@@ -1,0 +1,156 @@
+%
+% Copyright (c) 2012-2013 NEC Corporation
+% All rights reserved.
+% 
+% This program and the accompanying materials are made available under the
+% terms of the Eclipse Public License v1.0 which accompanies this
+% distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+%
+
+%%
+%% Format of daemon process configuration file.
+%%
+
+#include <unc/lnc_types.h>
+
+%
+% Declare symbol name.
+%
+cf_name		= daemon_conf_defs;
+cf_visibility	= hidden;
+
+%
+% Daemon process attributes.
+%
+defblock daemon
+{
+	% A brief description of the daemon.
+	description	= STRING: mandatory, min=1;
+
+	% The key of "command" map associated with the daemon command.
+	command		= STRING: mandatory, min=1;
+
+	% Specify type of this daemon process.
+	% Supported types are:
+	%
+	%	0	Unspecified (default)
+	%	1	Logical network daemon
+	%	2	Physical network daemon
+	%	3	Network driver daemon
+	%
+	process_type	= UINT32: max=LNC_PROCTYPE_MAX;
+
+	% Determine whether the daemon executable file is the same as
+	% UNC daemon. Default is false.
+	uncd		= BOOL;
+
+	% If true, the daemon process is expected to invoke an IPC service
+	% request to the launcher on the local host when it has been started
+	% successfully. Default is false.
+	%
+	% The daemon process must invoke an IPC service with specifying the
+	% following parameters:
+	%
+	%	IPC channel address:	uncd@LOCAL
+	%	IPC service name:	launcher
+	%	IPC service ID:		0
+	%
+	% If the daemon provides IPC services, the following data must be sent:
+	%
+	%	Additional data[0]:	IPC channel name provided by the daemon
+	%				(STRING)
+	%
+	% The launcher will wait for an IPC service request from the daemon
+	% process when it starts the daemon process.
+	%
+	% Note that this parameter affects only initial bootstrap.
+	start_wait	= BOOL;
+
+	% How long, in milliseconds, the launcher should wait for an IPC
+	% service request from the daemon process when it starts the daemon.
+	% The daemon process will be killed if the launcher does not receive
+	% an IPC service request within this milliseconds.
+	% This parameter is simply ignored unless "start_wait" is true.
+	% Default is 10000 milliseconds.
+	start_timeout	= UINT32:
+		min=LNC_DMCONF_MIN(start_timeout),
+		max=LNC_DMCONF_MAX(start_timeout);
+
+	% Determine order of the daemon start.
+	% Daemons are started in ascending order of "start_order".
+	start_order	= UINT32: mandatory, min=LNC_ORDER_MIN;
+
+	% The key of "command" map associated with the command which stops
+	% the daemon. If omitted, the daemon is killed by sending a signal.
+	stop		= STRING: min=1;
+
+	% Signal name to use when the launcher stops the daemon.
+	% This parameter is ignored if "stop" parameter is defined.
+	% Default is "TERM", which represents SIGTERM.
+	stop_signal	= STRING: min=1;
+
+	% How long, in milliseconds, the launcher should wait for the daemon
+	% to be stopped after executing "stop" command or sending "stop_signal"
+	% signal. Default is 10000 milliseconds.
+	stop_timeout	= UINT32:
+		min=LNC_DMCONF_MIN(stop_timeout),
+		max=LNC_DMCONF_MAX(stop_timeout);
+
+	% Determine order of the daemon stop.
+	% Daemons are stopped in ascending order of "stop_order".
+	% Note that the value of "stop_order" affects the timing when to
+	% stop the daemon.
+	%   - If the value is less than 1000, the daemon is always stopped
+	%     before modules in uncd, except for launcher and clstat.
+	%   - If the value is greater than or equal 1000, the daemon is
+	%     always stopped after modules in uncd, except for launcher and
+	%     clstat.
+	stop_order	= UINT32: mandatory, min=LNC_ORDER_MIN;
+
+	% Maximum number of stderr log file rotation.
+	% Log file rotation is disabled if zero is specified.
+	% stderr logging is disabled if a negative value is specified.
+	% Default is 10.
+	stderr_rotate	= INT32: max=LNC_DMCONF_MAX(stderr_rotate);
+
+	% Determine order of cluster state event delivery.
+	% Each cluster state event is delivered to daemons in ascending
+	% order of clevent_order value.
+	%
+	% Array index determines type of cluster state event.
+	% Currently the following events are defined:
+	%
+	%	0	- ACT event
+	%
+	% Cluster events are also delivered to uncd. uncd always uses 1000
+	% as clevent_order value for all event types.
+	% - 1000 can not be defined as clevent_order value because
+	%   clevent_order value must be unique.
+	% - If clevent_order value is greater than 1000, a cluster event
+	%   associated with the array index is delivered after uncd.
+	% - If clevent_order value is less than 1000, a cluster event
+	%   associated with the array index is delivered before uncd.
+	%
+	% If zero is specified, a cluster event associated with the array
+	% index is not delivered. In addition, any cluster event is not
+	% delivered if clevent_order is not defined.
+	clevent_order	= UINT32[CLSTAT_NEVTYPES];
+}
+
+%
+% Command to be executed.
+%
+defmap command
+{
+	% Path to an executable file for the command.
+	% It is recommended to specify an absolute path.
+	path		= STRING: mandatory, min=1;
+
+	% The name of the process.
+	% Value of this parameter is passed to the process via argv[0].
+	% If omitted, an executable file path is used as the process name.
+	name		= STRING: min=1;
+
+	% Command line arguments, excluding argv[0].
+	args		= STRING[];
+}

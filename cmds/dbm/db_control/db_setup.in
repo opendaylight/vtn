@@ -1,0 +1,274 @@
+#!/bin/bash
+
+#
+# Copyright (c) 2012-2013 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+# unc_setup_db
+#
+#	set up DB.
+
+dbmf=%INST_SYSSCRIPTDIR%/dbm/dbm_functions
+[ -r $dbmf ] || { echo "dbm_functions not found"; exit 1; } && . $dbmf
+
+# usage()
+#
+#   Show usage message.
+#
+# * input
+#     Nothing
+#
+# * output
+#     Nothing
+#
+usage()
+{
+	cat << EOF
+Usage: db_setup [OPTION]
+Setup database configuration and storage area.
+
+  -r     re-create the database storage area
+  -h     show this help message and exit
+EOF
+	exit 0
+}
+
+# invalid_argument()
+#
+#   Invalid argument message.
+#
+# * input
+#     Nothing
+#
+# * output
+#     1: error exit
+#
+invalid_argument()
+{
+	echo "*** Error: Invalid argument."
+	exit 1
+}
+
+# data_copy_error()
+#
+#   data copy error message.
+#
+# * input
+#     Nothing
+#
+# * output
+#     1: error exit
+#
+data_copy_error()
+{
+	error_output copy $LOGFILE $TMPLOGFILE
+	echo "*** Error: Failed in data copy."
+	exit 1
+}
+
+# db_setup_error()
+#
+#   DB setup message.
+#
+# * input
+#     arg1: DB operation
+#
+# * output
+#     1: error exit
+#
+db_setup_error()
+{
+	error_output $1 $LOGFILE $TMPLOGFILE
+	echo "*** Error: DB error occurred during DB setting."
+	exit 1
+}
+
+# check_exists_db()
+# 
+#	I check whether DB exists.
+#
+# * input
+#	   Nothing
+#
+# * output
+#	   0: exists
+#	   1: not exists or -r option is designated
+#
+check_exists_db()
+{
+	[ ! -d $PGDATA -o $ROPT = "ON" -o $start_flg -eq 1 ] \
+		|| return 0 && return 1
+}
+
+# create_db()
+# 
+#	create DB.
+#
+# * input
+#	   Nothing
+#
+# * output
+#	   Nothing
+#
+create_db()
+{
+	echo "1" > $STARTFILE
+	if [ $ROPT = "ON" -o $start_flg -eq 1 ]; then
+		db_stop 2> $TMPLOGFILE
+		rm -fr $PGDATA
+	fi
+	SU_DB_USER=$PGUSER
+	su -m $SUUSER -c "$PGINST/bin/initdb -D $PGDATA -U $PGUSER \
+		-E UNICODE --no-locale" > /dev/null 2> $TMPLOGFILE
+	[ $? -ne 0 ] && db_setup_error initdb
+	copy_postgresql_conf 2> $TMPLOGFILE
+	[ $? -ne 0 ] && data_copy_error
+	(db_start 200<&-) 2> $TMPLOGFILE
+	[ $? -ne 0 ] && db_setup_error dbstart
+	TMP_PGDATABASE=$PGDATABASE
+	PGDATABASE=postgres
+	su -m $SUUSER -c "psql -c \
+		\"ALTER USER $PGUSER PASSWORD '$PGPASSWORD'\"" \
+		> /dev/null 2> $TMPLOGFILE
+	[ $? -ne 0 ] && db_setup_error alterpass
+	su -m $SUUSER -c "psql -c \
+		\"CREATE USER $UNC_DB_USER WITH NOSUPERUSER PASSWORD '$UNC_DB_PASSWORD';\"" \
+		> /dev/null 2> $TMPLOGFILE
+	[ $? -ne 0 ] && db_setup_error createuser
+	PGDATABASE=$TMP_PGDATABASE
+	su -m $SUUSER -c "$PGINST/bin/createdb -E UNICODE \
+		-O $UNC_DB_USER $PGDATABASE" > /dev/null 2> $TMPLOGFILE
+	[ $? -ne 0 ] && db_setup_error createdb
+	PGUSER=$UNC_DB_USER
+	for UNCDATASQLFILE in `ls -1 $UNCDATASQLDIR/*.sql`; do
+		su -m $SUUSER -c "psql -f $UNCDATASQLFILE" \
+			> /dev/null 2> $TMPLOGFILE
+		[ $? -ne 0 ] && db_setup_error createtable
+	done
+	db_stop 2> $TMPLOGFILE
+	[ $? -ne 0 ] && db_setup_error dbstop
+	PGUSER=$SU_DB_USER
+	rm -f $STARTFILE
+}
+
+# directory_owner()
+#
+#   setting owner of directories.
+#
+# * input
+#     Nothing
+#
+# * output
+#     1: error exit
+#
+directory_owner()
+{
+	chown $SUUSER:$SUUSER $PGBASE
+	[ $? -ne 0 ] && data_copy_error
+	chown $SUUSER:$SUUSER $LOG_DIRECTORY
+	[ $? -ne 0 ] && data_copy_error
+	chown $SUUSER:$SUUSER $ARCHIVE_DIRECTORY
+	[ $? -ne 0 ] && data_copy_error
+	chown $SUUSER:$SUUSER $DBMUPDATECONFDIR
+	[ $? -ne 0 ] && data_copy_error
+}
+
+# odbc_driver_install()
+#
+#   Install odbc driver.
+#
+# * input
+#     Nothing
+#
+# * output
+#     1: error exit
+#
+odbc_driver_install()
+{
+	/usr/bin/odbcinst -q -d -v -n UNC_DB_DRIVER > /dev/null 2> $TMPLOGFILE
+	if [ $? -ne 0 ]; then
+		/usr/bin/odbcinst -i -d -f $ODBCDRVINIFILE > $TMPLOGFILE
+		[ $? -ne 0 ] && db_setup_error odbc
+	fi
+}
+
+# setup_db()
+#
+#   setup DB
+#
+# * input
+#     Nothing
+#
+# * output
+#     1: error exit
+#
+setup_db()
+{
+	{
+		flock -nx 200
+		if [ $? -ne 0 ]; then
+			log_output $$ ERROR $0 \
+				"Setting the DB is already executing." $LOGFILE
+			echo "*** Error: Setting the DB is already executing."
+			exit 1
+		fi
+
+		trap 'rm -f $TMPLOGFILE' 0
+
+		start_flg=0
+		[ -r $STARTFILE ] && start_flg=`cat $STARTFILE`
+
+		directory_owner
+		odbc_driver_install
+		pgpass_setting 2> $TMPLOGFILE
+		[ $? -ne 0 ] && data_copy_error
+		check_exists_db
+		[ $? -eq 1 ] && create_db
+		copy_postgresql_conf 2> $TMPLOGFILE
+		[ $? -ne 0 ] && data_copy_error
+		create_setting_file 2> $TMPLOGFILE
+		[ $? -ne 0 ] && data_copy_error
+
+		log_output $$ INFO $0 "Setup completed successfully." $LOGFILE
+		echo "Setup completed successfully."
+
+	} 200> ${LOCKFILE}
+}
+
+check_user_permission || exit 1
+
+export_pg_env
+
+LOGFILE=$DBMLOGDIR/unc_setup_db.log
+TMPLOGFILE=$DBMTMPDIR/unc_setup_db.log
+LOCKFILE=$DBMTMPDIR/unc_setup_db.lock
+STARTFILE=$DBMTMPDIR/unc_setup_db_cluster.starting
+
+trap 'interrupt_error $LOGFILE' 1 2 3 15
+
+ROPT="OFF"
+
+while [ $# -gt 0 ]; do
+	case "$1" in
+		"")
+			;;
+		-r)
+			ROPT="ON"
+			;;
+		-h)
+			usage;;
+		*)
+			invalid_argument
+			;;
+	esac
+	shift 1
+done
+
+setup_db
+
+exit 0

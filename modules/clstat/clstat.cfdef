@@ -1,0 +1,32 @@
+%
+% Copyright (c) 2012-2013 NEC Corporation
+% All rights reserved.
+% 
+% This program and the accompanying materials are made available under the
+% terms of the Eclipse Public License v1.0 which accompanies this
+% distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+%
+
+%%
+%% Format of configuration file for clstat module.
+%%
+
+#include <unc/clstat_types.h>
+
+% Options for clstat module.
+defblock options
+{
+	% How long, in milliseconds, the clstat module should wait for
+	% the event listener session to be established.
+	% Default is 5000 milliseconds.
+	init_timeout	= UINT32:
+		min=CLSTAT_CONF_MIN(init_timeout),
+		max=CLSTAT_CONF_MAX(init_timeout);
+
+	% How long, in milliseconds, the clstat module should wait for
+	% response of LNC_IPC_SVID_CLEVACK IPC service.
+	% Default is 5000 milliseconds.
+	ack_timeout	= UINT32:
+		min=CLSTAT_CONF_MIN(ack_timeout),
+		max=CLSTAT_CONF_MAX(ack_timeout);
+}

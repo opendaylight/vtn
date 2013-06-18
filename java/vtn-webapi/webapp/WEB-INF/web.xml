@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (c) 2012-2013 NEC Corporation
+  All rights reserved.
+
+  This program and the accompanying materials are made available under the
+  terms of the Eclipse Public License v1.0 which accompanies this
+  distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+-->
+
+<web-app id="WebApp_ID" version="2.4"
+	xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee 
+	http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd">
+	<display-name>vtn-webapi</display-name>
+
+	<servlet>
+		<servlet-name>uncWebAPIServlet</servlet-name>
+		<servlet-class>org.opendaylight.vtn.webapi.endpoint.VtnServiceWebAPIServlet</servlet-class>
+
+		<load-on-startup>2</load-on-startup>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>uncWebAPIServlet</servlet-name>
+		<url-pattern>/*</url-pattern>
+	</servlet-mapping>
+</web-app>

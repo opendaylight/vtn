@@ -1,0 +1,39 @@
+%
+% Copyright (c) 2012-2013 NEC Corporation
+% All rights reserved.
+% 
+% This program and the accompanying materials are made available under the
+% terms of the Eclipse Public License v1.0 which accompanies this
+% distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+%
+%/**
+% * @brief   DAL module conf def file
+% * @file    dal_db.cfdef 
+% * @author
+% * @date
+% * @version
+% * @par
+% */
+
+%
+% Declare symbol name.
+%
+
+cf_name = dal_cfdef;
+
+%
+% Define blocks
+%
+defmap dal_db_params {
+  server = STRING;
+  driver_name = STRING: max=64;
+  dsn_name = STRING: max=64;
+  database = STRING: max=64;
+  connection_type = UINT32;
+  port_no = UINT32;
+  time_out = UINT32;
+  connection_time_out = UINT32;
+  login_timeout = UINT32;
+  db_username = STRING: max=64;
+  db_password = STRING: max=64;
+}

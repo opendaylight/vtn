@@ -1,0 +1,98 @@
+#!/bin/bash
+
+#
+# Copyright (c) 2012-2013 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+# unc_start_db
+#
+#	start DB.
+
+dbmf=%INST_SYSSCRIPTDIR%/dbm/dbm_functions
+[ -r $dbmf ] || { echo "dbm_functions not found"; exit 2; } && . $dbmf
+
+# single_db_start()
+# 
+#	Start single DB
+#
+# * input
+#	   Nothing
+#
+# * output
+#	   0: Success
+#	   1: Already Started
+#	   2: Failure
+#
+single_db_start()
+{
+	db_start 2> $TMPLOGFILE
+	status=$?
+	if [ $status -eq 2 ]; then
+		error_output dbstart $DBLOGFILE $TMPLOGFILE
+	elif [ $status -eq 1 ]; then
+		error_output alreadydbstart $DBLOGFILE $TMPLOGFILE
+	fi
+	return $status
+}
+
+# odbc_dsn_install()
+# 
+#	ODBC system DSN is installed.
+#
+# * input
+#	   Nothing
+#
+# * output
+#	   0: Success
+#	   2: Failure
+#
+odbc_dsn_install()
+{
+	if [ ! -r $ODBCINSTALLEDFILE ]; then
+		/usr/bin/odbcinst -i -s -l -f $ODBCINIFILE > $TMPLOGFILE
+		if [ $? -ne 0 ]; then
+			error_output odbc $DBLOGFILE $TMPLOGFILE
+			db_stop 2> $TMPLOGFILE
+			if [ $? -ne 0 ]; then
+				error_output dbstop $DBLOGFILE $TMPLOGFILE
+			fi
+			return 2
+		fi
+		rm -f $TMPLOGFILE
+		su -m $SUUSER -c "touch $ODBCINSTALLEDFILE" 2> $TMPLOGFILE
+		if [ $? -ne 0 ]; then
+			error_output copy $DBLOGFILE $TMPLOGFILE
+			db_stop 2> $TMPLOGFILE
+			if [ $? -ne 0 ]; then
+				error_output dbstop $DBLOGFILE $TMPLOGFILE
+			fi
+			return 2
+		fi
+	fi
+	return 0
+}
+
+check_user_permission || exit 2
+[ $# -ge 2 ] && { echo "*** Error: Invalid argument."; exit 2; }
+
+export_pg_env
+
+TMPLOGFILE=$DBMTMPDIR/unc_start_db_$$.log
+
+trap 'rm -f $TMPLOGFILE; trap_rm_tmpfile unc_start_db' 0
+
+single_db_start
+status=$?
+[ $status -ne 0 ] && exit $status
+odbc_dsn_install
+status=$?
+[ $status -ne 0 ] && exit $status
+
+log_output $$ INFO $0 "Startup UNC DB." $DBLOGFILE
+
+exit 0

@@ -1,0 +1,105 @@
+#
+# Copyright (c) 2012-2013 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+# value structure for ALARM
+
+include "upll.ipct";
+
+ipc_struct pfcdrv_val_alarm_data {
+ UINT64 ingress_ofs_dpid;
+ UINT64 egress_ofs_dpid;
+};
+
+ipc_struct pfcdrv_alarm_data_cmn {
+  UINT64 ofs_dpid;
+};
+
+ipc_struct pfcdrv_policier_alarm_data {
+  UINT64 ofs_dpid;
+  UINT8  port_name[16];
+  UINT8  vnode_name[32];
+  UINT32 seq_num;
+};
+
+ipc_struct pfcdrv_network_mon_alarm_data {
+  UINT8 network_mon_group_name[32];
+};
+
+ipc_struct pfcdrv_val_vbr_if {
+  val_vbr_if   val_vbrif;
+  UINT8        vext_name[32];
+  UINT8        vext_if_name[32];
+  UINT8        vlink_name[32];
+  UINT8        valid[4];
+};
+
+ipc_struct pfc_cens_link {
+UINT64 src_dpid;
+UINT64 dst_dpid;
+UINT32 src_port;
+UINT32 dst_port;
+UINT32 state;
+};
+
+
+ipc_struct pfc_cens_ofs {
+UINT64 dpid;
+UINT32 state;
+UINT32 secchan_addr;
+UINT16 secchan_port;
+UINT8 ofp_mfr_desc[256];
+UINT8 ofp_hw_desc[256];
+UINT8 ofp_sw_desc[256];
+UINT8 ofp_serial_num[32];
+UINT8 ofp_dp_desc[256];
+};
+
+ipc_struct pfc_cens_port {
+UINT64 dpid;
+UINT8 port_name[16];
+UINT32 port_no;
+UINT32 state;
+UINT8 ofp_hw_addr[6];
+UINT16 ofp_curr_speed;
+UINT8 ofp_curr_media;
+UINT16 ofp_curr_func;
+UINT16 ofp_advertised_speed;
+UINT8 ofp_advertised_media;
+UINT16 ofp_advertised_func;
+UINT16 ofp_supported_speed;
+UINT8 ofp_supported_media;
+UINT16 ofp_supported_func;
+UINT16 ofp_peer_speed;
+UINT8 ofp_peer_media;
+UINT16 ofp_peer_func;
+UINT8 admin;
+UINT8 ofs_domain[32];
+};
+
+ipc_struct pfcdrv_val_vbrif_vextif{
+   UINT8   valid[3];
+   UINT8   interface_type;
+   UINT8   vexternal_name[32];
+   UINT8   vext_if_name[32];
+};
+
+# vbrif flowfilter_entry value structure
+ipc_struct pfcdrv_val_flowfilter_entry {
+  UINT8                     valid[2];
+  val_flowfilter_entry      val_ff_entry;
+  pfcdrv_val_vbrif_vextif   val_vbrif_vextif;
+};
+
+# vbrif policingmap value structure
+ipc_struct pfcdrv_val_vbrif_policingmap {
+  UINT8                     valid[2];
+  val_policingmap           val_policing_map;
+  pfcdrv_val_vbrif_vextif   val_vbrif_vextif;
+};
+

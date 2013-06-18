@@ -1,0 +1,286 @@
+#
+# Copyright (c) 2012-2013 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+##
+## Structs used by UPPL IPC Services.
+##
+
+##
+## UNC_KT_ROOT ipc structure
+##
+ipc_struct key_root {
+  UINT8 root_key;
+};
+
+##
+## UNC_KT_CONTROLLER ipc structure
+##
+ipc_struct key_ctr {
+  UINT8 controller_name[32];
+};
+
+ipc_struct val_ctr {
+  UINT8 type; # Enumeration values supported are
+              # UNC_CT_UNKNOWN
+              # UNC_CT_PFC
+              # UNC_CT_VNP
+  UINT8 version[32];
+  UINT8 description[128];
+  IPV4 ip_address;
+  UINT8 user[32];
+  UINT8 password[257];
+  UINT8 enable_audit; # Enumeration values supported are
+                      # UPPL_AUTO_AUDIT_DISABLED
+                      # UPPL_AUTO_AUDIT_ENABLED
+  UINT8 valid[7];
+  UINT8 cs_row_status; # This attribute will not be processed
+  UINT8 cs_attr[7];    # This attribute will not be processed
+};
+
+ipc_struct val_ctr_st {
+  val_ctr controller;
+  UINT8 actual_version[32];
+  UINT8 oper_status; # Enumeration values supported are
+                     # UPPL_CONTROLLER_OPER_DOWN
+                     # UPPL_CONTROLLER_OPER_UP
+                     # UPPL_CONTROLLER_OPER_WAITING_AUDIT
+                     # UPPL_CONTROLLER_OPER_AUDITING
+  UINT8 valid[3];
+};
+
+# From physical to Logical
+ipc_struct val_path_fault_alarm {
+  UINT8 ingress_logical_port[320];
+  UINT8 egress_logical_port[320];
+  UINT16 ingress_num_of_ports;
+  UINT16 egress_num_of_ports;
+  UINT8 valid[4];
+};
+
+# From driver to physical
+ipc_struct val_phys_path_fault_alarm {
+  UINT8 ingress_ofs_dpid[256];
+  UINT8 egress_ofs_dpid[256];
+  UINT8 valid[2];
+};
+
+##
+## UNC_KT_CTR_DOMAIN ipc structure
+##
+ipc_struct key_ctr_domain {
+  key_ctr ctr_key;
+  UINT8 domain_name[32];
+};
+
+ipc_struct val_ctr_domain {
+  UINT8 type;   # Enumeration values supported are
+                # UPPL_DOMAIN_TYPE_DEFAULT
+                # UPPL_DOMAIN_TYPE_NORMAL
+  UINT8 description[128];
+  UINT8 valid[2];
+  UINT8 cs_row_status;
+  UINT8 cs_attr[2];
+};
+
+ipc_struct val_ctr_domain_st {
+  val_ctr_domain domain;
+  UINT8 oper_status;  ## supported values are
+                       # UPPL_CTR_DOMAIN_OPER_DOWN
+                       # UPPL_CTR_DOMAIN_OPER_UP
+                       # UPPL_CTR_DOMAIN_OPER_UNKNOWN
+  UINT8 valid[2];
+};
+
+##
+## UNC_KT_LOGICAL_PORT ipc structure
+##
+ipc_struct key_logical_port {
+  key_ctr_domain  domain_key;
+  UINT8 port_id[320];
+};
+
+ipc_struct val_logical_port {
+  UINT8 description[128];  # description will hold subdomain type values like
+                           #   StandardVLAN, MCLAG, PFST
+  UINT8 port_type;         # port_type values supported are:
+                           # UPPL_LP_SWITCH
+                           # UPPL_LP_PHYSICAL_PORT
+                           # UPPL_LP_TRUNK_PORT
+                           # UPPL_LP_SUBDOMAIN
+  UINT8 switch_id[256];
+  UINT8 physical_port_id[32];
+  UINT8 oper_down_criteria;  # supported values are
+                               # UPPL_OPER_DOWN_CRITERIA_ALL
+                               # UPPL_OPER_DOWN_CRITERIA_ANY
+  UINT8 valid[5];
+};
+
+ipc_struct val_logical_port_st {
+  val_logical_port logical_port;
+  UINT8 oper_status; ## supported values are
+                     # UPPL_LOGICAL_PORT_OPER_DOWN
+                     # UPPL_LOGICAL_PORT_OPER_UP
+                     # UPPL_LOGICAL_PORT_OPER_UNKNOWN
+  UINT8 valid[2];
+};
+
+##
+## UNC_KT_LOGICAL_MEMBER_PORT ipc structure
+##
+ipc_struct key_logical_member_port {
+  key_logical_port logical_port_key;
+  UINT8 switch_id[256];
+  UINT8 physical_port_id[32];
+};
+
+##
+## UNC_KT_SWITCH ipc structure
+##
+ipc_struct key_switch {
+  key_ctr ctr_key;
+  UINT8 switch_id[256];
+};
+
+ipc_struct val_switch {
+  UINT8 description[128];
+  UINT8 model[16];
+  IPV4 ip_address;
+  IPV6 ipv6_address;
+  UINT8 admin_status; ## supported values are
+                      # UPPL_SWITCH_ADMIN_UP
+                      # UPPL_SWITCH_ADMIN_DOWN
+  UINT8 domain_name[32];
+  UINT8 valid[6];
+};
+
+ipc_struct val_switch_st {
+  val_switch switch_val;
+  UINT8 oper_status; ## supported values are
+                     # UPPL_SWITCH_OPER_DOWN
+                     # UPPL_SWITCH_OPER_UP
+                     # UPPL_SWITCH_OPER_UNKNOWN
+  UINT8 manufacturer[256];
+  UINT8 hardware[256];
+  UINT8 software[256];
+  UINT64 alarms_status; ## Bit mask, for each alarm type, if alarm exist set 1 else set 0.
+  UINT8 valid[6];
+};
+
+ipc_struct val_flow_entry_full_alarm {
+ UINT8 ofs_dpid[256];
+};
+
+ipc_struct val_ofs_lack_features_alarm{
+ UINT8 ofs_dpid[256];
+};
+
+##
+## UNC_KT_PORT ipc structure
+##
+ipc_struct key_port {
+  key_switch  sw_key;
+  UINT8 port_id[32];
+};
+
+ipc_struct val_port {
+  UINT32 port_number;
+  UINT8 description[128];
+  UINT8 admin_status;  ## supported values are
+                       # UPPL_PORT_ADMIN_UP
+                       # UPPL_PORT_ADMIN_DOWN
+  UINT16 trunk_allowed_vlan;
+  UINT8 valid[4];
+};
+
+ipc_struct val_port_st {
+  val_port port;
+  UINT8 oper_status; ## supported values are
+                     # UPPL_PORT_OPER_DOWN
+                     # UPPL_PORT_OPER_UP
+                     # UPPL_PORT_OPER_UNKNOWN
+  UINT8 mac_address[6];
+  UINT8 direction;   ## direction will have values of:
+                     #UPPL_PORT_DIR_INTERNEL
+                     #UPPL_PORT_DIR_EXTERNAL
+                     #UPPL_PORT_DIR_UNKNOWN
+  UINT8 duplex;      ## supported values are
+                     #UPPL_PORT_DUPLEX_HALF
+                     #UPPL_PORT_DUPLEX_FULL
+  UINT64 speed;
+  UINT64 alarms_status;  ## Bit mask, for each alarm type, if alarm exist set 1 else set 0.
+  UINT8 logical_port_id[320];
+  UINT8 valid[8];
+};
+
+ipc_struct val_port_st_neighbor {
+  val_port port;
+  UINT8 connected_switch_id[256];
+  UINT8 connected_port_id[32];
+  UINT8 valid[3];
+};
+
+ipc_struct val_port_alarm {
+ UINT8 ofs_dpid[256];
+ UINT8 port_id[32];
+ UINT8 valid[2];
+};
+
+##
+## UNC_KT_LINK ipc structure
+##
+ipc_struct key_link {
+  key_ctr ctr_key;
+  UINT8 switch_id1[256];
+  UINT8 port_id1[32];
+  UINT8 switch_id2[256];
+  UINT8 port_id2[32];
+};
+
+ipc_struct val_link {
+  UINT8 description[128];
+  UINT8 valid[1];
+};
+
+ipc_struct val_link_st {
+  val_link link;
+  UINT8 oper_status; ## supported values are
+                     # UPPL_LINK_OPER_DOWN
+                     # UPPL_LINK_OPER_UP
+                     # UPPL_LINK_OPER_UNKNOWN
+  UINT8 valid[2];
+};
+
+##
+## UNC_KT_BOUNDARY ipc structure
+##
+ipc_struct key_boundary {
+  UINT8 boundary_id[32];
+};
+
+ipc_struct val_boundary {
+  UINT8 description[128];
+  UINT8 controller_name1[32];
+  UINT8 domain_name1[32];
+  UINT8 logical_port_id1[320];
+  UINT8 controller_name2[32];
+  UINT8 domain_name2[32];
+  UINT8 logical_port_id2[320];
+  UINT8 valid[7];
+  UINT8 cs_row_status; # This attribute will not be processed
+  UINT8 cs_attr[7];    # This attribute will not be processed
+};
+
+ipc_struct val_boundary_st {
+  val_boundary boundary;
+  UINT8 oper_status;  ## supported values are
+                      # UPPL_BOUNDARY_OPER_DOWN
+                      # UPPL_BOUNDARY_OPER_UP
+                      # UPPL_BOUNDARY_OPER_UNKNOWN
+  UINT8 valid[2];
+};

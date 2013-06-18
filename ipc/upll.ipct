@@ -1,0 +1,911 @@
+#
+# Copyright (c) 2012-2013 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+ipc_struct val_ping {
+  UINT8    valid[7];
+  UINT32   target_addr; 
+  UINT32   src_addr;
+  UINT8    dfbit;
+  UINT16   packet_size; 
+  UINT32    count; 
+  UINT8    interval;
+  UINT8    timeout;
+};
+
+ipc_struct val_vtn_neighbor {
+  UINT8   valid[3];
+  UINT8   connected_vnode_name[32];
+  UINT8   connected_if_name[32];
+  UINT8   connected_vlink_name[32];
+};
+
+ipc_struct key_vtn {
+  UINT8  vtn_name[32];
+};
+
+ipc_struct val_vtn {
+  UINT8  valid[1];
+  UINT8  cs_row_status;
+  UINT8  cs_attr[1];
+  UINT8  description[128];
+};
+
+ipc_struct val_rename_vtn {
+  UINT8  valid[1];
+  UINT8  new_name[32];
+};
+
+ipc_struct val_vtn_st {
+  UINT8    valid[4];
+  UINT8    oper_status;
+  UINT8    alarm_status;
+  UINT64   creation_time;
+  UINT64   last_updated_time;
+};
+
+ipc_struct key_vtn_controller {
+  key_vtn  vtn_key;
+  UINT8    controller_name[32];
+  UINT8    domain_id[32];
+};
+
+ipc_struct val_vtn_mapping_controller_st {
+ UINT8     valid[8];
+ UINT8     switch_id[256];
+ UINT8     port_name[32];
+ UINT8     logical_port_id[320]; 
+ UINT16    vlan_id;
+ UINT8     tagged; 
+ UINT8     map_type; 
+ UINT8     vbr_name[32];
+ UINT8     vbrif_name[32];
+};
+
+ipc_struct key_vtnstation_controller {
+  UINT8   controller_name[32];
+};
+
+ipc_struct val_vtnstation_controller_st {
+  UINT8    valid[15];
+  UINT64   station_id;
+  UINT64   created_time;
+  UINT8    mac_addr[6];
+  UINT32   ipv4_count; 
+  UINT32   ipv6_count;
+  UINT8    switch_id[256];
+  UINT8    port_name[32];
+  UINT16   vlan_id;
+  UINT8    map_type; 
+  UINT8    map_status; 
+  UINT8    vtn_name[32];
+  UINT8    domain_id[32];
+  UINT8    vbr_name[32];
+  UINT8    vbrif_name[32];
+  UINT8    vbrif_status; 
+};
+
+ipc_struct val_vtnstation_controller_stat {
+  UINT8    valid[22];
+  UINT64   allTxPkt;
+  UINT64   allRxPkt;
+  UINT64   allTxBytes;
+  UINT64   allRxBytes;
+  UINT64   allNWTxPkt;
+  UINT64   allNWRxPkt;
+  UINT64   allNWTxBytes;
+  UINT64   allNWRxBytes;
+  UINT64   existingTxPkt;
+  UINT64   existingRxPkt;
+  UINT64   existingTxBytes;
+  UINT64   existingRxBytes;
+  UINT64   expiredTxPkt;
+  UINT64   expiredRxPkt;
+  UINT64   expiredTxBytes;
+  UINT64   expiredRxBytes;
+  UINT64   allDropRxPkt;
+  UINT64   allDropRxBytes;
+  UINT64   existingDropRxPkt;
+  UINT64   existingDropRxBytes;
+  UINT64   expiredDropRxPkt;
+  UINT64   expiredDropRxBytes;
+};
+
+ipc_struct key_vbr {
+  key_vtn   vtn_key;
+  UINT8     vbridge_name[32];
+};
+
+ipc_struct val_vbr {
+  UINT8    valid[5];
+  UINT8    cs_row_status;
+  UINT8    cs_attr[5];
+  UINT8    controller_id[32];
+  UINT8    domain_id[32];
+  UINT8    vbr_description[128];
+  IPV4     host_addr;
+  UINT8    host_addr_prefixlen;
+};
+
+ipc_struct val_rename_vbr {
+  UINT8   valid[1];
+  UINT8   new_name[32];
+};
+
+ipc_struct val_vbr_st {
+  UINT8   valid[1];
+  UINT8   oper_status; 
+};
+
+ipc_struct val_vbr_l2_domain_st {
+  UINT8    valid[2];
+  UINT64   l2domain_id;  
+  UINT32   ofs_count;
+};
+
+ipc_struct val_vbr_l2_domain_member_st {
+  UINT8    valid[2];
+  UINT8    switch_id[256];
+  UINT16   vlan_id;
+};
+
+ipc_struct val_vbr_mac_entry_st {
+  UINT8   valid[4];
+  UINT8   macaddr[6];  
+  UINT8   type;  
+  UINT8   if_name[32];
+  UINT8   if_kind;
+};
+
+ipc_struct key_vbr_if {
+  key_vbr  vbr_key;
+  UINT8    if_name[32];
+};
+
+ipc_struct val_port_map {
+  UINT8    valid[3];
+  UINT8    cs_attr[3];
+  UINT8    logical_port_id[320];
+  UINT16   vlan_id;
+  UINT8    tagged;
+};
+
+ipc_struct val_vbr_if {
+  UINT8   valid[3];
+  UINT8   admin_status;
+  UINT8   description[128];
+  UINT8   cs_row_status;
+  UINT8   cs_attr[3];
+  val_port_map   portmap;
+};
+
+ipc_struct val_vbr_if_st {
+  UINT8    valid[1];
+  UINT8    oper_status;
+};
+
+ipc_struct key_vlan_map {
+  key_vbr  vbr_key;
+  UINT8    logical_port_id[320];
+  UINT8    logical_port_id_valid;
+};
+
+ipc_struct val_vlan_map {
+  UINT8   valid[1];
+  UINT8   cs_row_status;
+  UINT8   cs_attr[1];
+  UINT16  vlan_id;
+};
+ 
+ipc_struct key_vrt {
+  key_vtn vtn_key;
+  UINT8   vrouter_name[32];
+};
+
+ipc_struct val_vrt {
+  UINT8   valid[4];
+  UINT8   cs_row_status;
+  UINT8   cs_attr[4];
+  UINT8   controller_id[32];
+  UINT8   domain_id[32];
+  UINT8   vrt_description[128];
+  UINT8   dhcp_relay_admin_status;
+};
+
+ipc_struct val_rename_vrt {
+  UINT8   valid[1];
+  UINT8   new_name[32];
+};
+
+ipc_struct val_vrt_st {
+  UINT8   valid[1];
+  UINT8   oper_status; 
+};
+
+ipc_struct val_vrt_dhcp_relay_st {
+  UINT8    valid[3];
+  UINT8    dhcprelay_adminstatus;
+  UINT32   ip_count;
+  UINT32   if_count;
+};
+
+ipc_struct val_dhcp_relay_if_st {
+  UINT8   valid[2];
+  UINT8   if_name[32];
+  UINT8   dhcprelay_status;
+};
+
+ipc_struct val_vrt_arp_entry_st {
+  UINT8    valid[4];
+  UINT8    macaddr[6];
+  IPV4     ip_addr;
+  UINT8    type; 
+  UINT8    if_name[32]; 
+};
+
+ipc_struct val_vrt_ip_route_st {
+  UINT8     valid[9];
+  IPV4      destination;
+  IPV4      gateway;
+  UINT8     prefixlen;
+  UINT16    flags;
+  UINT16    metric;
+  UINT32    use;
+  UINT8     if_name[32];
+  UINT8     nwmonitor_gr[32];
+  UINT16    group_metric;
+};
+
+ipc_struct key_vrt_if {
+  key_vrt   vrt_key;
+  UINT8    if_name[32];
+};
+
+ipc_struct val_vrt_if {
+  UINT8    valid[5];
+  UINT8    cs_row_status;
+  UINT8    cs_attr[5]; 
+  UINT8    description[128];
+  IPV4     ip_addr;  
+  UINT8    prefixlen;
+  UINT8    macaddr[6];
+  UINT8    admin_status;
+};
+
+ipc_struct val_vrt_if_st {
+  UINT8    valid[1];
+  UINT8    oper_status;
+};
+
+ipc_struct key_static_ip_route {
+  key_vrt   vrt_key;
+  IPV4      dst_addr;
+  UINT8     dst_addr_prefixlen;
+  IPV4      next_hop_addr;
+  UINT8     nwm_name[32];
+};
+
+ipc_struct val_static_ip_route {
+  UINT8     valid[1];
+  UINT8     cs_row_status;
+  UINT8     cs_attr[1]; 
+  UINT16    group_metric;
+};
+
+ipc_struct key_dhcp_relay_if {
+  key_vrt   vrt_key;
+  UINT8     if_name[32];
+};
+
+ipc_struct val_dhcp_relay_if {
+  UINT8   cs_row_status;
+};
+
+ipc_struct key_dhcp_relay_server {
+  key_vrt   vrt_key;
+  IPV4      server_addr;
+};
+
+ipc_struct val_dhcp_relay_server {
+  UINT8   cs_row_status;
+};
+
+ipc_struct key_nwm {
+  key_vbr   vbr_key;
+  UINT8     nwmonitor_name[32];
+};
+
+ipc_struct val_nwm {
+  UINT8   valid[1];
+  UINT8   cs_row_status;
+  UINT8   cs_attr[1];
+  UINT8   admin_status; 
+};
+
+ipc_struct val_nwm_st {
+  UINT8   valid[1];
+  UINT8   status;
+};
+
+ipc_struct val_nwm_host_st {
+  UINT8    valid[6]; 
+  IPV4     host_address;
+  UINT8    status;
+  UINT64   ping_send;
+  UINT64   ping_recv;
+  UINT64   ping_err;
+  UINT64   ping_trouble;
+};
+
+
+
+ipc_struct key_nwm_host {
+  key_nwm   nwm_key;
+  IPV4      host_address;
+};
+
+ipc_struct val_nwm_host {
+  UINT8    valid[5];
+  UINT8    cs_row_status;
+  UINT8    cs_attr[5];
+  UINT16   health_interval;
+  UINT16   recovery_interval;
+  UINT8    failure_count;
+  UINT8    recovery_count;
+  UINT8    wait_time;
+
+};
+
+ipc_struct key_vtep { 
+  key_vtn  vtn_key;
+  UINT8    vtep_name[32];
+};
+
+ipc_struct val_vtep {
+  UINT8   valid[3];
+  UINT8   cs_row_status;
+  UINT8   cs_attr[3];
+  UINT8   description[128];
+  UINT8   controller_id[32];
+  UINT8   domain_id[32];
+};
+
+ipc_struct val_vtep_st {
+  UINT8   valid[1];
+  UINT8   oper_status;
+};
+
+ipc_struct key_vtep_if {
+  key_vtep   vtep_key;
+  UINT8      if_name[32];
+};
+
+ipc_struct val_vtep_if {
+  UINT8         valid[3];
+  UINT8         cs_row_status;
+  UINT8         cs_attr[3];
+  UINT8         description[128];
+  UINT8	        admin_status;
+  val_port_map  portmap;
+};
+
+ipc_struct val_vtep_if_st {
+  UINT8   valid[1];
+  UINT8   oper_status;
+};
+
+ipc_struct key_vtep_grp {
+  key_vtn   vtn_key;
+  UINT8     vtepgrp_name[32];
+};
+
+ipc_struct val_vtep_grp {
+  UINT8   valid[2];
+  UINT8   cs_row_status;
+  UINT8   cs_attr[2];
+  UINT8   controller_id[32];
+  UINT8   description[128];
+};
+
+ipc_struct key_vtep_grp_member {
+  key_vtep_grp  vtepgrp_key;
+  UINT8         vtepmember_name[32];
+};
+
+ipc_struct val_vtep_grp_member {
+  UINT8   cs_row_status;
+};
+
+ipc_struct key_vtunnel {
+  key_vtn   vtn_key;
+  UINT8     vtunnel_name[32];
+};
+
+ipc_struct val_vtunnel {
+  UINT8   valid[6];
+  UINT8   cs_row_status;
+  UINT8   cs_attr[6];
+  UINT8   description[128];
+  UINT8   controller_id[32];
+  UINT8   domain_id[32];
+  UINT8   vtn_name[32];
+  UINT8   vtep_grp_name[32];
+  UINT32  label;
+};
+
+ipc_struct val_vtunnel_st {
+  UINT8   valid[1];
+  UINT8   oper_status;
+};
+
+ipc_struct key_vtunnel_if {
+  key_vtunnel   vtunnel_key;
+  UINT8         if_name[32];
+};
+
+ipc_struct val_vtunnel_if {
+  UINT8         valid[3];
+  UINT8         cs_row_status;
+  UINT8         cs_attr[3];
+  UINT8         description[128];
+  UINT8         admin_status;
+  val_port_map  portmap;
+};
+
+ipc_struct val_vtunnel_if_st {
+  UINT8   valid[1];
+  UINT8   oper_status;
+};
+
+ipc_struct key_vunknown {
+  key_vtn   vtn_key;
+  UINT8     vunknown_name[32];
+};
+
+ipc_struct val_vunknown {
+  UINT8   valid[4];
+  UINT8   cs_row_status;
+  UINT8   cs_attr[4];
+  UINT8   description[128];
+  UINT8   type;
+  UINT8   controller_id[32];
+  UINT8   domain_id[32];
+};
+
+ipc_struct key_vunk_if {
+  key_vunknown   vunk_key;
+  UINT8          if_name[32];
+};
+
+ipc_struct val_vunk_if {
+  UINT8   valid[2];
+  UINT8   cs_row_status;
+  UINT8   cs_attr[2];
+  UINT8   description[128];
+  UINT8   admin_status;
+};
+
+ipc_struct key_vlink{
+  key_vtn   vtn_key;
+  UINT8     vlink_name[32];
+};
+
+ipc_struct val_vlink{
+  UINT8   valid[8];
+  UINT8   cs_row_status;
+  UINT8   cs_attr[8];
+  UINT8   admin_status;
+  UINT8   vnode1_name[32];
+  UINT8   vnode1_ifname[32];
+  UINT8   vnode2_name[32];
+  UINT8   vnode2_ifname[32];
+  UINT8   boundary_name[32];
+  UINT16  vlan_id;
+  UINT8   description[128];
+};
+
+ipc_struct val_vlink_st {
+   UINT8   valid[1];
+   UINT8   oper_status;
+};
+
+ipc_struct val_rename_vlink {
+  UINT8   valid[1];
+  UINT8   new_name[32];
+};
+
+##
+## IPC structures for FlowList.
+##
+
+#
+# Flowlist Key
+#
+ipc_struct key_flowlist {
+  UINT8   flowlist_name[33];  # flowlist name
+};
+
+
+#
+# Flowlist Value
+#
+ipc_struct val_flowlist {
+  UINT8   valid[1];       # valid flag
+  UINT8   cs_row_status;  # object configuration status
+  UINT8   cs_attr[1];     # attributes configuration status
+  UINT8   ip_type;        # ip type for flowlist 
+};
+
+#
+# Flowlist Rename value
+#
+
+ipc_struct val_rename_flowlist {
+  UINT8   valid[1];               # valid flag
+  UINT8   flowlist_newname[33];   # flowlist new name
+};
+
+#
+# FlowlistEntry Key
+#
+ipc_struct key_flowlist_entry {
+  key_flowlist flowlist_key;   # Flowlist key
+  UINT16       sequence_num;   # sequence num
+};
+
+#
+# FlowlistEntry value
+#
+ipc_struct  val_flowlist_entry {
+  UINT8   valid[22];            # valid flag  
+  UINT8   cs_row_status;        # object configuration status
+  UINT8   cs_attr[22];          # attributes configuration status
+  UINT8   mac_dst[6];           # destination MAC address
+  UINT8   mac_src[6];           # source MAC address
+  UINT16  mac_eth_type;         # ether type
+  IPV4    dst_ip;               # destination IPv4 address
+  UINT8   dst_ip_prefixlen;     # destination IPv4 prefix length
+  IPV4    src_ip;               # source IPv4 address
+  UINT8   src_ip_prefixlen;     # source IPv4 prefix length
+  UINT8   vlan_priority;        # vlan priority
+  IPV6    dst_ipv6;             # destination IPv6 address 
+  UINT8   dst_ipv6_prefixlen;   # destination IPv6 prefix length
+  IPV6    src_ipv6;             # source IPv6 address
+  UINT8   src_ipv6_prefixlen;   # source IPv6 prefix length
+  UINT8   ip_proto;             # IP protocol
+  UINT8   ip_dscp;              # IP DSCP value
+  UINT16  l4_dst_port;          # L4 destination port
+  UINT16  l4_dst_port_endpt;    # L4 destination port end range value
+  UINT16  l4_src_port;          # L4 source port
+  UINT16  l4_src_port_endpt;    # L4 source port end range value
+  UINT8   icmp_type;            # IPv4 ICMP type
+  UINT8   icmp_code;            # IPv4 ICMP code
+  UINT8   icmpv6_type;          # IPv6 ICMP type
+  UINT8   icmpv6_code ;         # IPv6 ICMP code
+};
+
+
+
+##
+## IPC structures for FlowFilter.
+##
+
+#
+# generic statistics structure
+#
+ipc_struct pom_stats {
+  UINT8   valid[2];       # valid flag
+  UINT64  packets;        # Number of packets
+  UINT64  bytes;          # Number of bytes
+};
+
+
+#
+# VTN Flowfilter Key
+#
+ipc_struct key_vtn_flowfilter {
+  key_vtn   vtn_key;            # VTN key
+  UINT8     input_direction;    # flowfilter direction 
+};
+
+#
+# VTN Flowfilter value
+#
+ipc_struct val_flowfilter {
+  UINT8   cs_row_status;              # object configuration status
+};
+
+#
+# VTN Flowfilter controller statistics
+#
+ipc_struct val_vtn_flowfilter_controller_st {
+  UINT8       valid[12];              # valid flag
+  UINT8       direction;              # flowfilter direction
+  UINT16      sequence_num;           # flowfilter sequence number
+  UINT8       flowlist[33];           # flowlist name
+  UINT8       ip_type;                # flowlist ip type
+  UINT8       action;                 # flowfilter action
+  UINT8       dscp;                   # flowfilter ip dscp value
+  UINT8       priority;               # flowfilter vlan priority
+  UINT8       nwm_status;             # flowfilter n/w monitor status
+  pom_stats   software;               # software statistics 
+  pom_stats   exist;                  # existing statistics
+  pom_stats   expire;                 # expired statistics
+  pom_stats   total;                  # total statistics
+};
+
+#
+# FlowlistEntry statistics value
+#
+ipc_struct val_flowlist_entry_st { 
+  UINT8       valid[5];            # valid flag
+  UINT16      sequence_num;        # sequence number
+  pom_stats   software;            # software statistics 
+  pom_stats   exist;               # existing statistics
+  pom_stats   expire;              # expired statistics
+  pom_stats   total;               # total statistics
+ };
+
+
+#
+# VTN FlowfilterEntry key
+#
+ipc_struct key_vtn_flowfilter_entry { 
+  key_vtn_flowfilter    flowfilter_key;     # VTN Flowfilter key
+  UINT16                sequence_num;       # sequence number
+};
+
+#
+# VTN FlowfilterEntry value
+#
+ipc_struct val_vtn_flowfilter_entry {
+  UINT8   valid[5];                   # valid flag
+  UINT8   cs_row_status;              # object configuration status
+  UINT8   cs_attr[5];                 # attributes configuration status
+  UINT8   flowlist_name[33];          # flowlist name
+  UINT8   action;                     # flowfilter action
+  UINT8   nwm_name[32];               # network monitor name
+  UINT8   dscp;                       # dscp value
+  UINT8   priority;                   # vlan priority
+};
+
+#
+# VTN Flowfilter controller key
+#
+ipc_struct key_vtn_flowfilter_controller {
+  key_vtn   vtn_key;                  # VTN key
+  UINT8     controller_name[32];      # controller identifier
+  UINT8     domain_id[32];          # domain identifier
+};
+
+#
+# VTN Flowfilter controller value
+#
+ipc_struct val_flowfilter_controller {
+  UINT8   valid[2];           # valid flag
+  UINT8   direction;          # flowfilter direction 
+  UINT16  sequence_num;       # sequence number
+};
+
+#
+# vBridge Flowfilter key
+#
+ipc_struct key_vbr_flowfilter {
+  key_vbr   vbr_key;        # vBridge key
+  UINT8     direction;      # flowfilter direction
+};
+
+#
+# vBridge FlowfilterEntry key
+#
+ipc_struct key_vbr_flowfilter_entry {
+  key_vbr_flowfilter  flowfilter_key;     # vBridge flowfilter key
+  UINT16              sequence_num;       # sequence number
+};
+
+#
+# FlowfilterEntry value
+#
+ipc_struct val_flowfilter_entry {
+  UINT8   valid[9];                   # valid flag
+  UINT8   cs_row_status;              # object configuration status
+  UINT8   cs_attr[9];                 # attributes configuration status
+  UINT8   flowlist_name[33];          # flowlist name
+  UINT8   action;                     # flowfilter action
+  UINT8   redirect_node[32];          # redirect node
+  UINT8   redirect_port[32];          # redirect port
+  UINT8   modify_dstmac[6];           # modified destination MAC
+  UINT8   modify_srcmac[6];           # modified source MAC
+  UINT8   nwm_name[32];               # network monitor name
+  UINT8   dscp;                       # IP dscp value
+  UINT8   priority;                   # VLAN priority
+};
+
+#
+# FlowfilterEntry statistics
+#
+ipc_struct val_flowfilter_entry_st {
+  UINT8       valid[6];                 # valid flag
+  UINT16      sequence_num;             # sequence number
+  UINT8       nwm_status;               # n/w monitor status
+  pom_stats   software;                 # software statistics 
+  pom_stats   exist;                    # existing statistics
+  pom_stats   expire;                   # expired statistics
+  pom_stats   total;                    # total statistics
+};
+
+#
+# vBridge Interface Flowfilter key
+#
+ipc_struct key_vbr_if_flowfilter {
+  key_vbr_if    if_key;         # vBridge Interface key      
+  UINT8         direction;      # Flowfilter direction
+};
+
+#
+# vBridge Interface FlowfilterEntry key
+#
+ipc_struct key_vbr_if_flowfilter_entry {
+  key_vbr_if_flowfilter   flowfilter_key;   # vBridge Interface Flowfilter key
+  UINT16                  sequence_num;     # sequence number
+};
+
+#
+# vRouter Interface Flowfilter key
+#
+ipc_struct key_vrt_if_flowfilter {
+  key_vrt_if  if_key;         # vRouter Interface key
+  UINT8       direction;      # Flowfilter direction
+};
+
+#
+# vRouter Interface FlowfilterEntry key
+#
+ipc_struct  key_vrt_if_flowfilter_entry {
+  key_vrt_if_flowfilter   flowfilter_key;   # vRouter Interface Flowfilter key
+  UINT16                  sequence_num;     # sequence number
+};
+
+
+##
+## IPC structures for PolicingProfile
+##
+
+#
+# PolicingProfile Key
+#
+ipc_struct key_policingprofile {
+  UINT8   policingprofile_name[33];     # Policing profile name
+};
+
+#
+# PolicingProfile value for read operation
+#
+ipc_struct val_policingprofile {
+  UINT8   cs_row_status;                      # Object configuration status 
+};
+
+#
+# PolicingProfile rename value
+#
+ipc_struct val_rename_policingprofile {
+  UINT8   valid[1];                     # valid flag
+  UINT8   policingprofile_newname[33];  # policing profile new name
+};
+
+#
+# PolicingProfileEntry key
+#
+ipc_struct  key_policingprofile_entry {
+  key_policingprofile   policingprofile_key;    # policing profile key
+  UINT8                 sequence_num;           # sequence number
+};
+
+#
+# PolicingProfileEntry value
+#
+ipc_struct val_policingprofile_entry {
+  UINT8   valid[18];                          # valid flag
+  UINT8   cs_row_status;                      # Object configuration status 
+  UINT8   cs_attr[18];                        # attributes configuration status
+  UINT8   flowlist[33];                       # flowlist name
+  UINT8   rate;                               # rate unit
+  UINT32  cir;                                # commited information rate
+  UINT32  cbs;                                # commited burst size
+  UINT32  pir;                                # peak information rate
+  UINT32  pbs;                                # peak burst size   
+  UINT8   green_action;                       # green action
+  UINT8   green_action_priority;              # green action VLAN priority
+  UINT8   green_action_dscp;                  # green action IP dscp
+  UINT8   green_action_drop_precedence;       # green action drop priority
+  UINT8   yellow_action;                      # yellow action
+  UINT8   yellow_action_priority;             # yellow action VLAN priority
+  UINT8   yellow_action_dscp;                 # yellow action IP dscp
+  UINT8   yellow_action_drop_precedence;      # yellow action drop priority
+  UINT8   red_action;                         # red action 
+  UINT8   red_action_priority;                # red action VLAN priority
+  UINT8   red_action_dscp;                    # red action IP dscp
+  UINT8   red_action_drop_precedence;         # red action drop priority
+};
+
+##
+## IPC structures for PolicingMap
+##
+
+#
+# Policing map value
+#
+ipc_struct val_policingmap {
+  UINT8   valid[1];               # valid flag
+  UINT8   cs_row_status;          # object configuration status
+  UINT8   cs_attr[1];             # attributes configuration status
+  UINT8   policer_name[33];       # policer name
+};
+
+#
+# Policing map controller statistics   
+#
+ipc_struct val_policingmap_controller_st {
+  UINT8         valid[4];           # valid flags
+  UINT8         sequence_num;       # sequence number
+  pom_stats     total;              # total statistics
+  pom_stats     green_yellow;       # green and yellow statistics
+  pom_stats     red;                # red statistics
+};
+
+#
+# Policing map switch statistics
+#
+ipc_struct val_policingmap_switch_st {
+  UINT8       valid[10];           # valid flag
+  UINT32      policer_id;         # policer id
+  UINT8       switch_id[256];     # switch id
+  UINT8       status;             # status
+  UINT8       vbr_name[32];       # vbridge name
+  UINT8       if_name[32];        # interface name
+  UINT8       port_name[32];      # port name
+  UINT16      vlanid;             # vlan identifier
+  pom_stats   total;              # total statistics
+  pom_stats   green_yellow;       # green and yellow statistics
+  pom_stats   red;                # red statistics
+};
+
+#
+# VTN Policing map controller key
+#
+ipc_struct key_vtn_policingmap_controller {
+  key_vtn   vtn_key;                    # VTN key
+  UINT8     controller_name[32];        # Controller identifier
+  UINT8     domain_id[32];
+};
+
+#
+# Policing map controller value
+#
+ipc_struct val_policingmap_controller {
+  UINT8   valid[1];           # valid flag     
+  UINT8   sequence_num;       # sequence number
+};
+
+#
+# vBridge Policing map entry key
+#
+ipc_struct key_vbr_policingmap_entry {
+  key_vbr   vbr_key;            # vBridge Key
+  UINT8     sequence_num;       # sequence number
+};
+
+#
+# vBridge interface Policing map entry key
+#
+ipc_struct key_vbrif_policingmap_entry {
+  key_vbr_if    vbrif_key;          # vBridge Interface key
+  UINT8         sequence_num;       # sequence number
+};
+
+

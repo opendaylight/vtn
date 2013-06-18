@@ -1,0 +1,411 @@
+%
+% Copyright (c) 2012-2013 NEC Corporation
+% All rights reserved.
+% 
+% This program and the accompanying materials are made available under the
+% terms of the Eclipse Public License v1.0 which accompanies this
+% distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+%
+
+%%
+%% Configuration file format for pfccap.conf.
+%%
+
+%
+% Declare symbol name.
+%
+
+cf_name         = ctrlr_capa_conf_defs;
+cf_visibility   = hidden;
+
+% Version definitions.
+defblock version_list {
+	names	= STRING[]: mandatory;
+}
+
+defmap version_definition {
+	parent	= STRING;
+	flags	= UINT32;
+}
+
+% Capability definitions.
+
+defmap vtn {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        description             = BOOL[4];
+        operstatus              = BOOL[4];
+        alarm_status            = BOOL[4];
+        creation_time           = BOOL[4];
+        last_update_time        = BOOL[4];
+}
+
+defmap vbridge {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        description             = BOOL[4];
+        host_address            = BOOL[4];
+        host_address_prefixlen  = BOOL[4];
+        operstatus              = BOOL[4];
+}
+
+defmap vlan_map {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        vlan_id                 = BOOL[4];
+}
+
+defmap vbridge_interface {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        description             = BOOL[4];
+        admin_status            = BOOL[4];
+        logical_port_id         = BOOL[4];
+        vlan_id                 = BOOL[4];
+        tagged                  = BOOL[4];
+        operstatus              = BOOL[4];
+}
+
+defmap vrouter {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        description             = BOOL[4];
+        dhcp_relay_admin_status = BOOL[4];
+        operstatus              = BOOL[4];
+}
+
+defmap dhcp_relay_server {
+        instance_count          =  UINT32;
+        
+       % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+       % server_addrress        =   BOOL[4];
+}
+
+defmap dhcp_relay_interface {
+        instance_count          =  UINT32;
+       
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+ 
+
+}
+
+defmap static_ip_route {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        group_metric            = BOOL[4];
+}
+
+defmap vrouter_interface {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        description             = BOOL[4];
+        ip_address              = BOOL[4];
+        prefixlen               = BOOL[4];
+        mac_address             = BOOL[4];
+        admin_status            = BOOL[4];
+        operstatus              = BOOL[4];
+}
+%
+%defmap vunknown {
+%        instance_count          =  UINT32;
+%
+%        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+%        description             = BOOL[4];
+%        type                    = BOOL[4];
+%}
+%
+%defmap vunknown_interface {
+%        instance_count          =  UINT32;
+%
+%        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+%        description             = BOOL[4];
+%}
+
+defmap vtep {
+        instance_count         =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        description            = BOOL[4];
+        operstatus             = BOOL[4];
+}
+
+defmap vtep_interface {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        description             = BOOL[4];
+        admin_status            = BOOL[4];
+        logical_port_id         = BOOL[4];
+        vlan_id                 = BOOL[4];
+        tagged                  = BOOL[4];
+        operstatus              = BOOL[4];
+}
+
+defmap vtep_group {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        description             = BOOL[4];
+}
+
+defmap vtep_group_member {
+        instance_count          =  UINT32;
+}
+
+defmap vtunnel {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        description             = BOOL[4];
+        vtep_name               = BOOL[4];
+        vtep_group_name         = BOOL[4];
+        label                   = BOOL[4];
+        operstatus              = BOOL[4];
+}
+
+defmap vtunnel_interface {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        description             = BOOL[4];
+        admin_status            = BOOL[4];
+        logical_port_id         = BOOL[4];
+        vlan_id                 = BOOL[4];
+        tagged                  = BOOL[4];
+        operstatus              = BOOL[4];
+}
+
+defmap vlink {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        description             = BOOL[4];
+        admin_status            = BOOL[4];
+        vnode1_name             = BOOL[4];
+        vnode1_interface_name   = BOOL[4];
+        vnode2_name             = BOOL[4];
+        vnode2_interface_name   = BOOL[4];
+        boundary_name           = BOOL[4];
+        vlan_id                 = BOOL[4];
+        operstatus              = BOOL[4];
+}
+
+defmap network_monitor_group {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        admin_status            = BOOL[4];
+        status                  = BOOL[4];
+}
+
+defmap network_monitor_ip_host {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        health_interval         = BOOL[4];
+        recovery_interval       = BOOL[4];
+        failure_count           = BOOL[4];
+        recovery_count          = BOOL[4];
+        wait_time               = BOOL[4];
+}
+
+defmap flow_list {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        ip_type                 = BOOL[4];
+}
+
+defmap flow_list_entry {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        mac_destination         = BOOL[4];
+        mac_source              = BOOL[4];
+        mac_eth_type            = BOOL[4];
+        destination_ip          = BOOL[4];
+        destination_ip_prefix   = BOOL[4];
+        source_ip               = BOOL[4];
+        source_ip_prefix        = BOOL[4];
+        vlan_priority           = BOOL[4];
+        destination_ip_v6       = BOOL[4];
+        destination_ip_v6_prefix = BOOL[4];
+        source_ip_v6            = BOOL[4];
+        source_ip_v6_prefix     = BOOL[4];
+        ip_protocol             = BOOL[4];
+        ip_dscp                 = BOOL[4];
+        l4_destination_port     = BOOL[4];
+        l4_destination_port_endpt = BOOL[4];
+        l4_source_port          = BOOL[4];
+        l4_source_port_endpt    = BOOL[4];
+        icmp_type               = BOOL[4];
+        icmp_code               = BOOL[4];
+        icmp_v6_type            = BOOL[4];
+        icmp_v6_code            = BOOL[4];
+}
+
+defmap policing_profile {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        policer_name            = BOOL[4];
+}
+
+defmap policing_profile_entry {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        flowlist                = BOOL[4];
+        rate                    = BOOL[4];
+        cir                     = BOOL[4];
+        cbs                     = BOOL[4];
+        pir                     = BOOL[4];
+        pbs                     = BOOL[4];
+        green_action            = BOOL[4];
+        green_priority          = BOOL[4];
+        green_dscp              = BOOL[4];
+        green_drop              = BOOL[4];
+        yellow_action           = BOOL[4];
+        yellow_priority         = BOOL[4];
+        yellow_dscp             = BOOL[4];
+        yellow_drop             = BOOL[4];
+        red_action              = BOOL[4];
+        red_priority            = BOOL[4];
+        red_dscp                = BOOL[4];
+        red_drop                = BOOL[4];
+}
+
+defmap vtn_flow_filter {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+}
+
+defmap vtn_flow_filter_entry {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        flowlist_name           = BOOL[4];
+        action                  = BOOL[4];
+        network_monitor         = BOOL[4];
+        dscp                    = BOOL[4];
+        priority                = BOOL[4];
+}
+
+defmap vtn_flow_filter_controller {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        direction               = BOOL[4];
+        sequence_number         = BOOL[4];
+}
+
+defmap vtn_policing_map {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        policer_name             = BOOL[4];
+}
+
+defmap vtn_policing_map_controller {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        sequence_number                 = BOOL[4];
+}
+
+defmap vbridge_flow_filter {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+}
+
+defmap vbridge_flow_filter_entry {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        flowlist_name           = BOOL[4];
+        action                  = BOOL[4];
+        redirect_node           = BOOL[4];
+        redirect_port           = BOOL[4];
+        modify_destination_mac  = BOOL[4];
+        modify_source_mac       = BOOL[4];
+        network_monitor         = BOOL[4];
+        dscp                    = BOOL[4];
+        priority                = BOOL[4];
+}
+
+defmap vbridge_policing_map {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        policer_name            = BOOL[4];
+}
+
+defmap vbridge_policing_map_entry {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+}
+
+defmap vbridge_interface_flow_filter {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+}
+
+defmap vbridge_interface_flow_filter_entry {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        flowlist_name           = BOOL[4];
+        action                  = BOOL[4];
+        redirect_node           = BOOL[4];
+        redirect_port           = BOOL[4];
+        modify_destination_mac  = BOOL[4];
+        modify_source_mac       = BOOL[4];
+        network_monitor         = BOOL[4];
+        dscp                    = BOOL[4];
+        priority                = BOOL[4];
+}
+
+defmap vbridge_interface_policing_map {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        policer_name             = BOOL[4];
+}
+
+defmap vbridge_interface_policing_map_entry {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+}
+
+defmap vrouter_interface_flow_filter {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+}
+
+defmap vrouter_interface_flow_filter_entry {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        flowlist_name           = BOOL[4];
+        action                  = BOOL[4];
+        redirect_node           = BOOL[4];
+        redirect_port           = BOOL[4];
+        modify_destination_mac  = BOOL[4];
+        modify_source_mac       = BOOL[4];
+        network_monitor         = BOOL[4];
+        dscp                    = BOOL[4];
+        priority                = BOOL[4];
+}

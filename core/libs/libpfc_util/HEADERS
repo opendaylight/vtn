@@ -1,0 +1,63 @@
+#
+# Copyright (c) 2011-2013 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+##
+## This file contains list of header files which define public APIs
+## provided by libpfc_util.
+##
+
+# Atomic operations.
+pfc/atomic.h
+
+# Optimized bitmap operations.
+pfc/bitpos.h
+
+# Clock and time utilities.
+pfc/clock.h
+
+# Configuration file utilities.
+pfc/conf.h
+pfc/conf_parser.h
+
+# Synchronization.
+pfc/synch.h
+
+# Debugging utilities.
+pfc/debug.h
+
+# Pointer with reference counter.
+pfc/refptr.h
+
+# Hash table.
+pfc/hash.h
+
+# Simple doubly linked list.
+pfc/list.h
+
+# List container implementations.
+pfc/listmodel.h
+
+# Red-Black tree.
+pfc/rbtree.h
+pfc/rbtree_ex.h
+
+# I/O utilities.
+pfc/iostream.h
+pfc/socket.h
+pfc/hostaddr.h
+
+# Logging utilities.
+pfc/log.h
+
+# Miscellaneous.
+pfc/ctype.h
+pfc/extcmd.h
+pfc/plaintext.h
+pfc/strtoint.h
+pfc/util.h

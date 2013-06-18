@@ -1,0 +1,54 @@
+%
+% Copyright (c) 2012-2013 NEC Corporation
+% All rights reserved.
+% 
+% This program and the accompanying materials are made available under the
+% terms of the Eclipse Public License v1.0 which accompanies this
+% distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+%
+
+%%
+%% Format of configuration file for launcher module.
+%%
+
+#include <unc/lnc_types.h>
+
+%
+% Declare symbol name.
+%
+cf_name		= launcher_conf_defs;
+cf_visibility	= hidden;
+
+% Options for launcher module.
+defblock options
+{
+	% Path to daemon configuration directory.
+	% Default is "UNC_SYSCONFDIR/launcher.d".
+	conf_dir	= STRING: min=2;
+
+	% Path to working directory for launcher module.
+	% Default is "<work_dir>/launcher". <work_dir> is the working
+	% directory of the process.
+	work_dir	= STRING: min=2;
+
+	% How long, in milliseconds, the launcher module should wait for
+	% completion of LNC_EVTYPE_TERMINATED event delivery.
+	% Default is 5000 milliseconds.
+	event_timeout	= UINT32:
+		min=LNC_CONF_MIN(event_timeout),
+		max=LNC_CONF_MAX(event_timeout);
+
+	% How long, in milliseconds, the launcher module should wait for
+	% response of LNC_IPC_SVID_CLSTATE IPC service.
+	% Default is 5000 milliseconds.
+	clstate_timeout	= UINT32:
+		min=LNC_CONF_MIN(clact_timeout),
+		max=LNC_CONF_MAX(clact_timeout);
+
+	% How long, in milliseconds, the launcher module should wait for
+	% completion of sending start-up notification to remote cluster node.
+	% Default is 5000 milliseconds.
+	startup_timeout	= UINT32:
+		min=LNC_CONF_MIN(startup_timeout),
+		max=LNC_CONF_MAX(startup_timeout);
+}

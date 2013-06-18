@@ -1,0 +1,83 @@
+OpenDaylight Virtual Tenant Network (VTN)
+
+How To Build
+============
+
+== Prior preparation ==
+ 1. Arrange a server where RHEL 6.1 or later is installed.
+ 2. Install necessary packages. 
+        yum install make glibc-devel gcc gcc-c++ boost-devel openssl-devel \
+                    java-1.6.0-openjdk-devel ant perl-ExtUtils-MakeMaker \
+                    unixODBC-devel perl-Digest-SHA uuid libxslt
+
+ 3. Download the following PostgreSQL 9.1 files from
+    http://yum.postgresql.org/9.1/redhat/rhel-6-x86_64/ and install. 
+    * postgresql91-libs-9.1.9-1PGDG.rhel6.x86_64.rpm
+    * postgresql91-9.1.9-1PGDG.rhel6.x86_64.rpm
+    * postgresql91-server-9.1.9-1PGDG.rhel6.x86_64.rpm
+    * postgresql91-contrib-9.1.9-1PGDG.rhel6.x86_64.rpm
+    * postgresql91-odbc-09.00.0310-1PGDG.rhel6.x86_64.rpm
+
+ 4. Install Tomcat.
+    * Download the following file.
+      http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.39/bin/apache-tomcat-7.0.39.tar.gz
+    * Extract under /usr/share/java.
+        tar zxvf apache-tomcat-7.0.39.tar.gz -C /usr/share/java
+
+ 5. Install Gson.
+    * Download the following file. 
+      http://google-gson.googlecode.com/files/google-gson-2.2.2-release.zip
+    * Keep it under /usr/share/java.
+        unzip google-gson-2.2.2-release.zip
+        cp google-gson-2.2.2/gson-2.2.2.jar /usr/share/java
+
+ 6. Install org.json.
+    * Download the following file.
+      http://repo1.maven.org/maven2/org/json/json/20090211/json-20090211.jar
+    * Keep it under /usr/share/java.
+        cp json-20090211.jar /usr/share/java
+
+== Build ==
+ 1. Build and install VTN.
+        ./configure
+        make install
+
+ 2. Carry out Tomcat settings.
+    * Create the following symbolic link.
+        ln -s /usr/local/vtn/tomcat/webapps/vtn-webapi \
+              /usr/share/java/apache-tomcat-7.0.39/webapps/vtn-webapi
+    * Add the following to "common.loader" of
+      /usr/share/java/apache-tomcat-7.0.39/conf/catalina.properties.
+
+        /usr/local/vtn/tomcat/lib,/usr/local/vtn/tomcat/lib/*.jar
+
+    * Add the following to "shared.loader" of
+      /usr/share/java/apache-tomcat-7.0.39/conf/catalina.properties.
+
+        /usr/local/vtn/tomcat/shared/lib/*.jar
+
+    * Add the following to <Server> of
+      /usr/share/java/apache-tomcat-7.0.39/conf/server.xml.
+
+        <Listener className="org.opendaylight.vtn.tomcat.server.StateListener" />
+
+ 3. Set up the DB.
+        /usr/local/vtn/sbin/db_setup
+
+== Start ==
+ 1. Start VTN and Tomcat.
+        /usr/local/vtn/bin/vtn_start
+        /usr/share/java/apache-tomcat-7.0.39/bin/catalina.sh start
+
+ 2. Execute the following commands while stopping.
+        /usr/share/java/apache-tomcat-7.0.39/bin/catalina.sh stop
+        /usr/local/vtn/bin/vtn_stop
+
+== WebAPI ==
+ * Carry out VTN settings with WebAPI.
+ * VTN version information will be displayed if following command
+   is executed when VTN has started successfully.
+        $ curl -X GET -H 'content-type: application/json' -H 'username: admin' \
+               -H 'password: adminpass' -H 'ipaddr:127.0.0.1' \
+               http://127.0.0.1:8080/vtn-webapi/api_version.json
+

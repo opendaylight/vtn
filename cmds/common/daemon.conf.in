@@ -1,0 +1,119 @@
+#
+# Copyright (c) %YEAR_RANGE% NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+##
+## Configuration file for %DAEMON_DESC%.
+##
+
+#
+# Global options.
+#
+# Remarks: Path to file or directory must be an absolute path.
+#
+options
+{
+	# Directory which contains modules.
+#	module_dir	= "%INST_MODULEDIR%";
+
+	# Path to directory which keeps module caches.
+	# "module_dir" is used if omitted.
+	modcache_dir	= "%INST_MODCHDIR%";
+
+	# Daemon's working directory.
+	# The length must be within 90 bytes.
+	work_dir	= "%INST_WORKDIR%";
+
+	# Daemon's PID file path.
+	pid_file	= "%INST_RUNDIR%/%DAEMON_NAME%.pid";
+
+	# Directory to preserve the standard error output of the daemon.
+	stderr_logdir	= "%INST_WORKDIR%/stderr";
+
+	# Number of stderr log files.
+#	stderr_rotate	= 10;
+
+	# Logging level.
+	# Valid values are:
+	#     fatal, error, warning, notice, info, debug, trace.
+#	log_level	= info;
+
+	# Logging facility.
+	# Valid values are:
+	#     daemon, local0, local1, local2, local3, local4, local5,
+	#     local6, local7.
+#	log_facility	= daemon;
+
+	# Number of message log files.
+#	message_rotate	= 10;
+
+	# Maximum size of a message log file.
+#	message_size	= 1000000;
+
+	# File permission bits for the daemon control socket file.
+	# Default is 0700.
+%CTRL_PERM_COMM%	ctrl_perm	= %CTRL_PERM%;
+
+	# The name of user or string representation of user ID to run
+	# the daemon as. The user ID is not changed if omitted.
+%UNCD_USER_COMM%	user = %UNCD_USER%;
+
+	# The name of group or string representation of group ID to run
+	# the daemon as. The group ID is not changed if omitted.
+%UNCD_GROUP_COMM%	group = %UNCD_GROUP%;
+
+	# The name of user or string representation of user ID to run
+	# administrative IPC client as. The user ID is not changed if omitted.
+%ADMIN_USER_COMM%	admin_user = %ADMIN_USER%;
+
+	# The name of group or string representation of group ID to run
+	# administrative IPC client as. The group ID is not changed if omitted.
+%ADMIN_GROUP_COMM%	admin_group = %ADMIN_GROUP%;
+}
+
+#
+# Module management.
+#
+module
+{
+	# List of module names to be loaded.
+%LOAD_MODULES%
+
+	# Number of module loader threads.
+	# Default value is determined by the number of processors in
+	# the system.
+#	load_nthreads	= 2;
+
+	# How long, in seconds, we should wait a module to be loaded.
+	# The module loader waits load_timeout seconds per module.
+	# Default is 10. Zero means that we should wait without timeout.
+#	load_timeout	= 10;
+
+	# Number of module unloader threads.
+	# Default value is determined by the number of processors in
+	# the system.
+#	unload_nthreads	= 2;
+
+	# How long, in seconds, we should wait a module to be unloaded.
+	# The module unloader waits unload_timeout seconds per module.
+	# Default is 10. Zero means that we should wait without timeout.
+#	unload_timeout	= 10;
+
+	# If true, module information cache file will be updated whenever
+	# the daemon starts.
+#	cache_update	= false;
+}
+
+#
+# Resource limit.
+#
+rlimit
+{
+	# Maximum number of file descriptors.
+	open_files	= 1024;
+}

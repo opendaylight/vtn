@@ -1,0 +1,28 @@
+%
+% Copyright (c) 2010-2013 NEC Corporation
+% All rights reserved.
+% 
+% This program and the accompanying materials are made available under the
+% terms of the Eclipse Public License v1.0 which accompanies this
+% distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+%
+
+%%
+%% Define configuration file format of pfc_monitor.conf.
+%%
+
+%
+% Declare symbol name.
+%
+cf_name		= monitor_conf_defs;
+cf_visibility	= hidden;
+
+defblock monitor {
+	% Interval, in seconds, between tasks to send ping to the daemon.
+	% Default is 60 seconds.
+	interval	= UINT32: min=1, max=86400;
+
+	% How long, in seconds, we should wait for response from the
+	% daemon. Default is 5 seconds.
+	timeout		= UINT32: min=1, max=3600;
+}

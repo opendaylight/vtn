@@ -1,0 +1,57 @@
+#!%SHELL_PATH%
+
+#
+# Copyright (c) 2012-2013 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+##
+## Start the UNC daemon.
+##
+
+IFS="
+ 	"
+PATH=%PATH_SCRIPT%
+export PATH
+umask 022
+
+LOGDIR=%INST_LOCALSTATEDIR%/uncd
+LOGFILE=$LOGDIR/uncd_start.err
+UNCD=%INST_SBINDIR%/uncd
+UNC_CONTROL=%INST_BINDIR%/unc_control
+
+# Boot timeout in seconds.
+BOOT_TIMEOUT=60
+
+# Create log directory if it does not exist.
+if [ ! -d $LOGDIR ]; then
+    # Run the daemon as test mode in order to initialize system directories.
+    $UNCD -c || exit 1;
+fi
+
+# Preserve non-empty old log file.
+if [ -s $LOGFILE ]; then
+    mv -f $LOGFILE ${LOGFILE}.old
+fi
+
+exec 1>${LOGFILE} 2>&1
+
+# Start the UNC daemon.
+$UNCD
+status=$?
+if [ $status -ne 0 ]; then
+    exit $status
+fi
+
+# Ensure that the UNC daemon has started all services successfully.
+$UNC_CONTROL -T $BOOT_TIMEOUT ping
+status=$?
+if [ $status -ne 0 ]; then
+    # Terminate the UNC daemon.
+    $UNC_CONTROL stop -q
+    exit $status
+fi

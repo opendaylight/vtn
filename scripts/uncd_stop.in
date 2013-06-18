@@ -1,0 +1,45 @@
+#!%SHELL_PATH%
+
+#
+# Copyright (c) 2012-2013 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+##
+## Stop the UNC daemon.
+##
+
+IFS="
+ 	"
+PATH=%PATH_SCRIPT%
+export PATH
+umask 022
+
+LOGDIR=%INST_LOCALSTATEDIR%/uncd
+LOGFILE=$LOGDIR/uncd_stop.err
+UNCD=%INST_SBINDIR%/uncd
+UNC_MONITOR=%INST_BINDIR%/unc_monitor
+UNC_CONTROL=%INST_BINDIR%/unc_control
+
+# Create log directory if it does not exist.
+if [ ! -d $LOGDIR ]; then
+    # Run the daemon as test mode in order to initialize system directories.
+    $UNCD -c || exit 1;
+fi
+
+# Preserve non-empty old log file.
+if [ -s $LOGFILE ]; then
+    mv -f $LOGFILE ${LOGFILE}.old
+fi
+
+exec 1>${LOGFILE} 2>&1
+
+# Terminate the daemon monitor.
+$UNC_MONITOR -k
+
+# Terminate the UNC daemon.
+$UNC_CONTROL stop -q

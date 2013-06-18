@@ -1,0 +1,120 @@
+#
+# Copyright (c) 2012-2013 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+##
+## Structs used by user session manager.
+##
+
+
+#
+# user session ID.
+# (common)
+#
+ipc_struct usess_ipc_sess_id {
+    UINT32               id;                # [IN/OUT] user session ID.
+                                            # (positive number of 1 or more).
+};
+
+#
+# time information.
+# (common)
+#
+ipc_struct usess_ipc_timespec {
+    INT64               tv_sec;             # [OUT] elapsed time from 1970/1/1 in seconds.
+    INT64               tv_nsec;            # [OUT] nanosec.
+};
+
+
+#
+# additional requests user authentication and session.
+# (Request)
+#
+ipc_struct usess_ipc_req_sess_add {
+    UINT8               sess_uname[33];     # [IN] UNC user name(NULL termination)
+    UINT8               sess_passwd[73];    # [IN] UNC user password.
+    UINT8               login_name[33];     # [IN] Linux user name.
+    INT32               sess_type;          # [IN] connection type.
+    IPV4                ipaddr;             # [IN] remote IP address.
+    UINT8               info[64];           # [IN] option information.
+};
+
+#
+# request of user session delete.
+# (Request)
+#
+ipc_struct usess_ipc_req_sess_del {
+    usess_ipc_sess_id   current;            # [IN] current user session ID.
+    usess_ipc_sess_id   delsess;            # [IN] user session ID to deleted.
+};
+
+#
+# request of session delete(Specified session type).
+# (Request)
+#
+ipc_struct usess_ipc_req_sess_type_del {
+    INT32	sess_type;                      # [IN] session type.
+};
+
+#
+# request of enable authentication.
+# (Request)
+#
+ipc_struct usess_ipc_req_sess_enable {
+    usess_ipc_sess_id   current;            # [IN] current user session ID.
+    UINT8               enable_passwd[73];  # [IN] password of enable.
+                                            #  (NULL termination. Up to 72 characters)
+};
+
+#
+# request of user session detail information.
+# (Request)
+#
+ipc_struct usess_ipc_req_sess_detail {
+    usess_ipc_sess_id   current;            # [IN] current user session ID.
+    usess_ipc_sess_id   detail;             # [IN] detail information user session ID.
+};
+
+#
+# request of change user password.
+# (Request)
+#
+ipc_struct usess_ipc_req_user_passwd {
+    usess_ipc_sess_id   current;            # [IN] current user session ID.
+    UINT8               sess_uname[33];     # [IN] UNC user name(NULL termination)
+    UINT8               sess_passwd[73];    # [IN] password to be changed.
+                                            #  (NULL termination. Up to 72 characters)
+};
+
+#
+# request of change enable password.
+# (Request)
+#
+ipc_struct usess_ipc_req_enable_passwd {
+    usess_ipc_sess_id   current;            # [IN] current user session ID.
+    UINT8               enable_passwd[73];  # [IN] enable password to be changed.
+                                            #  (NULL termination.)
+};
+
+
+#
+# response of user session information.
+# (response)
+#
+ipc_struct usess_ipc_res_sess_info {
+    usess_ipc_sess_id   sess;               # [OUT] user session ID.
+    INT32               sess_type;          # [OUT] user session type.
+    INT32               sess_mode;          # [OUT] user session mode.
+    INT32               user_type;          # [OUT] user type
+    INT32               config_status;      # [OUT] Configuration status
+    UINT8               login_name[33];     # [OUT] Linux user name.
+    UINT8               sess_uname[33];     # [OUT] user name.
+    IPV4                ipaddr;             # [OUT] remote IP address.
+    usess_ipc_timespec  login_time;         # [OUT] user session start time.
+    UINT8               info[64];           # [OUT] option information.
+};

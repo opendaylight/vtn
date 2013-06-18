@@ -1,0 +1,304 @@
+%
+% Copyright (c) 2010-2013 NEC Corporation
+% All rights reserved.
+% 
+% This program and the accompanying materials are made available under the
+% terms of the Eclipse Public License v1.0 which accompanies this
+% distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+%
+
+%%
+%% PFC system configuration file format.
+%%
+
+#include <pfc/ipc.h>
+#include <pfc/pfcd_conf.h>
+
+%
+% Declare symbol name.
+%
+cf_name		= pfcd_conf_defs;
+cf_visibility	= hidden;
+
+%
+% Global options.
+%
+defblock options
+{
+	% Path to directory which contains PFC modules.
+	module_dir	= STRING: min=2;
+
+	% Path to directory which contains public configuration files for
+	% PFC modules.
+	modconf_dir	= STRING: min=2;
+
+	% Path to directory which keeps module caches.
+	% "module_dir" is used if omitted.
+	modcache_dir	= STRING: min=2;
+
+	% Working directory of PFC daemon.
+	% Too long path must not be specified to work_dir because it is
+	% used as name of UNIX domain socket.
+	work_dir	= STRING: min=2, max=90;
+
+	% PID file for PFC daemon.
+	pid_file	= STRING: min=2;
+
+	% Standard error logging directory.
+	% Standard error logging is disabled if the length of directory
+	% path is less than 2.
+	stderr_logdir	= STRING;
+
+	% Number of stderr log files.
+	stderr_rotate	= UINT32: max=1000;
+
+	% Use syslog for logging.
+	log_syslog	= BOOL;
+
+	% Logging level.
+	log_level	= STRING: min=1, max=7;
+
+	% Logging level per module.
+	% Each string must consist of module name and level separated by
+	% colon, just like "modname:debug".
+	log_modlevel	= STRING[]: min=3, max=39;
+
+	% Logging facility.
+	log_facility	= STRING: min=6, max=6;
+
+	% Number of message log files.
+	message_rotate	= UINT32: max=100;
+
+	% Maximum size of a message log file.
+	message_size	= UINT32: max=50000000;
+
+	% How long, in seconds, PFC daemon should wait for a shutdown
+	% start event to be delivered to all handlers.
+	shutdown_ack_timeout	= UINT32: max=3600;
+
+	% External command search path.
+	% PFC bindir is automatically prepended.
+	cmd_path	= STRING[]: min=2;
+
+	% Interval, in seconds, between task for resource reaping.
+	% Default is 5 minutes.
+	reap_interval	= UINT32: min=10, max=86400;
+
+	% Frequency of process heap area trimming.
+	% The PFC daemon will try to trim heap area every
+	% (reap_interval * heap_trim_freq) minutes.
+	% If zero is specified, the PFC daemon never trims its heap.
+	% Default value is 12, so that the heap will be trimmed every
+	% one hour.
+	heap_trim_freq		= UINT32: max=0x8000;
+
+	% Size of heap area to be retained on heap trimming.
+	% Default is 0x10000.
+	heap_trim_retain	= UINT32: max=0x10000000;
+
+	% How long, in seconds, we should wait for an I/O completion on
+	% the PFC daemon control channel. Default is 5 seconds.
+	ctrl_timeout	= UINT32: min=1, max=600;
+
+	% File permission bits for the PFC daemon control socket file.
+	% Default is 0700.
+	ctrl_perm	= UINT32: max=0777;
+
+	% The name of user or string representation of user ID to run
+	% pfcd as. The user ID is not changed if omitted.
+	user		= STRING: min=1, max=31;
+
+	% The name of group or string representation of group ID to run
+	% pfcd as. The group ID is not changed if omitted.
+	group		= STRING: min=1, max=31;
+
+	% The name of user or string representation of user ID to run
+	% administrative IPC client as. The user ID is not changed if omitted.
+	admin_user	= STRING: min=1, max=31;
+
+	% The name of group or string representation of group ID to run
+	% administrative IPC client as. The group ID is not changed if omitted.
+	admin_group	= STRING: min=1, max=31;
+}
+
+%
+% Module management.
+%
+defblock module
+{
+	% List of module names to be loaded.
+	load_modules	= STRING[]: min=1, max=31;
+
+	% Number of module loader threads.
+	% Default value is determined by the number of processors in
+	% the system.
+	load_nthreads	= UINT32: min=1, max=16;
+
+	% How long, in seconds, we should wait a module to be loaded.
+	% The module loader waits load_timeout seconds per module.
+	% Default is 10. Zero means that we should wait without timeout.
+	load_timeout	= UINT32: max=600;
+
+	% Number of module unloader threads.
+	% Default value is determined by the number of processors in
+	% the system.
+	unload_nthreads	= UINT32: min=1, max=16;
+
+	% How long, in seconds, we should wait a module to be unloaded.
+	% The module unloader waits unload_timeout seconds per module.
+	% Default is 10. Zero means that we should wait without timeout.
+	unload_timeout	= UINT32: max=600;
+
+	% If true, module information cache file will be updated whenever
+	% PFC daemon starts.
+	cache_update	= BOOL;
+}
+
+%
+% Resource limit.
+%
+defblock rlimit
+{
+	% Maximum size of virtual address space.
+	as_size		= ULONG;
+
+	% Maximum size of core file.
+	core_size	= ULONG;
+
+	% Maximum size of data segment.
+	data_size	= ULONG;
+
+	% Maximum number of file descriptors.
+	open_files	= ULONG;
+
+	% Maximum size of stack for main thread.
+	stack_size	= ULONG;
+}
+
+%
+% PFC event system.
+%
+defblock event
+{
+	% Number of threads for async event queue.
+	async_nthreads	= UINT32: min=2, max=30;
+
+	% How long, in seconds, event dispatch threads in the async queue
+	% should wait for a new event.
+	async_timeout	= UINT32: min=1, max=3600;
+
+	% If true, delivery logging is enabled on all event objects.
+	% Otherwise only events allowed to record delivery log are logged.
+	log_force	= BOOL;
+}
+
+%
+% Attributes for local event queue.
+% The name of event source is used as map key.
+%
+defmap event_source
+{
+	% Number of threads for the local queue.
+	nthreads	= UINT32: min=1, max=30;
+
+	% How long, in seconds, event dispatch threads in the local queue
+	% should wait for a new event.
+	timeout		= UINT32: min=1, max=3600;
+}
+
+%
+% Thread pool attributes.
+%
+defmap thread_pool
+{
+	% Stack size of each thread in bytes.
+	stack_size	= UINT32: min=0x2000, max=0x1000000;
+
+	% Maximum number of threads in the pool.
+	max_threads	= UINT32: min=2, max=10000;
+
+	% Maximum number of free threads in the pool.
+	max_free	= UINT32: min=2, max=200;
+
+	% Minimum number of free threads in the pool.
+	% This value must be equal or less than max_free.
+	min_free	= UINT32: min=0, max=100;
+
+	% Number of free threads to be reaped at once.
+	% Zero disables automatic thread reaping. Default is 1.
+	reap_threads	= UINT32;
+}
+
+%
+% IPC server
+%
+defblock ipc_server
+{
+	% Name of IPC channel. Default is "pfcd".
+	% IPC server is disabled if an empty string is specified.
+	channel_name	= STRING: max=PFC_IPC_CHANNEL_NAMELEN_MAX;
+}
+
+%
+% Options for IPC event subsystem.
+%
+defblock ipc_event
+{
+	% Determine whether to enable IPC event subsystem.
+	% Default is true.
+	enable		= BOOL;
+
+	% How long, in milliseconds, an IPC event listener task thread
+	% should wait for a new task.
+	%
+	% When an IPC event listener thread becomes idle, it will wait for
+	% a new event at most this value.
+	%
+	% Default is 1000 milliseconds.
+	idle_timeout	= UINT32:
+		min=PFCD_CONF_IPC_EVENT_IDLE_TIMEOUT_MIN,
+		max=PFCD_CONF_IPC_EVENT_IDLE_TIMEOUT_MAX;
+
+	% Maximum number of event listener task threads.
+	%
+	% Default value is 32.
+	maxthreads	= UINT32:
+		min=PFCD_CONF_IPC_EVENT_MAXTHREADS_MIN,
+		max=PFCD_CONF_IPC_EVENT_MAXTHREADS_MAX;
+
+	% Interval, in milliseconds, between attempts to reconnect to the
+	% IPC server.
+	%
+	% The IPC client library tries to establish the connection to the
+	% IPC server asynchronously when an IPC event handler is registered.
+	% If it fails to connect, it will try again periodically until the
+	% connection is established.
+	%
+	% Default value is 60000 milliseconds.
+	conn_interval	= UINT32:
+		min=PFCD_CONF_IPC_EVENT_CONN_INTERVAL_MIN,
+		max=PFCD_CONF_IPC_EVENT_CONN_INTERVAL_MAX;
+
+	% How long, in milliseconds, the IPC client will wait for the
+	% completion of one I/O transaction.
+	%
+	% Default value is 10000 milliseconds.
+	timeout		= UINT32:
+		min=PFCD_CONF_IPC_EVENT_TIMEOUT_MIN,
+		max=PFCD_CONF_IPC_EVENT_TIMEOUT_MAX;
+}
+
+%
+% Task queue options.
+%
+defblock taskq {
+	% Maximum number of concurrency.
+	max_concurrency	= UINT32: min=1, max=200;
+
+	% Staying time (milli seconds) for dispatcher thread.
+	stay_time	= UINT32: min=100, max=60000;
+
+	% Maximum number of tasks in a task queue.
+	% The value of zero means no limit.
+	max_tasks	= UINT32: min=0, max=1000000;
+}

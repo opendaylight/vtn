@@ -1,0 +1,78 @@
+%
+% Copyright (c) 2012-2013 NEC Corporation
+% All rights reserved.
+% 
+% This program and the accompanying materials are made available under the
+% terms of the Eclipse Public License v1.0 which accompanies this
+% distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+%
+
+%%
+%% user session module configuration file format.
+%%
+
+%%
+%% Used : usess.
+%%
+%% lock_timeout_sec     : lock timeout(sec)
+%% lock_timeout_nsec    : lock timeout(nano sec)
+%%
+defblock usess_conf_common {
+    lock_timeout_sec = INT64: min=0;
+    lock_timeout_nsec = INT64: min=0, max=999999;
+}
+
+%%
+%% Used : session.
+%%
+%% limited          : Judging of session connection limit.
+%% max_session      : Maximum number of simultaneous connections.
+%%
+defblock usess_session_info {
+    limited = BOOL;
+    max_session = UINT32: min=0;
+}
+
+%%
+%% start_id         : Start of range to session ID.
+%% end_id           : End of range to session ID.
+%% limited          : Judging of session connection limit.
+%% max_session      : Maximum number of simultaneous connections.
+%%
+defmap usess_session_parameter {
+    start_id = UINT32: min=1;
+    end_id = UINT32: min=1;
+    limited = BOOL;
+    max_session = UINT32: min=0;
+}
+
+%%
+%% Used : user.
+%%
+%% hash             : Hash type of password.
+%% user_length      : Valid number of user name characters
+%% user_regular     : Available characters to user name.
+%% passwd_length    : Valid number of password characters.
+%% passwd_regular   : Available characters to password.
+%%
+defblock usess_conf_user {
+    hash = INT32;
+    user_length = UINT32;
+    user_regular = STRING;
+    passwd_length = UINT32;
+    passwd_regular = STRING;
+}
+
+%%
+%% Used : enable.
+%%
+%% hash             : Hash type of password.
+%% passwd_length    : Valid number of password characters.
+%% passwd_regular   : Available characters to password.
+%%
+defblock usess_conf_enable {
+    hash = INT32;
+    passwd_length = UINT32;
+    passwd_regular = STRING;
+}
+

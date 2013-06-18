@@ -1,0 +1,29 @@
+#!%SHELL_PATH%
+
+#
+# Copyright (c) 2012-2013 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+##
+## Start the VTN
+##
+
+IFS="
+ 	"
+PATH=%PATH_SCRIPT%
+export PATH
+umask 022
+
+DB_STOP=%INST_SBINDIR%/db_stop
+UNCD_STOP=%INST_SBINDIR%/uncd_stop
+
+# Terminate the UNC daemon.
+$UNCD_STOP
+
+# Terminate database
+$DB_STOP

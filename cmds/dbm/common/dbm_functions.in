@@ -1,0 +1,465 @@
+#!/bin/bash
+
+#
+# Copyright (c) 2012-2013 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+# dbm common script functions
+
+PATH=/bin:/usr/bin:/usr/sbin:/sbin
+export PATH
+
+ALLOW_UID=0
+
+umask 066
+
+# readconf()
+#
+#      Read INI style config file.
+#
+# * input
+#      arg1: config file
+#
+# * output
+#      0: Could read config
+#      1: Couldn't read config
+#
+readconf()
+{
+	local values=""
+
+	[ -r $1 ] || return 1
+	values=$(grep '=' $1)
+	eval ${values// /}
+	return 0
+}
+
+DBMCONFDIR=%INST_SYSCONFDIR%/dbm
+DBMTMPDIR=%INST_LOCALSTATEDIR%/run/dbm
+DBMLOGDIR=%INST_UNCWORKDIR%/dbm
+DBMUPDATECONFDIR=%INST_UNCWORKDIR%/db/etc
+
+DBMCONF=$DBMCONFDIR/unc_db_env.conf
+DBMPATHCONF=$DBMCONFDIR/pathinfo/unc_db_path_info.conf
+
+readconf $DBMCONF
+readconf $DBMPATHCONF
+
+PIDFILE=$PGDATA/postmaster.pid
+POSTFILE=$PGDATA/postgresql.conf
+SINGLEPOSTFILE=$DBMCONFDIR/postgresql.conf.single
+HBACONFFILE=$DBMCONFDIR/pg_hba.conf
+HBADATAFILE=$PGDATA/pg_hba.conf
+POSTLOGFILE=$PGDATA/postmaster.log
+ODBCDRVINIFILE=$DBMCONFDIR/odbcinst.ini
+ODBCINIORGFILE=$DBMCONFDIR/odbc.ini.org
+ODBCINIFILE=$DBMUPDATECONFDIR/odbc.ini
+ODBCINSTALLEDFILE=$DBMTMPDIR/unc_odbc_DSN.installed
+UNCDATASQLDIR=%INST_SQLDIR%
+DBLOGFILE=$DBMLOGDIR/unc_db_script.log
+
+PGCTL_WAIT=190
+
+clm_date() { date +'%y-%m-%d %H:%M:%S.%N'; }
+
+# check_user_permission()
+#
+#      Validate current user.
+#      (root is allowed).
+#
+# * input
+#      Nothing
+#
+# * output
+#      0: valid
+#      1: invalid
+#
+check_user_permission()
+{
+	if [ "$(id -u)" != "$ALLOW_UID" ]; then
+		echo "*** Error: You need to be root."
+		return 1
+	fi
+	return 0
+}
+
+# log_output()
+# 
+#	Message is output in logfile for DB.
+#
+# * input
+#	   arg1: PID
+#	   arg2: log level(INFO or ERROR or WARNING)
+#	   arg3: command name
+#	   arg4: message
+#	   arg5: log file
+#
+# * output
+#	   Nothing
+#
+log_output()
+{
+	local pid=$1
+	local log_level=$2
+	local cmd_name=$3
+	local message=$4
+	local logfile=$5
+	echo "$(clm_date): $cmd_name[$pid]: $log_level : $message" >> $logfile
+}
+
+# db_access_check()
+# 
+#	Check DB access
+#
+# * output
+#	   0: already DB started
+#	   1: DB stopped
+#
+db_access_check()
+{
+	su -m $SUUSER -c "psql -c \"select now();\"" > /dev/null
+	[ $? -ne 0 ] && return 1
+	return 0
+}
+
+# db_start()
+# 
+#	Start DB
+#
+# * output
+#	   0: Success
+#	   1: Already Started
+#	   2: Failure
+#
+db_start()
+{
+	local lock_file=/tmp/.s.PGSQL.$PGPORT.lock
+	db_access_check
+	[ $? -eq 0 ] && return 1
+	rm -f $POSTLOGFILE
+	rm -f $PIDFILE
+	rm -f $lock_file
+	su -m $SUUSER -c \
+		"$PGINST/bin/pg_ctl start -D $PGDATA -w -t $PGCTL_WAIT" \
+		 > /dev/null
+	[ $? -ne 0 ] && return 2
+	return 0
+}
+
+# db_stop()
+# 
+#	Stop DB
+#
+# * output
+#	   0: Success
+#	   1: Failure
+#
+db_stop()
+{
+	db_stop_exec "-mf" && return 0
+	db_stop_exec "-mi" && return 0
+	kill_pg_process && return 0
+	return 1
+}
+
+# db_stop_exec()
+# 
+#	DB stop processing
+#
+# * input
+#	   arg1: stop mode
+#
+# * output
+#	   0: Success
+#	   1: Failure
+#
+db_stop_exec()
+{
+	local stop_mode="$1"
+
+	su -m $SUUSER -c \
+		"$PGINST/bin/pg_ctl stop -D $PGDATA $stop_mode \
+		-t $PGCTL_WAIT" > /dev/null
+	[ $? -ne 0 ] && return 1
+	return 0
+}
+
+# kill_pg_process()
+# 
+#	When processes of PostgreSQL existed, there are killed.
+#
+# * input
+#     Nothing
+#
+# * output
+#	   0: not exists
+#	   1: Processes of PostgreSQL were killed
+#	      or An error occurred in ssh
+#
+kill_pg_process()
+{
+	local pg_ppid=""
+	local pg_pids=""
+
+	pg_ppid=`pgrep -f "$PGINST/bin/postgres -D $PGDATA"`
+	[ $? -eq 0 ] &&
+	{
+		pg_pids=`pgrep -P $pg_ppid`
+		kill -9 $pg_ppid
+		for pg_pid in $pg_pids; do
+			kill -9 $pg_pid 2> /dev/null
+		done
+		return 1
+	}
+	return 0
+}
+
+# create_setting_hba_file()
+# 
+#	create setting hba file.
+#
+# * input
+#	   Nothing
+#
+# * output
+#	   0: Success
+#	   1: Failure
+#
+create_setting_hba_file()
+{
+	# Setting of pg_hba.conf
+	su -m $SUUSER -c "cp $HBACONFFILE $HBADATAFILE"
+	[ $? -ne 0 ] && return 1
+	chmod 0600 $HBADATAFILE
+	{
+		echo "host    all         $UNC_DB_USER,$PGUSER    127.0.0.1/32  md5"
+		echo "host    all         $UNC_DB_USER,$PGUSER    ::1/128       md5"
+	} >> $HBADATAFILE
+	[ $? -ne 0 ] && return 1
+
+	return 0
+}
+
+# copy_postgresql_conf()
+# 
+#	copy postgresql.conf
+#
+# * input
+#	   Nothing
+#
+# * output
+#	   0: Success
+#	   1: Failure
+#
+copy_postgresql_conf()
+{
+	# Setting of postgresql.conf
+	su -m $SUUSER -c "cp $SINGLEPOSTFILE $POSTFILE"
+	[ $? -ne 0 ] && return 1
+	chmod 0600 $POSTFILE
+
+	return 0
+}
+
+# create_setting_file()
+# 
+#	create setting file.
+#
+# * input
+#	   Nothing
+#
+# * output
+#	   0: Success
+#	   1: Failure
+#
+create_setting_file()
+{
+	create_setting_hba_file
+	[ $? -ne 0 ] && return 1
+
+	# Setting of odbc.ini
+	su -m $SUUSER -c "cp -p $ODBCINIORGFILE $ODBCINIFILE"
+	chmod 0644 $ODBCINIFILE
+	odbc_common_setting UNC_DB_DSN localhost
+	[ $? -ne 0 ] && return 1
+	odbc_common_setting UNC_DB_LC1_DSN localhost
+	[ $? -ne 0 ] && return 1
+	echo "[UNC_DB_LC2_DSN]" >> $ODBCINIFILE
+
+	rm -f $ODBCINSTALLEDFILE
+
+	return 0
+}
+
+# odbc_common_setting()
+# 
+#	odbc common setting.
+#
+# * input
+#	   arg1: DSN
+#	   arg2: Server IP address
+#
+# * output
+#	   0: Success
+#	   1: Failure
+#
+odbc_common_setting()
+{
+	{
+		echo "[${1}]"
+		echo "Driver     = UNC_DB_DRIVER"
+		echo "Servername = $2"
+		echo "Database   = $PGDATABASE"
+		echo "UserName   = $UNC_DB_USER"
+		echo "Password   = $UNC_DB_PASSWORD"
+		echo "Port       = $PGPORT"
+		echo ""
+	} >> $ODBCINIFILE
+	[ $? -ne 0 ] && return 1
+
+	return 0
+}
+
+# pgpass_setting()
+# 
+#	.pgpass setting.
+#
+# * input
+#	   Nothing
+#
+# * output
+#	   0: Success
+#	   1: Failure
+#
+pgpass_setting()
+{
+	rm -f $PGPASSFILE
+	cat >> $PGPASSFILE << EOF
+localhost:$PGPORT:*:$PGUSER:$PGPASSWORD
+localhost:$PGPORT:$PGDATABASE:$UNC_DB_USER:$UNC_DB_PASSWORD
+EOF
+	[ $? -ne 0 ] && return 1
+	chown $SUUSER:$SUUSER $PGPASSFILE
+	chmod 0600 $PGPASSFILE
+
+	return 0
+}
+
+# export_pg_env()
+# 
+#	An export does an environment variable of PostgreSQL.
+#
+# * input
+#	   Nothing
+#
+# * output
+#	   Nothing
+#
+export_pg_env()
+{
+	export PGDATA
+	export PGPORT
+	export PGUSER
+	export PGDATABASE
+	export PGCONNECT_TIMEOUT
+	export PGPASSFILE
+}
+
+# error_output()
+#
+#   error is output in log.
+#
+# * input
+#     arg1: DB operation
+#     arg2: log file path
+#     arg3: temporary log file path
+#     arg4: log level(It's possible to omit.)
+#
+# * output
+#     Nothing
+#
+error_output()
+{
+	local error_flg=1
+	local error_message=""
+	local log_level="$4"
+	log_level=${log_level:=ERROR}
+	case "$1" in
+		"")
+			error_flg=0;;
+		"initdb")
+			error_message="Failed in initialization of DB.";;
+		"dbstart")
+			error_message="Failed in start of DB node.";;
+		"alterpass")
+			error_message="Failed in password change in DB user.";;
+		"createuser")
+			error_message="Failed in making of DB user.";;
+		"createdb")
+			error_message="Failed in making of DB.";;
+		"createtable")
+			error_message="Failed in making of DB table.";;
+		"dbstop")
+			error_message="Failed in stop of DB node.";;
+		"copy")
+			error_message="Failed in data copy.";;
+		"odbc")
+			error_message="Failed in ODBC setting.";;
+		"alreadydbstart")
+			error_message="DB already started.";;
+		*)
+			error_flg=0
+			;;
+	esac
+	if [ "$error_flg" -eq 1 ]; then
+		log_output $$ $log_level $0 "$error_message" $2
+	fi
+	if [ "$3" != "" -a -r "$3" ]; then
+		while read LINE; do
+			log_output $$ $log_level $0 "$LINE" $2
+		done < "$3"
+		rm -f $3
+	fi
+}
+
+# trap_rm_tmpfile()
+#
+#   tmpfile which isn't eliminated is eliminated.
+#
+# * input
+#     arg1: command name
+#
+# * output
+#     Nothing
+#
+trap_rm_tmpfile()
+{
+	for i in $DBMTMPDIR/${1}_[0-9]*\.log; do
+		if test -r $i && ! lsof $i > /dev/null; then
+			rm -f $i
+		fi
+	done
+}
+
+# interrupt_error()
+#
+#   interrupt error message.
+#
+# * input
+#     arg1: log file path
+#
+# * output
+#     1: error exit
+#
+interrupt_error()
+{
+	log_output $$ ERROR $0 \
+		"The command has interrupted." $1
+	echo "*** Error: The command has interrupted."
+	exit 1
+}

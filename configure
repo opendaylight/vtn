@@ -1,0 +1,3235 @@
+#!/usr/bin/env perl
+
+#
+# Copyright (c) 2012-2013 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+##
+## Configure UNC build environment.
+##
+
+use strict;
+use vars qw($UNC_PRODUCT_NAME $DEBUG_BUILD @UNLINK_ON_ERROR $YEAR_RANGE
+	    $SRCROOT $CORE_SRCROOT $VERSION_FILE $BLDDIR @PATH %DEFAULT_LIBPATH
+	    @PKG_CONFIG_LIBDIR @JAVA_LIBSPEC @JAVA_LIBRARY_PATH
+	    @TOMCAT_LIBSPEC);
+
+use Cwd qw(abs_path);
+use DirHandle;
+use FileHandle;
+use File::Basename;
+use File::Find;
+use File::Path;
+use File::stat;
+use Getopt::Long;
+use POSIX qw(:DEFAULT :sys_wait_h :errno_h :fcntl_h);
+
+# Define product name.
+$UNC_PRODUCT_NAME = 'Virtual Tenant Network';
+
+# Default installation directories.
+use constant	DEFAULT_PREFIX		=> '/usr/local/vtn';
+
+use constant	CORE_DIR		=> 'core';
+use constant	OBJDIR_NAME		=> 'objs';
+use constant	BUILD_DIR		=> 'build';
+
+use constant	VERSION_FILE		=> 'VERSION';
+use constant	CONFIG_MK		=> BUILD_DIR . '/config.mk';
+use constant	CONFIG_H		=> 'include/unc/config.h';
+use constant	ODBC_DEFS_MK		=> 'odbc-defs.mk';
+use constant	ODBC_DEFS_MK_VAR	=> 'ODBC_DEFS_MK';
+use constant	ODBC_RULES_MK		=> 'odbc-rules.mk';
+use constant	ODBC_RULES_MK_VAR	=> 'ODBC_RULES_MK';
+use constant	JAVA_EXT_MK		=> 'java-ext.mk';
+use constant	JAVA_EXT_MK_VAR		=> 'JAVA_EXT_MK';
+use constant	JAVA_EXT_RULES_MK	=> 'java-ext-rules.mk';
+use constant	JAVA_EXT_RULES_MK_VAR	=> 'JAVA_EXT_RULES_MK';
+
+use constant	DEV_NULL		=> '/dev/null';
+use constant	DEFAULT_PATH		=> qw(/usr/bin /bin /usr/sbin /sbin);
+use constant	DEFAULT_INCDIR		=> '/usr/include';
+
+use constant	DEFS_MK			=> BUILD_DIR . '/defs.mk';
+use constant	CONFIG_STATUS		=> 'config.status';
+
+use constant	VALUE_NONE		=> 'none';
+
+use constant	CSTATUS_ARGV		=> 'ARGV';
+
+# Maximum length of user and group name.
+use constant	UG_NAMELEN_MAX		=> 31;
+
+$DEBUG_BUILD = 1;
+
+# Required ODBC version.
+use constant	ODBC_VERSION		=> 3;
+
+@PATH = ((DEFAULT_PATH), split(/:/, $ENV{PATH}));
+
+# System Java library directories.
+foreach my $dir (qw(/usr/share/java /usr/lib/java /usr/local/lib/java)) {
+	push(@JAVA_LIBRARY_PATH, $dir) if (-d $dir);
+}
+
+# Define required Java libraries.
+@JAVA_LIBSPEC = ({KEY => 'gson', DESC => 'Google gson',
+		  NAME => 'GOOGLE_GSON', FILEPAT => qr(.*gson.*\.jar$),
+		  FNAME => 'google-gson.jar',
+		  REQUIRED_CLASS => 'com/google/gson/JsonObject.class'},
+		 {KEY => 'org-json', DESC => 'org.json',
+		  NAME => 'ORG_JSON', FILEPAT => qr(.*json.*\.jar$),
+		  FNAME => 'org-json.jar',
+		  REQUIRED_CLASS => 'org/json/JSONObject.class'});
+
+# Define required Apache Tomcat libraries.
+@TOMCAT_LIBSPEC = ({NAME => 'TOMCAT_SERVLET_API',
+		    FILEPAT => qr(.*servlet-.*api.*\.jar$),
+		    FNAME => 'servlet-api.jar',
+		    REQUIRED_CLASS => 'javax/servlet/http/HttpServlet.class'},
+		   {NAME => 'TOMCAT_JSP_API',
+		    FILEPAT => qr(.*jsp-.*api.*\.jar$),
+		    FNAME => 'jsp-api.jar',
+		    REQUIRED_CLASS => 'javax/servlet/jsp/JspPage.class'},
+		   {NAME => 'TOMCAT_CATALINA',
+		    FILEPAT => qr(.*catalina.*\.jar$'),
+		    FNAME => 'catalina.jar',
+		    REQUIRED_CLASS => 'org/apache/catalina/Server.class'},
+		   {NAME => 'TOMCAT_JULI',
+		    FILEPAT => qr(.*tomcat-.*juli.*\.jar$),
+		    FNAME => 'tomcat-juli.jar',
+		    REQUIRED_CLASS => 'org/apache/juli/logging/Log.class'});
+
+use constant	OLDEST_YEAR		=> 2012;
+
+sub fatal(@);
+sub error(@);
+sub warning(@);
+sub dupfd($$);
+sub checking(@);
+sub core_configure($);
+sub exec_command(\%@);
+sub compile_and_exec($%);
+sub canonicalize_path($);
+sub stringify($);
+sub create_year_range();
+sub check_config_tests(\%\@);
+sub check_srcroot();
+sub check_version($);
+sub check_odbc($\%\%);
+sub check_user_group($\%);
+sub check_user_group_impl($\%\%$);
+sub check_perm($\%);
+sub check_perm_impl($\%\%);
+sub check_webapi_env($\%\%);
+sub check_jar($\%\%$);
+sub check_jarfile($$$);
+sub check_tomcat_libdir($\%\%);
+sub check_tomcat_libfile(\@$$);
+sub prepare($);
+sub create_dynamic_header($$);
+sub create_config_status(\@\%);
+sub create_config_mk($\%\%);
+sub create_odbc_defs_mk(\%\%);
+sub create_java_ext_mk(\%\%);
+sub create_java_link(\%\%);
+sub create_config_h($\%\@);
+sub parse_config_status($);
+sub parse_config_mk(\%);
+sub search_pkgconfig(\%$);
+sub make_symbol($$);
+sub get_command($$$);
+sub search_command($@);
+sub read_command_output(\%@);
+sub read_command_oneline(\%@);
+sub fixup_cppflags($);
+sub fixup_ldflags($\@\@);
+
+END {
+	if (@UNLINK_ON_ERROR) {
+		unlink(@UNLINK_ON_ERROR) unless ($? == 0);
+	}
+}
+
+# Class which represents additional definition in config.h.
+{
+	package ConfDef;
+
+	sub new
+	{
+		my $this = shift;
+		my $class = ref($this) || $this;
+		my ($name, $value, $desc, $required) = @_;
+
+		my $me = {NAME => $name, VALUE => $value, DESC => $desc,
+			  REQUIRED => $required};
+
+		return bless($me, $class);
+	}
+
+	sub print
+	{
+		my $me = shift;
+		my ($fh) = @_;
+
+		my ($name, $value, $desc) =
+			($me->{NAME}, $me->{VALUE}, $me->{DESC});
+		if (defined($value)) {
+			my ($required, $comm) = $me->getRequired();
+			if ($required) {
+				$fh->print(<<OUT);
+/* $desc */
+#if	$required
+#define	$name	$value
+#endif	/* $comm */
+#define	__$name	$value
+
+OUT
+			}
+			else {
+				$fh->print(<<OUT);
+/* $desc */
+#define	$name	$value
+
+OUT
+			}
+		}
+		else {
+			$fh->print(<<OUT);
+/* $desc */
+#undef	$name
+
+OUT
+		}
+	}
+
+	sub getRequired
+	{
+		my $me = shift;
+
+		my $required = $me->{REQUIRED};
+		$required = &$required() if (ref($required) eq 'CODE');
+		return (undef, undef) unless ($required);
+
+		if (ref($required) eq 'ARRAY') {
+			return (undef, undef) unless (@$required);
+		}
+		else {
+			$required = [$required];
+		}
+
+		my (@defs, @comm);
+		my $pat = qr,^!,;
+		foreach my $r (@$required) {
+			my $invert = '';
+			$invert = '!' if ($r =~ s,%pat,,);
+			push(@defs, sprintf("%sdefined(%s)", $invert, $r));
+			push(@comm, $invert . $r);
+		}
+
+		my $and = ' && ';
+		return (join($and, @defs), join($and, @comm));
+	}
+}
+
+# Class which represents file handle associated with temporary file.
+# A created file will be removed by destructor.
+{
+	package TempFile;
+
+	use vars qw($AUTOLOAD);
+	use FileHandle;
+
+	sub new
+	{
+		my $this = shift;
+		my $class = ref($this) || $this;
+		my ($fname, $flags, $mode) = @_;
+
+		my $fh = FileHandle->new($fname, $flags, $mode);
+		return undef unless ($fh);
+
+		my $me = {HANDLE => $fh, NAME => $fname};
+
+		return bless($me, $class);
+	}
+
+	sub AUTOLOAD
+	{
+		my $me = shift;
+
+		my $method = $AUTOLOAD;
+		$method =~ s,^.*::([^:]+)$,$1,o;
+		return if ($method eq 'DESTROY');
+
+		my $fh = $me->{HANDLE};
+
+		return $fh->$method(@_);
+	}
+
+	sub DESTROY
+	{
+		my $me = shift;
+
+		undef $me->{HANDLE};
+		unlink($me->{NAME});
+	}
+}
+
+# Utility class to print message with line breaking.
+{
+	package LineBreak;
+
+	# Maximum column width of screen.
+	use constant	MAX_LINE_WIDTH		=> 78;
+
+	sub new
+	{
+		my $this = shift;
+		my $class = ref($this) || $this;
+		my ($fh) = @_;
+
+		my $me = {_HANDLE => $fh, _CURSOR => 0};
+
+		return bless($me, $class);
+	}
+
+	# Insert newline character.
+	sub newLine
+	{
+		my $me = shift;
+		my ($indent, $num) = @_;
+
+		my $fh = $me->{_HANDLE};
+		if (defined($num)) {
+			$fh->print("\n" x $num);
+		}
+		else {
+			$fh->print("\n");
+		}
+		if ($indent > 0) {
+			$fh->print(" " x $indent);
+			$me->{_CURSOR} = $indent;
+		}
+		else {
+			$me->{_CURSOR} = 0;
+		}
+	}
+
+	# Move cursor to the specified position.
+	sub moveCursor
+	{
+		my $me = shift;
+		my ($pos) = @_;
+
+		# Insert newline if needed.
+		my $cursor = $me->{_CURSOR};
+		my $fh = $me->{_HANDLE};
+		if ($pos < $cursor) {
+			$fh->print("\n");
+			$cursor = 0;
+		}
+
+		while ($cursor < $pos) {
+			$fh->print(" ");
+			$cursor++;
+		}
+		$me->{_CURSOR} = $pos;
+	}
+
+	# Print message without line breaking.
+	# Specified message must not contain any newline character.
+	sub printRaw
+	{
+		my $me = shift;
+		my ($startpos, $msg) = @_;
+
+		$me->moveCursor($startpos);
+		$me->{_CURSOR} += length($msg);
+		my $fh = $me->{_HANDLE};
+		$fh->print($msg);
+	}
+
+	# Print message without line breaking.
+	# A newline character is inserted if the specified message exceeds
+	# the max width.
+	# Specified message must not contain any newline character.
+	sub printNoWrap
+	{
+		my $me = shift;
+		my ($indent, $msg) = @_;
+
+		my $len = length($msg);
+		my $fh = $me->{_HANDLE};
+		my $cursor = $me->{_CURSOR};
+		my $nextcur = $cursor + $len + 1;
+		if ($nextcur > MAX_LINE_WIDTH) {
+			# Need to break line.
+			$me->newLine($indent);
+			$cursor = $indent;
+		}
+		else {
+			# Insert whitespace.
+			$fh->print(' ');
+			$cursor++;
+		}
+		$fh->print($msg);
+		$me->{_CURSOR} = $cursor + $len;
+	}
+
+	# Print message with line breaking.
+	sub printMessage
+	{
+		my $me = shift;
+		my ($startpos, $indent, $msg) = @_;
+
+		$me->moveCursor($startpos);
+
+		my $fh = $me->{_HANDLE};
+		my $cursor = $me->{_CURSOR};
+
+		# Eliminate leading whitespaces.
+		$msg =~ s,^\s+,,;
+		my (@array) = split(//, $msg);
+		while (my $word = $me->getWord(\@array)) {
+			my $wlen = length($word);
+			my $nextcur = $cursor + $wlen;
+			if ($nextcur > MAX_LINE_WIDTH) {
+				# Need to break line.
+				$me->newLine($indent);
+				$cursor = $indent;
+			}
+			elsif ($cursor > $indent) {
+				$fh->print(" ");
+				$cursor++;
+			}
+
+			$fh->print($word);
+			$cursor += $wlen;
+
+			# Skip sequence of whitespaces.
+			while (@array and $array[0] =~ m,^\s+,o) {
+				my $c = shift(@array);
+				if ($c eq "\n") {
+					$me->newLine($indent);
+					$cursor = $indent;
+				}
+			}
+		}
+
+		$me->{_CURSOR} = $cursor;
+	}
+
+	# Get a word from the specified character array.
+	sub getWord
+	{
+		my $me = shift;
+		my ($array) = @_;
+
+		my (@ret);
+		while (@$array) {
+			my $c = shift(@$array);
+			if ($c =~ m,^\s$,o) {
+				unshift(@$array, $c);
+				last;
+			}
+			push(@ret, $c);
+		}
+
+		return (@ret) ? join('', @ret) : undef;
+	}
+}
+
+# Class which represents simple boolean option spec.
+{
+	package OptSpec;
+
+	use constant	INDENT_OPTION	=> 4;
+	use constant	INDENT_DESC	=> 8;
+
+	use constant	OPT_PREFIX	=> '--';
+
+	use constant	OPTARG_DIR		=> '<dir>';
+	use constant	OPTARG_FILE		=> '<file>';
+	use constant	OPTARG_PATH		=> '<path>';
+	use constant	OPTARG_ARCH		=> '<arch>';
+	use constant	OPTARG_CPP_OPT		=> '<cpp-option>';
+	use constant	OPTARG_CC_OPT		=> '<cc-option>';
+	use constant	OPTARG_CXX_OPT		=> '<cxx-option>';
+	use constant	OPTARG_BUILD_ID		=> '<build-id>';
+	use constant	OPTARG_USER		=> '<user>';
+	use constant	OPTARG_GROUP		=> '<group>';
+	use constant	OPTARG_PERM		=> '<perm>';
+	use constant	OPTARG_DEFAULT		=> '<arg>';
+
+	use constant	OPTDEF_AUTO		=> 'auto-detect';
+
+	sub new
+	{
+		my $this = shift;
+		my $class = ref($this) || $this;
+		my ($key, $desc, %attr) = @_;
+
+		my $me = {_KEY => $key, _DESC => $desc};
+		my $default = $attr{default};
+		$me->{_DEFAULT} = $default if (defined($default));
+		$me->{_ATTR} = \%attr;
+		$me = bless($me, $class);
+
+		my $def = $me->getDefault();
+		$me->value($def) if (defined($def));
+
+		return $me;
+	}
+
+	sub getKey
+	{
+		my $me = shift;
+
+		return $me->{_KEY};
+	}
+
+	sub getOption
+	{
+		my $me = shift;
+
+		return OPT_PREFIX . $me->getKey();
+	}
+
+	sub getArgument
+	{
+		my $me = shift;
+
+		my $arg = $me->getOption();
+		my (@list);
+		if ($me->attribute('arg')) {
+			my $value = $me->value();
+
+			if (defined($value)) {
+				if (ref($value) ne 'ARRAY') {
+					$value = [$value];
+				}
+				foreach my $v (@$value) {
+					push(@list, $arg . '=' . $v);
+				}
+			}
+		}
+		else {
+			push(@list, $arg);
+		}
+
+		return (wantarray) ? @list : \@list;
+	}
+
+	sub attribute
+	{
+		my $me = shift;
+		my $key = shift;
+
+		my $attr = $me->{_ATTR};
+		my $value = $attr->{$key};
+		$attr->{$key} = $_[0] if (@_ > 0);
+
+		return $value;
+	}
+
+	sub value
+	{
+		my $me = shift;
+
+		my $value = $me->{_VALUE};
+		if (@_ > 0) {
+			my $v = $_[0];
+			$me->{_VALUE} = $v;
+
+			my $d = $me->{_DEFAULT};
+			if (ref($d) eq 'SCALAR') {
+				# Overwrite default value.
+				$$d = $v;
+			}
+		}
+
+		return $value;
+	}
+
+	# Set value specified by configure option.
+	sub setValue
+	{
+		my $me = shift;
+		my ($value) = @_;
+
+		# Invoke check method if needed.
+		my $check = $me->attribute('check');
+		$value = $me->$check($value) if ($check);
+
+		# Set new value.
+		$me->value($value);
+	}
+
+	sub getDescription
+	{
+		my $me = shift;
+
+		return $me->{_DESC};
+	}
+
+	sub setSpec
+	{
+		my $me = shift;
+		my ($spec) = @_;
+
+		my $func = $me->getSpecFunc();
+		foreach my $k (@{$me->getSpecKeys()}) {
+			&main::fatal("Option conflicts: $k")
+				if ($spec->{$k} or $k eq 'help');
+			$spec->{$k} = $func;
+		}
+	}
+
+	sub getSpecKeys
+	{
+		my $me = shift;
+
+		return [$me->getKey()];
+	}
+
+	sub getSpecFunc
+	{
+		my $me = shift;
+
+		my $key = $me->getKey();
+		my $func = sub {
+			my ($k, $v) = @_;
+
+			$me->setValue($v);
+		};
+
+		return $func;
+	}
+
+	sub getDefault
+	{
+		my $me = shift;
+
+		my $default = $me->{_DEFAULT};
+
+		return (ref($default) eq 'SCALAR') ? $$default : $default;
+	}
+
+	sub getDefaultDesc
+	{
+		my $me = shift;
+
+		return $me->OPTDEF_AUTO if ($me->attribute('auto'));
+		return $me->getDefault();
+	}
+
+	sub printHelp
+	{
+		my $me = shift;
+		my ($lbrk) = @_;
+
+		my $option = $me->getOption();
+		my $arg = $me->attribute('arg');
+		$option .= ' ' . $arg if ($arg);
+
+		$lbrk->printRaw(INDENT_OPTION, $option);
+		$lbrk->printMessage(INDENT_DESC, INDENT_DESC,
+				    $me->getDescription(1));
+		my $default = $me->getDefaultDesc();
+		if ($default) {
+			my $def = "(Default: $default)";
+			$lbrk->printNoWrap(INDENT_DESC, $def);
+		}
+	}
+}
+
+# Option spec class to toggle boolean switch by "--enable-XXX" or
+# "--disable-XXX".
+{
+	package BoolOptSpec;
+
+	use base qw(OptSpec);
+
+	use constant	PREFIX_ENABLE	=> 'enable';
+	use constant	PREFIX_DISABLE	=> 'disable';
+
+	use constant	DESC_ENABLED	=> 'enabled';
+	use constant	DESC_DISABLED	=> 'disabled';
+
+	sub value
+	{
+		my $me = shift;
+
+		my $value = $me->{_VALUE};
+		if (@_ > 0) {
+			my $d = $me->{_DEFAULT};
+			if ($_[0]) {
+				$me->{_VALUE} = 1;
+				if (ref($d) eq 'SCALAR') {
+					# Overwrite default value.
+					$$d = 1;
+				}
+			}
+			else {
+				delete($me->{_VALUE});
+				if (ref($d) eq 'SCALAR') {
+					# Overwrite default value.
+					undef $$d;
+				}
+			}
+		}
+
+		return $value;
+	}
+
+	sub getDefaultDesc
+	{
+		my $me = shift;
+
+		return $me->OPTDEF_AUTO if ($me->attribute('auto'));
+		return ($me->getDefault()) ? DESC_ENABLED : DESC_DISABLED;
+	}
+
+	sub getArgument
+	{
+		my $me = shift;
+
+		my ($prefix) = ($me->value()) ? PREFIX_ENABLE : PREFIX_DISABLE;
+		my (@list) = ($me->OPT_PREFIX . $prefix . '-' . $me->getKey());
+
+		return (wantarray) ? @list : \@list;
+	}
+
+	sub getSpecKeys
+	{
+		my $me = shift;
+
+		my $key = $me->getKey();
+		my (@prefix) = (PREFIX_ENABLE(), PREFIX_DISABLE());
+		my (@spec) = map {$_ . '-' . $key} @prefix;
+
+		return \@spec;
+	}
+
+	sub getSpecFunc
+	{
+		my $me = shift;
+
+		my $key = $me->getKey();
+		my $en = PREFIX_ENABLE;
+		my $dis = PREFIX_DISABLE;
+		my $pat = qr,^($en|$dis)-$key$,;
+		my $func = sub {
+			my ($k) = @_;
+
+			if ($k =~ $pat) {
+				my $v = ($1 eq PREFIX_ENABLE) ? 1 : 0;
+				$me->setValue($v);
+			}
+
+		};
+
+		return $func;
+	}
+
+	sub printHelp
+	{
+		my $me = shift;
+		my ($lbrk) = @_;
+
+		my $key = $me->getKey();
+		foreach my $opt (PREFIX_ENABLE(), PREFIX_DISABLE()) {
+			my $option = $me->OPT_PREFIX . $opt . '-' . $key;
+			$lbrk->printRaw($me->INDENT_OPTION, $option);
+		}
+
+		$lbrk->printMessage($me->INDENT_DESC, $me->INDENT_DESC,
+				    $me->getDescription(1));
+		my $default = $me->getDefaultDesc();
+		if ($default) {
+			my $def = "(Default: $default)";
+			$lbrk->printNoWrap($me->INDENT_DESC, $def);
+		}
+	}
+}
+
+# Option spec class which takes an string argument.
+{
+	package StrOptSpec;
+
+	use base qw(OptSpec);
+	use Cwd qw(abs_path);
+	use POSIX qw(:errno_h :fcntl_h);
+	use File::stat;
+
+	use constant	KEY_PREFIX	=> 'with-';
+
+	sub new
+	{
+		my $this = shift;
+		my $class = ref($this) || $this;
+		my ($key, $desc, %attr) = @_;
+
+		my $arg = $attr{arg};
+		$attr{arg} = OptSpec::OPTARG_DEFAULT unless ($arg);
+
+		return $class->SUPER::new($key, $desc, %attr);
+	}
+
+	sub getOption
+	{
+		my $me = shift;
+
+		return $me->OPT_PREFIX . $me->getKeyPrefix() . $me->getKey();
+	}
+
+	sub getKeyPrefix
+	{
+		my $me = shift;
+
+		return $me->attribute('prefix') || KEY_PREFIX;
+	}
+
+	sub getSpecKeys
+	{
+		my $me = shift;
+
+		my $key = $me->getKey();
+
+		return [$me->getKeyPrefix() . $key . '=s'];
+	}
+
+	# Set empty string as option value if 'none' is specified as new value.
+	sub checkNone
+	{
+		my $me = shift;
+		my ($value) = @_;
+
+		$value = '' if ($value eq main::VALUE_NONE());
+
+		return $value;
+	}
+
+	# Ensure that the specified value is valid absolute path on the build
+	# host.
+	sub checkAbsPath
+	{
+		my $me = shift;
+		my ($value) = @_;
+
+		&main::error($me->getOption(),
+			     ": Value must be an absolute path.")
+			unless (substr($value, 0, 1) eq '/');
+
+		my $path = abs_path($value);
+		&main::error($me->getOption(),
+			     ": Failed to determine absolute path: ", $value)
+			unless ($path);
+
+		my $st = stat($path);
+		unless ($st) {
+			&main::error($me->getOption(),
+				     ": File not found: ", $value)
+				if ($! == ENOENT);
+			&main::error($me->getOption(),
+				     ": stat() failed: $value: $!");
+		}
+
+		my $arg = $me->attribute('arg');
+		if ($arg eq $me->OPTARG_FILE) {
+			&main::error($me->getOption(),
+				     ": Regular file must be specified: ",
+				     $value) unless (S_ISREG($st->mode()));
+		}
+		elsif ($arg eq $me->OPTARG_DIR) {
+			&main::error($me->getOption(),
+				     ": Directory must be specified: ",
+				     $value) unless (S_ISDIR($st->mode()));
+		}
+
+		return $path;
+	}
+
+	# Ensure that the specified value is valid absolute file path on the
+	# target system.
+	sub checkTargetAbsPath
+	{
+		my $me = shift;
+		my ($value) = @_;
+
+		&main::error($me->getOption(),
+			     ": Value must be an absolute path.")
+			unless (substr($value, 0, 1) eq '/');
+
+		my $arg = $me->attribute('arg');
+		if ($arg eq $me->OPTARG_FILE) {
+			&main::error($me->getOption(),
+				     ": Value must not be directory path.")
+				if ($value =~ m,/$,o);
+		}
+
+		return &main::canonicalize_path($value);
+	}
+
+	# Ensure that the specified value is suitable for PATH environment
+	# variable on the target system.
+	sub checkTargetPathEnv
+	{
+		my $me = shift;
+		my ($value) = @_;
+
+		foreach my $path (split(/:/, $value, -1)) {
+			&main::error($me->getOption(),
+				     ": PATH environment variable must not ",
+				     "contain an empty string.")
+				if ($path eq '');
+			&main::error($me->getOption(),
+				     ": Command path must be an absolute ",
+				     "path: $path")
+				unless (substr($path, 0, 1) eq '/');
+
+			foreach my $comp (split(/\//, $path, -1)) {
+				&main::error($me->getOption(),
+					     ": Command search path must not ",
+					     "contain \"$comp\": $path")
+					if ($comp eq '.' or $comp eq '..');
+			}
+		}
+
+		return $value;
+	}
+}
+
+# Option spec class which takes an list of string arguments.
+# Each value will be separated with whitespace character.
+{
+	package StrListOptSpec;
+
+	use base qw(StrOptSpec);
+
+	sub new
+	{
+		my $this = shift;
+		my $class = ref($this) || $this;
+
+		my $me = $class->SUPER::new(@_);
+		$me->{_VALUE} = [];
+
+		return bless($me, $class);
+	}
+
+	sub getSpecKeys
+	{
+		my $me = shift;
+
+		my $key = $me->getKey();
+
+		return [$me->getKeyPrefix() . $key . '=s@'];
+	}
+
+	sub value
+	{
+		my $me = shift;
+
+		my $value = $me->{_VALUE};
+		if (@_ > 0) {
+			my $v = $_[0];
+			if (ref($v) eq 'ARRAY') {
+				$me->{_VALUE} = $v;
+			}
+			else {
+				push(@$value, $v);
+			}
+
+			my $d = $me->{_DEFAULT};
+			if (ref($d) eq 'ARRAY') {
+				# Overwrite default value.
+				@$d = @$value;
+			}
+		}
+
+		return $value;
+	}
+
+	# Set value specified by configure option.
+	sub setValue
+	{
+		my $me = shift;
+		my ($value) = @_;
+
+		my $check = $me->attribute('check');
+		foreach my $val (split(/\s+/, $value)) {
+			# Invoke check method if needed.
+			$val = $me->$check($val) if ($check);
+
+			# Set new value.
+			$me->value($val);
+		}
+	}
+}
+
+# Option spec class which takes an string map argument.
+{
+	package StrMapOptSpec;
+
+	use base qw(StrOptSpec);
+
+	sub new
+	{
+		my $this = shift;
+		my $class = ref($this) || $this;
+
+		my $me = $class->SUPER::new(@_);
+		$me->{_MAP} = {};
+
+		return bless($me, $class);
+	}
+
+	sub getSpecKeys
+	{
+		my $me = shift;
+
+		my $key = $me->getKey();
+
+		return [$me->getKeyPrefix() . $key . '=s%'];
+	}
+
+	sub getSpecFunc
+	{
+		my $me = shift;
+
+		my $key = $me->getKey();
+		my $map = $me->{_MAP};
+		my $func = sub {
+			my ($k, $name, $value) = @_;
+
+			$map->{$name} = $value;
+		};
+
+		return $func;
+	}
+
+	sub getMap
+	{
+		my $me = shift;
+
+		return $me->{_MAP};
+	}
+
+	# Disable value() and setValue() methods because this option keeps
+	# pairs of name and value.
+	sub value;
+	sub setValue;
+}
+
+# Option spec class which takes an user name.
+{
+	package UserOptSpec;
+
+	use base qw(StrOptSpec);
+
+	sub new
+	{
+		my $this = shift;
+		my $class = ref($this) || $this;
+
+		my $me = $class->SUPER::new(@_);
+		$me = bless($me, $class);
+
+		$me->attribute('arg', '<user-or-uid>');
+		$me->attribute('check', 'checkUser');
+
+		my $def = $me->getDefault();
+		$me->setValue($def) if (defined($def));
+
+		return $me;
+	}
+
+	# Ensure that the specified user name is valid, and return user ID.
+	sub checkUser
+	{
+		my $me = shift;
+		my ($value) = @_;
+
+		my $uid;
+		if ($value =~ /^\d+$/) {
+			$uid = $value;
+		}
+		else {
+			$uid = getpwnam($value);
+			&main::error($me->getOption(),
+				     ": Unknown user name: ", $value)
+				unless (defined($uid));
+		}
+
+		return $uid;
+	}
+}
+
+# Option spec class which determines installation directory.
+{
+	package InstOptSpec;
+
+	use base qw(StrOptSpec);
+
+	use constant	PREFIX_USR_DIRS	=> {
+		sysconfdir	=> '/etc',
+		localstatedir	=> '/var',
+	};
+
+	sub new
+	{
+		my $this = shift;
+		my $class = ref($this) || $this;
+
+		my $me = $class->SUPER::new(@_);
+		$me = bless($me, $class);
+
+		# This option always takes directory path.
+		$me->attribute('arg', $me->OPTARG_DIR);
+
+		my $dname = $me->attribute('dname');
+		my $relative = $me->attribute('relative');
+		my $default = main::DEFAULT_PREFIX();
+		if ($relative) {
+			$default = uc($relative);
+			$default .= '/' . $dname if ($dname);
+		}
+		elsif ($dname) {
+			$default .= '/' . $dname;
+		}
+
+		# Set default value.
+		$me->{_DEFAULT} = $default;
+
+		# Set default value as value.
+		$me->value($default) unless ($dname or $relative);
+
+		# Set check method for a new value.
+		$me->attribute('check', 'checkInstDir');
+
+		return $me;
+	}
+
+	sub getDescription
+	{
+		my $me = shift;
+		my ($detailed) = @_;
+
+		my $desc = $me->SUPER::getDescription($detailed);
+		if ($detailed and $me->getKey() eq 'includedir') {
+			$desc .= "\nHeader files are not installed if \"" .
+				main::VALUE_NONE() . "\" is specified.";
+		}
+
+		return $desc;
+	}
+
+	# Ensure that the specified value is suitable for installation
+	# directory path.
+	sub checkInstDir
+	{
+		my $me = shift;
+		my ($value) = @_;
+
+		my $key = $me->getKey();
+		return $value if ($key eq 'includedir' and
+				  $value eq main::VALUE_NONE);
+
+		&main::error($me->getOption(),
+			     ": Value must be an absolute path.")
+			unless (substr($value, 0, 1) eq '/');
+
+		return &main::canonicalize_path($value);
+	}
+
+	sub resolvePath
+	{
+		my $me = shift;
+		my ($conf, $prefix) = @_;
+
+		my $key = $me->getKey();
+		my $dir = $me->value();
+		return if ($dir);
+
+		my $dname = $me->attribute('dname');
+		my $relative = $me->attribute('relative');
+		if ($relative) {
+			$dir = $conf->get($relative);
+			$dir .= '/' . $dname if ($dname);
+		}
+		else {
+			if ($prefix eq '/usr' and PREFIX_USR_DIRS->{$key}) {
+				$dir = PREFIX_USR_DIRS->{$key};
+			}
+			else {
+				$dir = $prefix;
+				$dir .= '/' . $dname if ($dname);
+			}
+		}
+
+		$me->value($dir);
+	}
+
+	sub getOption
+	{
+		my $me = shift;
+
+		return $me->OPT_PREFIX . $me->getKey();
+	}
+
+	sub getSpecKeys
+	{
+		my $me = shift;
+
+		my $key = $me->getKey();
+
+		return [$key . '=s'];
+	}
+}
+
+# Unhandled option.
+{
+	package UnhandledOption;
+
+	sub new
+	{
+		my $this = shift;
+		my $class = ref($this) || $this;
+		my ($spec) = @_;
+
+		my $arg;
+		if ($spec =~ s,(.+)=.+$,$1,) {
+			$arg = 1;
+		}
+
+		my $me = {_KEY => $spec};
+		$me->{_ARGS} = [] if ($arg);
+
+		return bless($me, $class);
+	}
+
+	sub getKey
+	{
+		my $me = shift;
+
+		return $me->{_KEY};
+	}
+
+	sub set
+	{
+		my $me = shift;
+		my ($value) = @_;
+
+		my $args = $me->{_ARGS};
+		if (defined($args)) {
+			push(@$args, $value);
+		}
+		elsif ($value) {
+			$me->{_VALUE} = 1;
+		}
+	}
+
+	sub getArguments
+	{
+		my $me = shift;
+
+		my $key = OptSpec::OPT_PREFIX() . $me->getKey();
+		my $args = $me->{_ARGS};
+		my (@list);
+		if (defined($args)) {
+			(@list) = map {$key . '=' . $_} @$args;
+		}
+		elsif ($me->{_VALUE}) {
+			push(@list, $key);
+		}
+
+		return (wantarray) ? @list : \@list;
+	}
+}
+
+{
+	package Config;
+
+	use Getopt::Long;
+	use Config;
+	use Cwd qw(:DEFAULT abs_path);
+	use vars qw(%Config @SPECS @SPEC_LIST);
+
+	# Prefix of OptSpec class.
+	use constant	OPTTYPE_INST		=> 'Inst';
+	use constant	OPTTYPE_BOOL		=> 'Bool';
+	use constant	OPTTYPE_STRING		=> 'Str';
+	use constant	OPTTYPE_STRING_LIST	=> 'StrList';
+	use constant	OPTTYPE_STRING_MAP	=> 'StrMap';
+	use constant	OPTTYPE_USER		=> 'User';
+
+	use constant	OPTCLASS_SUFFIX		=> 'OptSpec';
+
+	# Directory names under object directories created by core/configure.
+	use constant	JAVAOBJ_DIR		=> 'jobjs';
+	use constant	LDLIBS_DIR		=> 'ldlibs';
+
+	# Template for supported configure options.
+	# - The first element is prefix of OptSpec prefix.
+	# - The second element is option key.
+	# - The third element is description of the option.
+	# - The rest of elements are HASH table contents which contains
+	#   optional attributes.
+	@SPECS = ([OPTTYPE_INST, 'prefix',
+		   "Installation directory prefix."],
+		  [OPTTYPE_INST, 'bindir',
+		   "Installation directory for user executables.",
+		   dname => 'bin'],
+		  [OPTTYPE_INST, 'sbindir',
+		   "Installation directory for system admin executables.",
+		   dname => 'sbin'],
+		  [OPTTYPE_INST, 'libexecdir',
+		   "Installation directory for program executables.",
+		   dname => 'libexec'],
+		  [OPTTYPE_INST, 'datadir',
+		   "Installation directory for read-only data.",
+		   dname => 'share'],
+		  [OPTTYPE_INST, 'sysconfdir',
+		   "Installation directory for read-only system " .
+		   "configuration.",
+		   dname => 'etc'],
+		  [OPTTYPE_INST, 'localstatedir',
+		   "Installation directory for modifiable system data.",
+		   dname => 'var'],
+		  [OPTTYPE_INST, 'uncworkdir',
+		   "Installation directory for modifiable UNC system data.",
+		   relative => 'localstatedir', unc => 1],
+		  [OPTTYPE_INST, 'docdir',
+		   "Installation directory for documents.",
+		   dname => 'doc', relative => 'datadir'],
+		  [OPTTYPE_INST, 'libdir',
+		   "Installation directory for library files.",
+		   dname => 'lib'],
+		  [OPTTYPE_INST, 'moduledir',
+		   "Installation directory for UNC modules.",
+		   dname => 'modules'],
+		  [OPTTYPE_INST, 'modconfdir',
+		   "Installation directory for public configuration files " .
+		   "for UNC modules.",
+		   dname => 'modconf'],
+		  [OPTTYPE_INST, 'includedir',
+		   "Installation directory for C/C++ header files.",
+		   dname => 'include'],
+		  [OPTTYPE_INST, 'sysscriptdir',
+		   "Installation directory for system admin shell scripts.",
+		   dname => 'sbin'],
+		  [OPTTYPE_INST, 'javadir',
+		   "Installation directory for Java programs.",
+		   dname => 'java', relative => 'libdir'],
+		  [OPTTYPE_INST, 'sqldir',
+		   "Installation directory for SQL scripts.",
+		   dname => 'sql', relative => 'datadir', unc => 1],
+
+		  [OPTTYPE_STRING, 'build-id',
+		   'Specify build package identifier.',
+		   arg => OptSpec::OPTARG_BUILD_ID],
+
+		  [OPTTYPE_BOOL, 'debug',
+		   "Enable or disable debugging build option.",
+		   default => $main::DEBUG_BUILD],
+
+		  [OPTTYPE_STRING, 'objdir',
+		   "Specify directory path to store build outputs.",
+		   arg => OptSpec::OPTARG_DIR,
+		   default => getcwd() . '/' . main::OBJDIR_NAME(),
+		   check => 'checkTargetAbsPath', unc => 1],
+
+		  [OPTTYPE_STRING, 'user',
+		   'Specify the user name or the user ID to run the ' .
+		   'UNC daemon as.',
+		   arg => OptSpec::OPTARG_USER, unc => 1],
+		  [OPTTYPE_STRING, 'group',
+		   'Specify the group name or the group ID to run the ' .
+		   'UNC daemon as.',
+		   arg => OptSpec::OPTARG_GROUP, unc => 1],
+		  [OPTTYPE_STRING, 'admin-user',
+		   'Specify the user name or the user ID to run ' .
+		   'administrative command as.',
+		   arg => OptSpec::OPTARG_USER, unc => 1],
+		  [OPTTYPE_STRING, 'admin-group',
+		   'Specify the group name or the group ID to run ' .
+		   'administrative command as.',
+		   arg => OptSpec::OPTARG_GROUP, unc => 1],
+		  [OPTTYPE_STRING, 'ctrl-perm',
+		   'Specify permission bits of the daemon conrol socket.',
+		   arg => OptSpec::OPTARG_PERM, unc => 1],
+
+		  [OPTTYPE_STRING, 'odbc-config',
+		   'Specify path to odbc_config command.',
+		   arg => OptSpec::OPTARG_FILE, auto => 1,
+		   check => 'checkAbsPath', unc => 1],
+
+		  [OPTTYPE_STRING_LIST, 'tomcat-libdir',
+		   "Specify absolute path to Apache Tomcat library " .
+		   "directory.\nThis option can be specified multiple times.",
+		   arg => OptSpec::OPTARG_DIR, auto => 1, unc => 1,
+		   check => 'checkAbsPath'],
+
+		  [OPTTYPE_STRING, 'gson',
+		   "Specify absolute path to Google gson Java library.",
+		   arg => OptSpec::OPTARG_FILE, auto => 1, unc => 1,
+		   check => 'checkAbsPath'],
+		  [OPTTYPE_STRING, 'org-json',
+		   "Specify absolute path to org.json Java library.",
+		   arg => OptSpec::OPTARG_FILE, auto => 1, unc => 1,
+		   check => 'checkAbsPath'],
+		);
+
+
+	sub new
+	{
+		my $this = shift;
+		my $class = ref($this) || $this;
+
+		Getopt::Long::Configure(qw(no_ignore_case bundling
+					   require_order));
+		my $me = {_OPTS => {}, _INSTOPTS => {}, _INSTRELOPTS => {},
+			  _UNHANDLED => {}};
+		$me = bless($me, $class);
+		$me->parse();
+
+		return $me;
+	}
+
+	sub parse
+	{
+		my $me = shift;
+
+		my $spec = $me->createSpec();
+		$me->usage() unless (GetOptions(%$spec));
+		$me->fixup();
+	}
+
+	sub createSpec
+	{
+		my $me = shift;
+
+		@SPEC_LIST = ();
+		my (%map, @list);
+		my $opts = $me->{_OPTS};
+		foreach my $t (@SPECS) {
+			my (@tmpl) = (@$t);
+			my $prefix = shift(@tmpl);
+			my $key = shift(@tmpl);
+			my $desc = shift(@tmpl);
+
+			my $class = $prefix . OPTCLASS_SUFFIX;
+			my $spec = $class->new($key, $desc, @tmpl);
+			push(@list, $spec);
+
+			if ($spec->isa('InstOptSpec') and $key ne 'prefix') {
+				my $instkey = ($spec->attribute('relative'))
+					? '_INSTRELOPTS' : '_INSTOPTS';
+
+				$me->{$instkey}->{$key} = $spec;
+			}
+			&main::fatal("Option key conflicts: $key")
+				if ($opts->{$key});
+			$opts->{$key} = $spec;
+			$spec->setSpec(\%map);
+		}
+
+		(@SPEC_LIST) = (@list);
+
+		$map{help} = sub { $me->printHelp(); };
+		$map{'recheck=s'} = sub {
+			my ($k, $v) = @_;
+			$me->{_RECHECK} = $v;
+		};
+
+		# Determine option spec for core/configure.
+		$me->setCoreSpec(\%map);
+
+		return \%map;
+	}
+
+	sub setCoreSpec
+	{
+		my $me = shift;
+		my ($map) = @_;
+
+		my (%ignore) = (listspec => 1, unc => 1,
+				'enable-java' => 1, 'disable-java' => 1);
+		my $unhandled = $me->{_UNHANDLED};
+		my $handler = sub {
+			my ($key, $value) = @_;
+
+			my $opt = $unhandled->{$key};
+			$opt->set($value);
+		};
+		my $filter = sub {
+			my ($rh) = @_;
+
+			while (my $line = $rh->getline()) {
+				chomp($line);
+				next if ($ignore{$line});
+				unless (exists($map->{$line})) {
+					$map->{$line} = $handler;
+					my $opt = UnhandledOption->new($line);
+					my $k = $opt->getKey();
+					$unhandled->{$k} = $opt;
+				}
+			}
+		};
+
+		my (%opts) = (FILTER => $filter);
+		my $configure = $main::CORE_SRCROOT . '/configure';
+		my $ret = &main::exec_command(\%opts, $configure,
+					      '--listspec');
+		&main::fatal("Unable to determine option spec for ",
+			     $configure, ": ", $ret)
+			unless ($ret == 0);
+	}
+
+	sub getCoreConfigureArgs
+	{
+		my $me = shift;
+
+		my (@args);
+		foreach my $spec (@SPEC_LIST) {
+			next if ($spec->attribute('unc'));
+			push(@args, $spec->getArgument());
+		}
+
+		my $unhandled = $me->{_UNHANDLED};
+
+		while (my ($key, $opt) = each(%$unhandled)) {
+			push(@args, $opt->getArguments());
+		}
+
+		# Enable UNC build mode.
+		push(@args, '--enable-unc');
+
+		my $opt_make = sub {
+			return '--with-make-variable=' . $_[0];
+		};
+
+		# Specify object directories.
+		my $objdir = $me->get('objdir');
+		foreach my $map ({OPT => '--with-objdir',
+				  VALUE => main::CORE_DIR()},
+				 {OPT => '--with-java-objdir',
+				  VALUE => JAVAOBJ_DIR},
+				 {OPT => '--with-ldlibdir',
+				  VALUE => LDLIBS_DIR},
+				 {OPT => &$opt_make(main::ODBC_DEFS_MK_VAR()),
+				  VALUE => main::ODBC_DEFS_MK}) {
+			my $dir = $objdir . '/' . $map->{VALUE};
+			push(@args, $map->{OPT} . '=' . $dir);
+		}
+
+		push(@args, &$opt_make(main::ODBC_RULES_MK_VAR()) . '=' .
+		     $main::BLDDIR . '/' . main::ODBC_RULES_MK);
+
+		# Specify product name.
+		push(@args, '--with-product-name=' . $main::UNC_PRODUCT_NAME);
+
+		# Specify VERSION file.
+		my $verfile = abs_path($main::VERSION_FILE);
+		push(@args, '--with-version-file=' . $verfile);
+
+		return \@args;
+	}
+
+	sub getCoreObjectDirs
+	{
+		my $me = shift;
+
+		my (@dirs) = (main::CORE_DIR(), JAVAOBJ_DIR, LDLIBS_DIR);
+
+		return (wantarray) ? @dirs : \@dirs;
+	}
+
+	sub getSpec
+	{
+		my $me = shift;
+		my ($key) = @_;
+
+		return $me->{_OPTS}->{$key};
+	}
+
+	sub usage
+	{
+		print <<OUT;
+
+Usage: $0 [options]
+OUT
+
+		exit 1;
+
+	}
+
+	sub printHelp
+	{
+		print <<OUT;
+Usage: $0 [options]
+
+Options:
+OUT
+		my $lbrk = LineBreak->new(\*STDOUT);
+		foreach my $spec (@SPEC_LIST) {
+			$spec->printHelp($lbrk);
+			$lbrk->newLine(0, 2);
+		}
+
+		my $configure = $main::CORE_SRCROOT . '/configure';
+		my $excopts = '--enable-java and --disable-java';
+		$lbrk->printMessage(0, 0, <<OUT);
+In addition, options for $configure can be specified except for $excopts.
+
+Type "$configure --help" for more details.
+OUT
+
+		exit 0;
+	}
+
+	sub fixup
+	{
+		my $me = shift;
+
+		my $prefix = $me->get('prefix');
+		while (my ($key, $spec) = each(%{$me->{_INSTOPTS}})) {
+			$spec->resolvePath($me, $prefix);
+		}
+		while (my ($key, $spec) = each(%{$me->{_INSTRELOPTS}})) {
+			$spec->resolvePath($me, $prefix);
+		}
+	}
+
+	sub get
+	{
+		my $me = shift;
+		my ($key) = @_;
+
+		my $spec = $me->getSpec($key);
+
+		return ($spec) ? $spec->value() : undef;
+	}
+
+	sub set
+	{
+		my $me = shift;
+		my ($key, $value) = @_;
+
+		$me->getSpec($key)->value($value);
+	}
+
+	sub getInstDirKeys
+	{
+		my $me = shift;
+
+		my (@list) = (keys(%{$me->{_INSTOPTS}}),
+			      keys(%{$me->{_INSTRELOPTS}}));
+		return (wantarray) ? @list : \@list;
+	}
+
+	sub getDescription
+	{
+		my $me = shift;
+		my ($key) = @_;
+
+		return $me->getSpec($key)->getDescription();
+	}
+
+	sub getMap
+	{
+		my $me = shift;
+		my ($key) = @_;
+
+		my $spec = $me->getSpec($key);
+		if ($spec and $spec->can('getMap')) {
+			return $spec->getMap();
+		}
+
+		return undef;
+	}
+
+	sub recheck
+	{
+		my $me = shift;
+
+		return $me->{_RECHECK};
+	}
+}
+
+MAIN:
+{
+	my $intr = sub {
+		print "\n\nInterrupted.\n";
+		exit 3;
+	};
+	$SIG{INT} = $intr;
+	$SIG{TERM} = $intr;
+
+	# Preserve arguments.
+	my (@argv_saved) = (@ARGV);
+
+	# Determine source tree root.
+	$SRCROOT = check_srcroot();
+	$CORE_SRCROOT = $SRCROOT . '/' . CORE_DIR;
+	$VERSION_FILE = $SRCROOT . '/' . VERSION_FILE;
+	$BLDDIR = $SRCROOT . '/' . BUILD_DIR;
+
+	# Parse options.
+	my $conf = Config->new;
+
+	my $recheck = $conf->recheck();
+	if ($recheck) {
+		# Use arguments preserved in config.status.
+		parse_config_status($recheck);
+
+		if (@ARGV) {
+			print "-- rechecking with arguments:\n";
+			for (my $i = 0; $i <= $#ARGV; $i++) {
+				print "   $i: $ARGV[$i]\n";
+			}
+		}
+		else {
+			print "-- rechecking with default configuration.\n";
+		}
+
+		(@argv_saved) = (@ARGV);
+		$conf = Config->new;
+	}
+
+	# Run core/configure.
+	core_configure($conf);
+
+	# Determine software version.
+	my $version = check_version($conf);
+
+	my $objdir = $conf->get('objdir');
+	my (%vars) = (SRCROOT		=> $SRCROOT,
+		      OBJROOT		=> $objdir,
+		      BLDDIR		=> $BLDDIR,
+		      CORE_SRCROOT	=> $CORE_SRCROOT,
+		      CORE_OBJROOT	=> $objdir . '/' . CORE_DIR,
+		      CORE_EXP_INCDIR	=> $objdir . '/core_include');
+	my (@hdefs);
+
+	foreach my $key (@{$conf->getInstDirKeys()}) {
+		my $spec = $conf->getSpec($key);
+		next unless ($spec->attribute('unc'));
+
+		my $vname = make_symbol('INST_', $key);
+		$vars{$vname} = $spec->value();
+	}
+
+	# Fetch build configuration from core build environment.
+	my $jenv = parse_config_mk(%vars);
+
+	# Ensure that unixODBC is installed.
+	my (%odbcvars);
+	check_odbc($conf, %vars, %odbcvars);
+
+	# Check user and group name.
+	check_user_group($conf, %vars);
+
+	# Check file permission bits.
+	check_perm($conf, %vars);
+
+	# Check build environment for WebAPI.
+	my $wenv = check_webapi_env($conf, %vars, %$jenv);
+
+	prepare($conf);
+	create_config_h($conf, %$version, @hdefs);
+	create_config_mk($conf, %vars, %$version);
+	create_odbc_defs_mk(%vars, %odbcvars);
+	create_java_ext_mk(%vars, %$wenv);
+	create_java_link(%$jenv, %$wenv);
+	create_config_status(@argv_saved, %vars);
+}
+
+sub fatal(@)
+{
+	print STDERR "\n*** FATAL ERROR: ", @_, "\n";
+	exit 2;
+}
+
+sub error(@)
+{
+	print STDERR "\n*** ERROR: ", @_, "\n";
+	exit 1;
+}
+
+sub warning(@)
+{
+	if (ref($_[0]) eq 'ARRAY') {
+		print STDERR "\n";
+		foreach my $l (@{$_[0]}) {
+			print STDERR "*** WARNING: $l\n";
+		}
+		print STDERR "\n";
+	}
+	else {
+		print STDERR "\n*** WARNING: ", @_, "\n\n";
+	}
+}
+
+sub dupfd($$)
+{
+	my ($oldfd, $newfd) = @_;
+
+	POSIX::dup2($oldfd, $newfd) or fatal("dup2() failed: $!");
+}
+
+sub checking(@)
+{
+	print "-- checking ", @_, "... ";
+	STDOUT->flush();
+}
+
+sub core_configure($)
+{
+	my ($conf) = @_;
+
+	my $f = $CORE_SRCROOT . '/configure';
+	error("Unable to access \"$f\": $!") unless (-x $f);
+
+	print "\n== Configuring UNC-Core build environment.\n\n";
+
+	my $args = $conf->getCoreConfigureArgs();
+	my (%opts) = (CWD => $CORE_SRCROOT);
+	my $ret = exec_command(%opts, './configure', @$args);
+	error("Failed to configure UNC-Core build environment.")
+		unless ($ret == 0);
+	print "\n";
+}
+
+sub exec_command(\%@)
+{
+	my ($opts, @args) = @_;
+
+	my ($rh, $wh);
+	my $filter = $opts->{FILTER};
+	if ($filter) {
+		($rh, $wh) = FileHandle::pipe() or fatal("pipe() failed: $!");
+	}
+
+	my $pid = fork();
+	if (!defined($pid)) {
+		fatal("fork() failed: $!");
+	}
+	elsif ($pid == 0) {
+		if ($filter) {
+			# Create pipe to send output to filter.
+			undef $rh;
+			$wh->autoflush(1);
+			my $fd = $opts->{FILTER_FD};
+			$fd = STDOUT->fileno() unless (defined($fd));
+			dupfd($wh->fileno(), $fd);
+		}
+		elsif (my $redirect = $opts->{REDIRECT}) {
+			my $dir = dirname($redirect);
+			unless (-d $dir) {
+				mkpath($dir, undef, 0755);
+			}
+
+			my $omode = O_CREAT|O_TRUNC|O_WRONLY;
+			my $out = FileHandle->new($redirect, $omode, 0644) or
+				fatal("open($redirect) failed: $!");
+			dupfd($out->fileno(), STDOUT->fileno());
+		}
+		if ($opts->{ERR2OUT}) {
+			dupfd(STDOUT->fileno(), STDERR->fileno());
+		}
+		elsif (my $errout = $opts->{ERR_REDIRECT}) {
+			my $err;
+			if (ref($errout)) {
+				$err = $errout;
+			}
+			else {
+				my $omode = O_CREAT|O_TRUNC|O_WRONLY;
+				$err = FileHandle->new($errout, $omode, 0644)
+					or fatal("open($errout) failed: $!");
+			}
+			dupfd($err->fileno(), STDERR->fileno());
+		}
+
+		my $env = $opts->{ENV};
+		if ($env) {
+			while (my ($k, $v) = each(%$env)) {
+				$ENV{$k} = $v;
+			}
+		}
+
+		my $cwd = $opts->{CWD};
+		if ($cwd) {
+			chdir($cwd) or fatal("chdir($cwd) failed: $!");
+		}
+
+		exec(@args);
+		exit 1;
+	}
+
+	if ($filter) {
+		# Call filter function.
+		undef $wh;
+		&$filter($rh);
+		undef $rh;
+	}
+
+	my $cpid;
+	do {
+		$cpid = waitpid($pid, 0);
+	} while ($cpid == -1 and $! == EINTR);
+	fatal("waitpid($pid) failed: $!") if ($cpid == -1);
+
+	my $status = $?;
+	if (WIFEXITED($status)) {
+		return WEXITSTATUS($status);
+	}
+	elsif (WIFSIGNALED($status)) {
+		my $sig = WTERMSIG($status);
+		return -$sig;
+	}
+	else {
+		return -1;
+	}
+}
+
+sub compile_and_exec($%)
+{
+	my ($source, %args) = @_;
+
+	my $cc = $args{CC};
+	my $cppflags = $args{CPPFLAGS};
+	my $cflags = $args{CFLAGS};
+	my $ldflags = $args{LDFLAGS};
+	my $libs = $args{LIBS};
+	my $src = 'conftest.c';
+	my $fh = TempFile->new($src, O_CREAT|O_TRUNC|O_WRONLY, 0644) or
+		fatal("open($src) failed: $!");
+
+	$fh->print($source);
+	$fh->close();
+
+	my $output = 'conftest';
+	my %opts;
+	my (@args) = ($cc);
+	foreach my $a ($cppflags, $cflags, $ldflags, $libs) {
+		if ($a) {
+			if (ref($a) eq 'ARRAY') {
+				push(@args, @$a);
+			}
+			else {
+				push(@args, $a);
+			}
+		}
+	}
+	push(@args, '-o', $output, $src);
+
+	my $ccerr = $args{CC_ERROR};
+	if ($ccerr) {
+		push(@$ccerr, "Command: ", join(" ", @args), "\nOutput:\n");
+		my $filter = sub {
+			my ($rh) = @_;
+
+			while (<$rh>) {
+				push(@$ccerr, $_);
+			}
+		};
+		(%opts) = (FILTER => $filter, ERR2OUT => 1);
+	}
+	else {
+		(%opts) = (REDIRECT => '/dev/null', ERR2OUT => 1);
+	}
+	my $ret = exec_command(%opts, @args);
+	die "Compilation failed.\n" unless ($ret == 0);
+	die "$cc didn't generate object file: $output\n" unless (-f $output);
+
+	my (@out);
+	unless ($args{CC_ONLY}) {
+		my $filter = sub {
+			my ($rh) = @_;
+
+			while (<$rh>) {
+				push(@out, $_);
+			}
+		};
+		(%opts) = (FILTER => $filter, ERR2OUT => 1);
+		my $ret = exec_command(%opts, './' . $output);
+		unlink($output);
+
+		die "Command failed: $ret\n" unless ($ret == 0);
+	}
+
+	return \@out;
+}
+
+sub canonicalize_path($)
+{
+	my ($path) = @_;
+
+	$path =~ s,/+,/,go;
+	$path =~ s,/+$,,o;
+
+	my (@comp) = split('/', $path);
+	my (@newcomp);
+	my $root;
+	if ($comp[0] eq '') {
+		shift(@comp);
+		$root = '/';
+	}
+
+	foreach my $c (@comp) {
+		next if ($c eq '.');
+		if ($c eq '..') {
+			pop(@newcomp);
+		}
+		else {
+			push(@newcomp, $c);
+		}
+	}
+
+	return $root . join('/', @newcomp);
+}
+
+sub stringify($)
+{
+	my ($path) = @_;
+
+	$path =~ s,\x22,\\\x22,g;
+
+	return '"' . $path . '"';
+}
+
+sub create_year_range()
+{
+	unless (defined($YEAR_RANGE)) {
+		my (@tm) = localtime(time);
+		$YEAR_RANGE = $tm[5] + 1900;
+		$YEAR_RANGE = OLDEST_YEAR . '-' . $YEAR_RANGE
+			if ($YEAR_RANGE > OLDEST_YEAR);
+
+	}
+
+	return $YEAR_RANGE;
+}
+
+sub check_config_tests(\%\@)
+{
+	my ($vars, $tests) = @_;
+
+	my (@hdefs);
+	my $gcc = $vars->{CC};
+	my (%opts) = (CC => $gcc);
+	my $white = qr/\s+/;
+	my (@cflags) = (split($white, $vars->{CC_MODE}),
+			split($white, $vars->{CC_FEATURE_DEFS}));
+
+	foreach my $test (@$tests) {
+		my ($name, $desc, $skip, $required) =
+			($test->{DEFINE}, $test->{DESC}, $test->{SKIP},
+			 $test->{REQUIRED});
+		if (ref($skip) eq 'CODE') {
+			if (&$skip()) {
+				push(@hdefs, ConfDef->new($name, undef, $desc,
+							  $required))
+					if ($name);
+				next;
+			}
+		}
+		my $setup = $test->{SETUP};
+		if (ref($setup) eq 'CODE') {
+			&$setup($test, $vars);
+		}
+
+		my @errout;
+		$opts{CC_ERROR} = \@errout;
+		my $out;
+		my ($checking, $source, $cflags, $ldflags, $libs) =
+			($test->{CHECK}, $test->{CODE}, $test->{CFLAGS},
+			 $test->{LDFLAGS}, $test->{LIBS});
+		my (@cf) = (@cflags);
+		push(@cf, @$cflags) if ($cflags);
+		$opts{CFLAGS} = \@cf;
+		$opts{LDFLAGS} = $ldflags if ($ldflags);
+		$opts{LIBS} = $libs if ($libs);
+
+		checking($checking);
+		eval {
+			$out = compile_and_exec($source, %opts);
+		};
+		if ($@) {
+			if ($test->{IGNORE_ERROR}) {
+				$out = ["NO:Compilation failed\n"];
+			}
+			else {
+				print "unknown\n";
+				if (@errout) {
+					print "\n", @errout, "\n";
+				}
+				error("Configuration test failed: $@");
+			}
+		}
+
+		my $line = $out->[0];
+		chomp($line);
+		if ($line =~ m,^ERROR:(.+)$,) {
+			print "failed\n";
+
+			error($1);
+		}
+
+		my $value;
+		if ($line =~ m,^NO(:(.+))?$,o) {
+			my $msg = ($2) ? " ($2)" : '';
+
+			print "no$msg\n";
+			my $mandatory = $test->{MANDATORY};
+			error($mandatory) if ($mandatory);
+		}
+		elsif ($line =~ m,^VALUE:(.+)$,o) {
+			$value = $1;
+			print $value, "\n";
+		}
+		elsif ($line =~ m,^OK:(.+)$,o) {
+			print $1, "\n";
+			$value = 1;
+		}
+		else {
+			error("Unexpected output: $line");
+		}
+		push(@hdefs, ConfDef->new($name, $value, $desc, $required))
+			if ($name);
+		my $callback = $test->{CALLBACK};
+		&$callback($value) if ($callback);
+	}
+
+	return \@hdefs;
+}
+
+sub check_srcroot()
+{
+	my $dir;
+	if ($0 =~ m,/,) {
+		$dir = dirname($0);
+	}
+	else {
+		# Determine source tree path from PATH environment variable.
+		my $confst = stat($0);
+		fatal("stat($0) failed: $!") unless ($confst);
+		foreach my $d (split(/:/, $ENV{PATH})) {
+			my $path = "$d/configure";
+			my $st = stat($path);
+			next unless ($st);
+			if ($st->dev == $confst->dev and
+			    $st->ino == $confst->ino) {
+				$dir = $d;
+				last;
+			}
+		}
+
+		fatal("Failed to determine source tree root.") unless ($dir);
+	}
+
+	my $root = abs_path($dir) or
+		fatal("Failed to determine source tree root: $dir");
+
+	return $root;
+}
+
+sub check_version($)
+{
+	my ($conf) = @_;
+
+	checking("for UNC software version");
+
+	my $file = $VERSION_FILE;
+	my $fh = FileHandle->new($file);
+	unless ($fh) {
+		print "failed\n";
+		error("Unable to open \"$file\": $!");
+	}
+
+	my $pat = qr,^(\d+)\.(\d+)\.(\d+)\.(\d+)$,;
+	my (%version, $line);
+
+	while ($line = $fh->getline()) {
+		if ($line =~ $pat) {
+			$version{MAJOR} = $1;
+			$version{MINOR} = $2;
+			$version{REVISION} = $3;
+			$version{PATCHLEVEL} = $4;
+			chomp($line);
+			last;
+		}
+	}
+
+	unless (defined($version{PATCHLEVEL})) {
+		print "failed\n";
+		error("Failed to determine software version from ",
+		      "\"$file\".");
+	}
+
+	print $line, "\n";
+
+	checking("for UNC build ID");
+	my $bid = $conf->get('build-id');
+	if (length($bid) != 0) {
+		print "$bid\n";
+		$version{BUILD_ID} = $bid;
+	}
+	else {
+		print "none specified\n";
+	}
+
+	return \%version;
+}
+
+sub check_odbc($\%\%)
+{
+	my ($conf, $vars, $odbcvars) = @_;
+
+	checking('for odbc_config');
+	my $odbc_config = get_command($conf, 'odbc-config', 'ODBC_CONFIG');
+	unless (defined($odbc_config)) {
+		$odbc_config = search_command('odbc_config');
+		unless (defined($odbc_config)) {
+			print "no\n";
+			error("odbc_config was not found.");
+		}
+	}
+
+	print $odbc_config, "\n";
+
+	checking('for ODBC version');
+	my (%opts) = (pattern => qr,^\d+$,);
+	my $ver = read_command_oneline(%opts, $odbc_config, '--odbcversion');
+
+	print $ver, "\n";
+	error("ODBC version ", ODBC_VERSION,
+	      " is required, but found version ", $ver)
+		if ($ver < ODBC_VERSION);
+
+	checking('for CPPFLAGS required by ODBC');
+	$opts{pattern} = qr,.*,;
+	my $cppflags = read_command_oneline(%opts, $odbc_config, '--cflags');
+	$cppflags = fixup_cppflags($cppflags);
+
+	# Split "-D" options from CPPFLAGS.
+	my (@defines, @incflags);
+	if (defined($cppflags)) {
+		my $dpat = qr,^-D,;
+		foreach my $opt (@$cppflags) {
+			if ($opt =~ $dpat) {
+				push(@defines, $opt);
+			}
+			else {
+				push(@incflags, $opt);
+			}
+		}
+	}
+
+	my $code = <<'OUT';
+#include <stdio.h>
+#include <unixodbc_conf.h>
+
+int
+main(int argc, char **argv)
+{
+#ifdef	SIZEOF_LONG_INT
+	if (sizeof(long int) == SIZEOF_LONG_INT) {
+		puts("OK:yes");
+	}
+	else {
+		printf("NO:SIZEOF_LONG_INT is %u, but sizeof(long int) is "
+		       "%u\n", SIZEOF_LONG_INT,
+		       (unsigned int)sizeof(long int));
+	}
+#else	/* !SIZEOF_LONG_INT */
+	puts("NO:SIZEOF_LONG_INT is not defined.");
+#endif	/* SIZEOF_LONG_INT */
+
+	return 0;
+}
+OUT
+	my $has_conf_h;
+	my $callback = sub {
+		$has_conf_h = $_[0];
+	};
+	my (%t) = (CHECK => 'whether unixodbc_conf.h is provided',
+		   CODE => $code, IGNORE_ERROR => 1, CALLBACK => $callback);
+	$t{CFLAGS} = \@incflags if (@incflags);
+	my (@tests) = (\%t);
+	check_config_tests(%$vars, @tests);
+
+	if ($has_conf_h and defined($cppflags)) {
+		# Disable CPP macro definitions.
+		# Use unixodbc_conf.h instead.
+		$cppflags = \@incflags;
+		my $msg = (@incflags)
+			? join(' ', @incflags)
+			: 'none required';
+		print "   ++ ODBC_CPPFLAGS  = ", $msg, "\n";
+	}
+
+	checking('for LDFLAGS required by ODBC');
+	my $ldflags = read_command_oneline(%opts, $odbc_config, '--libs');
+	my (@libpath, @runpath);
+	$ldflags = fixup_ldflags($ldflags, @libpath, @runpath);
+
+	$code = <<'OUT';
+#include <stdio.h>
+#include <sql.h>
+
+int
+main(int argc, char **argv)
+{
+	SQLRETURN	ret;
+	SQLHANDLE	env;
+
+	ret = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
+	if (ret < 0) {
+		printf("ERROR:SQLAllocHandle() failed: %d\n", ret);
+		return 0;
+	}
+
+	ret = SQLFreeHandle(SQL_HANDLE_ENV, env);
+	if (ret < 0) {
+		printf("ERROR:SQLFreeHandle() failed: %d\n", ret);
+		return 0;
+	}
+
+	puts("OK:yes");
+	return 0;
+}
+OUT
+
+	(%t) = (CHECK => 'whether SQLAllocHandle() works', CODE => $code);
+	$t{CFLAGS} = $cppflags if (defined($cppflags));
+	$t{LDFLAGS} = $ldflags if (defined($ldflags));
+	(@tests) = (\%t);
+	check_config_tests(%$vars, @tests);
+
+	my $objdir = $conf->get('objdir');
+	$vars->{ODBC_DEFS_MK_VAR()} = $objdir . '/' . ODBC_DEFS_MK;
+	$vars->{ODBC_RULES_MK_VAR()} = $vars->{BLDDIR} . '/' . ODBC_RULES_MK;
+
+	$odbcvars->{ODBC_CPPFLAGS} = join(' ', @$cppflags)
+		if (defined($cppflags));
+	$odbcvars->{ODBC_LDFLAGS} = join(' ', @$ldflags)
+		if (defined($ldflags));
+
+	push(@runpath, @libpath);
+	$odbcvars->{ODBC_RUNPATH} = join(' ', @runpath) if (@runpath);
+}
+
+sub check_user_group($\%)
+{
+	my ($conf, $vars) = @_;
+
+	foreach my $uspec ({DESC => 'the daemon', VAR_PREFIX => 'UNCD_',
+			    KEY_PREFIX => ''},
+			   {DESC => 'administrative command',
+			    VAR_PREFIX => 'ADMIN_', KEY_PREFIX => 'admin-'}) {
+		foreach my $key (qw(user group)) {
+			check_user_group_impl($conf, %$vars, %$uspec, $key);
+		}
+	}
+}
+
+sub check_user_group_impl($\%\%$)
+{
+	my ($conf, $vars, $uspec, $key) = @_;
+
+	checking("for $key to run " . $uspec->{DESC} . " as");
+	my $cfkey = $uspec->{KEY_PREFIX} . $key;
+	my $value = $conf->get($cfkey);
+	unless (defined($value)) {
+		print "none specified\n";
+
+		return;
+	}
+
+	my $len = length($value);
+	my $label = ucfirst($key);
+	if ($len == 0) {
+		print "error\n";
+		error("$label name is empty.");
+	}
+
+	if ($len > UG_NAMELEN_MAX) {
+		print "error\n";
+		error("Too long $key name: $value");
+	}
+
+	print $value, "\n";
+	my $v = $uspec->{VAR_PREFIX} . uc($key);
+	$vars->{$v} = $value;
+}
+
+sub check_perm($\%)
+{
+	my ($conf, $vars) = @_;
+
+	foreach my $pspec ({KEY => 'ctrl-perm', VARNAME => 'UNCD_CTRL_PERM',
+			    DESC => 'the daemon control socket'}) {
+		check_perm_impl($conf, %$vars, %$pspec);
+	}
+}
+
+sub check_perm_impl($\%\%)
+{
+	my ($conf, $vars, $pspec) = @_;
+
+	my ($key, $desc, $varname) =
+		($pspec->{KEY}, $pspec->{DESC}, $pspec->{VARNAME});
+
+	checking("for permission bits for $desc");
+	my $value = $conf->get($key);
+	unless (defined($value)) {
+		print "default (0700)\n";
+		return;
+	}
+
+	my $pat_digit = qr,^\d+$,;
+	my $pat_oct = qr,^0,;
+	unless ($value =~ $pat_digit) {
+		print "error\n";
+		error("Invalid permission bits: $value");
+	}
+
+	$value = oct($value) if ($value =~ $pat_oct);
+	my $svalue = sprintf("0%03o", $value);
+
+	if ($value < 0) {
+		print "error\n";
+		error("Permission bits must be greater than or equal zero: ",
+		      $svalue);
+	}
+	if ($value > 0777) {
+		print "error\n";
+		error("Permission bits must be greater than or equal 0777: ",
+		      $svalue);
+	}
+
+	print $svalue, "\n";
+
+	$vars->{$varname} = $svalue;
+}
+
+sub check_webapi_env($\%\%)
+{
+	my ($conf, $vars, $jenv) = @_;
+
+	my %wenv;
+	foreach my $spec (@JAVA_LIBSPEC) {
+		my $err = check_jar($conf, %wenv, %$jenv, $spec);
+		if ($err) {
+			warning([$err, "UNC WebAPI will not be built."]);
+
+			return {};
+		}
+	}
+
+	my $err = check_tomcat_libdir($conf, %wenv, %$jenv);
+	if ($err) {
+		warning([$err, "UNC WebAPI will not be built."]);
+
+		return {};
+	}
+
+	my $objdir = $vars->{OBJROOT};
+	$vars->{JAVA_EXT_MK_VAR()} = $objdir. '/' . JAVA_EXT_MK;
+	$vars->{JAVA_EXT_RULES_MK_VAR()} = $objdir . '/' . JAVA_EXT_RULES_MK;
+
+	return \%wenv;
+}
+
+sub check_jar($\%\%$)
+{
+	my ($conf, $vars, $jenv, $spec) = @_;
+
+	my $desc = $spec->{DESC};
+	checking("for $desc");
+
+	my $key = $spec->{KEY};
+	my $class = $spec->{REQUIRED_CLASS};
+	my $cspec = $conf->getSpec($key);
+	my $path = $cspec->value();
+	my $jar = $jenv->{JAVA_HOME} . '/bin/jar';
+	if ($path) {
+		my $err = check_jarfile($jar, $path, $class);
+		if ($err) {
+			print "no\n";
+
+			return $err;
+		}
+	}
+	elsif (@JAVA_LIBRARY_PATH) {
+		my $filepat = $spec->{FILEPAT};
+		my $wanted = sub {
+			my $fname = basename($_);
+			return unless ($fname =~ $filepat);
+
+			my $st = stat($_);
+			return unless ($st and S_ISREG($st->mode()));
+
+			my $err = check_jarfile($jar, $_, $class);
+			unless ($err) {
+				$path = $File::Find::name;
+				die "JAR file found\n";
+			}
+		};
+
+		eval {
+			find({wanted => $wanted, no_chdir => 1},
+			     @JAVA_LIBRARY_PATH);
+		};
+		if ($@) {
+			my $err = "$@";
+			chomp($err);
+			die "$err\n" unless ($err eq 'JAR file found');
+		}
+
+		unless ($path) {
+			print "no\n";
+
+			return "$desc was not found.";
+		}
+	}
+	else {
+		print "no\n";
+
+		return "$desc was not found.";
+	}
+
+	print $path, "\n";
+
+	my $vname = $spec->{NAME};
+	$vars->{$vname} = $path;
+
+	return undef;
+}
+
+sub check_jarfile($$$)
+{
+	my ($jar, $path, $class) = @_;
+
+	my $found;
+	my $filter = sub {
+		my ($rh) = @_;
+
+		while (<$rh>) {
+			chomp;
+			$found = 1 if ($class eq $_);
+		}
+	};
+
+	my (%opts) = (FILTER => $filter, ERR_REDIRECT => '/dev/null');
+	my $ret = exec_command(%opts, $jar, 'tf', $path);
+	return "\"$jar tvf $path\" failed: $ret" unless ($ret == 0);
+	return "\"$class\" was not found in $path." unless ($found);
+
+	return undef;
+}
+
+sub check_tomcat_libdir($\%\%)
+{
+	my ($conf, $vars, $jenv) = @_;
+
+	my $dirs = $conf->get('tomcat-libdir');
+	$dirs = \@JAVA_LIBRARY_PATH unless ($dirs and @$dirs);
+	my $jar = $jenv->{JAVA_HOME} . '/bin/jar';
+
+	foreach my $spec (@TOMCAT_LIBSPEC) {
+		my $fname = $spec->{FNAME};
+		checking("for Apache Tomcat library: $fname");
+
+		my $path = check_tomcat_libfile(@$dirs, $jar, $spec);
+		unless ($path) {
+			print "no\n";
+
+			return "$fname was not found.";
+		}
+
+		print $path, "\n";
+
+		my $vname = $spec->{NAME};
+		$vars->{$vname} = $path;
+	}
+
+	return undef;
+}
+
+sub check_tomcat_libfile(\@$$)
+{
+	my ($dirs, $jar, $spec) = @_;
+
+	my $class = $spec->{REQUIRED_CLASS};
+	my $filepat = $spec->{FILEPAT};
+	my $path;
+	my $wanted = sub {
+		my $fname = basename($_);
+		return unless ($fname =~ $filepat);
+
+		my $st = stat($_);
+		return unless ($st and S_ISREG($st->mode()));
+
+		my $err = check_jarfile($jar, $_, $class);
+		unless ($err) {
+			$path = $File::Find::name;
+			die "JAR file found\n";
+		}
+	};
+
+	eval {
+		find({wanted => $wanted, no_chdir => 1}, @$dirs);
+	};
+	if ($@) {
+		my $err = "$@";
+		chomp($err);
+		die "$err\n" unless ($err eq 'JAR file found');
+	}
+
+	return $path;
+}
+
+sub prepare($)
+{
+	my ($conf) = @_;
+
+	print "\n== cleaning up old object directory.\n";
+
+	my $objdir = $conf->get('objdir');
+	my (%ignore) = map {$_ => 1} (@{$conf->getCoreObjectDirs()});
+	$ignore{'.'} = 1;
+	$ignore{'..'} = 1;
+
+	my $dirp = DirHandle->new($objdir);
+	fatal("Unable to open object directory: $objdir: $!") unless ($dirp);
+	while (my $dp = $dirp->read()) {
+		next if ($ignore{$dp});
+		my $path = "$objdir/$dp";
+		rmtree($path);
+	}
+}
+
+sub create_dynamic_header($$)
+{
+	my ($conf, $relpath) = @_;
+
+	my $yrange = create_year_range();
+	my $path = $conf->get('objdir') . '/' . $relpath;
+	my $parent = dirname($path);
+	unless (-d $parent) {
+		mkpath($parent, undef, 0755);
+	}
+
+	print "== creating $path\n";
+	my $fh = FileHandle->new($path, O_CREAT|O_TRUNC|O_WRONLY, 0644) or
+		fatal("open($path) failed: $!");
+	push(@UNLINK_ON_ERROR, $path);
+
+	$fh->print(<<OUT);
+/*
+ * Copyright (c) $yrange NEC Corporation
+ * All rights reserved.
+ * 
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+OUT
+
+	return $fh;
+}
+
+sub create_config_status(\@\%)
+{
+	my ($argv, $vars) = @_;
+
+	my $objroot = $vars->{OBJROOT};
+	my $path = $objroot . '/' . CONFIG_STATUS;
+	push(@UNLINK_ON_ERROR, $path);
+	print "== creating $path\n";
+
+	unless (-d $objroot) {
+		mkpath($objroot, undef, 0755);
+	}
+
+	my $fh = FileHandle->new($path, O_CREAT|O_TRUNC|O_WRONLY, 0644) or
+		fatal("open($path) failed: $!");
+
+	foreach my $arg (@$argv) {
+		$fh->print(CSTATUS_ARGV, ':', $arg, "\n");
+	}
+}
+
+sub create_config_mk($\%\%)
+{
+	my ($conf, $vars, $version) = @_;
+
+	my $fname = $SRCROOT . '/' . CONFIG_MK;
+	print "== creating $fname\n";
+	my $fh = FileHandle->new($fname, O_CREAT|O_TRUNC|O_WRONLY, 0644) or
+		fatal("open($fname) failed: $!");
+	push(@UNLINK_ON_ERROR, $fname);
+
+	$fh->print(<<OUT);
+##
+## Auto-generated build configuration.
+##
+
+ifndef	UNC_CONFIG_MK_INCLUDED
+
+UNC_CONFIG_MK_INCLUDED	:= 1
+
+# Software version.
+OUT
+	my (@ver);
+	foreach my $key (qw(MAJOR MINOR REVISION PATCHLEVEL)) {
+		my $name = 'UNC_VERSION_' . $key;
+		my $value = $version->{$key};
+		push(@ver, $value);
+		$fh->print(<<OUT);
+$name	:= $value
+OUT
+	}
+
+	my $vstring = join('.', @ver);
+	$fh->print(<<OUT);
+UNC_VERSION	:= $vstring
+
+OUT
+
+	my $bid = $version->{BUILD_ID};
+	if (defined($bid)) {
+		$fh->print(<<OUT);
+# Package build ID.
+UNC_BUILD_ID	:= $bid
+
+OUT
+	}
+
+	foreach my $vname (sort(keys(%$vars))) {
+		my $value = $vars->{$vname};
+		$fh->print(<<OUT);
+$vname		:= $value
+OUT
+	}
+
+	my $root = $vars->{SRCROOT};
+	my $defs_mk = $root . '/' . DEFS_MK;
+
+	$fh->print(<<OUT);
+
+include \$(ODBC_DEFS_MK)
+include $defs_mk
+
+endif	# !UNC_CONFIG_MK_INCLUDED
+OUT
+}
+
+sub create_odbc_defs_mk(\%\%)
+{
+	my ($vars, $odbcvars) = @_;
+
+	my $path = $vars->{ODBC_DEFS_MK_VAR()};
+	print "== creating $path\n";
+	my $fh = FileHandle->new($path, O_CREAT|O_TRUNC|O_WRONLY, 0644) or
+		fatal("open($path) failed: $!");
+	push(@UNLINK_ON_ERROR, $path);
+
+	$fh->print(<<OUT);
+##
+## ODBC build configuration.
+##
+
+ifndef	UNC_ODBC_DEFS_MK_INCLUDED
+
+UNC_ODBC_DEFS_MK_INCLUDED	:= 1
+
+OUT
+
+	foreach my $vname (sort(keys(%$odbcvars))) {
+		my $value = $odbcvars->{$vname};
+		$fh->print(<<OUT)
+$vname		:= $value
+OUT
+	}
+
+	$fh->print(<<OUT);
+
+endif	# !UNC_ODBC_DEFS_MK_INCLUDED
+OUT
+}
+
+sub create_java_ext_mk(\%\%)
+{
+	my ($vars, $wenv) = @_;
+
+	return unless (%$wenv);
+
+	my $extmk = JAVA_EXT_MK_VAR;
+	my $path = $vars->{$extmk};
+	print "== creating $path\n";
+	my $fh = FileHandle->new($path,  O_CREAT|O_TRUNC|O_WRONLY, 0644) or
+		fatal("open($path) failed: $!");
+
+	$fh->print(<<OUT);
+##
+## Define third-party Java libraries.
+##
+
+ifndef	UNC_JAVA_EX_MK_INCLUDED
+
+UNC_JAVA_EX_MK_INCLUDED		:= 1
+
+OUT
+
+	my (@names);
+	foreach my $spec (@JAVA_LIBSPEC, @TOMCAT_LIBSPEC) {
+		my $name = $spec->{NAME};
+		push(@names, '$(' . $name . ')') if ($spec->{KEY});
+		my $fname = $spec->{FNAME};
+		my $jarfile = $wenv->{$name};
+		my $jname = $name . '_JAR';
+		$fh->print(<<OUT);
+$name		:= $fname
+$jname		:= $jarfile
+OUT
+	}
+
+	my $extnames = join(' ', @names);
+	$fh->print(<<OUT);
+
+JAVA_EXT_LIBS	:= $extnames
+
+OUT
+
+	$fh->print(<<OUT);
+
+endif	# !UNC_JAVA_EX_MK_INCLUDED
+OUT
+
+	$path = $vars->{JAVA_EXT_RULES_MK_VAR()};
+	print "== creating $path\n";
+	my $fh = FileHandle->new($path,  O_CREAT|O_TRUNC|O_WRONLY, 0644) or
+		fatal("open($path) failed: $!");
+
+	$fh->print(<<OUT);
+##
+## Define rules to install third-party Java libraries.
+##
+
+ifndef	UNC_JAVA_EXT_RULES_MK_INCLUDED
+
+UNC_JAVA_EXT_RULES_MK_INCLUDED	:= 1
+OUT
+
+	foreach my $spec (@JAVA_LIBSPEC) {
+		my $name = $spec->{NAME};
+		my $jname = $name . '_JAR';
+		$fh->print(<<OUT);
+
+\$(DEST_EXTDIR)/\$($name):	\$(DEST_EXTDIR) FRC
+	\@echo "=== Installing \$\@";					\\
+	\$(LN_S) \$($jname) \$\@
+OUT
+	}
+
+	$fh->print(<<'OUT');
+
+$(DEST_EXTDIR):
+	@echo "=== Installing $@";					\
+	$(INSTALL_DIRS) $@
+
+endif	# !UNC_JAVA_EXT_RULES_MK_INCLUDED
+OUT
+}
+
+sub create_java_link(\%\%)
+{
+	my ($jenv, $wenv) = @_;
+
+	return unless (%$wenv);
+
+	my $dpath = $jenv->{JAVA_OBJDIR} . '/ext';
+	mkpath($dpath, undef, 0755) unless (-d $dpath);
+
+	foreach my $spec (@JAVA_LIBSPEC) {
+		my $jarfile = $wenv->{$spec->{NAME}};
+		my $fname = $spec->{FNAME};
+		my $jpath = "$dpath/$fname";
+		print "== creating $jpath\n";
+
+		symlink($jarfile, $jpath) or
+			fatal("Failed to create symlink to $fname: $!");
+	}
+}
+
+sub create_config_h($\%\@)
+{
+	my ($conf, $version, $hdefs) = @_;
+
+	my $fh = create_dynamic_header($conf, CONFIG_H);
+	my $product = stringify($UNC_PRODUCT_NAME);
+	$fh->print(<<OUT);
+/*
+ * UNC build configuration.
+ */
+
+#ifndef	_UNC_CONFIG_H
+#define	_UNC_CONFIG_H
+
+/* Product name. */
+#define	UNC_PRODUCT_NAME	$product
+
+OUT
+
+	my (@ver);
+	foreach my $spec ({KEY => 'MAJOR', DESC => 'UNC major version'},
+			  {KEY => 'MINOR', DESC => 'UNC minor version'},
+			  {KEY => 'REVISION', DESC => 'UNC software revision'},
+			  {KEY => 'PATCHLEVEL',
+			   DESC => 'UNC software patch level.'}) {
+		my ($key, $desc) = ($spec->{KEY}, $spec->{DESC});
+		my $value = $version->{$key};
+		push(@ver, $value);
+		$fh->print(<<OUT);
+/* $desc */
+#define	UNC_VERSION_${key}	$value
+
+OUT
+	}
+
+	my $vstring = stringify(join('.', @ver));
+	my $debug = stringify(($conf->get('debug')) ? '-debug' : '');
+	$fh->print(<<OUT);
+/* UNC software version string. */
+#define	UNC_VERSION_STRING	$vstring
+
+/* Version suffix which represents build type. */
+#define	UNC_BUILD_TYPE_SUFFIX	$debug
+
+OUT
+
+	my $bid = $version->{BUILD_ID};
+	if (defined($bid)) {
+		$bid = stringify($bid);
+		$fh->print(<<OUT);
+/* UNC package build identifier. */
+#define	UNC_BUILD_ID		$bid
+
+OUT
+	}
+
+	foreach my $key (sort(@{$conf->getInstDirKeys()})) {
+		my $dir = $conf->get($key);
+		my $value = stringify($dir);
+		my $name = make_symbol('UNC_', $key);
+		my $desc = $conf->getDescription($key);
+		$fh->print(<<OUT);
+/* $desc */
+#define	$name	$value
+
+OUT
+	}
+
+	# Append additional lines.
+	foreach my $cdef (@$hdefs) {
+		$cdef->print($fh);
+	}
+
+	$fh->print(<<OUT);
+#endif	/* _UNC_CONFIG_H */
+OUT
+}
+
+sub parse_config_status($)
+{
+	my ($file) = @_;
+
+	my $fh = FileHandle->new($file) or fatal("open($file) failed: $!");
+
+	@ARGV = ();
+	while (my $line = $fh->getline()) {
+		my ($key, $value) = split(/:/, $line, 2);
+		if ($key eq CSTATUS_ARGV) {
+			chomp($value);
+			push(@ARGV, $value);
+		}
+	}
+}
+
+sub parse_config_mk(\%)
+{
+	my ($vars) = @_;
+
+	my $file = $CORE_SRCROOT . '/build/config.mk';
+	my $fh = FileHandle->new($file) or fatal("open($file) failed: $!");
+
+	my $pat = qr,\s*:=\s*,;
+	my $ignorepat = qr,^(PFC_|CONFIG_MK_INCLUDED|UNC_CORE),;
+	while (my $line = $fh->getline()) {
+		my ($name, $value) = split($pat, $line, 2);
+		next if ($name eq $line);
+
+		# Set UNC_LP64 if PFC_LP64 is defined.
+		if ($name eq 'PFC_LP64') {
+			$vars->{UNC_LP64} = 1;
+			next;
+		}
+
+		next if ($name =~ $ignorepat or exists($vars->{$name}));
+		chomp($value);
+		$vars->{$name} = $value;
+	}
+
+	# Set up DEFAULT_LIBPATH map.
+	my (@libs) = (split(/\s+/, $vars->{DEFAULT_LIBPATH}));
+	(%DEFAULT_LIBPATH) = map {$_ => 1} @libs;
+
+	# Set well-known standard library directories to DEFAULT_LIBPATH.
+	$DEFAULT_LIBPATH{'/lib'} = 1;
+	$DEFAULT_LIBPATH{'/usr/lib'} = 1;
+	$DEFAULT_LIBPATH{'/lib64'} = 1;
+	$DEFAULT_LIBPATH{'/usr/lib64'} = 1;
+
+	# Parse java_config.mk.
+	my %jenv;
+	my $jmk = $vars->{JAVA_CONFIG_MK};
+	error("JAVA_CONFIG_MK is not defined.") unless ($jmk);
+
+	$fh = FileHandle->new($jmk) or fatal("open($jmk) failed: $!");
+	while (my $line = $fh->getline()) {
+		my ($name, $value) = split($pat, $line, 2);
+		next if ($name eq $line or exists($jenv{$name}));
+		chomp($value);
+		$jenv{$name} = $value;
+	}
+
+	return \%jenv;
+}
+
+sub search_pkgconfig(\%$)
+{
+	my ($vars, $name) = @_;
+
+	unless (@PKG_CONFIG_LIBDIR) {
+		# Initialize pkg-config library path.
+		my $libdir = ($vars->{UNC_LP64}) ? '/usr/lib64' : '/usr/lib';
+		my $env = $ENV{PKG_CONFIG_PATH};
+		(@PKG_CONFIG_LIBDIR) = split(/:/, $env) if ($env);
+		push(@PKG_CONFIG_LIBDIR, $libdir . '/pkgconfig',
+		     '/usr/share/pkgconfig');
+	}
+
+	my $fname = $name . '.pc';
+	foreach my $dir (@PKG_CONFIG_LIBDIR) {
+		my $path = $dir . '/' . $fname;
+		return $path if (-f $path);
+	}
+
+	return undef;
+}
+
+sub make_symbol($$)
+{
+	my ($prefix, $key) = @_;
+
+	my $sym = $prefix . uc($key);
+	$sym =~ s,-,_,go;
+
+	return $sym;
+}
+
+sub get_command($$$)
+{
+	my ($conf, $cfkey, $envkey) = @_;
+
+	my $path = $conf->get($cfkey);
+
+	return $path if (defined($path));
+	return $ENV{$envkey};
+}
+
+sub search_command($@)
+{
+	my ($cmd, @path) = @_;
+
+	my $dirs = (@path) ? \@path : \@PATH;
+
+	foreach my $d (@$dirs) {
+		my $cpath = "$d/$cmd";
+		return $cpath if (-x $cpath);
+	}
+
+	return undef;
+}
+
+sub read_command_output(\%@)
+{
+	my ($opts, @args) = @_;
+
+	my @out;
+	my $filter = sub {
+		my ($rh) = @_;
+
+		while (<$rh>) {
+			push(@out, $_);
+		}
+	};
+
+	my (%copts) = (%$opts);
+	$copts{FILTER} = $filter;
+	$copts{ERR2OUT} = 1;
+
+	my $ret = exec_command(%copts, @args);
+	unless ($ret == 0) {
+		print "failed\n\n";
+
+		my $cmd = join(' ', @args);
+		print STDERR @out, "\n" if (@out);
+		error("\"$cmd\" failed.");
+	}
+
+	return \@out;
+}
+
+sub read_command_oneline(\%@)
+{
+	my ($opts, @args) = @_;
+
+	my $out = read_command_output(%$opts, @args);
+
+	CHECK: {
+		last CHECK unless (@$out == 1);
+		my $ret = $out->[0] || '';
+		chomp($ret);
+
+		my $pat = $opts->{pattern};
+		last CHECK if ($pat and $ret !~ $pat);
+
+		return $ret;
+	}
+
+	print "failed\n\n";
+	my $cmd = join(' ', @args);
+	print STDERR @$out, "\n" if (@$out);
+
+	return undef if ($opts->{optional});
+
+	error("\"$cmd\" exited with unexpected output.");
+}
+
+sub fixup_cppflags($)
+{
+	my ($cppflags) = @_;
+
+	my (@list) = split(/\s+/, $cppflags);
+	my (@flags);
+	my $pat = qr,^-I(.+)$,;
+
+	while (defined(my $arg = shift(@list))) {
+		if ($arg eq '-I') {
+			my $path = shift(@list);
+
+			unless (defined($path)) {
+				print "failed\n\n";
+
+				error('Broken CPPFLAGS: ', $cppflags);
+			}
+
+			$path = canonicalize_path($path);
+			push(@flags, '-I' . $path)
+				unless ($path eq DEFAULT_INCDIR);
+			next;
+		}
+
+		if ($arg =~ $pat) {
+			my $path = $1;
+
+			$path = canonicalize_path($path);
+			push(@flags, '-I' . $path)
+				unless ($path eq DEFAULT_INCDIR);
+			next;
+		}
+
+		push(@flags, $arg) if (length($arg) > 0);
+	}
+
+	if (@flags) {
+		print join(' ', @flags), "\n";
+
+		return \@flags;
+	}
+
+	print "none required\n";
+
+	return undef;
+}
+
+sub fixup_ldflags($\@\@)
+{
+	my ($ldflags, $libpath, $runpath) = @_;
+
+	my (@list) = split(/\s+/, $ldflags);
+	my (@flags, %lmap, %rmap);
+	my $pat = qr,^-L(.+)$,;
+	my $rpat = qr/^-Wl,-rpath,(.+)$/;
+
+	my $add_path = sub {
+		my ($path, $list, $map, $f) = @_;
+
+		$path = canonicalize_path($path);
+		unless ($DEFAULT_LIBPATH{$path} or $map->{$path}) {
+			push(@flags, $f . $path);
+			push(@$list, $path);
+			$map->{$path} = 1;
+		}
+	};
+
+	while (defined(my $arg = shift(@list))) {
+		if ($arg eq '-L') {
+			my $path = shift(@list);
+
+			unless (defined($path)) {
+				print "failed\n\n";
+
+				error('Broken LDFLAGS: ', $ldflags);
+			}
+
+			&$add_path($path, $libpath, \%lmap, '-L');
+			next;
+		}
+
+		if ($arg =~ $pat) {
+			&$add_path($1, $libpath, \%lmap, '-L');
+			next;
+		}
+
+		if ($arg =~ $rpat) {
+			&$add_path($1, $runpath, \%rmap, '-Wl,-rpath,');
+			next;
+		}
+
+		push(@flags, $arg) if (length($arg) > 0);
+	}
+
+	if (@flags) {
+		print join(' ', @flags), "\n";
+
+		return \@flags;
+	}
+
+	print "none required\n";
+
+	return undef;
+}
