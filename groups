@@ -2,4 +2,6 @@
 #
 191cd873322f17613dd6ebaeebae5238fea8bf33	Non-interactive vtn users
 2373512464abcee3eaf50f265c4a4e428dab634e	Administrators
+global:Anonymous-Users                  	Anonymous Users
+global:Registered-Users                 	Registered Users
 ldap:cn=gerrit-vtn-commiters,ou=Groups,dc=opendaylight,dc=org	ldap/gerrit-vtn-commiters
