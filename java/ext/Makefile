@@ -19,8 +19,7 @@ include $(JAVA_CONFIG_MK)
 include $(JAVA_EXT_MK)
 
 # Path to installation directory.
-INST_EXTDIR	= $(INST_JARDIR)/ext
-DEST_EXTDIR	= $(DESTDIR)$(INST_EXTDIR)
+DEST_EXTDIR	= $(DEST_EXTJARDIR)
 DEST_JARFILES	= $(JAVA_EXT_LIBS:%=$(DEST_EXTDIR)/%)
 
 # Nothing to do on "make all".

@@ -54,7 +54,11 @@ JNI_JAVAH_HEADERS	:= $(JNI_JAVAH_NAMES:%=$(JAVAH_INCDIR)/%.h)
 # JAR file path to be passed to javah.
 ifeq	($(strip $(JNI_JAVAH_JARFILE)),)
 JNI_JAVA_LIBNAME	:= $(notdir $(realpath $(CURDIR)/..))
+ifdef	JUNIT_TEST
+JAVAH_JARFILE		:= $(JNI_JAVA_LIBNAME)_test.jar
+else	# !JUNIT_TEST
 JAVAH_JARFILE		:= $(JNI_JAVA_LIBNAME).jar
+endif	# JUNIT_TEST
 JNI_JAVAH_JARFILE	:= $(JAVA_OBJDIR)/$(JAVAH_JARFILE)
 endif	# empty(JNI_JAVAH_JARFILE)
 

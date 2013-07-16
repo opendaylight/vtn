@@ -1,0 +1,633 @@
+%
+% Copyright (c) 2010-2013 NEC Corporation
+% All rights reserved.
+% 
+% This program and the accompanying materials are made available under the
+% terms of the Eclipse Public License v1.0 which accompanies this
+% distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+%
+
+%%
+%% conf test configuration file format.
+%%
+
+#define TEST_CONF_MAX_ARRAY_SIZE	3
+#define TEST_CONF_MIN_VALUE		5
+#define TEST_CONF_MAX_VALUE		50
+
+cf_name = test_conf_cfdef;
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_blk
+{
+	test_conf_blk_p1 = INT32;
+	test_conf_blk_p2 = UINT32[];
+}
+
+defmap test_conf_map
+{
+	test_conf_map_p1 = UINT32;
+	test_conf_map_p2 = BYTE[];
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% BYTE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_blk_byte
+{
+	test_conf_blk_byte_oct        = BYTE;
+	test_conf_blk_byte_dec        = BYTE;
+	test_conf_blk_byte_hex        = BYTE;
+	test_conf_blk_byte_inv1       = BOOL;
+	test_conf_blk_byte_inv2       = BYTE[];
+	test_conf_blk_byte_array1     = BYTE[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_blk_byte_array2     = BYTE[];
+	test_conf_blk_byte_array_inv1 = BOOL[];
+	test_conf_blk_byte_array_inv2 = BYTE;
+}
+
+defmap test_conf_map_byte
+{
+	test_conf_map_byte_oct        = BYTE;
+	test_conf_map_byte_dec        = BYTE;
+	test_conf_map_byte_hex        = BYTE;
+	test_conf_map_byte_inv1       = BOOL;
+	test_conf_map_byte_inv2       = BYTE[];
+	test_conf_map_byte_array1     = BYTE[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_map_byte_array2     = BYTE[];
+	test_conf_map_byte_array_inv1 = BOOL[];
+	test_conf_map_byte_array_inv2 = BYTE;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% STRING
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_blk_str
+{
+	test_conf_blk_str             = STRING;
+	test_conf_blk_str_inv1        = BYTE;
+	test_conf_blk_str_inv2        = STRING[];
+	test_conf_blk_str_array1      = STRING[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_blk_str_array2      = STRING[];
+	test_conf_blk_str_array_inv1  = BYTE[];
+	test_conf_blk_str_array_inv2  = STRING;
+}
+
+defmap test_conf_map_str
+{
+	test_conf_map_str             = STRING;
+	test_conf_map_str_inv1        = BYTE;
+	test_conf_map_str_inv2        = STRING[];
+	test_conf_map_str_array1      = STRING[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_map_str_array2      = STRING[];
+	test_conf_map_str_array_inv1  = BYTE[];
+	test_conf_map_str_array_inv2  = STRING;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% BOOL
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_blk_bool
+{
+	test_conf_blk_bool            = BOOL;
+	test_conf_blk_bool_inv1       = UINT32;
+	test_conf_blk_bool_inv2       = BOOL[];
+	test_conf_blk_bool_array1     = BOOL[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_blk_bool_array2     = BOOL[];
+	test_conf_blk_bool_array_inv1 = BYTE[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_blk_bool_array_inv2 = BOOL;
+}
+
+defmap test_conf_map_bool
+{
+	test_conf_map_bool            = BOOL;
+	test_conf_map_bool_inv1       = UINT32;
+	test_conf_map_bool_inv2       = BOOL[];
+	test_conf_map_bool_array1     = BOOL[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_map_bool_array2     = BOOL[];
+	test_conf_map_bool_array_inv1 = BYTE[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_map_bool_array_inv2 = BOOL;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% INT32
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_blk_i32_min
+{
+	test_conf_blk_i32_oct         = INT32;
+	test_conf_blk_i32_dec         = INT32;
+	test_conf_blk_i32_hex         = INT32;
+	test_conf_blk_i32_inv1        = UINT32;
+	test_conf_blk_i32_inv2        = INT32[];
+	test_conf_blk_i32_array1      = INT32[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_blk_i32_array2      = INT32[];
+	test_conf_blk_i32_array_inv1  = BYTE[];
+	test_conf_blk_i32_array_inv2  = INT32;
+}
+
+defblock test_conf_blk_i32_max
+{
+	test_conf_blk_i32_oct         = INT32;
+	test_conf_blk_i32_dec         = INT32;
+	test_conf_blk_i32_hex         = INT32;
+	test_conf_blk_i32_inv1        = UINT32;
+	test_conf_blk_i32_inv2        = INT32[];
+}
+
+defmap test_conf_map_i32
+{
+	test_conf_map_i32_oct         = INT32;
+	test_conf_map_i32_dec         = INT32;
+	test_conf_map_i32_hex         = INT32;
+	test_conf_map_i32_inv1        = UINT32;
+	test_conf_map_i32_inv2        = INT32[];
+	test_conf_map_i32_array1      = INT32[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_map_i32_array2      = INT32[];
+	test_conf_map_i32_array_inv1  = BYTE[];
+	test_conf_map_i32_array_inv2  = INT32;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% UINT32
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_blk_ui32
+{
+	test_conf_blk_ui32_oct        = UINT32;
+	test_conf_blk_ui32_dec        = UINT32;
+	test_conf_blk_ui32_hex        = UINT32;
+	test_conf_blk_ui32_inv1       = STRING;
+	test_conf_blk_ui32_inv2       = UINT32[];
+
+	test_conf_blk_ui32_array1     = UINT32[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_blk_ui32_array2     = UINT32[];
+	test_conf_blk_ui32_array_inv1 = BYTE[];
+	test_conf_blk_ui32_array_inv2 = UINT32;
+}
+
+defmap test_conf_map_ui32
+{
+	test_conf_map_ui32_oct        = UINT32;
+	test_conf_map_ui32_dec        = UINT32;
+	test_conf_map_ui32_hex        = UINT32;
+	test_conf_map_ui32_inv1       = STRING;
+	test_conf_map_ui32_inv2       = UINT32[];
+
+	test_conf_map_ui32_array1     = UINT32[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_map_ui32_array2     = UINT32[];
+	test_conf_map_ui32_array_inv1 = BYTE[];
+	test_conf_map_ui32_array_inv2 = UINT32;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% INT64
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_blk_i64_min
+{
+	test_conf_blk_i64_oct         = INT64;
+	test_conf_blk_i64_dec         = INT64;
+	test_conf_blk_i64_hex         = INT64;
+	test_conf_blk_i64_inv1        = BOOL;
+	test_conf_blk_i64_inv2        = INT64[];
+	test_conf_blk_i64_array1      = INT64[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_blk_i64_array2      = INT64[];
+	test_conf_blk_i64_array_inv1  = BYTE[];
+	test_conf_blk_i64_array_inv2  = INT64;
+}
+
+defblock test_conf_blk_i64_max
+{
+	test_conf_blk_i64_oct         = INT64;
+	test_conf_blk_i64_dec         = INT64;
+	test_conf_blk_i64_hex         = INT64;
+	test_conf_blk_i64_inv1        = BOOL;
+	test_conf_blk_i64_inv2        = INT64[];
+}
+
+defmap test_conf_map_i64
+{
+	test_conf_map_i64_oct         = INT64;
+	test_conf_map_i64_dec         = INT64;
+	test_conf_map_i64_hex         = INT64;
+	test_conf_map_i64_inv1        = BOOL;
+	test_conf_map_i64_inv2        = INT64[];
+	test_conf_map_i64_array1      = INT64[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_map_i64_array2      = INT64[];
+	test_conf_map_i64_array_inv1  = BYTE[];
+	test_conf_map_i64_array_inv2  = INT64;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% UINT64
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_blk_ui64
+{
+	test_conf_blk_ui64_oct        = UINT64;
+	test_conf_blk_ui64_dec        = UINT64;
+	test_conf_blk_ui64_hex        = UINT64;
+	test_conf_blk_ui64_inv1       = STRING;
+	test_conf_blk_ui64_inv2       = UINT64[];
+	test_conf_blk_ui64_array1     = UINT64[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_blk_ui64_array2     = UINT64[];
+	test_conf_blk_ui64_array_inv1 = BYTE[];
+	test_conf_blk_ui64_array_inv2 = UINT64;
+}
+
+defmap test_conf_map_ui64
+{
+	test_conf_map_ui64_oct        = UINT64;
+	test_conf_map_ui64_dec        = UINT64;
+	test_conf_map_ui64_hex        = UINT64;
+	test_conf_map_ui64_inv1       = STRING;
+	test_conf_map_ui64_inv2       = UINT64[];
+	test_conf_map_ui64_array1     = UINT64[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_map_ui64_array2     = UINT64[];
+	test_conf_map_ui64_array_inv1 = BYTE[];
+	test_conf_map_ui64_array_inv2 = UINT64;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% LONG
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_blk_lng_min
+{
+	test_conf_blk_lng_oct         = LONG;
+	test_conf_blk_lng_dec         = LONG;
+	test_conf_blk_lng_hex         = LONG;
+	test_conf_blk_lng_inv1        = BOOL;
+	test_conf_blk_lng_inv2        = LONG[];
+	test_conf_blk_lng_array1      = LONG[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_blk_lng_array2      = LONG[];
+	test_conf_blk_lng_array_inv1  = BYTE[];
+	test_conf_blk_lng_array_inv2  = LONG;
+}
+
+defblock test_conf_blk_lng_max
+{
+	test_conf_blk_lng_oct         = LONG;
+	test_conf_blk_lng_dec         = LONG;
+	test_conf_blk_lng_hex         = LONG;
+	test_conf_blk_lng_inv1        = BOOL;
+	test_conf_blk_lng_inv2        = LONG[];
+}
+
+defmap test_conf_map_lng
+{
+	test_conf_map_lng_oct         = LONG;
+	test_conf_map_lng_dec         = LONG;
+	test_conf_map_lng_hex         = LONG;
+	test_conf_map_lng_inv1        = BOOL;
+	test_conf_map_lng_inv2        = LONG[];
+	test_conf_map_lng_array1      = LONG[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_map_lng_array2      = LONG[];
+	test_conf_map_lng_array_inv1  = BYTE[];
+	test_conf_map_lng_array_inv2  = LONG;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ULONG
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_blk_ulng
+{
+	test_conf_blk_ulng_oct        = ULONG;
+	test_conf_blk_ulng_dec        = ULONG;
+	test_conf_blk_ulng_hex        = ULONG;
+	test_conf_blk_ulng_inv1       = BYTE;
+	test_conf_blk_ulng_inv2       = ULONG[];
+	test_conf_blk_ulng_array1     = ULONG[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_blk_ulng_array2     = ULONG[];
+	test_conf_blk_ulng_array_inv1 = BYTE[];
+	test_conf_blk_ulng_array_inv2 = ULONG;
+}
+
+defmap test_conf_map_ulng
+{
+	test_conf_map_ulng_oct        = ULONG;
+	test_conf_map_ulng_dec        = ULONG;
+	test_conf_map_ulng_hex        = ULONG;
+	test_conf_map_ulng_inv1       = BYTE;
+	test_conf_map_ulng_inv2       = ULONG[];
+	test_conf_map_ulng_array1     = ULONG[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_map_ulng_array2     = ULONG[];
+	test_conf_map_ulng_array_inv1 = BYTE[];
+	test_conf_map_ulng_array_inv2 = ULONG;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Array Size
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_blk_array_size
+{
+	test_conf_blk_array_size_p1   = BOOL[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_blk_array_size_p2   = BOOL[];
+	test_conf_blk_array_size_inv1 = BOOL;
+}
+
+defmap test_conf_map_array_size
+{
+	test_conf_map_array_size_p1   = BOOL[TEST_CONF_MAX_ARRAY_SIZE];
+	test_conf_map_array_size_p2   = BOOL[];
+	test_conf_map_array_size_inv1 = BOOL;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Array Size Max
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_ary_max
+{
+	test_conf_ary_256             = BYTE[256];
+%	test_conf_ary_257             = BYTE[257];
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Mandatory
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_mandatory_1
+{
+	test_conf_mand1_byte          = BYTE  : mandatory;
+	test_conf_mand1_str           = STRING: mandatory;
+	test_conf_mand1_bool          = BOOL  : mandatory;
+	test_conf_mand1_i32           = INT32 : mandatory;
+	test_conf_mand1_ui32          = UINT32: mandatory;
+	test_conf_mand1_i64           = INT64 : mandatory;
+	test_conf_mand1_ui64          = UINT64: mandatory;
+	test_conf_mand1_lng           = LONG  : mandatory;
+	test_conf_mand1_ulng          = ULONG : mandatory;
+}
+
+defblock test_conf_mandatory_2
+{
+	test_conf_mand2_byte          = BYTE;
+	test_conf_mand2_str           = STRING;
+	test_conf_mand2_bool          = BOOL;
+	test_conf_mand2_i32           = INT32;
+	test_conf_mand2_ui32          = UINT32;
+	test_conf_mand2_i64           = INT64;
+	test_conf_mand2_ui64          = UINT64;
+	test_conf_mand2_lng           = LONG;
+	test_conf_mand2_ulng          = ULONG;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% min
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_min
+{
+	test_conf_min_byte            = BYTE  : min = TEST_CONF_MIN_VALUE;
+	test_conf_min_str             = STRING: min = TEST_CONF_MIN_VALUE;
+	test_conf_min_i32             = INT32 : min = TEST_CONF_MIN_VALUE;
+	test_conf_min_ui32            = UINT32: min = TEST_CONF_MIN_VALUE;
+	test_conf_min_i64             = INT64 : min = TEST_CONF_MIN_VALUE;
+	test_conf_min_ui64            = UINT64: min = TEST_CONF_MIN_VALUE;
+	test_conf_min_lng             = LONG  : min = TEST_CONF_MIN_VALUE;
+	test_conf_min_ulng            = ULONG : min = TEST_CONF_MIN_VALUE;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% max
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_max
+{
+	test_conf_max_byte            = BYTE  : max = TEST_CONF_MAX_VALUE;
+	test_conf_max_str             = STRING: max = TEST_CONF_MAX_VALUE;
+	test_conf_max_i32             = INT32 : max = TEST_CONF_MAX_VALUE;
+	test_conf_max_ui32            = UINT32: max = TEST_CONF_MAX_VALUE;
+	test_conf_max_i64             = INT64 : max = TEST_CONF_MAX_VALUE;
+	test_conf_max_ui64            = UINT64: max = TEST_CONF_MAX_VALUE;
+	test_conf_max_lng             = LONG  : max = TEST_CONF_MAX_VALUE;
+	test_conf_max_ulng            = ULONG : max = TEST_CONF_MAX_VALUE;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% min < max
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_min_max_1
+{
+	test_conf_min1_byte           = BYTE  : min = TEST_CONF_MIN_VALUE,
+						max = TEST_CONF_MAX_VALUE;
+	test_conf_min1_str            = STRING: min = TEST_CONF_MIN_VALUE,
+						max = TEST_CONF_MAX_VALUE;
+	test_conf_min1_i32            = INT32 : min = TEST_CONF_MIN_VALUE,
+						max = TEST_CONF_MAX_VALUE;
+	test_conf_min1_ui32           = UINT32: min = TEST_CONF_MIN_VALUE,
+						max = TEST_CONF_MAX_VALUE;
+	test_conf_min1_i64            = INT64 : min = TEST_CONF_MIN_VALUE,
+						max = TEST_CONF_MAX_VALUE;
+	test_conf_min1_ui64           = UINT64: min = TEST_CONF_MIN_VALUE,
+						max = TEST_CONF_MAX_VALUE;
+	test_conf_min1_lng            = LONG  : min = TEST_CONF_MIN_VALUE,
+						max = TEST_CONF_MAX_VALUE;
+	test_conf_min1_ulng           = ULONG : min = TEST_CONF_MIN_VALUE,
+						max = TEST_CONF_MAX_VALUE;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% min > max (ERROR)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%defblock test_conf_min_max_2
+%{
+%	test_conf_min2_byte           = BYTE  : min = TEST_CONF_MAX_VALUE,
+%						max = TEST_CONF_MIN_VALUE;
+%	test_conf_min2_str            = STRING: min = TEST_CONF_MAX_VALUE,
+%						max = TEST_CONF_MIN_VALUE;
+%	test_conf_min2_i32            = INT32 : min = TEST_CONF_MAX_VALUE,
+%						max = TEST_CONF_MIN_VALUE;
+%	test_conf_min2_ui32           = UINT32: min = TEST_CONF_MAX_VALUE,
+%						max = TEST_CONF_MIN_VALUE;
+%	test_conf_min2_i64            = INT64 : min = TEST_CONF_MAX_VALUE,
+%						max = TEST_CONF_MIN_VALUE;
+%	test_conf_min2_ui64           = UINT64: min = TEST_CONF_MAX_VALUE,
+%						max = TEST_CONF_MIN_VALUE;
+%	test_conf_min2_lng            = LONG  : min = TEST_CONF_MAX_VALUE,
+%						max = TEST_CONF_MIN_VALUE;
+%	test_conf_min2_ulng           = ULONG : min = TEST_CONF_MAX_VALUE,
+%						max = TEST_CONF_MIN_VALUE;
+%}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% min = max
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_min_max_2
+{
+	test_conf_min3_byte           = BYTE  : min = TEST_CONF_MIN_VALUE,
+						max = TEST_CONF_MIN_VALUE;
+	test_conf_min3_str            = STRING: min = TEST_CONF_MIN_VALUE,
+						max = TEST_CONF_MIN_VALUE;
+	test_conf_min3_i32            = INT32 : min = TEST_CONF_MIN_VALUE,
+						max = TEST_CONF_MIN_VALUE;
+	test_conf_min3_ui32           = UINT32: min = TEST_CONF_MIN_VALUE,
+						max = TEST_CONF_MIN_VALUE;
+	test_conf_min3_i64            = INT64 : min = TEST_CONF_MIN_VALUE,
+						max = TEST_CONF_MIN_VALUE;
+	test_conf_min3_ui64           = UINT64: min = TEST_CONF_MIN_VALUE,
+						max = TEST_CONF_MIN_VALUE;
+	test_conf_min3_lng            = LONG  : min = TEST_CONF_MIN_VALUE,
+						max = TEST_CONF_MIN_VALUE;
+	test_conf_min3_ulng           = ULONG : min = TEST_CONF_MIN_VALUE,
+						max = TEST_CONF_MIN_VALUE;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% String Backslash escape
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_bks_esp
+{
+	test_conf_bks_esp1            = STRING;
+	test_conf_bks_esp2            = STRING;
+	test_conf_bks_esp3            = STRING;
+	test_conf_bks_esp4            = STRING;
+	test_conf_bks_esp5            = STRING;
+	test_conf_bks_esp6            = STRING;
+	test_conf_bks_esp_inv1        = STRING;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% String length max
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_str_lenmax
+{
+	test_conf_str_len_1023        = STRING;
+	test_conf_str_len_1024        = STRING;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% duplicate (block name)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%defblock test_conf_duplicate1
+%{
+%	test_conf_dup_p1_1            = INT32;
+%}
+
+%defblock test_conf_duplicate1
+%{
+%	test_conf_dup_p1_2            = INT32;
+%}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% duplicate (map name)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%defmap test_conf_duplicate2
+%{
+%	test_conf_dup_p2_1            = INT32;
+%}
+
+%defmap test_conf_duplicate2
+%{
+%	test_conf_dup_p2_2            = INT32;
+%}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% duplicate (block and map name)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%defblock test_conf_duplicate3
+%{
+%	test_conf_dup_p3_1            = INT32;
+%}
+
+%defmap test_conf_duplicate3
+%{
+%	test_conf_dup_p3_2            = INT32;
+%}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% duplicate (parameter name in block)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%defblock test_conf_duplicate4
+%{
+%	test_conf_dup_p4              = INT32;
+%	test_conf_dup_p4              = INT32;
+%}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% duplicate (parameter name in map)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%defmap test_conf_duplicate5
+%{
+%	test_conf_dup_p5              = INT32;
+%	test_conf_dup_p5              = INT32;
+%}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% duplicate (key in .conf)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defmap test_conf_duplicate6
+{
+	test_conf_dup_p6              = INT32;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% block name max
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_block_name_length_63_12345678901234567890123456789012
+{
+	test_conf_block_name_len_63_p1 = INT32;
+}
+
+%defblock test_conf_block_name_length_64_123456789012345678901234567890123
+%{
+%	test_conf_block_name_len_64_p1 = INT32;
+%}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% map name max
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defmap test_conf_map_name_length_63_1234567890123456789012345678901234
+{
+	test_conf_map_name_len_63_p1  = INT32;
+}
+
+%defmap test_conf_map_name_length_64_12345678901234567890123456789012345
+%{
+%	test_conf_map_name_len_64_p1  = INT32;
+%}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% parameter name max
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_param_name_length_64
+{
+	test_conf_param_name_length_63_12345678901234567890123456789012
+	 = INT32;
+%	test_conf_param_name_length_64_123456789012345678901234567890123
+%	 = INT32;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% underscore
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defblock test_conf_invalid_block_name
+{
+	test_conf_invalid_block_name  = BYTE;
+}
+
+defblock _test_conf_invalid_block_name
+{
+	_test_conf_invalid_block_name  = BYTE;
+}
+
+%defblock 1_test_conf_invalid_block_name
+%{
+%	test_conf_invalid_block_name   = BYTE;
+%}
+
+defmap test_conf_invalid_map_name
+{
+	test_conf_invalid_map_name     = BYTE;
+}
+
+defmap _test_conf_invalid_map_name
+{
+	_test_conf_invalid_map_name    = BYTE;
+}
+
+%defmap 1_test_conf_invalid_map_name
+%{
+%	test_conf_invalid_map_name     = BYTE;
+%}
+
+defblock test_conf_invalid_param_name
+{
+	test_conf_invalid_param_name1  = BYTE;
+	_test_conf_invalid_param_name1 = BYTE;
+%	9test_conf_invalid_param_name1 = BYTE;
+}

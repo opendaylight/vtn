@@ -641,6 +641,9 @@ pfc_log_fini(void)
 
 	/* Close logging output files. */
 	(*log_close)();
+	if (log_close != closelog) {
+		closelog();
+	}
 
 	/* Finalize log file rotation. */
 	log_file_rotation_fini();

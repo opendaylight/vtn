@@ -10,14 +10,14 @@
 #
 
 ##
-## Configure UNC build environment.
+## Configure VTN Coordinator build environment.
 ##
 
 use strict;
 use vars qw($UNC_PRODUCT_NAME $DEBUG_BUILD @UNLINK_ON_ERROR $YEAR_RANGE
 	    $SRCROOT $CORE_SRCROOT $VERSION_FILE $BLDDIR @PATH %DEFAULT_LIBPATH
 	    @PKG_CONFIG_LIBDIR @JAVA_LIBSPEC @JAVA_LIBRARY_PATH
-	    @TOMCAT_LIBSPEC);
+	    @TOMCAT_LIBSPEC @BUILD_ID_SPEC);
 
 use Cwd qw(abs_path);
 use DirHandle;
@@ -72,11 +72,6 @@ use constant	ODBC_VERSION		=> 3;
 
 @PATH = ((DEFAULT_PATH), split(/:/, $ENV{PATH}));
 
-# System Java library directories.
-foreach my $dir (qw(/usr/share/java /usr/lib/java /usr/local/lib/java)) {
-	push(@JAVA_LIBRARY_PATH, $dir) if (-d $dir);
-}
-
 # Define required Java libraries.
 @JAVA_LIBSPEC = ({KEY => 'gson', DESC => 'Google gson',
 		  NAME => 'GOOGLE_GSON', FILEPAT => qr(.*gson.*\.jar$),
@@ -105,6 +100,12 @@ foreach my $dir (qw(/usr/share/java /usr/lib/java /usr/local/lib/java)) {
 		    FNAME => 'tomcat-juli.jar',
 		    REQUIRED_CLASS => 'org/apache/juli/logging/Log.class'});
 
+# Build identifiers.
+@BUILD_ID_SPEC = ({DESC => 'Package build ID', MAPKEY => 'BUILD_ID',
+		   CONFKEY => 'build-id'},
+		  {DESC => 'SCM revision number', MAPKEY => 'SCM_REVISION',
+		   CONFKEY => 'scm-revision'});
+
 use constant	OLDEST_YEAR		=> 2012;
 
 sub fatal(@);
@@ -112,6 +113,7 @@ sub error(@);
 sub warning(@);
 sub dupfd($$);
 sub checking(@);
+sub setup_java_libdir($);
 sub core_configure($);
 sub exec_command(\%@);
 sub compile_and_exec($%);
@@ -462,6 +464,7 @@ OUT
 	use constant	OPTARG_CC_OPT		=> '<cc-option>';
 	use constant	OPTARG_CXX_OPT		=> '<cxx-option>';
 	use constant	OPTARG_BUILD_ID		=> '<build-id>';
+	use constant	OPTARG_SCM_REV		=> '<scm-revision>';
 	use constant	OPTARG_USER		=> '<user>';
 	use constant	OPTARG_GROUP		=> '<group>';
 	use constant	OPTARG_PERM		=> '<perm>';
@@ -1332,9 +1335,15 @@ OUT
 		   "Installation directory for SQL scripts.",
 		   dname => 'sql', relative => 'datadir', unc => 1],
 
+		  [OPTTYPE_STRING, 'version-file',
+		   "Specify file path which defines software version.",
+		   arg => OptSpec::OPTARG_FILE],
 		  [OPTTYPE_STRING, 'build-id',
 		   'Specify build package identifier.',
 		   arg => OptSpec::OPTARG_BUILD_ID],
+		  [OPTTYPE_STRING, 'scm-revision',
+		   'Specify SCM revision number.',
+		   arg => OptSpec::OPTARG_SCM_REV],
 
 		  [OPTTYPE_BOOL, 'debug',
 		   "Enable or disable debugging build option.",
@@ -1371,6 +1380,11 @@ OUT
 		   arg => OptSpec::OPTARG_FILE, auto => 1,
 		   check => 'checkAbsPath', unc => 1],
 
+		  [OPTTYPE_STRING_LIST, 'java-libdir',
+		   "Specify absolute path to Java library directory.\n" .
+		   "This option can be specified multiple times.",
+		   arg => OptSpec::OPTARG_DIR, auto => 1,
+		   check => 'checkAbsPath'],
 		  [OPTTYPE_STRING_LIST, 'tomcat-libdir',
 		   "Specify absolute path to Apache Tomcat library " .
 		   "directory.\nThis option can be specified multiple times.",
@@ -1536,9 +1550,13 @@ OUT
 		# Specify product name.
 		push(@args, '--with-product-name=' . $main::UNC_PRODUCT_NAME);
 
-		# Specify VERSION file.
-		my $verfile = abs_path($main::VERSION_FILE);
-		push(@args, '--with-version-file=' . $verfile);
+		# Specify VERSION file if not specified.
+		my $verfile = $me->get('version-file');
+		unless ($verfile) {
+			$verfile = abs_path($main::VERSION_FILE);
+			push(@args, '--with-version-file=' . $verfile)
+				if (-f $verfile);
+		}
 
 		return \@args;
 	}
@@ -1730,6 +1748,9 @@ MAIN:
 	# Fetch build configuration from core build environment.
 	my $jenv = parse_config_mk(%vars);
 
+	# Set up additional Java library search path.
+	setup_java_libdir($conf);
+
 	# Ensure that unixODBC is installed.
 	my (%odbcvars);
 	check_odbc($conf, %vars, %odbcvars);
@@ -1791,6 +1812,23 @@ sub checking(@)
 	STDOUT->flush();
 }
 
+sub setup_java_libdir($)
+{
+	my ($conf) = @_;
+
+	my $dirs = $conf->get('java-libdir');
+	if ($dirs) {
+		foreach my $d (@$dirs) {
+			push(@JAVA_LIBRARY_PATH, $d) if (-d $d);
+		}
+	}
+
+	foreach my $dir (qw(/usr/share/java /usr/lib/java
+                            /usr/local/lib/java)) {
+		push(@JAVA_LIBRARY_PATH, $dir) if (-d $dir);
+	}
+}
+
 sub core_configure($)
 {
 	my ($conf) = @_;
@@ -1798,12 +1836,12 @@ sub core_configure($)
 	my $f = $CORE_SRCROOT . '/configure';
 	error("Unable to access \"$f\": $!") unless (-x $f);
 
-	print "\n== Configuring UNC-Core build environment.\n\n";
+	print "\n== Configuring VTN-Core build environment.\n\n";
 
 	my $args = $conf->getCoreConfigureArgs();
 	my (%opts) = (CWD => $CORE_SRCROOT);
 	my $ret = exec_command(%opts, './configure', @$args);
-	error("Failed to configure UNC-Core build environment.")
+	error("Failed to configure VTN-Core build environment.")
 		unless ($ret == 0);
 	print "\n";
 }
@@ -2148,23 +2186,25 @@ sub check_version($)
 
 	checking("for UNC software version");
 
-	my $file = $VERSION_FILE;
+	my $file = $conf->get('version-file') || $VERSION_FILE;
 	my $fh = FileHandle->new($file);
 	unless ($fh) {
 		print "failed\n";
 		error("Unable to open \"$file\": $!");
 	}
 
-	my $pat = qr,^(\d+)\.(\d+)\.(\d+)\.(\d+)$,;
+	my $pat = qr,^(\d+)\.(\d+)\.(\d+)\.(\d+)(-.+)?$,;
 	my (%version, $line);
 
 	while ($line = $fh->getline()) {
 		if ($line =~ $pat) {
+			chomp($line);
 			$version{MAJOR} = $1;
 			$version{MINOR} = $2;
 			$version{REVISION} = $3;
 			$version{PATCHLEVEL} = $4;
-			chomp($line);
+			$version{SUFFIX} = $5;
+			$version{STRING} = $line;
 			last;
 		}
 	}
@@ -2177,14 +2217,18 @@ sub check_version($)
 
 	print $line, "\n";
 
-	checking("for UNC build ID");
-	my $bid = $conf->get('build-id');
-	if (length($bid) != 0) {
-		print "$bid\n";
-		$version{BUILD_ID} = $bid;
-	}
-	else {
-		print "none specified\n";
+	foreach my $spec (@BUILD_ID_SPEC) {
+		my ($desc, $cfkey, $mapkey) =
+			($spec->{DESC}, $spec->{CONFKEY}, $spec->{MAPKEY});
+		checking("for $desc");
+		my $v = $conf->get($cfkey);
+		if (length($v) != 0) {
+			print "$v\n";
+			$version{$mapkey} = $v;
+		}
+		else {
+			print "none specified\n";
+		}
 	}
 
 	return \%version;
@@ -2692,29 +2736,31 @@ UNC_CONFIG_MK_INCLUDED	:= 1
 
 # Software version.
 OUT
-	my (@ver);
-	foreach my $key (qw(MAJOR MINOR REVISION PATCHLEVEL)) {
+	foreach my $key (qw(MAJOR MINOR REVISION PATCHLEVEL SUFFIX)) {
 		my $name = 'UNC_VERSION_' . $key;
 		my $value = $version->{$key};
-		push(@ver, $value);
 		$fh->print(<<OUT);
 $name	:= $value
 OUT
 	}
 
-	my $vstring = join('.', @ver);
+	my $vstring = $version->{STRING};
 	$fh->print(<<OUT);
 UNC_VERSION	:= $vstring
 
 OUT
 
-	my $bid = $version->{BUILD_ID};
-	if (defined($bid)) {
-		$fh->print(<<OUT);
-# Package build ID.
-UNC_BUILD_ID	:= $bid
+	foreach my $spec (@BUILD_ID_SPEC) {
+		my $mapkey = $spec->{MAPKEY};
+		my $v = $version->{$mapkey};
+		if (defined($v)) {
+			my $desc = $spec->{DESC};
+			$fh->print(<<OUT);
+# ${desc}.
+UNC_${mapkey}	:= $v
 
 OUT
+		}
 	}
 
 	foreach my $vname (sort(keys(%$vars))) {
@@ -2782,7 +2828,7 @@ sub create_java_ext_mk(\%\%)
 	my $fh = FileHandle->new($path,  O_CREAT|O_TRUNC|O_WRONLY, 0644) or
 		fatal("open($path) failed: $!");
 
-	$fh->print(<<OUT);
+	$fh->print(<<'OUT');
 ##
 ## Define third-party Java libraries.
 ##
@@ -2790,6 +2836,9 @@ sub create_java_ext_mk(\%\%)
 ifndef	UNC_JAVA_EX_MK_INCLUDED
 
 UNC_JAVA_EX_MK_INCLUDED		:= 1
+
+INST_EXTJARDIR	= $(INST_JARDIR)/ext
+DEST_EXTJARDIR	= $(DESTDIR)$(INST_EXTJARDIR)
 
 OUT
 
@@ -2820,10 +2869,10 @@ OUT
 
 	$path = $vars->{JAVA_EXT_RULES_MK_VAR()};
 	print "== creating $path\n";
-	my $fh = FileHandle->new($path,  O_CREAT|O_TRUNC|O_WRONLY, 0644) or
+	$fh = FileHandle->new($path,  O_CREAT|O_TRUNC|O_WRONLY, 0644) or
 		fatal("open($path) failed: $!");
 
-	$fh->print(<<OUT);
+	$fh->print(<<'OUT');
 ##
 ## Define rules to install third-party Java libraries.
 ##
@@ -2831,6 +2880,24 @@ OUT
 ifndef	UNC_JAVA_EXT_RULES_MK_INCLUDED
 
 UNC_JAVA_EXT_RULES_MK_INCLUDED	:= 1
+
+ifdef	JAREXT_SYMLINK
+OUT
+
+	foreach my $spec (@JAVA_LIBSPEC) {
+		my $name = $spec->{NAME};
+		my $jname = $name . '_JAR';
+		$fh->print(<<OUT);
+
+\$(DEST_EXTDIR)/\$($name):	\$(DEST_EXTDIR) \$($jname)
+	\@echo "=== Installing \$\@";					\\
+	\$(LN_S) \$(JAREXT_SYMLINK)/\$($name) \$\@
+OUT
+	}
+
+	$fh->print(<<'OUT');
+
+else	# !JAREXT_SYMLINK
 OUT
 
 	foreach my $spec (@JAVA_LIBSPEC) {
@@ -2840,11 +2907,13 @@ OUT
 
 \$(DEST_EXTDIR)/\$($name):	\$(DEST_EXTDIR) FRC
 	\@echo "=== Installing \$\@";					\\
-	\$(LN_S) \$($jname) \$\@
+	\$(INSTALL_FILES) \$($jname) \$\@
 OUT
 	}
 
 	$fh->print(<<'OUT');
+
+endif	# JAREXT_SYMLINK
 
 $(DEST_EXTDIR):
 	@echo "=== Installing $@";					\
@@ -2909,7 +2978,7 @@ OUT
 OUT
 	}
 
-	my $vstring = stringify(join('.', @ver));
+	my $vstring = stringify($version->{STRING});
 	my $debug = stringify(($conf->get('debug')) ? '-debug' : '');
 	$fh->print(<<OUT);
 /* UNC software version string. */
@@ -2920,14 +2989,18 @@ OUT
 
 OUT
 
-	my $bid = $version->{BUILD_ID};
-	if (defined($bid)) {
-		$bid = stringify($bid);
-		$fh->print(<<OUT);
-/* UNC package build identifier. */
-#define	UNC_BUILD_ID		$bid
+	foreach my $spec (@BUILD_ID_SPEC) {
+		my $mapkey = $spec->{MAPKEY};
+		my $v = $version->{$mapkey};
+		if (defined($v)) {
+			my $desc = $spec->{DESC};
+			$v = stringify($v);
+			$fh->print(<<OUT);
+/* $desc. */
+#define	UNC_${mapkey}		$v
 
 OUT
+		}
 	}
 
 	foreach my $key (sort(@{$conf->getInstDirKeys()})) {

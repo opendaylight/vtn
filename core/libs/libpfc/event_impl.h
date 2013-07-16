@@ -105,7 +105,6 @@ typedef struct {
 	volatile uint32_t	eh_nwaiters;	/* number of waiter threads */
 	uint32_t		eh_nactives;	/* active counter */
 	pfc_evhandler_t		eh_id;		/* handler ID */
-	pfc_thread_t		eh_thread;	/* calling thread ID */
 	volatile uint8_t	eh_state;	/* state */
 } evhandler_t;
 
