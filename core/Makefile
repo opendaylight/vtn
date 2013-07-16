@@ -73,7 +73,6 @@ tools-rebuild:	FRC
 
 DISTCLEANFILES	:= $(OBJROOT)
 DISTCLEANFILES	+= build/config.mk build/config.pl
-DISTCLEANFILES	+= test/tools/lazuli/lazuli
 
 # Clean up all build outputs for source distribution.
 distclean:	FRC

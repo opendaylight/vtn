@@ -1,0 +1,175 @@
+#!/usr/bin/env perl
+
+#
+# Copyright (c) 2013 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+##
+## Set up tunable makefile variables.
+##
+
+use strict;
+use vars qw($PROGNAME);
+use FileHandle;
+use File::Path;
+use Getopt::Long;
+use POSIX;
+
+$PROGNAME = 'setup';
+
+use constant	CONFIG_MK	=> 'config.mk';
+use constant	VERSION_FILE	=> 'VERSION';
+
+use constant	KEY_SCM_REV	=> 'VTN_SCM_REVISION';
+
+sub usage($);
+sub parse_args(\@);
+sub parse_config($);
+sub hash_equals(\%\%);
+sub write_config($$\%);
+
+MAIN:
+{
+	Getopt::Long::Configure(qw(no_ignore_case bundling require_order));
+
+	my $help = sub { usage(0); };
+	my $target = "target";
+	usage(1) unless (GetOptions('help'		=> $help,
+				    'd|target-dir=s'	=> \$target));
+
+	my $config_mk = $target . '/' . CONFIG_MK;
+	eval {
+		my $vars = parse_args(@ARGV);
+		my $current = parse_config($config_mk);
+		if (hash_equals(%$vars, %$current)) {
+			print "--- Build configuration is up to date.\n";
+		}
+		else {
+			write_config($target, $config_mk, %$vars);
+		}
+	};
+	if ($@) {
+		my $err = "$@";
+		chomp($err);
+		die "*** ERROR: $err\n";
+	}
+}
+
+sub usage($)
+{
+	my ($status) = @_;
+
+	my $out = ($status) ? \*STDERR : \*STDOUT;
+	$out->print(<<OUT);
+Usage: $PROGNAME [options] [NAME=VAR ...]
+OUT
+	if ($status) {
+		$out->print(<<OUT);
+
+Try "$PROGNAME --help".
+OUT
+	}
+	else {
+		$out->print(<<OUT);
+
+       Set up tunable makefile variables.
+
+Options:
+   -d|--target-dir <dir>
+        Specify build target directory.
+OUT
+	}
+
+	exit $status;
+}
+
+sub parse_args(\@)
+{
+	my ($args) = @_;
+
+	my (%vars);
+	my $seppat = qr,\s*=\s*,;
+	foreach my $arg (@$args) {
+		my ($name, $value) = split($seppat, $arg, 2);
+		die "Invalid argument: $arg\n" if ($name eq $arg);
+
+		# Make SCM ID empty if not available.
+		$value = '' if ($name eq KEY_SCM_REV and $value eq 'unknown');
+		$vars{$name} = $value;
+	}
+
+	return \%vars;
+}
+
+sub parse_config($)
+{
+	my ($file) = @_;
+
+	my (%vars);
+	my $fh = FileHandle->new($file);
+	return \%vars unless ($fh);
+
+	my $blpat = qr,^\s*$,;
+	my $compat = qr,\x23.*$,;
+	my $seppat = qr,\s*:=\s*,;
+	while (my $line = $fh->getline()) {
+		$line =~ s,$compat,,g;
+		next if ($line =~ $blpat);
+		my ($name, $value) = split($seppat, $line, 2);
+		next if ($name eq $line);
+		chomp($value);
+		$vars{$name} = $value;
+	}
+
+	return \%vars;
+}
+
+sub hash_equals(\%\%)
+{
+	my ($h1, $h2) = @_;
+
+	return undef unless (scalar(keys(%$h1)) == scalar(keys(%$h2)));
+
+	while (my ($key, $v1) = each(%$h1)) {
+		return undef unless (exists($h2->{$key}));
+		my $v2 = $h2->{$key};
+		if (defined($v1)) {
+			return undef unless (defined($v2) and $v1 eq $v2);
+		}
+		elsif (!defined($v2)) {
+			return undef;
+		}
+	}
+
+	return 1;
+}
+
+sub write_config($$\%)
+{
+	my ($dir, $path, $vars) = @_;
+
+	mkpath($dir, undef, 0755) unless (-d $dir);
+	print "--- Generating build configuration: $path\n";
+	my $fh = FileHandle->new($path, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+	die "open($path) failed: $!\n" unless ($fh);
+
+	my $stamp = scalar(localtime());
+	$fh->print(<<OUT);
+##
+## Auto-generated build configuration. ($stamp)
+##
+
+OUT
+	foreach my $key (sort(keys(%$vars))) {
+		my $value = $vars->{$key};
+		printf("    %-20s  = %s\n", $key, $value);
+		$fh->print(<<OUT);
+$key	:= $value
+OUT
+	}
+}

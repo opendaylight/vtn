@@ -1,0 +1,46 @@
+%
+% Copyright (c) 2010-2013 NEC Corporation
+% All rights reserved.
+% 
+% This program and the accompanying materials are made available under the
+% terms of the Eclipse Public License v1.0 which accompanies this
+% distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+%
+
+%%
+%% PFC system configuration file format.
+%%
+
+%
+% Declare symbol name.
+%
+cf_name		= test_loginit_cfdef;
+
+%
+% Global options.
+%
+defblock options
+{
+	% Use syslog for logging.
+	log_syslog	= BOOL;
+
+	% Logging level.
+	log_level	= STRING: min=1, max=7;
+
+	% Logging level per module.
+	% Each string must consist of module name and level separated by
+	% colon, just like "modname:debug".
+	log_modlevel	= STRING[]: min=3, max=39;
+
+	% Logging level for syslog.
+	syslog_level	= STRING: min=1, max=7;
+
+	% Logging facility.
+	log_facility	= STRING: min=6, max=6;
+
+	% Number of message log files.
+	message_rotate	= UINT32: max=100;
+
+	% Maximum size of a message log file.
+	message_size	= UINT32: max=50000000;
+}

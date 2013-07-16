@@ -50,6 +50,32 @@ libpfc_util_libinit(void)
 	char	*preload;
 	int	err;
 
+#ifdef	PFC_USE_GLIBC
+	/*
+	 * GNU libc registers atfork handlers for malloc() at the first call
+	 * of malloc(). The malloc() prepare fork handler acquires internal
+	 * malloc() locks in order to serialize malloc()/free() call while a
+	 * thread in the process calls fork().
+	 *
+	 * The prepare fork handlers are called in the reverse order in which
+	 * they were registered by calls of pthread_atfork(). If malloc()
+	 * have never been called here, the malloc() prepare fork handler will
+	 * be called before the libpfc_util prepare fork handler.
+	 * It may cause deadlock due to lock order violation because the
+	 * libpfc_util prepare fork handler acquires internal locks with
+	 * holding internal malloc() locks. So we must guarantee that the
+	 * malloc() atfork handlers are established.
+	 *
+	 * Note that the latest gcc knows what malloc() and free() are.
+	 * The latest gcc's optimizer will ignore such code as
+	 * "free(malloc(1))".
+	 */
+	{
+		void *volatile	ptr = malloc(1);
+		free(ptr);
+	}
+#endif	/* PFC_USE_GLIBC */
+
 	/*
 	 * Determine whether the library is loaded via valgrind or not.
 	 * If valgrind library is pre-loaded, we assume that we're on the

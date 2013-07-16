@@ -275,6 +275,35 @@ out:
 
 /*
  * int
+ * pfc_ipc_struct_loaddefault(const char *path, pfc_bool_t need_fields)
+ *	Load default struct information from the given file.
+ *
+ * Calling/Exit State:
+ *	Upon successful completion, zero is returned.
+ *	Otherwise error number which indicates the cause of error is returned.
+ *
+ * Remarks:
+ *	Currently, this function is provided only for debugging purpose.
+ */
+int
+pfc_ipc_struct_loaddefault(const char *path, pfc_bool_t need_fields)
+{
+	ipc_strload_t	ldctx;
+	int		err;
+
+	IPC_STRLOAD_INIT(&ldctx, &ipc_structs, path);
+
+	IPC_STRUCT_WRLOCK();
+	err = (need_fields) ? ipc_fldmeta_load(&ldctx)
+		: ipc_struct_load(&ldctx);
+	ipc_strload_destroy(&ldctx);
+	IPC_STRUCT_UNLOCK();
+
+	return err;
+}
+
+/*
+ * int
  * pfc_ipc_strinfo_get(const char *PFC_RESTRICT name,
  *		       ipc_cstrinfo_t **PFC_RESTRICT sipp,
  *		       pfc_bool_t need_fields)

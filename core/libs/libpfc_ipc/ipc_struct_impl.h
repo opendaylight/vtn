@@ -284,6 +284,8 @@ typedef struct {
 extern int	pfc_ipc_struct_load_fields(void);
 extern int	pfc_ipc_struct_loadfile(const char *path,
 					pfc_bool_t need_field);
+extern int	pfc_ipc_struct_loaddefault(const char *path,
+					   pfc_bool_t need_field);
 extern int	pfc_ipc_strinfo_get(const char *PFC_RESTRICT name,
 				    ipc_cstrinfo_t **PFC_RESTRICT sipp,
 				    pfc_bool_t need_fields);

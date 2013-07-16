@@ -1,0 +1,232 @@
+#!/usr/bin/env perl
+
+#
+# Copyright (c) 2013 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+##
+## Create VTN Coordinator distribution package.
+##
+
+use strict;
+use vars qw($PROGNAME $DEBUG $PAT_SO);
+use FileHandle;
+use File::Basename;
+use File::Find;
+use File::Path;
+use File::stat;
+use Getopt::Long;
+use POSIX qw(:DEFAULT :sys_wait_h :errno_h :fcntl_h);
+
+use constant	DEFAULT_PREFIX	=> '/usr/local/vtn';
+use constant	DEFAULT_OUTPUT	=> 'vtn-bin.tar.bz2';
+use constant	PATH_BIN	=> '/bin';
+use constant	PATH_SBIN	=> '/sbin';
+use constant	PATH_USRBIN	=> '/usr/bin';
+use constant	PATH_USRSBIN	=> '/usr/sbin';
+
+$PAT_SO = qr,\.so$,;
+
+sub usage($);
+sub debug(@);
+sub find_tar();
+sub remove_solink($);
+sub create_package($$$$);
+sub exec_command(@);
+
+MAIN:
+{
+	Getopt::Long::Configure(qw(no_ignore_case bundling require_order));
+
+	my $help = sub { usage(0); };
+	my $prefix = DEFAULT_PREFIX;
+	my $output = DEFAULT_OUTPUT;
+	my $tar;
+	usage(1) unless (GetOptions('help'		=> $help,
+				    'debug'		=> \$DEBUG,
+				    'p|prefix=s'	=> \$prefix,
+				    'o|output=s'	=> \$output,
+				    'tar=s'		=> \$tar));
+	usage(1) unless (@ARGV == 1);
+
+	eval {
+		my $root = $ARGV[0];
+		die "Packaging root directory does not exist.\n"
+			unless (-d $root);
+		die "Installation prefix must be an absolute path.\n"
+			unless ($prefix and substr($prefix, 0, 1) eq '/');
+
+		if ($tar) {
+			die "$tar: GNU tar was not found.\n" unless (-x $tar);
+		}
+		else {
+			$tar = find_tar();
+		}
+
+		remove_solink($root);
+		create_package($tar, $root, $prefix, $output);
+	};
+	if ($@) {
+		my $err = "$@";
+		chomp($err);
+		die "*** ERROR: $err\n";
+	}
+}
+
+sub usage($)
+{
+	my ($status) = @_;
+
+	my $out = ($status) ? \*STDERR : \*STDOUT;
+	$out->print(<<OUT);
+Usage: $PROGNAME [options] rootdir
+OUT
+	if ($status) {
+		$out->print(<<OUT);
+
+Try "$PROGNAME --help".
+OUT
+	}
+	else {
+		my $prefix = DEFAULT_PREFIX;
+		$out->print(<<OUT);
+
+       Create VTN Coordinator distribution package.
+
+Options:
+    -o|--output <file>
+       Put distribution package to <file>.
+
+    -p|--prefix <prefix>
+       Specify installation prefix. Default is "$prefix".
+
+    --tar <file>
+       Specify location of GNU tar program.
+OUT
+	}
+
+	exit $status;
+}
+
+sub debug(@)
+{
+	print "*** ", @_, "\n";
+}
+
+sub find_tar()
+{
+	my (@envpath) = split(/:/, $ENV{PATH});
+	my %found;
+	my $slash = qr,/+,;
+	my $lslash = qr,^/,;
+	my $tslash = qr,/+$,;
+	my (@path);
+	foreach my $p (@envpath) {
+		next unless ($p =~ $lslash and -d $p);
+		$p =~ s,$slash,/,g;
+		$p =~ s,$tslash,,;
+		next if ($found{$p});
+		$found{$p} = 1;
+		push(@path, $p);
+	}
+
+	foreach my $p (PATH_USRSBIN(), PATH_USRBIN(), PATH_SBIN(),
+		       PATH_BIN()) {
+		unshift(@path, $p) unless ($found{$p});
+	}
+
+	debug("PATH: ", join(':', @path)) if ($DEBUG);
+
+	foreach my $cmd (qw(tar gtar)) {
+		foreach my $p (@path) {
+			my $exe = $p . '/' . $cmd;
+			return $exe if (-x $exe);
+		}
+	}
+
+	die "GNU tar was not found.\n";
+}
+
+sub remove_solink($)
+{
+	my ($root) = @_;
+
+	# Collect '*.so' symlinks.
+	my (@solinks);
+	my $wanted = sub {
+		my $st = lstat($_);
+		return unless ($st and -l _);
+		push(@solinks, $File::Find::name) if ($_ =~ $PAT_SO);
+	};
+
+	File::Find::find({wanted => $wanted}, $root);
+
+	foreach my $path (@solinks) {
+		if ($DEBUG) {
+			debug("Remove: ", $path);
+		}
+		else {
+			unlink($path) or die "$path: unlink() failed: $!\n";
+		}
+	}
+}
+
+sub create_package($$$$)
+{
+	my ($tar, $root, $prefix, $output) = @_;
+
+	my $dir = $root . $prefix;
+	die "Packaging root directory does not contain installation.\n"
+		unless (-d $dir);
+
+	print "--- Creating package: $output\n";
+	$dir = dirname($dir);
+	mkpath($dir, undef, 0755) unless (-d $dir);
+	$prefix =~ s,^/+,,g;
+
+	exec_command($tar, '-C', $root, '-pcjf', $output, $prefix);
+}
+
+sub exec_command(@)
+{
+	my (@args) = @_;
+
+	my $pid = fork();
+	if (!defined($pid)) {
+		fatal("fork() failed: $!");
+	}
+	elsif ($pid == 0) {
+		exec(@args);
+		exit 1;
+	}
+
+	my $cpid;
+	do {
+		$cpid = waitpid($pid, 0);
+	} while ($cpid == -1 and $! == EINTR);
+	fatal("waitpid($pid) failed: $!") if ($cpid == -1);
+
+	my $status = $?;
+	if (WIFEXITED($status)) {
+		my $st = WEXITSTATUS($status);
+		unless ($st == 0) {
+			my $cmd = join(' ', @args);
+			die "Command exited with status $st: $cmd\n";
+		}
+	}
+	elsif (WIFSIGNALED($status)) {
+		my $sig = WTERMSIG($status);
+		my $cmd = join(' ', @args);
+		die "Command was killed by signal $sig: $cmd\n";
+	}
+	else {
+		my $cmd = join(' ', @args);
+		my $st = sprintf("0x%x", $status);
+		die "Unexpected exit status: $st: $cmd\n";
+	}
+}

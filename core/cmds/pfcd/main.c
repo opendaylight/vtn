@@ -465,6 +465,9 @@ dump_version(void)
 #ifdef	PFC_BUILD_ID
 	printf("  %*s: %s\n", LABEL_WIDTH, "Build ID", PFC_BUILD_ID);
 #endif	/* PFC_BUILD_ID */
+#ifdef	PFC_SCM_REVISION
+	printf("  %*s: %s\n", LABEL_WIDTH, "SCM Rev", PFC_SCM_REVISION);
+#endif	/* PFC_SCM_REVISION */
 
 	printf("\n%s\n", copyright);
 

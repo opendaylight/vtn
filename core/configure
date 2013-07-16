@@ -18,17 +18,18 @@ use vars qw(%COMMAND_SPEC %OSTYPE %OS_CONF %GCC_OSTYPE %ARCH %GCC_ARCH @PATH
 	    $C_OPT $CXX_OPT $C_DEBUG $CXX_DEBUG $DEBUG_BUILD
 	    $PFC_VERSION $PFC_VERSION_MAJOR $PFC_VERSION_MINOR
 	    $PFC_VERSION_REVISION $PFC_VERSION_PATCHLEVEL $PFC_BUILD_ID
-	    %OSDEP @CC_WARN @CXX_WARN $CC_MODE $CXX_MODE
+	    $PFC_VERSION_STRING %OSDEP @CC_WARN @CXX_WARN $CC_MODE $CXX_MODE
 	    %ARCH_CC_MODEFLAGS %ARCH_CXX_MODEFLAGS $SHELL_PATH $PATH_SCRIPT
 	    $JAVA_PATH %DEFAULT_OSARCH_LIBPATH @DEFAULT_LIBPATH @LIBDIR_NAMES
-	    $PFC_PRODUCT_NAME %MAKEVAR_RESV %LINUX_DIST
+	    $PFC_PRODUCT_NAME %MAKEVAR_RESV %LINUX_DIST $PFC_SCM_REVISION
 	    @OPENSSL_TESTS @CONFIG_TESTS @CFLAGS_TESTS %REQUIRED_CFLAGS
-	    @UNLINK_ON_ERROR $YEAR_RANGE $JRE_HOME);
+	    @UNLINK_ON_ERROR $YEAR_RANGE $JRE_HOME @JAVA_LIBRARY_PATH);
 
 use Cwd qw(abs_path);
 use DirHandle;
 use FileHandle;
 use File::Basename;
+use File::Find;
 use File::Path;
 use File::stat;
 use Getopt::Long;
@@ -2151,6 +2152,9 @@ OUT
 			     CODE => $code});
 }
 
+# Required Google Test version. (1.0 or later)
+use constant	GTEST_VERSION		=> 1.0;
+
 # Default installation directories.
 use constant	DEFAULT_PREFIX		=> '/usr/local/pfc';
 
@@ -2202,6 +2206,7 @@ use constant	CSTATUS_ARGV		=> 'ARGV';
 		 PFC_VERSION_MINOR		=> 1,
 		 PFC_VERSION_REVISION		=> 1,
 		 PFC_VERSION_PATCHLEVEL		=> 1,
+		 PFC_VERSION_STRING		=> 1,
 		 SUBARCH			=> 1,
 		 SYSLOG_TYPE			=> 1);
 
@@ -2296,6 +2301,16 @@ use constant	MODEL_ILP32	=> 'ILP32';
 				    PATTERN => ['GNU tar'],
 				    DESC => 'GNU tar',
 				    EXPORT => 1},
+		 gtest_config	=> {NAMES => ['gtest-config'],
+				    ARG => ['--usage'],
+				    PATTERN => ['Usage: gtest-config'],
+				    DESC => 'gtest-config',
+				    IGNORE_ERROR => sub {
+					    warning("Unit test may be ",
+						    "disabled.");
+				    },
+				    EXPORT => 1,
+				    VERIFY => \&check_gtest},
 		 ar		=> {EXPORT => 1},
 		 cat		=> {EXPORT => 1},
 		 mkdir		=> {EXPORT => 1},
@@ -2314,6 +2329,7 @@ sub error(@);
 sub warning(@);
 sub dupfd($$);
 sub checking(@);
+sub setup_java_libdir($);
 sub exec_command(\%@);
 sub verify_command($\%);
 sub canonicalize_path($);
@@ -2329,6 +2345,7 @@ sub check_srcroot();
 sub check_make($$);
 sub check_gcc($$);
 sub check_gxx($$);
+sub check_gtest($$);
 sub compile_and_exec($%);
 sub check_perl($);
 sub check_boost($);
@@ -2340,6 +2357,9 @@ sub format_boost_version($);
 sub check_java(\%$);
 sub get_java_home($);
 sub check_java_version($$%);
+sub check_jarfile($$$$);
+sub check_junit(\%$);
+sub check_junit_jar($);
 sub check_ant(\%$);
 sub check_file($\@%);
 sub check_header($\@%);
@@ -2691,6 +2711,7 @@ OUT
 	use constant	OPTARG_MAKEVAR		=> '<name>=<value>';
 	use constant	OPTARG_GROUP_LIST	=> '<group-or-gid>';
 	use constant	OPTARG_BUILD_ID		=> '<build-id>';
+	use constant	OPTARG_SCM_REV		=> '<scm-revision>';
 	use constant	OPTARG_DEFAULT		=> '<arg>';
 
 	use constant	OPTDEF_AUTO		=> 'auto-detect';
@@ -3565,6 +3586,9 @@ OUT
 		  [OPTTYPE_STRING, 'build-id',
 		   'Specify package build identifier.',
 		   arg => OptSpec::OPTARG_BUILD_ID],
+		  [OPTTYPE_STRING, 'scm-revision',
+		   'Specify SCM revision number.',
+		   arg => OptSpec::OPTARG_SCM_REV],
 		  [OPTTYPE_STRING_LIST, 'runpath',
 		   "Specify additional runtime shared library search path.\n" .
 		   "This option can be specified multiple times.",
@@ -3605,6 +3629,15 @@ OUT
 		   "option.", default => 1],
 		  [OPTTYPE_STRING, 'java-encoding',
 		   "Specify encoding of Java source.", default => 'utf-8'],
+		  [OPTTYPE_STRING, 'junit',
+		   "Specify absolute path to junit.jar, which is used for " .
+		   "unit test of Java programs.", auto => 1,
+		   arg => OptSpec::OPTARG_FILE, check => 'checkAbsPath'],
+		  [OPTTYPE_STRING_LIST, 'java-libdir',
+		   "Specify absolute path to Java library directory.\n" .
+		   "This option can be specified multiple times.",
+		   arg => OptSpec::OPTARG_DIR, auto => 1,
+		   check => 'checkAbsPath'],
 
 		  [OPTTYPE_STRING_MAP, 'make-variable',
 		   "Specify additional pair of Makefile variable name and " .
@@ -3864,6 +3897,9 @@ MAIN:
 	error("Invalid CPU architecture: $arch")
 		if (defined($arch) and !$ARCH{$arch});
 
+	# Set up additional Java library search path.
+	setup_java_libdir($conf);
+
 	my $prefix = $conf->get('prefix');
 
 	# Check whether mandatory commands are installed or not.
@@ -3973,6 +4009,14 @@ MAIN:
 	}
 	else {
 		undef $PFC_BUILD_ID;
+	}
+
+	$PFC_SCM_REVISION = $conf->get('scm-revision');
+	if (length($PFC_SCM_REVISION) != 0) {
+		$vars{PFC_SCM_REVISION} = $PFC_SCM_REVISION;
+	}
+	else {
+		undef $PFC_SCM_REVISION;
 	}
 
 	my @modsrcdir = ($root . '/' . MODULES_DIR);
@@ -4106,6 +4150,23 @@ sub checking(@)
 {
 	print "-- checking ", @_, "... ";
 	STDOUT->flush();
+}
+
+sub setup_java_libdir($)
+{
+	my ($conf) = @_;
+
+	my $dirs = $conf->get('java-libdir');
+	if ($dirs) {
+		foreach my $d (@$dirs) {
+			push(@JAVA_LIBRARY_PATH, $d) if (-d $d);
+		}
+	}
+
+	foreach my $dir (qw(/usr/share/java /usr/lib/java
+                            /usr/local/lib/java)) {
+		push(@JAVA_LIBRARY_PATH, $dir) if (-d $dir);
+	}
 }
 
 sub exec_command(\%@)
@@ -4461,12 +4522,14 @@ sub check_pfc_version($)
 			error("Failed to open \"$value\": $!");
 		}
 
-		my $pat = qr,^(\d+)\.(\d+)\.(\d+)\.(\d+)$,;
-		my ($maj, $min, $rev, $patch);
+		my $pat = qr,^(\d+)\.(\d+)\.(\d+)\.(\d+)(-.+)?$,;
+		my ($maj, $min, $rev, $patch, $vstr);
 		while (my $line = $fh->getline()) {
 			if ($line =~ $pat) {
 				($maj, $min, $rev, $patch) =
 					($1, $2, $3, $4);
+				chomp($line);
+				$vstr = $line;
 				last;
 			}
 		}
@@ -4482,10 +4545,13 @@ sub check_pfc_version($)
 		$PFC_VERSION_MINOR = $min;
 		$PFC_VERSION_REVISION = $rev;
 		$PFC_VERSION_PATCHLEVEL = $patch;
+		$PFC_VERSION_STRING = $vstr;
 	}
 
 	my $bid = $PFC_BUILD_ID;
+	my $scm = $PFC_SCM_REVISION;
 	$bid = '(none)' unless (defined($bid));
+	$scm = '(none)' unless (defined($scm));
 
 	print $PFC_VERSION, "\n";
 	print <<OUT;
@@ -4494,7 +4560,9 @@ sub check_pfc_version($)
    PFC_VERSION_MINOR      = $PFC_VERSION_MINOR
    PFC_VERSION_REVISION   = $PFC_VERSION_REVISION
    PFC_VERSION_PATCHLEVEL = $PFC_VERSION_PATCHLEVEL
+   PFC_VERSION_STRING     = $PFC_VERSION_STRING
    PFC_BUILD_ID           = $bid
+   PFC_SCM_REVISION       = $scm
 OUT
 }
 
@@ -4656,6 +4724,38 @@ OUT
 
 	print "yes\n";
 	unlink($output);
+}
+
+sub check_gtest($$)
+{
+	my ($gtconfig, $spec) = @_;
+
+	checking("for Google Test version");
+
+	my $version;
+	my $filter = sub {
+		my ($rh) = @_;
+
+		$version = $rh->getline();
+		chomp($version);
+	};
+
+	my (%opts) = (FILTER => $filter);
+	my $ret = exec_command(%opts, $gtconfig, '--version');
+	unless ($ret == 0 and defined($version)) {
+		print "unknown version\n";
+		warning("Unit test may be disabled.");
+		die;
+	}
+	print $version, "\n";
+
+	(%opts) = ();
+	$ret = exec_command(%opts, $gtconfig,
+			    '--min-version=' . GTEST_VERSION);
+	unless ($ret == 0) {
+		warning("Google Test is too old. Unit test may be disabled.");
+		die;
+	}
 }
 
 sub compile_and_exec($%)
@@ -5248,6 +5348,7 @@ sub check_java(\%$)
 		      JNI_INCDIR => $incdir, JAVA_MODE => $jmode,
 		      INST_JARDIR => '$(INST_JAVADIR)/jar');
 
+	check_junit(%jenv, $conf);
 	check_ant(%jenv, $conf);
 
 	return \%jenv;
@@ -5322,6 +5423,104 @@ sub check_java_version($$%)
 		error("JDK ", JDK_VERSION_MAJOR, '.', JDK_VERSION_MINOR,
 		      ' or later is required.');
 	}
+}
+
+sub check_jarfile($$$$)
+{
+	my ($msg, $jenv, $path, $class) = @_;
+
+	checking($msg);
+	my $found;
+	my $filter = sub {
+		my ($rh) = @_;
+
+		while (my $line = $rh->getline()) {
+			chomp($line);
+			if ($class eq $line) {
+				$found = 1;
+				last;
+			}
+		}
+
+		while ($rh->getline()) {}
+	};
+
+	my $errfile = 'conferr.out';
+	my $errout = TempFile->new($errfile, O_CREAT|O_TRUNC|O_RDWR, 0644) or
+		fatal("open($errfile) failed: $!");
+	my $jar = $jenv->{JAVA_HOME} . '/bin/jar';
+	my (%opts) = (FILTER => $filter, ERR_REDIRECT => $errout);
+	my $ret = exec_command(%opts, $jar, 'tf', $path);
+	unless ($ret == 0) {
+		print "unknown\n\n";
+
+		$errout->seek(0, SEEK_SET);
+		while (my $line = $errout->getline()) {
+			print 'STDERR: ', $line;
+		}
+
+		error('Failed to test JAR file.');
+	}
+
+	my $res = ($found) ? 'yes' : 'no';
+	print $res, "\n";
+
+	return $found;
+}
+
+sub check_junit(\%$)
+{
+	my ($jenv, $conf) = @_;
+
+	checking('for JUnit JAR file');
+	my $junit = $conf->get('junit');
+	unless ($junit) {
+		my $filepat = qr,^junit.*\.jar$,;
+		my $wanted = sub {
+			my $fname = basename($_);
+			return unless ($fname =~ $filepat);
+
+			my $st = stat($_);
+			return unless ($st and S_ISREG($st->mode()));
+			$junit = $File::Find::name;
+			die "JAR file found\n";
+		};
+
+		eval {
+			find({wanted => $wanted, no_chdir => 1},
+			     @JAVA_LIBRARY_PATH);
+		};
+		if ($@) {
+			my $err = "$@";
+			chomp($err);
+			die "$err\n" unless ($err eq 'JAR file found');
+		}
+	}
+
+	unless ($junit) {
+		print "no\n";
+
+		return;
+	}
+
+	print $junit, "\n";
+
+	my $swing = check_jarfile('whether JUnit provides swing UI', $jenv,
+				  $junit, 'junit/swingui/TestRunner.class');
+	$jenv->{JUNIT_SWINGUI} = 'junit.swingui.TestRunner' if ($swing);
+	$jenv->{JAVA_JUNIT} = $junit;
+}
+
+sub check_junit_jar($)
+{
+	my ($junit) = @_;
+
+	my $fh = FileHandle->new($junit);
+	die "Unable to open $junit: $!\n" unless ($fh);
+
+	my $st = stat($fh);
+	die "stat($junit) failed: $!\n" unless ($st);
+	die "$junit is not a regular file.\n" unless (S_ISREG($st->mode()));
 }
 
 sub check_ant(\%$)
@@ -5400,6 +5599,18 @@ sub check_ant(\%$)
 	      ($minor == ANT_VERSION_MINOR and $rev < ANT_VERSION_REVISION)))) {
 		error("Apache Ant ", ANT_VERSION_MAJOR, '.', ANT_VERSION_MINOR,
 		      '.', ANT_VERSION_REVISION, " or later is required.");
+	}
+
+	if ($jenv->{JAVA_JUNIT}) {
+		checking('whether Ant supports <junit> task');
+		my $junit = $ahome . '/lib/ant-junit.jar';
+		if (-f $junit) {
+			print "yes\n";
+			$jenv->{ANT_JUNIT} = 1;
+		}
+		else {
+			print "no\n";
+		}
 	}
 
 	$jenv->{ANT} = $ant;
@@ -5758,6 +5969,7 @@ PFC_VERSION_MAJOR	:= $PFC_VERSION_MAJOR
 PFC_VERSION_MINOR	:= $PFC_VERSION_MINOR
 PFC_VERSION_REVISION	:= $PFC_VERSION_REVISION
 PFC_VERSION_PATCHLEVEL	:= $PFC_VERSION_PATCHLEVEL
+PFC_VERSION_STRING	:= $PFC_VERSION_STRING
 
 OUT
 
@@ -5862,6 +6074,20 @@ OUT
 $key		:= $value
 OUT
 	}
+
+	my $junit = $jenv->{JAVA_JUNIT};
+	if ($junit) {
+		my $dpath = $jenv->{JAVA_OBJDIR} . '/ext';
+		my $jpath = $dpath . '/junit.jar';
+		print "== creating $jpath\n";
+
+		unless (-d $dpath) {
+			mkpath($dpath, undef, 0755);
+		}
+
+		symlink($junit, $jpath) or
+			fatal("Failed to symlink to JUnit JAR file: $!");
+	}
 }
 
 sub create_config_h($$\@)
@@ -5871,7 +6097,7 @@ sub create_config_h($$\@)
 	my $fh = create_dynamic_header($conf, CONFIG_H);
 	my $product = stringify($PFC_PRODUCT_NAME);
 	my $sprefix = stringify($prefix);
-	my $vstr = stringify($PFC_VERSION);
+	my $vstr = stringify($PFC_VERSION_STRING);
 	$fh->print(<<OUT);
 /*
  * PFC build configuration.
@@ -5905,6 +6131,14 @@ OUT
 		$fh->print(<<OUT);
 /* PFC package build identifier. */
 #define	PFC_BUILD_ID		$bid
+
+OUT
+	}
+	if (defined($PFC_SCM_REVISION)) {
+		my $scm = stringify($PFC_SCM_REVISION);
+		$fh->print(<<OUT);
+/* Source revision number derived from SCM. */
+#define	PFC_SCM_REVISION	$scm
 
 OUT
 	}

@@ -179,7 +179,7 @@ static const char	evsrc_debug[] = "core_debug";
 
 /*
  * Private data for event dispatch thread.
- * This is used to implement pfc_event_flush().
+ * This is used to implement pfc_event_flush() and event handler removal check.
  *
  * evthread_t is assigned to all event dispatch threads, and it has a linked
  * list, et_sync, to keep sync event. et_sync is cleared and the reference
@@ -192,7 +192,13 @@ typedef struct {
 	eventq_t	*et_queue;		/* event queue */
 	pfc_listm_t	et_sync;		/* list of sync events */
 	pfc_list_t	et_list;		/* link for thread list */
+	evhandler_t	*et_handler;		/* current handler */
 } evthread_t;
+
+/*
+ * TSD key for event dispatch threads.
+ */
+static pfc_tsd_key_t	evthread_key;
 
 /*
  * Private data for synchronization event.
@@ -344,7 +350,6 @@ static int	evhandler_add_orphan(const char *PFC_RESTRICT name,
 static void	evhandler_remove_orphan(evhandler_t *ehp);
 static int	evhandler_wait(evhandler_t *PFC_RESTRICT ehp,
 			       evsource_t *PFC_RESTRICT esrc,
-			       pfc_thread_t current,
 			       const pfc_timespec_t *PFC_RESTRICT abstime);
 static void	evhandler_set_rmfailed(evhandler_t *PFC_RESTRICT ehp,
 				       evsource_t *PFC_RESTRICT esrc);
@@ -384,7 +389,8 @@ static evqdata_t	*eventq_dequeue(evthread_t *PFC_RESTRICT etp,
 static void	*eventq_main(void *arg);
 static void	eventq_dispatch(evsource_t *PFC_RESTRICT esrc,
 				evhandler_t *PFC_RESTRICT ehp,
-				event_t *PFC_RESTRICT ev);
+				event_t *PFC_RESTRICT ev,
+				evthread_t *PFC_RESTRICT etp);
 static void	eventq_start(eventq_t *PFC_RESTRICT evq,
 			     evqdata_t *PFC_RESTRICT qdp);
 static void	eventq_log(evsource_t *PFC_RESTRICT esrc,
@@ -548,6 +554,14 @@ pfc_event_init(void)
 			      "source: %s", strerror(err));
 		/* NOTREACHED */
 	}
+
+	/* Create TSD key for event dispatch threads. */
+	err = pfc_thread_key_create(&evthread_key, NULL);
+	if (PFC_EXPECT_FALSE(err != 0)) {
+		pfc_log_fatal("failed to create evthread TSD key: %s",
+			      strerror(err));
+		/* NOTREACHED */
+	}
 }
 
 /*
@@ -627,6 +641,13 @@ pfc_event_shutdown(void)
 	err = eventq_destroy(event_globalq, &ctx.esd_abstime);
 	if (PFC_EXPECT_FALSE(err != 0)) {
 		pfc_log_error("failed to destroy event global queue: %s",
+			      strerror(err));
+		/* FALLTHROUGH */
+	}
+
+	err = pfc_thread_key_delete(evthread_key);
+	if (PFC_EXPECT_FALSE(err != 0)) {
+		pfc_log_error("failed to delete evthread TSD key: %s",
 			      strerror(err));
 		/* FALLTHROUGH */
 	}
@@ -1750,7 +1771,6 @@ evhandler_add(pfc_evhandler_t *PFC_RESTRICT idp, const char *PFC_RESTRICT name,
 	ehp->eh_nwaiters = 0;
 	ehp->eh_state = 0;
 	ehp->eh_nactives = 0;
-	ehp->eh_thread = PFC_THREAD_INVALID;
 
 	EVENT_SYSTEM_WRLOCK();
 
@@ -1957,7 +1977,7 @@ evhandler_remove_orphan(evhandler_t *ehp)
 /*
  * static int
  * evhandler_wait(evhandler_t *PFC_RESTRICT ehp, evsource_t *PFC_RESTRICT esrc,
- *		  pfc_thread_t current, const pfc_timespec_t *abstime)
+ *		  const pfc_timespec_t *abstime)
  *	Block the calling thread until the event handler specified by `ehp'
  *	is inactivated.
  *
@@ -1986,8 +2006,10 @@ evhandler_remove_orphan(evhandler_t *ehp)
  */
 static int
 evhandler_wait(evhandler_t *PFC_RESTRICT ehp, evsource_t *PFC_RESTRICT esrc,
-	       pfc_thread_t current, const pfc_timespec_t *abstime)
+	       const pfc_timespec_t *abstime)
 {
+	evthread_t	*etp;
+
 	PFC_ASSERT(!EVHANDLER_IS_ORPHAN(ehp));
 	PFC_ASSERT(EVHANDLER_IS_REMOVED(ehp));
 
@@ -1996,7 +2018,8 @@ evhandler_wait(evhandler_t *PFC_RESTRICT ehp, evsource_t *PFC_RESTRICT esrc,
 		goto out;
 	}
 
-	if (ehp->eh_thread == current) {
+	etp = (evthread_t *)pfc_thread_getspecific(evthread_key);
+	if (etp != NULL && etp->et_handler == ehp) {
 		pfc_log_info("handler is trying to remove itself: ehp=%p, "
 			     "id=%u, name=%s", ehp, ehp->eh_id,
 			     EVHANDLER_NAME(ehp));
@@ -2172,7 +2195,6 @@ evhandler_free(pfc_list_t *PFC_RESTRICT handlers,
 	       const pfc_timespec_t *PFC_RESTRICT abstime)
 {
 	pfc_list_t	*elem;
-	pfc_thread_t	current = pfc_thread_current();
 	int		ret = 0;
 
 	/* Ensure that all handlers are inactivated. */
@@ -2182,7 +2204,7 @@ evhandler_free(pfc_list_t *PFC_RESTRICT handlers,
 
 		/* Handler's lock is released by evhandler_wait(). */
 		EVHANDLER_LOCK(ehp);
-		err = evhandler_wait(ehp, esrc, current, abstime);
+		err = evhandler_wait(ehp, esrc, abstime);
 		if (PFC_EXPECT_TRUE(err == 0)) {
 			/* Destroy this handler instance. */
 			evhandler_destroy(ehp);
@@ -2670,7 +2692,6 @@ eventq_filter(evthread_t *PFC_RESTRICT etp, evqdata_t *PFC_RESTRICT qdp)
  *
  * Remarks:
  *	- The caller must call this function with holding event queue lock.
- *	  It is always released on return.
  *
  *	- If this function returns non-NULL value, the event handler instance
  *	  in the returned evqdata_t are held by EVHANDLER_INC_ACTIVE().
@@ -2696,7 +2717,7 @@ eventq_dequeue(evthread_t *PFC_RESTRICT etp,
 
 		if (PFC_EXPECT_FALSE(EVQ_STATE_IS_SHUTDOWN(state))) {
 			/* Queue has been shut down. */
-			goto quit;
+			return NULL;
 		}
 
 		/*
@@ -2717,7 +2738,7 @@ eventq_dequeue(evthread_t *PFC_RESTRICT etp,
 		}
 
 		if (tout) {
-			goto quit;
+			return NULL;
 		}
 
 		evq->eq_nwaiting++;
@@ -2744,29 +2765,7 @@ eventq_dequeue(evthread_t *PFC_RESTRICT etp,
 	}
 	EVHANDLER_UNLOCK(ehp);
 
-	EVENTQ_UNLOCK(evq);
-
 	return qdp;
-
-quit:
-	/* Decrement number of threads because this thread is about to quit. */
-	PFC_ASSERT(evq->eq_nthreads != 0);
-	evq->eq_nthreads--;
-	if (evq->eq_nthreads == 0) {
-		/* Some threads may wait for this queue to be down. */
-		EVENTQ_BROADCAST(evq);
-	}
-
-	/* Unlink thread private data. */
-	pfc_list_remove(&etp->et_list);
-
-	EVENTQ_UNLOCK(evq);
-
-	/* Clean up sync event list, and destroy data. */
-	pfc_listm_destroy(slist);
-	free(etp);
-
-	return NULL;
 }
 
 /*
@@ -2780,6 +2779,7 @@ eventq_main(void *arg)
 	evthread_t	*etp = (evthread_t *)arg;
 	eventq_t	*evq = etp->et_queue;
 	pfc_timespec_t	tspec, *timeout;
+	int		err;
 
 	if (evq->eq_type == EVQTYPE_GLOBAL) {
 		/* Global queue thread never quits by timeout. */
@@ -2796,6 +2796,14 @@ eventq_main(void *arg)
 	/* Link thread information. */
 	pfc_list_push(&evq->eq_tlist, &etp->et_list);
 
+	/* Set thread specific data. */
+	err = pfc_thread_setspecific(evthread_key, etp);
+	if (PFC_EXPECT_FALSE(err != 0)) {
+		pfc_log_error("failed to set evthread specific data: %s",
+			      strerror(err));
+		goto out;
+	}
+
 	while (1) {
 		evqdata_t	*qdp;
 		evsource_t	*esrc;
@@ -2811,6 +2819,7 @@ eventq_main(void *arg)
 			break;
 		}
 
+		EVENTQ_UNLOCK(evq);
 		ev = qdp->eqd_event;
 		esrc = qdp->eqd_source;
 		ehp = qdp->eqd_handler;
@@ -2818,7 +2827,7 @@ eventq_main(void *arg)
 
 		if (PFC_EXPECT_TRUE(ehp != NULL)) {
 			/* Dispatch this event. */
-			eventq_dispatch(esrc, ehp, ev);
+			eventq_dispatch(esrc, ehp, ev, etp);
 		}
 
 		/* Release this event. */
@@ -2827,18 +2836,37 @@ eventq_main(void *arg)
 		EVENTQ_LOCK(evq);
 	}
 
+out:
+	/* Decrement number of threads because this thread is about to quit. */
+	PFC_ASSERT(evq->eq_nthreads != 0);
+	evq->eq_nthreads--;
+	if (evq->eq_nthreads == 0) {
+		/* Some threads may wait for this queue to be down. */
+		EVENTQ_BROADCAST(evq);
+	}
+
+	/* Unlink thread private data. */
+	pfc_list_remove(&etp->et_list);
+
+	EVENTQ_UNLOCK(evq);
+
+	/* Clean up sync event list, and destroy data. */
+	pfc_listm_destroy(etp->et_sync);
+	free(etp);
+
 	return NULL;
 }
 
 /*
  * static void
  * eventq_dispatch(evsource_t *PFC_RESTRICT esrc,
- *		   evhandler_t *PFC_RESTRICT ehp, event_t *PFC_RESTRICT ev)
+ *		   evhandler_t *PFC_RESTRICT ehp, event_t *PFC_RESTRICT ev,
+ *		   evthread_t *PFC_RESTRICT etp)
  *	Dispatch an event to the specified event handler.
  */
 static void
 eventq_dispatch(evsource_t *PFC_RESTRICT esrc, evhandler_t *PFC_RESTRICT ehp,
-		event_t *PFC_RESTRICT ev)
+		event_t *PFC_RESTRICT ev, evthread_t *PFC_RESTRICT etp)
 {
 	pfc_bool_t	removed;
 
@@ -2854,7 +2882,8 @@ eventq_dispatch(evsource_t *PFC_RESTRICT esrc, evhandler_t *PFC_RESTRICT ehp,
 
 	/* Ensure that this handler is still valid. */
 	EVHANDLER_LOCK(ehp);
-	PFC_ASSERT(ehp->eh_thread == PFC_THREAD_INVALID);
+	PFC_ASSERT((evthread_t *)pfc_thread_getspecific(evthread_key) == etp);
+	PFC_ASSERT(etp->et_handler == NULL);
 
 	if (PFC_EXPECT_FALSE(EVHANDLER_IS_REMOVED(ehp))) {
 		removed = PFC_TRUE;
@@ -2862,8 +2891,8 @@ eventq_dispatch(evsource_t *PFC_RESTRICT esrc, evhandler_t *PFC_RESTRICT ehp,
 	else {
 		removed = PFC_FALSE;
 
-		/* Set calling thread ID to this handler. */
-		ehp->eh_thread = pfc_thread_current();
+		/* Set current handler to the thread specific data. */
+		etp->et_handler = ehp;
 	}
 
 	EVHANDLER_UNLOCK(ehp);
@@ -2890,8 +2919,8 @@ out:
 	/* Revert changes to active counter made by eventq_dequeue(). */
 	EVHANDLER_DEC_ACTIVE(ehp);
 
-	/* Clear calling thread ID. */
-	ehp->eh_thread = PFC_THREAD_INVALID;
+	/* Clear current event handler in the thread specific data. */
+	etp->et_handler = NULL;
 
 	if (!EVHANDLER_IS_ACTIVE(ehp)) {
 		if (PFC_EXPECT_FALSE(ehp->eh_nwaiters != 0)) {
@@ -2964,6 +2993,7 @@ eventq_start(eventq_t *PFC_RESTRICT evq, evqdata_t *PFC_RESTRICT qdp)
 			return;
 		}
 		etp->et_queue = evq;
+		etp->et_handler = NULL;
 		pfc_list_init(&etp->et_list);
 
 		/* Create a new thread. */

@@ -98,14 +98,18 @@ $(DEST_DBM_PATH_CONFDIR)/%:	$(OBJDIR)/%
 
 # Make directory.
 $(DBM_DIRS):
-	$(MKDIR) -p $@
+	$(INSTALL_DIRS) $@
 
 # Make directory.
 PERM_VARRUN_DIRS=0777
 $(DBM_VARRUN_DIRS):
-	$(MKDIR) -p -m $(PERM_VARRUN_DIRS) $@
+	$(INSTALL_DIRS) $@
+
+$(DBM_VARRUN_DIRS):	PERM_DIR = $(PERM_VARRUN_DIRS)
 
 # Make directory.
 PERM_POST_DIRS=0700
 $(DBM_POST_DIRS):
-	$(MKDIR) -p -m $(PERM_POST_DIRS) $@
+	$(INSTALL_DIRS) $@
+
+$(DBM_POST_DIRS):	PERM_DIR = $(PERM_POST_DIRS)

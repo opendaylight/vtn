@@ -650,6 +650,7 @@ pfc_thread_setspecific(pfc_tsd_key_t key, pfc_cptr_t value)
 	if (PFC_EXPECT_FALSE(pfc_rbtree_get(&tsd_tree, PFC_TSD_KEY(key))
 			     == NULL)) {
 		TSD_KEY_UNLOCK();
+		free(tvp);
 
 		return ENOENT;
 	}

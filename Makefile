@@ -61,6 +61,11 @@ distclean:	FRC
 core-headers:
 	$(MAKE) -C core/libs EXPORT_HEADER_DIR=$(CORE_EXP_INCDIR) export-header
 
+# Run unit tests.
+test-%:	FRC
+	$(MAKE) -C core/test $*
+	$(MAKE) -C test $*
+
 # Directory build dependencies.
 core:		env
 libs:		core

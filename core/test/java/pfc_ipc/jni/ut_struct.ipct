@@ -1,0 +1,54 @@
+#
+# Copyright (c) 2012-2013 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+##
+## Test structures used by IpcStruct JUnit tests.
+##
+
+#
+ipc_struct ut_struct_1 {
+	INT8		ut1_int8;
+	DOUBLE		ut1_double;
+	UINT8		ut1_uint8;
+	INT64		ut1_int64;
+	INT16		ut1_int16;
+	UINT32		ut1_uint32;
+	UINT16		ut1_uint16;
+	IPV6		ut1_ipv6;
+	INT32		ut1_int32;
+	UINT64		ut1_uint64;
+	FLOAT		ut1_float;
+	IPV4		ut1_ipv4;
+};
+
+ipc_struct ut_struct_2 {
+	INT8		ut2_int8[31];
+	INT16		ut2_int16[29];
+	INT64		ut2_int64[27];
+	UINT8		ut2_uint8[25];
+	UINT64		ut2_uint64[19];
+	UINT16		ut2_uint16[23];
+	INT32		ut2_int32[21];
+	DOUBLE		ut2_double[15];
+	FLOAT		ut2_float[17];
+	IPV4		ut2_ipv4[13];
+	UINT32		ut2_uint32[9];
+	IPV6		ut2_ipv6[11];
+};
+
+ipc_struct ut_struct_3 {
+	ut_struct_1	ut3_struct1;
+	ut_struct_2	ut3_struct2[4];
+};
+
+ipc_struct ut_struct_4 {
+	INT8		ut4_int8;
+	ut_struct_3	ut4_struct3[3];
+	INT64		ut4_int64;
+};

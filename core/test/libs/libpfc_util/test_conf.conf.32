@@ -1,0 +1,623 @@
+#
+# Copyright (c) 2010-2013 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+##
+## Configuration file for conf test.
+##
+
+##############################################################################
+test_conf_blk
+{
+	test_conf_blk_p1              = 15;
+	test_conf_blk_p2              = [0, 2, 0xffffffff];
+}
+
+test_conf_map "test_conf_map_key1"
+{
+	test_conf_map_p1              = 1;
+	test_conf_map_p2              = [1, 2, 0xff];
+}
+
+test_conf_map "test_conf_map_key2"
+{
+	test_conf_map_p1              = 2;
+	test_conf_map_p2              = [1, 2, 0xff];
+}
+
+##############################################################################
+### BYTE
+##############################################################################
+test_conf_blk_byte
+{
+	test_conf_blk_byte_oct        = 00;
+	test_conf_blk_byte_dec        = 0;
+	test_conf_blk_byte_hex        = 0x00;
+	test_conf_blk_byte_inv1       = true;
+	test_conf_blk_byte_inv2       = [0, 1, 2];
+	test_conf_blk_byte_array1     = [0, 1, 2];
+	test_conf_blk_byte_array2     = [0, 1, 2];
+	test_conf_blk_byte_array_inv1 = [true, true, true];
+	test_conf_blk_byte_array_inv2 = 0x00;
+}
+
+test_conf_map_byte "test_conf_map_byte_k1"
+{
+	test_conf_map_byte_oct        = 0377;
+	test_conf_map_byte_dec        = 255;
+	test_conf_map_byte_hex        = 0xff;
+	test_conf_map_byte_inv1       = false;
+	test_conf_map_byte_inv2       = [0xfd, 0xfe, 0xff];
+	test_conf_map_byte_array1     = [253, 254, 255];
+	test_conf_map_byte_array2     = [253, 254, 255];
+	test_conf_map_byte_array_inv1 = [false, false, false];
+	test_conf_map_byte_array_inv2 = 0xff;
+}
+
+##############################################################################
+### STRING
+##############################################################################
+test_conf_blk_str
+{
+	test_conf_blk_str             = test_string_blk;
+	test_conf_blk_str_inv1        = 0x00;
+	test_conf_blk_str_inv2        = ["test_string-1", "test_string-2",
+					 "test_string-3"];
+	test_conf_blk_str_array1      = ["test_string-1", "test_string-2",
+					 "test_string-3"];
+	test_conf_blk_str_array2      = ["test_string-1", "test_string-2",
+					 "test_string-3"];
+	test_conf_blk_str_array_inv1  = [00, 01, 02];
+	test_conf_blk_str_array_inv2  = "test_string-1";
+}
+
+test_conf_map_str "test_conf_map_str_k1"
+{
+	test_conf_map_str             = "test_string_map";
+	test_conf_map_str_inv1        = 0xff;
+	test_conf_map_str_inv2        = ["test_string-4", "test_string-5",
+					 "test_string-6"];
+	test_conf_map_str_array1      = ["test_string-4", "test_string-5",
+					 "test_string-6"];
+	test_conf_map_str_array2      = ["test_string-4", "test_string-5",
+					  "test_string-6"];
+	test_conf_map_str_array_inv1  = [0375, 0376, 0377];
+	test_conf_map_str_array_inv2  = "test_string-6";
+}
+
+##############################################################################
+### BOOL
+##############################################################################
+test_conf_blk_bool
+{
+	test_conf_blk_bool            = true;
+	test_conf_blk_bool_inv1       = 0xff;
+	test_conf_blk_bool_inv2       = [true, true, true];
+	test_conf_blk_bool_array1     = [true, true, true];
+	test_conf_blk_bool_array2     = [true, true, true];
+	test_conf_blk_bool_array_inv1 = [0, 1, 2];
+	test_conf_blk_bool_array_inv2 = true;
+}
+
+test_conf_map_bool "test_conf_map_bool_k1"
+{
+	test_conf_map_bool            = false;
+	test_conf_map_bool_inv1       = 0xff;
+	test_conf_map_bool_inv2       = [false, false, false];
+	test_conf_map_bool_array1     = [false, false, false];
+	test_conf_map_bool_array2     = [false, false, false];
+	test_conf_map_bool_array_inv1 = [253, 254, 255];
+	test_conf_map_bool_array_inv2 = false;
+}
+
+##############################################################################
+### INT32
+##############################################################################
+test_conf_blk_i32_min
+{
+	test_conf_blk_i32_oct         = -020000000000;
+	test_conf_blk_i32_dec         = -2147483648;
+	test_conf_blk_i32_hex         = -0x80000000;
+	test_conf_blk_i32_inv1        = 00;
+	test_conf_blk_i32_inv2        = [00, 01, 02];
+	test_conf_blk_i32_array1      = [-2147483648, -2147483647,
+					 -2147483646];
+	test_conf_blk_i32_array2      = [-2147483648, -2147483647,
+					 -2147483646];
+	test_conf_blk_i32_array_inv1  = [0, 1, 2];
+	test_conf_blk_i32_array_inv2  =  -2147483648;
+
+}
+test_conf_blk_i32_max
+{
+	test_conf_blk_i32_oct         = 017777777777;
+	test_conf_blk_i32_dec         = 2147483647;
+	test_conf_blk_i32_hex         = 0x7fffffff;
+	test_conf_blk_i32_inv1        = 4294967295;
+	test_conf_blk_i32_inv2        = [0x7ffffffd, 0x7ffffffe, 0x7fffffff];
+}
+
+test_conf_map_i32 "test_conf_map_i32_k1"
+{
+	test_conf_map_i32_oct         = -020000000000;
+	test_conf_map_i32_dec         = -2147483648;
+	test_conf_map_i32_hex         = -0x80000000;
+	test_conf_map_i32_inv1        = 00;
+	test_conf_map_i32_inv2        = [0, 1, 2];
+}
+
+test_conf_map_i32 "test_conf_map_i32_k2"
+{
+	test_conf_map_i32_oct         = 017777777777;
+	test_conf_map_i32_dec         = 2147483647;
+	test_conf_map_i32_hex         = 0x7fffffff;
+	test_conf_map_i32_inv1        = 0xffffffff;
+	test_conf_map_i32_inv2        = [2147483645, 2147483646, 2147483647];
+	test_conf_map_i32_array1      = [017777777775, 017777777776,
+					 017777777777];
+	test_conf_map_i32_array2      = [017777777775, 017777777776,
+					 017777777777];
+	test_conf_map_i32_array_inv1  = [0375, 0376, 0377];
+	test_conf_map_i32_array_inv2  = 017777777777;
+}
+
+##############################################################################
+### UINT32
+##############################################################################
+test_conf_blk_ui32
+{
+	test_conf_blk_ui32_oct        = 00;
+	test_conf_blk_ui32_dec        = 0;
+	test_conf_blk_ui32_hex        = 0x00;
+	test_conf_blk_ui32_inv1       = "INVALID";
+	test_conf_blk_ui32_inv2       = [0, 1, 2];
+
+	test_conf_blk_ui32_array1     = [0x00, 0x01, 0x02];
+	test_conf_blk_ui32_array2     = [0x00, 0x01, 0x02];
+	test_conf_blk_ui32_array_inv1 = [0, 1, 2];
+	test_conf_blk_ui32_array_inv2 = 0x00;
+}
+
+test_conf_map_ui32 "test_conf_map_ui32_k1"
+{
+	test_conf_map_ui32_oct        = 037777777777;
+	test_conf_map_ui32_dec        = 4294967295;
+	test_conf_map_ui32_hex        = 0xffffffff;
+	test_conf_map_ui32_inv1       = "INVALID";
+	test_conf_map_ui32_inv2       = [4294967293, 4294967294, 4294967295];
+
+	test_conf_map_ui32_array1     = [0xfffffffd, 0xfffffffe, 0xffffffff];
+	test_conf_map_ui32_array2     = [0xfffffffd, 0xfffffffe, 0xffffffff];
+	test_conf_map_ui32_array_inv1 = [0xfd, 0xfe, 0xff];
+	test_conf_map_ui32_array_inv2 = 0xffffffff;
+}
+
+##############################################################################
+### INT64
+##############################################################################
+test_conf_blk_i64_min
+{
+	test_conf_blk_i64_oct         = -01000000000000000000000;
+	test_conf_blk_i64_dec         = -9223372036854775808;
+	test_conf_blk_i64_hex         = -0x8000000000000000;
+	test_conf_blk_i64_inv1        = true;
+	test_conf_blk_i64_inv2        = [00, 01, 02];
+	test_conf_blk_i64_array1      = [-0x8000000000000000,
+					 -0x7fffffffffffffff,
+					 -0x7ffffffffffffffe];
+	test_conf_blk_i64_array2      = [-0x8000000000000000,
+					 -0x7fffffffffffffff,
+					 -0x7ffffffffffffffe];
+	test_conf_blk_i64_array_inv1  = [0x00, 0x01, 0x02];
+	test_conf_blk_i64_array_inv2  = -0x8000000000000000;
+}
+
+test_conf_blk_i64_max
+{
+	test_conf_blk_i64_oct         = 0777777777777777777777;
+	test_conf_blk_i64_dec         = 9223372036854775807;
+	test_conf_blk_i64_hex         = 0x7fffffffffffffff;
+	test_conf_blk_i64_inv1        = false;
+	test_conf_blk_i64_inv2        = [9223372036854775805,
+					 9223372036854775806,
+					 9223372036854775807];
+}
+
+test_conf_map_i64 "test_conf_map_i64_k1"
+{
+	test_conf_map_i64_oct         = -01000000000000000000000;
+	test_conf_map_i64_dec         = -9223372036854775808;
+	test_conf_map_i64_hex         = -0x8000000000000000;
+	test_conf_map_i64_inv1        = true;
+	test_conf_map_i64_inv2        = [0, 1, 2];
+}
+
+test_conf_map_i64 "test_conf_map_i64_k2"
+{
+	test_conf_map_i64_oct         = 0777777777777777777777;
+	test_conf_map_i64_dec         = 9223372036854775807;
+	test_conf_map_i64_hex         = 0x7fffffffffffffff;
+	test_conf_map_i64_inv1        = false;
+	test_conf_map_i64_inv2        = [0x7ffffffffffffffd,
+					 0x7ffffffffffffffe,
+					 0x7fffffffffffffff];
+	test_conf_map_i64_array1      = [0777777777777777777775,
+					 0777777777777777777776,
+					 0777777777777777777777];
+	test_conf_map_i64_array2      = [0777777777777777777775,
+					 0777777777777777777776,
+					 0777777777777777777777];
+	test_conf_map_i64_array_inv1  = [0375, 0376, 0377];
+	test_conf_map_i64_array_inv2  = 0777777777777777777777;
+}
+
+##############################################################################
+### UINT64
+##############################################################################
+test_conf_blk_ui64
+{
+	test_conf_blk_ui64_oct        = 00;
+	test_conf_blk_ui64_dec        = 0;
+	test_conf_blk_ui64_hex        = 0x00;
+	test_conf_blk_ui64_inv1       = "INVALID";
+	test_conf_blk_ui64_inv2       = [0, 1, 2];
+
+	test_conf_blk_ui64_array1     = [00, 01, 02];
+	test_conf_blk_ui64_array2     = [00, 01, 02];
+	test_conf_blk_ui64_array_inv1 = [0, 1, 2];
+	test_conf_blk_ui64_array_inv2 = 00;
+}
+
+test_conf_map_ui64 "test_conf_map_ui64_k1"
+{
+	test_conf_map_ui64_oct        = 01777777777777777777777;
+	test_conf_map_ui64_dec        = 18446744073709551615;
+	test_conf_map_ui64_hex        = 0xffffffffffffffff;
+	test_conf_map_ui64_inv1       = "INVALID";
+	test_conf_map_ui64_inv2       = [18446744073709551613,
+				         18446744073709551614,
+				         18446744073709551615];
+	test_conf_map_ui64_array1     = [01777777777777777777775,
+					 01777777777777777777776,
+					 01777777777777777777777];
+	test_conf_map_ui64_array2     = [01777777777777777777775,
+					 01777777777777777777776,
+					 01777777777777777777777];
+	test_conf_map_ui64_array_inv1 = [0xfd, 0xfe, 0xff];
+	test_conf_map_ui64_array_inv2 = 01777777777777777777777;
+}
+
+##############################################################################
+### LONG
+##############################################################################
+test_conf_blk_lng_min
+{
+	test_conf_blk_lng_oct         = -020000000000;
+	test_conf_blk_lng_dec         = -2147483648;
+	test_conf_blk_lng_hex         = -0x80000000;
+	test_conf_blk_lng_inv1        = true;
+	test_conf_blk_lng_inv2        = [-1, -2, -3];
+	test_conf_blk_lng_array1      = [-2147483648,
+					 -2147483647,
+					 -2147483646];
+	test_conf_blk_lng_array2      = [-2147483648,
+					 -2147483647,
+					 -2147483646];
+	test_conf_blk_lng_array_inv1  = [0x00, 0x01, 0x02];
+	test_conf_blk_lng_array_inv2  = -2147483648;
+}
+
+test_conf_blk_lng_max
+{
+	test_conf_blk_lng_oct         = 017777777777;
+	test_conf_blk_lng_dec         = 2147483647;
+	test_conf_blk_lng_hex         = 0x7fffffff;
+	test_conf_blk_lng_inv1        = false;
+	test_conf_blk_lng_inv2        = [017777777775,
+					 017777777776,
+					 017777777777];
+}
+
+test_conf_map_lng "test_conf_map_lng_k1"
+{
+	test_conf_map_lng_oct         = -020000000000;
+	test_conf_map_lng_dec         = -2147483648;
+	test_conf_map_lng_hex         = -0x80000000;
+	test_conf_map_lng_inv1        = true;
+	test_conf_map_lng_inv2        = [-1, -2, -3];
+}
+
+test_conf_map_lng "test_conf_map_lng_k2"
+{
+	test_conf_map_lng_oct         = 017777777777;
+	test_conf_map_lng_dec         = 2147483647;
+	test_conf_map_lng_hex         = 0x7fffffff;
+	test_conf_map_lng_inv1        = false;
+	test_conf_map_lng_inv2        = [017777777775,
+					 017777777776,
+					 017777777777];
+	test_conf_map_lng_array1      = [0x7ffffffd,
+					 0x7ffffffe,
+					 0x7fffffff];
+	test_conf_map_lng_array2      = [0x7ffffffd,
+					 0x7ffffffe,
+					 0x7fffffff];
+	test_conf_map_lng_array_inv1  = [0375, 0376, 0377];
+	test_conf_map_lng_array_inv2  = 0x7fffffff;
+}
+
+##############################################################################
+### ULONG
+##############################################################################
+test_conf_blk_ulng
+{
+	test_conf_blk_ulng_oct        = 00;
+	test_conf_blk_ulng_dec        = 0;
+	test_conf_blk_ulng_hex        = 0x00;
+	test_conf_blk_ulng_inv1       = 0;
+	test_conf_blk_ulng_inv2       = [0, 1, 2];
+	test_conf_blk_ulng_array1     = [0x00, 0x01, 0x02];
+	test_conf_blk_ulng_array2     = [0x00, 0x01, 0x02];
+	test_conf_blk_ulng_array_inv1 = [0x00, 0x01, 0x02];
+	test_conf_blk_ulng_array_inv2 = 0x00;
+}
+
+test_conf_map_ulng "test_conf_map_ulng_k1"
+{
+	test_conf_map_ulng_oct        = 037777777777;
+	test_conf_map_ulng_dec        = 4294967295;
+	test_conf_map_ulng_hex        = 0xffffffff;
+	test_conf_map_ulng_inv1       = 0xff;
+	test_conf_map_ulng_inv2       = [0xfffffffd,
+					 0xfffffffe,
+					 0xffffffff];
+	test_conf_map_ulng_array1     = [0xfffffffd,
+					 0xfffffffe,
+					 0xffffffff];
+	test_conf_map_ulng_array2     = [0xfffffffd,
+					 0xfffffffe,
+					 0xffffffff];
+	test_conf_map_ulng_array_inv1 = [0xfd, 0xfe, 0xff];
+	test_conf_map_ulng_array_inv2 = 0xffffffff;
+}
+
+##############################################################################
+### Array Size
+##############################################################################
+test_conf_blk_array_size
+{
+	test_conf_blk_array_size_p1   = [true, true, true];
+	test_conf_blk_array_size_p2   = [true, true, true];
+	test_conf_blk_array_size_inv1 = true;
+}
+
+test_conf_map_array_size "test_conf_map_array_size_k1"
+{
+	test_conf_map_array_size_p1   = [false, false, false];
+	test_conf_map_array_size_p2   = [false, false, false];
+	test_conf_map_array_size_inv1 = false;
+}
+
+##############################################################################
+### Array Size Max
+##############################################################################
+test_conf_ary_max
+{
+	test_conf_ary_256 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+			     1, 2, 3, 4, 5, 6];
+
+#	test_conf_ary_257 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+#			     1, 2, 3, 4, 5, 6, 7];
+}
+
+##############################################################################
+### Mandatory
+##############################################################################
+test_conf_mandatory_1
+{
+	test_conf_mand1_byte          = 0xff;
+	test_conf_mand1_str           = "mandatory";
+	test_conf_mand1_bool          = true;
+	test_conf_mand1_i32           = 0xff;
+	test_conf_mand1_ui32          = 0xff;
+	test_conf_mand1_i64           = 0xff;
+	test_conf_mand1_ui64          = 0xff;
+	test_conf_mand1_lng           = 0xff;
+	test_conf_mand1_ulng          = 0xff;
+}
+
+##############################################################################
+### min
+##############################################################################
+test_conf_min
+{
+#######################################
+# OK
+#######################################
+#	test_conf_min_byte            = 5;
+#	test_conf_min_str             = "12345";
+#	test_conf_min_i32             = 5;
+#	test_conf_min_ui32            = 5;
+#	test_conf_min_i64             = 5;
+#	test_conf_min_ui64            = 5;
+#	test_conf_min_lng             = 5;
+#	test_conf_min_ulng            = 56;
+
+#######################################
+# NG
+#######################################
+#	test_conf_min_byte            = 4;
+#	test_conf_min_str             = "1234";
+#	test_conf_min_i32             = 4;
+#	test_conf_min_ui32            = 4;
+#	test_conf_min_i64             = 4;
+#	test_conf_min_ui64            = 4;
+#	test_conf_min_lng             = 4;
+#	test_conf_min_ulng            = 4;
+}
+
+##############################################################################
+### max
+##############################################################################
+test_conf_max
+{
+#######################################
+# OK
+#######################################
+	test_conf_max_byte            = 50;
+	test_conf_max_str  
+	= "01234567890123456789012345678901234567890123456789";
+	test_conf_max_i32             = 50;
+	test_conf_max_ui32            = 50;
+	test_conf_max_i64             = 50;
+	test_conf_max_ui64            = 50;
+	test_conf_max_lng             = 50;
+	test_conf_max_ulng            = 50;
+
+#######################################
+# NG
+#######################################
+#	test_conf_max_byte            = 51;
+#	test_conf_max_str  
+#	= "012345678901234567890123456789012345678901234567890";
+#	test_conf_max_i32             = 51;
+#	test_conf_max_ui32            = 51;
+#	test_conf_max_i64             = 51;
+#	test_conf_max_ui64            = 51;
+#	test_conf_max_lng             = 51;
+#	test_conf_max_ulng            = 51;
+}
+
+##############################################################################
+### String Backslash escape
+##############################################################################
+test_conf_bks_esp
+{
+	test_conf_bks_esp1            = "0123456789\n0123456789";
+	test_conf_bks_esp2            = "0123456789\r0123456789";
+	test_conf_bks_esp3            = "0123456789\t0123456789";
+	test_conf_bks_esp4            = "0123456789\'0123456789";
+	test_conf_bks_esp5            = "0123456789\"0123456789";
+	test_conf_bks_esp6            = "0123456789\\0123456789";
+#	test_conf_bks_esp_inv1        = "0123456789\b0123456789";
+}
+
+##############################################################################
+### String length max
+##############################################################################
+test_conf_str_lenmax
+{
+	test_conf_str_len_1023 = "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012";
+
+#######################################
+# NG
+#######################################
+#	test_conf_str_len_1024 = "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123";
+}
+
+##############################################################################
+### INVALID 6
+##############################################################################
+#test_conf_duplicate6  "dup6"
+#{
+#	test_conf_dup_p6              = 10;
+#}
+
+#test_conf_duplicate6  "dup6"
+#{
+#	test_conf_dup_p6              = 10;
+#}
+
+
+##############################################################################
+### INVALID 10
+##############################################################################
+test_conf_invalid_block_name
+{
+	test_conf_invalid_block_name  = 1;
+}
+
+_test_conf_invalid_block_name
+{
+	_test_conf_invalid_block_name  = 2;
+}
+
+#1_test_conf_invalid_block_name
+#{
+#	test_conf_invalid_block_name  = 3;
+#}
+
+test_conf_invalid_map_name "test_conf_invalid_map_name_key"
+{
+	test_conf_invalid_map_name    = 4;
+}
+
+_test_conf_invalid_map_name _test_conf_invalid_map_name_key
+{
+	_test_conf_invalid_map_name   = 5;
+}
+
+#1_test_conf_invalid_map_name "1_test_conf_invalid_map_name"
+#{
+#	test_conf_invalid_map_name    = 6;
+#}
+
+test_conf_invalid_param_name
+{
+	test_conf_invalid_param_name1  = 7;
+	_test_conf_invalid_param_name1 = 8;
+#	9test_conf_invalid_param_name1 = 9;
+}
