@@ -57,9 +57,11 @@ TEST(clock, test_pfc_clock_gettime)
     ASSERT_GE(0, pfc_clock_compare(&pt1, (pfc_timespec_t *)&after));
 
     /* test pt1 < pt2 */
+    struct timespec ts = {0, 1};
     timespec_clear(&pt1);
     timespec_clear(&pt2);
     EXPECT_EQ(0, pfc_clock_gettime(&pt1));
+    nanosleep(&ts, NULL);
     EXPECT_EQ(0, pfc_clock_gettime(&pt2));
     ASSERT_LT(0, pfc_clock_compare(&pt2, &pt1));
 
@@ -92,9 +94,11 @@ TEST(clock, test_pfc_clock_get_realtime)
     ASSERT_GE(0, pfc_clock_compare(&pt1, (pfc_timespec_t *)&after));
 
     /* pt1 is not pt2. It is different value. */
+    struct timespec ts = {0, 1};
     timespec_clear(&pt1);
     timespec_clear(&pt2);
     EXPECT_EQ(0, pfc_clock_get_realtime(&pt1));
+    nanosleep(&ts, NULL);
     EXPECT_EQ(0, pfc_clock_get_realtime(&pt2));
     ASSERT_LT(0, pfc_clock_compare(&pt2, &pt1));
 
