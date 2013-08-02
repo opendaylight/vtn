@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+#
+# Copyright (c) 2013 NEC Corporation
+# All rights reserved.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+-->
+
+<project
+  xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.opendaylight.vtn</groupId>
+    <artifactId>manager.common</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <relativePath>../common</relativePath>
+  </parent>
+  <artifactId>manager.implementation</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>bundle</packaging>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>${maven-bundle.version}</version>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Export-Package>
+              org.opendaylight.vtn.manager.internal.cluster,
+            </Export-Package>
+            <Import-Package>
+              org.opendaylight.controller.clustering.services,
+              org.opendaylight.controller.configuration,
+              org.opendaylight.controller.containermanager,
+              org.opendaylight.controller.forwardingrulesmanager,
+              org.opendaylight.controller.hosttracker,
+              org.opendaylight.controller.hosttracker.hostAware,
+              org.opendaylight.controller.sal.core,
+              org.opendaylight.controller.sal.packet,
+              org.opendaylight.controller.sal.packet.address,
+              org.opendaylight.controller.sal.routing,
+              org.opendaylight.controller.sal.topology,
+              org.opendaylight.controller.sal.utils,
+              org.opendaylight.controller.switchmanager,
+              org.opendaylight.controller.topologymanager,
+              org.opendaylight.vtn.manager,
+              org.apache.felix.dm,
+              org.slf4j,
+            </Import-Package>
+            <Bundle-Activator>
+              org.opendaylight.vtn.manager.internal.Activator
+            </Bundle-Activator>
+            <Service-Component>
+            </Service-Component>
+          </instructions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.opendaylight.vtn</groupId>
+      <artifactId>manager</artifactId>
+      <version>0.1.0-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>clustering.services</artifactId>
+      <version>0.4.0-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>configuration</artifactId>
+      <version>0.4.0-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>switchmanager</artifactId>
+      <version>0.4.0-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>hosttracker</artifactId>
+      <version>0.4.0-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>topologymanager</artifactId>
+      <version>0.4.0-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>containermanager</artifactId>
+      <version>0.4.0-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>forwardingrulesmanager</artifactId>
+      <version>0.4.0-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>sal</artifactId>
+      <version>0.5.0-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>
