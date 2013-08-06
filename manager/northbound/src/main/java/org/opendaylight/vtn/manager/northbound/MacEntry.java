@@ -10,6 +10,7 @@
 package org.opendaylight.vtn.manager.northbound;
 
 import java.net.InetAddress;
+import java.util.Set;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -58,9 +59,9 @@ public class MacEntry {
     private SwitchPort  port;
 
     /**
-     * An array of IP addresses found in the Ethernet frame.
+     * A set of IP addresses found in the Ethernet frame.
      */
-    private IpAddressArray  inetAddresses;
+    private IpAddressSet  inetAddresses;
 
     /**
      * Private constructor used for JAXB mapping.
@@ -91,9 +92,9 @@ public class MacEntry {
         this.node = nc.getNode();
         this.vlan = entry.getVlan();
 
-        InetAddress[] ipaddrs = entry.getInetAddresses();
-        if (ipaddrs.length != 0) {
-            this.inetAddresses = new IpAddressArray(ipaddrs);
+        Set<InetAddress> ipaddrs = entry.getInetAddresses();
+        if (ipaddrs.size() != 0) {
+            this.inetAddresses = new IpAddressSet(ipaddrs);
         }
     }
 
@@ -136,28 +137,28 @@ public class MacEntry {
     }
 
     /**
-     * Return an {@link IpAddressArray} object which keeps IP addresses
+     * Return an {@link IpAddressSet} object which keeps IP addresses
      * associated with this MAC address entry.
      *
-     * @return  An {@link IpAddressArray} object.
+     * @return  An {@link IpAddressSet} object.
      *          {@code null} is returned if no IP address is associated
      *          with this MAC address entry.
      */
     @XmlElement(name = "inetAddresses")
-    IpAddressArray getInetAddresses() {
+    IpAddressSet getInetAddresses() {
         return inetAddresses;
     }
 
     /**
-     * Set an {@link IpAddressArray} object.
+     * Set an {@link IpAddressSet} object.
      *
      * <p>
      *   This method is called by JAXB.
      * </p>
      *
-     * @param ipaddrs  An {@link IpAddressArr} object.
+     * @param ipaddrs  An {@link IpAddressSet} object.
      */
-    private void setInetAddresses(IpAddressArray ipaddrs) {
+    private void setInetAddresses(IpAddressSet ipaddrs) {
         if (ipaddrs != null && ipaddrs.getLength() != 0) {
             inetAddresses = ipaddrs;
         } else {

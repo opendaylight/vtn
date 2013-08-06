@@ -144,11 +144,8 @@ public class MacTableEntry {
         try {
             byte[] macAddr = NetUtils.longToByteArray6(mac);
             EthernetAddress ethAddr = new EthernetAddress(macAddr);
-            int iplen = ipAddresses.size();
-            InetAddress[] ipaddrs = ipAddresses.
-                toArray(new InetAddress[iplen]);
-
-            return new MacAddressEntry(ethAddr, this.vlan, this.port, ipaddrs);
+            return new MacAddressEntry(ethAddr, this.vlan, this.port,
+                                       ipAddresses);
         } catch (Exception e) {
             throw new VTNException("Unable to create MAC address etnry", e);
         }
@@ -176,6 +173,6 @@ public class MacTableEntry {
             builder.append(ipaddr.getHostAddress());
         }
 
-        return builder.append('}').toString();
+        return builder.append("}]").toString();
     }
 }

@@ -11,7 +11,8 @@ package org.opendaylight.vtn.manager;
 
 import java.io.Serializable;
 import java.net.InetAddress;
-import java.util.Arrays;
+import java.util.Set;
+import java.util.HashSet;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
@@ -21,7 +22,7 @@ import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
  * by the virtual L2 bridge.
  */
 public class MacAddressEntry implements Serializable {
-    private final static long serialVersionUID = -4983331952133216806L;
+    private final static long serialVersionUID = 3397483429917503863L;
 
     /**
      * MAC address.
@@ -40,9 +41,10 @@ public class MacAddressEntry implements Serializable {
     private final NodeConnector  nodeConnector;
 
     /**
-     * IP addresses found in the Ethernet frame.
+     * Set of IP addresses found in the Ethernet frame.
      */
-    private final InetAddress[]  inetAddresses;
+    private final HashSet<InetAddress>  inetAddresses =
+        new HashSet<InetAddress>();
 
     /**
      * Construct a new MAC address entry.
@@ -54,21 +56,19 @@ public class MacAddressEntry implements Serializable {
      * @param nc       Node connector associated with the switch port where
      *                 the MAC address is detected.
      *                 Specifying {@code null} results in undefined behavior.
-     * @param ipaddrs  An array of IP addresses found in the Ethernet frame.
-     *                 Specifying {@code null} or an empty array means no IP
+     * @param ipaddrs  A set of IP addresses found in the Ethernet frame.
+     *                 Specifying {@code null} or an empty set means no IP
      *                 address was found.
-     *                 Specifying an array which contains {@code null} results
+     *                 Specifying a set which contains {@code null} results
      *                 in undefined behavior.
      */
     public MacAddressEntry(DataLinkAddress addr, short vlan, NodeConnector nc,
-                           InetAddress[] ipaddrs) {
+                           Set<InetAddress> ipaddrs) {
         address = addr;
         this.vlan = vlan;
         nodeConnector = nc;
-        if (ipaddrs == null) {
-            inetAddresses = new InetAddress[0];
-        } else {
-            inetAddresses = ipaddrs.clone();
+        if (ipaddrs != null) {
+            inetAddresses.addAll(ipaddrs);
         }
     }
 
@@ -101,13 +101,13 @@ public class MacAddressEntry implements Serializable {
     }
 
     /**
-     * Return an array of IP addresss associated with this MAC address entry.
+     * Return a set of IP addresss associated with this MAC address entry.
      *
-     * @return  An array of IP addresses. An empty array is returned if no
+     * @return  A set of IP addresses. An empty set is returned if no
      *          IP address is associated.
      */
-    public InetAddress[] getInetAddresses() {
-        return inetAddresses.clone();
+    public Set<InetAddress> getInetAddresses() {
+        return (Set<InetAddress>)inetAddresses.clone();
     }
 
     /**
@@ -136,7 +136,7 @@ public class MacAddressEntry implements Serializable {
             return false;
         }
 
-        return Arrays.equals(inetAddresses, mac.inetAddresses);
+        return inetAddresses.equals(mac.inetAddresses);
     }
 
     /**
@@ -147,7 +147,7 @@ public class MacAddressEntry implements Serializable {
     @Override
     public int hashCode() {
         int h = 367 + address.hashCode() + vlan + nodeConnector.hashCode() +
-            Arrays.hashCode(inetAddresses);
+            inetAddresses.hashCode();
 
         return h;
     }

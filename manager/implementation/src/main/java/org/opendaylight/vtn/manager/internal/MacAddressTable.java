@@ -32,6 +32,7 @@ import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.NetUtils;
+import org.opendaylight.controller.sal.utils.Status;
 
 /**
  * {@code MacAddressTable} class represents a MAC address table in a virtual
@@ -534,9 +535,14 @@ public class MacAddressTable {
      * @return  A {@code Long} object which represents the given MAC address.
      *          {@code null} is returned if {@code dladdr} is not an
      *          ethernet address.
+     * @throws VTNException  An error occurred.
      */
-    private Long getTableKey(DataLinkAddress dladdr) {
+    private Long getTableKey(DataLinkAddress dladdr) throws VTNException {
         if (!(dladdr instanceof EthernetAddress)) {
+            if (dladdr == null) {
+                Status status = VTNManagerImpl.argumentIsNull("MAC address");
+                throw new VTNException(status);
+            }
             return null;
         }
 

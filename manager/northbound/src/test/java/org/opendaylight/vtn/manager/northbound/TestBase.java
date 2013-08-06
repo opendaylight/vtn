@@ -17,6 +17,7 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.HashSet;
 
 import javax.xml.bind.JAXB;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -150,21 +151,22 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * Create a deep copy of the specified {@link InetAddress} array.
+     * Create a deep copy of the specified {@link InetAddress} set.
      *
-     * @param ia    A {@link InetAddress} array to be copied.
-     * @return      A copied {@link InetAddress} array.
+     * @param ia    A {@link InetAddress} set to be copied.
+     * @return      A copied {@link InetAddress} set.
      */
-    protected static InetAddress[] copy(InetAddress[] ia) {
+    protected static Set<InetAddress> copy(Set<InetAddress> ia) {
         if (ia != null) {
-            ia = ia.clone();
+            Set<InetAddress> newset = new HashSet<InetAddress>();
             try {
-                for (int i = 0; i < ia.length; i++) {
-                    ia [i]= InetAddress.getByAddress(ia[i].getAddress());
+                for (InetAddress iaddr: ia) {
+                    newset.add(InetAddress.getByAddress(iaddr.getAddress()));
                 }
             } catch (Exception e) {
                 unexpected(e);
             }
+            ia = newset;
         }
         return ia;
     }
@@ -437,22 +439,23 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * Create a list of {@link InetAddress} array and a {@code null}.
+     * Create a list of {@link InetAddress} set and a {@code null}.
      *
-     * @return A list of {@link InetAddress} array.
+     * @return A list of {@link InetAddress} set.
      */
-    protected static List<InetAddress[]> createInetAddresses() {
+    protected static List<Set<InetAddress>> createInetAddresses() {
         return createInetAddresses(true);
     }
 
     /**
-     * Create a list of {@link InetAddress} array.
+     * Create a list of {@link InetAddress} set.
      *
      * @param setNull  Set {@code null} to returned list if {@code true}.
-     * @return A list of {@link InetAddress}.
+     * @return A list of {@link InetAddress} set.
      */
-    protected static List<InetAddress[]> createInetAddresses(boolean setNull) {
-        List<InetAddress[]> list = new ArrayList<InetAddress[]>();
+    protected static List<Set<InetAddress>>
+        createInetAddresses(boolean setNull) {
+        List<Set<InetAddress>> list = new ArrayList<Set<InetAddress>>();
         String[][] arrays = {
             {"0.0.0.0"},
             {"255.255.255.255", "10.1.2.3"},
@@ -466,12 +469,12 @@ public abstract class TestBase extends Assert {
         }
 
         for (String[] array: arrays) {
-            InetAddress[] iarray = new InetAddress[array.length];
+            Set<InetAddress> iset = new HashSet<InetAddress>();
             try {
-                for (int i = 0; i < array.length; i++) {
-                    iarray[i] = InetAddress.getByName(array[i]);
+                for (String addr: array) {
+                    assertTrue(iset.add(InetAddress.getByName(addr)));
                 }
-                list.add(iarray);
+                list.add(iset);
             } catch (Exception e) {
                 unexpected(e);
             }

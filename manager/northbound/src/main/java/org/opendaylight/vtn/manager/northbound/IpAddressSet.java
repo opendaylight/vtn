@@ -10,7 +10,8 @@
 package org.opendaylight.vtn.manager.northbound;
 
 import java.net.InetAddress;
-import java.util.Arrays;
+import java.util.Set;
+import java.util.HashSet;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -18,48 +19,43 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
- * JAXB mapping for an array of {@code InetAddress}.
+ * JAXB mapping for a set of {@link IpAddress}.
  */
 @XmlRootElement(name = "inetAddresses")
 @XmlAccessorType(XmlAccessType.NONE)
-public class IpAddressArray {
+public class IpAddressSet {
     /**
-     * An array of IP address in text.
+     * A set of IP address in text.
      */
     @XmlElement(name = "inetAddress")
-    private IpAddress[]  ipAddress;
+    private final Set<IpAddress>  ipAddress = new HashSet<IpAddress>();
 
     /**
      * Private constructor used for JAXB mapping.
      */
-    private IpAddressArray() {
-        ipAddress = new IpAddress[0];
+    private IpAddressSet() {
     }
 
     /**
-     * Construct a new array of IP address.
+     * Construct a new set of IP address.
      *
-     * @param ipaddrs  An array of {@code InetAddress} object.
+     * @param ipaddrs  A set of {@code InetAddress} object.
      * @throws NullPointerException
      *    {@code ipaddrs} is {@code null}.
      */
-    public IpAddressArray(InetAddress[] ipaddrs) {
-        ipAddress = new IpAddress[ipaddrs.length];
-        for (int i = 0; i < ipaddrs.length; i++) {
-            ipAddress[i] = new IpAddress(ipaddrs[i]);
+    public IpAddressSet(Set<InetAddress> ipaddrs) {
+        for (InetAddress iaddr: ipaddrs) {
+            ipAddress.add(new IpAddress(iaddr));
         }
     }
 
     /**
-     * Return an {@link IpAddress} object at the given index.
+     * Return a set of {@link IpAddress} objects.
      *
-     * @param index  An array index.
-     * @return  An {@link IpAddress} object.
-     * @throws ArrayIndexOutOfBoundsException
-     *    An illegal array index is passed to {@code index}.
+     * @return  A set of {@link IpAddress} objects.
      */
-    IpAddress get(int index) {
-        return ipAddress[index];
+    Set<IpAddress> getAddresses() {
+        return ipAddress;
     }
 
     /**
@@ -68,7 +64,7 @@ public class IpAddressArray {
      * @return  The number of IP addresses.
      */
     int getLength() {
-        return ipAddress.length;
+        return ipAddress.size();
     }
 
     /**
@@ -82,12 +78,12 @@ public class IpAddressArray {
         if (o == this) {
             return true;
         }
-        if (!(o instanceof IpAddressArray)) {
+        if (!(o instanceof IpAddressSet)) {
             return false;
         }
 
-        IpAddressArray iaddrs = (IpAddressArray)o;
-        return Arrays.equals(ipAddress, iaddrs.ipAddress);
+        IpAddressSet iaddrs = (IpAddressSet)o;
+        return ipAddress.equals(iaddrs.ipAddress);
     }
 
     /**
@@ -97,6 +93,6 @@ public class IpAddressArray {
      */
     @Override
     public int hashCode() {
-        return Arrays.hashCode(ipAddress);
+        return ipAddress.hashCode();
     }
 }

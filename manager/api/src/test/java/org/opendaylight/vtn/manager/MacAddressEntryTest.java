@@ -9,7 +9,7 @@
 package org.opendaylight.vtn.manager;
 
 import java.net.InetAddress;
-import java.util.Arrays;
+import java.util.Set;
 import java.util.HashSet;
 import java.util.List;
 
@@ -46,37 +46,36 @@ public class MacAddressEntryTest extends TestBase {
     @Test
     public void testGetter() {
         short vlans[] = { -10, 0, 1, 100, 4095 };
-        List<InetAddress[]> ips = createInetAddresses();
+        List<Set<InetAddress>> ips = createInetAddresses();
         List<EthernetAddress> ethaddrs = createEthernetAddresses(false);
         for (NodeConnector nc : createNodeConnectors(3, false)) {
-            for (InetAddress[] ip : ips) {
+            for (Set<InetAddress> ipset : ips) {
                 for (EthernetAddress ea : ethaddrs) {
                     for (short vlan : vlans) {
                         MacAddressEntry mae =
-                            new MacAddressEntry(ea, vlan, nc, ip);
+                            new MacAddressEntry(ea, vlan, nc, ipset);
 
                         assertEquals(ea, mae.getAddress());
                         assertEquals(vlan, mae.getVlan());
                         assertEquals(nc, mae.getNodeConnector());
 
-                        InetAddress[] addrs = mae.getInetAddresses();
+                        Set<InetAddress> addrs = mae.getInetAddresses();
                         assertNotNull(addrs);
-                        if (ip != null) {
+                        if (ipset != null) {
                             // Ensure that MacAddressEntry copies the
-                            // given InetAddress array.
-                            InetAddress[] required = ip.clone();
-                            for (int i = 0; i < ip.length; i++) {
-                                ip[i] = null;
-                            }
-                            assertTrue(Arrays.equals(required, addrs));
+                            // given InetAddress set.
+                            Set<InetAddress> required =
+                                new HashSet<InetAddress>(ipset);
+                            ipset.clear();
+                            assertEquals(required, addrs);
                         } else {
-                            assertEquals(0, addrs.length);
+                            assertEquals(0, addrs.size());
                         }
 
                         // Ensure that getInetAddresses() returns a clone.
-                        InetAddress[] addrs1 = mae.getInetAddresses();
+                        Set<InetAddress> addrs1 = mae.getInetAddresses();
                         assertNotSame(addrs, addrs1);
-                        assertTrue(Arrays.equals(addrs, addrs1));
+                        assertEquals(addrs, addrs1);
                     }
                 }
             }
@@ -87,13 +86,13 @@ public class MacAddressEntryTest extends TestBase {
 
         for (NodeConnector nc : createNodeConnectors(3, false)) {
             short vlan = 0;
-            InetAddress[] ip = ips.get(1);
-            MacAddressEntry mae = new MacAddressEntry(tdl, vlan, nc, ip);
+            Set<InetAddress> ipset = ips.get(1);
+            MacAddressEntry mae = new MacAddressEntry(tdl, vlan, nc, ipset);
 
             assertEquals(tdl, mae.getAddress());
             assertEquals(vlan, mae.getVlan());
             assertEquals(nc, mae.getNodeConnector());
-            assertTrue(Arrays.equals(ip, mae.getInetAddresses()));
+            assertEquals(ipset, mae.getInetAddresses());
         }
     }
 
@@ -104,20 +103,20 @@ public class MacAddressEntryTest extends TestBase {
     @Test
     public void testEquals() {
         short vlans[] = { -10, 0, 1, 100, 4095 };
-        List<InetAddress[]> ips = createInetAddresses(false);
+        List<Set<InetAddress>> ips = createInetAddresses(false);
         List<EthernetAddress> ethaddrs = createEthernetAddresses(false);
         HashSet<Object> set = new HashSet<Object>();
         List<NodeConnector> connectors = createNodeConnectors(3, false);
 
         for (NodeConnector nc : connectors) {
-            for (InetAddress[] ip : ips) {
+            for (Set<InetAddress> ipset : ips) {
                 for (EthernetAddress ea : ethaddrs) {
                     for (short vlan : vlans) {
                         MacAddressEntry mae1 =
-                            new MacAddressEntry(ea, vlan, nc, ip);
+                            new MacAddressEntry(ea, vlan, nc, ipset);
                         MacAddressEntry mae2 =
                             new MacAddressEntry(copy(ea), vlan, copy(nc),
-                                                copy(ip));
+                                                copy(ipset));
 
                         testEquals(set, mae1, mae2);
                     }
@@ -135,21 +134,21 @@ public class MacAddressEntryTest extends TestBase {
      */
     @Test
     public void testToString() {
-        List<InetAddress[]> ips = createInetAddresses();
+        List<Set<InetAddress>> ips = createInetAddresses();
         String prefix = "MacAddressEntry[";
         String suffix = "]";
         short vlans[] = { -10, 0, 1, 100, 4095 };
         for (NodeConnector nc : createNodeConnectors(3, false)) {
-            for (InetAddress[] ip : ips) {
+            for (Set<InetAddress> ipset : ips) {
                 for (EthernetAddress ea : createEthernetAddresses(false)) {
                     for (short vlan : vlans) {
                         MacAddressEntry mae =
-                            new MacAddressEntry(ea, vlan, nc, ip);
+                            new MacAddressEntry(ea, vlan, nc, ipset);
 
                         String a = "address=" + ea;
                         String v = "vlan=" + vlan;
                         String c = "connector=" + nc;
-                        String i = "ipaddr=" + toString(ip);
+                        String i = "ipaddr=" + toString(ipset);
                         String required =
                             joinStrings(prefix, suffix, ",", a, v, c, i);
                         assertEquals(required, mae.toString());
@@ -166,11 +165,11 @@ public class MacAddressEntryTest extends TestBase {
     public void testSerialize() {
         short vlans[] = { -10, 0, 1, 100, 4095 };
         for (NodeConnector nc : createNodeConnectors(3, false)) {
-            for (InetAddress[] ip : createInetAddresses()) {
+            for (Set<InetAddress> ipset : createInetAddresses()) {
                 for (EthernetAddress ea : createEthernetAddresses(false)) {
                     for (short vlan : vlans) {
                         MacAddressEntry mae =
-                            new MacAddressEntry(ea, vlan, nc, ip);
+                            new MacAddressEntry(ea, vlan, nc, ipset);
 
                         serializeTest(mae);
                     }
@@ -180,12 +179,12 @@ public class MacAddressEntryTest extends TestBase {
     }
 
     /**
-     * Return a string representation of the given {@code InetAddress} array.
+     * Return a string representation of the given {@code InetAddress} set.
      *
-     * @param ipaddrs  An array of {@code InetAddress}.
-     * @return  A string representation of the given array.
+     * @param ipaddrs  An set of {@code InetAddress}.
+     * @return  A string representation of the given set.
      */
-    private String toString(InetAddress[] ipaddrs) {
+    private String toString(Set<InetAddress> ipaddrs) {
         StringBuilder builder = new StringBuilder("{");
         if (ipaddrs != null) {
             char sep = 0;
