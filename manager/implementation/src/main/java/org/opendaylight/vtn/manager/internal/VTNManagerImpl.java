@@ -3120,6 +3120,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
         rdlock.lock();
         try {
             // Port mappings should precede VLAN mappings.
+            LOOP:
             for (MapType type: MapType.values()) {
                 if (type == MapType.ALL) {
                     break;
@@ -3128,7 +3129,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
                 for (VTenantImpl vtn: tenantDB.values()) {
                     res = vtn.receive(this, type, pctx);
                     if (res != PacketResult.IGNORED) {
-                        break;
+                        break LOOP;
                     }
                 }
             }
