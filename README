@@ -1,9 +1,31 @@
 OpenDaylight Virtual Tenant Network (VTN)
 
-How To Build
-============
+https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):Main
 
-== Prior preparation ==
+Overview
+========
+OpenDaylight VTN provides multi-tenant virtual network functions on
+OpenDaylight controllers. OpenDaylight VTN consists of two parts:
+VTN Coordinator and VTN Manager.
+
+VTN Coordinator orchestrates multiple VTN Managers running in OpenDaylight
+Controllers, and provides VTN Applications with VTN API.
+
+VTN Manager is OSGi bundles running in OpenDaylight Controller. It handles
+PACKET_IN messages, sends PACKET_OUT messages, manages host information,
+and installs flow entries into switches to provide VTN Coordinator with
+virtual network functions.
+
+The requirements for installing these two are different.
+Therefore, we recommend that you install VTN Manager and VTN Coordinator
+in different machines.
+
+VTN Coordinator Installation Guide
+==================================
+https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):Installation:VTN_Coordinator
+
+== Installing VTN Coordinator from source code ==
+=== Prior preparation ===
  1. Arrange a server where RHEL 6.1 or later is installed.
  2. Install necessary packages. 
         yum install make glibc-devel gcc gcc-c++ boost-devel openssl-devel \
@@ -18,34 +40,42 @@ How To Build
     * postgresql91-contrib-9.1.9-1PGDG.rhel6.x86_64.rpm
     * postgresql91-odbc-09.00.0310-1PGDG.rhel6.x86_64.rpm
 
- 4. Install Tomcat.
+ 4. Install Maven.
+    * Download Maven from the following page and install it folloiwng
+      the instruction in the page.
+      http://maven.apache.org/download.cgi
+    * Extract under /usr/share/java.
+        tar zxvf apache-tomcat-7.0.39.tar.gz -C /usr/share/java
+
+ 5. Install gtest-devel.
+        wget http://dl.fedoraproject.org/pub/epel/6/i386/epel-release-6-8.noarch.rpm
+        rpm -Uvh epel-release-6-8.noarch.rpm
+        yum install gtest-devel
+
+=== Build ===
+ 1. Download the code from git.
+        git clone ssh://<username>@git.opendaylight.org:29418/vtn.git
+          or
+        git clone https://git.opendaylight.org/gerrit/p/vtn.git
+
+ 2. Build and install VTN Coordinator.
+        cd vtn/coordinator
+        mvn -f dist/pom.xml package
+        sudo make install
+
+== Run VTN Coordinator ==
+=== Prior preparation ===
+ 1. Install Tomcat.
     * Download the following file.
       http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.39/bin/apache-tomcat-7.0.39.tar.gz
     * Extract under /usr/share/java.
         tar zxvf apache-tomcat-7.0.39.tar.gz -C /usr/share/java
 
- 5. Install Gson.
-    * Download the following file. 
-      http://google-gson.googlecode.com/files/google-gson-2.2.2-release.zip
-    * Keep it under /usr/share/java.
-        unzip google-gson-2.2.2-release.zip
-        cp google-gson-2.2.2/gson-2.2.2.jar /usr/share/java
-
- 6. Install org.json.
-    * Download the following file.
-      http://repo1.maven.org/maven2/org/json/json/20090211/json-20090211.jar
-    * Keep it under /usr/share/java.
-        cp json-20090211.jar /usr/share/java
-
-== Build ==
- 1. Build and install VTN.
-        ./configure
-        make install
-
  2. Carry out Tomcat settings.
     * Create the following symbolic link.
         ln -s /usr/local/vtn/tomcat/webapps/vtn-webapi \
               /usr/share/java/apache-tomcat-7.0.39/webapps/vtn-webapi
+
     * Add the following to "common.loader" of
       /usr/share/java/apache-tomcat-7.0.39/conf/catalina.properties.
 
@@ -64,8 +94,8 @@ How To Build
  3. Set up the DB.
         /usr/local/vtn/sbin/db_setup
 
-== Start ==
- 1. Start VTN and Tomcat.
+=== Start ===
+ 1. Start VTN Coordinator and Tomcat.
         /usr/local/vtn/bin/vtn_start
         /usr/share/java/apache-tomcat-7.0.39/bin/catalina.sh start
 
@@ -73,11 +103,83 @@ How To Build
         /usr/share/java/apache-tomcat-7.0.39/bin/catalina.sh stop
         /usr/local/vtn/bin/vtn_stop
 
-== WebAPI ==
+=== WebAPI ===
  * Carry out VTN settings with WebAPI.
- * VTN version information will be displayed if following command
+ * VTN Coordinator version information will be displayed if following command
    is executed when VTN has started successfully.
         $ curl -X GET -H 'content-type: application/json' -H 'username: admin' \
                -H 'password: adminpass' -H 'ipaddr:127.0.0.1' \
                http://127.0.0.1:8080/vtn-webapi/api_version.json
+
+VTN Manager Installation Guide
+==============================
+https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):Installation:VTN_Manager
+
+== Installing VTN Manager from source code ==
+=== Prior preparation ===
+ 1. Install OpenDaylight Controller.
+    * Please refer Controller's Installation Guide.
+      https://wiki.opendaylight.org/view/OpenDaylight_Controller:Installation
+
+=== Build ===
+ 1. Download the code from the Git repository of VTN Project.
+        git clone ssh://<username>@git.opendaylight.org:29418/vtn.git
+          or
+        git clone https://git.opendaylight.org/gerrit/p/vtn.git
+
+    The following instructions assume you install OpenDaylight Controller
+    in directory ${CONTROLLER_DIR}, and put the VTN source code in directory
+    ${VTN_DIR}.
+
+        ${CONTROLLER_DIR}=<Installation directory of OpenDaylight Controller>
+        ${VTN_DIR}=<Top of VTN source tree>
+
+ 2. Build the code of VTN Manager.
+        cd ${VTN_DIR}
+        mvn -f manager/dist/pom.xml install
+
+ 3. Delete unused plugins in the plugin directory of the controller.
+    * arphandler
+    * simpleforwarding
+    * loadbalancer
+
+        cd  ${CONTROLLER_DIR}/plugins
+        rm org.opendaylight.controller.arphandler-<version>.jar
+        rm org.opendaylight.controller.samples.simpleforwarding-<version>.jar
+        rm org.opendaylight.controller.samples.loadbalancer-<version>.jar
+        rm org.opendaylight.controller.samples.loadbalancer.northbound-<version>.jar
+
+ 4. Copy OSGi bundles of VTN Manager to the plugin directory of the controller.
+
+    cp ${VTN_DIR}/manager/dist/target/distribution.vtn-manager-<version>-osgipackage/opendaylight/plugins/*.jar ${CONTROLLER_DIR}/plugins/
+
+== Run the Controller with VTN Manager ==
+
+On Linux/Unix systems, execute run.sh.
+
+        cd ${CONTROLLER_DIR}
+        ./run.sh
+
+Please see Controller's Installation Guide for more information.
+https://wiki.opendaylight.org/view/OpenDaylight_Controller:Installation
+
+=== REST API ===
+
+VTN Manager provides REST API for virtual network functions.
+
+Please check the VTN Manager's REST API specification page for detailed information.
+    https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):VTN_Manager:RestApi
+
+Here is an example of how to create a virtual tenant network.
+
+        curl --user "admin":"admin" -H "Accept: application/json" -H \
+        "Content-type: application/json" -X POST \
+        http://localhost:8080/controller/nb/v2/vtn/default/vtns/Tenant1 \
+        -d '{"@description": "My First Virtual Tenant Network"}'
+
+You can check the list of all tenants by executing the following command.
+
+        curl --user "admin":"admin" -H "Accept: application/json" -H \
+        "Content-type: application/json" -X GET \
+        http://localhost:8080/controller/nb/v2/vtn/default/vtns
 
