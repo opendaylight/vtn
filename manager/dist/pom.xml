@@ -47,6 +47,7 @@
     <module>../api</module>
     <module>../implementation</module>
     <module>../northbound</module>
+    <module>../northboundIT</module>
   </modules>
 
   <build>

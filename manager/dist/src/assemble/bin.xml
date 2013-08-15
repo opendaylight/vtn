@@ -22,6 +22,9 @@
   <includeBaseDirectory>false</includeBaseDirectory>
   <moduleSets>
     <moduleSet>
+      <excludes>
+        <exclude>org.opendaylight.vtn:*.integrationtest</exclude>
+      </excludes>
       <binaries>
         <outputDirectory>opendaylight/plugins</outputDirectory>
         <outputFileNameMapping>
