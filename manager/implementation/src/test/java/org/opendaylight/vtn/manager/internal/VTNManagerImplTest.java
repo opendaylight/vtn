@@ -660,7 +660,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
     /**
      * Test method for
      * {@link VTNManagerImpl#addVTNModeListener(IVTNModeListener)},
-     * {@link oVTNManagerImpl#removeVTNModeListener(IVTNModeListener)}
+     * {@link VTNManagerImpl#removeVTNModeListener(IVTNModeListener)}
      * {@link VTNManagerImpl#notifyChange(boolean)},
      * {@link VTNManagerImpl#notifyChange(IVTNModeListener, boolean)}
      */

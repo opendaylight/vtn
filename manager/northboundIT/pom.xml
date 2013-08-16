@@ -27,18 +27,81 @@
   <version>0.1.0-SNAPSHOT</version>
 
   <properties>
-    <exam.version>3.0.0</exam.version>
-    <enunciate.version>1.26.2</enunciate.version>
-    <slf4j.version>1.7.2</slf4j.version>
-    <jackson.version>1.9.8</jackson.version>
     <spring.version>3.1.3.RELEASE</spring.version>
     <spring-security.version>3.1.3.RELEASE</spring-security.version>
-    <jersey.version>1.17</jersey.version>
     <virgo.version>3.6.0.RELEASE</virgo.version>
     <geminiweb.version>2.2.0.RELEASE</geminiweb.version>
     <javax-servlet-api.version>2.5</javax-servlet-api.version>
+
+    <!-- Sonar properties using jacoco to retrieve test results -->
+    <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
+    <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
+    <sonar.jacoco.Reportpath>../northbound/target/jacoco.exec</sonar.jacoco.Reportpath>
+    <sonar.jacoco.itReportPath>../northbound/target/jacoco-it.exec</sonar.jacoco.itReportPath>
+    <sonar.language>java</sonar.language>
   </properties>
 
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>${jacoco.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <plugin>
+       <groupId>org.ops4j.pax.exam</groupId>
+       <artifactId>maven-paxexam-plugin</artifactId>
+       <version>${maven-paxexam.version}</version>
+        <executions>
+          <execution>
+            <id>generate-config</id>
+            <goals>
+              <goal>generate-depends-file</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <configuration>
+          <destFile>../northbound/target/jacoco-it.exec</destFile>
+          <includes>org.opendaylight.vtn.*</includes>
+        </configuration>
+        <executions>
+          <execution>
+            <id>pre-test</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>post-test</id>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <argLine>${testvm.argLine} ${argLine}</argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
   <dependencies>
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
@@ -693,22 +756,4 @@
       <version>${jersey.version}</version>
     </dependency>
   </dependencies>
-
-  <build>
-   <plugins>
-     <plugin>
-       <groupId>org.ops4j.pax.exam</groupId>
-       <artifactId>maven-paxexam-plugin</artifactId>
-       <version>1.2.4</version>
-        <executions>
-          <execution>
-            <id>generate-config</id>
-            <goals>
-              <goal>generate-depends-file</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 </project>
