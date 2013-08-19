@@ -150,7 +150,7 @@ public class MacAddressTable {
      */
     public void add(VTNManagerImpl mgr, PacketContext pctx) {
         byte[] src = pctx.getSourceAddress();
-        if (!VTNManagerImpl.isUnicast(src)) {
+        if (!NetUtils.isUnicastMACAddr(src)) {
             return;
         }
 
@@ -173,6 +173,7 @@ public class MacAddressTable {
             }
         }
 
+        boolean needProbe;
         synchronized (this) {
             // Search for a table entry.
             MacTableEntry tent = macAddressTable.get(key);
@@ -214,6 +215,7 @@ public class MacAddressTable {
                 }
                 macAddressTable.put(key, tent);
             }
+            needProbe = tent.isProbeNeeded();
         }
 
         // Notify the host tracker of new host entry.
@@ -229,6 +231,9 @@ public class MacAddressTable {
             } catch (Exception e) {
                 LOG.error(tableName + ": Unable to create a host entry", e);
             }
+        } else if (needProbe) {
+            // Try to detect IP address of the host.
+            pctx.probeInetAddress(mgr);
         }
     }
 

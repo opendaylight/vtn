@@ -1038,13 +1038,28 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     public Ethernet createArpRequest(byte[] dst, InetAddress addr,
                                      short vlan) {
         // IP address must be an IPv4 address.
-        if (!(addr instanceof Inet4Address)) {
-            return null;
+        if (addr instanceof Inet4Address) {
+            return createArpRequest(dst, addr.getAddress(), vlan);
         }
+        return null;
+    }
 
+    /**
+     * Create an ethernet frame which contains an ARP request message.
+     *
+     * <p>
+     *   Controller's MAC address is used as source MAC adddress, and zero
+     *   is used as sender protocol address.
+     * </p>
+     *
+     * @param dst     Destination MAC address.
+     * @param target  Target IP address.
+     * @param vlan    VLAN ID. Zero means VLAN tag should not be added.
+     * @return  An ethernet frame.
+     */
+    public Ethernet createArpRequest(byte[] dst, byte[] target, short vlan) {
         // Set controller's MAC address to source MAC address.
         byte[] src = switchManager.getControllerMAC();
-        byte[] target = addr.getAddress();
 
         // Create an ARP request message.
         // Set zero to sender protocol address.
@@ -1386,17 +1401,6 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     public static Status argumentIsNull(String desc) {
         String msg = desc + " cannot be null";
         return new Status(StatusCode.BADREQUEST, msg);
-    }
-
-    /**
-     * Determine whether the given MAC address is a unicast address or not.
-     *
-     * @param addr  A MAC address.
-     * @return  {@code true} is returned only if the given MAC address is a
-     *          unicast address.
-     */
-    public static boolean isUnicast(byte[] addr) {
-        return ((addr[0] & 0x1) == 0);
     }
 
     /**

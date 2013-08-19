@@ -57,6 +57,7 @@ import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.PacketResult;
 import org.opendaylight.controller.sal.routing.IRouting;
 import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
+import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
@@ -1567,7 +1568,7 @@ public class VBridgeImpl implements Serializable {
             return;
         }
 
-        if (!VTNManagerImpl.isUnicast(dst)) {
+        if (!NetUtils.isUnicastMACAddr(dst)) {
             // Flood the non-unicast packet.
             flood(mgr, pctx);
             return;

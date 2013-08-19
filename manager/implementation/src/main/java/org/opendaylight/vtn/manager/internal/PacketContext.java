@@ -9,8 +9,12 @@
 
 package org.opendaylight.vtn.manager.internal;
 
+import java.net.InetAddress;
 import java.util.Map;
 import java.util.TreeMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 
@@ -18,11 +22,13 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IEEE8021Q;
+import org.opendaylight.controller.sal.packet.IPv4;
 import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.NetUtils;
+import org.opendaylight.controller.switchmanager.ISwitchManager;
 
 /**
  * {@code PacketContext} class describes the context of received packet.
@@ -32,6 +38,12 @@ import org.opendaylight.controller.sal.utils.NetUtils;
  * </p>
  */
 public class PacketContext {
+    /**
+     * Logger instance.
+     */
+    private final static Logger  LOG =
+        LoggerFactory.getLogger(PacketContext.class);
+
     /**
      * A received raw packet.
      */
@@ -354,5 +366,40 @@ public class PacketContext {
             append(", vlan=").append((int)vlan);
 
         return builder.toString();
+    }
+
+    /**
+     * Try to probe IP address of the source address of this packet.
+     *
+     * @param mgr  VTN Manager service.
+     */
+    public void probeInetAddress(VTNManagerImpl mgr) {
+        if (payload instanceof IPv4) {
+            // Send an ARP request to the source address of this packet.
+            ISwitchManager swMgr = mgr.getSwitchManager();
+            IPv4 ipv4 = (IPv4)payload;
+            int srcIp = ipv4.getSourceAddress();
+            byte[] dst = getSourceAddress();
+            byte[] tpa = NetUtils.intToByteArray4(srcIp);
+            short vlan = getVlan();
+            Ethernet ether = mgr.createArpRequest(dst, tpa, vlan);
+            NodeConnector port = getIncomingNodeConnector();
+
+            if (LOG.isTraceEnabled()) {
+                String dstmac = HexEncode.bytesToHexStringFormat(dst);
+                String target;
+                try {
+                    InetAddress ia = InetAddress.getByAddress(tpa);
+                    target = ia.getHostAddress();
+                } catch (Exception e) {
+                    target = HexEncode.bytesToHexStringFormat(tpa);
+                }
+                LOG.trace("{}: Send an ARP request to detect IP address: " +
+                          "dst={}, tpa={}, vlan={}, port={}",
+                          mgr.getContainerName(), dstmac, target, vlan, port);
+            }
+
+            mgr.transmit(port, ether);
+        }
     }
 }

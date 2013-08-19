@@ -50,6 +50,11 @@ public class MacTableEntry {
     private boolean  used = true;
 
     /**
+     * {@code true} is set if a probe request for IP address should be sent.
+     */
+    private boolean  probeNeeded = true;
+
+    /**
      * Construct a new MAC address table entry.
      *
      * @param port    A node connector associated with the MAC address.
@@ -63,6 +68,7 @@ public class MacTableEntry {
         this.port = port;
         this.vlan = vlan;
         if (ipaddr != null) {
+            probeNeeded = false;
             ipAddresses.add(ipaddr);
         }
     }
@@ -112,6 +118,7 @@ public class MacTableEntry {
      *          added.
      */
     public boolean addInetAddress(InetAddress ipaddr) {
+        probeNeeded = false;
         return ipAddresses.add(ipaddr);
     }
 
@@ -132,6 +139,19 @@ public class MacTableEntry {
      */
     public void setUsed() {
         this.used = true;
+    }
+
+    /**
+     * Determine whether a probe request for IP address should be sent or not.
+     *
+     * @return  {@code true} is returned if a probe request for IP address
+     *          should be sent. Otherwise {@code false}.
+     */
+    public boolean isProbeNeeded() {
+        // A probe for IP address should be sent only one time.
+        boolean ret = probeNeeded;
+        probeNeeded = false;
+        return ret;
     }
 
     /**

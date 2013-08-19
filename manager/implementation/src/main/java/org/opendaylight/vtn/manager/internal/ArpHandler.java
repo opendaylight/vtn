@@ -326,7 +326,7 @@ public class ArpHandler {
 
         HostNodeConnector requestor = null;
         byte[] src = pctx.getSourceAddress();
-        if (VTNManagerImpl.isUnicast(src)) {
+        if (NetUtils.isUnicastMACAddr(src)) {
             try {
                 requestor = new HostNodeConnector(src, sdrIp, nc, vlan);
             } catch (ConstructionException e) {
