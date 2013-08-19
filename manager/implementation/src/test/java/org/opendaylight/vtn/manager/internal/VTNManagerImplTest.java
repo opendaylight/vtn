@@ -553,8 +553,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         stub2.checkVtnInfo(1, tpath, tname, UpdateType.ADDED);
         stub2.checkVbrInfo(1, bpath, bname, UpdateType.ADDED);
         stub2.checkVIfInfo(1, ifpath, ifname, UpdateType.ADDED);
-        // TODO: need to check.
-//        stub2.checkPmapInfo(1, ifpath, pmconf, UpdateType.ADDED);
+        stub2.checkPmapInfo(1, ifpath, pmconf, UpdateType.ADDED);
         stub1.checkAllNull();
         stub2.checkAllNull();
 
@@ -574,8 +573,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         stub2.checkVtnInfo(1, tpath, tname, UpdateType.ADDED);
         stub2.checkVbrInfo(1, bpath, bname, UpdateType.ADDED);
         stub2.checkVIfInfo(1, ifpath, ifname, UpdateType.ADDED);
-        // TODO: need to check.
-//      stub2.checkPmapInfo(1, ifpath, pmconf, UpdateType.ADDED);
+        stub2.checkPmapInfo(1, ifpath, pmconf, UpdateType.ADDED);
         stub2.checkVlmapInfo(1, bpath, map.getId(), UpdateType.ADDED);
         stub1.checkAllNull();
         stub2.checkAllNull();

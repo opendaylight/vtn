@@ -929,9 +929,7 @@ public class VBridgeImpl implements Serializable {
         rdlock.lock();
         try {
             for (VBridgeIfImpl vif: vInterfaces.values()) {
-                VInterface viface = vif.getVInterface(mgr);
-                VBridgeIfPath ipath = (VBridgeIfPath)vif.getPath();
-                mgr.notifyChange(listener, ipath, viface, type);
+                vif.notifyConfiguration(mgr, listener);
             }
 
             for (Map.Entry<String, VlanMapImpl> entry: vlanMaps.entrySet()) {
