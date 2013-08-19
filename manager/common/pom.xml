@@ -39,6 +39,7 @@
     <sonar.host.url>https://sonar.opendaylight.org/</sonar.host.url>
     <projectinfo.version>2.6</projectinfo.version>
     <project.build.sourceEncoding>${vtn.encoding}</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>${vtn.encoding}</project.reporting.outputEncoding>
     <compiler.version>2.3.2</compiler.version>
     <surefire.version>2.15</surefire.version>
     <failsafe.version>2.15</failsafe.version>
