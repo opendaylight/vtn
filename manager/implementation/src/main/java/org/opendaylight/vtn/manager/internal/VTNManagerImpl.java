@@ -857,7 +857,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     void unsetResourceManager(IVTNResourceManager service) {
         if (resourceManager == service) {
             LOG.debug("Unset VTN resource manager: {}", service);
-            resourceManager = service;
+            resourceManager = null;
         }
     }
 
