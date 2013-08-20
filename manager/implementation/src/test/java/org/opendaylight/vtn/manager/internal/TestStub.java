@@ -730,6 +730,11 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
     }
 
     @Override
+    public List<FlowEntry> getInstalledFlowEntriesForGroup(String policyName) {
+        return null;
+    }
+
+    @Override
     public List<FlowEntry> getFlowEntriesForGroup(String group) {
         return null;
     }
