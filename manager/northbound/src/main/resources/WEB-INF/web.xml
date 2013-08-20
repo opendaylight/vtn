@@ -3,6 +3,20 @@
    xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
    xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
    version="3.0">
+   <!-- Added CorsFilter to enable secure cross site scripting
+        See: http://tomcat.apache.org/tomcat-7.0-doc/config/filter.html#CORS_Filter
+        And: http://en.wikipedia.org/wiki/Cross-origin_resource_sharing
+        This is done to allow a web page using javascript to be able to make calls to our REST APIs even
+        though it does not originate in our domain.
+    -->
+  <filter>
+    <filter-name>CorsFilter</filter-name>
+    <filter-class>org.apache.catalina.filters.CorsFilter</filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>CorsFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
   <servlet>
     <servlet-name>JAXRSVTNManager</servlet-name>
     <servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
