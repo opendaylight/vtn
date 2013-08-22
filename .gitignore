@@ -32,3 +32,15 @@ target
 /coordinator/core/tools/src/perl/modtool
 /coordinator/core/tools/src/perl/replace
 /coordinator/objs/
+*.class
+**/bin
+**/logs
+products
+repository
+workspace
+*~
+.classpath
+.project
+.settings
+MANIFEST.MF
+manager/northboundIT/logs/
