@@ -35,4 +35,10 @@
       </binaries>
     </moduleSet>
   </moduleSets>
+  <fileSets>
+    <fileSet>
+      <directory>${project.build.directory}/generated-resources</directory>
+      <outputDirectory>/</outputDirectory>
+    </fileSet>
+  </fileSets>
 </assembly>
