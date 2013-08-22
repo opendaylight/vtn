@@ -24,6 +24,10 @@
     <moduleSet>
       <excludes>
         <exclude>org.opendaylight.vtn:*.integrationtest</exclude>
+        <exclude>opendaylight/plugins/org.opendaylight.controller.arphandler-*.jar</exclude>
+        <exclude>opendaylight/plugins/org.opendaylight.controller.samples.simpleforwarding-*.jar</exclude>
+        <exclude>opendaylight/plugins/org.opendaylight.controller.samples.loadbalancer-*.jar</exclude>
+        <exclude>opendaylight/plugins/org.opendaylight.controller.samples.loadbalancer.northbound-*.jar</exclude>
       </excludes>
       <binaries>
         <outputDirectory>opendaylight/plugins</outputDirectory>
@@ -35,4 +39,10 @@
       </binaries>
     </moduleSet>
   </moduleSets>
+  <fileSets>
+    <fileSet>
+      <directory>${project.build.directory}/generated-resources</directory>
+      <outputDirectory>/</outputDirectory>
+    </fileSet>
+  </fileSets>
 </assembly>
