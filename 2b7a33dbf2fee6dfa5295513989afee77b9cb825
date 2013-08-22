@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "AAAAFH///70\u003d",
+        "filename": ".gitignore",
+        "patchSetId": 1
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2013-08-22T08:17:15Z",
+      "side": 1,
+      "message": "Please remove \"dist\" line because \"coordinator/dist\" and \"manager/dist\" directories should be tracked by the git.",
+      "revId": "2b7a33dbf2fee6dfa5295513989afee77b9cb825",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
