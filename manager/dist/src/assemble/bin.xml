@@ -35,4 +35,14 @@
       </binaries>
     </moduleSet>
   </moduleSets>
+  <fileSets>
+    <fileSet>
+      <excludes>
+        <exclude>opendaylight/plugins/org.opendaylight.controller.arphandler-*.jar</exclude>
+        <exclude>opendaylight/plugins/org.opendaylight.controller.samples.*.jar</exclude>
+      </excludes>
+      <directory>${project.build.directory}/generated-resources</directory>
+      <outputDirectory>/</outputDirectory>
+    </fileSet>
+  </fileSets>
 </assembly>
