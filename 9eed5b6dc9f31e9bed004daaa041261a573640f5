@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "AAAAFH///zo\u003d",
+        "filename": "manager/dist/src/assemble/bin.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2013-08-23T09:05:38Z",
+      "side": 1,
+      "message": "Below this one, could you add the following configuration to exclude bundles which disrupt VTN Manager.\n\n      \u003cexcludes\u003e\n        \u003cexclude\u003eopendaylight/plugins/org.opendaylight.controller.arphandler-*.jar\u003c/exclude\u003e\n        \u003cexclude\u003eopendaylight/plugins/org.opendaylight.controller.samples.simpleforwarding-*.jar\u003c/exclude\u003e\n        \u003cexclude\u003eopendaylight/plugins/org.opendaylight.controller.samples.loadbalancer-*.jar\u003c/exclude\u003e\n        \u003cexclude\u003eopendaylight/plugins/org.opendaylight.controller.samples.loadbalancer.northbound-*.jar\u003c/exclude\u003e\n      \u003c/excludes\u003e",
+      "revId": "9eed5b6dc9f31e9bed004daaa041261a573640f5",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
