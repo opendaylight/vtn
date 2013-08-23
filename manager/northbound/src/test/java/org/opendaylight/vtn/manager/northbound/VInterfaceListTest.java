@@ -9,12 +9,11 @@
 
 package org.opendaylight.vtn.manager.northbound;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.ArrayList;
 
 import org.junit.Test;
-
 import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
 import org.opendaylight.vtn.manager.VNodeState;
@@ -23,6 +22,48 @@ import org.opendaylight.vtn.manager.VNodeState;
  * JUnit test for {@link VInterfaceList}.
  */
 public class VInterfaceListTest extends TestBase {
+    /**
+     * Test case for getter methods.
+     */
+    @Test
+    public void testGetter() {
+        List<VInterface> list = new ArrayList<VInterface>();
+        List<String> names = createStrings("nm");
+        List<VInterfaceConfig> configs = createConfigs();
+        VNodeState[] states = VNodeState.values();
+
+        // null list.
+        VInterfaceList nullList = new VInterfaceList(null);
+        assertNull(nullList.getList());
+
+        // Empty list should be treated as null list.
+        VInterfaceList emptyList =
+            new VInterfaceList(new ArrayList<VInterface>());
+        assertEquals(list, emptyList.getList());
+
+        for (String name: names) {
+            for (VInterfaceConfig iconf: configs) {
+                for (VNodeState state: states) {
+                    for (VNodeState estate: states) {
+                        VInterface i =
+                            new VInterface(name, state, estate, iconf);
+
+                        list.add(i);
+
+                        // Single entry.
+                        List<VInterface> l = new ArrayList<VInterface>();
+                        l.add(i);
+                        VInterfaceList vi = new VInterfaceList(l);
+                        assertEquals(l, vi.getList());
+                        // Multiple entries.
+                        VInterfaceList vil = new VInterfaceList(list);
+                        assertEquals(list, vil.getList());
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Test case for {@link VInterfaceList#equals(Object)} and
      * {@link VInterfaceList#hashCode()}.

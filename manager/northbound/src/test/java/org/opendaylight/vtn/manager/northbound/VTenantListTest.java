@@ -9,12 +9,11 @@
 
 package org.opendaylight.vtn.manager.northbound;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.ArrayList;
 
 import org.junit.Test;
-
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantConfig;
 
@@ -22,6 +21,37 @@ import org.opendaylight.vtn.manager.VTenantConfig;
  * JUnit test for {@link VTenantList}.
  */
 public class VTenantListTest extends TestBase {
+    /**
+     * Test case for getter methods.
+     */
+    @Test
+    public void testGetter() {
+        List<VTenant> list = new ArrayList<VTenant>();
+        List<String> names = createStrings("name");
+        List<String> descs = createStrings("description");
+
+        // null list.
+        VTenantList nullList = new VTenantList(null);
+        assertNull(nullList.getList());
+
+        // Empty list should be treated as null list.
+        VTenantList emptyList = new VTenantList(new ArrayList<VTenant>());
+        assertEquals(list, emptyList.getList());
+
+        for (String name: names) {
+            for (String desc: descs) {
+                VTenantConfig tconf = new VTenantConfig(desc);
+                VTenant t1 = new VTenant(name, tconf);
+
+                list.add(t1);
+
+                List<VTenant> l = new ArrayList<VTenant>(list);
+                VTenantList vt = new VTenantList(l);
+                assertEquals(list, vt.getList());
+            }
+        }
+    }
+
     /**
      * Test case for {@link VTenantList#equals(Object)} and
      * {@link VTenantList#hashCode()}.

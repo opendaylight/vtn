@@ -9,21 +9,51 @@
 
 package org.opendaylight.vtn.manager.northbound;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.ArrayList;
 
 import org.junit.Test;
-
-import org.opendaylight.vtn.manager.VlanMap;
-import org.opendaylight.vtn.manager.VNodeState;
-
 import org.opendaylight.controller.sal.core.Node;
+import org.opendaylight.vtn.manager.VlanMap;
 
 /**
  * JUnit test for {@link VlanMapList}.
  */
 public class VlanMapListTest extends TestBase {
+    /**
+     * Test case for getter methods.
+     */
+    @Test
+    public void testGetter() {
+        List<VlanMap> list = new ArrayList<VlanMap>();
+        List<String> ids = createStrings("map");
+        List<Node> nodes = createNodes(3);
+        short vlans[] = {-5, 0, 3, 4095};
+
+        // null list.
+        VlanMapList nullList = new VlanMapList(null);
+        assertNull(nullList.getList());
+
+        // Empty list should be treated as null list.
+        VlanMapList emptyList = new VlanMapList(new ArrayList<VlanMap>());
+        assertEquals(list, emptyList.getList());
+
+        for (String id: ids) {
+            for (Node node: nodes) {
+                for (short vlan: vlans) {
+                    VlanMap v = new VlanMap(id, node, vlan);
+
+                    list.add(v);
+                    List<VlanMap> l = new ArrayList<VlanMap>(list);
+
+                    VlanMapList vl = new VlanMapList(l);
+                    assertEquals(list, vl.getList());
+                }
+            }
+        }
+    }
+
     /**
      * Test case for {@link VlanMapList#equals(Object)} and
      * {@link VlanMapList#hashCode()}.

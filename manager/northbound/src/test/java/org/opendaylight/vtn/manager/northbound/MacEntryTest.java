@@ -9,16 +9,16 @@
 package org.opendaylight.vtn.manager.northbound;
 
 import java.net.InetAddress;
-import java.util.Set;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.Test;
-
+import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-
 import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.SwitchPort;
 
@@ -60,8 +60,7 @@ public class MacEntryTest extends TestBase {
             for (Set<InetAddress> ipset : ips) {
                 for (EthernetAddress ea : ethaddrs) {
                     for (short vlan : vlans) {
-                        MacAddressEntry mae =
-                            new MacAddressEntry(ea, vlan, nc, ipset);
+                        MacAddressEntry mae = new MacAddressEntry(ea, vlan, nc, ipset);
                         MacEntry me = new MacEntry(mae);
 
                         String type = nc.getType();
@@ -76,7 +75,7 @@ public class MacEntryTest extends TestBase {
                             assertNotNull(iset);
                             assertEquals(ipset.size(), iset.getLength());
                             Set<IpAddress> is = iset.getAddresses();
-                            for (InetAddress iaddr: ipset) {
+                            for (InetAddress iaddr : ipset) {
                                 IpAddress ipaddr = new IpAddress(iaddr);
                                 assertTrue(is.contains(ipaddr));
                             }
@@ -109,7 +108,7 @@ public class MacEntryTest extends TestBase {
             assertNotNull(iset);
             assertEquals(ipset.size(), iset.getLength());
             Set<IpAddress> is = iset.getAddresses();
-            for (InetAddress iaddr: ipset) {
+            for (InetAddress iaddr : ipset) {
                 IpAddress ipaddr = new IpAddress(iaddr);
                 assertTrue(is.contains(ipaddr));
             }
@@ -122,32 +121,61 @@ public class MacEntryTest extends TestBase {
      */
     @Test
     public void testEquals() {
+        int num = 3;
         short vlans[] = { -10, 0, 1, 100, 4095 };
         List<Set<InetAddress>> ips = createInetAddresses(false);
         List<EthernetAddress> ethaddrs = createEthernetAddresses(false);
-        List<NodeConnector> connectors = createNodeConnectors(3, false);
+        List<Node> nodes = createNodes(num, false);
+        List<NodeConnector> connectors = null;
+
         HashSet<Object> set = new HashSet<Object>();
 
-        for (NodeConnector nc : connectors) {
-            for (Set<InetAddress> ipset : ips) {
-                for (EthernetAddress ea : ethaddrs) {
-                    for (short vlan : vlans) {
-                        MacAddressEntry mae1 =
-                            new MacAddressEntry(ea, vlan, nc, ipset);
-                        MacAddressEntry mae2 =
-                            new MacAddressEntry(copy(ea), vlan, copy(nc),
-                                                copy(ipset));
-                        MacEntry me1 = new MacEntry(mae1);
-                        MacEntry me2 = new MacEntry(mae2);
+        for (Node node : nodes) {
+            connectors = createNodeConnectors(num, node, false);
+            for(NodeConnector nc : connectors) {
+                for (Set<InetAddress> ipset : ips) {
+                    for (EthernetAddress ea : ethaddrs) {
+                        for (short vlan : vlans) {
+                            MacAddressEntry mae1 = new MacAddressEntry(ea, vlan, nc, ipset);
+                            MacAddressEntry mae2 = new MacAddressEntry(copy(ea), vlan, copy(nc), copy(ipset));
+                            MacEntry me1 = new MacEntry(mae1);
+                            MacEntry me2 = new MacEntry(mae2);
 
-                        testEquals(set, me1, me2);
+                            testEquals(set, me1, me2);
+                        }
                     }
                 }
             }
         }
 
-        assertEquals(connectors.size() * ips.size() * ethaddrs.size() *
-                     vlans.length, set.size());
+        assertEquals(nodes.size() * connectors.size() * ips.size() * ethaddrs.size() * vlans.length, set.size());
+    }
+
+    private List<NodeConnector> createNodeConnectors(int num, Node node, boolean setNull) {
+        ArrayList<NodeConnector> list = new ArrayList<NodeConnector>();
+        if (setNull) {
+            list.add(null);
+            num--;
+        }
+
+        for (int i = 0; i < num; i++) {
+            String nodeType = node.getType();
+            String connType = nodeType;
+            Object connId;
+            if (nodeType.equals(Node.NodeIDType.OPENFLOW)) {
+                connId = new Short((short) (i + 10));
+            } else {
+                connId = "Node Connector ID: " + i;
+            }
+
+            try {
+                NodeConnector nc = new NodeConnector(connType, connId, node);
+                list.add(nc);
+            } catch (Exception e) {
+                unexpected(e);
+            }
+        }
+        return list;
     }
 
     /**
@@ -164,8 +192,7 @@ public class MacEntryTest extends TestBase {
             for (Set<InetAddress> ipset : ips) {
                 for (EthernetAddress ea : ethaddrs) {
                     for (short vlan : vlans) {
-                        MacAddressEntry mae =
-                            new MacAddressEntry(ea, vlan, nc, ipset);
+                        MacAddressEntry mae = new MacAddressEntry(ea, vlan, nc, ipset);
                         MacEntry me = new MacEntry(mae);
                         jaxbTest(me, "macentry");
                     }

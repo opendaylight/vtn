@@ -9,12 +9,11 @@
 
 package org.opendaylight.vtn.manager.northbound;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.ArrayList;
 
 import org.junit.Test;
-
 import org.opendaylight.vtn.manager.VBridge;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VNodeState;
@@ -23,6 +22,43 @@ import org.opendaylight.vtn.manager.VNodeState;
  * JUnit test for {@link VBridgeList}.
  */
 public class VBridgeListTest extends TestBase {
+    /**
+     * Test case for getter methods.
+     */
+    @Test
+    public void testGetter() {
+        List<VBridge> list = new ArrayList<VBridge>();
+        List<String> names = createStrings("name");
+        List<String> descs = createStrings("desc");
+        int nflts = 2;
+
+        // null list.
+        VBridgeList nullList = new VBridgeList(null);
+        assertNull(nullList.getList());
+
+        // Empty list should be treated as null list.
+        VBridgeList emptyList = new VBridgeList(new ArrayList<VBridge>());
+        assertEquals(list, emptyList.getList());
+
+        VNodeState[] states = VNodeState.values();
+        for (String name: names) {
+            for (String desc: descs) {
+                for (int flt = 0; flt < nflts; flt++) {
+                    for (VNodeState state: states) {
+                        VBridgeConfig bconf = new VBridgeConfig(desc);
+                        VBridge b = new VBridge(name, state, flt, bconf);
+
+                        list.add(b);
+
+                        List<VBridge> l = new ArrayList<VBridge>(list);
+                        VBridgeList vb = new VBridgeList(l);
+                        assertEquals(list, vb.getList());
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Test case for {@link VBridgeList#equals(Object)} and
      * {@link VBridgeList#hashCode()}.
