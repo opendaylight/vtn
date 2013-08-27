@@ -100,8 +100,29 @@
           <argLine>${testvm.argLine} ${argLine}</argLine>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-clean-plugin</artifactId>
+        <version>${clean.version}</version>
+        <configuration>
+          <filesets>
+            <fileset>
+              <directory>ObjectStore</directory>
+            </fileset>
+            <fileset>
+              <directory>PutObjectStoreDirHere</directory>
+            </fileset>
+            <fileset>
+              <directory>logs</directory>
+            </fileset>
+            <fileset>
+              <directory>work</directory>
+            </fileset>
+          </filesets>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
+
   <dependencies>
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
