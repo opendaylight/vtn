@@ -427,7 +427,7 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
                       getContainerName(), ifPath, state);
         }
 
-        return state;
+        return getBridgeState(state, bstate);
     }
 
     /**
