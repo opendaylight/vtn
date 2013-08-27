@@ -420,7 +420,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
 
         createCaches();
         saveEventValue.set(System.currentTimeMillis());
-        tenantListFileName = root + "vtn-names.conf";
+        tenantListFileName = root + "vtn-" + cname + "-tenant-names.conf";
 
         // Start job queue thread.
         jobQueueThread = new JobQueueThread("VTN Job Thread: " + cname);
