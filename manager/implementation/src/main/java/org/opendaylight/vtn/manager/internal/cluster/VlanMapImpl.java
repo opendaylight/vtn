@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMapConfig;
+import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
@@ -274,10 +275,17 @@ public class VlanMapImpl implements VBridgeNode, Serializable {
             return;
         }
 
+        IVTNResourceManager resMgr = mgr.getResourceManager();
         short vlan = vlanMapConfig.getVlan();
         Ethernet frame = pctx.createFrame(vlan);
         for (NodeConnector nc: ports) {
             PortVlan pvlan = new PortVlan(nc, vlan);
+            if (resMgr.isPortMapped(pvlan)) {
+                // This switch port is mapped to virtual interface by port
+                // mapping. This packet should not be sent to this port
+                // because port mapping always overrides VLAN mapping.
+                continue;
+            }
             if (!sent.add(pvlan)) {
                 continue;
             }

@@ -195,16 +195,10 @@ public class GlobalResourceManager implements IVTNResourceManager {
     @Override
     public String registerVlanMap(String containerName, VBridgePath path,
                                   short vlan) {
-        synchronized (vlanMaps) {
-            String name = vlanMaps.get(vlan);
-            if (name == null) {
-                StringBuilder builder = new StringBuilder(containerName);
-                builder.append(MAPKEY_SEPARATOR).append(path.toString());
-                String bname = builder.toString();
-                vlanMaps.put(vlan, bname);
-            }
-            return name;
-        }
+        StringBuilder builder = new StringBuilder(containerName);
+        builder.append(MAPKEY_SEPARATOR).append(path.toString());
+        String bname = builder.toString();
+        return vlanMaps.putIfAbsent(vlan, bname);
     }
 
     /**
@@ -214,12 +208,10 @@ public class GlobalResourceManager implements IVTNResourceManager {
      */
     @Override
     public void unregisterVlanMap(short vlan) {
-        synchronized (vlanMaps) {
-            if (vlanMaps.remove(vlan) == null) {
-                // This should never happen.
-                String msg = "Trying to unmap unexpected VLAN: " + vlan;
-                throw new IllegalStateException(msg);
-            }
+        if (vlanMaps.remove(vlan) == null) {
+            // This should never happen.
+            String msg = "Trying to unmap unexpected VLAN: " + vlan;
+            throw new IllegalStateException(msg);
         }
     }
 
@@ -237,16 +229,10 @@ public class GlobalResourceManager implements IVTNResourceManager {
     @Override
     public String registerPortMap(String containerName, VBridgeIfPath path,
                                   PortVlan pvlan) {
-        synchronized (portMaps) {
-            String name = portMaps.get(pvlan);
-            if (name == null) {
-                StringBuilder builder = new StringBuilder(containerName);
-                builder.append(MAPKEY_SEPARATOR).append(path.toString());
-                String ifname = builder.toString();
-                portMaps.put(pvlan, ifname);
-            }
-            return name;
-        }
+        StringBuilder builder = new StringBuilder(containerName);
+        builder.append(MAPKEY_SEPARATOR).append(path.toString());
+        String ifname = builder.toString();
+        return portMaps.putIfAbsent(pvlan, ifname);
     }
 
     /**
@@ -256,15 +242,25 @@ public class GlobalResourceManager implements IVTNResourceManager {
      */
     @Override
     public void unregisterPortMap(PortVlan pvlan) {
-        synchronized (portMaps) {
-            if (portMaps.remove(pvlan) == null) {
-                // This should never happen.
-                String msg = "Trying to unmap unexpected port: " + pvlan;
-                throw new IllegalStateException(msg);
-            }
+        if (portMaps.remove(pvlan) == null) {
+            // This should never happen.
+            String msg = "Trying to unmap unexpected port: " + pvlan;
+            throw new IllegalStateException(msg);
         }
     }
 
+    /**
+     * Determine whether the given switch port is mapped to the virtual
+     * interface or not.
+     *
+     * @param pvlan  A pair of the switch port and the VLAN ID.
+     * @return  {@code true} is returned only if the given switch port is
+     *          mapped to the virtual interface.
+     *          Otherwise {@code false} is returned.
+     */
+    public boolean isPortMapped(PortVlan pvlan) {
+        return portMaps.containsKey(pvlan);
+    }
 
     /**
      * Return the global timer.
@@ -287,23 +283,19 @@ public class GlobalResourceManager implements IVTNResourceManager {
 
         StringBuilder builder = new StringBuilder(containerName);
         String prefix = builder.append(MAPKEY_SEPARATOR).toString();
-        synchronized (vlanMaps) {
-            for (Iterator<String> it = vlanMaps.values().iterator();
-                 it.hasNext();) {
-                String name = it.next();
-                if (name.startsWith(prefix)) {
-                    it.remove();
-                }
+        for (Iterator<String> it = vlanMaps.values().iterator();
+             it.hasNext();) {
+            String name = it.next();
+            if (name.startsWith(prefix)) {
+                it.remove();
             }
         }
 
-        synchronized (portMaps) {
-            for (Iterator<String> it = portMaps.values().iterator();
-                 it.hasNext();) {
-                String name = it.next();
-                if (name.startsWith(prefix)) {
-                    it.remove();
-                }
+        for (Iterator<String> it = portMaps.values().iterator();
+             it.hasNext();) {
+            String name = it.next();
+            if (name.startsWith(prefix)) {
+                it.remove();
             }
         }
     }

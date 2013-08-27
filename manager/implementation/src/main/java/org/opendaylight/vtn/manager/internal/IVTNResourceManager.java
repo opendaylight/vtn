@@ -62,6 +62,17 @@ public interface IVTNResourceManager {
     public void unregisterPortMap(PortVlan pvlan);
 
     /**
+     * Determine whether the given switch port is mapped to the virtual
+     * interface or not.
+     *
+     * @param pvlan  A pair of the switch port and the VLAN ID.
+     * @return  {@code true} is returned only if the given switch port is
+     *          mapped to the virtual interface.
+     *          Otherwise {@code false} is returned.
+     */
+    public boolean isPortMapped(PortVlan pvlan);
+
+    /**
      * Return the global timer.
      *
      * @return  The global timer.
