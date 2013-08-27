@@ -1813,7 +1813,7 @@ public class VTNManagerIT extends TestBase {
     public void testICacheUpdateAware() {
         IVTNManager mgr = vtnManager;
         String root = GlobalConstants.STARTUPHOME.toString();
-        String tenantListFileName = root + "vtn-names.conf";
+        String tenantListFileName = root + "vtn-default-tenant-names.conf";
         String configFileName = root + "vtn-" + "default" + "-" + "tenant100" + ".conf";
         String configFileNameUp = root + "vtn-" + "default" + "-" + "tenant" + ".conf";
 
