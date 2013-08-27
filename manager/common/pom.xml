@@ -43,6 +43,7 @@
     <compiler.version>2.3.2</compiler.version>
     <surefire.version>2.15</surefire.version>
     <failsafe.version>2.15</failsafe.version>
+    <clean.version>2.4.1</clean.version>
     <exam.version>3.0.0</exam.version>
     <url.version>1.5.0</url.version>
     <enunciate.version>1.26.2</enunciate.version>
