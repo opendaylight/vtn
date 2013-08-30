@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1a2f8d8d_2babf98a",
+        "filename": "manager/dist/src/assemble/bin.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2013-08-30T00:50:53Z",
+      "side": 1,
+      "message": "This \u003cmoduleSet\u003e does not include this four jar files.\n\nCould you move this four \u003cexclude\u003e lines from here to under \u003cfileSet\u003e for the OpenDaylight Controller artifact?\n\n\nPlease refer my comment below.",
+      "revId": "67b4f387a7c1b8b0475550f7ab686f1c2ad5cd3e",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a2f8d8d_0bb03df3",
+        "filename": "manager/dist/src/assemble/bin.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2013-08-30T00:50:53Z",
+      "side": 1,
+      "message": "Below this \u003cfileSet\u003e line, could you add the following configuration to exclude the four bundles of the OpenDaylight Controller artifact?\n\n      \u003cexcludes\u003e\n        \u003cexclude\u003eopendaylight/plugins/org.opendaylight.controller.arphandler-*.jar\u003c/exclude\u003e\n        \u003cexclude\u003eopendaylight/plugins/org.opendaylight.controller.samples.simpleforwarding-*.jar\u003c/exclude\u003e\n        \u003cexclude\u003eopendaylight/plugins/org.opendaylight.controller.samples.loadbalancer-*.jar\u003c/exclude\u003e\n        \u003cexclude\u003eopendaylight/plugins/org.opendaylight.controller.samples.loadbalancer.northbound-*.jar\u003c/exclude\u003e\n      \u003c/excludes\u003e\n\nThis four bundles of the OpenDaylight Controller artifact disrupt VTN Manager.",
+      "revId": "67b4f387a7c1b8b0475550f7ab686f1c2ad5cd3e",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
