@@ -66,10 +66,10 @@ public class VBridgeConfigTest extends TestBase {
         String prefix = "VBridgeConfig[";
         String suffix = "]";
         for (String desc: createStrings("description")) {
-            for (Integer ival: createIntegers(0, 20)) {
+            for (Integer ival: createIntegers(-1, 20)) {
                 VBridgeConfig bconf = createVBridgeConfig(desc, ival);
                 String s = (desc == null) ? null : "desc=" + desc;
-                String i = (ival == null) ? null : "ageInterval=" + ival;
+                String i = (ival == null || ival < 0) ? null : "ageInterval=" + ival;
                 String required = joinStrings(prefix, suffix, ",", s, i);
                 assertEquals(required, bconf.toString());
             }
@@ -82,7 +82,7 @@ public class VBridgeConfigTest extends TestBase {
     @Test
     public void testSerialize() {
         for (String desc: createStrings("description")) {
-            for (Integer ival: createIntegers(0, 20)) {
+            for (Integer ival: createIntegers(-1, 20)) {
                 VBridgeConfig bconf = createVBridgeConfig(desc, ival);
                 serializeTest(bconf);
             }
@@ -95,7 +95,7 @@ public class VBridgeConfigTest extends TestBase {
     @Test
     public void testJAXB() {
         for (String desc: createStrings("description")) {
-            for (Integer ival: createIntegers(0, 20)) {
+            for (Integer ival: createIntegers(-1, 20)) {
                 VBridgeConfig bconf = createVBridgeConfig(desc, ival);
                 jaxbTest(bconf, "vbridgeconf");
             }

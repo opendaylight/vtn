@@ -50,6 +50,7 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.Path;
 import org.opendaylight.controller.sal.core.Property;
 import org.opendaylight.controller.sal.core.UpdateType;
+import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IDataPacketService;
 import org.opendaylight.controller.sal.packet.LinkEncap;
@@ -77,8 +78,10 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
     /*
      * stub mode
      *   0 : no nodes
-     *   1 : 2 nodes and each node have 5 nodeconnectors.
-     *   2 :
+     *   1 : 1 node (not implemented yet)
+     *   2 : 2 nodes and each node have 6 nodeconnectors ("port-15" is used to connect nodes).
+     *   3 : 3 nodes and each node have 7 nodeconnectors
+     *       (node0 and node1 connect with port-15, node0 and node2 connect with port-16)
      */
     private int stubmode = 0;
 
@@ -88,6 +91,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
     private Set<SwitchPort> ports = null;
     private ConcurrentMap<Node, Map<Node, List<Edge>>> nodeEdges = null;
     private ConcurrentMap<NodeConnector, Map<String, Property>> nodeConnectorProps = null;
+    private ConcurrentMap<NodeConnector, Set<Property>> nodeConnectorsISL = null;
 
     private List<RawPacket> transmittedData = null;
 
@@ -112,46 +116,59 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     private void setup() {
         transmittedData = new ArrayList<RawPacket>();
-        if (stubmode == 1) {
+        if (stubmode >= 2) {
             // create nodes
             nodes = new HashSet<Node>();
-            Node node = NodeCreator.createOFNode(Long.valueOf(0));
-            nodes.add(node);
-            node = NodeCreator.createOFNode(Long.valueOf(1));
-            nodes.add(node);
-
-            // create nodeconnectors
             nodeConnectors = new ConcurrentHashMap<Node, Set<NodeConnector>>();
             nodeConnectorNames = new ConcurrentHashMap<Node, Map<String, NodeConnector>>();
             nodeConnectorProps = new ConcurrentHashMap<NodeConnector, Map<String, Property>>();
-            for (Node addnode : nodes) {
-                Map<String, NodeConnector> map = new HashMap<String, NodeConnector>();
-                Set<NodeConnector> ncs = new HashSet<NodeConnector>();
-                for (short i = 10; i < 15; i++) {
-                    NodeConnector nc =
-                        NodeConnectorCreator.createOFNodeConnector(Short.valueOf(i), addnode);
-                    ncs.add(nc);
-                    String mapname = "port-" + i;
-                    map.put(mapname, nc);
 
-                    Map<String, Property> propmap = nodeConnectorProps.get(nc);
-                    if (propmap == null) {
-                        propmap = new HashMap<String, Property>();
+            for (short i = 0; i < stubmode; i++) {
+                Node node = NodeCreator.createOFNode(Long.valueOf(i));
+                nodes.add(node);
+
+                // create nodeconnectors
+                short ncnum = (short)(4 + stubmode);
+
+                for (Node addnode : nodes) {
+                    Map<String, NodeConnector> map = new HashMap<String, NodeConnector>();
+                    Set<NodeConnector> ncs = new HashSet<NodeConnector>();
+                    for (short inc = 10; inc < ((short)10 + ncnum); inc++) {
+                        NodeConnector nc =
+                                NodeConnectorCreator.createOFNodeConnector(Short.valueOf(inc), addnode);
+                        ncs.add(nc);
+                        String mapname = "port-" + inc;
+                        map.put(mapname, nc);
+
+                        Map<String, Property> propmap = nodeConnectorProps.get(nc);
+                        if (propmap == null) {
+                            propmap = new HashMap<String, Property>();
+                        }
+                        Name prop = new Name(mapname);
+                        propmap.put("name", prop);
+
+                        nodeConnectorProps.put(nc, propmap);
                     }
-                    Name prop = new Name(mapname);
-                    propmap.put("name", prop);
-
-                    nodeConnectorProps.put(nc, propmap);
+                    nodeConnectors.put(addnode, ncs);
+                    nodeConnectorNames.put(addnode, map);
                 }
-                nodeConnectors.put(addnode, ncs);
-                nodeConnectorNames.put(addnode, map);
             }
 
             // create edges
             nodeEdges = new ConcurrentHashMap<Node, Map<Node, List<Edge>>>();
+            nodeConnectorsISL = new ConcurrentHashMap<NodeConnector, Set<Property>>();
+            Node node0 = NodeCreator.createOFNode(Long.valueOf(0));
             for (Node srcnode: nodes) {
                 for (Node dstnode: nodes) {
                     if(srcnode.equals(dstnode)) {
+                        continue;
+                    }
+                    if (stubmode == 3 &&
+                        ((srcnode.getID().equals(Long.valueOf(1)) &&
+                          dstnode.getID().equals(Long.valueOf(2))) ||
+                         (srcnode.getID().equals(Long.valueOf(2)) &&
+                          dstnode.getID().equals(Long.valueOf(1))))
+                       ) {
                         continue;
                     }
 
@@ -166,17 +183,83 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
                         edglist = new ArrayList<Edge>();
                     }
 
-                    NodeConnector tail = nodeConnectorNames.get(dstnode).get("port-15");
-                    NodeConnector head = nodeConnectorNames.get(srcnode).get("port-15");
-                    Edge edge = null;
-                    try {
-                        edge = new Edge(tail, head);
-                    } catch (ConstructionException e) {
-                        edge = null;
+                    NodeConnector tail = null;
+                    NodeConnector head = null;
+                    if (((srcnode.getID().equals(Long.valueOf(0)) &&
+                          dstnode.getID().equals(Long.valueOf(1))) ||
+                         (srcnode.getID().equals(Long.valueOf(1)) &&
+                          dstnode.getID().equals(Long.valueOf(0))))) {
+                        tail = nodeConnectorNames.get(srcnode).get("port-15");
+                        head = nodeConnectorNames.get(dstnode).get("port-15");
+                        Edge edge = null;
+                        try {
+                            edge = new Edge(tail, head);
+                        } catch (ConstructionException e) {
+                            edge = null;
+                        }
+                        edglist.add(edge);
+                    } else if (stubmode == 3 &&
+                            ((srcnode.getID().equals(Long.valueOf(0)) &&
+                              dstnode.getID().equals(Long.valueOf(2))) ||
+                             (srcnode.getID().equals(Long.valueOf(2)) &&
+                              dstnode.getID().equals(Long.valueOf(0))))) {
+                        tail = nodeConnectorNames.get(srcnode).get("port-16");
+                        head = nodeConnectorNames.get(dstnode).get("port-16");
+                        Edge edge = null;
+                        try {
+                            edge = new Edge(tail, head);
+                        } catch (ConstructionException e) {
+                            edge = null;
+                        }
+                        edglist.add(edge);
+                    } else if (stubmode == 3 &&
+                               (srcnode.getID().equals(Long.valueOf(1)) &&
+                                 dstnode.getID().equals(Long.valueOf(2)))) {
+                        tail = nodeConnectorNames.get(srcnode).get("port-15");
+                        head = nodeConnectorNames.get(node0).get("port-15");
+                        Edge edge = null;
+                        try {
+                            edge = new Edge(tail, head);
+                        } catch (ConstructionException e) {
+                            edge = null;
+                        }
+                        edglist.add(edge);
+
+                        tail = nodeConnectorNames.get(node0).get("port-16");
+                        head = nodeConnectorNames.get(dstnode).get("port-16");
+                        try {
+                            edge = new Edge(tail, head);
+                        } catch (ConstructionException e) {
+                            edge = null;
+                        }
+                        edglist.add(edge);
+                    } else if (stubmode == 3 &&
+                               (srcnode.getID().equals(Long.valueOf(2)) &&
+                                dstnode.getID().equals(Long.valueOf(1)))) {
+                           tail = nodeConnectorNames.get(srcnode).get("port-16");
+                           head = nodeConnectorNames.get(node0).get("port-16");
+                           Edge edge = null;
+                           try {
+                               edge = new Edge(tail, head);
+                           } catch (ConstructionException e) {
+                               edge = null;
+                           }
+                           edglist.add(edge);
+
+                           tail = nodeConnectorNames.get(node0).get("port-15");
+                           head = nodeConnectorNames.get(dstnode).get("port-15");
+                           try {
+                               edge = new Edge(tail, head);
+                           } catch (ConstructionException e) {
+                               edge = null;
+                           }
+                           edglist.add(edge);
                     }
-                    edglist.add(edge);
                     map.put(dstnode, edglist);
                     nodeEdges.put(srcnode, map);
+
+                    nodeConnectorsISL.put(tail, new HashSet<Property>(1));
+                    nodeConnectorsISL.put(head, new HashSet<Property>(1));
                 }
             }
         }
@@ -273,6 +356,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Status removeSubnet(SubnetConfig configObject) {
+        savedSubnetConfig = null;
         return null;
     }
 
@@ -299,8 +383,11 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
     @Override
     public Subnet getSubnetByNetworkAddress(InetAddress networkAddress) {
 
-        if (stubmode == 1) {
-            Subnet sub = new Subnet(savedSubnetConfig);
+        if (stubmode >= 1) {
+            Subnet sub = null;
+            if (savedSubnetConfig != null) {
+                sub = new Subnet(savedSubnetConfig);
+            }
             return sub;
         }
 
@@ -354,7 +441,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Set<Node> getNodes() {
-        if (stubmode == 1) {
+        if (stubmode >= 1) {
             return nodes;
         }
 
@@ -388,7 +475,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Set<NodeConnector> getUpNodeConnectors(Node node) {
-        if (stubmode == 1) {
+        if (stubmode >= 1) {
             return nodeConnectors.get(node);
         }
         return null;
@@ -396,7 +483,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Set<NodeConnector> getNodeConnectors(Node node) {
-        if (stubmode == 1) {
+        if (stubmode >= 1) {
             return nodeConnectors.get(node);
         }
         return null;
@@ -404,7 +491,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Set<NodeConnector> getPhysicalNodeConnectors(Node node) {
-        if (stubmode == 1) {
+        if (stubmode >= 1) {
             return nodeConnectors.get(node);
         }
 
@@ -418,9 +505,12 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Property getNodeConnectorProp(NodeConnector nodeConnector, String propName) {
-        if (stubmode == 1) {
+        if (stubmode >= 1) {
             Map<String, Property> map = nodeConnectorProps.get(nodeConnector);
-            Property name = map.get(propName);
+            Property name = null;
+            if (map != null) {
+                name = map.get(propName);
+            }
             return name;
         }
         return null;
@@ -443,7 +533,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public NodeConnector getNodeConnector(Node node, String nodeConnectorName) {
-        if (stubmode == 1) {
+        if (stubmode >= 1) {
             Map<String, NodeConnector> map = nodeConnectorNames.get(node);
             return map.get(nodeConnectorName);
         }
@@ -452,7 +542,13 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public boolean isSpecial(NodeConnector p) {
-        if (stubmode == 1) {
+        if (stubmode >= 1) {
+            if (p.getType().equals(NodeConnectorIDType.CONTROLLER)
+                || p.getType().equals(NodeConnectorIDType.ALL)
+                || p.getType().equals(NodeConnectorIDType.SWSTACK)
+                || p.getType().equals(NodeConnectorIDType.HWPATH)) {
+                return true;
+            }
             return false;
         }
         return false;
@@ -460,7 +556,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Boolean isNodeConnectorEnabled(NodeConnector nodeConnector) {
-        if (stubmode == 1) {
+        if (stubmode >= 1) {
             return true;
         }
         return null;
@@ -507,18 +603,31 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
         return null;
     }
 
-
     // ITopologyManager
     @Override
     public boolean isInternal(NodeConnector p) {
-        if (stubmode == 1) {
-            return false;
+        if (stubmode >= 1) {
+            return (nodeConnectorsISL.get(p) != null);
         }
         return false;
     }
 
     @Override
     public Map<Edge, Set<Property>> getEdges() {
+        if (stubmode >= 1) {
+            Map<Edge, Set<Property>> edges = new HashMap<Edge, Set<Property>>();
+
+            for (Node srcNode : nodeEdges.keySet()) {
+                Map<Node, List<Edge>> srcmap = nodeEdges.get(srcNode);
+                for (Node dstNode : srcmap.keySet()) {
+                    for (Edge edge : srcmap.get(dstNode)) {
+                        edges.put(edge, new HashSet<Property>(1));
+                    }
+                }
+            }
+            return edges;
+        }
+
         return null;
     }
 
@@ -627,8 +736,11 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Path getRoute(Node src, Node dst) {
-        if (stubmode == 1) {
+        if (stubmode >= 1) {
             List<Edge> edges = nodeEdges.get(src).get(dst);
+            if (edges == null) {
+                return null;
+            }
             Path result = null;
             try {
                 result = new Path(edges);
@@ -858,7 +970,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public HostNodeConnector hostQuery(InetAddress networkAddress) {
-        if (stubmode == 1) {
+        if (stubmode >= 1) {
             HostNodeConnector hnode = null;
             byte [] tgt = networkAddress.getAddress();
             byte [] ip = new byte[] {(byte)192, (byte)168, (byte)0, (byte)251};
@@ -914,13 +1026,34 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
         return null;
     }
 
-    // additional method
+
+    // additional method for control stub
+    public void addEdge(Edge edge) {
+        Map<Node, List<Edge>> map = nodeEdges.get(edge.getTailNodeConnector().getNode());
+        List<Edge> list = map.get(edge.getHeadNodeConnector().getNode());
+        list.add(edge);
+        map.put(edge.getHeadNodeConnector().getNode(), list);
+        nodeEdges.put(edge.getTailNodeConnector().getNode(), map);
+
+        nodeConnectorsISL.put(edge.getTailNodeConnector(), new HashSet<Property>(1));
+        nodeConnectorsISL.put(edge.getHeadNodeConnector(), new HashSet<Property>(1));
+    }
+
+    public void deleteEdge(Edge edge) {
+        Map<Node, List<Edge>> map = nodeEdges.get(edge.getTailNodeConnector().getNode());
+        List<Edge> list = map.get(edge.getHeadNodeConnector().getNode());
+        list.remove(edge);
+        map.put(edge.getHeadNodeConnector().getNode(), list);
+        nodeEdges.put(edge.getTailNodeConnector().getNode(), map);
+
+        nodeConnectorsISL.remove(edge.getTailNodeConnector());
+        nodeConnectorsISL.remove(edge.getHeadNodeConnector());
+    }
+
     public List<RawPacket> getTransmittedDataPacket() {
         List<RawPacket> ret = new ArrayList<RawPacket>();
         ret.addAll(transmittedData);
         transmittedData.clear();
         return ret;
     }
-
-
 }

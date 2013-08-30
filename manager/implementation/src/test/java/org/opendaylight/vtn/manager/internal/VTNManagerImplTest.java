@@ -8,8 +8,6 @@
  */
 package org.opendaylight.vtn.manager.internal;
 
-import static org.junit.Assert.*;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -18,9 +16,11 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -79,6 +79,139 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
     /**
      * Test method for
+     * {@link VTNManagerImpl#init()},
+     * {@link VTNManagerImpl#destroy()}
+     */
+    @Test
+    public void testInitDestory() {
+        ComponentImpl c = new ComponentImpl(null, null, null);
+        Hashtable<String, String> properties = new Hashtable<String, String>();
+        String containerName = "default";
+        properties.put("containerName", containerName);
+        c.setServiceProperties(properties);
+
+        String tname = "vtn";
+        VTenantPath tpath = new VTenantPath(tname);
+        String bname = "vbridge";
+        VBridgePath bpath = new VBridgePath(tname, bname);
+        String ifname1 = "vif1";
+        VBridgeIfPath ifpath1 = new VBridgeIfPath(tname, bname, ifname1);
+        String ifname2 = "vif2";
+        VBridgeIfPath ifpath2 = new VBridgeIfPath(tname, bname, ifname2);
+
+        List<VBridgePath> bpathlist = new ArrayList<VBridgePath>();
+        List<VBridgeIfPath> ifpathlist = new ArrayList<VBridgeIfPath>();
+        bpathlist.add(bpath);
+        ifpathlist.add(ifpath1);
+        createTenantAndBridgeAndInterface(vtnMgr, tpath, bpathlist, ifpathlist);
+
+        Status st = vtnMgr.addBridgeInterface(ifpath2, new VInterfaceConfig(null, false));
+
+        vtnMgr.destroy();
+        vtnMgr.init(c);
+
+        List<VTenant> tlist = null;
+        List<VBridge> blist = null;
+        List<VInterface> iflist = null;
+        try {
+            tlist = vtnMgr.getTenants();
+            blist = vtnMgr.getBridges(tpath);
+            iflist = vtnMgr.getBridgeInterfaces(bpath);
+        } catch (VTNException e) {
+            unexpected(e);
+        }
+        assertNotNull(tlist);
+        assertNotNull(blist);
+        assertEquals(1, tlist.size());
+        assertEquals(tname, tlist.get(0).getName());
+        assertEquals(1, blist.size());
+        assertEquals(bname, blist.get(0).getName());
+        assertEquals(2, iflist.size());
+        assertEquals(ifname1, iflist.get(0).getName());
+
+        // add mappings
+        Node node = NodeCreator.createOFNode(0L);
+        SwitchPort port = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW,
+        String.valueOf(10));
+        PortMapConfig pmconf = new PortMapConfig(node, port, (short)0);
+        st = vtnMgr.setPortMap(ifpath1, pmconf);
+
+        VlanMapConfig vlconf = new VlanMapConfig(null, (short)4095);
+        VlanMap map = null;
+        try {
+            map = vtnMgr.addVlanMap(bpath, vlconf);
+        } catch (VTNException e) {
+            unexpected(e);
+        }
+
+        vtnMgr.destroy();
+        vtnMgr.init(c);
+
+        PortMap pmap = null;
+        VlanMap vmap = null;
+        try {
+            tlist = vtnMgr.getTenants();
+            blist = vtnMgr.getBridges(tpath);
+            iflist = vtnMgr.getBridgeInterfaces(bpath);
+            pmap = vtnMgr.getPortMap(ifpath1);
+            vmap = vtnMgr.getVlanMap(bpath, map.getId());
+        } catch (VTNException e) {
+            unexpected(e);
+        }
+        assertNotNull(tlist);
+        assertNotNull(blist);
+        assertEquals(1, tlist.size());
+        assertEquals(tname, tlist.get(0).getName());
+        assertEquals(1, blist.size());
+        assertEquals(bname, blist.get(0).getName());
+        assertEquals(2, iflist.size());
+        assertEquals(ifname1, iflist.get(0).getName());
+        assertEquals(pmap.getConfig(), pmconf);
+        assertEquals(vmap.getVlan(), vlconf.getVlan());
+        assertEquals(vmap.getNode(), vlconf.getNode());
+
+        vtnMgr.destroy();
+
+        VTNManagerImpl.cleanUpConfigFile(containerName);
+        vtnMgr.init(c);
+
+        try {
+            tlist = vtnMgr.getTenants();
+            blist = vtnMgr.getBridges(tpath);
+            iflist = vtnMgr.getBridgeInterfaces(bpath);
+            pmap = vtnMgr.getPortMap(ifpath1);
+            vmap = vtnMgr.getVlanMap(bpath, map.getId());
+        } catch (VTNException e) {
+            unexpected(e);
+        }
+        assertNotNull(tlist);
+        assertNotNull(blist);
+        assertEquals(1, tlist.size());
+        assertEquals(tname, tlist.get(0).getName());
+        assertEquals(1, blist.size());
+        assertEquals(bname, blist.get(0).getName());
+        assertEquals(2, iflist.size());
+        assertEquals(ifname1, iflist.get(0).getName());
+        assertEquals(pmap.getConfig(), pmconf);
+        assertEquals(vmap.getVlan(), vlconf.getVlan());
+        assertEquals(vmap.getNode(), vlconf.getNode());
+
+        vtnMgr.containerDestroy();
+        vtnMgr.destroy();
+        VTNManagerImpl.cleanUpConfigFile(containerName);
+        vtnMgr.init(c);
+
+        try {
+            tlist = vtnMgr.getTenants();
+        } catch (VTNException e) {
+            unexpected(e);
+        }
+        assertNotNull(tlist);
+        assertEquals(0, tlist.size());
+    }
+
+    /**
+     * Test method for
      * {@link VTNManagerImpl#getContainerName()}
      */
     @Test
@@ -96,10 +229,12 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
     public void testSetUnsetClusterContainerService() {
         VTNManagerImpl mgr = vtnMgr;
         TestStub stubnew = new TestStub();
+        TestStub stubnew2 = new TestStub();
 
+        // TODO: need to check
         mgr.setClusterContainerService(stubnew);
+        mgr.unsetClusterContainerService(stubnew2);
         mgr.unsetClusterContainerService(stubnew);
-
         mgr.setClusterContainerService(stubObj);
     }
 
@@ -115,8 +250,12 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VTNManagerImpl mgr = vtnMgr;
         ISwitchManager org = mgr.getSwitchManager();
         TestStub stub = new TestStub();
+        TestStub stub2 = new TestStub();
 
         mgr.setSwitchManager((ISwitchManager)stub);
+        assertSame(stub, mgr.getSwitchManager());
+
+        mgr.unsetSwitchManager((ISwitchManager)stub2);
         assertSame(stub, mgr.getSwitchManager());
 
         mgr.unsetSwitchManager((ISwitchManager)stub);
@@ -137,8 +276,12 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VTNManagerImpl mgr = vtnMgr;
         ITopologyManager org = mgr.getTopologyManager();
         TestStub stub = new TestStub();
+        TestStub stub2 = new TestStub();
 
         mgr.setTopologyManager((ITopologyManager)stub);
+        assertSame(stub, mgr.getTopologyManager());
+
+        mgr.unsetTopologyManager((ITopologyManager)stub2);
         assertSame(stub, mgr.getTopologyManager());
 
         mgr.unsetTopologyManager((ITopologyManager)stub);
@@ -159,8 +302,12 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VTNManagerImpl mgr = vtnMgr;
         IForwardingRulesManager org = mgr.getForwardingRuleManager();
         TestStub stub = new TestStub();
+        TestStub stub2 = new TestStub();
 
         mgr.setForwardingRuleManager((IForwardingRulesManager)stub);
+        assertSame(stub, mgr.getForwardingRuleManager());
+
+        mgr.unsetForwardingRuleManager((IForwardingRulesManager)stub2);
         assertSame(stub, mgr.getForwardingRuleManager());
 
         mgr.unsetForwardingRuleManager((IForwardingRulesManager)stub);
@@ -181,8 +328,12 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VTNManagerImpl mgr = vtnMgr;
         IRouting org = mgr.getRouting();
         TestStub stub = new TestStub();
+        TestStub stub2 = new TestStub();
 
         mgr.setRouting((IRouting)stub);
+        assertSame(stub, mgr.getRouting());
+
+        mgr.unsetRouting((IRouting)stub2);
         assertSame(stub, mgr.getRouting());
 
         mgr.unsetRouting((IRouting)stub);
@@ -204,8 +355,12 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VTNManagerImpl mgr = vtnMgr;
         IDataPacketService org = mgr.getDataPacketService();
         TestStub stub = new TestStub();
+        TestStub stub2 = new TestStub();
 
         mgr.setDataPacketService((IDataPacketService)stub);
+        assertSame(stub, mgr.getDataPacketService());
+
+        mgr.unsetDataPacketService((IDataPacketService)stub2);
         assertSame(stub, mgr.getDataPacketService());
 
         mgr.unsetDataPacketService((IDataPacketService)stub);
@@ -226,8 +381,12 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VTNManagerImpl mgr = vtnMgr;
         IfIptoHost org = mgr.getHostTracker();
         TestStub stub = new TestStub();
+        TestStub stub2 = new TestStub();
 
         mgr.setHostTracker(stub);
+        assertSame(stub, mgr.getHostTracker());
+
+        mgr.unsetHostTracker(stub2);
         assertSame(stub, mgr.getHostTracker());
 
         mgr.unsetHostTracker(stub);
@@ -247,26 +406,18 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
     public void testIfHostListener() {
        VTNManagerImpl mgr = vtnMgr;
 
-       // stub for test
-       class HostListener implements IfHostListener {
-           private int hostListenerCalled = 0;
-
-           @Override
-           public void hostListener(HostNodeConnector host) {
-               hostListenerCalled++;
-           }
-
-           int getHostListenerCalled () {
-               int ret = hostListenerCalled;
-               hostListenerCalled = 0;
-               return  ret;
-           }
-       }
-
        HostListener hl1 = new HostListener();
        HostListener hl2 = new HostListener();
        mgr.addHostListener(hl1);
        mgr.addHostListener(hl2);
+       mgr.addHostListener(hl1);
+
+       // check not removed listner when registered listener isn't match
+       // a listener specified removeHostListener
+       HostListener hlnew1 = new HostListener();
+       HostListener hlnew2 = new HostListener();
+       mgr.removeHostListener(hlnew2);
+       mgr.removeHostListener(hlnew1);
 
        // add entry to MacAddressTable to call HostListener
        byte [] src = new byte[] {(byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0x01};
@@ -300,13 +451,16 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VTNManagerImpl mgr = vtnMgr;
         IVTNResourceManager org = mgr.getResourceManager();
         GlobalResourceManager newmgr = new GlobalResourceManager();
+        GlobalResourceManager newmgr2 = new GlobalResourceManager();
 
         mgr.setResourceManager(newmgr);
         assertSame(newmgr, mgr.getResourceManager());
 
+        mgr.unsetResourceManager(newmgr2);
+        assertSame(newmgr, mgr.getResourceManager());
+
         mgr.unsetResourceManager(newmgr);
-        // TODO:
-//        assertNull(mgr.getResourceManager());
+        assertNull(mgr.getResourceManager());
 
         mgr.setResourceManager(org);
         assertSame(org, mgr.getResourceManager());
@@ -320,164 +474,6 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
     @Test
     public void testIVTNManagerAware() {
         VTNManagerImpl mgr = vtnMgr;
-
-        class VTNManagerAwareData<T, S> {
-            T path = null;
-            S obj = null;
-            UpdateType type = null;
-            int count = 0;
-
-            VTNManagerAwareData(T p, S o, UpdateType t, int c) {
-                path = p;
-                obj = o;
-                type = t;
-                count = c;
-            }
-        };
-
-        class VTNManagerAwareStub implements IVTNManagerAware {
-            private final long sleepMilliTime = 10L;
-
-            private int vtnChangedCalled = 0;
-            private int vbrChangedCalled = 0;
-            private int vIfChangedCalled = 0;
-            private int vlanMapChangedCalled = 0;
-            private int portMapChangedCalled = 0;
-            VTNManagerAwareData<VTenantPath, VTenant> vtnChangedInfo = null;
-            VTNManagerAwareData<VBridgePath, VBridge> vbrChangedInfo = null;
-            VTNManagerAwareData<VBridgeIfPath, VInterface> vIfChangedInfo = null;
-            VTNManagerAwareData<VBridgePath, VlanMap> vlanMapChangedInfo = null;
-            VTNManagerAwareData<VBridgeIfPath, PortMap> portMapChangedInfo = null;
-
-            @Override
-            public void vtnChanged(VTenantPath path, VTenant vtenant, UpdateType type) {
-                vtnChangedCalled++;
-                vtnChangedInfo = new VTNManagerAwareData<VTenantPath, VTenant>(path, vtenant,
-                        type, vtnChangedCalled);
-            }
-
-            @Override
-            public void vBridgeChanged(VBridgePath path, VBridge vbridge, UpdateType type) {
-                vbrChangedCalled++;
-                vbrChangedInfo = new VTNManagerAwareData<VBridgePath, VBridge>(path, vbridge, type,
-                        vbrChangedCalled);
-            }
-
-            @Override
-            public void vBridgeInterfaceChanged(VBridgeIfPath path, VInterface viface, UpdateType type) {
-                vIfChangedCalled++;
-                vIfChangedInfo = new VTNManagerAwareData<VBridgeIfPath, VInterface>(path, viface, type,
-                        vIfChangedCalled);
-            }
-
-            @Override
-            public void vlanMapChanged(VBridgePath path, VlanMap vlmap, UpdateType type) {
-                vlanMapChangedCalled++;
-                vlanMapChangedInfo = new VTNManagerAwareData<VBridgePath, VlanMap>(path, vlmap, type,
-                        vlanMapChangedCalled);
-            }
-
-            @Override
-            public void portMapChanged(VBridgeIfPath path, PortMap pmap, UpdateType type) {
-                portMapChangedCalled++;
-                portMapChangedInfo = new VTNManagerAwareData<VBridgeIfPath, PortMap>(path, pmap, type,
-                        portMapChangedCalled);
-            }
-
-            void checkVtnInfo (int count, VTenantPath path, String name, UpdateType type) {
-                sleep(sleepMilliTime);
-                assertEquals(count, vtnChangedCalled);
-                if (path != null) {
-                    assertEquals(path, vtnChangedInfo.path);
-                }
-                if (name != null) {
-                    assertEquals(name, vtnChangedInfo.obj.getName());
-                }
-                if (type != null) {
-                    assertEquals(type, vtnChangedInfo.type);
-                }
-                vtnChangedCalled = 0;
-                vtnChangedInfo = null;
-            }
-
-            void checkVbrInfo (int count, VBridgePath path, String name, UpdateType type) {
-                sleep(sleepMilliTime);
-                assertEquals(count, vbrChangedCalled);
-                if (path != null) {
-                    assertEquals(path, vbrChangedInfo.path);
-                }
-                if (name != null) {
-                    assertEquals(name, vbrChangedInfo.obj.getName());
-                }
-                if (type != null) {
-                    assertEquals(type, vbrChangedInfo.type);
-                }
-                vbrChangedCalled = 0;
-                vbrChangedInfo = null;
-            }
-
-            void checkVIfInfo (int count, VBridgeIfPath path, String name, UpdateType type) {
-                sleep(sleepMilliTime);
-                assertEquals(count, vIfChangedCalled);
-                if (path != null) {
-                    assertEquals(path, vIfChangedInfo.path);
-                }
-                if (name != null) {
-                    assertEquals(name, vIfChangedInfo.obj.getName());
-                }
-                if (type != null) {
-                    assertEquals(type, vIfChangedInfo.type);
-                }
-                vIfChangedCalled = 0;
-                vIfChangedInfo = null;
-            }
-
-            void checkVlmapInfo (int count, VBridgePath path, String id, UpdateType type) {
-                sleep(sleepMilliTime);
-                assertEquals(count, vlanMapChangedCalled);
-                if (path != null) {
-                    assertEquals(path, vlanMapChangedInfo.path);
-                }
-                if (id != null) {
-                    assertEquals(id, vlanMapChangedInfo.obj.getId());
-                }
-                if (type != null) {
-                    assertEquals(type, vlanMapChangedInfo.type);
-                }
-                vlanMapChangedCalled = 0;
-                vlanMapChangedInfo = null;
-            }
-
-            void checkPmapInfo (int count, VBridgeIfPath path, PortMapConfig pconf, UpdateType type) {
-                sleep(sleepMilliTime);
-                assertEquals(count, portMapChangedCalled);
-                if (path != null) {
-                    assertEquals(path, portMapChangedInfo.path);
-                }
-                if (pconf != null) {
-                    assertEquals(pconf, portMapChangedInfo.obj.getConfig());
-                }
-                if (type != null) {
-                    assertEquals(type, portMapChangedInfo.type);
-                }
-                portMapChangedCalled = 0;
-                portMapChangedInfo = null;
-            }
-
-            void checkAllNull() {
-                sleep(sleepMilliTime);
-                assertEquals(0, vtnChangedCalled);
-                assertNull(vtnChangedInfo);
-                assertEquals(0, vbrChangedCalled);
-                assertNull(vbrChangedInfo);
-                assertEquals(0, vIfChangedCalled);
-                assertNull(vIfChangedInfo);
-                assertEquals(0, vlanMapChangedCalled);
-                assertNull(vlanMapChangedInfo);
-                assertEquals(0, portMapChangedCalled);
-                assertNull(portMapChangedInfo);
-            }
-        };
 
         VTNManagerAwareStub stub1 = new VTNManagerAwareStub();
         VTNManagerAwareStub stub2 = new VTNManagerAwareStub();
@@ -578,6 +574,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         stub1.checkAllNull();
         stub2.checkAllNull();
 
+        mgr.addVTNManagerAware(stub2);
+
         // modify a tenant setting
         st = mgr.modifyTenant(tpath, new VTenantConfig("desc"), false);
         assertTrue(st.isSuccess());
@@ -645,8 +643,11 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         stub1.checkAllNull();
         stub2.checkAllNull();
 
+        VTNManagerAwareStub stubnew1 = new VTNManagerAwareStub();
+        mgr.removeVTNManagerAware(stubnew1);
+
         // remove a tenant
-        st =mgr.removeTenant(tpath);
+        st = mgr.removeTenant(tpath);
         assertTrue(st.isSuccess());
         stub1.checkVtnInfo(1, tpath, tname, UpdateType.REMOVED);
         stub2.checkVtnInfo(1, tpath, tname, UpdateType.REMOVED);
@@ -666,112 +667,103 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
     public void testIVTNModeListener() {
         VTNManagerImpl mgr = vtnMgr;
 
-        // stub for test
-        class VTNModeListenerStub implements IVTNModeListener {
-            private int calledCount = 0;
-            private Boolean oldactive = null;
-            private final long sleepMilliTime = 10L;
-
-            @Override
-            public void vtnModeChanged(boolean active) {
-                calledCount++;
-                oldactive = Boolean.valueOf(active);
-            }
-
-            public int getCalledCount() {
-                sleep(sleepMilliTime);
-                int ret = calledCount;
-                calledCount = 0;
-                return ret;
-            }
-
-            public Boolean getCalledArg() {
-                sleep(sleepMilliTime);
-                Boolean ret = oldactive;
-                oldactive = null;
-                return ret;
-            }
-        };
-
         VTNModeListenerStub stub1 = new VTNModeListenerStub();
         VTNModeListenerStub stub2 = new VTNModeListenerStub();
 
         VTenantPath tpath = new VTenantPath("tenant");
         Status st = mgr.addTenant(tpath, new VTenantConfig(null));
         assertTrue(st.isSuccess());
-        assertEquals(0, stub1.getCalledCount());
-        assertEquals(0, stub2.getCalledCount());
+        stub1.checkCalledInfo(0);
+        stub2.checkCalledInfo(0);
 
         mgr.addVTNModeListener(stub1);
-        assertEquals(1, stub1.getCalledCount());
-        assertEquals(true, stub1.getCalledArg());
+        stub1.checkCalledInfo(1, Boolean.TRUE);
 
         mgr.addVTNModeListener(stub2);
-        assertEquals(1, stub2.getCalledCount());
-        assertEquals(true, stub2.getCalledArg());
-        assertEquals(0, stub1.getCalledCount());
+        stub2.checkCalledInfo(1, Boolean.TRUE);
+        stub1.checkCalledInfo(0);
 
         mgr.addVTNModeListener(stub1);
-        assertEquals(0, stub1.getCalledCount());
-        assertEquals(0, stub2.getCalledCount());
+        stub1.checkCalledInfo(0);
+        stub2.checkCalledInfo(0);
 
         // notifyChange(boolean)
         for (Boolean bool: createBooleans(false)) {
             boolean curr = bool.booleanValue();
             mgr.notifyChange(curr);
             sleep(1L);
-            assertEquals(1, stub1.getCalledCount());
-            assertEquals(1, stub2.getCalledCount());
-            assertEquals(bool, stub1.getCalledArg());
-            assertEquals(bool, stub2.getCalledArg());
+
+            stub1.checkCalledInfo(1, bool);
+            stub2.checkCalledInfo(1, bool);
         }
 
         // notifyChange(IVTNModeListener, boolean)
         for (Boolean bool: createBooleans(false)) {
             boolean curr = bool.booleanValue();
             mgr.notifyChange(stub1, curr);
-            assertEquals(1, stub1.getCalledCount());
-            assertEquals(0, stub2.getCalledCount());
-            assertEquals(bool, stub1.getCalledArg());
-            assertEquals(null, stub2.getCalledArg());
+            stub1.checkCalledInfo(1, bool);
+            stub2.checkCalledInfo(0);
 
             mgr.notifyChange(stub2, curr);
-            assertEquals(1, stub2.getCalledCount());
-            assertEquals(0, stub1.getCalledCount());
-            assertEquals(bool, stub2.getCalledArg());
-            assertEquals(null, stub1.getCalledArg());
+            stub1.checkCalledInfo(0);
+            stub2.checkCalledInfo(1, bool);
         }
+
+        VTNModeListenerStub stubnew = new VTNModeListenerStub();
+        mgr.removeVTNModeListener(stubnew);
+
+        assertTrue(mgr.isActive());
+
+        // test for containerModeupdated()
+        mgr.containerModeUpdated(UpdateType.ADDED);
+        assertFalse(mgr.isActive());
+        stub1.checkCalledInfo(1, Boolean.FALSE);
+        stub2.checkCalledInfo(1, Boolean.FALSE);
+
+        mgr.containerModeUpdated(UpdateType.CHANGED);
+        assertFalse(mgr.isActive());
+        stub1.checkCalledInfo(0);
+        stub2.checkCalledInfo(0);
+
+        mgr.containerModeUpdated(UpdateType.REMOVED);
+        assertTrue(mgr.isActive());
+        stub1.checkCalledInfo(1, Boolean.TRUE);
+        stub2.checkCalledInfo(1, Boolean.TRUE);
+
+        mgr.containerModeUpdated(UpdateType.CHANGED);
+        assertTrue(mgr.isActive());
+        stub1.checkCalledInfo(0);
+        stub2.checkCalledInfo(0);
+
+        mgr.containerModeUpdated(UpdateType.REMOVED);
+        assertTrue(mgr.isActive());
+        stub1.checkCalledInfo(0);
+        stub2.checkCalledInfo(0);
 
         // remove Tenant
         st = mgr.removeTenant(tpath);
         assertTrue(st.isSuccess());
-        assertEquals(1, stub1.getCalledCount());
-        assertEquals(1, stub2.getCalledCount());
-        assertEquals(false, stub1.getCalledArg());
-        assertEquals(false, stub2.getCalledArg());
+        stub1.checkCalledInfo(1, Boolean.FALSE);
+        stub2.checkCalledInfo(1, Boolean.FALSE);
 
         // remove stub1
         mgr.removeVTNModeListener(stub1);
         mgr.notifyChange(true);
-        assertEquals(1, stub2.getCalledCount());
-        assertEquals(0, stub1.getCalledCount());
-        assertEquals(true, stub2.getCalledArg());
-        assertEquals(null, stub1.getCalledArg());
+        stub1.checkCalledInfo(0);
+        stub2.checkCalledInfo(1, Boolean.TRUE);
 
         mgr.removeVTNModeListener(stub2);
         mgr.notifyChange(true);
-        assertEquals(0, stub2.getCalledCount());
-        assertEquals(0, stub1.getCalledCount());
-        assertEquals(null, stub2.getCalledArg());
-        assertEquals(null, stub1.getCalledArg());
+        stub1.checkCalledInfo(0);
+        stub2.checkCalledInfo(0);
 
         // add in case that there is no tenant.
         mgr.addVTNModeListener(stub1);
-        assertEquals(1, stub1.getCalledCount());
-        assertEquals(false, stub1.getCalledArg());
+        stub1.checkCalledInfo(1, Boolean.FALSE);
 
         mgr.removeVTNModeListener(stub1);
     }
+
 
     /**
      * Test method for
@@ -818,7 +810,6 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
      * {@link VTNManagerImpl#getTenant(VTenantPath)},
      * {@link VTNManagerImpl#isActive()}
      */
-//    @Ignore("")
     @Test
     public void testAddGetRemoveTenant() {
         VTNManagerImpl mgr = vtnMgr;
@@ -910,7 +901,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         List<Integer> ivs = createIntegers(-1, 4);
         List<Integer> hvs = createIntegers(-1, 4);
 
-        tnames.add(new String("vtn"));
+        tnames.add(new String("Vtn"));
         tnames.add(new String("123456789012345678901234567890_"));
         descs.add(null);
         descs.add(new String("desc"));
@@ -1129,6 +1120,14 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         assertEquals(StatusCode.BADREQUEST, st.getCode());
         st = mgr.addTenant(new VTenantPath("12345678901234567890123456789012"), tconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
+        st = mgr.addTenant(new VTenantPath("tenant-"), tconf);
+        assertEquals(StatusCode.BADREQUEST, st.getCode());
+        st = mgr.addTenant(new VTenantPath("tenant:"), tconf);
+        assertEquals(StatusCode.BADREQUEST, st.getCode());
+        st = mgr.addTenant(new VTenantPath("tenant "), tconf);
+        assertEquals(StatusCode.BADREQUEST, st.getCode());
+        st = mgr.addTenant(new VTenantPath("_tenant "), tconf);
+        assertEquals(StatusCode.BADREQUEST, st.getCode());
 
 
         st = mgr.addTenant(tpath, tconf);
@@ -1189,7 +1188,16 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         st = mgr.removeTenant(tpath);
         assertEquals(StatusCode.NOTFOUND, st.getCode());
 
-        // TODO: StatusCode.NOTACCEPTABLE
+        // in Container mode
+        mgr.containerModeUpdated(UpdateType.ADDED);
+        st = mgr.addTenant(tpath, tconf);
+        assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
+        st = mgr.modifyTenant(tpath, tconf, true);
+        assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
+        st = mgr.removeTenant(tpath);
+        assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
+        mgr.containerModeUpdated(UpdateType.REMOVED);
+
     }
 
     /**
@@ -1394,6 +1402,12 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         assertEquals(StatusCode.BADREQUEST, st.getCode());
         st = mgr.addBridge(new VBridgePath(tname, "123456789012345678901234567890_1"), bconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
+        st = mgr.addBridge(new VBridgePath(tname, "123456789012345678901234567890:"), bconf);
+        assertEquals(StatusCode.BADREQUEST, st.getCode());
+        st = mgr.addBridge(new VBridgePath(tname, "123456789012345678901234567890:"), bconf);
+        assertEquals(StatusCode.BADREQUEST, st.getCode());
+        st = mgr.addBridge(new VBridgePath(tname, "_1234567890"), bconf);
+        assertEquals(StatusCode.BADREQUEST, st.getCode());
 
         for (VBridgeConfig conf : bcflist) {
             st = mgr.addBridge(bpath, conf);
@@ -1489,7 +1503,15 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());
         }
 
-        // TODO: NOTACCEPTABLE
+        // in Container mode
+        mgr.containerModeUpdated(UpdateType.ADDED);
+        st = mgr.addBridge(bpath, bconf);
+        assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
+        st = mgr.modifyBridge(bpath, bconf, true);
+        assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
+        st = mgr.removeBridge(bpath);
+        assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
+        mgr.containerModeUpdated(UpdateType.REMOVED);
     }
 
     /**
@@ -1706,8 +1728,6 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             st = mgr.removeTenant(tpath);
             assertTrue(tpath.toString(), st.isSuccess());
         }
-
-        // TODO: NOTACCEPTABLE
     }
 
     /**
@@ -1757,6 +1777,12 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         st = mgr.addBridgeInterface(new VBridgeIfPath(tname, bname, ""), ifconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
         st = mgr.addBridgeInterface(new VBridgeIfPath(tname, bname, "123456789012345678901234567890_1"), ifconf);
+        assertEquals(StatusCode.BADREQUEST, st.getCode());
+        st = mgr.addBridgeInterface(new VBridgeIfPath(tname, bname, "123456789012345678901234567890:"), ifconf);
+        assertEquals(StatusCode.BADREQUEST, st.getCode());
+        st = mgr.addBridgeInterface(new VBridgeIfPath(tname, bname, "123456789012345678901234567890 "), ifconf);
+        assertEquals(StatusCode.BADREQUEST, st.getCode());
+        st = mgr.addBridgeInterface(new VBridgeIfPath(tname, bname, "_1234567890"), ifconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
 
         // add Interface before modify and remove()
@@ -1852,7 +1878,15 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());
         }
 
-        // TODO: NOTACCEPTABLE
+        // in container mode
+        mgr.containerModeUpdated(UpdateType.ADDED);
+        st = mgr.addBridgeInterface(ifpath, ifconf);
+        assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
+        st = mgr.modifyBridgeInterface(ifpath, ifconf, true);
+        assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
+        st = mgr.removeBridgeInterface(ifpath);
+        assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
+        mgr.containerModeUpdated(UpdateType.REMOVED);
     }
 
     /**
@@ -2000,17 +2034,23 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VTenantPath tpath = new VTenantPath(tname);
         String bname = "vbridge";
         VBridgePath bpath = new VBridgePath(tname, bname);
+        String bname2 = "vbridge2";
+        VBridgePath bpath2 = new VBridgePath(tname, bname2);
+
         String ifname = "vinterface";
         VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, ifname);
 
         List<VBridgePath> bpathlist = new ArrayList<VBridgePath>();
         List<VBridgeIfPath> ifplist = new ArrayList<VBridgeIfPath>();
         bpathlist.add(bpath);
+        bpathlist.add(bpath2);
         ifplist.add(ifp);
         createTenantAndBridgeAndInterface(mgr, tpath, bpathlist, ifplist);
 
         Node node = NodeCreator.createOFNode(0L);
         Node node1 = NodeCreator.createOFNode(1L);
+        Node node2 = NodeCreator.createOFNode(2L);
+
         VlanMap map = null;
 
         // conflict case
@@ -2028,9 +2068,23 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             assertEquals(StatusCode.CONFLICT, e.getStatus().getCode());
         }
 
+        try {
+            map = mgr.addVlanMap(bpath2, new VlanMapConfig(null, (short) 0));
+            fail("Expected to throw Exception.");
+        } catch (VTNException e) {
+            assertEquals(StatusCode.CONFLICT, e.getStatus().getCode());
+        }
+
         map = null;
         try {
             map = mgr.addVlanMap(bpath, new VlanMapConfig(node, (short) 0));
+            fail("Expected to throw Exception.");
+        } catch (VTNException e) {
+            assertEquals(StatusCode.CONFLICT, e.getStatus().getCode());
+        }
+
+        try {
+            map = mgr.addVlanMap(bpath2, new VlanMapConfig(node, (short) 0));
             fail("Expected to throw Exception.");
         } catch (VTNException e) {
             assertEquals(StatusCode.CONFLICT, e.getStatus().getCode());
@@ -2046,9 +2100,12 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         // if mapped node is not exist, duplicate vlanmap success.
         try {
             map = mgr.addVlanMap(bpath, new VlanMapConfig(node1, (short) 1));
+            map = mgr.addVlanMap(bpath, new VlanMapConfig(node2, (short) 1));
         } catch (Exception e) {
             unexpected(e);
         }
+        st = mgr.removeVlanMap(bpath, map.getId());
+        assertTrue("status=" + st.toString(), st.isSuccess());
 
         map = null;
         try {
@@ -2189,7 +2246,17 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());
         }
 
-        // TODO: NOTACCEPTABLE case
+        // in container mode
+        mgr.containerModeUpdated(UpdateType.ADDED);
+        try {
+            map = mgr.addVlanMap(bpath, vlconf);
+            fail("Throwing Exception was expected.");
+        } catch (VTNException e) {
+            assertEquals(StatusCode.NOTACCEPTABLE, e.getStatus().getCode());
+        }
+        st = mgr.removeVlanMap(bpath, "");
+        assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
+        mgr.containerModeUpdated(UpdateType.REMOVED);
 
         st = mgr.removeTenant(tpath);
         assertTrue(st.isSuccess());
@@ -2310,6 +2377,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         st = mgr.setPortMap(ifp2, pmconf2);
         assertTrue(st.isSuccess());
 
+
+
         // if specified port is not exist, duplicate portmap success.
         String ifname3 = "vinterface3";
         VBridgeIfPath ifp3 = new VBridgeIfPath(tname, bname2, ifname3);
@@ -2416,7 +2485,11 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             }
         }
 
-        // TODO: NOTACCEPTABLE
+        // in container mode
+        mgr.containerModeUpdated(UpdateType.ADDED);
+        st = mgr.setPortMap(ifp, pmconf);
+        assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
+        mgr.containerModeUpdated(UpdateType.REMOVED);
 
         st = mgr.removeTenant(tpath);
         assertTrue(st.isSuccess());
@@ -2870,6 +2943,13 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         PacketResult result = mgr.receiveDataPacket(null);
         assertEquals(PacketResult.IGNORED, result);
 
+        byte [] srcCnt = new byte[] {cntMac[0], cntMac[1], cntMac[2],
+                                     cntMac[3], cntMac[4], cntMac[5]};
+        byte [] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
+                                  (byte)0xff, (byte)0xff, (byte)0xff};
+        byte [] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
+        byte [] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
+
         List<NodeConnector> connectors = createNodeConnectors(4);
         for (NodeConnector nc: connectors) {
             byte iphost = 1;
@@ -2877,28 +2957,21 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 byte [] bytes = ea.getValue();
                 byte [] src = new byte[] {bytes[0], bytes[1], bytes[2],
                                         bytes[3], bytes[4], bytes[5]};
-                byte [] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
-                                        (byte)0xff, (byte)0xff, (byte)0xff};
-                byte [] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)iphost};
-                byte [] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
+                sender[3] = (byte)iphost;
                 short vlan = 0;
                 RawPacket inPkt = createARPRawPacket(src, dst, sender, target, vlan, nc, ARP.REQUEST);
                 result = mgr.receiveDataPacket(inPkt);
 
                 // because there are no topology, in this case always ignored.
                 assertEquals(PacketResult.IGNORED, result);
+
+                iphost++;
             }
 
             // packet from controller.
-            byte [] src = new byte[] {cntMac[0], cntMac[1], cntMac[2],
-                                    cntMac[3], cntMac[4], cntMac[5]};
-            byte [] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
-                                    (byte)0xff, (byte)0xff, (byte)0xff};
-            byte [] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
-            byte [] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
             short vlan = 0;
 
-            RawPacket inPkt = createARPRawPacket(src, dst, sender, target, vlan, nc, ARP.REQUEST);
+            RawPacket inPkt = createARPRawPacket(srcCnt, dst, sender, target, vlan, nc, ARP.REQUEST);
             result = mgr.receiveDataPacket(inPkt);
 
             assertEquals(PacketResult.IGNORED, result);
@@ -2907,16 +2980,4 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         st = mgr.removeTenant(tpath);
         assertTrue(st.isSuccess());
     }
-
-
-    // private method
-    protected void sleep(long millis) {
-        Thread.yield();
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            unexpected(e);
-        }
-    }
-
 }

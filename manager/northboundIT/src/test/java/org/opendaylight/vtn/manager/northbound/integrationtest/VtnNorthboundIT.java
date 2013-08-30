@@ -953,6 +953,8 @@ public class VtnNorthboundIT {
                 mavenBundle("org.opendaylight.controller", "sal.connection.implementation").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller", "sal.networkconfiguration").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller", "sal.networkconfiguration.implementation").versionAsInProject(),
+                mavenBundle("org.opendaylight.controller", "connectionmanager").versionAsInProject(),
+                mavenBundle("org.opendaylight.controller", "connectionmanager.implementation").versionAsInProject(),
 
                 mavenBundle("org.opendaylight.controller", "switchmanager").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller", "switchmanager.implementation").versionAsInProject(),

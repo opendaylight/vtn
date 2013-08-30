@@ -649,7 +649,7 @@ public abstract class TestBase extends Assert {
         Ethernet eth = new Ethernet();
         eth.setSourceMACAddress(src).setDestinationMACAddress(dst);
 
-        if (vlan >= 0) {
+        if (vlan > 0) {
             eth.setEtherType(EtherTypes.VLANTAGGED.shortValue());
 
             IEEE8021Q vlantag = new IEEE8021Q();
@@ -809,5 +809,81 @@ public abstract class TestBase extends Assert {
 
         assertNotSame(o, newobj);
         assertEquals(o, newobj);
+    }
+
+    /**
+     * check a Ethernet packet whether setted expected parametor in the packet.
+     *
+     * @param msg   if check is failed, report error with a message specified this.
+     * @param eth   input ethernet frame data.
+     * @param ethType   expected ethernet type.
+     * @param destMac   expected destination mac address.
+     * @param srcMac    expected source mac address.
+     * @param vlan  expected vlan id. (if expected untagged, specify 0 or less than 0)
+     * @param protoType expected protocol type.
+     * @param opCode    expected opCode. if thish is not ARP, opCode is not checked.
+     * @param senderMac expected sender HW address.
+     * @param targetMac expected target HW address.
+     * @param senderAddr    expected sender protocol address.
+     * @param targetAddr    expected target protocol address.
+     *
+     */
+    protected void checkOutEthernetPacket (String msg, Ethernet eth, EtherTypes ethType,
+            byte[] srcMac, byte[] destMac,  short vlan, EtherTypes protoType, short opCode,
+            byte[] senderMac, byte[] targetMac, byte[] senderAddr, byte [] targetAddr) {
+
+        ARP arp = null;
+        if (vlan > 0) {
+            assertEquals(msg, EtherTypes.VLANTAGGED.shortValue(), eth.getEtherType());
+            IEEE8021Q vlantag = (IEEE8021Q)eth.getPayload();
+            assertEquals(msg, vlan, vlantag.getVid());
+            assertEquals(msg, ethType.shortValue(), vlantag.getEtherType());
+            if (ethType.shortValue() == EtherTypes.ARP.shortValue()) {
+                arp = (ARP)vlantag.getPayload();
+            }
+        } else {
+            assertEquals(msg, ethType.shortValue(), eth.getEtherType());
+            if (ethType.shortValue() == EtherTypes.ARP.shortValue()) {
+                arp = (ARP)eth.getPayload();
+            }
+        }
+
+        if (srcMac != null) {
+            assertArrayEquals(msg, srcMac, eth.getSourceMACAddress());
+        }
+        if (destMac != null) {
+            assertArrayEquals(msg, destMac, eth.getDestinationMACAddress());
+        }
+
+        if (ethType != null && ethType.shortValue() == EtherTypes.ARP.shortValue()) {
+            if (protoType != null) {
+                assertEquals(msg, protoType.shortValue(), arp.getProtocolType());
+            }
+            if (opCode >= 0) {
+                assertEquals(msg, opCode, arp.getOpCode());
+            }
+            if (senderMac != null) {
+                assertArrayEquals(msg, senderMac, arp.getSenderHardwareAddress());
+            }
+            if (targetMac != null) {
+                assertArrayEquals(msg, targetMac, arp.getTargetHardwareAddress());
+            }
+            if (senderAddr != null) {
+                assertArrayEquals(msg, senderAddr, arp.getSenderProtocolAddress());
+            }
+            if (targetAddr != null) {
+                assertArrayEquals(msg, targetAddr, arp.getTargetProtocolAddress());
+            }
+        }
+    }
+
+    // for dispatch other thread.
+    protected void sleep(long millis) {
+        Thread.yield();
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            unexpected(e);
+        }
     }
 }

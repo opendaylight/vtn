@@ -14,15 +14,22 @@ import java.net.UnknownHostException;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.opendaylight.controller.sal.core.ConstructionException;
+import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.ARP;
+import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
+import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
+import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.VTNException;
 
@@ -31,6 +38,23 @@ import org.opendaylight.vtn.manager.VTNException;
  */
 public class MacAddressTableTest extends TestBase {
     private static VTNManagerImpl vtnMgr = null;
+
+    // The Test class which implemented DataLinkAddress class.
+    class TestDataLink extends DataLinkAddress {
+        private static final long serialVersionUID = 5664547077536394233L;
+
+        TestDataLink() {
+
+        }
+
+        TestDataLink(String name) {
+            super(name);
+        }
+
+        public TestDataLink clone() {
+            return new TestDataLink(this.getName());
+        }
+    }
 
     /**
      * setup a test environment for MacAddressTableTest
@@ -76,7 +100,8 @@ public class MacAddressTableTest extends TestBase {
     }
 
     /**
-     * Test case for {@link MacAddressTable#MacAddressTable(VTNManagerImpl, String, int)} and
+     * Test case for
+     * {@link MacAddressTable#MacAddressTable(VTNManagerImpl, String, int)} and
      * {@link MacAddressTable#destroy()}
      */
     @Test
@@ -159,11 +184,7 @@ public class MacAddressTableTest extends TestBase {
             // get from empty table.
             tent = tbl.get(dpctx);
             assertNull(tent);
-            try {
-                mae = tbl.getEntry(ea);
-            } catch (VTNException e) {
-                unexpected(e);
-            }
+            mae = getEntry(tbl, ea);
             assertNull(mae);
 
             // add() and get() one data
@@ -177,11 +198,7 @@ public class MacAddressTableTest extends TestBase {
             assertEquals(0, tent.getVlan());
 
             // getEntry()
-            try {
-                mae = tbl.getEntry(ea);
-            } catch (VTNException e) {
-                unexpected(e);
-            }
+            mae = getEntry(tbl, ea);
             assertNotNull(mae);
             assertEquals(ea, mae.getAddress());
             assertEquals(0, mae.getVlan());
@@ -201,11 +218,7 @@ public class MacAddressTableTest extends TestBase {
             assertNotNull(tent);
             assertEquals(connectors.get(0), tent.getPort());
             assertEquals(0, tent.getVlan());
-            try {
-                mae = tbl.getEntry(ea);
-            } catch (VTNException e) {
-                unexpected(e);
-            }
+            mae = getEntry(tbl, ea);
             iplist = mae.getInetAddresses();
             assertTrue(iplist.size() == 2);
             InetAddress ip = null, ip2 = null;
@@ -227,11 +240,7 @@ public class MacAddressTableTest extends TestBase {
             assertNotNull(tent);
             assertEquals(connectors.get(0), tent.getPort());
             assertEquals(vlan, tent.getVlan());
-            try {
-                mae = tbl.getEntry(ea);
-            } catch (VTNException e) {
-                unexpected(e);
-            }
+            mae = getEntry(tbl, ea);
             iplist = mae.getInetAddresses();
             assertTrue(iplist.size() == 1);
             assertArrayEquals(sender, iplist.iterator().next().getAddress());
@@ -244,22 +253,14 @@ public class MacAddressTableTest extends TestBase {
             assertNotNull(tent);
             assertEquals(connectors.get(1), tent.getPort());
             assertEquals(0, tent.getVlan());
-            try {
-                mae = tbl.getEntry(ea);
-            } catch (VTNException e) {
-                unexpected(e);
-            }
+            mae = getEntry(tbl, ea);
             iplist = mae.getInetAddresses();
             assertTrue(iplist.size() == 1);
             assertArrayEquals(sender, iplist.iterator().next().getAddress());
 
             // check table size
             List<MacAddressEntry> list = null;
-            try {
-                list = tbl.getEntries();
-            } catch (Exception e) {
-                unexpected(e);
-            }
+            list = getEntries(tbl);
             assertNotNull(list);
             assertTrue(list.size() == 1);
             EthernetAddress eth = (EthernetAddress) list.get(0).getAddress();
@@ -297,12 +298,7 @@ public class MacAddressTableTest extends TestBase {
             assertNull(tent);
 
             tall.add(mgr, dpctx);
-            list = null;
-            try {
-                list = tall.getEntries();
-            } catch (Exception e) {
-                unexpected(e);
-            }
+            list = getEntries(tall);
             assertNotNull(list);
             assertTrue(list.size() == iphost);
 
@@ -325,13 +321,28 @@ public class MacAddressTableTest extends TestBase {
         mtbl.add(mgr, mpctx);
 
         List<MacAddressEntry> list = null;
-        try {
-            list = mtbl.getEntries();
-        } catch (Exception e) {
-            unexpected(e);
-        }
+        list = getEntries(mtbl);
         assertNotNull(list);
         assertTrue(list.size() == 0);
+
+        // query by bad object.
+        TestDataLink dl = new TestDataLink("test");
+
+        try {
+            mae = mtbl.getEntry(dl);
+        } catch (VTNException e) {
+            unexpected(e);
+        }
+        assertNull(mae);
+
+        try {
+            mae = mtbl.removeEntry(dl);
+        } catch (VTNException e) {
+           unexpected(e);
+        }
+        assertNull(mae);
+
+        mtbl.destroy(mgr);
     }
 
     /**
@@ -349,6 +360,7 @@ public class MacAddressTableTest extends TestBase {
         MacAddressTable tbl3 = new MacAddressTable(mgr, "Table3", 1000);
         MacAddressTable tbl4 = new MacAddressTable(mgr, "Table4", 1000);
         MacAddressTable tbl5 = new MacAddressTable(mgr, "Table5", 1000);
+        MacAddressTable tbl6 = new MacAddressTable(mgr, "Table5", 1000);
 
         List<NodeConnector> connectors = createNodeConnectors(3, false);
         short vlan = 0;
@@ -367,54 +379,142 @@ public class MacAddressTableTest extends TestBase {
             tbl3.add(mgr, pctx);
             tbl4.add(mgr, pctx);
             tbl5.add(mgr, pctx);
+            tbl6.add(mgr, pctx);
 
             vlan++;
         }
 
         List<MacAddressEntry> list = null;
         tbl1.flush();
-        try {
-            list = tbl1.getEntries();
-        } catch (Exception e) {
-            unexpected(e);
-        }
+        list = getEntries(tbl1);
         assertNotNull(list);
         assertTrue(list.size() == 0);
 
         tbl2.flush(connectors.get(0).getNode());
-        try {
-            list = tbl2.getEntries();
-        } catch (Exception e) {
-            unexpected(e);
-        }
+        list = getEntries(tbl2);
         assertNotNull(list);
         assertTrue(list.size() == 6);
 
         tbl3.flush(connectors.get(0).getNode(), (short)0);
-        try {
-            list = tbl3.getEntries();
-        } catch (Exception e) {
-            unexpected(e);
-        }
+        list = getEntries(tbl3);
         assertNotNull(list);
         assertTrue(list.size() == 8);
 
         tbl4.flush(connectors.get(0));
-        try {
-            list = tbl4.getEntries();
-        } catch (Exception e) {
-            unexpected(e);
-        }
+        list = getEntries(tbl4);
         assertNotNull(list);
         assertTrue(list.size() == 6);
 
         tbl5.flush(connectors.get(0), (short)0);
+        list = getEntries(tbl5);
+        assertNotNull(list);
+        assertTrue(list.size() == 8);
+
+        tbl6.flush((Node)null, (short)0);
+        list = getEntries(tbl6);
+        assertNotNull(list);
+        assertTrue(list.size() == 6);
+
+    }
+
+    /**
+     * Test case for {@link age())}
+     */
+    @Test
+    public void testAge() {
+
+        class PutTableTask extends TimerTask {
+            MacAddressTable tbl;
+            PacketContext pctx;
+
+            PutTableTask(MacAddressTable tbl, PacketContext pctx) {
+                this.tbl = tbl;
+                this.pctx = pctx;
+            }
+
+            @Override
+            public void run() {
+                tbl.add(vtnMgr, pctx);
+            }
+        }
+
+        VTNManagerImpl mgr = vtnMgr;
+        MacAddressTable tbl = new MacAddressTable(mgr, "Table", 1);
+
+        short vlan = 4095;
+        byte [] src = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
+                                  (byte)0xff, (byte)0xff, (byte)0x11};
+        byte [] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
+                                        (byte)0xff, (byte)0xff, (byte)0xff};
+        byte [] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
+        byte [] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
+        Node node = NodeCreator.createOFNode(0L);
+        NodeConnector nc = NodeConnectorCreator.createOFNodeConnector((short)0, node);
+
+        // default
+        PacketContext pctx = createARPPacketContext(src, dst, sender, target,
+                                                       vlan, nc, ARP.REQUEST);
+        EthernetAddress ea = null;
         try {
-            list = tbl5.getEntries();
+            ea = new EthernetAddress(src);
+        } catch (ConstructionException e) {
+            unexpected(e);
+        }
+
+        tbl.add(mgr, pctx);
+        MacAddressEntry mae = getEntry(tbl, ea);
+        assertNotNull(mae);
+        assertEquals(ea, mae.getAddress());
+
+        sleep(2500);
+
+        mae = getEntry(tbl, ea);
+        assertNull(mae);
+
+        Timer timer = new Timer();
+        PutTableTask ptask = new PutTableTask(tbl, pctx);
+        timer.schedule(ptask, 0, 500L);
+
+        tbl.add(mgr, pctx);
+
+        sleep(2500);
+
+        mae = getEntry(tbl, ea);
+        assertNotNull(mae);
+        assertEquals(ea, mae.getAddress());
+
+        timer.cancel();
+        timer.purge();
+
+    }
+
+
+    // private methods
+
+    /**
+     * get Mac address table entries
+     */
+    private List<MacAddressEntry> getEntries(MacAddressTable tbl) {
+        List<MacAddressEntry> list = null;
+        try {
+            list = tbl.getEntries();
         } catch (Exception e) {
             unexpected(e);
         }
-        assertNotNull(list);
-        assertTrue(list.size() == 8);
+        return list;
     }
+
+    /**
+     * get Mac address table entry
+     */
+    private MacAddressEntry getEntry(MacAddressTable tbl, EthernetAddress ea) {
+        MacAddressEntry mae = null;
+        try {
+            mae = tbl.getEntry(ea);
+        } catch (VTNException e) {
+            unexpected(e);
+        }
+        return mae;
+    }
+
 }

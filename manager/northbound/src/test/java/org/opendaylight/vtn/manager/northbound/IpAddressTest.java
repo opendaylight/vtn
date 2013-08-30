@@ -59,8 +59,8 @@ public class IpAddressTest extends TestBase {
 
                     testEquals(set, ia1, ia2);
                 }
-            int required = ipset.size();
-            assertEquals(required, set.size());
+                int required = ipset.size();
+                assertEquals(required, set.size());
             } else {
                 if (ipset == null) {
                     assertNull(ipset);

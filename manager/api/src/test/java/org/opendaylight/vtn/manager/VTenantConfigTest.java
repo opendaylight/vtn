@@ -79,14 +79,14 @@ public class VTenantConfigTest extends TestBase {
         String prefix = "VTenantConfig[";
         String suffix = "]";
         for (String desc: createStrings("description")) {
-            for (Integer iv: createIntegers(0, 5)) {
-                for (Integer hv: createIntegers(0, 5)) {
+            for (Integer iv: createIntegers(-1, 5)) {
+                for (Integer hv: createIntegers(-1, 5)) {
                     VTenantConfig tconf = createVTenantConfig(desc, iv, hv);
                     if (desc != null) {
                         desc = "desc=" + desc;
                     }
-                    String is = (iv == null) ? null : "idleTimeout=" + iv;
-                    String hs = (hv == null) ? null : "hardTimeout=" + hv;
+                    String is = (iv == null || iv < 0) ? null : "idleTimeout=" + iv;
+                    String hs = (hv == null || hv < 0) ? null : "hardTimeout=" + hv;
                     String required =
                         joinStrings(prefix, suffix, ",", desc, is, hs);
                     assertEquals(required, tconf.toString());
@@ -101,8 +101,8 @@ public class VTenantConfigTest extends TestBase {
     @Test
     public void testSerialize() {
         for (String desc: createStrings("description")) {
-            for (Integer iv: createIntegers(0, 5)) {
-                for (Integer hv: createIntegers(0, 5)) {
+            for (Integer iv: createIntegers(-1, 5)) {
+                for (Integer hv: createIntegers(-1, 5)) {
                     VTenantConfig tconf = createVTenantConfig(desc, iv, hv);
                     serializeTest(tconf);
                 }
@@ -116,8 +116,8 @@ public class VTenantConfigTest extends TestBase {
     @Test
     public void testJAXB() {
         for (String desc: createStrings("description")) {
-            for (Integer iv: createIntegers(0, 5)) {
-                for (Integer hv: createIntegers(0, 5)) {
+            for (Integer iv: createIntegers(-1, 5)) {
+                for (Integer hv: createIntegers(-1, 5)) {
                     VTenantConfig tconf = createVTenantConfig(desc, iv, hv);
                     jaxbTest(tconf, "vtnconf");
                 }

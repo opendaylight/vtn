@@ -16,6 +16,8 @@ import org.junit.Test;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
+import org.opendaylight.controller.sal.utils.NodeCreator;
 
 /**
  * JUnit test for {@link PortMap}.
@@ -106,6 +108,12 @@ public class PortMapTest extends TestBase {
 
         PortMap empty = new PortMap(null, null);
         assertEquals("PortMap[]", empty.toString());
+
+        Node node = NodeCreator.createOFNode(0L);
+        NodeConnector nc = NodeConnectorCreator.createOFNodeConnector((short)0, node);
+        empty = new PortMap(null, nc);
+        assertEquals("PortMap[connector=" + nc.toString() + "]", empty.toString());
+
     }
 
     /**

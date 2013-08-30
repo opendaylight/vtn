@@ -188,6 +188,8 @@ public class MacEntryTest extends TestBase {
         List<EthernetAddress> ethaddrs = createEthernetAddresses(false);
         List<NodeConnector> connectors = createNodeConnectors(3, false);
 
+        Set<InetAddress> ip = new HashSet<InetAddress>();
+        ips.add(ip);
         for (NodeConnector nc : connectors) {
             for (Set<InetAddress> ipset : ips) {
                 for (EthernetAddress ea : ethaddrs) {
