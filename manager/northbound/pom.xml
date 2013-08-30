@@ -157,6 +157,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.opendaylight.controller.thirdparty</groupId>
+      <artifactId>org.apache.catalina.filters.CorsFilter</artifactId>
+      <version>7.0.42-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>${junit.version}</version>

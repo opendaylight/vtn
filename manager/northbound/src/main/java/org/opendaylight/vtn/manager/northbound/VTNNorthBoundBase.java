@@ -48,7 +48,7 @@ public abstract class VTNNorthBoundBase {
      */
     @Context
     public void setSecurityContext(SecurityContext context) {
-        userName = context.getUserPrincipal().getName();
+        if (context != null && context.getUserPrincipal() != null) userName = context.getUserPrincipal().getName();
     }
 
     /**
