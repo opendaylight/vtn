@@ -686,14 +686,14 @@ public class VtnNorthboundIT {
         Assert.assertEquals(400, httpResponseCode.intValue());
 
         // Test PUT PortMapping expecting 415
-        requestBody = "{\"@vlan\":" + vlan2 + ", \"node\":{\"@type\":\""+ nodeType + "\", \"@id\":\""
+        requestBody = "{\"@vlan\":" + vlan2 + ", \"node\":{\"type\":\""+ nodeType + "\", \"id\":\""
                 + nodeid + "\"}, \"port\":{\"@name\":\"" + pname
                 + "\", \"@type\":\"" + nodeType + "\", \"@id\":\"" + portnum + "\"}}";
         result = getJsonResult(baseURL + ifname + "/portmap/", "PUT", requestBody);
         Assert.assertEquals(415, httpResponseCode.intValue());
 
         // Test PUT PortMapping expecting 404
-        requestBody = "{\"@vlan\":" + vlan1 + ", \"node\":{\"@type\":\"" + nodeType + "\", \"@id\":\""
+        requestBody = "{\"@vlan\":" + vlan1 + ", \"node\":{\"type\":\"" + nodeType + "\", \"id\":\""
                 + nodeid + "\"}, \"port\":{\"@name\":\"" + pname
                 + "\", \"@type\":\"" + nodeType + "\", \"@id\":\"" + portnum + "\"}}";
         result = getJsonResult(baseURL + ifname_dammy + "/portmap/", "PUT", requestBody);
@@ -704,7 +704,7 @@ public class VtnNorthboundIT {
         Assert.assertEquals(200, httpResponseCode.intValue());
 
         // Test PUT PortMapping
-        requestBody = "{\"@vlan\":" + vlan3 + ", \"node\":{\"@type\":\"" + nodeType + "\", \"@id\":\""
+        requestBody = "{\"@vlan\":" + vlan3 + ", \"node\":{\"type\":\"" + nodeType + "\", \"id\":\""
                 + nodeid + "\"}, \"port\":{\"@name\":\"" + pname
                 + "\", \"@type\":\"" + nodeType + "\", \"@id\":\"" + portnum + "\"}}";
         result = getJsonResult(url + bname2 + "/interfaces/" + ifname2 + "/portmap/", "PUT", requestBody);
@@ -724,8 +724,8 @@ public class VtnNorthboundIT {
 
 
         Assert.assertEquals(vlan1, json.getString("@vlan"));
-        Assert.assertEquals(nodeType, nodeinfo.getString("@type"));
-        Assert.assertEquals(nodeid, nodeinfo.getString("@id"));
+        Assert.assertEquals(nodeType, nodeinfo.getString("type"));
+        Assert.assertEquals(nodeid, nodeinfo.getString("id"));
         Assert.assertEquals(pname, portinfo.getString("@name"));
         Assert.assertEquals(nodeType, portinfo.getString("@type"));
         Assert.assertEquals(portnum, portinfo.getString("@id"));
@@ -776,31 +776,31 @@ public class VtnNorthboundIT {
         Assert.assertEquals("{}", result);
 
         // Test POST VLAN Mapping expecting 404
-        String requestBody = "{\"@vlan\":\"" + vlan1 +"\",\"node\":{\"@type\":\""+ nodeType +"\",\"@id\":\""
+        String requestBody = "{\"@vlan\":\"" + vlan1 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
                 + nodeid1 + "\"}}";
         result = getJsonResult(baseURL + bname_dammy + "/vlanmaps", "POST", requestBody);
         Assert.assertEquals(404, httpResponseCode.intValue());
 
         // Test POST VLAN Mapping expecting 415
-        requestBody = "{\"@vlan\":\"" + vlan3 +"\",\"node\":{\"@type\":\""+ nodeType +"\",\"@id\":\""
+        requestBody = "{\"@vlan\":\"" + vlan3 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
                 + nodeid1 + "\"}}";
         result = getJsonResult(baseURL + bname + "/vlanmaps", "POST", requestBody);
         Assert.assertEquals(415, httpResponseCode.intValue());
 
         // Test POST VLAN Mapping
-        requestBody = "{\"@vlan\":\"" + vlan1 +"\",\"node\":{\"@type\":\""+ nodeType +"\",\"@id\":\""
+        requestBody = "{\"@vlan\":\"" + vlan1 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
                 + nodeid1 + "\"}}";
         result = getJsonResult(baseURL + bname + "/vlanmaps", "POST", requestBody);
         Assert.assertEquals(201, httpResponseCode.intValue());
 
         // Test POST VLAN Mapping expecting 409
-        requestBody = "{\"@vlan\":\"" + vlan1 +"\",\"node\":{\"@type\":\""+ nodeType +"\",\"@id\":\""
+        requestBody = "{\"@vlan\":\"" + vlan1 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
                 + nodeid1 + "\"}}";
         result = getJsonResult(baseURL + bname + "/vlanmaps", "POST", requestBody);
         Assert.assertEquals(409, httpResponseCode.intValue());
 
         // Test POST VLAN Mapping
-        requestBody = "{\"@vlan\":\"" + vlan2 +"\",\"node\":{\"@type\":\""+ nodeType +"\",\"@id\":\""
+        requestBody = "{\"@vlan\":\"" + vlan2 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
                 + nodeid2 + "\"}}";
         result = getJsonResult(baseURL + bname + "/vlanmaps", "POST", requestBody);
         Assert.assertEquals(201, httpResponseCode.intValue());
@@ -820,13 +820,13 @@ public class VtnNorthboundIT {
             JSONObject nodeinfo = vLANMap.getJSONObject("node");
             if (vLANMap.getString("@id").equals(nodeType + "-" + nodeid1 + "." + vlan1)) {
                 Assert.assertEquals(vlan1, vLANMap.getString("@vlan"));
-                Assert.assertEquals(nodeType, nodeinfo.getString("@type"));
-                Assert.assertEquals(nodeid1, nodeinfo.getString("@id"));
+                Assert.assertEquals(nodeType, nodeinfo.getString("type"));
+                Assert.assertEquals(nodeid1, nodeinfo.getString("id"));
 
             } else if (vLANMap.getString("@id").equals(nodeType + "-" + nodeid2 + "." + vlan2)) {
                 Assert.assertEquals(vlan2, vLANMap.getString("@vlan"));
-                Assert.assertEquals(nodeType, nodeinfo.getString("@type"));
-                Assert.assertEquals(nodeid2, nodeinfo.getString("@id"));
+                Assert.assertEquals(nodeType, nodeinfo.getString("type"));
+                Assert.assertEquals(nodeid2, nodeinfo.getString("id"));
             }
             else {
                 // Unexpected VLAN Mapping
@@ -847,8 +847,8 @@ public class VtnNorthboundIT {
         Assert.assertEquals(nodeType + "-" + nodeid1 + "." + vlan1, json.getString("@id"));
         Assert.assertEquals(vlan1, json.getString("@vlan"));
         JSONObject nodeinfo = json.getJSONObject("node");
-        Assert.assertEquals(nodeType, nodeinfo.getString("@type"));
-        Assert.assertEquals(nodeid1, nodeinfo.getString("@id"));
+        Assert.assertEquals(nodeType, nodeinfo.getString("type"));
+        Assert.assertEquals(nodeid1, nodeinfo.getString("id"));
     }
 
     private void testVLANMappingDeleteAPI(StringBuilder url, String tname, String bname) throws JSONException {
