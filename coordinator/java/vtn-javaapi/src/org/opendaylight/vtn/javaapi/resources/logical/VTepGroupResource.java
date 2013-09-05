@@ -13,6 +13,7 @@ import java.util.List;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
 import org.opendaylight.vtn.core.util.Logger;
@@ -118,9 +119,13 @@ public class VTepGroupResource extends AbstractResource {
 								.getAsJsonArray();
 						if (vTepGroupMemberArray.size() > 0) {
 							for (final JsonElement jsonElement : vTepGroupMemberArray) {
+								status = ClientSession.RESP_FATAL;
+								requestProcessor.setServiceInfo(
+									UncUPLLEnums.UPLL_IPC_SERVICE_NAME,
+									UncUPLLEnums.ServiceID.UPLL_EDIT_SVC_ID.ordinal());
 								requestProcessor
 										.createIpcRequestPacket(
-												IpcRequestPacketEnum.KT_VTEP_GRP_DELETE,
+												IpcRequestPacketEnum.KT_VTEP_GRP_MEMBER_DELETE,
 												jsonElement.getAsJsonObject(),
 												getUriParameters(requestBody));
 								LOG.debug("Request packet deleted successfully");
@@ -134,13 +139,12 @@ public class VTepGroupResource extends AbstractResource {
 									break;
 								}
 							}
-
 						}
 					}
 				}
 				LOG.debug("Deletion of member data finished successfully..");
 				// creating Data members along with VtepGroup
-
+				//status = ClientSession.RESP_FATAL;
 				if (null != requestBody
 						&& requestBody.has(VtnServiceJsonConsts.VTEPGROUP)) {
 					vTepGroup = requestBody
@@ -155,8 +159,12 @@ public class VTepGroupResource extends AbstractResource {
 					final JsonArray vTepGroupMemberArray = vTepGroup.get(
 							VtnServiceJsonConsts.VTEPGROUPMEMBERNAME)
 							.getAsJsonArray();
-					if (vTepGroupMemberArray.size() > 0) {
+					if (vTepGroupMemberArray.size() > 0) {						
 						for (final JsonElement jsonElement : vTepGroupMemberArray) {
+							status = ClientSession.RESP_FATAL;
+							requestProcessor.setServiceInfo(
+								UncUPLLEnums.UPLL_IPC_SERVICE_NAME,
+								UncUPLLEnums.ServiceID.UPLL_EDIT_SVC_ID.ordinal());
 							requestProcessor
 									.createIpcRequestPacket(
 											IpcRequestPacketEnum.KT_VTEP_GRP_MEMBER_CREATE,
@@ -204,6 +212,7 @@ public class VTepGroupResource extends AbstractResource {
 			LOG.debug("Complete Ipc framework call");
 			LOG.trace("Completed VTepGroupResource#delete()");
 		}
+		setInfo(null);
 		return status;
 	}
 	/**
@@ -308,70 +317,84 @@ public class VTepGroupResource extends AbstractResource {
 			JsonObject vtepGroup = responseGenerator.getVTepGroupResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.SHOW);
+			if(!(vtepGroup.get(VtnServiceJsonConsts.VTEPGROUP) instanceof JsonNull)){
+				requestProcessor.setServiceInfo(
+						UncUPLLEnums.UPLL_IPC_SERVICE_NAME,
+						UncUPLLEnums.ServiceID.UPLL_READ_SVC_ID.ordinal());
 
-			requestProcessor.createIpcRequestPacket(
-					IpcRequestPacketEnum.KT_VTEP_GRP_MEMBER_GET, requestBody,
-					getUriParameters(requestBody));
-			LOG.debug("Request packet created successfully for 2nd call");
-			requestProcessor
-					.getRequestPacket()
-					.setOperation(
-							IpcDataUnitWrapper
-									.setIpcUint32Value(UncOperationEnum.UNC_OP_READ_SIBLING_BEGIN
-											.ordinal()));
-			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet processed with status" + status);
-			if (status == ClientSession.RESP_FATAL) {
-				throw new VtnServiceException(
-						Thread.currentThread().getStackTrace()[1]
-								.getClassName()
-								+ VtnServiceConsts.HYPHEN
-								+ Thread.currentThread().getStackTrace()[1]
-										.getMethodName(),
-						UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
-						UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorMessage());
-			}
-			LOG.debug("Request packet created successfully");
-			vtepGroup = responseGenerator.getVtepGroupMembers(
-					requestProcessor.getIpcResponsePacket(),
-					vtepGroup.getAsJsonObject(VtnServiceJsonConsts.VTEPGROUP));
-			JsonArray memberJsonArray = vtepGroup
-					.getAsJsonArray(VtnServiceJsonConsts.MEMBERVTEPS);
-			VtnServiceConfiguration configuration = VtnServiceInitManager
-					.getConfigurationMap();
-			final int max_rep_count = Integer.parseInt(configuration
-					.getConfigValue(VtnServiceConsts.MAX_REP_DEFAULT));
-			int memberIndex = memberJsonArray.size();
-			if (memberJsonArray.size() >= max_rep_count) {
-				while (memberIndex >= max_rep_count) {
-					memberIndex = memberJsonArray.size();
-					JsonObject memberJson = (JsonObject) vtepGroup
-							.getAsJsonArray(VtnServiceJsonConsts.MEMBERVTEPS)
-							.get(memberIndex - 1);
-					requestProcessor.createIpcRequestPacket(
-							IpcRequestPacketEnum.KT_VTEP_GRP_MEMBER_GET,
-							memberJson, getUriParameters(requestBody));
-					requestProcessor
-							.getRequestPacket()
-							.setOperation(
-									IpcDataUnitWrapper
-											.setIpcUint32Value(UncOperationEnum.UNC_OP_READ_SIBLING
-													.ordinal()));
-					status = requestProcessor.processIpcRequest();
-					vtepGroup = responseGenerator.getVtepGroupMembers(
-							requestProcessor.getIpcResponsePacket(), vtepGroup);
-					if (!vtepGroup.has(VtnServiceJsonConsts.MEMBERVTEPS)
-							|| vtepGroup
-									.getAsJsonArray(VtnServiceJsonConsts.MEMBERVTEPS) != null
-							&& vtepGroup.getAsJsonArray(
-									VtnServiceJsonConsts.MEMBERVTEPS).size() == 0) {
-						break;
-					}
-					memberIndex++;
+				requestProcessor.createIpcRequestPacket(
+						IpcRequestPacketEnum.KT_VTEP_GRP_MEMBER_GET,
+						requestBody, getUriParameters(requestBody));
+				LOG.debug("Request packet created successfully for 2nd call");
+				requestProcessor
+						.getRequestPacket()
+						.setOperation(
+								IpcDataUnitWrapper
+										.setIpcUint32Value(UncOperationEnum.UNC_OP_READ_SIBLING_BEGIN
+												.ordinal()));
+				status = requestProcessor.processIpcRequest();
+				LOG.debug("Request packet processed with status" + status);
+				if (status == ClientSession.RESP_FATAL) {
+					throw new VtnServiceException(
+							Thread.currentThread().getStackTrace()[1]
+									.getClassName()
+									+ VtnServiceConsts.HYPHEN
+									+ Thread.currentThread().getStackTrace()[1]
+											.getMethodName(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR
+									.getErrorMessage());
 				}
+				LOG.debug("Request packet created successfully");
+				vtepGroup = responseGenerator
+						.getVtepGroupMembers(
+								requestProcessor.getIpcResponsePacket(),
+								vtepGroup
+										.getAsJsonObject(VtnServiceJsonConsts.VTEPGROUP));
+				JsonArray memberJsonArray = vtepGroup
+						.getAsJsonArray(VtnServiceJsonConsts.MEMBERVTEPS);
+				VtnServiceConfiguration configuration = VtnServiceInitManager
+						.getConfigurationMap();
+				final int max_rep_count = Integer.parseInt(configuration
+						.getConfigValue(VtnServiceConsts.MAX_REP_DEFAULT));
+				int memberIndex = memberJsonArray.size();
+				if (memberJsonArray.size() >= max_rep_count) {
+					while (memberIndex >= max_rep_count) {
+						memberIndex = memberJsonArray.size();
+						JsonObject memberJson = (JsonObject) vtepGroup
+								.getAsJsonArray(
+										VtnServiceJsonConsts.MEMBERVTEPS).get(
+										memberIndex - 1);
+						requestProcessor.createIpcRequestPacket(
+								IpcRequestPacketEnum.KT_VTEP_GRP_MEMBER_GET,
+								memberJson, getUriParameters(requestBody));
+						requestProcessor
+								.getRequestPacket()
+								.setOperation(
+										IpcDataUnitWrapper
+												.setIpcUint32Value(UncOperationEnum.UNC_OP_READ_SIBLING
+														.ordinal()));
+						status = requestProcessor.processIpcRequest();
+						vtepGroup = responseGenerator.getVtepGroupMembers(
+								requestProcessor.getIpcResponsePacket(),
+								vtepGroup);
+						if (!vtepGroup.has(VtnServiceJsonConsts.MEMBERVTEPS)
+								|| vtepGroup
+										.getAsJsonArray(VtnServiceJsonConsts.MEMBERVTEPS) != null
+								&& vtepGroup.getAsJsonArray(
+										VtnServiceJsonConsts.MEMBERVTEPS)
+										.size() == 0) {
+							break;
+						}
+						memberIndex++;
+					}
+				}
+				root.add(VtnServiceJsonConsts.VTEPGROUP, vtepGroup);
+				setInfo(root);
+			} else {
+				setInfo(vtepGroup);
 			}
-			root.add(VtnServiceJsonConsts.VTEPGROUP, vtepGroup);
-			setInfo(root);
+			
 			LOG.debug("Response object created successfully");
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
@@ -409,6 +432,7 @@ public class VTepGroupResource extends AbstractResource {
 	 */
 	private List<String> getUriParameters(final JsonObject requestBody) {
 		LOG.trace("Start VTepGroupResource#getUriParameters()");
+		LOG.info("request body : " + requestBody);
 		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(vtnName);
 		if (null != requestBody

@@ -45,8 +45,9 @@ ODBCMUtils::~ODBCMUtils() {
    * Clear the structure and map 
    */
 }
-/** Return code string map structure array
- * */
+/**
+ * Return code string map structure array
+ **/
 ReturnCodes ODBCMUtils::rcode_string[] = {
   {ODBCM_RC_SUCCESS, "ODBCM_RC_SUCCESS"},
   {ODBCM_RC_SUCCESS_WITH_INFO, "ODBCM_RC_SUCCESS_WITH_INFO"},
@@ -121,8 +122,10 @@ ReturnCodes ODBCMUtils::rcode_string[] = {
 /**
  * @Description : This method will Initialize OdbcmSQLStateMap, 
  *                with the values from OdbcmReturnCode structure array
- * @param[in]   : None
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : void 
+ * @return      : ODBCM_RC_SUCCESS - is returned when the initialize
+ *                is done successfully.
+ *                ODBCM_RC_*       - is returned when the initialize is error
  **/
 ODBCM_RC_STATUS ODBCMUtils::Initialize_OdbcmSQLStateMap(void) {
   /*
@@ -267,7 +270,9 @@ ODBCM_RC_STATUS ODBCMUtils::Initialize_OdbcmSQLStateMap(void) {
     {"HY111", ODBCM_RC_GENERAL_ERROR},
     {"HYC00", ODBCM_RC_GENERAL_ERROR},
     {"HYT00", ODBCM_RC_QUERY_TIMEOUT},
-    {"HYT01", ODBCM_RC_CONNECTION_TIMEOUT}
+    {"HYT01", ODBCM_RC_CONNECTION_TIMEOUT},
+    /**database access problem due to connection dead*/
+    {"57P01", ODBCM_RC_CONNECTION_ERROR}
   };
   /** Initialise the local variables */
   uint32_t loop  = 0;
@@ -296,8 +301,9 @@ ODBCM_RC_STATUS ODBCMUtils::Initialize_OdbcmSQLStateMap(void) {
 
 /**
  * @Description : Clear the OdbcmSQLStateMap if it is not empty
- * @param[in]   : None
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : void
+ * @return      : ODBCM_RC_SUCCESS - is returned when the Clearing of   
+ *                OdbcmSQLStateMap is done successfully. 
  **/
 ODBCM_RC_STATUS ODBCMUtils::ClearOdbcmSQLStateMap(void) {
   /** Check map is empty or not */
@@ -311,8 +317,10 @@ ODBCM_RC_STATUS ODBCMUtils::ClearOdbcmSQLStateMap(void) {
 /**
  * @Description : This method returns odbcm rc with respect to the
  *                sql_state string value
- * @param[in]   : const std::string
- * @return      : None
+ * @param[in]   : odbcm_sqlstate - sql statement 
+ * @return      : ODBCM_RC_SUCCESS - is returned when the iterator
+ *                is done successfully.
+ *                ODBCM_RC_FAILED  - is returned when the iterator is fails
  **/
 ODBCM_RC_STATUS ODBCMUtils::get_odbc_rc(const std::string odbcm_sqlstate) {
   std::map<std::string, ODBCM_RC_STATUS>::iterator iter;
@@ -335,7 +343,7 @@ ODBCM_RC_STATUS ODBCMUtils::get_odbc_rc(const std::string odbcm_sqlstate) {
 
 /**
  * @Description : Print odbc info which are collected by SQLGetInfo() 
- * @param[in]   : SQLHDBC
+ * @param[in]   : conn_handle - ODBC connection handle   
  * @return      : None
  **/
 void ODBCMUtils::print_odbc_details(SQLHDBC conn_handle) {
@@ -517,8 +525,8 @@ void ODBCMUtils::print_odbc_details(SQLHDBC conn_handle) {
 
 /**
  * @Description : return the ip address version 4
- * @param[in]   : uint32_t
- * @return      : string
+ * @param[in]   : ip_address - ip address type i.e. IPV4
+ * @return      : string - The conversion of ip adress to asci format
  **/
 std::string ODBCMUtils::get_ip_string(uint32_t ip_address) {
   struct sockaddr_in ip;
@@ -530,11 +538,12 @@ std::string ODBCMUtils::get_ip_string(uint32_t ip_address) {
 
 /**
  * @Description : return the ipv6 address string
- * @param[in]   : uint8_t *ipv6_address 
- * @return      : string
+ * @param[in]   : ipv6_address - ip address type i.e. IPV6
+ * @return      : string  - The conversion of ip adress to asci format
  **/
 std::string ODBCMUtils::get_ipv6_string(uint8_t *ipv6_address) {
   sockaddr_in6 addr;
+  memset(&addr, 0, sizeof(sockaddr_in6));
   char str[INET6_ADDRSTRLEN];
   ODBCM_MEMSET(&str, '\0', INET6_ADDRSTRLEN);
   ODBCM_MEMSET(&addr.sin6_addr, 0, sizeof addr.sin6_addr);
@@ -547,11 +556,9 @@ std::string ODBCMUtils::get_ipv6_string(uint8_t *ipv6_address) {
 
 /**
  * @Description : return the return code string if return code enum is given
- * @param[in]   : int32_t error
- * @return      : string
+ * @param[in]   : error - error code
+ * @return      : string - corresponding error code string
  **/
-
-
 std::string ODBCMUtils::get_RC_Details(int32_t error) {
   int length;
   if (error == ODBCM_RC_SQL_INVALID_HANDLE)
@@ -564,170 +571,14 @@ std::string ODBCMUtils::get_RC_Details(int32_t error) {
     return std::string(rcode_string[error].rc_string);
   else
     return std::string("");
-  /*
-  if (error == ODBCM_RC_SQL_INVALID_HANDLE)
-    return std::string("ODBCM_RC_SQL_INVALID_HANDLE");
-  else if (error == ODBCM_RC_QUERY_FAILED)
-    return std::string("ODBCM_RC_QUERY_FAILED");
-  enum ODBCM_RC_STATUS rc_status;
-
-  std::string rc_details = ODBCM_RC_STATUS_NAME_TABLE[error];
-  pfc_log_info("ODBCM::ODBCMUtils::get_RC_Details:rc_details=%s",
-               rc_details.c_str());
-  if ("" != rc_details)
-    return rc_details;
-  else
-    return std::string("");
-}
-
-  switch (error) {
-    case ODBCM_RC_SQL_INVALID_HANDLE:
-      return "ODBCM_RC_SQL_INVALID_HANDLE";
-    case ODBCM_RC_QUERY_FAILED:
-       return "ODBCM_RC_QUERY_FAILED";
-    case ODBCM_RC_SUCCESS:
-      return "ODBCM_RC_SUCCESS";
-    case ODBCM_RC_SUCCESS_WITH_INFO:
-      return "ODBCM_RC_SUCCESS_WITH_INFO";
-    case ODBCM_RC_QUERY_STILL_EXECUTING:
-      return "ODBCM_RC_QUERY_STILL_EXECUTING";
-    case ODBCM_RC_FAILED:
-      return "ODBCM_RC_FAILED";
-    case ODBCM_RC_COMMON_LINK_FAILURE:
-      return "ODBCM_RC_COMMON_LINK_FAILURE";
-    case ODBCM_RC_CONNECTION_ERROR:
-      return "ODBCM_RC_CONNECTION_ERROR";
-    case ODBCM_RC_CONNECTION_TIMEOUT:
-      return "ODBCM_RC_CONNECTION_TIMEOUT";
-    case ODBCM_RC_CONNECTION_IN_USE:
-      return "ODBCM_RC_CONNECTION_IN_USE";
-    //  case ODBCM_RC_TRANSACTION_ERROR:
-    //  return "ODBCM_RC_TRANSACTION_ERROR";
-    case ODBCM_RC_SERIALIZATION_ERROR:
-      return "ODBCM_RC_SERIALIZATION_ERROR";
-    case ODBCM_RC_INVALID_CONN_HANDLE:
-      return "ODBCM_RC_INVALID_CONN_HANDLE";
-    case ODBCM_RC_QUERY_TIMEOUT:
-      return "ODBCM_RC_QUERY_TIMEOUT";
-    case ODBCM_RC_ERROR_IN_FRAMEQUERY:
-      return "ODBCM_RC_ERROR_IN_FRAMEQUERY";
-    case ODBCM_RC_INVALID_TABLE_NAME:
-      return "ODBCM_RC_INVALID_TABLE_NAME";
-    case ODBCM_RC_INVALID_DB_OPERATION:
-      return "ODBCM_RC_INVALID_DB_OPERATION";
-    case ODBCM_RC_PKEY_VIOLATION:
-      return "ODBCM_RC_PKEY_VIOLATION";
-    case ODBCM_RC_MEMORY_ERROR:
-      return "ODBCM_RC_MEMORY_ERROR";
-    case ODBCM_RC_TABLE_NOT_FOUND:
-      return "ODBCM_RC_TABLE_NOT_FOUND";
-    case ODBCM_RC_RECORD_NOT_FOUND:
-      return "ODBCM_RC_RECORD_NOT_FOUND";
-    case ODBCM_RC_DATA_ERROR:
-      return "ODBCM_RC_DATA_ERROR";
-    case ODBCM_RC_RECORD_NO_MORE:
-      return "ODBCM_RC_RECORD_NO_MORE";
-    case ODBCM_RC_NO_RECORD:
-      return "ODBCM_RC_NO_RECORD";
-    case ODBCM_RC_ERROR_FETCHING_ROW:
-      return "ODBCM_RC_ERROR_FETCHING_ROW";
-    case ODBCM_RC_STMT_ERROR:
-      return "ODBCM_RC_STMT_ERROR";
-    case ODBCM_RC_DISCONNECT_ERROR:
-      return "ODBCM_RC_DISCONNECT_ERROR";
-    case ODBCM_RC_RECORD_ALREADY_EXISTS:
-      return "ODBCM_RC_RECORD_ALREADY_EXISTS";
-    case ODBCM_RC_CONN_ENV_ERROR:
-      return "ODBCM_RC_CONN_ENV_ERROR";
-    case ODBCM_RC_CONN_HANDLE_ERROR:
-      return "ODBCM_RC_CONN_HANDLE_ERROR";
-    case ODBCM_RC_GENERAL_ERROR:
-      return "ODBCM_RC_GENERAL_ERROR";
-    case ODBCM_RC_PARAM_BIND_ERROR:
-      return "ODBCM_RC_PARAM_BIND_ERROR";
-    case ODBCM_RC_WRONG_PARAM:
-      return "ODBCM_RC_WRONG_PARAM";
-    case ODBCM_RC_MORE_ROWS_FOUND:
-      return "ODBCM_RC_MORE_ROWS_FOUND";
-    case ODBCM_RC_ROW_EXISTS:
-      return "ODBCM_RC_ROW_EXISTS";
-    case ODBCM_RC_ROW_NOT_EXISTS:
-      return "ODBCM_RC_ROW_NOT_EXISTS";
-    case ODBCM_RC_CANDIDATE_DIRTY:
-      return "ODBCM_RC_CANDIDATE_DIRTY";
-    case ODBCM_RC_CANDIDATE_NO_DIRTY:
-      return "ODBCM_RC_CANDIDATE_NO_DIRTY";
-    case ODBCM_RC_SQL_ERROR:
-      return "ODBCM_RC_SQL_ERROR";
-    case ODBCM_RC_SQL_NEED_DATA:
-      return "ODBCM_RC_SQL_NEED_DATA";
-    case ODBCM_RC_ROW_STATUS_NOT_FOUND:
-      return "ODBCM_RC_ROW_STATUS_NOT_FOUND";
-    case ODBCM_RC_COLUMN_DOES_NOT_MATCH:
-      return "ODBCM_RC_COLUMN_DOES_NOT_MATCH";
-    case ODBCM_RC_PREPARED_STMT_ERROR:
-      return "ODBCM_RC_PREPARED_STMT_ERROR";
-    case ODBCM_RC_TYPE_ATTR_VIOLATION:
-      return "ODBCM_RC_TYPE_ATTR_VIOLATION";
-    case ODBCM_RC_INVALID_DESC:
-      return "ODBCM_RC_INVALID_DESC";
-    case ODBCM_RC_UNABLE_ESTABLISH_CONN:
-      return "ODBCM_RC_UNABLE_ESTABLISH_CONN";
-    case ODBCM_RC_CONNECTION_REJECTED:
-      return "ODBCM_RC_CONNECTION_REJECTED";
-    case ODBCM_RC_INSERT_VAL_LIST_NOT_MATCHED:
-      return "ODBCM_RC_INSERT_VAL_LIST_NOT_MATCHED";
-    case ODBCM_RC_DATA_TRUNCATION_ERROR:
-      return "ODBCM_RC_DATA_TRUNCATION_ERROR";
-    case ODBCM_RC_VARIABLE_NOT_SUPPLIED:
-      return "ODBCM_RC_VARIABLE_NOT_SUPPLIED";
-    case ODBCM_RC_VALUE_OUT_OF_RANGE:
-      return "ODBCM_RC_VALUE_OUT_OF_RANGE";
-    case ODBCM_RC_DATETIME_ERROR:
-      return "ODBCM_RC_DATETIME_ERROR";
-    case ODBCM_RC_DIVISIBLE_ERROR:
-      return "ODBCM_RC_DIVISIBLE_ERROR";
-    case ODBCM_RC_FIELD_OVERFLOW:
-      return "ODBCM_RC_FIELD_OVERFLOW";
-    case ODBCM_RC_INVALID_CHAR_SPEC:
-      return "ODBCM_RC_INVALID_CHAR_SPEC";
-    case ODBCM_RC_CURSOR_STATE:
-      return "ODBCM_RC_CURSOR_STATE";
-    case ODBCM_RC_INVALID_CURSOR:
-      return "ODBCM_RC_INVALID_CURSOR";
-    case ODBCM_RC_SYNTAX_ERROR:
-      return "ODBCM_RC_SYNTAX_ERROR";
-    case ODBCM_RC_INDEX_NOT_FOUND:
-      return "ODBCM_RC_INDEX_NOT_FOUND";
-    case ODBCM_RC_COLUMN_ALREADY_EXISTS:
-      return "ODBCM_RC_COLUMN_ALREADY_EXISTS";
-    case ODBCM_RC_COLUMN_NOT_FOUND:
-      return "ODBCM_RC_COLUMN_NOT_FOUND";
-    case ODBCM_RC_NULL_POINTER_ERROR:
-      return "ODBCM_RC_NULL_POINTER_ERROR";
-    case ODBCM_RC_FUNC_SEQUENCE_ERROR:
-      return "ODBCM_RC_FUNC_SEQUENCE_ERROR";
-    case ODBCM_RC_TRANSACTION_ERROR:
-      return "ODBCM_RC_TRANSACTION_ERROR";
-    case ODBCM_RC_TABLE_EXISTS:
-      return "ODBCM_RC_TABLE_EXISTS";
-    case ODBCM_RC_COLUMN_ALREADY:
-      return "ODBCM_RC_COLUMN_ALREADY";
-    case ODBCM_RC_SQL_NO_DATA:
-      return "ODBCM_RC_SQL_NO_DATA";
-    default:
-      pfc_log_debug("ODBCM::ODBCMUtils::get_RC_Details: "
-        "Unknown error:%d", error);
-      return "UNKNOWN TYPE";
-      break;
-  }
-  */
 }
 
 /**
- *@Description : To print the error location
- *@param[in]   : SQLRETURN odbcm_rc, sint32_t line, string file
- *@return      : None
+ * @Description : To print the error location
+ * @param[in]   : odbcm_rc - return code of ODBCM api 
+                  line     - specify the line number
+                  file     - specify the file name
+ * @return      : None
  **/
 void ODBCMUtils::OdbcmHandleLocationPrint(SQLRETURN odbcm_rc,
     int32_t line, std::string file) {
@@ -738,13 +589,17 @@ void ODBCMUtils::OdbcmHandleLocationPrint(SQLRETURN odbcm_rc,
 }
 
 /**
-*@Description : To print the return values
-*@param[in]   : SQLSMALLINT htype, SQLHANDLE hndl
-*@return      : ODBCM_RC_STATUS
+* @Description : To print the return values
+* @param[in]   : htype - handle type
+                 hndl  - handle
+* @return      : ODBCM_RC_SUCCESS - if the OdbcmHandleDiagnosticsPrint is
+*                success
+*                ODBCM_RC_*       - if the OdbcmHandleDiagnosticsPrint is
+*                failed
 **/
 ODBCM_RC_STATUS ODBCMUtils::OdbcmHandleDiagnosticsPrint(
-              SQLSMALLINT htype, /* handle type */
-              SQLHANDLE hndl     /* handle */ ) {
+              SQLSMALLINT htype,
+              SQLHANDLE hndl) {
   /** Initialise the local variables */
   SQLCHAR     message[SQL_MAX_MESSAGE_LENGTH + 1];
   SQLCHAR     sqlstate[SQL_SQLSTATE_SIZE + 1];
@@ -763,9 +618,10 @@ ODBCM_RC_STATUS ODBCMUtils::OdbcmHandleDiagnosticsPrint(
     rc = ODBCMUtils::get_odbc_rc(std::string((const char*)sqlstate));
     if (rc != ODBCM_RC_FAILED) {
       if (rc == ODBCM_RC_COMMON_LINK_FAILURE) {
-        pfc_log_fatal("ODBCM::ODBCMUtills:: ODBCM_RC_COMMON_LINK_FAILURE");
+        pfc_log_error("ODBCM::ODBCMUtills:: ODBCM_RC_COMMON_LINK_FAILURE");
+        return ODBCM_RC_CONNECTION_ERROR;
       }
-  pfc_log_debug("ODBCM::ODBCMUtils::SQLGetDiagRec: SQLState: %s,"
+      pfc_log_debug("ODBCM::ODBCMUtils::SQLGetDiagRec: SQLState: %s,"
       "OdbcmReturnCode: %d(%s)", sqlstate, rc,
       ODBCMUtils::get_RC_Details(rc).c_str());
       return (ODBCM_RC_STATUS) rc;
@@ -775,15 +631,20 @@ ODBCM_RC_STATUS ODBCMUtils::OdbcmHandleDiagnosticsPrint(
 } /* OdbcmHandleDiagnosticsPrint */
 
 /**
-*@Description : To print the debug information - outputs to screen 
-                unexpected occurrences with ODBCM functions
-*@param[in]   : SQLSMALLINT, SQLHANDLE, SQLRETURN, int32_t, string
-*@return      : ODBCM_RC_STATUS
+* @Description : To print the debug information - outputs to screen 
+*                unexpected occurrences with ODBCM functions
+* @param[in]   : htype    - handle type
+*                hndl     - handle
+*                odbcm_rc - return code of ODBCM api
+*                line     - specify the line number 
+*                file     - specify the file name
+* @return      : ODBCM_RC_SUCCESS - if the OdbcmHandleInfoPrint is success
+*                ODBCM_RC_*       - if the OdbcmHandleInfoPrint is failed
 **/
 ODBCM_RC_STATUS ODBCMUtils::OdbcmHandleInfoPrint(
-                              SQLSMALLINT htype,  /* handle type */
+                              SQLSMALLINT htype,
                               SQLHANDLE hndl,
-                              SQLRETURN odbcm_rc, /*return code of ODBCM api */
+                              SQLRETURN odbcm_rc,
                               int32_t line,
                               std::string file) {
   /** Initialize the local variables */
@@ -835,9 +696,10 @@ ODBCM_RC_STATUS ODBCMUtils::OdbcmHandleInfoPrint(
 } /* OdbcmHandleInfoPrint */
 
 /**
-*@Description : To handle the sql cancel statment
-*@param[in]   : SQLHANDLE htype
-*@return      : int
+* @Description : To handle the sql cancel statment
+* @param[in]   : htype - handle type
+* @return      : int   - returns a numeric value based on the
+*                OdbcmHandleSqlCancel function
 **/
 int ODBCMUtils::OdbcmHandleSqlCancel(SQLHANDLE htype) {
   /** Initialise the local variables */
@@ -850,9 +712,10 @@ int ODBCMUtils::OdbcmHandleSqlCancel(SQLHANDLE htype) {
 } /*OdbcmHandleSqlCancel(htype) */
 
 /**
-*@Description : To free stmt handles & print unexpected occurrences
-*@param[in]   : SQLHANDLE htype
-*@return      : int
+* @Description : To free stmt handles & print unexpected occurrences
+* @param[in]   : hstmt - handle statement 
+* @return      : int   - returns a numeric value based on the
+*                OdbcmStmtResourcesFree function
 **/
 int ODBCMUtils::OdbcmStmtResourcesFree(SQLHANDLE hstmt) {
   /** Initialise the local variables */
@@ -862,20 +725,18 @@ int ODBCMUtils::OdbcmStmtResourcesFree(SQLHANDLE hstmt) {
   odbcm_rc = SQLFreeStmt(hstmt, SQL_UNBIND);
   rc = OdbcmHandleInfoPrint(
     SQL_HANDLE_STMT, hstmt, odbcm_rc, __LINE__, __FILE__);
-  if (rc != 0)
-    return 1;
 
   /** Free the statement handle */
   odbcm_rc = SQLFreeStmt(hstmt, SQL_RESET_PARAMS);
   rc = OdbcmHandleInfoPrint(
     SQL_HANDLE_STMT, hstmt, odbcm_rc, __LINE__, __FILE__);
-  if (rc != 0)
-    return 1;
 
   /** Free the statement handle */
   odbcm_rc = SQLFreeStmt(hstmt, SQL_CLOSE);
   rc = OdbcmHandleInfoPrint(
     SQL_HANDLE_STMT, hstmt, odbcm_rc, __LINE__, __FILE__);
+  if (NULL != hstmt)
+    SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
   if (rc != 0)
     return 1;
 
@@ -884,7 +745,7 @@ int ODBCMUtils::OdbcmStmtResourcesFree(SQLHANDLE hstmt) {
 
 /**
 *@Description : To rollback transactions on a single connection
-*@param[in]   : SQLHANDLE hdbc
+*@param[in]   : hdbc - handler database connection
 *@return      : void
 **/
 void ODBCMUtils::OdbcmTransRollback(SQLHANDLE hdbc) {

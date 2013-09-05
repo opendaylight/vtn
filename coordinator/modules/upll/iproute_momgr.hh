@@ -9,7 +9,6 @@
 
 #ifndef UNC_UPLL_IPROUTE_MOMGR_H
 #define UNC_UPLL_IPROUTE_MOMGR_H
-
 #include <string>
 #include "momgr_impl.hh"
 #include "vnode_child_momgr.hh"
@@ -18,21 +17,27 @@ namespace unc {
 namespace upll {
 namespace kt_momgr {
 
+#define INVALID_PREFIX_LENGTH 33
+#define INVALID_DST_IP_ADDR 0xffffffff
+#define INVALID_NEXT_HOP_ADDR 0xffffffff
+
+namespace uuds = unc::upll::dal::schema;
+namespace uudst = unc::upll::dal::schema::table;
 
 class IpRouteMoMgr : public VnodeChildMoMgr {
   private:
     static BindInfo ip_route_bind_info[];
     static BindInfo key_ip_route_maintbl_update_bind_info[];
     /**
-     * @brief  Gets the valid array position of the variable in the value 
-     *         structure from the table in the specified configuration  
+     * @brief  Gets the valid array position of the variable in the value
+     *         structure from the table in the specified configuration
      *
-     * @param[in]     val      pointer to the value structure 
+     * @param[in]     val      pointer to the value structure
      * @param[in]     indx     database index for the variable
-     * @param[out]    valid    position of the variable in the valid array - 
+     * @param[out]    valid    position of the variable in the valid array -
      *                          NULL if valid does not exist.
      * @param[in]     dt_type  specifies the configuration
-     * @param[in]     tbl      specifies the table containing the given value 
+     * @param[in]     tbl      specifies the table containing the given value
      *
      **/
     upll_rc_t GetValid(void *val, uint64_t indx, uint8_t *&valid,
@@ -65,7 +70,7 @@ class IpRouteMoMgr : public VnodeChildMoMgr {
     /**
      * @brief  Compares the valid value between two database records.
      * 	     if both the values are same, update the valid flag for corresponding
-     * 	     attribute as invalid in the first record. 
+     * 	     attribute as invalid in the first record.
      *
      * @param[in/out]  val1   first record value instance.
      * @param[in]      val2   second record value instance.
@@ -154,8 +159,8 @@ class IpRouteMoMgr : public VnodeChildMoMgr {
      *         associated attributes are supported on the given controller,
      *         based on the valid flag.
      *
-     * @param[in]  crtlr_name      Controller name.
-     * @param[in]  ikey            Corresponding key and value structure.
+     * @param[in]  iproute_val     KT_VRT_IPROUTE value structure.
+     * @param[in]  attrs           Pointer to controller attribute.
      * @param[in]  operation       Operation name.
      *
      * @retval  UPLL_RC_SUCCESS                      validation succeeded.
@@ -163,15 +168,16 @@ class IpRouteMoMgr : public VnodeChildMoMgr {
      * @retval  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR   Attribute NOT_SUPPORTED.
      * @retval  UPLL_RC_ERR_GENERIC                  Generic failure.
      */
-    upll_rc_t ValIpRouteAttributeSupportCheck(const char *ctrlr_name,
-                                              ConfigKeyVal *ikey,
-                                              uint32_t operation);
+    upll_rc_t ValIpRouteAttributeSupportCheck(
+        val_static_ip_route *iproute_val,
+        const uint8_t *attrs,
+        unc_keytype_operation_t operation);
 
-    upll_rc_t ValidateAttribute(ConfigKeyVal *kval, 
+    upll_rc_t ValidateAttribute(ConfigKeyVal *kval,
                                 DalDmlIntf *dmi,
                                 IpcReqRespHeader *req = NULL);
     /**
-     * @brief  Duplicates the input configkeyval including the key and val.  
+     * @brief  Duplicates the input configkeyval including the key and val.
      * based on the tbl specified.
      *
      * @param[in]  okey   Output Configkeyval - allocated within the function
@@ -184,10 +190,10 @@ class IpRouteMoMgr : public VnodeChildMoMgr {
     upll_rc_t DupConfigKeyVal(ConfigKeyVal *&okey, ConfigKeyVal *&req,
                               MoMgrTables tbl = MAINTBL);
     /**
-     * @brief  Allocates for the specified val in the given configuration in the     * specified table.   
+     * @brief  Allocates for the specified val in the given configuration in the     * specified table.
      *
-     * @param[in]  ck_val   Reference pointer to configval structure allocated.      * @param[in]  dt_type  specifies the configuration candidate/running/state 
-     * @param[in]  tbl      specifies if the corresponding table is the  main 
+     * @param[in]  ck_val   Reference pointer to configval structure allocated.      * @param[in]  dt_type  specifies the configuration candidate/running/state
+     * @param[in]  tbl      specifies if the corresponding table is the  main
      *                      table / controller table or rename table.
      *
      * @retval     UPLL_RC_SUCCESS      Successfull completion.
@@ -198,7 +204,7 @@ class IpRouteMoMgr : public VnodeChildMoMgr {
     /**
      * @brief      Method to get a configkeyval of a specified keytype from an input configkeyval
      *
-     * @param[in/out]  okey                 pointer to output ConfigKeyVal 
+     * @param[in/out]  okey                 pointer to output ConfigKeyVal
      * @param[in]      parent_key           pointer to the configkeyval from which the output configkey val is initialized.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -206,10 +212,10 @@ class IpRouteMoMgr : public VnodeChildMoMgr {
      */
     upll_rc_t GetChildConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *parent_key);
     /**
-     * @brief  Allocates for the specified val in the given configuration in the     * specified table.   
+     * @brief  Allocates for the specified val in the given configuration in the     * specified table.
      *
-     * @param[in]  ck_val   Reference pointer to configval structure allocated.      * @param[in]  dt_type  specifies the configuration candidate/running/state 
-     * @param[in]  tbl      specifies if the corresponding table is the  main 
+     * @param[in]  ck_val   Reference pointer to configval structure allocated.      * @param[in]  dt_type  specifies the configuration candidate/running/state
+     * @param[in]  tbl      specifies if the corresponding table is the  main
      *                      table / controller table or rename table.
      *
      * @retval     UPLL_RC_SUCCESS      Successfull completion.
@@ -224,6 +230,11 @@ class IpRouteMoMgr : public VnodeChildMoMgr {
                            DalDmlIntf *dmi);
     upll_rc_t MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
                             ConfigKeyVal *ikey, DalDmlIntf *dmi);
+
+    bool ResetDataForSibling(key_static_ip_route *key_ipr,
+                   uudst::static_ip_route::kStaticIpRouteIndex index);
+
+    static uint16_t kIpRouteNumChildKey;
 
   public:
     IpRouteMoMgr();
@@ -245,6 +256,31 @@ class IpRouteMoMgr : public VnodeChildMoMgr {
      * @retval         false                input key is invalid.
      **/
     bool IsValidKey(void *tkey, uint64_t index);
+
+  /* @brief         READ_SIBLING_BEGIN: Gets the first MO from the sibling group
+   *                under the parent
+   *                specified in the key from the specified UNC database
+   *                READ_SIBLING: Gets the next MO from the sibling group
+   *                under the parent
+   *                specified in the key from the specified UNC database
+   *
+   * @param[in]     req    Pointer to IpcResResHeader
+   * @param[in/out] key    Pointer to the ConfigKeyVal Structure
+   * @param[in]     begin  boolean variable to decide the sibling operation
+   * @param[in]     dal    Pointer to the DalDmlIntf(DB Interface)
+   *
+   * @retval  UPLL_RC_SUCCESS                    Completed successfully.
+   * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
+   * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource disconnected.
+   * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
+   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist
+   *
+   * @Note: Overridden from base class MoMgrImpl
+   **/
+  virtual upll_rc_t ReadSiblingMo(IpcReqRespHeader *req,
+                                  ConfigKeyVal *key,
+                                  bool begin,
+                                  DalDmlIntf *dal);
 };
 
 }  // namespace kt_momgr

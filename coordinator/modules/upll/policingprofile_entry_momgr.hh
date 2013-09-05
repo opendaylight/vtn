@@ -50,6 +50,7 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
      * Member Variable for PolicingProfileEntryBindInfo.
     */
     static BindInfo       rename_flowlist_pp_entry_ctrl_tbl[];
+    uint32_t cur_instance_count;
     /**
      * @brief  Validates the Attribute of a Particular Class.
      *
@@ -220,7 +221,6 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
      *
      * @retval  UPLL_RC_SUCCESS                     validation succeeded.
      * @retval  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR  Attribute NOT_SUPPORTED.
-     * @retval  UPLL_RC_ERR_GENERIC                 Generic failure.
      */
     upll_rc_t ValPolicingProfileEntryAttributeSupportCheck(
         val_policingprofile_entry_t *val_policingprofile_entry,
@@ -234,11 +234,8 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
      * @param[in]  val_policingprofile_entry  value structure.
      * @param[in]  attrs                      Refers supported capability file attributes
      *                                        for the given controller name.
-     *
-     * @retval UPLL_RC_SUCCESS                    validation succeeded.
-     * @retval UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR Attribute NOT_SUPPORTED.
      */
-    upll_rc_t ValidateGreenFieldAttribute(val_policingprofile_entry_t *
+     void ValidateGreenFieldAttribute(val_policingprofile_entry_t *
       val_policingprofile_entry, const uint8_t *attrs);
 
     /**
@@ -249,12 +246,9 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
      * @param[in]  val_policingprofile_entry  value structure.
      * @param[in]  attrs                      Refers supported capability file
      *                                        attributes for the given controller name.
-     *
-     * @retval  UPLL_RC_SUCCESS                     validation succeeded.
-     * @retval  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR  Attribute NOT_SUPPORTED.
      */
-    upll_rc_t ValidateYellowFieldAttribute(val_policingprofile_entry_t *
-      val_policingprofile_entry, const uint8_t *attrs);
+      void ValidateYellowFieldAttribute(val_policingprofile_entry_t *
+        val_policingprofile_entry, const uint8_t *attrs);
 
     /**
      * @Brief  Checks if the specified red_action, red_action_priority,
@@ -263,12 +257,8 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
      *
      * @param[in]  val_policingprofile_entry  value structure.
      * @param[in]  attrs                      Refers supported capability file attributes
-     *                                        for the given controller name.
-     *
-     * @retval  UPLL_RC_SUCCESS                     validation succeeded.
-     * @retval  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR  Attribute NOT_SUPPORTED.
      */
-    upll_rc_t ValidateRedFieldAttribute(val_policingprofile_entry_t *
+     void ValidateRedFieldAttribute(val_policingprofile_entry_t *
       val_policingprofile_entry, const uint8_t *attrs);
 
     /**
@@ -281,9 +271,9 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
      * @retval  UPLL_RC_SUCCESS         validation succeeded.
      * @retval  UPLL_RC_ERR_CFG_SYNTAX  validation failed.
      */
-    upll_rc_t ValidatePolicingProfileNameInVtnVbrVbrIfPolicingMapTbl(
-                  ConfigKeyVal *ikey, DalDmlIntf *dmi,
-                  IpcReqRespHeader *req);
+    upll_rc_t ValidatePolicingProfileEntryInPolicingMap(ConfigKeyVal *ikey,
+                                                        DalDmlIntf *dmi,
+                                                        IpcReqRespHeader *req);
 
 
   public:
@@ -470,7 +460,7 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
      * @retval  UPLL_RC_ERR_GENERIC  Failure.
      */
 
-    upll_rc_t GetRenamedControllerKey(ConfigKeyVal *&ikey,
+    upll_rc_t GetRenamedControllerKey(ConfigKeyVal *ikey,
                                    upll_keytype_datatype_t dt_type,
                                    DalDmlIntf *dmi,
                                    controller_domain *ctrlr_dom = NULL);
@@ -609,7 +599,7 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
      * @return     TRUE  Successfull completion.
      */
 
-    bool CompareValidValue(void *&val1, void *val2, bool audit);
+    bool CompareValidValue(void *&val1, void *val2, bool copy_to_running);
 
     /**
      * @brief  Method for TxUpdateController for updating the controller .
@@ -830,7 +820,7 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
     upll_rc_t ReadPolicingProfileEntry(
       const char *policingprofile_name, uint8_t seq_num,
       const char *ctrlr_id, DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
-      ConfigKeyVal *&ppe_ckv);
+      ConfigKeyVal *&ppe_ckv, unc_keytype_option1_t opt1 = UNC_OPT1_NORMAL);
 
     upll_rc_t IsFlowlistConfigured(const char* flowlist_name,
       DalDmlIntf *dmi);
@@ -860,6 +850,41 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
 
     upll_rc_t IsFlowListMatched(const char *flowlist_name,
       upll_keytype_datatype_t dt_type, DalDmlIntf *dmi);
+
+    upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
+
+    upll_rc_t DecrementRefCount(
+      ConfigKeyVal *ppe_ckv, DalDmlIntf *dmi,
+      upll_keytype_datatype_t dt_type);
+    upll_rc_t UpdateVnodeVal(ConfigKeyVal *ikey,
+                             DalDmlIntf *dmi,
+                             upll_keytype_datatype_t data_type,
+                             bool &no_rename);
+    bool FilterAttributes(void *&val1,
+                          void *val2,
+                          bool copy_to_running,
+                          unc_keytype_operation_t op);
+
+    upll_rc_t Get_Tx_Consolidated_Status(
+        unc_keytype_configstatus_t &status,
+        unc_keytype_configstatus_t  drv_result_status,
+        unc_keytype_configstatus_t current_cs,
+        unc_keytype_configstatus_t current_ctrlr_cs);
+
+   upll_rc_t GetFlowListEntryConfigKey(
+        ConfigKeyVal *&okey, ConfigKeyVal *ikey);
+
+   upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
+                            DalDmlIntf *dmi,
+                            IpcReqRespHeader *req);
+
+   upll_rc_t GetFlowlistConfigKey(
+        const char *flowlist_name, ConfigKeyVal *&okey,
+        DalDmlIntf *dmi); 
+
+    upll_rc_t SetPPEntryConsolidatedStatus(ConfigKeyVal *ikey,
+                                           uint8_t *ctrlr_id,
+                                           DalDmlIntf *dmi);
 };
 
 typedef struct val_policingprofile_entry_ctrl {

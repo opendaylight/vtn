@@ -74,14 +74,15 @@ typedef map<ControllerVersion, map<cap_key_struct,
 class PhysicalCore : public TcLibInterface, public UncStateHandler {
   public:
     /**
-     * @Description : The function returns singleton instance of PhysicalCore class
+     * @Description : The function returns singleton instance of
+     * PhysicalCore class
      */
 
     static PhysicalCore* get_physical_core();
 
     /**
-     * @Description : This function initializes physical core members and reads config,
-     *                sends event subscription to driver
+     * @Description : This function initializes physical core members and
+     *                reads config, sends event subscription to driver
      * @param[in] :
      */
 
@@ -102,8 +103,8 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
     UpplReturnCode ReadConfigFile();
 
     /**
-     * @Description : This function reads controller capability config and fills the
-     *                capability map
+     * @Description : This function reads controller capability config
+     * and fills the capability map
      * @param[in] :
      */
 
@@ -158,8 +159,8 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
     UpplReturnCode CancelEventSubscripInDriver();
 
     /**
-     * @Description : This function validates the config ID by sending IPC msg to
-     *                TC library
+     * @Description : This function validates the config ID by sending
+     *                IPC msg to TC library
      * @param[in] : session_id - Session ID from the request
      * @param[in] : config_id - Configuration ID
      */
@@ -167,8 +168,8 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
     UpplReturnCode ValidateConfigId(uint32_t session_id, uint32_t config_id);
 
     /**
-     * @Description : This function validates if the operation is valid in STANDBY
-     *                state
+     * @Description : This function validates if the operation is valid
+     *                in STANDBY state
      * @param[in] : operation_type - type of operation requested
      */
 
@@ -186,8 +187,10 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
     }
 
     /**
-     * @Description : This function returns the list of supported controller version
-     *                Controller version will be available in static capability file
+     * @Description : This function returns the list of supported controller
+     *                version
+     *                Controller version will be available in static
+     *                capability file
      *                This function will be called from ITC
      * @param[in] :
      */
@@ -195,10 +198,11 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
     list<string> GetControllerVersionList();
 
     /**
-     * @Description : This function sends CONROLLER_DISCONNECT alarm to node manager
-     *                This function will be called from Kt_Controller class when it
-     *                receives CONTROLLER notification from driver with oper_status
-     *                as down
+     * @Description : This function sends CONROLLER_DISCONNECT alarm to
+     *                node manager
+     *                This function will be called from Kt_Controller class
+     *                when it receives CONTROLLER notification from driver
+     *                with oper_status as down
      *
      * @param[in] : controller_id - Controller identification
      */
@@ -206,39 +210,22 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
     UpplReturnCode SendControllerDisconnectAlarm(string controller_id);
 
     /**
-     * @Description : This function sends CONROLLER_CONNECT alarm to node manager
+     * @Description : This function sends CONROLLER_CONNECT alarm to
+     *                node manager
      *                This is a clearance alarm for CONTROLLER_DISCONNECT alarm
-     *                This function will be called from Kt_Controller class when it
-     *                receives CONTROLLER notification from driver with oper_status
-     *                as up
+     *                This function will be called from Kt_Controller class
+     *                when it receives CONTROLLER notification from driver
+     *                with oper_status as up
      *
      * @param[in] : controller_id - Controller identification
      */
 
     UpplReturnCode SendControllerConnectAlarm(string controller_id);
 
-    /**
-     * @Description : This function sends AUDIT_FAILURE alarm to node manager
-     *                This function will be called from audit_req class when audit
-     *                operation fails
-     *
-     * @param[in] : controller_id - Controller identification
-     */
-
-    UpplReturnCode SendAuditFailureAlarm(string controller_id);
-
-    /**
-     * @Description : This function sends AUDIT_SUCCESS alarm to node manager
-     *                This is a clearance alarm for AUDIT_FAILURE alarm
-     *
-     *
-     * @param[in] : controller_id - Controller identification
-     */
-
-    UpplReturnCode SendAuditSuccessAlarm(string controller_id);
      /**
-     *@Description : This function sends EVENT_HANDLING_SUCCESS alarm to node manager
-     *                This is a clearance alarm for EVENT_HANDLING FAILURE alarm
+     *@Description : This function sends EVENT_HANDLING_SUCCESS alarm to
+     *               node manager
+     *               This is a clearance alarm for EVENT_HANDLING FAILURE alarm
      *
      *
      *@param[in] : controller_id - Controller identification
@@ -249,7 +236,8 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
                                                  string event_details);
 
      /**
-     *@Description : This function sends EVENT_HANDLING_FAILURE alarm to node manager
+     *@Description : This function sends EVENT_HANDLING_FAILURE alarm to
+     *               node manager
      *@param[in] : controller_id - Controller identification
      * event_failed - Additional details about failed event handling
      *
@@ -300,7 +288,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
 
     /**
      * @Description : This is a dummy function. TcLibInterface has pure virtual
-     *                functions. All functions has to have an implementiation to
+     *                functions. All functions has to have an implementation to
      *                avoid runtime conflicts
      */
 
@@ -322,7 +310,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
 
     /**
      * @Description : This is a dummy function. TcLibInterface has pure virtual
-     *                functions. All functions has to have an implementiation to
+     *                functions. All functions has to have an implementation to
      *                avoid runtime conflicts
      */
 
@@ -344,7 +332,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
                                          TcCommitPhaseResult driver_result);
     /**
      * @Description : This is a dummy function. TcLibInterface has pure virtual
-     *                functions. All functions has to have an implementiation to
+     *                functions. All functions has to have an implementation to
      *                avoid runtime conflicts
      */
 
@@ -404,7 +392,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
                                        TcDriverInfoMap &driver_info);
     /**
      * @Description : This is a dummy function. TcLibInterface has pure virtual
-     *                functions. All functions has to have an implementiation to
+     *                functions. All functions has to have an implementation to
      *                avoid runtime conflicts
      */
     TcCommonRet HandleAuditVoteRequest(uint32_t session_id,
@@ -427,7 +415,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
                                         TcAuditResult& audit_result);
     /**
      * @Description : This is a dummy function. TcLibInterface has pure virtual
-     *                functions. All functions has to have an implementiation to
+     *                functions. All functions has to have an implementation to
      *                avoid runtime conflicts
      */
 
@@ -539,8 +527,8 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
     /* PhysicalCore Instance */
     static PhysicalCore* physical_core_;
 
-    /* For each controller version, this map the Key types and the attributes under
-     * each Key Type that would be supported by controller.
+    /* For each controller version, this map the Key types and the attributes
+     * under each Key Type that would be supported by controller.
      * For each attribute the properties are stored in a map
      */
     map<ControllerVersion, map<cap_key_struct, cap_value_struct > >

@@ -12,6 +12,7 @@
  *   Implementation of methods in DalCursor
  */ 
 
+#include "uncxx/upll_log.hh"
 #include "dal_error_handler.hh"
 #include "dal_cursor.hh"
 
@@ -23,7 +24,6 @@ namespace dal {
 // If has_two_handles is true, do SQLFetch from both the handles
 DalResultCode
 DalCursor::GetNextRecord() const {
-  UPLL_FUNC_TRACE;
   DalResultCode dal_rc;
 
   if (stmt_handle_1_ == SQL_NULL_HANDLE) {
@@ -67,7 +67,6 @@ DalCursor::GetNextRecord() const {
 // Close Cursor
 DalResultCode
 DalCursor::CloseCursor(bool delete_bind) {
-  UPLL_FUNC_TRACE;
   DalResultCode dal_rc_1 = kDalRcSuccess;
   DalResultCode dal_rc_2 = kDalRcSuccess;
 
@@ -151,6 +150,8 @@ DalCursor::GetNextRecordFromStmt(const SQLHANDLE stmt_handle,
     UPLL_LOG_DEBUG("Failed to copy result");
     return kDalRcGeneralError;
   }
+  UPLL_LOG_TRACE("%s",
+      ((const_cast<DalBindInfo *>(bind_info))->BindListResultToStr()).c_str());
   UPLL_LOG_TRACE("Success Fetching record from Stmt Handle");
   return kDalRcSuccess;
 }  // DalCursor::GetNextRecordFromStmt

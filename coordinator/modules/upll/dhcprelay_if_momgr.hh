@@ -162,7 +162,8 @@ class DhcpRelayIfMoMgr : public VnodeChildMoMgr {
     upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *ikey);
     upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
                            DalDmlIntf *dmi);
-
+    upll_rc_t IsAdminStatusEnable(ConfigKeyVal *ikey,DalDmlIntf *dmi);
+    
   public:
     DhcpRelayIfMoMgr();
     virtual ~DhcpRelayIfMoMgr() {

@@ -93,7 +93,8 @@ public class IpRouteResourceValidator extends VtnServiceValidator {
 				&& VtnServiceConsts.GET.equals(method)) {
 			isValid = ValidateGet(requestBody);
 			updateOpParameterForList(requestBody);
-		} else {
+		} else if (isValid) {
+			setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 			isValid = false;
 		}
 		// Throws exception if validation fails

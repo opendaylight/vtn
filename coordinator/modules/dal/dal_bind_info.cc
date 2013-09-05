@@ -14,7 +14,7 @@
 
 
 #include <sstream>
-#include "upll/upll_log.hh"
+#include "uncxx/upll_log.hh"
 #include "dal_bind_info.hh"
 
 namespace unc {
@@ -96,7 +96,7 @@ DalBindInfo::BindInput(const DalColumnIndex column_index,
   }
   input_bind_count_++;
 
-  UPLL_LOG_TRACE("Successfully Bind Input for Column(%s) in Table(%s)",
+  UPLL_LOG_VERBOSE("Successfully Bind Input for Column(%s) in Table(%s)",
                  schema::ColumnName(table_index_, column_index),
                  schema::TableName(table_index_));
   return true;
@@ -144,7 +144,7 @@ DalBindInfo::BindOutput(const DalColumnIndex column_index,
     return false;
   }
   output_bind_count_++;
-  UPLL_LOG_TRACE("Successfully Bind Output for Column(%s) in Table(%s)",
+  UPLL_LOG_VERBOSE("Successfully Bind Output for Column(%s) in Table(%s)",
                  schema::ColumnName(table_index_, column_index),
                  schema::TableName(table_index_));
   return true;
@@ -192,7 +192,7 @@ DalBindInfo::BindMatch(const DalColumnIndex column_index,
     return false;
   }
   match_bind_count_++;
-  UPLL_LOG_TRACE("Successfully Bind Match for Column(%s) in Table(%s)",
+  UPLL_LOG_VERBOSE("Successfully Bind Match for Column(%s) in Table(%s)",
                  schema::ColumnName(table_index_, column_index),
                  schema::TableName(table_index_));
   return true;
@@ -201,7 +201,6 @@ DalBindInfo::BindMatch(const DalColumnIndex column_index,
 // Copy result from DB to Appln buffer
 bool
 DalBindInfo::CopyResultToApp(void) {
-  UPLL_FUNC_TRACE;
   DalBindList::iterator iter;
   DalBindColumnInfo *col_info = NULL;
 
@@ -228,7 +227,7 @@ DalBindInfo::CopyResultToApp(void) {
     }
   }
 
-  UPLL_LOG_TRACE("Succesfully copied result for all Columns bound for output "
+  UPLL_LOG_VERBOSE("Succesfully copied result for all Columns bound for output "
                  "in Table(%s)", schema::TableName(table_index_));
   return true;
 }  // DalBindInfo::CopyResultToApp
@@ -237,7 +236,6 @@ DalBindInfo::CopyResultToApp(void) {
 // Copy result from DB to Appln buffer
 bool
 DalBindInfo::ResetDalOutBuffer(void) {
-  UPLL_FUNC_TRACE;
   DalBindList::iterator iter;
   DalBindColumnInfo *col_info = NULL;
 
@@ -264,7 +262,7 @@ DalBindInfo::ResetDalOutBuffer(void) {
       }
     }
   }
-  UPLL_LOG_TRACE("Succesfully reset DAL output buffer for all Columns bound "
+  UPLL_LOG_VERBOSE("Succesfully reset DAL output buffer for all Columns bound "
                  "for output in Table(%s)", schema::TableName(table_index_));
   return true;
 }  // DalBindInfo::ResetDalOutBuffer
@@ -377,15 +375,15 @@ DalBindInfo::BindAttribute(const DalIoCode io_code,
                    schema::TableName(table_index_));
     return false;
   }
-  UPLL_LOG_TRACE("Successfully Updated Column Info for Column(%s) in Table(%s)",
-                 schema::ColumnName(table_index_, column_index),
-                 schema::TableName(table_index_));
+  UPLL_LOG_VERBOSE("Successfully Updated Column Info for Column(%s) in "
+                  "Table(%s)", schema::ColumnName(table_index_, column_index),
+                  schema::TableName(table_index_));
   return true;
 }  // DalBindInfo::BindAttribute
 
 // Methods for Debugging and Testing
-void
-DalBindInfo::PrintBindList(void) {
+std::string
+DalBindInfo::BindListToStr(void) {
   DalBindList::iterator iter;
   DalBindColumnInfo *col_info = NULL;
   std::stringstream ss;
@@ -412,9 +410,65 @@ DalBindInfo::PrintBindList(void) {
     }
   }
   ss << "\n*************************************\n";
-  UPLL_LOG_DEBUG("\n%s", ss.str().c_str());
-  return;
-}  // DalBindInfo::PrintBindList
+  return (ss.str());
+}  // DalBindInfo::BindListToStr
+
+std::string
+DalBindInfo::BindListInputToStr(void) {
+  DalBindList::iterator iter;
+  DalBindColumnInfo *col_info = NULL;
+  std::stringstream ss;
+
+  if (input_bind_count_ == 0 &&
+      output_bind_count_ == 0 &&
+      match_bind_count_ == 0) {
+    UPLL_LOG_DEBUG("No Columns in Table(%s) bound for Input/Ouput/Match",
+                   schema::TableName(table_index_));
+  }
+
+  ss << "\n*************************************"
+     << "\n* Input data for Table - "
+     << schema::TableName(table_index_);
+  ss << "\n*************************************";
+
+  for (iter = bind_list_.begin();
+       iter != bind_list_.end();
+       ++iter) {
+    col_info = reinterpret_cast<DalBindColumnInfo *>(*iter);
+    ss << "\n" << col_info->ColInfoInputToStr(table_index_).c_str();
+  }
+  ss << "\n*************************************";
+  return (ss.str());
+}  // DalBindInfo::BindListInputToStr
+
+std::string
+DalBindInfo::BindListResultToStr(void) {
+  DalBindList::iterator iter;
+  DalBindColumnInfo *col_info = NULL;
+  std::stringstream ss;
+
+  if (output_bind_count_ == 0) {
+    UPLL_LOG_DEBUG("No Columns in Table(%s) bound for Ouput",
+                   schema::TableName(table_index_));
+  }
+
+  ss << "\n*************************************"
+     << "\n* Result Data for Table - "
+     << schema::TableName(table_index_);
+  ss << "\n*************************************";
+  ss << "\n{ ";
+
+  for (iter = bind_list_.begin();
+       iter != bind_list_.end();
+       ++iter) {
+    col_info = reinterpret_cast<DalBindColumnInfo *>(*iter);
+    ss << col_info->ColInfoResultToStr(table_index_).c_str();
+  }
+  ss << "}";
+  ss << "\n*************************************";
+  UPLL_LOG_VERBOSE("\n%s", ss.str().c_str());
+  return (ss.str());
+}  // DalBindInfo::BindListResultToStr
 
 }  // namespace dal
 }  // namespace upll

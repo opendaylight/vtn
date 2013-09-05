@@ -12,12 +12,14 @@ package org.opendaylight.vtn.javaapi.resources.logical;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
+import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.IpcRequestProcessor;
@@ -41,20 +43,24 @@ public class DhcpRelayInterfacesResource extends AbstractResource {
 	/** The vrt name. */
 	@UNCField("vrt_name")
 	private String vrtName;
+
 	/**
 	 * @return the vtn name
 	 */
 	public String getVtnName() {
 		return vtnName;
 	}
+
 	/**
 	 * @return the vrt name
 	 */
 	public String getVrtName() {
 		return vrtName;
 	}
+
 	private static final Logger LOG = Logger
 			.getLogger(DhcpRelayInterfacesResource.class.getName());
+
 	/**
 	 * Instantiates a new dhcp relay interfaces resource.
 	 */
@@ -64,6 +70,7 @@ public class DhcpRelayInterfacesResource extends AbstractResource {
 		setValidator(new InterfaceResourceValidator(this));
 		LOG.trace("Complete DhcpRelayInterfacesResource#DhcpRelayInterfacesResource()");
 	}
+
 	/**
 	 * Implementation of post method of Dhcp Relay Interface
 	 * 
@@ -89,9 +96,10 @@ public class DhcpRelayInterfacesResource extends AbstractResource {
 			LOG.debug("Session created successfully");
 			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
 					getConfigID(), getExceptionHandler());
+			final List<String> uriParameterList = getUriParameters(requestBody);
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_DHCPRELAY_IF_CREATE, requestBody,
-					getUriParameters(requestBody));
+					uriParameterList);
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
@@ -123,6 +131,7 @@ public class DhcpRelayInterfacesResource extends AbstractResource {
 
 		return status;
 	}
+
 	/**
 	 * Implementation of get method of Dhcp Relay Interface
 	 * 
@@ -147,15 +156,34 @@ public class DhcpRelayInterfacesResource extends AbstractResource {
 			LOG.debug("Session created successfully");
 			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
 					getConfigID(), getExceptionHandler());
+			final List<String> uriParameterList = getUriParameters(requestBody);
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_DHCPRELAY_IF_GET, requestBody,
-					getUriParameters(requestBody));
+					uriParameterList);
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
 			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
-			setInfo(responseGenerator.getDhcpRelayInterfaceResponse(
-					requestProcessor.getIpcResponsePacket(), requestBody,
-					VtnServiceJsonConsts.LIST));
+			/*
+			 * setInfo(responseGenerator.getDhcpRelayInterfaceResponse(
+			 * requestProcessor.getIpcResponsePacket(), requestBody,
+			 * VtnServiceJsonConsts.LIST));
+			 */
+			JsonObject responseJson = responseGenerator
+					.getDhcpRelayInterfaceResponse(
+							requestProcessor.getIpcResponsePacket(),
+							requestBody, VtnServiceJsonConsts.LIST);
+			if (responseJson.get(VtnServiceJsonConsts.INTERFACES).isJsonArray()) {
+				JsonArray responseArray = responseJson.get(
+						VtnServiceJsonConsts.INTERFACES).getAsJsonArray();
+				responseJson = getResponseJsonArrayLogical(requestBody,
+						requestProcessor, responseGenerator, responseArray,
+						VtnServiceJsonConsts.INTERFACES,
+						VtnServiceJsonConsts.IFNAME,
+						IpcRequestPacketEnum.KT_DHCPRELAY_IF_GET,
+						uriParameterList,
+						VtnServiceIpcConsts.GET_DHCP_RELAY_IF_RESPONSE);
+			}
+			setInfo(responseJson);
 			LOG.debug("Response object created successfully");
 			LOG.debug("Ipc framework call complete");
 		} catch (final VtnServiceException e) {
@@ -184,12 +212,13 @@ public class DhcpRelayInterfacesResource extends AbstractResource {
 		LOG.trace("Completed DhcpRelayInterfacesResource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 
 	 * @return
 	 */
-	private List<String> getUriParameters(final JsonObject requestBody) {	
+	private List<String> getUriParameters(final JsonObject requestBody) {
 		LOG.trace("Start DhcpRelayInterfacesResource#getUriParameters()");
 		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(vtnName);

@@ -30,8 +30,10 @@ public enum ResourcePathEnum {
 	ACQUIRE_RELEASE_MONITORING_PATH("/configuration/readlock"),
 	
 	/** The COMMI t_ configuration. */
-	COMMIT_CONFIGURATION("/configuration");
+	COMMIT_CONFIGURATION("/configuration"),
 	
+	/** The ABORT_ configuration. */
+	ABORT_CONFIGURATION("/configuration/candidate");
 	/** The path. */
 	private String path; 
 	

@@ -10,3 +10,4 @@
 [UNC_DB_DRIVER]
 Decription		= PostgreSQL ODBC
 Driver		= /usr/pgsql-9.1/lib/psqlodbcw.so
+Threading	= 2

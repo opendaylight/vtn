@@ -26,6 +26,10 @@ defblock version_list {
 defmap version_definition {
 	parent	= STRING;
 	flags	= UINT32;
+        actual_version_count = UINT32;
+
+        % Multiples of 4: major1, major2, minor, update
+        actual_version       = INT32[];
 }
 
 % Capability definitions.
@@ -45,6 +49,7 @@ defmap vbridge {
         instance_count          =  UINT32;
 
         % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        domain_id               = BOOL[4];
         description             = BOOL[4];
         host_address            = BOOL[4];
         host_address_prefixlen  = BOOL[4];
@@ -74,6 +79,7 @@ defmap vrouter {
         instance_count          =  UINT32;
 
         % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        domain_id               = BOOL[4];
         description             = BOOL[4];
         dhcp_relay_admin_status = BOOL[4];
         operstatus              = BOOL[4];

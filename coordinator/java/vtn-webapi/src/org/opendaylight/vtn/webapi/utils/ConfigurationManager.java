@@ -74,18 +74,18 @@ public final class ConfigurationManager {
 			accessConfiguration = new Properties();
 			accessConfiguration.load(Thread.currentThread().getContextClassLoader().getResourceAsStream(ApplicationConstants.ACCESS_PROPERTY_PATH));
 			
-			pwdConfiguration = new Properties();
-			pwdConfiguration.load(Thread.currentThread().getContextClassLoader().getResourceAsStream(ApplicationConstants.PWD_PROPERTY_PATH));
+			/*pwdConfiguration = new Properties();
+			pwdConfiguration.load(Thread.currentThread().getContextClassLoader().getResourceAsStream(ApplicationConstants.PWD_PROPERTY_PATH));*/
 			
 			webAPIConfiguration = new Properties();
 			webAPIConfiguration.load(Thread.currentThread().getContextClassLoader().getResourceAsStream(ApplicationConstants.WEBAPI_CONF_PROPERTY_PATH));
 		LOG.trace("configuration properties initialised successfully.");
 		}catch (FileNotFoundException exception) {
 			LOG.error(exception.getMessage());
-			throw new VtnServiceWebAPIException(ApplicationConstants.PROPERTY_FILE_READ_ERROR, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.PROPERTY_FILE_READ_ERROR)); 
+			throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.INTERNAL_SERVER_ERROR)); 
 		}catch (IOException exception) {
 			LOG.error(exception.getMessage());
-			throw new VtnServiceWebAPIException(ApplicationConstants.PROPERTY_FILE_READ_ERROR, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.PROPERTY_FILE_READ_ERROR)); 
+			throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.INTERNAL_SERVER_ERROR)); 
 		}
 	}
 	
@@ -119,7 +119,7 @@ public final class ConfigurationManager {
 		final String value  = pwdConfiguration.getProperty(key);
 		//Check if value retrieved is null
 		if (null == value || value.isEmpty()) {
-			LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.PROPERTY_NOT_FOUND_ERROR));
+			LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
 			throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.INTERNAL_SERVER_ERROR));
 		}
 		LOG.trace("getPWDProperty end # getPWDProperty()");
@@ -139,7 +139,7 @@ public final class ConfigurationManager {
 		final String value  = webAPIConfiguration.getProperty(key);
 		//Check if value retrieved is null
 		if (null == value || value.isEmpty()) {
-			LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.PROPERTY_NOT_FOUND_ERROR));
+			LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
 			throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
 		}
 		LOG.trace("getConfProperty end # getConfProperty()");

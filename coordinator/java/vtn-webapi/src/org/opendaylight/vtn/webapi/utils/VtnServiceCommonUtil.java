@@ -8,7 +8,6 @@
  */
 package org.opendaylight.vtn.webapi.utils;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -73,7 +72,7 @@ public final class VtnServiceCommonUtil {
 	 * @return true, if successful
 	 * @throws VtnServiceWebAPIException the vtn service exception
 	 */
-    public static boolean authenticateUser(final JsonObject headerInfo, final String httpMethod) throws VtnServiceWebAPIException{
+    /*public static boolean authenticateUser(final JsonObject headerInfo, final String httpMethod) throws VtnServiceWebAPIException{
     	LOG.trace(" Authenticating user  #authenticateUser() :starts");
     	boolean authenticationStatus= false;    	
     	String role = null;
@@ -91,7 +90,7 @@ public final class VtnServiceCommonUtil {
 		}
 		LOG.trace(" Authenticating user  #authenticateUser() :ends");
     	return authenticationStatus;
-	}
+	}*/
     
     /**
      * Authorise user.
@@ -101,15 +100,19 @@ public final class VtnServiceCommonUtil {
      * @return true, if successful
      * @throws VtnServiceWebAPIException the vtn service web api exception
      */
-    private static boolean authoriseUser(SessionBean bean,  String httpMethod) throws VtnServiceWebAPIException{
+    public static boolean authoriseUser(SessionBean bean,  String httpMethod) throws VtnServiceWebAPIException{
     	boolean ipStatus = false;
     	ConfigurationManager configurationManager = ConfigurationManager.getInstance();
     	LOG.trace(" Authorizinging user  #authoriseUser() : starts");
-		//Proxy check is pending waiting for client reply on this.
-    	//String proxyStatus = configurationManager.getAccessProperty(ApplicationConstants.PROXY_OPT);
 		final String ipAddresses =  configurationManager.getAccessProperty(ApplicationConstants.ACCESS_ALL);
 		final String httpMethodAccessIpAddress = configurationManager.getAccessProperty(httpMethod.toUpperCase());
-		if(ipAddresses.indexOf(bean.getIpAddress()) != -1){
+		if(ipAddresses != null && ApplicationConstants.WILD_CARD_STAR.equals(ipAddresses.trim())){
+			ipStatus = true;
+		}
+		else if(ipAddresses.indexOf(bean.getIpAddress()) != -1){
+			ipStatus = true;
+		}
+		else if(null != httpMethodAccessIpAddress && !httpMethodAccessIpAddress.isEmpty() && ApplicationConstants.WILD_CARD_STAR.equals(httpMethodAccessIpAddress.trim())){
 			ipStatus = true;
 		}
 		else if(null != httpMethodAccessIpAddress && !httpMethodAccessIpAddress.isEmpty() && httpMethodAccessIpAddress.indexOf(bean.getIpAddress()) != -1){
@@ -131,7 +134,7 @@ public final class VtnServiceCommonUtil {
      * @return true, if successful
      * @throws VtnServiceWebAPIException the vtn service web api exception
      */
-    private static boolean checkRoleAccessability(final String role, final String httpMethod, final String password, final SessionBean bean) throws VtnServiceWebAPIException {
+   /* private static boolean checkRoleAccessability(final String role, final String httpMethod, final String password, final SessionBean bean) throws VtnServiceWebAPIException {
     	LOG.trace("Validating role and accessability of the user : starts");
     	boolean authenticationStatus = false;
     	if(VtnServiceWebUtil.checkStringForNullOrEmpty(role) && ApplicationConstants.ROLE_ADMIN.equals(role) && (VtnServiceWebUtil.checkStringForNullOrEmpty(password) && password.equals(convertPasswordStrToMd5Str(bean.getPassword())))){
@@ -141,7 +144,7 @@ public final class VtnServiceCommonUtil {
 		}
     	LOG.trace("Validating role and accessability of the user : ends");
     	return authenticationStatus;
-	}
+	}*/
 
 	/**
 	 * Gets the session from json.
@@ -203,6 +206,7 @@ public final class VtnServiceCommonUtil {
 	 */
 	public static boolean validateURI(final String uri, final String contentType){
 		LOG.trace("validation for URI : starts");
+		LOG.debug("uri : " + uri + " content-type : " + contentType);
 		boolean uriStatus = false;
 		if(null != uri && (uri.endsWith(ApplicationConstants.TYPE_XML) || uri.endsWith(ApplicationConstants.TYPE_JSON))){
 			uriStatus =  true;
@@ -212,6 +216,7 @@ public final class VtnServiceCommonUtil {
 		}else{
 			uriStatus =  false;
 		}
+		LOG.debug("uri : " + uri + " content-type : " + contentType);
 		LOG.trace("validation for URI : ends");
 		return uriStatus;
 	}
@@ -226,11 +231,11 @@ public final class VtnServiceCommonUtil {
 	public static SessionBean getSessionObject(final JsonObject sessionJson) throws VtnServiceWebAPIException{
 		LOG.trace("Preparing session object : starts");
 		SessionBean sessionBean = new SessionBean();
-		List<String> mandatoryList = Arrays.asList(SessionEnum.PASSWORD.getSessionElement(), SessionEnum.IPADDRESS.getSessionElement());
+		List<String> mandatoryList = Arrays.asList(SessionEnum.USERNAME.getSessionElement(), SessionEnum.PASSWORD.getSessionElement(), SessionEnum.IPADDRESS.getSessionElement());
 		JsonObject sessionJsonObj = (JsonObject) sessionJson.get(ApplicationConstants.SESSION_OBJECT);
 		for (String value : mandatoryList) {
 			if(!sessionJsonObj.has(value) || null == sessionJsonObj.get(value)){
-				throw new VtnServiceWebAPIException(ApplicationConstants.MISSING_HEADER_INFO, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.MISSING_HEADER_INFO));
+				throw new VtnServiceWebAPIException(ApplicationConstants.BAD_REQUEST_ERROR, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.BAD_REQUEST_ERROR));
 			}
 		}
 		sessionBean.setUserName(sessionJsonObj.get(SessionEnum.USERNAME.getSessionElement()) != null ?sessionJsonObj.get(SessionEnum.USERNAME.getSessionElement()).getAsString() : null );
@@ -251,20 +256,23 @@ public final class VtnServiceCommonUtil {
 	 * @return the resource uri
 	 */
 	public static String getResourceURI(final String requestURI) {
-		LOG.trace("Getting requested URI: starts");
-		String[] finalURI = null;
-		if(null != requestURI){
-			if(requestURI.endsWith(ApplicationConstants.TYPE_XML)){
-				finalURI = requestURI.split(ApplicationConstants.TYPE_XML);
-			}else{
-				finalURI =	requestURI.split(ApplicationConstants.TYPE_JSON);
+		LOG.trace("Getting requested URI: starts " + requestURI);
+		String finalURI = null;
+		if (null != requestURI) {
+			if (requestURI.endsWith(ApplicationConstants.TYPE_XML)) {
+				finalURI = requestURI.substring(ApplicationConstants.ZERO,
+						requestURI.length() - ApplicationConstants.FOUR);
+			} else if (requestURI.endsWith(ApplicationConstants.TYPE_JSON)) {
+				finalURI = requestURI.substring(ApplicationConstants.ZERO,
+						requestURI.length() - ApplicationConstants.FIVE);
 			}
 		}
-		if(null != finalURI[ApplicationConstants.ZERO]){
-			finalURI = finalURI[ApplicationConstants.ZERO].split(ApplicationConstants.CONTEXTPATH);
+		if (null != finalURI) {
+			finalURI = finalURI.replace(ApplicationConstants.CONTEXTPATH,
+					ApplicationConstants.EMPTY_STRING);
 		}
-		LOG.trace("Getting requested URI: ends ");
-		return finalURI[ApplicationConstants.ONE];
+		LOG.trace("Getting requested URI: ends " + finalURI);
+		return finalURI;
 	}
 	
 	/**
@@ -274,7 +282,7 @@ public final class VtnServiceCommonUtil {
 	 * @return the string
 	 * @throws VtnServiceWebAPIException the vtn service web api exception
 	 */
-	private static String convertPasswordStrToMd5Str(final String simplePasswordStr) throws VtnServiceWebAPIException{
+	/*private static String convertPasswordStrToMd5Str(final String simplePasswordStr) throws VtnServiceWebAPIException{
 		LOG.trace("Converting password string to MD5 using MD5 algorithm: starts");
 		StringBuffer sb = null;
         try {
@@ -293,7 +301,7 @@ public final class VtnServiceCommonUtil {
 		}
         LOG.trace("Converting password string to MD5 using MD5 algorithm: ends");
         return sb.toString();
-    }
+    }*/
 	
 	/**
 	 * Gets the op parameter.

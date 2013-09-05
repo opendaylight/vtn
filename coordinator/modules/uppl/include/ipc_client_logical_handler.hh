@@ -10,7 +10,8 @@
 /*
  @brief   IPCClientLogicalHandler header
  @file    ipc_client_logical_handler.hh
- @ Desc:  This header file contains the declaration of IPCClientConfigurationHandler class
+ @ Desc:  This header file contains the declaration of
+          IPCClientLogicalHandler class
  *
 */
 

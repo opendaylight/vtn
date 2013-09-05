@@ -12,6 +12,7 @@
 
 #include <string>
 #include <map>
+#include <list>
 
 #include "pfcxx/module.hh"
 #include "pfcxx/synch.hh"
@@ -164,10 +165,36 @@ class CapaModule : public pfc::core::Module, CapaIntf {
   void VerboseDumpAll();
   void VerboseDump(unc_keytype_ctrtype_t ctrlr_type, std::string version);
 
+  /*
+   * @brief Validates configuration version and actual version of specified
+   * controller type
+   *
+   * @param[in] ctrlr_type       controller type
+   * @param[in] config_version   configuration version
+   * @param[in] pfc_version      actual version
+   *
+   * @retval true   Successful
+   * @retval false  validation of configuration version and actual version.
+   *
+   * */
+  bool ValidateVersion(unc_keytype_ctrtype_t ctrlr_type,
+                       std::string config_version, uint8_t pfc_version_major1,
+                       uint8_t pfc_version_major2, uint8_t pfc_version_minor,
+                       uint8_t pfc_version_update);
  private:
+  struct ActualVersion {
+    int32_t major1;
+    int32_t major2;
+    int32_t minor;
+    int32_t update;
+  };
+
   bool LoadCapabilityFile(unc_keytype_ctrtype_t ctrlr_type);
 
   void LoadParentVersion(pfc_conf_t confp, const std::string version);
+
+  bool LoadActualVersion(pfc_conf_t confp, const std::string version,
+                         std::list<ActualVersion> &version_list);
 
   /**
    * @brief Capability Manager Instance.
@@ -181,6 +208,7 @@ class CapaModule : public pfc::core::Module, CapaIntf {
 
   struct CapaCtrlrCommon {
     std::map<std::string, CtrlrCapability*> capa_map;
+    std::map<std::string, std::list<ActualVersion> > actual_version_map_;
   };
 
   std::map<unc_keytype_ctrtype_t, CapaCtrlrCommon*> ctrlr_common_map_;

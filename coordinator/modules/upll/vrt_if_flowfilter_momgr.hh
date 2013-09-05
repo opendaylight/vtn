@@ -31,7 +31,7 @@ class VrtIfFlowFilterMoMgr : public MoMgrImpl {
     static unc_key_type_t vrt_if_flowfilter_child[];
     static BindInfo vrt_if_flowfilter_bind_info[];
     static BindInfo vrtIfflowfiltermaintbl_bind_info[];
-
+    uint32_t cur_instance_count;
   public:
     /**
     * @brief  Method used to fill the CongigKeyVal with the
@@ -80,7 +80,7 @@ class VrtIfFlowFilterMoMgr : public MoMgrImpl {
     * @retval UPLL_RC_SUCCESS  Successfull completion.
     * @retval UPLL_RC_ERR_GENERIC  Failure
     */
-    upll_rc_t GetRenamedControllerKey(ConfigKeyVal *&ikey,
+    upll_rc_t GetRenamedControllerKey(ConfigKeyVal *ikey,
                                       upll_keytype_datatype_t dt_type,
                                       DalDmlIntf *dmi,
                                       controller_domain *ctrlr_dom = NULL);
@@ -405,7 +405,8 @@ class VrtIfFlowFilterMoMgr : public MoMgrImpl {
     upll_rc_t SetVlinkPortmapConfiguration(ConfigKeyVal *ikey,
                                            upll_keytype_datatype_t dt_type,
                                            DalDmlIntf *dmi,
-                                           InterfacePortMapInfo flag);
+                                           InterfacePortMapInfo flag,
+                                           unc_keytype_operation_t oper);
 
     upll_rc_t TxUpdateController(unc_key_type_t keytype,
                                         uint32_t session_id,
@@ -425,11 +426,34 @@ class VrtIfFlowFilterMoMgr : public MoMgrImpl {
                                     DalDmlIntf *dmi);
     upll_rc_t ConstructReadDetailResponse(ConfigKeyVal *ikey,
                                           ConfigKeyVal *drv_resp_ckv,
-                                          upll_keytype_datatype_t dt_type,
-                                          unc_keytype_operation_t op,
-                                          DbSubOp dbop,
-                                          DalDmlIntf *dmi,
                                           ConfigKeyVal **okey);
+
+   upll_rc_t AuditUpdateController(unc_key_type_t keytype,
+                             const char *ctrlr_id,
+                             uint32_t session_id,
+                             uint32_t config_id,
+                             uuc::UpdateCtrlrPhase phase,
+                             bool *ctrlr_affected,
+                             DalDmlIntf *dmi);
+
+   upll_rc_t CreateAuditMoImpl(ConfigKeyVal *ikey,
+                                   DalDmlIntf *dmi,
+                                   const char *ctrlr_id);
+
+  upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
+                              upll_keytype_datatype_t dt_type,
+                              DalDmlIntf *dmi);
+
+  upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
+
+  bool FilterAttributes(void *&val1,
+                        void *val2,
+                        bool copy_to_running,
+                        unc_keytype_operation_t op);
+
+  upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
+                          DalDmlIntf *dmi,
+                          IpcReqRespHeader *req);
 
   public:
     VrtIfFlowFilterMoMgr();

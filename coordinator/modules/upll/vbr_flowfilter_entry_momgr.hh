@@ -40,6 +40,7 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      * @brief  Member Variable for FlowListRenameBindInfo.
      */
     static BindInfo vbr_flowlist_rename_bind_info[];
+    uint32_t cur_instance_count;
 
   public:
     /**
@@ -56,6 +57,13 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
                                 DalDmlIntf *dmi,
                                 IpcReqRespHeader *req = NULL);
 
+    upll_rc_t VerifyRedirectDestination(ConfigKeyVal *ikey,
+                                        DalDmlIntf *dmi,
+                                        upll_keytype_datatype_t dt_type);
+
+    upll_rc_t TxVote(unc_key_type_t keytype,
+                            DalDmlIntf *dmi,
+                            ConfigKeyVal **err_ckv);
     /**
      * @Brief  Validates the syntax of the specified key and value structure
      *         for KT_VBR_FLOWFILTER_ENTRY keytype
@@ -87,9 +95,9 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
          unc_keytype_operation_t operation);
 
     upll_rc_t GetControllerDomainID(ConfigKeyVal *ikey,
-                                     controller_domain *ctrlr_dom,
-                                     upll_keytype_datatype_t dt_type,
-                                     DalDmlIntf *dmi);
+                                    controller_domain *ctrlr_dom,
+                                    upll_keytype_datatype_t dt_type,
+                                    DalDmlIntf *dmi);
     /**
      * @Brief  Validates the syntax for val_flowfilter_entry structure.
      *
@@ -148,7 +156,7 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR  Attribute NOT_SUPPORTED.
      * @retval  UPLL_RC_ERR_GENERIC                 Generic failure.
      */
-    upll_rc_t ValFlowFilterEntryAttributeSupportCheck(
+    static upll_rc_t ValFlowFilterEntryAttributeSupportCheck(
       val_flowfilter_entry_t *val_flowfilter_entry, const uint8_t* attrs);
 
     /**
@@ -504,7 +512,26 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      *
      * @return No Return Value;
      */
-    bool CompareValidValue(void *&val1, void *val2, bool audit);
+    bool CompareValidValue(void *&val1, void *val2, bool copy_to_running);
+
+    /**
+     * @brief  Method used for Restoring FlowList in the Controller Table
+     *
+     * @param[in]      ikey       Pointer to ConfigKeyVal Class
+     * @param[in]      dt_type    Describes Configiration Information.
+     * @param[in]      tbl        Describe the destination table
+     * @param[in]      dmi        Pointer to DalDmlIntf Class.
+     *
+     * @retval  UPLL_RC_SUCCESS      Successfull completion.
+     * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
+     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists 
+     * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
+     */
+
+    upll_rc_t RestorePOMInCtrlTbl(ConfigKeyVal *ikey,
+                                  upll_keytype_datatype_t dt_type,
+                                  MoMgrTables tbl,
+                                  DalDmlIntf* dmi);
     upll_rc_t ReadSiblingMo(IpcReqRespHeader *req,
                             ConfigKeyVal *ikey,
                             bool begin,
@@ -512,9 +539,9 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
 
     upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey,
                                  ConfigKeyVal *ikey);
-    upll_rc_t ReadDetailEntry(
-        ConfigKeyVal *ff_ckv, upll_keytype_datatype_t dt_type,
-        DbSubOp dbop, DalDmlIntf *dmi);
+    upll_rc_t CreateAuditMoImpl(ConfigKeyVal *ikey,
+                                DalDmlIntf *dmi,
+                                const char *ctrlr_id);
     /**
      * @brief  Method to check validity of Key
      *
@@ -527,8 +554,30 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
     bool IsValidKey(void *key, uint64_t index);
     upll_rc_t ConstructReadDetailResponse(ConfigKeyVal *ikey,
                                           ConfigKeyVal *drv_resp_ckv,
-                                          DalDmlIntf *dmi,
                                           ConfigKeyVal **okey);
+
+    upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
+                                upll_keytype_datatype_t dt_type,
+                                DalDmlIntf *dmi);
+
+    upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
+
+    upll_rc_t UpdateVnodeVal(ConfigKeyVal *ikey, DalDmlIntf *dmi,
+                             upll_keytype_datatype_t data_type,
+                             bool &no_rename);
+
+    bool FilterAttributes(void *&val1,
+                          void *val2,
+                          bool copy_to_running,
+                          unc_keytype_operation_t op);
+
+    upll_rc_t GetFlowlistConfigKey(
+          const char *flowlist_name, ConfigKeyVal *&okey,
+          DalDmlIntf *dmi);
+
+    upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
+          DalDmlIntf *dmi,
+          IpcReqRespHeader *req);
 };
 }  // namespace kt_momgr
 }  // namespace upll

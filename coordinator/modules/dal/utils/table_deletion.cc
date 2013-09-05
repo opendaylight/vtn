@@ -64,14 +64,16 @@ void build_delete_table_script() {
 
   // Print Copyright
   line.clear();
-/*
- * Copyright (c) 2012-2013 NEC Corporation
- * All rights reserved.
- * 
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License v1.0 which accompanies this
- * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
- */
+  line += "/*\n"
+      " * Copyright (c) 2012-2013 NEC Corporation\n"
+      " * All rights reserved.\n"
+      " *\n"
+      " * This program and the accompanying materials are made available "
+      "under the\n"
+      " * terms of the Eclipse Public License v1.0 which accompanies this\n"
+      " * distribution, and is available at "
+      "http://www.eclipse.org/legal/epl-v10.html\n"
+      " */\n";
   printf("%s", line.c_str());
 
   // Print File Header

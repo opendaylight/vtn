@@ -10,7 +10,7 @@
 /*
  @brief   IPCClientLogicalHandler
  @file    ipc_client_logical_handler.cc
- @ Desc:  This header file contains the declaration of
+ @ Desc:  This file contains the definition of
           IPCClientConfigurationHandler class
  *
  */
@@ -28,12 +28,19 @@ ipc_client_logical_handler_ = NULL;
 
 const unsigned int UPLL_RESPONSE_COUNT = 3;
 
-/**
- *@Description : This function will be called from PhysicalCore to send message
-                only to logical layer. This is needed to perform semantic
-                validation during KT_CONTROLLER,KT_SWITCH and KT_BOUNDARY delete.
- *@param[in] : key_type,void pointer
- *@return    : UPPL_RC_SUCCESS or any associated erro code
+/**CheckInUseInLogical
+ * @Description : This function checks that the key is used in logical by
+ *                sending message only to logical layer. This is also needed
+ *                to perform semantic validation during KT_CONTROLLER,
+ *                KT_SWITCH and KT_BOUNDARY delete operation.
+ * @param[in]   : key_type - Specifies the key instances of respective key
+ *                types
+ *                key_str - void pointer
+ *                data_type - UNC_DT_* Specifies the datatype
+ * @return      : UPPL_RC_SUCCESS is returned when the response
+ *                is added to ipc session successfully.
+ *                UPPL_RC_ERR_* is returned when ipc response could not
+ *                be added to session
  **/
 UpplReturnCode IPCClientLogicalHandler::CheckInUseInLogical(
     unc_key_type_t key_type,
@@ -135,12 +142,12 @@ UpplReturnCode IPCClientLogicalHandler::CheckInUseInLogical(
   return return_code;
 }
 
-/**
- *@Description : This function will be called from IPCConnectionManager
-                to get the IPCClientLogicalHandler object.
- *@param[in] : none
- *@return    : Pointer to IPCClientLogicalHandler
- **/
+/**get_ipc_client_logical_handler
+ * @Description : This function will be called from IPCConnectionManager
+ *                to get the IPCClientLogicalHandler object.
+ * @param[in]   : None
+ * @return      : Returns class pointer to IPCClientLogicalHandler
+ * */
 IPCClientLogicalHandler* IPCClientLogicalHandler::
 get_ipc_client_logical_handler() {
   PhysicalLayer* physical_layer = PhysicalLayer::get_instance();
@@ -153,11 +160,11 @@ get_ipc_client_logical_handler() {
 }
 
 
-/**
- *@Description : This function will be called from IPCConnectionManager
-                to release the IPCClientLogicalHandler object.
- *@param[in] : none
- *@return    : void
+/**release_ipc_client_logical_handler
+ * @Description : This function will be called from IPCConnectionManager
+                  to release the IPCClientLogicalHandler object.
+ * @param[in]   : None
+ * @return      : void
  **/
 void IPCClientLogicalHandler::
 release_ipc_client_logical_handler() {

@@ -15,7 +15,7 @@
 #include <iomanip>
 #include <sstream>
 
-#include "upll_log.hh"
+#include "uncxx/upll_log.hh"
 #include "kt_util.hh"
 
 namespace unc {
@@ -152,7 +152,7 @@ void KtUtil::Init() {
   // UNC_KT_VBRIF_FLOWFILTER_ENTRY
   tmpl = new KtMsgTemplate();
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVbrIfFlowfilterEntry);
-  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStValFlowfilterEntry);
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStPfcdrvValFlowfilterEntry);
   // can't do; TC does not support
   // tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStPfcdrvValVbrifVextif);
   kt_msg_templates_[UNC_KT_FLOWLIST_ENTRY] = tmpl;
@@ -177,12 +177,14 @@ void KtUtil::Init() {
   // UNC_KT_DHCPRELAY_SERVER
   tmpl = new KtMsgTemplate();
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyDhcpRelayServer);
-  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStValDhcpRelayServer);
+  // NO - VAL
+  // tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStValDhcpRelayServer);
   kt_msg_templates_[UNC_KT_DHCPRELAY_SERVER] = tmpl;
   // UNC_KT_DHCPRELAY_IF
   tmpl = new KtMsgTemplate();
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyDhcpRelayIf);
-  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStValDhcpRelayIf);
+  // NO - VAL
+  // tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStValDhcpRelayIf);
   kt_msg_templates_[UNC_KT_DHCPRELAY_IF] = tmpl;
   // UNC_KT_VRT_IF
   tmpl = new KtMsgTemplate();
@@ -192,12 +194,12 @@ void KtUtil::Init() {
   // UNC_KT_VRTIF_FLOWFILTER
   tmpl = new KtMsgTemplate();
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVrtIfFlowfilter);
-  //                NO-VAL
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStPfcdrvValVbrifVextif);
   kt_msg_templates_[UNC_KT_VRTIF_FLOWFILTER] = tmpl;
   // UNC_KT_VRTIF_FLOWFILTER_ENTRY
   tmpl = new KtMsgTemplate();
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVrtIfFlowfilterEntry);
-  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStValFlowfilterEntry);
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStPfcdrvValFlowfilterEntry);
   kt_msg_templates_[UNC_KT_VRTIF_FLOWFILTER_ENTRY] = tmpl;
   // UNC_KT_VUNKNOWN
   tmpl = new KtMsgTemplate();
@@ -303,7 +305,7 @@ std::string KtUtil::KtStructToStr(IpctSt::IpcStructNum stnum, void *data) {
           << Ipv6AddrToStr(*reinterpret_cast<struct in6_addr*>(data));
       return ss.str();
     case IpctSt::kIpcStString:
-      ss << "   -->string " << *(reinterpret_cast<char**>(data));
+      ss << "   -->string " << (reinterpret_cast<char*>(data));
       return ss.str();
     case IpctSt::kIpcStBinary:
       /*
@@ -578,6 +580,11 @@ std::string KtUtil::KtStructToStr(IpctSt::IpcStructNum stnum, void *data) {
       return IpcStructToStr(*reinterpret_cast<val_boundary_st*>(data));
     case IpctSt::kIpcStValPathFaultAlarm:
       return IpcStructToStr(*reinterpret_cast<val_path_fault_alarm*>(data));
+      // Overlay Driver structures
+    case IpctSt::kIpcStVnpdrvValVtunnel:
+      return IpcStructToStr(*reinterpret_cast<vnpdrv_val_vtunnel*>(data));
+    case IpctSt::kIpcStVnpdrvValVtunnelIf:
+      return IpcStructToStr(*reinterpret_cast<vnpdrv_val_vtunnel_if*>(data));
   }
   return ss.str();
 }
@@ -601,8 +608,10 @@ std::string KtUtil::Ipv4AddrToStr(uint32_t ip_addr) {
 }
 
 std::string KtUtil::Ipv6AddrToStr(struct in6_addr address) {
+  socklen_t ipv6_len = INET6_ADDRSTRLEN;
   char str_addr[INET6_ADDRSTRLEN];
-  if (NULL == inet_ntop(AF_INET6, &address, str_addr, INET6_ADDRSTRLEN)) {
+  if (NULL == inet_ntop(AF_INET6, &address, str_addr, ipv6_len)) {
+    UPLL_LOG_TRACE(" Invalid IPV6 Address");
     return " Invalid IPV6 Address..!!! ";
   }
   return str_addr;
@@ -632,8 +641,11 @@ std::string KtUtil::ValidArrayToStr(const uint8_t *validarray, int size) {
       case UNC_VF_VALID_NO_VALUE:
         ss << "N";
         break;
-      case UNC_VF_NOT_SOPPORTED:
+      case UNC_VF_NOT_SUPPORTED:
         ss << "X";
+        break;
+      case UNC_VF_VALUE_NOT_MODIFIED:
+        ss << "M";
         break;
       default:
         ss << "!" << chr2int(validarray[i]) << "!:";
@@ -655,7 +667,7 @@ std::string KtUtil::ConfigStatusToStr(const uint8_t *cfgstatus, int size) {
       case UNC_CS_APPLIED:
         ss << "A";
         break;
-      case UNC_CS_PARTAILLY_APPLIED:
+      case UNC_CS_PARTIALLY_APPLIED:
         ss << "P";
         break;
       case UNC_CS_NOT_APPLIED:
@@ -742,6 +754,7 @@ std::string KtUtil::IpcStructToStr(const key_vtn_controller& data) {
   // ss << "   -->vtn_key "<< endl;
   ss << IpcStructToStr(data.vtn_key);
   ss << "   -->controller_name " << data.controller_name << endl;
+  ss << "   -->domain_name " << data.domain_id << endl;
   return ss.str();
 }
 
@@ -1228,6 +1241,7 @@ std::string KtUtil::IpcStructToStr(const val_vtep_if& val_vtep_if) {
   ss << "   -->cs_attr " << CS_ARRAY_TO_STR(val_vtep_if.cs_attr);
   ss << "   -->description " << val_vtep_if.description << endl;
   ss << "   -->admin_status " << chr2int(val_vtep_if.admin_status) << endl;
+  ss << IpcStructToStr(val_vtep_if.portmap);
   return ss.str();
 }
 
@@ -1322,6 +1336,7 @@ std::string KtUtil::IpcStructToStr(const val_vtunnel_if& val_vtunnel_if) {
   ss << "   -->cs_attr " << CS_ARRAY_TO_STR(val_vtunnel_if.cs_attr);
   ss << "   -->description " << val_vtunnel_if.description << endl;
   ss << "   -->admin_status " << chr2int(val_vtunnel_if.admin_status) << endl;
+  ss << IpcStructToStr(val_vtunnel_if.portmap);
   return ss.str();
 }
 
@@ -1350,6 +1365,7 @@ std::string KtUtil::IpcStructToStr(const val_vunknown& val_vunknown) {
   ss << "   -->cs_attr " << CS_ARRAY_TO_STR(val_vunknown.cs_attr);
   ss << "   -->description " << val_vunknown.description << endl;
   ss << "   -->type " << chr2int(val_vunknown.type) << endl;
+  ss << "   -->domain_id " << val_vunknown.domain_id << endl;
   return ss.str();
 }
 
@@ -1462,7 +1478,7 @@ std::string KtUtil::IpcStructToStr(const val_flowlist_entry& data) {
   ss << "   -->dst_ip_prefixlen " << chr2int(data.dst_ip_prefixlen) << endl;
   ss << "   -->src_ip " << Ipv4AddrToStr(data.src_ip) << endl;
   ss << "   -->src_ip_prefixlen " << chr2int(data.src_ip_prefixlen) << endl;
-  ss << "   -->vlan_priority " << data.vlan_priority << endl;
+  ss << "   -->vlan_priority " << chr2int(data.vlan_priority) << endl;
   ss << "   -->dst_ipv6 " << Ipv6AddrToStr(data.dst_ipv6) << endl;
   ss << "   -->dst_ipv6_prefixlen " << chr2int(data.dst_ipv6_prefixlen) << endl;
   ss << "   -->src_ipv6 " << Ipv6AddrToStr(data.src_ipv6) << endl;
@@ -1575,6 +1591,7 @@ std::string KtUtil::IpcStructToStr(const key_vtn_flowfilter_controller& data) {
   // ss << "   -->vtn_key " << endl;
   ss << IpcStructToStr(data.vtn_key);
   ss << "   -->controller_name " << data.controller_name << endl;
+  ss << "   -->domain_name " << data.domain_id << endl;
   return ss.str();
 }
 
@@ -1782,6 +1799,7 @@ std::string KtUtil::IpcStructToStr(const val_policingmap_switch_st& data) {
   ss << "   -->policer_id " << data.policer_id << endl;
   ss << "   -->switch_id " << data.switch_id << endl;
   ss << "   -->status " << chr2int(data.status) << endl;
+  ss << "   -->vBridge_name " << data.vbr_name << endl;
   ss << "   -->if_name " << data.if_name << endl;
   ss << "   -->port_name " << data.port_name << endl;
   ss << "   -->vlanid " << data.vlanid << endl;
@@ -1802,6 +1820,8 @@ std::string KtUtil::IpcStructToStr(const key_vtn_policingmap_controller&
   ss << IpcStructToStr(key_vtn_policingmap_controller.vtn_key);
   ss << "   -->controller_name "
       << key_vtn_policingmap_controller.controller_name << endl;
+  ss << "   -->domain_name "
+      << key_vtn_policingmap_controller.domain_id << endl;
   return ss.str();
 }
 
@@ -2000,6 +2020,26 @@ std::string KtUtil::IpcStructToStr(const pfcdrv_val_vbrif_policingmap &data) {
   ss << IpcStructToStr(data.val_vbrif_vextif);
   return ss.str();
 }
+
+// VNP-DRV
+std::string KtUtil::IpcStructToStr(const vnpdrv_val_vtunnel& data) {
+  std::stringstream ss;
+  ss << "   -----   vnpdrv_val_vtunnel   -----   " << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(data.valid);
+  ss << "   -->label " << data.label << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const vnpdrv_val_vtunnel_if& data) {
+  std::stringstream ss;
+  ss << "   -----   vnpdrv_val_vtunnel_if   -----   " << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(data.valid);
+  ss << "   -->label " << data.label << endl;
+  ss << "   -->vlan_id " << data.vlan_id << endl;
+  return ss.str();
+}
+
+
 
 }  // namespace ipc_util
 }  // namespace upll

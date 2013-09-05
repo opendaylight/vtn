@@ -49,6 +49,9 @@ public class ConfigResourceValidator extends VtnServiceValidator {
 		boolean isValid = false;
 		if (requestBody != null && VtnServiceConsts.PUT.equals(method)) {
 			isValid = validatePut(requestBody);
+		}else {
+			setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
+			isValid = false;
 		}
 		// Throws exception if validation fails
 		if (!isValid) {

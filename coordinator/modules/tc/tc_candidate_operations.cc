@@ -79,6 +79,12 @@ TcOperStatus TcCandidateOperations::TcValidateOperType() {
       (tc_oper_ != TC_OP_CANDIDATE_COMMIT)) {
     return TC_INVALID_OPERATION_TYPE;
   }
+
+  /*set IPC timeout to infinity for candidate operations*/
+  TcUtilRet ret = TcServerSessionUtils::set_srv_timeout(ssess_, NULL);
+  if (ret == TCUTIL_RET_FAILURE) {
+    return TC_OPER_FAILURE;
+  }
   return TC_OPER_SUCCESS;
 }
 
@@ -236,6 +242,8 @@ TcOperStatus TcCandidateOperations::Execute() {
       return TC_SYSTEM_FAILURE;
     }
     if (FillTcMsgData(tcmsg_, *MsgIter) != TC_OPER_SUCCESS) {
+      delete tcmsg_;
+      tcmsg_ = NULL;
       return TC_SYSTEM_FAILURE;
     }
     TcOperRet MsgRet = tcmsg_->Execute();
@@ -243,6 +251,8 @@ TcOperStatus TcCandidateOperations::Execute() {
       user_response_ = HandleMsgRet(MsgRet);
     }
     MsgIter++;
+    delete tcmsg_;
+    tcmsg_ = NULL;
   }
 
   return user_response_;
@@ -257,7 +267,7 @@ pfc_bool_t TcCandidateOperations::TransStartMsg() {
   TcMsg* tc_start_msg= TcMsg::CreateInstance(session_id_,
                                              unc::tclib::MSG_COMMIT_TRANS_START,
                                              unc_oper_channel_map_);
-  PFC_ASSERT(tc_start_msg != NULL);
+  PFC_VERIFY(tc_start_msg != NULL);
   FillTcMsgData(tc_start_msg, unc::tclib::MSG_COMMIT_TRANS_START);
   TcOperRet oper_ret(tc_start_msg->Execute());
   if ( oper_ret != TCOPER_RET_SUCCESS ) {
@@ -277,7 +287,7 @@ pfc_bool_t TcCandidateOperations::TransVoteMsg() {
                                              unc::tclib::MSG_COMMIT_VOTE,
                                              unc_oper_channel_map_);
 
-  PFC_ASSERT(tc_vote_msg != NULL);
+  PFC_VERIFY(tc_vote_msg != NULL);
   FillTcMsgData(tc_vote_msg, unc::tclib::MSG_COMMIT_VOTE);
   TcOperRet oper_ret(tc_vote_msg->Execute());
   if ( oper_ret != TCOPER_RET_SUCCESS ) {
@@ -312,7 +322,7 @@ pfc_bool_t TcCandidateOperations::TransGlobalCommitMsg() {
                                              unc::tclib::MSG_COMMIT_GLOBAL,
                                              unc_oper_channel_map_);
 
-  PFC_ASSERT(tc_commit_msg != NULL);
+  PFC_VERIFY(tc_commit_msg != NULL);
   FillTcMsgData(tc_commit_msg, unc::tclib::MSG_COMMIT_GLOBAL);
   TcOperRet oper_ret(tc_commit_msg->Execute());
   trans_result_ = tc_commit_msg->GetTransResult();
@@ -333,7 +343,7 @@ pfc_bool_t TcCandidateOperations::TransEndMsg() {
                                            unc::tclib::MSG_COMMIT_TRANS_END,
                                            unc_oper_channel_map_);
 
-  PFC_ASSERT(tc_end_msg != NULL);
+  PFC_VERIFY(tc_end_msg != NULL);
   FillTcMsgData(tc_end_msg, unc::tclib::MSG_COMMIT_TRANS_END);
   TcOperRet oper_ret(tc_end_msg->Execute());
   if ( oper_ret != TCOPER_RET_SUCCESS ) {
@@ -343,7 +353,8 @@ pfc_bool_t TcCandidateOperations::TransEndMsg() {
   }
   delete tc_end_msg;
 
-  if ( autosave_enabled_ == PFC_TRUE ) {
+  if ( autosave_enabled_ == PFC_TRUE     &&
+       user_response_ == TC_OPER_SUCCESS ) {
     TcMsg* tc_save_msg = TcMsg::CreateInstance(session_id_,
                                                unc::tclib::MSG_SAVE_CONFIG,
                                                unc_oper_channel_map_);

@@ -19,42 +19,43 @@
 #include "itc_kt_logicalport.hh"
 #include "itc_kt_link.hh"
 #include "odbcm_utils.hh"
+#include "itc_read_request.hh"
+#include "odbcm_db_varbind.hh"
 using unc::uppl::PhysicalLayer;
-/** Constructor
- * * @Description : This function initializes member variables
- * and fills the attribute syntax map used for validation
- * * * @param[in] : None
- * * * @return    : None
- * */
+/** 
+ * @Description : This function initializes member variables
+ *                and fills the attribute syntax map used for validation
+ * @param[in]   : None
+ * @return      : None
+ **/
 Kt_Port::Kt_Port() {
-  parent = NULL;
   // Populate structure to be used for syntax validation
-  Fill_Attr_Syntax_Map();
-}
-
-/** Destructor
- * * @Description : This function frees the parent and child key types
- * instances for Kt_Port
- * * * @param[in] : None
- * * * @return    : None
- * */
-Kt_Port::~Kt_Port() {
-  // Delete parent object
-  if (parent != NULL) {
-    delete parent;
-    parent = NULL;
+  if (attr_syntax_map_all.find(UNC_KT_PORT) == attr_syntax_map_all.end()) {
+    Fill_Attr_Syntax_Map();
   }
 }
 
-/** DeleteKeyInstance
- * * @Description : This function deletes the given  instance of KT_Port
- * * @param[in] : key_struct - key for the port instance
- * data_type - UNC_DT_* , delete only allowed in STATE
- * * @return    : UPPL_RC_SUCCESS is returned when the delete
- * is done successfully.
- * * UPPL_RC_ERR_* is returned when the delete is error
+/** 
+ * @Description : This function does nothing
+ * @param[in]   : None
+ * @return      : None
+ **/
+Kt_Port::~Kt_Port() {
+}
+
+/** 
+ * @Description : This function deletes the given  instance of KT_Port from
+ *                running port table
+ * @param[in]   : key_struct - void pointer to be type cast into port key type
+ *                data_type - indicates the data base type,UNC_DT_* delete only
+ *                allowed in STATE
+ *                key_type - indicates the Key Type Class 
+ * @return      : UPPL_RC_SUCCESS is returned when the delete of a port in
+ *                running db is successful
+ *                UPPL_RC_ERR_* is returned when the delete is failure
  * */
-UpplReturnCode Kt_Port::DeleteKeyInstance(void* key_struct,
+UpplReturnCode Kt_Port::DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
+                                          void* key_struct,
                                           uint32_t data_type,
                                           uint32_t key_type) {
   UpplReturnCode delete_status = UPPL_RC_SUCCESS;
@@ -76,6 +77,8 @@ UpplReturnCode Kt_Port::DeleteKeyInstance(void* key_struct,
   // Port delete corresponding logical port
   Kt_LogicalPort logical_port_obj;
   key_logical_port_t logical_port_key_obj;
+  memset(&logical_port_key_obj, '\0',
+         sizeof(logical_port_key_obj));
   val_logical_port_t logical_port_val_obj;
   memset(&logical_port_val_obj, 0, sizeof(logical_port_val_obj));
   val_logical_port_st_t logical_port_st_val_obj;
@@ -84,12 +87,6 @@ UpplReturnCode Kt_Port::DeleteKeyInstance(void* key_struct,
   memcpy(logical_port_key_obj.domain_key.ctr_key.controller_name,
          controller_name.c_str(),
          controller_name.length()+1);
-
-  memset(logical_port_key_obj.domain_key.domain_name, '\0',
-         sizeof(logical_port_key_obj.domain_key.domain_name));
-
-  memset(logical_port_key_obj.port_id, 0,
-         sizeof(logical_port_key_obj.port_id));
 
   memset(logical_port_val_obj.valid, 0,
          sizeof(logical_port_val_obj.valid));
@@ -111,12 +108,12 @@ UpplReturnCode Kt_Port::DeleteKeyInstance(void* key_struct,
   key_val.push_back(reinterpret_cast<void *>(&logical_port_key_obj));
   val_struct.push_back(reinterpret_cast<void *>(&logical_port_st_val_obj));
   UpplReturnCode lp_read_status = logical_port_obj.ReadInternal(
-      key_val, val_struct, UNC_DT_STATE, UNC_OP_READ);
+      db_conn, key_val, val_struct, data_type, UNC_OP_READ);
   if (lp_read_status == UPPL_RC_SUCCESS) {
     // form key struct with all required primary keys and call delete
     logical_port_obj.DeleteKeyInstance(
-        key_val[0],
-        UNC_DT_STATE,
+        db_conn, key_val[0],
+        data_type,
         UNC_KT_LOGICAL_PORT);
     // Clear key and value struct
     key_logical_port_t *key_log_port = reinterpret_cast<key_logical_port_t*>
@@ -138,8 +135,8 @@ UpplReturnCode Kt_Port::DeleteKeyInstance(void* key_struct,
 
   // Construct Primary key list
   vector<string> vect_prim_keys;
-  vect_prim_keys.push_back(CTR_NAME);
-  vect_prim_keys.push_back(SWITCH_ID);
+  vect_prim_keys.push_back(CTR_NAME_STR);
+  vect_prim_keys.push_back(SWITCH_ID_STR);
 
   // Construct TableAttrSchema structure
   // TableAttrSchema holds table_name, primary key, attr_name
@@ -147,32 +144,31 @@ UpplReturnCode Kt_Port::DeleteKeyInstance(void* key_struct,
   list< vector<TableAttrSchema> > row_list;
 
   // controller_name
-  PhyUtil::FillDbSchema(CTR_NAME, controller_name,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                         controller_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
   // switch_id
-  PhyUtil::FillDbSchema(SWITCH_ID, switch_id,
+  PhyUtil::FillDbSchema(unc::uppl::SWITCH_ID, switch_id,
                         switch_id.length(), DATATYPE_UINT8_ARRAY_256,
                         vect_table_attr_schema);
 
   // port_id
   if (port_id.length() > 0) {
-    vect_prim_keys.push_back(PORT_ID);
-    PhyUtil::FillDbSchema(PORT_ID, port_id,
+    vect_prim_keys.push_back(PORT_ID_STR);
+    PhyUtil::FillDbSchema(unc::uppl::PORT_ID, port_id,
                           port_id.length(), DATATYPE_UINT8_ARRAY_32,
                           vect_table_attr_schema);
   }
 
   // Send request to ODBC for port_table delete
-  kt_port_dbtableschema.set_table_name(UPPL_PORT_TABLE);
+  kt_port_dbtableschema.set_table_name(unc::uppl::PORT_TABLE);
   kt_port_dbtableschema.set_primary_keys(vect_prim_keys);
   row_list.push_back(vect_table_attr_schema);
   kt_port_dbtableschema.set_row_list(row_list);
 
   ODBCM_RC_STATUS delete_db_status = physical_layer->get_odbc_manager()-> \
       DeleteOneRow((unc_keytype_datatype_t)data_type,
-                   kt_port_dbtableschema);
-  pfc_log_info("DeleteOneRow response from DB is %d", delete_db_status);
+                   kt_port_dbtableschema, db_conn);
   if (delete_db_status != ODBCM_RC_SUCCESS) {
     if (delete_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
@@ -193,17 +189,20 @@ UpplReturnCode Kt_Port::DeleteKeyInstance(void* key_struct,
   return delete_status;
 }
 
-/** ReadInternal
- * * @Description : This function reads the given  instance of KT_Port
- ** * @param[in] : session_id - ipc session id used for TC validation
- * key_struct - the key for the kt port instance
- * value_struct - the value for the kt port instance
- * data_type - UNC_DT_* , read allowed in state
- * * @return    : UPPL_RC_SUCCESS is returned when the response
- * is added to ipc session successfully.
- * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
- * */
-UpplReturnCode Kt_Port::ReadInternal(vector<void *> &key_val,
+/** 
+ * @Description : This function reads the given  instance of KT_Port
+ * @param[in]   : key_val - vector to hold the primary key values 
+ *                val_struct - vector to hold the value structure
+ *                data_type - indicates the data base type, UNC_DT_* ,
+ *                read allowed in DT_STATE
+ *                operation_type - indicates the operation type for
+ *                read operation
+ * @return      : UPPL_RC_SUCCESS is returned when read operation is success on
+ *                DT_STATE db
+ *                UPPL_RC_ERR_* is returned when read operation is failure
+ **/
+UpplReturnCode Kt_Port::ReadInternal(OdbcmConnectionHandler *db_conn,
+                                     vector<void *> &key_val,
                                      vector<void *> &val_struct,
                                      uint32_t data_type,
                                      uint32_t operation_type) {
@@ -220,7 +219,8 @@ UpplReturnCode Kt_Port::ReadInternal(vector<void *> &key_val,
   if (!val_struct.empty()) {
     void_val_struct = val_struct[0];
   }
-  UpplReturnCode read_status = ReadPortValFromDB(key_struct,
+  UpplReturnCode read_status = ReadPortValFromDB(db_conn,
+                                                 key_struct,
                                                  void_val_struct,
                                                  data_type,
                                                  operation_type,
@@ -229,11 +229,10 @@ UpplReturnCode Kt_Port::ReadInternal(vector<void *> &key_val,
                                                  vect_port_id);
   key_val.clear();
   val_struct.clear();
-  if (read_status != UPPL_RC_SUCCESS) {
-    pfc_log_error("ReadPortValFromDB returned %d with response size %d",
-                  read_status,
-                  static_cast<int>(vect_val_port_st.size()));
-  } else {
+  pfc_log_info("ReadPortValFromDB returned %d with response size %d",
+               read_status,
+               static_cast<int>(vect_val_port_st.size()));
+  if (read_status == UPPL_RC_SUCCESS) {
     pfc_log_debug("ReadPortValFromDB returned %d with response size %d",
                   read_status, static_cast<int>(vect_val_port_st.size()));
     for (unsigned int iIndex = 0 ; iIndex < vect_val_port_st.size();
@@ -247,30 +246,30 @@ UpplReturnCode Kt_Port::ReadInternal(vector<void *> &key_val,
   return read_status;
 }
 
-/**ReadBulk
- * * @Description : This function reads bulk rows of KT_Port in
- *  port table of specified data type.
- *  Order of ReadBulk response
- *  val_port -> val_link -> val_boundary
- * * @param[in] :
- * key_struct - the key for the kt port instance
- * data_type - UNC_DT_* , read allowed in state
- * option1/option2 - specifies any additional condition for read operation
- * max_rep_ct - specifies number of rows to be returned
- * parent_call - indicates whether parent has called this readbulk
- * is_read_next - indicates whether this function is invoked from readnext
- * * @return    : UPPL_RC_SUCCESS is returned when the response
- * is added to ipc session successfully.
- * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
- * */
-UpplReturnCode Kt_Port::ReadBulk(void* key_struct,
+/**
+ * @Description : This function reads bulk rows of KT_Port in running port table 
+ *                of specified data type as well as its parent class.
+ * Order of ReadBulk response
+ * val_port -> val_link -> val_boundary
+ * @param[in]   : key_struct - void pointer to be type cast into port key type
+ *                data_type - UNC_DT_* , read allowed in state
+ *                max_rep_ct - specifies number of rows to be returned
+ *                parent_call - indicates whether parent has called this
+ *                readbulk
+ *                is_read_next - indicates whether this function is invoked
+ *                from readnext
+ * @return      : UPPL_RC_SUCCESS is returned when the read bulk operation is
+ *                success.
+ *                UPPL_RC_ERR_* is returned when read bulk operation is failure.
+ **/
+UpplReturnCode Kt_Port::ReadBulk(OdbcmConnectionHandler *db_conn,
+                                 void* key_struct,
                                  uint32_t data_type,
-                                 uint32_t option1,
-                                 uint32_t option2,
                                  uint32_t &max_rep_ct,
                                  int child_index,
                                  pfc_bool_t parent_call,
-                                 pfc_bool_t is_read_next) {
+                                 pfc_bool_t is_read_next,
+                                 ReadRequest *read_req) {
   pfc_log_info("Processing ReadBulk of Kt_Port");
   UpplReturnCode read_status = UPPL_RC_SUCCESS;
   key_port_t *obj_key_port= reinterpret_cast<key_port_t*>(key_struct);
@@ -298,7 +297,7 @@ UpplReturnCode Kt_Port::ReadBulk(void* key_struct,
 
   // Read the port values based on given key structure
   read_status = ReadBulkInternal(
-      key_struct,
+      db_conn, key_struct,
       val_struct,
       data_type,
       max_rep_ct,
@@ -308,11 +307,6 @@ UpplReturnCode Kt_Port::ReadBulk(void* key_struct,
   pfc_log_debug("Read status from port is %d with result size %d",
                 read_status, static_cast<int>(vect_port_id.size()));
   if (read_status == UPPL_RC_SUCCESS) {
-    PhysicalCore *physical_core = PhysicalLayer::get_instance()->
-        get_physical_core();
-    InternalTransactionCoordinator *itc_trans  =
-        physical_core->get_internal_transaction_coordinator();
-    // For each switch , read the child's attributes
     vector<val_port_st_t>::iterator vect_iter =
         vect_val_port_st.begin();
     vector<key_port_t> ::iterator port_iter =
@@ -328,33 +322,34 @@ UpplReturnCode Kt_Port::ReadBulk(void* key_struct,
           UNC_KT_PORT, IS_KEY,
           reinterpret_cast<void*>(key_buffer)
       };
-      itc_trans->AddToBuffer(obj_key_buffer);
+      read_req->AddToBuffer(obj_key_buffer);
       val_port_st_t *val_buffer = new val_port_st_t(*vect_iter);
       BulkReadBuffer obj_value_buffer = {
           UNC_KT_PORT, IS_STATE_VALUE,
           reinterpret_cast<void*>(val_buffer)
       };
-      itc_trans->AddToBuffer(obj_value_buffer);
+      read_req->AddToBuffer(obj_value_buffer);
       BulkReadBuffer obj_sep_buffer = {
           UNC_KT_PORT, IS_SEPARATOR, NULL
       };
-      itc_trans->AddToBuffer(obj_sep_buffer);
+      read_req->AddToBuffer(obj_sep_buffer);
       --max_rep_ct;
       if (max_rep_ct == 0) {
         pfc_log_debug("max_rep_ct reached zero, so returning");
         return read_status;
       }
     }
+  } else if (read_status == UPPL_RC_ERR_DB_ACCESS) {
+    pfc_log_debug("KtPort ReadBulk - Returning DB Access Error");
+    return read_status;
   }
 
   if (max_rep_ct > 0 && parent_call == false) {
     pfc_log_debug("port is called directly, so go to parent");
     Kt_Switch nextKin;
     key_switch_t nextkin_key_struct;
-    memset(nextkin_key_struct.switch_id, '\0',
-           sizeof(nextkin_key_struct.switch_id));
-    memset(nextkin_key_struct.ctr_key.controller_name,
-           '\0', sizeof(nextkin_key_struct.ctr_key.controller_name));
+    memset(&nextkin_key_struct, '\0',
+           sizeof(nextkin_key_struct));
     memcpy(nextkin_key_struct.switch_id,
            str_switch_id.c_str(),
            str_switch_id.length() +1);
@@ -362,14 +357,13 @@ UpplReturnCode Kt_Port::ReadBulk(void* key_struct,
            str_controller_name.c_str(),
            str_controller_name.length() +1);
     read_status = nextKin.ReadBulk(
-        reinterpret_cast<void *>(&nextkin_key_struct),
+        db_conn, reinterpret_cast<void *>(&nextkin_key_struct),
         data_type,
-        option1,
-        option2,
         max_rep_ct,
         0,
         false,
-        is_read_next);
+        is_read_next,
+        read_req);
     pfc_log_debug("read status from next kin Kt_Switch is %d", read_status);
     return UPPL_RC_SUCCESS;
   }
@@ -377,19 +371,23 @@ UpplReturnCode Kt_Port::ReadBulk(void* key_struct,
 }
 
 /**ReadBulkInternal
- * * @Description : This function reads bulk rows of KT_Port in
- *  port table of specified data type.
- * * @param[in] :
- * key_struct - the key for the kt port instance
- * val_struct - the value struct for kt_port instance
- * max_rep_ct - specifies number of rows to be returned
- * vect_val_port - indicates the fetched values from db of val_port type
- * vect_port_id - indicates the fetched port names from db
- * * @return    : UPPL_RC_SUCCESS is returned when the response
- * is added to ipc session successfully.
- * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
- * */
+ * @Description : This function reads bulk rows of KT_Port in
+ *                port table of specified data type.
+ * @param[in]   : key_struct - void pointer to be type cast into port key type
+ *                val_struct - void pointer to be type cast into port value
+ *                structure type
+ *                max_rep_ct - specifies number of rows to be returned
+ *                vect_val_port - store the structure elements of type
+ *                val_port_st_t from db
+ *                vect_port_id - stores the port_id values from the key
+ *                structure of kt port
+ * @return      : UPPL_RC_SUCCESS is returned when the read bulk operation is
+ *                successful.
+ *                UPPL_RC_ERR_* is returned when the read bulk operation is
+ *                failure
+ **/
 UpplReturnCode Kt_Port::ReadBulkInternal(
+    OdbcmConnectionHandler *db_conn,
     void* key_struct,
     void* val_struct,
     uint32_t data_type,
@@ -406,30 +404,34 @@ UpplReturnCode Kt_Port::ReadBulkInternal(
   void *old_struct;
   // Populate DBSchema for port_table
   vector<ODBCMOperator> vect_key_operations;
-  PopulateDBSchemaForKtTable(kt_port_dbtableschema,
+  PopulateDBSchemaForKtTable(db_conn, kt_port_dbtableschema,
                              key_struct,
                              val_struct,
-                             UNC_OP_READ_BULK, 0, 0,
+                             UNC_OP_READ_BULK, data_type, 0, 0,
                              vect_key_operations, old_struct);
   pfc_log_debug("Calling GetBulkRows");
   // Read rows from DB
   read_db_status = physical_layer->get_odbc_manager()-> \
       GetBulkRows((unc_keytype_datatype_t)data_type, max_rep_ct,
                   kt_port_dbtableschema,
-                  (unc_keytype_operation_t)UNC_OP_READ_BULK);
+                  (unc_keytype_operation_t)UNC_OP_READ_BULK, db_conn);
   pfc_log_debug("GetBulkRows return: %d", read_db_status);
   if (read_db_status == ODBCM_RC_RECORD_NOT_FOUND) {
     pfc_log_debug("No record found");
     read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
     return read_status;
+  } else if (read_db_status == ODBCM_RC_CONNECTION_ERROR) {
+    read_status = UPPL_RC_ERR_DB_ACCESS;
+    pfc_log_error("Read operation has failed with error %d", read_db_status);
+    return read_status;
   } else if (read_db_status != ODBCM_RC_SUCCESS) {
     read_status = UPPL_RC_ERR_DB_GET;
     // log error to log daemon
-    pfc_log_error("Read operation has failed");
+    pfc_log_error("Read operation has failed with error %d", read_db_status);
     return read_status;
   }
   // From the values received from DB, populate val_port structure
-  FillPortValueStructure(kt_port_dbtableschema,
+  FillPortValueStructure(db_conn, kt_port_dbtableschema,
                          vect_val_port,
                          max_rep_ct,
                          UNC_OP_READ_BULK,
@@ -437,43 +439,45 @@ UpplReturnCode Kt_Port::ReadBulkInternal(
   return read_status;
 }
 
-/** PerformSyntaxValidation
- * * @Description : This function performs syntax validation for
- *  UNC_KT_PORT
- * * * @param[in]
- * key_struct - the key for the kt port instance
- * value_struct - the value for the kt port instance
- * data_type - UNC_DT_*
- * operation_type - UNC_OP*
- * * @return    : UPPL_RC_SUCCESS is returned when the validation is successful
- * UPPL_RC_ERR_* is returned when validtion is failure
- * */
-UpplReturnCode Kt_Port::PerformSyntaxValidation(void* key_struct,
+/** 
+ * @Description : This function performs syntax validation for key type kt_port
+ * @param[in]   : key_struct - void pointer to be type cast into port key type
+ *                val_struct - void pointer to be type cast into va structure of
+ *                key type port
+ *                operation_type - UNC_OP* - indicates the operation type
+ *                data_type - UNC_DT_* - indicates the data base type
+ * @return      : UPPL_RC_SUCCESS is returned when the validation is successful
+ *                UPPL_RC_ERR_* is returned when validation is failure
+ **/
+UpplReturnCode Kt_Port::PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
+                                                void* key_struct,
                                                 void* val_struct,
                                                 uint32_t operation,
                                                 uint32_t data_type) {
   pfc_log_info("Performing Syntax Validation of KT_PORT");
   UpplReturnCode ret_code = UPPL_RC_SUCCESS;
   pfc_bool_t mandatory = PFC_TRUE;
+  map<string, Kt_Class_Attr_Syntax> attr_syntax_map =
+      attr_syntax_map_all[UNC_KT_PORT];
   // Validate key structure
   // validate controller_name
   key_port *key = reinterpret_cast<key_port_t*>(key_struct);
   string value = reinterpret_cast<char*>(key->sw_key.ctr_key.controller_name);
-  IS_VALID_STRING_KEY(CTR_NAME, value, operation, ret_code, mandatory);
+  IS_VALID_STRING_KEY(CTR_NAME_STR, value, operation, ret_code, mandatory);
   if (ret_code != UPPL_RC_SUCCESS) {
     return UPPL_RC_ERR_CFG_SYNTAX;
   }
 
   // validate switch_id
   value = reinterpret_cast<char*>(key->sw_key.switch_id);
-  IS_VALID_STRING_KEY(SWITCH_ID, value, operation, ret_code, mandatory);
+  IS_VALID_STRING_KEY(SWITCH_ID_STR, value, operation, ret_code, mandatory);
   if (ret_code != UPPL_RC_SUCCESS) {
     return UPPL_RC_ERR_CFG_SYNTAX;
   }
 
   // validate port_id
   value = reinterpret_cast<char*>(key->port_id);
-  IS_VALID_STRING_KEY(PORT_ID, value, operation, ret_code, mandatory);
+  IS_VALID_STRING_KEY(PORT_ID_STR, value, operation, ret_code, mandatory);
   if (ret_code != UPPL_RC_SUCCESS) {
     return UPPL_RC_ERR_CFG_SYNTAX;
   }
@@ -485,7 +489,7 @@ UpplReturnCode Kt_Port::PerformSyntaxValidation(void* key_struct,
 
     // validate port_number
     valid_val = PhyUtil::uint8touint(value_port->valid[kIdxPortNumber]);
-    IS_VALID_INT_VALUE(PORT_NUMBER, value_port->port_number, operation,
+    IS_VALID_INT_VALUE(PORT_NUMBER_STR, value_port->port_number, operation,
                        valid_val, ret_code, mandatory);
     if (ret_code != UPPL_RC_SUCCESS) {
       return UPPL_RC_ERR_CFG_SYNTAX;
@@ -494,7 +498,7 @@ UpplReturnCode Kt_Port::PerformSyntaxValidation(void* key_struct,
     // validate description
     valid_val = PhyUtil::uint8touint(value_port->valid[kIdxPortDescription]);
     string value = reinterpret_cast<char*>(value_port->description);
-    IS_VALID_STRING_VALUE(PORT_DESCRIPTION, value, operation,
+    IS_VALID_STRING_VALUE(PORT_DESCRIPTION_STR, value, operation,
                           valid_val, ret_code, mandatory);
     if (ret_code != UPPL_RC_SUCCESS) {
       return UPPL_RC_ERR_CFG_SYNTAX;
@@ -502,8 +506,8 @@ UpplReturnCode Kt_Port::PerformSyntaxValidation(void* key_struct,
 
     // validate admin_status
     valid_val = PhyUtil::uint8touint(value_port->valid[kIdxPortAdminStatus]);
-    IS_VALID_INT_VALUE(PORT_ADMIN_STATUS, value_port->admin_status, operation,
-                       valid_val, ret_code, mandatory);
+    IS_VALID_INT_VALUE(PORT_ADMIN_STATUS_STR, value_port->admin_status,
+                       operation, valid_val, ret_code, mandatory);
     if (ret_code != UPPL_RC_SUCCESS) {
       return UPPL_RC_ERR_CFG_SYNTAX;
     }
@@ -511,7 +515,7 @@ UpplReturnCode Kt_Port::PerformSyntaxValidation(void* key_struct,
     // validate trunk_allowed_vlan
     valid_val =
         PhyUtil::uint8touint(value_port->valid[kIdxPortTrunkAllowedVlan]);
-    IS_VALID_INT_VALUE(PORT_TRUNK_ALL_VLAN, value_port->trunk_allowed_vlan,
+    IS_VALID_INT_VALUE(PORT_TRUNK_ALL_VLAN_STR, value_port->trunk_allowed_vlan,
                        operation, valid_val, ret_code, mandatory);
     if (ret_code != UPPL_RC_SUCCESS) {
       return UPPL_RC_ERR_CFG_SYNTAX;
@@ -520,20 +524,24 @@ UpplReturnCode Kt_Port::PerformSyntaxValidation(void* key_struct,
   return ret_code;
 }
 
-/** PerformSemanticValidation
- * * @Description : This function performs semantic validation
- * for UNC_KT_PORT
- * * * @param[in] : key_struct - specifies key instance of KT_Port
- * , value_struct - specifies value of KT_PORT
- * operation - UNC_OP*
- * data_type - UNC_DT*
- * * * @return    : UPPL_RC_SUCCESS if semantic valition is successful
- * or UPPL_RC_ERR_* if failed
+/** 
+ * @Description : This function performs semantic validation
+ *                for UNC_KT_PORT
+ * @param[in]   : key_struct - void pointer to be type cast into port key type
+ *                val_struct - void pointer to be type cast into val structure
+ *                of key type port
+ *                operation_type - UNC_OP* - indicates the operation type
+ *                data_type - UNC_DT_* - indicates the data base type
+ * @return      : UPPL_RC_SUCCESS is returned when the semantic validation is
+ *                successful
+ *                UPPL_RC_ERR_* is returned when semantic validation is failure
  * */
-UpplReturnCode Kt_Port::PerformSemanticValidation(void* key_struct,
-                                                  void* val_struct,
-                                                  uint32_t operation,
-                                                  uint32_t data_type) {
+UpplReturnCode Kt_Port::PerformSemanticValidation(
+    OdbcmConnectionHandler *db_conn,
+    void* key_struct,
+    void* val_struct,
+    uint32_t operation,
+    uint32_t data_type) {
   UpplReturnCode status = UPPL_RC_SUCCESS;
   pfc_log_debug("Inside PerformSemanticValidation of KT_PORT");
   // Check whether the given instance of port exists in DB
@@ -550,7 +558,7 @@ UpplReturnCode Kt_Port::PerformSemanticValidation(void* key_struct,
 
   pfc_log_debug("switch id: %s", switch_id.c_str());
   key_switch_t obj_key_switch;
-  memset(obj_key_switch.switch_id, '\0', 32);
+  memset(&obj_key_switch, '\0', sizeof(obj_key_switch));
   memcpy(obj_key_switch.switch_id,
          switch_id.c_str(),
          switch_id.length()+1);
@@ -560,7 +568,6 @@ UpplReturnCode Kt_Port::PerformSemanticValidation(void* key_struct,
 
   pfc_log_debug("controller name in validate: %s", obj_key_port->
                 sw_key.ctr_key.controller_name);
-  memset(&obj_key_switch.ctr_key.controller_name, '\0', 32);
   memcpy(&obj_key_switch.ctr_key.controller_name,
          obj_key_port->sw_key.ctr_key.controller_name,
          sizeof(obj_key_port->sw_key.ctr_key.controller_name));
@@ -575,7 +582,7 @@ UpplReturnCode Kt_Port::PerformSemanticValidation(void* key_struct,
   vect_key_value.push_back(port_id);
 
   UpplReturnCode key_status = IsKeyExists(
-      (unc_keytype_datatype_t)data_type, vect_key_value);
+      db_conn, (unc_keytype_datatype_t)data_type, vect_key_value);
   pfc_log_debug("IsKeyExists status %d", key_status);
   // In case of create operation, key should not exist
   if (operation == UNC_OP_CREATE) {
@@ -603,7 +610,7 @@ UpplReturnCode Kt_Port::PerformSemanticValidation(void* key_struct,
     parent_vect_key_value.push_back(switch_id);
     Kt_Switch KtObj;
     UpplReturnCode parent_key_status = KtObj.IsKeyExists(
-        (unc_keytype_datatype_t)data_type, parent_vect_key_value);
+        db_conn, (unc_keytype_datatype_t)data_type, parent_vect_key_value);
     pfc_log_debug("Parent IsKeyExists status %d", parent_key_status);
     if (parent_key_status != UPPL_RC_SUCCESS) {
       status = UPPL_RC_ERR_PARENT_DOES_NOT_EXIST;
@@ -613,17 +620,25 @@ UpplReturnCode Kt_Port::PerformSemanticValidation(void* key_struct,
   return status;
 }
 
-/** HandleDriverAlarms
- * * @Description : This function processes the alarm notification
- * received from driver
- * * * @param[in] : alarm type - contains type to indicate which alarm
- * operation - contains UNC_OP_CREATE or UNC_OP_DELETE
- * key_struct - indicates the key instance of KT_PORT
- * value_struct - indicates the alarm values structure
- * * * @return    : UPPL_RC_SUCCESS if alarm is handled successfully or
- * UPPL_RC_ERR*
- * */
-UpplReturnCode Kt_Port::HandleDriverAlarms(uint32_t data_type,
+/**
+ * @Description : This function processes the alarm notification
+ *                sent by driver for port key type and sends the notification
+ *                to northbound
+ * @param[in]   : data_type - indicates the data base type i.e UNC_DT_STATE
+ *                            or UNC_DT_IMPORT
+ *                alarm type - indicates the alarm type sent by the driver
+ *                oper_type - indicates the operation type i.e. UNC_OP_CREATE
+ *                key_struct - void pointer type to be type cast to port
+ *                key type
+ *                value_struct - void pointer to be type cast to port value
+ *                structure type
+ * @return      : the oper status result from db will be returned
+ *                UPPL_RC_SUCCESS - in case oper status is received from DB
+ *                UPPL_RC_ERR_* - in case unable to receive oper status from DB
+ **/
+
+UpplReturnCode Kt_Port::HandleDriverAlarms(OdbcmConnectionHandler *db_conn,
+                                           uint32_t data_type,
                                            uint32_t alarm_type,
                                            uint32_t oper_type,
                                            void* key_struct,
@@ -645,9 +660,8 @@ UpplReturnCode Kt_Port::HandleDriverAlarms(uint32_t data_type,
          controller_name.c_str(),
          controller_name.length()+1);
   pfc_log_info("alarm sent by driver is: %d", alarm_type);
-  pfc_log_info("operation type: %d", oper_type);
   uint64_t alarm_status_db = 0;
-  UpplReturnCode read_alarm_status = GetAlarmStatus(data_type,
+  UpplReturnCode read_alarm_status = GetAlarmStatus(db_conn, data_type,
                                                     key_struct,
                                                     alarm_status_db);
   // Read old_alarm_status from db
@@ -697,7 +711,7 @@ UpplReturnCode Kt_Port::HandleDriverAlarms(uint32_t data_type,
     obj_val_port_st.alarms_status = new_alarm_status;
     void *old_val_struct;
     // Calling UPDATE KEY INSTANCE for update in DB
-    status = UpdateKeyInstance(obj_key_port,
+    status = UpdateKeyInstance(db_conn, obj_key_port,
                                reinterpret_cast<void *>(&obj_val_port_st),
                                data_type,
                                UNC_KT_PORT,
@@ -719,18 +733,24 @@ UpplReturnCode Kt_Port::HandleDriverAlarms(uint32_t data_type,
       int err = 0;
       // Send notification to Northbound
       ServerEvent ser_evt((pfc_ipcevtype_t)UPPL_EVENTS_KT_PORT, err);
-      ser_evt.addOutput((uint32_t)UNC_OP_UPDATE);
-      ser_evt.addOutput(data_type);
-      ser_evt.addOutput((uint32_t)UPPL_EVENTS_KT_PORT);
-      ser_evt.addOutput(*obj_key_port);
-      ser_evt.addOutput(new_val_port);
-      ser_evt.addOutput(old_val_port);
-      PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
-      // Notify operstatus modifications
-      status = (UpplReturnCode) physical_layer
-          ->get_ipc_connection_manager()->SendEvent(&ser_evt);
+      northbound_event_header rsh = {UNC_OP_UPDATE,
+          data_type,
+          UNC_KT_PORT};
+      err = PhyUtil::sessOutNBEventHeader(ser_evt, rsh);
+      err |= ser_evt.addOutput(*obj_key_port);
+      err |= ser_evt.addOutput(new_val_port);
+      err |= ser_evt.addOutput(old_val_port);
+      if (err == 0) {
+        PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+        // Notify operstatus modifications
+        status = (UpplReturnCode) physical_layer
+            ->get_ipc_connection_manager()->SendEvent(&ser_evt);
+      } else {
+        pfc_log_error("Server Event addOutput failed");
+        status = UPPL_RC_ERR_IPC_WRITE_ERROR;
+      }
     } else {
-      pfc_log_info("Update alarm status in db status %d", status);
+      pfc_log_debug("Update alarm status in db status %d", status);
     }
     val_port_st_t *val_port =
         reinterpret_cast<val_port_st_t*>(old_val_struct);
@@ -744,13 +764,19 @@ UpplReturnCode Kt_Port::HandleDriverAlarms(uint32_t data_type,
   return status;
 }
 
-/** IsKeyExists
- * * @Description : This function checks whether the port_id exists in DB
- * * * @param[in] : data type and key value
- * * * @return    : Success or associated error code
- * */
-UpplReturnCode Kt_Port::IsKeyExists(unc_keytype_datatype_t data_type,
-                                    vector<string> key_values) {
+/** 
+ * @Description : This function checks whether the port_id exists in specified
+ *                data base
+ * @param[in]   : data type - indicates the database type
+ *                key values - vector to store the primary key values of port
+ *                key type
+ * @return      : UPPL_RC_SUCCESS - if the row exists in db with the key value
+ *                specified
+ *                UPPL_RC_ERR_* - if the row doesn't exists in the specified DB   
+ **/
+UpplReturnCode Kt_Port::IsKeyExists(OdbcmConnectionHandler *db_conn,
+                                    unc_keytype_datatype_t data_type,
+                                    const vector<string> &key_values) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   UpplReturnCode check_status = UPPL_RC_SUCCESS;
   if (key_values.empty()) {
@@ -767,9 +793,9 @@ UpplReturnCode Kt_Port::IsKeyExists(unc_keytype_datatype_t data_type,
 
   // Construct Primary key list
   vector<string> vect_prim_keys;
-  vect_prim_keys.push_back(CTR_NAME);
-  vect_prim_keys.push_back(SWITCH_ID);
-  vect_prim_keys.push_back(PORT_ID);
+  vect_prim_keys.push_back(CTR_NAME_STR);
+  vect_prim_keys.push_back(SWITCH_ID_STR);
+  vect_prim_keys.push_back(PORT_ID_STR);
 
   // Construct TableAttrSchema structure
   // TableAttrSchema holds table_name, primary key, attr_name
@@ -777,27 +803,27 @@ UpplReturnCode Kt_Port::IsKeyExists(unc_keytype_datatype_t data_type,
   list< vector<TableAttrSchema> > row_list;
 
   // controller_name
-  PhyUtil::FillDbSchema(CTR_NAME, controller_name,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                         controller_name.length(),
                         DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
   // switch_id
-  PhyUtil::FillDbSchema(SWITCH_ID, switch_id,
+  PhyUtil::FillDbSchema(unc::uppl::SWITCH_ID, switch_id,
                         switch_id.length(), DATATYPE_UINT8_ARRAY_256,
                         vect_table_attr_schema);
   // port_id
-  PhyUtil::FillDbSchema(PORT_ID, port_id,
+  PhyUtil::FillDbSchema(unc::uppl::PORT_ID, port_id,
                         port_id.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
 
-  kt_port_dbtableschema.set_table_name(UPPL_PORT_TABLE);
+  kt_port_dbtableschema.set_table_name(unc::uppl::PORT_TABLE);
   kt_port_dbtableschema.set_primary_keys(vect_prim_keys);
   row_list.push_back(vect_table_attr_schema);
   kt_port_dbtableschema.set_row_list(row_list);
 
   // Send request to ODBC for port_table
   ODBCM_RC_STATUS check_db_status = physical_layer->get_odbc_manager()->\
-      IsRowExists(data_type, kt_port_dbtableschema);
+      IsRowExists(data_type, kt_port_dbtableschema, db_conn);
   if (check_db_status == ODBCM_RC_CONNECTION_ERROR) {
     // log error to log daemon
     pfc_log_error("DB connection not available or cannot access DB");
@@ -812,19 +838,26 @@ UpplReturnCode Kt_Port::IsKeyExists(unc_keytype_datatype_t data_type,
   return check_status;
 }
 
-/** HandleOperStatus
- * * @Description : This function performs the required actions when oper status
- * changes
- * * * @param[in] : Key and value struct
- * * * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
- * */
-UpplReturnCode Kt_Port::HandleOperStatus(uint32_t data_type,
+/** 
+ * @Description : This function performs the required actions when oper status
+ *                of its parent class
+ *                changes i.e. when controller/switch oper status is down
+ * @param[in]   : data_type - indicates the data base type
+ *                key_struct - void pointer to be type cast to port key type
+ *                value_struct - void pointer to be type cast to port value
+ *                structure type
+ * @return      : UPPL_RC_SUCCESS - if the update operation of oper status
+ *                change in db is successful
+ *                UPPL_RC_ERR* - if the update operation of oper status in db
+ *                is failure
+ **/
+UpplReturnCode Kt_Port::HandleOperStatus(OdbcmConnectionHandler *db_conn,
+                                         uint32_t data_type,
                                          void *key_struct,
                                          void *value_struct) {
   FN_START_TIME("HandleOperStatus", "Port");
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   UpplReturnCode return_code = UPPL_RC_SUCCESS;
-
   if (key_struct == NULL) {
     FN_END_TIME("HandleOperStatus", "Port");
     return UPPL_RC_ERR_BAD_REQUEST;
@@ -846,16 +879,18 @@ UpplReturnCode Kt_Port::HandleOperStatus(uint32_t data_type,
   UpplPortOperStatus port_oper_status = UPPL_PORT_OPER_UNKNOWN;
   Kt_Controller controller;
   UpplReturnCode read_status = controller.GetOperStatus(
-      data_type, reinterpret_cast<void*>(&ctr_key), ctrl_oper_status);
-  if (read_status == UPPL_RC_SUCCESS) {
-    pfc_log_debug("Controller's oper_status %d", ctrl_oper_status);
-    if (ctrl_oper_status ==
-        (UpplControllerOperStatus) UPPL_CONTROLLER_OPER_UP) {
-      pfc_log_info("Set Port oper status as up");
-      port_oper_status = UPPL_PORT_OPER_UP;
-    }
-  } else {
+      db_conn, data_type, reinterpret_cast<void*>(&ctr_key), ctrl_oper_status);
+  if (read_status != UPPL_RC_SUCCESS) {
     pfc_log_info("Controller's oper_status read returned failure");
+    return read_status;
+  }
+  pfc_log_debug("Controller's oper_status %d", ctrl_oper_status);
+  vector<OperStatusHolder> ref_oper_status;
+  ADD_CTRL_OPER_STATUS(controller_name, ctrl_oper_status);
+  if (ctrl_oper_status ==
+      (UpplControllerOperStatus) UPPL_CONTROLLER_OPER_UP) {
+    pfc_log_info("Set Port oper status as up");
+    port_oper_status = UPPL_PORT_OPER_UP;
   }
   // Get the switch oper status and decide on the oper_status
   key_switch_t sw_key;
@@ -866,9 +901,10 @@ UpplReturnCode Kt_Port::HandleOperStatus(uint32_t data_type,
   uint8_t switch_oper_status = 0;
   Kt_Switch switch1;
   read_status = switch1.GetOperStatus(
-      data_type, reinterpret_cast<void*>(&sw_key), switch_oper_status);
+      db_conn, data_type, reinterpret_cast<void*>(&sw_key), switch_oper_status);
   if (read_status == UPPL_RC_SUCCESS) {
     pfc_log_debug("Switch's oper_status %d", switch_oper_status);
+    ADD_SWITCH_OPER_STATUS(sw_key, switch_oper_status);
     if (switch_oper_status ==
         (UpplSwitchOperStatus) UPPL_SWITCH_OPER_UP) {
       pfc_log_info("Set Port oper status as up");
@@ -878,9 +914,9 @@ UpplReturnCode Kt_Port::HandleOperStatus(uint32_t data_type,
     pfc_log_debug("Switch oper_status read returned failure");
   }
   // Update oper_status in port table
-  return_code = SetOperStatus(data_type,
+  return_code = SetOperStatus(db_conn, data_type,
                               key_struct,
-                              port_oper_status, true);
+                              port_oper_status);
   pfc_log_debug("Set Port oper status status %d", return_code);
 
   // Call referred classes' notify oper_status functions
@@ -892,39 +928,40 @@ UpplReturnCode Kt_Port::HandleOperStatus(uint32_t data_type,
     vector<TableAttrSchema> vect_table_attr_schema;
     list< vector<TableAttrSchema> > row_list;
     vector<string> vect_prim_keys;
-    vect_prim_keys.push_back(CTR_NAME);
-    vect_prim_keys.push_back(SWITCH_ID);
+    vect_prim_keys.push_back(CTR_NAME_STR);
+    vect_prim_keys.push_back(SWITCH_ID_STR);
     if (!switch_id.empty()) {
       // one more primary key is required
-      vect_prim_keys.push_back(PORT_ID);
+      vect_prim_keys.push_back(PORT_ID_STR);
     }
     pfc_log_debug(
         "Get Bulk Rows called with controller_name %s, switch_id %s"
         "port_id %s", controller_name.c_str(), switch_id.c_str(),
         port_id.c_str());
-    PhyUtil::FillDbSchema(CTR_NAME, controller_name,
+    PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                           controller_name.length(), DATATYPE_UINT8_ARRAY_32,
                           vect_table_attr_schema);
 
-    PhyUtil::FillDbSchema(SWITCH_ID, switch_id,
+    PhyUtil::FillDbSchema(unc::uppl::SWITCH_ID, switch_id,
                           switch_id.length(), DATATYPE_UINT8_ARRAY_256,
                           vect_table_attr_schema);
 
-    PhyUtil::FillDbSchema(PORT_ID, port_id,
+    PhyUtil::FillDbSchema(unc::uppl::PORT_ID, port_id,
                           port_id.length(), DATATYPE_UINT8_ARRAY_32,
                           vect_table_attr_schema);
 
-    kt_port_dbtableschema.set_table_name(UPPL_PORT_TABLE);
+    kt_port_dbtableschema.set_table_name(unc::uppl::PORT_TABLE);
     kt_port_dbtableschema.set_primary_keys(vect_prim_keys);
     row_list.push_back(vect_table_attr_schema);
     kt_port_dbtableschema.set_row_list(row_list);
 
     ODBCM_RC_STATUS db_status = physical_layer->get_odbc_manager()->
-        GetBulkRows((unc_keytype_datatype_t)UNC_DT_STATE, UPPL_MAX_REP_CT,
+        GetBulkRows((unc_keytype_datatype_t)data_type, UPPL_MAX_REP_CT,
                     kt_port_dbtableschema,
-                    (unc_keytype_operation_t)UNC_OP_READ_SIBLING_BEGIN);
+                    (unc_keytype_operation_t)UNC_OP_READ_SIBLING_BEGIN,
+                    db_conn);
     if (db_status != ODBCM_RC_SUCCESS) {
-      pfc_log_info("ReadBulk failure");
+      pfc_log_info("No other port available");
       break;
     }
     list<vector<TableAttrSchema> > ::iterator iter_list;
@@ -934,58 +971,80 @@ UpplReturnCode Kt_Port::HandleOperStatus(uint32_t data_type,
       vector<TableAttrSchema> attributes_vector = *iter_list;
       vector<TableAttrSchema> :: iterator iter_vector;
       key_port_t port;
-      memset(port.sw_key.ctr_key.controller_name, '\0', 32);
-      memset(port.sw_key.switch_id, '\0', 256);
-      memset(port.port_id, '\0', 32);
+      memset(&port, '\0', sizeof(port));
       for (iter_vector = attributes_vector.begin();
           iter_vector != attributes_vector.end();
           ++iter_vector) {
         // Get attribute name of a row
         TableAttrSchema tab_att_schema = (*iter_vector);
-        if (tab_att_schema.table_attribute_name == CTR_NAME) {
-          PhyUtil::GetValueFromDbSchema(tab_att_schema,
-                                        controller_name,
-                                        DATATYPE_UINT8_ARRAY_32);
-          memcpy(port.sw_key.ctr_key.controller_name,
-                 controller_name.c_str(),
-                 controller_name.length()+1);
-        } else if (tab_att_schema.table_attribute_name == SWITCH_ID) {
-          PhyUtil::GetValueFromDbSchema(tab_att_schema, switch_id,
-                                        DATATYPE_UINT8_ARRAY_32);
-          memcpy(port.sw_key.switch_id,
-                 switch_id.c_str(),
-                 switch_id.length()+1);
-        } else if (tab_att_schema.table_attribute_name == PORT_ID) {
-          PhyUtil::GetValueFromDbSchema(tab_att_schema, port_id,
-                                        DATATYPE_UINT8_ARRAY_320);
-          memcpy(port.port_id, port_id.c_str(),
-                 port_id.length()+1);
+        switch (tab_att_schema.table_attribute_name) {
+          case unc::uppl::CTR_NAME:
+            PhyUtil::GetValueFromDbSchemaStr(
+                tab_att_schema,
+                port.sw_key.ctr_key.controller_name,
+                DATATYPE_UINT8_ARRAY_32);
+            controller_name = reinterpret_cast<const char*>
+            (port.sw_key.ctr_key.controller_name);
+            break;
+          case unc::uppl::SWITCH_ID:
+            PhyUtil::GetValueFromDbSchemaStr(tab_att_schema,
+                                             port.sw_key.switch_id,
+                                             DATATYPE_UINT8_ARRAY_256);
+            switch_id = reinterpret_cast<const char*>
+            (port.sw_key.switch_id);
+            break;
+          case unc::uppl::PORT_ID:
+            PhyUtil::GetValueFromDbSchemaStr(tab_att_schema, port.port_id,
+                                             DATATYPE_UINT8_ARRAY_320);
+            port_id = reinterpret_cast<const char*>(port.port_id);
+            break;
+          default:
+            break;
         }
       }
       vectPortKey.push_back(port);
+    }
+    if (kt_port_dbtableschema.row_list_.size() < UPPL_MAX_REP_CT) {
+      pfc_log_info("No other port available");
+      break;
     }
   }
   vector<key_port_t>::iterator keyItr =
       vectPortKey.begin();
   for (; keyItr != vectPortKey.end(); ++keyItr) {
-    // key_port_t objKeyPort;
+    key_port_t key_port = (*keyItr);
+    ADD_PORT_OPER_STATUS(
+        key_port,
+        port_oper_status);
     return_code = NotifyOperStatus(
-        data_type, reinterpret_cast<void *> (&(*keyItr)), NULL);
+        db_conn, data_type, reinterpret_cast<void *> (&(*keyItr)), NULL,
+        ref_oper_status);
     pfc_log_debug("Notify Oper status return %d", return_code);
   }
   FN_END_TIME("HandleOperStatus", "Port");
+  ClearOperStatusHolder(ref_oper_status);
   return return_code;
 }
 
-/** NotifyOperStatus
- * * @Description : This function performs the notifies other associated
- * key types when oper status changes
- * * * @param[in] : Key and value struct
- * * * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
- * */
-UpplReturnCode Kt_Port::NotifyOperStatus(uint32_t data_type,
-                                         void *key_struct,
-                                         void *value_struct) {
+/** 
+ * @Description : This function performs the notifies other associated
+ *                key types when port oper status changes
+ * @param[in]   : data_type - indicates the data base type
+ *                key_struct - void pointer to be type cast into respective
+ *                key type's key structure
+ *                value_struct - void pointer to be type cast into respective
+ *                key type's value structure
+ * @return      : UPPL_RC_SUCCESS  - if the updation of oper status change in
+ *                other key type is success
+ *                UPPL_RC_ERR* - if the updation of oper status change in db
+ *                is failure
+ **/
+UpplReturnCode Kt_Port::NotifyOperStatus(
+    OdbcmConnectionHandler *db_conn,
+    uint32_t data_type,
+    void *key_struct,
+    void *value_struct,
+    vector<OperStatusHolder> &ref_oper_status) {
   UpplReturnCode return_code = UPPL_RC_SUCCESS;
   key_port_t *obj_key_port =
       reinterpret_cast<key_port_t*>(key_struct);
@@ -1005,9 +1064,7 @@ UpplReturnCode Kt_Port::NotifyOperStatus(uint32_t data_type,
   memcpy(logical_port_key.domain_key.ctr_key.controller_name,
          controller_name.c_str(),
          controller_name.length()+1);
-  memset(logical_port_key.domain_key.domain_name, '\0', 32);
-  memset(logical_port_key.port_id, '\0', 320);
-  Kt_LogicalPort port_obj;
+  Kt_LogicalPort log_port_obj;
   val_logical_port_st_t port_val_obj;
   memset(&port_val_obj, 0, sizeof(val_logical_port_st_t));
   memset(port_val_obj.logical_port.valid, 0, 5);
@@ -1016,65 +1073,73 @@ UpplReturnCode Kt_Port::NotifyOperStatus(uint32_t data_type,
   port_val_obj.logical_port.valid[kIdxLogicalPortSwitchId] = UNC_VF_VALID;
   memcpy(port_val_obj.logical_port.physical_port_id, port_id.c_str(),
          (port_id.length())+1);
-  port_val_obj.logical_port.valid[kIdxLogicalPortPhysicalPortId] = UNC_VF_VALID;
-  return_code = port_obj.HandleOperStatus(
-      data_type, reinterpret_cast<void *> (&logical_port_key),
-      reinterpret_cast<void *> (&port_val_obj));
-  pfc_log_info("HandleOperStatus for port class %d",
-               return_code);
+  port_val_obj.logical_port.valid[kIdxLogicalPortPhysicalPortId] =
+      UNC_VF_VALID;
+  return_code = log_port_obj.HandleOperStatus(
+      db_conn, data_type, reinterpret_cast<void *> (&logical_port_key),
+      reinterpret_cast<void *> (&port_val_obj), ref_oper_status,
+      UNC_KT_PORT);
+  pfc_log_debug("HandleOperStatus for port class %d",
+                return_code);
+
+  // Perform SubDomain operstatus handling as well
+  return_code = SubDomainOperStatusHandling(db_conn, data_type,
+                                            controller_name,
+                                            switch_id, port_id);
 
   // Notify UNC_KT_LINK
   Kt_Link link;
   key_link link_key;
+  memset(&link_key, 0, sizeof(link_key));
   memcpy(link_key.ctr_key.controller_name,
          controller_name.c_str(),
          controller_name.length()+1);
   memcpy(link_key.port_id1,
          port_id.c_str(),
          port_id.length()+1);
-  memset(link_key.port_id2, 0, 32);
   memcpy(link_key.switch_id1,
          switch_id.c_str(),
          switch_id.length()+1);
-  memset(link_key.switch_id2, 0, 256);
   return_code = link.HandleOperStatus(
-      data_type, reinterpret_cast<void *> (&link_key),
+      db_conn, data_type, reinterpret_cast<void *> (&link_key),
       NULL);
-  pfc_log_info("HandleOperStatus for link class %d",
-               return_code);
+  pfc_log_debug("HandleOperStatus for link class %d",
+                return_code);
   key_link link_key1;
+  memset(&link_key1, 0, sizeof(link_key1));
   memcpy(link_key1.ctr_key.controller_name,
          controller_name.c_str(),
          controller_name.length()+1);
   memcpy(link_key1.port_id2,
          port_id.c_str(),
          port_id.length()+1);
-  memset(link_key1.port_id1, 0, 32);
   memcpy(link_key1.switch_id2,
          switch_id.c_str(),
          switch_id.length()+1);
-  memset(link_key1.switch_id1, 0, 256);
   return_code = link.HandleOperStatus(
-      data_type, reinterpret_cast<void *> (&link_key1),
+      db_conn, data_type, reinterpret_cast<void *> (&link_key1),
       NULL);
-  pfc_log_info("HandleOperStatus for link class %d",
-               return_code);
+  pfc_log_debug("HandleOperStatus for link class %d",
+                return_code);
   return return_code;
 }
 
 
-/** GetOperStatus
- *  * @Description : This function reads the oper_status value of the port
- *  * @param[in] : key_struct
- *  * @return    : oper_status
- */
-UpplReturnCode Kt_Port::GetOperStatus(uint32_t data_type,
+/** 
+ * @Description : This function reads the oper_status value of the port from
+ *                the specified data type
+ * @param[in]   : data_type - indicates the data base type i.e. DT_STATE
+ *                key_struct - void pointer to be type cast to port key type
+ *                structure
+ * @return      : oper_status - it stores the oper status returned from DB
+ **/
+UpplReturnCode Kt_Port::GetOperStatus(OdbcmConnectionHandler *db_conn,
+                                      uint32_t data_type,
                                       void* key_struct,
                                       uint8_t &oper_status) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   key_port *obj_key_port =
       reinterpret_cast<key_port_t*>(key_struct);
-  TableAttrSchema kt_port_table_attr_schema;
   vector<TableAttrSchema> vect_table_attr_schema;
   list < vector<TableAttrSchema> > row_list;
   vector<string> vect_prim_keys;
@@ -1083,40 +1148,39 @@ UpplReturnCode Kt_Port::GetOperStatus(uint32_t data_type,
       ctr_key.controller_name;
 
   if (!controller_name.empty()) {
-    vect_prim_keys.push_back(CTR_NAME);
+    vect_prim_keys.push_back(CTR_NAME_STR);
   }
 
-  PhyUtil::FillDbSchema(CTR_NAME, controller_name,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                         controller_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
 
   string switch_id = (const char*)obj_key_port->
       sw_key.switch_id;
-  pfc_log_info("switch_id: %s", switch_id.c_str());
   if (!switch_id.empty()) {
-    vect_prim_keys.push_back(SWITCH_ID);
+    vect_prim_keys.push_back(SWITCH_ID_STR);
   }
 
-  PhyUtil::FillDbSchema(SWITCH_ID, switch_id,
+  PhyUtil::FillDbSchema(unc::uppl::SWITCH_ID, switch_id,
                         switch_id.length(), DATATYPE_UINT8_ARRAY_256,
                         vect_table_attr_schema);
 
   string port_id = (const char*)obj_key_port->port_id;
   if (!port_id.empty()) {
-    vect_prim_keys.push_back(PORT_ID);
+    vect_prim_keys.push_back(PORT_ID_STR);
   }
 
-  PhyUtil::FillDbSchema(PORT_ID, port_id,
+  PhyUtil::FillDbSchema(unc::uppl::PORT_ID, port_id,
                         port_id.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
 
-  string oper_value;
-  PhyUtil::FillDbSchema(PORT_OPER_STATUS, oper_value,
+  string oper_value = "";
+  PhyUtil::FillDbSchema(unc::uppl::PORT_OPER_STATUS, oper_value,
                         oper_value.length(), DATATYPE_UINT16,
                         vect_table_attr_schema);
 
   DBTableSchema kt_port_dbtableschema;
-  kt_port_dbtableschema.set_table_name(UPPL_PORT_TABLE);
+  kt_port_dbtableschema.set_table_name(unc::uppl::PORT_TABLE);
   kt_port_dbtableschema.set_primary_keys(vect_prim_keys);
   row_list.push_back(vect_table_attr_schema);
   kt_port_dbtableschema.set_row_list(row_list);
@@ -1125,15 +1189,14 @@ UpplReturnCode Kt_Port::GetOperStatus(uint32_t data_type,
   ODBCM_RC_STATUS update_db_status =
       physical_layer->get_odbc_manager()->GetOneRow(
           (unc_keytype_datatype_t)data_type,
-          kt_port_dbtableschema);
+          kt_port_dbtableschema, db_conn);
   if (update_db_status != ODBCM_RC_SUCCESS) {
-    // log error
-    pfc_log_error("oper_status read operation failed");
+    pfc_log_info("oper_status read operation failed %d", update_db_status);
     return UPPL_RC_ERR_DB_GET;
   }
 
   // read the oper_status value
-  list < vector<TableAttrSchema> > res_port_row_list =
+  list < vector<TableAttrSchema> >& res_port_row_list =
       kt_port_dbtableschema.get_row_list();
   list < vector<TableAttrSchema> >::iterator res_port_iter =
       res_port_row_list.begin();
@@ -1146,9 +1209,9 @@ UpplReturnCode Kt_Port::GetOperStatus(uint32_t data_type,
         ++vect_port_iter) {
       // populate values from port_table
       TableAttrSchema tab_schema = (*vect_port_iter);
-      string attr_name = tab_schema.table_attribute_name;
-      string attr_value;
-      if (attr_name == PORT_OPER_STATUS) {
+      ODBCMTableColumns attr_name = tab_schema.table_attribute_name;
+      string attr_value = "";
+      if (attr_name == unc::uppl::PORT_OPER_STATUS) {
         PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
                                       DATATYPE_UINT16);
         oper_status = atoi(attr_value.c_str());
@@ -1160,50 +1223,55 @@ UpplReturnCode Kt_Port::GetOperStatus(uint32_t data_type,
   return UPPL_RC_SUCCESS;
 }
 
-/** GetAlarmStatus
- * * @Description: This function updates the alarm status in db
- * * @param[in]: key_struct - key structure of kt Port
- * alarm status - specifies the alarm status
- * * @return:  UPPL_RC_SUCCESS or UPPL_RC_ERR*
- * */
+/** 
+ * @Description : This function updates the alarm status in db
+ * @param[in]   : data_type - indicates the data base type
+ *                key_struct - void pointer type to be type cast to port key
+ *                type structure
+ *                alarm status - stores the alarm status received from DB
+ * @return      : UPPL_RC_SUCCESS - if the alarm status is received
+ *                successfully from db
+ *                UPPL_RC_ERR* - if there is failure in reading the value
+ *                from DB
+ **/
 
-UpplReturnCode Kt_Port::GetAlarmStatus(uint32_t data_type,
+UpplReturnCode Kt_Port::GetAlarmStatus(OdbcmConnectionHandler *db_conn,
+                                       uint32_t data_type,
                                        void* key_struct,
                                        uint64_t &alarms_status) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   key_port *obj_key_port =
       reinterpret_cast<key_port_t*>(key_struct);
-  TableAttrSchema kt_port_table_attr_schema;
   vector<TableAttrSchema> vect_table_attr_schema;
   list < vector<TableAttrSchema> > row_list;
   vector<string> vect_prim_keys;
-  vect_prim_keys.push_back(CTR_NAME);
-  vect_prim_keys.push_back(SWITCH_ID);
-  vect_prim_keys.push_back(PORT_ID);
+  vect_prim_keys.push_back(CTR_NAME_STR);
+  vect_prim_keys.push_back(SWITCH_ID_STR);
+  vect_prim_keys.push_back(PORT_ID_STR);
 
   string controller_name =
       (const char*)obj_key_port->sw_key.ctr_key.controller_name;
 
-  PhyUtil::FillDbSchema(CTR_NAME, controller_name,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                         controller_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
   string switch_id = (const char*)obj_key_port->sw_key.switch_id;
 
-  PhyUtil::FillDbSchema(SWITCH_ID, switch_id,
+  PhyUtil::FillDbSchema(unc::uppl::SWITCH_ID, switch_id,
                         switch_id.length(), DATATYPE_UINT8_ARRAY_256,
                         vect_table_attr_schema);
 
   string port_id = (const char*)obj_key_port->port_id;
 
-  PhyUtil::FillDbSchema(PORT_ID, port_id,
+  PhyUtil::FillDbSchema(unc::uppl::PORT_ID, port_id,
                         port_id.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
-  string empty_alarms_status;
-  PhyUtil::FillDbSchema(PORT_ALARM_STATUS, empty_alarms_status,
+  string empty_alarms_status = "";
+  PhyUtil::FillDbSchema(unc::uppl::PORT_ALARM_STATUS, empty_alarms_status,
                         empty_alarms_status.length(), DATATYPE_UINT64,
                         vect_table_attr_schema);
   DBTableSchema kt_port_dbtableschema;
-  kt_port_dbtableschema.set_table_name(UPPL_PORT_TABLE);
+  kt_port_dbtableschema.set_table_name(unc::uppl::PORT_TABLE);
   kt_port_dbtableschema.set_primary_keys(vect_prim_keys);
   row_list.push_back(vect_table_attr_schema);
   kt_port_dbtableschema.set_row_list(row_list);
@@ -1212,20 +1280,19 @@ UpplReturnCode Kt_Port::GetAlarmStatus(uint32_t data_type,
   ODBCM_RC_STATUS update_db_status =
       physical_layer->get_odbc_manager()->GetOneRow(
           (unc_keytype_datatype_t)data_type,
-          kt_port_dbtableschema);
+          kt_port_dbtableschema, db_conn);
   if (update_db_status != ODBCM_RC_SUCCESS) {
-    // log error
-    pfc_log_error("oper_status read operation failed");
+    pfc_log_info("oper_status read operation failed %d", update_db_status);
     return UPPL_RC_ERR_DB_GET;
   }
 
   // read the oper status value
-  list < vector<TableAttrSchema> > res_port_row_list =
+  list < vector<TableAttrSchema> >& res_port_row_list =
       kt_port_dbtableschema.get_row_list();
   list < vector<TableAttrSchema> >::iterator res_port_iter =
       res_port_row_list.begin();
 
-  // populate IPC value structure based on the response recevied from DB
+  // populate IPC value structure based on the response received from DB
   for (; res_port_iter!= res_port_row_list.end(); ++res_port_iter) {
     vector<TableAttrSchema> res_port_table_attr_schema = (*res_port_iter);
     vector<TableAttrSchema>:: iterator vect_port_iter =
@@ -1234,9 +1301,9 @@ UpplReturnCode Kt_Port::GetAlarmStatus(uint32_t data_type,
         ++vect_port_iter) {
       // populate values from port_table
       TableAttrSchema tab_schema = (*vect_port_iter);
-      string attr_name = tab_schema.table_attribute_name;
-      string attr_value;
-      if (attr_name == "alarms_status") {
+      ODBCMTableColumns attr_name = tab_schema.table_attribute_name;
+      string attr_value = "";
+      if (attr_name == unc::uppl::PORT_ALARM_STATUS) {
         PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
                                       DATATYPE_UINT64);
         alarms_status = atol(attr_value.c_str());
@@ -1247,20 +1314,21 @@ UpplReturnCode Kt_Port::GetAlarmStatus(uint32_t data_type,
   return UPPL_RC_SUCCESS;
 }
 
-/** SetOperStatus
- *  * @Description : This function updates the oper_status value
- *  of the controller
- *  * @param[in] : key_struct
- *  * @return    : oper_status
- */
-UpplReturnCode Kt_Port::SetOperStatus(uint32_t data_type,
+/**
+ * @Description : This function updates the oper_status value of the port in DB
+ * @param[in]   : data_type - indicates the data base type
+ *                key_struct - void pointer to be type cast into port key
+ *                type structure
+ *                oper_status - stores the oper status value to be updated in db
+ * @return    : oper_status
+ **/
+UpplReturnCode Kt_Port::SetOperStatus(OdbcmConnectionHandler *db_conn,
+                                      uint32_t data_type,
                                       void* key_struct,
-                                      UpplPortOperStatus oper_status,
-                                      bool is_single_key) {
+                                      UpplPortOperStatus oper_status) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   key_port_t *obj_key_port=
       reinterpret_cast<key_port_t*>(key_struct);
-  TableAttrSchema kt_port_table_attr_schema;
   vector<TableAttrSchema> vect_table_attr_schema;
   list < vector<TableAttrSchema> > row_list;
   vector<string> vect_prim_keys;
@@ -1271,35 +1339,33 @@ UpplReturnCode Kt_Port::SetOperStatus(uint32_t data_type,
   string port_id = (const char*)obj_key_port->port_id;
 
   if (!controller_name.empty()) {
-    vect_prim_keys.push_back(CTR_NAME);
+    vect_prim_keys.push_back(CTR_NAME_STR);
   }
 
-  PhyUtil::FillDbSchema(CTR_NAME, controller_name,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                         controller_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
-  if (is_single_key == false) {
-    if (!switch_id.empty()) {
-      vect_prim_keys.push_back(SWITCH_ID);
-      PhyUtil::FillDbSchema(SWITCH_ID, switch_id,
-                            switch_id.length(), DATATYPE_UINT8_ARRAY_32,
-                            vect_table_attr_schema);
-    }
+  if (!switch_id.empty()) {
+    vect_prim_keys.push_back(SWITCH_ID_STR);
+    PhyUtil::FillDbSchema(unc::uppl::SWITCH_ID, switch_id,
+                          switch_id.length(), DATATYPE_UINT8_ARRAY_256,
+                          vect_table_attr_schema);
+  }
 
-    if (!port_id.empty()) {
-      vect_prim_keys.push_back(PORT_ID);
-      PhyUtil::FillDbSchema(PORT_ID, port_id,
-                            port_id.length(), DATATYPE_UINT8_ARRAY_32,
-                            vect_table_attr_schema);
-    }
+  if (!port_id.empty()) {
+    vect_prim_keys.push_back(PORT_ID_STR);
+    PhyUtil::FillDbSchema(unc::uppl::PORT_ID, port_id,
+                          port_id.length(), DATATYPE_UINT8_ARRAY_32,
+                          vect_table_attr_schema);
   }
 
   string oper_value = PhyUtil::uint8tostr(oper_status);
-  PhyUtil::FillDbSchema(PORT_OPER_STATUS, oper_value,
+  PhyUtil::FillDbSchema(unc::uppl::PORT_OPER_STATUS, oper_value,
                         oper_value.length(), DATATYPE_UINT16,
                         vect_table_attr_schema);
 
   DBTableSchema kt_port_dbtableschema;
-  kt_port_dbtableschema.set_table_name(UPPL_PORT_TABLE);
+  kt_port_dbtableschema.set_table_name(unc::uppl::PORT_TABLE);
   kt_port_dbtableschema.set_primary_keys(vect_prim_keys);
   row_list.push_back(vect_table_attr_schema);
   kt_port_dbtableschema.set_row_list(row_list);
@@ -1308,55 +1374,77 @@ UpplReturnCode Kt_Port::SetOperStatus(uint32_t data_type,
   ODBCM_RC_STATUS update_db_status =
       physical_layer->get_odbc_manager()->UpdateOneRow(
           (unc_keytype_datatype_t)data_type,
-          kt_port_dbtableschema);
-  if (update_db_status != ODBCM_RC_SUCCESS) {
+          kt_port_dbtableschema, db_conn);
+  if (update_db_status == ODBCM_RC_ROW_NOT_EXISTS) {
+    pfc_log_info("No instance available for update");
+  } else if (update_db_status != ODBCM_RC_SUCCESS) {
     // log error
     pfc_log_error("oper_status update operation failed");
     return UPPL_RC_ERR_DB_UPDATE;
   } else {
     // Notify operstatus change to northbound
-    val_port_st old_val_port, new_val_port;
     uint8_t old_oper_status = 0;
-    UpplReturnCode read_status = GetOperStatus(data_type,
+    UpplReturnCode read_status = GetOperStatus(db_conn, data_type,
                                                key_struct,
                                                old_oper_status);
     if (read_status == UPPL_RC_SUCCESS) {
-      memset(old_val_port.valid, 0, 3);
+      val_port_st old_val_port, new_val_port;
+      memset(&old_val_port, 0, sizeof(old_val_port));
+      memset(&new_val_port, 0, sizeof(new_val_port));
       old_val_port.oper_status = old_oper_status;
       old_val_port.valid[kIdxPortOperStatus] = UNC_VF_VALID;
-      memset(new_val_port.valid, 0, 3);
       new_val_port.oper_status = oper_status;
       new_val_port.valid[kIdxPortOperStatus] = UNC_VF_VALID;
       int err = 0;
       // Send notification to Northbound
       ServerEvent ser_evt((pfc_ipcevtype_t)UPPL_EVENTS_KT_PORT, err);
-      ser_evt.addOutput((uint32_t)UNC_OP_UPDATE);
-      ser_evt.addOutput(data_type);
-      ser_evt.addOutput((uint32_t)UPPL_EVENTS_KT_PORT);
-      ser_evt.addOutput(*obj_key_port);
-      ser_evt.addOutput(new_val_port);
-      ser_evt.addOutput(old_val_port);
-      PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
-      // Notify operstatus modifications
-      UpplReturnCode status = (UpplReturnCode) physical_layer
-          ->get_ipc_connection_manager()->SendEvent(&ser_evt);
-      pfc_log_debug("Event notification status %d", status);
+      northbound_event_header rsh = {UNC_OP_UPDATE,
+          data_type,
+          UNC_KT_PORT};
+      err = PhyUtil::sessOutNBEventHeader(ser_evt, rsh);
+      err |= ser_evt.addOutput(*obj_key_port);
+      err |= ser_evt.addOutput(new_val_port);
+      err |= ser_evt.addOutput(old_val_port);
+      if (err == 0) {
+        PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+        // Notify operstatus modifications
+        UpplReturnCode status = (UpplReturnCode) physical_layer
+            ->get_ipc_connection_manager()->SendEvent(&ser_evt);
+        pfc_log_debug("Event notification status %d", status);
+      } else {
+        pfc_log_error("Server Event addOutput failed");
+      }
     }
   }
   return UPPL_RC_SUCCESS;
 }
 
-/** PopulateDBSchemaForKtTable
- * * @Description : This function populates the DBAttrSchema to be used to send
- *                  request to ODBC
- * * * @param[in] : DBTableSchema, key_struct, val_struct, operation_type
- * * * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
- * */
+/**
+ * @Description : This function is used to populate the db schema using the
+ *                given key struct, value struct, data_type, operation,
+ *                option1 and option
+ * @param[in]   : kt_port_dbtableschema - object of type DBTableSchema
+ *                key_struct - void pointer to be type cast into port key type
+ *                val_struct - void pointer to be type cast into port value type
+ *                operation_type - specifies the operation type i.e
+ *                                 UNC_OP_READ or UNC_OP_READ_SIBLING_BEGIN etc
+ *                option1/option2 - specifies any additional option for
+ *                populating in DB
+ *                vect_key_operations - vector of type ODBCMOperator
+ *                old_value_struct - holds the old value structure of the
+ *                port key type
+ *                row_status - enum indicating the row status of port type
+ *                entries in db
+ *                is_filtering/is_state - bool variables
+ * @return      : None
+ **/
 void Kt_Port::PopulateDBSchemaForKtTable(
+    OdbcmConnectionHandler *db_conn,
     DBTableSchema &kt_port_dbtableschema,
     void* key_struct,
     void* val_struct,
     uint8_t operation_type,
+    uint32_t data_type,
     uint32_t option1,
     uint32_t option2,
     vector<ODBCMOperator> &vect_key_operations,
@@ -1379,20 +1467,20 @@ void Kt_Port::PopulateDBSchemaForKtTable(
   // controller_name
   string controller_name = (const char*)obj_key_port
       ->sw_key.ctr_key.controller_name;
-  pfc_log_info("controller name: %s", controller_name.c_str());
+  pfc_log_debug("controller name: %s", controller_name.c_str());
   if (!controller_name.empty()) {
-    vect_prim_keys.push_back(CTR_NAME);
+    vect_prim_keys.push_back(CTR_NAME_STR);
   }
-  PhyUtil::FillDbSchema(CTR_NAME, controller_name,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                         controller_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
   // switch_id
   string switch_id = (const char*)obj_key_port->sw_key.switch_id;
-  pfc_log_info("switch id: %s", switch_id.c_str());
+  pfc_log_debug("switch id: %s", switch_id.c_str());
   if (!switch_id.empty()) {
-    vect_prim_keys.push_back(SWITCH_ID);
+    vect_prim_keys.push_back(SWITCH_ID_STR);
   }
-  PhyUtil::FillDbSchema(SWITCH_ID, switch_id,
+  PhyUtil::FillDbSchema(unc::uppl::SWITCH_ID, switch_id,
                         switch_id.length(), DATATYPE_UINT8_ARRAY_256,
                         vect_table_attr_schema);
   // port_id
@@ -1403,8 +1491,8 @@ void Kt_Port::PopulateDBSchemaForKtTable(
     port_id = "";
   }
 
-  pfc_log_info("port id: %s", port_id.c_str());
-  PhyUtil::FillDbSchema(PORT_ID, port_id,
+  pfc_log_debug("port id: %s", port_id.c_str());
+  PhyUtil::FillDbSchema(unc::uppl::PORT_ID, port_id,
                         port_id.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
 
@@ -1414,58 +1502,63 @@ void Kt_Port::PopulateDBSchemaForKtTable(
     pfc_log_debug("Get Valid value from Update Valid Flag");
     val_port_valid_st = new val_port_st_t();
     unc_keytype_validflag_t new_valid_val = UNC_VF_VALID;
-    UpdatePortValidFlag(key_struct, val_struct,
+    UpdatePortValidFlag(db_conn, key_struct, val_struct,
                         *val_port_valid_st,
-                        new_valid_val);
+                        new_valid_val, data_type);
     old_val_struct = reinterpret_cast<void *>(val_port_valid_st);
   }
 
   GetPortValStructure(
-      obj_val_port,
+      db_conn, obj_val_port,
       vect_table_attr_schema,
       vect_prim_keys,
       operation_type,
       val_port_valid_st,
       valid);
   GetPortStateValStructure(
-      obj_val_port,
+      db_conn, obj_val_port,
       vect_table_attr_schema,
       vect_prim_keys,
       operation_type,
       val_port_valid_st,
       valid);
-  vect_prim_keys.push_back(PORT_ID);
+  vect_prim_keys.push_back(PORT_ID_STR);
   PhyUtil::reorder_col_attrs(vect_prim_keys, vect_table_attr_schema);
-  kt_port_dbtableschema.set_table_name(UPPL_PORT_TABLE);
+  kt_port_dbtableschema.set_table_name(unc::uppl::PORT_TABLE);
   kt_port_dbtableschema.set_primary_keys(vect_prim_keys);
   row_list.push_back(vect_table_attr_schema);
   kt_port_dbtableschema.set_row_list(row_list);
   return;
 }
 
-/** FillPortValueStructure
- * * @Description : This function populates val_port_st_t by values retrieved
- * from database
- * * * @param[in] : port table dbtable schema,
- * value structure and max_rep_ct, operation type
- * * * @return    : Filled val_port_st and port id
- * */
+/** 
+ * @Description : This function populates val_port_st_t by values retrieved
+ *                from database
+ * @param[in]   : kt_port table dbtable schema - object of type DBTableSchema
+ *                vect_obj_val_port - vector to store the val_port_st structure
+ *                values
+ *                max_rep_ct - specifies number of rows to be returned
+ *                operation_type - indicates the operation type  
+ *                port_id - vector of type key_port_t to store the port id
+ * @return      : None
+ **/
 
 void Kt_Port::FillPortValueStructure(
+    OdbcmConnectionHandler *db_conn,
     DBTableSchema &kt_port_dbtableschema,
     vector<val_port_st_t> &vect_obj_val_port,
     uint32_t &max_rep_ct,
     uint32_t operation_type,
     vector<key_port_t> &port_id) {
-  // populate IPC value structure based on the response recevied from DB
-  list < vector<TableAttrSchema> > res_port_row_list =
+  // populate IPC value structure based on the response received from DB
+  list < vector<TableAttrSchema> >& res_port_row_list =
       kt_port_dbtableschema.get_row_list();
   list < vector<TableAttrSchema> > :: iterator res_port_iter =
       res_port_row_list.begin();
   max_rep_ct = res_port_row_list.size();
   pfc_log_debug("res_port_row_list.size: %d", max_rep_ct);
 
-  // populate IPC value structure based on the response recevied from DB
+  // populate IPC value structure based on the response received from DB
   for (; res_port_iter != res_port_row_list.end(); ++res_port_iter) {
     vector<TableAttrSchema> res_port_table_attr_schema =
         (*res_port_iter);
@@ -1473,7 +1566,6 @@ void Kt_Port::FillPortValueStructure(
         res_port_table_attr_schema.begin();
     val_port_st_t obj_val_port;
     memset(&obj_val_port, 0, sizeof(val_port_st_t));
-    memset(&obj_val_port.port, 0, sizeof(val_port_t));
     key_port_t obj_key_port;
     memset(&obj_key_port, '\0', sizeof(obj_key_port));
     // Read all attributes
@@ -1481,120 +1573,135 @@ void Kt_Port::FillPortValueStructure(
         ++vect_port_iter) {
       // Populate values from port_table
       TableAttrSchema tab_schema = (*vect_port_iter);
-      string attr_name = tab_schema.table_attribute_name;
-      string attr_value;
-      if (attr_name == CTR_NAME) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_32);
-        memcpy(obj_key_port.sw_key.ctr_key.controller_name,
-               attr_value.c_str(),
-               attr_value.length()+1);
-        pfc_log_debug("controller_name: %s", reinterpret_cast<char *>
-        (&obj_key_port.sw_key.ctr_key.controller_name));
-      }
-      if (attr_name == SWITCH_ID) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_256);
-        memcpy(obj_key_port.sw_key.switch_id,
-               attr_value.c_str(),
-               attr_value.length()+1);
-        pfc_log_debug("switch_id: %s", reinterpret_cast<char *>
-        (&obj_key_port.sw_key.switch_id));
-      }
-      if (attr_name == PORT_ID) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_32);
-        memcpy(obj_key_port.port_id,
-               attr_value.c_str(),
-               attr_value.length()+1);
-        pfc_log_debug("port_id: %s", reinterpret_cast<char *>
-        (&obj_key_port.port_id));
-      }
-      if (attr_name == PORT_NUMBER) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT32);
-        obj_val_port.port.port_number = atoi(attr_value.c_str());
-        pfc_log_debug("port_number: %d", obj_val_port.port.port_number);
-      }
-      if (attr_name == PORT_DESCRIPTION) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_128);
-        memcpy(obj_val_port.port.description,
-               attr_value.c_str(),
-               attr_value.length()+1);
-        pfc_log_debug("description: %s", obj_val_port.port.description);
-      }
-      if (attr_name == PORT_ADMIN_STATUS) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT16);
-        obj_val_port.port.admin_status = atoi(attr_value.c_str());
-        pfc_log_debug("admin_status: %d", obj_val_port.port.admin_status);
-      }
-      if (attr_name == PORT_TRUNK_ALL_VLAN) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT16);
-        obj_val_port.port.trunk_allowed_vlan =
-            atoi((const char*)attr_value.c_str());
-        pfc_log_debug("trunk_allowed_vlan: %s", attr_value.c_str());
-      }
-      if (attr_name == PORT_OPER_STATUS) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT16);
-        obj_val_port.oper_status = atoi(attr_value.c_str());
-        pfc_log_debug("oper status : %d", obj_val_port.oper_status);
-      }
-      if (attr_name == PORT_MAC_ADDRESS) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_6);
-        memcpy(obj_val_port.mac_address,
-               attr_value.c_str(),
-               attr_value.length()+1);
-        pfc_log_debug("Mac_address: %s", obj_val_port.mac_address);
-      }
-      if (attr_name == PORT_DIRECTION) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT16);
-        obj_val_port.direction = atoi(attr_value.c_str());
-        pfc_log_debug("direction: %d", obj_val_port.direction);
-      }
-      if (attr_name == PORT_DUPLEX) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT16);
-        obj_val_port.duplex = atoi(attr_value.c_str());
-        pfc_log_debug("duplex : %d", obj_val_port.duplex);
-      }
-      if (attr_name == PORT_SPEED) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT64);
-        pfc_log_debug("speed from DB : %s", attr_value.c_str());
-        obj_val_port.speed = atol(attr_value.c_str());
-        pfc_log_debug("speed : %" PFC_PFMT_u64, obj_val_port.speed);
-        pfc_log_debug("speed PFC_PFMT_u64 : %" PFC_PFMT_u64 "...",
-                      obj_val_port.speed);
-      }
-      if (attr_name == PORT_ALARM_STATUS) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT64);
-        obj_val_port.alarms_status = atol(attr_value.c_str());
-        pfc_log_debug("alarms_status : %" PFC_PFMT_u64,
-                      obj_val_port.alarms_status);
-      }
-      if (attr_name == PORT_LOGIC_PORT_ID) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_320);
-        memcpy(obj_val_port.logical_port_id,
-               attr_value.c_str(),
-               attr_value.length()+1);
-        pfc_log_debug("Logical_port_id: %s", obj_val_port.logical_port_id);
-      }
-      if (attr_name == PORT_VALID) {
-        memset(obj_val_port.valid, 0, 8);
-        obj_val_port.valid[kIdxPortSt] = UNC_VF_VALID;
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_11);
-        memset(obj_val_port.port.valid, '\0', 4);
-        FrameValidValue(attr_value, obj_val_port);
-        pfc_log_debug("valid: %s", attr_value.c_str());
+      ODBCMTableColumns attr_name = tab_schema.table_attribute_name;
+      string attr_value = "";
+      switch (attr_name) {
+        case unc::uppl::CTR_NAME:
+          PhyUtil::GetValueFromDbSchemaStr(
+              tab_schema,
+              obj_key_port.sw_key.ctr_key.controller_name,
+              DATATYPE_UINT8_ARRAY_32);
+          pfc_log_debug("controller_name: %s", reinterpret_cast<char *>
+          (&obj_key_port.sw_key.ctr_key.controller_name));
+          break;
+
+        case unc::uppl::SWITCH_ID:
+          PhyUtil::GetValueFromDbSchemaStr(tab_schema,
+                                           obj_key_port.sw_key.switch_id,
+                                           DATATYPE_UINT8_ARRAY_256);
+          pfc_log_debug("switch_id: %s", reinterpret_cast<char *>
+          (&obj_key_port.sw_key.switch_id));
+          break;
+
+        case unc::uppl::PORT_ID:
+          PhyUtil::GetValueFromDbSchemaStr(tab_schema,
+                                           obj_key_port.port_id,
+                                           DATATYPE_UINT8_ARRAY_32);
+          pfc_log_debug("port_id: %s", reinterpret_cast<char *>
+          (&obj_key_port.port_id));
+          break;
+
+        case unc::uppl::PORT_NUMBER:
+          PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
+                                        DATATYPE_UINT32);
+          obj_val_port.port.port_number = atoi(attr_value.c_str());
+          pfc_log_debug("port_number: %d", obj_val_port.port.port_number);
+          break;
+
+        case unc::uppl::PORT_DESCRIPTION:
+          PhyUtil::GetValueFromDbSchemaStr(tab_schema,
+                                           obj_val_port.port.description,
+                                           DATATYPE_UINT8_ARRAY_128);
+          pfc_log_debug("description: %s", obj_val_port.port.description);
+          break;
+
+        case unc::uppl::PORT_ADMIN_STATUS:
+          PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
+                                        DATATYPE_UINT16);
+          obj_val_port.port.admin_status = atoi(attr_value.c_str());
+          pfc_log_debug("admin_status: %d", obj_val_port.port.admin_status);
+          break;
+
+        case unc::uppl::PORT_TRUNK_ALL_VLAN:
+          PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
+                                        DATATYPE_UINT16);
+          obj_val_port.port.trunk_allowed_vlan =
+              atoi((const char*)attr_value.c_str());
+          pfc_log_debug("trunk_allowed_vlan: %s", attr_value.c_str());
+          break;
+
+        case unc::uppl::PORT_OPER_STATUS:
+          PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
+                                        DATATYPE_UINT16);
+          obj_val_port.oper_status = atoi(attr_value.c_str());
+          pfc_log_debug("oper status : %d", obj_val_port.oper_status);
+          break;
+
+        case unc::uppl::PORT_MAC_ADDRESS:
+          PhyUtil::GetValueFromDbSchemaStr(tab_schema,
+                                           obj_val_port.mac_address,
+                                           DATATYPE_UINT8_ARRAY_6);
+          pfc_log_info(""
+              "FillPortValueStructure:mac_address %02x%02x.%02x%02x.%02x%02x",
+              obj_val_port.mac_address[0], obj_val_port.mac_address[1],
+              obj_val_port.mac_address[2], obj_val_port.mac_address[3],
+              obj_val_port.mac_address[4], obj_val_port.mac_address[5]);
+          break;
+
+        case unc::uppl::PORT_DIRECTION:
+          PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
+                                        DATATYPE_UINT16);
+          obj_val_port.direction = atoi(attr_value.c_str());
+          pfc_log_debug("direction: %d", obj_val_port.direction);
+          break;
+
+        case unc::uppl::PORT_DUPLEX:
+          PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
+                                        DATATYPE_UINT16);
+          obj_val_port.duplex = atoi(attr_value.c_str());
+          pfc_log_debug("duplex : %d", obj_val_port.duplex);
+          break;
+
+        case unc::uppl::PORT_SPEED:
+          PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
+                                        DATATYPE_UINT64);
+          pfc_log_debug("speed from DB : %s", attr_value.c_str());
+          obj_val_port.speed = atol(attr_value.c_str());
+          pfc_log_debug("speed : %" PFC_PFMT_u64, obj_val_port.speed);
+          pfc_log_debug("speed PFC_PFMT_u64 : %" PFC_PFMT_u64 "...",
+                        obj_val_port.speed);
+          break;
+
+        case unc::uppl::PORT_ALARM_STATUS:
+          PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
+                                        DATATYPE_UINT64);
+          obj_val_port.alarms_status = atol(attr_value.c_str());
+          pfc_log_debug("alarms_status : %" PFC_PFMT_u64,
+                        obj_val_port.alarms_status);
+          break;
+
+        case unc::uppl::PORT_LOGIC_PORT_ID:
+          PhyUtil::GetValueFromDbSchemaStr(tab_schema,
+                                           obj_val_port.logical_port_id,
+                                           DATATYPE_UINT8_ARRAY_320);
+          pfc_log_debug("Logical_port_id: %s", obj_val_port.logical_port_id);
+          break;
+
+        case unc::uppl::PORT_VALID:
+          uint8_t port_valid[ODBCM_SIZE_11];
+          memset(obj_val_port.valid, 0, 8);
+          obj_val_port.valid[kIdxPortSt] = UNC_VF_VALID;
+          PhyUtil::GetValueFromDbSchemaStr(tab_schema, port_valid,
+                                           DATATYPE_UINT8_ARRAY_11);
+          memset(obj_val_port.port.valid, '\0', 4);
+          FrameValidValue(reinterpret_cast<const char*> (port_valid),
+                          obj_val_port);
+          pfc_log_debug("valid: %s", port_valid);
+          break;
+
+        default:
+          pfc_log_info("Ignoring Port attribute %d", attr_name);
+          break;
       }
     }
     vect_obj_val_port.push_back(obj_val_port);
@@ -1608,15 +1715,27 @@ void Kt_Port::FillPortValueStructure(
   return;
 }
 
-/** PerformRead
- * * @Description : This function reads the instance of KT_Port based on
- *                  operation type - READ, READ_SIBLING_BEGIN, READ_SIBLING
- * * * @param[in] : ipc session id, configuration id, key_struct, value_struct,
- *                  data_type, operation type, ServerSession, option1, option2,
- *                  max_rep_ct
- * * * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
- * */
-UpplReturnCode Kt_Port::PerformRead(uint32_t session_id,
+/**
+ * @Description : This function is used to read KT_PORT instance in database
+ *                table using key_ctr provided in IPC request
+ *                The IPC response would be filled in IPC session
+ * @param[in]   : ipc session id - ipc session id used for TC validation
+ *                configuration id - configuration id used for TC validation
+ *                key_struct - void pointer to be type cast into port key type
+ *                value_struct - void pointer to be type cast into port value
+ *                structure
+ *                data_type - specifies the data base type i.e UNC_DT_STATE
+ *                            or UNC_DT_IMPORT
+ *                operation type - indicates the operation type
+ *                sess - ipc server session where the response has to be added
+ *                option1,option2 - specifies any additional condition for
+ *                read operation
+ *                max_rep_ct - indicates the maximum repetition count
+ * @return      : UPPL_RC_SUCCESS - if the read operation is successful
+ *                UPPL_RC_ERR_* - read operation failed
+ **/
+UpplReturnCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
+                                    uint32_t session_id,
                                     uint32_t configuration_id,
                                     void* key_struct,
                                     void* val_struct,
@@ -1626,8 +1745,6 @@ UpplReturnCode Kt_Port::PerformRead(uint32_t session_id,
                                     uint32_t option1,
                                     uint32_t option2,
                                     uint32_t max_rep_ct) {
-  pfc_log_info("Inside PerformRead option1=%d option2=%d max_rep_ct=%d",
-               option1, option2, max_rep_ct);
   pfc_log_info("Inside PerformRead operation_type=%d data_type=%d",
                operation_type, data_type);
   key_port_t *obj_key_port =
@@ -1689,7 +1806,7 @@ UpplReturnCode Kt_Port::PerformRead(uint32_t session_id,
     pfc_log_debug("Populating val_port_st from DB");
     vector<key_port_t> vect_port_id;
     vector<val_port_st_t> vect_val_port_st;
-    read_status = ReadPortValFromDB(key_struct,
+    read_status = ReadPortValFromDB(db_conn, key_struct,
                                     val_struct,
                                     data_type,
                                     operation_type,
@@ -1698,7 +1815,7 @@ UpplReturnCode Kt_Port::PerformRead(uint32_t session_id,
                                     vect_port_id);
     rsh.result_code = read_status;
     rsh.max_rep_count = max_rep_ct;
-    pfc_log_info("read status val in performread = %d", read_status);
+    pfc_log_debug("read status val in performread = %d", read_status);
     if (read_status != UPPL_RC_SUCCESS) {
       rsh.max_rep_count = 0;
       int err = PhyUtil::sessOutRespHeader(sess, rsh);
@@ -1726,14 +1843,15 @@ UpplReturnCode Kt_Port::PerformRead(uint32_t session_id,
     }
 
   } else if (option2 == UNC_OPT2_NEIGHBOR) {
-    pfc_log_info("Read neighbor details from DB");
+    pfc_log_debug("Read neighbor details from DB");
     val_port_st_neighbor obj_neighbor;
+    memset(&obj_neighbor, '\0', sizeof(val_port_st_neighbor));
     read_status = ReadNeighbor(
-        key_struct,
+        db_conn, key_struct,
         val_struct,
         data_type,
         obj_neighbor);
-    pfc_log_info("Return value for read operation %d", read_status);
+    pfc_log_debug("Return value for read operation %d", read_status);
     rsh.result_code = read_status;
     int err = PhyUtil::sessOutRespHeader(sess, rsh);
     err |= sess.addOutput((uint32_t)UNC_KT_PORT);
@@ -1755,15 +1873,24 @@ UpplReturnCode Kt_Port::PerformRead(uint32_t session_id,
   return UPPL_RC_SUCCESS;
 }
 
-/** ReadPortValFromDB
- * * @Description : This function reads the instance of KT_Port based on
- *                  operation type - READ, READ_SIBLING_BEGIN, READ_SIBLING
- *                   from data base
- * * * @param[in] : key_struct, value_struct, ipc session id, configuration id,
- *                  data_type, operation type, max_rep_ct
- * * * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
- * */
+/** 
+ * @Description : This function is used to read KT_PORT instance in database
+ *                table using key_ctr provided in IPC request and operation_type
+ * @param[in]   : key_struct - void pointer to be type cast into port key
+ *                structure
+ *                value_struct - void pointer to be type cast into port value
+ *                structure
+ *                data_type - indicates the data base type
+ *                operation_type - indicates the operation type UNC_OP*
+ *                max_rep_ct - indicates the maximum repetition count
+ *                vect_val_port - vector to store the val_port_st_t structure
+ *                port_id - vector of type key_port_t to store the
+ *                logical port id
+ * @return      : UPPL_RC_SUCCESS - read operation is success
+ *                UPPL_RC_ERR_DB_GET - read operation is failure
+ **/
 UpplReturnCode Kt_Port::ReadPortValFromDB(
+    OdbcmConnectionHandler *db_conn,
     void* key_struct,
     void* val_struct,
     uint32_t data_type,
@@ -1771,30 +1898,33 @@ UpplReturnCode Kt_Port::ReadPortValFromDB(
     uint32_t &max_rep_ct,
     vector<val_port_st_t> &vect_val_port_st,
     vector<key_port_t> &port_id) {
+  if (operation_type < UNC_OP_READ) {
+    // Unsupported operation type for this function
+    return UPPL_RC_SUCCESS;
+  }
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   UpplReturnCode read_status = UPPL_RC_SUCCESS;
   ODBCM_RC_STATUS read_db_status = ODBCM_RC_SUCCESS;
-
   // Common structures that will be used to send query to ODBC
   // Structure used to send request to ODBC
   DBTableSchema kt_port_dbtableschema;
   void *old_struct;
   vector<ODBCMOperator> vect_key_operations;
-  PopulateDBSchemaForKtTable(kt_port_dbtableschema,
+  PopulateDBSchemaForKtTable(db_conn, kt_port_dbtableschema,
                              key_struct,
                              val_struct,
-                             operation_type, 0, 0,
+                             operation_type, data_type, 0, 0,
                              vect_key_operations, old_struct);
 
   if (operation_type == UNC_OP_READ) {
     read_db_status = physical_layer->get_odbc_manager()->
         GetOneRow((unc_keytype_datatype_t)data_type,
-                  kt_port_dbtableschema);
+                  kt_port_dbtableschema, db_conn);
   } else {
     read_db_status = physical_layer->get_odbc_manager()->
         GetBulkRows((unc_keytype_datatype_t)data_type, max_rep_ct,
                     kt_port_dbtableschema,
-                    (unc_keytype_operation_t)operation_type);
+                    (unc_keytype_operation_t)operation_type, db_conn);
   }
   if (read_db_status == ODBCM_RC_RECORD_NOT_FOUND) {
     pfc_log_debug("No record found");
@@ -1813,7 +1943,7 @@ UpplReturnCode Kt_Port::ReadPortValFromDB(
   }
 
   pfc_log_debug("Read operation Success result: %d", read_status);
-  FillPortValueStructure(kt_port_dbtableschema,
+  FillPortValueStructure(db_conn, kt_port_dbtableschema,
                          vect_val_port_st,
                          max_rep_ct,
                          UNC_OP_READ,
@@ -1833,12 +1963,19 @@ UpplReturnCode Kt_Port::ReadPortValFromDB(
 }
 
 /** ReadNeighbor
- * * @Description : This function reads the Neighbor information from driver
- * * * @param[in] : Session id, configuration id, key_struct, value_struct,
- *  data_type, operation type
- * * * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
- * */
+ * @Description : This function reads the Neighbor information from driver
+ * @param[in]   : key_struct - void pointer to be type cast to port key type
+ *                val_struct - void pointer to be type cast to port val
+ *                structure type
+ *                data_type - indicates the data base type
+ *                neighbor_obj - structure variable of type val_port_st_neighbor
+ * @return      : UPPL_RC_SUCCESS - is returned if the read neighbor operation
+ *                is success
+ *                UPPL_RC_ERR* - is returned if the read neighbor operation is
+ *                failure
+ **/
 UpplReturnCode Kt_Port::ReadNeighbor(
+    OdbcmConnectionHandler *db_conn,
     void* key_struct,
     void* val_struct,
     uint32_t data_type,
@@ -1850,12 +1987,13 @@ UpplReturnCode Kt_Port::ReadNeighbor(
       sw_key.ctr_key.controller_name;
   string switch_id = (const char*)obj_key_port->sw_key.switch_id;
   string port_id = (const char*)obj_key_port->port_id;
-  string switch_id2, port_id2;
+  string switch_id2 = "";
+  string port_id2 = "";
   // Read Port value from DB
   vector<void *> vect_key_port;
   vect_key_port.push_back(reinterpret_cast<void *>(obj_key_port));
   vector<void *> vect_val_port;
-  read_status = ReadInternal(vect_key_port,
+  read_status = ReadInternal(db_conn, vect_key_port,
                              vect_val_port,
                              data_type,
                              UNC_OP_READ);
@@ -1874,36 +2012,37 @@ UpplReturnCode Kt_Port::ReadNeighbor(
   val_port_t obj_val_port = obj_val_st_port->port;
   DBTableSchema kt_port_dbtableschema;
   vector<string> vect_prim_keys;
-  vect_prim_keys.push_back(CTR_NAME);
-  vect_prim_keys.push_back(LINK_SWITCH_ID1);
-  vect_prim_keys.push_back(LINK_PORT_ID1);
+  vect_prim_keys.push_back(CTR_NAME_STR);
+  vect_prim_keys.push_back(LINK_SWITCH_ID1_STR);
+  vect_prim_keys.push_back(LINK_PORT_ID1_STR);
   vector<TableAttrSchema> vect_table_attr_schema;
   list< vector<TableAttrSchema> > row_list;
-  PhyUtil::FillDbSchema(CTR_NAME, controller_name,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                         controller_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
-  PhyUtil::FillDbSchema(LINK_SWITCH_ID1, switch_id,
+  PhyUtil::FillDbSchema(unc::uppl::LINK_SWITCH_ID1, switch_id,
                         switch_id.length(), DATATYPE_UINT8_ARRAY_256,
                         vect_table_attr_schema);
-  PhyUtil::FillDbSchema(LINK_PORT_ID1, port_id,
+  PhyUtil::FillDbSchema(unc::uppl::LINK_PORT_ID1, port_id,
                         port_id.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
-  PhyUtil::FillDbSchema(LINK_SWITCH_ID2, switch_id2,
+  PhyUtil::FillDbSchema(unc::uppl::LINK_SWITCH_ID2, switch_id2,
                         switch_id2.length(), DATATYPE_UINT8_ARRAY_256,
                         vect_table_attr_schema);
-  PhyUtil::FillDbSchema(LINK_PORT_ID2, port_id2,
+  PhyUtil::FillDbSchema(unc::uppl::LINK_PORT_ID2, port_id2,
                         port_id2.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
-  kt_port_dbtableschema.set_table_name(UPPL_LINK_TABLE);
+  kt_port_dbtableschema.set_table_name(unc::uppl::LINK_TABLE);
   kt_port_dbtableschema.set_primary_keys(vect_prim_keys);
   row_list.push_back(vect_table_attr_schema);
   kt_port_dbtableschema.set_row_list(row_list);
 
   ODBCM_RC_STATUS read_db_status = physical_layer->get_odbc_manager()->
-      GetOneRow((unc_keytype_datatype_t)data_type, kt_port_dbtableschema);
+      GetOneRow((unc_keytype_datatype_t)data_type, kt_port_dbtableschema,
+                db_conn);
   if (read_db_status == ODBCM_RC_SUCCESS) {
     read_status = UPPL_RC_SUCCESS;
-    // populate IPC value structure based on the response recevied from DB
+    // populate IPC value structure based on the response received from DB
     vector<TableAttrSchema> res_table_attr_schema =
         kt_port_dbtableschema.get_row_list().front();
     vector<TableAttrSchema> ::iterator vect_iter =
@@ -1912,21 +2051,18 @@ UpplReturnCode Kt_Port::ReadNeighbor(
     neighbor_obj.port = obj_val_port;
     for (; vect_iter != res_table_attr_schema.end(); ++vect_iter) {
       TableAttrSchema tab_schema = (*vect_iter);
-      string attr_name = tab_schema.table_attribute_name;
-      if (attr_name == LINK_SWITCH_ID2) {
-        string switch_id2;
-        PhyUtil::GetValueFromDbSchema(tab_schema, switch_id2,
-                                      DATATYPE_UINT8_ARRAY_256);
-        memcpy(neighbor_obj.connected_switch_id,
-               switch_id2.c_str(), switch_id2.length()+1);
-        pfc_log_debug("Connected switch id: %s", switch_id2.c_str());
-      } else if (attr_name == LINK_PORT_ID2) {
-        string port_id2;
-        PhyUtil::GetValueFromDbSchema(tab_schema, port_id2,
-                                      DATATYPE_UINT8_ARRAY_32);
-        memcpy(neighbor_obj.connected_port_id,
-               port_id2.c_str(), port_id2.length()+1);
-        pfc_log_debug("Connected port id: %s", port_id2.c_str());
+      ODBCMTableColumns attr_name = tab_schema.table_attribute_name;
+      if (attr_name == unc::uppl::LINK_SWITCH_ID2) {
+        PhyUtil::GetValueFromDbSchemaStr(tab_schema,
+                                         neighbor_obj.connected_switch_id,
+                                         DATATYPE_UINT8_ARRAY_256);
+        pfc_log_debug("Connected switch id: %s",
+                      neighbor_obj.connected_switch_id);
+      } else if (attr_name == unc::uppl::LINK_PORT_ID2) {
+        PhyUtil::GetValueFromDbSchemaStr(tab_schema,
+                                         neighbor_obj.connected_port_id,
+                                         DATATYPE_UINT8_ARRAY_32);
+        pfc_log_debug("Connected port id: %s", neighbor_obj.connected_port_id);
       }
     }
   } else {
@@ -1953,92 +2089,104 @@ UpplReturnCode Kt_Port::ReadNeighbor(
   return read_status;
 }
 
-/** Fill_Attr_Syntax_Map
- * * @Description : This function populates the values to be used for attribute
- * validation
- * * * @param[in] : None
- * * * @return    : None
- * */
+/** 
+ * @Description : This function populates the values to be used for attribute
+ *                validation
+ * @param[in] : None
+ * @return    : None
+ **/
 void Kt_Port::Fill_Attr_Syntax_Map() {
+  map<string, Kt_Class_Attr_Syntax> attr_syntax_map;
+
   Kt_Class_Attr_Syntax objKeyAttrCtrSyntax =
   { PFC_IPCTYPE_UINT8, 0, 0, 1, 32, true, "" };
-  attr_syntax_map[CTR_NAME] = objKeyAttrCtrSyntax;
+  attr_syntax_map[CTR_NAME_STR] = objKeyAttrCtrSyntax;
 
   Kt_Class_Attr_Syntax objKeyAttrSwitchSyntax =
   { PFC_IPCTYPE_UINT8, 0, 0, 1, 32, true, "" };
-  attr_syntax_map[SWITCH_ID] = objKeyAttrSwitchSyntax;
+  attr_syntax_map[SWITCH_ID_STR] = objKeyAttrSwitchSyntax;
 
   Kt_Class_Attr_Syntax objKeyAttrPortSyntax =
   { PFC_IPCTYPE_UINT8, 0, 0, 1, 32, true, "" };
-  attr_syntax_map[PORT_ID] = objKeyAttrPortSyntax;
+  attr_syntax_map[PORT_ID_STR] = objKeyAttrPortSyntax;
 
   Kt_Class_Attr_Syntax objAttrPortNumberSyntax =
-  { PFC_IPCTYPE_UINT32, 0, 100000, 0, 0, false, "" };
-  attr_syntax_map[PORT_NUMBER] = objAttrPortNumberSyntax;
+  { PFC_IPCTYPE_UINT32, 1, 4294967295LL, 0, 0, false, "" };
+  attr_syntax_map[PORT_NUMBER_STR] = objAttrPortNumberSyntax;
 
   Kt_Class_Attr_Syntax objAttrDescSyntax =
   { PFC_IPCTYPE_STRING, 0, 0, 0, 128, false, "" };
-  attr_syntax_map[PORT_DESCRIPTION] = objAttrDescSyntax;
+  attr_syntax_map[PORT_DESCRIPTION_STR] = objAttrDescSyntax;
 
   Kt_Class_Attr_Syntax objAttrAdminStatusSyntax =
   { PFC_IPCTYPE_UINT8, 0, 1, 0, 0, false, "" };
-  attr_syntax_map[PORT_ADMIN_STATUS] = objAttrAdminStatusSyntax;
+  attr_syntax_map[PORT_ADMIN_STATUS_STR] = objAttrAdminStatusSyntax;
 
   Kt_Class_Attr_Syntax objAttrDirectionSyntax =
   { PFC_IPCTYPE_UINT8, 0, 2, 0, 0, false, "" };
-  attr_syntax_map[PORT_DIRECTION] = objAttrDirectionSyntax;
+  attr_syntax_map[PORT_DIRECTION_STR] = objAttrDirectionSyntax;
 
   Kt_Class_Attr_Syntax objAttrTrunkAVlanSyntax =
   { PFC_IPCTYPE_UINT16, 0, 65536, 0, 0, false, "" };
-  attr_syntax_map[PORT_TRUNK_ALL_VLAN] = objAttrTrunkAVlanSyntax;
+  attr_syntax_map[PORT_TRUNK_ALL_VLAN_STR] = objAttrTrunkAVlanSyntax;
 
   Kt_Class_Attr_Syntax objAttrOperStatusSyntax =
   { PFC_IPCTYPE_UINT8, 0, 2, 0, 0, false, "" };
-  attr_syntax_map[PORT_OPER_STATUS] = objAttrOperStatusSyntax;
+  attr_syntax_map[PORT_OPER_STATUS_STR] = objAttrOperStatusSyntax;
 
   Kt_Class_Attr_Syntax objAttrMacAddressSyntax =
   { PFC_IPCTYPE_STRING, 0, 0, 0, 6, false, "" };
-  attr_syntax_map[PORT_MAC_ADDRESS] = objAttrMacAddressSyntax;
+  attr_syntax_map[PORT_MAC_ADDRESS_STR] = objAttrMacAddressSyntax;
 
   Kt_Class_Attr_Syntax objAttrDuplexSyntax =
   { PFC_IPCTYPE_UINT8, 0, 1, 0, 0, false, "" };
-  attr_syntax_map[PORT_DUPLEX] = objAttrDuplexSyntax;
+  attr_syntax_map[PORT_DUPLEX_STR] = objAttrDuplexSyntax;
 
   Kt_Class_Attr_Syntax objAttrSpeedSyntax =
   { PFC_IPCTYPE_UINT64, 0, 0, 0, 0, false, "" };
-  attr_syntax_map[PORT_SPEED] = objAttrSpeedSyntax;
+  attr_syntax_map[PORT_SPEED_STR] = objAttrSpeedSyntax;
 
   Kt_Class_Attr_Syntax objAttrAlarmsStatusSyntax =
   { PFC_IPCTYPE_UINT64, 1, 3, 0, 0, false, "" };
-  attr_syntax_map[PORT_ALARM_STATUS] = objAttrAlarmsStatusSyntax;
+  attr_syntax_map[PORT_ALARM_STATUS_STR] = objAttrAlarmsStatusSyntax;
 
   Kt_Class_Attr_Syntax objAttrLogicalPortIdSyntax =
   { PFC_IPCTYPE_STRING, 0, 0, 0, 320, false, "" };
-  attr_syntax_map[PORT_LOGIC_PORT_ID] = objAttrLogicalPortIdSyntax;
+  attr_syntax_map[PORT_LOGIC_PORT_ID_STR] = objAttrLogicalPortIdSyntax;
 
   Kt_Class_Attr_Syntax objAttrValidSyntax =
   { PFC_IPCTYPE_STRING, 0, 0, 0, 12, false, "" };
-  attr_syntax_map[PORT_VALID] = objAttrValidSyntax;
+  attr_syntax_map[PORT_VALID_STR] = objAttrValidSyntax;
+
+  attr_syntax_map_all[UNC_KT_PORT] = attr_syntax_map;
 }
 
-/** UpdatePortValidFlag
- * * @Description : This function forms the valid flag based on update req
- * * * @param[in] : Key, value struct and newvalid val
- * * * @return    : Success or associated error code
- * */
+/** 
+ * @Description : This function forms the valid flag based on update req
+ * @param[in]   : key_struct - void pointer to be type cast to port key type
+ *                val_struct - void pointer to be type cast to port value
+ *                structure type
+ *                val_port_valid_st - structure variable of type
+ *                val_port_valid_st
+ *                new_valid_val - enum for valid flag
+ * @return      : UPPL_RC_SUCCESS - if valid flag update is success 
+ *                UPL_RC_ERR_* - if valid flag update is failure
+ **/
 UpplReturnCode Kt_Port::UpdatePortValidFlag(
+    OdbcmConnectionHandler *db_conn,
     void *key_struct,
     void *val_struct,
     val_port_st_t &val_port_valid_st,
-    unc_keytype_validflag_t new_valid_val) {
+    unc_keytype_validflag_t new_valid_val,
+    uint32_t data_type) {
   UpplReturnCode return_code = UPPL_RC_SUCCESS;
   // read the value structure from db
   void *obj_key_port_orig = key_struct;
   vector<void *> vect_key_port;
   vect_key_port.push_back(key_struct);
   vector<void *> vect_val_port;
-  return_code = ReadInternal(vect_key_port, vect_val_port,
-                             UNC_DT_STATE, UNC_OP_READ);
+  return_code = ReadInternal(db_conn, vect_key_port, vect_val_port,
+                             data_type, UNC_OP_READ);
   if (return_code != UPPL_RC_SUCCESS) {
     pfc_log_info("Read is not success");
     return return_code;
@@ -2066,7 +2214,7 @@ UpplReturnCode Kt_Port::UpdatePortValidFlag(
     uint32_t operation_type = UNC_OP_UPDATE;
 
     // Get the valid value from req received, verify the valid status
-    // For all valid attribs update stream to valid, for invalid attribs
+    // For all valid attributes update stream to valid, for invalid attributes
     // update stream with valid value read from db.
     // store the final valid val to stream
     stringstream ss_new;
@@ -2075,10 +2223,10 @@ UpplReturnCode Kt_Port::UpdatePortValidFlag(
     unsigned int valid_val =
         PhyUtil::uint8touint(obj_val_port->port.valid[kIdxPortNumber]);
     if (PhyUtil::IsValidValue(operation_type, valid_val) == true) {
-      pfc_log_debug("valid value port_number: %d", valid_val);
       ss_new << new_valid_val;
     } else {
-      ss_new << obj_new_val_port->port.valid[kIdxPortNumber];
+      ss_new << PhyUtil::uint8touint(
+          obj_new_val_port->port.valid[kIdxPortNumber]);
       pfc_log_debug("invalid value for port_number ignore the value");
     }
 
@@ -2086,10 +2234,10 @@ UpplReturnCode Kt_Port::UpdatePortValidFlag(
     valid_val =
         PhyUtil::uint8touint(obj_val_port->port.valid[kIdxPortDescription]);
     if (PhyUtil::IsValidValue(operation_type, valid_val) == true) {
-      pfc_log_debug("valid val desc: %d", valid_val);
       ss_new << new_valid_val;
     } else {
-      ss_new << obj_new_val_port->port.valid[kIdxPortDescription];
+      ss_new << PhyUtil::uint8touint(
+          obj_new_val_port->port.valid[kIdxPortDescription]);
       pfc_log_debug("invalid value for desc ignore the value");
     }
 
@@ -2097,10 +2245,10 @@ UpplReturnCode Kt_Port::UpdatePortValidFlag(
     valid_val =
         PhyUtil::uint8touint(obj_val_port->port.valid[kIdxPortAdminStatus]);
     if (PhyUtil::IsValidValue(operation_type, valid_val) == true) {
-      pfc_log_debug("valid value admin_status: %d", valid_val);
       ss_new << new_valid_val;
     } else {
-      ss_new << obj_new_val_port->port.valid[kIdxPortAdminStatus];
+      ss_new << PhyUtil::uint8touint(
+          obj_new_val_port->port.valid[kIdxPortAdminStatus]);
       pfc_log_debug("invalid value for admin_status ignore the value");
     }
 
@@ -2109,10 +2257,10 @@ UpplReturnCode Kt_Port::UpdatePortValidFlag(
         PhyUtil::uint8touint(
             obj_val_port->port.valid[kIdxPortTrunkAllowedVlan]);
     if (PhyUtil::IsValidValue(operation_type, valid_val) == true) {
-      pfc_log_debug("valid value trunkallowed: %d", valid_val);
       ss_new << new_valid_val;
     } else {
-      ss_new << obj_new_val_port->port.valid[kIdxPortTrunkAllowedVlan];
+      ss_new << PhyUtil::uint8touint(
+          obj_new_val_port->port.valid[kIdxPortTrunkAllowedVlan]);
       pfc_log_debug("invalid value for trunkallowed ignore the value");
     }
 
@@ -2120,11 +2268,11 @@ UpplReturnCode Kt_Port::UpdatePortValidFlag(
     valid_val =
         PhyUtil::uint8touint(obj_val_port->valid[kIdxPortOperStatus]);
     if (PhyUtil::IsValidValue(operation_type, valid_val) == true) {
-      pfc_log_debug("valid value operstatus: %d", valid_val);
       ss_new << new_valid_val;
 
     } else {
-      ss_new << obj_new_val_port->valid[kIdxPortOperStatus];
+      ss_new << PhyUtil::uint8touint(
+          obj_new_val_port->valid[kIdxPortOperStatus]);
       pfc_log_debug("invalid value for operstatus ignore the value");
     }
 
@@ -2132,10 +2280,10 @@ UpplReturnCode Kt_Port::UpdatePortValidFlag(
     valid_val =
         PhyUtil::uint8touint(obj_val_port->valid[kIdxPortMacAddress]);
     if (PhyUtil::IsValidValue(operation_type, valid_val) == true) {
-      pfc_log_debug("valid value macaddress: %d", valid_val);
       ss_new << new_valid_val;
     } else {
-      ss_new << obj_new_val_port->valid[kIdxPortMacAddress];
+      ss_new << PhyUtil::uint8touint(
+          obj_new_val_port->valid[kIdxPortMacAddress]);
       pfc_log_debug("invalid value for macaddress ignore the value");
     }
 
@@ -2143,41 +2291,39 @@ UpplReturnCode Kt_Port::UpdatePortValidFlag(
     valid_val =
         PhyUtil::uint8touint(obj_val_port->valid[kIdxPortDirection]);
     if (PhyUtil::IsValidValue(operation_type, valid_val) == true) {
-      pfc_log_debug("valid value portdirection: %d", valid_val);
       ss_new << new_valid_val;
     } else {
-      ss_new << obj_new_val_port->valid[kIdxPortDirection];
+      ss_new << PhyUtil::uint8touint(
+          obj_new_val_port->valid[kIdxPortDirection]);
       pfc_log_debug("invalid value for portdirection ignore the value");
     }
 
     // valid val of portduplex
     valid_val = PhyUtil::uint8touint(obj_val_port->valid[kIdxPortDuplex]);
     if (PhyUtil::IsValidValue(operation_type, valid_val) == true) {
-      pfc_log_debug("valid value portduplex: %d", valid_val);
       ss_new << new_valid_val;
     } else {
-      ss_new << obj_new_val_port->valid[kIdxPortDuplex];
+      ss_new << PhyUtil::uint8touint(obj_new_val_port->valid[kIdxPortDuplex]);
       pfc_log_debug("invalid value for portduplex ignore the value");
     }
 
     // valid val of portspeed
     valid_val = PhyUtil::uint8touint(obj_val_port->valid[kIdxPortSpeed]);
     if (PhyUtil::IsValidValue(operation_type, valid_val) == true) {
-      pfc_log_debug("valid value portspeed: %d", valid_val);
       ss_new << new_valid_val;
     } else {
-      ss_new << obj_new_val_port->valid[kIdxPortSpeed];
+      ss_new << PhyUtil::uint8touint(obj_new_val_port->valid[kIdxPortSpeed]);
       pfc_log_debug("invalid value for portspeed ignore the value");
     }
 
-    // valid val of alrmstatus
+    // valid val of alarmstatus
     valid_val =
         PhyUtil::uint8touint(obj_val_port->valid[kIdxPortAlarmsStatus]);
     if (PhyUtil::IsValidValue(operation_type, valid_val) == true) {
-      pfc_log_debug("valid value alrmstatus: %d", valid_val);
       ss_new << new_valid_val;
     } else {
-      ss_new << obj_new_val_port->valid[kIdxPortAlarmsStatus];
+      ss_new << PhyUtil::uint8touint(
+          obj_new_val_port->valid[kIdxPortAlarmsStatus]);
       pfc_log_debug("invalid value for alrmstatus ignore the value");
     }
 
@@ -2185,19 +2331,19 @@ UpplReturnCode Kt_Port::UpdatePortValidFlag(
     valid_val =
         PhyUtil::uint8touint(obj_val_port->valid[kIdxPortLogicalPortId]);
     if (PhyUtil::IsValidValue(operation_type, valid_val) == true) {
-      pfc_log_debug("valid value logicalportid: %d", valid_val);
       ss_new << new_valid_val;
     } else {
-      ss_new << obj_new_val_port->valid[kIdxPortLogicalPortId];
+      ss_new << PhyUtil::uint8touint(
+          obj_new_val_port->valid[kIdxPortLogicalPortId]);
       pfc_log_debug("invalid value for logicalportid ignore the value");
     }
-    pfc_log_debug("updateport final valid val:%s", ss_new.str().c_str());
+    pfc_log_debug("update port final valid val:%s", ss_new.str().c_str());
     // call populate schema for valid update
     return_code = PopulateSchemaForValidFlag(
-        // key_struct,
+        db_conn,
         obj_key_port_orig,
         reinterpret_cast<void*> (&obj_new_val_port),
-        ss_new.str().c_str());
+        ss_new.str().c_str(), data_type);
     delete obj_new_val_port;
     obj_new_val_port = NULL;
     key_port_t *key_port = reinterpret_cast<key_port_t*>(vect_key_port[0]);
@@ -2209,26 +2355,33 @@ UpplReturnCode Kt_Port::UpdatePortValidFlag(
   return return_code;
 }
 
-/** PopulateSchemaForValidFlag
- *  * @Description : This function updates the valid flag value
- *  of the port
- *  * @param[in] : key_struct, value_struct, valid val
- *  * @return    : success/failure
- */
-UpplReturnCode Kt_Port::PopulateSchemaForValidFlag(void* key_struct,
-                                                   void* val_struct,
-                                                   string valid_new) {
+/** 
+ * @Description : This function updates the valid flag value
+ *                of the port
+ * @param[in]   : key_struct - void pointer to be type cast to port key type
+ *                structure
+ *                val_struct - void pointer to be type cast to port value type
+ *                structure
+ *                valid_new - stores the valid flag to be updated in Db
+ * @return      : UPPL_RC_SUCCESS - if port valid update operation is success
+ *                UPPL_RC_ERR_* - if port valid update operation is failure
+ **/
+UpplReturnCode Kt_Port::PopulateSchemaForValidFlag(
+    OdbcmConnectionHandler *db_conn,
+    void* key_struct,
+    void* val_struct,
+    string valid_new,
+    uint32_t data_type) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   key_port_t *obj_key_port=
       reinterpret_cast<key_port_t*>(key_struct);
-  TableAttrSchema kt_port_table_attr_schema;
   vector<TableAttrSchema> vect_table_attr_schema;
   list < vector<TableAttrSchema> > row_list;
 
   vector<string> vect_prim_keys;
-  vect_prim_keys.push_back(CTR_NAME);
-  vect_prim_keys.push_back(SWITCH_ID);
-  vect_prim_keys.push_back(PORT_ID);
+  vect_prim_keys.push_back(CTR_NAME_STR);
+  vect_prim_keys.push_back(SWITCH_ID_STR);
+  vect_prim_keys.push_back(PORT_ID_STR);
 
 
   string controller_name = (const char*)obj_key_port->sw_key.
@@ -2237,38 +2390,40 @@ UpplReturnCode Kt_Port::PopulateSchemaForValidFlag(void* key_struct,
       sw_key.switch_id;
   string port_id = (const char*)obj_key_port->port_id;
   if (!controller_name.empty()) {
-    PhyUtil::FillDbSchema(CTR_NAME, controller_name,
+    PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                           (controller_name.length()+1), DATATYPE_UINT8_ARRAY_32,
                           vect_table_attr_schema);
   }
 
   if (!switch_id.empty()) {
-    PhyUtil::FillDbSchema(SWITCH_ID, switch_id,
+    PhyUtil::FillDbSchema(unc::uppl::SWITCH_ID, switch_id,
                           (switch_id.length()+1), DATATYPE_UINT8_ARRAY_256,
                           vect_table_attr_schema);
   }
 
   if (!port_id.empty()) {
-    PhyUtil::FillDbSchema(PORT_ID, port_id,
+    PhyUtil::FillDbSchema(unc::uppl::PORT_ID, port_id,
                           (port_id.length()+1), DATATYPE_UINT8_ARRAY_32,
                           vect_table_attr_schema);
   }
 
   pfc_log_debug("valid new val:%s", valid_new.c_str());
-  PhyUtil::FillDbSchema(PORT_VALID, valid_new.c_str(),
+  PhyUtil::FillDbSchema(unc::uppl::PORT_VALID, valid_new.c_str(),
                         11, DATATYPE_UINT8_ARRAY_11,
                         vect_table_attr_schema);
 
   DBTableSchema kt_port_dbtableschema;
-  kt_port_dbtableschema.set_table_name(UPPL_PORT_TABLE);
+  kt_port_dbtableschema.set_table_name(unc::uppl::PORT_TABLE);
   kt_port_dbtableschema.set_primary_keys(vect_prim_keys);
   row_list.push_back(vect_table_attr_schema);
   kt_port_dbtableschema.set_row_list(row_list);
 
   // Call ODBCManager and update
   ODBCM_RC_STATUS update_db_status =
-      physical_layer->get_odbc_manager()->UpdateOneRow(UNC_DT_STATE,
-                                                       kt_port_dbtableschema);
+      physical_layer->get_odbc_manager()->UpdateOneRow(
+          unc_keytype_datatype_t(data_type),
+          kt_port_dbtableschema,
+          db_conn);
   if (update_db_status != ODBCM_RC_SUCCESS) {
     // log error
     pfc_log_error("port valid update operation failed");
@@ -2277,11 +2432,13 @@ UpplReturnCode Kt_Port::PopulateSchemaForValidFlag(void* key_struct,
   return UPPL_RC_SUCCESS;
 }
 
-/** FrameValidValue
- * * @Description : This function converts the string value from db to uint8
- * * * @param[in] : Attribute value and val_ctr_st
- * * * @return    : Success or associated error code
- * */
+/**
+ * @Description : This function converts the string value from db to uint8
+ * @param[in]   : attr_value - string to store attribute value
+ *                obj_val_port - struct variables of val_port_st structure
+ * @return      : None
+ **/
+
 void Kt_Port::FrameValidValue(string attr_value,
                               val_port_st &obj_val_port) {
   for (unsigned int index = 0; index < attr_value.length(); ++index) {
@@ -2298,15 +2455,21 @@ void Kt_Port::FrameValidValue(string attr_value,
   return;
 }
 
-/** GetPortValStructure
- * * @Description : This function reads the values given in val_port structure
- * * @param[in] : DBTableSchema - DBtableschema associated with KT_Port
- * key_struct - key instance of Kt_Switch
- * val_struct - val instance of Kt_Switch
- * operation_type - UNC_OP*
- * * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
- * */
+/** 
+ * @Description : This function reads the values given in val_port structure
+ * @param[in]   : obj_val_port - pointer to structure val_port_st_t
+ *                vect_table_attr_schema - vector to store the db table
+ *                attribute schema
+ *                vect_prim_keys - vector to store the primary keys of port key
+ *                type
+ *                operation_type - indicates the operation type
+ *                val_port_valid_st - pointer to the structure val_port_st_t
+ *                valid - reference variable to store the valid flags of port
+ *                value structure
+ * @return      : None 
+ **/
 void Kt_Port::GetPortValStructure(
+    OdbcmConnectionHandler *db_conn,
     val_port_st_t *obj_val_port,
     vector<TableAttrSchema> &vect_table_attr_schema,
     vector<string> &vect_prim_keys,
@@ -2319,7 +2482,7 @@ void Kt_Port::GetPortValStructure(
     valid_value_struct = PhyUtil::uint8touint(
         obj_val_port->valid[kIdxPortSt]);
   }
-  string value;
+  string value = "";
   // Port_number
   if (obj_val_port != NULL && valid_value_struct == UNC_VF_VALID) {
     valid_val = PhyUtil::uint8touint(
@@ -2333,7 +2496,7 @@ void Kt_Port::GetPortValStructure(
   } else {
     valid_val = UPPL_NO_VAL_STRUCT;
   }
-  PhyUtil::FillDbSchema(PORT_NUMBER, value,
+  PhyUtil::FillDbSchema(unc::uppl::PORT_NUMBER, PORT_NUMBER_STR, value,
                         value.length(), DATATYPE_UINT32,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, valid);
@@ -2351,8 +2514,8 @@ void Kt_Port::GetPortValStructure(
   } else {
     valid_val = UPPL_NO_VAL_STRUCT;
   }
-  PhyUtil::FillDbSchema(PORT_DESCRIPTION, value,
-                        value.length(), DATATYPE_UINT8_ARRAY_128,
+  PhyUtil::FillDbSchema(unc::uppl::PORT_DESCRIPTION, PORT_DESCRIPTION_STR,
+                        value, value.length(), DATATYPE_UINT8_ARRAY_128,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, valid);
   value.clear();
@@ -2369,8 +2532,8 @@ void Kt_Port::GetPortValStructure(
   } else {
     valid_val = UPPL_NO_VAL_STRUCT;
   }
-  PhyUtil::FillDbSchema(PORT_ADMIN_STATUS, value,
-                        value.length(), DATATYPE_UINT16,
+  PhyUtil::FillDbSchema(unc::uppl::PORT_ADMIN_STATUS, PORT_ADMIN_STATUS_STR,
+                        value, value.length(), DATATYPE_UINT16,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, valid);
   value.clear();
@@ -2388,29 +2551,35 @@ void Kt_Port::GetPortValStructure(
   } else {
     valid_val = UPPL_NO_VAL_STRUCT;
   }
-  PhyUtil::FillDbSchema(PORT_TRUNK_ALL_VLAN, value,
-                        value.length(), DATATYPE_UINT16,
+  PhyUtil::FillDbSchema(unc::uppl::PORT_TRUNK_ALL_VLAN, PORT_TRUNK_ALL_VLAN_STR,
+                        value, value.length(), DATATYPE_UINT16,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, valid);
   return;
 }
 
-/** GetPortStateValStructure
- * * @Description : This function reads the values given in val_port_st structure
- * * @param[in] : DBTableSchema - DBtableschema associated with KT_Port
- * key_struct - key instance of Kt_Switch
- * val_struct - val instance of Kt_Switch
- * operation_type - UNC_OP*
- * * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
- * */
+/** 
+ * @Description : This function reads the values given in val_port_st structure
+ * @param[in]   : obj_val_port - pointer to structure val_port_st_t
+ *                vect_table_attr_schema - vector to store the table attribute
+ *                schema of key type port
+ *                vect_prim_keys - vector to store the primary keys of port key
+ *                type
+ *                operation_type - indicates the operation type
+ *                val_port_valid_st - pointer to the structure val_port_st_t
+ *                valid - reference variable to store the valid flags of port
+ *                value structure
+ * @return      : None
+ **/
 void Kt_Port::GetPortStateValStructure(
+    OdbcmConnectionHandler *db_conn,
     val_port_st_t *obj_val_port,
     vector<TableAttrSchema> &vect_table_attr_schema,
     vector<string> &vect_prim_keys,
     uint8_t operation_type,
     val_port_st_t *val_port_valid_st,
     stringstream &valid) {
-  string value;
+  string value = "";
   uint16_t valid_val = 0, prev_db_val = 0;
   // oper status
   if (obj_val_port != NULL) {
@@ -2427,17 +2596,14 @@ void Kt_Port::GetPortStateValStructure(
   } else {
     valid_val = UPPL_NO_VAL_STRUCT;
   }
-  PhyUtil::FillDbSchema(PORT_OPER_STATUS, value,
-                        value.length(), DATATYPE_UINT16,
+  PhyUtil::FillDbSchema(unc::uppl::PORT_OPER_STATUS, PORT_OPER_STATUS_STR,
+                        value, value.length(), DATATYPE_UINT16,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, valid);
   value.clear();
   // Mac_address
   if (obj_val_port != NULL) {
     valid_val = PhyUtil::uint8touint(obj_val_port->valid[kIdxPortMacAddress]);
-    if (valid_val == UNC_VF_VALID) {
-      value = (const char*)obj_val_port->mac_address;
-    }
     if (operation_type == UNC_OP_UPDATE) {
       prev_db_val =
           PhyUtil::uint8touint(
@@ -2446,10 +2612,19 @@ void Kt_Port::GetPortStateValStructure(
   } else {
     valid_val = UPPL_NO_VAL_STRUCT;
   }
-  PhyUtil::FillDbSchema(PORT_MAC_ADDRESS, value,
-                        value.length(), DATATYPE_UINT8_ARRAY_6,
-                        operation_type, valid_val, prev_db_val,
-                        vect_table_attr_schema, vect_prim_keys, valid);
+  if (valid_val == UNC_VF_VALID) {
+    PhyUtil::FillDbSchema(unc::uppl::PORT_MAC_ADDRESS, PORT_MAC_ADDRESS_STR,
+                          obj_val_port->mac_address, ODBCM_SIZE_6,
+                          DATATYPE_UINT8_ARRAY_6,
+                          operation_type, valid_val, prev_db_val,
+                          vect_table_attr_schema, vect_prim_keys, valid);
+  } else {
+    PhyUtil::FillDbSchema(unc::uppl::PORT_MAC_ADDRESS, PORT_MAC_ADDRESS_STR,
+                          value, value.length(), DATATYPE_UINT8_ARRAY_6,
+                          operation_type, valid_val, prev_db_val,
+                          vect_table_attr_schema, vect_prim_keys, valid);
+  }
+
   value.clear();
   // direction
   if (obj_val_port != NULL) {
@@ -2465,7 +2640,7 @@ void Kt_Port::GetPortStateValStructure(
   } else {
     valid_val = UPPL_NO_VAL_STRUCT;
   }
-  PhyUtil::FillDbSchema(PORT_DIRECTION, value,
+  PhyUtil::FillDbSchema(unc::uppl::PORT_DIRECTION, PORT_DIRECTION_STR, value,
                         value.length(), DATATYPE_UINT16,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, valid);
@@ -2484,7 +2659,7 @@ void Kt_Port::GetPortStateValStructure(
   } else {
     valid_val = UPPL_NO_VAL_STRUCT;
   }
-  PhyUtil::FillDbSchema(PORT_DUPLEX, value,
+  PhyUtil::FillDbSchema(unc::uppl::PORT_DUPLEX, PORT_DUPLEX_STR, value,
                         value.length(), DATATYPE_UINT16,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, valid);
@@ -2503,7 +2678,7 @@ void Kt_Port::GetPortStateValStructure(
   } else {
     valid_val = UPPL_NO_VAL_STRUCT;
   }
-  PhyUtil::FillDbSchema(PORT_SPEED, value,
+  PhyUtil::FillDbSchema(unc::uppl::PORT_SPEED, PORT_SPEED_STR, value,
                         value.length(), DATATYPE_UINT64,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, valid);
@@ -2525,8 +2700,8 @@ void Kt_Port::GetPortStateValStructure(
   if (operation_type == UNC_OP_CREATE) {
     valid_val = UNC_VF_VALID;
   }
-  PhyUtil::FillDbSchema(PORT_ALARM_STATUS, value,
-                        value.length(), DATATYPE_UINT64,
+  PhyUtil::FillDbSchema(unc::uppl::PORT_ALARM_STATUS, PORT_ALARM_STATUS_STR,
+                        value, value.length(), DATATYPE_UINT64,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, valid);
   value.clear();
@@ -2545,16 +2720,125 @@ void Kt_Port::GetPortStateValStructure(
   } else {
     valid_val = UPPL_NO_VAL_STRUCT;
   }
-  PhyUtil::FillDbSchema(PORT_LOGIC_PORT_ID, value,
-                        value.length(), DATATYPE_UINT8_ARRAY_320,
+  PhyUtil::FillDbSchema(unc::uppl::PORT_LOGIC_PORT_ID, PORT_LOGIC_PORT_ID_STR,
+                        value, value.length(), DATATYPE_UINT8_ARRAY_320,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, valid);
   stringstream dummy_valid;
   valid_val = UPPL_NO_VAL_STRUCT;
   prev_db_val = 0;
   // valid
-  PhyUtil::FillDbSchema(PORT_VALID, valid.str(),
+  PhyUtil::FillDbSchema(unc::uppl::PORT_VALID, valid.str(),
                         valid.str().length(), DATATYPE_UINT8_ARRAY_11,
                         vect_table_attr_schema);
   return;
+}
+
+/**
+ * @Description : This function performs oper status handling for sub domain
+ * @param[in]   : data_type - indicates the data base type
+ *                controller_name, switch_name and physical_port id
+ * @return      : UPPL_RC_SUCCESS
+ **/
+UpplReturnCode Kt_Port::SubDomainOperStatusHandling(
+    OdbcmConnectionHandler *db_conn,
+    uint32_t data_type,
+    string controller_name,
+    string switch_id,
+    string physical_port_id) {
+  PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+  DBTableSchema kt_logicalport_dbtableschema;
+  vector<string> vect_prim_keys;
+  vector<TableAttrSchema> vect_table_attr_schema;
+  list< vector<TableAttrSchema> > row_list;
+  vect_prim_keys.push_back(CTR_NAME_STR);
+  PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
+                        controller_name.length(), DATATYPE_UINT8_ARRAY_32,
+                        vect_table_attr_schema);
+  vect_prim_keys.push_back(LP_SWITCH_ID_STR);
+  PhyUtil::FillDbSchema(unc::uppl::LMP_SWITCH_ID, switch_id,
+                        switch_id.length(), DATATYPE_UINT8_ARRAY_256,
+                        vect_table_attr_schema);
+  vect_prim_keys.push_back(LMP_PHYSICAL_PORT_ID_STR);
+  PhyUtil::FillDbSchema(unc::uppl::LMP_PHYSICAL_PORT_ID, physical_port_id,
+                        physical_port_id.length(), DATATYPE_UINT8_ARRAY_32,
+                        vect_table_attr_schema);
+  string log_port_id = "";
+  vect_prim_keys.push_back(LMP_LP_PORT_ID_STR);
+  PhyUtil::FillDbSchema(unc::uppl::LMP_LP_PORT_ID, log_port_id,
+                        log_port_id.length(), DATATYPE_UINT8_ARRAY_320,
+                        vect_table_attr_schema);
+  string domain_name = "";
+  PhyUtil::FillDbSchema(unc::uppl::DOMAIN_NAME, domain_name,
+                        domain_name.length(), DATATYPE_UINT8_ARRAY_32,
+                        vect_table_attr_schema);
+  kt_logicalport_dbtableschema.set_table_name(
+      unc::uppl::LOGICAL_MEMBERPORT_TABLE);
+  kt_logicalport_dbtableschema.set_primary_keys(vect_prim_keys);
+
+  row_list.push_back(vect_table_attr_schema);
+  kt_logicalport_dbtableschema.set_row_list(row_list);
+
+  ODBCM_RC_STATUS db_status = physical_layer->get_odbc_manager()->
+      GetBulkRows((unc_keytype_datatype_t)data_type, UPPL_MAX_REP_CT,
+                  kt_logicalport_dbtableschema,
+                  (unc_keytype_operation_t)UNC_OP_READ_SIBLING_BEGIN,
+                  db_conn);
+  if (db_status != ODBCM_RC_SUCCESS) {
+    pfc_log_debug("No associated logical member port");
+    return UPPL_RC_SUCCESS;
+  }
+  // To traverse the list
+  list<vector<TableAttrSchema> > ::iterator iter_list;
+  for (iter_list = kt_logicalport_dbtableschema.row_list_.begin();
+      iter_list != kt_logicalport_dbtableschema.row_list_.end();
+      ++iter_list) {
+    vector<TableAttrSchema> &attributes_vector = *iter_list;
+    vector<TableAttrSchema> :: iterator iter_vector;
+    for (iter_vector = attributes_vector.begin();
+        iter_vector != attributes_vector.end();
+        ++iter_vector) {
+      /* Get attribute name of a row */
+      TableAttrSchema tab_att_schema = (*iter_vector);
+      switch (tab_att_schema.table_attribute_name) {
+        case unc::uppl::LMP_LP_PORT_ID:
+          uint8_t lp_id[ODBCM_SIZE_320];
+          PhyUtil::GetValueFromDbSchemaStr(tab_att_schema, lp_id,
+                                           DATATYPE_UINT8_ARRAY_320);
+          log_port_id = reinterpret_cast<const char*> (lp_id);
+          break;
+        case unc::uppl::DOMAIN_NAME:
+          uint8_t lp_domain_name[ODBCM_SIZE_32];
+          PhyUtil::GetValueFromDbSchemaStr(tab_att_schema, lp_domain_name,
+                                           DATATYPE_UINT8_ARRAY_32);
+          domain_name = reinterpret_cast<const char*> (lp_domain_name);
+          break;
+        default:
+          break;
+      }
+    }
+    // Call LogicalPort Handle Oper status
+    // Notify Kt_Logical_Port
+    key_logical_port_t logical_port_key;
+    memset(&logical_port_key, 0, sizeof(key_logical_port_t));
+    memcpy(logical_port_key.domain_key.ctr_key.controller_name,
+           controller_name.c_str(),
+           controller_name.length()+1);
+    memcpy(logical_port_key.domain_key.domain_name,
+           domain_name.c_str(),
+           domain_name.length()+1);
+    memcpy(logical_port_key.port_id,
+           log_port_id.c_str(),
+           log_port_id.length()+1);
+    vector<OperStatusHolder> ref_oper_status;
+    GET_ADD_CTRL_OPER_STATUS(controller_name);
+    Kt_LogicalPort log_port_obj;
+    UpplReturnCode return_code = log_port_obj.HandleOperStatus(
+        db_conn, data_type, reinterpret_cast<void *> (&logical_port_key),
+        NULL, ref_oper_status, UNC_KT_PORT);
+    pfc_log_debug("HandleOperStatus for logical port class %d",
+                  return_code);
+    ClearOperStatusHolder(ref_oper_status);
+  }
+  return UPPL_RC_SUCCESS;
 }

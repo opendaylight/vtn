@@ -80,9 +80,8 @@ public class FlowFilterEntryResourceValidator extends VtnServiceValidator {
 				if (((FlowFilterEntryResource) resource).getSeqnum() != null
 						&& !((FlowFilterEntryResource) resource).getSeqnum()
 								.trim().isEmpty()) {
-					isValid = validator.isValidRange(Integer
-							.parseInt(((FlowFilterEntryResource) resource)
-									.getSeqnum().trim()),
+					isValid = validator.isValidRange(((FlowFilterEntryResource) resource)
+									.getSeqnum().trim(),
 							VtnServiceJsonConsts.VAL_1,
 							VtnServiceJsonConsts.VAL_65535);
 				} else {
@@ -115,11 +114,12 @@ public class FlowFilterEntryResourceValidator extends VtnServiceValidator {
 					&& VtnServiceConsts.PUT.equals(method)) {
 				isValid = validator.isValidFlowFilterEntry(requestBody);
 				setInvalidParameter(validator.getInvalidParameter());
-			} else {
+			} else if (isValid) {
+				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			if(method.equals(VtnServiceConsts.PUT)){
+			if (method.equals(VtnServiceConsts.PUT)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
 			LOG.error("Inside catch:NumberFormatException");
@@ -153,35 +153,43 @@ public class FlowFilterEntryResourceValidator extends VtnServiceValidator {
 	private boolean validateGet(final JsonObject requestBody) {
 		LOG.trace("Start FlowFilterEntryResourceValidator#validateGet()");
 		boolean isValid = false;
-		// validation for key: controller_id(mandatory)
-		setInvalidParameter(VtnServiceJsonConsts.CONTROLLERID);
-		if (requestBody.has(VtnServiceJsonConsts.CONTROLLERID)
-				&& requestBody.getAsJsonPrimitive(
-						VtnServiceJsonConsts.CONTROLLERID).getAsString() != null) {
-			isValid = validator.isValidMaxLengthAlphaNum(requestBody
-					.getAsJsonPrimitive(VtnServiceJsonConsts.CONTROLLERID)
-					.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
-		} else {
-			isValid = false;
-		}
-		if (isValid) {
-			// validation for key: domain_id(mandatory)
-			setInvalidParameter(VtnServiceJsonConsts.DOMAINID);
-			if (requestBody.has(VtnServiceJsonConsts.DOMAINID)
+		
+		// validation for key: targetdb
+		setInvalidParameter(VtnServiceJsonConsts.TARGETDB);
+		isValid = validator.isValidRequestDB(requestBody);
+
+		if (isValid
+				&& requestBody
+						.getAsJsonPrimitive(VtnServiceJsonConsts.TARGETDB)
+						.getAsString().trim()
+						.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
+			// validation for key: controller_id(mandatory)
+			setInvalidParameter(VtnServiceJsonConsts.CONTROLLERID);
+			if (requestBody.has(VtnServiceJsonConsts.CONTROLLERID)
 					&& requestBody.getAsJsonPrimitive(
-							VtnServiceJsonConsts.DOMAINID).getAsString() != null) {
-				isValid = validator.isValidDomainId(requestBody
-						.getAsJsonPrimitive(VtnServiceJsonConsts.DOMAINID)
+							VtnServiceJsonConsts.CONTROLLERID).getAsString() != null) {
+				isValid = validator.isValidMaxLengthAlphaNum(requestBody
+						.getAsJsonPrimitive(VtnServiceJsonConsts.CONTROLLERID)
 						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
 			} else {
 				isValid = false;
 			}
+			
+			if (isValid) {
+				// validation for key: domain_id(mandatory)
+				setInvalidParameter(VtnServiceJsonConsts.DOMAINID);
+				if (requestBody.has(VtnServiceJsonConsts.DOMAINID)
+						&& requestBody.getAsJsonPrimitive(
+								VtnServiceJsonConsts.DOMAINID).getAsString() != null) {
+					isValid = validator.isValidDomainId(requestBody
+							.getAsJsonPrimitive(VtnServiceJsonConsts.DOMAINID)
+							.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+				} else {
+					isValid = false;
+				}
+			}			
 		}
-		// validation for key: targetdb
-		if (isValid) {
-			setInvalidParameter(VtnServiceJsonConsts.TARGETDB);
-			isValid = validator.isValidRequestDB(requestBody);
-		}
+						
 		// validation for key: op
 		if (isValid) {
 			setInvalidParameter(VtnServiceJsonConsts.OP);

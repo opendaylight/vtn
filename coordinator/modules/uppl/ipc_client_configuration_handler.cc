@@ -35,7 +35,7 @@ Ktclasses,Audit,Import and ITC class.
 
 
 IPCClientDriverHandler::IPCClientDriverHandler(
-    unc_keytype_ctrtype_t cntr_type, int &err) {
+    unc_keytype_ctrtype_t cntr_type, UpplReturnCode &err) {
   if (cntr_type == UNC_CT_PFC ||
       cntr_type == UNC_CT_VNP) {
     controller_type = cntr_type;
@@ -54,8 +54,8 @@ IPCClientDriverHandler::IPCClientDriverHandler(
     if (cntr_type == UNC_CT_VNP) {
       chn_name = VNPDRIVER_IPC_CHN_NAME;
     }
-    err = pfc_ipcclnt_altopen(chn_name.c_str(), &connp);
-    if (err != UPPL_RC_SUCCESS) {
+    int clnt_err = pfc_ipcclnt_altopen(chn_name.c_str(), &connp);
+    if (clnt_err != 0) {
       pfc_log_error("Could not open driver ipc session");
       err = UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
     }
@@ -63,13 +63,13 @@ IPCClientDriverHandler::IPCClientDriverHandler(
     if (cntr_type == UNC_CT_VNP) {
       service = VNPDRV_SVID_PHYSICAL;
     }
-    cli_session = new ClientSession(connp, driver_name, service, err);
+    cli_session = new ClientSession(connp, driver_name, service, clnt_err);
     if (cli_session == NULL) {
       pfc_log_error("Could not get driver ipc session");
       err = UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
-    } else if (err != 0) {
+    } else if (clnt_err != 0) {
       pfc_log_error("Could not get driver ipc session, error is %d", err);
-      err = ConvertDriverErrorCode(err);
+      err = ConvertDriverErrorCode(clnt_err);
     }
   } else {
     // Default case
@@ -78,6 +78,7 @@ IPCClientDriverHandler::IPCClientDriverHandler(
     controller_type = UNC_CT_UNKNOWN;
     driver_name = "";
     chn_name =  "";
+    err = UPPL_RC_ERR_BAD_REQUEST;
   }
 }
 
@@ -92,13 +93,16 @@ IPCClientDriverHandler::~IPCClientDriverHandler() {
 
 ClientSession* IPCClientDriverHandler::ResetAndGetSession() {
   pfc_ipcid_t service = PFCDRIVER_SVID_PHYSICAL;
+  if (controller_type == UNC_CT_VNP) {
+    service = VNPDRV_SVID_PHYSICAL;
+  }
   cli_session->reset(driver_name, service);
   return cli_session;
 }
 
 UpplReturnCode IPCClientDriverHandler::SendReqAndGetResp(
     driver_response_header &rsp) {
-  pfc_ipcresp_t resp;
+  pfc_ipcresp_t resp = 0;
   uint8_t err = cli_session->invoke(resp);
   pfc_log_debug("DriverHandler err = %d, resp = %d",
                 err, resp);

@@ -26,30 +26,31 @@
 
 using unc::uppl::NotificationRequest;
 
-/**
+/**NotificationRequest
  * @Description:NotificationRequest constructor
- * * @param[in]:void
- * * @return   :void
+ * @param[in]:none
+ * @return   :none
  **/
 NotificationRequest::NotificationRequest() {
 }
 
-/**
+/**NotificationRequest
  * @Description:NotificationRequest destructor
- * * @param[in]:void
- * * @return   :void
+ * @param[in]:none
+ * @return   :none
  **/
 NotificationRequest::~NotificationRequest() {
 }
 
-/**
- * @Description:This function invoke ProcessNotificationEvents() and
- *  ProcessAlarmEvents
- * * @param[in]:const IpcEvent &event
- * * @return   :pfc_bool_t
+/**ProcessEvent
+ * @Description:ITC triggers this function when notification request is
+ * received.This function invoke ProcessNotificationEvents() and
+ * ProcessAlarmEvents
+ * @param[in]:event-an object of IpcEvent
+ * @return   :pfc_bool_t.PFC_TRUE is returned if this module is initialized
+ * successfully otherwise PFC_FALSE is returned to denote error
  **/
 pfc_bool_t NotificationRequest::ProcessEvent(const IpcEvent &event) {
-  pfc_log_info("Inside ProcessEvent of NotificationRequest");
   pfc_ipcevtype_t event_type(event.getType());
   if (event_type == UNC_PHYSICAL_EVENTS ||
       event_type == UNC_CTLR_STATE_EVENTS) {
@@ -72,7 +73,21 @@ pfc_bool_t NotificationRequest::ProcessEvent(const IpcEvent &event) {
   return PFC_TRUE;
 }
 
+/**InvokeKtDriverEvent
+ * @Description:This function invokes HandleDriverEvents() based 
+ *              on the keytype and operation
+ * @param[in]:
+ * operation-type of operation which can be UNC_OP_CREATE/DELETE/UPDATE
+ * data_type-type of database,UNC_DT_*
+ * key_struct-void pointer that will point to any kt's key structure
+ * new_val_struct-void pointer that will point to any kt's value structure
+ * old_val_struct-void pointer that will point to any kt's value structure
+ * key_type-any one of unc_key_type_t
+ * @return   :Success or associated error code
+ **/
+
 UpplReturnCode NotificationRequest::InvokeKtDriverEvent(
+    OdbcmConnectionHandler *db_conn,
     uint32_t operation,
     uint32_t data_type,
     void *key_struct,
@@ -109,29 +124,32 @@ UpplReturnCode NotificationRequest::InvokeKtDriverEvent(
   }
   switch (operation) {
     case UNC_OP_CREATE: {
-      status = ObjStateNotify->HandleDriverEvents(key_struct, operation,
+      status = ObjStateNotify->HandleDriverEvents(db_conn, key_struct,
+                                                  operation,
                                                   data_type, key_type, NULL,
                                                   new_val_struct);
-      pfc_log_info(
+      pfc_log_debug(
           "Return status of KT create HandleDriverEvents: %d", status);
       delete ObjStateNotify;
       break;
     }
     case UNC_OP_UPDATE: {
-      status = ObjStateNotify->HandleDriverEvents(key_struct, operation,
+      status = ObjStateNotify->HandleDriverEvents(db_conn, key_struct,
+                                                  operation,
                                                   data_type, key_type,
                                                   old_val_struct,
                                                   new_val_struct);
-      pfc_log_info(
+      pfc_log_debug(
           "Return status of update HandleDriverEvents: %d", status);
       delete ObjStateNotify;
       break;
     }
     case UNC_OP_DELETE: {
-      status = ObjStateNotify->HandleDriverEvents(key_struct, operation,
+      status = ObjStateNotify->HandleDriverEvents(db_conn, key_struct,
+                                                  operation,
                                                   data_type, key_type,
                                                   NULL, NULL);
-      pfc_log_info(
+      pfc_log_debug(
           "Return status of delete HandleDriverEvents: %d", status);
       delete ObjStateNotify;
       break;
@@ -146,13 +164,14 @@ UpplReturnCode NotificationRequest::InvokeKtDriverEvent(
   return status;
 }
 
-/**
- * @Description:This function process Notification events
- * * @param[in]:const IpcEvent &event
- * * @return   :pfc_bool_t
+/**ProcessNotificationEvents
+ * @Description:This function process Notification events recieved 
+ *              for various key types
+ * @param[in]:event- an object of IpcEvent,contains the event posted by driver.
+ * @return   :Success or associated error code
  **/
-UpplReturnCode NotificationRequest::
-ProcessNotificationEvents(const IpcEvent &event) {
+UpplReturnCode NotificationRequest::ProcessNotificationEvents(
+    const IpcEvent &event) {
   pfc_log_info("Inside ProcessNotificationEvents of NotificationRequest");
   UpplReturnCode status = UPPL_RC_SUCCESS;
   ClientSession sess(event.getSession());
@@ -252,42 +271,42 @@ ProcessNotificationEvents(const IpcEvent &event) {
   return status;
 }
 
-/***
- * * @Description:This function checks whether audit in progress for the controller
- * and use IMPORT db to store the notifications received from driver
- * * * @param[in]:controller_name, datatype
- * * * @return   :void
+/***GetNotificationDT
+ * @Description:This function checks whether audit in progress for the
+ * controller and use IMPORT db to store the notifications received from driver
+ * @param[in]:controller_name-controller id
+ * @param[out]:datatype-type of database,UNC_DT_*
+ * @return   :void
  **/
-void NotificationRequest::GetNotificationDT(string controller_name,
+void NotificationRequest::GetNotificationDT(OdbcmConnectionHandler *db_conn,
+                                            string controller_name,
                                             uint32_t &data_type) {
-  unc_keytype_ctrtype_t ctr_type = UNC_CT_UNKNOWN;
-  if (PhyUtil::get_controller_type(
-      controller_name,
-      ctr_type,
-      (unc_keytype_datatype_t)data_type) == UPPL_RC_SUCCESS) {
-    pfc_log_debug("Received Controller Type %d", ctr_type);
-  }
-  NotificationManager *nfn_mgr = PhysicalLayer::get_instance()->
+  pfc_bool_t is_controller_in_audit = PhysicalLayer::get_instance()->
       get_ipc_connection_manager()->
-      get_notification_manager(ctr_type);
-  if (nfn_mgr != NULL) {
-    pfc_bool_t is_controller_in_audit = PhysicalLayer::get_instance()->
-        get_ipc_connection_manager()->
-        IsControllerInAudit(controller_name);
-    if (is_controller_in_audit == PFC_TRUE) {
-      data_type = (uint32_t)UNC_DT_IMPORT;
-    }
+      IsControllerInAudit(controller_name);
+  if (is_controller_in_audit == PFC_TRUE) {
+    data_type = (uint32_t)UNC_DT_IMPORT;
   }
   pfc_log_debug("GetNotificationDT data_type %d", data_type);
 }
 
-/***
- * * @Description:This function Process alarm events
- * * * @param[in]:const IpcEvent &event
- * * * @return   :pfc_bool_t
+/***ProcessAlarmEvents
+ * @Description:This function Process alarm events recieved for various 
+ *              key types
+ * @param[in]:event-an object of IpcEvent,contains the event posted by driver
+ * @return   :Success or associated error code
  **/
 UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
   pfc_log_info("Inside ProcessAlarmEvents of NotificationRequest");
+  // Check for MergeImportRunning Lock
+  ScopedReadWriteLock eventDoneLock(
+      PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
+  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
+  if (db_ret != UPPL_RC_SUCCESS) {
+    pfc_log_error("Error in opening DB connection");
+    return UPPL_RC_ERR_DB_ACCESS;
+  }
   UpplReturnCode status = UPPL_RC_SUCCESS;
   ClientSession sess(event.getSession());
 
@@ -309,6 +328,7 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
   if (alarm_header.key_type == UNC_KT_CONTROLLER) {
     /*process controller related alarm*/
     key_ctr key_ctr;
+    memset(&key_ctr, '\0', sizeof(key_ctr));
     int read_err = sess.getResponse((uint32_t)6, key_ctr);
     if (read_err != 0) {
       pfc_log_error("Key not received for controller");
@@ -324,13 +344,13 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
       }
       string controller_name = reinterpret_cast<char *>
       (key_ctr.controller_name);
-      GetNotificationDT(controller_name, data_type);
+      GetNotificationDT(&db_conn, controller_name, data_type);
       Kt_Controller NotifyController;
       status = NotifyController.HandleDriverAlarms(
-          data_type, alarm_header.alarm_type, alarm_header.operation,
+          &db_conn, data_type, alarm_header.alarm_type, alarm_header.operation,
           reinterpret_cast<void*>(&key_ctr),
           reinterpret_cast<void*>(&val_ctr_alarm_struct));
-      pfc_log_info(
+      pfc_log_debug(
           "Return status of controller HandleDriverAlarms: %d", status);
     } else {
       pfc_log_info("Invalid alarm type for UNC_KT_CONTROLLER: %d",
@@ -340,6 +360,7 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
   } else  if (alarm_header.key_type ==  UNC_KT_CTR_DOMAIN) {
     /*process domain related alarm*/
     key_ctr_domain_t key_ctr_domain;
+    memset(&key_ctr_domain, '\0', sizeof(key_ctr_domain_t));
     int read_err = sess.getResponse((uint32_t)6, key_ctr_domain);
     if (read_err != 0) {
       pfc_log_error("Key not received for ctr domain");
@@ -354,11 +375,11 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
     if (alarm_header.alarm_type ==  UNC_COREDOMAIN_SPLIT) {
       string controller_name = reinterpret_cast<char *>
       (key_ctr_domain.ctr_key.controller_name);
-      GetNotificationDT(controller_name, data_type);
+      GetNotificationDT(&db_conn, controller_name, data_type);
       status = NotifyDomain->HandleDriverAlarms(
-          data_type, alarm_header.alarm_type, alarm_header.operation,
+          &db_conn, data_type, alarm_header.alarm_type, alarm_header.operation,
           reinterpret_cast<void*>(&key_ctr_domain), NULL);
-      pfc_log_info(
+      pfc_log_debug(
           "Return status of domain HandleDriverAlarms: %d", status);
       delete NotifyDomain;
     } else {
@@ -370,6 +391,7 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
   }  else  if (alarm_header.key_type ==  UNC_KT_LOGICAL_PORT) {
     /*process logical port related alarm*/
     key_logical_port_t key_logicalport;
+    memset(&key_logicalport, '\0', sizeof(key_logical_port_t));
     int read_err = sess.getResponse((uint32_t)6, key_logicalport);
     if (read_err != 0) {
       pfc_log_error("Key not received for logical port");
@@ -384,11 +406,11 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
     if (alarm_header.alarm_type == UNC_SUBDOMAIN_SPLIT) {
       string controller_name = reinterpret_cast<char *>
       (key_logicalport.domain_key.ctr_key.controller_name);
-      GetNotificationDT(controller_name, data_type);
+      GetNotificationDT(&db_conn, controller_name, data_type);
       status = NotifyLogicalPort->HandleDriverAlarms(
-          data_type, alarm_header.alarm_type, alarm_header.operation,
+          &db_conn, data_type, alarm_header.alarm_type, alarm_header.operation,
           reinterpret_cast<void*>(&key_logicalport), NULL);
-      pfc_log_info(
+      pfc_log_debug(
           "Return status of sub_domain HandleDriverAlarms: %d", status);
       delete NotifyLogicalPort;
     } else {
@@ -400,6 +422,7 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
   }  else  if (alarm_header.key_type ==  UNC_KT_PORT) {
     /*process port related alarm*/
     key_port_t port_key;
+    memset(&port_key, '\0', sizeof(key_port_t));
     int read_err = sess.getResponse((uint32_t)6, port_key);
     if (read_err != 0) {
       pfc_log_error("Key not received for port");
@@ -416,11 +439,11 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
         (alarm_header.alarm_type ==  UNC_PORT_CONGES)) {
       string controller_name = reinterpret_cast<char *>
       (port_key.sw_key.ctr_key.controller_name);
-      GetNotificationDT(controller_name, data_type);
+      GetNotificationDT(&db_conn, controller_name, data_type);
       status = NotifyPort->HandleDriverAlarms(
-          data_type, alarm_header.alarm_type, alarm_header.operation,
+          &db_conn, data_type, alarm_header.alarm_type, alarm_header.operation,
           reinterpret_cast<void*>(&port_key), NULL);
-      pfc_log_info(
+      pfc_log_debug(
           "Return status of port HandleDriverAlarms: %d", status);
       delete NotifyPort;
     } else {
@@ -432,6 +455,7 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
   }  else  if (alarm_header.key_type ==  UNC_KT_SWITCH) {
     /*process controller related alarm*/
     key_switch_t switch_key;
+    memset(&switch_key, '\0', sizeof(key_switch_t));
     int read_err = sess.getResponse((uint32_t)6, switch_key);
     if (read_err != 0) {
       pfc_log_error("Key not received for switch");
@@ -447,11 +471,11 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
         (alarm_header.alarm_type ==  UNC_OFS_LACK_FEATURES)) {
       string controller_name = reinterpret_cast<char *>
       (switch_key.ctr_key.controller_name);
-      GetNotificationDT(controller_name, data_type);
+      GetNotificationDT(&db_conn, controller_name, data_type);
       status = NotifySwitch->HandleDriverAlarms(
-          data_type, alarm_header.alarm_type, alarm_header.operation,
+          &db_conn, data_type, alarm_header.alarm_type, alarm_header.operation,
           reinterpret_cast<void*>(&switch_key), NULL);
-      pfc_log_info(
+      pfc_log_debug(
           "Return status of switch HandleDriverAlarms: %d", status);
       delete NotifySwitch;
     } else {
@@ -466,12 +490,30 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
   return status;
 }
 
+/**ProcessPortEvents
+ * @Description:This function processes events recieved for port
+ * @param[in]:
+ * sess-ClientSession object used to retrieve the response arguments
+ * data_type-type of database,UNC_DT_*
+ * operation-type of operation UNC_OP_CREATE/UPDATE/DELETE
+ * @return   :Success or associated error code
+ **/
 UpplReturnCode NotificationRequest::ProcessPortEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
+  // Check for MergeImportRunning Lock
+  ScopedReadWriteLock eventDoneLock(
+      PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
+  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
+  if (db_ret != UPPL_RC_SUCCESS) {
+    pfc_log_error("Error in opening DB connection");
+    return UPPL_RC_ERR_DB_ACCESS;
+  }
   UpplReturnCode status = UPPL_RC_SUCCESS;
   key_port_t port_key;
+  memset(&port_key, '\0', sizeof(key_port_t));
   int read_err = sess->getResponse((uint32_t)5, port_key);
   if (read_err != 0) {
     pfc_log_error("Key not received for port");
@@ -480,7 +522,7 @@ UpplReturnCode NotificationRequest::ProcessPortEvents(
   pfc_log_info("%s", IpctUtil::get_string(port_key).c_str());
   string controller_name = reinterpret_cast<char *>
   (port_key.sw_key.ctr_key.controller_name);
-  GetNotificationDT(controller_name, data_type);
+  GetNotificationDT(&db_conn, controller_name, data_type);
   val_port_st old_val_port, new_val_port;
   // val
   if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
@@ -489,7 +531,7 @@ UpplReturnCode NotificationRequest::ProcessPortEvents(
       pfc_log_error("New value not received for port");
       return UPPL_RC_ERR_BAD_REQUEST;
     }
-    pfc_log_info("%s", IpctUtil::get_string(new_val_port).c_str());
+    pfc_log_info("NEWVAL: %s", IpctUtil::get_string(new_val_port).c_str());
   }
   // old val
   if (operation == UNC_OP_UPDATE) {
@@ -502,7 +544,7 @@ UpplReturnCode NotificationRequest::ProcessPortEvents(
                  IpctUtil::get_string(old_val_port).c_str());
   }
   // call driver event
-  status = InvokeKtDriverEvent(operation, data_type,
+  status = InvokeKtDriverEvent(&db_conn, operation, data_type,
                                reinterpret_cast<void*>(&port_key),
                                reinterpret_cast<void*>(&new_val_port),
                                reinterpret_cast<void*>(&old_val_port),
@@ -510,13 +552,31 @@ UpplReturnCode NotificationRequest::ProcessPortEvents(
   return status;
 }
 
+/***ProcessSwitchEvents
+ * @Description:This function processes events recieved for switch
+ * @param[in]:
+ * sess-ClientSession object used to retrieve the response arguments 
+ * data_type-type of database,UNC_DT_*
+ * operation-type of operation UNC_OP_CREATE/UPDATE/DELETE
+ * @return   :Success or associated error code
+ **/
 UpplReturnCode NotificationRequest::ProcessSwitchEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
+  // Check for MergeImportRunning Lock
+  ScopedReadWriteLock eventDoneLock(
+      PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
+  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
+  if (db_ret != UPPL_RC_SUCCESS) {
+    pfc_log_error("Error in opening DB connection");
+    return UPPL_RC_ERR_DB_ACCESS;
+  }
   UpplReturnCode status = UPPL_RC_SUCCESS;
   /*process switch add, switch update and switch delete events*/
   key_switch_t switch_key;
+  memset(&switch_key, '\0', sizeof(key_switch_t));
   int read_err = sess->getResponse((uint32_t)5, switch_key);
   if (read_err != 0) {
     pfc_log_error("Key not received for switch");
@@ -525,8 +585,10 @@ UpplReturnCode NotificationRequest::ProcessSwitchEvents(
   pfc_log_info("%s", IpctUtil::get_string(switch_key).c_str());
   string controller_name = reinterpret_cast<char *>
   (switch_key.ctr_key.controller_name);
-  GetNotificationDT(controller_name, data_type);
+  GetNotificationDT(&db_conn, controller_name, data_type);
   val_switch_st old_val_switch, new_val_switch;
+  memset(&old_val_switch, '\0', sizeof(val_switch_st));
+  memset(&new_val_switch, '\0', sizeof(val_switch_st));
   if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
     read_err = sess->getResponse((uint32_t)6, new_val_switch);
     if (read_err != 0) {
@@ -545,7 +607,7 @@ UpplReturnCode NotificationRequest::ProcessSwitchEvents(
     pfc_log_info("OLDVAL: %s",
                  IpctUtil::get_string(old_val_switch).c_str());
   }
-  status = InvokeKtDriverEvent(operation, data_type,
+  status = InvokeKtDriverEvent(&db_conn, operation, data_type,
                                reinterpret_cast<void*>(&switch_key),
                                reinterpret_cast<void*>(&new_val_switch),
                                reinterpret_cast<void*>(&old_val_switch),
@@ -553,13 +615,32 @@ UpplReturnCode NotificationRequest::ProcessSwitchEvents(
   return status;
 }
 
+
+/***ProcessLinkEvents
+ * @Description:This function processes events recieved for link
+ * @param[in]:
+ * sess-ClientSession object used to retrieve the resposne arguments
+ * data_type-type of database,UNC_DT_*
+ * operation-type of operation UNC_OP_CREATE/UPDATE/DELETE
+ * @return   :Success or associated error code
+ **/
 UpplReturnCode NotificationRequest:: ProcessLinkEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
+  // Check for MergeImportRunning Lock
+  ScopedReadWriteLock eventDoneLock(
+      PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
+  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
+  if (db_ret != UPPL_RC_SUCCESS) {
+    pfc_log_error("Error in opening DB connection");
+    return UPPL_RC_ERR_DB_ACCESS;
+  }
   UpplReturnCode status = UPPL_RC_SUCCESS;
   /*process link add, link update and link delete events*/
   key_link_t key_link;
+  memset(&key_link, '\0', sizeof(key_link_t));
   int read_err = sess->getResponse((uint32_t)5, key_link);
   if (read_err != 0) {
     pfc_log_error("Key not received for link");
@@ -568,7 +649,7 @@ UpplReturnCode NotificationRequest:: ProcessLinkEvents(
   pfc_log_info("%s", IpctUtil::get_string(key_link).c_str());
   string controller_name = reinterpret_cast<char *>
   (key_link.ctr_key.controller_name);
-  GetNotificationDT(controller_name, data_type);
+  GetNotificationDT(&db_conn, controller_name, data_type);
   val_link_st old_val_link, new_val_link;
   if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
     read_err = sess->getResponse((uint32_t)6, new_val_link);
@@ -588,7 +669,7 @@ UpplReturnCode NotificationRequest:: ProcessLinkEvents(
     pfc_log_info("OLDVAL: %s",
                  IpctUtil::get_string(old_val_link).c_str());
   }
-  status = InvokeKtDriverEvent(operation, data_type,
+  status = InvokeKtDriverEvent(&db_conn, operation, data_type,
                                reinterpret_cast<void*>(&key_link),
                                reinterpret_cast<void*>(&new_val_link),
                                reinterpret_cast<void*>(&old_val_link),
@@ -596,13 +677,22 @@ UpplReturnCode NotificationRequest:: ProcessLinkEvents(
   return status;
 }
 
+/***ProcessControllerEvents
+ * @Description:This function processes events recieved for Controller
+ * @param[in]:
+ * sess-ClientSession object used to retrieve the response arguments
+ * data_type-type of database,UNC_DT_*
+ * operation-type of operation UNC_OP_CREATE/UPDATE/DELETE
+ * @return   :Success or associated error code
+ **/
 UpplReturnCode NotificationRequest:: ProcessControllerEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
   UpplReturnCode status = UPPL_RC_SUCCESS;
   /*process controller add, controller update and controller delete events*/
-  key_ctr key_ctr;
+  key_ctr_t key_ctr;
+  memset(&key_ctr, '\0', sizeof(key_ctr_t));
   val_ctr_st old_val_ctr, new_val_ctr;
   int read_err = sess->getResponse((uint32_t)5, key_ctr);
   if (read_err != 0) {
@@ -625,6 +715,12 @@ UpplReturnCode NotificationRequest:: ProcessControllerEvents(
   pfc_log_info("OLDVAL: %s", IpctUtil::get_string(old_val_ctr).c_str());
   pfc_bool_t is_events_done = PFC_FALSE;
   uint8_t driver_oper_status = new_val_ctr.oper_status;
+  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
+  if (db_ret != UPPL_RC_SUCCESS) {
+    pfc_log_error("Error in opening DB connection");
+    return UPPL_RC_ERR_DB_ACCESS;
+  }
   if (driver_oper_status == CONTROLLER_EVENTS_DONE) {
     // CONTROLLER_OPER_UP can be set
     // Its same as enum UPPL_CONTROLLER_OPER_UP
@@ -641,11 +737,14 @@ UpplReturnCode NotificationRequest:: ProcessControllerEvents(
     if (is_controller_in_audit == PFC_TRUE) {
       pfc_log_debug("Calling MergeAuditDbToRunning");
       // To cancel the already running timer in Audit
-      uint32_t time_out_id = ipc_mgr->getTimeOutId(controller_name);
-      ipc_mgr->notfn_timer_->cancel(time_out_id);
+      UpplReturnCode cancel_ret = ipc_mgr->CancelTimer(controller_name);
+      if (cancel_ret != UPPL_RC_SUCCESS) {
+        pfc_log_info("Failure in cancelling timer for controller %s",
+                     controller_name.c_str());
+      }
       AuditRequest audit_req;
       UpplReturnCode merge_auditdb =
-          audit_req.MergeAuditDbToRunning(reinterpret_cast<char *>
+          audit_req.MergeAuditDbToRunning(&db_conn, reinterpret_cast<char *>
       (key_ctr.controller_name));
       if (merge_auditdb != UPPL_RC_SUCCESS) {
         pfc_log_info("Merge of audit and running db failed");
@@ -653,11 +752,12 @@ UpplReturnCode NotificationRequest:: ProcessControllerEvents(
     } else {
       pfc_log_info("End of events received non-audit controller %s",
                    controller_name.c_str());
+      return UPPL_RC_ERR_BAD_REQUEST;
     }
     is_events_done = PFC_TRUE;
   }
   status = NotifyController.HandleDriverEvents(
-      reinterpret_cast<void*>(&key_ctr),
+      &db_conn, reinterpret_cast<void*>(&key_ctr),
       operation,
       data_type,
       reinterpret_cast<void*>(&old_val_ctr),
@@ -669,13 +769,31 @@ UpplReturnCode NotificationRequest:: ProcessControllerEvents(
   return status;
 }
 
+/***ProcessDomainEvents
+ * @Description:This function processes events recieved for domain
+ * @param[in]:
+ * sess-ClientSession object used to retrieve reposne arguments 
+ * data_type-type of database,UNC_DT_*
+ * operation-type of operation UNC_OP_CREATE/UPDATE/DELETE
+ * @return   :Success or associated error code
+ **/
 UpplReturnCode NotificationRequest:: ProcessDomainEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
+  // Check for MergeImportRunning Lock
+  ScopedReadWriteLock eventDoneLock(
+      PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
+  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
+  if (db_ret != UPPL_RC_SUCCESS) {
+    pfc_log_error("Error in opening DB connection");
+    return UPPL_RC_ERR_DB_ACCESS;
+  }
   UpplReturnCode status = UPPL_RC_SUCCESS;
   /*process domain add, domain update and domain delete events*/
   key_ctr_domain_t key_ctr_domain;
+  memset(&key_ctr_domain, '\0', sizeof(key_ctr_domain_t));
   int read_err = sess->getResponse((uint32_t)5, key_ctr_domain);
   if (read_err != 0) {
     pfc_log_error("Key not received for controller");
@@ -684,7 +802,7 @@ UpplReturnCode NotificationRequest:: ProcessDomainEvents(
   pfc_log_info("%s", IpctUtil::get_string(key_ctr_domain).c_str());
   string controller_name = reinterpret_cast<char *>
   (key_ctr_domain.ctr_key.controller_name);
-  GetNotificationDT(controller_name, data_type);
+  GetNotificationDT(&db_conn, controller_name, data_type);
   val_ctr_domain_st new_val_ctr_domain_t;
   if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
     read_err = sess->getResponse((uint32_t)6, new_val_ctr_domain_t);
@@ -696,19 +814,37 @@ UpplReturnCode NotificationRequest:: ProcessDomainEvents(
                  IpctUtil::get_string(new_val_ctr_domain_t).c_str());
   }
   status = InvokeKtDriverEvent(
-      operation, data_type,
+      &db_conn, operation, data_type,
       reinterpret_cast<void*>(&key_ctr_domain),
       reinterpret_cast<void*>(&new_val_ctr_domain_t),
       NULL, UNC_KT_CTR_DOMAIN);
   return status;
 }
 
+/***ProcessLogicalPortEvents
+ * @Description:This function processes events recieved for LogicalPort
+ * @param[in]:
+ * sess-ClientSession object,used to retrieve the response arguments
+ * data_type-type of database,UNC_DT_*
+ * operation-type of operation UNC_OP_CREATE/UPDATE/DELETE
+ * @return   :Success or associated error code
+ **/
 UpplReturnCode NotificationRequest:: ProcessLogicalPortEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
+  // Check for MergeImportRunning Lock
+  ScopedReadWriteLock eventDoneLock(
+      PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
+  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
+  if (db_ret != UPPL_RC_SUCCESS) {
+    pfc_log_error("Error in opening DB connection");
+    return UPPL_RC_ERR_DB_ACCESS;
+  }
   UpplReturnCode status = UPPL_RC_SUCCESS;
   key_logical_port_t key_logical_port;
+  memset(&key_logical_port, '\0', sizeof(key_logical_port_t));
   int read_err = sess->getResponse((uint32_t)5, key_logical_port);
   if (read_err != 0) {
     pfc_log_error("Key not received for logical port");
@@ -717,7 +853,7 @@ UpplReturnCode NotificationRequest:: ProcessLogicalPortEvents(
   pfc_log_info("%s", IpctUtil::get_string(key_logical_port).c_str());
   string controller_name = reinterpret_cast<char *>
   (key_logical_port.domain_key.ctr_key.controller_name);
-  GetNotificationDT(controller_name, data_type);
+  GetNotificationDT(&db_conn, controller_name, data_type);
   val_logical_port_st new_val_logical_port_t;
   if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
     read_err = sess->getResponse((uint32_t)6, new_val_logical_port_t);
@@ -729,19 +865,38 @@ UpplReturnCode NotificationRequest:: ProcessLogicalPortEvents(
                  IpctUtil::get_string(new_val_logical_port_t).c_str());
   }
   status = InvokeKtDriverEvent(
-      operation, data_type,
+      &db_conn, operation, data_type,
       reinterpret_cast<void*>(&key_logical_port),
       reinterpret_cast<void*>(&new_val_logical_port_t),
       NULL, UNC_KT_LOGICAL_PORT);
   return status;
 }
 
+/***ProcessLogicalMemeberPortEvents
+ * @Description:This function processes events recieved for 
+ * LogicalMemeberPort
+ * @param[in]:
+ * sess-ClientSession object,used to retrieve the response arguments
+ * data_type-type of database,UNC_DT_*
+ * operation-type of operation UNC_OP_CREATE/UPDATE/DELETE
+ * @return   :Success or associated error code
+ **/
 UpplReturnCode NotificationRequest:: ProcessLogicalMemeberPortEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
+  // Check for MergeImportRunning Lock
+  ScopedReadWriteLock eventDoneLock(
+      PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
+  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
+  if (db_ret != UPPL_RC_SUCCESS) {
+    pfc_log_error("Error in opening DB connection");
+    return UPPL_RC_ERR_DB_ACCESS;
+  }
   UpplReturnCode status = UPPL_RC_SUCCESS;
   key_logical_member_port_t logical_member_port_key;
+  memset(&logical_member_port_key, '\0', sizeof(key_logical_member_port_t));
   int read_err = sess->getResponse((uint32_t)5, logical_member_port_key);
   if (read_err != 0) {
     pfc_log_error("Key not received for logical port");
@@ -752,14 +907,14 @@ UpplReturnCode NotificationRequest:: ProcessLogicalMemeberPortEvents(
       reinterpret_cast<char *>
   (logical_member_port_key.logical_port_key.
       domain_key.ctr_key.controller_name);
-  GetNotificationDT(controller_name, data_type);
+  GetNotificationDT(&db_conn, controller_name, data_type);
   Kt_State_Base *NotifyLogicalMemberPort = new Kt_LogicalMemberPort();
   if (NotifyLogicalMemberPort == NULL) {
     pfc_log_error("Memory not allocated for NotifyLogicalMemberPort_\n");
     return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
   }
   status = NotifyLogicalMemberPort->HandleDriverEvents(
-      reinterpret_cast<void*>(&logical_member_port_key),
+      &db_conn, reinterpret_cast<void*>(&logical_member_port_key),
       operation,
       data_type, UNC_KT_LOGICAL_MEMBER_PORT, NULL, NULL);
   pfc_log_info(

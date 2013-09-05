@@ -99,32 +99,31 @@ upll_rc_t DhcpRelayServerMoMgr::ValidateAttribute(ConfigKeyVal *ikey,
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   if (ikey->get_key_type() != UNC_KT_DHCPRELAY_SERVER) result_code =
       UPLL_RC_ERR_CFG_SYNTAX;
+
+  #if 0
+  /* Check if vrouter admin status is disabled */
+  result_code = IsAdminStatusEnable(ikey, dmi);
+  if (result_code != UPLL_RC_SUCCESS) {
+    return UPLL_RC_ERR_CFG_SEMANTIC;
+  }
+  #endif
   return result_code;
 }
 
-upll_rc_t DhcpRelayServerMoMgr::ValidateCapability(IpcReqRespHeader *req,
-                                                   ConfigKeyVal *ikey, const
-                                                   char *ctrlr_name) {
-  UPLL_FUNC_TRACE;
-  upll_rc_t result_code = UPLL_RC_SUCCESS;
-  if (ikey->get_key_type() != UNC_KT_DHCPRELAY_SERVER) result_code =
-      UPLL_RC_ERR_CFG_SYNTAX;
-  return result_code;
-}
 
 bool DhcpRelayServerMoMgr::IsValidKey(void *key, uint64_t index) {
+  UPLL_FUNC_TRACE;
   key_dhcp_relay_server *dhcp_rs_key =
      reinterpret_cast<key_dhcp_relay_server *>(key);
-  pfc_log_trace("Entering IsValidKey");
   uint32_t val = 0;
-  bool ret_val = UPLL_RC_SUCCESS;
+  upll_rc_t ret_val = UPLL_RC_SUCCESS;
   switch (index) {
     case uudst::dhcprelay_server::kDbiVtnName:
       ret_val = ValidateKey(reinterpret_cast<char *>
                             (dhcp_rs_key->vrt_key.vtn_key.vtn_name),
                             kMinLenVtnName, kMaxLenVtnName);
       if (ret_val != UPLL_RC_SUCCESS) {
-        pfc_log_trace("VTN Name is not valid(%d)", ret_val);
+        UPLL_LOG_TRACE("VTN Name is not valid(%d)", ret_val);
         return false;
       }
       break;
@@ -133,22 +132,21 @@ bool DhcpRelayServerMoMgr::IsValidKey(void *key, uint64_t index) {
                             (dhcp_rs_key->vrt_key.vrouter_name),
                             kMinLenVnodeName, kMaxLenVnodeName);
       if (ret_val != UPLL_RC_SUCCESS) {
-        pfc_log_trace("VRouter Name is not valid(%d)", ret_val);
+        UPLL_LOG_TRACE("VRouter Name is not valid(%d)", ret_val);
         return false;
       }
       break;
     case uudst::dhcprelay_server::kDbiServerIpAddr:
       val = dhcp_rs_key->server_addr.s_addr;
       if (val == 0xffffffff || val == 0x00000000) {
-        pfc_log_trace("Invalid Server Address /n");
+        UPLL_LOG_TRACE("Invalid Server Address /n");
         return false;
       }
       break;
     default:
-      pfc_log_trace("Invalid Key Index");
+      UPLL_LOG_TRACE("Invalid Key Index");
       break;
   }
-  pfc_log_trace("Leaving IsValidKey");
   return true;
 }
 
@@ -160,9 +158,8 @@ upll_rc_t DhcpRelayServerMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
   void *pkey;
   if (parent_key == NULL) {
     dhcp_key = reinterpret_cast<key_dhcp_relay_server *>
-        (malloc(sizeof(key_dhcp_relay_server)));
-    if (!dhcp_key) return UPLL_RC_ERR_GENERIC;
-    memset(dhcp_key, 0, sizeof(key_dhcp_relay_server));
+        (ConfigKeyVal::Malloc(sizeof(key_dhcp_relay_server)));
+    if (okey) delete okey;
     okey = new ConfigKeyVal(UNC_KT_DHCPRELAY_SERVER,
                             IpctSt::kIpcStKeyDhcpRelayServer, dhcp_key, NULL);
     return UPLL_RC_SUCCESS;
@@ -212,6 +209,8 @@ upll_rc_t DhcpRelayServerMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
   if (!okey)
     okey = new ConfigKeyVal(UNC_KT_DHCPRELAY_SERVER,
                             IpctSt::kIpcStKeyDhcpRelayServer, dhcp_key, NULL);
+  else if (okey->get_key() != dhcp_key)
+    okey->SetKey(IpctSt::kIpcStKeyDhcpRelayServer, dhcp_key);
   if (okey == NULL) {
     free(dhcp_key);
     result_code = UPLL_RC_ERR_GENERIC;
@@ -244,6 +243,7 @@ upll_rc_t DhcpRelayServerMoMgr::GetParentConfigKey(ConfigKeyVal *&okey,
   uuu::upll_strncpy(vrt_key->vrouter_name,
          reinterpret_cast<key_dhcp_relay_server *>(pkey)->vrt_key.vrouter_name,
          (kMaxLenVnodeName + 1));
+  if (okey) delete okey;
   okey = new ConfigKeyVal(UNC_KT_VROUTER, IpctSt::kIpcStKeyVrt, vrt_key, NULL);
   if (okey == NULL) {
     free(vrt_key);
@@ -290,7 +290,7 @@ upll_rc_t DhcpRelayServerMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
       val_dhcp_relay_server *ival =
           reinterpret_cast<val_dhcp_relay_server *>(GetVal(req));
       if (!ival) {
-        UPLL_LOG_DEBUG("Invalid dhcp_relay_server value\n");
+        UPLL_LOG_DEBUG("Invalid dhcp_relay_server value");
         return UPLL_RC_ERR_GENERIC;
       }
       val_dhcp_relay_server *dhcp_val =
@@ -309,7 +309,13 @@ upll_rc_t DhcpRelayServerMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
   memcpy(dhcp_key, ikey, sizeof(key_dhcp_relay_server));
   okey = new ConfigKeyVal(UNC_KT_DHCPRELAY_SERVER,
                           IpctSt::kIpcStKeyDhcpRelayServer, dhcp_key, tmp1);
-  if (okey) SET_USER_DATA(okey, req);
+  if (!okey) {
+    DELETE_IF_NOT_NULL(tmp1);
+    FREE_IF_NOT_NULL(dhcp_key);
+    return UPLL_RC_ERR_GENERIC;
+  } else {
+    SET_USER_DATA(okey, req);
+  }
   return UPLL_RC_SUCCESS;
 }
 
@@ -324,12 +330,19 @@ upll_rc_t DhcpRelayServerMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
       reinterpret_cast<val_dhcp_relay_server *>(GetVal(ikey));
 
   unc_keytype_configstatus_t cs_status =
-      (driver_result == 0) ? UNC_CS_APPLIED : UNC_CS_NOT_APPLIED;
+      (driver_result == UPLL_RC_SUCCESS) ? UNC_CS_APPLIED
+                                         : UNC_CS_NOT_APPLIED;
   if (dhcp_val == NULL) return UPLL_RC_ERR_GENERIC;
   if (op == UNC_OP_CREATE) {
     dhcp_val->cs_row_status = cs_status;
-  } else {
-    return UPLL_RC_ERR_GENERIC;
+  }
+  UPLL_LOG_TRACE("%s",(ikey->ToStrAll()).c_str());
+  val_dhcp_relay_server *dhcp_val2 = 
+       reinterpret_cast<val_dhcp_relay_server *>(GetVal(upd_key));
+  if (dhcp_val2 == NULL) return UPLL_RC_ERR_GENERIC;
+  if (UNC_OP_UPDATE == op) {
+    UPLL_LOG_TRACE("%s",(upd_key->ToStrAll()).c_str());
+    dhcp_val->cs_row_status = dhcp_val2->cs_row_status;
   }
   return UPLL_RC_SUCCESS;
 }
@@ -345,7 +358,57 @@ upll_rc_t DhcpRelayServerMoMgr::UpdateAuditConfigStatus(
     return UPLL_RC_ERR_GENERIC;
   }
   if (uuc::kUpllUcpCreate == phase) val->cs_row_status = cs_status;
+  if ((uuc::kUpllUcpUpdate == phase) &&
+           (val->cs_row_status == UNC_CS_INVALID ||
+            val->cs_row_status == UNC_CS_NOT_APPLIED))
+    val->cs_row_status = cs_status;
   return result_code;
+}
+
+upll_rc_t DhcpRelayServerMoMgr::GetVrtDhcpRelayServerAddress(ConfigKeyVal *ikey,
+                                                             DalDmlIntf *dmi) {
+  UPLL_FUNC_TRACE;
+  upll_rc_t result_code;
+  ConfigKeyVal *ck_dhcp = NULL;
+  result_code = GetChildConfigKey(ck_dhcp, ikey);
+  if (!ck_dhcp || result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("GetChildConfigKey is failed- %d", result_code);
+   return result_code;
+  }
+  DbSubOp dbop = { kOpReadMultiple, kOpMatchNone, kOpInOutNone };
+  result_code = ReadConfigDB(ck_dhcp, UPLL_DT_RUNNING, UNC_OP_READ, dbop,
+                                                                 dmi, MAINTBL);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("Failed to ReadConfigDb- %d", result_code);
+    DELETE_IF_NOT_NULL (ck_dhcp);
+    return result_code;
+  }
+  val_vrt_dhcp_relay_st *val_vrt_dhcp = reinterpret_cast<val_vrt_dhcp_relay_st *>
+                           (ConfigKeyVal::Malloc(sizeof(val_vrt_dhcp_relay_st)));
+  val_vrt_dhcp->valid[UPLL_IDX_DHCP_RELAY_ADMIN_STATUS_VDRS] = UNC_VF_INVALID;
+  val_vrt_dhcp->valid[UPLL_IDX_IP_COUNT_VDRS] = UNC_VF_VALID;
+  val_vrt_dhcp->valid[UPLL_IDX_IF_COUNT_VDRS] = UNC_VF_INVALID;
+  ConfigKeyVal *tmp= ck_dhcp;
+  while(tmp != NULL) {
+    val_vrt_dhcp->ip_count++;
+    tmp = tmp->get_next_cfg_key_val();
+  }
+  ikey->SetCfgVal(new ConfigVal(IpctSt::kIpcStValVrtDhcpRelaySt, val_vrt_dhcp));
+  uint32_t ipcount = 0;
+  ConfigKeyVal *tkey = ck_dhcp;
+  while (tkey  && ipcount < val_vrt_dhcp->ip_count)  {
+    key_dhcp_relay_server *dhcp_key =
+                  reinterpret_cast<key_dhcp_relay_server_t *>(tkey->get_key());
+    uint32_t *ip_addr = 
+          reinterpret_cast<uint32_t *>(ConfigKeyVal::Malloc(sizeof(uint32_t)));
+    *ip_addr = dhcp_key->server_addr.s_addr;  //  assign ipaddress
+    ikey->AppendCfgVal( IpctSt::kIpcStIpv4, ip_addr);
+    ipcount++;
+    tkey = tkey->get_next_cfg_key_val();
+  }
+  if (ck_dhcp)
+    delete ck_dhcp;
+  return UPLL_RC_SUCCESS;
 }
 
 upll_rc_t DhcpRelayServerMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
@@ -377,7 +440,15 @@ upll_rc_t DhcpRelayServerMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
     uuu::upll_strncpy(key_dhcp->vrt_key.vrouter_name,
            key_rename->old_unc_vnode_name,
            (kMaxLenVnodeName + 1));
+  } else {
+    if (!strlen(reinterpret_cast<char *>(key_rename->new_unc_vnode_name))) {
+      FREE_IF_NOT_NULL(key_dhcp);
+      return UPLL_RC_ERR_GENERIC;
+    }
+    uuu::upll_strncpy(key_dhcp->vrt_key.vrouter_name,
+       key_rename->new_unc_vnode_name, (kMaxLenVnodeName+1));
   }
+
   okey = new ConfigKeyVal(UNC_KT_DHCPRELAY_SERVER,
                           IpctSt::kIpcStKeyDhcpRelayServer, key_dhcp, NULL);
   if (!okey) {
@@ -477,10 +548,124 @@ upll_rc_t DhcpRelayServerMoMgr::ValidateDhcpRelayKey(
   return UPLL_RC_SUCCESS;
 }
 
+upll_rc_t DhcpRelayServerMoMgr::ValidateCapability(IpcReqRespHeader *req,
+                                                   ConfigKeyVal *ikey, const
+                                                   char *ctrlr_name) {
+  UPLL_FUNC_TRACE;
+  upll_rc_t result_code = UPLL_RC_ERR_GENERIC;
+
+  if ((NULL == req) || (NULL == ikey)) {
+    UPLL_LOG_DEBUG("IpcReqRespHeader/ConfigKeyval is NULL");
+    return result_code;
+  }
+
+  if (!ctrlr_name) {
+    ctrlr_name = reinterpret_cast<char*>((reinterpret_cast<key_user_data_t *>
+                  (ikey->get_user_data()))->ctrlr_id);
+    if (!ctrlr_name || !strlen(ctrlr_name)) {
+      UPLL_LOG_DEBUG("Controller Name is NULL");
+      return UPLL_RC_ERR_GENERIC;
+    }
+  }
+
+  upll_keytype_datatype_t dt_type = req->datatype;
+  unc_keytype_operation_t operation = req->operation;
+  unc_keytype_option1_t option1 = req->option1;
+  unc_keytype_option2_t option2 = req->option2;
+
+  UPLL_LOG_TRACE("Controller - %s"
+                 "dt_type: (%d) "
+                 "operation: (%d) "
+                 "option1: (%d) "
+                 "option2: (%d) ",
+                 ctrlr_name, dt_type, operation, option1, option2);
+
+  bool ret_code = false;
+  uint32_t max_attrs = 0;
+  uint32_t max_instance_count = 0;
+  const uint8_t *attrs = NULL;
+  switch (operation) {
+    case UNC_OP_CREATE: {
+      ret_code = GetCreateCapability(ctrlr_name,
+				     ikey->get_key_type(),
+                                     &max_instance_count,
+                                     &max_attrs,
+                                     &attrs);
+      if (ret_code && (max_instance_count != 0) &&
+          (cur_instance_count >= max_instance_count)) {
+        UPLL_LOG_DEBUG("[%s:%d:%s Instance count %d exceeds %d", __FILE__,
+                      __LINE__, __FUNCTION__, cur_instance_count,
+                      max_instance_count);
+        return UPLL_RC_ERR_EXCEEDS_RESOURCE_LIMIT;
+      }
+      break;
+    }
+    case UNC_OP_UPDATE: {
+      ret_code = GetUpdateCapability(ctrlr_name,
+                                     ikey->get_key_type(),
+                                     &max_attrs,
+                                     &attrs);
+      break;
+    }
+    case UNC_OP_READ:
+    case UNC_OP_READ_SIBLING:
+    case UNC_OP_READ_SIBLING_BEGIN:
+    case UNC_OP_READ_SIBLING_COUNT: {
+      ret_code = GetReadCapability(ctrlr_name,
+                                   ikey->get_key_type(),
+                                   &max_attrs,
+                                   &attrs);
+      break;
+    }
+    default:
+      UPLL_LOG_DEBUG("Invalid Operation Code - (%d)", operation);
+      return UPLL_RC_ERR_GENERIC;
+  }
+  UPLL_LOG_DEBUG("ret_code (%d)", ret_code);
+  if (!ret_code) {
+    UPLL_LOG_DEBUG("keytype(%d) is not supported by controller(%s) "
+                   "for opearion(%d)",
+                   ikey->get_key_type(), ctrlr_name, operation);
+    return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
+  }
+  return UPLL_RC_SUCCESS;
+}
+
 upll_rc_t DhcpRelayServerMoMgr::IsReferenced(ConfigKeyVal *ikey,
                                              upll_keytype_datatype_t dt_type,
                                              DalDmlIntf *dmi) {
   return UPLL_RC_SUCCESS;
+}
+
+upll_rc_t DhcpRelayServerMoMgr::IsAdminStatusEnable(ConfigKeyVal *ikey,
+                                                DalDmlIntf *dmi) {
+  UPLL_FUNC_TRACE;
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  MoMgrImpl *vrt_mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>
+                                            (GetMoManager(UNC_KT_VROUTER)));
+  if (!vrt_mgr) {
+   UPLL_LOG_DEBUG("Invalid param");
+   return UPLL_RC_ERR_GENERIC;
+  }
+  ConfigKeyVal *ckv_vrt = NULL;
+  result_code = GetParentConfigKey(ckv_vrt, ikey);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("Returing error %d \n",result_code);
+    return UPLL_RC_ERR_GENERIC;
+  }
+  DbSubOp dbop = {kOpReadSingle, kOpMatchNone, kOpInOutNone};
+  result_code = vrt_mgr->ReadConfigDB(ckv_vrt, UPLL_DT_CANDIDATE, UNC_OP_READ,
+                             dbop, dmi, MAINTBL);
+  if (result_code == UPLL_RC_SUCCESS) {
+    val_vrt_t *vrt_val = reinterpret_cast<val_vrt_t *>(GetVal(ckv_vrt));
+    if (vrt_val && vrt_val->dhcp_relay_admin_status == UPLL_ADMIN_ENABLE) {
+      UPLL_LOG_DEBUG("DHCP relay agent must be disabled!");
+      delete ckv_vrt;
+      return UPLL_RC_ERR_CFG_SEMANTIC;
+    }
+  }
+  DELETE_IF_NOT_NULL(ckv_vrt);
+  return result_code;
 }
 
 }  // namespaces kt_momgr

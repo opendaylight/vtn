@@ -623,7 +623,7 @@ liblnc_order_getindexstr(lnc_ordtype_t type, int index, char *buf, size_t size)
 	const char	*idx;
 
 	if (LNC_ORDTYPE_HASINDEX(type)) {
-		snprintf(buf, sizeof(buf), "[%d]", index);
+		snprintf(buf, size, "[%d]", index);
 		idx = buf;
 	}
 	else {

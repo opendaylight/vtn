@@ -12,7 +12,7 @@
  *@file    physical_layer.cc
  *
  * Desc:
- * This header file contains the definition of PhysicalLayer class
+ * This file contains the definition of PhysicalLayer class
  * which is the base class for all other classes
  */
 
@@ -48,6 +48,7 @@ Mutex PhysicalLayer::ODBCManager_mutex_;
 ReadWriteLock PhysicalLayer::phy_fini_db_lock_;
 ReadWriteLock PhysicalLayer::phy_fini_phycore_lock_;
 ReadWriteLock PhysicalLayer::phy_fini_event_lock_;
+ReadWriteLock PhysicalLayer::events_done_lock_;
 
 uint8_t PhysicalLayer::phyFiniFlag = 0;
 
@@ -56,17 +57,17 @@ uint8_t PhysicalLayer::phyFiniFlag = 0;
                 framework.This is the module initialization function which
                 invokes IntializePhysicalSubModules.
  *@param[in] : None
- *@return    : PFC_TRUE or PFC_FALSE
+ *@return    : PFC_TRUE is returned if this module is initialized successfully
+ *             otherwise PFC_FALSE is returned to denote error
  **/
 pfc_bool_t PhysicalLayer::init() {
-  pfc_log_debug("Physical Layer's init called");
+  pfc_log_info("Physical Layer init() called");
   uint8_t init_status = InitializePhysicalSubModules();
-  pfc_log_info("Initialising physical sub mobules");
   if (init_status != UPPL_RC_SUCCESS) {
-    pfc_log_debug("Init failed");
+    pfc_log_warn("Init failed with %d", init_status);
     return PFC_FALSE;
   }
-  pfc_log_info("Init() is Successful");
+  pfc_log_debug("Physical Layer init() is Successful");
   return PFC_TRUE;
 }
 
@@ -75,7 +76,8 @@ pfc_bool_t PhysicalLayer::init() {
  *@Description : The fini() function will be called automatically by PFC core
                   framework when UPPL module is to be terminated.
  *@param[in] : None
- *@return    : PFC_TRUE or PFC_FALSE
+ *@return    : PFC_TRUE is returned if this module is finalized successfully
+ *             otherwise PFC_FALSE is returned to denote error
  **/
 pfc_bool_t PhysicalLayer::fini() {
   pfc_log_info("Physical Layer's fini called");
@@ -85,9 +87,8 @@ pfc_bool_t PhysicalLayer::fini() {
                                     PFC_TRUE);
   }
   UpplReturnCode fini_status = FinalizePhysicalSubModules();
-  pfc_log_debug("Finalising all physical sub modules");
   if (fini_status != UPPL_RC_SUCCESS) {
-    pfc_log_debug("Finish failed");
+    pfc_log_warn("Fini failed with %d", fini_status);
     return PFC_FALSE;
   }
   if (physical_layer_ != NULL) delete physical_layer_;
@@ -118,15 +119,18 @@ PhysicalLayer* PhysicalLayer::get_instance() {
 
 
 /**
- *@Description : This function instantiates objects for the classes PhysicalCore,
-                    IPCConnectionManager, ODBCManager and LogManager.
+ *@Description : This function instantiates objects for the classes
+ *               PhysicalCore, IPCConnectionManager and ODBCManager.
  *@param[in] : None
- *@return : UPPL_RC_SUCCESS or any associated error code
+ *@return    : UPPL_RC_SUCCESS is returned if all sub modules are initialized
+ *             successfully
+ *             otherwise UPPL_RC_ERR* is returned to denote error
+
  **/
 UpplReturnCode PhysicalLayer::InitializePhysicalSubModules() {
   UpplReturnCode ret = UPPL_RC_SUCCESS;
   UpplReturnCode resp = UPPL_RC_SUCCESS;
-  pfc_log_info("Initialising IPCConnectionManager submodule");
+  pfc_log_debug("Initialising IPCConnectionManager submodule");
   ipc_connection_manager_= new IPCConnectionManager();
   if (ipc_connection_manager_ == NULL) {
     pfc_log_error("Memory not allocated for ipc_connection_manager_");
@@ -139,7 +143,7 @@ UpplReturnCode PhysicalLayer::InitializePhysicalSubModules() {
     pfc_log_error("Memory not allocated for physical_core_");
     return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
   }
-  pfc_log_info("Initialising PhysicalCore submodule");
+  pfc_log_debug("Initialising PhysicalCore submodule");
   ret = physical_core_->InitializePhysical();
   if (ret != UPPL_RC_SUCCESS) {
     pfc_log_error("Physical core initialise failed");
@@ -148,7 +152,7 @@ UpplReturnCode PhysicalLayer::InitializePhysicalSubModules() {
     return ret;
   }
   pfc_log_info("Physical Core initialised");
-  pfc_log_info("Initialising ODBCManger submodule");
+  pfc_log_debug("Initialising ODBCManger submodule");
   odbc_manager_= ODBCManager::get_ODBCManager();
   if (odbc_manager_ == NULL) {
     pfc_log_error("Memory not allocated for odbc_manager_");
@@ -169,10 +173,12 @@ UpplReturnCode PhysicalLayer::InitializePhysicalSubModules() {
 
 /**
  *@Description : This function releases the  objects instantiated for the
-                    classes PhysicalCore,IPCConnectionManager,
-                    ODBCManager and LogManager
+                    classes PhysicalCore, IPCConnectionManager and
+                    ODBCManager
  *@param[in] : None
- *@return : UPPL_RC_SUCCESS or any associated error code
+ *@return    : UPPL_RC_SUCCESS is returned if all sub modules are finalized
+ *             successfully
+ *             otherwise UPPL_RC_ERR* is returned to denote error
  **/
 UpplReturnCode PhysicalLayer::FinalizePhysicalSubModules() {
   UpplReturnCode response = UPPL_RC_SUCCESS;
@@ -207,7 +213,6 @@ UpplReturnCode PhysicalLayer::FinalizePhysicalSubModules() {
                                    PFC_TRUE);
     if (NULL != (odbc_manager_ = ODBCManager::get_ODBCManager())) {
       delete odbc_manager_;
-      pfc_log_info("odbc_manager_ is freed");
     } else {
       pfc_log_error("odbc_manager_ is already freed or NULL");
     }
@@ -222,18 +227,26 @@ UpplReturnCode PhysicalLayer::FinalizePhysicalSubModules() {
  *@Description : This is a call back function provided in IPC framework.
                 This function will be called by IPC library when IPC Server
                 receives a message corresponding to the registered services.
- *@param[in] : session, service_id
- *@return : ipc response
+ * @param[in]   : session    - Object of ServerSession where the request
+ *                argument present
+ *                service_id - service id to classify the type of request.
+ *                UPPL expects 1, 2 or 3.
+ * @return      : Response code back to the caller.
+ *   The system/generic level errors or common errors are generally
+ *   returned in this function otherwise SUCCESS(0) will be returned.
+ *   When an error code is being returned in this function, the caller
+ *   cannot expect more specific error in response.
+ *   When SUCCESS(0) is returned, the caller should further check
+ *   the operation result_code in the response for more specific error.
+
  **/
 pfc_ipcresp_t PhysicalLayer::ipcService(ServerSession &session,
                                         pfc_ipcid_t service_id) {
   pfc_log_info("PhysicalLayer::ipcService is called with service id %d",
                service_id);
   PHY_FINI_IPC_LOCK(UPPL_RC_ERR_SHUTTING_DOWN);
-  pfc_ipcresp_t resp = 0;
-  resp = ipc_connection_manager_->get_ipc_server_handler()->
+  return ipc_connection_manager_->get_ipc_server_handler()->
       IpcService(session, service_id);
-  return resp;
 }
 
 
@@ -266,6 +279,6 @@ ODBCManager* PhysicalLayer::get_odbc_manager() {
   return odbc_manager_;
 }
 
-PFC_MODULE_IPC_DECL(unc::uppl::PhysicalLayer, 5);  // This macro
+PFC_MODULE_IPC_DECL(unc::uppl::PhysicalLayer, 3);  // This macro
 // registers the service handler
 

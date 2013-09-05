@@ -16,12 +16,13 @@ namespace tc {
 /*
  * @brief : Constructor
  */
-TcDbHandler::TcDbHandler(std::string dsn_name, std::string driver_name)
+TcDbHandler::TcDbHandler(std::string dsn_name)
         :dsn_name_(dsn_name),
-         drv_name_(driver_name),
          db_env_(NULL),
          db_conn_handle_(NULL) {
-  PFC_ASSERT(TCOPER_RET_SUCCESS == OpenDBConnection());
+  if (TCOPER_RET_SUCCESS != OpenDBConnection()) {
+      pfc_log_fatal("Creating Database Handler Failed!!");
+  }
 }
 
 
@@ -30,8 +31,10 @@ TcDbHandler::TcDbHandler(std::string dsn_name, std::string driver_name)
  */
 TcDbHandler::TcDbHandler(const TcDbHandler& db_hdlr)
   : dsn_name_(db_hdlr.dsn_name_),
-    drv_name_(db_hdlr.drv_name_) {
-  PFC_ASSERT(TCOPER_RET_SUCCESS == OpenDBConnection());
+    db_env_(NULL),  db_conn_handle_(NULL) {
+      if (TCOPER_RET_SUCCESS != OpenDBConnection()) {
+        pfc_log_fatal("Creating Database Handler Failed!!");
+      }
 }
 
 /*!\brief method to get the error reason */
@@ -94,11 +97,8 @@ TcOperRet TcDbHandler::SetConnectionEnv() {
 /*sets the connection string for SQLDriverConnect API*/
 std::string TcDbHandler::GetDBConnectString() {
   std::string conn_str;
-  /*append DB driver name*/
-  conn_str.append("Driver=");
-  conn_str.append(drv_name_);
   /*append DSN name*/
-  conn_str.append(";DSN=");
+  conn_str.append("DSN=");
   conn_str.append(dsn_name_);
 
   return conn_str;
@@ -530,8 +530,11 @@ TcOperRet TcDbHandler::UpdateRecoveryTable(unc_keytype_datatype_t data_base,
     return retval;
   }
   /* check if the inputs are valid */
-  PFC_ASSERT(TCOPER_RET_SUCCESS ==
-             TcMsg::ValidateAuditDBAttributes(data_base, operation));
+  if (TCOPER_RET_SUCCESS !=
+      TcMsg::ValidateAuditDBAttributes(data_base, operation)) {
+    pfc_log_error("Audit DB attributes mismatch");
+    return TCOPER_RET_FAILURE;
+  }
 
   /* create query */
   upd_query.append("UPDATE TC_RECOVERY_TABLE SET database=");

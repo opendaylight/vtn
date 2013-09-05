@@ -188,6 +188,8 @@ class DalBindColumnInfo {
     bool ResetDalOutputBuffer(const DalTableIndex table_index);
 
     std::string ColInfoToStr(const DalTableIndex table_index) const;
+    std::string ColInfoInputToStr(const DalTableIndex table_index) const;
+    std::string ColInfoResultToStr(const DalTableIndex table_index) const;
     std::string ValueInBindAddrToStr(const DalTableIndex table_index,
                                      const void **addr) const;
 

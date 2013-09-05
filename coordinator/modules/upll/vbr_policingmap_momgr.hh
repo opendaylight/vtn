@@ -21,12 +21,6 @@ enum vbrpolicingmapMoMgrTables {
   VBRPOLICINGMAPTBL = 0, NVBRPOLICINGMAPTABLES
 };
 
-#define CONFIGKEYVALCLEAN(ikey) { \
-  if (ikey) { \
-    delete ikey; \
-    ikey = NULL; \
-  } \
-}
 /* This file declares interfaces for keyType KT_VBR_POLICINGMAP */
 /**
  * @Brief  VbrPolicingMapMoMgr class handles all the request
@@ -40,7 +34,7 @@ class VbrPolicingMapMoMgr : public MoMgrImpl {
     static BindInfo vbr_policingmap_bind_info[];
     static BindInfo key_vbrpm_maintbl_rename_bind_info[];
     static BindInfo key_vbrpm_policyname_maintbl_rename_bind_info[];
-
+    uint32_t cur_instance_count;
   public:
     /**
      * @Brief  PolicingProfileMoMgr Class Constructor.
@@ -180,7 +174,7 @@ class VbrPolicingMapMoMgr : public MoMgrImpl {
      *  @retval     UPLL_RC_SUCCESS  Successfull completion.
      *  */
     upll_rc_t GetControllerId(ConfigKeyVal *ikey, ConfigKeyVal *&okey,
-                              DalDmlIntf *dmi);
+                              upll_keytype_datatype_t dt_type, DalDmlIntf *dmi);
 
     /**
      * @Brief This API is used to read the configuration and statistics
@@ -471,6 +465,25 @@ class VbrPolicingMapMoMgr : public MoMgrImpl {
     upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey,
                                  ConfigKeyVal *ikey);
 
+    /**
+     * @brief  Method used for Restoring PolicingProfile in the Controller Table
+     *
+     * @param[in]      ikey       Pointer to ConfigKeyVal Class
+     * @param[in]      dt_type    Describes Configiration Information.
+     * @param[in]      tbl        Describe the destination table
+     * @param[in]      dmi        Pointer to DalDmlIntf Class.
+     *
+     * @retval  UPLL_RC_SUCCESS      Successfull completion.
+     * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
+     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists 
+     * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
+     */
+
+    upll_rc_t RestorePOMInCtrlTbl(ConfigKeyVal *ikey,
+                                  upll_keytype_datatype_t dt_type,
+                                  MoMgrTables tbl,
+                                  DalDmlIntf* dmi);
+
     upll_rc_t ConstructReadDetailResponse(ConfigKeyVal *ikey,
                                           ConfigKeyVal *drv_resp_ckv,
                                           upll_keytype_datatype_t dt_type,
@@ -533,6 +546,42 @@ class VbrPolicingMapMoMgr : public MoMgrImpl {
                                  const pfcdrv_policier_alarm_data_t &alarm_data,
                                  bool &alarm_raised,
                                  DalDmlIntf *dmi);
+
+    upll_rc_t CreateAuditMoImpl(ConfigKeyVal *ikey,
+                                 DalDmlIntf *dmi,
+                                 const char *ctrlr_id);
+ 
+    upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
+                                upll_keytype_datatype_t dt_type,
+                                DalDmlIntf *dmi);
+
+    upll_rc_t IsPolicingProfileConfigured(const char* policingprofile_name,
+                                          DalDmlIntf *dmi);
+
+    upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
+
+    bool FilterAttributes(void *&val1,
+                          void *val2,
+                          bool copy_to_running,
+                          unc_keytype_operation_t op);
+
+    upll_rc_t UpdateVnodeVal(ConfigKeyVal *ikey,
+                             DalDmlIntf *dmi,
+                             upll_keytype_datatype_t data_type,
+                             bool &no_rename);
+
+    upll_rc_t IsRenamed(ConfigKeyVal *ikey,
+                        upll_keytype_datatype_t dt_type,
+                        DalDmlIntf *dmi,
+                        uint8_t &rename);
+
+    upll_rc_t GetPolicingProfileConfigKey(
+          const char *pp_name, ConfigKeyVal *&okey,
+          DalDmlIntf *dmi);
+
+    upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
+                            DalDmlIntf *dmi,
+                            IpcReqRespHeader *req);
 };
 }  // kt_momgr
 }  // upll

@@ -18,6 +18,7 @@ import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
+import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.IpcRequestProcessor;
@@ -99,6 +100,7 @@ public class SwitchPortsResource extends AbstractResource {
 			 */
 			JsonObject root = null;
 			final IpcPhysicalResponseFactory responseGenerator = new IpcPhysicalResponseFactory();
+			final List<String> uriParameterList = getUriParameters(requestBody);
 			if (opType.equalsIgnoreCase(VtnServiceJsonConsts.COUNT)
 					|| opType.equalsIgnoreCase(VtnServiceJsonConsts.NORMAL)) {
 				root = responseGenerator.getSwitchPortResponse(
@@ -111,6 +113,12 @@ public class SwitchPortsResource extends AbstractResource {
 				JsonArray switchPortArray = root
 						.getAsJsonArray(VtnServiceJsonConsts.PORTS);
 				JsonArray switchPortArrayRes = new JsonArray();
+				root = getResponseJsonArrayPhysical(requestBody,
+                        requestProcessor, responseGenerator,
+                        switchPortArray, VtnServiceJsonConsts.PORTS,
+                        VtnServiceJsonConsts.PORTNAME,
+                        IpcRequestPacketEnum.KT_PORT_GET,
+                        uriParameterList,VtnServiceIpcConsts.GET_SWITCH_PORT_INTERFACE_RESPONSE);
 				requestProcessor.setServiceInfo(UncUPPLEnums.UPPL_IPC_SVC_NAME,
 						UncUPPLEnums.ServiceID.UPPL_SVC_READREQ.ordinal());
 				for (int index = 0; index < switchPortArray.size(); index++) {

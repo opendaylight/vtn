@@ -50,8 +50,7 @@ CREATE TABLE su_vtn_rename_tbl (
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, controller_name, domain_id),
-  UNIQUE(unc_vtn_name));
+  PRIMARY KEY(ctrlr_vtn_name, controller_name, domain_id));
 
 CREATE TABLE su_vbr_tbl (
     vtn_name varchar(32) default ' ',
@@ -116,6 +115,9 @@ CREATE TABLE su_vbr_if_tbl (
     valid_logical_port_id smallint default 0,
     valid_vlanid smallint default 0,
     valid_tagged smallint default 0,
+    valid_vex_name smallint default 0,
+    valid_vex_if_name smallint default 0,
+    valid_vex_link_name smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
     cs_admin_status smallint default 3,
@@ -183,8 +185,7 @@ CREATE TABLE su_vnode_rename_tbl (
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vnode_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, controller_name, domain_id),
-  UNIQUE(unc_vtn_name, unc_vnode_name));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, controller_name, domain_id));
 
 CREATE TABLE su_vlink_tbl (
     vtn_name varchar(32) default ' ',
@@ -203,7 +204,8 @@ CREATE TABLE su_vlink_tbl (
     controller2_name varchar(32) default ' ',
     domain1_id varchar(32) default ' ',
     domain2_id varchar(32) default ' ',
-    flags smallint default 0,
+    key_flags smallint default 0,
+    val_flags smallint default 0,
     valid_admin_status smallint default 0,
     valid_vnode1_name smallint default 0,
     valid_vnode1_ifname smallint default 0,
@@ -231,16 +233,15 @@ CREATE TABLE su_vlink_rename_tbl (
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vlink_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, controller_name, domain_id),
-  UNIQUE(unc_vtn_name, unc_vlink_name));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, controller_name, domain_id));
 
 CREATE TABLE su_static_ip_route_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
     dst_ip_addr bytea default '\000\000\000\000',
     mask smallint default 0,
-    nwm_name varchar(32) default ' ',
     next_hop_addr bytea default '\000\000\000\000',
+    nwm_name varchar(32) default ' ',
     metric integer default 0,
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
@@ -248,7 +249,7 @@ CREATE TABLE su_static_ip_route_tbl (
     valid_metric smallint default 0,
     cs_rowstatus smallint default 3,
     cs_metric smallint default 3,
-  PRIMARY KEY(vtn_name, vrouter_name, dst_ip_addr, mask, nwm_name, next_hop_addr));
+  PRIMARY KEY(vtn_name, vrouter_name, dst_ip_addr, mask, next_hop_addr, nwm_name));
 
 CREATE TABLE su_dhcp_relay_server_tbl (
     vtn_name varchar(32) default ' ',
@@ -370,9 +371,6 @@ CREATE TABLE su_vtep_if_tbl (
     logical_port_id varchar(320) default ' ',
     vlanid integer default 0,
     tagged smallint default 0,
-    vex_name varchar(32) default ' ',
-    vex_if_name varchar(32) default ' ',
-    vex_link_name varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
     controller_name varchar(32) default ' ',
@@ -400,11 +398,11 @@ CREATE TABLE su_vtep_grp_tbl (
     controller_name varchar(32) default ' ',
     description varchar(128) default ' ',
     flags smallint default 0,
-    valid_controller_name varchar(32) default 0,
-    valid_description varchar(32) default 0,
+    valid_controller_name smallint default 0,
+    valid_description smallint default 0,
     cs_rowstatus smallint default 3,
-    cs_controller_name varchar(32) default 3,
-    cs_description varchar(32) default 3,
+    cs_controller_name smallint default 3,
+    cs_description smallint default 3,
   PRIMARY KEY(vtn_name, vtepgrp_name));
 
 CREATE TABLE su_vtep_grp_mem_tbl (
@@ -425,7 +423,7 @@ CREATE TABLE su_vtunnel_tbl (
     domain_id varchar(32) default ' ',
     underlay_vtn_name varchar(32) default ' ',
     vtepgrp_name  varchar(32) default ' ',
-    label integer default 0,
+    label bigint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
     flags smallint default 0,
@@ -454,9 +452,6 @@ CREATE TABLE su_vtunnel_if_tbl (
     logical_port_id varchar(320) default ' ',
     vlanid integer default 0,
     tagged smallint default 0,
-    vex_name varchar(32) default ' ',
-    vex_if_name varchar(32) default ' ',
-    vex_link_name varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
     controller_name varchar(32) default ' ',
@@ -501,8 +496,7 @@ CREATE TABLE su_flowlist_rename_tbl (
     ctrlr_flowlist_name varchar(33) default ' ',
     ctrlr_name varchar(32) default ' ',
     unc_flowlist_name varchar(33) default ' ',
-  PRIMARY KEY(ctrlr_flowlist_name, ctrlr_name),
-  UNIQUE(unc_flowlist_name));
+  PRIMARY KEY(ctrlr_flowlist_name, ctrlr_name));
 
 CREATE TABLE su_flowlist_entry_tbl (
     flowlist_name varchar(33) default ' ',
@@ -647,8 +641,7 @@ CREATE TABLE su_policingprofile_rename_tbl (
     ctrlr_policingprofile_name varchar(33) default ' ',
     ctrlr_name varchar(32) default ' ',
     unc_policingprofile_name varchar(33) default ' ',
-  PRIMARY KEY(ctrlr_policingprofile_name, ctrlr_name),
-  UNIQUE(unc_policingprofile_name));
+  PRIMARY KEY(ctrlr_policingprofile_name, ctrlr_name));
 
 CREATE TABLE su_policingprofile_entry_tbl (
     policingprofile_name varchar(33) default ' ',
@@ -1045,8 +1038,7 @@ CREATE TABLE ca_vtn_rename_tbl (
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, controller_name, domain_id),
-  UNIQUE(unc_vtn_name));
+  PRIMARY KEY(ctrlr_vtn_name, controller_name, domain_id));
 
 CREATE TABLE ca_vbr_tbl (
     vtn_name varchar(32) default ' ',
@@ -1111,6 +1103,9 @@ CREATE TABLE ca_vbr_if_tbl (
     valid_logical_port_id smallint default 0,
     valid_vlanid smallint default 0,
     valid_tagged smallint default 0,
+    valid_vex_name smallint default 0,
+    valid_vex_if_name smallint default 0,
+    valid_vex_link_name smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
     cs_admin_status smallint default 3,
@@ -1178,8 +1173,7 @@ CREATE TABLE ca_vnode_rename_tbl (
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vnode_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, controller_name, domain_id),
-  UNIQUE(unc_vtn_name, unc_vnode_name));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, controller_name, domain_id));
 
 CREATE TABLE ca_vlink_tbl (
     vtn_name varchar(32) default ' ',
@@ -1198,7 +1192,8 @@ CREATE TABLE ca_vlink_tbl (
     controller2_name varchar(32) default ' ',
     domain1_id varchar(32) default ' ',
     domain2_id varchar(32) default ' ',
-    flags smallint default 0,
+    key_flags smallint default 0,
+    val_flags smallint default 0,
     valid_admin_status smallint default 0,
     valid_vnode1_name smallint default 0,
     valid_vnode1_ifname smallint default 0,
@@ -1226,16 +1221,15 @@ CREATE TABLE ca_vlink_rename_tbl (
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vlink_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, controller_name, domain_id),
-  UNIQUE(unc_vtn_name, unc_vlink_name));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, controller_name, domain_id));
 
 CREATE TABLE ca_static_ip_route_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
     dst_ip_addr bytea default '\000\000\000\000',
     mask smallint default 0,
-    nwm_name varchar(32) default ' ',
     next_hop_addr bytea default '\000\000\000\000',
+    nwm_name varchar(32) default ' ',
     metric integer default 0,
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
@@ -1243,7 +1237,7 @@ CREATE TABLE ca_static_ip_route_tbl (
     valid_metric smallint default 0,
     cs_rowstatus smallint default 3,
     cs_metric smallint default 3,
-  PRIMARY KEY(vtn_name, vrouter_name, dst_ip_addr, mask, nwm_name, next_hop_addr));
+  PRIMARY KEY(vtn_name, vrouter_name, dst_ip_addr, mask, next_hop_addr, nwm_name));
 
 CREATE TABLE ca_dhcp_relay_server_tbl (
     vtn_name varchar(32) default ' ',
@@ -1365,9 +1359,6 @@ CREATE TABLE ca_vtep_if_tbl (
     logical_port_id varchar(320) default ' ',
     vlanid integer default 0,
     tagged smallint default 0,
-    vex_name varchar(32) default ' ',
-    vex_if_name varchar(32) default ' ',
-    vex_link_name varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
     controller_name varchar(32) default ' ',
@@ -1395,11 +1386,11 @@ CREATE TABLE ca_vtep_grp_tbl (
     controller_name varchar(32) default ' ',
     description varchar(128) default ' ',
     flags smallint default 0,
-    valid_controller_name varchar(32) default 0,
-    valid_description varchar(32) default 0,
+    valid_controller_name smallint default 0,
+    valid_description smallint default 0,
     cs_rowstatus smallint default 3,
-    cs_controller_name varchar(32) default 3,
-    cs_description varchar(32) default 3,
+    cs_controller_name smallint default 3,
+    cs_description smallint default 3,
   PRIMARY KEY(vtn_name, vtepgrp_name));
 
 CREATE TABLE ca_vtep_grp_mem_tbl (
@@ -1420,7 +1411,7 @@ CREATE TABLE ca_vtunnel_tbl (
     domain_id varchar(32) default ' ',
     underlay_vtn_name varchar(32) default ' ',
     vtepgrp_name  varchar(32) default ' ',
-    label integer default 0,
+    label bigint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
     flags smallint default 0,
@@ -1449,9 +1440,6 @@ CREATE TABLE ca_vtunnel_if_tbl (
     logical_port_id varchar(320) default ' ',
     vlanid integer default 0,
     tagged smallint default 0,
-    vex_name varchar(32) default ' ',
-    vex_if_name varchar(32) default ' ',
-    vex_link_name varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
     controller_name varchar(32) default ' ',
@@ -1496,8 +1484,7 @@ CREATE TABLE ca_flowlist_rename_tbl (
     ctrlr_flowlist_name varchar(33) default ' ',
     ctrlr_name varchar(32) default ' ',
     unc_flowlist_name varchar(33) default ' ',
-  PRIMARY KEY(ctrlr_flowlist_name, ctrlr_name),
-  UNIQUE(unc_flowlist_name));
+  PRIMARY KEY(ctrlr_flowlist_name, ctrlr_name));
 
 CREATE TABLE ca_flowlist_entry_tbl (
     flowlist_name varchar(33) default ' ',
@@ -1642,8 +1629,7 @@ CREATE TABLE ca_policingprofile_rename_tbl (
     ctrlr_policingprofile_name varchar(33) default ' ',
     ctrlr_name varchar(32) default ' ',
     unc_policingprofile_name varchar(33) default ' ',
-  PRIMARY KEY(ctrlr_policingprofile_name, ctrlr_name),
-  UNIQUE(unc_policingprofile_name));
+  PRIMARY KEY(ctrlr_policingprofile_name, ctrlr_name));
 
 CREATE TABLE ca_policingprofile_entry_tbl (
     policingprofile_name varchar(33) default ' ',
@@ -2049,8 +2035,7 @@ CREATE TABLE ru_vtn_rename_tbl (
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, controller_name, domain_id),
-  UNIQUE(unc_vtn_name));
+  PRIMARY KEY(ctrlr_vtn_name, controller_name, domain_id));
 
 CREATE TABLE ru_vbr_tbl (
     vtn_name varchar(32) default ' ',
@@ -2115,6 +2100,9 @@ CREATE TABLE ru_vbr_if_tbl (
     valid_logical_port_id smallint default 0,
     valid_vlanid smallint default 0,
     valid_tagged smallint default 0,
+    valid_vex_name smallint default 0,
+    valid_vex_if_name smallint default 0,
+    valid_vex_link_name smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
     cs_admin_status smallint default 3,
@@ -2124,6 +2112,8 @@ CREATE TABLE ru_vbr_if_tbl (
     cs_vlanid smallint default 3,
     cs_tagged smallint default 3,
   PRIMARY KEY(vtn_name, vbridge_name, if_name));
+
+CREATE INDEX index_for_show_perf ON ru_vbr_if_tbl (vtn_name, vex_name, valid_vex_name);
 
 CREATE TABLE ru_vrt_tbl (
     vtn_name varchar(32) default ' ',
@@ -2182,8 +2172,7 @@ CREATE TABLE ru_vnode_rename_tbl (
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vnode_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, controller_name, domain_id),
-  UNIQUE(unc_vtn_name, unc_vnode_name));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, controller_name, domain_id));
 
 CREATE TABLE ru_vlink_tbl (
     vtn_name varchar(32) default ' ',
@@ -2202,7 +2191,8 @@ CREATE TABLE ru_vlink_tbl (
     controller2_name varchar(32) default ' ',
     domain1_id varchar(32) default ' ',
     domain2_id varchar(32) default ' ',
-    flags smallint default 0,
+    key_flags smallint default 0,
+    val_flags smallint default 0,
     valid_admin_status smallint default 0,
     valid_vnode1_name smallint default 0,
     valid_vnode1_ifname smallint default 0,
@@ -2230,16 +2220,15 @@ CREATE TABLE ru_vlink_rename_tbl (
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vlink_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, controller_name, domain_id),
-  UNIQUE(unc_vtn_name, unc_vlink_name));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, controller_name, domain_id));
 
 CREATE TABLE ru_static_ip_route_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
     dst_ip_addr bytea default '\000\000\000\000',
     mask smallint default 0,
-    nwm_name varchar(32) default ' ',
     next_hop_addr bytea default '\000\000\000\000',
+    nwm_name varchar(32) default ' ',
     metric integer default 0,
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
@@ -2247,7 +2236,7 @@ CREATE TABLE ru_static_ip_route_tbl (
     valid_metric smallint default 0,
     cs_rowstatus smallint default 3,
     cs_metric smallint default 3,
-  PRIMARY KEY(vtn_name, vrouter_name, dst_ip_addr, mask, nwm_name, next_hop_addr));
+  PRIMARY KEY(vtn_name, vrouter_name, dst_ip_addr, mask, next_hop_addr, nwm_name));
 
 CREATE TABLE ru_dhcp_relay_server_tbl (
     vtn_name varchar(32) default ' ',
@@ -2369,9 +2358,6 @@ CREATE TABLE ru_vtep_if_tbl (
     logical_port_id varchar(320) default ' ',
     vlanid integer default 0,
     tagged smallint default 0,
-    vex_name varchar(32) default ' ',
-    vex_if_name varchar(32) default ' ',
-    vex_link_name varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
     controller_name varchar(32) default ' ',
@@ -2399,11 +2385,11 @@ CREATE TABLE ru_vtep_grp_tbl (
     controller_name varchar(32) default ' ',
     description varchar(128) default ' ',
     flags smallint default 0,
-    valid_controller_name varchar(32) default 0,
-    valid_description varchar(32) default 0,
+    valid_controller_name smallint default 0,
+    valid_description smallint default 0,
     cs_rowstatus smallint default 3,
-    cs_controller_name varchar(32) default 3,
-    cs_description varchar(32) default 3,
+    cs_controller_name smallint default 3,
+    cs_description smallint default 3,
   PRIMARY KEY(vtn_name, vtepgrp_name));
 
 CREATE TABLE ru_vtep_grp_mem_tbl (
@@ -2424,7 +2410,7 @@ CREATE TABLE ru_vtunnel_tbl (
     domain_id varchar(32) default ' ',
     underlay_vtn_name varchar(32) default ' ',
     vtepgrp_name  varchar(32) default ' ',
-    label integer default 0,
+    label bigint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
     flags smallint default 0,
@@ -2453,9 +2439,6 @@ CREATE TABLE ru_vtunnel_if_tbl (
     logical_port_id varchar(320) default ' ',
     vlanid integer default 0,
     tagged smallint default 0,
-    vex_name varchar(32) default ' ',
-    vex_if_name varchar(32) default ' ',
-    vex_link_name varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
     controller_name varchar(32) default ' ',
@@ -2500,8 +2483,7 @@ CREATE TABLE ru_flowlist_rename_tbl (
     ctrlr_flowlist_name varchar(33) default ' ',
     ctrlr_name varchar(32) default ' ',
     unc_flowlist_name varchar(33) default ' ',
-  PRIMARY KEY(ctrlr_flowlist_name, ctrlr_name),
-  UNIQUE(unc_flowlist_name));
+  PRIMARY KEY(ctrlr_flowlist_name, ctrlr_name));
 
 CREATE TABLE ru_flowlist_entry_tbl (
     flowlist_name varchar(33) default ' ',
@@ -2646,8 +2628,7 @@ CREATE TABLE ru_policingprofile_rename_tbl (
     ctrlr_policingprofile_name varchar(33) default ' ',
     ctrlr_name varchar(32) default ' ',
     unc_policingprofile_name varchar(33) default ' ',
-  PRIMARY KEY(ctrlr_policingprofile_name, ctrlr_name),
-  UNIQUE(unc_policingprofile_name));
+  PRIMARY KEY(ctrlr_policingprofile_name, ctrlr_name));
 
 CREATE TABLE ru_policingprofile_entry_tbl (
     policingprofile_name varchar(33) default ' ',
@@ -3020,8 +3001,8 @@ CREATE TABLE im_vtn_tbl (
     valid_alarm_status smallint default 0,
     valid_creation_time smallint default 0,
     valid_last_updated_time smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_description smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_description smallint default 1,
   PRIMARY KEY(vtn_name));
 
 CREATE TABLE im_vtn_ctrlr_tbl (
@@ -3035,8 +3016,8 @@ CREATE TABLE im_vtn_ctrlr_tbl (
     flags smallint default 0,
     valid_oper_status smallint default 0,
     valid_alarm_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_description smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_description smallint default 1,
   PRIMARY KEY(vtn_name, controller_name, domain_id));
 
 CREATE TABLE im_vtn_rename_tbl (
@@ -3044,8 +3025,7 @@ CREATE TABLE im_vtn_rename_tbl (
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, controller_name, domain_id),
-  UNIQUE(unc_vtn_name));
+  PRIMARY KEY(ctrlr_vtn_name, controller_name, domain_id));
 
 CREATE TABLE im_vbr_tbl (
     vtn_name varchar(32) default ' ',
@@ -3064,12 +3044,12 @@ CREATE TABLE im_vbr_tbl (
     valid_host_addr smallint default 0,
     valid_host_addr_mask smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_controller_name smallint default 3,
-    cs_domain_id smallint default 3,
-    cs_vbr_description smallint default 3,
-    cs_host_addr smallint default 3,
-    cs_host_addr_mask smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_controller_name smallint default 1,
+    cs_domain_id smallint default 1,
+    cs_vbr_description smallint default 1,
+    cs_host_addr smallint default 1,
+    cs_host_addr_mask smallint default 1,
     flags smallint default 0,
   PRIMARY KEY(vtn_name, vbridge_name));
 
@@ -3083,8 +3063,8 @@ CREATE TABLE im_vbr_vlanmap_tbl (
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_vlanid smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_vlanid smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_vlanid smallint default 1,
   PRIMARY KEY(vtn_name, vbridge_name, logical_port_id, logical_port_id_valid));
 
 CREATE TABLE im_vbr_if_tbl (
@@ -3110,14 +3090,17 @@ CREATE TABLE im_vbr_if_tbl (
     valid_logical_port_id smallint default 0,
     valid_vlanid smallint default 0,
     valid_tagged smallint default 0,
+    valid_vex_name smallint default 0,
+    valid_vex_if_name smallint default 0,
+    valid_vex_link_name smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_admin_status smallint default 3,
-    cs_description smallint default 3,
-    cs_portmap smallint default 3,
-    cs_logical_port_id smallint default 3,
-    cs_vlanid smallint default 3,
-    cs_tagged smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_admin_status smallint default 1,
+    cs_description smallint default 1,
+    cs_portmap smallint default 1,
+    cs_logical_port_id smallint default 1,
+    cs_vlanid smallint default 1,
+    cs_tagged smallint default 1,
   PRIMARY KEY(vtn_name, vbridge_name, if_name));
 
 CREATE TABLE im_vrt_tbl (
@@ -3135,11 +3118,11 @@ CREATE TABLE im_vrt_tbl (
     valid_vrt_description smallint default 0,
     valid_dhcprelay_admin_status smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_controller_name smallint default 3,
-    cs_domain_id smallint default 3,
-    cs_vrt_description smallint default 3,
-    cs_dhcprelay_admin_status smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_controller_name smallint default 1,
+    cs_domain_id smallint default 1,
+    cs_vrt_description smallint default 1,
+    cs_dhcprelay_admin_status smallint default 1,
   PRIMARY KEY(vtn_name, vrouter_name));
 
 CREATE TABLE im_vrt_if_tbl (
@@ -3162,12 +3145,12 @@ CREATE TABLE im_vrt_if_tbl (
     valid_mac_addr smallint default 0,
     valid_admin_status smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_description smallint default 3,
-    cs_ip_addr smallint default 3,
-    cs_mask smallint default 3,
-    cs_mac_addr smallint default 3,
-    cs_admin_status smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_description smallint default 1,
+    cs_ip_addr smallint default 1,
+    cs_mask smallint default 1,
+    cs_mac_addr smallint default 1,
+    cs_admin_status smallint default 1,
   PRIMARY KEY(vtn_name, vrouter_name, if_name));
 
 CREATE TABLE im_vnode_rename_tbl (
@@ -3177,8 +3160,7 @@ CREATE TABLE im_vnode_rename_tbl (
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vnode_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, controller_name, domain_id),
-  UNIQUE(unc_vtn_name, unc_vnode_name));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, controller_name, domain_id));
 
 CREATE TABLE im_vlink_tbl (
     vtn_name varchar(32) default ' ',
@@ -3197,7 +3179,8 @@ CREATE TABLE im_vlink_tbl (
     controller2_name varchar(32) default ' ',
     domain1_id varchar(32) default ' ',
     domain2_id varchar(32) default ' ',
-    flags smallint default 0,
+    key_flags smallint default 0,
+    val_flags smallint default 0,
     valid_admin_status smallint default 0,
     valid_vnode1_name smallint default 0,
     valid_vnode1_ifname smallint default 0,
@@ -3207,15 +3190,15 @@ CREATE TABLE im_vlink_tbl (
     valid_vlanid smallint default 0,
     valid_description smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_admin_status smallint default 3,
-    cs_vnode1_name smallint default 3,
-    cs_vnode1_ifname smallint default 3,
-    cs_vnode2_name smallint default 3,
-    cs_vnode2_ifname smallint default 3,
-    cs_boundary_name smallint default 3,
-    cs_vlanid smallint default 3,
-    cs_description smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_admin_status smallint default 1,
+    cs_vnode1_name smallint default 1,
+    cs_vnode1_ifname smallint default 1,
+    cs_vnode2_name smallint default 1,
+    cs_vnode2_ifname smallint default 1,
+    cs_boundary_name smallint default 1,
+    cs_vlanid smallint default 1,
+    cs_description smallint default 1,
   PRIMARY KEY(vtn_name, vlink_name));
 
 CREATE TABLE im_vlink_rename_tbl (
@@ -3225,24 +3208,23 @@ CREATE TABLE im_vlink_rename_tbl (
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vlink_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, controller_name, domain_id),
-  UNIQUE(unc_vtn_name, unc_vlink_name));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, controller_name, domain_id));
 
 CREATE TABLE im_static_ip_route_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
     dst_ip_addr bytea default '\000\000\000\000',
     mask smallint default 0,
-    nwm_name varchar(32) default ' ',
     next_hop_addr bytea default '\000\000\000\000',
+    nwm_name varchar(32) default ' ',
     metric integer default 0,
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_metric smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_metric smallint default 3,
-  PRIMARY KEY(vtn_name, vrouter_name, dst_ip_addr, mask, nwm_name, next_hop_addr));
+    cs_rowstatus smallint default 1,
+    cs_metric smallint default 1,
+  PRIMARY KEY(vtn_name, vrouter_name, dst_ip_addr, mask, next_hop_addr, nwm_name));
 
 CREATE TABLE im_dhcp_relay_server_tbl (
     vtn_name varchar(32) default ' ',
@@ -3251,7 +3233,7 @@ CREATE TABLE im_dhcp_relay_server_tbl (
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(vtn_name, vrouter_name, server_ip_addr));
 
 CREATE TABLE im_dhcp_relay_if_tbl (
@@ -3261,7 +3243,7 @@ CREATE TABLE im_dhcp_relay_if_tbl (
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(vtn_name, vrouter_name, if_name));
 
 CREATE TABLE im_vbr_nwmon_grp_tbl (
@@ -3275,8 +3257,8 @@ CREATE TABLE im_vbr_nwmon_grp_tbl (
     flags smallint default 0,
     valid_admin_status smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_admin_status smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_admin_status smallint default 1,
   PRIMARY KEY(vtn_name, vbridge_name, nwm_name));
 
 CREATE TABLE im_vbr_nwmon_host_tbl (
@@ -3297,12 +3279,12 @@ CREATE TABLE im_vbr_nwmon_host_tbl (
     valid_failure_count smallint default 0,
     valid_recovery_count smallint default 0,
     valid_wait_time smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_health_interval smallint default 3,
-    cs_recovery_interval smallint default 3,
-    cs_failure_count smallint default 3,
-    cs_recovery_count smallint default 3,
-    cs_wait_time smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_health_interval smallint default 1,
+    cs_recovery_interval smallint default 1,
+    cs_failure_count smallint default 1,
+    cs_recovery_count smallint default 1,
+    cs_wait_time smallint default 1,
   PRIMARY KEY(vtn_name, vbridge_name, nwm_name, host_address));
 
 CREATE TABLE im_vunknown_tbl (
@@ -3315,10 +3297,10 @@ CREATE TABLE im_vunknown_tbl (
     valid_description smallint default 0,
     valid_type smallint default 0,
     valid_domain_id smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_description smallint default 3,
-    cs_type smallint default 3,
-    cs_domain_id smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_description smallint default 1,
+    cs_type smallint default 1,
+    cs_domain_id smallint default 1,
   PRIMARY KEY(vtn_name, vunknown_name));
 
 CREATE TABLE im_vunknown_if_tbl (
@@ -3331,9 +3313,9 @@ CREATE TABLE im_vunknown_if_tbl (
     flags smallint default 0,
     valid_description smallint default 0,
     valid_admin_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_description smallint default 3,
-    cs_admin_status smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_description smallint default 1,
+    cs_admin_status smallint default 1,
   PRIMARY KEY(vtn_name, vunknown_name, if_name));
 
 CREATE TABLE im_vtep_tbl (
@@ -3349,10 +3331,10 @@ CREATE TABLE im_vtep_tbl (
     valid_controller_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_description smallint default 3,
-    cs_controller_name smallint default 3,
-    cs_domain_id smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_description smallint default 1,
+    cs_controller_name smallint default 1,
+    cs_domain_id smallint default 1,
   PRIMARY KEY(vtn_name, vtep_name));
 
 CREATE TABLE im_vtep_if_tbl (
@@ -3364,9 +3346,6 @@ CREATE TABLE im_vtep_if_tbl (
     logical_port_id varchar(320) default ' ',
     vlanid integer default 0,
     tagged smallint default 0,
-    vex_name varchar(32) default ' ',
-    vex_if_name varchar(32) default ' ',
-    vex_link_name varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
     controller_name varchar(32) default ' ',
@@ -3379,13 +3358,13 @@ CREATE TABLE im_vtep_if_tbl (
     valid_vlanid smallint default 0,
     valid_tagged smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_description smallint default 3,
-    cs_admin_status smallint default 3,
-    cs_portmap smallint default 3,
-    cs_logical_port_id smallint default 3,
-    cs_vlanid smallint default 3,
-    cs_tagged smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_description smallint default 1,
+    cs_admin_status smallint default 1,
+    cs_portmap smallint default 1,
+    cs_logical_port_id smallint default 1,
+    cs_vlanid smallint default 1,
+    cs_tagged smallint default 1,
   PRIMARY KEY(vtn_name, vtep_name, if_name));
 
 CREATE TABLE im_vtep_grp_tbl (
@@ -3394,11 +3373,11 @@ CREATE TABLE im_vtep_grp_tbl (
     controller_name varchar(32) default ' ',
     description varchar(128) default ' ',
     flags smallint default 0,
-    valid_controller_name varchar(32) default 0,
-    valid_description varchar(32) default 0,
-    cs_rowstatus smallint default 3,
-    cs_controller_name varchar(32) default 3,
-    cs_description varchar(32) default 3,
+    valid_controller_name smallint default 0,
+    valid_description smallint default 0,
+    cs_rowstatus smallint default 1,
+    cs_controller_name smallint default 1,
+    cs_description smallint default 1,
   PRIMARY KEY(vtn_name, vtepgrp_name));
 
 CREATE TABLE im_vtep_grp_mem_tbl (
@@ -3408,7 +3387,7 @@ CREATE TABLE im_vtep_grp_mem_tbl (
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(vtn_name, vtepgrp_name, vtepgrp_member_name));
 
 CREATE TABLE im_vtunnel_tbl (
@@ -3419,7 +3398,7 @@ CREATE TABLE im_vtunnel_tbl (
     domain_id varchar(32) default ' ',
     underlay_vtn_name varchar(32) default ' ',
     vtepgrp_name  varchar(32) default ' ',
-    label integer default 0,
+    label bigint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
     flags smallint default 0,
@@ -3430,13 +3409,13 @@ CREATE TABLE im_vtunnel_tbl (
     valid_vtepgrp_name smallint default 0,
     valid_label smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_description smallint default 3,
-    cs_controller_name smallint default 3,
-    cs_domain_id smallint default 3,
-    cs_underlay_vtn_name smallint default 3,
-    cs_vtepgrp_name smallint default 3,
-    cs_label smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_description smallint default 1,
+    cs_controller_name smallint default 1,
+    cs_domain_id smallint default 1,
+    cs_underlay_vtn_name smallint default 1,
+    cs_vtepgrp_name smallint default 1,
+    cs_label smallint default 1,
   PRIMARY KEY(vtn_name, vtunnel_name));
 
 CREATE TABLE im_vtunnel_if_tbl (
@@ -3448,9 +3427,6 @@ CREATE TABLE im_vtunnel_if_tbl (
     logical_port_id varchar(320) default ' ',
     vlanid integer default 0,
     tagged smallint default 0,
-    vex_name varchar(32) default ' ',
-    vex_if_name varchar(32) default ' ',
-    vex_link_name varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
     controller_name varchar(32) default ' ',
@@ -3463,13 +3439,13 @@ CREATE TABLE im_vtunnel_if_tbl (
     valid_vlanid smallint default 0,
     valid_tagged smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_description smallint default 3,
-    cs_admin_status smallint default 3,
-    cs_portmap smallint default 3,
-    cs_logical_port_id smallint default 3,
-    cs_vlanid smallint default 3,
-    cs_tagged smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_description smallint default 1,
+    cs_admin_status smallint default 1,
+    cs_portmap smallint default 1,
+    cs_logical_port_id smallint default 1,
+    cs_vlanid smallint default 1,
+    cs_tagged smallint default 1,
   PRIMARY KEY(vtn_name, vtunnel_name, if_name));
 
 CREATE TABLE im_flowlist_tbl (
@@ -3477,8 +3453,8 @@ CREATE TABLE im_flowlist_tbl (
     ip_type smallint default 0,
     flags smallint default 0,
     valid_ip_type smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_ip_type smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_ip_type smallint default 1,
   PRIMARY KEY(flowlist_name));
 
 CREATE TABLE im_flowlist_ctrlr_tbl (
@@ -3487,16 +3463,15 @@ CREATE TABLE im_flowlist_ctrlr_tbl (
     ref_count bigint default 0,
     flags smallint default 0,
     valid_ip_type smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_ip_type smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_ip_type smallint default 1,
   PRIMARY KEY(flowlist_name, ctrlr_name));
 
 CREATE TABLE im_flowlist_rename_tbl (
     ctrlr_flowlist_name varchar(33) default ' ',
     ctrlr_name varchar(32) default ' ',
     unc_flowlist_name varchar(33) default ' ',
-  PRIMARY KEY(ctrlr_flowlist_name, ctrlr_name),
-  UNIQUE(unc_flowlist_name));
+  PRIMARY KEY(ctrlr_flowlist_name, ctrlr_name));
 
 CREATE TABLE im_flowlist_entry_tbl (
     flowlist_name varchar(33) default ' ',
@@ -3546,29 +3521,29 @@ CREATE TABLE im_flowlist_entry_tbl (
     valid_icmp_code smallint default 0,
     valid_icmpv6_type smallint default 0,
     valid_icmpv6_code smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_mac_dst smallint default 3,
-    cs_mac_src smallint default 3,
-    cs_mac_eth_type smallint default 3,
-    cs_dst_ip smallint default 3,
-    cs_dst_ip_prefix smallint default 3,
-    cs_src_ip smallint default 3,
-    cs_src_ip_prefix smallint default 3,
-    cs_vlan_priority smallint default 3,
-    cs_dst_ipv6 smallint default 3,
-    cs_dst_ipv6_prefix smallint default 3,
-    cs_src_ipv6 smallint default 3,
-    cs_src_ipv6_prefix smallint default 3,
-    cs_ip_protocol smallint default 3,
-    cs_ip_dscp smallint default 3,
-    cs_l4_dst_port smallint default 3,
-    cs_l4_dst_port_endpt smallint default 3,
-    cs_l4_src_port smallint default 3,
-    cs_l4_src_port_endpt smallint default 3,
-    cs_icmp_type smallint default 3,
-    cs_icmp_code smallint default 3,
-    cs_icmpv6_type smallint default 3,
-    cs_icmpv6_code smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_mac_dst smallint default 1,
+    cs_mac_src smallint default 1,
+    cs_mac_eth_type smallint default 1,
+    cs_dst_ip smallint default 1,
+    cs_dst_ip_prefix smallint default 1,
+    cs_src_ip smallint default 1,
+    cs_src_ip_prefix smallint default 1,
+    cs_vlan_priority smallint default 1,
+    cs_dst_ipv6 smallint default 1,
+    cs_dst_ipv6_prefix smallint default 1,
+    cs_src_ipv6 smallint default 1,
+    cs_src_ipv6_prefix smallint default 1,
+    cs_ip_protocol smallint default 1,
+    cs_ip_dscp smallint default 1,
+    cs_l4_dst_port smallint default 1,
+    cs_l4_dst_port_endpt smallint default 1,
+    cs_l4_src_port smallint default 1,
+    cs_l4_src_port_endpt smallint default 1,
+    cs_icmp_type smallint default 1,
+    cs_icmp_code smallint default 1,
+    cs_icmpv6_type smallint default 1,
+    cs_icmpv6_code smallint default 1,
   PRIMARY KEY(flowlist_name, sequence_num));
 
 CREATE TABLE im_flowlist_entry_ctrlr_tbl (
@@ -3598,35 +3573,35 @@ CREATE TABLE im_flowlist_entry_ctrlr_tbl (
     valid_icmp_code smallint default 0,
     valid_icmpv6_type smallint default 0,
     valid_icmpv6_code smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_mac_dst smallint default 3,
-    cs_mac_src smallint default 3,
-    cs_mac_eth_type smallint default 3,
-    cs_dst_ip smallint default 3,
-    cs_dst_ip_prefix smallint default 3,
-    cs_src_ip smallint default 3,
-    cs_src_ip_prefix smallint default 3,
-    cs_vlan_priority smallint default 3,
-    cs_dst_ipv6 smallint default 3,
-    cs_dst_ipv6_prefix smallint default 3,
-    cs_src_ipv6 smallint default 3,
-    cs_src_ipv6_prefix smallint default 3,
-    cs_ip_protocol smallint default 3,
-    cs_ip_dscp smallint default 3,
-    cs_l4_dst_port smallint default 3,
-    cs_l4_dst_port_endpt smallint default 3,
-    cs_l4_src_port smallint default 3,
-    cs_l4_src_port_endpt smallint default 3,
-    cs_icmp_type smallint default 3,
-    cs_icmp_code smallint default 3,
-    cs_icmpv6_type smallint default 3,
-    cs_icmpv6_code smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_mac_dst smallint default 1,
+    cs_mac_src smallint default 1,
+    cs_mac_eth_type smallint default 1,
+    cs_dst_ip smallint default 1,
+    cs_dst_ip_prefix smallint default 1,
+    cs_src_ip smallint default 1,
+    cs_src_ip_prefix smallint default 1,
+    cs_vlan_priority smallint default 1,
+    cs_dst_ipv6 smallint default 1,
+    cs_dst_ipv6_prefix smallint default 1,
+    cs_src_ipv6 smallint default 1,
+    cs_src_ipv6_prefix smallint default 1,
+    cs_ip_protocol smallint default 1,
+    cs_ip_dscp smallint default 1,
+    cs_l4_dst_port smallint default 1,
+    cs_l4_dst_port_endpt smallint default 1,
+    cs_l4_src_port smallint default 1,
+    cs_l4_src_port_endpt smallint default 1,
+    cs_icmp_type smallint default 1,
+    cs_icmp_code smallint default 1,
+    cs_icmpv6_type smallint default 1,
+    cs_icmpv6_code smallint default 1,
   PRIMARY KEY(flowlist_name, sequence_num, ctrlr_name));
 
 CREATE TABLE im_policingprofile_tbl (
     policingprofile_name varchar(33) default ' ',
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(policingprofile_name));
 
 CREATE TABLE im_policingprofile_ctrlr_tbl (
@@ -3634,15 +3609,14 @@ CREATE TABLE im_policingprofile_ctrlr_tbl (
     ctrlr_name varchar(32) default ' ',
     ref_count bigint default 0,
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(policingprofile_name, ctrlr_name));
 
 CREATE TABLE im_policingprofile_rename_tbl (
     ctrlr_policingprofile_name varchar(33) default ' ',
     ctrlr_name varchar(32) default ' ',
     unc_policingprofile_name varchar(33) default ' ',
-  PRIMARY KEY(ctrlr_policingprofile_name, ctrlr_name),
-  UNIQUE(unc_policingprofile_name));
+  PRIMARY KEY(ctrlr_policingprofile_name, ctrlr_name));
 
 CREATE TABLE im_policingprofile_entry_tbl (
     policingprofile_name varchar(33) default ' ',
@@ -3684,25 +3658,25 @@ CREATE TABLE im_policingprofile_entry_tbl (
     valid_red_priority smallint default 0,
     valid_red_dscp smallint default 0,
     valid_red_drop smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_flowlist smallint default 3,
-    cs_rate smallint default 3,
-    cs_cir smallint default 3,
-    cs_cbs smallint default 3,
-    cs_pir smallint default 3,
-    cs_pbs smallint default 3,
-    cs_green_action smallint default 3,
-    cs_green_priority smallint default 3,
-    cs_green_dscp smallint default 3,
-    cs_green_drop smallint default 3,
-    cs_yellow_action smallint default 3,
-    cs_yellow_priority smallint default 3,
-    cs_yellow_dscp smallint default 3,
-    cs_yellow_drop smallint default 3,
-    cs_red_action smallint default 3,
-    cs_red_priority smallint default 3,
-    cs_red_dscp smallint default 3,
-    cs_red_drop smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_flowlist smallint default 1,
+    cs_rate smallint default 1,
+    cs_cir smallint default 1,
+    cs_cbs smallint default 1,
+    cs_pir smallint default 1,
+    cs_pbs smallint default 1,
+    cs_green_action smallint default 1,
+    cs_green_priority smallint default 1,
+    cs_green_dscp smallint default 1,
+    cs_green_drop smallint default 1,
+    cs_yellow_action smallint default 1,
+    cs_yellow_priority smallint default 1,
+    cs_yellow_dscp smallint default 1,
+    cs_yellow_drop smallint default 1,
+    cs_red_action smallint default 1,
+    cs_red_priority smallint default 1,
+    cs_red_dscp smallint default 1,
+    cs_red_drop smallint default 1,
   PRIMARY KEY(policingprofile_name, sequence_num));
 
 CREATE TABLE im_policingprofile_entry_ctrlr_tbl (
@@ -3728,32 +3702,32 @@ CREATE TABLE im_policingprofile_entry_ctrlr_tbl (
     valid_red_priority smallint default 0,
     valid_red_dscp smallint default 0,
     valid_red_drop smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_flowlist smallint default 3,
-    cs_rate smallint default 3,
-    cs_cir smallint default 3,
-    cs_cbs smallint default 3,
-    cs_pir smallint default 3,
-    cs_pbs smallint default 3,
-    cs_green_action smallint default 3,
-    cs_green_priority smallint default 3,
-    cs_green_dscp smallint default 3,
-    cs_green_drop smallint default 3,
-    cs_yellow_action smallint default 3,
-    cs_yellow_priority smallint default 3,
-    cs_yellow_dscp smallint default 3,
-    cs_yellow_drop smallint default 3,
-    cs_red_action smallint default 3,
-    cs_red_priority smallint default 3,
-    cs_red_dscp smallint default 3,
-    cs_red_drop smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_flowlist smallint default 1,
+    cs_rate smallint default 1,
+    cs_cir smallint default 1,
+    cs_cbs smallint default 1,
+    cs_pir smallint default 1,
+    cs_pbs smallint default 1,
+    cs_green_action smallint default 1,
+    cs_green_priority smallint default 1,
+    cs_green_dscp smallint default 1,
+    cs_green_drop smallint default 1,
+    cs_yellow_action smallint default 1,
+    cs_yellow_priority smallint default 1,
+    cs_yellow_dscp smallint default 1,
+    cs_yellow_drop smallint default 1,
+    cs_red_action smallint default 1,
+    cs_red_priority smallint default 1,
+    cs_red_dscp smallint default 1,
+    cs_red_drop smallint default 1,
   PRIMARY KEY(policingprofile_name, sequence_num, ctrlr_name));
 
 CREATE TABLE im_vtn_flowfilter_tbl (
     vtn_name varchar(32) default ' ',
     direction smallint default 0,
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(vtn_name, direction));
 
 CREATE TABLE im_vtn_flowfilter_ctrlr_tbl (
@@ -3762,7 +3736,7 @@ CREATE TABLE im_vtn_flowfilter_ctrlr_tbl (
     ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(vtn_name, direction, ctrlr_name, domain_id));
 
 CREATE TABLE im_vtn_flowfilter_entry_tbl (
@@ -3780,12 +3754,12 @@ CREATE TABLE im_vtn_flowfilter_entry_tbl (
     valid_nwn_name smallint default 0,
     valid_dscp smallint default 0,
     valid_priority smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_flowlist_name smallint default 3,
-    cs_action smallint default 3,
-    cs_nwn_name smallint default 3,
-    cs_dscp smallint default 3,
-    cs_priority smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_flowlist_name smallint default 1,
+    cs_action smallint default 1,
+    cs_nwn_name smallint default 1,
+    cs_dscp smallint default 1,
+    cs_priority smallint default 1,
   PRIMARY KEY(vtn_name, direction, sequence_num));
 
 CREATE TABLE im_vtn_flowfilter_entry_ctrlr_tbl (
@@ -3800,12 +3774,12 @@ CREATE TABLE im_vtn_flowfilter_entry_ctrlr_tbl (
     valid_nwn_name smallint default 0,
     valid_dscp smallint default 0,
     valid_priority smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_flowlist_name smallint default 3,
-    cs_action smallint default 3,
-    cs_nwn_name smallint default 3,
-    cs_dscp smallint default 3,
-    cs_priority smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_flowlist_name smallint default 1,
+    cs_action smallint default 1,
+    cs_nwn_name smallint default 1,
+    cs_dscp smallint default 1,
+    cs_priority smallint default 1,
   PRIMARY KEY(vtn_name, direction, sequence_num, ctrlr_name, domain_id));
 
 CREATE TABLE im_vbr_flowfilter_tbl (
@@ -3815,7 +3789,7 @@ CREATE TABLE im_vbr_flowfilter_tbl (
     ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(vtn_name, vbr_name, direction));
 
 CREATE TABLE im_vbr_flowfilter_entry_tbl (
@@ -3844,16 +3818,16 @@ CREATE TABLE im_vbr_flowfilter_entry_tbl (
     valid_nwn_name smallint default 0,
     valid_dscp smallint default 0,
     valid_priority smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_flowlist_name smallint default 3,
-    cs_action smallint default 3,
-    cs_redirect_node smallint default 3,
-    cs_redirect_port smallint default 3,
-    cs_modify_dst_mac smallint default 3,
-    cs_modify_src_mac smallint default 3,
-    cs_nwm_name smallint default 3,
-    cs_dscp smallint default 3,
-    cs_priority smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_flowlist_name smallint default 1,
+    cs_action smallint default 1,
+    cs_redirect_node smallint default 1,
+    cs_redirect_port smallint default 1,
+    cs_modify_dst_mac smallint default 1,
+    cs_modify_src_mac smallint default 1,
+    cs_nwm_name smallint default 1,
+    cs_dscp smallint default 1,
+    cs_priority smallint default 1,
   PRIMARY KEY(vtn_name, vbr_name, direction, sequence_num));
 
 CREATE TABLE im_vbr_if_flowfilter_tbl (
@@ -3864,7 +3838,7 @@ CREATE TABLE im_vbr_if_flowfilter_tbl (
     ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(vtn_name, vbr_name, vbr_if_name, direction));
 
 CREATE TABLE im_vbr_if_flowfilter_entry_tbl (
@@ -3894,16 +3868,16 @@ CREATE TABLE im_vbr_if_flowfilter_entry_tbl (
     valid_nwn_name smallint default 0,
     valid_dscp smallint default 0,
     valid_priority smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_flowlist_name smallint default 3,
-    cs_action smallint default 3,
-    cs_redirect_node smallint default 3,
-    cs_redirect_port smallint default 3,
-    cs_modify_dst_mac smallint default 3,
-    cs_modify_src_mac smallint default 3,
-    cs_nwm_name smallint default 3,
-    cs_dscp smallint default 3,
-    cs_priority smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_flowlist_name smallint default 1,
+    cs_action smallint default 1,
+    cs_redirect_node smallint default 1,
+    cs_redirect_port smallint default 1,
+    cs_modify_dst_mac smallint default 1,
+    cs_modify_src_mac smallint default 1,
+    cs_nwm_name smallint default 1,
+    cs_dscp smallint default 1,
+    cs_priority smallint default 1,
   PRIMARY KEY(vtn_name, vbr_name, vbr_if_name, direction, sequence_num));
 
 CREATE TABLE im_vrt_if_flowfilter_tbl (
@@ -3914,7 +3888,7 @@ CREATE TABLE im_vrt_if_flowfilter_tbl (
     ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(vtn_name, vrt_name, vrt_if_name, direction));
 
 CREATE TABLE im_vrt_if_flowfilter_entry_tbl (
@@ -3944,16 +3918,16 @@ CREATE TABLE im_vrt_if_flowfilter_entry_tbl (
     valid_nwn_name smallint default 0,
     valid_dscp smallint default 0,
     valid_priority smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_flowlist_name smallint default 3,
-    cs_action smallint default 3,
-    cs_redirect_node smallint default 3,
-    cs_redirect_port smallint default 3,
-    cs_modify_dst_mac smallint default 3,
-    cs_modify_src_mac smallint default 3,
-    cs_nwm_name smallint default 3,
-    cs_dscp smallint default 3,
-    cs_priority smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_flowlist_name smallint default 1,
+    cs_action smallint default 1,
+    cs_redirect_node smallint default 1,
+    cs_redirect_port smallint default 1,
+    cs_modify_dst_mac smallint default 1,
+    cs_modify_src_mac smallint default 1,
+    cs_nwm_name smallint default 1,
+    cs_dscp smallint default 1,
+    cs_priority smallint default 1,
   PRIMARY KEY(vtn_name, vrt_name, vrt_if_name, direction, sequence_num));
 
 CREATE TABLE im_vtn_policingmap_tbl (
@@ -3961,8 +3935,8 @@ CREATE TABLE im_vtn_policingmap_tbl (
     policername varchar(33) default ' ',
     flags smallint default 0,
     valid_policername smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_policername smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_policername smallint default 1,
   PRIMARY KEY(vtn_name));
 
 CREATE TABLE im_vtn_policingmap_ctrlr_tbl (
@@ -3972,8 +3946,8 @@ CREATE TABLE im_vtn_policingmap_ctrlr_tbl (
     policername varchar(33) default ' ',
     flags smallint default 0,
     valid_policername smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_policername smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_policername smallint default 1,
   PRIMARY KEY(vtn_name, ctrlr_name, domain_id));
 
 CREATE TABLE im_vbr_policingmap_tbl (
@@ -3984,8 +3958,8 @@ CREATE TABLE im_vbr_policingmap_tbl (
     policername varchar(33) default ' ',
     flags smallint default 0,
     valid_policername smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_policername smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_policername smallint default 1,
   PRIMARY KEY(vtn_name, vbr_name));
 
 CREATE TABLE im_vbr_if_policingmap_tbl (
@@ -3997,8 +3971,8 @@ CREATE TABLE im_vbr_if_policingmap_tbl (
     policername varchar(33) default ' ',
     flags smallint default 0,
     valid_policername smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_policername smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_policername smallint default 1,
   PRIMARY KEY(vtn_name, vbr_name, vbr_if_name));
 
 CREATE TABLE au_vtn_tbl (
@@ -4015,8 +3989,8 @@ CREATE TABLE au_vtn_tbl (
     valid_alarm_status smallint default 0,
     valid_creation_time smallint default 0,
     valid_last_updated_time smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_description smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_description smallint default 1,
   PRIMARY KEY(vtn_name));
 
 CREATE TABLE au_vtn_ctrlr_tbl (
@@ -4030,8 +4004,8 @@ CREATE TABLE au_vtn_ctrlr_tbl (
     flags smallint default 0,
     valid_oper_status smallint default 0,
     valid_alarm_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_description smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_description smallint default 1,
   PRIMARY KEY(vtn_name, controller_name, domain_id));
 
 CREATE TABLE au_vtn_rename_tbl (
@@ -4039,8 +4013,7 @@ CREATE TABLE au_vtn_rename_tbl (
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, controller_name, domain_id),
-  UNIQUE(unc_vtn_name));
+  PRIMARY KEY(ctrlr_vtn_name, controller_name, domain_id));
 
 CREATE TABLE au_vbr_tbl (
     vtn_name varchar(32) default ' ',
@@ -4059,12 +4032,12 @@ CREATE TABLE au_vbr_tbl (
     valid_host_addr smallint default 0,
     valid_host_addr_mask smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_controller_name smallint default 3,
-    cs_domain_id smallint default 3,
-    cs_vbr_description smallint default 3,
-    cs_host_addr smallint default 3,
-    cs_host_addr_mask smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_controller_name smallint default 1,
+    cs_domain_id smallint default 1,
+    cs_vbr_description smallint default 1,
+    cs_host_addr smallint default 1,
+    cs_host_addr_mask smallint default 1,
     flags smallint default 0,
   PRIMARY KEY(vtn_name, vbridge_name));
 
@@ -4078,8 +4051,8 @@ CREATE TABLE au_vbr_vlanmap_tbl (
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_vlanid smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_vlanid smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_vlanid smallint default 1,
   PRIMARY KEY(vtn_name, vbridge_name, logical_port_id, logical_port_id_valid));
 
 CREATE TABLE au_vbr_if_tbl (
@@ -4105,14 +4078,17 @@ CREATE TABLE au_vbr_if_tbl (
     valid_logical_port_id smallint default 0,
     valid_vlanid smallint default 0,
     valid_tagged smallint default 0,
+    valid_vex_name smallint default 0,
+    valid_vex_if_name smallint default 0,
+    valid_vex_link_name smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_admin_status smallint default 3,
-    cs_description smallint default 3,
-    cs_portmap smallint default 3,
-    cs_logical_port_id smallint default 3,
-    cs_vlanid smallint default 3,
-    cs_tagged smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_admin_status smallint default 1,
+    cs_description smallint default 1,
+    cs_portmap smallint default 1,
+    cs_logical_port_id smallint default 1,
+    cs_vlanid smallint default 1,
+    cs_tagged smallint default 1,
   PRIMARY KEY(vtn_name, vbridge_name, if_name));
 
 CREATE TABLE au_vrt_tbl (
@@ -4130,11 +4106,11 @@ CREATE TABLE au_vrt_tbl (
     valid_vrt_description smallint default 0,
     valid_dhcprelay_admin_status smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_controller_name smallint default 3,
-    cs_domain_id smallint default 3,
-    cs_vrt_description smallint default 3,
-    cs_dhcprelay_admin_status smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_controller_name smallint default 1,
+    cs_domain_id smallint default 1,
+    cs_vrt_description smallint default 1,
+    cs_dhcprelay_admin_status smallint default 1,
   PRIMARY KEY(vtn_name, vrouter_name));
 
 CREATE TABLE au_vrt_if_tbl (
@@ -4157,12 +4133,12 @@ CREATE TABLE au_vrt_if_tbl (
     valid_mac_addr smallint default 0,
     valid_admin_status smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_description smallint default 3,
-    cs_ip_addr smallint default 3,
-    cs_mask smallint default 3,
-    cs_mac_addr smallint default 3,
-    cs_admin_status smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_description smallint default 1,
+    cs_ip_addr smallint default 1,
+    cs_mask smallint default 1,
+    cs_mac_addr smallint default 1,
+    cs_admin_status smallint default 1,
   PRIMARY KEY(vtn_name, vrouter_name, if_name));
 
 CREATE TABLE au_vnode_rename_tbl (
@@ -4172,8 +4148,7 @@ CREATE TABLE au_vnode_rename_tbl (
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vnode_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, controller_name, domain_id),
-  UNIQUE(unc_vtn_name, unc_vnode_name));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, controller_name, domain_id));
 
 CREATE TABLE au_vlink_tbl (
     vtn_name varchar(32) default ' ',
@@ -4192,7 +4167,8 @@ CREATE TABLE au_vlink_tbl (
     controller2_name varchar(32) default ' ',
     domain1_id varchar(32) default ' ',
     domain2_id varchar(32) default ' ',
-    flags smallint default 0,
+    key_flags smallint default 0,
+    val_flags smallint default 0,
     valid_admin_status smallint default 0,
     valid_vnode1_name smallint default 0,
     valid_vnode1_ifname smallint default 0,
@@ -4202,15 +4178,15 @@ CREATE TABLE au_vlink_tbl (
     valid_vlanid smallint default 0,
     valid_description smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_admin_status smallint default 3,
-    cs_vnode1_name smallint default 3,
-    cs_vnode1_ifname smallint default 3,
-    cs_vnode2_name smallint default 3,
-    cs_vnode2_ifname smallint default 3,
-    cs_boundary_name smallint default 3,
-    cs_vlanid smallint default 3,
-    cs_description smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_admin_status smallint default 1,
+    cs_vnode1_name smallint default 1,
+    cs_vnode1_ifname smallint default 1,
+    cs_vnode2_name smallint default 1,
+    cs_vnode2_ifname smallint default 1,
+    cs_boundary_name smallint default 1,
+    cs_vlanid smallint default 1,
+    cs_description smallint default 1,
   PRIMARY KEY(vtn_name, vlink_name));
 
 CREATE TABLE au_vlink_rename_tbl (
@@ -4220,24 +4196,23 @@ CREATE TABLE au_vlink_rename_tbl (
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vlink_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, controller_name, domain_id),
-  UNIQUE(unc_vtn_name, unc_vlink_name));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, controller_name, domain_id));
 
 CREATE TABLE au_static_ip_route_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
     dst_ip_addr bytea default '\000\000\000\000',
     mask smallint default 0,
-    nwm_name varchar(32) default ' ',
     next_hop_addr bytea default '\000\000\000\000',
+    nwm_name varchar(32) default ' ',
     metric integer default 0,
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_metric smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_metric smallint default 3,
-  PRIMARY KEY(vtn_name, vrouter_name, dst_ip_addr, mask, nwm_name, next_hop_addr));
+    cs_rowstatus smallint default 1,
+    cs_metric smallint default 1,
+  PRIMARY KEY(vtn_name, vrouter_name, dst_ip_addr, mask, next_hop_addr, nwm_name));
 
 CREATE TABLE au_dhcp_relay_server_tbl (
     vtn_name varchar(32) default ' ',
@@ -4246,7 +4221,7 @@ CREATE TABLE au_dhcp_relay_server_tbl (
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(vtn_name, vrouter_name, server_ip_addr));
 
 CREATE TABLE au_dhcp_relay_if_tbl (
@@ -4256,7 +4231,7 @@ CREATE TABLE au_dhcp_relay_if_tbl (
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(vtn_name, vrouter_name, if_name));
 
 CREATE TABLE au_vbr_nwmon_grp_tbl (
@@ -4270,8 +4245,8 @@ CREATE TABLE au_vbr_nwmon_grp_tbl (
     flags smallint default 0,
     valid_admin_status smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_admin_status smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_admin_status smallint default 1,
   PRIMARY KEY(vtn_name, vbridge_name, nwm_name));
 
 CREATE TABLE au_vbr_nwmon_host_tbl (
@@ -4292,12 +4267,12 @@ CREATE TABLE au_vbr_nwmon_host_tbl (
     valid_failure_count smallint default 0,
     valid_recovery_count smallint default 0,
     valid_wait_time smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_health_interval smallint default 3,
-    cs_recovery_interval smallint default 3,
-    cs_failure_count smallint default 3,
-    cs_recovery_count smallint default 3,
-    cs_wait_time smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_health_interval smallint default 1,
+    cs_recovery_interval smallint default 1,
+    cs_failure_count smallint default 1,
+    cs_recovery_count smallint default 1,
+    cs_wait_time smallint default 1,
   PRIMARY KEY(vtn_name, vbridge_name, nwm_name, host_address));
 
 CREATE TABLE au_vunknown_tbl (
@@ -4310,10 +4285,10 @@ CREATE TABLE au_vunknown_tbl (
     valid_description smallint default 0,
     valid_type smallint default 0,
     valid_domain_id smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_description smallint default 3,
-    cs_type smallint default 3,
-    cs_domain_id smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_description smallint default 1,
+    cs_type smallint default 1,
+    cs_domain_id smallint default 1,
   PRIMARY KEY(vtn_name, vunknown_name));
 
 CREATE TABLE au_vunknown_if_tbl (
@@ -4326,9 +4301,9 @@ CREATE TABLE au_vunknown_if_tbl (
     flags smallint default 0,
     valid_description smallint default 0,
     valid_admin_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_description smallint default 3,
-    cs_admin_status smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_description smallint default 1,
+    cs_admin_status smallint default 1,
   PRIMARY KEY(vtn_name, vunknown_name, if_name));
 
 CREATE TABLE au_vtep_tbl (
@@ -4344,10 +4319,10 @@ CREATE TABLE au_vtep_tbl (
     valid_controller_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_description smallint default 3,
-    cs_controller_name smallint default 3,
-    cs_domain_id smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_description smallint default 1,
+    cs_controller_name smallint default 1,
+    cs_domain_id smallint default 1,
   PRIMARY KEY(vtn_name, vtep_name));
 
 CREATE TABLE au_vtep_if_tbl (
@@ -4359,9 +4334,6 @@ CREATE TABLE au_vtep_if_tbl (
     logical_port_id varchar(320) default ' ',
     vlanid integer default 0,
     tagged smallint default 0,
-    vex_name varchar(32) default ' ',
-    vex_if_name varchar(32) default ' ',
-    vex_link_name varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
     controller_name varchar(32) default ' ',
@@ -4374,13 +4346,13 @@ CREATE TABLE au_vtep_if_tbl (
     valid_vlanid smallint default 0,
     valid_tagged smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_description smallint default 3,
-    cs_admin_status smallint default 3,
-    cs_portmap smallint default 3,
-    cs_logical_port_id smallint default 3,
-    cs_vlanid smallint default 3,
-    cs_tagged smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_description smallint default 1,
+    cs_admin_status smallint default 1,
+    cs_portmap smallint default 1,
+    cs_logical_port_id smallint default 1,
+    cs_vlanid smallint default 1,
+    cs_tagged smallint default 1,
   PRIMARY KEY(vtn_name, vtep_name, if_name));
 
 CREATE TABLE au_vtep_grp_tbl (
@@ -4389,11 +4361,11 @@ CREATE TABLE au_vtep_grp_tbl (
     controller_name varchar(32) default ' ',
     description varchar(128) default ' ',
     flags smallint default 0,
-    valid_controller_name varchar(32) default 0,
-    valid_description varchar(32) default 0,
-    cs_rowstatus smallint default 3,
-    cs_controller_name varchar(32) default 3,
-    cs_description varchar(32) default 3,
+    valid_controller_name smallint default 0,
+    valid_description smallint default 0,
+    cs_rowstatus smallint default 1,
+    cs_controller_name smallint default 1,
+    cs_description smallint default 1,
   PRIMARY KEY(vtn_name, vtepgrp_name));
 
 CREATE TABLE au_vtep_grp_mem_tbl (
@@ -4403,7 +4375,7 @@ CREATE TABLE au_vtep_grp_mem_tbl (
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(vtn_name, vtepgrp_name, vtepgrp_member_name));
 
 CREATE TABLE au_vtunnel_tbl (
@@ -4414,7 +4386,7 @@ CREATE TABLE au_vtunnel_tbl (
     domain_id varchar(32) default ' ',
     underlay_vtn_name varchar(32) default ' ',
     vtepgrp_name  varchar(32) default ' ',
-    label integer default 0,
+    label bigint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
     flags smallint default 0,
@@ -4425,13 +4397,13 @@ CREATE TABLE au_vtunnel_tbl (
     valid_vtepgrp_name smallint default 0,
     valid_label smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_description smallint default 3,
-    cs_controller_name smallint default 3,
-    cs_domain_id smallint default 3,
-    cs_underlay_vtn_name smallint default 3,
-    cs_vtepgrp_name smallint default 3,
-    cs_label smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_description smallint default 1,
+    cs_controller_name smallint default 1,
+    cs_domain_id smallint default 1,
+    cs_underlay_vtn_name smallint default 1,
+    cs_vtepgrp_name smallint default 1,
+    cs_label smallint default 1,
   PRIMARY KEY(vtn_name, vtunnel_name));
 
 CREATE TABLE au_vtunnel_if_tbl (
@@ -4443,9 +4415,6 @@ CREATE TABLE au_vtunnel_if_tbl (
     logical_port_id varchar(320) default ' ',
     vlanid integer default 0,
     tagged smallint default 0,
-    vex_name varchar(32) default ' ',
-    vex_if_name varchar(32) default ' ',
-    vex_link_name varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
     controller_name varchar(32) default ' ',
@@ -4458,13 +4427,13 @@ CREATE TABLE au_vtunnel_if_tbl (
     valid_vlanid smallint default 0,
     valid_tagged smallint default 0,
     valid_oper_status smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_description smallint default 3,
-    cs_admin_status smallint default 3,
-    cs_portmap smallint default 3,
-    cs_logical_port_id smallint default 3,
-    cs_vlanid smallint default 3,
-    cs_tagged smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_description smallint default 1,
+    cs_admin_status smallint default 1,
+    cs_portmap smallint default 1,
+    cs_logical_port_id smallint default 1,
+    cs_vlanid smallint default 1,
+    cs_tagged smallint default 1,
   PRIMARY KEY(vtn_name, vtunnel_name, if_name));
 
 CREATE TABLE au_flowlist_tbl (
@@ -4472,8 +4441,8 @@ CREATE TABLE au_flowlist_tbl (
     ip_type smallint default 0,
     flags smallint default 0,
     valid_ip_type smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_ip_type smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_ip_type smallint default 1,
   PRIMARY KEY(flowlist_name));
 
 CREATE TABLE au_flowlist_ctrlr_tbl (
@@ -4482,16 +4451,15 @@ CREATE TABLE au_flowlist_ctrlr_tbl (
     ref_count bigint default 0,
     flags smallint default 0,
     valid_ip_type smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_ip_type smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_ip_type smallint default 1,
   PRIMARY KEY(flowlist_name, ctrlr_name));
 
 CREATE TABLE au_flowlist_rename_tbl (
     ctrlr_flowlist_name varchar(33) default ' ',
     ctrlr_name varchar(32) default ' ',
     unc_flowlist_name varchar(33) default ' ',
-  PRIMARY KEY(ctrlr_flowlist_name, ctrlr_name),
-  UNIQUE(unc_flowlist_name));
+  PRIMARY KEY(ctrlr_flowlist_name, ctrlr_name));
 
 CREATE TABLE au_flowlist_entry_tbl (
     flowlist_name varchar(33) default ' ',
@@ -4541,29 +4509,29 @@ CREATE TABLE au_flowlist_entry_tbl (
     valid_icmp_code smallint default 0,
     valid_icmpv6_type smallint default 0,
     valid_icmpv6_code smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_mac_dst smallint default 3,
-    cs_mac_src smallint default 3,
-    cs_mac_eth_type smallint default 3,
-    cs_dst_ip smallint default 3,
-    cs_dst_ip_prefix smallint default 3,
-    cs_src_ip smallint default 3,
-    cs_src_ip_prefix smallint default 3,
-    cs_vlan_priority smallint default 3,
-    cs_dst_ipv6 smallint default 3,
-    cs_dst_ipv6_prefix smallint default 3,
-    cs_src_ipv6 smallint default 3,
-    cs_src_ipv6_prefix smallint default 3,
-    cs_ip_protocol smallint default 3,
-    cs_ip_dscp smallint default 3,
-    cs_l4_dst_port smallint default 3,
-    cs_l4_dst_port_endpt smallint default 3,
-    cs_l4_src_port smallint default 3,
-    cs_l4_src_port_endpt smallint default 3,
-    cs_icmp_type smallint default 3,
-    cs_icmp_code smallint default 3,
-    cs_icmpv6_type smallint default 3,
-    cs_icmpv6_code smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_mac_dst smallint default 1,
+    cs_mac_src smallint default 1,
+    cs_mac_eth_type smallint default 1,
+    cs_dst_ip smallint default 1,
+    cs_dst_ip_prefix smallint default 1,
+    cs_src_ip smallint default 1,
+    cs_src_ip_prefix smallint default 1,
+    cs_vlan_priority smallint default 1,
+    cs_dst_ipv6 smallint default 1,
+    cs_dst_ipv6_prefix smallint default 1,
+    cs_src_ipv6 smallint default 1,
+    cs_src_ipv6_prefix smallint default 1,
+    cs_ip_protocol smallint default 1,
+    cs_ip_dscp smallint default 1,
+    cs_l4_dst_port smallint default 1,
+    cs_l4_dst_port_endpt smallint default 1,
+    cs_l4_src_port smallint default 1,
+    cs_l4_src_port_endpt smallint default 1,
+    cs_icmp_type smallint default 1,
+    cs_icmp_code smallint default 1,
+    cs_icmpv6_type smallint default 1,
+    cs_icmpv6_code smallint default 1,
   PRIMARY KEY(flowlist_name, sequence_num));
 
 CREATE TABLE au_flowlist_entry_ctrlr_tbl (
@@ -4593,35 +4561,35 @@ CREATE TABLE au_flowlist_entry_ctrlr_tbl (
     valid_icmp_code smallint default 0,
     valid_icmpv6_type smallint default 0,
     valid_icmpv6_code smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_mac_dst smallint default 3,
-    cs_mac_src smallint default 3,
-    cs_mac_eth_type smallint default 3,
-    cs_dst_ip smallint default 3,
-    cs_dst_ip_prefix smallint default 3,
-    cs_src_ip smallint default 3,
-    cs_src_ip_prefix smallint default 3,
-    cs_vlan_priority smallint default 3,
-    cs_dst_ipv6 smallint default 3,
-    cs_dst_ipv6_prefix smallint default 3,
-    cs_src_ipv6 smallint default 3,
-    cs_src_ipv6_prefix smallint default 3,
-    cs_ip_protocol smallint default 3,
-    cs_ip_dscp smallint default 3,
-    cs_l4_dst_port smallint default 3,
-    cs_l4_dst_port_endpt smallint default 3,
-    cs_l4_src_port smallint default 3,
-    cs_l4_src_port_endpt smallint default 3,
-    cs_icmp_type smallint default 3,
-    cs_icmp_code smallint default 3,
-    cs_icmpv6_type smallint default 3,
-    cs_icmpv6_code smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_mac_dst smallint default 1,
+    cs_mac_src smallint default 1,
+    cs_mac_eth_type smallint default 1,
+    cs_dst_ip smallint default 1,
+    cs_dst_ip_prefix smallint default 1,
+    cs_src_ip smallint default 1,
+    cs_src_ip_prefix smallint default 1,
+    cs_vlan_priority smallint default 1,
+    cs_dst_ipv6 smallint default 1,
+    cs_dst_ipv6_prefix smallint default 1,
+    cs_src_ipv6 smallint default 1,
+    cs_src_ipv6_prefix smallint default 1,
+    cs_ip_protocol smallint default 1,
+    cs_ip_dscp smallint default 1,
+    cs_l4_dst_port smallint default 1,
+    cs_l4_dst_port_endpt smallint default 1,
+    cs_l4_src_port smallint default 1,
+    cs_l4_src_port_endpt smallint default 1,
+    cs_icmp_type smallint default 1,
+    cs_icmp_code smallint default 1,
+    cs_icmpv6_type smallint default 1,
+    cs_icmpv6_code smallint default 1,
   PRIMARY KEY(flowlist_name, sequence_num, ctrlr_name));
 
 CREATE TABLE au_policingprofile_tbl (
     policingprofile_name varchar(33) default ' ',
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(policingprofile_name));
 
 CREATE TABLE au_policingprofile_ctrlr_tbl (
@@ -4629,15 +4597,14 @@ CREATE TABLE au_policingprofile_ctrlr_tbl (
     ctrlr_name varchar(32) default ' ',
     ref_count bigint default 0,
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(policingprofile_name, ctrlr_name));
 
 CREATE TABLE au_policingprofile_rename_tbl (
     ctrlr_policingprofile_name varchar(33) default ' ',
     ctrlr_name varchar(32) default ' ',
     unc_policingprofile_name varchar(33) default ' ',
-  PRIMARY KEY(ctrlr_policingprofile_name, ctrlr_name),
-  UNIQUE(unc_policingprofile_name));
+  PRIMARY KEY(ctrlr_policingprofile_name, ctrlr_name));
 
 CREATE TABLE au_policingprofile_entry_tbl (
     policingprofile_name varchar(33) default ' ',
@@ -4679,25 +4646,25 @@ CREATE TABLE au_policingprofile_entry_tbl (
     valid_red_priority smallint default 0,
     valid_red_dscp smallint default 0,
     valid_red_drop smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_flowlist smallint default 3,
-    cs_rate smallint default 3,
-    cs_cir smallint default 3,
-    cs_cbs smallint default 3,
-    cs_pir smallint default 3,
-    cs_pbs smallint default 3,
-    cs_green_action smallint default 3,
-    cs_green_priority smallint default 3,
-    cs_green_dscp smallint default 3,
-    cs_green_drop smallint default 3,
-    cs_yellow_action smallint default 3,
-    cs_yellow_priority smallint default 3,
-    cs_yellow_dscp smallint default 3,
-    cs_yellow_drop smallint default 3,
-    cs_red_action smallint default 3,
-    cs_red_priority smallint default 3,
-    cs_red_dscp smallint default 3,
-    cs_red_drop smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_flowlist smallint default 1,
+    cs_rate smallint default 1,
+    cs_cir smallint default 1,
+    cs_cbs smallint default 1,
+    cs_pir smallint default 1,
+    cs_pbs smallint default 1,
+    cs_green_action smallint default 1,
+    cs_green_priority smallint default 1,
+    cs_green_dscp smallint default 1,
+    cs_green_drop smallint default 1,
+    cs_yellow_action smallint default 1,
+    cs_yellow_priority smallint default 1,
+    cs_yellow_dscp smallint default 1,
+    cs_yellow_drop smallint default 1,
+    cs_red_action smallint default 1,
+    cs_red_priority smallint default 1,
+    cs_red_dscp smallint default 1,
+    cs_red_drop smallint default 1,
   PRIMARY KEY(policingprofile_name, sequence_num));
 
 CREATE TABLE au_policingprofile_entry_ctrlr_tbl (
@@ -4723,32 +4690,32 @@ CREATE TABLE au_policingprofile_entry_ctrlr_tbl (
     valid_red_priority smallint default 0,
     valid_red_dscp smallint default 0,
     valid_red_drop smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_flowlist smallint default 3,
-    cs_rate smallint default 3,
-    cs_cir smallint default 3,
-    cs_cbs smallint default 3,
-    cs_pir smallint default 3,
-    cs_pbs smallint default 3,
-    cs_green_action smallint default 3,
-    cs_green_priority smallint default 3,
-    cs_green_dscp smallint default 3,
-    cs_green_drop smallint default 3,
-    cs_yellow_action smallint default 3,
-    cs_yellow_priority smallint default 3,
-    cs_yellow_dscp smallint default 3,
-    cs_yellow_drop smallint default 3,
-    cs_red_action smallint default 3,
-    cs_red_priority smallint default 3,
-    cs_red_dscp smallint default 3,
-    cs_red_drop smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_flowlist smallint default 1,
+    cs_rate smallint default 1,
+    cs_cir smallint default 1,
+    cs_cbs smallint default 1,
+    cs_pir smallint default 1,
+    cs_pbs smallint default 1,
+    cs_green_action smallint default 1,
+    cs_green_priority smallint default 1,
+    cs_green_dscp smallint default 1,
+    cs_green_drop smallint default 1,
+    cs_yellow_action smallint default 1,
+    cs_yellow_priority smallint default 1,
+    cs_yellow_dscp smallint default 1,
+    cs_yellow_drop smallint default 1,
+    cs_red_action smallint default 1,
+    cs_red_priority smallint default 1,
+    cs_red_dscp smallint default 1,
+    cs_red_drop smallint default 1,
   PRIMARY KEY(policingprofile_name, sequence_num, ctrlr_name));
 
 CREATE TABLE au_vtn_flowfilter_tbl (
     vtn_name varchar(32) default ' ',
     direction smallint default 0,
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(vtn_name, direction));
 
 CREATE TABLE au_vtn_flowfilter_ctrlr_tbl (
@@ -4757,7 +4724,7 @@ CREATE TABLE au_vtn_flowfilter_ctrlr_tbl (
     ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(vtn_name, direction, ctrlr_name, domain_id));
 
 CREATE TABLE au_vtn_flowfilter_entry_tbl (
@@ -4775,12 +4742,12 @@ CREATE TABLE au_vtn_flowfilter_entry_tbl (
     valid_nwn_name smallint default 0,
     valid_dscp smallint default 0,
     valid_priority smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_flowlist_name smallint default 3,
-    cs_action smallint default 3,
-    cs_nwn_name smallint default 3,
-    cs_dscp smallint default 3,
-    cs_priority smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_flowlist_name smallint default 1,
+    cs_action smallint default 1,
+    cs_nwn_name smallint default 1,
+    cs_dscp smallint default 1,
+    cs_priority smallint default 1,
   PRIMARY KEY(vtn_name, direction, sequence_num));
 
 CREATE TABLE au_vtn_flowfilter_entry_ctrlr_tbl (
@@ -4795,12 +4762,12 @@ CREATE TABLE au_vtn_flowfilter_entry_ctrlr_tbl (
     valid_nwn_name smallint default 0,
     valid_dscp smallint default 0,
     valid_priority smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_flowlist_name smallint default 3,
-    cs_action smallint default 3,
-    cs_nwn_name smallint default 3,
-    cs_dscp smallint default 3,
-    cs_priority smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_flowlist_name smallint default 1,
+    cs_action smallint default 1,
+    cs_nwn_name smallint default 1,
+    cs_dscp smallint default 1,
+    cs_priority smallint default 1,
   PRIMARY KEY(vtn_name, direction, sequence_num, ctrlr_name, domain_id));
 
 CREATE TABLE au_vbr_flowfilter_tbl (
@@ -4810,7 +4777,7 @@ CREATE TABLE au_vbr_flowfilter_tbl (
     ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(vtn_name, vbr_name, direction));
 
 CREATE TABLE au_vbr_flowfilter_entry_tbl (
@@ -4839,16 +4806,16 @@ CREATE TABLE au_vbr_flowfilter_entry_tbl (
     valid_nwn_name smallint default 0,
     valid_dscp smallint default 0,
     valid_priority smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_flowlist_name smallint default 3,
-    cs_action smallint default 3,
-    cs_redirect_node smallint default 3,
-    cs_redirect_port smallint default 3,
-    cs_modify_dst_mac smallint default 3,
-    cs_modify_src_mac smallint default 3,
-    cs_nwm_name smallint default 3,
-    cs_dscp smallint default 3,
-    cs_priority smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_flowlist_name smallint default 1,
+    cs_action smallint default 1,
+    cs_redirect_node smallint default 1,
+    cs_redirect_port smallint default 1,
+    cs_modify_dst_mac smallint default 1,
+    cs_modify_src_mac smallint default 1,
+    cs_nwm_name smallint default 1,
+    cs_dscp smallint default 1,
+    cs_priority smallint default 1,
   PRIMARY KEY(vtn_name, vbr_name, direction, sequence_num));
 
 CREATE TABLE au_vbr_if_flowfilter_tbl (
@@ -4859,7 +4826,7 @@ CREATE TABLE au_vbr_if_flowfilter_tbl (
     ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(vtn_name, vbr_name, vbr_if_name, direction));
 
 CREATE TABLE au_vbr_if_flowfilter_entry_tbl (
@@ -4889,16 +4856,16 @@ CREATE TABLE au_vbr_if_flowfilter_entry_tbl (
     valid_nwn_name smallint default 0,
     valid_dscp smallint default 0,
     valid_priority smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_flowlist_name smallint default 3,
-    cs_action smallint default 3,
-    cs_redirect_node smallint default 3,
-    cs_redirect_port smallint default 3,
-    cs_modify_dst_mac smallint default 3,
-    cs_modify_src_mac smallint default 3,
-    cs_nwm_name smallint default 3,
-    cs_dscp smallint default 3,
-    cs_priority smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_flowlist_name smallint default 1,
+    cs_action smallint default 1,
+    cs_redirect_node smallint default 1,
+    cs_redirect_port smallint default 1,
+    cs_modify_dst_mac smallint default 1,
+    cs_modify_src_mac smallint default 1,
+    cs_nwm_name smallint default 1,
+    cs_dscp smallint default 1,
+    cs_priority smallint default 1,
   PRIMARY KEY(vtn_name, vbr_name, vbr_if_name, direction, sequence_num));
 
 CREATE TABLE au_vrt_if_flowfilter_tbl (
@@ -4909,7 +4876,7 @@ CREATE TABLE au_vrt_if_flowfilter_tbl (
     ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
-    cs_rowstatus smallint default 3,
+    cs_rowstatus smallint default 1,
   PRIMARY KEY(vtn_name, vrt_name, vrt_if_name, direction));
 
 CREATE TABLE au_vrt_if_flowfilter_entry_tbl (
@@ -4939,16 +4906,16 @@ CREATE TABLE au_vrt_if_flowfilter_entry_tbl (
     valid_nwn_name smallint default 0,
     valid_dscp smallint default 0,
     valid_priority smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_flowlist_name smallint default 3,
-    cs_action smallint default 3,
-    cs_redirect_node smallint default 3,
-    cs_redirect_port smallint default 3,
-    cs_modify_dst_mac smallint default 3,
-    cs_modify_src_mac smallint default 3,
-    cs_nwm_name smallint default 3,
-    cs_dscp smallint default 3,
-    cs_priority smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_flowlist_name smallint default 1,
+    cs_action smallint default 1,
+    cs_redirect_node smallint default 1,
+    cs_redirect_port smallint default 1,
+    cs_modify_dst_mac smallint default 1,
+    cs_modify_src_mac smallint default 1,
+    cs_nwm_name smallint default 1,
+    cs_dscp smallint default 1,
+    cs_priority smallint default 1,
   PRIMARY KEY(vtn_name, vrt_name, vrt_if_name, direction, sequence_num));
 
 CREATE TABLE au_vtn_policingmap_tbl (
@@ -4956,8 +4923,8 @@ CREATE TABLE au_vtn_policingmap_tbl (
     policername varchar(33) default ' ',
     flags smallint default 0,
     valid_policername smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_policername smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_policername smallint default 1,
   PRIMARY KEY(vtn_name));
 
 CREATE TABLE au_vtn_policingmap_ctrlr_tbl (
@@ -4967,8 +4934,8 @@ CREATE TABLE au_vtn_policingmap_ctrlr_tbl (
     policername varchar(33) default ' ',
     flags smallint default 0,
     valid_policername smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_policername smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_policername smallint default 1,
   PRIMARY KEY(vtn_name, ctrlr_name, domain_id));
 
 CREATE TABLE au_vbr_policingmap_tbl (
@@ -4979,8 +4946,8 @@ CREATE TABLE au_vbr_policingmap_tbl (
     policername varchar(33) default ' ',
     flags smallint default 0,
     valid_policername smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_policername smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_policername smallint default 1,
   PRIMARY KEY(vtn_name, vbr_name));
 
 CREATE TABLE au_vbr_if_policingmap_tbl (
@@ -4992,6 +4959,6 @@ CREATE TABLE au_vbr_if_policingmap_tbl (
     policername varchar(33) default ' ',
     flags smallint default 0,
     valid_policername smallint default 0,
-    cs_rowstatus smallint default 3,
-    cs_policername smallint default 3,
+    cs_rowstatus smallint default 1,
+    cs_policername smallint default 1,
   PRIMARY KEY(vtn_name, vbr_name, vbr_if_name));

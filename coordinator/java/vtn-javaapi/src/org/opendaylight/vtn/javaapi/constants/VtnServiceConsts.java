@@ -34,17 +34,13 @@ public final class VtnServiceConsts {
 	public static final String STRUCT_METHOD_PREFIX = "get";
 	public static final String RESOURCES = "org/opendaylight/vtn/javaapi/resources";
 	public static final String TEST_RESOURCES = "org.opendaylight.vtn.javaapi.resources";
-	public static final String GUI_LOG_FILEPATH = "gui_log_path";
-	public static final String API_LOG_FILEPATH = "api_log_path";
-	public static final String DEFAULT_LOG_FILEPATH = "default_log_path";
-	public static final String LOG_NAME = "vtn-javaapi";
 
 	public static final String CONN_POOL_SIZE = "max_ipc_conn_pool_size_";
 	public static final String MAX_REP_DEFAULT = "max_repetition_default";
 
 	public static final String DOT_REGEX = "\\.";
 	public static final String MAC_ADD_REGEX = "^([0-9a-fA-F]{4}(\\.[0-9a-fA-F]{4}){2})$";
-	public static final String ETH_TYPE_REGEX = "0[xX][0-9a-fA-F]{4}";
+	public static final String ETH_TYPE_REGEX = "0[xX][0-9a-fA-F]{1,4}";
 	public static final String IPV4_ADD_REGEX = "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$";
 	public static final String IPV6_ADD_REGEX = "^[a-f0-9]{1,4}:([a-f0-9]{0,4}:){2,6}[a-f0-9]{1,4}$";
 	public static final String INTEGER_REGEX = "\\d+";
@@ -54,7 +50,7 @@ public final class VtnServiceConsts {
 	public static final String ALARM_REGEX="^(\\d{1,19})$";
 	public static final String SLASH = "/";
 	public static final String EMPTY_STRING = "";
-	public static final String COMMA = "";
+	public static final String COMMA = ",";
 	public static final String SPACE = " ";
 	public static final String EQUAL = "=";
 	public static final String DOT = ".";
@@ -89,4 +85,11 @@ public final class VtnServiceConsts {
 	public static final String WEB_API = "WEB-API";
 	public static final String UNC_GUI = "UNC-GUI";
 	public static final String ZERO = "0";
+	public static final String INCORRECT_METHOD_INVOCATION = "Incorrect method invocation";
+	
+	public static final int DEFAULT_NUMBER = 0;
+	public static final String DEFAULT_IP = "0.0.0.0";
+	public static final String DEFAULT_IPV6 = "0000:0000:0000:0000:0000:0000:0000:0000";
+	public static final String DEFAULT_MAC = "0000.0000.0000";
+	
 }

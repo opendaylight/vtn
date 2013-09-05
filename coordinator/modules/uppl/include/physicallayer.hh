@@ -28,6 +28,7 @@
 #include "odbcm_mgr.hh"
 #include "ipc_connection_manager.hh"
 #include "physical_core.hh"
+#include "odbcm_connection.hh"
 
 using unc::uppl::PhysicalCore;
 using unc::uppl::ODBCManager;
@@ -70,6 +71,22 @@ struct build_stamp {
     return; \
   }
 
+#define OPEN_DB_CONNECTION_TC_REQUEST(conn_type) \
+  UpplReturnCode db_ret = UPPL_RC_SUCCESS; \
+  /* Create a new odbcm connection */ \
+  OdbcmConnectionHandler db_conn(conn_type, db_ret, \
+      PhysicalLayer::get_instance()->get_odbc_manager()); \
+  if (db_ret != UPPL_RC_SUCCESS) { \
+    /* Error in opening db connection */ \
+    pfc_log_error("Error in opening DB connection"); \
+    return unc::tclib::TC_FAILURE; \
+  }
+
+#define OPEN_DB_CONNECTION(conn_type, db_ret) \
+  /* Create a new odbcm connection */ \
+  OdbcmConnectionHandler db_conn(conn_type, db_ret, \
+      PhysicalLayer::get_instance()->get_odbc_manager());
+
 namespace unc {
 
 namespace uppl {
@@ -105,6 +122,9 @@ class PhysicalLayer : public pfc::core::Module {
   static ReadWriteLock* get_phy_fini_event_lock_() {
     return &phy_fini_event_lock_;
   }
+  static ReadWriteLock* get_events_done_lock_() {
+    return &events_done_lock_;
+  }
   static Mutex physical_layer_mutex_;
   static Mutex physical_core_mutex_;
   static Mutex ipc_client_config_hdlr_mutex_;
@@ -115,6 +135,7 @@ class PhysicalLayer : public pfc::core::Module {
   static ReadWriteLock phy_fini_db_lock_;
   static ReadWriteLock phy_fini_phycore_lock_;
   static ReadWriteLock phy_fini_event_lock_;
+  static ReadWriteLock events_done_lock_;
   static uint8_t phyFiniFlag;
 
   private:

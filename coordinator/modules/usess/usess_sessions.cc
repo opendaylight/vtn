@@ -369,10 +369,11 @@ usess_ipc_err_e UsessSessions::GetList(const usess_ipc_sess_id_t& target,
   // set configration status.
   tc_rtn = tc_instance->TcGetConfigSession(&session_id, &config_id);
   RETURN_IF((tc_rtn != tc::TC_API_COMMON_SUCCESS && 
-             tc_rtn != tc::TC_NO_CONFIG_SESSION), USESS_E_NG,
+             tc_rtn != tc::TC_NO_CONFIG_SESSION &&
+             tc_rtn != tc::TC_INVALID_UNC_STATE), USESS_E_NG,
         "Get configuration session to TC. err=%d", tc_rtn);
 
-  if (session_id == target.id) {
+  if (tc_rtn == tc::TC_API_COMMON_SUCCESS && session_id == target.id) {
     info_list[0].config_status = CONFIG_STATUS_TCLOCK;
   }
 
@@ -407,7 +408,8 @@ usess_ipc_err_e UsessSessions::GetList(usess_session_list_v& info_list)
   // set configration status.
   tc_rtn = tc_instance->TcGetConfigSession(&session_id, &config_id);
   RETURN_IF((tc_rtn != tc::TC_API_COMMON_SUCCESS && 
-             tc_rtn != tc::TC_NO_CONFIG_SESSION), USESS_E_NG,
+             tc_rtn != tc::TC_NO_CONFIG_SESSION &&
+             tc_rtn != tc::TC_INVALID_UNC_STATE), USESS_E_NG,
         "Get configuration session to TC. err=%d", tc_rtn);
 
   // list clear.
@@ -416,7 +418,8 @@ usess_ipc_err_e UsessSessions::GetList(usess_session_list_v& info_list)
   // list set.
   for (it = table_.begin(); it != table_.end(); ++it) {
     info_list.push_back(it->second.sess());
-    if (session_id == it->second.sess().sess.id) {
+    if (tc_rtn == tc::TC_API_COMMON_SUCCESS &&
+        session_id == it->second.sess().sess.id) {
       info_list[info_list.size() - 1].config_status = CONFIG_STATUS_TCLOCK;
     }
   }

@@ -19,7 +19,8 @@ namespace tc {
 pfc::core::ipc::ClientSession*
     TcClientSessionUtils::create_tc_client_session(std::string channel_name,
                                                    uint32_t service_id,
-                                                   pfc_ipcconn_t &conn) {
+                                                   pfc_ipcconn_t &conn,
+                                                   pfc_bool_t infinite_timeout) {
   pfc::core::ipc::ClientSession* result_session = NULL;
   int err = 0;
   /*open an alternate connection*/
@@ -38,6 +39,17 @@ pfc::core::ipc::ClientSession*
     pfc_log_fatal("creating a ClientSession failed");
     pfc_ipcclnt_altclose(conn);
     return NULL;
+  }
+  /*set infinite timeout for commit/audit operations*/
+  if (infinite_timeout) {
+    err = result_session->setTimeout(NULL);
+    if (err != 0) {
+      pfc_log_fatal("pfc_ipcclnt_sess_settimeout failed");
+      delete result_session;
+      result_session = NULL;
+      pfc_ipcclnt_altclose(conn);
+      return NULL;
+    }
   }
   /*return session pointer*/
   return result_session;
@@ -60,22 +72,22 @@ TcUtilRet TcClientSessionUtils::tc_session_invoke(
   return TCUTIL_RET_SUCCESS;
 }
 /*IPC session close*/
-pfc::core::ipc::ClientSession*
-TcClientSessionUtils::tc_session_close(pfc::core::ipc::ClientSession* csess,
+TcUtilRet
+TcClientSessionUtils::tc_session_close(pfc::core::ipc::ClientSession** csess,
                                                  pfc_ipcconn_t conn) {
   int err = 0;
   pfc_log_debug("tc_session_close invoked");
-  if (csess != NULL) {
-    delete csess;
-    csess = NULL;
+  if (*csess != NULL) {
+    delete *csess;
+    *csess = NULL;
   }
   /*close the alternate connection*/
   err = pfc_ipcclnt_altclose(conn);
   if (err != 0) {
     pfc_log_fatal("pfc_ipcclnt_altclose failed");
-    return NULL;
+    return TCUTIL_RET_FAILURE;
   }
-  return csess;
+  return TCUTIL_RET_SUCCESS;
 }
 /*retrieve uint32_t data from IPC session*/
 TcUtilRet TcClientSessionUtils::get_uint32(

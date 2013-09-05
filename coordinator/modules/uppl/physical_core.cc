@@ -20,6 +20,7 @@
 #include "physical_core.hh"
 #include "physicallayer.hh"
 #include "tclib_module.hh"
+
 using unc::tclib::TcApiCommonRet;
 using unc::tclib::TcLibModule;
 
@@ -59,7 +60,12 @@ PhysicalCore* PhysicalCore::get_physical_core() {
 UpplReturnCode PhysicalCore::InitializePhysical() {
   // initialize the class member data
   // Create new internal transaction coordinator object
-  internal_transaction_coordinator_ = new InternalTransactionCoordinator();
+  internal_transaction_coordinator_ = InternalTransactionCoordinator::
+                get_internaltransactioncoordinator();
+  if (internal_transaction_coordinator_ == NULL) {
+    pfc_log_error("Memory not allocated for internal_transaction_coordinator_");
+    return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+  }
 
   // Read config from file
   UpplReturnCode ret = ReadConfigFile();
@@ -83,7 +89,7 @@ UpplReturnCode PhysicalCore::InitializePhysical() {
     return UPPL_RC_ERR_ALARM_API;
   } else {
     // clear all alarms
-    pfc::alarm::pfc_alarm_clear(0);
+    pfc::alarm::pfc_alarm_clear(UNCCID_PHYSICAL);
   }
 
   pfc_bool_t event_ret = RegisterStateHandlers();
@@ -98,7 +104,6 @@ UpplReturnCode PhysicalCore::InitializePhysical() {
   TcLibModule* tclib_ptr = static_cast<TcLibModule*>
   (TcLibModule::getInstance(TCLIB_MODULE_NAME));
   if (tclib_ptr != NULL) {
-    pfc_log_info("Calling TcLibRegisterHandler");
     ret_code = tclib_ptr->TcLibRegisterHandler(this);
     pfc_log_info("TcLibRegisterHandler returned %u.", ret_code);
     if (ret_code != unc::tclib::TC_API_COMMON_SUCCESS) {
@@ -201,7 +206,7 @@ UpplReturnCode PhysicalCore::ReadCtrlrStaticCapability() {
   string conf_file_path = string(UNC_MODULEDIR) +
       string("/uppl_ctr_capability.conf");
 
-  string version;
+  string version = "";
   attribute_struct attr_var;
   cap_value_struct vals;
   cap_key_struct keys;
@@ -224,7 +229,11 @@ UpplReturnCode PhysicalCore::ReadCtrlrStaticCapability() {
     int kVersArraySize = cObjs[iter].arraySize("version_supported");
     for (int idx = 0; idx < kVersArraySize; ++idx) {
       version = cObjs[iter].getStringAt("version_supported", idx, 0);
-      ControllerVersion ctr_obj(version);
+      UpplReturnCode parse_ret = UPPL_RC_SUCCESS;
+      ControllerVersion ctr_obj(version, parse_ret);
+      if (parse_ret != UPPL_RC_SUCCESS) {
+        return parse_ret;
+      }
       int kAttribArraySize = cObjs[iter].arraySize("attribute_name");
       vals.attrs.clear();
       for (int i =0; i < kAttribArraySize; ++i) {
@@ -252,12 +261,14 @@ UpplReturnCode PhysicalCore::ValidateKeyTypeInCtrlrCap(string version,
   if (physical_layer == NULL) {
     return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
   }
-  ControllerVersion obj(version);
+  UpplReturnCode parse_ret = UPPL_RC_SUCCESS;
+  ControllerVersion obj(version, parse_ret);
+  if (parse_ret != UPPL_RC_SUCCESS) {
+    return parse_ret;
+  }
   cap_key_struct keystructvar;
   keystructvar.key_type = key_type;
 
-  // map<ControllerVersion, map<cap_key_struct, cap_value_struct > >::iterator
-  // iter_cap_map = ctr_cap_map_.find(obj);
   cap_iter iter_cap_map = GetVersionIterator(obj);
 
   if (iter_cap_map != ctr_cap_map_.end()) {
@@ -302,7 +313,11 @@ UpplReturnCode PhysicalCore::ValidateAttribInCtrlrCap(string version,
     pfc_log_debug("ValidateKeyTypeInCtrlrCap ret = %d\n", ret);
     return ret;
   }
-  ControllerVersion obj(version);
+  UpplReturnCode parse_ret = UPPL_RC_SUCCESS;
+  ControllerVersion obj(version, parse_ret);
+  if (parse_ret != UPPL_RC_SUCCESS) {
+    return parse_ret;
+  }
   cap_iter iter_cap_map = GetVersionIterator(obj);
   pfc_log_debug("Controller Version = %s\n",
                 (iter_cap_map->first.version_).c_str());
@@ -336,10 +351,12 @@ UpplReturnCode PhysicalCore::ValidateAttribInCtrlrCap(string version,
 UpplReturnCode PhysicalCore::GetScalabilityNumber(string version,
                                                   uint32_t key_type,
                                                   uint32_t &scalability_num) {
-  ControllerVersion obj(version);
+  UpplReturnCode parse_ret = UPPL_RC_SUCCESS;
+  ControllerVersion obj(version, parse_ret);
+  if (parse_ret != UPPL_RC_SUCCESS) {
+    return parse_ret;
+  }
 
-  // map<ControllerVersion, map<cap_key_struct, cap_value_struct > >::iterator
-  // iter_cap_map = ctr_cap_map_.find(obj);
   cap_iter iter_cap_map = GetVersionIterator(obj);
   map<cap_key_struct, cap_value_struct > key_type_map;
 
@@ -466,9 +483,10 @@ TcCommonRet PhysicalCore::HandleCommitTransactionStart(uint32_t session_id,
     pfc_log_error("Operation Not allowed: System is in standby\n");
     return unc::tclib::TC_FAILURE;
   }
+  OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
   // Call ITC transaction handler function
   UpplReturnCode resp = internal_transaction_coordinator_->transaction_req()->
-      StartTransaction(session_id, config_id);
+      StartTransaction(&db_conn, session_id, config_id);
   pfc_log_debug("HandleCommitTransactionStart return code %d", resp);
   // convert the error code returned by ITC to TC error code
   if (resp == UPPL_RC_SUCCESS) {
@@ -525,10 +543,12 @@ TcCommonRet PhysicalCore::HandleCommitTransactionEnd(
     pfc_log_error("Operation Not allowed: System is in standby\n");
     return unc::tclib::TC_FAILURE;
   }
+  OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
   // Call ITC transaction handler function
   UpplReturnCode resp = internal_transaction_coordinator_->transaction_req()->
-      EndTransaction(session_id,
-                     config_id);
+      EndTransaction(&db_conn, session_id,
+                     config_id,
+                     trans_res);
   pfc_log_debug("HandleCommitTransactionEnd response %d", resp);
   // convert the error code returned by ITC to TC error code
   if (resp == UPPL_RC_SUCCESS) {
@@ -619,10 +639,11 @@ TcCommonRet PhysicalCore::HandleAuditVoteRequest(
     pfc_log_error("Operation Not allowed: System is in standby\n");
     return unc::tclib::TC_FAILURE;
   }
+  OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
   pfc_log_debug("Received HandleAuditVoteRequest from TC");
   // Call ITC transaction handler function
   UpplReturnCode resp = internal_transaction_coordinator_->audit_req()->
-      HandleAuditVoteRequest(session_id,
+      HandleAuditVoteRequest(&db_conn, session_id,
                              driver_id,
                              controller_id,
                              driver_info);
@@ -718,9 +739,13 @@ TcCommonRet PhysicalCore::HandleCommitDriverResult(
     pfc_log_error("Operation Not allowed: System is in standby\n");
     return unc::tclib::TC_FAILURE;
   }
+  // Check for Events Lock
+  ScopedReadWriteLock eventDoneLock(PhysicalLayer::get_events_done_lock_(),
+                                    PFC_TRUE);  // write lock
+  OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
   // Call ITC transaction handler function
   UpplReturnCode resp = internal_transaction_coordinator_->transaction_req()->
-      HandleDriverResult(session_id,
+      HandleDriverResult(&db_conn, session_id,
                          config_id,
                          commitphase,
                          driver_result);
@@ -782,10 +807,11 @@ TcCommonRet PhysicalCore::HandleAuditStart(uint32_t session_id,
     pfc_log_error("Operation Not allowed: System is in standby\n");
     return unc::tclib::TC_FAILURE;
   }
+  OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
   pfc_log_debug("Received HandleAuditStart from TC");
   // Call ITC transaction handler function
   UpplReturnCode resp = internal_transaction_coordinator_->audit_req()->
-      StartAudit(ctrl_type,
+      StartAudit(&db_conn, ctrl_type,
                  controller_id);
 
   // convert the error code returned by ITC to TC error code
@@ -813,9 +839,10 @@ TcCommonRet PhysicalCore::HandleAuditEnd(uint32_t session_id,
     return unc::tclib::TC_FAILURE;
   }
   pfc_log_debug("Received HandleAuditEnd from TC");
+  OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
   // Call ITC transaction handler function
   UpplReturnCode resp = internal_transaction_coordinator_->audit_req()->
-      EndAudit(ctrl_type,
+      EndAudit(&db_conn, ctrl_type,
                controller_id,
                audit_result);
 
@@ -840,9 +867,10 @@ TcCommonRet PhysicalCore::HandleSaveConfiguration(uint32_t session_id) {
     pfc_log_error("Operation Not allowed: System is in standby\n");
     return unc::tclib::TC_FAILURE;
   }
+  OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
   // Call ITC transaction handler function
   UpplReturnCode resp = internal_transaction_coordinator_->db_config_req()->
-      SaveRunningToStartUp();
+      SaveRunningToStartUp(&db_conn);
 
   // convert the error code returned by ITC to TC error code
   if (resp == UPPL_RC_SUCCESS) {
@@ -865,9 +893,10 @@ TcCommonRet PhysicalCore::HandleClearStartup(uint32_t session_id) {
     pfc_log_error("Operation Not allowed: System is in standby\n");
     return unc::tclib::TC_FAILURE;
   }
+  OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
   // Call ITC transaction handler function
   UpplReturnCode resp = internal_transaction_coordinator_->db_config_req()->
-      ClearStartUpDb();
+      ClearStartUpDb(&db_conn);
 
   // convert the error code returned by ITC to TC error code
   if (resp == UPPL_RC_SUCCESS) {
@@ -891,9 +920,10 @@ TcCommonRet PhysicalCore::HandleAbortCandidate(uint32_t session_id,
     pfc_log_error("Operation Not allowed: System is in standby\n");
     return unc::tclib::TC_FAILURE;
   }
+  OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
   // Call ITC transaction handler function
   uint8_t resp = internal_transaction_coordinator_->db_config_req()->
-      AbortCandidateDb();
+      AbortCandidateDb(&db_conn);
 
   // convert the error code returned by ITC to TC error code
   if (resp == UPPL_RC_SUCCESS) {
@@ -917,7 +947,11 @@ TcCommonRet PhysicalCore::HandleAuditConfig(unc_keytype_datatype_t db_target,
     pfc_log_error("Operation Not allowed: System is in standby\n");
     return unc::tclib::TC_FAILURE;
   }
-  pfc_log_debug("Recieved HandleAuditConfig from TC");
+  // Check for Events Lock
+  ScopedReadWriteLock eventDoneLock(PhysicalLayer::get_events_done_lock_(),
+                                    PFC_TRUE);  // write lock
+  OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
+  pfc_log_debug("Received HandleAuditConfig from TC");
   // Call ITC transaction handler function
   UpplReturnCode resp = UPPL_RC_SUCCESS;
   if (fail_oper == TC_OP_CANDIDATE_COMMIT) {
@@ -926,7 +960,7 @@ TcCommonRet PhysicalCore::HandleAuditConfig(unc_keytype_datatype_t db_target,
     TcDriverInfoMap driver_info;
     TransactionRequest *txn_req =
         internal_transaction_coordinator_->transaction_req();
-    resp = txn_req->StartTransaction(session_id, config_id);
+    resp = txn_req->StartTransaction(&db_conn, session_id, config_id);
     if (resp != UPPL_RC_SUCCESS) {
       pfc_log_error("HandleAuditConfig - StartTransaction failed with %d",
                     resp);
@@ -942,7 +976,7 @@ TcCommonRet PhysicalCore::HandleAuditConfig(unc_keytype_datatype_t db_target,
 
     TcCommitPhaseType phase = unc::tclib::TC_COMMIT_VOTE_PHASE;
     TcCommitPhaseResult driver_result;
-    resp = txn_req->HandleDriverResult(session_id,
+    resp = txn_req->HandleDriverResult(&db_conn, session_id,
                                        config_id, phase, driver_result);
     if (resp != UPPL_RC_SUCCESS) {
       pfc_log_error("HandleAuditConfig - DriverResult VOTE PH failed with %d",
@@ -959,15 +993,15 @@ TcCommonRet PhysicalCore::HandleAuditConfig(unc_keytype_datatype_t db_target,
     }
 
     phase = unc::tclib::TC_COMMIT_GLOBAL_COMMIT_PHASE;
-    resp = txn_req->HandleDriverResult(session_id,
+    resp = txn_req->HandleDriverResult(&db_conn, session_id,
                                        config_id, phase, driver_result);
     if (resp != UPPL_RC_SUCCESS) {
       pfc_log_error("HandleAuditConfig - DriverResult COM PH failed with %d",
                     resp);
       return unc::tclib::TC_FAILURE;
     }
-
-    resp = txn_req->EndTransaction(session_id, config_id);
+    TcTransEndResult trans_res = unc::tclib::TRANS_END_SUCCESS;
+    resp = txn_req->EndTransaction(&db_conn, session_id, config_id, trans_res);
     if (resp != UPPL_RC_SUCCESS) {
       pfc_log_error("HandleAuditConfig - EndTransaction COM PH failed with %d",
                     resp);
@@ -976,14 +1010,14 @@ TcCommonRet PhysicalCore::HandleAuditConfig(unc_keytype_datatype_t db_target,
 
   } else if (fail_oper == TC_OP_CLEAR_STARTUP) {
     resp = internal_transaction_coordinator_->db_config_req()->
-        ClearStartUpDb();
+        ClearStartUpDb(&db_conn);
   } else if (fail_oper == TC_OP_RUNNING_SAVE) {
     // Copy running to startup
     resp = internal_transaction_coordinator_->db_config_req()->
-        SaveRunningToStartUp();
+        SaveRunningToStartUp(&db_conn);
   } else if (fail_oper == TC_OP_CANDIDATE_ABORT) {
     resp = internal_transaction_coordinator_->db_config_req()->
-        AbortCandidateDb();
+        AbortCandidateDb(&db_conn);
   } else if (fail_oper == TC_OP_USER_AUDIT ||
       fail_oper == TC_OP_DRIVER_AUDIT) {
     // Do nothing
@@ -1072,10 +1106,11 @@ TcCommonRet PhysicalCore::HandleSetup() {
     pfc_log_error("Operation Not allowed: System is in standby\n");
     return unc::tclib::TC_FAILURE;
   }
+  OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
   // Call ITC transaction handler function
   // Copy startup to candidate and running and commit
   UpplReturnCode resp = internal_transaction_coordinator_->db_config_req()->
-      LoadAndCommitStartup();
+      LoadAndCommitStartup(&db_conn);
 
   // convert the error code returned by ITC to TC error code
   if (resp == UPPL_RC_SUCCESS) {
@@ -1099,10 +1134,11 @@ TcCommonRet PhysicalCore::HandleSetupComplete() {
     pfc_log_error("Operation Not allowed: System is in standby\n");
     return unc::tclib::TC_FAILURE;
   }
+  OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
   // Call ITC transaction handler function
   // Copy startup to candidate and running and commit
   UpplReturnCode resp = internal_transaction_coordinator_->
-      system_state_change_req()->SystemStateChangeToActive();
+      system_state_change_req()->SystemStateChangeToActive(&db_conn);
   pfc_log_debug("ReturnCode of SystemStateChangeToActive %d", resp);
   // convert the error code returned by ITC to TC error code
   if (resp == UPPL_RC_SUCCESS) {
@@ -1122,8 +1158,14 @@ TcCommonRet PhysicalCore::HandleSetupComplete() {
 unc_keytype_ctrtype_t PhysicalCore::HandleGetControllerType(
     string controller_id) {
   // call util function to get controller type
-  unc_keytype_ctrtype_t controller_type;
-  UpplReturnCode resp = PhyUtil::get_controller_type(controller_id,
+  unc_keytype_ctrtype_t controller_type = UNC_CT_UNKNOWN;
+  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteNb, db_ret);
+  if (db_ret != UPPL_RC_SUCCESS) {
+    return controller_type;
+  }
+  UpplReturnCode resp = PhyUtil::get_controller_type(&db_conn,
+                                                     controller_id,
                                                      controller_type,
                                                      UNC_DT_CANDIDATE);
   // convert the error code returned by ITC to TC error code
@@ -1161,7 +1203,8 @@ list<string> PhysicalCore::GetControllerVersionList() {
 }
 
 /**
- * @Description : This function sends CONROLLER_DISCONNECT alarm to node manager
+ * @Description : This function sends CONROLLER_DISCONNECT alarm to node
+ *                manager
  *                This function will be called from Kt_Controller class when it
  *                receives CONTROLLER notification from driver with oper_status
  *                as down
@@ -1176,7 +1219,7 @@ UpplReturnCode PhysicalCore::SendControllerDisconnectAlarm(
     return UPPL_RC_SUCCESS;
   }
   string vtn_name = "";
-  const std::string& alm_msg = "Controller disconnected";
+  const std::string& alm_msg = "Controller disconnected - " + controller_id;
   const std::string& alm_msg_summary = "Controller disconnected";
   pfc::alarm::alarm_info_with_key_t* data =
       new pfc::alarm::alarm_info_with_key_t;
@@ -1202,6 +1245,8 @@ UpplReturnCode PhysicalCore::SendControllerDisconnectAlarm(
   }
   delete []data->alarm_key;
   delete data;
+  pfc_log_info("Sent Controller Disconnected alarm - %s",
+               controller_id.c_str());
   return UPPL_RC_SUCCESS;
 }
 
@@ -1221,7 +1266,7 @@ UpplReturnCode PhysicalCore::SendControllerConnectAlarm(string controller_id) {
     return UPPL_RC_SUCCESS;
   }
   string vtn_name = "";
-  const std::string& alm_msg = "Controller connected";
+  const std::string& alm_msg = "Controller connected - " + controller_id;
   const std::string& alm_msg_summary = "Controller connected";
   pfc::alarm::alarm_info_with_key_t* data =
       new pfc::alarm::alarm_info_with_key_t;
@@ -1247,98 +1292,17 @@ UpplReturnCode PhysicalCore::SendControllerConnectAlarm(string controller_id) {
   }
   delete []data->alarm_key;
   delete data;
+  pfc_log_info("Sent Controller Connected alarm - %s",
+               controller_id.c_str());
   return UPPL_RC_SUCCESS;
 }
 
-/**
- * @Description : This function sends AUDIT_FAILURE alarm to node manager
- *                This function will be called from audit_req class when audit
- *                operation fails
- */
-
-UpplReturnCode PhysicalCore::SendAuditFailureAlarm(string controller_id) {
-  if (get_system_state() == UPPL_SYSTEM_ST_STANDBY) {
-    // system is in standby
-    pfc_log_info("System is in standby");
-    pfc_log_info("AuditFailure alarm not sent to node manager");
-    return UPPL_RC_SUCCESS;
-  }
-  string vtn_name = "";
-  const std::string& alm_msg =
-      "Controller audit failure due to Invalid Configuration";
-  const std::string& alm_msg_summary =
-      "Controller audit failure";
-  pfc::alarm::alarm_info_with_key_t* data =
-      new pfc::alarm::alarm_info_with_key_t;
-  data->alarm_class = pfc::alarm::ALM_WARNING;
-  data->apl_No = UNCCID_PHYSICAL;
-  data->alarm_category = 2;
-  data->alarm_key_size = controller_id.length();
-  data->alarm_key = new uint8_t[controller_id.length()+1];
-  memcpy(data->alarm_key,
-         controller_id.c_str(),
-         controller_id.length()+1);
-  data->alarm_kind = 1;
-
-  pfc::alarm::alarm_return_code_t ret = pfc::alarm::pfc_alarm_send_with_key(
-      vtn_name,
-      alm_msg,
-      alm_msg_summary,
-      data, fd);
-  if (ret != pfc::alarm::ALM_OK) {
-    delete []data->alarm_key;
-    delete data;
-    return UPPL_RC_ERR_ALARM_API;
-  }
-  delete []data->alarm_key;
-  delete data;
-  return UPPL_RC_SUCCESS;
-}
 
 /**
- * @Description : This function sends AUDIT_SUCCESS alarm to node manager
- *                This is a clearance alarm for AUDIT_FAILURE alarm
- */
-
-UpplReturnCode PhysicalCore::SendAuditSuccessAlarm(string controller_id) {
-  if (get_system_state() == UPPL_SYSTEM_ST_STANDBY) {
-    // system is in standby
-    pfc_log_info("System is in standby");
-    pfc_log_info("AuditSuccess alarm not sent to node manager");
-    return UPPL_RC_SUCCESS;
-  }
-  string vtn_name = "";
-  const std::string& alm_msg = "Controller audit success";
-  const std::string& alm_msg_summary = "Controller audit success";
-  pfc::alarm::alarm_info_with_key_t* data =
-      new pfc::alarm::alarm_info_with_key_t;
-  data->alarm_class = pfc::alarm::ALM_NOTICE;
-  data->apl_No = UNCCID_PHYSICAL;
-  data->alarm_category = 2;
-  data->alarm_key_size = controller_id.length();
-  data->alarm_key = new uint8_t[controller_id.length()+1];
-  memcpy(data->alarm_key,
-         controller_id.c_str(),
-         controller_id.length()+1);
-  data->alarm_kind = 0;
-  pfc::alarm::alarm_return_code_t ret = pfc::alarm::pfc_alarm_send_with_key(
-      vtn_name,
-      alm_msg,
-      alm_msg_summary,
-      data, fd);
-  if (ret != pfc::alarm::ALM_OK) {
-    delete []data->alarm_key;
-    delete data;
-    return UPPL_RC_ERR_ALARM_API;
-  }
-  delete []data->alarm_key;
-  delete data;
-  return UPPL_RC_SUCCESS;
-}
-
-/**
- * @Description : This function sends EVENT_HANDLING FAILURE alarm to node manager
- *                This function will be called from kt classes when event handling fails
+ * @Description : This function sends EVENT_HANDLING FAILURE alarm to
+ *                node manager
+ *                This function will be called from kt classes when event
+ *                handling fails
  */
 
 UpplReturnCode
@@ -1379,11 +1343,14 @@ PhysicalCore::SendEventHandlingFailureAlarm(string controller_id,
   }
   delete []data->alarm_key;
   delete data;
+  pfc_log_info("Sent Event Handling Failure alarm - %s , %s",
+               controller_id.c_str(), event_details.c_str());
   return UPPL_RC_SUCCESS;
 }
 
 /**
- * @Description : This function sends EVENT_HANDLING_SUCCESS alarm to node manager
+ * @Description : This function sends EVENT_HANDLING_SUCCESS alarm to
+ *                node manager
  *                This is a clearance alarm for EVENT_HANDLING_FAILURE alarm
  */
 
@@ -1423,6 +1390,8 @@ PhysicalCore::SendEventHandlingSuccessAlarm(string controller_id,
   }
   delete []data->alarm_key;
   delete data;
+  pfc_log_info("Sent Event Handling Success alarm - %s , %s",
+               controller_id.c_str(), event_details.c_str());
   return UPPL_RC_SUCCESS;
 }
 

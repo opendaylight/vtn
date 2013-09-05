@@ -30,10 +30,10 @@
 #include "pfc/debug.h"
 
 using unc::uppl::ITCReq;
-
+using unc::uppl::OdbcmConnectionHandler;
 
 /*
- * It is a singleton class which will be inherited from ITCReq
+ * This Class which will be inherited from ITCReq
  * class to process config req.
  * For further info,see the comments in .cc file
  */
@@ -42,8 +42,10 @@ class ConfigurationRequest: public ITCReq {
  public:
   ConfigurationRequest();
   ~ConfigurationRequest();
-  UpplReturnCode ProcessReq(ServerSession &session);
-  UpplReturnCode ValidateReq(ServerSession &session,
+  UpplReturnCode ProcessReq(ServerSession &session,
+                            physical_request_header &obj_req_hdr);
+  UpplReturnCode ValidateReq(OdbcmConnectionHandler *db_conn,
+                             ServerSession &session,
       physical_request_header obj_req_hdr,
       void* &key_struct,
       void* &val_struct,
@@ -57,17 +59,20 @@ class ConfigurationRequest: public ITCReq {
   val_ctr_domain_t val_domain_obj;
   key_boundary_t key_boundary_obj;
   val_boundary_t val_boundary_obj;
-  UpplReturnCode ValidateController(ServerSession &session,
+  UpplReturnCode ValidateController(OdbcmConnectionHandler *db_conn,
+                                    ServerSession &session,
                                     uint32_t data_type,
                                     uint32_t operation,
                                     void* &key_struct,
                                     void* &val_struct);
-  UpplReturnCode ValidateDomain(ServerSession &session,
+  UpplReturnCode ValidateDomain(OdbcmConnectionHandler *db_conn,
+                                ServerSession &session,
                                 uint32_t data_type,
                                 uint32_t operation,
                                 void* &key_struct,
                                 void* &val_struct);
-  UpplReturnCode ValidateBoundary(ServerSession &session,
+  UpplReturnCode ValidateBoundary(OdbcmConnectionHandler *db_conn,
+                                  ServerSession &session,
                                   uint32_t data_type,
                                   uint32_t operation,
                                   void* &key_struct,

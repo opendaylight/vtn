@@ -20,13 +20,6 @@ enum vtnpolicingmapMoMgrTables {
   VTNPOLICINGMAPTBL = 0, VTNPOLICINGMAPCTRLRTBL, NVTNPOLICINGMAPTABLES
 };
 
-#define CONFIGKEYVALCLEAN(ikey) { \
-  if (ikey) { \
-    delete ikey; \
-    ikey = NULL; \
-  } \
-}
-
 /**
  * @Brief VtnPolicingMapMoMgr class.
  */
@@ -42,7 +35,7 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
   static BindInfo key_vtnpm_vtn_ctrlrtbl_rename_bind_info[];
   static BindInfo key_vtnpm_Policyname_maintbl_rename_bind_info[];
   static BindInfo key_vtnpm_Policyname_ctrlrtbl_rename_bind_info[];
-
+  uint32_t cur_instance_count;
  public:
   /**
    * @Brief VtnPolicingMapMoMgr Class Constructor.
@@ -541,27 +534,10 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
                                const char* ctrlr_name = NULL);
 
   /**
-   * @Brief Method is used to validate the policing map value structure
-   *        attributes bases on the operation
-   *
-   * @param[in] val_policingmap               Pointer to val structure
-   * @param[in] req                           Describes IpcReqRespHeader class.
-   *
-   * @retval    UPLL_RC_SUCCESS               Successful.
-   * @retval    UPLL_RC_ERR_CFG_SYNTAX        Syntax error.
-   * @retval    UPLL_RC_ERR_NO_SUCH_INSTANCE  Record is not available.
-   * @retval    UPLL_RC_ERR_GENERIC           Generic failure.
-   * @retval    UPLL_RC_ERR_INVALID_OPTION1   option1 is not valid.
-   * @retval    UPLL_RC_ERR_INVALID_OPTION2   option2 is not valid.
-   */
-  static upll_rc_t ValidatePolicingMapValue(val_policingmap_t *val_policingmap,
-                                     IpcReqRespHeader *req);
-
-  /**
    * @Brief Method is used to validate the policingmap value structure
    *        attributes bases on the operation
    *
-   * @param[in] val_policingmap               Pointer to val structure
+   * @param[in] key                           Pointer to ConfigKeyVal.
    * @param[in] operation                     Type of operation.
    *
    * @retval    UPLL_RC_SUCCESS               Successful.
@@ -571,15 +547,15 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
    * @retval    UPLL_RC_ERR_INVALID_OPTION1   option1 is not valid.
    * @retval    UPLL_RC_ERR_INVALID_OPTION2   option2 is not valid.
    */
-  static upll_rc_t ValidatePolicingMapValue(val_policingmap_t *val_policingmap,
+  static upll_rc_t ValidatePolicingMapValue(ConfigKeyVal *key,
                                         uint32_t operation);
 
   /**
    * @Brief Method is used to validate the policingmap controller value
    * structure attributes bases on the operation
    *
-   * @param[in] val_policingmap_controller    Pointer to val structure
-   * @param[in] operation                     Type of operation.
+   * @param[in] key                           Pointer to ConfigKeyVal.
+   * @param[in] req                          Describes IpcReqRespHeader class.
    *
    * @retval    UPLL_RC_SUCCESS               Successful.
    * @retval    UPLL_RC_ERR_CFG_SYNTAX        Syntax error.
@@ -588,9 +564,8 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
    * @retval    UPLL_RC_ERR_INVALID_OPTION1   option1 is not valid.
    * @retval    UPLL_RC_ERR_INVALID_OPTION2   option2 is not valid.
    */
-  upll_rc_t ValidateVtnPolicingMapControllerValue(
-      val_policingmap_controller_t *val_policingmap_controller,
-      uint32_t operation);
+  upll_rc_t ValidateVtnPolicingMapControllerValue(ConfigKeyVal *key,
+                                                  IpcReqRespHeader *req);
 
   /**
    * @Brief Checks if the specified key type(KT_VTN_POLICINGMAP) and
@@ -652,7 +627,28 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
       uint8_t* vtn_name,
       controller_domain *ctrlr_dom,
       unc_keytype_operation_t op,
-      DalDmlIntf *dmi);
+      upll_keytype_datatype_t dt_type,
+      DalDmlIntf *dmi,
+      uint8_t flag);
+
+  /**
+   * @brief  Method used for Restoring PolicingProfile in the Controller Table
+   *
+   * @param[in]      ikey       Pointer to ConfigKeyVal Class
+   * @param[in]      dt_type    Describes Configiration Information.
+   * @param[in]      tbl        Describe the destination table
+   * @param[in]      dmi        Pointer to DalDmlIntf Class.
+   *
+   * @retval  UPLL_RC_SUCCESS      Successfull completion.
+   * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
+   * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists 
+   * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
+   */
+
+  upll_rc_t RestorePOMInCtrlTbl(ConfigKeyVal *ikey,
+                                upll_keytype_datatype_t dt_type,
+                                MoMgrTables tbl,
+                                DalDmlIntf* dmi);
 
   bool CompareKey(void *key1, void *key2) {
     return true;
@@ -738,6 +734,50 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
   upll_rc_t ValidateReadAttribute(ConfigKeyVal *ikey,
                                   DalDmlIntf *dmi,
                                   IpcReqRespHeader *req);
+
+  upll_rc_t CreateAuditMoImpl(ConfigKeyVal *ikey,
+                              DalDmlIntf *dmi,
+                              const char *ctrlr_id);
+
+  upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
+                              upll_keytype_datatype_t dt_type,
+                              DalDmlIntf *dmi);
+
+  upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
+
+  upll_rc_t UpdateVnodeVal(ConfigKeyVal *ikey,
+                           DalDmlIntf *dmi,
+                           upll_keytype_datatype_t data_type,
+                           bool &no_rename);
+
+  bool FilterAttributes(void *&val1,
+                          void *val2,
+                          bool copy_to_running,
+                          unc_keytype_operation_t op);
+
+  upll_rc_t MergeImportToCandidate(unc_key_type_t keytype,
+                                   const char *ctrlr_name,
+                                   DalDmlIntf *dmi);
+
+  upll_rc_t IsRenamed(ConfigKeyVal *ikey,
+                      upll_keytype_datatype_t dt_type,
+                      DalDmlIntf *dmi,
+                      uint8_t &rename);
+
+  upll_rc_t GetPolicingProfileConfigKey(
+        const char *pp_name, ConfigKeyVal *&okey,
+        DalDmlIntf *dmi);
+
+  upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
+                          DalDmlIntf *dmi,
+                          IpcReqRespHeader *req);
+
+  upll_rc_t SetVtnPmConsolidatedStatus(ConfigKeyVal *ikey,
+                                       uint8_t *ctrlr_id,
+                                       DalDmlIntf *dmi);
+
+  upll_rc_t SetConsolidatedStatus(ConfigKeyVal *ikey,
+                                  DalDmlIntf *dmi);
 };
 
 typedef struct val_vtnpolicingmap_ctrl {

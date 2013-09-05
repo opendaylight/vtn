@@ -18,6 +18,10 @@
 #include "pwd_impl.h"
 #include "conf_impl.h"
 
+#ifdef	PFC_HAVE_PRCTL_DUMPABLE
+#include <sys/prctl.h>
+#endif	/* PFC_HAVE_PRCTL_DUMPABLE */
+
 /*
  * Set user ID of the calling process.
  */
@@ -40,6 +44,7 @@
  * Internal prototypes.
  */
 static int	cred_loadconf(void);
+static int	cred_enable_coredump(void);
 
 /*
  * int
@@ -114,9 +119,12 @@ pfc_cred_setup(void)
  *	Otherwise error number which indicates the cause of error is returned.
  *
  * Remarks:
- *	pfc_cred_set() always tries to change group ID before user ID.
- *	And it returns a non-zero value without reverting group ID if it fails
- *	to change user ID of the calling process.
+ *	- pfc_cred_set() always tries to change group ID before user ID.
+ *	  And it returns a non-zero value without reverting group ID if it
+ *	  fails to change user ID of the calling process.
+ *
+ *	- On Linux platform, this function always set 1 to the suid core
+ *	  dumpable flag for the current process on successful return.
  */
 int
 pfc_cred_set(uid_t uid, gid_t gid, pfc_bool_t initgrp)
@@ -166,6 +174,15 @@ pfc_cred_set(uid_t uid, gid_t gid, pfc_bool_t initgrp)
 		}
 	}
 
+	/*
+	 * Setting UID or GID may disable the calling process for dumping
+	 * core file. So we need to enable explicitly.
+	 */
+	err = cred_enable_coredump();
+	if (PFC_EXPECT_FALSE(err != 0)) {
+		goto error;
+	}
+
 	return 0;
 
 error:
@@ -211,9 +228,12 @@ error:
  *	Otherwise error number which indicates the cause of error is returned.
  *
  * Remarks:
- *	pfc_cred_setbyname() always tries to change group ID before user ID.
- *	And it returns a non-zero value without reverting group ID if it fails
- *	to change user ID of the calling process.
+ *	- pfc_cred_setbyname() always tries to change group ID before user ID.
+ *	  And it returns a non-zero value without reverting group ID if it
+ *	  fails to change user ID of the calling process.
+ *
+ *	- On Linux platform, this function always set 1 to the suid core
+ *	  dumpable flag for the current process on successful return.
  */
 int
 pfc_cred_setbyname(const char *user, const char *group, pfc_bool_t initgrp)
@@ -266,6 +286,15 @@ pfc_cred_setbyname(const char *user, const char *group, pfc_bool_t initgrp)
 			err = errno;
 			goto error;
 		}
+	}
+
+	/*
+	 * Setting UID or GID may disable the calling process for dumping
+	 * core file. So we need to enable explicitly.
+	 */
+	err = cred_enable_coredump();
+	if (PFC_EXPECT_FALSE(err != 0)) {
+		goto error;
 	}
 
 	pfc_pwd_destroyuser(&uinfo);
@@ -321,4 +350,34 @@ cred_loadconf(void)
 	PFC_ASSERT(err != 0 || pfc_sysconf_open() != PFC_CONF_INVALID);
 
 	return err;
+}
+
+/*
+ * static int
+ * cred_enable_coredump(void)
+ *	Allow the calling process to dump core file.
+ *
+ * Calling/Exit State:
+ *	Upon successful completion, zero is returned.
+ *	Otherwise error number which indicates the cause of error is returned.
+ *
+ * Remarks:
+ *	Currently, this function works only on Linux.
+ */
+static int
+cred_enable_coredump(void)
+{
+#ifdef	PFC_HAVE_PRCTL_DUMPABLE
+	int	ret;
+
+	ret = prctl(PR_SET_DUMPABLE, 1);
+	if (PFC_EXPECT_FALSE(ret != 0)) {
+		PFC_ASSERT(ret == -1);
+		ret = errno;
+	}
+
+	return ret;
+#else	/* !PFC_HAVE_PRCTL_DUMPABLE */
+	return 0;
+#endif	/* PFC_HAVE_PRCTL_DUMPABLE */
 }

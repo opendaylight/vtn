@@ -19,6 +19,7 @@ import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.webapi.enums.ApplicationConstants;
 import org.opendaylight.vtn.webapi.exception.VtnServiceWebAPIException;
+import org.opendaylight.vtn.webapi.pojo.SessionBean;
 import org.opendaylight.vtn.webapi.utils.DataConverter;
 import org.opendaylight.vtn.webapi.utils.VtnServiceCommonUtil;
 import org.opendaylight.vtn.webapi.utils.VtnServiceWebUtil;
@@ -138,7 +139,15 @@ public class VtnServiceWebAPIHandler {
 			LOG.trace("PUT method of web api handler starts #put()");
 			this.resourcePath = VtnServiceCommonUtil.getResourceURI(request.getRequestURI());
 			this.contentType =  VtnServiceCommonUtil.getContentType(request.getRequestURI());
-			serviceRequest = new VtnServiceWebUtil().prepareRequestJson(request, contentType);
+			if (this.resourcePath.equals(ApplicationConstants.ALARMSTR)) {
+				final Map<String, String[]> paramsMap = request.getParameterMap();
+				if (null != paramsMap && !paramsMap.isEmpty()) {
+					serviceRequest = new JsonObject();
+					serviceRequest = DataConverter.convertMapToJson(paramsMap, serviceRequest);
+				}
+			} else {
+				serviceRequest = new VtnServiceWebUtil().prepareRequestJson(request, contentType);				
+			}
 			serviceResponse =  vtnServiceWebAPIController.put(VtnServiceWebUtil.prepareHeaderJson(request) ,serviceRequest, this.resourcePath);
 			responseString = DataConverter.getConvertedResponse(serviceResponse, contentType);
 			LOG.trace("PUT method of web api handler ends #put()");
@@ -191,7 +200,8 @@ public class VtnServiceWebAPIHandler {
 				throw new VtnServiceWebAPIException(ApplicationConstants.FORBIDDEN_ERROR, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.FORBIDDEN_ERROR));
 			}
 			final JsonObject headerInfo  = VtnServiceWebUtil.prepareHeaderJson(request);
-			if(!VtnServiceCommonUtil.authenticateUser(headerInfo, request.getMethod())){
+			final SessionBean bean = VtnServiceCommonUtil.getSessionObject(headerInfo);
+			if(!VtnServiceCommonUtil.authoriseUser(bean, request.getMethod())){
 				throw new VtnServiceWebAPIException(ApplicationConstants.USER_UNAUTHORISED_ERROR, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.USER_UNAUTHORISED_ERROR));
 			}
 			LOG.trace("validate method of web api handler ends #validate()");

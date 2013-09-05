@@ -32,12 +32,30 @@
 #include <pfc/util.h>
 #include <pfc/path.h>
 #include <pfc/conf.h>
+#include <pfc/strtoint.h>
 #include <conf_impl.h>
 #include "test.h"
 #include "child.hh"
 #include "misc.hh"
 #include "tmpfile.hh"
 #include "random.hh"
+
+#ifdef	PFC_HAVE_PRCTL_DUMPABLE
+#include <sys/prctl.h>
+#include <fcntl.h>
+
+/*
+ * Verify suid dumpable flag for the calling process.
+ */
+#define ASSERT_DUMPABLE(expected)                                       \
+    {                                                                   \
+        int  __value(prctl(PR_GET_DUMPABLE));                           \
+                                                                        \
+        ASSERT_NE(-1, __value) << "*** ERROR: " << strerror(errno);     \
+        ASSERT_EQ(expected, __value);                                   \
+    }
+
+#endif	/* PFC_HAVE_PRCTL_DUMPABLE */
 
 /*
  * This test uses getres[ug]id() and setres[ug]id().
@@ -276,6 +294,9 @@ check_set(ChildContext *ctx, uid_t uid, gid_t gid)
     // Change user and group ID.
     ASSERT_EQ(0, pfc_cred_set(uid, gid, PFC_FALSE));
 
+    // Ensure that suid dumpable flag is set.
+    ASSERT_DUMPABLE(1);
+
     // Ensure that user and group ID have been changed.
     if (uid != UID_UNDEF) {
         for (uid_t *u(uids); u < PFC_ARRAY_LIMIT(uids); u++) {
@@ -332,6 +353,9 @@ check_set_initgrp(ChildContext *ctx, uid_t uid, gid_t gid)
     // Change user and group ID and group list.
     ASSERT_EQ(0, pfc_cred_set(uid, gid, PFC_TRUE))
         << "uid=" << uid << " gid=" << gid;
+
+    // Ensure that suid dumpable flag is set.
+    ASSERT_DUMPABLE(1);
 
     // Ensure that user and group ID have been changed.
     uid_t curuids[NUM_CREDID];
@@ -403,18 +427,23 @@ check_set_unpriv(ChildContext *ctx)
     ASSERT_EQ(0, pfc_cred_set(UID_UNDEF, GID_UNDEF, PFC_FALSE));
     CHECK_RESUGID(uids, gids);
 
+    ASSERT_DUMPABLE(1);
+
     // Unprivileged process can switch user and group ID to effective user and
     // group ID respectively.
     gid_t egid(gids[1]);
     ASSERT_EQ(0, pfc_cred_set(UID_UNDEF, egid, PFC_FALSE));
     gid_t g[] = {egid, egid, egid};
     CHECK_RESUGID(uids, g);
+    ASSERT_DUMPABLE(1);
 
     uid_t euid(uids[1]);
     ASSERT_EQ(0, pfc_cred_set(euid, GID_UNDEF, PFC_FALSE));
     CHECK_UGID(euid, egid);
+    ASSERT_DUMPABLE(1);
     ASSERT_EQ(0, pfc_cred_set(uids[1], gids[1], PFC_FALSE));
     CHECK_UGID(euid, egid);
+    ASSERT_DUMPABLE(1);
 
     // Ensure that unprivileged process can not change user and group ID to
     // others.
@@ -432,6 +461,9 @@ check_set_unpriv(ChildContext *ctx)
     load_group_list(curgroups);
     RETURN_ON_ERROR();
     ASSERT_GIDSET_EQ(groups, curgroups);
+
+    // Ensure that suid dumpable flag is set.
+    ASSERT_DUMPABLE(1);
 #endif  /* DO_CRED_TEST */
 }
 
@@ -458,6 +490,7 @@ check_set_initgrp_unpriv(ChildContext *ctx)
     // This should do nothing.
     ASSERT_EQ(0, pfc_cred_set(UID_UNDEF, GID_UNDEF, PFC_TRUE));
     CHECK_RESUGID(uids, gids);
+    ASSERT_DUMPABLE(1);
     {
         gidset_t curgroups;
         load_group_list(curgroups);
@@ -470,6 +503,7 @@ check_set_initgrp_unpriv(ChildContext *ctx)
     ASSERT_EQ(0, pfc_cred_set(uid, GID_UNDEF, PFC_TRUE));
     uid_t u[] = {uid, uid, uid};
     CHECK_RESUGID(u, gids);
+    ASSERT_DUMPABLE(1);
     {
         gidset_t curgroups;
         load_group_list(curgroups);
@@ -480,12 +514,16 @@ check_set_initgrp_unpriv(ChildContext *ctx)
     // Ensure that unprivileged user can not change the group list.
     ASSERT_EQ(EPERM, pfc_cred_set(uid + 1, GID_UNDEF, PFC_TRUE));
     CHECK_RESUGID(u, gids);
+    ASSERT_DUMPABLE(1);
     {
         gidset_t curgroups;
         load_group_list(curgroups);
         RETURN_ON_ERROR();
         ASSERT_GIDSET_EQ(groups, curgroups);
     }
+
+    // Ensure that suid dumpable flag is set.
+    ASSERT_DUMPABLE(1);
 #endif  /* DO_CRED_TEST */
 }
 
@@ -588,12 +626,16 @@ check_setres_initgrp(ChildContext *ctx, uid_t uids[NUM_CREDID],
     // Ensure that real group ID can be set as effective group ID.
     ASSERT_EQ(0, pfc_cred_set(uids[0], gids[1], PFC_TRUE));
     CHECK_UGID(uids[0], gids[1]);
+    ASSERT_DUMPABLE(1);
 
     // Ensure that group list is not changed.
     gidset_t curgroups;
     load_group_list(curgroups);
     RETURN_ON_ERROR();
     ASSERT_GIDSET_EQ(groups, curgroups);
+
+    // Ensure that suid dumpable flag is set.
+    ASSERT_DUMPABLE(1);
 #endif  /* DO_CRED_TEST */
 }
 
@@ -618,6 +660,9 @@ check_setbyname(ChildContext *ctx, pwdmap *map, const char *user,
 
     // Change user and group ID.
     ASSERT_EQ(0, pfc_cred_setbyname(user, group, PFC_FALSE));
+
+    // Ensure that suid dumpable flag is set.
+    ASSERT_DUMPABLE(1);
 
     // Ensure that user and group ID have been changed.
     if (user != NULL) {
@@ -682,6 +727,9 @@ check_setbyname_initgrp(ChildContext *ctx, pwdmap *map, const char *user,
 
     // Change user and group ID.
     ASSERT_EQ(0, pfc_cred_setbyname(user, group, PFC_TRUE));
+
+    // Ensure that suid dumpable flag is set.
+    ASSERT_DUMPABLE(1);
 
     // Ensure that user and group ID have been changed.
     uid_t curuids[NUM_CREDID];
@@ -779,6 +827,9 @@ check_setbyname_unpriv(ChildContext *ctx, pwdmap *map)
     ASSERT_EQ(0, pfc_cred_setbyname(NULL, NULL, PFC_FALSE));
     CHECK_RESUGID(uids, gids);
 
+    // Ensure that suid dumpable flag is set.
+    ASSERT_DUMPABLE(1);
+
     // EINVAL test.
     ASSERT_EQ(EINVAL, pfc_cred_setbyname("", NULL, PFC_FALSE));
     CHECK_RESUGID(uids, gids);
@@ -819,6 +870,7 @@ check_setbyname_unpriv(ChildContext *ctx, pwdmap *map)
     gid_t egid(gids[1]);
     gid_t g[] = {egid, egid, egid};
     CHECK_RESUGID(uids, g);
+    ASSERT_DUMPABLE(1);
 
     ASSERT_EQ(0, pfc_cred_setbyname(map->pm_euname, NULL, PFC_FALSE));
     uid_t euid(uids[1]);
@@ -826,6 +878,7 @@ check_setbyname_unpriv(ChildContext *ctx, pwdmap *map)
     ASSERT_EQ(0, pfc_cred_setbyname(map->pm_euname, map->pm_egname,
                                     PFC_FALSE));
     CHECK_UGID(euid, egid);
+    ASSERT_DUMPABLE(1);
 
     // Ensure that unprivileged process can not change user and group ID to
     // others.
@@ -868,6 +921,9 @@ check_setbyname_unpriv(ChildContext *ctx, pwdmap *map)
     load_group_list(curgroups);
     RETURN_ON_ERROR();
     ASSERT_GIDSET_EQ(groups, curgroups);
+
+    // Ensure that suid dumpable flag is set.
+    ASSERT_DUMPABLE(1);
 #endif  /* DO_CRED_TEST */
 }
 
@@ -894,6 +950,7 @@ check_setbyname_initgrp_unpriv(ChildContext *ctx, pwdmap *map)
     // This should do nothing.
     ASSERT_EQ(0, pfc_cred_setbyname(NULL, NULL, PFC_TRUE));
     CHECK_RESUGID(uids, gids);
+    ASSERT_DUMPABLE(1);
     {
         gidset_t curgroups;
         load_group_list(curgroups);
@@ -952,6 +1009,7 @@ check_setbyname_initgrp_unpriv(ChildContext *ctx, pwdmap *map)
     gid_t egid(gids[1]);
     gid_t g[] = {egid, egid, egid};
     CHECK_RESUGID(uids, g);
+    ASSERT_DUMPABLE(1);
     {
         gidset_t curgroups;
         load_group_list(curgroups);
@@ -963,6 +1021,7 @@ check_setbyname_initgrp_unpriv(ChildContext *ctx, pwdmap *map)
     ASSERT_EQ(0, pfc_cred_setbyname(map->pm_uname, NULL, PFC_TRUE));
     uid_t ruid(uids[0]);
     CHECK_UGID(ruid, egid);
+    ASSERT_DUMPABLE(1);
     {
         gidset_t curgroups;
         load_group_list(curgroups);
@@ -972,6 +1031,7 @@ check_setbyname_initgrp_unpriv(ChildContext *ctx, pwdmap *map)
 
     ASSERT_EQ(0, pfc_cred_setbyname(map->pm_uname, map->pm_egname, PFC_TRUE));
     CHECK_UGID(ruid, egid);
+    ASSERT_DUMPABLE(1);
     {
         gidset_t curgroups;
         load_group_list(curgroups);
@@ -1020,6 +1080,9 @@ check_setbyname_initgrp_unpriv(ChildContext *ctx, pwdmap *map)
     load_group_list(curgroups);
     RETURN_ON_ERROR();
     ASSERT_GIDSET_EQ(groups, curgroups);
+
+    // Ensure that suid dumpable flag is set.
+    ASSERT_DUMPABLE(1);
 #endif  /* DO_CRED_TEST */
 }
 
@@ -1155,6 +1218,7 @@ check_setres_byname_initgrp(ChildContext *ctx, pwdmap *map,
     // Ensure that real group ID can be set as effective group ID.
     ASSERT_EQ(0, pfc_cred_setbyname(users[0], groups[1], PFC_TRUE));
     CHECK_UGID(uids[0], gids[1]);
+    ASSERT_DUMPABLE(1);
 
     // Ensure that group list is not changed.
     gidset_t curgroups;
@@ -1239,6 +1303,9 @@ check_setup(ChildContext *ctx, pwdmap *map, const char *cfpath, uid_t requid,
         // Ensure that group list is not changed.
         ASSERT_GIDSET_EQ(glist, curgroups);
     }
+
+    // Ensure that suid dumpable flag is set.
+    ASSERT_DUMPABLE(1);
 #endif  /* DO_CRED_TEST */
 }
 

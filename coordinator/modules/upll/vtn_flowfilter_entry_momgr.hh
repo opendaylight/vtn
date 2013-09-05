@@ -24,6 +24,15 @@ namespace kt_momgr {
 
 #define FLOWLIST 1
 #define NWMONITOR 2
+
+#define FREE_LIST_CTRLR(list_ctrlr_dom) { \
+  for (std::list<controller_domain_t>::iterator it= list_ctrlr_dom.begin(); \
+    it != list_ctrlr_dom.end(); ++it) { \
+    FREE_IF_NOT_NULL(it->ctrlr); \
+    FREE_IF_NOT_NULL(it->domain); \
+  } \
+}
+
 typedef struct val_vtn_flowfilter_entry_ctrlr {
         uint8_t                    valid[5];
         unc_keytype_configstatus_t cs_row_status;
@@ -47,6 +56,8 @@ class VtnFlowFilterEntryMoMgr: public MoMgrImpl {
      * @brief  Member Variable for FlowListRenameBindInfo.
      */
     static BindInfo vtn_flowlist_rename_bind_info[];
+
+    uint32_t cur_instance_count;
 
  public:
     /**
@@ -228,6 +239,10 @@ class VtnFlowFilterEntryMoMgr: public MoMgrImpl {
     }
     delete[] table;
   }
+
+    upll_rc_t CreateAuditMoImpl(ConfigKeyVal *ikey,
+                                   DalDmlIntf *dmi,
+                                   const char *ctrlr_id);
     /**
     * @brief  This API is used to retrive the configuration details.
     *
@@ -316,6 +331,9 @@ class VtnFlowFilterEntryMoMgr: public MoMgrImpl {
                           const char *ctrlr_id,
                           ConfigKeyVal *ikey,
                           DalDmlIntf *dmi);
+    upll_rc_t MergeImportToCandidate(unc_key_type_t keytype,
+                                    const char *ctrlr_name,
+                                    DalDmlIntf *dmi);
    /* @brief The Rename Operation is not allowed for the Key type KT_VTN_FLOWFILTER_ENTRY
     *
    *  @return code UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT. Rename operation is not allowed for
@@ -366,7 +384,7 @@ class VtnFlowFilterEntryMoMgr: public MoMgrImpl {
     * @retval  UPLL_RC_ERR_GENERIC  Generic Errors.
     * **/
 
-     upll_rc_t GetRenamedControllerKey(ConfigKeyVal *&ikey,
+     upll_rc_t GetRenamedControllerKey(ConfigKeyVal *ikey,
                                     upll_keytype_datatype_t dt_type,
                                     DalDmlIntf *dmi,
                                     controller_domain *ctrlr_dom = NULL);
@@ -554,7 +572,9 @@ class VtnFlowFilterEntryMoMgr: public MoMgrImpl {
                                         uint8_t* vtn_name,
                                         controller_domain *ctrlr_dom,
                                         unc_keytype_operation_t op,
-                                        DalDmlIntf *dmi);
+                                        upll_keytype_datatype_t dt_type,
+                                        DalDmlIntf *dmi,
+                                        uint8_t flag);
      /**
      * @brief  Method used for GetParentConfigKey Operation.
      *
@@ -566,7 +586,26 @@ class VtnFlowFilterEntryMoMgr: public MoMgrImpl {
      */
     upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey,
                                  ConfigKeyVal *ikey);
+    /**
+     * @brief  Method used for Restoring FlowList in the Controller Table
+     *
+     * @param[in]      ikey       Pointer to ConfigKeyVal Class
+     * @param[in]      dt_type    Describes Configiration Information.
+     * @param[in]      tbl        Describe the destination table
+     * @param[in]      dmi        Pointer to DalDmlIntf Class.
+     *
+     * @retval  UPLL_RC_SUCCESS      Successfull completion.
+     * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
+     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists 
+     * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
+     */
+
+    upll_rc_t RestorePOMInCtrlTbl(ConfigKeyVal *ikey,
+                                  upll_keytype_datatype_t dt_type,
+                                  MoMgrTables tbl,
+                                  DalDmlIntf* dmi);
   upll_rc_t UpdateFlowListInCtrl(ConfigKeyVal *ikey,
+                                 upll_keytype_datatype_t dt_type,
                                  unc_keytype_operation_t op,
                                  DalDmlIntf* dmi);
   upll_rc_t IsNWMReferenced(ConfigKeyVal *ikey,
@@ -607,9 +646,6 @@ class VtnFlowFilterEntryMoMgr: public MoMgrImpl {
 
   upll_rc_t ReadControllerStateDetail(ConfigKeyVal *ikey ,
                                       ConfigKeyVal *drv_resp_ckv,
-                                      upll_keytype_datatype_t dt_type,
-                                      unc_keytype_operation_t op,
-                                      DalDmlIntf *dmi,
                                       controller_domain *ctrlr_dom,
                                       ConfigKeyVal **okey);
   upll_rc_t GetCtrlFlowFilterEntry(
@@ -617,7 +653,9 @@ class VtnFlowFilterEntryMoMgr: public MoMgrImpl {
      val_vtn_flowfilter_entry_ctrlr_t *val_vtn_ffe_ctrlr,
      upll_keytype_datatype_t dt_type,
      DalDmlIntf *dmi,
-     val_vtn_flowfilter_entry_t *&op_val_vtn_ffe);
+     val_vtn_flowfilter_entry_t *&op_val_vtn_ffe,
+     const char* ctrlr_name,
+     unc_keytype_option1_t opt1 = UNC_OPT1_NORMAL);
 
   upll_rc_t  ReadSiblingCount(IpcReqRespHeader *req,
                               ConfigKeyVal *ikey,
@@ -641,15 +679,9 @@ class VtnFlowFilterEntryMoMgr: public MoMgrImpl {
     DalDmlIntf *dmi,
     ConfigKeyVal **okey);
 
-  upll_rc_t ConstructReadSiblingDetailResponse(
-    ConfigKeyVal *ikey ,
-    ConfigKeyVal *drv_resp_ckv,
-    upll_keytype_datatype_t dt_type,
-    DalDmlIntf *dmi,
-    ConfigKeyVal **okey);
-
   upll_rc_t GetVtnControllerSpan(
       ConfigKeyVal *ikey,
+      upll_keytype_datatype_t dt_type,
       DalDmlIntf *dmi,
       std::list<controller_domain_t> &list_ctrlr_dom);
 
@@ -669,6 +701,47 @@ upll_rc_t UpdateMainTbl(ConfigKeyVal *vtn_ffe_key,
 
   upll_rc_t IsFlowListConfigured(
       const char* flowlist_name, DalDmlIntf *dmi);
+
+  upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
+                              upll_keytype_datatype_t dt_type,
+                              DalDmlIntf *dmi);
+
+  upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
+  upll_rc_t UpdateVnodeVal(ConfigKeyVal *ikey,
+                           DalDmlIntf *dmi,
+                           upll_keytype_datatype_t data_type,
+                            bool &no_rename);
+
+  bool FilterAttributes(void *&val1,
+                        void *val2,
+                        bool copy_to_running,
+                        unc_keytype_operation_t op);
+
+  upll_rc_t Get_Tx_Consolidated_Status(
+      unc_keytype_configstatus_t &status,
+      unc_keytype_configstatus_t  drv_result_status,
+      unc_keytype_configstatus_t current_cs,
+      unc_keytype_configstatus_t current_ctrlr_cs);
+
+   upll_rc_t IsRenamed(ConfigKeyVal *ikey,
+                     upll_keytype_datatype_t dt_type,
+                     DalDmlIntf *dmi,
+                     uint8_t &rename);
+   upll_rc_t
+   SetVtnFFEntryConsolidatedStatus(ConfigKeyVal *ikey,
+                                   uint8_t *ctrlr_id,
+                                   DalDmlIntf *dmi);  
+
+    upll_rc_t GetFlowlistConfigKey(
+          const char *flowlist_name, ConfigKeyVal *&okey,
+          DalDmlIntf *dmi);
+
+    upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
+          DalDmlIntf *dmi,
+          IpcReqRespHeader *req);
+
+   bool CompareValidVal(void *&val1, void *val2,
+                        void *val3, bool audit);
 };
 
 }  // namespace kt_momgr

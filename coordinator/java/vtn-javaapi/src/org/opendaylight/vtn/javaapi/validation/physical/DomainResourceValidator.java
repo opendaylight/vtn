@@ -109,7 +109,8 @@ public class DomainResourceValidator extends VtnServiceValidator {
 		} else if (isValid && requestBody != null
 				&& VtnServiceConsts.PUT.equals(method)) {
 			isValid = validatePut(requestBody);
-		} else {
+		} else if (isValid) {
+			setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -163,8 +164,7 @@ public class DomainResourceValidator extends VtnServiceValidator {
 							.getAsJsonPrimitive(VtnServiceJsonConsts.TYPE)
 							.getAsString().trim();
 					isValid = type
-							.equalsIgnoreCase(VtnServiceJsonConsts.NORMAL)
-							|| type.equalsIgnoreCase(VtnServiceJsonConsts.DEFAULT);
+							.equalsIgnoreCase(VtnServiceJsonConsts.NORMAL);
 				} else {
 					isValid = false;
 				}

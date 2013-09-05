@@ -39,7 +39,8 @@ class Kt_State_Base: public Kt_Base {
   virtual ~Kt_State_Base() {
   };
 
-  UpplReturnCode Create(uint32_t session_id,
+  UpplReturnCode Create(OdbcmConnectionHandler *db_conn,
+                        uint32_t session_id,
                         uint32_t configuration_id,
                         void* key_struct,
                         void* val_struct,
@@ -47,18 +48,21 @@ class Kt_State_Base: public Kt_Base {
                         uint32_t key_type,
                         ServerSession &sess);
 
-  UpplReturnCode CreateKeyInstance(void* key_struct,
+  UpplReturnCode CreateKeyInstance(OdbcmConnectionHandler *db_conn,
+                                   void* key_struct,
                                    void* val_struct,
                                    uint32_t data_type,
                                    uint32_t key_type);
 
-  UpplReturnCode UpdateKeyInstance(void* key_struct,
+  UpplReturnCode UpdateKeyInstance(OdbcmConnectionHandler *db_conn,
+                                   void* key_struct,
                                    void* val_struct,
                                    uint32_t data_type,
                                    uint32_t key_type,
                                    void* &old_val_struct);
 
-  UpplReturnCode Update(uint32_t session_id,
+  UpplReturnCode Update(OdbcmConnectionHandler *db_conn,
+                        uint32_t session_id,
                         uint32_t configuration_id,
                         void* key_struct,
                         void* val_struct,
@@ -66,19 +70,30 @@ class Kt_State_Base: public Kt_Base {
                         uint32_t key_type,
                         ServerSession &sess);
 
-  UpplReturnCode Delete(uint32_t session_id,
+  UpplReturnCode Delete(OdbcmConnectionHandler *db_conn,
+                        uint32_t session_id,
                         uint32_t configuration_id,
                         void* key_struct,
                         uint32_t data_type,
                         uint32_t key_type,
                         ServerSession &sess);
 
-  UpplReturnCode HandleDriverEvents(void* key_struct,
+  UpplReturnCode HandleDriverEvents(OdbcmConnectionHandler *db_conn,
+                                    void* key_struct,
                                     uint32_t oper_type,
                                     uint32_t data_type,
                                     uint32_t key_type,
                                     void* old_val_struct,
                                     void* new_val_struct);
+
+ private:
+  UpplReturnCode HandleOperStatus(OdbcmConnectionHandler *db_conn,
+                                  void* key_struct,
+                                  uint32_t oper_type,
+                                  uint32_t data_type,
+                                  uint32_t key_type,
+                                  void* new_val_struct,
+                                  string controller_name);
 };
 
 #endif

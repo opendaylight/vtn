@@ -80,6 +80,8 @@ public class ConfigResource extends AbstractResource {
 							UncTCEnums.ServiceID.TC_CANDIDATE_SERVICES
 									.ordinal(), getExceptionHandler());
 					LOG.info("Session created successfully");
+					// set session timeout as infinity for commit operation
+					session.setTimeout(null);
 					session.addOutput(new IpcUint32(
 							UncTCEnums.ServiceType.TC_OP_CANDIDATE_COMMIT
 									.ordinal()));
@@ -101,6 +103,8 @@ public class ConfigResource extends AbstractResource {
 							UncTCEnums.ServiceID.TC_STARTUP_DB_SERVICES
 									.ordinal(), getExceptionHandler());
 					LOG.info("Session created successfully");
+					// set session timeout as infinity for save operation
+					session.setTimeout(null);
 					session.addOutput(IpcDataUnitWrapper
 							.setIpcUint32Value(UncTCEnums.ServiceType.TC_OP_RUNNING_SAVE
 									.ordinal()));
@@ -141,9 +145,7 @@ public class ConfigResource extends AbstractResource {
 			LOG.info("OperationStatus" + operationStatus);
 			if (operationStatus != UncTCEnums.OperationStatus.TC_OPER_SUCCESS
 					.getCode()) {
-				createErrorInfo(
-						UncCommonEnum.UncResultCode.UNC_SERVER_ERROR.getValue(),
-						UncIpcErrorCode.getTcCodes(operationStatus));
+				createTcErrorInfo(UncIpcErrorCode.getTcCodes(operationStatus));
 				LOG.info("Request not processed successfully");
 				status = UncCommonEnum.UncResultCode.UNC_SERVER_ERROR
 						.getValue();

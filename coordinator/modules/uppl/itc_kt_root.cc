@@ -19,13 +19,12 @@
 
 
 /** Constructor
- * * @Description : This function instantiates parent key type for
+ * @Description : This function instantiates child key instances for
  * kt_Root
- * * * @param[in] : None
- * * * @return    : None
+ * @param[in] : None
+ * @return    : None
  * */
 Kt_Root::Kt_Root() {
-  parent = NULL;
   for (int i = 0; i < KT_ROOT_CHILD_COUNT; ++i) {
     child[i] = NULL;
   }
@@ -33,16 +32,12 @@ Kt_Root::Kt_Root() {
 
 
 /** Destructor
- * * @Description : This function clears the parent and child key types
- * instances for Kt_Root
- * * * @param[in] : None
- * * * @return    : None
+ * @Description : This function frees the child key instances
+ *  for Kt_Root
+ * @param[in] : None
+ * @return    : None
  * */
 Kt_Root::~Kt_Root() {
-  if (parent != NULL) {
-    delete parent;
-    parent = NULL;
-  }
   for (int i = 0; i < KT_ROOT_CHILD_COUNT; ++i) {
     if (child[i] != NULL) {
       delete child[i];
@@ -52,9 +47,9 @@ Kt_Root::~Kt_Root() {
 }
 
 /** GetChildClassPointer
- *@Description : This function creates the instances of child classes of KtRoot.
- *@param[in] : KtRootChildClass
- *@return    : Kt_Base*
+ * @Description : This function creates the instances of child classes of KtRoot
+ * @param[in] : KIndex-any value of KtRootChildClass
+ * @return    : Kt_Base*
  ** */
 Kt_Base* Kt_Root::GetChildClassPointer(KtRootChildClass KIndex) {
   switch (KIndex) {
@@ -75,13 +70,18 @@ Kt_Base* Kt_Root::GetChildClassPointer(KtRootChildClass KIndex) {
 
 
 /** Create
- * * @Description : This function is not supported on KT_ROOT
- * * * @param[in] : key_struct, value_struct, ipc session id, configuration id,
- *                  data_type, option1 and option2
- * * * @return    : UPPL_RC_ERR_OPERATION_NOT_ALLOWED
+ * @Description : This function is not supported on KT_ROOT
+ * @param[in] : key_struct-void * to kt key structure
+ * value_struct-void* to kt value structure
+ * session_id -ipc session id used for TC validation
+ * configuration_id-ipc configuration id used for TC validation
+ * data_type-UNC_DT_*,type of database
+ * sess-ServerSession object where the request argument present
+ * @return    : UPPL_RC_ERR_OPERATION_NOT_ALLOWED
  * */
 
-UpplReturnCode Kt_Root::Create(uint32_t session_id,
+UpplReturnCode Kt_Root::Create(OdbcmConnectionHandler *db_conn,
+                               uint32_t session_id,
                                uint32_t configuration_id,
                                void* key_struct,
                                void* val_struct,
@@ -107,12 +107,17 @@ UpplReturnCode Kt_Root::Create(uint32_t session_id,
 
 
 /** Update
- * * @Description : This function is not supported on KT_ROOT
- * * * @param[in] : key_struct, value_struct, ipc session id, configuration id,
- *                  data_type, option1 and option2
- * * * @return    : UPPL_RC_ERR_OPERATION_NOT_ALLOWED
+ * @Description : This function is not supported on KT_ROOT
+ * @param[in] : key_struct-void* to ket key structure
+ * value_struct-void* to kt value structure
+ * session_id-ipc session id used for TC validation
+ * configuration_id-ipc configuration id used for TC validation
+ * data_type-UNC_DT_*,type of database
+ * sess-ServerSession object where the request argument present
+ * @return    : UPPL_RC_ERR_OPERATION_NOT_ALLOWED
  * */
-UpplReturnCode Kt_Root::Update(uint32_t session_id,
+UpplReturnCode Kt_Root::Update(OdbcmConnectionHandler *db_conn,
+                               uint32_t session_id,
                                uint32_t configuration_id,
                                void* key_struct,
                                void* val_struct,
@@ -139,12 +144,17 @@ UpplReturnCode Kt_Root::Update(uint32_t session_id,
 
 
 /** Delete
- * * @Description : This function is not supported on KT_ROOT
- * * * @param[in] : key_struct, value_struct, ipc session id, configuration id,
- *                  data_type, option1 and option2
- * * * @return    : UPPL_RC_ERR_OPERATION_NOT_ALLOWED
+ * @Description : This function is not supported on KT_ROOT
+ * @param[in] : key_struct-void* to ket key structure
+ * value_struct-void* to kt value structure
+ * session_id-ipc session id used for TC validation
+ * configuration_id-ipc configuration id used for TC validation
+ * data_type-UNC_DT_*,type of database
+ * sess-ServerSession object where the request argument present
+ * @return    : UPPL_RC_ERR_OPERATION_NOT_ALLOWED
  * */
-UpplReturnCode Kt_Root::Delete(uint32_t session_id,
+UpplReturnCode Kt_Root::Delete(OdbcmConnectionHandler *db_conn,
+                               uint32_t session_id,
                                uint32_t configuration_id,
                                void* key_struct,
                                uint32_t data_type,
@@ -169,29 +179,32 @@ UpplReturnCode Kt_Root::Delete(uint32_t session_id,
 }
 
 /**ReadBulk
- * * @Description : This function reads a bulk rows of KT_Controller in
+ * @Description : This function reads a bulk rows of KT_Controller in
  *  Controller table of specified data type.
  *  Order of ReadBulk response
  *  val_ctr -> val_ctr_domain -> val_logical_port ->
  *  val_logical_member_port -> val_switch ->  val_port ->
  *  val_link -> val_boundary
- * * @param[in] :
+ * @param[in] :
  * key_struct - no key for the kt Root instance
  * data_type - UNC_DT_* , read allowed in candidate/running/startup/state
- * option1/option2 - specifies any additional condition for read operation
- * * @return    : UPPL_RC_SUCCESS is returned when the response
+ * max_rep_ct-maximum repetition count
+ * child_index-index indicating children of KtController
+ * bool parent_call-flag to indicate whether function called by parent
+ * bool is_read_next-flag to indicate whether requested operation is 
+ *                 UNC_OP_READ_NEXT
+ * @return    : UPPL_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
  * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-
-UpplReturnCode Kt_Root::ReadBulk(void* key_struct,
+UpplReturnCode Kt_Root::ReadBulk(OdbcmConnectionHandler *db_conn,
+                                 void* key_struct,
                                  uint32_t data_type,
-                                 uint32_t option1,
-                                 uint32_t option2,
                                  uint32_t &max_rep_ct,
                                  int child_index,
                                  pfc_bool_t parent_call,
-                                 pfc_bool_t is_read_next) {
+                                 pfc_bool_t is_read_next,
+                                 ReadRequest *read_req) {
   pfc_log_debug("Inside ReadBulk of Kt_ROOT");
   UpplReturnCode read_status = UPPL_RC_SUCCESS;
   if (max_rep_ct == 0) {
@@ -217,14 +230,13 @@ UpplReturnCode Kt_Root::ReadBulk(void* key_struct,
         FreeKeyStruct(child_key_struct, kIdx);
         continue;
       }
-      read_status = child[kIdx]->ReadBulk(child_key_struct,
+      read_status = child[kIdx]->ReadBulk(db_conn, child_key_struct,
                                           data_type,
-                                          option1,
-                                          option2,
                                           max_rep_ct,
                                           -1,
                                           true,
-                                          is_read_next);
+                                          is_read_next,
+                                          read_req);
       pfc_log_debug(
           "KT_ROOT - read status from child %d is %d",
           kIdx, read_status);
@@ -248,9 +260,9 @@ UpplReturnCode Kt_Root::ReadBulk(void* key_struct,
 }
 
 /** getChildKeyStruct
- * * @Description : This function returns the void * of child key structures
- * * * @param[in] : child class index
- * * * @return    : void * key structure
+ * @Description : This function returns the void * of child key structures
+ * @param[in] : child_class-index indicating children of Controller
+ * @return    : void * key structure
  * */
 
 void* Kt_Root::getChildKeyStruct(uint32_t child_class) {
@@ -279,9 +291,10 @@ void* Kt_Root::getChildKeyStruct(uint32_t child_class) {
 }
 
 /** FreeKeyStruct
- * * @Description : This function clears the void * of child key structures
- * * * @param[in] : child class index
- * * * @return    : void * key structure
+ * @Description : This function clears the void * of child key structures
+ * @param[in] : child_class index indicating the children of KtController
+ * key_struct-void* to any child's key structure
+ * @return    : void 
  * */
 
 void Kt_Root::FreeKeyStruct(void *key_struct,

@@ -25,15 +25,15 @@ class VunkIfMoMgr : public MoMgrImpl {
     static BindInfo vunk_if_bind_info[];
     static BindInfo key_vunk_if_maintbl_update_bind_info[];
     /**
-     * @brief  Gets the valid array position of the variable in the value 
-     *         structure from the table in the specified configuration  
+     * @brief  Gets the valid array position of the variable in the value
+     *         structure from the table in the specified configuration
      *
-     * @param[in]     val      pointer to the value structure 
+     * @param[in]     val      pointer to the value structure
      * @param[in]     indx     database index for the variable
-     * @param[out]    valid    position of the variable in the valid array - 
+     * @param[out]    valid    position of the variable in the valid array -
      *                          NULL if valid does not exist.
      * @param[in]     dt_type  specifies the configuration
-     * @param[in]     tbl      specifies the table containing the given value 
+     * @param[in]     tbl      specifies the table containing the given value
      *
      **/
     upll_rc_t GetValid(void *val,
@@ -62,14 +62,14 @@ class VunkIfMoMgr : public MoMgrImpl {
     }
     upll_rc_t UpdateConfigStatus(ConfigKeyVal *req, unc_keytype_operation_t op,
                                  uint32_t driver_result, ConfigKeyVal *upd_key,
-                                 DalDmlIntf *dmi, 
+                                 DalDmlIntf *dmi,
                                  ConfigKeyVal *ctrlr_key = NULL);
     /**
      * @brief  Update config status for commit result and vote result.
      *
      * @param[in/out]  ckv_running  ConfigKeyVal instance.
      * @param[in]      cs_status    either UNC_CS_INVALID or UNC_CS_APPLIED.
-     * @param[in]      phase        specify the phase (CREATE,DELETE or UPDATE)
+     * @param[in]      phase        specify the phase (CREATE, DELETE or UPDATE)
      *
      **/
     upll_rc_t UpdateAuditConfigStatus(unc_keytype_configstatus_t cs_status,
@@ -79,7 +79,7 @@ class VunkIfMoMgr : public MoMgrImpl {
     /**
      * @brief  Compares the valid value between two database records.
      * 	    if both the values are same, update the valid flag for corresponding
-     * 	     attribute as invalid in the first record. 
+     * 	     attribute as invalid in the first record.
      *
      * @param[in/out]  val1   first record value instance.
      * @param[in]      val2   second record value instance.
@@ -162,41 +162,11 @@ class VunkIfMoMgr : public MoMgrImpl {
      */
     upll_rc_t ValidateCapability(IpcReqRespHeader *req,
                                  ConfigKeyVal *ikey,
-                                 const char *ctrlr_name = NULL);
-
+                                 const char *ctrlr_name = NULL) {
+      return UPLL_RC_SUCCESS;
+    }
     /**
-     * @Brief Checks if the specified key type and
-     *        associated attributes are supported on the given controller,
-     *        based on the valid flag.
-     *
-     * @param[in] crtlr_name      Controller name.
-     * @param[in] ikey            Corresponding key and value structure.
-     * @param[in] operation       Operation Name.
-     *
-     * @retval UPLL_RC_SUCCESS                    validation succeeded.
-     * @retval UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR Attribute NOT_SUPPORTED.
-     * @retval UPLL_RC_ERR_GENERIC                Generic failure.
-     */
-    upll_rc_t ValVunkIfAttributeSupportCheck(const char * crtlr_name,
-                                             ConfigKeyVal *ikey,
-                                             uint32_t operation);
-
-    /**
-     * @Brief Checks if the specified key type and
-     *        associated attributes are supported on the given controller,
-     *        based on the valid flag.
-     *
-     * @param[in] crtlr_name      Controller name.
-     * @param[in] ikey            Corresponding key and value structure.
-     *
-     * @retval UPLL_RC_SUCCESS                    validation succeeded.
-     * @retval UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR Attribute NOT_SUPPORTED.
-     * @retval UPLL_RC_ERR_GENERIC                Generic failure.
-     */
-    upll_rc_t ValVtnNeighAttributeSupportCheck(const char * crtlr_name,
-                                               ConfigKeyVal *ikey);
-    /**
-     * @brief  Duplicates the input configkeyval including the key and val.  
+     * @brief  Duplicates the input configkeyval including the key and val.
      * based on the tbl specified.
      *
      * @param[in]  okey   Output Configkeyval - allocated within the function
@@ -212,13 +182,13 @@ class VunkIfMoMgr : public MoMgrImpl {
                               MoMgrTables tbl = MAINTBL);
     /**
      * @brief  Allocates for the specified val in the given configuration in the
-     *                   specified table.   
+     *                   specified table.
      *
-     * @param[in/out]  ck_val   Reference pointer to configval structure 
-     *                          allocated.      
+     * @param[in/out]  ck_val   Reference pointer to configval structure
+     *                          allocated.
      * @param[in]      dt_type  specifies the configuration candidate/running/
-     *                          state 
-     * @param[in]      tbl      specifies if the corresponding table is the  
+     *                          state
+     * @param[in]      tbl      specifies if the corresponding table is the
      *                          main table / controller table or rename table.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -231,7 +201,7 @@ class VunkIfMoMgr : public MoMgrImpl {
      * @brief      Method to get a configkeyval of a specified keytype from an
      *         input configkeyval
      *
-     * @param[in/out]  okey                 pointer to output ConfigKeyVal 
+     * @param[in/out]  okey                 pointer to output ConfigKeyVal
      * @param[in]      parent_key           pointer to the configkeyval from
      *                            which the output configkey val is initialized.
      *
@@ -241,10 +211,10 @@ class VunkIfMoMgr : public MoMgrImpl {
     upll_rc_t GetChildConfigKey(ConfigKeyVal *&okey,
                                 ConfigKeyVal *parent_key);
     /**
-     * @brief      Method to get a configkeyval of the parent keytype 
+     * @brief      Method to get a configkeyval of the parent keytype
      *
-     * @param[in/out]  okey           pointer to parent ConfigKeyVal 
-     * @param[in]      ikey           pointer to the child configkeyval from 
+     * @param[in/out]  okey           pointer to parent ConfigKeyVal
+     * @param[in]      ikey           pointer to the child configkeyval from
      * which the parent configkey val is obtained.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -271,9 +241,11 @@ class VunkIfMoMgr : public MoMgrImpl {
                               BindInfo *&binfo,
                               int &nattr,
                               MoMgrTables tbl);
-    upll_rc_t ValidateAttribute(ConfigKeyVal *kval, 
+    upll_rc_t ValidateAttribute(ConfigKeyVal *kval,
                                 DalDmlIntf *dmi,
                                 IpcReqRespHeader *req = NULL) {
+      // string s(kval->ToStrAll());
+      // UPLL_LOG_DEBUG(" %s", s.c_str());
       return UPLL_RC_SUCCESS;
     }
 
@@ -346,16 +318,16 @@ class VunkIfMoMgr : public MoMgrImpl {
     }
 
     /* @brief         Populate val_vtn_neighbor for the READ/READ_SIBLING
-     *        operations  
-     *              
-     * @param[in/out] key   Pointer to the ConfigKeyVal Structure               
+     *        operations
+     *
+     * @param[in/out] key   Pointer to the ConfigKeyVal Structure
      * @param[in]     dmi    Pointer to the DalDmlIntf(DB Interface)
-     * 
+     *
      * @retval  UPLL_RC_SUCCESS                    Completed successfully.
      * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
      * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource disconnected.
      * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
-     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist 
+     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist
      *
      **/
     upll_rc_t PopulateValVtnNeighbor(ConfigKeyVal *&key, DalDmlIntf *dmi);

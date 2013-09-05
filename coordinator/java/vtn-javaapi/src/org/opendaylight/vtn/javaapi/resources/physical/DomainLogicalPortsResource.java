@@ -177,6 +177,7 @@ public class DomainLogicalPortsResource extends AbstractResource {
 							.getConfigurationMap();
 					int max_rep_count = Integer.parseInt(configuration
 							.getConfigValue(VtnServiceConsts.MAX_REP_DEFAULT));
+					memberIndex = memberArray.size();
 					if (memberArray.size() >= max_rep_count) {
 						while (memberIndex >= max_rep_count) {
 							memberIndex = memberArray.size();

@@ -33,7 +33,7 @@ CXX_SOURCES	=	tc_operations.cc \
 
 
 PFC_LIBS += \
-	  libtc_common
+	  libtc_common 
 
 USE_ODBC	= 1
 

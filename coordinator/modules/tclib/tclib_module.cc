@@ -144,32 +144,7 @@ pfc_bool_t TcLibModule::fini() {
   controller_key_map_.clear();
   commit_phase_result_.clear();
 
-  pfc_bool_t mtx_flag1 = PFC_TRUE;
-  pfc_bool_t mtx_flag2 = PFC_TRUE;
-
-  // unlock mutex if already locked
-  if ((tclib_mutex_.trylock() == EBUSY)) {
-    tclib_mutex_.unlock();
-    mtx_flag1 = PFC_FALSE;
-    pfc_log_info("%s %d tclib_mutex_ unlock", __FUNCTION__, __LINE__);
-  }
-
-  if (mtx_flag1 == PFC_TRUE) {
-    tclib_mutex_.unlock();
-  }
-
-  if ((tclib_ipc_control_mutex_.trylock() == EBUSY)) {
-    tclib_ipc_control_mutex_.unlock();
-    mtx_flag2 = PFC_FALSE;
-    pfc_log_info("%s %d tclib_ipc_control_mutex_ unlock",
-                 __FUNCTION__, __LINE__);
-  }
-
-  if (mtx_flag2 == PFC_TRUE) {
-    tclib_ipc_control_mutex_.unlock();
-  }
-
-  pfc_log_info("%s %d tclib termination", __FUNCTION__, __LINE__);
+  pfc_log_info("%s %d tclib shutdown", __FUNCTION__, __LINE__);
   return PFC_TRUE;
 }
 
@@ -330,6 +305,10 @@ TcApiCommonRet TcLibModule::GetKeyIndex(std::string controller_id,
 
   if (!controller_key_map_.empty()) {
     it = controller_key_map_.find(controller_id);
+    if (it == controller_key_map_.end()) {
+      pfc_log_error("Missing contrl-id:%s", controller_id.c_str());
+      return TC_INVALID_PARAM;
+    }
     key_type_map = it->second;
     if (!key_type_map.empty()) {
       key_it = key_type_map.find(err_pos);
@@ -595,7 +574,6 @@ uint32_t TcLibModule::GetMatchTypeIndex(uint32_t cur_idx, uint32_t arg_count,
 TcCommonRet TcLibModule::UpdateControllerKeyList() {
   TcCommonRet ret = TC_SUCCESS;
   uint32_t argcount = 0, idx = 0;
-  TcControllerResult ctrl_res;
   TcCommitPhaseResult comm_phase_res;
   tc::TcUtilRet util_ret = tc::TCUTIL_RET_SUCCESS;
 
@@ -626,6 +604,8 @@ TcCommonRet TcLibModule::UpdateControllerKeyList() {
       return ret;
     }
 
+
+    TcControllerResult ctrl_res;
     util_ret = tc::TcServerSessionUtils::get_string(sess_, idx,
                                                     ctrl_res.controller_id);
     if (util_ret != tc::TCUTIL_RET_SUCCESS) {
@@ -1956,7 +1936,7 @@ TcCommonRet TcLibModule::SaveConfiguaration() {
                   __FUNCTION__, __LINE__, ret);
     return ret;
   }
-
+  
   pfc_log_info("%s %d Handler returned with %d",
                __FUNCTION__, __LINE__, ret);
   return ret;
@@ -2060,7 +2040,7 @@ TcCommonRet TcLibModule::AbortCandidate() {
                   __FUNCTION__, __LINE__, ret);
     return ret;
   }
-
+  
   pfc_log_info("%s %d Handler returned with %d",
                __FUNCTION__, __LINE__, ret);
   return ret;
@@ -2240,13 +2220,13 @@ pfc_ipcresp_t TcLibModule::ipcService(pfc::core::ipc::ServerSession& sess,
                   __FUNCTION__, __LINE__);
     return PFC_IPCRESP_FATAL;
   }
-
-  /*
-   * Try to acquire the mutex lock.
-   *
-   * Zero is returned on success.
-   * EBUSY is returned, if the mutex was already locked.
-   */
+  /*set IPC timeout to infinity for commit/audit operations*/
+  if (service >= TCLIB_COMMIT_TRANSACTION &&
+      service <= TCLIB_USER_ABORT) {
+    if (TC_SUCCESS != sess.setTimeout(NULL)) {
+      pfc_log_debug("setting IPC timeout to infinity failed");
+    }
+  }
   sess_ = &sess;
 
   switch (service) {

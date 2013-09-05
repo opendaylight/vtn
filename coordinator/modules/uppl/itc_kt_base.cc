@@ -18,23 +18,24 @@
 #include "physicallayer.hh"
 using unc::uppl::PhysicalLayer;
 
-/** Constructor
- * * @Description : This function instantiates parent and child key types for
- * kt_controller
- * * * @param[in] : None
- * * * @return    : None
- * */
-Kt_Base::Kt_Base() {
-}
+map<unc_key_type_t, map<string, Kt_Class_Attr_Syntax> > Kt_Base::
+attr_syntax_map_all;
 
 /** ValidateRequest
  * * @Description : This function performs syntax and semantic validation
- * for UNC_KT_CONTROLLER
- * * * @param[in] : session_id , configuratin_id, key_struct, value_struct,
- * data_type
- * * * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR_*
+ *                  for a specifed KT
+ * * @param[in]   : key_struct - the key for the kt instance
+ *                  val_struct - the val for the kt instance
+ *                  data_type - UNC_DT_*, read allowed in
+ *                  candidate/running/startup/state
+ *                  key_type - specifies the kt instance
+ * * @return      : UPPL_RC_SUCCESS is returned when the response
+ *                  is added to ipc session successfully.
+ *                  UPPL_RC_ERR_* is returned when ipc response
+ *                  could not be added to sess.
  * */
-UpplReturnCode Kt_Base::ValidateRequest(void* key_struct,
+UpplReturnCode Kt_Base::ValidateRequest(OdbcmConnectionHandler *db_conn,
+                                        void* key_struct,
                                         void* val_struct,
                                         uint32_t operation,
                                         uint32_t data_type,
@@ -84,9 +85,9 @@ UpplReturnCode Kt_Base::ValidateRequest(void* key_struct,
       return UPPL_RC_ERR_KEYTYPE_NOT_SUPPORTED;
     }
   }
-  if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE ||
-      operation == UNC_OP_DELETE || operation == UNC_OP_READ) {
-    status = PerformSyntaxValidation(key_struct,
+  if (operation == UNC_OP_READ || operation == UNC_OP_CREATE ||
+      operation == UNC_OP_UPDATE || operation == UNC_OP_DELETE) {
+    status = PerformSyntaxValidation(db_conn, key_struct,
                                      val_struct,
                                      operation,
                                      data_type);
@@ -96,15 +97,17 @@ UpplReturnCode Kt_Base::ValidateRequest(void* key_struct,
       // return the actual response
       return status;
     }
-    status = PerformSemanticValidation(key_struct,
-                                       val_struct,
-                                       operation,
-                                       data_type);
-    if (status != UPPL_RC_SUCCESS) {
-      // log error and send error response
-      pfc_log_error("Semantic validation failed");
-      // return the actual response
-      return status;
+    if (operation != UNC_OP_READ) {
+      status = PerformSemanticValidation(db_conn, key_struct,
+                                         val_struct,
+                                         operation,
+                                         data_type);
+      if (status != UPPL_RC_SUCCESS) {
+        // log error and send error response
+        pfc_log_error("Semantic validation failed");
+        // return the actual response
+        return status;
+      }
     }
   }
   return status;
@@ -112,17 +115,22 @@ UpplReturnCode Kt_Base::ValidateRequest(void* key_struct,
 
 /**Read
  * * @Description : This function reads a row of KT in
- *  the given table of specified data type.
- * * @param[in] : session_id - ipc session id used for TC validation
- * configuration_id - configuration id used for TC validation
- * key_struct - the key for the kt instance
- * data_type - UNC_DT_*, read allowed in candidate/running/startup/state
- * sess - ipc server session where the response has to be added
- * * @return    : UPPL_RC_SUCCESS is returned when the response
- * is added to ipc session successfully.
- * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
+ *                  the given table of specified data type.
+ * * @param[in]   : session_id - ipc session id used for TC validation
+ *                  configuration_id - configuration id used for TC validation
+ *                  key_struct - the key for the kt instance
+ *                  data_type - UNC_DT_*, read allowed in
+ *                  candidate/running/startup/state
+ *                  sess - ipc server session where the
+ *                  response has to be added
+ *                  option1/option2 - specifies any additional
+ * * @return      : UPPL_RC_SUCCESS is returned when the response
+ *                  is added to ipc session successfully.
+ *                  UPPL_RC_ERR_* is returned when ipc response could not
+ *                  be added to sess.
  * */
-UpplReturnCode Kt_Base::Read(uint32_t session_id,
+UpplReturnCode Kt_Base::Read(OdbcmConnectionHandler *db_conn,
+                             uint32_t session_id,
                              uint32_t configuration_id,
                              void* key_struct,
                              void* val_struct,
@@ -130,8 +138,7 @@ UpplReturnCode Kt_Base::Read(uint32_t session_id,
                              ServerSession &sess,
                              uint32_t option1,
                              uint32_t option2) {
-  pfc_log_debug("Inside Read of Kt_Base DT:%d", data_type);
-  return PerformRead(session_id,
+  return PerformRead(db_conn, session_id,
                      configuration_id,
                      key_struct,
                      val_struct,
@@ -145,50 +152,53 @@ UpplReturnCode Kt_Base::Read(uint32_t session_id,
 
 /**ReadNext
  * * @Description : This function reads a next row of key instance in
- *  corresponding table of specified data type.
- * * @param[in] : session_id - ipc session id used for TC validation
- * configuration_id - configuration id used for TC validation
- * key_struct - key instance
- * data_type - UNC_DT_* , readnext allowed in candidate/running/startup/state
- * sess - ipc server session where the response has to be added
- * option1/option2 - specifies any additional condition for read operation
- * * @return    : UPPL_RC_SUCCESS is returned when the response
- * is added to ipc session successfully.
- * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
+ *                  corresponding table of specified data type.
+ * * @param[in]   : session_id - ipc session id used for TC validation
+ *                  configuration_id - configuration id used for TC validation
+ *                  key_struct - key instance
+ *                  data_type - UNC_DT_* ,
+ *                  readnext allowed in candidate/running/startup/state
+ *                  sess - ipc server session
+ *                  where the response has to be added
+ * * @return      : UPPL_RC_SUCCESS is returned when the response
+ *                  is added to ipc session successfully.
+ *                  UPPL_RC_ERR_* is returned when ipc
+ *                  response could not be added to sess.
  * */
-UpplReturnCode Kt_Base::ReadNext(void* key_struct,
+UpplReturnCode Kt_Base::ReadNext(OdbcmConnectionHandler *db_conn,
+                                 void* key_struct,
                                  uint32_t data_type,
-                                 uint32_t option1,
-                                 uint32_t option2) {
+                                 ReadRequest *read_req) {
   uint32_t max_rep_ct = 1;
-  // bool is_header_added = false;
-  pfc_log_info("Calling ReadBulk with max_rep_ct set as 1");
-  UpplReturnCode read_status = ReadBulk(key_struct,
-                                        data_type,
-                                        option1,
-                                        option2,
-                                        max_rep_ct,
-                                        -1,
-                                        false,
-                                        true);
-  return read_status;
+  return ReadBulk(db_conn, key_struct,
+                  data_type,
+                  max_rep_ct,
+                  -1,
+                  false,
+                  true,
+                  read_req);
 }
 
 /**ReadSiblingBegin
- * * @Description : This function reads sibling rows of KT_Link in
- *  link table of specified data type from the first instance
- * * @param[in] : session_id - ipc session id used for TC validation
- * configuration_id - configuration id used for TC validation
- * key_struct - the key for the kt link instance
- * data_type - UNC_DT_*, readsibling allowed in candidate/running/startup/state
- * sess - ipc server session where the response has to be added
- * option1/option2 - specifies any additional condition for read operation
- * max_rep_ct - specifies number of rows to be returned
- * * @return    : UPPL_RC_SUCCESS is returned when the response
- * is added to ipc session successfully.
- * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
+ * * @Description : This function reads sibling rows of given KT object
+ *                  for a specified data type from the first instance
+ * * @param[in]   : session_id - ipc session id used for TC validation
+ *                  configuration_id - configuration id used for TC validation
+ *                  key_struct - the key for the kt link instance
+ *                  data_type - UNC_DT_*, readsibling allowed in
+ *                  candidate/running/startup/state
+ *                  sess - ipc server session where the response
+ *                  has to be added
+ *                  option1/option2 - specifies any additional
+ *                  condition for read operation
+ *                  max_rep_ct - specifies number of rows to be returned
+ * * @return      : UPPL_RC_SUCCESS is returned when the response
+ *                  is added to ipc session successfully.
+ *                  UPPL_RC_ERR_* is returned when ipc
+ *                  response could not be added to sess.
  * */
-UpplReturnCode Kt_Base::ReadSiblingBegin(uint32_t session_id,
+UpplReturnCode Kt_Base::ReadSiblingBegin(OdbcmConnectionHandler *db_conn,
+                                         uint32_t session_id,
                                          uint32_t configuration_id,
                                          void* key_struct,
                                          void* val_struct,
@@ -197,36 +207,39 @@ UpplReturnCode Kt_Base::ReadSiblingBegin(uint32_t session_id,
                                          uint32_t option1,
                                          uint32_t option2,
                                          uint32_t &max_rep_ct) {
-  UpplReturnCode read_status = UPPL_RC_SUCCESS;
-  read_status = PerformRead(session_id,
-                            configuration_id,
-                            key_struct,
-                            val_struct,
-                            data_type,
-                            UNC_OP_READ_SIBLING_BEGIN,
-                            sess,
-                            option1,
-                            option2,
-                            max_rep_ct);
+  UpplReturnCode read_status = PerformRead(db_conn, session_id,
+                                           configuration_id,
+                                           key_struct,
+                                           val_struct,
+                                           data_type,
+                                           UNC_OP_READ_SIBLING_BEGIN,
+                                           sess,
+                                           option1,
+                                           option2,
+                                           max_rep_ct);
   pfc_log_info("Read Sibling Begin operation return %d", read_status);
   return read_status;
 }
 
 /**ReadSibling
  * * @Description : This function reads sibling rows of KT in
- *  the given table of specified data type.
- * * @param[in] : session_id - ipc session id used for TC validation
- * configuration_id - configuration id used for TC validation
- * key_struct - the key for the kt instance
- * data_type - UNC_DT_* , read sibling begin allowed in candidate/running/startup/state
- * sess - ipc server session where the response has to be added
- * option1/option2 - specifies any additional condition for read operation
- * max_rep_ct - specifies number of rows to be returned
- * * @return    : UPPL_RC_SUCCESS is returned when the response
- * is added to ipc session successfully.
- * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
+ *                  the given table of specified data type.
+ * * @param[in]   : session_id - ipc session id used for TC validation
+ *                  configuration_id - configuration id used for TC validation
+ *                  key_struct - the key for the kt instance
+ *                  data_type - UNC_DT_* , read sibling begin allowed
+ *                  in candidate/running/startup/state
+ *                  sess - ipc server session where the response has to be added
+ *                  option1/option2 - specifies any additional
+ *                  condition for read operation
+ *                  max_rep_ct - specifies number of rows to be returned
+ * * @return      : UPPL_RC_SUCCESS is returned when the response
+ *                  is added to ipc session successfully.
+ *                  UPPL_RC_ERR_* is returned when ipc response
+ *                  could not be added to sess.
  * */
-UpplReturnCode Kt_Base::ReadSibling(uint32_t session_id,
+UpplReturnCode Kt_Base::ReadSibling(OdbcmConnectionHandler *db_conn,
+                                    uint32_t session_id,
                                     uint32_t configuration_id,
                                     void* key_struct,
                                     void* val_struct,
@@ -235,36 +248,39 @@ UpplReturnCode Kt_Base::ReadSibling(uint32_t session_id,
                                     uint32_t option1,
                                     uint32_t option2,
                                     uint32_t &max_rep_ct) {
-  UpplReturnCode read_status = UPPL_RC_SUCCESS;
-  read_status = PerformRead(session_id,
-                            configuration_id,
-                            key_struct,
-                            val_struct,
-                            data_type,
-                            UNC_OP_READ_SIBLING,
-                            sess,
-                            option1,
-                            option2,
-                            max_rep_ct);
+  UpplReturnCode read_status = PerformRead(db_conn, session_id,
+                                           configuration_id,
+                                           key_struct,
+                                           val_struct,
+                                           data_type,
+                                           UNC_OP_READ_SIBLING,
+                                           sess,
+                                           option1,
+                                           option2,
+                                           max_rep_ct);
   pfc_log_info("Read Sibling operation return %d", read_status);
   return read_status;
 }
 
 /**ReadSiblingCount
  * * @Description : This function reads number of KT instances in
- *  the given table of specified data type.
- * * @param[in] : session_id - ipc session id used for TC validation
- * configuration_id - configuration id used for TC validation
- * key_struct - the key for the kt instance
- * data_type - UNC_DT_* , read sibling count allowed in candidate/running/startup/state
- * sess - ipc server session where the response has to be added
- * option1/option2 - specifies any additional condition for read operation
- * max_rep_ct - specifies number of rows to be returned
- * * @return    : UPPL_RC_SUCCESS is returned when the response
- * is added to ipc session successfully.
- * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
+ *                  the given table of specified data type.
+ * * @param[in]   : session_id - ipc session id used for TC validation
+ *                  configuration_id - configuration id used for TC validation
+ *                  key_struct - the key for the kt instance
+ *                  data_type - UNC_DT_* , read sibling count allowed
+ *                  in candidate/running/startup/state
+ *                  sess - ipc server session where the response has to be added
+ *                  option1/option2 - specifies any additional condition
+ *                  for read operation
+ *                  max_rep_ct - specifies number of rows to be returned
+ * * @return      : UPPL_RC_SUCCESS is returned when the response
+ *                  is added to ipc session successfully.
+ *                  UPPL_RC_ERR_* is returned when ipc response
+ *                  could not be added to sess.
  * */
-UpplReturnCode Kt_Base::ReadSiblingCount(uint32_t session_id,
+UpplReturnCode Kt_Base::ReadSiblingCount(OdbcmConnectionHandler *db_conn,
+                                         uint32_t session_id,
                                          uint32_t configuration_id,
                                          void* key_struct,
                                          void* val_struct,
@@ -299,10 +315,10 @@ UpplReturnCode Kt_Base::ReadSiblingCount(uint32_t session_id,
   DBTableSchema kt_dbtableschema;
   vector<ODBCMOperator> vect_prim_key_operations;
   void* old_value;
-  PopulateDBSchemaForKtTable(kt_dbtableschema,
+  PopulateDBSchemaForKtTable(db_conn, kt_dbtableschema,
                              key_struct,
                              val_struct,
-                             UNC_OP_READ_SIBLING_COUNT,
+                             UNC_OP_READ_SIBLING_COUNT, data_type,
                              option1, option2,
                              vect_prim_key_operations,
                              old_value);
@@ -311,11 +327,11 @@ UpplReturnCode Kt_Base::ReadSiblingCount(uint32_t session_id,
     read_db_status = physical_layer->get_odbc_manager()->
         GetSiblingCount((unc_keytype_datatype_t)data_type,
                         kt_dbtableschema, count,
-                        vect_prim_key_operations);
+                        vect_prim_key_operations, db_conn);
   } else {
     read_db_status = physical_layer->get_odbc_manager()-> \
         GetSiblingCount((unc_keytype_datatype_t)data_type,
-                        kt_dbtableschema, count);
+                        kt_dbtableschema, count, db_conn);
   }
   // count
   if (read_db_status != ODBCM_RC_SUCCESS) {
@@ -349,13 +365,14 @@ UpplReturnCode Kt_Base::ReadSiblingCount(uint32_t session_id,
 
 /** ConfigurationChangeNotification
  * * @Description : This function frames notification to be sent to NB for
- * the configuration changes done
- * * @param[in] : operation_type - UNC_OP*
- * key_struct - specifies the key instance of KT
- * old_val_struct - old value struct of kt
- * new_val_struct - new value struct of kt
- * * @return    : UPPL_RC_SUCCESS is notified to northbound successfully or
- * UPPL_RC_ERR*
+ *                  the configuration changes done
+ * * @param[in]   : date_type -  UNC_DT_*
+ *                  operation_type - UNC_OP*
+ *                  key_struct - specifies the key instance of KT
+ *                  old_val_struct - old value struct of kt
+ *                  new_val_struct - new value struct of kt
+ * * @return      : UPPL_RC_SUCCESS is notified to northbound successfully or
+ *                  UPPL_RC_ERR*
  * */
 UpplReturnCode Kt_Base::ConfigurationChangeNotification(
     uint32_t data_type,
@@ -369,10 +386,11 @@ UpplReturnCode Kt_Base::ConfigurationChangeNotification(
   int err = 0;
   pfc_ipcevtype_t event_type = GetEventType(key_type);
   // Create ServerEvent object to be sent to NB
-  ServerEvent ser_evt(event_type, err);
-  err = ser_evt.addOutput(oper_type);
-  err |= ser_evt.addOutput(data_type);
-  err |= ser_evt.addOutput(key_type);
+  ServerEvent ser_evt((pfc_ipcevtype_t)event_type, err);
+  northbound_event_header rsh = {oper_type,
+      data_type,
+      key_type};
+  err = PhyUtil::sessOutNBEventHeader(ser_evt, rsh);
   err |= AddKeyStructuretoSession(key_type,
                                   ser_evt,
                                   key_struct);
@@ -398,8 +416,8 @@ UpplReturnCode Kt_Base::ConfigurationChangeNotification(
 
 /** GetEventType
  * * @Description : This function gets the notification type for the given kt
- * * @param[in] : key type - UNC_KT*
- * * @return    : event_type - pfc_ipcevtype_t
+ * * @param[in]   : key type - UNC_KT*
+ * * @return      : event_type - pfc_ipcevtype_t
  * */
 pfc_ipcevtype_t Kt_Base::GetEventType(uint32_t key_type) {
   pfc_ipcevtype_t event_type = 0;
@@ -446,17 +464,16 @@ pfc_ipcevtype_t Kt_Base::GetEventType(uint32_t key_type) {
 
 /** AddKeyStructuretoSession
  * * @Description : This function adds key structure to sever session
- * for the given kt
- * * @param[in] : key type - UNC_KT*
- * ServerSession - sess
- * key_struct - void*
- * * @return    : Server Session addOutput return value
+ *                  for the given kt
+ * * @param[in]   : key type - UNC_KT*
+ *                  key_struct - void*
+ * * @param[out]  : ServerSession - sess
+ * * @return      : Server Session addOutput return value
  * */
 int Kt_Base::AddKeyStructuretoSession(uint32_t key_type,
                                       ServerSession *sess,
                                       void *key_struct) {
-  int err = 0;
-  sess->addOutput((uint32_t)key_type);
+  int err = sess->addOutput((uint32_t)key_type);
   switch (key_type) {
     case UNC_KT_CONTROLLER: {
       key_ctr_t *obj_key = reinterpret_cast<key_ctr_t*>(key_struct);
@@ -512,11 +529,11 @@ int Kt_Base::AddKeyStructuretoSession(uint32_t key_type,
 
 /** AddKeyStructuretoSession
  * * @Description : This function adds key structure to sever event
- * for the given kt
- * * @param[in] : key type - UNC_KT*
- * ServerEvent - ser_evt
- * key_struct - void*
- * * @return    : Server Event add Output return
+ *                  for the given kt
+ * * @param[in]   : key type - UNC_KT*
+ *                  key_struct - void*
+ * * @param[out]  : ServerSession - sess
+ * * @return      : Server Event add Output return
  * */
 int Kt_Base::AddKeyStructuretoSession(uint32_t key_type,
                                       ServerEvent &ser_evt,
@@ -579,13 +596,13 @@ int Kt_Base::AddKeyStructuretoSession(uint32_t key_type,
 
 /** AddValueStructuretoSession
  * * @Description : This function adds value structure to sever event
- * for the given kt
- * * @param[in] : key type - UNC_KT*
- * operation_type - UNC_OP*
- * ServerEvent - ser_evt
- * old_val_struct - void*
- * new_val_struct - void*
- * * @return    : Server Event add Output return
+ *                  for the given kt
+ * * @param[in]   : key type - UNC_KT*
+ *                  operation_type - UNC_OP*
+ *                  old_val_struct - void*
+ *                  new_val_struct - void*
+ * * @param[out]  : ServerEvent - ser_evt
+ * * @return      : Server Event add Output return
  * */
 int Kt_Base::AddValueStructuretoSession(uint32_t key_type,
                                         uint32_t oper_type,
@@ -599,16 +616,16 @@ int Kt_Base::AddValueStructuretoSession(uint32_t key_type,
       if (oper_type == UNC_OP_CREATE) {
         val_ctr_st_t new_val_st =
             *(reinterpret_cast<val_ctr_st_t*>(new_val_struct));
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_ctr_t*>(&new_val_st.controller)));
       } else if (oper_type == UNC_OP_UPDATE) {
         val_ctr_st_t new_val_st =
             *(reinterpret_cast<val_ctr_st_t*>(new_val_struct));
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_ctr_t*>(&new_val_st.controller)));
         val_ctr_st_t old_val_st =
             *(reinterpret_cast<val_ctr_st_t*>(old_value_struct));
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_ctr_t*>(&old_val_st.controller)));
       }
       break;
@@ -617,82 +634,82 @@ int Kt_Base::AddValueStructuretoSession(uint32_t key_type,
       if (oper_type == UNC_OP_CREATE && data_type == UNC_DT_RUNNING) {
         val_ctr_domain_st_t new_val_st =
             *(reinterpret_cast<val_ctr_domain_st_t*>(new_val_struct));
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_ctr_domain_t*>(&new_val_st.domain)));
       } else if (oper_type == UNC_OP_CREATE) {
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_ctr_domain_st_t*>(new_val_struct)));
       }
       if (oper_type == UNC_OP_UPDATE && data_type == UNC_DT_RUNNING) {
         val_ctr_domain_st_t new_val_st =
             *(reinterpret_cast<val_ctr_domain_st_t*>(new_val_struct));
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_ctr_domain_t*>(&new_val_st.domain)));
         val_ctr_domain_st_t old_val_st =
             *(reinterpret_cast<val_ctr_domain_st_t*>(old_value_struct));
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_ctr_domain_t*>(&old_val_st.domain)));
       } else if (oper_type == UNC_OP_UPDATE) {
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_ctr_domain_st_t*>(new_val_struct)));
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_ctr_domain_st_t*>(old_value_struct)));
       }
       break;
     }
     case UNC_KT_LOGICAL_PORT: {
       if (oper_type == UNC_OP_CREATE) {
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_logical_port_st_t*>(new_val_struct)));
       } else if (oper_type == UNC_OP_UPDATE) {
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_logical_port_st_t*>(new_val_struct)));
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_logical_port_st_t*>(old_value_struct)));
       }
       break;
     }
     case UNC_KT_LOGICAL_MEMBER_PORT: {
       if (oper_type == UNC_OP_CREATE) {
-        err =  ser_evt.addOutput();  // new value structure
+        err |=  ser_evt.addOutput();  // new value structure
       } else if (oper_type == UNC_OP_UPDATE) {
-        err = ser_evt.addOutput();  // new value structure
-        err = ser_evt.addOutput();  // old value structure
+        err |= ser_evt.addOutput();  // new value structure
+        err |= ser_evt.addOutput();  // old value structure
       }
       break;
     }
     case UNC_KT_SWITCH: {
       if (oper_type == UNC_OP_CREATE) {
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_switch_st_t*>(new_val_struct)));
       } else if (oper_type == UNC_OP_UPDATE) {
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_switch_st_t*>(new_val_struct)));
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_switch_st_t*>(old_value_struct)));
       }
       break;
     }
     case UNC_KT_PORT: {
       if (oper_type == UNC_OP_CREATE) {
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_port_st_t*>(new_val_struct)));
       } else if (oper_type == UNC_OP_UPDATE) {
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_port_st_t*>(new_val_struct)));
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_port_st_t*>(old_value_struct)));
       }
       break;
     }
     case UNC_KT_LINK: {
       if (oper_type == UNC_OP_CREATE) {
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_link_st_t*>(new_val_struct)));
       } else if (oper_type == UNC_OP_UPDATE) {
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_link_st_t*>(new_val_struct)));
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_link_st_t*>(old_value_struct)));
       }
       break;
@@ -701,16 +718,16 @@ int Kt_Base::AddValueStructuretoSession(uint32_t key_type,
       if (oper_type == UNC_OP_CREATE) {
         val_boundary_st_t new_val_st =
             *(reinterpret_cast<val_boundary_st_t*>(new_val_struct));
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_boundary_t*>(&new_val_st.boundary)));
       } else if (oper_type == UNC_OP_UPDATE) {
         val_boundary_st_t new_val_st =
             *(reinterpret_cast<val_boundary_st_t*>(new_val_struct));
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_boundary_t*>(&new_val_st.boundary)));
         val_boundary_st_t old_val_st =
             *(reinterpret_cast<val_boundary_st_t*>(old_value_struct));
-        err = ser_evt.addOutput(
+        err |= ser_evt.addOutput(
             *(reinterpret_cast<val_boundary_t*>(&old_val_st.boundary)));
       }
       break;
@@ -726,12 +743,12 @@ int Kt_Base::AddValueStructuretoSession(uint32_t key_type,
 
 /** ClearValueStructure
  * * @Description : This function clears value structure created in read process
- * * @param[in] : key type - UNC_KT*
- * old_val_struct - void*
- * * @return    : None
+ * * @param[in]   : key type - UNC_KT*
+ *                  old_val_struct - void*
+ * * @return      : void
  * */
 void Kt_Base::ClearValueStructure(uint32_t key_type,
-                                  void *old_value_struct) {
+                                  void *&old_value_struct) {
   switch (key_type) {
     case UNC_KT_CONTROLLER: {
       val_ctr_st_t *old_val_kt =
@@ -868,19 +885,146 @@ UpplReturnCode Kt_Base::ValidateKtCtrDomain(uint32_t operation,
 
 UpplReturnCode Kt_Base::ValidateKtState(uint32_t operation,
                                         uint32_t data_type) {
-  if ( (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE ||
-      operation == UNC_OP_DELETE) && data_type != UNC_DT_STATE &&
-      data_type != UNC_DT_IMPORT) {
-    pfc_log_error("Configuration operation only allowed in STATE DB");
-    return UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
-  } else if (operation >= UNC_OP_READ && data_type != UNC_DT_STATE) {
+  if (operation >= UNC_OP_READ && data_type != UNC_DT_STATE) {
     pfc_log_error(
         "Read operations are not allowed in requested data type");
     return UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
-  } else if (!(operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE ||
-      operation == UNC_OP_DELETE || operation >= UNC_OP_READ)) {
+  } else if ( data_type != UNC_DT_STATE &&
+      (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE ||
+          operation == UNC_OP_DELETE) &&
+          data_type != UNC_DT_IMPORT) {
+    pfc_log_error("Configuration operation only allowed in STATE DB");
+    return UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+  } else if (!(operation >= UNC_OP_READ ||
+      operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE ||
+      operation == UNC_OP_DELETE)) {
     pfc_log_error("Invalid operation type");
     return UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
   }
   return UPPL_RC_SUCCESS;
+}
+
+UpplReturnCode Kt_Base::get_oper_status(
+    vector<OperStatusHolder> &ref_oper_status,
+    unc_key_type_t key_type,
+    void* key_struct,
+    uint8_t &oper_status) {
+  size_t key_struct_size = 0;
+  switch (key_type) {
+    case UNC_KT_CONTROLLER:
+      key_struct_size = sizeof(key_ctr_t);
+      break;
+    case UNC_KT_CTR_DOMAIN:
+      key_struct_size = sizeof(key_ctr_domain_t);
+      break;
+    case UNC_KT_LOGICAL_PORT:
+      key_struct_size = sizeof(key_logical_port_t);
+      break;
+    case UNC_KT_SWITCH:
+      key_struct_size = sizeof(key_switch_t);
+      break;
+    case UNC_KT_PORT:
+      key_struct_size = sizeof(key_port_t);
+      break;
+    case UNC_KT_LINK:
+      key_struct_size = sizeof(key_link_t);
+      break;
+    case UNC_KT_BOUNDARY:
+      key_struct_size = sizeof(key_boundary_t);
+      break;
+    default:
+      break;
+  }
+  vector<OperStatusHolder>::iterator iter = ref_oper_status.begin();
+  for (; iter != ref_oper_status.end(); ++iter) {
+    OperStatusHolder kt_oper_status = (*iter);
+    if (kt_oper_status.get_key_type() == key_type &&
+        (memcmp(kt_oper_status.get_key_struct(),
+                key_struct, key_struct_size) == 0) ) {
+      oper_status = kt_oper_status.get_oper_status();
+      pfc_log_debug("Returning oper_status from internal structure %d",
+                    oper_status);
+      return UPPL_RC_SUCCESS;
+    }
+  }
+  pfc_log_debug("oper_status not found in internal structure");
+  return UPPL_RC_ERR_NO_SUCH_INSTANCE;
+}
+
+void Kt_Base::ClearOperStatusHolder(vector<OperStatusHolder> &ref_oper_status) {
+  vector<OperStatusHolder>::iterator iter = ref_oper_status.begin();
+  for (; iter != ref_oper_status.end(); ++iter) {
+    OperStatusHolder kt_oper_status = (*iter);
+    switch (kt_oper_status.get_key_type()) {
+      case UNC_KT_CONTROLLER: {
+        key_ctr_t *ctr_key =
+            reinterpret_cast<key_ctr_t*>(kt_oper_status.get_key_struct());
+        if (ctr_key != NULL) {
+          delete ctr_key;
+          ctr_key = NULL;
+        }
+      }
+      break;
+      case UNC_KT_CTR_DOMAIN: {
+        key_ctr_domain_t *ctr_domain_key =
+            reinterpret_cast<key_ctr_domain_t*>
+        (kt_oper_status.get_key_struct());
+        if (ctr_domain_key != NULL) {
+          delete ctr_domain_key;
+          ctr_domain_key = NULL;
+        }
+      }
+      break;
+      case UNC_KT_LOGICAL_PORT: {
+        key_logical_port_t *log_port_key =
+            reinterpret_cast<key_logical_port_t*>
+        (kt_oper_status.get_key_struct());
+        if (log_port_key != NULL) {
+          delete log_port_key;
+          log_port_key = NULL;
+        }
+      }
+      break;
+      case UNC_KT_SWITCH: {
+        key_switch_t *switch_key = reinterpret_cast<key_switch_t*>
+        (kt_oper_status.get_key_struct());
+        if (switch_key != NULL) {
+          delete switch_key;
+          switch_key = NULL;
+        }
+      }
+      break;
+      case UNC_KT_PORT: {
+        key_port_t *port_key = reinterpret_cast<key_port_t*>
+        (kt_oper_status.get_key_struct());
+        if (port_key != NULL) {
+          delete port_key;
+          port_key = NULL;
+        }
+      }
+      break;
+      case UNC_KT_LINK: {
+        key_link_t *link_key = reinterpret_cast<key_link_t*>
+        (kt_oper_status.get_key_struct());
+        if (link_key != NULL) {
+          delete link_key;
+          link_key = NULL;
+        }
+      }
+      break;
+      case UNC_KT_BOUNDARY: {
+        key_boundary_t *bdry_key = reinterpret_cast<key_boundary_t*>
+        (kt_oper_status.get_key_struct());
+        if (bdry_key != NULL) {
+          delete bdry_key;
+          bdry_key = NULL;
+        }
+      }
+      break;
+      default:
+        break;
+    }
+  }
+  ref_oper_status.clear();
+  return;
 }

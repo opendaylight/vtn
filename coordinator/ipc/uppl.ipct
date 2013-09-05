@@ -113,6 +113,7 @@ ipc_struct val_logical_port {
                            # UPPL_LP_PHYSICAL_PORT
                            # UPPL_LP_TRUNK_PORT
                            # UPPL_LP_SUBDOMAIN
+                           # UPPL_LP_TUNNEL_ENDPOINT
   UINT8 switch_id[256];
   UINT8 physical_port_id[32];
   UINT8 oper_down_criteria;  # supported values are

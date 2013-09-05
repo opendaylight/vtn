@@ -110,7 +110,7 @@ public class IpcLogicalResponseFactory {
 									.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vtn,
 								VtnServiceJsonConsts.DESCRIPTION,
@@ -136,7 +136,7 @@ public class IpcLogicalResponseFactory {
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
-								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 										.ordinal()) {
 							if (IpcDataUnitWrapper
 									.getIpcStructUint8Value(valVtnStStruct,
@@ -181,7 +181,7 @@ public class IpcLogicalResponseFactory {
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
-								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 										.ordinal()) {
 							if (IpcDataUnitWrapper
 									.getIpcStructUint8Value(
@@ -219,7 +219,7 @@ public class IpcLogicalResponseFactory {
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
-								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 										.ordinal()) {
 							setValueToJsonObject(validBit, vtn,
 									VtnServiceJsonConsts.CREATEDTIME,
@@ -234,7 +234,7 @@ public class IpcLogicalResponseFactory {
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
-								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 										.ordinal()) {
 							setValueToJsonObject(validBit, vtn,
 									VtnServiceJsonConsts.LASTCOMMITTEDTIME,
@@ -375,7 +375,7 @@ public class IpcLogicalResponseFactory {
 							.ordinal());
 			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 					.ordinal()
-					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 							.ordinal()) {
 				if (validBit == (byte) UncStructIndexEnum.Valid.UNC_VF_VALID
 						.ordinal()) {
@@ -396,12 +396,12 @@ public class IpcLogicalResponseFactory {
 									.ordinal());
 			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 					.ordinal()
-					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 							.ordinal()) {
 				if (validBit == (byte) UncStructIndexEnum.Valid.UNC_VF_VALID
 						.ordinal()) {
 					setValueToJsonObject(validBit, ipAddress,
-							VtnServiceJsonConsts.NETMASK,
+							VtnServiceJsonConsts.PREFIX,
 							IpcDataUnitWrapper.getIpcStructUint8Value(
 									valVbrStruct,
 									VtnServiceIpcConsts.HOST_ADDR_PREFIXLEN));
@@ -458,19 +458,10 @@ public class IpcLogicalResponseFactory {
 							.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]));
 			root.add(rootJsonName, l2Domain);
 		} else {
-			for (int index = 0; index < responsePacket.length; index++) {
+			// There is no use of key type, key structure and count of l2domains
+			for (int index = 3; index < responsePacket.length;) {
 				l2Domain = new JsonObject();
 				byte validBit;
-
-				// There is no use of key type
-				LOG.debug("Skip key type: no use");
-				index++;
-
-				/*
-				 * There is no use of key structure
-				 */
-				LOG.debug("Skip key Structure: no use");
-				index++;
 
 				/*
 				 * add valid informations from value structure
@@ -487,7 +478,7 @@ public class IpcLogicalResponseFactory {
 										.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					setValueToJsonObject(validBit, l2Domain,
 							VtnServiceJsonConsts.L2DOMAINID,
@@ -507,7 +498,7 @@ public class IpcLogicalResponseFactory {
 										.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					memberCount = Integer.parseInt(IpcDataUnitWrapper
 							.getIpcStructUint32Value(valVbrL2DomainSt,
@@ -526,7 +517,7 @@ public class IpcLogicalResponseFactory {
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
-								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 										.ordinal()) {
 							setValueToJsonObject(
 									validBit,
@@ -544,7 +535,7 @@ public class IpcLogicalResponseFactory {
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
-								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 										.ordinal()) {
 							setValueToJsonObject(validBit, l2DomainMember,
 									VtnServiceJsonConsts.VLANID,
@@ -639,7 +630,7 @@ public class IpcLogicalResponseFactory {
 										.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					setValueToJsonObject(validBit, macEntries,
 							VtnServiceJsonConsts.MACADDR,
@@ -658,7 +649,7 @@ public class IpcLogicalResponseFactory {
 										.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					if (IpcDataUnitWrapper
 							.getIpcStructUint8Value(valVbrMacEntrySt,
@@ -693,7 +684,7 @@ public class IpcLogicalResponseFactory {
 										.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					setValueToJsonObject(validBit, macEntries,
 							VtnServiceJsonConsts.PORTNAME,
@@ -711,7 +702,7 @@ public class IpcLogicalResponseFactory {
 										.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					if (IpcDataUnitWrapper
 							.getIpcStructUint8Value(valVbrMacEntrySt,
@@ -850,7 +841,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowFilterEntry,
 								VtnServiceJsonConsts.FLNAME,
@@ -865,7 +856,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						if (IpcDataUnitWrapper
 								.getIpcStructUint8Value(
@@ -912,7 +903,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowFilterEntry,
 								VtnServiceJsonConsts.NMGNAME,
@@ -927,7 +918,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowFilterEntry,
 								VtnServiceJsonConsts.PRIORITY,
@@ -942,7 +933,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowFilterEntry,
 								VtnServiceJsonConsts.DSCP,
@@ -958,7 +949,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, redirectDst,
 								VtnServiceJsonConsts.VNODENAME,
@@ -973,7 +964,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, redirectDst,
 								VtnServiceJsonConsts.IFNAME,
@@ -988,7 +979,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, redirectDst,
 								VtnServiceJsonConsts.MACDSTADDR,
@@ -1003,7 +994,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, redirectDst,
 								VtnServiceJsonConsts.MACSRCADDR,
@@ -1029,7 +1020,7 @@ public class IpcLogicalResponseFactory {
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
-								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 										.ordinal()) {
 							setValueToJsonObject(validBit, flowFilterEntry,
 									VtnServiceJsonConsts.NMG_STATUS,
@@ -1066,10 +1057,9 @@ public class IpcLogicalResponseFactory {
 						flowFilterEntry.add(flowListName, flowListJson);
 					} else {
 						LOG.debug("Show ,Operation : normal and target db :state Skip flowList value strutures ");
-						for (; index < responsePacket.length; index++) {
-							// increasing index to eliminate flow list entry
-							// structures in case of show and op : normal
-						}
+						// increasing index to eliminate flow list entry
+						// structures in case of show and op : normal
+						index = responsePacket.length - 1;
 					}
 				}
 				if (getType.equals(VtnServiceJsonConsts.LIST)
@@ -1187,7 +1177,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vRouter,
 								VtnServiceJsonConsts.CONTROLLERID,
@@ -1202,7 +1192,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vRouter,
 								VtnServiceJsonConsts.DOMAINID,
@@ -1215,7 +1205,7 @@ public class IpcLogicalResponseFactory {
 									.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vRouter,
 								VtnServiceJsonConsts.DESCRIPTION,
@@ -1237,7 +1227,7 @@ public class IpcLogicalResponseFactory {
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
-								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 										.ordinal()) {
 							if (IpcDataUnitWrapper
 									.getIpcStructUint8Value(valVrtStStruct,
@@ -1388,7 +1378,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						if (IpcDataUnitWrapper
 								.getIpcStructUint8Value(valFlowListStruct,
@@ -1442,11 +1432,11 @@ public class IpcLogicalResponseFactory {
 		return root;
 	}
 
-	public JsonObject getVUnknownResponse(final IpcDataUnit[] responsePacket,
+	public JsonObject getVBypassResponse(final IpcDataUnit[] responsePacket,
 			final JsonObject requestBody, final String getType) {
-		LOG.trace("Start getVUnknownResponse");
+		LOG.trace("Start getVBypassResponse");
 		final JsonObject root = new JsonObject();
-		JsonArray vUnknownArray = null;
+		JsonArray vBypassArray = null;
 		LOG.debug("getType: " + getType);
 		/*
 		 * operation type will be required to resolve the response type
@@ -1459,33 +1449,33 @@ public class IpcLogicalResponseFactory {
 		String rootJsonName;
 		/*
 		 * get type (show or list) will be required to resolve root json name
-		 * here it will be vunknown for show and vunknowns for list
+		 * here it will be VBYPASS for show and VBYPASS for list
 		 */
 		if (getType.equals(VtnServiceJsonConsts.SHOW)) {
-			rootJsonName = VtnServiceJsonConsts.VUNKNOWN;
+			rootJsonName = VtnServiceJsonConsts.VBYPASS;
 		} else {
-			rootJsonName = VtnServiceJsonConsts.VUNKNOWNS;
+			rootJsonName = VtnServiceJsonConsts.VBYPASSES;
 			// json array will be required for list type of cases
-			vUnknownArray = new JsonArray();
+			vBypassArray = new JsonArray();
 		}
 		LOG.debug("Json Name :" + rootJsonName);
-		JsonObject vUnknownList = null;
+		JsonObject vBypassList = null;
 
 		if (opType.equalsIgnoreCase(VtnServiceJsonConsts.COUNT)) {
 			/*
 			 * Create Json for Count
 			 */
-			vUnknownList = new JsonObject();
-			vUnknownList
+			vBypassList = new JsonObject();
+			vBypassList
 					.addProperty(
 							VtnServiceJsonConsts.COUNT,
 							IpcDataUnitWrapper
 									.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]));
-			root.add(rootJsonName, vUnknownList);
+			root.add(rootJsonName, vBypassList);
 		} else {
 			for (int index = 0; index < responsePacket.length; index++) {
 
-				vUnknownList = new JsonObject();
+				vBypassList = new JsonObject();
 				byte validBit;
 
 				// There is no use of key type
@@ -1496,7 +1486,7 @@ public class IpcLogicalResponseFactory {
 				 * add mandatory informations from key structure
 				 */
 				final IpcStruct keyFlowListStruct = (IpcStruct) responsePacket[index++];
-				vUnknownList.addProperty(VtnServiceJsonConsts.VUKNAME,
+				vBypassList.addProperty(VtnServiceJsonConsts.VBYPASS_NAME,
 						IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
 								keyFlowListStruct,
 								VtnServiceIpcConsts.VUNKNOWNNAME));
@@ -1521,9 +1511,9 @@ public class IpcLogicalResponseFactory {
 
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
-						setValueToJsonObject(validBit, vUnknownList,
+						setValueToJsonObject(validBit, vBypassList,
 								VtnServiceJsonConsts.DESCRIPTION,
 								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
 										valVUnknownStruct,
@@ -1536,7 +1526,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						if (IpcDataUnitWrapper
 								.getIpcStructUint8Value(valVUnknownStruct,
@@ -1544,7 +1534,7 @@ public class IpcLogicalResponseFactory {
 								.equalsIgnoreCase(
 										UncStructIndexEnum.ValVunknowntype.VUNKNOWN_TYPE_BRIDGE
 												.getValue())) {
-							setValueToJsonObject(validBit, vUnknownList,
+							setValueToJsonObject(validBit, vBypassList,
 									VtnServiceJsonConsts.TYPE,
 									VtnServiceJsonConsts.BRIDGE);
 						} else if (IpcDataUnitWrapper
@@ -1553,7 +1543,7 @@ public class IpcLogicalResponseFactory {
 								.equalsIgnoreCase(
 										UncStructIndexEnum.ValVunknowntype.VUNKNOWN_TYPE_ROUTER
 												.getValue())) {
-							setValueToJsonObject(validBit, vUnknownList,
+							setValueToJsonObject(validBit, vBypassList,
 									VtnServiceJsonConsts.TYPE,
 									VtnServiceJsonConsts.ROUTER);
 						} else {
@@ -1571,9 +1561,9 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
-						setValueToJsonObject(validBit, vUnknownList,
+						setValueToJsonObject(validBit, vBypassList,
 								VtnServiceJsonConsts.CONTROLLERID,
 								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
 										valVUnknownStruct,
@@ -1587,9 +1577,9 @@ public class IpcLogicalResponseFactory {
 
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
-						setValueToJsonObject(validBit, vUnknownList,
+						setValueToJsonObject(validBit, vBypassList,
 								VtnServiceJsonConsts.DOMAINID,
 								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
 										valVUnknownStruct,
@@ -1602,22 +1592,22 @@ public class IpcLogicalResponseFactory {
 				}
 				// add current json object to array, if it has been initialized
 				// earlier
-				if (null != vUnknownArray) {
-					vUnknownArray.add(vUnknownList);
+				if (null != vBypassArray) {
+					vBypassArray.add(vBypassList);
 				}
 			}
 			/*
 			 * finally add either array or single object to root json object and
 			 * return the same.
 			 */
-			if (null != vUnknownArray) {
-				root.add(rootJsonName, vUnknownArray);
+			if (null != vBypassArray) {
+				root.add(rootJsonName, vBypassArray);
 			} else {
-				root.add(rootJsonName, vUnknownList);
+				root.add(rootJsonName, vBypassList);
 			}
 		}
 		LOG.debug("response Json: " + root.toString());
-		LOG.trace("Complete getVUnknownResponse");
+		LOG.trace("Complete getVBypassResponse");
 		return root;
 	}
 
@@ -1735,7 +1725,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						flowFilterEntry.addProperty(
 								VtnServiceJsonConsts.SEQNUM,
@@ -1755,7 +1745,7 @@ public class IpcLogicalResponseFactory {
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
-								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 										.ordinal()) {
 							setValueToJsonObject(validBit, flowFilterEntry,
 									VtnServiceJsonConsts.NMG_STATUS,
@@ -1792,10 +1782,9 @@ public class IpcLogicalResponseFactory {
 						flowFilterEntry.add(flowListName, flowListJson);
 					} else {
 						LOG.debug("Show ,Operation : normal and target db :state Skip flowList value strutures ");
-						for (; index < responsePacket.length; index++) {
-							// increasing index to eliminate flow list entry
-							// structures in case of show and oop : normal
-						}
+						// increasing index to eliminate flow list entry
+						// structures in case of show and op : normal
+						index = responsePacket.length - 1;
 					}
 
 					// root.add(subRootJsonName, statistics);
@@ -1846,7 +1835,7 @@ public class IpcLogicalResponseFactory {
 									.ordinal());
 			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 					.ordinal()
-					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 							.ordinal()) {
 				setValueToJsonObject(validBit, flowListEntriesJson,
 						VtnServiceJsonConsts.SEQNUM,
@@ -1907,7 +1896,7 @@ public class IpcLogicalResponseFactory {
 						pomStatsIndexSet.getSoftware());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					validBit = IpcDataUnitWrapper
 							.getInnerIpcStruct(responseStruct,
@@ -1918,7 +1907,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, softwareFFJson,
 								VtnServiceJsonConsts.PACKETS,
@@ -1937,7 +1926,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, softwareFFJson,
 								VtnServiceIpcConsts.OCTETS,
@@ -1955,7 +1944,7 @@ public class IpcLogicalResponseFactory {
 						pomStatsIndexSet.getExistingFlow());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					validBit = IpcDataUnitWrapper
 							.getInnerIpcStruct(responseStruct,
@@ -1966,7 +1955,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, existFFJson,
 								VtnServiceJsonConsts.PACKETS,
@@ -1985,7 +1974,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, existFFJson,
 								VtnServiceIpcConsts.OCTETS,
@@ -2003,7 +1992,7 @@ public class IpcLogicalResponseFactory {
 						pomStatsIndexSet.getExpiredFlow());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					validBit = IpcDataUnitWrapper
 							.getInnerIpcStruct(responseStruct,
@@ -2014,7 +2003,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, expireFFJson,
 								VtnServiceJsonConsts.PACKETS,
@@ -2033,7 +2022,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, expireFFJson,
 								VtnServiceIpcConsts.OCTETS,
@@ -2051,7 +2040,7 @@ public class IpcLogicalResponseFactory {
 						pomStatsIndexSet.getTotal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					validBit = IpcDataUnitWrapper
 							.getInnerIpcStruct(responseStruct,
@@ -2062,7 +2051,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, totalFFJson,
 								VtnServiceJsonConsts.PACKETS,
@@ -2081,7 +2070,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, totalFFJson,
 								VtnServiceIpcConsts.OCTETS,
@@ -2143,7 +2132,7 @@ public class IpcLogicalResponseFactory {
 									.ordinal());
 			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 					.ordinal()
-					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 							.ordinal()) {
 				if (IpcDataUnitWrapper.getIpcStructUint8Value(valVrtStruct,
 						VtnServiceIpcConsts.DHCPRELAYADMINSTATUS).equals(
@@ -2261,7 +2250,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						LOG.debug("targetdb : State");
 						if (IpcDataUnitWrapper
@@ -2447,7 +2436,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.MACDSTADDR,
@@ -2465,7 +2454,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.MACSRCADDR,
@@ -2483,7 +2472,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.MACETHERTYPE,
@@ -2499,7 +2488,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.MACVLANPRIORITY,
@@ -2515,7 +2504,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.IPDSTADDR,
@@ -2531,7 +2520,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.IPDSTADDRPREFIX,
@@ -2547,7 +2536,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.IPSRCADDR,
@@ -2563,7 +2552,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.IPSRCADDRPREFIX,
@@ -2579,7 +2568,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.IPV6DSTADDR,
@@ -2595,7 +2584,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.IPV6DSTADDRPREFIX,
@@ -2611,7 +2600,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.IPV6SRCADDR,
@@ -2627,7 +2616,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.IPV6SRCADDRPREFIX,
@@ -2643,7 +2632,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.IPPROTO,
@@ -2659,7 +2648,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.IPDSCP,
@@ -2675,7 +2664,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.L4DSTPORT,
@@ -2691,7 +2680,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.L4DSTENDPORT,
@@ -2707,7 +2696,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.L4SRCPORT,
@@ -2723,7 +2712,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.L4SRCENDPORT,
@@ -2739,7 +2728,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.ICMPTYPENUM,
@@ -2755,7 +2744,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.ICMPCODENUM,
@@ -2771,7 +2760,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.IPV6ICMPTYPENUM,
@@ -2787,7 +2776,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, flowListEntry,
 								VtnServiceJsonConsts.IPV6ICMPCODENUM,
@@ -2903,7 +2892,7 @@ public class IpcLogicalResponseFactory {
 										.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					setValueToJsonObject(validBit, aRPEntries,
 							VtnServiceJsonConsts.IPADDR,
@@ -2919,7 +2908,7 @@ public class IpcLogicalResponseFactory {
 										.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					setValueToJsonObject(validBit, aRPEntries,
 							VtnServiceJsonConsts.MACADDR,
@@ -2935,7 +2924,7 @@ public class IpcLogicalResponseFactory {
 										.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 
 					if (IpcDataUnitWrapper
@@ -2970,7 +2959,7 @@ public class IpcLogicalResponseFactory {
 										.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					setValueToJsonObject(validBit, aRPEntries,
 							VtnServiceJsonConsts.IFNAME,
@@ -3245,7 +3234,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vRouterflowFilterEntry,
 								VtnServiceJsonConsts.FLNAME,
@@ -3260,7 +3249,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						if (IpcDataUnitWrapper
 								.getIpcStructUint8Value(
@@ -3310,7 +3299,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vRouterflowFilterEntry,
 								VtnServiceJsonConsts.NMGNAME,
@@ -3325,7 +3314,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vRouterflowFilterEntry,
 								VtnServiceJsonConsts.PRIORITY,
@@ -3340,7 +3329,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vRouterflowFilterEntry,
 								VtnServiceJsonConsts.DSCP,
@@ -3357,7 +3346,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, redirectDst,
 								VtnServiceJsonConsts.VNODENAME,
@@ -3374,7 +3363,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, redirectDst,
 								VtnServiceJsonConsts.IFNAME,
@@ -3389,7 +3378,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, redirectDst,
 								VtnServiceJsonConsts.MACDSTADDR,
@@ -3404,7 +3393,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, redirectDst,
 								VtnServiceJsonConsts.MACSRCADDR,
@@ -3430,7 +3419,7 @@ public class IpcLogicalResponseFactory {
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
-								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 										.ordinal()) {
 							setValueToJsonObject(validBit,
 									vRouterflowFilterEntry,
@@ -3468,10 +3457,9 @@ public class IpcLogicalResponseFactory {
 
 					} else {
 						LOG.debug("Show ,Operation : normal and target db :state Skip flowList value strutures ");
-						for (; index < responsePacket.length; index++) {
-							// increasing index to eliminate flow list entry
-							// structures in case of show and oop : normal
-						}
+						// increasing index to eliminate flow list entry
+						// structures in case of show and op : normal
+						index = responsePacket.length - 1;
 					}
 				}
 				if (getType.equals(VtnServiceJsonConsts.LIST)
@@ -3587,7 +3575,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vTunnel,
 								VtnServiceJsonConsts.DESCRIPTION,
@@ -3598,11 +3586,26 @@ public class IpcLogicalResponseFactory {
 					validBit = valVtunnelStruct
 							.getByte(
 									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValVtunnelIndex.UPLL_IDX_CONTROLLER_ID_VTNL
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, vTunnel,
+								VtnServiceJsonConsts.CONTROLLERID,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valVtunnelStruct,
+										VtnServiceIpcConsts.CONTROLLERID));
+					}
+					validBit = valVtunnelStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
 									UncStructIndexEnum.ValVtunnelIndex.UPLL_IDX_VTN_NAME_VTNL
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vTunnel,
 								VtnServiceJsonConsts.VTNNAME,
@@ -3617,7 +3620,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vTunnel,
 								VtnServiceJsonConsts.VTEPGROUPNAME,
@@ -3632,7 +3635,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vTunnel,
 								VtnServiceJsonConsts.LABEL,
@@ -3647,7 +3650,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vTunnel,
 								VtnServiceJsonConsts.DOMAINID,
@@ -3669,7 +3672,7 @@ public class IpcLogicalResponseFactory {
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
-								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 										.ordinal()) {
 							if (IpcDataUnitWrapper
 									.getIpcStructUint8Value(valVtunnelStStruct,
@@ -3819,7 +3822,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						if (IpcDataUnitWrapper
 								.getIpcStructUint8Value(valVLinkStruct,
@@ -3855,7 +3858,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vLink,
 								VtnServiceJsonConsts.VNODE1NAME,
@@ -3870,7 +3873,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vLink,
 								VtnServiceJsonConsts.IF1NAME,
@@ -3885,7 +3888,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vLink,
 								VtnServiceJsonConsts.VNODE2NAME,
@@ -3900,7 +3903,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vLink,
 								VtnServiceJsonConsts.IF2NAME,
@@ -3915,7 +3918,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vLink,
 								VtnServiceJsonConsts.DESCRIPTION,
@@ -3934,7 +3937,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, boundaryMapJson,
 								VtnServiceJsonConsts.BOUNDARYID,
@@ -3950,7 +3953,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						if (IpcDataUnitWrapper
 								.getIpcStructUint16HexaValue(valVLinkStruct,
@@ -3982,7 +3985,7 @@ public class IpcLogicalResponseFactory {
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
-								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 										.ordinal()) {
 							if (IpcDataUnitWrapper
 									.getIpcStructUint8Value(valVLinkStStruct,
@@ -4193,7 +4196,7 @@ public class IpcLogicalResponseFactory {
 									.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vrtInterface,
 								VtnServiceJsonConsts.DESCRIPTION,
@@ -4208,7 +4211,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						if (IpcDataUnitWrapper
 								.getIpcStructUint8Value(valVrtIfStruct,
@@ -4242,7 +4245,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vrtInterface,
 								VtnServiceJsonConsts.IPADDR,
@@ -4257,10 +4260,10 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vrtInterface,
-								VtnServiceJsonConsts.NETMASK,
+								VtnServiceJsonConsts.PREFIX,
 								IpcDataUnitWrapper.getIpcStructUint8Value(
 										valVrtIfStruct,
 										VtnServiceIpcConsts.PREFIXLEN));
@@ -4272,7 +4275,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vrtInterface,
 								VtnServiceJsonConsts.MACADDR,
@@ -4290,7 +4293,7 @@ public class IpcLogicalResponseFactory {
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
-								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 										.ordinal()) {
 							if (IpcDataUnitWrapper
 									.getIpcStructUint8Value(valVrtIfStStruct,
@@ -4449,7 +4452,7 @@ public class IpcLogicalResponseFactory {
 
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vtepInterface,
 								VtnServiceJsonConsts.DESCRIPTION,
@@ -4466,7 +4469,7 @@ public class IpcLogicalResponseFactory {
 
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 
 						if (IpcDataUnitWrapper
@@ -4506,7 +4509,7 @@ public class IpcLogicalResponseFactory {
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
-								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 										.ordinal()) {
 
 							if (IpcDataUnitWrapper
@@ -4578,12 +4581,12 @@ public class IpcLogicalResponseFactory {
 		return root;
 	}
 
-	public JsonObject getVUnknownInterfaceResponse(
+	public JsonObject getVBypassInterfaceResponse(
 			final IpcDataUnit[] responsePacketIf, final JsonObject requestBody,
 			final String getType) {
-		LOG.trace("Start getVUnknownInterfaceResponse");
+		LOG.trace("Start getVBypassInterfaceResponse");
 		final JsonObject root = new JsonObject();
-		JsonArray vukInterfacesArray = null;
+		JsonArray vBypassInterfacesArray = null;
 		LOG.debug("getType: " + getType);
 		/*
 		 * operation type will be required to resolve the response type
@@ -4608,27 +4611,27 @@ public class IpcLogicalResponseFactory {
 		} else {
 			rootJsonName = VtnServiceJsonConsts.INTERFACES;
 			// json array will be required for list type of cases
-			vukInterfacesArray = new JsonArray();
+			vBypassInterfacesArray = new JsonArray();
 		}
 		LOG.debug("Json Name :" + rootJsonName);
-		JsonObject vukInterface = null;
+		JsonObject vBypassInterface = null;
 
 		if (opType.equalsIgnoreCase(VtnServiceJsonConsts.COUNT)) {
 			/*
 			 * Create Json for Count
 			 */
-			vukInterface = new JsonObject();
-			vukInterface
+			vBypassInterface = new JsonObject();
+			vBypassInterface
 					.addProperty(
 							VtnServiceJsonConsts.COUNT,
 							IpcDataUnitWrapper
 									.getIpcDataUnitValue(responsePacketIf[VtnServiceConsts.IPC_COUNT_INDEX]));
-			root.add(rootJsonName, vukInterface);
+			root.add(rootJsonName, vBypassInterface);
 		} else {
 
 			for (int index = 0; index < responsePacketIf.length; index++) {
 
-				vukInterface = new JsonObject();
+				vBypassInterface = new JsonObject();
 				byte validBit;
 
 				// There is no use of key type so skipped it.
@@ -4639,7 +4642,7 @@ public class IpcLogicalResponseFactory {
 				 * add mandatory informations from key structure
 				 */
 				final IpcStruct keyVukIfStruct = (IpcStruct) responsePacketIf[index++];
-				vukInterface.addProperty(VtnServiceJsonConsts.IFNAME,
+				vBypassInterface.addProperty(VtnServiceJsonConsts.IFNAME,
 						IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
 								keyVukIfStruct, VtnServiceIpcConsts.IFNAME));
 
@@ -4662,9 +4665,9 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
-						setValueToJsonObject(validBit, vukInterface,
+						setValueToJsonObject(validBit, vBypassInterface,
 								VtnServiceJsonConsts.DESCRIPTION,
 								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
 										valVukIfStruct,
@@ -4677,14 +4680,14 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						if (IpcDataUnitWrapper
 								.getIpcStructUint8Value(valVukIfStruct,
 										VtnServiceIpcConsts.ADMIN_STATUS)
 								.equals(UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_ENABLE
 										.getValue())) {
-							setValueToJsonObject(validBit, vukInterface,
+							setValueToJsonObject(validBit, vBypassInterface,
 									VtnServiceJsonConsts.ADMINSTATUS,
 									VtnServiceJsonConsts.ENABLE);
 						} else if (IpcDataUnitWrapper
@@ -4692,7 +4695,7 @@ public class IpcLogicalResponseFactory {
 										VtnServiceIpcConsts.ADMIN_STATUS)
 								.equals(UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_DISABLE
 										.getValue())) {
-							setValueToJsonObject(validBit, vukInterface,
+							setValueToJsonObject(validBit, vBypassInterface,
 									VtnServiceJsonConsts.ADMINSTATUS,
 									VtnServiceJsonConsts.DISABLE);
 						} else {
@@ -4710,22 +4713,22 @@ public class IpcLogicalResponseFactory {
 
 				// add current json object to array, if it has been initialized
 				// earlier
-				if (null != vukInterfacesArray) {
-					vukInterfacesArray.add(vukInterface);
+				if (null != vBypassInterfacesArray) {
+					vBypassInterfacesArray.add(vBypassInterface);
 				}
 			}
 			/*
 			 * finally add either array or single object to root json object and
 			 * return the same.
 			 */
-			if (null != vukInterfacesArray) {
-				root.add(rootJsonName, vukInterfacesArray);
+			if (null != vBypassInterfacesArray) {
+				root.add(rootJsonName, vBypassInterfacesArray);
 			} else {
-				root.add(rootJsonName, vukInterface);
+				root.add(rootJsonName, vBypassInterface);
 			}
 		}
 		LOG.debug("response Json: " + root.toString());
-		LOG.trace("Complete getVUnknownInterfaceResponse");
+		LOG.trace("Complete getVBypassInterfaceResponse");
 
 		return root;
 	}
@@ -4797,7 +4800,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vTepGroup,
 								VtnServiceJsonConsts.CONTROLLERID,
@@ -4812,7 +4815,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vTepGroup,
 								VtnServiceJsonConsts.DESCRIPTION,
@@ -4969,7 +4972,7 @@ public class IpcLogicalResponseFactory {
 									.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vbrInterface,
 								VtnServiceJsonConsts.DESCRIPTION,
@@ -4984,7 +4987,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						if (IpcDataUnitWrapper
 								.getIpcStructUint8Value(valVbrInterfaceStruct,
@@ -5020,7 +5023,7 @@ public class IpcLogicalResponseFactory {
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
-								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 										.ordinal()) {
 							if (IpcDataUnitWrapper
 									.getIpcStructUint8Value(valVbrIfStStruct,
@@ -5117,7 +5120,7 @@ public class IpcLogicalResponseFactory {
 									.ordinal());
 			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 					.ordinal()
-					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 							.ordinal()) {
 				setValueToJsonObject(validBit, neighbor,
 						VtnServiceJsonConsts.VNODENAME,
@@ -5132,7 +5135,7 @@ public class IpcLogicalResponseFactory {
 									.ordinal());
 			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 					.ordinal()
-					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 							.ordinal()) {
 				setValueToJsonObject(validBit, neighbor,
 						VtnServiceJsonConsts.IFNAME,
@@ -5147,7 +5150,7 @@ public class IpcLogicalResponseFactory {
 									.ordinal());
 			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 					.ordinal()
-					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 							.ordinal()) {
 				setValueToJsonObject(validBit, neighbor,
 						VtnServiceJsonConsts.VLINKNAME,
@@ -5247,7 +5250,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vBridge,
 								VtnServiceJsonConsts.CONTROLLERID,
@@ -5262,7 +5265,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vBridge,
 								VtnServiceJsonConsts.DOMAINID,
@@ -5275,7 +5278,7 @@ public class IpcLogicalResponseFactory {
 									.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vBridge,
 								VtnServiceJsonConsts.DESCRIPTION,
@@ -5297,7 +5300,7 @@ public class IpcLogicalResponseFactory {
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
-								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 										.ordinal()) {
 							if (IpcDataUnitWrapper
 									.getIpcStructUint8Value(valVbrStStruct,
@@ -5364,7 +5367,7 @@ public class IpcLogicalResponseFactory {
 	}
 
 	public JsonObject getPortMapResponse(final IpcDataUnit[] responsePacket,
-			final JsonObject requestBody, final String getType) {
+			final JsonObject requestBody, final String getType, String ifType) {
 		LOG.trace("Start getPortMapResponse");
 		final JsonObject root = new JsonObject();
 
@@ -5381,7 +5384,7 @@ public class IpcLogicalResponseFactory {
 		for (int index = 0; index < responsePacket.length; index++) {
 
 			portMap = new JsonObject();
-			byte validBit;
+			byte validBit=0;
 			// There is no use of key type
 			LOG.debug("Skip key type: no use");
 			index++;
@@ -5394,96 +5397,126 @@ public class IpcLogicalResponseFactory {
 			/*
 			 * add valid informations from value structure
 			 */
-			final IpcStruct valVbrIfStruct = (IpcStruct) responsePacket[index++];
-			validBit = valVbrIfStruct
-					.getByte(VtnServiceIpcConsts.VALID,
+			final IpcStruct valIfStruct = (IpcStruct) responsePacket[index++];
+			if (ifType != null && !ifType.isEmpty()) {
+				if (ifType
+						.equalsIgnoreCase(VtnServiceJsonConsts.VBRIDGE_INTERFACE_PORTMAP)) {
+					validBit = valIfStruct.getByte(VtnServiceIpcConsts.VALID,
 							UncStructIndexEnum.ValVbrIfIndex.UPLL_IDX_PM_VBRI
 									.ordinal());
-			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
-					.ordinal()
-					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
-							.ordinal()) {
-
-				IpcStruct valPortMapStruct = IpcDataUnitWrapper
-						.getInnerIpcStruct(valVbrIfStruct,
-								VtnServiceJsonConsts.PORTMAP);
-				/*
-				 * add valid switch_id from value structure
-				 */
-				validBit = valPortMapStruct
-						.getByte(
-								VtnServiceIpcConsts.VALID,
-								UncStructIndexEnum.ValPortMapIndex.UPLL_IDX_LOGICAL_PORT_ID_PM
-										.ordinal());
-				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
-						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
-								.ordinal()) {
-					setValueToJsonObject(validBit, portMap,
-							VtnServiceJsonConsts.LOGICAL_PORT_ID,
-							IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
-									valPortMapStruct,
-									VtnServiceIpcConsts.LOGICAL_PORT_ID));
+				} else if (ifType
+						.equalsIgnoreCase(VtnServiceJsonConsts.VTEP_INTERFACE_PORTMAP)) {
+					validBit = valIfStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValVtepIfIndex.UPLL_IDX_PORT_MAP_VTEPI
+											.ordinal());
+				} else if (ifType
+						.equalsIgnoreCase(VtnServiceJsonConsts.VTUNNEL_INTERFACE_PORTMAP)) {
+					validBit = valIfStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValVtunnelIfIndex.UPLL_IDX_PORT_MAP_VTNL_IF
+											.ordinal());
+				} else {
+					LOG.debug("Incorrect ifType:" + ifType);
 				}
-				/*
-				 * add valid Novlanid from value structure
-				 */
-				validBit = valPortMapStruct.getByte(VtnServiceIpcConsts.VALID,
-						UncStructIndexEnum.ValPortMapIndex.UPLL_IDX_VLAN_ID_PM
-								.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 
-					setValueToJsonObject(validBit, portMap,
-							VtnServiceJsonConsts.VLANID,
-							IpcDataUnitWrapper.getIpcStructUint16Value(
-									valPortMapStruct,
-									VtnServiceJsonConsts.VLANID));
-					LOG.debug("Vlan Id :"
-							+ IpcDataUnitWrapper.getIpcStructUint16Value(
-									valPortMapStruct,
-									VtnServiceJsonConsts.VLANID));
-
-				}
-				/*
-				 * add valid tagged from value structure
-				 */
-				validBit = valPortMapStruct.getByte(VtnServiceIpcConsts.VALID,
-						UncStructIndexEnum.ValPortMapIndex.UPLL_IDX_TAGGED_PM
-								.ordinal());
-				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
-						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
-								.ordinal()) {
-					if (IpcDataUnitWrapper
-							.getIpcStructUint8Value(valPortMapStruct,
-									VtnServiceIpcConsts.TAGGED)
-							.equals(UncStructIndexEnum.vlan_tagged.UPLL_VLAN_TAGGED
-									.getValue())) {
+					IpcStruct valPortMapStruct = IpcDataUnitWrapper
+							.getInnerIpcStruct(valIfStruct,
+									VtnServiceJsonConsts.PORTMAP);
+					/*
+					 * add valid switch_id from value structure
+					 */
+					validBit = valPortMapStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValPortMapIndex.UPLL_IDX_LOGICAL_PORT_ID_PM
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
 						setValueToJsonObject(validBit, portMap,
-								VtnServiceJsonConsts.TAGGED,
-								VtnServiceJsonConsts.TRUE);
-					} else if (IpcDataUnitWrapper
-							.getIpcStructUint8Value(valPortMapStruct,
-									VtnServiceIpcConsts.TAGGED)
-							.equals(UncStructIndexEnum.vlan_tagged.UPLL_VLAN_UNTAGGED
-									.getValue())) {
-						setValueToJsonObject(validBit, portMap,
-								VtnServiceJsonConsts.TAGGED,
-								VtnServiceJsonConsts.FALSE);
+								VtnServiceJsonConsts.LOGICAL_PORT_ID,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valPortMapStruct,
+										VtnServiceIpcConsts.LOGICAL_PORT_ID));
 					}
-					LOG.debug("Tagged :"
-							+ IpcDataUnitWrapper.getIpcStructUint8Value(
-									valPortMapStruct,
-									VtnServiceIpcConsts.TAGGED));
+					/*
+					 * add valid Novlanid from value structure
+					 */
+					validBit = valPortMapStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValPortMapIndex.UPLL_IDX_VLAN_ID_PM
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, portMap,
+								VtnServiceJsonConsts.VLANID,
+								IpcDataUnitWrapper.getIpcStructUint16Value(
+										valPortMapStruct,
+										VtnServiceJsonConsts.VLANID));
+						// }
+						LOG.debug("Vlan Id :"
+								+ IpcDataUnitWrapper.getIpcStructUint16Value(
+										valPortMapStruct,
+										VtnServiceJsonConsts.VLANID));
+					}
+					/*
+					 * add valid tagged from value structure
+					 */
+					validBit = valPortMapStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValPortMapIndex.UPLL_IDX_TAGGED_PM
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						/*
+						 * setValueToJsonObject(validBit, portMap,
+						 * VtnServiceJsonConsts.TAGGED,
+						 * IpcDataUnitWrapper.getIpcStructUint8ArrayValue
+						 * (valPortMapStruct, VtnServiceIpcConsts.TAGGED));
+						 */if (IpcDataUnitWrapper
+								.getIpcStructUint8Value(valPortMapStruct,
+										VtnServiceIpcConsts.TAGGED)
+								.equals(UncStructIndexEnum.vlan_tagged.UPLL_VLAN_TAGGED
+										.getValue())) {
+							setValueToJsonObject(validBit, portMap,
+									VtnServiceJsonConsts.TAGGED,
+									VtnServiceJsonConsts.TRUE);
+						} else if (IpcDataUnitWrapper
+								.getIpcStructUint8Value(valPortMapStruct,
+										VtnServiceIpcConsts.TAGGED)
+								.equals(UncStructIndexEnum.vlan_tagged.UPLL_VLAN_UNTAGGED
+										.getValue())) {
+							setValueToJsonObject(validBit, portMap,
+									VtnServiceJsonConsts.TAGGED,
+									VtnServiceJsonConsts.FALSE);
+						}
+						LOG.debug("Tagged :"
+								+ IpcDataUnitWrapper.getIpcStructUint8Value(
+										valPortMapStruct,
+										VtnServiceIpcConsts.TAGGED));
+					}
 				}
-			}
-			if (dataType.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
-				LOG.debug("In target db state case-skip val_vbr_if_st ");
-				index++;
+				if (dataType.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
+					LOG.debug("In target db state case-skip St structure ");
+					index++;
 
+				}
+			} else {
+				LOG.debug("IfType:: " + "is either null or incorrect");
 			}
 		}
 		/*
@@ -5609,7 +5642,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						if (IpcDataUnitWrapper
 								.getIpcStructUint16HexaValue(valVlanMapStruct,
@@ -5743,7 +5776,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vbrIfFlowFilterEntry,
 								VtnServiceJsonConsts.FLNAME,
@@ -5758,7 +5791,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						if (IpcDataUnitWrapper
 								.getIpcStructUint8Value(
@@ -5806,7 +5839,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vbrIfFlowFilterEntry,
 								VtnServiceJsonConsts.NMGNAME,
@@ -5821,7 +5854,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vbrIfFlowFilterEntry,
 								VtnServiceJsonConsts.PRIORITY,
@@ -5836,7 +5869,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vbrIfFlowFilterEntry,
 								VtnServiceJsonConsts.DSCP,
@@ -5852,7 +5885,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, redirectDst,
 								VtnServiceJsonConsts.VNODENAME,
@@ -5869,7 +5902,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, redirectDst,
 								VtnServiceJsonConsts.IFNAME,
@@ -5884,7 +5917,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, redirectDst,
 								VtnServiceJsonConsts.MACDSTADDR,
@@ -5899,7 +5932,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, redirectDst,
 								VtnServiceJsonConsts.MACSRCADDR,
@@ -5924,7 +5957,7 @@ public class IpcLogicalResponseFactory {
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
-								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 										.ordinal()) {
 							setValueToJsonObject(validBit,
 									vbrIfFlowFilterEntry,
@@ -5961,10 +5994,9 @@ public class IpcLogicalResponseFactory {
 						vbrIfFlowFilterEntry.add(flowListName, flowListJson);
 					} else {
 						LOG.debug("Show ,Operation : normal and target db :state Skip flowList value strutures ");
-						for (; index < responsePacket.length; index++) {
-							// increasing index to eliminate flow list entry
-							// structures in case of show and oop : normal
-						}
+						// increasing index to eliminate flow list entry
+						// structures in case of show and op : normal
+						index = responsePacket.length - 1;
 					}
 				}
 				if (getType.equals(VtnServiceJsonConsts.LIST)
@@ -6084,7 +6116,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vTunnelInterface,
 								VtnServiceJsonConsts.DESCRIPTION,
@@ -6100,7 +6132,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						if (IpcDataUnitWrapper
 								.getIpcStructUint8Value(valVtunnelIfStruct,
@@ -6138,7 +6170,7 @@ public class IpcLogicalResponseFactory {
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
-								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 										.ordinal()) {
 							if (IpcDataUnitWrapper
 									.getIpcStructUint8Value(
@@ -6259,7 +6291,6 @@ public class IpcLogicalResponseFactory {
 			for (int index = 0; index < responsePacket.length; index++) {
 
 				staticIpRoute = new JsonObject();
-				byte validBit;
 
 				// There is no use of key type
 				LOG.debug("Skip key type: no use");
@@ -6278,19 +6309,14 @@ public class IpcLogicalResponseFactory {
 				final String nextHopAddr = IpcDataUnitWrapper
 						.getIpcStructIpv4Value(keyStaticIpRouteStruct,
 								VtnServiceIpcConsts.NEXT_HOP_ADDR);
-				final String nwm_name = IpcDataUnitWrapper
-						.getIpcStructUint8ArrayValue(keyStaticIpRouteStruct,
-								VtnServiceIpcConsts.NWM_NAME);
-				/*
-				 * this part is always required in Show, but not required in
-				 * List + "normal" op type
-				 */
-				final IpcStruct valStaticIpRouteStruct = (IpcStruct) responsePacket[index++];
+				
+				// no use of value structure
+				LOG.debug("no use of value structure");
+				index++;
 
 				final String staticIpRouteStr = dst_addr
 						+ VtnServiceJsonConsts.HYPHEN + nextHopAddr
-						+ VtnServiceJsonConsts.HYPHEN + prefixlen
-						+ VtnServiceJsonConsts.HYPHEN + nwm_name;
+						+ VtnServiceJsonConsts.HYPHEN + prefixlen;
 				staticIpRoute.addProperty(VtnServiceJsonConsts.STATICIPROUTEID,
 						staticIpRouteStr);
 				if (getType.equals(VtnServiceJsonConsts.SHOW)
@@ -6298,32 +6324,10 @@ public class IpcLogicalResponseFactory {
 					LOG.debug("Case : Show or detail");
 					staticIpRoute.addProperty(VtnServiceJsonConsts.IPADDR,
 							dst_addr);
-					staticIpRoute.addProperty(VtnServiceJsonConsts.NETMASK,
+					staticIpRoute.addProperty(VtnServiceJsonConsts.PREFIX,
 							prefixlen);
 					staticIpRoute.addProperty(VtnServiceJsonConsts.NEXTHOPADDR,
 							nextHopAddr);
-					staticIpRoute.addProperty(VtnServiceJsonConsts.NMG_NAME,
-							nwm_name);
-
-					validBit = valStaticIpRouteStruct
-							.getByte(
-									VtnServiceIpcConsts.VALID,
-									UncStructIndexEnum.ValStaticIpRouteIndex.UPLL_IDX_GROUP_METRIC_SIR
-											.ordinal());
-					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
-							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
-									.ordinal()) {
-						setValueToJsonObject(validBit, staticIpRoute,
-								VtnServiceJsonConsts.GROUPMETRIC,
-								IpcDataUnitWrapper.getIpcStructUint16Value(
-										valStaticIpRouteStruct,
-										VtnServiceIpcConsts.GROUP_METRIC));
-					}
-
-				} else {
-					LOG.debug("Operation : normal Skip value struture");
-					index++;
 				}
 				// add current json object to array, if it has been initialized
 				// earlier
@@ -6489,7 +6493,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vtep,
 								VtnServiceJsonConsts.CONTROLLERID,
@@ -6505,7 +6509,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vtep,
 								VtnServiceJsonConsts.DESCRIPTION,
@@ -6520,7 +6524,7 @@ public class IpcLogicalResponseFactory {
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, vtep,
 								VtnServiceJsonConsts.DOMAINID,
@@ -6528,7 +6532,7 @@ public class IpcLogicalResponseFactory {
 										valVtepStruct,
 										VtnServiceJsonConsts.DOMAINID));
 					}
-				}
+				
 					/*
 					 * If data type is set as "state", then value structure will
 					 * also contain the state information
@@ -6549,7 +6553,7 @@ public class IpcLogicalResponseFactory {
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
-								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 										.ordinal()) {
 							if (IpcDataUnitWrapper
 									.getIpcStructUint8Value(valVtepStStruct,
@@ -6586,7 +6590,7 @@ public class IpcLogicalResponseFactory {
 						}
 
 					}
-
+				}
 					 else {
 					LOG.debug("Operation : normal Skip value struture");
 					index++;
@@ -6635,7 +6639,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, flowFilterEntry,
 					VtnServiceJsonConsts.FLNAME,
@@ -6650,7 +6654,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			if (IpcDataUnitWrapper
 					.getIpcStructUint8Value(valFlowFilterEntryStruct,
@@ -6694,7 +6698,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, flowFilterEntry,
 					VtnServiceJsonConsts.NMGNAME,
@@ -6709,7 +6713,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, flowFilterEntry,
 					VtnServiceJsonConsts.PRIORITY,
@@ -6724,7 +6728,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, flowFilterEntry,
 					VtnServiceJsonConsts.DSCP,
@@ -6755,7 +6759,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, vtnStation,
 					VtnServiceJsonConsts.STATIONID,
@@ -6772,7 +6776,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, vtnStation,
 					VtnServiceJsonConsts.CREATEDTIME,
@@ -6789,7 +6793,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, vtnStation,
 					VtnServiceJsonConsts.MACADDR,
@@ -6807,7 +6811,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			if (UncStructIndexEnum.ValVbrIfMapType.UPLL_IF_OFS_MAP.getValue()
 					.equals(IpcDataUnitWrapper.getIpcStructUint8Value(
@@ -6839,7 +6843,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			if (UncStructIndexEnum.ValVtnMapStatus.UPLL_VTN_MAP_VALID
 					.getValue().equals(
@@ -6872,7 +6876,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, vtnStation,
 					VtnServiceJsonConsts.VTNNAME,
@@ -6889,7 +6893,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, vtnStation,
 					VtnServiceJsonConsts.DOMAINID,
@@ -6906,7 +6910,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, vtnStation,
 					VtnServiceJsonConsts.VBRIDGENAME,
@@ -6925,7 +6929,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, interfaceObj,
 					VtnServiceJsonConsts.IFNAME,
@@ -6942,7 +6946,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			if (UncStructIndexEnum.ValOperStatus.UPLL_OPER_STATUS_UP.getValue()
 					.equals(IpcDataUnitWrapper.getIpcStructUint8Value(
@@ -6986,7 +6990,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, vtnStation,
 					VtnServiceJsonConsts.SWITCHID,
@@ -7003,7 +7007,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, vtnStation,
 					VtnServiceJsonConsts.PORTNAME,
@@ -7020,7 +7024,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			if (IpcDataUnitWrapper
 					.getIpcStructUint16HexaValue(valVtnstationControllerSt,
@@ -7090,7 +7094,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, allRx, VtnServiceJsonConsts.PACKETS,
 					IpcDataUnitWrapper.getIpcStructUint64Value(
@@ -7105,7 +7109,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, allRx, VtnServiceJsonConsts.OCTETS,
 					IpcDataUnitWrapper.getIpcStructUint64Value(
@@ -7125,7 +7129,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, allTx, VtnServiceJsonConsts.PACKETS,
 					IpcDataUnitWrapper.getIpcStructUint64Value(
@@ -7140,7 +7144,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, allTx, VtnServiceJsonConsts.OCTETS,
 					IpcDataUnitWrapper.getIpcStructUint64Value(
@@ -7176,7 +7180,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, allRx, VtnServiceJsonConsts.PACKETS,
 					IpcDataUnitWrapper.getIpcStructUint64Value(
@@ -7191,7 +7195,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, allRx, VtnServiceJsonConsts.OCTETS,
 					IpcDataUnitWrapper.getIpcStructUint64Value(
@@ -7211,7 +7215,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, allTx, VtnServiceJsonConsts.PACKETS,
 					IpcDataUnitWrapper.getIpcStructUint64Value(
@@ -7226,7 +7230,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, allTx, VtnServiceJsonConsts.OCTETS,
 					IpcDataUnitWrapper.getIpcStructUint64Value(
@@ -7246,7 +7250,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, existingRx,
 					VtnServiceJsonConsts.PACKETS,
@@ -7262,7 +7266,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, existingRx,
 					VtnServiceJsonConsts.OCTETS,
@@ -7283,7 +7287,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, existingTx,
 					VtnServiceJsonConsts.PACKETS,
@@ -7299,7 +7303,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, existingTx,
 					VtnServiceJsonConsts.OCTETS,
@@ -7320,7 +7324,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, expiredRx,
 					VtnServiceJsonConsts.PACKETS,
@@ -7336,7 +7340,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, expiredRx,
 					VtnServiceJsonConsts.OCTETS,
@@ -7357,7 +7361,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, expiredTx,
 					VtnServiceJsonConsts.PACKETS,
@@ -7373,7 +7377,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, expiredTx,
 					VtnServiceJsonConsts.OCTETS,
@@ -7394,7 +7398,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, allDropRx,
 					VtnServiceJsonConsts.PACKETS,
@@ -7410,7 +7414,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, allDropRx,
 					VtnServiceJsonConsts.OCTETS,
@@ -7431,7 +7435,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, existingDropRx,
 					VtnServiceJsonConsts.PACKETS,
@@ -7447,7 +7451,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, existingDropRx,
 					VtnServiceJsonConsts.OCTETS,
@@ -7468,7 +7472,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, expiredDropRx,
 					VtnServiceJsonConsts.PACKETS,
@@ -7484,7 +7488,7 @@ public class IpcLogicalResponseFactory {
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
-				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, expiredDropRx,
 					VtnServiceJsonConsts.OCTETS,
@@ -7539,25 +7543,25 @@ public class IpcLogicalResponseFactory {
 			root.add(rootJsonName, vtnStation);
 		} else {
 			vtnStationsArray = new JsonArray();
-			for (int index = 0; index < responsePacket.length; index++) {
+			LOG.debug("Skip Key Type, Key Structure and Count of VTN-Stations");
+			for (int index = 3; index < responsePacket.length; ) {
 
 				vtnStation = new JsonObject();
 				byte validBit;
-
-				// There is no use of key type
-				LOG.debug("Skip key type: no use");
-				index++;
-
-				/*
-				 * add mandatory informations from key structure
-				 */
-				// final IpcStruct keyVtnstationController = (IpcStruct)
-				// responsePacket[index++];
-				LOG.debug("Skip key Structure: no use");
-				index++; // no need to use key structure
-
+								
 				final IpcStruct valVtnstationControllerSt = (IpcStruct) responsePacket[index++];
 				createVtnStationConstJson(vtnStation, valVtnstationControllerSt);
+		
+				if (opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
+                                        LOG.debug("op : detail");
+                                        final IpcStruct valVtnstationControllerStat = (IpcStruct) responsePacket[index++];
+
+                                        final JsonObject vtnStationStats = new JsonObject();
+                                        addVtnStationStatsData(vtnStationStats,
+                                                        valVtnstationControllerStat);
+                                        vtnStation.add(VtnServiceJsonConsts.STATISTICS,
+                                                        vtnStationStats);
+                                }
 
 				// for ipaddrs parameter
 				validBit = valVtnstationControllerSt
@@ -7567,7 +7571,7 @@ public class IpcLogicalResponseFactory {
 										.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					final int ipv4_count = Integer.parseInt(IpcDataUnitWrapper
 							.getIpcStructUint32Value(valVtnstationControllerSt,
@@ -7579,47 +7583,38 @@ public class IpcLogicalResponseFactory {
 										.getIpcDataUnitValue(responsePacket[index++]));
 						ipaddrsArray.add(ipaddrs);
 					}
-					vtnStation.add(VtnServiceJsonConsts.IPADDRS, ipaddrsArray);
+					if(ipaddrsArray.size() > 0){
+						vtnStation.add(VtnServiceJsonConsts.IPADDRS, ipaddrsArray);						
+					}
 					LOG.debug("count of ipv4 address : " + ipv4_count);
 
-				} else {
-					// for ipv6addrs parameter
-					validBit = valVtnstationControllerSt
-							.getByte(
-									VtnServiceIpcConsts.VALID,
-									UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_IPV6_COUNT_VSCS
-											.ordinal());
-					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
-							.ordinal()
-							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
-									.ordinal()) {
-						final int ipv6_count = Integer
-								.parseInt(IpcDataUnitWrapper
-										.getIpcStructUint32Value(
-												valVtnstationControllerSt,
-												VtnServiceIpcConsts.IPV6_COUNT));
-						final JsonArray ipaddrsArray = new JsonArray();
-						for (int i = 0; i < ipv6_count; i++) {
-							final JsonPrimitive ipaddrs = new JsonPrimitive(
-									IpcDataUnitWrapper
-											.getIpcDataUnitValue(responsePacket[index++]));
-							ipaddrsArray.add(ipaddrs);
-						}
-						vtnStation.add(VtnServiceJsonConsts.IPV6ADDRS,
-								ipaddrsArray);
-						LOG.debug("count of ip64 address : " + ipv6_count);
-					}
 				}
-
-				if (opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
-					LOG.debug("op : detail");
-					final IpcStruct valVtnstationControllerStat = (IpcStruct) responsePacket[index++];
-
-					final JsonObject vtnStationStats = new JsonObject();
-					addVtnStationStatsData(vtnStationStats,
-							valVtnstationControllerStat);
-					vtnStation.add(VtnServiceJsonConsts.STATISTICS,
-							vtnStationStats);
+				// for ipv6addrs parameter
+				validBit = valVtnstationControllerSt
+						.getByte(
+								VtnServiceIpcConsts.VALID,
+								UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_IPV6_COUNT_VSCS
+										.ordinal());
+				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+						.ordinal()
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+								.ordinal()) {
+					final int ipv6_count = Integer
+							.parseInt(IpcDataUnitWrapper
+									.getIpcStructUint32Value(
+											valVtnstationControllerSt,
+											VtnServiceIpcConsts.IPV6_COUNT));
+					final JsonArray ipaddrsArray = new JsonArray();
+					for (int i = 0; i < ipv6_count; i++) {
+						final JsonPrimitive ipaddrs = new JsonPrimitive(
+								IpcDataUnitWrapper
+										.getIpcDataUnitValue(responsePacket[index++]));
+						ipaddrsArray.add(ipaddrs);
+					}
+					if(ipaddrsArray.size() > 0){
+						vtnStation.add(VtnServiceJsonConsts.IPV6ADDRS, ipaddrsArray);						
+					}
+					LOG.debug("count of ip64 address : " + ipv6_count);
 				}
 
 				// add current json object to array, if it has been initialized
@@ -7672,11 +7667,12 @@ public class IpcLogicalResponseFactory {
 			 * Create Json for Count
 			 */
 			ipRouteList = new JsonObject();
-			ipRouteList
-					.addProperty(
-							VtnServiceJsonConsts.COUNT,
-							IpcDataUnitWrapper
-									.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]));
+			String count = VtnServiceConsts.ZERO;
+			if (responsePacket.length != 0) {
+				count = IpcDataUnitWrapper
+						.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]);
+			}
+			ipRouteList.addProperty(VtnServiceJsonConsts.COUNT, count);
 			root.add(rootJsonName, ipRouteList);
 		} else {
 			int index = 0;
@@ -7691,9 +7687,12 @@ public class IpcLogicalResponseFactory {
 			LOG.debug("Skip key Structure: no use");
 			index++;
 			// get count of value structure
-			final Long count = Long
-					.parseLong(IpcDataUnitWrapper
-							.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]));
+			Long count = 0L;
+			if (responsePacket.length != 0) {
+				count = Long
+						.valueOf(IpcDataUnitWrapper
+								.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]));
+			}
 			LOG.debug("Count of value structure: " + count);
 			/*
 			 * moving from count to value structure parameter
@@ -7715,7 +7714,7 @@ public class IpcLogicalResponseFactory {
 
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					setValueToJsonObject(validBit, ipRouteList,
 							VtnServiceJsonConsts.DSTADDR,
@@ -7730,7 +7729,7 @@ public class IpcLogicalResponseFactory {
 										.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					setValueToJsonObject(validBit, ipRouteList,
 							VtnServiceJsonConsts.GATEWAY,
@@ -7745,10 +7744,10 @@ public class IpcLogicalResponseFactory {
 										.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					setValueToJsonObject(validBit, ipRouteList,
-							VtnServiceJsonConsts.NETMASK,
+							VtnServiceJsonConsts.PREFIX,
 							IpcDataUnitWrapper.getIpcStructUint8Value(
 									vaVvrtIpRouteSt,
 									VtnServiceIpcConsts.PREFIXLEN));
@@ -7760,7 +7759,7 @@ public class IpcLogicalResponseFactory {
 										.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					setValueToJsonObject(validBit, ipRouteList,
 							VtnServiceJsonConsts.FLAGS,
@@ -7776,7 +7775,7 @@ public class IpcLogicalResponseFactory {
 										.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					setValueToJsonObject(validBit, ipRouteList,
 							VtnServiceJsonConsts.METRIC,
@@ -7791,7 +7790,7 @@ public class IpcLogicalResponseFactory {
 										.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					setValueToJsonObject(validBit, ipRouteList,
 							VtnServiceJsonConsts.USE,
@@ -7801,26 +7800,26 @@ public class IpcLogicalResponseFactory {
 				validBit = vaVvrtIpRouteSt
 						.getByte(
 								VtnServiceIpcConsts.VALID,
-								UncStructIndexEnum.ValVrtIpRouteStIndex.UPLL_IDX_USE_VIRS
+								UncStructIndexEnum.ValVrtIpRouteStIndex.UPLL_IDX_IF_NAME_VIRS
 										.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					setValueToJsonObject(validBit, ipRouteList,
 							VtnServiceJsonConsts.IFNAME,
-							IpcDataUnitWrapper.getIpcStructUint32Value(
+							IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
 									vaVvrtIpRouteSt,
 									VtnServiceJsonConsts.IFNAME));
 				}
 				validBit = vaVvrtIpRouteSt
 						.getByte(
 								VtnServiceIpcConsts.VALID,
-								UncStructIndexEnum.ValVrtIpRouteStIndex.UPLL_IDX_USE_VIRS
+								UncStructIndexEnum.ValVrtIpRouteStIndex.UPLL_IDX_NW_MONITOR_GR_VIRS
 										.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					setValueToJsonObject(validBit, ipRouteList,
 							VtnServiceJsonConsts.NMG_NAME,
@@ -7835,7 +7834,7 @@ public class IpcLogicalResponseFactory {
 										.ordinal());
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 						.ordinal()
-						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SOPPORTED
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					setValueToJsonObject(validBit, ipRouteList,
 							VtnServiceJsonConsts.GROUPMETRIC,

@@ -97,12 +97,14 @@ public class UserResource extends AbstractResource {
 					usessIpcReqSessId);
 
 			// set user name
+			LOG.info("set user name for : " + getUserName());
 			usessIpcReqUserPasswd.set(VtnServiceIpcConsts.SESS_UNAME,
-					IpcDataUnitWrapper.setIpcUint8ArrayValue(getUserName()));
+					IpcDataUnitWrapper.setIpcUint8ArrayValue(getUNCUserName(getUserName())));
 
 			// set password
+			LOG.info("set password");
 			usessIpcReqUserPasswd.set(
-					VtnServiceJsonConsts.PASSWORD,
+					VtnServiceIpcConsts.SESS_PASSWD,
 					IpcDataUnitWrapper.setIpcUint8ArrayValue(requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.PASSWORD)
 							.getAsString().trim()));
@@ -113,9 +115,7 @@ public class UserResource extends AbstractResource {
 			LOG.info("Request packet processed with status:"+status);
 			if (status != UncSessionEnums.UsessIpcErrE.USESS_E_OK.ordinal()) {
 				LOG.info("Error occurred while performing operation");
-				createErrorInfo(
-						UncCommonEnum.UncResultCode.UNC_SERVER_ERROR.getValue(),
-						UncIpcErrorCode.getSessionCodes(status));
+				createSessionErrorInfo(UncIpcErrorCode.getSessionCodes(status));
 				status = UncResultCode.UNC_SERVER_ERROR.getValue();
 			} else {
 				LOG.info("Opeartion successfully performed");
@@ -157,5 +157,22 @@ public class UserResource extends AbstractResource {
 		}
 		LOG.trace("Completed UserResource#put()");
 		return status;
+	}
+	
+	/**
+	 * Convert the higher level user name to USESS user name
+	 * @param userName
+	 * @return
+	 */
+	private String getUNCUserName(String userName) {
+		LOG.debug("User name : " + userName);
+		String uncUserName = null;
+		if (userName.equalsIgnoreCase(VtnServiceJsonConsts.ADMIN)) {
+			uncUserName = VtnServiceIpcConsts.USESS_USER_WEB_ADMIN;
+		} else if (userName.equalsIgnoreCase(VtnServiceJsonConsts.OPER)){
+			uncUserName = VtnServiceIpcConsts.USESS_USER_WEB_OPER;
+		}
+		LOG.debug("UNC user name : " + uncUserName);
+		return uncUserName;
 	}
 }

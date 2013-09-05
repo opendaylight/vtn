@@ -48,7 +48,8 @@ class AuditRequest:public ITCReq  {
  public:
   AuditRequest();
   ~AuditRequest();
-  UpplReturnCode StartAudit(unc_keytype_ctrtype_t driver_id,
+  UpplReturnCode StartAudit(OdbcmConnectionHandler *db_conn,
+                            unc_keytype_ctrtype_t driver_id,
                             string controller_id);
   UpplReturnCode StartAuditTransaction(uint32_t session_id,
                                        unc_keytype_ctrtype_t driver_id,
@@ -58,7 +59,8 @@ class AuditRequest:public ITCReq  {
                                          string controller_id,
                                          TcDriverInfoMap& driver_info,
                                          TcAuditResult& audit_result);
-  UpplReturnCode HandleAuditVoteRequest(uint32_t session_id,
+  UpplReturnCode HandleAuditVoteRequest(OdbcmConnectionHandler *db_conn,
+                                        uint32_t session_id,
                                         uint32_t driver_id,
                                         string controller_id,
                                         TcDriverInfoMap &driver_info);
@@ -76,10 +78,12 @@ class AuditRequest:public ITCReq  {
   UpplReturnCode EndAuditTransaction(uint32_t session_id,
                                      unc_keytype_ctrtype_t& driver_id,
                                      string controller_id);
-  UpplReturnCode EndAudit(unc_keytype_ctrtype_t driver_id,
+  UpplReturnCode EndAudit(OdbcmConnectionHandler *db_conn,
+                          unc_keytype_ctrtype_t driver_id,
                           string controller_id,
                           TcAuditResult audit_result);
-  UpplReturnCode MergeAuditDbToRunning(string controller_name);
+  UpplReturnCode MergeAuditDbToRunning(OdbcmConnectionHandler *db_conn,
+                                       string controller_name);
 
  private:
   Kt_Base* GetClassPointerAndKey(AuditStateObjects audit_key_type,
@@ -88,18 +92,35 @@ class AuditRequest:public ITCReq  {
   void FreeKeyAndValueStruct(void* key_struct,
                              void* value_struct,
                              unsigned int key_type);
+  void AddToRunningDbFromImportDb(const vector<void *> &key_import,
+                                  const vector<void *> &val_import,
+                                  const vector<void *> &key_running,
+                                  const vector<void *> &val_running,
+                                  unsigned int index,
+                                  Kt_Base *class_pointer,
+                                  OdbcmConnectionHandler *db_conn,
+                                  uint32_t key_type);
+  void UpdateRunningDbWithImportDb(const vector<void *> &key_import,
+                                   const vector<void *> &val_import,
+                                   const vector<void *> &key_running,
+                                   const vector<void *> &val_running,
+                                   unsigned int index,
+                                   Kt_Base *class_pointer,
+                                   OdbcmConnectionHandler *db_conn,
+                                   uint32_t key_type);
+  void FreeKeyAndValueStruct(const vector<void *> &key_import,
+                             const vector<void *> &val_import,
+                             const vector<void *> &key_running,
+                             const vector<void *> &val_running,
+                             unsigned int index);
 };
 
 class AuditNotification : public std::unary_function < void, void > {
  public:
   string controller_name_;
-  explicit AuditNotification() {}
-  void operator() ()  {
-    pfc_log_debug("Received Audit Notification timer out controller %s",
-                  controller_name_.c_str());
-    AuditRequest audit_req;
-    audit_req.MergeAuditDbToRunning(controller_name_);
+  explicit AuditNotification() {
   }
+  void operator() ();
 };
 
 }  // namespace uppl

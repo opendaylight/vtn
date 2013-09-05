@@ -24,6 +24,36 @@ class VrtIfMoMgr : public VnodeChildMoMgr {
     static unc_key_type_t vrt_if_child[];
     static BindInfo vrt_if_bind_info[];
     static BindInfo key_vrt_if_maintbl_update_bind_info[];
+
+   /* @brief      Returns admin and portmap information if portmap is 
+    *             valid. Else returns NULL for portmap 
+    *              
+    * @param[in]   ikey     Pointer to ConfigKeyVal
+    * @param[out]  valid_pm portmap is valid 
+    * @param[out]  pm       pointer to portmap informtation if valid_pm
+    *
+    * @retval  UPLL_RC_SUCCESS      Completed successfully.
+    * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
+    * 
+    **/ 
+    virtual upll_rc_t GetPortMap(ConfigKeyVal *ikey, uint8_t &valid_pm,
+                                 val_port_map_t *&pm, uint8_t &valid_admin,
+                                 uint8_t &admin_status) {
+      UPLL_FUNC_TRACE;
+      if (ikey == NULL) return UPLL_RC_ERR_GENERIC; 
+      val_vrt_if *ifval = reinterpret_cast<val_vrt_if *>
+                                                 (GetVal(ikey));
+      if (!ifval) {
+        UPLL_LOG_DEBUG("Invalid param");
+        return UPLL_RC_ERR_GENERIC;
+      }
+      valid_pm = UNC_VF_INVALID;
+      pm = NULL;
+      valid_admin = ifval->valid[UPLL_IDX_ADMIN_ST_VI]; 
+      admin_status = ifval->admin_status;
+      return UPLL_RC_SUCCESS;
+    }
+ 
     /**
      * @brief  Gets the valid array position of the variable in the value 
      *         structure from the table in the specified configuration  
@@ -172,8 +202,8 @@ class VrtIfMoMgr : public VnodeChildMoMgr {
      *         associated attributes are supported on the given controller,
      *         based on the valid flag.
      *
-     * @param[in]  crtlr_name      Controller name.
-     * @param[in]  ikey            Corresponding key and value structure.
+     * @param[in]  vrt_if_val      KT_VRT_IF value structure.
+     * @param[in]  attrs           Pointer to controller attribute.
      * @param[in]  operation       Operation name.
      *
      * @retval  UPLL_RC_SUCCESS                      validation succeeded.
@@ -182,8 +212,8 @@ class VrtIfMoMgr : public VnodeChildMoMgr {
      * @retval  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR   Attribute NOT_SUPPORTED.
      * @retval  UPLL_RC_ERR_GENERIC                  Generic failure.
      */
-    upll_rc_t ValVrtIfAttributeSupportCheck(const char *ctrlr_name,
-                                            ConfigKeyVal *ikey,
+    upll_rc_t ValVrtIfAttributeSupportCheck(val_vrt_if *vrt_if_val, 
+                                            const uint8_t *attrs,
                                             unc_keytype_operation_t operation);
 
     /**

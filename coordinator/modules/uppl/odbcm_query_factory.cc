@@ -25,28 +25,28 @@ namespace uppl {
  * @Description :Constructor function which will create/initialize
  * the instance of QueryFactory.
  * @param[in]   : None
- * @return      : None
+ * @return      : void
  **/
-QueryFactory::QueryFactory() {
-  GetQuery              = NULL;
-  GetDBSpecificQuery    = NULL;
-  GetTwoDBQuery         = NULL;
-  GetSingleDBQuery      = NULL;
-  GetIsDBQuery          = NULL;
-  GetClearInstanceQuery = NULL;
-//  GetTwoTableQuery      = NULL;
-  GetBulkRowQuery       = NULL;
-  CommitTableQuery      = NULL;
-  GetCountQuery         = NULL;
-  GetFilterCountQuery   = NULL;
-  GetSiblingFilterQuery = NULL;
+QueryFactory::QueryFactory()
+: GetQuery(NULL),
+  GetQueryWithBool(NULL),
+  GetFilterCountQuery(NULL),
+  GetSiblingFilterQuery(NULL),
+  GetCountQuery(NULL),
+  GetDBSpecificQuery(NULL),
+  GetTwoDBQuery(NULL),
+  GetSingleDBQuery(NULL),
+  GetIsDBQuery(NULL),
+  CommitTableQuery(NULL),
+  GetBulkRowQuery(NULL),
+  GetClearInstanceQuery(NULL) {
 }
 
 /**
  * @Description :This function is automatically invoked when
  * QueryFactory object is destroyed
  * @param[in]   : None
- * @return      : None
+ * @return      : void
  **/
 QueryFactory::~QueryFactory() {
 }
@@ -54,31 +54,44 @@ QueryFactory::~QueryFactory() {
 /**
  * @Description : This function gets the query statement handler
  *                for creating a row in the database
- * @param[in]   : unc_keytype_datatype_t, DBTableSchema&
- * @return      : SQLQUERY
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ * @return      : SQLQUERY - framed query will be returned
  **/
 SQLQUERY QueryFactory::operation_createonerow(
     unc_keytype_datatype_t db_name,
     DBTableSchema &db_table_schema) {
-  std::string             prefix;
+  std::string             prefix = "";
   uint16_t                loop1 = 0, loop2 = 0;
   std::ostringstream      create_query, values;
   std::vector<TableAttrSchema> :: iterator              iter_vector;
   std::list<std::vector<TableAttrSchema> > ::iterator   iter_list;
   /** Get the table name prefix */
-  if (db_name == UNC_DT_CANDIDATE)
+  switch (db_name) {
+  /** Get the table name prefix */
+  case UNC_DT_CANDIDATE:
     prefix = "c_";
-  else if (db_name == UNC_DT_RUNNING)
+    break;
+  case UNC_DT_RUNNING:
     prefix = "r_";
-  else if (db_name == UNC_DT_STARTUP)
+    break;
+  case UNC_DT_STARTUP:
     prefix = "s_";
-  else if (db_name == UNC_DT_IMPORT)
+    break;
+  case UNC_DT_IMPORT:
     prefix = "i_";
-  else if (db_name == UNC_DT_STATE)
+    break;
+  case UNC_DT_STATE:
     prefix = "r_";
-  else
+    break;
+  default:
     return ODBCM_NULL_STRING;
-  create_query << "INSERT INTO " << prefix << db_table_schema.table_name_<< " ";
+  }
+  create_query << "INSERT INTO " << prefix <<
+      ODBCManager::get_ODBCManager()->
+                      GetTableName(db_table_schema.table_name_) << " ";
   /** Traverse the list to get the Attribute vector */
   /** In this case, this traversal will be only once since list
    * contains only one row info */
@@ -91,7 +104,8 @@ SQLQUERY QueryFactory::operation_createonerow(
     for (loop2 = 0, iter_vector = attributes_vector.begin();
         iter_vector != attributes_vector.end(); iter_vector++, loop2++) {
       /** Get attribute name of a row */
-      create_query << (*iter_vector).table_attribute_name;
+      create_query << ODBCManager::get_ODBCManager()->GetColumnName(
+                       (*iter_vector).table_attribute_name);
       /** For the last attribute comma is not required*/
       if (loop2  !=  attributes_vector.size()-1) {
         create_query << ",";
@@ -117,47 +131,67 @@ SQLQUERY QueryFactory::operation_createonerow(
 /**
  * @Description : This method gets the query statement handler
  *                for updating a row in the database.
- * @param[in]   : unc_keytype_datatype_t, DBTableSchema&
- * @return      : SQLQUERY
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ * @return      : SQLQUERY - framed query will be retuned  
  **/
 SQLQUERY QueryFactory::operation_updateonerow(
-    unc_keytype_datatype_t db_name, DBTableSchema &db_table_schema) {
+    unc_keytype_datatype_t db_name, DBTableSchema &db_table_schema,
+    bool IsInternal) {
   uint16_t            loop1 = 0;
   uint16_t            loop2 = 0;
   uint16_t            loop3 = 0;
-  std::string         prefix;
+  std::string         prefix = "";
   std::ostringstream  update_query;
   std::ostringstream  where_query;
   std::vector<std::string> :: iterator                iter_keys;
   std::vector<TableAttrSchema> :: iterator            iter_vector;
   std::list<std::vector<TableAttrSchema> > ::iterator iter_list;
   /** Get the table name prefix */
-  if (db_name == UNC_DT_CANDIDATE)
+  switch (db_name) {
+  /** Get the table name prefix */
+  case UNC_DT_CANDIDATE:
     prefix = "c_";
-  else if (db_name == UNC_DT_RUNNING)
+    break;
+  case UNC_DT_RUNNING:
     prefix = "r_";
-  else if (db_name == UNC_DT_STARTUP)
+    break;
+  case UNC_DT_STARTUP:
     prefix = "s_";
-  else if (db_name == UNC_DT_IMPORT)
+    break;
+  case UNC_DT_IMPORT:
     prefix = "i_";
-  else if (db_name == UNC_DT_STATE)
+    break;
+  case UNC_DT_STATE:
     prefix = "r_";
-  else
+    break;
+  default:
     return ODBCM_NULL_STRING;
+  }
   /** Start framing the update query */
 
-  if (db_name == UNC_DT_CANDIDATE) {
+  if (db_name == UNC_DT_CANDIDATE && IsInternal == false) {
     if (db_table_schema.db_return_status_ == CREATED) {
       /**to keep the immediate created rows status as created*/
       update_query << "UPDATE " << prefix << \
-        db_table_schema.table_name_<< " SET cs_row_status = " << CREATED << ",";
+          ODBCManager::get_ODBCManager()->
+                          GetTableName(db_table_schema.table_name_)
+                          << " SET cs_row_status = " << CREATED << ",";
     } else {
       update_query << "UPDATE " << prefix << \
-        db_table_schema.table_name_<< " SET cs_row_status = " << UPDATED << ",";
+          ODBCManager::get_ODBCManager()->
+                          GetTableName(db_table_schema.table_name_)
+                          << " SET cs_row_status = " << UPDATED << ",";
     }
   } else {
+    /**cs_row_status will not be updated other than candidate configurations, 
+      *db_name == UNC_DT_CANDIDATE && IsInternal == true  */
     update_query << "UPDATE " << prefix << \
-        db_table_schema.table_name_<< " " <<" SET ";
+        ODBCManager::get_ODBCManager()->
+                        GetTableName(db_table_schema.table_name_)
+                        << " " <<" SET ";
   }
   /** Get the primary keys. Needed since its not required to SET the pk */
   std::vector <std::string> primarykeys = db_table_schema.get_primary_keys();
@@ -173,7 +207,8 @@ SQLQUERY QueryFactory::operation_updateonerow(
         iter_vector != attributes_vector.end(); iter_vector++, loop2++) {
       for (loop3 = 0, iter_keys = primarykeys.begin();
           iter_keys != primarykeys.end(); iter_keys++, loop3++) {
-        if (((*iter_keys).compare((*iter_vector).table_attribute_name) == 0) &&
+        if (((*iter_keys).compare(ODBCManager::get_ODBCManager()->GetColumnName(
+              (*iter_vector).table_attribute_name)) == 0) &&
             ((*iter_vector).request_attribute_type ==
                 DATATYPE_UINT8_ARRAY_32)) {
             ColumnAttrValue <uint8_t[ODBCM_SIZE_32]> column_value;
@@ -184,16 +219,16 @@ SQLQUERY QueryFactory::operation_updateonerow(
             ODBCM_MEMCPY(&temp, &column_value.value, ODBCM_SIZE_32);
             uint16_t len = strlen((const char*)temp);
             temp[len+1] = '\0';
-            pfc_log_info("ODBCM::QueryFactory::UpdateQuery():"
+            pfc_log_debug("ODBCM::QueryFactory::UpdateQuery():"
                 " (*iter_vector).length %d value = %s\n",
                 (*iter_vector).table_attribute_length,
                 temp);
             where_query << (*iter_keys).c_str() << " = '" <<
                 temp << "'";
-        } else if (
-            ((*iter_keys).compare((*iter_vector).table_attribute_name) == 0) &&
+        } else if (((*iter_keys).compare(ODBCManager::get_ODBCManager()->
+              GetColumnName((*iter_vector).table_attribute_name)) == 0) &&
             ((*iter_vector).request_attribute_type ==
-                DATATYPE_UINT8_ARRAY_320)) {
+                      DATATYPE_UINT8_ARRAY_320)) {
             ColumnAttrValue <uint8_t[ODBCM_SIZE_320]> column_value;
             column_value = *((ColumnAttrValue <uint8_t[ODBCM_SIZE_320]>*)
                 ((*iter_vector).p_table_attribute_value));
@@ -202,14 +237,15 @@ SQLQUERY QueryFactory::operation_updateonerow(
             ODBCM_MEMCPY(&btemp, &column_value.value, ODBCM_SIZE_320);
             uint16_t len = strlen((const char*)btemp);
             btemp[len+1] = '\0';
-            pfc_log_info("ODBCM::QueryFactory::UpdateQuery():"
+            pfc_log_debug("ODBCM::QueryFactory::UpdateQuery():"
                 " (*iter_vector).length %d value = %s\n",
                 (*iter_vector).table_attribute_length,
                 btemp);
             where_query << (*iter_keys).c_str() << " = '" <<
                 btemp << "'";
         } else if (
-            ((*iter_keys).compare((*iter_vector).table_attribute_name) == 0) &&
+            ((*iter_keys).compare(ODBCManager::get_ODBCManager()->GetColumnName(
+               (*iter_vector).table_attribute_name)) ==0) &&
             ((*iter_vector).request_attribute_type ==
                 DATATYPE_UINT8_ARRAY_256)) {
             ColumnAttrValue <uint8_t[ODBCM_SIZE_256]> column_value;
@@ -221,7 +257,7 @@ SQLQUERY QueryFactory::operation_updateonerow(
             ODBCM_MEMCPY(&stemp, &column_value.value, ODBCM_SIZE_256);
             uint16_t len = strlen((const char*)stemp);
             stemp[len+1] = '\0';
-            pfc_log_info("ODBCM::QueryFactory::UpdateQuery():"
+            pfc_log_debug("ODBCM::QueryFactory::UpdateQuery():"
                 "(*iter_vector).length %d value = %s\n",
                 (*iter_vector).table_attribute_length,
                 column_value.value);
@@ -229,7 +265,8 @@ SQLQUERY QueryFactory::operation_updateonerow(
                 stemp << "'";
           }
 
-          if (((*iter_keys).compare((*iter_vector).table_attribute_name) == 0)
+          if (((*iter_keys).compare(ODBCManager::get_ODBCManager()->\
+                GetColumnName((*iter_vector).table_attribute_name)) == 0)
               && loop3 != primarykeys.size()-1) {
             where_query << " AND ";
           }
@@ -263,7 +300,8 @@ SQLQUERY QueryFactory::operation_updateonerow(
     /** Get the column names  and values */
     for (loop2 = 0, iter_vector = attributes_vector.begin() + pkey_size;
         iter_vector != attributes_vector.end(); iter_vector++, loop2++) {
-      update_query << (*iter_vector).table_attribute_name <<"= ?";
+      update_query << ODBCManager::get_ODBCManager()->GetColumnName(
+                  (*iter_vector).table_attribute_name) <<"= ?";
       if (loop2  !=  attributes_vector.size()-(pkey_size+1))
         update_query << ",";
     }  // for list of rows
@@ -278,34 +316,49 @@ SQLQUERY QueryFactory::operation_updateonerow(
 /**
  * @Description : This method will get the query statement handler
  *                for deleting a row in the database.
- * @param[in]   : unc_keytype_datatype_t, DBTableSchema& 
- * @return      : SQLQUERY
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ * @return      : SQLQUERY - framed query will be retuned 
  **/
 SQLQUERY QueryFactory::operation_deleteonerow(unc_keytype_datatype_t db_name,
                                               DBTableSchema &db_table_schema) {
   uint16_t            loop1 = 0;
-  std::string         prefix;
+  std::string         prefix = "";
   std::ostringstream  delete_query;
   std::vector <std::string>             primarykeys;
   std::vector<std::string> :: iterator  iter_vector;
   /** Get the table name prefix */
-  if (db_name == UNC_DT_CANDIDATE)
+  switch (db_name) {
+  /** Get the table name prefix */
+  case UNC_DT_CANDIDATE:
     prefix = "c_";
-  else if (db_name == UNC_DT_RUNNING)
+    break;
+  case UNC_DT_RUNNING:
     prefix = "r_";
-  else if (db_name == UNC_DT_STARTUP)
+    break;
+  case UNC_DT_STARTUP:
     prefix = "s_";
-  else if (db_name == UNC_DT_IMPORT)
+    break;
+  case UNC_DT_IMPORT:
     prefix = "i_";
-  else if (db_name == UNC_DT_STATE)
+    break;
+  case UNC_DT_STATE:
     prefix = "r_";
-  else
+    break;
+  default:
     return ODBCM_NULL_STRING;
+  }
+
   if (db_name == UNC_DT_CANDIDATE) {
-    delete_query << "UPDATE " << prefix << db_table_schema.table_name_;
+    delete_query << "UPDATE " << prefix << ODBCManager::get_ODBCManager()->
+        GetTableName(db_table_schema.table_name_);
     delete_query << " SET cs_row_status = " << DELETED << " WHERE ";
   } else {
-    delete_query << "DELETE FROM " << prefix << db_table_schema.table_name_;
+    delete_query << "DELETE FROM " << prefix <<
+        ODBCManager::get_ODBCManager()->
+        GetTableName(db_table_schema.table_name_);
     delete_query << " WHERE ";
   }
   /** Use only primary keys after WHERE in the sql query */
@@ -326,30 +379,42 @@ SQLQUERY QueryFactory::operation_deleteonerow(unc_keytype_datatype_t db_name,
 
 /**
  * @Description : To frame the query for deleting a row in a db table
- * @param[in]   : unc_keytype_datatype_t, DBTableSchema& 
- * @return      : SQLQUERY
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ * @return      : SQLQUERY - framed query will be retuned
  **/
 SQLQUERY QueryFactory::operation_clearonerow(unc_keytype_datatype_t db_name,
                                               DBTableSchema &db_table_schema) {
   uint16_t                    loop1 = 0;
-  std::string                 prefix;
+  std::string                 prefix = "";
   std::ostringstream          clearone_query;
   std::vector<std::string> :: iterator  iter_keys;
   /** Get the table name prefix */
-  if (db_name == UNC_DT_CANDIDATE)
+  switch (db_name) {
+  /** Get the table name prefix */
+  case UNC_DT_CANDIDATE:
     prefix = "c_";
-  else if (db_name == UNC_DT_RUNNING)
+    break;
+  case UNC_DT_RUNNING:
     prefix = "r_";
-  else if (db_name == UNC_DT_STARTUP)
+    break;
+  case UNC_DT_STARTUP:
     prefix = "s_";
-  else if (db_name == UNC_DT_IMPORT)
+    break;
+  case UNC_DT_IMPORT:
     prefix = "i_";
-  else if (db_name == UNC_DT_STATE)
+    break;
+  case UNC_DT_STATE:
     prefix = "r_";
-  else
+    break;
+  default:
     return ODBCM_NULL_STRING;
+  }
 
-  clearone_query << "DELETE FROM " << prefix << db_table_schema.table_name_;
+  clearone_query << "DELETE FROM " << prefix <<
+      ODBCManager::get_ODBCManager()->GetTableName(db_table_schema.table_name_);
   clearone_query << " WHERE ";
   /** Use only primary keys after WHERE in the sql query */
   std::vector <std::string> primarykeys = db_table_schema.get_primary_keys();
@@ -369,46 +434,58 @@ SQLQUERY QueryFactory::operation_clearonerow(unc_keytype_datatype_t db_name,
 /**
  * @Description : This function will get the query statement handler for
  *                fetching a row in the database
- * @param[in]   : unc_keytype_datatype_t, DBTableSchema& 
- * @return      : SQLQUERY
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ * @return      : SQLQUERY - framed query will be retuned
  **/
 SQLQUERY QueryFactory::operation_getonerow(unc_keytype_datatype_t db_name,
                                            DBTableSchema &db_table_schema) {
-  uint16_t            loop1 = 0;
   uint16_t            loop2 = 0;
   uint16_t            loop3 = 0;
-  std::string         prefix;
+  std::string         prefix = "";
   std::ostringstream  get_query;  // stream to store the query
   std::ostringstream  get_columns;  // stream to store the query
   std::vector<std::string> :: iterator           iter_keys;
   std::vector<TableAttrSchema> :: iterator       iter_vector;
   std::list<std::vector<TableAttrSchema> > ::iterator iter_list;
+  switch (db_name) {
   /** Get the table name prefix */
-  if (db_name == UNC_DT_CANDIDATE)
+  case UNC_DT_CANDIDATE:
     prefix = "c_";
-  else if (db_name == UNC_DT_RUNNING)
+    break;
+  case UNC_DT_RUNNING:
     prefix = "r_";
-  else if (db_name == UNC_DT_STARTUP)
+    break;
+  case UNC_DT_STARTUP:
     prefix = "s_";
-  else if (db_name == UNC_DT_IMPORT)
+    break;
+  case UNC_DT_IMPORT:
     prefix = "i_";
-  else if (db_name == UNC_DT_STATE)
+    break;
+  case UNC_DT_STATE:
     prefix = "r_";
-  else
+    break;
+  default:
     return ODBCM_NULL_STRING;
+  }
 
   get_query << "SELECT  ";
   /** Traverse the list to get the Attribute vector */
   /** In this case, this traversal will be only once since list
    *  contains only one row info */
-  for (loop1 = 0, iter_list = db_table_schema.row_list_.begin();
-      iter_list != db_table_schema.row_list_.end(); iter_list++, loop1++) {
+  for (iter_list = db_table_schema.row_list_.begin();
+      iter_list != db_table_schema.row_list_.end(); iter_list++) {
     /** This vector contains all attributes of a row in a table */
     std::vector<TableAttrSchema>attributes_vector = *iter_list;
+    if (attributes_vector.size() == 0)
+      return ODBCM_NULL_STRING;
     /** Get the column names  and values */
     for (loop2 = 0, iter_vector = attributes_vector.begin();
         iter_vector != attributes_vector.end(); iter_vector++, loop2++) {
-      get_query << (*iter_vector).table_attribute_name;
+      get_query << ODBCManager::get_ODBCManager()->GetColumnName(
+                (*iter_vector).table_attribute_name);
       if (loop2  !=  attributes_vector.size()-1) {
         get_query << " ,";
       }
@@ -423,8 +500,14 @@ SQLQUERY QueryFactory::operation_getonerow(unc_keytype_datatype_t db_name,
       get_columns << " AND ";
     }
   }  // for
-  get_query << " FROM " << prefix << db_table_schema.table_name_ << " WHERE "
-      << get_columns.str() << " ORDER BY " << primarykeys.front() <<";";
+  get_query << " FROM " << prefix << ODBCManager::get_ODBCManager()->
+      GetTableName(db_table_schema.table_name_);
+  if (primarykeys.size() != 0) {
+    get_query << " WHERE " << get_columns.str();
+  }
+  get_query << getOrderByString(db_table_schema.table_name_,
+                    primarykeys);
+  get_query << ";";
 
   pfc_log_info("ODBCM::QueryFactory::GetOneRow: Query: \"%s\"",
       (get_query.str()).c_str());
@@ -434,54 +517,71 @@ SQLQUERY QueryFactory::operation_getonerow(unc_keytype_datatype_t db_name,
 /**
  * @Description : This function will check whether the given
  *                row exists in the given table
- * @param[in]   : unc_keytype_datatype_t,  DBTableSchema&
- * @return      : SQLQUERY
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ * @return      : SQLQUERY - framed query will be retuned
  **/
 SQLQUERY QueryFactory::operation_isrowexists(unc_keytype_datatype_t db_name,
                                              DBTableSchema &db_table_schema) {
   uint16_t                    loop1 = 0;
-  std::string                 prefix;
+  std::string                 prefix = "";
   std::ostringstream          exists_query;
+  std::ostringstream          exists_pkeys;
   std::vector <std::string>   primarykeys;
   std::vector<std::string> :: iterator  iter_keys;
-
-  if (db_name == UNC_DT_CANDIDATE) {
-     prefix = "c_";
-     exists_query << "SELECT EXISTS(SELECT * FROM "<< prefix
-         << db_table_schema.table_name_  << "), cs_row_status";
-  } else if (db_name == UNC_DT_RUNNING) {
-     prefix = "r_";
-     exists_query << "SELECT EXISTS(SELECT * FROM "<< prefix
-         << db_table_schema.table_name_  << ")";
-  } else if (db_name == UNC_DT_STARTUP) {
-     prefix = "s_";
-     exists_query << "SELECT EXISTS(SELECT * FROM "<< prefix
-         << db_table_schema.table_name_  << ")";
-  } else if (db_name == UNC_DT_IMPORT) {
-     prefix = "i_";
-     exists_query << "SELECT EXISTS(SELECT * FROM "<< prefix
-         << db_table_schema.table_name_  << ")";
-  } else if (db_name == UNC_DT_STATE) {
-     prefix = "r_";
-     exists_query << "SELECT EXISTS(SELECT * FROM "<< prefix
-         << db_table_schema.table_name_  << ")";
-  } else {
-    pfc_log_info("ODBCM::QueryFactory::operation_isrowexists:"
-        "unc_keytype_datatype_t does not match ");
+  switch (db_name) {
+  /** Get the table name prefix */
+  case UNC_DT_CANDIDATE:
+    prefix = "c_";
+    exists_query << "SELECT EXISTS(SELECT * FROM "<< prefix
+         << ODBCManager::get_ODBCManager()->
+         GetTableName(db_table_schema.table_name_)  << "), cs_row_status";
+    break;
+  case UNC_DT_RUNNING:
+    prefix = "r_";
+    exists_query << "SELECT EXISTS(SELECT * FROM "<< prefix
+         << ODBCManager::get_ODBCManager()->
+         GetTableName(db_table_schema.table_name_)  << ")";
+    break;
+  case UNC_DT_STARTUP:
+    prefix = "s_";
+    exists_query << "SELECT EXISTS(SELECT * FROM "<< prefix
+         << ODBCManager::get_ODBCManager()->
+         GetTableName(db_table_schema.table_name_)  << ")";
+    break;
+  case UNC_DT_IMPORT:
+    prefix = "i_";
+    exists_query << "SELECT EXISTS(SELECT * FROM "<< prefix
+         << ODBCManager::get_ODBCManager()->
+         GetTableName(db_table_schema.table_name_)  << ")";
+    break;
+  case UNC_DT_STATE:
+    prefix = "r_";
+    exists_query << "SELECT EXISTS(SELECT * FROM "<< prefix
+         << ODBCManager::get_ODBCManager()->
+         GetTableName(db_table_schema.table_name_)  << ")";
+    break;
+  default:
     return ODBCM_NULL_STRING;
   }
 
   exists_query << " from "<< prefix <<
-      db_table_schema.table_name_ << " WHERE ";
+      ODBCManager::get_ODBCManager()->
+                      GetTableName(db_table_schema.table_name_);
   /** Use only primary keys after WHERE in the sql query */
   primarykeys = db_table_schema.get_primary_keys();
   for (loop1 = 0, iter_keys = primarykeys.begin();
       iter_keys != primarykeys.end(); iter_keys++, loop1++) {
-    exists_query << (*iter_keys).c_str() << " = ?";
+    exists_pkeys << (*iter_keys).c_str() << " = ?";
     if (loop1 != primarykeys.size()-1) {
-      exists_query << " AND ";
+      exists_pkeys << " AND ";
     }
   }  // for
+  if (primarykeys.size() != 0) {
+    exists_query << " WHERE " << exists_pkeys.str();
+  }
   exists_query << ";";
   pfc_log_info("ODBCM::QueryFactory::IsRowExists: Query: \"%s\"",
       (exists_query.str()).c_str());
@@ -491,33 +591,45 @@ SQLQUERY QueryFactory::operation_isrowexists(unc_keytype_datatype_t db_name,
 /**
  * @Description : This function will get the query for fetching
  *                the modified rows in the table.
- * @param[in]   : unc_keytype_datatype_t, DBTableSchema&
- * @return      : SQLQUERY
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ * @return      : SQLQUERY - framed query will be retuned
  **/
 SQLQUERY QueryFactory::operation_getmodifiedrows
                                       (unc_keytype_datatype_t db_name,
                                        DBTableSchema &db_table_schema) {
   uint16_t            loop1 = 0;
   uint16_t            loop2 = 0;
-  std::string         prefix;
+  std::string         prefix = "";
   std::ostringstream  get_query, where_query;  // stream to store the query
   std::ostringstream  get_columns;  // stream to store the query
   std::vector<std::string> :: iterator                iter_keys;
   std::vector<TableAttrSchema> :: iterator            iter_vector;
   std::list<std::vector<TableAttrSchema> > ::iterator iter_list;
   /** Get the prefix for tablenaem based on db_tpe */
-  if (db_name == UNC_DT_CANDIDATE)
+  switch (db_name) {
+  /** Get the table name prefix */
+  case UNC_DT_CANDIDATE:
     prefix = "c_";
-  else if (db_name == UNC_DT_RUNNING)
+    break;
+  case UNC_DT_RUNNING:
     prefix = "r_";
-  else if (db_name == UNC_DT_STARTUP)
+    break;
+  case UNC_DT_STARTUP:
     prefix = "s_";
-  else if (db_name == UNC_DT_IMPORT)
+    break;
+  case UNC_DT_IMPORT:
     prefix = "i_";
-  else if (db_name == UNC_DT_STATE)
+    break;
+  case UNC_DT_STATE:
     prefix = "r_";
-  else
+    break;
+  default:
     return ODBCM_NULL_STRING;
+  }
+
   /** Start framing the query */
   get_query << "SELECT  ";
   /** Traverse the list to get the Attribute vector */
@@ -527,16 +639,20 @@ SQLQUERY QueryFactory::operation_getmodifiedrows
       iter_list != db_table_schema.row_list_.end(); iter_list++, loop1++) {
     /** This vector contains all attributes of a row in a table */
     std::vector<TableAttrSchema>attributes_vector = *iter_list;
+    if (attributes_vector.size() == 0)
+      return ODBCM_NULL_STRING;
     /** Get the column names  and values */
     for (loop2 = 0, iter_vector = attributes_vector.begin();
         iter_vector != attributes_vector.end(); iter_vector++, loop2++) {
       /** Get attribute name of a row */
-      get_query << (*iter_vector).table_attribute_name;
+      get_query << ODBCManager::get_ODBCManager()->GetColumnName(
+              (*iter_vector).table_attribute_name);
       if (loop2  !=  attributes_vector.size()-1)
         get_query << " ,";
       /** Frame where query part using row_status in db_table_schema */
-      if (attributes_vector[loop2].table_attribute_name.
-          compare("cs_row_status") == 0) {
+      if (ODBCManager::get_ODBCManager()->GetColumnName(
+           attributes_vector[loop2].table_attribute_name).
+           compare("cs_row_status") == 0) {
         ColumnAttrValue <uint16_t> *rs_value =
             ((ColumnAttrValue <uint16_t>*)
                 ((*iter_vector).p_table_attribute_value));
@@ -548,11 +664,13 @@ SQLQUERY QueryFactory::operation_getmodifiedrows
   }  // for list of rows
   //  get primary key (first key) for order by clause
   std::vector <std::string> p_key = db_table_schema.get_primary_keys();
-  std::string key_value = p_key.front();
   get_query << " FROM " << prefix
-      << db_table_schema.table_name_
-      << " WHERE " << where_query.str()
-      << " order by " << key_value << ";";
+      << ODBCManager::get_ODBCManager()->
+      GetTableName(db_table_schema.table_name_)
+      << " WHERE " << where_query.str();
+  get_query << getOrderByString(db_table_schema.table_name_,
+                  p_key);
+  get_query << ";";
   pfc_log_info("ODBCM::QueryFactory::GetModifiedRows(): Query: \"%s\"",
     (get_query.str()).c_str());
   return get_query.str();
@@ -563,8 +681,11 @@ SQLQUERY QueryFactory::operation_getmodifiedrows
  *                1. During bootup: Startup --> Candidate
  *                2. During backup: Running --> Startup
  *                3. During commit: Candidate --> Running
- * @param[in]   : unc_keytype_datatype_t, unc_keytype_datatype_t
- * @return      : SQLQUERY*
+ * @param[in]   : src_db_name - specifies the configuration
+ *                i.e.candidate/running/startup,
+ *                dst_db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ * @return      : SQLQUERY* - list of framed query will be retuned
  **/
 SQLQUERY* QueryFactory::operation_copydatabase(
     unc_keytype_datatype_t src_db_name,
@@ -592,7 +713,7 @@ SQLQUERY* QueryFactory::operation_copydatabase(
 
   p_odbc_mgr = ODBCManager::get_ODBCManager();
   /** Allocate memory to store the queries. For all the scenarios 
-    * in copy db, the number of tables involved is 3 
+    * in copy db, the number of tables involved is 3
     * Totally 6 queries (3 for clear dst_db and 3 for copying)*/
   p_copy_db = new std::string[2*ODBCM_MAX_UPPL_TABLES + 1];
   /** Null validation */
@@ -620,11 +741,11 @@ SQLQUERY* QueryFactory::operation_copydatabase(
     iter_dstvector != dst_vector.end(); iter_dstvector++, loop1++ ) {
     if ((*iter_dstvector).compare("r_"UPPL_CTR_DOMAIN_TABLE) == 0) {
       copy_query << "DELETE FROM " << (*iter_dstvector) <<
-          " WHERE " << CTR_NAME << " IN (SELECT " << CTR_NAME <<
-          " FROM r_" << UPPL_CTR_TABLE << " WHERE " << CTR_TYPE <<
+          " WHERE " << CTR_NAME_STR << " IN (SELECT " << CTR_NAME_STR <<
+          " FROM r_" << UPPL_CTR_TABLE << " WHERE " << CTR_TYPE_STR <<
           "=" << UNC_CT_UNKNOWN << ");";
     } else {
-      copy_query << "TRUNCATE " << (*iter_dstvector) << ";";
+      copy_query << "DELETE FROM " << (*iter_dstvector) << ";";
     }
     pfc_log_info("ODBCM::QueryFactory::CopyDatabase: "
         "Clear Query:%d is \"%s\"", loop1, (copy_query.str()).c_str());
@@ -662,8 +783,8 @@ SQLQUERY* QueryFactory::operation_copydatabase(
           strcmp(p_dst_table, "_"UPPL_CTR_DOMAIN_TABLE) == 0) {
         copy_query << "INSERT INTO " << (*iter_dstvector) <<
           " SELECT * FROM " << (*iter_srcvector) <<
-          " WHERE " << CTR_NAME << " IN (SELECT " << CTR_NAME << " from " <<
-          ctr_table.c_str() << " WHERE " << CTR_TYPE << "=" <<
+          " WHERE " << CTR_NAME_STR << " IN (SELECT " << CTR_NAME_STR <<
+          " from " << ctr_table.c_str() << " WHERE " << CTR_TYPE_STR << "=" <<
           UNC_CT_UNKNOWN << ");";
         /*Unknown domain type = 0 (UNC_CT_UNKNOWN)*/
       } else {
@@ -688,8 +809,9 @@ SQLQUERY* QueryFactory::operation_copydatabase(
 }
 /**
  * @Description : This function will be called by PhysicalCore when IPC client
- * @param[in]   : unc_keytype_datatype_t
- * @return      : SQLQUERY*
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup,
+ * @return      : SQLQUERY* - list of framed query will be retuned
  **/
 SQLQUERY* QueryFactory::operation_cleardatabase
 (unc_keytype_datatype_t db_name) {
@@ -702,22 +824,27 @@ SQLQUERY* QueryFactory::operation_cleardatabase
   std::vector<std::string> :: iterator        iter_vector;
   std::map <int, std::vector<std::string> >   db_table_list_map;
   /** Allocate memory for query based on the db_type */
-  if (db_name == UNC_DT_STARTUP) {
-    table_count = ODBCM_MAX_STARTUP_TABLES;
-  }  else if (db_name == UNC_DT_CANDIDATE) {
-    table_count = ODBCM_MAX_CANDIDATE_TABLES;
-  } else if (db_name == UNC_DT_RUNNING) {
-    table_count = ODBCM_MAX_RUNNING_TABLES;
-  } else if (db_name == UNC_DT_STATE) {
-    table_count = ODBCM_MAX_STATE_TABLES+1;
+  switch (db_name) {
+    case UNC_DT_STARTUP:
+      table_count = ODBCM_MAX_STARTUP_TABLES;
+      break;
+    case UNC_DT_CANDIDATE:
+      table_count = ODBCM_MAX_CANDIDATE_TABLES;
+      break;
+    case UNC_DT_RUNNING:
+      table_count = ODBCM_MAX_RUNNING_TABLES;
+      break;
+    case UNC_DT_STATE:
+      table_count = ODBCM_MAX_STATE_TABLES+1;
+      break;
     /*UNC_DT_CANDIDATE - CTR_DOMAIN table*/
-  } else if (db_name == UNC_DT_IMPORT) {
-    table_count = ODBCM_MAX_IMPORT_TABLES;
-  } else {
-    pfc_log_error("ODBCM::QueryFactory::ClearDatabase: "
-      "Invalid request. db_name: %s", g_log_db_name[db_name]);
-    return NULL;
+    case UNC_DT_IMPORT:
+      table_count = ODBCM_MAX_IMPORT_TABLES;
+      break;
+    default:
+      return NULL;
   }
+
   p_odbc_mgr = ODBCManager::get_ODBCManager();
   p_clear_db = new std::string[table_count+1];
   /** Null validation */
@@ -744,8 +871,8 @@ SQLQUERY* QueryFactory::operation_cleardatabase
 
   if (db_name == UNC_DT_STATE) {
     clear_query << "DELETE FROM " << "r_"UPPL_CTR_DOMAIN_TABLE <<
-        " WHERE " << CTR_NAME << " IN (SELECT " << CTR_NAME <<
-        " FROM r_" << UPPL_CTR_TABLE << " WHERE " << CTR_TYPE <<
+        " WHERE " << CTR_NAME_STR << " IN (SELECT " << CTR_NAME_STR <<
+        " FROM r_" << UPPL_CTR_TABLE << " WHERE " << CTR_TYPE_STR <<
         "!=" << UNC_CT_UNKNOWN << ");";
     pfc_log_info("ODBCM::QueryFactory::ClearDatabase: "
         "CTR_DOMAIN Query is:%d  \"%s\"", loop, (clear_query.str()).c_str());
@@ -759,8 +886,10 @@ SQLQUERY* QueryFactory::operation_cleardatabase
 
 /**
  * @Description : To clear all controller entries from in db
- * @param[in]   : unc_keytype_datatype_t, string&
- * @return      : SQLQUERY*
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup,
+ *                controller_name - specifies the controller name
+ * @return      : SQLQUERY* - list of framed query will be retuned
  **/
 SQLQUERY* QueryFactory::operation_clearoneinstance(
     unc_keytype_datatype_t db_name, std::string& controller_name) {
@@ -773,22 +902,27 @@ SQLQUERY* QueryFactory::operation_clearoneinstance(
   std::vector<std::string> :: iterator      iter_srcvector;
   std::map <int, std::vector<std::string> > db_table_list_map;
   /** Get the number of tables in the given db */
-  if (db_name == UNC_DT_STARTUP) {
-    table_count = ODBCM_MAX_STARTUP_TABLES;
-  }  else if (db_name == UNC_DT_CANDIDATE) {
-    table_count = ODBCM_MAX_CANDIDATE_TABLES;
-  } else if (db_name == UNC_DT_RUNNING) {
-    table_count = ODBCM_MAX_RUNNING_TABLES;
-  } else if (db_name == UNC_DT_STATE) {
-    table_count = ODBCM_MAX_STATE_TABLES + 1;
-    /*+1 to add the DT_STATE ctr_domain_table delete*/
-  } else if (db_name == UNC_DT_IMPORT) {
-    table_count = ODBCM_MAX_IMPORT_TABLES;
-  } else {
-    pfc_log_error("ODBCM::QueryFactory::ClearOneInstance: "
-      "Invalid request. db_name: %s", g_log_db_name[db_name]);
-    return NULL;
+  switch (db_name) {
+    case UNC_DT_STARTUP:
+      table_count = ODBCM_MAX_STARTUP_TABLES;
+      break;
+    case UNC_DT_CANDIDATE:
+      table_count = ODBCM_MAX_CANDIDATE_TABLES;
+      break;
+    case UNC_DT_RUNNING:
+      table_count = ODBCM_MAX_RUNNING_TABLES;
+      break;
+    case UNC_DT_STATE:
+      table_count = ODBCM_MAX_STATE_TABLES+1;
+      break;
+    /*UNC_DT_CANDIDATE - CTR_DOMAIN table*/
+    case UNC_DT_IMPORT:
+      table_count = ODBCM_MAX_IMPORT_TABLES;
+      break;
+    default:
+      return NULL;
   }
+
   p_odbc_mgr = ODBCManager::get_ODBCManager();
   /** Allocate memory for storing the query */
   p_clear_inst_query = new std::string[table_count+1];
@@ -845,7 +979,7 @@ SQLQUERY* QueryFactory::operation_clearoneinstance(
  *                entry with cs_row_status != APPLIED in db.
  *                cs_row_status 
  * @param[in]   : None
- * @return      : SQLQUERY*
+ * @return      : SQLQUERY* - framed query will be retuned
  **/
 SQLQUERY* QueryFactory::operation_iscandidatedirty() {
   uint16_t                          loop1 = 0;
@@ -921,11 +1055,14 @@ SQLQUERY* QueryFactory::operation_iscandidatedirty() {
  *                4.  If VTN queries without any value for Controller 
  *                primary key, DB can return from first controller instance 
  *                i.e Controller1
- * @param[in]   : unc_keytype_datatype_t,
- *                uint32_t, 
- *                DBTableSchema, 
- *                unc_keytype_operation_t
- * @return      : SQLQUERY
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ *                max_repetition_count -specifies number of rows to be returned
+ *                unc_keytype_operation_t - specifies any additional
+ *                condition for GetBulkRows operation
+ * @return      : SQLQUERY - framed query will be retuned
  **/
 SQLQUERY QueryFactory::operation_getbulkrows(unc_keytype_datatype_t db_name,
                                             uint32_t max_repetition_count,
@@ -935,25 +1072,33 @@ SQLQUERY QueryFactory::operation_getbulkrows(unc_keytype_datatype_t db_name,
   uint32_t              loop1 = 0;
   uint32_t              loop2 = 0;
   uint32_t              loop3 = 0;
-  std::string           prefix;
+  std::string           prefix = "";
   std::ostringstream    getbulk_query;
   std::ostringstream    getbulk_primarykey;
   std::ostringstream    getbulk_where;
   std::vector<std::string> :: iterator                iter_primarykey;
   std::vector<TableAttrSchema> :: iterator            iter_vector;
   std::list<std::vector<TableAttrSchema> > ::iterator iter_list;
+  std::vector<std::string>::iterator iter_okey;
   /** Get the prefix for tablenaem based on db_tpe */
-  if (db_name == UNC_DT_CANDIDATE) {
-     prefix = "c_";
-  } else if (db_name == UNC_DT_RUNNING) {
-     prefix = "r_";
-  } else if (db_name == UNC_DT_STARTUP) {
-     prefix = "s_";
-  } else if (db_name == UNC_DT_IMPORT) {
-     prefix = "i_";
-  } else if (db_name == UNC_DT_STATE) {
-     prefix = "r_";
-  } else {
+  switch (db_name) {
+  /** Get the table name prefix */
+  case UNC_DT_CANDIDATE:
+    prefix = "c_";
+    break;
+  case UNC_DT_RUNNING:
+    prefix = "r_";
+    break;
+  case UNC_DT_STARTUP:
+    prefix = "s_";
+    break;
+  case UNC_DT_IMPORT:
+    prefix = "i_";
+    break;
+  case UNC_DT_STATE:
+    prefix = "r_";
+    break;
+  default:
     return ODBCM_NULL_STRING;
   }
   getbulk_query << "SELECT  ";
@@ -964,10 +1109,13 @@ SQLQUERY QueryFactory::operation_getbulkrows(unc_keytype_datatype_t db_name,
       iter_list != db_table_schema.row_list_.end(); iter_list++, loop1++) {
     /** This vector contains all attributes of a row in a table */
     std::vector<TableAttrSchema>attributes_vector = *iter_list;
+    if (attributes_vector.size() == 0)
+      return ODBCM_NULL_STRING;
     /** Get the column names  and values */
     for (loop2 = 0, iter_vector = attributes_vector.begin();
         iter_vector != attributes_vector.end(); iter_vector++, loop2++) {
-      getbulk_query << (*iter_vector).table_attribute_name;
+      getbulk_query << ODBCManager::get_ODBCManager()->GetColumnName(
+               (*iter_vector).table_attribute_name);
       if (loop2  !=  attributes_vector.size()-1)
         getbulk_query << ",";
     }  // for attribute vectors
@@ -992,81 +1140,96 @@ SQLQUERY QueryFactory::operation_getbulkrows(unc_keytype_datatype_t db_name,
     }  // for primarykey vector
   }  // for list of rows
 
-  getbulk_query << " FROM " << prefix << db_table_schema.table_name_ <<
-  getbulk_where.str() << "  ORDER BY  " << getbulk_primarykey.str()
-  << " ASC  LIMIT " << max_repetition_count;
+  getbulk_query << " FROM " << prefix << ODBCManager::get_ODBCManager()->
+      GetTableName(db_table_schema.table_name_);
+  if (db_table_schema.primary_keys_.size() != 0) {
+    getbulk_query << getbulk_where.str();
+  }
+  getbulk_query << getOrderByString(db_table_schema.table_name_,
+                  db_table_schema.primary_keys_) << " ASC ";
+  getbulk_query << " LIMIT " << max_repetition_count << ";";
 
   pfc_log_info("ODBCM::QueryFactory::GetBulkRows: Query is \"%s\"",
       (getbulk_query.str()).c_str());
-
   return getbulk_query.str();
 }
 
 /**
  * @Description : This method is invoked when getsiblingcount
  *                request comes, this will fetch the sibling count from table
- * @param[in]   : unc_keytype_datatype_t, DBTableSchema&
- * @return      : SQLQUERY
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ * @return      : SQLQUERY - framed query will be retuned
  **/
 SQLQUERY QueryFactory::operation_getsiblingcount(
         unc_keytype_datatype_t db_name,
         DBTableSchema &db_table_schema) {
   /** Initialise the local variables */
   uint32_t            loop1 = 0;
-  uint8_t             orderby_flag = 0, speccondition_flag = 0;
-  std::string         prefix;
-  std::ostringstream  query, orderby_query, special_condition;
+  uint8_t             speccondition_flag = 0;
+  std::string         prefix = "";
+  std::ostringstream  query, where_query, special_condition;
   std::vector <std::string>             primarykeys;
   std::vector<std::string> :: iterator  iter_keys;
   /** Based on the db type, get the prefix for table name */
-  if (db_name == UNC_DT_CANDIDATE) {
-    prefix = "c_";
-    special_condition << " AND cs_row_status != " << DELETED << " ";
-    speccondition_flag = 1;
-  } else if (db_name == UNC_DT_RUNNING) {
-    prefix = "r_";
-    if (db_table_schema.table_name_.compare(UPPL_CTR_TABLE) == 0 ||
-        db_table_schema.table_name_.compare(UPPL_CTR_DOMAIN_TABLE) == 0 ||
-        db_table_schema.table_name_.compare(UPPL_BOUNDARY_TABLE) ==0) {
+  switch (db_name) {
+    /** Get the table name prefix */
+    case UNC_DT_CANDIDATE:
+      prefix = "c_";
       special_condition << " AND cs_row_status != " << DELETED << " ";
       speccondition_flag = 1;
-    }
-  } else if (db_name == UNC_DT_STARTUP) {
-    prefix = "s_";
-  } else if (db_name == UNC_DT_IMPORT) {
-    prefix = "i_";
-  } else if (db_name == UNC_DT_STATE) {
-    prefix = "r_";
-  } else {
-    return ODBCM_NULL_STRING;
+      break;
+    case UNC_DT_RUNNING:
+      prefix = "r_";
+      if (db_table_schema.table_name_ == CTR_TABLE ||
+          db_table_schema.table_name_ == CTR_DOMAIN_TABLE ||
+          db_table_schema.table_name_ == BOUNDARY_TABLE) {
+        special_condition << " AND cs_row_status != " << DELETED << " ";
+        speccondition_flag = 1;
+      }
+      break;
+    case UNC_DT_STARTUP:
+      prefix = "s_";
+      break;
+    case UNC_DT_IMPORT:
+      prefix = "i_";
+      break;
+    case UNC_DT_STATE:
+      prefix = "r_";
+      break;
+    default:
+      return ODBCM_NULL_STRING;
   }
-  query << "SELECT * FROM " << prefix << db_table_schema.table_name_
-    << " WHERE ";
+  query << "SELECT * FROM " << prefix << ODBCManager::get_ODBCManager()->
+      GetTableName(db_table_schema.table_name_);
   /** Get the primary keys */
   primarykeys = db_table_schema.get_primary_keys();
+  where_query << " WHERE ";
   for (loop1 = 0, iter_keys = primarykeys.begin();
       iter_keys != primarykeys.end(); iter_keys++, loop1++) {
     /** Fill the primary keys in the query */
     if (loop1  !=  db_table_schema.primary_keys_.size()-1) {
-      query << (*iter_keys).c_str() << " = ? ";
-      query << " AND ";
+      where_query << (*iter_keys).c_str() << " = ? ";
+      where_query << " AND ";
     } else {
-      query << (*iter_keys).c_str() << " > ? ";
-    }
-    /** In ORDER BY, we always take the first primary key */
-    if (0 == orderby_flag) {
-      orderby_query << " ORDER BY " << (*iter_keys).c_str() << " ;";
-      orderby_flag = 1;
+      where_query << (*iter_keys).c_str() << " > ? ";
     }
   }
   /* Fill the table name in the query */
   /* Example: Query should as below */
   /* SELECT controller_name FROM c_controller_common_table WHERE
    * controller_name > ? ORDER BY controller_name */
-  if (speccondition_flag == 1) {
-    query << special_condition.str();
+  if (primarykeys.size() != 0) {
+    query << where_query.str();
+    if (speccondition_flag == 1) {
+      query << special_condition.str();
+    }
   }
-  query << orderby_query.str();
+  query << getOrderByString(db_table_schema.table_name_,
+                  db_table_schema.primary_keys_);
+  query << ";";
   pfc_log_info("ODBCM::QueryFactory::GetSiblingCount:: "
     "Query is \"%s\"", (query.str()).c_str());
   return query.str();
@@ -1074,47 +1237,60 @@ SQLQUERY QueryFactory::operation_getsiblingcount(
 /**
  * @Description : To frame query for getting the sibling count based upon
  * filter options in request.
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ *                filter_operators - vector to decide the filter while
+ *                framing query
  * @param[in]   : unc_keytype_datatype_t, DBTableSchema&, vector<ODBCMOperator>
- * @return      : SQLQUERY
+ * @return      : SQLQUERY - framed query will be retuned
  **/
 SQLQUERY QueryFactory::operation_getsiblingcount_with_filter(
     unc_keytype_datatype_t db_name,
     DBTableSchema& db_table_schema,
     std::vector<ODBCMOperator> filter_operators) {
-  std::string prefix;
+  std::string prefix = "";
   uint8_t             speccondition_flag = 0;
   /**stream to store the query*/
-  std::ostringstream query, orderby_query, special_condition;
+  std::ostringstream query, where_query, special_condition;
   uint32_t loop1 = 0;
   /**To traverse the primary key vector*/
   std::vector<std::string> :: iterator iter_keys;
   /**To traverse the primary key vector*/
   std::vector<ODBCMOperator> :: iterator iter_operators;
-  uint8_t orderby_flag = 0;
   /* Based on the db type, get the prefix for table name */
-  if (db_name == UNC_DT_CANDIDATE) {
+  switch (db_name) {
+  /** Get the table name prefix */
+  case UNC_DT_CANDIDATE:
     prefix = "c_";
     special_condition << " AND cs_row_status != " << DELETED << " ";
     speccondition_flag = 1;
-  } else if (db_name == UNC_DT_RUNNING) {
+    break;
+  case UNC_DT_RUNNING:
     prefix = "r_";
-    if (db_table_schema.table_name_.compare(UPPL_CTR_TABLE) == 0 ||
-        db_table_schema.table_name_.compare(UPPL_CTR_DOMAIN_TABLE) == 0 ||
-        db_table_schema.table_name_.compare(UPPL_BOUNDARY_TABLE) ==0) {
+    if (db_table_schema.table_name_ == CTR_TABLE ||
+        db_table_schema.table_name_ == CTR_DOMAIN_TABLE ||
+        db_table_schema.table_name_ == BOUNDARY_TABLE) {
       special_condition << " AND cs_row_status != " << DELETED << " ";
       speccondition_flag = 1;
     }
-  } else if (db_name == UNC_DT_STARTUP) {
+    break;
+  case UNC_DT_STARTUP:
     prefix = "s_";
-  } else if (db_name == UNC_DT_IMPORT) {
+    break;
+  case UNC_DT_IMPORT:
     prefix = "i_";
-  } else if (db_name == UNC_DT_STATE) {
+    break;
+  case UNC_DT_STATE:
     prefix = "r_";
-  } else {
+    break;
+  default:
     return ODBCM_NULL_STRING;
   }
-  query << "SELECT * FROM " << prefix << db_table_schema.table_name_
-    << " WHERE ";
+  query << "SELECT * FROM " << prefix << ODBCManager::get_ODBCManager()->
+      GetTableName(db_table_schema.table_name_);
+  where_query << " WHERE ";
   /* Get the primary keys */
   std::vector <std::string> primarykeys = db_table_schema.get_primary_keys();
   for (loop1 = 0, iter_keys = primarykeys.begin(),
@@ -1124,53 +1300,53 @@ SQLQUERY QueryFactory::operation_getsiblingcount_with_filter(
     const int op = static_cast<int>(*iter_operators);
     switch (op) {
       case UNKNOWN_OPERATOR:
-        query << (*iter_keys).c_str() << " = ? ";
+        where_query << (*iter_keys).c_str() << " = ? ";
         pfc_log_debug("ODBCM::QueryFactory::GetSiblingCount(filter)::"
             "invalid operator found");
         return ODBCM_NULL_STRING;
         break;
       case EQUAL:
-        query << (*iter_keys).c_str() << " = ? ";
+        where_query << (*iter_keys).c_str() << " = ? ";
         break;
       case NOT_EQUAL:
-        query << (*iter_keys).c_str() << " != ? ";
+        where_query << (*iter_keys).c_str() << " != ? ";
         break;
       case GREATER:
-        query << (*iter_keys).c_str() << " > ? ";
+        where_query << (*iter_keys).c_str() << " > ? ";
         break;
       case GREATER_EQUAL:
-        query << (*iter_keys).c_str() << " >= ? ";
+        where_query << (*iter_keys).c_str() << " >= ? ";
         break;
       case LESSER:
-        query << (*iter_keys).c_str() << " < ? ";
+        where_query << (*iter_keys).c_str() << " < ? ";
         break;
       case LESSER_EQUAL:
-        query << (*iter_keys).c_str() << " <= ? ";
+        where_query << (*iter_keys).c_str() << " <= ? ";
         break;
       default:
-        query << (*iter_keys).c_str() << " = ? ";
+        //  where_query << (*iter_keys).c_str() << " = ? ";
         pfc_log_debug("ODBCM::QueryFactory::GetSiblingCount(filter)::"
             "invalid operator found");
         return ODBCM_NULL_STRING;
         break;
     }
-    /* In ORDER BY, we always take the first primary key */
-    if (0 == orderby_flag) {
-      orderby_query << " ORDER BY " << (*iter_keys).c_str() << " ;";
-      orderby_flag = 1;
-    }
     if (loop1 != primarykeys.size()-1) {
-      query << " AND ";
+      where_query << " AND ";
     }
   }
   /** Fill the table name in the query */
   /** Example: Query should as below */
   /** SELECT controller_name FROM c_controller_common_table WHERE
    * controller_name > ? ORDER BY controller_name */
-  if (speccondition_flag == 1) {
-    query << special_condition.str();
+  if (primarykeys.size() != 0) {
+    query << where_query.str();
+    if (speccondition_flag == 1) {
+      query << special_condition.str();
+    }
   }
-  query << orderby_query.str();
+  query << " " << getOrderByString(db_table_schema.table_name_,
+                  db_table_schema.primary_keys_);
+  query << ";";
   pfc_log_info("ODBCM::QueryFactory::GetSiblingCount:: "
     "Query is \"%s\"", (query.str()).c_str());
   return query.str();
@@ -1179,8 +1355,16 @@ SQLQUERY QueryFactory::operation_getsiblingcount_with_filter(
 /**
  * @Description : To frame query for getting the sibling rows based upon
  * filter options in request.
- * @param[in]   : unc_keytype_datatype_t, DBTableSchema&, vector<ODBCMOperator>
- * @return      : SQLQUERY
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                max_repetition_count - specifies the number of rows
+ *                to return
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ *                filter_operators - vector to decide the filter while
+ *                framing query
+ *                op_type - specifies Operation type siblingbegin/sibling
+ * @return      : SQLQUERY - framed query will be retuned
  **/
 SQLQUERY QueryFactory::operation_getsiblingrows(
     unc_keytype_datatype_t      db_name,
@@ -1188,7 +1372,7 @@ SQLQUERY QueryFactory::operation_getsiblingrows(
     uint32_t                    max_repetition_count,
     std::vector<ODBCMOperator>  filter_operators,
     unc_keytype_operation_t     op_type) {
-  std::string           prefix;
+  std::string           prefix = "";
   std::ostringstream    getsibling_query;
   uint32_t              loop1, loop2, loop3;
   std::ostringstream    getsibling_primarykey;
@@ -1198,19 +1382,27 @@ SQLQUERY QueryFactory::operation_getsiblingrows(
   std::vector<TableAttrSchema> :: iterator              iter_vector;
   std::list <std::vector<TableAttrSchema> > ::iterator  iter_list;
 
-  if (db_name == UNC_DT_CANDIDATE) {
-     prefix = "c_";
-  } else if (db_name == UNC_DT_RUNNING) {
-     prefix = "r_";
-  } else if (db_name == UNC_DT_STARTUP) {
-     prefix = "s_";
-  } else if (db_name == UNC_DT_IMPORT) {
-     prefix = "i_";
-  } else if (db_name == UNC_DT_STATE) {
-     prefix = "r_";
-  } else {
+  switch (db_name) {
+  /** Get the table name prefix */
+  case UNC_DT_CANDIDATE:
+    prefix = "c_";
+    break;
+  case UNC_DT_RUNNING:
+    prefix = "r_";
+    break;
+  case UNC_DT_STARTUP:
+    prefix = "s_";
+    break;
+  case UNC_DT_IMPORT:
+    prefix = "i_";
+    break;
+  case UNC_DT_STATE:
+    prefix = "r_";
+    break;
+  default:
     return ODBCM_NULL_STRING;
   }
+
   getsibling_query << "SELECT  ";
   getsibling_where << " where ";
   /** Traverse the list to get the Attribute vector In this case,
@@ -1219,10 +1411,13 @@ SQLQUERY QueryFactory::operation_getsiblingrows(
       iter_list != db_table_schema.row_list_.end(); iter_list++, loop1++) {
     /* This vector contains all attributes of a row in a table */
     std::vector<TableAttrSchema>attributes_vector = *iter_list;
+    if (attributes_vector.size() == 0)
+      return ODBCM_NULL_STRING;
     /* Get the column names  and values */
     for (loop2 = 0, iter_vector = attributes_vector.begin();
         iter_vector != attributes_vector.end(); iter_vector++, loop2++) {
-      getsibling_query << (*iter_vector).table_attribute_name;
+      getsibling_query << ODBCManager::get_ODBCManager()->GetColumnName(
+                  (*iter_vector).table_attribute_name);
       if (loop2  !=  attributes_vector.size()-1)
         getsibling_query << ",";
     }  // for attribute vectors
@@ -1259,7 +1454,7 @@ SQLQUERY QueryFactory::operation_getsiblingrows(
           getsibling_where << (*iter_primarykey) << " <= ? ";
           break;
         default:
-          getsibling_where << (*iter_primarykey) << " = ? ";
+          //  getsibling_where << (*iter_primarykey) << " = ? ";
           pfc_log_debug("ODBCM::QueryFactory::GetSiblingRows(filter)::"
               "invalid operator found");
           return ODBCM_NULL_STRING;
@@ -1274,9 +1469,14 @@ SQLQUERY QueryFactory::operation_getsiblingrows(
     }  // for primarykey vector
   }  // for list of rows
 
-  getsibling_query << " FROM " << prefix << db_table_schema.table_name_ <<
-  getsibling_where.str() << "  ORDER BY  " << getsibling_primarykey.str()
-  << " ASC  LIMIT " << max_repetition_count;
+  getsibling_query << " FROM " << prefix << ODBCManager::get_ODBCManager()->
+      GetTableName(db_table_schema.table_name_);
+  if (db_table_schema.primary_keys_.size() != 0) {
+    getsibling_query << getsibling_where.str();    
+  }
+  getsibling_query << getOrderByString(db_table_schema.table_name_,
+                                         db_table_schema.primary_keys_);
+  getsibling_query << " ASC LIMIT " << max_repetition_count << ";";
   pfc_log_info("ODBCM::QueryFactory::GetSiblingRows: Query is \"%s\"",
         (getsibling_query.str()).c_str());
   return getsibling_query.str();
@@ -1285,26 +1485,37 @@ SQLQUERY QueryFactory::operation_getsiblingrows(
 /**
  * @Description : This method is invoked when getsiblingcount
  *                request comes, this will fetch the sibling count from table
- * @param[in]   : unc_keytype_datatype_t, std::string
- * @return      : SQLQUERY
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup,
+ *                table_name - specifies the table name
+ * @return      : SQLQUERY - framed query will be retuned
  **/
 SQLQUERY QueryFactory::operation_getrowcount(unc_keytype_datatype_t db_name,
                                             std::string table_name) {
-  std::string         prefix;
+  std::string         prefix = "";
   std::ostringstream  query;
   /** Based on the db type, get the prefix for table name */
-  if (db_name == UNC_DT_CANDIDATE)
+  switch (db_name) {
+  /** Get the table name prefix */
+  case UNC_DT_CANDIDATE:
     prefix = "c_";
-  else if (db_name == UNC_DT_RUNNING)
+    break;
+  case UNC_DT_RUNNING:
     prefix = "r_";
-  else if (db_name == UNC_DT_STARTUP)
+    break;
+  case UNC_DT_STARTUP:
     prefix = "s_";
-  else if (db_name == UNC_DT_IMPORT)
+    break;
+  case UNC_DT_IMPORT:
     prefix = "i_";
-  else if (db_name == UNC_DT_STATE)
+    break;
+  case UNC_DT_STATE:
     prefix = "r_";
-  else
+    break;
+  default:
     return ODBCM_NULL_STRING;
+  }
+
   query << "SELECT * FROM " << prefix << table_name;
   pfc_log_info("ODBCM::QueryFactory::GetRowCount:: "
     "Query is \"%s\"", (query.str()).c_str());
@@ -1322,10 +1533,11 @@ SQLQUERY QueryFactory::operation_getrowcount(unc_keytype_datatype_t db_name,
  *                STEP3: Copy Candidate->Running if above steps are success
  *                copydatabase will be reused for step3.
  *
- * @param[in]   : unc_data_type_t src_db,
- *                unc_data_type_t dst_db,
- *                uint32_t query_type
- * @return      : SQLQUERY
+ * @param[in]   : src_db - To specifies the source DB,
+ *                dst_db - To specifies the destination DB
+ *                query_type - To specifies the type query to 
+ *                be framed
+ * @return      : SQLQUERY - framed query will be retuned
  **/
 SQLQUERY* QueryFactory::operation_commit_all_config(
     unc_keytype_datatype_t src_db_name,
@@ -1414,12 +1626,12 @@ SQLQUERY* QueryFactory::operation_commit_all_config(
       /**copy the actual_version, oper_status STATE details into 
       * candidate controller_table*/
       commit_query << "UPDATE " <<  "c_"UPPL_CTR_TABLE <<
-      " SET " << CTR_ACTUAL_VERSION << " = " << "r_"UPPL_CTR_TABLE << "." <<
-      CTR_ACTUAL_VERSION << ", " << CTR_OPER_STATUS << " = " <<
-      "r_"UPPL_CTR_TABLE << "." << CTR_OPER_STATUS << " from " <<
+      " SET " << CTR_ACTUAL_VERSION_STR << " = " << "r_"UPPL_CTR_TABLE << "." <<
+      CTR_ACTUAL_VERSION_STR << ", " << CTR_OPER_STATUS_STR << " = " <<
+      "r_"UPPL_CTR_TABLE << "." << CTR_OPER_STATUS_STR << " from " <<
       "r_"UPPL_CTR_TABLE << " where " << "c_"UPPL_CTR_TABLE <<
-      "." << CTR_NAME << " = " << "r_"UPPL_CTR_TABLE << "." <<
-      CTR_NAME << ";";
+      "." << CTR_NAME_STR << " = " << "r_"UPPL_CTR_TABLE << "." <<
+      CTR_NAME_STR << ";";
       p_commit_db[loop] = commit_query.str();
       pfc_log_info("ODBCM::QueryFactory::CommitAllConfiguration: "
           "COPY_STATE_INFO:Query:%d is \"%s\"", loop,
@@ -1428,11 +1640,11 @@ SQLQUERY* QueryFactory::operation_commit_all_config(
       loop++;
       /**copy oper_status STATE details into candidate ctr_domain_table*/
       commit_query << "UPDATE " <<  "c_"UPPL_CTR_DOMAIN_TABLE <<
-      " SET " << CTR_OPER_STATUS << " = " <<
-      "r_"UPPL_CTR_DOMAIN_TABLE << "." << CTR_OPER_STATUS << " from " <<
+      " SET " << CTR_OPER_STATUS_STR << " = " <<
+      "r_"UPPL_CTR_DOMAIN_TABLE << "." << CTR_OPER_STATUS_STR << " from " <<
       "r_"UPPL_CTR_DOMAIN_TABLE << " where " << "c_"UPPL_CTR_DOMAIN_TABLE <<
-      "." << CTR_NAME << " = " << "r_"UPPL_CTR_DOMAIN_TABLE << "." <<
-      CTR_NAME << ";";
+      "." << CTR_NAME_STR << " = " << "r_"UPPL_CTR_DOMAIN_TABLE << "." <<
+      CTR_NAME_STR << ";";
       p_commit_db[loop] = commit_query.str();
       pfc_log_info("ODBCM::QueryFactory::CommitAllConfiguration: "
           "COPY_STATE_INFO:Query:%d is \"%s\"", loop,
@@ -1441,11 +1653,11 @@ SQLQUERY* QueryFactory::operation_commit_all_config(
       loop++;
       /**copy oper_status STATE details into candidate boundary_table*/
       commit_query << "UPDATE " <<  "c_"UPPL_BOUNDARY_TABLE <<
-      " SET " << CTR_OPER_STATUS << " = " <<
-      "r_"UPPL_BOUNDARY_TABLE << "." << CTR_OPER_STATUS << " from " <<
+      " SET " << CTR_OPER_STATUS_STR << " = " <<
+      "r_"UPPL_BOUNDARY_TABLE << "." << CTR_OPER_STATUS_STR << " from " <<
       "r_"UPPL_BOUNDARY_TABLE << " where " << "c_"UPPL_BOUNDARY_TABLE <<
-      "." << BDRY_ID << " = " << "r_"UPPL_BOUNDARY_TABLE<< "." <<
-      BDRY_ID << ";";
+      "." << BDRY_ID_STR << " = " << "r_"UPPL_BOUNDARY_TABLE<< "." <<
+      BDRY_ID_STR << ";";
       p_commit_db[loop] = commit_query.str();
       pfc_log_info("ODBCM::QueryFactory::CommitAllConfiguration: "
           "COPY_STATE_INFO:Query:%d is \"%s\"", loop,
@@ -1459,13 +1671,13 @@ SQLQUERY* QueryFactory::operation_commit_all_config(
         char *p_table = const_cast <char*>((*iter_dstvector).c_str());
           if (strcmp(p_table, "r_"UPPL_CTR_DOMAIN_TABLE) == 0) {
             commit_query << "DELETE FROM " << (*iter_dstvector) <<
-                " WHERE " << CTR_NAME << " IN (SELECT " << CTR_NAME <<
-                " FROM r_" << UPPL_CTR_TABLE <<" WHERE " << CTR_TYPE <<
+                " WHERE " << CTR_NAME_STR << " IN (SELECT " << CTR_NAME_STR <<
+                " FROM r_" << UPPL_CTR_TABLE <<" WHERE " << CTR_TYPE_STR <<
                 "=" << UNC_CT_UNKNOWN << ");";
         }
         if ((strcmp(p_table, "r_"UPPL_CTR_TABLE) == 0) ||
             (strcmp(p_table, "r_"UPPL_BOUNDARY_TABLE) == 0)) {
-            commit_query << "TRUNCATE " << (*iter_dstvector) << ";";
+            commit_query << "DELETE FROM " << (*iter_dstvector) << ";";
           }
           if (index >= ODBCM_MAX_UPPL_TABLES) {
             delete []p_commit_db;
@@ -1505,8 +1717,8 @@ SQLQUERY* QueryFactory::operation_commit_all_config(
 /**
  * @Description : This function set the function pointer with
  *                appropriate method to frame thw query
- * @param[in]   : int
- * @return      : None
+ * @param[in]   : operation_type - specifies the operation type
+ * @return      : void
  **/
 void QueryFactory::SetOperation(int operation_type) {
   switch (operation_type) {
@@ -1514,7 +1726,7 @@ void QueryFactory::SetOperation(int operation_type) {
       GetQuery = &QueryFactory::operation_createonerow;
       break;
     case UPDATEONEROW:
-      GetQuery = &QueryFactory::operation_updateonerow;
+      GetQueryWithBool = &QueryFactory::operation_updateonerow;
       break;
     case DELETEONEROW:
       GetQuery = &QueryFactory::operation_deleteonerow;
@@ -1568,5 +1780,57 @@ void QueryFactory::SetOperation(int operation_type) {
       break;
   }
 }
+
+/**
+ * @Description : This function is to return the primary keys string
+ * @param[in]   : ODBCMTable , std::vector <std::string> - primary key vector
+ * @return      : std:string 
+ **/
+std::string QueryFactory::getOrderByString(ODBCMTable table_id,
+                                     std::vector <std::string>& p_keys) {
+  std::ostringstream  query;
+  uint32_t loop;
+  std::vector <std::string>::iterator iter_keys;
+  query << " ORDER BY ";
+  switch (table_id) {
+    case CTR_TABLE:
+      query << "controller_name";
+      return query.str();
+    case CTR_DOMAIN_TABLE:
+      query << "controller_name, domain_name";
+      return query.str();
+    case LOGICALPORT_TABLE:
+      query << "controller_name, domain_name, port_id";
+      return query.str();
+    case LOGICAL_MEMBERPORT_TABLE:
+      query <<
+        "controller_name, domain_name, port_id,switch_id, physical_port_id";
+      return query.str();
+    case SWITCH_TABLE:
+      query << "controller_name, switch_id";
+      return query.str();
+    case PORT_TABLE:
+      query << "controller_name, switch_id, port_id";
+      return query.str();
+    case LINK_TABLE:
+      query << "controller_name, switch_id1, port_id1, switch_id2, port_id2";
+      return query.str();
+    case BOUNDARY_TABLE:
+      query << "boundary_id";
+      return query.str();
+    default:
+      if (p_keys.size() == 0)
+        return ODBCM_NULL_STRING;
+      for (loop = 0, iter_keys = p_keys.begin();
+           iter_keys != p_keys.end(); iter_keys++, loop++) {
+        query << (*iter_keys).c_str();
+        if (loop != p_keys.size()-1) {
+          query << ",";
+        }
+      }  // for
+      return query.str();
+  }
+}
+
 }  // namespace uppl
 }  // namespace unc

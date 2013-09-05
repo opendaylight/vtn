@@ -20,6 +20,7 @@ import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
+import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.IpcRequestProcessor;
@@ -192,6 +193,18 @@ public class VTepInterfacesResource extends AbstractResource {
 			vTepInterfaceJson = responseGenerator.getVTepInterfaceResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.LIST);
+			final List<String> uriParameterList = getUriParameters(requestBody);
+			if (vTepInterfaceJson.get(VtnServiceJsonConsts.INTERFACES).isJsonArray()) {
+				JsonArray responseArray = vTepInterfaceJson.get(
+						VtnServiceJsonConsts.INTERFACES)
+						.getAsJsonArray();
+				vTepInterfaceJson = getResponseJsonArrayLogical(requestBody,
+                        requestProcessor, responseGenerator,
+                        responseArray, VtnServiceJsonConsts.INTERFACES,
+                        VtnServiceJsonConsts.IFNAME,
+                        IpcRequestPacketEnum.KT_VTEP_IF_GET,
+                        uriParameterList,VtnServiceIpcConsts.GET_VTEP_INTERFACE_RESPONSE);
+			}
 			LOG.trace("Response Packet created successfully for 1st request");
 			if ((VtnServiceJsonConsts.STATE).equalsIgnoreCase(dataType)
 					&& opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {

@@ -27,10 +27,13 @@
 #include "ipct_util.hh"
 
 using unc::uppl::PhysicalLayer;
+
 /* ConfigurationRequest
- * @Description    : constructor function
- * @param[in]: NA
- * @return   : NA
+ * @Description : This function initializes the member variables
+ *                and allocates the memory for the key instances of
+ *                kt_root,kt_controller,kt_domain,kt_boundary 
+ * @param[in]   : None
+ * @return      : None
  * */
 
 ConfigurationRequest::ConfigurationRequest() {
@@ -44,29 +47,35 @@ ConfigurationRequest::ConfigurationRequest() {
 }
 
 /* ~ConfigurationRequest
- * @Description    : Destructor function
- * @param[in]:  NA
- * @return   :  NA
+ * @Description : This function releases the memory allocated to
+ *                pointer member data
+ * @param[in]   : None
+ * @param[out]  : None
+ * @return      : None
  * */
 ConfigurationRequest::~ConfigurationRequest() {
 }
 
-/*  ProcessReq
- *  @Description: Creates the respective Kt class object
- *  to process the config operation
- *  @param[in]: ipc struct, service id, session id,
- *  configuration id, session object
- *  @return   : config operation response success/failure.
+/* ProcessReq
+ * @Description : This function creates the respective Kt class object to
+ *                process the configuration request received from north bound
+ * @param[in]   : session - Object of ServerSession where the request
+ *                argument present
+ * @return      : UPPL_RC_SUCCESS is returned when the response is added to
+ *                ipc session successfully otherwise Common error code is
+ *                returned when ipc response could not be added to session.
  * */
-UpplReturnCode ConfigurationRequest::ProcessReq(ServerSession &session) {
+UpplReturnCode ConfigurationRequest::ProcessReq(
+    ServerSession &session,
+    physical_request_header &obj_req_hdr) {
   Kt_Base *KtObj = NULL;
-  physical_request_header obj_req_hdr;
-  // populate header from ipc message
-  if (0 != PhyUtil::sessGetReqHeader(session, obj_req_hdr)) {
-    pfc_log_error("Unable to parse ipc structure. BAD_REQUEST error");
-    return UPPL_RC_ERR_BAD_REQUEST;
+  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteNb, db_ret);
+  if (db_ret != UPPL_RC_SUCCESS) {
+    pfc_log_fatal("DB Connection failure for operation %d",
+                  obj_req_hdr.operation);
+    return db_ret;
   }
-
   UpplReturnCode return_code = UPPL_RC_SUCCESS, resp_code = UPPL_RC_SUCCESS;
 
   void* key_struct = NULL;
@@ -75,7 +84,7 @@ UpplReturnCode ConfigurationRequest::ProcessReq(ServerSession &session) {
   physical_response_header rsh;
   PhyUtil::getRespHeaderFromReqHeader(obj_req_hdr, rsh);
 
-  resp_code = ValidateReq(session, obj_req_hdr,
+  resp_code = ValidateReq(&db_conn, session, obj_req_hdr,
                           key_struct, val_struct, KtObj);
   if (resp_code != UPPL_RC_SUCCESS) {
     // validation failed call add output
@@ -99,7 +108,7 @@ UpplReturnCode ConfigurationRequest::ProcessReq(ServerSession &session) {
   switch (obj_req_hdr.operation) {
     case UNC_OP_CREATE:
     {
-      resp_code = KtObj->Create(obj_req_hdr.client_sess_id,
+      resp_code = KtObj->Create(&db_conn, obj_req_hdr.client_sess_id,
                                 obj_req_hdr.config_id,
                                 key_struct,
                                 val_struct,
@@ -110,7 +119,7 @@ UpplReturnCode ConfigurationRequest::ProcessReq(ServerSession &session) {
     case UNC_OP_UPDATE:
     {
       // Invoke Update operation for respective KT class
-      resp_code = KtObj->Update(obj_req_hdr.client_sess_id,
+      resp_code = KtObj->Update(&db_conn, obj_req_hdr.client_sess_id,
                                 obj_req_hdr.config_id,
                                 key_struct,
                                 val_struct,
@@ -121,7 +130,7 @@ UpplReturnCode ConfigurationRequest::ProcessReq(ServerSession &session) {
     case UNC_OP_DELETE:
     {
       // Invoke Delete operation for respective KT class
-      resp_code = KtObj->Delete(obj_req_hdr.client_sess_id,
+      resp_code = KtObj->Delete(&db_conn, obj_req_hdr.client_sess_id,
                                 obj_req_hdr.config_id,
                                 key_struct,
                                 obj_req_hdr.data_type,
@@ -137,7 +146,10 @@ UpplReturnCode ConfigurationRequest::ProcessReq(ServerSession &session) {
     // return the actual response
     pfc_log_error("Config validation failed");
     rsh.result_code = resp_code;
-    if (PhyUtil::sessOutRespHeader(session, rsh) == 0) {
+    int err = PhyUtil::sessOutRespHeader(session, rsh);
+    err |= KtObj->AddKeyStructuretoSession(obj_req_hdr.key_type, &session,
+                                           key_struct);
+    if (err == 0) {
       resp_code = UPPL_RC_SUCCESS;
     } else {
       resp_code = UPPL_RC_ERR_IPC_WRITE_ERROR;
@@ -151,18 +163,24 @@ UpplReturnCode ConfigurationRequest::ProcessReq(ServerSession &session) {
     // It's a common error code
     return_code = UPPL_RC_ERR_IPC_WRITE_ERROR;
   }
-  pfc_log_info("Returning %d from config request handler", return_code);
+  pfc_log_debug("Returning %d from config request handler", return_code);
   return return_code;
 }
 
-
-/*  ValidateReq
- *  @Description    : validates the request received from north bound
- *  @param[in]: session, request header, key struct, value struct and
- *  Base class object
- *  @return   : config operation response success/failure.
+/* ValidateReq
+ * @Description : This function validates the request received from north bound
+ * @param[in]   : session - Object of ServerSession where the request
+ *                argument present
+ *                key struct - the key instance for appropriate key types
+ *                value struct - the value struct for the appropriate key types
+ *                obj_req_hdr - object of physical request header 
+ *                KtObj - Object of the base class to invoke appropriate
+ *                kt class
+ * @return      : UPPL_RC_SUCCESS if validation is successful
+ *                or UPPL_RC_ERR_* if validation is failed
  * */
 UpplReturnCode ConfigurationRequest::ValidateReq(
+    OdbcmConnectionHandler *db_conn,
     ServerSession &session,
     physical_request_header obj_req_hdr,
     void* &key_struct, void* &val_struct,
@@ -187,7 +205,7 @@ UpplReturnCode ConfigurationRequest::ValidateReq(
     }
     case UNC_KT_CONTROLLER:
     {
-      resp_code = ValidateController(session,
+      resp_code = ValidateController(db_conn, session,
                                      obj_req_hdr.data_type,
                                      obj_req_hdr.operation,
                                      key_struct,
@@ -204,7 +222,7 @@ UpplReturnCode ConfigurationRequest::ValidateReq(
     }
     case UNC_KT_CTR_DOMAIN:
     {
-      resp_code = ValidateDomain(session,
+      resp_code = ValidateDomain(db_conn, session,
                                  obj_req_hdr.data_type,
                                  obj_req_hdr.operation,
                                  key_struct,
@@ -221,7 +239,7 @@ UpplReturnCode ConfigurationRequest::ValidateReq(
     }
     case UNC_KT_BOUNDARY:
     {
-      resp_code = ValidateBoundary(session,
+      resp_code = ValidateBoundary(db_conn, session,
                                    obj_req_hdr.data_type,
                                    obj_req_hdr.operation,
                                    key_struct,
@@ -258,7 +276,7 @@ UpplReturnCode ConfigurationRequest::ValidateReq(
     case UNC_OP_DELETE:
     {
       // form validate request for CREATE operation
-      resp_code = KtObj->ValidateRequest(key_struct,
+      resp_code = KtObj->ValidateRequest(db_conn, key_struct,
                                          val_struct,
                                          obj_req_hdr.operation,
                                          obj_req_hdr.data_type,
@@ -280,11 +298,25 @@ UpplReturnCode ConfigurationRequest::ValidateReq(
   return return_code;
 }
 
-UpplReturnCode ConfigurationRequest::ValidateController(ServerSession &session,
-                                                        uint32_t data_type,
-                                                        uint32_t operation,
-                                                        void* &key_struct,
-                                                        void* &val_struct) {
+/* ValidateController
+ * @Description : This function validates the value struct and the scalability
+ *                and also checks the capability for UNC_KT_CONTROLLER
+ * @param[in]   : session - Object of ServerSession where the request
+ *                argument present
+ *                data_type - The data_type UNC_DT_CANDIDATE is only allowed
+ *                operation - contains UNC_OP_CREATE or UNC_OP_UPDATE
+ *                key struct - specifies key instance of KT_Controller
+ *                value struct - specifies value structure of KT_CONTROLLER
+ * @return      : UPPL_RC_SUCCESS if scalability number is within range
+ *                or UPPL_RC_ERR_* if not
+ * * */
+UpplReturnCode ConfigurationRequest::ValidateController(
+    OdbcmConnectionHandler *db_conn,
+    ServerSession &session,
+    uint32_t data_type,
+    uint32_t operation,
+    void* &key_struct,
+    void* &val_struct) {
   UpplReturnCode resp_code = UPPL_RC_SUCCESS;
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   if (data_type != UNC_DT_CANDIDATE) {
@@ -339,7 +371,7 @@ UpplReturnCode ConfigurationRequest::ValidateController(ServerSession &session,
   // validate scalability after basic validation
   // Since it requires db call
   resp_code = KtObj.ValidateCtrlrScalability(
-      version,
+      db_conn, version,
       (uint32_t)UNC_KT_CONTROLLER,
       data_type);
   if (resp_code != UPPL_RC_SUCCESS) {
@@ -349,11 +381,25 @@ UpplReturnCode ConfigurationRequest::ValidateController(ServerSession &session,
   return UPPL_RC_SUCCESS;
 }
 
-UpplReturnCode ConfigurationRequest::ValidateDomain(ServerSession &session,
-                                                    uint32_t data_type,
-                                                    uint32_t operation,
-                                                    void* &key_struct,
-                                                    void* &val_struct) {
+/* ValidateDomain
+ * @Description : This function validates the value struct of the
+ *                UNC_KT_DOMAIN
+ * @param[in]   : session - Object of ServerSession where the request
+ *                argument present
+ *                data_type - The data_type UNC_DT_CANDIDATE is only allowed
+ *                operation - contains UNC_OP_CREATE or UNC_OP_UPDATE
+ *                key struct - specifies key instance of KT_Domain
+ *                value struct - specifies value structure of KT_Domain
+ * @return      : UPPL_RC_SUCCESS if the validation is success
+ *                or UPPL_RC_ERR_* if validation is failed
+ * */
+UpplReturnCode ConfigurationRequest::ValidateDomain(
+    OdbcmConnectionHandler *db_conn,
+    ServerSession &session,
+    uint32_t data_type,
+    uint32_t operation,
+    void* &key_struct,
+    void* &val_struct) {
   UpplReturnCode resp_code = UPPL_RC_SUCCESS;
   if (data_type != UNC_DT_CANDIDATE) {
     pfc_log_info("Operation not allowed in given data type %d",
@@ -380,11 +426,25 @@ UpplReturnCode ConfigurationRequest::ValidateDomain(ServerSession &session,
   return UPPL_RC_SUCCESS;
 }
 
-UpplReturnCode ConfigurationRequest::ValidateBoundary(ServerSession &session,
-                                                      uint32_t data_type,
-                                                      uint32_t operation,
-                                                      void* &key_struct,
-                                                      void* &val_struct) {
+/* ValidateBoundary
+ * @Description : This function validates the value struct of the
+ *                UNC_KT_BOUNDARY
+ * @param[in]   : session - Object of ServerSession where the request
+ *                argument present
+ *                data_type - The data_type UNC_DT_CANDIDATE is only allowed
+ *                operation - contains UNC_OP_CREATE or UNC_OP_UPDATE
+ *                key struct - specifies key instance of KT_Boundary
+ *                value struct - specifies value structure of KT_Boundary
+ * @return      : UPPL_RC_SUCCESS if the validation is success
+ *                or UPPL_RC_ERR_* if validation is failed
+ * */
+UpplReturnCode ConfigurationRequest::ValidateBoundary(
+    OdbcmConnectionHandler *db_conn,
+    ServerSession &session,
+    uint32_t data_type,
+    uint32_t operation,
+    void* &key_struct,
+    void* &val_struct) {
   UpplReturnCode resp_code = UPPL_RC_SUCCESS;
   if (data_type != UNC_DT_CANDIDATE) {
     pfc_log_info("Operation not allowed in given data type %d",

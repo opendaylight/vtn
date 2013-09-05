@@ -68,7 +68,8 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      * ConnectToDb
      *   Connects to the DB with the connection parameters from conf file.
      *
-     * @param[in] conn_type       - Type of the connection (Read-Only or Read/Write)
+     * @param[in] conn_type       - Type of the connection
+     *                              (Read-Only or Read/Write)
      *
      * @return DalResultCode      - kDalRcSuccess in case of success
      *                            - Valid errorcode otherwise
@@ -83,6 +84,8 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      *                            - Valid errorcode otherwise
      */
     DalResultCode DisconnectFromDb() const;
+
+    inline DalConnType get_conn_type() { return conn_type_; }
 
     /**
      * CommitTransaction
@@ -736,6 +739,49 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
                     const DalBindInfo *output_and_match_attr_info) const;
 
     /**
+     * CopyModifiedInsertRecords
+     *   Inserts the additional records of table from source configuration to
+     *   destination configuration.
+     *
+     * @param[in] dest_cfg_type   - Configuration Type where the records to be
+     *                              copied (not equal to src_cfg_type)
+     * @param[in] src_cfg_type    - Configuration Type from where the records
+     *                              will be copied (not equal to dest_cfg_type)
+     * @param[in] table_index     - Valid Index of the table
+     * @param[in] output_and_match_attr_info
+     *                            - Bind Information for output and match
+     *                            - columns
+     *
+     * @return DalResultCode      - kDalRcSuccess in case of success
+     *                            - Valid errorcode otherwise
+     *                              On successful execution, both the
+     *                              configurations have same records.
+     *
+     * Note:
+     * Information on Copy Logic
+     * 1. Add the records in dest_cfg_type that are result of
+     *    GetCreatedRecords(dest_cfg_type, src_cfg_type, ...)
+     *    
+     * Information on usage of DalBindInfo
+     *  1. Valid instance of DalBindInfo with same table_index used in this API
+     *  2. BindInput if used for any attributes, ignored.
+     *  3. BindMatch if used for any attributes, ignored.
+     *  4. BindOutput is optional.
+     *     BindOutput, if used, copy the values of bound columns from
+     *     src_cfg_type to dst_cfg_type
+     *     BindOutput, if not used, copy the values of all columns from
+     *     src_cfg_type to dst_cfg_type
+     *     Since the bound value is not used for this API, it is ok to bind
+     *     dummy address. Do not pass NULL address.
+     *
+     */
+    DalResultCode CopyModifiedInsertRecords(
+                    const UpllCfgType dest_cfg_type,
+                    const UpllCfgType src_cfg_type,
+                    const DalTableIndex table_index,
+                    const DalBindInfo *output_and_match_attr_info) const;
+
+    /**
      * CopyMatchingRecords
      *   Copies all the matching records of table from source configuration to
      *   destination configuration.
@@ -810,13 +856,49 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
                                         const DalTableIndex table_index,
                                         const DalBindInfo *matching_attr_info,
                                         bool *identical) const;
-
+    /**
+     * ExecuteAppQuerySingleRecord
+     *   Execute the user supplied query statement to generate single record as
+     *   output
+     *
+     * @param[in] query_stmt      - User supplied executable query statement
+     * @param[in] bind_info       - Corresponding bind information for the query
+     *
+     * @return DalResultCode      - kDalRcSuccess in case of success
+     *                            - Valid errorcode otherwise
+     */
+    DalResultCode ExecuteAppQuerySingleRecord(
+                         const std::string query_stmt,
+                         const DalBindInfo *bind_info) const;
+    /**
+     * ExecuteAppQueryMultipleRecords
+     *   Execute the user supplied query statement to generate multiple records
+     *   in a given cursor as output
+     *
+     * @param[in] query_stmt      - User supplied executable query statement
+     * @param[in] bind_info       - Corresponding bind information for the query
+     * @param[in] max_record_count- Count of output records expected from the
+     *                              user.
+     * @param[in/out] cursor      - reference to the unallocated DalCursor
+     *                              pointer
+     *                            - Output - cursor pointer with valid instance
+     *                              of DalCursor
+     *
+     * @return DalResultCode      - kDalRcSuccess in case of success
+     *                            - Valid errorcode otherwise
+     */
+    DalResultCode ExecuteAppQueryMultipleRecords(
+                         const std::string query_stmt,
+                         const size_t max_record_count,
+                         const DalBindInfo *bind_info,
+                         DalCursor **cursor) const;
   private:
     /**
      * SetConnAttributes
      *   Sets necessary attributes for the connection from the configuration file
      *
-     * @param[in] conn_handle     - Valid connection handle before conencting to DB
+     * @param[in] conn_handle     - Valid connection handle before connecting
+     *                              to DB
      * @param[in] conn_type       - Type of the connection
      *                              (Read-Only or Read/Write)
      *
@@ -839,7 +921,8 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
 
     /**
      * SetCursorAttributes
-     *   Sets necessary cursor properites for the statement from the configuration file
+     *   Sets necessary cursor properites for the statement from the
+     *   configuration file
      *
      * @param[in] stmt_handle     - Valid Statment handle before binding query
      * @return DalResultCode      - kDalRcSuccess in case of success
@@ -941,6 +1024,7 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
 
     SQLHANDLE dal_env_handle_;   // Environment Handle
     SQLHANDLE dal_conn_handle_;  // Connection Handle
+    mutable DalConnType conn_type_;  // Connection Type
 };  // class DalOdbcMgr
 
 }  // namespace dal

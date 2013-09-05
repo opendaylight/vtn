@@ -271,7 +271,8 @@ upll_rc_t UpllConfigMgr::ReadBulkGetSubtree(const KeyTree &kt_tree,
       upll_rc_t new_urc = ReadBulkGetSubtree(kt_tree, datatype,
                                              local_bulk_ckv_req,
                                              (requested_cnt - (*added_cnt)),
-                                             &local_bulk_ckv_resp, &new_cnt, dmi);
+                                             &local_bulk_ckv_resp, &new_cnt,
+                                             dmi);
       delete local_bulk_ckv_req;
       if (new_urc == UPLL_RC_SUCCESS) {
         (*added_cnt) += new_cnt;
@@ -290,13 +291,15 @@ upll_rc_t UpllConfigMgr::ReadBulkGetSubtree(const KeyTree &kt_tree,
       }
       UPLL_LOG_DEBUG("KT: %u Got %u Urc %d", curr_kt, (*added_cnt), new_urc);
     }  // For all sibling instances
+
+    delete curr_req_ckv;
+
     if ((curr_urc != UPLL_RC_ERR_NO_SUCH_INSTANCE) &&
         (curr_urc != UPLL_RC_SUCCESS)) {
       if (*user_resp_ckv != NULL) {
         delete *user_resp_ckv;
         *user_resp_ckv = NULL;
       }
-      delete curr_req_ckv;
       return curr_urc;
     }
   }  // For all children KT
@@ -304,7 +307,8 @@ upll_rc_t UpllConfigMgr::ReadBulkGetSubtree(const KeyTree &kt_tree,
   UPLL_LOG_DEBUG("KT: %u Requested: %u, Got %u",
                  user_req_ckv->get_key_type(), requested_cnt, (*added_cnt));
   UPLL_LOG_TRACE("Req:%s\nResponse: %s", user_req_ckv->ToStr().c_str(),
-                 ((*user_resp_ckv) ? (*user_resp_ckv)->ToStrAll().c_str() : "null"));
+                 ((*user_resp_ckv) ? (*user_resp_ckv)->ToStrAll().c_str()
+                  : "null"));
   return UPLL_RC_SUCCESS;
 }
 
@@ -372,7 +376,8 @@ upll_rc_t UpllConfigMgr::ReadBulkMo(IpcReqRespHeader *msghdr,
   // Find first instance in the database
   MoManager *momgr = GetMoManager(user_req_ckv->get_key_type());
   if (momgr == NULL) {
-    UPLL_LOG_DEBUG("KT %u is not managed by UPLL", user_req_ckv->get_key_type());
+    UPLL_LOG_DEBUG("KT %u is not managed by UPLL",
+                   user_req_ckv->get_key_type());
     msghdr->result_code = UPLL_RC_ERR_NO_SUCH_NAME;
     return UPLL_RC_ERR_NO_SUCH_NAME;
   }
@@ -428,8 +433,12 @@ upll_rc_t UpllConfigMgr::ReadBulkMo(IpcReqRespHeader *msghdr,
           delete step_req_ckv;
           step_req_ckv = NULL;
 
+          ConfigKeyVal *subtree_req_ckv = step_resp_ckv->DupKey();
+
           if (retrieve_user_req_mo) {
             retrieve_user_req_mo = false;
+            delete step_resp_ckv;
+            step_resp_ckv = NULL;
           } else {
             // Add the node;
             added_cnt++;
@@ -440,18 +449,18 @@ upll_rc_t UpllConfigMgr::ReadBulkMo(IpcReqRespHeader *msghdr,
               (*user_resp_ckv)->AppendCfgKeyVal(step_resp_ckv);
             }
           }
+
           begin = false;
-          ConfigKeyVal *subtree_req_ckv = step_resp_ckv->DupKey();
           ConfigKeyVal *subtree_resp_ckv = NULL;
           uint32_t step_added_cnt = 0;
           upll_rc_t urc = ReadBulkGetSubtree(*kt_tree, msghdr->datatype,
                                              subtree_req_ckv, pending_cnt,
                                              &subtree_resp_ckv,
                                              &step_added_cnt, dmi);
-          delete subtree_req_ckv;
-          subtree_req_ckv = NULL;
           if (urc != UPLL_RC_SUCCESS) {
             UPLL_LOG_INFO("ReadBulkGetSubtree failed. Urc=%d", urc);
+            delete subtree_req_ckv;
+            subtree_req_ckv = NULL;
             if (*user_resp_ckv) {
               delete *user_resp_ckv;
               *user_resp_ckv = NULL;
@@ -470,11 +479,15 @@ upll_rc_t UpllConfigMgr::ReadBulkMo(IpcReqRespHeader *msghdr,
           }
           if (pending_cnt > 0) {
             // continue; and fetch more
-            step_req_ckv = step_resp_ckv->DupKey();
+            step_req_ckv = subtree_req_ckv->DupKey();
+            delete subtree_req_ckv;
+            subtree_req_ckv = NULL;
           } else {
             /* Can't delete step_resp_ckv as is it attached to user_resp_ckv
             delete step_resp_ckv;
             */
+            delete subtree_req_ckv;
+            subtree_req_ckv = NULL;
             msghdr->result_code = UPLL_RC_SUCCESS;
             msghdr->rep_count = added_cnt;
             UPLL_LOG_TRACE("Returning from %s", __FUNCTION__);
@@ -536,18 +549,18 @@ upll_rc_t UpllConfigMgr::ReadBulkMo(IpcReqRespHeader *msghdr,
                 done = true;
                 msghdr->result_code = UPLL_RC_ERR_GENERIC;
               } else {
+                delete step_req_ckv;
                 step_req_ckv = parent_ckv;
                 parent_ckv = NULL;
               }
             }
             if (done) {
-              if (step_req_ckv) {
-                delete step_req_ckv;
-                step_req_ckv = NULL;
-              }
+              delete step_req_ckv;
+              step_req_ckv = NULL;
+
               if ((msghdr->result_code != UPLL_RC_SUCCESS &&
                    msghdr->result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) &&
-                  (user_resp_ckv != NULL)) {
+                  (*user_resp_ckv != NULL)) {
                 delete *user_resp_ckv;
                 *user_resp_ckv = NULL;
               }

@@ -45,6 +45,8 @@ using unc::tclib::TcAuditResult;
 
 class TcLibIntfImpl : public unc::tclib::TcLibInterface {
  public:
+  static const char * const kUpllCtrlrId;
+
   explicit TcLibIntfImpl(UpllConfigMgr *ucm);
   virtual ~TcLibIntfImpl();
   /* commit related interfaces */

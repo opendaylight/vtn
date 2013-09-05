@@ -117,7 +117,7 @@ create table if not exists r_controller_table (
   actual_version varchar(32),
   oper_status smallint default 0,
   valid char(9),
-  cs_row_status smallint,
+  cs_row_status smallint default 5,
   cs_attr char(9) 
   );
 
@@ -128,7 +128,7 @@ create table if not exists r_ctr_domain_table(
   description varchar(128) , 
   oper_status smallint default 1 , 
   valid char(3),
-  cs_row_status smallint, 
+  cs_row_status smallint default 5, 
   cs_attr char(3),        
   primary key(controller_name,domain_name)
   );
@@ -144,7 +144,7 @@ create table if not exists r_boundary_table(
   logical_port_id2 bytea,
   oper_status smallint default 1,
   valid char(8),
-  cs_row_status smallint,
+  cs_row_status smallint default 5,
   cs_attr char(8)
   );
 
@@ -228,7 +228,7 @@ create table if not exists i_ctr_domain_table(
   description varchar(128) , 
   oper_status smallint default 1 , 
   valid char(3),
-  cs_row_status smallint, 
+  cs_row_status smallint default 5, 
   cs_attr char(3),        
   primary key(controller_name,domain_name)
   );

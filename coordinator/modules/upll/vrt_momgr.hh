@@ -228,8 +228,8 @@ class VrtMoMgr : public VnodeMoMgr {
    *         associated attributes are supported on the given controller,
    *         based on the valid flag.
    *
-   * @param[in]  crtlr_name      Controller name.
-   * @param[in]  ikey            Corresponding key and value structure.
+   * @param[in]  vrt_val         KT_VROUTER Value structure.
+   * @param[in]  attrs           Pointer to controller attribute.
    * @param[in]  operation       Operation name.
    *
    * @retval  UPLL_RC_SUCCESS                       validation succeeded.
@@ -237,9 +237,9 @@ class VrtMoMgr : public VnodeMoMgr {
    * @retval  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR    Attribute NOT_SUPPORTED.
    * @retval  UPLL_RC_ERR_GENERIC                   Generic failure.
    */
-  upll_rc_t ValidateVrtAttributeSupportCheck(const char *ctrlr_name,
-                                             ConfigKeyVal *kval,
-                                             uint32_t operation);
+  upll_rc_t ValidateVrtAttributeSupportCheck(val_vrt_t *vrt_val,
+                                             const uint8_t *attrs,
+                                             unc_keytype_operation_t operation);
 
   /**
    * @brief  Duplicates the input configkeyval including the key and val.  
@@ -362,7 +362,19 @@ class VrtMoMgr : public VnodeMoMgr {
                             MoMgrTables tbl);
   upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey,
                             ConfigKeyVal *ikey);
+  /**
+   * @Brief  compares controller id and domain id before 
+   *         updating the value to DB.
+   *
+   * @param[in]  ikey  ikey contains key and value structure.
+   * @param[in]  okey  okey contains key and value structure.
+   *
+   * @retval  UPLL_RC_SUCCESS            Successful.
+   * @retval  UPLL_RC_ERR_CFG_SYNTAX     Syntax error.
+   */
 
+  upll_rc_t CtrlrIdAndDomainIdUpdationCheck(ConfigKeyVal *ikey,
+                                                   ConfigKeyVal *okey);
   /**
    * @brief create entry in Vnode Rename Table,
    *        with the renamed VTN details fetched from VTN rename Table
@@ -379,6 +391,9 @@ class VrtMoMgr : public VnodeMoMgr {
    */
   upll_rc_t CreateVnodeConfigKey(ConfigKeyVal *ikey,
                                  ConfigKeyVal *&okey);
+  upll_rc_t EnableAdminStatus(ConfigKeyVal *ikey,
+                              DalDmlIntf *dmi,
+                              IpcReqRespHeader *req);
 };
 
 }  // namespace kt_momgr

@@ -16,7 +16,7 @@
 #include <sstream>
 
 #include "pfcxx/module.hh"
-#include "upll/upll_log.hh"
+#include "uncxx/upll_log.hh"
 #include "dal_odbc_mgr.hh"
 #include "dal_query_builder.hh"
 #include "dal_error_handler.hh"
@@ -29,6 +29,7 @@ namespace dal {
 DalOdbcMgr::DalOdbcMgr() {
   dal_env_handle_ = SQL_NULL_HANDLE;
   dal_conn_handle_ = SQL_NULL_HANDLE;
+  conn_type_ = kDalConnReadOnly;
 }
 
 /* Desctructor */
@@ -129,6 +130,8 @@ DalOdbcMgr::ConnectToDb(const DalConnType conn_type) const {
   SQLRETURN     sql_rc;
   DalResultCode dal_rc;
   // PFC_ASSERT(dal_env_handle_);
+
+  conn_type_ = conn_type;
 
   if (dal_conn_handle_ == NULL) {
     UPLL_LOG_DEBUG("NULL Connection Handle");
@@ -324,6 +327,8 @@ DalOdbcMgr::GetSingleRecord(const UpllCfgType cfg_type,
     return kDalRcGeneralError;
   }
   UPLL_LOG_TRACE("Copied result to the DAL User Buffer");
+  UPLL_LOG_TRACE("%s",
+      ((const_cast<DalBindInfo *>(bind_info))->BindListResultToStr()).c_str());
 
   FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
   return kDalRcSuccess;
@@ -1287,6 +1292,7 @@ DalOdbcMgr::CopyEntireRecords(const UpllCfgType dest_cfg_type,
                    "\n Query - %s; Bind - %s",
                    schema::TableName(table_index),
                    schema::TableName(bind_info->get_table_index()));
+    return kDalRcGeneralError;
   }
 
   // Build Query Statement
@@ -1301,7 +1307,7 @@ DalOdbcMgr::CopyEntireRecords(const UpllCfgType dest_cfg_type,
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
   dal_rc = ExecuteQuery(&dal_stmt_handle,
-                        &query_stmt);
+                        &query_stmt, bind_info);
 
   if (dal_rc != kDalRcSuccess) {
     UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
@@ -1349,6 +1355,7 @@ DalOdbcMgr::CopyModifiedRecords(const UpllCfgType dest_cfg_type,
                    "\n Query - %s; Bind - %s",
                    schema::TableName(table_index),
                    schema::TableName(bind_info->get_table_index()));
+    return kDalRcGeneralError;
   }
 
   // Delete deleted records from dst
@@ -1363,7 +1370,7 @@ DalOdbcMgr::CopyModifiedRecords(const UpllCfgType dest_cfg_type,
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
   dal_rc = ExecuteQuery(&dal_stmt_handle,
-                        &query_stmt);
+                        &query_stmt, bind_info);
 
   if (dal_rc != kDalRcSuccess && dal_rc != kDalRcRecordNotFound) {
     UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
@@ -1385,7 +1392,7 @@ DalOdbcMgr::CopyModifiedRecords(const UpllCfgType dest_cfg_type,
   }
 
   dal_rc = ExecuteQuery(&dal_stmt_handle,
-                        &query_stmt);
+                        &query_stmt, bind_info);
 
   if (dal_rc != kDalRcSuccess && dal_rc != kDalRcRecordNotFound) {
     UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
@@ -1409,7 +1416,7 @@ DalOdbcMgr::CopyModifiedRecords(const UpllCfgType dest_cfg_type,
   }
 
   dal_rc = ExecuteQuery(&dal_stmt_handle,
-                        &query_stmt);
+                        &query_stmt, bind_info);
 
   if (dal_rc != kDalRcSuccess && dal_rc != kDalRcRecordNotFound) {
     UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
@@ -1422,6 +1429,69 @@ DalOdbcMgr::CopyModifiedRecords(const UpllCfgType dest_cfg_type,
   FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
   return kDalRcSuccess;
 }  // DalOdbcMgr::CopyModifiedRecords
+
+// Copies only the modified records from dst to src cfg_type
+DalResultCode
+DalOdbcMgr::CopyModifiedInsertRecords(const UpllCfgType dest_cfg_type,
+                                const UpllCfgType src_cfg_type,
+                                const DalTableIndex table_index,
+                                const DalBindInfo *bind_info) const {
+  SQLHANDLE     dal_stmt_handle = SQL_NULL_HANDLE;
+  DalResultCode dal_rc;
+  DalQueryBuilder  qbldr;
+  std::string query_stmt;
+
+  // Validating Inputs
+  if (dest_cfg_type == UPLL_DT_INVALID || src_cfg_type == UPLL_DT_INVALID) {
+    UPLL_LOG_DEBUG("Invalid Config Type - %d %d", dest_cfg_type, src_cfg_type);
+    return kDalRcGeneralError;
+  }
+
+  if (dest_cfg_type == src_cfg_type) {
+    UPLL_LOG_DEBUG("Same Config Type - %d %d", dest_cfg_type, src_cfg_type);
+    return kDalRcGeneralError;
+  }
+
+  if (table_index >= schema::table::kDalNumTables) {
+    UPLL_LOG_DEBUG("Invalid Table Index - %d", table_index);
+    return kDalRcGeneralError;
+  }
+
+  // No need to validate bindinfo
+  // BindInput - NA; BindOuput - O; BindMatch - O;
+  if (bind_info != NULL && table_index != bind_info->get_table_index()) {
+    UPLL_LOG_DEBUG("Table Index Mismatch with bind info "
+                   "\n Query - %s; Bind - %s",
+                   schema::TableName(table_index),
+                   schema::TableName(bind_info->get_table_index()));
+    return kDalRcGeneralError;
+  }
+
+  // Insert created records to dst
+  if (qbldr.get_sql_statement(kDalCopyModRecCreateQT, bind_info, query_stmt,
+                        table_index, dest_cfg_type, src_cfg_type) != true) {
+    UPLL_LOG_TRACE("Failed Building Query Stmt");
+    return kDalRcGeneralError;
+  } else {
+    UPLL_LOG_DEBUG("Query Stmt - %s", query_stmt.c_str());
+  }
+
+  dal_rc = ExecuteQuery(&dal_stmt_handle,
+                        &query_stmt, bind_info);
+
+  if (dal_rc != kDalRcSuccess && dal_rc != kDalRcRecordNotFound) {
+    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+                   dal_rc, query_stmt.c_str());
+    if (dal_stmt_handle != SQL_NULL_HANDLE) {
+      FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
+    }
+    return dal_rc;
+  }
+  FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
+  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s",
+                query_stmt.c_str());
+  return kDalRcSuccess;
+}  // DalOdbcMgr::CopyModifiedInsertRecords
 
 // Copies the matching records from dst to src cfg_type
 DalResultCode
@@ -1477,7 +1547,8 @@ DalOdbcMgr::CopyMatchingRecords(const UpllCfgType dest_cfg_type,
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
   dal_rc = ExecuteQuery(&dal_stmt_handle,
-                        &query_stmt);
+                        &query_stmt,
+                        bind_info);
 
   if (dal_rc != kDalRcSuccess) {
     UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
@@ -1588,6 +1659,111 @@ DalOdbcMgr::CheckRecordsIdentical(const UpllCfgType cfg_type_1,
   FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
   return kDalRcSuccess;
 }  // DalOdbcMgr::CheckRecordsIdentical
+
+// Executes User supplied query and returns single record in the result set
+DalResultCode
+DalOdbcMgr::ExecuteAppQuerySingleRecord(
+                         const std::string query_stmt,
+                         const DalBindInfo *bind_info) const {
+  SQLHANDLE     dal_stmt_handle = SQL_NULL_HANDLE;
+  SQLRETURN     sql_rc;
+  DalResultCode dal_rc;
+
+  // Validating Inputs
+  if (query_stmt.size() == 0) {
+    UPLL_LOG_DEBUG("Empty Query Stmt string");
+    return kDalRcGeneralError;
+  }
+
+  // PFC_ASSERT(bind_info)
+  if (bind_info == NULL) {
+    UPLL_LOG_DEBUG("NULL Bind Info");
+    return kDalRcGeneralError;
+  }
+
+  // Allocate Stmt Handle, Bind and Execute the Query Statement
+  dal_rc = ExecuteQuery(&dal_stmt_handle, &query_stmt, bind_info);
+  if (dal_rc != kDalRcSuccess) {
+    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+                   dal_rc, query_stmt.c_str());
+    FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
+    return dal_rc;
+  }
+  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s", query_stmt.c_str());
+
+  // Fetching results from the resultset
+  sql_rc = SQLFetch(dal_stmt_handle);
+  DalErrorHandler::ProcessOdbcErrors(SQL_HANDLE_STMT,
+                                     dal_stmt_handle,
+                                     sql_rc, &dal_rc);
+  if (dal_rc != kDalRcSuccess) {
+    UPLL_LOG_DEBUG("%d - Failed to Fetch result", dal_rc);
+    FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
+    return dal_rc;
+  }
+  UPLL_LOG_TRACE("Result fetched from DB");
+
+  if (const_cast<DalBindInfo*>(bind_info)->CopyResultToApp() != true) {
+    UPLL_LOG_DEBUG("Failed to Copy result to the DAL User Buffer");
+    FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
+    return kDalRcGeneralError;
+  }
+  UPLL_LOG_TRACE("Copied result to the DAL User Buffer");
+  UPLL_LOG_TRACE("%s",
+      ((const_cast<DalBindInfo *>(bind_info))->BindListResultToStr()).c_str());
+
+  FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
+  return kDalRcSuccess;
+}  // DalOdbcMgr::ExecuteAppQuerySingleRecord
+
+// Executes user given query resulting multiple records in the result set
+DalResultCode
+DalOdbcMgr::ExecuteAppQueryMultipleRecords(
+                         const std::string query_stmt,
+                         const size_t max_record_count,
+                         const DalBindInfo *bind_info,
+                         DalCursor **cursor) const {
+  SQLHANDLE     dal_stmt_handle = SQL_NULL_HANDLE;
+  DalResultCode dal_rc;
+
+  // Validating Inputs
+  if (query_stmt.size() == 0) {
+    UPLL_LOG_DEBUG("Empty Query Stmt string");
+    return kDalRcGeneralError;
+  }
+
+  // PFC_ASSERT(bind_info)
+  if (bind_info == NULL) {
+    UPLL_LOG_DEBUG("NULL Bind Info");
+    return kDalRcGeneralError;
+  }
+
+  // Allocate Stmt Handle, Bind and Execute the Query Statement
+  dal_rc = ExecuteQuery(&dal_stmt_handle,
+                        &query_stmt,
+                        bind_info,
+                        max_record_count);
+
+  if (dal_rc != kDalRcSuccess) {
+    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+                   dal_rc, query_stmt.c_str());
+    FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
+    return dal_rc;
+  }
+  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s",
+                query_stmt.c_str());
+
+  *cursor = new DalCursor(dal_stmt_handle,
+                          bind_info);
+  // PFC_ASSERT(*cursor)
+  if (*cursor == NULL) {
+    UPLL_LOG_DEBUG("Failed to allocate cursor handle for the result");
+    FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
+    return kDalRcGeneralError;
+  }
+  UPLL_LOG_TRACE("Allocated cursor handle for the result");
+  return kDalRcSuccess;
+}   // DalOdbcMgr::ExecuteAppQueryMultipleRecords
 
 // Private Methods of DalOdbcMgr
 // Set Connection Attributes
@@ -1792,7 +1968,10 @@ DalOdbcMgr::BindToQuery(const SQLHANDLE *stmt_handle,
   }
 
   // Printing Bind List for debugging
-  (const_cast<DalBindInfo *>(bind_info))->PrintBindList();
+  UPLL_LOG_VERBOSE("%s",
+      ((const_cast<DalBindInfo *>(bind_info))->BindListToStr()).c_str());
+  UPLL_LOG_TRACE("%s",
+      ((const_cast<DalBindInfo *>(bind_info))->BindListInputToStr()).c_str());
 
   // Dont change the order of binding(input, output and match)
   // Parameter Indexing is dependant on this ordering.
@@ -1895,7 +2074,7 @@ DalOdbcMgr::BindInputToQuery(const SQLHANDLE *stmt_handle,
       (*param_idx)++;
     }
   }  // for iter
-  UPLL_LOG_TRACE("Input Parameters bound sucessfully to Query");
+  UPLL_LOG_VERBOSE("Input Parameters bound sucessfully to Query");
   return dal_rc;
 }  // DalBindInfo::BindInputToQuery
 
@@ -1960,7 +2139,7 @@ DalOdbcMgr::BindOutputToQuery(const SQLHANDLE *stmt_handle,
       (*param_idx)++;
     }
   }  // for iter
-  UPLL_LOG_TRACE("Output Parameters bound sucessfully to Query");
+  UPLL_LOG_VERBOSE("Output Parameters bound sucessfully to Query");
   return dal_rc;
 }  // DalBindInfo::BindOutputToQuery
 
@@ -2028,7 +2207,7 @@ DalOdbcMgr::BindMatchToQuery(const SQLHANDLE *stmt_handle,
       (*param_idx)++;
     }
   }  // for iter
-  UPLL_LOG_TRACE("Match Parameters bound sucessfully to Query");
+  UPLL_LOG_VERBOSE("Match Parameters bound sucessfully to Query");
   return dal_rc;
 }  // DalBindInfo::BindMatchToQuery
 
@@ -2090,7 +2269,7 @@ DalOdbcMgr::ExecuteQuery(SQLHANDLE *dal_stmt_handle,
       FreeHandle(SQL_HANDLE_STMT, *dal_stmt_handle);
       return dal_rc;
     }
-    UPLL_LOG_TRACE("Success Binding parameters to Query");
+    UPLL_LOG_VERBOSE("Success Binding parameters to Query");
   }
 
   // Executing the Query Statement
@@ -2107,7 +2286,7 @@ DalOdbcMgr::ExecuteQuery(SQLHANDLE *dal_stmt_handle,
     return dal_rc;
   }
 
-  UPLL_LOG_TRACE("Query Successfully Executed %s",
+  UPLL_LOG_VERBOSE("Query Successfully Executed %s",
                 query_stmt->c_str());
   return kDalRcSuccess;
 }   // DalOdbcMgr::ExecuteQuery

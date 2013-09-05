@@ -69,7 +69,7 @@
 
     <vtn.build.destdir>root</vtn.build.destdir>
     <vtn.build.prefix>/usr/local/vtn</vtn.build.prefix>
-    <vtn.build.debug>true</vtn.build.debug>
+    <vtn.build.debug>false</vtn.build.debug>
 
     <!-- The number of GNU make jobs -->
     <vtn.build.jobs>1</vtn.build.jobs>

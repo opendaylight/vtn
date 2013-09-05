@@ -137,7 +137,8 @@ public class VRouterInterfaceResourceValidator extends VtnServiceValidator {
 			} else if (isValid && requestBody != null
 					&& VtnServiceConsts.POST.equals(method)) {
 				isValid = validatePost(requestBody);
-			} else {
+			} else if (isValid) {
+				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
@@ -270,13 +271,13 @@ public class VRouterInterfaceResourceValidator extends VtnServiceValidator {
 			}
 			// validation for key: netmask(optional)
 			if (isValid) {
-				setInvalidParameter(VtnServiceJsonConsts.NETMASK);
-				if (vRouterInterface.has(VtnServiceJsonConsts.NETMASK)) {
+				setInvalidParameter(VtnServiceJsonConsts.PREFIX);
+				if (vRouterInterface.has(VtnServiceJsonConsts.PREFIX)) {
 					isValid = validator.isValidRange(
-							Integer.parseInt(vRouterInterface
+							vRouterInterface
 									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.NETMASK)
-									.getAsString().trim()),
+											VtnServiceJsonConsts.PREFIX)
+									.getAsString().trim(),
 							VtnServiceJsonConsts.VAL_1,
 							VtnServiceJsonConsts.VAL_30);
 				}

@@ -14,7 +14,7 @@
 
 #include <stdint.h>
 #include <cstring>
-#include "upll/upll_log.hh"
+#include "uncxx/upll_log.hh"
 #include "dal_error_handler.hh"
 
 namespace unc {

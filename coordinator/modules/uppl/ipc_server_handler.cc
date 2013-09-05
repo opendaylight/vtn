@@ -8,9 +8,9 @@
  */
 
 /*
- *@brief   IPCServerHandler header
- *@file    ipc_server_handler.hh
- *@ Desc:  This header file contains the declaration of IPCServerHandler class
+ *@brief   IPC Server Handler
+ *@file    ipc_server_handler.cc
+ *@ Desc:  This file contains the definition of IPCServerHandler class
  **
  **/
 
@@ -26,10 +26,21 @@ IPCServerHandler* IPCServerHandler::ipc_server_handler_ = NULL;
 
 /**
  * @Description : This function will be called by PhysicalCore when IPC client
- *                sends a message to is received for this server.This function
- *                validates whether the provided service id is valid
- * @param[in]   : ServerSession object, service id
- * @return      : PFC_TRUE or PFC_FALSE
+ *                sends a message to be received by UPPL's IPC server.
+ *                This function validates whether the provided service id
+ *                is valid. It sends the request to Internal Transaction
+ *                Coordinator for further processing
+ * @param[in]   : session    - Object of ServerSession where the request
+ *                argument present
+ *                service_id - service id to classify the type of request.
+ *                UPPL expects 1, 2 or 3.
+ * @return      : Response code back to the caller.
+ *   The system/generic level errors or common errors are generally
+ *   returned in this function otherwise SUCCESS(0) will be returned.
+ *   When an error code is being returned in this function, the caller
+ *   cannot expect more specific error in response.
+ *   When SUCCESS(0) is returned, the caller should further check
+ *   the operation result_code in the response for more specific error.
  **/
 
 pfc_ipcresp_t IPCServerHandler::IpcService(ServerSession &session,
@@ -49,11 +60,12 @@ pfc_ipcresp_t IPCServerHandler::IpcService(ServerSession &session,
 
 
 /**
- * @Description :This function is used to send events via IPC post() command
+ * @Description :This function is used to send events via IPC post() command.
  *               This function will be called from ITC to send events to UPLL
  *               or VTN
  * @param[in]   : ServerEvent object
- * @return      : Success code or any associated error code
+ * @return      : 0 is returned if event is posted successfully
+ *                otherwise 'non 0' is returned to denote error
  **/
 
 uint32_t IPCServerHandler::SendEvent(ServerEvent *serv_event) {
@@ -63,7 +75,7 @@ uint32_t IPCServerHandler::SendEvent(ServerEvent *serv_event) {
 }
 
 /**
- * @Description :This function is called by IPCConnectionMAnager to
+ * @Description :This function is called by IPCConnectionManager to
  *               get the IPCServerHandler object
  * @param[in]   :none
  * @return      :Pointer to IPCServerHandler
@@ -78,6 +90,11 @@ IPCServerHandler* IPCServerHandler::get_ipc_server_handler() {
   return ipc_server_handler_;
 }
 
+/**
+ * @Description :This function is used to delete the IPCServerHandler object
+ * @param[in]   :none
+ * @return      :none
+ * **/
 void IPCServerHandler::release_ipc_server_handler() {
   PhysicalLayer* physical_layer = PhysicalLayer::get_instance();
   physical_layer->ipc_server_hdlr_mutex_.lock();

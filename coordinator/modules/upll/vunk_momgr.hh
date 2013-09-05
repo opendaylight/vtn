@@ -25,15 +25,15 @@ class VunknownMoMgr : public MoMgrImpl {
     static BindInfo vunk_bind_info[];
     static BindInfo key_vunk_maintbl_update_bind_info[];
     /**
-     * @brief  Gets the valid array position of the variable in the value 
-     *         structure from the table in the specified configuration  
+     * @brief  Gets the valid array position of the variable in the value
+     *         structure from the table in the specified configuration
      *
-     * @param[in]     val      pointer to the value structure 
+     * @param[in]     val      pointer to the value structure
      * @param[in]     indx     database index for the variable
-     * @param[out]    valid    position of the variable in the valid array - 
+     * @param[out]    valid    position of the variable in the valid array -
      *                          NULL if valid does not exist.
      * @param[in]     dt_type  specifies the configuration
-     * @param[in]     tbl      specifies the table containing the given value 
+     * @param[in]     tbl      specifies the table containing the given value
      *
      **/
     upll_rc_t GetValid(void *val, uint64_t indx, uint8_t *&valid,
@@ -83,7 +83,7 @@ class VunknownMoMgr : public MoMgrImpl {
     /**
      * @brief  Compares the valid value between two database records.
      * 	     if both the values are same, update the valid flag for corresponding
-     * 	     attribute as invalid in the first record. 
+     * 	     attribute as invalid in the first record.
      *
      * @param[in/out]  val1   first record value instance.
      * @param[in]      val2   second record value instance.
@@ -120,7 +120,7 @@ class VunknownMoMgr : public MoMgrImpl {
      * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
      */
     upll_rc_t ValidateVunknownValue(val_vunknown_t *val_vunknown,
-                                    unc_keytype_operation_t operation = UNC_OP_INVALID);
+                                    uint32_t operation = UNC_OP_INVALID);
 
     /**
      * @Brief Checks if the specified key type(KT_VUNKNOWN) and
@@ -138,23 +138,9 @@ class VunknownMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_INVALID_OPTION2 Option2 is not valid.
      */
     upll_rc_t ValidateCapability(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                                  const char * crtlr_name = NULL);
-
-    /**
-     * @Brief Checks if the specified key type and
-     *        associated attributes are supported on the given controller,
-     *        based on the valid flag.
-     *
-     * @param[in] crtlr_name      Controller name.
-     * @param[in] ikey            Corresponding key and value structure.
-     *
-     * @retval UPLL_RC_SUCCESS                    validation succeeded.
-     * @retval UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR Attribute NOT_SUPPORTED.
-     * @retval UPLL_RC_ERR_GENERIC                Generic failure.
-     */
-    upll_rc_t ValVunknownAttributeSupportCheck(const char * crtlr_name,
-                                               ConfigKeyVal *ikey,
-                                               uint32_t operation);
+                                  const char * crtlr_name = NULL) {
+      return UPLL_RC_SUCCESS;
+    }
     /**
      * @brief      Method to check if individual portions of a key are valid
      *
@@ -166,7 +152,7 @@ class VunknownMoMgr : public MoMgrImpl {
      **/
     bool IsValidKey(void *key, uint64_t index);
     /**
-     * @brief  Duplicates the input configkeyval including the key and val.  
+     * @brief  Duplicates the input configkeyval including the key and val.
      * based on the tbl specified.
      *
      * @param[in]  okey   Output Configkeyval - allocated within the function
@@ -179,13 +165,13 @@ class VunknownMoMgr : public MoMgrImpl {
     upll_rc_t DupConfigKeyVal(ConfigKeyVal *&okey, ConfigKeyVal *&req,
                               MoMgrTables tbl = MAINTBL);
     /**
-     * @brief  Allocates for the specified val in the given configuration in the     * specified table.   
+     * @brief  Allocates for the specified val in the given configuration in the     * specified table.
      *
-     * @param[in/out]  ck_val   Reference pointer to configval structure 
-     *                          allocated.      
+     * @param[in/out]  ck_val   Reference pointer to configval structure
+     *                          allocated.
      * @param[in]      dt_type  specifies the configuration candidate/running/
-     *                          state 
-     * @param[in]      tbl      specifies if the corresponding table is the  
+     *                          state
+     * @param[in]      tbl      specifies if the corresponding table is the
      *                          main table / controller table or rename table.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -196,7 +182,7 @@ class VunknownMoMgr : public MoMgrImpl {
     /**
      * @brief      Method to get a configkeyval of a specified keytype from an input configkeyval
      *
-     * @param[in/out]  okey                 pointer to output ConfigKeyVal 
+     * @param[in/out]  okey                 pointer to output ConfigKeyVal
      * @param[in]      parent_key           pointer to the configkeyval from which the output configkey val is initialized.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -204,10 +190,10 @@ class VunknownMoMgr : public MoMgrImpl {
      */
     upll_rc_t GetChildConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *parent_key);
     /**
-     * @brief      Method to get a configkeyval of the parent keytype 
+     * @brief      Method to get a configkeyval of the parent keytype
      *
-     * @param[in/out]  okey           pointer to parent ConfigKeyVal 
-     * @param[in]      ikey           pointer to the child configkeyval from 
+     * @param[in/out]  okey           pointer to parent ConfigKeyVal
+     * @param[in]      ikey           pointer to the child configkeyval from
      * which the parent configkey val is obtained.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -229,11 +215,9 @@ class VunknownMoMgr : public MoMgrImpl {
     upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *ikey);
     bool GetRenameKeyBindInfo(unc_key_type_t key_type, BindInfo *&binfo,
                               int &nattr, MoMgrTables tbl);
-    upll_rc_t ValidateAttribute(ConfigKeyVal *kval, 
+    upll_rc_t ValidateAttribute(ConfigKeyVal *kval,
                                 DalDmlIntf *dmi,
-                                IpcReqRespHeader *req = NULL) {
-      return UPLL_RC_SUCCESS;
-    }
+                                IpcReqRespHeader *req = NULL);
 
   public:
     VunknownMoMgr();
@@ -290,6 +274,19 @@ class VunknownMoMgr : public MoMgrImpl {
                                DalDmlIntf *dmi) {
       return UPLL_RC_SUCCESS;
     }
+
+    /**
+     * @Brief  compares controller id and domain id before
+     *         updating the value to DB.
+     *
+     * @param[in]  ikey  ikey contains key and value structure.
+     * @param[in]  okey  okey contains key and value structure.
+     *
+     * @retval  UPLL_RC_SUCCESS            Successful.
+     * @retval  UPLL_RC_ERR_CFG_SYNTAX     Syntax error.
+     */
+    upll_rc_t CtrlrIdAndDomainIdUpdationCheck(ConfigKeyVal *ikey,
+                                                   ConfigKeyVal *okey);
     /**
      * @Brief Validates the syntax for KT_VUNKNOWN keytype key structure.
      *

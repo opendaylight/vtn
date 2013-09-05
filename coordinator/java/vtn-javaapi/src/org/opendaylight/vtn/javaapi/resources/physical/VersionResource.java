@@ -16,6 +16,7 @@ import org.opendaylight.vtn.core.ipc.IpcStruct;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
+import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.conversion.IpcDataUnitWrapper;
@@ -73,9 +74,7 @@ public class VersionResource extends AbstractResource {
 			LOG.info("Request packet processed with status:"+status);
 			if (status != UncSYSMGEnums.NodeIpcErrorT.NOMG_E_OK.ordinal()) {
 				LOG.info("error occurred while performing operation");
-				createErrorInfo(
-						UncCommonEnum.UncResultCode.UNC_SERVER_ERROR.getValue(),
-						UncIpcErrorCode.getNodeCodes(status));
+				createNoMgErrorInfo(UncIpcErrorCode.getNodeCodes(status));
 				status = UncResultCode.UNC_SERVER_ERROR.getValue();
 			} else {
 				LOG.info("Operation successfully performed");
@@ -133,9 +132,24 @@ public class VersionResource extends AbstractResource {
 		final JsonObject versionJson = new JsonObject();
 		final IpcStruct versionStruct = (IpcStruct) session
 				.getResponse(VtnServiceJsonConsts.VAL_0);
-		versionJson.addProperty(VtnServiceJsonConsts.VERSIONNO,
-				IpcDataUnitWrapper.getIpcStructUint8ArrayValue(versionStruct,
-						VtnServiceJsonConsts.VERSION));
+		String major = IpcDataUnitWrapper.getIpcStructUint16Value(versionStruct,
+				VtnServiceIpcConsts.MAJOR);
+		LOG.debug("major: "+ IpcDataUnitWrapper.getIpcStructUint16Value(versionStruct,
+				VtnServiceIpcConsts.MAJOR));
+		String minor = IpcDataUnitWrapper.getIpcStructUint16Value(versionStruct,
+				VtnServiceIpcConsts.MINOR);
+		LOG.debug("minor: "+ IpcDataUnitWrapper.getIpcStructUint16Value(versionStruct,
+				VtnServiceIpcConsts.MINOR));
+		String revision = IpcDataUnitWrapper.getIpcStructUint16Value(versionStruct,
+				VtnServiceIpcConsts.REVISION);
+		LOG.debug("revision: "+ IpcDataUnitWrapper.getIpcStructUint16Value(versionStruct,
+				VtnServiceIpcConsts.REVISION));
+		String patchLevel = IpcDataUnitWrapper.getIpcStructUint16Value(versionStruct,
+				VtnServiceIpcConsts.PATCHLEVEL);
+		LOG.debug("patchLevel: "+ IpcDataUnitWrapper.getIpcStructUint16Value(versionStruct,
+				VtnServiceIpcConsts.PATCHLEVEL));
+		String version = VtnServiceJsonConsts.V + major + VtnServiceConsts.DOT + minor + VtnServiceConsts.DOT + revision + VtnServiceConsts.DOT + patchLevel;
+		versionJson.addProperty(VtnServiceJsonConsts.VERSIONNO, version);
 		final JsonArray patchJsonArray = new JsonArray();
 		JsonObject patchJson = null;
 		for (int i = VtnServiceJsonConsts.VAL_1; i < count; i++) {

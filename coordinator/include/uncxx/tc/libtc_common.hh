@@ -27,6 +27,10 @@ typedef enum {
 /*provides methods to access IPC server session data*/
 class TcServerSessionUtils {
  public:
+  /*method to set timeout for server session*/
+  static TcUtilRet 
+      set_srv_timeout(pfc::core::ipc::ServerSession* ssess,
+                      const pfc_timespec_t *timeout);
   /*methods to retrieve data*/
   static TcUtilRet get_uint32(
                pfc::core::ipc::ServerSession* ssess,
@@ -73,14 +77,14 @@ class TcClientSessionUtils {
   static pfc::core::ipc::ClientSession* create_tc_client_session(
                                             std::string channel_name,
                                             uint32_t service_id,
-                                            pfc_ipcconn_t &conn);
+                                            pfc_ipcconn_t &conn,
+                                            pfc_bool_t infinite_timeout = PFC_TRUE);
 
   static TcUtilRet tc_session_invoke(pfc::core::ipc::ClientSession* csess,
                                      pfc_ipcresp_t& response);
 
-  static pfc::core::ipc::ClientSession* tc_session_close(
-                                        pfc::core::ipc::ClientSession* csess,
-                                        pfc_ipcconn_t conn);
+  static TcUtilRet tc_session_close(pfc::core::ipc::ClientSession** csess,
+                                    pfc_ipcconn_t conn);
   /*methods to retrieve data*/
   static TcUtilRet get_uint32(
                pfc::core::ipc::ClientSession* csess,

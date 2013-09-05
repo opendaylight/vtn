@@ -27,74 +27,86 @@
 using unc::uppl::ODBCMOperator;
 /* @ Port Class definition */
 class Kt_Port: public Kt_State_Base {
- private:
-  Kt_Base *parent;
-
  public:
   Kt_Port();
 
   ~Kt_Port();
 
-  UpplReturnCode DeleteKeyInstance(void* key_struct,
+  UpplReturnCode DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
+                                   void* key_struct,
                                    uint32_t data_type,
                                    uint32_t key_type);
 
-  UpplReturnCode ReadInternal(vector<void *> &key_val,
+  UpplReturnCode ReadInternal(OdbcmConnectionHandler *db_conn,
+                              vector<void *> &key_val,
                               vector<void *> &val_struct,
                               uint32_t data_type,
                               uint32_t operation_type);
 
-  UpplReturnCode ReadBulk(void* key_struct,
+  UpplReturnCode ReadBulk(OdbcmConnectionHandler *db_conn,
+                          void* key_struct,
                           uint32_t data_type,
-                          uint32_t option1,
-                          uint32_t option2,
                           uint32_t &max_rep_ct,
                           int child_index,
                           pfc_bool_t parent_call,
-                          pfc_bool_t is_read_next);
+                          pfc_bool_t is_read_next,
+                          ReadRequest *read_req);
 
-  UpplReturnCode PerformSyntaxValidation(void* key_struct,
+  UpplReturnCode PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
+                                         void* key_struct,
                                          void* val_struct,
                                          uint32_t operation,
                                          uint32_t data_type);
 
-  UpplReturnCode PerformSemanticValidation(void* key_struct,
+  UpplReturnCode PerformSemanticValidation(OdbcmConnectionHandler *db_conn,
+                                           void* key_struct,
                                            void* val_struct,
                                            uint32_t operation,
                                            uint32_t data_type);
 
-  UpplReturnCode HandleDriverAlarms(uint32_t data_type,
+  UpplReturnCode HandleDriverAlarms(OdbcmConnectionHandler *db_conn,
+                                    uint32_t data_type,
                                     uint32_t alarm_type,
                                     uint32_t oper_type,
                                     void* key_struct,
                                     void* val_struct);
-  UpplReturnCode HandleOperStatus(uint32_t data_type,
+  UpplReturnCode HandleOperStatus(OdbcmConnectionHandler *db_conn,
+                                  uint32_t data_type,
                                   void *key_struct,
                                   void *value_struct);
 
-  UpplReturnCode NotifyOperStatus(uint32_t data_type,
+  UpplReturnCode NotifyOperStatus(OdbcmConnectionHandler *db_conn,
+                                  uint32_t data_type,
                                   void *key_struct,
-                                  void *value_struct);
+                                  void *value_struct,
+                                  vector<OperStatusHolder> &ref_oper_status);
 
-  UpplReturnCode GetOperStatus(uint32_t data_type,
+  UpplReturnCode GetOperStatus(OdbcmConnectionHandler *db_conn,
+                               uint32_t data_type,
                                void* key_struct,
                                uint8_t &oper_status);
 
-  UpplReturnCode GetAlarmStatus(uint32_t data_type,
+  UpplReturnCode GetAlarmStatus(OdbcmConnectionHandler *db_conn,
+                                uint32_t data_type,
                                 void* key_struct,
                                 uint64_t &alarms_status);
 
-  UpplReturnCode IsKeyExists(unc_keytype_datatype_t data_type,
-                             vector<string> key_values);
+  UpplReturnCode IsKeyExists(OdbcmConnectionHandler *db_conn,
+                             unc_keytype_datatype_t data_type,
+                             const vector<string>& key_values);
 
   void Fill_Attr_Syntax_Map();
-  UpplReturnCode UpdatePortValidFlag(void *key_struct,
+  UpplReturnCode UpdatePortValidFlag(OdbcmConnectionHandler *db_conn,
+                                     void *key_struct,
                                      void *val_struct,
                                      val_port_st_t &val_port_valid_st,
-                                     unc_keytype_validflag_t valid_val);
-  UpplReturnCode PopulateSchemaForValidFlag(void* key_struct,
+                                     unc_keytype_validflag_t valid_val,
+                                     uint32_t data_type);
+  UpplReturnCode PopulateSchemaForValidFlag(OdbcmConnectionHandler *db_conn,
+                                            void* key_struct,
                                             void* val_struct,
-                                            string new_val);
+                                            string new_val,
+                                            uint32_t data_type);
   pfc_bool_t CompareValueStruct(void *value_struct1,
                                 void *value_struct2) {
     val_port_st_t port_val1 =
@@ -144,11 +156,12 @@ class Kt_Port: public Kt_State_Base {
   }
 
  private:
-  void PopulateDBSchemaForKtTable(
+  void PopulateDBSchemaForKtTable(OdbcmConnectionHandler *db_conn,
       DBTableSchema &kt_dbtableschema,
       void* key_struct,
       void* val_struct,
       uint8_t operation_type,
+      uint32_t data_type,
       uint32_t option1,
       uint32_t option2,
       vector<ODBCMOperator> &vect_key_operations,
@@ -157,13 +170,15 @@ class Kt_Port: public Kt_State_Base {
       pfc_bool_t is_filtering= false,
       pfc_bool_t is_state= PFC_FALSE);
 
-  void FillPortValueStructure(DBTableSchema &kt_port_dbtableschema,
+  void FillPortValueStructure(OdbcmConnectionHandler *db_conn,
+                              DBTableSchema &kt_port_dbtableschema,
                               vector<val_port_st_t> &vect_obj_val_port,
                               uint32_t &max_rep_ct,
                               uint32_t operation_type,
                               vector<key_port_t> &port_id);
 
-  UpplReturnCode PerformRead(uint32_t session_id,
+  UpplReturnCode PerformRead(OdbcmConnectionHandler *db_conn,
+                             uint32_t session_id,
                              uint32_t configuration_id,
                              void* key_struct,
                              void* val_struct,
@@ -174,7 +189,8 @@ class Kt_Port: public Kt_State_Base {
                              uint32_t option2,
                              uint32_t max_rep_ct);
 
-  UpplReturnCode ReadPortValFromDB(void* key_struct,
+  UpplReturnCode ReadPortValFromDB(OdbcmConnectionHandler *db_conn,
+                                   void* key_struct,
                                    void* val_struct,
                                    uint32_t data_type,
                                    uint32_t operation_type,
@@ -182,35 +198,42 @@ class Kt_Port: public Kt_State_Base {
                                    vector<val_port_st_t> &vect_val_port_st,
                                    vector<key_port_t> &port_id);
 
-  UpplReturnCode ReadBulkInternal(void* key_struct,
+  UpplReturnCode ReadBulkInternal(OdbcmConnectionHandler *db_conn,
+                                  void* key_struct,
                                   void* value_struct,
                                   uint32_t data_type,
                                   uint32_t max_rep_ct,
                                   vector<val_port_st_t> &vect_val_port,
                                   vector<key_port_t> &vect_port_id);
-  UpplReturnCode SetOperStatus(uint32_t data_type,
+  UpplReturnCode SetOperStatus(OdbcmConnectionHandler *db_conn,
+                               uint32_t data_type,
                                void* key_struct,
-                               UpplPortOperStatus oper_status,
-                               bool is_single_key);
-  UpplReturnCode ReadNeighbor(
+                               UpplPortOperStatus oper_status);
+  UpplReturnCode ReadNeighbor(OdbcmConnectionHandler *db_conn,
       void* key_struct,
       void* val_struct,
       uint32_t data_type,
       val_port_st_neighbor &obj_neighbor);
   void FrameValidValue(string attr_value, val_port_st &obj_val_port);
-  void GetPortValStructure(
+  void GetPortValStructure(OdbcmConnectionHandler *db_conn,
         val_port_st_t *obj_val_port,
         vector<TableAttrSchema> &vect_table_attr_schema,
         vector<string> &vect_prim_keys,
         uint8_t operation_type,
         val_port_st_t *val_port_valid_st,
         stringstream &valid);
-    void GetPortStateValStructure(
+    void GetPortStateValStructure(OdbcmConnectionHandler *db_conn,
         val_port_st_t *obj_val_port,
         vector<TableAttrSchema> &vect_table_attr_schema,
         vector<string> &vect_prim_keys,
         uint8_t operation_type,
         val_port_st_t *val_port_valid_st,
         stringstream &valid);
+    UpplReturnCode SubDomainOperStatusHandling(
+        OdbcmConnectionHandler *db_conn,
+        uint32_t data_type,
+        string controller_name,
+        string switch_name,
+        string physical_port_id);
 };
 #endif

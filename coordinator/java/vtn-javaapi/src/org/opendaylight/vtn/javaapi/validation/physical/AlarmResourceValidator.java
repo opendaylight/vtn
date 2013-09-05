@@ -75,7 +75,8 @@ public class AlarmResourceValidator extends VtnServiceValidator {
 			if (isValid && requestBody != null
 					&& VtnServiceConsts.PUT.equals(method)) {
 				isValid = validatePut(requestBody);
-			} else {
+			} else if (isValid) {
+				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
@@ -116,7 +117,7 @@ public class AlarmResourceValidator extends VtnServiceValidator {
 			isValid = validator.isValidAlarmRange(new BigInteger(requestBody
 					.getAsJsonPrimitive(VtnServiceJsonConsts.ALARMNO)
 					.getAsString().trim()), VtnServiceJsonConsts.BIG_VAL0,
-					VtnServiceJsonConsts.BIG_VAL_18446744073709551615);
+					VtnServiceJsonConsts.BIG_VAL_9999999999999999999);
 		} else {
 			isValid = false;
 		}

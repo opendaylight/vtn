@@ -8,7 +8,7 @@
  */
 
 #include "vunk_momgr.hh"
-#include "upll_log.hh"
+#include "uncxx/upll_log.hh"
 #include "vtn_momgr.hh"
 
 #define NUM_KEY_MAIN_TBL_ 4
@@ -108,14 +108,14 @@ bool VunknownMoMgr::GetRenameKeyBindInfo(unc_key_type_t key_type,
 bool VunknownMoMgr::IsValidKey(void *key, uint64_t index) {
   UPLL_FUNC_TRACE;
   key_vunknown *vunk_key = reinterpret_cast<key_vunknown *>(key);
-  bool ret_val = UPLL_RC_SUCCESS;
+  upll_rc_t ret_val = UPLL_RC_SUCCESS;
   switch (index) {
     case uudst::vunknown::kDbiVtnName:
       ret_val = ValidateKey(reinterpret_cast<char *>
                             (vunk_key->vtn_key.vtn_name),
                             kMinLenVtnName, kMaxLenVtnName);
       if (ret_val != UPLL_RC_SUCCESS) {
-        pfc_log_info("VTN Name is not valid(%d)", ret_val);
+        UPLL_LOG_TRACE("VTN Name is not valid(%d)", ret_val);
         return false;
       }
       break;
@@ -123,15 +123,14 @@ bool VunknownMoMgr::IsValidKey(void *key, uint64_t index) {
       ret_val = ValidateKey(reinterpret_cast<char *>(vunk_key->vunknown_name),
                             kMinLenVnodeName, kMaxLenVnodeName);
       if (ret_val != UPLL_RC_SUCCESS) {
-        pfc_log_info("Vunknown name is not valid(%d)", ret_val);
+        UPLL_LOG_TRACE("Vunknown name is not valid(%d)", ret_val);
         return false;
       }
       break;
     default:
-      pfc_log_info("Invalid Key Index");
+      UPLL_LOG_INFO("Invalid Key Index");
       break;
   }
-  pfc_log_info("Leaving IsValidKey");
   return true;
 }
 
@@ -150,6 +149,7 @@ upll_rc_t VunknownMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
 
   void *pkey;
   if (parent_key == NULL) {
+    if (okey) delete okey;
     okey = new ConfigKeyVal(UNC_KT_VUNKNOWN, IpctSt::kIpcStKeyVunknown,
                             vunk_key, NULL);
     return UPLL_RC_SUCCESS;
@@ -183,6 +183,7 @@ upll_rc_t VunknownMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
     free(vunk_key);
     result_code = UPLL_RC_ERR_GENERIC;
   }
+  SET_USER_DATA(okey, parent_key);
   return result_code;
 }
 
@@ -205,6 +206,7 @@ upll_rc_t VunknownMoMgr::GetParentConfigKey(ConfigKeyVal *&okey,
   uuu::upll_strncpy(vtn_key->vtn_name,
          reinterpret_cast<key_vunknown *>(pkey)->vtn_key.vtn_name,
          (kMaxLenVtnName+1) );
+  if (okey) delete okey;
   okey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, vtn_key, NULL);
   if (okey == NULL) {
     free(vtn_key);
@@ -245,7 +247,7 @@ upll_rc_t VunknownMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
     if (tbl == MAINTBL) {
       val_vunknown *ival = reinterpret_cast<val_vunknown *>(GetVal(req));
       if (!ival) {
-        UPLL_LOG_DEBUG("Invalid vunknown value\n");
+        UPLL_LOG_DEBUG("Invalid vunknown value");
         return UPLL_RC_ERR_GENERIC;
       }
       val_vunknown *vunk_val = reinterpret_cast<val_vunknown *>
@@ -263,6 +265,7 @@ upll_rc_t VunknownMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
   memcpy(vunk_key, ikey, sizeof(key_vunknown));
   okey = new ConfigKeyVal(UNC_KT_VUNKNOWN, IpctSt::kIpcStKeyVunknown, vunk_key,
                           tmp1);
+  SET_USER_DATA(okey, req);
   return UPLL_RC_SUCCESS;
 }
 
@@ -280,21 +283,33 @@ upll_rc_t VunknownMoMgr::UpdateConfigStatus(ConfigKeyVal *vunk_key,
                                             ConfigKeyVal *ctrlr_key) {
   UPLL_FUNC_TRACE;
   val_vunknown *vunk_val;
-  unc_keytype_configstatus_t cs_status = UNC_CS_NOT_APPLIED;
+  unc_keytype_configstatus_t cs_status = UNC_CS_APPLIED;
   vunk_val = reinterpret_cast<val_vunknown *>(GetVal(vunk_key));
+  val_vunknown *vunk_val2 = reinterpret_cast<val_vunknown *>(GetVal(upd_key));
+  UPLL_LOG_TRACE("Key in Candidate %s",(vunk_key->ToStrAll()).c_str());
   if (vunk_val == NULL) return UPLL_RC_ERR_GENERIC;
   if (op == UNC_OP_CREATE) {
     vunk_val->cs_row_status = cs_status;
-  } else if (op != UNC_OP_UPDATE) {
+  } else if (op == UNC_OP_UPDATE) {
+    void *vunkval = reinterpret_cast<void *>(vunk_val);
+    CompareValidValue(vunkval, GetVal(upd_key), true);
+    UPLL_LOG_TRACE("Key in Running %s",(upd_key->ToStrAll()).c_str());
+    vunk_val->cs_row_status = vunk_val2->cs_row_status;
+  } else {
      return UPLL_RC_ERR_GENERIC;
   }
   for (unsigned int loop = 0;
        loop < sizeof(vunk_val->valid) / sizeof(vunk_val->valid[0]); ++loop) {
     if ((UNC_VF_VALID == vunk_val->valid[loop])
           || (UNC_VF_VALID_NO_VALUE == vunk_val->valid[loop]))
-      vunk_val->cs_attr[loop] =  vunk_val->cs_row_status;
-    else if (vunk_val->valid[loop] != UNC_VF_NOT_SOPPORTED)
-      vunk_val->cs_attr[loop] = UNC_CS_NOT_SUPPORTED;
+      vunk_val->cs_attr[loop] =  cs_status;
+    else if ((UNC_VF_INVALID == vunk_val->valid[loop]) &&
+             (UNC_OP_CREATE == op))
+      vunk_val->cs_attr[loop] = UNC_CS_APPLIED;
+    else if ((UNC_VF_INVALID == vunk_val->valid[loop]) &&
+             (UNC_OP_UPDATE == op)) {
+      vunk_val->cs_attr[loop] = vunk_val2->cs_attr[loop];
+    }
   }
   return UPLL_RC_SUCCESS;
 }
@@ -327,31 +342,27 @@ upll_rc_t VunknownMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
   return result_code;
 }
 upll_rc_t VunknownMoMgr::ValidateMessage(IpcReqRespHeader *req,
-                                         ConfigKeyVal *ikey) {
+    ConfigKeyVal *ikey) {
   UPLL_FUNC_TRACE;
   upll_rc_t ret_val = UPLL_RC_ERR_GENERIC;
-  if (NULL == req) {
-    UPLL_LOG_DEBUG("IpcReqRespHeader is NULL");
-    return UPLL_RC_ERR_GENERIC;
-  }
-  if (ikey == NULL) {
-    UPLL_LOG_DEBUG("ConfigKeyVal is NULL");
-    return UPLL_RC_ERR_GENERIC;
+  if (!ikey || !req || !(ikey->get_key())) {
+    UPLL_LOG_DEBUG("IpcReqRespHeader or ConfigKeyVal is Null");
+    return UPLL_RC_ERR_BAD_REQUEST;
   }
   if (ikey->get_st_num() != IpctSt::kIpcStKeyVunknown) {
-    pfc_log_debug(
+    UPLL_LOG_DEBUG(
         "Invalid structure received.Expected struct-kIpcStKeyVunknown"
         "received struct -%s ",
-      reinterpret_cast<const char *>(IpctSt::GetIpcStdef(ikey->get_st_num())));
-    return UPLL_RC_ERR_GENERIC;
+        reinterpret_cast<const char *>(IpctSt::GetIpcStdef(ikey->get_st_num())));
+    return UPLL_RC_ERR_BAD_REQUEST;
   }
   key_vunknown_t *key_vunknown =
-      reinterpret_cast<key_vunknown_t *>(ikey->get_key());
+    reinterpret_cast<key_vunknown_t *>(ikey->get_key());
   val_vunknown_t *val_vunknown = NULL;
   if ((ikey->get_cfg_val())
       && (ikey->get_cfg_val())->get_st_num() == IpctSt::kIpcStValVunknown) {
     val_vunknown =
-        reinterpret_cast<val_vunknown_t *>(ikey->get_cfg_val()->get_val());
+      reinterpret_cast<val_vunknown_t *>(ikey->get_cfg_val()->get_val());
   }
   upll_keytype_datatype_t dt_type = req->datatype;
   unc_keytype_operation_t operation = req->operation;
@@ -360,70 +371,122 @@ upll_rc_t VunknownMoMgr::ValidateMessage(IpcReqRespHeader *req,
 
   unc_key_type_t keytype = ikey->get_key_type();
   if (UNC_KT_VUNKNOWN != keytype) {
-    pfc_log_debug("Invalid keytype. Keytype- %d", keytype);
-    return UPLL_RC_ERR_GENERIC;
+    UPLL_LOG_DEBUG("Invalid keytype. Keytype- %d", keytype);
+    return UPLL_RC_ERR_BAD_REQUEST;
   }
   if (key_vunknown == NULL) {
-    pfc_log_debug("KT_VUNKNOWN Key structure is empty!!");
-    return UPLL_RC_ERR_NO_SUCH_INSTANCE;
+    UPLL_LOG_DEBUG("KT_VUNKNOWN Key structure is empty!!");
+    return UPLL_RC_ERR_BAD_REQUEST;
   }
 
   ret_val = ValidateVunknownKey(key_vunknown, operation);
   if (ret_val != UPLL_RC_SUCCESS) {
-    pfc_log_debug("Syntax check failed for KT_VUNKNOWN key structure");
+    UPLL_LOG_DEBUG("Syntax check failed for KT_VUNKNOWN key structure");
     return UPLL_RC_ERR_CFG_SYNTAX;
   }
 
   if (((operation == UNC_OP_CREATE) || (operation == UNC_OP_UPDATE))
       && (dt_type == UPLL_DT_CANDIDATE)) {
     if (val_vunknown == NULL) {
-      pfc_log_debug("Value structure mandatory for CREATE/UPDATE");
-      return UPLL_RC_ERR_CFG_SYNTAX;
+      UPLL_LOG_DEBUG("Value structure mandatory for CREATE/UPDATE");
+      return UPLL_RC_ERR_BAD_REQUEST;
     } else {
       ret_val = ValidateVunknownValue(val_vunknown, operation);
       if (ret_val != UPLL_RC_SUCCESS) {
-        pfc_log_debug("Syntax check failed for KT_VUNKNOWN value structure");
+        UPLL_LOG_DEBUG("Syntax check failed for KT_VUNKNOWN value structure");
         return UPLL_RC_ERR_CFG_SYNTAX;
       }
-      pfc_log_trace("Syntax check success for KT_VUNKNOWN value structure");
       return UPLL_RC_SUCCESS;
     }
   } else if (((operation == UNC_OP_READ) || (operation == UNC_OP_READ_SIBLING)
-              || (operation == UNC_OP_READ_SIBLING_BEGIN)
-              || (operation == UNC_OP_READ_SIBLING_COUNT))
-             && ((dt_type == UPLL_DT_CANDIDATE) || (dt_type == UPLL_DT_RUNNING)
-                 || (dt_type == UPLL_DT_STARTUP) || (dt_type == UPLL_DT_STATE))) {
+        || (operation == UNC_OP_READ_SIBLING_BEGIN)
+        || (operation == UNC_OP_READ_SIBLING_COUNT))
+      && ((dt_type == UPLL_DT_CANDIDATE) || (dt_type == UPLL_DT_RUNNING)
+        || (dt_type == UPLL_DT_STARTUP) || (dt_type == UPLL_DT_STATE))) {
     if (option1 == UNC_OPT1_NORMAL) {
       if (option2 == UNC_OPT2_NONE) {
         if (val_vunknown != NULL) {
           ret_val = ValidateVunknownValue(val_vunknown);
           if (ret_val != UPLL_RC_SUCCESS) {
-            pfc_log_debug("Syntax check failed for Vunknown value structure");
+            UPLL_LOG_DEBUG("Syntax check failed for Vunknown value structure");
             return UPLL_RC_ERR_CFG_SYNTAX;
           }
-          pfc_log_trace("Validation success for KT_VUNKNOWN value structure");
           return UPLL_RC_SUCCESS;
         } else {
-          pfc_log_trace("Value structure is optional for READ");
+          UPLL_LOG_TRACE("Value structure is optional for READ");
           return UPLL_RC_SUCCESS;
         }
       } else {
-        pfc_log_debug("option2 is not matching");
+        UPLL_LOG_DEBUG("option2 is not matching");
         return UPLL_RC_ERR_INVALID_OPTION2;
       }
     } else {
-      pfc_log_debug("option1 is not matching");
+      UPLL_LOG_DEBUG("option1 is not matching");
       return UPLL_RC_ERR_INVALID_OPTION1;
     }
-  } else if ((operation == UNC_OP_DELETE) || (operation == UNC_OP_READ_NEXT)
-             || (operation == UNC_OP_READ_BULK)) {
-    pfc_log_trace("Value structure is none for operation type:%d", operation);
+  } else if ((operation == UNC_OP_DELETE) && (dt_type == UPLL_DT_CANDIDATE)) {
+    UPLL_LOG_TRACE("Value structure is none for this operation :%d", operation);
+    return UPLL_RC_SUCCESS;
+  } else if (((operation == UNC_OP_READ_NEXT) ||
+        (operation == UNC_OP_READ_BULK)) &&
+      ((dt_type == UPLL_DT_CANDIDATE) || 
+       (dt_type == UPLL_DT_RUNNING) ||
+       (dt_type == UPLL_DT_STARTUP))) {
+    UPLL_LOG_TRACE("Value structure is none for this operation :%d", operation);
     return UPLL_RC_SUCCESS;
   } else {
-    pfc_log_debug("Invalid datatype(%d) and operation(%d)", dt_type,
-                  operation);
-    return UPLL_RC_ERR_CFG_SYNTAX;
+    UPLL_LOG_DEBUG("Invalid datatype(%d) and operation(%d)", dt_type,
+        operation);
+    return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT;
   }
+}
+
+upll_rc_t VunknownMoMgr::ValidateAttribute(ConfigKeyVal *ikey, DalDmlIntf *dmi,
+                                        IpcReqRespHeader *req) {
+  UPLL_FUNC_TRACE;
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  controller_domain ctrlr_dom;
+  ctrlr_dom.ctrlr = ctrlr_dom.domain = NULL;
+  if (req->operation == UNC_OP_UPDATE) {
+    ConfigKeyVal *okey = NULL;
+    result_code = GetChildConfigKey(okey, ikey);
+    if (UPLL_RC_SUCCESS != result_code) {
+      UPLL_LOG_DEBUG("Returing error %d",result_code);
+      if (okey) delete okey;
+      return result_code;
+    }
+    DbSubOp dbop = {kOpReadSingle, kOpMatchNone, kOpInOutCtrlr | kOpInOutDomain | kOpInOutFlag};
+    result_code = ReadConfigDB(okey, req->datatype, UNC_OP_READ, dbop, dmi, MAINTBL);
+    if (UPLL_RC_SUCCESS != result_code) {
+      UPLL_LOG_ERROR("Record does Not Exists");
+      delete okey;
+      return result_code;
+    }
+    GET_USER_DATA_CTRLR_DOMAIN(okey,ctrlr_dom);
+    result_code = CtrlrIdAndDomainIdUpdationCheck(ikey, okey);
+    DELETE_IF_NOT_NULL(okey);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_ERROR("Controller_id/domain_id updation check failed");
+      return result_code;
+    }
+  }
+  return result_code;
+}
+
+upll_rc_t VunknownMoMgr::CtrlrIdAndDomainIdUpdationCheck(ConfigKeyVal *ikey,
+                                                   ConfigKeyVal *okey) {
+  UPLL_FUNC_TRACE;
+  val_vunknown *vunk_val = reinterpret_cast<val_vunknown *>(GetVal(ikey));
+  val_vunknown *vunk_val1 = reinterpret_cast<val_vunknown *>(GetVal(okey));
+  if (vunk_val->valid[UPLL_IDX_DOMAIN_ID_VUN] == UNC_VF_VALID) {
+    if (strncmp(reinterpret_cast<const char *>(vunk_val->domain_id),
+                reinterpret_cast<const char *>(vunk_val1->domain_id),
+                kMaxLenDomainId+1)) {
+      UPLL_LOG_DEBUG("domain id comparision failed");
+      return UPLL_RC_ERR_CFG_SYNTAX;
+    }
+  }
+  return UPLL_RC_SUCCESS;
 }
 
 upll_rc_t VunknownMoMgr::ValidateVunknownKey(key_vunknown_t *key_vunknown,
@@ -432,242 +495,191 @@ upll_rc_t VunknownMoMgr::ValidateVunknownKey(key_vunknown_t *key_vunknown,
   bool ret_val = UPLL_RC_SUCCESS;
   /** Validate vtn_key structure */
   VtnMoMgr *objvtnmgr =
-      reinterpret_cast<VtnMoMgr *>(const_cast<MoManager *>(GetMoManager(
-          UNC_KT_VTN)));
+    reinterpret_cast<VtnMoMgr *>(const_cast<MoManager *>(GetMoManager(
+            UNC_KT_VTN)));
   if (NULL == objvtnmgr) {
-    pfc_log_debug("unable to get VtnMoMgr object to validate key_vtn");
+    UPLL_LOG_DEBUG("unable to get VtnMoMgr object to validate key_vtn");
     return UPLL_RC_ERR_GENERIC;
   }
   ret_val = objvtnmgr->ValidateVtnKey(&(key_vunknown->vtn_key));
 
   if (UPLL_RC_SUCCESS != ret_val) {
-    pfc_log_debug("Vtn_name syntax validation failed.Err Code- %d", ret_val);
+    UPLL_LOG_DEBUG("Vtn_name syntax validation failed.Err Code- %d", ret_val);
     return UPLL_RC_ERR_CFG_SYNTAX;
   }
   if ((operation != UNC_OP_READ_SIBLING_BEGIN) &&
       (operation != UNC_OP_READ_SIBLING_COUNT)) {
-    pfc_log_trace("KT_VUNKNOWN:vunknown_name (%s)", key_vunknown->vunknown_name);
+    UPLL_LOG_TRACE("KT_VUNKNOWN:vunknown_name (%s)", key_vunknown->vunknown_name);
     ret_val = ValidateKey(reinterpret_cast<char *>(key_vunknown->vunknown_name),
         kMinLenVnodeName, kMaxLenVnodeName);
 
     if (ret_val != UPLL_RC_SUCCESS) {
-      pfc_log_debug("Validation failure for key_vunknown->vunknown_name");
+      UPLL_LOG_DEBUG("Validation failure for key_vunknown->vunknown_name");
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
   } else {
     UPLL_LOG_TRACE("Operation is %d", operation);
     StringReset(key_vunknown->vunknown_name);
   }
-  pfc_log_trace("key structure validation successful for vunknown keytype");
   return UPLL_RC_SUCCESS;
 }
-upll_rc_t VunknownMoMgr::ValidateVunknownValue(val_vunknown_t *val_vunknown,
-                                               unc_keytype_operation_t operation) {
-  UPLL_FUNC_TRACE;
-  bool ret_val = UPLL_RC_SUCCESS;
 
-  if (val_vunknown->valid[UPLL_IDX_CONTROLLER_ID_VUN] == UNC_VF_VALID) {
-    ret_val = ValidateKey(reinterpret_cast<char *>(val_vunknown->controller_id),
-                           kMinLenCtrlrId,
-                           kMaxLenCtrlrId);
-    if (ret_val != UPLL_RC_SUCCESS) {
-      pfc_log_debug("controller_id syntax check failed."
-                    "Received controller_id - %s",
-                    val_vunknown->controller_id);
-      return UPLL_RC_ERR_CFG_SYNTAX;
-    }
-  }
-  if (val_vunknown->valid[UPLL_IDX_DOMAIN_ID_VUN] == UNC_VF_VALID) {
-    ret_val = ValidateDefaultStr(reinterpret_cast<char *>(
-                          val_vunknown->domain_id),
-                          kMinLenDomainId,
-                          kMaxLenDomainId);
-    if (ret_val != UPLL_RC_SUCCESS) {
-      pfc_log_debug("Domain_id syntax check failed."
-                    "Received Domain_id - %s",
-                    val_vunknown->domain_id);
-      return UPLL_RC_ERR_CFG_SYNTAX;
-    }
-  }
-  if (val_vunknown->valid[UPLL_IDX_DESC_VUN] == UNC_VF_VALID) {
-    ret_val = ValidateDesc(reinterpret_cast<char *>(val_vunknown->description),
-                           kMinLenDescription, kMaxLenDescription);
-    if (ret_val != UPLL_RC_SUCCESS) {
-      pfc_log_debug("Syntax check failed.desc - %s", val_vunknown->description);
-      return UPLL_RC_ERR_CFG_SYNTAX;
-    }
-  } else if ((val_vunknown->valid[UPLL_IDX_DESC_VUN] == UNC_VF_VALID_NO_VALUE)
-      && ((operation == UNC_OP_UPDATE) || (operation == UNC_OP_CREATE))) {
-    val_vunknown->description[0] = '\0';
-  }
-  if (val_vunknown->valid[UPLL_IDX_TYPE_VUN] == UNC_VF_VALID) {
-    if (!ValidateNumericRange(val_vunknown->type,
-                                   (uint8_t) VUNKNOWN_TYPE_BRIDGE,
-                                  (uint8_t) VUNKNOWN_TYPE_ROUTER, true, true)) {
-      pfc_log_debug("Syntax check failed.Type- %d", val_vunknown->type);
-      return UPLL_RC_ERR_CFG_SYNTAX;
-    } 
-  } else if ((val_vunknown->valid[UPLL_IDX_TYPE_VUN] == UNC_VF_VALID_NO_VALUE)
-      && ((operation == UNC_OP_UPDATE) || (operation == UNC_OP_CREATE))) {
-    val_vunknown->type = VUNKNOWN_TYPE_BRIDGE;
-  }
-  pfc_log_trace("value structure validation successful for vunknown keytype");
-  return UPLL_RC_SUCCESS;
-}
-upll_rc_t VunknownMoMgr::ValVunknownAttributeSupportCheck(
-    const char * crtlr_name, ConfigKeyVal *ikey, uint32_t operation) {
+upll_rc_t VunknownMoMgr::ValidateVunknownValue(val_vunknown_t *vunk_val,
+    uint32_t operation) {
   UPLL_FUNC_TRACE;
-  bool ret_val = false;
-  uint32_t instance_count = 0;
-  uint32_t num_attrs = 0;
-  const uint8_t *attrs = 0;
-  if (ikey == NULL) {
-    UPLL_LOG_DEBUG("ConfigKeyVal is NULL");
-    return UPLL_RC_ERR_GENERIC;
+  bool ret_val =false;
+  
+  // Attribute syntax validation
+  for (unsigned int valid_index = 0;
+       valid_index < sizeof(vunk_val->valid) / sizeof(vunk_val->valid[0]);
+       valid_index++) { 
+    if (vunk_val->valid[valid_index] == UNC_VF_VALID) {
+      switch(valid_index) {    
+        case UPLL_IDX_DOMAIN_ID_VUN:
+          ret_val = ValidateDefaultStr(vunk_val->domain_id,
+                                       kMinLenDomainId, kMaxLenDomainId);
+          break;
+        case UPLL_IDX_DESC_VUN:
+          ret_val = ValidateDesc(vunk_val->description,
+                                 kMinLenDescription, kMaxLenDescription);
+          break; 
+        case UPLL_IDX_TYPE_VUN:
+          ret_val = ValidateNumericRange(vunk_val->type,
+                                 (uint8_t) VUNKNOWN_TYPE_BRIDGE,
+                                 (uint8_t) VUNKNOWN_TYPE_ROUTER, true, true);
+          break;
+      }
+      if (!ret_val) {
+        return UPLL_RC_ERR_CFG_SYNTAX; 
+      }
+    }
   }
-  val_vunknown_t *val_vunknown = NULL;
-  if ((ikey->get_cfg_val())
-      && ((ikey->get_cfg_val())->get_st_num() == IpctSt::kIpcStValVunknown)) {
-    val_vunknown = reinterpret_cast<val_vunknown_t *>(GetVal(ikey));
-  }
-  if (val_vunknown != NULL) {
+
+  // Additional checks
+  for (unsigned int valid_index = 0;
+       valid_index < sizeof(vunk_val->valid) / sizeof(vunk_val->valid[0]);
+       valid_index++) {
+    uint8_t flag = vunk_val->valid[valid_index];
     switch (operation) {
       case UNC_OP_CREATE:
-        ret_val = GetCreateCapability(crtlr_name, ikey->get_key_type(),
-                                      &instance_count, &num_attrs, &attrs);
+        {
+          switch(valid_index) {
+            case UPLL_IDX_DOMAIN_ID_VUN:
+              if ((flag == UNC_VF_INVALID || flag == UNC_VF_VALID_NO_VALUE)) {
+                UPLL_LOG_DEBUG("domain_id flag is invalid"
+                               " or valid_no_value");
+                return UPLL_RC_ERR_CFG_SYNTAX; 
+              }
+              break;
+            case UPLL_IDX_DESC_VUN:
+              break;
+            case UPLL_IDX_TYPE_VUN:
+              if ((flag == UNC_VF_INVALID) || (flag == UNC_VF_VALID_NO_VALUE)) {
+                vunk_val->type = VUNKNOWN_TYPE_BRIDGE;
+              }
+              break;
+            default:
+              break;
+          }
+        } 
         break;
-
       case UNC_OP_UPDATE:
-        ret_val = GetUpdateCapability(crtlr_name, ikey->get_key_type(),
-                                      &num_attrs, &attrs);
+        {
+          switch(valid_index) {
+            case UPLL_IDX_DOMAIN_ID_VUN:
+              if (flag == UNC_VF_VALID_NO_VALUE) {
+                UPLL_LOG_DEBUG("controller_id or domain_id flag is valid_no_value");
+                return UPLL_RC_ERR_CFG_SYNTAX;
+              }
+              break; 
+            case UPLL_IDX_DESC_VUN:
+            case UPLL_IDX_TYPE_VUN:
+            default:
+              break;
+          }
+        } 
         break;
-
-      case UNC_OP_READ:
-      case UNC_OP_READ_SIBLING:
-      case UNC_OP_READ_SIBLING_BEGIN:
-      case UNC_OP_READ_SIBLING_COUNT:
-        ret_val = GetReadCapability(crtlr_name, ikey->get_key_type(),
-                                    &num_attrs, &attrs);
-        break;
-
-      default:
-        pfc_log_debug("Invalid operation");
-        break;
     }
-
-    if (!ret_val) {
-      pfc_log_debug("key_type - %d is not supported by controller - %s",
-                    ikey->get_key_type(), crtlr_name);
-      return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT;
-    }
-    if ((val_vunknown->valid[UPLL_IDX_DESC_VUN] == UNC_VF_VALID)
-        || (val_vunknown->valid[UPLL_IDX_DESC_VUN] == UNC_VF_VALID_NO_VALUE)) {
-      if (attrs[unc::capa::vunknown::kCapDesc] == 0) {
-        val_vunknown->valid[UPLL_IDX_DESC_VUN] = UNC_VF_NOT_SOPPORTED;
-        pfc_log_trace("UPLL_IDX_DESC_VUN not supported in pfc controller");
-        return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
-      }
-    }
-    if ((val_vunknown->valid[UPLL_IDX_TYPE_VUN] == UNC_VF_VALID)
-        || (val_vunknown->valid[UPLL_IDX_TYPE_VUN] == UNC_VF_VALID_NO_VALUE)) {
-      if (attrs[unc::capa::vunknown::kCapType] == 0) {
-        val_vunknown->valid[UPLL_IDX_TYPE_VUN] = UNC_VF_NOT_SOPPORTED;
-        pfc_log_debug("UPLL_IDX_TYPE_VUN  not supported in pfc controller");
-        return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
-      }
-    }
-  } else {
-    pfc_log_debug("value structure is empty");
-    return UPLL_RC_ERR_GENERIC;
   }
-  pfc_log_info("Exiting KT_VUNKOWN: ValVunknownAttributeSupportCheck()");
+
+  // Resets
+  for (unsigned int valid_index = 0;
+       valid_index < sizeof(vunk_val->valid) / sizeof(vunk_val->valid[0]);
+       valid_index++) {
+    uint8_t flag = vunk_val->valid[valid_index];
+    if (flag != UNC_VF_INVALID && flag != UNC_VF_VALID_NO_VALUE)  
+      continue;
+       
+    switch(valid_index) {
+      case UPLL_IDX_DOMAIN_ID_VUN:
+        StringReset(vunk_val->domain_id);
+        break;
+      case UPLL_IDX_DESC_VUN:
+        StringReset(vunk_val->description);
+        break;
+      case UPLL_IDX_TYPE_VUN:
+        vunk_val->type = VUNKNOWN_TYPE_BRIDGE;
+        break;
+      default:
+        UPLL_LOG_TRACE("Never here");
+        break;
+    }
+  }
   return UPLL_RC_SUCCESS;
 }
-upll_rc_t VunknownMoMgr::ValidateCapability(IpcReqRespHeader *req,
-    ConfigKeyVal *ikey, const char* ctrlr_name) {
+
+bool VunknownMoMgr::CompareValidValue(void *&val1,
+                                 void *val2,
+                                 bool copy_to_running) {
   UPLL_FUNC_TRACE;
-
-  upll_rc_t ret_val = UPLL_RC_SUCCESS;
-  if (NULL == req) {
-    UPLL_LOG_DEBUG("IpcReqRespHeader is NULL");
-    return UPLL_RC_ERR_GENERIC;
-  }
-  if (ikey == NULL) {
-    UPLL_LOG_DEBUG("ConfigKeyVal is NULL");
-    return UPLL_RC_ERR_GENERIC;
-  }
-  /* controller name */
-  if (!ctrlr_name) {
-    ctrlr_name = reinterpret_cast<char *>(ikey->get_user_data());
-    pfc_log_trace("controller Name :(%s)", ctrlr_name);
-  }
-  pfc_log_trace("controller Name :(%s)", ctrlr_name);
-
-  upll_keytype_datatype_t dt_type = req->datatype;
-  unc_keytype_operation_t operation = req->operation;
-  unc_keytype_option1_t option1 = req->option1;
-  unc_keytype_option2_t option2 = req->option2;
-  pfc_log_trace("dt_type   : (%d)"
-                "operation : (%d)"
-                "option1   : (%d)"
-                "option2   : (%d)",
-                dt_type, operation, option1, option2);
-  if (((operation == UNC_OP_CREATE) || (operation == UNC_OP_UPDATE))
-      && (dt_type == UPLL_DT_CANDIDATE)) {
-    if (GetVal(ikey) != NULL) {
-      ret_val = ValVunknownAttributeSupportCheck(ctrlr_name, ikey, operation);
-      if (ret_val == UPLL_RC_SUCCESS) {
-        pfc_log_trace("Attribute check success for KT_VUNKOWN value structure");
-        return UPLL_RC_SUCCESS;
-      } else {
-        pfc_log_debug("Attribute check failed for KT_VUNKOWN value structure");
-        return UPLL_RC_ERR_GENERIC;
-      }
-    } else {
-      pfc_log_debug("Value structure mandatory for the UPDATE/CREATE");
+  bool invalid_attr = true;
+  val_vunknown_t *val_vunknown1 = reinterpret_cast<val_vunknown_t *>(val1);
+  val_vunknown_t *val_vunknown2 = reinterpret_cast<val_vunknown_t *>(val2);
+  if (!val_vunknown2) {
+      UPLL_LOG_TRACE("Invalid param");
       return UPLL_RC_ERR_GENERIC;
-    }
-  } else if (((operation == UNC_OP_READ) || (operation == UNC_OP_READ_SIBLING)
-      || (operation == UNC_OP_READ_SIBLING_BEGIN)
-      || (operation == UNC_OP_READ_SIBLING_COUNT))
-      && ((dt_type == UPLL_DT_CANDIDATE) || (dt_type == UPLL_DT_RUNNING)
-          || (dt_type == UPLL_DT_STARTUP) || (dt_type == UPLL_DT_STATE))) {
-    if (option1 == UNC_OPT1_NORMAL) {
-      if (option2 == UNC_OPT2_NONE) {
-        if (GetVal(ikey) != NULL) {
-          ret_val = ValVunknownAttributeSupportCheck(ctrlr_name, ikey,
-                                                     operation);
-          if (ret_val == UPLL_RC_SUCCESS) {
-            pfc_log_trace("Attribute check success for VUNKOWN value struct");
-            return UPLL_RC_SUCCESS;
-          } else {
-            pfc_log_debug("Attribute check failed for KT_VUNKOWN value struct");
-            return UPLL_RC_ERR_GENERIC;
-          }
-        } else {
-          pfc_log_trace("Value structure is optional for READ");
-          return UPLL_RC_SUCCESS;
-        }
-      } else {
-        pfc_log_debug("option2 is not matching");
-        return UPLL_RC_ERR_INVALID_OPTION2;
-      }
-    } else {
-      pfc_log_debug("option1 is not matching");
-      return UPLL_RC_ERR_INVALID_OPTION1;
-    }
-  } else if ((operation == UNC_OP_DELETE) || (operation == UNC_OP_READ_NEXT)
-      || (operation == UNC_OP_READ_BULK)) {
-    pfc_log_trace("Value structure is none for operation type:%d", operation);
-    return UPLL_RC_SUCCESS;
-  } else {
-    pfc_log_debug("Invalid datatype(%d) and operation(%d)", dt_type, operation);
-    return UPLL_RC_ERR_GENERIC;
   }
-}
-
-bool VunknownMoMgr::CompareValidValue(void *&val1, void *val2, bool audit) {
-  return false;
+  for (unsigned int loop = 0;
+        loop < sizeof(val_vunknown1->valid) / sizeof(uint8_t); ++loop) {
+      if (UNC_VF_INVALID == val_vunknown1->valid[loop]
+          && UNC_VF_VALID == val_vunknown2->valid[loop]) 
+        val_vunknown1->valid[loop] = UNC_VF_VALID_NO_VALUE;
+  }
+  /* Specify the configured ip address for
+   * PFC to clear the configured IP address
+   */
+  if ((UNC_VF_VALID == val_vunknown1->valid[UPLL_IDX_DESC_VUN])
+        && (UNC_VF_VALID == val_vunknown2->valid[UPLL_IDX_DESC_VUN]))
+    if (!strncmp(reinterpret_cast<char*>(val_vunknown1->description),
+                 reinterpret_cast<char*>(val_vunknown2->description),
+                 kMaxLenDescription))
+        val_vunknown1->valid[UPLL_IDX_DESC_VUN] = UNC_VF_INVALID;
+  if (UNC_VF_VALID == val_vunknown1->valid[UPLL_IDX_TYPE_VUN]
+      && UNC_VF_VALID == val_vunknown2->valid[UPLL_IDX_TYPE_VUN]) {
+    if (val_vunknown1->type == val_vunknown2->type)
+      val_vunknown1->valid[UPLL_IDX_TYPE_VUN] = UNC_VF_INVALID;
+  }
+  if (UNC_VF_VALID == val_vunknown1->valid[UPLL_IDX_CONTROLLER_ID_VUN]
+      && UNC_VF_VALID == val_vunknown2->valid[UPLL_IDX_CONTROLLER_ID_VUN]) {
+    if (!strcmp(reinterpret_cast<char*>(val_vunknown1->controller_id),
+                reinterpret_cast<char*>(val_vunknown2->controller_id)))
+      val_vunknown1->valid[UPLL_IDX_CONTROLLER_ID_VUN] = UNC_VF_INVALID;
+  }
+  if (UNC_VF_VALID == val_vunknown1->valid[UPLL_IDX_DOMAIN_ID_VUN]
+      && UNC_VF_VALID == val_vunknown2->valid[UPLL_IDX_DOMAIN_ID_VUN]) {
+    if (!strcmp(reinterpret_cast<char*>(val_vunknown1->domain_id),
+                reinterpret_cast<char*>(val_vunknown2->domain_id)))
+      val_vunknown1->valid[UPLL_IDX_DOMAIN_ID_VUN] = UNC_VF_INVALID;
+  }
+  for (unsigned int loop = 0;
+      loop < sizeof(val_vunknown1->valid) / sizeof(uint8_t); ++loop) {
+    if ((UNC_VF_VALID == (uint8_t) val_vunknown1->valid[loop]) ||
+       (UNC_VF_VALID_NO_VALUE == (uint8_t) val_vunknown1->valid[loop])) {
+        invalid_attr = false;
+        break;
+    }
+  }
+  return invalid_attr;
 }
 
 upll_rc_t VunknownMoMgr::CreateVnodeConfigKey(ConfigKeyVal *ikey,
@@ -700,6 +712,17 @@ if (!temp_key_vunknown) {
 upll_rc_t VunknownMoMgr::IsReferenced(ConfigKeyVal *ikey,
                                       upll_keytype_datatype_t dt_type,
                                       DalDmlIntf *dmi) {
+  UPLL_FUNC_TRACE;
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
+                                                (GetMoManager(UNC_KT_VUNK_IF)));
+  result_code = mgr->IsReferenced(ikey, dt_type, dmi);
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_DEBUG("UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code (%d)",
+           result_code);
+    return result_code;
+  }
+  UPLL_LOG_DEBUG("IsReferenced result code (%d)", result_code);
   return UPLL_RC_SUCCESS;
 }
 

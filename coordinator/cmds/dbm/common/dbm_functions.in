@@ -63,7 +63,8 @@ ODBCINSTALLEDFILE=$DBMTMPDIR/unc_odbc_DSN.installed
 UNCDATASQLDIR=%INST_SQLDIR%
 DBLOGFILE=$DBMLOGDIR/unc_db_script.log
 
-PGCTL_WAIT=190
+PGCTL_START_WAIT=333
+PGCTL_STOP_WAIT=180
 
 clm_date() { date +'%y-%m-%d %H:%M:%S.%N'; }
 
@@ -145,7 +146,7 @@ db_start()
 	rm -f $PIDFILE
 	rm -f $lock_file
 	su -m $SUUSER -c \
-		"$PGINST/bin/pg_ctl start -D $PGDATA -w -t $PGCTL_WAIT" \
+		"$PGINST/bin/pg_ctl start -D $PGDATA -w -t $PGCTL_START_WAIT" \
 		 > /dev/null
 	[ $? -ne 0 ] && return 2
 	return 0
@@ -184,7 +185,7 @@ db_stop_exec()
 
 	su -m $SUUSER -c \
 		"$PGINST/bin/pg_ctl stop -D $PGDATA $stop_mode \
-		-t $PGCTL_WAIT" > /dev/null
+		-t $PGCTL_STOP_WAIT" > /dev/null
 	[ $? -ne 0 ] && return 1
 	return 0
 }

@@ -265,11 +265,11 @@ public class UncPhysicalStructIndexEnum {
 		kIdxLogicalPortOperDownCriteria
 	};
 	public enum UpplLogicalPortType {
-		UPPL_LP_SWITCH("0"),
-		UPPL_LP_PHYSICAL_PORT("1"),
-		UPPL_LP_TRUNK_PORT("2"),
-		UPPL_LP_SUBDOMAIN("3"),
-		UPPL_LP_TUNNEL_ENDPOINT("4");
+		UPPL_LP_SWITCH("1"),
+		UPPL_LP_PHYSICAL_PORT("2"),
+		UPPL_LP_TRUNK_PORT("11"),
+		UPPL_LP_SUBDOMAIN("12"),
+		UPPL_LP_TUNNEL_ENDPOINT("13");
 		private final String value;
 
 		private UpplLogicalPortType(final String value) {

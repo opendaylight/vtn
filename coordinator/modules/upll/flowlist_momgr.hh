@@ -40,6 +40,8 @@ class FlowListMoMgr : public MoMgrImpl {
      */
     static BindInfo rename_flowlist_rename_tbl[];
 
+    uint32_t cur_instance_count;
+
     /**
      * @Brief Validates the syntax of the specified key and value structure
      *        for KT_FLOWLIST keytype
@@ -178,7 +180,7 @@ class FlowListMoMgr : public MoMgrImpl {
     * @retval  UPLL_RC_ERR_GENERIC  For failue case GENERIC ERROR
     */
     upll_rc_t SwapKeyVal(ConfigKeyVal *ikey, ConfigKeyVal *&okey,
-                         DalDmlIntf *dmi, uint8_t *ctrlr);
+                         DalDmlIntf *dmi, uint8_t *ctrlr, bool &no_rename);
 
     upll_rc_t UpdateConfigStatus(ConfigKeyVal *flowlist_key,
                                  unc_keytype_operation_t op,
@@ -408,7 +410,7 @@ class FlowListMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_SUCCECSS     Successful Completion
      * @retval  UPLL_RC_ERR_GENERIC  On Failure
      **/
-    upll_rc_t GetRenamedControllerKey(ConfigKeyVal *&ikey,
+    upll_rc_t GetRenamedControllerKey(ConfigKeyVal *ikey,
                                       upll_keytype_datatype_t dt_type,
                                       DalDmlIntf *dmi,
                                       controller_domain *ctrlr_dom = NULL);
@@ -508,6 +510,7 @@ class FlowListMoMgr : public MoMgrImpl {
     upll_rc_t AddFlowListToController(char *flowlist_name,
                                       DalDmlIntf *dmi,
                                       char* ctrl_id,
+                                      upll_keytype_datatype_t dt_type,
                                       unc_keytype_operation_t op);
     /**
      * @brief  Method to Set the Consolidated status
@@ -557,11 +560,22 @@ class FlowListMoMgr : public MoMgrImpl {
 
     upll_rc_t CreateFlowListToController(
         char *flowlist_name, DalDmlIntf *dmi, char* ctrl_id,
-        unc_keytype_operation_t op);
+        upll_keytype_datatype_t dt_type, unc_keytype_operation_t op);
 
     upll_rc_t DeleteFlowListToController(
         char *flowlist_name, DalDmlIntf *dmi, char* ctrl_id,
-        unc_keytype_operation_t op);
+        upll_keytype_datatype_t dt_type, unc_keytype_operation_t op);
+
+    upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
+
+    bool FilterAttributes(void *&val1,
+                          void *val2,
+                          bool copy_to_running,
+                          unc_keytype_operation_t op);
+
+    upll_rc_t SetFlowListConsolidatedStatus(ConfigKeyVal *ikey,
+                                            uint8_t *ctrlr_id,
+                                            DalDmlIntf *dmi);
 };
 
 typedef struct val_flowlist_ctrl {

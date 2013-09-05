@@ -59,6 +59,7 @@ public class VtnServiceWebUtil {
 	        line = reader.readLine();
 	    }
 	    reader.close();
+	    LOG.debug("Request String : " + requestStr.toString());
 	    serviceRequest = DataConverter.getConvertedRequestObject(requestStr.toString(), contentType);
 	    LOG.debug("Request object json # serviceRequest #");
 	    return serviceRequest;
@@ -80,7 +81,6 @@ public class VtnServiceWebUtil {
 				final String nextElement =  (String)headerEnum.nextElement();
 				if(SessionEnum.USERNAME.getSessionElement().equals(nextElement) || 
 					SessionEnum.PASSWORD.getSessionElement().equals(nextElement) || 
-					SessionEnum.IPADDRESS.getSessionElement().equals(nextElement) || 
 					SessionEnum.LOGINNAME.getSessionElement().equals(nextElement) || 
 					SessionEnum.INFO.getSessionElement().equals(nextElement))
 					{
@@ -89,6 +89,7 @@ public class VtnServiceWebUtil {
 			}
 			
 		}
+		headerJson.addProperty(SessionEnum.IPADDRESS.getSessionElement(), request.getRemoteAddr());
 		headerJson.addProperty(ApplicationConstants.TYPE, ApplicationConstants.SESSION_TYPE);
 		final JsonObject sessionJson = new JsonObject();
 		sessionJson.add(SESSION, headerJson);
@@ -140,6 +141,20 @@ public class VtnServiceWebUtil {
 		commitConfigObj.add(ApplicationConstants.CONFIGURATION_STRING, commitConfigJson);
 		return commitConfigObj;
 	}
+	/**
+	 * Prepare abort commit json.
+	 * 
+	 * @param operation
+	 *            the operation
+	 * @return the json object
+	 */
+	public static JsonObject prepareCandidateAbortJSON(final String operation) {
+		JsonObject abortConfigJson = new JsonObject();
+		JsonObject abortConfigObj = new JsonObject();
+		abortConfigJson.addProperty(ApplicationConstants.OPERATION, operation);
+		abortConfigObj.add(ApplicationConstants.CANDIDATE, abortConfigJson);
+		return abortConfigObj;
+	}
 	
 	
 	/**
@@ -151,14 +166,17 @@ public class VtnServiceWebUtil {
 	 * @throws JSONException 
 	 */
 	public static JSONObject prepareErrResponseJson(final String errCode, final String description) {
-		JSONObject temErrorJSON = new JSONObject();
-		JSONObject errJson = new JSONObject();
-		try{
-			temErrorJSON.put(ApplicationConstants.ERR_CODE, errCode);
-			temErrorJSON.put(ApplicationConstants.ERR_DESCRIPTION, description);
-			errJson.put(ApplicationConstants.ERROR, temErrorJSON);
-		}catch(JSONException e){
-			LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
+		JSONObject errJson = null;
+		if(!ApplicationConstants.STATUS_OK.equals(errCode)){
+			JSONObject temErrorJSON = new JSONObject();
+			errJson = new JSONObject();
+			try{
+				temErrorJSON.put(ApplicationConstants.ERR_CODE, errCode);
+				temErrorJSON.put(ApplicationConstants.ERR_DESCRIPTION, description);
+				errJson.put(ApplicationConstants.ERROR, temErrorJSON);
+			}catch(JSONException e){
+				LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
+			}			
 		}
 		return errJson;
 	}

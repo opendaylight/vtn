@@ -27,7 +27,7 @@ import org.opendaylight.vtn.javaapi.validation.VtnServiceValidator;
  * VrouterInterfaceFlowFilterEntry API.
  */
 public class VBridgeFlowFilterEntriesResourceValidator extends
-VtnServiceValidator {
+		VtnServiceValidator {
 	private static final Logger LOG = Logger
 			.getLogger(VBridgeFlowFilterEntriesResourceValidator.class
 					.getName());
@@ -62,7 +62,7 @@ VtnServiceValidator {
 		if (resource instanceof VBridgeFlowFilterEntriesResource
 				&& ((VBridgeFlowFilterEntriesResource) resource).getVtnName() != null
 				&& !((VBridgeFlowFilterEntriesResource) resource).getVtnName()
-				.trim().isEmpty()) {
+						.trim().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
 					((VBridgeFlowFilterEntriesResource) resource).getVtnName()
 					.trim(), VtnServiceJsonConsts.LEN_31);
@@ -247,20 +247,21 @@ VtnServiceValidator {
 			} else if (isValid && requestBody != null
 					&& VtnServiceConsts.POST.equals(method)) {
 				isValid = validatePost(requestBody);
-				if(validator.getInvalidParameter()!=null){
+				if (validator.getInvalidParameter() != null) {
 					setInvalidParameter(validator.getInvalidParameter());
 				}
-			} else {
+			} else if (isValid) {
+				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			if(validator.getInvalidParameter()!=null){
+			if (validator.getInvalidParameter() != null) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
 			LOG.error("Inside catch:NumberFormatException");
 			isValid = false;
 		} catch (final ClassCastException e) {
-			if(validator.getInvalidParameter()!=null){
+			if (validator.getInvalidParameter() != null) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
 			LOG.error("Inside catch:ClassCastException");
@@ -300,9 +301,9 @@ VtnServiceValidator {
 			if (ffEntry.has(VtnServiceJsonConsts.SEQNUM)
 					&& ffEntry.getAsJsonPrimitive(VtnServiceJsonConsts.SEQNUM)
 					.getAsString() != null) {
-				isValid = validator.isValidRange(Integer.parseInt(ffEntry
+				isValid = validator.isValidRange(ffEntry
 						.getAsJsonPrimitive(VtnServiceJsonConsts.SEQNUM)
-						.getAsString().trim()), VtnServiceJsonConsts.VAL_1,
+						.getAsString().trim(), VtnServiceJsonConsts.VAL_1,
 						VtnServiceJsonConsts.VAL_65535);
 			}
 			if (isValid) {

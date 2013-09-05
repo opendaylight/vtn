@@ -16,6 +16,8 @@ import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
 import org.opendaylight.vtn.javaapi.resources.AbstractResource;
 import org.opendaylight.vtn.javaapi.resources.logical.PortMapResource;
+import org.opendaylight.vtn.javaapi.resources.logical.VTepInterfacePortMapResource;
+import org.opendaylight.vtn.javaapi.resources.logical.VTunnelInterfacePortMapResource;
 import org.opendaylight.vtn.javaapi.validation.CommonValidator;
 import org.opendaylight.vtn.javaapi.validation.VtnServiceValidator;
 
@@ -86,6 +88,65 @@ public class PortMapResourceValidator extends VtnServiceValidator {
 			}
 			setListOpFlag(false);
 		}
+		else if (resource instanceof VTunnelInterfacePortMapResource
+				&& ((VTunnelInterfacePortMapResource) resource).getVtnName() != null
+				&& !((VTunnelInterfacePortMapResource) resource).getVtnName().trim().isEmpty()) {
+			isValid = validator.isValidMaxLengthAlphaNum(
+					((VTunnelInterfacePortMapResource) resource).getVtnName().trim(),
+					VtnServiceJsonConsts.LEN_31);
+			if (isValid){
+				setInvalidParameter(VtnServiceJsonConsts.URI + VtnServiceJsonConsts.VTUNNELNAME);
+				if(((VTunnelInterfacePortMapResource) resource).getVtunnelName() != null
+						&& !((VTunnelInterfacePortMapResource) resource).getVtunnelName().trim().isEmpty()) {
+					isValid = validator.isValidMaxLengthAlphaNum(
+							((VTunnelInterfacePortMapResource) resource).getVtunnelName().trim(),
+							VtnServiceJsonConsts.LEN_31);
+				} else {
+					isValid = false;
+				}
+			}
+			if (isValid){
+				setInvalidParameter(VtnServiceJsonConsts.URI + VtnServiceJsonConsts.IFNAME);
+				if(((VTunnelInterfacePortMapResource) resource).getIfName() != null
+						&& !((VTunnelInterfacePortMapResource) resource).getIfName().trim().isEmpty()) {
+					isValid = validator.isValidMaxLengthAlphaNum(
+							((VTunnelInterfacePortMapResource) resource).getIfName().trim(),
+							VtnServiceJsonConsts.LEN_31);
+				} else {
+					isValid = false;
+				}
+			}
+			setListOpFlag(false);
+		}else if (resource instanceof VTepInterfacePortMapResource
+				&& ((VTepInterfacePortMapResource) resource).getVtnName() != null
+				&& !((VTepInterfacePortMapResource) resource).getVtnName().trim().isEmpty()) {
+			isValid = validator.isValidMaxLengthAlphaNum(
+					((VTepInterfacePortMapResource) resource).getVtnName().trim(),
+					VtnServiceJsonConsts.LEN_31);
+			if (isValid){
+				setInvalidParameter(VtnServiceJsonConsts.URI + VtnServiceJsonConsts.VTEPNAME);
+				if(((VTepInterfacePortMapResource) resource).getVtepName() != null
+						&& !((VTepInterfacePortMapResource) resource).getVtepName().trim().isEmpty()) {
+					isValid = validator.isValidMaxLengthAlphaNum(
+							((VTepInterfacePortMapResource) resource).getVtepName().trim(),
+							VtnServiceJsonConsts.LEN_31);
+				} else {
+					isValid = false;
+				}
+			}
+			if (isValid){
+				setInvalidParameter(VtnServiceJsonConsts.URI + VtnServiceJsonConsts.IFNAME);
+				if(((VTepInterfacePortMapResource) resource).getIfName() != null
+						&& !((VTepInterfacePortMapResource) resource).getIfName().trim().isEmpty()) {
+					isValid = validator.isValidMaxLengthAlphaNum(
+							((VTepInterfacePortMapResource) resource).getIfName().trim(),
+							VtnServiceJsonConsts.LEN_31);
+				} else {
+					isValid = false;
+				}
+			}
+			setListOpFlag(false);
+		}
 		LOG.trace("Completed PortMapResourceValidator#validateUri()");
 		return isValid;
 	}
@@ -110,7 +171,8 @@ public class PortMapResourceValidator extends VtnServiceValidator {
 			} else if (isValid && requestBody != null
 					&& VtnServiceConsts.PUT.equals(method)) {
 				isValid = validatePut(requestBody);
-			} else {
+			} else if (isValid) {
+				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
@@ -167,7 +229,7 @@ public class PortMapResourceValidator extends VtnServiceValidator {
 						portMap.getAsJsonPrimitive(
 								VtnServiceJsonConsts.LOGICAL_PORT_ID)
 								.getAsString().trim(),
-						VtnServiceJsonConsts.LEN_255);
+						VtnServiceJsonConsts.LEN_319);
 			}
 			if (isValid) {
 				// validation for key: vlan_id
@@ -177,7 +239,7 @@ public class PortMapResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.VLANID).getAsString() != null) {
 					isValid = validator.isValidRange(portMap
 							.getAsJsonPrimitive(VtnServiceJsonConsts.VLANID)
-							.getAsInt(), VtnServiceJsonConsts.VAL_1,
+							.getAsString().trim(), VtnServiceJsonConsts.VAL_1,
 							VtnServiceJsonConsts.VAL_4095);
 				}
 			}
@@ -190,6 +252,9 @@ public class PortMapResourceValidator extends VtnServiceValidator {
 					final String portMp = portMap
 							.getAsJsonPrimitive(VtnServiceJsonConsts.TAGGED)
 							.getAsString().trim();
+					if (VtnServiceConsts.EMPTY_STRING.equals(portMp)) {
+						return true;
+					}
 					isValid = portMp
 							.equalsIgnoreCase(VtnServiceJsonConsts.TRUE)
 							|| portMp

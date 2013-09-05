@@ -16,11 +16,17 @@ public final class ApplicationConstants {
 	/**
 	 * Instantiates a new application constants.
 	 */
-	private ApplicationConstants() {//private default constructor so that no one can make the object of this class	
+	private ApplicationConstants() {	
 	}
 	
 	/** The Constant ZERO. */
 	public static final int ZERO = 0;
+	
+	/** The Constant FOUR for XML length. */
+	public static final int FOUR = 4;
+	
+	/** The Constant FIVE for JSON length. */
+	public static final int FIVE = 5;
 	
 	/** The Constant TIMEOUT. */
 	public static final String TIMEOUT = "timeout";
@@ -36,10 +42,7 @@ public final class ApplicationConstants {
 	
 	/** The Constant ACCESS_PROPERTY_PATH. */
 	public static final String ACCESS_PROPERTY_PATH = "/access.properties";
-	
-	/** The Constant PWD_PROPERTY_PATH. */
-	public static final String PWD_PROPERTY_PATH = "/pwd.properties";
-	
+		
 	/** The Constant WEBAPI_CONF_PROPERTY_PATH. */
 	public static final String WEBAPI_CONF_PROPERTY_PATH = "/webapiconf.properties";
 	
@@ -48,10 +51,7 @@ public final class ApplicationConstants {
 	
 	/** The Constant DEFAULT_ERROR_DESCRIPTION. */
 	public final static String DEFAULT_ERROR_DESCRIPTION = "internal server error";
-	
-	/** The Constant PROPERTY_NOT_FOUND_ERROR_DESC. */
-	public static final String PROPERTY_NOT_FOUND_ERROR_DESC = "Property Read Error";
-	
+		
 	/** The Constant OPERATION. */
 	public static final String OPERATION = "operation";
 	
@@ -69,7 +69,7 @@ public final class ApplicationConstants {
 	
 	/** The Constant ONE. */
 	public static final int ONE = 1;
-	/* Http Error codes and error descriptions */
+	/* HTTP Error codes and error descriptions */
 	//error codes
 	/** The Constant VTN_ERRORCODE_PREFIX. */
 	public static final String VTN_ERRORCODE_PREFIX = "vtns_err_";
@@ -91,41 +91,10 @@ public final class ApplicationConstants {
 	
 	/** The Constant METHOD_NOT_ALLOWED_ERROR. */
 	public static final String METHOD_NOT_ALLOWED_ERROR = "405";
-	
-	/** The Constant MISSING_HEADER_INFO. */
-	public static final String MISSING_HEADER_INFO = "410";
-	
+		
 	/** The Constant INTERNAL_SERVER_ERROR. */
 	public static final String INTERNAL_SERVER_ERROR = "500";
-	
-	/** The Constant PROPERTY_NOT_FOUND_ERROR. */
-	public static final String PROPERTY_NOT_FOUND_ERROR = "501";
-	
-	/** The Constant PROPERTY_FILE_READ_ERROR. */
-	public static final String PROPERTY_FILE_READ_ERROR = "502";
-	
-	/** The Constant SESSION_CREATION_FAILED. */
-	public static final String SESSION_CREATION_FAILED = "510";
-	
-	/** The Constant AQUIRE_CONFIGURATION_FAILED. */
-	public static final String AQUIRE_CONFIGURATION_FAILED = "511";
-	
-	/** The Constant RELEASE_SESSION_FAILED. */
-	public static final String RELEASE_SESSION_FAILED = "512";
-	
-	/** The Constant RELEASE_CONFIGURATION_FAILED. */
-	public static final String RELEASE_CONFIGURATION_FAILED = "513";
-	
-	/** The Constant MD5_ALGO_ERROR. */
-	public static final String MD5_ALGO_ERROR = "411";
-	
-	/** The Constant UNSUPPORTED_PASSWORD_STRING_FORMAT_ERROR. */
-	public static final String UNSUPPORTED_PASSWORD_STRING_FORMAT_ERROR = "412";
-	
-	
-	/** The Constant PROXY_OPT. */
-	public static final String PROXY_OPT = "PROXY";
-	
+		
 	/** The Constant ACCESS_ALL. */
 	public static final String ACCESS_ALL = "ALL";
 	
@@ -152,9 +121,6 @@ public final class ApplicationConstants {
 	
 	/** The Constant CONFIG_ID_STR. */
 	public static final String CONFIG_ID_STR = "config_id";
-	
-	/** The Constant MD5. */
-	public static final String MD5 = "MD5";
 	
 	/** The Constant ENCODE_UTF8_FORMAT. */
 	public static final String ENCODE_UTF8_FORMAT = "UTF-8";
@@ -211,4 +177,49 @@ public final class ApplicationConstants {
 
 	public static final String SESSIONSTR = "/sessions/";
 	
+	public static final String ALARMSTR = "/unc/alarms";
+	
+	public static final String UNC_WEB_ADMIN = "UNC_WEB_ADMIN";
+
+	public static final String UNC_WEB_OPER = "UNC_WEB_OPER";
+
+	public static final String CANDIDATE = "candidate";
+
+	public static final String OPERATION_ABORT = "abort";
+	
+	public static final String WILD_CARD_STAR = "*";
+	
+	public static final String CHAR_ENCODING = "UTF-8";
+	
+	public static final String XSLT_FILE = "org/opendaylight/vtn/webapi/utils/tranformXslt.xslt";
+	
+	public static final String LINE_FEED = "[\\n\\r]";
+	
+	public static final String XML_STANDALONE = "yes";
+	
+	public static final char LESS_THAN = '<';
+
+	public static final char GREATER_THAN = '>';	
+
+	public static final String NULL_STRING = "null";
+	
+	public static final String DUMMY_JSON = "{\"dummy\" : {}}";
+
+	public static final String DUMMY_XML = " dummy=\"\"";
+
+	public static final String EMPTY_JSON = "{}";
+
+	public static final String EMPTY_JSON_ARRAY = "[]";
+	
+	public static final String vtepgroup = "vtepgroup";
+
+	public static final String member_vteps = "member_vteps";
+	
+	public static final String member_vtep = "member_vtep";
+
+	public static final String ipaddrs = "ipaddrs";
+	
+	public static final String ipv6addr = "ipv6addrs";
+	
+	public static final String DOT_ZERO = "0";
 } 

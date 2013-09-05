@@ -12,6 +12,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
 import org.opendaylight.vtn.core.ipc.IpcException;
+import org.opendaylight.vtn.core.ipc.IpcString;
 import org.opendaylight.vtn.core.ipc.IpcStruct;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
@@ -76,9 +77,7 @@ public class AlarmResource extends AbstractResource {
 			LOG.info("Request packet processed with status:" +status);
 			if (status != UncSYSMGEnums.NodeIpcErrorT.NOMG_E_OK.ordinal()) {
 				LOG.info("Error occurred while performing operation");
-				createErrorInfo(
-						UncCommonEnum.UncResultCode.UNC_SERVER_ERROR.getValue(),
-						UncIpcErrorCode.getNodeCodes(status));
+				createNoMgErrorInfo(UncIpcErrorCode.getNodeCodes(status));
 				status = UncResultCode.UNC_SERVER_ERROR.getValue();
 			} else {
 				LOG.info("Opeartion successfully performed");
@@ -133,9 +132,7 @@ public class AlarmResource extends AbstractResource {
 			LOG.info("Request packet processed with status:"+status);
 			if (status != UncSYSMGEnums.NodeIpcErrorT.NOMG_E_OK.ordinal()) {
 				LOG.info("Error occurred while performing operation");
-				createErrorInfo(
-						UncCommonEnum.UncResultCode.UNC_SERVER_ERROR.getValue(),
-						UncIpcErrorCode.getNodeCodes(status));
+				createNoMgErrorInfo(UncIpcErrorCode.getNodeCodes(status));
 				status = UncResultCode.UNC_SERVER_ERROR.getValue();
 			} else {
 				LOG.info("Opeartion successfully performed");
@@ -229,12 +226,9 @@ public class AlarmResource extends AbstractResource {
 		} else if(IpcDataUnitWrapper.getIpcStructUint8Value(ipcResponseStruct,	VtnServiceJsonConsts.TYPE).toString().equals(VtnServiceJsonConsts.TWO)){
 			sessionDetails.addProperty(VtnServiceJsonConsts.TYPE,VtnServiceJsonConsts.RECOVERED);
 		}
-		final IpcStruct vtnNameStruct = (IpcStruct) session.getResponse(i++);
-		sessionDetails.addProperty(VtnServiceJsonConsts.VTNNAME, IpcDataUnitWrapper.getIpcStructUint8ArrayValue(vtnNameStruct, VtnServiceJsonConsts.VTNNAME).toString());
-		final IpcStruct summaryStruct = (IpcStruct) session.getResponse(i++);
-		sessionDetails.addProperty(VtnServiceJsonConsts.SUMMARY, IpcDataUnitWrapper.getIpcStructUint8ArrayValue(summaryStruct, VtnServiceJsonConsts.SUMMARY).toString());
-		final IpcStruct messageStruct = (IpcStruct) session.getResponse(i++);
-		sessionDetails.addProperty(VtnServiceJsonConsts.MESSAGE,IpcDataUnitWrapper.getIpcStructUint8ArrayValue(messageStruct, VtnServiceJsonConsts.MESSAGE).toString());
+		sessionDetails.addProperty(VtnServiceJsonConsts.VTNNAME, ((IpcString)session.getResponse(i++)).toString());
+		sessionDetails.addProperty(VtnServiceJsonConsts.SUMMARY, ((IpcString)session.getResponse(i++)).toString());
+		sessionDetails.addProperty(VtnServiceJsonConsts.MESSAGE, ((IpcString)session.getResponse(i++)).toString());
 		alarmJsonArray.add(sessionDetails);
 		}
 		response.add(VtnServiceJsonConsts.ALARMS, alarmJsonArray);

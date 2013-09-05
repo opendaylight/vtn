@@ -20,7 +20,6 @@
 #define _PFC_PHYSICALINTERNALTRANSACTIONCOORDINATOR_H_
 
 #include <string>
-#include <vector>
 #include "physical_common_def.hh"
 #include "unc/uppl_common.h"
 #include "itc_transaction_request.hh"
@@ -38,19 +37,6 @@ using unc::uppl::SystemStateChangeRequest;
 class ConfigurationRequest;
 class ReadRequest;
 
-typedef enum {
-  IS_KEY = 0,
-      IS_VALUE,
-      IS_STATE_VALUE,
-      IS_SEPARATOR
-}ValueType;
-
-struct BulkReadBuffer {
-  unc_key_type_t key_type;
-  ValueType value_type;
-  void* value;
-};
-
 /**************************************************************************
  * It is a singleton class which will invoke respective configuration classes.
  * For further info,see the comments in .cc file
@@ -58,9 +44,8 @@ struct BulkReadBuffer {
 
 class InternalTransactionCoordinator {
   public:
-    InternalTransactionCoordinator();
     ~InternalTransactionCoordinator();
-
+    static InternalTransactionCoordinator* get_internaltransactioncoordinator();
     TransactionRequest *transaction_req();
     AuditRequest *audit_req();
     DBConfigurationRequest *db_config_req();
@@ -102,58 +87,6 @@ class InternalTransactionCoordinator {
       return config_request_status_;
     }
 
-    /*  set_audit_state
-     *
-     *  @Description    : This function sets the audit state
-     *
-     *  @param[in]: audit status enum value
-     *
-     *  @return   : void
-     *
-     *  */
-    inline void set_audit_state(uint16_t audit_state) {
-      audit_state_= audit_state;
-    }
-
-    /*  audit_state
-     *
-     *  @Description    : This function gets the audit state
-     *
-     *  @param[in]: none
-     *
-     *  @return   : audit status value
-     *
-     *  */
-    inline uint16_t audit_state() {
-      return audit_state_;
-    }
-
-    /* set_import_state
-     *
-     *  @Description    : This function sets the import status
-     *
-     *  @param[in]: import status value
-     *
-     *  @return   : void
-     *
-     *  */
-    inline void set_import_state(uint16_t import_state) {
-      import_state_ = import_state;
-    }
-
-    /* import_state
-     *
-     *  @Description    : This function gets the import state
-     *
-     *  @param[in]: none
-     *
-     *  @return   : import status value
-     *
-     *  * */
-    inline uint16_t import_state() {
-      return import_state_;
-    }
-
     /* set_trans_state
      *
      *  @Description    : This function sets the transaction status
@@ -179,39 +112,33 @@ class InternalTransactionCoordinator {
     inline uint16_t trans_state() {
       return trans_state_;
     }
-
-    void AddToBuffer(BulkReadBuffer objBuffer) {
-      vect_bulk_read_buffer.push_back(objBuffer);
-    }
-
-    void FlushBulkReadBuffer() {
-      vect_bulk_read_buffer.clear();
-    }
-
-    vector<BulkReadBuffer> get_readbulk_buffer() {
-      return vect_bulk_read_buffer;
+    pfc_bool_t IsControllerInImport(string controller_name) {
+      if (controller_name == controller_in_import_) {
+        return PFC_TRUE;
+      }
+      return PFC_FALSE;
     }
 
   private:
     uint16_t config_request_status_;
     uint16_t trans_state_;
-    uint16_t import_state_;
-    uint16_t audit_state_;
-
+    string controller_in_import_;
+    InternalTransactionCoordinator();
+    static InternalTransactionCoordinator* internal_transaction_coordinator_;
     TransactionRequest *transaction_req_;
     DBConfigurationRequest *db_config_req_;
     SystemStateChangeRequest *system_state_change_req_;
     AuditRequest *audit_req_;
 
-    vector<BulkReadBuffer> vect_bulk_read_buffer;
-
     UpplReturnCode ProcessConfigRequest(ServerSession &session,
-                                        physical_request_header obj_req_hdr,
+                                        physical_request_header &obj_req_hdr,
                                         physical_response_header &rsh);
     UpplReturnCode ProcessReadRequest(ServerSession &session,
-                                      physical_request_header obj_req_hdr,
+                                      physical_request_header &obj_req_hdr,
                                       physical_response_header &rsh);
     UpplReturnCode ProcessImportRequest(ServerSession &session,
                                         uint32_t operation);
+    UpplReturnCode ProcessIsCandidateDirty(ServerSession &session,
+                                           uint32_t operation);
 };
 #endif

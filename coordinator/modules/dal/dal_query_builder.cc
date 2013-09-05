@@ -14,7 +14,7 @@
  *      Author: guest
  */
 
-#include "upll/upll_log.hh"
+#include "uncxx/upll_log.hh"
 #include "dal_query_builder.hh"
 // #include "/home/guest/BuildEnv/src/core/include/cxx/pfcxx/synch.hh"
 
@@ -61,6 +61,7 @@ const char * DalQueryBuilder::DalUpdateRecQT    =
   "UPDATE {config1_table_name} SET {mand_in_columns_with_?}"
     " {opt_WHERE_match_columns_eq}";
 
+#if 0
 const char * DalQueryBuilder::DalGetDelRecQT    =
   "SELECT {mand_out_columns} FROM {config2_table_name}"
     " WHERE ({mand_match_columns}) NOT IN"
@@ -70,6 +71,18 @@ const char * DalQueryBuilder::DalGetCreatedRecQT =
   "SELECT {mand_out_columns} FROM {config1_table_name}"
     " WHERE ({mand_match_columns}) NOT IN"
     " ( SELECT {mand_match_columns} FROM {config2_table_name})";
+#endif
+const char * DalQueryBuilder::DalGetDelRecQT    =
+  "SELECT {mand_out_columns} FROM {config2_table_name} AS temp"
+    " WHERE NOT EXISTS"
+    " ( SELECT {mand_match_columns} FROM {config1_table_name}"
+    "   {mand_match_columns_eq_with_temp})";
+
+const char * DalQueryBuilder::DalGetCreatedRecQT =
+  "SELECT {mand_out_columns} FROM {config1_table_name} AS temp"
+    " WHERE NOT EXISTS"
+    " ( SELECT {mand_match_columns} FROM {config2_table_name}"
+    "   {mand_match_columns_eq_with_temp})";
 
 const char * DalQueryBuilder::DalGetModRecQT     =
   "SELECT {mand_out_columns} FROM {config1_table_name}"
@@ -78,7 +91,7 @@ const char * DalQueryBuilder::DalGetModRecQT     =
         " ( SELECT {opt_match_columns} FROM {config2_table_name} EXCEPT"
           " SELECT {opt_match_columns} FROM {config1_table_name}"
         " ) as temp"
-      " )";
+      " ) ORDER BY ({primary_key_columns})";
 
 const char * DalQueryBuilder::DalCopyEntireRecQT =
   "DELETE FROM {dst_table_name};"
@@ -169,6 +182,8 @@ const char * DalQueryBuilder::DalOptMatchColEqNotLastExpr =
   "{opt_WHERE_match_columns_eq_not_last}";
 const char * DalQueryBuilder::DalMandMatchColLstGtrExpr =
   "{mand_WHERE_match_columns_last_greater}";
+const char * DalQueryBuilder::DalMandMatchColEqTempExpr =
+  "{mand_match_columns_eq_with_temp}";
 
 // Primary Key related tokens
 const char * DalQueryBuilder::DalPkeyColNames = "{primary_key_columns}";
@@ -323,6 +338,8 @@ DalQuerytoken DalQueryBuilder::str_to_num(const std::string &tokenstr) const {
     return kDalOptMatchColEqNotLastExpr;
   } else if (tokenstr.compare(DalMandMatchColLstGtrExpr) == 0) {
     return kDalMandMatchColLstGtrExpr;
+  } else if (tokenstr.compare(DalMandMatchColEqTempExpr) == 0) {
+    return kDalMandMatchColEqTempExpr;
 
   // Primary Key Related tokens
   } else if (tokenstr.compare(DalPkeyColNames) == 0) {
@@ -902,6 +919,50 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
 
         replc_str += std::string(schema::ColumnName(table_index, col_index));
       }
+      break;
+
+    // {mand_match_columns_eq_with_temp}
+    // col1 = temp.col1 AND col2 = temp.col2 ...
+    // For all match columns in bind list
+    case kDalMandMatchColEqTempExpr:
+      if (dbi == NULL) {
+        UPLL_LOG_INFO("Null Bind Info for Mandatory token");
+        return false;
+      }
+
+      if (dbi->get_match_bind_count() == 0) {
+        UPLL_LOG_INFO("No columns bound for Mandatory Match");
+        return false;
+      }
+
+      // Building string for attributes bound for match
+      if (dbi->get_match_bind_count() > 0)
+        replc_str += std::string("WHERE ");
+
+      bind_list = dbi->get_bind_list();
+      for (bl_it = bind_list.begin(); bl_it != bind_list.end(); ++bl_it) {
+        col_info = *bl_it;
+        io_type = col_info->get_io_type();
+        if (io_type == kDalIoMatchOnly ||
+            io_type == kDalIoInputAndMatch ||
+            io_type == kDalIoOutputAndMatch) {
+          if (first != true)
+            replc_str += std::string(" AND ");
+
+          if (first)
+            first = false;
+
+          replc_str += std::string(schema::ColumnName(
+                                     table_index,
+                                     col_info->get_column_index()));
+          replc_str += std::string(" = temp.");
+          replc_str += std::string(schema::ColumnName(
+                                     table_index,
+                                     col_info->get_column_index()));
+
+        }  // if
+        col_count++;
+      }  // for
       break;
 
     // {match_dst_primary_key_columns_eq_with_temp} - col1, col2, ...

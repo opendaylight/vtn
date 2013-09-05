@@ -178,7 +178,7 @@ public class PortMapResource extends AbstractResource {
 			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			setInfo(responseGenerator.getPortMapResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
-					VtnServiceJsonConsts.SHOW));
+					VtnServiceJsonConsts.SHOW,VtnServiceJsonConsts.VBRIDGE_INTERFACE_PORTMAP));
 			LOG.debug("Response object created successfully");
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {

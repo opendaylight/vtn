@@ -68,6 +68,8 @@ public class AbortCandidateConfigResource extends AbstractResource {
 					UncTCEnums.ServiceID.TC_CANDIDATE_SERVICES.ordinal(),
 					getExceptionHandler());
 			LOG.info("Session created successfully");
+			// set session timeout as infinity for abort operation
+			session.setTimeout(null);
 			if (requestBody != null
 					&& requestBody.has(VtnServiceJsonConsts.CANDIDATE)
 					&& requestBody
@@ -106,9 +108,7 @@ public class AbortCandidateConfigResource extends AbstractResource {
 			LOG.info("OperationStatus" + operationStatus);
 			if (operationStatus != UncTCEnums.OperationStatus.TC_OPER_SUCCESS
 					.getCode()) {
-				createErrorInfo(
-						UncCommonEnum.UncResultCode.UNC_SERVER_ERROR.getValue(),
-						UncIpcErrorCode.getTcCodes(operationStatus));
+				createTcErrorInfo(UncIpcErrorCode.getTcCodes(operationStatus));
 				LOG.info("Request not processed successfully");
 				status = UncCommonEnum.UncResultCode.UNC_SERVER_ERROR
 						.getValue();

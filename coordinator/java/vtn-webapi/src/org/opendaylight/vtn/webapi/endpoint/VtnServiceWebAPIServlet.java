@@ -17,9 +17,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.webapi.enums.ApplicationConstants;
 import org.opendaylight.vtn.webapi.exception.VtnServiceWebAPIException;
@@ -102,14 +102,10 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 			if(null != serviceErrorJSON){
 				try {
 					final String responseString = DataConverter.getConvertedResponse(serviceErrorJSON, VtnServiceCommonUtil.getContentType(request.getRequestURI()));
-					response.setStatus(Integer.valueOf(serviceErrorJSON.getJSONObject(ApplicationConstants.ERROR).getString(ApplicationConstants.ERR_CODE)));
-					response.getWriter().write(responseString);
+					setResponseHeader(request, response, responseString);
 				} catch (IOException e) {
 					LOG.error("Servlet writer failed error "+e.getMessage());
 				} catch (NumberFormatException e) {
-					LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
-					serviceErrorJSON = VtnServiceWebUtil.prepareErrResponseJson(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
-				} catch (JSONException e) {
 					LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
 					serviceErrorJSON = VtnServiceWebUtil.prepareErrResponseJson(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
 				} catch (VtnServiceWebAPIException e) {
@@ -136,8 +132,7 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 			try {
 				vtnServiceWebAPIHandler = new VtnServiceWebAPIHandler();
 				final String responseString = vtnServiceWebAPIHandler.get(request);
-				response.setContentType(VtnServiceCommonUtil.getContentType(request.getRequestURI()));
-				response.getWriter().write(responseString);
+				setResponseHeader(request, response, responseString);
 				LOG.trace("HTTP GET method finished processing.");
 			}catch (IOException e) {
 				LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
@@ -149,14 +144,10 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 				if(null != serviceErrorJSON){
 					try {
 						final String responseString = DataConverter.getConvertedResponse(serviceErrorJSON, VtnServiceCommonUtil.getContentType(request.getRequestURI()));
-						response.setStatus(Integer.valueOf(serviceErrorJSON.getJSONObject(ApplicationConstants.ERROR).getString(ApplicationConstants.ERR_CODE)));
-						response.getWriter().write(responseString);
+						setResponseHeader(request, response, responseString);
 					} catch (IOException e) {
 						LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
 					} catch (NumberFormatException e) {
-						LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
-						serviceErrorJSON = VtnServiceWebUtil.prepareErrResponseJson(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
-					} catch (JSONException e) {
 						LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
 						serviceErrorJSON = VtnServiceWebUtil.prepareErrResponseJson(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
 					} catch (VtnServiceWebAPIException e) {
@@ -184,9 +175,8 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 		JSONObject serviceErrorJSON = null;
 		try{
 			vtnServiceWebAPIHandler = new VtnServiceWebAPIHandler();
-			final String responseString =  vtnServiceWebAPIHandler.post(request);
-			response.setContentType(request.getRequestURI());
-			response.getWriter().write(responseString);
+			final String responseString = vtnServiceWebAPIHandler.post(request);
+			setResponseHeader(request, response, responseString);
 			LOG.trace("HTTP POST method finished processing.");
 		}
 		catch (IOException e) {
@@ -200,14 +190,10 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 			if(null != serviceErrorJSON){
 				try {
 					final String responseString = DataConverter.getConvertedResponse(serviceErrorJSON, VtnServiceCommonUtil.getContentType(request.getRequestURI()));
-					response.setStatus(Integer.valueOf(serviceErrorJSON.getJSONObject(ApplicationConstants.ERROR).getString(ApplicationConstants.ERR_CODE)));
-					response.getWriter().write(responseString);
+					setResponseHeader(request, response, responseString);
 				} catch (IOException e) {
 					LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
 				} catch (NumberFormatException e) {
-					LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
-					serviceErrorJSON = VtnServiceWebUtil.prepareErrResponseJson(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
-				} catch (JSONException e) {
 					LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
 					serviceErrorJSON = VtnServiceWebUtil.prepareErrResponseJson(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
 				} catch (VtnServiceWebAPIException e) {
@@ -215,9 +201,7 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 					serviceErrorJSON = VtnServiceWebUtil.prepareErrResponseJson(e.getErrorCode(), e.getErrorDescription());
 				}
 			}
-		}
-		
-		
+		}		
 	}
 
 	/**
@@ -235,8 +219,7 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 		try{
 			vtnServiceWebAPIHandler = new VtnServiceWebAPIHandler();
 			final String responseString =  vtnServiceWebAPIHandler.put(request);
-			response.setContentType(request.getRequestURI());
-			response.getWriter().write(responseString);
+			setResponseHeader(request, response, responseString);
 			LOG.trace("HTTP PUT method finished processing.");
 		}
 		catch (IOException e) {
@@ -249,14 +232,10 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 			if(null != serviceErrorJSON){
 				try {
 					final String responseString = DataConverter.getConvertedResponse(serviceErrorJSON, VtnServiceCommonUtil.getContentType(request.getRequestURI()));
-					response.setStatus(Integer.valueOf(serviceErrorJSON.getJSONObject(ApplicationConstants.ERROR).getString(ApplicationConstants.ERR_CODE)));
-					response.getWriter().write(responseString);
+					setResponseHeader(request, response, responseString);
 				} catch (IOException e) {
 					LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
 				} catch (NumberFormatException e) {
-					LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
-					serviceErrorJSON = VtnServiceWebUtil.prepareErrResponseJson(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
-				} catch (JSONException e) {
 					LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
 					serviceErrorJSON = VtnServiceWebUtil.prepareErrResponseJson(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
 				} catch (VtnServiceWebAPIException e) {
@@ -285,8 +264,7 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 		try{
 			vtnServiceWebAPIHandler = new VtnServiceWebAPIHandler();
 			final String responseString =  vtnServiceWebAPIHandler.delete(request);
-			response.setContentType(request.getRequestURI());
-			response.getWriter().write(responseString);
+			setResponseHeader(request, response, responseString);
 			LOG.trace("HTTP DELETE method finished processing.");
 		}
 		catch (IOException e) {
@@ -299,14 +277,10 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 			if(null != serviceErrorJSON){
 				try {
 					final String responseString = DataConverter.getConvertedResponse(serviceErrorJSON, VtnServiceCommonUtil.getContentType(request.getRequestURI()));
-					response.setStatus(Integer.valueOf(serviceErrorJSON.getJSONObject(ApplicationConstants.ERROR).getString(ApplicationConstants.ERR_CODE)));
-					response.getWriter().write(responseString);
+					setResponseHeader(request, response, responseString);
 				} catch (IOException e) {
 					LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
 				} catch (NumberFormatException e) {
-					LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
-					serviceErrorJSON = VtnServiceWebUtil.prepareErrResponseJson(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
-				} catch (JSONException e) {
 					LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
 					serviceErrorJSON = VtnServiceWebUtil.prepareErrResponseJson(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
 				} catch (VtnServiceWebAPIException e) {
@@ -332,5 +306,28 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 		LOG.trace("Servlet instance is now eligible for garbage collection.");
 		super.destroy();
 	}
-	
+
+	/**
+	 * Set response header information
+	 *
+	 * @param request the request
+	 * @param response the response
+	 * @see HttpServlet#doPut(HttpServletRequest, HttpServletResponse)
+	 */
+	private void setResponseHeader(final HttpServletRequest request,final HttpServletResponse response, final String responseString) throws IOException, VtnServiceWebAPIException {
+		LOG.debug("Start setResponseHeader");
+		response.setContentType(VtnServiceCommonUtil.getContentType(request.getRequestURI()));
+		response.setCharacterEncoding(ApplicationConstants.CHAR_ENCODING);
+		if(null != responseString && !responseString.isEmpty()){			
+			// Set response status in cases where returned response in not success from JavaAPI
+			JsonObject responseJson = DataConverter.getConvertedRequestObject(responseString, VtnServiceCommonUtil.getContentType(request.getRequestURI()));
+			if(responseJson.has(ApplicationConstants.ERROR)){
+				LOG.debug("Set HTTP response status : " + responseJson.get(ApplicationConstants.ERROR).getAsJsonObject().get(ApplicationConstants.ERR_CODE).getAsInt());
+				response.setStatus(responseJson.get(ApplicationConstants.ERROR).getAsJsonObject().get(ApplicationConstants.ERR_CODE).getAsInt());						
+			} else {
+				response.getWriter().write(responseString);
+			}
+		}
+		LOG.debug("Complete setResponseHeader");
+	}
 }

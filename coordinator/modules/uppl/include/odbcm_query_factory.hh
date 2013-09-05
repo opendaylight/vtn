@@ -39,13 +39,15 @@ namespace uppl {
       /**** Function pointers to class member functions ****/
       /** Function pointer for below methods
        * operation_createonerow, 
-       * operation_updateonerow
        * operation_deleteonerow
        * operation_clearonerow
        * operation_isrowexists
        * operation_getmodifiedrows */
       std::string(QueryFactory::*GetQuery)
           (unc_keytype_datatype_t, DBTableSchema&);
+      /* operation_updateonerow */
+      std::string(QueryFactory::*GetQueryWithBool)
+          (unc_keytype_datatype_t, DBTableSchema&, bool);
       /** Function pointer for operation_getsiblingCount with filters */
       std::string(QueryFactory::*GetFilterCountQuery)
           (unc_keytype_datatype_t, DBTableSchema&, std::vector<ODBCMOperator>);
@@ -62,11 +64,6 @@ namespace uppl {
       /** Function pointer for operation_copydatabase */
       std::string* (QueryFactory::*GetTwoDBQuery)
           (unc_keytype_datatype_t, unc_keytype_datatype_t);
-      /** Function pointer for operation_mergetwodatabase */
-/*
-      std::string* (QueryFactory::*GetTwoTableQuery)
-          (unc_keytype_datatype_t, unc_keytype_datatype_t, std::string);
-*/
       /** Function pointer for operation_cleardatabase */
       std::string* (QueryFactory::*GetSingleDBQuery)
           (unc_keytype_datatype_t);
@@ -78,18 +75,19 @@ namespace uppl {
       /** Function pointer for operation_getbulkrows */
       std::string(QueryFactory::*GetBulkRowQuery)
           (unc_keytype_datatype_t, uint32_t, DBTableSchema&,
-              unc_keytype_operation_t);
+          unc_keytype_operation_t);
       /** Function pointer for operation_clearoneinstance */
       std::string* (QueryFactory::*GetClearInstanceQuery)
           (unc_keytype_datatype_t, std::string&);
 
+      std::string getOrderByString(ODBCMTable, std::vector <std::string>&);
     private:
       /** To frame query for creating a row in db */
       SQLQUERY operation_createonerow
           (unc_keytype_datatype_t, DBTableSchema &);
       /** To frame query for updating a row in db */
       SQLQUERY operation_updateonerow
-          (unc_keytype_datatype_t, DBTableSchema &);
+          (unc_keytype_datatype_t, DBTableSchema &, bool);
       /** To frame query for deleting a row in db
         * (Change cs_row_status to DELETED) */
       SQLQUERY operation_deleteonerow
@@ -113,9 +111,6 @@ namespace uppl {
       /** To frame query to copy data from one to other db */
       SQLQUERY* operation_copydatabase
           (unc_keytype_datatype_t, unc_keytype_datatype_t);
-      /** To frame query for merging two db */
-      //  SQLQUERY* operation_mergetwodatabase
-      //    (unc_keytype_datatype_t, unc_keytype_datatype_t, std::string);
       /** To frame query for clearing a controller
         * instance in all tables in a db */
       SQLQUERY* operation_clearoneinstance

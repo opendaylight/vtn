@@ -79,102 +79,188 @@ namespace uppl {
 #define UPPL_LINK_TABLE                 "link_table"
 #define UPPL_BOUNDARY_TABLE             "boundary_table"
 
+
+/**controller table Column names enumeration*/
+typedef enum {
+  CTR_NAME = 0,
+  CTR_TYPE,
+  CTR_VERSION,
+  CTR_DESCRIPTION,
+  CTR_IP_ADDRESS,
+  CTR_USER_NAME,
+  CTR_PASSWORD,
+  CTR_ENABLE_AUDIT,
+  CTR_ACTUAL_VERSION,
+  CTR_OPER_STATUS,
+  CTR_VALID,
+  CTR_CS_ROW_STATUS,
+  CTR_CS_ATTR = 12,
+  DOMAIN_NAME = 13,
+  DOMAIN_TYPE,
+  DOMAIN_DESCRIPTION,
+  DOMAIN_OP_STATUS,
+  DOMAIN_VALID,
+  DOMAIN_CS_ROW_STATUS,
+  DOMAIN_CS_ATTR = 19,
+  LP_PORT_ID = 20,
+  LP_DESCRIPTION,
+  LP_PORT_TYPE,
+  LP_SWITCH_ID,
+  LP_PHYSICAL_PORT_ID,
+  LP_OPER_DOWN_CRITERIA,
+  LP_OPER_STATUS,
+  LP_CTR_VALID = 27,
+  LMP_SWITCH_ID = 28,
+  LMP_PHYSICAL_PORT_ID,
+  LMP_LP_PORT_ID = 30,
+  SWITCH_ID = 31,
+  SWITCH_DESCRIPTION,
+  SWITCH_MODEL,
+  SWITCH_IP_ADDRESS,
+  SWITCH_IPV6_ADDRESS,
+  SWITCH_ADMIN_STATUS,
+  SWITCH_DOMAIN_NAME,
+  SWITCH_MANUFACTURER,
+  SWITCH_HARDWARE,
+  SWITCH_SOFTWARE,
+  SWITCH_ALARM_STATUS,
+  SWITCH_OPER_STATUS,
+  SWITCH_VALID = 43,
+  PORT_ID = 44,
+  PORT_NUMBER,
+  PORT_DESCRIPTION,
+  PORT_ADMIN_STATUS,
+  PORT_DIRECTION,
+  PORT_TRUNK_ALL_VLAN,
+  PORT_OPER_STATUS,
+  PORT_MAC_ADDRESS,
+  PORT_DUPLEX,
+  PORT_SPEED,
+  PORT_ALARM_STATUS,
+  PORT_LOGIC_PORT_ID,
+  PORT_VALID = 56,
+  LINK_SWITCH_ID1 = 57,
+  LINK_PORT_ID1,
+  LINK_SWITCH_ID2,
+  LINK_PORT_ID2,
+  LINK_DESCRIPTION,
+  LINK_OPER_STATUS,
+  LINK_VALID = 63,
+  BDRY_ID = 64,
+  BDRY_DESCRIPTION,
+  BDRY_CTR_NAME1,
+  BDRY_DM_NAME1,
+  BDRY_PORT_ID1,
+  BDRY_CTR_NAME2,
+  BDRY_DM_NAME2,
+  BDRY_PORT_ID2,
+  BDRY_OPER_STATUS,
+  BDRY_VALID,
+  BDRY_ROW_STATUS,
+  BDRY_ATTR = 75,
+  UNKNOWN_COLUMN
+}ODBCMTableColumns;
+
+/*
+* odbcm tables column name struct
+*/
+typedef struct {
+  const unc::uppl::ODBCMTableColumns column_id;
+  const std::string column_string;
+}OdbcmColumnName;
+
 //  UPPL tables column names
 //  controller_table columns
-#define CTR_NAME            "controller_name"
-#define CTR_TYPE            "type"
-#define CTR_VERSION         "version"
-#define CTR_DESCRIPTION     "description"
-#define CTR_IP_ADDRESS      "ip_address"
-#define CTR_USER_NAME       "user_name"
-#define CTR_PASSWORD        "password"
-#define CTR_ENABLE_AUDIT    "enable_audit"
-#define CTR_ACTUAL_VERSION  "actual_version"
-#define CTR_OPER_STATUS     "oper_status"
-#define CTR_VALID           "valid"
-#define CTR_CS_ROW_STATUS  "cs_row_status"
-#define CTR_CS_ATTR         "cs_attr"
+#define CTR_NAME_STR            "controller_name"
+#define CTR_TYPE_STR            "type"
+#define CTR_VERSION_STR         "version"
+#define CTR_DESCRIPTION_STR     "description"
+#define CTR_IP_ADDRESS_STR      "ip_address"
+#define CTR_USER_NAME_STR       "user_name"
+#define CTR_PASSWORD_STR        "password"
+#define CTR_ENABLE_AUDIT_STR    "enable_audit"
+#define CTR_ACTUAL_VERSION_STR  "actual_version"
+#define CTR_OPER_STATUS_STR     "oper_status"
+#define CTR_VALID_STR           "valid"
+#define CTR_CS_ROW_STATUS_STR   "cs_row_status"
+#define CTR_CS_ATTR_STR         "cs_attr"
 
 // ctr_domain_table columns
-
-#define DOMAIN_NAME          "domain_name"
-#define DOMAIN_TYPE          "type"
-#define DOMAIN_DESCRIPTION   "description"
-#define DOMAIN_OP_STATUS     "oper_status"
-#define DOMAIN_VALID         "valid"
-#define DOMAIN_CS_ROW_STATUS "cs_row_status"
-#define DOMAIN_CS_ATTR       "cs_attr"
+#define DOMAIN_NAME_STR          "domain_name"
+#define DOMAIN_TYPE_STR          "type"
+#define DOMAIN_DESCRIPTION_STR   "description"
+#define DOMAIN_OP_STATUS_STR     "oper_status"
+#define DOMAIN_VALID_STR         "valid"
+#define DOMAIN_CS_ROW_STATUS_STR "cs_row_status"
+#define DOMAIN_CS_ATTR_STR       "cs_attr"
 
 //  logicalport_table columns
-#define LP_PORT_ID            "port_id"
-#define LP_DESCRIPTION        "description"
-#define LP_PORT_TYPE          "port_type"
-#define LP_SWITCH_ID          "switch_id"
-#define LP_PHYSICAL_PORT_ID   "physical_port_id"
-#define LP_OPER_DOWN_CRITERIA "oper_down_criteria"
-#define LP_OPER_STATUS         "oper_status"
-#define LP_CTR_VALID           "valid"
+#define LP_PORT_ID_STR            "port_id"
+#define LP_DESCRIPTION_STR        "description"
+#define LP_PORT_TYPE_STR          "port_type"
+#define LP_SWITCH_ID_STR          "switch_id"
+#define LP_PHYSICAL_PORT_ID_STR   "physical_port_id"
+#define LP_OPER_DOWN_CRITERIA_STR "oper_down_criteria"
+#define LP_OPER_STATUS_STR        "oper_status"
+#define LP_CTR_VALID_STR          "valid"
 
 //  logical_memberport_table columns
-#define LMP_SWITCH_ID "switch_id"
-#define LMP_PHYSICAL_PORT_ID "physical_port_id"
-#define LMP_LP_PORT_ID "port_id"
-
+#define LMP_SWITCH_ID_STR        "switch_id"
+#define LMP_PHYSICAL_PORT_ID_STR "physical_port_id"
+#define LMP_LP_PORT_ID_STR       "port_id"
 
 //  switch table columns
-#define SWITCH_ID           "switch_id"
-#define SWITCH_DESCRIPTION  "description"
-#define SWITCH_MODEL        "model"
-#define SWITCH_IP_ADDRESS   "ip_address"
-#define SWITCH_IPV6_ADDRESS "ipv6_address"
-#define SWITCH_ADMIN_STATUS "admin_status"
-#define SWITCH_DOMAIN_NAME  "domain_name"
-#define SWITCH_MANUFACTURER "manufacturer"
-#define SWITCH_HARDWARE     "hardware"
-#define SWITCH_SOFTWARE     "software"
-#define SWITCH_ALARM_STATUS  "alarms_status"
-#define SWITCH_OPER_STATUS  "oper_status"
-#define SWITCH_VALID        "valid"
+#define SWITCH_ID_STR           "switch_id"
+#define SWITCH_DESCRIPTION_STR  "description"
+#define SWITCH_MODEL_STR        "model"
+#define SWITCH_IP_ADDRESS_STR   "ip_address"
+#define SWITCH_IPV6_ADDRESS_STR "ipv6_address"
+#define SWITCH_ADMIN_STATUS_STR "admin_status"
+#define SWITCH_DOMAIN_NAME_STR  "domain_name"
+#define SWITCH_MANUFACTURER_STR "manufacturer"
+#define SWITCH_HARDWARE_STR     "hardware"
+#define SWITCH_SOFTWARE_STR     "software"
+#define SWITCH_ALARM_STATUS_STR "alarms_status"
+#define SWITCH_OPER_STATUS_STR  "oper_status"
+#define SWITCH_VALID_STR        "valid"
 
-// port_table column
-//  #define PORT_CTR_NAME "controller_name"
-#define PORT_ID             "port_id"
-#define PORT_NUMBER         "port_number"
-#define PORT_DESCRIPTION    "description"
-#define PORT_ADMIN_STATUS   "admin_status"
-#define PORT_DIRECTION      "direction"
-#define PORT_TRUNK_ALL_VLAN "trunk_allowed_vlan"
-#define PORT_OPER_STATUS    "oper_status"
-#define PORT_MAC_ADDRESS    "mac_address"
-#define PORT_DUPLEX         "duplex"
-#define PORT_SPEED          "speed"
-#define PORT_ALARM_STATUS   "alarms_status"
-#define PORT_LOGIC_PORT_ID  "logical_port_id"
-#define PORT_VALID          "valid"
+//  port table columns
+#define PORT_ID_STR             "port_id"
+#define PORT_NUMBER_STR         "port_number"
+#define PORT_DESCRIPTION_STR    "description"
+#define PORT_ADMIN_STATUS_STR   "admin_status"
+#define PORT_DIRECTION_STR      "direction"
+#define PORT_TRUNK_ALL_VLAN_STR "trunk_allowed_vlan"
+#define PORT_OPER_STATUS_STR    "oper_status"
+#define PORT_MAC_ADDRESS_STR    "mac_address"
+#define PORT_DUPLEX_STR         "duplex"
+#define PORT_SPEED_STR          "speed"
+#define PORT_ALARM_STATUS_STR   "alarms_status"
+#define PORT_LOGIC_PORT_ID_STR  "logical_port_id"
+#define PORT_VALID_STR          "valid"
 
 // link_table columns
-//  #define LINK_CTR_NAME       "controller_name"
-#define LINK_SWITCH_ID1     "switch_id1"
-#define LINK_PORT_ID1       "port_id1"
-#define LINK_SWITCH_ID2     "switch_id2"
-#define LINK_PORT_ID2       "port_id2"
-#define LINK_DESCRIPTION    "description"
-#define LINK_OPER_STATUS    "oper_status"
-#define LINK_VALID          "valid"
+#define LINK_SWITCH_ID1_STR     "switch_id1"
+#define LINK_PORT_ID1_STR       "port_id1"
+#define LINK_SWITCH_ID2_STR     "switch_id2"
+#define LINK_PORT_ID2_STR       "port_id2"
+#define LINK_DESCRIPTION_STR    "description"
+#define LINK_OPER_STATUS_STR    "oper_status"
+#define LINK_VALID_STR          "valid"
 
 // boundary_table columns
-#define BDRY_ID             "boundary_id"
-#define BDRY_DESCRIPTION    "description"
-#define BDRY_CTR_NAME1      "controller_name1"
-#define BDRY_DM_NAME1       "domain_name1"
-#define BDRY_PORT_ID1       "logical_port_id1"
-#define BDRY_CTR_NAME2      "controller_name2"
-#define BDRY_DM_NAME2       "domain_name2"
-#define BDRY_PORT_ID2       "logical_port_id2"
-#define BDRY_OPER_STATUS    "oper_status"
-#define BDRY_VALID          "valid"
-#define BDRY_ROW_STATUS     "cs_row_status"
-#define BDRY_ATTR           "cs_attr"
+#define BDRY_ID_STR             "boundary_id"
+#define BDRY_DESCRIPTION_STR    "description"
+#define BDRY_CTR_NAME1_STR      "controller_name1"
+#define BDRY_DM_NAME1_STR       "domain_name1"
+#define BDRY_PORT_ID1_STR       "logical_port_id1"
+#define BDRY_CTR_NAME2_STR      "controller_name2"
+#define BDRY_DM_NAME2_STR       "domain_name2"
+#define BDRY_PORT_ID2_STR       "logical_port_id2"
+#define BDRY_OPER_STATUS_STR    "oper_status"
+#define BDRY_VALID_STR          "valid"
+#define BDRY_ROW_STATUS_STR     "cs_row_status"
+#define BDRY_ATTR_STR           "cs_attr"
 
 #define PHY_FINI_READ_LOCK() \
   if (PhysicalLayer::phyFiniFlag == 1) { \
@@ -222,7 +308,7 @@ struct ColumnAttrValue {
 /**this structure will hold the table name, column names, datatype and values
  * template address.*/
 struct TableAttrSchema {
-  std::string         table_attribute_name;
+  ODBCMTableColumns table_attribute_name;
   //  pointer to struct TableAttrValue
   void*               p_table_attribute_value;
   unsigned int        table_attribute_length;

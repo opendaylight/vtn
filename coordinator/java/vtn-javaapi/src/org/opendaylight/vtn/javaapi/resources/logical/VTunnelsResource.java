@@ -12,21 +12,20 @@ package org.opendaylight.vtn.javaapi.resources.logical;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
-import org.opendaylight.vtn.core.ipc.IpcDataUnit;
-import org.opendaylight.vtn.core.ipc.IpcStruct;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
+import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.IpcRequestProcessor;
 import org.opendaylight.vtn.javaapi.ipc.conversion.IpcLogicalResponseFactory;
 import org.opendaylight.vtn.javaapi.ipc.enums.IpcRequestPacketEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
-import org.opendaylight.vtn.javaapi.ipc.enums.UncStructEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncUPLLEnums;
@@ -41,6 +40,7 @@ public class VTunnelsResource extends AbstractResource {
 	/** The vtn name. */
 	@UNCField("vtn_name")
 	private String vtnName;
+
 	/**
 	 * 
 	 * @return the vtn name
@@ -48,8 +48,10 @@ public class VTunnelsResource extends AbstractResource {
 	public String getVtnName() {
 		return vtnName;
 	}
+
 	private static final Logger LOG = Logger.getLogger(VTunnelsResource.class
 			.getName());
+
 	/**
 	 * Instantiates a new v tunnels resource.
 	 */
@@ -59,6 +61,7 @@ public class VTunnelsResource extends AbstractResource {
 		setValidator(new VTunnelResourceValidator(this));
 		LOG.trace("Complete VTunnelsResource#VTunnelsResource()");
 	}
+
 	/**
 	 * Implementation of post method of VTunnels
 	 * 
@@ -82,11 +85,12 @@ public class VTunnelsResource extends AbstractResource {
 					UncUPLLEnums.ServiceID.UPLL_EDIT_SVC_ID.ordinal(),
 					getExceptionHandler());
 			LOG.debug("Session created successfully");
+			final List<String> uriParameterList = getUriParameters(requestBody);
 			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
 					getConfigID(), getExceptionHandler());
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_VTUNNEL_CREATE, requestBody,
-					getUriParameters(requestBody));
+					uriParameterList);
 			LOG.debug("Request Packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
@@ -117,6 +121,7 @@ public class VTunnelsResource extends AbstractResource {
 		LOG.trace("Complete VTunnelsResource#post()");
 		return status;
 	}
+
 	/**
 	 * Implementation of get method of VTunnels
 	 * 
@@ -142,6 +147,7 @@ public class VTunnelsResource extends AbstractResource {
 			LOG.debug("Session created successfully");
 			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
 					getConfigID(), getExceptionHandler());
+			final List<String> uriParameterList = getUriParameters(requestBody);
 			if (requestBody.has(VtnServiceJsonConsts.TARGETDB)
 					&& requestBody.get(VtnServiceJsonConsts.TARGETDB)
 							.getAsString()
@@ -151,19 +157,38 @@ public class VTunnelsResource extends AbstractResource {
 							.equalsIgnoreCase(VtnServiceJsonConsts.COUNT))) {
 				requestProcessor.createIpcRequestPacket(
 						IpcRequestPacketEnum.KT_VTUNNEL_GET, requestBody,
-						getUriParameters(requestBody));
+						uriParameterList);
 			} else {
 				requestProcessor.createIpcRequestPacket(
 						IpcRequestPacketEnum.KT_VTUNNEL_GET_COUNT, requestBody,
-						getUriParameters(requestBody));
+						uriParameterList);
 			}
 			LOG.debug("Request Packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
 			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
-			setInfo(responseGenerator.getVTunnelResponse(
-					requestProcessor.getIpcResponsePacket(), requestBody,
-					VtnServiceJsonConsts.LIST));
+			/*
+			 * setInfo(responseGenerator.getVTunnelResponse(
+			 * requestProcessor.getIpcResponsePacket(), requestBody,
+			 * VtnServiceJsonConsts.LIST));
+			 */
+			JsonObject responseJson = responseGenerator
+					.getVTunnelResponse(
+							requestProcessor.getIpcResponsePacket(),
+							requestBody, VtnServiceJsonConsts.LIST);
+			if (responseJson.get(VtnServiceJsonConsts.VTUNNELS)
+					.isJsonArray()) {
+				JsonArray responseArray = responseJson.get(
+						VtnServiceJsonConsts.VTUNNELS).getAsJsonArray();
+				responseJson = getResponseJsonArrayLogical(requestBody,
+						requestProcessor, responseGenerator, responseArray,
+						VtnServiceJsonConsts.VTUNNELS,
+						VtnServiceJsonConsts.VTUNNELNAME,
+						IpcRequestPacketEnum.KT_VTUNNEL_GET,
+						uriParameterList,
+						VtnServiceIpcConsts.GET_VTUNNEL_RESPONSE);
+			}
+			setInfo(responseJson);
 			LOG.debug("Response object created successfully");
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
@@ -192,6 +217,7 @@ public class VTunnelsResource extends AbstractResource {
 		LOG.trace("Complete VTunnelsResource#get()");
 		return status;
 	}
+
 	/**
 	 * Gets the uri parameters.
 	 * 

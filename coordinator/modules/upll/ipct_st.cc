@@ -159,6 +159,9 @@ const char *IpctSt::kIpcStrStKeyBoundary = "key_boundary";
 const char *IpctSt::kIpcStrStValBoundary = "val_boundary";
 const char *IpctSt::kIpcStrStValBoundarySt = "val_boundary_st";
 const char *IpctSt::kIpcStrStValPathFaultAlarm = "val_path_fault_alarm";
+  // Add Overlay Driver structures below
+const char *IpctSt::kIpcStrStVnpdrvValVtunnel = "vnpdrv_val_vtunnel";
+const char *IpctSt::kIpcStrStVnpdrvValVtunnelIf ="vnpdrv_val_vtunnel_if";
 
 std::map<std::string, const pfc_ipcstdef_t*> IpctSt::ipc_stdef_smap_;
 std::map<IpctSt::IpcStructNum, const pfc_ipcstdef_t*> IpctSt::ipc_stdef_nmap_;
@@ -533,6 +536,16 @@ void IpctSt::RegisterAll() {
   REGISTER_STDEF(val_boundary,
                  kIpcStrStValBoundary,
                  kIpcStValBoundary);
+  REGISTER_STDEF(val_boundary_st,
+                 kIpcStrStValBoundarySt,
+                 kIpcStValBoundarySt);
+  // Add Overlay Driver structures below
+  REGISTER_STDEF(vnpdrv_val_vtunnel,
+                 kIpcStrStVnpdrvValVtunnel,
+                 kIpcStVnpdrvValVtunnel);
+  REGISTER_STDEF(vnpdrv_val_vtunnel_if,
+                 kIpcStrStVnpdrvValVtunnelIf,
+                 kIpcStVnpdrvValVtunnelIf);
 }
 
 }  // namespace ipc_util

@@ -8,9 +8,13 @@
  */
 package org.opendaylight.vtn.javaapi.resources;
 
+import java.lang.reflect.Method;
 import java.util.List;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import org.opendaylight.vtn.core.ipc.ClientSession;
+import org.opendaylight.vtn.core.ipc.IpcDataUnit;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.VtnServiceResource;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
@@ -19,9 +23,22 @@ import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceExceptionHandler;
+import org.opendaylight.vtn.javaapi.init.VtnServiceConfiguration;
 import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
+import org.opendaylight.vtn.javaapi.ipc.IpcRequestProcessor;
+import org.opendaylight.vtn.javaapi.ipc.conversion.IpcDataUnitWrapper;
+import org.opendaylight.vtn.javaapi.ipc.conversion.IpcLogicalResponseFactory;
+import org.opendaylight.vtn.javaapi.ipc.conversion.IpcPhysicalResponseFactory;
+import org.opendaylight.vtn.javaapi.ipc.enums.IpcRequestPacketEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncOption2Enum;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncSYSMGEnums;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncSessionEnums;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncTCEnums;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncUPLLEnums;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncUPPLEnums;
 import org.opendaylight.vtn.javaapi.validation.VtnServiceValidator;
 
 /**
@@ -39,9 +56,6 @@ public abstract class AbstractResource implements VtnServiceResource {
 	private IpcConnPool connPool;
 
 	public AbstractResource() {
-//		ResponseFielPathFinder.key = this.getClass()
-//				.getAnnotation(UNCVtnService.class).path()
-//				+ VtnServiceConsts.COLON + VtnServiceConsts.GET;
 	}
 
 	public void setConnPool() {
@@ -271,6 +285,54 @@ public abstract class AbstractResource implements VtnServiceResource {
 	}
 
 	/**
+	 * Create error Json specific to session error codes
+	 * 
+	 * @param errorMessage
+	 */
+	public void createSessionErrorInfo(UncSessionEnums.UsessIpcErrE errorEnum) {
+		LOG.trace("Complete AbstractResource#createSessionErrorInfo");
+		final JsonObject errorJsonObject = new JsonObject();
+		final JsonObject error = new JsonObject();
+		error.addProperty(VtnServiceJsonConsts.CODE, errorEnum.getCode());
+		error.addProperty(VtnServiceJsonConsts.MSG, errorEnum.getMessage());
+		errorJsonObject.add(VtnServiceJsonConsts.ERROR, error);
+		setInfo(errorJsonObject);
+		LOG.trace("Complete AbstractResource#createSessionErrorInfo");
+	}
+
+	/**
+	 * Create error Json specific to tc error codes
+	 * 
+	 * @param errorMessage
+	 */
+	public void createTcErrorInfo(UncTCEnums.OperationStatus errorEnum) {
+		LOG.trace("Complete AbstractResource#createTcErrorInfo");
+		final JsonObject errorJsonObject = new JsonObject();
+		final JsonObject error = new JsonObject();
+		error.addProperty(VtnServiceJsonConsts.CODE, errorEnum.getErrorCode());
+		error.addProperty(VtnServiceJsonConsts.MSG, errorEnum.getMessage());
+		errorJsonObject.add(VtnServiceJsonConsts.ERROR, error);
+		setInfo(errorJsonObject);
+		LOG.trace("Complete AbstractResource#createTcErrorInfo");
+	}
+
+	/**
+	 * Create error Json specific to node manager error codes
+	 * 
+	 * @param errorMessage
+	 */
+	public void createNoMgErrorInfo(UncSYSMGEnums.NodeIpcErrorT errorEnum) {
+		LOG.trace("Complete AbstractResource#createNoMgErrorInfo");
+		final JsonObject errorJsonObject = new JsonObject();
+		final JsonObject error = new JsonObject();
+		error.addProperty(VtnServiceJsonConsts.CODE, errorEnum.getCode());
+		error.addProperty(VtnServiceJsonConsts.MSG, errorEnum.getMessage());
+		errorJsonObject.add(VtnServiceJsonConsts.ERROR, error);
+		setInfo(errorJsonObject);
+		LOG.trace("Complete AbstractResource#createNoMgErrorInfo");
+	}
+
+	/**
 	 * Return a Null Json Object
 	 * 
 	 * @return
@@ -290,4 +352,232 @@ public abstract class AbstractResource implements VtnServiceResource {
 		return null;
 	}
 
+	/**
+	 * Invoke the UPPL services, if the previous call contains more than 10K
+	 * (configurable)
+	 * 
+	 * @param requestBody
+	 * @param requestProcessor
+	 * @param responseGenerator
+	 * @param responseArray
+	 * @param JsonArrayName
+	 * @param IndexName
+	 * @param requestPackeEnumName
+	 * @param uriParameters
+	 * @param methodName
+	 * @return
+	 * @throws VtnServiceException
+	 */
+	public JsonObject getResponseJsonArrayPhysical(
+			final JsonObject requestBody, IpcRequestProcessor requestProcessor,
+			Object responseGenerator, JsonArray responseArray,
+			String JsonArrayName, String IndexName,
+			IpcRequestPacketEnum requestPackeEnumName,
+			List<String> uriParameters, String methodName)
+			throws VtnServiceException {
+		// session reset
+		requestProcessor.setServiceInfo(UncUPPLEnums.UPPL_IPC_SVC_NAME,
+				UncUPPLEnums.ServiceID.UPPL_SVC_READREQ.ordinal());
+		int status = ClientSession.RESP_FATAL;
+		int memberIndex = 0;
+		VtnServiceConfiguration configuration = VtnServiceInitManager
+				.getConfigurationMap();
+		int max_rep_count = Integer.parseInt(configuration
+				.getConfigValue(VtnServiceConsts.MAX_REP_DEFAULT));
+		memberIndex = responseArray.size();
+		if (memberIndex != 0) {
+			JsonObject memberLastIndex = (JsonObject) responseArray
+					.get(responseArray.size() - 1);
+			if (requestBody.has(VtnServiceJsonConsts.INDEX)) {
+				uriParameters.remove(uriParameters.size() - 1);
+				uriParameters.add(uriParameters.size(),
+						memberLastIndex.get(IndexName).getAsString());
+			} else {
+				uriParameters.add(memberLastIndex.get(IndexName).getAsString());
+			}
+			while (memberIndex == max_rep_count) {
+
+				JsonArray memberArray = null;
+				memberLastIndex = (JsonObject) responseArray.get(responseArray
+						.size() - 1);
+				uriParameters.remove(uriParameters.size() - 1);
+				uriParameters.add(uriParameters.size(),
+						memberLastIndex.get(IndexName).getAsString());
+
+				requestProcessor.createIpcRequestPacket(requestPackeEnumName,
+						requestBody, uriParameters);
+				// for testing only
+				requestProcessor
+						.getRequestPacket()
+						.setOption2(
+								IpcDataUnitWrapper
+										.setIpcUint32Value(UncOption2Enum.UNC_OPT2_NEIGHBOR
+												.ordinal()));
+
+				status = requestProcessor.processIpcRequest();
+				if (status == ClientSession.RESP_FATAL) {
+					throw new VtnServiceException(
+							Thread.currentThread().getStackTrace()[1]
+									.getClassName()
+									+ VtnServiceConsts.HYPHEN
+									+ Thread.currentThread().getStackTrace()[1]
+											.getMethodName(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR
+									.getErrorMessage());
+				}
+				try {
+					Method method;
+
+					final Class<IpcPhysicalResponseFactory> sourceClass = IpcPhysicalResponseFactory.class;
+					// get the method name to get the IpcLogicalResponseFactory
+					// object for given key
+					method = sourceClass.getMethod(methodName,
+							new Class<?>[] { IpcDataUnit[].class,
+									JsonObject.class, String.class });
+					// get IpcLogicalResponseFactory object
+
+					memberArray = ((JsonObject) method.invoke(
+							responseGenerator,
+							requestProcessor.getIpcResponsePacket(),
+							requestBody, VtnServiceJsonConsts.LIST))
+							.getAsJsonArray(JsonArrayName);
+				} catch (final Exception e) {
+					exceptionHandler.raise(
+							Thread.currentThread().getStackTrace()[1]
+									.getClassName()
+									+ VtnServiceConsts.HYPHEN
+									+ Thread.currentThread().getStackTrace()[1]
+											.getMethodName(),
+							UncJavaAPIErrorCode.INTERNAL_ERROR.getErrorCode(),
+							UncJavaAPIErrorCode.INTERNAL_ERROR
+									.getErrorMessage(), e);
+				}
+				if (null != memberArray && !memberArray.isJsonNull()
+						&& memberArray.size() > 0) {
+					responseArray.getAsJsonArray().addAll(memberArray);
+				} else {
+					break;
+				}
+				memberIndex = memberArray.size();
+			}
+		}
+		JsonObject root = new JsonObject();
+		root.add(JsonArrayName, responseArray);
+		return root;
+	}
+
+	/**
+	 * Invoke the UPLL services, if the previous call contains more than 10K
+	 * (configurable)
+	 * 
+	 * @param requestBody
+	 * @param requestProcessor
+	 * @param responseGenerator
+	 * @param responseArray
+	 * @param JsonArrayName
+	 * @param IndexName
+	 * @param requestPackeEnumName
+	 * @param uriParameters
+	 * @param methodName
+	 * @return
+	 * @throws VtnServiceException
+	 */
+	public JsonObject getResponseJsonArrayLogical(final JsonObject requestBody,
+			IpcRequestProcessor requestProcessor, Object responseGenerator,
+			JsonArray responseArray, String JsonArrayName, String IndexName,
+			IpcRequestPacketEnum requestPackeEnumName,
+			List<String> uriParameters, String methodName)
+			throws VtnServiceException {
+		// session reset
+		requestProcessor.setServiceInfo(UncUPLLEnums.UPLL_IPC_SERVICE_NAME,
+				UncUPLLEnums.ServiceID.UPLL_READ_SVC_ID.ordinal());
+		int status = ClientSession.RESP_FATAL;
+		int memberIndex = 0;
+		VtnServiceConfiguration configuration = VtnServiceInitManager
+				.getConfigurationMap();
+		int max_rep_count = Integer.parseInt(configuration
+				.getConfigValue(VtnServiceConsts.MAX_REP_DEFAULT));
+		memberIndex = responseArray.size();
+		if (memberIndex != 0) {
+			JsonObject memberLastIndex = (JsonObject) responseArray
+					.get(responseArray.size() - 1);
+			if (requestBody.has(VtnServiceJsonConsts.INDEX)) {
+				uriParameters.remove(uriParameters.size() - 1);
+				uriParameters.add(uriParameters.size(),
+						memberLastIndex.get(IndexName).getAsString());
+			} else {
+				uriParameters.add(memberLastIndex.get(IndexName).getAsString());
+			}
+			while (memberIndex == max_rep_count) {
+
+				JsonArray memberArray = null;
+				memberLastIndex = (JsonObject) responseArray.get(responseArray
+						.size() - 1);
+				uriParameters.remove(uriParameters.size() - 1);
+				uriParameters.add(uriParameters.size(),
+						memberLastIndex.get(IndexName).getAsString());
+
+				requestProcessor.createIpcRequestPacket(requestPackeEnumName,
+						requestBody, uriParameters);
+				// for testing only
+				requestProcessor
+						.getRequestPacket()
+						.setOption2(
+								IpcDataUnitWrapper
+										.setIpcUint32Value(UncOption2Enum.UNC_OPT2_NEIGHBOR
+												.ordinal()));
+
+				status = requestProcessor.processIpcRequest();
+				if (status == ClientSession.RESP_FATAL) {
+					throw new VtnServiceException(
+							Thread.currentThread().getStackTrace()[1]
+									.getClassName()
+									+ VtnServiceConsts.HYPHEN
+									+ Thread.currentThread().getStackTrace()[1]
+											.getMethodName(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR
+									.getErrorMessage());
+				}
+				try {
+					Method method;
+
+					final Class<IpcLogicalResponseFactory> sourceClass = IpcLogicalResponseFactory.class;
+					// get the method name to get the IpcLogicalResponseFactory
+					// object for given key
+					method = sourceClass.getMethod(methodName,
+							new Class<?>[] { IpcDataUnit[].class,
+									JsonObject.class, String.class });
+					// get IpcLogicalResponseFactory object
+
+					memberArray = ((JsonObject) method.invoke(
+							responseGenerator,
+							requestProcessor.getIpcResponsePacket(),
+							requestBody, VtnServiceJsonConsts.LIST))
+							.getAsJsonArray(JsonArrayName);
+				} catch (final Exception e) {
+					exceptionHandler.raise(
+							Thread.currentThread().getStackTrace()[1]
+									.getClassName()
+									+ VtnServiceConsts.HYPHEN
+									+ Thread.currentThread().getStackTrace()[1]
+											.getMethodName(),
+							UncJavaAPIErrorCode.INTERNAL_ERROR.getErrorCode(),
+							UncJavaAPIErrorCode.INTERNAL_ERROR
+									.getErrorMessage(), e);
+				}
+				if (null != memberArray && !memberArray.isJsonNull()
+						&& memberArray.size() > 0) {
+					responseArray.getAsJsonArray().addAll(memberArray);
+				} else {
+					break;
+				}
+				memberIndex = memberArray.size();
+			}
+		}
+		JsonObject root = new JsonObject();
+		root.add(JsonArrayName, responseArray);
+		return root;
+	}
 }

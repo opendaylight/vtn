@@ -30,6 +30,7 @@ KtAttrMap kam_vtn_neighbor[] = {
 */
 
 KtAttrMap kam_vbridge[] = {
+  { "domain_id", vbr::kCapDomainId },
   { "description", vbr::kCapDesc },
   { "host_address", vbr::kCapHostAddr },
   { "host_address_prefixlen", vbr::kCapHostAddrPrefixlen },
@@ -50,6 +51,7 @@ KtAttrMap kam_vbr_if[] = {
 };
 
 KtAttrMap kam_vrouter[] = {
+  { "domain_id", vrt::kCapDomainId },
   { "description", vrt::kCapDesc },
   { "dhcp_relay_admin_status", vrt::kCapDhcpRelayAdminStatus },
   { "operstatus", vrt::kCapOperStatus }

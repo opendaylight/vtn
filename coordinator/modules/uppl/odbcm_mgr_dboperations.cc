@@ -19,14 +19,47 @@
 #include "odbcm_db_varbind.hh"
 #include "odbcm_utils.hh"
 #include "physicallayer.hh"
+#include "odbcm_connection.hh"
 using unc::uppl::ODBCManager;
 using std::string;
+using unc::uppl::OdbcmConnectionHandler;
+
+/**
+ * @Description : Function to get the table name using table_id
+ * @param[in]   : ODBCMTable
+ * @return      : std::string
+ **/
+std::string ODBCManager::GetTableName(ODBCMTable table_id) {
+  switch (table_id) {
+    case CTR_TABLE:
+      return UPPL_CTR_TABLE;
+    case CTR_DOMAIN_TABLE:
+      return UPPL_CTR_DOMAIN_TABLE;
+    case LOGICALPORT_TABLE:
+      return UPPL_LOGICALPORT_TABLE;
+    case LOGICAL_MEMBERPORT_TABLE:
+      return UPPL_LOGICAL_MEMBER_PORT_TABLE;
+    case SWITCH_TABLE:
+      return UPPL_SWITCH_TABLE;
+    case PORT_TABLE:
+      return UPPL_PORT_TABLE;
+    case LINK_TABLE:
+      return UPPL_LINK_TABLE;
+    case BOUNDARY_TABLE:
+      return UPPL_BOUNDARY_TABLE;
+    default:
+      return "";
+  }
+}
 /**
  * @Description : clear the entries in the database tables.
- * @param[in]   : unc_keytype_datatype_t
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e. candidate/running/startup 
+ * @return      : ODBCM_RC_SUCCESS - if the database is cleared successfully
+ *                ODBCM_RC_*       - if the database is not cleared
  **/
-ODBCM_RC_STATUS ODBCManager::ClearDatabase(unc_keytype_datatype_t db_name) {
+ODBCM_RC_STATUS ODBCManager::ClearDatabase(unc_keytype_datatype_t db_name,
+                                      OdbcmConnectionHandler *conn_obj) {
   PHY_FINI_READ_LOCK();
   string            *cleardb_query = NULL;       // to store query
   SQLRETURN         odbc_rc = ODBCM_RC_SUCCESS;  //  SQL APIs rc
@@ -35,8 +68,9 @@ ODBCM_RC_STATUS ODBCManager::ClearDatabase(unc_keytype_datatype_t db_name) {
   QueryFactory      *query_factory = NULL;
   QueryProcessor    *query_processor = NULL;
 
+  SQLHDBC rw_conn_handle = conn_obj->get_conn_handle();
   /** Allocate for db statement handle */
-  ODBCM_STATEMENT_CREATE(rw_conn_handle_, clear_stmt);
+  ODBCM_STATEMENT_CREATE(rw_conn_handle, clear_stmt);
   /** Create query_factory and query processor objects */
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
   ODBCM_CREATE_OBJECT(query_processor, QueryProcessor);
@@ -58,11 +92,11 @@ ODBCM_RC_STATUS ODBCManager::ClearDatabase(unc_keytype_datatype_t db_name) {
               CLEARDATABASE, cleardb_query, clear_stmt);
   if (status == ODBCM_RC_SUCCESS) {
     /** Commit all active transactions on this connection*/
-    ODBCM_END_TRANSACTION(rw_conn_handle_, SQL_COMMIT);
+    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT);
     pfc_log_info("ODBCM::ODBCManager::ClearDatabase:database is cleared");
   } else {
     /** Rollback all active transactions on this connection*/
-    ODBCM_END_TRANSACTION(rw_conn_handle_, SQL_ROLLBACK);
+    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK);
     pfc_log_info("ODBCM::ODBCManager::ClearDatabase:database is not cleared");
   }
   /* Freeing all allocated memory */
@@ -77,12 +111,18 @@ ODBCM_RC_STATUS ODBCManager::ClearDatabase(unc_keytype_datatype_t db_name) {
 /**
  * @Description : This method will copy databases, copy all 
  *                contents from src db table to dst db table.
- * @param[in]   : unc_keytype_datatype_t , unc_keytype_datatype_t
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : src_db_name - specifies the source configuration
+ *                i.e. candidate/running/startup
+ *                dst_db_name - specifies the destination configuration
+ *                i.e. candidate/running/startup
+ * @return      : ODBCM_RC_SUCCESS - if the copy databases is success 
+ *                ODBCM_RC_*       - if any error occured while copying
+ *                databases
  **/
 ODBCM_RC_STATUS ODBCManager::CopyDatabase(
     unc_keytype_datatype_t src_db_name,
-    unc_keytype_datatype_t dst_db_name) {
+    unc_keytype_datatype_t dst_db_name,
+    OdbcmConnectionHandler *conn_obj) {
   PHY_FINI_READ_LOCK();
   /** Initialise the local variables */
   string          *p_copydb_query = NULL;
@@ -100,8 +140,9 @@ ODBCM_RC_STATUS ODBCManager::CopyDatabase(
       " %s->%s", g_log_db_name[src_db_name], g_log_db_name[dst_db_name]);
     return ODBCM_RC_INVALID_DB_OPERATION;
   }
+  SQLHDBC rw_conn_handle = conn_obj->get_conn_handle();
   /** Create p_query_factory and query processor objects */
-  ODBCM_STATEMENT_CREATE(rw_conn_handle_, copy_stmt);
+  ODBCM_STATEMENT_CREATE(rw_conn_handle, copy_stmt);
   ODBCM_CREATE_OBJECT(p_query_factory, QueryFactory);
   ODBCM_CREATE_OBJECT(query_processor, QueryProcessor);
   /** Set the FPTR */
@@ -121,11 +162,11 @@ ODBCM_RC_STATUS ODBCManager::CopyDatabase(
     COPYDATABASE, p_copydb_query, copy_stmt);
   if (status == ODBCM_RC_SUCCESS) {
     /** Commit all active transactions on this connection*/
-    ODBCM_END_TRANSACTION(rw_conn_handle_, SQL_COMMIT);
+    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT);
     pfc_log_info("ODBCM::ODBCManager::CopyDatabase:database is copied");
   } else {
     /** Rollback all active transactions on this connection*/
-    ODBCM_END_TRANSACTION(rw_conn_handle_, SQL_ROLLBACK);
+    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK);
     pfc_log_info("ODBCM::ODBCManager::CopyDatabase:database is not copied");
   }
   /* Freeing all allocated memory */
@@ -145,9 +186,12 @@ ODBCM_RC_STATUS ODBCManager::CopyDatabase(
  *                uncommited rows are present in candiate config. 
  *                other than APPLIED row status are treated as dirty.
  * @param[in]   : None
- * @return      : ODBCM_RC_STATUS
+ * @return      : ODBCM_RC_SUCCESS - if the candidate databases is dirty
+ *                ODBCM_RC_*       - if the candidate databases as any 
+ *                                   uncommited rows
  **/
-ODBCM_RC_STATUS ODBCManager::IsCandidateDirty() {
+ODBCM_RC_STATUS ODBCManager::IsCandidateDirty(
+             OdbcmConnectionHandler *conn_obj) {
   PHY_FINI_READ_LOCK();
   string            *query = NULL;  // to receive the query from queryfactory
   SQLRETURN         odbc_rc = ODBCM_RC_SUCCESS;  // SQL APIs rc
@@ -156,8 +200,9 @@ ODBCM_RC_STATUS ODBCManager::IsCandidateDirty() {
   QueryFactory      *query_factory = NULL;
   QueryProcessor    *query_processor = NULL;
 
+  SQLHDBC ro_conn_handle = conn_obj->get_conn_handle();
   /** Allocate for db statement handle */
-  ODBCM_STATEMENT_CREATE(ro_conn_handle_, isdirty_stmt);
+  ODBCM_STATEMENT_CREATE(ro_conn_handle, isdirty_stmt);
   /** Create query_factory and query processor objects */
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
   ODBCM_CREATE_OBJECT(query_processor, QueryProcessor);
@@ -208,12 +253,17 @@ ODBCM_RC_STATUS ODBCManager::IsCandidateDirty() {
  *                STEP2: TRUNCATE all the tables in Running db
  *                STEP3: Copy Candidate->Running if above steps are success
  *                copydatabase will be reused for step3.
- * @param[in]   : unc_data_type_t src_db,unc_data_type_t dst_db
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : src_db - specifies the source configuration as
+ *                candidate database
+ *                dst_db - specifies the destination configuration 
+ *                as running database
+ * @return      : ODBCM_RC_SUCCESS - if the commit is success
+ *                ODBCM_RC_*       - if the commit is failed
  **/
 ODBCM_RC_STATUS ODBCManager::CommitAllConfiguration(
     unc_keytype_datatype_t src_db,
-    unc_keytype_datatype_t dst_db) {
+    unc_keytype_datatype_t dst_db,
+    OdbcmConnectionHandler *conn_obj) {
   PHY_FINI_READ_LOCK();
   HSTMT           commit_stmt       = NULL;
   string          *p_commit_query   = NULL;
@@ -230,8 +280,9 @@ ODBCM_RC_STATUS ODBCManager::CommitAllConfiguration(
         g_log_db_name[src_db], g_log_db_name[dst_db]);
       return ODBCM_RC_INVALID_DB_OPERATION;
   }
+  SQLHDBC rw_conn_handle = conn_obj->get_conn_handle();
   /** Create query_factory and query processor objects */
-  ODBCM_STATEMENT_CREATE(rw_conn_handle_, commit_stmt);
+  ODBCM_STATEMENT_CREATE(rw_conn_handle, commit_stmt);
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
   ODBCM_CREATE_OBJECT(query_processor, QueryProcessor);
   /** Fptr for queryfactory to construct COMMITALLCONFIG query */
@@ -285,12 +336,12 @@ ODBCM_RC_STATUS ODBCManager::CommitAllConfiguration(
   }
   if (status == ODBCM_RC_SUCCESS) {
     /** Commit all active transactions on this connection*/
-    ODBCM_END_TRANSACTION(rw_conn_handle_, SQL_COMMIT);
+    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT);
     pfc_log_info("ODBCM::ODBCManager::CommitAllConfiguration: "
         "ODBCM level commit is completed");
   } else {
     /** Rollback all active transactions on this connection*/
-    ODBCM_END_TRANSACTION(rw_conn_handle_, SQL_ROLLBACK);
+    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK);
     pfc_log_info("ODBCM::ODBCManager::CommitAllConfiguration: "
         "ODBCM level commit is not completed");
   }
@@ -304,12 +355,15 @@ ODBCM_RC_STATUS ODBCManager::CommitAllConfiguration(
 }
 /**
  * @Description : To clear controller_name instance in all the tables in DB
- * @param[in]   : unc_keytype_datatype_t db_name, string controller_name
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e. candidate/running/startup
+ *                controller_name - controller_id
+ * @return      : ODBCM_RC_SUCCESS - if the ClearOneInstance function is success
+ *                ODBCM_RC_*       - if the ClearOneInstance function is failed
  **/
 ODBCM_RC_STATUS ODBCManager::ClearOneInstance(
     unc_keytype_datatype_t db_name,
-    string controller_name) {
+    string controller_name, OdbcmConnectionHandler *conn_obj) {
   PHY_FINI_READ_LOCK();
   /** Initialise the local variables */
   std::string       *QUERY = NULL;
@@ -319,8 +373,9 @@ ODBCM_RC_STATUS ODBCManager::ClearOneInstance(
   QueryFactory      *query_factory = NULL;
   QueryProcessor    *query_processor = NULL;
 
+  SQLHDBC rw_conn_handle = conn_obj->get_conn_handle();
   /** Do sql allocate for sql stmt */
-  ODBCM_STATEMENT_CREATE(rw_conn_handle_, stmt);
+  ODBCM_STATEMENT_CREATE(rw_conn_handle, stmt);
   /** Create query_factory and query processor objects */
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
   ODBCM_CREATE_OBJECT(query_processor, QueryProcessor);
@@ -342,11 +397,11 @@ ODBCM_RC_STATUS ODBCManager::ClearOneInstance(
   status = query_processor->ExecuteTransaction(
       CLEARONEINSTANCE, QUERY, stmt);
   if (status == ODBCM_RC_SUCCESS) {
-    ODBCM_END_TRANSACTION(rw_conn_handle_, SQL_COMMIT);
+    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT);
     pfc_log_info("ODBCM::ODBCManager::ClearOneInstance: "
       "given one instance is cleared");
   } else {
-    ODBCM_END_TRANSACTION(rw_conn_handle_, SQL_ROLLBACK);
+    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK);
     pfc_log_info("ODBCM::ODBCManager::ClearOneInstance: "
       "given one instance is not cleared");
   }

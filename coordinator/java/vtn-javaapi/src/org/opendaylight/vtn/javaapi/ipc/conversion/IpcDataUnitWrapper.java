@@ -41,6 +41,21 @@ public final class IpcDataUnitWrapper {
 	}
 
 	/**
+	 * Set json string value to IpcUint8 type
+	 * 
+	 * @param jsonValue
+	 * @return
+	 */
+	public static IpcUint8 setIpcUint8Value(final String jsonValue,
+			final IpcStruct struct, final int index) {
+		if (jsonValue == null || jsonValue.isEmpty()) {
+			setNoValueFlag(struct, index);
+			return new IpcUint8(VtnServiceConsts.DEFAULT_NUMBER);
+		}
+		return new IpcUint8(Integer.parseInt(jsonValue));
+	}
+	
+	/**
 	 * Set json integer value to IpcUint8 type
 	 * 
 	 * @param jsonValue
@@ -69,12 +84,7 @@ public final class IpcDataUnitWrapper {
 	public static String setIpcUint8ArrayValue(final String jsonValue,
 			final IpcStruct struct, final int index) {
 		if (jsonValue == null || jsonValue.isEmpty()) {
-			struct.set(
-					VtnServiceIpcConsts.VALID,
-					index,
-					IpcDataUnitWrapper
-							.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID_NO_VALUE
-									.ordinal()));
+			setNoValueFlag(struct, index);
 		}
 		return jsonValue;
 	}
@@ -86,6 +96,21 @@ public final class IpcDataUnitWrapper {
 	 * @return
 	 */
 	public static IpcUint16 setIpcUint16Value(final String jsonValue) {
+		return new IpcUint16(Integer.parseInt(jsonValue));
+	}
+	
+	/**
+	 * Set json string value to IpcUint16 type
+	 * 
+	 * @param jsonValue
+	 * @return
+	 */
+	public static IpcUint16 setIpcUint16Value(final String jsonValue,
+			final IpcStruct struct, final int index) {
+		if (jsonValue == null || jsonValue.isEmpty()) {
+			setNoValueFlag(struct, index);
+			return new IpcUint16(VtnServiceConsts.DEFAULT_NUMBER);
+		}
 		return new IpcUint16(Integer.parseInt(jsonValue));
 	}
 
@@ -110,6 +135,21 @@ public final class IpcDataUnitWrapper {
 	}
 
 	/**
+	 * Set json hex string value to IpcUint16 type
+	 * 
+	 * @param jsonValue
+	 * @return
+	 */
+	public static IpcUint16 setIpcUint16HexaValue(final String jsonValue,
+			final IpcStruct struct, final int index) {
+		if (jsonValue == null || jsonValue.isEmpty()) {
+			setNoValueFlag(struct, index);
+			return new IpcUint16(VtnServiceConsts.DEFAULT_NUMBER);
+		}
+		return new IpcUint16(jsonValue);
+	}
+	
+	/**
 	 * Set json string value to IpcUint32 type
 	 * 
 	 * @param jsonValue
@@ -119,6 +159,21 @@ public final class IpcDataUnitWrapper {
 		return new IpcUint32(Long.parseLong(jsonValue));
 	}
 
+	/**
+	 * Set json string value to IpcUint32 type
+	 * 
+	 * @param jsonValue
+	 * @return
+	 */
+	public static IpcUint32 setIpcUint32Value(final String jsonValue,
+			final IpcStruct struct, final int index) {
+		if (jsonValue == null || jsonValue.isEmpty()) {
+			setNoValueFlag(struct, index);
+			return new IpcUint32(VtnServiceConsts.DEFAULT_NUMBER);
+		}
+		return new IpcUint32(Long.parseLong(jsonValue));
+	}
+	
 	/**
 	 * Set int string value to IpcInt32 type
 	 * 
@@ -150,6 +205,21 @@ public final class IpcDataUnitWrapper {
 	}
 
 	/**
+	 * Set json string value to IpcUint64 type
+	 * 
+	 * @param jsonValue
+	 * @return
+	 */
+	public static IpcUint64 setIpcUint64Value(final String jsonValue,
+			final IpcStruct struct, final int index) {
+		if (jsonValue == null || jsonValue.isEmpty()) {
+			setNoValueFlag(struct, index);
+			return new IpcUint64(VtnServiceConsts.DEFAULT_NUMBER);
+		}
+		return new IpcUint64(jsonValue);
+	}
+	
+	/**
 	 * Set json ipaddress value to IpcInet4Address type
 	 * 
 	 * @param jsonValue
@@ -160,6 +230,23 @@ public final class IpcDataUnitWrapper {
 				.textToNumericFormatV4(jsonValue));
 	}
 
+	/**
+	 * Set json ipaddress value to IpcInet4Address type
+	 * 
+	 * @param jsonValue
+	 * @return
+	 */
+	public static IpcInet4Address setIpcInet4AddressValue(final String jsonValue,
+			final IpcStruct struct, final int index) {
+		if (jsonValue == null || jsonValue.isEmpty()) {
+			setNoValueFlag(struct, index);
+			return (IpcInet4Address) IpcInetAddress.create(IpAddressUtil
+					.textToNumericFormatV4(VtnServiceConsts.DEFAULT_IP));
+		}
+		return (IpcInet4Address) IpcInetAddress.create(IpAddressUtil
+				.textToNumericFormatV4(jsonValue));
+	}
+	
 	/**
 	 * Set json ipaddress value to IpcInet6Address type
 	 * 
@@ -172,6 +259,23 @@ public final class IpcDataUnitWrapper {
 	}
 
 	/**
+	 * Set json ipaddress value to IpcInet6Address type
+	 * 
+	 * @param jsonValue
+	 * @return
+	 */
+	public static IpcInet6Address setIpcInet6AddressValue(final String jsonValue,
+			final IpcStruct struct, final int index) {
+		if (jsonValue == null || jsonValue.isEmpty()) {
+			setNoValueFlag(struct, index);
+			return (IpcInet6Address) IpcInetAddress.create(IpAddressUtil
+					.textToNumericFormatV6(VtnServiceConsts.DEFAULT_IPV6));
+		}
+		return (IpcInet6Address) IpcInetAddress.create(IpAddressUtil
+				.textToNumericFormatV6(jsonValue));
+	}
+	
+	/**
 	 * Create IpcStruct with name as Json string value
 	 * 
 	 * @param jsonValue
@@ -180,7 +284,7 @@ public final class IpcDataUnitWrapper {
 	public static IpcStruct setIpcStructValue(final String jsonValue) {
 		return new IpcStruct(jsonValue);
 	}
-
+	
 	/**
 	 * Get string value of IpcDataUnit
 	 * 
@@ -196,6 +300,8 @@ public final class IpcDataUnitWrapper {
 				stringValue = ((IpcInet4Address) ipcUnit).toString();
 			} else if (ipcUnit.getType() == IpcDataUnit.IPV6) {
 				stringValue = ((IpcInet6Address) ipcUnit).toString();
+			} else if (ipcUnit.getType() == IpcDataUnit.UINT8) {
+				stringValue = ((IpcUint8) ipcUnit).toString();
 			} else if (ipcUnit.getType() == IpcDataUnit.STRING) {
 				stringValue = ((IpcString) ipcUnit).getValue();
 			}
@@ -325,6 +431,13 @@ public final class IpcDataUnitWrapper {
 		return struct.getInner(parameterName);
 	}
 
+	/**
+	 * Get string value of hexadecimal IpcUint64 
+	 * 
+	 * @param struct
+	 * @param parameterName
+	 * @return
+	 */
 	public static String getIpcStructUint64HexaValue(final IpcStruct struct,
 			final String parameterName) {
 		long longValue = ((IpcUint64) struct.get(parameterName)).longValue();
@@ -341,24 +454,28 @@ public final class IpcDataUnitWrapper {
 	 * @param jsonValue
 	 */
 	public static void setMacAddress(final IpcStruct struct,
-			final String parameterName, final String jsonValue) {
+			final String parameterName, final String jsonValue, final int index) {
+		if (jsonValue == null || jsonValue.isEmpty()) {
+			setNoValueFlag(struct, index);
+			return ;
+		}
 		String macAddress = jsonValue.replaceAll(VtnServiceConsts.DOT_REGEX,
 				VtnServiceConsts.EMPTY_STRING);
 		if (macAddress.length() != UncIndexEnum.TWELVE.ordinal()) {
 			return;
 		} else {
 			int structIndex = UncIndexEnum.ZERO.ordinal();
-			int index = UncIndexEnum.ZERO.ordinal();
+			int counter = UncIndexEnum.ZERO.ordinal();
 			while (structIndex != UncIndexEnum.SIX.ordinal()) {
 				struct.set(
 						parameterName,
 						structIndex,
 						new IpcUint8(Integer.valueOf(
-								macAddress.substring(index, index
+								macAddress.substring(counter, counter
 										+ UncIndexEnum.TWO.ordinal()),
 								UncIndexEnum.SIXTEEN.ordinal())));
 				structIndex++;
-				index = index + UncIndexEnum.TWO.ordinal();
+				counter = counter + UncIndexEnum.TWO.ordinal();
 			}
 		}
 	}
@@ -390,7 +507,7 @@ public final class IpcDataUnitWrapper {
 								UncIndexEnum.SIX.ordinal(),
 								UncIndexEnum.EIGHT.ordinal());
 			} else if (value >= UncIndexEnum.ZERO.ordinal()
-					&& value < UncIndexEnum.TEN.ordinal()) {
+					&& value < UncIndexEnum.SIXTEEN.ordinal()) {
 				jsonString = jsonString
 						+ VtnServiceConsts.ZERO
 						+ Integer.toHexString((int) struct.getByte(
@@ -403,4 +520,20 @@ public final class IpcDataUnitWrapper {
 		}
 		return jsonString;
 	}
+	
+	/**
+	 * Set UNC_VF_VALID_NO_VALUE in case of receiving empty string for parameter
+	 * 
+	 * @param struct
+	 * @param index
+	 */
+	private static void setNoValueFlag(final IpcStruct struct, final int index) {
+		struct.set(
+				VtnServiceIpcConsts.VALID,
+				index,
+				IpcDataUnitWrapper
+						.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID_NO_VALUE
+								.ordinal()));
+	}
+	
 }

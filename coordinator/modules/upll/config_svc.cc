@@ -30,7 +30,7 @@
 #include "unc/pfcdriver_include.h"
 
 #include "unc/upll_svc.h"
-#include "upll_log.hh"
+#include "uncxx/upll_log.hh"
 
 #include "kt_util.hh"
 #include "ctrlr_mgr.hh"
@@ -177,6 +177,16 @@ pfc_ipcresp_t UpllConfigSvc::KtService(pfc::core::ipc::ServerSession *sess,
     return PFC_IPCRESP_FATAL;
   }
 
+  // Increasing IPC session timeout only for PING operation
+  if (msghdr.operation == UNC_OP_CONTROL && msghdr.option2 == UNC_OPT2_PING) {
+    pfc_timespec_t ping_tspec;
+    ping_tspec.tv_sec = kIpcTimeoutPing;
+    ping_tspec.tv_nsec = 0;
+    sess->setTimeout(&ping_tspec);
+    UPLL_LOG_DEBUG("IPC Server Session timeout for Ping set to %d",
+                  kIpcTimeoutPing);
+  }
+
   pfc_ipcresp_t ret = config_mgr_->KtServiceHandler(service, &msghdr, ckv);
   if (ret != 0) {
     UPLL_LOG_DEBUG("Failed in processing the key tree request");
@@ -212,6 +222,9 @@ pfc_ipcresp_t UpllConfigSvc::GlobalConfigService(
   switch (operation) {
     case UPLL_IS_CANDIDATE_DIRTY_OP: {
       bool dirty = true;
+      sess->setTimeout(NULL);
+      UPLL_LOG_DEBUG("IPC Server Session timeout for IS_CANDIDATE_DIRTY is set "
+                     " to infinite");
       urc = config_mgr_->IsCandidateDirty(&dirty);
       // Write response
       if ((0 != (ipc_err = sess->addOutput((uint32_t)operation))) ||
@@ -248,7 +261,22 @@ pfc_ipcresp_t UpllConfigSvc::GlobalConfigService(
         }
         return 0;
       }
+
+      /*
+      pfc_timespec_t sess_timeout;
+      sess_timeout.tv_sec = kIpcTimeoutImport;
+      sess_timeout.tv_nsec = 0;
+      sess->setTimeout(&sess_timeout);
+      UPLL_LOG_DEBUG("IPC Server Session timeout for Import set to %d",
+                     kIpcTimeoutImport);
+      */
+      sess->setTimeout(NULL);
+      UPLL_LOG_DEBUG("IPC Server Session timeout for Import set to infinite.");
+
       urc = config_mgr_->StartImport(ctrlr_name, session_id, config_id);
+      UPLL_LOG_TRACE("StartImport: urc=%d, ctrlr_name=%s,"
+                     " session_id=%d, config_id=%d",
+                     urc, ctrlr_name, session_id, config_id);
       // Write response
       if ((0 != (ipc_err = sess->addOutput((uint32_t)operation))) ||
           (0 != (ipc_err = sess->addOutput((uint32_t)urc)))) {
@@ -267,7 +295,21 @@ pfc_ipcresp_t UpllConfigSvc::GlobalConfigService(
                        arg, ipc_err);
         return PFC_IPCRESP_FATAL;
       }
+
+      /*
+      pfc_timespec_t sess_timeout;
+      sess_timeout.tv_sec = kIpcTimeoutImport;
+      sess_timeout.tv_nsec = 0;
+      sess->setTimeout(&sess_timeout);
+      UPLL_LOG_DEBUG("IPC Server Session timeout for ImportMerge set to %d",
+                     kIpcTimeoutImport);
+      */
+      sess->setTimeout(NULL);
+      UPLL_LOG_DEBUG("IPC Server Session timeout for Merge set to infinite");
+
       urc = config_mgr_->OnMerge(session_id, config_id);
+      UPLL_LOG_TRACE("Merge: urc=%d, session_id=%d, config_id=%d",
+                     urc, session_id, config_id);
       // Write response
       if ((0 != (ipc_err = sess->addOutput((uint32_t)operation))) ||
           (0 != (ipc_err = sess->addOutput((uint32_t)urc)))) {
@@ -287,6 +329,8 @@ pfc_ipcresp_t UpllConfigSvc::GlobalConfigService(
         return PFC_IPCRESP_FATAL;
       }
       urc = config_mgr_->ClearImport(session_id, config_id, false);
+      UPLL_LOG_TRACE("ClearImport: urc=%d, session_id=%d, config_id=%d",
+                     urc, session_id, config_id);
       // Write response
       if ((0 != (ipc_err = sess->addOutput((uint32_t)operation))) ||
           (0 != (ipc_err = sess->addOutput((uint32_t)urc)))) {
@@ -371,6 +415,8 @@ pfc_ipcresp_t UpllConfigSvc::HandleUpplUpdate(
   uint32_t keytype;
   key_ctr_t ctr_key;
   val_ctr_t ctr_val;
+  memset(&ctr_key, 0, sizeof(key_ctr_t));
+  memset(&ctr_val, 0, sizeof(val_ctr_t));
   int ipc_err;
   upll_rc_t urc = UPLL_RC_SUCCESS;
 
@@ -415,17 +461,41 @@ pfc_ipcresp_t UpllConfigSvc::HandleUpplUpdate(
 
   CtrlrMgr *ctrlr_mgr = CtrlrMgr::GetInstance();
   if (operation == UNC_OP_CREATE) {
-    if (ctr_val.valid[kIdxType] == UNC_VF_VALID &&
-        ctr_val.valid[kIdxVersion] == UNC_VF_VALID) {
-
-      CtrlrMgr::Ctrlr ctrlr(reinterpret_cast<char*>(ctr_key.controller_name),
-                            (unc_keytype_ctrtype_t)ctr_val.type,
-                            reinterpret_cast<char*>(ctr_val.version));
-      urc = ctrlr_mgr->Add(ctrlr, (upll_keytype_datatype_t)datatype);
-      if (urc != UPLL_RC_SUCCESS) {
-        UPLL_LOG_DEBUG("Controller add failed %s",
-                       reinterpret_cast<char*>(ctr_key.controller_name));
+    urc = UPLL_RC_SUCCESS;
+    if (ctr_val.valid[kIdxType] == UNC_VF_VALID) {
+      // For Unknown, version is optional.
+      if (((unc_keytype_ctrtype_t)ctr_val.type == UNC_CT_PFC ||
+          (unc_keytype_ctrtype_t)ctr_val.type == UNC_CT_VNP)) {
+        if (ctr_val.valid[kIdxVersion] == UNC_VF_INVALID) {
+          urc = UPLL_RC_ERR_CFG_SYNTAX;
+        }
+      } else if ((unc_keytype_ctrtype_t)ctr_val.type == UNC_CT_UNKNOWN) {
+        if (ctr_val.valid[kIdxVersion] == UNC_VF_INVALID) {
+          memset(ctr_val.version, 0, sizeof(ctr_val.version));
+        }
+      } else {
+        urc = UPLL_RC_ERR_CFG_SYNTAX;
       }
+    } else {
+      urc = UPLL_RC_ERR_CFG_SYNTAX;
+    }
+
+    if (urc != UPLL_RC_SUCCESS) {
+      if ((0 != (ipc_err = sess->addOutput((uint32_t)UPLL_UPPL_UPDATE_OP))) ||
+          (0 != (ipc_err = sess->addOutput((uint32_t)urc)))) {
+        UPLL_LOG_DEBUG("Unable to write IPC response. Err=%d", ipc_err);
+        return PFC_IPCRESP_FATAL;
+      }
+      return 0;
+    }
+
+    CtrlrMgr::Ctrlr ctrlr(reinterpret_cast<char*>(ctr_key.controller_name),
+                          (unc_keytype_ctrtype_t)ctr_val.type,
+                          reinterpret_cast<char*>(ctr_val.version));
+    urc = ctrlr_mgr->Add(ctrlr, (upll_keytype_datatype_t)datatype);
+    if (urc != UPLL_RC_SUCCESS) {
+      UPLL_LOG_DEBUG("Controller add failed %s",
+                     reinterpret_cast<char*>(ctr_key.controller_name));
     }
   } else if (operation == UNC_OP_DELETE) {
     urc = ctrlr_mgr->Delete(reinterpret_cast<char *>(ctr_key.controller_name),
@@ -545,6 +615,7 @@ bool UpllConfigSvc::RegisterForIpcEvents() {
 
   /* Set Physical module as a target. */
   pfc::core::ipc::IpcEventMask phy_mask;
+  phy_mask.empty();
   phy_mask.add(UPPL_ALARMS_PHYS_PATH_FAULT);
   phy_mask.add(UPPL_EVENTS_KT_LOGICAL_PORT);
   phy_mask.add(UPPL_EVENTS_KT_BOUNDARY);
@@ -564,6 +635,7 @@ bool UpllConfigSvc::RegisterForIpcEvents() {
 
   /* Set PFC Driver module as a target. */
   pfc::core::ipc::IpcEventMask pfc_mask;
+  pfc_mask.empty();
   // Mask adjustment needed once PFC code is checkedin
   pfc_mask.add(UNC_ALARMS);
 
@@ -693,9 +765,15 @@ void UpllConfigSvc::PhysicalEventHandler(const IpcEvent &event) {
           }
           if ((old_ctr_st.oper_status == UPPL_CONTROLLER_OPER_UP)  &&
               (new_ctr_st.oper_status != UPPL_CONTROLLER_OPER_UP)) {
-            config_mgr_->OnControllerDown(
-                reinterpret_cast<char *>(key_ctr.controller_name));
-          }
+            config_mgr_->OnControllerStatusChange(
+                            reinterpret_cast<char *>(key_ctr.controller_name),
+                            UPPL_CONTROLLER_OPER_DOWN);
+          }  else if ((old_ctr_st.oper_status != UPPL_CONTROLLER_OPER_UP)  &&
+                     (new_ctr_st.oper_status == UPPL_CONTROLLER_OPER_UP)) {
+            config_mgr_->OnControllerStatusChange(
+                             reinterpret_cast<char *>(key_ctr.controller_name),
+                             UPPL_CONTROLLER_OPER_UP);
+          } 
         }
       }
       return;

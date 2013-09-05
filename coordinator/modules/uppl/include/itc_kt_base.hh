@@ -24,12 +24,17 @@
 #include "unc/uppl_common.h"
 #include "ipc_connection_manager.hh"
 #include "odbcm_utils.hh"
+#include "odbcm_common.hh"
+#include "odbcm_connection.hh"
 
 using std::vector;
 using std::map;
 using pfc::core::ipc::ServerSession;
 using unc::uppl::ODBCMOperator;
 using unc::uppl::DBTableSchema;
+using unc::uppl::ODBCMTableColumns;
+using unc::uppl::OdbcmConnectionHandler;
+class ReadRequest;
 
 class Kt_Class_Attr_Syntax {
  public:
@@ -42,80 +47,106 @@ class Kt_Class_Attr_Syntax {
   string default_value;
 };
 
+class OperStatusHolder {
+ private:
+  unc_key_type_t key_type_;
+  void* key_struct_;
+  uint8_t oper_status_;
+ public:
+  OperStatusHolder(unc_key_type_t key_type,
+                   void* key_struct,
+                   uint8_t oper_status) {
+    key_type_ = key_type;
+    key_struct_ = key_struct;
+    oper_status_ = oper_status;
+  };
+  unc_key_type_t get_key_type() {return key_type_;}
+  void* get_key_struct() {return key_struct_;}
+  uint8_t get_oper_status() {return oper_status_;}
+};
+
 class Kt_Base {
  public:
-  Kt_Base();
-
   virtual ~Kt_Base() {
   };
   unc_key_type_t get_key_type() {
     return UNC_KT_ROOT;
   };
 
-  virtual UpplReturnCode Create(uint32_t session_id, uint32_t configuration_id,
+  virtual UpplReturnCode Create(OdbcmConnectionHandler *db_conn,
+                                uint32_t session_id, uint32_t configuration_id,
                                 void* key_struct, void* val_struct,
                                 uint32_t data_type, ServerSession &sess) {
     return UPPL_RC_SUCCESS;
   };
 
-  virtual UpplReturnCode CreateKeyInstance(void* key_struct,
+  virtual UpplReturnCode CreateKeyInstance(OdbcmConnectionHandler *db_conn,
+                                           void* key_struct,
                                            void* val_struct,
                                            uint32_t data_type,
                                            uint32_t key_type) {
     return UPPL_RC_SUCCESS;
   };
 
-  virtual UpplReturnCode UpdateKeyInstance(void* key_struct, void* val_struct,
+  virtual UpplReturnCode UpdateKeyInstance(OdbcmConnectionHandler *db_conn,
+                                           void* key_struct, void* val_struct,
                                            uint32_t data_type,
                                            uint32_t key_type,
                                            void* &old_val_struct) {
     return UPPL_RC_SUCCESS;
   };
 
-  virtual UpplReturnCode Update(uint32_t session_id, uint32_t configuration_id,
+  virtual UpplReturnCode Update(OdbcmConnectionHandler *db_conn,
+                                uint32_t session_id, uint32_t configuration_id,
                                 void* key_struct, void* val_struct,
                                 uint32_t data_type, ServerSession &sess) {
     return UPPL_RC_SUCCESS;
   };
 
-  virtual UpplReturnCode Delete(uint32_t session_id, uint32_t configuration_id,
+  virtual UpplReturnCode Delete(OdbcmConnectionHandler *db_conn,
+                                uint32_t session_id, uint32_t configuration_id,
                                 void* key_struct, uint32_t data_type,
                                 ServerSession &sess) {
     return UPPL_RC_SUCCESS;
   };
 
-  virtual UpplReturnCode DeleteKeyInstance(void* key_struct,
+  virtual UpplReturnCode DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
+                                           void* key_struct,
                                            uint32_t data_type,
                                            uint32_t key_type) {
     return UPPL_RC_SUCCESS;
   };
 
-  virtual UpplReturnCode ReadInternal(vector<void*> &key_struct,
+  virtual UpplReturnCode ReadInternal(OdbcmConnectionHandler *db_conn,
+                                      vector<void*> &key_struct,
                                       vector<void*> &val_struct,
                                       uint32_t data_type,
                                       uint32_t operation_type) {
     return UPPL_RC_SUCCESS;
   };
 
-  virtual UpplReturnCode Read(uint32_t session_id, uint32_t configuration_id,
+  virtual UpplReturnCode Read(OdbcmConnectionHandler *db_conn,
+                              uint32_t session_id, uint32_t configuration_id,
                               void* key_struct, void* val_struct,
                               uint32_t data_type, ServerSession &sess,
                               uint32_t option1, uint32_t option2);
 
-  virtual UpplReturnCode ReadNext(void* key_struct,
+  virtual UpplReturnCode ReadNext(OdbcmConnectionHandler *db_conn,
+                                  void* key_struct,
                                   uint32_t data_type,
-                                  uint32_t option1, uint32_t option2);
+                                  ReadRequest *read_req);
 
-  virtual UpplReturnCode ReadBulk(void* key_struct,
+  virtual UpplReturnCode ReadBulk(OdbcmConnectionHandler *db_conn,
+                                  void* key_struct,
                                   uint32_t data_type,
-                                  uint32_t option1,
-                                  uint32_t option2,
                                   uint32_t &max_rep_ct,
                                   int child_index,
                                   pfc_bool_t parent_call,
-                                  pfc_bool_t is_read_next)=0;
+                                  pfc_bool_t is_read_next,
+                                  ReadRequest *read_req)=0;
 
-  virtual UpplReturnCode ReadSiblingBegin(uint32_t session_id,
+  virtual UpplReturnCode ReadSiblingBegin(OdbcmConnectionHandler *db_conn,
+                                          uint32_t session_id,
                                           uint32_t configuration_id,
                                           void* key_struct, void* val_struct,
                                           uint32_t data_type,
@@ -123,14 +154,16 @@ class Kt_Base {
                                           uint32_t option1, uint32_t option2,
                                           uint32_t &max_rep_ct);
 
-  virtual UpplReturnCode ReadSibling(uint32_t session_id,
+  virtual UpplReturnCode ReadSibling(OdbcmConnectionHandler *db_conn,
+                                     uint32_t session_id,
                                      uint32_t configuration_id,
                                      void* key_struct, void* val_struct,
                                      uint32_t data_type, ServerSession &sess,
                                      uint32_t option1, uint32_t option2,
                                      uint32_t &max_rep_ct);
 
-  virtual UpplReturnCode ReadSiblingCount(uint32_t session_id,
+  virtual UpplReturnCode ReadSiblingCount(OdbcmConnectionHandler *db_conn,
+                                          uint32_t session_id,
                                           uint32_t configuration_id,
                                           void* key_struct, void* val_struct,
                                           uint32_t key_type,
@@ -138,7 +171,8 @@ class Kt_Base {
                                           ServerSession &sess,
                                           uint32_t option1, uint32_t option2);
 
-  virtual UpplReturnCode PerformRead(uint32_t session_id,
+  virtual UpplReturnCode PerformRead(OdbcmConnectionHandler *db_conn,
+                                     uint32_t session_id,
                                      uint32_t configuration_id,
                                      void* key_struct, void* val_struct,
                                      uint32_t data_type,
@@ -146,18 +180,23 @@ class Kt_Base {
                                      ServerSession &sess, uint32_t option1,
                                      uint32_t option2, uint32_t max_rep_ct)=0;
 
-  virtual UpplReturnCode PerformSyntaxValidation(void* key_struct,
-                                                 void* val_struct,
-                                                 uint32_t operation,
-                                                 uint32_t data_type)=0;
+  virtual UpplReturnCode PerformSyntaxValidation(
+      OdbcmConnectionHandler *db_conn,
+      void* key_struct,
+      void* val_struct,
+      uint32_t operation,
+      uint32_t data_type)=0;
 
-  virtual UpplReturnCode PerformSemanticValidation(void* key_struct,
-                                                   void* val_struct,
-                                                   uint32_t operation,
-                                                   uint32_t data_type)=0;
+  virtual UpplReturnCode PerformSemanticValidation(
+      OdbcmConnectionHandler *db_conn,
+      void* key_struct,
+      void* val_struct,
+      uint32_t operation,
+      uint32_t data_type)=0;
 
   UpplReturnCode
-  ValidateRequest(void* key_struct, void* val_struct, uint32_t operation,
+  ValidateRequest(OdbcmConnectionHandler *db_conn,
+                  void* key_struct, void* val_struct, uint32_t operation,
                   uint32_t data_type, uint32_t key_type);
 
   virtual UpplReturnCode ValidateCtrlrValueCapability(string version,
@@ -175,8 +214,9 @@ class Kt_Base {
   // A switch within a controller is existing
   // In this case list will contain two values -
   // a controller id and a switch id
-  virtual UpplReturnCode IsKeyExists(unc_keytype_datatype_t data_type, vector<
-                                     string> key_values) {
+  virtual UpplReturnCode IsKeyExists(OdbcmConnectionHandler *db_conn,
+                                     unc_keytype_datatype_t data_type,
+                                     const vector<string>& key_values) {
     return UPPL_RC_SUCCESS;
   };
 
@@ -187,7 +227,8 @@ class Kt_Base {
                                                  void* old_val_struct,
                                                  void* new_val_struct);
 
-  virtual UpplReturnCode HandleDriverAlarms(uint32_t data_type,
+  virtual UpplReturnCode HandleDriverAlarms(OdbcmConnectionHandler *db_conn,
+                                            uint32_t data_type,
                                             uint32_t alarm_type,
                                             uint32_t oper_type,
                                             void* key_struct,
@@ -195,23 +236,25 @@ class Kt_Base {
     return UPPL_RC_SUCCESS;
   };
 
-  virtual UpplReturnCode GetModifiedRows(vector<void *> &key_struct, vector<
-                                         void *> &val_struct,
+  virtual UpplReturnCode GetModifiedRows(OdbcmConnectionHandler *db_conn,
+                                         vector<void *> &key_struct,
+                                         vector<void *> &val_struct,
                                          CsRowStatus row_status) {
     return UPPL_RC_SUCCESS;
   };
 
-  map<string, Kt_Class_Attr_Syntax> attr_syntax_map;
   virtual void Fill_Attr_Syntax_Map() {
   };
 
-  virtual UpplReturnCode HandleOperStatus(uint32_t data_type,
+  virtual UpplReturnCode HandleOperStatus(OdbcmConnectionHandler *db_conn,
+                                          uint32_t data_type,
                                           void *key_struct,
                                           void *value_struct) {
     return UPPL_RC_SUCCESS;
   };
 
-  virtual UpplReturnCode NotifyOperStatus(uint32_t data_type,
+  virtual UpplReturnCode NotifyOperStatus(OdbcmConnectionHandler *db_conn,
+                                          uint32_t data_type,
                                           void *key_struct,
                                           void *value_struct) {
     return UPPL_RC_SUCCESS;
@@ -226,10 +269,11 @@ class Kt_Base {
     return UPPL_RC_SUCCESS;
   };
   virtual void
-  PopulateDBSchemaForKtTable(DBTableSchema &kt_dbtableschema,
+  PopulateDBSchemaForKtTable(OdbcmConnectionHandler *db_conn,
+                             DBTableSchema &kt_dbtableschema,
                              void* key_struct, void* val_struct,
-                             uint8_t operation_type, uint32_t option1,
-                             uint32_t option2,
+                             uint8_t operation_type, uint32_t data_type,
+                             uint32_t option1, uint32_t option2,
                              vector<ODBCMOperator> &vect_key_operations,
                              void* &old_value_struct,
                              CsRowStatus row_status = NOTAPPLIED,
@@ -249,7 +293,14 @@ class Kt_Base {
                                  void *new_value_struct,
                                  void *old_value_struct);
   void ClearValueStructure(uint32_t key_type,
-                           void *old_value_struct);
+                           void *&old_value_struct);
+  static map<unc_key_type_t, map<string, Kt_Class_Attr_Syntax> >
+  attr_syntax_map_all;
+  UpplReturnCode get_oper_status(vector<OperStatusHolder> &ref_oper_status,
+                                   unc_key_type_t key_type,
+                                   void* key_struct,
+                                   uint8_t &oper_status);
+  void ClearOperStatusHolder(vector<OperStatusHolder> &ref_oper_status);
 
  private:
   UpplReturnCode ValidateKtRoot(uint32_t operation,
@@ -445,4 +496,58 @@ class Kt_Base {
                       attr_name); \
       } \
 }
+
+#define ADD_CTRL_OPER_STATUS(controller_name, oper_status) \
+    key_ctr_t *ctlr_key = new key_ctr_t; \
+    memset(ctlr_key->controller_name, 0, 32); \
+    memcpy(ctlr_key->controller_name, controller_name.c_str(), \
+           controller_name.length()+1); \
+    OperStatusHolder obj_oper_status_ctr(UNC_KT_CONTROLLER, \
+                                     reinterpret_cast<void *>(ctlr_key), \
+                                     oper_status); \
+    ref_oper_status.push_back(obj_oper_status_ctr); \
+
+#define GET_ADD_CTRL_OPER_STATUS(controller_name) \
+    key_ctr_t *ctr_key = new key_ctr_t; \
+    memset(ctr_key->controller_name, 0, 32); \
+    memcpy(ctr_key->controller_name, controller_name.c_str(), \
+           (controller_name.length())+1); \
+    void* key_type_struct = reinterpret_cast<void*>(ctr_key); \
+    Kt_Controller controller; \
+    uint8_t ctr_oper_status = \
+          (UpplControllerOperStatus) UPPL_CONTROLLER_OPER_UP; \
+    uint32_t ctrl_data_type = data_type; \
+    if (data_type == UNC_DT_IMPORT) { \
+       ctrl_data_type = UNC_DT_RUNNING; \
+    } \
+    UpplReturnCode read_status = controller.GetOperStatus( \
+        db_conn, ctrl_data_type, key_type_struct, ctr_oper_status); \
+    pfc_log_debug("Controller's read_status %d, oper_status %d", \
+              read_status, ctr_oper_status); \
+    OperStatusHolder obj_oper_status_ctr(UNC_KT_CONTROLLER, \
+                                     reinterpret_cast<void *>(ctr_key), \
+                                     ctr_oper_status); \
+    ref_oper_status.push_back(obj_oper_status_ctr); \
+
+#define ADD_SWITCH_OPER_STATUS(sw_key, oper_status) \
+    key_switch_t *p_switch = new key_switch_t(sw_key); \
+    OperStatusHolder obj_oper_status_sw(UNC_KT_SWITCH, \
+                                     reinterpret_cast<void*>(p_switch), \
+                                     oper_status); \
+    ref_oper_status.push_back(obj_oper_status_sw);
+
+#define ADD_PORT_OPER_STATUS(port_key, oper_status) \
+    key_port_t *p_port = new key_port_t(port_key); \
+    OperStatusHolder obj_oper_status_port(UNC_KT_PORT, \
+                                     reinterpret_cast<void*>(p_port), \
+                                     oper_status); \
+    ref_oper_status.push_back(obj_oper_status_port);
+
+#define ADD_LP_PORT_OPER_STATUS(lp_key, oper_status) \
+    key_logical_port_t *p_lport = new key_logical_port_t(lp_key); \
+    OperStatusHolder obj_oper_status_lp(UNC_KT_LOGICAL_PORT, \
+                                     reinterpret_cast<void*>(p_lport), \
+                                     oper_status); \
+    ref_oper_status.push_back(obj_oper_status_lp); \
+
 #endif

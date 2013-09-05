@@ -27,10 +27,11 @@ class SystemStateChangeRequest:public ITCReq  {
   public:
   SystemStateChangeRequest();
   ~SystemStateChangeRequest();
-  UpplReturnCode GetControllerListFromDb(uint32_t,
-                                         vector<string> &vec_controller_name);
-  UpplReturnCode SystemStateChangeToStandBy();
-  UpplReturnCode SystemStateChangeToActive();
+  UpplReturnCode SystemStateChangeToStandBy(OdbcmConnectionHandler *db_conn);
+  UpplReturnCode SystemStateChangeToActive(OdbcmConnectionHandler *db_conn);
+
+  private:
+  UpplReturnCode SendCandidateInfoToLogical(OdbcmConnectionHandler *db_conn);
 };
 }  // namespace uppl
 }  // namespace unc

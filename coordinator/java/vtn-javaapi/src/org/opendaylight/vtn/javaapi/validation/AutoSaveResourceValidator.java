@@ -56,6 +56,9 @@ public class AutoSaveResourceValidator extends VtnServiceValidator {
 		boolean isValid = false;
 		if (requestBody != null && VtnServiceConsts.PUT.equals(method)) {
 			isValid = validatePut(requestBody);
+		}else {
+			setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
+			isValid = false;
 		}
 		// Throws exception if validation fails
 		if (!isValid) {
@@ -101,5 +104,4 @@ public class AutoSaveResourceValidator extends VtnServiceValidator {
 		LOG.trace("Complete AutoSaveResourceValidator#validatePut()");
 		return isValid;
 	}
-
 }

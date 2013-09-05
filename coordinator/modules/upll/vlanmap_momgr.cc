@@ -10,9 +10,11 @@
 #include "vlanmap_momgr.hh"
 #include <ctype.h>
 #define NUM_KEY_MAIN_TBL_ 5
+#define INVALID_LOG_PORT_ID_VALID 0xFF
 namespace unc {
 namespace upll {
 namespace kt_momgr {
+uint16_t VlanMapMoMgr::kVbrVlanMapNumChildKey = 2;
 
 BindInfo VlanMapMoMgr::vlan_map_bind_info[] = {
     { uudst::vbridge_vlanmap::kDbiVtnName, CFG_KEY, offsetof(
@@ -52,16 +54,16 @@ BindInfo VlanMapMoMgr::vlan_map_bind_info[] = {
 BindInfo VlanMapMoMgr::vlan_map_maintbl_update_key_bind_info[] = {
     { uudst::vbridge_vlanmap::kDbiVtnName, CFG_MATCH_KEY, offsetof(
         key_vlan_map, vbr_key.vtn_key.vtn_name),
-      uud::kDalChar, kMaxLenVtnName },
+      uud::kDalChar, (kMaxLenVtnName+1) },
     { uudst::vbridge_vlanmap::kDbiVbrName, CFG_MATCH_KEY, offsetof(
         key_vlan_map, vbr_key.vbridge_name),
-      uud::kDalChar, kMaxLenVnodeName },
+      uud::kDalChar, (kMaxLenVnodeName+1) },
     { uudst::vbridge_vlanmap::kDbiVtnName, CFG_INPUT_KEY, offsetof(
         key_rename_vnode_info_t, new_unc_vtn_name),
-      uud::kDalChar, kMaxLenVtnName },
+      uud::kDalChar, (kMaxLenVtnName+1) },
     { uudst::vbridge_vlanmap::kDbiVbrName, CFG_INPUT_KEY, offsetof(
         key_rename_vnode_info_t, new_unc_vnode_name),
-      uud::kDalChar, kMaxLenVnodeName },
+      uud::kDalChar, (kMaxLenVnodeName+1) },
     { uudst::vbridge_vlanmap::kDbiVbrVlanMapFlags, CK_VAL, offsetof(
         key_user_data_t, flags),
       uud::kDalUint8, 1 },
@@ -103,14 +105,14 @@ bool VlanMapMoMgr::IsValidKey(void *key,
                               uint64_t index) {
   key_vlan_map *vlanmap_key = reinterpret_cast<key_vlan_map *>(key);
   UPLL_FUNC_TRACE;
-  bool ret_val = UPLL_RC_SUCCESS;
+  upll_rc_t ret_val = UPLL_RC_SUCCESS;
   switch (index) {
     case uudst::vbridge_vlanmap::kDbiVtnName:
       ret_val = ValidateKey(reinterpret_cast<char *>
                            (vlanmap_key->vbr_key.vtn_key.vtn_name),
                            kMinLenVtnName, kMaxLenVtnName);
       if (ret_val != UPLL_RC_SUCCESS) {
-        pfc_log_trace(
+        UPLL_LOG_TRACE(
             "syntax check failure for key_vlan_map->vbr_key.vtn_key.vtn_name");
         return false;
       }
@@ -120,28 +122,27 @@ bool VlanMapMoMgr::IsValidKey(void *key,
                            (vlanmap_key->vbr_key.vbridge_name),
                            kMinLenVnodeName, kMaxLenVnodeName);
       if (ret_val != UPLL_RC_SUCCESS) {
-        pfc_log_trace("VBR Name is not valid(%d)", ret_val);
+        UPLL_LOG_TRACE("VBR Name is not valid(%d)", ret_val);
         return false;
       }
       break;
     case uudst::vbridge_vlanmap::kDbiLogicalPortId:
-      ret_val = ValidateLogicalPortId(reinterpret_cast<char *>
+      if (!ValidateLogicalPortId(reinterpret_cast<char *>
                            (vlanmap_key->logical_port_id),
-                           kMinLenLogicalPortId, kMaxLenLogicalPortId);
-      if (ret_val != UPLL_RC_SUCCESS) {
-        pfc_log_trace("Switch ID is not valid(%d)", ret_val);
+                           kMinLenLogicalPortId, kMaxLenLogicalPortId)) {
+        UPLL_LOG_TRACE("Switch ID is not valid");
         return false;
       }
       break;
     case uudst::vbridge_vlanmap::kDbiLogicalPortIdValid:
       if (!ValidateNumericRange(vlanmap_key->logical_port_id_valid, PFC_FALSE,
                             PFC_TRUE, true, true)) {
-        pfc_log_trace("LogicalPortId validis not valid(%d)", ret_val);
+        UPLL_LOG_TRACE("LogicalPortId validis not valid");
         return false;
       }
       break;
     default:
-      pfc_log_trace("Invalid Key Index");
+      UPLL_LOG_TRACE("Invalid Key Index");
       break;
   }
   return true;
@@ -155,8 +156,9 @@ upll_rc_t VlanMapMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
   void *pkey;
   if (parent_key == NULL) {
     vlanmap_key = reinterpret_cast<key_vlan_map_t *>
-                                  (malloc(sizeof(key_vlan_map_t)));
-    memset(vlanmap_key, 0, sizeof(key_vlan_map_t));
+                  (ConfigKeyVal::Malloc(sizeof(key_vlan_map_t)));
+    vlanmap_key->logical_port_id_valid = INVALID_LOG_PORT_ID_VALID;
+    if (okey) delete okey;
     okey = new ConfigKeyVal(UNC_KT_VBR_VLANMAP, IpctSt::kIpcStKeyVlanMap,
                             vlanmap_key, NULL);
     return UPLL_RC_SUCCESS;
@@ -165,12 +167,13 @@ upll_rc_t VlanMapMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
   }
   if (!pkey) return UPLL_RC_ERR_GENERIC;
   if (okey) {
-    if (okey->get_key_type() != UNC_KT_VBR_VLANMAP) return UPLL_RC_ERR_GENERIC;
+    if (okey->get_key_type() != UNC_KT_VBR_VLANMAP) 
+      return UPLL_RC_ERR_GENERIC;
     vlanmap_key = reinterpret_cast<key_vlan_map_t *>(okey->get_key());
   } else {
     vlanmap_key = reinterpret_cast<key_vlan_map_t *>
-                  (malloc(sizeof(key_vlan_map_t)));
-    memset(vlanmap_key, 0, sizeof(key_vlan_map_t));
+                  (ConfigKeyVal::Malloc(sizeof(key_vlan_map_t)));
+    vlanmap_key->logical_port_id_valid = INVALID_LOG_PORT_ID_VALID;
   }
   unc_key_type_t keytype = parent_key->get_key_type();
   switch (keytype) {
@@ -210,6 +213,9 @@ upll_rc_t VlanMapMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
   if (!okey)
     okey = new ConfigKeyVal(UNC_KT_VBR_VLANMAP, IpctSt::kIpcStKeyVlanMap,
                             vlanmap_key, NULL);
+  else if (okey->get_key() != vlanmap_key)
+    okey->SetKey(IpctSt::kIpcStKeyVlanMap, vlanmap_key);
+
   if (okey == NULL) {
     free(vlanmap_key);
     result_code = UPLL_RC_ERR_GENERIC;
@@ -232,9 +238,8 @@ upll_rc_t VlanMapMoMgr::GetParentConfigKey(ConfigKeyVal *&okey,
   if (ikey_type != UNC_KT_VBR_VLANMAP) return UPLL_RC_ERR_GENERIC;
   key_vlan_map_t *pkey = reinterpret_cast<key_vlan_map_t *>(ikey->get_key());
   if (!pkey) return UPLL_RC_ERR_GENERIC;
-  key_vbr *vbr_key = reinterpret_cast<key_vbr *>(malloc(sizeof(key_vbr)));
-  if (!vbr_key) return UPLL_RC_ERR_GENERIC;
-  memset(vbr_key, 0, sizeof(key_vbr));
+  key_vbr *vbr_key = reinterpret_cast<key_vbr *>
+    (ConfigKeyVal::Malloc(sizeof(key_vbr)));
   uuu::upll_strncpy(vbr_key->vtn_key.vtn_name,
          (reinterpret_cast<key_vlan_map_t *>(pkey))->vbr_key.vtn_key.vtn_name,
          kMaxLenVtnName+1);
@@ -260,8 +265,8 @@ upll_rc_t VlanMapMoMgr::AllocVal(ConfigVal *&ck_val,
   if (ck_val != NULL) return UPLL_RC_ERR_GENERIC;
   switch (tbl) {
     case MAINTBL:
-      val = reinterpret_cast<void *>(malloc(sizeof(val_vlan_map)));
-      memset(val, 0, sizeof(val_vlan_map));
+      val = reinterpret_cast<void *>(
+                     ConfigKeyVal::Malloc(sizeof(val_vlan_map)));
       ck_val = new ConfigVal(IpctSt::kIpcStValVlanMap, val);
       break;
     default:
@@ -283,15 +288,11 @@ upll_rc_t VlanMapMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
     if (tbl == MAINTBL) {
       val_vlan_map *ival = reinterpret_cast<val_vlan_map *>(GetVal(req));
       if (!ival) {
-        UPLL_LOG_DEBUG("Invalid vlanmap\n");
+        UPLL_LOG_DEBUG("Invalid vlanmap");
         return UPLL_RC_ERR_GENERIC;
       }
       val_vlan_map *vlanmap_val = reinterpret_cast<val_vlan_map *>
-                                  (malloc(sizeof(val_vlan_map)));
-      if (!vlanmap_val) {
-        UPLL_LOG_DEBUG("Invalid vlanmap\n");
-        return UPLL_RC_ERR_GENERIC;
-      }
+                                  (ConfigKeyVal::Malloc(sizeof(val_vlan_map)));
       memcpy(vlanmap_val, ival, sizeof(val_vlan_map));
       tmp1 = new ConfigVal(IpctSt::kIpcStValVlanMap, vlanmap_val);
     }
@@ -299,11 +300,7 @@ upll_rc_t VlanMapMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
   void *tkey = (req != NULL) ? (req)->get_key() : NULL;
   key_vlan_map_t *ikey = reinterpret_cast<key_vlan_map_t *>(tkey);
   key_vlan_map_t *vlanmap_key = reinterpret_cast<key_vlan_map_t *>
-                                (malloc(sizeof(key_vlan_map_t)));
-  if (!vlanmap_key) {
-    delete tmp1;
-    return UPLL_RC_ERR_GENERIC;
-  }
+                                (ConfigKeyVal::Malloc(sizeof(key_vlan_map_t)));
   memcpy(vlanmap_key, ikey, sizeof(key_vlan_map_t));
   okey = new ConfigKeyVal(UNC_KT_VBR_VLANMAP, IpctSt::kIpcStKeyVlanMap,
                           vlanmap_key, tmp1);
@@ -326,21 +323,31 @@ upll_rc_t VlanMapMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
 
   unc_keytype_configstatus_t cs_status =
       (driver_result == UPLL_RC_SUCCESS) ? UNC_CS_APPLIED : UNC_CS_NOT_APPLIED;
+  val_vlan_map *vlanmap_val2 = reinterpret_cast<val_vlan_map *>(GetVal(upd_key));
+  UPLL_LOG_TRACE("Key from Candidate %s",(ikey->ToStrAll()).c_str());
   if (vlanmap_val == NULL) return UPLL_RC_ERR_GENERIC;
-  vlanmap_val->cs_row_status = cs_status;
-  if (op == UNC_OP_UPDATE) {
+  if (op == UNC_OP_CREATE) {
+    vlanmap_val->cs_row_status = cs_status;
+  } else if (op == UNC_OP_UPDATE) {
     void *val = reinterpret_cast<void *>(vlanmap_val);
     CompareValidValue(val, GetVal(upd_key), true);
+    UPLL_LOG_TRACE("Key from Running %s",(upd_key->ToStrAll()).c_str());
+    vlanmap_val->cs_row_status = vlanmap_val2->cs_row_status;
   } else if (op != UNC_OP_CREATE) {
     return UPLL_RC_ERR_GENERIC;
   }
   for (unsigned int loop = 0;
-       loop < sizeof(vlanmap_val->valid) / sizeof(vlanmap_val->valid[0]); ++loop) {
+       loop < sizeof(vlanmap_val->valid) / sizeof(vlanmap_val->valid[0]);
+       ++loop) {
     if ((UNC_VF_VALID == (uint8_t) vlanmap_val->valid[loop])
-            || (UNC_VF_VALID_NO_VALUE == (uint8_t) vlanmap_val->valid[loop])) {
-          vlanmap_val->cs_attr[loop] = cs_status;
-    } else if ((uint8_t) vlanmap_val->valid[loop] == UNC_VF_NOT_SOPPORTED) {
-        vlanmap_val->cs_attr[loop] = UNC_CS_NOT_SUPPORTED;
+        || (UNC_VF_VALID_NO_VALUE == (uint8_t) vlanmap_val->valid[loop])) {
+      vlanmap_val->cs_attr[loop] = cs_status;
+    } else if ((UNC_VF_INVALID == vlanmap_val->valid[loop]) &&
+               (UNC_OP_CREATE == op)) {
+        vlanmap_val->cs_attr[loop] = UNC_CS_APPLIED;
+    } else if ((UNC_VF_INVALID == vlanmap_val->valid[loop]) &&
+               (UNC_OP_UPDATE == op)) {
+        vlanmap_val->cs_attr[loop] = vlanmap_val2->cs_attr[loop];
     }
   }
   return UPLL_RC_SUCCESS;
@@ -358,6 +365,10 @@ upll_rc_t VlanMapMoMgr::UpdateAuditConfigStatus(
     return UPLL_RC_ERR_GENERIC;
   }
   if (uuc::kUpllUcpCreate == phase) val->cs_row_status = cs_status;
+  if ((uuc::kUpllUcpUpdate == phase) &&
+           (val->cs_row_status == UNC_CS_INVALID ||
+            val->cs_row_status == UNC_CS_NOT_APPLIED))
+    val->cs_row_status = cs_status;
   for (unsigned int loop = 0; loop < sizeof(val->valid) / sizeof(uint8_t);
       ++loop) {
     if ((cs_status == UNC_CS_INVALID &&
@@ -393,9 +404,8 @@ upll_rc_t VlanMapMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
   key_rename_vnode_info *key_rename =
              reinterpret_cast<key_rename_vnode_info *>(ikey->get_key());
   key_vlan_map_t* key_vlan_map = reinterpret_cast<key_vlan_map_t *>
-                                 (malloc(sizeof(key_vlan_map_t)));
-  if (!key_vlan_map) return UPLL_RC_ERR_GENERIC;
-  memset(key_vlan_map, 0, sizeof(key_vlan_map_t));
+                      (ConfigKeyVal::Malloc(sizeof(key_vlan_map_t)));
+  key_vlan_map->logical_port_id_valid = INVALID_LOG_PORT_ID_VALID; 
   if (!strlen(reinterpret_cast<char *>(key_rename->old_unc_vtn_name))) {
     free(key_vlan_map);
     return UPLL_RC_ERR_GENERIC;
@@ -410,7 +420,15 @@ upll_rc_t VlanMapMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
     }
     uuu::upll_strncpy(key_vlan_map->vbr_key.vbridge_name,
             key_rename->old_unc_vnode_name, kMaxLenVnodeName+1);
+  } else {
+    if (!strlen(reinterpret_cast<char *>(key_rename->new_unc_vnode_name))) {
+      free(key_vlan_map);
+      return UPLL_RC_ERR_GENERIC;
+    }
+    uuu::upll_strncpy(key_vlan_map->vbr_key.vbridge_name,
+                      key_rename->new_unc_vnode_name, (kMaxLenVnodeName + 1));
   }
+
   okey = new ConfigKeyVal(UNC_KT_VBR_VLANMAP, IpctSt::kIpcStKeyVlanMap,
                           key_vlan_map, NULL);
 
@@ -458,8 +476,8 @@ upll_rc_t VlanMapMoMgr::ValidateMessage(IpcReqRespHeader *req,
     if (dt_type == UPLL_DT_CANDIDATE || UPLL_DT_IMPORT == dt_type) {
       ConfigVal *cfg_val = ikey->get_cfg_val();
       if (!cfg_val)  {
-        UPLL_LOG_DEBUG("Value structure mandatory\n");
-        return UPLL_RC_ERR_CFG_SYNTAX;
+        UPLL_LOG_DEBUG("Value structure mandatory");
+        return UPLL_RC_ERR_BAD_REQUEST;
       }
       if (cfg_val->get_st_num() != IpctSt::kIpcStValVlanMap) {
         UPLL_LOG_DEBUG("Invalid Value structure received. received struct - %d",
@@ -480,7 +498,7 @@ upll_rc_t VlanMapMoMgr::ValidateMessage(IpcReqRespHeader *req,
       return UPLL_RC_SUCCESS;
     } else {
       UPLL_LOG_DEBUG("Unsupported data type - (%d)", dt_type);
-      return UPLL_RC_ERR_NO_SUCH_INSTANCE;
+      return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT;
     }
   } else if (op == UNC_OP_READ || op == UNC_OP_READ_SIBLING
       || op == UNC_OP_READ_SIBLING_BEGIN || op == UNC_OP_READ_SIBLING_COUNT) {
@@ -515,7 +533,7 @@ upll_rc_t VlanMapMoMgr::ValidateMessage(IpcReqRespHeader *req,
       return UPLL_RC_SUCCESS;
     } else {
       UPLL_LOG_DEBUG("Unsupported data type - (%d)", dt_type);
-      return UPLL_RC_ERR_NO_SUCH_INSTANCE;
+      return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT;
     }
   } else if (op == UNC_OP_READ_NEXT || op == UNC_OP_READ_BULK) {
     if (dt_type == UPLL_DT_CANDIDATE || dt_type == UPLL_DT_RUNNING
@@ -524,19 +542,19 @@ upll_rc_t VlanMapMoMgr::ValidateMessage(IpcReqRespHeader *req,
       return UPLL_RC_SUCCESS;
     } else {
       UPLL_LOG_DEBUG("Unsupported data type - (%d)", dt_type);
-      return UPLL_RC_ERR_NO_SUCH_INSTANCE;
+      return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT;
     }
   } else if (op == UNC_OP_DELETE) {
     if(dt_type == UPLL_DT_CANDIDATE) {
-      pfc_log_debug("Value structure is none for operation type:%d", op);
+      UPLL_LOG_DEBUG("Value structure is none for operation type:%d", op);
       return UPLL_RC_SUCCESS;
     } else {
-      pfc_log_debug("Unsupported data type - (%d)", dt_type);
-      return UPLL_RC_ERR_NO_SUCH_INSTANCE;
+      UPLL_LOG_DEBUG("Unsupported data type - (%d)", dt_type);
+      return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT;
     }
   }
   UPLL_LOG_DEBUG("Unsupported operation - (%d)", op);
-  return UPLL_RC_ERR_NO_SUCH_INSTANCE;
+  return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT;
 }
 
 upll_rc_t VlanMapMoMgr::ValidateVlanmapValue(val_vlan_map *vlanmap_val,
@@ -585,10 +603,13 @@ upll_rc_t VlanMapMoMgr::ValidateVlanmapKey(key_vlan_map *vlan_map_key,
   }
   if ((operation != UNC_OP_READ_SIBLING_BEGIN) &&
       (operation != UNC_OP_READ_SIBLING_COUNT)) {
-    if (vlan_map_key->logical_port_id_valid == PFC_TRUE)
-      ret_val = ValidateLogicalPortId(
+    if (vlan_map_key->logical_port_id_valid == PFC_TRUE) {
+      if (!ValidateLogicalPortId(
                  reinterpret_cast<char *>(vlan_map_key->logical_port_id),
-                 kMinLenLogicalPortId, kMaxLenLogicalPortId);
+                 kMinLenLogicalPortId, kMaxLenLogicalPortId)) {
+        ret_val = UPLL_RC_ERR_CFG_SYNTAX;
+      }
+    }   
     else
       ret_val = UPLL_RC_SUCCESS;
   if (ret_val != UPLL_RC_SUCCESS) {
@@ -637,87 +658,35 @@ upll_rc_t VlanMapMoMgr::ValidateCapability(IpcReqRespHeader *req,
                                            ConfigKeyVal *ikey,
                                            const char *ctrlr_name) {
   UPLL_FUNC_TRACE;
-  upll_rc_t ret_val = UPLL_RC_SUCCESS;
+  upll_rc_t ret_val = UPLL_RC_ERR_GENERIC;
   if (!req || !ikey ) {
     UPLL_LOG_DEBUG("ConfigKeyVal / IpcReqRespHeader is Null");
     return UPLL_RC_ERR_GENERIC;
   }
-  if (!ctrlr_name) ctrlr_name = reinterpret_cast<char *>
-                                (ikey->get_user_data());
-  upll_keytype_datatype_t dt_type = req->datatype;
-  unc_keytype_operation_t op = req->operation;
-  unc_keytype_option1_t opt1 = req->option1;
-  unc_keytype_option2_t opt2 = req->option2;
-  if (op == UNC_OP_CREATE) {  // C, I
-    if (dt_type == UPLL_DT_CANDIDATE) {
-      ret_val = ValVlanmapAttributeSupportCheck(ctrlr_name, ikey, op);
-      if (ret_val != UPLL_RC_SUCCESS) {
-        UPLL_LOG_DEBUG("In VLAN_MAP Capa check failure for create operation");
-        return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
-      }
-      return UPLL_RC_SUCCESS;
-    } else {
-      UPLL_LOG_DEBUG("Unsupported data type - (%d)", dt_type);
+
+  if (!ctrlr_name) {
+    ctrlr_name = reinterpret_cast<char*>((reinterpret_cast<key_user_data_t *>
+                  (ikey->get_user_data()))->ctrlr_id);
+    if (!ctrlr_name || !strlen(ctrlr_name)) {
+      UPLL_LOG_DEBUG("Controller Name is NULL");
       return UPLL_RC_ERR_GENERIC;
-    }
-  } else if (op == UNC_OP_UPDATE) {
-    if (dt_type == UPLL_DT_CANDIDATE) {
-      ret_val = ValVlanmapAttributeSupportCheck(ctrlr_name, ikey, op);
-      if (ret_val != UPLL_RC_SUCCESS) {
-        UPLL_LOG_DEBUG("In VLAN_MAP Capa check failure for Update operation");
-        return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
-      }
-      return UPLL_RC_SUCCESS;
-    } else {
-      UPLL_LOG_DEBUG("Unsupported data type - (%d)", dt_type);
-      return UPLL_RC_ERR_GENERIC;
-    }
-  } else if (op == UNC_OP_READ || op == UNC_OP_READ_SIBLING
-      || op == UNC_OP_READ_SIBLING_BEGIN || op == UNC_OP_READ_SIBLING_COUNT) {
-    if (dt_type == UPLL_DT_CANDIDATE || dt_type == UPLL_DT_RUNNING
-        || dt_type == UPLL_DT_STARTUP || dt_type == UPLL_DT_STATE) {
-      if (opt1 != UNC_OPT1_NORMAL) {
-        UPLL_LOG_DEBUG("Error option1 is not NORMAL");
-        return UPLL_RC_ERR_INVALID_OPTION1;
-      }
-      if (opt2 != UNC_OPT2_NONE) {
-        UPLL_LOG_DEBUG("Error option2 is not NONE");
-        return UPLL_RC_ERR_INVALID_OPTION2;
-      }
-      if (ikey->get_cfg_val()->get_val() != NULL) {
-        ret_val = ValVlanmapAttributeSupportCheck(ctrlr_name, ikey, op);
-        if (ret_val != UPLL_RC_SUCCESS) {
-          UPLL_LOG_DEBUG("In VLAN_MAP capa check failure for read operation");
-          return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
-        }
-        return UPLL_RC_SUCCESS;
-      } else {
-        UPLL_LOG_DEBUG("val_vlan_map struct is an optional");
-        return UPLL_RC_SUCCESS;
-      }
-    } else {
-      UPLL_LOG_DEBUG("Unsupported data type - (%d)", dt_type);
-      return UPLL_RC_ERR_NO_SUCH_INSTANCE;
     }
   }
-  UPLL_LOG_DEBUG("Unsupported operation - (%d)", op);
-  return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT;
-}
 
-upll_rc_t VlanMapMoMgr::ValVlanmapAttributeSupportCheck(const char *ctrlr_name,
-                                                        ConfigKeyVal *ikey,
-                                                        uint32_t operation) {
-  UPLL_FUNC_TRACE;
-  bool result_code = 1;
+  bool result_code = false;
   uint32_t max_attrs = 0;
   uint32_t max_instance_count = 0;
   const uint8_t *attrs;
-  switch (operation) {
+  switch (req->operation) {
     case UNC_OP_CREATE:
       result_code = GetCreateCapability(ctrlr_name, ikey->get_key_type(),
                                         &max_instance_count, &max_attrs,
                                         &attrs);
-      if (result_code && cur_instance_count >= max_instance_count) {
+      UPLL_LOG_TRACE("The Current Instance is %d", cur_instance_count);
+      UPLL_LOG_TRACE("The Max Instance is %d", max_instance_count);
+
+      if (result_code && (max_instance_count != 0) &&
+         (cur_instance_count >= max_instance_count)) {
         UPLL_LOG_DEBUG("[%s:%d:%s Instance count %d exceeds %d", __FILE__,
                       __LINE__, __FUNCTION__, cur_instance_count,
                       max_instance_count);
@@ -737,37 +706,52 @@ upll_rc_t VlanMapMoMgr::ValVlanmapAttributeSupportCheck(const char *ctrlr_name,
                                       &max_attrs, &attrs);
       break;
     default:
-      UPLL_LOG_DEBUG("INVALID OPERATION CODE - (%d)", operation);
+      UPLL_LOG_DEBUG("INVALID OPERATION CODE - (%d)", req->operation);
       return UPLL_RC_ERR_GENERIC;
   }
   if (!result_code) {
     UPLL_LOG_DEBUG("key_type - %d is not supported by controller - %s",
                   ikey->get_key_type(), ctrlr_name);
-    return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT;
+    return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
   }
-  ConfigVal *cfg_val = (ikey->get_cfg_val());
-  if (!cfg_val) return UPLL_RC_ERR_GENERIC;
-  if (cfg_val->get_st_num() != IpctSt::kIpcStValVlanMap) {
-    UPLL_LOG_DEBUG("Invalid Value structure received. received struct - %d",
-                  (cfg_val->get_st_num()));
-    return UPLL_RC_ERR_BAD_REQUEST;
-  }
-  val_vlan_map *vlanmap_val = reinterpret_cast<val_vlan_map *>
+  val_vlan_map *vlanmap_val = NULL;
+  if ((ikey->get_cfg_val()) && (ikey->get_cfg_val()->get_st_num() ==
+       IpctSt::kIpcStValVlanMap)) {
+    vlanmap_val = reinterpret_cast<val_vlan_map *>
                               (ikey->get_cfg_val()->get_val());
+  }
+  if (vlanmap_val) {
+    if (max_attrs > 0) {
+      ret_val = ValVlanmapAttributeSupportCheck(vlanmap_val, attrs, req->operation);
+      return ret_val;
+    } else {
+      UPLL_LOG_DEBUG("Attribute list is empty for operation %d", req->operation);
+      return UPLL_RC_ERR_GENERIC;
+    }
+  }
+  return UPLL_RC_SUCCESS;
+}
+ 
+upll_rc_t VlanMapMoMgr::ValVlanmapAttributeSupportCheck(val_vlan_map *vlanmap_val,
+                                                        const uint8_t *attrs,
+                                                        unc_keytype_operation_t operation) {
+  UPLL_FUNC_TRACE;
   if (vlanmap_val != NULL) {
     if ((vlanmap_val->valid[UPLL_IDX_VLAN_ID_VM] == UNC_VF_VALID)
         || (vlanmap_val->valid[UPLL_IDX_VLAN_ID_VM] == UNC_VF_VALID_NO_VALUE)) {
       if (attrs[unc::capa::vlan_map::kCapVlanId] == 0) {
-        vlanmap_val->valid[UPLL_IDX_VLAN_ID_VM] = UNC_VF_NOT_SOPPORTED;
-        UPLL_LOG_DEBUG("vlan_id attr is not supported by pfc ctrlr ");
-        return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
+        vlanmap_val->valid[UPLL_IDX_VLAN_ID_VM] = UNC_VF_INVALID;
+        if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
+          UPLL_LOG_DEBUG("vlan_id attr is not supported by pfc ctrlr ");
+          return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
+        }
       }
     }
-    return UPLL_RC_SUCCESS;
   } else {
     UPLL_LOG_DEBUG("Error val_vlan_map struct is NULL");
+    return UPLL_RC_ERR_GENERIC;
   }
-  return UPLL_RC_ERR_GENERIC;
+  return UPLL_RC_SUCCESS;
 }
 
 bool VlanMapMoMgr::FilterAttributes(void *&val1,
@@ -796,7 +780,8 @@ bool VlanMapMoMgr::CompareValidValue(void *&val1,
   if (val_vlan_map1->valid[UPLL_IDX_VLAN_ID_VM] == UNC_VF_VALID
       && val_vlan_map2->valid[UPLL_IDX_VLAN_ID_VM] == UNC_VF_VALID) {
     if (val_vlan_map1->vlan_id == val_vlan_map2->vlan_id)
-      val_vlan_map1->valid[UPLL_IDX_VLAN_ID_VM] = UNC_VF_INVALID;
+      val_vlan_map1->valid[UPLL_IDX_VLAN_ID_VM] =
+        (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED; 
   }
   for (unsigned int loop = 0;
        loop < sizeof(val_vlan_map1->valid) / sizeof(val_vlan_map1->valid[0]);
@@ -814,70 +799,230 @@ upll_rc_t VlanMapMoMgr::IsReferenced(ConfigKeyVal *ikey,
   return UPLL_RC_SUCCESS;
 }
 
-upll_rc_t VlanMapMoMgr::IsLogicalPortAndVlanIdInUse(ConfigKeyVal *ckv, 
-                                                    DalDmlIntf *dmi, 
-					            IpcReqRespHeader *req) {
+upll_rc_t VlanMapMoMgr::IsLogicalPortAndVlanIdInUse(ConfigKeyVal *ckv,
+    DalDmlIntf *dmi,
+    IpcReqRespHeader *req) {
   UPLL_FUNC_TRACE;
-  ConfigKeyVal *ckv_vlanmap = NULL;
+  if (!ckv || !(ckv->get_cfg_val()) || !(ckv->get_key()))
+    return UPLL_RC_ERR_GENERIC;
+
   upll_rc_t result_code = UPLL_RC_SUCCESS;
-  upll_keytype_datatype_t dt_type = req->datatype;
-  DbSubOp dbop = { kOpReadMultiple, kOpMatchNone, kOpInOutNone };
-  
-  result_code = GetChildConfigKey(ckv_vlanmap, NULL);
-  val_vlan_map *vlanmap_val = static_cast<val_vlan_map*>
-                              (malloc(sizeof(val_vlan_map)));
-  if (!vlanmap_val) {
-    UPLL_LOG_DEBUG("Memory allocation failed");
-    return UPLL_RC_ERR_GENERIC;
-  }
-  memset(vlanmap_val, 0, sizeof(val_vlan_map));
 
-  key_vlan_map *vlanmapkey = reinterpret_cast<key_vlan_map*>(ckv->get_key());
-  if ((!strlen(reinterpret_cast<const char *>
-      (vlanmapkey->vbr_key.vtn_key.vtn_name)))) {
-    free(vlanmap_val);
-    return UPLL_RC_ERR_GENERIC;
-  }
+  val_vlan_map_t* vlanmapval = reinterpret_cast<val_vlan_map_t*>(GetVal(ckv));
+  key_vlan_map_t* vlanmapkey =
+    reinterpret_cast<key_vlan_map_t *>(ckv->get_key());
 
-  uuu::upll_strncpy(reinterpret_cast<key_vlan_map*>
-                   (ckv_vlanmap->get_key())->vbr_key.vtn_key.vtn_name,
-                    vlanmapkey->vbr_key.vtn_key.vtn_name,
-                    kMaxLenVtnName+1);
-  val_vlan_map *vlanmapval = reinterpret_cast<val_vlan_map*>(GetVal(ckv));
+  if (vlanmapval->valid[UPLL_IDX_VLAN_ID_VM] == UNC_VF_VALID) {
 
-  if (!(vlanmapkey->logical_port_id_valid) && 
-        vlanmapval->valid[UPLL_IDX_VLAN_ID_VM] != UNC_VF_VALID) {
-    UPLL_LOG_DEBUG("Semantic check not required!");
-    return UPLL_RC_SUCCESS;
-  }
+    key_vlan_map_t* key_vlan_map = reinterpret_cast<key_vlan_map_t *>
+      (ConfigKeyVal::Malloc(sizeof(key_vlan_map_t)));
+    val_vlan_map_t* val_vlan_map = static_cast<val_vlan_map_t*>
+      (ConfigKeyVal::Malloc(sizeof(val_vlan_map_t)));
+    if (vlanmapkey->logical_port_id_valid) {
+      uuu::upll_strncpy(key_vlan_map->logical_port_id,
+          vlanmapkey->logical_port_id,
+          kMaxLenLogicalPortId+1);
+      key_vlan_map->logical_port_id_valid = vlanmapkey->logical_port_id_valid;
+    }
 
-  char *port_id = NULL;
-  port_id = reinterpret_cast<char *>(vlanmapkey->logical_port_id);
-  uuu::upll_strncpy(reinterpret_cast<key_vlan_map*>
-                   (ckv_vlanmap->get_key())->logical_port_id,
-              port_id, kMaxLenLogicalPortId+1);
+    //Populating key and val of vlanmap
+    val_vlan_map->vlan_id = vlanmapval->vlan_id;
+    val_vlan_map->valid[UPLL_IDX_VLAN_ID_VM] = UNC_VF_VALID;
 
-  key_vlan_map *vlanmap_key = reinterpret_cast<key_vlan_map *>
-                                              (ckv_vlanmap->get_key());
-  vlanmap_key->logical_port_id_valid = vlanmapkey->logical_port_id_valid;
-  vlanmap_val->vlan_id = vlanmapval->vlan_id;
-  vlanmap_val->valid[UPLL_IDX_VLAN_ID_VM] = UNC_VF_VALID;
+    ConfigKeyVal *ckv_vlanmap = new ConfigKeyVal(UNC_KT_VBR_VLANMAP,
+        IpctSt::kIpcStKeyVlanMap, key_vlan_map, NULL);
+    ckv_vlanmap->AppendCfgVal(IpctSt::kIpcStValVlanMap, val_vlan_map);
+    //Setting Ctrlr/Domain Id to vlanmap
+    SET_USER_DATA(ckv_vlanmap, ckv);
 
-  ckv_vlanmap->AppendCfgVal(IpctSt::kIpcStValVlanMap, vlanmap_val);
-  if (ckv_vlanmap == NULL) return UPLL_RC_ERR_GENERIC;
-  UPLL_LOG_TRACE("\n existence check %s",(ckv_vlanmap->ToStrAll()).c_str());
-
-  result_code = ReadConfigDB(ckv_vlanmap, dt_type, UNC_OP_READ, 
-                             dbop, dmi, MAINTBL);
-  delete ckv_vlanmap;
-
-  UPLL_LOG_DEBUG("ReadConfigDB returns %d", result_code);
-  if (UPLL_RC_SUCCESS == result_code) {
-      UPLL_LOG_DEBUG("More than one vbridge configured with the same"
-                     " logical port id and vlanid!");
-      return UPLL_RC_ERR_CFG_SEMANTIC;
+    DbSubOp dbop = { kOpReadMultiple, kOpMatchCtrlr | kOpMatchDomain,
+      kOpInOutFlag};
+    //Read the Configuration from the MainTable
+    result_code = ReadConfigDB(ckv_vlanmap, UPLL_DT_CANDIDATE, UNC_OP_READ,
+        dbop, dmi, MAINTBL);
+    //Check LogicalPortId and VlanId in use
+    if (result_code == UPLL_RC_SUCCESS) {
+      ConfigKeyVal *tmp = ckv_vlanmap;
+      key_vlan_map_t* tmp_vlanmapkey =
+        reinterpret_cast<key_vlan_map_t *>(tmp->get_key());
+      while (tmp) {
+        if (!memcmp((const void*)&(vlanmapkey->vbr_key),
+              (const void*) &(tmp_vlanmapkey->vbr_key),
+              sizeof(key_vbr_t))) {
+          UPLL_LOG_TRACE("Looking on the Same key");
+        } else {
+          UPLL_LOG_DEBUG("More than one vlanmap is configured with the"
+              " same logical port id and vlanid!");
+          DELETE_IF_NOT_NULL(ckv_vlanmap);
+          tmp = NULL;
+          return UPLL_RC_ERR_CFG_SEMANTIC;
+        }
+        tmp = tmp->get_next_cfg_key_val();
+      }
+    } else if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+      result_code = UPLL_RC_SUCCESS;
+    }
+    DELETE_IF_NOT_NULL(ckv_vlanmap);
   }
   return result_code;
+}
+
+// Overridden Read Sibling from momgr_impl.
+// This keytype contains 2 child keys and needs special handling.
+upll_rc_t VlanMapMoMgr::ReadSiblingMo(IpcReqRespHeader *header,
+                                   ConfigKeyVal *ikey,
+                                   bool begin,
+                                   DalDmlIntf *dmi) {
+  UPLL_FUNC_TRACE;
+  upll_rc_t result_code = UPLL_RC_ERR_GENERIC;
+  uint32_t result_count = 0;
+
+  if (begin == true) {
+    return (MoMgrImpl::ReadSiblingMo(header, ikey, begin, dmi));
+    
+  }
+  // Fix it: This function is for READ_SIBLING
+  if ((header->operation != UNC_OP_READ_SIBLING_BEGIN) &&
+      (header->operation != UNC_OP_READ_SIBLING)) { 
+    UPLL_LOG_DEBUG("Operation type is not Sibling begin/Sibling");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  if (ikey == NULL || dmi == NULL) {
+    UPLL_LOG_INFO("Null param ikey/dmi");
+    return UPLL_RC_ERR_GENERIC;
+  }
+  result_code = ValidateMessage(header, ikey);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("ValidateMessage failed result_code %d",
+                   result_code);
+    return result_code;
+  }
+
+  MoMgrTables tbl = MAINTBL;
+  DbSubOp dbop = {kOpReadMultiple, kOpMatchNone, 
+                     kOpInOutCtrlr | kOpInOutDomain | kOpInOutFlag};
+
+  switch (header->datatype) {
+    case UPLL_DT_IMPORT:
+      return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT;
+    case UPLL_DT_CANDIDATE:
+    case UPLL_DT_RUNNING:
+    case UPLL_DT_STARTUP:
+    case UPLL_DT_STATE:
+    {
+      // To read the record(s) from DB
+      upll_keytype_datatype_t dt_type = (header->datatype == UPLL_DT_STATE) ?
+                                        UPLL_DT_RUNNING : header->datatype;
+
+      ConfigKeyVal *result_ckv = NULL;
+      // Used in ReadConfigDB in each Iteration
+      ConfigKeyVal *queryckval = NULL;
+      result_code = DupConfigKeyVal(queryckval, ikey, MAINTBL);
+      if (result_code != UPLL_RC_SUCCESS || queryckval == NULL) {
+        UPLL_LOG_INFO("Error while DupConfigKeyVal");
+        return UPLL_RC_ERR_GENERIC;
+      }
+
+      for (uint16_t childKeyIndex = uuds::TableNumPkCols(
+               uudst::kDbiVbrVlanMapTbl) - 1;
+           childKeyIndex >= uuds::TableNumPkCols(
+               uudst::kDbiVbrVlanMapTbl) - kVbrVlanMapNumChildKey;
+           childKeyIndex--) {
+
+        // For skipping invalid inputs - do not delete
+        if (IsValidKey(queryckval->get_key(), childKeyIndex) == false)
+          continue;
+
+        uint32_t tmp_count = (header->rep_count - result_count);
+        result_code = ReadConfigDB(queryckval, dt_type, header->operation,
+                                   dbop, tmp_count, dmi, tbl);
+
+        if (result_code == UPLL_RC_SUCCESS) {
+          // Collect the data into result_ckv.
+          if (result_ckv == NULL) {
+            result_ckv = queryckval;
+          } else {
+            result_ckv->AppendCfgKeyVal(queryckval);  // TODO perf
+          }
+          result_count += queryckval->size();
+          queryckval = NULL;
+          
+          if (result_count >= header->rep_count) {
+            break;  // break the for loop
+          }
+
+          // Used in ReadConfigDB in each Iteration
+          result_code = DupConfigKeyVal(queryckval, ikey, MAINTBL);
+          if (result_code != UPLL_RC_SUCCESS || queryckval == NULL) {
+            UPLL_LOG_INFO("Error while DupConfigKeyVal");
+            return UPLL_RC_ERR_GENERIC;
+          }
+        } else if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+          // use queryckval in the next iteration;
+        } else {
+          UPLL_LOG_INFO("Error while ReadConfigDB");
+          delete queryckval;
+          return result_code;
+        }
+
+        // Preparing Child Key data for next Sibling Iteration
+        if (ResetDataForSibling(
+             reinterpret_cast<key_vlan_map *>(queryckval->get_key()),
+             (uudst::vbridge_vlanmap::kVbrVlanMapIndex)childKeyIndex)
+           == false) {
+          UPLL_LOG_DEBUG("Data Not Reset for the index(%d)", childKeyIndex);
+          delete queryckval;
+          return UPLL_RC_ERR_GENERIC;
+        }
+        UPLL_LOG_TRACE("Next Query After Reset: %s",
+                       (queryckval->ToStrAll()).c_str());
+      }  // for
+      DELETE_IF_NOT_NULL(queryckval);
+      header->rep_count = result_count;
+      if (result_ckv) {
+        ikey->ResetWith(result_ckv);
+        delete result_ckv;
+      }
+      break;
+    }  // case
+    default:
+      return UPLL_RC_ERR_GENERIC;
+  }
+
+  if (header->rep_count > 0) {
+    result_code = (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)
+                  ? UPLL_RC_SUCCESS : result_code;
+    if (result_code == UPLL_RC_SUCCESS) { 
+      result_code = AdaptValToVtnService(ikey);
+      if (result_code != UPLL_RC_SUCCESS) {
+        UPLL_LOG_DEBUG("AdaptValToVtnService failed result_code %d",
+                    result_code);
+        return UPLL_RC_ERR_GENERIC;
+      }
+    }
+  } else {
+    return UPLL_RC_ERR_NO_SUCH_INSTANCE;
+  }
+  return UPLL_RC_SUCCESS;
+}  // VlanMapMoMgr::ReadSiblingMo
+
+// To reset the data available in index to empty
+// Currently implemented only for child index
+bool VlanMapMoMgr::ResetDataForSibling(key_vlan_map *key_vmap,
+    uudst::vbridge_vlanmap::kVbrVlanMapIndex index) {
+  switch(index) {
+    case uudst::vbridge_vlanmap::kDbiLogicalPortId:
+      memset(key_vmap->logical_port_id, 0, sizeof(key_vmap->logical_port_id));
+    case uudst::vbridge_vlanmap::kDbiLogicalPortIdValid:
+      key_vmap->logical_port_id_valid = INVALID_LOG_PORT_ID_VALID;
+      break;
+    default:
+      UPLL_LOG_DEBUG("Not a child key index");
+      return false;
+  }
+  UPLL_LOG_TRACE("Resetting Data for index(%d)", index);
+  return true;
 }
 
 }  // namespace kt_momgr

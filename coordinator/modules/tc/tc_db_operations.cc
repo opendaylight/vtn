@@ -70,6 +70,11 @@ TcOperStatus TcDbOperations::TcValidateOperType() {
       tc_oper_ != TC_OP_CLEAR_STARTUP) {
     return TC_INVALID_OPERATION_TYPE;
   }
+  /*set infinite timeout for startup operations*/
+  TcUtilRet ret = TcServerSessionUtils::set_srv_timeout(ssess_, NULL);
+  if (ret == TCUTIL_RET_FAILURE) {
+    return TC_OPER_FAILURE;
+  }
   return TC_OPER_SUCCESS;
 }
 

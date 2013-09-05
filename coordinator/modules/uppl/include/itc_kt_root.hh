@@ -33,41 +33,44 @@ typedef enum {
 
 class Kt_Root: public Kt_Base {
   private:
-    Kt_Base *parent;
     Kt_Base *child[KT_ROOT_CHILD_COUNT];
 
   public:
     Kt_Root();
     ~Kt_Root();
-    UpplReturnCode Create(uint32_t session_id,
+    UpplReturnCode Create(OdbcmConnectionHandler *db_conn,
+                          uint32_t session_id,
                           uint32_t configuration_id,
                           void* key_struct,
                           void* val_struct,
                           uint32_t data_type,
                           ServerSession &sess);
-    UpplReturnCode Update(uint32_t session_id,
+    UpplReturnCode Update(OdbcmConnectionHandler *db_conn,
+                          uint32_t session_id,
                           uint32_t configuration_id,
                           void* key_struct,
                           void* val_struct,
                           uint32_t data_type,
                           ServerSession &sess);
 
-    UpplReturnCode Delete(uint32_t session_id,
+    UpplReturnCode Delete(OdbcmConnectionHandler *db_conn,
+                          uint32_t session_id,
                           uint32_t configuration_id,
                           void* key_struct,
                           uint32_t data_type,
                           ServerSession &sess);
 
-    UpplReturnCode ReadBulk(void* key_struct,
+    UpplReturnCode ReadBulk(OdbcmConnectionHandler *db_conn,
+                            void* key_struct,
                             uint32_t data_type,
-                            uint32_t option1,
-                            uint32_t option2,
                             uint32_t &max_rep_ct,
                             int child_index,
                             pfc_bool_t parent_call,
-                            pfc_bool_t is_read_next);
+                            pfc_bool_t is_read_next,
+                            ReadRequest *read_req);
 
-    UpplReturnCode PerformRead(uint32_t session_id,
+    UpplReturnCode PerformRead(OdbcmConnectionHandler *db_conn,
+                               uint32_t session_id,
                                uint32_t configuration_id,
                                void* key_struct,
                                void* val_struct,
@@ -78,25 +81,28 @@ class Kt_Root: public Kt_Base {
                                uint32_t option2,
                                uint32_t max_rep_ct) { return UPPL_RC_SUCCESS; }
 
-    UpplReturnCode PerformSyntaxValidation(void* key_struct,
+    UpplReturnCode PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
+                                           void* key_struct,
                                            void* val_struct,
                                            uint32_t operation,
                                            uint32_t data_type) {
       return UPPL_RC_SUCCESS;
     }
 
-    UpplReturnCode PerformSemanticValidation(void* key_struct,
+    UpplReturnCode PerformSemanticValidation(OdbcmConnectionHandler *db_conn,
+                                             void* key_struct,
                                              void* val_struct,
                                              uint32_t operation,
                                              uint32_t data_type) {
       return UPPL_RC_SUCCESS;
     }
 
-    void PopulateDBSchemaForKtTable(
+    void PopulateDBSchemaForKtTable(OdbcmConnectionHandler *db_conn,
         DBTableSchema &kt_dbtableschema,
         void* key_struct,
         void* val_struct,
         uint8_t operation_type,
+        uint32_t data_type,
         uint32_t option1,
         uint32_t option2,
         vector<ODBCMOperator> &vect_key_operations,

@@ -32,78 +32,93 @@ import org.opendaylight.vtn.javaapi.resources.AbstractResource;
  * The Class PackageScan. Scans the resource classes for VTN Service
  */
 public final class PackageScan {
+	/**
+	 * Pairs of REST resource path and associated resource class.
+	 */
+	private final HashMap<String, Class<?>> _cachedClasses =
+		new HashMap<String, Class<?>>();
 
-	private static final Logger LOG = Logger.getLogger(PackageScan.class
-			.getName());
-
-	private static final Map<String, Class<?>> CACHEDRESOURCES = new HashMap<String, Class<?>>();
-
-	private PackageScan() {
+	/**
+	 * Private class that keeps a single global instance of
+	 * {@code PackageScan}.
+	 */
+	private final static class PackageScanHolder {
+		/**
+		 * A single global instance of {@code PackageScan}.
+		 */
+		private final static PackageScan _instance = new PackageScan();
 	}
 
 	/**
-	 * Load resources.
+	 * Return a single global instance of {@code PackageScan}.
 	 * 
-	 * @throws VtnServiceException
-	 *             the vtn service exception
+	 * @return A single global instance of {@code PackageScan}.
 	 */
-	public static void loadResources() throws VtnServiceException {
+	public final static PackageScan getInstance() {
+		return PackageScanHolder._instance;
+	}
 
-		LOG.trace("Start PackageScan#loadResources()");
+	/**
+	 * Create a single global instance of {@code PackageScan}.
+	 * 
+	 * @throws IllegalStateException
+	 *             Failed to load properties file that defines resource clas
+ses.
+        */
+	private PackageScan() {
+		Logger log = Logger.getLogger(PackageScan.class.getName());
+		log.trace("Start PackageScan#PackageScan()");
 
-		List<String> classNameList = null;
 		// create the list of resource classes from a given package
+		String jar = VtnServiceInitManager.
+			getConfigurationMap().
+			getConfigValue(VtnServiceConsts.JAVAAPI_JARPATH);
+		List<String> classNameList;
 		try {
-			//classNameList = getClassNameList(VtnServiceConsts.TEST_RESOURCES);
-			classNameList = getFromJARFile(
-					VtnServiceInitManager.getConfigurationMap().getConfigValue(
-							VtnServiceConsts.JAVAAPI_JARPATH),
-					VtnServiceConsts.RESOURCES);
-
-			if (classNameList == null) {
-				return;
-			}
-
-			for (final String className : classNameList) {
-				Class<?> classResource = null;
-
-				// check the class validity for each resource class
-				classResource = Class.forName(className);
-
-				// continue if resource class is not derived from AbstractClass
-				if (classResource == null
-						|| AbstractResource.class != classResource
-								.getSuperclass()) {
-					continue;
-				}
-
-				final UNCVtnService annotion = classResource
-						.getAnnotation(UNCVtnService.class);
-				if (annotion == null) {
-					continue;
-				}
-
-				// map the annotation path with resource class
-				final String path = annotion.path();
-				if (path != null
-						&& !VtnServiceConsts.EMPTY_STRING.equals(path.trim())) {
-					CACHEDRESOURCES.put(path, classResource);
-				}
-			}
-		} catch (final Exception e) {
-			VtnServiceInitManager
-					.getExceptionHandler()
-					.raise(Thread.currentThread().getStackTrace()[1]
-							.getClassName()
-							+ VtnServiceConsts.HYPHEN
-							+ Thread.currentThread().getStackTrace()[1]
-									.getMethodName(),
-							UncJavaAPIErrorCode.RESOURCE_LOAD_ERROR
-									.getErrorCode(),
-							UncJavaAPIErrorCode.RESOURCE_LOAD_ERROR
-									.getErrorMessage(), e);
+			classNameList =
+				getFromJARFile(jar, VtnServiceConsts.RESOURCES);
+		} catch (FileNotFoundException e) {
+			String msg = "Java API JAR file not found: " + jar;
+			log.error(msg + ": " + e);
+			throw new IllegalStateException(msg, e);
+		} catch (IOException e) {
+			String msg = "Failed to load Java API JAR file: " + jar;
+			log.error(msg + ": " + e);
+			throw new IllegalStateException(msg, e);
 		}
-		LOG.trace("Complete PackageScan#loadResources()");
+
+		for (final String className : classNameList) {
+			// check the class validity for each resource
+			// class
+			Class<?> cls = null;
+			try {
+				cls = Class.forName(className);
+			} catch (ClassNotFoundException e) {
+				log.warning("Failed to load resource class: " +
+					    className + ": " + e);
+				continue;
+			}
+
+			// continue if resource class is not derived
+			// from AbstractClass
+			if (cls == null ||
+			    AbstractResource.class != cls.getSuperclass()) {
+				continue;
+			}
+
+			final UNCVtnService annotion =
+				cls.getAnnotation(UNCVtnService.class);
+			if (annotion == null) {
+				continue;
+			}
+
+			// map the annotation path with resource class
+			final String path = annotion.path();
+			if (path != null && path.trim().length() != 0) {
+				_cachedClasses.put(path, cls);
+			}
+		}
+		log.trace("Complete PackageScan#PackageScan()");
 	}
 
 	/**
@@ -115,33 +130,55 @@ public final class PackageScan {
 	 * @return list of class names
 	 * @throws FileNotFoundException
 	 * @throws IOException
-	 * @throws ClassNotFoundException
 	 */
-	static List<String> getFromJARFile(final String jar,
-			final String packageName) throws FileNotFoundException,
-			IOException, ClassNotFoundException {
+	private List<String> getFromJARFile(final String jar,
+					    final String packageName)
+		throws FileNotFoundException, IOException {
 		final List<String> classes = new ArrayList<String>();
-		final JarInputStream jarFile = new JarInputStream(new FileInputStream(
-				jar));
-		JarEntry jarEntry;
+		final JarInputStream jarFile = 
+			new JarInputStream(new FileInputStream(jar));
+
 		/*
 		 * iterate for all the class files in Jar file
 		 */
-		do {
-			jarEntry = jarFile.getNextJarEntry();
-			if (jarEntry != null) {
-				String className = jarEntry.getName();
-				if (className.endsWith(VtnServiceConsts.CLASS_EXT)) {
-					className = stripFilenameExtension(className);
-					if (className.startsWith(packageName)) {
-						classes.add(className.replaceAll(
-								VtnServiceConsts.SLASH, VtnServiceConsts.DOT));
-					}
-				}
+		for (JarEntry jarEntry = jarFile.getNextJarEntry();
+		     jarEntry != null; jarEntry = jarFile.getNextJarEntry()) {
+			String className = jarEntry.getName();
+			if (!className.endsWith(VtnServiceConsts.CLASS_EXT)) {
+				continue;
 			}
-		} while (jarEntry != null);
+
+			className = stripFilenameExtension(className);
+			if (className.startsWith(packageName)) {
+				classes.add(className.replaceAll
+					    (VtnServiceConsts.SLASH,
+					     VtnServiceConsts.DOT));
+			}
+		}
 		jarFile.close();
 		return classes;
+	}
+
+	/**
+	 * Return a resource class associated with the given path.
+	 * 
+	 * @param path  A path.
+	 * @return A {@code Class} instance associated with the given path
+	 *         if found. {@code null} if not found.
+	 */
+	public Class<?> getResourceClass(String path) {
+		return _cachedClasses.get(path);
+	}
+
+	/**
+	 * Return a string array which contains all REST paths.
+	 * 
+	 * @return A string array which contains all REST paths.
+	 */
+	public String[] getAllPaths() {
+		String[] array = new String[_cachedClasses.size()];
+
+		return _cachedClasses.keySet().toArray(array);
 	}
 
 	/**
@@ -150,93 +187,7 @@ public final class PackageScan {
 	 * @param className
 	 * @return
 	 */
-	public static String stripFilenameExtension(final String className) {
-		final String str = className.substring(0, className.lastIndexOf('.'));
-		return str;
-	}
-
-	/**
-	 * Gets the class name list.
-	 * 
-	 * @param packageName
-	 *            the package name
-	 * @return the class name list
-	 * @throws VtnServiceException
-	 *             the vtn service exception
-	 */
-	private static List<String> getClassNameList(final String packageName)
-			throws VtnServiceException {
-
-		LOG.trace("Start PackageScan#getClassNameList()");
-		LOG.debug("Input value for package name : " + packageName);
-		final List<String> classNames = new ArrayList<String>();
-		final ClassLoader loader = Thread.currentThread()
-				.getContextClassLoader();
-		try {
-			// load all the classes from given package
-			final String resourceName = packageName.replaceAll(
-					VtnServiceConsts.DOT_REGEX, VtnServiceConsts.SLASH);
-			final URL url = loader.getResource(resourceName);
-			final File urlFile = new File(url.toURI());
-			final File[] files = urlFile.listFiles();
-			// get class name of each file present in package
-			for (final File f : files) {
-				getClassName(packageName, f, classNames);
-			}
-		} catch (final URISyntaxException e) {
-			VtnServiceInitManager
-					.getExceptionHandler()
-					.raise(Thread.currentThread().getStackTrace()[1]
-							.getClassName()
-							+ VtnServiceConsts.HYPHEN
-							+ Thread.currentThread().getStackTrace()[1]
-									.getMethodName(),
-							UncJavaAPIErrorCode.INIT_ERROR.getErrorCode(),
-							UncJavaAPIErrorCode.INIT_ERROR.getErrorCode(), e);
-		}
-		LOG.debug("Class list:" + classNames.toArray());
-		LOG.trace("Complete PackageScan#getClassNameList()");
-		return classNames;
-	}
-
-	/**
-	 * Gets the class name.
-	 * 
-	 * @param packageName
-	 *            the package name
-	 * @param packageFile
-	 *            the package file
-	 * @param list
-	 *            the list
-	 * @return the class name
-	 */
-	private static void getClassName(final String packageName,
-			final File packageFile, final List<String> list) {
-
-		LOG.trace("Start PackageScan#getClassName()");
-		if (packageFile.isFile()) {
-			list.add(packageName
-					+ VtnServiceConsts.DOT
-					+ packageFile.getName().replace(VtnServiceConsts.CLASS_EXT,
-							VtnServiceConsts.EMPTY_STRING));
-		} else {
-			final File[] files = packageFile.listFiles();
-			final String tmPackageName = packageName + VtnServiceConsts.DOT
-					+ packageFile.getName();
-			for (final File file : files) {
-				getClassName(tmPackageName, file, list);
-			}
-		}
-		LOG.trace("Complete PackageScan#getClassName()");
-	}
-
-	/**
-	 * Gets the cached resources.
-	 * 
-	 * @return the cached resources
-	 */
-	public static Map<String, Class<?>> getCachedResources() {
-		LOG.trace("Return from PackageScan#getCachedResources()");
-		return CACHEDRESOURCES;
+	private static String stripFilenameExtension(final String className) {
+		return className.substring(0, className.lastIndexOf('.'));
 	}
 }

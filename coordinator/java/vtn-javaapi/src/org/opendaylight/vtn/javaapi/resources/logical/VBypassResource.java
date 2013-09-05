@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2013 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -27,13 +27,13 @@ import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncUPLLEnums;
 import org.opendaylight.vtn.javaapi.resources.AbstractResource;
-import org.opendaylight.vtn.javaapi.validation.logical.VUnknownResourceValidator;
+import org.opendaylight.vtn.javaapi.validation.logical.VBypassResourceValidator;
 
 /**
- * The Class VUnknownResource implements get, delete and put.
+ * The Class VBypassResource implements get, delete and put.
  */
 @UNCVtnService(path = "/vtns/{vtn_name}/vbypasses/{vbypass_name}")
-public class VUnknownResource extends AbstractResource {
+public class VBypassResource extends AbstractResource {
 	/** The vtn name. */
 	@UNCField("vtn_name")
 	private String vtnName;
@@ -43,28 +43,29 @@ public class VUnknownResource extends AbstractResource {
 	public String getVtnName() {
 		return vtnName;
 	}
-	/** The vunknown name. */
+	/** The vbypass name. */
 	@UNCField("vbypass_name")
-	private String vukName;
+	private String vbypassName;
+
 	/**
-	 * @return the vuk name
+	 * @return the VBypass name
 	 */
-	public String getVukName() {
-		return vukName;
+	public String getVbypassName() {
+		return vbypassName;
 	}
-	private static final Logger LOG = Logger.getLogger(VUnknownResource.class
+	private static final Logger LOG = Logger.getLogger(VBypassResource.class
 			.getName());
 	/**
-	 * Instantiates a new v unknown resource.
+	 * Instantiates a new VBypass resource.
 	 */
-	public VUnknownResource() {
+	public VBypassResource() {
 		super();
-		LOG.trace("Start VUnknownResource#VUnknownsResource()");
-		setValidator(new VUnknownResourceValidator(this));
-		LOG.trace("Completed VUnknownResource#VUnknownsResource()");
+		LOG.trace("Start VBypassResource#VBypassResource()");
+		setValidator(new VBypassResourceValidator(this));
+		LOG.trace("Completed VBypassResource#VBypassResource()");
 	}
 	/**
-	 * Implementation of put method of Vunknown
+	 * Implementation of put method of VBypass
 	 * 
 	 * @param requestBody
 	 *            the request Json object
@@ -74,7 +75,7 @@ public class VUnknownResource extends AbstractResource {
 	 */
 	@Override
 	public int put(final JsonObject requestBody) throws VtnServiceException {
-		LOG.trace("Starts VUnknownResource#put()");
+		LOG.trace("Starts VBypassResource#put()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
 		int status = ClientSession.RESP_FATAL;
@@ -118,18 +119,18 @@ public class VUnknownResource extends AbstractResource {
 			}
 			getConnPool().destroySession(session);
 		}
-		LOG.trace("Completed VUnknownResource#put()");
+		LOG.trace("Completed VBypassResource#put()");
 		return status;
 	}
 	/**
-	 * Implementation of delete method of Vunknown
+	 * Implementation of delete method of VBypass
 	 * 
 	 * @return Error code
 	 * @throws VtnServiceException
 	 */
 	@Override
 	public int delete() throws VtnServiceException {
-		LOG.trace("Starts VUnknownResource#delete()");
+		LOG.trace("Starts VBypassResource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
 		int status = ClientSession.RESP_FATAL;
@@ -173,11 +174,11 @@ public class VUnknownResource extends AbstractResource {
 			}
 			getConnPool().destroySession(session);
 		}
-		LOG.trace("Completed VUnknownResource#delete()");
+		LOG.trace("Completed VBypassResource#delete()");
 		return status;
 	}
 	/**
-	 * Implementation of get method of Vunknown
+	 * Implementation of get method of VBypass
 	 * 
 	 * @param requestBody
 	 *            the request Json object
@@ -187,7 +188,7 @@ public class VUnknownResource extends AbstractResource {
 	 */
 	@Override
 	public int get(final JsonObject requestBody) throws VtnServiceException {
-		LOG.trace("Starts VUnknownResource#get()");
+		LOG.trace("Starts VBypassResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
 		int status = ClientSession.RESP_FATAL;
@@ -208,7 +209,7 @@ public class VUnknownResource extends AbstractResource {
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
 			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
-			setInfo(responseGenerator.getVUnknownResponse(
+			setInfo(responseGenerator.getVBypassResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.SHOW));
 			LOG.debug("Response object created successfully");
@@ -236,7 +237,7 @@ public class VUnknownResource extends AbstractResource {
 			}
 			getConnPool().destroySession(session);
 		}
-		LOG.trace("Completed VUnknownResource#get()");
+		LOG.trace("Completed VBypassResource#get()");
 		return status;
 	}
 	/**
@@ -245,11 +246,11 @@ public class VUnknownResource extends AbstractResource {
 	 * @return parameter list
 	 */
 	private List<String> getUriParameters() {
-		LOG.trace("Start VUnknownResource#getUriParameters()");
+		LOG.trace("Start VBypassResource#getUriParameters()");
 		List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(vtnName);
-		uriParameters.add(vukName);
-		LOG.trace("Completed VUnknownResource#getUriParameters()");
+		uriParameters.add(vbypassName);
+		LOG.trace("Completed VBypassResource#getUriParameters()");
 		return uriParameters;
 	}
 }

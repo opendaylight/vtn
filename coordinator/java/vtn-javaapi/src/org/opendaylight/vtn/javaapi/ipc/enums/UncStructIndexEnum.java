@@ -14,7 +14,8 @@ public class UncStructIndexEnum {
 		UNC_VF_INVALID,
 		UNC_VF_VALID,
 		UNC_VF_VALID_NO_VALUE,
-		UNC_VF_NOT_SOPPORTED
+		UNC_VF_NOT_SUPPORTED,
+		UNC_VF_VALUE_NOT_MODIFIED
 	};
 	// vtn
 	public enum ValVtnIndex{
@@ -131,8 +132,8 @@ public class UncStructIndexEnum {
 
 	//ValVbrIf for VBridgeInterface APIs
 	public enum ValVbrIfIndex {
-		UPLL_IDX_DESC_VBRI,
 		UPLL_IDX_ADMIN_STATUS_VBRI,
+		UPLL_IDX_DESC_VBRI,
 		UPLL_IDX_PM_VBRI
 	};
 
@@ -685,5 +686,17 @@ public class UncStructIndexEnum {
 					return value;
 				}
 			};
+			public  enum DirtyStatus {
+				FALSE("0"),
+				TRUE("1");
+				private final String value;
 
+				private DirtyStatus(final String value){
+					this.value = value;
+				}
+
+				public String getValue(){
+					return value;
+				}
+			};
 }

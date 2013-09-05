@@ -641,7 +641,7 @@ class DalDmlIntf {
      * @return DalResultCode      - kDalRcSuccess in case of success
      *                            - Valid errorcode otherwise
      *                              On successful execution, both the
-     *                              configurations have same records.
+     *                              configurations have same records
      *
      * Note:
      * Information on Copy Logic
@@ -679,6 +679,49 @@ class DalDmlIntf {
      *
      */
     virtual DalResultCode CopyModifiedRecords(
+                    const UpllCfgType dest_cfg_type,
+                    const UpllCfgType src_cfg_type,
+                    const DalTableIndex table_index,
+                    const DalBindInfo *output_and_match_attr_info) const = 0;
+
+    /**
+     * CopyModifiedInsertRecords
+     *   Inserts the additional records of table from source configuration to
+     *   destination configuration.
+     *
+     * @param[in] dest_cfg_type   - Configuration Type where the records to be
+     *                              copied (not equal to src_cfg_type)
+     * @param[in] src_cfg_type    - Configuration Type from where the records
+     *                              will be copied (not equal to dest_cfg_type)
+     * @param[in] table_index     - Valid Index of the table
+     * @param[in] output_and_match_attr_info
+     *                            - Bind Information for output and match
+     *                            - columns
+     *
+     * @return DalResultCode      - kDalRcSuccess in case of success
+     *                            - Valid errorcode otherwise
+     *                              On successful execution, both the
+     *                              configurations have same records.
+     *
+     * Note:
+     * Information on Copy Logic
+     * 1. Add the records in dest_cfg_type that are result of
+     *    GetCreatedRecords(dest_cfg_type, src_cfg_type, ...)
+     *    
+     * Information on usage of DalBindInfo
+     *  1. Valid instance of DalBindInfo with same table_index used in this API
+     *  2. BindInput if used for any attributes, ignored.
+     *  3. BindMatch if used for any attributes, ignored.
+     *  4. BindOutput is optional.
+     *     BindOutput, if used, copy the values of bound columns from
+     *     src_cfg_type to dst_cfg_type
+     *     BindOutput, if not used, copy the values of all columns from
+     *     src_cfg_type to dst_cfg_type
+     *     Since the bound value is not used for this API, it is ok to bind
+     *     dummy address. Do not pass NULL address.
+     *
+     */
+    virtual DalResultCode CopyModifiedInsertRecords(
                     const UpllCfgType dest_cfg_type,
                     const UpllCfgType src_cfg_type,
                     const DalTableIndex table_index,
@@ -759,6 +802,43 @@ class DalDmlIntf {
                                         const DalTableIndex table_index,
                                         const DalBindInfo *matching_attr_info,
                                         bool *identical) const = 0;
+
+    /**
+     * ExecuteAppQuerySingleRecord
+     *   Execute the user supplied query statement to generate single record as
+     *   output
+     *
+     * @param[in] query_stmt      - User supplied executable query statement
+     * @param[in] bind_info       - Corresponding bind information for the query
+     *
+     * @return DalResultCode      - kDalRcSuccess in case of success
+     *                            - Valid errorcode otherwise
+     */
+    virtual DalResultCode ExecuteAppQuerySingleRecord(
+                         const std::string query_stmt,
+                         const DalBindInfo *bind_info) const = 0;
+    /**
+     * ExecuteAppQueryMultipleRecords
+     *   Execute the user supplied query statement to generate multiple records
+     *   in a given cursor as output
+     *
+     * @param[in] query_stmt      - User supplied executable query statement
+     * @param[in] bind_info       - Corresponding bind information for the query
+     * @param[in] max_record_count- Count of output records expected from the
+     *                              user.
+     * @param[in/out] cursor      - reference to the unallocated DalCursor
+     *                              pointer
+     *                            - Output - cursor pointer with valid instance
+     *                              of DalCursor
+     *
+     * @return DalResultCode      - kDalRcSuccess in case of success
+     *                            - Valid errorcode otherwise
+     */
+     virtual DalResultCode ExecuteAppQueryMultipleRecords(
+                         const std::string query_stmt,
+                         const size_t max_record_count,
+                         const DalBindInfo *bind_info,
+                         DalCursor **cursor) const = 0;
 };  // class DalDmlIntf
 
 };  // namespace dal

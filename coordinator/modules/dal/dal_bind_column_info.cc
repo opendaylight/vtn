@@ -17,7 +17,7 @@
 #include <sstream>
 #include "pfc/base.h"
 #include "unc/base.h"
-#include "upll/upll_log.hh"
+#include "uncxx/upll_log.hh"
 #include "dal_bind_column_info.hh"
 
 namespace unc {
@@ -178,15 +178,10 @@ DalBindColumnInfo::UpdateColumnInfo(const DalTableIndex table_index,
     return false;
   }
 
-  if (io_type_ == io_type) {
-    UPLL_LOG_TRACE("Overwriting Bind Information for Table(%s) Column(%s): "
-                  "\nRequested Bind Code - %s, Existing Bind Type - %s, "
-                  "Computed Bind Type - %s",
-                   schema::TableName(table_index),
-                   schema::ColumnName(table_index, column_index_),
-                   DalIoCodeToStr(io_code).c_str(),
-                   DalIoTypeToStr(io_type_).c_str(),
-                   DalIoTypeToStr(io_type).c_str());
+  if (io_type_ == io_type && io_code == kDalIoCodeInput) {
+    UPLL_LOG_TRACE("Overwriting Input Bind Information for Table(%s)"
+                   " Column(%s): ", schema::TableName(table_index),
+                   schema::ColumnName(table_index, column_index_));
     return false;
   }
   io_type_ = io_type;
@@ -215,7 +210,7 @@ DalBindColumnInfo::UpdateColumnInfo(const DalTableIndex table_index,
     }
     memset(buff_len_ptr_, 0, sizeof(SQLLEN));
     *buff_len_ptr_ = app_array_size_;
-    UPLL_LOG_TRACE("Done with first time updation of common member variables "
+    UPLL_LOG_VERBOSE("Done with first time updation of common member variables "
                    "for Table(%s) Column(%s) with the following data: \n"
                    "App data type - %s\nApp array size - %zd\n"
                    "Buff Len Ptr - %p\nBuff Len - %ld\n",
@@ -240,7 +235,7 @@ DalBindColumnInfo::UpdateColumnInfo(const DalTableIndex table_index,
                      schema::ColumnName(table_index, column_index_));
       return false;
     }
-    UPLL_LOG_TRACE("Updated Input Binding for Table(%s) Column(%s):"
+    UPLL_LOG_VERBOSE("Updated Input Binding for Table(%s) Column(%s):"
                    "\n User Address - %p, Value - %s"
                    "\n DAL Address - %p, Value - %s",
                    schema::TableName(table_index),
@@ -263,7 +258,7 @@ DalBindColumnInfo::UpdateColumnInfo(const DalTableIndex table_index,
                      schema::ColumnName(table_index, column_index_));
       return false;
     }
-    UPLL_LOG_TRACE("Updated Output Binding for Table(%s) Column(%s):"
+    UPLL_LOG_VERBOSE("Updated Output Binding for Table(%s) Column(%s):"
                    "\n User Address - %p, Value - %s"
                    "\n DAL Address - %p, Value - %s",
                    schema::TableName(table_index),
@@ -288,7 +283,7 @@ DalBindColumnInfo::UpdateColumnInfo(const DalTableIndex table_index,
                      schema::ColumnName(table_index, column_index_));
       return false;
     }
-    UPLL_LOG_TRACE("Updated Match Binding for Table(%s) Column(%s):"
+    UPLL_LOG_VERBOSE("Updated Match Binding for Table(%s) Column(%s):"
                    "\n User Address - %p, Value - %s"
                    "\n DAL Address - %p, Value - %s",
                    schema::TableName(table_index),
@@ -387,9 +382,8 @@ DalBindColumnInfo::CopyResultToAppAddr(const DalTableIndex table_index) {
     UPLL_LOG_DEBUG("Data Type mismatch");
     return false;
   }
-  UPLL_LOG_TRACE("Copied result for Column(%s) in Table(%s): \n"
-                 "\nSrc - DAL Output Address - %p, Value - %s"
-                 "\nDest - User Output Address - %p, Value - %s",
+  UPLL_LOG_VERBOSE("Copied result for Column(%s) in Table(%s): "
+                 "Src(%p, %s) Dest (%p, %s)",
                  schema::ColumnName(table_index, column_index_),
                  schema::TableName(table_index),
                  db_in_out_addr_,
@@ -485,7 +479,7 @@ DalBindColumnInfo::AllocateAndCopy(void **dest,
     UPLL_LOG_DEBUG("Cannot Copy Data - Datatype mismatch Error");
     return false;
   }
-  UPLL_LOG_TRACE("Copied Data from source(%p) to destination(%p)",
+  UPLL_LOG_VERBOSE("Copied Data from source(%p) to destination(%p)",
                *src, *dest);
 
   return true;
@@ -530,7 +524,7 @@ DalBindColumnInfo::AllocateColBuffer(void **col_buff,
   }
   memset(*col_buff, 0, alloc_size);
 
-  UPLL_LOG_TRACE("Allocated Memory for %zd bytes", alloc_size);
+  UPLL_LOG_VERBOSE("Allocated Memory for %zd bytes", alloc_size);
   return true;
 }  // DalBindColumnInfo::AllocateColBuffer
 
@@ -639,7 +633,7 @@ DalBindColumnInfo::CalculateDalBufferSize(const SQLSMALLINT dal_data_type,
     default:
       return 0;
   }
-  UPLL_LOG_TRACE("Calculated DAL Buffer size - %zd"
+  UPLL_LOG_VERBOSE("Calculated DAL Buffer size - %zd"
                  " for DAL datatype(%d) and array size(%zd)",
                  buffer_size, dal_data_type, array_size);
   return buffer_size;
@@ -689,7 +683,7 @@ DalBindColumnInfo::CalculateAppBufferSize(const DalCDataType app_data_type,
       return 0;
   }  // switch(app_data_type)
 
-  UPLL_LOG_TRACE("Calculated App Buffer size - %zd"
+  UPLL_LOG_VERBOSE("Calculated App Buffer size - %zd"
                 " for App datatype(%d) and array size(%zd)",
                 buffer_size, app_data_type, array_size);
   return buffer_size;
@@ -785,8 +779,7 @@ DalBindColumnInfo::GetCopyDataType(const DalCDataType app_data_type,
       *data_type_code = kDalDtCodeInvalid;
       break;
   }
-  UPLL_LOG_TRACE("Copy Data type code - %d",
-               *data_type_code);
+  UPLL_LOG_VERBOSE("Copy Data type code - %d", *data_type_code);
   return;
 }  // DalBindColumnInfo::GetCopyDatatype
 
@@ -838,21 +831,16 @@ DalBindColumnInfo::CopyUsingAppDataType(void **dest, const void **src,
   switch (app_data_type) {
     case kDalChar:
       for (i = 0; i < array_size; i++) {
-        if (((reinterpret_cast<char *>(*dest))+i) == NULL ||
-            ((reinterpret_cast<const char *>(*src))+i) == NULL) {
-          return false;
-        }
         *((reinterpret_cast<char *>(*dest))+i) =
           *((reinterpret_cast<const char *>(*src))+i);
+        if (*((reinterpret_cast<const char *>(*src))+i) == '\0') {
+          break;
+        }
       }
       break;
 
     case kDalUint8:
       for (i = 0; i < array_size; i++) {
-        if (((reinterpret_cast<uint8_t *>(*dest))+i) == NULL ||
-            ((reinterpret_cast<const uint8_t *>(*src))+i) == NULL) {
-          return false;
-        }
         *((reinterpret_cast<uint8_t *>(*dest))+i) =
           *((reinterpret_cast<const uint8_t *>(*src))+i);
       }
@@ -860,10 +848,6 @@ DalBindColumnInfo::CopyUsingAppDataType(void **dest, const void **src,
 
     case kDalUint16:
       for (i = 0; i < array_size; i++) {
-        if (((reinterpret_cast<uint16_t *>(*dest))+i) == NULL ||
-            ((reinterpret_cast<const uint16_t *>(*src))+i) == NULL) {
-          return false;
-        }
         *((reinterpret_cast<uint16_t *>(*dest))+i) =
           *((reinterpret_cast<const uint16_t *>(*src))+i);
       }
@@ -871,10 +855,6 @@ DalBindColumnInfo::CopyUsingAppDataType(void **dest, const void **src,
 
     case kDalUint32:
       for (i = 0; i < array_size; i++) {
-        if (((reinterpret_cast<uint32_t *>(*dest))+i) == NULL ||
-            ((reinterpret_cast<const uint32_t *>(*src))+i) == NULL) {
-          return false;
-        }
         *((reinterpret_cast<uint32_t *>(*dest))+i) =
           *((reinterpret_cast<const uint32_t *>(*src))+i);
       }
@@ -882,10 +862,6 @@ DalBindColumnInfo::CopyUsingAppDataType(void **dest, const void **src,
 
     case kDalUint64:
       for (i = 0; i < array_size; i++) {
-        if (((reinterpret_cast<uint64_t *>(*dest))+i) == NULL ||
-            ((reinterpret_cast<const uint64_t *>(*src))+i) == NULL) {
-          return false;
-        }
         *((reinterpret_cast<uint64_t *>(*dest))+i) =
           *((reinterpret_cast<const uint64_t *>(*src))+i);
       }
@@ -896,7 +872,7 @@ DalBindColumnInfo::CopyUsingAppDataType(void **dest, const void **src,
       return false;
   }  // switch(app_data_type)
 
-  UPLL_LOG_TRACE("Copied contents of source address(%p) to "
+  UPLL_LOG_VERBOSE("Copied contents of source address(%p) to "
                "destination(%p) address", *src, *dest);
   return true;
 }  // DalBindColumnInfo::CopyUsingAppDataType
@@ -950,22 +926,17 @@ DalBindColumnInfo::CopyUsingDalDataType(void **dest, const void **src,
   switch (dal_data_type) {
     case SQL_C_CHAR:
      for (i = 0; i < array_size; i++) {
-        if (((reinterpret_cast<SQLCHAR *>(*dest))+i) == NULL ||
-            ((reinterpret_cast<const SQLCHAR *>(*src))+i) == NULL) {
-          return false;
-        }
         *((reinterpret_cast<SQLCHAR *>(*dest))+i) =
           *((reinterpret_cast<const SQLCHAR *>(*src))+i);
+        if (*((reinterpret_cast<const SQLCHAR *>(*src))+i) == '\0') {
+          break;
+        }
       }
       break;
 
     case SQL_C_TINYINT:
     case SQL_C_STINYINT:
      for (i = 0; i < array_size; i++) {
-        if (((reinterpret_cast<SCHAR *>(*dest))+i) == NULL ||
-            ((reinterpret_cast<const SCHAR *>(*src))+i) == NULL) {
-          return false;
-        }
         *((reinterpret_cast<SCHAR *>(*dest))+i) =
           *((reinterpret_cast<const SCHAR *>(*src))+i);
       }
@@ -973,10 +944,6 @@ DalBindColumnInfo::CopyUsingDalDataType(void **dest, const void **src,
 
     case SQL_C_UTINYINT:
      for (i = 0; i < array_size; i++) {
-        if (((reinterpret_cast<UCHAR *>(*dest))+i) == NULL ||
-            ((reinterpret_cast<const UCHAR *>(*src))+i) == NULL) {
-          return false;
-        }
         *((reinterpret_cast<UCHAR *>(*dest))+i) =
           *((reinterpret_cast<const UCHAR *>(*src))+i);
       }
@@ -985,10 +952,6 @@ DalBindColumnInfo::CopyUsingDalDataType(void **dest, const void **src,
     case SQL_C_SHORT:
     case SQL_C_SSHORT:
      for (i = 0; i < array_size; i++) {
-        if (((reinterpret_cast<SQLSMALLINT *>(*dest))+i) == NULL ||
-            ((reinterpret_cast<const SQLSMALLINT *>(*src))+i) == NULL) {
-          return false;
-        }
         *((reinterpret_cast<SQLSMALLINT *>(*dest))+i) =
           *((reinterpret_cast<const SQLSMALLINT *>(*src))+i);
       }
@@ -996,10 +959,6 @@ DalBindColumnInfo::CopyUsingDalDataType(void **dest, const void **src,
 
     case SQL_C_USHORT:
      for (i = 0; i < array_size; i++) {
-        if (((reinterpret_cast<SQLUSMALLINT *>(*dest))+i) == NULL ||
-            ((reinterpret_cast<const SQLUSMALLINT *>(*src))+i) == NULL) {
-          return false;
-        }
         *((reinterpret_cast<SQLUSMALLINT *>(*dest))+i) =
           *((reinterpret_cast<const SQLUSMALLINT *>(*src))+i);
       }
@@ -1008,10 +967,6 @@ DalBindColumnInfo::CopyUsingDalDataType(void **dest, const void **src,
     case SQL_C_LONG:
     case SQL_C_SLONG:
      for (i = 0; i < array_size; i++) {
-        if (((reinterpret_cast<SQLINTEGER *>(*dest))+i) == NULL ||
-            ((reinterpret_cast<const SQLINTEGER *>(*src))+i) == NULL) {
-          return false;
-        }
         *((reinterpret_cast<SQLINTEGER *>(*dest))+i) =
           *((reinterpret_cast<const SQLINTEGER *>(*src))+i);
       }
@@ -1019,10 +974,6 @@ DalBindColumnInfo::CopyUsingDalDataType(void **dest, const void **src,
 
     case SQL_C_ULONG:
      for (i = 0; i < array_size; i++) {
-        if (((reinterpret_cast<SQLUINTEGER *>(*dest))+i) == NULL ||
-            ((reinterpret_cast<const SQLUINTEGER *>(*src))+i) == NULL) {
-          return false;
-        }
         *((reinterpret_cast<SQLUINTEGER *>(*dest))+i) =
           *((reinterpret_cast<const SQLUINTEGER *>(*src))+i);
       }
@@ -1030,10 +981,6 @@ DalBindColumnInfo::CopyUsingDalDataType(void **dest, const void **src,
 
     case SQL_C_SBIGINT:
      for (i = 0; i < array_size; i++) {
-        if (((reinterpret_cast<SQLBIGINT *>(*dest))+i) == NULL ||
-            ((reinterpret_cast<const SQLBIGINT *>(*src))+i) == NULL) {
-          return false;
-        }
         *((reinterpret_cast<SQLBIGINT *>(*dest))+i) =
           *((reinterpret_cast<const SQLBIGINT *>(*src))+i);
       }
@@ -1041,10 +988,6 @@ DalBindColumnInfo::CopyUsingDalDataType(void **dest, const void **src,
 
     case SQL_C_UBIGINT:
      for (i = 0; i < array_size; i++) {
-        if (((reinterpret_cast<SQLUBIGINT *>(*dest))+i) == NULL ||
-            ((reinterpret_cast<const SQLUBIGINT *>(*src))+i) == NULL) {
-          return false;
-        }
         *((reinterpret_cast<SQLUBIGINT *>(*dest))+i) =
           *((reinterpret_cast<const SQLUBIGINT *>(*src))+i);
       }
@@ -1054,10 +997,6 @@ DalBindColumnInfo::CopyUsingDalDataType(void **dest, const void **src,
       if (app_data_type == kDalChar ||
           app_data_type == kDalUint8) {
         for (i = 0; i < array_size; i++) {
-          if (((reinterpret_cast<SQLCHAR *>(*dest))+i) == NULL ||
-              ((reinterpret_cast<const SQLCHAR *>(*src))+i) == NULL) {
-            return false;
-          }
           *((reinterpret_cast<SQLCHAR *>(*dest))+i) =
             *((reinterpret_cast<const SQLCHAR *>(*src))+i);
         }
@@ -1082,6 +1021,9 @@ DalBindColumnInfo::CopyUsingDalDataType(void **dest, const void **src,
                         (uint64_t)array_size, app_data_type, dal_data_type);
           return false;
         }
+          *(reinterpret_cast<uint32_t *>(*dest)) =
+            (*(reinterpret_cast<const uint32_t *>(*src)));
+#if 0
         if (input == true) {
           *(reinterpret_cast<uint32_t *>(*dest)) =
             htonl(*(reinterpret_cast<const uint32_t *>(*src)));
@@ -1089,6 +1031,7 @@ DalBindColumnInfo::CopyUsingDalDataType(void **dest, const void **src,
           *(reinterpret_cast<uint32_t *>(*dest)) =
             ntohl(*(reinterpret_cast<const uint32_t *>(*src)));
         }
+#endif
       } else if (app_data_type == kDalUint64) {
         if (array_size != 8) {
           UPLL_LOG_DEBUG("Wrong Array Size(%"PFC_PFMT_u64") for"
@@ -1125,7 +1068,7 @@ DalBindColumnInfo::CopyUsingDalDataType(void **dest, const void **src,
       return false;
   }
 
-  UPLL_LOG_TRACE("Copied contents of source address(%p) to "
+  UPLL_LOG_VERBOSE("Copied contents of source address(%p) to "
                "destination(%p) address", *src, *dest);
   return true;
 }  // DalBindColumnInfo::CopyUsingDalDataType
@@ -1167,7 +1110,7 @@ DalBindColumnInfo::ResetColBuffer(void **col_buff,
 
   memset(*col_buff, 0, alloc_size);
 
-  UPLL_LOG_TRACE("Contents of address(%p) reset to 0",
+  UPLL_LOG_VERBOSE("Contents of address(%p) reset to 0",
                *col_buff);
   return true;
 }  // DalBindColumnInfo::ResetColBuffer
@@ -1207,14 +1150,21 @@ DalBindColumnInfo::ComputeIoType(const DalIoType curr_io_type,
         return kDalIoInputAndMatch;
       } else if (io_code == kDalIoCodeOutput) {
         return kDalIoOutputAndMatch;
+      } else if (io_code == kDalIoCodeMatch) {
+        return kDalIoMatchOnly;
       }
       break;
 
     case kDalIoInputAndMatch:
+      if (io_code == kDalIoCodeMatch) {
+        return kDalIoInputAndMatch;
+      }
       break;
 
     case kDalIoOutputAndMatch:
       if (io_code == kDalIoCodeOutput) {
+        return kDalIoOutputAndMatch;
+      } else if (io_code == kDalIoCodeMatch) {
         return kDalIoOutputAndMatch;
       }
       break;
@@ -1254,6 +1204,10 @@ DalBindColumnInfo::GetBindAvailability(const DalIoCode io_code,
           io_type_ == kDalIoInputOnly ||
           io_type_ == kDalIoOutputOnly) {
         *avail = true;
+      } else if (io_type_ == kDalIoMatchOnly ||
+          io_type_ == kDalIoInputAndMatch ||
+          io_type_ == kDalIoOutputAndMatch) {
+        *avail = false;
       } else {
         return false;
       }
@@ -1401,6 +1355,59 @@ DalBindColumnInfo::ColInfoToStr(const DalTableIndex table_index) const {
 }  // DalBindColumnInfo::ColInfoToStr
 
 std::string
+DalBindColumnInfo::ColInfoInputToStr(const DalTableIndex table_index) const {
+  std::stringstream ss;
+  ss << "{" << schema::ColumnName(table_index, column_index_) << ", "
+     << AppDataTypeToStr(app_data_type_) << ", "
+     << app_array_size_ << ", " << DalIoTypeToStr(io_type_);
+  if (io_type_ == kDalIoOutputOnly || io_type_ == kDalIoOutputAndMatch) {
+    if (app_out_addr_ != NULL) {
+      ss  << ", OUTPUT[" << app_out_addr_ << "]";
+    } else {
+      ss << ", OUTPUT[NULL]";
+    }
+  }
+  if (io_type_ == kDalIoInputOnly || io_type_ == kDalIoInputAndMatch) {
+    if (db_in_out_addr_ != NULL) {
+      ss << ", INPUT[" << db_in_out_addr_ << ", "
+         << ValueInBindAddrToStr(table_index,
+                            const_cast<const void**>(&db_in_out_addr_)) << "]";
+    } else {
+      ss << ", INPUT[NULL]";
+    }
+  }
+  if (io_type_ == kDalIoMatchOnly || io_type_ == kDalIoInputAndMatch ||
+      io_type_ == kDalIoOutputAndMatch) {
+    if (db_match_addr_ != NULL) {
+      ss << ", MATCH[" << db_match_addr_ << ", "
+       << ValueInBindAddrToStr(table_index,
+                            const_cast<const void**>(&db_match_addr_)) << "]";
+    } else {
+      ss << ", MATCH[NULL]";
+    }
+  }
+  ss << "}";
+  return ss.str();
+}  // DalBindColumnInfo::ColInfoInputToStr
+
+std::string
+DalBindColumnInfo::ColInfoResultToStr(const DalTableIndex table_index) const {
+  std::stringstream ss;
+  if (io_type_ == kDalIoOutputOnly || io_type_ == kDalIoOutputAndMatch) {
+    ss << "[";
+    if (app_out_addr_ != NULL) {
+       ss << schema::ColumnName(table_index, column_index_) << ", "
+          << ValueInBindAddrToStr(table_index,
+                            const_cast<const void**>(&app_out_addr_));
+    } else {
+      ss << "NULL";
+    }
+    ss << "] ";
+  }
+  return ss.str();
+}  // DalBindColumnInfo::ColInfoResultToStr
+
+std::string
 DalBindColumnInfo::AppDataTypeToStr(DalCDataType app_data_type) const {
   switch (app_data_type) {
     case kDalChar:
@@ -1519,11 +1526,16 @@ std::string
 DalBindColumnInfo::AppValueToStr(const DalCDataType app_data_type,
                                  const void **addr) const {
   std::stringstream ss;
+  
+  if (addr == NULL || *addr == NULL) {
+    ss << "(null)";
+    return ss.str();
+  }
+
   switch (app_data_type) {
     case kDalChar:
       for (size_t i = 0; i < app_array_size_; i++) {
-        if (((reinterpret_cast<const char*>(*addr))+i) == NULL ||
-            *((reinterpret_cast<const char*>(*addr))+i) == 0) {
+        if (*((reinterpret_cast<const char*>(*addr))+i) == 0) {
           break;
         }
         ss << *((reinterpret_cast<const char *>(*addr))+i);
@@ -1535,9 +1547,6 @@ DalBindColumnInfo::AppValueToStr(const DalCDataType app_data_type,
         char xtemp[3];
         ss << "0x";
         for (size_t i = 0; i < app_array_size_; i++) {
-          if (((reinterpret_cast<const uint8_t *>(*addr))+i) == NULL) {
-            ss << "(null) ";
-          }
           memset(xtemp, 0, 3);
           snprintf(xtemp, 3,
                    "%02X", *((reinterpret_cast<const uint8_t *>(*addr))+i));
@@ -1548,27 +1557,18 @@ DalBindColumnInfo::AppValueToStr(const DalCDataType app_data_type,
 
     case kDalUint16:
       for (size_t i = 0; i < app_array_size_; i++) {
-        if (((reinterpret_cast<const uint16_t *>(*addr))+i) == NULL) {
-          ss << "(null) ";
-        }
         ss << *((reinterpret_cast<const uint16_t  *>(*addr))+i) << " ";
       }
       break;
 
     case kDalUint32:
       for (size_t i = 0; i < app_array_size_; i++) {
-        if (((reinterpret_cast<const uint32_t *>(*addr))+i) == NULL) {
-          ss << "(null) ";
-        }
         ss << *((reinterpret_cast<const uint32_t  *>(*addr))+i) << " ";
       }
       break;
 
     case kDalUint64:
       for (size_t i = 0; i < app_array_size_; i++) {
-        if (((reinterpret_cast<const uint64_t *>(*addr))+i) == NULL) {
-          ss << "(null) ";
-        }
         ss << *((reinterpret_cast<const uint64_t  *>(*addr))+i) << " ";
       }
       break;
@@ -1587,11 +1587,16 @@ DalBindColumnInfo::DalValueToStr(const SQLSMALLINT dal_data_type,
   std::stringstream ss;
   SCHAR schar_temp = 0;
   UCHAR uchar_temp = 0;
+
+  if (addr == NULL || *addr == NULL) {
+    ss << "(null)";
+    return ss.str();
+  }
+
   switch (dal_data_type) {
     case SQL_C_CHAR:
       for (size_t i = 0; i < app_array_size_; i++) {
-        if (((reinterpret_cast<const SQLCHAR *>(*addr))+i) == NULL ||
-            *((reinterpret_cast<const SQLCHAR *>(*addr))+i) == 0) {
+        if (*((reinterpret_cast<const SQLCHAR *>(*addr))+i) == 0) {
           break;
         }
         ss << *((reinterpret_cast<const SQLCHAR *>(*addr))+i);
@@ -1601,9 +1606,6 @@ DalBindColumnInfo::DalValueToStr(const SQLSMALLINT dal_data_type,
     case SQL_C_TINYINT:
     case SQL_C_STINYINT:
       for (size_t i = 0; i < app_array_size_; i++) {
-        if (((reinterpret_cast<const SCHAR *>(*addr))+i) == NULL) {
-          ss << "(null) ";
-        }
         schar_temp = *((reinterpret_cast<const SCHAR *>(*addr))+i);
         ss << (SQLSMALLINT)(schar_temp) << " ";
       }
@@ -1611,9 +1613,6 @@ DalBindColumnInfo::DalValueToStr(const SQLSMALLINT dal_data_type,
 
     case SQL_C_UTINYINT:
       for (size_t i = 0; i < app_array_size_; i++) {
-        if (((reinterpret_cast<const UCHAR *>(*addr))+i) == NULL) {
-          ss << "(null) ";
-        }
         uchar_temp = *((reinterpret_cast<const UCHAR *>(*addr))+i);
         ss << (SQLSMALLINT)(uchar_temp) << " ";
       }
@@ -1622,18 +1621,12 @@ DalBindColumnInfo::DalValueToStr(const SQLSMALLINT dal_data_type,
     case SQL_C_SHORT:
     case SQL_C_SSHORT:
       for (size_t i = 0; i < app_array_size_; i++) {
-        if (((reinterpret_cast<const SQLSMALLINT *>(*addr))+i) == NULL) {
-          ss << "(null) ";
-        }
         ss << *((reinterpret_cast<const SQLSMALLINT *>(*addr))+i);
       }
       break;
 
     case SQL_C_USHORT:
       for (size_t i = 0; i < app_array_size_; i++) {
-        if (((reinterpret_cast<const SQLUSMALLINT *>(*addr))+i) == NULL) {
-          ss << "(null) ";
-        }
         ss << *((reinterpret_cast<const SQLUSMALLINT *>(*addr))+i);
       }
       break;
@@ -1641,36 +1634,24 @@ DalBindColumnInfo::DalValueToStr(const SQLSMALLINT dal_data_type,
     case SQL_C_LONG:
     case SQL_C_SLONG:
       for (size_t i = 0; i < app_array_size_; i++) {
-        if (((reinterpret_cast<const SQLINTEGER *>(*addr))+i) == NULL) {
-          ss << "(null) ";
-        }
         ss << *((reinterpret_cast<const SQLINTEGER *>(*addr))+i);
       }
       break;
 
     case SQL_C_ULONG:
       for (size_t i = 0; i < app_array_size_; i++) {
-        if (((reinterpret_cast<const SQLUINTEGER *>(*addr))+i) == NULL) {
-          ss << "(null) ";
-        }
         ss << *((reinterpret_cast<const SQLUINTEGER *>(*addr))+i);
       }
       break;
 
     case SQL_C_SBIGINT:
       for (size_t i = 0; i < app_array_size_; i++) {
-        if (((reinterpret_cast<const SQLBIGINT *>(*addr))+i) == NULL) {
-          ss << "(null) ";
-        }
         ss << *((reinterpret_cast<const SQLBIGINT *>(*addr))+i);
       }
       break;
 
     case SQL_C_UBIGINT:
       for (size_t i = 0; i < app_array_size_; i++) {
-        if (((reinterpret_cast<const SQLUBIGINT *>(*addr))+i) == NULL) {
-          ss << "(null) ";
-        }
         ss << *((reinterpret_cast<const SQLUBIGINT *>(*addr))+i);
       }
       break;
@@ -1679,15 +1660,12 @@ DalBindColumnInfo::DalValueToStr(const SQLSMALLINT dal_data_type,
       {
         char xtemp[3];
         ss << "0x";
-      for (size_t i = 0; i < app_array_size_; i++) {
-        if (((reinterpret_cast<const SCHAR *>(*addr))+i) == NULL) {
-          ss << "(null) ";
+        for (size_t i = 0; i < app_array_size_; i++) {
+          memset(xtemp, 0, 3);
+          snprintf(xtemp, 3,
+                   "%02X", *((reinterpret_cast<const SCHAR *>(*addr))+i));
+          ss << xtemp;
         }
-        memset(xtemp, 0, 3);
-        snprintf(xtemp, 3,
-                 "%02X", *((reinterpret_cast<const SCHAR *>(*addr))+i));
-        ss << xtemp;
-      }
       }
       break;
 

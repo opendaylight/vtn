@@ -13,7 +13,7 @@
 #include <sstream>
 
 #include "cxx/pfcxx/synch.hh"
-#include "upll/upll_log.hh"
+#include "uncxx/upll_log.hh"
 // #include "config_mgr.hh"
 #include "ctrlr_mgr.hh"
 
@@ -55,7 +55,8 @@ upll_rc_t CtrlrMgr::Add(const Ctrlr &ctrlr,
          it != ctrlrs_.end(); ++it) {
       if ((*it)->name_.compare(pctrlr->name_) == 0 &&
           (*it)->datatype_ == pctrlr->datatype_) {
-        UPLL_LOG_ERROR("Ctrlr(%s) Already exists", pctrlr->name_.c_str());
+        UPLL_LOG_ERROR("Ctrlr(%s) Already exists in datatype(%d)",
+                       pctrlr->name_.c_str(), datatype);
         delete pctrlr;
         return UPLL_RC_ERR_INSTANCE_EXISTS;
       } else if ((*it)->name_.compare(pctrlr->name_) < 0) {
@@ -100,11 +101,14 @@ upll_rc_t CtrlrMgr::Delete(const std::string &ctrlr_name,
   }
   /* Deleting in the map */
   bool deleted = false;
+  Ctrlr *ctrlr = NULL;
   for (std::list<Ctrlr*>::iterator it = ctrlrs_.begin();
        it != ctrlrs_.end(); ++it) {
     if ((*it)->name_.compare(ctrlr_name) == 0 &&
       (*it)->datatype_ == datatype) {
+      ctrlr = *it;
       ctrlrs_.erase(it);
+      delete ctrlr;
       deleted = true;
       break;
     }
@@ -493,6 +497,8 @@ upll_rc_t CtrlrMgr::GetNextCtrlrName(
     const std::string in_name, const upll_keytype_datatype_t datatype,
     std::string *next_name) {
   pfc::core::ScopedMutex lock(ctrlr_mutex_);
+  UPLL_LOG_TRACE("Input Ctrlr (%s) next Ctrlr (%s) ",
+                     in_name.c_str(), (*next_name).c_str());
   upll_keytype_datatype_t mapped_dt;
   mapped_dt = MapDataType(datatype);
   if (next_name == NULL) {
@@ -505,14 +511,13 @@ upll_rc_t CtrlrMgr::GetNextCtrlrName(
   }
   for (std::list<Ctrlr*>::iterator it = ctrlrs_.begin();
        it != ctrlrs_.end(); ++it) {
-    if ((*it)->name_.compare(in_name) < 0) {
+    if ((*it)->datatype_ != mapped_dt)
       continue;
-    } else if ((*it)->datatype_ != mapped_dt) {
-      continue;
-    } else {
-      UPLL_LOG_TRACE("Ctrlr (%s) is next to (%s) in datatype(%d)",
-                     (*it)->name_.c_str(), in_name.c_str(), datatype);
+    if ((*it)->name_.compare(in_name) > 0) {
+      UPLL_LOG_DEBUG("ctlr in list (%s) and input ctrlr (%s) are same",
+       (*it)->name_.c_str(), in_name.c_str());
       *next_name = (*it)->name_;
+      UPLL_LOG_DEBUG("next_name Ctrlr (%s)", (*next_name).c_str());
       return UPLL_RC_SUCCESS;
     }
   }

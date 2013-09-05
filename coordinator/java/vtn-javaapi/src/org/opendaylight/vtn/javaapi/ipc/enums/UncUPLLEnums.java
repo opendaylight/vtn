@@ -23,7 +23,7 @@ public class UncUPLLEnums {
 	}
 
 	/* UPLL IPC Operations supported under GlobalConfig Service ID */
-	public enum GlobalConfigServiceID{
+	public enum UpllGlobalConfigOpT{
 	  UPLL_IS_CANDIDATE_DIRTY_OP(101),
 	  UPLL_IMPORT_CTRLR_CONFIG_OP(102),
 	  UPLL_MERGE_IMPORT_CONFIG_OP(103),
@@ -32,7 +32,7 @@ public class UncUPLLEnums {
 
 		private final int value;
 
-		private GlobalConfigServiceID(final int value) {
+		private UpllGlobalConfigOpT(final int value) {
 			this.value = value;
 		}
 

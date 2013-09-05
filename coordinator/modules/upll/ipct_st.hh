@@ -155,6 +155,9 @@ class IpctSt {
   static const char *kIpcStrStValBoundary;
   static const char *kIpcStrStValBoundarySt;
   static const char *kIpcStrStValPathFaultAlarm;
+  // Overlay Driver structures
+  static const char *kIpcStrStVnpdrvValVtunnel;
+  static const char *kIpcStrStVnpdrvValVtunnelIf;
 
   enum IpcStructNum {
     kIpcInvalidStNum = 0,
@@ -296,7 +299,10 @@ class IpctSt {
     kIpcStKeyBoundary,
     kIpcStValBoundary,
     kIpcStValBoundarySt,
-    kIpcStValPathFaultAlarm
+    kIpcStValPathFaultAlarm,
+    // Overlay Driver structures
+    kIpcStVnpdrvValVtunnel,
+    kIpcStVnpdrvValVtunnelIf
   };  // enum IpcStructNum
 
   static uint32_t Register(const char *stname, IpcStructNum stnum);

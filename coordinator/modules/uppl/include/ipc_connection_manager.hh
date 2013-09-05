@@ -24,8 +24,11 @@
 #include "ipc_server_handler.hh"
 #include "ipc_client_logical_handler.hh"
 #include "physical_notification_manager.hh"
+#include "odbcm_connection.hh"
 
 using std::string;
+using std::vector;
+using std::map;
 namespace unc {
 namespace uppl {
 
@@ -53,10 +56,8 @@ class IPCConnectionManager {
   void addControllerToAuditList(string);
   UpplReturnCode removeControllerFromAuditList(string);
   pfc_bool_t IsControllerInAudit(string controller_name);
-  uint32_t StartNotificationTimer(string controller_name);
-  Timer *notfn_timer_;
-  TaskQueue* taskq_;
-  map<string, uint32_t> notfn_timer_id_;
+  uint32_t StartNotificationTimer(OdbcmConnectionHandler *db_conn,
+                                  string controller_name);
   void setTimeOutId(string controller_name, uint32_t notfn_timer_id) {
     notfn_timer_id_[controller_name] = notfn_timer_id;
   }
@@ -69,6 +70,7 @@ class IPCConnectionManager {
     }
     return timer_id;
   }
+  UpplReturnCode CancelTimer(string);
 
  private:
   IPCServerHandler* ipc_server_handler_;
@@ -77,6 +79,9 @@ class IPCConnectionManager {
   string uppl_ipc_service_name_;
   // vector to denote a controller is being audited
   vector<string> controller_in_audit_;
+  map<string, uint32_t> notfn_timer_id_;
+  map<string, Timer *> timer_obj_;
+  map<string, TaskQueue *> queue_obj_;
 };
 }  // namespace uppl
 }  // namespace unc

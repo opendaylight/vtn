@@ -26,9 +26,12 @@
 
 #include "./keytype_upll_ext.h"
 #include "ipct_st.hh"
-
+#include "uncxx/upll_log.hh"
 namespace unc {
 namespace upll {
+static const uint32_t kIpcTimeoutPing = 330;
+static const uint32_t kIpcTimeoutImport = 300;
+
 namespace ipc_util {
 
 // using pfc::core::ipc::ServerSession;
@@ -52,20 +55,22 @@ class ConfigVal {
     next_cfg_val_ = NULL;
     user_data_ = NULL;
   }
-  virtual ~ConfigVal() {
-    if (next_cfg_val_) 
-     delete next_cfg_val_;
-    next_cfg_val_ = NULL;
+  inline virtual ~ConfigVal() {
     if (val_)
       free(val_);
     val_ = NULL;
-    // DeleteNextCfgVal();
     if (user_data_)
       free(user_data_);
     user_data_ = NULL;
+    DeleteNextCfgVal();
   }
   inline IpctSt::IpcStructNum get_st_num() const { return st_num_; }
   inline void *get_val() const { return val_; }
+  inline void *GetValAndUnlink() {
+    void *t = val_;
+    val_ = NULL;
+    return t;
+  }
   inline void SetVal(IpctSt::IpcStructNum st_num, void *val) {
     st_num_ = st_num;
     if (val_) free(val_);
@@ -139,12 +144,12 @@ class ConfigKeyVal {
   }
   inline ConfigVal *get_cfg_val() const { return cfg_val_; }
 
-  void SetCfgVal(ConfigVal *val) {
+  inline void SetCfgVal(ConfigVal *val) {
     DeleteCfgVal();
     cfg_val_ = val;
   }
 
-  void AppendCfgVal(IpctSt::IpcStructNum st_num, void *val) {
+  inline void AppendCfgVal(IpctSt::IpcStructNum st_num, void *val) {
     ConfigVal *cv = new ConfigVal(st_num, val);
     AppendCfgVal(cv);
   }
@@ -155,6 +160,11 @@ class ConfigKeyVal {
     } else {
       cfg_val_->AppendCfgVal(cv);
     }
+  }
+  inline ConfigVal *GetCfgValAndUnlink() {
+    ConfigVal *t = cfg_val_;
+    cfg_val_ = NULL;
+    return t;
   }
 
   inline void DeleteCfgVal() {
@@ -217,7 +227,7 @@ class ConfigKeyVal {
     SetKey(from->st_num_, from->key_);
     from->key_ = NULL;
     SetUserData(from->user_data_);
-    from->user_data_ = NULL;		
+    from->user_data_ = NULL;
     DeleteCfgVal();
     AppendCfgVal(from->cfg_val_);
     from->cfg_val_ = NULL;
@@ -231,7 +241,7 @@ class ConfigKeyVal {
   std::string ToStr() const;
   std::string ToStrAll() const;
 
-  static void *Malloc(size_t size) throw (std::bad_alloc) {
+  static void *Malloc(size_t size) throw(std::bad_alloc) {
     void *ptr = malloc(size);
     if (ptr == NULL) {
       throw new std::bad_alloc;

@@ -30,45 +30,49 @@ class Kt_Link : public Kt_State_Base {
 
   ~Kt_Link();
 
-  UpplReturnCode DeleteKeyInstance(void* key_struct,
+  UpplReturnCode DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
+                                   void* key_struct,
                                    uint32_t data_type,
                                    uint32_t key_type);
-  UpplReturnCode ReadInternal(
+  UpplReturnCode ReadInternal(OdbcmConnectionHandler *db_conn,
       vector<void *> &key_val,
       vector<void *> &val_struct,
       uint32_t data_type,
       uint32_t operation_type);
 
-  UpplReturnCode ReadBulk(void* key_struct,
+  UpplReturnCode ReadBulk(OdbcmConnectionHandler *db_conn,
+                          void* key_struct,
                           uint32_t data_type,
-                          uint32_t option1,
-                          uint32_t option2,
                           uint32_t &max_rep_ct,
                           int child_index,
                           pfc_bool_t parent_call,
-                          pfc_bool_t is_read_next);
+                          pfc_bool_t is_read_next,
+                          ReadRequest *read_req);
 
-  UpplReturnCode PerformSyntaxValidation(void* key_struct,
+  UpplReturnCode PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
+                                         void* key_struct,
                                          void* val_struct,
-
                                          uint32_t operation,
                                          uint32_t data_type);
 
-  UpplReturnCode PerformSemanticValidation(void* key_struct,
+  UpplReturnCode PerformSemanticValidation(OdbcmConnectionHandler *db_conn,
+                                           void* key_struct,
                                            void* val_struct,
                                            uint32_t operation,
                                            uint32_t data_type);
 
-  UpplReturnCode IsKeyExists(unc_keytype_datatype_t data_type,
-                             vector<string> key_values);
+  UpplReturnCode IsKeyExists(OdbcmConnectionHandler *db_conn,
+                             unc_keytype_datatype_t data_type,
+                             const vector<string>& key_values);
 
   void Fill_Attr_Syntax_Map();
 
-  UpplReturnCode HandleOperStatus(uint32_t data_type,
+  UpplReturnCode HandleOperStatus(OdbcmConnectionHandler *db_conn,
+                                  uint32_t data_type,
                                   void *key_struct,
                                   void *value_struct);
 
-  pfc_bool_t CheckValueStruct(void *value_struct1,
+  pfc_bool_t CompareValueStruct(void *value_struct1,
                               void *value_struct2) {
     val_link_st_t link_val1 =
         *(reinterpret_cast<val_link_st_t*>(value_struct1));
@@ -83,7 +87,7 @@ class Kt_Link : public Kt_State_Base {
     }
     return PFC_FALSE;
   }
-  pfc_bool_t CheckKeyStruct(void *key_struct1,
+  pfc_bool_t CompareKeyStruct(void *key_struct1,
                             void *key_struct2) {
     key_link_t link_key1 =
         *(reinterpret_cast<key_link_t*>(key_struct1));
@@ -115,11 +119,12 @@ class Kt_Link : public Kt_State_Base {
   }
 
  private:
-  void PopulateDBSchemaForKtTable(
+  void PopulateDBSchemaForKtTable(OdbcmConnectionHandler *db_conn,
       DBTableSchema &kt_dbtableschema,
       void* key_struct,
       void* val_struct,
       uint8_t operation_type,
+      uint32_t data_type,
       uint32_t option1,
       uint32_t option2,
       vector<ODBCMOperator> &vect_key_operations,
@@ -128,13 +133,15 @@ class Kt_Link : public Kt_State_Base {
       pfc_bool_t is_filtering = false,
       pfc_bool_t is_state = PFC_FALSE);
 
-  void FillLinkValueStructure(DBTableSchema &kt_link_dbtableschema,
+  void FillLinkValueStructure(OdbcmConnectionHandler *db_conn,
+                              DBTableSchema &kt_link_dbtableschema,
                               vector<val_link_st_t> &vect_obj_val_link,
                               uint32_t &max_rep_ct,
                               uint32_t operation_type,
                               vector<key_link_t> &link_id);
 
-  UpplReturnCode PerformRead(uint32_t session_id,
+  UpplReturnCode PerformRead(OdbcmConnectionHandler *db_conn,
+                             uint32_t session_id,
                              uint32_t configuration_id,
                              void* key_struct,
                              void* val_struct,
@@ -145,7 +152,8 @@ class Kt_Link : public Kt_State_Base {
                              uint32_t option2,
                              uint32_t max_rep_ct);
 
-  UpplReturnCode ReadLinkValFromDB(void* key_struct,
+  UpplReturnCode ReadLinkValFromDB(OdbcmConnectionHandler *db_conn,
+                                   void* key_struct,
                                    void* val_struct,
                                    uint32_t data_type,
                                    uint32_t operation_type,
@@ -156,32 +164,33 @@ class Kt_Link : public Kt_State_Base {
                                    uint32_t option2,
                                    pfc_bool_t is_state = PFC_FALSE);
 
-  UpplReturnCode ReadBulkInternal(void* key_struct,
+  UpplReturnCode ReadBulkInternal(OdbcmConnectionHandler *db_conn,
+                                  void* key_struct,
                                   uint32_t data_type,
                                   uint32_t max_rep_ct,
                                   vector<val_link_st_t> &vect_val_link_st,
                                   vector<key_link_t> &vect_link_id);
 
-  UpplReturnCode SetOperStatus(uint32_t data_type,
+  UpplReturnCode SetOperStatus(OdbcmConnectionHandler *db_conn,
+                               uint32_t data_type,
                                void* key_struct,
-                               UpplLinkOperStatus oper_status,
-                               bool is_single_key = false);
-  UpplReturnCode GetLinkValidFlag(
+                               UpplLinkOperStatus oper_status);
+  UpplReturnCode GetLinkValidFlag(OdbcmConnectionHandler *db_conn,
       void *key_struct,
-      val_link_st_t &val_link_valid_st);
-  UpplReturnCode GetOperStatus(uint32_t data_type,
+      val_link_st_t &val_link_valid_st,
+      uint32_t data_type);
+  UpplReturnCode GetOperStatus(OdbcmConnectionHandler *db_conn,
+                               uint32_t data_type,
                                void* key_struct, uint8_t &oper_status);
   void FrameValidValue(string attr_value, val_link_st &obj_val_link);
-  Kt_Base *parent;
-  void PopulatePrimaryKeys(
-      uint32_t operation_type,
-      uint32_t option1,
-      uint32_t option2,
-      string switch_id1,
-      string switch_id2,
-      string port_id1,
-      string port_id2,
-      vector<string> &vect_prim_keys,
-      vector<ODBCMOperator> &vect_prim_keys_operation);
+  void PopulatePrimaryKeys(uint32_t operation_type,
+                           uint32_t option1,
+                           uint32_t option2,
+                           string switch_id1,
+                           string switch_id2,
+                           string port_id1,
+                           string port_id2,
+                           vector<string> &vect_prim_keys,
+                           vector<ODBCMOperator> &vect_prim_keys_operation);
 };
 #endif

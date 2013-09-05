@@ -19,13 +19,12 @@ using unc::uppl::PhysicalLayer;
 using unc::uppl::ODBCMUtils;
 
 
-/*** KT_ROOT *****/
-/** get_string
- * * @Description : This function returns the root key from
- * the key structure
- * * * @param[in] : key structure
- * * * @return    : root key
- * */
+/** KT_ROOT 
+ * @Description : This function is used to return the root key from the
+ *                key structure
+ * @param[in]   : k - structure variable of type key_root_t
+ * @return      : key structure elements of kt_root
+ **/
 string IpctUtil::get_string(const key_root_t &k) {
   stringstream ss;
   ss << "KT_ROOT:[KEY: "
@@ -35,12 +34,12 @@ string IpctUtil::get_string(const key_root_t &k) {
 }
 
 /*** KT_CONTROLLER *****/
-/** get_string
- * * @Description : This function returns the controller name from
- * the key structure
- * * * @param[in] : key structure
- * * * @return    : controller name
- * */
+/**
+ * @Description : This function returns the controller name from
+ *                the key structure
+ * @param[in]   : k - structure variable of type key_ctr_t
+ * @return      : key structure elements of kt_controller
+ **/
 string IpctUtil::get_string(const key_ctr_t &k) {
   stringstream ss;
   ss << "KT_CONTROLLER:[KEY: "
@@ -49,11 +48,12 @@ string IpctUtil::get_string(const key_ctr_t &k) {
   return ss.str();
 }
 
-/** get_string
- * * @Description : This function returns the values from the value structure
- * * * @param[in] : value structure
- * * * @return    : values of each attribute in value structure
- * */
+/**
+ * @Description : This function returns the values from the value structure
+ * of kt_controller
+ * @param[in]   : v - structure variable of type val_ctr_t
+ * @return      : value structure elements of kt_controller
+ **/
 string IpctUtil::get_string(const val_ctr_t &v) {
   stringstream ss;
   stringstream valid;
@@ -66,8 +66,8 @@ string IpctUtil::get_string(const val_ctr_t &v) {
   }
   ss << "KT_CONTROLLER:[VAL: "
       << "type:" << PhyUtil::uint8tostr(v.type)
-  << ", description:" << v.description
   << ", version:" << v.version
+  << ", description:" << v.description
   << ", ip_address:" << ODBCMUtils::get_ip_string(v.ip_address.s_addr)
   << ", user:" << v.user
   << ", password:" << v.password
@@ -80,11 +80,13 @@ string IpctUtil::get_string(const val_ctr_t &v) {
   return ss.str();
 }
 
-/** get_string
- * * @Description : This function returns the values from the st value structure
- * * * @param[in] : st value structure
- * * * @return    : values of each attribute in value structure
- * */
+/** 
+ * @Description : This function returns the values from the kt_controller
+ * value structure
+ * @param[in]   : val_st - structure variable of type val_ctr_st_t 
+ * @return      : value structure elements of val_ctr_st_t structure of
+ * kt_controller
+ **/
 string IpctUtil::get_string(const val_ctr_st_t &val_st) {
   stringstream ss;
   val_ctr_t v = val_st.controller;
@@ -120,12 +122,13 @@ string IpctUtil::get_string(const val_ctr_st_t &val_st) {
 }
 
 /***** KT_CTR_DOMAIN *****/
-/** get_string
- * * @Description : This function returns the domain name from
- * the key structure
- * * * @param[in] : key structure
- * * * @return    : domain name
- * */
+/** 
+ * @Description : This function returns the domain name from
+ *                the key structure
+ * @param[in]   : k - structure variable of type key_ctr_domain
+ * @return      : key structure elements of key_ctr_domain of kt_domain are
+ * returned
+ **/
 string IpctUtil::get_string(const key_ctr_domain &k) {
   stringstream ss;
   ss << "KT_CTR_DOMAIN:[KEY: "
@@ -135,11 +138,12 @@ string IpctUtil::get_string(const key_ctr_domain &k) {
   return ss.str();
 }
 
-/** get_string
- * * @Description : This function returns the values from the value structure
- * * * @param[in] : value structure
- * * * @return    : values of each attribute in value structure
- * */
+/** 
+ * @Description : This function returns the values from the value structure of
+ * type kt_ctr_domain
+ * @param[in]   : v - structure variable of type val_ctr_domain
+ * @return      : value structure elements of controller domain are returned
+ **/
 string IpctUtil::get_string(const val_ctr_domain &v) {
   stringstream ss;
   stringstream valid;
@@ -161,11 +165,11 @@ string IpctUtil::get_string(const val_ctr_domain &v) {
   return ss.str();
 }
 
-/** get_string
- * * @Description : This function returns the values from the st value structure
- * * * @param[in] : st value structure
- * * * @return    : values of each attribute in value structure
- * */
+/** 
+ * @Description : This function returns the values from the st value structure
+ * @param[in]   : val_st - structure variable of type val_ctr_domain_st
+ * @return      : value structure elements of val_ctr_domain_st are returned
+ **/
 string IpctUtil::get_string(const val_ctr_domain_st &val_st) {
   stringstream ss;
   val_ctr_domain v = val_st.domain;
@@ -195,12 +199,12 @@ string IpctUtil::get_string(const val_ctr_domain_st &val_st) {
 }
 
 /***** KT_LOGICALPORT ******/
-/** get_string
- * * @Description : This function returns the logicalport name from
- * the key structure
- * * * @param[in] : key structure
- * * * @return    : logicalport name
- * */
+/** 
+ * @Description : This function returns the logicalport name from
+ *                the key structure
+ * @param[in]   : k - structure variable of type key_logical_port_t
+ * @return      : structure elements of key_logicalport_t are returned
+ **/
 string IpctUtil::get_string(const key_logical_port_t &k) {
   stringstream ss;
   ss << "KT_LOGICAL_PORT[KEY: "
@@ -211,11 +215,11 @@ string IpctUtil::get_string(const key_logical_port_t &k) {
   return ss.str();
 }
 
-/** get_string
- * * @Description : This function returns the values from the value structure
- * * * @param[in] : value structure
- * * * @return    : values of each attribute in value structure
- * */
+/** 
+ * @Description : This function returns the values from the value structure
+ * @param[in]   : v - structure variable of type val_logical_port_st_t
+ * @return      : value structure elements of val_logical_port_st_t are returned
+ **/
 string IpctUtil::get_string(const val_logical_port_st_t &v) {
   stringstream ss;
   stringstream st_valid;
@@ -240,11 +244,11 @@ string IpctUtil::get_string(const val_logical_port_st_t &v) {
   return ss.str();
 }
 
-/** get_string
- * * @Description : This function returns the values from the value structure
- * * * @param[in] : value structure
- * * * @return    : values of each attribute in value structure
- * */
+/** 
+ * @Description : This function returns the values from the value structure
+ * @param[in]   : v - structure variable of type val_logical_port_t
+ * @return      : value structure elements of val_logical_port_t are returned
+ **/
 string IpctUtil::get_string(const val_logical_port_t &v) {
   stringstream ss;
   stringstream valid;
@@ -265,11 +269,11 @@ string IpctUtil::get_string(const val_logical_port_t &v) {
 }
 
 /***** KT_LOGICAL_MEMBER_PORT *****/
-/** get_string
- * * @Description :
- * * * @param[in] : key_logical_member_port
- * * * @return    : string
- * * */
+/** 
+ * @Description : This function returns the values from the value structure
+ * @param[in]   : k - structure element of type key_logical_member_port_t
+ * @return      : structure elements of key_logical_member_port_t are returned
+ **/
 string IpctUtil::get_string(const key_logical_member_port_t &k) {
   stringstream ss;
   ss << "KT_LOGICAL_MEMBER_PORT[KEY: "
@@ -285,12 +289,12 @@ string IpctUtil::get_string(const key_logical_member_port_t &k) {
 }
 
 /****** KT_SWITCH ******/
-/** get_string
- * * @Description : this functions returns the switch_id and controller name
- * from the key structure
- * * @param[in] : key_struct of kt switch
- * * @return    : string
- * */
+/** 
+ * @Description : this functions returns the switch_id and controller name
+ *                from the key structure
+ * @param[in]   : k - structure variable of type key_switch_t
+ * @return      : attributes in structure key_switch_t are returned
+ **/
 string IpctUtil::get_string(const key_switch_t &k) {
   stringstream ss;
   ss << "KT_SWITCH:[KEY: "
@@ -300,12 +304,12 @@ string IpctUtil::get_string(const key_switch_t &k) {
   return ss.str();
 }
 
-/** get_string
- * * @Description : this function returns the values contained in the value
- * structure
- * * @param[in] : val_switch_t - value structure of kt switch
- * * @return  : string
- * */
+/** 
+ * @Description : this function returns the values contained in the value
+ *                structure
+ * @param[in]   : v - structure variable of type val_switch_t 
+ * @return      : attributes in structure val_switch_t are returned 
+ **/
 string IpctUtil::get_string(const val_switch_t &v) {
   stringstream ss;
   stringstream valid;
@@ -313,6 +317,7 @@ string IpctUtil::get_string(const val_switch_t &v) {
     valid << PhyUtil::uint8tostr(v.valid[i]);
   }
   char ip_value[INET6_ADDRSTRLEN];
+  memset(&ip_value, '\0', INET6_ADDRSTRLEN);
   inet_ntop(AF_INET6, &v.ipv6_address.s6_addr, ip_value, INET6_ADDRSTRLEN);
   ss << "KT_SWITCH:[VAL: "
       << "description:" << v.description
@@ -328,11 +333,11 @@ string IpctUtil::get_string(const val_switch_t &v) {
 }
 
 /** get_string
- * * @Description : this function returns the values contained in the val_st
- * structure
- * * @param[in] : val_switch_st - val_st structure of kt switch
- * * @return  : string
- * */
+ * @Description : this function returns the values contained in the val_st
+ *                structure
+ * @param[in]   : val_st - structure variable of type val_switch_st 
+ * @return      : attributes in value structure of switch are returned 
+ **/
 string IpctUtil::get_string(const val_switch_st &val_st) {
   stringstream ss;
   val_switch_t v = val_st.switch_val;
@@ -347,6 +352,7 @@ string IpctUtil::get_string(const val_switch_st &val_st) {
   /* A string of contiguous zero fields in the 
    preferred form can be shown as "::" */
   char ip_value[INET6_ADDRSTRLEN];
+  memset(&ip_value, '\0', INET6_ADDRSTRLEN);
   inet_ntop(AF_INET6, &v.ipv6_address.s6_addr, ip_value, INET6_ADDRSTRLEN);
   ss << "KT_SWITCH:[VAL: "
       << "description:" << v.description
@@ -368,12 +374,12 @@ string IpctUtil::get_string(const val_switch_st &val_st) {
 }
 
 /*** KT_PORT **********/
-/** get_string
- * * @Description : This function returns the key names from
- * the key structure
- * * * @param[in] : key structure
- * * * @return    : controller name
- * */
+/** 
+ * @Description : This function returns the key names from
+ *                the key structure
+ * @param[in]   : k - structure variable of type key_port_t 
+ * @return      : attributes in key structure of port are returned 
+ **/
 string IpctUtil::get_string(const key_port_t &k) {
   stringstream ss;
   ss << "KT_PORT:[KEY: "
@@ -384,11 +390,11 @@ string IpctUtil::get_string(const key_port_t &k) {
   return ss.str();
 }
 
-/** get_string
- * * @Description : This function returns the values from the value structure
- * * * @param[in] : value structure
- * * * @return    : values of each attribute in value structure
- * */
+/** 
+ * @Description : This function returns the values from the value structure
+ * @param[in]   : v - structure variable of type val_port_st_t 
+ * @return      : attributes in value structure of val_port_st_t are returned
+ **/
 string IpctUtil::get_string(const val_port_st_t &v) {
   stringstream ss;
   stringstream valid;
@@ -399,31 +405,37 @@ string IpctUtil::get_string(const val_port_st_t &v) {
   for (unsigned int i = 0; i < 8; ++i) {
     st_valid << PhyUtil::uint8tostr(v.valid[i]);
   }
+  char macaddr[18];
+  memset(&macaddr, '\0', 18);
+  snprintf(macaddr, sizeof(macaddr), "%02x%02x.%02x%02x.%02x%02x",
+           v.mac_address[0], v.mac_address[1], v.mac_address[2],
+           v.mac_address[3], v.mac_address[4], v.mac_address[5]);
+
   ss << "KT_PORT:[VAL: "
       << "port_number:" << v.port.port_number
-  << ", description:" << v.port.description
-  << ", admin_status:" << PhyUtil::uint8tostr(v.port.admin_status)
+      << ", description:" << v.port.description
+      << ", admin_status:" << PhyUtil::uint8tostr(v.port.admin_status)
   << ", trunk_allowed_vlan:" << PhyUtil::uint8tostr
   (v.port.trunk_allowed_vlan)
+  << ", valid:" << valid.str()
   << ", oper_status:" << PhyUtil::uint8tostr(v.oper_status)
-  << ", mac_address:" << v.mac_address
+  << ", mac_address:" << macaddr
   << ", direction:" << PhyUtil::uint8tostr(v.direction)
   << ", duplex:" << PhyUtil::uint8tostr(v.duplex)
   << ", speed:" << PhyUtil::uint64tostr(v.speed)
   << ", alarms_status:" << PhyUtil::uint64tostr(v.alarms_status)
   << ", logical_port_id:" << v.logical_port_id
-  << ", valid:" << valid.str()
   << ", st_valid:" << st_valid.str()
   << "]"
   << endl;
   return ss.str();
 }
 
-/** get_string
- * * @Description : This function returns the values from the value structure
- * * * @param[in] : value structure
- * * * @return    : values of each attribute in value structure
- * */
+/** 
+ * @Description : This function returns the values from the value structure
+ * @param[in]   : v - structure variable of type val_port_t  
+ * @return      : attributes in value structure of val_port_t are returned
+ **/
 string IpctUtil::get_string(const val_port_t &v) {
   stringstream ss;
   stringstream valid;
@@ -432,8 +444,8 @@ string IpctUtil::get_string(const val_port_t &v) {
   }
   ss << "KT_PORT:[VAL: "
       << "port_number:" << v.port_number
-  << ", description:" << v.description
-  << ", admin_status:" << PhyUtil::uint8tostr(v.admin_status)
+      << ", description:" << v.description
+      << ", admin_status:" << PhyUtil::uint8tostr(v.admin_status)
   << ", trunk_allowed_vlan:" << PhyUtil::uint8tostr
   (v.trunk_allowed_vlan)
   << ", valid:" << valid.str()
@@ -442,11 +454,13 @@ string IpctUtil::get_string(const val_port_t &v) {
   return ss.str();
 }
 
-/** get_string
- * * @Description : This function returns the values from the value structure
- * * * @param[in] : value structure
- * * * @return    : values of each attribute in value structure
- * */
+/** 
+ * @Description : This function returns the values from the value structure
+ * @param[in]   : v - structure variable of type val_port_st_neighbor
+ * @return      : attributes in value structure of  val_port_st_neighbor are
+ * returned
+ *
+ **/
 string IpctUtil::get_string(const val_port_st_neighbor &v) {
   stringstream ss;
   stringstream valid;
@@ -463,9 +477,9 @@ string IpctUtil::get_string(const val_port_st_neighbor &v) {
   << ", admin_status:" << PhyUtil::uint8tostr(v.port.admin_status)
   << ", trunk_allowed_vlan:" << PhyUtil::uint8tostr
   (v.port.trunk_allowed_vlan)
+  << ", valid:" << valid.str()
   << ", connected_switch_id:" << v.connected_switch_id
   << ", connected_port_id:" << v.connected_port_id
-  << ", valid:" << valid.str()
   << ", neigbour_valid:" << neigh_valid.str()
   << "]"
   << endl;
@@ -473,12 +487,12 @@ string IpctUtil::get_string(const val_port_st_neighbor &v) {
 }
 
 /***** KT_LINK ************/
-/** get_string
- * * @Description : This function returns the link name from
- * the key structure
- * * * @param[in] : key structure
- * * * @return    : controller name
- * */
+/** 
+ * @Description : This function returns the link name from
+ *                the key structure
+ * @param[in]   : k - structure variable of type key_link_t
+ * @return      : attributes in key structure of link are returned 
+ **/
 string IpctUtil::get_string(const key_link_t &k) {
   stringstream ss;
   ss << "KT_LINK:[KEY: "
@@ -490,11 +504,11 @@ string IpctUtil::get_string(const key_link_t &k) {
       << "]";
   return ss.str();
 }
-/** get_string
- * * @Description : This function returns the values from the value structure
- * * * @param[in] : value structure
- * * * @return    : values of each attribute in value structure
- * */
+/** 
+ * @Description : This function returns the values from the value structure
+ * @param[in]   : v - structure variable of type val_link_t 
+ * @return      : attributes in value structure of val_link_t are returned
+ **/
 string IpctUtil::get_string(const val_link_t &v) {
   stringstream ss;
   ss << "KT_LINK:[VAL: "
@@ -504,11 +518,11 @@ string IpctUtil::get_string(const val_link_t &v) {
   << endl;
   return ss.str();
 }
-/** get_string
- * * @Description : This function returns the values from the value structure
- * * * @param[in] : value structure
- * * * @return    : values of each attribute in value structure
- * */
+/** 
+ * @Description : This function returns the values from the value structure
+ * @param[in]   : v - structure variable of type val_link_st_t 
+ * @return      : attributes in value structure of val_link_st_t are returned
+ **/
 string IpctUtil::get_string(const val_link_st_t &v) {
   stringstream ss;
   stringstream st_valid;
@@ -526,11 +540,11 @@ string IpctUtil::get_string(const val_link_st_t &v) {
 }
 
 /***** KT_BOUNDARY *****/
-/** get_string
- * * @Description : This function returns the boundary_id from the key structure
- * * * @param[in] : key structure
- * * * @return    : boundary_id
- * */
+/** 
+ * @Description : This function returns the boundary_id from the key structure
+ * @param[in]   : key_obj - structure variable of type key_boundary_t
+ * @return      : attributes in key structure of key_boundary_t are returned 
+ **/
 string IpctUtil::get_string(const key_boundary_t &key_obj) {
   stringstream ss;
   ss << "KT_BOUNDARY:[KEY: "
@@ -539,11 +553,11 @@ string IpctUtil::get_string(const key_boundary_t &key_obj) {
   return ss.str();
 }
 
-/** get_string
- * * @Description : This function returns the values from the value structure
- * * * @param[in] : value structure
- * * * @return    : values of each attribute in value structure
- * */
+/** 
+ * @Description : This function returns the values from the value structure
+ * @param[in]   : val_obj - structure variable of type val_boundary_t
+ * @return      : attributes in value structure of val_boundary_t are returned
+ **/
 string IpctUtil::get_string(const val_boundary_t &val_obj) {
   stringstream ss;
   stringstream valid;
@@ -570,11 +584,12 @@ string IpctUtil::get_string(const val_boundary_t &val_obj) {
   return ss.str();
 }
 
-/** get_string
- * * @Description : This function returns the values from the value structure
- * * * @param[in] : value structure
- * * * @return    : values of each attribute in value structure
- * */
+/** 
+ * @Description : This function returns the values from the value structure
+ * @param[in]   : val_obj - structure variable of type val_boundary_st_t
+ * @return      : attributes in value structure of val_boundary_st_t are
+ *                returned
+ **/
 string IpctUtil::get_string(const val_boundary_st_t &val_obj) {
   stringstream ss;
   stringstream valid;
@@ -597,23 +612,25 @@ string IpctUtil::get_string(const val_boundary_st_t &val_obj) {
       << ", controller_name2:" << val_obj.boundary.controller_name2
       << ", domain_name2:" << val_obj.boundary.domain_name2
       << ", logical_port_id2:" << val_obj.boundary.logical_port_id2
-      << ", oper_status: " << PhyUtil::uint8tostr(val_obj.oper_status)
-  << ", valid:" << valid.str()
-  << ", valid_st:" << valid_st.str()
-  << ", cs_row_status:" <<
-  PhyUtil::uint8tostr(val_obj.boundary.cs_row_status)
+      << ", valid:" << valid.str()
+      << ", cs_row_status:" <<
+      PhyUtil::uint8tostr(val_obj.boundary.cs_row_status)
   << ", cs_attr:" << cs_attr.str()
+  << ", oper_status: " << PhyUtil::uint8tostr(val_obj.oper_status)
+  << ", valid_st:" << valid_st.str()
   << "]"
   << endl;
   return ss.str();
 }
 
 /******** PATH_FAULT_ALARM ****/
-/** get_string
- * * @Description : This function returns the values from the value structure
- * * * @param[in] : value structure
- * * * @return    : values of each attribute in value structure
- * */
+/** 
+ * @Description : This function returns the values from the value structure of
+ * alarm type PATH_FAULT_ALARM
+ * @param[in]   : v - structure variable of type val_path_fault_alarm_t 
+ * @return      : attributes in value structure of val_path_fault_alarm_t are
+ * returned
+ **/
 string IpctUtil::get_string(const val_path_fault_alarm_t  &v) {
   stringstream ss;
   stringstream valid;
@@ -632,11 +649,13 @@ string IpctUtil::get_string(const val_path_fault_alarm_t  &v) {
 }
 
 /********* PHY_PATH_FAULT_ALARM ********/
-/** get_string
- * * @Description : This function returns the values from the value structure
- * * * @param[in] : value structure
- * * * @return    : values of each attribute in value structure
- * */
+/** 
+ * @Description : This function returns the values from the value structure of
+ * type PHY_PATH_FAULT_ALARM
+ * @param[in]   : v - structure variable of type val_phys_path_fault_alarm_t
+ * @return      : attributes in value structure of val_phys_path_fault_alarm_t
+ * are returned
+ **/
 string IpctUtil::get_string(const val_phys_path_fault_alarm_t  &v) {
   stringstream ss;
   stringstream valid;
@@ -653,11 +672,13 @@ string IpctUtil::get_string(const val_phys_path_fault_alarm_t  &v) {
 }
 
 /********* FLOW_ENTRY_FULL_ALARM ********/
-/** get_string
- * * @Description : This function returns the values from the value structure
- * * * @param[in] : value structure
- * * * @return    : values of each attribute in value structure
- * */
+/** 
+ * @Description : This function returns the values from the value structure of
+ * type FLOW_ENTRY_FULL_ALARM
+ * @param[in]   : v - structure variable of type val_flow_entry_full_alarm_t
+ * @return      : attributes in the value structure of FLOW_ENTRY_FULL_ALARM
+ * are returned
+ **/
 string IpctUtil::get_string(const val_flow_entry_full_alarm_t  &v) {
   stringstream ss;
   ss << "FLOW_ENTRY_FULL_ALARM:[VAL: "
@@ -668,11 +689,13 @@ string IpctUtil::get_string(const val_flow_entry_full_alarm_t  &v) {
 }
 
 /********* OFS_LACK_FEATURES_ALARM ********/
-/** get_string
- * * @Description : This function returns the values from the value structure
- * * * @param[in] : value structure
- * * * @return    : values of each attribute in value structure
- * */
+/** 
+ * @Description : This function returns the values from the value structure of
+ * type OFS_LACK_FEATURES_ALARM
+ * @param[in]   : v - structure variable of type val_ofs_lack_features_alarm_t
+ * @return      : attributes in the value structure of
+ * val_ofs_lack_features_alarm_t are returned
+ **/
 string IpctUtil::get_string(const val_ofs_lack_features_alarm_t  &v) {
   stringstream ss;
   ss << "OFS_LACK_FEATURES_ALARM:[VAL: "
@@ -683,11 +706,13 @@ string IpctUtil::get_string(const val_ofs_lack_features_alarm_t  &v) {
 }
 
 /********* VAL_PORT_ALARM ********/
-/** get_string
- * * @Description : This function returns the values from the value structure
- * * * @param[in] : value structure
- * * * @return    : values of each attribute in value structure
- * */
+/** 
+ * @Description : This function returns the values from the value structure of
+ * type VAL_PORT_ALARM
+ * @param[in]   : v - structure variable of type val_port_alarm_t
+ * @return      : attributes in the value structure of val_port_alarm_t are
+ * returned
+ **/
 string IpctUtil::get_string(const val_port_alarm_t  &v) {
   stringstream ss;
   stringstream valid;

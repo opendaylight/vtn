@@ -49,20 +49,6 @@ namespace uppl {
 #define ODBCM_SIZE_256          256
 #define ODBCM_SIZE_257          257
 #define ODBCM_SIZE_320          320
-
-/*  
- *  This if check is for fill structure
- */
-#define ODBCM_COMPARE_ATTRNAME_DATATYPE(__iv__, __dtype__, __aname__) \
-  if ((__iv__.table_attribute_name.compare(__aname__) == 0) &&        \
-      (__iv__.request_attribute_type == __dtype__) &&                 \
-      (__iv__.p_table_attribute_value != NULL))
-/*  
- *  This if check is for fetch structure value
- */
-#define ODBCM_COMPARE_FETCH_DATA(__iv__, __dtype__, __aname__)        \
-  if ((__iv__.table_attribute_name.compare(__aname__) == 0) &&        \
-      (__iv__.request_attribute_type == __dtype__))
 /* 
  * uppl memcpy macro
  */
@@ -81,6 +67,7 @@ namespace uppl {
 #define ODBCM_ALLOCATE_COLUMN_ATTRVALUE_T(__dt__, __Tname__)          \
   ColumnAttrValue <__dt__> *__Tname__ = new ColumnAttrValue <__dt__>; \
   ODBCM_MEMSET(__Tname__, '\0', sizeof(__dt__));
+
 /* 
  * To bind the input datatypes
  * for binding SQL_VARCHAR data type

@@ -8,8 +8,9 @@
  */
 
 #include "nwm_momgr.hh"
-#include "upll_log.hh"
+#include "uncxx/upll_log.hh"
 #include "vbr_momgr.hh"
+#include "vtn_momgr.hh"
 
 #define NUM_KEY_MAIN_TBL_ 6
 namespace unc {
@@ -63,10 +64,10 @@ BindInfo NwMonitorMoMgr::key_nwm_maintbl_update_bind_info[] = {
         key_nwm, nwmonitor_name),
       uud::kDalChar, kMaxLenVnodeName + 1 },
     { uudst::vbridge_networkmonitor_group::kDbiVtnName, CFG_INPUT_KEY, offsetof(
-        key_nwm, vbr_key.vtn_key.vtn_name),
+        key_rename_vnode_info_t, new_unc_vtn_name),
       uud::kDalChar, kMaxLenVtnName + 1 },
     { uudst::vbridge_networkmonitor_group::kDbiVbrName, CFG_INPUT_KEY, offsetof(
-        key_nwm, vbr_key.vbridge_name),
+        key_rename_vnode_info_t, new_unc_vnode_name),
       uud::kDalChar, kMaxLenVnodeName + 1 },
     { uudst::vbridge_networkmonitor_group::kDbiFlags, CK_VAL, offsetof(
         key_user_data, flags),
@@ -104,16 +105,16 @@ bool NwMonitorMoMgr::GetRenameKeyBindInfo(unc_key_type_t key_type,
 }
 
 bool NwMonitorMoMgr::IsValidKey(void *key, uint64_t index) {
+  UPLL_FUNC_TRACE;
   key_nwm *nwm_key = reinterpret_cast<key_nwm *>(key);
-  pfc_log_info("Entering IsValidKey");
-  bool ret_val = UPLL_RC_SUCCESS;
+  upll_rc_t ret_val = UPLL_RC_SUCCESS;
   switch (index) {
     case uudst::vbridge_networkmonitor_group::kDbiVtnName:
       ret_val = ValidateKey(reinterpret_cast<char *>
                             (nwm_key->vbr_key.vtn_key.vtn_name),
                             kMinLenVtnName, kMaxLenVtnName);
       if (ret_val != UPLL_RC_SUCCESS) {
-        pfc_log_info("VTN Name is not valid(%d)", ret_val);
+        UPLL_LOG_INFO("VTN Name is not valid(%d)", ret_val);
         return false;
       }
       break;
@@ -122,7 +123,7 @@ bool NwMonitorMoMgr::IsValidKey(void *key, uint64_t index) {
                             (nwm_key->vbr_key.vbridge_name),
                             kMinLenVnodeName, kMaxLenVnodeName);
       if (ret_val != UPLL_RC_SUCCESS) {
-        pfc_log_info("VBridge Name is not valid(%d)", ret_val);
+        UPLL_LOG_INFO("VBridge Name is not valid(%d)", ret_val);
         return false;
       }
       break;
@@ -131,15 +132,14 @@ bool NwMonitorMoMgr::IsValidKey(void *key, uint64_t index) {
                             (nwm_key->nwmonitor_name), kMinLenNwmName,
                             kMaxLenNwmName);
       if (ret_val != UPLL_RC_SUCCESS) {
-        pfc_log_info("NwMonitor Name is not valid(%d)", ret_val);
+        UPLL_LOG_INFO("NwMonitor Name is not valid(%d)", ret_val);
         return false;
       }
       break;
     default:
-      pfc_log_info("Invalid Key Index");
+      UPLL_LOG_INFO("Invalid Key Index");
       break;
   }
-  pfc_log_info("Leaving IsValidKey");
   return true;
 }
 
@@ -150,9 +150,9 @@ upll_rc_t NwMonitorMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
   key_nwm *nwm_key;
   void *pkey;
   if (parent_key == NULL) {
-    nwm_key = reinterpret_cast<key_nwm *>(malloc(sizeof(key_nwm)));
-    if (!nwm_key) return UPLL_RC_ERR_GENERIC;
-    memset(nwm_key, 0, sizeof(key_nwm));
+    nwm_key = reinterpret_cast<key_nwm *>(
+        ConfigKeyVal::Malloc(sizeof(key_nwm)));
+    if (okey) delete okey;
     okey = new ConfigKeyVal(UNC_KT_VBR_NWMONITOR, IpctSt::kIpcStKeyNwm, nwm_key,
                             NULL);
     return UPLL_RC_SUCCESS;
@@ -165,9 +165,8 @@ upll_rc_t NwMonitorMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
       return UPLL_RC_ERR_GENERIC;
     nwm_key = reinterpret_cast<key_nwm *>(okey->get_key());
   } else {
-    nwm_key = reinterpret_cast<key_nwm *>(malloc(sizeof(key_nwm)));
-    if (!nwm_key) return UPLL_RC_ERR_GENERIC;
-    memset(nwm_key, 0, sizeof(key_nwm));
+    nwm_key = reinterpret_cast<key_nwm *>(
+        ConfigKeyVal::Malloc(sizeof(key_nwm)));
   }
   unc_key_type_t keytype = parent_key->get_key_type();
   switch (keytype) {
@@ -200,12 +199,13 @@ upll_rc_t NwMonitorMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
   if (!okey)
     okey = new ConfigKeyVal(UNC_KT_VBR_NWMONITOR, IpctSt::kIpcStKeyNwm, nwm_key,
                             NULL);
+  else if (okey->get_key() != nwm_key)
+    okey->SetKey(IpctSt::kIpcStKeyNwm, nwm_key);
   if (okey == NULL) {
     free(nwm_key);
-    result_code = UPLL_RC_ERR_GENERIC;
-  } else {
-    SET_USER_DATA(okey, parent_key);
+    return UPLL_RC_ERR_GENERIC;
   }
+  SET_USER_DATA(okey, parent_key);
   return result_code;
 }
 
@@ -222,22 +222,17 @@ upll_rc_t NwMonitorMoMgr::GetParentConfigKey(ConfigKeyVal *&okey,
   if (ikey_type != UNC_KT_VBR_NWMONITOR) return UPLL_RC_ERR_GENERIC;
   key_nwm *pkey = reinterpret_cast<key_nwm *>(ikey->get_key());
   if (!pkey) return UPLL_RC_ERR_GENERIC;
-  key_vbr *vbr_key = reinterpret_cast<key_vbr *>(malloc(sizeof(key_vbr)));
-  if (!vbr_key) return UPLL_RC_ERR_GENERIC;
-  memset(vbr_key, 0, sizeof(key_vbr));
+  key_vbr *vbr_key = reinterpret_cast<key_vbr *>(
+      ConfigKeyVal::Malloc(sizeof(key_vbr)));
   uuu::upll_strncpy(vbr_key->vtn_key.vtn_name,
          reinterpret_cast<key_nwm *>(pkey)->vbr_key.vtn_key.vtn_name,
          (kMaxLenVtnName + 1));
   uuu::upll_strncpy(vbr_key->vbridge_name,
          reinterpret_cast<key_nwm *>(pkey)->vbr_key.vbridge_name,
          (kMaxLenVnodeName + 1));
+  if (okey) delete okey;
   okey = new ConfigKeyVal(UNC_KT_VBRIDGE, IpctSt::kIpcStKeyVbr, vbr_key, NULL);
-  if (okey == NULL) {
-    free(vbr_key);
-    result_code = UPLL_RC_ERR_GENERIC;
-  } else {
-    SET_USER_DATA(okey, ikey);
-  }
+  SET_USER_DATA(okey, ikey);
   return result_code;
 }
 
@@ -252,14 +247,10 @@ upll_rc_t NwMonitorMoMgr::AllocVal(ConfigVal *&ck_val,
   if (ck_val != NULL) return UPLL_RC_ERR_GENERIC;
   switch (tbl) {
     case MAINTBL:
-      val = malloc(sizeof(val_nwm));
-      if (!val) return UPLL_RC_ERR_GENERIC;
-      memset(val, 0, sizeof(val_nwm));
+      val = ConfigKeyVal::Malloc(sizeof(val_nwm));
       ck_val = new ConfigVal(IpctSt::kIpcStValNwm, val);
       if (dt_type == UPLL_DT_STATE) {
-        val = malloc(sizeof(val_nwm_st));
-        if (!val) return UPLL_RC_ERR_GENERIC;
-        memset(val, 0, sizeof(val_nwm_st));
+        val = ConfigKeyVal::Malloc(sizeof(val_nwm_st));
         ConfigVal *ck_nxtval = new ConfigVal(IpctSt::kIpcStValNwmSt, val);
         ck_val->AppendCfgVal(ck_nxtval);
       }
@@ -281,8 +272,8 @@ upll_rc_t NwMonitorMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
   if (tmp) {
     if (tbl == MAINTBL) {
       val_nwm *ival = reinterpret_cast<val_nwm *>(GetVal(req));
-      val_nwm *nwm_val = reinterpret_cast<val_nwm *>(malloc(sizeof(val_nwm)));
-      if (!nwm_val) return UPLL_RC_ERR_GENERIC;
+      val_nwm *nwm_val = reinterpret_cast<val_nwm *>(
+          ConfigKeyVal::Malloc(sizeof(val_nwm)));
       memcpy(nwm_val, ival, sizeof(val_nwm));
       tmp1 = new ConfigVal(IpctSt::kIpcStValNwm, nwm_val);
     }
@@ -291,13 +282,8 @@ upll_rc_t NwMonitorMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
   if (tmp) {
     if (tbl == MAINTBL) {
       val_nwm_st *ival = reinterpret_cast<val_nwm_st *>(tmp->get_val());
-      val_nwm_st *val_nwmst =
-          reinterpret_cast<val_nwm_st *>(malloc(sizeof(val_nwm_st)));
-      if (!val_nwmst) {
-        /* Addressed RESOURCE_LEAK */
-        DELETE_IF_NOT_NULL(tmp1);
-        return UPLL_RC_ERR_GENERIC;
-      }
+      val_nwm_st *val_nwmst = reinterpret_cast<val_nwm_st *>(
+          ConfigKeyVal::Malloc(sizeof(val_nwm_st)));
       memcpy(val_nwmst, ival, sizeof(val_nwm_st));
       ConfigVal *tmp2 = new ConfigVal(IpctSt::kIpcStValNwmSt, val_nwmst);
       tmp1->AppendCfgVal(tmp2);
@@ -305,9 +291,10 @@ upll_rc_t NwMonitorMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
   };
   void *tkey = (req != NULL) ? (req)->get_key() : NULL;
   key_nwm *ikey = reinterpret_cast<key_nwm *>(tkey);
-  key_nwm *nwm_key = reinterpret_cast<key_nwm *>(malloc(sizeof(key_nwm)));
+  key_nwm *nwm_key = reinterpret_cast<key_nwm *>(
+      ConfigKeyVal::Malloc(sizeof(key_nwm)));
   if (!ikey || !nwm_key) {
-    UPLL_LOG_INFO("Invalid params\n");
+    UPLL_LOG_INFO("Invalid params");
     /* Addressed RESOURCE_LEAK */
     FREE_IF_NOT_NULL(nwm_key);
     DELETE_IF_NOT_NULL(tmp1);
@@ -319,7 +306,8 @@ upll_rc_t NwMonitorMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
   if (okey) {
     SET_USER_DATA(okey, req);
   } else {
-    delete tmp1;
+    DELETE_IF_NOT_NULL(tmp1);
+    FREE_IF_NOT_NULL(nwm_key);
   }
   return UPLL_RC_SUCCESS;
 }
@@ -336,27 +324,34 @@ upll_rc_t NwMonitorMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
     return UPLL_RC_ERR_GENERIC;
   }
   val_nwm *nwm_val = reinterpret_cast<val_nwm_t *>(GetVal(ikey));
+  val_nwm *nwm_val2 = reinterpret_cast<val_nwm *>(GetVal(upd_key));
+  UPLL_LOG_TRACE("Key in Candidate %s", (ikey->ToStrAll()).c_str());
 
   unc_keytype_configstatus_t cs_status =
       (driver_result == 0) ? UNC_CS_APPLIED : UNC_CS_NOT_APPLIED;
   if (nwm_val == NULL) return UPLL_RC_ERR_GENERIC;
-  nwm_val->cs_row_status = cs_status;
-  if (op == UNC_OP_UPDATE) {
+  if (op == UNC_OP_CREATE) {
+    nwm_val->cs_row_status = cs_status;
+  } else if (op == UNC_OP_UPDATE) {
     void *val = reinterpret_cast<void*>(nwm_val);
     CompareValidValue(val, GetVal(upd_key), true);
-  } else if (op != UNC_OP_CREATE) {
+    UPLL_LOG_TRACE("Key in Running %s", (upd_key->ToStrAll()).c_str());
+    nwm_val->cs_row_status = nwm_val2->cs_row_status;
+  } else {
     return UPLL_RC_ERR_GENERIC;
   }
   for (unsigned int loop = 0;
          loop < (sizeof(nwm_val->valid) / sizeof(nwm_val->valid[0]));
         ++loop) {
-    if (nwm_val->valid[loop] != UNC_VF_NOT_SOPPORTED) {
-      if ((UNC_VF_VALID == (uint8_t) nwm_val->valid[loop])
+    if ((UNC_VF_VALID == (uint8_t) nwm_val->valid[loop])
             || (UNC_VF_VALID_NO_VALUE == (uint8_t) nwm_val->valid[loop]))
          nwm_val->cs_attr[loop] = cs_status;
-    } else {
-      nwm_val->cs_attr[loop] = UNC_CS_NOT_SUPPORTED;
-    }
+    else if ((UNC_VF_INVALID == nwm_val->valid[loop]) &&
+               (UNC_OP_CREATE == op))
+         nwm_val->cs_attr[loop] = UNC_CS_NOT_APPLIED;
+    else if ((UNC_VF_INVALID == nwm_val->valid[loop]) &&
+               (UNC_OP_UPDATE == op))
+         nwm_val->cs_attr[loop] = nwm_val2->cs_attr[loop];
   }
   return UPLL_RC_SUCCESS;
 }
@@ -372,6 +367,10 @@ upll_rc_t NwMonitorMoMgr::UpdateAuditConfigStatus(
     return UPLL_RC_ERR_GENERIC;
   }
   if (uuc::kUpllUcpCreate == phase) val->cs_row_status = cs_status;
+  if ((uuc::kUpllUcpUpdate == phase) &&
+           (val->cs_row_status == UNC_CS_INVALID ||
+            val->cs_row_status == UNC_CS_NOT_APPLIED))
+    val->cs_row_status = cs_status;
   for (unsigned int loop = 0; loop < sizeof(val->valid) / sizeof(uint8_t);
       ++loop) {
     if ((cs_status == UNC_CS_INVALID &&
@@ -390,12 +389,11 @@ upll_rc_t NwMonitorMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
 
   key_rename_vnode_info *key_rename =
       reinterpret_cast<key_rename_vnode_info *>(ikey->get_key());
-  key_nwm_t * key_vwm = new key_nwm_t();
-  if (!key_vwm) return UPLL_RC_ERR_GENERIC;
-  memset(key_vwm, 0 , sizeof(key_nwm_t));
+  key_nwm_t *key_vwm = reinterpret_cast<key_nwm_t*>(
+      ConfigKeyVal::Malloc(sizeof(key_nwm_t)));
   if (!strlen(reinterpret_cast<char *>(key_rename->old_unc_vtn_name))) {
     /* Addressed RESOURCE_LEAK */
-    DELETE_IF_NOT_NULL(key_vwm);
+    ConfigKeyVal::Free(key_vwm);
     return UPLL_RC_ERR_GENERIC;
   }
   uuu::upll_strncpy(key_vwm->vbr_key.vtn_key.vtn_name,
@@ -403,15 +401,22 @@ upll_rc_t NwMonitorMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
   if (ikey->get_key_type() == UNC_KT_VBRIDGE) {
     if (!strlen(reinterpret_cast<char *>(key_rename->old_unc_vnode_name))) {
       /* Addressed RESOURCE_LEAK */
-      DELETE_IF_NOT_NULL(key_vwm);
+      ConfigKeyVal::Free(key_vwm);
       return UPLL_RC_ERR_GENERIC;
     }
     uuu::upll_strncpy(key_vwm->vbr_key.vbridge_name,
            key_rename->old_unc_vnode_name, (kMaxLenVnodeName + 1));
+  } else {
+    if (!strlen(reinterpret_cast<char *>(key_rename->new_unc_vnode_name))) {
+      ConfigKeyVal::Free(key_vwm);
+      return UPLL_RC_ERR_GENERIC;
+    }
+    uuu::upll_strncpy(key_vwm->vbr_key.vbridge_name,
+       key_rename->new_unc_vnode_name, (kMaxLenVnodeName+1));
   }
+
   okey = new ConfigKeyVal(UNC_KT_VBR_NWMONITOR, IpctSt::kIpcStKeyNwm, key_vwm,
                           NULL);
-  if (!okey) return UPLL_RC_ERR_GENERIC;
 
   return result_code;
 }
@@ -425,7 +430,8 @@ bool NwMonitorMoMgr::FilterAttributes(void *&val1, void *val2,
   return false;
 }
 
-bool NwMonitorMoMgr::CompareValidValue(void *&val1, void *val2, bool copy_to_running) {
+bool NwMonitorMoMgr::CompareValidValue(void *&val1, void *val2,
+                                       bool copy_to_running) {
   UPLL_FUNC_TRACE;
   bool invalid_attr = true;
   val_nwm_t *val_nwm1 = reinterpret_cast<val_nwm_t*>(val1);
@@ -433,11 +439,11 @@ bool NwMonitorMoMgr::CompareValidValue(void *&val1, void *val2, bool copy_to_run
   for (unsigned int loop = 0;
       loop < sizeof(val_nwm1->valid) / sizeof(uint8_t); ++loop) {
     if (UNC_VF_INVALID == val_nwm1->valid[loop]
-        && UNC_VF_VALID == val_nwm2->valid[loop]) 
+        && UNC_VF_VALID == val_nwm2->valid[loop])
       val_nwm1->valid[loop] = UNC_VF_VALID_NO_VALUE;
   }
-  if (val_nwm1->valid[UPLL_IDX_ADMIN_STATUS_NWM] == UNC_VF_VALID
-      && val_nwm2->valid[UPLL_IDX_ADMIN_STATUS_NWM] == UNC_VF_VALID) {
+  if (val_nwm1->valid[UPLL_IDX_ADMIN_STATUS_NWM] != UNC_VF_INVALID
+      && val_nwm2->valid[UPLL_IDX_ADMIN_STATUS_NWM] != UNC_VF_INVALID) {
     if (val_nwm1->admin_status == val_nwm2->admin_status)
       val_nwm1->valid[UPLL_IDX_ADMIN_STATUS_NWM] = UNC_VF_INVALID;
   }
@@ -445,34 +451,32 @@ bool NwMonitorMoMgr::CompareValidValue(void *&val1, void *val2, bool copy_to_run
        loop < (sizeof(val_nwm1->valid) / sizeof(val_nwm1->valid[0]));
       ++loop) {
     if ((UNC_VF_VALID == (uint8_t) val_nwm1->valid[loop])||
-        (UNC_VF_VALID_NO_VALUE == (uint8_t) val_nwm1->valid[loop]))
-         invalid_attr = false;
+        (UNC_VF_VALID_NO_VALUE == (uint8_t) val_nwm1->valid[loop])) {
+      invalid_attr = false;
+      break;
+    }
   }
-  return invalid_attr;	
+  return invalid_attr;
 }
 
 upll_rc_t NwMonitorMoMgr::ValidateMessage(IpcReqRespHeader *req,
-                                          ConfigKeyVal *ikey) {
+    ConfigKeyVal *ikey) {
   UPLL_FUNC_TRACE;
   upll_rc_t ret_val = UPLL_RC_ERR_GENERIC;
-  if (NULL == req) {
-    UPLL_LOG_DEBUG("IpcReqRespHeader is NULL");
-    return UPLL_RC_ERR_GENERIC;
-  }
-  if (ikey == NULL) {
-    UPLL_LOG_DEBUG("ConfigKeyVal is NULL");
-    return UPLL_RC_ERR_GENERIC;
+  if (!ikey || !req || !(ikey->get_key())) {
+    UPLL_LOG_DEBUG("IpcReqRespHeader or ConfigKeyVal is Null");
+    return UPLL_RC_ERR_BAD_REQUEST;
   }
   unc_key_type_t keytype = ikey->get_key_type();
   if (UNC_KT_VBR_NWMONITOR != keytype) {
     UPLL_LOG_DEBUG("Invalid keytype. Keytype- %d", keytype);
-    return UPLL_RC_ERR_GENERIC;
+    return UPLL_RC_ERR_BAD_REQUEST;
   }
   if (ikey->get_st_num() != IpctSt::kIpcStKeyNwm) {
     UPLL_LOG_DEBUG(
         "Invalid structure received.Expected struct-kIpcStKeyNwm,"
         "received struct -%d ", (ikey->get_st_num()));
-    return UPLL_RC_ERR_GENERIC;
+    return UPLL_RC_ERR_BAD_REQUEST;
   }
   key_nwm_t *key_nwm = reinterpret_cast<key_nwm_t *>(ikey->get_key());
   val_nwm_t *val_nwm = NULL;
@@ -487,8 +491,8 @@ upll_rc_t NwMonitorMoMgr::ValidateMessage(IpcReqRespHeader *req,
   unc_keytype_option2_t option2 = req->option2;
 
   if (key_nwm == NULL) {
-    pfc_log_debug("key structure is empty!!");
-    return UPLL_RC_ERR_NO_SUCH_INSTANCE;
+    UPLL_LOG_DEBUG("key structure is empty!!");
+    return UPLL_RC_ERR_BAD_REQUEST;
   }
   ret_val = ValidateNwMonKey(key_nwm, operation);
   if (ret_val != UPLL_RC_SUCCESS) {
@@ -496,16 +500,14 @@ upll_rc_t NwMonitorMoMgr::ValidateMessage(IpcReqRespHeader *req,
     return UPLL_RC_ERR_CFG_SYNTAX;
   } else {
     if (((operation == UNC_OP_CREATE) || (operation == UNC_OP_UPDATE))
-        && ((dt_type == UPLL_DT_CANDIDATE)|| (UPLL_DT_IMPORT == dt_type))) {
+        && ((dt_type == UPLL_DT_CANDIDATE)|| (dt_type == UPLL_DT_IMPORT))) {
       if (val_nwm != NULL) {
         ret_val = ValidateNwMonValue(val_nwm, operation);
         if (ret_val != UPLL_RC_SUCCESS) {
           UPLL_LOG_DEBUG("Syntax check failed for NWMONITOR value struct");
           return UPLL_RC_ERR_CFG_SYNTAX;
-        } else {
-          UPLL_LOG_DEBUG("Syntax check success for NWMONITOR value struct");
-          return UPLL_RC_SUCCESS;
         }
+        return UPLL_RC_SUCCESS;
       } else {
         UPLL_LOG_DEBUG("Value structure mandatory CREATE/UPDATE");
         return UPLL_RC_ERR_CFG_SYNTAX;
@@ -518,42 +520,46 @@ upll_rc_t NwMonitorMoMgr::ValidateMessage(IpcReqRespHeader *req,
         ((dt_type == UPLL_DT_CANDIDATE) ||
          (dt_type == UPLL_DT_RUNNING) ||
          (dt_type == UPLL_DT_STARTUP) ||
-          (dt_type == UPLL_DT_STATE))) {
-      if ((option1 == UNC_OPT1_NORMAL) || ((option1 == UNC_OPT1_DETAIL) &&
-         (operation != UNC_OP_READ_SIBLING_COUNT))) {
+         (dt_type == UPLL_DT_STATE))) {
+      if ((option1 == UNC_OPT1_NORMAL) ||
+          ((option1 == UNC_OPT1_DETAIL) &&
+           (operation != UNC_OP_READ_SIBLING_COUNT) &&
+           (dt_type == UPLL_DT_STATE))) {
         if (option2 == UNC_OPT2_NONE) {
           if (val_nwm != NULL) {
             ret_val = ValidateNwMonValue(val_nwm);
             if (ret_val != UPLL_RC_SUCCESS) {
-              pfc_log_debug("Syntax check failed for NWMONITOR value struct");
+              UPLL_LOG_DEBUG("Syntax check failed for NWMONITOR value struct");
               return UPLL_RC_ERR_CFG_SYNTAX;
             } else {
-              pfc_log_trace("Syntax check success for NWMONITOR value struct");
+              UPLL_LOG_TRACE("Syntax check success for NWMONITOR value struct");
               return UPLL_RC_SUCCESS;
             }
           } else {
-            pfc_log_trace("value structure is optional");
+            UPLL_LOG_TRACE("value structure is optional");
             return UPLL_RC_SUCCESS;
           }
         } else {
-          pfc_log_debug("option2 is not matching");
+          UPLL_LOG_DEBUG("option2 is not matching");
           return UPLL_RC_ERR_INVALID_OPTION2;
         }
       } else {
-        pfc_log_debug("option1 is not matching");
+        UPLL_LOG_DEBUG("option1 is not matching");
         return UPLL_RC_ERR_INVALID_OPTION1;
       }
 
     } else if ((operation == UNC_OP_DELETE) || (operation == UNC_OP_READ_NEXT)
         || (operation == UNC_OP_READ_BULK)) {
-      pfc_log_trace("Value structure is none for operation type:%d", operation);
+      UPLL_LOG_TRACE("Value structure is none for operation type:%d",
+                     operation);
       return UPLL_RC_SUCCESS;
     } else {
-      pfc_log_debug("Invalid datatype(%d) and operation(%d)", dt_type,
-                    operation);
-      return UPLL_RC_ERR_CFG_SYNTAX;
+      UPLL_LOG_DEBUG("Invalid datatype(%d) and operation(%d)", dt_type,
+          operation);
+      return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT;
     }
   }
+  return UPLL_RC_SUCCESS;
 }
 upll_rc_t NwMonitorMoMgr::ValidateNwMonValue(val_nwm_t *val_nwm,
     unc_keytype_operation_t operation) {
@@ -561,18 +567,18 @@ upll_rc_t NwMonitorMoMgr::ValidateNwMonValue(val_nwm_t *val_nwm,
 
   if (val_nwm->valid[UPLL_IDX_ADMIN_STATUS_NWM] == UNC_VF_VALID) {
     if (!ValidateNumericRange(val_nwm->admin_status,
-                              (uint8_t) UPLL_ADMIN_ENABLE,
-                              (uint8_t) UPLL_ADMIN_DISABLE, true, true)) {
-      pfc_log_debug("Syntax check failed admin_stat-%d", val_nwm->admin_status);
+          (uint8_t) UPLL_ADMIN_ENABLE,
+          (uint8_t) UPLL_ADMIN_DISABLE, true, true)) {
+      UPLL_LOG_DEBUG("Syntax check failed admin_stat-%d",
+                     val_nwm->admin_status);
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
   } else if ((val_nwm->valid[UPLL_IDX_ADMIN_STATUS_NWM] ==
-              UNC_VF_VALID_NO_VALUE)
+        UNC_VF_VALID_NO_VALUE)
       && ((operation == UNC_OP_UPDATE) || (operation == UNC_OP_CREATE))) {
     /* Copy default value */
     val_nwm->admin_status = UPLL_ADMIN_ENABLE;
   }
-  pfc_log_trace("value structure validation successful for VTUNNEL_IF keytype");
   return UPLL_RC_SUCCESS;
 }
 upll_rc_t NwMonitorMoMgr::ValidateNwMonKey(key_nwm_t *key_nwm,
@@ -581,8 +587,8 @@ upll_rc_t NwMonitorMoMgr::ValidateNwMonKey(key_nwm_t *key_nwm,
 
   upll_rc_t ret_val = UPLL_RC_SUCCESS;
   VbrMoMgr *objvbrmgr =
-      reinterpret_cast<VbrMoMgr *>(const_cast<MoManager *>(GetMoManager(
-          UNC_KT_VBRIDGE)));
+    reinterpret_cast<VbrMoMgr *>(const_cast<MoManager *>(GetMoManager(
+            UNC_KT_VBRIDGE)));
   if (NULL == objvbrmgr) {
     UPLL_LOG_DEBUG("unable to get VbrMoMgr object to validate key_vbr");
     return UPLL_RC_ERR_GENERIC;
@@ -610,164 +616,255 @@ upll_rc_t NwMonitorMoMgr::ValidateNwMonKey(key_nwm_t *key_nwm,
   return ret_val;
 }
 
-upll_rc_t NwMonitorMoMgr::ValNwMonAttributeSupportCheck(const char * crtlr_name,
-                                                        ConfigKeyVal *ikey,
-                                                        uint32_t operation) {
+upll_rc_t NwMonitorMoMgr::ValNwMonAttributeSupportCheck(val_nwm_t *val_nwm,
+    const uint8_t* attrs, unc_keytype_operation_t operation) {
   UPLL_FUNC_TRACE;
+  if ((val_nwm->valid[UPLL_IDX_ADMIN_STATUS_NWM] == UNC_VF_VALID) ||
+      (val_nwm->valid[UPLL_IDX_ADMIN_STATUS_NWM] == UNC_VF_VALID_NO_VALUE)) {
+    if (attrs[unc::capa::nwm::kCapAdminStatus] == 0) {
+      val_nwm->valid[UPLL_IDX_ADMIN_STATUS_NWM] = UNC_VF_INVALID;
+      if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
+        UPLL_LOG_DEBUG(
+            "UPLL_IDX_ADMIN_STATUS_NWM not supported in pfc controller");
+        return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
+      }
+    }
+  }
+  return UPLL_RC_SUCCESS;
+}
+
+upll_rc_t NwMonitorMoMgr::ValidateCapability(IpcReqRespHeader *req,
+    ConfigKeyVal *ikey,
+    const char * ctrlr_name) {
+  UPLL_FUNC_TRACE;
+
+  if (!ikey || !req) {
+    UPLL_LOG_DEBUG("ConfigKeyVal / IpcReqRespHeader is Null");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  if (!ctrlr_name) {
+    ctrlr_name = reinterpret_cast<char*>((reinterpret_cast<key_user_data_t *>
+                                          (ikey->get_user_data()))->ctrlr_id);
+    if (!ctrlr_name || !strlen(ctrlr_name)) {
+      UPLL_LOG_DEBUG("Controller Name is NULL");
+      return UPLL_RC_ERR_GENERIC;
+    }
+  }
+
+  UPLL_LOG_TRACE("ctrlr_name(%s), operation : (%d)",
+                 ctrlr_name, req->operation);
+
   bool result_code = false;
   uint32_t max_instance_count = 0;
-  uint32_t num_attrs = 0;
-  const uint8_t *attrs = 0;
-  if (ikey == NULL) {
-    UPLL_LOG_DEBUG("ConfigKeyVal is NULL");
-    return UPLL_RC_ERR_GENERIC;
+  uint32_t max_attrs = 0;
+  const uint8_t *attrs = NULL;
+
+  switch (req->operation) {
+    case UNC_OP_CREATE: {
+      result_code = GetCreateCapability(ctrlr_name, ikey->get_key_type(),
+                                        &max_instance_count, &max_attrs,
+                                        &attrs);
+      if (result_code && (max_instance_count != 0) &&
+          cur_instance_count >= max_instance_count) {
+        UPLL_LOG_DEBUG("Instance count %d exceeds %d", cur_instance_count,
+                       max_instance_count);
+        return UPLL_RC_ERR_EXCEEDS_RESOURCE_LIMIT;
+      }
+      break;
+    }
+
+    case UNC_OP_UPDATE: {
+      result_code = GetUpdateCapability(ctrlr_name, ikey->get_key_type(),
+                                        &max_attrs, &attrs);
+      break;
+    }
+
+    case UNC_OP_READ:
+    case UNC_OP_READ_SIBLING:
+    case UNC_OP_READ_SIBLING_BEGIN:
+    case UNC_OP_READ_SIBLING_COUNT: {
+      result_code = GetReadCapability(ctrlr_name, ikey->get_key_type(),
+                                      &max_attrs, &attrs);
+      break;
+    }
+    default: {
+      UPLL_LOG_DEBUG("Invalid operation");
+      break;
+    }
+  }
+  if (!result_code) {
+    UPLL_LOG_DEBUG("keytype(%d) is not supported by controller(%s) "
+                   "for operation(%d)",
+                   ikey->get_key_type(), ctrlr_name, req->operation);
+    return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
   }
   val_nwm_t *val_nwm = NULL;
   if ((ikey->get_cfg_val())
       && ((ikey->get_cfg_val())->get_st_num() == IpctSt::kIpcStValNwm)) {
     val_nwm = reinterpret_cast<val_nwm_t *>(ikey->get_cfg_val()->get_val());
   }
-  if (val_nwm != NULL) {
-    switch (operation) {
-      case UNC_OP_CREATE:
-        result_code = GetCreateCapability(crtlr_name, ikey->get_key_type(),
-                                          &max_instance_count, &num_attrs,
-                                          &attrs);
-        if (result_code && cur_instance_count >= max_instance_count) {
-          pfc_log_debug("[%s:%d:%s Instance count %d exceeds %d", __FILE__,
-                        __LINE__, __FUNCTION__, cur_instance_count,
-                        max_instance_count);
-          return UPLL_RC_ERR_EXCEEDS_RESOURCE_LIMIT;
-        }
-        break;
-
-      case UNC_OP_UPDATE:
-        result_code = GetUpdateCapability(crtlr_name, ikey->get_key_type(),
-                                          &num_attrs, &attrs);
-        break;
-
-      case UNC_OP_READ:
-      case UNC_OP_READ_SIBLING:
-      case UNC_OP_READ_SIBLING_BEGIN:
-      case UNC_OP_READ_SIBLING_COUNT:
-        result_code = GetReadCapability(crtlr_name, ikey->get_key_type(),
-                                        &num_attrs, &attrs);
-        break;
-
-      default:
-        pfc_log_debug("Invalid operation");
-        break;
+  if (val_nwm) {
+    if (max_attrs > 0) {
+      return ValNwMonAttributeSupportCheck(val_nwm, attrs, req->operation);
+    } else {
+      UPLL_LOG_DEBUG("Attribute list is empty for operation %d",
+                     req->operation);
+      return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
     }
-
-    if (!result_code) {
-      pfc_log_debug("key_type - %d is not supported by controller - %s",
-                    ikey->get_key_type(), crtlr_name);
-      return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT;
-    }
-    if ((val_nwm->valid[UPLL_IDX_ADMIN_STATUS_NWM] == UNC_VF_VALID) ||
-        (val_nwm->valid[UPLL_IDX_ADMIN_STATUS_NWM] == UNC_VF_VALID_NO_VALUE)) {
-      if (attrs[unc::capa::nwm::kCapAdminStatus] == 0) {
-        val_nwm->valid[UPLL_IDX_ADMIN_STATUS_NWM] = UNC_VF_NOT_SOPPORTED;
-        pfc_log_debug(
-            "UPLL_IDX_ADMIN_STATUS_NWM not supported in pfc controller");
-        return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
-      }
-    }
-  } else {
-    pfc_log_debug("Value structure is empty");
-    return UPLL_RC_ERR_GENERIC;
   }
-  pfc_log_info("Exiting KT_VBR_NWMONITOR: ValNwMonAttributeSupportCheck()");
   return UPLL_RC_SUCCESS;
 }
-upll_rc_t NwMonitorMoMgr::ValidateCapability(IpcReqRespHeader *req,
-                                             ConfigKeyVal *ikey,
-                                             const char * ctrlr_name) {
-  UPLL_FUNC_TRACE;
-  upll_rc_t result_code = UPLL_RC_SUCCESS;
-  if (NULL == req) {
-    UPLL_LOG_DEBUG("IpcReqRespHeader is NULL");
-    return UPLL_RC_ERR_GENERIC;
-  }
-  if (ikey == NULL) {
-    UPLL_LOG_DEBUG("ConfigKeyVal is NULL");
-    return UPLL_RC_ERR_GENERIC;
-  }
-  if (!ctrlr_name) ctrlr_name = reinterpret_cast<char *>(ikey->get_user_data());
-  pfc_log_trace("controller name (%s)", ctrlr_name);
 
-  upll_keytype_datatype_t dt_type = req->datatype;
-  unc_keytype_operation_t operation = req->operation;
-  unc_keytype_option1_t option1 = req->option1;
-  unc_keytype_option2_t option2 = req->option2;
-  pfc_log_trace("dt_type   : (%d)"
-                "operation : (%d)"
-                "option1   : (%d)"
-                "option2   : (%d)",
-                dt_type, operation, option1, option2);
-  if (((operation == UNC_OP_CREATE) || (operation == UNC_OP_UPDATE))
-      && (dt_type == UPLL_DT_CANDIDATE)) {
-    if ((GetVal(ikey)) != NULL) {
-      result_code = ValNwMonAttributeSupportCheck(ctrlr_name, ikey, operation);
-      if (result_code == UPLL_RC_SUCCESS) {
-        pfc_log_trace("Attribute check success for KT_VBR_NWMONITOR");
-        return UPLL_RC_SUCCESS;
-      } else {
-        pfc_log_debug("Attribute check failed for KT_VBR_NWMONITOR");
-        return UPLL_RC_ERR_CFG_SEMANTIC;
-      }
-    } else {
-      pfc_log_debug("value structure mandatory");
-      return UPLL_RC_ERR_CFG_SEMANTIC;
-    }
-  } else if (((operation == UNC_OP_READ) ||
-          (operation == UNC_OP_READ_SIBLING) ||
-          (operation == UNC_OP_READ_SIBLING_BEGIN) ||
-          (operation == UNC_OP_READ_SIBLING_COUNT)) &&
-        ((dt_type == UPLL_DT_CANDIDATE) ||
-         (dt_type == UPLL_DT_RUNNING) ||
-         (dt_type == UPLL_DT_STARTUP) ||
-          (dt_type == UPLL_DT_STATE))) {
-      if ((option1 == UNC_OPT1_NORMAL) || ((option1 == UNC_OPT1_DETAIL) &&
-         (operation != UNC_OP_READ_SIBLING_COUNT))) {
-        if (option2 == UNC_OPT2_NONE) {
-        if ((GetVal(ikey)) != NULL) {
-          result_code = ValNwMonAttributeSupportCheck(ctrlr_name, ikey,
-                                                      operation);
-          if (result_code == UPLL_RC_SUCCESS) {
-            pfc_log_trace("Attribute check success for KT_VBR_NWMONITOR");
-            return UPLL_RC_SUCCESS;
-          } else {
-            pfc_log_debug("Attribute check failed for KT_VBR_NWMONITOR");
-            return UPLL_RC_ERR_CFG_SEMANTIC;
-          }
-        } else {
-          pfc_log_trace("value structure is optional");
-          return UPLL_RC_SUCCESS;
-        }
-      } else {
-        pfc_log_debug("option2 is not matching");
-        return UPLL_RC_ERR_INVALID_OPTION2;
-      }
-    } else {
-      pfc_log_debug("option1 is not matching");
-      return UPLL_RC_ERR_INVALID_OPTION1;
-    }
-
-  } else if ((operation == UNC_OP_DELETE) || (operation == UNC_OP_READ_NEXT)
-      || (operation == UNC_OP_READ_BULK)) {
-    pfc_log_trace("Value structure is none for operation type:%d", operation);
-    return UPLL_RC_SUCCESS;
-  } else {
-    pfc_log_debug("Invalid datatype(%d) and operation(%d)", dt_type, operation);
-    return UPLL_RC_ERR_CFG_SYNTAX;
-  }
-}
 
 upll_rc_t NwMonitorMoMgr::IsReferenced(ConfigKeyVal *ikey,
                                        upll_keytype_datatype_t dt_type,
                                        DalDmlIntf *dmi) {
-  return UPLL_RC_SUCCESS;
+  UPLL_FUNC_TRACE;
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  if (!ikey)
+    return UPLL_RC_ERR_GENERIC;
+  unc_key_type_t nodes[] = { UNC_KT_VTN_FLOWFILTER_ENTRY,
+    UNC_KT_VBR_FLOWFILTER_ENTRY, UNC_KT_VBRIF_FLOWFILTER_ENTRY,
+    UNC_KT_VRTIF_FLOWFILTER_ENTRY
+  };
+  int nop = sizeof(nodes)/ sizeof(nodes[0]);
+  ConfigKeyVal *ckv_tmp = NULL;
+  ConfigVal *cval = NULL;
+  for (int indx = 0 ; indx < nop; indx++) {
+    MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>(
+        const_cast<MoManager *>(GetMoManager(nodes[indx])));
+    if (!mgr) {
+      UPLL_LOG_TRACE("Invalid mgr");
+      continue;
+    }
+    if (indx == 0) {
+      val_vtn_flowfilter_entry_t *flowfilter_val =reinterpret_cast
+             <val_vtn_flowfilter_entry_t*>
+            (ConfigKeyVal::Malloc(sizeof(val_vtn_flowfilter_entry_t)));
+      flowfilter_val->valid[UPLL_IDX_NWN_NAME_VFFE] = UNC_VF_VALID;
+      uuu::upll_strncpy(flowfilter_val->nwm_name, reinterpret_cast<key_nwm *>
+                      (ikey->get_key())->nwmonitor_name, (kMaxLenNwmName + 1));
+      cval  = new ConfigVal(IpctSt::kIpcStValVtnFlowfilterEntry,
+                             flowfilter_val);
+    } else {
+      val_flowfilter_entry_t *flowfilter_val =reinterpret_cast
+             <val_flowfilter_entry_t*>
+            (ConfigKeyVal::Malloc(sizeof(val_flowfilter_entry_t)));
+      flowfilter_val->valid[UPLL_IDX_NWM_NAME_FFE] = UNC_VF_VALID;
+      uuu::upll_strncpy(flowfilter_val->nwm_name, reinterpret_cast<key_nwm *>
+                      (ikey->get_key())->nwmonitor_name, (kMaxLenNwmName + 1));
+      cval  = new ConfigVal(IpctSt::kIpcStValFlowfilterEntry,
+                             flowfilter_val);
+    }
+    result_code = mgr->GetChildConfigKey(ckv_tmp, ikey);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_DEBUG("GetChildConfigKey failed - %d", result_code);
+      if (ckv_tmp)
+        delete ckv_tmp;
+      DELETE_IF_NOT_NULL(cval);
+      return result_code;
+    }
+    ckv_tmp->SetCfgVal(cval);
+    DbSubOp dbop = { kOpReadSingle, kOpMatchNone, kOpInOutNone };
+    result_code = mgr->ReadConfigDB(ckv_tmp, dt_type, UNC_OP_READ, dbop,
+                                         dmi, MAINTBL);
+    if (result_code != UPLL_RC_SUCCESS &&
+        result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+      UPLL_LOG_DEBUG("Existence check in keytype %d result_code  %d",
+        ckv_tmp->get_key_type(), result_code);
+      delete ckv_tmp;
+      return result_code;
+    }
+    if (UPLL_RC_SUCCESS == result_code) {
+      delete ckv_tmp;
+      return UPLL_RC_ERR_CFG_SEMANTIC;
+    }
+    delete ckv_tmp;
+    ckv_tmp = NULL;
+    cval = NULL;
+  }
+  result_code = (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) ?
+      UPLL_RC_SUCCESS : result_code;
+  return result_code;
+}
+
+upll_rc_t NwMonitorMoMgr::OnNwmonFault(
+       string ctrlr_name ,
+       string domain_id,
+       const key_vtn &key_vtn,
+       const pfcdrv_network_mon_alarm_data_t &alarm_data,
+       bool alarm_raised,
+       DalDmlIntf *dmi ) {
+  UPLL_FUNC_TRACE;
+  ConfigKeyVal *ikey = NULL;
+  char *alarm_status = NULL;
+  char al_raised[] = "Raised";
+  char al_cleared[] = "Cleared";
+  key_vtn_t *vtn_key = NULL;
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  char *vtn_name = NULL;
+  VtnMoMgr *vtn_mgr = reinterpret_cast<VtnMoMgr*>
+        (const_cast<MoManager*>(GetMoManager(UNC_KT_VTN)));
+  if (NULL == vtn_mgr) {
+    UPLL_LOG_DEBUG("unable to get VtnMoMgr object to validate key_vtn");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  result_code = vtn_mgr->GetChildConfigKey(ikey, NULL);
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_DEBUG("GetChildConfigKey failed %d", result_code);
+    return result_code;
+  }
+  vtn_key = reinterpret_cast<key_vtn_t*>(ikey->get_key());
+  uuu::upll_strncpy(vtn_key->vtn_name, key_vtn.vtn_name,
+                    (kMaxLenVtnName + 1));
+
+  result_code = vtn_mgr->ValidateVtnKey(vtn_key);
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_DEBUG("Vtn Key validation failed - %d", result_code);
+    DELETE_IF_NOT_NULL(ikey);
+    return result_code;
+  }
+  uint8_t *ctrlr_id = reinterpret_cast<uint8_t*>
+      (const_cast<char*>(ctrlr_name.c_str()));
+  result_code = vtn_mgr->GetRenamedUncKey(ikey, UPLL_DT_RUNNING,
+                                       dmi, ctrlr_id);
+  if (result_code != UPLL_RC_SUCCESS &&
+      UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
+    UPLL_LOG_DEBUG("Error in getting renamed vtn name");
+    DELETE_IF_NOT_NULL(ikey);
+    return result_code;
+  }
+  if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
+    ikey->SetCfgVal(NULL);
+    result_code = vtn_mgr->UpdateConfigDB(ikey, UPLL_DT_RUNNING, UNC_OP_READ,
+                                    dmi, MAINTBL);
+    if (UPLL_RC_ERR_INSTANCE_EXISTS != result_code) {
+      delete ikey;
+      return result_code;
+    }
+    result_code = UPLL_RC_ERR_INSTANCE_EXISTS == result_code?UPLL_RC_SUCCESS: 
+                  result_code;
+  }
+  
+  vtn_key = reinterpret_cast<key_vtn_t*>(ikey->get_key());
+  vtn_name = reinterpret_cast<char*>(vtn_key->vtn_name);
+
+  if (alarm_raised) {
+    alarm_status = al_raised;
+  } else {
+    alarm_status = al_cleared;
+  }
+
+  UPLL_LOG_INFO("Network Monitor Fault alarm : status - %s, "
+                "network_mon_group_name - %s, "
+                 "controller - %s, domain - %s, vtn - %s", 
+                alarm_status, alarm_data.network_mon_group_name,
+                ctrlr_name.c_str(), domain_id.c_str(),
+                vtn_name);
+  DELETE_IF_NOT_NULL(ikey);
+  return result_code;
 }
 
 }  // namespace kt_momgr

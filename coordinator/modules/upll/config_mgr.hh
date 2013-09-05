@@ -110,6 +110,8 @@ class UpllConfigMgr {
    * @return @see upll_rc_t
    */
   upll_rc_t IsCandidateDirty(bool *dirty);
+  // caller should have taken the READ lock on CANDIDATE and RUNNING
+  upll_rc_t IsCandidateDirtyNoLock(bool *dirty);
 
   /**
    * @brief Imports controller configuration to DT_IMPORT
@@ -156,7 +158,7 @@ class UpllConfigMgr {
    * @param[in] config_id   Config ID of the service user
    * @param[in] sby2act_trans   state transition to active
    *
-   * @return 
+   * @return
    */
   upll_rc_t ClearImport(uint32_t session_id, uint32_t config_id,
                         bool sby2act_trans);
@@ -172,6 +174,9 @@ class UpllConfigMgr {
    */
   upll_rc_t IsKeyInUse(upll_keytype_datatype_t datatype,
                        const ConfigKeyVal *ckv, bool *in_use);
+  // Caller should have taken the READ lock on the datatype
+  upll_rc_t IsKeyInUseNoLock(upll_keytype_datatype_t datatype,
+                             const ConfigKeyVal *ckv, bool *in_use);
 
   /**
    * @brief Path Fault Alarm Handler
@@ -182,7 +187,8 @@ class UpllConfigMgr {
    * @param[in] egress_ports  vector of egress ports
    * @param[in] alarm_asserted  true if alarm is asserted, false otherwise
    */
-  void OnPathFaultAlarm(const char *ctrlr_name, const char *domain_id,
+  void OnPathFaultAlarm(const char *ctrlr_name,
+                        const char *domain_name,
                         std::vector<std::string> &ingress_ports,
                         std::vector<std::string> &egress_ports,
                         bool alarm_asserted);
@@ -191,8 +197,9 @@ class UpllConfigMgr {
    * @brief Controller down event handler
    *
    * @param[in] ctrlr_name  name of the controller
+   * @param[in] operstatus  operational status of controller 
    */
-  void OnControllerDown(const char *ctrlr_name);
+  void OnControllerStatusChange(const char *ctrlr_name, bool operstatus);
 
   /**
    * @brief Logical Port operstatus change event handler
@@ -268,8 +275,8 @@ class UpllConfigMgr {
   upll_rc_t OnTxVoteCtrlrStatus(std::list<CtrlrVoteStatus*> *ctrlr_vote_status);
   upll_rc_t OnAuditTxVoteCtrlrStatus(CtrlrVoteStatus *ctrlr_vote_status);
   upll_rc_t OnTxGlobalCommit(const std::set<std::string> **affected_ctrlr_list);
-  upll_rc_t OnAuditTxGlobalCommit(const char *ctrlr_id,
-                                  const std::set<std::string> **affected_ctrlr_list);
+  upll_rc_t OnAuditTxGlobalCommit(
+      const char *ctrlr_id, const std::set<std::string> **affected_ctrlr_list);
   upll_rc_t OnTxCommitCtrlrStatus(
       uint32_t session_id, uint32_t config_id,
       std::list<CtrlrCommitStatus*> *ctrlr_commit_status);
@@ -311,8 +318,11 @@ class UpllConfigMgr {
     tclib_impl_.SetClusterState(active);
     sys_state_rwlock_.unlock();
     if (active) {
+      DalOpenInitialConnections();
       OnAuditEnd("", true);
       ClearImport(0, 0, true);
+    } else {
+      DalCloseInitialConnections();
     }
   }
   bool IsActiveNode() {
@@ -322,6 +332,8 @@ class UpllConfigMgr {
     sys_state_rwlock_.unlock();
     return state;
   }
+  bool SendOperStatusAlarm(const char *vtn_name, const char *vnode_name,
+                           const char *vif_name, bool assert_alarm);
 
  private:
   UpllConfigMgr();
@@ -369,16 +381,16 @@ class UpllConfigMgr {
   upll_rc_t ValidateCommit(const char *caller);
   upll_rc_t ValidateAudit(const char *caller, const char *ctrlr_id);
   upll_rc_t ValidateImport(uint32_t session_id, uint32_t config_id,
-                           const char *caller);
+                           const char *ctrlr_id, uint32_t operation);
   upll_rc_t ImportCtrlrConfig(const char *ctrlr_id, upll_keytype_datatype_t dt);
 
   // Helper functions or DB operations
-  upll_rc_t DalOpen(DalOdbcMgr *dom, bool read_write_conn, const char *caller);
+  upll_rc_t DalOpen(DalOdbcMgr **dom, bool read_write_conn, const char *caller);
   upll_rc_t DalClose(DalOdbcMgr *dom, bool commit, const char *caller);
+  upll_rc_t DalOpenInitialConnections();
+  upll_rc_t DalCloseInitialConnections();
 
   bool SendInvalidConfigAlarm(string ctrlr_name, bool assert_alarm);
-  bool SendOperStatusAlarm(const char *vtn_name, const char *vnode_name,
-                           const char *vif_name, bool assert_alarm);
 
 
   bool node_active_;  // cluster state
@@ -403,6 +415,15 @@ class UpllConfigMgr {
   pfc::core::Mutex  import_mutex_lock_;
   pfc::core::Mutex  audit_mutex_lock_;
   std::set<std::string> affected_ctrlr_set_;
+
+  // Initail database connections. When node turns ACTIVE, intial connections
+  // are mode, and when node turns STANDBY from ACTIVE, initial connections are
+  // closed.
+  pfc::core::Mutex rw_dom_mutex_lock_;
+  DalOdbcMgr config_rw_dom_;
+  DalOdbcMgr config_ro_dom_;
+  DalOdbcMgr import_rw_dom_;
+  DalOdbcMgr alarm_rw_dom_;
 
   int32_t alarm_fd;
 

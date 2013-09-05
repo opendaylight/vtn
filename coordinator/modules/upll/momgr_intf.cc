@@ -58,6 +58,7 @@ bool MoManager::GetCreateCapability(const char *ctrlr_name,
                                     uint32_t *num_attrs,
                                     const uint8_t **attrs,
                                     upll_keytype_datatype_t datatype) {
+  UPLL_FUNC_TRACE;
   unc_keytype_ctrtype_t type;
   std::string version;
 
@@ -115,6 +116,7 @@ bool MoManager::GetReadCapability(const char *ctrlr_name,
                                   uint32_t *num_attrs,
                                   const uint8_t **attrs,
                                   upll_keytype_datatype_t datatype) {
+  UPLL_FUNC_TRACE;
   unc_keytype_ctrtype_t type;
   std::string version;
 
