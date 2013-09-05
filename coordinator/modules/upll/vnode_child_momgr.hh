@@ -17,6 +17,12 @@ enum rename_key {
   UNC_RENAME_KEY, CTRLR_RENAME_KEY
 };
 
+enum alarm_status {
+  ALARM_OPER_UP = 0,
+  ALARM_OPER_DOWN,
+  ALARM_NOT_SET
+};
+
 namespace unc {
 namespace upll {
 namespace kt_momgr {
@@ -104,6 +110,18 @@ class VnodeChildMoMgr : public MoMgrImpl {
     ConfigKeyVal *parent_ck_vnode;
     uint32_t cur_instance_count;
 
+   /**
+    * @brief  Update parent oper status on delete for Transaction commit
+    *
+    * @param[in]  ikey          ConfigKeyVal instance
+    * @param[in]   dmi           Database connection parameter
+
+    * @retval  UPLL_RC_SUCCESS      Completed successfully.
+    * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
+    */
+    virtual upll_rc_t UpdateParentOperStatus(ConfigKeyVal *ikey,
+                                             DalDmlIntf *dmi);
+   
     /* @brief      Returns portmap information if portmap is valid 
      *             Else returns NULL for portmap 
      *              
@@ -116,7 +134,8 @@ class VnodeChildMoMgr : public MoMgrImpl {
      * 
      **/ 
     virtual upll_rc_t GetPortMap(ConfigKeyVal *ikey, uint8_t &valid_pm,
-                                 val_port_map_t *&pm) {
+                                val_port_map_t *&pm, uint8_t &valid_admin,
+                                uint8_t &admin_status) {
       return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT;
     }
 
@@ -128,14 +147,20 @@ class VnodeChildMoMgr : public MoMgrImpl {
       return UPLL_RC_ERR_NO_SUCH_OPERATION;
     }
     template<typename T1, typename T2>
-    bool SetOperStatus(ConfigKeyVal *ikey,
-                       state_notification notification,
-                       DalDmlIntf *dmi);
+    upll_rc_t SetOperStatus(ConfigKeyVal *ikey,
+                       state_notification &notification,
+                       DalDmlIntf *dmi, alarm_status &oper_change = ALARM_NOT_SET);
 
-    upll_rc_t UpdateOperStatus(ConfigKeyVal *ikey, 
-                           DalDmlIntf *dmi, 
-                           state_notification notification,
-                           bool skip);
+     /**
+     * @brief          Enqueues oper status notifications
+     *
+     * @param[in]      ikey    pointer to the configkeyval with
+     *                 the changed oper status
+     *
+     * @retval         UPLL_RC_SUCCESS      Successfull completion.
+     * @retval         UPLL_RC_ERR_GENERIC  Failure case.
+     **/
+    bool  EnqueOperStatusNotification(ConfigKeyVal *ikey, bool oper_change);
 
     /* @brief      Retrieve oper status of logical portid from physical  
      *              
@@ -274,6 +299,21 @@ class VnodeChildMoMgr : public MoMgrImpl {
                                                InterfacePortMapInfo flag) {
       return UPLL_RC_ERR_GENERIC;
    }
+    upll_rc_t UpdateOperStatus(ConfigKeyVal *ikey, 
+                           DalDmlIntf *dmi, 
+                           state_notification notification,
+                           bool skip, bool upd_if, bool upd_remif,
+                           bool save_to_db = false);
+   virtual upll_rc_t GetMappedInterfaces(const key_vnode_type_t &vnode_key,
+                                         DalDmlIntf *dmi,
+                                         ConfigKeyVal *&iokey);
+   virtual upll_rc_t SetLinkedIfOperStatusforPathFault(
+                           const key_vnode_type_t &vnode_key,
+                           state_notification notification,
+                           DalDmlIntf *dmi);
+   virtual upll_rc_t UpdateVnodeIf(ConfigKeyVal *ck_if,
+                           DalDmlIntf *dmi,
+                           state_notification notification);
 };
 
 }  // namespace kt_momgr

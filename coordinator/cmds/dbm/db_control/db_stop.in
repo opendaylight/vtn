@@ -31,4 +31,6 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
+log_output $$ INFO $0 "UNC DB has stopped." $DBLOGFILE
+
 exit 0

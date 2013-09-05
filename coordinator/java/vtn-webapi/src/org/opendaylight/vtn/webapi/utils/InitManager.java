@@ -9,7 +9,6 @@
 package org.opendaylight.vtn.webapi.utils;
 
 import org.opendaylight.vtn.core.util.Logger;
-import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.webapi.exception.VtnServiceWebAPIException;
 

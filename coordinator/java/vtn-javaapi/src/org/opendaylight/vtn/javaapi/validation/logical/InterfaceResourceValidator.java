@@ -19,12 +19,12 @@ import org.opendaylight.vtn.javaapi.resources.logical.DhcpRelayInterfaceResource
 import org.opendaylight.vtn.javaapi.resources.logical.DhcpRelayInterfacesResource;
 import org.opendaylight.vtn.javaapi.resources.logical.VBridgeInterfaceResource;
 import org.opendaylight.vtn.javaapi.resources.logical.VBridgeInterfacesResource;
+import org.opendaylight.vtn.javaapi.resources.logical.VBypassInterfaceResource;
+import org.opendaylight.vtn.javaapi.resources.logical.VBypassInterfacesResource;
 import org.opendaylight.vtn.javaapi.resources.logical.VTepInterfaceResource;
 import org.opendaylight.vtn.javaapi.resources.logical.VTepInterfacesResource;
 import org.opendaylight.vtn.javaapi.resources.logical.VTunnelInterfaceResource;
 import org.opendaylight.vtn.javaapi.resources.logical.VTunnelInterfacesResource;
-import org.opendaylight.vtn.javaapi.resources.logical.VUnknownInterfaceResource;
-import org.opendaylight.vtn.javaapi.resources.logical.VUnknownInterfacesResource;
 import org.opendaylight.vtn.javaapi.validation.CommonValidator;
 import org.opendaylight.vtn.javaapi.validation.VtnServiceValidator;
 
@@ -66,21 +66,21 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.URI
 				+ VtnServiceJsonConsts.VTNNAME);
-		if (resource instanceof VUnknownInterfaceResource
-				&& ((VUnknownInterfaceResource) resource).getVtnName() != null
-				&& !((VUnknownInterfaceResource) resource).getVtnName().trim()
+		if (resource instanceof VBypassInterfaceResource
+				&& ((VBypassInterfaceResource) resource).getVtnName() != null
+				&& !((VBypassInterfaceResource) resource).getVtnName().trim()
 				.isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VUnknownInterfaceResource) resource).getVtnName().trim(),
+					((VBypassInterfaceResource) resource).getVtnName().trim(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
-						+ VtnServiceJsonConsts.VUKNAME);
-				if (((VUnknownInterfaceResource) resource).getVukName() != null
-						&& !((VUnknownInterfaceResource) resource).getVukName()
+						+ VtnServiceJsonConsts.VBYPASS_NAME);
+				if (((VBypassInterfaceResource) resource).getVbypassName() != null
+						&& !((VBypassInterfaceResource) resource).getVbypassName()
 						.trim().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VUnknownInterfaceResource) resource).getVukName()
+							((VBypassInterfaceResource) resource).getVbypassName()
 							.trim(), VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -89,35 +89,35 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.IFNAME);
-				if (((VUnknownInterfaceResource) resource).getIfName() != null
-						&& !((VUnknownInterfaceResource) resource).getIfName()
+				if (((VBypassInterfaceResource) resource).getIfName() != null
+						&& !((VBypassInterfaceResource) resource).getIfName()
 						.trim().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VUnknownInterfaceResource) resource).getIfName()
+							((VBypassInterfaceResource) resource).getIfName()
 							.trim(), VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
 			}
 			setListOpFlag(false);
-		} else if (resource instanceof VUnknownInterfacesResource
-				&& ((VUnknownInterfacesResource) resource).getVtnName() != null
-				&& !((VUnknownInterfacesResource) resource).getVtnName().trim()
+		} else if (resource instanceof VBypassInterfacesResource
+				&& ((VBypassInterfacesResource) resource).getVtnName() != null
+				&& !((VBypassInterfacesResource) resource).getVtnName().trim()
 				.isEmpty()) {
 			isValid = validator
 					.isValidMaxLengthAlphaNum(
-							((VUnknownInterfacesResource) resource)
+							((VBypassInterfacesResource) resource)
 							.getVtnName().trim(),
 							VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
-						+ VtnServiceJsonConsts.VUKNAME);
-				if (((VUnknownInterfacesResource) resource).getVukName() != null
-						&& !((VUnknownInterfacesResource) resource)
-						.getVukName().trim().isEmpty()) {
+						+ VtnServiceJsonConsts.VBYPASS_NAME);
+				if (((VBypassInterfacesResource) resource).getVbypassName() != null
+						&& !((VBypassInterfacesResource) resource)
+						.getVbypassName().trim().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VUnknownInterfacesResource) resource)
-							.getVukName().trim(),
+							((VBypassInterfacesResource) resource)
+							.getVbypassName().trim(),
 							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -384,7 +384,8 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 			} else if (isValid && requestBody != null
 					&& VtnServiceConsts.PUT.equals(method)) {
 				isValid = validatePut(requestBody);
-			} else {
+			} else if (isValid) {
+				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {

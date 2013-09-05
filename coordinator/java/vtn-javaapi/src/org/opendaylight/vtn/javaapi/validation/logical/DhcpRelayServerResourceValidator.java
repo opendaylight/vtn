@@ -133,7 +133,8 @@ public class DhcpRelayServerResourceValidator extends VtnServiceValidator {
 		} else if (isValid && requestBody != null
 				&& VtnServiceConsts.POST.equals(method)) {
 			isValid = validatePost(requestBody);
-		} else {
+		} else if (isValid) {
+			setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 			isValid = false;
 		}
 		// Throws exception if validation fails

@@ -31,9 +31,11 @@ class ImportRequest:public ITCReq {
  public:
   ImportRequest();
   ~ImportRequest();
-  UpplReturnCode ProcessRequest(uint32_t operation,
+  UpplReturnCode ProcessRequest(OdbcmConnectionHandler *db_conn,
+                                uint32_t operation,
                             key_ctr_t obj_key_ctr);
-  UpplReturnCode StartImport(key_ctr_t obj_key_ctr);
+  UpplReturnCode StartImport(OdbcmConnectionHandler *db_conn,
+                             key_ctr_t obj_key_ctr);
   UpplReturnCode MergeConfiguration(key_ctr_t obj_key_ctr);
   UpplReturnCode ClearImportConfig(key_ctr_t obj_key_ctr);
 };

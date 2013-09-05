@@ -224,16 +224,16 @@ class NwMonitorHostMoMgr : public VnodeChildMoMgr {
      *        associated attributes are supported on the given controller,
      *        based on the valid flag.
      *
-     * @param[in] crtlr_name      Controller name.
-     * @param[in] ikey            Corresponding key and value structure.
+     * @param[in] val_nwm_host    Value Structure.
+     * @param[in] attr            pointer to controller attribute
+     * @param[in] operation       Operation Name
      *
      * @retval UPLL_RC_SUCCESS                    validation succeeded.
      * @retval UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR Attribute NOT_SUPPORTED.
      * @retval UPLL_RC_ERR_GENERIC                Generic failure.
      */
-    upll_rc_t ValNwMonHostAttributeSupportCheck(const char * crtlr_name,
-                                                ConfigKeyVal *ikey,
-                                                uint32_t operation);
+    upll_rc_t ValNwMonHostAttributeSupportCheck(val_nwm_host_t *val_nwm_host,
+  const uint8_t* attrs, unc_keytype_operation_t operation);
 
     upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
                            DalDmlIntf *dmi);

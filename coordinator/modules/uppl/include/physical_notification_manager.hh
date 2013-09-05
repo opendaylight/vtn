@@ -19,16 +19,12 @@
 
 #include <pfcxx/timer.hh>
 #include <pfcxx/task_queue.hh>
-#include <vector>
 #include <string>
-#include <map>
 #include "physical_common_def.hh"
 
 using pfc::core::ipc::IpcEventHandler;
 using pfc::core::ipc::IpcEvent;
-using std::vector;
 using std::string;
-using std::map;
 using pfc::core::timer_func_t;
 using pfc::core::TaskQueue;
 using pfc::core::Timer;
@@ -37,7 +33,7 @@ namespace unc {
 namespace uppl {
 /**
  * * * @Description: Notification Manager class is responsible for all
- * notification event handling procedure
+ * events and alarms notification received from south bound
  * **/
 class NotificationManager:public IpcEventHandler {
   public:

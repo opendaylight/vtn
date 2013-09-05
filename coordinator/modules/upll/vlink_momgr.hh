@@ -25,6 +25,28 @@ namespace kt_momgr {
 #define NO_VN1_RENAME 0xFB
 #define NO_VN2_RENAME 0xF7
 
+typedef struct key_vnode_if_t {
+  key_vnode_t vnode_key;
+  uint8_t vnode_if_name[kMaxLenInterfaceName+1];
+}key_vnode_if;
+
+struct key_vnode_if_compare {
+  inline bool operator()(const key_vnode_if &keyvnodeif1,
+                          const key_vnode_if keyvnodeif2) const {
+    int ret = strcmp((const char *)keyvnodeif1.vnode_key.vtn_key.vtn_name,
+                     (const char *)keyvnodeif2.vnode_key.vtn_key.vtn_name);
+    if (ret == 0) {
+      ret = strcmp((const char *)keyvnodeif1.vnode_key.vnode_name,
+                     (const char*)keyvnodeif2.vnode_key.vnode_name);
+      if (ret == 0) {
+        return (strcmp((const char *)keyvnodeif1.vnode_if_name,
+                      (const char*)keyvnodeif2.vnode_if_name) < 0);
+      } else 
+        return (ret < 0);
+    } else 
+      return (ret < 0);
+    }   
+};
 
 typedef struct key_vlink_user_data {
     key_user_data_t user_data1;
@@ -58,6 +80,11 @@ typedef struct val_db_vlink_st {
   }\
 }
 
+enum NodePosition {
+  kVnode1,
+  kVnode2
+};
+
 class VlinkMoMgr : public VnodeMoMgr {
   private:
     static unc_key_type_t vlink_child[];
@@ -67,46 +94,24 @@ class VlinkMoMgr : public VnodeMoMgr {
     static BindInfo key_vlink_renametbl_update_bind_info[];
     ConfigKeyVal *ck_boundary;
 
-    /**
-     * @brief  Gets the associated config and state information for interfaces
-     *         that constitute the vlink
+    /* @brief      Retrieve oper status of boundary port from physical  
+     *              
+     * @param[in]  boundary_name pointer to boundary name 
+     * @param[in]  ctr_domain    pointer to controller and domain id pair
+     * @param[out] bound_operStatus operstatus of boundary 
+     * @param[in]  session_id   transaction session id
+     * @param[in]  config_id    transaction config id
      *
-     * @param[in]     vlink    ConfigKeyVal pointer to the vlink
-     * @param[out]    vnif     array of pointers to the vlink member interfaces
-     * @param[in]     dmi      Database connection params
-     *
-     * @retval UPLL_RC_SUCCESS     validation succeeded.
-     * @retval UPLL_RC_ERR_GENERIC Illegal operation/ invalid paramters
-     **/
-    upll_rc_t GetVnodeIfFromVlink(ConfigKeyVal *vlink, 
-                                  ConfigKeyVal **vnif,
-                                  DalDmlIntf   *dmi) ;
+     * @retval  UPLL_RC_SUCCESS      Completed successfully.
+     * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
+     * 
+     **/ 
+    upll_rc_t GetBoundaryStatusFromPhysical(uint8_t *boundary_name,
+                                       controller_domain_t *ctr_domain,
+                                       val_oper_status &bound_operStatus,
+                                       uint32_t session_id,
+                                       uint32_t config_id) ;
 
-    /**
-     * @brief  Gets the keytype of the vlink member interface specified by pos
-     *
-     * @param[in]     ck_vlink    ConfigKeyVal pointer to the vlink
-     * @param[in]     pos         0/1 corresponding to the first/second member 
-     *                            interface
-     *
-     * @retval unc_key_type_t     keytype of the specified member interface
-     *                            KT_ROOT if unsupported iftype.
-     **/
-    unc_key_type_t GetVlinkVnodeIfKeyType(ConfigKeyVal *ck_vlink,
-                                          int pos ) {
-      uint8_t vnif_type;
-      uint8_t vlink_flag = 0;
-      GET_USER_DATA_FLAGS(ck_vlink,vlink_flag);
-      if (pos == 0)
-        vnif_type = GET_VLINK_NODE1_TYPE(vlink_flag);
-      else 
-        vnif_type = GET_VLINK_NODE2_TYPE(vlink_flag);
-      unc_key_type_t if_ktype[] = {UNC_KT_ROOT,UNC_KT_VBR_IF, UNC_KT_VRT_IF,
-                             UNC_KT_VUNK_IF, UNC_KT_VTEP_IF,UNC_KT_VTUNNEL_IF};
-      if (vnif_type >= sizeof(if_ktype)/sizeof(if_ktype[0]))
-        return UNC_KT_ROOT;
-      return if_ktype[vnif_type];
-    }
 
     /**
      * @brief  Gets the valid array position of the variable in the value 
@@ -142,6 +147,21 @@ class VlinkMoMgr : public VnodeMoMgr {
      */
     upll_rc_t ValidateMessage(IpcReqRespHeader *req,
                               ConfigKeyVal *ikey);
+    /**
+     * @Brief  compares controller id and domain id before 
+     *         updating the value to DB.
+     *
+     * @param[in]  ikey  ikey contains key and value structure.
+     * @param[in]  okey  okey contains key and value structure.
+     *
+     * @retval  UPLL_RC_SUCCESS            Successful.
+     * @retval  UPLL_RC_ERR_CFG_SYNTAX     Syntax error.
+     */
+    upll_rc_t CtrlrIdAndDomainIdUpdationCheck(ConfigKeyVal *ikey,
+                                              ConfigKeyVal *okey) {
+      UPLL_LOG_TRACE("Not needed for this KT, returning SUCCESS");
+      return UPLL_RC_SUCCESS;
+    }
 
     /**
      * @Brief Validates the syntax for KT_VLINK keytype key structure.
@@ -192,16 +212,16 @@ class VlinkMoMgr : public VnodeMoMgr {
      *        associated attributes are supported on the given controller,
      *        based on the valid flag.
      *
-     * @param[in] crtlr_name      Controller name.
-     * @param[in] ikey            Corresponding key and value structure.
+     * @param[in] val_vlink         Value Structure.
+     * @param[in] attr            pointer to controller attribute
+     * @param[in] operation       Operation Name
      *
      * @retval UPLL_RC_SUCCESS                    validation succeeded.
      * @retval UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR Attribute NOT_SUPPORTED.
      * @retval UPLL_RC_ERR_GENERIC                Generic failure.
      */
-    upll_rc_t ValVlinkAttributeSupportCheck(const char * crtlr_name,
-                                            ConfigKeyVal *ikey,
-                                            uint32_t operation);
+    upll_rc_t ValVlinkAttributeSupportCheck(val_vlink_t *val_vlink,
+    const uint8_t* attrs, unc_keytype_operation_t operation);
 
     /**
      * @brief  Get the specific vtn_name and vnode_name from ConfigKeyVal
@@ -261,16 +281,6 @@ class VlinkMoMgr : public VnodeMoMgr {
      **/
     upll_rc_t AllocVal(ConfigVal *&ck_val, upll_keytype_datatype_t dt_type,
                        MoMgrTables tbl = MAINTBL);
-    /**
-     * @brief      Method to get a configkeyval of a specified keytype from an input configkeyval
-     *
-     * @param[in/out]  okey                 pointer to output ConfigKeyVal 
-     * @param[in]      parent_key           pointer to the configkeyval from which the output configkey val is initialized.
-     *
-     * @retval         UPLL_RC_SUCCESS      Successfull completion.
-     * @retval         UPLL_RC_ERR_GENERIC  Failure case.
-     */
-    upll_rc_t GetChildConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *parent_key);
     /**
      * @brief      Method to get a configkeyval of the parent keytype 
      *
@@ -334,7 +344,7 @@ class VlinkMoMgr : public VnodeMoMgr {
     /**
      * @brief Check if Vlink interfaces are unique and update accordingly
      *
-     * @param[in]  dt_type  database type
+     * @param[in]  req      IpcReqRespHeader
      * @param[in]  ikey     pointer to ConfigKeyVal
      * @param[in]  dmi      pointer to DalDmlIntf  
      * @param[in]  controller_ids      pointer to array of controller domains 
@@ -342,7 +352,7 @@ class VlinkMoMgr : public VnodeMoMgr {
      * @retval UPLL_RC_SUCCESS      Successful
      * @retval UPLL_RC_ERR_GENERIC  Generic error/Failed to update VbrIf
      */
-    upll_rc_t UpdateVlinkIf(upll_keytype_datatype_t dt_type,
+    upll_rc_t UpdateVlinkIf(IpcReqRespHeader *req,
                               ConfigKeyVal *ikey, DalDmlIntf *dmi,
                               controller_domain_t *ctrlr_dom);
     /**
@@ -372,31 +382,35 @@ class VlinkMoMgr : public VnodeMoMgr {
      * @param[in]  ikey     pointer to ConfigKeyVal
      * @param[in]  ck_vbrif array of pointers to component vbrifs
      * @param[in]  dmi      pointer to DalDmlIntf  
+     * @param[in]  op       UPLL operation 
      *
      * @retval UPLL_RC_SUCCESS      Successful
      * @retval UPLL_RC_ERR_GENERIC  Generic error/Failed to update VbrIf
      */
-    upll_rc_t UpdateVbrIfExternal(upll_keytype_datatype_t dt_type,
-             ConfigKeyVal *ikey, ConfigKeyVal **cv_vbrif, DalDmlIntf *dmi);
+    upll_rc_t UpdateVnodeIf(upll_keytype_datatype_t dt_type,
+             ConfigKeyVal *ikey, ConfigKeyVal **cv_vbrif, DalDmlIntf *dmi,
+             unc_keytype_operation_t op);
 
     /**
      * @brief Check if the Vlink interface is a VbrIf. If it is VbrIf,
      *        Update portmap if port on switch in not preconfigured
      with settings different from physical data
      *
-     * @param[in]  ikey           pointer to ConfigKeyVal
-     * @param[in]  ikey           pointer to ConfigKeyVal
+     * @param[in]  ikey           pointer to vlink ConfigKeyVal
+     * @param[in]  ikey           pointer to vnode interface ConfigKeyVal
      * @param[in]  dmi            pointer to DalDmlIntf  
-     * @param[in]  rename_vbr_if  uint8_t  
+     * @param[in]  dt_type        Data type (candidate/running)    
+     * @param[in]  op             operation  
      *
      * @retval UPLL_RC_SUCCESS               Successful
      * @retval UPLL_RC_ERR_NO_SUCH_INSTANCE  vLink Interface is not a VbrIf Interface
      * @retval UPLL_RC_ERR_GENERIC           Generic error/Failed to update VbrIfi
      */
-    upll_rc_t CheckPortmapValidandUpdateVbrIf(ConfigKeyVal *ikey,
-                                              ConfigKeyVal *ck_drv_vbr_if,
-                                              DalDmlIntf *dmi,
-                                              upll_keytype_datatype_t dt_type);
+    upll_rc_t UpdateVnodeIfPortmap(ConfigKeyVal *ikey,
+                                   ConfigKeyVal *ck_drv_vbr_if,
+                                   DalDmlIntf *dmi,
+                                   upll_keytype_datatype_t dt_type,
+                                   unc_keytype_operation_t op);
 
     bool GetBoundaryData(ConfigKeyVal *ikey,
                          IpcRequest *ipc_req,
@@ -479,6 +493,9 @@ class VlinkMoMgr : public VnodeMoMgr {
     upll_rc_t CreateCandidateMo(IpcReqRespHeader *req,
                                 ConfigKeyVal *ikey,
                                 DalDmlIntf *dmi);
+    upll_rc_t CreateAuditMoImpl(ConfigKeyVal *ikey,
+                                DalDmlIntf *dmi,
+                                const char *ctrlr_id);
     /**
      * @brief  Creates a vnode entry in DB after performing pre-requisite checks
      *
@@ -511,6 +528,17 @@ class VlinkMoMgr : public VnodeMoMgr {
                                     unc_keytype_configstatus_t cs_status,
                                     DalDmlIntf *dmi);
 
+    /**
+     * @brief  Validate whether its valid Boundary Combination
+     *
+     * @param[in]  node1_ktype                Ketype of first Node
+     * @param[in]  node2_ktype                Ketype of Second Node
+     *
+     * @retval UPLL_RC_SUCCESS                Valid combination
+     * @retval UPLL_RC_ERR_CFG_SEMANTIC       Invalid combination
+     */
+    upll_rc_t ValidateIfType(ConfigKeyVal **vnodeIf);
+
   public:
     VlinkMoMgr();
     virtual ~VlinkMoMgr() {
@@ -523,6 +551,39 @@ class VlinkMoMgr : public VnodeMoMgr {
         delete ck_boundary;
       ck_boundary = NULL;
     }
+
+    /**
+     * @brief  Gets the associated config information for the remote interface 
+     *         that constitute the vlink
+     *
+     * @param[in]     ck_vif       ConfigKeyVal pointer to the interface
+     * @param[out]   ck_remif      ConfigKeyVal pointer to the remote interface
+     * @param[in]     dmi          Database connection params
+     *
+     * @retval UPLL_RC_SUCCESS     validation succeeded.
+     * @retval UPLL_RC_ERR_GENERIC Illegal operation/ invalid paramters
+     **/
+    upll_rc_t GetRemoteIf(ConfigKeyVal *ck_vif, 
+                          ConfigKeyVal *&ck_remif,
+                          DalDmlIntf   *dmi);
+    /**
+     * @brief  Gets the associated config and state information for interfaces
+     *         that constitute the vlink
+     *
+     * @param[in]     vlink    ConfigKeyVal pointer to the vlink
+     * @param[out]    vnif     array of pointers to the vlink member interfaces
+     *                         if both interfaces wanted - 
+     * @param[in]     dmi      Database connection params
+     * @param[in]     pos      0 if both interfaces wanted else 
+     *                         kVlinkVnode1/kVlinkVnode2 for that vnode if.
+     *
+     * @retval UPLL_RC_SUCCESS     validation succeeded.
+     * @retval UPLL_RC_ERR_GENERIC Illegal operation/ invalid paramters
+     **/
+    upll_rc_t GetVnodeIfFromVlink(ConfigKeyVal *vlink, 
+                                  ConfigKeyVal **vnif,
+                                  DalDmlIntf   *dmi,
+                                  uint8_t pos = 0) ;
     /**
      * @brief      Method to check if individual portions of a key are valid
      *
@@ -581,13 +642,24 @@ class VlinkMoMgr : public VnodeMoMgr {
                            void *val2,
                            bool audit);
 
+    /**
+     * @brief      Method to get a configkeyval of a specified keytype from an input configkeyval
+     *
+     * @param[in/out]  okey                 pointer to output ConfigKeyVal 
+     * @param[in]      parent_key           pointer to the configkeyval from which the output configkey val is initialized.
+     *
+     * @retval         UPLL_RC_SUCCESS      Successfull completion.
+     * @retval         UPLL_RC_ERR_GENERIC  Failure case.
+     */
+    upll_rc_t GetChildConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *parent_key);
     upll_rc_t ValidateRenameVlinkValue(val_rename_vlink_t *val);
     upll_rc_t CheckVnodeInfo(ConfigKeyVal *ikey,
                              upll_keytype_datatype_t dt_type,
                              DalDmlIntf *dmi);
+
     upll_rc_t SetOperStatus(ConfigKeyVal *ikey,
                             DalDmlIntf *dmi,
-                            int notification,
+                            state_notification notification,
                             bool skip = false);
 
     upll_rc_t GetNodeType(void *key, bool vnode,
@@ -636,9 +708,15 @@ class VlinkMoMgr : public VnodeMoMgr {
     inline upll_rc_t BoundaryVlink(ConfigKeyVal        *ck_main,
                               controller_domain_t *ctrlr_dom,
                               bool            &bound_vlink) {
+       unc_key_type_t ktype1 = GetVlinkVnodeIfKeyType(ck_main, 0);
+       unc_key_type_t ktype2 = GetVlinkVnodeIfKeyType(ck_main, 1);
+       if ((ktype1 == UNC_KT_VUNK_IF) || (ktype2 == UNC_KT_VUNK_IF)) {
+         bound_vlink = true;
+         return UPLL_RC_SUCCESS;
+       }
        upll_rc_t result_code = GetControllerDomainId(ck_main, ctrlr_dom);
        if (result_code != UPLL_RC_SUCCESS) {
-         UPLL_LOG_DEBUG("Returning %d\n", result_code);
+         UPLL_LOG_DEBUG("Returning %d", result_code);
          return result_code;
        }
        if((memcmp(ctrlr_dom[0].ctrlr, ctrlr_dom[1].ctrlr,kMaxLenCtrlrId)) || 
@@ -658,6 +736,57 @@ class VlinkMoMgr : public VnodeMoMgr {
                               uint32_t session_id,
                               uint32_t config_id,
                               DalDmlIntf *dmi);
+    upll_rc_t BoundaryStatusHandler(uint8_t boundary_name[32],
+    bool oper_status, DalDmlIntf *dmi);
+
+    /**
+     * @brief  Gets the keytype of the vlink member interface specified by pos
+     *
+     * @param[in]     ck_vlink    ConfigKeyVal pointer to the vlink
+     * @param[in]     pos         0/1 corresponding to the first/second member 
+     *                            interface
+     *
+     * @retval unc_key_type_t     keytype of the specified member interface
+     *                            KT_ROOT if unsupported iftype.
+     **/
+    unc_key_type_t GetVlinkVnodeIfKeyType(ConfigKeyVal *ck_vlink,
+                                          int pos ) {
+      uint8_t vnif_type;
+      uint8_t vlink_flag = 0;
+      if (!ck_vlink || ck_vlink->get_key_type() != UNC_KT_VLINK) {
+        UPLL_LOG_DEBUG("Invalid param");
+        return UNC_KT_ROOT;
+      }
+      GET_USER_DATA_FLAGS(ck_vlink,vlink_flag);
+      if (pos == 0)
+        vnif_type = GET_VLINK_NODE1_TYPE(vlink_flag);
+      else 
+        vnif_type = GET_VLINK_NODE2_TYPE(vlink_flag);
+      UPLL_LOG_DEBUG("flag %d vnif_type %d pos %d",vlink_flag,vnif_type,pos);
+      unc_key_type_t if_ktype[] = {UNC_KT_ROOT,UNC_KT_VBR_IF, UNC_KT_VRT_IF,
+                             UNC_KT_VUNK_IF, UNC_KT_VTEP_IF,UNC_KT_VTUNNEL_IF};
+      if (vnif_type >= sizeof(if_ktype)/sizeof(if_ktype[0]))
+        return UNC_KT_ROOT;
+      return if_ktype[vnif_type];
+    }
+    upll_rc_t RestoreVlinkOperStatus(ConfigKeyVal *ck_vnif,
+                                     DalDmlIntf *dmi,
+                                     state_notification notification,
+                                     bool skip);
+    upll_rc_t UpdateVlinkOperStatus(uint8_t *ctrlr_id,
+                                    DalDmlIntf *dmi,
+                                    state_notification notification,
+                                    bool skip);
+    upll_rc_t GetConnected(key_vnode_type_t *src_node,
+                         set<key_vnode_type_t,key_vnode_type_compare> *Vnode_set_obj,
+                         set<key_vlink_t,vlink_compare>*Vlink_set_obj,
+                         set<key_vnode_if_t, key_vnode_if_compare>* boundary_vnode_if,
+                         DalDmlIntf *dmi);
+
+    upll_rc_t UpdateVlinkOperStatusUsingVlinkSet(
+                            set<key_vlink_t, vlink_compare>*vlink_set,
+                            DalDmlIntf *dmi, state_notification notification);
+
 };
 
 typedef struct val_db_rename_vlink {

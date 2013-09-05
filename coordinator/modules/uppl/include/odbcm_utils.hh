@@ -131,7 +131,8 @@ const char g_log_db_name[7][20] = {
             rc == SQL_STILL_EXECUTING ||                      \
             rc == SQL_NEED_DATA ) {                           \
           ODBCMUtils::OdbcmStmtResourcesFree(hstmt);          \
-          odbcm_rc = (ODBCM_RC_STATUS)rc; }                   \
+         }                                                    \
+        odbcm_rc = (ODBCM_RC_STATUS)rc;                     \
     }
 
 /*

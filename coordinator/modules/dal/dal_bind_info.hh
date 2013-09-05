@@ -185,7 +185,9 @@ class DalBindInfo {
     bool ResetDalOutBuffer();
 
     /* Only for Debugging and Testing */
-    void PrintBindList();
+    std::string BindListToStr();
+    std::string BindListInputToStr();
+    std::string BindListResultToStr();
 
   private:
     // Initialize the bind list for all columns with default values

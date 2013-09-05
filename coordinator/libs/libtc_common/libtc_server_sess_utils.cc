@@ -13,6 +13,21 @@
 namespace unc {
 namespace tc {
 
+TcUtilRet
+    TcServerSessionUtils::set_srv_timeout(pfc::core::ipc::ServerSession* ssess,
+                                          const pfc_timespec_t *timeout) {
+      int err = 0;
+      if (ssess == NULL)
+        return TCUTIL_RET_FAILURE;
+      
+      err = ssess->setTimeout(timeout);
+      if (err != 0) {
+        pfc_log_fatal("setting timeout to server session failed");        
+        return TCUTIL_RET_FAILURE;
+      }
+      return TCUTIL_RET_SUCCESS;
+}
+
 /*retrieve uint32_t data from IPC session*/
 TcUtilRet TcServerSessionUtils::get_uint32(
                           pfc::core::ipc::ServerSession* ssess,

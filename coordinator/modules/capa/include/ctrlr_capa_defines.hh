@@ -49,7 +49,8 @@ enum vtn_neighbor {
 
 namespace vbr {
 enum vbr {
-  kCapDesc = 0,
+  kCapDomainId =0,
+  kCapDesc,
   kCapHostAddr,
   kCapHostAddrPrefixlen,
   kCapOperStatus
@@ -76,7 +77,8 @@ enum vbr_if {
 
 namespace vrt {
 enum vrt {
-  kCapDesc = 0,
+  kCapDomainId =0,
+  kCapDesc,
   kCapDhcpRelayAdminStatus,
   kCapOperStatus
 };

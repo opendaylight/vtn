@@ -22,19 +22,20 @@ public class UncCommonEnum {
 	public enum ConfigStatus{
 		UNC_CS_UNKNOWN,
 		UNC_CS_APPLIED,
-		UNC_CS_PARTAILLY_APPLIED,
+		UNC_CS_PARTIALLY_APPLIED,
 		UNC_CS_NOT_APPLIED,
 		UNC_CS_INVALID,
 		UNC_CS_NOT_SUPPORTED
 	}
 
 	/* Enumeration for Valid flag. */
-	public enum ValidFlag{
-		UNC_VF_INVALID,
-		UNC_VF_VALID,
-		UNC_VF_VALID_NO_VALUE,
-		UNC_VF_NOT_SOPPORTED
-	}
+//	public enum ValidFlag{
+//		UNC_VF_INVALID,
+//		UNC_VF_VALID,
+//		UNC_VF_VALID_NO_VALUE,
+//		UNC_VF_NOT_SUPPORTED,
+//		UNC_VF_VALUE_NOT_MODIFIED
+//	}
 
 	/* Controller type enum. */
 	public enum ControllerType{
@@ -65,7 +66,7 @@ public class UncCommonEnum {
 	public enum UncResultCode {
 
 		UNC_SUCCESS(200,"Success"),
-		UNC_CLIENT_ERROR(400,"Validation error for parameter: "),
+		UNC_CLIENT_ERROR(400,"Validation error for: "),
 		UNC_SERVER_ERROR(500, "IPC server error");
 
 		private final int value;

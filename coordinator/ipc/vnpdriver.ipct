@@ -7,12 +7,15 @@
 # distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
 #
 
-#
-# define UID/ROLE/PWD.
-#2ROLES can be defined.(oper|admin)
-# At most 1000 UID/ROLE/PWD can be defined.
-#
-# username:role:MD5(password)
-# fox example:
-oper:oper:25e4ee4e9229397b6b17776bfceaf8e7
-admin:admin:25e4ee4e9229397b6b17776bfceaf8e7
+# Value struct for DELETE operation of VTUNNEL and VTUNNEL_IF
+
+ipc_struct vnpdrv_val_vtunnel {
+  UINT8  valid[1];
+  UINT32  label;
+};
+
+ipc_struct vnpdrv_val_vtunnel_if {
+  UINT8  valid[2];
+  UINT32  label;
+  UINT16 vlan_id;
+};

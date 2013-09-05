@@ -9,6 +9,10 @@
 
 
 #include <tc_module.hh>
+#include <alarm.hh>
+#include <unc/component.h>
+
+static int32_t alarm_id;
 
 namespace unc {
 namespace tc {
@@ -34,13 +38,9 @@ TcModule::~TcModule() {}
 void TcModule::collect_db_params() {
   pfc::core::ModuleConfBlock tc_db_block(tc_conf_block);
 
-  dsn_name=
+  dsn_name =
       tc_db_block.getString(tc_conf_db_dsn_name_param,
                             tc_def_db_dsn_name_value.c_str());
-
-  drv_name=
-      tc_db_block.getString(tc_conf_db_drv_name_param,
-                            tc_def_db_drv_name_value.c_str());
 }
 
 /**
@@ -58,14 +58,24 @@ pfc_bool_t TcModule::validate_tc_db(TcDbHandler* tc_db_) {
  * @brief Module Init
  */
 pfc_bool_t TcModule::init() {
+  /*Initialize Audit failure alarm*/
+  pfc::alarm::alarm_return_code_t alarm_retval = pfc::alarm::ALM_OK;
+  alarm_retval = pfc::alarm::pfc_alarm_initialize(&alarm_id);
+  if (alarm_retval != pfc::alarm::ALM_OK) {
+    pfc_log_debug("Alarm intialization failed: %d", alarm_retval);
+    return PFC_FALSE;
+  } else {
+    pfc_log_info("Initialised audit alarm fd: %d", alarm_id);
+  }
+
   // Assign Memory to task queues
-  read_q_ = new TcTaskqUtil(TC_READ_CONCURRENCY);
+  read_q_ = new TcTaskqUtil(TC_READ_CONCURRENCY, 0);
   if (PFC_EXPECT_FALSE(read_q_ == NULL)) {
     pfc_log_error("ReadQ Creation Failed");
     return PFC_FALSE;
   }
 
-  audit_q_ = new TcTaskqUtil(TC_AUDIT_CONCURRENCY);
+  audit_q_ = new TcTaskqUtil(TC_AUDIT_CONCURRENCY, alarm_id);
   if (PFC_EXPECT_FALSE(audit_q_ == NULL)) {
     pfc_log_error("AuditQ Creation Failed");
     return PFC_FALSE;
@@ -93,7 +103,7 @@ pfc_bool_t TcModule::init() {
   }
   // Read the configuration file
   collect_db_params();
-  TcDbHandler tc_db_hdlr_(dsn_name, drv_name);
+  TcDbHandler tc_db_hdlr_(dsn_name);
   if (validate_tc_db(&tc_db_hdlr_) == PFC_FALSE) {
     return PFC_FALSE;
   }
@@ -167,9 +177,13 @@ pfc_bool_t TcModule::HandleAct(pfc_bool_t is_switch) {
     return PFC_FALSE;
   }
   tc_lock_.ResetTcGlobalDataOnStateTransition();
+  /*clear alarms in transition*/
+  pfc::alarm::pfc_alarm_clear(UNCCID_TC);
 
-  TcDbHandler* tc_db_hdlr_ = new TcDbHandler(dsn_name, drv_name);
-  PFC_ASSERT(tc_db_hdlr_ != NULL);
+  TcDbHandler* tc_db_hdlr_ = new TcDbHandler(dsn_name);
+  if (tc_db_hdlr_ == NULL) {
+    return PFC_FALSE;
+  }
   // create operations to send setup/setup_complete
   TcStartUpOperations startup_(&tc_lock_, NULL, tc_db_hdlr_, tc_channels_,
                                is_switch);
@@ -218,8 +232,11 @@ TcOperStatus TcModule::HandleConfigRequests(pfc::core::ipc::ServerSession*
  */
 TcOperStatus TcModule::HandleStartUpRequests(pfc::core::ipc::ServerSession*
                                              oper_sess) {
-  TcDbHandler* tc_db_hdlr_ = new TcDbHandler(dsn_name, drv_name);
-  PFC_ASSERT(tc_db_hdlr_ != NULL);
+  TcDbHandler* tc_db_hdlr_ = new TcDbHandler(dsn_name);
+  if (tc_db_hdlr_ == NULL) {
+    pfc_log_fatal("allocating DB handler failed");
+    return TC_OPER_FAILURE;
+  }
   TcDbOperations tc_db_oper(&tc_lock_,
                             oper_sess,
                             tc_db_hdlr_,
@@ -247,8 +264,12 @@ TcOperStatus TcModule::HandleReadRequests(pfc::core::ipc::ServerSession*
  */
 TcOperStatus TcModule::HandleAutoSaveRequests(pfc::core::ipc::ServerSession*
                                               oper_sess) {
-  TcDbHandler* tc_db_hdlr_ = new TcDbHandler(dsn_name, drv_name);
-  PFC_ASSERT(tc_db_hdlr_ != NULL);
+  TcDbHandler* tc_db_hdlr_ = new TcDbHandler(dsn_name);
+  if (tc_db_hdlr_ == NULL) {
+    pfc_log_fatal("allocating DB handler failed");
+    return TC_OPER_FAILURE;
+  }
+
   TcAutoSaveOperations tc_as_oper(&tc_lock_,
                                   oper_sess,
                                   tc_db_hdlr_,
@@ -262,8 +283,12 @@ TcOperStatus TcModule::HandleAutoSaveRequests(pfc::core::ipc::ServerSession*
  */
 TcOperStatus TcModule::HandleCandidateRequests(pfc::core::ipc::ServerSession*
                                               oper_sess) {
-  TcDbHandler* tc_db_hdlr_ = new TcDbHandler(dsn_name, drv_name);
-  PFC_ASSERT(tc_db_hdlr_ != NULL);
+  TcDbHandler* tc_db_hdlr_ = new TcDbHandler(dsn_name);
+  if (tc_db_hdlr_ == NULL) {
+    pfc_log_fatal("allocating DB handler failed");
+    return TC_OPER_FAILURE;
+  }
+
   TcCandidateOperations tc_commit_oper(&tc_lock_,
                                        oper_sess,
                                        tc_db_hdlr_,
@@ -277,8 +302,11 @@ TcOperStatus TcModule::HandleCandidateRequests(pfc::core::ipc::ServerSession*
  */
 TcOperStatus TcModule::HandleAuditRequests(pfc::core::ipc::ServerSession*
                                               oper_sess) {
-  TcDbHandler* tc_db_hdlr_ = new TcDbHandler(dsn_name, drv_name);
-  PFC_ASSERT(tc_db_hdlr_ != NULL);
+  TcDbHandler* tc_db_hdlr_ = new TcDbHandler(dsn_name);
+  if (tc_db_hdlr_ == NULL) {
+    pfc_log_fatal("allocating DB handler failed");
+    return TC_OPER_FAILURE;
+  }
   TcAuditOperations tc_audit_oper(&tc_lock_,
                                   oper_sess,
                                   tc_db_hdlr_,
@@ -354,6 +382,7 @@ pfc_ipcresp_t TcModule::ipcService(pfc::core::ipc::ServerSession& sess,
 pfc_bool_t TcModule::fini() {
   pfc_log_info("TC fini");
   UnRegisterStateHandlers();
+  pfc::alarm::pfc_alarm_close(alarm_id);
   delete read_q_;
   read_q_ = NULL;
   delete audit_q_;

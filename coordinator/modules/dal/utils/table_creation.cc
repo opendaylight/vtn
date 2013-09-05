@@ -147,14 +147,16 @@ void build_create_table_script() {
 
   // Print Copyright
   line.clear();
-/*
- * Copyright (c) 2012-2013 NEC Corporation
- * All rights reserved.
- * 
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License v1.0 which accompanies this
- * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
- */
+  line += "/*\n"
+      " * Copyright (c) 2012-2013 NEC Corporation\n"
+      " * All rights reserved.\n"
+      " *\n"
+      " * This program and the accompanying materials are made available "
+      "under the\n"
+      " * terms of the Eclipse Public License v1.0 which accompanies this\n"
+      " * distribution, and is available at "
+      "http://www.eclipse.org/legal/epl-v10.html\n"
+      " */\n";
   printf("%s", line.c_str());
 
   // Print File Header
@@ -209,11 +211,11 @@ void build_create_table_script() {
       if (def_type == kDefaultTypeBinary) {
         line += "'";
         for (uint16_t i = 0; i < uudschema::ColumnDbArraySize(tbl_idx, col_idx); i++) {
-          line+= get_default_str(kCfgIdCandidate, def_type);
+          line+= get_default_str((UpllDbCfgId)cfg_idx, def_type);
         }
         line += "'";
       } else {
-        line+= get_default_str(kCfgIdCandidate, def_type);
+        line+= get_default_str((UpllDbCfgId)cfg_idx, def_type);
       }
 
       // uinque constraint for rename tables
@@ -238,26 +240,7 @@ void build_create_table_script() {
       }
       line += uudschema::ColumnName(tbl_idx, col_idx);
     }
-    line += ")";
-
-    // UINQUE constraint on RENAME tables
-    if (strstr(uudschema::TableName(tbl_idx), "rename") != NULL) {
-      line += ",\n  ";
-      line += "UNIQUE(";
-      first = true;
-      for (col_idx = 0; col_idx < uudschema::TableNumCols(tbl_idx); col_idx++) {
-        if (col_idx >= uudschema::TableNumPkCols(tbl_idx)) {
-          if (first == false) {
-            line += ", ";
-          } else {
-            first = false;
-          }
-          line += uudschema::ColumnName(tbl_idx, col_idx);
-        }
-      }
-      line += ")";
-    }
-    line += ");";
+    line += "));";
     printf("\n  %s", line.c_str());
     printf("\n");
   }  // for all tables

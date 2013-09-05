@@ -34,6 +34,7 @@ class VbrFlowFilterMoMgr : public MoMgrImpl {
      */
     static BindInfo vbr_flowfilter_maintbl_bind_info[];
 
+    uint32_t cur_instance_count;
     /**
      * @brief  Validates the Attribute of a Particular Class.
      *
@@ -414,11 +415,31 @@ class VbrFlowFilterMoMgr : public MoMgrImpl {
 
     upll_rc_t ConstructReadDetailResponse(ConfigKeyVal *ikey,
                                           ConfigKeyVal *drv_resp_ckv,
-                                          upll_keytype_datatype_t dt_type,
-                                          unc_keytype_operation_t op,
-                                          DbSubOp dbop,
-                                          DalDmlIntf *dmi,
                                           ConfigKeyVal **okey);
+
+    upll_rc_t CreateAuditMoImpl(ConfigKeyVal *ikey,
+                                DalDmlIntf *dmi,
+                                const char *ctrlr_id);
+
+    upll_rc_t GetControllerDomainID(ConfigKeyVal *ikey,
+                                    upll_keytype_datatype_t dt_type,
+                                    DalDmlIntf *dmi);
+
+    upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
+                                upll_keytype_datatype_t dt_type,
+                                DalDmlIntf *dmi);
+
+    upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
+
+    bool FilterAttributes(void *&val1,
+                          void *val2,
+                          bool copy_to_running,
+                          unc_keytype_operation_t op);
+
+    upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
+                          DalDmlIntf *dmi,
+                          IpcReqRespHeader *req);
+
 };
 }  // namespace kt_momgr
 }  // namespace upll

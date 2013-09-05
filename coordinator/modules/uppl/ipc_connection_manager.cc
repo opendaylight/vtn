@@ -30,11 +30,10 @@ using pfc::core::ipc::IpcEventMask;
  *@param[in]   : None
  *@return      : None
  **/
-IPCConnectionManager::IPCConnectionManager() {
-  ipc_server_handler_ = NULL;
-  ipc_client_logical_handler_= NULL;
-  notfn_timer_ = NULL;
-  taskq_ = NULL;
+IPCConnectionManager::IPCConnectionManager()
+:
+                      ipc_server_handler_(NULL),
+                      ipc_client_logical_handler_(NULL) {
 }
 
 /**
@@ -43,16 +42,34 @@ IPCConnectionManager::IPCConnectionManager() {
  *@return      : None
  **/
 IPCConnectionManager::~IPCConnectionManager() {
-  if (notfn_timer_ != NULL) {
-    delete notfn_timer_;
-    notfn_timer_ = NULL;
+  // Clear timer and taskq if present in case of timeout
+  if (!timer_obj_.empty()) {
+    map<string, Timer *> :: iterator timer_iter = timer_obj_.begin();
+    for (; timer_iter != timer_obj_.end();) {
+      Timer * timer = (*timer_iter).second;
+      if (timer != NULL) {
+        delete timer;
+        timer = NULL;
+      }
+      timer_obj_.erase(timer_iter++);
+    }
+  } else {
+    pfc_log_debug("timer_obj_ map is empty");
   }
-  if (taskq_ != NULL) {
-    delete taskq_;
-    taskq_ = NULL;
+  if (!queue_obj_.empty()) {
+    map<string, TaskQueue *> :: iterator task_iter = queue_obj_.begin();
+    for (; task_iter != queue_obj_.end(); ) {
+      TaskQueue * task = (*task_iter).second;
+      if (task != NULL) {
+        delete task;
+        task = NULL;
+      }
+      queue_obj_.erase(task_iter++);
+    }
+  } else {
+    pfc_log_debug("queue_obj_ map is empty");
   }
 }
-
 
 /**
  *@Description : Initializes the IPC client and server class objects
@@ -67,9 +84,11 @@ void IPCConnectionManager::InitializeIpcServerClient() {
 
 
 /**
- *@Description : Initializes the data members of IPCConnectionManager
- *@param[in]   : channel name ,service name
- *@return      : None
+ * @Description : Initializes the data members of IPCConnectionManager
+ * @param[in]   : channel name - it contains the ipc channel name provided
+ *                               by UPPL 
+ *                service name - it contains the ipc service name provided
+ *                               by UPPL
  **/
 void IPCConnectionManager::InitIpcConnectionManager(string channel_name,
                                                     string service_name) {
@@ -89,9 +108,10 @@ IPCServerHandler * IPCConnectionManager::get_ipc_server_handler() {
 }
 
 /**
- *@Description : Returns the object of NotificationManager class
- *@param[in]   : None
- *@return      : Pointer to NotificationManager class
+ * @Description : Returns the object of NotificationManager class
+ * @param[in]   : ctr_type - enum which indicates the controller type
+ *                           i.e either UNKNOWN or PFC or VNP
+ * @return      : Pointer to NotificationManager class
  **/
 NotificationManager* IPCConnectionManager::get_notification_manager(
     unc_keytype_ctrtype_t ctr_type) {
@@ -101,7 +121,7 @@ NotificationManager* IPCConnectionManager::get_notification_manager(
   }
   if (ctr_type == UNC_CT_VNP) {
     return NotificationManager::get_notification_manager(
-          UNC_CT_VNP);
+        UNC_CT_VNP);
   }
   return NULL;
 }
@@ -141,9 +161,9 @@ string IPCConnectionManager::get_uppl_service_name() {
 }
 
 /**
- *@Description : Posts the event to the client
- *@param[in]   : Server event
- *@return      : UPPL_RC_SUCCESS
+ * @Description : Posts the event to the client
+ * @param[in]   : pointer to Serverevent
+ * @return      : UPPL_RC_SUCCESS
  **/
 uint32_t IPCConnectionManager::SendEvent(ServerEvent *evt) {
   uint32_t ret = ipc_server_handler_->SendEvent(evt);
@@ -152,9 +172,9 @@ uint32_t IPCConnectionManager::SendEvent(ServerEvent *evt) {
 
 
 /**
- *@Description : Frees up the allocated memory
- *@param[in]   : None
- *@return      : UPPL_RC_SUCCESS
+ * @Description : Frees up the allocated memory
+ * @return      : UPPL_RC_SUCCESS - if the allocated memory is freed
+ *                successfully
  **/
 UpplReturnCode IPCConnectionManager::Finalize() {
   if (ipc_server_handler_ != NULL)
@@ -163,15 +183,18 @@ UpplReturnCode IPCConnectionManager::Finalize() {
     IPCClientLogicalHandler::release_ipc_client_logical_handler();
   ipc_server_handler_ = NULL;
   ipc_client_logical_handler_ = NULL;
+  notfn_timer_id_.clear();
+  controller_in_audit_.clear();
   return UPPL_RC_SUCCESS;
 }
 
 /**
- * * @Description: This function is used for notification manager subscription
- * to IPC event handler
- * * * @param[in]: no argument
- * * * @return   : pfc_ipcresp_t
- * */
+ * @Description : This function is used for notification manager subscription
+ *                to IPC event handler
+ * @return      : UPPL_RC_SUCCESS  - if the IPC Event subscription notification
+ *                is successful else UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED 
+ *                is returned if event subscription notification failed
+ **/
 UpplReturnCode IPCConnectionManager::SendEventSubscription() {
   // Get Physical layer instance
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
@@ -215,11 +238,13 @@ UpplReturnCode IPCConnectionManager::SendEventSubscription() {
 }
 
 /**
- * * @Description: This function is used for notification manager cancel
- * subscription from IPC event handler
- * * * @param[in]: no argument
- * * * @return   : pfc_ipcresp_t
- * */
+ * @Description : This function is used for notification manager cancel
+ *                subscription from IPC event handler
+ * @return      : UPPL_RC_SUCCESS - if event subscription is cancelled
+ *                successfully from IPC Event Handler 
+ *                else UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED
+ *                will be returned
+ **/
 UpplReturnCode  IPCConnectionManager::CancelEventSubscription() {
   // Get Physical layer instance
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
@@ -242,10 +267,10 @@ UpplReturnCode  IPCConnectionManager::CancelEventSubscription() {
 }
 
 /**
- * * @Description: This function is used for add controller to controller_in_audit
- * vector
- * * * @param[in]: controller_name
- * * * @return   : None
+ * @Description : This function is used for add controller to
+ *                controller_in_audit vector
+ * @param[in]   : controller_name of type string
+ * @return      : void 
  * */
 void IPCConnectionManager::addControllerToAuditList(string controller_name) {
   pfc_log_debug("Executing addControllerToAuditList");
@@ -261,11 +286,13 @@ void IPCConnectionManager::addControllerToAuditList(string controller_name) {
 }
 
 /**
- * * @Description: This function is used for remove controller from controller_in_audit
- * vector
- * * * @param[in]: controller_name
- * * * @return   : None
- * */
+ * @Description : This function is used for remove controller from
+ *                controller_in_audit vector
+ * @param[in]   : controller_name of type string
+ * @return      : UPPL_RC_SUCCESS  - if controller is removed successfully
+ *                from audit list else UPPL_RC_ERR_AUDIT_FAILURE will be
+ *                returned if controller is not available in the vector
+ **/
 UpplReturnCode IPCConnectionManager::removeControllerFromAuditList(
     string controller_name) {
   pfc_log_debug("Executing removeControllerFromAuditList");
@@ -290,11 +317,12 @@ UpplReturnCode IPCConnectionManager::removeControllerFromAuditList(
 }
 
 /**
- * * @Description: This function is used for check whether controller name is
- * available in controller_in_audit vector
- * * * @param[in]: controller_name
- * * * @return   : PFC_TRUE or PFC_FALSE
- * */
+ * @Description : This function is used for check whether controller name is
+ *                available in controller_in_audit vector
+ * @param[in]   : controller_name of type string
+ * @return      : PFC_TRUE - if controller is in the audit list else
+ *                PFC_FALSE is returned
+ **/
 pfc_bool_t IPCConnectionManager::IsControllerInAudit(string controller_name) {
   pfc_log_debug("Executing IsControllerInAudit");
   vector<string> :: iterator iter = find(controller_in_audit_.begin(),
@@ -308,18 +336,48 @@ pfc_bool_t IPCConnectionManager::IsControllerInAudit(string controller_name) {
 }
 
 /**
- * * @Description: This function is used for start the timer to receive
- * notification after audit end
- * * * @param[in]: controller_name
- * * * @return   : Success or Failure
- * */
-uint32_t IPCConnectionManager::StartNotificationTimer(string controller_name) {
+ * @Description : This function is used for start the timer to receive
+ *                notification after audit end
+ * @param[in]   : controller_name of type string
+ * @return      : UPPL_RC_SUCCESS if timer is started successfully for audit
+ *                as well as for task queue else
+ *                UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION if there is error while
+ *                creating task queue or timer for task queue
+ **/
+uint32_t IPCConnectionManager::StartNotificationTimer(
+    OdbcmConnectionHandler *db_conn,
+    string controller_name) {
   PhysicalCore *physical_core = PhysicalLayer::get_instance()->
       get_physical_core();
   uint32_t time_out = physical_core->getAuditNotfnTimeOut();
   uint32_t no_tasks = 1;
+  map<string, Timer *> :: iterator timer_iter =
+      timer_obj_.find(controller_name);
+  map<string, TaskQueue *> :: iterator task_iter
+      = queue_obj_.find(controller_name);
+  if ((timer_iter != timer_obj_.end()) || (task_iter != queue_obj_.end())) {
+    pfc_log_warn("StartNotificationTimer::Timer object found for controller %s", 
+        controller_name.c_str());
+    UpplReturnCode cancel_ret = CancelTimer(controller_name);
+    if (cancel_ret != UPPL_RC_SUCCESS) {
+      pfc_log_error("StartNotificationTimer::Failure in cancelling "
+          "timer for controller %s", controller_name.c_str());
+    }
+  }
+  std::pair<std::map<string, Timer*>::iterator, bool> tmap_rc;
+  std::pair<std::map<string, TaskQueue*>::iterator, bool> tqmap_rc;
+
   pfc_log_debug("Starting timer with timeout %d for audit", time_out);
-  taskq_ = TaskQueue::create(no_tasks);
+  TaskQueue *taskq = TaskQueue::create(no_tasks);
+  if (taskq == NULL) {
+    pfc_log_fatal("Error while creating task queue");
+    return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+  }
+  tqmap_rc = queue_obj_.insert(
+          std::pair<std::string, TaskQueue*>(controller_name, taskq));
+  if (tqmap_rc.second == false) {
+    pfc_log_error("StartNotificationTimer - Error in inserting TaskQueue object");
+  } 
   AuditNotification func_obj;
   func_obj.controller_name_ = controller_name;
   timer_func_t timer_func = func_obj;
@@ -327,14 +385,65 @@ uint32_t IPCConnectionManager::StartNotificationTimer(string controller_name) {
   pfc_timespec_t  timeout;
   timeout.tv_sec = time_out;
   timeout.tv_nsec = 0;
-  notfn_timer_ = pfc::core::Timer::create(taskq_->getId());
-  uint32_t ret = notfn_timer_->post(&timeout, timer_func, &time_out_id);
+  Timer *notfn_timer = pfc::core::Timer::create(taskq->getId());
+  if (notfn_timer == NULL) {
+    pfc_log_fatal("Error while creating timer for the task queue");
+    return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+  }
+  tmap_rc = timer_obj_.insert(
+          std::pair<string, Timer*>(controller_name, notfn_timer));
+  if (tmap_rc.second == false) {
+    pfc_log_error("StartNotificationTimer - Error in inserting Timer object");
+  }
+  uint32_t ret = notfn_timer->post(&timeout, timer_func, &time_out_id);
   if (ret != 0) {
-    pfc_log_error("Failure occurred in starting notification timer");
+    pfc_log_error("StartNotificationTimer - Failure occurred in starting timer");
   } else {
     pfc_log_debug("Setting time_out_id %d, taskq id %d controller_name %s",
-                  time_out_id, taskq_->getId(), controller_name.c_str());
+                  time_out_id, taskq->getId(), controller_name.c_str());
     setTimeOutId(controller_name, time_out_id);
+  }
+  return ret;
+}
+
+/**
+ * @Description : This function is used to cancel the timer and 
+ *                delete associated objects
+ * @param[in]   : controller_name of type string
+ * @return      : UPPL_RC_SUCCESS - if timer object and task object 
+ *                are deleted successfully else UPPL_RC_ERR_AUDIT_FAILURE
+ *                will be returned
+ **/
+UpplReturnCode IPCConnectionManager::CancelTimer(string controller_name) {
+  pfc_log_debug("Executing CancelTimer()");
+  UpplReturnCode ret = UPPL_RC_SUCCESS;
+  uint32_t time_out_id = getTimeOutId(controller_name);
+  map<string, Timer *> :: iterator timer_iter =
+      timer_obj_.find(controller_name);
+  if (timer_iter != timer_obj_.end()) {
+    Timer * timer = (*timer_iter).second;
+    if (timer != NULL) {
+      timer->cancel(time_out_id);
+      delete timer;
+      timer = NULL;
+      pfc_log_debug("Deleted Timer object successfully");
+    }
+    timer_obj_.erase(timer_iter);
+  } else {
+    pfc_log_debug("Timer object not found ");
+  }
+  map<string, TaskQueue *> :: iterator task_iter
+  = queue_obj_.find(controller_name);
+  if (task_iter != queue_obj_.end()) {
+    TaskQueue * task = (*task_iter).second;
+    if (task != NULL) {
+      delete task;
+      task = NULL;
+      pfc_log_debug("Deleted Task object successfully");
+    }
+    queue_obj_.erase(task_iter);
+  } else {
+    pfc_log_debug("Task object not found ");
   }
   return ret;
 }

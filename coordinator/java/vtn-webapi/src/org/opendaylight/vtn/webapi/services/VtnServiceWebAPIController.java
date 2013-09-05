@@ -57,8 +57,10 @@ public class VtnServiceWebAPIController {
 			//acquire session id
 			resource.setPath(ResourcePathEnum.SESSION_PATH.getPath());
 			if(resource.post(sessionJson) != RESPONSE_SUCCESS){
-				LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-				throw new VtnServiceWebAPIException(ApplicationConstants.SESSION_CREATION_FAILED,VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.SESSION_CREATION_FAILED));
+				isReadlock=false;
+				LOG.error("JAVA API returns error # "+resource.getInfo());
+				responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+				throw new VtnServiceWebAPIException();
 			}
 			sessionId = VtnServiceCommonUtil.getSessionFromJson(resource.getInfo());
 			//acquire monitoring mode
@@ -66,8 +68,9 @@ public class VtnServiceWebAPIController {
 			resource.setSessionID(sessionId);
 			if(resource.put(VtnServiceWebUtil.prepareAquireReadLockJSON()) != RESPONSE_SUCCESS){
 				isReadlock=false;
-				LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-				throw new VtnServiceWebAPIException(ApplicationConstants.AQUIRE_CONFIGURATION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.AQUIRE_CONFIGURATION_FAILED));
+				LOG.error("JAVA API returns error # "+resource.getInfo());
+				responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+				throw new VtnServiceWebAPIException();
 			}
 			//send the api request json
 			resource.setPath(resourcePath);
@@ -76,14 +79,13 @@ public class VtnServiceWebAPIController {
 			LOG.debug("JAVA API returned error code #"+status);
 			if(status != RESPONSE_SUCCESS){
 				responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
-				LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-				throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
+				LOG.error("JAVA API returns error # "+resource.getInfo());
+				throw new VtnServiceWebAPIException();
 			}
 			responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
 			LOG.debug("JAVA API returned response # "+responseStr);
 		}catch (VtnServiceWebAPIException vtnException) {	
 			exceptionStatus = true;
-			LOG.error(VtnServiceCommonUtil.logErrorDetails(vtnException.getErrorCode()));
 		}catch (RuntimeException exception) {
 			exceptionStatus = true;
 			LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));	
@@ -96,8 +98,9 @@ public class VtnServiceWebAPIController {
 					resource.setPath(ResourcePathEnum.ACQUIRE_RELEASE_MONITORING_PATH.getPath());
 					resource.setSessionID(sessionId);
 					if(resource.delete() != RESPONSE_SUCCESS){
-						LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-						throw new VtnServiceWebAPIException(ApplicationConstants.RELEASE_CONFIGURATION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.RELEASE_CONFIGURATION_FAILED));
+						LOG.error("JAVA API returns error # "+resource.getInfo());
+						responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+						throw new VtnServiceWebAPIException();
 					}
 			}
 			if(sessionId != ApplicationConstants.ZERO){
@@ -105,8 +108,9 @@ public class VtnServiceWebAPIController {
 					resource.setPath(ResourcePathEnum.RELEASE_SESSION.getPath()+ sessionId);
 					resource.setSessionID(sessionId);
 					if(resource.delete() != RESPONSE_SUCCESS){
-						LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-						throw new VtnServiceWebAPIException(ApplicationConstants.RELEASE_SESSION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.RELEASE_SESSION_FAILED));
+						LOG.error("JAVA API returns error # "+resource.getInfo());
+						responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+						throw new VtnServiceWebAPIException();
 					}
 			}
 			responseJSON = new JSONObject(responseStr);
@@ -142,8 +146,10 @@ public class VtnServiceWebAPIController {
 			//acquire session id
 			resource.setPath(ResourcePathEnum.SESSION_PATH.getPath());
 			if(resource.post(sessionJson) != RESPONSE_SUCCESS){
-				LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-				throw new VtnServiceWebAPIException(ApplicationConstants.SESSION_CREATION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.SESSION_CREATION_FAILED));
+				isReadlock=false;
+				LOG.error("JAVA API returns error # "+resource.getInfo());
+				responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+				throw new VtnServiceWebAPIException();
 			}
 			sessionId = VtnServiceCommonUtil.getSessionFromJson(resource.getInfo());
 			//acquire monitoring mode
@@ -152,8 +158,9 @@ public class VtnServiceWebAPIController {
 			resource.setSessionID(sessionId);
 			if(resource.put(VtnServiceWebUtil.prepareAquireReadLockJSON()) != RESPONSE_SUCCESS){
 				isReadlock = false;
-				LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-				throw new VtnServiceWebAPIException(ApplicationConstants.AQUIRE_CONFIGURATION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.AQUIRE_CONFIGURATION_FAILED));
+				LOG.error("JAVA API returns error # "+resource.getInfo());
+				responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+				throw new VtnServiceWebAPIException();
 			}
 			//send the api request json
 			resource.setPath(resourcePath);
@@ -163,14 +170,13 @@ public class VtnServiceWebAPIController {
 			LOG.debug("JAVA API returned error code #"+status);
 			if(status != RESPONSE_SUCCESS){
 				responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
-				LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-				throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
+				LOG.error("JAVA API returns error # "+resource.getInfo());
+				throw new VtnServiceWebAPIException();
 			}
 			responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
 			LOG.debug("JAVA API returned response # "+responseStr);
 		}catch (VtnServiceWebAPIException vtnException) {
 			exceptionStatus = true;
-			LOG.error(VtnServiceCommonUtil.logErrorDetails(vtnException.getErrorCode()));
 		}catch (RuntimeException exception) {
 			exceptionStatus = true;
 			LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));	
@@ -183,8 +189,9 @@ public class VtnServiceWebAPIController {
 					resource.setPath(ResourcePathEnum.ACQUIRE_RELEASE_MONITORING_PATH.getPath());
 					resource.setSessionID(sessionId);
 					if(resource.delete() != RESPONSE_SUCCESS){
-						LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-						throw new VtnServiceWebAPIException(ApplicationConstants.RELEASE_CONFIGURATION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.RELEASE_CONFIGURATION_FAILED));
+						LOG.error("JAVA API returns error # "+resource.getInfo());
+						responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+						throw new VtnServiceWebAPIException();
 					}
 				}
 				
@@ -193,8 +200,9 @@ public class VtnServiceWebAPIController {
 					resource.setPath(ResourcePathEnum.RELEASE_SESSION.getPath()+ sessionId);
 					resource.setSessionID(sessionId);
 					if(resource.delete() != RESPONSE_SUCCESS){
-						LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-						throw new VtnServiceWebAPIException(ApplicationConstants.RELEASE_SESSION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.RELEASE_SESSION_FAILED));
+						LOG.error("JAVA API returns error # "+resource.getInfo());
+						responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+						throw new VtnServiceWebAPIException();
 					}
 				}
 				responseJSON = new JSONObject(responseStr);
@@ -231,89 +239,91 @@ public class VtnServiceWebAPIController {
 		long configId = 0;
 		final RestResource resource = new RestResource();
 		try{
-		LOG.debug("acquiring session id and config mode from java API");
-		//acquire session id
-		resource.setPath(ResourcePathEnum.SESSION_PATH.getPath());
-		if(resource.post(sessionJson) != RESPONSE_SUCCESS){
-			LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-			throw new VtnServiceWebAPIException(ApplicationConstants.SESSION_CREATION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.SESSION_CREATION_FAILED));
-		}
-		sessionId = VtnServiceCommonUtil.getSessionFromJson(resource.getInfo());
-		//acquire configure mode
-		resource.setPath(ResourcePathEnum.ACQUIRE_CONFIG_PATH.getPath());
-		resource.setSessionID(sessionId);
-		if(resource.post(VtnServiceWebUtil.prepareAquireConfigJSON()) != RESPONSE_SUCCESS){
-			LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-			throw new VtnServiceWebAPIException(ApplicationConstants.AQUIRE_CONFIGURATION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.AQUIRE_CONFIGURATION_FAILED));
-		}
-		configId = VtnServiceCommonUtil.getConfigIdFromJson(resource.getInfo());
-		//send the api request json
-		resource.setPath(resourcePath);
-		resource.setSessionID(sessionId);
-		resource.setConfigID(configId);
-		LOG.debug("Request object passing to JAVA API  #"+reqObject);
-		final int status = resource.post(reqObject);
-		LOG.debug("JAVA API returned error code #"+status);
-		if(status != RESPONSE_SUCCESS){
-			LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-			throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
-		}
-		responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
-		LOG.debug("JAVA API returned response # "+responseStr);
-		resource.setPath(ResourcePathEnum.COMMIT_CONFIGURATION.getPath());
-		resource.setSessionID(sessionId);
-		resource.setConfigID(configId);
-		final int commitStatus = resource.put(VtnServiceWebUtil.prepareConfigCommitOrSaveJSON(ApplicationConstants.OPERATION_COMMIT));
-		if (commitStatus != RESPONSE_SUCCESS) {
-			LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-				throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR,
-						ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
+			LOG.debug("acquiring session id and config mode from java API");
+			//acquire session id
+			resource.setPath(ResourcePathEnum.SESSION_PATH.getPath());
+			if(resource.post(sessionJson) != RESPONSE_SUCCESS){
+				LOG.error("JAVA API returns error # "+resource.getInfo());
+				responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+				throw new VtnServiceWebAPIException();
+			}
+			sessionId = VtnServiceCommonUtil.getSessionFromJson(resource.getInfo());
+			//acquire configure mode
+			resource.setPath(ResourcePathEnum.ACQUIRE_CONFIG_PATH.getPath());
+			resource.setSessionID(sessionId);
+			if(resource.post(VtnServiceWebUtil.prepareAquireConfigJSON()) != RESPONSE_SUCCESS){
+				LOG.error("JAVA API returns error # "+resource.getInfo());
+				responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+				throw new VtnServiceWebAPIException();
+			}
+			configId = VtnServiceCommonUtil.getConfigIdFromJson(resource.getInfo());
+			// Abort operation to clear candidate DB
+			responseStr = performAbort(sessionId, configId, resource);
+			//send the api request json
+			resource.setPath(resourcePath);
+			resource.setSessionID(sessionId);
+			resource.setConfigID(configId);
+			LOG.debug("Request object passing to JAVA API  #"+reqObject);
+			final int status = resource.post(reqObject);
+			LOG.debug("JAVA API returned error code #"+status);
+			if(status != RESPONSE_SUCCESS){
+				LOG.error("JAVA API returns error # "+resource.getInfo());
+				responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+				throw new VtnServiceWebAPIException();//to save the below steps execution
+			}
+			responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+			LOG.debug("JAVA API returned response # "+responseStr);
+			//responseStr = performCommit(sessionId, configId, resource);
+			String commitResponse = performCommit(sessionId, configId, resource);
+			if(commitResponse != null){
+				responseStr = commitResponse;
 			}
 		}catch (VtnServiceWebAPIException vtnException) {	
 			exceptionStatus = true;
-			LOG.error(VtnServiceCommonUtil.logErrorDetails(vtnException.getErrorCode()));
 		}catch (RuntimeException exception) {
 			exceptionStatus = true;
 			LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));	
 			throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
 		}
-	finally{
-		try{
-			if(configId != ApplicationConstants.ZERO){
-				//release monitoring mode
-				resource.setPath(ResourcePathEnum.RELEASE_CONFIGURATION.getPath()+configId);
-				resource.setSessionID(sessionId);
-				resource.setConfigID(configId);
-				if(resource.delete() != RESPONSE_SUCCESS){
-					LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-					throw new VtnServiceWebAPIException(ApplicationConstants.RELEASE_CONFIGURATION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.RELEASE_CONFIGURATION_FAILED));
+		finally{
+			try{
+				if(configId != ApplicationConstants.ZERO){
+					//release monitoring mode
+					resource.setPath(ResourcePathEnum.RELEASE_CONFIGURATION.getPath()+configId);
+					resource.setSessionID(sessionId);
+					resource.setConfigID(configId);
+					if(resource.delete() != RESPONSE_SUCCESS){
+						LOG.error("JAVA API returns error # "+resource.getInfo());
+						responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+						throw new VtnServiceWebAPIException();
+					}
 				}
-			}
-			if(sessionId != ApplicationConstants.ZERO){
-				//release session
-				resource.setPath(ResourcePathEnum.RELEASE_SESSION.getPath()+ sessionId);
-				resource.setSessionID(sessionId);
-				if(resource.delete() != RESPONSE_SUCCESS){
-					LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-					throw new VtnServiceWebAPIException(ApplicationConstants.RELEASE_SESSION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.RELEASE_SESSION_FAILED));
+				if(sessionId != ApplicationConstants.ZERO){
+					//release session
+					resource.setPath(ResourcePathEnum.RELEASE_SESSION.getPath()+ sessionId);
+					resource.setSessionID(sessionId);
+					if(resource.delete() != RESPONSE_SUCCESS){
+						LOG.error("JAVA API returns error # "+resource.getInfo());
+						responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+						throw new VtnServiceWebAPIException();
+					}
 				}
+
+				if(null == responseStr && !exceptionStatus){
+					responseJSON = VtnServiceWebUtil.prepareErrResponseJson(ApplicationConstants.STATUS_OK, ApplicationConstants.STATUS_SUCCESS);
+				}else{
+					responseJSON = new JSONObject(responseStr);
+				}
+			}catch (Exception exception) {
+				LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));	
+				throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
 			}
-			
-			if(null == responseStr && !exceptionStatus){
-				responseJSON = VtnServiceWebUtil.prepareErrResponseJson(ApplicationConstants.STATUS_OK, ApplicationConstants.STATUS_SUCCESS);
-			}else{
-				responseJSON = VtnServiceWebUtil.prepareErrResponseJson(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
-			}
-		}catch (Exception exception) {
-			exceptionStatus = true;
-			LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));	
-			throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
+
+
 		}
-		
-		
+		return responseJSON;
 	}
-	return responseJSON;
-	}
+
 	/**
 	 * Put.This method will be required when we have to update any component using Java API. 
 	 * This method will work in the following sequence-
@@ -339,43 +349,42 @@ public class VtnServiceWebAPIController {
 			//acquire session id
 			resource.setPath(ResourcePathEnum.SESSION_PATH.getPath());
 			if(resource.post(sessionJson) != RESPONSE_SUCCESS){
-				LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-				throw new VtnServiceWebAPIException(ApplicationConstants.SESSION_CREATION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.SESSION_CREATION_FAILED));
+				LOG.error("JAVA API returns error # "+resource.getInfo());
+				responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+				throw new VtnServiceWebAPIException();
 			}
 			sessionId = VtnServiceCommonUtil.getSessionFromJson(resource.getInfo());
 			//acquire configure mode
 			resource.setPath(ResourcePathEnum.ACQUIRE_CONFIG_PATH.getPath());
 			resource.setSessionID(sessionId);
 			if(resource.post(VtnServiceWebUtil.prepareAquireConfigJSON()) != RESPONSE_SUCCESS){
-				LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-				throw new VtnServiceWebAPIException(ApplicationConstants.AQUIRE_CONFIGURATION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.AQUIRE_CONFIGURATION_FAILED));
-		}
-		configId = VtnServiceCommonUtil.getConfigIdFromJson(resource.getInfo());
-		//send the api request json
-		resource.setPath(resourcePath);
-		resource.setConfigID(configId);
-		resource.setSessionID(sessionId);
-		LOG.debug("Request object passing to JAVA API  #"+reqObject);
-		final int status = resource.put(reqObject);
-		LOG.debug("JAVA API returned error code #"+status);
-		if(status != RESPONSE_SUCCESS){
-			LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-			throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
-		}
-		responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
-		LOG.debug("JAVA API returned response # "+responseStr);
-		resource.setPath(ResourcePathEnum.COMMIT_CONFIGURATION.getPath());
-		resource.setSessionID(sessionId);
-		resource.setConfigID(configId);
-		final int commitStatus = resource.put(VtnServiceWebUtil.prepareConfigCommitOrSaveJSON(ApplicationConstants.OPERATION_COMMIT));
-		if (commitStatus != RESPONSE_SUCCESS) {
-			LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-			throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR,
-						ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
-		}
+				LOG.error("JAVA API returns error # "+resource.getInfo());
+				responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+				throw new VtnServiceWebAPIException();
+			}
+			configId = VtnServiceCommonUtil.getConfigIdFromJson(resource.getInfo());
+			responseStr = performAbort(sessionId, configId, resource);		
+			//send the api request json
+			resource.setPath(resourcePath);
+			resource.setConfigID(configId);
+			resource.setSessionID(sessionId);
+			LOG.debug("Request object passing to JAVA API  #"+reqObject);
+			final int status = resource.put(reqObject);
+			LOG.debug("JAVA API returned error code #"+status);
+			if(status != RESPONSE_SUCCESS){
+				LOG.error("JAVA API returns error # "+resource.getInfo());
+				responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+				throw new VtnServiceWebAPIException();//to save the below steps execution
+			}
+			responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+			LOG.debug("JAVA API returned response # "+responseStr);
+			//responseStr = performCommit(sessionId, configId, resource);
+			String commitResponse = performCommit(sessionId, configId, resource);
+			if(commitResponse != null){
+					responseStr = commitResponse;
+			}
 		}catch (VtnServiceWebAPIException vtnException) {	
 			exceptionStatus = true;
-			LOG.error(VtnServiceCommonUtil.logErrorDetails(vtnException.getErrorCode()));
 		}catch (RuntimeException exception) {
 			exceptionStatus = true;
 			LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));	
@@ -389,8 +398,9 @@ public class VtnServiceWebAPIController {
 					resource.setSessionID(sessionId);
 					resource.setConfigID(configId);
 					if(resource.delete() != RESPONSE_SUCCESS){
-						LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-						throw new VtnServiceWebAPIException(ApplicationConstants.RELEASE_CONFIGURATION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.RELEASE_CONFIGURATION_FAILED));
+						LOG.error("JAVA API returns error # "+resource.getInfo());
+						responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+						throw new VtnServiceWebAPIException();
 					}
 				}
 				if(sessionId != ApplicationConstants.ZERO){
@@ -398,26 +408,27 @@ public class VtnServiceWebAPIController {
 					resource.setPath(ResourcePathEnum.RELEASE_SESSION.getPath()+ sessionId);
 					resource.setSessionID(sessionId);
 					if(resource.delete() != RESPONSE_SUCCESS){
-						LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-						throw new VtnServiceWebAPIException(ApplicationConstants.RELEASE_SESSION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.RELEASE_SESSION_FAILED));
+						LOG.error("JAVA API returns error # "+resource.getInfo());
+						responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+						throw new VtnServiceWebAPIException();
 					}
 				}
-				
+
 				if(null == responseStr && !exceptionStatus){
 					responseJSON = VtnServiceWebUtil.prepareErrResponseJson(ApplicationConstants.STATUS_OK, ApplicationConstants.STATUS_SUCCESS);
 				}else{
-					responseJSON = VtnServiceWebUtil.prepareErrResponseJson(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
+					responseJSON = new JSONObject(responseStr);
 				}
 			}catch (Exception exception) {
 				exceptionStatus = true;
 				LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));	
 				throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
 			}
-			
+
 		}
 		return responseJSON;
 	}
-	
+
 	/**
 	 * Delete.This method will be required when we have to delete any component using Java API. 
 	 * This method will work in the following sequence-
@@ -443,42 +454,42 @@ public class VtnServiceWebAPIController {
 			//acquire session id
 			resource.setPath(ResourcePathEnum.SESSION_PATH.getPath());
 			if(resource.post(sessionJson) != RESPONSE_SUCCESS){
-				LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-				throw new VtnServiceWebAPIException(ApplicationConstants.SESSION_CREATION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.SESSION_CREATION_FAILED));
+				LOG.error("JAVA API returns error # "+resource.getInfo());
+				responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+				throw new VtnServiceWebAPIException();
 			}
 			sessionId = VtnServiceCommonUtil.getSessionFromJson(resource.getInfo());
 			//acquire configure mode
 			resource.setPath(ResourcePathEnum.ACQUIRE_CONFIG_PATH.getPath());
 			resource.setSessionID(sessionId);
 			if(resource.post(VtnServiceWebUtil.prepareAquireConfigJSON()) != RESPONSE_SUCCESS){
-				throw new VtnServiceWebAPIException(ApplicationConstants.AQUIRE_CONFIGURATION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.AQUIRE_CONFIGURATION_FAILED));
-		}
-		configId = VtnServiceCommonUtil.getConfigIdFromJson(resource.getInfo());
-		//send the api request json
-		resource.setPath(resourcePath);
-		resource.setConfigID(configId);
-		resource.setSessionID(sessionId);
-		LOG.debug("Request object passing to JAVA API  #"+reqObject);
-		final int status = resource.delete(reqObject);
-		LOG.debug("JAVA API returned error code #"+status);
-		if(status != RESPONSE_SUCCESS){
-			LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-			throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
-		}
-		responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
-		LOG.debug("JAVA API returned response # "+responseStr);
-		resource.setPath(ResourcePathEnum.COMMIT_CONFIGURATION.getPath());
-		resource.setSessionID(sessionId);
-		resource.setConfigID(configId);
-		final int commitStatus = resource.put(VtnServiceWebUtil.prepareConfigCommitOrSaveJSON(ApplicationConstants.OPERATION_COMMIT));
-		if (commitStatus != RESPONSE_SUCCESS) {
-			LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-			throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR,
-						ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
-		}
+				LOG.error("JAVA API returns error # "+resource.getInfo());
+				responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+				throw new VtnServiceWebAPIException();
+			}
+			configId = VtnServiceCommonUtil.getConfigIdFromJson(resource.getInfo());
+			responseStr = performAbort(sessionId, configId, resource);	
+			//send the api request json
+			resource.setPath(resourcePath);
+			resource.setConfigID(configId);
+			resource.setSessionID(sessionId);
+			LOG.debug("Request object passing to JAVA API  #"+reqObject);
+			final int status = resource.delete(reqObject);
+			LOG.debug("JAVA API returned error code #"+status);
+			if(status != RESPONSE_SUCCESS){
+				LOG.error("JAVA API returns error # "+resource.getInfo());
+				responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+				throw new VtnServiceWebAPIException();//to save the below steps execution
+			}
+			responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+			LOG.debug("JAVA API returned response # "+responseStr);
+			//responseStr = performCommit(sessionId, configId, resource);
+			String commitResponse = performCommit(sessionId, configId, resource);
+			if(commitResponse != null){
+					responseStr = commitResponse;
+			}
 		}catch (VtnServiceWebAPIException vtnException) {	
 			exceptionStatus = true;
-			LOG.error(VtnServiceCommonUtil.logErrorDetails(vtnException.getErrorCode()));
 		}catch (Exception exception) {
 			exceptionStatus = true;
 			LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));	
@@ -492,8 +503,9 @@ public class VtnServiceWebAPIController {
 					resource.setSessionID(sessionId);
 					resource.setConfigID(configId);
 					if(resource.delete() != RESPONSE_SUCCESS){
-						LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-						throw new VtnServiceWebAPIException(ApplicationConstants.RELEASE_CONFIGURATION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.RELEASE_CONFIGURATION_FAILED));
+						LOG.error("JAVA API returns error # "+resource.getInfo());
+						responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+						throw new VtnServiceWebAPIException();
 					}
 				}
 				if(sessionId != ApplicationConstants.ZERO){
@@ -501,14 +513,15 @@ public class VtnServiceWebAPIController {
 					resource.setPath(ResourcePathEnum.RELEASE_SESSION.getPath()+ sessionId);
 					resource.setSessionID(sessionId);
 					if(resource.delete() != RESPONSE_SUCCESS){
-						LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-						throw new VtnServiceWebAPIException(ApplicationConstants.RELEASE_SESSION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.RELEASE_SESSION_FAILED));
+						LOG.error("JAVA API returns error # "+resource.getInfo());
+						responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+						throw new VtnServiceWebAPIException();
 					}
 				}
 				if(null == responseStr && !exceptionStatus){
 					responseJSON = VtnServiceWebUtil.prepareErrResponseJson(ApplicationConstants.STATUS_OK, ApplicationConstants.STATUS_SUCCESS);
 				}else{
-					responseJSON = VtnServiceWebUtil.prepareErrResponseJson(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
+					responseJSON = new JSONObject(responseStr);
 				}
 			}catch (Exception exception) {
 				exceptionStatus = true;
@@ -544,42 +557,41 @@ public class VtnServiceWebAPIController {
 			//acquire session id
 			resource.setPath(ResourcePathEnum.SESSION_PATH.getPath());
 			if(resource.post(sessionJson) != RESPONSE_SUCCESS){
-				LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-				throw new VtnServiceWebAPIException(ApplicationConstants.SESSION_CREATION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.SESSION_CREATION_FAILED));
+				LOG.error("JAVA API returns error # "+resource.getInfo());
+				responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+				throw new VtnServiceWebAPIException();
 			}
 			sessionId = VtnServiceCommonUtil.getSessionFromJson(resource.getInfo());
 			//acquire configure mode
 			resource.setPath(ResourcePathEnum.ACQUIRE_CONFIG_PATH.getPath());
 			resource.setSessionID(sessionId);
 			if(resource.post(VtnServiceWebUtil.prepareAquireConfigJSON()) != RESPONSE_SUCCESS){
-				LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-				throw new VtnServiceWebAPIException(ApplicationConstants.AQUIRE_CONFIGURATION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.AQUIRE_CONFIGURATION_FAILED));
-		}
-		configId = VtnServiceCommonUtil.getConfigIdFromJson(resource.getInfo());
-		//send the api request json
-		resource.setPath(resourcePath);
-		resource.setConfigID(configId);
-		resource.setSessionID(sessionId);
-		final int status = resource.delete();
-		LOG.debug("JAVA API returned error code #"+status);
-		if(status != RESPONSE_SUCCESS){
-			LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-			throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
-		}
-		responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
-		LOG.debug("JAVA API returned response # "+responseStr);
-		resource.setPath(ResourcePathEnum.COMMIT_CONFIGURATION.getPath());
-		resource.setSessionID(sessionId);
-		resource.setConfigID(configId);
-		final int commitStatus = resource.put(VtnServiceWebUtil.prepareConfigCommitOrSaveJSON(ApplicationConstants.OPERATION_COMMIT));
-		if (commitStatus != RESPONSE_SUCCESS) {
-			LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-			throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR,
-						ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
-		}
+				LOG.error("JAVA API returns error # "+resource.getInfo());
+				responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+				throw new VtnServiceWebAPIException();
+			}
+			configId = VtnServiceCommonUtil.getConfigIdFromJson(resource.getInfo());
+			responseStr = performAbort(sessionId, configId, resource);	
+			//send the api request json
+			resource.setPath(resourcePath);
+			resource.setConfigID(configId);
+			resource.setSessionID(sessionId);
+			final int status = resource.delete();
+			LOG.debug("JAVA API returned error code #"+status);
+			if(status != RESPONSE_SUCCESS){
+				LOG.error("JAVA API returns error # "+resource.getInfo());
+				responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+				throw new VtnServiceWebAPIException();//to save the below steps execution
+			}
+			responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+			LOG.debug("JAVA API returned response # "+responseStr);
+			//responseStr = performCommit(sessionId, configId, resource);
+			String commitResponse = performCommit(sessionId, configId, resource);
+			if(commitResponse != null){
+					responseStr = commitResponse;
+			}
 		}catch (VtnServiceWebAPIException vtnException) {
 			exceptionStatus = true;
-			LOG.error(VtnServiceCommonUtil.logErrorDetails(vtnException.getErrorCode()));
 		}catch (RuntimeException exception) {
 			exceptionStatus = true;
 			LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));	
@@ -593,8 +605,9 @@ public class VtnServiceWebAPIController {
 					resource.setSessionID(sessionId);
 					resource.setConfigID(configId);
 					if(resource.delete() != RESPONSE_SUCCESS){
-						LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-						throw new VtnServiceWebAPIException(ApplicationConstants.RELEASE_CONFIGURATION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.RELEASE_CONFIGURATION_FAILED));
+						LOG.error("JAVA API returns error # "+resource.getInfo());
+						responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+						throw new VtnServiceWebAPIException();
 					}
 				}
 				if(sessionId != ApplicationConstants.ZERO){
@@ -602,14 +615,15 @@ public class VtnServiceWebAPIController {
 					resource.setPath(ResourcePathEnum.RELEASE_SESSION.getPath()+ sessionId);
 					resource.setSessionID(sessionId);
 					if(resource.delete() != RESPONSE_SUCCESS){
-						LOG.error("JAVA API returns error # "+resource.getInfo().getAsString());
-						throw new VtnServiceWebAPIException(ApplicationConstants.RELEASE_SESSION_FAILED, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.RELEASE_SESSION_FAILED));
+						LOG.error("JAVA API returns error # "+resource.getInfo());
+						responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+						throw new VtnServiceWebAPIException();
 					}
 				}
 				if(null == responseStr && !exceptionStatus){
 					responseJSON = VtnServiceWebUtil.prepareErrResponseJson(ApplicationConstants.STATUS_OK, ApplicationConstants.STATUS_SUCCESS);
 				}else{
-					responseJSON = VtnServiceWebUtil.prepareErrResponseJson(ApplicationConstants.INTERNAL_SERVER_ERROR, ApplicationConstants.DEFAULT_ERROR_DESCRIPTION);
+					responseJSON = new JSONObject(responseStr);
 				}
 			}catch (Exception exception) {
 				exceptionStatus = true;
@@ -620,6 +634,56 @@ public class VtnServiceWebAPIController {
 		}
 		return responseJSON;
 	}
+
+	/**
+	 * Execute commit API for given resource, session and configuration id
+	 * @param responseStr
+	 * @param sessionId
+	 * @param configId
+	 * @param resource
+	 * @return : response from JavaAPI
+	 * @throws VtnServiceWebAPIException
+	 */
+	private String performCommit(long sessionId, long configId, final RestResource resource)
+			throws VtnServiceWebAPIException {
+		String responseStr = null ;
+		LOG.trace("Start VtnServiceWebAPIController#performCommit()");
+		resource.setPath(ResourcePathEnum.COMMIT_CONFIGURATION.getPath());
+		resource.setSessionID(sessionId);
+		resource.setConfigID(configId);
+		final int commitStatus = resource.put(VtnServiceWebUtil.prepareConfigCommitOrSaveJSON(ApplicationConstants.OPERATION_COMMIT));
+		if (commitStatus != RESPONSE_SUCCESS) {
+			LOG.error("JAVA API returns error # "+resource.getInfo());
+			responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+			performAbort(sessionId, configId, resource);
+			throw new VtnServiceWebAPIException();
+		}
+		LOG.trace("Complete VtnServiceWebAPIController#performCommit()");
+		return responseStr;
+	}
 	
-	
+	/**
+	 * Execute abort API for given resource, session and configuration id
+	 * @param responseStr
+	 * @param sessionId
+	 * @param configId
+	 * @param resource
+	 * @return : response from JavaAPI
+	 * @throws VtnServiceWebAPIException
+	 */
+	private String performAbort(long sessionId, long configId, final RestResource resource)
+			throws VtnServiceWebAPIException {
+		String responseStr = null ;
+		LOG.trace("Start VtnServiceWebAPIController#performAbort()");
+		resource.setPath(ResourcePathEnum.ABORT_CONFIGURATION.getPath());
+		resource.setSessionID(sessionId);
+		resource.setConfigID(configId);
+		if (resource.put(VtnServiceWebUtil.prepareCandidateAbortJSON(ApplicationConstants.OPERATION_ABORT)) != RESPONSE_SUCCESS) {
+			LOG.error("JAVA API returns error # " + resource.getInfo());
+			responseStr = resource.getInfo() != null? resource.getInfo().toString():null;
+			throw new VtnServiceWebAPIException();
+		}
+		LOG.trace("Complete VtnServiceWebAPIController#performAbort()");
+		return responseStr;
+	}	
 }

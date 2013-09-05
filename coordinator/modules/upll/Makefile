@@ -33,9 +33,12 @@ VTN_SOURCES	= momgr_util.cc momgr_impl.cc \
   vbr_momgr.cc vbr_if_momgr.cc \
 	vrt_momgr.cc vrt_if_momgr.cc \
   vlink_momgr.cc vlanmap_momgr.cc iproute_momgr.cc \
-	dhcprelay_server_momgr.cc dhcprelay_if_momgr.cc \
+  dhcprelay_server_momgr.cc dhcprelay_if_momgr.cc \
 	nwm_momgr.cc nwm_host_momgr.cc \
-	vunk_momgr.cc vunk_if_momgr.cc
+	vunk_momgr.cc vunk_if_momgr.cc \
+        vtep_momgr.cc vtep_if_momgr.cc \
+        vtep_grp_momgr.cc vtepgrp_mem_momgr.cc \
+        vtunnel_momgr.cc vtunnel_if_momgr.cc
        
 POM_SOURCES	= policingprofile_momgr.cc policingprofile_entry_momgr.cc \
               flowlist_momgr.cc flowlist_entry_momgr.cc \

@@ -80,6 +80,8 @@ public final class VtnServiceIpcConsts {
 	public static final String SESS_TYPE = "sess_type";
 	public static final String LOGIN_TIME = "login_time";
 	public static final String USER_TYPE = "user_type";
+	public static final String SESS_MODE = "sess_mode";
+	public static final String CONFIG_STATUS = "config_status";
 	public static final String IP_ADDR = "ip_addr";
 	public static final String MAC_ETH_TYPE="mac_eth_type";
 	public static final String DST_IP="dst_ip";
@@ -259,5 +261,39 @@ public final class VtnServiceIpcConsts {
 	public static final String  USESS_USER_WEB_OPER = "UNC_WEB_OPER";
 	public static final String  USESS_IPC_TIMESPEC = "usess_ipc_timespec";
 	public static final String  TV_SEC = "tv_sec";
+	public static final String  MAJOR = "major";
+	public static final String  MINOR = "minor";
+	public static final String  REVISION = "revision";
+	public static final String  PATCHLEVEL = "patchlevel";
+	public static final String  ENABLE_PASSWORD = "enable_passwd";
+	
+	public static final String  GET_FLOW_LIST_RESPONSE = "getFlowListResponse";
+	public static final String  GET_FLOW_LIST_ENTRY_RESPONSE = "getFlowListEntryResponse";
+	public static final String  GET_VTN_RESPONSE = "getVtnResponse";
+	public static final String  GET_VTN_FLOW_FILETER_ENTRY_RESPONSE = "getVtnFlowFilterEntryResponse";
+	public static final String  GET_VBYPASS_INTERFACE_RESPONSE ="getVBypassInterfaceResponse";
+	public static final String  GET_VBYPASS_RESPONSE = "getVBypassResponse";
+	public static final String  GET_VBRIDGE_RESPONSE = "getVBridgeResponse";
+	public static final String  GET_SWITCH_RESPONSE = "getSwitchResponse";
+	public static final String  GET_DOMAIN_RESPONSE = "getDomainResponse";
+	public static final String GET_VBRIDGE_FLOW_FILTER_ENTRY_RESPONSE = "getVBridgeFlowFilterEntryResponse";
+	public static final String GET_VBRIDGE_VLANMAP_RESPONSE = "getVlanMapResponse";
+	public static final String GET_LINK_RESPONSE = "getLinkResponse";
+	public static final String GET_CONTROLLER_RESPONSE = "getControllerResponse";
+	public static final String GET_VBRIDGE_INTERFACE_RESPONSE = "getVBridgeInterfaceResponse";
+	public static final String GET_VROUTER_RESPONSE = "getVRouterResponse";
+	public static final String GET_VROUTER_INTERFACE_RESPONSE = "getVRouterInterfaceResponse";
+	public static final String GET_DHCP_RELAY_IF_RESPONSE = "getDhcpRelayInterfaceResponse";
+	public static final String GET_DHCP_RELAY_SERVER_RESPONSE = "getDHCPRelayServerResponse";
+	public static final String GET_STATIC_IPROUTE_SERVER_RESPONSE = "getStaticIpRouteResponse";
+	public static final String GET_VTUNNEL_RESPONSE = "getVTunnelResponse";
+	public static final String GET_VBRIDGE_INTERFACE_FLOW_FILTER_ENTRY_RESPONSE = "getVBridgeInterfaceFlowFilterEntryResponse";
+	public static final String GET_VROUTER_INTERFACE_FLOW_FILTER_ENTRY_RESPONSE = "getVRouterInterfaceFlowFilterEntryResponse";
+	public static final String GET_VTEP_RESPONSE = "getVtepResponse";
+	public static final String GET_BOUNDARY_RESPONSE = "getBoundaryResponse";
+	public static final String GET_VTEP_INTERFACE_RESPONSE = "getVTepInterfaceResponse";
+	public static final String GET_VTUNNEL_INTERFACE_RESPONSE = "getVTunnelInterfaceResourceResponse";
+	public static final String GET_VLINKS_RESPONSE = "getVLinkResponse";
+	public static final String GET_SWITCH_PORT_INTERFACE_RESPONSE = "getSwitchPortResponse";
+	public static final String GET_DOMAIN_LOGICAL_PORT_RESPONSE = "getDomainLogicalPortResponse";
 }
-

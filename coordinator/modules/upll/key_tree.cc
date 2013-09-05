@@ -7,7 +7,7 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-#include "upll_log.hh"
+#include "uncxx/upll_log.hh"
 
 #include "key_tree.hh"
 
@@ -60,7 +60,7 @@ KeyTreeNode *KeyTree::GetNode(unc_key_type_t key_type) {
 }
 
 const KeyTreeNode *KeyTree::GetNode(unc_key_type_t key_type) const {
-  std::map<unc_key_type_t,KeyTreeNode *>::const_iterator it =
+  std::map<unc_key_type_t, KeyTreeNode *>::const_iterator it =
       all_kt_map_.find(key_type);
   if (it != all_kt_map_.end())
     return it->second;
@@ -98,10 +98,10 @@ KeyTreeNode *KeyTree::GetNextSibling(const KeyTreeNode *node) const {
 
   for (std::list<KeyTreeNode*>::iterator it = children.begin();
        it != children.end(); ++it) {
-    UPLL_LOG_VERBOSE("child in iterator: %d\n", (*it)->key_type);
+    UPLL_LOG_VERBOSE("child in iterator: %d", (*it)->key_type);
     if ((*it)->key_type == node->key_type) {
       if (++it != children.end()) {
-        UPLL_LOG_VERBOSE("found sibling: %d\n", (*it)->key_type);
+        UPLL_LOG_VERBOSE("found sibling: %d", (*it)->key_type);
         return (*it);
       } else {
         break;
@@ -237,4 +237,3 @@ bool KeyTree::PostorderIterator::Next(unc_key_type_t *next_key_type) {
 }  // namespace keytree
 }  // namespace upll
 }  // namespace unc
-

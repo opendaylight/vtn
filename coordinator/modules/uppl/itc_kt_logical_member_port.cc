@@ -15,45 +15,46 @@
 
 #include "itc_kt_logical_member_port.hh"
 #include "itc_kt_logicalport.hh"
+#include "itc_read_request.hh"
 using unc::uppl::PhysicalLayer;
 /** Constructor
- * * @Description : This function initializes member variables
+ * @Description : This function initializes member variables
  * and fills the attribute syntax map used for validation
- * * * @param[in] : None
- * * * @return    : None
+ * @param[in] : None
+ * @return    : None
  * */
 Kt_LogicalMemberPort::Kt_LogicalMemberPort() {
-  parent = NULL;
+  if (attr_syntax_map_all.find(UNC_KT_LOGICAL_MEMBER_PORT) ==
+        attr_syntax_map_all.end()) {
   Fill_Attr_Syntax_Map();
-}
-
-/** Destructor
- * * @Description : This function frees the parent and child key types
- * instances for kt_logical_member_port
- * * * @param[in] : None
- * * * @return    : None
- * */
-Kt_LogicalMemberPort::~Kt_LogicalMemberPort() {
-  // Delete parent object
-  if (parent != NULL) {
-    delete parent;
-    parent = NULL;
   }
 }
 
+/** Destructor
+ * @Description : This function frees child key types
+ * instances for kt_logical_member_port
+ * @param[in] : None
+ * @return    : None
+ * */
+Kt_LogicalMemberPort::~Kt_LogicalMemberPort() {
+}
+
 /**DeleteKeyInstance
- * * @Description : This function deletes a row of KT_LogicalMemberPort in
+ * @Description : This function deletes a row of KT_LogicalMemberPort in
  * state logicalmemberport table.
- * * @param[in] :
+ * @param[in] :
  * key_struct - the key for the new kt logicalmemberport instance
  * data_type - UNC_DT_* , delete only allowed in state
- * * @return    : UPPL_RC_SUCCESS is returned when the delete
+ * key_type-UNC_KT_LOGICAL_MEMBER_PORT,value of unc_key_type_t
+ * @return    : UPPL_RC_SUCCESS is returned when the delete
  * is done successfully.
  * UPPL_RC_ERR_* is returned when the delete is error
  * */
-UpplReturnCode Kt_LogicalMemberPort::DeleteKeyInstance(void* key_struct,
-                                                       uint32_t data_type,
-                                                       uint32_t key_type) {
+UpplReturnCode Kt_LogicalMemberPort::DeleteKeyInstance(
+    OdbcmConnectionHandler *db_conn,
+    void* key_struct,
+    uint32_t data_type,
+    uint32_t key_type) {
   UpplReturnCode delete_status = UPPL_RC_SUCCESS;
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   // Check whether operation is allowed on the given DT type
@@ -83,51 +84,51 @@ UpplReturnCode Kt_LogicalMemberPort::DeleteKeyInstance(void* key_struct,
   // Construct Primary key list
   vector<string> vect_prim_keys;
   if (!controller_name.empty())
-    vect_prim_keys.push_back(CTR_NAME);
+    vect_prim_keys.push_back(CTR_NAME_STR);
   if (!domain_name.empty())
-    vect_prim_keys.push_back(DOMAIN_NAME);
+    vect_prim_keys.push_back(DOMAIN_NAME_STR);
   if (!port_id.empty())
-    vect_prim_keys.push_back(LMP_LP_PORT_ID);
+    vect_prim_keys.push_back(LMP_LP_PORT_ID_STR);
   if (!switch_id.empty())
-    vect_prim_keys.push_back(LMP_SWITCH_ID);
+    vect_prim_keys.push_back(LMP_SWITCH_ID_STR);
   if (!physical_port_id.empty())
-    vect_prim_keys.push_back(LMP_PHYSICAL_PORT_ID);
+    vect_prim_keys.push_back(LMP_PHYSICAL_PORT_ID_STR);
   // Construct TableAttrSchema structure
   // TableAttrSchema holds table_name, primary key, attr_name
   vector<TableAttrSchema> vect_table_attr_schema;
   list< vector<TableAttrSchema> > row_list;
 
   // controller_name
-  PhyUtil::FillDbSchema(CTR_NAME, controller_name,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                         controller_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
   // domain_name
-  PhyUtil::FillDbSchema(DOMAIN_NAME, domain_name,
+  PhyUtil::FillDbSchema(unc::uppl::DOMAIN_NAME, domain_name,
                         domain_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
   // port_id
-  PhyUtil::FillDbSchema(LMP_LP_PORT_ID, port_id,
+  PhyUtil::FillDbSchema(unc::uppl::LMP_LP_PORT_ID, port_id,
                         port_id.length(), DATATYPE_UINT8_ARRAY_320,
                         vect_table_attr_schema);
   // switch_id
-  PhyUtil::FillDbSchema(LMP_SWITCH_ID, switch_id,
+  PhyUtil::FillDbSchema(unc::uppl::LMP_SWITCH_ID, switch_id,
                         switch_id.length(), DATATYPE_UINT8_ARRAY_256,
                         vect_table_attr_schema);
   // physical_port_id
-  PhyUtil::FillDbSchema(LMP_PHYSICAL_PORT_ID, physical_port_id,
+  PhyUtil::FillDbSchema(unc::uppl::LMP_PHYSICAL_PORT_ID, physical_port_id,
                         physical_port_id.length(),
                         DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
   // Send request to ODBC for logical_member_port_table delete
-  kt_logical_member_port_dbtableschema.set_table_name(
-      UPPL_LOGICAL_MEMBER_PORT_TABLE);
+  kt_logical_member_port_dbtableschema.set_table_name(unc::uppl::
+      LOGICAL_MEMBERPORT_TABLE);
   kt_logical_member_port_dbtableschema.set_primary_keys(vect_prim_keys);
   row_list.push_back(vect_table_attr_schema);
   kt_logical_member_port_dbtableschema.set_row_list(row_list);
 
   ODBCM_RC_STATUS delete_db_status = physical_layer->get_odbc_manager()-> \
       DeleteOneRow((unc_keytype_datatype_t)data_type,
-                   kt_logical_member_port_dbtableschema);
+                   kt_logical_member_port_dbtableschema, db_conn);
   if (delete_db_status != ODBCM_RC_SUCCESS) {
     if (delete_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
@@ -149,32 +150,31 @@ UpplReturnCode Kt_LogicalMemberPort::DeleteKeyInstance(void* key_struct,
 }
 
 /** ReadBulk
- * * @Description : This function reads the max_rep_ct number of instances of
+ * @Description : This function reads the max_rep_ct number of instances of
  *                  the KT_LogicalMemberPort
  *  Order of ReadBulk response
  *  val_ctr -> val_ctr_domain -> val_logical_port ->
  *  val_logical_member_port -> val_switch ->  val_port ->
  *  val_link -> val_boundary
- * * * @param[in] :
+ * @param[in] :
  * key_struct - the key for the kt logicalmemberport instance
  * data_type - UNC_DT_* , read allowed in state
- * option1/option2 - specifies any additional condition for read operation
  * max_rep_ct - specifies number of rows to be returned
  * parent_call - indicates whether parent has called this readbulk
  * is_read_next - indicates whether this function is invoked from readnext
- * * @return    : UPPL_RC_SUCCESS is returned when the response
+ * @return    : UPPL_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
  * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-
-UpplReturnCode Kt_LogicalMemberPort::ReadBulk(void* key_struct,
-                                              uint32_t data_type,
-                                              uint32_t option1,
-                                              uint32_t option2,
-                                              uint32_t &max_rep_ct,
-                                              int child_index,
-                                              pfc_bool_t parent_call,
-                                              pfc_bool_t is_read_next) {
+UpplReturnCode Kt_LogicalMemberPort::ReadBulk(
+    OdbcmConnectionHandler *db_conn,
+    void* key_struct,
+    uint32_t data_type,
+    uint32_t &max_rep_ct,
+    int child_index,
+    pfc_bool_t parent_call,
+    pfc_bool_t is_read_next,
+    ReadRequest *read_req) {
   UpplReturnCode read_status = UPPL_RC_SUCCESS;
   key_logical_member_port_t* obj_key_logical_member_port =
       reinterpret_cast<key_logical_member_port_t*>(key_struct);
@@ -203,17 +203,13 @@ UpplReturnCode Kt_LogicalMemberPort::ReadBulk(void* key_struct,
   }
   vector<key_logical_member_port_t> vect_logical_mem_port;
   // Read the controller values based on given key structure
-  read_status = ReadBulkInternal(key_struct,
+  read_status = ReadBulkInternal(db_conn, key_struct,
                                  data_type,
                                  max_rep_ct,
                                  vect_logical_mem_port);
 
   pfc_log_debug("read_status from _logical_member_port is %d", read_status);
   if (read_status == UPPL_RC_SUCCESS) {
-    PhysicalCore *physical_core = PhysicalLayer::get_instance()->
-        get_physical_core();
-    InternalTransactionCoordinator *itc_trans  =
-        physical_core->get_internal_transaction_coordinator();
     vector<key_logical_member_port_t> ::iterator logical_mem_port_iter =
         vect_logical_mem_port.begin();
     for (; logical_mem_port_iter != vect_logical_mem_port.end();
@@ -230,17 +226,20 @@ UpplReturnCode Kt_LogicalMemberPort::ReadBulk(void* key_struct,
           UNC_KT_LOGICAL_MEMBER_PORT, IS_KEY,
           reinterpret_cast<void *>(key_buffer)
       };
-      itc_trans->AddToBuffer(obj_key_buffer);
+      read_req->AddToBuffer(obj_key_buffer);
       BulkReadBuffer obj_sep_buffer = {
           UNC_KT_LOGICAL_MEMBER_PORT, IS_SEPARATOR, NULL
       };
-      itc_trans->AddToBuffer(obj_sep_buffer);
+      read_req->AddToBuffer(obj_sep_buffer);
       --max_rep_ct;
       if (max_rep_ct == 0) {
         pfc_log_debug("max_rep_ct reached zero, so returning");
         return read_status;
       }
     }
+  } else if (read_status == UPPL_RC_ERR_DB_ACCESS) {
+    pfc_log_debug("KtLogicalMemberPort ReadBulk - Returning DB Access Error");
+    return read_status;
   }
   if (max_rep_ct > 0 && parent_call == false) {
     pfc_log_debug("max_rep_ct is %d and parent_call is %d, calling parent",
@@ -260,14 +259,13 @@ UpplReturnCode Kt_LogicalMemberPort::ReadBulk(void* key_struct,
     controller_name.c_str(),
     controller_name.length()+1);
     read_status = nextKin.ReadBulk(
-        reinterpret_cast<void *>(&nextkin_key_struct),
+        db_conn, reinterpret_cast<void *>(&nextkin_key_struct),
         data_type,
-        option1,
-        option2,
         max_rep_ct,
         0,
         false,
-        is_read_next);
+        is_read_next,
+        read_req);
     pfc_log_debug("read status from next kin Kt_LogicalPort is %d",
                   read_status);
     return UPPL_RC_SUCCESS;
@@ -281,18 +279,19 @@ UpplReturnCode Kt_LogicalMemberPort::ReadBulk(void* key_struct,
 }
 
 /**ReadBulkInternal
- * * @Description : This function reads bulk rows of KT_LogicalMemberPort in
+ * @Description : This function reads bulk rows of KT_LogicalMemberPort in
  *  logicalmemberport table of specified data type.
- * * @param[in] :
+ * @param[in] :
  * key_struct - the key for the kt logicalmemberport instance
- * val_struct - the value struct for kt_logicalmemberport instance
  * max_rep_ct - specifies number of rows to be returned
- * vect_ctr_id - indicates the fetched contoller names from db
- * * @return    : UPPL_RC_SUCCESS is returned when the response
+ * data_type-UNC_DT_*,type of database
+ * vect_logical_mem_port-instance of vector<key_logical_member_port_t> 
+ * @return    : UPPL_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
  * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
 UpplReturnCode Kt_LogicalMemberPort::ReadBulkInternal(
+    OdbcmConnectionHandler *db_conn,
     void* key_struct,
     uint32_t data_type,
     uint32_t max_rep_ct,
@@ -308,9 +307,9 @@ UpplReturnCode Kt_LogicalMemberPort::ReadBulkInternal(
   vector<ODBCMOperator> primary_key_operation_list;
   void *old_val_struct;
   PopulateDBSchemaForKtTable(
-      kt_logical_member_port_dbtableschema,
+      db_conn, kt_logical_member_port_dbtableschema,
       key_struct, NULL,
-      UNC_OP_READ_BULK, 0, 0,
+      UNC_OP_READ_BULK, data_type, 0, 0,
       primary_key_operation_list, old_val_struct);
   uint32_t no_of_query = 1;
   vector<ODBCMOperator>:: iterator iter =
@@ -322,12 +321,18 @@ UpplReturnCode Kt_LogicalMemberPort::ReadBulkInternal(
     pfc_log_debug("Multiple query to be sent to DB till we get a match");
     no_of_query = 2;  // LMP has 2 primary keys other than LP
   }
-  for (uint32_t index = 0; index < no_of_query; ++index) {
+  uint32_t index = 0;
+  for (; index < no_of_query; ++index) {
+    if (kt_logical_member_port_dbtableschema.primary_keys_.size() < 3) {
+      pfc_log_debug("No record found");
+      read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+      break;
+    }
     // Read rows from DB
     read_db_status = physical_layer->get_odbc_manager()-> \
         GetBulkRows((unc_keytype_datatype_t)data_type, max_rep_ct,
                     kt_logical_member_port_dbtableschema,
-                    (unc_keytype_operation_t)UNC_OP_READ_BULK);
+                    (unc_keytype_operation_t)UNC_OP_READ_BULK, db_conn);
     if (read_db_status == ODBCM_RC_RECORD_NOT_FOUND) {
       pfc_log_debug("No record found");
       read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
@@ -337,41 +342,59 @@ UpplReturnCode Kt_LogicalMemberPort::ReadBulkInternal(
           "Primary key vector size %d",
           static_cast<int>
       (kt_logical_member_port_dbtableschema.primary_keys_.size()));
-      // return read_status;
+    } else if (read_db_status == ODBCM_RC_CONNECTION_ERROR) {
+      read_status = UPPL_RC_ERR_DB_ACCESS;
+      pfc_log_error("Read operation has failed with error %d",
+                     read_db_status);
+      break;
     } else if (read_db_status == ODBCM_RC_SUCCESS) {
       read_status = UPPL_RC_SUCCESS;
+      uint32_t max_rep_ct_new = 0;
       pfc_log_debug("Received success response from db");
-      break;
+      // From the values received from DB, populate val structure
+      FillLogicalMemberPortValueStructure(db_conn,
+                                        kt_logical_member_port_dbtableschema,
+                                        max_rep_ct_new,
+                                        UNC_OP_READ_BULK,
+                                        vect_logical_mem_port);
+      pfc_log_debug("max_rep_ct_new=%d max_rep_ct=%d",
+                      max_rep_ct_new, max_rep_ct);
+      for (uint32_t uindex = 1; uindex < max_rep_ct_new; uindex++) {
+        pfc_log_debug("Ktlink:Row list Removed");
+        kt_logical_member_port_dbtableschema.row_list_.pop_front();
+      }
+      max_rep_ct -= max_rep_ct_new;
+      kt_logical_member_port_dbtableschema.primary_keys_.pop_back();
     } else {
       read_status = UPPL_RC_ERR_DB_GET;
       // log error to log daemon
       pfc_log_error("Read operation has failed");
-      // return read_status;
+     break;
     }
-  }
-  if (read_status == UPPL_RC_SUCCESS) {
-    // From the values received from DB, populate val structure
-    FillLogicalMemberPortValueStructure(kt_logical_member_port_dbtableschema,
-                                        max_rep_ct,
-                                        UNC_OP_READ_BULK,
-                                        vect_logical_mem_port);
+  }  // for end
+  if (vect_logical_mem_port.empty() && index == 2) {
+     pfc_log_debug("No record found");
+     read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+  } else if (!vect_logical_mem_port.empty()) {
+     read_status = UPPL_RC_SUCCESS;
   }
   return read_status;
 }
 
 /** PerformSyntaxValidation
- * * @Description : This function performs syntax validation for
+ * @Description : This function performs syntax validation for
  *  UNC_KT_LOGICAL_MEMBER_PORT
- * * * @param[in]
+ * @param[in]
  * key_struct - the key for the kt logicalmemberport instance
  * value_struct - the value for the kt logicalmemberport instance
- * data_type - UNC_DT_*
- * operation_type - UNC_OP*
- * * @return    : UPPL_RC_SUCCESS is returned when the validation is successful
- * UPPL_RC_ERR_* is returned when validtion is failure
+ * data_type - UNC_DT_*,type of database
+ * operation_type - UNC_OP*,type of operation
+ * @return    : UPPL_RC_SUCCESS is returned when the validation is successful
+ * UPPL_RC_ERR_* is returned when validation is failure
  * */
 
 UpplReturnCode Kt_LogicalMemberPort::PerformSyntaxValidation(
+    OdbcmConnectionHandler *db_conn,
     void* key_struct,
     void* val_struct,
     uint32_t operation,
@@ -389,21 +412,23 @@ UpplReturnCode Kt_LogicalMemberPort::PerformSyntaxValidation(
       reinterpret_cast<key_logical_member_port_t*>(key_struct);
 
   string value = reinterpret_cast<char*>(key->switch_id);
-  IS_VALID_STRING_KEY(LMP_SWITCH_ID, value, operation, ret_code, mandatory);
+  map<string, Kt_Class_Attr_Syntax> attr_syntax_map =
+        attr_syntax_map_all[UNC_KT_LOGICAL_MEMBER_PORT];
+  IS_VALID_STRING_KEY(LMP_SWITCH_ID_STR, value, operation, ret_code, mandatory);
   if (ret_code != UPPL_RC_SUCCESS) {
     return UPPL_RC_ERR_CFG_SYNTAX;
   }
 
 
   value = reinterpret_cast<char*>(key->physical_port_id);
-  IS_VALID_STRING_KEY(LMP_PHYSICAL_PORT_ID, value, operation,
+  IS_VALID_STRING_KEY(LMP_PHYSICAL_PORT_ID_STR, value, operation,
                       ret_code, mandatory);
   if (ret_code != UPPL_RC_SUCCESS) {
     return UPPL_RC_ERR_CFG_SYNTAX;
   }
 
   value = reinterpret_cast<char*>(key->logical_port_key.port_id);
-  IS_VALID_STRING_KEY(LMP_LP_PORT_ID, value, operation,
+  IS_VALID_STRING_KEY(LMP_LP_PORT_ID_STR, value, operation,
                       ret_code, mandatory);
   if (ret_code != UPPL_RC_SUCCESS) {
     return UPPL_RC_ERR_CFG_SYNTAX;
@@ -411,7 +436,7 @@ UpplReturnCode Kt_LogicalMemberPort::PerformSyntaxValidation(
 
   value = reinterpret_cast<char*>
   (key->logical_port_key.domain_key.domain_name);
-  IS_VALID_STRING_KEY(DOMAIN_NAME, value, operation,
+  IS_VALID_STRING_KEY(DOMAIN_NAME_STR, value, operation,
                       ret_code, mandatory);
   if (ret_code != UPPL_RC_SUCCESS) {
     return UPPL_RC_ERR_CFG_SYNTAX;
@@ -419,7 +444,7 @@ UpplReturnCode Kt_LogicalMemberPort::PerformSyntaxValidation(
 
   value = reinterpret_cast<char*>(key->
       logical_port_key.domain_key.ctr_key.controller_name);
-  IS_VALID_STRING_KEY(CTR_NAME, value, operation,
+  IS_VALID_STRING_KEY(CTR_NAME_STR, value, operation,
                       ret_code, mandatory);
   if (ret_code != UPPL_RC_SUCCESS) {
     return UPPL_RC_ERR_CFG_SYNTAX;
@@ -428,17 +453,18 @@ UpplReturnCode Kt_LogicalMemberPort::PerformSyntaxValidation(
 }
 
 /** PerformSemanticValidation
- * * @Description : This function performs semantic validation
+ * @Description : This function performs semantic validation
  * for UNC_KT_LOGICAL_MEMBER_PORT
- * * * @param[in] : key_struct - specifies key instance of KTLogicalMemberPort
- * , value_struct - specifies value of KTLOGICAL_MEMBER_PORT
- * operation - UNC_OP*
- * data_type - UNC_DT*
- * * * @return    : UPPL_RC_SUCCESS if semantic valition is successful
+ * @param[in] : key_struct - specifies key instance of KTLogicalMemberPort
+ * value_struct - specifies value of KTLOGICAL_MEMBER_PORT
+ * operation - UNC_OP*,type of operation
+ * data_type - UNC_DT*,type of database
+ * @return    : UPPL_RC_SUCCESS if semantic valition is successful
  * or UPPL_RC_ERR_* if failed
  * */
 
 UpplReturnCode Kt_LogicalMemberPort::PerformSemanticValidation(
+    OdbcmConnectionHandler *db_conn,
     void* key_struct,
     void* val_struct,
     uint32_t operation,
@@ -468,9 +494,10 @@ UpplReturnCode Kt_LogicalMemberPort::PerformSemanticValidation(
   vect_key_value.push_back(switch_id);
   vect_key_value.push_back(physical_port_id);
 
-  UpplReturnCode KeyStatus = IsKeyExists((unc_keytype_datatype_t)data_type,
+  UpplReturnCode KeyStatus = IsKeyExists(db_conn,
+                                         (unc_keytype_datatype_t)data_type,
                                          vect_key_value);
-  pfc_log_info("return value of IsKeyExists:%d", KeyStatus);
+  pfc_log_debug("return value of IsKeyExists:%d", KeyStatus);
   // KeyStatus = UPPL_RC_SUCCESS; //to be removed
   if (operation == UNC_OP_UPDATE || operation == UNC_OP_DELETE ||
       operation == UNC_OP_READ) {
@@ -505,7 +532,7 @@ UpplReturnCode Kt_LogicalMemberPort::PerformSemanticValidation(
     pfc_log_info("calling KtLogicalPort IsKeyExists function");
     Kt_LogicalPort KtObj;
     UpplReturnCode parent_key_status = KtObj.IsKeyExists(
-        (unc_keytype_datatype_t)data_type, parent_vect_key_value);
+        db_conn, (unc_keytype_datatype_t)data_type, parent_vect_key_value);
     pfc_log_debug("Parent IsKeyExists status %d", parent_key_status);
     if (parent_key_status != UPPL_RC_SUCCESS) {
       status = UPPL_RC_ERR_PARENT_DOES_NOT_EXIST;
@@ -516,14 +543,16 @@ UpplReturnCode Kt_LogicalMemberPort::PerformSemanticValidation(
 }
 
 /** IsKeyExists
- * * @Description : This function checks whether the
+ * @Description : This function checks whether the
  *  logicalmemberport_id exists in DB
- * * * @param[in] : key_struct
- * * * @return    : Success or associated error code
+ * @param[in] : data_type-UNC_DT_*,type of database
+ * key_values-vector of strings containing key values
+ * @return    : Success or associated error code,UPPL_RC_SUCCESS/UPPL_RC_ERR*
  * */
 UpplReturnCode Kt_LogicalMemberPort::IsKeyExists(
+    OdbcmConnectionHandler *db_conn,
     unc_keytype_datatype_t data_type,
-    vector<string> key_values) {
+    const vector<string> &key_values) {
   PhysicalLayer* physical_layer = PhysicalLayer::get_instance();
   UpplReturnCode check_status = UPPL_RC_SUCCESS;
 
@@ -544,48 +573,48 @@ UpplReturnCode Kt_LogicalMemberPort::IsKeyExists(
 
   // Construct Primary key list
   vector<string> vect_prim_keys;
-  vect_prim_keys.push_back(CTR_NAME);
-  vect_prim_keys.push_back(DOMAIN_NAME);
-  vect_prim_keys.push_back(LP_PORT_ID);
-  vect_prim_keys.push_back(LMP_SWITCH_ID);
-  vect_prim_keys.push_back(LMP_PHYSICAL_PORT_ID);
+  vect_prim_keys.push_back(CTR_NAME_STR);
+  vect_prim_keys.push_back(DOMAIN_NAME_STR);
+  vect_prim_keys.push_back(LP_PORT_ID_STR);
+  vect_prim_keys.push_back(LMP_SWITCH_ID_STR);
+  vect_prim_keys.push_back(LMP_PHYSICAL_PORT_ID_STR);
   // Construct TableAttrSchema structure
   // TableAttrSchema holds table_name, primary key, attr_name
   vector<TableAttrSchema> vect_table_attr_schema;
   list< vector<TableAttrSchema> > row_list;
 
   // controller_name
-  PhyUtil::FillDbSchema(CTR_NAME, controller_name,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                         controller_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
 
   // domain_name
-  PhyUtil::FillDbSchema(DOMAIN_NAME, domain_name,
+  PhyUtil::FillDbSchema(unc::uppl::DOMAIN_NAME, domain_name,
                         domain_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
 
   // port_id
-  PhyUtil::FillDbSchema(LP_PORT_ID, port_id,
+  PhyUtil::FillDbSchema(unc::uppl::LMP_LP_PORT_ID, port_id,
                         port_id.length(), DATATYPE_UINT8_ARRAY_320,
                         vect_table_attr_schema);
   // switch_id
-  PhyUtil::FillDbSchema(LMP_SWITCH_ID, switch_id,
+  PhyUtil::FillDbSchema(unc::uppl::LMP_SWITCH_ID, switch_id,
                         switch_id.length(), DATATYPE_UINT8_ARRAY_256,
                         vect_table_attr_schema);
   // physical_port_id
-  PhyUtil::FillDbSchema(LMP_PHYSICAL_PORT_ID, physical_port_id,
+  PhyUtil::FillDbSchema(unc::uppl::LMP_PHYSICAL_PORT_ID, physical_port_id,
                         physical_port_id.length(),
                         DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
 
-  kt_logical_member_port_dbtableschema.set_table_name(
-      UPPL_LOGICAL_MEMBER_PORT_TABLE);
+  kt_logical_member_port_dbtableschema.set_table_name(unc::uppl::
+      LOGICAL_MEMBERPORT_TABLE);
   kt_logical_member_port_dbtableschema.set_primary_keys(vect_prim_keys);
   row_list.push_back(vect_table_attr_schema);
   kt_logical_member_port_dbtableschema.set_row_list(row_list);
   //  Send request to ODBC for controlle_common_table
   ODBCM_RC_STATUS check_db_status = physical_layer->get_odbc_manager()->
-      IsRowExists(data_type, kt_logical_member_port_dbtableschema);
+      IsRowExists(data_type, kt_logical_member_port_dbtableschema, db_conn);
   if (check_db_status == ODBCM_RC_CONNECTION_ERROR) {
     // log error to log daemon
     pfc_log_error("DB connection not available or cannot access DB");
@@ -601,16 +630,27 @@ UpplReturnCode Kt_LogicalMemberPort::IsKeyExists(
 }
 
 /** PopulateDBSchemaForKtTable
- * * @Description : This function populates the DBAttrSchema to be used to
+ * @Description : This function populates the DBAttrSchema to be used to
  *                  send request to ODBC
- * * * @param[in] : DBTableSchema, key_struct, operation_type
- * * * @return    : Success or associated error code
+ * @param[in] : kt_dbtableschema- instance of DBTableSchema to be filled
+ * key_struct-void* to LMP key structure
+ * operation_type-UNC_OP_*
+ * val_struct-void* to kt val structure
+ * option1,option2-additional options for read operations,UNC_OPT1/OPT2_*
+ * vect_key_operations- instance of vector<ODBCMOperator>
+ * old_value_struct-void* to kt val structure
+ * row_status- value of CsRowStatus
+ * is_filtering-flag to indicate whether filter option is enabled
+ * is_state-flag to indicate whether datatype is DT_STATE
+ * @return    : Success or associated error code,UPPL_RC_SUCCESS/ERR*
  * */
 void Kt_LogicalMemberPort::PopulateDBSchemaForKtTable(
+    OdbcmConnectionHandler *db_conn,
     DBTableSchema &kt_dbtableschema,
     void* key_struct,
     void* val_struct,
     uint8_t operation_type,
+    uint32_t data_type,
     uint32_t option1,
     uint32_t option2,
     vector<ODBCMOperator> &vect_key_operations,
@@ -635,21 +675,21 @@ void Kt_LogicalMemberPort::PopulateDBSchemaForKtTable(
       obj_key_logical_member_port
       ->logical_port_key.domain_key.ctr_key.controller_name);
   pfc_log_debug("controller_name: %s", controller_name.c_str());
-  PhyUtil::FillDbSchema(CTR_NAME, controller_name,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                         controller_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
-  vect_prim_keys.push_back(CTR_NAME);
+  vect_prim_keys.push_back(CTR_NAME_STR);
   vect_key_operations.push_back(unc::uppl::EQUAL);
 
   // domain name
   string domain_name = reinterpret_cast<const char*>(obj_key_logical_member_port
       ->logical_port_key.domain_key.domain_name);
   pfc_log_debug("domain_name: %s", domain_name.c_str());
-  PhyUtil::FillDbSchema(DOMAIN_NAME, domain_name,
+  PhyUtil::FillDbSchema(unc::uppl::DOMAIN_NAME, domain_name,
                         domain_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
   if (!domain_name.empty()) {
-    vect_prim_keys.push_back(DOMAIN_NAME);
+    vect_prim_keys.push_back(DOMAIN_NAME_STR);
     vect_key_operations.push_back(unc::uppl::EQUAL);
   }
 
@@ -657,11 +697,11 @@ void Kt_LogicalMemberPort::PopulateDBSchemaForKtTable(
   string port_id = reinterpret_cast<const char*>(obj_key_logical_member_port
       ->logical_port_key.port_id);
   pfc_log_info("port_id: %s", port_id.c_str());
-  PhyUtil::FillDbSchema(LMP_LP_PORT_ID, port_id,
+  PhyUtil::FillDbSchema(unc::uppl::LMP_LP_PORT_ID, port_id,
                         port_id.length(), DATATYPE_UINT8_ARRAY_320,
                         vect_table_attr_schema);
   if (!port_id.empty()) {
-    vect_prim_keys.push_back(LMP_LP_PORT_ID);
+    vect_prim_keys.push_back(LMP_LP_PORT_ID_STR);
     vect_key_operations.push_back(unc::uppl::EQUAL);
   }
 
@@ -671,15 +711,15 @@ void Kt_LogicalMemberPort::PopulateDBSchemaForKtTable(
   // only parent key has to be considered for read_sibling_begin
   if (operation_type == UNC_OP_READ_SIBLING_BEGIN ||
       operation_type == UNC_OP_READ_SIBLING_COUNT) {
-    vect_prim_keys.push_back(LMP_SWITCH_ID);
+    vect_prim_keys.push_back(LMP_SWITCH_ID_STR);
     vect_key_operations.push_back(unc::uppl::GREATER);
     switch_id = "";
   } else if (!switch_id.empty()) {
-    vect_prim_keys.push_back(LMP_SWITCH_ID);
+    vect_prim_keys.push_back(LMP_SWITCH_ID_STR);
     vect_key_operations.push_back(unc::uppl::EQUAL);
   }
   pfc_log_info("switch_id: %s ", switch_id.c_str());
-  PhyUtil::FillDbSchema(LMP_SWITCH_ID, switch_id,
+  PhyUtil::FillDbSchema(unc::uppl::LMP_SWITCH_ID, switch_id,
                         switch_id.length(),
                         DATATYPE_UINT8_ARRAY_256,
                         vect_table_attr_schema);
@@ -688,7 +728,7 @@ void Kt_LogicalMemberPort::PopulateDBSchemaForKtTable(
   string physical_port_id = reinterpret_cast<const char*>(
       obj_key_logical_member_port->physical_port_id);
   pfc_log_info("physical_port_id: %s ", physical_port_id.c_str());
-  PhyUtil::FillDbSchema(LMP_PHYSICAL_PORT_ID, physical_port_id,
+  PhyUtil::FillDbSchema(unc::uppl::LMP_PHYSICAL_PORT_ID, physical_port_id,
                         physical_port_id.length(),
                         DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
@@ -697,13 +737,13 @@ void Kt_LogicalMemberPort::PopulateDBSchemaForKtTable(
   if (!physical_port_id.empty() &&
       (operation_type != UNC_OP_READ_SIBLING_BEGIN &&
           operation_type != UNC_OP_READ_SIBLING_COUNT)) {
-    vect_prim_keys.push_back(LMP_PHYSICAL_PORT_ID);
+    vect_prim_keys.push_back(LMP_PHYSICAL_PORT_ID_STR);
     vect_key_operations.push_back(unc::uppl::GREATER);
   }
   if (physical_port_id.empty() &&
       operation_type > UNC_OP_READ &&
       vect_prim_keys.size() >= 1) {  // Key apart from controller
-    vect_prim_keys.push_back(LMP_PHYSICAL_PORT_ID);
+    vect_prim_keys.push_back(LMP_PHYSICAL_PORT_ID_STR);
     vect_key_operations.push_back(unc::uppl::GREATER);
   }
   if ((operation_type == UNC_OP_READ_NEXT ||
@@ -714,7 +754,7 @@ void Kt_LogicalMemberPort::PopulateDBSchemaForKtTable(
     vect_key_operations.push_back(unc::uppl::MULTIPLE_QUERY);
   }
   PhyUtil::reorder_col_attrs(vect_prim_keys, vect_table_attr_schema);
-  kt_dbtableschema.set_table_name(UPPL_LOGICAL_MEMBER_PORT_TABLE);
+  kt_dbtableschema.set_table_name(unc::uppl::LOGICAL_MEMBERPORT_TABLE);
   kt_dbtableschema.set_primary_keys(vect_prim_keys);
   row_list.push_back(vect_table_attr_schema);
   kt_dbtableschema.set_row_list(row_list);
@@ -722,18 +762,22 @@ void Kt_LogicalMemberPort::PopulateDBSchemaForKtTable(
 }
 
 /** FillLogicalMemberPortValueStructure
- * * @Description : This function populates val_ctr by querying database
- * * * @param[in] : switch common table dbtable schema, openflow switch
- *                  db schema, value structure and max_rep_ct, operation type
- * * * @return    : Success or associated error code
+ * @Description : This function populates val_ctr by querying database
+ * @param[in] :
+ * kt_logical_member_port_dbtableschema-DBTableSchema instance to be filled
+ * max_rep_ct-maximum no. of records to be read
+ * operation_type-UNC_OP_*,type of database
+ * logical_mem_port-instance of vector<key_logical_member_port_t>
+ * @return    : Success or associated error code,UPPL_RC_SUCCESS/ERR*
  * */
 void Kt_LogicalMemberPort::FillLogicalMemberPortValueStructure(
+    OdbcmConnectionHandler *db_conn,
     DBTableSchema &kt_logical_member_port_dbtableschema,
     uint32_t &max_rep_ct,
     uint32_t operation_type,
     vector<key_logical_member_port_t> &logical_mem_port) {
-  // populate IPC value structure based on the response recevied from DB
-  list < vector<TableAttrSchema> > res_logical_member_port_row_list =
+  // populate IPC value structure based on the response received from DB
+  list < vector<TableAttrSchema> >& res_logical_member_port_row_list =
       kt_logical_member_port_dbtableschema.get_row_list();
   list < vector<TableAttrSchema> > :: iterator res_logical_member_port_iter =
       res_logical_member_port_row_list.begin();
@@ -756,48 +800,57 @@ void Kt_LogicalMemberPort::FillLogicalMemberPortValueStructure(
     ++vect_logical_member_port_iter) {
       // populate values from controller_common_table
       TableAttrSchema tab_schema = (*vect_logical_member_port_iter);
-      string attr_name = tab_schema.table_attribute_name;
-      string attr_value;
-      if (attr_name == LMP_SWITCH_ID) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_256);
-        memcpy(obj_key_logical_mem_port.switch_id,
-               attr_value.c_str(),
-               attr_value.length()+1);
-        pfc_log_debug("switch_id : %s", attr_value.c_str());
-      }
-      if (attr_name == LMP_PHYSICAL_PORT_ID) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_32);
-        memcpy(obj_key_logical_mem_port.physical_port_id,
-               attr_value.c_str(),
-               attr_value.length()+1);
-        pfc_log_debug("physical_port_id: %s", attr_value.c_str());
-      }
-      if (attr_name == LMP_LP_PORT_ID) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_320);
-        memcpy(obj_key_logical_mem_port.logical_port_key.port_id,
-               attr_value.c_str(),
-               attr_value.length()+1);
-        pfc_log_debug("port_id: %s", attr_value.c_str());
-      }
-      if (attr_name == DOMAIN_NAME) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_32);
-        memcpy(obj_key_logical_mem_port.logical_port_key.domain_key.domain_name,
-               attr_value.c_str(),
-               attr_value.length()+1);
-        pfc_log_debug("domain_name: %s", attr_value.c_str());
-      }
-      if (attr_name == CTR_NAME) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_32);
-        memcpy(obj_key_logical_mem_port.logical_port_key.domain_key.
-               ctr_key.controller_name,
-               attr_value.c_str(),
-               attr_value.length()+1);
-        pfc_log_debug("controller_name: %s", attr_value.c_str());
+      ODBCMTableColumns attr_name = tab_schema.table_attribute_name;
+      switch (attr_name) {
+        case unc::uppl::LMP_SWITCH_ID:
+          PhyUtil::GetValueFromDbSchemaStr(tab_schema,
+                                           obj_key_logical_mem_port.switch_id,
+                                           DATATYPE_UINT8_ARRAY_256);
+          pfc_log_debug("switch_id : %s", obj_key_logical_mem_port.switch_id);
+          break;
+
+        case unc::uppl::LMP_PHYSICAL_PORT_ID:
+          PhyUtil::GetValueFromDbSchemaStr(
+              tab_schema,
+              obj_key_logical_mem_port.physical_port_id,
+              DATATYPE_UINT8_ARRAY_32);
+          pfc_log_debug("physical_port_id: %s",
+                        obj_key_logical_mem_port.physical_port_id);
+          break;
+
+        case unc::uppl::LMP_LP_PORT_ID:
+          PhyUtil::GetValueFromDbSchemaStr(
+              tab_schema,
+              obj_key_logical_mem_port.logical_port_key.port_id,
+              DATATYPE_UINT8_ARRAY_320);
+          pfc_log_debug("port_id: %s",
+                        obj_key_logical_mem_port.logical_port_key.port_id);
+          break;
+
+        case unc::uppl::DOMAIN_NAME:
+          PhyUtil::GetValueFromDbSchemaStr(
+              tab_schema,
+              obj_key_logical_mem_port.logical_port_key.domain_key.domain_name,
+              DATATYPE_UINT8_ARRAY_32);
+          pfc_log_debug(
+              "domain_name: %s",
+              obj_key_logical_mem_port.logical_port_key.domain_key.domain_name);
+          break;
+
+        case unc::uppl::CTR_NAME:
+          PhyUtil::GetValueFromDbSchemaStr(
+              tab_schema,
+              obj_key_logical_mem_port.logical_port_key.domain_key.
+              ctr_key.controller_name,
+              DATATYPE_UINT8_ARRAY_32);
+          pfc_log_debug("controller_name: %s",
+                        obj_key_logical_mem_port.logical_port_key.domain_key.
+                        ctr_key.controller_name);
+          break;
+
+        default:
+          pfc_log_info("Ignoring LogicalMemberPort attribute %d", attr_name);
+          break;
       }
     }
     logical_mem_port.push_back(obj_key_logical_mem_port);
@@ -808,26 +861,32 @@ void Kt_LogicalMemberPort::FillLogicalMemberPortValueStructure(
 
 
 /** PerformRead
- * * @Description : This function reads the instance of
+ * @Description : This function reads the instance of
  *  KT_LogicalMemberPort based on operation type -
  *   READ, READ_SIBLING_BEGIN, READ_SIBLING
- * * * @param[in] : key_struct, value_struct, ipc session id,
- *                  configuration id, option1, option2, data_type,
- *                  operation type, max_rep_ct
- * * * @return    : Success or associated error code
+ * @param[in] : key_struct-void* to LMP key structure
+ * value_struct-void* to kt value structure
+ * session_id-ipc session id used for TC validation
+ * configuration_id-ipcconfiguration id used for TC validation
+ * option1,option2-UNC_OPT1/OPT2_*,additional info for read operations
+ * data_type-UNC_DT_*,type of database
+ * operation_type-type of operation,UNC_OP_READ*
+ * max_rep_ct-max.no of records to be read
+ * @param[out]: sess-ServerSession object where the arguments present
+ * @return    : Success or associated error code,UPPL_RC_SUCCESS/ERR*
  * */
-UpplReturnCode Kt_LogicalMemberPort::PerformRead(uint32_t session_id,
-                                                 uint32_t configuration_id,
-                                                 void* key_struct,
-                                                 void* value_struct,
-                                                 uint32_t data_type,
-                                                 uint32_t operation_type,
-                                                 ServerSession &sess,
-                                                 uint32_t option1,
-                                                 uint32_t option2,
-                                                 uint32_t max_rep_ct) {
-  pfc_log_info("Inside PerformRead option1=%d option2=%d max_rep_ct=%d",
-               option1, option2, max_rep_ct);
+UpplReturnCode Kt_LogicalMemberPort::PerformRead(
+    OdbcmConnectionHandler *db_conn,
+    uint32_t session_id,
+    uint32_t configuration_id,
+    void* key_struct,
+    void* value_struct,
+    uint32_t data_type,
+    uint32_t operation_type,
+    ServerSession &sess,
+    uint32_t option1,
+    uint32_t option2,
+    uint32_t max_rep_ct) {
   pfc_log_info("Inside PerformRead operation_type=%d data_type=%d",
                operation_type, data_type);
   physical_response_header rsh = {session_id,
@@ -884,7 +943,8 @@ UpplReturnCode Kt_LogicalMemberPort::PerformRead(uint32_t session_id,
     return UPPL_RC_SUCCESS;
   }
   vector<key_logical_member_port_t> vect_logical_mem_port;
-  read_status = ReadLogicalMemberPortValFromDB(key_struct,
+  read_status = ReadLogicalMemberPortValFromDB(db_conn,
+                                               key_struct,
                                                data_type,
                                                operation_type,
                                                max_rep_ct,
@@ -919,20 +979,29 @@ UpplReturnCode Kt_LogicalMemberPort::PerformRead(uint32_t session_id,
 }
 
 /** ReadLogicalMemberPortValFromDB
- * * @Description : This function reads the instance of Kt_LogicalMemberPortbased on
- *                  operation type - READ, READ_SIBLING_BEGIN, READ_SIBLING
- *                  from data_base
- * * * @param[in] : key_struct, value_struct, ipc session id,
- *                  configuration id,data_type, operation type, max_rep_ct
- * * * @return    : Success or associated error code
+ * @Description : This function reads the instance of Kt_LogicalMemberPort
+ *                based on operation type - READ, READ_SIBLING_BEGIN,
+ *                READ_SIBLING from data_base
+ * @param[in] : key_struct-void* to LMP key structure
+ * data_type-UNC_DT_*,type of database
+ * operation_type-UNC_OP_*,type of operation
+ * max_rep_ct-max. no of records to be read
+ * logical_mem_port-instance of vector<key_logical_member_port_t>
+ * is_state-flag to indicate whether datatype is DT_STATE
+ * @return    : Success or associated error code,UPPL_RC_SUCCESS/ERR*            
  * */
 UpplReturnCode Kt_LogicalMemberPort::ReadLogicalMemberPortValFromDB(
+    OdbcmConnectionHandler *db_conn,
     void* key_struct,
     uint32_t data_type,
     uint32_t operation_type,
     uint32_t &max_rep_ct,
     vector<key_logical_member_port_t> &logical_mem_port,
     pfc_bool_t is_state) {
+  if (operation_type < UNC_OP_READ) {
+    // Unsupported operation type for this function
+    return UPPL_RC_SUCCESS;
+  }
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   UpplReturnCode read_status = UPPL_RC_SUCCESS;
   ODBCM_RC_STATUS read_db_status = ODBCM_RC_SUCCESS;
@@ -946,30 +1015,89 @@ UpplReturnCode Kt_LogicalMemberPort::ReadLogicalMemberPortValFromDB(
   vector<ODBCMOperator> prim_keys_operator;
   void *old_val_struct;
   PopulateDBSchemaForKtTable(
-      kt_logical_member_port_dbtableschema,
+      db_conn, kt_logical_member_port_dbtableschema,
       key_struct, NULL,
-      operation_type, 0, 0,
+      operation_type, data_type, 0, 0,
       prim_keys_operator, old_val_struct);
-
+  pfc_log_debug("Operation type is %d", operation_type);
   if (operation_type == UNC_OP_READ) {
     read_db_status = physical_layer->get_odbc_manager()->
         GetOneRow((unc_keytype_datatype_t)data_type,
-                  kt_logical_member_port_dbtableschema);
+                  kt_logical_member_port_dbtableschema, db_conn);
   } else if (prim_keys_operator.empty()) {
+    pfc_log_debug("LMP:Read Bulk");
     read_db_status = physical_layer->get_odbc_manager()->
         GetBulkRows((unc_keytype_datatype_t)data_type, max_rep_ct,
                     kt_logical_member_port_dbtableschema,
-                    (unc_keytype_operation_t)operation_type);
-  } else if (!prim_keys_operator.empty()) {
-    read_db_status = physical_layer->get_odbc_manager()->
+                    (unc_keytype_operation_t)operation_type, db_conn);
+  } else if (!prim_keys_operator.empty() &&
+             operation_type == UNC_OP_READ_SIBLING) {
+    uint32_t no_of_query = 2;  // LMP has 2 primary keys other than LP
+    uint32_t index = 0;
+    for (; index < no_of_query; ++index) {
+      if (kt_logical_member_port_dbtableschema.primary_keys_.size() < 3) {
+        pfc_log_debug("No record found");
+        read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+        break;
+      }
+      pfc_log_debug("LMP:Read Sibling");
+       read_db_status = physical_layer->get_odbc_manager()-> \
+        GetBulkRows((unc_keytype_datatype_t)data_type, max_rep_ct,
+                    kt_logical_member_port_dbtableschema,
+                    (unc_keytype_operation_t)UNC_OP_READ_BULK,
+                     db_conn);
+      if (read_db_status ==  ODBCM_RC_SUCCESS) {
+        uint32_t max_rep_ct_new = 0;
+        FillLogicalMemberPortValueStructure(db_conn,
+                                      kt_logical_member_port_dbtableschema,
+                                      max_rep_ct_new,
+                                      operation_type,
+                                      logical_mem_port);
+        pfc_log_debug("max_rep_ct_new=%d max_rep_ct=%d",
+                      max_rep_ct_new, max_rep_ct);
+        for (uint32_t uindex = 1; uindex < max_rep_ct_new; uindex++) {
+          pfc_log_debug("Ktlink:Row list Removed");
+          kt_logical_member_port_dbtableschema.row_list_.pop_front();
+        }
+        max_rep_ct -= max_rep_ct_new;
+        //  Update the primary key vector
+        kt_logical_member_port_dbtableschema.primary_keys_.pop_back();
+        read_status = UPPL_RC_SUCCESS;
+      } else if (read_db_status == ODBCM_RC_CONNECTION_ERROR) {
+        read_status = UPPL_RC_ERR_DB_ACCESS;
+        pfc_log_error("Read operation has failed with error %d",
+                       read_db_status);
+        return read_status;
+      } else if (read_db_status == ODBCM_RC_RECORD_NOT_FOUND) {
+        pfc_log_debug("No record found");
+        read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+        // Update the primary key vector
+         kt_logical_member_port_dbtableschema.primary_keys_.pop_back();
+      }
+    }  // for end
+    if (logical_mem_port.empty() && index == 2) {
+      pfc_log_debug("No record found");
+      read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+    } else if (!logical_mem_port.empty()) {
+      max_rep_ct = logical_mem_port.size();
+      read_status = UPPL_RC_SUCCESS;
+    }
+    return read_status;
+  } else if (operation_type == UNC_OP_READ_SIBLING_BEGIN) {
+     pfc_log_debug("LMP:Read Sibling Begin");
+      read_db_status = physical_layer->get_odbc_manager()->
         GetSiblingRows((unc_keytype_datatype_t)data_type, max_rep_ct,
                        kt_logical_member_port_dbtableschema,
                        prim_keys_operator,
-                       (unc_keytype_operation_t)operation_type);
+                       (unc_keytype_operation_t)operation_type, db_conn);
   }
   if (read_db_status == ODBCM_RC_RECORD_NOT_FOUND) {
     pfc_log_debug("No record found");
     read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+    return read_status;
+  } else if (read_db_status == ODBCM_RC_CONNECTION_ERROR) {
+    read_status = UPPL_RC_ERR_DB_ACCESS;
+    pfc_log_error("Read operation has failed with error %d", read_db_status);
     return read_status;
   } else if (read_db_status != ODBCM_RC_SUCCESS) {
     read_status = UPPL_RC_ERR_DB_GET;
@@ -977,7 +1105,8 @@ UpplReturnCode Kt_LogicalMemberPort::ReadLogicalMemberPortValFromDB(
     pfc_log_info("Read operation has failed with error %d", read_db_status);
     return read_status;
   }
-  FillLogicalMemberPortValueStructure(kt_logical_member_port_dbtableschema,
+  FillLogicalMemberPortValueStructure(db_conn,
+                                      kt_logical_member_port_dbtableschema,
                                       max_rep_ct,
                                       operation_type,
                                       logical_mem_port);
@@ -987,92 +1116,48 @@ UpplReturnCode Kt_LogicalMemberPort::ReadLogicalMemberPortValFromDB(
 }
 
 /** Fill_Attr_Syntax_Map
- * * @Description : This function fills the attributes associated
+ * @Description : This function fills the attributes associated
  *                  with the class
- * * * @param[in] : void
- * * * @return    : void
+ * @param[in] : void
+ * @return    : void
  * */
 void Kt_LogicalMemberPort::Fill_Attr_Syntax_Map() {
+  map<string, Kt_Class_Attr_Syntax> attr_syntax_map;
   Kt_Class_Attr_Syntax objKeyAttrSyntax1 =
   { PFC_IPCTYPE_STRING, 0, 0, 1, 256, true, ""};
-  attr_syntax_map[LMP_SWITCH_ID] = objKeyAttrSyntax1;
+  attr_syntax_map[LMP_SWITCH_ID_STR] = objKeyAttrSyntax1;
 
   Kt_Class_Attr_Syntax objKeyAttrSyntax2 =
   { PFC_IPCTYPE_STRING, 0, 0, 1, 32, true, ""};
-  attr_syntax_map[LMP_PHYSICAL_PORT_ID] = objKeyAttrSyntax2;
+  attr_syntax_map[LMP_PHYSICAL_PORT_ID_STR] = objKeyAttrSyntax2;
 
   Kt_Class_Attr_Syntax objKeyAttrSyntax3 =
   { PFC_IPCTYPE_STRING, 0, 0, 1, 291, true, ""};
-  attr_syntax_map[LMP_LP_PORT_ID] = objKeyAttrSyntax3;
+  attr_syntax_map[LMP_LP_PORT_ID_STR] = objKeyAttrSyntax3;
 
   Kt_Class_Attr_Syntax objKeyAttr1Syntax4 =
   { PFC_IPCTYPE_UINT8, 0, 0, 1, 32, true, "" };
-  attr_syntax_map[DOMAIN_NAME] = objKeyAttr1Syntax4;
+  attr_syntax_map[DOMAIN_NAME_STR] = objKeyAttr1Syntax4;
 
   Kt_Class_Attr_Syntax objKeyAttr1Syntax5 =
   { PFC_IPCTYPE_UINT8, 0, 0, 1, 32, true, "" };
-  attr_syntax_map[CTR_NAME] = objKeyAttr1Syntax5;
-}
-
-/** IsLogicalMemberPortReferred
- *  * @Description : This function returns true if given controller_name,
- *  domain and port_id are referred in logical member port table
- *  * @param[in] : controller_name, domain_name, port_id
- *  * @return    : PFC_TRUE/PFC_FALSE
- */
-pfc_bool_t Kt_LogicalMemberPort::IsLogicalMemberPortReferred(
-    string controller_name,
-    string domain_name,
-    string port_id) {
-  pfc_bool_t is_ref = PFC_FALSE;
-  PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
-  DBTableSchema kt_dbtableschema;
-  vector<TableAttrSchema> vect_table_attr_schema;
-  TableAttrSchema kt_logical_port_table_attr_schema;
-  list< vector<TableAttrSchema> > row_list;
-  vector<string> vect_prim_keys;
-
-  // Check whether controller_name1 is reffered
-  vect_prim_keys.push_back("controller_name");
-  vect_prim_keys.push_back("domain_name");
-  vect_prim_keys.push_back("port_id");
-  //  controller_name
-  PhyUtil::FillDbSchema("controller_name", controller_name,
-                        controller_name.length(),
-                        DATATYPE_UINT8_ARRAY_32, vect_table_attr_schema);
-  PhyUtil::FillDbSchema("domain_name", domain_name,
-                        domain_name.length(),
-                        DATATYPE_UINT8_ARRAY_32, vect_table_attr_schema);
-  PhyUtil::FillDbSchema("port_id", port_id,
-                        port_id.length(),
-                        DATATYPE_UINT8_ARRAY_320, vect_table_attr_schema);
-  kt_dbtableschema.set_table_name("logical_member_port_table");
-  kt_dbtableschema.set_primary_keys(vect_prim_keys);
-  row_list.push_back(vect_table_attr_schema);
-  kt_dbtableschema.set_row_list(row_list);
-
-  //  Send request to ODBC for logical_member_port_table
-  ODBCM_RC_STATUS read_db_status = physical_layer->
-      get_odbc_manager()->IsRowExists(UNC_DT_STATE,
-                                      kt_dbtableschema);
-  if (read_db_status == ODBCM_RC_ROW_EXISTS) {
-    //  read count
-    pfc_log_debug("Given logical_port id is referred in memberport - 1");
-    is_ref = PFC_TRUE;
-  }
-  return is_ref;
+  attr_syntax_map[CTR_NAME_STR] = objKeyAttr1Syntax5;
+  attr_syntax_map_all[UNC_KT_LOGICAL_MEMBER_PORT] = attr_syntax_map;
 }
 
 /** ReadInternal
- * * @Description : This function reads the given  instance of KT_Port
- ** * @param[in] : session_id - ipc session id used for TC validation
- * key_struct - the key for the kt port instance
- * data_type - UNC_DT_* , read allowed in state
- * * @return    : UPPL_RC_SUCCESS is returned when the response
+ * @Description : This function reads the given  instance of KT_Port
+ * @param[in] : session_id - ipc session id used for TC validation
+ * key_struct - the key for the ktLMP instance
+ * val_struct - NULL
+ * operation_type-UNC_OP_READ*,type of read operation
+ * data_type - UNC_DT_* , read allowed in state,type of database
+ * @return    : UPPL_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
  * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
 UpplReturnCode Kt_LogicalMemberPort::ReadInternal(
+    OdbcmConnectionHandler *db_conn,
     vector<void *> &key_val,
     vector<void *> &val_struct,
     uint32_t data_type,
@@ -1085,20 +1170,17 @@ UpplReturnCode Kt_LogicalMemberPort::ReadInternal(
   // Get read response from database
   void *key_struct = key_val[0];
   vector<key_logical_member_port_t> logical_mem_port;
-  UpplReturnCode read_status = ReadLogicalMemberPortValFromDB(key_struct,
+  UpplReturnCode read_status = ReadLogicalMemberPortValFromDB(db_conn,
+                                                              key_struct,
                                                               data_type,
                                                               operation_type,
                                                               max_rep_ct,
                                                               logical_mem_port);
+  pfc_log_info(
+      "ReadLogicalMemberPortValFromDB returned %d with response size %d",
+      read_status, static_cast<int>(logical_mem_port.size()));
   key_val.clear();
-  if (read_status != UPPL_RC_SUCCESS) {
-    pfc_log_error("ReadValFromDB returned %d with response size %d",
-                  read_status,
-                  static_cast<int>(logical_mem_port.size()));
-  } else {
-    pfc_log_debug(
-        "ReadLogicalMemberPortValFromDB returned %d with response size %d",
-        read_status, static_cast<int>(logical_mem_port.size()));
+  if (read_status == UPPL_RC_SUCCESS) {
     for (unsigned int iIndex = 0 ; iIndex < logical_mem_port.size();
         ++iIndex) {
       key_logical_member_port_t *key_mem_port = new

@@ -12,12 +12,14 @@ package org.opendaylight.vtn.javaapi.resources.logical;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
+import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.IpcRequestProcessor;
@@ -120,9 +122,10 @@ public class VRouterInterfaceFlowFilterEntriesResource extends AbstractResource 
 			LOG.debug("Session created successfully");
 			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
 					getConfigID(), getExceptionHandler());
+			final List<String> uriParameterList = getUriParameters(requestBody);
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_VRTIF_FLOWFILTER_ENTRY_CREATE,
-					requestBody, getUriParameters(requestBody));
+					requestBody, uriParameterList);
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
@@ -179,17 +182,37 @@ public class VRouterInterfaceFlowFilterEntriesResource extends AbstractResource 
 			LOG.debug("Session created successfully");
 			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
 					getConfigID(), getExceptionHandler());
+			final List<String> uriParameterList = getUriParameters(requestBody);
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_VRTIF_FLOWFILTER_ENTRY_GET,
-					requestBody, getUriParameters(requestBody));
+					requestBody, uriParameterList);
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
 			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
-			setInfo(responseGenerator
+			/*
+			 * setInfo(responseGenerator
+			 * .getVRouterInterfaceFlowFilterEntryResponse(
+			 * requestProcessor.getIpcResponsePacket(), requestBody,
+			 * VtnServiceJsonConsts.LIST));
+			 */
+			JsonObject responseJson = responseGenerator
 					.getVRouterInterfaceFlowFilterEntryResponse(
 							requestProcessor.getIpcResponsePacket(),
-							requestBody, VtnServiceJsonConsts.LIST));
+							requestBody, VtnServiceJsonConsts.LIST);
+			if (responseJson.get(VtnServiceJsonConsts.FLOWFILTERENTRIES)
+					.isJsonArray()) {
+				JsonArray responseArray = responseJson.get(
+						VtnServiceJsonConsts.FLOWFILTERENTRIES).getAsJsonArray();
+				responseJson = getResponseJsonArrayLogical(requestBody,
+						requestProcessor, responseGenerator, responseArray,
+						VtnServiceJsonConsts.FLOWFILTERENTRIES,
+						VtnServiceJsonConsts.SEQNUM,
+						IpcRequestPacketEnum.KT_VRTIF_FLOWFILTER_ENTRY_GET,
+						uriParameterList,
+						VtnServiceIpcConsts.GET_VROUTER_INTERFACE_FLOW_FILTER_ENTRY_RESPONSE);
+			}
+			setInfo(responseJson);
 			LOG.debug("Response object created successfully");
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
@@ -235,7 +258,8 @@ public class VRouterInterfaceFlowFilterEntriesResource extends AbstractResource 
 		if (requestBody != null && requestBody.has(VtnServiceJsonConsts.INDEX)) {
 			uriParameters.add(requestBody.get(VtnServiceJsonConsts.INDEX)
 					.getAsString());
-		}LOG.trace("Completed VRouterInterfaceFlowFilterEntriesResource#getUriParameters()");
+		}
+		LOG.trace("Completed VRouterInterfaceFlowFilterEntriesResource#getUriParameters()");
 		return uriParameters;
 	}
 }

@@ -16,30 +16,35 @@
 #include "itc_kt_state_base.hh"
 #include "physicallayer.hh"
 #include "itc_kt_logicalport.hh"
+#include "itc_kt_port.hh"
+#include "itc_kt_switch.hh"
+#include "itc_kt_link.hh"
+#include "itc_kt_controller.hh"
 
 using unc::uppl::PhysicalLayer;
 
 /** Constructor
- * * @Description : This function instantiates parent and child key types for
- * kt
- * * * @param[in] : None
- * * * @return    : None
+ * @Description : Empty Constructor
+ * @param[in] : None
+ * @return    : None
  * */
 Kt_State_Base::Kt_State_Base() {
 }
 
 /** Create
- * * @Description : This function returns error when CREATE request is sent for State
- * Objects from north bound
- * * @param[in] : session_id - ipc session id used for TC validation
+ * @Description : This function returns error when CREATE request is sent
+ * for State Objects from north bound
+ * @param[in] : session_id - ipc session id used for TC validation
  * configuration_id - configuration id used for TC validation
  * key_struct - the key for the new kt instance
  * value_struct - the values for the new kt instance
  * data_type - UNC_DT_* , Create only allowed in running/state/import
+ * key_type-UNC_KT_*,any value of unc_key_type_t
  * sess - ipc server session where the response has to be added
- * * @return    : UPPL_RC_ERR_* is returned.
+ * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR_* is returned.
  * */
-UpplReturnCode Kt_State_Base::Create(uint32_t session_id,
+UpplReturnCode Kt_State_Base::Create(OdbcmConnectionHandler *db_conn,
+                                     uint32_t session_id,
                                      uint32_t configuration_id,
                                      void* key_struct,
                                      void* val_struct,
@@ -101,15 +106,17 @@ UpplReturnCode Kt_State_Base::Create(uint32_t session_id,
 }
 
 /** CreateKeyInstance
- * * @Description : This function creates a new row of KT in
+ * @Description : This function creates a new row of KT in
  * candidate  table.
- * key_struct - the key for the new kt  instance
+ * @param[in]:key_struct - the key for the new kt  instance
  * value_struct - the values for the new kt  instance
  * data_type - UNC_DT_* , Create only allowed in running/state/import
- * * @return    : UPPL_RC_SUCCESS is returned when the create is success
+ * key_type-UNC_KT_*,any value of unc_key_type_t
+ * @return    : UPPL_RC_SUCCESS is returned when the create is success
  * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_State_Base::CreateKeyInstance(void* key_struct,
+UpplReturnCode Kt_State_Base::CreateKeyInstance(OdbcmConnectionHandler *db_conn,
+                                                void* key_struct,
                                                 void* val_struct,
                                                 uint32_t data_type,
                                                 uint32_t key_type) {
@@ -130,18 +137,16 @@ UpplReturnCode Kt_State_Base::CreateKeyInstance(void* key_struct,
   void* old_value_struct;
   vector<ODBCMOperator> vect_key_operations;
   // Create DBSchema structure for kt_table
-  PopulateDBSchemaForKtTable(kt_dbtableschema,
+  PopulateDBSchemaForKtTable(db_conn, kt_dbtableschema,
                              key_struct,
                              val_struct,
-                             UNC_OP_CREATE, 0, 0,
+                             UNC_OP_CREATE, data_type, 0, 0,
                              vect_key_operations, old_value_struct);
 
   // Send request to ODBC for kt_table create
   ODBCM_RC_STATUS create_db_status = physical_layer->get_odbc_manager()->
-      CreateOneRow((unc_keytype_datatype_t)data_type, kt_dbtableschema);
-
-  pfc_log_info("Response from DB: %d", create_db_status);
-
+      CreateOneRow((unc_keytype_datatype_t)data_type,
+                   kt_dbtableschema, db_conn);
   if (create_db_status != ODBCM_RC_SUCCESS) {
     if (create_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
@@ -160,19 +165,21 @@ UpplReturnCode Kt_State_Base::CreateKeyInstance(void* key_struct,
 }
 
 /** Update
- * * @Description : This function updates a row of KT in
+ * @Description : This function updates a row of KT in
  * candidate  table.
- * * @param[in] : session_id - ipc session id used for TC validation
+ * @param[in] : session_id - ipc session id used for TC validation
  * configuration_id - configuration id used for TC validation
  * key_struct - the key for the kt  instance
  * value_struct - the values for the kt  instance
  * data_type - UNC_DT_* , Update only allowed in running/state/import
+ * key_type-UNC_KT_*,any value of unc_key_type_t
  * sess - ipc server session where the response has to be added
- * * @return    : UPPL_RC_SUCCESS is returned when the response
+ * @return    : UPPL_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
  * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_State_Base::Update(uint32_t session_id,
+UpplReturnCode Kt_State_Base::Update(OdbcmConnectionHandler *db_conn,
+                                     uint32_t session_id,
                                      uint32_t configuration_id,
                                      void* key_struct,
                                      void* val_struct,
@@ -234,30 +241,26 @@ UpplReturnCode Kt_State_Base::Update(uint32_t session_id,
 }
 
 /** UpdateKeyInstance
- * * @Description : This function updates a row of KT in
+ * @Description : This function updates a row of KT in
  * candidate  table.
- * * @param[in] :
+ * @param[in] :
  * key_struct - the key for the new kt instance
  * value_struct - the values for the new kt instance
  * data_type - UNC_DT_* , update only allowed in running/state/import
- * * @return    : UPPL_RC_SUCCESS is returned when the update
+ * key_type-UNC_KT_*,any value of unc_key_type_t
+ * old_val_struct-void * to switch value structure
+ * @return    : UPPL_RC_SUCCESS is returned when the update
  * is done successfully.
  * UPPL_RC_ERR_* is returned when the update is error
  * */
-UpplReturnCode Kt_State_Base::UpdateKeyInstance(void* key_struct,
+UpplReturnCode Kt_State_Base::UpdateKeyInstance(OdbcmConnectionHandler *db_conn,
+                                                void* key_struct,
                                                 void* val_struct,
                                                 uint32_t data_type,
                                                 uint32_t key_type,
                                                 void* &old_val_struct) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   UpplReturnCode update_status = UPPL_RC_SUCCESS;
-  if (key_type == UNC_KT_LOGICAL_PORT ||
-      key_type == UNC_KT_LOGICAL_MEMBER_PORT) {
-    pfc_log_error("Update operation is provided on unsupported key type %d",
-                  key_type);
-    update_status = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
-    return update_status;
-  }
   // Check whether operation is allowed on the given DT type
   if (((unc_keytype_datatype_t)data_type != UNC_DT_STATE) &&
       ((unc_keytype_datatype_t)data_type != UNC_DT_IMPORT)) {
@@ -266,22 +269,25 @@ UpplReturnCode Kt_State_Base::UpdateKeyInstance(void* key_struct,
     update_status = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
     return update_status;
   }
-
+  pfc_bool_t is_state = PFC_FALSE;
+  if (key_type == UNC_KT_CTR_DOMAIN) {
+    is_state = PFC_TRUE;
+  }
   // Structure used to send request to ODBC
   DBTableSchema kt_dbtableschema;
   vector<ODBCMOperator> vect_key_operations;
   // Create DBSchema structure for table
-  PopulateDBSchemaForKtTable(kt_dbtableschema,
+  PopulateDBSchemaForKtTable(db_conn, kt_dbtableschema,
                              key_struct,
                              val_struct,
-                             UNC_OP_UPDATE, 0, 0,
-                             vect_key_operations, old_val_struct);
+                             UNC_OP_UPDATE, data_type, 0, 0,
+                             vect_key_operations, old_val_struct,
+                             NOTAPPLIED, false, is_state);
   if (!((kt_dbtableschema.get_row_list()).empty())) {
     // Send request to ODBC for kt_table update
     ODBCM_RC_STATUS update_db_status = physical_layer->get_odbc_manager()-> \
         UpdateOneRow((unc_keytype_datatype_t)data_type,
-                     kt_dbtableschema);
-    pfc_log_info("UpdateOneRow response from DB is %d", update_db_status);
+                     kt_dbtableschema, db_conn);
     if (update_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
       pfc_log_fatal("DB connection not available or cannot access DB");
@@ -300,18 +306,20 @@ UpplReturnCode Kt_State_Base::UpdateKeyInstance(void* key_struct,
 }
 
 /**Delete
- * * @Description : This function deletes a row of KT in
+ * @Description : This function deletes a row of KT in
  * candidate  table.
- * * @param[in] : session_id - ipc session id used for TC validation
+ * @param[in] : session_id - ipc session id used for TC validation
  * configuration_id - configuration id used for TC validation
  * key_struct - the key for the kt instance
- * data_type - UNC_DT_* , delete only allowed in running/state/import
+ * data_type - UNC_DT_* , delete only allowed in running/state/import,
+ * key_type-UNC_KT_*,any value of unc_key_type_t
  * sess - ipc server session where the response has to be added
- * * @return    : UPPL_RC_SUCCESS is returned when the response
+ * @return    : UPPL_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
  * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_State_Base::Delete(uint32_t session_id,
+UpplReturnCode Kt_State_Base::Delete(OdbcmConnectionHandler *db_conn,
+                                     uint32_t session_id,
                                      uint32_t configuration_id,
                                      void* key_struct,
                                      uint32_t data_type,
@@ -372,24 +380,29 @@ UpplReturnCode Kt_State_Base::Delete(uint32_t session_id,
 }
 
 /** HandleDriverEvents
- * * @Description : This function processes the notification received from
+ * @Description : This function processes the notification received from
  * driver
- * * * @param[in] : key_struct - specifies the key instance of KT
+ * @param[in] : key_struct - specifies the key instance of KT
  * old_value_struct - old value of KT
  * new_value_struct - new value of KT
- * * * @return    : UPPL_RC_SUCCESS if events are handled successfully or
+ * oper_type-UNC_OP_*,type of operation
+ * data_type-UNC_DT_*,type of database
+ * key_type-UNC_KT_*,any value of unc_key_type_t
+ * @return    : UPPL_RC_SUCCESS if events are handled successfully or
  * UPPL_RC_ERR*
  * */
-UpplReturnCode Kt_State_Base::HandleDriverEvents(void* key_struct,
-                                                 uint32_t oper_type,
-                                                 uint32_t data_type,
-                                                 uint32_t key_type,
-                                                 void* old_val_struct,
-                                                 void* new_val_struct) {
+UpplReturnCode Kt_State_Base::HandleDriverEvents(
+    OdbcmConnectionHandler *db_conn,
+    void* key_struct,
+    uint32_t oper_type,
+    uint32_t data_type,
+    uint32_t key_type,
+    void* old_val_struct,
+    void* new_val_struct) {
   UpplReturnCode status = UPPL_RC_SUCCESS;
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
-  string controller_name;
-  string event_details;  // for sending event handling alarm
+  string controller_name = "";
+  string event_details = "";  // for sending event handling alarm
   // Validate the given request
   switch (key_type) {
     case UNC_KT_CTR_DOMAIN: {
@@ -403,7 +416,7 @@ UpplReturnCode Kt_State_Base::HandleDriverEvents(void* key_struct,
       }
       unc_keytype_ctrtype_t controller_type;
       UpplReturnCode retcode = PhyUtil::get_controller_type(
-          controller_name, controller_type,
+          db_conn, controller_name, controller_type,
           (unc_keytype_datatype_t)parent_data_type);
       // Check whether operation is allowed on the given DT type
       if (retcode != UPPL_RC_SUCCESS) {
@@ -414,7 +427,7 @@ UpplReturnCode Kt_State_Base::HandleDriverEvents(void* key_struct,
         pfc_log_error("Unknown domain cannot be operated from driver");
         return UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
       }
-      event_details = "KT_CONTROLLER";
+      event_details = "KT_CTR_DOMAIN";
       break;
     }
     case UNC_KT_LOGICAL_PORT: {
@@ -455,20 +468,25 @@ UpplReturnCode Kt_State_Base::HandleDriverEvents(void* key_struct,
       break;
     }
   }
-  status = ValidateRequest(key_struct, new_val_struct,
+  status = ValidateRequest(db_conn, key_struct, new_val_struct,
                            oper_type, data_type, key_type);
   if (status != UPPL_RC_SUCCESS) {
-    pfc_log_error(
-        "HandleDriverEvents failed with %d "
+    pfc_log_info(
+        "HandleDriverEvents validation failed with %d "
         "for operation %d with data type %d", status, oper_type, data_type);
-    UpplReturnCode alarm_status = physical_layer->get_physical_core()->
-        RaiseEventHandlingAlarm(controller_name);
-    if (alarm_status == UPPL_RC_SUCCESS) {
-      alarm_status = physical_layer->get_physical_core()->
-          SendEventHandlingFailureAlarm(controller_name,
-                                        event_details);
-      pfc_log_debug("Failure alarm sent to nodemanager - status %d",
-                    alarm_status);
+    if ((oper_type == UNC_OP_CREATE && status != UPPL_RC_ERR_INSTANCE_EXISTS) ||
+        ((oper_type == UNC_OP_UPDATE || oper_type == UNC_OP_DELETE) &&
+            status != UPPL_RC_ERR_NO_SUCH_INSTANCE)) {
+      // Raise validation failure alarm
+      UpplReturnCode alarm_status = physical_layer->get_physical_core()->
+          RaiseEventHandlingAlarm(controller_name);
+      if (alarm_status == UPPL_RC_SUCCESS) {
+        alarm_status = physical_layer->get_physical_core()->
+            SendEventHandlingFailureAlarm(controller_name,
+                                          event_details);
+        pfc_log_info("Event Handling Validation Failure alarm sent - status %d",
+                     alarm_status);
+      }
     }
     return status;
   }
@@ -476,55 +494,29 @@ UpplReturnCode Kt_State_Base::HandleDriverEvents(void* key_struct,
   // Call CreateKeyInstance, UpdateKeyInstance and DeleteKeyInstance based
   // on operation type
   // Create the kt instance in DB
-  void* old_value_struct;
+  void* old_value_struct = NULL;
   if (oper_type == UNC_OP_CREATE) {
-    pfc_log_info("Call CreateKeyInstance to create kt in DB");
-    status = CreateKeyInstance(key_struct, new_val_struct,
+    pfc_log_debug("Call CreateKeyInstance to create kt in DB");
+    status = CreateKeyInstance(db_conn, key_struct, new_val_struct,
                                data_type, key_type);
-    pfc_log_info("CreateKeyInstance status: %d" , status);
   } else if (oper_type == UNC_OP_UPDATE) {
+    if (key_type == UNC_KT_LOGICAL_PORT ||
+        key_type == UNC_KT_LOGICAL_MEMBER_PORT) {
+      pfc_log_error("Update operation is provided on unsupported key type %d",
+                    key_type);
+      status = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+      return status;
+    }
     // Call UpdateKeyInstance to update kt value in DB
-    pfc_log_info("Call UpdateKeyInstance to update kt in DB");
-    status = UpdateKeyInstance(key_struct, new_val_struct,
+    pfc_log_debug("Call UpdateKeyInstance to update kt in DB");
+    status = UpdateKeyInstance(db_conn, key_struct, new_val_struct,
                                data_type, key_type,
                                old_value_struct);
-    pfc_log_info("UpdateKeyInstance status: %d" , status);
   } else if (oper_type == UNC_OP_DELETE) {
     // Call DeleteKeyInstance to Delete kt from DB
-    pfc_log_info("Call DeleteKeyInstance to delete kt in DB");
-    status = DeleteKeyInstance(key_struct, data_type, key_type);
-    pfc_log_info("DeleteKeyInstance status: %d" , status);
+    pfc_log_debug("Call DeleteKeyInstance to delete kt in DB");
+    status = DeleteKeyInstance(db_conn, key_struct, data_type, key_type);
   }
-  // logical port oper status handling
-  if (key_type == UNC_KT_LOGICAL_MEMBER_PORT &&
-      (oper_type == UNC_OP_CREATE || oper_type == UNC_OP_DELETE) &&
-       status == UPPL_RC_SUCCESS) {
-    key_logical_member_port_t *obj_key =
-          reinterpret_cast<key_logical_member_port_t*>(key_struct);
-    string domain_name = reinterpret_cast<const char*>(
-          obj_key->logical_port_key.domain_key.domain_name);
-    string port_id = reinterpret_cast<const char*>(obj_key
-      ->logical_port_key.port_id);
-
-    key_logical_port logical_port_key;
-    memcpy(logical_port_key.domain_key.ctr_key.controller_name,
-         controller_name.c_str(),
-         controller_name.length()+1);
-    memcpy(logical_port_key.domain_key.domain_name,
-         domain_name.c_str(),
-         domain_name.length()+1);
-    memcpy(logical_port_key.port_id,
-           port_id.c_str(),
-           port_id.length()+1);
-
-    Kt_LogicalPort logical_port;
-    UpplReturnCode return_code = logical_port.HandleOperStatus(
-      data_type, reinterpret_cast<void *> (&logical_port_key),
-      NULL);
-    pfc_log_info("HandleOperStatus for logical_port class %d",
-               return_code);
-  }
-
   if (status != UPPL_RC_SUCCESS) {
     UpplReturnCode alarm_status = physical_layer->get_physical_core()->
         RaiseEventHandlingAlarm(controller_name);
@@ -532,8 +524,8 @@ UpplReturnCode Kt_State_Base::HandleDriverEvents(void* key_struct,
       alarm_status = physical_layer->get_physical_core()->
           SendEventHandlingFailureAlarm(controller_name,
                                         event_details);
-      pfc_log_debug("Failure alarm sent to node manager - status %d",
-                    alarm_status);
+      pfc_log_info("Failure alarm sent to node manager - status %d",
+                   alarm_status);
     }
   } else {
     UpplReturnCode alarm_status = physical_layer->get_physical_core()->
@@ -542,8 +534,8 @@ UpplReturnCode Kt_State_Base::HandleDriverEvents(void* key_struct,
       alarm_status = physical_layer->get_physical_core()->
           SendEventHandlingSuccessAlarm(controller_name,
                                         event_details);
-      pfc_log_debug("Success alarm sent to node manager - status %d",
-                    alarm_status);
+      pfc_log_info("Success alarm sent to node manager - status %d",
+                   alarm_status);
     }
     if (data_type != UNC_DT_IMPORT) {
       pfc_ipcevtype_t event_type = GetEventType(key_type);
@@ -572,11 +564,160 @@ UpplReturnCode Kt_State_Base::HandleDriverEvents(void* key_struct,
             ->get_ipc_connection_manager()->SendEvent(&ser_evt);
       }
     }
-    // Old value structure memory clean up
-    if (oper_type == UNC_OP_UPDATE) {
+    // Perform for oper_status handling
+    UpplReturnCode oper_status_handle = HandleOperStatus(db_conn, key_struct,
+                                                         oper_type,
+                                                         data_type,
+                                                         key_type,
+                                                         new_val_struct,
+                                                         controller_name);
+    pfc_log_debug("Oper Status Handling Status %d", oper_status_handle);
+  }
+  // Old value structure memory clean up
+  if (oper_type == UNC_OP_UPDATE) {
+    if(old_value_struct != NULL) {
       ClearValueStructure(key_type,
                           old_value_struct);
+      old_value_struct = NULL;
     }
   }
   return status;
+}
+
+/** HandleOperStatus
+ * @Description : This function calls oper status handling of associated
+ * key types
+ * @param[in] : key_struct - specifies the key instance of KT
+ * new_value_struct - new value of KT
+ * oper_type-UNC_OP_*,type of operation
+ * data_type-UNC_DT_*,type of database
+ * key_type-UNC_KT_*,any value of unc_key_type_t
+ * controller_name-controller id
+ * @return    : UPPL_RC_SUCCESS if oper status changes are handled
+ *  successfully or UPPL_RC_ERR*
+ * */
+UpplReturnCode Kt_State_Base::HandleOperStatus(OdbcmConnectionHandler *db_conn,
+                                               void* key_struct,
+                                               uint32_t oper_type,
+                                               uint32_t data_type,
+                                               uint32_t key_type,
+                                               void* new_val_struct,
+                                               string controller_name) {
+  UpplReturnCode oper_return = UPPL_RC_SUCCESS;
+  // logical port oper status handling
+  if (key_type == UNC_KT_LOGICAL_MEMBER_PORT &&
+      (oper_type == UNC_OP_CREATE || oper_type == UNC_OP_DELETE)) {
+    key_logical_member_port_t *obj_key =
+        reinterpret_cast<key_logical_member_port_t*>(key_struct);
+    string domain_name = reinterpret_cast<const char*>(
+        obj_key->logical_port_key.domain_key.domain_name);
+    string port_id = reinterpret_cast<const char*>(obj_key
+        ->logical_port_key.port_id);
+
+    key_logical_port logical_port_key;
+    memset(&logical_port_key, '\0', sizeof(key_logical_port));
+    memcpy(logical_port_key.domain_key.ctr_key.controller_name,
+           controller_name.c_str(),
+           controller_name.length()+1);
+    memcpy(logical_port_key.domain_key.domain_name,
+           domain_name.c_str(),
+           domain_name.length()+1);
+    memcpy(logical_port_key.port_id,
+           port_id.c_str(),
+           port_id.length()+1);
+    vector<OperStatusHolder> ref_oper_status;
+    GET_ADD_CTRL_OPER_STATUS(controller_name);
+    Kt_LogicalPort logical_port;
+    oper_return = logical_port.HandleOperStatus(
+        db_conn,
+        data_type,
+        reinterpret_cast<void *> (&logical_port_key),
+        NULL,
+        ref_oper_status, UNC_KT_LOGICAL_MEMBER_PORT);
+    pfc_log_debug("HandleOperStatus for logical_port class %d",
+                  oper_return);
+    ClearOperStatusHolder(ref_oper_status);
+  } else if (key_type == UNC_KT_PORT && oper_type == UNC_OP_UPDATE) {
+    // Port oper status changes
+    Kt_Port kt_port;
+    val_port_st_t port_st = *(reinterpret_cast<val_port_st_t*>(new_val_struct));
+    unsigned int valid_val =
+        PhyUtil::uint8touint(port_st.valid[kIdxPortOperStatus]);
+    if (valid_val == UNC_VF_VALID) {
+      key_port_t port_key = *(reinterpret_cast<key_port_t*>(key_struct));
+      vector<OperStatusHolder> ref_oper_status;
+      GET_ADD_CTRL_OPER_STATUS(controller_name);
+      // Get Switch oper status
+      key_switch_t switch_key;
+      Kt_Switch kt_switch;
+      memcpy(switch_key.ctr_key.controller_name, controller_name.c_str(),
+             (controller_name.length())+1);
+      memcpy(switch_key.switch_id, port_key.sw_key.switch_id,
+             sizeof(port_key.sw_key.switch_id));
+      uint8_t switch_oper_status = 0;
+      read_status = kt_switch.GetOperStatus(
+          db_conn, data_type,
+          reinterpret_cast<void*>(&switch_key), switch_oper_status);
+      pfc_log_debug("Switch read_status %d, oper_status %d",
+                    read_status, switch_oper_status);
+      ADD_SWITCH_OPER_STATUS(switch_key, switch_oper_status);
+      // Get port oper status
+      uint8_t port_oper_status = 0;
+      read_status = kt_port.GetOperStatus(
+          db_conn, data_type,
+          key_struct, port_oper_status);
+      pfc_log_debug("Port read_status %d, oper_status %d",
+                    read_status, port_oper_status);
+      ADD_PORT_OPER_STATUS(
+          port_key, port_oper_status);
+      oper_return = kt_port.NotifyOperStatus(db_conn, data_type,
+                                             key_struct,
+                                             new_val_struct,
+                                             ref_oper_status);
+      pfc_log_debug("Port notify oper status return %d", oper_return);
+      ClearOperStatusHolder(ref_oper_status);
+    }
+  } else if (key_type == UNC_KT_SWITCH && oper_type == UNC_OP_UPDATE) {
+    // Switch oper status changes
+    Kt_Switch kt_switch;
+    val_switch_st_t switch_st =
+        *(reinterpret_cast<val_switch_st_t*>(new_val_struct));
+    unsigned int valid_val =
+        PhyUtil::uint8touint(switch_st.valid[kIdxSwitchOperStatus]);
+    if (valid_val == UNC_VF_VALID) {
+      key_switch_t switch_key =
+          *(reinterpret_cast<key_switch_t*>(key_struct));
+      vector<OperStatusHolder> ref_oper_status;
+      GET_ADD_CTRL_OPER_STATUS(controller_name);
+      // Get Switch oper status
+      uint8_t switch_oper_status = 0;
+      read_status = kt_switch.GetOperStatus(
+          db_conn, data_type,
+          key_struct, switch_oper_status);
+      pfc_log_debug("Switch read_status %d, oper_status %d",
+                    read_status, switch_oper_status);
+      ADD_SWITCH_OPER_STATUS(switch_key,
+                             switch_oper_status);
+      oper_return = kt_switch.NotifyOperStatus(db_conn, data_type,
+                                               key_struct,
+                                               new_val_struct,
+                                               ref_oper_status);
+      pfc_log_debug("Switch notify oper status return %d", oper_return);
+      ClearOperStatusHolder(ref_oper_status);
+    }
+  } else if (key_type == UNC_KT_LINK && oper_type == UNC_OP_UPDATE) {
+  // Link oper status changes
+    Kt_Link kt_link;
+    val_link_st_t link_st =
+        *(reinterpret_cast<val_link_st_t*>(new_val_struct));
+    unsigned int valid_val =
+        PhyUtil::uint8touint(link_st.valid[kIdxLinkStOperStatus]);
+    if (valid_val == UNC_VF_VALID) {
+      oper_return = kt_link.NotifyOperStatus(db_conn, data_type,
+                                             key_struct,
+                                             new_val_struct);
+      pfc_log_debug("Link notify oper status return %d", oper_return);
+    }
+  }
+  return oper_return;
 }

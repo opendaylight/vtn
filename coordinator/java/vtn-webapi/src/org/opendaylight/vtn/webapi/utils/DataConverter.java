@@ -10,6 +10,7 @@ package org.opendaylight.vtn.webapi.utils;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import org.json.JSONException;
@@ -49,16 +50,21 @@ public final class DataConverter {
 	 * @return the json object
 	 * @throws VtnServiceWebAPIException the vtn service web api exception
 	 */
-	
-	
-	public static JsonObject getConvertedRequestObject(final String rawRequestString, final String contentType) throws VtnServiceWebAPIException{
+	public static JsonObject getConvertedRequestObject(String rawRequestString, final String contentType) throws VtnServiceWebAPIException{
 		JsonObject convertedObj=null;
 		final JsonParser parser = new JsonParser(); 
 		try{
 		LOG.trace("converting request string to JSON Object #getConvertedRequestObject()");
 		if(ContentTypeEnum.APPLICATION_XML.getContentType().equals(contentType)){
+			final Random random = new Random();
+			String randomString = String.valueOf(random.nextInt());
+			rawRequestString = rawRequestString.replaceAll(ApplicationConstants.DOT_ZERO, randomString + ApplicationConstants.SESSION_TYPE);
 			org.json.JSONObject jsonObject =  XML.toJSONObject(rawRequestString);
-			convertedObj =  (JsonObject) parser.parse(jsonObject.toString());
+			if(ApplicationConstants.vtepgroup.equals(jsonObject.keys().next().toString())){
+				XMLTransformationUtil.preProcessJson(jsonObject);
+			}
+			LOG.debug("Json before parsing : " + jsonObject);
+			convertedObj =  (JsonObject) parser.parse(jsonObject.toString().replaceAll(randomString + ApplicationConstants.SESSION_TYPE, ApplicationConstants.DOT_ZERO));
 		}else{
 			convertedObj =  (JsonObject) parser.parse(rawRequestString);
 		}
@@ -115,17 +121,37 @@ public final class DataConverter {
 	public static String getConvertedResponse(final JSONObject responseJson, final String requiredContentType) throws VtnServiceWebAPIException {
 		String responseString = null;
 		LOG.trace("converting response JSON to String #getConvertedResponse()");
+		LOG.debug("Json : " + responseJson);
 		try{
-		if(null != responseJson){
-			responseString = responseJson.toString();
-			if(ContentTypeEnum.APPLICATION_XML.getContentType().equals(requiredContentType)){
-				responseString = XML.toString(responseJson);
+			if (null != responseJson) {
+				responseString = responseJson.toString();
+				// conversion is required only for XML type response type
+				if (ContentTypeEnum.APPLICATION_XML.getContentType().equals(requiredContentType)) {
+					// modify the json object to remove null and empty nested
+					// json and arrays
+					JSONObject modifiedJson = new JSONObject(responseJson.toString()
+							.replace(ApplicationConstants.NULL_STRING,
+									ApplicationConstants.EMPTY_JSON)
+							.replace(ApplicationConstants.EMPTY_JSON,
+									ApplicationConstants.DUMMY_JSON)
+							.replace(ApplicationConstants.EMPTY_JSON_ARRAY,
+									ApplicationConstants.DUMMY_JSON));
+					LOG.debug("Modified Json : " + modifiedJson.toString());
+					String xml = XMLTransformationUtil.convertJsonToXml(modifiedJson);
+					LOG.debug("Converted XML : " + xml);
+					// remove non-required dummy xml attributes
+					responseString = XMLTransformationUtil.convertAllAttributesToElements(xml).replace(
+									ApplicationConstants.DUMMY_XML,
+									ApplicationConstants.EMPTY_STRING);
+				}
+				LOG.debug("Response String : " + responseString);
 			}
-		}
 		}catch (JSONException e) {
+			LOG.error(e.getMessage());
 			LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
 			throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.INTERNAL_SERVER_ERROR));
 		}catch (Exception e) {
+			 LOG.error(e.getMessage());
 			LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
 			throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.INTERNAL_SERVER_ERROR));
 		}

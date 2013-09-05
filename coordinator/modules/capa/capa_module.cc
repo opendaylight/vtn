@@ -96,6 +96,107 @@ void CapaModule::LoadParentVersion(pfc_conf_t confp,
   parent_map_[version] = pfc_conf_get_string(ver_def_cfblk, "parent", "");
 }
 
+bool CapaModule::LoadActualVersion(pfc_conf_t confp, const std::string version,
+                                   std::list<ActualVersion> &version_list) {
+
+  pfc_cfblk_t ver_def_cfblk = pfc_conf_get_map(confp, "version_definition",
+                                               version.c_str());
+
+  ActualVersion      actual_version;
+  uint32_t           actual_count         = 0;
+  uint32_t           actual_version_size  = 0;
+  uint32_t           array_index          = 0;
+  
+  /* Clear actual version list */
+  version_list.clear();
+
+  actual_count = pfc_conf_get_uint32(ver_def_cfblk, "actual_version_count", 0);
+
+  pfc_log_verbose(" Actual version count is %u", actual_count);
+
+  for (uint32_t index = 0; index <actual_count; index++) {
+
+    actual_version_size = pfc_conf_array_size(ver_def_cfblk, "actual_version");
+
+    if ((actual_version_size == 0) || (actual_version_size%4 != 0)) {
+      pfc_log_warn("Actual version array size is not multiples of 4");
+      return false;
+    }
+
+    memset(&actual_version, 0, sizeof(ActualVersion));
+    actual_version.major1  = pfc_conf_array_int32at(ver_def_cfblk,
+                                                 "actual_version", array_index++, 0);
+    actual_version.major2  = pfc_conf_array_int32at(ver_def_cfblk,
+                                                 "actual_version", array_index++, 0);
+    actual_version.minor   = pfc_conf_array_int32at(ver_def_cfblk,
+                                                 "actual_version", array_index++, 0);
+    actual_version.update  = pfc_conf_array_int32at(ver_def_cfblk,
+                                                 "actual_version", array_index++, 0);
+    version_list.push_back(actual_version);
+  }
+  return true;
+}
+
+bool CapaModule::ValidateVersion(unc_keytype_ctrtype_t ctrlr_type,
+                                 std::string config_version,
+                                 uint8_t pfc_version_major1, 
+                                 uint8_t pfc_version_major2,
+                                 uint8_t pfc_version_minor,
+                                 uint8_t pfc_version_update) {
+
+  pfc_log_info("Validates Configuration version and actual version ");
+
+  struct CapaCtrlrCommon    *ccc = ctrlr_common_map_.find(ctrlr_type)->second;
+  std::list<ActualVersion>  actual_version_list;
+  ActualVersion             actual;
+
+  if (ccc == NULL) {
+    pfc_log_warn("Failed to find Capa controller common");
+    return false;
+  }
+  memset(&actual, 0, sizeof(ActualVersion));
+
+  if (ccc->actual_version_map_.count(config_version) == 0) {
+    pfc_log_debug("Configuration version is not a member of "
+                  "actual version map");
+    return false;
+  }
+
+  actual_version_list = ccc->actual_version_map_.find(config_version)->second;
+
+  while (!actual_version_list.empty()) {
+    actual = actual_version_list.front();
+
+    actual_version_list.pop_front();
+    pfc_log_verbose("Actual version : : (%d.%d.%d.%d)",
+                    actual.major1, actual.major2, actual.minor, actual.update);
+
+    if ((actual.major1 == -1) || ((uint8_t)actual.major1 < pfc_version_major1)) {
+      return true;
+    } 
+
+    if (((uint8_t)actual.major1 == pfc_version_major1)) {
+      if ((actual.major2 == -1) || ((uint8_t)actual.major2 < pfc_version_major2)) {
+        return true;
+      }
+
+      if ((uint8_t)actual.major2 == pfc_version_major2) {
+        if ((actual.minor == -1) || ((uint8_t)actual.minor < pfc_version_minor)) {
+          return true;
+        }
+
+        if ((uint8_t)actual.minor == pfc_version_minor) {
+          if ((actual.update == -1) || ((uint8_t)actual.update <= pfc_version_update)) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+
 bool CapaModule::LoadCapabilityFile(unc_keytype_ctrtype_t ctrlr_type) {
   int         ret;
   pfc_conf_t  confp;
@@ -159,6 +260,7 @@ bool CapaModule::LoadCapabilityFile(unc_keytype_ctrtype_t ctrlr_type) {
     LoadParentVersion(confp, version_name);
   }
 
+  ccc->actual_version_map_.clear();
   // Load KT capability for each controller version
   for (int index = 0; index < num_versions; index++) {
     /* Read version name from names filed in version list block */
@@ -177,11 +279,22 @@ bool CapaModule::LoadCapabilityFile(unc_keytype_ctrtype_t ctrlr_type) {
       return false;
     }
     ccc->capa_map[version_name] = cap_ptr;
+
+    pfc_log_verbose("Loading Actual version: %s", version_name);
+    std::list<ActualVersion> version_list;
+    if (false == LoadActualVersion(confp, version_name, version_list)) {
+      pfc_log_warn("Failed to load capability for %s", version_name);
+      return false;
+    }
+    ccc->actual_version_map_[version_name] = version_list;
   }
+
   /* Close file */
   pfc_conf_close(confp);
+
   return true;
 }
+
 
 // Even if capability files are not loaded the module returns success.
 // If file was not loaded, then this module assumes no feature is supported

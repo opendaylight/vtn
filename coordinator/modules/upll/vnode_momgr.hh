@@ -12,6 +12,7 @@
 
 #include <string>
 #include <set>
+#include <map>
 #include "momgr_impl.hh"
 
 namespace unc {
@@ -44,9 +45,10 @@ typedef struct val_db_vtunnel_st {
 
 class VnodeMoMgr : public MoMgrImpl {
   public:
+    map<string,ConfigKeyVal *> vnode_oper_map;
+
     VnodeMoMgr() {
       parent_ck_vtn = NULL;
-      cur_instance_count = 0;
       cntrl_id = NULL;
     }
     virtual ~VnodeMoMgr() {
@@ -54,11 +56,24 @@ class VnodeMoMgr : public MoMgrImpl {
       parent_ck_vtn = NULL;
     }
 
-    bool UpdateOperStatus(ConfigKeyVal *ck_vn,
+    upll_rc_t UpdateOperStatus(ConfigKeyVal *ck_vn,
                           DalDmlIntf *dmi,
-                          state_notification notification);
+                          state_notification notification, bool skip,
+                          bool save_to_db);
     upll_rc_t CtrlrTypeAndDomainCheck(ConfigKeyVal *ikey, 
                                               IpcReqRespHeader *req);
+   /**
+    * @Brief  compares controller id and domain id before 
+    *         updating the value to DB.
+    * @param[in]  ikey  ikey contains key and value structure.
+    * @param[in]  okey  okey contains key and value structure.
+    *
+    * @retval  UPLL_RC_SUCCESS            Successful.
+    * @retval  UPLL_RC_ERR_CFG_SYNTAX     Syntax error.
+    */
+    virtual upll_rc_t CtrlrIdAndDomainIdUpdationCheck(ConfigKeyVal *ikey,
+                                              ConfigKeyVal *okey) = 0;
+
    /**
      * @brief  Perform Semantic Check to check Different vbridges
      *          contain same switch-id and vlan-id
@@ -103,17 +118,47 @@ class VnodeMoMgr : public MoMgrImpl {
     upll_rc_t IntimatePOMAboutNewController(ConfigKeyVal *ikey,
                                         controller_domain *ctrlr_dom,
                                         DalDmlIntf *dmi,
-                                        unc_keytype_operation_t op);
+                                        unc_keytype_operation_t op,
+                                        upll_keytype_datatype_t dt_type);
 
     template<typename T1, typename T2>
     bool SetOperStatus(ConfigKeyVal *ikey,
                             DalDmlIntf *dmi,
                             int notification,
-                            bool skip = false);
+                            bool skip,
+                            bool save_to_db);
 
+    /* @brief     To update oper status of vnode
+     *              
+     * @param[in] ktype         keytype 
+     * @param[in] session_id    session identifier
+     * @param[in] config_id     config identifier 
+     * @param[in] dmi           Pointer to db connection instance
+     * 
+     * @retval  UPLL_RC_SUCCESS                    updated successfully.
+     * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
+     * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
+     *
+     **/
+
+    upll_rc_t TxUpdateDtState(unc_key_type_t ktype,
+                              uint32_t session_id,
+                              uint32_t config_id,
+                              DalDmlIntf *dmi) ;
   protected:
-    uint32_t cur_instance_count;
     ConfigKeyVal *parent_ck_vtn;
+
+   /**
+    * @brief  Update parent oper status on delete for Transaction commit
+    *
+    * @param[in]  ikey          ConfigKeyVal instance
+    * @param[in]   dmi           Database connection parameter
+
+    * @retval  UPLL_RC_SUCCESS      Completed successfully.
+    * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
+    */
+    virtual upll_rc_t UpdateParentOperStatus(ConfigKeyVal *ikey,
+                                           DalDmlIntf *dmi);
 
     virtual upll_rc_t DeleteMo(IpcReqRespHeader *req,
                                ConfigKeyVal *ikey,
@@ -172,12 +217,6 @@ class VnodeMoMgr : public MoMgrImpl {
     virtual upll_rc_t GetVnodeName(ConfigKeyVal *ikey,
                                    uint8_t *&vtn_name,
                                    uint8_t *&vnode_name) =0;
-
-    upll_rc_t UpdateVnodeOperStatus(key_vnode_t *src_vnode,
-                            set<key_vnode_t>*vnode_set,
-                            set<key_vlink_t, vlink_compare>*vlink_set,
-                            DalDmlIntf *dmi, state_notification notification);
-
 
     /**
      * @brief  Checks and Updates the VbrIf interfaces associated with the vlink with the 
@@ -305,23 +344,6 @@ class VnodeMoMgr : public MoMgrImpl {
     upll_rc_t ControlMo(IpcReqRespHeader *header, ConfigKeyVal *ikey,
                         DalDmlIntf *dmi);
 
-    /* @brief     To update oper status of vnode
-     *              
-     * @param[in] ktype         keytype 
-     * @param[in] session_id    session identifier
-     * @param[in] config_id     config identifier 
-     * @param[in] dmi           Pointer to db connection instance
-     * 
-     * @retval  UPLL_RC_SUCCESS                    updated successfully.
-     * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
-     * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
-     *
-     **/
-
-    upll_rc_t TxUpdateDtState(unc_key_type_t ktype,
-                              uint32_t session_id,
-                              uint32_t config_id,
-                              DalDmlIntf *dmi) ;
 };
 
 }  // namespace kt_momgr

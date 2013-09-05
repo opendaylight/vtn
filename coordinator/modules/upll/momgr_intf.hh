@@ -125,9 +125,9 @@ class MoTxServiceIntf {
                                     uint32_t session_id,
                                      uint32_t config_id,
                                      DalDmlIntf *dmi) {
-    UPLL_LOG_DEBUG("kt: %u \n", ktype );
+    UPLL_LOG_DEBUG("kt: %u", ktype);
     return UPLL_RC_SUCCESS;
-  } 
+  }
   virtual upll_rc_t TxEnd(unc_key_type_t keytype, DalDmlIntf *dmi) = 0;
 };
 

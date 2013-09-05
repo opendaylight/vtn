@@ -75,7 +75,8 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 					&& VtnServiceConsts.GET.equals(method)) {
 				isValid = validateGet(requestBody);
 				updateOpParameterForList(requestBody);
-			} else {
+			} else if (isValid) {
+				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
@@ -131,7 +132,7 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 								.getAsString().trim().isEmpty()) {
 					isValid = validator.isValidRange(requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.VLANID)
-							.getAsInt(), VtnServiceJsonConsts.VAL_1,
+							.getAsString().trim(), VtnServiceJsonConsts.VAL_1,
 							VtnServiceJsonConsts.VAL_4095);
 				} else {
 					isValid = false;
@@ -153,8 +154,6 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 				} else {
 					isValid = false;
 				}
-			} else {
-				//isValid = false;
 			}
 		}
 		// validation for key: op

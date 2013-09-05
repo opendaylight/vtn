@@ -565,14 +565,10 @@ TEST(hostaddr, init_ipv4)
     /* Invalid IPv4 address. */
     pfc_hostaddr_t  addr;
     int  gerr(pfc_hostaddr_init(&addr, AF_INET, "100.200.300.400"));
-    if (gerr != EAI_NODATA) {
-        ASSERT_EQ(EAI_NONAME, gerr);
-    }
+    ASSERT_NE(0, gerr);
 
     gerr = pfc_hostaddr_fromstring(&addr, "100.200.300.400/INET4");
-    if (gerr != EAI_NODATA) {
-        ASSERT_EQ(EAI_NONAME, gerr);
-    }
+    ASSERT_NE(0, gerr);
 
     /* NULL address must be converted into loopback. */
     struct in_addr  iaddr;
@@ -651,14 +647,10 @@ TEST(hostaddr, init_ipv6)
     /* Invalid IPv6 address. */
     pfc_hostaddr_t  addr;
     int  gerr(pfc_hostaddr_init(&addr, AF_INET6, "::ffff:gggg:hhhh:iiii"));
-    if (gerr != EAI_NODATA) {
-        ASSERT_EQ(EAI_NONAME, gerr);
-    }
+    ASSERT_NE(0, gerr);
 
     gerr = pfc_hostaddr_fromstring(&addr, "::ffff:gggg:hhhh:iiii/INET6");
-    if (gerr != EAI_NODATA) {
-        ASSERT_EQ(EAI_NONAME, gerr);
-    }
+    ASSERT_NE(0, gerr);
 
     /* NULL address must be converted into loopback. */
     struct in6_addr  iaddr;
@@ -795,14 +787,10 @@ TEST(hostaddr, init_unspec)
     const char      *name("unknown-host-name::");
     pfc_hostaddr_t  addr;
     int  gerr(pfc_hostaddr_init(&addr, AF_UNSPEC, name));
-    if (gerr != EAI_NODATA) {
-        ASSERT_EQ(EAI_NONAME, gerr);
-    }
+    ASSERT_NE(0, gerr);
 
     gerr = pfc_hostaddr_fromstring(&addr, name);
-    if (gerr != EAI_NODATA) {
-        ASSERT_EQ(EAI_NONAME, gerr);
-    }
+    ASSERT_NE(0, gerr);
 
     /* IPv4 address. */
     RandomGenerator  rand;

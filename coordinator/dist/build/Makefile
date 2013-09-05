@@ -41,9 +41,9 @@ CONFIGURE_ARGS	+= --includedir=none
 CONFIGURE_ARGS	+= --with-java-libdir=$(JAVA_LIBDIR)
 CONFIGURE_ARGS	+= --with-tomcat-libdir=$(TOMCAT_LIBDIR)
 
-ifeq	($(strip $(VTN_DEBUG)),)
+ifneq	($(strip $(VTN_DEBUG)),true)
 CONFIGURE_ARGS	+= --disable-debug
-endif	# empty(VTN_DEBUG)
+endif	# VTN_DEBUG != true
 
 ifneq	($(strip $(VTN_BUILD_ID)),)
 CONFIGURE_ARGS	+= --with-build-id="$(VTN_BUILD_ID)"

@@ -185,14 +185,26 @@ class VbrMoMgr : public VnodeMoMgr {
      */
     upll_rc_t ValidateMessage(IpcReqRespHeader *req,
                               ConfigKeyVal *ikey);
+    /**
+     * @Brief  compares controller id and domain id before 
+     *         updating the value to DB.
+     *
+     * @param[in]  ikey  ikey contains key and value structure.
+     * @param[in]  okey  okey contains key and value structure.
+     *
+     * @retval  UPLL_RC_SUCCESS            Successful.
+     * @retval  UPLL_RC_ERR_CFG_SYNTAX     Syntax error.
+     */
+    upll_rc_t CtrlrIdAndDomainIdUpdationCheck(ConfigKeyVal *ikey,
+                                              ConfigKeyVal *okey);
 
     /**
      * @Brief  Checks if the specified key type and
      *         associated attributes are supported on the given controller,
      *         based on the valid flag.
      *
-     * @param[in]  crtlr_name      Controller name.
-     * @param[in]  ikey            Corresponding key and value structure.
+     * @param[in]  vbr_val         KT_VBRIDGE value structure.
+     * @param[in]  attrs           Pointer to controller attribute.
      * @param[in]  operation       Operation name.
      *
      * @retval  UPLL_RC_SUCCESS                     validation succeeded.
@@ -200,10 +212,10 @@ class VbrMoMgr : public VnodeMoMgr {
      * @retval  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR  Attribute NOT_SUPPORTED.
      * @retval  UPLL_RC_ERR_GENERIC                 Generic failure.
      */
-    upll_rc_t ValVbrAttributeSupportCheck(const char *ctrle_name,
-                                          ConfigKeyVal *ikey,
-                                          uint32_t operation);
-
+    upll_rc_t ValVbrAttributeSupportCheck(val_vbr_t *vbr_val,
+                                          const uint8_t *attrs,
+                                          unc_keytype_operation_t operation);
+ 
     /**
      * @Brief  Validates the syntax for KT_VBR keytype Rename structure.
      *

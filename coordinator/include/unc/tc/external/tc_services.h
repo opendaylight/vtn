@@ -106,6 +106,12 @@ typedef enum {
   TC_AUTOSAVE_ENABLED
 } TcAutoSaveValue;
 
+/* Audit operation Status */
+typedef enum {
+    TC_AUDIT_OPER_FAILURE = 0,
+    TC_AUDIT_OPER_SUCCESS 
+} TcAuditStatus;
+
 
 
 #endif  // SRC_INCLUDE_UNC_TC_EXTERNAL_TC_SERVICES_H_

@@ -20,6 +20,7 @@ import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
+import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.IpcRequestProcessor;
@@ -187,12 +188,24 @@ public class VTunnelInterfacesResource extends AbstractResource {
 			if (requestBody.has(VtnServiceJsonConsts.OP)) {
 				opType = requestBody.get(VtnServiceJsonConsts.OP).getAsString();
 			}
+			final List<String> uriParameterList = getUriParameters(requestBody);
 			JsonObject interfacesJson = null;
 			final JsonArray interfaceArray = new JsonArray();
 			vtunnelInterfacesJson = responseGenerator
 					.getVTunnelInterfaceResourceResponse(
 							requestProcessor.getIpcResponsePacket(),
 							requestBody, VtnServiceJsonConsts.LIST);
+			if (vtunnelInterfacesJson.get(VtnServiceJsonConsts.INTERFACES).isJsonArray()) {
+				JsonArray responseArray = vtunnelInterfacesJson.get(
+						VtnServiceJsonConsts.INTERFACES)
+						.getAsJsonArray();
+				vtunnelInterfacesJson = getResponseJsonArrayLogical(requestBody,
+                        requestProcessor, responseGenerator,
+                        responseArray, VtnServiceJsonConsts.INTERFACES,
+                        VtnServiceJsonConsts.IFNAME,
+                        IpcRequestPacketEnum.KT_VTUNNEL_IF_GET,
+                        uriParameterList,VtnServiceIpcConsts.GET_VTUNNEL_INTERFACE_RESPONSE);
+			}
 			LOG.trace("Response Packet created successfully for 1st request");
 			if ((VtnServiceJsonConsts.STATE).equalsIgnoreCase(dataType)
 					&& opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {

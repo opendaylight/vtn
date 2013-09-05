@@ -12,7 +12,6 @@
  * @file    odbcm_mgr.cc
  *
  */
-
 #include "odbcm_mgr.hh"
 #include "odbcm_db_tableschema.hh"
 #include "odbcm_utils.hh"
@@ -20,6 +19,7 @@
 #include "odbcm_query_factory.hh"
 #include "odbcm_query_processor.hh"
 #include "odbcm_db_varbind.hh"
+#include "odbcm_connection.hh"
 using unc::uppl::ODBCManager;
 
 extern pfc_cfdef_t odbcm_cfdef;
@@ -42,7 +42,7 @@ ODBCM_RC_STATUS ODBCManager::ODBCM_Initialize() {
   /** Initialize the SQLStateMap */
   ODBCM_RC_STATUS rc = ODBCMUtils::Initialize_OdbcmSQLStateMap();
   //  rc = ODBCMUtils::Intialize_RCode_String();
-  pfc_log_info("ODBCM::ODBCManager::Initialize: "
+  pfc_log_debug("ODBCM::ODBCManager::Initialize: "
     "OdbcmSQLStateMap initialized:%s", ODBCMUtils::get_RC_Details(rc).c_str());
   if (rc != ODBCM_RC_SUCCESS) {
     pfc_log_error("ODBCM::ODBCManager::Initialize: "
@@ -55,8 +55,16 @@ ODBCM_RC_STATUS ODBCManager::ODBCM_Initialize() {
         "Error in db_table_list_map_ initialization ");
     return ODBCM_RC_GENERAL_ERROR;
   }
-  pfc_log_info("ODBCM::ODBCManager::Initialize: "
+  pfc_log_debug("ODBCM::ODBCManager::Initialize: "
       "db_table_list_map_ is initialized ");
+  /** Initialise the table columns name map */
+  if (ODBCM_RC_SUCCESS != initialize_odbcm_tables_column_map_()) {
+    pfc_log_error("ODBCM::ODBCManager::Initialize: "
+        "Error in odbcm_tables_column_map_ initialization ");
+    return ODBCM_RC_GENERAL_ERROR;
+  }
+  pfc_log_debug("ODBCM::ODBCManager::Initialize: "
+      "odbcm_tables_column_map_ is initialized ");
 
   /** Parse the odbcm.conf to get odbc config information */
   if (ODBCM_RC_SUCCESS != ParseConfigFile()) {
@@ -64,15 +72,15 @@ ODBCM_RC_STATUS ODBCManager::ODBCM_Initialize() {
         "Could not parse odbcm.conf !!");
     return ODBCM_RC_GENERAL_ERROR;
   }
-  pfc_log_info("ODBCM::ODBCManager::Initialize: "
+  pfc_log_debug("ODBCM::ODBCManager::Initialize: "
       "db_conf_info is updated");
-
   /* Establish the database connection */
-  if (ODBCM_RC_SUCCESS != OpenDBConnection()) {
+  if (ODBCM_RC_SUCCESS != InitializeConnectionEnv()) {
     pfc_log_fatal("ODBCM::ODBCManager::Initialize: "
-        "Could not establish Database Connection !!");
+        "Could not allocate connection environment !!");
     return ODBCM_RC_CONNECTION_ERROR;
   }
+
   pfc_log_info("ODBCM::ODBCManager::Initialize: "
       "ODBCM initialized !!!");
   /**set Flag for the status of init*/
@@ -88,21 +96,26 @@ ODBCM_RC_STATUS ODBCManager::ODBCM_Initialize() {
  *                During commit phase the row will be created in 
  *                running configuration and the cs_row_status 
  *                will be set accordingly.
- * @param[in]   : unc_keytype_datatype_t , DBTableSchema &
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ * @return      : ODBCM_RC_SUCCESS is returned when the row is created
+ *                ODBCM_RC_* is returned when the row is not created
+ *
  **/
 ODBCM_RC_STATUS ODBCManager::CreateOneRow(unc_keytype_datatype_t db_name,
-                                          DBTableSchema &db_table_schema ) {
+                                          DBTableSchema &db_table_schema,
+                                        OdbcmConnectionHandler *conn_obj) {
   PHY_FINI_READ_LOCK();
   /** Initialize all local variables */
-  string            insert_query; /* To store the db query */
+  string            insert_query = ""; /* To store the db query */
   SQLRETURN         odbc_rc           = ODBCM_RC_SUCCESS; /* SQL API rc */
   ODBCM_RC_STATUS   status            = ODBCM_RC_SUCCESS; /* other method rc */
   ODBCMTable        table_id          = UNKNOWN_TABLE;
-  std::list < std::vector <TableAttrSchema> > rlist;
   std::list < std::vector <TableAttrSchema> >::iterator iter_list;
   /** Check the requested row already exists in database */
-  status = IsRowExists(db_name, db_table_schema);
+  status = IsRowExists(db_name, db_table_schema, conn_obj);
   pfc_log_info("ODBCM::ODBCManager::CreateOneRow: IsRowExists "
     "returns: %s", ODBCMUtils::get_RC_Details(status).c_str());
   if (status != ODBCM_RC_ROW_EXISTS &&
@@ -115,7 +128,8 @@ ODBCM_RC_STATUS ODBCManager::CreateOneRow(unc_keytype_datatype_t db_name,
   /** Allocate memory for statement, queryfactory, 
     * query processor and db_varbind objects */
   HSTMT             create_stmt       = NULL;
-  ODBCM_STATEMENT_CREATE(rw_conn_handle_, create_stmt);
+  SQLHDBC rw_conn_handle = conn_obj->get_conn_handle();
+  ODBCM_STATEMENT_CREATE(rw_conn_handle, create_stmt);
   QueryFactory      *query_factory    = NULL;
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
   QueryProcessor    *query_processor  = NULL;
@@ -152,7 +166,7 @@ ODBCM_RC_STATUS ODBCManager::CreateOneRow(unc_keytype_datatype_t db_name,
                       "create row which is already exists but deleted in"
                       "previous transaction, clear will be called and "
                       "row creation will be allowed ");
-        status = ClearOneRow(db_name, db_table_schema);
+        status = ClearOneRow(db_name, db_table_schema, conn_obj);
         if (status != ODBCM_RC_SUCCESS) {
           pfc_log_error("ODBCM::ODBCManager::CreateOneRow: "
                         "Error in Clearonerow so create not continued");
@@ -162,7 +176,7 @@ ODBCM_RC_STATUS ODBCManager::CreateOneRow(unc_keytype_datatype_t db_name,
         break;
       case ROW_INVALID:
         /* worst and corner case handling*/
-        status = ClearOneRow(db_name, db_table_schema);
+        status = ClearOneRow(db_name, db_table_schema, conn_obj);
         if (status != ODBCM_RC_SUCCESS) {
           pfc_log_error("ODBCM::ODBCManager::CreateOneRow: "
                         "Error in Clearonerow so create not continued");
@@ -181,10 +195,10 @@ ODBCM_RC_STATUS ODBCManager::CreateOneRow(unc_keytype_datatype_t db_name,
   }
   query_factory->SetOperation(CREATEONEROW);
   /** Get table id enum value */
-  table_id = get_table_id(db_table_schema.get_table_name());
+  table_id = db_table_schema.get_table_name();
   if (table_id == UNKNOWN_TABLE) {
-    pfc_log_error("ODBCM::ODBCManager::CreateOneRow: Unknown table: %s",
-                 db_table_schema.get_table_name().c_str());
+    pfc_log_error("ODBCM::ODBCManager::CreateOneRow: Unknown table: %d",
+                 db_table_schema.get_table_name());
     status = ODBCM_RC_TABLE_NOT_FOUND;
     ODBCMFreeingMemory(create_stmt, table_id, db_varbind, query_factory,
                        query_processor);
@@ -219,12 +233,13 @@ ODBCM_RC_STATUS ODBCManager::CreateOneRow(unc_keytype_datatype_t db_name,
                        query_processor);
     return status;
   }
-  rlist = db_table_schema.get_row_list();
+  std::list < std::vector <TableAttrSchema> >& rlist =
+      db_table_schema.get_row_list();
   /**to print the entire DBTableSchema object*/
-  db_table_schema.PrintDBTableSchema();
+  // db_table_schema.PrintDBTableSchema();
   /** Traverse the list to bind and execute */
   if (rlist.size() > 1) {
-    pfc_log_info("ODBCM::ODBCManager::CreateOneRow: "
+    pfc_log_debug("ODBCM::ODBCManager::CreateOneRow: "
        "> 1 rows are received for DB operation, But 1st row only will be pushed"
        "to Database");
   }
@@ -258,12 +273,12 @@ ODBCM_RC_STATUS ODBCManager::CreateOneRow(unc_keytype_datatype_t db_name,
               CREATEONEROW, create_stmt);
     if (status == ODBCM_RC_SUCCESS) {
       /** Commit all active transactions on this connection */
-      ODBCM_END_TRANSACTION(rw_conn_handle_, SQL_COMMIT);
-      pfc_log_info("ODBCM::ODBCManager::CreateOneRow:row is created");
+      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT);
+      pfc_log_debug("ODBCM::ODBCManager::CreateOneRow:row is created");
     } else {
       /** Rollback all active transactions on this connection */
-      ODBCM_END_TRANSACTION(rw_conn_handle_, SQL_ROLLBACK);
-      pfc_log_info("ODBCM::ODBCManager::CreateOneRow:row is not created");
+      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK);
+      pfc_log_debug("ODBCM::ODBCManager::CreateOneRow:row is not created");
     }
   } else {
     pfc_log_info("ODBCM::ODBCManager::CreateOneRow: No Data Received !");
@@ -282,20 +297,24 @@ ODBCM_RC_STATUS ODBCManager::CreateOneRow(unc_keytype_datatype_t db_name,
  *                the row will be cleared out. In other databases, 
  *                the entry will be deleted in this method and the 
  *                transaction will be committed.
- * @param[in]   : unc_keytype_datatype_t db_name, DBTableSchema db_table_schema
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ * @return      : ODBCM_RC_SUCCESS is returned when the row is deleted
+ *                ODBCM_RC_* is returned when the row is not deleted
  **/
 ODBCM_RC_STATUS ODBCManager::DeleteOneRow(unc_keytype_datatype_t db_name,
-                                          DBTableSchema &db_table_schema ) {
+                                          DBTableSchema &db_table_schema,
+                                          OdbcmConnectionHandler *conn_obj ) {
   PHY_FINI_READ_LOCK();
-  string              delete_query;  // receiving the query from queryfactory
+  string              delete_query = "";  // receiving the query from queryfactory
   SQLRETURN           odbc_rc   = ODBCM_RC_SUCCESS;  // SQL API rc
   ODBCM_RC_STATUS     status    = ODBCM_RC_SUCCESS;  // other method rc
   ODBCMTable          table_id  = UNKNOWN_TABLE;
-  std::list < std::vector <TableAttrSchema> >           rlist;
   std::list < std::vector <TableAttrSchema> >::iterator iter_list;
   /* To check the row exists */
-  status = IsRowExists(db_name, db_table_schema);
+  status = IsRowExists(db_name, db_table_schema, conn_obj);
   if (status == ODBCM_RC_ROW_NOT_EXISTS ||
       (status != ODBCM_RC_ROW_EXISTS &&
       status != ODBCM_RC_ROW_NOT_EXISTS &&
@@ -308,7 +327,8 @@ ODBCM_RC_STATUS ODBCManager::DeleteOneRow(unc_keytype_datatype_t db_name,
   /** Allocate memory for statement, queryfactory, 
     * query processor and db_varbind objects */
   HSTMT               delete_stmt = NULL;
-  ODBCM_STATEMENT_CREATE(rw_conn_handle_, delete_stmt);
+  SQLHDBC rw_conn_handle = conn_obj->get_conn_handle();
+  ODBCM_STATEMENT_CREATE(rw_conn_handle, delete_stmt);
   QueryFactory        *query_factory = NULL;
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
   QueryProcessor      *query_processor = NULL;
@@ -316,8 +336,9 @@ ODBCM_RC_STATUS ODBCManager::DeleteOneRow(unc_keytype_datatype_t db_name,
   DBVarbind           *db_varbind = NULL;
   ODBCM_CREATE_OBJECT(db_varbind, DBVarbind);
 
-  rlist = db_table_schema.get_row_list();
-  pfc_log_info("ODBCM::ODBCManager::DeleteOneRow: "
+  std::list < std::vector <TableAttrSchema> > & rlist =
+      db_table_schema.get_row_list();
+  pfc_log_debug("ODBCM::ODBCManager::DeleteOneRow: "
       "IsRowExists status %s",
       ODBCMUtils::get_RC_Details(status).c_str());
   /** Fetch the cs_row_status value to compare further */
@@ -327,7 +348,7 @@ ODBCM_RC_STATUS ODBCManager::DeleteOneRow(unc_keytype_datatype_t db_name,
     if (rs_value == DELETED) {
       pfc_log_info("ODBCM::ODBCManager::DeleteOneRow: "
                     "Row exists but already in DELETED state ");
-      ODBCM_RC_STATUS status = ClearOneRow(db_name, db_table_schema);
+      ODBCM_RC_STATUS status = ClearOneRow(db_name, db_table_schema, conn_obj);
       if (status != ODBCM_RC_SUCCESS) {
         pfc_log_error("ODBCM::ODBCManager::DeleteOneRow: "
                       "Error in ClearOneRow so delete not continued");
@@ -344,10 +365,10 @@ ODBCM_RC_STATUS ODBCManager::DeleteOneRow(unc_keytype_datatype_t db_name,
   }  // if
   query_factory->SetOperation(DELETEONEROW);
   /** Validate the table */
-  table_id = get_table_id(db_table_schema.get_table_name());
+  table_id = db_table_schema.get_table_name();
   if (table_id == UNKNOWN_TABLE) {
-    pfc_log_error("ODBCM::ODBCManager::DeleteOneRow: Unknown table: %s",
-      db_table_schema.get_table_name().c_str());
+    pfc_log_error("ODBCM::ODBCManager::DeleteOneRow: Unknown table: %d",
+      db_table_schema.get_table_name());
     status = ODBCM_RC_TABLE_NOT_FOUND;
     /** Freeing all allocated memory*/
     ODBCMFreeingMemory(delete_stmt, table_id, db_varbind, query_factory,
@@ -384,11 +405,11 @@ ODBCM_RC_STATUS ODBCManager::DeleteOneRow(unc_keytype_datatype_t db_name,
                            query_processor);
     return status;
   }
-  pfc_log_info("ODBCM::ODBCManager::DeleteOneRow: "
+  pfc_log_debug("ODBCM::ODBCManager::DeleteOneRow: "
       "row_list size : %d ", static_cast<int>(rlist.size()));
-  db_table_schema.PrintDBTableSchema();
+  // db_table_schema.PrintDBTableSchema();
   if (rlist.size() > 1) {
-    pfc_log_info("ODBCM::ODBCManager::DeleteOneRow: "
+    pfc_log_debug("ODBCM::ODBCManager::DeleteOneRow: "
        "> 1 rows are received for DB operation,But 1st row only will be pushed"
        "to Database");
   }
@@ -434,12 +455,12 @@ ODBCM_RC_STATUS ODBCManager::DeleteOneRow(unc_keytype_datatype_t db_name,
     }
     if (status == ODBCM_RC_SUCCESS) {
       /** Commit all active transactions on this connection*/
-      ODBCM_END_TRANSACTION(rw_conn_handle_, SQL_COMMIT);
-      pfc_log_info("ODBCM::ODBCManager::DeleteOneRow:row is deleted");
+      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT);
+      pfc_log_debug("ODBCM::ODBCManager::DeleteOneRow:row is deleted");
     } else {
       /** Rollback all active transactions on this connection*/
-      ODBCM_END_TRANSACTION(rw_conn_handle_, SQL_ROLLBACK);
-      pfc_log_info("ODBCM::ODBCManager::DeleteOneRow:row is not deleted");
+      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK);
+      pfc_log_debug("ODBCM::ODBCManager::DeleteOneRow:row is not deleted");
     }
   } else {
     pfc_log_info("ODBCM::ODBCManager::DeleteOneRow: No Data Received !");
@@ -457,21 +478,26 @@ ODBCM_RC_STATUS ODBCManager::DeleteOneRow(unc_keytype_datatype_t db_name,
  *                During commit phase the update will be moved to 
  *                running configuration and the row_status will be 
  *                set accordingly.
- * @param[in]   : unc_keytype_datatype_t db_name, DBTableSchema db_table_schema
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ * @return      : ODBCM_RC_SUCCESS is returned when the row is updated
+ *                ODBCM_RC_* is returned when the row is not updated
  **/
 ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
-                                          DBTableSchema &db_table_schema ) {
+                                          DBTableSchema &db_table_schema,
+                                          OdbcmConnectionHandler *conn_obj,
+                                          bool IsInternal) {
   PHY_FINI_READ_LOCK();
   /** Initialize all local variables */
-  string            update_query;  // to store the query
+  string            update_query = "";  // to store the query
   SQLRETURN         odbc_rc  = ODBCM_RC_SUCCESS;  // SQL API rc
   ODBCM_RC_STATUS   status   = ODBCM_RC_SUCCESS;  // other methods rc
   ODBCMTable        table_id = UNKNOWN_TABLE;
-  std::list < std::vector <TableAttrSchema> >           rlist;
   std::list < std::vector <TableAttrSchema> >::iterator iter;
   /** To check the row exists */
-  status = IsRowExists(db_name, db_table_schema);
+  status = IsRowExists(db_name, db_table_schema, conn_obj);
   if (status == ODBCM_RC_ROW_NOT_EXISTS ||
       (status != ODBCM_RC_ROW_EXISTS &&
       status != ODBCM_RC_ROW_NOT_EXISTS &&
@@ -483,7 +509,8 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
   }
   /** Allocation for sql stmt */
   HSTMT           update_stmt = NULL;
-  ODBCM_STATEMENT_CREATE(rw_conn_handle_, update_stmt);
+  SQLHDBC rw_conn_handle = conn_obj->get_conn_handle();
+  ODBCM_STATEMENT_CREATE(rw_conn_handle, update_stmt);
   /** Create query_factory, query processor, dbvarbind obj */
   QueryFactory    *query_factory = NULL;
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
@@ -492,7 +519,8 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
   DBVarbind       *db_varbind = NULL;
   ODBCM_CREATE_OBJECT(db_varbind, DBVarbind);
 
-  rlist = db_table_schema.get_row_list();
+  std::list < std::vector <TableAttrSchema> >& rlist =
+      db_table_schema.get_row_list();
   pfc_log_info("ODBCM::ODBCManager::UpdateOneRow: "
       "IsRowExists returns: %s",
       ODBCMUtils::get_RC_Details(status).c_str());
@@ -501,7 +529,7 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
     if (rs_value == DELETED) {
       pfc_log_info("ODBCM::ODBCManager::UpdateOneRow: Row exists with"
         "DELETED state so ClearOneRow will be called");
-      ODBCM_RC_STATUS status = ClearOneRow(db_name, db_table_schema);
+      ODBCM_RC_STATUS status = ClearOneRow(db_name, db_table_schema, conn_obj);
       if (status != ODBCM_RC_SUCCESS) {
         pfc_log_debug("ODBCM::ODBCManager::UpdateOneRow: "
            "ClearOneRow is not succeeded, update not continued");
@@ -519,8 +547,8 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
 
   query_factory->SetOperation(UPDATEONEROW);
   /** Prepare the sql command */
-  update_query = (query_factory->*query_factory->GetQuery)(
-                db_name, db_table_schema);
+  update_query = (query_factory->*query_factory->GetQueryWithBool)(
+                db_name, db_table_schema, IsInternal);
   if (update_query.empty()) {
     pfc_log_error("ODBCM::ODBCManager::UpdateOneRow: "
         "Error in framing the SQL query");
@@ -531,11 +559,11 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
     return status;
   }
   /** Get table id enum value*/
-  table_id = get_table_id(db_table_schema.get_table_name());
+  table_id = db_table_schema.get_table_name();
   if (table_id == UNKNOWN_TABLE) {
     pfc_log_error("ODBCM::ODBCManager::UpdateOneRow: "
-        "Unknown table:%s",
-        db_table_schema.get_table_name().c_str());
+        "Unknown table:%d",
+        db_table_schema.get_table_name());
     status = ODBCM_RC_TABLE_NOT_FOUND;
     /* Freeing all allocated memory */
     ODBCMFreeingMemory(update_stmt, table_id, db_varbind, query_factory,
@@ -561,11 +589,11 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
     return status;
   }
   if (rlist.size() > 1) {
-    pfc_log_info("ODBCM::ODBCManager::UpdateOneRow: "
+    pfc_log_debug("ODBCM::ODBCManager::UpdateOneRow: "
        "> 1 rows are received for DB operation,But 1st row only will be pushed"
        "to Database");
   }
-  db_table_schema.PrintDBTableSchema();
+  // db_table_schema.PrintDBTableSchema();
   iter = rlist.begin();
   if (iter != rlist.end()) {
     /** Removing the primarykey values from vector */
@@ -578,8 +606,8 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
     iter_vector = (*iter).begin();
 
     for (uint32_t loop = 0; loop < (*iter).size(); loop++) {
-      pfc_log_debug("ODBCM::ODBCManager::UpdateOneRow: %s",
-        (*iter_vector).table_attribute_name.c_str());
+      pfc_log_debug("ODBCM::ODBCManager::UpdateOneRow: %d",
+        (*iter_vector).table_attribute_name);
       iter_vector++;
     }
     if ((*iter).size() < pkey_size) {
@@ -593,11 +621,21 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
     } else {
       pfc_log_debug("ODBCM::ODBCManager::UpdateOneRow: "
         "Vector size with pkeys %d", static_cast<int>((*iter).size()));
-      if ((*iter).size() >= pkey_size)
-        (*iter).erase((*iter).begin(), (*iter).begin() + pkey_size);
-      pfc_log_debug("ODBCM::ODBCManager::UpdateOneRow: primary keys"
-          " value are removed from attributes_vector to skip from update."
-          " vector size = %d", static_cast<int>((*iter).size()));
+      if ((*iter).size() >= pkey_size) {
+        uint32_t index = 0;
+        for (iter_vector = (*iter).begin();
+            iter_vector != (*iter).end(), index < pkey_size;
+            ++index) {
+          if ((*iter_vector).p_table_attribute_value != NULL) {
+            ::operator delete((*iter_vector).p_table_attribute_value);
+            (*iter_vector).p_table_attribute_value = NULL;
+          }
+          iter_vector = (*iter).erase(iter_vector);
+        }
+        pfc_log_debug("ODBCM::ODBCManager::UpdateOneRow: primary keys"
+            " value are removed from attributes_vector to skip from update."
+            " vector size = %d", static_cast<int>((*iter).size()));
+      }
     }
   } else {
         pfc_log_debug("ODBCM::ODBCManager::UpdateOneRow: No Data Received !");
@@ -635,11 +673,11 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
               CREATEONEROW, update_stmt);
     if (status == ODBCM_RC_SUCCESS) {
       /** Commit all active transactions on this connection*/
-      ODBCM_END_TRANSACTION(rw_conn_handle_, SQL_COMMIT);
+      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT);
       pfc_log_info("ODBCM::ODBCManager::UpdateOneRow:row is updated");
     } else {
       /** Rollback all active transactions on this connection*/
-      ODBCM_END_TRANSACTION(rw_conn_handle_, SQL_ROLLBACK);
+      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK);
       pfc_log_info("ODBCM::ODBCManager::UpdateOneRow:row is not updated");
     }
   } else {
@@ -656,26 +694,33 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
  *                database table and return the result set
  *                (fill the table rows in the DBTableSchema ref) 
  *                and return the status to caller
- * @param[in]   : unc_keytype_datatype_t db_name, DBTableSchema db_table_schema
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ * @param[out]  : DBTableSchema db_table_schema
+ * @return      : ODBCM_RC_SUCCESS is returned when the GetOneRow is
+ *                success otherwise DB related error code will be
+ *                returned
  **/
 ODBCM_RC_STATUS ODBCManager::GetOneRow(
     unc_keytype_datatype_t db_name,
-    DBTableSchema &db_table_schema) {
+    DBTableSchema &db_table_schema, OdbcmConnectionHandler *conn_obj) {
   PHY_FINI_READ_LOCK();
   /** Initialise the local variables */
-  string            getone_query;  /* to receive the query from queryfactory */
+  string            getone_query = "";  /* to receive the query from queryfactory */
   SQLRETURN         odbc_rc  = ODBCM_RC_SUCCESS;  //  SQL API rc
   ODBCM_RC_STATUS   status   = ODBCM_RC_SUCCESS;  //  Other method rc
   ODBCMTable        table_id = UNKNOWN_TABLE;
-  std::list < std::vector <TableAttrSchema> >           rlist;
   std::list < std::vector <TableAttrSchema> >::iterator iter_list;
 
   HSTMT read_stmt = NULL;  /* statement for getonerow */
-  ODBCM_STATEMENT_CREATE(ro_conn_handle_, read_stmt);
+  SQLHDBC ro_conn_handle = conn_obj->get_conn_handle();
+  ODBCM_STATEMENT_CREATE(ro_conn_handle, read_stmt);
 
   /** DBTableSchema row_list - get from parameter */
-  rlist = db_table_schema.get_row_list();
+  std::list < std::vector <TableAttrSchema> >& rlist =
+      db_table_schema.get_row_list();
   /** iterate all rows in vector */
 
   /** Create query_factory and query processor objects */
@@ -715,11 +760,11 @@ ODBCM_RC_STATUS ODBCManager::GetOneRow(
     return status;
   }
   /** Get table id */
-  table_id = get_table_id(db_table_schema.get_table_name());
+  table_id = db_table_schema.get_table_name();
   if (table_id == UNKNOWN_TABLE) {
     pfc_log_error("ODBCM::ODBCManager::GetOneRow: "
-      "Unknown table: %s",
-      db_table_schema.get_table_name().c_str());
+      "Unknown table: %d",
+      db_table_schema.get_table_name());
     status = ODBCM_RC_TABLE_NOT_FOUND;
     /* Freeing all allocated memory */
     ODBCMFreeingMemory(read_stmt, table_id, db_varbind, query_factory,
@@ -818,7 +863,7 @@ ODBCM_RC_STATUS ODBCManager::GetOneRow(
     pfc_log_error("ODBCM::ODBCManager::GetOneRow:No input data Received!");
   }
   db_table_schema.set_row_list(rlist);
-  db_table_schema.PrintDBTableSchema();
+  // db_table_schema.PrintDBTableSchema();
   /* Freeing all allocated memory */
   ODBCMFreeingMemory(read_stmt, table_id, db_varbind, query_factory,
                          query_processor);
@@ -830,21 +875,27 @@ ODBCM_RC_STATUS ODBCManager::GetOneRow(
  *                table, based on the condition given in the 
  *                DBTableSchema the row will be identified 
  *                and deleted permanently.
- * @param[in]   : unc_keytype_datatype_t db_name, DBTableSchema db_table_schema
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ * @return      : ODBCM_RC_SUCCESS is returned when the ClearOneRow is
+ *                success otherwise DB related error code will be
+ *                returned
  **/
 ODBCM_RC_STATUS ODBCManager::ClearOneRow(unc_keytype_datatype_t db_name,
-                                         DBTableSchema &db_table_schema) {
+                                         DBTableSchema &db_table_schema,
+                                         OdbcmConnectionHandler *conn_obj) {
   PHY_FINI_READ_LOCK();
-  string          clearone_query;              // to store the query
+  string          clearone_query = "";              // to store the query
   SQLRETURN       odbc_rc = ODBCM_RC_SUCCESS;  // SQL API rc
   ODBCM_RC_STATUS status = ODBCM_RC_SUCCESS;   // other methods rc
   ODBCMTable      table_id = UNKNOWN_TABLE;
-  std::list < std::vector <TableAttrSchema> > rlist;
   std::list < std::vector <TableAttrSchema> >::iterator iter_list;
   /** statement for clearonerow */
   HSTMT clearone_stmt = NULL;
-  ODBCM_STATEMENT_CREATE(rw_conn_handle_, clearone_stmt);
+  SQLHDBC rw_conn_handle = conn_obj->get_conn_handle();
+  ODBCM_STATEMENT_CREATE(rw_conn_handle, clearone_stmt);
   /** Create query_factory and query processor objects */
   QueryFactory    *query_factory    = NULL;
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
@@ -854,7 +905,8 @@ ODBCM_RC_STATUS ODBCManager::ClearOneRow(unc_keytype_datatype_t db_name,
   ODBCM_CREATE_OBJECT(db_varbind, DBVarbind);
 
   /** DBTableSchema row_list - get from parameter */
-  rlist = db_table_schema.get_row_list();
+  std::list < std::vector <TableAttrSchema> >& rlist =
+      db_table_schema.get_row_list();
   /** To iterate entire vector */
   /** Set function ptr to construct the query in queryfactory */
   query_factory->SetOperation(CLEARONEROW);
@@ -870,10 +922,10 @@ ODBCM_RC_STATUS ODBCManager::ClearOneRow(unc_keytype_datatype_t db_name,
     return status;
   }
   /** Get table id enum value */
-  table_id = get_table_id(db_table_schema.get_table_name());
+  table_id = db_table_schema.get_table_name();
   if (table_id == UNKNOWN_TABLE) {
     pfc_log_error("ODBCM::ODBCManager::ClearOneRow:: "
-      "Unknown table: %s", db_table_schema.get_table_name().c_str());
+      "Unknown table: %d", db_table_schema.get_table_name());
     status = ODBCM_RC_TABLE_NOT_FOUND;
     /* Freeing all allocated memory */
     ODBCMFreeingMemory(clearone_stmt, table_id, db_varbind, query_factory,
@@ -900,7 +952,7 @@ ODBCM_RC_STATUS ODBCManager::ClearOneRow(unc_keytype_datatype_t db_name,
     return status;
   }
 
-  db_table_schema.PrintDBTableSchema();
+  // db_table_schema.PrintDBTableSchema();
   iter_list = rlist.begin();
   if (iter_list != rlist.end()) {
     /** to filling the values into binded structure variables */
@@ -933,11 +985,11 @@ ODBCM_RC_STATUS ODBCManager::ClearOneRow(unc_keytype_datatype_t db_name,
             CLEARONEROW, clearone_stmt);
     if (status == ODBCM_RC_SUCCESS) {
       /** Commit all active transactions on this connection*/
-      ODBCM_END_TRANSACTION(rw_conn_handle_, SQL_COMMIT);
+      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT);
       pfc_log_info("ODBCM::ODBCManager::ClearOneRow:row is cleared");
     } else {
       /** Rollback all active transactions on this connection*/
-      ODBCM_END_TRANSACTION(rw_conn_handle_, SQL_ROLLBACK);
+      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK);
       pfc_log_info("ODBCM::ODBCManager::ClearOneRow:row is not cleared");
     }
   } else {
@@ -953,16 +1005,20 @@ ODBCM_RC_STATUS ODBCManager::ClearOneRow(unc_keytype_datatype_t db_name,
  *                table. Database name is the first parameter, 
  *                other key, primary key details are must be 
  *                provided in DBTableSchema
- * @param[in]   : unc_keytype_datatype_t db_name, 
- *                DBTableSchema db_table_schema
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ * @return      : ODBCM_RC_SUCCESS is returned when the row is exits in DB
+ *                success otherwise DB related error code will be
+ *                returned
  **/
 ODBCM_RC_STATUS ODBCManager::IsRowExists(
     unc_keytype_datatype_t db_name,
-    DBTableSchema &db_table_schema) {
+    DBTableSchema &db_table_schema, OdbcmConnectionHandler *conn_obj) {
   PHY_FINI_READ_LOCK();
   /** Initialise the local variables */
-  string            query;                       // to store the query
+  string            query = "";                   // to store the query
   ODBCM_RC_STATUS   status = ODBCM_RC_SUCCESS;   // other methods rc
   SQLRETURN         odbc_rc = ODBCM_RC_SUCCESS;  // SQL APIs rc
   ODBCMTable        table_id = UNKNOWN_TABLE;
@@ -974,7 +1030,8 @@ ODBCM_RC_STATUS ODBCManager::IsRowExists(
   }
   /** Statement for isrowexists */
   HSTMT           rowexists_stmt   = NULL;
-  ODBCM_STATEMENT_CREATE(ro_conn_handle_, rowexists_stmt);
+  SQLHDBC ro_conn_handle = conn_obj->get_conn_handle();
+  ODBCM_STATEMENT_CREATE(ro_conn_handle, rowexists_stmt);
   /** Create query_factory and query processor objects */
   QueryFactory    *query_factory    = NULL;
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
@@ -1009,10 +1066,10 @@ ODBCM_RC_STATUS ODBCManager::IsRowExists(
     return status;
   }
   /** Get table id enum value */
-  table_id = get_table_id(db_table_schema.get_table_name());
+  table_id = db_table_schema.get_table_name();
   if (table_id == UNKNOWN_TABLE) {
     pfc_log_error("ODBCM::ODBCManager::IsRowExists: "
-      "Unknown table: %s", db_table_schema.get_table_name().c_str());
+      "Unknown table: %d", db_table_schema.get_table_name());
     status = ODBCM_RC_TABLE_NOT_FOUND;
     /* Freeing all allocated memory */
     ODBCMFreeingMemory(rowexists_stmt, table_id, db_varbind, query_factory,
@@ -1028,7 +1085,7 @@ ODBCM_RC_STATUS ODBCManager::IsRowExists(
   db_varbind->SetBinding(IS_ROW_EXISTS, BIND_OUT);
   db_varbind->SetValueStruct(IS_ROW_EXISTS, BIND_OUT);
 
-  db_table_schema.PrintDBTableSchema();
+  // db_table_schema.PrintDBTableSchema();
   /** To fill the values into binded structure variables */
   status = (db_varbind->*db_varbind->FillINPUTValues)((*iter_list));
   if (status != ODBCM_RC_SUCCESS) {
@@ -1039,7 +1096,7 @@ ODBCM_RC_STATUS ODBCManager::IsRowExists(
     /* Freeing all allocated memory */
     if (NULL != db_varbind->p_isrowexists) {
       delete db_varbind->p_isrowexists;
-      pfc_log_info("ODBCM::ODBCManager::IsRowExists: p_isrowexists is freed");
+      pfc_log_debug("ODBCM::ODBCManager::IsRowExists: p_isrowexists is freed");
     }
     ODBCMFreeingMemory(rowexists_stmt, table_id, db_varbind, query_factory,
                        query_processor);
@@ -1058,7 +1115,7 @@ ODBCM_RC_STATUS ODBCManager::IsRowExists(
     /* Freeing all allocated memory */
     if (NULL != db_varbind->p_isrowexists) {
       delete db_varbind->p_isrowexists;
-      pfc_log_info("ODBCM::ODBCManager::IsRowExists: p_isrowexists is freed");
+      pfc_log_debug("ODBCM::ODBCManager::IsRowExists: p_isrowexists is freed");
     }
     ODBCMFreeingMemory(rowexists_stmt, table_id, db_varbind, query_factory,
                        query_processor);
@@ -1076,7 +1133,7 @@ ODBCM_RC_STATUS ODBCManager::IsRowExists(
     // Output bind structure free
     if (NULL != db_varbind->p_isrowexists) {
       delete db_varbind->p_isrowexists;
-      pfc_log_info("ODBCM::ODBCManager::IsRowExists: p_isrowexists is freed");
+      pfc_log_debug("ODBCM::ODBCManager::IsRowExists: p_isrowexists is freed");
     }
     ODBCMFreeingMemory(rowexists_stmt, table_id, db_varbind, query_factory,
                        query_processor);
@@ -1113,7 +1170,7 @@ ODBCM_RC_STATUS ODBCManager::IsRowExists(
       default:
         break;
     }
-    pfc_log_info("ODBCM::ODBCManager::IsRowExists: "
+    pfc_log_debug("ODBCM::ODBCManager::IsRowExists: "
         "db_table_schema.db_return_status_ = %d ",
         db_table_schema.db_return_status_);
   }
@@ -1121,7 +1178,7 @@ ODBCM_RC_STATUS ODBCManager::IsRowExists(
   // Output bind structure free
   if (NULL != db_varbind->p_isrowexists) {
     delete db_varbind->p_isrowexists;
-    pfc_log_info("ODBCM::ODBCManager::IsRowExists: p_isrowexists is freed");
+    pfc_log_debug("ODBCM::ODBCManager::IsRowExists: p_isrowexists is freed");
   }
   ODBCMFreeingMemory(rowexists_stmt, table_id, db_varbind, query_factory,
                          query_processor);
@@ -1132,28 +1189,33 @@ ODBCM_RC_STATUS ODBCManager::IsRowExists(
  * @Description : This method will fetch the one or more number of 
  *                rows in the db table based upon the given 
  *                max_repetition_count & condition or filter criteria.
- * @param[in]   : unc_data_type_t           db_name,
- *                uint32_t                  max_repetition_count,
- *                DBTableSchema             &db_table_schema,
- *                unc_keytype_operation_t   op_type
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ *                max_repetition_count -specifies number of rows to be returned
+ *                unc_keytype_operation_t - specifies any additional
+ *                condition for GetBulkRows operation
+ * @param[out]  : DBTableSchema             &db_table_schema,
+ * @return      : ODBCM_RC_SUCCESS is returned when the rows are read from DB
+ *                otherwise DB related error code will be returned
  **/
 ODBCM_RC_STATUS ODBCManager::GetBulkRows(
     unc_keytype_datatype_t db_name,
     uint32_t max_repetition_count,
     DBTableSchema &db_table_schema,
-    unc_keytype_operation_t op_type) {
+    unc_keytype_operation_t op_type, OdbcmConnectionHandler *conn_obj) {
   PHY_FINI_READ_LOCK();
   /** Initialize the local variables */
-  string                getbulk_query;               // to store query
+  string                getbulk_query = "";               // to store query
   SQLRETURN             odbc_rc = ODBCM_RC_SUCCESS;  // SQL API rc
   ODBCM_RC_STATUS       status = ODBCM_RC_SUCCESS;   // other methods rc
   SQLLEN                row_count = 0;
   ODBCMTable            table_id = UNKNOWN_TABLE;
-  std::list < std::vector <TableAttrSchema> > rlist;
   std::list < std::vector <TableAttrSchema> >::iterator it_vect;
 
-  rlist = db_table_schema.get_row_list();
+  std::list < std::vector <TableAttrSchema> > & rlist =
+      db_table_schema.get_row_list();
   it_vect = rlist.begin();
   if (it_vect == rlist.end()) {
     pfc_log_info("ODBCM::ODBCManager::GetBulkRows:No input data received !");
@@ -1162,7 +1224,8 @@ ODBCM_RC_STATUS ODBCManager::GetBulkRows(
   /** Allocate stmt handle only if the connection 
     * was successfully created */
   HSTMT           read_stmt         = NULL;
-  ODBCM_STATEMENT_CREATE(ro_conn_handle_, read_stmt);
+  SQLHDBC ro_conn_handle = conn_obj->get_conn_handle();
+  ODBCM_STATEMENT_CREATE(ro_conn_handle, read_stmt);
   /** Create query_factory and query processor objects */
   QueryFactory    *query_factory    = NULL;
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
@@ -1173,7 +1236,7 @@ ODBCM_RC_STATUS ODBCManager::GetBulkRows(
 
   /** Set the operation for GETBULKROWS */
   query_factory->SetOperation(GETBULKROWS);
-  pfc_log_info("ODBCM::ODBCManager: GetBulkRows: "
+  pfc_log_debug("ODBCM::ODBCManager: GetBulkRows: "
     "Request with max_repetition_count: %d, op_type: %d",
     max_repetition_count, op_type);
 
@@ -1204,10 +1267,10 @@ ODBCM_RC_STATUS ODBCManager::GetBulkRows(
     return status;
   }
   /** Get table id */
-  table_id = get_table_id(db_table_schema.get_table_name());
+  table_id = db_table_schema.get_table_name();
   if (table_id == UNKNOWN_TABLE) {
     pfc_log_error("ODBCM::ODBCManager::GetBulkRows: "
-      "Unknown table: %s", db_table_schema.get_table_name().c_str());
+      "Unknown table: %d", db_table_schema.get_table_name());
     status = ODBCM_RC_TABLE_NOT_FOUND;
     /* Freeing all allocated memory */
     ODBCMFreeingMemory(read_stmt, table_id, db_varbind, query_factory,
@@ -1288,7 +1351,7 @@ ODBCM_RC_STATUS ODBCManager::GetBulkRows(
                        query_processor);
     return status;
   }
-  pfc_log_info("ODBCM::ODBCManager::GetBulkRows: "
+  pfc_log_debug("ODBCM::ODBCManager::GetBulkRows: "
       "Row count = %ld", row_count);
   if (row_count < 0) {
     pfc_log_debug("ODBCM::ODBCManager::GetBulkRows: "
@@ -1364,10 +1427,10 @@ ODBCM_RC_STATUS ODBCManager::GetBulkRows(
     }
   }
   db_table_schema.set_row_list(rlist);
-  pfc_log_info("ODBCM::ODBCManager::GetBulkRows:dbtableschema list size: %d",
+  pfc_log_debug("ODBCM::ODBCManager::GetBulkRows:dbtableschema list size: %d",
                static_cast<int>(db_table_schema.row_list_.size()));
   status = ODBCM_RC_SUCCESS;
-  db_table_schema.PrintDBTableSchema();
+  // db_table_schema.PrintDBTableSchema();
   /* Freeing all allocated memory */
   ODBCMFreeingMemory(read_stmt, table_id, db_varbind, query_factory,
                          query_processor);
@@ -1381,13 +1444,21 @@ ODBCM_RC_STATUS ODBCManager::GetBulkRows(
  *                rows after Ctr2 i.e 2 if the given row does 
  *                not exists, the next row will be identified 
  *                and process accordingly.
- * @param[in]   : unc_keytype_datatype_t , DBTableSchema , [out]count
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ * @param[in]   : unc_keytype_datatype_t , DBTableSchema
+ * @param[out]  : uint32_t count
+ * @return      : ODBCM_RC_SUCCESS is returned when the siblingcount 
+ *                received from DB
+ *                otherwise DB related error code will be
+ *                returned
  **/
 ODBCM_RC_STATUS ODBCManager::GetSiblingCount(
     unc_keytype_datatype_t db_name,
     DBTableSchema& db_table_schema,
-    uint32_t& count) {
+    uint32_t& count, OdbcmConnectionHandler *conn_obj) {
   PHY_FINI_READ_LOCK();
   // Initialise the local variables
   std::string QUERY("\0");  // to receive the query from queryfactory
@@ -1399,8 +1470,9 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingCount(
   ODBCMTable table_id = UNKNOWN_TABLE;
 
   HSTMT stmt = NULL;  // statement for getsiblingcount
+  SQLHDBC ro_conn_handle = conn_obj->get_conn_handle();
   /* Do sql allocate for sql stmt */
-  ODBCM_STATEMENT_CREATE(ro_conn_handle_, stmt);
+  ODBCM_STATEMENT_CREATE(ro_conn_handle, stmt);
 
   /** Create query_factory and query processor objects */
   QueryFactory *query_factory = NULL;
@@ -1425,10 +1497,10 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingCount(
     return status;
   }
   /** Validate the table information */
-  table_id = get_table_id(db_table_schema.get_table_name());
+  table_id = db_table_schema.get_table_name();
   if (table_id == UNKNOWN_TABLE) {
     pfc_log_error("ODBCM::ODBCManager::GetSiblingCount: "
-        "Error unknown table: %s", db_table_schema.get_table_name().c_str());
+        "Error Unknown table: %d", db_table_schema.get_table_name());
     status = ODBCM_RC_TABLE_NOT_FOUND;
     /* Freeing all allocated memory */
     ODBCMFreeingMemory(stmt, table_id, db_varbind, query_factory,
@@ -1524,18 +1596,23 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingCount(
 
 /**
  * @Description : This method will get the row count of the given table
- * @param[in]   : unc_data_type_t ,string ctr_name, [out] count
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                table_name - specifies the table name in DB
+ * @param[out]  : count - specifies the row count 
+ * @return      : ODBCM_RC_SUCCESS is returned when the row count
+ *                received from DB otherwise DB related error
+ *                code will be returned
  **/
 ODBCM_RC_STATUS ODBCManager::GetRowCount(
     unc_keytype_datatype_t db_name,
     string table_name,
-    uint32_t &count) {
+    uint32_t &count, OdbcmConnectionHandler *conn_obj) {
   PHY_FINI_READ_LOCK();
   /** Initialize the local variables */
   SQLLEN          row_count = 0;               // to store rowcount
   SQLRETURN       odbc_rc = ODBCM_RC_SUCCESS;  // SQL API rc
-  std::string     query;                       // query from queryfactory
+  std::string     query = "";                  // query from queryfactory
   ODBCM_RC_STATUS status = ODBCM_RC_SUCCESS;   //  other method rc
   HSTMT           stmt = NULL;                 // statement for getrowcount
   QueryFactory    *query_factory = NULL;
@@ -1543,8 +1620,9 @@ ODBCM_RC_STATUS ODBCManager::GetRowCount(
 
   /** Initialise the count value */
   count = 0;
+  SQLHDBC ro_conn_handle = conn_obj->get_conn_handle();
   /** Do sql allocate for sql stmt */
-  ODBCM_STATEMENT_CREATE(ro_conn_handle_, stmt);
+  ODBCM_STATEMENT_CREATE(ro_conn_handle, stmt);
   /** Create query_factory and query processor objects */
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
   ODBCM_CREATE_OBJECT(query_processor, QueryProcessor);
@@ -1611,12 +1689,18 @@ ODBCM_RC_STATUS ODBCManager::GetRowCount(
  * We get a request: GetModifiedRows(DBTableSchema(CREATED));
  * The database output will be filled in DBTableSchema
  *
- * @param[in]   : unc_keytype_datatype_t db_name, DBTableSchema db_table_schema
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ * @param[out]  : DBTableSchema db_table_schema
+ * @return      : ODBCM_RC_SUCCESS is returned when the modified rows
+ *                received from DB otherwise DB related error
+ *                code will be returned
  **/
 ODBCM_RC_STATUS ODBCManager::GetModifiedRows(
     unc_keytype_datatype_t db_name,
-    DBTableSchema& db_table_schema) {
+    DBTableSchema& db_table_schema, OdbcmConnectionHandler *conn_obj) {
   PHY_FINI_READ_LOCK();
   std::string QUERY("\0");
   SQLRETURN odbc_rc = ODBCM_RC_SUCCESS;
@@ -1625,14 +1709,14 @@ ODBCM_RC_STATUS ODBCManager::GetModifiedRows(
   SQLLEN iRow_count = 0;
   std::list <std::vector<TableAttrSchema> >::iterator i_list;
   std::vector<TableAttrSchema> :: iterator iter_vector;
-  std::list < std::vector <TableAttrSchema> > rlist;
   if (db_name != UNC_DT_CANDIDATE) {
     pfc_log_debug("ODBCM::ODBCManager::GetModifiedRows: "
-                 "This operation does not supported for %s ",
-                 db_table_schema.table_name_.c_str());
+                 "This operation does not supported for %d ",
+                 db_table_schema.table_name_);
     return ODBCM_RC_TABLE_NOT_FOUND;
   }
-  rlist = db_table_schema.get_row_list();
+  std::list < std::vector <TableAttrSchema> >& rlist =
+      db_table_schema.get_row_list();
   i_list = rlist.begin();
   if (i_list == rlist.end()) {
     pfc_log_info("ODBCM::ODBCManager::GetModifiedRows:"
@@ -1641,8 +1725,9 @@ ODBCM_RC_STATUS ODBCManager::GetModifiedRows(
   }
 
   HSTMT get_stmt = NULL;
+  SQLHDBC ro_conn_handle = conn_obj->get_conn_handle();
   /* Do sql allocate for sql stmt */
-  ODBCM_STATEMENT_CREATE(ro_conn_handle_, get_stmt);
+  ODBCM_STATEMENT_CREATE(ro_conn_handle, get_stmt);
 
   QueryFactory *query_factory = NULL;
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
@@ -1667,11 +1752,11 @@ ODBCM_RC_STATUS ODBCManager::GetModifiedRows(
   }
 
   /* Validate the table information */
-  table_id = get_table_id(db_table_schema.get_table_name());
+  table_id = db_table_schema.get_table_name();
   if (table_id == UNKNOWN_TABLE) {
     pfc_log_error("ODBCM::ODBCManager::GetModifiedRows: "
-      "Error unknown table: %s",
-      db_table_schema.get_table_name().c_str());
+      "Error Unknown table: %d",
+      db_table_schema.get_table_name());
     status = ODBCM_RC_TABLE_NOT_FOUND;
     /* Freeing all allocated memory */
     ODBCMFreeingMemory(get_stmt, table_id, db_varbind, query_factory,
@@ -1811,11 +1896,11 @@ ODBCM_RC_STATUS ODBCManager::GetModifiedRows(
   }
 
   db_table_schema.set_row_list(rlist);
-  pfc_log_info("ODBCM::ODBCManager::GetModifiedRows:"
+  pfc_log_debug("ODBCM::ODBCManager::GetModifiedRows:"
       "dbtableschema list size: %d",
       static_cast<int>(db_table_schema.row_list_.size()));
   status = ODBCM_RC_SUCCESS;
-  db_table_schema.PrintDBTableSchema();
+  // db_table_schema.PrintDBTableSchema();
   /** Freeing all allocated memory */
   ODBCMFreeingMemory(get_stmt, table_id, db_varbind, query_factory,
                          query_processor);
@@ -1824,15 +1909,23 @@ ODBCM_RC_STATUS ODBCManager::GetModifiedRows(
 
 /**
  * @Description : To get the sibling rows count based upon given filter
- * @param[in]   : unc_keytype_datatype_t db_name, string controller_name
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ *                filter_operators - vector to decide the filter while
+ *                framing query
+ * @param[out]  : count - To return the sibling row count
+ * @return      : ODBCM_RC_SUCCESS is returned when the row count
+ *                received from DB otherwise DB related error
+ *                code will be returned
  **/
 ODBCM_RC_STATUS ODBCManager::GetSiblingCount(
-    unc_keytype_datatype_t db_name /**Database type*/,
-    DBTableSchema& db_table_schema /**table,pkeys,column names with data type*/,
-    uint32_t& count/**return value count*/,
-    std::vector<ODBCMOperator> filter_operators
-  /** Operator to decide the filter while framing query (where clause) */) {
+    unc_keytype_datatype_t db_name,
+    DBTableSchema& db_table_schema,
+    uint32_t& count,
+    std::vector<ODBCMOperator> filter_operators,
+    OdbcmConnectionHandler *conn_obj) {
   PHY_FINI_READ_LOCK();
   /** To receive the query from queryfactory*/
   std::string QUERY("\0");
@@ -1849,8 +1942,9 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingCount(
   ODBCMTable table_id = UNKNOWN_TABLE;
   /**Statement handler*/
   HSTMT stmt = NULL;
+  SQLHDBC ro_conn_handle = conn_obj->get_conn_handle();
   /* sql handle allocate for sql stmt */
-  ODBCM_STATEMENT_CREATE(ro_conn_handle_, stmt);
+  ODBCM_STATEMENT_CREATE(ro_conn_handle, stmt);
   /** Create query_factory object */
   QueryFactory *query_factory = NULL;
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
@@ -1875,11 +1969,11 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingCount(
     return status;
   }
   /** Validate the table information */
-  table_id = get_table_id(db_table_schema.get_table_name());
+  table_id = db_table_schema.get_table_name();
   if (table_id == UNKNOWN_TABLE) {
     pfc_log_error("ODBCM::ODBCManager::GetSiblingCount(with filter): "
-        "Error unknown table: %s",
-        db_table_schema.get_table_name().c_str());
+        "Error Unknown table: %d",
+        db_table_schema.get_table_name());
     status = ODBCM_RC_TABLE_NOT_FOUND;
     /* Freeing all allocated memory */
     ODBCMFreeingMemory(stmt, table_id, db_varbind, query_factory,
@@ -1975,17 +2069,27 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingCount(
 /**
  * @Description : To return the sibiling rows in the given table and 
  *                based upon the given filter criteria
- * @param[in]   : unc_keytype_datatype_t db_name, string controller_name
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : db_name - specifies the configuration
+ *                i.e.candidate/running/startup
+ *                max_repetition_count - specifies the number of rows
+ *                to return
+ *                db_table_schema - object holds the key and value struct
+ *                of specified KT instance
+ *                filter_operators - vector to decide the filter while
+ *                framing query
+ *                op_type - specifies Operation type siblingbegin/sibling
+ * @param[out]  : DBTableSchema& db_table_schema
+ * @return      : ODBCM_RC_SUCCESS is returned when the siblingrows
+ *                received from DB otherwise DB related error
+ *                code will be returned
  **/
 ODBCM_RC_STATUS ODBCManager::GetSiblingRows(
-    unc_keytype_datatype_t db_name,  // database type */
-    uint32_t max_repetition_count,   // maximum repetition count*/
-    DBTableSchema& db_table_schema,  // table,pkeys,column names with data type
+    unc_keytype_datatype_t db_name,
+    uint32_t max_repetition_count,
+    DBTableSchema& db_table_schema,
     std::vector<ODBCMOperator> filter_operators,
-                    /** Arithmetic operators to frame read sibling query*/
-    unc_keytype_operation_t op_type
-                    /** Operation type siblingbegin/sibling*/) {
+    unc_keytype_operation_t op_type,
+    OdbcmConnectionHandler *conn_obj) {
   PHY_FINI_READ_LOCK();
   /** To receive the query from query factory*/
   std::string QUERY("\0");
@@ -2000,7 +2104,7 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingRows(
   /** To traverse the row list in db_table_schmea */
   std::list <std::vector<TableAttrSchema> >::iterator it_vect;
   /** To traverse the row lists vectors in db_table_schmea */
-  std::list < std::vector <TableAttrSchema> > rlist =
+  std::list < std::vector <TableAttrSchema> >& rlist =
       db_table_schema.get_row_list();
   it_vect = rlist.begin();
   if (it_vect == rlist.end()) {
@@ -2009,8 +2113,9 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingRows(
     return ODBCM_RC_FAILED;
   }
   HSTMT get_stmt = NULL;
+  SQLHDBC ro_conn_handle = conn_obj->get_conn_handle();
   /* Do sql allocate for sql stmt */
-  ODBCM_STATEMENT_CREATE(ro_conn_handle_, get_stmt);
+  ODBCM_STATEMENT_CREATE(ro_conn_handle, get_stmt);
 
   QueryFactory *query_factory = NULL;
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
@@ -2035,11 +2140,11 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingRows(
     return status;
   }
   /** Validate the table information */
-  table_id = get_table_id(db_table_schema.get_table_name());
+  table_id = db_table_schema.get_table_name();
   if (table_id == UNKNOWN_TABLE) {
     pfc_log_error("ODBCM::ODBCManager::GetSiblingRows: "
-      "Unknown table: %s",
-      db_table_schema.get_table_name().c_str());
+      "Unknown table: %d",
+      db_table_schema.get_table_name());
     status = ODBCM_RC_TABLE_NOT_FOUND;
     /* Freeing all allocated memory */
     ODBCMFreeingMemory(get_stmt, table_id, db_varbind, query_factory,
@@ -2060,11 +2165,11 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingRows(
     return status;
   }
   /** Get table id */
-  table_id = get_table_id(db_table_schema.get_table_name());
+  table_id = db_table_schema.get_table_name();
   if (table_id == UNKNOWN_TABLE) {
     pfc_log_error("ODBCM::ODBCManager::GetSiblingRows: "
-      "Error Unknown table: %s",
-      db_table_schema.get_table_name().c_str());
+      "Error Unknown table: %d",
+      db_table_schema.get_table_name());
     status = ODBCM_RC_TABLE_NOT_FOUND;
     /* Freeing all allocated memory */
     ODBCMFreeingMemory(get_stmt, table_id, db_varbind, query_factory,
@@ -2148,7 +2253,7 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingRows(
   }
   pfc_log_info("ODBCM::ODBCManager::GetSiblingRows: "
       "Row count = %ld", iRow_count);
-  if (iRow_count < 0) {
+  if (iRow_count <= 0) {
     pfc_log_debug("ODBCM::ODBCManager::GetSiblingRows: "
                   "No more record found ");
     status = ODBCM_RC_RECORD_NO_MORE;
@@ -2219,11 +2324,11 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingRows(
   }
 
   db_table_schema.set_row_list(rlist);
-  pfc_log_info("ODBCM::ODBCManager::GetSiblingRows: "
+  pfc_log_debug("ODBCM::ODBCManager::GetSiblingRows: "
       "dbtableschema list size:%d",
       static_cast<int>(db_table_schema.row_list_.size()));
   status = ODBCM_RC_SUCCESS;
-  db_table_schema.PrintDBTableSchema();
+  // db_table_schema.PrintDBTableSchema();
   /* Freeing all allocated memory */
   ODBCMFreeingMemory(get_stmt, table_id, db_varbind, query_factory,
                          query_processor);

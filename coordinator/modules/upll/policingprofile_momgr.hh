@@ -59,7 +59,7 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      * Member Variable for PolicingProfileBindInfo.
      */
     static BindInfo rename_policingprofile_rename_tbl[];
-
+    uint32_t cur_instance_count;
    /**
     * @Brief Validates the syntax of the specified key and value structure
     *        for KT_POLICINGPROFILE keytype
@@ -209,7 +209,7 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE  No record found in DB
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
-    upll_rc_t GetRenamedControllerKey(ConfigKeyVal *&ikey,
+    upll_rc_t GetRenamedControllerKey(ConfigKeyVal *ikey,
                                       upll_keytype_datatype_t dt_type,
                                       DalDmlIntf *dmi,
                                       controller_domain *ctrlr_dom = NULL);
@@ -595,6 +595,24 @@ class PolicingProfileMoMgr : public MoMgrImpl {
     upll_rc_t UpdateMainTbl(ConfigKeyVal *key_pp,
       unc_keytype_operation_t op, uint32_t driver_result,
       ConfigKeyVal *nreq, DalDmlIntf *dmi);
+
+    upll_rc_t GetDiffRecord(ConfigKeyVal *ckv_running,
+                            ConfigKeyVal *ckv_audit,
+                            uuc::UpdateCtrlrPhase phase, MoMgrTables tbl,
+                            ConfigKeyVal *&okey,
+                            DalDmlIntf *dmi,
+                            bool &invalid_attr);
+
+    upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
+
+    bool FilterAttributes(void *&val1,
+                          void *val2,
+                          bool copy_to_running,
+                          unc_keytype_operation_t op);
+
+    upll_rc_t SetPPConsolidatedStatus(ConfigKeyVal *ikey,
+                                      uint8_t *ctrlr_id,
+                                      DalDmlIntf *dmi);
 };
 
 typedef struct val_policingprofile_ctrl {

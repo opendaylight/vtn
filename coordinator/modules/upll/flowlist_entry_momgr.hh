@@ -36,7 +36,8 @@ class FlowListEntryMoMgr: public MoMgrImpl {
 
     static BindInfo rename_flowlist_entry_main_tbl[];
     static BindInfo rename_flowlist_entry_ctrlr_tbl[];
-
+    uint32_t cur_instance_count;
+    
     bool GetRenameKeyBindInfo(unc_key_type_t key_type,
     BindInfo *&binfo, int &nattr, MoMgrTables tbl);
 
@@ -64,9 +65,7 @@ class FlowListEntryMoMgr: public MoMgrImpl {
     * @param[in]   ctrlr_name      controller_name
     *
     * @retval  UPLL_RC_SUCCESS             Validation succeeded.
-    * @retval  UPLL_RC_ERR_GENERIC         Validation failure.
-    * @retval  UPLL_RC_ERR_INVALID_OPTION1 Option1 is not valid.
-    * @retval  UPLL_RC_ERR_INVALID_OPTION2 Option2 is not valid.
+    * @retval  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR  Validation failure.
     */
     upll_rc_t ValidateCapability(IpcReqRespHeader *req, ConfigKeyVal *key,
                                  const char *ctrlr_name = NULL);
@@ -79,9 +78,7 @@ class FlowListEntryMoMgr: public MoMgrImpl {
      * @param[in] val_flowlist_entry  KT_FLOWLIST_ENTRY value structure.
      * @param[in] attrs               pointer to controller attribute
      *
-     * @retval UPLL_RC_SUCCESS                     validation succeeded.
-     * @retval UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR  Attribute NOT_SUPPORTED.
-     * @retval UPLL_RC_ERR_GENERIC                 Generic failure.
+     * @retval UPLL_RC_SUCCESS        indicates attribute check completion
      */
     upll_rc_t ValFlowlistEntryAttributeSupportCheck(
                           val_flowlist_entry_t *val_flowlist_entry,
@@ -92,11 +89,10 @@ class FlowListEntryMoMgr: public MoMgrImpl {
     *  on the given controller, based on the valid flag.
     *
     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
+    * @param[in] attrs               pointer to controller attribute
     *
-    * @retval UPLL_RC_SUCCESS                    validation succeeded.
-    * @retval UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR Attribute NOT_SUPPORTED.
     */
-    upll_rc_t ValidateIpProtoAttribute(
+    void ValidateIpProtoAttribute(
       val_flowlist_entry_t *val_flowlist_entry, const uint8_t *attrs);
 
     /**
@@ -104,11 +100,9 @@ class FlowListEntryMoMgr: public MoMgrImpl {
     *  on the given controller, based on the valid flag.
     *
     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
-    *
-    * @retval UPLL_RC_SUCCESS                    validation succeeded.
-    * @retval UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR Attribute NOT_SUPPORTED.
+    * @param[in] attrs               pointer to controller attributee
     */
-    upll_rc_t ValidateVlanPriorityAttribute(
+    void ValidateVlanPriorityAttribute(
       val_flowlist_entry_t *val_flowlist_entry, const uint8_t *attrs);
 
    /**
@@ -116,11 +110,9 @@ class FlowListEntryMoMgr: public MoMgrImpl {
     *  on the given controller, based on the valid flag.
     *
     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
-    *
-    * @retval UPLL_RC_SUCCESS                    validation succeeded.
-    * @retval UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR Attribute NOT_SUPPORTED.
+    * @param[in] attrs               pointer to controller attribute
     */
-    upll_rc_t ValidateMacAttribute(val_flowlist_entry_t *val_flowlist_entry,
+    void ValidateMacAttribute(val_flowlist_entry_t *val_flowlist_entry,
       const uint8_t *attrs);
 
    /**
@@ -128,11 +120,9 @@ class FlowListEntryMoMgr: public MoMgrImpl {
     *  are supported on the given controller, based on the valid flag.
     *
     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
-    *
-    * @retval UPLL_RC_SUCCESS                    validation succeeded.
-    * @retval UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR Attribute NOT_SUPPORTED.
+    * @param[in] attrs               pointer to controller attribute
     */
-    upll_rc_t ValidateIPAttribute(val_flowlist_entry_t *val_flowlist_entry,
+    void ValidateIPAttribute(val_flowlist_entry_t *val_flowlist_entry,
       const uint8_t *attrs);
 
    /**
@@ -140,11 +130,9 @@ class FlowListEntryMoMgr: public MoMgrImpl {
     *  are supported on the given controller, based on the valid flag.
     *
     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
-    *
-    * @retval UPLL_RC_SUCCESS                    validation succeeded.
-    * @retval UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR Attribute NOT_SUPPORTED.
+    * @param[in] attrs               pointer to controller attribute
     */
-    upll_rc_t ValidateIPV6Attribute(val_flowlist_entry_t *val_flowlist_entry,
+    void ValidateIPV6Attribute(val_flowlist_entry_t *val_flowlist_entry,
       const uint8_t *attrs);
 
    /**
@@ -152,11 +140,9 @@ class FlowListEntryMoMgr: public MoMgrImpl {
     *  are supported on the given controller, based on the valid flag.
     *
     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
-    *
-    * @retval UPLL_RC_SUCCESS                    validation succeeded.
-    * @retval UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR Attribute NOT_SUPPORTED.
+    * @param[in] attrs               pointer to controller attribute
     */
-    upll_rc_t ValidateL4PortAttribute(val_flowlist_entry_t *val_flowlist_entry,
+    void ValidateL4PortAttribute(val_flowlist_entry_t *val_flowlist_entry,
       const uint8_t *attrs);
 
    /**
@@ -164,22 +150,18 @@ class FlowListEntryMoMgr: public MoMgrImpl {
     *  are supported on the given controller, based on the valid flag.
     *
     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
-    *
-    * @retval UPLL_RC_SUCCESS                    validation succeeded.
-    * @retval UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR Attribute NOT_SUPPORTED.
+    * @param[in] attrs               pointer to controller attribute
     */
-    upll_rc_t ValidateICMPAttribute(val_flowlist_entry_t *val_flowlist_entry,
+    void ValidateICMPAttribute(val_flowlist_entry_t *val_flowlist_entry,
      const uint8_t *attrs);
    /**
     * @Brief Checks Mac_eth_type attributes is supported
     *  on the given controller, based on the valid flag.
     *
     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
-    *
-    * @retval UPLL_RC_SUCCESS                    validation succeeded.
-    * @retval UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR Attribute NOT_SUPPORTED.
+    * @param[in] attrs               pointer to controller attribute
     */
-    upll_rc_t ValidateMacEthTypeAttribute(
+    void ValidateMacEthTypeAttribute(
       val_flowlist_entry_t *val_flowlist_entry, const uint8_t *attrs);
 
    /**
@@ -187,11 +169,9 @@ class FlowListEntryMoMgr: public MoMgrImpl {
     *  on the given controller, based on the valid flag.
     *
     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
-    *
-    * @retval UPLL_RC_SUCCESS                    validation succeeded.
-    * @retval UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR Attribute NOT_SUPPORTED.
+    * @param[in] attrs               pointer to controller attribute
     */
-    upll_rc_t ValidateIpDscpAttribute(
+    void ValidateIpDscpAttribute(
       val_flowlist_entry_t *val_flowlist_entry, const uint8_t *attrs);
 
    /**
@@ -566,7 +546,7 @@ class FlowListEntryMoMgr: public MoMgrImpl {
      * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE  No record found in DB
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
-    upll_rc_t GetRenamedControllerKey(ConfigKeyVal *&ikey,
+    upll_rc_t GetRenamedControllerKey(ConfigKeyVal *ikey,
         upll_keytype_datatype_t dt_type, DalDmlIntf *dmi,
         controller_domain *ctrlr_dom = NULL);
     /**
@@ -610,7 +590,7 @@ class FlowListEntryMoMgr: public MoMgrImpl {
                                                 DalDmlIntf *dmi,
                                                 ConfigKeyVal **err_ckv);
 
-    bool CompareValidValue(void *&val1, void *val2, bool audit);
+    bool CompareValidValue(void *&val1, void *val2, bool copy_to_running);
 
    /**
     *  @brief  Method to compare to keys
@@ -700,6 +680,7 @@ class FlowListEntryMoMgr: public MoMgrImpl {
    */
     upll_rc_t UpdateControllerTable(ConfigKeyVal *ikey,
                                     unc_keytype_operation_t op,
+                                    upll_keytype_datatype_t dt_type,
                                     DalDmlIntf *dmi,
                                     char* ctrl_id);
     void SetValidAttributesForController(val_flowlist_entry_t *val);
@@ -718,6 +699,7 @@ class FlowListEntryMoMgr: public MoMgrImpl {
     upll_rc_t AddFlowListToController(char *flowlist_name,
                                       DalDmlIntf *dmi,
                                       char* ctrl_id,
+                                      upll_keytype_datatype_t dt_type,
                                       unc_keytype_operation_t op);
 
     /**
@@ -767,6 +749,41 @@ class FlowListEntryMoMgr: public MoMgrImpl {
   upll_rc_t IsFlowListMatched(ConfigKeyVal *ikey,
                               DalDmlIntf *dmi,
                               IpcReqRespHeader *req);
+
+  upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
+
+  upll_rc_t AuditUpdateController1(unc_key_type_t keytype,
+                                  const char *ctrlr_id,
+                                  uint32_t session_id,
+                                  uint32_t config_id,
+                                  uuc::UpdateCtrlrPhase phase,
+                                  bool *ctrlr_affected,
+                                  DalDmlIntf *dmi);
+
+  bool FilterAttributes(void *&val1,
+                        void *val2,
+                        bool copy_to_running,
+                        unc_keytype_operation_t op);
+
+  upll_rc_t Get_Tx_Consolidated_Status(
+      unc_keytype_configstatus_t &status,
+      unc_keytype_configstatus_t  drv_result_status,
+      unc_keytype_configstatus_t current_cs,
+      unc_keytype_configstatus_t current_ctrlr_cs);
+
+  upll_rc_t CreateEntryCtrlrTbl(IpcReqRespHeader *req,
+                                ConfigKeyVal *ikey,
+                                DalDmlIntf *dmi);
+
+  upll_rc_t SetFlowlistEntryConsolidatedStatus(ConfigKeyVal *ikey,
+                                               uint8_t *ctrlr_id,
+                                               DalDmlIntf *dmi);
+
+  upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
+                          DalDmlIntf *dmi,
+                          IpcReqRespHeader *req);
+  bool CompareValidVal(void *&val1, void *val2, void *val3,
+                       bool copy_to_running);
 };
 
 typedef struct val_flowlist_entry_ctrl {

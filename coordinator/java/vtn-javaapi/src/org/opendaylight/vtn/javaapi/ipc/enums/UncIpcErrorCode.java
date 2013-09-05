@@ -24,11 +24,11 @@ public class UncIpcErrorCode {
 
 	private static final Map<Integer, UncErrorBean> LOGICAL_CODES = new HashMap<Integer, UncErrorBean>();
 
-	private static final Map<Integer, String> TC_CODES = new HashMap<Integer,String>();
+	private static final Map<Integer, UncTCEnums.OperationStatus> TC_CODES = new HashMap<Integer,UncTCEnums.OperationStatus>();
 
-	private static final Map<Integer, String> SESSION_CODES = new HashMap<Integer, String>();
+	private static final Map<Integer, UncSessionEnums.UsessIpcErrE> SESSION_CODES = new HashMap<Integer, UncSessionEnums.UsessIpcErrE>();
 
-	private static final Map<Integer, String> NODE_CODES = new HashMap<Integer, String>();
+	private static final Map<Integer, UncSYSMGEnums.NodeIpcErrorT> NODE_CODES = new HashMap<Integer, UncSYSMGEnums.NodeIpcErrorT>();
 
 	private static final Map<Integer, String> SYSMG_CODES = new HashMap<Integer, String>();
 	
@@ -76,7 +76,7 @@ public class UncIpcErrorCode {
 		 */
 		index = 0;
 		for(UncTCEnums.OperationStatus operationStatus : UncTCEnums.OperationStatus.values()){
-			TC_CODES.put(operationStatus.getCode(), operationStatus.getMessage());
+			TC_CODES.put(operationStatus.getCode(), operationStatus);
 		}
 		
 		/*
@@ -84,7 +84,7 @@ public class UncIpcErrorCode {
 		 */
 		index = 0;
 		for(UncSessionEnums.UsessIpcErrE operationStatus : UncSessionEnums.UsessIpcErrE.values()){
-			SESSION_CODES.put(index++, operationStatus.getMessage());
+			SESSION_CODES.put(index++, operationStatus);
 		}
 		
 		/*
@@ -92,7 +92,7 @@ public class UncIpcErrorCode {
 		 */
 		index = 0;
 		for(UncSYSMGEnums.NodeIpcErrorT operationStatus : UncSYSMGEnums.NodeIpcErrorT.values()){
-			NODE_CODES.put(index++, operationStatus.getMessage());
+			NODE_CODES.put(index++, operationStatus);
 		}
 		
 		/*
@@ -128,7 +128,7 @@ public class UncIpcErrorCode {
 	 * @param errorKey
 	 * @return
 	 */
-	public static String getTcCodes(final int errorKey) {
+	public static UncTCEnums.OperationStatus getTcCodes(final int errorKey) {
 		return TC_CODES.get(errorKey);
 	}
 	
@@ -137,7 +137,7 @@ public class UncIpcErrorCode {
 	 * @param errorKey
 	 * @return
 	 */
-	public static String getSessionCodes(final int errorKey) {
+	public static UncSessionEnums.UsessIpcErrE getSessionCodes(final int errorKey) {
 		return SESSION_CODES.get(errorKey);
 	}
 	
@@ -146,7 +146,7 @@ public class UncIpcErrorCode {
 	 * @param errorKey
 	 * @return
 	 */
-	public static String getNodeCodes(final int errorKey) {
+	public static UncSYSMGEnums.NodeIpcErrorT getNodeCodes(final int errorKey) {
 		return NODE_CODES.get(errorKey);
 	}
 	

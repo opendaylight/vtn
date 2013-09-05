@@ -10,7 +10,8 @@
 /*
  @brief   IPCClientConfigurationHandler header
  @file    ipc_client_configuration_handler.hh
- @ Desc:  This header file contains the declaration of IPCClientConfigurationHandler class
+ @ Desc:  This header file contains the declaration of
+          IPCClientConfigurationHandler class
  *
  */
 
@@ -38,7 +39,7 @@ namespace uppl {
 
 class IPCClientDriverHandler {
   public:
-    IPCClientDriverHandler(unc_keytype_ctrtype_t type, int &err);
+    IPCClientDriverHandler(unc_keytype_ctrtype_t type, UpplReturnCode &err);
     ~IPCClientDriverHandler();
     IPCClientDriverHandler();
     IPCClientDriverHandler(const IPCClientDriverHandler&);

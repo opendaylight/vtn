@@ -62,6 +62,8 @@ class VtnMoMgr : public MoMgrImpl {
      **/
     bool FilterAttributes(void *&val1, void *val2, bool audit_status,
                           unc_keytype_operation_t op);
+    bool IsAllInvalidAttributes(const val_vtnstation_controller_st *val);
+
     /** Not used for VTN **/
     bool CompareValidValue(void *&val1, void *val2, bool audit);
     /*
@@ -94,6 +96,9 @@ class VtnMoMgr : public MoMgrImpl {
      *
      **/
     upll_rc_t UpdateAuditConfigStatus(unc_keytype_configstatus_t cs_status,
+                                      uuc::UpdateCtrlrPhase phase,
+                                      ConfigKeyVal *&ckv_running);
+    upll_rc_t UpdateCtrlrConfigStatus(unc_keytype_configstatus_t cs_status,
                                       uuc::UpdateCtrlrPhase phase,
                                       ConfigKeyVal *&ckv_running);
     upll_rc_t TxUpdateProcess(ConfigKeyVal *ck_main, IpcResponse *resp, 
@@ -141,20 +146,17 @@ class VtnMoMgr : public MoMgrImpl {
      **/
     upll_rc_t DupConfigKeyVal(ConfigKeyVal *&okey, ConfigKeyVal *&req,
                               MoMgrTables tbl = MAINTBL);
-    upll_rc_t GetRenamedControllerKey(ConfigKeyVal *ikey,
-                                      upll_keytype_datatype_t dt_type,
-                                      DalDmlIntf *dmi,
-                                      controller_domain *ctrlr_dom);
-    upll_rc_t GetRenamedUncKey(ConfigKeyVal *ctrlr_key,
-                               upll_keytype_datatype_t dt_type, DalDmlIntf *dmi,
-                               uint8_t *ctrlr_id);
     upll_rc_t MappingvExtTovBr(ConfigKeyVal *ikey, IpcReqRespHeader *req,
-                               DalDmlIntf *dmi);
+                               DalDmlIntf *dmi, uint32_t *&count);
 
     upll_rc_t ReadSingleCtlrlStation(IpcReqRespHeader *header,
                                              ConfigKeyVal *ikey,
                                               DalDmlIntf *dmi,
-                                              uint32_t &count);
+                                              uint32_t *count);
+    upll_rc_t ReadSingleCtlrlVtnMapping(IpcReqRespHeader *header,
+                                             ConfigKeyVal *ikey,
+                                              DalDmlIntf *dmi,
+                                              uint32_t *count);
     /**
      * @brief     Method used in Delete opertaion. Its semantic checks
      *            for the VTN key.
@@ -214,27 +216,26 @@ class VtnMoMgr : public MoMgrImpl {
      *
      * @retval   UPLL_RC_SUCCESS               Validation succeeded.
      * @retval   UPLL_RC_ERR_GENERIC           Validation failure.
-     * @retval   UPLL_RC_ERR_INVALID_OPTION1   Option1 is not valid.
-     * @retval   UPLL_RC_ERR_INVALID_OPTION2   Option2 is not valid.
+     * @retval   UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR  Attribute not supported.
      */
-     upll_rc_t ValidateCapability(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                                   const char *cntrl_id = NULL);
+    upll_rc_t ValidateCapability(IpcReqRespHeader *req, ConfigKeyVal *ikey,
+                                  const char *cntrl_id = NULL);
 
     /**
      * @Brief  Checks if the specified key type and
      *         associated attributes are supported on the given controller,
      *         based on the valid flag.
      *
-     * @param[in]  crtlr_name      Controller name.
-     * @param[in]  ikey            Corresponding key and value structure.
+     * @param[in]  vtn_val         KEY_VTN value structure.
+     * @param[in]  attrs           List of supported attribute from CAPA API.
      * @param[in]  operation       Operation name.
      *
      * @retval  UPLL_RC_SUCCESS                      validation succeeded.
      * @retval  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR   Attribute not supported.
      * @retval  UPLL_RC_ERR_GENERIC                  Generic failure.
      */
-    upll_rc_t ValVtnAttributeSupportCheck(const char *ctrlr_name,
-                                          ConfigKeyVal *ikey,
+    upll_rc_t ValVtnAttributeSupportCheck(val_vtn_t *vtn_val,
+                                          const uint8_t *attrs,
                                           uint32_t operation);
 
     /**
@@ -347,13 +348,17 @@ class VtnMoMgr : public MoMgrImpl {
                                   ConfigKeyVal *ikey,
                                   DalDmlIntf *dmi);
 
-    bool SetCtrlrOperStatus(ConfigKeyVal *ikey,
+    upll_rc_t SetCtrlrOperStatus(ConfigKeyVal *ikey,
                             state_notification notification,
-                            DalDmlIntf *dmi) ;
+                            DalDmlIntf *dmi, bool &oper_change) ;
 
-    bool SetOperStatus(ConfigKeyVal *ikey,
+    upll_rc_t SetOperStatus(ConfigKeyVal *ikey,
                        state_notification notification,
                        DalDmlIntf *dmi) ;
+    upll_rc_t DupConfigKeyValVtnStation(ConfigKeyVal *&okey,
+                                 ConfigKeyVal *req);
+    upll_rc_t DupConfigKeyValVtnMapping(ConfigKeyVal *&okey,
+                                 ConfigKeyVal *req);
   public:
     VtnMoMgr();
     virtual ~VtnMoMgr() {
@@ -423,6 +428,16 @@ class VtnMoMgr : public MoMgrImpl {
                                 DalDmlIntf *dmi,
                                 ConfigKeyVal **err_ckv);
 
+    /* @brief         Set Consolidated config status when controller
+     *                                        table entry is deleted
+     *
+     * @param[in]     ikey            Vtn Main Table Key
+     * @param[in]     ctrlr_id        Controller Name which is deleted
+     * @param[in]     dmi             Database object
+     *
+     */
+    upll_rc_t SetVtnConsolidatedStatus(ConfigKeyVal *ikey, uint8_t *ctrlr_id,
+                                       DalDmlIntf *dmi);
     /* @brief         Read the configuration either from RDBMS and/or from the
      *             controller  
      *              
@@ -478,6 +493,9 @@ class VtnMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist 
      *
      **/
+    upll_rc_t ReadSiblingCount(IpcReqRespHeader *req, ConfigKeyVal *ikey,
+                                DalDmlIntf *dmi);
+
     upll_rc_t MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
                             ConfigKeyVal *conflict_ckv, DalDmlIntf *dmi);
     /* Rename */
@@ -551,10 +569,6 @@ class VtnMoMgr : public MoMgrImpl {
 
     upll_rc_t SetConsolidatedStatus(ConfigKeyVal *ikey, DalDmlIntf *dmi);
 
-    upll_rc_t ControlMo(IpcReqRespHeader *header, ConfigKeyVal *ikey,
-                        DalDmlIntf *dmi) {
-      return UPLL_RC_SUCCESS;
-    }
     /* @brief     To update oper status of vnode
      *              
      * @param[in] ktype         keytype 
@@ -572,6 +586,39 @@ class VtnMoMgr : public MoMgrImpl {
                               uint32_t session_id,
                               uint32_t config_id,
                               DalDmlIntf *dmi) ;
+    upll_rc_t ControllerStatusHandler(uint8_t *ctrlr_name,
+                                          DalDmlIntf *dmi,
+                                          bool operstatus);
+    upll_rc_t UpdateVnodeIfOperStatus(ConfigKeyVal *ck_vtn,
+                                       DalDmlIntf *dmi,
+                                       state_notification notification,
+                                       bool skip,
+                                       int if_type);
+    upll_rc_t UpdateVnodeOperStatus(uint8_t *ctrlr_name,
+                                    DalDmlIntf *dmi,
+                                    state_notification notification,
+                                    bool skip);
+    upll_rc_t RestoreVtnOperStatus(ConfigKeyVal *ck_vtn,
+                                   DalDmlIntf *dmi,
+                                   state_notification notification);
+    upll_rc_t RestoreVtnCtrlrOperStatus(uint8_t *ctrlr_name,
+                                        DalDmlIntf *dmi,
+                                        state_notification notification);
+    upll_rc_t GetRenamedControllerKey(ConfigKeyVal *ikey,
+                                      upll_keytype_datatype_t dt_type,
+                                      DalDmlIntf *dmi,
+                                      controller_domain *ctrlr_dom);
+    upll_rc_t GetRenamedUncKey(ConfigKeyVal *ctrlr_key,
+                               upll_keytype_datatype_t dt_type, DalDmlIntf *dmi,
+                               uint8_t *ctrlr_id);
+    upll_rc_t RestoreVnodeOperStatus(uint8_t *ctrlr_id,
+                                     DalDmlIntf *dmi,
+                                     state_notification notification,
+                                     bool skip);
+    upll_rc_t RestoreVnodeIfAndVtnCtrlr(uint8_t *ctrlr_id,
+                                        DalDmlIntf *dmi,
+                                        state_notification notification,
+                                        uint32_t &down_count);
 };
 
 typedef struct val_db_vtn_st {

@@ -21,6 +21,7 @@ import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
+import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.IpcRequestProcessor;
@@ -102,9 +103,10 @@ public class VRouterInterfacesResource extends AbstractResource {
 			LOG.debug("Session created successfully");
 			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
 					getConfigID(), getExceptionHandler());
+			final List<String> uriParameterList = getUriParameters(requestBody);
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_VRT_IF_GET, requestBody,
-					getUriParameters(requestBody));
+					uriParameterList);
 			LOG.debug("Request Packet created successfully for 1st call");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed for 1st call with status" + status);
@@ -135,6 +137,17 @@ public class VRouterInterfacesResource extends AbstractResource {
 			vrtInterfacesJson = responseGenerator.getVRouterInterfaceResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.LIST);
+			if (vrtInterfacesJson.get(VtnServiceJsonConsts.INTERFACES).isJsonArray()) {
+				JsonArray responseArray = vrtInterfacesJson.get(
+						VtnServiceJsonConsts.INTERFACES)
+						.getAsJsonArray();
+				vrtInterfacesJson = getResponseJsonArrayLogical(requestBody,
+                        requestProcessor, responseGenerator,
+                        responseArray, VtnServiceJsonConsts.INTERFACES,
+                        VtnServiceJsonConsts.IFNAME,
+                        IpcRequestPacketEnum.KT_VRT_IF_GET,
+                        uriParameterList,VtnServiceIpcConsts.GET_VROUTER_INTERFACE_RESPONSE);
+			}
 			 LOG.debug("Response object created successfully for 1st request");
 			if ((VtnServiceJsonConsts.STATE).equalsIgnoreCase(dataType)
 					&& opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {

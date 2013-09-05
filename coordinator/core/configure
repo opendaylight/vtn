@@ -2150,6 +2150,72 @@ OUT
 			     REQUIRED => ['_GNU_SOURCE'],
 			     IGNORE_ERROR => 1,
 			     CODE => $code});
+
+	$code = <<'OUT';
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <sys/prctl.h>
+
+static int
+change_dumpable(int value)
+{
+	int	ret;
+
+	ret = prctl(PR_SET_DUMPABLE, value);
+	if (ret == -1) {
+		printf("NO:prctl(PR_SET_DUMPABLE, %d) failed: %s\n", value,
+		       strerror(errno));
+		return 0;
+	}
+	else if (ret != 0) {
+		printf("NO:prctl(PR_SET_DUMPABLE, %d) returned unexpected "
+		       "value: %d, %d\n", value, ret);
+		return 0;
+	}
+
+	ret = prctl(PR_GET_DUMPABLE);
+	if (ret != value) {
+		printf("NO:prctl(PR_GET_DUMPABLE) returned unexpected value: "
+		       "%d, %d:\n", value, ret);
+		return 0;
+	}
+
+	return 1;
+}
+
+int
+main(int argc, char **argv)
+{
+#if	!defined(PR_GET_DUMPABLE)
+	printf("NO:PR_GET_DUMPABLE is not defined.\n");
+#elif	!defined(PR_SET_DUMPABLE)
+	printf("NO:PR_SET_DUMPABLE is not defined.\n");
+#else	/* PR_GET_DUMPABLE && PR_GET_DUMPABLE */
+
+	/* Disable core dump. */
+	if (change_dumpable(0) == 0) {
+		return 0;
+	}
+
+	/* Enable core dump. */
+	if (change_dumpable(1) == 0) {
+		return 0;
+	}
+
+	printf("OK:yes\n");
+#endif	/* !PR_GET_DUMPABLE */
+
+	return 0;
+}
+OUT
+
+	push(@CONFIG_TESTS, {CHECK => 'whether prctl(PR_SET_DUMPABLE) works',
+			     DESC => 'Define 1 if prctl(PR_SET_DUMPABLE) is ' .
+				     'supported.',
+			     DEFINE => 'PFC_HAVE_PRCTL_DUMPABLE',
+			     IGNORE_ERROR => 1,
+			     CODE => $code});
 }
 
 # Required Google Test version. (1.0 or later)
@@ -2224,7 +2290,8 @@ $PATH_SCRIPT = '/bin:/usr/bin';
 
 # Compiler option for strict checking.
 use constant	GCC_WARN_OPTS		=>
-	qw(-Wall -Wextra -Wno-clobbered -Wno-unused-parameter);
+	qw(-Wall -Wextra -Wno-clobbered -Wno-unused-parameter
+           -Wno-unused-local-typedefs);
 
 use constant	GCC_NO_STRICT_ALIAS	=> '-fno-strict-aliasing';
 

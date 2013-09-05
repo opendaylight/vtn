@@ -8,7 +8,7 @@
  */
 
 #include "pfcxx/module.hh"
-#include "upll/upll_log.hh"
+#include "uncxx/upll_log.hh"
 #include "dal_error_handler.hh"
 #include "dal_module.hh"
 

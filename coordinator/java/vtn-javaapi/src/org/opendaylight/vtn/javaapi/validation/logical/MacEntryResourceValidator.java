@@ -93,7 +93,8 @@ public class MacEntryResourceValidator extends VtnServiceValidator {
 					&& VtnServiceConsts.GET.equals(method)) {
 				isValid = validateGet(requestBody);
 				updateOpParameterForList(requestBody);
-			} else {
+			} else if (isValid) {
+				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {

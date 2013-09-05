@@ -11,12 +11,14 @@ package org.opendaylight.vtn.javaapi.resources.logical;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
+import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.IpcRequestProcessor;
@@ -98,14 +100,14 @@ public class VBridgesResource extends AbstractResource {
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
 			getExceptionHandler()
-					.raise(Thread.currentThread().getStackTrace()[1]
-							.getClassName()
-							+ VtnServiceConsts.HYPHEN
-							+ Thread.currentThread().getStackTrace()[1]
-									.getMethodName(),
+			.raise(Thread.currentThread().getStackTrace()[1]
+					.getClassName()
+					+ VtnServiceConsts.HYPHEN
+					+ Thread.currentThread().getStackTrace()[1]
+							.getMethodName(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR
-									.getErrorMessage(), e);
+							.getErrorMessage(), e);
 			throw e;
 		} finally {
 			if (status == ClientSession.RESP_FATAL) {
@@ -148,28 +150,47 @@ public class VBridgesResource extends AbstractResource {
 			LOG.debug("Session created successfully");
 			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
 					getConfigID(), getExceptionHandler());
+			// Uriparamter list
+			final List<String> uriParameterList = getUriParameters(requestBody);
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_VBRIDGE_GET, requestBody,
-					getUriParameters(requestBody));
+					uriParameterList);
 			LOG.debug("Request Packet created successfully");
-			status= requestProcessor.processIpcRequest();
+			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
 			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
-			setInfo(responseGenerator.getVBridgeResponse(
+			/*
+			 * setInfo(responseGenerator.getVBridgeResponse(
+			 * requestProcessor.getIpcResponsePacket(), requestBody,
+			 * VtnServiceJsonConsts.LIST));
+			 */
+			JsonObject responseJson = responseGenerator.getVBridgeResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
-					VtnServiceJsonConsts.LIST));
+					VtnServiceJsonConsts.LIST);
+			if (responseJson.get(VtnServiceJsonConsts.VBRIDGES).isJsonArray()) {
+				JsonArray responseArray = responseJson.get(
+						VtnServiceJsonConsts.VBRIDGES).getAsJsonArray();
+
+				responseJson = getResponseJsonArrayLogical(requestBody,
+						requestProcessor, responseGenerator,
+						responseArray, VtnServiceJsonConsts.VBRIDGES,
+						VtnServiceJsonConsts.VBRIDGENAME,
+						IpcRequestPacketEnum.KT_VBRIDGE_GET,
+						uriParameterList,VtnServiceIpcConsts.GET_VBRIDGE_RESPONSE);
+			}
+			setInfo(responseJson);
 			LOG.debug("Response object created successfully");
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
 			getExceptionHandler()
-					.raise(Thread.currentThread().getStackTrace()[1]
-							.getClassName()
-							+ VtnServiceConsts.HYPHEN
-							+ Thread.currentThread().getStackTrace()[1]
-									.getMethodName(),
+			.raise(Thread.currentThread().getStackTrace()[1]
+					.getClassName()
+					+ VtnServiceConsts.HYPHEN
+					+ Thread.currentThread().getStackTrace()[1]
+							.getMethodName(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR
-									.getErrorMessage(), e);
+							.getErrorMessage(), e);
 			throw e;
 		} finally {
 			if (status == ClientSession.RESP_FATAL) {
@@ -192,7 +213,7 @@ public class VBridgesResource extends AbstractResource {
 	 * 
 	 * @return parameter list
 	 */
-	private List<String> getUriParameters(JsonObject requestBody) {		
+	private List<String> getUriParameters(JsonObject requestBody) {
 		LOG.trace("Start VBridgesResource#getUriParameters()");
 		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(vtnName);
@@ -203,5 +224,4 @@ public class VBridgesResource extends AbstractResource {
 		LOG.trace("Completed VBridgesResource#getUriParameters()");
 		return uriParameters;
 	}
-
 }

@@ -123,9 +123,9 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 		isValid = validator.isValidIpV4(staticIpRoute[0])
 				&& validator.isValidIpV4(staticIpRoute[1])
 				&& validator
-						.isValidRange(Integer.parseInt(staticIpRoute[2]),
-								VtnServiceJsonConsts.VAL_1,
-								VtnServiceJsonConsts.VAL_30)
+						.isValidRange(staticIpRoute[2],
+								VtnServiceJsonConsts.VAL_0,
+								VtnServiceJsonConsts.VAL_32)
 				&& (staticIpRoute.length > 3 ? validator
 						.isValidMaxLengthAlphaNum(staticIpRoute[3],
 								VtnServiceJsonConsts.LEN_31) : true);
@@ -150,13 +150,14 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 					&& VtnServiceConsts.GET.equals(method)) {
 				isValid = validateGet(requestBody, isListOpFlag());
 				updateOpParameterForList(requestBody);
-			} else if (isValid && requestBody != null
-					&& VtnServiceConsts.PUT.equals(method)) {
-				isValid = validatePut(requestBody);
+//			} else if (isValid && requestBody != null
+//					&& VtnServiceConsts.PUT.equals(method)) {
+//				isValid = validatePut(requestBody);
 			} else if (isValid && requestBody != null
 					&& VtnServiceConsts.POST.equals(method)) {
 				isValid = validatePost(requestBody);
-			} else {
+			} else if (isValid) {
+				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
@@ -265,38 +266,38 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 						.getAsString().trim());
 			}
 
-			// validation for key: netmask(mandatory)
+			// validation for key: prefix(mandatory)
 			if (isValid) {
-				setInvalidParameter(VtnServiceJsonConsts.NETMASK);
-				if (staticIp.has(VtnServiceJsonConsts.NETMASK)
+				setInvalidParameter(VtnServiceJsonConsts.PREFIX);
+				if (staticIp.has(VtnServiceJsonConsts.PREFIX)
 						&& staticIp.getAsJsonPrimitive(
-								VtnServiceJsonConsts.NETMASK).getAsString() != null) {
+								VtnServiceJsonConsts.PREFIX).getAsString() != null) {
 					isValid = validator.isValidRange(
-							Integer.parseInt(staticIp
+							staticIp
 									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.NETMASK)
-									.getAsString().trim()),
-							VtnServiceJsonConsts.VAL_1,
-							VtnServiceJsonConsts.VAL_30);
+											VtnServiceJsonConsts.PREFIX)
+									.getAsString().trim(),
+							VtnServiceJsonConsts.VAL_0,
+							VtnServiceJsonConsts.VAL_32);
 				} else {
 					isValid = false;
 				}
 			}
 			// validation for key: nmg_name(mandatory)
-			if (isValid) {
-				setInvalidParameter(VtnServiceJsonConsts.NMGNAME);
-				if (staticIp.has(VtnServiceJsonConsts.NMGNAME)
-						&& staticIp.getAsJsonPrimitive(
-								VtnServiceJsonConsts.NMGNAME).getAsString() != null
-						&& !staticIp
-								.getAsJsonPrimitive(
-										VtnServiceJsonConsts.NMGNAME)
-								.getAsString().trim().isEmpty()) {
-					isValid = validator.isValidMaxLengthAlphaNum(staticIp
-							.getAsJsonPrimitive(VtnServiceJsonConsts.NMGNAME)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
-				}
-			}
+//			if (isValid) {
+//				setInvalidParameter(VtnServiceJsonConsts.NMGNAME);
+//				if (staticIp.has(VtnServiceJsonConsts.NMGNAME)
+//						&& staticIp.getAsJsonPrimitive(
+//								VtnServiceJsonConsts.NMGNAME).getAsString() != null
+//						&& !staticIp
+//								.getAsJsonPrimitive(
+//										VtnServiceJsonConsts.NMGNAME)
+//								.getAsString().trim().isEmpty()) {
+//					isValid = validator.isValidMaxLengthAlphaNum(staticIp
+//							.getAsJsonPrimitive(VtnServiceJsonConsts.NMGNAME)
+//							.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+//				}
+//			}
 			if (isValid) {
 				isValid = validatePut(requestBody);
 			}
@@ -336,24 +337,8 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 						.getAsJsonPrimitive(VtnServiceJsonConsts.NEXTHOPADDR)
 						.getAsString().trim());
 			}
-			// validation for key:groupmetric(optional)
-			if (isValid) {
-				setInvalidParameter(VtnServiceJsonConsts.GROUPMETRIC);
-				if (staticIp.has(VtnServiceJsonConsts.GROUPMETRIC)
-						&& staticIp.getAsJsonPrimitive(
-								VtnServiceJsonConsts.GROUPMETRIC).getAsString() != null) {
-					isValid = validator.isValidRange(
-							Integer.parseInt(staticIp
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.GROUPMETRIC)
-									.getAsString().trim()),
-							VtnServiceJsonConsts.VAL_1,
-							VtnServiceJsonConsts.VAL_65535);
-				}
-			}
 		}
 		LOG.trace("Complete StaticIpRouteResourceValidator#validatePut()");
 		return isValid;
 	}
-
 }

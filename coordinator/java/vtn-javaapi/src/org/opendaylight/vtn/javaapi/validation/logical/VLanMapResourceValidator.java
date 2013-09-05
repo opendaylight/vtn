@@ -120,8 +120,7 @@ public class VLanMapResourceValidator extends VtnServiceValidator {
 		boolean isValid;
 		if (vlamMapId.contains(VtnServiceJsonConsts.LPID
 				+ VtnServiceJsonConsts.VLANMAPIDSEPERATOR)) {
-			isValid = validator.isValidMaxLength(
-					vlamMapId.substring(5),
+			isValid = validator.isValidMaxLength(vlamMapId.substring(5),
 					VtnServiceJsonConsts.LEN_319);
 		} else if (vlamMapId.contains(VtnServiceJsonConsts.NOLPID)) {
 			isValid = true;
@@ -154,7 +153,8 @@ public class VLanMapResourceValidator extends VtnServiceValidator {
 			} else if (isValid && requestBody != null
 					&& VtnServiceConsts.POST.equals(method)) {
 				isValid = validatePost(requestBody);
-			} else {
+			} else if (isValid) {
+				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
@@ -314,7 +314,7 @@ public class VLanMapResourceValidator extends VtnServiceValidator {
 								.getAsString().trim().isEmpty()) {
 					isValid = validator.isValidRange(vLanMap
 							.getAsJsonPrimitive(VtnServiceJsonConsts.VLANID)
-							.getAsInt(), VtnServiceJsonConsts.VAL_1,
+							.getAsString().trim(), VtnServiceJsonConsts.VAL_1,
 							VtnServiceJsonConsts.VAL_4095);
 				} else {
 					isValid = false;

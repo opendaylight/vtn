@@ -66,6 +66,12 @@ const uint16_t kMaxLenLogicalPortId = 319;
 const uint16_t kMinVlanId = 1;
 const uint16_t kMaxVlanId = 4095;
 
+const uint8_t kMinIpRoutePrefix = 0;
+const uint8_t kMaxIpRoutePrefix = 32;
+
+const uint8_t kMinVnodeIpv4Prefix = 1;
+const uint8_t kMaxVnodeIpv4Prefix = 30;
+
 const uint8_t kMinIpv4Prefix = 1;
 const uint8_t kMaxIpv4Prefix = 32;
 
@@ -73,7 +79,7 @@ const uint8_t kMinIpv6Prefix = 1;
 const uint8_t kMaxIpv6Prefix = 128;
 
 const uint16_t kMinPingPacketLen = 1;
-const uint16_t kMaxPingPacketLen = 65468;
+const uint16_t kMaxPingPacketLen = 65467;
 
 const uint32_t kMinPingCount = 1;
 const uint32_t kMaxPingCount = 655350;
@@ -149,7 +155,7 @@ const uint8_t kMaxPolicingProfileSeqNum = 255;
 const uint32_t kMinRateType = 0;
 const uint32_t kMaxRateType = 4294967295u;
 
-const uint32_t kMinBurstSize = 1;
+const uint32_t kMinBurstSize = 0;
 const uint32_t kMaxBurstSize = 4294967295u;
 
 const uint8_t kMinPrecedence = 1;
@@ -232,22 +238,26 @@ inline bool ValidateStrPrint(const char *str_val) {
 }
 
 // wrapper function for validating default strings
-inline upll_rc_t ValidateDefaultStr(char *str, unsigned int min, unsigned int max) {
+inline bool ValidateDefaultStr(uint8_t *str,
+                               unsigned int min,
+                               unsigned int max) {
   if (NULL == str) {
     UPLL_LOG_DEBUG(" Input string is NULL ");
-    return UPLL_RC_ERR_GENERIC;
-  } else if (!ValidateStringRange(str, min, max)) {
-    UPLL_LOG_DEBUG(" Invalid string length %d", (unsigned int) strlen(str));
-    return UPLL_RC_ERR_CFG_SYNTAX;
+    return false;
+  } else if (!ValidateStringRange(reinterpret_cast<char *>(str), min, max)) {
+    UPLL_LOG_DEBUG(" Invalid string length %d",
+        (unsigned int) strlen(reinterpret_cast<char *>(str)));
+    return false;
   } else if ((str[0] == '(') &&
-      (0 == strncmp(str, kDefaultDomainId, strlen(kDefaultDomainId)))) {
-    return UPLL_RC_SUCCESS;
-  } else if (!ValidateStrId(str)) {
-    UPLL_LOG_DEBUG(" Invalid string format %s", str);
-    return UPLL_RC_ERR_CFG_SYNTAX;
+      (0 == strncmp(reinterpret_cast<char *>(str),
+                    kDefaultDomainId, strlen(kDefaultDomainId)))) {
+    return true;
+  } else if (!ValidateStrId(reinterpret_cast<char *>(str))) {
+    UPLL_LOG_DEBUG("Invalid string format %s", str);
+    return false;
   }
 
-  return UPLL_RC_SUCCESS;
+  return true;
 }
 
 // wrapper function for validating key strings
@@ -274,44 +284,55 @@ inline upll_rc_t ValidateKey(char *str, unsigned int min, unsigned int max) {
   return UPLL_RC_SUCCESS;
 }
 
+inline bool ValidateString(uint8_t *str, unsigned int min, unsigned int max) {
+  upll_rc_t result_code = ValidateKey(reinterpret_cast<char *>(str), min, max);
+  if (result_code != UPLL_RC_SUCCESS) {
+    return false;
+  }
+  return true;
+}
+
+
 // wrapper function for validating description strings
-inline upll_rc_t ValidateDesc(char *str, unsigned int min, unsigned int max) {
+inline bool ValidateDesc(uint8_t *str, unsigned int min, unsigned int max) {
   bool ret_val = false;
 
   if (NULL == str) {
     UPLL_LOG_DEBUG("Input string is NULL ");
-    return UPLL_RC_ERR_GENERIC;
+    return false;
   }
 
-  if (!(ret_val = ValidateStringRange(str, min, max))) {
-    UPLL_LOG_DEBUG("Invalid string length %d", (unsigned int) strlen(str));
+  if (!(ret_val = ValidateStringRange(reinterpret_cast<char *>(str),
+                                      min, max))) {
+    UPLL_LOG_DEBUG("Invalid string length %d",
+                  (unsigned int) strlen(reinterpret_cast<char *>(str)));
   } else {
-    if (!(ret_val = ValidateStrPrint(str))) {
+    if (!(ret_val = ValidateStrPrint(reinterpret_cast<char *>(str)))) {
       UPLL_LOG_DEBUG("Invalid string format %s", str);
     }
   }
 
   if (!ret_val) {
-    return UPLL_RC_ERR_CFG_SYNTAX;
+    return ret_val;
   }
-  return UPLL_RC_SUCCESS;
+  return true;
 }
 
 // wrapper function for validating logical port id
-inline upll_rc_t ValidateLogicalPortId(char *str, unsigned int min,
+inline bool ValidateLogicalPortId(char *str, unsigned int min,
                                        unsigned int max) {
   UPLL_LOG_DEBUG("Inside ValidateLogicalPortId");
 
   if (NULL == str) {
     UPLL_LOG_DEBUG(" Input string is NULL ");
-    return UPLL_RC_ERR_GENERIC;
+    return false;
   }
 
   UPLL_LOG_DEBUG("Input string expected min (%d) max (%d)", min, max);
   UPLL_LOG_DEBUG("String length %d", (unsigned int) strlen(str));
   if (!(ValidateStringRange(str, min, max))) {
     UPLL_LOG_DEBUG("Invalid string length %d", (unsigned int) strlen(str));
-    return UPLL_RC_ERR_CFG_SYNTAX;
+    return false;
   }
 
 /*
@@ -323,7 +344,7 @@ inline upll_rc_t ValidateLogicalPortId(char *str, unsigned int min,
     str++;
   }
 */
-  return UPLL_RC_SUCCESS;
+  return true;
 }
 
 inline bool ValidateMacAddr(uint8_t *mac_addr) {
@@ -415,7 +436,7 @@ inline bool chk_ip_address_muticast(uint32_t ip_adr) {
   }
 }
 
-inline upll_rc_t ValidateIpv4Addr(uint32_t host_addr, uint8_t prefix_len) {
+inline bool ValidateIpv4Addr(uint32_t host_addr, uint8_t prefix_len) {
   int32_t i;
   uint32_t mask = 0;
 
@@ -426,29 +447,29 @@ inline upll_rc_t ValidateIpv4Addr(uint32_t host_addr, uint8_t prefix_len) {
 
   if (!chk_ip_mask(ip_mask)) {
     UPLL_LOG_DEBUG(" Invalid Input subnet mask - 0x%08X", ip_mask);
-    return UPLL_RC_ERR_CFG_SYNTAX;
+    return false;
   }
 
   if (!chk_ip_mask_allow(ip_mask)) {
     UPLL_LOG_DEBUG(" Invalid Input subnet mask - 0x%08X", ip_mask);
-    return UPLL_RC_ERR_CFG_SYNTAX;
+    return false;
   }
 
   if (host_addr == 0xffffffff || host_addr == 0x00000000) {
     UPLL_LOG_DEBUG(" Invalid Input host address - 0x%08X", host_addr);
-    return UPLL_RC_ERR_CFG_SYNTAX;
+    return false;
   }
 
   if (!chk_ip_address_muticast(host_addr)) {
     UPLL_LOG_DEBUG(" Invalid Input host address - 0x%08X", host_addr);
-    return UPLL_RC_ERR_CFG_SYNTAX;
+    return false;
   }
 
   if (!chk_ip_host_id(host_addr, ip_mask)) {
     UPLL_LOG_DEBUG(" Invalid Input host id - 0x%08X", host_addr);
-    return UPLL_RC_ERR_CFG_SYNTAX;
+    return false;
   }
-  return UPLL_RC_SUCCESS;
+  return true;
 }
 
 inline bool bc_check(const uint32_t &ip_adr) {
@@ -500,7 +521,7 @@ inline bool mc_check(const uint32_t &ip_adr) {
   }
 }
 
-inline void StringReset(uint8_t *key){
+inline void StringReset(uint8_t *key) {
   PFC_ASSERT(key != NULL);
   key[0] = '\0';
 }

@@ -32,17 +32,23 @@ TcMsg::~TcMsg() {
   if (sess_) {
     delete sess_;
     sess_ = NULL;
-    PFC_ASSERT_INT(pfc_ipcclnt_altclose(conn_), 0);
+    if (TCOPER_RET_SUCCESS != pfc_ipcclnt_altclose(conn_)) {
+      pfc_log_fatal("pfc_ipcclnt_altclose of sess_ failed");
+    }
   }
   if (upll_sess_) {
     delete upll_sess_;
     upll_sess_ = NULL;
-    PFC_ASSERT_INT(pfc_ipcclnt_altclose(upll_conn_), 0);
+    if (TCOPER_RET_SUCCESS != pfc_ipcclnt_altclose(upll_conn_)) {
+      pfc_log_fatal("pfc_ipcclnt_altclose of upll_sess_ failed");
+    }
   }
   if (uppl_sess_) {
     delete uppl_sess_;
     uppl_sess_ = NULL;
-    PFC_ASSERT_INT(pfc_ipcclnt_altclose(uppl_conn_), 0);
+    if (TCOPER_RET_SUCCESS != pfc_ipcclnt_altclose(uppl_conn_)) {
+      pfc_log_fatal("pfc_ipcclnt_altclose of uppl_sess_ failed");
+    }
   }
 }
 
@@ -156,23 +162,23 @@ TcOperRet TcMsg::GetControllerType(std::string channel_name,
   /*create client session*/
   pfc::core::ipc::ClientSession* sess_ =
       TcClientSessionUtils::create_tc_client_session(channel_name,
-                            tclib::TCLIB_CONTROLLER_TYPE, conn);
-  PFC_ASSERT(NULL != sess_);
+                            tclib::TCLIB_CONTROLLER_TYPE, conn, PFC_FALSE);
+  if (NULL == sess_) {
+      return TCOPER_RET_FATAL;
+  }
 
   TcUtilRet ret = TcClientSessionUtils::tc_session_invoke(sess_, resp);
   if (PFC_EXPECT_TRUE(ret == TCUTIL_RET_SUCCESS)) {
     /*controller type is returned in resp*/
     *ctrtype = (unc_keytype_ctrtype_t) resp;
   } else {
-    TcClientSessionUtils::tc_session_close(sess_, conn);
+    TcClientSessionUtils::tc_session_close(&sess_, conn);
     return TCOPER_RET_FATAL;
   }
   pfc_log_info("GetControllerType() exit - controller_type::%d",
                 *ctrtype);
 
-  sess_ = TcClientSessionUtils::tc_session_close(sess_, conn);
-  PFC_ASSERT(NULL == sess_);
-
+  TcClientSessionUtils::tc_session_close(&sess_, conn);
   return TCOPER_RET_SUCCESS;
 }
 
@@ -242,48 +248,81 @@ unc_keytype_ctrtype_t  TcMsg::GetResult() {
   return UNC_CT_UNKNOWN;
 }
 
+/*!\brief This internal method forwards result from client session to server
+ * session
+ * @result - TcOperRet - TCOPER_RET_SUCCESS/TCOPER_RET_FAILURE
+ * */
+TcOperRet
+TcMsg::ForwardResponseInternal(pfc::core::ipc::ServerSession& srv_sess,
+                               pfc::core::ipc::ClientSession* clnt_sess,
+                               pfc_bool_t decr_resp) {
+  
+  uint32_t respcount = clnt_sess->getResponseCount();
+  if (PFC_EXPECT_TRUE(respcount == 0)) {
+    pfc_log_info("session is empty");
+    return TCOPER_RET_SUCCESS;
+  }
+
+  uint32_t from_index = 0, to_index = 0;
+  if (decr_resp == PFC_TRUE) {
+    to_index = respcount - 1;
+  } else {
+    to_index = respcount;
+  }
+  
+  if (clnt_sess->forwardTo(srv_sess, from_index, to_index)
+      != TCOPER_RET_SUCCESS) {
+    pfc_log_fatal("forwardTo failed!!");
+    return TCOPER_RET_FATAL;
+  }
+  pfc_log_info("data size forwarded to VTN: %d", to_index);
+  return TCOPER_RET_SUCCESS;
+}
+
 /*!\brief method to forward the response from other modules to VTN.
  *@param srv_sess - VTN session parameter.
- *@result TcOperRet - TCOPER_RET_SUCCESS/TCtclib::MSG_FATAL
+ *@result TcOperRet - TCOPER_RET_SUCCESS/TCOPER_RET_FATAL
  **/
-TcOperRet
-TcMsg::ForwardResponseToVTN(pfc::core::ipc::ServerSession& srv_sess_) {
-  pfc_log_debug("TcMsg::ForwardResponseToVTN() entry");
-  uint32_t respcount = 0;
 
+TcOperRet
+TcMsg::ForwardResponseToVTN(pfc::core::ipc::ServerSession& srv_sess) {
+  pfc_log_debug("TcMsg::ForwardResponseToVTN() entry");
+  TcOperRet ret = TCOPER_RET_SUCCESS;
+  
   if (sess_) {
-    respcount = sess_->getResponseCount();
-    if (PFC_EXPECT_TRUE(respcount > 0)) {
-      pfc_log_info("forwarding client session data to VTN");
-      PFC_ASSERT_INT(sess_->forwardTo(srv_sess_, 0, UINT32_MAX), 0);
+    pfc_log_info("forward client session data");    
+    ret = ForwardResponseInternal(srv_sess, sess_, PFC_FALSE);
+    if (ret != TCOPER_RET_SUCCESS) {
+      pfc_log_info("forwarding session data to VTN failed");
+      return TCOPER_RET_FATAL;
     }
   }
 
   if (upll_sess_) {
-    respcount = upll_sess_->getResponseCount();
-    if (PFC_EXPECT_TRUE(respcount > 0)) {
-      if (PFC_EXPECT_TRUE(opertype_ == tclib::MSG_AUDIT_GLOBAL)) {
-        /*filtering audit_result of global commit*/
-        pfc_log_info("forwarding UPLL session data to VTN:%d", respcount-1);
-        PFC_ASSERT_INT(upll_sess_->forwardTo(srv_sess_, 0, respcount-1), 0);
-      } else {
-        pfc_log_info("forwarding UPLL session data to VTN:%d", respcount);
-        PFC_ASSERT_INT(upll_sess_->forwardTo(srv_sess_, 0, respcount), 0);
-      }
+    pfc_log_info("forward UPLL session data");    
+    if (PFC_EXPECT_TRUE(opertype_ == tclib::MSG_AUDIT_GLOBAL)) {
+      /*filtering audit_result of global commit*/
+      ret = ForwardResponseInternal(srv_sess, upll_sess_, PFC_TRUE);
+    } else {
+      ret = ForwardResponseInternal(srv_sess, upll_sess_, PFC_FALSE);
+    }
+    if (ret != TCOPER_RET_SUCCESS) {
+      pfc_log_info("forwarding UPLL session data to VTN failed");
+      return TCOPER_RET_FATAL;
     }
   }
 
   if (uppl_sess_) {
-    respcount = uppl_sess_->getResponseCount();
-    if (PFC_EXPECT_TRUE(respcount > 0)) {
-      if (PFC_EXPECT_TRUE(opertype_ == tclib::MSG_AUDIT_GLOBAL)) {
-        /*filtering audit_result of global commit*/
-        pfc_log_info("forwarding UPPL session data to VTN:%d", respcount-1);
-        PFC_ASSERT_INT(uppl_sess_->forwardTo(srv_sess_, 0, respcount-1), 0);
-      } else {
-        pfc_log_info("forwarding UPPL session data to VTN:%d", respcount);
-        PFC_ASSERT_INT(uppl_sess_->forwardTo(srv_sess_, 0, respcount), 0);
-      }
+    pfc_log_info("forward UPPL session data");    
+    if (PFC_EXPECT_TRUE(opertype_ == tclib::MSG_AUDIT_GLOBAL)) {
+      /*filtering audit_result of global commit*/
+      ret = ForwardResponseInternal(srv_sess, uppl_sess_, PFC_TRUE);
+    } else {
+      ret = ForwardResponseInternal(srv_sess, uppl_sess_, PFC_FALSE);
+    }
+    if (ret != TCOPER_RET_SUCCESS) {
+      pfc_log_info("forwarding UPPL session data to VTN failed");
+      return TCOPER_RET_FATAL;
     }
   }
   pfc_log_debug("TcMsg::ForwardResponseToVTN() exit");
@@ -322,20 +361,20 @@ TcMsg::ValidateAuditDBAttributes(unc_keytype_datatype_t data_base,
     case TC_OP_CANDIDATE_COMMIT:
     case TC_OP_USER_AUDIT:
     case TC_OP_DRIVER_AUDIT: {
-      PFC_ASSERT(data_base == UNC_DT_RUNNING);
+      PFC_VERIFY(data_base == UNC_DT_RUNNING);
       break;
     }
     case TC_OP_CANDIDATE_ABORT: {
-      PFC_ASSERT(data_base == UNC_DT_CANDIDATE);
+      PFC_VERIFY(data_base == UNC_DT_CANDIDATE);
       break;
     }
     case TC_OP_RUNNING_SAVE:
     case TC_OP_CLEAR_STARTUP: {
-      PFC_ASSERT(data_base == UNC_DT_STARTUP);
+      PFC_VERIFY(data_base == UNC_DT_STARTUP);
       break;
     }
     case TC_OP_INVALID: {
-      PFC_ASSERT(data_base == UNC_DT_INVALID);
+      PFC_VERIFY(data_base == UNC_DT_INVALID);
       break;
     }
     default: {
@@ -401,8 +440,10 @@ TcOperRet TcMsgSetUp::Execute() {
 
     sess_ = TcClientSessionUtils::create_tc_client_session(channel_name,
                                                            service_id,
-                                                           conn_);
-    PFC_ASSERT(NULL != sess_);
+                                                           conn_, PFC_FALSE);
+    if (NULL == sess_) {
+      return TCOPER_RET_FATAL;
+    }
     pfc_log_info("notify %s with srv_id %d",
                  channel_name.c_str(), service_id);
 
@@ -411,7 +452,7 @@ TcOperRet TcMsgSetUp::Execute() {
       return ReturnUtilResp(util_resp);
     }
 
-    sess_ = TcClientSessionUtils::tc_session_close(sess_, conn_);
+    TcClientSessionUtils::tc_session_close(&sess_, conn_);
 
     if (PFC_EXPECT_TRUE(resp == tclib::TC_FAILURE)) {
       pfc_log_info("Failure response from %s", channel_name.c_str());
@@ -468,8 +509,11 @@ TcOperRet TcMsgNotifyConfigId::Execute() {
     }
 
     sess_ = TcClientSessionUtils::create_tc_client_session(channel_name,
-                                  tclib::TCLIB_NOTIFY_SESSION_CONFIG, conn_);
-    PFC_ASSERT(NULL != sess_);
+                                  tclib::TCLIB_NOTIFY_SESSION_CONFIG,
+                                  conn_, PFC_FALSE);
+    if (NULL == sess_) {
+      return TCOPER_RET_FATAL;
+    }
 
     util_resp = TcClientSessionUtils::set_uint32(sess_, session_id_);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
@@ -488,7 +532,7 @@ TcOperRet TcMsgNotifyConfigId::Execute() {
       return ReturnUtilResp(util_resp);
     }
 
-    sess_ = TcClientSessionUtils::tc_session_close(sess_, conn_);
+    TcClientSessionUtils::tc_session_close(&sess_, conn_);
 
     if (PFC_EXPECT_TRUE(resp == tclib::TC_FAILURE)) {
       pfc_log_info("Failure response from %s", channel_name.c_str());
@@ -551,9 +595,11 @@ TcOperRet TcMsgToStartupDB::Execute() {
 
     /*Create session for the given module name and service id*/
     sess_ = TcClientSessionUtils::create_tc_client_session(channel_name,
-                                                               service_id,
-                                                               conn_);
-    PFC_ASSERT(NULL != sess_);
+                                                           service_id,
+                                                           conn_);
+    if (NULL == sess_) {
+      return TCOPER_RET_FATAL;
+    }
     /*append data to channel */
     if (PFC_EXPECT_TRUE(session_id_ > 0)) {
       util_resp = TcClientSessionUtils::set_uint32(sess_, session_id_);
@@ -571,8 +617,7 @@ TcOperRet TcMsgToStartupDB::Execute() {
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
       return ReturnUtilResp(util_resp);
     }
-    sess_ = TcClientSessionUtils::tc_session_close(sess_, conn_);
-    PFC_ASSERT(NULL == sess_);
+    TcClientSessionUtils::tc_session_close(&sess_, conn_);
 
     if (PFC_EXPECT_TRUE(resp == tclib::TC_FAILURE)) {
       pfc_log_info("Failure response from %s", channel_name.c_str());
@@ -618,8 +663,11 @@ TcOperRet TcMsgAuditDB::Execute() {
 
   /*channel_names_ map should not be empty */
   PFC_ASSERT(TCOPER_RET_SUCCESS == channel_names_.empty());
-  PFC_ASSERT(TCOPER_RET_SUCCESS == TcMsg::ValidateAuditDBAttributes(target_db_,
-                                                             fail_oper_));
+  if (TCOPER_RET_SUCCESS != TcMsg::ValidateAuditDBAttributes(target_db_,
+                                                             fail_oper_)) {
+    pfc_log_error("Invalid AuditDB Attributes");
+    return TCOPER_RET_FAILURE;
+  }
   notifyorder_.push_back(TC_UPLL);
   notifyorder_.push_back(TC_UPPL);
   pfc_log_info("sending AUDIT-DB notification");
@@ -633,8 +681,10 @@ TcOperRet TcMsgAuditDB::Execute() {
 
     /*Create session for the given module name and service id*/
     sess_ = TcClientSessionUtils::create_tc_client_session(channel_name,
-                                  tclib::TCLIB_AUDIT_CONFIG, conn_);
-    PFC_ASSERT(NULL != sess_);
+                                  tclib::TCLIB_AUDIT_CONFIG, conn_, PFC_FALSE);
+    if (NULL == sess_) {
+      return TCOPER_RET_FATAL;
+    }
     /*append data to channel */
     util_resp = TcClientSessionUtils::set_uint8(sess_, target_db_);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
@@ -652,8 +702,7 @@ TcOperRet TcMsgAuditDB::Execute() {
       return ReturnUtilResp(util_resp);
     }
 
-    sess_ = TcClientSessionUtils::tc_session_close(sess_, conn_);
-    PFC_ASSERT(NULL == sess_);
+    TcClientSessionUtils::tc_session_close(&sess_, conn_);
 
     if (PFC_EXPECT_TRUE(resp == tclib::TC_FAILURE)) {
       pfc_log_info("Failure response from %s", channel_name.c_str());

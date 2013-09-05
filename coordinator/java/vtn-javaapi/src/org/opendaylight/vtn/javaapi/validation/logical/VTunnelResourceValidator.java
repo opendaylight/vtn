@@ -108,7 +108,8 @@ public class VTunnelResourceValidator extends VtnServiceValidator {
 			} else if (isValid && requestBody != null
 					&& VtnServiceConsts.PUT.equals(method)) {
 				isValid = validatePut(requestBody);
-			} else {
+			} else if (isValid) {
+				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
@@ -261,12 +262,10 @@ public class VTunnelResourceValidator extends VtnServiceValidator {
 			setInvalidParameter(VtnServiceJsonConsts.LABEL);
 			if (isValid && vTunnel.has(VtnServiceJsonConsts.LABEL)) {
 				isValid = validator.isValidRange(
-						Long.parseLong(vTunnel
-								.getAsJsonPrimitive(
-										VtnServiceJsonConsts.LABEL)
-										.getAsString().trim()),
-										VtnServiceJsonConsts.LONG_VAL_0,
-										VtnServiceJsonConsts.LONG_VAL_4294967295);
+						vTunnel.getAsJsonPrimitive(VtnServiceJsonConsts.LABEL)
+								.getAsString().trim(),
+						VtnServiceJsonConsts.LONG_VAL_0,
+						VtnServiceJsonConsts.LONG_VAL_4294967295);
 			}
 		}
 		LOG.trace("complete VTunnelResourceValidator#commonValidations()");

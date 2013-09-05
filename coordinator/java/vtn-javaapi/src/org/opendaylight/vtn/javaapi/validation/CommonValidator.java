@@ -147,9 +147,9 @@ public class CommonValidator {
 							VtnServiceJsonConsts.INDEX).getAsString() != null) {
 				invalidParameter = VtnServiceJsonConsts.INDEX;
 				isValid = isValidRange(
-						Integer.parseInt(requestBody
+						requestBody
 								.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
-								.getAsString().trim()),
+								.getAsString().trim(),
 								VtnServiceJsonConsts.VAL_1,
 								VtnServiceJsonConsts.VAL_65535);
 
@@ -269,10 +269,10 @@ public class CommonValidator {
 				.getAsString() != null
 				&& !requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.MAX)
 				.getAsString().trim().isEmpty()) {
-			final long max = Long.parseLong(requestBody
+			final String max = requestBody
 					.getAsJsonPrimitive(VtnServiceJsonConsts.MAX).getAsString()
-					.trim());
-			isValid = isValidRange(max, VtnServiceJsonConsts.LONG_VAL_0,
+					.trim();
+			isValid = isValidRange(max, VtnServiceJsonConsts.LONG_VAL_1,
 					VtnServiceJsonConsts.LONG_VAL_4294967295);
 		} else {
 			VtnServiceConfiguration configuration = VtnServiceInitManager
@@ -286,22 +286,6 @@ public class CommonValidator {
 	}
 
 	/**
-	 * Validate the description filed's value
-	 * 
-	 * @param description
-	 *            the value of description in the request Json object
-	 * @param len
-	 *            length of description field possible
-	 * @return
-	 */
-	/*
-	 * public boolean isValidDescription(final String description, final int
-	 * len) { LOG.trace("Inside CommonValidator#isValidDescription"); return
-	 * description.matches(VtnServiceConsts.ALPHANUM_REGEX) &&
-	 * description.length() <= len; }
-	 */
-
-	/**
 	 * Checks if is valid range.
 	 * 
 	 * @param input
@@ -312,9 +296,14 @@ public class CommonValidator {
 	 *            the maximum value possible
 	 * @return true, if is valid range
 	 */
-	public boolean isValidRange(final int input, final int min, final int max) {
+	public boolean isValidRange(final String input, final int min, final int max) {
 		LOG.trace("Inside CommonValidator#isValidRange (int)");
-		return input >= min && input <= max;
+		if (!(input.equals(VtnServiceConsts.EMPTY_STRING))) {
+			int inputResult = Integer.parseInt(input);
+			return inputResult >= min && inputResult <= max;
+		} else {
+			return true;
+		}
 	}
 
 	/**
@@ -349,9 +338,14 @@ public class CommonValidator {
 	 * @return true,if it is valid range
 	 */
 
-	public boolean isValidRange(final Long input, final Long min, final Long max) {
+	public boolean isValidRange(final String input, final Long min, final Long max) {
 		LOG.trace("Inside CommonValidator#isValidRange (Long)");
-		return input >= min && input <= max;
+		if (!(input.equals(VtnServiceConsts.EMPTY_STRING))) {
+			long inputResult = Long.parseLong(input);
+			return inputResult >= min && inputResult <= max;
+		} else {
+			return true;
+		}
 	}
 
 	/**
@@ -364,6 +358,9 @@ public class CommonValidator {
 	 */
 	public boolean isValidMacAddress(final String input) {
 		LOG.trace("Inside CommonValidator#isValidMacAddress");
+		if(VtnServiceConsts.EMPTY_STRING.equals(input)){
+			return true;
+		}
 		return input.matches(VtnServiceConsts.MAC_ADD_REGEX);
 	}
 
@@ -376,7 +373,14 @@ public class CommonValidator {
 	 */
 	public boolean isValidEtherType(final String input) {
 		LOG.trace("Inside CommonValidator#isValidEtherType");
-		return input.matches(VtnServiceConsts.ETH_TYPE_REGEX);
+		if (VtnServiceConsts.EMPTY_STRING.equals(input)) {
+			return true;
+		} else if (input.contains("x") || input.contains("X")) {
+			return input.matches(VtnServiceConsts.ETH_TYPE_REGEX);
+		} else {
+			return isValidRange(input, VtnServiceJsonConsts.VAL_0,
+					VtnServiceJsonConsts.VAL_65535);
+		}
 	}
 
 	/**
@@ -388,12 +392,13 @@ public class CommonValidator {
 	 */
 	public boolean isValidIpV4(final String input) {
 		LOG.trace("Inside CommonValidator#isValidIpV4");
-		if (null != IpAddressUtil.textToNumericFormatV4(input)) {
+		if (VtnServiceConsts.EMPTY_STRING.equals(input)) {
+			return true;
+		} else if (null != IpAddressUtil.textToNumericFormatV4(input)) {
 			return true;
 		} else {
 			return false;
 		}
-		// return input.matches(VtnServiceConsts.IPV4_ADD_REGEX);
 	}
 
 	/**
@@ -405,41 +410,14 @@ public class CommonValidator {
 	 */
 	public boolean isValidIpV6(final String input) {
 		LOG.trace("Inside CommonValidator#isValidIpV6");
-		if (null != IpAddressUtil.textToNumericFormatV6(input)) {
+		if (VtnServiceConsts.EMPTY_STRING.equals(input)) {
+			return true;
+		} else if (null != IpAddressUtil.textToNumericFormatV6(input)) {
 			return true;
 		} else {
 			return false;
 		}
-		// return input.matches(VtnServiceConsts.IPV6_ADD_REGEX);
 	}
-
-	/**
-	 * Checks if is valid netmask.
-	 * 
-	 * @param input
-	 *            the value to be validated
-	 * @return true, if is valid netmask
-	 */
-	/*
-	 * public boolean isValidNetmask(final String input) {
-	 * LOG.trace("Inside CommonValidator#isValidNetmask"); return
-	 * input.matches(VtnServiceConsts.NETMASK_REGEX); }
-	 */
-
-	/**
-	 * Checks if is valid length.
-	 * 
-	 * @param input
-	 *            the value to be validated
-	 * @param length
-	 *            the length
-	 * @return true, if is valid length
-	 */
-	/*
-	 * public boolean isValidLength(final String input, final int length) {
-	 * LOG.trace("Inside CommonValidator#isValidLength"); return input.length()
-	 * == length; }
-	 */
 
 	/**
 	 * Checks if is valid max length.
@@ -456,18 +434,6 @@ public class CommonValidator {
 	}
 
 	/**
-	 * Checks if is valid max length number.
-	 * 
-	 * @param input
-	 *            the value to be validated
-	 * @return true, if is valid max length number
-	 */
-	public boolean isValidMaxLengthNumber(final String input) {
-		LOG.trace("Inside CommonValidator#isValidMaxLengthNumber");
-		return input.matches(VtnServiceConsts.INTEGER_REGEX);
-	}
-
-	/**
 	 * @param input
 	 *            the value to be validated
 	 * 
@@ -478,12 +444,15 @@ public class CommonValidator {
 	 */
 	public boolean isValidMaxLengthAlphaNum(final String input, final int length) {
 		LOG.trace("Inside CommonValidator#isValidMaxLengthAlphaNum");
+		if (VtnServiceConsts.EMPTY_STRING.equals(input)) {
+			return true;
+		}
 		return input.matches(VtnServiceConsts.ALPHANUM_REGEX)
 				&& input.length() <= length;
 	}
 
 	/**
-	 * Type validation recommended values : unknown,pfc,overlay and legacy
+	 * Type validation recommended values : bypass,pfc and vnp
 	 * 
 	 * @param input
 	 *            the value to be validated
@@ -491,6 +460,9 @@ public class CommonValidator {
 	 */
 	public boolean isValidType(final String input) {
 		LOG.trace("Start CommonValidator#isValidType");
+		if (VtnServiceConsts.EMPTY_STRING.equals(input)) {
+			return true;
+		}
 		Boolean valid = false;
 		if (VtnServiceJsonConsts.BYPASS.equalsIgnoreCase(input)
 				|| VtnServiceJsonConsts.PFC.equalsIgnoreCase(input)
@@ -502,25 +474,15 @@ public class CommonValidator {
 	}
 
 	/**
-	 * Audit Status recommended values : enable or disable
-	 * 
+	 * Check validation for Audit Status Parameter
 	 * @param input
-	 *            the value to be validated
-	 * @return true, if is valid audit status
+	 * @return
 	 */
-	/*
-	 * public boolean isValidAuditStatus(final String input) {
-	 * LOG.trace("Inside CommonValidator#isValidAuditStatus"); Boolean valid =
-	 * false; if(VtnServiceJsonConsts.UP.equalsIgnoreCase(input) ||
-	 * VtnServiceJsonConsts.DOWN.equalsIgnoreCase(input) ||
-	 * VtnServiceJsonConsts.WAITING_AUDIT.equalsIgnoreCase(input) ||
-	 * VtnServiceJsonConsts.AUDITING.equalsIgnoreCase(input)){ valid = true; }
-	 * return valid; // return input.length()<=length; }
-	 */
-
-	// updated after integration
 	public boolean isValidAuditStatus(final String input) {
 		LOG.trace("Inside CommonValidator#isValidAuditStatus");
+		if (VtnServiceConsts.EMPTY_STRING.equals(input)) {
+			return true;
+		}
 		return VtnServiceJsonConsts.ENABLE.equalsIgnoreCase(input)
 				|| VtnServiceJsonConsts.DISABLE.equalsIgnoreCase(input);
 	}
@@ -537,26 +499,12 @@ public class CommonValidator {
 	 */
 	public boolean isValidPhysicalId(final String linkName, final int length) {
 		LOG.trace("Inside CommonValidator#isValidPhysicalId");
+		if (VtnServiceConsts.EMPTY_STRING.equals(linkName)) {
+			return true;
+		}
 		return linkName.matches(VtnServiceConsts.SWITCH_REGEX)
 				&& linkName.length() <= length;
 	}
-
-	/**
-	 * Validator for logical port id allows alphanumeric characters, "-" and "."
-	 * in the value
-	 * 
-	 * @param input
-	 *            the value to be validated
-	 * @param length
-	 *            the maximum length possible
-	 * @return true, if is valid value
-	 */
-	/*
-	 * public boolean isValidPhysicalLogicalId(final String linkName, final int
-	 * length) { LOG.trace("Inside CommonValidator#isValidPhysicalId"); return
-	 * linkName.matches(VtnServiceConsts.LOGICAL_PORT_ID_REGEX) &&
-	 * linkName.length() <= length; }
-	 */
 
 	/**
 	 * Validator for version, allows alphanumeric characters and "." in the
@@ -570,6 +518,9 @@ public class CommonValidator {
 	 */
 	public boolean isValidVersion(final String input, final int length) {
 		LOG.trace("Inside CommonValidator#isValidVersion");
+		if (VtnServiceConsts.EMPTY_STRING.equals(input)) {
+			return true;
+		}
 		return input.matches(VtnServiceConsts.VERSION_REGEX)
 				&& input.length() <= length;
 	}
@@ -587,6 +538,9 @@ public class CommonValidator {
 	 */
 	public boolean isValidDomainId(final String input, final int length) {
 		LOG.trace("Inside CommonValidator#isValidDomainId");
+		if (VtnServiceConsts.EMPTY_STRING.equals(input)) {
+			return true;
+		}
 		return (input.matches(VtnServiceConsts.ALPHANUM_REGEX) || input
 				.equals(VtnServiceJsonConsts.DEFAULT_DOMAIN_ID))
 				&& input.length() <= length;
@@ -657,10 +611,10 @@ public class CommonValidator {
 						&& ffEntry.getAsJsonPrimitive(
 								VtnServiceJsonConsts.PRIORITY).getAsString() != null) {
 					isValid = isValidRange(
-							Integer.parseInt(ffEntry
+							ffEntry
 									.getAsJsonPrimitive(
 											VtnServiceJsonConsts.PRIORITY)
-											.getAsString().trim()),
+											.getAsString().trim(),
 											VtnServiceJsonConsts.VAL_0,
 											VtnServiceJsonConsts.VAL_7);
 				}
@@ -673,10 +627,10 @@ public class CommonValidator {
 						.getAsJsonPrimitive(VtnServiceJsonConsts.DSCP)
 						.getAsString() != null) {
 					isValid = isValidRange(
-							Integer.parseInt(ffEntry
+							ffEntry
 									.getAsJsonPrimitive(
 											VtnServiceJsonConsts.DSCP)
-											.getAsString().trim()),
+											.getAsString().trim(),
 											VtnServiceJsonConsts.VAL_0,
 											VtnServiceJsonConsts.VAL_63);
 				}
@@ -694,7 +648,7 @@ public class CommonValidator {
 	 * @return true, if successful
 	 */
 	public boolean isValidRedirectDst(boolean isValid, final JsonObject ffEntry) {
-		LOG.trace("Start CommonValidator#isValidRedirectDst()");
+		LOG.trace("Start CommonValidator#isValidRedirectDst()"); 
 		setInvalidParameter(VtnServiceJsonConsts.REDIRECTDST);
 		if (ffEntry.has(VtnServiceJsonConsts.REDIRECTDST)) {
 			final JsonObject dest = ffEntry
@@ -760,8 +714,6 @@ public class CommonValidator {
 									.getAsString().trim());
 				}
 			}
-		} else {
-			isValid = false;
 		}
 		LOG.trace("Complete CommonValidator#isValidRedirectDst()");
 		return isValid;

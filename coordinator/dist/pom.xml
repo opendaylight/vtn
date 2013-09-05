@@ -14,12 +14,9 @@
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
 	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>org.opendaylight.vtn</groupId>
-    <artifactId>common</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
-    <relativePath>../../common</relativePath>
-  </parent>
+  <prerequisites>
+    <maven>3.0</maven>
+  </prerequisites>
 
   <scm>
     <connection>scm:git:https://git.opendaylight.org/gerrit/p/vtn.git</connection>
@@ -57,6 +54,10 @@
   </profiles>
 
   <properties>
+    <nexusproxy>http://nexus.opendaylight.org/content</nexusproxy>
+    <propertymavenplugin.version>1.0-alpha-2</propertymavenplugin.version>
+    <sitedeploy>dav:http://nexus.opendaylight.org/content/sites/site</sitedeploy>
+
     <!-- Run tests by default. -->
     <skipTests>false</skipTests>
     <maven.test.skip>false</maven.test.skip>
@@ -66,10 +67,11 @@
     <vtn.gson.version>2.2.2</vtn.gson.version>
     <vtn.json.version>20090211</vtn.json.version>
     <vtn.tomcat.version>7.0.39</vtn.tomcat.version>
+    <vtn.junit.version>4.8.1</vtn.junit.version>
 
     <vtn.build.destdir>root</vtn.build.destdir>
     <vtn.build.prefix>/usr/local/vtn</vtn.build.prefix>
-    <vtn.build.debug>true</vtn.build.debug>
+    <vtn.build.debug>false</vtn.build.debug>
 
     <!-- The number of GNU make jobs -->
     <vtn.build.jobs>1</vtn.build.jobs>
@@ -90,6 +92,24 @@
       <url>${nexusproxy}/repositories/svnkit-snapshots/</url>
     </repository>
   </repositories>
+
+  <distributionManagement>
+    <!-- OpenDayLight Released artifact -->
+    <repository>
+      <id>opendaylight-release</id>
+      <url>${nexusproxy}/repositories/opendaylight.release/</url>
+    </repository>
+    <!-- OpenDayLight Snapshot artifact -->
+    <snapshotRepository>
+      <id>opendaylight-snapshot</id>
+      <url>${nexusproxy}/repositories/opendaylight.snapshot/</url>
+    </snapshotRepository>
+    <!-- Site deployment -->
+    <site>
+      <id>website</id>
+      <url>${sitedeploy}</url>
+    </site>
+  </distributionManagement>
 
   <build>
     <defaultGoal>package</defaultGoal>
@@ -163,7 +183,7 @@
 		<artifactItem>
 		  <groupId>junit</groupId>
 		  <artifactId>junit</artifactId>
-		  <version>${junit.version}</version>
+		  <version>4.8.1</version>
 		  <outputDirectory>${vtn.java.libdir}</outputDirectory>
 		</artifactItem>
 
@@ -401,7 +421,7 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
+      <version>4.8.1</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

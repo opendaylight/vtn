@@ -107,7 +107,8 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 			} else if (isValid && requestBody != null
 					&& VtnServiceConsts.POST.equals(method)) {
 				isValid = validatePost(requestBody);
-			} else {
+			} else if (isValid) {
+				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
@@ -451,7 +452,7 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 								.isValidRange(
 										boundary.getAsJsonPrimitive(
 												VtnServiceJsonConsts.VLANID)
-												.getAsInt(),
+												.getAsString().trim(),
 										VtnServiceJsonConsts.VAL_1,
 										VtnServiceJsonConsts.VAL_4095);
 					} else {
@@ -475,9 +476,9 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 					} else {
 						isValid = false;
 					}
-				} else {
+				}/* else {
 					isValid = false;
-				}
+				}*/
 				if (isValid) {
 					setInvalidParameter(VtnServiceJsonConsts.BOUNDARYID);
 					if (boundary.has(VtnServiceJsonConsts.BOUNDARYID)
@@ -495,9 +496,9 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 										.getAsString().trim().isEmpty();
 					}
 				}
-			} else {
+			}/* else {
 				isValid = false;
-			}
+			}*/
 		}
 		LOG.trace("Complete VLinkResourceValidator#commonValidation()");
 		return isValid;

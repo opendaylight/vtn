@@ -105,9 +105,7 @@ public class ReadLockResource extends AbstractResource {
 			LOG.info("OperationStatus" + operationStatus);
 			if (operationStatus != UncTCEnums.OperationStatus.TC_OPER_SUCCESS
 					.getCode()) {
-				createErrorInfo(
-						UncCommonEnum.UncResultCode.UNC_SERVER_ERROR.getValue(),
-						UncIpcErrorCode.getTcCodes(operationStatus));
+				createTcErrorInfo(UncIpcErrorCode.getTcCodes(operationStatus));
 				LOG.info("Request not processed successfully");
 				status = UncCommonEnum.UncResultCode.UNC_SERVER_ERROR
 						.getValue();
@@ -195,9 +193,7 @@ public class ReadLockResource extends AbstractResource {
 			LOG.info("OperationStatus" + operationStatus);
 			if (operationStatus != UncTCEnums.OperationStatus.TC_OPER_SUCCESS
 					.getCode()) {
-				createErrorInfo(
-						UncCommonEnum.UncResultCode.UNC_SERVER_ERROR.getValue(),
-						UncIpcErrorCode.getTcCodes(operationStatus));
+				createTcErrorInfo(UncIpcErrorCode.getTcCodes(operationStatus));
 				LOG.info("Request not processed successfully");
 				status = UncCommonEnum.UncResultCode.UNC_SERVER_ERROR
 						.getValue();

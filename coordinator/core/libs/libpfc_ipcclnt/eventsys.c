@@ -305,6 +305,7 @@ static int	ipc_elsess_lookup(const char *PFC_RESTRICT channel,
 				  const pfc_hostaddr_t *PFC_RESTRICT haddr,
 				  ipc_clchan_t **PFC_RESTRICT chpp,
 				  ipc_elsess_t **PFC_RESTRICT elspp);
+static int	ipc_elsess_getsockerror(ipc_elsess_t *elsp, int sock);
 
 static pfc_cptr_t	ipc_evhdlr_getkey(pfc_rbnode_t *node);
 static pfc_cptr_t	ipc_elsess_getkey(pfc_rbnode_t *node);
@@ -479,6 +480,33 @@ ipc_event_gettime(pfc_timespec_t *tsp)
 
 /*
  * static inline int PFC_FATTR_ALWAYS_INLINE
+ * ipc_event_gettimeout_msec(pfc_timespec_t *abstime, uint32_t msec)
+ *	Determine absolute I/O timeout from the specified milliseconds.
+ *
+ * Calling/Exit State:
+ *	Upon successful completion, an upper limit of I/O time from now is set
+ *	to the buffer pointed by `abstime', and zero is returned.
+ *	Otherwise error number which indicates the cause of error is returned.
+ */
+static inline int PFC_FATTR_ALWAYS_INLINE
+ipc_event_gettimeout_msec(pfc_timespec_t *abstime, uint32_t msec)
+{
+	pfc_timespec_t	timeout;
+	int		err;
+
+	pfc_clock_msec2time(&timeout, msec);
+	err = pfc_clock_abstime(abstime, &timeout);
+	if (PFC_EXPECT_FALSE(err != 0)) {
+		/* This should never happen. */
+		IPCCLNT_LOG_ERROR("Failed to determine I/O timeout: %s",
+				  strerror(err));
+	}
+
+	return err;
+}
+
+/*
+ * static inline int PFC_FATTR_ALWAYS_INLINE
  * ipc_event_gettimeout(pfc_timespec_t *abstime)
  *	Determine I/O timeout.
  *
@@ -490,18 +518,9 @@ ipc_event_gettime(pfc_timespec_t *tsp)
 static inline int PFC_FATTR_ALWAYS_INLINE
 ipc_event_gettimeout(pfc_timespec_t *abstime)
 {
-	pfc_timespec_t	timeout;
-	int		err;
+	uint32_t	msec = ipc_event_opts.evopt_timeout;
 
-	pfc_clock_msec2time(&timeout, ipc_event_opts.evopt_timeout);
-	err = pfc_clock_abstime(abstime, &timeout);
-	if (PFC_EXPECT_FALSE(err != 0)) {
-		/* This should never happen. */
-		IPCCLNT_LOG_ERROR("Failed to determine I/O timeout: %s",
-				  strerror(err));
-	}
-
-	return err;
+	return ipc_event_gettimeout_msec(abstime, msec);
 }
 
 /*
@@ -4894,7 +4913,7 @@ ipc_elsess_epoll(pfc_ephdlr_t *ephp, uint32_t events, void *arg)
 	IPC_ELSESS_LOCK(elsp);
 	IPC_ELSESS_EPOLL_ASSERT(elsp, ectx);
 
-	if (PFC_EXPECT_FALSE(events & (EPOLLOUT | EPOLLHUP))) {
+	if (PFC_EXPECT_FALSE(events & (EPOLLOUT | EPOLLHUP | EPOLLERR))) {
 		int	err, fd;
 
 		/* Remove the session socket from the epoll instance. */
@@ -4921,9 +4940,18 @@ ipc_elsess_epoll(pfc_ephdlr_t *ephp, uint32_t events, void *arg)
 #endif	/* PFC_VERBOSE_DEBUG */
 		IPC_EVCTX_UNLOCK(ectx);
 
-		if (events & EPOLLHUP) {
+		if (events & (EPOLLHUP | EPOLLERR)) {
+			int	soerr;
+
+			/* Determine socket level error. */
+			soerr = ipc_elsess_getsockerror(elsp, fd);
+			if (soerr == 0) {
+				/* Session was reset by peer. */
+				soerr = ECONNRESET;
+			}
+
 			/* Need to update the state of this session. */
-			ipc_elsess_setdowncode(elsp, ECONNRESET);
+			ipc_elsess_setdowncode(elsp, soerr);
 			ipc_evtaskq_post(elsp);
 		}
 
@@ -5108,6 +5136,43 @@ ipc_elsess_lookup(const char *PFC_RESTRICT channel,
 
 	return 0;
 }
+
+/*
+ * static int
+ * ipc_elsess_getsockerror(ipc_elsess_t *elsp, int sock)
+ *	Get and clear the socket error pending on the given socket.
+ *
+ * Calling/Exit State:
+ *	Upon successful completion, a pending socket error number is
+ *	returned.
+ *	On failure, an error number which indicates the cause of error is
+ *	returned.
+ */
+static int
+ipc_elsess_getsockerror(ipc_elsess_t *elsp, int sock)
+{
+	int		soerr, ret;
+	socklen_t	optlen = sizeof(soerr);
+
+	ret = getsockopt(sock, SOL_SOCKET, SO_ERROR, &soerr, &optlen);
+	if (PFC_EXPECT_FALSE(ret != 0)) {
+		soerr = errno;
+		IPCCLNT_LOG_ERROR("%s: Failed to get socket error: %s",
+				  IPC_CLCHAN_NAME(elsp->els_chan),
+				  strerror(soerr));
+		if (PFC_EXPECT_FALSE(soerr == 0)) {
+			soerr = EIO;
+		}
+	}
+	else if (soerr != 0) {
+		IPCCLNT_LOG_ERROR("%s: Detected socket error: %s",
+				  IPC_CLCHAN_NAME(elsp->els_chan),
+				  strerror(soerr));
+	}
+
+	return soerr;
+}
+
 
 /*
  * static pfc_cptr_t

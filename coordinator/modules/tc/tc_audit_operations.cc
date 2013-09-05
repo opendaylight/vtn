@@ -9,7 +9,8 @@
 
 
 #include <tc_operations.hh>
-
+#include <alarm.hh>
+#include <unc/component.h>
 
 namespace unc {
 namespace tc {
@@ -100,6 +101,13 @@ TcOperStatus TcAuditOperations::TcValidateOperType() {
   if ((tc_oper_ != TC_OP_USER_AUDIT ) &&
       (tc_oper_ != TC_OP_DRIVER_AUDIT)) {
     return TC_INVALID_OPERATION_TYPE;
+  }
+  /*set IPC timeout to infinity for audit operations*/
+  if (tc_oper_ == TC_OP_USER_AUDIT) {
+    TcUtilRet ret = TcServerSessionUtils::set_srv_timeout(ssess_, NULL);
+    if (ret == TCUTIL_RET_FAILURE) {
+      return TC_OPER_FAILURE;
+    }
   }
   return TC_OPER_SUCCESS;
 }
@@ -234,11 +242,15 @@ pfc_bool_t TcAuditOperations::GetDriverType() {
   TcOperRet oper_ret(tc_drv_msg->Execute());
   if ( oper_ret != TCOPER_RET_SUCCESS ) {
     user_response_ = HandleMsgRet(oper_ret);
+    delete tc_drv_msg;
+    tc_drv_msg = NULL;
     return PFC_FALSE;
   }
   driver_id_ = tc_drv_msg->GetResult();
   if ( driver_id_ == UNC_CT_UNKNOWN ) {
     pfc_log_error("Controller of Unknown type");
+    delete tc_drv_msg;
+    tc_drv_msg = NULL;
     return PFC_FALSE;
   }
   delete tc_drv_msg;
@@ -449,6 +461,26 @@ TcOperStatus TcAuditOperations::Execute() {
   if ( AuditEnd() == PFC_FALSE ) {
     return user_response_;
   }
+  if ( db_hdlr_->UpdateRecoveryTable(UNC_DT_INVALID,
+                                     TC_OP_INVALID)!= TCOPER_RET_SUCCESS) {
+    pfc_log_info("Recovery Table not updated");
+    user_response_ = TC_OPER_FAILURE;
+    return TC_OPER_FAILURE;
+  }
+  return TC_OPER_SUCCESS;
+}
+
+/*set Audit operation status*/
+TcOperStatus
+TcAuditOperations::SetAuditOperationStatus() {
+  pfc_log_info("Audit status:%d", audit_result_);
+
+  TcUtilRet ret =
+      TcServerSessionUtils::set_uint32(ssess_,
+                                       audit_result_);
+  if ( ret != TCUTIL_RET_SUCCESS ) {
+    return TC_OPER_FAILURE;
+  }
   return TC_OPER_SUCCESS;
 }
 
@@ -460,6 +492,10 @@ TcAuditOperations::SendAdditionalResponse(TcOperStatus oper_stat) {
   if ( api_audit_ == PFC_TRUE ) {
     return oper_stat;
   }
+  /*Append the status of Audit operation*/
+  if (SetAuditOperationStatus() != TC_OPER_SUCCESS) {
+        return TC_OPER_FAILURE;
+  }
   if (tc_oper_ == TC_OP_USER_AUDIT &&
      resp_tc_msg_ != NULL) {
     TcOperRet ret = resp_tc_msg_->ForwardResponseToVTN(*ssess_);
@@ -467,13 +503,53 @@ TcAuditOperations::SendAdditionalResponse(TcOperStatus oper_stat) {
       return TC_SYSTEM_FAILURE;
     }
   }
-  if ( oper_stat == TC_OPER_SUCCESS ) {
-    if ( db_hdlr_->UpdateRecoveryTable(UNC_DT_INVALID,
-                                       TC_OP_INVALID)!= TCOPER_RET_SUCCESS) {
-      pfc_log_info("Recovery Table not updated");
-    }
-  }
   return oper_stat;
+}
+
+/*
+ *  * @brief Send Alarm notification for driver audit failure
+ *  */
+TcOperStatus
+TcAuditOperations::SendAuditStatusNotification(int32_t alarm_id) {
+  std::string alm_msg;
+  std::string alm_msg_summary;
+  std::string vtn_name = "";
+  pfc::alarm::alarm_info_with_key_t* data =
+      new pfc::alarm::alarm_info_with_key_t;
+
+  if (audit_result_ == unc::tclib::TC_AUDIT_SUCCESS) {
+    alm_msg = "Controller audit success.Controller Id - " +\
+                                  controller_id_;
+    alm_msg_summary = "Controller audit success";
+    data->alarm_class = pfc::alarm::ALM_NOTICE;
+    data->alarm_kind = 0;
+  } else {
+    alm_msg = "Controller audit failure.Controller Id - " +\
+                                  controller_id_;
+    alm_msg_summary = "Controller audit failure";
+    data->alarm_class = pfc::alarm::ALM_WARNING;
+    data->alarm_kind = 1;
+  }
+  data->apl_No = UNCCID_TC;
+  data->alarm_category = 2;
+  data->alarm_key_size = controller_id_.length();
+  data->alarm_key = new uint8_t[controller_id_.length()+1];
+  memcpy(data->alarm_key,
+         controller_id_.c_str(),
+         controller_id_.length()+1);
+  pfc::alarm::alarm_return_code_t ret = pfc::alarm::pfc_alarm_send_with_key(
+      vtn_name,
+      alm_msg,
+      alm_msg_summary,
+      data, alarm_id);
+  if (ret != pfc::alarm::ALM_OK) {
+    delete []data->alarm_key;
+    delete data;
+    return TC_OPER_FAILURE;
+  }
+  delete []data->alarm_key;
+  delete data;
+  return TC_OPER_SUCCESS;
 }
 
 }  // namespace  tc

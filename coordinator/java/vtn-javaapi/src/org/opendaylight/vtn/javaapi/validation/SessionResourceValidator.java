@@ -57,10 +57,13 @@ public class SessionResourceValidator extends VtnServiceValidator {
 				&& ((SessionResource) resource).getSessionId() != null
 				&& !((SessionResource) resource).getSessionId().trim()
 						.isEmpty()) {
-			if (Long.parseLong(((SessionResource) resource).getSessionId()
+			/*if (Long.parseLong(((SessionResource) resource).getSessionId()
 					.trim()) >= 0) {
 				isValid = true;
-			}
+			}*/
+			isValid = validator.isValidRange(((SessionResource) resource)
+					.getSessionId().trim(), VtnServiceJsonConsts.LONG_VAL_1,
+					VtnServiceJsonConsts.LONG_VAL_4294967295);
 			setListOpFlag(false);
 		} else if (resource instanceof SessionsResource) {
 			isValid = true;
@@ -88,7 +91,8 @@ public class SessionResourceValidator extends VtnServiceValidator {
 		} else if (isValid && requestBody != null
 				&& VtnServiceConsts.POST.equals(method)) {
 			isValid = validatePost(requestBody);
-		} else {
+		} else if (isValid) {
+			setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -184,7 +188,7 @@ public class SessionResourceValidator extends VtnServiceValidator {
 							session.getAsJsonPrimitive(
 									VtnServiceJsonConsts.LOGIN_NAME)
 									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_32);
+							VtnServiceJsonConsts.LEN_63);
 				}
 			}
 			// validation for key: username
@@ -208,8 +212,8 @@ public class SessionResourceValidator extends VtnServiceValidator {
 									.trim()
 									.equalsIgnoreCase(VtnServiceJsonConsts.OPER);
 				} else {
-					requestBody.remove(VtnServiceJsonConsts.USERNAME);
-					requestBody.addProperty(VtnServiceJsonConsts.USERNAME,
+					requestBody.getAsJsonObject(VtnServiceJsonConsts.SESSION).remove(VtnServiceJsonConsts.USERNAME);
+					requestBody.getAsJsonObject(VtnServiceJsonConsts.SESSION).addProperty(VtnServiceJsonConsts.USERNAME,
 							VtnServiceJsonConsts.OPER);
 				}
 			}
@@ -235,8 +239,8 @@ public class SessionResourceValidator extends VtnServiceValidator {
 									.equalsIgnoreCase(
 											VtnServiceJsonConsts.WEBUI);
 				} else {
-					requestBody.remove(VtnServiceJsonConsts.TYPE);
-					requestBody.addProperty(VtnServiceJsonConsts.TYPE,
+					requestBody.getAsJsonObject(VtnServiceJsonConsts.SESSION).remove(VtnServiceJsonConsts.TYPE);
+					requestBody.getAsJsonObject(VtnServiceJsonConsts.SESSION).addProperty(VtnServiceJsonConsts.TYPE,
 							VtnServiceJsonConsts.WEBUI);
 				}
 			}
@@ -252,12 +256,11 @@ public class SessionResourceValidator extends VtnServiceValidator {
 								.getAsString().trim().isEmpty()) {
 					isValid = validator.isValidMaxLength(session
 							.getAsJsonPrimitive(VtnServiceJsonConsts.INFO)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_64);
+							.getAsString().trim(), VtnServiceJsonConsts.LEN_63);
 				}
 			}
 		}
 		LOG.trace("Complete SessionResourceValidator#validatePost()");
 		return isValid;
 	}
-
 }

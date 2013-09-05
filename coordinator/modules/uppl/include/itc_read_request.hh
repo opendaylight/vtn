@@ -19,6 +19,7 @@
 #define _ITC_READ_REQUEST_HH_
 
 #include <string>
+#include <vector>
 #include "physical_common_def.hh"
 #include "unc/uppl_common.h"
 #include "physical_itc_req.hh"
@@ -31,8 +32,21 @@
 
 using unc::uppl::ITCReq;
 
+typedef enum {
+  IS_KEY = 0,
+      IS_VALUE,
+      IS_STATE_VALUE,
+      IS_SEPARATOR
+}ValueType;
+
+struct BulkReadBuffer {
+  unc_key_type_t key_type;
+  ValueType value_type;
+  void* value;
+};
+
 /*
- * It is a singleton class which will be inherited from ITCReq class 
+ * This class which will be inherited from ITCReq class 
  * to process read requests
  * For further info,see the comments in .cc file
  **/
@@ -41,7 +55,16 @@ class ReadRequest: public ITCReq {
   public:
     ReadRequest();
     ~ReadRequest();
-    UpplReturnCode ProcessReq(ServerSession &session);
+    UpplReturnCode ProcessReq(ServerSession &session,
+                              physical_request_header &obj_req_hdr);
+    void AddToBuffer(BulkReadBuffer objBuffer) {
+      vect_bulk_read_buffer.push_back(objBuffer);
+    }
+
+    vector<BulkReadBuffer>& get_readbulk_buffer() {
+      return vect_bulk_read_buffer;
+    }
+    void FlushBulkReadBuffer();
 
   private:
     key_root_t key_root_obj;
@@ -60,9 +83,11 @@ class ReadRequest: public ITCReq {
     val_link_st_t val_link_obj;
     key_boundary_t key_boundary_obj;
     val_boundary_t val_boundary_obj;
-    UpplReturnCode ProcessReadOperation(ServerSession &session,
+    vector<BulkReadBuffer> vect_bulk_read_buffer;
+    UpplReturnCode ProcessReadOperation(OdbcmConnectionHandler *db_conn,
+                                        ServerSession &session,
                                         Kt_Base *KtObj,
-                                        physical_request_header obj_req_hdr,
+                                        physical_request_header &obj_req_hdr,
                                         void* key_struct,
                                         void* val_struct,
                                         uint32_t operation_type);
@@ -129,6 +154,14 @@ class ReadRequest: public ITCReq {
     void AddBoundaryStructure(ServerSession &session,
                               BulkReadBuffer obj_buffer,
                               int &err);
+    void ClearControllerStructure(BulkReadBuffer obj_buffer);
+    void ClearDomainStructure(BulkReadBuffer obj_buffer);
+    void ClearLogicalPortStructure(BulkReadBuffer obj_buffer);
+    void ClearLogicalMemberPortStructure(BulkReadBuffer obj_buffer);
+    void ClearSwitchStructure(BulkReadBuffer obj_buffer);
+    void ClearPortStructure(BulkReadBuffer obj_buffer);
+    void ClearLinkStructure(BulkReadBuffer obj_buffer);
+    void ClearBoundaryStructure(BulkReadBuffer obj_buffer);
 };
 
 #define ADD_KEY_TO_SESSION(err, session, key_type, key_value, ipc_keytype_t) { \
@@ -138,8 +171,6 @@ class ReadRequest: public ITCReq {
     if (key != NULL) { \
       pfc_log_debug("Key added: %s", IpctUtil::get_string(*key).c_str()); \
       err |= session.addOutput(*key); \
-      delete key; \
-      key = NULL; \
     } \
 }
 
@@ -149,6 +180,22 @@ class ReadRequest: public ITCReq {
     if (val != NULL) { \
       pfc_log_debug("Value added: %s", IpctUtil::get_string(*val).c_str()); \
       err |= session.addOutput(*val); \
+    } \
+}
+
+#define CLEAR_KEY(key_value, ipc_keytype_t) { \
+    ipc_keytype_t *key = \
+    reinterpret_cast<ipc_keytype_t*>(key_value); \
+    if (key != NULL) { \
+      delete key; \
+      key = NULL; \
+    } \
+}
+
+#define CLEAR_VALUE(value, ipc_keytype_t) { \
+    ipc_keytype_t *val = \
+    reinterpret_cast<ipc_keytype_t*>(value); \
+    if (val != NULL) { \
       delete val; \
       val = NULL; \
     } \

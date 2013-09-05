@@ -79,7 +79,8 @@ public class UserResourceValidator extends VtnServiceValidator {
 		if (isValid && requestBody != null
 				&& VtnServiceConsts.PUT.equalsIgnoreCase(method)) {
 			isValid = validatePut(requestBody);
-		} else {
+		} else if (isValid) {
+			setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -106,6 +107,18 @@ public class UserResourceValidator extends VtnServiceValidator {
 		boolean isValid = false;
 		// validation for password
 		setInvalidParameter(VtnServiceJsonConsts.PASSWORD);
+		if (requestBody.has(VtnServiceJsonConsts.PASSWORD)
+				&& requestBody.get(VtnServiceJsonConsts.PASSWORD) instanceof JsonObject
+				&& requestBody.get(VtnServiceJsonConsts.PASSWORD)
+						.getAsJsonObject()
+						.getAsJsonPrimitive(VtnServiceJsonConsts.PASSWORD)
+						.getAsString() != null) {
+			String password = requestBody.get(VtnServiceJsonConsts.PASSWORD)
+					.getAsJsonObject().get(VtnServiceJsonConsts.PASSWORD)
+					.getAsString();
+			requestBody.remove(VtnServiceJsonConsts.PASSWORD);
+			requestBody.addProperty(VtnServiceJsonConsts.PASSWORD, password);
+		}
 		if (requestBody.has(VtnServiceJsonConsts.PASSWORD)
 				&& requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.PASSWORD)

@@ -12,3 +12,4 @@
 # lnctest module uses APIs provided by launcher module.
 launcher
 clstat
+alarm

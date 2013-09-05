@@ -54,6 +54,9 @@ public class AbortCandidateConfigResourceValidator extends VtnServiceValidator {
 		boolean isValid = false;
 		if (requestBody != null && VtnServiceConsts.PUT.equals(method)) {
 			isValid = validatePut(requestBody);
+		}else {
+			setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
+			isValid = false;
 		}
 		if (!isValid) {
 			LOG.error("Validation failed");

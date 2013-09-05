@@ -98,6 +98,21 @@ class DhcpRelayServerMoMgr : public VnodeChildMoMgr {
       return true;
     }
 
+    /**
+     * @Brief  Checks if the specified key type(KT_DHCPRELAY_SERVER) and
+     *         associated attributes are supported on the given controller,
+     *         based on the valid flag
+     *
+     * @param[in]  req               This structure contains IpcReqRespHeader
+     *                               (first 8 fields of input request structure).
+     * @param[in]  ikey              ikey contains key and value structure.
+     * @param[in]  ctrlr_name        Controller name associated with ikey.
+     *
+     * @retval   UPLL_RC_SUCCESS               Validation succeeded.
+     * @retval   UPLL_RC_ERR_GENERIC           Validation failure.
+     * @retval   UPLL_RC_ERR_INVALID_OPTION1   Option1 is not valid.
+     * @retval   UPLL_RC_ERR_INVALID_OPTION2   Option2 is not valid.
+     **/
     upll_rc_t ValidateCapability(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                                  const char *ctrlr_name);
 
@@ -156,6 +171,7 @@ class DhcpRelayServerMoMgr : public VnodeChildMoMgr {
     upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *ikey);
     upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
                            DalDmlIntf *dmi);
+    upll_rc_t IsAdminStatusEnable(ConfigKeyVal *ikey,DalDmlIntf *dmi);
 
   public:
     DhcpRelayServerMoMgr();
@@ -176,6 +192,9 @@ class DhcpRelayServerMoMgr : public VnodeChildMoMgr {
      * @retval         false                input key is invalid.
      **/
     bool IsValidKey(void *tkey, uint64_t index);
+
+    upll_rc_t GetVrtDhcpRelayServerAddress(ConfigKeyVal *ikey,
+                                             DalDmlIntf *dmi);
 };
 
 }  // namespace kt_momgr

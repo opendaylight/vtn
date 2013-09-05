@@ -12,12 +12,14 @@ package org.opendaylight.vtn.javaapi.resources.logical;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
+import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.IpcRequestProcessor;
@@ -97,7 +99,7 @@ public class StaticIpRoutesResource extends AbstractResource {
 			LOG.debug("Session created successfully");
 			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
 					getConfigID(), getExceptionHandler());
-			if (requestBody != null
+			/*if (requestBody != null
 					&& requestBody.has(VtnServiceJsonConsts.STATIC_IPROUTE)
 					&& !((JsonObject) requestBody
 							.get(VtnServiceJsonConsts.STATIC_IPROUTE))
@@ -105,18 +107,19 @@ public class StaticIpRoutesResource extends AbstractResource {
 				((JsonObject) requestBody
 						.get(VtnServiceJsonConsts.STATIC_IPROUTE)).addProperty(
 						VtnServiceJsonConsts.NMG_NAME, "");
-			}
+			}*/
+			final List<String> uriParameterList = getUriParameters(requestBody);
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_VRT_IPROUTE_CREATE, requestBody,
-					getUriParameters(requestBody));
+					uriParameterList);
 			LOG.debug("Request Packet  created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
 			// StaticIp Route
 			String ipAddr = null;
 			String nextHopAddr = null;
-			String netMask = null;
-			String nmgName = null;
+			String prefix = null;
+			//String nmgName = null;
 			String staticIpRouteId = null;
 			if (requestBody != null
 					&& requestBody.has(VtnServiceJsonConsts.STATIC_IPROUTE)
@@ -125,10 +128,7 @@ public class StaticIpRoutesResource extends AbstractResource {
 							.has(VtnServiceJsonConsts.IPADDR)
 					&& ((JsonObject) requestBody
 							.get(VtnServiceJsonConsts.STATIC_IPROUTE))
-							.has(VtnServiceJsonConsts.NETMASK)
-					&& ((JsonObject) requestBody
-							.get(VtnServiceJsonConsts.STATIC_IPROUTE))
-							.has(VtnServiceJsonConsts.NMG_NAME)
+							.has(VtnServiceJsonConsts.PREFIX)
 					&& ((JsonObject) requestBody
 							.get(VtnServiceJsonConsts.STATIC_IPROUTE))
 							.has(VtnServiceJsonConsts.NEXTHOPADDR)) {
@@ -138,15 +138,14 @@ public class StaticIpRoutesResource extends AbstractResource {
 				nextHopAddr = ((JsonObject) requestBody
 						.get(VtnServiceJsonConsts.STATIC_IPROUTE)).get(
 						VtnServiceJsonConsts.NEXTHOPADDR).getAsString();
-				netMask = ((JsonObject) requestBody
+				prefix = ((JsonObject) requestBody
 						.get(VtnServiceJsonConsts.STATIC_IPROUTE)).get(
-						VtnServiceJsonConsts.NETMASK).getAsString();
-				nmgName = ((JsonObject) requestBody
+						VtnServiceJsonConsts.PREFIX).getAsString();
+			/*	nmgName = ((JsonObject) requestBody
 						.get(VtnServiceJsonConsts.STATIC_IPROUTE)).get(
-						VtnServiceJsonConsts.NMG_NAME).getAsString();
+						VtnServiceJsonConsts.NMG_NAME).getAsString();*/
 				staticIpRouteId = ipAddr + VtnServiceJsonConsts.HYPHEN
-						+ nextHopAddr + VtnServiceJsonConsts.HYPHEN + netMask
-						+ VtnServiceJsonConsts.HYPHEN + nmgName;
+						+ nextHopAddr + VtnServiceJsonConsts.HYPHEN + prefix;
 			}
 			JsonObject root = new JsonObject();
 			JsonObject staticIpRoute = new JsonObject();
@@ -209,16 +208,36 @@ public class StaticIpRoutesResource extends AbstractResource {
 			LOG.debug("Session created successfully");
 			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
 					getConfigID(), getExceptionHandler());
+			final List<String> uriParameterList = getUriParameters(requestBody);
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_VRT_IPROUTE_GET, requestBody,
-					getUriParameters(requestBody));
+					uriParameterList);
 			LOG.debug("Request Packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
 			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
-			setInfo(responseGenerator.getStaticIpRouteResponse(
-					requestProcessor.getIpcResponsePacket(), requestBody,
-					VtnServiceJsonConsts.LIST));
+			/*
+			 * setInfo(responseGenerator.getStaticIpRouteResponse(
+			 * requestProcessor.getIpcResponsePacket(), requestBody,
+			 * VtnServiceJsonConsts.LIST));
+			 */
+			JsonObject responseJson = responseGenerator
+					.getStaticIpRouteResponse(
+							requestProcessor.getIpcResponsePacket(),
+							requestBody, VtnServiceJsonConsts.LIST);
+			if (responseJson.get(VtnServiceJsonConsts.STATIC_IPROUTES)
+					.isJsonArray()) {
+				JsonArray responseArray = responseJson.get(
+						VtnServiceJsonConsts.STATIC_IPROUTES).getAsJsonArray();
+				responseJson = getResponseJsonArrayLogical(requestBody,
+						requestProcessor, responseGenerator, responseArray,
+						VtnServiceJsonConsts.STATIC_IPROUTES,
+						VtnServiceJsonConsts.STATICIPROUTEID,
+						IpcRequestPacketEnum.KT_VRT_IPROUTE_GET,
+						uriParameterList,
+						VtnServiceIpcConsts.GET_STATIC_IPROUTE_SERVER_RESPONSE);
+			}
+			setInfo(responseJson);
 			LOG.debug("Response object created successfully");
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
@@ -244,7 +263,7 @@ public class StaticIpRoutesResource extends AbstractResource {
 			}
 			getConnPool().destroySession(session);
 		}
-		LOG.trace("Start StaticIpRoutesResource#get()");
+		LOG.trace("Complete StaticIpRoutesResource#get()");
 		return status;
 	}
 
@@ -253,7 +272,7 @@ public class StaticIpRoutesResource extends AbstractResource {
 	 * 
 	 * @return
 	 */
-	private List<String> getUriParameters(final JsonObject requestBody) {		
+	private List<String> getUriParameters(final JsonObject requestBody) {
 		LOG.trace("Start StaticIpRoutesResource#getUriParameters()");
 		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(vtnName);

@@ -104,20 +104,21 @@ public class FlowFilterEntriesResourceValidator extends VtnServiceValidator {
 			} else if (isValid && requestBody != null
 					&& VtnServiceConsts.POST.equals(method)) {
 				isValid = validatePost(requestBody);
-				if(validator.getInvalidParameter()!=null){
+				if (validator.getInvalidParameter() != null) {
 					setInvalidParameter(validator.getInvalidParameter());
 				}
-			} else {
+			} else if (isValid) {
+				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			if(validator.getInvalidParameter()!=null){
+			if (validator.getInvalidParameter() != null) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
 			LOG.error("Inside catch:NumberFormatException");
 			isValid = false;
 		} catch (final ClassCastException e) {
-			if(validator.getInvalidParameter()!=null){
+			if (validator.getInvalidParameter() != null) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
 			LOG.error("Inside catch:ClassCastException");
@@ -158,9 +159,9 @@ public class FlowFilterEntriesResourceValidator extends VtnServiceValidator {
 							.getAsString() != null
 					&& !ffEntry.getAsJsonPrimitive(VtnServiceJsonConsts.SEQNUM)
 							.getAsString().trim().isEmpty()) {
-				isValid = validator.isValidRange(Integer.parseInt(ffEntry
+				isValid = validator.isValidRange(ffEntry
 						.getAsJsonPrimitive(VtnServiceJsonConsts.SEQNUM)
-						.getAsString().trim()), VtnServiceJsonConsts.VAL_1,
+						.getAsString().trim(), VtnServiceJsonConsts.VAL_1,
 						VtnServiceJsonConsts.VAL_65535);
 			} else {
 				isValid = false;

@@ -16,7 +16,6 @@
 #define __DAL_CURSOR_HH__
 
 #include <sql.h>
-#include "upll/upll_log.hh"
 #include "dal_defines.hh"
 #include "dal_bind_info.hh"
 
@@ -83,10 +82,10 @@ class DalCursor {
      * @return void             - None
      */
     ~DalCursor() {
-      if (stmt_handle_1_ != SQL_NULL_HANDLE) {
+      if (stmt_handle_1_ != NULL) {
         SQLFreeHandle(SQL_HANDLE_STMT, stmt_handle_1_);
       }
-      if (stmt_handle_2_ != SQL_NULL_HANDLE) {
+      if (stmt_handle_2_ != NULL) {
         SQLFreeHandle(SQL_HANDLE_STMT, stmt_handle_2_);
       }
     }

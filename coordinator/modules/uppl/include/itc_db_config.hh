@@ -19,6 +19,8 @@
 #include <unc/uppl_common.h>
 #include "physical_common_def.hh"
 #include "physical_itc_req.hh"
+#include "odbcm_connection.hh"
+using unc::uppl::OdbcmConnectionHandler;
 
 namespace unc {
 namespace uppl {
@@ -27,19 +29,19 @@ class DBConfigurationRequest : public ITCReq {
  public:
   DBConfigurationRequest();
   ~DBConfigurationRequest();
-  UpplReturnCode LoadAndCommitStartup();
-  UpplReturnCode  ClearStartUpDb();
-  UpplReturnCode  ClearAllDb();
-  UpplReturnCode  AbortCandidateDb();
-  UpplReturnCode  SaveCandidateToRunning();
-  UpplReturnCode  SaveRunningToStartUp();
-  UpplReturnCode  AuditStartUp();
-  UpplReturnCode  AuditRunningDb();
-  UpplReturnCode SendDeletedControllerToLogical();
-  UpplReturnCode SendCreatedControllerToLogical();
-  UpplReturnCode SendUpdatedControllerToLogical();
+  UpplReturnCode LoadAndCommitStartup(OdbcmConnectionHandler *db_conn);
+  UpplReturnCode ClearStartUpDb(OdbcmConnectionHandler *db_conn);
+  UpplReturnCode AbortCandidateDb(OdbcmConnectionHandler *db_conn);
+  UpplReturnCode  SaveRunningToStartUp(OdbcmConnectionHandler *db_conn);
+  UpplReturnCode SendDeletedControllerToLogical(
+      OdbcmConnectionHandler *db_conn);
+  UpplReturnCode SendCreatedControllerToLogical(
+      OdbcmConnectionHandler *db_conn);
+  UpplReturnCode SendUpdatedControllerToLogical(
+      OdbcmConnectionHandler *db_conn);
+  UpplReturnCode SendAppliedControllerToLogical(
+      OdbcmConnectionHandler *db_conn);
 };
 }  // namespace uppl
 }  // namespace unc
 #endif
-

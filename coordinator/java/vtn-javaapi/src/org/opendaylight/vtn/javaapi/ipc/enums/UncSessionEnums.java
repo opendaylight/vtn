@@ -31,6 +31,7 @@ public class UncSessionEnums {
 		kUsessIpcNipcs; // number of IPC service ID.
 	}
 
+	// Type of user session.
 	public enum UsessTypeE{
 		USESS_TYPE_UNKNOWN("0"),     // Unknown session type.
 		USESS_TYPE_CLI("1"),             // CLI session type.
@@ -49,6 +50,7 @@ public class UncSessionEnums {
 		}
 	}
 
+	// Type of user.
 	public enum UserTypeE {
 		USER_TYPE_UNKNOWN("0"),      	// Unknown user.
 		USER_TYPE_OPER("1"),             // operator user.
@@ -65,27 +67,67 @@ public class UncSessionEnums {
 		}
 	}
 
+	// Mode of user session
+	public enum UsessModeE {
+		USESS_MODE_UNKNOWN("0"), // Unknown mode.
+		USESS_MODE_OPER("1"), // operator mode.
+		USESS_MODE_ENABLE("2"), // enable mode.
+		USESS_MODE_DEL("3"); // administrator user.
+
+		private final String value;
+
+		private UsessModeE(final String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return value;
+		}
+	}
+
+	// config mode status.
+	public enum UsessConfigModeE {
+		CONFIG_STATUS_NONE("0"), // Not Configuration mode.
+		CONFIG_STATUS_TCLOCK("1"); // Configuration mode.
+
+		private final String value;
+
+		private UsessConfigModeE(final String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return value;
+		}
+	}
+
 	// error code.
 	public enum UsessIpcErrE {
-		USESS_E_OK("success"), // success.
-		USESS_E_NG("error"), // error.
-		USESS_E_INVALID_SESSID("Invalid current session ID"), // Invalid current session ID.
-		USESS_E_NO_SUCH_SESSID("Invalid target session ID"), // Invalod target session ID.
-		USESS_E_INVALID_PRIVILEGE("Invalid privileges"), // Invalid privileges
-		USESS_E_INVALID_MODE("Invalid target session ID"), // Invalid mode.
-		USESS_E_INVALID_SESSTYPE("Invalid session type"), // Invalid session type.
-		USESS_E_INVALID_USER("Invalid user name"), // Invalid user name.
-		USESS_E_INVALID_PASSWD("Invalid password"), // Invalid password.
-		USESS_E_SESS_OVER("Over the number of user sessions"); // Over the number of user sessions
+		USESS_E_OK(200, "Success"), // success.
+		USESS_E_NG(500, "Internal error"), // error.
+		USESS_E_INVALID_SESSID(400, "Invalid current session ID"), // Invalid current session ID.
+		USESS_E_NO_SUCH_SESSID(404, "Invalid target session ID"), // Invalid target session ID.
+		USESS_E_INVALID_PRIVILEGE(403, "Invalid privileges"), // Invalid privileges
+		USESS_E_INVALID_MODE(400, "Invalid mode"), // Invalid mode.
+		USESS_E_INVALID_SESSTYPE(400, "Invalid session type"), // Invalid session type.
+		USESS_E_INVALID_USER(400, "Invalid user name"), // Invalid user name.
+		USESS_E_INVALID_PASSWD(400, "Invalid password"), // Invalid password.
+		USESS_E_SESS_OVER(500, "Over the number of user sessions"); // Over the number of user sessions
 		
 		private String message;
+		private int code;
 
-		private UsessIpcErrE(String message) {
+		private UsessIpcErrE(int code, String message) {
+			this.code = code;
 			this.message = message;
 		}
 
 		public String getMessage() {
 			return message;
+		}
+		
+		public int getCode() {
+			return code;
 		}
 	}
 }

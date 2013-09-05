@@ -60,11 +60,11 @@ public class ConfigModeResourceValidator extends VtnServiceValidator {
 				&& ((ReleaseConfigModeResource) resource).getConfigId() != null
 				&& !((ReleaseConfigModeResource) resource).getConfigId().trim()
 						.isEmpty()) {
-			isValid = validator.isValidRange(Long
-					.parseLong(((ReleaseConfigModeResource) resource)
-							.getConfigId().trim()),
-					VtnServiceJsonConsts.LONG_VAL_0,
-					VtnServiceJsonConsts.LONG_VAL_4294967295);
+			isValid = validator
+					.isValidRange(((ReleaseConfigModeResource) resource)
+							.getConfigId().trim(),
+							VtnServiceJsonConsts.LONG_VAL_0,
+							VtnServiceJsonConsts.LONG_VAL_4294967295);
 		} else if (resource instanceof AcquireConfigModeResource) {
 			isValid = true;
 		}
@@ -85,7 +85,8 @@ public class ConfigModeResourceValidator extends VtnServiceValidator {
 		if (isValid && requestBody != null
 				&& VtnServiceConsts.POST.equalsIgnoreCase(method)) {
 			isValid = validatePost(requestBody);
-		} else {
+		} else if (isValid) {
+			setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -121,5 +122,4 @@ public class ConfigModeResourceValidator extends VtnServiceValidator {
 		LOG.trace("Complete ConfigModeResourceValidator#validatePost()");
 		return isValid;
 	}
-
 }

@@ -67,26 +67,39 @@ public class UncSYSMGEnums {
 	 * The Enum NodeMgrReturnCode.
 	 */
 	public enum NodeIpcErrorT{
-	  NOMG_E_OK("Success"),
-	  NOMG_E_NG("Error"),
-	  NOMG_E_NOENT("No Entry"),
-	  NOMG_E_INVAL("Invalid"),
-	  NOMG_E_INITING("Initiating"),
-	  NOMG_E_ABRT("Abort");
+		NOMG_E_OK(200, "Success"),	  
+		NOMG_E_NG(500, "Error"),
+		NOMG_E_NOENT(400, "No Entry"),
+		NOMG_E_INVAL(500, "Invalid"),
+		NOMG_E_INITING(500, "Initiating"),
+		NOMG_E_ABRT(500, "Abort");
+	  
 		private String message;
-
+		private int code;
+		
 		/**
 		 * Instantiates a new node mgr return code.
-		 *
-		 * @param message the message
+		 * 
+		 * @param message
+		 *            the message
 		 */
-		private NodeIpcErrorT(String message) {
+		private NodeIpcErrorT(int code, String message) {
+			this.code = code;
 			this.message = message;
 		}
 
 		/**
+		 * Gets the code.
+		 * 
+		 * @return the code
+		 */		
+		public int getCode() {
+			return code;
+		}
+		
+		/**
 		 * Gets the message.
-		 *
+		 * 
 		 * @return the message
 		 */
 		public String getMessage() {
@@ -120,7 +133,7 @@ public class UncSYSMGEnums {
 		private MgmtIpcErrorT(String message) {
 			this.message = message;
 		}
-
+		
 		/**
 		 * Gets the message.
 		 *

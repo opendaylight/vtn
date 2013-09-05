@@ -53,8 +53,8 @@ public final class AnnotationReflect {
 		// resource class. Also set the URI parameters
 		final String key = matchResource(fields, path);
 		if (key != null) {
-			final Class<?> resourceClass = PackageScan.getCachedResources()
-					.get(key);
+			PackageScan pscan = PackageScan.getInstance();
+			final Class<?> resourceClass = pscan.getResourceClass(key);
 			if (resourceClass != null) {
 				try {
 					// instantiate the resource class
@@ -118,7 +118,9 @@ public final class AnnotationReflect {
 			return returnKey;
 		}
 		// iterate for each value of KeySet in scanned resource classes
-		for (final String key : PackageScan.getCachedResources().keySet()) {
+		//for (final String key : PackageScan.getCachedResources().keySet()) {
+		PackageScan pscan = PackageScan.getInstance();
+		for (final String key: pscan.getAllPaths()) {
 			if (returnKey != null) {
 				break;
 			}

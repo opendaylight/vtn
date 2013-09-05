@@ -11,6 +11,7 @@ package org.opendaylight.vtn.javaapi.resources.logical;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
 import org.opendaylight.vtn.core.util.Logger;
@@ -254,7 +255,7 @@ public class VTunnelInterfaceResource extends AbstractResource {
 							requestProcessor.getIpcResponsePacket(),
 							requestBody, VtnServiceJsonConsts.SHOW);
 			LOG.trace("Response Packet created successfully for 1st request");
-			if ((VtnServiceJsonConsts.STATE).equalsIgnoreCase(dataType)) {
+			if ((VtnServiceJsonConsts.STATE).equalsIgnoreCase(dataType) && !(vtunnelInterfaceJson.get(VtnServiceJsonConsts.INTERFACE) instanceof JsonNull)) {
 				requestProcessor.setServiceInfo(
 						UncUPLLEnums.UPLL_IPC_SERVICE_NAME,
 						UncUPLLEnums.ServiceID.UPLL_READ_SVC_ID.ordinal());

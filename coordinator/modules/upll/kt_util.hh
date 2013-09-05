@@ -180,6 +180,9 @@ class KtUtil {
   static string ValidArrayToStr(const uint8_t *validarray, int size);
   static string ConfigStatusToStr(const uint8_t *cfgstatus, int size);
 
+  static string IpcStructToStr(const vnpdrv_val_vtunnel &data);
+  static string IpcStructToStr(const vnpdrv_val_vtunnel_if &data);
+
  private:
   KtUtil() {}
   void Init();

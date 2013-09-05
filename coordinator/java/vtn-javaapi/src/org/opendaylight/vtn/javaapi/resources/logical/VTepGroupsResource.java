@@ -116,6 +116,10 @@ public class VTepGroupsResource extends AbstractResource {
 						.get(VtnServiceJsonConsts.VTEPGROUPMEMBERNAME)
 						.getAsJsonArray();
 				if (vTepGroupMemberArray.size() > 0) {
+				requestProcessor.setServiceInfo(
+						UncUPLLEnums.UPLL_IPC_SERVICE_NAME,
+						UncUPLLEnums.ServiceID.UPLL_EDIT_SVC_ID.ordinal());
+						
 					for (final JsonElement jsonElement : vTepGroupMemberArray) {
 						requestBody.add(
 								VtnServiceJsonConsts.INDEX,
@@ -217,6 +221,11 @@ public class VTepGroupsResource extends AbstractResource {
 			JsonObject VtepGrp = responseGenerator.getVTepGroupResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.LIST);
+					
+			requestProcessor.setServiceInfo(
+						UncUPLLEnums.UPLL_IPC_SERVICE_NAME,
+						UncUPLLEnums.ServiceID.UPLL_READ_SVC_ID.ordinal());
+						
 			JsonArray vTepGroupArr = null;
 
 			if (VtnServiceJsonConsts.DETAIL.equalsIgnoreCase(opType)) {
@@ -229,6 +238,7 @@ public class VTepGroupsResource extends AbstractResource {
 						.getConfigValue(VtnServiceConsts.MAX_REP_DEFAULT));
 				while (vtepGrpItr.hasNext()) {
 					JsonObject vTepGroup = (JsonObject) vtepGrpItr.next();
+					requestBody.addProperty(VtnServiceJsonConsts.INDEX,vTepGroup.get(VtnServiceJsonConsts.VTEPGROUPNAME).getAsString());
 					requestProcessor.createIpcRequestPacket(
 							IpcRequestPacketEnum.KT_VTEP_GRP_MEMBER_GET,
 							requestBody, getUriParameters(requestBody));
@@ -327,6 +337,7 @@ public class VTepGroupsResource extends AbstractResource {
 	 */
 	private List<String> getUriParameters(final JsonObject requestBody) {
 		LOG.trace("Start VTepGroupsResource#getUriParameters()");
+		LOG.info("request body : " + requestBody);
 		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(vtnName);
 		if (requestBody != null && requestBody.has(VtnServiceJsonConsts.INDEX)) {

@@ -52,6 +52,9 @@ public class ReadLockResourceValidator extends VtnServiceValidator {
 		try {
 			if (requestBody != null && VtnServiceConsts.PUT.equals(method)) {
 				isValid = validatePut(requestBody);
+			}else {
+				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
+				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
 			LOG.error("Inside catch:NumberFormatException");
@@ -93,16 +96,13 @@ public class ReadLockResourceValidator extends VtnServiceValidator {
 							.getAsJsonPrimitive(VtnServiceJsonConsts.TIMEOUT)
 							.getAsString() != null) {
 				isValid = validator.isValidRange(
-						Long.parseLong(readLock
-								.getAsJsonPrimitive(
-										VtnServiceJsonConsts.TIMEOUT)
-								.getAsString().trim()),
-						VtnServiceJsonConsts.LONG_VAL_0,
+						readLock.getAsJsonPrimitive(
+								VtnServiceJsonConsts.TIMEOUT).getAsString()
+								.trim(), VtnServiceJsonConsts.LONG_VAL_0,
 						VtnServiceJsonConsts.LONG_VAL_4294967295);
 			}
 		}
 		LOG.trace("Complete ReadLockResourceValidator#validatePut()");
 		return isValid;
 	}
-
 }

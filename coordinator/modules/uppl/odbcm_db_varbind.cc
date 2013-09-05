@@ -26,71 +26,62 @@ using unc::uppl::DBVarbind;
  * @param[in]   : None
  * @return      : None
  **/
-DBVarbind::DBVarbind() {
-  /** Initialize the pointers in DBVarbind */
-  FillINPUTValues             = NULL;
-  FetchOUTPUTValues           = NULL;
-  BindINParameter             = NULL;
-  BindOUTParameter            = NULL;
-  p_ctr_table                 = NULL;
-  p_domain_table              = NULL;
-  p_logicalport_table         = NULL;
-  p_logical_memberport_table  = NULL;
-  p_switch_table              = NULL;
-  p_port_table                = NULL;
-  p_link_table                = NULL;
-  p_boundary_table            = NULL;
-  p_isrowexists               = NULL;
-
+DBVarbind::DBVarbind()
+: /** Initialize the pointers in DBVarbind */
+  BindINParameter(NULL),
+  BindOUTParameter(NULL),
+  FillINPUTValues(NULL),
+  FetchOUTPUTValues(NULL),
+  p_ctr_table(NULL),
+  p_domain_table(NULL),
+  p_logicalport_table(NULL),
+  p_logical_memberport_table(NULL),
+  p_switch_table(NULL),
+  p_port_table(NULL),
+  p_link_table(NULL),
+  p_boundary_table(NULL),
+  p_isrowexists(NULL) {
   /** SQL Binary buffer length ptr to use in 
     * database binding apis */
   p_switch_id1_len = new SQLLEN;
-  if (p_switch_id1_len != NULL )
-    *p_switch_id1_len = 0;
-  else
-    pfc_log_debug("ODBCM::DBVarbind:: Error in new: p_switch_id1_len");
+  if (p_switch_id1_len == NULL )
+    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_switch_id1_len");
+  *p_switch_id1_len = 0;
 
   p_switch_id2_len = new SQLLEN;
-  if (p_switch_id2_len != NULL )
-    *p_switch_id2_len = 0;
-  else
-    pfc_log_debug("ODBCM::DBVarbind:: Error in new: p_switch_id2_len");
+  if (p_switch_id2_len == NULL )
+    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_switch_id2_len");
+  *p_switch_id2_len = 0;
 
   p_logicalport_id1_len = new SQLLEN;
-  if (p_logicalport_id1_len != NULL )
-    *p_logicalport_id1_len = 0;
-  else
-    pfc_log_debug("ODBCM::DBVarbind:: Error in new: p_logicalport_id1_len");
+  if (p_logicalport_id1_len == NULL )
+    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_logicalport_id1_len");
+  *p_logicalport_id1_len = 0;
 
   p_logicalport_id2_len = new SQLLEN;
-  if (p_logicalport_id2_len != NULL )
-    *p_logicalport_id2_len = 0;
-  else
-    pfc_log_debug("ODBCM::DBVarbind:: Error in new: p_logicalport_id2_len");
+  if (p_logicalport_id2_len == NULL )
+    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_logicalport_id2_len");
+  *p_logicalport_id2_len = 0;
 
   p_ipv6_len = new SQLLEN;
-  if (p_ipv6_len != NULL )
-    *p_ipv6_len = 0;
-  else
-    pfc_log_debug("ODBCM::DBVarbind:: Error in new: p_ipv6_len");
+  if (p_ipv6_len == NULL )
+    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_ipv6_len");
+  *p_ipv6_len = 0;
 
   p_alarms_status_len = new SQLLEN;
-  if (p_alarms_status_len != NULL )
-    *p_alarms_status_len = 0;
-  else
-    pfc_log_debug("ODBCM::DBVarbind:: Error in new: p_alarms_status_len");
+  if (p_alarms_status_len == NULL )
+    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_alarms_status_len");
+  *p_alarms_status_len = 0;
 
   p_mac_len = new SQLLEN;
-  if (p_mac_len != NULL )
-    *p_mac_len = 0;
-  else
-    pfc_log_debug("ODBCM::DBVarbind:: Error in new: p_mac_len");
+  if (p_mac_len == NULL )
+    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_mac_len");
+  *p_mac_len = 0;
 
   p_speed_len = new SQLLEN;
-  if (p_speed_len != NULL )
-    *p_speed_len = 0;
-  else
-    pfc_log_debug("ODBCM::DBVarbind:: Error in new: p_speed_len");
+  if (p_speed_len == NULL )
+    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_speed_len");
+  *p_speed_len = 0;
 }
 
 /**
@@ -136,15 +127,15 @@ DBVarbind::~DBVarbind() {
 
 /**
  * @Description : To free the allocated memory in bind struct pointers
- * @param[in]   : const uint32_t table_id, DBVarbind db_varbind
+ * @param[in]   : table_id - enum of the tables
  * @return      : void
  **/
 void DBVarbind::FreeingBindedStructure(
     const uint32_t table_id) {
   switch (table_id) {
     case UNKNOWN_TABLE:
-      pfc_log_info("ODBCM::DBVarbind::FreeingBindedStructure:  "
-                   "No table structure found ");
+      pfc_log_debug("ODBCM::DBVarbind::FreeingBindedStructure:  "
+                   "No table structure found id:%d", table_id);
       break;
     case CTR_TABLE:
       if (NULL != p_ctr_table) {
@@ -197,13 +188,14 @@ void DBVarbind::FreeingBindedStructure(
     case IS_ROW_EXISTS:
       break;
     default:
-      pfc_log_info("ODBCM::DBVarbind::FreeingBindedStructure: "
+      pfc_log_debug("ODBCM::DBVarbind::FreeingBindedStructure: "
                    "Invalid table_id: %d", table_id);
   }
 }
 /**
  * @Description : To set the fptr with i/p or o/p binding functions
- * @param[in]   : int table_id, int stream
+ * @param[in]   : table_id - enum of the tables
+ *                stream   - Binding input/output
  * @return      : void
  **/
 void DBVarbind::SetBinding(int table_id, int stream) {
@@ -222,7 +214,7 @@ void DBVarbind::SetBinding(int table_id, int stream) {
 
 /**
  * @Description : To set the fptr with i/p binding functions
- * @param[in]   : int table_id
+ * @param[in]   : table_id - enum of the tables
  * @return      : void
  **/
 void DBVarbind::BindingInput(int table_id) {
@@ -380,7 +372,7 @@ void DBVarbind::BindingInput(int table_id) {
 
 /**
  * @Description : To set the fptr with o/p binding functions
- * @param[in]   : int table_id
+ * @param[in]   : table_id - enum of the tables 
  * @return      : void
  **/
 void DBVarbind::BindingOutput(int table_id) {
@@ -536,7 +528,8 @@ void DBVarbind::BindingOutput(int table_id) {
 }
 /**
  * @Description : To set the value struct for filling and fetching
- * @param[in]   : int table_id, int stream
+ * @param[in]   : table_id - enum of the tables 
+ *                stream   - Binding input/output
  * @return      : void
  **/
 void DBVarbind::SetValueStruct(int table_id, int stream) {
@@ -644,11 +637,12 @@ void DBVarbind::SetValueStruct(int table_id, int stream) {
   }
 }
 
-
 /**
  * @Description : This is special case - No table mapping 
- * @param[in]   : vector<TableAttrSchema> &column_attr
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : column_attr - DBTableSchema->rowlist_entry
+ * @return      : ODBCM_RC_ROW_EXISTS     - if the row appears in the table 
+ *                ODBCM_RC_ROW_NOT_EXISTS - if there is no particular row 
+ *                in the table
  **/
 ODBCM_RC_STATUS DBVarbind::fetch_is_row_exists_status(
     std::vector<TableAttrSchema> &column_attr) {
@@ -665,8 +659,10 @@ ODBCM_RC_STATUS DBVarbind::fetch_is_row_exists_status(
 
 /**
  * @Description : This is special case - No table mapping 
- * @param[in]   : vector<TableAttrSchema> &column_attr, HSTMT &r_hstmt
- * @return      : ODBCM_RC_STATUS
+ * @param[in]   : column_attr - DBTableSchema->rowlist_entry
+ *                r_hstmt     - statement handler which carries the SQL Query
+ * @return      : ODBCM_RC_SUCCESS          - if all bind opertions success
+ *                ODBCM_RC_PARAM_BIND_ERROR - if any one of the bind got failed
  **/
 ODBCM_RC_STATUS DBVarbind::bind_is_row_exists_output(
     std::vector<TableAttrSchema> &column_attr, HSTMT &r_hstmt) {

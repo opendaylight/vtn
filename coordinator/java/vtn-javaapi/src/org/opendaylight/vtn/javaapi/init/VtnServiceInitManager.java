@@ -80,7 +80,7 @@ public final class VtnServiceInitManager {
 					.getContextClassLoader(), ipcConnPool);
 
 			// load the resources
-			PackageScan.loadResources();
+			PackageScan.getInstance();
 		} catch (final VtnServiceException e) {
 			LOG.error("VtnService Initialization Failed : " + e);
 			throw new VtnServiceInitFailException(

@@ -282,11 +282,16 @@ TcOperStatus TcOperations::Execute() {
       return TC_SYSTEM_FAILURE;
     }
     if (FillTcMsgData(tcmsg_, *MsgIter) != TC_OPER_SUCCESS) {
+      delete tcmsg_;
+      tcmsg_ = NULL;
       return TC_SYSTEM_FAILURE;
     }
     TcOperRet MsgRet = tcmsg_->Execute();
-    if ( MsgRet != TCOPER_RET_SUCCESS )
+    if ( MsgRet != TCOPER_RET_SUCCESS ) {
+      delete tcmsg_;
+      tcmsg_ = NULL;
       return HandleMsgRet(MsgRet);
+    }
 
     MsgIter++;
     delete tcmsg_;

@@ -19,9 +19,16 @@
 
 using unc::uppl::PhysicalLayer;
 using unc::uppl::ODBCMUtils;
+using unc::uppl::ODBCMTableColumns;
 
-// For giving response to logical using serversession object
-void PhyUtil::getRespHeaderFromReqHeader(physical_request_header rqh,
+/**getRespHeaderFromReqHeader
+ * @Description : This function is for giving response to logical using
+ *                serversession object
+ * @param[in]   : rqh - object of the physical request header structure
+ * @param[out]  : &rsh - object of the physical response header structure
+ * @return      : void
+ * */
+void PhyUtil::getRespHeaderFromReqHeader(const physical_request_header& rqh,
                                          physical_response_header& rsh) {
   rsh.client_sess_id = rqh.client_sess_id;
   rsh.config_id = rqh.config_id;
@@ -33,9 +40,16 @@ void PhyUtil::getRespHeaderFromReqHeader(physical_request_header rqh,
   rsh.result_code = 0;
 }
 
-// For giving response to logical using serversession object
+/**sessOutRespHeader
+ * @Description : This function is for giving response to logical using
+ *                serversession object
+ * @param[in]   : sess - Object of ServerSession where the request
+ *                argument present
+ * @param[out]  : &rsh - object of the physical response header structure
+ * @return      : void
+ * */
 int PhyUtil::sessOutRespHeader(ServerSession& sess,
-                               physical_response_header& rsh) {
+                               const physical_response_header& rsh) {
   int err = 0;
   err = sess.addOutput(rsh.client_sess_id);
   if (err != UPPL_RC_SUCCESS) return err;
@@ -56,7 +70,13 @@ int PhyUtil::sessOutRespHeader(ServerSession& sess,
   return err;
 }
 
-void PhyUtil::printReqHeader(physical_request_header rqh) {
+/**printReqHeader
+ * @Description : This function prints the attributes that are present in
+ *                physical request header structure
+ * @param[in]  :  rqh - object of the physical request header structure
+ * @return      : void
+ * */
+void PhyUtil::printReqHeader(const physical_request_header& rqh) {
   stringstream ss;
   ss  << "Request to UPPL  : " << endl
       << "    session_id   : " << rqh.client_sess_id << endl
@@ -70,7 +90,13 @@ void PhyUtil::printReqHeader(physical_request_header rqh) {
   pfc_log_info((const char*)(ss.str().c_str()));
 }
 
-void PhyUtil::printRespHeader(physical_response_header rsh) {
+/**printRespHeader
+ * @Description : This function prints the attributes that are present in
+ *                physical response header structure
+ * @param[in]  :  rsh - object of the physical response header structure
+ * @return      : void
+ * */
+void PhyUtil::printRespHeader(const physical_response_header& rsh) {
   stringstream ss;
   ss << "Response from UPPL: "<< endl
       << "    session_id   : " << rsh.client_sess_id << endl
@@ -84,7 +110,14 @@ void PhyUtil::printRespHeader(physical_response_header rsh) {
   pfc_log_info((const char*)(ss.str().c_str()));
 }
 
-// For getting the request from logical using serversession object.
+/**sessGetReqHeader
+ * @Description : This function is for getting the request from logical using
+ *                serversession object.
+ * @param[in]   : sess - Object of ServerSession where the request
+ *                argument present
+ * @param[out]  : rqh - object of the physical request header structure
+ * @return      : void
+ * */
 int PhyUtil::sessGetReqHeader(ServerSession& sess,
                               physical_request_header& rqh) {
   int err = 0;
@@ -106,9 +139,16 @@ int PhyUtil::sessGetReqHeader(ServerSession& sess,
   return err;
 }
 
-// For sending request to driver using clientsessioin object
+/**sessOutReqHeader
+ * @Description : This function is for sending request to driver using
+ *                clientsessioin object
+ * @param[in]   : cli_sess - Object of ClientSession where the request
+ *                argument present
+ * @param[out]  : rqh - object of the physical request header structure
+ * @return      : void
+ * */
 int PhyUtil::sessOutReqHeader(ClientSession& cli_sess,
-                              physical_request_header rqh) {
+                              const physical_request_header& rqh) {
   int err = 0;
   err = cli_sess.addOutput(rqh.client_sess_id);
   if (err != UPPL_RC_SUCCESS) return err;
@@ -128,7 +168,14 @@ int PhyUtil::sessOutReqHeader(ClientSession& cli_sess,
   return err;
 }
 
-// For getting the repsonse from driver
+/**sessGetRespHeader
+ * @Description : This function is for getting the repsonse from driver using
+ *                clientsessioin object
+ * @param[in]   : cli_sess - Object of ClientSession where the request
+ *                argument present
+ * @param[out]  : rsh - object of the physical response header structure
+ * @return      : void
+ * */
 int PhyUtil::sessGetRespHeader(ClientSession& cli_sess,
                                physical_response_header& rsh) {
   int err = 0;
@@ -150,7 +197,13 @@ int PhyUtil::sessGetRespHeader(ClientSession& cli_sess,
   return err;
 }
 
-void PhyUtil::printDriverReqHeader(driver_request_header rqh) {
+/**printDriverReqHeader
+ * @Description : This function prints the attributes that are present in
+ *                driver request header structure
+ * @param[in]   : rqh - object of the driver request header structure
+ * @return      : void
+ * */
+void PhyUtil::printDriverReqHeader(const driver_request_header& rqh) {
   stringstream ss;
   ss  << "Request to Driver : " << endl
       << "    client_sess_id: " << rqh.client_sess_id << endl
@@ -166,7 +219,13 @@ void PhyUtil::printDriverReqHeader(driver_request_header rqh) {
   pfc_log_info((const char*)(ss.str().c_str()));
 }
 
-void PhyUtil::printDriverRespHeader(driver_response_header rsh) {
+/**printDriverRespHeader
+ * @Description : This function prints the attributes that are present in
+ *                driver response header structure
+ * @param[in]   : rsh - object of the driver response header structure
+ * @return      : void
+ * */
+void PhyUtil::printDriverRespHeader(const driver_response_header& rsh) {
   stringstream ss;
   ss  << "Response from Driver: "<< endl
       << "    client_sess_id: " << rsh.client_sess_id << endl
@@ -182,9 +241,16 @@ void PhyUtil::printDriverRespHeader(driver_response_header rsh) {
   pfc_log_info((const char*)(ss.str().c_str()));
 }
 
-// For sending request to driver using clientsessioin object
+/**sessOutDriverReqHeader
+ * @Description : This function is for sending request to driver using
+ *                clientsessioin object
+ * @param[in]   : cli_sess - Object of ClientSession where the request
+ *                argument present
+ * @param[out]  : rqh - object of the driver request header structure
+ * @return      : void
+ * */
 int PhyUtil::sessOutDriverReqHeader(ClientSession& cli_sess,
-                                    driver_request_header rqh) {
+                                    const driver_request_header& rqh) {
   int err = 0;
   err = cli_sess.addOutput(rqh.client_sess_id);
   if (err != UPPL_RC_SUCCESS) return err;
@@ -211,7 +277,14 @@ int PhyUtil::sessOutDriverReqHeader(ClientSession& cli_sess,
   return err;
 }
 
-// For getting the repsonse from driver
+/**sessGetDriverRespHeader
+ * @Description : This function is for getting the repsonse from driver using
+ *                clientsessioin object
+ * @param[in]   : cli_sess - Object of ClientSession where the request
+ *                argument present
+ * @param[out]  : rsh - object of the driver response header structure
+ * @return      : void
+ * */
 int PhyUtil::sessGetDriverRespHeader(ClientSession& cli_sess,
                                      driver_response_header& rsh) {
   int err = 0;
@@ -243,7 +316,14 @@ int PhyUtil::sessGetDriverRespHeader(ClientSession& cli_sess,
   return err;
 }
 
-// For getting the event header from driver
+/**sessGetDriverEventHeader
+ * @Description : This function is for getting the event header from driver
+ *                using clientsessioin object
+ * @param[in]   : cli_sess - Object of ClientSession where the request
+ *                argument present
+ * @param[out]  : &rsh - object of the driver event header structure
+ * @return      : void
+ * */
 int PhyUtil::sessGetDriverEventHeader(ClientSession& cli_sess,
                                       driver_event_header& rsh) {
   int err = 0;
@@ -286,7 +366,14 @@ int PhyUtil::sessGetDriverEventHeader(ClientSession& cli_sess,
   return err;
 }
 
-// For getting the alarm header from driver
+/**sessGetDriverAlarmHeader
+ * @Description : This function is for getting the alarm header from driver
+ *                using clientsessioin object
+ * @param[in]   : cli_sess - Object of ClientSession where the request
+ *                argument present
+ * @param[out]  : &rsh - object of the driver alarm header structure
+ * @return      : void
+ * */
 int PhyUtil::sessGetDriverAlarmHeader(ClientSession& cli_sess,
                                       driver_alarm_header& rsh) {
   int err = 0;
@@ -331,13 +418,20 @@ int PhyUtil::sessGetDriverAlarmHeader(ClientSession& cli_sess,
       << "    data_type    : " << rsh.data_type << endl
       << "    key_type     : " << rsh.key_type << endl
       << "    alarm_type   : " << rsh.alarm_type;
-  pfc_log_debug((const char*)(ss.str().c_str()));
+  pfc_log_info((const char*)(ss.str().c_str()));
   return err;
 }
 
-// For sending the event header to northbound
+/**sessOutNBEventHeader
+ * @Description : This function is for sending the event header to northbound
+ *                using ServerEvent object
+ * @param[in]   : cli_sess - Object of ServerEvent where the request
+ *                argument present
+ * @param[out]  : &rqh - object of the northbound event header structure
+ * @return      : void
+ * */
 int PhyUtil::sessOutNBEventHeader(ServerEvent& cli_sess,
-                                  northbound_event_header& rqh) {
+                                  const northbound_event_header& rqh) {
   int err = 0;
   err = cli_sess.addOutput(rqh.operation);
   if (err != UPPL_RC_SUCCESS) return err;
@@ -349,13 +443,20 @@ int PhyUtil::sessOutNBEventHeader(ServerEvent& cli_sess,
       << "    operation    : " << rqh.operation << endl
       << "    data_type    : " << rqh.data_type << endl
       << "    key_type     : " << rqh.key_type;
-  pfc_log_debug((const char*)(ss.str().c_str()));
+  pfc_log_info((const char*)(ss.str().c_str()));
   return err;
 }
 
-// For sending the alarm header to northbound
+/**sessOutNBAlarmHeader
+ * @Description : This function is for sending the alarm header to northbound
+ *                using ServerEvent object
+ * @param[in]   : cli_sess - Object of ServerEvent where the request
+ *                argument present
+ * @param[out]  : &rqh - object of the northbound alarm header structure
+ * @return      : void
+ * */
 int PhyUtil::sessOutNBAlarmHeader(ServerEvent& cli_sess,
-                                  northbound_alarm_header& rqh) {
+                                  const northbound_alarm_header& rqh) {
   int err = 0;
   err = cli_sess.addOutput(rqh.operation);
   if (err != UPPL_RC_SUCCESS) return err;
@@ -370,164 +471,87 @@ int PhyUtil::sessOutNBAlarmHeader(ServerEvent& cli_sess,
       << "    data_type    : " << rqh.data_type << endl
       << "    key_type     : " << rqh.key_type << endl
       << "    alarm_type   : " << rqh.alarm_type;
-  pfc_log_debug((const char*)(ss.str().c_str()));
+  pfc_log_info((const char*)(ss.str().c_str()));
   return err;
 }
 
-/* Following function checks the controller status and gives the oper status
- * , audit status and audit_import state  */
-
-UpplReturnCode PhyUtil::GetControllerStatus(unc_keytype_datatype_t dt_type,
-                                            string controller_id,
-                                            uint8_t& oper_status) {
-  // Structure used to send request to ODBC
-  DBTableSchema dbtableschema_obj;
-  // Construct Primary key list
-  vector<string> vect_prim_keys;
-  vect_prim_keys.push_back("controller_name");
-
-  dbtableschema_obj.set_primary_keys(vect_prim_keys);
-  dbtableschema_obj.set_table_name("controller_common_table");
-
-  // TableAttrSchema holds table_name, primary key, attr_name
-  vector<TableAttrSchema> vect_table_attr_schema;
-  TableAttrSchema  table_attr_schema_obj;
-
-
-  // controller_name
-  PhyUtil::FillDbSchema("controller_name", controller_id,
-                        controller_id.length(), DATATYPE_UINT8_ARRAY_32,
-                        vect_table_attr_schema);
-
-  // oper_status
-  string oper_status_value = PhyUtil::uint8tostr(oper_status);
-  PhyUtil::FillDbSchema("oper_status", oper_status_value,
-                        oper_status_value.length(), DATATYPE_UINT16,
-                        vect_table_attr_schema);
-
-  dbtableschema_obj.PushBackToRowList(vect_table_attr_schema);
-
-  ODBCM_RC_STATUS read_db_status =
-      ODBCManager::get_ODBCManager()->GetOneRow(dt_type, dbtableschema_obj);
-
-  if (read_db_status == ODBCM_RC_SUCCESS) {
-    list< vector<TableAttrSchema> > lvTas = dbtableschema_obj.get_row_list();
-    list< vector<TableAttrSchema> >::iterator vIter = lvTas.begin();
-    vector<TableAttrSchema> ::iterator tIter = (*vIter).begin();
-    for ( ; tIter != (*vIter).end(); ++tIter) {
-      TableAttrSchema tab_schema = (*tIter);
-      string attr_name = tab_schema.table_attribute_name;
-      string attr_value;
-      if (attr_name == "oper_status") {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT16);
-        oper_status = attr_value[0];
-      }
-    }
-  } else {
-    pfc_log_error("Unable to read from db");
-  }
-  return UPPL_RC_SUCCESS;
+/**uint8tostr
+ * @Description : This function does the conversion of type uint8 to string
+ * @param[in]   : c - varaiable of type uint8 
+ * @return      : string
+ * */
+string PhyUtil::uint8tostr(const uint8_t& c) {
+  char str[20];
+  memset(&str, '\0', 20);
+  snprintf(str, sizeof(str), "%d", c);
+  string str1 = str;
+  return str1;
 }
 
-UpplReturnCode PhyUtil::GetOperStatus(unc_keytype_datatype_t dt_type,
-                                      string controller_name,
-                                      uint16_t& oper_status) {
-  // Structure used to send request to ODBC
-  DBTableSchema dbtableschema_obj;
-  // Construct Primary key list
-  vector<string> vect_prim_keys;
-  vect_prim_keys.push_back("controller_name");
-
-  dbtableschema_obj.set_primary_keys(vect_prim_keys);
-  dbtableschema_obj.set_table_name("controller_table");
-
-  // TableAttrSchema holds table_name, primary key, attr_name
-  vector<TableAttrSchema> vect_table_attr_schema;
-  TableAttrSchema  table_attr_schema_obj;
-
-
-  // controller_name
-  PhyUtil::FillDbSchema("controller_name", controller_name,
-                        controller_name.length(), DATATYPE_UINT8_ARRAY_32,
-                        vect_table_attr_schema);
-
-  // oper_status
-  string oper_status_value = PhyUtil::uint16tostr(oper_status);
-  PhyUtil::FillDbSchema("oper_status", oper_status_value,
-                        oper_status_value.length(), DATATYPE_UINT16,
-                        vect_table_attr_schema);
-
-  dbtableschema_obj.PushBackToRowList(vect_table_attr_schema);
-
-  ODBCM_RC_STATUS read_db_status =
-      ODBCManager::get_ODBCManager()->GetOneRow(dt_type, dbtableschema_obj);
-  if (read_db_status == ODBCM_RC_SUCCESS) {
-    list< vector<TableAttrSchema> > lvTas = dbtableschema_obj.get_row_list();
-    list< vector<TableAttrSchema> >::iterator vIter = lvTas.begin();
-    vector<TableAttrSchema> ::iterator tIter = (*vIter).begin();
-    for ( ; tIter != (*vIter).end(); ++tIter) {
-      TableAttrSchema tab_schema = (*tIter);
-      string attr_name = tab_schema.table_attribute_name;
-      string attr_value;
-      pfc_log_info("PhyUtil: attr name is %s\n", attr_name.c_str());
-
-      if (attr_name == "oper_status") {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT16);
-        pfc_log_info("PhyUtil:Attribute value is %c\n", attr_value[0]);
-        oper_status = attr_value[0];
-
-        pfc_log_info("PhyUtil: oper_status is %d\n", oper_status);
-      }
-      pfc_log_info("PhyUtil: Iterating the loop\n");
-    }
-  } else {
-    pfc_log_error("Unable to read from db");
-  }
-  return UPPL_RC_SUCCESS;
-}
-string PhyUtil::uint8tostr(uint8_t c) {
+/**uint16tostr
+ * @Description : This function does the conversion of type uint16 to string
+ * @param[in]   : c - varaiable of type uint16 
+ * @return      : string
+ * */
+string PhyUtil::uint16tostr(const uint16_t& c) {
   char str[20];
   snprintf(str, sizeof(str), "%d", c);
   string str1 = str;
   return str1;
 }
 
-string PhyUtil::uint16tostr(uint16_t c) {
-  char str[20];
-  snprintf(str, sizeof(str), "%d", c);
-  string str1 = str;
-  return str1;
-}
-
-string PhyUtil::uint64tostr(uint64_t c) {
+/**uint64tostr
+ * @Description : This function does the conversion of type uint64 to string
+ * @param[in]   : c - varaiable of type uint64 
+ * @return      : string
+ * */
+string PhyUtil::uint64tostr(const uint64_t& c) {
   char str[20];
   snprintf(str, sizeof(str), "%"PFC_PFMT_u64, c);
   string str1 = str;
   return str1;
 }
 
-
-int PhyUtil::uint8touint(uint8_t c) {
+/**uint8touint
+ * @Description : This function does the conversion of type uint8 to uint
+ * @param[in]   : c - varaiable of type uint8 
+ * @return      : integer
+ * */
+int PhyUtil::uint8touint(const uint8_t& c) {
   stringstream stream;
   stream << c;
   return stream.get();
 }
 
-unsigned int PhyUtil::strtouint(string str) {
-  unsigned int value;
-  value = atoi((const char*)(str.c_str()));
-  return value;
+/**strtouint
+ * @Description : This function does the conversion of type string to uint
+ * @param[in]   : str - varaiable of type string
+ * @return      : unsigned integer
+ * */
+unsigned int PhyUtil::strtouint(const string& str) {
+  return atoi((const char*)(str.c_str()));
 }
 
-uint64_t PhyUtil::strtouint64(string str) {
-  uint64_t value;
-  value = atol((const char*)(str.c_str()));
-  return value;
+/**strtouint64
+ * @Description : This function does the conversion of type string to uint64
+ * @param[in]   : str - varaiable of type string
+ * @return      : uint64
+ * */
+uint64_t PhyUtil::strtouint64(const string& str) {
+  return atol((const char*)(str.c_str()));
 }
 
-void PhyUtil::FillDbSchema(string attr_name, string attr_value,
+/**FillDbSchema
+ * @Description : This function fills the database schema with the attribute
+ *                names ,attribute values ,attribute length and attribute type
+ * @param[in]   : attr_name - Name of the attribute
+ *                attr_value - Value of the attribute
+ *                attr_length - length of the attribute
+ *                attr_type - DATATYPE_* datatype of the attribute
+ * @param[out]  : vect_attr - vector that contains all details of attributes         
+ * @return      : void
+ * */
+void PhyUtil::FillDbSchema(ODBCMTableColumns attr_name, string attr_value,
                            unsigned int attr_length,
                            AttributeDataType attr_type,
                            vector<TableAttrSchema> &vect_attr) {
@@ -537,27 +561,21 @@ void PhyUtil::FillDbSchema(string attr_name, string attr_value,
     case DATATYPE_UINT16:
     {
       ColumnAttrValue <uint16_t> *value = new ColumnAttrValue <uint16_t>;
-      value->value = 0;
-      uint16_t uint_val = strtouint(attr_value);
-      value->value = uint_val;
+      value->value = strtouint(attr_value);
       table_attr_schema.p_table_attribute_value = value;
       break;
     }
     case DATATYPE_UINT64:
     {
       ColumnAttrValue <uint64_t> *value = new ColumnAttrValue <uint64_t>;
-      value->value = 0;
-      uint64_t uint_val = strtouint64(attr_value);
-      value->value = uint_val;
+      value->value = strtouint64(attr_value);
       table_attr_schema.p_table_attribute_value = value;
       break;
     }
     case DATATYPE_UINT32:
     {
       ColumnAttrValue <uint32_t> *value = new ColumnAttrValue <uint32_t>;
-      value->value = 0;
-      uint32_t uint_val = strtouint(attr_value);
-      value->value = uint_val;
+      value->value = strtouint(attr_value);
       table_attr_schema.p_table_attribute_value = value;
       break;
     }
@@ -565,12 +583,11 @@ void PhyUtil::FillDbSchema(string attr_name, string attr_value,
     {
       ColumnAttrValue <uint32_t> *value=
           new ColumnAttrValue <uint32_t>;
-      uint32_t uint_val = 0;
+      value->value = 0;
       if (!attr_value.empty()) {
-        uint_val = inet_addr(attr_value.c_str());
+        value->value = inet_addr(attr_value.c_str());
       }
-      pfc_log_debug("ip address to db: %d", uint_val);
-      value->value = uint_val;
+      pfc_log_debug("ip address to db: %d", value->value);
       table_attr_schema.p_table_attribute_value = value;
       break;
     }
@@ -651,17 +668,6 @@ void PhyUtil::FillDbSchema(string attr_name, string attr_value,
       table_attr_schema.table_attribute_length = attr_length;
       break;
     }
-    case DATATYPE_UINT8_ARRAY_12:
-    {
-      ColumnAttrValue <unsigned char[12+1]> *value=
-          new ColumnAttrValue <unsigned char[12+1]>;
-      memset(&value->value, '\0', sizeof(value->value));
-      memcpy(value->value,
-             attr_value.c_str(), attr_length+1);
-      table_attr_schema.p_table_attribute_value = value;
-      table_attr_schema.table_attribute_length = attr_length;
-      break;
-    }
     case DATATYPE_UINT8_ARRAY_16:
     {
       ColumnAttrValue <unsigned char[16+1]> *value=
@@ -710,7 +716,7 @@ void PhyUtil::FillDbSchema(string attr_name, string attr_value,
     {
       ColumnAttrValue <unsigned char[257+1]> *value=
           new ColumnAttrValue <unsigned char[257+1]>;
-      memset(value->value, '\0', sizeof(value->value));
+      memset(&value->value, '\0', sizeof(value->value));
       memcpy(value->value,
              attr_value.c_str(), attr_length+1);
       table_attr_schema.p_table_attribute_value = value;
@@ -723,7 +729,7 @@ void PhyUtil::FillDbSchema(string attr_name, string attr_value,
           new ColumnAttrValue <unsigned char[320+1]>;
       memset(&value->value, '\0', sizeof(value->value));
       memcpy(value->value,
-             attr_value.c_str(), attr_length);
+             attr_value.c_str(), attr_length+1);
       table_attr_schema.p_table_attribute_value = value;
       table_attr_schema.table_attribute_length = attr_length;
       break;
@@ -733,7 +739,64 @@ void PhyUtil::FillDbSchema(string attr_name, string attr_value,
   vect_attr.push_back(table_attr_schema);
 }
 
-void PhyUtil::FillDbSchema(string attr_name,
+/**FillDbSchema
+ * @Description : This function fills the database schema with the attribute
+ *                names ,attribute values ,attribute length and attribute type
+ * @param[in]   : attr_name - Name of the attribute
+ *                attr_value - Value of the attribute
+ *                attr_length - length of the attribute
+ *                attr_type - DATATYPE_* datatype of the attribute
+ * @param[out]  : vect_attr - vector that contains all details of attributes
+ * @return      : void
+ * */
+void PhyUtil::FillDbSchema(ODBCMTableColumns attr_name, uint8_t* attr_value,
+                           unsigned int attr_length,
+                           AttributeDataType attr_type,
+                           vector<TableAttrSchema> &vect_attr) {
+  TableAttrSchema table_attr_schema;
+  table_attr_schema.table_attribute_name = attr_name;
+  switch (attr_type) {
+    case DATATYPE_UINT8_ARRAY_6: {
+      ColumnAttrValue <unsigned char[6+1]> *value=
+          new ColumnAttrValue <unsigned char[6+1]>;
+      pfc_log_info("Fill mac_address %02x:%02x:%02x:%02x:%02x:%02x ",
+                   attr_value[0], attr_value[1],
+                   attr_value[2], attr_value[3],
+                   attr_value[4], attr_value[5]);
+      memset(&value->value, '\0', sizeof(value->value));
+      memcpy(value->value,
+             attr_value, attr_length+1);
+      table_attr_schema.p_table_attribute_value = value;
+      table_attr_schema.table_attribute_length = attr_length;
+    }
+    break;
+    default:
+      break;
+  }
+  table_attr_schema.request_attribute_type = attr_type;
+  vect_attr.push_back(table_attr_schema);
+}
+
+/**FillDbSchema
+ * @Description : This function fills the database schema with the attribute
+ *                names ,attribute values ,attribute length and attribute type
+ *                Validates the attributes with respect to operation type and
+ *                valid_value
+ * @param[in]   : attr_name - Name of the attribute
+ *                attr_value - Value of the attribute
+ *                attr_length - length of the attribute 
+ *                attr_type - DATATYPE_* datatype of the attribute
+ *                operation_type - UNC_OP_* specifies the type of operation
+ *                in_valid_val - specifies the valid flag.Its a enum value
+ *                prev_db_valid_val - specifies the db valid flag.
+ *                Its a enum value
+ * @param[out]  : vect_attr - vector that contains all details of attributes
+ *                vect_prim_keys -vector that contains the primary keys
+ *                out_valid_value - string that has the valid value
+ * @return      : void
+ * */
+void PhyUtil::FillDbSchema(ODBCMTableColumns attr_name,
+                           string attr_name_str,
                            string attr_value,
                            unsigned int attr_length,
                            AttributeDataType attr_type,
@@ -750,18 +813,21 @@ void PhyUtil::FillDbSchema(string attr_name,
     out_valid_value << UNC_VF_VALID;
     if (PhyUtil::IsFilteringOperation(operation_type, in_valid_val) == true) {
       // To be used as filter and add in vect_primary_key
-      vect_prim_keys.push_back(attr_name);
+      vect_prim_keys.push_back(attr_name_str);
     }
+  } else if (operation_type >= UNC_OP_READ) {
+    string empty = "";
+    PhyUtil::FillDbSchema(attr_name, empty,
+                          empty.length(), attr_type,
+                          vect_attr);
   } else if (operation_type == UNC_OP_CREATE &&
       in_valid_val == UNC_VF_INVALID) {
     pfc_log_debug("Attribute '%s' is not given in create request",
-                  attr_name.c_str());
+                  attr_name_str.c_str());
     out_valid_value << UNC_VF_INVALID;
   } else if ((operation_type == UNC_OP_CREATE ||
       operation_type == UNC_OP_UPDATE) &&
       in_valid_val == UPPL_NO_VAL_STRUCT) {
-    pfc_log_debug("Attribute '%s' is not given in create/update request",
-                  attr_name.c_str());
     out_valid_value << UNC_VF_VALID;
     PhyUtil::FillDbSchema(attr_name, attr_value,
                           attr_value.length(), attr_type,
@@ -770,29 +836,115 @@ void PhyUtil::FillDbSchema(string attr_name,
       in_valid_val == UNC_VF_VALID_NO_VALUE) {
     // empty value - value to be deleted
     pfc_log_debug("Attribute '%s' value is to be deleted in update request",
-                  attr_name.c_str());
-    string empty;
+                  attr_name_str.c_str());
+    string empty = "";
     PhyUtil::FillDbSchema(attr_name, empty,
                           empty.length(), attr_type,
                           vect_attr);
-    out_valid_value << UNC_VF_VALID_NO_VALUE;
+    if(attr_name==unc::uppl::CTR_ENABLE_AUDIT) {
+      out_valid_value << UNC_VF_VALID;
+    } else { 
+      out_valid_value << UNC_VF_INVALID;
+    }
   } else if (operation_type == UNC_OP_CREATE) {
     out_valid_value << in_valid_val;
   } else if (operation_type == UNC_OP_UPDATE &&
       in_valid_val == UNC_VF_INVALID) {
     pfc_log_debug(
         "Attribute '%s' not given in Update Request. Retain db valid",
-        attr_name.c_str());
+        attr_name_str.c_str());
     out_valid_value << prev_db_valid_val;
-  }  else if (operation_type >= UNC_OP_READ) {
-    string empty;
-    PhyUtil::FillDbSchema(attr_name, empty,
-                          empty.length(), attr_type,
-                          vect_attr);
   }
 }
 
-void PhyUtil::GetValueFromDbSchema(TableAttrSchema table_attr_schema,
+/**FillDbSchema
+ * @Description : This function fills the database schema with the attribute
+ *                names ,attribute values ,attribute length and attribute type
+ *                Validates the attributes with respect to operation type and
+ *                valid_value
+ * @param[in]   : attr_name - Name of the attribute
+ *                attr_value - Value of the attribute
+ *                attr_length - length of the attribute
+ *                attr_type - DATATYPE_* datatype of the attribute
+ *                operation_type - UNC_OP_* specifies the type of operation
+ *                in_valid_val - specifies the valid flag.Its a enum value
+ *                prev_db_valid_val - specifies the db valid flag.
+ *                Its a enum value
+ * @param[out]  : vect_attr - vector that contains all details of attributes
+ *                vect_prim_keys -vector that contains the primary keys
+ *                out_valid_value - string that has the valid value
+ * @return      : void
+ * */
+void PhyUtil::FillDbSchema(ODBCMTableColumns attr_name,
+                           string attr_name_str,
+                           uint8_t* attr_value,
+                           unsigned int attr_length,
+                           AttributeDataType attr_type,
+                           uint32_t operation_type,
+                           uint16_t in_valid_val,
+                           uint16_t prev_db_valid_val,
+                           vector<TableAttrSchema> &vect_attr,
+                           vector<string> &vect_prim_keys,
+                           stringstream &out_valid_value) {
+  if (PhyUtil::IsValidValue(operation_type, in_valid_val) == true) {
+    PhyUtil::FillDbSchema(attr_name, attr_value,
+                          attr_length, attr_type,
+                          vect_attr);
+    out_valid_value << UNC_VF_VALID;
+    if (PhyUtil::IsFilteringOperation(operation_type, in_valid_val) == true) {
+      // To be used as filter and add in vect_primary_key
+      vect_prim_keys.push_back(attr_name_str);
+    }
+  } else if (operation_type >= UNC_OP_READ) {
+    string empty = "";
+    PhyUtil::FillDbSchema(attr_name, empty,
+                          empty.length(), attr_type,
+                          vect_attr);
+  } else if (operation_type == UNC_OP_CREATE &&
+      in_valid_val == UNC_VF_INVALID) {
+    pfc_log_debug("Attribute '%s' is not given in create request",
+                  attr_name_str.c_str());
+    out_valid_value << UNC_VF_INVALID;
+  } else if ((operation_type == UNC_OP_CREATE ||
+      operation_type == UNC_OP_UPDATE) &&
+      in_valid_val == UPPL_NO_VAL_STRUCT) {
+    pfc_log_debug("Attribute '%s' is not given in create/update request",
+                  attr_name_str.c_str());
+    out_valid_value << UNC_VF_VALID;
+    PhyUtil::FillDbSchema(attr_name, attr_value,
+                          attr_length, attr_type,
+                          vect_attr);
+  } else if (operation_type == UNC_OP_UPDATE &&
+      in_valid_val == UNC_VF_VALID_NO_VALUE) {
+    // empty value - value to be deleted
+    pfc_log_debug("Attribute '%s' value is to be deleted in update request",
+                  attr_name_str.c_str());
+    string empty = "";
+    PhyUtil::FillDbSchema(attr_name, empty,
+                          empty.length(), attr_type,
+                          vect_attr);
+    out_valid_value << UNC_VF_INVALID;
+  } else if (operation_type == UNC_OP_CREATE) {
+    out_valid_value << in_valid_val;
+  } else if (operation_type == UNC_OP_UPDATE &&
+      in_valid_val == UNC_VF_INVALID) {
+    pfc_log_debug(
+        "Attribute '%s' not given in Update Request. Retain db valid",
+        attr_name_str.c_str());
+    out_valid_value << prev_db_valid_val;
+  }
+}
+
+/**GetValueFromDbSchema
+ * @Description : This function gets the attribute values thats stored in
+ *                database schema
+ * @param[in]   : table_attr_schema - Structure that contains the
+ *                attribute values
+ *                attr_type - DATATYPE_* datatype of the attribute
+ * @param[out]  : attr_value - string that has Value of the attribute
+ * @return      : void
+ * */
+void PhyUtil::GetValueFromDbSchema(const TableAttrSchema& table_attr_schema,
                                    string &attr_value,
                                    AttributeDataType attr_type) {
   stringstream ss;
@@ -829,11 +981,12 @@ void PhyUtil::GetValueFromDbSchema(TableAttrSchema table_attr_schema,
       pfc_log_debug("Received ip value from DB: %d", value->value);
       if (value->value > 0) {
         struct sockaddr_in ipv4_addr;
+        memset(&ipv4_addr, 0, sizeof(sockaddr_in));
         ipv4_addr.sin_addr.s_addr = value->value;
         ss << inet_ntoa(ipv4_addr.sin_addr);
         pfc_log_debug("ip address from db: %d", ipv4_addr.sin_addr.s_addr);
       } else {
-        string empty;
+        string empty = "";
         ss << empty;
       }
       break;
@@ -846,12 +999,31 @@ void PhyUtil::GetValueFromDbSchema(TableAttrSchema table_attr_schema,
       ss << value->value;
       break;
     }
+    default:
+      break;
+  }
+  attr_value = ss.str();
+}
+
+/**GetValueFromDbSchemaStr
+ * @Description : This function gets the attribute values thats stored in
+ *                database schema
+ * @param[in]   : table_attr_schema - Structure that contains the
+ *                attribute values
+ *                attr_type - DATATYPE_* datatype of the attribute
+ * @param[out]  : attr_value - string that has Value of the attribute
+ * @return      : void
+ * */
+void PhyUtil::GetValueFromDbSchemaStr(const TableAttrSchema& table_attr_schema,
+                                      uint8_t *attr_value,
+                                      AttributeDataType attr_type) {
+  switch (attr_type) {
     case DATATYPE_UINT8_ARRAY_2:
     {
       ColumnAttrValue <unsigned char[2+1]> *value =
           (ColumnAttrValue <unsigned char[2+1]>*)
           table_attr_schema.p_table_attribute_value;
-      ss << value->value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
       break;
     }
     case DATATYPE_UINT8_ARRAY_3:
@@ -859,7 +1031,7 @@ void PhyUtil::GetValueFromDbSchema(TableAttrSchema table_attr_schema,
       ColumnAttrValue <unsigned char[3+1]> *value =
           (ColumnAttrValue <unsigned char[3+1]>*)
           table_attr_schema.p_table_attribute_value;
-      ss << value->value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
       break;
     }
     case DATATYPE_UINT8_ARRAY_6:
@@ -867,7 +1039,8 @@ void PhyUtil::GetValueFromDbSchema(TableAttrSchema table_attr_schema,
       ColumnAttrValue <unsigned char[6+1]> *value =
           (ColumnAttrValue <unsigned char[6+1]>*)
           table_attr_schema.p_table_attribute_value;
-      ss << value->value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
+      memcpy(attr_value, value->value, 6);
       break;
     }
     case DATATYPE_UINT8_ARRAY_8:
@@ -875,7 +1048,7 @@ void PhyUtil::GetValueFromDbSchema(TableAttrSchema table_attr_schema,
       ColumnAttrValue <unsigned char[8+1]> *value =
           (ColumnAttrValue <unsigned char[8+1]>*)
           table_attr_schema.p_table_attribute_value;
-      ss << value->value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
       break;
     }
     case DATATYPE_UINT8_ARRAY_9:
@@ -883,7 +1056,7 @@ void PhyUtil::GetValueFromDbSchema(TableAttrSchema table_attr_schema,
       ColumnAttrValue <unsigned char[9+1]> *value =
           (ColumnAttrValue <unsigned char[9+1]>*)
           table_attr_schema.p_table_attribute_value;
-      ss << value->value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
       break;
     }
     case DATATYPE_UINT8_ARRAY_11:
@@ -891,15 +1064,7 @@ void PhyUtil::GetValueFromDbSchema(TableAttrSchema table_attr_schema,
       ColumnAttrValue <unsigned char[11+1]> *value =
           (ColumnAttrValue <unsigned char[11+1]>*)
           table_attr_schema.p_table_attribute_value;
-      ss << value->value;
-      break;
-    }
-    case DATATYPE_UINT8_ARRAY_12:
-    {
-      ColumnAttrValue <unsigned char[12+1]> *value =
-          (ColumnAttrValue <unsigned char[12+1]>*)
-          table_attr_schema.p_table_attribute_value;
-      ss << value->value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
       break;
     }
     case DATATYPE_UINT8_ARRAY_16:
@@ -907,7 +1072,7 @@ void PhyUtil::GetValueFromDbSchema(TableAttrSchema table_attr_schema,
       ColumnAttrValue <unsigned char[16+1]> *value =
           (ColumnAttrValue <unsigned char[16+1]>*)
           table_attr_schema.p_table_attribute_value;
-      ss << value->value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
       break;
     }
     case DATATYPE_UINT8_ARRAY_32:
@@ -915,7 +1080,7 @@ void PhyUtil::GetValueFromDbSchema(TableAttrSchema table_attr_schema,
       ColumnAttrValue <unsigned char[32+1]> *value =
           (ColumnAttrValue <unsigned char[32+1]>*)
           table_attr_schema.p_table_attribute_value;
-      ss << value->value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
       break;
     }
     case DATATYPE_UINT8_ARRAY_128:
@@ -923,7 +1088,7 @@ void PhyUtil::GetValueFromDbSchema(TableAttrSchema table_attr_schema,
       ColumnAttrValue <unsigned char[128+1]> *value =
           (ColumnAttrValue <unsigned char[128+1]>*)
           table_attr_schema.p_table_attribute_value;
-      ss << value->value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
       break;
     }
     case DATATYPE_UINT8_ARRAY_256:
@@ -931,7 +1096,7 @@ void PhyUtil::GetValueFromDbSchema(TableAttrSchema table_attr_schema,
       ColumnAttrValue <unsigned char[256+1]> *value =
           (ColumnAttrValue <unsigned char[256+1]>*)
           table_attr_schema.p_table_attribute_value;
-      ss << value->value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
       break;
     }
     case DATATYPE_UINT8_ARRAY_257:
@@ -939,7 +1104,7 @@ void PhyUtil::GetValueFromDbSchema(TableAttrSchema table_attr_schema,
       ColumnAttrValue <unsigned char[257+1]> *value =
           (ColumnAttrValue <unsigned char[257+1]>*)
           table_attr_schema.p_table_attribute_value;
-      ss << value->value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
       break;
     }
     case DATATYPE_UINT8_ARRAY_320:
@@ -947,41 +1112,54 @@ void PhyUtil::GetValueFromDbSchema(TableAttrSchema table_attr_schema,
       ColumnAttrValue <unsigned char[320+1]> *value =
           (ColumnAttrValue <unsigned char[320+1]>*)
           table_attr_schema.p_table_attribute_value;
-      ss << value->value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
       break;
     }
+    default:
+      break;
   }
-  attr_value = ss.str();
-  ss.str("");
 }
 
+/**get_controller_type
+ * @Description : This function gets the controller type of the specified 
+ *                controller by sending the request to odbc manager
+ * @param[in]   : controller_name - name of the controller
+ *                datatype - UNC_DT_* specifies the datatype
+ * @param[out]  : controller_type - UNC_CT_* Type of the controller(UNKNOWN,
+ *                PFC,VNP)
+ * @return      : UPPL_RC_SUCCESS is returned when the response
+ *                is added to ipc session successfully.
+ *                UPPL_RC_ERR_* is returned when ipc response could not
+ *                be added to session.
+ * */
 UpplReturnCode PhyUtil::get_controller_type(
+    OdbcmConnectionHandler *db_conn,
     string controller_name,
     unc_keytype_ctrtype_t& controller_type,
     unc_keytype_datatype_t datatype) {
   UpplReturnCode ret_code = UPPL_RC_SUCCESS;
-  string type;
+  string type = "";
   // Creating the Physical Layer instance
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
 
   // Creating the object that consists of vectors of Table Atrr Schema
   vector<TableAttrSchema> vect_table_attr_schema;
   vector<string> vect_prim_keys;  // Construct Primary key list
-  vect_prim_keys.push_back("controller_name");
-  pfc_log_info("PhyUtil::controller_name is %s\n", controller_name.c_str());
-  PhyUtil::FillDbSchema("controller_name", controller_name,
+  vect_prim_keys.push_back(CTR_NAME_STR);
+  pfc_log_debug("PhyUtil::controller_name is %s", controller_name.c_str());
+  PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                         controller_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
-  PhyUtil::FillDbSchema("type", type,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_TYPE, type,
                         type.length(), DATATYPE_UINT16,
                         vect_table_attr_schema);
   // Structure used to send request to ODBC
   DBTableSchema dbtableschema_obj;
   dbtableschema_obj.set_primary_keys(vect_prim_keys);
-  dbtableschema_obj.set_table_name("controller_table");
+  dbtableschema_obj.set_table_name(unc::uppl::CTR_TABLE);
   dbtableschema_obj.PushBackToRowList(vect_table_attr_schema);
   ODBCM_RC_STATUS db_status = physical_layer->get_odbc_manager()-> \
-      GetOneRow(datatype, dbtableschema_obj);
+      GetOneRow(datatype, dbtableschema_obj, db_conn);
   if (db_status == ODBCM_RC_CONNECTION_ERROR) {
     // log fatal error to log daemon
     pfc_log_fatal("DB connection not available or cannot access DB");
@@ -993,16 +1171,16 @@ UpplReturnCode PhyUtil::get_controller_type(
     ret_code = UPPL_RC_ERR_DB_GET;
     return ret_code;
   }
-  list< vector<TableAttrSchema> > row_list_iter =
+  list< vector<TableAttrSchema> >& row_list_iter =
       dbtableschema_obj.get_row_list();
   list< vector<TableAttrSchema> >::iterator vect_iter =
       row_list_iter.begin();
   vector<TableAttrSchema> ::iterator tab_iter = (*vect_iter).begin();
   for ( ; tab_iter != (*vect_iter).end(); ++tab_iter) {
     TableAttrSchema tab_schema = (*tab_iter);
-    string attr_name = tab_schema.table_attribute_name;
-    string attr_value;
-    if (attr_name == "type") {
+    ODBCMTableColumns attr_name = tab_schema.table_attribute_name;
+    string attr_value = "";
+    if (attr_name == unc::uppl::CTR_TYPE) {
       PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
                                     DATATYPE_UINT16);
       controller_type = (unc_keytype_ctrtype_t)(atoi(attr_value.c_str()));
@@ -1013,6 +1191,14 @@ UpplReturnCode PhyUtil::get_controller_type(
   return ret_code;
 }
 
+/**reorder_col_attrs
+ * @Description : This function reorders the attributes present in the column
+ *                attribute table in table attribute schema
+ * @param[in]   : vect_prim_keys - vector that contains the primary keys
+ *                vect_table_attr_schema - vector that contains the table
+ *                attribute schema structure
+ * @return      : void
+ * */
 void PhyUtil::reorder_col_attrs(
     vector<string> vect_prim_keys,
     vector<TableAttrSchema> &vect_table_attr_schema) {
@@ -1025,7 +1211,8 @@ void PhyUtil::reorder_col_attrs(
         vect_table_attr_schema.begin();
     for ( ; tab_iter != vect_table_attr_schema.end(); ++tab_iter) {
       TableAttrSchema col_attr = (*tab_iter);
-      if (key_attr_name == col_attr.table_attribute_name) {
+      if (key_attr_name == ODBCManager::get_ODBCManager()->GetColumnName(
+          col_attr.table_attribute_name)) {
         vect_table_attr_schema.erase(tab_iter);
         vect_table_attr_schema.insert(vect_table_attr_schema.begin(),
                                       col_attr);
@@ -1035,34 +1222,38 @@ void PhyUtil::reorder_col_attrs(
   }
 }
 
-/** IsValidValue
- * * @Description : This function checks whether the value in value
- * structure can be considered
- * * * @param[in] : operation type and valid flag
- * * * @return    : True of false
+/**IsValidValue
+ * @Description : This function checks whether the value in value
+ *                structure can be considered
+ * @param[in]   : operation type - UNC_OP_* specifies the type of operation
+ *                valid - speicifies the valid flag
+ * @return      : PFC_TRUE is returned if value is considered otherwise
+ *                PFC_FALSE is returned to denote error
  * */
 bool PhyUtil::IsValidValue(uint32_t operation_type,
                            unsigned int valid) {
   if (valid == UPPL_NO_VAL_STRUCT) {
     return false;
   }
-  if ((operation_type == UNC_OP_CREATE && valid == UNC_VF_VALID) ||
-      (operation_type == UNC_OP_UPDATE && valid == UNC_VF_VALID) ||
-      (operation_type == UNC_OP_READ) ||
+  if ((operation_type == UNC_OP_READ) ||
       (operation_type == UNC_OP_READ_SIBLING_BEGIN) ||
       (operation_type == UNC_OP_READ_SIBLING) ||
-      (operation_type == UNC_OP_READ_SIBLING_COUNT)) {
+      (operation_type == UNC_OP_READ_SIBLING_COUNT) ||
+      (operation_type == UNC_OP_CREATE && valid == UNC_VF_VALID) ||
+      (operation_type == UNC_OP_UPDATE && valid == UNC_VF_VALID)) {
     return true;
   } else {
     return false;
   }
 }
 
-/** IsFilteringOperation
- * * @Description : This function checks whether the value in value
- * structure has to be used for filertering
- * * * @param[in] : operation type and valid flag
- * * * @return    : True of false
+/**IsFilteringOperation
+ * @Description : This function checks whether the value in value
+ *                structure has to be used for filertering
+ * @param[in]   : operation type - UNC_OP_* specifies the type of operation
+ *                valid - speicifies the valid flag
+ * @return      : PFC_TRUE is returned if value in value structure is used for
+ *                filertering otherwise PFC_FALSE is returned to denote error
  * */
 bool PhyUtil::IsFilteringOperation(uint32_t operation_type,
                                    unsigned int valid) {

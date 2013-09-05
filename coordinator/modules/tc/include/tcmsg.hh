@@ -78,6 +78,9 @@ class TcMsg {
   tclib::TcTransEndResult GetTransResult();
   TcOperRet SetTransResult(tclib::TcTransEndResult result);
   /*method to send response to VTN*/
+  TcOperRet ForwardResponseInternal(pfc::core::ipc::ServerSession& srv_sess,
+                                    pfc::core::ipc::ClientSession* clnt_sess,
+                                    pfc_bool_t decr_resp);
   TcOperRet ForwardResponseToVTN(pfc::core::ipc::ServerSession&
                                  srv_sess);
 

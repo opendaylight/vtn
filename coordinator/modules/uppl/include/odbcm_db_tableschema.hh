@@ -37,7 +37,7 @@ class DBTableSchema {
     /*
      * This corresponds to table name in db
      */
-    std::string table_name_;
+    ODBCMTable table_name_;
     /*
      * This contains primary keys of the table
      */
@@ -51,15 +51,14 @@ class DBTableSchema {
      */
     CsRowStatus db_return_status_;
 
-  public:
     /*
      * Get the table name
      */
-    std::string get_table_name();
+    ODBCMTable get_table_name();
     /*
      * Set the table name 
      */
-    void set_table_name(std::string table_name);
+    void set_table_name(ODBCMTable table_name);
     /*
      * Get the vector containing primary keys
      */
@@ -67,7 +66,7 @@ class DBTableSchema {
     /*
      * Get the list containing all the attribute vectors 
      */
-    std::list < std::vector <TableAttrSchema> > get_row_list();
+    std::list < std::vector <TableAttrSchema> >& get_row_list();
     /*
      * To push the primary keys in to primary_key vector
      */
@@ -96,6 +95,12 @@ class DBTableSchema {
      * Method to print the database schema information
      */
     void PrintDBTableSchema();
+
+  private:
+    /*
+    * To print the char buffer values in DBTableSchema
+    */ 
+    inline std::string Odbcm_PrintCharBuffer(uint8_t*, int, ODBCMTableColumns);
 };  // class DBTableSchema
 
 }  // namespace uppl

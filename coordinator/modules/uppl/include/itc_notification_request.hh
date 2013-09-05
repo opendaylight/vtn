@@ -20,7 +20,9 @@
 #include <unc/keytype.h>
 #include <string>
 #include "physical_itc_req.hh"
+#include "odbcm_connection.hh"
 using pfc::core::ipc::ClientSession;
+using unc::uppl::OdbcmConnectionHandler;
 
 namespace unc {
 namespace uppl {
@@ -54,16 +56,19 @@ class NotificationRequest : public ITCReq {
   UpplReturnCode ProcessLogicalPortEvents(ClientSession *sess,
                                           uint32_t data_type,
                                           uint32_t operation);
-  UpplReturnCode ProcessLogicalMemeberPortEvents(ClientSession *sess,
-                                                 uint32_t data_type,
-                                                 uint32_t operation);
-  void GetNotificationDT(string controller_name,
+  UpplReturnCode ProcessLogicalMemeberPortEvents(
+      ClientSession *sess,
+      uint32_t data_type,
+      uint32_t operation);
+  void GetNotificationDT(OdbcmConnectionHandler *db_conn,
+                         string controller_name,
                          uint32_t &data_type);
   /*This function process notification events*/
   UpplReturnCode ProcessNotificationEvents(const IpcEvent &event);
   /*This function process alarm events*/
   UpplReturnCode ProcessAlarmEvents(const IpcEvent &event);
   UpplReturnCode InvokeKtDriverEvent(
+      OdbcmConnectionHandler *db_conn,
       uint32_t operation,
       uint32_t data_type,
       void *key_struct,

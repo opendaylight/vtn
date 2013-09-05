@@ -197,16 +197,17 @@ class NwMonitorMoMgr : public VnodeChildMoMgr {
      *        associated attributes are supported on the given controller,
      *        based on the valid flag.
      *
-     * @param[in] crtlr_name      Controller name.
-     * @param[in] ikey            Corresponding key and value structure.
+     * @param[in] val_nwm         Value Structure.
+     * @param[in] attr            pointer to controller attribute
+     * @param[in] operation       Operation Name
      *
      * @retval UPLL_RC_SUCCESS                    validation succeeded.
      * @retval UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR Attribute NOT_SUPPORTED.
      * @retval UPLL_RC_ERR_GENERIC                Generic failure.
      */
-    upll_rc_t ValNwMonAttributeSupportCheck(const char * crtlr_name,
-                                            ConfigKeyVal *ikey,
-                                            uint32_t operation);
+    upll_rc_t ValNwMonAttributeSupportCheck(val_nwm_t *val_nwm,
+        const uint8_t* attrs,
+        unc_keytype_operation_t operation);
 
     upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
                            DalDmlIntf *dmi);
@@ -248,6 +249,13 @@ class NwMonitorMoMgr : public VnodeChildMoMgr {
      */
     upll_rc_t ValidateNwMonKey(key_nwm_t *key_nwm,
         unc_keytype_operation_t operation = UNC_OP_INVALID);
+    upll_rc_t OnNwmonFault(
+       string ctrlr_name ,
+       string domain_id,
+       const key_vtn &key_vtn,
+       const pfcdrv_network_mon_alarm_data_t &alarm_data,
+       bool alarm_raised,
+       DalDmlIntf *dmi ); 
 };
 }  // namespace kt_momgr
 }  // namespace upll

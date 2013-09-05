@@ -596,6 +596,12 @@ public class RestResource implements VtnServiceResource {
 			final JsonObject requestBody) throws VtnServiceException {
 		try {
 			VtnServiceUtil.trimParamValues(requestBody);
+			/*
+			 * remove the parameters which contains empty strings
+			 */
+			if(VtnServiceConsts.POST.equals(requestType)){
+				VtnServiceUtil.removeEmptyParamas(requestBody);
+			}
 			resource.getValidator().validate(requestType, requestBody);
 		} catch (final Exception exception) {
 			resource.createErrorInfo(UncCommonEnum.UncResultCode.UNC_CLIENT_ERROR

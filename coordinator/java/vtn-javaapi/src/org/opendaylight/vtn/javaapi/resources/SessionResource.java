@@ -110,9 +110,7 @@ public class SessionResource extends AbstractResource {
 			LOG.info("Request packet processed with status:"+status);
 			if (status != UncSessionEnums.UsessIpcErrE.USESS_E_OK.ordinal()) {
 				LOG.info("Error occurred while performing operation");
-				createErrorInfo(
-						UncCommonEnum.UncResultCode.UNC_SERVER_ERROR.getValue(),
-						UncIpcErrorCode.getSessionCodes(status));
+				createSessionErrorInfo(UncIpcErrorCode.getSessionCodes(status));
 				status = UncResultCode.UNC_SERVER_ERROR.getValue();
 			} else {
 				LOG.info("Opeartion successfully performed");
@@ -204,9 +202,7 @@ public class SessionResource extends AbstractResource {
 			LOG.info("Request packet processed with status:"+status);
 			if (status != UncSessionEnums.UsessIpcErrE.USESS_E_OK.ordinal()) {
 				LOG.info("Error occurred while performing operation");
-				createErrorInfo(
-						UncCommonEnum.UncResultCode.UNC_SERVER_ERROR.getValue(),
-						UncIpcErrorCode.getSessionCodes(status));
+				createSessionErrorInfo(UncIpcErrorCode.getSessionCodes(status));
 				status = UncResultCode.UNC_SERVER_ERROR.getValue();
 			} else {
 				LOG.info("Opeartion successfully performed");
@@ -295,6 +291,8 @@ public class SessionResource extends AbstractResource {
 				.equals(UncSessionEnums.UsessTypeE.USESS_TYPE_WEB_UI.getValue())) {
 			sessJson.addProperty(VtnServiceJsonConsts.TYPE,
 					VtnServiceJsonConsts.WEBUI);
+		} else{
+			LOG.debug("Incorrect value for type");
 		}
 		LOG.debug("type:"
 				+ IpcDataUnitWrapper.getIpcStructUint32Value(responseStruct,
@@ -309,6 +307,8 @@ public class SessionResource extends AbstractResource {
 		} else if (VtnServiceIpcConsts.USESS_USER_WEB_OPER.equals(userName)) {
 			sessJson.addProperty(VtnServiceJsonConsts.USERNAME,
 					VtnServiceJsonConsts.OPER);
+		} else{
+			LOG.debug("Incorrect value for user_name");
 		}
 		// add user type to response json
 		if (IpcDataUnitWrapper
@@ -323,6 +323,8 @@ public class SessionResource extends AbstractResource {
 				.equals(UncSessionEnums.UserTypeE.USER_TYPE_OPER.getValue())) {
 			sessJson.addProperty(VtnServiceJsonConsts.USERTYPE,
 					VtnServiceJsonConsts.OPER);
+		} else{
+			LOG.debug("Incorrect value for user_type");
 		}
 		LOG.debug("usertype:"
 				+ IpcDataUnitWrapper.getIpcStructUint32Value(responseStruct,
@@ -363,6 +365,63 @@ public class SessionResource extends AbstractResource {
 		LOG.debug("info:"
 				+ IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
 						responseStruct, VtnServiceJsonConsts.INFO));
+		// add mode to response json
+		if (IpcDataUnitWrapper
+				.getIpcStructUint32Value(responseStruct,
+						VtnServiceIpcConsts.SESS_MODE).toString()
+				.equals(UncSessionEnums.UsessModeE.USESS_MODE_OPER.getValue())) {
+			sessJson.addProperty(VtnServiceJsonConsts.MODE,
+					VtnServiceJsonConsts.OPER);
+		} else if (IpcDataUnitWrapper
+				.getIpcStructUint32Value(responseStruct,
+						VtnServiceIpcConsts.SESS_MODE)
+				.toString()
+				.equals(UncSessionEnums.UsessModeE.USESS_MODE_ENABLE.getValue())) {
+			sessJson.addProperty(VtnServiceJsonConsts.MODE,
+					VtnServiceJsonConsts.ENABLE);
+		} else if (IpcDataUnitWrapper
+				.getIpcStructUint32Value(responseStruct,
+						VtnServiceIpcConsts.SESS_MODE).toString()
+				.equals(UncSessionEnums.UsessModeE.USESS_MODE_DEL.getValue())) {
+			sessJson.addProperty(VtnServiceJsonConsts.MODE,
+					VtnServiceJsonConsts.DEL);
+		} else if (IpcDataUnitWrapper
+				.getIpcStructUint32Value(responseStruct,
+						VtnServiceIpcConsts.SESS_MODE)
+				.toString()
+				.equals(UncSessionEnums.UsessModeE.USESS_MODE_UNKNOWN
+						.getValue())) {
+			sessJson.addProperty(VtnServiceJsonConsts.MODE,
+					VtnServiceJsonConsts.UNKNOWN);
+		} else{
+			LOG.debug("Incorrect value for mode");
+		}
+		LOG.debug("mode: "
+				+ IpcDataUnitWrapper.getIpcStructUint32Value(responseStruct,
+						VtnServiceIpcConsts.SESS_MODE));
+		// add configstatus to response json
+		if (IpcDataUnitWrapper
+				.getIpcStructUint32Value(responseStruct,
+						VtnServiceIpcConsts.CONFIG_STATUS)
+				.toString()
+				.equals(UncSessionEnums.UsessConfigModeE.CONFIG_STATUS_NONE
+						.getValue())) {
+			sessJson.addProperty(VtnServiceJsonConsts.CONFIGSTATUS,
+					VtnServiceJsonConsts.DISABLE);
+		} else if (IpcDataUnitWrapper
+				.getIpcStructUint32Value(responseStruct,
+						VtnServiceIpcConsts.CONFIG_STATUS)
+				.toString()
+				.equals(UncSessionEnums.UsessConfigModeE.CONFIG_STATUS_TCLOCK
+						.getValue())) {
+			sessJson.addProperty(VtnServiceJsonConsts.CONFIGSTATUS,
+					VtnServiceJsonConsts.ENABLE);
+		} else{
+			LOG.debug("Incorrect value for config_status");
+		}
+		LOG.debug("configstatus: "
+				+ IpcDataUnitWrapper.getIpcStructUint32Value(responseStruct,
+						VtnServiceIpcConsts.CONFIG_STATUS));
 		response.add(VtnServiceJsonConsts.SESSION, sessJson);
 		LOG.trace("Completed SessionResource#createGetResponse()");
 		return response;

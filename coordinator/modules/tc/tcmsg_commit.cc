@@ -59,26 +59,23 @@ TcMsgCommit::SendAbortRequest(AbortOnFailVector abort_on_fail_) {
 
   for (it = abort_on_fail_.begin() ; it != abort_on_fail_.end(); it++) {
     channel_name = GetChannelName(*it);
-    if (PFC_EXPECT_TRUE(channel_name.empty())) {
-      /*channel name of overlay drivers can be empty - ignore*/
-      continue;
-      /* need to revisit once they are added.
-       * pfc_log_error("channel name is empty");
-       * return TCOPER_RET_FAILURE;*/
-    }
+    PFC_ASSERT(TCOPER_RET_SUCCESS == channel_name.empty());
+
     pfc_log_info("send ABORT to %s - fail_phase:%d",
                   channel_name.c_str(), fail_phase);
     /*Create session for the given module name and service id*/
     pfc::core::ipc::ClientSession* abortsess =
         TcClientSessionUtils::create_tc_client_session(channel_name,
                               tclib::TCLIB_COMMIT_GLOBAL_ABORT, conn);
-    PFC_ASSERT(NULL != abortsess);
+    if (NULL == abortsess) {
+      return TCOPER_RET_FATAL;
+    }
 
     /*append data to channel */
     util_resp = TcClientSessionUtils::set_uint8(abortsess,
                                                 tclib::MSG_COMMIT_ABORT);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
-      TcClientSessionUtils::tc_session_close(abortsess, conn);
+      TcClientSessionUtils::tc_session_close(&abortsess, conn);
       return ReturnUtilResp(util_resp);
     }
     /*validate session_id_ and config_id_*/
@@ -86,12 +83,12 @@ TcMsgCommit::SendAbortRequest(AbortOnFailVector abort_on_fail_) {
         PFC_EXPECT_TRUE(config_id_ > 0)) {
       util_resp = TcClientSessionUtils::set_uint32(abortsess, session_id_);
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
-        TcClientSessionUtils::tc_session_close(abortsess, conn);
+        TcClientSessionUtils::tc_session_close(&abortsess, conn);
         return ReturnUtilResp(util_resp);
       }
       util_resp = TcClientSessionUtils::set_uint32(abortsess, config_id_);
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
-        TcClientSessionUtils::tc_session_close(abortsess, conn);
+        TcClientSessionUtils::tc_session_close(&abortsess, conn);
         return ReturnUtilResp(util_resp);
       }
     } else {
@@ -101,18 +98,17 @@ TcMsgCommit::SendAbortRequest(AbortOnFailVector abort_on_fail_) {
 
     util_resp = TcClientSessionUtils::set_uint8(abortsess, fail_phase);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
-      TcClientSessionUtils::tc_session_close(abortsess, conn);
+      TcClientSessionUtils::tc_session_close(&abortsess, conn);
       return ReturnUtilResp(util_resp);
     }
     /*invoke session*/
     util_resp = TcClientSessionUtils::tc_session_invoke(abortsess, resp);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
-      TcClientSessionUtils::tc_session_close(abortsess, conn);
+      TcClientSessionUtils::tc_session_close(&abortsess, conn);
       return ReturnUtilResp(util_resp);
     }
 
-    abortsess = TcClientSessionUtils::tc_session_close(abortsess, conn);
-    PFC_ASSERT(NULL == abortsess);
+    TcClientSessionUtils::tc_session_close(&abortsess, conn);
 
     if (PFC_EXPECT_TRUE(tclib::TC_FAILURE == resp)) {
       pfc_log_error("Failure response from %s", channel_name.c_str());
@@ -154,24 +150,26 @@ TcMsgCommit::SendTransEndRequest(AbortOnFailVector abort_on_fail_) {
     pfc::core::ipc::ClientSession* end_sess =
         TcClientSessionUtils::create_tc_client_session(channel_name,
                               tclib::TCLIB_COMMIT_TRANSACTION, conn);
-    PFC_ASSERT(NULL != end_sess);
+    if (NULL == end_sess) {
+      return TCOPER_RET_FATAL;
+    }
     /*append data to channel */
     util_resp = TcClientSessionUtils::set_uint8(end_sess,
                                                 tclib::MSG_COMMIT_TRANS_END);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
-      TcClientSessionUtils::tc_session_close(end_sess, conn);
+      TcClientSessionUtils::tc_session_close(&end_sess, conn);
       return ReturnUtilResp(util_resp);
     }
     /*validate session_id_ and config_id_*/
     if (PFC_EXPECT_TRUE(session_id_ > 0) && PFC_EXPECT_TRUE(config_id_ > 0)) {
       util_resp = TcClientSessionUtils::set_uint32(end_sess, session_id_);
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
-        TcClientSessionUtils::tc_session_close(end_sess, conn);
+        TcClientSessionUtils::tc_session_close(&end_sess, conn);
         return ReturnUtilResp(util_resp);
       }
       util_resp = TcClientSessionUtils::set_uint32(end_sess, config_id_);
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
-        TcClientSessionUtils::tc_session_close(end_sess, conn);
+        TcClientSessionUtils::tc_session_close(&end_sess, conn);
         return ReturnUtilResp(util_resp);
       }
     } else {
@@ -182,18 +180,17 @@ TcMsgCommit::SendTransEndRequest(AbortOnFailVector abort_on_fail_) {
     util_resp = TcClientSessionUtils::set_uint8(end_sess,
                                                 tclib::TRANS_END_FAILURE);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
-      TcClientSessionUtils::tc_session_close(end_sess, conn);
+      TcClientSessionUtils::tc_session_close(&end_sess, conn);
       return ReturnUtilResp(util_resp);
     }
     /*invoke session*/
     util_resp = TcClientSessionUtils::tc_session_invoke(end_sess, resp);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
-      TcClientSessionUtils::tc_session_close(end_sess, conn);
+      TcClientSessionUtils::tc_session_close(&end_sess, conn);
       return ReturnUtilResp(util_resp);
     }
 
-    end_sess = TcClientSessionUtils::tc_session_close(end_sess, conn);
-    PFC_ASSERT(NULL == end_sess);
+    TcClientSessionUtils::tc_session_close(&end_sess, conn);
 
     if (tclib::TC_FAILURE == resp) {
       pfc_log_error("Failure response from %s", channel_name.c_str());
@@ -243,7 +240,9 @@ TcOperRet AbortCandidateDB::Execute() {
     /*Create session for the given module name and service id*/
     sess_ = TcClientSessionUtils::create_tc_client_session(channel_name,
                                   tclib::TCLIB_USER_ABORT, conn_);
-    PFC_ASSERT(NULL != sess_);
+    if (NULL == sess_) {
+      return TCOPER_RET_FATAL;
+    }
 
     /*append data to channel - validate session_id_ and config_id_*/
     if (PFC_EXPECT_TRUE(session_id_ > 0) &&
@@ -266,11 +265,13 @@ TcOperRet AbortCandidateDB::Execute() {
       return ReturnUtilResp(util_resp);
     }
 
-    sess_ = TcClientSessionUtils::tc_session_close(sess_, conn_);
+    TcClientSessionUtils::tc_session_close(&sess_, conn_);
 
     if (resp == tclib::TC_FAILURE) {
       pfc_log_info("Failure response from %s", channel_name.c_str());
       break;
+    } else {
+      pfc_log_info("Success response from %s", channel_name.c_str());
     }
   }
   /*return server response*/
@@ -306,7 +307,9 @@ CommitTransaction::SendRequest(std::string channel_name) {
   /*Create session for the given module name and service id*/
   sess_ = TcClientSessionUtils::create_tc_client_session(channel_name,
                                 tclib::TCLIB_COMMIT_TRANSACTION, conn_);
-  PFC_ASSERT(NULL != sess_);
+  if (NULL == sess_) {
+    return TCOPER_RET_FATAL;
+  }
 
   /*append data to channel */
   util_resp = TcClientSessionUtils::set_uint8(sess_, opertype_);
@@ -364,7 +367,7 @@ CommitTransaction::SendRequest(std::string channel_name) {
   /*session is not closed in case of failure as
    * its contents are forwarded to VTN*/
   if (PFC_EXPECT_TRUE(ret_val == TCOPER_RET_SUCCESS)) {
-    sess_ = TcClientSessionUtils::tc_session_close(sess_, conn_);
+    TcClientSessionUtils::tc_session_close(&sess_, conn_);
   }
   pfc_log_debug("CommitTransaction::SendRequest() exit");
   return ret_val;
@@ -418,12 +421,10 @@ TcOperRet CommitTransaction::Execute() {
        list_iter != notifyorder_.end(); list_iter++) {
     channel_name = GetChannelName(*list_iter);
     if (PFC_EXPECT_TRUE(channel_name.empty())) {
-      /*channel name of overlay driver may be empty - ignore*/
+      /*channel names of drivers may be empty - ignore*/
       continue;
-      /* need to revisit once they are added.
-         pfc_log_error("channel name is empty");
-         return TCOPER_RET_FAILURE;*/
     }
+
     ret_val = SendRequest(channel_name);
     if (PFC_EXPECT_TRUE(ret_val != TCOPER_RET_SUCCESS)) {
       return ret_val;
@@ -517,7 +518,9 @@ TcOperRet TwoPhaseCommit::CreateSessionsToForwardDriverResult() {
   upll_sess_ = TcClientSessionUtils::create_tc_client_session(channel_name,
                                      tclib::TCLIB_COMMIT_DRV_RESULT,
                                      upll_conn_);
-  PFC_ASSERT(NULL != upll_sess_);
+  if (NULL == upll_sess_) {
+    return TCOPER_RET_FATAL;
+  }
 
   ret_val = SetSessionToForwardDriverResult(upll_sess_);
   if (PFC_EXPECT_TRUE(ret_val != TCOPER_RET_SUCCESS)) {
@@ -531,7 +534,9 @@ TcOperRet TwoPhaseCommit::CreateSessionsToForwardDriverResult() {
   uppl_sess_ = TcClientSessionUtils::create_tc_client_session(channel_name,
                                      tclib::TCLIB_COMMIT_DRV_RESULT,
                                      uppl_conn_);
-  PFC_ASSERT(NULL != uppl_sess_);
+  if (NULL == uppl_sess_) {
+    return TCOPER_RET_FATAL;
+  }
 
   ret_val = SetSessionToForwardDriverResult(uppl_sess_);
   if (PFC_EXPECT_TRUE(ret_val != TCOPER_RET_SUCCESS)) {
@@ -712,7 +717,9 @@ TwoPhaseCommit::SendRequestToDriver() {
     /*Create session for the given module name and service id*/
     sess_ = TcClientSessionUtils::create_tc_client_session(channel_name,
                                   tclib::TCLIB_COMMIT_DRV_VOTE_GLOBAL, conn_);
-    PFC_ASSERT(NULL != sess_);
+    if (NULL == sess_) {
+      return TCOPER_RET_FATAL;
+    }
 
     /*append data to channel */
     util_resp = TcClientSessionUtils::set_uint8(sess_, oper);
@@ -762,14 +769,20 @@ TwoPhaseCommit::SendRequestToDriver() {
       /*validate the driver_id saved from UPLL controllerinfo*/
       if (PFC_EXPECT_TRUE(dmndrvinfo.find((*it).first) != dmndrvinfo.end())) {
         pfc_log_debug("forward response to UPLL session");
-        PFC_ASSERT_INT(upll_sess_->forward(*sess_, 0, UINT32_MAX), 0);
+        if (TCOPER_RET_SUCCESS != upll_sess_->forward(*sess_, 0, UINT32_MAX)) {
+          pfc_log_fatal("forward failed");
+          return TCOPER_RET_FATAL;
+        }
       }
       dmndrvinfo.clear();
       dmndrvinfo = driverset_map_[TC_UPPL];
       /*validate the driver_id saved from UPPL controllerinfo*/
       if (PFC_EXPECT_TRUE(dmndrvinfo.find((*it).first) != dmndrvinfo.end())) {
         pfc_log_debug("forward response to UPPL session");
-        PFC_ASSERT_INT(uppl_sess_->forward(*sess_, 0, UINT32_MAX), 0);
+        if (TCOPER_RET_SUCCESS != upll_sess_->forward(*sess_, 0, UINT32_MAX)) {
+          pfc_log_fatal("forward failed");
+          return TCOPER_RET_FATAL;
+        }
       }
       /*append channelname to handle failure*/
       abort_on_fail_.push_back(tc_driverid);
@@ -799,7 +812,7 @@ TwoPhaseCommit::SendRequestToDriver() {
     }
 
     if (ret_val == TCOPER_RET_SUCCESS) {
-      sess_ = TcClientSessionUtils::tc_session_close(sess_, conn_);
+      TcClientSessionUtils::tc_session_close(&sess_, conn_);
     } else {
       return ret_val;
     }
@@ -838,7 +851,9 @@ TwoPhaseCommit::SendRequest(std::string channel_name) {
   /*Create session for the given module name and service id*/
   sess_ = TcClientSessionUtils::create_tc_client_session(channel_name,
                                 tclib::TCLIB_COMMIT_TRANSACTION, conn_);
-  PFC_ASSERT(NULL != sess_);
+  if (NULL == sess_) {
+    return TCOPER_RET_FATAL;
+  }
 
   /*append data to channel */
   util_resp = TcClientSessionUtils::set_uint8(sess_, opertype_);
@@ -868,7 +883,10 @@ TwoPhaseCommit::SendRequest(std::string channel_name) {
       PFC_EXPECT_TRUE(respcount > 0)) {
     /*append the driver info from log/phy in
      * TcControllerInfoMap driverinfo_map_*/
-    PFC_ASSERT(TCOPER_RET_SUCCESS == GetControllerInfo(sess_));
+    if (TCOPER_RET_SUCCESS != GetControllerInfo(sess_)) {
+      pfc_log_error("could not retrieve controller-info");
+      return TCOPER_RET_FAILURE;
+    }
     ret_val = TCOPER_RET_SUCCESS;
   } else if (PFC_EXPECT_TRUE(resp == tclib::TC_FAILURE) &&
              PFC_EXPECT_TRUE(opertype_ == tclib::MSG_COMMIT_VOTE)) {
@@ -898,7 +916,7 @@ TwoPhaseCommit::SendRequest(std::string channel_name) {
 
   if (ret_val == TCOPER_RET_SUCCESS)  {
     pfc_log_info("Success response from %s", channel_name.c_str());
-    sess_ = TcClientSessionUtils::tc_session_close(sess_, conn_);
+    TcClientSessionUtils::tc_session_close(&sess_, conn_);
   }
   pfc_log_debug("TwoPhaseCommit::SendRequest() exit");
   return ret_val;

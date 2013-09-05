@@ -11,12 +11,14 @@ package org.opendaylight.vtn.javaapi.resources.physical;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
+import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.IpcRequestProcessor;
@@ -82,43 +84,29 @@ public class LinksResource extends AbstractResource {
 			LOG.debug("Session created successfully");
 			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
 					getConfigID(), getExceptionHandler());
+			final List<String> uriParameterList = getUriParameters(requestBody);
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_LINK_GET, requestBody,
-					getUriParameters(requestBody));
-			if (requestBody.has(VtnServiceJsonConsts.OP)
-					&& !requestBody.get(VtnServiceJsonConsts.OP).getAsString()
-							.equalsIgnoreCase(VtnServiceJsonConsts.COUNT)) {
-				if (requestBody.has(VtnServiceJsonConsts.SWITCH1ID)
-						&& requestBody.has(VtnServiceJsonConsts.SWITCH2ID)) {
-					requestProcessor
-							.getRequestPacket()
-							.setOption2(
-									IpcDataUnitWrapper
-											.setIpcUint32Value(UncOption2Enum.UNC_OPT2_MATCH_BOTH_SWITCH
-													.ordinal()));
-				} else if (requestBody.has(VtnServiceJsonConsts.SWITCH1ID)) {
-					requestProcessor
-							.getRequestPacket()
-							.setOption2(
-									IpcDataUnitWrapper
-											.setIpcUint32Value(UncOption2Enum.UNC_OPT2_MATCH_SWITCH1
-													.ordinal()));
-				} else if (requestBody.has(VtnServiceJsonConsts.SWITCH2ID)) {
-					requestProcessor
-							.getRequestPacket()
-							.setOption2(
-									IpcDataUnitWrapper
-											.setIpcUint32Value(UncOption2Enum.UNC_OPT2_MATCH_SWITCH2
-													.ordinal()));
-				}
-			}
+					uriParameterList);
+			getModifiedRequestPacket(requestBody, requestProcessor);
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet processed with status:"+status);
+			LOG.debug("Request packet processed with status:" + status);
 			final IpcPhysicalResponseFactory responseGenerator = new IpcPhysicalResponseFactory();
-			setInfo(responseGenerator.getLinkResponse(
+			JsonObject responseJson = responseGenerator.getLinkResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
-					VtnServiceJsonConsts.LIST));
+					VtnServiceJsonConsts.LIST);
+			if (responseJson.get(VtnServiceJsonConsts.LINKS).isJsonArray()) {
+				JsonArray responseArray = responseJson.get(
+						VtnServiceJsonConsts.LINKS).getAsJsonArray();
+				responseJson = getResponseJsonArrayPhysical(requestBody,
+						requestProcessor, responseGenerator, responseArray,
+						VtnServiceJsonConsts.LINKS,
+						VtnServiceJsonConsts.LINKNAME,
+						IpcRequestPacketEnum.KT_LINK_GET, uriParameterList,
+						VtnServiceIpcConsts.GET_LINK_RESPONSE);
+			}
+			setInfo(responseJson);
 			LOG.debug("Response object created successfully");
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
@@ -146,6 +134,33 @@ public class LinksResource extends AbstractResource {
 		}
 		LOG.trace("Completed LinksResource#get()");
 		return status;
+	}
+
+	private void getModifiedRequestPacket(final JsonObject requestBody,
+			IpcRequestProcessor requestProcessor) {
+			if ((requestBody.has(VtnServiceJsonConsts.SWITCH1ID)
+					&& requestBody.has(VtnServiceJsonConsts.SWITCH2ID)) || requestBody.has(VtnServiceJsonConsts.INDEX)) {
+				requestProcessor
+						.getRequestPacket()
+						.setOption2(
+								IpcDataUnitWrapper
+										.setIpcUint32Value(UncOption2Enum.UNC_OPT2_MATCH_BOTH_SWITCH
+												.ordinal()));
+			} else if (requestBody.has(VtnServiceJsonConsts.SWITCH1ID)) {
+				requestProcessor
+						.getRequestPacket()
+						.setOption2(
+								IpcDataUnitWrapper
+										.setIpcUint32Value(UncOption2Enum.UNC_OPT2_MATCH_SWITCH1
+												.ordinal()));
+			} else if (requestBody.has(VtnServiceJsonConsts.SWITCH2ID)) {
+				requestProcessor
+						.getRequestPacket()
+						.setOption2(
+								IpcDataUnitWrapper
+										.setIpcUint32Value(UncOption2Enum.UNC_OPT2_MATCH_SWITCH2
+												.ordinal()));
+			}
 	}
 
 	/**

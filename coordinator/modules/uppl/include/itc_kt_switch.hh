@@ -35,7 +35,6 @@ typedef enum {
 /* @  Switch Class definition */
 class Kt_Switch : public Kt_State_Base {
  private:
-  Kt_Base *parent;
   Kt_Base *child[KT_SWITCH_CHILD_COUNT];
 
  public:
@@ -43,68 +42,83 @@ class Kt_Switch : public Kt_State_Base {
 
   ~Kt_Switch();
 
-  UpplReturnCode DeleteKeyInstance(void* key_struct,
+  UpplReturnCode DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
+                                   void* key_struct,
                                    uint32_t data_type,
                                    uint32_t key_type);
 
-  UpplReturnCode ReadInternal(vector<void *> &key_struct,
+  UpplReturnCode ReadInternal(OdbcmConnectionHandler *db_conn,
+                              vector<void *> &key_struct,
                               vector<void *> &val_struct,
                               uint32_t data_type,
                               uint32_t operation_type);
 
-  UpplReturnCode ReadBulk(void* key_struct,
+  UpplReturnCode ReadBulk(OdbcmConnectionHandler *db_conn,
+                          void* key_struct,
                           uint32_t data_type,
-                          uint32_t option1,
-                          uint32_t option2,
                           uint32_t &max_rep_ct,
                           int child_index,
                           pfc_bool_t parent_call,
-                          pfc_bool_t is_read_next);
+                          pfc_bool_t is_read_next,
+                          ReadRequest *read_req);
 
-  UpplReturnCode PerformSyntaxValidation(void* key_struct,
+  UpplReturnCode PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
+                                         void* key_struct,
                                          void* val_struct,
                                          uint32_t operation,
                                          uint32_t data_type);
 
-  UpplReturnCode PerformSemanticValidation(void* key_struct,
+  UpplReturnCode PerformSemanticValidation(OdbcmConnectionHandler *db_conn,
+                                           void* key_struct,
                                            void* val_struct,
                                            uint32_t operation,
                                            uint32_t data_type);
 
-  UpplReturnCode HandleDriverAlarms(uint32_t data_type,
+  UpplReturnCode HandleDriverAlarms(OdbcmConnectionHandler *db_conn,
+                                    uint32_t data_type,
                                     uint32_t alarm_type,
                                     uint32_t oper_type,
                                     void* key_struct,
                                     void* val_struct);
 
-  UpplReturnCode IsKeyExists(unc_keytype_datatype_t data_type,
-                             vector<string> key_values);
+  UpplReturnCode IsKeyExists(OdbcmConnectionHandler *db_conn,
+                             unc_keytype_datatype_t data_type,
+                             const vector<string>& key_values);
 
-  UpplReturnCode NotifyOperStatus(uint32_t data_type,
+  UpplReturnCode NotifyOperStatus(OdbcmConnectionHandler *db_conn,
+                                  uint32_t data_type,
                                   void* key_struct,
-                                  void* value_struct);
+                                  void* value_struct,
+                                  vector<OperStatusHolder> &ref_oper_status);
 
-  UpplReturnCode HandleOperStatus(uint32_t data_type,
+  UpplReturnCode HandleOperStatus(OdbcmConnectionHandler *db_conn,
+                                  uint32_t data_type,
                                   void *key_struct,
                                   void *value_struct);
 
-  UpplReturnCode GetOperStatus(uint32_t data_type,
+  UpplReturnCode GetOperStatus(OdbcmConnectionHandler *db_conn,
+                               uint32_t data_type,
                                void* key_struct,
                                uint8_t &oper_status);
 
-  UpplReturnCode GetAlarmStatus(uint32_t data_type,
+  UpplReturnCode GetAlarmStatus(OdbcmConnectionHandler *db_conn,
+                                uint32_t data_type,
                                 void* key_struct,
                                 uint64_t &alarms_status);
   void Fill_Attr_Syntax_Map();
 
-  UpplReturnCode UpdateSwitchValidFlag(void *key_struct,
+  UpplReturnCode UpdateSwitchValidFlag(OdbcmConnectionHandler *db_conn,
+                                       void *key_struct,
                                        void *val_struct,
                                        val_switch_st_t &val_switch_val_st,
-                                       unc_keytype_validflag_t valid_val);
+                                       unc_keytype_validflag_t valid_val,
+                                       uint32_t data_type);
 
-  UpplReturnCode PopulateSchemaForValidFlag(void* key_struct,
+  UpplReturnCode PopulateSchemaForValidFlag(OdbcmConnectionHandler *db_conn,
+                                            void* key_struct,
                                             void* val_struct,
-                                            string valid_new);
+                                            string valid_new,
+                                            uint32_t data_type);
 
   pfc_bool_t CompareValueStruct(void *val_struct1,
                                 void *val_struct2) {
@@ -131,17 +145,23 @@ class Kt_Switch : public Kt_State_Base {
                        switch_val1.switch_val.domain_name,
                        switch_val2.switch_val.domain_name,
                        sizeof(switch_val1.switch_val.domain_name)) == 0 &&
-                       switch_val1.oper_status == switch_val2.oper_status &&
-                       memcmp(switch_val1.manufacturer,
-                              switch_val2.manufacturer,
-                              sizeof(switch_val1.manufacturer)) == 0&&
-                              memcmp(switch_val1.hardware,
-                                     switch_val2.hardware,
-                                     sizeof(switch_val1.hardware)) == 0 &&
-                                     memcmp(
-                                         switch_val1.software,
-                                         switch_val2.software,
-                                         sizeof(switch_val1.software)) == 0) {
+                       memcmp(
+                           switch_val1.switch_val.valid,
+                           switch_val2.switch_val.valid,
+                           sizeof(switch_val1.switch_val.valid)) == 0 &&
+                           switch_val1.oper_status == switch_val2.oper_status
+                           &&
+                           memcmp(switch_val1.manufacturer,
+                                  switch_val2.manufacturer,
+                                  sizeof(switch_val1.manufacturer)) == 0&&
+                                  memcmp(switch_val1.hardware,
+                                         switch_val2.hardware,
+                                         sizeof(switch_val1.hardware)) == 0 &&
+                                         memcmp(
+                                             switch_val1.software,
+                                             switch_val2.software,
+                                             sizeof(switch_val1.software))
+    == 0) {
       delete []ip_value1;
       delete []ip_value2;
       return PFC_TRUE;
@@ -168,11 +188,12 @@ class Kt_Switch : public Kt_State_Base {
   };
 
  private:
-  void PopulateDBSchemaForKtTable(
+  void PopulateDBSchemaForKtTable(OdbcmConnectionHandler *db_conn,
       DBTableSchema &kt_dbtableschema,
       void* key_struct,
       void* val_struct,
       uint8_t operation_type,
+      uint32_t data_type,
       uint32_t option1,
       uint32_t option2,
       vector<ODBCMOperator> &vect_key_operations,
@@ -181,14 +202,15 @@ class Kt_Switch : public Kt_State_Base {
       pfc_bool_t is_filtering= false,
       pfc_bool_t is_state= PFC_FALSE);
 
-  void FillSwitchValueStructure(
+  void FillSwitchValueStructure(OdbcmConnectionHandler *db_conn,
       DBTableSchema &kt_switch_dbtableschema,
       vector<val_switch_st_t> &vect_obj_val_switch,
       uint32_t &max_rep_ct,
       uint32_t operation_type,
       vector<key_switch_t> &vect_switch_id);
 
-  UpplReturnCode PerformRead(uint32_t session_id,
+  UpplReturnCode PerformRead(OdbcmConnectionHandler *db_conn,
+                             uint32_t session_id,
                              uint32_t configuration_id,
                              void* key_struct,
                              void* val_struct,
@@ -199,7 +221,7 @@ class Kt_Switch : public Kt_State_Base {
                              uint32_t option2,
                              uint32_t max_rep_ct);
 
-  UpplReturnCode ReadSwitchValFromDB(
+  UpplReturnCode ReadSwitchValFromDB(OdbcmConnectionHandler *db_conn,
       void* key_struct,
       void* val_struct,
       uint32_t data_type,
@@ -209,7 +231,8 @@ class Kt_Switch : public Kt_State_Base {
       vector<key_switch_t> &vect_switch_id,
       pfc_bool_t is_state = PFC_FALSE);
 
-  UpplReturnCode ReadBulkInternal(void* key_struct,
+  UpplReturnCode ReadBulkInternal(OdbcmConnectionHandler *db_conn,
+                                  void* key_struct,
                                   void* val_struct,
                                   uint32_t data_type,
                                   uint32_t max_rep_ct,
@@ -221,21 +244,22 @@ class Kt_Switch : public Kt_State_Base {
                           string controller_name);
   Kt_Base* GetChildClassPointer(KtSwitchChildClass KIndex);
 
-  UpplReturnCode SetOperStatus(uint32_t data_type,
+  UpplReturnCode SetOperStatus(OdbcmConnectionHandler *db_conn,
+                               uint32_t data_type,
                                void* key_struct,
-                               UpplSwitchOperStatus oper_status,
-                               bool is_single_key = false);
+                               UpplSwitchOperStatus oper_status);
   void FreeChildKeyStruct(int child_class,
                           void *key_struct);
-  void FrameValidValue(string attr_value, val_switch_st &obj_val_st);
-  void GetSwitchValStructure(
+  void FrameValidValue(string attr_value,
+                       val_switch_st &obj_val_st);
+  void GetSwitchValStructure(OdbcmConnectionHandler *db_conn,
       val_switch_st_t *obj_val_switch,
       vector<TableAttrSchema> &vect_table_attr_schema,
       vector<string> &vect_prim_keys,
       uint8_t operation_type,
       val_switch_st_t *val_switch_valid_st,
       stringstream &valid);
-  void GetSwitchStateValStructure(
+  void GetSwitchStateValStructure(OdbcmConnectionHandler *db_conn,
       val_switch_st_t *obj_val_switch,
       vector<TableAttrSchema> &vect_table_attr_schema,
       vector<string> &vect_prim_keys,

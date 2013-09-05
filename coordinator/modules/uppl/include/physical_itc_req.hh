@@ -29,8 +29,7 @@ using pfc::core::ipc::ServerSession;
 namespace unc {
 namespace uppl {
 /* *
-* * It is a singleton class which is the base for all the request classes. 
-* * For further info,see the comments in .cc file
+* * It is a base class for all the request classes.
 * */
 
 class ITCReq {

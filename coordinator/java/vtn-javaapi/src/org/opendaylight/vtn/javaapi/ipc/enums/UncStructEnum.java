@@ -100,7 +100,8 @@ public enum UncStructEnum {
 	ValPortSt("val_port_st"),
 	ValPortStNeighbour("val_port_st_neighbor"),
 	KeyLogicalPort("key_logical_port"),
-	KeyLogicalMemberPort("key_logical_member_port");
+	KeyLogicalMemberPort("key_logical_member_port"),
+	UsessIpcReqSessEnable("usess_ipc_req_sess_enable");
 
 
 	private String value;

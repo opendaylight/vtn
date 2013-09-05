@@ -13,6 +13,7 @@
 #include <string>
 #include <list>
 
+#include "uncxx/upll_log.hh"
 #include "upll/keytype_upll_ext.h"
 #include "unc/upll_errno.h"
 #include "dal/dal_odbc_mgr.hh"
@@ -110,6 +111,7 @@ class CtrlrMgr {
   CtrlrMgr() { }
 
   virtual ~CtrlrMgr() {
+    CleanUp();
   }
 
   static CtrlrMgr *singleton_instance_;

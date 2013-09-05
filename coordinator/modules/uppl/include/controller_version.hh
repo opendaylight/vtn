@@ -25,7 +25,8 @@ namespace uppl {
  */
 class ControllerVersion {
  public:
-  explicit ControllerVersion(string version);
+  explicit ControllerVersion(string version,
+                             UpplReturnCode &return_code);
 
   ~ControllerVersion() {}
 

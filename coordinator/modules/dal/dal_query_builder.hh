@@ -69,6 +69,7 @@ enum DalQuerytoken {
   kDalOptMatchColEqExpr,
   kDalOptMatchColEqNotLastExpr,
   kDalMandMatchColLstGtrExpr,
+  kDalMandMatchColEqTempExpr,
 
   // Enum for Primary Key Related Tokens
   kDalPkeyColNames,
@@ -182,15 +183,19 @@ class DalQueryBuilder {
     // n is the number of attributes bound for match
     // column names of attributes bound for match
     static const char * DalMandMatchColLstGtrExpr;
+    // {mand_match_columns_eq_with_temp}
+    // col1 = temp.col1 AND col2 = temp.col2 ...
+    // For all match columns in bind list
+    static const char * DalMandMatchColEqTempExpr;
+    // {match_dst_primary_key_columns_eq_with_temp} - col1, col2, ...
+    // <dst_table>.col1 = temp.col1 AND <dst_table>.col2 = temp.col2 ...
+    // For all primary key column names of the table
+    static const char * DalMatchPriColEqTempExpr;
 
     // Primary Key Related Tokens
     // {primary_key_columns} - col1, col2, ...
     // All primary key column names of the table
     static const char * DalPkeyColNames;
-    // {match_dst_primary_key_columns_eq_with_temp} - col1, col2, ...
-    // <dst_table>.col1 = temp.col1 AND <dst_table>.col2 = temp.col2 ...
-    // For all primary key column names of the table
-    static const char * DalMatchPriColEqTempExpr;
 
     // Table Related Tokens
     // {config1_table_name} - <config1>_<table_name>

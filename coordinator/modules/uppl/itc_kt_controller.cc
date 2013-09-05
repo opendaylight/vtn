@@ -25,37 +25,39 @@
 #include "unc/upll_svc.h"
 #include "unc/upll_errno.h"
 #include "ipct_util.hh"
+#include "itc_read_request.hh"
 using unc::uppl::PhysicalLayer;
 using unc::uppl::ODBCMUtils;
+using unc::uppl::ODBCMTableColumns;
+#define IPCT_USER "user"  // attribute name in val_ctr is "user"
+// and field name in database is "user_name"
 
 /** Constructor
- * * @Description : This function initializes member variables
+ * @Description : This function initializes member variables
  * and fills the attribute syntax map used for validation
- * * * @param[in] : None
- * * * @return    : None
+ * @param[in] : None
+ * @return    : None
  * */
 Kt_Controller::Kt_Controller() {
   // Populate structure to be used for syntax validation
-  Fill_Attr_Syntax_Map();
-  /* Parent and child instances will be initialized inside
+  if (attr_syntax_map_all.find(UNC_KT_CONTROLLER) ==
+      attr_syntax_map_all.end()) {
+    Fill_Attr_Syntax_Map();
+  }
+  /* Child instances will be initialized inside
    * member functions whenever required */
-  parent = NULL;
   for (int i = 0; i < KT_CONTROLLER_CHILD_COUNT; ++i) {
     child[i] = NULL;
   }
 }
 
 /** Destructor
- * * @Description : This function frees the parent and child key types
+ * @Description : This function frees the child key instances
  * instances for kt_controller
- * * * @param[in] : None
- * * * @return    : None
+ * @param[in] : None
+ * @return    : None
  * */
 Kt_Controller::~Kt_Controller() {
-  if (parent != NULL) {
-    delete parent;
-    parent = NULL;
-  }
   for (int i = 0; i < KT_CONTROLLER_CHILD_COUNT; ++i) {
     if (child[i] != NULL) {
       delete child[i];
@@ -65,10 +67,10 @@ Kt_Controller::~Kt_Controller() {
 }
 
 /** GetChildClassPointer
- *  * @Description : This function creates a new child class instance
+ * @Description : This function creates a new child class instance
  *   class of KtController based on index passed
- *  * @param[in] : KIndex - Child class index enum
- *  * @return    : Kt_Base* - The child class pointer
+ * @param[in] : KIndex - Child class index enum
+ * @return    : Kt_Base* - The child class pointer
  */
 Kt_Base* Kt_Controller::GetChildClassPointer(KtControllerChildClass KIndex) {
   switch (KIndex) {
@@ -102,19 +104,20 @@ Kt_Base* Kt_Controller::GetChildClassPointer(KtControllerChildClass KIndex) {
 
 
 /** Create
- * * @Description : This function creates a new row of KT_Controller in
+ * @Description : This function creates a new row of KT_Controller in
  * candidate controller table.
- * * @param[in] : session_id - ipc session id used for TC validation
+ * @param[in] : session_id - ipc session id used for TC validation
  * configuration_id - configuration id used for TC validation
  * key_struct - the key for the new kt controller instance
  * value_struct - the values for the new kt controller instance
  * data_type - UNC_DT_* , Create only allowed in candidate
  * sess - ipc server session where the response has to be added
- * * @return    : UPPL_RC_SUCCESS is returned when the response
+ * @return    : UPPL_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
  * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_Controller::Create(uint32_t session_id,
+UpplReturnCode Kt_Controller::Create(OdbcmConnectionHandler *db_conn,
+                                     uint32_t session_id,
                                      uint32_t configuration_id,
                                      void* key_struct,
                                      void* val_struct,
@@ -129,12 +132,12 @@ UpplReturnCode Kt_Controller::Create(uint32_t session_id,
   } else {
     val_ctr_t obj_val_ctr = *(reinterpret_cast<val_ctr_t*>(val_struct));
     if (obj_val_ctr.type == UNC_CT_UNKNOWN) {
-      create_status = ValidateUnknownCtrlrScalability(key_struct,
+      create_status = ValidateUnknownCtrlrScalability(db_conn, key_struct,
                                                       obj_val_ctr.type,
                                                       data_type);
     }
     if (create_status == UPPL_RC_SUCCESS) {
-      create_status = CreateKeyInstance(key_struct,
+      create_status = CreateKeyInstance(db_conn, key_struct,
                                         val_struct,
                                         data_type,
                                         UNC_KT_CONTROLLER);
@@ -175,15 +178,17 @@ UpplReturnCode Kt_Controller::Create(uint32_t session_id,
 }
 
 /** CreateKeyInstance
- * * @Description : This function creates a new row of KT_Controller in
+ * @Description : This function creates a new row of KT_Controller in
  * candidate controller table.
  * key_struct - the key for the new kt controller instance
  * value_struct - the values for the new kt controller instance
  * data_type - UNC_DT_* , Create only allowed in candidate
- * * @return    : UPPL_RC_SUCCESS is returned when the create is success
+ * key_type-UNC_KT_CONTROLLER,value of unc_key_type_t
+ * @return    : UPPL_RC_SUCCESS is returned when the create is success
  * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_Controller::CreateKeyInstance(void* key_struct,
+UpplReturnCode Kt_Controller::CreateKeyInstance(OdbcmConnectionHandler *db_conn,
+                                                void* key_struct,
                                                 void* val_struct,
                                                 uint32_t data_type,
                                                 uint32_t key_type) {
@@ -194,17 +199,15 @@ UpplReturnCode Kt_Controller::CreateKeyInstance(void* key_struct,
   // Create DBSchema structure for controller_table
   void *old_val_struct;
   vector<ODBCMOperator> vect_key_operations;
-  PopulateDBSchemaForKtTable(kt_controller_dbtableschema,
+  PopulateDBSchemaForKtTable(db_conn, kt_controller_dbtableschema,
                              key_struct,
                              val_struct,
-                             UNC_OP_CREATE, 0, 0,
+                             UNC_OP_CREATE, data_type, 0, 0,
                              vect_key_operations, old_val_struct);
   // Send request to ODBC for controller_table create
   ODBCM_RC_STATUS create_db_status = physical_layer->get_odbc_manager()->\
       CreateOneRow((unc_keytype_datatype_t)data_type,
-                   kt_controller_dbtableschema);
-  pfc_log_info("CreateOneRow error response from DB is %d",
-               create_db_status);
+                   kt_controller_dbtableschema, db_conn);
   if (create_db_status != ODBCM_RC_SUCCESS) {
     if (create_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
@@ -223,19 +226,20 @@ UpplReturnCode Kt_Controller::CreateKeyInstance(void* key_struct,
 }
 
 /** Update
- * * @Description : This function updates a row of KT_Controller in
+ * @Description : This function updates a row of KT_Controller in
  * candidate controller table.
- * * @param[in] : session_id - ipc session id used for TC validation
+ * @param[in] : session_id - ipc session id used for TC validation
  * configuration_id - configuration id used for TC validation
  * key_struct - the key for the kt controller instance
  * value_struct - the values for the kt controller instance
  * data_type - UNC_DT_* , Update only allowed in candidate
  * sess - ipc server session where the response has to be added
- * * @return    : UPPL_RC_SUCCESS is returned when the response
+ * @return    : UPPL_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
  * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_Controller::Update(uint32_t session_id,
+UpplReturnCode Kt_Controller::Update(OdbcmConnectionHandler *db_conn,
+                                     uint32_t session_id,
                                      uint32_t configuration_id,
                                      void* key_struct,
                                      void* val_struct,
@@ -247,7 +251,7 @@ UpplReturnCode Kt_Controller::Update(uint32_t session_id,
                   data_type);
     update_status = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   } else {
-    update_status = UpdateKeyInstance(key_struct,
+    update_status = UpdateKeyInstance(db_conn, key_struct,
                                       val_struct,
                                       data_type,
                                       UNC_KT_CONTROLLER);
@@ -288,17 +292,19 @@ UpplReturnCode Kt_Controller::Update(uint32_t session_id,
 }
 
 /** UpdateKeyInstance
- * * @Description : This function updates a row of KT_Controller in
+ * @Description : This function updates a row of KT_Controller in
  * candidate controller table.
- * * @param[in] :
+ * @param[in] :
  * key_struct - the key for the new kt controller instance
  * value_struct - the values for the new kt controller instance
  * data_type - UNC_DT_* , update only allowed in candidate
- * * @return    : UPPL_RC_SUCCESS is returned when the update
+ * key_type-UNC_KT_CONTROLLER,value of unc_key_type_t
+ * @return    : UPPL_RC_SUCCESS is returned when the update
  * is done successfully.
  * UPPL_RC_ERR_* is returned when the update is error
  * */
-UpplReturnCode Kt_Controller::UpdateKeyInstance(void* key_struct,
+UpplReturnCode Kt_Controller::UpdateKeyInstance(OdbcmConnectionHandler *db_conn,
+                                                void* key_struct,
                                                 void* val_struct,
                                                 uint32_t data_type,
                                                 uint32_t key_type) {
@@ -308,18 +314,17 @@ UpplReturnCode Kt_Controller::UpdateKeyInstance(void* key_struct,
   // Create DBSchema structure for controller_table
   void *old_val_struct;
   vector<ODBCMOperator> vect_key_operations;
-  PopulateDBSchemaForKtTable(kt_controller_dbtableschema,
+  PopulateDBSchemaForKtTable(db_conn, kt_controller_dbtableschema,
                              key_struct,
                              val_struct,
-                             UNC_OP_UPDATE, 0, 0,
+                             UNC_OP_UPDATE, data_type, 0, 0,
                              vect_key_operations, old_val_struct);
   if (!((kt_controller_dbtableschema.get_row_list()).empty())) {
     // Send request to ODBC for controller_table update
     PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
     ODBCM_RC_STATUS update_db_status = physical_layer->get_odbc_manager()-> \
         UpdateOneRow((unc_keytype_datatype_t)data_type,
-                     kt_controller_dbtableschema);
-    pfc_log_info("UpdateOneRow response from DB is %d", update_db_status);
+                     kt_controller_dbtableschema, db_conn);
     if (update_db_status != ODBCM_RC_SUCCESS) {
       if (update_db_status == ODBCM_RC_CONNECTION_ERROR) {
         // log fatal error to log daemon
@@ -340,18 +345,19 @@ UpplReturnCode Kt_Controller::UpdateKeyInstance(void* key_struct,
 }
 
 /**Delete
- * * @Description : This function deletes a row of KT_Controller in
+ * @Description : This function deletes a row of KT_Controller in
  * candidate controller table.
- * * @param[in] : session_id - ipc session id used for TC validation
+ * @param[in] : session_id - ipc session id used for TC validation
  * configuration_id - configuration id used for TC validation
  * key_struct - the key for the kt controller instance
  * data_type - UNC_DT_* , delete only allowed in candidate
  * sess - ipc server session where the response has to be added
- * * @return    : UPPL_RC_SUCCESS is returned when the response
+ * @return    : UPPL_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
  * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_Controller::Delete(uint32_t session_id,
+UpplReturnCode Kt_Controller::Delete(OdbcmConnectionHandler *db_conn,
+                                     uint32_t session_id,
                                      uint32_t configuration_id,
                                      void* key_struct,
                                      uint32_t data_type,
@@ -359,11 +365,41 @@ UpplReturnCode Kt_Controller::Delete(uint32_t session_id,
   UpplReturnCode delete_status = UPPL_RC_SUCCESS;
   key_ctr_t *obj_key_ctr = reinterpret_cast<key_ctr_t*>(key_struct);
   string controller_name = (const char*)obj_key_ctr->controller_name;
+  // Check whether the controller is being imported
+  PhysicalCore *physical_core = PhysicalLayer::get_instance()->
+      get_physical_core();
+  InternalTransactionCoordinator *itc_trans  =
+      physical_core->get_internal_transaction_coordinator();
+  if (itc_trans->IsControllerInImport(controller_name) == PFC_TRUE) {
+    pfc_log_info("Import is in progress for controller %s, Delete not allowed",
+                 controller_name.c_str());
+    delete_status = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    // Populate the response to be sent in ServerSession
+    physical_response_header rsh = {session_id,
+        configuration_id,
+        UNC_OP_DELETE,
+        0,
+        0,
+        0,
+        data_type,
+        delete_status};
+    int err = PhyUtil::sessOutRespHeader(sess, rsh);
+    err |= sess.addOutput((uint32_t)UNC_KT_CONTROLLER);
+    err |= sess.addOutput(*obj_key_ctr);
+    if (err != 0) {
+      pfc_log_debug(
+          "Server session addOutput failed, so return IPC_WRITE_ERROR");
+      delete_status = UPPL_RC_ERR_IPC_WRITE_ERROR;
+    } else {
+      delete_status = UPPL_RC_SUCCESS;
+    }
+    return delete_status;
+  }
   Kt_Boundary boundary_class;
   // Check whether any boundary is referring controller
   pfc_bool_t is_bdry_referred = PFC_FALSE;
   is_bdry_referred = boundary_class.IsBoundaryReferred(
-      UNC_KT_CONTROLLER, key_struct, data_type);
+      db_conn, UNC_KT_CONTROLLER, key_struct, data_type);
   if (is_bdry_referred == PFC_TRUE) {
     // Boundary is referring controller
     pfc_log_error(
@@ -411,10 +447,10 @@ UpplReturnCode Kt_Controller::Delete(uint32_t session_id,
         (KtControllerChildClass)child_class);
     if (child[child_class] != NULL) {
       UpplReturnCode ch_delete_status =
-          child[child_class]->DeleteKeyInstance(
-              child_key_struct,
-              data_type,
-              UNC_KT_CTR_DOMAIN);
+          child[child_class]->DeleteKeyInstance(db_conn,
+                                                child_key_struct,
+                                                data_type,
+                                                UNC_KT_CTR_DOMAIN);
       delete child[child_class];
       child[child_class] = NULL;
       FreeChildKeyStruct(child_key_struct, child_class);
@@ -434,7 +470,7 @@ UpplReturnCode Kt_Controller::Delete(uint32_t session_id,
     }
     // Delete the controller now
     if (delete_status == UPPL_RC_SUCCESS) {
-      delete_status = DeleteKeyInstance(key_struct, data_type,
+      delete_status = DeleteKeyInstance(db_conn, key_struct, data_type,
                                         UNC_KT_CONTROLLER);
     }
   }
@@ -472,16 +508,18 @@ UpplReturnCode Kt_Controller::Delete(uint32_t session_id,
 }
 
 /**DeleteKeyInstance
- * * @Description : This function deletes a row of KT_Controller in
+ * @Description : This function deletes a row of KT_Controller in
  * candidate controller table.
- * * @param[in] :
+ * @param[in] :
  * key_struct - the key for the new kt controller instance
  * data_type - UNC_DT_* , delete only allowed in candidate
- * * @return    : UPPL_RC_SUCCESS is returned when the delete
+ * key_type-UNC_DT_CONTROLLER,value of unc_keytype_t
+ * @return    : UPPL_RC_SUCCESS is returned when the delete
  * is done successfully.
  * UPPL_RC_ERR_* is returned when the delete is error
  * */
-UpplReturnCode Kt_Controller::DeleteKeyInstance(void* key_struct,
+UpplReturnCode Kt_Controller::DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
+                                                void* key_struct,
                                                 uint32_t data_type,
                                                 uint32_t key_type) {
   UpplReturnCode delete_status = UPPL_RC_SUCCESS;
@@ -492,7 +530,7 @@ UpplReturnCode Kt_Controller::DeleteKeyInstance(void* key_struct,
 
   // Construct Primary key list
   vector<string> vect_prim_keys;
-  vect_prim_keys.push_back(CTR_NAME);
+  vect_prim_keys.push_back(CTR_NAME_STR);
 
   // Construct TableAttrSchema structure
   // TableAttrSchema holds table_name, primary key, attr_name
@@ -500,12 +538,12 @@ UpplReturnCode Kt_Controller::DeleteKeyInstance(void* key_struct,
   list< vector<TableAttrSchema> > row_list;
 
   // Controller_name
-  PhyUtil::FillDbSchema(CTR_NAME, controller_name,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                         controller_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
 
   // Send request to ODBC for controller_table delete
-  kt_controller_dbtableschema.set_table_name(UPPL_CTR_TABLE);
+  kt_controller_dbtableschema.set_table_name(unc::uppl::CTR_TABLE);
   kt_controller_dbtableschema.set_primary_keys(vect_prim_keys);
   row_list.push_back(vect_table_attr_schema);
   kt_controller_dbtableschema.set_row_list(row_list);
@@ -513,9 +551,7 @@ UpplReturnCode Kt_Controller::DeleteKeyInstance(void* key_struct,
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   ODBCM_RC_STATUS delete_db_status = physical_layer->get_odbc_manager()-> \
       DeleteOneRow((unc_keytype_datatype_t)data_type,
-                   kt_controller_dbtableschema);
-  pfc_log_info("DeleteOneRow error response from DB is %d",
-               delete_db_status);
+                   kt_controller_dbtableschema, db_conn);
   if (delete_db_status != ODBCM_RC_SUCCESS) {
     if (delete_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
@@ -535,16 +571,18 @@ UpplReturnCode Kt_Controller::DeleteKeyInstance(void* key_struct,
 }
 
 /** ReadInternal
- * * @Description : This function reads the given  instance of KT_Controller
- ** * @param[in] : session_id - ipc session id used for TC validation
+ * @Description : This function reads the given  instance of KT_Controller
+ * @param[in] : session_id - ipc session id used for TC validation
  * key_struct - the key for the kt controller instance
  * value_struct - the value for the kt controller instance
  * data_type - UNC_DT_* , read allowed in candidate/running/startup/state
- * * @return    : UPPL_RC_SUCCESS is returned when the response
+ * operation_type-UNC_OP_*,type of operation
+ * @return    : UPPL_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
  * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_Controller::ReadInternal(vector<void *> &ctr_key,
+UpplReturnCode Kt_Controller::ReadInternal(OdbcmConnectionHandler *db_conn,
+                                           vector<void *> &ctr_key,
                                            vector<void *> &ctr_val,
                                            uint32_t data_type,
                                            uint32_t operation_type) {
@@ -562,7 +600,7 @@ UpplReturnCode Kt_Controller::ReadInternal(vector<void *> &ctr_key,
     val_struct = reinterpret_cast<void *>(&st_ctr_val.controller);
   }
   // Get read response from database
-  UpplReturnCode read_status = ReadCtrValFromDB(key_struct,
+  UpplReturnCode read_status = ReadCtrValFromDB(db_conn, key_struct,
                                                 val_struct,
                                                 data_type,
                                                 operation_type,
@@ -580,6 +618,7 @@ UpplReturnCode Kt_Controller::ReadInternal(vector<void *> &ctr_key,
     for (unsigned int iIndex = 0 ; iIndex < vect_controller_id.size();
         ++iIndex) {
       key_ctr_t *key_ctr = new key_ctr_t;
+      memset(key_ctr->controller_name, 0, sizeof(key_ctr->controller_name));
       memcpy(key_ctr->controller_name,
              vect_controller_id[iIndex].c_str(),
              vect_controller_id[iIndex].length()+1);
@@ -592,31 +631,31 @@ UpplReturnCode Kt_Controller::ReadInternal(vector<void *> &ctr_key,
 }
 
 /**ReadBulk
- * * @Description : This function reads bulk rows of KT_Controller in
+ * @Description : This function reads bulk rows of KT_Controller in
  *  controller table of specified data type.
  *  Order of ReadBulk response
  *  val_ctr -> val_ctr_domain -> val_logical_port ->
  *  val_logical_member_port -> val_switch ->  val_port ->
  *  val_link -> val_boundary
- * * @param[in] :
+ * @param[in] :
  * key_struct - the key for the kt controller instance
  * data_type - UNC_DT_* , read allowed in candidate/running/startup/state
- * option1/option2 - specifies any additional condition for read operation
  * max_rep_ct - specifies number of rows to be returned
+ * child_index-index indicating the children of Controller
  * parent_call - indicates whether parent has called this readbulk
  * is_read_next - indicates whether this function is invoked from readnext
- * * @return    : UPPL_RC_SUCCESS is returned when the response
+ * @return    : UPPL_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
  * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_Controller::ReadBulk(void* key_struct,
+UpplReturnCode Kt_Controller::ReadBulk(OdbcmConnectionHandler *db_conn,
+                                       void* key_struct,
                                        uint32_t data_type,
-                                       uint32_t option1,
-                                       uint32_t option2,
                                        uint32_t &max_rep_ct,
                                        int child_index,
                                        pfc_bool_t parent_call,
-                                       pfc_bool_t is_read_next) {
+                                       pfc_bool_t is_read_next,
+                                       ReadRequest *read_req) {
   pfc_log_info("Processing ReadBulk of Kt_Controller");
   UpplReturnCode read_status = UPPL_RC_SUCCESS;
   key_ctr_t* obj_key_ctr= reinterpret_cast<key_ctr_t*>(key_struct);
@@ -644,6 +683,7 @@ UpplReturnCode Kt_Controller::ReadBulk(void* key_struct,
     vector<string> vect_ctr_key_value;
     vect_ctr_key_value.push_back(str_controller_name);
     UpplReturnCode key_exist_status = IsKeyExists(
+        db_conn,
         (unc_keytype_datatype_t)data_type,
         vect_ctr_key_value);
     if (key_exist_status == UPPL_RC_SUCCESS) {
@@ -655,13 +695,13 @@ UpplReturnCode Kt_Controller::ReadBulk(void* key_struct,
   }
   void *val_struct = NULL;
   // Read the controller values based on given key structure
-  read_status = ReadBulkInternal(
-      key_struct,
-      val_struct,
-      data_type,
-      max_rep_ct+1,
-      vect_val_ctr,
-      vect_ctr_id);
+  read_status = ReadBulkInternal(db_conn,
+                                 key_struct,
+                                 val_struct,
+                                 data_type,
+                                 max_rep_ct+1,
+                                 vect_val_ctr,
+                                 vect_ctr_id);
   if (ctr_exists == PFC_TRUE) {
     vect_ctr_id.insert(vect_ctr_id.begin(), str_controller_name);
     val_ctr_st_t dummy_val_ctr;
@@ -669,10 +709,6 @@ UpplReturnCode Kt_Controller::ReadBulk(void* key_struct,
   }
   if (read_status == UPPL_RC_SUCCESS ||
       ctr_exists == PFC_TRUE) {
-    PhysicalCore *physical_core = PhysicalLayer::get_instance()->
-        get_physical_core();
-    InternalTransactionCoordinator *itc_trans  =
-        physical_core->get_internal_transaction_coordinator();
     // For each controller, read the child's attributes
     vector<val_ctr_st_t> ::iterator vect_iter = vect_val_ctr.begin();
     vector<string> ::iterator controller_iter = vect_ctr_id.begin();
@@ -701,26 +737,26 @@ UpplReturnCode Kt_Controller::ReadBulk(void* key_struct,
             UNC_KT_CONTROLLER, IS_KEY,
             reinterpret_cast<void *>(ctr_key)
         };
-        itc_trans->AddToBuffer(obj_key_buffer);
+        read_req->AddToBuffer(obj_key_buffer);
         if ((unc_keytype_datatype_t)data_type == UNC_DT_STATE) {
           val_ctr_st_t *val_buffer = new val_ctr_st_t(*vect_iter);
           BulkReadBuffer obj_value_buffer = {
               UNC_KT_CONTROLLER, IS_STATE_VALUE,
               reinterpret_cast<void *>(val_buffer)
           };
-          itc_trans->AddToBuffer(obj_value_buffer);
+          read_req->AddToBuffer(obj_value_buffer);
         } else {
           val_ctr_t *val_buffer = new val_ctr_t((*vect_iter).controller);
           BulkReadBuffer obj_value_buffer = {
               UNC_KT_CONTROLLER, IS_VALUE,
               reinterpret_cast<void *>(val_buffer)
           };
-          itc_trans->AddToBuffer(obj_value_buffer);
+          read_req->AddToBuffer(obj_value_buffer);
         }
         BulkReadBuffer obj_sep_buffer = {
             UNC_KT_CONTROLLER, IS_SEPARATOR, NULL
         };
-        itc_trans->AddToBuffer(obj_sep_buffer);
+        read_req->AddToBuffer(obj_sep_buffer);
         --max_rep_ct;
         if (max_rep_ct == 0) {
           pfc_log_debug("Controller - max_rep_ct reached zero...");
@@ -750,14 +786,13 @@ UpplReturnCode Kt_Controller::ReadBulk(void* key_struct,
         }
         pfc_log_debug("Controller Calling child %d read bulk", kIdx);
         UpplReturnCode ch_read_status = child[kIdx]->ReadBulk(
-            child_key_struct,
+            db_conn, child_key_struct,
             data_type,
-            option1,
-            option2,
             max_rep_ct,
             -1,
             true,
-            is_read_next);
+            is_read_next,
+            read_req);
         pfc_log_debug("ReadBulk response from child %d is %d",
                       kIdx, ch_read_status);
         delete child[kIdx];
@@ -771,6 +806,9 @@ UpplReturnCode Kt_Controller::ReadBulk(void* key_struct,
       // reset child index
       child_index = -1;
     }
+  } else if (read_status == UPPL_RC_ERR_DB_ACCESS) {
+    pfc_log_debug("KtController ReadBulk - Returning DB Access Error");
+    return read_status;
   }
   if (max_rep_ct > 0 && parent_call == false) {
     pfc_log_debug("max_rep_ct is %d and parent_call is %d, calling parent",
@@ -779,14 +817,13 @@ UpplReturnCode Kt_Controller::ReadBulk(void* key_struct,
     Kt_Root nextKin;
     key_root_t nextkin_key_struct;
     read_status = nextKin.ReadBulk(
-        reinterpret_cast<void *>(&nextkin_key_struct),
+        db_conn, reinterpret_cast<void *>(&nextkin_key_struct),
         data_type,
-        option1,
-        option2,
         max_rep_ct,
         0,
         false,
-        is_read_next);
+        is_read_next,
+        read_req);
     pfc_log_debug("read status from next kin Kt_Root is %d",
                   read_status);
     return UPPL_RC_SUCCESS;
@@ -800,19 +837,21 @@ UpplReturnCode Kt_Controller::ReadBulk(void* key_struct,
 }
 
 /**ReadBulkInternal
- * * @Description : This function reads bulk rows of KT_Controller in
+ * @Description : This function reads bulk rows of KT_Controller in
  *  controller table of specified data type.
- * * @param[in] :
+ * @param[in] :
  * key_struct - the key for the kt controller instance
+ * data_type-UNC_DT_*
  * val_struct - the value struct for kt_controller instance
  * max_rep_ct - specifies number of rows to be returned
  * vect_val_ctr - indicates the fetched values from db of val_ctr type
  * vect_ctr_id - indicates the fetched contoller names from db
- * * @return    : UPPL_RC_SUCCESS is returned when the response
+ * @return    : UPPL_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
  * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
 UpplReturnCode Kt_Controller::ReadBulkInternal(
+    OdbcmConnectionHandler *db_conn,
     void* key_struct,
     void* val_struct,
     uint32_t data_type,
@@ -829,19 +868,23 @@ UpplReturnCode Kt_Controller::ReadBulkInternal(
   // Populate DBSchema for controller_table
   void *old_val_struct;
   vector<ODBCMOperator> vect_key_operations;
-  PopulateDBSchemaForKtTable(kt_controller_dbtableschema,
+  PopulateDBSchemaForKtTable(db_conn, kt_controller_dbtableschema,
                              key_struct,
                              val_struct,
-                             UNC_OP_READ_BULK, 0, 0,
+                             UNC_OP_READ_BULK, data_type, 0, 0,
                              vect_key_operations, old_val_struct);
   // Read rows from DB
   read_db_status = physical_layer->get_odbc_manager()-> \
       GetBulkRows((unc_keytype_datatype_t)data_type, max_rep_ct,
                   kt_controller_dbtableschema,
-                  (unc_keytype_operation_t)UNC_OP_READ_BULK);
+                  (unc_keytype_operation_t)UNC_OP_READ_BULK, db_conn);
   if (read_db_status == ODBCM_RC_RECORD_NOT_FOUND) {
     pfc_log_debug("No record to read");
     read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+    return read_status;
+  } else if (read_db_status == ODBCM_RC_CONNECTION_ERROR) {
+    read_status = UPPL_RC_ERR_DB_ACCESS;
+    pfc_log_error("ReadBulk operation has failed with %d", read_db_status);
     return read_status;
   } else if (read_db_status != ODBCM_RC_SUCCESS) {
     read_status = UPPL_RC_ERR_DB_GET;
@@ -850,7 +893,7 @@ UpplReturnCode Kt_Controller::ReadBulkInternal(
   }
 
   // From the values received from DB, populate val_ctr structure
-  FillControllerValueStructure(kt_controller_dbtableschema,
+  FillControllerValueStructure(db_conn, kt_controller_dbtableschema,
                                vect_val_ctr,
                                max_rep_ct,
                                UNC_OP_READ_BULK,
@@ -859,27 +902,30 @@ UpplReturnCode Kt_Controller::ReadBulkInternal(
 }
 
 /** PerformSyntaxValidation
- * * @Description : This function performs syntax validation for
+ * @Description : This function performs syntax validation for
  *  UNC_KT_CONTROLLER
- * * * @param[in]
+ * @param[in]
  * key_struct - the key for the kt controller instance
  * value_struct - the value for the kt controller instance
- * data_type - UNC_DT_*
- * operation_type - UNC_OP*
- * * @return    : UPPL_RC_SUCCESS is returned when the validation is successful
- * UPPL_RC_ERR_* is returned when validtion is failure
+ * data_type - UNC_DT_*,type of database
+ * operation_type - UNC_OP*,type of operation
+ * @return    : UPPL_RC_SUCCESS is returned when the validation is successful
+ * UPPL_RC_ERR_* is returned when validation is failure
  * */
-UpplReturnCode Kt_Controller::PerformSyntaxValidation(void* key_struct,
-                                                      void* val_struct,
-                                                      uint32_t operation,
-                                                      uint32_t data_type) {
+UpplReturnCode Kt_Controller::PerformSyntaxValidation(
+    OdbcmConnectionHandler *db_conn,
+    void* key_struct,
+    void* val_struct,
+    uint32_t operation,
+    uint32_t data_type) {
   UpplReturnCode ret_code = UPPL_RC_SUCCESS;
   pfc_bool_t mandatory = PFC_TRUE;
-
+  map<string, Kt_Class_Attr_Syntax> attr_syntax_map =
+      attr_syntax_map_all[UNC_KT_CONTROLLER];
   // Validate key structure
   key_ctr *key = reinterpret_cast<key_ctr_t*>(key_struct);
   string value = reinterpret_cast<char*>(key->controller_name);
-  IS_VALID_STRING_KEY(CTR_NAME, value, operation, ret_code, mandatory);
+  IS_VALID_STRING_KEY(CTR_NAME_STR, value, operation, ret_code, mandatory);
   if (ret_code != UPPL_RC_SUCCESS) {
     return UPPL_RC_ERR_CFG_SYNTAX;
   }
@@ -888,7 +934,7 @@ UpplReturnCode Kt_Controller::PerformSyntaxValidation(void* key_struct,
   UpplReturnCode ctr_type_code = UPPL_RC_SUCCESS;
   if (operation == UNC_OP_UPDATE) {
     ctr_type_code = PhyUtil::get_controller_type(
-        value,
+        db_conn, value,
         ctr_type,
         (unc_keytype_datatype_t)data_type);
     pfc_log_debug("Controller type - return code %d, value %s",
@@ -899,7 +945,7 @@ UpplReturnCode Kt_Controller::PerformSyntaxValidation(void* key_struct,
   if (val_struct != NULL) {
     val_ctr *val_ctr = reinterpret_cast<val_ctr_t*>(val_struct);
     ret_code = ValidateControllerType(
-        operation,
+        db_conn, operation,
         data_type,
         ctr_type,
         ctr_type_code,
@@ -908,7 +954,7 @@ UpplReturnCode Kt_Controller::PerformSyntaxValidation(void* key_struct,
       return UPPL_RC_ERR_CFG_SYNTAX;
     }
     ret_code = ValidateControllerVersion(
-        operation,
+        db_conn, operation,
         data_type,
         ctr_type,
         ctr_type_code,
@@ -917,7 +963,7 @@ UpplReturnCode Kt_Controller::PerformSyntaxValidation(void* key_struct,
       return UPPL_RC_ERR_CFG_SYNTAX;
     }
     ret_code = ValidateControllerDescription(
-        operation,
+        db_conn, operation,
         data_type,
         ctr_type,
         ctr_type_code,
@@ -926,7 +972,7 @@ UpplReturnCode Kt_Controller::PerformSyntaxValidation(void* key_struct,
       return UPPL_RC_ERR_CFG_SYNTAX;
     }
     ret_code = ValidateControllerIpAddress(
-        operation,
+        db_conn, operation,
         data_type,
         ctr_type,
         ctr_type_code,
@@ -936,7 +982,7 @@ UpplReturnCode Kt_Controller::PerformSyntaxValidation(void* key_struct,
       return UPPL_RC_ERR_CFG_SYNTAX;
     }
     ret_code = ValidateControllerUser(
-        operation,
+        db_conn, operation,
         data_type,
         ctr_type,
         ctr_type_code,
@@ -945,7 +991,7 @@ UpplReturnCode Kt_Controller::PerformSyntaxValidation(void* key_struct,
       return UPPL_RC_ERR_CFG_SYNTAX;
     }
     ret_code = ValidateControllerPassword(
-        operation,
+        db_conn, operation,
         data_type,
         ctr_type,
         ctr_type_code,
@@ -954,7 +1000,7 @@ UpplReturnCode Kt_Controller::PerformSyntaxValidation(void* key_struct,
       return UPPL_RC_ERR_CFG_SYNTAX;
     }
     ret_code = ValidateControllerEnableAudit(
-        operation,
+        db_conn, operation,
         data_type,
         ctr_type,
         ctr_type_code,
@@ -967,10 +1013,10 @@ UpplReturnCode Kt_Controller::PerformSyntaxValidation(void* key_struct,
 }
 
 /** ValidateCtrlrValueCapability
- * * @Description : This function checks capability for UNC_KT_CONTROLLER
- * * * @param[in] : version - specifies the version to be used for validation
- * key type - specifies UNC_KT_CONTROLLER
- * * * @return    : UPPL_RC_SUCCESS if validation is successful
+ * @Description : This function checks capability for UNC_KT_CONTROLLER
+ * @param[in] : version - specifies the version to be used for validation
+ * key type - specifies UNC_KT_CONTROLLER,value of unc_key_type_t
+ * @return    : UPPL_RC_SUCCESS if validation is successful
  * or UPPL_RC_ERR_* if validation is failed
  * */
 UpplReturnCode Kt_Controller::ValidateCtrlrValueCapability(string version,
@@ -978,14 +1024,16 @@ UpplReturnCode Kt_Controller::ValidateCtrlrValueCapability(string version,
   UpplReturnCode resp_code = UPPL_RC_SUCCESS;
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   map<string, Kt_Class_Attr_Syntax>::iterator itVal;
+  map<string, Kt_Class_Attr_Syntax> attr_syntax_map =
+      attr_syntax_map_all[UNC_KT_CONTROLLER];
   for (itVal = attr_syntax_map.begin();
       itVal != attr_syntax_map.end();
       ++itVal) {
     string attribute_name = itVal->first;
-    if (attribute_name != CTR_NAME &&
-        attribute_name != CTR_VALID &&
-        attribute_name != CTR_CS_ROW_STATUS &&
-        attribute_name != CTR_CS_ATTR) {
+    if (attribute_name != CTR_NAME_STR &&
+        attribute_name != CTR_VALID_STR &&
+        attribute_name != CTR_CS_ROW_STATUS_STR &&
+        attribute_name != CTR_CS_ATTR_STR) {
       resp_code = physical_layer->get_physical_core()->
           ValidateAttribInCtrlrCap(version,
                                    key_type,
@@ -1000,16 +1048,18 @@ UpplReturnCode Kt_Controller::ValidateCtrlrValueCapability(string version,
 }
 
 /** ValidateCtrlrScalability
- * * @Description : This function checks scalability for UNC_KT_CONTROLLER
- * * * @param[in] : version - specifies the controller version
- * key type - contains UNC_KT_CONTROLLER
- * data_type - UNC_DT_*, scalability number and data_type
- * * * @return    : UPPL_RC_SUCCESS if scalability number is within range
+ * @Description : This function checks scalability for UNC_KT_CONTROLLER
+ * @param[in] : version - specifies the controller version
+ * key type - contains UNC_KT_CONTROLLER,value of unc_key_type_t
+ * data_type - UNC_DT_*, type of database
+ * @return    : UPPL_RC_SUCCESS if scalability number is within range
  * or UPPL_RC_ERR_* if not
  * */
-UpplReturnCode Kt_Controller::ValidateCtrlrScalability(string version,
-                                                       uint32_t key_type,
-                                                       uint32_t data_type) {
+UpplReturnCode Kt_Controller::ValidateCtrlrScalability(
+    OdbcmConnectionHandler *db_conn,
+    string version,
+    uint32_t key_type,
+    uint32_t data_type) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   // Structure used to send request to ODBC
   // Send request to ODBC for controller_table create
@@ -1018,7 +1068,7 @@ UpplReturnCode Kt_Controller::ValidateCtrlrScalability(string version,
   string table_name = UPPL_CTR_TABLE;
   response_status = physical_layer->get_odbc_manager()->\
       GetRowCount((unc_keytype_datatype_t)data_type,
-                  table_name, response_count);
+                  table_name, response_count, db_conn);
   if (response_status == ODBCM_RC_CONNECTION_ERROR) {
     // log error to log daemon
     pfc_log_error("DB connection not available or cannot access DB");
@@ -1048,14 +1098,15 @@ UpplReturnCode Kt_Controller::ValidateCtrlrScalability(string version,
 }
 
 /** ValidateUnKnownCtrlrScalability
- * * @Description : This function checks scalability for unknown controller
- * * * @param[in] : type - specifies the controller type
- * key type - contains UNC_KT_CONTROLLER
+ * @Description : This function checks scalability for unknown controller
+ * @param[in] : type - specifies the controller type
+ * key_struct - contains UNC_KT_CONTROLLER key structure
  * data_type - UNC_DT_*, unknown controler scalability number and data_type
- * * * @return    : UPPL_RC_SUCCESS if unknown controler scalability number
+ * @return    : UPPL_RC_SUCCESS if unknown controler scalability number
  *  is within range or UPPL_RC_ERR_* if not
  * */
 UpplReturnCode Kt_Controller::ValidateUnknownCtrlrScalability(
+    OdbcmConnectionHandler *db_conn,
     void *key_struct,
     uint8_t type,
     uint32_t data_type) {
@@ -1065,7 +1116,7 @@ UpplReturnCode Kt_Controller::ValidateUnknownCtrlrScalability(
   DBTableSchema kt_controller_dbtableschema;
   // Construct Primary key list
   vector<string> vect_prim_keys;
-  vect_prim_keys.push_back(CTR_TYPE);
+  vect_prim_keys.push_back(CTR_TYPE_STR);
   std::vector<ODBCMOperator> vect_filter_operators;
   vect_filter_operators.push_back(unc::uppl::EQUAL);
 
@@ -1076,10 +1127,10 @@ UpplReturnCode Kt_Controller::ValidateUnknownCtrlrScalability(
   // TableAttrSchema holds table_name, primary key, attr_name
   vector<TableAttrSchema> vect_table_attr_schema;
   list< vector<TableAttrSchema> > row_list;
-  PhyUtil::FillDbSchema(CTR_TYPE, value,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_TYPE, value,
                         value.length(), DATATYPE_UINT16,
                         vect_table_attr_schema);
-  kt_controller_dbtableschema.set_table_name(UPPL_CTR_TABLE);
+  kt_controller_dbtableschema.set_table_name(unc::uppl::CTR_TABLE);
   kt_controller_dbtableschema.set_primary_keys(vect_prim_keys);
   row_list.push_back(vect_table_attr_schema);
   kt_controller_dbtableschema.set_row_list(row_list);
@@ -1088,7 +1139,7 @@ UpplReturnCode Kt_Controller::ValidateUnknownCtrlrScalability(
   response_status = physical_layer->get_odbc_manager()-> \
       GetSiblingCount((unc_keytype_datatype_t)data_type,
                       kt_controller_dbtableschema, count,
-                      vect_filter_operators);
+                      vect_filter_operators, db_conn);
 
   if (response_status == ODBCM_RC_CONNECTION_ERROR) {
     // log error to log daemon
@@ -1114,19 +1165,21 @@ UpplReturnCode Kt_Controller::ValidateUnknownCtrlrScalability(
 }
 
 /** PerformSemanticValidation
- * * @Description : This function performs semantic validation
+ * @Description : This function performs semantic validation
  * for UNC_KT_CONTROLLER
- * * * @param[in] : key_struct - specifies key instance of KT_Controller
- * , value_struct - specifies value of KT_CONTROLLER
- * operation - UNC_OP*
- * data_type - UNC_DT*
- * * * @return    : UPPL_RC_SUCCESS if semantic valition is successful
+ * @param[in] : key_struct - specifies key instance of KT_Controller
+ * value_struct - specifies value of KT_CONTROLLER,value of unc_key_type_t
+ * operation - UNC_OP*,type of operation
+ * data_type - UNC_DT*,type of database
+ * @return    : UPPL_RC_SUCCESS if semantic valition is successful
  * or UPPL_RC_ERR_* if failed
  * */
-UpplReturnCode Kt_Controller::PerformSemanticValidation(void* key_struct,
-                                                        void* val_struct,
-                                                        uint32_t operation,
-                                                        uint32_t data_type) {
+UpplReturnCode Kt_Controller::PerformSemanticValidation(
+    OdbcmConnectionHandler *db_conn,
+    void* key_struct,
+    void* val_struct,
+    uint32_t operation,
+    uint32_t data_type) {
   UpplReturnCode status = UPPL_RC_SUCCESS;
 
   // Check whether the given instance of controller exists in DB
@@ -1134,7 +1187,8 @@ UpplReturnCode Kt_Controller::PerformSemanticValidation(void* key_struct,
   string controller_name = (const char*)obj_key_ctr->controller_name;
   vector<string> ctr_vect_key_value;
   ctr_vect_key_value.push_back(controller_name);
-  UpplReturnCode key_status = IsKeyExists((unc_keytype_datatype_t)data_type,
+  UpplReturnCode key_status = IsKeyExists(db_conn,
+                                          (unc_keytype_datatype_t)data_type,
                                           ctr_vect_key_value);
   // In case of create operation, key should not exist
   if (operation == UNC_OP_CREATE) {
@@ -1148,9 +1202,15 @@ UpplReturnCode Kt_Controller::PerformSemanticValidation(void* key_struct,
     } else if (key_status == UPPL_RC_ERR_DB_GET) {
       pfc_log_debug("Key does not exist. Validate Ip Address/ Type");
       // Check whether any controller with same type and ip address exists
-      status = ValidateTypeIpAddress(key_struct,
+      status = ValidateTypeIpAddress(db_conn, key_struct,
                                      val_struct,
                                      data_type);
+      if (status == UPPL_RC_SUCCESS) {
+        pfc_log_debug("Validating Type and Ip Address in Running Db");
+        status = ValidateTypeIpAddress(db_conn, key_struct,
+                                       val_struct,
+                                       UNC_DT_RUNNING);
+      }
     }
   } else if (operation == UNC_OP_UPDATE || operation == UNC_OP_DELETE ||
       operation == UNC_OP_READ) {
@@ -1168,10 +1228,11 @@ UpplReturnCode Kt_Controller::PerformSemanticValidation(void* key_struct,
 }
 
 /** SendSemanticRequestToUPLL
- * * @Description : This functions calls IPC to check whether UNC_KT_CONTROLLER
+ * @Description : This functions calls IPC to check whether UNC_KT_CONTROLLER
  *  is being referred in Logical
- * * * @param[in] : key_ctr - specifies key instance of KT_CONTROLLER
- * * * @return    : UPPL_RC_SUCCESS if controller is not referred
+ * @param[in] : key_ctr - specifies key instance of KT_CONTROLLER
+ * data_type-UNC_DT_*,type of database
+ * @return    : UPPL_RC_SUCCESS if controller is not referred
  * or UPPL_RC_ERR_* if controller is referred in logical
  * */
 UpplReturnCode Kt_Controller::SendSemanticRequestToUPLL(void* key_struct,
@@ -1193,20 +1254,25 @@ UpplReturnCode Kt_Controller::SendSemanticRequestToUPLL(void* key_struct,
 }
 
 /** HandleDriverEvents
- * * @Description : This function processes the notification received from
+ * @Description : This function processes the notification received from
  * driver
- * * * @param[in] : key_struct - specifies the key instance of KT_CONTROLLER
+ * @param[in] : key_struct - specifies the key instance of KT_CONTROLLER
+ * oper_type-UNC_OP_*,type of operation
+ * data_type-UNC_DT_*,type ,of database
+ * is_events_done-flag to indicate whether event is processed
  * old_value_struct - old value of KT_CONTROLLER
  * new_value_struct - new value of KT_CONTROLLER
- * * * @return    : UPPL_RC_SUCCESS if events are handled successfully or
+ * @return    : UPPL_RC_SUCCESS if events are handled successfully or
  * UPPL_RC_ERR*
  * */
-UpplReturnCode Kt_Controller::HandleDriverEvents(void* key_struct,
-                                                 uint32_t oper_type,
-                                                 uint32_t data_type,
-                                                 void* old_val_struct,
-                                                 void* new_val_struct,
-                                                 pfc_bool_t is_events_done) {
+UpplReturnCode Kt_Controller::HandleDriverEvents(
+    OdbcmConnectionHandler *db_conn,
+    void* key_struct,
+    uint32_t oper_type,
+    uint32_t data_type,
+    void* old_val_struct,
+    void* new_val_struct,
+    pfc_bool_t is_events_done) {
   key_ctr *obj_key_ctr= reinterpret_cast<key_ctr_t*>(key_struct);
   val_ctr_st *obj_old_val_ctr = reinterpret_cast<val_ctr_st*>(old_val_struct);
   val_ctr_st *obj_new_val_ctr = reinterpret_cast<val_ctr_st*>(new_val_struct);
@@ -1225,78 +1291,104 @@ UpplReturnCode Kt_Controller::HandleDriverEvents(void* key_struct,
   valid_val = PhyUtil::uint8touint(obj_new_val_ctr->valid[kIdxActualVersion]);
   if (PhyUtil::IsValidValue(oper_type, valid_val) == true) {
     string act_version = (const char*)obj_new_val_ctr->actual_version;
-    status = SetActualVersion(key_struct, act_version);
+    status = SetActualVersion(db_conn, key_struct, act_version,
+                              UNC_DT_RUNNING, UNC_VF_VALID);
     if (status != UPPL_RC_SUCCESS) {
       // log error
-      pfc_log_error("act_version update operation failed");
+      pfc_log_error("act_version update operation failed for running");
+    }
+    status = SetActualVersion(db_conn, key_struct,
+                              act_version, UNC_DT_CANDIDATE, UNC_VF_VALID);
+    if (status != UPPL_RC_SUCCESS) {
+      // log error
+      pfc_log_error("act_version update operation failed for candidate");
     }
   }
   // Read old_oper_status from DB
   uint8_t oper_status_db = 0;
-  UpplReturnCode read_status = GetOperStatus(data_type,
+  UpplReturnCode read_status = GetOperStatus(db_conn, data_type,
                                              key_struct,
                                              oper_status_db);
-  if (read_status == UPPL_RC_SUCCESS) {
-    uint8_t new_oper_status = UPPL_CONTROLLER_OPER_DOWN;
-    // CONTROLLER_OPER_UP from driver
-    // Its same as enum UPPL_CONTROLLER_OPER_UP
-    if (obj_new_val_ctr->oper_status == UPPL_CONTROLLER_OPER_UP) {
-      if (is_events_done == false) {
-        new_oper_status = UPPL_CONTROLLER_OPER_WAITING_AUDIT;
-      } else {
-        new_oper_status = UPPL_CONTROLLER_OPER_UP;
+  if (read_status != UPPL_RC_SUCCESS) {
+    return read_status;
+  }
+  uint8_t new_oper_status = UPPL_CONTROLLER_OPER_DOWN;
+  // CONTROLLER_OPER_UP from driver
+  // Its same as enum UPPL_CONTROLLER_OPER_UP
+  if (obj_new_val_ctr->oper_status == UPPL_CONTROLLER_OPER_UP) {
+    if (is_events_done == false) {
+      new_oper_status = UPPL_CONTROLLER_OPER_WAITING_AUDIT;
+    } else {
+      new_oper_status = UPPL_CONTROLLER_OPER_UP;
+    }
+  }
+  if (obj_new_val_ctr->oper_status == UPPL_CONTROLLER_OPER_DOWN) {
+    // If controller is in audit list perform required action
+    IPCConnectionManager *ipc_mgr = PhysicalLayer::get_instance()->
+        get_ipc_connection_manager();
+    pfc_bool_t is_controller_in_audit = ipc_mgr->
+        IsControllerInAudit(controller_name);
+    if (is_controller_in_audit == PFC_TRUE) {
+      pfc_log_debug("Calling MergeAuditDbToRunning");
+      // To cancel the already running timer in Audit
+      UpplReturnCode cancel_ret = ipc_mgr->CancelTimer(controller_name);
+      if (cancel_ret != UPPL_RC_SUCCESS) {
+        pfc_log_info("Failure in cancelling timer for controller %s",
+                     controller_name.c_str());
+      }
+      AuditRequest audit_req;
+      UpplReturnCode merge_auditdb =
+          audit_req.MergeAuditDbToRunning(db_conn, controller_name);
+      if (merge_auditdb != UPPL_RC_SUCCESS) {
+        pfc_log_info("Merge of audit and running db failed");
       }
     }
-    if (obj_new_val_ctr->oper_status == UPPL_CONTROLLER_OPER_DOWN) {
-      // If controller is in audit list perform required action
-      IPCConnectionManager *ipc_mgr = PhysicalLayer::get_instance()->
-          get_ipc_connection_manager();
-      pfc_bool_t is_controller_in_audit = ipc_mgr->
-          IsControllerInAudit(controller_name);
-      if (is_controller_in_audit == PFC_TRUE) {
-        pfc_log_debug("Calling MergeAuditDbToRunning");
-        // To cancel the already running timer in Audit
-        uint32_t time_out_id = ipc_mgr->getTimeOutId(controller_name);
-        ipc_mgr->notfn_timer_->cancel(time_out_id);
-        AuditRequest audit_req;
-        UpplReturnCode merge_auditdb =
-            audit_req.MergeAuditDbToRunning(controller_name);
-        if (merge_auditdb != UPPL_RC_SUCCESS) {
-          pfc_log_info("Merge of audit and running db failed");
-        }
-      }
+    // Check for Ip Address and remove state db if no ip address is found
+    UpplReturnCode state_status = CheckIpAndClearStateDB(db_conn, key_struct);
+    pfc_log_debug("Ip and state db processing status : %d", state_status);
+  }
+  pfc_log_info("New Oper_status to be set is: %d", new_oper_status);
+  if (new_oper_status != oper_status_db) {
+    if (is_events_done == true) {
+      // To avoid changing back to audit_waiting
+      status = HandleOperStatus(db_conn, data_type,
+                                key_struct, obj_new_val_ctr, true);
+    } else {
+      status = HandleOperStatus(db_conn, data_type,
+                                key_struct, obj_new_val_ctr);
     }
-    pfc_log_info("New Oper_status to be set is: %d", new_oper_status);
-    if (new_oper_status != oper_status_db) {
-      status = HandleOperStatus(data_type, key_struct, obj_new_val_ctr);
-      pfc_log_debug("HandleOperStatus return %d", status);
-      // Send notification to Northbound
-      if (new_oper_status == UPPL_CONTROLLER_OPER_UP ||
-          new_oper_status == UPPL_CONTROLLER_OPER_DOWN) {
-        status = SendOperStatusNotification(*obj_key_ctr,
-                                            oper_status_db,
-                                            new_oper_status);
-      }
+    pfc_log_debug("HandleOperStatus return %d", status);
+    // Send notification to Northbound
+    if (new_oper_status == UPPL_CONTROLLER_OPER_UP ||
+        new_oper_status == UPPL_CONTROLLER_OPER_DOWN) {
+      status = SendOperStatusNotification(*obj_key_ctr,
+                                          oper_status_db,
+                                          new_oper_status);
     }
   }
   return status;
 }
 
 /** HandleDriverAlarms
- * * @Description : This function processes the alarm notification
+ * @Description : This function processes the alarm notification
  * received from driver
- * * * @param[in] : alarm type - contains type to indicate PATH_FAULT alarm
+ * @param[in] : alarm type - contains type to indicate PATH_FAULT alarm
  * operation - contains UNC_OP_CREATE or UNC_OP_DELETE\
  * key_struct - indicates the key instance of KT_CONTROLLER
  * value_struct - indicates the alarm values structure
- * * * @return    : UPPL_RC_SUCCESS if alarm is handled successfully or
+ * data_type-UNC_DT_*,type of database
+ * alarm_type-type of alarm raised
+ * oper_type-UNC_OP_*,type of operation
+ * @return    : UPPL_RC_SUCCESS if alarm is handled successfully or
  * UPPL_RC_ERR*
  * */
-UpplReturnCode Kt_Controller::HandleDriverAlarms(uint32_t data_type,
-                                                 uint32_t alarm_type,
-                                                 uint32_t oper_type,
-                                                 void* key_struct,
-                                                 void* val_struct) {
+UpplReturnCode Kt_Controller::HandleDriverAlarms(
+    OdbcmConnectionHandler *db_conn,
+    uint32_t data_type,
+    uint32_t alarm_type,
+    uint32_t oper_type,
+    void* key_struct,
+    void* val_struct) {
   UpplReturnCode status = UPPL_RC_SUCCESS;
   // Following alarms are sent for kt_controller
   if (alarm_type == UNC_PHYS_PATH_FAULT) {
@@ -1305,6 +1397,8 @@ UpplReturnCode Kt_Controller::HandleDriverAlarms(uint32_t data_type,
     PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
     key_ctr_t *obj_key_ctr= reinterpret_cast<key_ctr_t*>(key_struct);
     string controller_name = (const char*)obj_key_ctr->controller_name;
+    string temp_domain_name = "";
+    string domain_name = "";
     int err = 0;
     Kt_LogicalPort logical_port_class;
     Kt_Port port_class;
@@ -1316,37 +1410,40 @@ UpplReturnCode Kt_Controller::HandleDriverAlarms(uint32_t data_type,
     (obj_val.ingress_ofs_dpid);
     string egress_switch_id = reinterpret_cast<char *>
     (obj_val.egress_ofs_dpid);
-    string phy_port_id;
+    string phy_port_id = "";
     vector<string> ingress_logical_port_id, egress_logical_port_id;
     // Get the associated logical_port_id for ingress switch
-    logical_port_class.GetAllPortId(data_type,
+    logical_port_class.GetAllPortId(db_conn, data_type,
                                     controller_name,
                                     ingress_switch_id,
+                                    temp_domain_name,
                                     ingress_logical_port_id,
                                     true);
-    memset(obj_path_fault_alarm.ingress_logical_port, 0, 320);
+    memset(&obj_path_fault_alarm, 0, sizeof(obj_path_fault_alarm));
     if (!ingress_logical_port_id.empty()) {
       memcpy(obj_path_fault_alarm.ingress_logical_port,
              ingress_logical_port_id[0].c_str(),
              (ingress_logical_port_id[0].length())+1);
       pfc_log_debug("Ingress Logical Port: %s",
                     obj_path_fault_alarm.ingress_logical_port);
+      domain_name = temp_domain_name;
     } else {
       pfc_log_info("No logical port associated with ingress switch id");
     }
     // Get the associated logical_port_id for egress switch
-    logical_port_class.GetAllPortId(data_type,
+    logical_port_class.GetAllPortId(db_conn, data_type,
                                     controller_name,
                                     egress_switch_id,
+                                    temp_domain_name,
                                     egress_logical_port_id,
                                     true);
-    memset(obj_path_fault_alarm.egress_logical_port, 0, 320);
     if (!egress_logical_port_id.empty()) {
       memcpy(obj_path_fault_alarm.egress_logical_port,
              egress_logical_port_id[0].c_str(),
              egress_logical_port_id[0].length()+1);
       pfc_log_debug("Egress Logical Port: %s",
                     obj_path_fault_alarm.egress_logical_port);
+      domain_name = temp_domain_name;
     } else {
       pfc_log_info("No logical port associated with egress switch id");
     }
@@ -1354,16 +1451,18 @@ UpplReturnCode Kt_Controller::HandleDriverAlarms(uint32_t data_type,
     egress_logical_port_id.clear();
     pfc_log_debug("Get LogPortIds for corresponding ingress switch PhyPorts");
     // Get all logical ports associated with ingress switch
-    logical_port_class.GetAllPortId(data_type,
+    logical_port_class.GetAllPortId(db_conn, data_type,
                                     controller_name,
                                     ingress_switch_id,
+                                    temp_domain_name,
                                     ingress_logical_port_id,
                                     false);
     pfc_log_debug("Get LogPortIds for corresponding egress switch PhyPorts");
     // Get all logical ports associated with egress switch
-    logical_port_class.GetAllPortId(data_type,
+    logical_port_class.GetAllPortId(db_conn, data_type,
                                     controller_name,
                                     egress_switch_id,
+                                    temp_domain_name,
                                     egress_logical_port_id,
                                     false);
     obj_path_fault_alarm.ingress_num_of_ports = static_cast<uint16_t>
@@ -1379,10 +1478,19 @@ UpplReturnCode Kt_Controller::HandleDriverAlarms(uint32_t data_type,
     ServerEvent ser_evt((pfc_ipcevtype_t)UPPL_ALARMS_PHYS_PATH_FAULT, err);
     northbound_alarm_header rsh = { oper_type,
         data_type,
-        UNC_KT_CONTROLLER,
+        UNC_KT_CTR_DOMAIN,
         UPPL_ALARMS_PHYS_PATH_FAULT};
     err = PhyUtil::sessOutNBAlarmHeader(ser_evt, rsh);
-    err |= ser_evt.addOutput(*obj_key_ctr);
+    key_ctr_domain_t ctr_dmn_key;
+    memset(&ctr_dmn_key, '\0', sizeof(ctr_dmn_key));
+    memcpy(ctr_dmn_key.ctr_key.controller_name,
+           (const char *)controller_name.c_str(), controller_name.length()+1);
+    if (!domain_name.empty()) {
+      memcpy(ctr_dmn_key.domain_name,
+             (const char *)domain_name.c_str(), domain_name.length()+1);
+    }
+    err |= ser_evt.addOutput(ctr_dmn_key);
+    pfc_log_info("%s", (IpctUtil::get_string(ctr_dmn_key)).c_str());
     err |= ser_evt.addOutput(obj_path_fault_alarm);
     // N number of  UINT8 logical_port[320] has to be added
     // Get all logical_port_ids associated with switch and physical port
@@ -1409,13 +1517,15 @@ UpplReturnCode Kt_Controller::HandleDriverAlarms(uint32_t data_type,
 }
 
 /** IsKeyExists
- * * @Description : This function checks whether the controller_id exists in DB
- * * * @param[in] : data type - UNC_DT_*
+ * @Description : This function checks whether the controller_id exists in DB
+ * @param[in] : data type - UNC_DT_*,type of database
  * key value - Contains controller_id
- * * * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR* based on operation type
+ * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR* based on operation type
  * */
-UpplReturnCode Kt_Controller::IsKeyExists(unc_keytype_datatype_t data_type,
-                                          vector<string> key_values) {
+UpplReturnCode Kt_Controller::IsKeyExists(
+    OdbcmConnectionHandler *db_conn,
+    unc_keytype_datatype_t data_type,
+    const vector<string> &key_values) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   UpplReturnCode check_status = UPPL_RC_SUCCESS;
   if (key_values.empty()) {
@@ -1429,7 +1539,7 @@ UpplReturnCode Kt_Controller::IsKeyExists(unc_keytype_datatype_t data_type,
 
   // Construct Primary key list
   vector<string> vect_prim_keys;
-  vect_prim_keys.push_back(CTR_NAME);
+  vect_prim_keys.push_back(CTR_NAME_STR);
 
   // Construct TableAttrSchema structure
   // TableAttrSchema holds table_name, primary key, attr_name
@@ -1437,18 +1547,18 @@ UpplReturnCode Kt_Controller::IsKeyExists(unc_keytype_datatype_t data_type,
   list< vector<TableAttrSchema> > row_list;
 
   // Controller_name
-  PhyUtil::FillDbSchema(CTR_NAME, controller_name,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                         controller_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
 
-  kt_controller_dbtableschema.set_table_name(UPPL_CTR_TABLE);
+  kt_controller_dbtableschema.set_table_name(unc::uppl::CTR_TABLE);
   kt_controller_dbtableschema.set_primary_keys(vect_prim_keys);
   row_list.push_back(vect_table_attr_schema);
   kt_controller_dbtableschema.set_row_list(row_list);
 
   // Send request to ODBC for controlle_common_table
   ODBCM_RC_STATUS check_db_status = physical_layer->get_odbc_manager()->\
-      IsRowExists(data_type, kt_controller_dbtableschema);
+      IsRowExists(data_type, kt_controller_dbtableschema, db_conn);
   if (check_db_status == ODBCM_RC_CONNECTION_ERROR) {
     // log error to log daemon
     pfc_log_error("DB connection not available or cannot access DB");
@@ -1473,16 +1583,20 @@ UpplReturnCode Kt_Controller::IsKeyExists(unc_keytype_datatype_t data_type,
 }
 
 /** HandleOperStatus
- * * @Description : This function performs the required actions when oper status
+ * @Description : This function performs the required actions when oper status
  * changes
- * * * @param[in] : Key and value struct
- * * * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
+ * @param[in] : key_struct-void* to CTR key structure
+ * value_struct-void* to CTR val structure
+ * data_type-UNC_DT_*,type of database
+ * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
  * */
-UpplReturnCode Kt_Controller::HandleOperStatus(uint32_t data_type,
-                                               void *key_struct,
-                                               void *value_struct) {
+UpplReturnCode Kt_Controller::HandleOperStatus(
+    OdbcmConnectionHandler *db_conn,
+    uint32_t data_type,
+    void *key_struct,
+    void *value_struct) {
   UpplReturnCode return_code = UPPL_RC_SUCCESS;
-  return_code = HandleOperStatus(data_type,
+  return_code = HandleOperStatus(db_conn, data_type,
                                  key_struct,
                                  value_struct,
                                  false);
@@ -1490,16 +1604,20 @@ UpplReturnCode Kt_Controller::HandleOperStatus(uint32_t data_type,
 }
 
 /** HandleOperStatus
- * * @Description : This function performs the required actions when oper status
+ * @Description : This function performs the required actions when oper status
  * changes
- * * * @param[in] : Key struct - identifies the controller key instance
- * value struct - identifies the controller value structure
- * * * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
+ * @param[in] : key_struct - identifies the controller key instance
+ * value_struct - identifies the controller value structure
+ * data_type-UNC_DT_*,type of database
+ * bIsInternal-based on this flag,oper status is updated 
+ * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
  * */
-UpplReturnCode Kt_Controller::HandleOperStatus(uint32_t data_type,
-                                               void *key_struct,
-                                               void *value_struct,
-                                               bool bIsInternal) {
+UpplReturnCode Kt_Controller::HandleOperStatus(
+    OdbcmConnectionHandler *db_conn,
+    uint32_t data_type,
+    void *key_struct,
+    void *value_struct,
+    bool bIsInternal) {
   FN_START_TIME("HandleOperStatus", "Controller");
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   UpplReturnCode return_code = UPPL_RC_SUCCESS;
@@ -1515,15 +1633,14 @@ UpplReturnCode Kt_Controller::HandleOperStatus(uint32_t data_type,
       oper_value = UPPL_CONTROLLER_OPER_WAITING_AUDIT;
     }
   }
-  UpplReturnCode read_status = GetOperStatus(data_type,
+  UpplReturnCode read_status = GetOperStatus(db_conn, data_type,
                                              key_struct,
                                              oper_status_db);
   pfc_log_debug("Get OperStatus return: %d", read_status);
   // Update oper_status in controller_table
-  return_code = SetOperStatus(data_type, key_struct, oper_value);
+  return_code = SetOperStatus(db_conn, data_type, key_struct, oper_value);
   if (return_code != UPPL_RC_SUCCESS) {
-    // log error
-    pfc_log_error("oper_status update operation failed");
+    pfc_log_info("oper_status update operation failed %d", return_code);
     return return_code;
   }
 
@@ -1548,9 +1665,13 @@ UpplReturnCode Kt_Controller::HandleOperStatus(uint32_t data_type,
         physical_layer->get_physical_core()->
         SendControllerDisconnectAlarm(controller_name);
     pfc_log_info("Alarm status: %d", alarms_status);
-    return_code = NotifyOperStatus(UNC_DT_RUNNING,
+    vector<OperStatusHolder> ref_oper_status;
+    ADD_CTRL_OPER_STATUS(controller_name, obj_val_ctr->oper_status);
+    return_code = NotifyOperStatus(db_conn, UNC_DT_RUNNING,
                                    key_struct,
-                                   value_struct);
+                                   value_struct,
+                                   ref_oper_status);
+    ClearOperStatusHolder(ref_oper_status);
   } else if (obj_val_ctr->oper_status == UPPL_CONTROLLER_OPER_UP) {
     // Send clearance for CONTROLLER_DISCONNECT alarm
     // Send CONTROLLER_CONNECT alarm
@@ -1566,14 +1687,19 @@ UpplReturnCode Kt_Controller::HandleOperStatus(uint32_t data_type,
 }
 
 /** NotifyOperStatus
- * * @Description : This function performs the notifies other associated
+ * @Description : This function performs the notifies other associated
  * key types when oper status changes
- * * * @param[in] : Key and value struct
- * * * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
+ * @param[in] : data_type-UNC_DT_*,type of database
+ * key_struct-void* to CTR key structure
+ * value_struct-void* to CTR val structure
+ * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
  * */
-UpplReturnCode Kt_Controller::NotifyOperStatus(uint32_t data_type,
-                                               void *key_struct,
-                                               void *value_struct) {
+UpplReturnCode Kt_Controller::NotifyOperStatus(
+    OdbcmConnectionHandler *db_conn,
+    uint32_t data_type,
+    void *key_struct,
+    void *value_struct,
+    vector<OperStatusHolder> &ref_oper_status) {
   UpplReturnCode return_code = UPPL_RC_SUCCESS;
   key_ctr *key = reinterpret_cast<key_ctr_t*>(key_struct);
   string controller_name = reinterpret_cast<char*>(key->controller_name);
@@ -1585,50 +1711,66 @@ UpplReturnCode Kt_Controller::NotifyOperStatus(uint32_t data_type,
     void *ref_key_struct = NULL;
     Kt_Base *class_pointer = GetClassPointerAndKey(
         (KtControllerOperStatusRef)index, controller_name, ref_key_struct);
-    return_code = class_pointer->HandleOperStatus(data_type, ref_key_struct,
+    return_code = class_pointer->HandleOperStatus(db_conn, data_type,
+                                                  ref_key_struct,
                                                   NULL);
     pfc_log_info("HandleOperStatus for %d child class %d",
                  index, return_code);
     delete class_pointer;
     FreeKeyStruct(ref_key_struct, index);
   }
-  /* Construct UNC_KT_BOUNDARY value struct
+  // Notify Boundary to change oper status
   Kt_Boundary boundary;
   val_boundary_t obj_val_boundary1;
+  memset(&obj_val_boundary1, 0, sizeof(obj_val_boundary1));
   memcpy(obj_val_boundary1.controller_name1,
          controller_name.c_str(), controller_name.length()+1);
-  memset(obj_val_boundary1.domain_name1, 0, 32);
-  memset(obj_val_boundary1.logical_port_id1, 0, 320);
-  memset(obj_val_boundary1.valid, 0, 7);
   obj_val_boundary1.valid[kIdxBoundaryControllerName1] = UNC_VF_VALID;
   return_code = boundary.HandleOperStatus(
-      NULL, reinterpret_cast<void *> (&obj_val_boundary1));
-  pfc_log_info("HandleOperStatus for boundary class %d", return_code);
+      db_conn,
+      UNC_DT_RUNNING, NULL,
+      reinterpret_cast<void *> (&obj_val_boundary1),
+      ref_oper_status);
+  pfc_log_info("HandleOperStatus for boundary C1 class %d", return_code);
 
   val_boundary_t obj_val_boundary2;
+  memset(&obj_val_boundary2, 0, sizeof(obj_val_boundary2));
   memcpy(obj_val_boundary2.controller_name2,
          controller_name.c_str(), controller_name.length()+1);
-  memset(obj_val_boundary2.domain_name2, 0, 32);
-  memset(obj_val_boundary2.logical_port_id2, 0, 320);
-  memset(obj_val_boundary2.valid, 0, 7);
   obj_val_boundary2.valid[kIdxBoundaryControllerName2] = UNC_VF_VALID;
-  return_code = boundary.HandleOperStatus(data_type,
-      NULL, reinterpret_cast<void *> (&obj_val_boundary2));
-  pfc_log_info("HandleOperStatus for boundary class %d", return_code);*/
+  return_code = boundary.HandleOperStatus(
+      db_conn,
+      UNC_DT_RUNNING, NULL,
+      reinterpret_cast<void *> (&obj_val_boundary2),
+      ref_oper_status);
+  pfc_log_info("HandleOperStatus for boundary C2 class %d", return_code);
+
   return return_code;
 }
 
 /** PopulateDBSchemaForKtTable
- * * @Description : This function populates the DBAttrSchema to be used to send
+ * @Description : This function populates the DBAttrSchema to be used to send
  *                  request to ODBC
- * * * @param[in] : DBTableSchema, key_struct, val_struct, operation_type
- * * * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
+ * @param[in] : kt_controller_dbtableschema-DBTableSchema instance associated
+ *              with Controller
+ * key_struct-void* to CTR key structure
+ * val_struct-void* to CTR value structure
+ * operation_type-UNC_OP_*,type of operation
+ * option1,option2-UNC_OPT1/OPT2_*,additional info for read operations
+ * vect_key_operations-instance of vector<ODBCMOperator>
+ * old_value_struct-void* to old value strcuture of CTR
+ * row_status-CsRowStatus value
+ * is_filtering-flag to indicate whether filter  option is enabled or not
+ * is_state-flag to indicate whether data type is DT_STATE
+ * @return    : void
  * */
 void Kt_Controller::PopulateDBSchemaForKtTable(
+    OdbcmConnectionHandler *db_conn,
     DBTableSchema &kt_controller_dbtableschema,
     void* key_struct,
     void* val_struct,
     uint8_t operation_type,
+    uint32_t data_type,
     uint32_t option1,
     uint32_t option2,
     vector<ODBCMOperator> &vect_key_operations,
@@ -1646,7 +1788,7 @@ void Kt_Controller::PopulateDBSchemaForKtTable(
 
   key_ctr_t *obj_key_ctr = reinterpret_cast<key_ctr_t*>(key_struct);
   val_ctr_t *obj_val_ctr = reinterpret_cast<val_ctr_t*>(val_struct);
-  vect_prim_keys.push_back(CTR_NAME);
+
   stringstream valid;
   pfc_log_info("operation: %d", operation_type);
   // Controller_name
@@ -1657,7 +1799,7 @@ void Kt_Controller::PopulateDBSchemaForKtTable(
     controller_name = "";
   }
   pfc_log_info("controller name: %s", controller_name.c_str());
-  PhyUtil::FillDbSchema(CTR_NAME, controller_name,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                         controller_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
 
@@ -1666,11 +1808,11 @@ void Kt_Controller::PopulateDBSchemaForKtTable(
   if (operation_type == UNC_OP_UPDATE) {
     // get valid array for update req
     pfc_log_debug("Get Valid value from DB");
-    GetCtrValidFlag(key_struct, val_ctr_valid_st);
+    GetCtrValidFlag(db_conn, key_struct, val_ctr_valid_st, data_type);
   }
 
   uint16_t valid_val = 0, prev_db_val = 0;
-  string value;
+  string value = "";
   unc_keytype_ctrtype_t ctr_type = UNC_CT_UNKNOWN;
   // Type
   if (obj_val_ctr != NULL) {
@@ -1682,7 +1824,7 @@ void Kt_Controller::PopulateDBSchemaForKtTable(
   } else {
     valid_val = UPPL_NO_VAL_STRUCT;
   }
-  PhyUtil::FillDbSchema(CTR_TYPE, value,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_TYPE, CTR_TYPE_STR, value,
                         value.length(), DATATYPE_UINT16,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, valid);
@@ -1696,7 +1838,7 @@ void Kt_Controller::PopulateDBSchemaForKtTable(
   } else {
     valid_val = UPPL_NO_VAL_STRUCT;
   }
-  PhyUtil::FillDbSchema(CTR_VERSION, value,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_VERSION, CTR_VERSION_STR, value,
                         value.length(), DATATYPE_UINT8_ARRAY_32,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, valid);
@@ -1711,12 +1853,13 @@ void Kt_Controller::PopulateDBSchemaForKtTable(
   } else {
     valid_val = UPPL_NO_VAL_STRUCT;
   }
-  PhyUtil::FillDbSchema(CTR_DESCRIPTION, value,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_DESCRIPTION, CTR_DESCRIPTION_STR, value,
                         value.length(), DATATYPE_UINT8_ARRAY_128,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, valid);
   // Ip_address
   char *ip_value = new char[16];
+  memset(ip_value, '\0', 16);
   if (obj_val_ctr != NULL) {
     valid_val = PhyUtil::uint8touint(obj_val_ctr->valid[kIdxIpAddress]);
     inet_ntop(AF_INET, &obj_val_ctr->ip_address, ip_value, INET_ADDRSTRLEN);
@@ -1726,7 +1869,7 @@ void Kt_Controller::PopulateDBSchemaForKtTable(
   } else {
     valid_val = UPPL_NO_VAL_STRUCT;
   }
-  PhyUtil::FillDbSchema(CTR_IP_ADDRESS, ip_value,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_IP_ADDRESS, CTR_IP_ADDRESS_STR, ip_value,
                         strlen(ip_value), DATATYPE_IPV4,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, valid);
@@ -1742,7 +1885,7 @@ void Kt_Controller::PopulateDBSchemaForKtTable(
   } else {
     valid_val = UPPL_NO_VAL_STRUCT;
   }
-  PhyUtil::FillDbSchema(CTR_USER_NAME, value,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_USER_NAME, CTR_USER_NAME_STR, value,
                         value.length(), DATATYPE_UINT8_ARRAY_32,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, valid);
@@ -1757,14 +1900,18 @@ void Kt_Controller::PopulateDBSchemaForKtTable(
   } else {
     valid_val = UPPL_NO_VAL_STRUCT;
   }
-  PhyUtil::FillDbSchema(CTR_PASSWORD, value,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_PASSWORD, CTR_PASSWORD_STR, value,
                         value.length(), DATATYPE_UINT8_ARRAY_257,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, valid);
   value.clear();
   // enable_audit
   if (obj_val_ctr != NULL) {
-    valid_val = PhyUtil::uint8touint(obj_val_ctr->valid[kIdxEnableAudit]);
+    if (operation_type == UNC_OP_CREATE) {
+      valid_val = UNC_VF_VALID;
+    } else {
+      valid_val = PhyUtil::uint8touint(obj_val_ctr->valid[kIdxEnableAudit]);
+    }
     value = PhyUtil::uint8tostr(obj_val_ctr->enable_audit);
     prev_db_val =
         PhyUtil::uint8touint(
@@ -1772,21 +1919,35 @@ void Kt_Controller::PopulateDBSchemaForKtTable(
   } else {
     valid_val = UPPL_NO_VAL_STRUCT;
   }
-  PhyUtil::FillDbSchema(CTR_ENABLE_AUDIT, value,
-                        value.length(), DATATYPE_UINT16,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_ENABLE_AUDIT, CTR_ENABLE_AUDIT_STR,
+                        value, value.length(), DATATYPE_UINT16,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, valid);
   value.clear();
   // actual_version
   valid_val = UNC_VF_INVALID;
-  prev_db_val = 0;
+  if (operation_type == UNC_OP_UPDATE) {
+    prev_db_val =
+        PhyUtil::uint8touint(
+            val_ctr_valid_st.valid[kIdxActualVersion]);
+  } else {
+    prev_db_val = 0;
+  }
   value.clear();
-  PhyUtil::FillDbSchema(CTR_ACTUAL_VERSION, value,
-                        value.length(), DATATYPE_UINT8_ARRAY_32,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_ACTUAL_VERSION, CTR_ACTUAL_VERSION_STR,
+                        value, value.length(), DATATYPE_UINT8_ARRAY_32,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, valid);
-  valid_val = UPPL_NO_VAL_STRUCT;
   // oper_status
+  if (operation_type == UNC_OP_UPDATE) {
+    valid_val = UNC_VF_INVALID;
+    prev_db_val =
+        PhyUtil::uint8touint(
+            val_ctr_valid_st.valid[kIdxOperStatus]);
+  } else {
+    valid_val = UPPL_NO_VAL_STRUCT;
+    prev_db_val = 0;
+  }
   if (operation_type == UNC_OP_CREATE &&
       (ctr_type == UNC_CT_UNKNOWN)) {
     // Oper_status for Unknown will be always up
@@ -1795,37 +1956,43 @@ void Kt_Controller::PopulateDBSchemaForKtTable(
     value = oper_value.str();
     valid_val = UNC_VF_VALID;
   }
-  PhyUtil::FillDbSchema(CTR_OPER_STATUS, value,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_OPER_STATUS, CTR_OPER_STATUS_STR, value,
                         value.length(), DATATYPE_UINT16,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, valid);
   // valid
+  valid_val = UPPL_NO_VAL_STRUCT;
   stringstream dummy_valid;
-  PhyUtil::FillDbSchema(CTR_VALID, valid.str(),
+  PhyUtil::FillDbSchema(unc::uppl::CTR_VALID, CTR_VALID_STR, valid.str(),
                         valid.str().length(), DATATYPE_UINT8_ARRAY_9,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, dummy_valid);
   // cs_attr_status
+  if (operation_type == UNC_OP_UPDATE) {
+    valid_val = UNC_VF_INVALID;
+  }
   stringstream attr_status;
   for (unsigned int index = 0; index < ODBCM_SIZE_9; ++index) {
     attr_status << CREATED;
   }
-  PhyUtil::FillDbSchema(CTR_CS_ATTR, attr_status.str(),
+  PhyUtil::FillDbSchema(unc::uppl::CTR_CS_ATTR, CTR_CS_ATTR_STR,
+                        attr_status.str(),
                         attr_status.str().length(), DATATYPE_UINT8_ARRAY_9,
                         operation_type, valid_val, prev_db_val,
                         vect_table_attr_schema, vect_prim_keys, dummy_valid);
   // cs_row status
   if (is_filtering == true) {
-    vect_prim_keys.push_back(CTR_CS_ROW_STATUS);
+    vect_prim_keys.push_back(CTR_CS_ROW_STATUS_STR);
   }
   value = PhyUtil::uint8tostr(row_status);
   if (operation_type >= UNC_OP_READ) {
-    PhyUtil::FillDbSchema(CTR_CS_ROW_STATUS, value,
+    PhyUtil::FillDbSchema(unc::uppl::CTR_CS_ROW_STATUS, value,
                           value.length(), DATATYPE_UINT16,
                           vect_table_attr_schema);
   }
+  vect_prim_keys.push_back(CTR_NAME_STR);
   PhyUtil::reorder_col_attrs(vect_prim_keys, vect_table_attr_schema);
-  kt_controller_dbtableschema.set_table_name(UPPL_CTR_TABLE);
+  kt_controller_dbtableschema.set_table_name(unc::uppl::CTR_TABLE);
   kt_controller_dbtableschema.set_primary_keys(vect_prim_keys);
   row_list.push_back(vect_table_attr_schema);
   kt_controller_dbtableschema.set_row_list(row_list);
@@ -1833,122 +2000,133 @@ void Kt_Controller::PopulateDBSchemaForKtTable(
 }
 
 /**
- * * @Description : This function populates val_ctr_t by values retrieved
+ * @Description : This function populates val_ctr_t by values retrieved
  * from database
- * * * @param[in] : controller common table dbtable schema,
- * value structure and max_rep_ct, operation type
- * * * @return    : Filled val_ctr and controller id
+ * @param[in] : kt_controller_dbtableschema-DBTableSchema instance to be filled
+ * vect_obj_val_ctr-vector of CTR value structures
+ * max_rep_ct-max. no. of records to be read
+ * operation_type-type of operation,UNC_OP_*
+ * controller_id-vector of strings containg the controller names
+ * @return    : void
  * */
 void Kt_Controller::FillControllerValueStructure(
+    OdbcmConnectionHandler *db_conn,
     DBTableSchema &kt_controller_dbtableschema,
     vector<val_ctr_st_t> &vect_obj_val_ctr,
     uint32_t &max_rep_ct,
     uint32_t operation_type,
     vector<string> &controller_id) {
-  // populate IPC value structure based on the response recevied from DB
-  list < vector<TableAttrSchema> > res_ctr_row_list =
+  // populate IPC value structure based on the response received from DB
+  list < vector<TableAttrSchema> >& res_ctr_row_list =
       kt_controller_dbtableschema.get_row_list();
   list < vector<TableAttrSchema> > :: iterator res_ctr_iter =
       res_ctr_row_list.begin();
   max_rep_ct = res_ctr_row_list.size();
   pfc_log_debug("res_ctr_row_list.size: %d", max_rep_ct);
-  // populate IPC value structure based on the response recevied from DB
+  // populate IPC value structure based on the response received from DB
   for (; res_ctr_iter != res_ctr_row_list.end(); ++res_ctr_iter) {
     vector<TableAttrSchema> res_ctr_table_attr_schema = (*res_ctr_iter);
     vector<TableAttrSchema> :: iterator vect_ctr_iter =
         res_ctr_table_attr_schema.begin();
     val_ctr_st_t obj_val_ctr_st;
-    memset(obj_val_ctr_st.valid, '\0', 3);
+    memset(&obj_val_ctr_st, '\0', sizeof(val_ctr_st_t));
     val_ctr_t obj_val_ctr;
     memset(&obj_val_ctr, 0, sizeof(val_ctr_t));
-    memset(obj_val_ctr.valid, '\0', 7);
-    memset(obj_val_ctr.cs_attr, '\0', 7);
     // Read all attributes
     vector<int> valid_flag, cs_attr;
     for (; vect_ctr_iter != res_ctr_table_attr_schema.end();
         ++vect_ctr_iter) {
       // populate values from controller_table
       TableAttrSchema tab_schema = (*vect_ctr_iter);
-      string attr_name = tab_schema.table_attribute_name;
-      string attr_value;
-      if (attr_name == CTR_NAME) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_32);
-        controller_id.push_back(attr_value);
-        pfc_log_info("controller_name: %s", attr_value.c_str());
-      }
-      if (attr_name == CTR_TYPE) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT16);
-        obj_val_ctr.type = atoi(attr_value.c_str());
-      }
-      if (attr_name == CTR_DESCRIPTION) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_128);
-        memcpy(obj_val_ctr.description,
-               attr_value.c_str(),
-               attr_value.length()+1);
-      }
-      if (attr_name == CTR_IP_ADDRESS) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_IPV4);
-        inet_pton(AF_INET, (const char *)attr_value.c_str(),
-                  &obj_val_ctr.ip_address.s_addr);
-      }
-      if (attr_name == CTR_USER_NAME) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_32);
-        memcpy(obj_val_ctr.user,
-               attr_value.c_str(),
-               attr_value.length()+1);
-      }
-      if (attr_name == CTR_PASSWORD) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_257);
-        memcpy(obj_val_ctr.password,
-               attr_value.c_str(),
-               attr_value.length()+1);
-      }
-      if (attr_name == CTR_VALID) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_9);
-        memset(obj_val_ctr.valid, '\0', 7);
-        FrameValidValue(attr_value, obj_val_ctr_st, obj_val_ctr);
-      }
-      if (attr_name == CTR_CS_ATTR) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_9);
-        memset(obj_val_ctr.cs_attr, '\0', 7);
-        FrameCsAttrValue(attr_value, obj_val_ctr);
-      }
-      if (attr_name == CTR_CS_ROW_STATUS) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT16);
-        obj_val_ctr.cs_row_status = atoi(attr_value.c_str());
-      }
-      if (attr_name == CTR_ENABLE_AUDIT) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT16);
-        obj_val_ctr.enable_audit = atoi(attr_value.c_str());
-      }
-      if (attr_name == CTR_VERSION) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_32);
-        memcpy(obj_val_ctr.version,
-               attr_value.c_str(),
-               attr_value.length()+1);
-      }
-      if (attr_name == CTR_OPER_STATUS) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT16);
-        obj_val_ctr_st.oper_status = atoi(attr_value.c_str());
-      }
-      if (attr_name == CTR_ACTUAL_VERSION) {
-        PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
-                                      DATATYPE_UINT8_ARRAY_32);
-        memcpy(obj_val_ctr_st.actual_version,
-               attr_value.c_str(),
-               attr_value.length()+1);
+      ODBCMTableColumns attr_name = tab_schema.table_attribute_name;
+      string attr_value = "";
+      switch (attr_name) {
+        case unc::uppl::CTR_NAME :
+          uint8_t ctr_name[ODBCM_SIZE_32];
+          PhyUtil::GetValueFromDbSchemaStr(tab_schema, ctr_name,
+                                           DATATYPE_UINT8_ARRAY_32);
+          controller_id.push_back(reinterpret_cast<const char*>(ctr_name));
+          pfc_log_debug("controller_name: %s", ctr_name);
+          break;
+
+        case unc::uppl::CTR_TYPE :
+          PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
+                                        DATATYPE_UINT16);
+          obj_val_ctr.type = atoi(attr_value.c_str());
+          break;
+
+        case unc::uppl::CTR_DESCRIPTION :
+          PhyUtil::GetValueFromDbSchemaStr(tab_schema, obj_val_ctr.description,
+                                           DATATYPE_UINT8_ARRAY_128);
+          break;
+
+        case unc::uppl::CTR_IP_ADDRESS:
+          PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
+                                        DATATYPE_IPV4);
+          inet_pton(AF_INET, (const char *)attr_value.c_str(),
+                    &obj_val_ctr.ip_address.s_addr);
+          break;
+
+        case unc::uppl::CTR_USER_NAME:
+          PhyUtil::GetValueFromDbSchemaStr(tab_schema, obj_val_ctr.user,
+                                           DATATYPE_UINT8_ARRAY_32);
+          break;
+
+        case unc::uppl::CTR_PASSWORD:
+          PhyUtil::GetValueFromDbSchemaStr(tab_schema, obj_val_ctr.password,
+                                           DATATYPE_UINT8_ARRAY_257);
+          break;
+
+        case unc::uppl::CTR_VALID:
+          uint8_t ctr_valid[ODBCM_SIZE_9];
+          PhyUtil::GetValueFromDbSchemaStr(tab_schema, ctr_valid,
+                                           DATATYPE_UINT8_ARRAY_9);
+          memset(obj_val_ctr.valid, '\0', 7);
+          FrameValidValue(reinterpret_cast<const char*>(ctr_valid),
+                          obj_val_ctr_st, obj_val_ctr);
+          break;
+
+        case unc::uppl::CTR_CS_ATTR:
+          uint8_t ctr_cs_attr[ODBCM_SIZE_9];
+          PhyUtil::GetValueFromDbSchemaStr(tab_schema, ctr_cs_attr,
+                                           DATATYPE_UINT8_ARRAY_9);
+          memset(obj_val_ctr.cs_attr, '\0', 7);
+          FrameCsAttrValue(reinterpret_cast<const char*>(ctr_cs_attr),
+                           obj_val_ctr);
+          break;
+
+        case unc::uppl::CTR_CS_ROW_STATUS:
+          PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
+                                        DATATYPE_UINT16);
+          obj_val_ctr.cs_row_status = atoi(attr_value.c_str());
+          break;
+
+        case unc::uppl::CTR_ENABLE_AUDIT:
+          PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
+                                        DATATYPE_UINT16);
+          obj_val_ctr.enable_audit = atoi(attr_value.c_str());
+          break;
+
+        case unc::uppl::CTR_VERSION:
+          PhyUtil::GetValueFromDbSchemaStr(tab_schema, obj_val_ctr.version,
+                                           DATATYPE_UINT8_ARRAY_32);
+          break;
+
+        case unc::uppl::CTR_OPER_STATUS:
+          PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
+                                        DATATYPE_UINT16);
+          obj_val_ctr_st.oper_status = atoi(attr_value.c_str());
+          break;
+
+        case unc::uppl::CTR_ACTUAL_VERSION:
+          PhyUtil::GetValueFromDbSchemaStr(tab_schema,
+                                           obj_val_ctr_st.actual_version,
+                                           DATATYPE_UINT8_ARRAY_32);
+          break;
+
+        default:
+          pfc_log_info("Ignoring Controller attribute %d", attr_name);
+          break;
       }
     }
     memcpy(&obj_val_ctr_st.controller, &obj_val_ctr, sizeof(val_ctr_t));
@@ -1958,14 +2136,24 @@ void Kt_Controller::FillControllerValueStructure(
 }
 
 /** PerformRead
- * * @Description : This function reads the instance of KT_Controller based on
+ * @Description : This function reads the instance of KT_Controller based on
  *                  operation type - READ, READ_SIBLING_BEGIN, READ_SIBLING
- * * * @param[in] : ipc session id, configuration id, key_struct, value_struct,
- *                  data_type, operation type, ServerSession, option1, option2,
- *                  max_rep_ct
- * * * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
+ * @param[in] : session_id-ipc session id used for TC validation
+ * configuration_id-ipc configuration id used for TC validation
+ * key_struct-void* to ctr key structure
+ * value_struct-void* to ctr value structure
+ * data_type-UNC_DT_*,type of database
+ * operation _type-UNC_OP_*,type of database
+ * sess- object of ServerSession
+ * option1,option2-UNC_OPT1/OPT2_*,additional infor read operations
+ * max_rep_ct-max. no of records to be read
+ * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*,
+ * UPPL_RC_SUCCESS is returned when the response
+ * is added to ipc session successfully.
+ * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_Controller::PerformRead(uint32_t session_id,
+UpplReturnCode Kt_Controller::PerformRead(OdbcmConnectionHandler *db_conn,
+                                          uint32_t session_id,
                                           uint32_t configuration_id,
                                           void* key_struct,
                                           void* val_struct,
@@ -1975,8 +2163,6 @@ UpplReturnCode Kt_Controller::PerformRead(uint32_t session_id,
                                           uint32_t option1,
                                           uint32_t option2,
                                           uint32_t max_rep_ct) {
-  pfc_log_info("Inside PerformRead option1=%d option2=%d max_rep_ct=%d",
-               option1, option2, max_rep_ct);
   pfc_log_info("Inside PerformRead operation_type=%d data_type=%d",
                operation_type, data_type);
   key_ctr_t *obj_key_ctr= reinterpret_cast<key_ctr_t*>(key_struct);
@@ -2048,7 +2234,7 @@ UpplReturnCode Kt_Controller::PerformRead(uint32_t session_id,
   // Read from DB directly for all data types
   vector<string> vect_controller_id;
   vector<val_ctr_st_t> vect_val_ctr_st;
-  read_status = ReadCtrValFromDB(key_struct,
+  read_status = ReadCtrValFromDB(db_conn, key_struct,
                                  val_struct,
                                  data_type,
                                  operation_type,
@@ -2092,6 +2278,7 @@ UpplReturnCode Kt_Controller::PerformRead(uint32_t session_id,
     }
     for (unsigned int index = 0; index < vect_val_ctr_st.size(); ++index) {
       key_ctr_t obj_ctr;
+      memset(&obj_ctr, '\0', sizeof(key_ctr_t));
       string controller_name = vect_controller_id[index];
       if (data_type == UNC_DT_CANDIDATE &&
           vect_val_ctr_st[index].controller.cs_row_status == DELETED) {
@@ -2127,19 +2314,28 @@ UpplReturnCode Kt_Controller::PerformRead(uint32_t session_id,
       return UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
   }
-  pfc_log_info("Return value for read operation %d", read_status);
+  pfc_log_debug("Return value for read operation %d", read_status);
   return read_status;
 }
 
 /** ReadCtrValFromDB
- * * @Description : This function reads the instance of KT_Controller based on
+ * @Description : This function reads the instance of KT_Controller based on
  *                  operation type - READ, READ_SIBLING_BEGIN, READ_SIBLING
  *                   from data base
- * * * @param[in] : key_struct, value_struct, ipc session id, configuration id,
- *                  data_type, operation type, max_rep_ct
- * * * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
+ * @param[in] : key_struct-void* to CTR key structure
+ * value_struct-void* to CTR val structure
+ * data_type-UNC_DT_*,type of database
+ * operation type-UNC_OP_*,type of operation
+ * max_rep_ct-max no of records to be read
+ * vect_val_ctr_st-instance of vector<val_ctr_st_t>
+ * controller_id-instance of vector<string> containing ctr keys
+ * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
+ * UPPL_RC_SUCCESS is returned when the response
+ * is added to ipc session successfully.
+ * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
 UpplReturnCode Kt_Controller::ReadCtrValFromDB(
+    OdbcmConnectionHandler *db_conn,
     void* key_struct,
     void* val_struct,
     uint32_t data_type,
@@ -2147,6 +2343,10 @@ UpplReturnCode Kt_Controller::ReadCtrValFromDB(
     uint32_t &max_rep_ct,
     vector<val_ctr_st_t> &vect_val_ctr_st,
     vector<string> &controller_id) {
+  if (operation_type < UNC_OP_READ) {
+    // Unsupported operation type for this function
+    return UPPL_RC_SUCCESS;
+  }
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   UpplReturnCode read_status = UPPL_RC_SUCCESS;
   ODBCM_RC_STATUS read_db_status = ODBCM_RC_SUCCESS;
@@ -2154,27 +2354,31 @@ UpplReturnCode Kt_Controller::ReadCtrValFromDB(
   // Common structures that will be used to send query to ODBC
   // Structure used to send request to ODBC
   DBTableSchema kt_controller_dbtableschema;
-  void *old_val_struct;
+  void *old_val_struct = NULL;
   vector<ODBCMOperator> vect_key_operations;
-  PopulateDBSchemaForKtTable(kt_controller_dbtableschema,
+  PopulateDBSchemaForKtTable(db_conn, kt_controller_dbtableschema,
                              key_struct,
                              val_struct,
-                             operation_type, 0, 0,
+                             operation_type, data_type, 0, 0,
                              vect_key_operations, old_val_struct);
 
   if (operation_type == UNC_OP_READ) {
     read_db_status = physical_layer->get_odbc_manager()->
         GetOneRow((unc_keytype_datatype_t)data_type,
-                  kt_controller_dbtableschema);
+                  kt_controller_dbtableschema, db_conn);
   } else {
     read_db_status = physical_layer->get_odbc_manager()->
         GetBulkRows((unc_keytype_datatype_t)data_type, max_rep_ct,
                     kt_controller_dbtableschema,
-                    (unc_keytype_operation_t)operation_type);
+                    (unc_keytype_operation_t)operation_type, db_conn);
   }
   if (read_db_status == ODBCM_RC_RECORD_NOT_FOUND) {
     pfc_log_debug("No record found");
     read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+    return read_status;
+  } else if (read_db_status == ODBCM_RC_CONNECTION_ERROR) {
+    read_status = UPPL_RC_ERR_DB_ACCESS;
+    pfc_log_error("Read operation has failed with error %d", read_db_status);
     return read_status;
   } else if (read_db_status != ODBCM_RC_SUCCESS) {
     read_status = UPPL_RC_ERR_DB_GET;
@@ -2182,7 +2386,7 @@ UpplReturnCode Kt_Controller::ReadCtrValFromDB(
     pfc_log_error("Read operation has failed with error %d", read_db_status);
     return read_status;
   }
-  FillControllerValueStructure(kt_controller_dbtableschema,
+  FillControllerValueStructure(db_conn, kt_controller_dbtableschema,
                                vect_val_ctr_st,
                                max_rep_ct,
                                operation_type,
@@ -2200,9 +2404,10 @@ UpplReturnCode Kt_Controller::ReadCtrValFromDB(
 }
 
 /** getChildKeyStruct
- * * @Description : This function returns the void * of child key structures
- * * * @param[in] : child class index and controller name
- * * * @return    : void * key structure
+ * @Description : This function returns the void * of child key structures
+ * @param[in] : child_class-child class index indicating children of Controller
+ * controller_name-controller id
+ * @return    : void * key structure
  * */
 void* Kt_Controller::getChildKeyStruct(unsigned int child_class,
                                        string controller_name) {
@@ -2248,9 +2453,10 @@ void* Kt_Controller::getChildKeyStruct(unsigned int child_class,
 }
 
 /** FreeChildKeyStruct
- * * @Description : This function clearsthe void * of child key structures
- * * * @param[in] : child class index and key_struct
- * * * @return    : None
+ * @Description : This function clearsthe void * of child key structures
+ * @param[in] : child_class-child class index indicating children of Controller
+ * key_struct-void* to ctr key structure
+ * @return    : void
  * */
 void Kt_Controller::FreeChildKeyStruct(void* key_struct,
                                        unsigned int child_class) {
@@ -2293,11 +2499,16 @@ void Kt_Controller::FreeChildKeyStruct(void* key_struct,
 }
 
 /** GetModifiedRows
- * * @Description : This function reads all KT_Controller with given row_status
- * * * @param[in] : key_struct, value_struct, row_status
- * * * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
+ * @Description : This function reads all KT_Controller with given row_status
+ * @param[in] : obj_key_struct-vector of void* to ctr key structure
+ * row_status-CsRowStatus value
+ * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
+ * UPPL_RC_SUCCESS is returned when the response
+ * is added to ipc session successfully.
+ * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_Controller::GetModifiedRows(vector<void *> &obj_key_struct,
+UpplReturnCode Kt_Controller::GetModifiedRows(OdbcmConnectionHandler *db_conn,
+                                              vector<void *> &obj_key_struct,
                                               CsRowStatus row_status) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   uint32_t max_rep_ct = 0;
@@ -2318,15 +2529,15 @@ UpplReturnCode Kt_Controller::GetModifiedRows(vector<void *> &obj_key_struct,
   DBTableSchema kt_controller_dbtableschema;
   void *old_val_struct;
   vector<ODBCMOperator> vect_key_operations;
-  PopulateDBSchemaForKtTable(kt_controller_dbtableschema,
+  PopulateDBSchemaForKtTable(db_conn, kt_controller_dbtableschema,
                              ctr_key, ctr_val,
-                             UNC_OP_READ, 0, 0,
+                             UNC_OP_READ, UNC_DT_CANDIDATE, 0, 0,
                              vect_key_operations, old_val_struct,
                              row_status,
                              true);
 
   read_db_status = physical_layer->get_odbc_manager()->
-      GetModifiedRows(UNC_DT_CANDIDATE, kt_controller_dbtableschema);
+      GetModifiedRows(UNC_DT_CANDIDATE, kt_controller_dbtableschema, db_conn);
   if (read_db_status == ODBCM_RC_RECORD_NOT_FOUND) {
     pfc_log_debug("No record to read");
     read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
@@ -2340,7 +2551,7 @@ UpplReturnCode Kt_Controller::GetModifiedRows(vector<void *> &obj_key_struct,
   }
   vector<string> controller_id;
 
-  FillControllerValueStructure(kt_controller_dbtableschema,
+  FillControllerValueStructure(db_conn, kt_controller_dbtableschema,
                                obj_value_struct,
                                max_rep_ct,
                                UNC_OP_READ,
@@ -2365,62 +2576,66 @@ UpplReturnCode Kt_Controller::GetModifiedRows(vector<void *> &obj_key_struct,
 }
 
 /** Fill_Attr_Syntax_Map
- * * @Description : This function populates the values to be used for attribute
+ * @Description : This function populates the values to be used for attribute
  * validation
- * * * @param[in] : None
- * * * @return    : None
+ * @param[in] : None
+ * @return    : void
  * */
 void Kt_Controller::Fill_Attr_Syntax_Map() {
+  map<string, Kt_Class_Attr_Syntax> attr_syntax_map;
   Kt_Class_Attr_Syntax objKeyAttrSyntax =
   { PFC_IPCTYPE_UINT8, 0, 0, 1, 32, true,  "" };
-  attr_syntax_map[CTR_NAME] = objKeyAttrSyntax;
+  attr_syntax_map[CTR_NAME_STR] = objKeyAttrSyntax;
 
   Kt_Class_Attr_Syntax objAttrTypeSyntax =
-  { PFC_IPCTYPE_UINT8, 0, 3, 0, 0, true,  "" };
-  attr_syntax_map[CTR_TYPE] = objAttrTypeSyntax;
+  { PFC_IPCTYPE_UINT8, 0, 2, 0, 0, true,  "" };
+  attr_syntax_map[CTR_TYPE_STR] = objAttrTypeSyntax;
 
   Kt_Class_Attr_Syntax objAttrVersionSyntax =
   { PFC_IPCTYPE_STRING, 0, 0, 1, 32, true, "" };
-  attr_syntax_map[CTR_VERSION] = objAttrVersionSyntax;
+  attr_syntax_map[CTR_VERSION_STR] = objAttrVersionSyntax;
 
   Kt_Class_Attr_Syntax objAttrDescSyntax =
-  { PFC_IPCTYPE_STRING, 0, 0, 0, 128, false,  "" };
-  attr_syntax_map[CTR_DESCRIPTION] = objAttrDescSyntax;
+  { PFC_IPCTYPE_STRING, 0, 0, 1, 128, false,  "" };
+  attr_syntax_map[CTR_DESCRIPTION_STR] = objAttrDescSyntax;
 
   Kt_Class_Attr_Syntax objAttrIpSyntax =
   { PFC_IPCTYPE_IPV4, 0, 4294967295LL, 0, 0, false,  "" };
-  attr_syntax_map[CTR_IP_ADDRESS] = objAttrIpSyntax;
+  attr_syntax_map[CTR_IP_ADDRESS_STR] = objAttrIpSyntax;
 
   Kt_Class_Attr_Syntax objAttrUserSyntax =
-  { PFC_IPCTYPE_STRING, 0, 0, 0, 32, false, "" };
-  attr_syntax_map["user"] = objAttrUserSyntax;
+  { PFC_IPCTYPE_STRING, 0, 0, 1, 32, false, "" };
+  attr_syntax_map[IPCT_USER] = objAttrUserSyntax;
 
   Kt_Class_Attr_Syntax objAttrPswdSyntax =
-  { PFC_IPCTYPE_STRING, 0, 0, 0, 257, false, "" };
-  attr_syntax_map[CTR_PASSWORD] = objAttrPswdSyntax;
+  { PFC_IPCTYPE_STRING, 0, 0, 1, 257, false, "" };
+  attr_syntax_map[CTR_PASSWORD_STR] = objAttrPswdSyntax;
 
   Kt_Class_Attr_Syntax objAttrAuditSyntax =
   { PFC_IPCTYPE_UINT8, 0, 1, 0, 0, false, "" };
-  attr_syntax_map[CTR_ENABLE_AUDIT] = objAttrAuditSyntax;
+  attr_syntax_map[CTR_ENABLE_AUDIT_STR] = objAttrAuditSyntax;
 
   Kt_Class_Attr_Syntax objAttrValidSyntax =
   { PFC_IPCTYPE_STRING, 0, 0, 0, 8, false, "" };
-  attr_syntax_map[CTR_VALID] = objAttrValidSyntax;
+  attr_syntax_map[CTR_VALID_STR] = objAttrValidSyntax;
 
   Kt_Class_Attr_Syntax objAttrCsRowSyntax =
   { PFC_IPCTYPE_STRING, 0, 3, 0, 0, false, "" };
-  attr_syntax_map[CTR_CS_ROW_STATUS] = objAttrCsRowSyntax;
+  attr_syntax_map[CTR_CS_ROW_STATUS_STR] = objAttrCsRowSyntax;
 
   Kt_Class_Attr_Syntax objAttrCsAttrSyntax =
   { PFC_IPCTYPE_STRING, 0, 0, 0, 8, false, "" };
-  attr_syntax_map[CTR_CS_ATTR] = objAttrCsAttrSyntax;
+  attr_syntax_map[CTR_CS_ATTR_STR] = objAttrCsAttrSyntax;
+  attr_syntax_map_all[UNC_KT_CONTROLLER] = attr_syntax_map;
 }
 
 /** GetClassPointerAndKey
- * * @Description : This function returns the void * of requested key structures
- * * and class pointer
- * * * @param[in] : key type and controller name
- * * * @return    : void * key structure
+ * @Description : This function returns the void * of requested key structures
+ * and class pointer
+ * @param[in] : key_type-any value of KtControllerOperStatusRef 
+ * controller name-controller id
+ * key-void* to ctr key structure
+ * @return    : KtBase* key structure
  * */
 Kt_Base* Kt_Controller::GetClassPointerAndKey(
     KtControllerOperStatusRef key_type,
@@ -2428,16 +2643,6 @@ Kt_Base* Kt_Controller::GetClassPointerAndKey(
     void* &key) {
   Kt_Base* class_pointer = NULL;
   switch (key_type) {
-    /* case KtCtrDomain: {
-      class_pointer = new Kt_Ctr_Domain();
-      key_ctr_domain_t *obj_key = new key_ctr_domain_t;
-      memcpy(obj_key->ctr_key.controller_name,
-             controller_name.c_str(),
-             controller_name.length()+1);
-      memset(obj_key->domain_name, 0, 32);
-      key = reinterpret_cast<void *>(obj_key);
-      break;
-    } */
     case KtSwitch: {
       class_pointer = new Kt_Switch();
       key_switch_t *obj_key = new key_switch_t;
@@ -2448,68 +2653,19 @@ Kt_Base* Kt_Controller::GetClassPointerAndKey(
       key = reinterpret_cast<void *>(obj_key);
       break;
     }
-    /* case KtLink: {
-      class_pointer = new Kt_Link();
-      key_link_t *obj_key = new key_link_t;
-      memcpy(obj_key->ctr_key.controller_name,
-             controller_name.c_str(),
-             controller_name.length()+1);
-      memset(obj_key->switch_id1, 0, 256);
-      memset(obj_key->switch_id2, 0, 256);
-      memset(obj_key->port_id1, 0, 32);
-      memset(obj_key->port_id2, 0, 32);
-      key = reinterpret_cast<void *>(obj_key);
-      break;
-    }
-    case KtPort: {
-      class_pointer = new Kt_Port();
-      key_port_t *obj_key = new key_port_t;
-      memcpy(obj_key->sw_key.ctr_key.controller_name,
-             controller_name.c_str(),
-             controller_name.length()+1);
-      memset(obj_key->sw_key.switch_id, 0, 256);
-      memset(obj_key->port_id, 0, 32);
-      key = reinterpret_cast<void *>(obj_key);
-      break;
-    }
-    case KtLogicalPort: {
-      class_pointer = new Kt_LogicalPort();
-      key_logical_port_t *obj_key = new key_logical_port_t;
-      memcpy(obj_key->domain_key.ctr_key.controller_name,
-             controller_name.c_str(),
-             controller_name.length()+1);
-      memset(obj_key->domain_key.domain_name, 0, 32);
-      memset(obj_key->port_id, 0, 320);
-      key = reinterpret_cast<void *>(obj_key);
-      break;
-    }
-    case KtBoundary: {
-      // Do nothing
-      pfc_log_info("GetClassPointerAndKey - Boundary cannot be handled");
-      PFC_ASSERT(PFC_FALSE);
-      break;
-    } */
   }
   return class_pointer;
 }
 
 /** FreeKeyStruct
- * * @Description : This function clears the key struct
- * * * @param[in] : key type and controller name
- * * * @return    : void * key structure
+ * @Description : This function clears the key struct
+ * @param[in] : key type-any child kt of Controller
+ * key_struct-void* to any controller's child key structure
+ * @return    : void
  * */
 void Kt_Controller::FreeKeyStruct(void* key_struct,
                                   unsigned int key_type) {
   switch (key_type) {
-    /* case KtCtrDomain: {
-      key_ctr_domain_t *obj_key = reinterpret_cast<key_ctr_domain_t *>
-      (key_struct);
-      if (obj_key != NULL) {
-        delete obj_key;
-        obj_key = NULL;
-      }
-      break;
-    } */
     case KtSwitch: {
       key_switch_t *obj_key = reinterpret_cast<key_switch_t *>
       (key_struct);
@@ -2519,55 +2675,28 @@ void Kt_Controller::FreeKeyStruct(void* key_struct,
       }
       break;
     }
-    /* case KtLink: {
-      key_link_t *obj_key = reinterpret_cast<key_link_t *>
-      (key_struct);
-      if (obj_key != NULL) {
-        delete obj_key;
-        obj_key = NULL;
-      }
-      break;
-    }
-    case KtPort: {
-      key_port_t *obj_key = reinterpret_cast<key_port_t *>
-      (key_struct);
-      if (obj_key != NULL) {
-        delete obj_key;
-        obj_key = NULL;
-      }
-      break;
-    }
-    case KtLogicalPort: {
-      key_logical_port_t *obj_key = reinterpret_cast<key_logical_port_t *>
-      (key_struct);
-      if (obj_key != NULL) {
-        delete obj_key;
-        obj_key = NULL;
-      }
-      break;
-    }
-    case KtBoundary: {
-      // Do nothing
-      pfc_log_info("FreeKeyStruct - Boundary cannot be handled");
-      PFC_ASSERT(PFC_FALSE);
-      break;
-    } */
   }
   return;
 }
 
 /** GetOperStatus
- *  * @Description : This function reads the oper_status value of the controller
- *  * @param[in] : key_struct
- *  * @return    : oper_status
+ * @Description : This function reads the oper_status value of the controller
+ * @param[in] : key_struct
+ * data_type-UNC_DT_*,type of database
+ * param[out]:oper_status-oper status of Controller whether up/down/auditing
+ * @return    : Success or associated error code
+ * UPPL_RC_SUCCESS is returned when the response
+ * is added to ipc session successfully.
+ * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  */
-UpplReturnCode Kt_Controller::GetOperStatus(uint32_t data_type,
+UpplReturnCode Kt_Controller::GetOperStatus(OdbcmConnectionHandler *db_conn,
+                                            uint32_t data_type,
                                             void* key_struct,
                                             uint8_t &oper_status) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   UpplReturnCode return_code = UPPL_RC_SUCCESS;
   vector<string> vect_prim_keys;
-  vect_prim_keys.push_back(CTR_NAME);
+  vect_prim_keys.push_back(CTR_NAME_STR);
 
   vector<TableAttrSchema> vect_table_attr_schema;
   list < vector<TableAttrSchema> > row_list;
@@ -2578,34 +2707,34 @@ UpplReturnCode Kt_Controller::GetOperStatus(uint32_t data_type,
   // Controller_name
   string controller_name = (const char*)obj_key_ctr->controller_name;
   pfc_log_info("controller name: %s", controller_name.c_str());
-  PhyUtil::FillDbSchema(CTR_NAME, controller_name,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                         controller_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
 
   // oper_status
-  string value;
-  PhyUtil::FillDbSchema(CTR_OPER_STATUS, value,
+  string value = "";
+  PhyUtil::FillDbSchema(unc::uppl::CTR_OPER_STATUS, value,
                         value.length(), DATATYPE_UINT16,
                         vect_table_attr_schema);
 
-  kt_controller_dbtableschema.set_table_name(UPPL_CTR_TABLE);
+  kt_controller_dbtableschema.set_table_name(unc::uppl::CTR_TABLE);
   kt_controller_dbtableschema.set_primary_keys(vect_prim_keys);
   row_list.push_back(vect_table_attr_schema);
   kt_controller_dbtableschema.set_row_list(row_list);
 
   ODBCM_RC_STATUS read_db_status = physical_layer->get_odbc_manager()->
-      GetOneRow(UNC_DT_RUNNING, kt_controller_dbtableschema);
+      GetOneRow(UNC_DT_RUNNING, kt_controller_dbtableschema, db_conn);
   if (read_db_status == ODBCM_RC_SUCCESS) {
-    // populate IPC value structure based on the response recevied from DB
+    // populate IPC value structure based on the response received from DB
     vector<TableAttrSchema> res_table_attr_schema =
         kt_controller_dbtableschema.get_row_list().front();
     vector<TableAttrSchema> ::iterator vect_iter =
         res_table_attr_schema.begin();
     for (; vect_iter != res_table_attr_schema.end(); ++vect_iter) {
       TableAttrSchema tab_schema = (*vect_iter);
-      string attr_name = tab_schema.table_attribute_name;
-      string attr_value;
-      if (attr_name == CTR_OPER_STATUS) {
+      ODBCMTableColumns attr_name = tab_schema.table_attribute_name;
+      string attr_value = "";
+      if (attr_name == unc::uppl::CTR_OPER_STATUS) {
         PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
                                       DATATYPE_UINT16);
         oper_status = atoi(attr_value.c_str());
@@ -2620,18 +2749,24 @@ UpplReturnCode Kt_Controller::GetOperStatus(uint32_t data_type,
 }
 
 /** SetOperStatus
- *  * @Description : This function updates the oper_status value
+ * @Description : This function updates the oper_status value
  *  of the controller
- *  * @param[in] : key_struct
- *  * @return    : oper_status
+ * @param[in] : key_struct-void* to ctr key structure
+ * data_type-UNC_DT_*,type of database
+ * oper_status-oper status of Controller
+ * @return    : Success or associated error code 
+ * UPPL_RC_SUCCESS is returned when the response
+ * is added to ipc session successfully.
+ * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  */
-UpplReturnCode Kt_Controller::SetOperStatus(uint32_t data_type,
+UpplReturnCode Kt_Controller::SetOperStatus(OdbcmConnectionHandler *db_conn,
+                                            uint32_t data_type,
                                             void* key_struct,
                                             uint8_t oper_status) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   UpplReturnCode return_code = UPPL_RC_SUCCESS;
   vector<string> vect_prim_keys;
-  vect_prim_keys.push_back(CTR_NAME);
+  vect_prim_keys.push_back(CTR_NAME_STR);
 
   vector<TableAttrSchema> vect_table_attr_schema;
   list < vector<TableAttrSchema> > row_list;
@@ -2642,25 +2777,28 @@ UpplReturnCode Kt_Controller::SetOperStatus(uint32_t data_type,
   // Controller_name
   string controller_name = (const char*)obj_key_ctr->controller_name;
   pfc_log_info("controller name: %s", controller_name.c_str());
-  PhyUtil::FillDbSchema(CTR_NAME, controller_name,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                         controller_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
 
   // oper_status
   string value = PhyUtil::uint8tostr(oper_status);
-  PhyUtil::FillDbSchema(CTR_OPER_STATUS, value,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_OPER_STATUS, value,
                         value.length(), DATATYPE_UINT16,
                         vect_table_attr_schema);
 
-  kt_controller_dbtableschema.set_table_name(UPPL_CTR_TABLE);
+  kt_controller_dbtableschema.set_table_name(unc::uppl::CTR_TABLE);
   kt_controller_dbtableschema.set_primary_keys(vect_prim_keys);
   row_list.push_back(vect_table_attr_schema);
   kt_controller_dbtableschema.set_row_list(row_list);
 
   ODBCM_RC_STATUS update_db_status = physical_layer->get_odbc_manager()->
-      UpdateOneRow(UNC_DT_RUNNING, kt_controller_dbtableschema);
+      UpdateOneRow(UNC_DT_RUNNING, kt_controller_dbtableschema, db_conn);
   if (update_db_status == ODBCM_RC_SUCCESS) {
     pfc_log_info("oper_status updated in DB successfully");
+  } else if (update_db_status == ODBCM_RC_CONNECTION_ERROR) {
+    pfc_log_fatal("DB connection issue during set oper status");
+    return_code = UPPL_RC_ERR_DB_ACCESS;
   } else {
     pfc_log_info("oper_status update failed in DB");
     return_code = UPPL_RC_ERR_DB_UPDATE;
@@ -2669,17 +2807,25 @@ UpplReturnCode Kt_Controller::SetOperStatus(uint32_t data_type,
 }
 
 /** SetActualVersion
- *  * @Description : This function updates the actual_version value
+ * @Description : This function updates the actual_version value
  *  of the controller
- *  * @param[in] : key_struct
- *  * @return    : oper_status
+ * @param[in] : key_struct-void* to ctr key structure
+ * actual_version-version of controller
+ * data_type-UNC_DT_*,type of database
+ * @return    : Success or associated error code
+ * UPPL_RC_SUCCESS is returned when the response
+ * is added to ipc session successfully.
+ * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  */
-UpplReturnCode Kt_Controller::SetActualVersion(void* key_struct,
-                                               string actual_version) {
+UpplReturnCode Kt_Controller::SetActualVersion(OdbcmConnectionHandler *db_conn,
+                                               void* key_struct,
+                                               string actual_version,
+                                               uint32_t data_type,
+                                               uint32_t valid_flag) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   UpplReturnCode return_code = UPPL_RC_SUCCESS;
   vector<string> vect_prim_keys;
-  vect_prim_keys.push_back(CTR_NAME);
+  vect_prim_keys.push_back(CTR_NAME_STR);
 
   vector<TableAttrSchema> vect_table_attr_schema;
   list < vector<TableAttrSchema> > row_list;
@@ -2689,7 +2835,7 @@ UpplReturnCode Kt_Controller::SetActualVersion(void* key_struct,
   val_ctr_st_t val_ctr_valid_st;
   memset(&val_ctr_valid_st, 0, sizeof(val_ctr_st_t));
   pfc_log_debug("Get Valid value from DB");
-  GetCtrValidFlag(key_struct, val_ctr_valid_st);
+  GetCtrValidFlag(db_conn, key_struct, val_ctr_valid_st, data_type);
   stringstream str_valid;
   for (unsigned int index = 0; index < ODBCM_SIZE_7;
       ++index) {
@@ -2699,7 +2845,7 @@ UpplReturnCode Kt_Controller::SetActualVersion(void* key_struct,
     }
     str_valid << valid;
   }
-  str_valid << UNC_VF_VALID;  // Actual Version
+  str_valid << valid_flag;  // Actual Version
   str_valid << UNC_VF_VALID;  // Oper Status
   pfc_log_debug("str_valid %s", str_valid.str().c_str());
 
@@ -2708,26 +2854,33 @@ UpplReturnCode Kt_Controller::SetActualVersion(void* key_struct,
   // Controller_name
   string controller_name = (const char*)obj_key_ctr->controller_name;
   pfc_log_debug("controller name: %s", controller_name.c_str());
-  PhyUtil::FillDbSchema(CTR_NAME, controller_name,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                         controller_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
 
   // actual_version_update
-  PhyUtil::FillDbSchema(CTR_ACTUAL_VERSION, actual_version,
+  PhyUtil::FillDbSchema(unc::uppl::CTR_ACTUAL_VERSION, actual_version,
                         actual_version.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
 
-  PhyUtil::FillDbSchema(CTR_VALID, str_valid.str(),
+  PhyUtil::FillDbSchema(unc::uppl::CTR_VALID, str_valid.str(),
                         str_valid.str().length(), DATATYPE_UINT8_ARRAY_9,
                         vect_table_attr_schema);
 
-  kt_controller_dbtableschema.set_table_name(UPPL_CTR_TABLE);
+  kt_controller_dbtableschema.set_table_name(unc::uppl::CTR_TABLE);
   kt_controller_dbtableschema.set_primary_keys(vect_prim_keys);
   row_list.push_back(vect_table_attr_schema);
   kt_controller_dbtableschema.set_row_list(row_list);
-
-  ODBCM_RC_STATUS update_db_status = physical_layer->get_odbc_manager()->
-      UpdateOneRow(UNC_DT_RUNNING, kt_controller_dbtableschema);
+  ODBCM_RC_STATUS update_db_status = ODBCM_RC_SUCCESS;
+  if (data_type == UNC_DT_CANDIDATE) {
+    update_db_status = physical_layer->get_odbc_manager()->
+        UpdateOneRow((unc_keytype_datatype_t)data_type,
+                     kt_controller_dbtableschema, db_conn, true);
+  } else {
+    update_db_status = physical_layer->get_odbc_manager()->
+        UpdateOneRow((unc_keytype_datatype_t)data_type,
+                     kt_controller_dbtableschema, db_conn);
+  }
   if (update_db_status == ODBCM_RC_SUCCESS) {
     pfc_log_info("actual version updated in DB successfully");
   } else {
@@ -2747,6 +2900,10 @@ UpplReturnCode Kt_Controller::SetActualVersion(void* key_struct,
  *                key_struct:- key struct for updated controller
  *                val_struct:- val struct for updated controller
  * @return      : Success or associated error code
+ *                UPPL_RC_SUCCESS is returned when the response
+ *                is added to ipc session successfully.
+ *                UPPL_RC_ERR_* is returned when ipc response 
+ *                could not be added to sess.
  * */
 
 UpplReturnCode Kt_Controller::SendUpdatedControllerInfoToUPLL(
@@ -2796,22 +2953,27 @@ UpplReturnCode Kt_Controller::SendUpdatedControllerInfoToUPLL(
 }
 
 /** GetCtrValidFlag
- * * @Description : This function reads the valid flag from DB
- * * * @param[in] : Key, value struct and newvalid val
- * * * @return    : Success or associated error code
+ * @Description : This function reads the valid flag from DB
+ * @param[in] : key_struct-void* to ctr key structure
+ * val_ctr_valid_st-instance of val_ctr_st_t
+ * @return    : Success or associated error code
+ * UPPL_RC_SUCCESS is returned when the response
+ * is added to ipc session successfully.
+ * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_Controller::GetCtrValidFlag(
-    void *key_struct,
-    val_ctr_st_t &val_ctr_valid_st) {
+UpplReturnCode Kt_Controller::GetCtrValidFlag(OdbcmConnectionHandler *db_conn,
+                                              void *key_struct,
+                                              val_ctr_st_t &val_ctr_valid_st,
+                                              uint32_t data_type) {
   UpplReturnCode return_code = UPPL_RC_SUCCESS;
   vector<void *> vect_key_ctr;
   vect_key_ctr.push_back(key_struct);
-  vector<void *> vect_val_port;
-  return_code = ReadInternal(vect_key_ctr, vect_val_port,
-                             UNC_DT_CANDIDATE, UNC_OP_READ);
+  vector<void *> vect_val_ctr;
+  return_code = ReadInternal(db_conn, vect_key_ctr, vect_val_ctr,
+                             data_type, UNC_OP_READ);
   if (return_code == UPPL_RC_SUCCESS) {
     val_ctr_st_t *val_ctr_new_valid_st =
-        reinterpret_cast<val_ctr_st_t*>(vect_val_port[0]);
+        reinterpret_cast<val_ctr_st_t*>(vect_val_ctr[0]);
     if (val_ctr_new_valid_st != NULL) {
       val_ctr_valid_st = *val_ctr_new_valid_st;
       delete val_ctr_new_valid_st;
@@ -2832,9 +2994,11 @@ UpplReturnCode Kt_Controller::GetCtrValidFlag(
 }
 
 /** FrameValidValue
- * * @Description : This function converts the string value from db to uint8
- * * * @param[in] : Attribute value and val_ctr_st
- * * * @return    : Success or associated error code
+ * @Description : This function converts the string value from db to uint8
+ * @param[in] : attr_value-attribute value in string
+ * obj_val_ctr_st-instance of val_ctr_st
+ * obj_val_ctr-instance of val_ctr_t
+ * @return    : void 
  * */
 void Kt_Controller::FrameValidValue(string attr_value,
                                     val_ctr_st &obj_val_ctr_st,
@@ -2855,9 +3019,10 @@ void Kt_Controller::FrameValidValue(string attr_value,
 }
 
 /** FrameCsAttrValue
- * * @Description : This function converts the string value from db to uint8
- * * * @param[in] : Attribute value and val_ctr_st
- * * * @return    : Success or associated error code
+ * @Description : This function converts the string value from db to uint8
+ * @param[in] : attr_value-Attribute value in string
+ * obj_val_ctr-instance of val_ctr_st
+ * @return    : void
  * */
 void Kt_Controller::FrameCsAttrValue(string attr_value,
                                      val_ctr_t &obj_val_ctr) {
@@ -2872,15 +3037,23 @@ void Kt_Controller::FrameCsAttrValue(string attr_value,
 }
 
 /** ValidateTypeIpAddress
- * * @Description : This function checks whether controller exists with same
+ * @Description : This function checks whether controller exists with same
  * type and ip address
- * * * @param[in] : Key and Value Struct
- * * * @return    : Success or associated error code
+ * @param[in] : key_struct-void* to ctr key structure
+ * val_struct-void* to ctr val structure
+ * data_type-UNC_DT_*,type of datatype
+ * ctrl_type-type of controller,value of unc_keytype_ctrtype_t
+ * @return    : Success or associated error code
+ * UPPL_RC_SUCCESS is returned when the response
+ * is added to ipc session successfully.
+ * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_Controller::ValidateTypeIpAddress(void *key_struct,
-                                                    void *val_struct,
-                                                    uint32_t data_type,
-                                                    uint32_t ctrl_type) {
+UpplReturnCode Kt_Controller::ValidateTypeIpAddress(
+    OdbcmConnectionHandler *db_conn,
+    void *key_struct,
+    void *val_struct,
+    uint32_t data_type,
+    uint32_t ctrl_type) {
   UpplReturnCode status = UPPL_RC_SUCCESS;
   val_ctr_t *obj_val_ctr = reinterpret_cast<val_ctr_t*>(val_struct);
   if (obj_val_ctr == NULL) {
@@ -2912,20 +3085,20 @@ UpplReturnCode Kt_Controller::ValidateTypeIpAddress(void *key_struct,
   void *old_val_struct;
   vector<ODBCMOperator> vect_key_operations;
 
-  PopulateDBSchemaForKtTable(kt_controller_dbtableschema,
+  PopulateDBSchemaForKtTable(db_conn, kt_controller_dbtableschema,
                              key_struct,
                              NULL,
-                             UNC_OP_READ_SIBLING_BEGIN, 0, 0,
+                             UNC_OP_READ_SIBLING_BEGIN, data_type, 0, 0,
                              vect_key_operations, old_val_struct);
   ODBCM_RC_STATUS read_db_status = physical_layer->get_odbc_manager()->
       GetBulkRows((unc_keytype_datatype_t)data_type, count,
                   kt_controller_dbtableschema,
-                  UNC_OP_READ_SIBLING_BEGIN);
+                  UNC_OP_READ_SIBLING_BEGIN, db_conn);
   pfc_log_debug("Return of GetBulkRows:%d", read_db_status);
   if (read_db_status != ODBCM_RC_SUCCESS) {
     return status;
   }
-  FillControllerValueStructure(kt_controller_dbtableschema,
+  FillControllerValueStructure(db_conn, kt_controller_dbtableschema,
                                vect_val_ctr_st,
                                count,
                                UNC_OP_READ_SIBLING_BEGIN,
@@ -2957,12 +3130,20 @@ UpplReturnCode Kt_Controller::ValidateTypeIpAddress(void *key_struct,
 }
 
 /** ValidateControllerType
- * * @Description : This function checks whether the given controller type
+ * @Description : This function checks whether the given controller type
  * is valid
- * * * @param[in] : operation, data_type, ctr_type, val_ctr
- * * * @return    : Success or associated error code
+ * @param[in] : operation-UNC_OP_*,type of operation
+ * data_type-UNC_DT_*,type of database
+ * ctr_type-type of controller(unc_keytype_ctrtype_t)
+ * val_ctr-pointer to val_ctr_t
+ * param[out]:ctr_type_code-Success or associated error code
+ * @return    : Success or associated error code
+ * UPPL_RC_SUCCESS is returned when the response
+ * is added to ipc session successfully.
+ * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
 UpplReturnCode Kt_Controller::ValidateControllerType(
+    OdbcmConnectionHandler *db_conn,
     uint32_t operation,
     uint32_t data_type,
     unc_keytype_ctrtype_t ctr_type,
@@ -2974,7 +3155,9 @@ UpplReturnCode Kt_Controller::ValidateControllerType(
   unsigned int valid_val = 0;
   // validate type
   valid_val = PhyUtil::uint8touint(val_ctr->valid[kIdxType]);
-  IS_VALID_INT_VALUE(CTR_TYPE, val_ctr->type, operation,
+  map<string, Kt_Class_Attr_Syntax> attr_syntax_map =
+      attr_syntax_map_all[UNC_KT_CONTROLLER];
+  IS_VALID_INT_VALUE(CTR_TYPE_STR, val_ctr->type, operation,
                      valid_val, ret_code, mandatory);
   if (ret_code != UPPL_RC_SUCCESS) {
     return UPPL_RC_ERR_CFG_SYNTAX;
@@ -2988,12 +3171,20 @@ UpplReturnCode Kt_Controller::ValidateControllerType(
 }
 
 /** ValidateControllerVersion
- * * @Description : This function checks whether the given controller version
+ * @Description : This function checks whether the given controller version
  * is valid
- * * * @param[in] : operation, data_type, ctr_type, val_ctr
- * * * @return    : Success or associated error code
+ * @param[in] : operation-UNC_OP_*,type of operation
+ * data_type-UNC_DT_*,type of database
+ * ctr_type-type of controller,value of unc_keytype_ctrtype_t
+ * val_ctr-pointer ctr value structure
+ * param[out]:ctr_type_code-Success or associated error code
+ * @return    : Success or associated error code
+ * UPPL_RC_SUCCESS is returned when the response
+ * is added to ipc session successfully.
+ * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
 UpplReturnCode Kt_Controller::ValidateControllerVersion(
+    OdbcmConnectionHandler *db_conn,
     uint32_t operation,
     uint32_t data_type,
     unc_keytype_ctrtype_t ctr_type,
@@ -3007,9 +3198,11 @@ UpplReturnCode Kt_Controller::ValidateControllerVersion(
       ctr_type == UNC_CT_PFC) ||
       (operation == UNC_OP_CREATE &&  val_ctr->type == UNC_CT_PFC)) {
     // validate version
+    map<string, Kt_Class_Attr_Syntax> attr_syntax_map =
+        attr_syntax_map_all[UNC_KT_CONTROLLER];
     valid_val = PhyUtil::uint8touint(val_ctr->valid[kIdxVersion]);
     string value = reinterpret_cast<char*>(val_ctr->version);
-    IS_VALID_STRING_VALUE(CTR_VERSION, value, operation,
+    IS_VALID_STRING_VALUE(CTR_VERSION_STR, value, operation,
                           valid_val, ret_code, mandatory);
     if (ret_code != UPPL_RC_SUCCESS) {
       return UPPL_RC_ERR_CFG_SYNTAX;
@@ -3019,12 +3212,20 @@ UpplReturnCode Kt_Controller::ValidateControllerVersion(
 }
 
 /** ValidateControllerDescription
- * * @Description : This function checks whether the given controller description
+ * @Description : This function checks whether the given controller description
  * is valid
- * * * @param[in] : operation, data_type, ctr_type, val_ctr
- * * * @return    : Success or associated error code
+ * @param[in] : operation-UNC_OP_*,type of operation
+ * data_type-UNC_DT_*,type of database
+ * ctr_type-type of controller
+ * val_ctr-pointer to ctr val structure
+ * param[out]:ctr_type_code-Success or associated error code
+ * @return    : Success or associated error code
+ * UPPL_RC_SUCCESS is returned when the response
+ * is added to ipc session successfully.
+ * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
 UpplReturnCode Kt_Controller::ValidateControllerDescription(
+    OdbcmConnectionHandler *db_conn,
     uint32_t operation,
     uint32_t data_type,
     unc_keytype_ctrtype_t ctr_type,
@@ -3036,7 +3237,9 @@ UpplReturnCode Kt_Controller::ValidateControllerDescription(
   // validate description
   valid_val = PhyUtil::uint8touint(val_ctr->valid[kIdxDescription]);
   string value = reinterpret_cast<char*>(val_ctr->description);
-  IS_VALID_STRING_VALUE(CTR_DESCRIPTION, value, operation,
+  map<string, Kt_Class_Attr_Syntax> attr_syntax_map =
+      attr_syntax_map_all[UNC_KT_CONTROLLER];
+  IS_VALID_STRING_VALUE(CTR_DESCRIPTION_STR, value, operation,
                         valid_val, ret_code, mandatory);
   if (ret_code != UPPL_RC_SUCCESS) {
     return UPPL_RC_ERR_CFG_SYNTAX;
@@ -3045,12 +3248,20 @@ UpplReturnCode Kt_Controller::ValidateControllerDescription(
 }
 
 /** ValidateControllerIpAddress
- * * @Description : This function checks whether the given controller ip address
+ * @Description : This function checks whether the given controller ip address
  * is valid
- * * * @param[in] : operation, data_type, ctr_type, val_ctr
- * * * @return    : Success or associated error code
+ * @param[in] : operation-UNC_OP_*,type of operation
+ * data_type-UNC_DT_*,type of database
+ * ctr_type-type of controller,value of unc_keytype_ctrtype_t
+ * val_ctr-pointer to ctr val structure
+ * param[out]:ctr_type_code-Success or associated error code
+ * @return    : Success or associated error code
+ * UPPL_RC_SUCCESS is returned when the response
+ * is added to ipc session successfully.
+ * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
 UpplReturnCode Kt_Controller::ValidateControllerIpAddress(
+    OdbcmConnectionHandler *db_conn,
     uint32_t operation,
     uint32_t data_type,
     unc_keytype_ctrtype_t ctr_type,
@@ -3071,15 +3282,25 @@ UpplReturnCode Kt_Controller::ValidateControllerIpAddress(
   }
   if (operation == UNC_OP_UPDATE && ctr_type_code == UPPL_RC_SUCCESS &&
       valid_val == UNC_VF_VALID) {
-    UpplReturnCode validate_status = ValidateTypeIpAddress(key_struct,
+    UpplReturnCode validate_status = ValidateTypeIpAddress(db_conn, key_struct,
                                                            val_struct,
                                                            data_type,
                                                            ctr_type);
     if (validate_status != UPPL_RC_SUCCESS) {
       return UPPL_RC_ERR_CFG_SYNTAX;
     }
+    pfc_log_debug("Validating Type and Ip Address in Running Db");
+    validate_status = ValidateTypeIpAddress(db_conn, key_struct,
+                                            val_struct,
+                                            UNC_DT_RUNNING,
+                                            ctr_type);
+    if (validate_status != UPPL_RC_SUCCESS) {
+      return UPPL_RC_ERR_CFG_SYNTAX;
+    }
   }
-  IS_VALID_IPV4_VALUE(CTR_IP_ADDRESS, val_ctr->ip_address, operation,
+  map<string, Kt_Class_Attr_Syntax> attr_syntax_map =
+      attr_syntax_map_all[UNC_KT_CONTROLLER];
+  IS_VALID_IPV4_VALUE(CTR_IP_ADDRESS_STR, val_ctr->ip_address, operation,
                       valid_val, ret_code, mandatory);
   if (ret_code != UPPL_RC_SUCCESS) {
     return UPPL_RC_ERR_CFG_SYNTAX;
@@ -3088,12 +3309,20 @@ UpplReturnCode Kt_Controller::ValidateControllerIpAddress(
 }
 
 /** ValidateControllerUser
- * * @Description : This function checks whether the given controller user
+ * @Description : This function checks whether the given controller user
  * is valid
- * * * @param[in] : operation, data_type, ctr_type, val_ctr
- * * * @return    : Success or associated error code
+ * @param[in] : operation-UNC_OP_*,type of operation
+ * data_type-UNC_DT_*,type of database
+ * ctr_type-type of controller,value of unc_keytype_ctrtype_t
+ * val_ctr-pointer to ctr val structure
+ * param[out]:ctr_type_code-Success or associated error code
+ * @return    : Success or associated error code
+ * UPPL_RC_SUCCESS is returned when the response
+ * is added to ipc session successfully.
+ * UPPL_RC_ERR_* is returned when ipc response could not be added to sess. 
  * */
 UpplReturnCode Kt_Controller::ValidateControllerUser(
+    OdbcmConnectionHandler *db_conn,
     uint32_t operation,
     uint32_t data_type,
     unc_keytype_ctrtype_t ctr_type,
@@ -3110,7 +3339,9 @@ UpplReturnCode Kt_Controller::ValidateControllerUser(
     return UPPL_RC_ERR_CFG_SYNTAX;
   }
   string value = reinterpret_cast<char*>(val_ctr->user);
-  IS_VALID_STRING_VALUE("user", value, operation,
+  map<string, Kt_Class_Attr_Syntax> attr_syntax_map =
+      attr_syntax_map_all[UNC_KT_CONTROLLER];
+  IS_VALID_STRING_VALUE(IPCT_USER, value, operation,
                         valid_val, ret_code, mandatory);
   if (ret_code != UPPL_RC_SUCCESS) {
     return UPPL_RC_ERR_CFG_SYNTAX;
@@ -3119,12 +3350,17 @@ UpplReturnCode Kt_Controller::ValidateControllerUser(
 }
 
 /** ValidateControllerPassword
- * * @Description : This function checks whether the given controller password
+ * @Description : This function checks whether the given controller password
  * is valid
- * * * @param[in] : operation, data_type, ctr_type, val_ctr
- * * * @return    : Success or associated error code
+ * @param[in] :operation-UNC_OP_*,type of operation
+ * data_type-UNC_DT_*,type of database
+ * ctr_type-type of controller,value of unc_keytype_ctrtype_t
+ * val_ctr-pointer to ctr val structure
+ * param[out]:ctr_type_code-Success or associated error code
+ * @return    : Success or associated error code,UPPL_RC_SUCCESS/ERR*
  * */
 UpplReturnCode Kt_Controller::ValidateControllerPassword(
+    OdbcmConnectionHandler *db_conn,
     uint32_t operation,
     uint32_t data_type,
     unc_keytype_ctrtype_t ctr_type,
@@ -3141,7 +3377,9 @@ UpplReturnCode Kt_Controller::ValidateControllerPassword(
     return UPPL_RC_ERR_CFG_SYNTAX;
   }
   string value = reinterpret_cast<char*>(val_ctr->password);
-  IS_VALID_STRING_VALUE(CTR_PASSWORD, value, operation,
+  map<string, Kt_Class_Attr_Syntax> attr_syntax_map =
+      attr_syntax_map_all[UNC_KT_CONTROLLER];
+  IS_VALID_STRING_VALUE(CTR_PASSWORD_STR, value, operation,
                         valid_val, ret_code, mandatory);
   if (ret_code != UPPL_RC_SUCCESS) {
     return UPPL_RC_ERR_CFG_SYNTAX;
@@ -3150,12 +3388,17 @@ UpplReturnCode Kt_Controller::ValidateControllerPassword(
 }
 
 /** ValidateControllerEnableAudit
- * * @Description : This function checks whether the given controller enable audit
+ * @Description : This function checks whether the given controller enable audit
  * is valid
- * * * @param[in] : operation, data_type, ctr_type, val_ctr
- * * * @return    : Success or associated error code
+ * @param[in] : operation-UNC_OP_*,type of operation
+ * data_type-UNC_DT_*,type of database
+ * ctr_type-type of controller, value of unc_keytype_ctrtype_t
+ * val_ctr-pointer to ctr val structure
+ * param[out]:ctr_type_code-Success or associated error code 
+ * @return    : Success or associated error code,UPPL_RC_SUCCESS/ERR*
  * */
 UpplReturnCode Kt_Controller::ValidateControllerEnableAudit(
+    OdbcmConnectionHandler *db_conn,
     uint32_t operation,
     uint32_t data_type,
     unc_keytype_ctrtype_t ctr_type,
@@ -3172,7 +3415,9 @@ UpplReturnCode Kt_Controller::ValidateControllerEnableAudit(
         "Enable audit cannot be modified for unknown controller type");
     return UPPL_RC_ERR_CFG_SYNTAX;
   }
-  IS_VALID_INT_VALUE(CTR_ENABLE_AUDIT, val_ctr->enable_audit, operation,
+  map<string, Kt_Class_Attr_Syntax> attr_syntax_map =
+      attr_syntax_map_all[UNC_KT_CONTROLLER];
+  IS_VALID_INT_VALUE(CTR_ENABLE_AUDIT_STR, val_ctr->enable_audit, operation,
                      valid_val, ret_code, mandatory);
   if (ret_code != UPPL_RC_SUCCESS) {
     return UPPL_RC_ERR_CFG_SYNTAX;
@@ -3181,10 +3426,12 @@ UpplReturnCode Kt_Controller::ValidateControllerEnableAudit(
 }
 
 /** SendOperStatusNotification
- * * @Description : This function sends oper status change as notification to
+ * @Description : This function sends oper status change as notification to
  * north bound
- * * * @param[in] : key_ctr, old oper status and new oper status
- * * * @return    : Success or associated error code
+ * @param[in] : ctr_key pointer to ctr key structure
+ * old_oper_st-old oper status of controller 
+ * new_oper_st-new oper status of controller
+ * @return    : Success or associated error code,UPPL_RC_SUCESS/ERR*
  * */
 UpplReturnCode Kt_Controller::SendOperStatusNotification(key_ctr_t ctr_key,
                                                          uint8_t old_oper_st,
@@ -3204,9 +3451,6 @@ UpplReturnCode Kt_Controller::SendOperStatusNotification(key_ctr_t ctr_key,
       UNC_DT_STATE,
       UNC_KT_CONTROLLER};
   err = PhyUtil::sessOutNBEventHeader(ser_evt, rsh);
-  pfc_log_debug("%s", (IpctUtil::get_string(ctr_key)).c_str());
-  pfc_log_debug("%s", (IpctUtil::get_string(new_val_ctr)).c_str());
-  pfc_log_debug("%s", (IpctUtil::get_string(old_val_ctr)).c_str());
   err |= ser_evt.addOutput(ctr_key);
   err |= ser_evt.addOutput(new_val_ctr);
   err |= ser_evt.addOutput(old_val_ctr);
@@ -3215,9 +3459,116 @@ UpplReturnCode Kt_Controller::SendOperStatusNotification(key_ctr_t ctr_key,
         "Server Event addOutput failed, return IPC_WRITE_ERROR");
     status = UPPL_RC_ERR_IPC_WRITE_ERROR;
   } else {
+    pfc_log_debug("%s", (IpctUtil::get_string(ctr_key)).c_str());
+    pfc_log_debug("%s", (IpctUtil::get_string(new_val_ctr)).c_str());
+    pfc_log_debug("%s", (IpctUtil::get_string(old_val_ctr)).c_str());
     // Call IPC server to post the event
     status = (UpplReturnCode) physical_layer
         ->get_ipc_connection_manager()->SendEvent(&ser_evt);
   }
   return status;
+}
+
+/** CheckIpAndClearStateDB
+ * @Description : This function checks the ip address and clears state db
+ *                if ip address is empty
+ * @param[in] : key_struct of controller
+ * @return    : Success or associated error code,UPPL_RC_SUCESS/ERR*
+ * */
+UpplReturnCode Kt_Controller::CheckIpAndClearStateDB(
+    OdbcmConnectionHandler *db_conn,
+    void *key_struct) {
+  UpplReturnCode state_status = UPPL_RC_SUCCESS;
+  vector<void *> vect_ctr_key, vect_ctr_val;
+  vect_ctr_key.push_back(key_struct);
+  state_status = ReadInternal(db_conn,
+                              vect_ctr_key,
+                              vect_ctr_val,
+                              UNC_DT_RUNNING,
+                              UNC_OP_READ);
+  if (state_status != UPPL_RC_SUCCESS) {
+    pfc_log_debug("Read Internal Failed");
+    return state_status;
+  }
+  val_ctr_st_t *ctr_val =
+      reinterpret_cast<val_ctr_st_t*>(vect_ctr_val[0]);
+  key_ctr_t *ctr_key = reinterpret_cast<key_ctr_t*>(vect_ctr_key[0]);
+  string controller_name = "";
+  if (ctr_key != NULL) {
+    controller_name = reinterpret_cast<char*>(ctr_key->controller_name);
+    delete ctr_key;
+    ctr_key = NULL;
+  }
+  if (ctr_val != NULL) {
+    if (ctr_val->controller.ip_address.s_addr == 0) {
+      // Release all associated entries in state db
+      pfc_log_info("Removing State entries for controller %s",
+                   controller_name.c_str());
+      ODBCM_RC_STATUS clear_status =
+          PhysicalLayer::get_instance()->get_odbc_manager()->
+          ClearOneInstance(UNC_DT_STATE, controller_name, db_conn);
+      if (clear_status != ODBCM_RC_SUCCESS) {
+        pfc_log_info("State DB clearing failed");
+      }
+      // Reset actual version as empty
+      string act_version = "";
+      UpplReturnCode status = SetActualVersion(db_conn, key_struct, act_version,
+                                               UNC_DT_RUNNING, UNC_VF_INVALID);
+      if (status != UPPL_RC_SUCCESS) {
+        // log error
+        pfc_log_error("act_version reset operation failed for running");
+      }
+      status = SetActualVersion(db_conn, key_struct,
+                                act_version, UNC_DT_CANDIDATE, UNC_VF_INVALID);
+      if (status != UPPL_RC_SUCCESS) {
+        // log error
+        pfc_log_error("act_version reset operation failed for candidate");
+      }
+    }
+    delete ctr_val;
+    ctr_val = NULL;
+  }
+  return state_status;
+}
+
+/** CheckSameIp
+ * @Description : This function checks whether same ip is given
+ * @param[in] : key_struct-void* to ctr key structure
+ * val_ctr_valid_st-instance of val_ctr_st_t
+ * @return    : Success or associated error code
+ * */
+UpplReturnCode Kt_Controller::CheckSameIp(OdbcmConnectionHandler *db_conn,
+                                          void *key_struct,
+                                          void *val_struct,
+                                          uint32_t data_type) {
+  UpplReturnCode return_code = UPPL_RC_SUCCESS;
+  vector<void *> vect_key_ctr;
+  vect_key_ctr.push_back(key_struct);
+  vector<void *> vect_val_ctr;
+  val_ctr_t ctr_val = *reinterpret_cast<val_ctr_t*>(val_struct);
+  uint32_t existing_ip = ctr_val.ip_address.s_addr;
+  return_code = ReadInternal(db_conn, vect_key_ctr, vect_val_ctr,
+                             data_type, UNC_OP_READ);
+  if (return_code == UPPL_RC_SUCCESS) {
+    val_ctr_st_t *val_ctr_new_valid_st =
+        reinterpret_cast<val_ctr_st_t*>(vect_val_ctr[0]);
+    if (val_ctr_new_valid_st != NULL) {
+      uint32_t in_ip = val_ctr_new_valid_st->controller.ip_address.s_addr;
+      if (existing_ip == in_ip) {
+        pfc_log_info("Same Ip given - Ignore");
+      } else {
+        pfc_log_info("Different Ip given - Throw Error");
+        return_code = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+      }
+      delete val_ctr_new_valid_st;
+      val_ctr_new_valid_st = NULL;
+      key_ctr_t *ctr_key = reinterpret_cast<key_ctr_t*>
+      (vect_key_ctr[0]);
+      if (ctr_key != NULL) {
+        delete ctr_key;
+        ctr_key = NULL;
+      }
+    }
+  }
+  return return_code;
 }

@@ -28,7 +28,7 @@ void TcLock::ResetTcGlobalDataOnStateTransition(void)  {
   tc_config_lock_.is_taken = PFC_FALSE;
   /* Initialize read lock information */
   std::set<uint32_t> &sessions(tc_read_lock_.read_sessions);
-  PFC_ASSERT(tc_rwlock_.rw_owner == sessions.size() + 1);
+  PFC_VERIFY(tc_rwlock_.rw_owner == sessions.size() + 1);
   sessions.clear();
   tc_rwlock_.rw_owner = 1;
   /* Initialize write lock information */
@@ -193,7 +193,7 @@ TcLockRet TcLock::AcquireReadLock(uint32_t session_id) {
  *@return     TC_LOCK_INVALID_UNC_STATE The lock can not be held in this state.
  */
 TcLockRet TcLock::TcAcquireReadLockForStateTransition() {
-  PFC_ASSERT(tc_state_lock_.current_state != TC_STOP);
+  PFC_VERIFY(tc_state_lock_.current_state != TC_STOP);
 
   while (!tc_rwlock_.canReadLock() ||
          tc_state_lock_.state_transition_in_progress) {

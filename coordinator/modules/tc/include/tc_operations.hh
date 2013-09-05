@@ -313,10 +313,11 @@ class TcAuditOperations: public TcOperations {
   TcOperStatus TcCreateMsgList();
   TcOperStatus FillTcMsgData(TcMsg*, TcMsgOperType);
   TcOperStatus SendAdditionalResponse(TcOperStatus);
-  TcOperStatus  HandleLockRet(TcLockRet LockRet);
+  TcOperStatus HandleLockRet(TcLockRet LockRet);
   TcOperStatus GetSessionId();
-  TcOperStatus SetControllerId();
+  TcOperStatus SetAuditOperationStatus();
   TcOperStatus Execute();
+  TcOperStatus SendAuditStatusNotification(int32_t alarm_id);
   pfc_bool_t  AuditTransStart();
   pfc_bool_t  AuditTransEnd();
   pfc_bool_t  AuditVote();
@@ -332,10 +333,11 @@ class TcAuditOperations: public TcOperations {
  */
 class TcTaskqUtil {
  public:
-  explicit TcTaskqUtil(uint32_t concurrency);
+  explicit TcTaskqUtil(uint32_t concurrency, int32_t alarm_id);
   ~TcTaskqUtil();
   pfc::core::TaskQueue* taskq_;
   pfc::core::Timer* timed_;
+  int32_t auditq_alarm_;
   int PostReadTimer(uint32_t session_id,
                     uint32_t timeout,
                     TcLock* tclock,
@@ -376,12 +378,14 @@ class  AuditParams : public std::unary_function < void, void > {
   TcLock* tclock_;
   TcChannelNameMap& unc_channel_map_;
   unc_keytype_ctrtype_t driver_id_;
+  int32_t alarm_id_;
 
   AuditParams(std::string controller_id,
               TcDbHandler* db_handler,
               TcLock* tclock,
               TcChannelNameMap& unc_map,
-              unc_keytype_ctrtype_t driver_id);
+              unc_keytype_ctrtype_t driver_id,
+              int32_t alarm_id);
   void operator() ()  {
     HandleDriverAudit();
   }

@@ -99,7 +99,8 @@ public class HostAddressResourceValidator extends VtnServiceValidator {
 			} else if (isValid && requestBody != null
 					&& VtnServiceConsts.PUT.equals(method)) {
 				isValid = validatePut(requestBody);
-			} else {
+			} else if (isValid) {
+				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
@@ -154,15 +155,15 @@ public class HostAddressResourceValidator extends VtnServiceValidator {
 			}
 			if (isValid) {
 				// validation for mandatory keys: netmask
-				setInvalidParameter(VtnServiceJsonConsts.NETMASK);
-				if (ipaddr.has(VtnServiceJsonConsts.NETMASK)
+				setInvalidParameter(VtnServiceJsonConsts.PREFIX);
+				if (ipaddr.has(VtnServiceJsonConsts.PREFIX)
 						&& ipaddr.getAsJsonPrimitive(
-								VtnServiceJsonConsts.NETMASK).getAsString() != null) {
+								VtnServiceJsonConsts.PREFIX).getAsString() != null) {
 					isValid = validator.isValidRange(
-							Integer.parseInt(ipaddr
+							ipaddr
 									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.NETMASK)
-									.getAsString().trim()),
+											VtnServiceJsonConsts.PREFIX)
+									.getAsString().trim(),
 							VtnServiceJsonConsts.VAL_1,
 							VtnServiceJsonConsts.VAL_30);
 				} else {

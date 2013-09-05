@@ -16,7 +16,7 @@
 #include "ctrlr_mgr.hh"
 #include "config_mgr.hh"
 #include "ipct_st.hh"
-#include "upll_log.hh"
+#include "uncxx/upll_log.hh"
 
 namespace unc {
 namespace upll {
@@ -24,6 +24,8 @@ namespace config_momgr {
 
 using unc::upll::ipc_util::IpctSt;
 using unc::upll::ipc_util::KtUtil;
+
+const char * const TcLibIntfImpl::kUpllCtrlrId = "";
 
 TcLibIntfImpl::TcLibIntfImpl(UpllConfigMgr *ucm) {
   ucm_ = ucm;
@@ -45,7 +47,7 @@ TcCommonRet TcLibIntfImpl::HandleCommitTransactionStart(uint32_t session_id,
     if (err_ckv != NULL) {
       // Local error in UPLL, send it to TC with controller id as ""
       list<CtrlrTxResult*> tx_res_list;
-      CtrlrTxResult unc_res("", urc, urc);
+      CtrlrTxResult unc_res(kUpllCtrlrId, urc, urc);
       unc_res.err_ckv = err_ckv;   // err_ckv will be freed by CtlrTxResult
       tx_res_list.push_back(&unc_res);
       if (WriteBackTxResult(tx_res_list) != true) {
@@ -84,9 +86,19 @@ upll_rc_t TcLibIntfImpl::FillTcDriverInfoMap(
     upll_keytype_datatype_t datatype;
     datatype = audit ? UPLL_DT_RUNNING : UPLL_DT_CANDIDATE;
     if (false == CtrlrMgr::GetInstance()->GetCtrlrType(
-          ctrlr_name.c_str(), datatype, &ctrlr_type)) {
-      UPLL_LOG_WARN("Unable to get controller type for %s", ctrlr_name.c_str());
-      return UPLL_RC_ERR_GENERIC;
+        ctrlr_name.c_str(), datatype, &ctrlr_type)) {
+      if (datatype != UPLL_DT_RUNNING) {
+        if (false == CtrlrMgr::GetInstance()->GetCtrlrType(
+            ctrlr_name.c_str(), UPLL_DT_RUNNING, &ctrlr_type)) {
+          UPLL_LOG_WARN("Unable to get controller type for %s",
+                        ctrlr_name.c_str());
+          return UPLL_RC_ERR_GENERIC;
+        }
+      } else {
+        UPLL_LOG_WARN("Unable to get controller type for %s",
+                      ctrlr_name.c_str());
+        return UPLL_RC_ERR_GENERIC;
+      }
     }
     UPLL_LOG_TRACE("Affected controller name=%s, type=%d",
                   ctrlr_name.c_str(), ctrlr_type);
@@ -131,7 +143,7 @@ TcCommonRet TcLibIntfImpl::HandleCommitVoteRequest(
     if (err_ckv != NULL) {
       // Local error in UPLL, send it to TC with controller id as ""
       list<CtrlrTxResult*> tx_res_list;
-      CtrlrTxResult unc_res("", urc, urc);
+      CtrlrTxResult unc_res(kUpllCtrlrId, urc, urc);
       unc_res.err_ckv = err_ckv;   // err_ckv will be freed by CtlrTxResult
       tx_res_list.push_back(&unc_res);
       if (WriteBackTxResult(tx_res_list) != true) {
@@ -149,6 +161,9 @@ TcCommonRet TcLibIntfImpl::HandleCommitGlobalCommit(
   upll_rc_t urc = ucm_->OnTxGlobalCommit(&affected_ctrlr_list);
   if (urc == UPLL_RC_SUCCESS) {
     urc = FillTcDriverInfoMap(&driver_info, affected_ctrlr_list, false);
+    if (urc != UPLL_RC_SUCCESS) {
+      pfc_log_fatal("Failed to fill TcDriverInfoMap in Commit-GlobalCommit");
+    }
   }
   return ((urc == UPLL_RC_SUCCESS) ? unc::tclib::TC_SUCCESS :
           unc::tclib::TC_FAILURE);
@@ -172,7 +187,7 @@ bool TcLibIntfImpl::GetTxKtResult(const string &ctrlr_id,
 
   unc::tclib::TcLibModule *tclib = UpllConfigMgr::GetTcLibModule();
   if (tclib == NULL) {
-    UPLL_LOG_DEBUG("Unable to get tclib module");
+    UPLL_LOG_ERROR("Unable to get tclib module");
     return false;
   }
 
@@ -214,7 +229,15 @@ bool TcLibIntfImpl::GetTxKtResult(const string &ctrlr_id,
 
     // Read Key and Value from the Tclib Module.
     const pfc_ipcstdef_t *key_stdef = IpctSt::GetIpcStdef(key_stnum);
-    const pfc_ipcstdef_t *val_stdef = IpctSt::GetIpcStdef(val_stnum);
+    // Need a dummy for val_stdef;
+    pfc_ipcstdef_t val_stdef_dummy;
+    const pfc_ipcstdef_t *val_stdef;
+    if (val_exists) {
+      val_stdef = IpctSt::GetIpcStdef(val_stnum);
+    } else {
+        bzero(&val_stdef_dummy, sizeof(val_stdef_dummy));
+        val_stdef = &val_stdef_dummy;
+    }
     if (key_stdef == NULL || (val_exists && (val_stdef == NULL))) {
       UPLL_LOG_TRACE("key_stnum=%d key_stdef=%p val_stnum=%d val_stdef=%p",
                     key_stnum, key_stdef, val_stnum, val_stdef);
@@ -225,12 +248,12 @@ bool TcLibIntfImpl::GetTxKtResult(const string &ctrlr_id,
       return false;
     }
 
-    void *key = malloc(key_stdef->ist_size);
-    void *val = (val_exists) ? malloc(val_stdef->ist_size) : NULL;
+    void *key = ConfigKeyVal::Malloc(key_stdef->ist_size);
+    void *val = (val_exists) ? ConfigKeyVal::Malloc(val_stdef->ist_size) : NULL;
     if (key == NULL || (val_exists && (val == NULL))) {
       UPLL_LOG_TRACE("Failed to allocate key=%p val=%p", key, val);
-      if (key != NULL) free(key);
-      if (val != NULL) free(val);
+      if (key != NULL) ConfigKeyVal::Free(key);
+      if (val != NULL) ConfigKeyVal::Free(val);
       if (*err_ckv != NULL) {
         delete *err_ckv;
         *err_ckv = NULL;
@@ -241,9 +264,9 @@ bool TcLibIntfImpl::GetTxKtResult(const string &ctrlr_id,
         ctrlr_id, err_pos, keytype, *key_stdef, *val_stdef, key, val);
     if (tclib_ret != unc::tclib::TC_API_COMMON_SUCCESS) {
       UPLL_LOG_DEBUG("Failed to read from tclib %d", tclib_ret);
-      free(key);
+      ConfigKeyVal::Free(key);
       if (val != NULL) {
-        free(val);
+        ConfigKeyVal::Free(val);
       }
       if (*err_ckv != NULL) {
         delete *err_ckv;
@@ -268,6 +291,7 @@ upll_rc_t TcLibIntfImpl::DriverResultCodeToTxURC(
     unc_keytype_ctrtype_t ctrlr_type, int driver_result_code) {
   switch (ctrlr_type) {
     case UNC_CT_PFC:
+    case UNC_CT_VNP:
       {
         switch (driver_result_code) {
           case DRVAPI_RESPONSE_SUCCESS:
@@ -293,14 +317,13 @@ upll_rc_t TcLibIntfImpl::DriverResultCodeToTxURC(
           case DRVAPI_RESPONSE_INVALID_KEYTYPE:
           case DRVAPI_RESPONSE_MISSING_KEY_STRUCT:
           case DRVAPI_RESPONSE_MISSING_VAL_STRUCT:
+          case DRVAPI_RESPONSE_NO_SUCH_INSTANCE:
           case DRVAPI_RESPONSE_INVALID_TRANSACTION:
           default:
             return UPLL_RC_ERR_GENERIC;
         }
       }
       break;
-    // case UNC_CT_LEGACY:
-    case UNC_CT_VNP:
     default:
       return UPLL_RC_ERR_GENERIC;
   }
@@ -325,17 +348,20 @@ bool TcLibIntfImpl::GetTxResult(const TcCommitPhaseResult *driver_result,
        ctr_it != driver_result->end(); ++ctr_it) {
     unc_keytype_ctrtype_t ctrlr_type = UNC_CT_UNKNOWN;
     if (false == CtrlrMgr::GetInstance()->GetCtrlrType(
-            ctr_it->controller_id.c_str(), UPLL_DT_CANDIDATE, &ctrlr_type)) {
-      UPLL_LOG_DEBUG("Controller %s does not exist",
-                     ctr_it->controller_id.c_str());
-      // empty tx_res_list and free its contents
-      for (list<CtrlrTxResult*>::iterator tx_res_it = tx_res_list->begin();
-           tx_res_it != tx_res_list->end(); tx_res_it++) {
-        CtrlrTxResult *tx_res = *tx_res_it;
-        delete tx_res;
+        ctr_it->controller_id.c_str(), UPLL_DT_CANDIDATE, &ctrlr_type)) {
+      if (false == CtrlrMgr::GetInstance()->GetCtrlrType(
+          ctr_it->controller_id.c_str(), UPLL_DT_RUNNING, &ctrlr_type)) {
+        UPLL_LOG_DEBUG("Controller %s does not exist",
+                       ctr_it->controller_id.c_str());
+        // empty tx_res_list and free its contents
+        for (list<CtrlrTxResult*>::iterator tx_res_it = tx_res_list->begin();
+            tx_res_it != tx_res_list->end(); tx_res_it++) {
+          CtrlrTxResult *tx_res = *tx_res_it;
+          delete tx_res;
+        }
+        tx_res_list->clear();
+        return false;
       }
-      tx_res_list->clear();
-      return false;
     }
     /*
     if (ctrlr_type == UNC_CT_PFC) {
@@ -358,9 +384,9 @@ bool TcLibIntfImpl::GetTxResult(const TcCommitPhaseResult *driver_result,
     }
     */
 
-    UPLL_LOG_TRACE("Controller ID=%s Result=%d ErrCount=%d",
-                  ctr_it->controller_id.c_str(), converted_result,
-                  ctr_it->num_of_errors);
+    UPLL_LOG_INFO("Controller ID=%s CtrlrResult=%d Urc=%d ErrCount=%d",
+                  ctr_it->controller_id.c_str(), ctr_it->resp_code,
+                  converted_result, ctr_it->num_of_errors);
 
     CtrlrTxResult *tx_res = new CtrlrTxResult(ctr_it->controller_id,
                                               converted_result,
@@ -378,6 +404,11 @@ bool TcLibIntfImpl::GetTxResult(const TcCommitPhaseResult *driver_result,
       tx_res_list->clear();
       delete tx_res;
       return false;
+    }
+    if (tx_res->err_ckv != NULL) {
+      UPLL_LOG_INFO("Error CKV received from controller <%s>: %s",
+                     ctr_it->controller_id.c_str(),
+                     tx_res->err_ckv->ToStrAll().c_str());
     }
     tx_res_list->push_back(tx_res);
     /*
@@ -398,17 +429,28 @@ bool TcLibIntfImpl::WriteBackTxResult(const list<CtrlrTxResult*> &tx_res_list) {
 
   unc::tclib::TcLibModule *tclib = UpllConfigMgr::GetTcLibModule();
   if (tclib == NULL) {
-    UPLL_LOG_DEBUG("Unable to get tclib module");
+    UPLL_LOG_ERROR("Unable to get tclib module");
     return false;
   }
   for (std::list<CtrlrTxResult*>::const_iterator ctrlr_it = tx_res_list.begin();
        ctrlr_it != tx_res_list.end(); ctrlr_it++) {
     const CtrlrTxResult *res = *ctrlr_it;
+    // Skip controllers whose status is success.
+    // During Vote/G-Commit, disconnected controller information is not skipped
+    // During Vote, DRVAPI_RESPONSE_NOT_SENT_TO_CONTROLLER is not skipped.
+    if ((res->ctrlr_id.compare(kUpllCtrlrId) != 0) &&
+        (res->ctrlr_orig_result == DRVAPI_RESPONSE_SUCCESS)) {
+      continue;
+    }
     unc::tclib::TcApiCommonRet tclib_ret = tclib->TcLibWriteControllerInfo(
         res->ctrlr_id, res->ctrlr_orig_result, res->err_ckv->size());
     if (tclib_ret != unc::tclib::TC_API_COMMON_SUCCESS) {
       UPLL_LOG_DEBUG("Failed to write to tclib %d", tclib_ret);
       return false;
+    }
+    if (res->err_ckv) {
+      UPLL_LOG_INFO("Proccessed Error CKV for controller <%s>: %s",
+                    res->ctrlr_id.c_str(), res->err_ckv->ToStrAll().c_str());
     }
     for (const ConfigKeyVal *ckv = res->err_ckv; ckv;
          ckv = ckv->get_next_cfg_key_val()) {
@@ -511,10 +553,31 @@ TcCommonRet TcLibIntfImpl::HandleCommonTxDriverResult(
     UPLL_LOG_TRACE("ConfigMgr failed to process the commit result %d", urc);
     tcr = unc::tclib::TC_FAILURE;
   }
-  // free tx_res_list;
+  // free tx_res_list and also compute final TC result;
   for (list<CtrlrTxResult*>::iterator tx_res_it = tx_res_list.begin();
        tx_res_it != tx_res_list.end(); tx_res_it++) {
     CtrlrTxResult *tx_res = *tx_res_it;
+    UPLL_LOG_TRACE("Driver received error %d from controller %s",
+                   tx_res->ctrlr_orig_result, tx_res->ctrlr_id.c_str());
+    // For Vote phase, tcr will be failure if controller result is failure.
+    // For Global-Commit phase, tcr is not dependent on the controller result.
+    if (tcr == unc::tclib::TC_SUCCESS) {
+      if (tx_phase == unc::tclib::TC_COMMIT_VOTE_PHASE) {
+        if ((tx_res->ctrlr_orig_result != DRVAPI_RESPONSE_SUCCESS) &&
+            (tx_res->ctrlr_orig_result !=
+             DRVAPI_RESPONSE_CONTROLLER_DISCONNECTED)) {
+          /* Assumption: If err is DRVAPI_RESPONSE_NOT_SENT_TO_CONTROLLER, then
+           * atleast one controller failed the vote. */
+          tcr = unc::tclib::TC_FAILURE;
+        }
+      } else if (tx_phase == unc::tclib::TC_AUDIT_VOTE_PHASE) {
+        if (tx_res->ctrlr_orig_result != DRVAPI_RESPONSE_SUCCESS) {
+          /* Note: If err is DRVAPI_RESPONSE_CONTROLLER_DISCONNECTED, then
+           * Audit for the controller is incomplete, so tcr is failure. */
+          tcr = unc::tclib::TC_FAILURE;
+        }
+      }
+    }
     delete tx_res;
   }
   tx_res_list.clear();
@@ -599,17 +662,43 @@ TcCommonRet TcLibIntfImpl::HandleAuditGlobalCommit(
                                               &affected_ctrlr_list);
   if (urc == UPLL_RC_SUCCESS) {
     urc = FillTcDriverInfoMap(&driver_info, affected_ctrlr_list, true);
+    if (urc != UPLL_RC_SUCCESS) {
+      pfc_log_fatal("Failed to fill TcDriverInfoMap in AuditGlobalCommit");
+    }
   }
+  audit_result = ((urc == UPLL_RC_SUCCESS) ? unc::tclib::TC_AUDIT_SUCCESS :
+                  unc::tclib::TC_AUDIT_FAILURE);
   return ((urc == UPLL_RC_SUCCESS) ? unc::tclib::TC_SUCCESS :
-          unc::tclib::TC_FAILURE);
+                  unc::tclib::TC_FAILURE);
 }
 
 TcCommonRet TcLibIntfImpl::HandleAuditDriverResult(
     uint32_t session_id, std::string controller_id,
     TcCommitPhaseType phase, TcCommitPhaseResult driver_result,
     TcAuditResult &audit_result) {
-  // return unc::tclib::TC_SUCCESS;
-  return HandleCommonTxDriverResult(session_id, 0, phase, driver_result);
+  TcCommonRet tcr = HandleCommonTxDriverResult(session_id, 0, phase,
+                                               driver_result);
+  /* Note: audit_result is applicable only to TC_AUDIT_GLOBAL_COMMIT_PHASE.
+   * For TC_AUDIT_VOTE_PHASE, audit_result will be set to SUCCESS irrespective
+   * of the vote result at UNC / Controler. */
+  audit_result = unc::tclib::TC_AUDIT_SUCCESS;
+  if (phase == unc::tclib::TC_AUDIT_GLOBAL_COMMIT_PHASE) {
+    if (tcr != unc::tclib::TC_SUCCESS) {
+      audit_result = unc::tclib::TC_AUDIT_FAILURE;
+    } else {
+      /* Iterate over each controller status to find audit_result */
+      for (TcCommitPhaseResult::const_iterator ctr_it = driver_result.begin();
+           ctr_it != driver_result.end(); ++ctr_it) {
+        if (ctr_it->resp_code != DRVAPI_RESPONSE_SUCCESS) {
+          /* audit_result is failure even if ctrlr is disconnected or
+           * vote request not sent to controller. */
+          audit_result = unc::tclib::TC_AUDIT_FAILURE;
+          break;
+        }
+      }
+    }
+  }
+  return tcr;
 }
 
 TcCommonRet TcLibIntfImpl::HandleAuditGlobalAbort(
@@ -655,7 +744,12 @@ TcCommonRet TcLibIntfImpl::HandleClearStartup(uint32_t session_id) {
  */
 TcCommonRet TcLibIntfImpl::HandleAuditConfig(unc_keytype_datatype_t db_target,
                                              TcServiceType fail_oper) {
-  if ((!IsActiveNode()) || IsShuttingDown()) {
+  if (IsActiveNode()) {
+    UPLL_LOG_WARN("Node is active, cannot handle Tclib audit config");
+    return unc::tclib::TC_FAILURE;
+  }
+  if (IsShuttingDown()) {
+    UPLL_LOG_WARN("Shutting down, cannot handle Tclib audit config");
     return unc::tclib::TC_FAILURE;
   }
 

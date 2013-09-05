@@ -27,6 +27,7 @@ namespace kt_momgr {
 
 class VtnFlowFilterMoMgr : public MoMgrImpl {
   private:
+    uint32_t cur_instance_count;
     static unc_key_type_t vtn_flowfilter_child[];
     static BindInfo vtn_flowfilter_bind_info[];
     static BindInfo vtn_flowfilter_ctrl_bind_info[];
@@ -157,6 +158,9 @@ class VtnFlowFilterMoMgr : public MoMgrImpl {
     upll_rc_t MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
                             ConfigKeyVal *ikey, DalDmlIntf *dmi);
 
+    upll_rc_t MergeImportToCandidate(unc_key_type_t keytype,
+                                     const char *ctrlr_name,
+                                     DalDmlIntf *dmi);
     /**
      * @brief   This API is used to create the record  in candidate
      *          configuration
@@ -291,7 +295,7 @@ class VtnFlowFilterMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
 
-    upll_rc_t GetRenamedControllerKey(ConfigKeyVal *&ikey,
+    upll_rc_t GetRenamedControllerKey(ConfigKeyVal *ikey,
                                       upll_keytype_datatype_t dt_type,
                                       DalDmlIntf *dmi,
                                       controller_domain *ctrlr_dom = NULL);
@@ -532,7 +536,9 @@ class VtnFlowFilterMoMgr : public MoMgrImpl {
                                           uint8_t* vtn_name,
                                           controller_domain *ctrlr_dom,
                                           unc_keytype_operation_t op,
-                                          DalDmlIntf *dmi);
+                                          upll_keytype_datatype_t dt_type,
+                                          DalDmlIntf *dmi,
+                                          uint8_t flag);
 
     upll_rc_t UpdateControllerTable(
         ConfigKeyVal *ikey,
@@ -550,11 +556,43 @@ class VtnFlowFilterMoMgr : public MoMgrImpl {
 
     upll_rc_t GetVtnControllerSpan(
         ConfigKeyVal *ikey,
+        upll_keytype_datatype_t dt_type,
         DalDmlIntf *dmi,
         std::list<controller_domain_t> &list_ctrlr_dom);
 
     upll_rc_t DeleteMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                        DalDmlIntf *dmi);
+
+    upll_rc_t GetDiffRecord(ConfigKeyVal *ckv_running,
+                                   ConfigKeyVal *ckv_audit,
+                                   uuc::UpdateCtrlrPhase phase, MoMgrTables tbl,
+                                   ConfigKeyVal *&ckv_driver_req,
+                                   DalDmlIntf *dmi,
+                                   bool &invalid_attr);
+
+    upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
+                                upll_keytype_datatype_t dt_type,
+                                DalDmlIntf *dmi);
+    upll_rc_t  SetVtnFFConsolidatedStatus(ConfigKeyVal *ikey,
+                                          uint8_t *ctrlr_id,
+                                          DalDmlIntf *dmi); 
+    upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
+
+    bool FilterAttributes(void *&val1,
+                          void *val2,
+                          bool copy_to_running,
+                          unc_keytype_operation_t op);
+
+    upll_rc_t CreateAuditMoImpl(ConfigKeyVal *ikey,
+                                                DalDmlIntf *dmi,
+                                                const char *ctrlr_id);
+
+    upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
+                          DalDmlIntf *dmi,
+                          IpcReqRespHeader *req);
+
+    upll_rc_t CopyVtnFlowFilterControllerCkv(ConfigKeyVal *ikey,
+                           ConfigKeyVal *&okey);
 };
 
 typedef struct val_vtn_flowfilter_ctrlr {

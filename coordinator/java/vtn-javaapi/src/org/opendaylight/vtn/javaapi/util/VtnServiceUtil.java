@@ -78,8 +78,53 @@ public class VtnServiceUtil {
 							.equals(entry.getValue().getAsString().trim())) {
 				entry.setValue(new JsonPrimitive(entry.getValue().getAsString()
 						.trim()));
-			} else {
-				// No need to do anything
+			}
+		}
+		return jsonObject;
+	}
+	
+	/**
+	 * Remove the parameters of given Json which contain empty string
+	 * 
+	 * @param Json
+	 *            object that require to be update
+	 * @return Updated Json Object
+	 */
+	public static JsonObject removeEmptyParamas(final JsonObject jsonObject){
+		// extract all the entries in Json Object
+		Set<Entry<String, JsonElement>> jsonSet = jsonObject.entrySet();
+		/*
+		 * iterate the loop for each entry
+		 */
+		for (Entry<String, JsonElement> entry : jsonSet) {
+			/*
+			 * if entry is type of Json Object
+			 */
+			if (!(entry.getValue() instanceof JsonNull)
+					&& entry.getValue().isJsonObject()) {
+				VtnServiceUtil.removeEmptyParamas((JsonObject) entry.getValue());
+				continue;
+			}
+			/*
+			 * if entry is type of Json array
+			 */
+			else if (!(entry.getValue() instanceof JsonNull)
+					&& entry.getValue().isJsonArray()) {
+				JsonArray array = (JsonArray) entry.getValue();
+				for (int index = 0; index < array.size(); index++) {
+					VtnServiceUtil.removeEmptyParamas(array.get(index)
+							.getAsJsonObject());
+					continue;
+				}
+				continue;
+			}
+			/*
+			 * if entry is primitive type value
+			 */
+			else if (!(entry.getValue() instanceof JsonNull)
+					&& entry.getValue().getAsString()
+							.equals("")) {
+				jsonObject.remove(entry.getKey());
 			}
 		}
 		return jsonObject;

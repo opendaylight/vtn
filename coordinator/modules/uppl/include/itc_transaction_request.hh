@@ -1,5 +1,5 @@
-#ifndef _ITC_TRANSACT_REQUEST_HH_
-#define _ITC_TRANSACT_REQUEST_HH_
+#ifndef _ITC_TRANSACTION_REQUEST_HH_
+#define _ITC_TRANSACTION_REQUEST_HH_
 
 /*
  * Copyright (c) 2012-2013 NEC Corporation
@@ -12,7 +12,7 @@
 
 /**
  * @brief    Transaction Request
- * @file     itc_transact_request.hh
+ * @file     itc_transaction_request.hh
  *
  **/
 
@@ -27,6 +27,7 @@
 #include "phy_util.hh"
 #include "itc_kt_base.hh"
 #include "physical_itc_req.hh"
+#include "odbcm_connection.hh"
 
 using std::vector;
 using std::set;
@@ -35,6 +36,7 @@ using unc::tclib::TcDriverInfoMap;
 using unc::tclib::TcCommitPhaseType;
 using unc::tclib::TcCommitPhaseResult;
 using unc::tclib::TcCommitOpAbortPhase;
+using unc::tclib::TcTransEndResult;
 
 namespace unc {
 namespace uppl {
@@ -55,29 +57,37 @@ class TransactionRequest : public ITCReq {
     set<string>set_controller_oflow;
     set<string>set_controller_vnp;
     map<unc_keytype_ctrtype_t, vector<string> > driver_controller_info_map_;
-    UpplReturnCode SendControllerNotification(vector<void *> vec_old_val_ctr);
+    UpplReturnCode SendControllerNotification(OdbcmConnectionHandler *db_conn,
+                                              vector<void *> vec_old_val_ctr);
     UpplReturnCode SendDomainNotification(
+        OdbcmConnectionHandler *db_conn,
         vector<void *> vec_old_val_ctr_domain);
     UpplReturnCode SendBoundaryNotification(
+        OdbcmConnectionHandler *db_conn,
         vector<void *> vec_old_val_boundary);
-    void SendControllerInfo(uint32_t operation_type,
+    void SendControllerInfo(OdbcmConnectionHandler *db_conn,
+                            uint32_t operation_type,
                             uint32_t session_id,
                             uint32_t config_id);
-    UpplReturnCode GetModifiedConfiguration(uint32_t session_id,
-                                            uint32_t config_id,
+    UpplReturnCode GetModifiedConfiguration(OdbcmConnectionHandler *db_conn,
                                             CsRowStatus row_status);
     void ClearMaps();
-    UpplReturnCode GetModifiedController(CsRowStatus row_status);
-    UpplReturnCode GetModifiedDomain(CsRowStatus row_status);
-    UpplReturnCode GetModifiedBoundary(CsRowStatus row_status);
+    UpplReturnCode GetModifiedController(OdbcmConnectionHandler *db_conn,
+                                         CsRowStatus row_status);
+    UpplReturnCode GetModifiedDomain(OdbcmConnectionHandler *db_conn,
+                                     CsRowStatus row_status);
+    UpplReturnCode GetModifiedBoundary(OdbcmConnectionHandler *db_conn,
+                                       CsRowStatus row_status);
 
   public:
     TransactionRequest();
     ~TransactionRequest();
-    UpplReturnCode StartTransaction(uint32_t session_id, uint32_t config_id);
+    UpplReturnCode StartTransaction(OdbcmConnectionHandler *db_conn,
+                                    uint32_t session_id, uint32_t config_id);
     UpplReturnCode HandleVoteRequest(uint32_t session_id, uint32_t config_id,
                                  TcDriverInfoMap &driver_info);
-    UpplReturnCode HandleDriverResult(uint32_t session_id,
+    UpplReturnCode HandleDriverResult(OdbcmConnectionHandler *db_conn,
+                                      uint32_t session_id,
                                       uint32_t config_id,
                                       TcCommitPhaseType phase,
                                       TcCommitPhaseResult
@@ -94,9 +104,12 @@ class TransactionRequest : public ITCReq {
     UpplReturnCode AbortTransaction(uint32_t session_id,
                                 uint32_t config_id,
                                 TcCommitOpAbortPhase operation_phase);
-    UpplReturnCode EndTransaction(uint32_t session_id, uint32_t config_id);
+    UpplReturnCode EndTransaction(OdbcmConnectionHandler *db_conn,
+                                  uint32_t session_id,
+                                  uint32_t config_id,
+                                  TcTransEndResult trans_res);
 };
 }   //   namespace uppl
 }   //   namespace unc
 
-#endif   //   _ITC_TRANSACT_REQUEST_HH_
+#endif   //   _ITC_TRANSACTION_REQUEST_HH_

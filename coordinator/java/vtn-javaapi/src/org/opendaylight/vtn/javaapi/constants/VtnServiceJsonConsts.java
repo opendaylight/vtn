@@ -242,7 +242,7 @@ public final class VtnServiceJsonConsts {
 
 	// Host Address
 	public static final String HOST_ADDR = "hostaddr";
-	public static final String NETMASK = "netmask";
+	public static final String PREFIX = "prefix";
 
 	// L2 Domain
 	public static final String L2DOMAINS = "l2domains";
@@ -326,10 +326,10 @@ public final class VtnServiceJsonConsts {
 	public static final String SERVER = "server";
 	public static final String SERVERS = "servers";
 
-	// vUnknown
-	public static final String VUNKNOWN = "vbypass";
-	public static final String VUKNAME = "vbypass_name";
-	public static final String VUNKNOWNS = "vbypasses";
+	// vByPass
+	public static final String VBYPASS = "vbypass";
+	public static final String VBYPASS_NAME = "vbypass_name";
+	public static final String VBYPASSES = "vbypasses";
 
 	// vTep
 	public static final String VTEP = "vtep";
@@ -612,6 +612,7 @@ public final class VtnServiceJsonConsts {
 	public static final String INFO = "info";
 	public static final String USERTYPE = "usertype";
 	public static final String LOGINTIME = "login_time";
+	public static final String CONFIGSTATUS = "configstatus";
 
 	// validation requirements
 	public static final String APIVERSION = "api_version";
@@ -655,7 +656,9 @@ public final class VtnServiceJsonConsts {
 	public static final BigInteger BIG_VAL0 = new BigInteger("0");
 	public static final BigInteger BIG_VAL = new BigInteger("4294967295");
 	public static final BigInteger BIG_VAL_18446744073709551615 = new BigInteger("18446744073709551615");
+	public static final BigInteger BIG_VAL_9999999999999999999 = new BigInteger("9999999999999999999");
 	public static final long LONG_VAL_0 = 0L;
+	public static final long LONG_VAL_1 = 1L;
 	public static final long LONG_VAL_4294967295 = 4294967295L;
 	public static final String LOGIN_NAME = "login_name";
 	public static final String LOGIN_TIME = "login_time";
@@ -757,5 +760,13 @@ public final class VtnServiceJsonConsts {
 	public static final String SWITCHID_NOT_FOUND= "switchIdNotFound";
 	public static final String PORTID_NOT_FOUND = "portIdNotFound";
 	public static final String VNP = "vnp";
+	public static final String DIFF = "diff";
+	public static final String DIFF_STATUS = "diff_status";
 	public static final String TWO = "2";
+	public static final String DEL = "del";
+	public static final String V = "V";
+	//Constatnts for portmap under overlay
+	public static final String VTUNNEL_INTERFACE_PORTMAP = "VTunnelInterfacePortMap";
+	public static final String VTEP_INTERFACE_PORTMAP = "VTepInterfacePortMap";
+	public static final String VBRIDGE_INTERFACE_PORTMAP = "VBridgeInterfacePortMap";
 }

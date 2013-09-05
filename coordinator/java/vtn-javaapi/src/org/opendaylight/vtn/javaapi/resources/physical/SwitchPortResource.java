@@ -11,6 +11,7 @@ package org.opendaylight.vtn.javaapi.resources.physical;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
 import org.opendaylight.vtn.core.util.Logger;
@@ -92,27 +93,29 @@ public class SwitchPortResource extends AbstractResource {
 			root = responseGenerator.getSwitchPortResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.SHOW);
-			requestProcessor.setServiceInfo(UncUPPLEnums.UPPL_IPC_SVC_NAME,
-					UncUPPLEnums.ServiceID.UPPL_SVC_READREQ.ordinal());
-			requestProcessor.createIpcRequestPacket(
-					IpcRequestPacketEnum.KT_PORT_GET_MEMBER, requestBody,
-					getUriParameters());
-			LOG.debug("Request Packet 2nd call created successfully");
-			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet 2nd call processed with status:"+status);
-			if (status == ClientSession.RESP_FATAL) {
-				throw new VtnServiceException(
-						Thread.currentThread().getStackTrace()[1]
-								.getClassName()
-								+ VtnServiceConsts.HYPHEN
-								+ Thread.currentThread().getStackTrace()[1]
-										.getMethodName(),
-						UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
-						UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorMessage());
+			if(!(root.get(VtnServiceJsonConsts.PORT) instanceof JsonNull)){
+				requestProcessor.setServiceInfo(UncUPPLEnums.UPPL_IPC_SVC_NAME,
+						UncUPPLEnums.ServiceID.UPPL_SVC_READREQ.ordinal());
+				requestProcessor.createIpcRequestPacket(
+						IpcRequestPacketEnum.KT_PORT_GET_MEMBER, requestBody,
+						getUriParameters());
+				LOG.debug("Request Packet 2nd call created successfully");
+				status = requestProcessor.processIpcRequest();
+				LOG.debug("Request packet 2nd call processed with status:"+status);
+				if (status == ClientSession.RESP_FATAL) {
+					throw new VtnServiceException(
+							Thread.currentThread().getStackTrace()[1]
+									.getClassName()
+									+ VtnServiceConsts.HYPHEN
+									+ Thread.currentThread().getStackTrace()[1]
+											.getMethodName(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorMessage());
+				}
+				root = responseGenerator.getSwitchPortMemberResponse(
+						requestProcessor.getIpcResponsePacket(), root,
+						VtnServiceJsonConsts.SHOW);
 			}
-			root = responseGenerator.getSwitchPortMemberResponse(
-					requestProcessor.getIpcResponsePacket(), root,
-					VtnServiceJsonConsts.SHOW);
 			setInfo(root);
 			LOG.debug("Response object created successfully");
 			LOG.debug("Complete Ipc framework call");

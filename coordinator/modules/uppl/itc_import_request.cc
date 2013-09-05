@@ -9,41 +9,48 @@
 
 /**
  * @brief    ImportRequest
- * @file     import.cc
- *
- */
+ * @file     itc_import_request.cc
+ **/
 
 #include "itc_import_request.hh"
 using unc::uppl::ImportRequest;
 
 /**ImportRequest
- * @Description   : Constructor which will initializes the member data
- * @param[in]     : None
- * @Return        : void
- * **/
+ * @Description : This function initializes the member data
+ * @param[in]   : None
+ * @Return      : None
+ * */
 ImportRequest::ImportRequest()  {
 }
 
-/** ~ImportRequest()
- * @Description   : Destructor to release any memory allocated to pointer member data
- * @param[in]     : None
- * @Return        : void
- * **/
+/**~ImportRequest
+ * @Description : This function releases memory allocated to
+ *                pointer member data
+ * @param[in]   : None
+ * @Return      : None
+ * */
 ImportRequest::~ImportRequest()  {
 }
 
-/**ProcessRequest()
- * @Description    : This function receives the import request and process that request
- * @param[in]      : unc_keytype_operation_t, key_struct
- * @Return         : UpplReturnCode(enum)
- **/
-UpplReturnCode ImportRequest::ProcessRequest(uint32_t unc_keytype_operation_t,
+/**ProcessRequest
+ * @Description : This function receives the import request from the internal
+ *                transaction coordinator and returns the processing result
+ * @param[in]   : unc_keytype_operation_t - UNC_OP_* operations related to
+ *                import
+ *                key_struct - specifies key instance of Kt_Controller
+ * @Return      : UPPL_RC_SUCCESS is returned when the response
+ *                is added to ipc session successfully.
+ *                UPPL_RC_ERR_* is returned when ipc
+ *                response could not be added to session
+ * */
+UpplReturnCode ImportRequest::ProcessRequest(OdbcmConnectionHandler *db_conn,
+                                             uint32_t unc_keytype_operation_t,
                                              key_ctr_t obj_key_ctr)  {
   UpplReturnCode result_code = UPPL_RC_SUCCESS;
   pfc_log_info("Process the import request");
   switch (unc_keytype_operation_t)  {
     case UNC_OP_IMPORT_CONTROLLER_CONFIG:
-      result_code = StartImport(obj_key_ctr);
+      result_code = StartImport(db_conn, obj_key_ctr);
       if (result_code != UPPL_RC_SUCCESS) {
         pfc_log_info("Import Request:Candidate is dirty");
       }
@@ -60,13 +67,19 @@ UpplReturnCode ImportRequest::ProcessRequest(uint32_t unc_keytype_operation_t,
   return result_code;
 }
 
-/**StartImport()
- * @Description    : This function checks whether candidate is dirty
- * @param[in]      : key_struct
- * @Return         : UpplReturnCode(enum)
- **/
-
-UpplReturnCode ImportRequest::StartImport(key_ctr_t obj_key_ctr)  {
+/**StartImport
+ * @Description : This function is invoked when the import request comes from
+ *                internal transaction coordinator.It Checks the oper_status
+ *                of the controller and whether candidate is dirty or not
+ *                and returns the response
+ * @param[in]   : key_struct - specifies key instance of KT_Controller
+ * @Return      : UPPL_RC_SUCCESS is returned when the response
+ *                is added to ipc session successfully.
+ *                UPPL_RC_ERR_* is returned when ipc
+ *                response could not be added to session 
+ * */
+UpplReturnCode ImportRequest::StartImport(OdbcmConnectionHandler *db_conn,
+                                          key_ctr_t obj_key_ctr)  {
   UpplReturnCode result_code = UPPL_RC_SUCCESS;
   PhysicalCore *physical_core = PhysicalLayer::get_instance()->
       get_physical_core();
@@ -76,9 +89,9 @@ UpplReturnCode ImportRequest::StartImport(key_ctr_t obj_key_ctr)  {
   Kt_Controller KtObj;
   uint8_t oper_status = 0;
   /* Checks controller existence and its oper status */
-  pfc_log_info("Get the oper Status");
+  pfc_log_debug("Get controller oper Status");
   UpplReturnCode read_status = KtObj.GetOperStatus(
-      UNC_DT_RUNNING, &obj_key_ctr, oper_status);
+      db_conn, UNC_DT_RUNNING, &obj_key_ctr, oper_status);
   if (read_status == UPPL_RC_SUCCESS) {
     pfc_log_debug("Received oper_status %d", oper_status);
     if (oper_status == UPPL_CONTROLLER_OPER_AUDITING) {
@@ -89,7 +102,7 @@ UpplReturnCode ImportRequest::StartImport(key_ctr_t obj_key_ctr)  {
   }
   ODBCM_RC_STATUS db_status = ODBCM_RC_SUCCESS;
   db_status = PhysicalLayer::get_instance()->get_odbc_manager()->
-      IsCandidateDirty();
+      IsCandidateDirty(db_conn);
   pfc_log_debug("Candidate Dirty status %d", db_status);
   if (itc_trans->trans_state() != TRANS_END ||
       db_status == ODBCM_RC_CANDIDATE_DIRTY) {
@@ -99,23 +112,25 @@ UpplReturnCode ImportRequest::StartImport(key_ctr_t obj_key_ctr)  {
   return result_code;
 }
 
-/**MergeConfiguration()
- * @Description    : This function returns success for Merge Import Operation.
- * @param[in]      : key_struct
- * @Return         : UpplReturnCode(enum)
- **/
-
+/**MergeConfiguration
+ * @Description : This function returns success for Merge
+ *                configuration Operation.
+ * @param[in]   : key_struct - specifies key instance of KT_Controller
+ * @Return      : UPPL_RC_SUCCESS if the merge is successful
+ * */
 UpplReturnCode ImportRequest::MergeConfiguration(key_ctr_t obj_key_ctr) {
   UpplReturnCode result_code = UPPL_RC_SUCCESS;
   pfc_log_info("Returning Success for MergeConfiguration");
   return result_code;
 }
 
-/**ClearImportConfig()
- * @Description    : This function returns success for Clear import configuration
- * @param[in]      : key_struct
- * @Return         : UpplReturnCode(enum)
- **/
+/**ClearImportConfig
+ * @Description    : This function returns success for Clear import
+ *                   configuration
+ * @param[in]      : key_struct - specifies key instance of KT_Controller
+ * @Return         : UPPL_RC_SUCCESS if the clear import configuration is
+ *                   successful
+ * */
 UpplReturnCode ImportRequest::ClearImportConfig(key_ctr_t obj_key_ctr) {
   UpplReturnCode result_code = UPPL_RC_SUCCESS;
   pfc_log_info("Returning Success for ClearImportConfig");

@@ -8,11 +8,13 @@
  */
 
 /**
-* @file   vnpdriver_include.h
-* @brief  VNP Driver common definition.
-* @par History
-*  - 2013/01/01 Create.
-*/
+ * @brief   VNP Driver common definition.
+ * @file    vnpdriver_include.h
+ * @author  HCL
+ * @date    2013
+ * @version SYSTEM:UNC 1.0, MODULE:VNPDriver
+ *
+ */
 
 #ifndef _VNPDRIVER_INCLUDE_H_
 #define _VNPDRIVER_INCLUDE_H_

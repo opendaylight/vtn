@@ -11,11 +11,13 @@ package org.opendaylight.vtn.javaapi.resources.physical;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
+import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.IpcRequestProcessor;
@@ -75,7 +77,7 @@ public class BoundariesResource extends AbstractResource {
 					getUriParameters(requestBody));
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet processed with status:"+status);
+			LOG.debug("Request packet processed with status:" + status);
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
 			getExceptionHandler()
@@ -135,6 +137,7 @@ public class BoundariesResource extends AbstractResource {
 			if (requestBody.has(VtnServiceJsonConsts.OP)) {
 				opType = requestBody.get(VtnServiceJsonConsts.OP).getAsString();
 			}
+			final List<String> uriParameterList = getUriParameters(requestBody);
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_BOUNDARY_GET, requestBody,
 					getUriParameters(requestBody));
@@ -145,11 +148,30 @@ public class BoundariesResource extends AbstractResource {
 			}
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet processed with status:"+status);
+			LOG.debug("Request packet processed with status:" + status);
 			final IpcPhysicalResponseFactory responseGenerator = new IpcPhysicalResponseFactory();
-			setInfo(responseGenerator.getBoundaryResponse(
-					requestProcessor.getIpcResponsePacket(), requestBody,
-					VtnServiceJsonConsts.LIST));
+			/*
+			 * setInfo(responseGenerator.getBoundaryResponse(
+			 * requestProcessor.getIpcResponsePacket(), requestBody,
+			 * VtnServiceJsonConsts.LIST));
+			 */
+				JsonObject responseJson = responseGenerator
+						.getBoundaryResponse(
+								requestProcessor.getIpcResponsePacket(),
+								requestBody, VtnServiceJsonConsts.LIST);
+				if (responseJson.get(VtnServiceJsonConsts.BOUNDARIES)
+						.isJsonArray()) {
+					JsonArray responseArray = responseJson.get(
+							VtnServiceJsonConsts.BOUNDARIES).getAsJsonArray();
+					responseJson = getResponseJsonArrayPhysical(requestBody,
+							requestProcessor, responseGenerator, responseArray,
+							VtnServiceJsonConsts.BOUNDARIES,
+							VtnServiceJsonConsts.BOUNDARYID,
+							IpcRequestPacketEnum.KT_BOUNDARY_GET,
+							uriParameterList,
+							VtnServiceIpcConsts.GET_BOUNDARY_RESPONSE);
+				}
+				setInfo(responseJson);
 			LOG.debug("Response object created successfully");
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {

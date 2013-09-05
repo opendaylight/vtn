@@ -546,19 +546,26 @@ public class IpcRequestProcessor {
 								.getResponse(VtnServiceConsts.IPC_RESUL_CODE_INDEX));
 				LOG.debug("Result code received: " + resultCode);
 				final int keyType = requestPacket.getKeyType().intValue();
-				if (keyType >= UncCommonEnum.MIN_LOGICAL_KEYTYPE
-						&& keyType <= UncCommonEnum.MAX_LOGICAL_KEYTYPE
-						&& Integer.parseInt(resultCode) == VtnServiceConsts.UPLL_RC_ERR_NO_SUCH_INSTANCE) {
-					noSuchInstanceFlag = true;
-					LOG.debug("No such instance case for UPLL");
-				} else if (keyType >= UncCommonEnum.MIN_PHYSICAL_KEYTYPE
-						&& keyType <= UncCommonEnum.MAX_PHYSICAL_KEYTYPE
-						&& Integer.parseInt(resultCode) == VtnServiceConsts.UPPL_RC_ERR_NO_SUCH_INSTANCE) {
-					noSuchInstanceFlag = true;
-					LOG.debug("No such instance case for UPPL");
-				} else {
-					LOG.debug(" Either Key Type does not exists or operation is not success");
-				}
+				
+				if(requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ.ordinal()
+							|| requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ_SIBLING_BEGIN.ordinal()
+							|| requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ_SIBLING.ordinal()
+							|| requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ_SIBLING_COUNT.ordinal()){
+					  if (keyType >= UncCommonEnum.MIN_LOGICAL_KEYTYPE
+								  && keyType <= UncCommonEnum.MAX_LOGICAL_KEYTYPE
+								  && Integer.parseInt(resultCode) == VtnServiceConsts.UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+							noSuchInstanceFlag = true;
+							LOG.debug("No such instance case for UPLL");
+					  } else if (keyType >= UncCommonEnum.MIN_PHYSICAL_KEYTYPE
+								  && keyType <= UncCommonEnum.MAX_PHYSICAL_KEYTYPE
+								  && Integer.parseInt(resultCode) == VtnServiceConsts.UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+							noSuchInstanceFlag = true;
+							LOG.debug("No such instance case for UPPL");
+					  } else {
+							LOG.debug(" Either Key Type does not exists or operation is not success");
+					  }                             
+                }
+				
 				// if return code is not success, then create the error Json for
 				// received result code
 				if (null == resultCode

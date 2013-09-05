@@ -115,7 +115,8 @@ public class VTepGroupResourceValidator extends VtnServiceValidator {
 			} else if (isValid && requestBody != null
 					&& VtnServiceConsts.POST.equals(method)) {
 				isValid = validatePost(requestBody);
-			} else {
+			} else if (isValid) {
+				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
@@ -258,9 +259,6 @@ public class VTepGroupResourceValidator extends VtnServiceValidator {
 						}
 					}
 				}
-			}// updated in bug fixing
-			else {
-				isValid = false;
 			}
 		}
 		LOG.trace("Complete VTepGroupResourceValidator#validatePut()");

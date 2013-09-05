@@ -15,18 +15,10 @@
 #include <set>
 #include "momgr_impl.hh"
 #include "vnode_child_momgr.hh"
-
+#include "vlink_momgr.hh"
 namespace unc {
 namespace upll {
 namespace kt_momgr {
-
-// TODO(owner):  remove once driver header file included
-enum VexDefines {
-  UPLL_IDX_VBR_IF_DRV_PM = 0,
-  UPLL_IDX_VEXT_DRV_PM,
-  UPLL_IDX_VEXT_IF_DRV_PM,
-  UPLL_IDX_VEXT_LINK_DRV_PM
-};
 
 #if 0
 enum vbr_if_numbers {
@@ -60,21 +52,14 @@ typedef struct val_drv_vbr_if {
 } val_drv_vbr_if_t;
 
 
-
-enum val_drv_vbr_if_index {
-  UPLL_IDX_DESC_DRV_VBRI = 0,
-  UPLL_IDX_ADMIN_STATUS_DRV_VBRI,
-  UPLL_IDX_PM_DRV_VBRI
-};
-
 class VbrIfMoMgr : public VnodeChildMoMgr {
  private:
   static unc_key_type_t vbr_if_child[];
   static BindInfo       vbr_if_bind_info[];
   static BindInfo       key_vbr_if_maintbl_bind_info[];
 
-  /* @brief      Returns portmap information if portmap is valid 
-   *             Else returns NULL for portmap 
+  /* @brief      Returns admin and portmap information if portmap is 
+   *             valid. Else returns NULL for portmap 
    *              
    * @param[in]   ikey     Pointer to ConfigKeyVal
    * @param[out]  valid_pm portmap is valid 
@@ -85,7 +70,8 @@ class VbrIfMoMgr : public VnodeChildMoMgr {
    * 
    **/ 
    virtual upll_rc_t GetPortMap(ConfigKeyVal *ikey, uint8_t &valid_pm,
-                                val_port_map_t *&pm) {
+                                val_port_map_t *&pm, uint8_t &valid_admin,
+                                uint8_t &admin_status) {
      UPLL_FUNC_TRACE;
      if (ikey == NULL) return UPLL_RC_ERR_GENERIC; 
      val_drv_vbr_if *drv_vbrif = reinterpret_cast<val_drv_vbr_if *>
@@ -100,6 +86,8 @@ class VbrIfMoMgr : public VnodeChildMoMgr {
        pm = &ifval->portmap;
      else 
        pm = NULL;
+     valid_admin = ifval->valid[UPLL_IDX_ADMIN_STATUS_VBRI]; 
+     admin_status = ifval->admin_status;
      return UPLL_RC_SUCCESS;
    }
 
@@ -152,10 +140,16 @@ class VbrIfMoMgr : public VnodeChildMoMgr {
                                 valid[UPLL_IDX_TAGGED_PM];
           break;
         case uudst::vbridge_interface::kDbiVexName:
+            valid = &(reinterpret_cast<val_drv_vbr_if_t *>(val))->
+                                valid[PFCDRV_IDX_VEXT_NAME_VBRIF];
+          break;
         case uudst::vbridge_interface::kDbiVexIfName:
+            valid = &(reinterpret_cast<val_drv_vbr_if_t *>(val))->
+                                valid[PFCDRV_IDX_VEXTIF_NAME_VBRIF];
+          break;
         case uudst::vbridge_interface::kDbiVexLinkName:
-          valid = &(reinterpret_cast<val_vbr_if *>(val))->portmap.
-                                  valid[UPLL_IDX_LOGICAL_PORT_ID_PM];
+            valid = &(reinterpret_cast<val_drv_vbr_if_t *>(val))->
+                                valid[PFCDRV_IDX_VLINK_NAME_VBRIF];
           break;
         default:
           return UPLL_RC_ERR_GENERIC;
@@ -271,19 +265,21 @@ class VbrIfMoMgr : public VnodeChildMoMgr {
    *         associated attributes are supported on the given controller,
    *         based on the valid flag.
    *
-   * @param[in]  crtlr_name      Controller name.
+   * @param[in]  attrs           Pointer to controller attribute.    
    * @param[in]  ikey            Corresponding key and value structure.
    * @param[in]  operation       Operation name.
+   * @param[in]  dt_type         Data type name
    *
    * @retval  UPLL_RC_SUCCESS                     validation succeeded.
    * @retval  UPLL_RC_ERR_EXCEEDS_RESOURCE_LIMIT  Instance count limit is exceeds.
    * @retval  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR  Attribute Not_Supported.
    * @retval  UPLL_RC_ERR_GENERIC                 Generic failure.
    */
-  upll_rc_t ValVbrIfAttributeSupportCheck(const char *ctrlr_name,
-      ConfigKeyVal *ikey, unc_keytype_operation_t operation,
-      upll_keytype_datatype_t dt_type);
-
+  upll_rc_t ValVbrIfAttributeSupportCheck(const uint8_t *attrs, 
+                                          ConfigKeyVal *ikey, 
+                                          unc_keytype_operation_t operation,
+                                          upll_keytype_datatype_t dt_type);
+                                                
   /**
    * @Brief  Checks if the specified key type and
    *         associated attributes are supported on the given controller,
@@ -364,6 +360,22 @@ class VbrIfMoMgr : public VnodeChildMoMgr {
                             upll_keytype_datatype_t datatype,
                             DalDmlIntf *dmi);
 
+  /* @brief         Updates vbrif portmap structure 
+   *                based on valid[PORTMAP] flag.
+   *
+   * @param[in]     db_key          Pointer to the ConfigKeyVal structure in db
+   * @param[in]     datatype        DB type.
+   * @param[in]     dmi             Pointer to the DalDmlIntf(DB Interface)
+   * @param[in]     ikey            Pointer to input ConfigKeyVal
+   *
+   * @retval  UPLL_RC_SUCCESS                    Completed successfully.
+   * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
+   *
+   **/
+  upll_rc_t UpdatePortMap(ConfigKeyVal *db_key,
+                            upll_keytype_datatype_t datatype,
+                            DalDmlIntf *dmi,
+                            ConfigKeyVal *ikey);
 
   /**
    * @brief      Method used to Update the Values in the specified key type.
@@ -423,10 +435,9 @@ class VbrIfMoMgr : public VnodeChildMoMgr {
      **/
   upll_rc_t DupConfigKeyVal(ConfigKeyVal *&okey,
       ConfigKeyVal *&req, MoMgrTables tbl = MAINTBL);
-  upll_rc_t GetMappedVbridges(uint8_t *logportid, DalDmlIntf *dmi,
-             set<key_vnode_t>*sw_vbridge_set);
-  upll_rc_t GetMappedInterfaces(key_vbr_t *vbr_key, DalDmlIntf *dmi,
-             ConfigKeyVal *&ikey);
+  upll_rc_t GetMappedVbridges(const char* ctrlr_id, const char *domain_id,
+                              std::string logportid, DalDmlIntf *dmi,
+                              set<key_vnode_type_t,key_vnode_type_compare>*sw_vbridge_set);
   /* create mo has to handle vex creation */
 
   /**
@@ -459,8 +470,8 @@ class VbrIfMoMgr : public VnodeChildMoMgr {
                          upll_keytype_datatype_t dt_type,
                          DalDmlIntf *dmi);
 
-  upll_rc_t CreateAuditMoImpl(IpcReqRespHeader *req,
-      ConfigKeyVal *ikey, DalDmlIntf *dmi, const char *ctrlr_id);
+  upll_rc_t CreateAuditMoImpl(ConfigKeyVal *ikey,
+                       DalDmlIntf *dmi, const char *ctrlr_id);
   upll_rc_t updateVbrIf(IpcReqRespHeader *req,
     ConfigKeyVal *ikey, DalDmlIntf *dmi);
   upll_rc_t ConverttoDriverPortMap(ConfigKeyVal *ck_port_map);
@@ -507,6 +518,11 @@ class VbrIfMoMgr : public VnodeChildMoMgr {
                                           uuc::UpdateCtrlrPhase phase,
                                           bool *ctrlr_affected,
                                           DalDmlIntf *dmi);
+  
+  upll_rc_t GetVbrIfFromVExternal(uint8_t *vtn_name,
+                                  uint8_t *vext_name,
+                                  ConfigKeyVal *&tmpckv,
+                                  DalDmlIntf *dmi) ;
 
 /**
    * @brief  Update controller with the new created / updated / deleted configuration
@@ -552,7 +568,36 @@ class VbrIfMoMgr : public VnodeChildMoMgr {
     **/
   upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey,
       ConfigKeyVal *parent_key);
+  upll_rc_t IsLogicalPortAndVlanIdInUse(ConfigKeyVal *ckv,
+                                                  DalDmlIntf *dmi,
+                                                  IpcReqRespHeader *req);
+  upll_rc_t PathFaultHandler(const char *ctrlr_name,
+                        const char *domain_id,
+                        std::vector<std::string> &ingress_ports,
+                        std::vector<std::string> &egress_ports,
+                        bool alarm_asserted,
+                        DalDmlIntf *dmi);
+  upll_rc_t GetBoundaryInterfaces(key_vnode_if_t boundary_if,
+                                DalDmlIntf *dmi,
+                                ConfigKeyVal *&ikey);
 
+    /**
+    * @brief      Method to set the operstatus of boundary interfaces
+    *             and corresponding parent elements 
+    *
+    * @param[in]    boundary_if_set  set containing all the boundary interfaces
+    * @param[in]    notification     pathfault/pathfaultreset notification 
+    * @param[in]    dmi              Pointer to DalDmlIntf class 
+    * 
+    *
+    * @retval         UPLL_RC_SUCCESS      Success.
+    * @retval         UPLL_RC_ERR_GENERIC  Failure case.
+    **/
+  upll_rc_t SetBoundaryIfOperStatusforPathFault(
+                        const set<key_vnode_if_t, key_vnode_if_compare> &boundary_if_set,
+                        state_notification notification,
+                        DalDmlIntf *dmi);
+  upll_rc_t RestoreUnInitOPerStatus(DalDmlIntf *dmi);
 };
 
 }  // namespace kt_momgr

@@ -34,9 +34,7 @@ public class UncUPPLEnums {
 	public enum ServiceID{
 	  UPPL_SVC_CONFIGREQ,
 	  UPPL_SVC_READREQ,
-	  UPPL_SVC_CONTROL,
-	  UPPL_SVC_GLOBAL_CONFIG,
-	  UPPL_SVC_NOTIFICATION;
+	  UPPL_SVC_GLOBAL_CONFIG;
 	}
 
 	public enum RowStatus{
@@ -58,7 +56,7 @@ public class UncUPPLEnums {
 	  NOT_SET
 	}
 
-	public enum AddlOperation{
+	public enum UncAddlOperationT{
 	  UNC_OP_IS_CANDIDATE_DIRTY,
 	  UNC_OP_IMPORT_CONTROLLER_CONFIG,
 	  UNC_OP_MERGE_CONTROLLER_CONFIG,

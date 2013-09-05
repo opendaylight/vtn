@@ -11,6 +11,7 @@ package org.opendaylight.vtn.javaapi.resources.logical;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
 import org.opendaylight.vtn.core.ipc.IpcDataUnit;
@@ -19,15 +20,16 @@ import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
+import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.IpcRequestProcessor;
 import org.opendaylight.vtn.javaapi.ipc.conversion.IpcLogicalResponseFactory;
 import org.opendaylight.vtn.javaapi.ipc.enums.IpcRequestPacketEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
-import org.opendaylight.vtn.javaapi.ipc.enums.UncStructEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncStructEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncUPLLEnums;
 import org.opendaylight.vtn.javaapi.resources.AbstractResource;
 import org.opendaylight.vtn.javaapi.validation.logical.VTepResourceValidator;
@@ -44,6 +46,7 @@ public class VTepsResource extends AbstractResource {
 	/** The Constant LOG. */
 	private static final Logger LOG = Logger.getLogger(VTepsResource.class
 			.getName());
+
 	/**
 	 * Instantiates a new v teps resource.
 	 */
@@ -53,12 +56,14 @@ public class VTepsResource extends AbstractResource {
 		setValidator(new VTepResourceValidator(this));
 		LOG.trace("Completed VTepsResource#VTepsResource()");
 	}
+
 	/**
 	 * @return the vtnName
 	 */
 	public String getVtnName() {
 		return vtnName;
 	}
+
 	/**
 	 * Implementation of Post method of Vtep API
 	 * 
@@ -117,6 +122,7 @@ public class VTepsResource extends AbstractResource {
 		LOG.trace("Completed VTepsResource#post()");
 		return status;
 	}
+
 	/**
 	 * Implementation of Get method of Vtep API
 	 * 
@@ -140,18 +146,19 @@ public class VTepsResource extends AbstractResource {
 					UncUPLLEnums.ServiceID.UPLL_READ_SVC_ID.ordinal(),
 					getExceptionHandler());
 			LOG.debug("Session created successfully");
+			final List<String> uriParameterList = getUriParameters(requestBody);
 			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
 					getConfigID(), getExceptionHandler());
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_VTEP_GET, requestBody,
-					getUriParameters(requestBody));
+					uriParameterList);
 			if (requestBody != null
 					&& ((requestBody.has(VtnServiceJsonConsts.TARGETDB) && requestBody
 							.get(VtnServiceJsonConsts.TARGETDB).getAsString()
 							.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) && !(requestBody
 							.get(VtnServiceJsonConsts.OP).getAsString()
 							.equalsIgnoreCase(VtnServiceJsonConsts.COUNT)))) {
-				
+
 				IpcStruct valStruct = new IpcStruct(
 						UncStructEnum.ValVtep.getValue());
 				requestProcessor.getRequestPacket().setValStruct(valStruct);
@@ -162,14 +169,33 @@ public class VTepsResource extends AbstractResource {
 				extraDataUnits[0] = valStructSt;
 				requestProcessor.getRequestPacket().setExtraDataUnits(
 						extraDataUnits);
-			} 
+			}
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
 			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
-			setInfo(responseGenerator.getVtepResponse(
-					requestProcessor.getIpcResponsePacket(), requestBody,
-					VtnServiceJsonConsts.LIST));
+			/*
+			 * setInfo(responseGenerator.getVtepResponse(
+			 * requestProcessor.getIpcResponsePacket(), requestBody,
+			 * VtnServiceJsonConsts.LIST));
+			 */
+			JsonObject responseJson = responseGenerator
+					.getVtepResponse(
+							requestProcessor.getIpcResponsePacket(),
+							requestBody, VtnServiceJsonConsts.LIST);
+			if (responseJson.get(VtnServiceJsonConsts.VTEPS)
+					.isJsonArray()) {
+				JsonArray responseArray = responseJson.get(
+						VtnServiceJsonConsts.VTEPS).getAsJsonArray();
+				responseJson = getResponseJsonArrayLogical(requestBody,
+						requestProcessor, responseGenerator, responseArray,
+						VtnServiceJsonConsts.VTEPS,
+						VtnServiceJsonConsts.VTEPNAME,
+						IpcRequestPacketEnum.KT_VTEP_GET,
+						uriParameterList,
+						VtnServiceIpcConsts.GET_VTEP_RESPONSE);
+			}
+			setInfo(responseJson);
 			LOG.debug("Response object created successfully");
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
@@ -198,6 +224,7 @@ public class VTepsResource extends AbstractResource {
 		LOG.trace("Completed VTepsResource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 

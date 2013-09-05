@@ -31,7 +31,7 @@ namespace tc {
 /*class to handle all database related operations*/
 class TcDbHandler {
   public:
-    TcDbHandler(std::string dsn_name, std::string driver_name);
+    TcDbHandler(std::string dsn_name);
     TcDbHandler(const TcDbHandler&);
     ~TcDbHandler() {
       CloseDBConnection();
@@ -70,7 +70,6 @@ class TcDbHandler {
                         SQLHANDLE handle);
 
     std::string dsn_name_;   /*DB DSN name*/
-    std::string drv_name_;   /*DB driver name*/
     SQLHENV db_env_;         /*Environment handle for application*/
     SQLHDBC db_conn_handle_; /*Connection handle */
 };

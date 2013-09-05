@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
 import org.opendaylight.vtn.core.ipc.IpcDataUnit;
@@ -126,7 +127,7 @@ public class DomainLogicalPortResource extends AbstractResource {
 					VtnServiceJsonConsts.SHOW);
 			JsonArray memberArray = null;
 			JsonArray memberArrayNew = null;
-			if (VtnServiceJsonConsts.STATE.equalsIgnoreCase(dataType)) {
+			if (VtnServiceJsonConsts.STATE.equalsIgnoreCase(dataType) && !(root.get(VtnServiceJsonConsts.LOGICALPORT) instanceof JsonNull)) {
 				requestProcessor.setServiceInfo(UncUPPLEnums.UPPL_IPC_SVC_NAME,
 						UncUPPLEnums.ServiceID.UPPL_SVC_READREQ.ordinal());
 				requestProcessor.createIpcRequestPacket(
@@ -160,6 +161,7 @@ public class DomainLogicalPortResource extends AbstractResource {
 						.getConfigurationMap();
 				int max_rep_count = Integer.parseInt(configuration
 						.getConfigValue(VtnServiceConsts.MAX_REP_DEFAULT));
+				memberIndex = memberArray.size();
 				if (memberArray.size() >= max_rep_count) {
 					while (memberIndex >= max_rep_count) {
 						memberIndex = memberArray.size();

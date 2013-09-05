@@ -13,7 +13,9 @@
  *
  */
 
+#include <cctype>
 #include "physical_core.hh"
+
 using std::istringstream;
 
 namespace unc {
@@ -22,37 +24,46 @@ namespace uppl {
 /**
  * @Description : ControllerVersion class constructor implementation
  */
-
-ControllerVersion::ControllerVersion(string version) {
-  version_ = version;
-  product_version_part1_ = 0;
-  product_version_part2_ = 0;
-  product_version_part3_ = 0;
-  UpplReturnCode return_code = ParseControllerVersion(version_);
+ControllerVersion::ControllerVersion(string version,
+                                     UpplReturnCode &return_code):
+                                     version_(version),
+                                     product_version_part1_(0),
+                                     product_version_part2_(0),
+                                     product_version_part3_(0) {
+  return_code = ParseControllerVersion(version_);
   if (return_code != UPPL_RC_SUCCESS) {
     pfc_log_error("Controller version parsing error");
   }
 }
+
 /**
  * @Description : This function parses the given controller version string and
  *                fills the class data members
+ *@param[in]    : version - specifies the controller version
+ *@return       : UPPL_RC_SUCCESS or any associated erro code
  */
 
 UpplReturnCode ControllerVersion::ParseControllerVersion(string version) {
   // String parsing of controller version
   vector<string> split_version;
   istringstream strversion(version);
-  string temp_version;
+  string temp_version = "";
   while (getline(strversion, temp_version, '.')) {
     split_version.push_back(temp_version);
   }
   if (split_version.empty()) {
     // unable to get version
-    return UPPL_RC_FAILURE;
+    return UPPL_RC_ERR_CFG_SYNTAX;
   }
   for (unsigned int index = 0 ; index < split_version.size(); ++index) {
+    string part_version = split_version[index];
     uint16_t version_part =
-        static_cast<uint16_t>(atoi(split_version[index].c_str()));
+        static_cast<uint16_t>(atoi(part_version.c_str()));
+    if (version_part == 0 && isdigit(part_version[0]) == 0) {
+      pfc_log_error("Unable to parse the version part: %s",
+                    part_version.c_str());
+      return UPPL_RC_ERR_CFG_SYNTAX;
+    }
     switch (index) {
       case 0 : {
         product_version_part1_ = version_part;
