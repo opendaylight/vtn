@@ -156,7 +156,7 @@ public class VTNManagerIT extends TestBase {
                 mavenBundle("org.opendaylight.controller", "configuration").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller", "configuration.implementation").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller", "containermanager").versionAsInProject(),
-                mavenBundle("org.opendaylight.controller", "containermanager.implementation").versionAsInProject(),
+                mavenBundle("org.opendaylight.controller", "containermanager.it.implementation").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller", "clustering.services").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller", "clustering.services-implementation").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller", "sal").versionAsInProject(),
