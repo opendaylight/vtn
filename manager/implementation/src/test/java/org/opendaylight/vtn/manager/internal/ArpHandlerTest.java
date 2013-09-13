@@ -12,6 +12,7 @@ package org.opendaylight.vtn.manager.internal;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -82,13 +83,13 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
             Set<NodeConnector> mappedThis = new HashSet<NodeConnector>();
             Set<NodeConnector> noMappedThis = new HashSet<NodeConnector>(existConnectors);
 
-            Set<String> ncstr = new HashSet<String>();
+            List<String> ncstr = new ArrayList<String>();
 
             for (NodeConnector nc : existConnectors) {
                 if (node == null || node.equals(nc.getNode())) {
                     if (!topoMgr.isInternal(nc)) {
                         if (node != null) {
-                            ncstr.add(nc.getNode().toString() + "/" + nc.getID());
+                            ncstr.add(nc.toString());
                         }
                         mappedThis.add(nc);
                     }
@@ -279,12 +280,12 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
             Set<NodeConnector> mappedThis = new HashSet<NodeConnector>();
             Set<NodeConnector> noMappedThis = new HashSet<NodeConnector>(existConnectors);
 
-            Set<String> ncstr = new HashSet<String>();
+            List<String> ncstr = new ArrayList<String>();
             for (NodeConnector nc : existConnectors) {
                 if (node == null || node.equals(nc.getNode())) {
                     if (!topoMgr.isInternal(nc)) {
                         if (node != null) {
-                            ncstr.add(nc.getNode().toString() + "/" + nc.getID());
+                            ncstr.add(nc.toString());
                         }
                         mappedThis.add(nc);
                     }

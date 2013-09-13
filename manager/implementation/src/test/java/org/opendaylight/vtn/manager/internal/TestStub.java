@@ -361,6 +361,11 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
     }
 
     @Override
+    public Status modifySubnet(SubnetConfig configObject) {
+        return null;
+    }
+
+    @Override
     public Status removeSubnet(String name) {
         return null;
     }
@@ -430,12 +435,12 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
     }
 
     @Override
-    public Status addPortsToSubnet(String name, String nodeConnectors) {
+    public Status addPortsToSubnet(String name, List<String> nodeConnectors) {
         return null;
     }
 
     @Override
-    public Status removePortsFromSubnet(String name, String nodeConnectors) {
+    public Status removePortsFromSubnet(String name, List<String> nodeConnectors) {
         return null;
     }
 
