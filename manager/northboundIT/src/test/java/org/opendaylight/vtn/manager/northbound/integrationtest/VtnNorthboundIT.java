@@ -972,6 +972,8 @@ public class VtnNorthboundIT {
 
                 mavenBundle("org.opendaylight.controller", "clustering.test").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller", "forwarding.staticrouting").versionAsInProject(),
+                mavenBundle("org.opendaylight.controller", "bundlescanner").versionAsInProject(),
+                mavenBundle("org.opendaylight.controller", "bundlescanner.implementation").versionAsInProject(),
 
                 // Northbound bundles
                 mavenBundle("org.opendaylight.controller", "commons.northbound").versionAsInProject(),
@@ -991,6 +993,7 @@ public class VtnNorthboundIT {
                 mavenBundle("org.codehaus.jackson", "jackson-mapper-asl").versionAsInProject(),
                 mavenBundle("org.codehaus.jackson", "jackson-core-asl").versionAsInProject(),
                 mavenBundle("org.codehaus.jackson", "jackson-jaxrs").versionAsInProject(),
+                mavenBundle("org.codehaus.jackson", "jackson-xc").versionAsInProject(),
                 mavenBundle("org.codehaus.jettison", "jettison").versionAsInProject(),
 
                 mavenBundle("commons-io", "commons-io").versionAsInProject(),
@@ -1057,6 +1060,8 @@ public class VtnNorthboundIT {
                 mavenBundle("org.ops4j.pax.exam", "pax-exam-junit4"),
                 mavenBundle("org.ops4j.pax.exam", "pax-exam-link-mvn"),
                 mavenBundle("org.ops4j.pax.url", "pax-url-aether"),
+
+                mavenBundle("org.ow2.asm", "asm-all").versionAsInProject(),
 
                 mavenBundle("org.springframework", "org.springframework.asm").versionAsInProject(),
                 mavenBundle("org.springframework", "org.springframework.aop").versionAsInProject(),
