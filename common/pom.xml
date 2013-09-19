@@ -35,9 +35,9 @@
 
   <pluginRepositories>
     <pluginRepository>
-      <id>central2</id>
-      <name>central2</name>
-      <url>${nexusproxy}/repositories/central2/</url>
+      <id>central</id>
+      <name>central</name>
+      <url>http://repo1.maven.org/maven2</url>
     </pluginRepository>
 
     <!-- OpenDayLight Released artifact -->
