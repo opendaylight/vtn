@@ -39,7 +39,7 @@ public class VTNFlowDatabase {
     /**
      * Logger instance.
      */
-    private final static Logger  LOG =
+    private static final Logger  LOG =
         LoggerFactory.getLogger(VTNFlowDatabase.class);
 
     /**
@@ -164,7 +164,7 @@ public class VTNFlowDatabase {
     /**
      * Flow collector that excludes flow entries in the specified node.
      */
-    private class ExcludeNodeCollector extends FlowCollector {
+    private final class ExcludeNodeCollector extends FlowCollector {
         /**
          * A node to be excluded.
          */
@@ -194,10 +194,9 @@ public class VTNFlowDatabase {
     /**
      * Construct a new VTN flow database.
      *
-     * @param mgr    VTN Manager service.
      * @param tname  The name of the virtual tenant.
      */
-    VTNFlowDatabase(VTNManagerImpl mgr, String tname) {
+    VTNFlowDatabase(String tname) {
         tenantName = tname;
     }
 
@@ -580,7 +579,6 @@ public class VTNFlowDatabase {
              it.hasNext();) {
             // Remove this VTN flow from the database.
             VTNFlow vflow = it.next();
-            FlowGroupId gid = vflow.getGroupId();
             it.remove();
 
             // Collect flow entries to be uninstalled.

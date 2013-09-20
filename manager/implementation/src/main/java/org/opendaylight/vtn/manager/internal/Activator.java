@@ -81,8 +81,7 @@ public class Activator extends ComponentActivatorAbstractBase {
      */
     @Override
     public Object[] getGlobalImplementations() {
-        Object[] res = {GlobalResourceManager.class};
-        return res;
+        return new Object[]{GlobalResourceManager.class};
     }
 
     /**
@@ -125,8 +124,7 @@ public class Activator extends ComponentActivatorAbstractBase {
      */
     @Override
     public Object[] getImplementations() {
-        Object[] res = {VTNManagerImpl.class};
-        return res;
+        return new Object[]{VTNManagerImpl.class};
     }
 
     /**

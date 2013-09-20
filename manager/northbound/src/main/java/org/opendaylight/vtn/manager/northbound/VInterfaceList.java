@@ -81,10 +81,9 @@ public class VInterfaceList {
      */
     @Override
     public int hashCode() {
-        int h = 3371;
-
+        int h = 0;
         if (ifList != null && !ifList.isEmpty()) {
-            h += ifList.hashCode();
+            h ^= ifList.hashCode();
         }
 
         return h;

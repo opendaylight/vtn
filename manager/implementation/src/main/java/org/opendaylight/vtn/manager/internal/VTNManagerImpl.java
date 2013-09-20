@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Dictionary;
 import java.util.EnumSet;
+import java.util.Deque;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -145,65 +146,65 @@ public class VTNManagerImpl
     /**
      * Logger instance.
      */
-    final static Logger  LOG = LoggerFactory.getLogger(VTNManagerImpl.class);
+    static final Logger  LOG = LoggerFactory.getLogger(VTNManagerImpl.class);
 
     /**
      * Maximum length of the resource name.
      */
-    private final static int RESOURCE_NAME_MAXLEN = 31;
+    private static final int RESOURCE_NAME_MAXLEN = 31;
 
     /**
      * Maximum lifetime, in milliseconds, of a cluster event.
      */
-    private final static long CLUSTER_EVENT_LIFETIME = 1000L;
+    private static final long CLUSTER_EVENT_LIFETIME = 1000L;
 
     /**
      * Regular expression that matches valid resource name.
      */
-    private final static Pattern RESOURCE_NAME_REGEX =
+    private static final Pattern RESOURCE_NAME_REGEX =
         Pattern.compile("^\\p{Alnum}[\\p{Alnum}_]*$");
 
     /**
      * Maximum value of VLAN ID.
      */
-    final static short VLAN_ID_MAX = 4095;
+    static final short VLAN_ID_MAX = 4095;
 
     /**
      * VLAN ID which represents untagged frame.
      */
-    final static short VLAN_ID_UNTAGGED = 0;
+    static final short VLAN_ID_UNTAGGED = 0;
 
     /**
      * Cluster cache name associated with {@link #tenantDB}.
      */
-    final static String  CACHE_TENANT = "vtn.tenant";
+    static final String  CACHE_TENANT = "vtn.tenant";
 
     /**
      * Cluster cache name associated with {@link #stateDB}.
      */
-    final static String  CACHE_STATE = "vtn.state";
+    static final String  CACHE_STATE = "vtn.state";
 
     /**
      * The name of the cluster cache which keeps pairs of existing nodes and
      * sets of node connectors.
      */
-    final static String CACHE_NODES = "vtn.nodes";
+    static final String CACHE_NODES = "vtn.nodes";
 
     /**
      * The name of the cluster cache which keeps pairs of existing node
      * connectors and properties.
      */
-    final static String CACHE_PORTS = "vtn.ports";
+    static final String CACHE_PORTS = "vtn.ports";
 
     /**
      * Cluster cache name associated with {@link #clusterEvent}.
      */
-    final static String  CACHE_EVENT = "vtn.clusterEvent";
+    static final String  CACHE_EVENT = "vtn.clusterEvent";
 
     /**
      * The name of the cluster cache which keeps flow entries in the container.
      */
-    final static String CACHE_FLOWS = "vtn.flows";
+    static final String CACHE_FLOWS = "vtn.flows";
 
     /**
      * Keeps virtual tenant configurations in a container.
@@ -360,7 +361,7 @@ public class VTNManagerImpl
     /**
      * List of cluster events.
      */
-    private final ArrayList<ClusterEvent>  clusterEventQueue =
+    private final List<ClusterEvent>  clusterEventQueue =
         new ArrayList<ClusterEvent>();
 
     /**
@@ -389,18 +390,17 @@ public class VTNManagerImpl
     /**
      * Set of remote flow modification requests.
      */
-    private final HashSet<RemoteFlowRequest>  remoteFlowRequests =
+    private final Set<RemoteFlowRequest>  remoteFlowRequests =
         new HashSet<RemoteFlowRequest>();
 
     /**
      * A thread which executes queued tasks.
      */
-    private class TaskQueueThread extends Thread {
+    private final class TaskQueueThread extends Thread {
         /**
          * Task queue.
          */
-        private final LinkedList<Runnable> taskQueue =
-            new LinkedList<Runnable>();
+        private final Deque<Runnable> taskQueue = new LinkedList<Runnable>();
 
         /**
          * Determine whether the task queue is active or not.
@@ -497,7 +497,7 @@ public class VTNManagerImpl
     /**
      * A timer task which interrupts the specified thread.
      */
-    private class AlarmTask extends TimerTask {
+    private final class AlarmTask extends TimerTask {
         /**
          * The target thread.
          */
@@ -1710,7 +1710,7 @@ public class VTNManagerImpl
      * @param name  The name of the virtual tenant.
      */
     public void createTenantFlowDB(String name) {
-        VTNFlowDatabase fdb = new VTNFlowDatabase(this, name);
+        VTNFlowDatabase fdb = new VTNFlowDatabase(name);
         vtnFlowMap.put(name, fdb);
     }
 
@@ -1965,7 +1965,7 @@ public class VTNManagerImpl
             }
         } else if (cl == ConnectionLocality.NOT_LOCAL) {
             // Toss the packet to remote cluster nodes.
-            RawPacketEvent ev = new RawPacketEvent(pkt.getPacketData(), nc);
+            RawPacketEvent ev = new RawPacketEvent(pkt, nc);
             postEvent(ev);
         } else {
             LOG.warn("{}: Drop packet because target port is " +

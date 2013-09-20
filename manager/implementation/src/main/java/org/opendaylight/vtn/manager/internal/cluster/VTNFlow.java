@@ -49,7 +49,7 @@ import org.opendaylight.controller.switchmanager.ISwitchManager;
  * </p>
  */
 public class VTNFlow implements Serializable {
-    private static final long serialVersionUID = 2204573172712778354L;
+    private static final long serialVersionUID = -102569190506563759L;
 
     /**
      * The identifier of the flow group.
@@ -59,8 +59,7 @@ public class VTNFlow implements Serializable {
     /**
      * Flow entries.
      */
-    private final ArrayList<FlowEntry>  flowEntries =
-        new ArrayList<FlowEntry>();
+    private final List<FlowEntry>  flowEntries = new ArrayList<FlowEntry>();
 
     /**
      * Set of nodes related to this flow.
@@ -239,13 +238,6 @@ public class VTNFlow implements Serializable {
     }
 
     /**
-     * Minimize memory usage.
-     */
-    public void pack() {
-        flowEntries.trimToSize();
-    }
-
-    /**
      * Update indices of flow entries.
      *
      * @param swMgr  Switch manager service. If a non-{@code null} value is
@@ -333,7 +325,6 @@ public class VTNFlow implements Serializable {
     private void readObject(ObjectInputStream in)
         throws IOException, ClassNotFoundException {
         in.defaultReadObject();
-        flowEntries.trimToSize();
 
         // Update indices for node and port.
         ISwitchManager swMgr = (ISwitchManager)ServiceHelper.

@@ -91,10 +91,9 @@ public class MacEntryList {
      */
     @Override
     public int hashCode() {
-        int h = 3407;
-
+        int h = 0;
         if (entries != null && !entries.isEmpty()) {
-            h += entries.hashCode();
+            h ^= entries.hashCode();
         }
 
         return h;

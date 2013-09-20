@@ -45,7 +45,8 @@ public abstract class RemoteFlowModTask extends FlowModTask {
                                        long limit) {
         // Register flow modification request to VTN flow programmer.
         RemoteFlowRequest req = new RemoteFlowRequest(entries);
-        vtnManager.addRemoteFlowRequest(req);
+        VTNManagerImpl mgr = getVTNManager();
+        mgr.addRemoteFlowRequest(req);
 
         try {
             // Issue flow modification request.
@@ -59,7 +60,7 @@ public abstract class RemoteFlowModTask extends FlowModTask {
             }
             return ret;
         } finally {
-            vtnManager.removeRemoteFlowRequest(req);
+            mgr.removeRemoteFlowRequest(req);
         }
     }
 

@@ -46,7 +46,7 @@ public class VTNConfig {
     /**
      * Configuration loader.
      */
-    private class ConfigLoader {
+    private final class ConfigLoader {
         /**
          * Logger instance.
          */

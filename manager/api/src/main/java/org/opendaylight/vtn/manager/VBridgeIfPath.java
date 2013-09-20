@@ -14,7 +14,7 @@ package org.opendaylight.vtn.manager;
  * interface in the virtual L2 bridge.
  */
 public class VBridgeIfPath extends VBridgePath {
-    private final static long serialVersionUID = -281976621630015110L;
+    private static final long serialVersionUID = 9070687329308327585L;
 
     /**
      * The name of the interface.

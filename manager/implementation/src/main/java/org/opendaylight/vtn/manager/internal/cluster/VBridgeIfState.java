@@ -26,7 +26,7 @@ import org.opendaylight.controller.sal.core.NodeConnector;
  * </p>
  */
 public class VBridgeIfState implements Serializable {
-    private final static long serialVersionUID = -8925788210043958442L;
+    private static final long serialVersionUID = -8925788210043958442L;
 
     /**
      * State of the interface.

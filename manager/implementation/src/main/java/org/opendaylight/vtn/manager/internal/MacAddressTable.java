@@ -42,7 +42,7 @@ public class MacAddressTable {
     /**
      * Logger instance.
      */
-    private final static Logger  LOG =
+    private static final Logger  LOG =
         LoggerFactory.getLogger(MacAddressTable.class);
 
     /**
@@ -54,7 +54,7 @@ public class MacAddressTable {
      *   an aging task will be purged when it is canceled.
      * </p>
      */
-    private final static int  AGING_PURGE_THRESHOLD = 60;
+    private static final int  AGING_PURGE_THRESHOLD = 60;
 
     /**
      * The name of the table.
@@ -69,7 +69,7 @@ public class MacAddressTable {
     /**
      * MAC address table.
      */
-    private final TreeMap<Long, MacTableEntry>  macAddressTable =
+    private final Map<Long, MacTableEntry>  macAddressTable =
         new TreeMap<Long, MacTableEntry>();
 
     /**
@@ -99,7 +99,7 @@ public class MacAddressTable {
      */
     public static Long getTableKey(byte[] addr) {
         long mac = NetUtils.byteArray6ToLong(addr);
-        return new Long(mac);
+        return Long.valueOf(mac);
     }
 
     /**
@@ -378,10 +378,7 @@ public class MacAddressTable {
             Node tnode = tent.getPort().getNode();
             if (tnode.equals(node)) {
                 if (LOG.isDebugEnabled()) {
-                    long mac = entry.getKey().longValue();
-                    String strmac = VTNManagerImpl.formatMacAddress(mac);
-                    LOG.debug("{}: MAC address removed: {}, {}",
-                              tableName, strmac, tent);
+                    logRemoved(entry);
                 }
                 it.remove();
             }
@@ -403,10 +400,7 @@ public class MacAddressTable {
             if (tent.getVlan() == vlan &&
                 (node == null || node.equals(tent.getPort().getNode()))) {
                 if (LOG.isDebugEnabled()) {
-                    long mac = entry.getKey().longValue();
-                    String strmac = VTNManagerImpl.formatMacAddress(mac);
-                    LOG.debug("{}: MAC address removed: {}, {}",
-                              tableName, strmac, tent);
+                    logRemoved(entry);
                 }
                 it.remove();
             }
@@ -427,10 +421,7 @@ public class MacAddressTable {
             NodeConnector tport = tent.getPort();
             if (tport.equals(nc)) {
                 if (LOG.isDebugEnabled()) {
-                    long mac = entry.getKey().longValue();
-                    String strmac = VTNManagerImpl.formatMacAddress(mac);
-                    LOG.debug("{}: MAC address removed: {}, {}",
-                              tableName, strmac, tent);
+                    logRemoved(entry);
                 }
                 it.remove();
             }
@@ -451,10 +442,7 @@ public class MacAddressTable {
             MacTableEntry tent = entry.getValue();
             if (tent.getVlan() == vlan && nc.equals(tent.getPort())) {
                 if (LOG.isDebugEnabled()) {
-                    long mac = entry.getKey().longValue();
-                    String strmac = VTNManagerImpl.formatMacAddress(mac);
-                    LOG.debug("{}: MAC address removed: {}, {}",
-                              tableName, strmac, tent);
+                    logRemoved(entry);
                 }
                 it.remove();
             }
@@ -554,5 +542,18 @@ public class MacAddressTable {
 
         EthernetAddress ethAddr = (EthernetAddress)dladdr;
         return getTableKey(ethAddr.getValue());
+    }
+
+    /**
+     * Record a debug log which indicates the specified MAC address table was
+     * removed.
+     *
+     * @param entry  Table entry to be removed.
+     */
+    private void logRemoved(Map.Entry<Long, MacTableEntry> entry) {
+        long mac = entry.getKey().longValue();
+        MacTableEntry tent = entry.getValue();
+        String strmac = VTNManagerImpl.formatMacAddress(mac);
+        LOG.debug("{}: MAC address removed: {}, {}", tableName, strmac, tent);
     }
 }

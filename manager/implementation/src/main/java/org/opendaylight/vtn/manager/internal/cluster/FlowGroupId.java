@@ -30,7 +30,7 @@ public class FlowGroupId extends ClusterEventId {
     /**
      * Prefix of the flow group name.
      */
-    private final static String  NAME_PREFIX = "vtn:";
+    private static final String  NAME_PREFIX = "vtn:";
 
     /**
      * The name of the virtual tenant to which the flow group belongs.

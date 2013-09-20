@@ -19,7 +19,7 @@ public abstract class FlowEntryTask extends FlowModTask {
     /**
      * A flow entry to be modified.
      */
-    protected final FlowEntry  flowEntry;
+    private final FlowEntry  flowEntry;
 
     /**
      * Construct a new task.

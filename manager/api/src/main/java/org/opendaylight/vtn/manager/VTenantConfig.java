@@ -23,7 +23,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "vtnconf")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VTenantConfig implements Serializable {
-    private final static long serialVersionUID = -3064307963305950380L;
+    private static final long serialVersionUID = 7446090329841381143L;
 
     /**
      * An arbitrary description about the tenant.
@@ -124,7 +124,7 @@ public class VTenantConfig implements Serializable {
      */
     @XmlAttribute(name = "idleTimeout")
     public Integer getIdleTimeoutValue() {
-        return (idleTimeout >= 0) ? new Integer(idleTimeout) : null;
+        return (idleTimeout >= 0) ? Integer.valueOf(idleTimeout) : null;
     }
 
     /**
@@ -155,7 +155,7 @@ public class VTenantConfig implements Serializable {
      */
     @XmlAttribute(name = "hardTimeout")
     public Integer getHardTimeoutValue() {
-        return (hardTimeout >= 0) ? new Integer(hardTimeout) : null;
+        return (hardTimeout >= 0) ? Integer.valueOf(hardTimeout) : null;
     }
 
     /**
