@@ -170,15 +170,15 @@ public class SwitchPort implements Serializable {
      */
     @Override
     public int hashCode() {
-        int h = 463;
+        int h = 0;
         if (name != null) {
-            h += name.hashCode();
+            h ^= name.hashCode();
         }
         if (type != null) {
-            h += type.hashCode();
+            h ^= type.hashCode();
         }
         if (id != null) {
-            h += id.hashCode();
+            h ^= id.hashCode();
         }
 
         return h;

@@ -91,7 +91,7 @@ public class VlanMap extends VlanMapConfig {
     public int hashCode() {
         int h = super.hashCode();
         if (id != null) {
-            h += id.hashCode();
+            h ^= id.hashCode();
         }
 
         return h;

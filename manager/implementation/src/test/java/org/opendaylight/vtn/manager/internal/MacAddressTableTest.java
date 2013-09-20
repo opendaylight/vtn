@@ -18,8 +18,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.apache.felix.dm.impl.ComponentImpl;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import org.opendaylight.controller.sal.core.ConstructionException;
@@ -37,7 +37,8 @@ import org.opendaylight.vtn.manager.VTNException;
  * JUnit test for {@link MacAddressTable}
  */
 public class MacAddressTableTest extends TestBase {
-    private static VTNManagerImpl vtnMgr = null;
+    private VTNManagerImpl vtnMgr = null;
+    private GlobalResourceManager resMgr;
 
     // The Test class which implemented DataLinkAddress class.
     class TestDataLink extends DataLinkAddress {
@@ -59,27 +60,31 @@ public class MacAddressTableTest extends TestBase {
     /**
      * setup a test environment for MacAddressTableTest
      */
-    @BeforeClass
-    public static void beforeClass() {
+    @Before
+    public void before() {
         vtnMgr = new VTNManagerImpl();
+        resMgr = new GlobalResourceManager();
         ComponentImpl c = new ComponentImpl(null, null, null);
-        GlobalResourceManager grsc = new GlobalResourceManager();
 
         Hashtable<String, String> properties = new Hashtable<String, String>();
         properties.put("containerName", "default");
         c.setServiceProperties(properties);
 
-        grsc.init(c);
+        resMgr.init(c);
+        vtnMgr.setResourceManager(resMgr);
         vtnMgr.init(c);
-        vtnMgr.setResourceManager(grsc);
     }
 
     /**
      * cleanup a test environment
      */
-    @AfterClass
-    public static void afterClass() {
-        // nothing to do.
+    @After
+    public void after() {
+        vtnMgr.stopping();
+        vtnMgr.stop();
+        vtnMgr.destroy();
+
+        resMgr.destroy();
     }
 
     /**
@@ -516,5 +521,4 @@ public class MacAddressTableTest extends TestBase {
         }
         return mae;
     }
-
 }

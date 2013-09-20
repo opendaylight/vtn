@@ -174,6 +174,9 @@ public class VBridgeIfState implements Serializable {
      */
     @Override
     public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
         if (!(o instanceof VBridgeIfState)) {
             return false;
         }
@@ -200,9 +203,10 @@ public class VBridgeIfState implements Serializable {
      */
     @Override
     public int hashCode() {
-        int h = 163 + ifState.hashCode() + portState.hashCode();
+        int h = ifState.toString().hashCode() ^
+            portState.toString().hashCode();
         if (mappedPort != null) {
-            h += mappedPort.hashCode();
+            h ^= mappedPort.hashCode();
         }
 
         return h;

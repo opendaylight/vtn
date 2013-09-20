@@ -113,7 +113,7 @@ public class MacTableEntry {
     /**
      * Add an IP address to this entry.
      *
-     * @paran ipaddr  An {@code InetAddress} object to be added.
+     * @param ipaddr  An {@code InetAddress} object to be added.
      * @return  {@code true} is returned only if the given address was actually
      *          added.
      */
@@ -159,6 +159,8 @@ public class MacTableEntry {
      *
      * @param mac  A long value which represents a MAC address.
      * @return  A {@link MacAddressEntry} object.
+     * @throws VTNException
+     *    Failed to create MAC address entry.
      */
     public MacAddressEntry getEntry(long mac) throws VTNException {
         try {

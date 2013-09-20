@@ -71,6 +71,8 @@ import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
+import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
+import org.opendaylight.vtn.manager.internal.cluster.VTenantEvent;
 
 import org.opendaylight.controller.clustering.services.ICacheUpdateAware;
 import org.opendaylight.controller.configuration.IConfigurationContainerAware;
@@ -120,7 +122,7 @@ public class VTNManagerIT extends TestBase {
 
     private IVTNManager vtnManager = null;
     private IObjectReader objReader = null;
-    private ICacheUpdateAware<String, Long> cacheUpdateAware = null;
+    private ICacheUpdateAware<ClusterEventId, Object> cacheUpdateAware = null;
     private IConfigurationContainerAware  configContainerAware = null;
     private IInventoryListener inventoryListener = null;
     private ITopologyManagerAware  topologyManagerAware = null;
@@ -247,7 +249,8 @@ public class VTNManagerIT extends TestBase {
         if (r != null) {
             this.vtnManager = (IVTNManager) bc.getService(r);
             this.objReader = (IObjectReader)this.vtnManager ;
-            this.cacheUpdateAware = (ICacheUpdateAware<String, Long>)this.vtnManager;
+            this.cacheUpdateAware =
+                (ICacheUpdateAware<ClusterEventId, Object>)this.vtnManager;
             this.configContainerAware = (IConfigurationContainerAware)this.vtnManager;
             this.inventoryListener = (IInventoryListener) this.vtnManager;
             this.topologyManagerAware = (ITopologyManagerAware) this.vtnManager;
@@ -1359,7 +1362,7 @@ public class VTNManagerIT extends TestBase {
                 ServiceHelper.registerServiceWReg(IVTNManagerAware.class, "default",
                                                     listenerRepeated, props);
         assertNotNull(updateServiceRegRepeated);
-        res.await(100L, TimeUnit.SECONDS);
+        res.await(10L, TimeUnit.SECONDS);
 
         res = listener.restart(1);
 
@@ -1369,7 +1372,7 @@ public class VTNManagerIT extends TestBase {
         st = mgr.addTenant(tpath, new VTenantConfig(null));
         assertTrue(st.isSuccess());
 
-        res.await(100L, TimeUnit.SECONDS);
+        res.await(10L, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
         assertEquals(1, ups.size());
@@ -1386,10 +1389,10 @@ public class VTNManagerIT extends TestBase {
         st = mgr.addBridge(bpath, new VBridgeConfig(null));
         assertTrue(st.isSuccess());
 
-        res.await(100L, TimeUnit.SECONDS);
+        res.await(10L, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
-        assertTrue(ups.size() == 1);
+        assertEquals(1, ups.size());
 
         up = ups.get(0);
         assertTrue(up.vbrChangedInfo.type.equals(UpdateType.ADDED));
@@ -1404,10 +1407,10 @@ public class VTNManagerIT extends TestBase {
         st = mgr.addBridgeInterface(ifpath, ifconf);
         assertTrue(st.isSuccess());
 
-        res.await(100L, TimeUnit.SECONDS);
+        res.await(10L, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
-        assertTrue(ups.size() == 1);
+        assertEquals(1, ups.size());
 
         up = ups.get(0);
         assertTrue(up.vIfChangedInfo.type.equals(UpdateType.ADDED));
@@ -1415,7 +1418,7 @@ public class VTNManagerIT extends TestBase {
         assertTrue(up.vIfChangedInfo.obj.getName().equals(ifname));
 
         // set a PortMap
-        res = listener.restart(1);
+        res = listener.restart(3);
         Node node = NodeCreator.createOFNode(0L);
         SwitchPort port = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW,
         String.valueOf(10));
@@ -1423,10 +1426,10 @@ public class VTNManagerIT extends TestBase {
         st = mgr.setPortMap(ifpath, pmconf);
         assertTrue(st.isSuccess());
 
-        res.await(100L, TimeUnit.SECONDS);
+        res.await(10L, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
-        assertTrue(ups.size() == 3);
+        assertEquals(3, ups.size());
 
         up = ups.get(0);
         assertTrue(up.portMapChangedInfo.type.equals(UpdateType.ADDED));
@@ -1453,10 +1456,10 @@ public class VTNManagerIT extends TestBase {
             unexpected(e);
         }
 
-        res.await(100L, TimeUnit.SECONDS);
+        res.await(10L, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
-        assertTrue(ups.size() == 1);
+        assertEquals(1, ups.size());
 
         up = ups.get(0);
         assertTrue(up.vlanMapChangedInfo.type.equals(UpdateType.ADDED));
@@ -1468,10 +1471,10 @@ public class VTNManagerIT extends TestBase {
         st = mgr.modifyTenant(tpath, new VTenantConfig("desc"), false);
         assertTrue(st.isSuccess());
 
-        res.await(100L, TimeUnit.SECONDS);
+        res.await(10L, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
-        assertTrue(ups.size() == 1);
+        assertEquals(1, ups.size());
 
         up = ups.get(0);
         assertTrue(up.vtnChangedInfo.type.equals(UpdateType.CHANGED));
@@ -1483,10 +1486,10 @@ public class VTNManagerIT extends TestBase {
         st = mgr.modifyBridge(bpath, new VBridgeConfig("desc"), false);
         assertTrue(st.isSuccess());
 
-        res.await(100L, TimeUnit.SECONDS);
+        res.await(10L, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
-        assertTrue(ups.size() == 1);
+        assertEquals(1, ups.size());
 
         up = ups.get(0);
         assertTrue(up.vbrChangedInfo.type.equals(UpdateType.CHANGED));
@@ -1498,10 +1501,10 @@ public class VTNManagerIT extends TestBase {
         st = mgr.modifyBridgeInterface(ifpath, new VInterfaceConfig("interface", true), false);
         assertTrue(st.isSuccess());
 
-        res.await(100L, TimeUnit.SECONDS);
+        res.await(10L, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
-        assertTrue(ups.size() == 1);
+        assertEquals(1, ups.size());
 
         up = ups.get(0);
         assertTrue(up.vIfChangedInfo.type.equals(UpdateType.CHANGED));
@@ -1515,10 +1518,10 @@ public class VTNManagerIT extends TestBase {
         st = mgr.setPortMap(ifpath, pmconf);
         assertTrue(st.isSuccess());
 
-        res.await(100L, TimeUnit.SECONDS);
+        res.await(10L, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
-        assertTrue(ups.size() == 1);
+        assertEquals(1, ups.size());
 
         up = ups.get(0);
         assertTrue(up.portMapChangedInfo.type.equals(UpdateType.CHANGED));
@@ -1530,10 +1533,10 @@ public class VTNManagerIT extends TestBase {
         st = mgr.removeVlanMap(bpath, map.getId());
         assertTrue(st.isSuccess());
 
-        res.await(100L, TimeUnit.SECONDS);
+        res.await(10L, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
-        assertTrue(ups.size() == 1);
+        assertEquals(1, ups.size());
 
         up = ups.get(0);
         assertTrue(up.vlanMapChangedInfo.type.equals(UpdateType.REMOVED));
@@ -1541,14 +1544,14 @@ public class VTNManagerIT extends TestBase {
         assertTrue(up.vlanMapChangedInfo.obj.equals(map));
 
         // remove a portmap
-        res = listener.restart(1);
+        res = listener.restart(3);
         st = mgr.setPortMap(ifpath, null);
         assertTrue(st.isSuccess());
 
-        res.await(100L, TimeUnit.SECONDS);
+        res.await(10L, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
-        assertTrue(ups.size() == 3);
+        assertEquals(3, ups.size());
 
         up = ups.get(0);
         assertTrue(up.portMapChangedInfo.type.equals(UpdateType.REMOVED));
@@ -1570,10 +1573,10 @@ public class VTNManagerIT extends TestBase {
         st = mgr.removeBridgeInterface(ifpath);
         assertTrue(st.isSuccess());
 
-        res.await(100L, TimeUnit.SECONDS);
+        res.await(10L, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
-        assertTrue(ups.size() == 1);
+        assertEquals(1, ups.size());
 
         up = ups.get(0);
         assertTrue(up.vIfChangedInfo.type.equals(UpdateType.REMOVED));
@@ -1585,10 +1588,10 @@ public class VTNManagerIT extends TestBase {
         st = mgr.removeBridge(bpath);
         assertTrue(st.isSuccess());
 
-        res.await(100L, TimeUnit.SECONDS);
+        res.await(10L, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
-        assertTrue(ups.size() == 1);
+        assertEquals(1, ups.size());
 
         up = ups.get(0);
         assertTrue(up.vbrChangedInfo.type.equals(UpdateType.REMOVED));
@@ -1600,10 +1603,10 @@ public class VTNManagerIT extends TestBase {
         st =mgr.removeTenant(tpath);
         assertTrue(st.isSuccess());
 
-        res.await(100L, TimeUnit.SECONDS);
+        res.await(10L, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
-        assertTrue(ups.size() == 1);
+        assertEquals(1, ups.size());
 
         up = ups.get(0);
         assertTrue(up.vtnChangedInfo.type.equals(UpdateType.REMOVED));
@@ -1622,7 +1625,7 @@ public class VTNManagerIT extends TestBase {
 
         res.await(1L, TimeUnit.SECONDS);
         ups = listener.getUpdates();
-        assertTrue(ups.size() == 0);
+        assertEquals(0, ups.size());
     }
 
 
@@ -1812,77 +1815,170 @@ public class VTNManagerIT extends TestBase {
 
     /**
      * test method for {@link ICacheUpdateAware}
+     *
+     * @throws InterruptedException  Test was interrupted.
      */
     @Test
-    public void testICacheUpdateAware() {
+    public void testICacheUpdateAware() throws InterruptedException {
         IVTNManager mgr = vtnManager;
         String root = GlobalConstants.STARTUPHOME.toString();
         String tenantListFileName = root + "vtn-default-tenant-names.conf";
-        String configFileName = root + "vtn-" + "default" + "-" + "tenant100" + ".conf";
-        String configFileNameUp = root + "vtn-" + "default" + "-" + "tenant" + ".conf";
+        String configFileName100 = root + "vtn-" + "default" + "-" + "tenant100" + ".conf";
+        String configFileName = root + "vtn-" + "default" + "-" + "tenant" + ".conf";
 
-        // create
+        Dictionary<String, Object> props = new Hashtable<String, Object>();
+        VTNManagerAware listener = new VTNManagerAware();
+        ServiceRegistration svReg =
+            ServiceHelper.registerServiceWReg(IVTNManagerAware.class,
+                                              "default", listener, props);
+
+        // create tenant
         File tenantList = new File(tenantListFileName);
         tenantList.delete();
 
-        cacheUpdateAware.entryCreated("tenant100", "vtn.tenant" , true);
-        tenantList = new File(tenantListFileName);
-        assertFalse(tenantList.exists());
+        File configFile = new File(configFileName);
+        File configFile100 = new File(configFileName100);
+        configFile.delete();
+        configFile100.delete();
 
-        cacheUpdateAware.entryCreated("tenant100", "vtn.tenant" , false);
-        tenantList = new File(tenantListFileName);
+        CountDownLatch res = listener.restart(1);
+        ClusterEventId evid = new ClusterEventId(0, 0);
+        VTenantPath tpath = new VTenantPath("tenant");
+        VTenantConfig tconf = new VTenantConfig(null);
+        VTenant vtenant = new VTenant("tenant", tconf);
+        mgr.addTenant(tpath, tconf);
+        assertTrue(res.await(10L, TimeUnit.SECONDS));
+        tenantList.delete();
+        configFile.delete();
+        configFile100.delete();
+
+        VTenantEvent ev = new VTenantEvent(tpath, vtenant, UpdateType.ADDED);
+        cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
+                                      true);
+        assertFalse(tenantList.exists());
+        assertFalse(configFile.exists());
+        assertFalse(configFile100.exists());
+
+        res = listener.restart(1);
+        cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
+                                      false);
+        assertTrue(res.await(10L, TimeUnit.SECONDS));
         assertTrue(tenantList.exists());
+        assertTrue(configFile.exists());
+        assertFalse(configFile100.exists());
+
+        VTenantPath tpath100 = new VTenantPath("tenant100");
+        VTenantConfig tconf100 = new VTenantConfig("tenant 100");
+        VTenant vtenant100 = new VTenant("tenant100", tconf100);
+        mgr.addTenant(tpath100, tconf100);
+        tenantList.delete();
+        configFile.delete();
+        configFile100.delete();
+
+        ev = new VTenantEvent(tpath100, vtenant100, UpdateType.ADDED);
+        cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
+                                      true);
+        assertFalse(tenantList.exists());
+        assertFalse(configFile.exists());
+        assertFalse(configFile100.exists());
+
+        res = listener.restart(1);
+        cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
+                                      false);
+        assertTrue(res.await(10L, TimeUnit.SECONDS));
+        assertTrue(tenantList.exists());
+        assertFalse(configFile.exists());
+        assertTrue(configFile100.exists());
+
+        tenantList.delete();
+        configFile.delete();
+        configFile100.delete();
 
         // update
-        VTenantPath tpath = new VTenantPath("tenant");
-        mgr.addTenant(tpath, new VTenantConfig(null));
-        tenantList = new File(tenantListFileName);
-        tenantList.delete();
-        File configFile = new File(configFileNameUp);
-        configFile.delete();
+        ev = new VTenantEvent(tpath, vtenant, UpdateType.CHANGED);
+        cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
+                                      true);
+        checkFileExists(configFile, false, true);
+        checkFileExists(configFile100, false, true);
+        checkFileExists(tenantList, false, true);
 
-        cacheUpdateAware.entryUpdated("tenant", Long.valueOf(1L), "vtn.tenant", true);
-        checkFileExists(configFileNameUp, false, false);
-        checkFileExists(tenantListFileName, false, false);
+        res = listener.restart(1);
+        cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
+                                      false);
+        assertTrue(res.await(10L, TimeUnit.SECONDS));
+        checkFileExists(configFile, true, true);
+        checkFileExists(configFile100, false, true);
+        checkFileExists(tenantList, false, true);
 
-        cacheUpdateAware.entryUpdated("<all>", Long.valueOf(1L), "vtn.tenant", false);
-        checkFileExists(configFileNameUp, true, true);
-        checkFileExists(tenantListFileName, true, true);
+        ev = new VTenantEvent(tpath100, vtenant100, UpdateType.CHANGED);
+        cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
+                                      true);
+        checkFileExists(configFile, false, true);
+        checkFileExists(configFile100, false, true);
+        checkFileExists(tenantList, false, true);
 
-        cacheUpdateAware.entryUpdated("tenant", Long.valueOf(1L), "vtn.tenant", false);
-        checkFileExists(configFileNameUp, true, true);
-        checkFileExists(tenantListFileName, false, true);
+        res = listener.restart(1);
+        cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
+                                      false);
+        assertTrue(res.await(10L, TimeUnit.SECONDS));
+        checkFileExists(configFile, false, true);
+        checkFileExists(configFile100, true, true);
+        checkFileExists(tenantList, false, true);
 
+        res = listener.restart(2);
         mgr.removeTenant(tpath);
+        mgr.removeTenant(tpath100);
+        assertTrue(res.await(10L, TimeUnit.SECONDS));
 
         // delete
-        tenantList = new File(tenantListFileName);
         tenantList.delete();
-        configFile = new File(configFileName);
         try {
             configFile.createNewFile();
+            configFile100.createNewFile();
         } catch (IOException e) {
             unexpected(e);
         }
 
-        cacheUpdateAware.entryDeleted("tenant100", "vtn.tenant" , true);
-        checkFileExists(configFileName, true, false);
-        checkFileExists(tenantListFileName, false, true);
+        ev = new VTenantEvent(tpath, vtenant, UpdateType.REMOVED);
+        cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
+                                      true);
+        checkFileExists(configFile, true, false);
+        checkFileExists(configFile100, true, false);
+        checkFileExists(tenantList, false, true);
 
-        cacheUpdateAware.entryDeleted("<all>", "vtn.tenant" , false);
-        checkFileExists(configFileName, true, false);
-        checkFileExists(tenantListFileName, true, true);
+        res = listener.restart(1);
+        cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
+                                      false);
+        assertTrue(res.await(10L, TimeUnit.SECONDS));
+        checkFileExists(configFile, false, false);
+        checkFileExists(configFile100, true, false);
+        checkFileExists(tenantList, true, true);
 
-        cacheUpdateAware.entryDeleted("tenant100", "vtn.tenant" , false);
-        checkFileExists(configFileName, false, true);
-        checkFileExists(tenantListFileName, true, true);
+        ev = new VTenantEvent(tpath100, vtenant100, UpdateType.REMOVED);
+        cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
+                                      true);
+        checkFileExists(configFile, true, false);
+        checkFileExists(configFile100, true, false);
+        checkFileExists(tenantList, false, true);
+
+        res = listener.restart(1);
+        cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
+                                      false);
+        assertTrue(res.await(10L, TimeUnit.SECONDS));
+        checkFileExists(configFile, true, true);
+        checkFileExists(configFile100, false, true);
+        checkFileExists(tenantList, true, true);
+
+        svReg.unregister();
     }
 
-    private void checkFileExists(String fileName, boolean result, boolean remove) {
-        File file = new File(fileName);
-        assertEquals(result, file.exists());
-        if (remove && file.exists()) {
-            file.delete();
+    private void checkFileExists(File file, boolean result, boolean remove) {
+        boolean exists = file.exists();
+        assertEquals(result, exists);
+        if (remove) {
+            if (exists) {
+                file.delete();
+            }
         } else {
             try {
                 file.createNewFile();
@@ -1965,6 +2061,11 @@ public class VTNManagerIT extends TestBase {
                 // test for node connector change notify.
                 Map<String, Property> propMap = null; // not used now.
 
+                mgr.notifyNodeConnector(nc, UpdateType.ADDED, propMap);
+                checkNodeStatus(vtnManager, bpath, ifp,
+                        (node == null) ? VNodeState.UP : VNodeState.DOWN,
+                        VNodeState.UNKNOWN, vlconf.toString());
+
                 putMacTableEntry(listenDataPacket, bpath, nc);
 
                 mgr.notifyNodeConnector(nc, UpdateType.REMOVED, propMap);
@@ -1974,17 +2075,7 @@ public class VTNManagerIT extends TestBase {
 
                 checkMacTableEntry(vtnManager, bpath, true, vlconf.toString());
 
-                mgr.notifyNodeConnector(nc, UpdateType.ADDED, propMap);
-                checkNodeStatus(vtnManager, bpath, ifp,
-                        (node == null) ? VNodeState.UP : VNodeState.DOWN,
-                        VNodeState.UNKNOWN, vlconf.toString());
-
                 mgr.notifyNodeConnector(nc, UpdateType.CHANGED, propMap);
-                checkNodeStatus(vtnManager, bpath, ifp,
-                        (node == null) ? VNodeState.UP : VNodeState.DOWN,
-                        VNodeState.UNKNOWN, vlconf.toString());
-
-                mgr.notifyNodeConnector(otherNc, UpdateType.REMOVED, propMap);
                 checkNodeStatus(vtnManager, bpath, ifp,
                         (node == null) ? VNodeState.UP : VNodeState.DOWN,
                         VNodeState.UNKNOWN, vlconf.toString());
@@ -1994,19 +2085,25 @@ public class VTNManagerIT extends TestBase {
                         (node == null) ? VNodeState.UP : VNodeState.DOWN,
                         VNodeState.UNKNOWN, vlconf.toString());
 
+                mgr.notifyNodeConnector(otherNc, UpdateType.REMOVED, propMap);
+                checkNodeStatus(vtnManager, bpath, ifp,
+                        (node == null) ? VNodeState.UP : VNodeState.DOWN,
+                        VNodeState.UNKNOWN, vlconf.toString());
+
                 // test for node change notify.
+                mgr.notifyNode(cnode, UpdateType.ADDED, propMap);
+                checkNodeStatus(vtnManager, bpath, ifp,
+                        (node == null) ? VNodeState.UP : VNodeState.DOWN,
+                        VNodeState.UNKNOWN, vlconf.toString());
+
                 putMacTableEntry(listenDataPacket, bpath, nc);
+
                 mgr.notifyNode(cnode, UpdateType.REMOVED, propMap);
                 checkNodeStatus(vtnManager, bpath, ifp,
                         (node == null) ? VNodeState.UP : VNodeState.DOWN,
                         VNodeState.UNKNOWN, vlconf.toString());
 
                 checkMacTableEntry(vtnManager, bpath, true, vlconf.toString());
-
-                mgr.notifyNode(cnode, UpdateType.ADDED, propMap);
-                checkNodeStatus(vtnManager, bpath, ifp,
-                        (node == null) ? VNodeState.UP : VNodeState.DOWN,
-                        VNodeState.UNKNOWN, vlconf.toString());
 
 //                mgr.notifyNodeConnector(nc, UpdateType.ADDED, propMap);
 //                checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UP, vlconf.toString());
@@ -2016,12 +2113,12 @@ public class VTNManagerIT extends TestBase {
                         (node == null) ? VNodeState.UP : VNodeState.DOWN,
                         VNodeState.UNKNOWN, vlconf.toString());
 
-                mgr.notifyNode(onode, UpdateType.REMOVED, propMap);
+                mgr.notifyNode(onode, UpdateType.ADDED, propMap);
                 checkNodeStatus(vtnManager, bpath, ifp,
                         (node == null) ? VNodeState.UP : VNodeState.DOWN,
                         VNodeState.UNKNOWN, vlconf.toString());
 
-                mgr.notifyNode(onode, UpdateType.ADDED, propMap);
+                mgr.notifyNode(onode, UpdateType.REMOVED, propMap);
                 checkNodeStatus(vtnManager, bpath, ifp,
                         (node == null) ? VNodeState.UP : VNodeState.DOWN,
                         VNodeState.UNKNOWN, vlconf.toString());
@@ -2385,5 +2482,4 @@ public class VTNManagerIT extends TestBase {
             assertTrue(st.isSuccess());
         }
     }
-
 }

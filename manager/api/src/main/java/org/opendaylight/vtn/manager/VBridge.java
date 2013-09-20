@@ -161,9 +161,9 @@ public class VBridge extends VBridgeConfig {
      */
     @Override
     public int hashCode() {
-        int h = super.hashCode() + state.hashCode() + faults;
+        int h = super.hashCode() ^ state.toString().hashCode() + faults;
         if (name != null) {
-            h += name.hashCode();
+            h ^= name.hashCode();
         }
 
         return h;

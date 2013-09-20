@@ -192,9 +192,10 @@ public class VInterface extends VInterfaceConfig {
      */
     @Override
     public int hashCode() {
-        int h = super.hashCode() + state.hashCode() + entityState.hashCode();
+        int h = super.hashCode() ^ state.toString().hashCode() ^
+            entityState.toString().hashCode();
         if (name != null) {
-            h += name.hashCode();
+            h ^= name.hashCode();
         }
 
         return h;

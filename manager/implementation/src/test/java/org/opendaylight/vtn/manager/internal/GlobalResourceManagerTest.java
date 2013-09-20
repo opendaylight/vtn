@@ -158,6 +158,7 @@ public class GlobalResourceManagerTest extends TestBase {
 
         grsc.unregisterVlanMap((short)0);
         grsc.unregisterVlanMap((short)4095);
+        grsc.destroy();
     }
 
 
@@ -222,6 +223,7 @@ public class GlobalResourceManagerTest extends TestBase {
                 grsc.unregisterPortMap(pv);
             }
         }
+        grsc.destroy();
     }
 
     /**
@@ -265,6 +267,7 @@ public class GlobalResourceManagerTest extends TestBase {
         assertEquals(0, vmap.size());
         pmap = (ConcurrentMap<PortVlan, String>)cs.getCache("vtn.portmap");
         assertEquals(0, pmap.size());
+        grsc.destroy();
     }
 
     /**

@@ -137,12 +137,12 @@ public class PortMapConfig implements Serializable {
      */
     @Override
     public int hashCode() {
-        int h = vlan + 701;
+        int h = vlan;
         if (node != null) {
-            h += node.hashCode();
+            h ^= node.hashCode();
         }
         if (port != null) {
-            h += port.hashCode();
+            h ^= port.hashCode();
         }
 
         return h;

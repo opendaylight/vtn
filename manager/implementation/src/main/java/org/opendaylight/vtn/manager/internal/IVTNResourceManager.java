@@ -80,6 +80,32 @@ public interface IVTNResourceManager {
     public Timer getTimer();
 
     /**
+     * Run the given command asynchronously.
+     *
+     * <p>
+     *   Note that this method exucutes the given command using a thread pool
+     *   which has multiple threads. So the order of the command execution is
+     *   unspecified.
+     * </p>
+     *
+     * @param command  A task to be executed asynchronously.
+     * @return  {@code true} is returned if the specified task was submitted.
+     *          {@code false} is returned if the specified tas was rejected.
+     */
+    public boolean executeAsync(Runnable command);
+
+    /**
+     * Return the number of remote cluster nodes.
+     *
+     * <p>
+     *   Zero is returned if no remote node was found in the cluster.
+     * </p>
+     *
+     * @return  The number of remote cluster nodes.
+     */
+    public int getRemoteClusterSize();
+
+    /**
      * Clean up resources associated with the given container.
      *
      * @param containerName  The name of the container.

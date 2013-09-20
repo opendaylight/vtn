@@ -10,15 +10,22 @@
 package org.opendaylight.vtn.manager.internal;
 
 import java.net.InetAddress;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.HashSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
+import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.match.Match;
+import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IEEE8021Q;
@@ -28,7 +35,6 @@ import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.NetUtils;
-import org.opendaylight.controller.switchmanager.ISwitchManager;
 
 /**
  * {@code PacketContext} class describes the context of received packet.
@@ -87,13 +93,19 @@ public class PacketContext {
     /**
      * Obsolete MAC address table entries.
      */
-    private TreeMap<Long, MacTableEntry>  obsoleteEntries =
+    private final TreeMap<Long, MacTableEntry>  obsoleteEntries =
         new TreeMap<Long, MacTableEntry>();
 
     /**
      * Outgoing node connector.
      */
     private NodeConnector  outgoing;
+
+    /**
+     * Set of virtual node paths which handles this packet.
+     */
+    private final HashSet<VTenantPath>  virtualNodes =
+        new HashSet<VTenantPath>();
 
     /**
      * Construct a new packet context.
@@ -272,8 +284,10 @@ public class PacketContext {
             setDestinationMACAddress(getDestinationAddress());
 
         short ethType;
-        if (vlan != 0) {
+        if (vlan != 0 || (vlanTag != null && vlanTag.getVid() == 0)) {
             // Add a VLAN tag.
+            // We don't strip VLAN tag with zero VLAN ID because PCP field
+            // in the VLAN tag should affect even if the VLAN ID is zero.
             IEEE8021Q tag = new IEEE8021Q();
             byte cfi, pcp;
             if (vlanTag != null) {
@@ -332,6 +346,43 @@ public class PacketContext {
         return obsoleteEntries;
     }
 
+
+    /**
+     * Purge VTN flows relevant to obsolete MAC address table entries.
+     *
+     * @param mgr         VTN manager service.
+     * @param tenantName  Name of the virtual tenant.
+     */
+    public void purgeObsoleteFlow(VTNManagerImpl mgr, String tenantName) {
+        VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
+        if (fdb != null) {
+            purgeObsoleteFlow(mgr, fdb);
+        }
+    }
+
+    /**
+     * Purge VTN flows relevant to obsolete MAC address table entries.
+     *
+     * <p>
+     *   Obsolte MAC address entries added by
+     *   {@link addObsoleteEntry(Long, MacTableEntry)} are removed.
+     * </p>
+     *
+     * @param mgr   VTN manager service.
+     * @param fdb   VTN flow database.
+     */
+    public void purgeObsoleteFlow(VTNManagerImpl mgr, VTNFlowDatabase fdb) {
+        for (Iterator<Map.Entry<Long, MacTableEntry>> it =
+                 obsoleteEntries.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<Long, MacTableEntry> entry = it.next();
+            long addr = entry.getKey().longValue();
+            short vlan = entry.getValue().getVlan();
+            MacVlan mvlan = new MacVlan(addr, vlan);
+            fdb.removeFlows(mgr, mvlan);
+            it.remove();
+        }
+    }
+
     /**
      * Create a brief description of the ethernet frame in this context.
      *
@@ -376,7 +427,6 @@ public class PacketContext {
     public void probeInetAddress(VTNManagerImpl mgr) {
         if (payload instanceof IPv4) {
             // Send an ARP request to the source address of this packet.
-            ISwitchManager swMgr = mgr.getSwitchManager();
             IPv4 ipv4 = (IPv4)payload;
             int srcIp = ipv4.getSourceAddress();
             byte[] dst = getSourceAddress();
@@ -401,5 +451,54 @@ public class PacketContext {
 
             mgr.transmit(port, ether);
         }
+    }
+
+    /**
+     * Create match for a flow entry.
+     *
+     * @param inPort  A node connector associated with incoming switch port.
+     * @return  A match object that matches the packet.
+     */
+    public Match createMatch(NodeConnector inPort) {
+        Match match = new Match();
+
+        // The following match types are mandatory:
+        //   - Source MAC address
+        //   - Destination MAC address
+        //   - VLAN ID
+        match.setField(MatchType.DL_SRC, getSourceAddress());
+        match.setField(MatchType.DL_DST, getDestinationAddress());
+
+        // This code expects MatchType.DL_VLAN_NONE is zero.
+        match.setField(MatchType.DL_VLAN, getVlan());
+
+        // Set input port.
+        match.setField(MatchType.IN_PORT, inPort);
+
+        return match;
+    }
+
+    /**
+     * Record a virtual node which handled this packet.
+     *
+     * @param path  A virtual node path.
+     */
+    public void addNodePath(VTenantPath path) {
+        virtualNodes.add(path);
+    }
+
+    /**
+     * Add network elements relevant to this packet to the dependency set of
+     * the given VTN flow.
+     *
+     * @param vflow  A VTN flow.
+     */
+    public void setFlowDependency(VTNFlow vflow) {
+        // Set relevant virtual nodes.
+        vflow.addDependency(virtualNodes);
+
+        // Set source host entry.
+        MacVlan mvlan = new MacVlan(getSourceAddress(), getVlan());
+        vflow.addDependency(mvlan);
     }
 }

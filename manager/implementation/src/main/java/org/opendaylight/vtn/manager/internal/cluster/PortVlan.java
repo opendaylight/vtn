@@ -74,6 +74,9 @@ public class PortVlan implements Serializable {
      */
     @Override
     public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
         if (!(o instanceof PortVlan)) {
             return false;
         }
@@ -90,7 +93,7 @@ public class PortVlan implements Serializable {
      */
     @Override
     public int hashCode() {
-        return vlan + nodeConnector.hashCode() + 4111;
+        return vlan + nodeConnector.hashCode();
     }
 
     /**

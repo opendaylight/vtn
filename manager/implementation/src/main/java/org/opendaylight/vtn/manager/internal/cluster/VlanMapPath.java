@@ -60,6 +60,9 @@ public class VlanMapPath extends VBridgePath {
      */
     @Override
     public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
         if (!(o instanceof VlanMapPath) || !super.equals(o)) {
             return false;
         }
@@ -75,7 +78,7 @@ public class VlanMapPath extends VBridgePath {
      */
     @Override
     public int hashCode() {
-        return super.hashCode() + mapId.hashCode() + 883;
+        return super.hashCode() ^ mapId.hashCode();
     }
 
     /**

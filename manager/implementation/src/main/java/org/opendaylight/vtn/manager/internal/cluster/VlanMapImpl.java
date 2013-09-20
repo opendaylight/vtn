@@ -24,6 +24,7 @@ import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
+import org.opendaylight.vtn.manager.internal.VTNThreadData;
 
 import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
@@ -31,7 +32,6 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
-import org.opendaylight.controller.switchmanager.ISwitchManager;
 
 /**
  * Implementation of VLAN mapping to the virtual L2 bridge.
@@ -47,7 +47,7 @@ import org.opendaylight.controller.switchmanager.ISwitchManager;
  * </p>
  */
 public class VlanMapImpl implements VBridgeNode, Serializable {
-    private static final long serialVersionUID = 1;
+    private static final long serialVersionUID = 7906444004478478476L;
 
     /**
      * Logger instance.
@@ -172,7 +172,7 @@ public class VlanMapImpl implements VBridgeNode, Serializable {
         boolean valid;
         switch (type) {
         case ADDED:
-            valid = getNewState(mgr, node);
+            valid = mgr.hasEdgePort(node);
             break;
 
         case REMOVED:
@@ -217,7 +217,7 @@ public class VlanMapImpl implements VBridgeNode, Serializable {
         // VLAN mapping can work if at least one physical switch port
         // is up.
         boolean valid = (pstate == VNodeState.UP && mgr.isEdgePort(nc))
-            ? true : getNewState(mgr, node);
+            ? true : mgr.hasEdgePort(node);
 
         setValid(db, cur, valid);
         return getBridgeState(valid, bstate);
@@ -240,14 +240,13 @@ public class VlanMapImpl implements VBridgeNode, Serializable {
         boolean cur = isValid(db);
         Node node = vlanMapConfig.getNode();
         if (node != null) {
-            ISwitchManager swMgr = mgr.getSwitchManager();
             for (TopoEdgeUpdate topo: topoList) {
                 Edge e = topo.getEdge();
                 NodeConnector head = e.getHeadNodeConnector();
                 NodeConnector tail = e.getTailNodeConnector();
                 if (node.equals(head.getNode()) ||
                     node.equals(tail.getNode())) {
-                    boolean valid = getNewState(mgr, node);
+                    boolean valid = mgr.hasEdgePort(node);
                     setValid(db, cur, valid);
                     cur = valid;
                     break;
@@ -308,13 +307,7 @@ public class VlanMapImpl implements VBridgeNode, Serializable {
      * @return  {@code true} is returned only if the given node is valid.
      */
     private boolean checkNode(VTNManagerImpl mgr, Node node) {
-        ISwitchManager swMgr = mgr.getSwitchManager();
-        Set<Node> nodeSet = swMgr.getNodes();
-        if (nodeSet == null || !nodeSet.contains(node)) {
-            return false;
-        }
-
-        return getNewState(mgr, node);
+        return (mgr.exists(node) && mgr.hasEdgePort(node));
     }
 
     /**
@@ -334,30 +327,6 @@ public class VlanMapImpl implements VBridgeNode, Serializable {
         }
 
         return bstate;
-    }
-
-    /**
-     * Determine whether at least one node connector in the give node is in
-     * up state or not.
-     *
-     * @param mgr   VTN Manager service.
-     * @param node  Node to be tested.
-     * @return  {@code true} is returned only if at least one node connector
-     *          is in up state.
-     */
-    private boolean getNewState(VTNManagerImpl mgr, Node node) {
-        ISwitchManager swMgr = mgr.getSwitchManager();
-        Set<NodeConnector> ncSet = swMgr.getUpNodeConnectors(node);
-        if (ncSet != null) {
-            // vBridge always ignores pseudo port and internal switch port.
-            for (NodeConnector nc: ncSet) {
-                if (mgr.isEdgePort(nc)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -395,38 +364,27 @@ public class VlanMapImpl implements VBridgeNode, Serializable {
      *          Node that {@code null} may be returned.
      */
     private Set<NodeConnector> getPorts(VTNManagerImpl mgr) {
-        ISwitchManager swMgr = mgr.getSwitchManager();
         Node node = vlanMapConfig.getNode();
-        Set<Node> nodeSet;
-        if (node == null) {
-            nodeSet = swMgr.getNodes();
-            if (nodeSet == null) {
-                return null;
-            }
-        } else {
-            nodeSet = new HashSet<Node>();
-            nodeSet.add(node);
-        }
-
         HashSet<NodeConnector> ncSet = new HashSet<NodeConnector>();
-        for (Node n: nodeSet) {
-            for (NodeConnector nc: swMgr.getUpNodeConnectors(n)) {
-                if (mgr.isEdgePort(nc)) {
-                    ncSet.add(nc);
-                }
-            }
-        }
-
+        mgr.collectUpEdgePorts(ncSet, node);
         return ncSet;
     }
 
     /**
      * Destroy the VLAN mapping.
      *
-     * @param db  Virtual node state DB.
+     * @param mgr            VTN manager service.
+     * @param bridgeDestroy  {@code true} is specified if the parent bridge is
+     *                       being destroyed.
      */
-    void destroy(ConcurrentMap<VTenantPath, Object> db) {
+    void destroy(VTNManagerImpl mgr, boolean bridgeDestroy) {
+        ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         db.remove(mapPath);
+
+        if (!bridgeDestroy) {
+            // Purge all VTN flows related to this mapping.
+            VTNThreadData.removeFlows(mgr, mapPath);
+        }
     }
 
     /**
@@ -437,6 +395,9 @@ public class VlanMapImpl implements VBridgeNode, Serializable {
      */
     @Override
     public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
         if (!(o instanceof VlanMapImpl)) {
             return false;
         }
@@ -452,7 +413,7 @@ public class VlanMapImpl implements VBridgeNode, Serializable {
      */
     @Override
     public int hashCode() {
-        return vlanMapConfig.hashCode() + 523;
+        return vlanMapConfig.hashCode();
     }
 
     // VBridgeNode

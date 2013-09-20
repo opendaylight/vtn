@@ -146,6 +146,33 @@ public class VTNConfig {
     private int  nodeEdgeWait = 3000;
 
     /**
+     * Priority value of layer 2 flow entries.
+     */
+    @IntConfig(min = 1, max = 999)
+    private int  l2FlowPriority = 10;
+
+    /**
+     * The number of milliseconds to wait for completion of modification of
+     * a single flow entry.
+     */
+    @IntConfig(min = 100, max = 60000)
+    private int  flowModTimeout = 3000;
+
+    /**
+     * The number of milliseconds to wait for remote cluster nodes to finish
+     * to modify flow entries in a VTN flow.
+     */
+    @IntConfig(min = 1000, max = 60000)
+    private int  remoteFlowModTimeout = 5000;
+
+    /**
+     * The number of milliseconds to wait for remote cluster nodes to finish
+     * modifying bulk flow entries.
+     */
+    @IntConfig(min = 3000, max = 600000)
+    private int  remoteBulkFlowModTimeout = 15000;
+
+    /**
      * Construct a new configuration object.
      *
      * @param dir            A path to directory which contains configuartion
@@ -162,8 +189,47 @@ public class VTNConfig {
      *
      * @return  The number of milliseconds to wait for node edges.
      */
-    int getNodeEdgeWait() {
+    public int getNodeEdgeWait() {
         return nodeEdgeWait;
+    }
+
+    /**
+     * Return priority value for layer 2 flow entries.
+     *
+     * @return  Priority value for layer 2 flow entries.
+     */
+    public int getL2FlowPriority() {
+        return l2FlowPriority;
+    }
+
+    /**
+     * Return the number of milliseconds to wait for completion of modification
+     * of a single flow entry.
+     *
+     * @return  The number of milliseconds to wait.
+     */
+    public int getFlowModTimeout() {
+        return flowModTimeout;
+    }
+
+    /**
+     * Return the number of milliseconds to wait for remote cluster nodes to
+     * finish modifying flow entries in a VTN flow.
+     *
+     * @return  The number of milliseconds to wait.
+     */
+    public int getRemoteFlowModTimeout() {
+        return remoteFlowModTimeout;
+    }
+
+    /**
+     * Return the number of milliseconds to wait for remote cluster nodes to
+     * finish modifying bulk flow entries.
+     *
+     * @return  The number of milliseconds to wait.
+     */
+    public int getRemoteBulkFlowModTimeout() {
+        return remoteBulkFlowModTimeout;
     }
 
     /**
@@ -195,5 +261,4 @@ public class VTNConfig {
 
         return prop;
     }
-
 }

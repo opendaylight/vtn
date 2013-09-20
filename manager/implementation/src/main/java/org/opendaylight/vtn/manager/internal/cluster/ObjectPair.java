@@ -103,7 +103,7 @@ public class ObjectPair<L, R> implements Serializable {
      */
     @Override
     public int hashCode() {
-        int h = 313;
+        int h = 0;
         if (left != null) {
             h += left.hashCode();
         }

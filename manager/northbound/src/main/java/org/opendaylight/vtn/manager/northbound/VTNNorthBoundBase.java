@@ -9,12 +9,13 @@
 
 package org.opendaylight.vtn.manager.northbound;
 
-import java.util.List;
+import java.security.Principal;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
 
+import org.opendaylight.vtn.manager.IVTNFlowDebugger;
 import org.opendaylight.vtn.manager.IVTNManager;
 
 import org.opendaylight.controller.containermanager.IContainerManager;
@@ -48,7 +49,12 @@ public abstract class VTNNorthBoundBase {
      */
     @Context
     public void setSecurityContext(SecurityContext context) {
-        if (context != null && context.getUserPrincipal() != null) userName = context.getUserPrincipal().getName();
+        if (context != null) {
+            Principal p = context.getUserPrincipal();
+            if (p != null) {
+                userName = p.getName();
+            }
+        }
     }
 
     /**
@@ -101,16 +107,16 @@ public abstract class VTNNorthBoundBase {
 
         StatusCode code = status.getCode();
         String desc = status.getDescription();
-        if (code.equals(StatusCode.BADREQUEST)) {
+        if (code == StatusCode.BADREQUEST) {
             return new UnsupportedMediaTypeException(desc);
         }
-        if (code.equals(StatusCode.CONFLICT)) {
+        if (code == StatusCode.CONFLICT) {
             return new ResourceConflictException(desc);
         }
-        if (code.equals(StatusCode.NOTACCEPTABLE)) {
+        if (code == StatusCode.NOTACCEPTABLE) {
             return new NotAcceptableException(desc);
         }
-        if (code.equals(StatusCode.NOTFOUND)) {
+        if (code == StatusCode.NOTFOUND) {
             throw new ResourceNotFoundException(desc);
         }
 
@@ -130,32 +136,62 @@ public abstract class VTNNorthBoundBase {
      *    Invalid container name is specified.
      */
     protected IVTNManager getVTNManager(String containerName) {
+        IVTNManager mgr = (IVTNManager)
+            getContainerService(IVTNManager.class, containerName);
+        if (mgr == null) {
+            serviceUnavailable("VTN Manager");
+        }
+
+        return mgr;
+    }
+
+    /**
+     * Return the VTN flow debugger service associated with the specified
+     * container.
+     *
+     * @param containerName  The container name.
+     * @return  The VTN flow debugger service associated with the specified
+     *          container.
+     * @throws ServiceUnavailableException
+     *    Unable to get VTN manager service.
+     * @throws ResourceNotFoundException
+     *    Invalid container name is specified.
+     */
+    protected IVTNFlowDebugger getVTNFlowDebugger(String containerName) {
+        IVTNFlowDebugger debugger = (IVTNFlowDebugger)
+            getContainerService(IVTNFlowDebugger.class, containerName);
+        if (debugger == null) {
+            serviceUnavailable("VTN Flow Debugger");
+        }
+
+        return debugger;
+    }
+
+    /**
+     * Return the specified OSGi service bound to the specified container.
+     *
+     * @param cls            The targer class.
+     * @param containerName  The container name.
+     * @return  The OSGi service instance associated with the specified
+     *          container.
+     * @throws ServiceUnavailableException
+     *    Unable to get OSGi service.
+     * @throws ResourceNotFoundException
+     *    Invalid container name is specified.
+     */
+    private Object getContainerService(Class<?> cls, String containerName) {
         IContainerManager containerManager = (IContainerManager)ServiceHelper.
             getGlobalInstance(IContainerManager.class, this);
         if (containerManager == null) {
             serviceUnavailable("Container");
         }
 
-        boolean found = false;
-        List<String> containerNames = containerManager.getContainerNames();
-        for (String cName : containerNames) {
-            if (cName.trim().equalsIgnoreCase(containerName.trim())) {
-                found = true;
-            }
-        }
-
-        if (!found) {
+        if (!containerManager.doesContainerExist(containerName)) {
             String msg = containerName + ": " +
                 RestMessages.NOCONTAINER.toString();
             throw new ResourceNotFoundException(msg);
         }
 
-        IVTNManager mgr = (IVTNManager)ServiceHelper.
-            getInstance(IVTNManager.class, containerName, this);
-        if (mgr == null) {
-            serviceUnavailable("VTN Manager");
-        }
-
-        return mgr;
+        return ServiceHelper.getInstance(cls, containerName, this);
     }
 }

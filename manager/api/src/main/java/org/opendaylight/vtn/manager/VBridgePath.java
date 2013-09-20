@@ -84,7 +84,7 @@ public class VBridgePath extends VTenantPath {
     public int hashCode() {
         int h = super.hashCode();
         if (bridgeName != null) {
-            h += bridgeName.hashCode();
+            h ^= bridgeName.hashCode();
         }
 
         return h;

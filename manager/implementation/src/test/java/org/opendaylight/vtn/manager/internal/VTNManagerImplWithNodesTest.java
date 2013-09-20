@@ -26,7 +26,10 @@ import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.core.ConstructionException;
 import org.opendaylight.controller.sal.core.Edge;
@@ -66,6 +69,7 @@ import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.VTNManagerImplTestCommon.VTNManagerAwareStub;
+import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 
 /**
@@ -104,8 +108,11 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         Status st = vtnMgr.addBridgeInterface(ifpath2, new VInterfaceConfig(null, false));
 
+        vtnMgr.stopping();
+        vtnMgr.stop();
         vtnMgr.destroy();
         vtnMgr.init(c);
+        vtnMgr.clearDisabledNode();
 
         List<VTenant> tlist = null;
         List<VBridge> blist = null;
@@ -172,8 +179,11 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         assertEquals(vmap.getVlan(), vlconf.getVlan());
         assertEquals(vmap.getNode(), vlconf.getNode());
 
+        vtnMgr.stopping();
+        vtnMgr.stop();
         vtnMgr.destroy();
         vtnMgr.init(c);
+        vtnMgr.clearDisabledNode();
 
         pmap = null;
         vmap = null;
@@ -208,6 +218,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         assertEquals(vmap.getVlan(), vlconf.getVlan());
         assertEquals(vmap.getNode(), vlconf.getNode());
 
+        vtnMgr.stopping();
+        vtnMgr.stop();
         vtnMgr.destroy();
     }
 
@@ -773,6 +785,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                 pmconf.toString());
 
         NodeConnector nc = NodeConnectorCreator.createOFNodeConnector((short)16, cnode);
+        ISwitchManager swMgr = mgr.getSwitchManager();
+        propMap = swMgr.getNodeConnectorProps(nc);
         mgr.notifyNodeConnector(nc, UpdateType.CHANGED, propMap);
         checkNodeStatus(mgr, bpath, ifp, VNodeState.DOWN, VNodeState.DOWN,
                 pmconf.toString());
@@ -1042,6 +1056,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             checkMacTableEntry(mgr, bpath, false, msg);
         }
 
+        propMap = swMgr.getNodeConnectorProps(chgNc);
         mgr.notifyNodeConnector(chgNc, UpdateType.ADDED, propMap);
         if (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) {
             checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UP, msg);
@@ -1083,6 +1098,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         }
         flushMacTableEntry(mgr, bpath);
 
+        mgr.initInventory();
+        mgr.getNodeDB().remove(chgNode);
         mgr.notifyNode(chgNode, UpdateType.ADDED, propMap);
         if (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) {
             if (chgNode.equals(portMapNode)) {
@@ -1095,6 +1112,9 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         }
 
         if (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) {
+            mgr.initInventory();
+            mgr.getPortDB().remove(mapNc);
+            propMap = swMgr.getNodeConnectorProps(mapNc);
             mgr.notifyNodeConnector(mapNc, UpdateType.ADDED, propMap);
             checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UP, msg);
         }
@@ -1154,8 +1174,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                     msg + "," + edge.toString());
         }
 
-
-
+        // Reset inventory cache.
+        mgr.initInventory();
     }
 
 
@@ -1258,6 +1278,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         mgr.setSwitchManager(stub3);
         mgr.setTopologyManager(stub3);
         mgr.setRouting(stub0);
+        mgr.initInventory();
+        mgr.clearDisabledNode();
 
         // setup vbridge
         String tname = "vtn";
@@ -1279,6 +1301,10 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         ifplist.add(ifp2);
         createTenantAndBridgeAndInterface(mgr, tpath, bpathlist, ifplist);
 
+        // Append one more listener to catch port mapping change events.
+        VTNManagerAwareStub pmapAware = new VTNManagerAwareStub();
+        mgr.addVTNManagerAware(pmapAware);
+
         Node node0 = NodeCreator.createOFNode(0L);
         SwitchPort port = new SwitchPort(null, NodeConnector.NodeConnectorIDType.OPENFLOW, "10");
         PortMapConfig pmconf = new PortMapConfig(node0, port, (short) 0);
@@ -1292,6 +1318,10 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         pmconf = new PortMapConfig(node2, port, (short) 0);
         st = mgr.setPortMap(ifp2, pmconf);
         assertTrue(st.isSuccess());
+
+        // Ensure that no port mapping change event is delivered to awareStub.
+        pmapAware.checkPmapInfo(3, ifp2, pmconf, UpdateType.ADDED);
+        mgr.removeVTNManagerAware(pmapAware);
 
         mgr.addVTNManagerAware(awareStub);
         awareStub.checkVtnInfo(1, tpath, tname, UpdateType.ADDED);
@@ -1396,6 +1426,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         mgr.setSwitchManager(stubObj);
         mgr.setTopologyManager(stubObj);
         mgr.setRouting(stubObj);
+        mgr.initInventory();
+        mgr.clearDisabledNode();
 
         st = mgr.removeTenant(tpath);
         assertTrue(st.toString(), st.isSuccess());
@@ -2188,8 +2220,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
                 if (inNc != null &&
                     inNc.getType() == NodeConnector.NodeConnectorIDType.OPENFLOW) {
-
-                  assertEquals(emsg, PacketResult.KEEP_PROCESSING, result);
+                    assertEquals(emsg, PacketResult.KEEP_PROCESSING, result);
+                    expireFlows(mgr, stub);
 
                     MacAddressEntry entry = null;
                     try {
@@ -2343,6 +2375,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                     if (inNc != null &&
                         inNc.getType() == NodeConnector.NodeConnectorIDType.OPENFLOW) {
                         assertEquals(emsg, PacketResult.KEEP_PROCESSING, result);
+                        expireFlows(mgr, stub);
 
                         MacAddressEntry entry = null;
                         try {
@@ -2420,6 +2453,71 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
             Status st = mgr.flushMacEntries(bpath);
             assertTrue(st.isSuccess());
+        }
+    }
+
+    /**
+     * Expire flow entries.
+     *
+     * @param mgr    VTN Manager service.
+     * @param stub   Stub for OSGi service.
+     */
+    private void expireFlows(VTNManagerImpl mgr, TestStub stub) {
+        // Wait for all flow modifications to complete.
+        NopFlowTask task = new NopFlowTask(mgr);
+        mgr.postFlowTask(task);
+        assertSame(FlowModResult.SUCCEEDED, task.getResult(3000));
+
+        Set<FlowEntry> flows = stub.getFlowEntries();
+        if (!flows.isEmpty()) {
+            for (FlowEntry fent: flows) {
+                String flowName = fent.getFlowName();
+                if (flowName.endsWith("-0")) {
+                    Status status = stub.uninstallFlowEntry(fent);
+                    assertTrue(status.isSuccess());
+                    mgr.flowRemoved(fent.getNode(), fent.getFlow());
+                }
+            }
+
+            // Wait for all flow entries to be removed.
+            task = new NopFlowTask(mgr);
+            mgr.postFlowTask(task);
+            assertSame(FlowModResult.SUCCEEDED, task.getResult(3000));
+            assertSame(0, stub.getFlowEntries().size());
+        }
+    }
+
+    /**
+     * A dummy flow task to flush pending tasks.
+     */
+    private class NopFlowTask extends FlowModTask {
+        /**
+         * Construct a new task.
+         *
+         * @param mgr  VTN Manager service.
+         */
+        private NopFlowTask(VTNManagerImpl mgr) {
+            super(mgr);
+        }
+
+        /**
+         * Execute this task.
+         *
+         * @return  {@code true} is always returned.
+         */
+        @Override
+        protected boolean execute() {
+            return true;
+        }
+
+        /**
+         * Return a logger object for this class.
+         *
+         * @return  A logger object.
+         */
+        @Override
+        protected Logger getLogger() {
+            return LoggerFactory.getLogger(getClass());
         }
     }
 }

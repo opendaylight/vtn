@@ -155,9 +155,9 @@ public class VBridgeConfig implements Serializable {
      */
     @Override
     public int hashCode() {
-        int h = 229 + ageInterval;
+        int h = ageInterval;
         if (description != null) {
-            h += description.hashCode();
+            h ^= description.hashCode();
         }
 
         return h;

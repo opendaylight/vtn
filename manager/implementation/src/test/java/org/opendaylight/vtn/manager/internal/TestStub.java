@@ -29,11 +29,16 @@ import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
+import org.junit.Assert;
+
 import org.opendaylight.controller.clustering.services.CacheConfigException;
 import org.opendaylight.controller.clustering.services.CacheExistException;
 import org.opendaylight.controller.clustering.services.IClusterContainerServices;
 import org.opendaylight.controller.clustering.services.IClusterGlobalServices;
 import org.opendaylight.controller.clustering.services.IClusterServices.cacheMode;
+import org.opendaylight.controller.connectionmanager.ConnectionLocality;
+import org.opendaylight.controller.connectionmanager.ConnectionMgmtScheme;
+import org.opendaylight.controller.connectionmanager.IConnectionManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowConfig;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.forwardingrulesmanager.IForwardingRulesManager;
@@ -41,16 +46,19 @@ import org.opendaylight.controller.forwardingrulesmanager.PortGroupConfig;
 import org.opendaylight.controller.forwardingrulesmanager.PortGroupProvider;
 import org.opendaylight.controller.hosttracker.IfIptoHost;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
+import org.opendaylight.controller.sal.connection.ConnectionConstants;
+import org.opendaylight.controller.sal.core.Config;
 import org.opendaylight.controller.sal.core.ConstructionException;
 import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Host;
 import org.opendaylight.controller.sal.core.Name;
 import org.opendaylight.controller.sal.core.Node;
+import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.Path;
 import org.opendaylight.controller.sal.core.Property;
+import org.opendaylight.controller.sal.core.State;
 import org.opendaylight.controller.sal.core.UpdateType;
-import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IDataPacketService;
 import org.opendaylight.controller.sal.packet.LinkEncap;
@@ -61,6 +69,7 @@ import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.controller.sal.utils.Status;
+import org.opendaylight.controller.sal.utils.StatusCode;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
 import org.opendaylight.controller.switchmanager.SpanConfig;
 import org.opendaylight.controller.switchmanager.Subnet;
@@ -72,8 +81,8 @@ import org.opendaylight.controller.topologymanager.TopologyUserLinkConfig;
 import org.opendaylight.vtn.manager.SwitchPort;
 
 class TestStub implements IClusterGlobalServices, IClusterContainerServices,
-    ISwitchManager, ITopologyManager, IDataPacketService, IRouting, IForwardingRulesManager,
-    IfIptoHost {
+    ISwitchManager, ITopologyManager, IDataPacketService, IRouting,
+    IForwardingRulesManager, IfIptoHost, IConnectionManager {
 
     /*
      * stub mode
@@ -97,6 +106,10 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     private SubnetConfig savedSubnetConfig = null;
 
+    /**
+     * Installad flow entries.
+     */
+    private HashSet<FlowEntry>  flowEntries;
 
     /**
      * Constractor of TestStub
@@ -116,6 +129,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     private void setup() {
         transmittedData = new ArrayList<RawPacket>();
+        flowEntries = new HashSet<FlowEntry>();
         if (stubmode >= 2) {
             // create nodes
             nodes = new HashSet<Node>();
@@ -144,8 +158,12 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
                         if (propmap == null) {
                             propmap = new HashMap<String, Property>();
                         }
-                        Name prop = new Name(mapname);
-                        propmap.put("name", prop);
+                        Name nm = new Name(mapname);
+                        propmap.put(Name.NamePropName, nm);
+                        Config cf = new Config(Config.ADMIN_UP);
+                        propmap.put(Config.ConfigPropName, cf);
+                        State st = new State(State.EDGE_UP);
+                        propmap.put(State.StatePropName, st);
 
                         nodeConnectorProps.put(nc, propmap);
                     }
@@ -160,7 +178,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
             Node node0 = NodeCreator.createOFNode(Long.valueOf(0));
             for (Node srcnode: nodes) {
                 for (Node dstnode: nodes) {
-                    if(srcnode.equals(dstnode)) {
+                    if (srcnode.equals(dstnode)) {
                         continue;
                     }
                     if (stubmode == 3 &&
@@ -195,7 +213,8 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
                         try {
                             edge = new Edge(tail, head);
                         } catch (ConstructionException e) {
-                            edge = null;
+                            Assert.fail("Bad edge: tail=" + tail + ", head =" +
+                                        head);
                         }
                         edglist.add(edge);
                     } else if (stubmode == 3 &&
@@ -209,7 +228,8 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
                         try {
                             edge = new Edge(tail, head);
                         } catch (ConstructionException e) {
-                            edge = null;
+                            Assert.fail("Bad edge: tail=" + tail + ", head =" +
+                                        head);
                         }
                         edglist.add(edge);
                     } else if (stubmode == 3 &&
@@ -221,7 +241,8 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
                         try {
                             edge = new Edge(tail, head);
                         } catch (ConstructionException e) {
-                            edge = null;
+                            Assert.fail("Bad edge: tail=" + tail + ", head =" +
+                                        head);
                         }
                         edglist.add(edge);
 
@@ -230,7 +251,8 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
                         try {
                             edge = new Edge(tail, head);
                         } catch (ConstructionException e) {
-                            edge = null;
+                            Assert.fail("Bad edge: tail=" + tail + ", head =" +
+                                        head);
                         }
                         edglist.add(edge);
                     } else if (stubmode == 3 &&
@@ -242,7 +264,8 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
                            try {
                                edge = new Edge(tail, head);
                            } catch (ConstructionException e) {
-                               edge = null;
+                               Assert.fail("Bad edge: tail=" + tail +
+                                           ", head =" + head);
                            }
                            edglist.add(edge);
 
@@ -251,7 +274,8 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
                            try {
                                edge = new Edge(tail, head);
                            } catch (ConstructionException e) {
-                               edge = null;
+                               Assert.fail("Bad edge: tail=" + tail +
+                                           ", head =" + head);
                            }
                            edglist.add(edge);
                     }
@@ -263,6 +287,27 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
                 }
             }
         }
+    }
+
+    private Set<Node> getNodeSet(Set<Node> nodeSet) {
+        if (nodeSet == null) {
+            return new HashSet<Node>();
+        }
+        return new HashSet<Node>(nodeSet);
+    }
+
+    private Set<NodeConnector> getPortSet(Set<NodeConnector> ncSet) {
+        if (ncSet == null) {
+            return new HashSet<NodeConnector>();
+        }
+        return new HashSet<NodeConnector>(ncSet);
+    }
+
+    private Map<String, Property> getProperty(Map<String, Property> prop) {
+        if (prop == null) {
+            return new HashMap<String, Property>();
+        }
+        return new HashMap<String, Property>(prop);
     }
 
     // IClusterGlobalServices, IClusterContainerServices
@@ -447,10 +492,10 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
     @Override
     public Set<Node> getNodes() {
         if (stubmode >= 1) {
-            return nodes;
+            return getNodeSet(nodes);
         }
 
-        return null;
+        return getNodeSet(null);
     }
 
     @Override
@@ -481,31 +526,33 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
     @Override
     public Set<NodeConnector> getUpNodeConnectors(Node node) {
         if (stubmode >= 1) {
-            return nodeConnectors.get(node);
+            return getPortSet(nodeConnectors.get(node));
         }
-        return null;
+        return getPortSet(null);
     }
 
     @Override
     public Set<NodeConnector> getNodeConnectors(Node node) {
         if (stubmode >= 1) {
-            return nodeConnectors.get(node);
+            return getPortSet(nodeConnectors.get(node));
         }
-        return null;
+        return getPortSet(null);
     }
 
     @Override
     public Set<NodeConnector> getPhysicalNodeConnectors(Node node) {
         if (stubmode >= 1) {
-            return nodeConnectors.get(node);
+            return getPortSet(nodeConnectors.get(node));
         }
-
-        return null;
+        return getPortSet(null);
     }
 
     @Override
     public Map<String, Property> getNodeConnectorProps(NodeConnector nodeConnector) {
-        return null;
+        if (stubmode >= 1) {
+            return getProperty(nodeConnectorProps.get(nodeConnector));
+        }
+        return getProperty(null);
     }
 
     @Override
@@ -788,12 +835,18 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Status installFlowEntry(FlowEntry flow) {
-        return null;
+        if (flowEntries.add(flow)) {
+            return new Status(StatusCode.SUCCESS, null);
+        }
+        return new Status(StatusCode.CONFLICT, "Already installed");
     }
 
     @Override
     public Status uninstallFlowEntry(FlowEntry flow) {
-        return null;
+        if (flowEntries.remove(flow)) {
+            return new Status(StatusCode.SUCCESS, null);
+        }
+        return new Status(null, null);
     }
 
     @Override
@@ -1031,6 +1084,49 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
         return null;
     }
 
+    // IConnectionManager
+
+    @Override
+    public ConnectionMgmtScheme getActiveScheme() {
+        return ConnectionMgmtScheme.ANY_CONTROLLER_ONE_MASTER;
+    }
+
+    @Override
+    public Set<Node> getNodes(InetAddress controller) {
+        return null;
+    }
+
+    @Override
+    public Set<Node> getLocalNodes() {
+        return null;
+    }
+
+    @Override
+    public boolean isLocal(Node node) {
+        return true;
+    }
+
+    @Override
+    public ConnectionLocality getLocalityStatus(Node node) {
+        return ConnectionLocality.LOCAL;
+    }
+
+    @Override
+    public Status disconnect(Node node) {
+        return new Status(StatusCode.SUCCESS, null);
+    }
+
+    @Override
+    public Node connect (String connectionIdentifier,
+                         Map<ConnectionConstants, String> params) {
+        return null;
+    }
+
+    @Override
+    public Node connect(String type, String connectionIdentifier,
+                        Map<ConnectionConstants, String> params) {
+        return null;
+    }
 
     // additional method for control stub
     public void addEdge(Edge edge) {
@@ -1060,5 +1156,14 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
         ret.addAll(transmittedData);
         transmittedData.clear();
         return ret;
+    }
+
+    /**
+     * Return a set of installed flow entries.
+     *
+     * @return  A set of installed flow entries.
+     */
+    public Set<FlowEntry> getFlowEntries() {
+        return new HashSet<FlowEntry>(flowEntries);
     }
 }

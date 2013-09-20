@@ -91,6 +91,9 @@ public class VBridgeState implements Serializable {
      */
     @Override
     public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
         if (!(o instanceof VBridgeState)) {
             return false;
         }
@@ -110,7 +113,7 @@ public class VBridgeState implements Serializable {
      */
     @Override
     public int hashCode() {
-        return 641 + bridgeState.hashCode() + faultedPaths.hashCode();
+        return bridgeState.toString().hashCode() ^ faultedPaths.hashCode();
     }
 
     /**

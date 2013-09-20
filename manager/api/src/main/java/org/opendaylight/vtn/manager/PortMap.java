@@ -101,12 +101,12 @@ public class PortMap implements Serializable {
      */
     @Override
     public int hashCode() {
-        int h = 409;
+        int h = 0;
         if (config != null) {
-            h += config.hashCode();
+            h ^= config.hashCode();
         }
         if (nodeConnector != null) {
-            h += nodeConnector.hashCode();
+            h ^= nodeConnector.hashCode();
         }
 
         return h;

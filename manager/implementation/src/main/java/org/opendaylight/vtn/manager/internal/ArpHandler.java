@@ -456,27 +456,18 @@ public class ArpHandler {
      * @param subnet   A subnet to which the target belongs.
      */
     private void floodArpRequest(InetAddress target, Subnet subnet) {
-        ISwitchManager swMgr = vtnManager.getSwitchManager();
         Set<NodeConnector> ncSet = new HashSet<NodeConnector>();
         if (subnet.isFlatLayer2()) {
-            Set<Node> nodeSet = swMgr.getNodes();
-            if (nodeSet == null) {
-                return;
-            }
-            for (Node node: nodeSet) {
-                Set<NodeConnector> up = swMgr.getUpNodeConnectors(node);
-                if (up != null) {
-                    ncSet.addAll(up);
-                }
-            }
+            vtnManager.collectUpEdgePorts(ncSet);
         } else {
             for (NodeConnector nc: subnet.getNodeConnectors()) {
-                if (swMgr.isNodeConnectorEnabled(nc)) {
+                if (vtnManager.isEnabled(nc) && vtnManager.isEdgePort(nc)) {
                     ncSet.add(nc);
                 }
             }
         }
 
+        ISwitchManager swMgr = vtnManager.getSwitchManager();
         byte[] src = swMgr.getControllerMAC();
         byte[] dst = {-1, -1, -1, -1, -1, -1};
         byte[] spa = subnet.getNetworkAddress().getAddress();
@@ -484,9 +475,7 @@ public class ArpHandler {
         short vlan = subnet.getVlan();
 
         for (NodeConnector nc: ncSet) {
-            if (vtnManager.isEdgePort(nc)) {
-                sendArp(nc, ARP.REQUEST, src, dst, spa, tpa, vlan);
-            }
+            sendArp(nc, ARP.REQUEST, src, dst, spa, tpa, vlan);
         }
     }
 
@@ -571,14 +560,12 @@ public class ArpHandler {
                 LOG.debug("{}: Subnet not found: addr={}",
                           vtnManager.getContainerName(), addr);
             }
-        } else {
-            if (subnet.getVlan() != vlan) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("{}: VLAN ID does not match: subnet={}, vlan={}",
-                              vtnManager.getContainerName(), subnet, vlan);
-                }
-                subnet = null;
+        } else if (subnet.getVlan() != vlan) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}: VLAN ID does not match: subnet={}, vlan={}",
+                          vtnManager.getContainerName(), subnet, vlan);
             }
+            subnet = null;
         }
 
         return subnet;

@@ -90,7 +90,7 @@ public class VTenant extends VTenantConfig {
     public int hashCode() {
         int h = super.hashCode();
         if (name != null) {
-            h += name.hashCode();
+            h ^= name.hashCode();
         }
 
         return h;

@@ -146,7 +146,7 @@ public class MacAddressEntry implements Serializable {
      */
     @Override
     public int hashCode() {
-        int h = 367 + address.hashCode() + vlan + nodeConnector.hashCode() +
+        int h = address.hashCode() + vlan ^ nodeConnector.hashCode() ^
             inetAddresses.hashCode();
 
         return h;

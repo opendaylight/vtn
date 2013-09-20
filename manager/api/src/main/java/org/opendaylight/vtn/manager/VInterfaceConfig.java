@@ -118,12 +118,12 @@ public class VInterfaceConfig implements Serializable {
      */
     @Override
     public int hashCode() {
-        int h = 199;
+        int h = 0;
         if (description != null) {
-            h += description.hashCode();
+            h ^= description.hashCode();
         }
         if (enabled != null) {
-            h += enabled.hashCode();
+            h ^= enabled.hashCode();
         }
 
         return h;

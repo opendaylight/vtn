@@ -71,9 +71,9 @@ public class VTenantPath implements Serializable {
      */
     @Override
     public int hashCode() {
-        int h = 151;
+        int h = 0;
         if (tenantName != null) {
-            h += tenantName.hashCode();
+            h ^= tenantName.hashCode();
         }
 
         return h;

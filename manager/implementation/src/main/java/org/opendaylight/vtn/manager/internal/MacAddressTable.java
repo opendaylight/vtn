@@ -293,6 +293,7 @@ public class MacAddressTable {
                 list.add(tent.getEntry(mac.longValue()));
             }
         }
+        list.trimToSize();
 
         return list;
     }
@@ -349,7 +350,7 @@ public class MacAddressTable {
         }
 
         if (LOG.isDebugEnabled()) {
-            String strmac = HexEncode.longToHexString(key.longValue());
+            String strmac = VTNManagerImpl.formatMacAddress(key.longValue());
             LOG.debug("{}: removeEntry: MAC address removed: {}, {}",
                       tableName, strmac, tent);
         }
@@ -378,7 +379,7 @@ public class MacAddressTable {
             if (tnode.equals(node)) {
                 if (LOG.isDebugEnabled()) {
                     long mac = entry.getKey().longValue();
-                    String strmac = HexEncode.longToHexString(mac);
+                    String strmac = VTNManagerImpl.formatMacAddress(mac);
                     LOG.debug("{}: MAC address removed: {}, {}",
                               tableName, strmac, tent);
                 }
@@ -403,7 +404,7 @@ public class MacAddressTable {
                 (node == null || node.equals(tent.getPort().getNode()))) {
                 if (LOG.isDebugEnabled()) {
                     long mac = entry.getKey().longValue();
-                    String strmac = HexEncode.longToHexString(mac);
+                    String strmac = VTNManagerImpl.formatMacAddress(mac);
                     LOG.debug("{}: MAC address removed: {}, {}",
                               tableName, strmac, tent);
                 }
@@ -427,7 +428,7 @@ public class MacAddressTable {
             if (tport.equals(nc)) {
                 if (LOG.isDebugEnabled()) {
                     long mac = entry.getKey().longValue();
-                    String strmac = HexEncode.longToHexString(mac);
+                    String strmac = VTNManagerImpl.formatMacAddress(mac);
                     LOG.debug("{}: MAC address removed: {}, {}",
                               tableName, strmac, tent);
                 }
@@ -451,7 +452,7 @@ public class MacAddressTable {
             if (tent.getVlan() == vlan && nc.equals(tent.getPort())) {
                 if (LOG.isDebugEnabled()) {
                     long mac = entry.getKey().longValue();
-                    String strmac = HexEncode.longToHexString(mac);
+                    String strmac = VTNManagerImpl.formatMacAddress(mac);
                     LOG.debug("{}: MAC address removed: {}, {}",
                               tableName, strmac, tent);
                 }
@@ -524,7 +525,7 @@ public class MacAddressTable {
                 // Remove this entry.
                 if (LOG.isDebugEnabled()) {
                     long mac = entry.getKey().longValue();
-                    String strmac = HexEncode.longToHexString(mac);
+                    String strmac = VTNManagerImpl.formatMacAddress(mac);
                     LOG.debug("{}: MAC address aged out: {}, {}",
                               tableName, strmac, tent);
                 }

@@ -210,9 +210,9 @@ public class VTenantConfig implements Serializable {
      */
     @Override
     public int hashCode() {
-        int h = 127 + idleTimeout + hardTimeout;
+        int h = idleTimeout ^ hardTimeout;
         if (description != null) {
-            h += description.hashCode();
+            h ^= description.hashCode();
         }
 
         return h;

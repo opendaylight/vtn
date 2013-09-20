@@ -31,9 +31,9 @@ import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
+import org.opendaylight.vtn.manager.internal.VTNThreadData;
 
 import org.opendaylight.controller.sal.core.Edge;
-import org.opendaylight.controller.sal.core.Name;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
@@ -53,7 +53,7 @@ import org.opendaylight.controller.switchmanager.ISwitchManager;
  * </p>
  */
 public class VBridgeIfImpl implements VBridgeNode, Serializable {
-    private static final long serialVersionUID = 1;
+    private static final long serialVersionUID = 4919208115256402156L;
 
     /**
      * Logger instance.
@@ -231,6 +231,11 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
 
             ist.setState(state);
             if (ist.isDirty()) {
+                if (state != VNodeState.UP) {
+                    // Purge all VTN flows related to this interface.
+                    VTNThreadData.removeFlows(mgr, ifPath);
+                }
+
                 db.put(ifPath, ist);
             }
         } else {
@@ -239,7 +244,7 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
 
         VNodeState pstate = ist.getPortState();
         VInterface viface = new VInterface(getName(), state, pstate, iconf);
-        mgr.notifyChange(ifPath, viface, UpdateType.CHANGED);
+        mgr.enqueueEvent(ifPath, viface, UpdateType.CHANGED);
         return true;
     }
 
@@ -325,9 +330,7 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
         IVTNResourceManager resMgr = mgr.getResourceManager();
 
         // Search for the node connector specified by the configuration.
-        ISwitchManager swMgr = mgr.getSwitchManager();
-        Set<Node> nodeSet = swMgr.getNodes();
-        NodeConnector nc = findNodeConnector(mgr, nodeSet, node, port);
+        NodeConnector nc = findNodeConnector(mgr, node, port);
         if (nc != null) {
             if (nc.equals(mapped) && oldconf.getVlan() == vlan) {
                 // No need to change switch port mapping.
@@ -352,13 +355,16 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
         if (mapped != null) {
             PortVlan pvlan = new PortVlan(mapped, oldconf.getVlan());
             resMgr.unregisterPortMap(pvlan);
+
+            // Purge all VTN flows related to this interface.
+            VTNThreadData.removeFlows(mgr, ifPath);
         }
 
         // Update the state of the bridge interface.
         portMapConfig = pmconf;
         ist.setMappedPort(nc);
         PortMap pmap = new PortMap(pmconf, nc);
-        mgr.notifyChange(ifPath, pmap, utype);
+        mgr.enqueueEvent(ifPath, pmap, utype);
 
         VNodeState state;
         if (isEnabled()) {
@@ -374,7 +380,7 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
             VNodeState pstate = ist.getPortState();
             VInterface viface = new VInterface(getName(), state, pstate,
                                                ifConfig);
-            mgr.notifyChange(ifPath, viface, UpdateType.CHANGED);
+            mgr.enqueueEvent(ifPath, viface, UpdateType.CHANGED);
         }
 
         return state;
@@ -401,9 +407,7 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
         if (pmconf != null) {
             Node node = pmconf.getNode();
             SwitchPort port = pmconf.getPort();
-            ISwitchManager swMgr = mgr.getSwitchManager();
-            Set<Node> nodeSet = swMgr.getNodes();
-            NodeConnector nc = findNodeConnector(mgr, nodeSet, node, port);
+            NodeConnector nc = findNodeConnector(mgr, node, port);
 
             // Try to establish port mapping.
             if (nc != null && mapPort(mgr, db, ist, nc, false)) {
@@ -677,9 +681,11 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
     /**
      * Destroy the virtual bridge interface.
      *
-     * @param mgr  VTN manager service.
+     * @param mgr            VTN manager service.
+     * @param bridgeDestroy  {@code true} is specified if the parent bridge is
+     *                       being destroyed.
      */
-    void destroy(VTNManagerImpl mgr) {
+    void destroy(VTNManagerImpl mgr, boolean bridgeDestroy) {
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         VBridgeIfState ist = getIfState(mgr);
         VNodeState state = ist.getState();
@@ -700,11 +706,16 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
                 }
             }
 
-            mgr.notifyChange(ifPath, pmap, UpdateType.REMOVED);
+            mgr.enqueueEvent(ifPath, pmap, UpdateType.REMOVED);
+        }
+
+        if (!bridgeDestroy) {
+            // Purge all VTN flows related to this interface.
+            VTNThreadData.removeFlows(mgr, ifPath);
         }
 
         db.remove(ifPath);
-        mgr.notifyChange(ifPath, viface, UpdateType.REMOVED);
+        mgr.enqueueEvent(ifPath, viface, UpdateType.REMOVED);
 
         // Unlink parent for GC.
         parent = null;
@@ -802,11 +813,16 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
 
         ist.setState(state);
         if (ist.isDirty()) {
+            if (state != VNodeState.UP) {
+                // Purge all VTN flows related to this interface.
+                VTNThreadData.removeFlows(mgr, ifPath);
+            }
+
             db.put(ifPath, ist);
             VNodeState pstate = ist.getPortState();
             VInterface viface = new VInterface(getName(), state, pstate,
                                                ifConfig);
-            mgr.notifyChange(ifPath, viface, UpdateType.CHANGED);
+            mgr.enqueueEvent(ifPath, viface, UpdateType.CHANGED);
         }
     }
 
@@ -873,9 +889,7 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
             return VNodeState.UNKNOWN;
         }
 
-        ISwitchManager swMgr = mgr.getSwitchManager();
-        return (swMgr.isNodeConnectorEnabled(nc))
-            ? VNodeState.UP : VNodeState.DOWN;
+        return (mgr.isEnabled(nc)) ? VNodeState.UP : VNodeState.DOWN;
     }
 
     /**
@@ -902,7 +916,7 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
 
             portMapConfig = null;
             PortMap pmap = new PortMap(pmconf, mapped);
-            mgr.notifyChange(ifPath, pmap, UpdateType.REMOVED);
+            mgr.enqueueEvent(ifPath, pmap, UpdateType.REMOVED);
             setState(mgr, db, ist, VNodeState.UNKNOWN);
         }
     }
@@ -962,16 +976,14 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
      * Find a node connector that matches the specified condition.
      *
      * @param mgr      VTN Manager service.
-     * @param nodeSet  A set of all nodes in the container.
      * @param node     Node associated with the target switch.
      * @param port     Switch port configuration.
      * @return  A node connector that matches the specified condition.
      *          {@code null} is returned if not found.
      */
-    private NodeConnector findNodeConnector(VTNManagerImpl mgr,
-                                            Set<Node> nodeSet, Node node,
+    private NodeConnector findNodeConnector(VTNManagerImpl mgr, Node node,
                                             SwitchPort port) {
-        if (nodeSet == null || !nodeSet.contains(node)) {
+        if (!mgr.exists(node)) {
             return null;
         }
 
@@ -998,8 +1010,8 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
         }
 
         assert target != null;
-        Set<NodeConnector> ncSet = swMgr.getPhysicalNodeConnectors(node);
-        if (ncSet == null || !ncSet.contains(target)) {
+        PortProperty pp = mgr.getPortProperty(target);
+        if (pp == null) {
             target = null;
         }
         return target;
@@ -1017,8 +1029,8 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
      */
     private boolean portMatch(VTNManagerImpl mgr, PortMapConfig pmconf,
                               NodeConnector nc) {
-        ISwitchManager swMgr = mgr.getSwitchManager();
-        if (swMgr.isSpecial(nc)) {
+        PortProperty pp = mgr.getPortProperty(nc);
+        if (pp == null) {
             // Non-physical port cannot be mapped.
             return false;
         }
@@ -1038,8 +1050,7 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
 
         String name = port.getName();
         if (name != null) {
-            Name nm = (Name)swMgr.getNodeConnectorProp(nc, Name.NamePropName);
-            if (nm == null || !name.equals(nm.getValue())) {
+            if (!name.equals(pp.getName())) {
                 return false;
             }
         }
@@ -1073,7 +1084,7 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
             db.put(ifPath, ist);
             if (notify) {
                 PortMap pmap = new PortMap(portMapConfig, nc);
-                mgr.notifyChange(ifPath, pmap, UpdateType.CHANGED);
+                mgr.enqueueEvent(ifPath, pmap, UpdateType.CHANGED);
             }
             return true;
         }
@@ -1085,6 +1096,11 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
 
     /**
      * Unmap the physical switch port currently mapped.
+     *
+     * <p>
+     *   Note that this method never purges flow entries related to the mapped
+     *   switch port.
+     * </p>
      *
      * @param mgr   VTN Manager service.
      * @param db    Virtual node state DB.
@@ -1105,7 +1121,7 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
         db.put(ifPath, ist);
         if (path != null) {
             PortMap pmap = new PortMap(portMapConfig, null);
-            mgr.notifyChange(path, pmap, UpdateType.CHANGED);
+            mgr.enqueueEvent(path, pmap, UpdateType.CHANGED);
         }
     }
 
@@ -1145,6 +1161,9 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
      */
     @Override
     public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
         if (!(o instanceof VBridgeIfImpl)) {
             return false;
         }
@@ -1170,9 +1189,7 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
      */
     @Override
     public int hashCode() {
-        int h = ifPath.hashCode() + getVInterfaceConfig().hashCode();
-
-        return h * 11;
+        return ifPath.hashCode() ^ getVInterfaceConfig().hashCode();
     }
 
     // VBridgeNode

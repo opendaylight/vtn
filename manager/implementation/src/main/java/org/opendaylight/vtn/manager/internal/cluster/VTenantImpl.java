@@ -35,6 +35,7 @@ import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
+import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantConfig;
@@ -45,6 +46,7 @@ import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
 import org.opendaylight.vtn.manager.internal.MapType;
 import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
 import org.opendaylight.controller.sal.core.Node;
@@ -68,7 +70,7 @@ import org.opendaylight.controller.sal.utils.StatusCode;
  * </p>
  */
 public class VTenantImpl implements Serializable {
-    private static final long serialVersionUID = 1;
+    private static final long serialVersionUID = 919682502181006074L;
 
     /**
      * Logger instance.
@@ -228,7 +230,7 @@ public class VTenantImpl implements Serializable {
         checkConfig(tconf);
         tenantConfig = tconf;
         VTenant vtenant = new VTenant(tenantName, tconf);
-        mgr.notifyChange(path, vtenant, UpdateType.CHANGED);
+        mgr.enqueueEvent(path, vtenant, UpdateType.CHANGED);
         return true;
     }
 
@@ -264,7 +266,7 @@ public class VTenantImpl implements Serializable {
             }
 
             VBridge vbridge = vbr.getVBridge(mgr);
-            mgr.notifyChange(path, vbridge, UpdateType.ADDED);
+            mgr.enqueueEvent(path, vbridge, UpdateType.ADDED);
 
             // Create a MAC address table for this bridge.
             vbr.initMacTableAging(mgr);
@@ -352,6 +354,7 @@ public class VTenantImpl implements Serializable {
             for (VBridgeImpl vbr: vBridges.values()) {
                 list.add(vbr.getVBridge(mgr));
             }
+            list.trimToSize();
         } finally {
             rdlock.unlock();
         }
@@ -737,7 +740,7 @@ public class VTenantImpl implements Serializable {
         }
 
         String msg = "Failed to save tenant configuration";
-        LOG.error("{}.{}: {}: {}", containerName, tenantName, msg, status);
+        LOG.error("{}:{}: {}: {}", containerName, tenantName, msg, status);
         return new Status(StatusCode.INTERNALERROR, msg);
     }
 
@@ -755,6 +758,9 @@ public class VTenantImpl implements Serializable {
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
+            // Create flow database for this tenant.
+            mgr.createTenantFlowDB(tenantName);
+
             for (VBridgeImpl vbr: vBridges.values()) {
                 vbr.resume(mgr);
             }
@@ -774,6 +780,20 @@ public class VTenantImpl implements Serializable {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
+            if (type == UpdateType.ADDED) {
+                // Collect garbages in the VTN flow database.
+                VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
+                if (fdb != null) {
+                    fdb.nodeAdded(mgr, node);
+                }
+            } else if (type == UpdateType.REMOVED) {
+                // Uninstall VTN flows related to the removed node.
+                VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
+                if (fdb != null) {
+                    fdb.removeFlows(mgr, node);
+                }
+            }
+
             for (VBridgeImpl vbr: vBridges.values()) {
                 vbr.notifyNode(mgr, node, type);
             }
@@ -792,11 +812,26 @@ public class VTenantImpl implements Serializable {
      */
     public void notifyNodeConnector(VTNManagerImpl mgr, NodeConnector nc,
                                     UpdateType type) {
+        VNodeState pstate;
+        if (type == UpdateType.REMOVED) {
+            pstate = VNodeState.UNKNOWN;
+        } else {
+            // Determine whether the port is up or not.
+            pstate = (mgr.isEnabled(nc)) ? VNodeState.UP : VNodeState.DOWN;
+        }
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
+            if (pstate != VNodeState.UP) {
+                // Uninstall VTN flows related to the switch port.
+                VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
+                if (fdb != null) {
+                    fdb.removeFlows(mgr, nc);
+                }
+            }
             for (VBridgeImpl vbr: vBridges.values()) {
-                vbr.notifyNodeConnector(mgr, nc, type);
+                vbr.notifyNodeConnector(mgr, nc, pstate, type);
             }
         } finally {
             rdlock.unlock();
@@ -928,6 +963,7 @@ public class VTenantImpl implements Serializable {
             for (VBridgeImpl vbr: vBridges.values()) {
                 PacketResult res = vbr.receive(mgr, type, pctx);
                 if (res != PacketResult.IGNORED) {
+                    pctx.purgeObsoleteFlow(mgr, tenantName);
                     return res;
                 }
             }
@@ -991,6 +1027,9 @@ public class VTenantImpl implements Serializable {
      */
     @Override
     public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
         if (!(o instanceof VTenantImpl)) {
             return false;
         }
@@ -1023,7 +1062,7 @@ public class VTenantImpl implements Serializable {
      */
     @Override
     public int hashCode() {
-        int h = containerName.hashCode() + tenantName.hashCode() +
+        int h = containerName.hashCode() ^ tenantName.hashCode() ^
             getVTenantConfig().hashCode();
 
         Lock rdlock = rwLock.readLock();
@@ -1034,7 +1073,7 @@ public class VTenantImpl implements Serializable {
             rdlock.unlock();
         }
 
-        return h * 13;
+        return h;
     }
 
     /**

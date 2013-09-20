@@ -85,7 +85,7 @@ public class VBridgeIfPath extends VBridgePath {
     public int hashCode() {
         int h = super.hashCode();
         if (ifName != null) {
-            h += ifName.hashCode();
+            h ^= ifName.hashCode();
         }
 
         return h;

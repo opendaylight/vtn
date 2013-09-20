@@ -27,6 +27,7 @@ import org.codehaus.enunciate.jaxrs.ResponseCode;
 import org.codehaus.enunciate.jaxrs.StatusCodes;
 import org.codehaus.enunciate.jaxrs.TypeHint;
 
+import org.opendaylight.vtn.manager.IVTNFlowDebugger;
 import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenant;
@@ -214,6 +215,44 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
         IVTNManager mgr = getVTNManager(containerName);
         VTenantPath path = new VTenantPath(tenantName);
         Status status = mgr.removeTenant(path);
+        if (status.isSuccess()) {
+            return Response.ok().build();
+        }
+
+        throw getException(status);
+    }
+
+    /**
+     * Remove all flow entries in the specified virtual tenant.
+     *
+     * <p>
+     *   This interface is provided only for debugging purpose, and is
+     *   available only if the system property {@code vtn.debug} is defined
+     *   as {@code true}.
+     * </p>
+     *
+     * @param containerName  The name of the container.
+     * @param tenantName     The name of the virtual tenant.
+     * @return Response as dictated by the HTTP Response code.
+     */
+    @Path("{tenantName}/flows")
+    @DELETE
+    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @StatusCodes({
+            @ResponseCode(code = 200, condition = "Operation completed successfully"),
+            @ResponseCode(code = 401, condition = "Authentication failed"),
+            @ResponseCode(code = 404, condition = "The specified resource does not exist"),
+            @ResponseCode(code = 406, condition = "Cannot operate on Default Container when other Containers are active"),
+            @ResponseCode(code = 500, condition = "Failed to remove flow entries. Failure Reason included in HTTP Error response"),
+            @ResponseCode(code = 503, condition = "One or more of Controller service is unavailable") })
+    public Response removeAllFlows(
+            @PathParam("containerName") String containerName,
+            @PathParam("tenantName") String tenantName) {
+        checkPrivilege(containerName, Privilege.WRITE);
+
+        IVTNFlowDebugger debugger = getVTNFlowDebugger(containerName);
+        VTenantPath path = new VTenantPath(tenantName);
+        Status status = debugger.removeAllFlows(path);
         if (status.isSuccess()) {
             return Response.ok().build();
         }

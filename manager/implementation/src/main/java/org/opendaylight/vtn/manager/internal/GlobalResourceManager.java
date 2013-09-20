@@ -9,11 +9,15 @@
 
 package org.opendaylight.vtn.manager.internal;
 
+import java.net.InetAddress;
+import java.util.List;
 import java.util.Set;
 import java.util.EnumSet;
-import java.util.Iterator;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,12 +32,14 @@ import org.opendaylight.controller.clustering.services.CacheConfigException;
 import org.opendaylight.controller.clustering.services.CacheExistException;
 import org.opendaylight.controller.clustering.services.IClusterGlobalServices;
 import org.opendaylight.controller.clustering.services.IClusterServices;
+import org.opendaylight.controller.clustering.services.ICoordinatorChangeAware;
 
 /**
  * {@code GlobalResourceManager} class manages global resources used by the
  * VTN Manager.
  */
-public class GlobalResourceManager implements IVTNResourceManager {
+public class GlobalResourceManager
+    implements IVTNResourceManager, ICoordinatorChangeAware {
     /**
      * Logger instance.
      */
@@ -56,6 +62,24 @@ public class GlobalResourceManager implements IVTNResourceManager {
     private final static String  CACHE_PORTMAP = "vtn.portmap";
 
     /**
+     * The maximum number of threads in the thread pool for asynchronous tasks.
+     */
+    private final static int  THREAD_POOL_MAXSIZE = 1;
+    // REVISIT: Pool size will be expanded later.
+
+    /**
+     * The number of milliseconds to keep threads in the thread pool for
+     * asynchronous tasks.
+     */
+    private final static int  THREAD_POOL_KEEPALIVE = 10000;
+
+    /**
+     * The number of milliseconds to wait for completion of thread pool
+     * shutdown.
+     */
+    private final static long  THREAD_POOL_SHUTDOWN = 5000;
+
+    /**
      * VLAN IDs mapped to the virtual L2 bridge.
      */
     private ConcurrentMap<Short, String> vlanMaps;
@@ -76,6 +100,16 @@ public class GlobalResourceManager implements IVTNResourceManager {
     private Timer  globalTimer;
 
     /**
+     * The global thread pool to execute commands.
+     */
+    private VTNThreadPool  asyncThreadPool;
+
+    /**
+     * The number of remote cluster nodes.
+     */
+    private int  remoteClusterSize;
+
+    /**
      * Function called by the dependency manager when all the required
      * dependencies are satisfied.
      *
@@ -83,7 +117,14 @@ public class GlobalResourceManager implements IVTNResourceManager {
      */
     void init(Component c) {
         createCaches();
+
+        remoteClusterSize = getRawRemoteClusterSize(clusterService);
+        LOG.debug("The number of remote cluster nodes: {}", remoteClusterSize);
+
         globalTimer = new Timer("VTN Global Timer");
+        asyncThreadPool =
+            new VTNThreadPool("VTN Async Thread", THREAD_POOL_MAXSIZE,
+                              THREAD_POOL_KEEPALIVE);
     }
 
     /**
@@ -94,6 +135,17 @@ public class GlobalResourceManager implements IVTNResourceManager {
     void destroy() {
         if (globalTimer != null) {
             globalTimer.cancel();
+            globalTimer = null;
+        }
+
+        if (asyncThreadPool != null) {
+            asyncThreadPool.shutdown();
+            if (!asyncThreadPool.join(THREAD_POOL_SHUTDOWN)) {
+                LOG.error("Async thread pool did not terminate within {} msec",
+                          THREAD_POOL_SHUTDOWN);
+                asyncThreadPool.terminate();
+            }
+            asyncThreadPool = null;
         }
     }
 
@@ -125,12 +177,14 @@ public class GlobalResourceManager implements IVTNResourceManager {
     private void createCaches() {
         IClusterGlobalServices cluster = clusterService;
         if (cluster == null) {
-            LOG.error("Cluster service is not yet registered.");
+            // Create dummy caches.
+            vlanMaps = new ConcurrentHashMap<Short, String>();
+            portMaps = new ConcurrentHashMap<PortVlan, String>();
             return;
         }
 
         Set<IClusterServices.cacheMode> cmode =
-            EnumSet.of(IClusterServices.cacheMode.NON_TRANSACTIONAL);
+            EnumSet.of(IClusterServices.cacheMode.TRANSACTIONAL);
         createCache(cluster, CACHE_VLANMAP, cmode);
         createCache(cluster, CACHE_PORTMAP, cmode);
 
@@ -181,6 +235,32 @@ public class GlobalResourceManager implements IVTNResourceManager {
 
         return cache;
     }
+
+    /**
+     * Derive the number of remote cluster nodes from the cluster service.
+     *
+     * @param cs  Cluster global service.
+     * @return    The number of remote cluster nodes.
+     */
+    private int getRawRemoteClusterSize(IClusterGlobalServices cs) {
+        if (cs == null) {
+            return 0;
+        }
+
+        List<InetAddress> controllers = cs.getClusteredControllers();
+        if (controllers == null) {
+            return 0;
+        }
+
+        int rsize = controllers.size() - 1;
+        if (rsize < 0) {
+            rsize = 0;
+        }
+
+        return rsize;
+    }
+
+    // IVTNResourceManager
 
     /**
      * Register VLAN ID for VLAN mapping.
@@ -258,6 +338,7 @@ public class GlobalResourceManager implements IVTNResourceManager {
      *          mapped to the virtual interface.
      *          Otherwise {@code false} is returned.
      */
+    @Override
     public boolean isPortMapped(PortVlan pvlan) {
         return portMaps.containsKey(pvlan);
     }
@@ -273,6 +354,39 @@ public class GlobalResourceManager implements IVTNResourceManager {
     }
 
     /**
+     * Run the given command asynchronously.
+     *
+     * <p>
+     *   Note that this method exucutes the given command using a thread pool
+     *   which has multiple threads. So the order of the command execution is
+     *   unspecified.
+     * </p>
+     *
+     * @param command  The command to be executed.
+     * @return  {@code true} is returned if the specified task was submitted.
+     *          {@code false} is returned if the specified tas was rejected.
+     */
+    @Override
+    public boolean executeAsync(Runnable command) {
+        return asyncThreadPool.execute(command);
+    }
+
+
+    /**
+     * Return the number of remote cluster nodes.
+     *
+     * <p>
+     *   Zero is returned if no remote node was found in the cluster.
+     * </p>
+     *
+     * @return  The number of remote cluster nodes.
+     */
+    @Override
+    public synchronized int getRemoteClusterSize() {
+        return remoteClusterSize;
+    }
+
+    /**
      * Clean up resources associated with the given container.
      *
      * @param containerName  The name of the container.
@@ -283,20 +397,44 @@ public class GlobalResourceManager implements IVTNResourceManager {
 
         StringBuilder builder = new StringBuilder(containerName);
         String prefix = builder.append(MAPKEY_SEPARATOR).toString();
-        for (Iterator<String> it = vlanMaps.values().iterator();
-             it.hasNext();) {
-            String name = it.next();
+        Set<Short> vlanSet = new HashSet<Short>();
+        for (Map.Entry<Short, String> entry: vlanMaps.entrySet()) {
+            String name = entry.getValue();
             if (name.startsWith(prefix)) {
-                it.remove();
+                vlanSet.add(entry.getKey());
             }
         }
+        for (Short vlan: vlanSet) {
+            vlanMaps.remove(vlan);
+        }
 
-        for (Iterator<String> it = portMaps.values().iterator();
-             it.hasNext();) {
-            String name = it.next();
+        Set<PortVlan> pvSet = new HashSet<PortVlan>();
+        for (Map.Entry<PortVlan, String> entry: portMaps.entrySet()) {
+            String name = entry.getValue();
             if (name.startsWith(prefix)) {
-                it.remove();
+                pvSet.add(entry.getKey());
             }
+        }
+        for (PortVlan pvlan: pvSet) {
+            portMaps.remove(pvlan);
+        }
+    }
+
+    // ICoordinatorChangeAware
+
+    /**
+     * Function that will be called when there is the event of
+     * coordinator change in the cluster.
+     */
+    @Override
+    public synchronized void coordinatorChanged() {
+        int rsize = getRawRemoteClusterSize(clusterService);
+        if (rsize != remoteClusterSize) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("The number of remote cluster nodes: {} -> {}",
+                          remoteClusterSize, rsize);
+            }
+            remoteClusterSize = rsize;
         }
     }
 }

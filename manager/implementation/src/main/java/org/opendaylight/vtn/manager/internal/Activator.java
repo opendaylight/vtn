@@ -17,20 +17,26 @@ import java.util.HashSet;
 
 import org.apache.felix.dm.Component;
 
+import org.opendaylight.vtn.manager.IVTNFlowDebugger;
 import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.IVTNManagerAware;
 import org.opendaylight.vtn.manager.IVTNModeListener;
 
 import org.opendaylight.controller.clustering.services.ICacheUpdateAware;
-import org.opendaylight.controller.clustering.services.IClusterContainerServices;
+import org.opendaylight.controller.clustering.services.
+    IClusterContainerServices;
 import org.opendaylight.controller.clustering.services.IClusterGlobalServices;
+import org.opendaylight.controller.clustering.services.ICoordinatorChangeAware;
 import org.opendaylight.controller.configuration.IConfigurationContainerAware;
-import org.opendaylight.controller.forwardingrulesmanager.IForwardingRulesManager;
+import org.opendaylight.controller.connectionmanager.IConnectionManager;
+import org.opendaylight.controller.forwardingrulesmanager.
+    IForwardingRulesManager;
 import org.opendaylight.controller.hosttracker.IfHostListener;
 import org.opendaylight.controller.hosttracker.IfIptoHost;
 import org.opendaylight.controller.hosttracker.hostAware.IHostFinder;
 import org.opendaylight.controller.sal.core.ComponentActivatorAbstractBase;
 import org.opendaylight.controller.sal.core.IContainerListener;
+import org.opendaylight.controller.sal.flowprogrammer.IFlowProgrammerListener;
 import org.opendaylight.controller.sal.packet.IDataPacketService;
 import org.opendaylight.controller.sal.packet.IListenDataPacket;
 import org.opendaylight.controller.sal.routing.IListenRoutingUpdates;
@@ -94,7 +100,11 @@ public class Activator extends ComponentActivatorAbstractBase {
     public void configureGlobalInstance(Component c, Object imp) {
         if (imp.equals(GlobalResourceManager.class)) {
             // Export the services.
-            c.setInterface(IVTNResourceManager.class.getName(), null);
+            String[] classes = {
+                IVTNResourceManager.class.getName(),
+                ICoordinatorChangeAware.class.getName(),
+            };
+            c.setInterface(classes, null);
 
             // Create service dependencies.
             c.add(createServiceDependency().
@@ -139,7 +149,8 @@ public class Activator extends ComponentActivatorAbstractBase {
             Dictionary<String, Object> props =
                 new Hashtable<String, Object>();
             Set<String> propSet = new HashSet<String>();
-            propSet.add(VTNManagerImpl.CACHE_SAVE_EVENT);
+            propSet.add(VTNManagerImpl.CACHE_EVENT);
+            propSet.add(VTNManagerImpl.CACHE_FLOWS);
             props.put("cachenames", propSet);
             props.put("salListenerName", "vtnmanager");
 
@@ -153,8 +164,16 @@ public class Activator extends ComponentActivatorAbstractBase {
             list.add(IListenDataPacket.class.getName());
             list.add(IListenRoutingUpdates.class.getName());
             list.add(IHostFinder.class.getName());
+            list.add(IFlowProgrammerListener.class.getName());
             if (containerName.equals(GlobalConstants.DEFAULT.toString())) {
                 list.add(IContainerListener.class.getName());
+            }
+
+            // Export IVTNFlowDebugger only if "vtn.debug" system property
+            // is defined as "true".
+            String debug = System.getProperty("vtn.debug");
+            if (debug != null && Boolean.parseBoolean(debug)) {
+                list.add(IVTNFlowDebugger.class.getName());
             }
 
             c.setInterface(list.toArray(new String[list.size()]), props);
@@ -163,6 +182,12 @@ public class Activator extends ComponentActivatorAbstractBase {
             c.add(createServiceDependency().
                   setService(IVTNResourceManager.class).
                   setCallbacks("setResourceManager", "unsetResourceManager").
+                  setRequired(true));
+
+            c.add(createServiceDependency().
+                  setService(IConnectionManager.class).
+                  setCallbacks("setConnectionManager",
+                               "unsetConnectionManager").
                   setRequired(true));
 
             c.add(createContainerServiceDependency(containerName).

@@ -129,10 +129,9 @@ public class VlanMapConfig implements Serializable {
      */
     @Override
     public int hashCode() {
-        int h = vlan + 271;
-
+        int h = vlan;
         if (node != null) {
-            h += node.hashCode();
+            h ^= node.hashCode();
         }
 
         return h;

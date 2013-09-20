@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.TreeMap;
-import java.util.Hashtable;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Timer;
@@ -32,7 +32,6 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
@@ -43,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.felix.dm.Component;
 
+import org.opendaylight.vtn.manager.IVTNFlowDebugger;
 import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.IVTNManagerAware;
 import org.opendaylight.vtn.manager.IVTNModeListener;
@@ -55,33 +55,56 @@ import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
+import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
+import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
+import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
+import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
+import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
+import org.opendaylight.vtn.manager.internal.cluster.PortMapEvent;
+import org.opendaylight.vtn.manager.internal.cluster.PortProperty;
+import org.opendaylight.vtn.manager.internal.cluster.RawPacketEvent;
+import org.opendaylight.vtn.manager.internal.cluster.VBridgeEvent;
+import org.opendaylight.vtn.manager.internal.cluster.VBridgeIfEvent;
+import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
+import org.opendaylight.vtn.manager.internal.cluster.VTenantEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantImpl;
+import org.opendaylight.vtn.manager.internal.cluster.VlanMapEvent;
 
 import org.opendaylight.controller.clustering.services.CacheConfigException;
 import org.opendaylight.controller.clustering.services.CacheExistException;
 import org.opendaylight.controller.clustering.services.ICacheUpdateAware;
-import org.opendaylight.controller.clustering.services.IClusterContainerServices;
+import org.opendaylight.controller.clustering.services.
+    IClusterContainerServices;
 import org.opendaylight.controller.clustering.services.IClusterServices;
 import org.opendaylight.controller.configuration.IConfigurationContainerAware;
+import org.opendaylight.controller.connectionmanager.ConnectionLocality;
+import org.opendaylight.controller.connectionmanager.IConnectionManager;
 import org.opendaylight.controller.containermanager.IContainerManager;
-import org.opendaylight.controller.forwardingrulesmanager.IForwardingRulesManager;
+import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
+import org.opendaylight.controller.forwardingrulesmanager.
+    IForwardingRulesManager;
 import org.opendaylight.controller.hosttracker.IfHostListener;
 import org.opendaylight.controller.hosttracker.IfIptoHost;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.hosttracker.hostAware.IHostFinder;
+import org.opendaylight.controller.sal.core.Config;
 import org.opendaylight.controller.sal.core.ContainerFlow;
 import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.IContainerListener;
+import org.opendaylight.controller.sal.core.Name;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.Property;
+import org.opendaylight.controller.sal.core.State;
 import org.opendaylight.controller.sal.core.UpdateType;
+import org.opendaylight.controller.sal.flowprogrammer.Flow;
+import org.opendaylight.controller.sal.flowprogrammer.IFlowProgrammerListener;
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IDataPacketService;
@@ -97,6 +120,7 @@ import org.opendaylight.controller.sal.routing.IRouting;
 import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
+import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.IObjectReader;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.ObjectReader;
@@ -112,20 +136,26 @@ import org.opendaylight.controller.topologymanager.ITopologyManagerAware;
 /**
  * Implementation of VTN Manager service.
  */
-public class VTNManagerImpl implements IVTNManager, IObjectReader,
-    ICacheUpdateAware<String, Long>, IConfigurationContainerAware,
-    IInventoryListener, ITopologyManagerAware, IContainerListener,
-    IListenDataPacket, IListenRoutingUpdates, IHostFinder {
+public class VTNManagerImpl
+    implements IVTNManager, IVTNFlowDebugger, IObjectReader,
+               ICacheUpdateAware<ClusterEventId, Object>,
+               IConfigurationContainerAware, IInventoryListener,
+               ITopologyManagerAware, IContainerListener, IListenDataPacket,
+               IListenRoutingUpdates, IHostFinder, IFlowProgrammerListener {
     /**
      * Logger instance.
      */
-    private final static Logger  LOG =
-        LoggerFactory.getLogger(VTNManagerImpl.class);
+    final static Logger  LOG = LoggerFactory.getLogger(VTNManagerImpl.class);
 
     /**
      * Maximum length of the resource name.
      */
     private final static int RESOURCE_NAME_MAXLEN = 31;
+
+    /**
+     * Maximum lifetime, in milliseconds, of a cluster event.
+     */
+    private final static long CLUSTER_EVENT_LIFETIME = 1000L;
 
     /**
      * Regular expression that matches valid resource name.
@@ -154,15 +184,26 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     final static String  CACHE_STATE = "vtn.state";
 
     /**
-     * Cluster cache name associated with {@link #configSaveEvent}.
+     * The name of the cluster cache which keeps pairs of existing nodes and
+     * sets of node connectors.
      */
-    final static String  CACHE_SAVE_EVENT = "vtn.configSaveEvent";
+    final static String CACHE_NODES = "vtn.nodes";
 
     /**
-     * {@link #configSaveEvent} key that indicates save request for all tenant
-     * configuration.
+     * The name of the cluster cache which keeps pairs of existing node
+     * connectors and properties.
      */
-    private final static String  CHSAVE_ALL = "<all>";
+    final static String CACHE_PORTS = "vtn.ports";
+
+    /**
+     * Cluster cache name associated with {@link #clusterEvent}.
+     */
+    final static String  CACHE_EVENT = "vtn.clusterEvent";
+
+    /**
+     * The name of the cluster cache which keeps flow entries in the container.
+     */
+    final static String CACHE_FLOWS = "vtn.flows";
 
     /**
      * Keeps virtual tenant configurations in a container.
@@ -175,9 +216,30 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     private ConcurrentMap<VTenantPath, Object>  stateDB;
 
     /**
-     * A cluster cache used to raise an config save event to the cluster nodes.
+     * A cluster cache used to deliver events to nodes in the cluster.
      */
-    private ConcurrentMap<String, Long>  configSaveEvent;
+    private ConcurrentMap<ClusterEventId, ClusterEvent>  clusterEvent;
+
+    /**
+     * VTN flow database.
+     */
+    private ConcurrentMap<FlowGroupId, VTNFlow>  flowDB;
+
+    /**
+     * Keeps existing nodes as map key.
+     *
+     * <p>
+     *   This map is used as {@code Set<Node>}. So we use {@code VNodeState}
+     *   enum as value in order to reduce memory footprint and traffic between
+     *   cluster nodes.
+     * </p>
+     */
+    private ConcurrentMap<Node, VNodeState>  nodeDB;
+
+    /**
+     * Keeps pairs of existing node connectors and properties.
+     */
+    private ConcurrentMap<NodeConnector, PortProperty>  portDB;
 
     /**
      * Cluster container service instance.
@@ -215,6 +277,11 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     private IfIptoHost  hostTracker;
 
     /**
+     * Connection manager service instance.
+     */
+    private IConnectionManager  connectionManager;
+
+    /**
      * Host listeners.
      */
     private final CopyOnWriteArrayList<IfHostListener>  hostListeners =
@@ -249,14 +316,14 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
         new ReentrantReadWriteLock();
 
     /**
-     * Long value to be set to {@link #configSaveEvent}.
+     * Single-threaded task queue runner.
      */
-    private final AtomicLong  saveEventValue = new AtomicLong();
+    private TaskQueueThread  taskQueueThread;
 
     /**
-     * Single-threaded job queue runner.
+     * Single-threaded task queue runner which executes {@link FlowModTask}.
      */
-    private JobQueueThread  jobQueueThread;
+    private TaskQueueThread  flowTaskThread;
 
     /**
      * The name of the file to keep virtual tenant names.
@@ -276,6 +343,11 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     private boolean  inContainerMode;
 
     /**
+     * True if the VTN Manager service is available.
+     */
+    private volatile boolean  serviceAvailable;
+
+    /**
      * True if the container is being destroyed.
      */
     private boolean  destroying;
@@ -284,6 +356,12 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      * Static configuration.
      */
     private VTNConfig  vtnConfig;
+
+    /**
+     * List of cluster events.
+     */
+    private final ArrayList<ClusterEvent>  clusterEventQueue =
+        new ArrayList<ClusterEvent>();
 
     /**
      * Keep nodes which are not in service yet.
@@ -299,41 +377,53 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     /**
      * MAC address tables associated with vBridges.
      */
-    private final Hashtable<VBridgePath, MacAddressTable> macTableMap =
-        new Hashtable<VBridgePath, MacAddressTable>();
+    private final ConcurrentMap<VBridgePath, MacAddressTable> macTableMap =
+        new ConcurrentHashMap<VBridgePath, MacAddressTable>();
 
     /**
-     * A thread which executes queued jobs.
+     * Flow database associated with virtual tenants.
      */
-    private class JobQueueThread extends Thread {
+    private final ConcurrentMap<String, VTNFlowDatabase> vtnFlowMap =
+        new ConcurrentHashMap<String, VTNFlowDatabase>();
+
+    /**
+     * Set of remote flow modification requests.
+     */
+    private final HashSet<RemoteFlowRequest>  remoteFlowRequests =
+        new HashSet<RemoteFlowRequest>();
+
+    /**
+     * A thread which executes queued tasks.
+     */
+    private class TaskQueueThread extends Thread {
         /**
-         * Job queue.
+         * Task queue.
          */
-        private final LinkedList<Runnable> jobQueue =
+        private final LinkedList<Runnable> taskQueue =
             new LinkedList<Runnable>();
 
         /**
-         * Determine whether the job queue is active or not.
+         * Determine whether the task queue is active or not.
          */
         private boolean  active = true;
 
         /**
-         * Construct a job queue thread.
+         * Construct a task thread.
          *
          * @param name  The name of the thread.
          */
-        private JobQueueThread(String name) {
+        private TaskQueueThread(String name) {
             super(name);
         }
 
         /**
-         * Dequeue a job.
+         * Dequeue a task.
          *
-         * @return  A dequeued job. {@link null} is returned if the queue
+         * @return  A dequeued task. {@code null} is returned if the queue
          *          is down.
          */
-        private synchronized Runnable getJob() {
-            while (jobQueue.size() == 0) {
+        private synchronized Runnable getTask() {
+            while (taskQueue.size() == 0) {
                 if (!active) {
                     return null;
                 }
@@ -343,45 +433,144 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
                 }
             }
 
-            return jobQueue.remove();
+            return taskQueue.remove();
         }
 
         /**
-         * Post a job to the job queue.
+         * Post a task to the task queue.
          *
-         * @param r  A runnable to be run on a job queue runner thread.
+         * @param r  A runnable to be run on a task queue runner thread.
+         * @return  {@code true} is returned if the given task was successfully
+         *          posted. {@code false} is returned if the task thread is
+         *          no longer available.
          */
-        private synchronized void post(Runnable r) {
-            if (active) {
-                jobQueue.add(r);
+        private synchronized boolean post(Runnable r) {
+            boolean ret = active;
+            if (ret) {
+                taskQueue.addLast(r);
                 notify();
             }
+            return ret;
         }
 
         /**
-         * Shut down the job queue.
+         * Shut down the task queue.
+         *
+         * <p>
+         *   All queued tasks are dropped.
+         * </p>
          */
         private synchronized void shutdown() {
-            jobQueue.clear();
+            shutdown(true);
+        }
+
+        /**
+         * Shut down the task queue.
+         *
+         * @param clear  Clear task queue if {@code true}.
+         */
+        private synchronized void shutdown(boolean clear) {
+            if (clear) {
+                taskQueue.clear();
+            }
             active = false;
             notify();
         }
 
         /**
-         * Main routine of a job queue thread.
+         * Main routine of a task thread.
          */
         @Override
         public void run() {
-            LOG.info("{}: Start job queue runner", containerName);
-            for (Runnable r = getJob(); r != null; r = getJob()) {
+            LOG.debug("Start");
+            for (Runnable r = getTask(); r != null; r = getTask()) {
                 try {
                     r.run();
                 } catch (Exception e) {
-                    LOG.error(containerName +
-                              ": Exception occurred on a job thread.", e);
+                    LOG.error("Exception occurred on a task thread.", e);
                 }
             }
-            LOG.info("{}: Shutdown job queue runner", containerName);
+            LOG.debug("Exit");
+        }
+    }
+
+    /**
+     * A timer task which interrupts the specified thread.
+     */
+    private class AlarmTask extends TimerTask {
+        /**
+         * The target thread.
+         */
+        private final Thread  targetThread;
+
+        /**
+         * Determine whether this alarm is active or not.
+         */
+        private boolean  active = true;
+
+        /**
+         * Construct a new alarm task to interrupt the calling thread.
+         */
+        private AlarmTask() {
+            this(Thread.currentThread());
+        }
+
+        /**
+         * Construct a new alarm task to interrupt the given thread.
+         *
+         * @param thread  A target thread.
+         */
+        private AlarmTask(Thread thread) {
+            targetThread = thread;
+        }
+
+        /**
+         * Inactivate this alarm.
+         */
+        private synchronized void inactivate() {
+            active = false;
+            notifyAll();
+        }
+
+        /**
+         * Wait for completion of this alarm.
+         */
+        private synchronized void complete() {
+            while (active) {
+                try {
+                    wait();
+                } catch (InterruptedException e) {
+                }
+            }
+        }
+
+        /**
+         * Interrupt the target thread.
+         */
+        @Override
+        public void run() {
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}: Alarm expired: thread={}", containerName,
+                          targetThread);
+            }
+            targetThread.interrupt();
+            inactivate();
+        }
+
+        /**
+         * Cancel this alarm task.
+         *
+         * @return  {@code true} is returned only if this alarm has been
+         *          canceled before expiration.
+         */
+        @Override
+        public boolean cancel() {
+            boolean ret = super.cancel();
+            if (ret) {
+                inactivate();
+            }
+
+            return ret;
         }
     }
 
@@ -403,6 +592,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             return;
         }
 
+        LOG.debug("{}: init() called", cname);
         containerName = cname;
 
         // Load static configuration.
@@ -418,20 +608,61 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             inContainerMode = false;
         }
 
+        ClusterEventId.initLocalNodeId(this);
         createCaches();
-        saveEventValue.set(System.currentTimeMillis());
+
         tenantListFileName = root + "vtn-" + cname + "-tenant-names.conf";
 
-        // Start job queue thread.
-        jobQueueThread = new JobQueueThread("VTN Job Thread: " + cname);
-        jobQueueThread.start();
+        // Start VTN task thread.
+        taskQueueThread = new TaskQueueThread("VTN Task Thread: " + cname);
+        taskQueueThread.start();
+
+        // Start VTN flow task thread.
+        flowTaskThread = new TaskQueueThread("VTN Flow Thread: " + cname);
+        flowTaskThread.start();
+
+        // Initialize inventory caches.
+        initInventory();
 
         // Load saved configurations.
         loadConfig();
 
-        if (inContainerMode || tenantDB == null || tenantDB.isEmpty()) {
+        // Initialize VTN flow databases.
+        initFlowDatabase();
+
+        if (inContainerMode || tenantDB.isEmpty()) {
             // Start ARP handler emulator.
             arpHandler = new ArpHandler(this);
+        }
+
+        serviceAvailable = true;
+    }
+
+    /**
+     * Function called by the dependency manager after the VTN Manager service
+     * has been registered to the OSGi service repository.
+     */
+    void started() {
+        LOG.debug("{}: started() called", containerName);
+    }
+
+    /**
+     * Function called just before the dependency manager stops the service.
+     */
+    void stopping() {
+        LOG.debug("{}: stopping() called", containerName);
+
+        Lock wrlock = rwLock.writeLock();
+        wrlock.lock();
+        try {
+            serviceAvailable = false;
+        } finally {
+            wrlock.unlock();
+        }
+
+        // Shut down VTN flow database.
+        for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+            fdb.shutdown(this);
         }
     }
 
@@ -441,11 +672,16 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      * "destroy()" calls.
      */
     void stop() {
-        synchronized (this) {
+        LOG.debug("{}: stop() called", containerName);
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
             // Stop timeout timer in the ARP handler emulator.
             if (arpHandler != null) {
                 arpHandler.destroy();
             }
+        } finally {
+            rdlock.unlock();
         }
     }
 
@@ -455,31 +691,44 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      * example bundle is being stopped.
      */
     void destroy() {
+        LOG.debug("{}: destroy() called", containerName);
         vtnManagerAware.clear();
-        if (jobQueueThread != null) {
-            jobQueueThread.shutdown();
-            try {
-                jobQueueThread.join();
-            } catch (InterruptedException e) {
-            }
-            jobQueueThread = null;
-        }
 
         // Remove all MAC address tables.
-        IVTNResourceManager resMgr = resourceManager;
         ArrayList<MacAddressTable> tables;
-        synchronized (macTableMap) {
-            tables = new ArrayList<MacAddressTable>(macTableMap.size());
-            for (Iterator<MacAddressTable> it =
-                     macTableMap.values().iterator(); it.hasNext();) {
-                MacAddressTable table = it.next();
-                tables.add(table);
-                it.remove();
-            }
+        tables = new ArrayList<MacAddressTable>(macTableMap.size());
+        for (Iterator<MacAddressTable> it = macTableMap.values().iterator();
+             it.hasNext();) {
+            MacAddressTable table = it.next();
+            tables.add(table);
+            it.remove();
         }
 
         for (MacAddressTable table: tables) {
             table.destroy(null);
+        }
+
+        // Terminate internal threads.
+        if (flowTaskThread != null) {
+            flowTaskThread.shutdown(false);
+            try {
+                flowTaskThread.join();
+            } catch (InterruptedException e) {
+                LOG.warn("{}: Interrupted while joining thread: {}",
+                         containerName, flowTaskThread.getName());
+            }
+            flowTaskThread = null;
+        }
+
+        if (taskQueueThread != null) {
+            taskQueueThread.shutdown();
+            try {
+                taskQueueThread.join();
+            } catch (InterruptedException e) {
+                LOG.warn("{}: Interrupted while joining thread: {}",
+                         containerName, taskQueueThread.getName());
+            }
+            taskQueueThread = null;
         }
 
         for (Iterator<TimerTask> it = disabledNodes.values().iterator();
@@ -489,18 +738,18 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             it.remove();
         }
 
-        Timer timer = resMgr.getTimer();
+        Timer timer = resourceManager.getTimer();
         timer.purge();
 
         if (destroying) {
             // Clear all caches.
             LOG.debug("{}: Clear VTN caches.", containerName);
-            if (tenantDB != null) {
-                tenantDB.clear();
-            }
-            if (stateDB != null) {
-                stateDB.clear();
-            }
+            tenantDB.clear();
+            stateDB.clear();
+            nodeDB.clear();
+            portDB.clear();
+            clusterEvent.clear();
+            flowDB.clear();
             destroyCaches();
         }
     }
@@ -511,23 +760,60 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     private void createCaches() {
         IClusterContainerServices cluster = clusterService;
         if (cluster == null) {
-            LOG.error("{}: Cluster service is not yet registered.",
-                      containerName);
+            // Create dummy caches.
+            tenantDB = new ConcurrentHashMap<String, VTenantImpl>();
+            stateDB = new ConcurrentHashMap<VTenantPath, Object>();
+            nodeDB = new ConcurrentHashMap<Node, VNodeState>();
+            portDB = new ConcurrentHashMap<NodeConnector, PortProperty>();
+            clusterEvent =
+                new ConcurrentHashMap<ClusterEventId, ClusterEvent>();
+            flowDB = new ConcurrentHashMap<FlowGroupId, VTNFlow>();
             return;
         }
 
+        // Create transactional cluster caches.
         Set<IClusterServices.cacheMode> cmode =
-            EnumSet.of(IClusterServices.cacheMode.NON_TRANSACTIONAL);
+            EnumSet.of(IClusterServices.cacheMode.TRANSACTIONAL);
         createCache(cluster, CACHE_TENANT, cmode);
         createCache(cluster, CACHE_STATE, cmode);
-        createCache(cluster, CACHE_SAVE_EVENT, cmode);
+        createCache(cluster, CACHE_NODES, cmode);
+        createCache(cluster, CACHE_PORTS, cmode);
 
         tenantDB = (ConcurrentMap<String, VTenantImpl>)
             getCache(cluster, CACHE_TENANT);
         stateDB = (ConcurrentMap<VTenantPath, Object>)
             getCache(cluster, CACHE_STATE);
-        configSaveEvent = (ConcurrentMap<String, Long>)
-            getCache(cluster, CACHE_SAVE_EVENT);
+        nodeDB = (ConcurrentMap<Node, VNodeState>)
+            getCache(cluster, CACHE_NODES);
+        portDB = (ConcurrentMap<NodeConnector, PortProperty>)
+            getCache(cluster, CACHE_PORTS);
+
+        // Create non-transactional cluster caches.
+        // Keys in non-transactional caches should never conflict between
+        // cluster nodes.
+        cmode = EnumSet.of(IClusterServices.cacheMode.NON_TRANSACTIONAL);
+        createCache(cluster, CACHE_EVENT, cmode);
+        createCache(cluster, CACHE_FLOWS, cmode);
+
+        clusterEvent = (ConcurrentMap<ClusterEventId, ClusterEvent>)
+            getCache(cluster, CACHE_EVENT);
+        flowDB = (ConcurrentMap<FlowGroupId, VTNFlow>)
+            getCache(cluster, CACHE_FLOWS);
+
+        // Remove obsolete events in clusterEvent.
+        Set<ClusterEventId> removed = new HashSet<ClusterEventId>();
+        for (ClusterEventId evid: clusterEvent.keySet()) {
+            if (evid.isLocal()) {
+                removed.add(evid);
+            }
+        }
+        for (ClusterEventId evid: removed) {
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}: Remove obsolete cluster event: {}",
+                          containerName, evid);
+            }
+            clusterEvent.remove(evid);
+        }
 
         LOG.debug("{}: Created VTN caches.", containerName);
     }
@@ -544,7 +830,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
         try {
             cs.createCache(cacheName, cmode);
         } catch (CacheExistException e) {
-            LOG.warn("{}: {}: Cache already exists", containerName, cacheName);
+            LOG.info("{}: {}: Cache already exists", containerName, cacheName);
         } catch (CacheConfigException e) {
             LOG.error("{}: {}: Invalid cache configuration: {}",
                       containerName, cacheName, cmode);
@@ -562,13 +848,18 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      *
      * @param cs         Cluster container service.
      * @param cacheName  The name of cluster cache.
-     * @return           Cluster cache, or {@code null} on failure.
+     * @return           Cluster cache.
+     * @throws IllegalStateException
+     *    The specified cache was not found.
      */
     private ConcurrentMap<?, ?> getCache(IClusterContainerServices cs,
                                          String cacheName) {
         ConcurrentMap<?, ?> cache = cs.getCache(cacheName);
         if (cache == null) {
-            LOG.error("{}: {}: Cache not found", containerName, cacheName);
+            String msg = containerName + ": " + cacheName +
+                ": Cache not found";
+            LOG.error(msg);
+            throw new IllegalStateException(msg);
         }
 
         return cache;
@@ -579,12 +870,324 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      */
     private void destroyCaches() {
         IClusterContainerServices cluster = clusterService;
-        if (cluster != null) {
-            cluster.destroyCache(CACHE_TENANT);
-            cluster.destroyCache(CACHE_STATE);
-            cluster.destroyCache(CACHE_SAVE_EVENT);
+        cluster.destroyCache(CACHE_TENANT);
+        cluster.destroyCache(CACHE_STATE);
+        cluster.destroyCache(CACHE_EVENT);
+        cluster.destroyCache(CACHE_FLOWS);
 
-            LOG.debug("{}: Destroyed VTN caches.", containerName);
+        LOG.debug("{}: Destroyed VTN caches.", containerName);
+    }
+
+    /**
+     * Initialize inventory caches.
+     */
+    void initInventory() {
+        if (switchManager == null) {
+            return;
+        }
+
+        Set<Node> curNode = new HashSet<Node>(nodeDB.keySet());
+        Set<NodeConnector> curPort =
+            new HashSet<NodeConnector>(portDB.keySet());
+        for (Node node: switchManager.getNodes()) {
+            addNode(node);
+            curNode.remove(node);
+
+            Set<NodeConnector> ncSet =
+                switchManager.getPhysicalNodeConnectors(node);
+            for (NodeConnector nc: ncSet) {
+                Map<String, Property> prop =
+                    switchManager.getNodeConnectorProps(nc);
+                addPort(nc, prop);
+                curPort.remove(nc);
+            }
+        }
+
+        if (!curNode.isEmpty()) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}: Remove obsolte nodes from nodeDB: {}",
+                          containerName, curNode);
+            }
+            for (Node node: curNode) {
+                nodeDB.remove(node);
+            }
+        }
+
+        if (!curPort.isEmpty()) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}: Remove obsolte ports from portDB: {}",
+                          containerName, curPort);
+            }
+            for (NodeConnector nc: curPort) {
+                portDB.remove(nc);
+            }
+        }
+    }
+
+    /**
+     * Add the given node to the node DB.
+     *
+     * <p>
+     *   This method must be called with holding writer lock of
+     *   {@link #rwLock}.
+     * </p>
+     *
+     * @param node  Node associated with the SDN switch.
+     * @return  {@code true} is returned if the given node was actually added.
+     *          Otherwise {@code false} is returned.
+     */
+    private boolean addNode(Node node) {
+        return addNode(node, true);
+    }
+
+    /**
+     * Add the given node to the node DB.
+     *
+     * <p>
+     *   This method must be called with holding writer lock of
+     *   {@link #rwLock}.
+     * </p>
+     *
+     * @param node    Node associated with the SDN switch.
+     * @param verify  Verify the given node if {@code true}.
+     * @return  {@code true} is returned if the given node was actually added.
+     *          Otherwise {@code false} is returned.
+     */
+    private boolean addNode(Node node, boolean verify) {
+        if (verify) {
+            try {
+                checkNode(node);
+            } catch (VTNException e) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("{}: addNode: Ignore invalid node {}: {}",
+                              containerName, node, e);
+                }
+                return false;
+            }
+        }
+
+        if (nodeDB.putIfAbsent(node, VNodeState.UP) == null) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}: addNode: New node {}", containerName, node);
+            }
+            addDisabledNode(node);
+            return true;
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("{}: addNode: Ignore existing node {}",
+                      containerName, node);
+        }
+        return false;
+    }
+
+    /**
+     * Remove the given node from the node DB.
+     *
+     * <p>
+     *   This method also removes node connectors associated with the given
+     *   node from the port DB.
+     * </p>
+     * <p>
+     *   This method must be called with holding writer lock of
+     *   {@link #rwLock}.
+     * </p>
+     *
+     * @param node  Node associated with the SDN switch.
+     * @return  {@code true} is returned if the given node was actually
+     *          removed. Otherwise {@code false} is returned.
+     */
+    private boolean removeNode(Node node) {
+        if (nodeDB.remove(node) != null) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}: removeNode: Removed {}", containerName, node);
+            }
+
+            TimerTask task = disabledNodes.remove(node);
+            if (task != null) {
+                task.cancel();
+            }
+
+            // Clean up node connectors in the given node.
+            Set<NodeConnector> ports =
+                new HashSet<NodeConnector>(portDB.keySet());
+            for (NodeConnector nc: ports) {
+                if (node.equals(nc.getNode())) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("{}: removeNode({}): Remove port {}",
+                                  containerName, node, nc);
+                    }
+                    portDB.remove(nc);
+                }
+            }
+
+            return true;
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("{}: removeNode: Ignore unknown node {}",
+                      containerName, node);
+        }
+        return false;
+    }
+
+    /**
+     * Add the given node connector associated with the physical switch port
+     * to the port DB.
+     *
+     * <p>
+     *   If a node in the given node connector does not exist in the node DB,
+     *   it will also be added.
+     * </p>
+     * <p>
+     *   This method must be called with holding writer lock of
+     *   {@link #rwLock}.
+     * </p>
+     *
+     * @param nc       Node connector associated with the SDN switch port.
+     * @param propMap  Property map associated with the SDN switch port.
+     * @return  {@code UpdateType.ADDED} is returned if the given port was
+     *          actually added.
+     *          {@code UpdateType.CHANGED} is returned if property of the
+     *          given port was changed.
+     *          Otherwise {@code null} is returned.
+     */
+    private UpdateType addPort(NodeConnector nc,
+                               Map<String, Property> propMap) {
+        try {
+            checkNodeConnector(nc);
+        } catch (VTNException e) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}: addPort: Ignore invalid port {}: {}",
+                          containerName, nc, e);
+            }
+            return null;
+        }
+
+        if (switchManager.isSpecial(nc)) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}: addPort: Ignore special port {}",
+                          containerName, nc);
+            }
+            return null;
+        }
+
+        String name;
+        boolean enabled;
+        if (propMap == null) {
+            name = null;
+            enabled = false;
+        } else {
+            Name nm = (Name)propMap.get(Name.NamePropName);
+            name = (nm == null) ? null : nm.getValue();
+
+            Config cf = (Config)propMap.get(Config.ConfigPropName);
+            State st = (State)propMap.get(State.StatePropName);
+            enabled =
+                (cf != null && cf.getValue() == Config.ADMIN_UP &&
+                 st != null && st.getValue() == State.EDGE_UP);
+        }
+        PortProperty pp = new PortProperty(name, enabled);
+        PortProperty old = portDB.putIfAbsent(nc, pp);
+        if (old == null) {
+            addNode(nc.getNode(), false);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}: addPort: New port: port={}, prop={}",
+                          containerName, nc, pp);
+            }
+            return UpdateType.ADDED;
+        }
+
+        if (!old.equals(pp)) {
+            portDB.put(nc, pp);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}: addPort: Property has been changed: " +
+                          "port={}, prop={} -> {}", containerName, nc,
+                          old, pp);
+            }
+            return UpdateType.CHANGED;
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("{}: addPort: Ignore existing port {}",
+                      containerName, nc);
+        }
+        return null;
+    }
+
+    /**
+     * Remove the given node connector from the port DB.
+     *
+     * <p>
+     *   This method must be called with holding writer lock of
+     *   {@link #rwLock}.
+     * </p>
+     *
+     * @param nc       Node connector associated with the SDN switch port.
+     * @return  {@code true} is returned if the given node connector was
+     *          actually removed. Otherwise {@code false} is returned.
+     */
+    private boolean removePort(NodeConnector nc) {
+        if (portDB.remove(nc) != null) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}: removePort: Removed {}", containerName, nc);
+            }
+            return true;
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("{}: removePort: Ignore unknown port {}",
+                      containerName, nc);
+        }
+        return false;
+    }
+
+    /**
+     * Initialize the VTN flow database.
+     */
+    private void initFlowDatabase() {
+        List<FlowGroupId> orphans = new ArrayList<FlowGroupId>();
+        Map<VTNFlowDatabase, List<VTNFlow>> obsoletes =
+            new HashMap<VTNFlowDatabase, List<VTNFlow>>();
+
+        for (VTNFlow vflow: flowDB.values()) {
+            FlowGroupId gid = vflow.getGroupId();
+            VTNFlowDatabase fdb = getTenantFlowDB(gid);
+            if (fdb == null) {
+                // This should never happen.
+                LOG.error("{}: Orphan VTN flow was found: {}",
+                          containerName, gid);
+                orphans.add(gid);
+                continue;
+            }
+
+            if (vflow.getLocality(this) != ConnectionLocality.NOT_LOCAL) {
+                // This VTN flow kept by another cluster node is obsolete.
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("{}: Remove obsolete VTN flow: {}",
+                              containerName, gid);
+                }
+
+                List<VTNFlow> vflows = obsoletes.get(fdb);
+                if (vflows == null) {
+                    vflows = new ArrayList<VTNFlow>();
+                    obsoletes.put(fdb, vflows);
+                }
+                vflows.add(vflow);
+            } else {
+                // Initialize indices for the VTN flow.
+                fdb.createIndex(this, vflow);
+            }
+        }
+
+        for (FlowGroupId gid: orphans) {
+            flowDB.remove(gid);
+        }
+        for (Map.Entry<VTNFlowDatabase, List<VTNFlow>> entry:
+                 obsoletes.entrySet()) {
+            VTNFlowDatabase fdb = entry.getKey();
+            List<VTNFlow> vflows = entry.getValue();
+            fdb.removeFlows(this, vflows);
         }
     }
 
@@ -624,6 +1227,15 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             LOG.debug("{}: Unset cluster service: {}", containerName, service);
             clusterService = null;
         }
+    }
+
+    /**
+     * Return cluster service instance.
+     *
+     * @return  Cluster service instance.
+     */
+    public IClusterContainerServices getClusterContainerService() {
+        return clusterService;
     }
 
     /**
@@ -818,6 +1430,39 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     }
 
     /**
+     * Invoked when a connection manager service is registered.
+     *
+     * @param service  Connection manager service.
+     */
+    void setConnectionManager(IConnectionManager service) {
+        LOG.debug("{}: Set connection manager service: {}",
+                  containerName, service);
+        connectionManager = service;
+    }
+
+    /**
+     * Invoked when a connection manager service is unregistered.
+     *
+     * @param service  Connection manager service.
+     */
+    void unsetConnectionManager(IConnectionManager service) {
+        if (connectionManager == service) {
+            LOG.debug("{}: Unset connection manager service: {}",
+                      containerName, service);
+            connectionManager = null;
+        }
+    }
+
+    /**
+     * Return connection manager service instance.
+     *
+     * @return  Connection manager service.
+     */
+    public IConnectionManager getConnectionManager() {
+        return connectionManager;
+    }
+
+    /**
      * Invoked when a host listener is registered.
      *
      * @param service  Host listener service.
@@ -901,10 +1546,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     void addVTNModeListener(IVTNModeListener listener) {
         if (vtnModeListeners.addIfAbsent(listener)) {
             LOG.debug("Add VTN mode listener: {}", listener);
-
-            synchronized (this) {
-                notifyChange(listener, arpHandler == null);
-            }
+            notifyChange(listener, isActive());
         }
     }
 
@@ -920,12 +1562,106 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     }
 
     /**
+     * Return the switch node DB.
+     *
+     * @return  Switch node DB.
+     */
+    public ConcurrentMap<Node, VNodeState> getNodeDB() {
+        return nodeDB;
+    }
+
+    /**
+     * Return the switch port DB.
+     *
+     * @return  Switch port DB.
+     */
+    public ConcurrentMap<NodeConnector, PortProperty> getPortDB() {
+        return portDB;
+    }
+
+    /**
      * Return the virtual node state DB.
      *
      * @return  Virtual node state DB.
      */
     public ConcurrentMap<VTenantPath, Object> getStateDB() {
         return stateDB;
+    }
+
+    /**
+     * Return VTN flow database.
+     *
+     * @return VTN flow database.
+     */
+    public ConcurrentMap<FlowGroupId, VTNFlow> getFlowDB() {
+        return flowDB;
+    }
+
+    /**
+     * Return a {@link VTNConfig} object which contains static configuration.
+     *
+     * @return  A {@link VTNConfig} object.
+     */
+    public VTNConfig getVTNConfig() {
+        return vtnConfig;
+    }
+
+    /**
+     * Determine whether the VTN Manager service is available or not.
+     *
+     * @return  {@code true} is returned if the VTN Manager service is
+     *          available. Otherwise {@code false} is returned.
+     */
+    public boolean isAvailable() {
+        // It's harmless to access serviceAvailable flag without holding
+        // rwLock because this flag will be turned off only once by stopping().
+        return serviceAvailable;
+    }
+
+    /**
+     * Interrupt the calling thread after the specified milliseconds passes.
+     *
+     * <p>
+     *   Note that this method clears interrupt state of the calling thread.
+     * </p>
+     *
+     * @param delay  Delay in milliseconds to be inserted before interrupt.
+     * @return  A timer task which implements alarm timer.
+     */
+    public TimerTask setAlarm(long delay) {
+        Timer timer = resourceManager.getTimer();
+        AlarmTask task = new AlarmTask();
+        Thread.interrupted();
+        timer.schedule(task, delay);
+
+        return task;
+    }
+
+    /**
+     * Cancel the given alarm task.
+     *
+     * @param task  An alarm task returned by {@link #setAlarm(long)}.
+     */
+    public void cancelAlarm(TimerTask task) {
+        task.cancel();
+        if (task instanceof AlarmTask) {
+            AlarmTask alarm = (AlarmTask)task;
+            alarm.complete();
+            Thread.interrupted();
+        }
+    }
+
+    /**
+     * Set alarm timer for flow modification.
+     *
+     * <p>
+     *   Note that this method clears interrupt state of the calling thread.
+     * </p>
+     *
+     * @return  A timer task which implements alarm timer.
+     */
+    public TimerTask setFlowModAlarm() {
+        return setAlarm((long)vtnConfig.getFlowModTimeout());
     }
 
     /**
@@ -962,10 +1698,102 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      *
      * @param path   Path to the virtual L2 bridge.
      * @return  A MAC address table associated with the given virtual L2
-     *          bridge.
+     *          bridge. {@code null} is returned if not found.
      */
     public MacAddressTable getMacAddressTable(VBridgePath path) {
         return macTableMap.get(path);
+    }
+
+    /**
+     * Create a new VTN flow database object if not exists.
+     *
+     * @param name  The name of the virtual tenant.
+     */
+    public void createTenantFlowDB(String name) {
+        VTNFlowDatabase fdb = new VTNFlowDatabase(this, name);
+        vtnFlowMap.put(name, fdb);
+    }
+
+    /**
+     * Remove VTN flow database object.
+     *
+     * @param name  The name of the virtual tenant.
+     * @return  A removed VTN flow database object.
+     *          {@code null} is returned if database does not exist.
+     */
+    public VTNFlowDatabase removeTenantFlowDB(String name) {
+        return vtnFlowMap.remove(name);
+    }
+
+    /**
+     * Return a VTN flow database object associated with the specified virtual
+     * tenant.
+     *
+     * @param name  The name of the virtual tenant.
+     * @return  A VTN flow database associated with the specified virtual
+     *          tenant. {@code null} is returned if not fonud.
+     */
+    public VTNFlowDatabase getTenantFlowDB(String name) {
+        return vtnFlowMap.get(name);
+    }
+
+    /**
+     * Return a VTN flow database which contains flow entry specified by the
+     * given name.
+     *
+     * @param gid  Identifier of the flow group.
+     * @return  A VTN flow database is returned if found.
+     *          {@code null} is returned if not fonud.
+     */
+    public VTNFlowDatabase getTenantFlowDB(FlowGroupId gid) {
+        String tname = gid.getTenantName();
+        return getTenantFlowDB(tname);
+    }
+
+    /**
+     * Set remote flow modification request which wait for completion of flow
+     * modification on remote cluster node.
+     *
+     * @param req  A remote flow modification request.
+     */
+    public void addRemoteFlowRequest(RemoteFlowRequest req) {
+        synchronized (remoteFlowRequests) {
+            remoteFlowRequests.add(req);
+        }
+    }
+
+    /**
+     * Remove remote flow modification request.
+     *
+     * @param req  A remote flow modification request.
+     */
+    public void removeRemoteFlowRequest(RemoteFlowRequest req) {
+        synchronized (remoteFlowRequests) {
+            remoteFlowRequests.remove(req);
+        }
+    }
+
+    /**
+     * Called when a remote cluster node reports a result of flow modification.
+     *
+     * @param name    The name of flow entry.
+     * @param result  Result of flow modification.
+     */
+    public void setRemoteFlowResult(String name, FlowModResult result) {
+        int rsize = resourceManager.getRemoteClusterSize();
+        synchronized (remoteFlowRequests) {
+            RemoteFlowRequest done = null;
+            for (RemoteFlowRequest req: remoteFlowRequests) {
+                if (req.setResult(name, result, rsize)) {
+                    done = req;
+                    break;
+                }
+            }
+
+            if (done != null) {
+                remoteFlowRequests.remove(done);
+            }
+        }
     }
 
     /**
@@ -983,25 +1811,210 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     }
 
     /**
+     * Return a set of existing nodes.
+     *
+     * <p>
+     *   This method must be called with holding {@link #rwLock}.
+     * </p>
+     *
+     * @return  A set of existing nodes.
+     */
+    public Set<Node> getNodes() {
+        return new HashSet<Node>(nodeDB.keySet());
+    }
+
+    /**
+     * Determine whether the given node exists or not.
+     *
+     * <p>
+     *   This method must be called with holding {@link #rwLock}.
+     * </p>
+     *
+     * @param node  Node associated with SDN switch.
+     * @return  {@code true} is returned if the given node exists.
+     *          Otherwise {@code false} is returned.
+     */
+    public boolean exists(Node node) {
+        return nodeDB.containsKey(node);
+    }
+
+    /**
+     * Collect node connectors associated with edge switch ports in up state.
+     *
+     * <p>
+     *   This method must be called with holding {@link #rwLock}.
+     * </p>
+     *
+     * @param portSet  A set of node connectors to store results.
+     */
+    public void collectUpEdgePorts(Set<NodeConnector> portSet) {
+        for (Map.Entry<NodeConnector, PortProperty> entry: portDB.entrySet()) {
+            NodeConnector port = entry.getKey();
+            PortProperty pp = entry.getValue();
+            if (pp.isEnabled() && isEdgePort(port)) {
+                portSet.add(port);
+            }
+        }
+    }
+
+    /**
+     * Collect node connectors associated with edge switch ports in up state
+     * for the given node.
+     *
+     * <p>
+     *   This method must be called with holding {@link #rwLock}.
+     * </p>
+     *
+     * @param portSet  A set of node connectors to store results.
+     * @param node     Node associated with SDN switch.
+     *                 If {@code null} is specified, this method collects all
+     *                 enabled edge ports.
+     */
+    public void collectUpEdgePorts(Set<NodeConnector> portSet, Node node) {
+        if (node == null) {
+            collectUpEdgePorts(portSet);
+            return;
+        }
+
+        for (Map.Entry<NodeConnector, PortProperty> entry: portDB.entrySet()) {
+            NodeConnector port = entry.getKey();
+            if (port.getNode().equals(node)) {
+                PortProperty pp = entry.getValue();
+                if (pp.isEnabled() && isEdgePort(port)) {
+                    portSet.add(port);
+                }
+            }
+        }
+    }
+
+    /**
+     * Determine whether the given node has at least one edge port in up state
+     * or not.
+     *
+     * <p>
+     *   This method must be called with holding {@link #rwLock}.
+     * </p>
+     *
+     * @param node     Node associated with SDN switch.
+     * @return  {@code true} is returned if the given node has at least one
+     *          edge port in up state. Otherwise {@code false} is returned.
+     */
+    public boolean hasEdgePort(Node node) {
+        for (Map.Entry<NodeConnector, PortProperty> entry: portDB.entrySet()) {
+            NodeConnector port = entry.getKey();
+            if (port.getNode().equals(node)) {
+                PortProperty pp = entry.getValue();
+                if (pp.isEnabled() && isEdgePort(port)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Determine whether the given physical switch port is enabled or not.
+     *
+     * <p>
+     *   This method must be called with holding {@link #rwLock}.
+     * </p>
+     *
+     * @param port  Node connector associated with physical switch port.
+     * @return  {@code true} is returned if the given physical switch port
+     *          is enabled. Otherwise {@code false} is returned.
+     */
+    public boolean isEnabled(NodeConnector port) {
+        PortProperty pp = portDB.get(port);
+        return (pp != null && pp.isEnabled());
+    }
+
+    /**
+     * Return property of the specified physical switch port.
+     *
+     * <p>
+     *   This method must be called with holding {@link #rwLock}.
+     * </p>
+     *
+     * @param nc  Node connector associated with physical switch port.
+     * @return  {@code PortProperty} object which represents switch port
+     *          property is returned. {@code null} is returned if not found.
+     */
+    public PortProperty getPortProperty(NodeConnector nc) {
+        return portDB.get(nc);
+    }
+
+    /**
      * Transmit an ethernet frame to the specified node connector.
      *
      * @param nc     A node connector.
      * @param ether  An ethernet frame.
      */
     public void transmit(NodeConnector nc, Ethernet ether) {
-        if (disabledNodes.containsKey(nc.getNode())) {
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("{}: Don't send packet to disabled node: {}",
-                          containerName, nc.getNode());
-            }
-            return;
-        }
-
+        Node node = nc.getNode();
         IDataPacketService pktSrv = dataPacketService;
-
         RawPacket pkt = pktSrv.encodeDataPacket(ether);
-        pkt.setOutgoingNodeConnector(nc);
-        pktSrv.transmitDataPacket(pkt);
+        ConnectionLocality cl = connectionManager.getLocalityStatus(node);
+        if (cl == ConnectionLocality.LOCAL) {
+            if (!disabledNodes.containsKey(node)) {
+                pkt.setOutgoingNodeConnector(nc);
+                pktSrv.transmitDataPacket(pkt);
+            } else if (LOG.isTraceEnabled()) {
+                LOG.trace("{}: Don't send packet to disabled node: {}",
+                          containerName, node);
+            }
+        } else if (cl == ConnectionLocality.NOT_LOCAL) {
+            // Toss the packet to remote cluster nodes.
+            RawPacketEvent ev = new RawPacketEvent(pkt.getPacketData(), nc);
+            postEvent(ev);
+        } else {
+            LOG.warn("{}: Drop packet because target port is " +
+                     "uncontrollable: " + containerName, nc);
+        }
+    }
+
+    /**
+     * Send a raw packet data to the specified node connector.
+     *
+     * <p>
+     *   This method is provided only for {@link RawPacketEvent}.
+     * </p>
+     *
+     * @param data  A raw packet data.
+     * @param nc    A node connector associated with a switch port where the
+     *              packet should be sent.
+     */
+    public void transmit(byte[] data, NodeConnector nc) {
+        Node node = nc.getNode();
+        ConnectionLocality cl = connectionManager.getLocalityStatus(node);
+        if (cl == ConnectionLocality.LOCAL) {
+            if (disabledNodes.containsKey(node)) {
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("{}: Don't send packet to disabled node: {}",
+                              containerName, node);
+                }
+                return;
+            }
+
+            RawPacket pkt;
+            try {
+                pkt = new RawPacket(data);
+            } catch (Exception e) {
+                LOG.error("{}: Failed to instantiate raw packet: port={}",
+                          containerName, nc);
+                return;
+            }
+
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}: Accept raw packet event: port={}",
+                          containerName, nc);
+            }
+
+            pkt.setOutgoingNodeConnector(nc);
+            dataPacketService.transmitDataPacket(pkt);
+        } else if (LOG.isTraceEnabled()) {
+            LOG.trace("{}: Ignore raw packet event: {}", containerName, nc);
+        }
     }
 
     /**
@@ -1100,7 +2113,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
         short ethType = EtherTypes.ARP.shortValue();
         Packet payload = arp;
         if (vlan != 0) {
-            // Add VLAN tag.
+            // Add a VLAN tag.
             IEEE8021Q tag = new IEEE8021Q();
             tag.setCfi((byte)0).setPcp((byte)0).setVid(vlan).
                 setEtherType(ethType).setPayload(arp);
@@ -1117,40 +2130,16 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     }
 
     /**
-     * Raise a configuration save event to the cluster nodes.
-     *
-     * @param tenantName  The name of the tenant.
-     */
-    private void raiseConfigSaveEvent(String tenantName) {
-        ConcurrentMap<String, Long> event = configSaveEvent;
-        if (event != null) {
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("{}.{}: Send config save event",
-                          containerName, tenantName);
-            }
-            configSaveEvent.put(tenantName, saveEventValue.getAndIncrement());
-        }
-    }
-
-    /**
      * Save a set of virtual tenant names.
+     *
+     * <p>
+     *   This method must be called with holding {@link #rwLock}.
+     * </p>
      *
      * @return  "Success" or failure reason.
      */
-    private Status saveTenantNames() {
-        if (tenantDB == null) {
-            return cacheNotInitialized();
-        }
-
-        HashSet<String> nameSet;
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
-        try {
-            nameSet = new HashSet<String>(tenantDB.keySet());
-        } finally {
-            rdlock.unlock();
-        }
-
+    public Status saveTenantNamesLocked() {
+        HashSet<String> nameSet = new HashSet<String>(tenantDB.keySet());
         return saveTenantNames(nameSet);
     }
 
@@ -1173,31 +2162,61 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     }
 
     /**
-     * Save virtual tenant configuration.
+     * Save virtual tenant configuration, and apply current configuration to
+     * the VTN Manager.
      *
-     * @param vtn  The tenant instance.
-     * @return  "Success" or failure reason.
+     * <p>
+     *   This method must be called with holding {@link #rwLock}.
+     * </p>
+     *
+     * @param tenantName  The name of the virtual tenant.
      */
-    private Status saveTenantConfig(VTenantImpl vtn) {
-        raiseConfigSaveEvent(vtn.getName());
-        return vtn.saveConfig(null);
+    public void saveTenantConfig(String tenantName) {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            saveTenantConfigLocked(tenantName);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Save virtual tenant configuration, and apply current configuration to
+     * the VTN Manager.
+     *
+     * <p>
+     *   This method must be called with holding {@link #rwLock}.
+     * </p>
+     *
+     * @param tenantName  The name of the virtual tenant.
+     */
+    private void saveTenantConfigLocked(String tenantName) {
+        VTenantImpl vtn = tenantDB.get(tenantName);
+        if (vtn != null) {
+            vtn.saveConfig(this);
+        }
     }
 
     /**
      * Load all virtual tenant configurations.
      */
     private void loadConfig() {
-        if (tenantDB == null) {
-            return;
-        }
-
-        // Read tenant names.
-        ObjectReader rdr = new ObjectReader();
-        HashSet<String> nameSet = (HashSet<String>)
-            rdr.read(this, tenantListFileName);
-        if (nameSet != null) {
-            for (String name: nameSet) {
-                loadTenantConfig(name);
+        // Do NOT read configurations if we have already received them from
+        // another node.
+        if (tenantDB.isEmpty()) {
+            // Read tenant names.
+            ObjectReader rdr = new ObjectReader();
+            HashSet<String> nameSet = (HashSet<String>)
+                rdr.read(this, tenantListFileName);
+            if (nameSet != null) {
+                for (String name: nameSet) {
+                    loadTenantConfig(name);
+                }
+            }
+        } else {
+            for (VTenantImpl vtn: tenantDB.values()) {
+                vtn.resume(this);
             }
         }
     }
@@ -1221,18 +2240,32 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     }
 
     /**
-     * Return a failure status if the controller is in container mode.
+     * Check whether the VTN configuration can be updated or not.
      *
-     * @return  A failure status if in container mode.
-     *          Otherwise {@code null}.
+     * <p>
+     *   This method must be called with holding {@link #rwLock}.
+     * </p>
+     *
+     * @throws VTNException   VTN configuration can not be updated.
      */
-    private synchronized Status checkContainerMode() {
+    private void checkUpdate() throws VTNException {
         if (inContainerMode) {
-            return new Status(StatusCode.NOTACCEPTABLE,
-                              "VTN is disabled by container mode");
+            throw new VTNException(StatusCode.NOTACCEPTABLE,
+                                   "VTN is disabled by container mode");
         }
+        checkService();
+    }
 
-        return null;
+    /**
+     * Check whether the VTN Manager service is available or not.
+     *
+     * @throws VTNException   VTN Manager service is not available.
+     */
+    private void checkService() throws VTNException {
+        if (!serviceAvailable) {
+            throw new VTNException(StatusCode.NOSERVICE,
+                                   "VTN service is not available");
+        }
     }
 
     /**
@@ -1263,6 +2296,17 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
                 f.delete();
             }
         }
+    }
+
+    /**
+     * Convert a long value which represents a MAC address into a string.
+     *
+     * @param mac  A long value which represents a MAC address.
+     * @return  A string representation of MAC address.
+     */
+    public static String formatMacAddress(long mac) {
+        byte[] addr = NetUtils.longToByteArray6(mac);
+        return HexEncode.bytesToHexStringFormat(addr);
     }
 
     /**
@@ -1369,17 +2413,6 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     }
 
     /**
-     * Return a failure status which represents the VTN cluster cache is not
-     * yet initialized.
-     *
-     * @return  A failure reason.
-     */
-    private Status cacheNotInitialized() {
-        String msg = "VTN cache is not yet initialized";
-        return new Status(StatusCode.INTERNALERROR, msg);
-    }
-
-    /**
      * Return a failure status that indicates the specified tenant does not
      * exist.
      *
@@ -1416,9 +2449,6 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      */
     private VTenantImpl getTenantImpl(VTenantPath path)
         throws VTNException {
-        if (tenantDB == null) {
-            throw new VTNException(cacheNotInitialized());
-        }
         if (path == null) {
             throw new VTNException(argumentIsNull("Path"));
         }
@@ -1438,12 +2468,233 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     }
 
     /**
-     * Run the specified job on a job queue.
+     * Run the specified task on the VTN task thread.
      *
-     * @param r  A runnable to be run on a job queue runner thread.
+     * @param r  A runnable to be run on the task queue runner thread.
      */
-    void postJob(Runnable r) {
-        jobQueueThread.post(r);
+    public void postTask(Runnable r) {
+        taskQueueThread.post(r);
+    }
+
+    /**
+     * Run the specified task on the VTN flow thread.
+     *
+     * @param task  A flow mod task to be run on the VTN flow thread.
+     */
+    void postFlowTask(FlowModTask task) {
+        flowTaskThread.post(task);
+    }
+
+    /**
+     * Run the specified task on the global async thread pool.
+     *
+     * @param r  A runnable to be run on the global async thread pool.
+     */
+    public void postAsync(Runnable r) {
+        if (!resourceManager.executeAsync(r)) {
+            LOG.error("{}: Async task was rejected: {}", containerName, r);
+        }
+    }
+
+    /**
+     * Run the specified flow mod task on the global async thread pool.
+     *
+     * @param task  A flow mod task to be run on the global async thread pool.
+     */
+    void postAsync(FlowModTask task) {
+        if (!resourceManager.executeAsync(task)) {
+            if (task instanceof FlowEntryTask) {
+                FlowEntryTask ft = (FlowEntryTask)task;
+                LOG.error("{}: FlowEntryTask was rejected: flow={}",
+                          containerName, ft.getFlowEntry());
+            } else {
+                LOG.error("{}: {} was rejected",
+                          containerName, task.getClass().getSimpleName());
+            }
+
+            if (task instanceof ClusterFlowModTask) {
+                ClusterFlowModTask cft = (ClusterFlowModTask)task;
+                cft.sendRemoteFlowModResult(FlowModResult.FAILED);
+            }
+            task.setResult(false);
+        }
+    }
+
+    /**
+     * Enqueue a cluster event to the event delivery queue.
+     *
+     * @param cev  A cluster event.
+     */
+    void enqueueEvent(ClusterEvent cev) {
+        synchronized (clusterEventQueue) {
+            clusterEventQueue.add(cev);
+        }
+    }
+
+    /**
+     * Enqueue a virtual tenant event.
+     *
+     * @param path    Path to the tenant.
+     * @param vtenant Information about the virtual tenant.
+     * @param type    {@code ADDED} if added.
+     *                {@code REMOVED} if removed.
+     *                {@code CHANGED} if changed.
+     */
+    public void enqueueEvent(VTenantPath path, VTenant vtenant,
+                             UpdateType type) {
+        VTenantEvent ev = new VTenantEvent(path, vtenant, type);
+        enqueueEvent(ev);
+    }
+
+    /**
+     * Enqueue a virtual bridge event.
+     *
+     * @param path     Path to the bridge.
+     * @param vbridge  Information about the virtual L2 bridge.
+     * @param type     {@code ADDED} if added.
+     *                 {@code REMOVED} if removed.
+     *                 {@code CHANGED} if changed.
+     */
+    public void enqueueEvent(VBridgePath path, VBridge vbridge,
+                             UpdateType type) {
+        VBridgeEvent ev = new VBridgeEvent(path, vbridge, type);
+        enqueueEvent(ev);
+    }
+
+    /**
+     * Enqueue a virtual bridge interface event.
+     *
+     * @param path    Path to the interface.
+     * @param viface  Information about the virtual interface.
+     * @param type    {@code ADDED} if added.
+     *                {@code REMOVED} if removed.
+     *                {@code CHANGED} if changed.
+     */
+    public void enqueueEvent(VBridgeIfPath path, VInterface viface,
+                             UpdateType type) {
+        VBridgeIfEvent ev = new VBridgeIfEvent(path, viface, type);
+        enqueueEvent(ev);
+    }
+
+    /**
+     * Enqueue a VLAN mapping event.
+     *
+     * @param path   Path to the bridge associated with the VLAN mapping.
+     * @param vlmap  Information about the VLAN mapping.
+     * @param type   {@code ADDED} if added.
+     *               {@code REMOVED} if removed.
+     */
+    public void enqueueEvent(VBridgePath path, VlanMap vlmap,
+                             UpdateType type) {
+        VlanMapEvent ev = new VlanMapEvent(path, vlmap, type);
+        enqueueEvent(ev);
+    }
+
+    /**
+     * Enqueue a port mapping event.
+     *
+     * @param path  Path to the bridge interface.
+     * @param pmap  Information about the port mapping.
+     * @param type  {@code ADDED} if added.
+     *              {@code REMOVED} if removed.
+     */
+    public void enqueueEvent(VBridgeIfPath path, PortMap pmap,
+                             UpdateType type) {
+        PortMapEvent ev = new PortMapEvent(path, pmap, type);
+        enqueueEvent(ev);
+    }
+
+    /**
+     * Post the given cluster event.
+     *
+     * @param cev  A cluster event.
+     */
+    public void postEvent(ClusterEvent cev) {
+        // Call event handler for local node.
+        cev.received(this, true);
+
+        if (resourceManager.getRemoteClusterSize() > 0) {
+            // Put the event to the cluser cache for event delivery.
+            final ClusterEventId evid = new ClusterEventId();
+            clusterEvent.put(evid, cev);
+
+            // Create a timer task to remove cluster event object.
+            TimerTask task = new TimerTask() {
+                @Override
+                public void run() {
+                    clusterEvent.remove(evid);
+                }
+            };
+
+            Timer timer = resourceManager.getTimer();
+            timer.schedule(task, CLUSTER_EVENT_LIFETIME);
+        }
+    }
+
+    /**
+     * Deliver cluster events queued in the event delivery queue.
+     */
+    private void flushEventQueue() {
+        ArrayList<ClusterEvent> list;
+        synchronized (clusterEventQueue) {
+            list = new ArrayList<ClusterEvent>(clusterEventQueue);
+            clusterEventQueue.clear();
+        }
+
+        if (resourceManager.getRemoteClusterSize() <= 0) {
+            // Only thing to do is to call event handlers for local node.
+            for (ClusterEvent cev: list) {
+                cev.received(this, true);
+            }
+        } else {
+            // Call event handlers for local node.
+            final ArrayList<ClusterEventId> ids =
+                new ArrayList<ClusterEventId>();
+            for (ClusterEvent cev: list) {
+                cev.received(this, true);
+
+                ClusterEventId evid = new ClusterEventId();
+                ids.add(evid);
+                clusterEvent.put(evid, cev);
+            }
+
+            // Create a timer task to remove cluster event objects.
+            TimerTask task = new TimerTask() {
+                @Override
+                public void run() {
+                    for (ClusterEventId evid: ids) {
+                        clusterEvent.remove(evid);
+                    }
+                }
+            };
+
+            Timer timer = resourceManager.getTimer();
+            timer.schedule(task, CLUSTER_EVENT_LIFETIME);
+        }
+    }
+
+    /**
+     * Call VTN mode listeners on the calling thread.
+     *
+     * @param active  {@code true} if the VTN has been activated.
+     *                {@code false} if the VTN has been inactivated.
+     */
+    public void notifyListeners(boolean active) {
+        if (LOG.isInfoEnabled()) {
+            String m = (active) ? "Enter" : "Exit";
+            LOG.info("{}: {} VTN mode", containerName, m);
+        }
+
+        for (IVTNModeListener listener: vtnModeListeners) {
+            try {
+                listener.vtnModeChanged(active);
+            } catch (Exception e) {
+                StringBuilder builder = new StringBuilder(containerName);
+                builder.append(": Unhandled exception in mode listener: ").
+                    append(listener).append(": ").append(e.toString());
+                LOG.error(builder.toString(), e);
+            }
+        }
     }
 
     /**
@@ -1456,21 +2707,14 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
         Runnable r = new Runnable() {
             @Override
             public void run() {
-                if (LOG.isInfoEnabled()) {
-                    String m = (active) ? "Enter" : "Exit";
-                    LOG.info("{} VTN mode", m);
-                }
-
-                for (IVTNModeListener listener: vtnModeListeners) {
-                    listener.vtnModeChanged(active);
-                }
+                notifyListeners(active);
             }
         };
-        postJob(r);
+        postTask(r);
     }
 
     /**
-     * Notify the specified listner of the VTN mode change.
+     * Notify the specified listener of the VTN mode change.
      *
      * @param listener VTN mode listener service.
      * @param active   {@code true} if the VTN has been activated.
@@ -1484,7 +2728,33 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
                 listener.vtnModeChanged(active);
             }
         };
-        postJob(r);
+        postTask(r);
+    }
+
+    /**
+     * Call virtual tenant listeners on the calling thread.
+     *
+     * @param path    Path to the tenant.
+     * @param vtenant Information about the virtual tenant.
+     * @param type    {@code ADDED} if added.
+     *                {@code REMOVED} if removed.
+     *                {@code CHANGED} if changed.
+     */
+    public void notifyListeners(VTenantPath path, VTenant vtenant,
+                                UpdateType type) {
+        LOG.info("{}:{}: Tenant {}: {}", containerName, path, type.getName(),
+                 vtenant);
+
+        for (IVTNManagerAware listener: vtnManagerAware) {
+            try {
+                listener.vtnChanged(path, vtenant, type);
+            } catch (Exception e) {
+                StringBuilder builder = new StringBuilder(containerName);
+                builder.append(": Unhandled exception in tenant listener: ").
+                    append(listener).append(": ").append(e.toString());
+                LOG.error(builder.toString(), e);
+            }
+        }
     }
 
     /**
@@ -1501,17 +2771,14 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
         Runnable r = new Runnable() {
             @Override
             public void run() {
-                LOG.info("{}: Tenant {}: {}", path, type.getName(), vtenant);
-                for (IVTNManagerAware listener: vtnManagerAware) {
-                    listener.vtnChanged(path, vtenant, type);
-                }
+                notifyListeners(path, vtenant, type);
             }
         };
-        postJob(r);
+        postTask(r);
     }
 
     /**
-     * Notify the specified listner of the virtual tenant changes.
+     * Notify the specified listener of the virtual tenant changes.
      *
      * @param listener  VTN manager listener service.
      * @param path      Path to the tenant.
@@ -1529,7 +2796,33 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
                 listener.vtnChanged(path, vtenant, type);
             }
         };
-        postJob(r);
+        postTask(r);
+    }
+
+    /**
+     * Call virtual L2 bridge listeners on the calling thread.
+     *
+     * @param path     Path to the bridge.
+     * @param vbridge  Information about the virtual L2 bridge.
+     * @param type     {@code ADDED} if added.
+     *                 {@code REMOVED} if removed.
+     *                 {@code CHANGED} if changed.
+     */
+    public void notifyListeners(VBridgePath path, VBridge vbridge,
+                                UpdateType type) {
+        LOG.info("{}:{}: Bridge {}: {}", containerName, path, type.getName(),
+                 vbridge);
+
+        for (IVTNManagerAware listener: vtnManagerAware) {
+            try {
+                listener.vBridgeChanged(path, vbridge, type);
+            } catch (Exception e) {
+                StringBuilder builder = new StringBuilder(containerName);
+                builder.append(": Unhandled exception in bridge listener: ").
+                    append(listener).append(": ").append(e.toString());
+                LOG.error(builder.toString(), e);
+            }
+        }
     }
 
     /**
@@ -1546,14 +2839,10 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
         Runnable r = new Runnable() {
             @Override
             public void run() {
-                LOG.info("{}: Bridge {}: {}", path, type.getName(), vbridge);
-
-                for (IVTNManagerAware listener: vtnManagerAware) {
-                    listener.vBridgeChanged(path, vbridge, type);
-                }
+                notifyListeners(path, vbridge, type);
             }
         };
-        postJob(r);
+        postTask(r);
     }
 
     /**
@@ -1575,7 +2864,34 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
                 listener.vBridgeChanged(path, vbridge, type);
             }
         };
-        postJob(r);
+        postTask(r);
+    }
+
+    /**
+     * Call virtual L2 bridge interface listeners on the calling thread.
+     *
+     * @param path    Path to the interface.
+     * @param viface  Information about the virtual interface.
+     * @param type    {@code ADDED} if added.
+     *                {@code REMOVED} if removed.
+     *                {@code CHANGED} if changed.
+     */
+    public void notifyListeners(VBridgeIfPath path, VInterface viface,
+                                UpdateType type) {
+        LOG.info("{}:{}: Bridge interface {}: {}", containerName, path,
+                 type.getName(), viface);
+
+        for (IVTNManagerAware listener: vtnManagerAware) {
+            try {
+                listener.vBridgeInterfaceChanged(path, viface, type);
+            } catch (Exception e) {
+                StringBuilder builder = new StringBuilder(containerName);
+                builder.append
+                    (": Unhandled exception in bridge interface listener: ").
+                    append(listener).append(": ").append(e.toString());
+                LOG.error(builder.toString(), e);
+            }
+        }
     }
 
     /**
@@ -1592,15 +2908,10 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
         Runnable r = new Runnable() {
             @Override
             public void run() {
-                LOG.info("{}: Bridge interface {}: {}", path, type.getName(),
-                         viface);
-
-                for (IVTNManagerAware listener: vtnManagerAware) {
-                    listener.vBridgeInterfaceChanged(path, viface, type);
-                }
+                notifyListeners(path, viface, type);
             }
         };
-        postJob(r);
+        postTask(r);
     }
 
     /**
@@ -1622,7 +2933,33 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
                 listener.vBridgeInterfaceChanged(path, viface, type);
             }
         };
-        postJob(r);
+        postTask(r);
+    }
+
+    /**
+     * Call VLAN mapping listeners on the calling thread.
+     *
+     * @param path   Path to the bridge associated with the VLAN mapping.
+     * @param vlmap  Information about the VLAN mapping.
+     * @param type   {@code ADDED} if added.
+     *               {@code REMOVED} if removed.
+     */
+    public void notifyListeners(VBridgePath path, VlanMap vlmap,
+                                UpdateType type) {
+        LOG.info("{}:{}: VLAN mapping {}: {}", containerName, path,
+                 type.getName(), vlmap);
+
+        for (IVTNManagerAware listener: vtnManagerAware) {
+            try {
+                listener.vlanMapChanged(path, vlmap, type);
+            } catch (Exception e) {
+                StringBuilder builder = new StringBuilder(containerName);
+                builder.append
+                    (": Unhandled exception in VLAN mapping listener: ").
+                    append(listener).append(": ").append(e.toString());
+                LOG.error(builder.toString(), e);
+            }
+        }
     }
 
     /**
@@ -1638,15 +2975,10 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
         Runnable r = new Runnable() {
             @Override
             public void run() {
-                LOG.info("{}: VLAN mapping {}: {}", path, type.getName(),
-                         vlmap);
-
-                for (IVTNManagerAware listener: vtnManagerAware) {
-                    listener.vlanMapChanged(path, vlmap, type);
-                }
+                notifyListeners(path, vlmap, type);
             }
         };
-        postJob(r);
+        postTask(r);
     }
 
     /**
@@ -1667,7 +2999,33 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
                 listener.vlanMapChanged(path, vlmap, type);
             }
         };
-        postJob(r);
+        postTask(r);
+    }
+
+    /**
+     * Call port mapping listeners on the calling thread.
+     *
+     * @param path  Path to the bridge interface.
+     * @param pmap  Information about the port mapping.
+     * @param type  {@code ADDED} if added.
+     *              {@code REMOVED} if removed.
+     */
+    public void notifyListeners(VBridgeIfPath path, PortMap pmap,
+                                UpdateType type) {
+        LOG.info("{}:{}: Port mapping {}: {}", containerName, path,
+                 type.getName(), pmap);
+
+        for (IVTNManagerAware listener: vtnManagerAware) {
+            try {
+                listener.portMapChanged(path, pmap, type);
+            } catch (Exception e) {
+                StringBuilder builder = new StringBuilder(containerName);
+                builder.append
+                    (": Unhandled exception in port mapping listener: ").
+                    append(listener).append(": ").append(e.toString());
+                LOG.error(builder.toString(), e);
+            }
+        }
     }
 
     /**
@@ -1683,15 +3041,10 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
         Runnable r = new Runnable() {
             @Override
             public void run() {
-                LOG.info("{}: Port mapping {}: {}", path, type.getName(),
-                         pmap);
-
-                for (IVTNManagerAware listener: vtnManagerAware) {
-                    listener.portMapChanged(path, pmap, type);
-                }
+                notifyListeners(path, pmap, type);
             }
         };
-        postJob(r);
+        postTask(r);
     }
 
     /**
@@ -1712,7 +3065,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
                 listener.portMapChanged(path, pmap, type);
             }
         };
-        postJob(r);
+        postTask(r);
     }
 
     /**
@@ -1725,11 +3078,20 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             @Override
             public void run() {
                 for (IfHostListener listener: hostListeners) {
-                    listener.hostListener(host);
+                    try {
+                        listener.hostListener(host);
+                    } catch (Exception e) {
+                        StringBuilder builder =
+                            new StringBuilder(containerName);
+                        builder.append
+                            (": Unhandled exception in host listener: ").
+                            append(listener).append(": ").append(e.toString());
+                        LOG.error(builder.toString(), e);
+                    }
                 }
             }
         };
-        postJob(r);
+        postTask(r);
     }
 
     /**
@@ -1749,7 +3111,53 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
                 vtn.notifyConfiguration(this, listener);
             }
         } finally {
-            rdlock.unlock();
+            unlock(rdlock);
+        }
+    }
+
+    /**
+     * Called when a virtual tenant was added, removed, or changed by
+     * remote cluster node.
+     *
+     * @param path  Path to the virtual tenant.
+     * @param type    {@code ADDED} if added.
+     *                {@code REMOVED} if removed.
+     *                {@code CHANGED} if changed.
+     */
+    public void updateTenant(final VTenantPath path, final UpdateType type) {
+        String tenantName = path.getTenantName();
+
+        if (type == UpdateType.CHANGED) {
+            // Save the tenant configuration specified by the tenant name.
+            saveTenantConfig(tenantName);
+            return;
+        }
+
+        Lock wrlock = rwLock.readLock();
+        wrlock.lock();
+        try {
+            if (type == UpdateType.ADDED) {
+                // Create flow database for a new tenant.
+                createTenantFlowDB(tenantName);
+
+                // Save configurations, and update VTN mode.
+                saveTenantNamesLocked();
+                saveTenantConfigLocked(tenantName);
+                updateVTNMode();
+            } else {
+                // Remove flow database.
+                // Flow entries in this tenant is purged by event originator.
+                removeTenantFlowDB(tenantName);
+
+                // Delete the virtual tenant configuration file.
+                VTenantImpl.deleteConfigFile(containerName, tenantName);
+
+                // Save tenant names, and update VTN mode.
+                saveTenantNamesLocked();
+                updateVTNMode();
+            }
+        } finally {
+            unlock(wrlock);
         }
     }
 
@@ -1757,10 +3165,11 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      * Change VTN mode if needed.
      *
      * <p>
-     *   This method must be called with holding {@link #rwLock}.
+     *   This method must be called with holding writer lock of
+     *   {@link #rwLock}.
      * </p>
      */
-    private synchronized void updateVTNMode() {
+    private void updateVTNMode() {
         if (!inContainerMode && !tenantDB.isEmpty()) {
             // Stop ARP handler emulator, and activate VTN.
             if (arpHandler != null) {
@@ -1770,57 +3179,12 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             }
         } else if (arpHandler == null) {
             // Inactivate VTN, and start ARP handler emulator.
+            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                VTNThreadData.removeFlows(this, fdb);
+            }
             arpHandler = new ArpHandler(this);
             notifyChange(false);
         }
-    }
-
-    /**
-     * Save all configurations to the local filesystem.
-     *
-     * @param apply  {@code true} is passed if the current configuration needs
-     *               to be applied to the VTN Manager.
-     * @return  "Success" or failure reason.
-     */
-    private Status saveLocalConfig(boolean apply) {
-        if (tenantDB == null) {
-            return cacheNotInitialized();
-        }
-
-        VTNManagerImpl mgr = (apply) ? this : null;
-        HashSet<String> nameSet = new HashSet<String>();
-        Status failure = null;
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
-        try {
-            for (VTenantImpl vtn: tenantDB.values()) {
-                nameSet.add(vtn.getName());
-
-                Status status = vtn.saveConfig(mgr);
-                if (!status.isSuccess()) {
-                    failure = status;
-                }
-            }
-        } finally {
-            rdlock.unlock();
-        }
-
-        Status status = saveTenantNames(nameSet);
-        if (failure != null) {
-            return failure;
-        }
-
-        return status;
-    }
-
-    /**
-     * Return ARP handler emulator.
-     *
-     * @return  An ARP handler emulator object is returned if no VTN exists.
-     *          {@code null} is returned if at least one VTN exists.
-     */
-    private synchronized ArpHandler getArpHandler() {
-        return arpHandler;
     }
 
     /**
@@ -1864,6 +3228,35 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
         }
     }
 
+    /**
+     * Remove all nodes in {@link #disabledNodes}.
+     *
+     * <p>
+     *   This method is only for testing.
+     * </p>
+     */
+    void clearDisabledNode() {
+        for (Iterator<TimerTask> it = disabledNodes.values().iterator();
+             it.hasNext();) {
+            TimerTask task = it.next();
+            task.cancel();
+            it.remove();
+        }
+    }
+
+    /**
+     * Flush pending cluster events, and then unlock the given lock object.
+     *
+     * @param lock  A lock object.
+     */
+    void unlock(Lock lock) {
+        try {
+            flushEventQueue();
+        } finally {
+            lock.unlock();
+        }
+    }
+
     // IVTNManager
 
     /**
@@ -1873,8 +3266,14 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      *          Otherwise {@code false} is returned.
      */
     @Override
-    public synchronized boolean isActive() {
-        return (arpHandler == null);
+    public boolean isActive() {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            return (arpHandler == null);
+        } finally {
+            unlock(rdlock);
+        }
     }
 
     /**
@@ -1885,10 +3284,6 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      */
     @Override
     public List<VTenant> getTenants() throws VTNException {
-        if (tenantDB == null) {
-            throw new VTNException(cacheNotInitialized());
-        }
-
         // Sort tenants by their name.
         TreeMap<String, VTenantImpl> tree;
         Lock rdlock = rwLock.readLock();
@@ -1899,10 +3294,11 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             rdlock.unlock();
         }
 
-        List<VTenant> list = new ArrayList<VTenant>();
+        ArrayList<VTenant> list = new ArrayList<VTenant>();
         for (VTenantImpl vtn: tree.values()) {
             list.add(vtn.getVTenant());
         }
+        list.trimToSize();
 
         return list;
     }
@@ -1923,7 +3319,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             VTenantImpl vtn = getTenantImpl(path);
             vtenant = vtn.getVTenant();
         } finally {
-            rdlock.unlock();
+            unlock(rdlock);
         }
 
         return vtenant;
@@ -1938,14 +3334,6 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      */
     @Override
     public Status addTenant(VTenantPath path, VTenantConfig tconf) {
-        Status status = checkContainerMode();
-        if (status != null) {
-            return status;
-        }
-
-        if (tenantDB == null) {
-            return cacheNotInitialized();
-        }
         if (path == null) {
             return argumentIsNull("Path");
         }
@@ -1953,9 +3341,10 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             return argumentIsNull("Tenant configuration");
         }
 
-        Lock wrlock = rwLock.writeLock();
-        wrlock.lock();
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
+            checkUpdate();
+
             // Ensure the given tenant name is valid.
             String tenantName = path.getTenantName();
             checkName("Tenant", tenantName);
@@ -1967,26 +3356,25 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
                 return new Status(StatusCode.CONFLICT, msg);
             }
 
-            Status stName = saveTenantNames();
-            Status stConf = saveTenantConfig(vtn);
-            if (!stName.isSuccess()) {
-                status = stName;
-            } else if (!stConf.isSuccess()) {
+            // Create a VTN flow database.
+            createTenantFlowDB(tenantName);
+
+            Status status = saveTenantNamesLocked();
+            Status stConf = vtn.saveConfig(null);
+            if (status.isSuccess()) {
                 status = stConf;
-            } else {
-                status = new Status(StatusCode.SUCCESS, null);
             }
 
             VTenant vtenant = vtn.getVTenant();
             updateVTNMode();
-            notifyChange(path, vtenant, UpdateType.ADDED);
+            enqueueEvent(path, vtenant, UpdateType.ADDED);
+
+            return status;
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
-            wrlock.unlock();
+            data.cleanUp(this);
         }
-
-        return status;
     }
 
     /**
@@ -2004,31 +3392,26 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     @Override
     public Status modifyTenant(VTenantPath path, VTenantConfig tconf,
                                boolean all) {
-        Status status = checkContainerMode();
-        if (status != null) {
-            return status;
-        }
         if (tconf == null) {
             return argumentIsNull("Tenant configuration");
         }
 
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
+        VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
+            checkUpdate();
+
             VTenantImpl vtn = getTenantImpl(path);
             if (!vtn.setVTenantConfig(this, path, tconf, all)) {
                 return new Status(StatusCode.SUCCESS, "Not modified");
             }
 
             tenantDB.put(vtn.getName(), vtn);
-            status = saveTenantConfig(vtn);
+            return vtn.saveConfig(null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
-            rdlock.unlock();
+            data.cleanUp(this);
         }
-
-        return status;
     }
 
     /**
@@ -2039,14 +3422,6 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      */
     @Override
     public Status removeTenant(VTenantPath path) {
-        Status status = checkContainerMode();
-        if (status != null) {
-            return status;
-        }
-
-        if (tenantDB == null) {
-            return cacheNotInitialized();
-        }
         if (path == null) {
             return argumentIsNull("Path");
         }
@@ -2056,29 +3431,35 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             return argumentIsNull("Tenant name");
         }
 
-        Lock wrlock = rwLock.writeLock();
-        wrlock.lock();
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
+            checkUpdate();
+
             // Make the specified tenant invisible.
             VTenantImpl vtn = tenantDB.remove(tenantName);
             if (vtn == null) {
                 return tenantNotFound(tenantName);
             }
 
-            status = saveTenantNames();
-            if (configSaveEvent != null) {
-                configSaveEvent.remove(tenantName);
-            }
-
             VTenant vtenant = vtn.getVTenant();
             vtn.destroy(this);
-            notifyChange(path, vtenant, UpdateType.REMOVED);
-            updateVTNMode();
-        } finally {
-            wrlock.unlock();
-        }
 
-        return status;
+            // Purge all VTN flows in this tenant.
+            VTNFlowDatabase fdb = removeTenantFlowDB(tenantName);
+            if (fdb != null) {
+                VTNThreadData.removeFlows(this, fdb);
+            }
+
+            Status status = saveTenantNamesLocked();
+            updateVTNMode();
+            enqueueEvent(path, vtenant, UpdateType.REMOVED);
+
+            return status;
+        } catch (VTNException e) {
+            return e.getStatus();
+        } finally {
+            data.cleanUp(this);
+        }
     }
 
     /**
@@ -2096,7 +3477,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.getBridges(this);
         } finally {
-            rdlock.unlock();
+            unlock(rdlock);
         }
     }
 
@@ -2115,7 +3496,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.getBridge(this, path);
         } finally {
-            rdlock.unlock();
+            unlock(rdlock);
         }
     }
 
@@ -2128,25 +3509,19 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      */
     @Override
     public Status addBridge(VBridgePath path, VBridgeConfig bconf) {
-        Status status = checkContainerMode();
-        if (status != null) {
-            return status;
-        }
-
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
+        VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
+            checkUpdate();
+
             VTenantImpl vtn = getTenantImpl(path);
             vtn.addBridge(this, path, bconf);
             tenantDB.put(vtn.getName(), vtn);
-            status = saveTenantConfig(vtn);
+            return vtn.saveConfig(null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
-            rdlock.unlock();
+            data.cleanUp(this);
         }
-
-        return status;
     }
 
     /**
@@ -2164,28 +3539,22 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     @Override
     public Status modifyBridge(VBridgePath path, VBridgeConfig bconf,
                                boolean all) {
-        Status status = checkContainerMode();
-        if (status != null) {
-            return status;
-        }
-
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
+        VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
+            checkUpdate();
+
             VTenantImpl vtn = getTenantImpl(path);
             if (!vtn.modifyBridge(this, path, bconf, all)) {
                 return new Status(StatusCode.SUCCESS, "Not modified");
             }
 
             tenantDB.put(vtn.getName(), vtn);
-            status = saveTenantConfig(vtn);
+            return vtn.saveConfig(null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
-            rdlock.unlock();
+            data.cleanUp(this);
         }
-
-        return status;
     }
 
     /**
@@ -2196,25 +3565,19 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      */
     @Override
     public Status removeBridge(VBridgePath path) {
-        Status status = checkContainerMode();
-        if (status != null) {
-            return status;
-        }
-
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
+        VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
+            checkUpdate();
+
             VTenantImpl vtn = getTenantImpl(path);
             vtn.removeBridge(this, path);
             tenantDB.put(vtn.getName(), vtn);
-            status = saveTenantConfig(vtn);
+            return vtn.saveConfig(null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
-            rdlock.unlock();
+            data.cleanUp(this);
         }
-
-        return status;
     }
 
     /**
@@ -2234,7 +3597,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.getBridgeInterfaces(this, path);
         } finally {
-            rdlock.unlock();
+            unlock(rdlock);
         }
     }
 
@@ -2255,7 +3618,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.getBridgeInterface(this, path);
         } finally {
-            rdlock.unlock();
+            unlock(rdlock);
         }
     }
 
@@ -2269,25 +3632,19 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     @Override
     public Status addBridgeInterface(VBridgeIfPath path,
                                      VInterfaceConfig iconf) {
-        Status status = checkContainerMode();
-        if (status != null) {
-            return status;
-        }
-
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
+        VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
+            checkUpdate();
+
             VTenantImpl vtn = getTenantImpl(path);
             vtn.addBridgeInterface(this, path, iconf);
             tenantDB.put(vtn.getName(), vtn);
-            status = saveTenantConfig(vtn);
+            return vtn.saveConfig(null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
-            rdlock.unlock();
+            data.cleanUp(this);
         }
-
-        return status;
     }
 
     /**
@@ -2306,28 +3663,22 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     @Override
     public Status modifyBridgeInterface(VBridgeIfPath path,
                                         VInterfaceConfig iconf, boolean all) {
-        Status status = checkContainerMode();
-        if (status != null) {
-            return status;
-        }
-
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
+        VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
+            checkUpdate();
+
             VTenantImpl vtn = getTenantImpl(path);
             if (!vtn.modifyBridgeInterface(this, path, iconf, all)) {
                 return new Status(StatusCode.SUCCESS, "Not modified");
             }
 
             tenantDB.put(vtn.getName(), vtn);
-            status = saveTenantConfig(vtn);
+            return vtn.saveConfig(null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
-            rdlock.unlock();
+            data.cleanUp(this);
         }
-
-        return status;
     }
 
     /**
@@ -2338,25 +3689,19 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      */
     @Override
     public Status removeBridgeInterface(VBridgeIfPath path) {
-        Status status = checkContainerMode();
-        if (status != null) {
-            return status;
-        }
-
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
+        VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
+            checkUpdate();
+
             VTenantImpl vtn = getTenantImpl(path);
             vtn.removeBridgeInterface(this, path);
             tenantDB.put(vtn.getName(), vtn);
-            status = saveTenantConfig(vtn);
+            return vtn.saveConfig(null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
-            rdlock.unlock();
+            data.cleanUp(this);
         }
-
-        return status;
     }
 
     /**
@@ -2375,7 +3720,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.getVlanMaps(path);
         } finally {
-            rdlock.unlock();
+            unlock(rdlock);
         }
     }
 
@@ -2397,7 +3742,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.getVlanMap(path, mapId);
         } finally {
-            rdlock.unlock();
+            unlock(rdlock);
         }
     }
 
@@ -2413,24 +3758,20 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     @Override
     public VlanMap addVlanMap(VBridgePath path, VlanMapConfig vlconf)
         throws VTNException {
-        Status status = checkContainerMode();
-        if (status != null) {
-            throw new VTNException(status);
-        }
-
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
+        VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
+            checkUpdate();
+
             VTenantImpl vtn = getTenantImpl(path);
             VlanMap vlmap = vtn.addVlanMap(this, path, vlconf);
             tenantDB.put(vtn.getName(), vtn);
-            status = saveTenantConfig(vtn);
+            Status status = vtn.saveConfig(null);
             if (!status.isSuccess()) {
                 throw new VTNException(status);
             }
             return vlmap;
         } finally {
-            rdlock.unlock();
+            data.cleanUp(this);
         }
     }
 
@@ -2443,25 +3784,19 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      */
     @Override
     public Status removeVlanMap(VBridgePath path, String mapId) {
-        Status status = checkContainerMode();
-        if (status != null) {
-            return status;
-        }
-
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
+        VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
+            checkUpdate();
+
             VTenantImpl vtn = getTenantImpl(path);
             vtn.removeVlanMap(this, path, mapId);
             tenantDB.put(vtn.getName(), vtn);
-            status = saveTenantConfig(vtn);
+            return vtn.saveConfig(null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
-            rdlock.unlock();
+            data.cleanUp(this);
         }
-
-        return status;
     }
 
     /**
@@ -2481,7 +3816,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.getPortMap(this, path);
         } finally {
-            rdlock.unlock();
+            unlock(rdlock);
         }
     }
 
@@ -2497,22 +3832,18 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      */
     @Override
     public Status setPortMap(VBridgeIfPath path, PortMapConfig pmconf) {
-        Status status = checkContainerMode();
-        if (status != null) {
-            return status;
-        }
-
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
+        VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
+            checkUpdate();
+
             VTenantImpl vtn = getTenantImpl(path);
             vtn.setPortMap(this, path, pmconf);
             tenantDB.put(vtn.getName(), vtn);
-            return saveTenantConfig(vtn);
+            return vtn.saveConfig(null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
-            rdlock.unlock();
+            data.cleanUp(this);
         }
     }
 
@@ -2549,6 +3880,10 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
+            if (!serviceAvailable) {
+                return;
+            }
+
             if (pathSet != null) {
                 for (VBridgePath bpath: pathSet) {
                     try {
@@ -2565,7 +3900,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
                 }
             }
         } finally {
-            rdlock.unlock();
+            unlock(rdlock);
         }
     }
 
@@ -2593,6 +3928,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
 
         NodeConnector nc = host.getnodeConnector();
         try {
+            checkService();
             checkNodeConnector(nc);
         } catch (VTNException e) {
             Status status = e.getStatus();
@@ -2640,7 +3976,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
                 }
             }
         } finally {
-            rdlock.unlock();
+            unlock(rdlock);
         }
 
         return false;
@@ -2654,6 +3990,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      * @return  A list of MAC address entries.
      * @throws VTNException  An error occurred.
      */
+    @Override
     public List<MacAddressEntry> getMacEntries(VBridgePath path)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
@@ -2662,7 +3999,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.getMacEntries(this, path);
         } finally {
-            rdlock.unlock();
+            unlock(rdlock);
         }
     }
 
@@ -2676,6 +4013,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      *          {@code null} is returned if not found.
      * @throws VTNException  An error occurred.
      */
+    @Override
     public MacAddressEntry getMacEntry(VBridgePath path, DataLinkAddress addr)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
@@ -2684,7 +4022,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.getMacEntry(this, path, addr);
         } finally {
-            rdlock.unlock();
+            unlock(rdlock);
         }
     }
 
@@ -2698,16 +4036,19 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      *          {@code null} is returned if not found.
      * @throws VTNException  An error occurred.
      */
+    @Override
     public MacAddressEntry removeMacEntry(VBridgePath path,
                                           DataLinkAddress addr)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
+            checkUpdate();
+
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.removeMacEntry(this, path, addr);
         } finally {
-            rdlock.unlock();
+            unlock(rdlock);
         }
     }
 
@@ -2717,19 +4058,74 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      * @param path  Path to the bridge.
      * @return  "Success" or failure reason.
      */
+    @Override
     public Status flushMacEntries(VBridgePath path) {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
+            checkUpdate();
+
             VTenantImpl vtn = getTenantImpl(path);
             vtn.flushMacEntries(this, path);
+        } catch (VTNException e) {
+            return e.getStatus();
+        } finally {
+            unlock(rdlock);
+        }
+
+        return new Status(StatusCode.SUCCESS, null);
+    }
+
+    // IVTNFlowDebugger
+
+    /**
+     * Remove all flow entries in the specified virtual tenant.
+     *
+     * @param path   Path to the virtual tenant.
+     * @return  "Success" or failure reason.
+     */
+    @Override
+    public Status removeAllFlows(VTenantPath path) {
+        if (path == null) {
+            return argumentIsNull("Path");
+        }
+
+        String tenantName = path.getTenantName();
+        if (tenantName == null) {
+            return argumentIsNull("Tenant name");
+        }
+
+        FlowRemoveTask task;
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            checkUpdate();
+
+            VTNFlowDatabase fdb = getTenantFlowDB(tenantName);
+            if (fdb == null) {
+                return tenantNotFound(tenantName);
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}:{}: Clear flow entries", containerName, path);
+            }
+            task = fdb.clear(this);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
             rdlock.unlock();
         }
 
-        return new Status(StatusCode.SUCCESS, null);
+        Status status;
+        if (task != null) {
+            // Wait for completion of flow remove task.
+            FlowModResult result = task.getResult();
+            status = result.toStatus();
+        } else {
+            status = new Status(StatusCode.SUCCESS, null);
+        }
+
+        return status;
     }
 
     // IObjectReader
@@ -2763,20 +4159,12 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      * node
      */
     @Override
-    public void entryCreated(String key, String cacheName,
+    public void entryCreated(ClusterEventId key, String cacheName,
                              boolean originLocal) {
-        if (!originLocal) {
-            // Update a list of the tenant names.
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("{}.{}: Received new tenant name",
-                          containerName, key);
-            }
-            saveTenantNames();
-        }
     }
 
     /**
-     * Called anytime a given entry is updated
+     * Called anytime a given entry is updated.
      *
      * @param key         Key for the entry modified.
      * @param newValue    The new value the key will have.
@@ -2785,31 +4173,63 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      *                    node.
      */
     @Override
-    public void entryUpdated(String key, Long newValue, String cacheName,
-                             boolean originLocal) {
-        if (originLocal || tenantDB == null) {
+    public void entryUpdated(ClusterEventId key, Object newValue,
+                             String cacheName, boolean originLocal) {
+        if (originLocal) {
             return;
         }
 
-        if (LOG.isTraceEnabled()) {
-            LOG.trace("{}.{}: Received config save event",
-                      containerName, key);
-        }
-        if (key.equals(CHSAVE_ALL)) {
-            saveLocalConfig(true);
-            return;
-        }
-
-        // Save the tenant configuration specified by the map key.
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
-        try {
-            VTenantImpl vtn = tenantDB.get(key);
-            if (vtn != null) {
-                vtn.saveConfig(this);
+        if (CACHE_EVENT.equals(cacheName)) {
+            if (key.isLocal()) {
+                LOG.debug("{}: Local key is updated, but originLocal " +
+                          "is false: key={}, value={}", containerName,
+                          key, newValue);
+                return;
             }
-        } finally {
-            rdlock.unlock();
+            if (!(newValue instanceof ClusterEvent)) {
+                LOG.error("{}: Unexpected value in cluster event cache: " +
+                          "key={}, value={}", containerName, key, newValue);
+                return;
+            }
+
+            ClusterEvent cev = (ClusterEvent)newValue;
+            if (LOG.isTraceEnabled()) {
+                cev.traceLog(this, LOG, key);
+            }
+            cev.received(this, false);
+        } else if (CACHE_FLOWS.equals(cacheName)) {
+            if (key.isLocal()) {
+                LOG.debug("{}: Local VTN flow is updated, but originLocal " +
+                          "is false: key={}, value={}", containerName,
+                          key, newValue);
+                return;
+            }
+            if (!(key instanceof FlowGroupId)) {
+                LOG.error("{}: Unexpected key in flow DB: key={}, value={}",
+                          containerName, key, newValue);
+                return;
+            }
+            if (!(newValue instanceof VTNFlow)) {
+                LOG.error("{}: Unexpected value in flow DB: key={}, value={}",
+                          containerName, key, newValue);
+                return;
+            }
+
+            FlowGroupId gid = (FlowGroupId)key;
+            VTNFlowDatabase fdb = getTenantFlowDB(gid);
+            if (fdb == null) {
+                LOG.error("{}: update: Flow database was not found: group={}",
+                          containerName, gid);
+                return;
+            }
+
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}: Received new VTN flow: group={}",
+                          containerName, gid);
+            }
+
+            // Update indices for a new VTN flow.
+            fdb.createIndex(this, (VTNFlow)newValue);
         }
     }
 
@@ -2823,20 +4243,33 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      *                    node.
      */
     @Override
-    public void entryDeleted(String key, String cacheName,
+    public void entryDeleted(ClusterEventId key, String cacheName,
                              boolean originLocal) {
-        if (!originLocal) {
-            // Update a list of the tenant names.
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("{}.{}: Received removed tenant name",
-                          containerName, key);
-            }
-            saveTenantNames();
+        if (originLocal) {
+            return;
+        }
 
-            if (!key.equals(CHSAVE_ALL)) {
-                // Delete the virtual tenant configuration file.
-                VTenantImpl.deleteConfigFile(containerName, key);
+        if (CACHE_FLOWS.equals(cacheName)) {
+            if (!(key instanceof FlowGroupId)) {
+                LOG.error("{}: Unexpected key in the flow DB: {}",
+                          containerName, key);
+                return;
             }
+
+            FlowGroupId gid = (FlowGroupId)key;
+            VTNFlowDatabase fdb = getTenantFlowDB(gid);
+            if (fdb == null) {
+                LOG.debug("{}: Flow database is already removed, but " +
+                          "originLocal is false: group={}",
+                          containerName, gid);
+                return;
+            }
+
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}: Received removed VTN flow group name: {}",
+                          containerName, gid);
+            }
+            fdb.flowRemoved(this, gid);
         }
     }
 
@@ -2849,8 +4282,29 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      */
     @Override
     public Status saveConfiguration() {
-        raiseConfigSaveEvent(CHSAVE_ALL);
-        return saveLocalConfig(false);
+        HashSet<String> nameSet = new HashSet<String>();
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            Status failure = null;
+            for (VTenantImpl vtn: tenantDB.values()) {
+                nameSet.add(vtn.getName());
+
+                Status st = vtn.saveConfig(null);
+                if (!st.isSuccess()) {
+                    failure = st;
+                }
+            }
+
+            Status status = saveTenantNames(nameSet);
+            if (failure != null) {
+                status = failure;
+            }
+
+            return status;
+        } finally {
+            unlock(rdlock);
+        }
     }
 
     // IInventoryListener
@@ -2871,14 +4325,22 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             return;
         }
 
-        if (type == UpdateType.ADDED) {
-            addDisabledNode(node);
-        } else {
-            assert type == UpdateType.REMOVED;
-            TimerTask task = disabledNodes.remove(node);
-            if (task != null) {
-                task.cancel();
+        // Maintain the node DB.
+        Lock wrlock = rwLock.writeLock();
+        wrlock.lock();
+        try {
+            if (type == UpdateType.ADDED) {
+                if (!addNode(node)) {
+                    return;
+                }
+            } else {
+                assert type == UpdateType.REMOVED;
+                if (!removeNode(node)) {
+                    return;
+                }
             }
+        } finally {
+            wrlock.unlock();
         }
 
         Lock rdlock = rwLock.readLock();
@@ -2888,7 +4350,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
                 vtn.notifyNode(this, node, type);
             }
         } finally {
-            rdlock.unlock();
+            unlock(rdlock);
         }
     }
 
@@ -2903,6 +4365,24 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
     @Override
     public void notifyNodeConnector(NodeConnector nc, UpdateType type,
                                     Map<String, Property> propMap) {
+        // Maintain the port DB.
+        Lock wrlock = rwLock.writeLock();
+        wrlock.lock();
+        try {
+            if (type == UpdateType.REMOVED) {
+                if (!removePort(nc)) {
+                    return;
+                }
+            } else {
+                type = addPort(nc, propMap);
+                if (type == null) {
+                    return;
+                }
+            }
+        } finally {
+            wrlock.unlock();
+        }
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -2910,7 +4390,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
                 vtn.notifyNodeConnector(this, nc, type);
             }
         } finally {
-            rdlock.unlock();
+            unlock(rdlock);
         }
     }
 
@@ -2932,13 +4412,13 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
                 vtn.edgeUpdate(this, topoList);
             }
         } finally {
-            rdlock.unlock();
+            unlock(rdlock);
         }
     }
 
     /**
      * Called when an Edge utilization is above the safety threshold configured
-     * on the controller
+     * on the controller.
      *
      * @param edge  The edge which bandwidth usage is above the safety level
      */
@@ -2948,7 +4428,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
 
     /**
      * Called when the Edge utilization is back to normal, below the safety
-     * threshold level configured on the controller
+     * threshold level configured on the controller.
      *
      * @param edge  The edge which bandwidth usage is back to the normal level.
      */
@@ -3035,15 +4515,13 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             return;
         }
 
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
+        Lock wrlock = rwLock.readLock();
+        wrlock.lock();
         try {
-            synchronized (this) {
-                inContainerMode = mode;
-                updateVTNMode();
-            }
+            inContainerMode = mode;
+            updateVTNMode();
         } finally {
-            rdlock.unlock();
+            unlock(wrlock);
         }
     }
 
@@ -3108,21 +4586,20 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
             return PacketResult.IGNORED;
         }
 
-        ArpHandler arph = getArpHandler();
-        if (arph != null) {
-            // No VTN. Pass packet to the ARP handler emulator.
-            return arph.receive(pctx);
-        }
-
-        if (topologyManager.isInternal(nc)) {
-            LOG.debug("{}: Ignore packet from internal node connector: {}",
-                      containerName, nc);
-            return PacketResult.IGNORED;
-        }
-
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
+            if (arpHandler != null) {
+                // No VTN. Pass packet to the ARP handler emulator.
+                return arpHandler.receive(pctx);
+            }
+
+            if (topologyManager.isInternal(nc)) {
+                LOG.debug("{}: Ignore packet from internal node connector: {}",
+                          containerName, nc);
+                return PacketResult.IGNORED;
+            }
+
             // Port mappings should precede VLAN mappings.
             LOOP:
             for (MapType type: MapType.values()) {
@@ -3138,7 +4615,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
                 }
             }
         } finally {
-            rdlock.unlock();
+            unlock(rdlock);
         }
 
         return res;
@@ -3160,7 +4637,7 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
                 vtn.recalculateDone(this);
             }
         } finally {
-            rdlock.unlock();
+            unlock(rdlock);
         }
     }
 
@@ -3175,11 +4652,16 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      */
     @Override
     public void find(InetAddress networkAddress) {
-        ArpHandler arph = getArpHandler();
-        if (arph == null) {
-            findHost(networkAddress, null);
-        } else {
-            arph.find(networkAddress);
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            if (arpHandler == null) {
+                findHost(networkAddress, null);
+            } else {
+                arpHandler.find(networkAddress);
+            }
+        } finally {
+            unlock(rdlock);
         }
     }
 
@@ -3191,11 +4673,53 @@ public class VTNManagerImpl implements IVTNManager, IObjectReader,
      */
     @Override
     public void probe(HostNodeConnector host) {
-        ArpHandler arph = getArpHandler();
-        if (arph == null) {
-            probeHost(host);
-        } else {
-            arph.probe(host);
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            if (arpHandler == null) {
+                probeHost(host);
+            } else {
+                arpHandler.probe(host);
+            }
+        } finally {
+            unlock(rdlock);
         }
+    }
+
+    // IFlowProgrammerListener
+
+    /**
+     * Invoked when a SAL flow has expired.
+     *
+     * @param node  The network node on which the flow got removed.
+     * @param flow  The flow that got removed.
+     *              Note: It may contain only the Match and flow parameters
+     *              fields. Actions may not be present.
+     */
+    @Override
+    public void flowRemoved(Node node, Flow flow) {
+        VTNFlowDatabase found = null;
+        String empty = "";
+        FlowEntry entry = new FlowEntry(empty, empty, flow, node);
+        for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+            if (fdb.containsIngressFlow(entry)) {
+                found = fdb;
+                break;
+            }
+        }
+        if (found != null) {
+            found.flowRemoved(this, entry);
+        }
+    }
+
+    /**
+     * Invoked when an error message has been received from a switch.
+     *
+     * @param node  The network node on which the error reported.
+     * @param rid   The offending message request ID.
+     * @param err   The error message.
+     */
+    @Override
+    public void flowErrorReported(Node node, long rid, Object err) {
     }
 }
