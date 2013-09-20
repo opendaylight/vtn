@@ -48,7 +48,7 @@ public class ClusterEventId implements Serializable {
      * A character which separates fields in a string representation of
      * event ID.
      */
-    public final static char  SEPARATOR = '-';
+    public static final char  SEPARATOR = '-';
 
     /**
      * Identifier of the local cluster node.
@@ -58,7 +58,7 @@ public class ClusterEventId implements Serializable {
     /**
      * Event identifier for the next allocation.
      */
-    protected final static AtomicLong  nextEventId = new AtomicLong();
+    protected static final AtomicLong  nextEventId = new AtomicLong();
 
     /**
      * Cluster node identifier.

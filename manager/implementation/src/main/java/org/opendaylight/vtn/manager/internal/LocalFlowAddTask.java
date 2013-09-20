@@ -22,7 +22,7 @@ public class LocalFlowAddTask extends FlowEntryTask {
     /**
      * Logger instance.
      */
-    private final static Logger  LOG =
+    private static final Logger  LOG =
         LoggerFactory.getLogger(LocalFlowAddTask.class);
 
     /**
@@ -43,7 +43,7 @@ public class LocalFlowAddTask extends FlowEntryTask {
      */
     @Override
     protected boolean execute() {
-        return installLocal(flowEntry);
+        return installLocal(getFlowEntry());
     }
 
     /**

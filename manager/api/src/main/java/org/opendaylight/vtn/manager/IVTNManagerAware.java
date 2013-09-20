@@ -25,7 +25,7 @@ public interface IVTNManagerAware {
      *                 {@code REMOVED} if removed.
      *                 {@code CHANGED} if changed.
      */
-    public void vtnChanged(VTenantPath path, VTenant vtenant, UpdateType type);
+    void vtnChanged(VTenantPath path, VTenant vtenant, UpdateType type);
 
     /**
      * Invoked when a virtual L2 bridge is added, removed, or changed.
@@ -36,8 +36,7 @@ public interface IVTNManagerAware {
      *                 {@code REMOVED} if removed.
      *                 {@code CHANGED} if changed.
      */
-    public void vBridgeChanged(VBridgePath path, VBridge vbridge,
-                               UpdateType type);
+    void vBridgeChanged(VBridgePath path, VBridge vbridge, UpdateType type);
 
     /**
      * Invoked when a virtual L2 bridge interface is added, removed, or
@@ -49,8 +48,8 @@ public interface IVTNManagerAware {
      *                {@code REMOVED} if removed.
      *                {@code CHANGED} if changed.
      */
-    public void vBridgeInterfaceChanged(VBridgeIfPath path, VInterface viface,
-                                        UpdateType type);
+    void vBridgeInterfaceChanged(VBridgeIfPath path, VInterface viface,
+                                 UpdateType type);
 
     /**
      * Invoked when a VLAN is mapped to the virtual L2 bridge, or unmapped.
@@ -60,8 +59,7 @@ public interface IVTNManagerAware {
      * @param type   {@code ADDED} if added.
      *               {@code REMOVED} if removed.
      */
-    public void vlanMapChanged(VBridgePath path, VlanMap vlmap,
-                               UpdateType type);
+    void vlanMapChanged(VBridgePath path, VlanMap vlmap, UpdateType type);
 
     /**
      * Invoked when a mapping between virtual bridge interface between
@@ -74,6 +72,5 @@ public interface IVTNManagerAware {
      *              {@code REMOVED} if destroyed.
      *              {@code CHANGED} if changed.
      */
-    public void portMapChanged(VBridgeIfPath path, PortMap pmap,
-                               UpdateType type);
+    void portMapChanged(VBridgeIfPath path, PortMap pmap, UpdateType type);
 }

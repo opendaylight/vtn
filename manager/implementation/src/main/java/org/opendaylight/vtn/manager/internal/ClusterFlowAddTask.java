@@ -28,7 +28,7 @@ public class ClusterFlowAddTask extends ClusterFlowModTask {
     /**
      * Logger instance.
      */
-    private final static Logger  LOG =
+    private static final Logger  LOG =
         LoggerFactory.getLogger(ClusterFlowAddTask.class);
 
     /**
@@ -49,7 +49,7 @@ public class ClusterFlowAddTask extends ClusterFlowModTask {
      */
     @Override
     protected boolean modifyFlow() {
-        return installLocal(flowEntry);
+        return installLocal(getFlowEntry());
     }
 
     /**

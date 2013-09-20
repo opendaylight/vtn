@@ -26,7 +26,7 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 @XmlRootElement(name = "portmap")
 @XmlAccessorType(XmlAccessType.NONE)
 public class PortMapInfo extends PortMapConfig {
-    private final static long serialVersionUID =  -225590318297720518L;
+    private static final long serialVersionUID =  7081865293009944033L;
 
     /**
      * Identifier of node connector associated with the switch port actually
@@ -103,10 +103,9 @@ public class PortMapInfo extends PortMapConfig {
      */
     @Override
     public int hashCode() {
-        int h = 607 + super.hashCode();
-
+        int h = super.hashCode();
         if (mapped != null) {
-            h += mapped.hashCode();
+            h ^= mapped.hashCode();
         }
 
         return h;

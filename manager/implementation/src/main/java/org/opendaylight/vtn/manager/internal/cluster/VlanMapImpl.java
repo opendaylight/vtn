@@ -46,13 +46,13 @@ import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
  *   class.
  * </p>
  */
-public class VlanMapImpl implements VBridgeNode, Serializable {
-    private static final long serialVersionUID = 7906444004478478476L;
+public final class VlanMapImpl implements VBridgeNode, Serializable {
+    private static final long serialVersionUID = -784362913741696063L;
 
     /**
      * Logger instance.
      */
-    private final static Logger  LOG =
+    private static final Logger  LOG =
         LoggerFactory.getLogger(VlanMapImpl.class);
 
     /**
@@ -327,18 +327,6 @@ public class VlanMapImpl implements VBridgeNode, Serializable {
         }
 
         return bstate;
-    }
-
-    /**
-     * Set valid flag for the VLAN mapping.
-     *
-     * @param db     Virtual node state DB.
-     * @param valid  {@code true} if the VLAN mapping is valid.
-     */
-    private void setValid(ConcurrentMap<VTenantPath, Object> db,
-                          boolean valid) {
-        boolean cur = isValid(db);
-        setValid(db, cur, valid);
     }
 
     /**

@@ -35,7 +35,7 @@ public class FlowAddTask extends RemoteFlowModTask {
     /**
      * Logger instance.
      */
-    private final static Logger  LOG =
+    private static final Logger  LOG =
         LoggerFactory.getLogger(FlowAddTask.class);
 
     /**
@@ -64,11 +64,12 @@ public class FlowAddTask extends RemoteFlowModTask {
     protected boolean execute() {
         // This class expects that the given VTN flow has at least one flow
         // entry.
+        VTNManagerImpl mgr = getVTNManager();
         FlowGroupId gid = vtnFlow.getGroupId();
         Iterator<FlowEntry> it = vtnFlow.getFlowEntries().iterator();
         if (!it.hasNext()) {
             LOG.error("{}: No flow entry in a VTN flow: {}",
-                      vtnManager.getContainerName(), gid);
+                      mgr.getContainerName(), gid);
             return false;
         }
 
@@ -79,16 +80,16 @@ public class FlowAddTask extends RemoteFlowModTask {
         }
 
         // This class expects that the ingress flow is installed to local node.
-        IConnectionManager cnm = vtnManager.getConnectionManager();
+        IConnectionManager cnm = mgr.getConnectionManager();
         ConnectionLocality cl = cnm.getLocalityStatus(ingress.getNode());
         if (cl != ConnectionLocality.LOCAL) {
             if (cl == ConnectionLocality.NOT_LOCAL) {
                 LOG.error("{}: Ingress flow must be installed to " +
-                          "local node: {}", vtnManager.getContainerName(),
+                          "local node: {}", mgr.getContainerName(),
                           ingress);
             } else {
                 LOG.error("{}: Target node of ingress flow entry is " +
-                          "disconnected: {}", vtnManager.getContainerName(),
+                          "disconnected: {}", mgr.getContainerName(),
                           ingress);
             }
             return false;
@@ -108,7 +109,7 @@ public class FlowAddTask extends RemoteFlowModTask {
 
             if (!remote.isEmpty()) {
                 // Direct remote cluster nodes to install flow entries.
-                VTNConfig vc = vtnManager.getVTNConfig();
+                VTNConfig vc = mgr.getVTNConfig();
                 long limit = System.currentTimeMillis() +
                     (long)vc.getRemoteFlowModTimeout();
                 if (!modifyRemoteFlow(remote, false, limit)) {
@@ -127,8 +128,7 @@ public class FlowAddTask extends RemoteFlowModTask {
         }
 
         // Put VTN flow into the cluster cache.
-        ConcurrentMap<FlowGroupId, VTNFlow> db = vtnManager.getFlowDB();
-        vtnFlow.pack();
+        ConcurrentMap<FlowGroupId, VTNFlow> db = mgr.getFlowDB();
         db.put(gid, vtnFlow);
 
         // Install ingress flow.
@@ -139,7 +139,7 @@ public class FlowAddTask extends RemoteFlowModTask {
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("{}: Installed VTN flow: group={}",
-                      vtnManager.getContainerName(), vtnFlow.getGroupId());
+                      mgr.getContainerName(), vtnFlow.getGroupId());
         }
 
         return true;
@@ -163,8 +163,7 @@ public class FlowAddTask extends RemoteFlowModTask {
     @Override
     protected void sendRequest(List<FlowEntry> entries) {
         // Send flow add event.
-        FlowAddEvent ev = new FlowAddEvent(entries);
-        vtnManager.postEvent(ev);
+        postEvent(new FlowAddEvent(entries));
     }
 
     /**
@@ -187,19 +186,19 @@ public class FlowAddTask extends RemoteFlowModTask {
     private boolean install(List<FlowEntry> entries,
                             List<LocalFlowAddTask> local,
                             List<FlowEntry> remote) {
-        IConnectionManager cnm = vtnManager.getConnectionManager();
-        IVTNResourceManager resMgr = vtnManager.getResourceManager();
+        VTNManagerImpl mgr = getVTNManager();
+        IConnectionManager cnm = mgr.getConnectionManager();
         for (FlowEntry fent: entries) {
             ConnectionLocality cl = cnm.getLocalityStatus(fent.getNode());
             if (cl == ConnectionLocality.LOCAL) {
-                LocalFlowAddTask task = new LocalFlowAddTask(vtnManager, fent);
+                LocalFlowAddTask task = new LocalFlowAddTask(mgr, fent);
                 local.add(task);
-                vtnManager.postAsync(task);
+                mgr.postAsync(task);
             } else if (cl == ConnectionLocality.NOT_LOCAL) {
                 remote.add(fent);
             } else {
                 LOG.error("{}: Target node of flow entry is disconnected: {}",
-                          vtnManager.getConnectionManager(), fent);
+                          mgr.getConnectionManager(), fent);
                 return false;
             }
         }
@@ -215,9 +214,11 @@ public class FlowAddTask extends RemoteFlowModTask {
      */
     private void rollback(List<LocalFlowAddTask> local,
                           List<FlowEntry> remote) {
+        VTNManagerImpl mgr = getVTNManager();
+
         // Uninstall flow entries.
         if (local != null) {
-            IForwardingRulesManager frm = vtnManager.getForwardingRuleManager();
+            IForwardingRulesManager frm = mgr.getForwardingRuleManager();
             for (LocalFlowAddTask task: local) {
                 task.waitFor();
                 FlowEntry fent = task.getFlowEntry();
@@ -228,18 +229,18 @@ public class FlowAddTask extends RemoteFlowModTask {
         FlowGroupId gid = vtnFlow.getGroupId();
         if (remote != null && !remote.isEmpty()) {
             FlowRemoveTask task =
-                new FlowRemoveTask(vtnManager, gid, null, remote.iterator());
+                new FlowRemoveTask(mgr, gid, null, remote.iterator());
             task.run();
             task.getResult();
         }
 
         // Remove the VTN flow from the flow database.
-        VTNFlowDatabase fdb = vtnManager.getTenantFlowDB(gid.getTenantName());
+        VTNFlowDatabase fdb = mgr.getTenantFlowDB(gid.getTenantName());
         if (fdb != null) {
-            fdb.removeIndex(vtnManager, vtnFlow);
+            fdb.removeIndex(mgr, vtnFlow);
         }
 
-        ConcurrentMap<FlowGroupId, VTNFlow> db = vtnManager.getFlowDB();
+        ConcurrentMap<FlowGroupId, VTNFlow> db = mgr.getFlowDB();
         db.remove(gid);
     }
 }

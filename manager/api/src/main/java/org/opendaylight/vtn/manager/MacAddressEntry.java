@@ -22,7 +22,7 @@ import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
  * by the virtual L2 bridge.
  */
 public class MacAddressEntry implements Serializable {
-    private final static long serialVersionUID = 3397483429917503863L;
+    private static final long serialVersionUID = -9111260127680923458L;
 
     /**
      * MAC address.
@@ -43,8 +43,7 @@ public class MacAddressEntry implements Serializable {
     /**
      * Set of IP addresses found in the Ethernet frame.
      */
-    private final HashSet<InetAddress>  inetAddresses =
-        new HashSet<InetAddress>();
+    private final Set<InetAddress>  inetAddresses = new HashSet<InetAddress>();
 
     /**
      * Construct a new MAC address entry.
@@ -107,7 +106,7 @@ public class MacAddressEntry implements Serializable {
      *          IP address is associated.
      */
     public Set<InetAddress> getInetAddresses() {
-        return (Set<InetAddress>)inetAddresses.clone();
+        return new HashSet<InetAddress>(inetAddresses);
     }
 
     /**

@@ -81,10 +81,9 @@ public class VBridgeList {
      */
     @Override
     public int hashCode() {
-        int h = 2917;
-
+        int h = 0;
         if (bridgeList != null && !bridgeList.isEmpty()) {
-            h += bridgeList.hashCode();
+            h ^= bridgeList.hashCode();
         }
 
         return h;

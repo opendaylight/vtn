@@ -81,10 +81,9 @@ public class VTenantList {
      */
     @Override
     public int hashCode() {
-        int h = 4561;
-
+        int h = 0;
         if (tenantList != null && !tenantList.isEmpty()) {
-            h += tenantList.hashCode();
+            h ^= tenantList.hashCode();
         }
 
         return h;

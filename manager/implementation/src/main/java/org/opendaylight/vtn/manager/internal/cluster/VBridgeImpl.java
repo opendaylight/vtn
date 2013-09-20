@@ -78,34 +78,34 @@ import org.opendaylight.controller.switchmanager.ISwitchManager;
  *   class.
  * </p>
  */
-public class VBridgeImpl implements Serializable {
-    private static final long serialVersionUID = 5809623386349895195L;
+public final class VBridgeImpl implements Serializable {
+    private static final long serialVersionUID =  -4099528491204018963L;
 
     /**
      * Logger instance.
      */
-    private final static Logger  LOG =
+    private static final Logger  LOG =
         LoggerFactory.getLogger(VBridgeImpl.class);
 
     /**
      * Default interval of MAC address table aging.
      */
-    private final static int  DEFAULT_AGE_INTERVAL = 600;
+    private static final int  DEFAULT_AGE_INTERVAL = 600;
 
     /**
      * Maximum interval of MAC address table aging.
      */
-    private final static int  MAX_AGE_INTERVAL = 1000000;
+    private static final int  MAX_AGE_INTERVAL = 1000000;
 
     /**
      * Minimum interval of MAC address table aging.
      */
-    private final static int  MIN_AGE_INTERVAL = 10;
+    private static final int  MIN_AGE_INTERVAL = 10;
 
     /**
      * Pseudo node identifier which indicates that the node is unspecified.
      */
-    private final static String  NODEID_ANY = "ANY";
+    private static final String  NODEID_ANY = "ANY";
 
     /**
      * Virtual tenant which includes this bridge.
@@ -125,13 +125,13 @@ public class VBridgeImpl implements Serializable {
     /**
      * Attached virtual interfaces.
      */
-    private final TreeMap<String, VBridgeIfImpl> vInterfaces =
+    private final Map<String, VBridgeIfImpl> vInterfaces =
         new TreeMap<String, VBridgeIfImpl>();
 
     /**
      * VLAN mappings applied to this bridge.
      */
-    private final TreeMap<String, VlanMapImpl> vlanMaps =
+    private final Map<String, VlanMapImpl> vlanMaps =
         new TreeMap<String, VlanMapImpl>();
 
     /**
@@ -1129,7 +1129,7 @@ public class VBridgeImpl implements Serializable {
                 VlanMapImpl vmap = entry.getValue();
                 VlanMapConfig vlconf = vmap.getVlanMapConfig();
                 short vlan = vlconf.getVlan();
-                Short vid = new Short(vlan);
+                Short vid = Short.valueOf(vlan);
                 if (!vlanIDs.contains(vid)) {
                     resMgr.unregisterVlanMap(vlan);
                     vlanIDs.add(vid);
@@ -1222,14 +1222,14 @@ public class VBridgeImpl implements Serializable {
         }
 
         // Compare copied maps in order to avoid deadlock.
-        TreeMap<String, VBridgeIfImpl> ifs = getInterfaceMap();
-        TreeMap<String, VBridgeIfImpl> otherIfs = vbr.getInterfaceMap();
+        Map<String, VBridgeIfImpl> ifs = getInterfaceMap();
+        Map<String, VBridgeIfImpl> otherIfs = vbr.getInterfaceMap();
         if (!ifs.equals(otherIfs)) {
             return false;
         }
 
-        TreeMap<String, VlanMapImpl> vmaps = getVlanMappings();
-        TreeMap<String, VlanMapImpl> otherVmaps = vbr.getVlanMappings();
+        Map<String, VlanMapImpl> vmaps = getVlanMappings();
+        Map<String, VlanMapImpl> otherVmaps = vbr.getVlanMappings();
 
         return vmaps.equals(otherVmaps);
     }
@@ -1315,7 +1315,7 @@ public class VBridgeImpl implements Serializable {
      *
      * @return  Pairs of interface name and interface instance.
      */
-    private TreeMap<String, VBridgeIfImpl> getInterfaceMap() {
+    private Map<String, VBridgeIfImpl> getInterfaceMap() {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -1330,7 +1330,7 @@ public class VBridgeImpl implements Serializable {
      *
      * @return Pairs of VLAN mapping ID and VLAN mapping instance.
      */
-    private TreeMap<String, VlanMapImpl> getVlanMappings() {
+    private Map<String, VlanMapImpl> getVlanMappings() {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {

@@ -20,7 +20,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "vtn")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VTenant extends VTenantConfig {
-    private final static long serialVersionUID = 2450381614616453968L;
+    private static final long serialVersionUID = -2091502158725895050L;
 
     /**
      * The name of the tenant.

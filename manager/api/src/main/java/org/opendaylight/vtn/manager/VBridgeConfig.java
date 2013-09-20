@@ -23,7 +23,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "vbridgeconf")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VBridgeConfig implements Serializable {
-    private final static long serialVersionUID = -4582273744010592577L;
+    private static final long serialVersionUID = 7501956469021832807L;
 
     /**
      * An arbitrary description about the bridge.
@@ -100,7 +100,7 @@ public class VBridgeConfig implements Serializable {
      */
     @XmlAttribute(name = "ageInterval")
     public Integer getAgeIntervalValue() {
-        return (ageInterval >= 0) ? new Integer(ageInterval) : null;
+        return (ageInterval >= 0) ? Integer.valueOf(ageInterval) : null;
     }
 
     /**

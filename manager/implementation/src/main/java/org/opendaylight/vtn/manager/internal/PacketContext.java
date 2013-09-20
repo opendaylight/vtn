@@ -13,6 +13,7 @@ import java.net.InetAddress;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.Set;
 import java.util.HashSet;
 
 import org.slf4j.Logger;
@@ -47,7 +48,7 @@ public class PacketContext {
     /**
      * Logger instance.
      */
-    private final static Logger  LOG =
+    private static final Logger  LOG =
         LoggerFactory.getLogger(PacketContext.class);
 
     /**
@@ -93,7 +94,7 @@ public class PacketContext {
     /**
      * Obsolete MAC address table entries.
      */
-    private final TreeMap<Long, MacTableEntry>  obsoleteEntries =
+    private final Map<Long, MacTableEntry>  obsoleteEntries =
         new TreeMap<Long, MacTableEntry>();
 
     /**
@@ -104,8 +105,7 @@ public class PacketContext {
     /**
      * Set of virtual node paths which handles this packet.
      */
-    private final HashSet<VTenantPath>  virtualNodes =
-        new HashSet<VTenantPath>();
+    private final Set<VTenantPath>  virtualNodes = new HashSet<VTenantPath>();
 
     /**
      * Construct a new packet context.

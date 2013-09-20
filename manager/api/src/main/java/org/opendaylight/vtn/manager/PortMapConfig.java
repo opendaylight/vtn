@@ -25,7 +25,7 @@ import org.opendaylight.controller.sal.core.Node;
 @XmlRootElement(name = "portmapconf")
 @XmlAccessorType(XmlAccessType.NONE)
 public class PortMapConfig implements Serializable {
-    private final static long serialVersionUID = -1024695809149751425L;
+    private static final long serialVersionUID = 1752903499492179337L;
 
     /**
      * Network element associated with the target switch.

@@ -13,10 +13,7 @@ import org.slf4j.Logger;
 
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
-import org.opendaylight.controller.connectionmanager.IConnectionManager;
-import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.packet.IDataPacketService;
 import org.opendaylight.controller.sal.packet.RawPacket;
 
 /**
@@ -30,7 +27,7 @@ import org.opendaylight.controller.sal.packet.RawPacket;
  * </p>
  */
 public class RawPacketEvent extends ClusterEvent {
-    private static final long serialVersionUID = -3180714480988803267L;
+    private static final long serialVersionUID = -7220670242600520137L;
 
     /**
      * Raw packet data.
@@ -46,14 +43,12 @@ public class RawPacketEvent extends ClusterEvent {
     /**
      * Construct a new raw packet event.
      *
-     * @param data      A raw packet data. This constructor keeps the specified
-     *                  byte array itself, not a copy. So the caller must
-     *                  not modify the specified byte array.
+     * @param pkt       A raw packet data.
      * @param outgoing  A node connector associated with SDN switch port
      *                  where the packet should be sent.
      */
-    public RawPacketEvent(byte[] data, NodeConnector outgoing) {
-        packetData = data;
+    public RawPacketEvent(RawPacket pkt, NodeConnector outgoing) {
+        packetData = pkt.getPacketData();
         outgoingPort = outgoing;
     }
 

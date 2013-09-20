@@ -23,11 +23,11 @@ import org.opendaylight.vtn.manager.VTenantPath;
  *   This class is designed to be used by a single thread.
  * </p>
  */
-public class VTNThreadData {
+public final class VTNThreadData {
     /**
      * Thread-local variables used for the VTN Manager.
      */
-    private final static ThreadLocal<VTNThreadData>  THREAD_LOCAL =
+    private static final ThreadLocal<VTNThreadData>  THREAD_LOCAL =
         new ThreadLocal<VTNThreadData>();
 
     /**
