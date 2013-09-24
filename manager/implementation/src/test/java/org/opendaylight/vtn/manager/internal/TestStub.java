@@ -314,6 +314,11 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
     private ConcurrentMap<String, ConcurrentMap<?, ?>> caches = new ConcurrentHashMap<String, ConcurrentMap<?, ?>>();
 
     @Override
+    public void removeContainerCaches(String containerName) {
+
+    }
+
+    @Override
     public ConcurrentMap<?, ?> createCache(String cacheName, Set<cacheMode> cMode) throws CacheExistException,
             CacheConfigException {
 
