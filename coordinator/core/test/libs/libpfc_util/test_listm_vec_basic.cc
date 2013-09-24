@@ -435,8 +435,15 @@ TEST(listm, vector_set_capacity)
             EXPECT_EQ(nents, pfc_listm_get_size(list));
 
             // try to set
-            EXPECT_EQ(0, pfc_vector_set_capacity(list, PFC_VECTOR_MAX_CAPACITY));
-            EXPECT_EQ(PFC_VECTOR_MAX_CAPACITY, pfc_vector_get_capacity(list));
+            int cap(pfc_vector_get_capacity(list));
+            int err(pfc_vector_set_capacity(list, PFC_VECTOR_MAX_CAPACITY));
+            if (err == 0) {
+                EXPECT_EQ(PFC_VECTOR_MAX_CAPACITY,
+                          pfc_vector_get_capacity(list));
+            }
+            else {
+                EXPECT_EQ(cap, pfc_vector_get_capacity(list));
+            }
 
             // check entries (they should not be changed)
             check_ents(list, vals, nents, add_mode);
