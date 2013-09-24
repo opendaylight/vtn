@@ -81,8 +81,7 @@ public class VlanMapList {
      */
     @Override
     public int hashCode() {
-        int h = 1381;
-
+        int h = 0;
         if (vmapList != null && !vmapList.isEmpty()) {
             h += vmapList.hashCode();
         }

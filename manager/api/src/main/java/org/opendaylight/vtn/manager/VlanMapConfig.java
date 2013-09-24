@@ -25,7 +25,7 @@ import org.opendaylight.controller.sal.core.Node;
 @XmlRootElement(name = "vlanmapconf")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VlanMapConfig implements Serializable {
-    private final static long serialVersionUID = 602803188863871510L;
+    private static final long serialVersionUID = -70616068870223019L;
 
     /**
      * Network element associated with the VLAN mapping.

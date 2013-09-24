@@ -30,15 +30,14 @@ public interface IVTNResourceManager {
      *          On failure, fully-qualified name of the bridge which maps
      *          the specified VLAN is returned.
      */
-    public String registerVlanMap(String containerName, VBridgePath path,
-                                  short vlan);
+    String registerVlanMap(String containerName, VBridgePath path, short vlan);
 
     /**
      * Unregister VLAN mapping.
      *
      * @param vlan  VLAN ID.
      */
-    public void unregisterVlanMap(short vlan);
+    void unregisterVlanMap(short vlan);
 
     /**
      * Register mapping between physical switch port and virtual bridge
@@ -51,15 +50,15 @@ public interface IVTNResourceManager {
      *          On failure, fully-qualified name of the bridge interface
      *          which maps the specified physical switch port is returned.
      */
-    public String registerPortMap(String containerName, VBridgeIfPath path,
-                                  PortVlan pvlan);
+    String registerPortMap(String containerName, VBridgeIfPath path,
+                           PortVlan pvlan);
 
     /**
      * Unregister port mapping.
      *
      * @param pvlan  Identifier of the mapped switch port.
      */
-    public void unregisterPortMap(PortVlan pvlan);
+    void unregisterPortMap(PortVlan pvlan);
 
     /**
      * Determine whether the given switch port is mapped to the virtual
@@ -70,14 +69,14 @@ public interface IVTNResourceManager {
      *          mapped to the virtual interface.
      *          Otherwise {@code false} is returned.
      */
-    public boolean isPortMapped(PortVlan pvlan);
+    boolean isPortMapped(PortVlan pvlan);
 
     /**
      * Return the global timer.
      *
      * @return  The global timer.
      */
-    public Timer getTimer();
+    Timer getTimer();
 
     /**
      * Run the given command asynchronously.
@@ -92,7 +91,7 @@ public interface IVTNResourceManager {
      * @return  {@code true} is returned if the specified task was submitted.
      *          {@code false} is returned if the specified tas was rejected.
      */
-    public boolean executeAsync(Runnable command);
+    boolean executeAsync(Runnable command);
 
     /**
      * Return the number of remote cluster nodes.
@@ -103,12 +102,12 @@ public interface IVTNResourceManager {
      *
      * @return  The number of remote cluster nodes.
      */
-    public int getRemoteClusterSize();
+    int getRemoteClusterSize();
 
     /**
      * Clean up resources associated with the given container.
      *
      * @param containerName  The name of the container.
      */
-    public void cleanUp(String containerName);
+    void cleanUp(String containerName);
 }

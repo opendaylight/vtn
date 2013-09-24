@@ -27,12 +27,12 @@ public interface VBridgeNode {
      *
      * @return  Path to the node.
      */
-    public VTenantPath getPath();
+    VTenantPath getPath();
 
     /**
      * Determine whether this node is enabled or not.
      *
      * @return  {@code true} is returned only if this node is enabled.
      */
-    public boolean isEnabled();
+    boolean isEnabled();
 }

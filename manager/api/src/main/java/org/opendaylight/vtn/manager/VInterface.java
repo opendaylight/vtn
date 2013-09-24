@@ -21,7 +21,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "interface")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VInterface extends VInterfaceConfig {
-    private final static long serialVersionUID = -4682666193022515484L;
+    private static final long serialVersionUID = -1119374472984925440L;
 
     /**
      * The name of the interface.

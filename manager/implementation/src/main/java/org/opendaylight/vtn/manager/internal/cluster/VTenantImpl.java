@@ -69,29 +69,29 @@ import org.opendaylight.controller.sal.utils.StatusCode;
  *   class.
  * </p>
  */
-public class VTenantImpl implements Serializable {
-    private static final long serialVersionUID = 919682502181006074L;
+public final class VTenantImpl implements Serializable {
+    private static final long serialVersionUID = 1119058818818252108L;
 
     /**
      * Logger instance.
      */
-    private final static Logger  LOG =
+    private static final Logger  LOG =
         LoggerFactory.getLogger(VTenantImpl.class);
 
     /**
      * Maximum value of flow timeout value.
      */
-    private final static int  MAX_FLOW_TIMEOUT = 65535;
+    private static final int  MAX_FLOW_TIMEOUT = 65535;
 
     /**
      * Default value of {@code idle_timeout} of flow entries.
      */
-    private final static int  DEFAULT_IDLE_TIMEOUT = 300;
+    private static final int  DEFAULT_IDLE_TIMEOUT = 300;
 
     /**
      * Default value of {@code hard_timeout} of flow entries.
      */
-    private final static int  DEFAULT_HARD_TIMEOUT = 0;    // Infinite
+    private static final int  DEFAULT_HARD_TIMEOUT = 0;    // Infinite
 
     /**
      * The name of the container to which this tenant belongs.
@@ -111,7 +111,7 @@ public class VTenantImpl implements Serializable {
     /**
      * Virtual layer 2 bridges.
      */
-    private final TreeMap<String, VBridgeImpl> vBridges =
+    private final Map<String, VBridgeImpl> vBridges =
         new TreeMap<String, VBridgeImpl>();
 
     /**
@@ -299,7 +299,6 @@ public class VTenantImpl implements Serializable {
             throw new VTNException(status);
         }
 
-        VBridge vbridge;
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -422,7 +421,6 @@ public class VTenantImpl implements Serializable {
     public boolean modifyBridgeInterface(VTNManagerImpl mgr, VBridgeIfPath path,
                                          VInterfaceConfig iconf, boolean all)
         throws VTNException {
-        VInterface viface;
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -866,8 +864,6 @@ public class VTenantImpl implements Serializable {
      */
     public void notifyConfiguration(VTNManagerImpl mgr,
                                     IVTNManagerAware listener) {
-        UpdateType type = UpdateType.ADDED;
-
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -1049,8 +1045,8 @@ public class VTenantImpl implements Serializable {
         }
 
         // Use copy of bridge map in order to avoid deadlock.
-        TreeMap<String, VBridgeImpl> bridges = getBridgeMap();
-        TreeMap<String, VBridgeImpl> otherBridges = vtn.getBridgeMap();
+        Map<String, VBridgeImpl> bridges = getBridgeMap();
+        Map<String, VBridgeImpl> otherBridges = vtn.getBridgeMap();
 
         return bridges.equals(otherBridges);
     }
@@ -1160,7 +1156,7 @@ public class VTenantImpl implements Serializable {
      *
      * @return  Pairs of bridge name and bridge instance.
      */
-    private TreeMap<String, VBridgeImpl> getBridgeMap() {
+    private Map<String, VBridgeImpl> getBridgeMap() {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {

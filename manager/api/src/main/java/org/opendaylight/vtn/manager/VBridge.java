@@ -21,7 +21,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "vbridge")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VBridge extends VBridgeConfig {
-    private final static long serialVersionUID = 3020097134642324374L;
+    private static final long serialVersionUID = -1492044132766790382L;
 
     /**
      * The name of the bridge.

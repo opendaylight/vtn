@@ -37,9 +37,8 @@ public abstract class ClusterFlowModTask extends FlowEntryTask {
      * @param result  The result of flow modification.
      */
     void sendRemoteFlowModResult(FlowModResult result) {
-        String name = flowEntry.getFlowName();
-        FlowModResultEvent ev = new FlowModResultEvent(name, result);
-        vtnManager.postEvent(ev);
+        String name = getFlowEntry().getFlowName();
+        postEvent(new FlowModResultEvent(name, result));
     }
 
     /**
@@ -50,16 +49,17 @@ public abstract class ClusterFlowModTask extends FlowEntryTask {
      */
     @Override
     protected boolean execute() {
-        IConnectionManager cnm = vtnManager.getConnectionManager();
+        IConnectionManager cnm = getVTNManager().getConnectionManager();
         boolean ret;
         FlowModResult result;
-        ConnectionLocality cl = cnm.getLocalityStatus(flowEntry.getNode());
+        FlowEntry fent = getFlowEntry();
+        ConnectionLocality cl = cnm.getLocalityStatus(fent.getNode());
         if (cl == ConnectionLocality.LOCAL) {
             try {
                 ret = modifyFlow();
                 result = (ret)
                     ? FlowModResult.SUCCEEDED : FlowModResult.FAILED;
-            } catch (Throwable t) {
+            } catch (Exception e) {
                 ret = false;
                 result = FlowModResult.FAILED;
             }

@@ -209,8 +209,7 @@ public class MacEntry {
      */
     @Override
     public int hashCode() {
-        int h = 31 + address.hashCode() + node.hashCode() + port.hashCode() +
-            vlan;
+        int h = address.hashCode() ^ node.hashCode() ^ port.hashCode() + vlan;
         if (inetAddresses != null) {
             h += inetAddresses.hashCode();
         }

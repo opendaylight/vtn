@@ -22,7 +22,7 @@ import org.opendaylight.controller.sal.core.Node;
 @XmlRootElement(name = "vlanmap")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VlanMap extends VlanMapConfig {
-    private final static long serialVersionUID = 6303754933615983739L;
+    private static final long serialVersionUID = 7225775555870161356L;
 
     /**
      * Unique identifier assigned to the VLAN mapping.

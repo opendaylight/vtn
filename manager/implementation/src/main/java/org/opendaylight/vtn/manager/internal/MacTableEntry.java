@@ -10,6 +10,7 @@
 package org.opendaylight.vtn.manager.internal;
 
 import java.net.InetAddress;
+import java.util.Set;
 import java.util.HashSet;
 
 import org.opendaylight.vtn.manager.MacAddressEntry;
@@ -42,7 +43,7 @@ public class MacTableEntry {
     /**
      * Set of IP addresses.
      */
-    private HashSet<InetAddress>  ipAddresses = new HashSet<InetAddress>();
+    private Set<InetAddress>  ipAddresses = new HashSet<InetAddress>();
 
     /**
      * {@code true} is set if this entry is used.

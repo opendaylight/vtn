@@ -26,7 +26,7 @@ public class ActionList {
     /**
      * List of actions.
      */
-    private final ArrayList<Action>  actionList = new ArrayList<Action>();
+    private final List<Action>  actionList = new ArrayList<Action>();
 
     /**
      * A node associated with the target SDN switch.

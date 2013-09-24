@@ -52,13 +52,13 @@ import org.opendaylight.controller.switchmanager.ISwitchManager;
  *   class.
  * </p>
  */
-public class VBridgeIfImpl implements VBridgeNode, Serializable {
-    private static final long serialVersionUID = 4919208115256402156L;
+public final class VBridgeIfImpl implements VBridgeNode, Serializable {
+    private static final long serialVersionUID = 699966877414184978L;
 
     /**
      * Logger instance.
      */
-    private final static Logger  LOG =
+    private static final Logger  LOG =
         LoggerFactory.getLogger(VBridgeIfImpl.class);
 
     /**
@@ -781,18 +781,6 @@ public class VBridgeIfImpl implements VBridgeNode, Serializable {
         }
 
         return bstate;
-    }
-
-    /**
-     * Set state of the bridge interface.
-     *
-     * @param mgr    VTN Manager service.
-     * @param state  New interface state.
-     */
-    private void setState(VTNManagerImpl mgr, VNodeState state) {
-        ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
-        VBridgeIfState ist = getIfState(db);
-        setState(mgr, db, ist, state);
     }
 
     /**

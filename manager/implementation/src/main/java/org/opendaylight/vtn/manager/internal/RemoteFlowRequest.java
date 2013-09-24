@@ -10,7 +10,9 @@
 package org.opendaylight.vtn.manager.internal;
 
 import java.util.List;
+import java.util.Set;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.HashMap;
 
 import org.slf4j.Logger;
@@ -27,29 +29,28 @@ public class RemoteFlowRequest {
     /**
      * A set of flow entries being modified by remote cluster node.
      */
-    private final HashSet<String>  requestSet = new HashSet<String>();
+    private final Set<String>  requestSet = new HashSet<String>();
 
     /**
      * A set of flow entries successfully modified.
      */
-    private final HashSet<String>  succeededSet = new HashSet<String>();
+    private final Set<String>  succeededSet = new HashSet<String>();
 
     /**
      * A set of flow entries failed to modify.
      */
-    private final HashSet<String>  failedSet = new HashSet<String>();
+    private final Set<String>  failedSet = new HashSet<String>();
 
     /**
      * A set of flow entries that handled by no one.
      */
-    private final HashSet<String> orphanSet = new HashSet<String>();
+    private final Set<String> orphanSet = new HashSet<String>();
 
     /**
      * This map keeps the number of remote cluster nodes that ignores
      * flow modification request.
      */
-    private HashMap<String, Integer> ignoredFlows =
-        new HashMap<String, Integer>();
+    private Map<String, Integer> ignoredFlows = new HashMap<String, Integer>();
 
     /**
      * Result of this request.
@@ -183,7 +184,7 @@ public class RemoteFlowRequest {
         }
 
         if (c < remoteNodes) {
-            ignoredFlows.put(name, new Integer(c));
+            ignoredFlows.put(name, Integer.valueOf(c));
         } else {
             // The specified flow entry was ignored by all remote cluster
             // nodes. So no one can modify the flow.

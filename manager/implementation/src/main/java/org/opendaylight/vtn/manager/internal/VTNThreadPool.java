@@ -9,6 +9,7 @@
 
 package org.opendaylight.vtn.manager.internal;
 
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.HashSet;
@@ -35,23 +36,23 @@ public class VTNThreadPool {
     /**
      * Logger instance.
      */
-    private final static Logger  LOG =
+    private static final Logger  LOG =
         LoggerFactory.getLogger(VTNThreadPool.class);
 
     /**
      * Thread pool state which represents the pool is available.
      */
-    private final int STATE_RUNNING = 0;
+    private static final int STATE_RUNNING = 0;
 
     /**
      * Thread pool state which represents the pool is shut down.
      */
-    private final int STATE_SHUTDOWN = 1;
+    private static final int STATE_SHUTDOWN = 1;
 
     /**
      * Thread pool state which represents the pool is terminated.
      */
-    private final int STATE_TERMINATE = 2;
+    private static final int STATE_TERMINATE = 2;
 
     /**
      * Prefix of the name of worker threads.
@@ -71,7 +72,7 @@ public class VTNThreadPool {
     /**
      * The queue used to hold submitted tasks.
      */
-    private final LinkedList<Runnable>  taskQueue = new LinkedList<Runnable>();
+    private final Deque<Runnable>  taskQueue = new LinkedList<Runnable>();
 
     /**
      * Index for worker thread.
@@ -331,8 +332,9 @@ public class VTNThreadPool {
      * </p>
      */
     @Override
-    protected void finalize() {
+    protected void finalize() throws Throwable {
         terminate();
+        super.finalize();
     }
 
     /**

@@ -13,6 +13,7 @@ import java.util.TimerTask;
 
 import org.slf4j.Logger;
 
+import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 
 import org.opendaylight.controller.forwardingrulesmanager.
@@ -31,7 +32,7 @@ public abstract class FlowModTask implements Runnable {
     /**
      * VTN Manager service.
      */
-    protected final VTNManagerImpl  vtnManager;
+    private final VTNManagerImpl  vtnManager;
 
     /**
      * Result of this task.
@@ -45,6 +46,24 @@ public abstract class FlowModTask implements Runnable {
      */
     protected FlowModTask(VTNManagerImpl mgr) {
         vtnManager = mgr;
+    }
+
+    /**
+     * Return VTN Manager service.
+     *
+     * @return  VTN Manager service.
+     */
+    protected VTNManagerImpl getVTNManager() {
+        return vtnManager;
+    }
+
+    /**
+     * Post a cluster event.
+     *
+     * @param cev  A cluster event.
+     */
+    protected void postEvent(ClusterEvent cev) {
+        vtnManager.postEvent(cev);
     }
 
     /**

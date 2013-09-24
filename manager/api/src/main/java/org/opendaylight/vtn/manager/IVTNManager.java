@@ -28,7 +28,7 @@ public interface IVTNManager {
      * @return  {@code true} is returned if the VTN is active in the container.
      *          Otherwise {@code false} is returned.
      */
-    public boolean isActive();
+    boolean isActive();
 
     /**
      * Return a list of virtual tenant information.
@@ -36,7 +36,7 @@ public interface IVTNManager {
      * @return  A list of virtual tenant information.
      * @throws VTNException  An error occurred.
      */
-    public List<VTenant> getTenants() throws VTNException;
+    List<VTenant> getTenants() throws VTNException;
 
     /**
      * Return the tenant information specified by the given name.
@@ -45,7 +45,7 @@ public interface IVTNManager {
      * @return  Information about the specified tenant.
      * @throws VTNException  An error occurred.
      */
-    public VTenant getTenant(VTenantPath path) throws VTNException;
+    VTenant getTenant(VTenantPath path) throws VTNException;
 
     /**
      * Add a new virtual tenant.
@@ -54,7 +54,7 @@ public interface IVTNManager {
      * @param tconf  Tenant configuration
      * @return  "Success" or failure reason.
      */
-    public Status addTenant(VTenantPath path, VTenantConfig tconf);
+    Status addTenant(VTenantPath path, VTenantConfig tconf);
 
     /**
      * Modify configuration of existing virtual tenant.
@@ -68,8 +68,7 @@ public interface IVTNManager {
      *               modified if its value in {@code tconf} is {@code null}.
      * @return  "Success" or failure reason.
      */
-    public Status modifyTenant(VTenantPath path, VTenantConfig tconf,
-                               boolean all);
+    Status modifyTenant(VTenantPath path, VTenantConfig tconf, boolean all);
 
     /**
      * Remove the virtual tenant specified by the given name.
@@ -77,7 +76,7 @@ public interface IVTNManager {
      * @param path  Path to the virtual tenant.
      * @return  "Success" or failure reason.
      */
-    public Status removeTenant(VTenantPath path);
+    Status removeTenant(VTenantPath path);
 
     /**
      * Return a list of virtual L2 bridges in the specified tenant.
@@ -86,7 +85,7 @@ public interface IVTNManager {
      * @return  A list of virtual L2 bridges.
      * @throws VTNException  An error occurred.
      */
-    public List<VBridge> getBridges(VTenantPath path) throws VTNException;
+    List<VBridge> getBridges(VTenantPath path) throws VTNException;
 
     /**
      * Return information about the specified virtual L2 bridge.
@@ -95,7 +94,7 @@ public interface IVTNManager {
      * @return  Information about the specified L2 bridge.
      * @throws VTNException  An error occurred.
      */
-    public VBridge getBridge(VBridgePath path) throws VTNException;
+    VBridge getBridge(VBridgePath path) throws VTNException;
 
     /**
      * Add a new virtual L2 bridge.
@@ -104,7 +103,7 @@ public interface IVTNManager {
      * @param bconf  Bridge configuration.
      * @return  "Success" or failure reason.
      */
-    public Status addBridge(VBridgePath path, VBridgeConfig bconf);
+    Status addBridge(VBridgePath path, VBridgeConfig bconf);
 
     /**
      * Modify configuration of existing virtual L2 bridge.
@@ -118,8 +117,7 @@ public interface IVTNManager {
      *               modified if its value in {@code bconf} is {@code null}.
      * @return  "Success" or failure reason.
      */
-    public Status modifyBridge(VBridgePath path, VBridgeConfig bconf,
-                               boolean all);
+    Status modifyBridge(VBridgePath path, VBridgeConfig bconf, boolean all);
 
     /**
      * Remove the virtual L2 bridge specified by the given name.
@@ -127,7 +125,7 @@ public interface IVTNManager {
      * @param path  Path to the virtual bridge.
      * @return  "Success" or failure reason.
      */
-    public Status removeBridge(VBridgePath path);
+    Status removeBridge(VBridgePath path);
 
     /**
      * Return a list of virtual interfaces attached to the specified virtual
@@ -137,7 +135,7 @@ public interface IVTNManager {
      * @return  A list of virtual interfaces.
      * @throws VTNException  An error occurred.
      */
-    public List<VInterface> getBridgeInterfaces(VBridgePath path)
+    List<VInterface> getBridgeInterfaces(VBridgePath path)
         throws VTNException;
 
     /**
@@ -148,8 +146,7 @@ public interface IVTNManager {
      * @return  Information about the specified interface.
      * @throws VTNException  An error occurred.
      */
-    public VInterface getBridgeInterface(VBridgeIfPath path)
-        throws VTNException;
+    VInterface getBridgeInterface(VBridgeIfPath path) throws VTNException;
 
     /**
      * Add a new virtual interface to the virtual L2 bridge.
@@ -158,8 +155,7 @@ public interface IVTNManager {
      * @param iconf  Interface configuration.
      * @return  "Success" or failure reason.
      */
-    public Status addBridgeInterface(VBridgeIfPath path,
-                                     VInterfaceConfig iconf);
+    Status addBridgeInterface(VBridgeIfPath path, VInterfaceConfig iconf);
 
     /**
      * Modify configuration of existing virtual interface attached to the
@@ -174,8 +170,8 @@ public interface IVTNManager {
      *               modified if its value in {@code iconf} is {@code null}.
      * @return  "Success" or failure reason.
      */
-    public Status modifyBridgeInterface(VBridgeIfPath path,
-                                        VInterfaceConfig iconf, boolean all);
+    Status modifyBridgeInterface(VBridgeIfPath path, VInterfaceConfig iconf,
+                                 boolean all);
 
     /**
      * Remove the virtual interface from the virtual L2 bridge.
@@ -183,7 +179,7 @@ public interface IVTNManager {
      * @param path  Path to the interface.
      * @return  "Success" or failure reason.
      */
-    public Status removeBridgeInterface(VBridgeIfPath path);
+    Status removeBridgeInterface(VBridgeIfPath path);
 
     /**
      * Return a list of VLAN mappings in the specified virtual L2 bridge.
@@ -192,7 +188,7 @@ public interface IVTNManager {
      * @return  A list of VLAN mappings.
      * @throws VTNException  An error occurred.
      */
-    public List<VlanMap> getVlanMaps(VBridgePath path) throws VTNException;
+    List<VlanMap> getVlanMaps(VBridgePath path) throws VTNException;
 
     /**
      * Return information about the specified VLAN mapping in the virtual
@@ -203,8 +199,7 @@ public interface IVTNManager {
      * @return  Information about the specified VLAN mapping.
      * @throws VTNException  An error occurred.
      */
-    public VlanMap getVlanMap(VBridgePath path, String mapId)
-        throws VTNException;
+    VlanMap getVlanMap(VBridgePath path, String mapId) throws VTNException;
 
     /**
      * Add a new VLAN mapping to the virtual L2 bridge.
@@ -215,7 +210,7 @@ public interface IVTNManager {
      *          VLAN map identifier.
      * @throws VTNException  An error occurred.
      */
-    public VlanMap addVlanMap(VBridgePath path, VlanMapConfig vlconf)
+    VlanMap addVlanMap(VBridgePath path, VlanMapConfig vlconf)
         throws VTNException;
 
     /**
@@ -225,7 +220,7 @@ public interface IVTNManager {
      * @param mapId  The identifier of the VLAN mapping.
      * @return  "Success" or failure reason.
      */
-    public Status removeVlanMap(VBridgePath path, String mapId);
+    Status removeVlanMap(VBridgePath path, String mapId);
 
     /**
      * Return the port mapping configuration applied to the specified virtual
@@ -236,7 +231,7 @@ public interface IVTNManager {
      *          port mapping is not configured on the specified interface.
      * @throws VTNException  An error occurred.
      */
-    public PortMap getPortMap(VBridgeIfPath path) throws VTNException;
+    PortMap getPortMap(VBridgeIfPath path) throws VTNException;
 
     /**
      * Create or destroy mapping between the physical switch port and the
@@ -248,7 +243,7 @@ public interface IVTNManager {
      *                specified interface is destroyed.
      * @return  "Success" or failure reason.
      */
-    public Status setPortMap(VBridgeIfPath path, PortMapConfig pmconf);
+    Status setPortMap(VBridgeIfPath path, PortMapConfig pmconf);
 
     /**
      * Initiate the discovery of a host base on its IP address.
@@ -265,7 +260,7 @@ public interface IVTNManager {
      *                 If {@code null} is specified, a ARP request is sent
      *                 to all existing bridges.
      */
-    public void findHost(InetAddress addr, Set<VBridgePath> pathSet);
+    void findHost(InetAddress addr, Set<VBridgePath> pathSet);
 
     /**
      * Send a unicast ARP request to the specified host.
@@ -279,7 +274,7 @@ public interface IVTNManager {
      * @return  {@code true} is returned if an ARP request was sent.
      *          Otherwise {@code false} is returned.
      */
-    public boolean probeHost(HostNodeConnector host);
+    boolean probeHost(HostNodeConnector host);
 
     /**
      * Return a list of MAC address entries learned by the specified virtual
@@ -289,8 +284,7 @@ public interface IVTNManager {
      * @return  A list of MAC address entries.
      * @throws VTNException  An error occurred.
      */
-    public List<MacAddressEntry> getMacEntries(VBridgePath path)
-        throws VTNException;
+    List<MacAddressEntry> getMacEntries(VBridgePath path) throws VTNException;
 
     /**
      * Search for a MAC address entry from the MAC address table in the
@@ -302,7 +296,7 @@ public interface IVTNManager {
      *          {@code null} is returned if not found.
      * @throws VTNException  An error occurred.
      */
-    public MacAddressEntry getMacEntry(VBridgePath path, DataLinkAddress addr)
+    MacAddressEntry getMacEntry(VBridgePath path, DataLinkAddress addr)
         throws VTNException;
 
     /**
@@ -315,8 +309,7 @@ public interface IVTNManager {
      *          {@code null} is returned if not found.
      * @throws VTNException  An error occurred.
      */
-    public MacAddressEntry removeMacEntry(VBridgePath path,
-                                          DataLinkAddress addr)
+    MacAddressEntry removeMacEntry(VBridgePath path, DataLinkAddress addr)
         throws VTNException;
 
     /**
@@ -325,5 +318,5 @@ public interface IVTNManager {
      * @param path  Path to the bridge.
      * @return  "Success" or failure reason.
      */
-    public Status flushMacEntries(VBridgePath path);
+    Status flushMacEntries(VBridgePath path);
 }

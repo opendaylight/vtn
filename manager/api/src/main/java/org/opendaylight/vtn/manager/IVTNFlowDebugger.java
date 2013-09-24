@@ -32,5 +32,5 @@ public interface IVTNFlowDebugger {
      * @param path   Path to the virtual tenant.
      * @return  "Success" or failure reason.
      */
-    public Status removeAllFlows(VTenantPath path);
+    Status removeAllFlows(VTenantPath path);
 }

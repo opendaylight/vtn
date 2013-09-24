@@ -30,7 +30,6 @@ import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.controller.hosttracker.IfIptoHost;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.core.ConstructionException;
-import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.Ethernet;
@@ -54,13 +53,13 @@ public class ArpHandler {
     /**
      * Logger instance.
      */
-    private final static Logger  LOG =
+    private static final Logger  LOG =
         LoggerFactory.getLogger(ArpHandler.class);
 
     /**
      * ARP request timeout in seconds.
      */
-    private final static short  ARP_REQUEST_TIMEOUT = 1;
+    private static final short  ARP_REQUEST_TIMEOUT = 1;
 
     /**
      * VTN Manager service.
@@ -82,7 +81,7 @@ public class ArpHandler {
     /**
      * Keep hosts waiting for ARP reply.
      */
-    private class Requestor {
+    private final class Requestor {
         /**
          * Set of hosts waiting for ARP reply.
          */

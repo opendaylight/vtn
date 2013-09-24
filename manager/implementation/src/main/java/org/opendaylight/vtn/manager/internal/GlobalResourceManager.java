@@ -43,41 +43,41 @@ public class GlobalResourceManager
     /**
      * Logger instance.
      */
-    private final static Logger  LOG =
+    private static final Logger  LOG =
         LoggerFactory.getLogger(GlobalResourceManager.class);
 
     /**
      * A character which separates the container name from the map key.
      */
-    private final static char  MAPKEY_SEPARATOR = ':';
+    private static final char  MAPKEY_SEPARATOR = ':';
 
     /**
      * Cluster cache name associated with {@link #vlanMaps}.
      */
-    private final static String  CACHE_VLANMAP = "vtn.vlanmap";
+    private static final String  CACHE_VLANMAP = "vtn.vlanmap";
 
     /**
      * Cluster cache name associated with {@link #portMaps}.
      */
-    private final static String  CACHE_PORTMAP = "vtn.portmap";
+    private static final String  CACHE_PORTMAP = "vtn.portmap";
 
     /**
      * The maximum number of threads in the thread pool for asynchronous tasks.
      */
-    private final static int  THREAD_POOL_MAXSIZE = 1;
+    private static final int  THREAD_POOL_MAXSIZE = 1;
     // REVISIT: Pool size will be expanded later.
 
     /**
      * The number of milliseconds to keep threads in the thread pool for
      * asynchronous tasks.
      */
-    private final static int  THREAD_POOL_KEEPALIVE = 10000;
+    private static final int  THREAD_POOL_KEEPALIVE = 10000;
 
     /**
      * The number of milliseconds to wait for completion of thread pool
      * shutdown.
      */
-    private final static long  THREAD_POOL_SHUTDOWN = 5000;
+    private static final long  THREAD_POOL_SHUTDOWN = 5000;
 
     /**
      * VLAN IDs mapped to the virtual L2 bridge.

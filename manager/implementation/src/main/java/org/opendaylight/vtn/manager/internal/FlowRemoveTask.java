@@ -35,28 +35,28 @@ public class FlowRemoveTask extends RemoteFlowModTask {
     /**
      * Logger instance.
      */
-    private final static Logger  LOG =
+    private static final Logger  LOG =
         LoggerFactory.getLogger(FlowRemoveTask.class);
 
     /**
      * Divisor used to derive ingress flow remove timeout.
      */
-    private final static long  INGRESS_TIMEOUT_DIVISOR = 4;
+    private static final long  INGRESS_TIMEOUT_DIVISOR = 4;
 
     /**
      * Set of VTN flow group identifier to be removed.
      */
-    private final HashSet<FlowGroupId>  groupSet;
+    private final Set<FlowGroupId>  groupSet;
 
     /**
      * A list of ingress flow entries.
      */
-    private final ArrayList<FlowEntry>  ingressFlows;
+    private final List<FlowEntry>  ingressFlows;
 
     /**
      * A list of flow entries except for ingress flows.
      */
-    private final ArrayList<FlowEntry>  flowEntries;
+    private final List<FlowEntry>  flowEntries;
 
     /**
      * The maximum number of milliseconds to wait for completion of this task.
@@ -85,7 +85,6 @@ public class FlowRemoveTask extends RemoteFlowModTask {
         if (ingress != null) {
             ingressFlows.add(ingress);
         }
-        ingressFlows.trimToSize();
 
         flowEntries = new ArrayList<FlowEntry>();
         while (it.hasNext()) {
@@ -133,11 +132,11 @@ public class FlowRemoveTask extends RemoteFlowModTask {
         if (ret == FlowModResult.SUCCEEDED) {
             if (logger.isTraceEnabled()) {
                 logger.trace("{}: VTN flow remove task has completed: {}",
-                             vtnManager.getContainerName(), groupSet);
+                             getVTNManager().getContainerName(), groupSet);
             }
         } else {
             logger.error("{}: Failed to remove VTN flows: result={}, group={}",
-                         vtnManager.getContainerName(), ret, groupSet);
+                         getVTNManager().getContainerName(), ret, groupSet);
         }
 
         return ret;
@@ -152,7 +151,8 @@ public class FlowRemoveTask extends RemoteFlowModTask {
     @Override
     protected boolean execute() {
         // Remove VTN flows from the cluster cache.
-        ConcurrentMap<FlowGroupId, VTNFlow> db = vtnManager.getFlowDB();
+        VTNManagerImpl mgr = getVTNManager();
+        ConcurrentMap<FlowGroupId, VTNFlow> db = mgr.getFlowDB();
         for (FlowGroupId gid: groupSet) {
             db.remove(gid);
         }
@@ -170,7 +170,7 @@ public class FlowRemoveTask extends RemoteFlowModTask {
 
         if (LOG.isDebugEnabled() && ret) {
             LOG.debug("{}: Flow entries have been removed",
-                      vtnManager.getContainerName());
+                      mgr.getContainerName());
         }
 
         return ret;
@@ -194,8 +194,7 @@ public class FlowRemoveTask extends RemoteFlowModTask {
     @Override
     protected void sendRequest(List<FlowEntry> entries) {
         // Send flow remove event.
-        FlowRemoveEvent ev = new FlowRemoveEvent(entries);
-        vtnManager.postEvent(ev);
+        postEvent(new FlowRemoveEvent(entries));
     }
 
     /**
@@ -246,17 +245,17 @@ public class FlowRemoveTask extends RemoteFlowModTask {
      */
     private List<LocalFlowRemoveTask> uninstall(List<FlowEntry> entries,
                                                 List<FlowEntry> remote) {
-        IConnectionManager cnm = vtnManager.getConnectionManager();
+        VTNManagerImpl mgr = getVTNManager();
+        IConnectionManager cnm = mgr.getConnectionManager();
         ArrayList<LocalFlowRemoveTask> local =
             new ArrayList<LocalFlowRemoveTask>();
-        IVTNResourceManager resMgr = vtnManager.getResourceManager();
         for (FlowEntry fent: entries) {
             ConnectionLocality cl = cnm.getLocalityStatus(fent.getNode());
             if (cl == ConnectionLocality.LOCAL) {
                 LocalFlowRemoveTask task =
-                    new LocalFlowRemoveTask(vtnManager, fent);
+                    new LocalFlowRemoveTask(mgr, fent);
                 local.add(task);
-                vtnManager.postAsync(task);
+                mgr.postAsync(task);
             } else if (cl == ConnectionLocality.NOT_LOCAL) {
                 remote.add(fent);
             }

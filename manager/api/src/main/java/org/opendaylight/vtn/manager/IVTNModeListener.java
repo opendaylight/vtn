@@ -19,5 +19,5 @@ public interface IVTNModeListener {
      * @param active  {@code true} is passed if the VTN is active in the
      *                container. Otherwise {@code false} is passed.
      */
-    public void vtnModeChanged(boolean active);
+    void vtnModeChanged(boolean active);
 }
