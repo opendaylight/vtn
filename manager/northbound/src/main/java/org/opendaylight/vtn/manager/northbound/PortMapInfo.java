@@ -26,6 +26,9 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 @XmlRootElement(name = "portmap")
 @XmlAccessorType(XmlAccessType.NONE)
 public class PortMapInfo extends PortMapConfig {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID =  7081865293009944033L;
 
     /**
@@ -38,6 +41,7 @@ public class PortMapInfo extends PortMapConfig {
     /**
      * Private constructor used for JAXB mapping.
      */
+    @SuppressWarnings("unused")
     private PortMapInfo() {
         super(null, null, (short)0);
     }

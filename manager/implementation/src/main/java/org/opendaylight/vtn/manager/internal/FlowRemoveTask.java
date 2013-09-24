@@ -212,11 +212,9 @@ public class FlowRemoveTask extends RemoteFlowModTask {
         List<LocalFlowRemoveTask> local = uninstall(entries, remote);
 
         boolean ret = true;
-        if (!remote.isEmpty()) {
-            // Direct remote cluster nodes to uninstall flow entries.
-            if (!modifyRemoteFlow(remote, true, limit)) {
-                ret = false;
-            }
+        // Direct remote cluster nodes to uninstall flow entries.
+        if (!remote.isEmpty() && !modifyRemoteFlow(remote, true, limit)) {
+            ret = false;
         }
 
         // Ensure that all local flows were successfully uninstalled.

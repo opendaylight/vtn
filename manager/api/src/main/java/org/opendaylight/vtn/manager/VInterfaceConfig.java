@@ -23,6 +23,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "interfaceconf")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VInterfaceConfig implements Serializable {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = -6152398562520322469L;
 
     /**
@@ -40,6 +43,7 @@ public class VInterfaceConfig implements Serializable {
     /**
      * Private constructor used for JAXB mapping.
      */
+    @SuppressWarnings("unused")
     private VInterfaceConfig() {
     }
 

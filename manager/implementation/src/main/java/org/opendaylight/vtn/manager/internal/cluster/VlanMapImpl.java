@@ -47,6 +47,9 @@ import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
  * </p>
  */
 public final class VlanMapImpl implements VBridgeNode, Serializable {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = -784362913741696063L;
 
     /**
@@ -323,7 +326,7 @@ public final class VlanMapImpl implements VBridgeNode, Serializable {
         }
 
         if (bstate == VNodeState.UNKNOWN) {
-            bstate = VNodeState.UP;
+            return VNodeState.UP;
         }
 
         return bstate;

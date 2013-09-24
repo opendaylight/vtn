@@ -31,6 +31,7 @@ public class IpAddress {
     /**
      * Private constructor used for JAXB mapping.
      */
+    @SuppressWarnings("unused")
     private IpAddress() {
     }
 

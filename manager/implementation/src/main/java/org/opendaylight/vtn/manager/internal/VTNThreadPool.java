@@ -99,7 +99,7 @@ public class VTNThreadPool {
     private volatile int  poolState = STATE_RUNNING;
 
     /**
-     * Construct a new thread pool
+     * Construct a new thread pool.
      *
      * @param prefix  A prefix for the name of worker threads.
      * @param size    The maximum number of threads in the pool.
@@ -205,15 +205,16 @@ public class VTNThreadPool {
                 } while (workerThreads.size() != 0);
             } else {
                 long limit = System.currentTimeMillis() + timeout;
+                long tmout = timeout;
                 do {
                     try {
-                        wait(timeout);
+                        wait(tmout);
                     } catch (InterruptedException e) {
                         LOG.error("join: Interrupted", e);
                         return (workerThreads.size() == 0);
                     }
-                    timeout = limit - System.currentTimeMillis();
-                    if (timeout <= 0) {
+                    tmout = limit - System.currentTimeMillis();
+                    if (tmout <= 0) {
                         LOG.error("join: Timed out");
                         return (workerThreads.size() == 0);
                     }
@@ -268,6 +269,7 @@ public class VTNThreadPool {
     private synchronized Runnable poll(WorkerThread worker, long timeout) {
         if (taskQueue.size() == 0) {
             long limit = System.currentTimeMillis() + timeout;
+            long tmout = timeout;
             do {
                 if (poolState != STATE_RUNNING) {
                     removeWorker(worker);
@@ -276,7 +278,7 @@ public class VTNThreadPool {
 
                 waiting++;
                 try {
-                    wait(timeout);
+                    wait(tmout);
                 } catch (InterruptedException e) {
                 } finally {
                     waiting--;
@@ -286,8 +288,8 @@ public class VTNThreadPool {
                     break;
                 }
 
-                timeout = limit - System.currentTimeMillis();
-                if (timeout <= 0) {
+                tmout = limit - System.currentTimeMillis();
+                if (tmout <= 0) {
                     removeWorker(worker);
                     return null;
                 }
@@ -330,6 +332,8 @@ public class VTNThreadPool {
      *   This method calls {@link #terminate()} to terminate all worker
      *   threads.
      * </p>
+     *
+     * @throws Throwable  An error occurred.
      */
     @Override
     protected void finalize() throws Throwable {

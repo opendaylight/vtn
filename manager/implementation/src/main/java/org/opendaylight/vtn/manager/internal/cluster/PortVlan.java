@@ -24,6 +24,9 @@ import org.opendaylight.controller.sal.core.NodeConnector;
  * </p>
  */
 public class PortVlan implements Serializable {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = -7201707889447361884L;
 
     /**

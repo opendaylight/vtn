@@ -53,13 +53,14 @@ public final class VTNThreadData {
      */
     static VTNThreadData create(Lock lock) {
         VTNThreadData data = new VTNThreadData(lock);
+        boolean succeeded = false;
         THREAD_LOCAL.set(data);
         try {
             lock.lock();
-            lock = null;
+            succeeded = true;
             return data;
         } finally {
-            if (lock != null) {
+            if (!succeeded) {
                 THREAD_LOCAL.remove();
             }
         }

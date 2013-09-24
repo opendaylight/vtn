@@ -26,6 +26,9 @@ import org.opendaylight.controller.sal.core.UpdateType;
  * </p>
  */
 public class VTenantEvent extends VNodeEvent {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = 3402130533987207931L;
 
     /**

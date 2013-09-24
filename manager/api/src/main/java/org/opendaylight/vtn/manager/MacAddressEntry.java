@@ -22,6 +22,9 @@ import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
  * by the virtual L2 bridge.
  */
 public class MacAddressEntry implements Serializable {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = -9111260127680923458L;
 
     /**

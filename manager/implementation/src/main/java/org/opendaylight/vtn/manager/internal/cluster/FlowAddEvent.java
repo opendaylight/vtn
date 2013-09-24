@@ -28,6 +28,9 @@ import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
  * </p>
  */
 public class FlowAddEvent extends FlowModEvent {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = -5294903918196762899L;
 
     /**
@@ -44,6 +47,7 @@ public class FlowAddEvent extends FlowModEvent {
      *
      * @param mgr   VTN Manager service.
      * @param fent  A flow entry to be modified.
+     * @return  A flow mod task to add the given flow entry.
      */
     protected ClusterFlowModTask createTask(VTNManagerImpl mgr,
                                             FlowEntry fent) {

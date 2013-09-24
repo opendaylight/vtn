@@ -25,6 +25,9 @@ package org.opendaylight.vtn.manager.internal.cluster;
  * </p>
  */
 public class FlowGroupId extends ClusterEventId {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = -5792856577909605564L;
 
     /**

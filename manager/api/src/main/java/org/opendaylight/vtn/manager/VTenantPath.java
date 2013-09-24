@@ -16,6 +16,9 @@ import java.io.Serializable;
  * tenant in the container.
  */
 public class VTenantPath implements Serializable {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = -4898647140177601483L;
 
     /**

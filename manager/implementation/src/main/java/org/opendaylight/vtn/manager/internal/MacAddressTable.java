@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -478,7 +479,7 @@ public class MacAddressTable {
     private synchronized void installAging(Timer timer, int age) {
         ageInterval = age;
         agingTask = new MacTableAgingTask();
-        long milli = (long)age * 1000L;
+        long milli = TimeUnit.SECONDS.toMillis((long)age);
         timer.schedule(agingTask, milli, milli);
     }
 

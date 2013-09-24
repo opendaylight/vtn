@@ -26,6 +26,9 @@ import org.opendaylight.controller.sal.core.UpdateType;
  * </p>
  */
 public class VlanMapEvent extends VNodeEvent {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = -609404786499431527L;
 
     /**

@@ -28,6 +28,9 @@ import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
  * </p>
  */
 public class FlowRemoveEvent extends FlowModEvent {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = -7125181635347239394L;
 
     /**
@@ -44,6 +47,7 @@ public class FlowRemoveEvent extends FlowModEvent {
      *
      * @param mgr   VTN Manager service.
      * @param fent  A flow entry to be modified.
+     * @return  A flow mod task to remove the given flow entry.
      */
     protected ClusterFlowModTask createTask(VTNManagerImpl mgr,
                                             FlowEntry fent) {

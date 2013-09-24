@@ -29,6 +29,9 @@ import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
  * </p>
  */
 public abstract class ClusterEvent implements Serializable {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = -7483110677313880843L;
 
     /**

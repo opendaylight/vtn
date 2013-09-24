@@ -27,6 +27,31 @@ import org.slf4j.LoggerFactory;
  */
 public class VTNConfig {
     /**
+     * Default value of {@link #nodeEdgeWait}.
+     */
+    private static final int  DEFAULT_NODE_EDGE_WAIT = 3000;
+
+    /**
+     * Default value of {@link #l2FlowPriority}.
+     */
+    private static final int  DEFAULT_L2FLOW_PRIORITY = 10;
+
+    /**
+     * Default value of {@link #flowModTimeout}.
+     */
+    private static final int  DEFAULT_FLOWMOD_TIMEOUT = 3000;
+
+    /**
+     * Default value of {@link #remoteFlowModTimeout}.
+     */
+    private static final int  DEFAULT_REMOTE_FLOWMOD_TIMEOUT = 5000;
+
+    /**
+     * Default value of {@link #remoteBulkFlowModTimeout}.
+     */
+    private static final int  DEFAULT_REMOTE_BULK_FLOWMOD_TIMEOUT = 15000;
+
+    /**
      * Indicates a field keeps an integer value.
      */
     @Retention(RetentionPolicy.RUNTIME)
@@ -143,34 +168,35 @@ public class VTNConfig {
      * The number of milliseconds to wait for node edges to be detected.
      */
     @IntConfig(min = 0, max = 600000)
-    private int  nodeEdgeWait = 3000;
+    private int  nodeEdgeWait = DEFAULT_NODE_EDGE_WAIT;
 
     /**
      * Priority value of layer 2 flow entries.
      */
     @IntConfig(min = 1, max = 999)
-    private int  l2FlowPriority = 10;
+    private int  l2FlowPriority = DEFAULT_L2FLOW_PRIORITY;
 
     /**
      * The number of milliseconds to wait for completion of modification of
      * a single flow entry.
      */
     @IntConfig(min = 100, max = 60000)
-    private int  flowModTimeout = 3000;
+    private int  flowModTimeout = DEFAULT_FLOWMOD_TIMEOUT;
 
     /**
      * The number of milliseconds to wait for remote cluster nodes to finish
      * to modify flow entries in a VTN flow.
      */
     @IntConfig(min = 1000, max = 60000)
-    private int  remoteFlowModTimeout = 5000;
+    private int  remoteFlowModTimeout = DEFAULT_REMOTE_FLOWMOD_TIMEOUT;
 
     /**
      * The number of milliseconds to wait for remote cluster nodes to finish
      * modifying bulk flow entries.
      */
     @IntConfig(min = 3000, max = 600000)
-    private int  remoteBulkFlowModTimeout = 15000;
+    private int  remoteBulkFlowModTimeout =
+        DEFAULT_REMOTE_BULK_FLOWMOD_TIMEOUT;
 
     /**
      * Construct a new configuration object.

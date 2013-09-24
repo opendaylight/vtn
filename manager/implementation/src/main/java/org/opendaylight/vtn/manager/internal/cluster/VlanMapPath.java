@@ -22,6 +22,9 @@ import org.opendaylight.vtn.manager.VBridgePath;
  * </p>
  */
 public class VlanMapPath extends VBridgePath {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = 2252969356673452895L;
 
     /**

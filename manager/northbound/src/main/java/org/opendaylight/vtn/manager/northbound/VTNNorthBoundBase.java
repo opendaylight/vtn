@@ -89,8 +89,7 @@ public abstract class VTNNorthBoundBase {
      * @param service  The name of unavailable service.
      * @throws ServiceUnavailableException  Always thrown.
      */
-    protected void serviceUnavailable(String service)
-        throws ServiceUnavailableException {
+    protected void serviceUnavailable(String service) {
         String msg = service + ": " + RestMessages.SERVICEUNAVAILABLE;
         throw new ServiceUnavailableException(msg);
     }

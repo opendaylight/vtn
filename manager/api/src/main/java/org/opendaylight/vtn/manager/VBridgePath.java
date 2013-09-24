@@ -14,6 +14,9 @@ package org.opendaylight.vtn.manager;
  * layer 2 bridge in the virtual tenant.
  */
 public class VBridgePath extends VTenantPath {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = 7534766664277362064L;
 
     /**

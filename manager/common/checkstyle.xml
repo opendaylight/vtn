@@ -1,0 +1,131 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+ "-//Puppy Crawl//DTD Check Configuration 1.2//EN"
+ "http://www.puppycrawl.com/dtds/configuration_1_2.dtd">
+
+<!--
+#
+# Copyright (c) 2013 NEC Corporation
+# All rights reserved.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+-->
+
+<!-- Checkstyle configuration for VTN Manager -->
+<module name="Checker">
+
+  <!-- Ensure that files end with a newline character. -->
+  <module name="NewlineAtEndOfFile"/>
+
+  <!-- Ensure that property files contain the same keys. -->
+  <module name="Translation"/>
+
+  <!-- Checks for long source files. -->
+  <module name="FileLength"/>
+
+  <module name="TreeWalker">
+    <property name="cacheFile" value="${checkstyle.cache.file}" />
+
+    <!-- Checks for Javadoc comments. -->
+    <module name="JavadocMethod">
+      <property name="allowUndeclaredRTE" value="true" />
+      <property name="allowThrowsTagsForSubclasses" value="true" />
+    </module>
+    <module name="JavadocType"/>
+    <module name="JavadocVariable"/>
+    <module name="JavadocStyle"/>
+
+    <!-- Checks for naming conventions. -->
+    <module name="ClassTypeParameterName"/>
+    <module name="ConstantName"/>
+    <module name="LocalFinalVariableName"/>
+    <module name="LocalVariableName"/>
+    <module name="MemberName"/>
+    <module name="MethodName"/>
+    <module name="MethodTypeParameterName"/>
+    <module name="PackageName"/>
+    <module name="ParameterName"/>
+    <module name="StaticVariableName"/>
+    <module name="TypeName"/>
+
+    <!-- Checks for imports. -->
+    <module name="AvoidStarImport"/>
+    <module name="IllegalImport"/>
+    <module name="RedundantImport"/>
+    <module name="UnusedImports"/>
+
+    <!-- Checks for size violations. -->
+    <module name="LineLength">
+      <property name="max" value="100" />
+      <!-- Ignore import directives and annotations. -->
+      <property name="ignorePattern" value="^(import .+|\s*@[a-zA-Z]+.*)$" />
+    </module>
+    <module name="MethodLength"/>
+    <module name="ParameterNumber"/>
+    <module name="AnonInnerLength"/>
+
+    <!-- Checks for whitespace. -->
+    <module name="EmptyForIteratorPad"/>
+    <module name="NoWhitespaceAfter"/>
+    <module name="NoWhitespaceBefore"/>
+    <module name="ParenPad"/>
+    <module name="TypecastParenPad"/>
+    <module name="WhitespaceAfter">
+      <property name="tokens" value="COMMA, SEMI" />
+    </module>
+ 
+
+    <!-- Modifier Checks. -->
+    <module name="ModifierOrder"/>
+    <module name="RedundantModifier"/>
+
+    <!-- Checks for blocks. -->
+    <module name="AvoidNestedBlocks"/>
+    <module name="LeftCurly"/>
+    <module name="NeedBraces"/>
+    <module name="RightCurly"/>
+
+    <!-- Checks for common coding problems. -->
+    <module name="DefaultComesLast"/>
+    <module name="EmptyStatement"/>
+    <module name="EqualsHashCode"/>
+    <module name="HiddenField">
+      <property name="tokens" value="VARIABLE_DEF" />
+      <property name="ignoreConstructorParameter" value="true" />
+      <property name="ignoreSetter" value="true" /> 
+      <property name="ignoreAbstractMethods" value="true" />
+    </module>
+    <module name="IllegalInstantiation"/>
+    <module name="IllegalThrows"/>
+    <module name="InnerAssignment"/>
+    <module name="MagicNumber">
+      <property name="ignoreAnnotation" value="true" />
+    </module>
+    <module name="MissingSwitchDefault"/>
+    <module name="ParameterAssignment"/>
+    <module name="RedundantThrows"/>
+
+    <module name="SimplifyBooleanExpression"/>
+    <module name="SimplifyBooleanReturn"/>
+    <module name="StringLiteralEquality"/>
+
+    <!-- Checks for class design. -->
+    <module name="FinalClass"/>
+    <module name="HideUtilityClassConstructor"/>
+    <module name="InterfaceIsType"/>
+    <module name="VisibilityModifier"/>
+
+    <!-- Checks for complexity. -->
+    <module name="BooleanExpressionComplexity"/>
+    <module name="CyclomaticComplexity"/>
+
+    <!-- Other checks. -->
+    <module name="ArrayTypeStyle"/>
+    <module name="TrailingComment"/>
+    <module name="UpperEll"/>
+  </module>
+
+</module>

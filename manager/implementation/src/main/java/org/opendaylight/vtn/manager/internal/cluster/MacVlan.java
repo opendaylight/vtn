@@ -25,6 +25,9 @@ import org.opendaylight.controller.sal.utils.NetUtils;
  * </p>
  */
 public class MacVlan implements Serializable {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = -4031121202176886188L;
 
     /**
@@ -102,7 +105,7 @@ public class MacVlan implements Serializable {
      */
     @Override
     public int hashCode() {
-        return (int)(macAddress ^ (macAddress >> 32)) + vlan;
+        return VTNManagerImpl.hashCode(macAddress);
     }
 
     /**

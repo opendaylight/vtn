@@ -49,6 +49,9 @@ import org.opendaylight.controller.switchmanager.ISwitchManager;
  * </p>
  */
 public class VTNFlow implements Serializable {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = -102569190506563759L;
 
     /**

@@ -21,6 +21,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "vbridge")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VBridge extends VBridgeConfig {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = -1492044132766790382L;
 
     /**
@@ -43,6 +46,7 @@ public class VBridge extends VBridgeConfig {
     /**
      * Private constructor used for JAXB mapping.
      */
+    @SuppressWarnings("unused")
     private VBridge() {
         super(null);
         state = VNodeState.UNKNOWN;
@@ -65,9 +69,10 @@ public class VBridge extends VBridgeConfig {
         this.faults = faults;
 
         if (state == null) {
-            state = VNodeState.UNKNOWN;
+            this.state = VNodeState.UNKNOWN;
+        } else {
+            this.state = state;
         }
-        this.state = state;
     }
 
     /**
@@ -106,6 +111,7 @@ public class VBridge extends VBridgeConfig {
      *
      * @return  A numerical representation of the bridge state.
      */
+    @SuppressWarnings("unused")
     @XmlAttribute(name = "state")
     private int getStateValue() {
         return state.getValue();
@@ -120,6 +126,7 @@ public class VBridge extends VBridgeConfig {
      *
      * @param st  A numerical representation of the bridge state.
      */
+    @SuppressWarnings("unused")
     private void setStateValue(int st) {
         this.state = VNodeState.valueOf(st);
     }

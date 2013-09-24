@@ -23,6 +23,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "switchport")
 @XmlAccessorType(XmlAccessType.NONE)
 public class SwitchPort implements Serializable {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = -2599650909042057330L;
 
     /**
@@ -46,6 +49,7 @@ public class SwitchPort implements Serializable {
     /**
      * Private constructor used for JAXB mapping.
      */
+    @SuppressWarnings("unused")
     private SwitchPort() {
     }
 

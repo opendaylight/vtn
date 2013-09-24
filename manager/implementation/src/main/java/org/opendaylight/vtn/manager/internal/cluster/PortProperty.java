@@ -16,6 +16,9 @@ import java.io.Serializable;
  * used by the VTN Manager.
  */
 public class PortProperty implements Serializable {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = -3079521309453101331L;
 
     /**

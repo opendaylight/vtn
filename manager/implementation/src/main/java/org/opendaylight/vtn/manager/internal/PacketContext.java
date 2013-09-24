@@ -52,6 +52,11 @@ public class PacketContext {
         LoggerFactory.getLogger(PacketContext.class);
 
     /**
+     * Bitmask which represents valid ethernet type.
+     */
+    private static final int  ETHER_TYPE_MASK = 0xffff;
+
+    /**
      * A received raw packet.
      */
     private final RawPacket  rawPacket;
@@ -407,7 +412,7 @@ public class PacketContext {
             bytesToHexStringFormat(ether.getSourceMACAddress());
         String dstmac = HexEncode.
             bytesToHexStringFormat(ether.getDestinationMACAddress());
-        int type = (int)ether.getEtherType() & 0xffff;
+        int type = (int)ether.getEtherType() & ETHER_TYPE_MASK;
 
         StringBuilder builder = new StringBuilder("src=");
         builder.append(srcmac).

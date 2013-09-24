@@ -23,6 +23,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "vbridgeconf")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VBridgeConfig implements Serializable {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = 7501956469021832807L;
 
     /**
@@ -39,6 +42,7 @@ public class VBridgeConfig implements Serializable {
     /**
      * Private constructor used for JAXB mapping.
      */
+    @SuppressWarnings("unused")
     private VBridgeConfig() {
         ageInterval = -1;
     }
@@ -113,6 +117,7 @@ public class VBridgeConfig implements Serializable {
      * @param age  An {@code Integer} object which represents the number of
      *             seconds between MAC address table aging.
      */
+    @SuppressWarnings("unused")
     private void setAgeIntervalValue(Integer age) {
         if (age == null || age.intValue() < 0) {
             ageInterval = -1;

@@ -170,9 +170,14 @@ public class VTNManagerImpl
     static final short VLAN_ID_MAX = 4095;
 
     /**
-     * VLAN ID which represents untagged frame.
+     * The number of bytes in an IPv4 address.
      */
-    static final short VLAN_ID_UNTAGGED = 0;
+    static final int  IPV4_ADDRLEN = 4;
+
+    /**
+     * The number of bits in an integer value.
+     */
+    static final int  NBITS_INT = 32;
 
     /**
      * Cluster cache name associated with {@link #tenantDB}.
@@ -2095,7 +2100,7 @@ public class VTNManagerImpl
                               byte[] target, short vlan) {
         assert src.length == EthernetAddress.SIZE &&
             dst.length == EthernetAddress.SIZE &&
-            sender.length == 4 && target.length == 4;
+            sender.length == IPV4_ADDRLEN && target.length == IPV4_ADDRLEN;
 
         byte[] tha = (NetUtils.isBroadcastMACAddr(dst))
             ? new byte[]{0, 0, 0, 0, 0, 0} : dst;
@@ -2257,6 +2262,18 @@ public class VTNManagerImpl
     }
 
     /**
+     * Ensure that the given tenant configuration is not null.
+     *
+     * @param tconf  Tenant configuration
+     * @throws VTNException  {@code tconf} is {@code null}.
+     */
+    private void checkTenantConfig(VTenantConfig tconf) throws VTNException {
+        if (tconf == null) {
+            throw new VTNException(argumentIsNull("Tenant configuration"));
+        }
+    }
+
+    /**
      * Check whether the VTN Manager service is available or not.
      *
      * @throws VTNException   VTN Manager service is not available.
@@ -2296,6 +2313,16 @@ public class VTNManagerImpl
                 f.delete();
             }
         }
+    }
+
+    /**
+     * Return a hash code of the given long integer value.
+     *
+     * @param value  A long integer value.
+     * @return  A hash code of the given value.
+     */
+    public static int hashCode(long value) {
+        return (int)(value ^ (value >>> NBITS_INT));
     }
 
     /**
@@ -2437,6 +2464,26 @@ public class VTNManagerImpl
     }
 
     /**
+     * Return the name of the virtual tenant in the given tenant path.
+     *
+     * @param path  Path to the virtual tenant.
+     * @return  The name of the virtual tenant in the given path.
+     * @throws VTNException  An error occurred.
+     */
+    private String getTenantName(VTenantPath path) throws VTNException {
+        if (path == null) {
+            throw new VTNException(argumentIsNull("Path"));
+        }
+
+        String tenantName = path.getTenantName();
+        if (tenantName == null) {
+            throw new VTNException(argumentIsNull("Tenant name"));
+        }
+
+        return tenantName;
+    }
+
+    /**
      * Return the virtual tenant instance associated with the given name.
      *
      * <p>
@@ -2447,17 +2494,8 @@ public class VTNManagerImpl
      * @return  Virtual tenant instance is returned.
      * @throws VTNException  An error occurred.
      */
-    private VTenantImpl getTenantImpl(VTenantPath path)
-        throws VTNException {
-        if (path == null) {
-            throw new VTNException(argumentIsNull("Path"));
-        }
-
-        String tenantName = path.getTenantName();
-        if (tenantName == null) {
-            throw new VTNException(argumentIsNull("Tenant name"));
-        }
-
+    private VTenantImpl getTenantImpl(VTenantPath path) throws VTNException {
+        String tenantName = getTenantName(path);
         VTenantImpl vtn = tenantDB.get(tenantName);
         if (vtn == null) {
             Status status = tenantNotFound(tenantName);
@@ -3213,11 +3251,10 @@ public class VTNManagerImpl
         TimerTask task = new TimerTask() {
             @Override
             public void run() {
-                if (disabledNodes.remove(node) != null) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("{}: {}: Start packet service",
-                                  containerName, node);
-                    }
+                if (disabledNodes.remove(node) != null &&
+                    LOG.isDebugEnabled()) {
+                    LOG.debug("{}: {}: Start packet service",
+                              containerName, node);
                 }
             }
         };
@@ -3334,19 +3371,13 @@ public class VTNManagerImpl
      */
     @Override
     public Status addTenant(VTenantPath path, VTenantConfig tconf) {
-        if (path == null) {
-            return argumentIsNull("Path");
-        }
-        if (tconf == null) {
-            return argumentIsNull("Tenant configuration");
-        }
-
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
+            String tenantName = getTenantName(path);
+            checkTenantConfig(tconf);
             checkUpdate();
 
             // Ensure the given tenant name is valid.
-            String tenantName = path.getTenantName();
             checkName("Tenant", tenantName);
 
             VTenantImpl vtn = new VTenantImpl(containerName, tenantName,
@@ -3392,12 +3423,9 @@ public class VTNManagerImpl
     @Override
     public Status modifyTenant(VTenantPath path, VTenantConfig tconf,
                                boolean all) {
-        if (tconf == null) {
-            return argumentIsNull("Tenant configuration");
-        }
-
         VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
+            checkTenantConfig(tconf);
             checkUpdate();
 
             VTenantImpl vtn = getTenantImpl(path);
@@ -3422,17 +3450,9 @@ public class VTNManagerImpl
      */
     @Override
     public Status removeTenant(VTenantPath path) {
-        if (path == null) {
-            return argumentIsNull("Path");
-        }
-
-        String tenantName = path.getTenantName();
-        if (tenantName == null) {
-            return argumentIsNull("Tenant name");
-        }
-
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
+            String tenantName = getTenantName(path);
             checkUpdate();
 
             // Make the specified tenant invisible.
@@ -4086,19 +4106,11 @@ public class VTNManagerImpl
      */
     @Override
     public Status removeAllFlows(VTenantPath path) {
-        if (path == null) {
-            return argumentIsNull("Path");
-        }
-
-        String tenantName = path.getTenantName();
-        if (tenantName == null) {
-            return argumentIsNull("Tenant name");
-        }
-
         FlowRemoveTask task;
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
+            String tenantName = getTenantName(path);
             checkUpdate();
 
             VTNFlowDatabase fdb = getTenantFlowDB(tenantName);
@@ -4366,6 +4378,7 @@ public class VTNManagerImpl
     public void notifyNodeConnector(NodeConnector nc, UpdateType type,
                                     Map<String, Property> propMap) {
         // Maintain the port DB.
+        UpdateType utype = type;
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
@@ -4374,8 +4387,8 @@ public class VTNManagerImpl
                     return;
                 }
             } else {
-                type = addPort(nc, propMap);
-                if (type == null) {
+                utype = addPort(nc, propMap);
+                if (utype == null) {
                     return;
                 }
             }
@@ -4387,7 +4400,7 @@ public class VTNManagerImpl
         rdlock.lock();
         try {
             for (VTenantImpl vtn: tenantDB.values()) {
-                vtn.notifyNodeConnector(this, nc, type);
+                vtn.notifyNodeConnector(this, nc, utype);
             }
         } finally {
             unlock(rdlock);

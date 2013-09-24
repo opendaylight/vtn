@@ -53,6 +53,9 @@ import org.opendaylight.controller.switchmanager.ISwitchManager;
  * </p>
  */
 public final class VBridgeIfImpl implements VBridgeNode, Serializable {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = 699966877414184978L;
 
     /**
@@ -201,16 +204,16 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
      */
     boolean setVInterfaceConfig(VTNManagerImpl mgr, VInterfaceConfig iconf,
                                 boolean all) {
-        iconf = (all) ? resolve(iconf) : merge(iconf);
-        if (iconf.equals(ifConfig)) {
+        VInterfaceConfig cf = (all) ? resolve(iconf) : merge(iconf);
+        if (cf.equals(ifConfig)) {
             return false;
         }
 
         Boolean olden = ifConfig.getEnabled();
-        Boolean newen = iconf.getEnabled();
+        Boolean newen = cf.getEnabled();
         boolean changed = !olden.equals(newen);
 
-        ifConfig = iconf;
+        ifConfig = cf;
 
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         VBridgeIfState ist = getIfState(db);
@@ -243,7 +246,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
         }
 
         VNodeState pstate = ist.getPortState();
-        VInterface viface = new VInterface(getName(), state, pstate, iconf);
+        VInterface viface = new VInterface(getName(), state, pstate, cf);
         mgr.enqueueEvent(ifPath, viface, UpdateType.CHANGED);
         return true;
     }
@@ -738,11 +741,11 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
         String desc = iconf.getDescription();
         Boolean en = iconf.getEnabled();
         if (desc == null) {
-            iconf = (en == null)
+            return (en == null)
                 ? ifConfig
                 : new VInterfaceConfig(ifConfig.getDescription(), en);
         } else if (en == null) {
-            iconf = new VInterfaceConfig(desc, ifConfig.getEnabled());
+            return new VInterfaceConfig(desc, ifConfig.getEnabled());
         }
 
         return iconf;
@@ -758,7 +761,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
         Boolean enabled = iconf.getEnabled();
         if (enabled == null) {
             // Interface should be enabled by default.
-            iconf = new VInterfaceConfig(iconf.getDescription(), Boolean.TRUE);
+            return new VInterfaceConfig(iconf.getDescription(), Boolean.TRUE);
         }
 
         return iconf;
@@ -777,7 +780,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
         }
 
         if (bstate == VNodeState.UNKNOWN && state == VNodeState.UP) {
-            bstate = VNodeState.UP;
+            return VNodeState.UP;
         }
 
         return bstate;
@@ -794,21 +797,24 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
     private void setState(VTNManagerImpl mgr,
                           ConcurrentMap<VTenantPath, Object> db,
                           VBridgeIfState ist, VNodeState state) {
+        VNodeState st;
         if (!isEnabled()) {
             // State of disabled interface must be DOWN.
-            state = VNodeState.DOWN;
+            st = VNodeState.DOWN;
+        } else {
+            st = state;
         }
 
-        ist.setState(state);
+        ist.setState(st);
         if (ist.isDirty()) {
-            if (state != VNodeState.UP) {
+            if (st != VNodeState.UP) {
                 // Purge all VTN flows related to this interface.
                 VTNThreadData.removeFlows(mgr, ifPath);
             }
 
             db.put(ifPath, ist);
             VNodeState pstate = ist.getPortState();
-            VInterface viface = new VInterface(getName(), state, pstate,
+            VInterface viface = new VInterface(getName(), st, pstate,
                                                ifConfig);
             mgr.enqueueEvent(ifPath, viface, UpdateType.CHANGED);
         }
@@ -856,10 +862,8 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
         // Update the state of the mapped port.
         ist.setPortState(pstate);
 
-        if (pstate == VNodeState.UP) {
-            if (mgr.isEdgePort(nc)) {
-                return VNodeState.UP;
-            }
+        if (pstate == VNodeState.UP && mgr.isEdgePort(nc)) {
+            return VNodeState.UP;
         }
 
         return VNodeState.DOWN;
@@ -1037,13 +1041,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
         }
 
         String name = port.getName();
-        if (name != null) {
-            if (!name.equals(pp.getName())) {
-                return false;
-            }
-        }
-
-        return true;
+        return (name == null || name.equals(pp.getName()));
     }
 
     /**

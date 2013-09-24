@@ -26,6 +26,9 @@ import org.opendaylight.controller.sal.core.UpdateType;
  * </p>
  */
 public class PortMapEvent extends VNodeEvent {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = 7275615707564769661L;
 
     /**

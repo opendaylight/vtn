@@ -33,6 +33,7 @@ public class VBridgeList {
     /**
      * Default constructor used by JAXB.
      */
+    @SuppressWarnings("unused")
     private VBridgeList() {
     }
 

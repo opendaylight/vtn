@@ -24,6 +24,9 @@ import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
  * </p>
  */
 public class FlowModResultEvent extends ClusterEvent {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = 1772757786660826935L;
 
     /**

@@ -70,6 +70,9 @@ import org.opendaylight.controller.sal.utils.StatusCode;
  * </p>
  */
 public final class VTenantImpl implements Serializable {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = 1119058818818252108L;
 
     /**
@@ -91,7 +94,7 @@ public final class VTenantImpl implements Serializable {
     /**
      * Default value of {@code hard_timeout} of flow entries.
      */
-    private static final int  DEFAULT_HARD_TIMEOUT = 0;    // Infinite
+    private static final int  DEFAULT_HARD_TIMEOUT = 0;
 
     /**
      * The name of the container to which this tenant belongs.
@@ -159,11 +162,11 @@ public final class VTenantImpl implements Serializable {
      */
     public VTenantImpl(String containerName, String tenantName,
                        VTenantConfig tconf) throws VTNException {
-        tconf = resolve(tconf);
-        checkConfig(tconf);
+        VTenantConfig cf = resolve(tconf);
+        checkConfig(cf);
         this.containerName = containerName;
         this.tenantName = tenantName;
-        this.tenantConfig = tconf;
+        this.tenantConfig = cf;
     }
 
     /**
@@ -222,14 +225,19 @@ public final class VTenantImpl implements Serializable {
                                                  VTenantConfig tconf,
                                                  boolean all)
         throws VTNException {
-        tconf = (all) ? resolve(tconf) : merge(tconf);
-        if (tconf.equals(tenantConfig)) {
+        VTenantConfig cf;
+        if (all) {
+            cf = resolve(tconf);
+        } else {
+            cf = merge(tconf);
+        }
+        if (cf.equals(tenantConfig)) {
             return false;
         }
 
-        checkConfig(tconf);
-        tenantConfig = tconf;
-        VTenant vtenant = new VTenant(tenantName, tconf);
+        checkConfig(cf);
+        tenantConfig = cf;
+        VTenant vtenant = new VTenant(tenantName, cf);
         mgr.enqueueEvent(path, vtenant, UpdateType.CHANGED);
         return true;
     }

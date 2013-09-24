@@ -66,6 +66,7 @@ public class MacEntry {
     /**
      * Private constructor used for JAXB mapping.
      */
+    @SuppressWarnings("unused")
     private MacEntry() {
     }
 
@@ -158,6 +159,7 @@ public class MacEntry {
      *
      * @param ipaddrs  An {@link IpAddressSet} object.
      */
+    @SuppressWarnings("unused")
     private void setInetAddresses(IpAddressSet ipaddrs) {
         if (ipaddrs != null && ipaddrs.getLength() != 0) {
             inetAddresses = ipaddrs;

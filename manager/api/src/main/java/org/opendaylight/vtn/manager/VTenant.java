@@ -20,6 +20,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "vtn")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VTenant extends VTenantConfig {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = -2091502158725895050L;
 
     /**
@@ -31,6 +34,7 @@ public class VTenant extends VTenantConfig {
     /**
      * Private constructor used for JAXB mapping.
      */
+    @SuppressWarnings("unused")
     private VTenant() {
         super(null);
     }

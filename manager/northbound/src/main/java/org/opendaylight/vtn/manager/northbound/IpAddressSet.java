@@ -33,6 +33,7 @@ public class IpAddressSet {
     /**
      * Private constructor used for JAXB mapping.
      */
+    @SuppressWarnings("unused")
     private IpAddressSet() {
     }
 

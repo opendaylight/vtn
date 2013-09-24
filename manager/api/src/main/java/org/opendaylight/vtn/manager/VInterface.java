@@ -21,6 +21,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "interface")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VInterface extends VInterfaceConfig {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = -1119374472984925440L;
 
     /**
@@ -42,6 +45,7 @@ public class VInterface extends VInterfaceConfig {
     /**
      * Private constructor used for JAXB mapping.
      */
+    @SuppressWarnings("unused")
     private VInterface() {
         super(null, null);
         state = VNodeState.UNKNOWN;
@@ -64,13 +68,15 @@ public class VInterface extends VInterfaceConfig {
         name = ifName;
 
         if (state == null) {
-            state = VNodeState.UNKNOWN;
+            this.state = VNodeState.UNKNOWN;
+        } else {
+            this.state = state;
         }
         if (estate == null) {
-            estate = VNodeState.UNKNOWN;
+            this.entityState = VNodeState.UNKNOWN;
+        } else {
+            this.entityState = estate;
         }
-        this.state = state;
-        this.entityState = estate;
     }
 
     /**
@@ -109,6 +115,7 @@ public class VInterface extends VInterfaceConfig {
      *
      * @return  A numerical representation of the interface state.
      */
+    @SuppressWarnings("unused")
     @XmlAttribute(name = "state")
     private int getStateValue() {
         return state.getValue();
@@ -123,6 +130,7 @@ public class VInterface extends VInterfaceConfig {
      *
      * @param st  A numerical representation of the interface state.
      */
+    @SuppressWarnings("unused")
     private void setStateValue(int st) {
         this.state = VNodeState.valueOf(st);
     }
@@ -137,6 +145,7 @@ public class VInterface extends VInterfaceConfig {
      *
      * @return  A numerical representation of the network element state.
      */
+    @SuppressWarnings("unused")
     @XmlAttribute(name = "entityState")
     private int getEntityStateValue() {
         return entityState.getValue();
@@ -151,6 +160,7 @@ public class VInterface extends VInterfaceConfig {
      *
      * @param st  A numerical representation of the network element state.
      */
+    @SuppressWarnings("unused")
     private void setEntityStateValue(int st) {
         this.entityState = VNodeState.valueOf(st);
     }

@@ -18,6 +18,7 @@ import java.util.TimerTask;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.net.InetAddress;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
@@ -60,6 +61,12 @@ public class ArpHandler {
      * ARP request timeout in seconds.
      */
     private static final short  ARP_REQUEST_TIMEOUT = 1;
+
+    /**
+     * The number of milliseconds in {@link #ARP_REQUEST_TIMEOUT}.
+     */
+    private static final long  ARP_REQUEST_TIMEOUT_MSEC =
+        TimeUnit.SECONDS.toMillis((long)ARP_REQUEST_TIMEOUT);
 
     /**
      * VTN Manager service.
@@ -155,7 +162,8 @@ public class ArpHandler {
             }
         };
 
-        timerThread.scheduleAtFixedRate(task, 1000, 1000);
+        timerThread.scheduleAtFixedRate(task, ARP_REQUEST_TIMEOUT_MSEC,
+                                        ARP_REQUEST_TIMEOUT_MSEC);
     }
 
     /**

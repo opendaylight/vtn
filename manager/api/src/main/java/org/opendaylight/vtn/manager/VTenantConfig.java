@@ -23,6 +23,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "vtnconf")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VTenantConfig implements Serializable {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = 7446090329841381143L;
 
     /**
@@ -46,6 +49,7 @@ public class VTenantConfig implements Serializable {
     /**
      * Private constructor used for JAXB mapping.
      */
+    @SuppressWarnings("unused")
     private VTenantConfig() {
         idleTimeout = -1;
         hardTimeout = -1;
@@ -137,6 +141,7 @@ public class VTenantConfig implements Serializable {
      * @param idle  An {@code Integer} object which represents
      *              {@code idle_timeout} value for flow entries.
      */
+    @SuppressWarnings("unused")
     private void setIdleTimeoutValue(Integer idle) {
         if (idle == null || idle.intValue() < 0) {
             idleTimeout = -1;
@@ -168,6 +173,7 @@ public class VTenantConfig implements Serializable {
      * @param hard  An {@code Integer} object which represents
      *              {@code hard_timeout} value for flow entries.
      */
+    @SuppressWarnings("unused")
     private void setHardTimeoutValue(Integer hard) {
         if (hard == null || hard.intValue() < 0) {
             hardTimeout = -1;

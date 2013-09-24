@@ -27,6 +27,9 @@ import org.opendaylight.controller.sal.core.UpdateType;
  * </p>
  */
 public abstract class VNodeEvent extends ClusterEvent {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = 8518009257290792509L;
 
     /**

@@ -24,6 +24,9 @@ import java.io.Serializable;
  * @param <R>   Type of the object to be located at the right side.
  */
 public class ObjectPair<L, R> implements Serializable {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = 6758220741320387162L;
 
     /**

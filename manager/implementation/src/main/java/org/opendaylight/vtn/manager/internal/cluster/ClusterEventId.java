@@ -42,6 +42,9 @@ import org.opendaylight.controller.sal.utils.NetUtils;
  * </p>
  */
 public class ClusterEventId implements Serializable {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = 1962921552441279134L;
 
     /**
@@ -58,7 +61,7 @@ public class ClusterEventId implements Serializable {
     /**
      * Event identifier for the next allocation.
      */
-    protected static final AtomicLong  nextEventId = new AtomicLong();
+    private static final AtomicLong  NEXT_EVENT_ID = new AtomicLong();
 
     /**
      * Cluster node identifier.
@@ -166,7 +169,7 @@ public class ClusterEventId implements Serializable {
      */
     public ClusterEventId() {
         nodeId = localNodeId;
-        eventId = nextEventId.getAndIncrement();
+        eventId = NEXT_EVENT_ID.getAndIncrement();
     }
 
     /**
@@ -236,9 +239,8 @@ public class ClusterEventId implements Serializable {
      */
     @Override
     public int hashCode() {
-        int h = (int)((nodeId ^ (nodeId >>> 32)) +
-                      (eventId ^ (eventId >>> 32)));
-        return h;
+        return VTNManagerImpl.hashCode(nodeId) +
+            VTNManagerImpl.hashCode(eventId);
     }
 
     /**

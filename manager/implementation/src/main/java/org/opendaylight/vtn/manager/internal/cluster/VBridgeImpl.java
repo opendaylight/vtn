@@ -79,6 +79,9 @@ import org.opendaylight.controller.switchmanager.ISwitchManager;
  * </p>
  */
 public final class VBridgeImpl implements Serializable {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID =  -4099528491204018963L;
 
     /**
@@ -150,9 +153,9 @@ public final class VBridgeImpl implements Serializable {
      */
     VBridgeImpl(VTenantImpl vtn, String name, VBridgeConfig bconf)
         throws VTNException {
-        bconf = resolve(bconf);
-        checkConfig(bconf);
-        bridgeConfig = bconf;
+        VBridgeConfig cf = resolve(bconf);
+        checkConfig(cf);
+        bridgeConfig = cf;
         setPath(vtn, name);
     }
 
@@ -273,15 +276,15 @@ public final class VBridgeImpl implements Serializable {
     synchronized boolean setVBridgeConfig(VTNManagerImpl mgr,
                                           VBridgeConfig bconf, boolean all)
         throws VTNException {
-        bconf = (all) ? resolve(bconf) : merge(bconf);
-        if (bconf.equals(bridgeConfig)) {
+        VBridgeConfig cf = (all) ? resolve(bconf) : merge(bconf);
+        if (cf.equals(bridgeConfig)) {
             return false;
         }
 
-        checkConfig(bconf);
-        bridgeConfig = bconf;
+        checkConfig(cf);
+        bridgeConfig = cf;
         String name = bridgePath.getBridgeName();
-        VBridge vbridge = getVBridge(mgr, name, bconf);
+        VBridge vbridge = getVBridge(mgr, name, cf);
         mgr.enqueueEvent(bridgePath, vbridge, UpdateType.CHANGED);
 
         initMacTableAging(mgr);
@@ -468,8 +471,7 @@ public final class VBridgeImpl implements Serializable {
         if (node == null) {
             // Node is unspecified.
             idBuilder.append(NODEID_ANY);
-        }
-        else {
+        } else {
             VTNManagerImpl.checkNode(node);
             idBuilder.append(node.getType()).append('-').
                 append(node.getNodeIDString());
@@ -1270,11 +1272,11 @@ public final class VBridgeImpl implements Serializable {
         String desc = bconf.getDescription();
         int age = bconf.getAgeInterval();
         if (desc == null) {
-            bconf = (age < 0)
+            return (age < 0)
                 ? bridgeConfig
                 : new VBridgeConfig(bridgeConfig.getDescription(), age);
         } else if (age < 0) {
-            bconf = new VBridgeConfig(desc, bridgeConfig.getAgeInterval());
+            return new VBridgeConfig(desc, bridgeConfig.getAgeInterval());
         }
 
         return bconf;
@@ -1289,8 +1291,8 @@ public final class VBridgeImpl implements Serializable {
     private VBridgeConfig resolve(VBridgeConfig bconf) {
         int age = bconf.getAgeInterval();
         if (age < 0) {
-            bconf = new VBridgeConfig(bconf.getDescription(),
-                                      DEFAULT_AGE_INTERVAL);
+            return new VBridgeConfig(bconf.getDescription(),
+                                     DEFAULT_AGE_INTERVAL);
         }
 
         return bconf;
@@ -1442,16 +1444,21 @@ public final class VBridgeImpl implements Serializable {
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         VBridgeState bst = getBridgeState(db);
         int faults = bst.getFaultedPaths().size();
+        VNodeState st;
         if (faults != 0) {
-            state = VNodeState.DOWN;
+            st = VNodeState.DOWN;
+        } else {
+            st = state;
         }
-        if (bst.setState(state)) {
+
+        boolean chg = changed;
+        if (bst.setState(st)) {
             db.put(bridgePath, bst);
-            changed = true;
+            chg = true;
         }
-        if (changed) {
+        if (chg) {
             VBridge vbridge =
-                new VBridge(getName(), state, faults, getVBridgeConfig());
+                new VBridge(getName(), st, faults, getVBridgeConfig());
             mgr.enqueueEvent(bridgePath, vbridge, UpdateType.CHANGED);
         }
     }

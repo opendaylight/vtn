@@ -18,6 +18,9 @@ import org.opendaylight.controller.sal.core.NodeConnector;
  * bridge interface and physical switch port.
  */
 public class PortMap implements Serializable {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = 9006400881038730332L;
 
     /**

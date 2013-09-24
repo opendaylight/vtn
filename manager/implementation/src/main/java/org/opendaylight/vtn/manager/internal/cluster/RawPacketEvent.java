@@ -27,6 +27,9 @@ import org.opendaylight.controller.sal.packet.RawPacket;
  * </p>
  */
 public class RawPacketEvent extends ClusterEvent {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = -7220670242600520137L;
 
     /**

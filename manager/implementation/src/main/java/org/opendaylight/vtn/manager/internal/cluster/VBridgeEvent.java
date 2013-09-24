@@ -26,6 +26,9 @@ import org.opendaylight.controller.sal.core.UpdateType;
  * </p>
  */
 public class VBridgeEvent extends VNodeEvent {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = 4839916486356062624L;
 
     /**

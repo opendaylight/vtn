@@ -20,6 +20,9 @@ import org.opendaylight.controller.sal.utils.StatusCode;
  * </p>
  */
 public class VTNException extends Exception {
+    /**
+     * Version number for serialization.
+     */
     private static final long serialVersionUID = -6977947338362700417L;
 
     /**
