@@ -18,6 +18,7 @@
 
 #include <pfc/listmodel.h>
 #include <pfc/thread.h>
+#include <pfc/synch.h>
 
 #include "pseudo_rand.hh"
 #include "string_util.h"
@@ -113,6 +114,7 @@ TEST(listm, llist_pop_wait_for_filled_list)
 typedef struct {
     pfc_listm_t list;
     pfc_ptr_t *vals;
+    pfc_sem_t sem;
     int max_idx;
 } args_for_sleep_and_push_t;
 
@@ -129,6 +131,7 @@ sleep_and_push (void *args) {
             wait_usec *= 10;
         }
         EXPECT_EQ(0, usleep(wait_usec));
+        EXPECT_EQ(0, pfc_sem_wait(&my_args_p->sem));
         EXPECT_EQ(0, pfc_listm_push(list, vals[i]));
     }
 
@@ -160,15 +163,24 @@ TEST(listm, llist_pop_wait_for_empty_list)
             // start `sleep_and_push' thread
             pfc_thread_t thr_id;
             args_for_sleep_and_push_t args;
+            pfc_sem_t *sem(&args.sem);
+
             args.list = list;
             args.vals = vals;
             args.max_idx = i;
+            int err(pfc_sem_init(sem, 0));
+            if (err != 0) {
+                EXPECT_EQ(0, err);
+                break;
+            }
             EXPECT_EQ(0, pfc_thread_create(&thr_id, sleep_and_push,
                                            (pfc_ptr_t)&args, 0));
 
             pfc_bool_t skip_val_eq_check = PFC_FALSE;
             
             for (int j = 0; j <= i; ++j) {
+                EXPECT_EQ(0, pfc_sem_post(sem));
+
                 // do pop_wait
                 pfc_cptr_t v = INVALID_PTR;
                 timespec_t ts1 = timespec_get_mono();
