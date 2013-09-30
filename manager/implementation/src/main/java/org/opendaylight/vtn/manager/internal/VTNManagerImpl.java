@@ -1166,7 +1166,7 @@ public class VTNManagerImpl
                 continue;
             }
 
-            if (vflow.getLocality(this) != ConnectionLocality.NOT_LOCAL) {
+            if (vflow.getLocality(this) == ConnectionLocality.LOCAL) {
                 // This VTN flow kept by another cluster node is obsolete.
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("{}: Remove obsolete VTN flow: {}",
