@@ -25,6 +25,13 @@
   <version>0.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
+  <scm>
+    <connection>scm:git:https://git.opendaylight.org/gerrit/p/vtn.git</connection>
+    <developerConnection>scm:git:ssh://git.opendaylight.org:29418/vtn.git</developerConnection>
+    <url>https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_%28VTN%29:Main</url>
+    <tag>HEAD</tag>
+  </scm>
+
   <properties>
     <nexusproxy>http://nexus.opendaylight.org/content</nexusproxy>
     <sitedeploy>

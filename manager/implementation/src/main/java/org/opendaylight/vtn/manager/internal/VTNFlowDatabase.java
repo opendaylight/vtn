@@ -26,9 +26,9 @@ import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 
-import org.opendaylight.controller.connectionmanager.ConnectionLocality;
 import org.opendaylight.controller.connectionmanager.IConnectionManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
+import org.opendaylight.controller.sal.connection.ConnectionLocality;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 

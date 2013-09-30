@@ -36,7 +36,6 @@ import org.opendaylight.controller.clustering.services.CacheExistException;
 import org.opendaylight.controller.clustering.services.IClusterContainerServices;
 import org.opendaylight.controller.clustering.services.IClusterGlobalServices;
 import org.opendaylight.controller.clustering.services.IClusterServices.cacheMode;
-import org.opendaylight.controller.connectionmanager.ConnectionLocality;
 import org.opendaylight.controller.connectionmanager.ConnectionMgmtScheme;
 import org.opendaylight.controller.connectionmanager.IConnectionManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowConfig;
@@ -47,6 +46,7 @@ import org.opendaylight.controller.forwardingrulesmanager.PortGroupProvider;
 import org.opendaylight.controller.hosttracker.IfIptoHost;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.connection.ConnectionConstants;
+import org.opendaylight.controller.sal.connection.ConnectionLocality;
 import org.opendaylight.controller.sal.core.Config;
 import org.opendaylight.controller.sal.core.ConstructionException;
 import org.opendaylight.controller.sal.core.Edge;
@@ -628,16 +628,6 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
     @Override
     public byte[] getNodeMAC(Node node) {
         return null;
-    }
-
-    @Override
-    public boolean isHostRefreshEnabled() {
-        return false;
-    }
-
-    @Override
-    public int getHostRetryCount() {
-        return 0;
     }
 
     @Override

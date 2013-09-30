@@ -26,6 +26,13 @@
   <version>0.1.0-SNAPSHOT</version>
   <packaging>bundle</packaging>
 
+  <scm>
+    <connection>scm:git:https://git.opendaylight.org/gerrit/p/vtn.git</connection>
+    <developerConnection>scm:git:ssh://git.opendaylight.org:29418/vtn.git</developerConnection>
+    <url>https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_%28VTN%29:Main</url>
+    <tag>HEAD</tag>
+  </scm>
+
   <properties>
     <!-- Sonar properties using jacoco to retrieve test results -->
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
@@ -65,13 +72,13 @@
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal</artifactId>
-      <version>0.5.0-SNAPSHOT</version>
+      <version>0.5.1-SNAPSHOT</version>
     </dependency>
 
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>hosttracker</artifactId>
-      <version>0.4.0-SNAPSHOT</version>
+      <version>0.4.1-SNAPSHOT</version>
     </dependency>
 
     <dependency>

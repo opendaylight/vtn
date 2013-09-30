@@ -21,11 +21,11 @@ import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
-import org.opendaylight.controller.connectionmanager.ConnectionLocality;
 import org.opendaylight.controller.connectionmanager.IConnectionManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.action.Action;
 import org.opendaylight.controller.sal.action.Output;
+import org.opendaylight.controller.sal.connection.ConnectionLocality;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.flowprogrammer.Flow;

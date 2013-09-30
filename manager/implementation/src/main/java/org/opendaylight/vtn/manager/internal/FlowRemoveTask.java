@@ -24,9 +24,9 @@ import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.FlowRemoveEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 
-import org.opendaylight.controller.connectionmanager.ConnectionLocality;
 import org.opendaylight.controller.connectionmanager.IConnectionManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
+import org.opendaylight.controller.sal.connection.ConnectionLocality;
 
 /**
  * This class implements flow programming task which uninstalls VTN flows.
