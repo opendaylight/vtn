@@ -23,7 +23,7 @@ public class VTNException extends Exception {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -6977947338362700417L;
+    private static final long serialVersionUID = -3983343760793384085L;
 
     /**
      * Operation status.
@@ -41,14 +41,24 @@ public class VTNException extends Exception {
     }
 
     /**
+     * Consturct a VTN exception with SAL status and cause of exception.
+     *
+     * @param status   A status to be delivered as exception.
+     * @param cause    The cause of an error.
+     */
+    public VTNException(Status status, Throwable cause) {
+        super((status == null) ? null : status.toString(), cause);
+        this.status = status;
+    }
+
+    /**
      * Construct a VTN exception.
      *
      * @param code  The status code.
      * @param desc  Description about the status.
      */
     public VTNException(StatusCode code, String desc) {
-        super(desc);
-        this.status = new Status(code, desc);
+        this(new Status(code, desc));
     }
 
     /**
@@ -59,8 +69,7 @@ public class VTNException extends Exception {
      * @param cause    The cause of an error.
      */
     public VTNException(String message, Throwable cause) {
-        super(message, cause);
-        this.status = new Status(StatusCode.INTERNALERROR, message);
+        this(new Status(StatusCode.INTERNALERROR, message), cause);
     }
 
     /**
