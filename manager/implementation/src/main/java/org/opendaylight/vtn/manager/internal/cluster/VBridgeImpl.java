@@ -681,10 +681,12 @@ public final class VBridgeImpl implements Serializable {
         try {
             VBridgeIfImpl vif = getInterfaceImpl(path);
             VNodeState ifState = vif.setPortMap(mgr, pmconf);
-            if (ifState == VNodeState.DOWN) {
-                setState(mgr, VNodeState.DOWN);
-            } else {
-                updateState(mgr);
+            if (vif.isEnabled()) {
+                if (ifState == VNodeState.DOWN) {
+                    setState(mgr, VNodeState.DOWN);
+                } else {
+                    updateState(mgr);
+                }
             }
         } finally {
             wrlock.unlock();
