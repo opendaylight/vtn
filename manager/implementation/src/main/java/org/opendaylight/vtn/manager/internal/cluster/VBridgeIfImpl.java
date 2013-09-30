@@ -408,16 +408,17 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
 
         PortMapConfig pmconf = portMapConfig;
         if (pmconf != null) {
-            Node node = pmconf.getNode();
-            SwitchPort port = pmconf.getPort();
-            NodeConnector nc = findNodeConnector(mgr, node, port);
-
-            // Try to establish port mapping.
-            if (nc != null && mapPort(mgr, db, ist, nc, false)) {
-                state = getNewState(mgr, ist);
-            } else {
-                state = VNodeState.DOWN;
+            NodeConnector mapped = ist.getMappedPort();
+            if (mapped == null) {
+                // Try to establish port mapping.
+                Node node = pmconf.getNode();
+                SwitchPort port = pmconf.getPort();
+                NodeConnector nc = findNodeConnector(mgr, node, port);
+                if (nc != null) {
+                    mapPort(mgr, db, ist, nc, false);
+                }
             }
+            state = getNewState(mgr, ist);
         }
 
         if (!isEnabled()) {
