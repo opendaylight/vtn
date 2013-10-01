@@ -620,6 +620,11 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
     }
 
     @Override
+    public boolean doesNodeConnectorExist(NodeConnector nc) {
+        return false;
+    }
+
+    @Override
     public byte[] getControllerMAC() {
         return new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
                             (byte)0xCC, (byte)0xCC, (byte)0xCC};
