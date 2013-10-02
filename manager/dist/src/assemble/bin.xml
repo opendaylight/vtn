@@ -24,6 +24,7 @@
     <moduleSet>
       <excludes>
         <exclude>org.opendaylight.vtn:*.integrationtest</exclude>
+        <exclude>org.opendaylight.vtn:*.checkstyle</exclude>
       </excludes>
       <binaries>
         <outputDirectory>opendaylight/plugins</outputDirectory>

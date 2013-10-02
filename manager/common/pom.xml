@@ -12,7 +12,7 @@
 -->
 
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
-	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <prerequisites>
     <maven>3.0</maven>
@@ -153,6 +153,12 @@
       <id>central</id>
       <name>central</name>
       <url>http://repo1.maven.org/maven2</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+          <enabled>true</enabled>
+      </releases>
     </repository>
     <!-- Pax mirror -->
     <!-- https://oss.sonatype.org/content/repositories/ops4j-releases -->
@@ -174,6 +180,12 @@
       <id>jboss.releases</id>
       <name>jboss.releases</name>
       <url>${nexusproxy}/repositories/jboss.releases/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
     </repository>
     <!-- OpenDayLight Released artifact -->
     <repository>
@@ -232,11 +244,9 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
         <version>${checkstyle.version}</version>
-	<configuration>
-	  <configLocation>
-	    ${project.parent.basedir}/checkstyle.xml
-	  </configLocation>
-	</configuration>
+        <configuration>
+          <configLocation>vtn/checkstyle.xml</configLocation>
+        </configuration>
       </plugin>
 
       <plugin>
@@ -295,14 +305,14 @@
         <configuration>
           <compilerSource>${vtn.java.version.source}</compilerSource>
           <compilerCompliance>
-	    ${vtn.java.version.compliance}
-	  </compilerCompliance>
+            ${vtn.java.version.compliance}
+          </compilerCompliance>
           <compilerTargetPlatform>
-	    ${vtn.java.version.target}
-	  </compilerTargetPlatform>
+            ${vtn.java.version.target}
+          </compilerTargetPlatform>
           <configFile>
-	    ${project.parent.basedir}/sun_coding_style.xml
-	  </configFile>
+            ${project.parent.basedir}/sun_coding_style.xml
+          </configFile>
         </configuration>
       </plugin>
 
@@ -310,6 +320,13 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
         <version>${checkstyle.version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>org.opendaylight.vtn</groupId>
+            <artifactId>manager.checkstyle</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+          </dependency>
+        </dependencies>
         <executions>
           <execution>
             <phase>process-sources</phase>
@@ -320,9 +337,7 @@
         </executions>
         <configuration>
           <failsOnError>true</failsOnError>
-          <configLocation>
-	    ${project.parent.basedir}/space_and_tabs_checks.xml
-	  </configLocation>
+          <configLocation>vtn/space_and_tabs_checks.xml</configLocation>
           <consoleOutput>true</consoleOutput>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
           <sourceDirectory>${project.basedir}</sourceDirectory>
