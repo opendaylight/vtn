@@ -45,8 +45,15 @@
     <module>../api</module>
     <module>../implementation</module>
     <module>../northbound</module>
+
+    <!-- Tests -->
     <module>../integrationtest</module>
     <module>../northboundIT</module>
+
+    <!-- Parents -->
+    <module>../checkstyle</module>
+    <module>../common</module>
+    <module>../../common</module>
   </modules>
 
   <dependencies>
