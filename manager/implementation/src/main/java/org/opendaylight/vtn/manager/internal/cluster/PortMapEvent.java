@@ -25,11 +25,60 @@ import org.opendaylight.controller.sal.core.UpdateType;
  *   class.
  * </p>
  */
-public class PortMapEvent extends VNodeEvent {
+public final class PortMapEvent extends VNodeEvent {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 7275615707564769661L;
+    private static final long serialVersionUID = -2492804795223875017L;
+
+    /**
+     * Generate a port mapping event which indicates the port mapping has
+     * been added.
+     *
+     * @param mgr   VTN Manager service.
+     * @param path  Path to the virtual bridge interface associated with the
+     *              port mapping.
+     * @param pmap  Information about the port mapping.
+     */
+    public static void added(VTNManagerImpl mgr, VBridgeIfPath path,
+                             PortMap pmap) {
+        mgr.enqueueEvent(new PortMapEvent(path, pmap, UpdateType.ADDED,
+                                          true));
+    }
+
+    /**
+     * Generate a port mapping event which indicates the port mapping has
+     * been changed.
+     *
+     * @param mgr   VTN Manager service.
+     * @param path  Path to the virtual bridge interface associated with the
+     *              port mapping.
+     * @param pmap  Information about the port mapping.
+     * @param save  {@code true} means that the tenant configuration should
+     *              be saved or not.
+     */
+    public static void changed(VTNManagerImpl mgr, VBridgeIfPath path,
+                               PortMap pmap, boolean save) {
+        mgr.enqueueEvent(new PortMapEvent(path, pmap, UpdateType.CHANGED,
+                                          save));
+    }
+
+    /**
+     * Generate a port mapping event which indicates the port mapping has
+     * been removed.
+     *
+     * @param mgr   VTN Manager service.
+     * @param path  Path to the virtual bridge interface associated with the
+     *              port mapping.
+     * @param pmap  Information about the port mapping.
+     * @param save  {@code true} means that the tenant configuration should
+     *              be saved or not.
+     */
+    public static void removed(VTNManagerImpl mgr, VBridgeIfPath path,
+                               PortMap pmap, boolean save) {
+        mgr.enqueueEvent(new PortMapEvent(path, pmap, UpdateType.REMOVED,
+                                          save));
+    }
 
     /**
      * Construct a new port mapping event.
@@ -38,9 +87,12 @@ public class PortMapEvent extends VNodeEvent {
      *              port mapping.
      * @param pmap  Information about the port mapping.
      * @param type  Update type.
+     * @param save  {@code true} means that the tenant configuration should
+     *              be saved or not.
      */
-    public PortMapEvent(VBridgeIfPath path, PortMap pmap, UpdateType type) {
-        super(path, pmap, type);
+    private PortMapEvent(VBridgeIfPath path, PortMap pmap, UpdateType type,
+                         boolean save) {
+        super(path, pmap, type, save);
     }
 
     /**

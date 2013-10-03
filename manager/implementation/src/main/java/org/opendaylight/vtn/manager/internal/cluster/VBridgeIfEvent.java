@@ -25,11 +25,57 @@ import org.opendaylight.controller.sal.core.UpdateType;
  *   class.
  * </p>
  */
-public class VBridgeIfEvent extends VNodeEvent {
+public final class VBridgeIfEvent extends VNodeEvent {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 5162654527309471540L;
+    private static final long serialVersionUID = 6843379628289003498L;
+
+    /**
+     * Generate a virtual bridge interface event which indicates the bridge
+     * interface has been added.
+     *
+     * @param mgr     VTN Manager service.
+     * @param path    Path to the virtual bridge interface.
+     * @param viface  Information about the virtual bridge interface.
+     */
+    public static void added(VTNManagerImpl mgr, VBridgeIfPath path,
+                             VInterface viface) {
+        mgr.enqueueEvent(new VBridgeIfEvent(path, viface, UpdateType.ADDED,
+                                            true));
+    }
+
+    /**
+     * Generate a virtual bridge interface event which indicates the bridge
+     * interface has been changed.
+     *
+     * @param mgr     VTN Manager service.
+     * @param path    Path to the virtual bridge interface.
+     * @param viface  Information about the virtual bridge interface.
+     * @param save     {@code true} means that the tenant configuration should
+     *                 be saved or not.
+     */
+    public static void changed(VTNManagerImpl mgr, VBridgeIfPath path,
+                               VInterface viface, boolean save) {
+        mgr.enqueueEvent(new VBridgeIfEvent(path, viface, UpdateType.CHANGED,
+                                            save));
+    }
+
+    /**
+     * Generate a virtual bridge interface event which indicates the bridge
+     * interface has been removed.
+     *
+     * @param mgr     VTN Manager service.
+     * @param path    Path to the virtual bridge interface.
+     * @param viface  Information about the virtual bridge interface.
+     * @param save     {@code true} means that the tenant configuration should
+     *                 be saved or not.
+     */
+    public static void removed(VTNManagerImpl mgr, VBridgeIfPath path,
+                               VInterface viface, boolean save) {
+        mgr.enqueueEvent(new VBridgeIfEvent(path, viface, UpdateType.REMOVED,
+                                            save));
+    }
 
     /**
      * Construct a new virtual bridge interface event.
@@ -37,10 +83,12 @@ public class VBridgeIfEvent extends VNodeEvent {
      * @param path    Path to the virtual bridge interface.
      * @param viface  Information about the virtual bridge interface.
      * @param type    Update type.
+     * @param save    {@code true} means that the tenant configuration should
+     *                be saved or not.
      */
-    public VBridgeIfEvent(VBridgeIfPath path, VInterface viface,
-                          UpdateType type) {
-        super(path, viface, type);
+    private VBridgeIfEvent(VBridgeIfPath path, VInterface viface,
+                           UpdateType type, boolean save) {
+        super(path, viface, type, save);
     }
 
     /**

@@ -25,11 +25,43 @@ import org.opendaylight.controller.sal.core.UpdateType;
  *   class.
  * </p>
  */
-public class VlanMapEvent extends VNodeEvent {
+public final class VlanMapEvent extends VNodeEvent {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -609404786499431527L;
+    private static final long serialVersionUID = -5983073727151900538L;
+
+    /**
+     * Generate a VLAN mapping event which indicates the VLAN mapping has
+     * been added.
+     *
+     * @param mgr    VTN Manager service.
+     * @param path   Path to the virtual bridge associated with the VLAN
+     *               mapping.
+     * @param vlmap  Information about the VLAN mapping.
+     */
+    public static void added(VTNManagerImpl mgr, VBridgePath path,
+                             VlanMap vlmap) {
+        mgr.enqueueEvent(new VlanMapEvent(path, vlmap, UpdateType.ADDED,
+                                          true));
+    }
+
+    /**
+     * Generate a VLAN mapping event which indicates the VLAN mapping has
+     * been removed.
+     *
+     * @param mgr    VTN Manager service.
+     * @param path   Path to the virtual bridge associated with the VLAN
+     *               mapping.
+     * @param vlmap  Information about the VLAN mapping.
+     * @param save   {@code true} means that the tenant configuration should
+     *               be saved or not.
+     */
+    public static void removed(VTNManagerImpl mgr, VBridgePath path,
+                               VlanMap vlmap, boolean save) {
+        mgr.enqueueEvent(new VlanMapEvent(path, vlmap, UpdateType.REMOVED,
+                                          save));
+    }
 
     /**
      * Construct a new VLAN mapping event.
@@ -38,9 +70,12 @@ public class VlanMapEvent extends VNodeEvent {
      *               mapping.
      * @param vlmap  Information about the VLAN mapping.
      * @param type   Update type.
+     * @param save   {@code true} means that the tenant configuration should
+     *               be saved or not.
      */
-    public VlanMapEvent(VBridgePath path, VlanMap vlmap, UpdateType type) {
-        super(path, vlmap, type);
+    public VlanMapEvent(VBridgePath path, VlanMap vlmap, UpdateType type,
+                        boolean save) {
+        super(path, vlmap, type, save);
     }
 
     /**

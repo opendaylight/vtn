@@ -33,6 +33,8 @@ import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
+import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 
 /**
@@ -98,14 +100,16 @@ public class PacketContextTest extends TestBase {
         PacketContext pc = createARPPacketContext(src, dst, sender, target,
                                                 (vlan > 0) ? vlan : -1, nc, ARP.REQUEST);
 
+        VBridgePath path = new VBridgePath("tenant1", "bridge1");
+        Long key = NetUtils.byteArray6ToLong(src);
         if (vlan <= 0) {
             assertEquals(msg, 0, pc.getVlan());
             pv = new PortVlan(nc, (short) 0);
-            me = new MacTableEntry(nc, (short) 0, ipaddr);
+            me = new MacTableEntry(path, key, nc, (short) 0, ipaddr);
         } else {
             assertEquals(msg, vlan, pc.getVlan());
             pv = new PortVlan(nc, vlan);
-            me = new MacTableEntry(nc, vlan, ipaddr);
+            me = new MacTableEntry(path, key, nc, vlan, ipaddr);
         }
 
         assertNotNull(msg, pc.getRawPacket());
@@ -126,7 +130,6 @@ public class PacketContextTest extends TestBase {
             fail(e.getMessage());
         }
 
-        Long key = NetUtils.byteArray6ToLong(src);
         pc.addObsoleteEntry(key, me);
 
         TreeMap<Long, MacTableEntry> map = new TreeMap<Long, MacTableEntry>();
@@ -252,15 +255,16 @@ public class PacketContextTest extends TestBase {
             fail(e.getMessage());
         }
 
+        Long key = NetUtils.byteArray6ToLong(src);
+        VBridgePath path = new VBridgePath("tenant1", "bridge1");
         if (vlan < 0) {
             assertEquals(msg, (short)0, pctx.getVlan());
-            me = new MacTableEntry(nc, (short) 0, ipaddr);
+            me = new MacTableEntry(path, key, nc, (short) 0, ipaddr);
         } else {
             assertEquals(vlan, pctx.getVlan());
-            me = new MacTableEntry(nc, vlan, ipaddr);
+            me = new MacTableEntry(path, key, nc, vlan, ipaddr);
         }
 
-        Long key = NetUtils.byteArray6ToLong(src);
         pctx.addObsoleteEntry(key, me);
 
         TreeMap<Long, MacTableEntry> map = new TreeMap<Long, MacTableEntry>();

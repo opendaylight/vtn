@@ -274,7 +274,7 @@ public final class VTenantImpl implements Serializable {
             }
 
             VBridge vbridge = vbr.getVBridge(mgr);
-            mgr.enqueueEvent(path, vbridge, UpdateType.ADDED);
+            VBridgeEvent.added(mgr, path, vbridge);
 
             // Create a MAC address table for this bridge.
             vbr.initMacTableAging(mgr);
@@ -341,7 +341,7 @@ public final class VTenantImpl implements Serializable {
                 throw new VTNException(status);
             }
 
-            vbr.destroy(mgr, false);
+            vbr.destroy(mgr, true);
         } finally {
             wrlock.unlock();
         }
@@ -739,6 +739,10 @@ public final class VTenantImpl implements Serializable {
 
             status = wtr.write(this, path);
             if (status.isSuccess()) {
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("{}:{}: Tenant saved", containerName,
+                              tenantName);
+                }
                 return status;
             }
         } finally {
@@ -786,13 +790,7 @@ public final class VTenantImpl implements Serializable {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            if (type == UpdateType.ADDED) {
-                // Collect garbages in the VTN flow database.
-                VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
-                if (fdb != null) {
-                    fdb.nodeAdded(mgr, node);
-                }
-            } else if (type == UpdateType.REMOVED) {
+            if (type == UpdateType.REMOVED) {
                 // Uninstall VTN flows related to the removed node.
                 VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
                 if (fdb != null) {
@@ -1010,7 +1008,7 @@ public final class VTenantImpl implements Serializable {
             for (Iterator<VBridgeImpl> it = vBridges.values().iterator();
                  it.hasNext();) {
                 VBridgeImpl vbr = it.next();
-                vbr.destroy(mgr, true);
+                vbr.destroy(mgr, false);
                 it.remove();
             }
         } finally {
@@ -1183,6 +1181,7 @@ public final class VTenantImpl implements Serializable {
      * @throws ClassNotFoundException
      *    At least one necessary class was not found.
      */
+    @SuppressWarnings("unused")
     private void readObject(ObjectInputStream in)
         throws IOException, ClassNotFoundException {
         in.defaultReadObject();

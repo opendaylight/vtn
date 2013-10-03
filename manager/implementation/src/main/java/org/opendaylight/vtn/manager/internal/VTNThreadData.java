@@ -41,6 +41,11 @@ public final class VTNThreadData {
     private List<FlowRemoveTask>  flowRemoveTaskList;
 
     /**
+     * Determine whether the VTN mode has been changed or not.
+     */
+    private boolean  modeChanged;
+
+    /**
      * Create a thread-local variable for the calling thread.
      *
      * <p>
@@ -103,6 +108,16 @@ public final class VTNThreadData {
         addTask(fdb.clear(mgr));
     }
 
+    /**
+     * Schedule the VTN mode check.
+     *
+     * <p>
+     *   The VTN mode check will be executed by {@link #cleanUp()}.
+     * </p>
+     */
+    void setModeChanged() {
+        modeChanged = true;
+    }
 
     /**
      * Add the specified flow remove task to the task list to wait.
@@ -140,7 +155,7 @@ public final class VTNThreadData {
     void cleanUp(VTNManagerImpl mgr) {
         try {
             // Unlock the lock, and flush pending events.
-            mgr.unlock(theLock);
+            mgr.unlock(theLock, modeChanged);
         } finally {
             // Unbind this object from the calling thread.
             THREAD_LOCAL.remove();

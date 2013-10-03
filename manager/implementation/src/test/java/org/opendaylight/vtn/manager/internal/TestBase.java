@@ -34,6 +34,7 @@ import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.vtn.manager.VBridgeConfig;
+import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VTenantConfig;
 
 import org.junit.Assert;
@@ -574,6 +575,24 @@ public abstract class TestBase extends Assert {
                 unexpected(e);
             }
         }
+        return list;
+    }
+
+    /**
+     * Create a list of {@code VBridgePath} objects.
+     *
+     * @return  A list of {@code VBridgePath} objects.
+     */
+    protected static List<VBridgePath> createVBridgePaths() {
+        List<VBridgePath> list = new ArrayList<VBridgePath>();
+        for (int tidx = 0; tidx < 2; tidx++) {
+            String tname = "tenant" + tidx;
+            for (int bidx = 0; bidx < 2; bidx++) {
+                VBridgePath path = new VBridgePath(tname, "bridge" + bidx);
+                list.add(path);
+            }
+        }
+
         return list;
     }
 

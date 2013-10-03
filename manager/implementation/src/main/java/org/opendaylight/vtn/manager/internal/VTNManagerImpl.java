@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.TreeMap;
 import java.util.Set;
 import java.util.HashSet;
@@ -67,15 +66,13 @@ import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
-import org.opendaylight.vtn.manager.internal.cluster.PortMapEvent;
+import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
+import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
 import org.opendaylight.vtn.manager.internal.cluster.PortProperty;
 import org.opendaylight.vtn.manager.internal.cluster.RawPacketEvent;
-import org.opendaylight.vtn.manager.internal.cluster.VBridgeEvent;
-import org.opendaylight.vtn.manager.internal.cluster.VBridgeIfEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantImpl;
-import org.opendaylight.vtn.manager.internal.cluster.VlanMapEvent;
 
 import org.opendaylight.controller.clustering.services.CacheConfigException;
 import org.opendaylight.controller.clustering.services.CacheExistException;
@@ -202,6 +199,11 @@ public class VTNManagerImpl
     static final String CACHE_PORTS = "vtn.ports";
 
     /**
+     * The name of the cluster cache which keeps MAC address table entries.
+     */
+    static final String CACHE_MAC = "vtn.mac";
+
+    /**
      * Cluster cache name associated with {@link #clusterEvent}.
      */
     static final String  CACHE_EVENT = "vtn.clusterEvent";
@@ -246,6 +248,20 @@ public class VTNManagerImpl
      * Keeps pairs of existing node connectors and properties.
      */
     private ConcurrentMap<NodeConnector, PortProperty>  portDB;
+
+    /**
+     * Keeps all MAC address table entries in this container.
+     *
+     * <p>
+     *   This map should not use MAC address as the map key because
+     *   different MAC address table entries with the same MAC address may
+     *   exist in different virtual bridges.
+     * </p>
+     * <p>
+     *   Note that {@code null} is set if controller cluster is not configured.
+     * </p>
+     */
+    private ConcurrentMap<MacTableEntryId, MacTableEntry> macAddressDB;
 
     /**
      * Cluster container service instance.
@@ -613,9 +629,7 @@ public class VTNManagerImpl
             inContainerMode = false;
         }
 
-        ClusterEventId.initLocalNodeId(this);
         createCaches();
-
         tenantListFileName = root + "vtn-" + cname + "-tenant-names.conf";
 
         // Start VTN task thread.
@@ -632,6 +646,9 @@ public class VTNManagerImpl
         // Load saved configurations.
         loadConfig();
 
+        // Initialize MAC address tables.
+        initMacAddressTable();
+
         // Initialize VTN flow databases.
         initFlowDatabase();
 
@@ -639,6 +656,8 @@ public class VTNManagerImpl
             // Start ARP handler emulator.
             arpHandler = new ArpHandler(this);
         }
+
+        resourceManager.addManager(this);
 
         serviceAvailable = true;
     }
@@ -663,11 +682,6 @@ public class VTNManagerImpl
             serviceAvailable = false;
         } finally {
             wrlock.unlock();
-        }
-
-        // Shut down VTN flow database.
-        for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-            fdb.shutdown(this);
         }
     }
 
@@ -697,20 +711,15 @@ public class VTNManagerImpl
      */
     void destroy() {
         LOG.debug("{}: destroy() called", containerName);
+        resourceManager.removeManager(this);
         vtnManagerAware.clear();
 
         // Remove all MAC address tables.
-        ArrayList<MacAddressTable> tables;
-        tables = new ArrayList<MacAddressTable>(macTableMap.size());
         for (Iterator<MacAddressTable> it = macTableMap.values().iterator();
              it.hasNext();) {
             MacAddressTable table = it.next();
-            tables.add(table);
+            table.destroy(false);
             it.remove();
-        }
-
-        for (MacAddressTable table: tables) {
-            table.destroy(null);
         }
 
         // Terminate internal threads.
@@ -747,14 +756,6 @@ public class VTNManagerImpl
         timer.purge();
 
         if (destroying) {
-            // Clear all caches.
-            LOG.debug("{}: Clear VTN caches.", containerName);
-            tenantDB.clear();
-            stateDB.clear();
-            nodeDB.clear();
-            portDB.clear();
-            clusterEvent.clear();
-            flowDB.clear();
             destroyCaches();
         }
     }
@@ -773,12 +774,14 @@ public class VTNManagerImpl
             clusterEvent =
                 new ConcurrentHashMap<ClusterEventId, ClusterEvent>();
             flowDB = new ConcurrentHashMap<FlowGroupId, VTNFlow>();
+            macAddressDB = null;
             return;
         }
 
         // Create transactional cluster caches.
         Set<IClusterServices.cacheMode> cmode =
-            EnumSet.of(IClusterServices.cacheMode.TRANSACTIONAL);
+            EnumSet.of(IClusterServices.cacheMode.TRANSACTIONAL,
+                       IClusterServices.cacheMode.SYNC);
         createCache(cluster, CACHE_TENANT, cmode);
         createCache(cluster, CACHE_STATE, cmode);
         createCache(cluster, CACHE_NODES, cmode);
@@ -793,10 +796,22 @@ public class VTNManagerImpl
         portDB = (ConcurrentMap<NodeConnector, PortProperty>)
             getCache(cluster, CACHE_PORTS);
 
+        InetAddress ipaddr = resourceManager.getControllerAddress();
+        if (ipaddr.isLoopbackAddress()) {
+            // Controller cluster is not configured.
+            macAddressDB = null;
+        } else {
+            // Create cluster cache for MAC address table entries.
+            createCache(cluster, CACHE_MAC, cmode);
+            macAddressDB = (ConcurrentMap<MacTableEntryId, MacTableEntry>)
+                getCache(cluster, CACHE_MAC);
+        }
+
         // Create non-transactional cluster caches.
         // Keys in non-transactional caches should never conflict between
         // cluster nodes.
-        cmode = EnumSet.of(IClusterServices.cacheMode.NON_TRANSACTIONAL);
+        cmode = EnumSet.of(IClusterServices.cacheMode.NON_TRANSACTIONAL,
+                           IClusterServices.cacheMode.SYNC);
         createCache(cluster, CACHE_EVENT, cmode);
         createCache(cluster, CACHE_FLOWS, cmode);
 
@@ -817,7 +832,7 @@ public class VTNManagerImpl
                 LOG.trace("{}: Remove obsolete cluster event: {}",
                           containerName, evid);
             }
-            clusterEvent.remove(evid);
+            removeEvent(evid);
         }
 
         LOG.debug("{}: Created VTN caches.", containerName);
@@ -877,8 +892,14 @@ public class VTNManagerImpl
         IClusterContainerServices cluster = clusterService;
         cluster.destroyCache(CACHE_TENANT);
         cluster.destroyCache(CACHE_STATE);
+        cluster.destroyCache(CACHE_NODES);
+        cluster.destroyCache(CACHE_PORTS);
         cluster.destroyCache(CACHE_EVENT);
         cluster.destroyCache(CACHE_FLOWS);
+
+        if (macAddressDB != null) {
+            cluster.destroyCache(CACHE_MAC);
+        }
 
         LOG.debug("{}: Destroyed VTN caches.", containerName);
     }
@@ -1152,47 +1173,60 @@ public class VTNManagerImpl
      */
     private void initFlowDatabase() {
         List<FlowGroupId> orphans = new ArrayList<FlowGroupId>();
-        Map<VTNFlowDatabase, List<VTNFlow>> obsoletes =
-            new HashMap<VTNFlowDatabase, List<VTNFlow>>();
-
         for (VTNFlow vflow: flowDB.values()) {
             FlowGroupId gid = vflow.getGroupId();
             VTNFlowDatabase fdb = getTenantFlowDB(gid);
-            if (fdb == null) {
+            if (fdb != null) {
+                // Initialize indices for the VTN flow.
+                fdb.createIndex(this, vflow);
+            } else {
                 // This should never happen.
                 LOG.error("{}: Orphan VTN flow was found: {}",
                           containerName, gid);
                 orphans.add(gid);
-                continue;
-            }
-
-            if (vflow.getLocality(this) == ConnectionLocality.LOCAL) {
-                // This VTN flow kept by another cluster node is obsolete.
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("{}: Remove obsolete VTN flow: {}",
-                              containerName, gid);
-                }
-
-                List<VTNFlow> vflows = obsoletes.get(fdb);
-                if (vflows == null) {
-                    vflows = new ArrayList<VTNFlow>();
-                    obsoletes.put(fdb, vflows);
-                }
-                vflows.add(vflow);
-            } else {
-                // Initialize indices for the VTN flow.
-                fdb.createIndex(this, vflow);
             }
         }
 
         for (FlowGroupId gid: orphans) {
             flowDB.remove(gid);
         }
-        for (Map.Entry<VTNFlowDatabase, List<VTNFlow>> entry:
-                 obsoletes.entrySet()) {
-            VTNFlowDatabase fdb = entry.getKey();
-            List<VTNFlow> vflows = entry.getValue();
-            fdb.removeFlows(this, vflows);
+    }
+
+    /**
+     * Initialize MAC address tables.
+     */
+    private void initMacAddressTable() {
+        if (macAddressDB == null) {
+            // Controller cluster is not configured.
+            return;
+        }
+
+        Set<MacTableEntryId> removed = new HashSet<MacTableEntryId>();
+        for (MacTableEntry tent: macAddressDB.values()) {
+            MacTableEntryId id = tent.getEntryId();
+            if (id.isLocal()) {
+                // This MAC address kept by another cluster node is obsolete.
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("{}: Remove obsolete MAC address: {}",
+                              containerName, tent);
+                }
+                removed.add(id);
+                continue;
+            }
+
+            MacAddressTable table = getMacAddressTable(id);
+            if (table != null) {
+                table.add(tent);
+            } else {
+                // This should never happen.
+                LOG.error("{}: Orphan MAC address was found: {}",
+                          containerName, tent);
+                removed.add(id);
+            }
+        }
+
+        for (MacTableEntryId id: removed) {
+            removeMacAddress(id);
         }
     }
 
@@ -1585,6 +1619,17 @@ public class VTNManagerImpl
     }
 
     /**
+     * Return the MAC address entry DB.
+     *
+     * @return  MAC address entry DB.
+     *          {@code null} is returned if controller cluster is not
+     *          configured.
+     */
+    public ConcurrentMap<MacTableEntryId, MacTableEntry> getMacAddressDB() {
+        return macAddressDB;
+    }
+
+    /**
      * Return the virtual node state DB.
      *
      * @return  Virtual node state DB.
@@ -1676,11 +1721,7 @@ public class VTNManagerImpl
      * @param age   Interval in milliseconds between aging tasks.
      */
     public void addMacAddressTable(VBridgePath path, int age) {
-        StringBuilder builder = new StringBuilder(containerName);
-        builder.append(':').append(path.toString());
-        String name = builder.toString();
-
-        MacAddressTable table = new MacAddressTable(this, name, age);
+        MacAddressTable table = new MacAddressTable(this, path, age);
         macTableMap.put(path, table);
     }
 
@@ -1694,7 +1735,7 @@ public class VTNManagerImpl
     public void removeMacAddressTable(VBridgePath path, boolean purge) {
         MacAddressTable table = macTableMap.remove(path);
         if (table != null) {
-            table.destroy((purge) ? this : null);
+            table.destroy(purge);
         }
     }
 
@@ -1706,6 +1747,19 @@ public class VTNManagerImpl
      *          bridge. {@code null} is returned if not found.
      */
     public MacAddressTable getMacAddressTable(VBridgePath path) {
+        return macTableMap.get(path);
+    }
+
+    /**
+     * Return a MAC address table that contains the specified MAC address
+     * table entry.
+     *
+     * @param id  An identifier of a MAC address table entry.
+     * @return  A MAC address table is returned if found.
+     *          {@code null} is returned if not found.
+     */
+    public MacAddressTable getMacAddressTable(MacTableEntryId id) {
+        VBridgePath path = id.getBridgePath();
         return macTableMap.get(path);
     }
 
@@ -1974,7 +2028,7 @@ public class VTNManagerImpl
             postEvent(ev);
         } else {
             LOG.warn("{}: Drop packet because target port is " +
-                     "uncontrollable: " + containerName, nc);
+                     "uncontrollable: {}", containerName, nc);
         }
     }
 
@@ -2143,7 +2197,7 @@ public class VTNManagerImpl
      *
      * @return  "Success" or failure reason.
      */
-    public Status saveTenantNamesLocked() {
+    private Status saveTenantNamesLocked() {
         HashSet<String> nameSet = new HashSet<String>(tenantDB.keySet());
         return saveTenantNames(nameSet);
     }
@@ -2563,7 +2617,7 @@ public class VTNManagerImpl
      *
      * @param cev  A cluster event.
      */
-    void enqueueEvent(ClusterEvent cev) {
+    public void enqueueEvent(ClusterEvent cev) {
         synchronized (clusterEventQueue) {
             clusterEventQueue.add(cev);
         }
@@ -2585,64 +2639,6 @@ public class VTNManagerImpl
     }
 
     /**
-     * Enqueue a virtual bridge event.
-     *
-     * @param path     Path to the bridge.
-     * @param vbridge  Information about the virtual L2 bridge.
-     * @param type     {@code ADDED} if added.
-     *                 {@code REMOVED} if removed.
-     *                 {@code CHANGED} if changed.
-     */
-    public void enqueueEvent(VBridgePath path, VBridge vbridge,
-                             UpdateType type) {
-        VBridgeEvent ev = new VBridgeEvent(path, vbridge, type);
-        enqueueEvent(ev);
-    }
-
-    /**
-     * Enqueue a virtual bridge interface event.
-     *
-     * @param path    Path to the interface.
-     * @param viface  Information about the virtual interface.
-     * @param type    {@code ADDED} if added.
-     *                {@code REMOVED} if removed.
-     *                {@code CHANGED} if changed.
-     */
-    public void enqueueEvent(VBridgeIfPath path, VInterface viface,
-                             UpdateType type) {
-        VBridgeIfEvent ev = new VBridgeIfEvent(path, viface, type);
-        enqueueEvent(ev);
-    }
-
-    /**
-     * Enqueue a VLAN mapping event.
-     *
-     * @param path   Path to the bridge associated with the VLAN mapping.
-     * @param vlmap  Information about the VLAN mapping.
-     * @param type   {@code ADDED} if added.
-     *               {@code REMOVED} if removed.
-     */
-    public void enqueueEvent(VBridgePath path, VlanMap vlmap,
-                             UpdateType type) {
-        VlanMapEvent ev = new VlanMapEvent(path, vlmap, type);
-        enqueueEvent(ev);
-    }
-
-    /**
-     * Enqueue a port mapping event.
-     *
-     * @param path  Path to the bridge interface.
-     * @param pmap  Information about the port mapping.
-     * @param type  {@code ADDED} if added.
-     *              {@code REMOVED} if removed.
-     */
-    public void enqueueEvent(VBridgeIfPath path, PortMap pmap,
-                             UpdateType type) {
-        PortMapEvent ev = new PortMapEvent(path, pmap, type);
-        enqueueEvent(ev);
-    }
-
-    /**
      * Post the given cluster event.
      *
      * @param cev  A cluster event.
@@ -2654,18 +2650,18 @@ public class VTNManagerImpl
         if (resourceManager.getRemoteClusterSize() > 0) {
             // Put the event to the cluser cache for event delivery.
             final ClusterEventId evid = new ClusterEventId();
-            clusterEvent.put(evid, cev);
+            if (putEvent(evid, cev)) {
+                // Create a timer task to remove cluster event object.
+                TimerTask task = new TimerTask() {
+                    @Override
+                    public void run() {
+                        removeEvent(evid);
+                    }
+                };
 
-            // Create a timer task to remove cluster event object.
-            TimerTask task = new TimerTask() {
-                @Override
-                public void run() {
-                    clusterEvent.remove(evid);
-                }
-            };
-
-            Timer timer = resourceManager.getTimer();
-            timer.schedule(task, CLUSTER_EVENT_LIFETIME);
+                Timer timer = resourceManager.getTimer();
+                timer.schedule(task, CLUSTER_EVENT_LIFETIME);
+            }
         }
     }
 
@@ -2701,7 +2697,7 @@ public class VTNManagerImpl
                 @Override
                 public void run() {
                     for (ClusterEventId evid: ids) {
-                        clusterEvent.remove(evid);
+                        removeEvent(evid);
                     }
                 }
             };
@@ -3181,7 +3177,7 @@ public class VTNManagerImpl
                 // Save configurations, and update VTN mode.
                 saveTenantNamesLocked();
                 saveTenantConfigLocked(tenantName);
-                updateVTNMode();
+                updateVTNMode(true);
             } else {
                 // Remove flow database.
                 // Flow entries in this tenant is purged by event originator.
@@ -3192,7 +3188,10 @@ public class VTNManagerImpl
 
                 // Save tenant names, and update VTN mode.
                 saveTenantNamesLocked();
-                updateVTNMode();
+                updateVTNMode(false);
+
+                // Purge canceled timer tasks.
+                resourceManager.getTimer().purge();
             }
         } finally {
             unlock(wrlock);
@@ -3206,14 +3205,23 @@ public class VTNManagerImpl
      *   This method must be called with holding writer lock of
      *   {@link #rwLock}.
      * </p>
+     *
+     * @param sync  If {@code true} is specified, mode listeners are invoked
+     *              on the calling thread.
+     *              If {@code false} is specified, mode listeners are invoked
+     *              on the VTN task thread.
      */
-    private void updateVTNMode() {
+    private void updateVTNMode(boolean sync) {
         if (!inContainerMode && !tenantDB.isEmpty()) {
             // Stop ARP handler emulator, and activate VTN.
             if (arpHandler != null) {
                 arpHandler.destroy();
                 arpHandler = null;
-                notifyChange(true);
+                if (sync) {
+                    notifyListeners(true);
+                } else {
+                    notifyChange(true);
+                }
             }
         } else if (arpHandler == null) {
             // Inactivate VTN, and start ARP handler emulator.
@@ -3221,7 +3229,11 @@ public class VTNManagerImpl
                 VTNThreadData.removeFlows(this, fdb);
             }
             arpHandler = new ArpHandler(this);
-            notifyChange(false);
+            if (sync) {
+                notifyListeners(false);
+            } else {
+                notifyChange(false);
+            }
         }
     }
 
@@ -3286,11 +3298,205 @@ public class VTNManagerImpl
      *
      * @param lock  A lock object.
      */
-    void unlock(Lock lock) {
+    private void unlock(Lock lock) {
+        unlock(lock, false);
+    }
+
+    /**
+     * Flush pending cluster events, and then unlock the given lock object.
+     *
+     * @param lock    A lock object.
+     * @param update  {@code true} means that the VTN mode should be updated.
+     */
+    void unlock(Lock lock, boolean update) {
         try {
             flushEventQueue();
+            if (update) {
+                updateVTNMode(false);
+            }
         } finally {
             lock.unlock();
+        }
+    }
+
+    /**
+     * Put the given cluster event to the cluster event cache.
+     *
+     * @param evid  An identifier of the given event.
+     * @param cev   An cluster event.
+     * @return  {@code true} is returned on success.
+     *          Otherwise {@code false} is returned.
+     */
+    private boolean putEvent(ClusterEventId evid, ClusterEvent cev) {
+        try {
+            clusterEvent.put(evid, cev);
+            return true;
+        } catch (Exception e) {
+            LOG.error(containerName + ": Failed to put cluster event: id=" +
+                      evid + " event=" + cev, e);
+        }
+
+        return false;
+    }
+
+    /**
+     * Remove the given cluster event from the cluster event cache.
+     *
+     * @param evid  A cluster event ID.
+     */
+    private void removeEvent(ClusterEventId evid) {
+        try {
+            clusterEvent.remove(evid);
+        } catch (Exception e) {
+            LOG.error(containerName + ": Failed to remove cluster event: id=" +
+                      evid, e);
+        }
+    }
+
+    /**
+     * Remove the given MAC address table entry from the cluster cache.
+     *
+     * @param id  An identifier of a MAC address table entry.
+     */
+    private void removeMacAddress(MacTableEntryId id) {
+        try {
+            macAddressDB.remove(id);
+        } catch (Exception e) {
+            LOG.error(containerName +
+                      ": Failed to remove MAC address table entry: " + id, e);
+        }
+    }
+
+    /**
+     * Put a new MAC address table entry to the cluster cache.
+     *
+     * <p>
+     *   Actual work of this method is executed on the VTN task thread.
+     * </p>
+     *
+     * @param tent  A MAC address table entry.
+     */
+    void putMacTableEntry(final MacTableEntry tent) {
+        if (macAddressDB != null) {
+            Runnable r = new Runnable() {
+                @Override
+                public void run() {
+                    MacTableEntryId id = tent.getEntryId();
+                    while (macAddressDB.putIfAbsent(id, tent) != null) {
+                        // Reassign entry ID.
+                        id = tent.reassignEntryId();
+                    }
+                }
+            };
+            postTask(r);
+        }
+    }
+
+    /**
+     * Update the given MAC address table entry in the cluster cache.
+     *
+     * <p>
+     *   Actual work of this method is executed on the VTN task thread.
+     * </p>
+     *
+     * @param tent  A MAC address table entry.
+     */
+    void updateMacTableEntry(final MacTableEntry tent) {
+        if (macAddressDB != null) {
+            Runnable r = new Runnable() {
+                @Override
+                public void run() {
+                    MacTableEntryId id = tent.getEntryId();
+                    macAddressDB.put(id, tent);
+                }
+            };
+            postTask(r);
+        }
+    }
+
+    /**
+     * Remove the specified MAC address table entry from the cluster cache.
+     *
+     * <p>
+     *   Actual work of this method is executed on the VTN task thread.
+     * </p>
+     *
+     * @param id  An identifier of MAC address table entry to be removed.
+     */
+    void removeMacTableEntry(final MacTableEntryId id) {
+        if (macAddressDB != null) {
+            Runnable r = new Runnable() {
+                @Override
+                public void run() {
+                    removeMacAddress(id);
+                }
+            };
+            postTask(r);
+        }
+    }
+
+    /**
+     * Remove MAC address table entries from the cluster cache.
+     *
+     * <p>
+     *   Actual work of this method is executed on the VTN task thread.
+     * </p>
+     *
+     * @param idSet  A set of MAC address table entry IDs to be removed.
+     */
+    void removeMacTableEntries(final Set<MacTableEntryId> idSet) {
+        if (macAddressDB != null) {
+            Runnable r = new Runnable() {
+                @Override
+                public void run() {
+                    removeMacTableEntriesSync(idSet);
+                }
+            };
+            postTask(r);
+        }
+    }
+
+    /**
+     * Remove MAC address table entries from the cluster cache.
+     *
+     * <p>
+     *   This method removes entries from the cache on the calling thread.
+     *   So this method shoule be called without holding any lock to avoid
+     *   deadlock with InfiniSpan.
+     * </p>
+     *
+     * @param idSet  A set of MAC address table entry IDs to be removed.
+     */
+    void removeMacTableEntriesSync(Set<MacTableEntryId> idSet) {
+        if (macAddressDB != null) {
+            for (MacTableEntryId id: idSet) {
+                removeMacAddress(id);
+            }
+        }
+    }
+
+    /**
+     * Invoked when at least one controller is added to or removed from the
+     * cluster.
+     *
+     * @param added    A set of controller IP addresses added to the cluster.
+     * @param removed  A set of controller IP addresses removed from the
+     *                 cluster.
+     */
+    void clusterNodeChanged(final Set<InetAddress> added,
+                            final Set<InetAddress> removed) {
+        if (clusterService.amICoordinator()) {
+            // Flush MAC address table entries created by removed cluster
+            // nodes.
+            Runnable r = new Runnable() {
+                @Override
+                public void run() {
+                    for (MacAddressTable table: macTableMap.values()) {
+                        table.flush(removed);
+                    }
+                }
+            };
+            postTask(r);
         }
     }
 
@@ -3397,7 +3603,7 @@ public class VTNManagerImpl
             }
 
             VTenant vtenant = vtn.getVTenant();
-            updateVTNMode();
+            updateVTNMode(false);
             enqueueEvent(path, vtenant, UpdateType.ADDED);
 
             return status;
@@ -3471,7 +3677,7 @@ public class VTNManagerImpl
             }
 
             Status status = saveTenantNamesLocked();
-            updateVTNMode();
+            data.setModeChanged();
             enqueueEvent(path, vtenant, UpdateType.REMOVED);
 
             return status;
@@ -4191,13 +4397,13 @@ public class VTNManagerImpl
             return;
         }
 
+        if (key.isLocal()) {
+            LOG.debug("{}: Local key is updated, but originLocal is false: " +
+                      "key={}, value={}", containerName, key, newValue);
+            return;
+        }
+
         if (CACHE_EVENT.equals(cacheName)) {
-            if (key.isLocal()) {
-                LOG.debug("{}: Local key is updated, but originLocal " +
-                          "is false: key={}, value={}", containerName,
-                          key, newValue);
-                return;
-            }
             if (!(newValue instanceof ClusterEvent)) {
                 LOG.error("{}: Unexpected value in cluster event cache: " +
                           "key={}, value={}", containerName, key, newValue);
@@ -4210,12 +4416,6 @@ public class VTNManagerImpl
             }
             cev.received(this, false);
         } else if (CACHE_FLOWS.equals(cacheName)) {
-            if (key.isLocal()) {
-                LOG.debug("{}: Local VTN flow is updated, but originLocal " +
-                          "is false: key={}, value={}", containerName,
-                          key, newValue);
-                return;
-            }
             if (!(key instanceof FlowGroupId)) {
                 LOG.error("{}: Unexpected key in flow DB: key={}, value={}",
                           containerName, key, newValue);
@@ -4242,6 +4442,26 @@ public class VTNManagerImpl
 
             // Update indices for a new VTN flow.
             fdb.createIndex(this, (VTNFlow)newValue);
+        } else if (CACHE_MAC.equals(cacheName)) {
+            if (!(key instanceof MacTableEntryId)) {
+                LOG.error("{}: Unexpected key in MAC address DB: key={}, " +
+                          "value={}", containerName, key, newValue);
+                return;
+            }
+            if (!(newValue instanceof MacTableEntry)) {
+                LOG.error("{}: Unexpected value in MAC address DB: key={}, " +
+                          "value={}", containerName, key, newValue);
+                return;
+            }
+
+            MacTableEntryId id = (MacTableEntryId)key;
+            MacAddressTable table = getMacAddressTable(id);
+            if (table != null) {
+                table.entryUpdated((MacTableEntry)newValue);
+            } else {
+                LOG.error("{}: MAC address table was not found: " +
+                          "id={}, value={}", containerName, id, newValue);
+            }
         }
     }
 
@@ -4271,8 +4491,7 @@ public class VTNManagerImpl
             FlowGroupId gid = (FlowGroupId)key;
             VTNFlowDatabase fdb = getTenantFlowDB(gid);
             if (fdb == null) {
-                LOG.debug("{}: Flow database is already removed, but " +
-                          "originLocal is false: group={}",
+                LOG.debug("{}: Flow database is already removed: group={}",
                           containerName, gid);
                 return;
             }
@@ -4282,6 +4501,21 @@ public class VTNManagerImpl
                           containerName, gid);
             }
             fdb.flowRemoved(this, gid);
+        } else if (CACHE_MAC.equals(cacheName)) {
+            if (!(key instanceof MacTableEntryId)) {
+                LOG.error("{}: Unexpected key in MAC address DB: {}",
+                          containerName, key);
+                return;
+            }
+
+            MacTableEntryId id = (MacTableEntryId)key;
+            MacAddressTable table = getMacAddressTable(id);
+            if (table != null) {
+                table.entryDeleted(id);
+            } else if (LOG.isDebugEnabled()) {
+                LOG.debug("{}: MAC address table is already removed: {}",
+                          containerName, id);
+            }
         }
     }
 
@@ -4342,6 +4576,16 @@ public class VTNManagerImpl
         wrlock.lock();
         try {
             if (type == UpdateType.ADDED) {
+                if (connectionManager.getLocalityStatus(node) ==
+                    ConnectionLocality.LOCAL) {
+                    // Remove all VTN flows related to this node because
+                    // all flow entries in this node should be removed by
+                    // protocol plugin.
+                    for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                        fdb.removeFlows(this, node, true);
+                    }
+                }
+
                 if (!addNode(node)) {
                     return;
                 }
@@ -4532,9 +4776,8 @@ public class VTNManagerImpl
         wrlock.lock();
         try {
             inContainerMode = mode;
-            updateVTNMode();
         } finally {
-            unlock(wrlock);
+            unlock(wrlock, true);
         }
     }
 
@@ -4565,7 +4808,8 @@ public class VTNManagerImpl
             return PacketResult.IGNORED;
         }
 
-        if (disabledNodes.containsKey(nc.getNode())) {
+        Node node = nc.getNode();
+        if (disabledNodes.containsKey(node)) {
             if (LOG.isTraceEnabled()) {
                 LOG.trace("{}: Ignore packet from disabled node: {}",
                           containerName, nc.getNode());
@@ -4610,6 +4854,15 @@ public class VTNManagerImpl
             if (topologyManager.isInternal(nc)) {
                 LOG.debug("{}: Ignore packet from internal node connector: {}",
                           containerName, nc);
+                if (connectionManager.getLocalityStatus(node) ==
+                    ConnectionLocality.LOCAL) {
+                    // This PACKET_IN may be caused by a obsolete flow entry.
+                    // So all flow entries related to this port should be
+                    // removed.
+                    for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                        fdb.removeFlows(this, nc);
+                    }
+                }
                 return PacketResult.IGNORED;
             }
 

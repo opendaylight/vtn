@@ -65,6 +65,7 @@ import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
+import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 
 /**
@@ -1382,7 +1383,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         PacketContext pctx = createARPPacketContext(src, dst, sender ,target,
                                                     (short)-1, nc, ARP.REQUEST);
         MacAddressTable tbl = mgr.getMacAddressTable(bpath);
-        tbl.add(mgr, pctx);
+        tbl.add(pctx);
     }
 
     /**
@@ -1771,7 +1772,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         PacketContext pctx = createARPPacketContext(src, dst, sender, target,
                 (short) 99, nc, ARP.REQUEST);
         table.flush();
-        table.add(mgr, pctx);
+        table.add(pctx);
 
         VBridgeIfPath ifp1 = new VBridgeIfPath(tname, bname1, "vinterface010");
         PortMap map = null;

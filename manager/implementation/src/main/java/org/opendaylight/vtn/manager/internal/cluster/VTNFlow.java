@@ -52,7 +52,7 @@ public class VTNFlow implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -102569190506563759L;
+    private static final long serialVersionUID = -6425896731077560205L;
 
     /**
      * The identifier of the flow group.
@@ -281,7 +281,7 @@ public class VTNFlow implements Serializable {
     }
 
     /**
-     * Determine locality status of this VTN flow.
+     * Determine whether this VTN flow is relevant to local nodes.
      *
      * <p>
      *   Note that this method always returns {@code ConnectionLocality.LOCAL}
@@ -289,31 +289,25 @@ public class VTNFlow implements Serializable {
      * </p>
      *
      * @param mgr  VTN Manager service.
-     * @return  {@code ConnectionLocality.LOCAL} is returned if this VTN flow
-     *          contains at least one flow entry installed to the switch
-     *          connected to this controller.
-     *          {@code ConnectionLocality.NOT_CONNECTED} is returned if this
-     *          VTN flow contains at least one flow entry installed to the
-     *          switch which is not connected to any of controllers in the
-     *          cluster.
-     *          {@code ConnectionLocality.NOT_LOCAL} is returned if all flow
-     *          entries in this VTN flow are installed to switches connected
-     *          to remote cluster nodes.
+     * @return  {@code true} is returned if this VTN flow contains at least
+     *          one flow entry installed to the switch connected to this
+     *          controller.
+     *          Otherwise {@code false} is returned.
      */
-    public ConnectionLocality getLocality(VTNManagerImpl mgr) {
+    public boolean isLocal(VTNManagerImpl mgr) {
         if (groupId.isLocal()) {
-            return ConnectionLocality.LOCAL;
+            return true;
         }
 
         IConnectionManager cnm = mgr.getConnectionManager();
         for (Node node: flowNodes) {
             ConnectionLocality cl = cnm.getLocalityStatus(node);
-            if (cl != ConnectionLocality.NOT_LOCAL) {
-                return cl;
+            if (cl == ConnectionLocality.LOCAL) {
+                return true;
             }
         }
 
-        return ConnectionLocality.NOT_LOCAL;
+        return false;
     }
 
     /**
@@ -325,6 +319,7 @@ public class VTNFlow implements Serializable {
      * @throws ClassNotFoundException
      *    At least one necessary class was not found.
      */
+    @SuppressWarnings("unused")
     private void readObject(ObjectInputStream in)
         throws IOException, ClassNotFoundException {
         in.defaultReadObject();

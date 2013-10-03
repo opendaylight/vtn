@@ -15,6 +15,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.TreeMap;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -24,7 +26,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.MacAddressEntry;
+import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
+import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
 
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.core.Node;
@@ -58,9 +63,14 @@ public class MacAddressTable {
     private static final int  AGING_PURGE_THRESHOLD = 60;
 
     /**
-     * The name of the table.
+     * Path to the virtual L2 bridge.
      */
-    private final String  tableName;
+    private final VBridgePath  bridgePath;
+
+    /**
+     * VTN Manager service.
+     */
+    private final VTNManagerImpl vtnManager;
 
     /**
      * Interval in seconds between aging task.
@@ -70,7 +80,7 @@ public class MacAddressTable {
     /**
      * MAC address table.
      */
-    private final Map<Long, MacTableEntry>  macAddressTable =
+    private Map<Long, MacTableEntry>  macAddressTable =
         new TreeMap<Long, MacTableEntry>();
 
     /**
@@ -81,14 +91,298 @@ public class MacAddressTable {
     /**
      * Periodic timer task used for MAC address table aging.
      */
-    private class MacTableAgingTask extends TimerTask {
+    private final class MacTableAgingTask extends TimerTask {
         /**
          * Scan MAC address table for aging.
          */
         @Override
         public void run() {
-            LOG.trace("{}: Aging task called", tableName);
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}: Aging task called", getTableName());
+            }
             age();
+        }
+    }
+
+    /**
+     * Remove MAC address table entries that match the specified condition.
+     */
+    protected class EntryRemover {
+        /**
+         * Remove MAC address table entries.
+         *
+         * @param table  A map which keeps MAC address table entries.
+         */
+        private void remove(Map<Long, MacTableEntry> table) {
+            Set<MacTableEntryId> removed = new HashSet<MacTableEntryId>();
+            for (Iterator<MacTableEntry> it = table.values().iterator();
+                 it.hasNext();) {
+                MacTableEntry tent = it.next();
+                if (match(tent)) {
+                    if (LOG.isTraceEnabled()) {
+                        logRemoved(tent);
+                    }
+                    removed.add(tent.getEntryId());
+                    it.remove();
+                }
+            }
+
+            if (!removed.isEmpty()) {
+                removeFromCache(removed);
+            }
+        }
+
+        /**
+         * Remove the given MAC address table entries from the cluster cache.
+         *
+         * @param idSet  A set of identifiers of MAC address table entries.
+         */
+        protected void removeFromCache(Set<MacTableEntryId> idSet) {
+            vtnManager.removeMacTableEntries(idSet);
+        }
+
+        /**
+         * Record a trace log that indicates a MAC address table entry
+         * was removed.
+         *
+         * @param tent  A MAC address table entry.
+         */
+        protected void logRemoved(MacTableEntry tent) {
+            LOG.trace("{}: MAC address removed: {}", getTableName(), tent);
+        }
+
+        /**
+         * Determine whether the given entry should be removed or not.
+         *
+         * @param tent  A MAC address table entry.
+         * @return  {@code true} is returned if the given entry should be
+         *          removed. Otherwise {@code fales} is returned.
+         */
+        protected boolean match(MacTableEntry tent) {
+            // Remove all entries.
+            return true;
+        }
+    }
+
+    /**
+     * Remove MAC address table entries associated with the given node.
+     */
+    protected class NodeEntryRemover extends EntryRemover {
+        /**
+         * A node associated with SDN switch.
+         */
+        private final Node  node;
+
+        /**
+         * Construct a new entry remover.
+         *
+         * @param node  A node.
+         */
+        protected NodeEntryRemover(Node node) {
+            this.node = node;
+        }
+
+        /**
+         * Return the target node.
+         *
+         * @return  The target node.
+         */
+        protected Node getNode() {
+            return node;
+        }
+
+        /**
+         * Determine whether the given entry should be removed or not.
+         *
+         * @param tent  A MAC address table entry.
+         * @return  {@code true} is returned if the given entry should be
+         *          removed. Otherwise {@code fales} is returned.
+         */
+        @Override
+        protected boolean match(MacTableEntry tent) {
+            Node tnode = tent.getPort().getNode();
+            return tnode.equals(node);
+        }
+    }
+
+    /**
+     * Remove MAC address table entries associated with the given node and
+     * the VLAN ID.
+     */
+    private final class NodeVlanEntryRemover extends NodeEntryRemover {
+        /**
+         * The target VLAN ID.
+         */
+        private final short  vlan;
+
+        /**
+         * Construct a new entry remover.
+         *
+         * @param node  A node. Specifying {@code null} means wildcard.
+         * @param vlan  VLAN ID.
+         */
+        private NodeVlanEntryRemover(Node node, short vlan) {
+            super(node);
+            this.vlan = vlan;
+        }
+
+        /**
+         * Determine whether the given entry should be removed or not.
+         *
+         * @param tent  A MAC address table entry.
+         * @return  {@code true} is returned if the given entry should be
+         *          removed. Otherwise {@code fales} is returned.
+         */
+        @Override
+        protected boolean match(MacTableEntry tent) {
+            Node node = getNode();
+            return (tent.getVlan() == vlan &&
+                    (node == null || node.equals(tent.getPort().getNode())));
+        }
+    }
+
+    /**
+     * Remove MAC address table entries associated with the given node
+     * connector.
+     */
+    protected class PortEntryRemover extends EntryRemover {
+        /**
+         * A node connector associated with SDN switch port.
+         */
+        private final NodeConnector  nodeConnector;
+
+        /**
+         * Construct a new entry remover.
+         *
+         * @param nc  A node connector.
+         */
+        protected PortEntryRemover(NodeConnector nc) {
+            nodeConnector = nc;
+        }
+
+        /**
+         * Determine whether the given entry should be removed or not.
+         *
+         * @param tent  A MAC address table entry.
+         * @return  {@code true} is returned if the given entry should be
+         *          removed. Otherwise {@code fales} is returned.
+         */
+        @Override
+        protected boolean match(MacTableEntry tent) {
+            return tent.getPort().equals(nodeConnector);
+        }
+    }
+
+    /**
+     * Remove MAC address table entries associated with the given node
+     * connector and the VLAN ID.
+     */
+    private final class PortVlanEntryRemover extends PortEntryRemover {
+        /**
+         * The target VLAN ID.
+         */
+        private final short  vlan;
+
+        /**
+         * Construct a new entry remover.
+         *
+         * @param nc    A node connector.
+         * @param vlan  VLAN ID.
+         */
+        protected PortVlanEntryRemover(NodeConnector nc, short vlan) {
+            super(nc);
+            this.vlan = vlan;
+        }
+
+        /**
+         * Determine whether the given entry should be removed or not.
+         *
+         * @param tent  A MAC address table entry.
+         * @return  {@code true} is returned if the given entry should be
+         *          removed. Otherwise {@code fales} is returned.
+         */
+        @Override
+        protected boolean match(MacTableEntry tent) {
+            return (tent.getVlan() == vlan && super.match(tent));
+        }
+    }
+
+    /**
+     * Age MAC address table entries, and remove unused entries.
+     */
+    private final class AgedEntryRemover extends EntryRemover {
+        /**
+         * Record a debugging log that indicates a MAC address table entry
+         * was removed.
+         *
+         * @param tent  A MAC address table entry.
+         */
+        @Override
+        protected void logRemoved(MacTableEntry tent) {
+            LOG.trace("{}: MAC address aged out: {}", getTableName(), tent);
+        }
+
+        /**
+         * Determine whether the given entry should be removed or not.
+         *
+         * @param tent  A MAC address table entry.
+         * @return  {@code true} is returned if the given entry should be
+         *          removed. Otherwise {@code fales} is returned.
+         */
+        @Override
+        protected boolean match(MacTableEntry tent) {
+            // Do nothing if the specified entry is not created by this
+            // controller.
+            MacTableEntryId id = tent.getEntryId();
+            return (id.isLocal() && !tent.clearUsed());
+        }
+    }
+
+    /**
+     * Remove MAC address table entries created by the given controller.
+     */
+    private final class ControllerEntryRemover extends EntryRemover {
+        /**
+         * A set of IP addresses of target controllers.
+         */
+        private final Set<InetAddress>  controllerAddresses;
+
+        /**
+         * Construct a new entry remover.
+         *
+         * @param addrs  A list of IP addresses of controllers.
+         */
+        private ControllerEntryRemover(Set<InetAddress> addrs) {
+            controllerAddresses = addrs;
+        }
+
+        /**
+         * Remove the given MAC address table entries from the cluster cache.
+         *
+         * <p>
+         *   This method removes MAC address table entries on the calling
+         *   thread.
+         * </p>
+         *
+         * @param idSet  A set of identifiers of MAC address table entries.
+         */
+        @Override
+        protected void removeFromCache(Set<MacTableEntryId> idSet) {
+            vtnManager.removeMacTableEntriesSync(idSet);
+        }
+
+        /**
+         * Determine whether the given entry should be removed or not.
+         *
+         * @param tent  A MAC address table entry.
+         * @return  {@code true} is returned if the given entry should be
+         *          removed. Otherwise {@code fales} is returned.
+         */
+        @Override
+        protected boolean match(MacTableEntry tent) {
+            MacTableEntryId id = tent.getEntryId();
+            InetAddress addr = id.getControllerAddress();
+            return controllerAddresses.contains(addr);
         }
     }
 
@@ -107,11 +401,12 @@ public class MacAddressTable {
      * Construct a new MAC address table.
      *
      * @param mgr   VTN Manager service.
-     * @param name  The name of the table.
+     * @param path  Path to the virtual L2 bridge.
      * @param age   Interval in seconds between aging task.
      */
-    public MacAddressTable(VTNManagerImpl mgr, String name, int age) {
-        this.tableName = name;
+    public MacAddressTable(VTNManagerImpl mgr, VBridgePath path, int age) {
+        vtnManager = mgr;
+        bridgePath = path;
 
         // Register an aging task to the global timer.
         IVTNResourceManager resMgr = mgr.getResourceManager();
@@ -122,20 +417,24 @@ public class MacAddressTable {
     /**
      * Set interval between MAC address table aging task.
      *
-     * @param mgr  VTN Manager service.
      * @param age  Interval in seconds between aging task.
      */
-    public void setAgeInterval(VTNManagerImpl mgr, int age) {
+    public void setAgeInterval(int age) {
         if (age != ageInterval) {
-            IVTNResourceManager resMgr = mgr.getResourceManager();
+            IVTNResourceManager resMgr = vtnManager.getResourceManager();
             Timer timer = resMgr.getTimer();
 
             synchronized (this) {
-                LOG.trace("{}: Aging interval changed: {} -> {}",
-                          tableName, ageInterval, age);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("{}: Aging interval changed: {} -> {}",
+                              getTableName(), ageInterval, age);
+                }
 
                 // Cancel current aging task.
-                cancelAging(timer);
+                agingTask.cancel();
+                if (ageInterval > AGING_PURGE_THRESHOLD) {
+                    timer.purge();
+                }
 
                 // Install a new aging task.
                 installAging(timer, age);
@@ -146,10 +445,9 @@ public class MacAddressTable {
     /**
      * Add a MAC address table entry if needed.
      *
-     * @param mgr   VTN Manager service.
      * @param pctx  The context of the received packet.
      */
-    public void add(VTNManagerImpl mgr, PacketContext pctx) {
+    public void add(PacketContext pctx) {
         byte[] src = pctx.getSourceAddress();
         if (!NetUtils.isUnicastMACAddr(src)) {
             return;
@@ -159,82 +457,57 @@ public class MacAddressTable {
         Long key = getTableKey(src);
         NodeConnector port = pctx.getIncomingNodeConnector();
         short vlan = pctx.getVlan();
-        byte[] sip = pctx.getSourceIpAddress();
-        InetAddress ipaddr = null;
-        if (sip != null) {
-            try {
-                ipaddr = InetAddress.getByAddress(sip);
-            } catch (UnknownHostException e) {
-                // This should never happen.
-                if (LOG.isErrorEnabled()) {
-                    String strip = HexEncode.bytesToHexStringFormat(sip);
-                    LOG.error("{}: Invalid IP address: {}, ipaddr={}",
-                              tableName, pctx.getDescription(port), strip);
-                }
-            }
-        }
+        InetAddress ipaddr = getSourceInetAddress(pctx);
 
-        boolean needProbe;
-        synchronized (this) {
-            // Search for a table entry.
-            MacTableEntry tent = macAddressTable.get(key);
-            if (tent != null) {
-                // Check to see if the entry needs to be changed.
-                NodeConnector curport = tent.getPort();
-                short curvlan = tent.getVlan();
-                boolean changed = false;
-                if (vlan != curvlan || !port.equals(curport)) {
-                    // The host was moved to other network.
-                    pctx.addObsoleteEntry(key, tent);
-
-                    // Replace the table entry.
-                    tent = new MacTableEntry(port, vlan, ipaddr);
-                    macAddressTable.put(key, tent);
-                    changed = true;
-                } else {
-                    if (ipaddr != null) {
-                        // Append IP address to this entry.
-                        changed = tent.addInetAddress(ipaddr);
-                    }
-
-                    // Turn the used flag on.
-                    tent.setUsed();
-                }
-
-                if (changed && LOG.isInfoEnabled()) {
-                    String strmac = HexEncode.bytesToHexStringFormat(src);
-                    LOG.info("{}: MAC address table entry changed: {}, {}",
-                             tableName, strmac, tent);
-                }
-            } else {
-                // Register a new table entry.
-                tent = new MacTableEntry(port, vlan, ipaddr);
-                if (LOG.isDebugEnabled()) {
-                    String strmac = HexEncode.bytesToHexStringFormat(src);
-                    LOG.debug("{}: New MAC address table entry: {}, {}",
-                              tableName, strmac, tent);
-                }
-                macAddressTable.put(key, tent);
-            }
-            needProbe = tent.isProbeNeeded();
+        // Add a MAC address table entry.
+        MacTableEntry tent = addEntry(pctx, port, vlan, key, ipaddr);
+        if (tent == null) {
+            return;
         }
 
         // Notify the host tracker of new host entry.
+        boolean needProbe = tent.clearProbeNeeded();
         if (ipaddr != null) {
             try {
                 HostNodeConnector host =
                     new HostNodeConnector(src, ipaddr, port, vlan);
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("{}: Notify new host: ipaddr={}, host={}",
-                              tableName, ipaddr.getHostAddress(), host);
+                              getTableName(), ipaddr.getHostAddress(), host);
                 }
-                mgr.notifyHost(host);
+                vtnManager.notifyHost(host);
             } catch (Exception e) {
-                LOG.error(tableName + ": Unable to create a host entry", e);
+                if (LOG.isErrorEnabled()) {
+                    StringBuilder builder =
+                        new StringBuilder(getTableName());
+                    builder.append(": Unable to create host: src=").
+                        append(HexEncode.bytesToHexStringFormat(src)).
+                        append(", ipaddr=").append(ipaddr).
+                        append(", port=").append(port.toString()).
+                        append(", vlan=").append((int)vlan);
+                    LOG.error(builder.toString(), e);
+                }
             }
         } else if (needProbe) {
             // Try to detect IP address of the host.
-            pctx.probeInetAddress(mgr);
+            pctx.probeInetAddress(vtnManager);
+        }
+    }
+
+    /**
+     * Add the given MAC address table entry to this table.
+     *
+     * <p>
+     *   Note that this method never puts the given entry to the cluster cache.
+     * </p>
+     *
+     * @param tent  A MAC address table entry.
+     */
+    synchronized void add(MacTableEntry tent) {
+        Map<Long, MacTableEntry> table = macAddressTable;
+        if (table != null) {
+            Long key = Long.valueOf(tent.getMacAddress());
+            table.put(key, tent);
         }
     }
 
@@ -250,7 +523,12 @@ public class MacAddressTable {
         Long key = getTableKey(dst);
 
         synchronized (this) {
-            MacTableEntry tent = macAddressTable.get(key);
+            Map<Long, MacTableEntry> table = macAddressTable;
+            if (table == null) {
+                return null;
+            }
+
+            MacTableEntry tent = table.get(key);
             if (tent != null) {
                 // Turn the used flag on.
                 tent.setUsed();
@@ -271,7 +549,13 @@ public class MacAddressTable {
         Long key = getTableKey(dst);
 
         synchronized (this) {
-            macAddressTable.remove(key);
+            Map<Long, MacTableEntry> table = macAddressTable;
+            if (table != null) {
+                MacTableEntry tent = table.remove(key);
+                if (tent != null) {
+                    vtnManager.removeMacTableEntry(tent.getEntryId());
+                }
+            }
         }
     }
 
@@ -281,18 +565,20 @@ public class MacAddressTable {
      * @return  A list of MAC address entries.
      * @throws VTNException  An error occurred.
      */
-    public List<MacAddressEntry> getEntries() throws VTNException {
-        ArrayList<MacAddressEntry> list =
-            new ArrayList<MacAddressEntry>(macAddressTable.size());
+    public synchronized List<MacAddressEntry> getEntries() throws VTNException {
+        Map<Long, MacTableEntry> table = macAddressTable;
+        if (table == null) {
+            return new ArrayList<MacAddressEntry>();
+        }
 
-        synchronized (this) {
-            for (Iterator<Map.Entry<Long, MacTableEntry>> it =
-                     macAddressTable.entrySet().iterator(); it.hasNext();) {
-                Map.Entry<Long, MacTableEntry> entry = it.next();
-                Long mac = entry.getKey();
-                MacTableEntry tent = entry.getValue();
-                list.add(tent.getEntry(mac.longValue()));
-            }
+        ArrayList<MacAddressEntry> list =
+            new ArrayList<MacAddressEntry>(table.size());
+        for (Iterator<Map.Entry<Long, MacTableEntry>> it =
+                 table.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<Long, MacTableEntry> entry = it.next();
+            Long mac = entry.getKey();
+            MacTableEntry tent = entry.getValue();
+            list.add(tent.getEntry());
         }
         list.trimToSize();
 
@@ -319,11 +605,16 @@ public class MacAddressTable {
         }
 
         synchronized (this) {
-            MacTableEntry tent = macAddressTable.get(key);
+            Map<Long, MacTableEntry> table = macAddressTable;
+            if (table == null) {
+                return null;
+            }
+
+            MacTableEntry tent = table.get(key);
             if (tent == null) {
                 return null;
             }
-            return tent.getEntry(key.longValue());
+            return tent.getEntry();
         }
     }
 
@@ -343,27 +634,37 @@ public class MacAddressTable {
 
         MacTableEntry tent;
         synchronized (this) {
-            tent = macAddressTable.remove(key);
+            Map<Long, MacTableEntry> table = macAddressTable;
+            if (table == null) {
+                return null;
+            }
+
+            tent = table.remove(key);
+            if (tent == null) {
+                return null;
+            }
+            vtnManager.removeMacTableEntry(tent.getEntryId());
         }
 
-        if (tent == null) {
-            return null;
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("{}: removeEntry: MAC address removed: {}",
+                      getTableName(), tent);
         }
-
-        if (LOG.isDebugEnabled()) {
-            String strmac = VTNManagerImpl.formatMacAddress(key.longValue());
-            LOG.debug("{}: removeEntry: MAC address removed: {}, {}",
-                      tableName, strmac, tent);
-        }
-        return tent.getEntry(key.longValue());
+        return tent.getEntry();
     }
 
     /**
      * Flush all MAC address table entries.
      */
     public synchronized void flush() {
-        LOG.debug("{}: MAC address table flushed", tableName);
-        macAddressTable.clear();
+        Map<Long, MacTableEntry> table = macAddressTable;
+        if (table != null) {
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}: Flush MAC address table", getTableName());
+            }
+            EntryRemover remover = new EntryRemover();
+            remover.remove(table);
+        }
     }
 
     /**
@@ -372,17 +673,10 @@ public class MacAddressTable {
      * @param node  A node.
      */
     public synchronized void flush(Node node) {
-        for (Iterator<Map.Entry<Long, MacTableEntry>> it =
-                 macAddressTable.entrySet().iterator(); it.hasNext();) {
-            Map.Entry<Long, MacTableEntry> entry = it.next();
-            MacTableEntry tent = entry.getValue();
-            Node tnode = tent.getPort().getNode();
-            if (tnode.equals(node)) {
-                if (LOG.isDebugEnabled()) {
-                    logRemoved(entry);
-                }
-                it.remove();
-            }
+        Map<Long, MacTableEntry> table = macAddressTable;
+        if (table != null) {
+            EntryRemover remover = new NodeEntryRemover(node);
+            remover.remove(table);
         }
     }
 
@@ -394,17 +688,10 @@ public class MacAddressTable {
      * @param vlan  VLAN ID.
      */
     public synchronized void flush(Node node, short vlan) {
-        for (Iterator<Map.Entry<Long, MacTableEntry>> it =
-                 macAddressTable.entrySet().iterator(); it.hasNext();) {
-            Map.Entry<Long, MacTableEntry> entry = it.next();
-            MacTableEntry tent = entry.getValue();
-            if (tent.getVlan() == vlan &&
-                (node == null || node.equals(tent.getPort().getNode()))) {
-                if (LOG.isDebugEnabled()) {
-                    logRemoved(entry);
-                }
-                it.remove();
-            }
+        Map<Long, MacTableEntry> table = macAddressTable;
+        if (table != null) {
+            EntryRemover remover = new NodeVlanEntryRemover(node, vlan);
+            remover.remove(table);
         }
     }
 
@@ -415,17 +702,10 @@ public class MacAddressTable {
      * @param nc  A node connector.
      */
     public synchronized void flush(NodeConnector nc) {
-        for (Iterator<Map.Entry<Long, MacTableEntry>> it =
-                 macAddressTable.entrySet().iterator(); it.hasNext();) {
-            Map.Entry<Long, MacTableEntry> entry = it.next();
-            MacTableEntry tent = entry.getValue();
-            NodeConnector tport = tent.getPort();
-            if (tport.equals(nc)) {
-                if (LOG.isDebugEnabled()) {
-                    logRemoved(entry);
-                }
-                it.remove();
-            }
+        Map<Long, MacTableEntry> table = macAddressTable;
+        if (table != null) {
+            EntryRemover remover = new PortEntryRemover(nc);
+            remover.remove(table);
         }
     }
 
@@ -437,37 +717,108 @@ public class MacAddressTable {
      * @param vlan  VLAN ID.
      */
     public synchronized void flush(NodeConnector nc, short vlan) {
-        for (Iterator<Map.Entry<Long, MacTableEntry>> it =
-                 macAddressTable.entrySet().iterator(); it.hasNext();) {
-            Map.Entry<Long, MacTableEntry> entry = it.next();
-            MacTableEntry tent = entry.getValue();
-            if (tent.getVlan() == vlan && nc.equals(tent.getPort())) {
-                if (LOG.isDebugEnabled()) {
-                    logRemoved(entry);
-                }
-                it.remove();
-            }
+        Map<Long, MacTableEntry> table = macAddressTable;
+        if (table != null) {
+            EntryRemover remover = new PortVlanEntryRemover(nc, vlan);
+            remover.remove(table);
+        }
+    }
+
+    /**
+     * Flush all MAC address table entries created by the specified
+     * controllers.
+     *
+     * <p>
+     *   Note that this method removes MAC address table entries from the
+     *   cluster cache on the calling thread.
+     * </p>
+     *
+     * @param addrs  A set of IP addresses of controllers.
+     */
+    public synchronized void flush(Set<InetAddress> addrs) {
+        Map<Long, MacTableEntry> table = macAddressTable;
+        if (table != null) {
+            EntryRemover remover = new ControllerEntryRemover(addrs);
+            remover.remove(table);
         }
     }
 
     /**
      * Destroy the MAC address table.
      *
-     * @param mgr  VTN Manager service.
-     *             If a non-{@code null} value is specified, this method tries
-     *             to purge canceled tasks from the global timer task queue.
+     * @param purge  If {@code true} is passed, purge all canceled aging
+     *               tasks in the global timer task queue.
      */
-    public void destroy(VTNManagerImpl mgr) {
+    public synchronized void destroy(boolean purge) {
+        // Invalidate MAC address table.
+        Map<Long, MacTableEntry> table = macAddressTable;
+        if (table == null) {
+            return;
+        }
+        macAddressTable = null;
+
+        // Remove all MAC address table entries from the cluster cache.
+        EntryRemover remover = new EntryRemover();
+        remover.remove(table);
+
         // Cancel the aging task.
-        Timer timer;
-        if (mgr != null) {
-            IVTNResourceManager resMgr = mgr.getResourceManager();
-            timer = resMgr.getTimer();
-        } else {
-            timer = null;
+        agingTask.cancel();
+        if (purge) {
+            vtnManager.getResourceManager().getTimer().purge();
+        }
+    }
+
+    /**
+     * Invoked when a MAC address table entry is updated by remote cluster
+     * node.
+     *
+     * @param tent  A MAC address table entry.
+     */
+    synchronized void entryUpdated(MacTableEntry tent) {
+        Map<Long, MacTableEntry> table = macAddressTable;
+        if (table == null) {
+            return;
         }
 
-        cancelAging(timer);
+        Long key = Long.valueOf(tent.getMacAddress());
+        MacTableEntry old = table.put(key, tent);
+        if (LOG.isTraceEnabled()) {
+            String tname = getTableName();
+            if (old != null) {
+                LOG.trace("{}: MAC address was changed by another controller" +
+                          ": {} -> {}", tname, old, tent);
+            } else {
+                LOG.trace("{}: MAC address was added by another controller" +
+                          ": {}", tname, tent);
+            }
+        }
+    }
+
+    /**
+     * Invoked when a MAC address table entry is deleted by remote cluster
+     * node.
+     *
+     * @param id  An identifier of a MAC address table entry.
+     */
+    synchronized void entryDeleted(MacTableEntryId id) {
+        Map<Long, MacTableEntry> table = macAddressTable;
+        if (table == null) {
+            return;
+        }
+
+        Long key = Long.valueOf(id.getMacAddress());
+        MacTableEntry tent = table.remove(key);
+        if (tent == null) {
+            return;
+        }
+
+        if (!tent.getEntryId().equals(id)) {
+            // Another entry is mapped to this MAC address.
+            table.put(key, tent);
+        } else if (LOG.isTraceEnabled()) {
+            LOG.trace("{}: MAC address was removed by another controller: {}",
+                      getTableName(), tent);
+        }
     }
 
     /**
@@ -484,42 +835,13 @@ public class MacAddressTable {
     }
 
     /**
-     * Cancel the MAC address table aging task.
-     *
-     * @param timer  The global timer thread.
-     *               If a non-{@code null} value is specified, this method
-     *               tries to purge canceled tasks from the global timer task
-     *               queue.
-     */
-    private synchronized void cancelAging(Timer timer) {
-        // Cancel current aging task.
-        agingTask.cancel();
-
-        if (timer != null && ageInterval > AGING_PURGE_THRESHOLD) {
-            // Purge canceled task.
-            timer.purge();
-        }
-    }
-
-    /**
      * Scan MAC address table entries, and eliminate unused entries.
      */
     private synchronized void age() {
-        for (Iterator<Map.Entry<Long, MacTableEntry>> it =
-                 macAddressTable.entrySet().iterator(); it.hasNext();) {
-            Map.Entry<Long, MacTableEntry> entry = it.next();
-            MacTableEntry tent = entry.getValue();
-            // Turn the used flag off.
-            if (!tent.clearUsed()) {
-                // Remove this entry.
-                if (LOG.isDebugEnabled()) {
-                    long mac = entry.getKey().longValue();
-                    String strmac = VTNManagerImpl.formatMacAddress(mac);
-                    LOG.debug("{}: MAC address aged out: {}, {}",
-                              tableName, strmac, tent);
-                }
-                it.remove();
-            }
+        Map<Long, MacTableEntry> table = macAddressTable;
+        if (table != null) {
+            EntryRemover remover = new AgedEntryRemover();
+            remover.remove(table);
         }
     }
 
@@ -546,15 +868,108 @@ public class MacAddressTable {
     }
 
     /**
-     * Record a debug log which indicates the specified MAC address table was
-     * removed.
+     * Add a MAC address table entry for a received packet.
      *
-     * @param entry  Table entry to be removed.
+     * @param pctx    The context of the received packet.
+     * @param port    A node connector associated with incoming switch port.
+     * @param vlan    VLAN ID.
+     * @param key     A long value which represents a MAC address.
+     * @param ipaddr  IP address assigned to the given entry.
+     * @return  A MAC address table entry associated with the received packet
+     *          is returned.
+     *          {@code null} is returned if this table is no longer available.
      */
-    private void logRemoved(Map.Entry<Long, MacTableEntry> entry) {
-        long mac = entry.getKey().longValue();
-        MacTableEntry tent = entry.getValue();
-        String strmac = VTNManagerImpl.formatMacAddress(mac);
-        LOG.debug("{}: MAC address removed: {}, {}", tableName, strmac, tent);
+    private synchronized MacTableEntry addEntry(PacketContext pctx,
+                                                NodeConnector port, short vlan,
+                                                Long key, InetAddress ipaddr) {
+        Map<Long, MacTableEntry> table = macAddressTable;
+        if (table == null) {
+            return null;
+        }
+
+        // Search for a table entry mapped to the given MAC address.
+        MacTableEntry tent = table.get(key);
+        if (tent == null) {
+            // Register a new table entry.
+            tent = new MacTableEntry(bridgePath, key, port, vlan, ipaddr);
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}: New MAC address table entry: {}",
+                          getTableName(), tent);
+            }
+            table.put(key, tent);
+            vtnManager.putMacTableEntry(tent);
+            return tent;
+        }
+
+        // Check to see if the entry needs to be changed.
+        NodeConnector curport = tent.getPort();
+        short curvlan = tent.getVlan();
+        boolean changed = false;
+        MacTableEntry newEnt = tent;
+        if (vlan != curvlan || !port.equals(curport)) {
+            // The host was moved to other network.
+            pctx.addObsoleteEntry(key, tent);
+            vtnManager.removeMacTableEntry(tent.getEntryId());
+
+            // Replace the table entry.
+            newEnt = new MacTableEntry(bridgePath, key, port, vlan, ipaddr);
+            table.put(key, newEnt);
+            vtnManager.putMacTableEntry(newEnt);
+            changed = true;
+        } else {
+            if (ipaddr != null) {
+                // Append IP address to this entry.
+                changed = tent.addInetAddress(ipaddr);
+                if (changed) {
+                    vtnManager.updateMacTableEntry(tent);
+                }
+            }
+
+            // Turn the used flag on.
+            tent.setUsed();
+        }
+
+        if (changed && LOG.isTraceEnabled()) {
+            LOG.trace("{}: MAC address table entry changed: {}",
+                      getTableName(), tent);
+        }
+
+        return newEnt;
+    }
+
+    /**
+     * Return the source IP address of the received packet.
+     *
+     * @param pctx  The context of the received packet.
+     * @return  The source IP address.
+     *          {@code null} is returned if no IP header was found.
+     */
+    private InetAddress getSourceInetAddress(PacketContext pctx) {
+        byte[] sip = pctx.getSourceIpAddress();
+        if (sip != null) {
+            try {
+                return InetAddress.getByAddress(sip);
+            } catch (UnknownHostException e) {
+                // This should never happen.
+                LOG.error("{}: Invalid IP address: {}, ipaddr={}",
+                          getTableName(),
+                          pctx.getDescription(pctx.getIncomingNodeConnector()),
+                          HexEncode.bytesToHexStringFormat(sip));
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Return the name of this table.
+     *
+     * @return  The name of this table.
+     */
+    private String getTableName() {
+        StringBuilder builder =
+            new StringBuilder(vtnManager.getContainerName());
+        builder.append(':').append(bridgePath.toString());
+        return builder.toString();
     }
 }

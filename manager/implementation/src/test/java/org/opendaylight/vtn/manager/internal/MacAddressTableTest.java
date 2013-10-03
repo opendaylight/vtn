@@ -31,7 +31,9 @@ import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.vtn.manager.MacAddressEntry;
+import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 
 /**
  * JUnit test for {@link MacAddressTable}
@@ -113,17 +115,18 @@ public class MacAddressTableTest extends TestBase {
     public void testMacAddressTable() {
         VTNManagerImpl mgr = vtnMgr;
 
-        MacAddressTable tbl = new MacAddressTable(mgr, "Table", 600);
+        VBridgePath path = new VBridgePath("tenant1", "bridge1");
+        MacAddressTable tbl = new MacAddressTable(mgr, path, 600);
         assertNotNull(tbl);
-        tbl.destroy(mgr);
+        tbl.destroy(true);
 
-        tbl = new MacAddressTable(mgr, "Table", 10);
+        tbl = new MacAddressTable(mgr, path, 10);
         assertNotNull(tbl);
-        tbl.destroy(mgr);
+        tbl.destroy(true);
 
-        tbl = new MacAddressTable(mgr, "Table", 1000000);
+        tbl = new MacAddressTable(mgr, path, 1000000);
         assertNotNull(tbl);
-        tbl.destroy(mgr);
+        tbl.destroy(true);
     }
 
     /**
@@ -133,11 +136,12 @@ public class MacAddressTableTest extends TestBase {
     public void testSetAgeInterval() {
         VTNManagerImpl mgr = vtnMgr;
 
-        MacAddressTable tbl = new MacAddressTable(mgr, "Table", 600);
-        tbl.setAgeInterval(mgr, 10);
-        tbl.setAgeInterval(mgr, 1000000);
-        tbl.setAgeInterval(mgr, 1000000);
-        tbl.destroy(mgr);
+        VBridgePath path = new VBridgePath("tenant1", "bridge1");
+        MacAddressTable tbl = new MacAddressTable(mgr, path, 600);
+        tbl.setAgeInterval(10);
+        tbl.setAgeInterval(1000000);
+        tbl.setAgeInterval(1000000);
+        tbl.destroy(true);
     }
 
     /**
@@ -151,8 +155,10 @@ public class MacAddressTableTest extends TestBase {
     @Test
     public void testAddGetRemoveEntry() {
         VTNManagerImpl mgr = vtnMgr;
-        MacAddressTable tbl = new MacAddressTable(mgr, "Table", 600);
-        MacAddressTable tall = new MacAddressTable(mgr, "Table", 600);
+        VBridgePath path1 = new VBridgePath("tenant1", "bridge1");
+        VBridgePath path2 = new VBridgePath("tenant1", "bridge2");
+        MacAddressTable tbl = new MacAddressTable(mgr, path1, 600);
+        MacAddressTable tall = new MacAddressTable(mgr, path2, 600);
         MacTableEntry tent = null;
         MacAddressEntry mae = null;
 
@@ -193,7 +199,7 @@ public class MacAddressTableTest extends TestBase {
             assertNull(mae);
 
             // add() and get() one data
-            tbl.add(mgr, dpctx);
+            tbl.add(dpctx);
             tent = tbl.get(dpctx);
             assertNull(tent);
             tent = tbl.get(rpctx);
@@ -214,11 +220,11 @@ public class MacAddressTableTest extends TestBase {
 
             // add same packet
             assertFalse(tent.clearUsed());
-            tbl.add(mgr, dpctx);
+            tbl.add(dpctx);
             assertTrue(tent.clearUsed());
 
             // add packet IP changed
-            tbl.add(mgr, ippctx);
+            tbl.add(ippctx);
             tent = tbl.get(rpctx);
             assertNotNull(tent);
             assertEquals(connectors.get(0), tent.getPort());
@@ -237,10 +243,10 @@ public class MacAddressTableTest extends TestBase {
             assertTrue(iplist.contains(ip2));
             assertFalse(ip.equals(ip2));
 
-            tbl.add(mgr, dpctx);
+            tbl.add(dpctx);
 
             // add packet vlan changed
-            tbl.add(mgr, vlanpctx);
+            tbl.add(vlanpctx);
             tent = tbl.get(rpctx);
             assertNotNull(tent);
             assertEquals(connectors.get(0), tent.getPort());
@@ -250,10 +256,10 @@ public class MacAddressTableTest extends TestBase {
             assertTrue(iplist.size() == 1);
             assertArrayEquals(sender, iplist.iterator().next().getAddress());
 
-            tbl.add(mgr, dpctx);
+            tbl.add(dpctx);
 
             // add packet setted different nodeconnector
-            tbl.add(mgr, ncpctx);
+            tbl.add(ncpctx);
             tent = tbl.get(rpctx);
             assertNotNull(tent);
             assertEquals(connectors.get(1), tent.getPort());
@@ -280,7 +286,7 @@ public class MacAddressTableTest extends TestBase {
             assertNull(tent);
 
             // removeEntry()
-            tbl.add(mgr, dpctx);
+            tbl.add(dpctx);
             try {
                 mae = tbl.removeEntry(ea);
             } catch (Exception e) {
@@ -302,15 +308,15 @@ public class MacAddressTableTest extends TestBase {
             tent = tbl.get(rpctx);
             assertNull(tent);
 
-            tall.add(mgr, dpctx);
+            tall.add(dpctx);
             list = getEntries(tall);
             assertNotNull(list);
             assertTrue(list.size() == iphost);
 
             iphost++;
         }
-        tbl.destroy(mgr);
-        tall.destroy(mgr);
+        tbl.destroy(true);
+        tall.destroy(true);
 
         // case for Multicast packet data
         byte [] dst = new byte[] {(byte)0xFF, (byte)0xFF, (byte)0xFF,
@@ -320,10 +326,11 @@ public class MacAddressTableTest extends TestBase {
         byte [] sender = new byte[] {(byte)192, (byte)168, (byte)100, (byte)1};
         byte [] target = new byte[] {(byte)192, (byte)168, (byte)100, (byte)2};
 
-        MacAddressTable mtbl = new MacAddressTable(mgr, "Table", 600);
+        VBridgePath path = new VBridgePath("tenant1", "bridge1");
+        MacAddressTable mtbl = new MacAddressTable(mgr, path, 600);
         PacketContext mpctx = createARPPacketContext(src, dst, sender, target,
                                            (short)-1, connectors.get(0), ARP.REQUEST);
-        mtbl.add(mgr, mpctx);
+        mtbl.add(mpctx);
 
         List<MacAddressEntry> list = null;
         list = getEntries(mtbl);
@@ -347,7 +354,7 @@ public class MacAddressTableTest extends TestBase {
         }
         assertNull(mae);
 
-        mtbl.destroy(mgr);
+        mtbl.destroy(true);
     }
 
     /**
@@ -360,12 +367,18 @@ public class MacAddressTableTest extends TestBase {
     public void testFlush() {
         VTNManagerImpl mgr = vtnMgr;
 
-        MacAddressTable tbl1 = new MacAddressTable(mgr, "Table", 600);
-        MacAddressTable tbl2 = new MacAddressTable(mgr, "Table2", 1000);
-        MacAddressTable tbl3 = new MacAddressTable(mgr, "Table3", 1000);
-        MacAddressTable tbl4 = new MacAddressTable(mgr, "Table4", 1000);
-        MacAddressTable tbl5 = new MacAddressTable(mgr, "Table5", 1000);
-        MacAddressTable tbl6 = new MacAddressTable(mgr, "Table5", 1000);
+        VBridgePath path1 = new VBridgePath("tenant1", "bridge1");
+        VBridgePath path2 = new VBridgePath("tenant1", "bridge2");
+        VBridgePath path3 = new VBridgePath("tenant1", "bridge3");
+        VBridgePath path4 = new VBridgePath("tenant1", "bridge4");
+        VBridgePath path5 = new VBridgePath("tenant1", "bridge5");
+        VBridgePath path6 = new VBridgePath("tenant1", "bridge6");
+        MacAddressTable tbl1 = new MacAddressTable(mgr, path1, 600);
+        MacAddressTable tbl2 = new MacAddressTable(mgr, path2, 1000);
+        MacAddressTable tbl3 = new MacAddressTable(mgr, path3, 1000);
+        MacAddressTable tbl4 = new MacAddressTable(mgr, path4, 1000);
+        MacAddressTable tbl5 = new MacAddressTable(mgr, path5, 1000);
+        MacAddressTable tbl6 = new MacAddressTable(mgr, path6, 1000);
 
         List<NodeConnector> connectors = createNodeConnectors(3, false);
         short vlan = 0;
@@ -380,12 +393,12 @@ public class MacAddressTableTest extends TestBase {
             PacketContext pctx = createARPPacketContext(src, dst, sender, target,
                                                (short)(((vlan / 3) > 0) ? (vlan / 3) : -1),
                                                connectors.get(iphost % 3), ARP.REQUEST);
-            tbl1.add(mgr, pctx);
-            tbl2.add(mgr, pctx);
-            tbl3.add(mgr, pctx);
-            tbl4.add(mgr, pctx);
-            tbl5.add(mgr, pctx);
-            tbl6.add(mgr, pctx);
+            tbl1.add(pctx);
+            tbl2.add(pctx);
+            tbl3.add(pctx);
+            tbl4.add(pctx);
+            tbl5.add(pctx);
+            tbl6.add(pctx);
 
             vlan++;
         }
@@ -440,12 +453,13 @@ public class MacAddressTableTest extends TestBase {
 
             @Override
             public void run() {
-                tbl.add(vtnMgr, pctx);
+                tbl.add(pctx);
             }
         }
 
         VTNManagerImpl mgr = vtnMgr;
-        MacAddressTable tbl = new MacAddressTable(mgr, "Table", 1);
+        VBridgePath path = new VBridgePath("tenant1", "bridge1");
+        MacAddressTable tbl = new MacAddressTable(mgr, path, 1);
 
         short vlan = 4095;
         byte [] src = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
@@ -467,7 +481,7 @@ public class MacAddressTableTest extends TestBase {
             unexpected(e);
         }
 
-        tbl.add(mgr, pctx);
+        tbl.add(pctx);
         MacAddressEntry mae = getEntry(tbl, ea);
         assertNotNull(mae);
         assertEquals(ea, mae.getAddress());
@@ -481,7 +495,7 @@ public class MacAddressTableTest extends TestBase {
         PutTableTask ptask = new PutTableTask(tbl, pctx);
         timer.schedule(ptask, 0, 500L);
 
-        tbl.add(mgr, pctx);
+        tbl.add(pctx);
 
         sleep(2500);
 

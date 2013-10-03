@@ -1841,8 +1841,14 @@ public class VTNManagerIT extends TestBase {
         configFile.delete();
         configFile100.delete();
 
+        InetAddress ipaddr = null;
+        try {
+            ipaddr = InetAddress.getByName("0.0.0.0");
+        } catch (Exception e) {
+            unexpected(e);
+        }
         CountDownLatch res = listener.restart(1);
-        ClusterEventId evid = new ClusterEventId(0, 0);
+        ClusterEventId evid = new ClusterEventId(ipaddr, 0);
         VTenantPath tpath = new VTenantPath("tenant");
         VTenantConfig tconf = new VTenantConfig(null);
         VTenant vtenant = new VTenant("tenant", tconf);

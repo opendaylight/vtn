@@ -342,7 +342,7 @@ public class ArpHandler {
                         new StringBuilder(vtnManager.getContainerName());
                     builder.append(": Unable to create host: src=").
                         append(HexEncode.bytesToHexStringFormat(src)).
-                        append(", sender=").append(sdrIp).
+                        append(", sender=").append(sdrIp.getHostAddress()).
                         append(", incoming=").append(nc.toString()).
                         append(", vlan=").append((int)vlan);
                     LOG.error(builder.toString(), e);
@@ -351,6 +351,11 @@ public class ArpHandler {
             }
 
             // Notify the host tracker of new host entry.
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}: Notify new host: ipaddr={}, host={}",
+                          vtnManager.getContainerName(),
+                          sdrIp.getHostAddress(), requestor);
+            }
             vtnManager.notifyHost(requestor);
         }
 

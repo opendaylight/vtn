@@ -45,7 +45,6 @@ import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
-import org.opendaylight.vtn.manager.internal.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.MapType;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNConfig;
@@ -284,7 +283,7 @@ public final class VBridgeImpl implements Serializable {
         bridgeConfig = cf;
         String name = bridgePath.getBridgeName();
         VBridge vbridge = getVBridge(mgr, name, cf);
-        mgr.enqueueEvent(bridgePath, vbridge, UpdateType.CHANGED);
+        VBridgeEvent.changed(mgr, bridgePath, vbridge, true);
 
         initMacTableAging(mgr);
         return true;
@@ -322,7 +321,7 @@ public final class VBridgeImpl implements Serializable {
             }
 
             VInterface viface = vif.getVInterface(mgr);
-            mgr.enqueueEvent(path, viface, UpdateType.ADDED);
+            VBridgeIfEvent.added(mgr, path, viface);
             updateState(mgr);
         } finally {
             wrlock.unlock();
@@ -394,7 +393,7 @@ public final class VBridgeImpl implements Serializable {
                 throw new VTNException(status);
             }
 
-            vif.destroy(mgr, false);
+            vif.destroy(mgr, true);
             updateState(mgr);
         } finally {
             wrlock.unlock();
@@ -514,7 +513,7 @@ public final class VBridgeImpl implements Serializable {
             vlanMaps.put(id, vmap);
 
             VlanMap vlmap = new VlanMap(id, node, vlan);
-            mgr.enqueueEvent(bridgePath, vlmap, UpdateType.ADDED);
+            VlanMapEvent.added(mgr, bridgePath, vlmap);
             if (vmap.isValid(mgr.getStateDB())) {
                 updateState(mgr);
             } else {
@@ -573,10 +572,9 @@ public final class VBridgeImpl implements Serializable {
                 IVTNResourceManager resMgr = mgr.getResourceManager();
                 resMgr.unregisterVlanMap(vlan);
             }
-            vmap.destroy(mgr, false);
 
             VlanMap vlmap = new VlanMap(mapId, node, vlan);
-            mgr.enqueueEvent(bridgePath, vlmap, UpdateType.REMOVED);
+            vmap.destroy(mgr, bridgePath, vlmap, true);
             updateState(mgr);
         } finally {
             wrlock.unlock();
@@ -757,7 +755,7 @@ public final class VBridgeImpl implements Serializable {
         if (table == null) {
             mgr.addMacAddressTable(bridgePath, age);
         } else {
-            table.setAgeInterval(mgr, age);
+            table.setAgeInterval(age);
         }
     }
 
@@ -1101,11 +1099,12 @@ public final class VBridgeImpl implements Serializable {
     /**
      * Destroy the virtual L2 bridge.
      *
-     * @param mgr         VTN manager service.
-     * @param vtnDestroy  {@code true} is specified if the parent VTN is being
-     *                    destroyed.
+     * @param mgr     VTN manager service.
+     * @param retain  {@code true} means that the parent tenant will be
+     *                retained. {@code false} means that the parent tenant
+     *                is being destroyed.
      */
-    void destroy(VTNManagerImpl mgr, boolean vtnDestroy) {
+    void destroy(VTNManagerImpl mgr, boolean retain) {
         VBridge vbridge = getVBridge(mgr);
         IVTNResourceManager resMgr = mgr.getResourceManager();
 
@@ -1126,26 +1125,25 @@ public final class VBridgeImpl implements Serializable {
                     resMgr.unregisterVlanMap(vlan);
                     vlanIDs.add(vid);
                 }
-                vmap.destroy(mgr, true);
 
                 VlanMap vlmap = new VlanMap(mapId, vlconf.getNode(), vlan);
-                mgr.enqueueEvent(bridgePath, vlmap, UpdateType.REMOVED);
+                vmap.destroy(mgr, bridgePath, vlmap, false);
                 it.remove();
             }
             vlanIDs = null;
 
             // Destroy MAC address table.
-            mgr.removeMacAddressTable(bridgePath, !vtnDestroy);
+            mgr.removeMacAddressTable(bridgePath, retain);
 
             // Destroy all interfaces.
             for (Iterator<VBridgeIfImpl> it = vInterfaces.values().iterator();
                  it.hasNext();) {
                 VBridgeIfImpl vif = it.next();
-                vif.destroy(mgr, true);
+                vif.destroy(mgr, false);
                 it.remove();
             }
 
-            if (!vtnDestroy) {
+            if (retain) {
                 // Purge all VTN flows related to this bridge.
                 VTNThreadData.removeFlows(mgr, bridgePath);
             }
@@ -1158,7 +1156,7 @@ public final class VBridgeImpl implements Serializable {
 
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         db.remove(bridgePath);
-        mgr.enqueueEvent(bridgePath, vbridge, UpdateType.REMOVED);
+        VBridgeEvent.removed(mgr, bridgePath, vbridge, retain);
     }
 
     /**
@@ -1341,6 +1339,7 @@ public final class VBridgeImpl implements Serializable {
      * @throws ClassNotFoundException
      *    At least one necessary class was not found.
      */
+    @SuppressWarnings("unused")
     private void readObject(ObjectInputStream in)
         throws IOException, ClassNotFoundException {
         in.defaultReadObject();
@@ -1440,7 +1439,7 @@ public final class VBridgeImpl implements Serializable {
             int faulted = bst.getFaultedPathSize();
             VBridge vbridge = new VBridge(getName(), st, faulted,
                                           getVBridgeConfig());
-            mgr.enqueueEvent(bridgePath, vbridge, UpdateType.CHANGED);
+            VBridgeEvent.changed(mgr, bridgePath, vbridge, false);
         }
     }
 
@@ -1548,7 +1547,7 @@ public final class VBridgeImpl implements Serializable {
     private void handlePacket(VTNManagerImpl mgr, PacketContext pctx) {
         // Learn the source MAC address if needed.
         MacAddressTable table = mgr.getMacAddressTable(bridgePath);
-        table.add(mgr, pctx);
+        table.add(pctx);
 
         ISwitchManager swMgr = mgr.getSwitchManager();
         byte[] ctlrMac = swMgr.getControllerMAC();

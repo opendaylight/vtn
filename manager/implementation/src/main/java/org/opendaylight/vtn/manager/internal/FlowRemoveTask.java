@@ -128,15 +128,14 @@ public class FlowRemoveTask extends RemoteFlowModTask {
     FlowModResult getResult() {
         long abs = System.currentTimeMillis() + taskTimeout;
         FlowModResult ret = getResultAbs(abs);
-        Logger logger = getLogger();
         if (ret == FlowModResult.SUCCEEDED) {
-            if (logger.isTraceEnabled()) {
-                logger.trace("{}: VTN flow remove task has completed: {}",
-                             getVTNManager().getContainerName(), groupSet);
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}: VTN flow remove task has completed: {}",
+                          getVTNManager().getContainerName(), groupSet);
             }
         } else {
-            logger.error("{}: Failed to remove VTN flows: result={}, group={}",
-                         getVTNManager().getContainerName(), ret, groupSet);
+            LOG.error("{}: Failed to remove VTN flows: result={}, group={}",
+                      getVTNManager().getContainerName(), ret, groupSet);
         }
 
         return ret;
@@ -154,7 +153,13 @@ public class FlowRemoveTask extends RemoteFlowModTask {
         VTNManagerImpl mgr = getVTNManager();
         ConcurrentMap<FlowGroupId, VTNFlow> db = mgr.getFlowDB();
         for (FlowGroupId gid: groupSet) {
-            db.remove(gid);
+            try {
+                db.remove(gid);
+            } catch (Exception e) {
+                LOG.error(mgr.getContainerName() +
+                          ": Failed to remove VTN flow from the cache: " +
+                          gid, e);
+            }
         }
 
         // Unintall ingress flows.
@@ -256,6 +261,9 @@ public class FlowRemoveTask extends RemoteFlowModTask {
                 mgr.postAsync(task);
             } else if (cl == ConnectionLocality.NOT_LOCAL) {
                 remote.add(fent);
+            } else {
+                LOG.warn("{}: Target node of flow entry is not connected: {}",
+                         mgr.getConnectionManager(), fent);
             }
         }
 

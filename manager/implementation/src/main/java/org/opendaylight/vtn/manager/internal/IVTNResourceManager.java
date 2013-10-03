@@ -9,6 +9,7 @@
 
 package org.opendaylight.vtn.manager.internal;
 
+import java.net.InetAddress;
 import java.util.Timer;
 
 import org.opendaylight.vtn.manager.VBridgeIfPath;
@@ -20,6 +21,20 @@ import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
  * resources used by the VTN Manager.
  */
 public interface IVTNResourceManager {
+    /**
+     * Add the VTN Manager service.
+     *
+     * @param mgr  VTN Manager service.
+     */
+    void addManager(VTNManagerImpl mgr);
+
+    /**
+     * Remove the VTN Manager service.
+     *
+     * @param mgr  VTN Manager service.
+     */
+    void removeManager(VTNManagerImpl mgr);
+
     /**
      * Register VLAN ID for VLAN mapping.
      *
@@ -92,6 +107,13 @@ public interface IVTNResourceManager {
      *          {@code false} is returned if the specified tas was rejected.
      */
     boolean executeAsync(Runnable command);
+
+    /**
+     * Return the IP address of the controller in the cluster.
+     *
+     * @return  The IP address of the controller.
+     */
+    InetAddress getControllerAddress();
 
     /**
      * Return the number of remote cluster nodes.

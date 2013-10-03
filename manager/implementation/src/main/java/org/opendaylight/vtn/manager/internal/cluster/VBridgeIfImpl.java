@@ -247,7 +247,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
 
         VNodeState pstate = ist.getPortState();
         VInterface viface = new VInterface(getName(), state, pstate, cf);
-        mgr.enqueueEvent(ifPath, viface, UpdateType.CHANGED);
+        VBridgeIfEvent.changed(mgr, ifPath, viface, true);
         return true;
     }
 
@@ -351,9 +351,6 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
             }
         }
 
-        UpdateType utype = (portMapConfig == null)
-            ? UpdateType.ADDED : UpdateType.CHANGED;
-
         // Destroy old mapping.
         if (mapped != null) {
             PortVlan pvlan = new PortVlan(mapped, oldconf.getVlan());
@@ -367,7 +364,11 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
         portMapConfig = pmconf;
         ist.setMappedPort(nc);
         PortMap pmap = new PortMap(pmconf, nc);
-        mgr.enqueueEvent(ifPath, pmap, utype);
+        if (oldconf == null) {
+            PortMapEvent.added(mgr, ifPath, pmap);
+        } else {
+            PortMapEvent.changed(mgr, ifPath, pmap, true);
+        }
 
         VNodeState state;
         if (isEnabled()) {
@@ -383,7 +384,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
             VNodeState pstate = ist.getPortState();
             VInterface viface = new VInterface(getName(), state, pstate,
                                                ifConfig);
-            mgr.enqueueEvent(ifPath, viface, UpdateType.CHANGED);
+            VBridgeIfEvent.changed(mgr, ifPath, viface, false);
         }
 
         return state;
@@ -685,11 +686,12 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
     /**
      * Destroy the virtual bridge interface.
      *
-     * @param mgr            VTN manager service.
-     * @param bridgeDestroy  {@code true} is specified if the parent bridge is
-     *                       being destroyed.
+     * @param mgr     VTN manager service.
+     * @param retain  {@code true} means that the parent bridge will be
+     *                retained. {@code false} means that the parent bridge
+     *                is being destroyed.
      */
-    void destroy(VTNManagerImpl mgr, boolean bridgeDestroy) {
+    void destroy(VTNManagerImpl mgr, boolean retain) {
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         VBridgeIfState ist = getIfState(mgr);
         VNodeState state = ist.getState();
@@ -710,16 +712,16 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
                 }
             }
 
-            mgr.enqueueEvent(ifPath, pmap, UpdateType.REMOVED);
+            PortMapEvent.removed(mgr, ifPath, pmap, false);
         }
 
-        if (!bridgeDestroy) {
+        if (retain) {
             // Purge all VTN flows related to this interface.
             VTNThreadData.removeFlows(mgr, ifPath);
         }
 
         db.remove(ifPath);
-        mgr.enqueueEvent(ifPath, viface, UpdateType.REMOVED);
+        VBridgeIfEvent.removed(mgr, ifPath, viface, retain);
 
         // Unlink parent for GC.
         parent = null;
@@ -817,7 +819,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
             VNodeState pstate = ist.getPortState();
             VInterface viface = new VInterface(getName(), st, pstate,
                                                ifConfig);
-            mgr.enqueueEvent(ifPath, viface, UpdateType.CHANGED);
+            VBridgeIfEvent.changed(mgr, ifPath, viface, false);
         }
     }
 
@@ -909,7 +911,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
 
             portMapConfig = null;
             PortMap pmap = new PortMap(pmconf, mapped);
-            mgr.enqueueEvent(ifPath, pmap, UpdateType.REMOVED);
+            PortMapEvent.removed(mgr, ifPath, pmap, true);
             setState(mgr, db, ist, VNodeState.UNKNOWN);
         }
     }
@@ -1075,7 +1077,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
 
             if (notify) {
                 PortMap pmap = new PortMap(portMapConfig, nc);
-                mgr.enqueueEvent(ifPath, pmap, UpdateType.CHANGED);
+                PortMapEvent.changed(mgr, ifPath, pmap, false);
             }
             return true;
         }
@@ -1116,7 +1118,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
 
         if (path != null) {
             PortMap pmap = new PortMap(portMapConfig, null);
-            mgr.enqueueEvent(path, pmap, UpdateType.CHANGED);
+            PortMapEvent.changed(mgr, path, pmap, false);
         }
     }
 

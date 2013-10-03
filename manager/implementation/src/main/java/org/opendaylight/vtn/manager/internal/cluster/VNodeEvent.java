@@ -9,6 +9,8 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
+import java.io.Serializable;
+
 import org.slf4j.Logger;
 
 import org.opendaylight.vtn.manager.VTenantPath;
@@ -30,7 +32,7 @@ public abstract class VNodeEvent extends ClusterEvent {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 8518009257290792509L;
+    private static final long serialVersionUID = -2748094766955786808L;
 
     /**
      * Path to the virtual node.
@@ -40,7 +42,7 @@ public abstract class VNodeEvent extends ClusterEvent {
     /**
      * An optional object to be delivered with this event.
      */
-    private final Object  object;
+    private final Serializable  object;
 
     /**
      * Update type of this event.
@@ -48,16 +50,25 @@ public abstract class VNodeEvent extends ClusterEvent {
     private final UpdateType  updateType;
 
     /**
+     * Determine whether the tenant configuration should be saved or not.
+     */
+    private final boolean  saveConfig;
+
+    /**
      * Construct a new virtual node event.
      *
      * @param path  Path to the virtual node.
      * @param obj   An optional object.
      * @param type  Update type.
+     * @param save  {@code true} means that the tenant configuration should
+     *              be saved or not.
      */
-    protected VNodeEvent(VTenantPath path, Object obj, UpdateType type) {
+    protected VNodeEvent(VTenantPath path, Serializable obj, UpdateType type,
+                         boolean save) {
         this.path = path;
         object = obj;
         updateType = type;
+        saveConfig = save;
     }
 
     /**
@@ -74,7 +85,7 @@ public abstract class VNodeEvent extends ClusterEvent {
      *
      * @return  An optional object in this event.
      */
-    public Object getObject() {
+    public Serializable getObject() {
         return object;
     }
 
@@ -88,6 +99,16 @@ public abstract class VNodeEvent extends ClusterEvent {
     }
 
     /**
+     * Determine whether the tenant configuration should be saved or not.
+     *
+     * @return  {@code true} is returned if the tenant configuration should be
+     *          saved. Otherwise {@code false} is returned.
+     */
+    public boolean isSaveConfig() {
+        return saveConfig;
+    }
+
+    /**
      * Invoked when a cluster event has been received.
      *
      * @param mgr    VTN Manager service.
@@ -95,7 +116,7 @@ public abstract class VNodeEvent extends ClusterEvent {
      */
     @Override
     protected void eventReceived(VTNManagerImpl mgr, boolean local) {
-        if (!local) {
+        if (!local && saveConfig) {
             // Save the tenant configuration specified by the tenant name.
             String tenantName = path.getTenantName();
             mgr.saveTenantConfig(tenantName);

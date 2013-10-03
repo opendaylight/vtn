@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;

@@ -10,6 +10,7 @@
 package org.opendaylight.vtn.manager.internal;
 
 import java.net.InetAddress;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.EnumSet;
@@ -18,6 +19,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +28,7 @@ import org.apache.felix.dm.Component;
 
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 
 import org.opendaylight.controller.clustering.services.CacheConfigException;
@@ -105,9 +108,20 @@ public class GlobalResourceManager
     private VTNThreadPool  asyncThreadPool;
 
     /**
-     * The number of remote cluster nodes.
+     * The IP address of the controller in the cluster.
      */
-    private int  remoteClusterSize;
+    private InetAddress  controllerAddress;
+
+    /**
+     * Set of IP addresses of remote cluster nodes.
+     */
+    private Set<InetAddress>  remoteClusterNodes = new HashSet<InetAddress>();
+
+    /**
+     * A list of VTN Manager services.
+     */
+    private CopyOnWriteArrayList<VTNManagerImpl>  vtnManagers =
+        new CopyOnWriteArrayList<VTNManagerImpl>();
 
     /**
      * Function called by the dependency manager when all the required
@@ -116,10 +130,7 @@ public class GlobalResourceManager
      * @param c  Dependency manager component.
      */
     void init(Component c) {
-        createCaches();
-
-        remoteClusterSize = getRawRemoteClusterSize(clusterService);
-        LOG.debug("The number of remote cluster nodes: {}", remoteClusterSize);
+        initCluster();
 
         globalTimer = new Timer("VTN Global Timer");
         asyncThreadPool =
@@ -172,28 +183,48 @@ public class GlobalResourceManager
     }
 
     /**
-     * Create global cluster caches for VTN.
+     * Initialize clustering service.
      */
-    private void createCaches() {
+    private void initCluster() {
+        // Clear remote cluster addresses.
+        remoteClusterNodes.clear();
+
         IClusterGlobalServices cluster = clusterService;
         if (cluster == null) {
             // Create dummy caches.
             vlanMaps = new ConcurrentHashMap<Short, String>();
             portMaps = new ConcurrentHashMap<PortVlan, String>();
-            return;
+
+            // Use loopback address as controller's address.
+            controllerAddress = InetAddress.getLoopbackAddress();
+        } else {
+            Set<IClusterServices.cacheMode> cmode =
+                EnumSet.of(IClusterServices.cacheMode.TRANSACTIONAL);
+            createCache(cluster, CACHE_VLANMAP, cmode);
+            createCache(cluster, CACHE_PORTMAP, cmode);
+
+            vlanMaps = (ConcurrentMap<Short, String>)
+                getCache(cluster, CACHE_VLANMAP);
+            portMaps = (ConcurrentMap<PortVlan, String>)
+                getCache(cluster, CACHE_PORTMAP);
+
+            controllerAddress = cluster.getMyAddress();
+            if (controllerAddress == null) {
+                controllerAddress = InetAddress.getLoopbackAddress();
+            }
+
+            List<InetAddress> addrs = cluster.getClusteredControllers();
+            if (addrs != null) {
+                for (InetAddress addr: addrs) {
+                    if (!addr.equals(controllerAddress)) {
+                        remoteClusterNodes.add(addr);
+                    }
+                }
+            }
+            LOG.debug("Remote controller addresses: {}", remoteClusterNodes);
         }
 
-        Set<IClusterServices.cacheMode> cmode =
-            EnumSet.of(IClusterServices.cacheMode.TRANSACTIONAL);
-        createCache(cluster, CACHE_VLANMAP, cmode);
-        createCache(cluster, CACHE_PORTMAP, cmode);
-
-        vlanMaps = (ConcurrentMap<Short, String>)
-            getCache(cluster, CACHE_VLANMAP);
-        portMaps = (ConcurrentMap<PortVlan, String>)
-            getCache(cluster, CACHE_PORTMAP);
-
-        LOG.debug("Created global VTN caches.");
+        ClusterEventId.setLocalAddress(controllerAddress);
     }
 
     /**
@@ -236,31 +267,32 @@ public class GlobalResourceManager
         return cache;
     }
 
+    // IVTNResourceManager
+
     /**
-     * Derive the number of remote cluster nodes from the cluster service.
+     * Add the VTN Manager service.
      *
-     * @param cs  Cluster global service.
-     * @return    The number of remote cluster nodes.
+     * @param mgr  VTN Manager service.
      */
-    private int getRawRemoteClusterSize(IClusterGlobalServices cs) {
-        if (cs == null) {
-            return 0;
+    @Override
+    public void addManager(VTNManagerImpl mgr) {
+        if (vtnManagers.addIfAbsent(mgr)) {
+            LOG.debug("{}: Add VTN Manager: {}", mgr.getContainerName(), mgr);
         }
-
-        List<InetAddress> controllers = cs.getClusteredControllers();
-        if (controllers == null) {
-            return 0;
-        }
-
-        int rsize = controllers.size() - 1;
-        if (rsize < 0) {
-            rsize = 0;
-        }
-
-        return rsize;
     }
 
-    // IVTNResourceManager
+    /**
+     * Remove the VTN Manager service.
+     *
+     * @param mgr  VTN Manager service.
+     */
+    @Override
+    public void removeManager(VTNManagerImpl mgr) {
+        if (vtnManagers.remove(mgr)) {
+            LOG.debug("{}: Remove VTN Manager: {}", mgr.getContainerName(),
+                      mgr);
+        }
+    }
 
     /**
      * Register VLAN ID for VLAN mapping.
@@ -371,6 +403,15 @@ public class GlobalResourceManager
         return asyncThreadPool.execute(command);
     }
 
+    /**
+     * Return the IP address of the controller in the cluster.
+     *
+     * @return  The IP address of the controller.
+     */
+    @Override
+    public InetAddress getControllerAddress() {
+        return controllerAddress;
+    }
 
     /**
      * Return the number of remote cluster nodes.
@@ -382,8 +423,10 @@ public class GlobalResourceManager
      * @return  The number of remote cluster nodes.
      */
     @Override
-    public synchronized int getRemoteClusterSize() {
-        return remoteClusterSize;
+    public int getRemoteClusterSize() {
+        synchronized (remoteClusterNodes) {
+            return remoteClusterNodes.size();
+        }
     }
 
     /**
@@ -427,14 +470,43 @@ public class GlobalResourceManager
      * coordinator change in the cluster.
      */
     @Override
-    public synchronized void coordinatorChanged() {
-        int rsize = getRawRemoteClusterSize(clusterService);
-        if (rsize != remoteClusterSize) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("The number of remote cluster nodes: {} -> {}",
-                          remoteClusterSize, rsize);
+    public void coordinatorChanged() {
+        List<InetAddress> addrs = clusterService.getClusteredControllers();
+        Set<InetAddress> newset = new HashSet<InetAddress>(addrs);
+        Set<InetAddress> added = new HashSet<InetAddress>();
+        Set<InetAddress> removed = new HashSet<InetAddress>();
+        int size;
+        synchronized (remoteClusterNodes) {
+            // Eliminate removed addresses.
+            for (Iterator<InetAddress> it = remoteClusterNodes.iterator();
+                 it.hasNext();) {
+                InetAddress addr = it.next();
+                if (!newset.contains(addr)) {
+                    removed.add(addr);
+                    it.remove();
+                }
             }
-            remoteClusterSize = rsize;
+
+            // Set remote controller's addresses.
+            for (InetAddress addr: addrs) {
+                if (!addr.equals(controllerAddress) &&
+                    remoteClusterNodes.add(addr)) {
+                    added.add(addr);
+                }
+            }
+            size = remoteClusterNodes.size();
+        }
+
+        // Invoke cluster node change event listeners.
+        if (!added.isEmpty() || !removed.isEmpty()) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Remote cluster node changed: " +
+                          "size={}, added={}, removed={}",
+                          size, added, removed);
+            }
+            for (VTNManagerImpl mgr: vtnManagers) {
+                mgr.clusterNodeChanged(added, removed);
+            }
         }
     }
 }

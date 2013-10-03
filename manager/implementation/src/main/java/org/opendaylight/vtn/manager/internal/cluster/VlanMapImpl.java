@@ -18,8 +18,10 @@ import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.PacketContext;
@@ -364,18 +366,25 @@ public final class VlanMapImpl implements VBridgeNode, Serializable {
     /**
      * Destroy the VLAN mapping.
      *
-     * @param mgr            VTN manager service.
-     * @param bridgeDestroy  {@code true} is specified if the parent bridge is
-     *                       being destroyed.
+     * @param mgr     VTN manager service.
+     * @param bpath   Path to the parent bridge.
+     * @param vlmap   Information about the VLAN mapping.
+     * @param retain  {@code true} means that the parent bridge will be
+     *                retained. {@code false} means that the parent bridge
+     *                is being destroyed.
      */
-    void destroy(VTNManagerImpl mgr, boolean bridgeDestroy) {
+    void destroy(VTNManagerImpl mgr, VBridgePath bpath, VlanMap vlmap,
+                 boolean retain) {
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         db.remove(mapPath);
 
-        if (!bridgeDestroy) {
+        if (retain) {
             // Purge all VTN flows related to this mapping.
             VTNThreadData.removeFlows(mgr, mapPath);
         }
+
+        // Generate a VLAN mapping event.
+        VlanMapEvent.removed(mgr, bpath, vlmap, retain);
     }
 
     /**

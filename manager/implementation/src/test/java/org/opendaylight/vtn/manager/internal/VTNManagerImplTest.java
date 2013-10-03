@@ -405,10 +405,11 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
        PacketContext pctx = createARPPacketContext(src, dst, sender, target,
                (short)-1, connectors.get(0), ARP.REQUEST);
 
-       MacAddressTable table = new MacAddressTable(mgr, "table", 600);
-       table.add(mgr, pctx);
+       VBridgePath path = new VBridgePath("tenant1", "bridge1");
+       MacAddressTable table = new MacAddressTable(mgr, path, 600);
+       table.add(pctx);
 
-       sleep(10L);
+       flushTasks();
        assertEquals(1, hl1.getHostListenerCalled());
        assertEquals(1, hl2.getHostListenerCalled());
 
@@ -692,7 +693,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         for (Boolean bool: createBooleans(false)) {
             boolean curr = bool.booleanValue();
             mgr.notifyChange(curr);
-            sleep(1L);
+            flushTasks();
 
             stub1.checkCalledInfo(1, bool);
             stub2.checkCalledInfo(1, bool);
@@ -2550,8 +2551,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             PacketContext pctx2 = createARPPacketContext(src2, dst2, sender2, target2,
                                     (vlan2 > 0) ? vlan2 : -1, connectors.get(0), ARP.REQUEST);
 
-            tbl.add(mgr, pctx);
-            tbl2.add(mgr, pctx2);
+            tbl.add(pctx);
+            tbl2.add(pctx2);
 
             MacAddressEntry entry = null;
             try {
@@ -2604,7 +2605,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
             PacketContext pctx = createARPPacketContext(src, dst, sender, target, (short)-1, connectors.get(0), ARP.REQUEST);
 
-            tbl.add(mgr, pctx);
+            tbl.add(pctx);
         }
 
         List<MacAddressEntry> list = null;
@@ -2692,7 +2693,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             unexpected(e);
         }
 
-        tbl.add(mgr, pctx);
+        tbl.add(pctx);
 
         VBridgePath[] badplist = new VBridgePath[] {null,
                 new VBridgePath(tname, null),
@@ -2836,7 +2837,13 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         configFile.delete();
         configFile100.delete();
 
-        ClusterEventId evid = new ClusterEventId(0, 0);
+        InetAddress ipaddr = null;
+        try {
+            ipaddr = InetAddress.getByName("0.0.0.0");
+        } catch (Exception e) {
+            unexpected(e);
+        }
+        ClusterEventId evid = new ClusterEventId(ipaddr, 0);
         VTenantPath tpath = new VTenantPath("tenant");
         VTenantConfig tconf = new VTenantConfig(null);
         VTenant vtenant = new VTenant("tenant", tconf);
@@ -3052,7 +3059,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
     private void flushTasks() {
         NopTask task = new NopTask();
         vtnMgr.postTask(task);
-        assertTrue(task.await(3000, TimeUnit.SECONDS));
+        assertTrue(task.await(10, TimeUnit.SECONDS));
     }
 
     /**

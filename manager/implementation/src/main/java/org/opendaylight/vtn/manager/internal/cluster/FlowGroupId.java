@@ -9,6 +9,8 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
+import java.net.InetAddress;
+
 /**
  * {@code FlowGroupId} describes an identifier of flow group created by the
  * VTN Manager.
@@ -44,8 +46,8 @@ public class FlowGroupId extends ClusterEventId {
      * Construct a new flow group ID.
      *
      * <p>
-     *   This constructor uses the local cluster node ID as the node ID, and
-     *   assigns a new event ID.
+     *   This constructor uses the IP address of this controller, and assigns
+     *   a new event ID.
      * </p>
      *
      * @param tname  The name of the virtual tenant to which the flow group
@@ -59,14 +61,14 @@ public class FlowGroupId extends ClusterEventId {
     /**
      * Construct a new flow group ID.
      *
-     * @param node   The node ID.
-     * @param event  The event ID.
+     * @param addr   IP address of the controller.
+     * @param id     The event ID.
      * @param tname  The name of the virtual tenant to which the flow group
      *               belongs. Specifying {@code null} results in undefined
      *               behavior.
      */
-    public FlowGroupId(long node, long event, String tname) {
-        super(node, event);
+    public FlowGroupId(InetAddress addr, long id, String tname) {
+        super(addr, id);
         tenantName = tname;
     }
 

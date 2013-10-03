@@ -148,6 +148,7 @@ public class Activator extends ComponentActivatorAbstractBase {
                 new Hashtable<String, Object>();
             Set<String> propSet = new HashSet<String>();
             propSet.add(VTNManagerImpl.CACHE_EVENT);
+            propSet.add(VTNManagerImpl.CACHE_MAC);
             propSet.add(VTNManagerImpl.CACHE_FLOWS);
             props.put("cachenames", propSet);
             props.put("salListenerName", "vtnmanager");

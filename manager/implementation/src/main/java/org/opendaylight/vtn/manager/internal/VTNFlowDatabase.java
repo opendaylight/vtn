@@ -26,9 +26,7 @@ import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 
-import org.opendaylight.controller.connectionmanager.IConnectionManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
-import org.opendaylight.controller.sal.connection.ConnectionLocality;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 
@@ -300,31 +298,11 @@ public class VTNFlowDatabase {
     }
 
     /**
-     * Invoked when a new node has been detected.
-     *
-     * <p>
-     *   This method removes all VTN flows related to the specified node
-     *   because a newly detected node should not have any flow entry.
-     * </p>
-     *
-     * @param mgr   VTN Manager service.
-     * @param node  A new node.
-     */
-    public synchronized void nodeAdded(VTNManagerImpl mgr, Node node) {
-        IConnectionManager cnm = mgr.getConnectionManager();
-        ConnectionLocality cl = cnm.getLocalityStatus(node);
-        if (cl != ConnectionLocality.NOT_LOCAL) {
-            removeFlows(mgr, node);
-        }
-    }
-
-    /**
      * Remove all VTN flows related to the given node.
      *
      * <p>
-     *   This method assumes that flow entries in the given node are no longer
-     *   available. So this method never try to uninstall flow entries from
-     *   the given node.
+     *   This method assumes that the given node is no longer available.
+     *   So this method never tries to remove flow entries from the given node.
      * </p>
      *
      * @param mgr   VTN Manager service.
@@ -335,18 +313,34 @@ public class VTNFlowDatabase {
      */
     public synchronized FlowRemoveTask removeFlows(VTNManagerImpl mgr,
                                                    Node node) {
+        return removeFlows(mgr, node, false);
+    }
+
+    /**
+     * Remove all VTN flows related to the given node.
+     *
+     * @param mgr        VTN Manager service.
+     * @param node       A node associated with a switch.
+     * @param available  Specifying {@code true} means that the given node is
+     *                   still available.
+     *                   Otherwise this method assumes that the given node is
+     *                   no longer available. In this case this method never
+     *                   tries to remove flow entries from the given node.
+     * @return  A {@link FlowRemoveTask} object that will execute the actual
+     *          work is returned. {@code null} is returned if there is no flow
+     *          entry to be removed.
+     */
+    public synchronized FlowRemoveTask removeFlows(VTNManagerImpl mgr,
+                                                   Node node,
+                                                   boolean available) {
         Set<VTNFlow> vflows = nodeFlows.remove(node);
         if (vflows == null) {
             return null;
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("{}:{}: Remove VTN flows related to obsolete node {}",
-                      mgr.getContainerName(), tenantName, node);
-        }
-
         // Eliminate flow entries in the specified node.
-        FlowCollector collector = new ExcludeNodeCollector(node);
+        FlowCollector collector = (available)
+            ? new FlowCollector() : new ExcludeNodeCollector(node);
         for (VTNFlow vflow: vflows) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("{}:{}: Remove VTN flow related to node {}: " +
@@ -592,33 +586,6 @@ public class VTNFlowDatabase {
 
         // Uninstall flow entries in background.
         return collector.uninstall(mgr);
-    }
-
-    /**
-     * Uninstall all flows related to the local node.
-     *
-     * @param mgr  VTN Manager service.
-     */
-    public synchronized void shutdown(VTNManagerImpl mgr) {
-        FlowCollector collector = new FlowCollector();
-        for (Iterator<VTNFlow> it = vtnFlows.values().iterator();
-             it.hasNext();) {
-            VTNFlow vflow = it.next();
-            if (vflow.getLocality(mgr) != ConnectionLocality.NOT_LOCAL) {
-                // Remove this VTN flow from indices.
-                FlowGroupId gid = vflow.getGroupId();
-                groupFlows.remove(gid);
-                removeNodeIndex(vflow);
-                removePortIndex(vflow);
-                it.remove();
-
-                // Collect flow entries to be uninstalled.
-                collector.collect(mgr, vflow);
-            }
-        }
-
-        // Uninstall flow entries in background.
-        collector.uninstall(mgr);
     }
 
     /**

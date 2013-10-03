@@ -39,7 +39,7 @@ public class VTenantEvent extends VNodeEvent {
      * @param type     Update type.
      */
     public VTenantEvent(VTenantPath path, VTenant vtenant, UpdateType type) {
-        super(path, vtenant, type);
+        super(path, vtenant, type, true);
     }
 
     /**
