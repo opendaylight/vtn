@@ -20,6 +20,11 @@ import org.opendaylight.controller.sal.core.NodeConnector;
  * interface.
  *
  * <p>
+ *   Note that this class is not synchronized.
+ *   If multiple threads access a {@code VBridgeIfState} object concurrently,
+ *   it must be synchronized externally.
+ * </p>
+ * <p>
  *   Although this class is public to other packages, this class does not
  *   provide any API. Applications other than VTN Manager must not use this
  *   class.

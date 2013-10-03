@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.ARP;
@@ -75,6 +76,23 @@ public abstract class TestBase extends Assert {
             i = new Integer(i.intValue());
         }
         return i;
+    }
+
+    /**
+     * Create a copy of the specified {@link Node}.
+     *
+     * @param node  A {@link Node} object to be copied.
+     * @return      A copied {@link Node} object.
+     */
+    protected static Node copy(Node node) {
+        if (node != null) {
+            try {
+                node = new Node(node);
+            } catch (Exception e) {
+                unexpected(e);
+            }
+        }
+        return node;
     }
 
     /**
@@ -353,6 +371,32 @@ public abstract class TestBase extends Assert {
                 list.add(nc);
             } catch (Exception e) {
                 unexpected(e);
+            }
+        }
+
+        return list;
+    }
+
+    /**
+     * Create a list of unique edges.
+     *
+     * @param num  The number of edges to be created.
+     * @return  A list of unique edges.
+     */
+    protected static List<Edge> createEdges(int num) {
+        List<Edge> list = new ArrayList<Edge>();
+        NodeConnector src = null;
+        for (NodeConnector nc: createNodeConnectors(num << 1, false)) {
+            if (src == null) {
+                src = nc;
+            } else {
+                try {
+                    Edge edge = new Edge(src, nc);
+                    list.add(edge);
+                    src = null;
+                } catch (Exception e) {
+                    unexpected(e);
+                }
             }
         }
 
@@ -805,8 +849,9 @@ public abstract class TestBase extends Assert {
      * Ensure that the given object is serializable.
      *
      * @param o  An object to be tested.
+     * @return  A deserialized object is returned.
      */
-    protected static void serializeTest(Object o) {
+    protected static Object serializeTest(Object o) {
         // Serialize the given object.
         byte[] bytes = null;
         try {
@@ -834,6 +879,8 @@ public abstract class TestBase extends Assert {
 
         assertNotSame(o, newobj);
         assertEquals(o, newobj);
+
+        return newobj;
     }
 
     /**

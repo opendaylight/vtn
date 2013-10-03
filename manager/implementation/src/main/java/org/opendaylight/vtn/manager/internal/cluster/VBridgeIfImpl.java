@@ -1069,6 +1069,10 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
         if (anotherIf == null) {
             ist.setMappedPort(nc);
             db.put(ifPath, ist);
+
+            // Clear dirty flag.
+            ist.isDirty();
+
             if (notify) {
                 PortMap pmap = new PortMap(portMapConfig, nc);
                 mgr.enqueueEvent(ifPath, pmap, UpdateType.CHANGED);
@@ -1106,6 +1110,10 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
 
         ist.setMappedPort(null);
         db.put(ifPath, ist);
+
+        // Clear dirty flag.
+        ist.isDirty();
+
         if (path != null) {
             PortMap pmap = new PortMap(portMapConfig, null);
             mgr.enqueueEvent(path, pmap, UpdateType.CHANGED);

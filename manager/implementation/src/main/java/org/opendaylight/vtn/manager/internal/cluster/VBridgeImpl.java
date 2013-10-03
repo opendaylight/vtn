@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Set;
 import java.util.HashSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
@@ -731,8 +730,10 @@ public final class VBridgeImpl implements Serializable {
             }
 
             VBridgeState bst = getBridgeState(db);
-            bst.setState(state);
-            db.put(bridgePath, bst);
+            state = bst.setState(state);
+            if (bst.isDirty()) {
+                db.put(bridgePath, bst);
+            }
             if (LOG.isDebugEnabled()) {
                 LOG.debug("{}:{}: Resumed bridge: state={}",
                           containerName, bridgePath, state);
@@ -807,7 +808,6 @@ public final class VBridgeImpl implements Serializable {
                 }
                 state = s;
             }
-
             setState(mgr, state);
 
             if (doflush) {
@@ -1073,37 +1073,25 @@ public final class VBridgeImpl implements Serializable {
         try {
             ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
             VBridgeState bst = getBridgeState(db);
-            Set<ObjectPair<Node, Node>> faulted = bst.getFaultedPaths();
-            if (faulted.isEmpty()) {
+            if (bst.getFaultedPathSize() == 0) {
                 return;
             }
 
-            IRouting routing = mgr.getRouting();
-            boolean changed = false;
-            for (Iterator<ObjectPair<Node, Node>> it = faulted.iterator();
-                 it.hasNext();) {
-                ObjectPair<Node, Node> npath = it.next();
-                Node snode = npath.getLeft();
-                Node dnode = npath.getRight();
-                Path path = routing.getRoute(snode, dnode);
-                if (path != null) {
+            // Remove resolved node paths from the set of faulted node paths.
+            List<ObjectPair<Node, Node>> resolved =
+                bst.removeResolvedPath(mgr.getRouting());
+            if (LOG.isInfoEnabled()) {
+                for (ObjectPair<Node, Node> npath: resolved) {
                     LOG.info("{}:{}: Path fault resolved: {} -> {}",
-                             getContainerName(), bridgePath, snode, dnode);
-                    it.remove();
-                    changed = true;
+                             getContainerName(), bridgePath, npath.getLeft(),
+                             npath.getRight());
                 }
             }
 
-            if (changed) {
-                db.put(bridgePath, bst);
-                if (faulted.isEmpty()) {
-                    updateState(mgr, true);
-                } else {
-                    VBridge vbridge =
-                        new VBridge(getName(), VNodeState.DOWN, faulted.size(),
-                                    getVBridgeConfig());
-                    mgr.enqueueEvent(bridgePath, vbridge, UpdateType.CHANGED);
-                }
+            if (bst.getFaultedPathSize() == 0) {
+                updateState(mgr, db, bst);
+            } else {
+                setState(mgr, db, bst, VNodeState.DOWN);
             }
         } finally {
             wrlock.unlock();
@@ -1425,7 +1413,9 @@ public final class VBridgeImpl implements Serializable {
      * @param state  New bridge state.
      */
     private void setState(VTNManagerImpl mgr, VNodeState state) {
-        setState(mgr, state, false);
+        ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
+        VBridgeState bst = getBridgeState(db);
+        setState(mgr, db, bst, state);
     }
 
     /**
@@ -1436,31 +1426,20 @@ public final class VBridgeImpl implements Serializable {
      *   lock.
      * </p>
      *
-     * @param mgr      VTN Manager service.
-     * @param state    New bridge state.
-     * @param changed  {@code true} means a bridge changed notification is
-     *                 required.
+     * @param mgr    VTN Manager service.
+     * @param db     Virtual node state DB.
+     * @param bst    Runtime state of the bridge.
+     * @param state  New bridge state.
      */
-    private void setState(VTNManagerImpl mgr, VNodeState state,
-                          boolean changed) {
-        ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
-        VBridgeState bst = getBridgeState(db);
-        int faults = bst.getFaultedPaths().size();
-        VNodeState st;
-        if (faults != 0) {
-            st = VNodeState.DOWN;
-        } else {
-            st = state;
-        }
-
-        boolean chg = changed;
-        if (bst.setState(st)) {
+    private void setState(VTNManagerImpl mgr,
+                          ConcurrentMap<VTenantPath, Object> db,
+                          VBridgeState bst, VNodeState state) {
+        VNodeState st = bst.setState(state);
+        if (bst.isDirty()) {
             db.put(bridgePath, bst);
-            chg = true;
-        }
-        if (chg) {
-            VBridge vbridge =
-                new VBridge(getName(), st, faults, getVBridgeConfig());
+            int faulted = bst.getFaultedPathSize();
+            VBridge vbridge = new VBridge(getName(), st, faulted,
+                                          getVBridgeConfig());
             mgr.enqueueEvent(bridgePath, vbridge, UpdateType.CHANGED);
         }
     }
@@ -1473,23 +1452,15 @@ public final class VBridgeImpl implements Serializable {
      *   lock.
      * </p>
      *
-     * @param mgr   VTN Manager service.
-     * @param path  A node path.
+     * @param mgr    VTN Manager service.
+     * @param snode  The source node.
+     * @param dnode  The destination node.
      */
-    private void addFaultedPath(VTNManagerImpl mgr,
-                                ObjectPair<Node, Node> path) {
+    private void addFaultedPath(VTNManagerImpl mgr, Node snode, Node dnode) {
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         VBridgeState bst = getBridgeState(db);
-        Set<ObjectPair<Node, Node>> faulted = bst.getFaultedPaths();
-        boolean added = faulted.add(path);
-        boolean changed = bst.setState(VNodeState.DOWN);
-        if (added || changed) {
-            db.put(bridgePath, bst);
-            VBridge vbridge =
-                new VBridge(getName(), VNodeState.DOWN, faulted.size(),
-                            getVBridgeConfig());
-            mgr.enqueueEvent(bridgePath, vbridge, UpdateType.CHANGED);
-        }
+        bst.addFaultedPath(snode, dnode);
+        setState(mgr, db, bst, VNodeState.DOWN);
     }
 
     /**
@@ -1504,7 +1475,9 @@ public final class VBridgeImpl implements Serializable {
      * @param mgr   VTN Manager service.
      */
     private void updateState(VTNManagerImpl mgr) {
-        updateState(mgr, false);
+        ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
+        VBridgeState bst = getBridgeState(db);
+        updateState(mgr, db, bst);
     }
 
     /**
@@ -1516,12 +1489,13 @@ public final class VBridgeImpl implements Serializable {
      *   lock.
      * </p>
      *
-     * @param mgr      VTN Manager service.
-     * @param changed  {@code true} means a bridge changed notification is
-     *                 required.
+     * @param mgr   VTN Manager service.
+     * @param db  Runtime state DB.
+     * @param bst    Runtime state of the bridge.
      */
-    private void updateState(VTNManagerImpl mgr, boolean changed) {
-        ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
+    private void updateState(VTNManagerImpl mgr,
+                             ConcurrentMap<VTenantPath, Object> db,
+                             VBridgeState bst) {
         VNodeState state = VNodeState.UNKNOWN;
 
         // Scan virtual interfaces.
@@ -1529,7 +1503,7 @@ public final class VBridgeImpl implements Serializable {
             if (vif.isEnabled()) {
                 state = vif.getBridgeState(db, state);
                 if (state == VNodeState.DOWN) {
-                    setState(mgr, state, changed);
+                    setState(mgr, db, bst, state);
                     return;
                 }
             }
@@ -1543,7 +1517,7 @@ public final class VBridgeImpl implements Serializable {
             }
         }
 
-        setState(mgr, state, changed);
+        setState(mgr, db, bst, state);
     }
 
     /**
@@ -1557,8 +1531,8 @@ public final class VBridgeImpl implements Serializable {
     private VBridge getVBridge(VTNManagerImpl mgr, String name,
                                VBridgeConfig bconf) {
         VBridgeState bst = getBridgeState(mgr);
-        Set<ObjectPair<Node, Node>> faulted = bst.getFaultedPaths();
-        return new VBridge(name, bst.getState(), faulted.size(), bconf);
+        int faulted = bst.getFaultedPathSize();
+        return new VBridge(name, bst.getState(), faulted, bconf);
     }
 
     /**
@@ -1646,9 +1620,7 @@ public final class VBridgeImpl implements Serializable {
             if (path == null) {
                 LOG.error("{}:{}: Path fault: {} -> {}",
                           getContainerName(), bridgePath, snode, dnode);
-                ObjectPair<Node, Node> npath =
-                    new ObjectPair<Node, Node>(snode, dnode);
-                addFaultedPath(mgr, npath);
+                addFaultedPath(mgr, snode, dnode);
                 return;
             }
         } else {
