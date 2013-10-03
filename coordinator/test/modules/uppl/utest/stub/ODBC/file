@@ -1,0 +1,73 @@
+g++ -g  -I../stub/ODBC/include -I../stub/ODBC -I../../../../../../modules/ -I../../../../../../modules/../core/libs/libpfc_ipc -I../../../../../../modules/../../objs/core_include -I../../../../../../modules/../../objs/core/include -I../../../../../../modules/../../objs/include -I../../../../../../modules/../core/include -I../../../../../../modules/../include/ -I../../../../../../modules/modules  -c odbcm_mgr.cc -o ../stub_objs/odbcm_mgr.o
+In file included from include/odbcm_mgr.hh:8,
+                 from odbcm_mgr.cc:2:
+include/odbcm_common.hh:33:34: error: physical_common_def.hh: No such file or directory
+In file included from include/odbcm_mgr.hh:8,
+                 from odbcm_mgr.cc:2:
+include/odbcm_common.hh:316: error: ‘AttributeDataType’ does not name a type
+In file included from odbcm_mgr.cc:2:
+include/odbcm_mgr.hh:55: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:57: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:60: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:76: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:87: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:101: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:111: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:121: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:131: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:137: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:144: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:150: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:157: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:169: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:180: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:184: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:188: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:190: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:193: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:201: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:213: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:215: error: ‘ODBCM_RC_STATUS’ has not been declared
+include/odbcm_mgr.hh:245: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:248: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:250: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:252: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:254: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:256: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:260: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:265: error: ‘ODBCM_RC_STATUS’ does not name a type
+include/odbcm_mgr.hh:266: error: ‘ODBCM_RC_STATUS’ was not declared in this scope
+include/odbcm_mgr.hh:266: error: template argument 2 is invalid
+include/odbcm_mgr.hh:266: error: template argument 4 is invalid
+include/odbcm_mgr.hh: In static member function ‘static void unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::Method, int)’:
+include/odbcm_mgr.hh:216: error: request for member ‘insert’ in ‘unc::uppl::ODBCManager::method_resultcode_map’, which is of non-class type ‘int’
+include/odbcm_mgr.hh: In static member function ‘static void unc::uppl::ODBCManager::clearStubData()’:
+include/odbcm_mgr.hh:224: error: request for member ‘clear’ in ‘unc::uppl::ODBCManager::method_resultcode_map’, which is of non-class type ‘int’
+odbcm_mgr.cc: At global scope:
+odbcm_mgr.cc:6: error: ‘ODBCM_RC_STATUS’ was not declared in this scope
+odbcm_mgr.cc:6: error: template argument 2 is invalid
+odbcm_mgr.cc:6: error: template argument 4 is invalid
+odbcm_mgr.cc:6: error: invalid type in declaration before ‘;’ token
+odbcm_mgr.cc:16: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:25: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:29: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:46: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:51: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:84: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:92: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:100: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:109: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:117: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:125: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:135: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:142: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:150: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:159: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:172: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:185: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:193: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:199: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:205: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:210: error: ‘ODBCM_RC_STATUS’ does not name a type
+odbcm_mgr.cc:214: error: ‘ODBCM_RC_STATUS’ does not name a type
+make: *** [../stub_objs/odbcm_mgr.o] Error 1
