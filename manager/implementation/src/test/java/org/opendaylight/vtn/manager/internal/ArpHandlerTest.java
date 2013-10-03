@@ -25,6 +25,7 @@ import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.Ethernet;
+import org.opendaylight.controller.sal.packet.LLDP;
 import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.packet.PacketResult;
 import org.opendaylight.controller.sal.packet.RawPacket;
@@ -33,17 +34,38 @@ import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
+import org.opendaylight.controller.switchmanager.Subnet;
 import org.opendaylight.controller.switchmanager.SubnetConfig;
 import org.opendaylight.controller.topologymanager.ITopologyManager;
 import org.opendaylight.vtn.manager.VBridgePath;
 
-
+/**
+ * JUnit test for {@link ArpHandler}
+ */
 public class ArpHandlerTest extends VTNManagerImplTestCommon {
 
-    private byte[] defaultIp = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
+    /**
+     * target IP address used test.
+     */
+    private byte[] testTgtIp = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
+
+    /**
+     * gateway IP address.
+     */
     private byte[] gwIp = new byte[] {(byte)192, (byte)168, (byte)0, (byte)254};
+
+    /**
+     * target host IP address.
+     * TestStub maintains a HostNodeConnector information of this IP address Host.
+     */
     private byte[] hostIp = new byte[] {(byte)192, (byte)168, (byte)0, (byte)251};
-    private byte[] hostmac = new byte [] { 0x00, 0x00, 0x00, 0x11, 0x22, 0x33};
+
+    /**
+     * target host  MAC address.
+     * When query HostNodeConnector of hostIp, TestStub return this MAC address.
+     */
+    private byte[] hostMac = new byte [] { 0x00, 0x00, 0x00, 0x11, 0x22, 0x33};
+
 
     @BeforeClass
     public static void beforeClass() {
@@ -57,7 +79,7 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
     public void testReceive() {
         VTNManagerImpl mgr = vtnMgr;
         TestStub stub = stubObj;
-        ISwitchManager swmgr = mgr.getSwitchManager();
+        ISwitchManager swMgr = mgr.getSwitchManager();
         ITopologyManager topoMgr = mgr.getTopologyManager();
         byte [] src = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
                                   (byte)0x00, (byte)0x00, (byte)0x11};
@@ -69,10 +91,10 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
         byte [] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
         byte [] targetht = new byte[] {(byte)192, (byte)168, (byte)0, (byte)251};
 
-        Set<Node> existNodes = swmgr.getNodes();
+        Set<Node> existNodes = swMgr.getNodes();
         Set<NodeConnector> existConnectors = new HashSet<NodeConnector>();
         for (Node node: existNodes) {
-            existConnectors.addAll(swmgr.getNodeConnectors(node));
+            existConnectors.addAll(swMgr.getNodeConnectors(node));
         }
 
         Set<Node> testNodes = new HashSet<Node>(existNodes);
@@ -96,8 +118,9 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
                 }
             }
 
+            swMgr.removeSubnet("test");
             SubnetConfig sconf = new SubnetConfig("test", "192.168.0.254/24", ncstr);
-            swmgr.addSubnet(sconf);
+            swMgr.addSubnet(sconf);
 
             noMappedThis.removeAll(mappedThis);
             numMapped = mappedThis.size();
@@ -109,15 +132,27 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
             testReceiveDataPacketBCLoop(mgr, null, (short)0,
                     mappedThis, noMappedThis, stub);
 
+            // after 2 seconds, ARP requestor is expired.
+            sleep(3000);
             testReceiveDataPacketARPReplyReceive(mgr, null, (short)0,
+                    mappedThis, noMappedThis, stub, true);
+
+            // receive ARP request and ARP reply
+            testReceiveDataPacketBCLoop(mgr, null, (short)0,
                     mappedThis, noMappedThis, stub);
 
+            testReceiveDataPacketARPReplyReceive(mgr, null, (short)0,
+                    mappedThis, noMappedThis, stub, false);
+
+            // receive a packet send to alerady learned.
             testReceiveDataPacketBCLoopMatch(mgr, null, (short)0,
                     mappedThis, noMappedThis, stub);
 
+            // receive a packet send to controller.
             testReceiveDataPacketBCLoopToCont(mgr, null, (short)0,
                     mappedThis, noMappedThis, stub);
 
+            // receive a packet have unicast dst.
             testReceiveDataPacketUCLoop(mgr, null, (short)0,
                     mappedThis, noMappedThis, stub);
 
@@ -125,14 +160,14 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
             if (node != null && noMappedThis.size() != 0) {
                 NodeConnector nc = noMappedThis.iterator().next();
                 RawPacket inPkt = createARPRawPacket(src, dst, sender, target,
-                        (short)0, nc, ARP.REPLY);
+                        (short)-1, nc, ARP.REPLY);
                 result = mgr.receiveDataPacket(inPkt);
                 List<RawPacket> transDatas = stub.getTransmittedDataPacket();
                 assertEquals(PacketResult.IGNORED, result);
                 assertEquals(0, transDatas.size());
             }
 
-            swmgr.removeSubnet(sconf);
+            swMgr.removeSubnet(sconf);
         }
 
         // invalid data received case
@@ -148,19 +183,21 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
 
         // payload is !ARP && !IPv4
         NodeConnector nc = existConnectors.iterator().next();
-        RawPacket inPkt = createARPRawPacket(src, dst, sender, target, (short)0,
+        RawPacket inPkt = createARPRawPacket(src, dst, sender, target, (short)-1,
                           nc, ARP.REQUEST);
         Ethernet pkt= (Ethernet)stub.decodeDataPacket(inPkt);
-        pkt.setPayload(null);
-        pkt.setEtherType((short)0);
+        LLDP lldp = new LLDP();
+        pkt.setPayload(lldp);
+        pkt.setEtherType(EtherTypes.LLDP.shortValue());
         inPkt = stub.encodeDataPacket(pkt);
+        inPkt.setIncomingNodeConnector(nc);
         PacketResult result = mgr.receiveDataPacket(inPkt);
         List<RawPacket> transDatas = stub.getTransmittedDataPacket();
         assertEquals(PacketResult.IGNORED, result);
         assertEquals(0, transDatas.size());
 
         // !ARP.REQUEST && !ARP.REPLY
-        inPkt = createARPRawPacket(src, dst, sender, target, (short)0,
+        inPkt = createARPRawPacket(src, dst, sender, target, (short)-1,
                                             nc, ARP.PROTO_TYPE_IP);
         result = mgr.receiveDataPacket(inPkt);
         transDatas = stub.getTransmittedDataPacket();
@@ -168,14 +205,14 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
         assertEquals(0, transDatas.size());
 
         // subnet == null
-        inPkt = createARPRawPacket(src, dst, sender, target, (short)0,
+        inPkt = createARPRawPacket(src, dst, sender, target, (short)-1,
                                     nc, ARP.REPLY);
         result = mgr.receiveDataPacket(inPkt);
         transDatas = stub.getTransmittedDataPacket();
         assertEquals(PacketResult.IGNORED, result);
         assertEquals(0, transDatas.size());
 
-        inPkt = createIPv4RawPacket(src, dst, sender, target, (short)0,
+        inPkt = createIPv4RawPacket(src, dst, sender, target, (short)-1,
                 nc);
         result = mgr.receiveDataPacket(inPkt);
         transDatas = stub.getTransmittedDataPacket();
@@ -183,10 +220,29 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
         assertEquals(0, transDatas.size());
 
         SubnetConfig sconf = new SubnetConfig("test", "192.168.0.254/24", null);
-        swmgr.addSubnet(sconf);
+        swMgr.addSubnet(sconf);
 
-        // src is not unicast packet
-        inPkt = createARPRawPacket(srcmc, dst, sender, target, (short)0,
+        // in case vlan don't match
+        InetAddress ia = null;
+        try {
+            ia = InetAddress.getByAddress(new byte[] {(byte)192, (byte)168, (byte)0, (byte)254});
+        } catch (UnknownHostException e) {
+            unexpected(e);
+        }
+        Subnet sub = swMgr.getSubnetByNetworkAddress(ia);
+        sub.setVlan((short) 2);
+
+        inPkt = createARPRawPacket(src, dst, sender, target, (short)-1,
+                nc, ARP.REPLY);
+        result = mgr.receiveDataPacket(inPkt);
+        transDatas = stub.getTransmittedDataPacket();
+        assertEquals(PacketResult.IGNORED, result);
+        assertEquals(0, transDatas.size());
+
+        sub.setVlan((short) 0);
+
+        // src is not a unicast packet
+        inPkt = createARPRawPacket(srcmc, dst, sender, target, (short)-1,
                 nc, ARP.REQUEST);
         result = mgr.receiveDataPacket(inPkt);
         transDatas = stub.getTransmittedDataPacket();
@@ -194,7 +250,7 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
         assertEquals(mappedThis.size(), transDatas.size());
 
         // sender == target
-        inPkt = createARPRawPacket(srcmc, dst, sender, sender, (short)0,
+        inPkt = createARPRawPacket(srcmc, dst, sender, sender, (short)-1,
                 nc, ARP.REQUEST);
         result = mgr.receiveDataPacket(inPkt);
         transDatas = stub.getTransmittedDataPacket();
@@ -203,15 +259,15 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
 
         // target IP == controller and dst == unicast
         inPkt = createARPRawPacket(src, src,
-                sender, gwIp, (short)0, nc, ARP.REQUEST);
+                sender, gwIp, (short)-1, nc, ARP.REQUEST);
         result = mgr.receiveDataPacket(inPkt);
         transDatas = stub.getTransmittedDataPacket();
         assertEquals(PacketResult.KEEP_PROCESSING, result);
         assertEquals(mappedThis.size(), transDatas.size());
 
         // !isBroadCast(dst) && host.dladdr != dst
-        inPkt = createARPRawPacket(src, swmgr.getControllerMAC(),
-                sender, gwIp, (short)0, nc, ARP.REQUEST);
+        inPkt = createARPRawPacket(src, swMgr.getControllerMAC(),
+                sender, gwIp, (short)-1, nc, ARP.REQUEST);
         result = mgr.receiveDataPacket(inPkt);
         transDatas = stub.getTransmittedDataPacket();
         assertEquals(PacketResult.KEEP_PROCESSING, result);
@@ -219,7 +275,7 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
 
         // host found but dst is not match
         inPkt = createARPRawPacket(src, src,
-                sender, targetht, (short)0, nc, ARP.REQUEST);
+                sender, hostIp, (short)-1, nc, ARP.REQUEST);
         result = mgr.receiveDataPacket(inPkt);
         transDatas = stub.getTransmittedDataPacket();
         assertEquals(PacketResult.IGNORED, result);
@@ -227,13 +283,12 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
 
         // host found and dst is not BC
         // host found but dst is not match
-        inPkt = createARPRawPacket(src, new byte [] { 0x00, 0x00, 0x00, 0x11, 0x22, 0x33},
-                sender, targetht, (short)0, nc, ARP.REQUEST);
+        inPkt = createARPRawPacket(src, hostMac,
+                sender, hostIp, (short)-1, nc, ARP.REQUEST);
         result = mgr.receiveDataPacket(inPkt);
         transDatas = stub.getTransmittedDataPacket();
         assertEquals(PacketResult.KEEP_PROCESSING, result);
         assertEquals(1, transDatas.size());
-
     }
 
     /**
@@ -243,13 +298,13 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
     public void testFindProbe() {
         VTNManagerImpl mgr = vtnMgr;
         TestStub stub = stubObj;
-        ISwitchManager swmgr = mgr.getSwitchManager();
+        ISwitchManager swMgr = mgr.getSwitchManager();
         ITopologyManager topoMgr = mgr.getTopologyManager();
 
-        Set<Node> existNodes = swmgr.getNodes();
+        Set<Node> existNodes = swMgr.getNodes();
         Set<NodeConnector> existConnectors = new HashSet<NodeConnector>();
         for (Node node: existNodes) {
-            existConnectors.addAll(swmgr.getNodeConnectors(node));
+            existConnectors.addAll(swMgr.getNodeConnectors(node));
         }
 
         Set<Node> testNodes = new HashSet<Node>(existNodes);
@@ -260,7 +315,7 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
             ia6 = InetAddress.getByAddress(new byte[]{
                     (byte)0x20, (byte)0x01, (byte)0x04, (byte)0x20,
                     (byte)0x02, (byte)0x81, (byte)0x10, (byte)0x04,
-                    (byte)0x0e1, (byte)0x23, (byte)0xe6, (byte)0x88,
+                    (byte)0xe1, (byte)0x23, (byte)0xe6, (byte)0x88,
                     (byte)0xd6, (byte)0x55, (byte)0xa1, (byte)0xb0});
         } catch (UnknownHostException e) {
             unexpected(e);
@@ -292,7 +347,7 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
                 }
             }
             SubnetConfig sconf = new SubnetConfig("test", "192.168.0.254/24", ncstr);
-            swmgr.addSubnet(sconf);
+            swMgr.addSubnet(sconf);
 
             noMappedThis.removeAll(mappedThis);
             numMapped = mappedThis.size();
@@ -312,10 +367,10 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
                 Ethernet eth = (Ethernet)pkt;
 
                 checkOutEthernetPacket("", eth, EtherTypes.ARP,
-                    swmgr.getControllerMAC(), new byte[] {-1, -1, -1, -1, -1, -1},
-                    (short)0, EtherTypes.IPv4, ARP.REQUEST,
-                    swmgr.getControllerMAC(), new byte[] {0, 0, 0, 0, 0, 0},
-                    gwIp, ia.getAddress());
+                        swMgr.getControllerMAC(), new byte[] {-1, -1, -1, -1, -1, -1},
+                        (short)0, EtherTypes.IPv4, ARP.REQUEST,
+                        swMgr.getControllerMAC(), new byte[] {0, 0, 0, 0, 0, 0},
+                        gwIp, ia.getAddress());
             }
 
             mgr.find(ia6);
@@ -342,12 +397,12 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
 
             Ethernet eth = (Ethernet)stub.decodeDataPacket(raw);
             checkOutEthernetPacket("", eth, EtherTypes.ARP,
-                    swmgr.getControllerMAC(), mac,
+                    swMgr.getControllerMAC(), mac,
                     (short)0, EtherTypes.IPv4, ARP.REQUEST,
-                    swmgr.getControllerMAC(), mac,
+                    swMgr.getControllerMAC(), mac,
                     gwIp, ia.getAddress());
 
-            swmgr.removeSubnet(sconf);
+            swMgr.removeSubnet(sconf);
 
             // subnet == null
             mgr.find(ia);
@@ -358,7 +413,6 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
             transDatas = stub.getTransmittedDataPacket();
             assertEquals(0, transDatas.size());
         }
-
 
         // if null
         mgr.probe(null);
@@ -371,35 +425,35 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
             short vlan, Set<NodeConnector> mappedThis, Set<NodeConnector> noMappedThis,
             TestStub stub) {
          testReceiveDataPacketAHCommonLoop(mgr, bpath, vlan,
-                 mappedThis, noMappedThis, stub, (short)1, EtherTypes.ARP, ARP.REQUEST, null, defaultIp);
+                 mappedThis, noMappedThis, stub, (short)1, EtherTypes.ARP, ARP.REQUEST, null, testTgtIp, false);
     }
 
     private void testReceiveDataPacketUCLoop(VTNManagerImpl mgr, VBridgePath bpath,
             short vlan, Set<NodeConnector> mappedThis, Set<NodeConnector> noMappedThis,
             TestStub stub) {
         testReceiveDataPacketAHCommonLoop(mgr, bpath, vlan,
-                mappedThis, noMappedThis, stub, (short)0, EtherTypes.IPv4, (short)-1, null, defaultIp);
+                mappedThis, noMappedThis, stub, (short)0, EtherTypes.IPv4, (short)-1, null, testTgtIp, false);
     }
 
     private void testReceiveDataPacketBCLoopMatch(VTNManagerImpl mgr, VBridgePath bpath,
             short vlan, Set<NodeConnector> mappedThis, Set<NodeConnector> noMappedThis,
             TestStub stub) {
          testReceiveDataPacketAHCommonLoop(mgr, bpath, vlan,
-                 mappedThis, noMappedThis, stub, (short)1, EtherTypes.ARP, ARP.REQUEST, null, hostIp);
+                 mappedThis, noMappedThis, stub, (short)1, EtherTypes.ARP, ARP.REQUEST, null, hostIp, false);
      }
 
     private void testReceiveDataPacketBCLoopToCont(VTNManagerImpl mgr, VBridgePath bpath,
             short vlan, Set<NodeConnector> mappedThis, Set<NodeConnector> noMappedThis,
             TestStub stub) {
          testReceiveDataPacketAHCommonLoop(mgr, bpath, vlan,
-                 mappedThis, noMappedThis, stub, (short)1, EtherTypes.ARP, ARP.REQUEST, null, gwIp);
+                 mappedThis, noMappedThis, stub, (short)1, EtherTypes.ARP, ARP.REQUEST, null, gwIp, false);
      }
 
     private void testReceiveDataPacketARPReplyReceive(VTNManagerImpl mgr, VBridgePath bpath,
             short vlan, Set<NodeConnector> mappedThis, Set<NodeConnector> noMappedThis,
-            TestStub stub) {
+            TestStub stub, boolean expired) {
          testReceiveDataPacketAHCommonLoop(mgr, bpath, vlan,
-                 mappedThis, noMappedThis, stub, (short)1, EtherTypes.ARP, ARP.REPLY, null, defaultIp);
+                 mappedThis, noMappedThis, stub, (short)1, EtherTypes.ARP, ARP.REPLY, null, testTgtIp, expired);
      }
 
     /**
@@ -408,15 +462,32 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
     private void testReceiveDataPacketAHCommonLoop(VTNManagerImpl mgr, VBridgePath bpath,
             short vlan, Set<NodeConnector> mappedThis, Set<NodeConnector> noMappedThis,
             TestStub stub, short isBc, EtherTypes ethType, short arpType,
-            NodeConnector targetnc, byte [] targetIp) {
+            NodeConnector targetnc, byte[] targetIp, boolean expired) {
 
-        ISwitchManager swmgr = mgr.getSwitchManager();
-        byte[] target = targetIp;
+        ISwitchManager swMgr = mgr.getSwitchManager();
         Node hostnode = NodeCreator.createOFNode(Long.valueOf(0));
         NodeConnector hostnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("10"), hostnode);
         List<EthernetAddress> ethers = createEthernetAddresses(false);
-        boolean isFirst = true;
+        byte[] src = null;
+        byte[] dst = null;
+        byte[] sender = targetIp;
+        byte[] target = targetIp;
 
+        if (arpType == ARP.REPLY) {
+            src = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
+                            (byte)0xff, (byte)0xff, (byte)0x11};
+            sender = targetIp;
+        } else {
+            if (isBc > 0) {
+                dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
+                                (byte)0xff, (byte)0xff, (byte)0xff};
+            } else {
+                dst = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
+                                (byte)0xff, (byte)0xff, (byte)0x11};
+            }
+        }
+
+        boolean isFirst = true;
         for (NodeConnector nc: mappedThis) {
             if (targetnc != null && !targetnc.equals(nc)) {
                 continue;
@@ -424,26 +495,16 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
             byte iphost = 1;
             for (EthernetAddress ea: ethers) {
                 byte[] bytes = ea.getValue();
-                byte [] src;
-                byte [] dst;
-                byte [] sender;
+
                 if (arpType == ARP.REPLY) {
+                    // in case test with ARP.REPLY packet,
+                    // revese MAC address and IP address.
                     dst = new byte[] {bytes[0], bytes[1], bytes[2],
-                            bytes[3], bytes[4], bytes[5]};
-                    src = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
-                            (byte)0xff, (byte)0xff, (byte)0x11};
+                                        bytes[3], bytes[4], bytes[5]};
                     target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)iphost};
-                    sender = targetIp;
                 } else {
                     src = new byte[] {bytes[0], bytes[1], bytes[2],
-                            bytes[3], bytes[4], bytes[5]};
-                    if (isBc > 0) {
-                        dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
-                                (byte)0xff, (byte)0xff, (byte)0xff};
-                    } else {
-                        dst = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
-                                (byte)0xff, (byte)0xff, (byte)0x11};
-                    }
+                                        bytes[3], bytes[4], bytes[5]};
                     sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)iphost};
                 }
 
@@ -458,11 +519,15 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
                 Ethernet inPktDecoded = (Ethernet)stub.decodeDataPacket(inPkt);
                 PacketResult result = mgr.receiveDataPacket(inPkt);
 
+                // check result
                 if (nc != null &&
                         nc.getType() == NodeConnector.NodeConnectorIDType.OPENFLOW) {
-                    if (isFirst) {
+
+                    if (isFirst && !expired) {
                         assertEquals(nc.toString() + ea.toString(), PacketResult.KEEP_PROCESSING, result);
                     } else {
+                        // in case packet is ARP.Reply and there aren't ARP requestor,
+                        // received packet is IGNORED.
                         assertEquals(nc.toString() + ea.toString(), PacketResult.IGNORED, result);
                     }
 
@@ -477,11 +542,13 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
                         assertEquals(nc.toString() + "," + ea.toString(), 1, transDatas.size());
                     } else if (ethType.shortValue() == EtherTypes.ARP.shortValue() &&
                             arpType == ARP.REPLY) {
-                        if (isFirst) {
+                        if (isFirst && !expired) {
                             assertEquals(nc.toString() + "," + ea.toString(),
                                 mappedThis.size() * ethers.size(), transDatas.size());
                             isFirst = false;
                         } else {
+                            // in case arpType == ARP.Reply
+                            // send ARP.Reply packet at first time only.
                             assertEquals(nc.toString() + "," + ea.toString(),
                                     0, transDatas.size());
                         }
@@ -506,9 +573,9 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
                             // send ARP Request
                             checkOutEthernetPacket(nc.toString() + "," + ea.toString(),
                                     (Ethernet)pkt, EtherTypes.ARP,
-                                    swmgr.getControllerMAC(), new byte[] {-1, -1, -1, -1, -1, -1}, vlan,
+                                    swMgr.getControllerMAC(), new byte[] {-1, -1, -1, -1, -1, -1}, vlan,
                                     EtherTypes.IPv4, ARP.REQUEST,
-                                    swmgr.getControllerMAC(),
+                                    swMgr.getControllerMAC(),
                                     new byte[] {0, 0, 0, 0, 0, 0},
                                     gwIp, target);
                         } else if (ethType.shortValue() == EtherTypes.ARP.shortValue() &&
@@ -516,18 +583,19 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
                             // in this case receive ARP Reply
                             checkOutEthernetPacket(nc.toString() + "," + ea.toString(),
                                     (Ethernet)pkt, EtherTypes.ARP,
-                                    hostmac, src, vlan,
+                                    hostMac, src, vlan,
                                     EtherTypes.IPv4, ARP.REPLY,
-                                    hostmac, src, target, sender);
+                                    hostMac, src, target, sender);
+
                         } else if (ethType.shortValue() == EtherTypes.ARP.shortValue() &&
                                 arpType == ARP.REQUEST && Arrays.equals(target, gwIp)){
                             // in this case receive ARP Reply
                             checkOutEthernetPacket(nc.toString() + "," + ea.toString(),
                                     (Ethernet)pkt, EtherTypes.ARP,
-                                    swmgr.getControllerMAC(),
+                                    swMgr.getControllerMAC(),
                                     src, vlan,
                                     EtherTypes.IPv4, ARP.REPLY,
-                                    swmgr.getControllerMAC(),
+                                    swMgr.getControllerMAC(),
                                     src,
                                     target, sender);
                         } else if (ethType.shortValue() == EtherTypes.ARP.shortValue() &&
@@ -535,9 +603,9 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
                             // in this case flooded
                             checkOutEthernetPacket(nc.toString() + "," + ea.toString(),
                                     (Ethernet)pkt, EtherTypes.ARP,
-                                    swmgr.getControllerMAC(), dst, vlan,
+                                    swMgr.getControllerMAC(), dst, vlan,
                                     EtherTypes.IPv4, ARP.REQUEST,
-                                    swmgr.getControllerMAC(),
+                                    swMgr.getControllerMAC(),
                                     new byte[] {0, 0, 0, 0, 0, 0},
                                     gwIp, target);
                         } else if (ethType.shortValue() == EtherTypes.ARP.shortValue() &&

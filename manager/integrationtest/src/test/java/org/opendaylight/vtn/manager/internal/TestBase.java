@@ -76,10 +76,10 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * Create a copy of the specified {@code NodeConnector}.
+     * Create a copy of the specified {@link NodeConnector}.
      *
-     * @param nc  A {@code NodeConnector} object to be copied.
-     * @return    A copied {@code NodeConnector} object.
+     * @param nc  A {@link NodeConnector} object to be copied.
+     * @return    A copied {@link NodeConnector} object.
      */
     protected static NodeConnector copy(NodeConnector nc) {
         if (nc != null) {
@@ -294,21 +294,21 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * Create a list of {@code NodeConnector} and a {@code null}.
+     * Create a list of {@link NodeConnector} and a {@code null}.
      *
      * @param num  The number of objects to be created.
-     * @return A list of {@code NodeConnector}.
+     * @return A list of {@link NodeConnector}.
      */
     protected static List<NodeConnector> createNodeConnectors(int num) {
         return createNodeConnectors(num, true);
     }
 
     /**
-     * Create a list of {@code NodeConnector}.
+     * Create a list of {@link NodeConnector}.
      *
      * @param num      The number of objects to be created.
      * @param setNull  Set {@code null} to returned list if {@code true}.
-     * @return A list of {@code NodeConnector}.
+     * @return A list of {@link NodeConnector}.
      */
     protected static List<NodeConnector>
         createNodeConnectors(int num, boolean setNull) {
@@ -536,14 +536,12 @@ public abstract class TestBase extends Assert {
         return list;
     }
 
-
-
     /**
-     * create a RawPacket object.
+     * create a {@link RawPacket} object.
      *
-     * @param eth   A Ethernet data.
+     * @param eth   A {@link Ethernet} object.
      * @param nc    A node connector.
-     * @return RawPacket.
+     * @return A {@link RawPacket} object.
      */
     protected RawPacket createRawPacket (Ethernet eth, NodeConnector nc) {
         RawPacket raw = null;
@@ -558,27 +556,28 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * create a Ethernet object of IPv4 Packet.
+     * create a {@link Ethernet} object of IPv4 Packet.
      *
-     * @param src   source MAC address
-     * @param dst   destination MAC address
-     * @param sender    sender address
-     * @param target    target address
-     * @param vlan  specify val ID. if vlan < 0, vlan tag is not added.
-     * @param arptype ARP.REQUEST or ARP.REPLY.
-     * @return  Ethernet.
+     * @param src       A source MAC address
+     * @param dst       A destination MAC address
+     * @param sender    A sender address
+     * @param target    A target address
+     * @param vlan      specify val ID. if vlan < 0, vlan tag is not added.
+     * @param arptype   ARP.REQUEST or ARP.REPLY.
+     * @return  A {@link Ethernet} object.
      */
     protected Ethernet createIPv4Packet (byte[] src, byte[] dst, byte[] sender, byte [] target, short vlan) {
 
         IPv4 ip = new IPv4();
-            ip.setVersion((byte) 4)
-                .setIdentification((short) 5)
-                .setDiffServ((byte) 0)
-                .setECN((byte) 0)
-                .setTotalLength((short) 84)
-                .setFlags((byte) 2)
-                .setFragmentOffset((short) 0)
-                .setTtl((byte) 64);
+        ip.setVersion((byte)4).
+            setIdentification((short)5).
+            setDiffServ((byte)0).
+            setECN((byte)0).
+            setTotalLength((short)84).
+            setFlags((byte)2).
+            setFragmentOffset((short)0).
+            setTtl((byte) 64);
+
         try {
             ip.setDestinationAddress(InetAddress.getByAddress(target));
             ip.setSourceAddress(InetAddress.getByAddress(sender));
@@ -606,15 +605,15 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * create a Ethernet object of ARP Packet.
+     * create a {@link Ethernet} object of ARP Packet.
      *
-     * @param src   source MAC address
-     * @param dst   destination MAC address
-     * @param sender    sender address
-     * @param target    target address
-     * @param vlan  specify val ID. if vlan < 0, vlan tag is not added.
-     * @param arptype ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
-     * @return  Ethernet.
+     * @param src       A source MAC address
+     * @param dst       A destination MAC address
+     * @param sender    A sender address
+     * @param target    A target address
+     * @param vlan      specify val ID. if vlan < 0, vlan tag is not added.
+     * @param arptype   ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
+     * @return  A {@link Ethernet} object.
      */
     protected Ethernet createARPPacket (byte[] src, byte[] dst, byte[] sender, byte [] target, short vlan, short arptype) {
         ARP arp = new ARP();
@@ -647,32 +646,32 @@ public abstract class TestBase extends Assert {
 
 
     /**
-     * create a RawPacket object of ARP Request.
+     * create a {@link RawPacket} object of ARP Request.
      *
-     * @param src   source MAC address
-     * @param dst   destination MAC address
-     * @param sender    sender address
-     * @param target    target address
-     * @param vlan  specify val ID. if vlan < 0, vlan tag is not added.
-     * @param nc    A node connector
-     * @param arptype ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
-     * @return  PacketContext.
+     * @param src       A source MAC address
+     * @param dst       A destination MAC address
+     * @param sender    A sender address
+     * @param target    A target address
+     * @param vlan      specify val ID. if vlan < 0, vlan tag is not added.
+     * @param nc        A node connector
+     * @param arptype   ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
+     * @return  A {@link PacketContext}.
      */
     protected RawPacket createARPRawPacket (byte[] src, byte[] dst, byte[] sender, byte [] target, short vlan, NodeConnector nc, short arptype) {
         return createRawPacket(createARPPacket(src, dst, sender, target, vlan, arptype), nc);
     }
 
     /**
-     * create a RawPacket object of IPv4 packet.
+     * create a {@link RawPacket} object of IPv4 packet.
      *
-     * @param src   source MAC address
-     * @param dst   destination MAC address
-     * @param sender    sender address
-     * @param target    target address
-     * @param vlan  specify val ID. if vlan < 0, vlan tag is not added.
-     * @param nc    A node connector
-     * @param arptype ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
-     * @return  PacketContext.
+     * @param src       A source MAC address
+     * @param dst       A destination MAC address
+     * @param sender    A sender address
+     * @param target    A target address
+     * @param vlan      specify val ID. if vlan < 0, vlan tag is not added.
+     * @param nc        A node connector
+     * @param arptype   ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
+     * @return  A {@link PacketContext}.
      */
     protected RawPacket createIPv4RawPacket (byte[] src, byte[] dst, byte[] sender, byte [] target, short vlan, NodeConnector nc) {
         return createRawPacket(createIPv4Packet(src, dst, sender, target, vlan), nc);

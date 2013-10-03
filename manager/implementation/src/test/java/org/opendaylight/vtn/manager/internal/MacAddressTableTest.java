@@ -377,7 +377,8 @@ public class MacAddressTableTest extends TestBase {
             byte[] sender = new byte[] {(byte)192, (byte)168, (byte)100, (byte)iphost};
             byte[] target = new byte[] {(byte)192, (byte)168, (byte)100, (byte)250};
 
-            PacketContext pctx = createARPPacketContext(src, dst, sender, target, (short)(vlan / 3),
+            PacketContext pctx = createARPPacketContext(src, dst, sender, target,
+                                               (short)(((vlan / 3) > 0) ? (vlan / 3) : -1),
                                                connectors.get(iphost % 3), ARP.REQUEST);
             tbl1.add(mgr, pctx);
             tbl2.add(mgr, pctx);
@@ -458,7 +459,7 @@ public class MacAddressTableTest extends TestBase {
 
         // default
         PacketContext pctx = createARPPacketContext(src, dst, sender, target,
-                                                       vlan, nc, ARP.REQUEST);
+                                                       (vlan > 0) ? vlan : -1, nc, ARP.REQUEST);
         EthernetAddress ea = null;
         try {
             ea = new EthernetAddress(src);

@@ -52,18 +52,16 @@ public class IpAddressSetTest extends TestBase {
      */
     @Test
     public void testEquals() {
-        List<Set<InetAddress>> ips = createInetAddresses();
+        List<Set<InetAddress>> ips = createInetAddresses(false);
         HashSet<Object> set = new HashSet<Object>();
         int required = 0;
 
         for (Set<InetAddress> ipset: ips) {
-            if (ipset != null && ipset.size() != 0) {
-                IpAddressSet iaddrs1 = new IpAddressSet(ipset);
-                IpAddressSet iaddrs2 = new IpAddressSet(ipset);
+            IpAddressSet iaddrs1 = new IpAddressSet(ipset);
+            IpAddressSet iaddrs2 = new IpAddressSet(ipset);
 
-                testEquals(set, iaddrs1, iaddrs2);
-                required++;
-            }
+            testEquals(set, iaddrs1, iaddrs2);
+            required++;
         }
 
         assertEquals(required, set.size());
@@ -74,12 +72,10 @@ public class IpAddressSetTest extends TestBase {
      */
     @Test
     public void testJAXB() {
-        List<Set<InetAddress>> ips = createInetAddresses();
+        List<Set<InetAddress>> ips = createInetAddresses(false);
         for (Set<InetAddress> ipset: ips) {
-            if (ipset != null && ipset.size() != 0) {
                 IpAddressSet iaddrs = new IpAddressSet(ipset);
                 jaxbTest(iaddrs, "inetAddresses");
-            }
         }
     }
 }

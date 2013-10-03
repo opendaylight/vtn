@@ -11,6 +11,7 @@ package org.opendaylight.vtn.manager.internal;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
@@ -29,6 +30,7 @@ import org.opendaylight.controller.sal.packet.IPv4;
 import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.EtherTypes;
+import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VTenantConfig;
@@ -76,10 +78,10 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * Create a copy of the specified {@code NodeConnector}.
+     * Create a copy of the specified {@link NodeConnector}.
      *
-     * @param nc  A {@code NodeConnector} object to be copied.
-     * @return    A copied {@code NodeConnector} object.
+     * @param nc  A {@link NodeConnector} object to be copied.
+     * @return    A copied {@link NodeConnector} object.
      */
     protected static NodeConnector copy(NodeConnector nc) {
         if (nc != null) {
@@ -136,7 +138,7 @@ public abstract class TestBase extends Assert {
         if (ia != null) {
             Set<InetAddress> newset = new HashSet<InetAddress>();
             try {
-                for (InetAddress iaddr: ia) {
+                for (InetAddress iaddr : ia) {
                     newset.add(InetAddress.getByAddress(iaddr.getAddress()));
                 }
             } catch (Exception e) {
@@ -172,7 +174,6 @@ public abstract class TestBase extends Assert {
         list.add(Boolean.FALSE);
         return list;
     }
-
 
     /**
      * Create a list of strings and a {@code null}.
@@ -294,21 +295,21 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * Create a list of {@code NodeConnector} and a {@code null}.
+     * Create a list of {@link NodeConnector} and a {@code null}.
      *
      * @param num  The number of objects to be created.
-     * @return A list of {@code NodeConnector}.
+     * @return A list of {@link NodeConnector}.
      */
     protected static List<NodeConnector> createNodeConnectors(int num) {
         return createNodeConnectors(num, true);
     }
 
     /**
-     * Create a list of {@code NodeConnector}.
+     * Create a list of {@link NodeConnector}.
      *
      * @param num      The number of objects to be created.
      * @param setNull  Set {@code null} to returned list if {@code true}.
-     * @return A list of {@code NodeConnector}.
+     * @return A list of {@link NodeConnector}.
      */
     protected static List<NodeConnector>
         createNodeConnectors(int num, boolean setNull) {
@@ -417,8 +418,7 @@ public abstract class TestBase extends Assert {
      * @return  A {@link VBridgeConfig} object.
      */
     protected static VTenantConfig createVTenantConfig(String desc,
-                                                       Integer idle,
-                                                       Integer hard) {
+            Integer idle, Integer hard) {
         if (idle == null) {
             if (hard == null) {
                 return new VTenantConfig(desc);
@@ -446,7 +446,6 @@ public abstract class TestBase extends Assert {
             return new VBridgeConfig(desc, age);
         }
     }
-
 
     /**
      * Create a list of {@link EthernetAddress} and a {@code null}.
@@ -478,7 +477,7 @@ public abstract class TestBase extends Assert {
             list.add(null);
         }
 
-        for(byte[] addr: addrbytes) {
+        for (byte[] addr : addrbytes) {
             try {
                 EthernetAddress ea;
                 ea = new EthernetAddress(addr);
@@ -506,8 +505,7 @@ public abstract class TestBase extends Assert {
      * @param setNull  Set {@code null} to returned list if {@code true}.
      * @return A list of {@link InetAddress} set.
      */
-    protected static List<Set<InetAddress>>
-        createInetAddresses(boolean setNull) {
+    protected static List<Set<InetAddress>> createInetAddresses(boolean setNull) {
         List<Set<InetAddress>> list = new ArrayList<Set<InetAddress>>();
         String[][] arrays = {
             {"0.0.0.0"},
@@ -521,10 +519,10 @@ public abstract class TestBase extends Assert {
             list.add(null);
         }
 
-        for (String[] array: arrays) {
+        for (String[] array : arrays) {
             Set<InetAddress> iset = new HashSet<InetAddress>();
             try {
-                for (String addr: array) {
+                for (String addr : array) {
                     assertTrue(iset.add(InetAddress.getByName(addr)));
                 }
                 list.add(iset);
@@ -532,18 +530,17 @@ public abstract class TestBase extends Assert {
                 unexpected(e);
             }
         }
-
         return list;
     }
 
     /**
-     * create a PacketContext object.
+     * create a {@link PacketContext} object.
      *
-     * @param eth   A Ethernet data.
-     * @param nc    A node connector.
-     * @return PacketContext.
+     * @param eth   A {@link Ethernet} object.
+     * @param nc    A incoming node connector.
+     * @return A {@link PacketContext} object.
      */
-    protected PacketContext createPacketContext (Ethernet eth, NodeConnector nc) {
+    protected PacketContext createPacketContext(Ethernet eth, NodeConnector nc) {
         PacketContext pctx = null;
         RawPacket raw = null;
         try {
@@ -559,13 +556,13 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * create a RawPacket object.
+     * create a {@link RawPacket} object.
      *
-     * @param eth   A Ethernet data.
-     * @param nc    A node connector.
-     * @return RawPacket.
+     * @param eth   A {@link Ethernet} object.
+     * @param nc    A incoming node connector.
+     * @return A {@link RawPacket} object.
      */
-    protected RawPacket createRawPacket (Ethernet eth, NodeConnector nc) {
+    protected RawPacket createRawPacket(Ethernet eth, NodeConnector nc) {
         RawPacket raw = null;
         try {
             raw = new RawPacket(eth.serialize());
@@ -578,27 +575,29 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * create a Ethernet object of IPv4 Packet.
+     * create a {@link Ethernet} object of IPv4 Packet.
      *
-     * @param src   source MAC address
-     * @param dst   destination MAC address
-     * @param sender    sender address
-     * @param target    target address
-     * @param vlan  specify val ID. if vlan < 0, vlan tag is not added.
-     * @param arptype ARP.REQUEST or ARP.REPLY.
-     * @return  Ethernet.
+     * @param src       A source MAC address
+     * @param dst       A destination MAC address
+     * @param sender    A sender address
+     * @param target    A target address
+     * @param vlan      specify vlan ID. if vlan < 0, vlan tag is not added.
+     * @param arptype   ARP.REQUEST or ARP.REPLY.
+     * @return  A {@link Ethernet} object.
      */
-    protected Ethernet createIPv4Packet (byte[] src, byte[] dst, byte[] sender, byte [] target, short vlan) {
+    protected Ethernet createIPv4Packet(byte[] src, byte[] dst, byte[] sender,
+            byte[] target, short vlan) {
 
         IPv4 ip = new IPv4();
-            ip.setVersion((byte) 4)
-                .setIdentification((short) 5)
-                .setDiffServ((byte) 0)
-                .setECN((byte) 0)
-                .setTotalLength((short) 84)
-                .setFlags((byte) 2)
-                .setFragmentOffset((short) 0)
-                .setTtl((byte) 64);
+        ip.setVersion((byte)4).
+                setIdentification((short)5).
+                setDiffServ((byte)0).
+                setECN((byte)0).
+                setTotalLength((short)84).
+                setFlags((byte)2).
+                setFragmentOffset((short)0).
+                setTtl((byte)64);
+
         try {
             ip.setDestinationAddress(InetAddress.getByAddress(target));
             ip.setSourceAddress(InetAddress.getByAddress(sender));
@@ -613,8 +612,8 @@ public abstract class TestBase extends Assert {
             eth.setEtherType(EtherTypes.VLANTAGGED.shortValue());
 
             IEEE8021Q vlantag = new IEEE8021Q();
-            vlantag.setCfi((byte) 0x0).setPcp((byte) 0x0).setVid((short) vlan).
-                setEtherType(EtherTypes.IPv4.shortValue()).setParent(eth);
+            vlantag.setCfi((byte) 0x0).setPcp((byte) 0x0).setVid((short) vlan)
+                    .setEtherType(EtherTypes.IPv4.shortValue()).setParent(eth);
             eth.setPayload(vlantag);
 
             vlantag.setPayload(ip);
@@ -626,35 +625,36 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * create a Ethernet object of ARP Packet.
+     * create a {@link Ethernet} object of ARP Packet.
      *
-     * @param src   source MAC address
-     * @param dst   destination MAC address
-     * @param sender    sender address
-     * @param target    target address
-     * @param vlan  specify val ID. if vlan < 0, vlan tag is not added.
-     * @param arptype ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
-     * @return  Ethernet.
+     * @param src       A source MAC address
+     * @param dst       A destination MAC address
+     * @param sender    A sender address
+     * @param target    A target address
+     * @param vlan      specify vlan ID. if vlan < 0, vlan tag is not added.
+     * @param arptype   ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
+     * @return  A {@link Ethernet object.}
      */
-    protected Ethernet createARPPacket (byte[] src, byte[] dst, byte[] sender, byte [] target, short vlan, short arptype) {
+    protected Ethernet createARPPacket(byte[] src, byte[] dst, byte[] sender,
+            byte[] target, short vlan, short arptype) {
         ARP arp = new ARP();
         arp.setHardwareType(ARP.HW_TYPE_ETHERNET).
-            setProtocolType(EtherTypes.IPv4.shortValue()).
-            setHardwareAddressLength((byte)EthernetAddress.SIZE).
-            setProtocolAddressLength((byte)target.length).
-            setOpCode(arptype).
-            setSenderHardwareAddress(src).setSenderProtocolAddress(sender).
-            setTargetHardwareAddress(dst).setTargetProtocolAddress(target);
+                setProtocolType(EtherTypes.IPv4.shortValue()).
+                setHardwareAddressLength((byte) EthernetAddress.SIZE).
+                setProtocolAddressLength((byte) target.length).
+                setOpCode(arptype).
+                setSenderHardwareAddress(src).setSenderProtocolAddress(sender).
+                setTargetHardwareAddress(dst).setTargetProtocolAddress(target);
 
         Ethernet eth = new Ethernet();
         eth.setSourceMACAddress(src).setDestinationMACAddress(dst);
 
-        if (vlan > 0) {
+        if (vlan >= 0) {
             eth.setEtherType(EtherTypes.VLANTAGGED.shortValue());
 
             IEEE8021Q vlantag = new IEEE8021Q();
-            vlantag.setCfi((byte) 0x0).setPcp((byte) 0x0).setVid((short) vlan).
-                setEtherType(EtherTypes.ARP.shortValue()).setParent(eth);
+            vlantag.setCfi((byte) 0x0).setPcp((byte) 0x0).setVid(vlan)
+                    .setEtherType(EtherTypes.ARP.shortValue()).setParent(eth);
             eth.setPayload(vlantag);
 
             vlantag.setPayload(arp);
@@ -666,51 +666,76 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * create a PacketContext object of ARP Request.
+     * create a {@link PacketContext} object of ARP Request.
      *
-     * @param src   source MAC address
-     * @param dst   destination MAC address
-     * @param sender    sender address
-     * @param target    target address
-     * @param vlan  specify val ID. if vlan < 0, vlan tag is not added.
-     * @param nc    A node connector
-     * @param arptype ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
-     * @return  PacketContext.
+     * @param src       A source MAC address
+     * @param dst       A destination MAC address
+     * @param sender    A sender address
+     * @param target    A target address
+     * @param vlan      specify vlan ID. if vlan < 0, vlan tag is not added.
+     * @param nc        A node connector
+     * @param arptype   ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
+     * @return  A {@link PacketContext} object.
      */
-    protected PacketContext createARPPacketContext (byte[] src, byte[] dst, byte[] sender, byte [] target, short vlan, NodeConnector nc, short arptype) {
-        return createPacketContext(createARPPacket(src, dst, sender, target, vlan, arptype), nc);
+    protected PacketContext createARPPacketContext(byte[] src, byte[] dst,
+            byte[] sender, byte[] target, short vlan, NodeConnector nc,
+            short arptype) {
+        return createPacketContext(
+                createARPPacket(src, dst, sender, target, vlan, arptype), nc);
     }
 
     /**
-     * create a RawPacket object of ARP Request.
+     * create a {@link PacketContext} object of IPv4 packet.
      *
-     * @param src   source MAC address
-     * @param dst   destination MAC address
-     * @param sender    sender address
-     * @param target    target address
-     * @param vlan  specify val ID. if vlan < 0, vlan tag is not added.
-     * @param nc    A node connector
-     * @param arptype ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
-     * @return  PacketContext.
+     * @param src       A source MAC address
+     * @param dst       A destination MAC address
+     * @param sender    A sender address
+     * @param target    A target address
+     * @param vlan      specify vlan ID. if vlan < 0, vlan tag is not added.
+     * @param nc        A node connector
+     * @return  A {@link PacketContext} object.
      */
-    protected RawPacket createARPRawPacket (byte[] src, byte[] dst, byte[] sender, byte [] target, short vlan, NodeConnector nc, short arptype) {
-        return createRawPacket(createARPPacket(src, dst, sender, target, vlan, arptype), nc);
+    protected PacketContext createIPv4PacketContext(byte[] src, byte[] dst,
+            byte[] sender, byte[] target, short vlan, NodeConnector nc) {
+        return createPacketContext(
+                createIPv4Packet(src, dst, sender, target, vlan), nc);
     }
 
     /**
-     * create a RawPacket object of IPv4 packet.
+     * create a {@link RawPacket} object of ARP Request.
      *
-     * @param src   source MAC address
-     * @param dst   destination MAC address
-     * @param sender    sender address
-     * @param target    target address
-     * @param vlan  specify val ID. if vlan < 0, vlan tag is not added.
-     * @param nc    A node connector
-     * @param arptype ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
-     * @return  PacketContext.
+     * @param src       A source MAC address
+     * @param dst       A destination MAC address
+     * @param sender    A sender address
+     * @param target    A target address
+     * @param vlan      specify val ID. if vlan < 0, vlan tag is not added.
+     * @param nc        A node connector
+     * @param arptype   ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
+     * @return  A {@link PacketContext} object.
      */
-    protected RawPacket createIPv4RawPacket (byte[] src, byte[] dst, byte[] sender, byte [] target, short vlan, NodeConnector nc) {
-        return createRawPacket(createIPv4Packet(src, dst, sender, target, vlan), nc);
+    protected RawPacket createARPRawPacket(byte[] src, byte[] dst,
+            byte[] sender, byte[] target, short vlan, NodeConnector nc,
+            short arptype) {
+        return createRawPacket(
+                createARPPacket(src, dst, sender, target, vlan, arptype), nc);
+    }
+
+    /**
+     * create a {@link RawPacket} object of IPv4 packet.
+     *
+     * @param src       A source MAC address
+     * @param dst       A destination MAC address
+     * @param sender    A sender address
+     * @param target    A target address
+     * @param vlan      specify vlan ID. if vlan < 0, vlan tag is not added.
+     * @param nc        A node connector
+     * @param arptype ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
+     * @return  A {@link PacketContext} object.
+     */
+    protected RawPacket createIPv4RawPacket(byte[] src, byte[] dst,
+            byte[] sender, byte[] target, short vlan, NodeConnector nc) {
+        return createRawPacket(
+                createIPv4Packet(src, dst, sender, target, vlan), nc);
     }
 
     /**
@@ -723,14 +748,14 @@ public abstract class TestBase extends Assert {
      *                   array is always ignored.
      */
     protected static String joinStrings(String prefix, String suffix,
-                                        String separator, Object ... args) {
+            String separator, Object... args) {
         StringBuilder builder = new StringBuilder();
         if (prefix != null) {
             builder.append(prefix);
         }
 
         boolean first = true;
-        for (Object o: args) {
+        for (Object o : args) {
             if (o != null) {
                 if (first) {
                     first = false;
@@ -766,7 +791,7 @@ public abstract class TestBase extends Assert {
         assertFalse(o1.equals("string"));
         assertFalse(o1.equals(set));
 
-        for (Object o: set) {
+        for (Object o : set) {
             assertFalse("o1=" + o1 + ", o=" + o, o1.equals(o));
             assertFalse(o.equals(o1));
         }
@@ -812,14 +837,54 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * check a Ethernet packet whether setted expected parametor in the packet.
+     * setup a startup directory
+     */
+    protected void setupStartupDir() {
+        File confdir = new File(GlobalConstants.STARTUPHOME.toString());
+        boolean result = confdir.exists();
+        if (!result) {
+            result = confdir.mkdirs();
+        } else {
+            File[] list = confdir.listFiles();
+            for (File f : list) {
+                f.delete();
+            }
+        }
+    }
+
+    /**
+     * cleanup a startup directory
+     */
+    protected void cleanupStartupDir() {
+        String currdir = new File(".").getAbsoluteFile().getParent();
+        File confdir = new File(GlobalConstants.STARTUPHOME.toString());
+
+        if (confdir.exists()) {
+            File[] list = confdir.listFiles();
+            for (File f : list) {
+                f.delete();
+            }
+
+            while (confdir != null && confdir.getAbsolutePath() != currdir) {
+                confdir.delete();
+                String pname = confdir.getParent();
+                if (pname == null) {
+                    break;
+                }
+                confdir = new File(pname);
+            }
+        }
+    }
+
+    /**
+     * check a Ethernet packet whether expeceted parameters are set.
      *
-     * @param msg   if check is failed, report error with a message specified this.
-     * @param eth   input ethernet frame data.
+     * @param msg       if check is failed, report error with a this string.
+     * @param eth       A input ethernet frame data.
      * @param ethType   expected ethernet type.
      * @param destMac   expected destination mac address.
      * @param srcMac    expected source mac address.
-     * @param vlan  expected vlan id. (if expected untagged, specify 0 or less than 0)
+     * @param vlan      expected vlan id. (if expected untagged, specify 0 or less than 0)
      * @param protoType expected protocol type.
      * @param opCode    expected opCode. if thish is not ARP, opCode is not checked.
      * @param senderMac expected sender HW address.
@@ -828,23 +893,25 @@ public abstract class TestBase extends Assert {
      * @param targetAddr    expected target protocol address.
      *
      */
-    protected void checkOutEthernetPacket (String msg, Ethernet eth, EtherTypes ethType,
-            byte[] srcMac, byte[] destMac,  short vlan, EtherTypes protoType, short opCode,
-            byte[] senderMac, byte[] targetMac, byte[] senderAddr, byte [] targetAddr) {
+    protected void checkOutEthernetPacket(String msg, Ethernet eth,
+            EtherTypes ethType, byte[] srcMac, byte[] destMac, short vlan,
+            EtherTypes protoType, short opCode, byte[] senderMac,
+            byte[] targetMac, byte[] senderAddr, byte[] targetAddr) {
 
         ARP arp = null;
         if (vlan > 0) {
-            assertEquals(msg, EtherTypes.VLANTAGGED.shortValue(), eth.getEtherType());
-            IEEE8021Q vlantag = (IEEE8021Q)eth.getPayload();
+            assertEquals(msg, EtherTypes.VLANTAGGED.shortValue(),
+                    eth.getEtherType());
+            IEEE8021Q vlantag = (IEEE8021Q) eth.getPayload();
             assertEquals(msg, vlan, vlantag.getVid());
             assertEquals(msg, ethType.shortValue(), vlantag.getEtherType());
             if (ethType.shortValue() == EtherTypes.ARP.shortValue()) {
-                arp = (ARP)vlantag.getPayload();
+                arp = (ARP) vlantag.getPayload();
             }
         } else {
             assertEquals(msg, ethType.shortValue(), eth.getEtherType());
             if (ethType.shortValue() == EtherTypes.ARP.shortValue()) {
-                arp = (ARP)eth.getPayload();
+                arp = (ARP) eth.getPayload();
             }
         }
 
@@ -855,7 +922,9 @@ public abstract class TestBase extends Assert {
             assertArrayEquals(msg, destMac, eth.getDestinationMACAddress());
         }
 
-        if (ethType != null && ethType.shortValue() == EtherTypes.ARP.shortValue()) {
+        if (ethType != null
+                && ethType.shortValue() == EtherTypes.ARP.shortValue()) {
+            assertNotNull(msg, arp);
             if (protoType != null) {
                 assertEquals(msg, protoType.shortValue(), arp.getProtocolType());
             }
@@ -863,21 +932,47 @@ public abstract class TestBase extends Assert {
                 assertEquals(msg, opCode, arp.getOpCode());
             }
             if (senderMac != null) {
-                assertArrayEquals(msg, senderMac, arp.getSenderHardwareAddress());
+                assertArrayEquals(msg, senderMac,
+                        arp.getSenderHardwareAddress());
             }
             if (targetMac != null) {
-                assertArrayEquals(msg, targetMac, arp.getTargetHardwareAddress());
+                assertArrayEquals(msg, targetMac,
+                        arp.getTargetHardwareAddress());
             }
             if (senderAddr != null) {
-                assertArrayEquals(msg, senderAddr, arp.getSenderProtocolAddress());
+                assertArrayEquals(msg, senderAddr,
+                        arp.getSenderProtocolAddress());
             }
             if (targetAddr != null) {
-                assertArrayEquals(msg, targetAddr, arp.getTargetProtocolAddress());
+                assertArrayEquals(msg, targetAddr,
+                        arp.getTargetProtocolAddress());
             }
         }
     }
 
-    // for dispatch other thread.
+    /**
+     * check a Ethernet packet whether expected parameters are set.
+     * (for IPv4 packet)
+     *
+     * @param msg       if check is failed, report error with a this string.
+     * @param eth       input ethernet frame data.
+     * @param ethType   expected ethernet type.
+     * @param destMac   expected destination mac address.
+     * @param srcMac    expected source mac address.
+     * @param vlan      expected vlan id. (if expected untagged, specify 0 or less than 0)
+     */
+    protected void checkOutEthernetPacketIPv4(String msg, Ethernet eth,
+            EtherTypes ethType, byte[] srcMac, byte[] destMac, short vlan) {
+
+        checkOutEthernetPacket(msg, eth, ethType, srcMac, destMac, vlan, null,
+                (short) -1, null, null, null, null);
+    }
+
+    /**
+     *  for dispatch other thread.
+     *
+     * @param millis    the length of time in millisecond.
+     */
     protected void sleep(long millis) {
         Thread.yield();
         try {

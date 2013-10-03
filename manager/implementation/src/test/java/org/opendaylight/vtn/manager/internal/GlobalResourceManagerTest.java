@@ -29,15 +29,10 @@ import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 
 /**
- * @author kawagish
+ * JUnit test for {@link GlobalResourceManager}
  *
  */
 public class GlobalResourceManagerTest extends TestBase {
-
-    @Before
-    public void before() {
-    }
-
 
     /**
      * Test method for
@@ -73,7 +68,6 @@ public class GlobalResourceManagerTest extends TestBase {
         assertEquals(0, pmap.size());
 
         grsc.init(c);
-
 
         grsc.destroy();
 
@@ -153,7 +147,7 @@ public class GlobalResourceManagerTest extends TestBase {
             grsc.unregisterVlanMap((short)1);
             fail("throwing exception was expected.");
         } catch (IllegalStateException e) {
-
+            // expected path
         }
 
         grsc.unregisterVlanMap((short)0);
@@ -272,8 +266,8 @@ public class GlobalResourceManagerTest extends TestBase {
 
     /**
      * setup GlobalResourceManager
-     * @param containerName container name.
-     * @param stubObj TestStub object
+     * @param containerName A container name.
+     * @param stubObj       A TestStub object
      * @return GlobalResourceManager
      */
     private GlobalResourceManager setupGlobalResourceManager (String containerName, TestStub stubObj) {
@@ -292,10 +286,10 @@ public class GlobalResourceManagerTest extends TestBase {
 
     /**
      * check Map cache.
-     * @param cs    IClusgerGlobalServices
-     * @param cacheName a cache name.
-     * @param containerName a container name.
-     * @param path  VBridgePath or VBridgeIfPath
+     * @param cs            A IClusgerGlobalServices object.
+     * @param cacheName     A cache name.
+     * @param containerName A container name.
+     * @param path          VBridgePath or VBridgeIfPath
      * @param key   key value
      */
     private <T, S> void checkMapCache (IClusterGlobalServices cs, String cacheName,
@@ -306,5 +300,4 @@ public class GlobalResourceManagerTest extends TestBase {
         String value = map.get(key);
         assertEquals(required, value);
     }
-
 }

@@ -16,8 +16,10 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -94,15 +96,15 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         String containerName = "default";
         properties.put("containerName", containerName);
         c.setServiceProperties(properties);
+        Map<VBridgeIfPath, PortMapConfig> pmaps = new HashMap<VBridgeIfPath, PortMapConfig>();
+        Map<VlanMap, VlanMapConfig> vmaps = new HashMap<VlanMap, VlanMapConfig>();
 
         String tname = "vtn";
         VTenantPath tpath = new VTenantPath(tname);
         String bname = "vbridge";
         VBridgePath bpath = new VBridgePath(tname, bname);
-        String ifname1 = "vif1";
-        VBridgeIfPath ifpath1 = new VBridgeIfPath(tname, bname, ifname1);
-        String ifname2 = "vif2";
-        VBridgeIfPath ifpath2 = new VBridgeIfPath(tname, bname, ifname2);
+        VBridgeIfPath ifpath1 = new VBridgeIfPath(tname, bname, "vif1");
+        VBridgeIfPath ifpath2 = new VBridgeIfPath(tname, bname, "vif2");
 
         List<VBridgePath> bpathlist = new ArrayList<VBridgePath>();
         List<VBridgeIfPath> ifpathlist = new ArrayList<VBridgeIfPath>();
@@ -111,30 +113,14 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         createTenantAndBridgeAndInterface(vtnMgr, tpath, bpathlist, ifpathlist);
 
         Status st = vtnMgr.addBridgeInterface(ifpath2, new VInterfaceConfig(null, false));
+        ifpathlist.add(ifpath2);
+        assertTrue(st.toString(), st.isSuccess());
 
-        vtnMgr.stopping();
-        vtnMgr.stop();
-        vtnMgr.destroy();
-        vtnMgr.init(c);
+        restartVTNManager(c);
 
-        List<VTenant> tlist = null;
-        List<VBridge> blist = null;
-        List<VInterface> iflist = null;
-        try {
-            tlist = vtnMgr.getTenants();
-            blist = vtnMgr.getBridges(tpath);
-            iflist = vtnMgr.getBridgeInterfaces(bpath);
-        } catch (VTNException e) {
-            unexpected(e);
-        }
-        assertNotNull(tlist);
-        assertNotNull(blist);
-        assertEquals(1, tlist.size());
-        assertEquals(tname, tlist.get(0).getName());
-        assertEquals(1, blist.size());
-        assertEquals(bname, blist.get(0).getName());
-        assertEquals(2, iflist.size());
-        assertEquals(ifname1, iflist.get(0).getName());
+        pmaps.put(ifpath1, null);
+        pmaps.put(ifpath2, null);
+        checkVTNconfig(tpath, bpathlist, pmaps, null);
 
         // add mappings
         Node node = NodeCreator.createOFNode(0L);
@@ -150,70 +136,23 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         } catch (VTNException e) {
             unexpected(e);
         }
+        vmaps.put(map, vlconf);
 
-        vtnMgr.stopping();
-        vtnMgr.stop();
-        vtnMgr.destroy();
-        vtnMgr.init(c);
+        restartVTNManager(c);
 
-        PortMap pmap = null;
-        VlanMap vmap = null;
-        try {
-            tlist = vtnMgr.getTenants();
-            blist = vtnMgr.getBridges(tpath);
-            iflist = vtnMgr.getBridgeInterfaces(bpath);
-            pmap = vtnMgr.getPortMap(ifpath1);
-            vmap = vtnMgr.getVlanMap(bpath, map.getId());
-        } catch (VTNException e) {
-            unexpected(e);
-        }
-        assertNotNull(tlist);
-        assertNotNull(blist);
-        assertEquals(1, tlist.size());
-        assertEquals(tname, tlist.get(0).getName());
-        assertEquals(1, blist.size());
-        assertEquals(bname, blist.get(0).getName());
-        assertEquals(2, iflist.size());
-        assertEquals(ifname1, iflist.get(0).getName());
-        assertEquals(pmap.getConfig(), pmconf);
-        assertEquals(vmap.getVlan(), vlconf.getVlan());
-        assertEquals(vmap.getNode(), vlconf.getNode());
+        checkVTNconfig(tpath, bpathlist, pmaps, vmaps);
 
-        vtnMgr.stopping();
-        vtnMgr.stop();
-        vtnMgr.destroy();
-
+        stopVTNManager(false);
         VTNManagerImpl.cleanUpConfigFile(containerName);
-        vtnMgr.init(c);
+        startVTNManager(c);
 
-        try {
-            tlist = vtnMgr.getTenants();
-            blist = vtnMgr.getBridges(tpath);
-            iflist = vtnMgr.getBridgeInterfaces(bpath);
-            pmap = vtnMgr.getPortMap(ifpath1);
-            vmap = vtnMgr.getVlanMap(bpath, map.getId());
-        } catch (VTNException e) {
-            unexpected(e);
-        }
-        assertNotNull(tlist);
-        assertNotNull(blist);
-        assertEquals(1, tlist.size());
-        assertEquals(tname, tlist.get(0).getName());
-        assertEquals(1, blist.size());
-        assertEquals(bname, blist.get(0).getName());
-        assertEquals(2, iflist.size());
-        assertEquals(ifname1, iflist.get(0).getName());
-        assertEquals(pmap.getConfig(), pmconf);
-        assertEquals(vmap.getVlan(), vlconf.getVlan());
-        assertEquals(vmap.getNode(), vlconf.getNode());
+        checkVTNconfig(tpath, bpathlist, pmaps, vmaps);
 
-        vtnMgr.stopping();
-        vtnMgr.containerDestroy();
-        vtnMgr.stop();
-        vtnMgr.destroy();
+        stopVTNManager(true);
         VTNManagerImpl.cleanUpConfigFile(containerName);
-        vtnMgr.init(c);
+        startVTNManager(c);
 
+        List<VTenant> tlist = null;
         try {
             tlist = vtnMgr.getTenants();
         } catch (VTNException e) {
@@ -221,6 +160,30 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         }
         assertNotNull(tlist);
         assertEquals(0, tlist.size());
+
+        stopVTNManager(true);
+        VTNManagerImpl.cleanUpConfigFile(containerName);
+
+        c = new ComponentImpl(null, null, null);
+        c.setServiceProperties(null);
+        startVTNManager(c);
+        assertFalse(vtnMgr.isAvailable());
+
+        stopVTNManager(true);
+        VTNManagerImpl.cleanUpConfigFile(containerName);
+
+        // in case not "default" container
+        c = new ComponentImpl(null, null, null);
+        properties = new Hashtable<String, String>();
+        String containerNameTest = "test";
+        properties.put("containerName", containerNameTest);
+        c.setServiceProperties(properties);
+        startVTNManager(c);
+
+        createTenantAndBridgeAndInterface(vtnMgr, tpath, bpathlist, ifpathlist);
+
+        stopVTNManager(true);
+        VTNManagerImpl.cleanUpConfigFile(containerNameTest);
     }
 
     /**
@@ -693,11 +656,10 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         stub2.checkAllNull();
     }
 
-
     /**
      * Test method for
      * {@link VTNManagerImpl#addVTNModeListener(IVTNModeListener)},
-     * {@link VTNManagerImpl#removeVTNModeListener(IVTNModeListener)}
+     * {@link VTNManagerImpl#removeVTNModeListener(IVTNModeListener)},
      * {@link VTNManagerImpl#notifyChange(boolean)},
      * {@link VTNManagerImpl#notifyChange(IVTNModeListener, boolean)}
      */
@@ -810,16 +772,6 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         stub1.checkCalledInfo(1, Boolean.FALSE);
 
         mgr.removeVTNModeListener(stub1);
-    }
-
-
-    /**
-     * Test method for
-     * {@link org.opendaylight.controller.vtn.internal.VTNManagerImpl#getStateDB()}
-     */
-    @Test
-    public void testGetStateDB() {
-        // TODO:
     }
 
     /**
@@ -2426,7 +2378,6 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         assertTrue(st.isSuccess());
 
 
-
         // if specified port is not exist, duplicate portmap success.
         String ifname3 = "vinterface3";
         VBridgeIfPath ifp3 = new VBridgeIfPath(tname, bname2, ifname3);
@@ -2594,8 +2545,10 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 unexpected(e1);
             }
 
-            PacketContext pctx = createARPPacketContext(src, dst, sender, target, vlan, connectors.get(0), ARP.REQUEST);
-            PacketContext pctx2 = createARPPacketContext(src2, dst2, sender2, target2, vlan2, connectors.get(0), ARP.REQUEST);
+            PacketContext pctx = createARPPacketContext(src, dst, sender, target,
+                                    (vlan > 0) ? vlan : -1, connectors.get(0), ARP.REQUEST);
+            PacketContext pctx2 = createARPPacketContext(src2, dst2, sender2, target2,
+                                    (vlan2 > 0) ? vlan2 : -1, connectors.get(0), ARP.REQUEST);
 
             tbl.add(mgr, pctx);
             tbl2.add(mgr, pctx2);
@@ -2730,7 +2683,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         byte[] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
         byte[] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
 
-        PacketContext pctx = createARPPacketContext(src, dst, sender, target, vlan, nc, ARP.REQUEST);
+        PacketContext pctx = createARPPacketContext(src, dst, sender, target,
+                                        (vlan > 0) ? vlan : -1, nc, ARP.REQUEST);
         EthernetAddress ea = null;
         try {
             ea = new EthernetAddress(src);
@@ -3072,8 +3026,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 byte [] src = new byte[] {bytes[0], bytes[1], bytes[2],
                                         bytes[3], bytes[4], bytes[5]};
                 sender[3] = (byte)iphost;
-                short vlan = 0;
-                RawPacket inPkt = createARPRawPacket(src, dst, sender, target, vlan, nc, ARP.REQUEST);
+                RawPacket inPkt = createARPRawPacket(src, dst, sender, target, (short)-1, nc, ARP.REQUEST);
                 result = mgr.receiveDataPacket(inPkt);
 
                 // because there are no topology, in this case always ignored.
@@ -3083,9 +3036,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             }
 
             // packet from controller.
-            short vlan = 0;
-
-            RawPacket inPkt = createARPRawPacket(srcCnt, dst, sender, target, vlan, nc, ARP.REQUEST);
+            RawPacket inPkt = createARPRawPacket(srcCnt, dst, sender, target, (short)-1, nc, ARP.REQUEST);
             result = mgr.receiveDataPacket(inPkt);
 
             assertEquals(PacketResult.IGNORED, result);

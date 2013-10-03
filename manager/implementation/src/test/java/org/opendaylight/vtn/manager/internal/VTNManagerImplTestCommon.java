@@ -51,14 +51,15 @@ import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
 import org.opendaylight.vtn.manager.VNodeState;
+import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
+import org.opendaylight.vtn.manager.VlanMapConfig;
 
 /**
- * Common class for {@link VTNManagerImplTest} and {@link VTNManagerImplWithNodesTest}.
- *
+ * Common class for tests of {@link VTNManagerImpl}.
  */
 public class VTNManagerImplTestCommon extends TestBase {
     protected VTNManagerImpl vtnMgr = null;
@@ -389,16 +390,7 @@ public class VTNManagerImplTestCommon extends TestBase {
 
     @Before
     public void before() {
-        File confdir = new File(GlobalConstants.STARTUPHOME.toString());
-        boolean result = confdir.exists();
-        if (!result) {
-            result = confdir.mkdirs();
-        } else {
-            File[] list = confdir.listFiles();
-            for (File f : list) {
-                f.delete();
-            }
-        }
+        setupStartupDir();
 
         vtnMgr = new VTNManagerImpl();
         resMgr = new GlobalResourceManager();
@@ -420,39 +412,45 @@ public class VTNManagerImplTestCommon extends TestBase {
         vtnMgr.setHostTracker(stubObj);
         vtnMgr.setForwardingRuleManager(stubObj);
         vtnMgr.setConnectionManager(stubObj);
-        vtnMgr.init(c);
-        vtnMgr.clearDisabledNode();
+        startVTNManager(c);
     }
 
     @After
     public void after() {
-
-        vtnMgr.stopping();
-        vtnMgr.stop();
-        vtnMgr.destroy();
-
+        stopVTNManager(true);
         resMgr.destroy();
 
-        String currdir = new File(".").getAbsoluteFile().getParent();
-        File confdir = new File(GlobalConstants.STARTUPHOME.toString());
-
-        if (confdir.exists()) {
-            File[] list = confdir.listFiles();
-            for (File f : list) {
-                f.delete();
-            }
-
-            while (confdir != null && confdir.getAbsolutePath() != currdir) {
-                confdir.delete();
-                String pname = confdir.getParent();
-                if (pname == null) {
-                    break;
-                }
-                confdir = new File(pname);
-            }
-        }
+        cleanupStartupDir();
     }
 
+    /**
+     * startup VTNManager
+     */
+    protected void startVTNManager(ComponentImpl c) {
+        vtnMgr.init(c);
+        vtnMgr.clearDisabledNode();
+    }
+
+    /**
+     * stop VTNManager
+     * @param clearCache    if true clear cache maintained in VTNManager.
+     */
+    protected void stopVTNManager(boolean clearCache) {
+        vtnMgr.stopping();
+        if (clearCache) {
+            vtnMgr.containerDestroy();
+        }
+        vtnMgr.stop();
+        vtnMgr.destroy();
+    }
+
+    /**
+     * restart VTNManager
+     */
+    protected void restartVTNManager(ComponentImpl c) {
+        stopVTNManager(false);
+        startVTNManager(c);
+    }
 
     /**
      * method for setup enviroment.
@@ -495,20 +493,65 @@ public class VTNManagerImplTestCommon extends TestBase {
     }
 
     /**
-     * check a Ethernet packet whether setted expected parametor in the packet.
-     * (for IPv4 packet)
-     *
-     * @param msg   if check is failed, report error with a message specified this.
-     * @param eth   input ethernet frame data.
-     * @param ethType   expected ethernet type.
-     * @param destMac   expected destination mac address.
-     * @param srcMac    expected source mac address.
-     * @param vlan  expected vlan id. (if expected untagged, specify 0 or less than 0)
+     * check VTN configuraion.
+     * note: this don't support a configuration which VBridge > 1
      */
-    protected void checkOutEthernetPacketIPv4 (String msg, Ethernet eth, EtherTypes ethType,
-            byte[] srcMac, byte[] destMac,  short vlan) {
+    protected void checkVTNconfig(VTenantPath tpath, List<VBridgePath> bpathlist,
+            Map<VBridgeIfPath, PortMapConfig> pmaps, Map<VlanMap, VlanMapConfig> vmaps) {
+        VBridgePath bpath = bpathlist.get(0);
 
-        checkOutEthernetPacket(msg, eth, ethType, srcMac, destMac, vlan, null, (short)-1,
-                null, null, null, null);
+        List<VTenant> tlist = null;
+        List<VBridge> blist = null;
+        List<VInterface> iflist = null;
+        try {
+            tlist = vtnMgr.getTenants();
+            blist = vtnMgr.getBridges(tpath);
+            iflist = vtnMgr.getBridgeInterfaces(bpath);
+        } catch (VTNException e) {
+            unexpected(e);
+        }
+
+        assertNotNull(tlist);
+        assertNotNull(blist);
+        assertEquals(1, tlist.size());
+        assertEquals(tpath.getTenantName(), tlist.get(0).getName());
+        assertEquals(1, blist.size());
+        assertEquals(bpath.getBridgeName(), blist.get(0).getName());
+        assertEquals(pmaps.size(), iflist.size());
+
+        for (VInterface vif : iflist) {
+            VBridgeIfPath bif = new VBridgeIfPath(tpath.getTenantName(), bpath.getBridgeName(), vif.getName());
+            assertTrue(bif.toString(), pmaps.containsKey(bif));
+        }
+
+        if (pmaps != null) {
+            for (Map.Entry<VBridgeIfPath, PortMapConfig> ent : pmaps.entrySet()) {
+                PortMap pmap = null;
+                try {
+                    pmap = vtnMgr.getPortMap(ent.getKey());
+                } catch (VTNException e) {
+                    unexpected(e);
+                }
+                if (ent.getValue() != null) {
+                    assertEquals(ent.getValue(), pmap.getConfig());
+                }
+            }
+        }
+
+        if (vmaps != null) {
+            for (Map.Entry<VlanMap, VlanMapConfig> ent : vmaps.entrySet()) {
+                VlanMap vmap = null;
+                try {
+                    vmap = vtnMgr.getVlanMap(bpath, ent.getKey().getId());
+                } catch (VTNException e) {
+                    unexpected(e);
+                }
+                if (ent.getValue() != null) {
+                    assertEquals(ent.getValue().getVlan(), vmap.getVlan());
+                    assertEquals(ent.getValue().getNode(), vmap.getNode());
+                }
+            }
+        }
     }
+
 }

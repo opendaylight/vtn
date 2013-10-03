@@ -1701,7 +1701,7 @@ public class VTNManagerIT extends TestBase {
                 unexpected(e);
             }
 
-            RawPacket inPkt = createARPRawPacket (src, dst, sender, target, (short)0, nc, ARP.REQUEST);
+            RawPacket inPkt = createARPRawPacket (src, dst, sender, target, (short)-1, nc, ARP.REQUEST);
             listenDataPacket.receiveDataPacket(inPkt);
 
             MacAddressEntry entry = null;
@@ -2161,12 +2161,14 @@ public class VTNManagerIT extends TestBase {
      * @param nc    NodeConnector
      */
     private void putMacTableEntry(IListenDataPacket listenData, VBridgePath bpath, NodeConnector nc) {
-        byte[] src = new byte[] {(byte)0x00, (byte)0x01, (byte)0x01, (byte)0x01, (byte)0x01, (byte)0x01,};
-        byte[] dst = new byte[] {(byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF};
+        byte[] src = new byte[] {(byte)0x00, (byte)0x01, (byte)0x01,
+                                 (byte)0x01, (byte)0x01, (byte)0x01,};
+        byte[] dst = new byte[] {(byte)0xFF, (byte)0xFF, (byte)0xFF,
+                                 (byte)0xFF, (byte)0xFF, (byte)0xFF};
         byte[] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
         byte[] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
 
-        RawPacket inPkt = createARPRawPacket (src, dst, sender, target, (short)0, nc, ARP.REQUEST);
+        RawPacket inPkt = createARPRawPacket (src, dst, sender, target, (short)-1, nc, ARP.REQUEST);
 
         listenData.receiveDataPacket(inPkt);
     }
@@ -2250,8 +2252,8 @@ public class VTNManagerIT extends TestBase {
                                         (byte)0xff, (byte)0xff, (byte)0xff};
                 byte [] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)iphost};
                 byte [] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
-                short vlan = 0;
-                RawPacket inPkt = createARPRawPacket(src, dst, sender, target, vlan, nc, ARP.REQUEST);
+                RawPacket inPkt = createARPRawPacket(src, dst, sender, target,
+                                            (short)-1, nc, ARP.REQUEST);
                 result = listenDataPacket.receiveDataPacket(inPkt);
 
                 // because there are no topology, in this case always ignored.
@@ -2265,9 +2267,8 @@ public class VTNManagerIT extends TestBase {
                                     (byte)0xff, (byte)0xff, (byte)0xff};
             byte [] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
             byte [] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
-            short vlan = 0;
 
-            RawPacket inPkt = createARPRawPacket(src, dst, sender, target, vlan, nc, ARP.REQUEST);
+            RawPacket inPkt = createARPRawPacket(src, dst, sender, target, (short) -1, nc, ARP.REQUEST);
             result = listenDataPacket.receiveDataPacket(inPkt);
 
             assertEquals(PacketResult.IGNORED, result);

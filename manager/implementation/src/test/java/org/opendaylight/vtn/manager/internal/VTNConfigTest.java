@@ -21,7 +21,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * test for {@code VTNConfig}
+ * test for {@link VTNConfig}
  */
 public class VTNConfigTest extends TestBase {
     static String containerName = "unittest";
@@ -49,7 +49,7 @@ public class VTNConfigTest extends TestBase {
      */
     @Test
     public void testVTNConfig() {
-        String[] values = {null, "empty", "", "0", "-1",  "1", "600000", "600001", "val"};
+        String[] values = {null, "empty", "", "0", "-1", "1", "600000", "600001", "val"};
         String dir = "./";
         String filename = "vtnmanager-" + containerName + ".ini";
         String gfilename = "vtnmanager.ini";

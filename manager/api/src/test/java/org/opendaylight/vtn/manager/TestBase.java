@@ -27,6 +27,7 @@ import org.opendaylight.vtn.manager.VInterfaceConfig;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
+import org.opendaylight.controller.sal.utils.Status;
 
 import org.junit.Assert;
 
@@ -132,6 +133,13 @@ public abstract class TestBase extends Assert {
         return iconf;
     }
 
+    protected static Status copy(Status st) {
+        if (st != null) {
+            st = new Status(st.getCode(), copy(st.getDescription()));
+        }
+        return st;
+    }
+
     /**
      * Create a copy of the specified {@link EthernetAddress}.
      *
@@ -159,7 +167,7 @@ public abstract class TestBase extends Assert {
         if (ia != null) {
             Set<InetAddress> newset = new HashSet<InetAddress>();
             try {
-                for (InetAddress iaddr: ia) {
+                for (InetAddress iaddr : ia) {
                     newset.add(InetAddress.getByAddress(iaddr.getAddress()));
                 }
             } catch (Exception e) {
@@ -497,7 +505,7 @@ public abstract class TestBase extends Assert {
             list.add(null);
         }
 
-        for(byte[] addr: addrbytes) {
+        for (byte[] addr : addrbytes) {
             try {
                 EthernetAddress ea;
                 ea = new EthernetAddress(addr);
@@ -540,10 +548,10 @@ public abstract class TestBase extends Assert {
             list.add(null);
         }
 
-        for (String[] array: arrays) {
+        for (String[] array : arrays) {
             Set<InetAddress> iset = new HashSet<InetAddress>();
             try {
-                for (String addr: array) {
+                for (String addr : array) {
                     assertTrue(iset.add(InetAddress.getByName(addr)));
                 }
                 list.add(iset);
@@ -572,7 +580,7 @@ public abstract class TestBase extends Assert {
         }
 
         boolean first = true;
-        for (Object o: args) {
+        for (Object o : args) {
             if (o != null) {
                 if (first) {
                     first = false;
@@ -608,7 +616,7 @@ public abstract class TestBase extends Assert {
         assertFalse(o1.equals("string"));
         assertFalse(o1.equals(set));
 
-        for (Object o: set) {
+        for (Object o : set) {
             assertFalse("o1=" + o1 + ", o=" + o, o1.equals(o));
             assertFalse(o.equals(o1));
         }

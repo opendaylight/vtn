@@ -80,15 +80,23 @@ import org.opendaylight.controller.topologymanager.ITopologyManager;
 import org.opendaylight.controller.topologymanager.TopologyUserLinkConfig;
 import org.opendaylight.vtn.manager.SwitchPort;
 
+/**
+ * Stub module for Unit test of VTNManager.
+ *
+ * This stub provides APIs implemented in Bundle in controller project.
+ */
 class TestStub implements IClusterGlobalServices, IClusterContainerServices,
     ISwitchManager, ITopologyManager, IDataPacketService, IRouting,
     IForwardingRulesManager, IfIptoHost, IConnectionManager {
 
     /*
-     * stub mode
+     * Mode of TestStub.
+     * Each mode corresponds to following configuration.
+     *
      *   0 : no nodes
      *   1 : 1 node (not implemented yet)
-     *   2 : 2 nodes and each node have 6 nodeconnectors ("port-15" is used to connect nodes).
+     *   2 : 2 nodes and each node have 6 nodeconnectors
+     *       ("port-15" is used to connect nodes).
      *   3 : 3 nodes and each node have 7 nodeconnectors
      *       (node0 and node1 connect with port-15, node0 and node2 connect with port-16)
      */
@@ -104,6 +112,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     private List<RawPacket> transmittedData = null;
 
+    private Subnet savedSubnet = null;
     private SubnetConfig savedSubnetConfig = null;
 
     /**
@@ -406,6 +415,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Status removeSubnet(SubnetConfig configObject) {
+        savedSubnet = null;
         savedSubnetConfig = null;
         return null;
     }
@@ -417,6 +427,8 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Status removeSubnet(String name) {
+        savedSubnet = null;
+        savedSubnetConfig = null;
         return null;
     }
 
@@ -439,11 +451,12 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
     public Subnet getSubnetByNetworkAddress(InetAddress networkAddress) {
 
         if (stubmode >= 1) {
-            Subnet sub = null;
             if (savedSubnetConfig != null) {
-                sub = new Subnet(savedSubnetConfig);
+                if (savedSubnet == null) {
+                    savedSubnet = new Subnet(savedSubnetConfig);
+                }
+                return savedSubnet;
             }
-            return sub;
         }
 
         return null;

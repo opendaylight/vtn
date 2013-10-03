@@ -53,8 +53,29 @@ public class ObjectPairTest extends TestBase {
                 testEquals(set, p1, p2);
             }
         }
-
         int required = strings.size() * integers.size();
+        assertEquals(required, set.size());
+
+        set.clear();
+        for (String str1: strings) {
+            for (String str2: strings) {
+                ObjectPair<String, String> p1 =
+                        new ObjectPair<String, String>(str1, str2);
+                ObjectPair<String, String> p2 =
+                        new ObjectPair<String, String>(str2, str1);
+
+                if(str1 != null && !str1.equals(str2)) {
+                    assertFalse(p1.equals(p2));
+                }
+                if(str2 != null && !str2.equals(str1)) {
+                    assertFalse(p2.equals(p1));
+                }
+                assertTrue(set.add(p1));
+                assertFalse(set.add(p1));
+            }
+        }
+
+        required = strings.size() * strings.size();
         assertEquals(required, set.size());
     }
 
