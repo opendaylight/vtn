@@ -213,6 +213,7 @@ upll_rc_t IpcUtil::DriverResultCodeToKtURC(
   switch (ctrlr_type) {
     case UNC_CT_PFC:
     case UNC_CT_VNP:
+    case UNC_CT_ODC:
       {
         switch (driver_result_code) {
           case DRVAPI_RESPONSE_SUCCESS:
@@ -297,6 +298,11 @@ bool IpcUtil::SendReqToDriver(const char *ctrlr_name, char *domain_id,
     case UNC_CT_VNP:
       channel_name = VNPDRIVER_CHANNEL_NAME;
       service_name = VNPDRIVER_SERVICE_NAME;
+      service_id = VNPDRV_SVID_LOGICAL;
+      break;
+    case UNC_CT_ODC:
+      channel_name = "drvvtnd";
+      service_name = "vtndrvintf";
       service_id = VNPDRV_SVID_LOGICAL;
       break;
     default:

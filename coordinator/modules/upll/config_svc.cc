@@ -465,7 +465,8 @@ pfc_ipcresp_t UpllConfigSvc::HandleUpplUpdate(
     if (ctr_val.valid[kIdxType] == UNC_VF_VALID) {
       // For Unknown, version is optional.
       if (((unc_keytype_ctrtype_t)ctr_val.type == UNC_CT_PFC ||
-          (unc_keytype_ctrtype_t)ctr_val.type == UNC_CT_VNP)) {
+          (unc_keytype_ctrtype_t)ctr_val.type == UNC_CT_VNP || 
+          (unc_keytype_ctrtype_t)ctr_val.type == UNC_CT_ODC)) {
         if (ctr_val.valid[kIdxVersion] == UNC_VF_INVALID) {
           urc = UPLL_RC_ERR_CFG_SYNTAX;
         }
