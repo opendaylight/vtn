@@ -2588,7 +2588,7 @@ void Kt_Controller::Fill_Attr_Syntax_Map() {
   attr_syntax_map[CTR_NAME_STR] = objKeyAttrSyntax;
 
   Kt_Class_Attr_Syntax objAttrTypeSyntax =
-  { PFC_IPCTYPE_UINT8, 0, 2, 0, 0, true,  "" };
+  { PFC_IPCTYPE_UINT8, 0, 3, 0, 0, true,  "" };
   attr_syntax_map[CTR_TYPE_STR] = objAttrTypeSyntax;
 
   Kt_Class_Attr_Syntax objAttrVersionSyntax =

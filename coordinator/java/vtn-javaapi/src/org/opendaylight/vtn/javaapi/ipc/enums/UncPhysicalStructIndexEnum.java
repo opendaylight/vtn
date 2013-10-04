@@ -160,7 +160,7 @@ public class UncPhysicalStructIndexEnum {
 	// Not mapped with updated header file- Poorvi
 
 	public enum UpplTypeIndex {
-		UNC_CT_UNKNOWN("0"), UNC_CT_PFC("1"), UNC_CT_VNP("2");
+		UNC_CT_UNKNOWN("0"), UNC_CT_PFC("1"), UNC_CT_VNP("2"), UNC_CT_ODC("3");
 
 		private final String value;
 

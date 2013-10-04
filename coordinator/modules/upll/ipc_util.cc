@@ -16,6 +16,7 @@
 
 #include "unc/pfcdriver_include.h"
 #include "unc/vnpdriver_include.h"
+#include "unc/odcdriver_include.h"
 #include "unc/unc_base.h"
 
 #include "ctrlr_mgr.hh"
@@ -213,6 +214,7 @@ upll_rc_t IpcUtil::DriverResultCodeToKtURC(
   switch (ctrlr_type) {
     case UNC_CT_PFC:
     case UNC_CT_VNP:
+    case UNC_CT_ODC:
       {
         switch (driver_result_code) {
           case DRVAPI_RESPONSE_SUCCESS:
@@ -298,6 +300,11 @@ bool IpcUtil::SendReqToDriver(const char *ctrlr_name, char *domain_id,
       channel_name = VNPDRIVER_CHANNEL_NAME;
       service_name = VNPDRIVER_SERVICE_NAME;
       service_id = VNPDRV_SVID_LOGICAL;
+      break;
+    case UNC_CT_ODC:
+      channel_name = ODCDRIVER_CHANNEL_NAME;
+      service_name = ODCDRIVER_SERVICE_NAME;
+      service_id = ODCDRV_SVID_PLATFORM;
       break;
     default:
       UPLL_LOG_WARN("Unknown controller type %d", ctrlr_type);

@@ -342,7 +342,8 @@ class TcReadWriteLock  {
     TC_UPLL,
     TC_UPPL,
     TC_DRV_OPENFLOW,
-    TC_DRV_OVERLAY
+    TC_DRV_OVERLAY,
+    TC_DRV_ODL
     //TC_DRV_LEGACY
   };
 

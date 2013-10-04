@@ -24,6 +24,9 @@
 #include <string>
 #include "unc/uppl_common.h"
 #include "unc/keytype.h"
+#include "unc/pfcdriver_include.h"
+#include "unc/vnpdriver_include.h"
+#include <unc/odcdriver_include.h>
 #include "phy_util.hh"
 
 using pfc::core::ipc::ClientSession;

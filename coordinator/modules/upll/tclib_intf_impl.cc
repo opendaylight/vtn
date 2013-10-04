@@ -76,8 +76,8 @@ upll_rc_t TcLibIntfImpl::FillTcDriverInfoMap(
   PFC_ASSERT(driver_info != NULL);
   PFC_ASSERT(ctrlr_set != NULL);
 
-  std::vector<std::string> openflow_list, legacy_list, overlay_list;
-  int openflow_cnt = 0, /*legacy_cnt = 0,*/ overlay_cnt = 0;
+  std::vector<std::string> openflow_list, legacy_list, overlay_list, odc_list;
+  int openflow_cnt = 0, /*legacy_cnt = 0,*/ overlay_cnt = 0,  odc_cnt = 0;
 
   for (std::set<std::string>::iterator ctr_it = ctrlr_set->begin();
        ctr_it != ctrlr_set->end(); ++ctr_it) {
@@ -113,6 +113,9 @@ upll_rc_t TcLibIntfImpl::FillTcDriverInfoMap(
     } else if (ctrlr_type == UNC_CT_VNP) {
       overlay_cnt++;
       overlay_list.push_back(ctrlr_name);
+    } else if (ctrlr_type == UNC_CT_ODC) {
+      odc_cnt++;
+      odc_list.push_back(ctrlr_name);
     } else {
       UPLL_LOG_WARN("Unknown controller type in %d", ctrlr_type);
       return UPLL_RC_ERR_GENERIC;
@@ -128,6 +131,9 @@ upll_rc_t TcLibIntfImpl::FillTcDriverInfoMap(
   */
   if (overlay_cnt) {
     (*driver_info)[UNC_CT_VNP] = overlay_list;
+  }
+  if (odc_cnt) {
+    (*driver_info)[UNC_CT_ODC] = odc_list;
   }
   return UPLL_RC_SUCCESS;
 }

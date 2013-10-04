@@ -195,6 +195,10 @@ TcDaemonName TcMsg::MapTcDriverId(unc_keytype_ctrtype_t driver_id) {
       drv_daemon = TC_DRV_OVERLAY;
       break;
     }
+    case UNC_CT_ODC: {
+      drv_daemon = TC_DRV_ODL;
+      break;
+    }
    /* case UNC_CT_LEGACY: {
       drv_daemon = TC_DRV_LEGACY;
       break;
