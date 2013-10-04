@@ -5489,6 +5489,13 @@ public class IpcStructFactory {
 									IpcDataUnitWrapper
 											.setIpcUint8Value(UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_VNP
 													.ordinal()));
+				} else if (controller.get(VtnServiceJsonConsts.TYPE).getAsString()
+						.equalsIgnoreCase(VtnServiceJsonConsts.ODC)) {
+					valCtrStruct
+							.set(VtnServiceJsonConsts.TYPE,
+									IpcDataUnitWrapper
+											.setIpcUint8Value(UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_ODC
+													.ordinal()));
 				}
 				LOG.debug("type:"
 						+ controller.get(VtnServiceJsonConsts.TYPE).getAsString());

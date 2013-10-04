@@ -19,8 +19,6 @@
 #include "ipc_client_configuration_handler.hh"
 #include "physicallayer.hh"
 #include "physical_common_def.hh"
-#include "unc/pfcdriver_include.h"
-#include "unc/vnpdriver_include.h"
 
 using unc::uppl::IPCClientDriverHandler;
 
@@ -37,7 +35,8 @@ Ktclasses,Audit,Import and ITC class.
 IPCClientDriverHandler::IPCClientDriverHandler(
     unc_keytype_ctrtype_t cntr_type, UpplReturnCode &err) {
   if (cntr_type == UNC_CT_PFC ||
-      cntr_type == UNC_CT_VNP) {
+      cntr_type == UNC_CT_VNP || 
+      cntr_type == UNC_CT_ODC ) {
     controller_type = cntr_type;
     PhysicalCore* physical_core = PhysicalCore::get_physical_core();
     /* Getting the driver name from uppl.conf */
@@ -53,6 +52,8 @@ IPCClientDriverHandler::IPCClientDriverHandler(
     chn_name = PFCDRIVER_IPC_CHN_NAME;
     if (cntr_type == UNC_CT_VNP) {
       chn_name = VNPDRIVER_IPC_CHN_NAME;
+    } else if ( cntr_type == UNC_CT_ODC ) {
+      chn_name = ODCDRIVER_CHANNEL_NAME;
     }
     int clnt_err = pfc_ipcclnt_altopen(chn_name.c_str(), &connp);
     if (clnt_err != 0) {
@@ -125,6 +126,7 @@ UpplReturnCode IPCClientDriverHandler::ConvertDriverErrorCode(
     uint32_t drv_err_code) {
   switch (controller_type) {
     case UNC_CT_PFC:
+    case UNC_CT_ODC:
     case UNC_CT_VNP:
       switch (drv_err_code) {
         case 0:

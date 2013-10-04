@@ -395,6 +395,7 @@ TcOperRet CommitTransaction::Execute() {
   switch (opertype_) {
     case tclib::MSG_COMMIT_TRANS_START: {
       pfc_log_info("*** TxSTART request ***");
+      notifyorder_.push_back(TC_DRV_ODL);
       notifyorder_.push_back(TC_DRV_OPENFLOW);
       notifyorder_.push_back(TC_DRV_OVERLAY);
       // notifyorder_.push_back(TC_DRV_LEGACY);
@@ -409,6 +410,7 @@ TcOperRet CommitTransaction::Execute() {
       // notifyorder_.push_back(TC_DRV_LEGACY);
       notifyorder_.push_back(TC_DRV_OVERLAY);
       notifyorder_.push_back(TC_DRV_OPENFLOW);
+      notifyorder_.push_back(TC_DRV_ODL);
       break;
     }
     default: {

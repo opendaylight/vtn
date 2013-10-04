@@ -19,7 +19,7 @@ CXX_SOURCES = capa_module.cc \
 
 CFDEF_FILES     += ctrlr_capa.cfdef
 
-SYSCONF_FILES	= pfc_capa.conf vnp_capa.conf
+SYSCONF_FILES	= pfc_capa.conf vnp_capa.conf odc_capa.conf
 SYSCONF_DESTDIR	= $(DESTDIR)$(INST_SYSCONFDIR)/capa
 SYSCONF_TARGET	= $(SYSCONF_FILES:%=$(SYSCONF_DESTDIR)/%)
 EXTRA_INSTALL	= install-sysconf

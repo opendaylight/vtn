@@ -553,6 +553,12 @@ UpplReturnCode TransactionRequest::EndTransaction(
     pfc_log_fatal("Cannot open session to VNP driver");
     return err;
   }
+  err = UPPL_RC_SUCCESS;
+  IPCClientDriverHandler odc_drv_handler(UNC_CT_ODC, err);
+  if (err != UPPL_RC_SUCCESS) {
+    pfc_log_fatal("Cannot open session to ODC driver");
+    return err;
+  }
   // Sending the 'Delete' Controller Request to Driver
   vector<key_ctr_t> :: iterator it_controller = controller_deleted.begin();
   for ( ; it_controller != controller_deleted.end(); ++it_controller) {
@@ -584,6 +590,9 @@ UpplReturnCode TransactionRequest::EndTransaction(
       } else if (controller_type == UNC_CT_VNP) {
         pfc_log_debug("VNP Controller Type");
         cli_session = vnp_drv_handler.ResetAndGetSession();
+      } else if (controller_type == UNC_CT_ODC ) {
+        pfc_log_debug("ODC Controller Type");
+        cli_session = odc_drv_handler.ResetAndGetSession();
       } else {
         pfc_log_debug("DRIVER SUPPORT NOT ADDED YET FOR"
             "UNKNOWN type");
@@ -605,6 +614,9 @@ UpplReturnCode TransactionRequest::EndTransaction(
       }
       if (controller_type == UNC_CT_VNP) {
         driver_response = vnp_drv_handler.SendReqAndGetResp(rsp);
+      }
+      if (controller_type == UNC_CT_ODC ) {
+        driver_response = odc_drv_handler.SendReqAndGetResp(rsp);
       }
       if (err != 0 || driver_response != UPPL_RC_SUCCESS) {
         pfc_log_error("Delete response from driver for controller %s"
@@ -1079,6 +1091,11 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
     pfc_log_error("Cannot open session to VNP driver");
     return;
   }
+  IPCClientDriverHandler odc_drv_handler(UNC_CT_ODC, err);
+  if (err != UPPL_RC_SUCCESS) {
+    pfc_log_error("Cannot open session to VNP driver");
+    return;
+  }
   PhysicalCore *physical_core = PhysicalLayer::get_instance()->
       get_physical_core();
   if (operation_type == UNC_OP_CREATE) {
@@ -1147,6 +1164,9 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
     } else if (controller_type == UNC_CT_VNP) {
       pfc_log_debug("VNP Controller type");
       cli_session = vnp_drv_handler.ResetAndGetSession();
+    } else if (controller_type == UNC_CT_ODC ) {
+      pfc_log_debug("ODC Controller type");
+      cli_session = odc_drv_handler.ResetAndGetSession();
     } else {
       pfc_log_debug("DRIVER SUPPORT NOT ADDED YET FOR"
           " UNKNOWN type");
@@ -1181,6 +1201,9 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
     }
     if (controller_type == UNC_CT_VNP) {
       driver_response = vnp_drv_handler.SendReqAndGetResp(rsp);
+    }
+    if (controller_type == UNC_CT_ODC ) {
+      driver_response = odc_drv_handler.SendReqAndGetResp(rsp);
     }
     delete val_ctr_new;
     val_ctr_new = NULL;
