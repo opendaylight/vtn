@@ -573,14 +573,9 @@ public class MacAddressTable {
 
         ArrayList<MacAddressEntry> list =
             new ArrayList<MacAddressEntry>(table.size());
-        for (Iterator<Map.Entry<Long, MacTableEntry>> it =
-                 table.entrySet().iterator(); it.hasNext();) {
-            Map.Entry<Long, MacTableEntry> entry = it.next();
-            Long mac = entry.getKey();
-            MacTableEntry tent = entry.getValue();
+        for (MacTableEntry tent: table.values()) {
             list.add(tent.getEntry());
         }
-        list.trimToSize();
 
         return list;
     }
