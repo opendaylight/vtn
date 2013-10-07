@@ -77,6 +77,7 @@
               org.opendaylight.vtn.manager,
               org.apache.felix.dm,
               org.slf4j,
+              org.osgi.framework
             </Import-Package>
             <Bundle-Activator>
               org.opendaylight.vtn.manager.internal.Activator

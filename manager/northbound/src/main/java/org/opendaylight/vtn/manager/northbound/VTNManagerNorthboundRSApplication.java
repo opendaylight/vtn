@@ -28,6 +28,7 @@ public class VTNManagerNorthboundRSApplication extends Application {
     @Override
     public Set<Class<?>> getClasses() {
         Set<Class<?>> classes = new HashSet<Class<?>>();
+        classes.add(GlobalNorthbound.class);
         classes.add(VTenantNorthbound.class);
         classes.add(VBridgeNorthbound.class);
         classes.add(VBridgeInterfaceNorthbound.class);

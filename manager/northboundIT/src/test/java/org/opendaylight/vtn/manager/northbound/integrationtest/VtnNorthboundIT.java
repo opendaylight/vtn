@@ -50,17 +50,24 @@ import org.ops4j.pax.exam.util.PathUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
+import org.osgi.framework.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RunWith(PaxExam.class)
 public class VtnNorthboundIT {
-    private Logger log = LoggerFactory.getLogger(VtnNorthboundIT.class);
+    private static final Logger log = LoggerFactory.
+        getLogger(VtnNorthboundIT.class);
+    private static final String  BUNDLE_VTN_MANAGER_IMPL =
+        "org.opendaylight.vtn.manager.implementation";
+
     // get the OSGI bundle context
     @Inject
     private BundleContext bc;
     private IUserManager userManager = null;
     private Boolean debugMsg = false;
+
+    private Bundle  implBundle;
 
     @BeforeClass
     public static void beforeClass() {
@@ -118,12 +125,14 @@ public class VtnNorthboundIT {
     public void areWeReady() {
         assertNotNull(bc);
         boolean debugit = false;
-        Bundle b[] = bc.getBundles();
-        for (int i = 0; i < b.length; i++) {
-            int state = b[i].getState();
+        for (Bundle b: bc.getBundles()) {
+            String name = b.getSymbolicName();
+            int state = b.getState();
             if (state != Bundle.ACTIVE && state != Bundle.RESOLVED) {
-                log.debug("Bundle:" + b[i].getSymbolicName() + " state:" + stateToString(state));
+                log.debug("Bundle:" + name + " state:" + stateToString(state));
                 debugit = true;
+            } else if (BUNDLE_VTN_MANAGER_IMPL.equals(name)) {
+                implBundle = b;
             }
         }
         if (debugit) {
@@ -347,6 +356,7 @@ public class VtnNorthboundIT {
         result = getJsonResult(baseURL + "default/vtns/" + tname1, "DELETE");
         Assert.assertEquals(404, httpResponseCode.intValue());
 
+        testVtnGlobal(baseURL);
     }
 
     private void testVBridgeAPI(String url, String tname1, String tname2) throws JSONException {
@@ -906,6 +916,36 @@ public class VtnNorthboundIT {
 
     }
 
+    private void testVtnGlobal(String base) throws JSONException {
+        System.out.println("Starting IVTNGlobal JAXB client.");
+
+        // Get version information of the VTN Manager.
+        String result = getJsonResult(base + "version");
+        Assert.assertEquals(200, httpResponseCode.intValue());
+
+        JSONTokener jt = new JSONTokener(result);
+        JSONObject json = new JSONObject(jt);
+        int api = json.getInt("@api");
+        JSONObject bv = json.getJSONObject("bundle");
+        Assert.assertTrue("API version: " + api, api > 0);
+
+        // Determine actual bundle version of manager.implementation.
+        Assert.assertNotNull(implBundle);
+        Version ver = implBundle.getVersion();
+        Assert.assertNotNull(ver);
+
+        Assert.assertEquals(ver.getMajor(), bv.getInt("@major"));
+        Assert.assertEquals(ver.getMinor(), bv.getInt("@minor"));
+        Assert.assertEquals(ver.getMicro(), bv.getInt("@micro"));
+
+        String qf = ver.getQualifier();
+        String qfkey  ="@qualifier";
+        if (qf == null || qf.isEmpty()) {
+            Assert.assertTrue(bv.isNull(qfkey));
+        } else {
+            Assert.assertEquals(qf, bv.getString(qfkey));
+        }
+    }
 
     // Configure the OSGi container
     @Configuration

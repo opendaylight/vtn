@@ -18,6 +18,7 @@ import java.util.HashSet;
 import org.apache.felix.dm.Component;
 
 import org.opendaylight.vtn.manager.IVTNFlowDebugger;
+import org.opendaylight.vtn.manager.IVTNGlobal;
 import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.IVTNManagerAware;
 import org.opendaylight.vtn.manager.IVTNModeListener;
@@ -100,6 +101,7 @@ public class Activator extends ComponentActivatorAbstractBase {
         if (imp.equals(GlobalResourceManager.class)) {
             // Export the services.
             String[] classes = {
+                IVTNGlobal.class.getName(),
                 IVTNResourceManager.class.getName(),
                 ICoordinatorChangeAware.class.getName(),
             };

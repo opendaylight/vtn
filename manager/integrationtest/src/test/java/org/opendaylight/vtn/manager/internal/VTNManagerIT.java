@@ -50,7 +50,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-
+import org.opendaylight.vtn.manager.BundleVersion;
+import org.opendaylight.vtn.manager.IVTNGlobal;
 import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.IVTNManagerAware;
 import org.opendaylight.vtn.manager.IVTNModeListener;
@@ -109,18 +110,23 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.framework.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RunWith(PaxExam.class)
 public class VTNManagerIT extends TestBase {
-    private Logger log = LoggerFactory
-            .getLogger(VTNManagerIT.class);
+    private static final Logger log = LoggerFactory.
+        getLogger(VTNManagerIT.class);
+    private static final String  BUNDLE_VTN_MANAGER_IMPL =
+        "org.opendaylight.vtn.manager.implementation";
+
     // get the OSGI bundle context
     @Inject
     private BundleContext bc;
 
     private IVTNManager vtnManager = null;
+    private IVTNGlobal vtnGlobal = null;
     private IObjectReader objReader = null;
     private ICacheUpdateAware<ClusterEventId, Object> cacheUpdateAware = null;
     private IConfigurationContainerAware  configContainerAware = null;
@@ -130,6 +136,8 @@ public class VTNManagerIT extends TestBase {
     private IListenDataPacket listenDataPacket = null;
     private IListenRoutingUpdates listenRoutingUpdates = null;
     private IHostFinder hostFinder = null;
+
+    private Bundle  implBundle;
 
     // Configure the OSGi container
     @Configuration
@@ -228,13 +236,14 @@ public class VTNManagerIT extends TestBase {
     public void areWeReady() {
         assertNotNull(bc);
         boolean debugit = false;
-        Bundle b[] = bc.getBundles();
-        for (int i = 0; i < b.length; i++) {
-            int state = b[i].getState();
+        for (Bundle b: bc.getBundles()) {
+            String name = b.getSymbolicName();
+            int state = b.getState();
             if (state != Bundle.ACTIVE && state != Bundle.RESOLVED) {
-                log.debug("Bundle:" + b[i].getSymbolicName() + " state:"
-                        + stateToString(state));
+                log.debug("Bundle:" + name + " state:" + stateToString(state));
                 debugit = true;
+            } else if (BUNDLE_VTN_MANAGER_IMPL.equals(name)) {
+                implBundle = b;
             }
         }
         if (debugit) {
@@ -260,9 +269,14 @@ public class VTNManagerIT extends TestBase {
             this.hostFinder = (IHostFinder) this.vtnManager;
         }
 
-        // If StatisticsManager is null, cannot run tests.
-        assertNotNull(this.vtnManager);
+        r = bc.getServiceReference(IVTNGlobal.class.getName());
+        if (r != null) {
+            this.vtnGlobal = (IVTNGlobal)bc.getService(r);
+        }
 
+        // If either IVTNManager or IVTNGlobal is null, cannot run tests.
+        assertNotNull(this.vtnManager);
+        assertNotNull(this.vtnGlobal);
     }
 
     @BeforeClass
@@ -301,6 +315,7 @@ public class VTNManagerIT extends TestBase {
      */
     @Test
     public void testIVTNManager() {
+        testIVTNGlobal();
         testAddGetRemoveTenant();
         testModifyTenant();
         testBridge();
@@ -1194,6 +1209,33 @@ public class VTNManagerIT extends TestBase {
 
         st = mgr.removeTenant(tpath);
         assertTrue(st.isSuccess());
+    }
+
+    /**
+     * Test case for {@link IVTNGlobal}.
+     */
+    private void testIVTNGlobal() {
+        int api = vtnGlobal.getApiVersion();
+        assertTrue("API version = " + api, api > 0);
+
+        BundleVersion bv = vtnGlobal.getBundleVersion();
+        assertNotNull(bv);
+
+        // Determine actual bundle version of manager.implementation.
+        assertNotNull(implBundle);
+        Version ver = implBundle.getVersion();
+        assertNotNull(ver);
+
+        assertEquals(ver.getMajor(), bv.getMajor());
+        assertEquals(ver.getMinor(), bv.getMinor());
+        assertEquals(ver.getMicro(), bv.getMicro());
+
+        String qf = ver.getQualifier();
+        if (qf == null || qf.isEmpty()) {
+            assertNull(bv.getQualifier());
+        } else {
+            assertEquals(qf, bv.getQualifier());
+        }
     }
 
     /**
@@ -2446,7 +2488,6 @@ public class VTNManagerIT extends TestBase {
         assertEquals(1, stub.getCalledCount());
         assertEquals(false, stub.getCalledArg());
     }
-
 
     // private methods.
 

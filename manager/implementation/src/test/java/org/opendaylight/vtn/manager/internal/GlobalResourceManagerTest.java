@@ -24,6 +24,7 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
+import org.opendaylight.vtn.manager.BundleVersion;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
@@ -218,6 +219,20 @@ public class GlobalResourceManagerTest extends TestBase {
             }
         }
         grsc.destroy();
+    }
+
+    /**
+     * Test case for {@link GlobalResourceManager#getApiVersion()} and
+     * {@link GlobalResourceManager#getBundleVersion()}.
+     */
+    @Test
+    public void testGetVersion() {
+        GlobalResourceManager grsc = new GlobalResourceManager();
+        assertEquals(GlobalResourceManager.API_VERSION, grsc.getApiVersion());
+
+        // This should return null because the VTN Manager is not loaded by
+        // a OSGi bundle class loader.
+        assertNull(grsc.getBundleVersion());
     }
 
     /**

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2013 NEC Corporation
  * All rights reserved.
  *
@@ -6,6 +6,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.northbound;
 
 import java.net.InetAddress;
@@ -23,7 +24,7 @@ import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.SwitchPort;
 
 /**
- * JUnit test for {@link MacEntry}
+ * JUnit test for {@link MacEntry}.
  */
 public class MacEntryTest extends TestBase {
 

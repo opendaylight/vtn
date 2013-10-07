@@ -26,6 +26,12 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.felix.dm.Component;
 
+import org.osgi.framework.Bundle;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.Version;
+
+import org.opendaylight.vtn.manager.BundleVersion;
+import org.opendaylight.vtn.manager.IVTNGlobal;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
@@ -42,12 +48,17 @@ import org.opendaylight.controller.clustering.services.ICoordinatorChangeAware;
  * VTN Manager.
  */
 public class GlobalResourceManager
-    implements IVTNResourceManager, ICoordinatorChangeAware {
+    implements IVTNGlobal, IVTNResourceManager, ICoordinatorChangeAware {
     /**
      * Logger instance.
      */
     private static final Logger  LOG =
         LoggerFactory.getLogger(GlobalResourceManager.class);
+
+    /**
+     * Current API version of the VTN Manager.
+     */
+    public static final int  API_VERSION = 1;
 
     /**
      * A character which separates the container name from the map key.
@@ -265,6 +276,44 @@ public class GlobalResourceManager
         }
 
         return cache;
+    }
+
+    // IVTNGlobal
+
+    /**
+     * Return the API version of the VTN Manager.
+     *
+     * <p>
+     *   The API version will be incremented when changes which breaks
+     *   compatibility is made to the API of VTN Manager.
+     * </p>
+     *
+     * @return  The API version of the VTN Manager.
+     */
+    @Override
+    public int getApiVersion() {
+        return API_VERSION;
+    }
+
+    /**
+     * Return the version information of the OSGi bundle which implements
+     * the VTN Manager.
+     *
+     * @return  A {@link BundleVersion} object which represents the version
+     *          of the OSGi bundle which implements the VTN Manager.
+     *          {@code null} is returned if the VTN Manager is loaded by
+     *          a OSGi bundle class loader.
+     */
+    @Override
+    public BundleVersion getBundleVersion() {
+        Bundle bundle = FrameworkUtil.getBundle(GlobalResourceManager.class);
+        if (bundle == null) {
+            return null;
+        }
+
+        Version ver = bundle.getVersion();
+        return new BundleVersion(ver.getMajor(), ver.getMinor(),
+                                 ver.getMicro(), ver.getQualifier());
     }
 
     // IVTNResourceManager

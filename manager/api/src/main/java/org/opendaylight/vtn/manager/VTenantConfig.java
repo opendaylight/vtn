@@ -256,5 +256,4 @@ public class VTenantConfig implements Serializable {
 
         return builder.toString();
     }
-
 }
