@@ -16,12 +16,12 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.After;
 import org.junit.Before;
-
 
 import org.opendaylight.controller.hosttracker.IfHostListener;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
@@ -554,4 +554,46 @@ public class VTNManagerImplTestCommon extends TestBase {
         }
     }
 
+    /**
+     * Flush all pending tasks on the VTN task thread.
+     */
+    protected void flushTasks() {
+        NopTask task = new NopTask();
+        vtnMgr.postTask(task);
+        assertTrue(task.await(10, TimeUnit.SECONDS));
+    }
+
+    /**
+     * A dummy task to flush tasks on the VTN task thread.
+     */
+    private class NopTask implements Runnable {
+        /**
+         * A latch to wait for completion.
+         */
+        private final CountDownLatch  latch = new CountDownLatch(1);
+
+        /**
+         * Wake up all threads waiting for this task.
+         */
+        @Override
+        public void run() {
+            latch.countDown();
+        }
+
+        /**
+         * Wait for completion of this task.
+         *
+         * @param timeout  The maximum time to wait.
+         * @param unit     The time unit of the {@code timeout} argument.
+         * @return  {@code true} is returned if this task completed.
+         *          Otherwise {@code false} is returned.
+         */
+        private boolean await(long timeout, TimeUnit unit) {
+            try {
+                return latch.await(timeout, unit);
+            } catch (InterruptedException e) {
+                return false;
+            }
+        }
+    }
 }

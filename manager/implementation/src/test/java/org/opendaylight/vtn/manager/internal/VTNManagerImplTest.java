@@ -21,8 +21,6 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.BeforeClass;
@@ -490,11 +488,13 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         mgr.addVTNManagerAware(stub1);
         mgr.addVTNManagerAware(stub2);
+        flushTasks();
         stub1.checkVtnInfo(1, tpath, tname, UpdateType.ADDED);
         stub2.checkVtnInfo(1, tpath, tname, UpdateType.ADDED);
 
         mgr.removeVTNManagerAware(stub2);
         mgr.addVTNManagerAware(stub2);
+        flushTasks();
         stub2.checkVtnInfo(1, tpath, tname, UpdateType.ADDED);
         stub1.checkAllNull();
         stub2.checkAllNull();
@@ -509,6 +509,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         mgr.removeVTNManagerAware(stub2);
         mgr.addVTNManagerAware(stub2);
+        flushTasks();
         stub2.checkVtnInfo(1, tpath, tname, UpdateType.ADDED);
         stub2.checkVbrInfo(1, bpath, bname, UpdateType.ADDED);
         stub1.checkAllNull();
@@ -525,6 +526,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         mgr.removeVTNManagerAware(stub2);
         mgr.addVTNManagerAware(stub2);
+        flushTasks();
         stub2.checkVtnInfo(1, tpath, tname, UpdateType.ADDED);
         stub2.checkVbrInfo(1, bpath, bname, UpdateType.ADDED);
         stub2.checkVIfInfo(1, ifpath, ifname, UpdateType.ADDED);
@@ -548,6 +550,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         mgr.removeVTNManagerAware(stub2);
         mgr.addVTNManagerAware(stub2);
+        flushTasks();
         stub2.checkVtnInfo(1, tpath, tname, UpdateType.ADDED);
         stub2.checkVbrInfo(1, bpath, bname, UpdateType.ADDED);
         stub2.checkVIfInfo(1, ifpath, ifname, UpdateType.ADDED);
@@ -568,6 +571,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         mgr.removeVTNManagerAware(stub2);
         mgr.addVTNManagerAware(stub2);
+        flushTasks();
         stub2.checkVtnInfo(1, tpath, tname, UpdateType.ADDED);
         stub2.checkVbrInfo(1, bpath, bname, UpdateType.ADDED);
         stub2.checkVIfInfo(1, ifpath, ifname, UpdateType.ADDED);
@@ -577,6 +581,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         stub2.checkAllNull();
 
         mgr.addVTNManagerAware(stub2);
+        flushTasks();
 
         // modify a tenant setting
         st = mgr.modifyTenant(tpath, new VTenantConfig("desc"), false);
@@ -3051,48 +3056,5 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         st = mgr.removeTenant(tpath);
         assertTrue(st.isSuccess());
-    }
-
-    /**
-     * Flush all pending tasks on the VTN task thread.
-     */
-    private void flushTasks() {
-        NopTask task = new NopTask();
-        vtnMgr.postTask(task);
-        assertTrue(task.await(10, TimeUnit.SECONDS));
-    }
-
-    /**
-     * A dummy task to flush tasks on the VTN task thread.
-     */
-    private class NopTask implements Runnable {
-        /**
-         * A latch to wait for completion.
-         */
-        private final CountDownLatch  latch = new CountDownLatch(1);
-
-        /**
-         * Wake up all threads waiting for this task.
-         */
-        @Override
-        public void run() {
-            latch.countDown();
-        }
-
-        /**
-         * Wait for completion of this task.
-         *
-         * @param timeout  The maximum time to wait.
-         * @param unit     The time unit of the {@code timeout} argument.
-         * @return  {@code true} is returned if this task completed.
-         *          Otherwise {@code false} is returned.
-         */
-        private boolean await(long timeout, TimeUnit unit) {
-            try {
-                return latch.await(timeout, unit);
-            } catch (InterruptedException e) {
-                return false;
-            }
-        }
     }
 }
