@@ -554,5 +554,6 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
             propMap = swmgr.getNodeConnectorProps(nc);
             mgr.notifyNodeConnector(nc, UpdateType.ADDED, propMap);
         }
+        mgr.initISL();
     }
 }

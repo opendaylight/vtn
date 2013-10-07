@@ -199,6 +199,11 @@ public class VTNManagerImpl
     static final String CACHE_PORTS = "vtn.ports";
 
     /**
+     * The name of the cluster cache which keeps internal ports.
+     */
+    static final String CACHE_ISL = "vtn.isl";
+
+    /**
      * The name of the cluster cache which keeps MAC address table entries.
      */
     static final String CACHE_MAC = "vtn.mac";
@@ -248,6 +253,17 @@ public class VTNManagerImpl
      * Keeps pairs of existing node connectors and properties.
      */
     private ConcurrentMap<NodeConnector, PortProperty>  portDB;
+
+    /**
+     * Keeps internal ports as map key.
+     *
+     * <p>
+     *   This map is used as {@code Set<NodeConnector>}. So we use
+     *   {@code VNodeState} enum as value in order to reduce memory footprint
+     *   and traffic between cluster nodes.
+     * </p>
+     */
+    private ConcurrentMap<NodeConnector, VNodeState>  islDB;
 
     /**
      * Keeps all MAC address table entries in this container.
@@ -642,6 +658,7 @@ public class VTNManagerImpl
 
         // Initialize inventory caches.
         initInventory();
+        initISL();
 
         // Load saved configurations.
         loadConfig();
@@ -771,6 +788,7 @@ public class VTNManagerImpl
             stateDB = new ConcurrentHashMap<VTenantPath, Object>();
             nodeDB = new ConcurrentHashMap<Node, VNodeState>();
             portDB = new ConcurrentHashMap<NodeConnector, PortProperty>();
+            islDB = new ConcurrentHashMap<NodeConnector, VNodeState>();
             clusterEvent =
                 new ConcurrentHashMap<ClusterEventId, ClusterEvent>();
             flowDB = new ConcurrentHashMap<FlowGroupId, VTNFlow>();
@@ -786,6 +804,7 @@ public class VTNManagerImpl
         createCache(cluster, CACHE_STATE, cmode);
         createCache(cluster, CACHE_NODES, cmode);
         createCache(cluster, CACHE_PORTS, cmode);
+        createCache(cluster, CACHE_ISL, cmode);
 
         tenantDB = (ConcurrentMap<String, VTenantImpl>)
             getCache(cluster, CACHE_TENANT);
@@ -795,6 +814,8 @@ public class VTNManagerImpl
             getCache(cluster, CACHE_NODES);
         portDB = (ConcurrentMap<NodeConnector, PortProperty>)
             getCache(cluster, CACHE_PORTS);
+        islDB = (ConcurrentMap<NodeConnector, VNodeState>)
+            getCache(cluster, CACHE_ISL);
 
         InetAddress ipaddr = resourceManager.getControllerAddress();
         if (ipaddr.isLoopbackAddress()) {
@@ -894,6 +915,7 @@ public class VTNManagerImpl
         cluster.destroyCache(CACHE_STATE);
         cluster.destroyCache(CACHE_NODES);
         cluster.destroyCache(CACHE_PORTS);
+        cluster.destroyCache(CACHE_ISL);
         cluster.destroyCache(CACHE_EVENT);
         cluster.destroyCache(CACHE_FLOWS);
 
@@ -946,6 +968,42 @@ public class VTNManagerImpl
             }
             for (NodeConnector nc: curPort) {
                 portDB.remove(nc);
+                islDB.remove(nc);
+            }
+        }
+    }
+
+    /**
+     * Initialize inter-switch link cache.
+     */
+    void initISL() {
+        if (topologyManager == null) {
+            return;
+        }
+
+        Map<Edge, Set<Property>> edgeMap = topologyManager.getEdges();
+        if (edgeMap == null) {
+            return;
+        }
+
+        Set<NodeConnector> current =
+            new HashSet<NodeConnector>(islDB.keySet());
+        for (Edge edge: edgeMap.keySet()) {
+            if (addISL(edge) >= 0) {
+                NodeConnector head = edge.getHeadNodeConnector();
+                NodeConnector tail = edge.getTailNodeConnector();
+                current.remove(head);
+                current.remove(tail);
+            }
+        }
+
+        if (!current.isEmpty()) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}: Remove obsolte ports from islDB: {}",
+                          containerName, current);
+            }
+            for (NodeConnector nc: current) {
+                islDB.remove(nc);
             }
         }
     }
@@ -1043,7 +1101,9 @@ public class VTNManagerImpl
                         LOG.debug("{}: removeNode({}): Remove port {}",
                                   containerName, node, nc);
                     }
-                    portDB.remove(nc);
+                    if (portDB.remove(nc) != null) {
+                        removeISLPort(nc);
+                    }
                 }
             }
 
@@ -1158,11 +1218,146 @@ public class VTNManagerImpl
             if (LOG.isDebugEnabled()) {
                 LOG.debug("{}: removePort: Removed {}", containerName, nc);
             }
+            removeISLPort(nc);
             return true;
         }
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("{}: removePort: Ignore unknown port {}",
+                      containerName, nc);
+        }
+        return false;
+    }
+
+    /**
+     * Update inter switch links.
+     *
+     * @param topoList  A list of {@code TopoEdgeUpdate} passed by topology
+     *                  manager.
+     * @return  {@code true} is returned if inter switch links was actually
+     *          updated. {@code false} is returned if link map was not changed.
+     */
+    private boolean updateISL(List<TopoEdgeUpdate> topoList) {
+        Lock wrlock = rwLock.writeLock();
+        wrlock.lock();
+        try {
+            boolean changed = false;
+            for (TopoEdgeUpdate topo: topoList) {
+                UpdateType type = topo.getUpdateType();
+                Edge edge = topo.getEdge();
+                if ((type == UpdateType.ADDED && addISL(edge) > 0) ||
+                    (type == UpdateType.REMOVED && removeISL(edge))) {
+                    changed = true;
+                }
+            }
+
+            return changed;
+        } finally {
+            wrlock.unlock();
+        }
+    }
+
+    /**
+     * Add inter switch link specified by the given edge.
+     *
+     * <p>
+     *   This method must be called with holding writer lock of
+     *   {@link #rwLock}.
+     * </p>
+     *
+     * @param edge  A edge;
+     * @return  {@code 1} is returned if the given edge is actually added.
+     *          {@code 0} is returned if the given edge already exists in
+     *          the inter switch link map.
+     *          {@code -1} is returned if the given edge is invalid.
+     */
+    private int addISL(Edge edge) {
+        NodeConnector head = edge.getHeadNodeConnector();
+        NodeConnector tail = edge.getTailNodeConnector();
+        if (portDB.containsKey(head) && portDB.containsKey(tail)) {
+            boolean h = addISLPort(head);
+            boolean t = addISLPort(tail);
+            return (h || t) ? 1 : 0;
+        } else if (LOG.isDebugEnabled()) {
+            LOG.debug("{}: addISL: Ignore invalid edge: {}",
+                      containerName, edge);
+        }
+
+        return -1;
+    }
+
+    /**
+     * Remove inter switch link specified by the given edge.
+     *
+     * <p>
+     *   This method must be called with holding writer lock of
+     *   {@link #rwLock}.
+     * </p>
+     *
+     * @param edge  A edge.
+     * @return  {@code true} is returned if the given edge is actually removed.
+     *          Otherwise {@code false} is returned.
+     */
+    private boolean removeISL(Edge edge) {
+        NodeConnector head = edge.getHeadNodeConnector();
+        NodeConnector tail = edge.getTailNodeConnector();
+        boolean h = removeISLPort(head);
+        boolean t = removeISLPort(tail);
+        return (h || t);
+    }
+
+    /**
+     * Add the given node connector to the inter switch link map.
+     *
+     * <p>
+     *   This method must be called with holding writer lock of
+     *   {@link #rwLock}.
+     * </p>
+     *
+     * @param nc  A node connector.
+     * @return  {@code true} is returned if the given node connector is
+     *          actually added. {@code false} is returned if the given node
+     *          connector exists in the inter switch link map.
+     */
+    private boolean addISLPort(NodeConnector nc) {
+        if (islDB.putIfAbsent(nc, VNodeState.UP) == null) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}: addISLPort: New ISL port {}",
+                          containerName, nc);
+            }
+            return true;
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("{}: addISLPort: Ignore existing port {}",
+                      containerName, nc);
+        }
+        return false;
+    }
+
+    /**
+     * Remove the given node connector from the inter switch link map.
+     *
+     * <p>
+     *   This method must be called with holding writer lock of
+     *   {@link #rwLock}.
+     * </p>
+     *
+     * @param nc  A node connector.
+     * @return  {@code true} is returned if the given node connector is
+     *          actually removed. {@code false} is returned if the given node
+     *          connector does not exist in the inter switch link map.
+     */
+    private boolean removeISLPort(NodeConnector nc) {
+        if (islDB.remove(nc) != null) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}: removeISLPort: Removed {}", containerName, nc);
+            }
+            return true;
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("{}: removeISLPort: Ignore unknown port {}",
                       containerName, nc);
         }
         return false;
@@ -1865,8 +2060,7 @@ public class VTNManagerImpl
      *          the SDN network.
      */
     public boolean isEdgePort(NodeConnector nc) {
-        return (!switchManager.isSpecial(nc) &&
-                !topologyManager.isInternal(nc));
+        return (portDB.containsKey(nc) && !islDB.containsKey(nc));
     }
 
     /**
@@ -1910,7 +2104,7 @@ public class VTNManagerImpl
         for (Map.Entry<NodeConnector, PortProperty> entry: portDB.entrySet()) {
             NodeConnector port = entry.getKey();
             PortProperty pp = entry.getValue();
-            if (pp.isEnabled() && isEdgePort(port)) {
+            if (pp.isEnabled() && !islDB.containsKey(port)) {
                 portSet.add(port);
             }
         }
@@ -1939,7 +2133,7 @@ public class VTNManagerImpl
             NodeConnector port = entry.getKey();
             if (port.getNode().equals(node)) {
                 PortProperty pp = entry.getValue();
-                if (pp.isEnabled() && isEdgePort(port)) {
+                if (pp.isEnabled() && !islDB.containsKey(port)) {
                     portSet.add(port);
                 }
             }
@@ -1963,7 +2157,7 @@ public class VTNManagerImpl
             NodeConnector port = entry.getKey();
             if (port.getNode().equals(node)) {
                 PortProperty pp = entry.getValue();
-                if (pp.isEnabled() && isEdgePort(port)) {
+                if (pp.isEnabled() && !islDB.containsKey(port)) {
                     return true;
                 }
             }
@@ -4163,12 +4357,6 @@ public class VTNManagerImpl
             return false;
         }
 
-        if (topologyManager.isInternal(nc)) {
-            LOG.debug("{}: probeHost: Ignore request for {}: Internal port",
-                      containerName, host);
-            return false;
-        }
-
         // Create an unicast ARP request.
         InetAddress target = host.getNetworkAddress();
         byte[] dst = host.getDataLayerAddressBytes();
@@ -4188,6 +4376,12 @@ public class VTNManagerImpl
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
+            if (islDB.containsKey(nc)) {
+                LOG.debug("{}: probeHost: Ignore request for {}: " +
+                          "Internal port", containerName, host);
+                return false;
+            }
+
             // Port mappings should precede VLAN mappings.
             for (MapType type: MapType.values()) {
                 if (type == MapType.ALL) {
@@ -4662,6 +4856,11 @@ public class VTNManagerImpl
      */
     @Override
     public void edgeUpdate(List<TopoEdgeUpdate> topoList) {
+        // Maintain the inter switch link DB.
+        if (!updateISL(topoList)) {
+            return;
+        }
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -4851,7 +5050,7 @@ public class VTNManagerImpl
                 return arpHandler.receive(pctx);
             }
 
-            if (topologyManager.isInternal(nc)) {
+            if (islDB.containsKey(nc)) {
                 LOG.debug("{}: Ignore packet from internal node connector: {}",
                           containerName, nc);
                 if (connectionManager.getLocalityStatus(node) ==

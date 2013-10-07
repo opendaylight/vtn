@@ -895,6 +895,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         mgr.notifyNodeConnector(nc, UpdateType.ADDED, propMap);
         mgr.notifyNodeConnector(nc, UpdateType.REMOVED, propMap);
         mgr.notifyNodeConnector(nc, UpdateType.ADDED, propMap);
+        mgr.initISL();
 
         checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UP, pmconf.toString());
         checkNodeStatus(mgr, bpath2, ifp2, VNodeState.DOWN, VNodeState.DOWN, pmconf.toString());
@@ -905,6 +906,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         mgr.notifyNodeConnector(nc, UpdateType.REMOVED, propMap);
         mgr.notifyNodeConnector(nc, UpdateType.ADDED, propMap);
+        mgr.initISL();
 
         checkNodeStatus(mgr, bpath2, ifp2, VNodeState.UNKNOWN, VNodeState.DOWN, pmconf.toString());
 
@@ -923,7 +925,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         checkNodeStatus(mgr, bpath, ifp, VNodeState.DOWN, VNodeState.DOWN,
                 pmconf.toString());
 
-        mgr.edgeUpdate(null);
+        mgr.edgeUpdate(new ArrayList<TopoEdgeUpdate>(0));
         checkNodeStatus(mgr, bpath, ifp, VNodeState.DOWN, VNodeState.DOWN,
                 pmconf.toString());
 
@@ -1189,6 +1191,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         propMap = swMgr.getNodeConnectorProps(chgNc);
         mgr.notifyNodeConnector(chgNc, UpdateType.ADDED, propMap);
+        mgr.initISL();
         if (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) {
             checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UP, msg);
         } else {
@@ -1238,6 +1241,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         flushMacTableEntry(mgr, bpath);
 
         mgr.initInventory();
+        mgr.initISL();
         mgr.getNodeDB().remove(chgNode);
         mgr.notifyNode(chgNode, UpdateType.ADDED, propMap);
         if (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) {
@@ -1252,6 +1256,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         if (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) {
             mgr.initInventory();
+            mgr.initISL();
             mgr.getPortDB().remove(mapNc);
             propMap = swMgr.getNodeConnectorProps(mapNc);
             mgr.notifyNodeConnector(mapNc, UpdateType.ADDED, propMap);
@@ -1268,12 +1273,11 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         // test for a edge changed notification
         Map<Edge, Set<Property>> edges = topoMgr.getEdges();
         for (Edge edge: edges.keySet()) {
-            List<TopoEdgeUpdate> addTopoList = new ArrayList<TopoEdgeUpdate>();
-            List<TopoEdgeUpdate> rmTopoList = new ArrayList<TopoEdgeUpdate>();
-            List<TopoEdgeUpdate> chgTopoList = new ArrayList<TopoEdgeUpdate>();
+            List<TopoEdgeUpdate> topoList = new ArrayList<TopoEdgeUpdate>();
 
-            TopoEdgeUpdate update = new TopoEdgeUpdate(edge, null, UpdateType.ADDED);
-            addTopoList.add(update);
+            TopoEdgeUpdate update =
+                new TopoEdgeUpdate(edge, null, UpdateType.REMOVED);
+            topoList.add(update);
 
             Edge reverseEdge = null;
             try {
@@ -1282,30 +1286,36 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             } catch (ConstructionException e) {
                 unexpected(e);
             }
-            update = new TopoEdgeUpdate(reverseEdge, null, UpdateType.ADDED);
-            addTopoList.add(update);
-
-            mgr.edgeUpdate(addTopoList);
-            checkNodeStatus(mgr, bpath, ifp, VNodeState.UP,
-                    (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) ? VNodeState.UP : VNodeState.UNKNOWN,
-                    msg + "," + edge.toString());
-
-            update = new TopoEdgeUpdate(edge, null, UpdateType.REMOVED);
-            rmTopoList.add(update);
             update = new TopoEdgeUpdate(reverseEdge, null, UpdateType.REMOVED);
-            rmTopoList.add(update);
+            topoList.add(update);
 
-            mgr.edgeUpdate(rmTopoList);
+            stubObj.deleteEdge(edge);
+            stubObj.deleteEdge(reverseEdge);
+            mgr.edgeUpdate(topoList);
             checkNodeStatus(mgr, bpath, ifp, VNodeState.UP,
                     (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) ? VNodeState.UP : VNodeState.UNKNOWN,
                     msg + "," + edge.toString());
 
-            update = new TopoEdgeUpdate(edge, null, UpdateType.CHANGED);
-            chgTopoList.add(update);
-            update = new TopoEdgeUpdate(reverseEdge, null, UpdateType.CHANGED);
-            chgTopoList.add(update);
+            topoList.clear();
+            update = new TopoEdgeUpdate(edge, null, UpdateType.ADDED);
+            topoList.add(update);
+            update = new TopoEdgeUpdate(reverseEdge, null, UpdateType.ADDED);
+            topoList.add(update);
 
-            mgr.edgeUpdate(chgTopoList);
+            stubObj.addEdge(edge);
+            stubObj.addEdge(reverseEdge);
+            mgr.edgeUpdate(topoList);
+            checkNodeStatus(mgr, bpath, ifp, VNodeState.UP,
+                    (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) ? VNodeState.UP : VNodeState.UNKNOWN,
+                    msg + "," + edge.toString());
+
+            topoList.clear();
+            update = new TopoEdgeUpdate(edge, null, UpdateType.CHANGED);
+            topoList.add(update);
+            update = new TopoEdgeUpdate(reverseEdge, null, UpdateType.CHANGED);
+            topoList.add(update);
+
+            mgr.edgeUpdate(topoList);
             checkNodeStatus(mgr, bpath, ifp, VNodeState.UP,
                     (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) ? VNodeState.UP : VNodeState.UNKNOWN,
                     msg + "," + edge.toString());
@@ -1331,6 +1341,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         // Reset inventory cache.
         mgr.initInventory();
+        mgr.initISL();
     }
 
 
@@ -1435,6 +1446,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         mgr.setTopologyManager(stub3);
         mgr.setRouting(stub0);
         mgr.initInventory();
+        mgr.initISL();
         mgr.clearDisabledNode();
 
         // setup vbridge
@@ -1562,6 +1574,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         mgr.setTopologyManager(stubObj);
         mgr.setRouting(stubObj);
         mgr.initInventory();
+        mgr.initISL();
         mgr.clearDisabledNode();
 
         st = mgr.removeTenant(tpath);
