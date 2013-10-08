@@ -22,9 +22,10 @@ public class MapTypeTest extends TestBase {
     public void testMatch() {
         MapType[] types = MapType.values();
         for (MapType type: types) {
-            assertTrue(type.match(type));
-            assertTrue(type.match(MapType.ALL));
-            assertTrue(MapType.ALL.match(type));
+            String emsg = "(MapType)" + type.toString();
+            assertTrue(emsg, type.match(type));
+            assertTrue(emsg, type.match(MapType.ALL));
+            assertTrue(emsg, MapType.ALL.match(type));
         }
 
         assertFalse(MapType.PORT.match(MapType.VLAN));

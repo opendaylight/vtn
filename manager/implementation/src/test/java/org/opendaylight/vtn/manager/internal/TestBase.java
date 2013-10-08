@@ -481,7 +481,7 @@ public abstract class TestBase extends Assert {
      * Create a {@link VBridgeConfig} object.
      *
      * @param desc  Description of the virtual bridge.
-     * @param age  {@code age} value for aging interval for MAC address table.
+     * @param age   {@code age} value for aging interval for MAC address table.
      * @return  A {@link VBridgeConfig} object.
      */
     protected static VBridgeConfig createVBridgeConfig(String desc, Integer age) {
@@ -1035,7 +1035,7 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     *  for dispatch other thread.
+     * let a thread sleep. used for dispatch other thread.
      *
      * @param millis    the length of time in millisecond.
      */

@@ -61,27 +61,30 @@ public class MacEntryTest extends TestBase {
             for (Set<InetAddress> ipset : ips) {
                 for (EthernetAddress ea : ethaddrs) {
                     for (short vlan : vlans) {
+                        String emsg = "(NodeConnector)" + nc.toString()
+                                + "(ipset)" + ((ipset == null) ? "null" : ipset.toString())
+                                + "(EthernetAddress)" + ea.toString();
                         MacAddressEntry mae = new MacAddressEntry(ea, vlan, nc, ipset);
                         MacEntry me = new MacEntry(mae);
 
                         String type = nc.getType();
                         String id = nc.getNodeConnectorIDString();
 
-                        assertEquals(ea.getMacAddress(), me.getAddress());
-                        assertEquals(vlan, me.getVlan());
-                        assertEquals(nc.getNode(), me.getNode());
-                        assertEquals(new SwitchPort(type, id), me.getPort());
+                        assertEquals(emsg, ea.getMacAddress(), me.getAddress());
+                        assertEquals(emsg, vlan, me.getVlan());
+                        assertEquals(emsg, nc.getNode(), me.getNode());
+                        assertEquals(emsg, new SwitchPort(type, id), me.getPort());
                         IpAddressSet iset = me.getInetAddresses();
                         if (ipset != null && ipset.size() != 0) {
-                            assertNotNull(iset);
-                            assertEquals(ipset.size(), iset.getLength());
+                            assertNotNull(emsg, iset);
+                            assertEquals(emsg, ipset.size(), iset.getLength());
                             Set<IpAddress> is = iset.getAddresses();
                             for (InetAddress iaddr : ipset) {
                                 IpAddress ipaddr = new IpAddress(iaddr);
-                                assertTrue(is.contains(ipaddr));
+                                assertTrue(emsg, is.contains(ipaddr));
                             }
                         } else {
-                            assertNull(iset);
+                            assertNull(emsg, iset);
                         }
                     }
                 }
@@ -91,6 +94,7 @@ public class MacEntryTest extends TestBase {
         // test for DataLinkAddress class except EthrenetAddress.
         TestDataLink tdl = new TestDataLink("TestDataLink");
         for (NodeConnector nc : createNodeConnectors(3, false)) {
+            String emsg = "(nc)" + nc.toString();
             short vlan = 0;
             Set<InetAddress> ipset = ips.get(1);
             MacAddressEntry mae = new MacAddressEntry(tdl, vlan, nc, ipset);
@@ -100,18 +104,19 @@ public class MacEntryTest extends TestBase {
             String id = nc.getNodeConnectorIDString();
             SwitchPort port = new SwitchPort(type, id);
 
-            assertEquals(tdl.toString(), me.getAddress());
-            assertEquals(vlan, me.getVlan());
-            assertEquals(nc.getNode(), me.getNode());
-            assertEquals(port, me.getPort());
+            assertEquals(emsg, tdl.toString(), me.getAddress());
+            assertEquals(emsg, vlan, me.getVlan());
+            assertEquals(emsg, nc.getNode(), me.getNode());
+            assertEquals(emsg, port, me.getPort());
 
             IpAddressSet iset = me.getInetAddresses();
-            assertNotNull(iset);
-            assertEquals(ipset.size(), iset.getLength());
+            assertNotNull(emsg, iset);
+            assertEquals(emsg, ipset.size(), iset.getLength());
             Set<IpAddress> is = iset.getAddresses();
             for (InetAddress iaddr : ipset) {
                 IpAddress ipaddr = new IpAddress(iaddr);
-                assertTrue(is.contains(ipaddr));
+                assertTrue(emsg + ",(ipaddr)" + iaddr.toString(),
+                        is.contains(ipaddr));
             }
         }
     }

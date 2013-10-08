@@ -24,6 +24,7 @@ import org.opendaylight.controller.sal.core.NodeConnector;
  * JUnit test for {@link PortMapInfo}.
  */
 public class PortMapInfoTest extends TestBase {
+
     /**
      * Test case for getter methods.
      */
@@ -33,20 +34,26 @@ public class PortMapInfoTest extends TestBase {
             for (Node node: createNodes(3)) {
                 for (SwitchPort port: createSwitchPorts(5)) {
                     for (short vlan = -3; vlan <= 3; vlan++) {
+                        String emsg = "(NodeConnector)"
+                                + ((nc == null) ? "null" : nc.toString())
+                                + "(Node)"
+                                + ((node == null) ? "null" : node.toString())
+                                + "(vlan)" + vlan;
+
                         PortMapConfig pmconf =
                             new PortMapConfig(node, port, vlan);
                         PortMapInfo pi = new PortMapInfo(pmconf, nc);
-                        assertEquals(node, pi.getNode());
-                        assertEquals(port, pi.getPort());
-                        assertEquals(vlan, pi.getVlan());
+                        assertEquals(emsg, node, pi.getNode());
+                        assertEquals(emsg, port, pi.getPort());
+                        assertEquals(emsg, vlan, pi.getVlan());
 
                         SwitchPort sp = pi.getMappedPort();
                         if (nc == null) {
-                            assertNull(sp);
+                            assertNull(emsg, sp);
                         } else {
-                            assertNull(sp.getName());
-                            assertEquals(nc.getType(), sp.getType());
-                            assertEquals(nc.getNodeConnectorIDString(),
+                            assertNull(emsg, sp.getName());
+                            assertEquals(emsg, nc.getType(), sp.getType());
+                            assertEquals(emsg, nc.getNodeConnectorIDString(),
                                          sp.getId());
                         }
                     }

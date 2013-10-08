@@ -32,9 +32,10 @@ public class VlanMapPathTest extends TestBase {
                 VBridgePath bpath = new VBridgePath(tname, bname);
                 for (String mapId: createStrings("mapId", false)) {
                     VlanMapPath path = new VlanMapPath(bpath, mapId);
-                    assertEquals(tname, path.getTenantName());
-                    assertEquals(bname, path.getBridgeName());
-                    assertEquals(mapId, path.getMapId());
+                    String emsg = path.toString();
+                    assertEquals(emsg, tname, path.getTenantName());
+                    assertEquals(emsg, bname, path.getBridgeName());
+                    assertEquals(emsg, mapId, path.getMapId());
                 }
             }
         }
@@ -60,10 +61,14 @@ public class VlanMapPathTest extends TestBase {
                     testEquals(set, p1, p2);
 
                     VBridgeIfPath ifPath = new VBridgeIfPath(bp1, mapId);
-                    assertFalse(p1.equals(ifPath));
-                    assertFalse(p2.equals(ifPath));
-                    assertFalse(ifPath.equals(p1));
-                    assertFalse(ifPath.equals(p2));
+                    assertFalse("(p1)" + p1.toString() + ",(ifPath)" + ifPath.toString(),
+                            p1.equals(ifPath));
+                    assertFalse("(p2)" + p2.toString() + ",(ifPath)" + ifPath.toString(),
+                            p2.equals(ifPath));
+                    assertFalse("(p1)" + p1.toString() + ",(ifPath)" + ifPath.toString(),
+                            ifPath.equals(p1));
+                    assertFalse("(p2)" + p2.toString() + ",(ifPath)" + ifPath.toString(),
+                            ifPath.equals(p2));
                 }
             }
         }

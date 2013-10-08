@@ -36,12 +36,18 @@ public class VInterfaceTest extends TestBase {
             for (VInterfaceConfig iconf: createConfigs()) {
                 for (VNodeState state: states) {
                     for (VNodeState estate: states) {
+                        String emsg = "(name)" + name
+                                + ",(state)"
+                                + ((state == null) ? "null" : state.toString())
+                                + ",(estate)"
+                                + ((estate == null) ? "null" : estate.toString());
+
                         VInterface viface =
                             new VInterface(name, state, estate, iconf);
-                        assertEquals(name, viface.getName());
-                        assertEquals(iconf.getDescription(),
+                        assertEquals(emsg, name, viface.getName());
+                        assertEquals(emsg, iconf.getDescription(),
                                      viface.getDescription());
-                        assertEquals(iconf.getEnabled(),
+                        assertEquals(emsg, iconf.getEnabled(),
                                      viface.getEnabled());
 
                         // null state should be interpreted as UNKNOWN.
@@ -51,8 +57,8 @@ public class VInterfaceTest extends TestBase {
                         if (estate == null) {
                             estate = VNodeState.UNKNOWN;
                         }
-                        assertSame(state, viface.getState());
-                        assertSame(estate, viface.getEntityState());
+                        assertSame(emsg, state, viface.getState());
+                        assertSame(emsg, estate, viface.getEntityState());
                     }
                 }
             }

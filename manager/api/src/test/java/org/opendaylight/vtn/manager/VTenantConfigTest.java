@@ -26,21 +26,25 @@ public class VTenantConfigTest extends TestBase {
         for (String desc: createStrings("description")) {
             for (Integer iv: createIntegers(-2, 5)) {
                 for (Integer hv: createIntegers(-2, 5)) {
+                    String emsg = "(desc)"+ desc
+                            + ",(iv)" + ((iv == null) ? "null" : iv.intValue())
+                            + ",(hv)" + ((hv == null) ? "null" : hv.intValue());
+
                     VTenantConfig tconf = createVTenantConfig(desc, iv, hv);
-                    assertEquals(desc, tconf.getDescription());
+                    assertEquals(emsg, desc, tconf.getDescription());
                     if (iv == null || iv.intValue() < 0) {
-                        assertEquals(-1, tconf.getIdleTimeout());
-                        assertNull(tconf.getIdleTimeoutValue());
+                        assertEquals(emsg, -1, tconf.getIdleTimeout());
+                        assertNull(emsg, tconf.getIdleTimeoutValue());
                     } else {
-                        assertEquals(iv.intValue(), tconf.getIdleTimeout());
-                        assertEquals(iv, tconf.getIdleTimeoutValue());
+                        assertEquals(emsg, iv.intValue(), tconf.getIdleTimeout());
+                        assertEquals(emsg, iv, tconf.getIdleTimeoutValue());
                     }
                     if (hv == null || hv.intValue() < 0) {
-                        assertEquals(-1, tconf.getHardTimeout());
-                        assertNull(tconf.getHardTimeoutValue());
+                        assertEquals(emsg, -1, tconf.getHardTimeout());
+                        assertNull(emsg, tconf.getHardTimeoutValue());
                     } else {
-                        assertEquals(hv.intValue(), tconf.getHardTimeout());
-                        assertEquals(hv, tconf.getHardTimeoutValue());
+                        assertEquals(emsg, hv.intValue(), tconf.getHardTimeout());
+                        assertEquals(emsg, hv, tconf.getHardTimeoutValue());
                     }
                 }
             }
@@ -85,8 +89,10 @@ public class VTenantConfigTest extends TestBase {
                     if (desc != null) {
                         desc = "desc=" + desc;
                     }
-                    String is = (iv == null || iv < 0) ? null : "idleTimeout=" + iv;
-                    String hs = (hv == null || hv < 0) ? null : "hardTimeout=" + hv;
+                    String is = (iv == null || iv < 0)
+                            ? null : "idleTimeout=" + iv;
+                    String hs = (hv == null || hv < 0)
+                            ? null : "hardTimeout=" + hv;
                     String required =
                         joinStrings(prefix, suffix, ",", desc, is, hs);
                     assertEquals(required, tconf.toString());

@@ -92,8 +92,7 @@ public class PacketContextTest extends TestBase {
         MacTableEntry me;
         PortVlan pv;
         String desc;
-        String msg = "(src)" + src.toString() + ",(dst)" + dst.toString() +
-                     ",(sender)" + sender.toString() + ",(target)" + target.toString();
+        String msg = createErrorMessageString(src, dst, sender, target, vlan, nc);
 
         // createARPPacketContext create PacketContext
         // by using {@link PacketContext(RawPacket, Ethernet)}.
@@ -102,6 +101,7 @@ public class PacketContextTest extends TestBase {
 
         VBridgePath path = new VBridgePath("tenant1", "bridge1");
         Long key = NetUtils.byteArray6ToLong(src);
+        // test getter methods
         if (vlan <= 0) {
             assertEquals(msg, 0, pc.getVlan());
             pv = new PortVlan(nc, (short) 0);
@@ -137,12 +137,12 @@ public class PacketContextTest extends TestBase {
 
         assertEquals(msg, map, pc.getObsoleteEntries());
 
-        // getFrame()
+        // test getFrame()
         Ethernet ether = pc.getFrame();
         checkOutEthernetPacket("", ether, EtherTypes.ARP, src, dst, vlan, EtherTypes.IPv4,
                 ARP.REQUEST, src, dst, sender, target);
 
-        // createFrame()
+        // test createFrame()
         Ethernet newether;
         if (vlan <= 0) {
             desc = convertForDescription(ether, nc, (short) 0);
@@ -154,7 +154,7 @@ public class PacketContextTest extends TestBase {
         assertEquals(msg, desc, pc.getDescription(nc));
         assertNotNull(msg, newether);
         assertEquals(msg, ether, newether);
-        assertTrue(msg, ether != newether);
+        assertNotSame(msg, ether, newether);
 
 
         // in case payload is null && RawPayload is null
@@ -228,11 +228,11 @@ public class PacketContextTest extends TestBase {
         InetAddress ipaddr = null;
         MacTableEntry me;
         String desc;
-        String msg = "(ether)" + ether.toString() + ",(src)" + src + ",(dst)" + dst +
-                     ",(sender)" + sender + ",(target)" + target;
+        String msg = createErrorMessageString(src, dst, sender, target, vlan, nc);
 
         PacketContext pctx = new PacketContext(ether, nc);
 
+        // test getter methods
         assertNull(msg, pctx.getRawPacket());
         assertNull(msg, pctx.getIncomingNetwork());
         try {
@@ -289,7 +289,7 @@ public class PacketContextTest extends TestBase {
         assertEquals(msg, desc, pctx.getDescription(nc));
         assertNotNull(msg, newether);
         assertEquals(msg, ether, newether);
-        assertTrue(msg, ether != newether);
+        assertNotSame(msg, ether, newether);
 
         if (vlan <= 0) {
             // set invalid sender ip address
@@ -343,12 +343,12 @@ public class PacketContextTest extends TestBase {
 
             assertNotNull(msg, newether);
             assertEquals(msg, eth, newether);
-            assertTrue(msg, eth != newether);
+            assertNotSame(msg, eth, newether);
         }
     }
 
     /**
-     * Test case for {@link PacketContext.probeInetAddress(VTNManagerImpl)}.
+     * Test case for {@link PacketContext#probeInetAddress(VTNManagerImpl)}.
      */
     @Test
     public void testProbeInetAddress() {
@@ -505,5 +505,54 @@ public class PacketContextTest extends TestBase {
         resMgr.destroy();
 
         cleanupStartupDir();
+    }
+    /**
+     * create String of Error Message.
+     */
+    private String createErrorMessageString(byte[] src, byte[] dst, byte[] sender, byte[] target,
+            short vlan, NodeConnector nc) {
+        StringBuilder builder = new StringBuilder();
+
+        if (src != null) {
+            builder.append("(src)");
+            for (byte val : src) {
+                builder.append(Integer.toHexString(val & 0xff)).append(":");
+            }
+            builder.replace(builder.length() - 1, builder.length() - 1, ",");
+        }
+
+        if (dst != null) {
+            builder.append("(dst)");
+            for (byte val : dst) {
+                builder.append(Integer.toHexString(val & 0xff)).append(":");
+            }
+            builder.replace(builder.length() - 1, builder.length() - 1, ",");
+        }
+
+        if (sender != null) {
+            builder.append("(sender)");
+            for (byte val : sender) {
+                builder.append(Integer.valueOf(val & 0xff).toString()).append(".");
+            }
+            builder.replace(builder.length() - 1, builder.length() - 1, ",");
+        }
+
+        if (target != null) {
+            builder.append("(target)");
+            for (byte val : target) {
+                builder.append(Integer.valueOf(val & 0xff).toString()).append(".");
+            }
+            builder.replace(builder.length() - 1, builder.length() - 1, ",");
+        }
+
+        builder.append("(vlan)").append(vlan).append(",");
+
+        if (nc != null) {
+            builder.append("(NodeConnector)").append(nc.toString()).append(",");
+        }
+
+        builder.delete(builder.length() - 1, builder.length() - 1);
+
+        return builder.toString();
     }
 }

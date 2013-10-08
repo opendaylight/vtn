@@ -148,7 +148,9 @@ public class VTNConfigTest extends TestBase {
 
     /**
      * delete .ini files.
-     * @param isExit
+     *
+     * @param isExit    If this is {@code true}, {@code deleteOnExit()} called
+     *                  instead of {@code delete()}.
      */
     public static void cleanup(boolean isExit) {
         String dir = "./";
