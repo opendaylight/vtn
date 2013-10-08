@@ -49,22 +49,25 @@ public class VlanMapConfigTest extends TestBase {
 
         for (Node node: createNodes(5)) {
             for (short vlan = -10; vlan <= 10; vlan++) {
+                String emsg = "(node)"
+                        + ((node == null) ? "null" : node.toString())
+                        + ",(vlan)" + vlan;
                 VlanMapConfig vlconf = new VlanMapConfig(node, vlan);
-                assertTrue(vlconf.isOverlapped(vlconf));
+                assertTrue(emsg, vlconf.isOverlapped(vlconf));
 
                 VlanMapConfig vc = new VlanMapConfig(null, vlan);
-                assertTrue(vlconf.isOverlapped(vc));
+                assertTrue(emsg, vlconf.isOverlapped(vc));
 
                 for (short i = 1; i < 3; i++) {
                     vc = new VlanMapConfig(null, (short)(vlan + i));
-                    assertFalse(vlconf.isOverlapped(vc));
+                    assertFalse(emsg + "(i)" + i, vlconf.isOverlapped(vc));
                 }
 
                 vc = new VlanMapConfig(differentNode, vlan);
                 if (node == null) {
-                    assertTrue(vlconf.isOverlapped(vc));
+                    assertTrue(emsg, vlconf.isOverlapped(vc));
                 } else {
-                    assertFalse(vlconf.isOverlapped(vc));
+                    assertFalse(emsg, vlconf.isOverlapped(vc));
                 }
             }
         }

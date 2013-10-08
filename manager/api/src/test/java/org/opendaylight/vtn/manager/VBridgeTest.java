@@ -37,18 +37,22 @@ public class VBridgeTest extends TestBase {
                     VBridgeConfig bconf = createVBridgeConfig(desc, ival);
                     for (int flt = 0; flt < 3; flt++) {
                         for (VNodeState state: states) {
+                            String emsg = "(name)" + name + ",(desc)" + desc
+                                    + ",(ival)" + ((ival == null) ? "null" : ival.intValue())
+                                    + ",(flt)" + flt;
+
                             VBridge vbridge = new VBridge(name, state, flt,
                                                           bconf);
-                            assertEquals(name, vbridge.getName());
-                            assertEquals(desc, vbridge.getDescription());
-                            assertEquals(flt, vbridge.getFaults());
+                            assertEquals(emsg, name, vbridge.getName());
+                            assertEquals(emsg, desc, vbridge.getDescription());
+                            assertEquals(emsg, flt, vbridge.getFaults());
                             if (ival == null || ival.intValue() < 0) {
-                                assertEquals(-1, vbridge.getAgeInterval());
-                                assertNull(vbridge.getAgeIntervalValue());
+                                assertEquals(emsg, -1, vbridge.getAgeInterval());
+                                assertNull(emsg, vbridge.getAgeIntervalValue());
                             } else {
-                                assertEquals(ival.intValue(),
+                                assertEquals(emsg, ival.intValue(),
                                              vbridge.getAgeInterval());
-                                assertEquals(ival,
+                                assertEquals(emsg, ival,
                                              vbridge.getAgeIntervalValue());
                             }
 
@@ -56,7 +60,7 @@ public class VBridgeTest extends TestBase {
                             if (state == null) {
                                 state = VNodeState.UNKNOWN;
                             }
-                            assertSame(state, vbridge.getState());
+                            assertSame(emsg, state, vbridge.getState());
                         }
                     }
                 }

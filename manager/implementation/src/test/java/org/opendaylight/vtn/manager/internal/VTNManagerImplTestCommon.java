@@ -38,6 +38,7 @@ import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.Status;
+import org.opendaylight.controller.sal.utils.StatusCode;
 import org.opendaylight.controller.topologymanager.ITopologyManager;
 import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.IVTNManagerAware;
@@ -67,6 +68,9 @@ public class VTNManagerImplTestCommon extends TestBase {
     protected TestStub stubObj = null;
     protected static int stubMode = 0;
 
+    /**
+     *  Mock-up of IfHostListener.
+     */
     class HostListener implements IfHostListener {
         private int hostListenerCalled = 0;
 
@@ -75,6 +79,10 @@ public class VTNManagerImplTestCommon extends TestBase {
             hostListenerCalled++;
         }
 
+        /**
+         * get times hostListener called.
+         * @ret the number of times hostListener was called.
+         */
         int getHostListenerCalled () {
             int ret = hostListenerCalled;
             hostListenerCalled = 0;
@@ -82,6 +90,9 @@ public class VTNManagerImplTestCommon extends TestBase {
         }
     }
 
+    /**
+     * Mock-up of IVTNModeListener.
+     */
     class VTNModeListenerStub implements IVTNModeListener {
         private int calledCount = 0;
         private Boolean oldactive = null;
@@ -137,11 +148,20 @@ public class VTNManagerImplTestCommon extends TestBase {
             return ret;
         }
 
+        /**
+         * check information registered by vtnModeChanged().
+         * @param expCount  A expected number of times vtnModeChanged() was called.
+         * @param expMode   A expected mode.
+         */
         void checkCalledInfo(int expCount, Boolean expMode) {
             checkCalledInfo(expCount);
             assertEquals(expMode, this.getCalledArg());
         }
 
+        /**
+         * check information registered by vtnModeChanged().
+         * @param expCount  A expected number of times vtnModeChanged() was called.
+         */
         void checkCalledInfo(int expCount) {
             if (expCount >= 0) {
                 assertEquals(expCount, this.getCalledCount(expCount));
@@ -149,6 +169,9 @@ public class VTNManagerImplTestCommon extends TestBase {
         }
     }
 
+    /**
+     * utility class used in VTNManagerAwareStub.
+     */
     class VTNManagerAwareData<T, S> {
         T path = null;
         S obj = null;
@@ -163,6 +186,9 @@ public class VTNManagerImplTestCommon extends TestBase {
         }
     };
 
+    /**
+     * Mock-up of IVTNManagerAware.
+     */
     class VTNManagerAwareStub implements IVTNManagerAware {
         private final long sleepMilliTime = 10L;
 
@@ -212,6 +238,14 @@ public class VTNManagerImplTestCommon extends TestBase {
                     portMapChangedCalled);
         }
 
+        /**
+         * check information notified by vtnChanged().
+         *
+         * @param count     A expected number of times vtnChanged() was called.
+         * @param path      A VTenantPath expect to be notified.
+         * @param name      A name expect to be notified.
+         * @param type      A type expect to be notified.
+         */
         synchronized void checkVtnInfo(int count, VTenantPath path,
                                        String name, UpdateType type) {
             if (vtnChangedCalled < count) {
@@ -244,6 +278,14 @@ public class VTNManagerImplTestCommon extends TestBase {
             vtnChangedInfo = null;
         }
 
+        /**
+         * check information notified by vBridgeChanged().
+         *
+         * @param count     A expected number of times vBridgeChanged() was called.
+         * @param path      A VBridgePath expect to be notified.
+         * @param name      A name expect to be notified.
+         * @param type      A type expect to be notified.
+         */
         synchronized void checkVbrInfo(int count, VBridgePath path,
                                        String name, UpdateType type) {
             if (vbrChangedCalled < count) {
@@ -276,6 +318,15 @@ public class VTNManagerImplTestCommon extends TestBase {
             vbrChangedInfo = null;
         }
 
+        /**
+         * check information notified by vBridgeInterfaceChanged().
+         *
+         * @param count     A expected number of times
+         *                  vBridgeInterfaceChanged() was called.
+         * @param path      A VBridgeIfPath expect to be notified.
+         * @param name      A name expect to be notified.
+         * @param type      A type expect to be notified.
+         */
         synchronized void checkVIfInfo(int count, VBridgeIfPath path,
                                        String name, UpdateType type) {
             if (vIfChangedCalled < count) {
@@ -308,6 +359,14 @@ public class VTNManagerImplTestCommon extends TestBase {
             vIfChangedInfo = null;
         }
 
+        /**
+         * check information notified by vlanMapChanged().
+         *
+         * @param count     A expected number of times vlanMapChanged() was called.
+         * @param path      A VBridgePath expect to be notified.
+         * @param name      A map-id expect to be notified.
+         * @param type      A type expect to be notified.
+         */
         synchronized void checkVlmapInfo(int count, VBridgePath path,
                                          String id, UpdateType type) {
             if (vlanMapChangedCalled < count) {
@@ -340,6 +399,14 @@ public class VTNManagerImplTestCommon extends TestBase {
             vlanMapChangedInfo = null;
         }
 
+        /**
+         * check information notified by portMapChanged().
+         *
+         * @param count     A expected number of times portMapChanged() was called.
+         * @param path      A VBridgeIfPath expect to be notified.
+         * @param name      A PortMapConfig expect to be notified.
+         * @param type      A type expect to be notified.
+         */
         synchronized void checkPmapInfo(int count, VBridgeIfPath path,
                                         PortMapConfig pconf, UpdateType type) {
             if (portMapChangedCalled < count) {
@@ -372,6 +439,9 @@ public class VTNManagerImplTestCommon extends TestBase {
             portMapChangedInfo = null;
         }
 
+        /**
+         * check all methods not called.
+         */
         void checkAllNull() {
             sleep(sleepMilliTime);
             assertEquals(0, vtnChangedCalled);
@@ -453,47 +523,47 @@ public class VTNManagerImplTestCommon extends TestBase {
     }
 
     /**
-     * method for setup enviroment.
+     * method for setup the environment.
      * create 1 Tenant and bridges
      */
     protected void createTenantAndBridge(IVTNManager mgr, VTenantPath tpath,
             List<VBridgePath> bpaths) {
 
         Status st = mgr.addTenant(tpath, new VTenantConfig(null));
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
         assertTrue(mgr.isActive());
 
         for (VBridgePath bpath : bpaths) {
             st = mgr.addBridge(bpath, new VBridgeConfig(null));
-            assertTrue(st.isSuccess());
+            assertEquals("(VBridgePath)" + bpath.toString(), StatusCode.SUCCESS, st.getCode());
         }
     }
 
     /**
-     * method for setup enviroment.
-     * create 1 Tenant and bridges and vinterfaces
+     * method for setup the environment.
+     * create 1 Tenant and bridges and vInterfaces
      */
     protected void createTenantAndBridgeAndInterface(IVTNManager mgr, VTenantPath tpath,
             List<VBridgePath> bpaths, List<VBridgeIfPath> ifpaths) {
 
         Status st = mgr.addTenant(tpath, new VTenantConfig(null));
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
         assertTrue(mgr.isActive());
 
         for (VBridgePath bpath : bpaths) {
             st = mgr.addBridge(bpath, new VBridgeConfig(null));
-            assertTrue(st.isSuccess());
+            assertEquals("(VBridgePath)" + bpath.toString(), StatusCode.SUCCESS, st.getCode());
         }
 
         for (VBridgeIfPath ifpath : ifpaths) {
             VInterfaceConfig ifconf = new VInterfaceConfig(null, null);
             st = mgr.addBridgeInterface(ifpath, ifconf);
-            assertTrue(st.isSuccess());
+            assertEquals("(VBridgeIfPath)" + ifpath.toString(), StatusCode.SUCCESS, st.getCode());
         }
     }
 
     /**
-     * check VTN configuraion.
+     * check VTN configuration.
      * note: this don't support a configuration which VBridge > 1
      */
     protected void checkVTNconfig(VTenantPath tpath, List<VBridgePath> bpathlist,
@@ -553,7 +623,6 @@ public class VTNManagerImplTestCommon extends TestBase {
             }
         }
     }
-
     /**
      * Flush all pending tasks on the VTN task thread.
      */

@@ -257,10 +257,10 @@ public class VTNManagerIT extends TestBase {
         ServiceReference r = bc.getServiceReference(IVTNManager.class.getName());
         if (r != null) {
             this.vtnManager = (IVTNManager) bc.getService(r);
-            this.objReader = (IObjectReader)this.vtnManager ;
+            this.objReader = (IObjectReader) this.vtnManager ;
             this.cacheUpdateAware =
-                (ICacheUpdateAware<ClusterEventId, Object>)this.vtnManager;
-            this.configContainerAware = (IConfigurationContainerAware)this.vtnManager;
+                (ICacheUpdateAware<ClusterEventId, Object>) this.vtnManager;
+            this.configContainerAware = (IConfigurationContainerAware) this.vtnManager;
             this.inventoryListener = (IInventoryListener) this.vtnManager;
             this.topologyManagerAware = (ITopologyManagerAware) this.vtnManager;
             this.containerListener = (IContainerListener) this.vtnManager;
@@ -363,18 +363,21 @@ public class VTNManagerIT extends TestBase {
                     for (Integer hv : hvs) {
                         VTenantConfig tconf = createVTenantConfig(desc, iv, hv);
                         Status st = mgr.addTenant(tpath, tconf);
+                        String emsg = "(name)" + tname + "(desc)"+ desc
+                                + ",(iv)" + ((iv == null) ? "null" : iv.intValue())
+                                + ",(hv)" + ((hv == null) ? "null" : hv.intValue());
 
                         if (iv != null && hv != null && iv.intValue() > 0 && hv.intValue() > 0
                                 && iv.intValue() >= hv.intValue()) {
-                            assertEquals(StatusCode.BADREQUEST, st.getCode());
+                            assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
                             continue;
                         } else if ((iv == null || iv.intValue() < 0) && hv != null && hv.intValue() > 0
                                 && 300 >= hv.intValue()) {
-                            assertEquals(StatusCode.BADREQUEST, st.getCode());
+                            assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
                             continue;
                         } else {
-                            assertTrue(st.isSuccess());
-                            assertTrue(mgr.isActive());
+                            assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
+                            assertTrue(emsg, mgr.isActive());
                         }
 
                         // getTenant()
@@ -387,19 +390,19 @@ public class VTNManagerIT extends TestBase {
                         assertEquals(tname, tenant.getName());
                         assertEquals(tconf.getDescription(), tenant.getDescription());
                         if (iv == null || iv.intValue() < 0) {
-                            assertEquals(300, tenant.getIdleTimeout());
+                            assertEquals(emsg, 300, tenant.getIdleTimeout());
                         } else {
-                            assertEquals(iv.intValue(), tenant.getIdleTimeout());
+                            assertEquals(emsg, iv.intValue(), tenant.getIdleTimeout());
                         }
                         if (hv == null || hv.intValue() < 0) {
-                            assertEquals(0, tenant.getHardTimeout());
+                            assertEquals(emsg, 0, tenant.getHardTimeout());
                         } else {
-                            assertEquals(hv.intValue(), tenant.getHardTimeout());
+                            assertEquals(emsg, hv.intValue(), tenant.getHardTimeout());
                         }
 
                         // removeTenant()
                         mgr.removeTenant(tpath);
-                        assertTrue(st.isSuccess());
+                        assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
                     }
                 }
             }
@@ -407,7 +410,7 @@ public class VTNManagerIT extends TestBase {
 
         try {
             List<VTenant> list = mgr.getTenants();
-            assertTrue(list.size() == 0);
+            assertEquals(0, list.size());
         } catch (Exception e) {
             unexpected(e);
         }
@@ -464,16 +467,25 @@ public class VTNManagerIT extends TestBase {
                                     for (String ndesc : descs) {
                                         // test for all == true. executed at
                                         // first time only.
+                                        String emsg = "(name)" + tname + "(ndesc)"+ ndesc
+                                                + ",(iv)" + ((iv == null) ? "null" : iv.intValue())
+                                                + ",(hv)" + ((hv == null) ? "null" : hv.intValue());
+
                                         tconf = createVTenantConfig(ndesc, iv, hv);
                                         st = mgr.modifyTenant(tpath, tconf, true);
 
-                                        if (iv != null && hv != null && iv.intValue() > 0 && hv.intValue() > 0
+                                        if (iv != null && hv != null
+                                                && iv.intValue() > 0 && hv.intValue() > 0
                                                 && iv.intValue() >= hv.intValue()) {
-                                            assertEquals(StatusCode.BADREQUEST, st.getCode());
-                                        } else if ((iv == null || iv < 0) && hv != null && hv > 0 && 300 >= hv) {
-                                            assertEquals(StatusCode.BADREQUEST, st.getCode());
+                                            assertEquals(emsg,
+                                                    StatusCode.BADREQUEST, st.getCode());
+                                        } else if ((iv == null || iv < 0)
+                                                && hv != null && hv > 0 && 300 >= hv) {
+                                            assertEquals(emsg,
+                                                    StatusCode.BADREQUEST, st.getCode());
                                         } else {
-                                            assertTrue(st.isSuccess());
+                                            assertEquals(emsg,
+                                                    StatusCode.SUCCESS, st.getCode());
                                         }
 
                                         try {
@@ -483,24 +495,32 @@ public class VTNManagerIT extends TestBase {
                                         }
 
                                         if (st.isSuccess()) {
-                                            assertEquals(tname, tenant.getName());
-                                            assertEquals(ndesc, tenant.getDescription());
+                                            assertEquals(emsg, tname, tenant.getName());
+                                            assertEquals(emsg,
+                                                    ndesc, tenant.getDescription());
                                             if (iv == null || iv.intValue() < 0) {
-                                                assertEquals(300, tenant.getIdleTimeout());
+                                                assertEquals(emsg,
+                                                        300, tenant.getIdleTimeout());
                                             } else {
-                                                assertEquals(iv.intValue(), tenant.getIdleTimeout());
+                                                assertEquals(emsg,
+                                                        iv.intValue(),
+                                                        tenant.getIdleTimeout());
                                             }
                                             if (hv == null || hv.intValue() < 0) {
-                                                assertEquals(0, tenant.getHardTimeout());
+                                                assertEquals(emsg,
+                                                        0, tenant.getHardTimeout());
                                             } else {
-                                                assertEquals(hv.intValue(), tenant.getHardTimeout());
+                                                assertEquals(emsg,
+                                                        hv.intValue(),
+                                                        tenant.getHardTimeout());
                                             }
                                         }
                                     }
                                 }
 
-                                tconf = createVTenantConfig(desc, orgiv, orghv);
-                                st = mgr.modifyTenant(tpath, tconf, true);
+                                VTenantConfig tconfOrg = createVTenantConfig(desc,
+                                        orgiv, orghv);
+                                st = mgr.modifyTenant(tpath, tconfOrg, true);
 
                                 olddesc = (desc == null) ? null : new String(desc);
                                 oldiv = (orgiv == null || orgiv.intValue() < 0) ? new Integer(300) : orgiv;
@@ -510,6 +530,11 @@ public class VTNManagerIT extends TestBase {
                                 tconf = createVTenantConfig(desc, iv, hv);
                                 st = mgr.modifyTenant(tpath, tconf, false);
 
+                                String emsg = "(VTenangConfig(orig))"  + tconfOrg.toString()
+                                        + "(name)" + tname + "(ndesc)"+ desc
+                                        + ",(iv)" + ((iv == null) ? "null" : iv.intValue())
+                                        + ",(hv)" + ((hv == null) ? "null" : hv.intValue());
+
                                 if ((iv == null || iv.intValue() < 0) && (hv == null || hv.intValue() < 0)) {
                                     // both are notset
                                     // not changed.
@@ -518,31 +543,39 @@ public class VTNManagerIT extends TestBase {
                                     // idle_timeout is notset
                                     if (hv.intValue() > 0
                                             && (oldiv.intValue() != 0 && oldiv.intValue() >= hv.intValue())) {
-                                        assertEquals(StatusCode.BADREQUEST, st.getCode());
+                                        assertEquals(emsg,
+                                                StatusCode.BADREQUEST, st.getCode());
                                     } else {
-                                        assertTrue(st.isSuccess());
+                                        assertEquals(emsg,
+                                                StatusCode.SUCCESS, st.getCode());
                                     }
                                 } else if (hv == null || hv.intValue() < 0) {
                                     // hard_timeout is notset
                                     if (iv > 0 && oldhv > 0) {
                                         if (iv >= oldhv) {
-                                            assertEquals(StatusCode.BADREQUEST, st.getCode());
+                                            assertEquals(emsg,
+                                                    StatusCode.BADREQUEST, st.getCode());
                                         } else {
-                                            assertTrue(st.isSuccess());
+                                            assertEquals(emsg,
+                                                    StatusCode.SUCCESS, st.getCode());
                                         }
                                     } else {
-                                        assertTrue(st.isSuccess());
+                                        assertEquals(emsg,
+                                                StatusCode.SUCCESS, st.getCode());
                                     }
                                 } else {
                                     // both are set
                                     if (iv.intValue() > 0 && hv.intValue() > 0) {
                                         if (iv.intValue() >= hv.intValue()) {
-                                            assertEquals(StatusCode.BADREQUEST, st.getCode());
+                                            assertEquals(emsg,
+                                                    StatusCode.BADREQUEST, st.getCode());
                                         } else {
-                                            assertTrue(st.isSuccess());
+                                            assertEquals(emsg,
+                                                    StatusCode.SUCCESS, st.getCode());
                                         }
                                     } else {
-                                        assertTrue(st.isSuccess());
+                                        assertEquals(emsg,
+                                                StatusCode.SUCCESS, st.getCode());
                                     }
                                 }
 
@@ -554,17 +587,21 @@ public class VTNManagerIT extends TestBase {
                                 }
 
                                 if (st.isSuccess()) {
-                                    assertEquals(tname, tenant.getName());
-                                    assertEquals(olddesc, tenant.getDescription());
+                                    assertEquals(emsg, tname, tenant.getName());
+                                    assertEquals(emsg, olddesc, tenant.getDescription());
                                     if (iv == null || iv.intValue() < 0) {
-                                        assertEquals(oldiv.intValue(), tenant.getIdleTimeout());
+                                        assertEquals(emsg,
+                                                oldiv.intValue(), tenant.getIdleTimeout());
                                     } else {
-                                        assertEquals(iv.intValue(), tenant.getIdleTimeout());
+                                        assertEquals(emsg,
+                                                iv.intValue(), tenant.getIdleTimeout());
                                     }
                                     if (hv == null || hv.intValue() < 0) {
-                                        assertEquals(oldhv.intValue(), tenant.getHardTimeout());
+                                        assertEquals(emsg,
+                                                oldhv.intValue(), tenant.getHardTimeout());
                                     } else {
-                                        assertEquals(hv.intValue(), tenant.getHardTimeout());
+                                        assertEquals(emsg,
+                                                hv.intValue(), tenant.getHardTimeout());
                                     }
                                 }
 
@@ -581,7 +618,7 @@ public class VTNManagerIT extends TestBase {
 
         try {
             List<VTenant> list = mgr.getTenants();
-            assertTrue(list.size() == tnames.size());
+            assertEquals(tnames.size(), list.size());
         } catch (Exception e) {
             unexpected(e);
         }
@@ -622,7 +659,7 @@ public class VTNManagerIT extends TestBase {
         for (String tname : tlist) {
             VTenantPath tpath = new VTenantPath(tname);
             Status st = mgr.addTenant(tpath, new VTenantConfig(null));
-            assertTrue(st.isSuccess());
+            assertEquals(StatusCode.SUCCESS, st.getCode());
 
             for (String bname : blist) {
                 if (bname.isEmpty()) {
@@ -632,8 +669,12 @@ public class VTNManagerIT extends TestBase {
                 for (String desc : descs) {
                     for (Integer age : ages) {
                         VBridgeConfig bconf = createVBridgeConfig(desc, age);
+                        String emsg = "(VBridgePath)" + bpath.toString()
+                                + "(VBridgeConfig)" + bconf.toString()
+                                + "(age)" + ((age == null) ? "null" : age.intValue());
+
                         st = mgr.addBridge(bpath, bconf);
-                        assertTrue(st.isSuccess());
+                        assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
 
                         VBridge brdg = null;
                         try {
@@ -641,14 +682,14 @@ public class VTNManagerIT extends TestBase {
                         } catch (Exception e) {
                             unexpected(e);
                         }
-                        assertEquals(bname, brdg.getName());
-                        assertEquals(desc, brdg.getDescription());
+                        assertEquals(emsg, bname, brdg.getName());
+                        assertEquals(emsg, desc, brdg.getDescription());
                         if (age == null) {
-                            assertEquals(600, brdg.getAgeInterval());
+                            assertEquals(emsg, 600, brdg.getAgeInterval());
                         } else {
-                            assertEquals(age.intValue(), brdg.getAgeInterval());
+                            assertEquals(emsg, age.intValue(), brdg.getAgeInterval());
                         }
-                        assertEquals(VNodeState.UNKNOWN, brdg.getState());
+                        assertEquals(emsg, VNodeState.UNKNOWN, brdg.getState());
 
                         String olddesc = brdg.getDescription();
                         int oldage = brdg.getAgeInterval();
@@ -658,32 +699,42 @@ public class VTNManagerIT extends TestBase {
                                 bconf = createVBridgeConfig(newdesc, newage);
                                 st = mgr.modifyBridge(bpath, bconf, false);
 
+                                String emsgMod = emsg
+                                        + "(VBridgeConfig(new))" + bconf.toString()
+                                        + "(age(new))"
+                                        + ((newage == null) ? "null" : newage.intValue());
+
                                 brdg = null;
                                 try {
                                     brdg = mgr.getBridge(bpath);
                                 } catch (Exception e) {
                                     unexpected(e);
                                 }
-                                assertEquals(bname, brdg.getName());
+                                assertEquals(emsgMod, bname, brdg.getName());
                                 if (newdesc == null) {
-                                    assertEquals(olddesc, brdg.getDescription());
+                                    assertEquals(emsgMod,
+                                            olddesc, brdg.getDescription());
                                 } else {
-                                    assertEquals(newdesc, brdg.getDescription());
+                                    assertEquals(emsgMod,
+                                            newdesc, brdg.getDescription());
                                 }
                                 if (newage == null) {
-                                    assertEquals(oldage, brdg.getAgeInterval());
+                                    assertEquals(emsgMod,
+                                            oldage, brdg.getAgeInterval());
                                 } else {
-                                    assertEquals(newage.intValue(), brdg.getAgeInterval());
+                                    assertEquals(emsgMod,
+                                            newage.intValue(), brdg.getAgeInterval());
                                 }
                                 olddesc = brdg.getDescription();
                                 oldage = brdg.getAgeInterval();
 
-                                assertEquals(VNodeState.UNKNOWN, brdg.getState());
+                                assertEquals(emsgMod,
+                                        VNodeState.UNKNOWN, brdg.getState());
                             }
                         }
 
                         st = mgr.removeBridge(bpath);
-                        assertTrue(st.isSuccess());
+                        assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
                     }
 
                     if (first) {
@@ -694,25 +745,33 @@ public class VTNManagerIT extends TestBase {
                                 bconf = createVBridgeConfig(newdesc, newage);
                                 st = mgr.modifyBridge(bpath, bconf, true);
 
+                                String emsgMod =
+                                        "(VBridgeConfig(new))" + bconf.toString()
+                                        + "(age(new))"
+                                        + ((newage == null) ? "null" : newage.intValue());
+
                                 VBridge brdg = null;
                                 try {
                                     brdg = mgr.getBridge(bpath);
                                 } catch (Exception e) {
                                     unexpected(e);
                                 }
-                                assertEquals(bname, brdg.getName());
-                                assertEquals(newdesc, brdg.getDescription());
+                                assertEquals(emsgMod, bname, brdg.getName());
+                                assertEquals(emsgMod, newdesc, brdg.getDescription());
                                 if (newage == null) {
-                                    assertEquals(600, brdg.getAgeInterval());
+                                    assertEquals(emsgMod, 600, brdg.getAgeInterval());
                                 } else {
-                                    assertEquals(newage.intValue(), brdg.getAgeInterval());
+                                    assertEquals(emsgMod,
+                                            newage.intValue(), brdg.getAgeInterval());
                                 }
-                                assertEquals(VNodeState.UNKNOWN, brdg.getState());
+                                assertEquals(emsgMod,
+                                        VNodeState.UNKNOWN, brdg.getState());
                             }
                         }
 
                         st = mgr.removeBridge(bpath);
-                        assertTrue(st.isSuccess());
+                        assertEquals("(VBridgePath)" + bpath.toString(),
+                                StatusCode.SUCCESS, st.getCode());
 
                         first = false;
                     }
@@ -726,14 +785,15 @@ public class VTNManagerIT extends TestBase {
                 unexpected(e);
             }
             st = mgr.removeTenant(tpath);
-            assertTrue(st.isSuccess());
+            assertEquals(StatusCode.SUCCESS, st.getCode());
         }
 
         // add mulitple entry.
         for (String tname : tlist) {
             VTenantPath tpath = new VTenantPath(tname);
             Status st = mgr.addTenant(tpath, new VTenantConfig(null));
-            assertTrue(st.isSuccess());
+            assertEquals("(VTenantPath)" + tpath.toString(),
+                    StatusCode.SUCCESS, st.getCode());
 
             for (String bname : blist) {
                 if (bname.isEmpty()) {
@@ -743,16 +803,20 @@ public class VTNManagerIT extends TestBase {
                 VBridgeConfig bconf = createVBridgeConfig(null, null);
 
                 st = mgr.addBridge(bpath, bconf);
-                assertTrue(st.isSuccess());
+                assertEquals("(VBridgePath)" + bpath.toString()
+                        + "(VBridgeConfig)" + bconf.toString(),
+                        StatusCode.SUCCESS, st.getCode());
             }
             try {
                 List<VBridge> list = mgr.getBridges(tpath);
-                assertEquals(blist.size(), list.size());
+                assertEquals("(VTenantPath)" + tpath.toString(),
+                        blist.size(), list.size());
             } catch (VTNException e) {
                 unexpected(e);
             }
             st = mgr.removeTenant(tpath);
-            assertTrue(st.isSuccess());
+            assertEquals("(VTenantPath)" + tpath.toString(),
+                    StatusCode.SUCCESS, st.getCode());
         }
     }
 
@@ -783,13 +847,15 @@ public class VTNManagerIT extends TestBase {
         for (String tname : tlist) {
             VTenantPath tpath = new VTenantPath(tname);
             Status st = mgr.addTenant(tpath, new VTenantConfig(null));
-            assertTrue(st.isSuccess());
+            assertEquals("(VTenantPath)" + tpath.toString(),
+                    StatusCode.SUCCESS, st.getCode());
 
             for (String bname : blist) {
                 VBridgePath bpath = new VBridgePath(tname, bname);
                 VBridgeConfig bconf = createVBridgeConfig(null, null);
                 st = mgr.addBridge(bpath, bconf);
-                assertTrue(st.isSuccess());
+                assertEquals("(VBridgePath)" + bpath.toString(),
+                        StatusCode.SUCCESS, st.getCode());
 
                 List<VInterface> list = null;
                 try {
@@ -797,7 +863,8 @@ public class VTNManagerIT extends TestBase {
                 } catch (Exception e) {
                     unexpected(e);
                 }
-                assertTrue(list.size() == 0);
+                assertEquals("(VBridgePath)" + bpath.toString(),
+                        0, list.size());
 
                 for (String ifname : iflist) {
                     if (ifname.isEmpty()) {
@@ -808,9 +875,11 @@ public class VTNManagerIT extends TestBase {
                     for (String desc : descs) {
                         for (Boolean enabled : createBooleans()) {
                             VInterfaceConfig ifconf = new VInterfaceConfig(desc, enabled);
+                            String emsg = "(VBridgeIfPath)" + ifp.toString()
+                                    + ",(VInterfaceConfig)" + ifconf.toString();
 
                             st = mgr.addBridgeInterface(ifp, ifconf);
-                            assertTrue(st.isSuccess());
+                            assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
 
                             VInterface vif = null;
                             try {
@@ -819,17 +888,17 @@ public class VTNManagerIT extends TestBase {
                                 unexpected(e);
                             }
 
-                            assertEquals(ifname, vif.getName());
-                            assertEquals(desc, vif.getDescription());
+                            assertEquals(emsg, ifname, vif.getName());
+                            assertEquals(emsg, desc, vif.getDescription());
                             if (enabled == null) {
-                                assertEquals(Boolean.TRUE, vif.getEnabled());
+                                assertEquals(emsg, Boolean.TRUE, vif.getEnabled());
                             } else {
-                                assertEquals(enabled, vif.getEnabled());
+                                assertEquals(emsg, enabled, vif.getEnabled());
                             }
                             if (enabled == Boolean.FALSE) {
-                                assertEquals(VNodeState.DOWN, vif.getState());
+                                assertEquals(emsg, VNodeState.DOWN, vif.getState());
                             } else {
-                                assertEquals(VNodeState.UNKNOWN, vif.getState());
+                                assertEquals(emsg, VNodeState.UNKNOWN, vif.getState());
                             }
 
                             VBridge brdg = null;
@@ -838,24 +907,27 @@ public class VTNManagerIT extends TestBase {
                             } catch (VTNException e) {
                                unexpected(e);
                             }
-                            assertEquals(VNodeState.UNKNOWN, brdg.getState());
+                            assertEquals(emsg, VNodeState.UNKNOWN, brdg.getState());
 
                             st = mgr.removeBridgeInterface(ifp);
-                            assertTrue(st.isSuccess());
+                            assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
                         }
                     }
 
                     // for modify(false)
                     st = mgr.addBridgeInterface(ifp, new VInterfaceConfig("desc", Boolean.FALSE));
-                    assertTrue(st.isSuccess());
+                    assertEquals(StatusCode.SUCCESS, st.getCode());
 
                     String olddesc = new String("desc");
                     Boolean oldenabled = Boolean.FALSE;
                     for (String desc : descs) {
                         for (Boolean enabled : createBooleans()) {
                             VInterfaceConfig ifconf = new VInterfaceConfig(desc, enabled);
+                            String emsg = "(VBridgeIfPath)" + ifp.toString()
+                                    + "(VInterfaceConfig)" + ifconf.toString();
+
                             st = mgr.modifyBridgeInterface(ifp, ifconf, false);
-                            assertTrue(st.isSuccess());
+                            assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
 
                             VInterface vif = null;
                             try {
@@ -864,26 +936,26 @@ public class VTNManagerIT extends TestBase {
                                 unexpected(e);
                             }
 
-                            assertEquals(ifname, vif.getName());
+                            assertEquals(emsg, ifname, vif.getName());
 
                             if (desc == null) {
-                                assertEquals(olddesc, vif.getDescription());
+                                assertEquals(emsg, olddesc, vif.getDescription());
                             } else {
-                                assertEquals(desc, vif.getDescription());
+                                assertEquals(emsg, desc, vif.getDescription());
                             }
 
                             Boolean currenabled = enabled;
                             if (enabled == null) {
-                                assertEquals(oldenabled, vif.getEnabled());
+                                assertEquals(emsg, oldenabled, vif.getEnabled());
                                 currenabled = oldenabled;
                             } else {
                                 assertEquals(enabled, vif.getEnabled());
                             }
 
                             if (currenabled == Boolean.FALSE) {
-                                assertEquals(VNodeState.DOWN, vif.getState());
+                                assertEquals(emsg, VNodeState.DOWN, vif.getState());
                             } else {
-                                assertEquals(VNodeState.UNKNOWN, vif.getState());
+                                assertEquals(emsg, VNodeState.UNKNOWN, vif.getState());
                             }
                             VBridge brdg = null;
                             try {
@@ -891,7 +963,7 @@ public class VTNManagerIT extends TestBase {
                             } catch (VTNException e) {
                                unexpected(e);
                             }
-                            assertEquals(VNodeState.UNKNOWN, brdg.getState());
+                            assertEquals(emsg, VNodeState.UNKNOWN, brdg.getState());
 
                             olddesc = vif.getDescription();
                             oldenabled = vif.getEnabled();
@@ -899,12 +971,15 @@ public class VTNManagerIT extends TestBase {
                     }
                     // for modify(true)
                     st = mgr.modifyBridgeInterface(ifp, new VInterfaceConfig("desc", Boolean.FALSE), true);
-                    assertTrue(st.isSuccess());
+                    assertEquals(StatusCode.SUCCESS, st.getCode());
                     for (String desc : descs) {
                         for (Boolean enabled : createBooleans()) {
                             VInterfaceConfig ifconf = new VInterfaceConfig(desc, enabled);
+                            String emsg = "(VBridgeIfPath)" + ifp.toString()
+                                    + "(VInterfaceConfig)" + ifconf.toString();
+
                             st = mgr.modifyBridgeInterface(ifp, ifconf, true);
-                            assertTrue(st.isSuccess());
+                            assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
 
                             VInterface vif = null;
                             try {
@@ -913,18 +988,18 @@ public class VTNManagerIT extends TestBase {
                                 unexpected(e);
                             }
 
-                            assertEquals(ifname, vif.getName());
-                            assertEquals(desc, vif.getDescription());
+                            assertEquals(emsg, ifname, vif.getName());
+                            assertEquals(emsg, desc, vif.getDescription());
                             if (enabled == null) {
-                                assertEquals(Boolean.TRUE, vif.getEnabled());
+                                assertEquals(emsg, Boolean.TRUE, vif.getEnabled());
                             } else {
-                                assertEquals(enabled, vif.getEnabled());
+                                assertEquals(emsg, enabled, vif.getEnabled());
                             }
 
                             if (enabled == Boolean.FALSE) {
-                                assertEquals(VNodeState.DOWN, vif.getState());
+                                assertEquals(emsg, VNodeState.DOWN, vif.getState());
                             } else {
-                                assertEquals(VNodeState.UNKNOWN, vif.getState());
+                                assertEquals(emsg, VNodeState.UNKNOWN, vif.getState());
                             }
 
                             VBridge brdg = null;
@@ -933,7 +1008,7 @@ public class VTNManagerIT extends TestBase {
                             } catch (VTNException e) {
                                unexpected(e);
                             }
-                            assertEquals(VNodeState.UNKNOWN, brdg.getState());
+                            assertEquals(emsg, VNodeState.UNKNOWN, brdg.getState());
                         }
                     }
                 }
@@ -944,11 +1019,11 @@ public class VTNManagerIT extends TestBase {
                 } catch (Exception e) {
                     unexpected(e);
                 }
-                assertTrue(iflist.size() == list.size());
+                assertEquals(iflist.size(), list.size());
             }
 
             st = mgr.removeTenant(tpath);
-            assertTrue(st.isSuccess());
+            assertEquals(StatusCode.SUCCESS, st.getCode());
         }
 
         // TODO: NOTACCEPTABLE
@@ -968,24 +1043,26 @@ public class VTNManagerIT extends TestBase {
         String tname = "vtn";
         VTenantPath tpath = new VTenantPath(tname);
         Status st = mgr.addTenant(tpath, new VTenantConfig(null));
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         String bname = "vbridge";
         VBridgePath bpath = new VBridgePath(tname, bname);
         VBridgeConfig bconf = createVBridgeConfig(null, null);
         st = mgr.addBridge(bpath, bconf);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         String ifname = "vinterface";
         VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, ifname);
-        VInterfaceConfig ifconf = new VInterfaceConfig(null, true);
+        VInterfaceConfig ifconf = new VInterfaceConfig(null, Boolean.TRUE);
         st = mgr.addBridgeInterface(ifp, ifconf);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         // add a vlanmap to a vbridge
         for (Node node : createNodes(3)) {
             for (short vlan : vlans) {
                 VlanMapConfig vlconf = new VlanMapConfig(node, vlan);
+                String emsg = "(VlanMapConfig)" + vlconf.toString();
+
                 VlanMap map = null;
                 try {
                     map = mgr.addVlanMap(bpath, vlconf);
@@ -1006,9 +1083,9 @@ public class VTNManagerIT extends TestBase {
                 } catch (VTNException e) {
                     unexpected(e);
                 }
-                assertEquals(getmap.getId(), map.getId());
-                assertEquals(getmap.getNode(), node);
-                assertEquals(getmap.getVlan(), vlan);
+                assertEquals(emsg, getmap.getId(), map.getId());
+                assertEquals(emsg, getmap.getNode(), node);
+                assertEquals(emsg, getmap.getVlan(), vlan);
 
                 VBridge brdg = null;
                 try {
@@ -1016,10 +1093,11 @@ public class VTNManagerIT extends TestBase {
                 } catch (VTNException e) {
                    unexpected(e);
                 }
-                assertEquals((node == null) ? VNodeState.UP : VNodeState.DOWN, brdg.getState());
+                assertEquals(emsg,
+                        (node == null) ? VNodeState.UP : VNodeState.DOWN, brdg.getState());
 
                 st = mgr.removeVlanMap(bpath, map.getId());
-                assertTrue(st.isSuccess());
+                assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
             }
         }
 
@@ -1050,34 +1128,38 @@ public class VTNManagerIT extends TestBase {
             } catch (Exception e) {
                 unexpected(e);
             }
+            String emsg = "(Node)" + ((node == null) ? "null" : node.toString());
             if (node == null || node.getType() == NodeConnector.NodeConnectorIDType.OPENFLOW) {
-                assertTrue(list.size() == vlans.length);
+                assertEquals(emsg,
+                        vlans.length, list.size());
                 VBridge brdg = null;
                 try {
                     brdg = mgr.getBridge(bpath);
                 } catch (VTNException e) {
                    unexpected(e);
                 }
-                assertEquals((node == null) ? VNodeState.UP : VNodeState.DOWN, brdg.getState());
+                assertEquals(emsg,
+                        (node == null) ? VNodeState.UP : VNodeState.DOWN, brdg.getState());
             } else {
-                assertTrue(list.size() == 0);
+                assertEquals(0, list.size());
                 VBridge brdg = null;
                 try {
                     brdg = mgr.getBridge(bpath);
                 } catch (VTNException e) {
                    unexpected(e);
                 }
-                assertEquals(VNodeState.UNKNOWN, brdg.getState());
+                assertEquals(emsg, VNodeState.UNKNOWN, brdg.getState());
             }
 
             for (VlanMap map : list) {
                 st = mgr.removeVlanMap(bpath, map.getId());
-                assertTrue(st.isSuccess());
+                assertEquals(emsg + ",(VlanMap)"+ map.toString(),
+                        StatusCode.SUCCESS, st.getCode());
             }
         }
 
         st = mgr.removeTenant(tpath);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
     }
 
     /**
@@ -1091,19 +1173,19 @@ public class VTNManagerIT extends TestBase {
         String tname = "vtn";
         VTenantPath tpath = new VTenantPath(tname);
         Status st = mgr.addTenant(tpath, new VTenantConfig(null));
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         String bname = "vbridge";
         VBridgePath bpath = new VBridgePath(tname, bname);
         VBridgeConfig bconf = createVBridgeConfig(null, null);
         st = mgr.addBridge(bpath, bconf);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         String ifname = "vinterface";
         VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, ifname);
-        VInterfaceConfig ifconf = new VInterfaceConfig(null, true);
+        VInterfaceConfig ifconf = new VInterfaceConfig(null, Boolean.TRUE);
         st = mgr.addBridgeInterface(ifp, ifconf);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         PortMap pmap = null;
         try {
@@ -1125,8 +1207,10 @@ public class VTNManagerIT extends TestBase {
         for (SwitchPort port: ports) {
             for (short vlan : vlans) {
                 PortMapConfig pmconf = new PortMapConfig(node, port, (short)vlan);
+                String emsg = "(PortMapConfig)" + pmconf.toString();
+
                 st = mgr.setPortMap(ifp, pmconf);
-                assertTrue(pmconf.toString(), st.isSuccess());
+                assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
 
                 PortMap map = null;
                 try {
@@ -1134,8 +1218,8 @@ public class VTNManagerIT extends TestBase {
                 } catch (Exception e) {
                     unexpected(e);
                 }
-                assertEquals(pmconf, map.getConfig());
-                assertNull(pmconf.toString(), map.getNodeConnector());
+                assertEquals(emsg, pmconf, map.getConfig());
+                assertNull(emsg, map.getNodeConnector());
 
                 VInterface bif = null;
                 try {
@@ -1143,7 +1227,7 @@ public class VTNManagerIT extends TestBase {
                 } catch (VTNException e) {
                     unexpected(e);
                 }
-                assertEquals(pmconf.toString(), VNodeState.DOWN, bif.getState());
+                assertEquals(emsg, VNodeState.DOWN, bif.getState());
 
                 VBridge brdg = null;
                 try {
@@ -1151,12 +1235,12 @@ public class VTNManagerIT extends TestBase {
                 } catch (VTNException e) {
                    unexpected(e);
                 }
-                assertEquals(pmconf.toString(), VNodeState.DOWN, brdg.getState());
+                assertEquals(emsg, VNodeState.DOWN, brdg.getState());
             }
         }
 
         st = mgr.setPortMap(ifp, null);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         PortMap map = null;
         try {
@@ -1167,48 +1251,48 @@ public class VTNManagerIT extends TestBase {
         assertNull(map);
 
         st = mgr.removeTenant(tpath);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         // assign mutli portmaps to a vbridge
         st = mgr.addTenant(tpath, new VTenantConfig(null));
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
         String bname1 = "vbridge1";
         st = mgr.addBridge(new VBridgePath(tname, bname1), new VBridgeConfig(null));
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
         String bname2 = "vbridge2";
         st = mgr.addBridge(new VBridgePath(tname, bname2), new VBridgeConfig(null));
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         String ifname1 = "vinterface1";
         VBridgeIfPath ifp1 = new VBridgeIfPath(tname, bname1, ifname1);
-        st = mgr.addBridgeInterface(ifp1, new VInterfaceConfig(null, true));
-        assertTrue(st.isSuccess());
+        st = mgr.addBridgeInterface(ifp1, new VInterfaceConfig(null, Boolean.TRUE));
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         String ifname2 = "vinterface2";
         VBridgeIfPath ifp2 = new VBridgeIfPath(tname, bname1, ifname2);
-        st = mgr.addBridgeInterface(ifp2, new VInterfaceConfig(null, true));
-        assertTrue(st.isSuccess());
+        st = mgr.addBridgeInterface(ifp2, new VInterfaceConfig(null, Boolean.TRUE));
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         Node node1 = NodeCreator.createOFNode(0L);
         SwitchPort port1 = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "10");
         PortMapConfig pmconf1 = new PortMapConfig(node1, port1, (short) 0);
         st = mgr.setPortMap(ifp1, pmconf1);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         SwitchPort port2 = new SwitchPort( NodeConnector.NodeConnectorIDType.OPENFLOW, "11");
         PortMapConfig pmconf2 = new PortMapConfig(node1, port2, (short) 0);
         st = mgr.setPortMap(ifp2, pmconf2);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         // if specified port is not exist, duplicate portmap success.
         String ifname3 = "vinterface3";
         VBridgeIfPath ifp3 = new VBridgeIfPath(tname, bname2, ifname3);
-        st = mgr.addBridgeInterface(ifp3, new VInterfaceConfig(null, true));
+        st = mgr.addBridgeInterface(ifp3, new VInterfaceConfig(null, Boolean.TRUE));
         st = mgr.setPortMap(ifp3, pmconf1);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         st = mgr.removeTenant(tpath);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
     }
 
     /**
@@ -1377,9 +1461,9 @@ public class VTNManagerIT extends TestBase {
         VTenantPath tpath1 = new VTenantPath(tname1);
         VTenantPath tpath2 = new VTenantPath(tname2);
         Status st = mgr.addTenant(tpath1, new VTenantConfig(null));
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
         st = mgr.addTenant(tpath2, new VTenantConfig(null));
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         Dictionary<String, Object> props = new Hashtable<String, Object>();
         Set<String> propSet = new HashSet<String>();
@@ -1412,7 +1496,7 @@ public class VTNManagerIT extends TestBase {
         String tname = "tenant";
         VTenantPath tpath = new VTenantPath(tname);
         st = mgr.addTenant(tpath, new VTenantConfig(null));
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         res.await(10L, TimeUnit.SECONDS);
 
@@ -1429,7 +1513,7 @@ public class VTNManagerIT extends TestBase {
         String bname = "bname";
         VBridgePath bpath = new VBridgePath(tname1, bname);
         st = mgr.addBridge(bpath, new VBridgeConfig(null));
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         res.await(10L, TimeUnit.SECONDS);
 
@@ -1447,7 +1531,7 @@ public class VTNManagerIT extends TestBase {
         VBridgeIfPath ifpath = new VBridgeIfPath(tname1, bname, ifname);
         VInterfaceConfig ifconf = new VInterfaceConfig(null, null);
         st = mgr.addBridgeInterface(ifpath, ifconf);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         res.await(10L, TimeUnit.SECONDS);
 
@@ -1466,7 +1550,7 @@ public class VTNManagerIT extends TestBase {
         String.valueOf(10));
         PortMapConfig pmconf = new PortMapConfig(node, port, (short)0);
         st = mgr.setPortMap(ifpath, pmconf);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         res.await(10L, TimeUnit.SECONDS);
 
@@ -1511,7 +1595,7 @@ public class VTNManagerIT extends TestBase {
         // modify a tenant setting
         res = listener.restart(1);
         st = mgr.modifyTenant(tpath, new VTenantConfig("desc"), false);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         res.await(10L, TimeUnit.SECONDS);
 
@@ -1526,7 +1610,7 @@ public class VTNManagerIT extends TestBase {
         // modify a vbridge setting
         res = listener.restart(1);
         st = mgr.modifyBridge(bpath, new VBridgeConfig("desc"), false);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         res.await(10L, TimeUnit.SECONDS);
 
@@ -1540,8 +1624,9 @@ public class VTNManagerIT extends TestBase {
 
         // modify a vbridge interface setting
         res = listener.restart(1);
-        st = mgr.modifyBridgeInterface(ifpath, new VInterfaceConfig("interface", true), false);
-        assertTrue(st.isSuccess());
+        st = mgr.modifyBridgeInterface(ifpath,
+                new VInterfaceConfig("interface", Boolean.TRUE), false);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         res.await(10L, TimeUnit.SECONDS);
 
@@ -1558,7 +1643,7 @@ public class VTNManagerIT extends TestBase {
         port = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, String.valueOf(11));
         pmconf = new PortMapConfig(node, port, (short)0);
         st = mgr.setPortMap(ifpath, pmconf);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         res.await(10L, TimeUnit.SECONDS);
 
@@ -1573,7 +1658,7 @@ public class VTNManagerIT extends TestBase {
         //remove a VLanMap
         res = listener.restart(1);
         st = mgr.removeVlanMap(bpath, map.getId());
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         res.await(10L, TimeUnit.SECONDS);
 
@@ -1588,7 +1673,7 @@ public class VTNManagerIT extends TestBase {
         // remove a portmap
         res = listener.restart(3);
         st = mgr.setPortMap(ifpath, null);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         res.await(10L, TimeUnit.SECONDS);
 
@@ -1613,7 +1698,7 @@ public class VTNManagerIT extends TestBase {
         // remove a vbridge interface
         res = listener.restart(1);
         st = mgr.removeBridgeInterface(ifpath);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         res.await(10L, TimeUnit.SECONDS);
 
@@ -1628,7 +1713,7 @@ public class VTNManagerIT extends TestBase {
         // remove a vbridge
         res = listener.restart(1);
         st = mgr.removeBridge(bpath);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         res.await(10L, TimeUnit.SECONDS);
 
@@ -1643,7 +1728,7 @@ public class VTNManagerIT extends TestBase {
         // remove a tenant
         res = listener.restart(1);
         st =mgr.removeTenant(tpath);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         res.await(10L, TimeUnit.SECONDS);
 
@@ -1694,25 +1779,19 @@ public class VTNManagerIT extends TestBase {
         String tname = "vtn";
         VTenantPath tpath = new VTenantPath(tname);
         Status st = mgr.addTenant(tpath, new VTenantConfig(null));
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         String bname = "vbridge";
         VBridge bridge1 = new VBridge(bname, states[1], flt1, bconf);
         VBridgePath bpath = new VBridgePath(tname, bname);
         st = mgr.addBridge(bpath, bconf);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         String bname2 = "vbridge2";
         VBridge bridge2 = new VBridge(bname2, states[2], flt2, bconf);
         VBridgePath bpath2 = new VBridgePath(tname, bname2);
         st = mgr.addBridge(bpath2, bconf);
-        assertTrue(st.isSuccess());
-
-//        String ifname = "vinterface";
-//        VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, ifname);
-//        VInterfaceConfig ifconf = new VInterfaceConfig(null, true);
-//        st = mgr.addBridgeInterface(ifp, ifconf);
-//        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         VlanMapConfig vlconf = new VlanMapConfig(null, (short)0);
         VlanMap map = null;
@@ -1746,26 +1825,27 @@ public class VTNManagerIT extends TestBase {
             RawPacket inPkt = createARPRawPacket (src, dst, sender, target, (short)-1, nc, ARP.REQUEST);
             listenDataPacket.receiveDataPacket(inPkt);
 
+            String emsg = ea.toString();
             MacAddressEntry entry = null;
             List<MacAddressEntry> elist = null;
             try {
                 entry = mgr.getMacEntry(bpath, eaSrc);
-                assertNotNull(ea.toString(), entry);
+                assertNotNull(emsg, entry);
             } catch (VTNException e) {
                 unexpected(e);
             }
-            assertEquals(ea.toString(), eaSrc, entry.getAddress());
-            assertEquals(ea.toString(), nc, entry.getNodeConnector());
+            assertEquals(emsg, eaSrc, entry.getAddress());
+            assertEquals(emsg, nc, entry.getNodeConnector());
 
             Set<InetAddress> ips = entry.getInetAddresses();
-            assertArrayEquals(ea.toString(), sender, ips.iterator().next().getAddress());
+            assertArrayEquals(emsg, sender, ips.iterator().next().getAddress());
 
             try {
                 entry = mgr.getMacEntry(bpath2, eaSrc);
             } catch (VTNException e) {
                 unexpected(e);
             }
-            assertNull(ea.toString(), entry);
+            assertNull(emsg, entry);
 
             try {
                 assertNull(mgr.removeMacEntry(bpath, ea));
@@ -1783,7 +1863,7 @@ public class VTNManagerIT extends TestBase {
             unexpected(e);
         }
         assertNotNull(list);
-        assertTrue(list.size() == ethers.size());
+        assertEquals(ethers.size(), list.size());
 
         st = mgr.flushMacEntries(bpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
@@ -1794,7 +1874,7 @@ public class VTNManagerIT extends TestBase {
             unexpected(e);
         }
         assertNotNull(list);
-        assertTrue(list.size() == 0);
+        assertEquals(0, list.size());
 
         try {
             list = mgr.getMacEntries(bpath2);
@@ -1813,10 +1893,10 @@ public class VTNManagerIT extends TestBase {
             unexpected(e);
         }
         assertNotNull(list);
-        assertTrue(list.size() == 0);
+        assertEquals(0, list.size());
 
         st = mgr.removeTenant(tpath);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
     }
 
 
@@ -2042,7 +2122,7 @@ public class VTNManagerIT extends TestBase {
     @Test
     public void testIConfigurationContainerAware() {
         Status st = configContainerAware.saveConfiguration();
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
     }
 
     /**
@@ -2079,6 +2159,7 @@ public class VTNManagerIT extends TestBase {
         for (Node node : createNodes(2)) {
             for (short vlan : vlans) {
                 VlanMapConfig vlconf = new VlanMapConfig(node, vlan);
+                String emsg = vlconf.toString();
                 VlanMap map = null;
                 try {
                     map = vtnManager.addVlanMap(bpath, vlconf);
@@ -2099,12 +2180,12 @@ public class VTNManagerIT extends TestBase {
                 } catch (VTNException e) {
                     unexpected(e);
                 }
-                assertEquals(getmap.getId(), map.getId());
-                assertEquals(getmap.getNode(), node);
-                assertEquals(getmap.getVlan(), vlan);
+                assertEquals(emsg, getmap.getId(), map.getId());
+                assertEquals(emsg, getmap.getNode(), node);
+                assertEquals(emsg, getmap.getVlan(), vlan);
                 checkNodeStatus(vtnManager, bpath, ifp,
                                 (node == null) ? VNodeState.UP : VNodeState.DOWN,
-                                VNodeState.UNKNOWN, vlconf.toString());
+                                VNodeState.UNKNOWN, emsg);
 
                 // test for node connector change notify.
                 Map<String, Property> propMap = null; // not used now.
@@ -2112,46 +2193,46 @@ public class VTNManagerIT extends TestBase {
                 mgr.notifyNodeConnector(nc, UpdateType.ADDED, propMap);
                 checkNodeStatus(vtnManager, bpath, ifp,
                         (node == null) ? VNodeState.UP : VNodeState.DOWN,
-                        VNodeState.UNKNOWN, vlconf.toString());
+                        VNodeState.UNKNOWN, emsg);
 
                 putMacTableEntry(listenDataPacket, bpath, nc);
 
                 mgr.notifyNodeConnector(nc, UpdateType.REMOVED, propMap);
                 checkNodeStatus(vtnManager, bpath, ifp,
                         (node == null) ? VNodeState.UP : VNodeState.DOWN,
-                        VNodeState.UNKNOWN, vlconf.toString());
+                        VNodeState.UNKNOWN, emsg);
 
                 checkMacTableEntry(vtnManager, bpath, true, vlconf.toString());
 
                 mgr.notifyNodeConnector(nc, UpdateType.CHANGED, propMap);
                 checkNodeStatus(vtnManager, bpath, ifp,
                         (node == null) ? VNodeState.UP : VNodeState.DOWN,
-                        VNodeState.UNKNOWN, vlconf.toString());
+                        VNodeState.UNKNOWN, emsg);
 
                 mgr.notifyNodeConnector(otherNc, UpdateType.ADDED, propMap);
                 checkNodeStatus(vtnManager, bpath, ifp,
                         (node == null) ? VNodeState.UP : VNodeState.DOWN,
-                        VNodeState.UNKNOWN, vlconf.toString());
+                        VNodeState.UNKNOWN, emsg);
 
                 mgr.notifyNodeConnector(otherNc, UpdateType.REMOVED, propMap);
                 checkNodeStatus(vtnManager, bpath, ifp,
                         (node == null) ? VNodeState.UP : VNodeState.DOWN,
-                        VNodeState.UNKNOWN, vlconf.toString());
+                        VNodeState.UNKNOWN, emsg);
 
                 // test for node change notify.
                 mgr.notifyNode(cnode, UpdateType.ADDED, propMap);
                 checkNodeStatus(vtnManager, bpath, ifp,
                         (node == null) ? VNodeState.UP : VNodeState.DOWN,
-                        VNodeState.UNKNOWN, vlconf.toString());
+                        VNodeState.UNKNOWN, emsg);
 
                 putMacTableEntry(listenDataPacket, bpath, nc);
 
                 mgr.notifyNode(cnode, UpdateType.REMOVED, propMap);
                 checkNodeStatus(vtnManager, bpath, ifp,
                         (node == null) ? VNodeState.UP : VNodeState.DOWN,
-                        VNodeState.UNKNOWN, vlconf.toString());
+                        VNodeState.UNKNOWN, emsg);
 
-                checkMacTableEntry(vtnManager, bpath, true, vlconf.toString());
+                checkMacTableEntry(vtnManager, bpath, true, emsg);
 
 //                mgr.notifyNodeConnector(nc, UpdateType.ADDED, propMap);
 //                checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UP, vlconf.toString());
@@ -2159,27 +2240,27 @@ public class VTNManagerIT extends TestBase {
                 mgr.notifyNode(cnode, UpdateType.CHANGED, propMap);
                 checkNodeStatus(vtnManager, bpath, ifp,
                         (node == null) ? VNodeState.UP : VNodeState.DOWN,
-                        VNodeState.UNKNOWN, vlconf.toString());
+                        VNodeState.UNKNOWN, emsg);
 
                 mgr.notifyNode(onode, UpdateType.ADDED, propMap);
                 checkNodeStatus(vtnManager, bpath, ifp,
                         (node == null) ? VNodeState.UP : VNodeState.DOWN,
-                        VNodeState.UNKNOWN, vlconf.toString());
+                        VNodeState.UNKNOWN, emsg);
 
                 mgr.notifyNode(onode, UpdateType.REMOVED, propMap);
                 checkNodeStatus(vtnManager, bpath, ifp,
                         (node == null) ? VNodeState.UP : VNodeState.DOWN,
-                        VNodeState.UNKNOWN, vlconf.toString());
+                        VNodeState.UNKNOWN, emsg);
 
                 // TODO: test for edge change notify
 
                 st = vtnManager.removeVlanMap(bpath, map.getId());
-                assertTrue(st.isSuccess());
+                assertEquals(StatusCode.SUCCESS, st.getCode());
             }
         }
 
         st = vtnManager.removeTenant(tpath);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
     }
 
     /**
@@ -2283,7 +2364,7 @@ public class VTNManagerIT extends TestBase {
         String tname = "vtn";
         VTenantPath tpath = new VTenantPath(tname);
         Status st = vtnManager.addTenant(tpath, new VTenantConfig(null));
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
         assertTrue(vtnManager.isActive());
 
         PacketResult result = listenDataPacket.receiveDataPacket(null);
@@ -2323,7 +2404,7 @@ public class VTNManagerIT extends TestBase {
         }
 
         st = vtnManager.removeTenant(tpath);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
     }
 
     /**
@@ -2359,7 +2440,7 @@ public class VTNManagerIT extends TestBase {
         testIHostFinderCommon(bpath);
 
         st = vtnManager.removeTenant(tpath);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         // no tenant case
         testIHostFinderCommon(null);
@@ -2470,7 +2551,7 @@ public class VTNManagerIT extends TestBase {
 
         VTenantPath tpath = new VTenantPath("tenant");
         Status st = vtnManager.addTenant(tpath, new VTenantConfig(null));
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
         assertEquals(1, stub.getCalledCount());
         assertEquals(true, stub.getCalledArg());
 
@@ -2484,7 +2565,7 @@ public class VTNManagerIT extends TestBase {
 
         // remove Tenant
         st = vtnManager.removeTenant(tpath);
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
         assertEquals(1, stub.getCalledCount());
         assertEquals(false, stub.getCalledArg());
     }
@@ -2499,12 +2580,12 @@ public class VTNManagerIT extends TestBase {
             List<VBridgePath> bpaths) {
 
         Status st = mgr.addTenant(tpath, new VTenantConfig(null));
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
         assertTrue(mgr.isActive());
 
         for (VBridgePath bpath : bpaths) {
             st = mgr.addBridge(bpath, new VBridgeConfig(null));
-            assertTrue(st.isSuccess());
+            assertEquals(StatusCode.SUCCESS, st.getCode());
         }
     }
 
@@ -2516,18 +2597,18 @@ public class VTNManagerIT extends TestBase {
             List<VBridgePath> bpaths, List<VBridgeIfPath> ifpaths) {
 
         Status st = mgr.addTenant(tpath, new VTenantConfig(null));
-        assertTrue(st.isSuccess());
+        assertEquals(StatusCode.SUCCESS, st.getCode());
         assertTrue(mgr.isActive());
 
         for (VBridgePath bpath : bpaths) {
             st = mgr.addBridge(bpath, new VBridgeConfig(null));
-            assertTrue(st.isSuccess());
+            assertEquals(StatusCode.SUCCESS, st.getCode());
         }
 
         for (VBridgeIfPath ifpath : ifpaths) {
             VInterfaceConfig ifconf = new VInterfaceConfig(null, null);
             st = mgr.addBridgeInterface(ifpath, ifconf);
-            assertTrue(st.isSuccess());
+            assertEquals(StatusCode.SUCCESS, st.getCode());
         }
     }
 }

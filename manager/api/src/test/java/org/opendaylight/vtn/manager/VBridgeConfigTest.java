@@ -27,12 +27,16 @@ public class VBridgeConfigTest extends TestBase {
             for (Integer ival: createIntegers(-10, 20)) {
                 VBridgeConfig bconf = createVBridgeConfig(desc, ival);
                 assertEquals(desc, bconf.getDescription());
+
+                String emsg = "(input interval value)"
+                        + ((ival == null) ? "null" : ival.intValue());
                 if (ival == null || ival.intValue() < 0) {
-                    assertEquals(-1, bconf.getAgeInterval());
-                    assertNull(bconf.getAgeIntervalValue());
+                    assertEquals(emsg, -1, bconf.getAgeInterval());
+                    assertNull(emsg, bconf.getAgeIntervalValue());
                 } else {
-                    assertEquals(ival.intValue(), bconf.getAgeInterval());
-                    assertEquals(ival, bconf.getAgeIntervalValue());
+                    assertEquals(emsg, ival.intValue(),
+                            bconf.getAgeInterval());
+                    assertEquals(emsg, ival, bconf.getAgeIntervalValue());
                 }
             }
         }

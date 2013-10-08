@@ -55,27 +55,28 @@ public class MacAddressEntryTest extends TestBase {
                         MacAddressEntry mae =
                             new MacAddressEntry(ea, vlan, nc, ipset);
 
-                        assertEquals(ea, mae.getAddress());
-                        assertEquals(vlan, mae.getVlan());
-                        assertEquals(nc, mae.getNodeConnector());
+                        String emsg = mae.toString();
+                        assertEquals(emsg, ea, mae.getAddress());
+                        assertEquals(emsg, vlan, mae.getVlan());
+                        assertEquals(emsg, nc, mae.getNodeConnector());
 
                         Set<InetAddress> addrs = mae.getInetAddresses();
-                        assertNotNull(addrs);
+                        assertNotNull(emsg, addrs);
                         if (ipset != null) {
                             // Ensure that MacAddressEntry copies the
                             // given InetAddress set.
                             Set<InetAddress> required =
                                 new HashSet<InetAddress>(ipset);
                             ipset.clear();
-                            assertEquals(required, addrs);
+                            assertEquals(emsg, required, addrs);
                         } else {
-                            assertEquals(0, addrs.size());
+                            assertEquals(emsg, 0, addrs.size());
                         }
 
                         // Ensure that getInetAddresses() returns a clone.
                         Set<InetAddress> addrs1 = mae.getInetAddresses();
-                        assertNotSame(addrs, addrs1);
-                        assertEquals(addrs, addrs1);
+                        assertNotSame(emsg, addrs, addrs1);
+                        assertEquals(emsg, addrs, addrs1);
                     }
                 }
             }
@@ -89,10 +90,11 @@ public class MacAddressEntryTest extends TestBase {
             Set<InetAddress> ipset = ips.get(1);
             MacAddressEntry mae = new MacAddressEntry(tdl, vlan, nc, ipset);
 
-            assertEquals(tdl, mae.getAddress());
-            assertEquals(vlan, mae.getVlan());
-            assertEquals(nc, mae.getNodeConnector());
-            assertEquals(ipset, mae.getInetAddresses());
+            String emsg = mae.toString();
+            assertEquals(emsg, tdl, mae.getAddress());
+            assertEquals(emsg, vlan, mae.getVlan());
+            assertEquals(emsg, nc, mae.getNodeConnector());
+            assertEquals(emsg, ipset, mae.getInetAddresses());
         }
     }
 

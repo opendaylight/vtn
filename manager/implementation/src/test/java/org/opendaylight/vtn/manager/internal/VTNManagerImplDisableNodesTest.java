@@ -72,8 +72,8 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
         setupVTNManager(600000);
 
         VTNManagerImpl mgr = vtnMgr;
-        ISwitchManager swmgr = mgr.getSwitchManager();
-        ITopologyManager topomgr = mgr.getTopologyManager();
+        ISwitchManager swMgr = mgr.getSwitchManager();
+        ITopologyManager topoMgr = mgr.getTopologyManager();
         TestStub stub = stubObj;
         short[] vlans = new short[] { 0, 10, 4095 };
         Set<Node> nodeSet = new HashSet<Node>();
@@ -82,8 +82,7 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
         VTenantPath tpath = new VTenantPath(tname);
         String bname = "vbridge";
         VBridgePath bpath = new VBridgePath(tname, bname);
-        String ifname = "vinterface";
-        VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, ifname);
+        VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, "vinterface");
         Status st = null;
 
         List<VBridgePath> bpathlist = new ArrayList<VBridgePath>();
@@ -96,22 +95,22 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
                 = new ConcurrentHashMap<VBridgePath, Set<NodeConnector>>();
         mappedConnectors.put(bpath, new HashSet<NodeConnector>());
 
-        Set<Node> existNodes = swmgr.getNodes();
+        Set<Node> existNodes = swMgr.getNodes();
         Set<NodeConnector> existConnectors = new HashSet<NodeConnector>();
         for (Node node : existNodes) {
-            existConnectors.addAll(swmgr.getNodeConnectors(node));
+            existConnectors.addAll(swMgr.getNodeConnectors(node));
         }
 
         Set<Node> vmapNodes = new HashSet<Node>(existNodes);
         vmapNodes.add(null);
 
         byte[] src = new byte[] { (byte) 0x00, (byte) 0x00, (byte) 0x00,
-                                (byte) 0x00, (byte) 0x00, (byte) 0x11 };
+                                  (byte) 0x00, (byte) 0x00, (byte) 0x11 };
         byte[] dst = new byte[] { (byte) 0xff, (byte) 0xff, (byte) 0xff,
-                                (byte) 0xff, (byte) 0xff, (byte) 0xff };
+                                  (byte) 0xff, (byte) 0xff, (byte) 0xff };
         byte[] sender = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 1 };
-        byte[] target = new byte[] { (byte) 192, (byte) 168, (byte) 0,
-                                    (byte) 250 };
+        byte[] target
+                = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 250 };
 
         Node pnode = NodeCreator.createOFNode(0L);
         SwitchPort port = new SwitchPort(
@@ -140,6 +139,7 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
                     Set<PortVlan> mappedThis = new HashSet<PortVlan>();
                     Set<PortVlan> disabledPV = new HashSet<PortVlan>();
 
+                    // add vlan mapping
                     VlanMapConfig vlconf = new VlanMapConfig(vlanMapNode,
                             vmapVlan);
                     VlanMap map = null;
@@ -152,8 +152,8 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
                     for (Node node : existNodes) {
                         if (vlanMapNode == null || node.equals(vlanMapNode)) {
                             for (NodeConnector nc :
-                                    swmgr.getNodeConnectors(node)) {
-                                if (!topomgr.isInternal(nc)) {
+                                    swMgr.getNodeConnectors(node)) {
+                                if (!topoMgr.isInternal(nc)) {
                                     mappedThis.add(new PortVlan(nc, vmapVlan));
                                     if (node.equals(disableNode)) {
                                         disabledPV.add(new PortVlan(nc,
@@ -171,13 +171,12 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
                         disabledPV.add(new PortVlan(pmapnc, pmapvlan));
                     }
 
-                    // a result of adding Node, specified Node setted to
+                    // a result of adding Node, specified Node set to
                     // disableNodes.
-                    addNode(mgr, swmgr, disableNode);
+                    addNode(mgr, swMgr, disableNode);
 
                     // EdgeTimeout is not infinity, but time is long enough and
-                    // expected to return
-                    // result before timeout.
+                    // expected to return result before timeout.
                     for (PortVlan pv : mappedThis) {
                         String emsg = "vlan=" + vlan + "," + vlconf.toString()
                                         + "," + pv.toString();
@@ -194,20 +193,21 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
                             assertEquals(emsg, 0, transDatas.size());
                         } else {
                             assertEquals(emsg, PacketResult.KEEP_PROCESSING,
-                                    result);
+                                         result);
                             assertEquals(emsg,
                                     mappedThis.size() - disabledPV.size() - 1,
                                     transDatas.size());
                         }
 
                         for (RawPacket raw : transDatas) {
-                            Ethernet pkt = (Ethernet) stub
-                                    .decodeDataPacket(raw);
+                            Ethernet pkt
+                                    = (Ethernet) stub.decodeDataPacket(raw);
                             String emsgr = emsg + ",(out packet)"
-                                            + pkt.toString() + ",(in nc)"
-                                            + raw.getIncomingNodeConnector()
-                                            + ",(out nc)"
-                                            + raw.getOutgoingNodeConnector();
+                                    + pkt.toString() + ",(in nc)"
+                                    + raw.getIncomingNodeConnector()
+                                    + ",(out nc)"
+                                    + raw.getOutgoingNodeConnector();
+
                             short outVlan;
                             if (pkt.getEtherType()
                                     == EtherTypes.VLANTAGGED.shortValue()) {
@@ -217,7 +217,7 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
                                 outVlan = (short) 0;
                             }
                             PortVlan outPv = new PortVlan(raw.getOutgoingNodeConnector(),
-                                    outVlan);
+                                                          outVlan);
                             assertTrue(emsgr, mappedThis.contains(outPv));
 
                             checkOutEthernetPacket(emsgr, (Ethernet) pkt,
@@ -230,8 +230,9 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
                     mgr.clearDisabledNode();
 
                     for (PortVlan pv : mappedThis) {
-                        String emsg = "vlan=" + vlan + "," + vlconf.toString()
-                                        + "," + pv.toString();
+                        String emsg = "(vlan)" + vlan
+                                + ",(VlanMapConfig)" + vlconf.toString()
+                                + ",(PortVlan)" + pv.toString();
                         RawPacket inPkt = createARPRawPacket(src, dst, sender,
                                 target, (pv.getVlan() > 0) ? pv.getVlan() : -1,
                                 pv.getNodeConnector(), ARP.REQUEST);
@@ -243,8 +244,9 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
                     }
 
                     st = mgr.removeVlanMap(bpath, map.getId());
-                    assertTrue("vlconf=" + vlconf.toString() + ",status=" + st,
-                                st.isSuccess());
+                    assertTrue("(vlconf)" + vlconf.toString()
+                            + ",(status)" + st,
+                            st.isSuccess());
                 }
             }
         }
@@ -262,8 +264,8 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
         setupVTNManager(1);
 
         VTNManagerImpl mgr = vtnMgr;
-        ISwitchManager swmgr = mgr.getSwitchManager();
-        ITopologyManager topomgr = mgr.getTopologyManager();
+        ISwitchManager swMgr = mgr.getSwitchManager();
+        ITopologyManager topoMgr = mgr.getTopologyManager();
         TestStub stub = stubObj;
         short[] vlans = new short[] { 0, 10, 4095 };
         Set<Node> nodeSet = new HashSet<Node>();
@@ -286,27 +288,28 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
                 = new ConcurrentHashMap<VBridgePath, Set<NodeConnector>>();
         mappedConnectors.put(bpath, new HashSet<NodeConnector>());
 
-        Set<Node> existNodes = swmgr.getNodes();
+        Set<Node> existNodes = swMgr.getNodes();
         Set<NodeConnector> existConnectors = new HashSet<NodeConnector>();
         for (Node node : existNodes) {
-            existConnectors.addAll(swmgr.getNodeConnectors(node));
+            existConnectors.addAll(swMgr.getNodeConnectors(node));
         }
 
         Set<Node> vmapNodes = new HashSet<Node>(existNodes);
         vmapNodes.add(null);
 
         byte[] src = new byte[] { (byte) 0x00, (byte) 0x00, (byte) 0x00,
-                                    (byte) 0x00, (byte) 0x00, (byte) 0x11 };
+                                  (byte) 0x00, (byte) 0x00, (byte) 0x11 };
         byte[] dst = new byte[] { (byte) 0xff, (byte) 0xff, (byte) 0xff,
-                                    (byte) 0xff, (byte) 0xff, (byte) 0xff };
+                                  (byte) 0xff, (byte) 0xff, (byte) 0xff };
         byte[] sender = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 1 };
         byte[] target = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 250 };
 
         Node pnode = NodeCreator.createOFNode(0L);
         SwitchPort port = new SwitchPort(
                 NodeConnector.NodeConnectorIDType.OPENFLOW, String.valueOf(10));
-        NodeConnector pmapnc = NodeConnectorCreator.createOFNodeConnector(
-                Short.valueOf((short) 10), pnode);
+        NodeConnector pmapnc
+            = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 10),
+                                                         pnode);
         Node disableNode = NodeCreator.createOFNode(0L);
 
         for (short vlan : vlans) {
@@ -329,8 +332,9 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
                     Set<PortVlan> mappedThis = new HashSet<PortVlan>();
                     Set<PortVlan> disabledPV = new HashSet<PortVlan>();
 
+                    // add vlan mapping
                     VlanMapConfig vlconf = new VlanMapConfig(vlanMapNode,
-                            vmapVlan);
+                                                             vmapVlan);
                     VlanMap map = null;
                     try {
                         map = mgr.addVlanMap(bpath, vlconf);
@@ -341,12 +345,12 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
                     for (Node node : existNodes) {
                         if (vlanMapNode == null || node.equals(vlanMapNode)) {
                             for (NodeConnector nc :
-                                    swmgr.getNodeConnectors(node)) {
-                                if (!topomgr.isInternal(nc)) {
+                                    swMgr.getNodeConnectors(node)) {
+                                if (!topoMgr.isInternal(nc)) {
                                     mappedThis.add(new PortVlan(nc, vmapVlan));
                                     if (node.equals(disableNode)) {
                                         disabledPV.add(new PortVlan(nc,
-                                                vmapVlan));
+                                                       vmapVlan));
                                     }
                                 }
                             }
@@ -362,7 +366,7 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
 
                     // a result of adding Node, specified Node setted to
                     // disableNodes.
-                    addNode(mgr, swmgr, disableNode);
+                    addNode(mgr, swMgr, disableNode);
 
                     // sleep until disabled Node timer timeout
                     try {
@@ -374,8 +378,9 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
                     // EdgeTimeout is not infinity, but time is long enough and
                     // expected to return result before timeout.
                     for (PortVlan pv : mappedThis) {
-                        String emsg = "(vlan)" + vlan + ",(vlanmap conf)" + vlconf.toString()
-                                        + ",(portvlan)" + pv.toString();
+                        String emsg = "(vlan)" + vlan
+                                + ",(vlanmap conf)" + vlconf.toString()
+                                + ",(portvlan)" + pv.toString();
                         RawPacket inPkt = createARPRawPacket(src, dst, sender,
                                 target, (pv.getVlan() > 0) ? pv.getVlan() : -1,
                                 pv.getNodeConnector(), ARP.REQUEST);
@@ -412,7 +417,7 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
                     }
 
                     st = mgr.removeVlanMap(bpath, map.getId());
-                    assertTrue("vlconf=" + vlconf.toString() + ",status=" + st,
+                    assertTrue("(vlconf)" + vlconf.toString() + ",(status)" + st,
                                 st.isSuccess());
                 }
             }

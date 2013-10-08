@@ -82,8 +82,11 @@ import org.opendaylight.vtn.manager.SwitchPort;
 
 /**
  * Stub module for Unit test of VTNManager.
- *
  * This stub provides APIs implemented in Bundle in controller project.
+ *
+ * <p>
+ *   Note that stubMode can be set to 0 or 2 or 3 only. (other is not implemented yet.)
+ * </p>
  */
 class TestStub implements IClusterGlobalServices, IClusterContainerServices,
     ISwitchManager, ITopologyManager, IDataPacketService, IRouting,
@@ -94,25 +97,57 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
      * Each mode corresponds to following configuration.
      *
      *   0 : no nodes
-     *   1 : 1 node (not implemented yet)
+     *   1 : 1 node (note: not implemented yet)
      *   2 : 2 nodes and each node have 6 nodeconnectors
      *       ("port-15" is used to connect nodes).
      *   3 : 3 nodes and each node have 7 nodeconnectors
      *       (node0 and node1 connect with port-15, node0 and node2 connect with port-16)
      */
-    private int stubmode = 0;
+    private int stubMode = 0;
 
+    /**
+     * Set of existing node.
+     */
     private Set<Node> nodes = null;
+
+    /**
+     * Map between Node and NodeConnector.
+     */
     private ConcurrentMap<Node, Set<NodeConnector>> nodeConnectors = null;
+
+    /**
+     * Map between a name of NodeConnector and NodeConnector in each node.
+     */
     private ConcurrentMap<Node, Map<String, NodeConnector>> nodeConnectorNames = null;
-    private Set<SwitchPort> ports = null;
+
+    /**
+     * Edges exist in between each nodes.
+     */
     private ConcurrentMap<Node, Map<Node, List<Edge>>> nodeEdges = null;
+
+    /**
+     * Map between NodeConnector and NodeConnector properties.
+     */
     private ConcurrentMap<NodeConnector, Map<String, Property>> nodeConnectorProps = null;
+
+    /**
+     * Map between NodeConnector and property of internal node connector.
+     */
     private ConcurrentMap<NodeConnector, Set<Property>> nodeConnectorsISL = null;
 
+    /**
+     * List of data transmitted from controller.
+     */
     private List<RawPacket> transmittedData = null;
 
+    /**
+     * saved Subnet object
+     */
     private Subnet savedSubnet = null;
+
+    /**
+     * saved SubnetConfig object.
+     */
     private SubnetConfig savedSubnetConfig = null;
 
     /**
@@ -124,34 +159,37 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
      * Constractor of TestStub
      */
     public TestStub() {
-        stubmode = 0;
+        stubMode = 0;
     }
 
     /**
-     * Constractor of TestStub
-     * @param mode  stubmode
+     * Constructor of TestStub
+     * @param mode  stubMode
      */
     public TestStub(int mode) {
-        stubmode = mode;
+        stubMode = mode;
         setup();
     }
 
+    /**
+     * setup datas.
+     */
     private void setup() {
         transmittedData = new ArrayList<RawPacket>();
         flowEntries = new HashSet<FlowEntry>();
-        if (stubmode >= 2) {
+        if (stubMode >= 2) {
             // create nodes
             nodes = new HashSet<Node>();
             nodeConnectors = new ConcurrentHashMap<Node, Set<NodeConnector>>();
             nodeConnectorNames = new ConcurrentHashMap<Node, Map<String, NodeConnector>>();
             nodeConnectorProps = new ConcurrentHashMap<NodeConnector, Map<String, Property>>();
 
-            for (short i = 0; i < stubmode; i++) {
+            for (short i = 0; i < stubMode; i++) {
                 Node node = NodeCreator.createOFNode(Long.valueOf(i));
                 nodes.add(node);
 
                 // create nodeconnectors
-                short ncnum = (short)(4 + stubmode);
+                short ncnum = (short)(4 + stubMode);
 
                 for (Node addnode : nodes) {
                     Map<String, NodeConnector> map = new HashMap<String, NodeConnector>();
@@ -190,7 +228,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
                     if (srcnode.equals(dstnode)) {
                         continue;
                     }
-                    if (stubmode == 3 &&
+                    if (stubMode == 3 &&
                         ((srcnode.getID().equals(Long.valueOf(1)) &&
                           dstnode.getID().equals(Long.valueOf(2))) ||
                          (srcnode.getID().equals(Long.valueOf(2)) &&
@@ -226,7 +264,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
                                         head);
                         }
                         edglist.add(edge);
-                    } else if (stubmode == 3 &&
+                    } else if (stubMode == 3 &&
                             ((srcnode.getID().equals(Long.valueOf(0)) &&
                               dstnode.getID().equals(Long.valueOf(2))) ||
                              (srcnode.getID().equals(Long.valueOf(2)) &&
@@ -241,7 +279,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
                                         head);
                         }
                         edglist.add(edge);
-                    } else if (stubmode == 3 &&
+                    } else if (stubMode == 3 &&
                                (srcnode.getID().equals(Long.valueOf(1)) &&
                                  dstnode.getID().equals(Long.valueOf(2)))) {
                         tail = nodeConnectorNames.get(srcnode).get("port-15");
@@ -264,7 +302,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
                                         head);
                         }
                         edglist.add(edge);
-                    } else if (stubmode == 3 &&
+                    } else if (stubMode == 3 &&
                                (srcnode.getID().equals(Long.valueOf(2)) &&
                                 dstnode.getID().equals(Long.valueOf(1)))) {
                            tail = nodeConnectorNames.get(srcnode).get("port-16");
@@ -450,7 +488,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
     @Override
     public Subnet getSubnetByNetworkAddress(InetAddress networkAddress) {
 
-        if (stubmode >= 1) {
+        if (stubMode >= 1) {
             if (savedSubnetConfig != null) {
                 if (savedSubnet == null) {
                     savedSubnet = new Subnet(savedSubnetConfig);
@@ -509,7 +547,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Set<Node> getNodes() {
-        if (stubmode >= 1) {
+        if (stubMode >= 1) {
             return getNodeSet(nodes);
         }
 
@@ -543,7 +581,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Set<NodeConnector> getUpNodeConnectors(Node node) {
-        if (stubmode >= 1) {
+        if (stubMode >= 1) {
             return getPortSet(nodeConnectors.get(node));
         }
         return getPortSet(null);
@@ -551,7 +589,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Set<NodeConnector> getNodeConnectors(Node node) {
-        if (stubmode >= 1) {
+        if (stubMode >= 1) {
             return getPortSet(nodeConnectors.get(node));
         }
         return getPortSet(null);
@@ -559,7 +597,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Set<NodeConnector> getPhysicalNodeConnectors(Node node) {
-        if (stubmode >= 1) {
+        if (stubMode >= 1) {
             return getPortSet(nodeConnectors.get(node));
         }
         return getPortSet(null);
@@ -567,7 +605,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Map<String, Property> getNodeConnectorProps(NodeConnector nodeConnector) {
-        if (stubmode >= 1) {
+        if (stubMode >= 1) {
             return getProperty(nodeConnectorProps.get(nodeConnector));
         }
         return getProperty(null);
@@ -575,7 +613,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Property getNodeConnectorProp(NodeConnector nodeConnector, String propName) {
-        if (stubmode >= 1) {
+        if (stubMode >= 1) {
             Map<String, Property> map = nodeConnectorProps.get(nodeConnector);
             Property name = null;
             if (map != null) {
@@ -603,7 +641,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public NodeConnector getNodeConnector(Node node, String nodeConnectorName) {
-        if (stubmode >= 1) {
+        if (stubMode >= 1) {
             Map<String, NodeConnector> map = nodeConnectorNames.get(node);
             return map.get(nodeConnectorName);
         }
@@ -612,7 +650,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public boolean isSpecial(NodeConnector p) {
-        if (stubmode >= 1) {
+        if (stubMode >= 1) {
             if (p.getType().equals(NodeConnectorIDType.CONTROLLER)
                 || p.getType().equals(NodeConnectorIDType.ALL)
                 || p.getType().equals(NodeConnectorIDType.SWSTACK)
@@ -626,7 +664,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Boolean isNodeConnectorEnabled(NodeConnector nodeConnector) {
-        if (stubmode >= 1) {
+        if (stubMode >= 1) {
             return true;
         }
         return null;
@@ -671,7 +709,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
     // ITopologyManager
     @Override
     public boolean isInternal(NodeConnector p) {
-        if (stubmode >= 1) {
+        if (stubMode >= 1) {
             return (nodeConnectorsISL.get(p) != null);
         }
         return false;
@@ -679,7 +717,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Map<Edge, Set<Property>> getEdges() {
-        if (stubmode >= 1) {
+        if (stubMode >= 1) {
             Map<Edge, Set<Property>> edges = new HashMap<Edge, Set<Property>>();
 
             for (Node srcNode : nodeEdges.keySet()) {
@@ -801,7 +839,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Path getRoute(Node src, Node dst) {
-        if (stubmode >= 1) {
+        if (stubMode >= 1) {
             List<Edge> edges = nodeEdges.get(src).get(dst);
             if (edges == null) {
                 return null;
@@ -1041,7 +1079,7 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public HostNodeConnector hostQuery(InetAddress networkAddress) {
-        if (stubmode >= 1) {
+        if (stubMode >= 1) {
             HostNodeConnector hnode = null;
             byte [] tgt = networkAddress.getAddress();
             byte [] ip = new byte[] {(byte)192, (byte)168, (byte)0, (byte)251};

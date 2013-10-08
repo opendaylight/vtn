@@ -95,14 +95,16 @@ public class MacAddressTableTest extends TestBase {
     @Test
     public void testGetTableKey() {
         for (EthernetAddress ea: createEthernetAddresses(false)) {
+            String emsg = ea.toString();
             byte [] value = ea.getValue();
             Long lvalue = MacAddressTable.getTableKey(ea.getValue());
 
             int len = value.length;
             for (int i = 0; i < len; i++) {
-                assertTrue(value[len - i - 1] == (byte)((lvalue.longValue() >> (i * 8)) & 0xff));
+                assertEquals(emsg, value[len - i - 1],
+                        (byte)((lvalue.longValue() >> (i * 8)) & 0xff));
             }
-            assertTrue(lvalue.longValue() < (long)(1L << (len * 8)));
+            assertTrue(emsg, lvalue.longValue() < (long)(1L << (len * 8)));
         }
     }
 
@@ -164,19 +166,23 @@ public class MacAddressTableTest extends TestBase {
 
         byte iphost = 1;
         short vlan = 4095;
+        byte [] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
+                                  (byte)0xff, (byte)0xff, (byte)0xff};
+        byte [] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
+
         List<NodeConnector> connectors = createNodeConnectors(3, false);
 
         for (EthernetAddress ea: createEthernetAddresses(false)) {
+            String emsg = ea.toString();
+
             byte [] bytes = ea.getValue();
             byte [] src = new byte[] {bytes[0], bytes[1], bytes[2],
-                                        bytes[3], bytes[4], bytes[5]};
-            byte [] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
-                                        (byte)0xff, (byte)0xff, (byte)0xff};
+                                      bytes[3], bytes[4], bytes[5]};
             byte [] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)iphost};
-            byte [] sender2 = new byte[] {(byte)192, (byte)168, (byte)0, (byte)(iphost + 100)};
-            byte [] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
+            byte [] sender2
+                = new byte[] {(byte)192, (byte)168, (byte)0, (byte)(iphost + 100)};
 
-            // default
+            // packet context added to table at first
             PacketContext dpctx = createARPPacketContext(src, dst, sender, target,
                                           (short)-1, connectors.get(0), ARP.REQUEST);
             // replaced src and dst
@@ -194,44 +200,44 @@ public class MacAddressTableTest extends TestBase {
 
             // get from empty table.
             tent = tbl.get(dpctx);
-            assertNull(tent);
+            assertNull(emsg, tent);
             mae = getEntry(tbl, ea);
-            assertNull(mae);
+            assertNull(emsg, mae);
 
             // add() and get() one data
             tbl.add(dpctx);
             tent = tbl.get(dpctx);
-            assertNull(tent);
+            assertNull(emsg, tent);
             tent = tbl.get(rpctx);
-            assertNotNull(tent);
-            assertTrue(tent.clearUsed());
-            assertEquals(connectors.get(0), tent.getPort());
-            assertEquals(0, tent.getVlan());
+            assertNotNull(emsg, tent);
+            assertTrue(emsg, tent.clearUsed());
+            assertEquals(emsg, connectors.get(0), tent.getPort());
+            assertEquals(emsg, 0, tent.getVlan());
 
             // getEntry()
             mae = getEntry(tbl, ea);
-            assertNotNull(mae);
-            assertEquals(ea, mae.getAddress());
-            assertEquals(0, mae.getVlan());
-            assertEquals(connectors.get(0), mae.getNodeConnector());
+            assertNotNull(emsg, mae);
+            assertEquals(emsg, ea, mae.getAddress());
+            assertEquals(emsg, 0, mae.getVlan());
+            assertEquals(emsg, connectors.get(0), mae.getNodeConnector());
             Set<InetAddress> iplist = mae.getInetAddresses();
-            assertTrue(iplist.size() == 1);
-            assertArrayEquals(sender, iplist.iterator().next().getAddress());
+            assertEquals(emsg, 1, iplist.size());
+            assertArrayEquals(emsg, sender, iplist.iterator().next().getAddress());
 
             // add same packet
-            assertFalse(tent.clearUsed());
+            assertFalse(emsg, tent.clearUsed());
             tbl.add(dpctx);
-            assertTrue(tent.clearUsed());
+            assertTrue(emsg, tent.clearUsed());
 
-            // add packet IP changed
+            // add packet IP address changed
             tbl.add(ippctx);
             tent = tbl.get(rpctx);
-            assertNotNull(tent);
-            assertEquals(connectors.get(0), tent.getPort());
-            assertEquals(0, tent.getVlan());
+            assertNotNull(emsg, tent);
+            assertEquals(emsg, connectors.get(0), tent.getPort());
+            assertEquals(emsg, 0, tent.getVlan());
             mae = getEntry(tbl, ea);
             iplist = mae.getInetAddresses();
-            assertTrue(iplist.size() == 2);
+            assertEquals(emsg, 2, iplist.size());
             InetAddress ip = null, ip2 = null;
             try {
                 ip = InetAddress.getByAddress(sender);
@@ -239,51 +245,51 @@ public class MacAddressTableTest extends TestBase {
             } catch (UnknownHostException e) {
                 unexpected(e);
             }
-            assertTrue(iplist.contains(ip));
-            assertTrue(iplist.contains(ip2));
-            assertFalse(ip.equals(ip2));
+            assertTrue(emsg, iplist.contains(ip));
+            assertTrue(emsg, iplist.contains(ip2));
+            assertFalse(emsg, ip.equals(ip2));
 
             tbl.add(dpctx);
 
             // add packet vlan changed
             tbl.add(vlanpctx);
             tent = tbl.get(rpctx);
-            assertNotNull(tent);
-            assertEquals(connectors.get(0), tent.getPort());
-            assertEquals(vlan, tent.getVlan());
+            assertNotNull(emsg, tent);
+            assertEquals(emsg, connectors.get(0), tent.getPort());
+            assertEquals(emsg, vlan, tent.getVlan());
             mae = getEntry(tbl, ea);
             iplist = mae.getInetAddresses();
-            assertTrue(iplist.size() == 1);
-            assertArrayEquals(sender, iplist.iterator().next().getAddress());
+            assertEquals(emsg, 1, iplist.size());
+            assertArrayEquals(emsg, sender, iplist.iterator().next().getAddress());
 
             tbl.add(dpctx);
 
-            // add packet setted different nodeconnector
+            // add packet set different nodeconnector
             tbl.add(ncpctx);
             tent = tbl.get(rpctx);
-            assertNotNull(tent);
-            assertEquals(connectors.get(1), tent.getPort());
-            assertEquals(0, tent.getVlan());
+            assertNotNull(emsg, tent);
+            assertEquals(emsg, connectors.get(1), tent.getPort());
+            assertEquals(emsg, 0, tent.getVlan());
             mae = getEntry(tbl, ea);
             iplist = mae.getInetAddresses();
-            assertTrue(iplist.size() == 1);
-            assertArrayEquals(sender, iplist.iterator().next().getAddress());
+            assertEquals(emsg, 1, iplist.size());
+            assertArrayEquals(emsg, sender, iplist.iterator().next().getAddress());
 
             // check table size
             List<MacAddressEntry> list = null;
             list = getEntries(tbl);
-            assertNotNull(list);
-            assertTrue(list.size() == 1);
+            assertNotNull(emsg, list);
+            assertEquals(emsg, 1, list.size());
             EthernetAddress eth = (EthernetAddress) list.get(0).getAddress();
-            assertArrayEquals(src, eth.getValue());
+            assertArrayEquals(emsg, src, eth.getValue());
 
             // remove entry
             tbl.remove(rpctx);
-            assertNull(tbl.get(rpctx));
+            assertNull(emsg, tbl.get(rpctx));
 
             // check whether removed entry not included.
             tent = tbl.get(rpctx);
-            assertNull(tent);
+            assertNull(emsg, tent);
 
             // removeEntry()
             tbl.add(dpctx);
@@ -292,26 +298,26 @@ public class MacAddressTableTest extends TestBase {
             } catch (Exception e) {
                 unexpected(e);
             }
-            assertNotNull(mae);
-            assertEquals(ea, mae.getAddress());
-            assertEquals(0, mae.getVlan());
-            assertEquals(connectors.get(0), mae.getNodeConnector());
+            assertNotNull(emsg, mae);
+            assertEquals(emsg, ea, mae.getAddress());
+            assertEquals(emsg, 0, mae.getVlan());
+            assertEquals(emsg, connectors.get(0), mae.getNodeConnector());
 
             try {
                 mae = tbl.removeEntry(ea);
             } catch (Exception e) {
                 unexpected(e);
             }
-            assertNull(mae);
+            assertNull(emsg, mae);
 
             // check whether removed entry not included.
             tent = tbl.get(rpctx);
-            assertNull(tent);
+            assertNull(emsg, tent);
 
             tall.add(dpctx);
             list = getEntries(tall);
-            assertNotNull(list);
-            assertTrue(list.size() == iphost);
+            assertNotNull(emsg, list);
+            assertEquals(emsg, iphost, list.size());
 
             iphost++;
         }
@@ -319,12 +325,9 @@ public class MacAddressTableTest extends TestBase {
         tall.destroy(true);
 
         // case for Multicast packet data
-        byte [] dst = new byte[] {(byte)0xFF, (byte)0xFF, (byte)0xFF,
-                                    (byte)0xFF, (byte)0xFF, (byte)0xFF};
         byte [] src = new byte[] {(byte)0xFF, (byte)0x00, (byte)0x00,
                                     (byte)0x00, (byte)0x00, (byte)0x01};
         byte [] sender = new byte[] {(byte)192, (byte)168, (byte)100, (byte)1};
-        byte [] target = new byte[] {(byte)192, (byte)168, (byte)100, (byte)2};
 
         VBridgePath path = new VBridgePath("tenant1", "bridge1");
         MacAddressTable mtbl = new MacAddressTable(mgr, path, 600);
@@ -335,7 +338,7 @@ public class MacAddressTableTest extends TestBase {
         List<MacAddressEntry> list = null;
         list = getEntries(mtbl);
         assertNotNull(list);
-        assertTrue(list.size() == 0);
+        assertEquals(0, list.size());
 
         // query by bad object.
         TestDataLink dl = new TestDataLink("test");
@@ -382,13 +385,14 @@ public class MacAddressTableTest extends TestBase {
 
         List<NodeConnector> connectors = createNodeConnectors(3, false);
         short vlan = 0;
+        byte[] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
+                                 (byte)0xff, (byte)0xff, (byte)0xff};
+        byte[] target = new byte[] {(byte)192, (byte)168, (byte)100, (byte)250};
+
         for (byte iphost = 1; iphost <= 9; iphost++) {
             byte[] src = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
-                                        (byte)0x00, (byte)0x00, (byte)iphost};
-            byte[] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
-                                        (byte)0xff, (byte)0xff, (byte)0xff};
+                                     (byte)0x00, (byte)0x00, (byte)iphost};
             byte[] sender = new byte[] {(byte)192, (byte)168, (byte)100, (byte)iphost};
-            byte[] target = new byte[] {(byte)192, (byte)168, (byte)100, (byte)250};
 
             PacketContext pctx = createARPPacketContext(src, dst, sender, target,
                                                (short)(((vlan / 3) > 0) ? (vlan / 3) : -1),
@@ -407,33 +411,32 @@ public class MacAddressTableTest extends TestBase {
         tbl1.flush();
         list = getEntries(tbl1);
         assertNotNull(list);
-        assertTrue(list.size() == 0);
+        assertEquals(0, list.size());
 
         tbl2.flush(connectors.get(0).getNode());
         list = getEntries(tbl2);
         assertNotNull(list);
-        assertTrue(list.size() == 6);
+        assertEquals(6, list.size());
 
         tbl3.flush(connectors.get(0).getNode(), (short)0);
         list = getEntries(tbl3);
         assertNotNull(list);
-        assertTrue(list.size() == 8);
+        assertEquals(8, list.size());
 
         tbl4.flush(connectors.get(0));
         list = getEntries(tbl4);
         assertNotNull(list);
-        assertTrue(list.size() == 6);
+        assertEquals(6, list.size());
 
         tbl5.flush(connectors.get(0), (short)0);
         list = getEntries(tbl5);
         assertNotNull(list);
-        assertTrue(list.size() == 8);
+        assertEquals(8, list.size());
 
         tbl6.flush((Node)null, (short)0);
         list = getEntries(tbl6);
         assertNotNull(list);
-        assertTrue(list.size() == 6);
-
+        assertEquals(6, list.size());
     }
 
     /**
@@ -442,6 +445,7 @@ public class MacAddressTableTest extends TestBase {
     @Test
     public void testAge() {
 
+        // Task used to put a table entry in parallel.
         class PutTableTask extends TimerTask {
             MacAddressTable tbl;
             PacketContext pctx;
@@ -471,7 +475,7 @@ public class MacAddressTableTest extends TestBase {
         Node node = NodeCreator.createOFNode(0L);
         NodeConnector nc = NodeConnectorCreator.createOFNodeConnector((short)0, node);
 
-        // default
+        // packet context added to table at first.
         PacketContext pctx = createARPPacketContext(src, dst, sender, target,
                                                        (vlan > 0) ? vlan : -1, nc, ARP.REQUEST);
         EthernetAddress ea = null;
@@ -488,6 +492,7 @@ public class MacAddressTableTest extends TestBase {
 
         sleep(2500);
 
+        // expect the entry to be removed by aging task.
         mae = getEntry(tbl, ea);
         assertNull(mae);
 
@@ -499,13 +504,13 @@ public class MacAddressTableTest extends TestBase {
 
         sleep(2500);
 
+        // expect the entry to exist
         mae = getEntry(tbl, ea);
         assertNotNull(mae);
         assertEquals(ea, mae.getAddress());
 
         timer.cancel();
         timer.purge();
-
     }
 
 

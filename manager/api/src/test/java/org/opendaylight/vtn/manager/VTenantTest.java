@@ -30,26 +30,30 @@ public class VTenantTest extends TestBase {
             for (String desc: createStrings("desc")) {
                 for (Integer iv: createIntegers(-2, 5)) {
                     for (Integer hv: createIntegers(-2, 5)) {
+                        String emsg = "(name)" + name + "(desc)"+ desc
+                                + ",(iv)" + ((iv == null) ? "null" : iv.intValue())
+                                + ",(hv)" + ((hv == null) ? "null" : hv.intValue());
+
                         VTenantConfig tconf =
                             createVTenantConfig(desc, iv, hv);
                         VTenant vtenant = new VTenant(name, tconf);
-                        assertEquals(name, vtenant.getName());
-                        assertEquals(desc, vtenant.getDescription());
+                        assertEquals(emsg, name, vtenant.getName());
+                        assertEquals(emsg, desc, vtenant.getDescription());
                         if (iv == null || iv.intValue() < 0) {
-                            assertEquals(-1, vtenant.getIdleTimeout());
-                            assertNull(vtenant.getIdleTimeoutValue());
+                            assertEquals(emsg, -1, vtenant.getIdleTimeout());
+                            assertNull(emsg, vtenant.getIdleTimeoutValue());
                         } else {
-                            assertEquals(iv.intValue(),
+                            assertEquals(emsg, iv.intValue(),
                                          vtenant.getIdleTimeout());
-                            assertEquals(iv, vtenant.getIdleTimeoutValue());
+                            assertEquals(emsg, iv, vtenant.getIdleTimeoutValue());
                         }
                         if (hv == null || hv.intValue() < 0) {
-                            assertEquals(-1, vtenant.getHardTimeout());
-                            assertNull(vtenant.getHardTimeoutValue());
+                            assertEquals(emsg, -1, vtenant.getHardTimeout());
+                            assertNull(emsg, vtenant.getHardTimeoutValue());
                         } else {
-                            assertEquals(hv.intValue(),
+                            assertEquals(emsg, hv.intValue(),
                                          vtenant.getHardTimeout());
-                            assertEquals(hv, vtenant.getHardTimeoutValue());
+                            assertEquals(emsg, hv, vtenant.getHardTimeoutValue());
                         }
                     }
                 }

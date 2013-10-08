@@ -70,8 +70,9 @@ public class ObjectPairTest extends TestBase {
                 if(str2 != null && !str2.equals(str1)) {
                     assertFalse(p2.equals(p1));
                 }
-                assertTrue(set.add(p1));
-                assertFalse(set.add(p1));
+
+                assertTrue(p1.toString(), set.add(p1));
+                assertFalse(p1.toString(), set.add(p1));
             }
         }
 

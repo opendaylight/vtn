@@ -64,32 +64,37 @@ public class VBridgeIfStateTest extends TestBase {
         };
         for (VNodeState state: states) {
             ist.setState(state);
-            assertSame(state, ist.getState());
-            assertTrue(ist.isDirty());
-            assertFalse(ist.isDirty());
+            String emsg = ist.toString();
+            assertSame(emsg, state, ist.getState());
+            assertTrue(emsg, ist.isDirty());
+            assertFalse(emsg, ist.isDirty());
 
             ist.setState(state);
-            assertSame(state, ist.getState());
-            assertFalse(ist.isDirty());
+            emsg = ist.toString();
+            assertSame(emsg, state, ist.getState());
+            assertFalse(emsg, ist.isDirty());
         }
 
         // Change port state.
         for (VNodeState state: states) {
             ist.setPortState(state);
-            assertSame(state, ist.getPortState());
-            assertTrue(ist.isDirty());
-            assertFalse(ist.isDirty());
+            String emsg = ist.toString();
+            assertSame(emsg, state, ist.getPortState());
+            assertTrue(emsg, ist.isDirty());
+            assertFalse(emsg, ist.isDirty());
 
             ist.setPortState(state);
-            assertSame(state, ist.getPortState());
-            assertFalse(ist.isDirty());
+            emsg = ist.toString();
+            assertSame(emsg, state, ist.getPortState());
+            assertFalse(emsg, ist.isDirty());
         }
 
         // Changing mapped port should not affect the dirty flag.
         for (NodeConnector nc: createNodeConnectors(50, false)) {
             ist.setMappedPort(nc);
-            assertEquals(nc, ist.getMappedPort());
-            assertFalse(ist.isDirty());
+            String emsg = ist.toString();
+            assertEquals(emsg, nc, ist.getMappedPort());
+            assertFalse(emsg, ist.isDirty());
         }
 
         // Set null to mapped port.

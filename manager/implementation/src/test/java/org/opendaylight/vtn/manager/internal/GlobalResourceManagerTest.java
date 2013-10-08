@@ -60,11 +60,13 @@ public class GlobalResourceManagerTest extends TestBase {
         Timer tm = grsc.getTimer();
         assertNotNull(tm);
 
-        ConcurrentMap<Short, String> vmap = (ConcurrentMap<Short, String>)cs.getCache("vtn.vlanmap");
+        ConcurrentMap<Short, String> vmap
+            = (ConcurrentMap<Short, String>)cs.getCache("vtn.vlanmap");
         assertNotNull(vmap);
         assertEquals(0, vmap.size());
 
-        ConcurrentMap<Short, String> pmap = (ConcurrentMap<Short, String>)cs.getCache("vtn.portmap");
+        ConcurrentMap<Short, String> pmap
+            = (ConcurrentMap<Short, String>)cs.getCache("vtn.portmap");
         assertNotNull(pmap);
         assertEquals(0, pmap.size());
 
@@ -109,7 +111,8 @@ public class GlobalResourceManagerTest extends TestBase {
     public void testRegisterVlanMap() {
         String containerName = "default";
         TestStub stubObj = new TestStub(0);
-        GlobalResourceManager grsc = setupGlobalResourceManager(containerName, stubObj);
+        GlobalResourceManager grsc
+            = setupGlobalResourceManager(containerName, stubObj);
         IClusterGlobalServices cs = (IClusterGlobalServices)stubObj;
 
         String tname = "tenant";
@@ -120,6 +123,7 @@ public class GlobalResourceManagerTest extends TestBase {
         assertEquals(null, reg);
         checkMapCache(cs, "vtn.vlanmap", containerName, bpath, vlan);
 
+        // add the same VlanMap with different bpath
         String bnamenew = "bridgenew";
         VBridgePath bpathnew = new VBridgePath(tname, bnamenew);
         reg = grsc.registerVlanMap(containerName, bpathnew, vlan);
@@ -127,6 +131,7 @@ public class GlobalResourceManagerTest extends TestBase {
         assertEquals(required, reg);
         checkMapCache(cs, "vtn.vlanmap", containerName, bpath, vlan);
 
+        // add with different vlan
         reg = grsc.registerVlanMap(containerName, bpathnew, (short)4095);
         required = containerName + ":" + bpath.toString();
         assertEquals(null, reg);
@@ -134,16 +139,19 @@ public class GlobalResourceManagerTest extends TestBase {
 
         grsc.unregisterVlanMap((short)0);
 
+        // check if other setting exist after unregister entry a vlan == 0
         reg = grsc.registerVlanMap(containerName, bpath, (short)4095);
         required = containerName + ":" + bpathnew.toString();
         assertEquals(required, reg);
         checkMapCache(cs, "vtn.vlanmap", containerName, bpathnew, (short)4095);
 
+        // set a entry vlan == 0 again
         reg = grsc.registerVlanMap(containerName, bpathnew, (short)0);
         required = containerName + ":" + bpathnew.toString();
         assertEquals(null, reg);
         checkMapCache(cs, "vtn.vlanmap", containerName, bpathnew, (short)0);
 
+        // try to unregister not registered
         try {
             grsc.unregisterVlanMap((short)1);
             fail("throwing exception was expected.");
@@ -172,39 +180,44 @@ public class GlobalResourceManagerTest extends TestBase {
 
         for (NodeConnector nc : createNodeConnectors(3, false)) {
             for (short vlan : vlans) {
+                String emsg = "(NodeConnector)" + nc.toString() + ",(vlan)" + vlan;
+
                 String tname = "tenant";
                 String bname = "bridge";
                 String ifname = "interface";
                 VBridgeIfPath bifpath = new VBridgeIfPath(tname, bname, ifname);
                 PortVlan pv = new PortVlan(nc, vlan);
                 String reg = grsc.registerPortMap(containerName, bifpath, pv);
-                assertEquals(null, reg);
+                assertEquals(emsg, null, reg);
                 checkMapCache(cs, "vtn.portmap", containerName, bifpath, pv);
 
+                // add conflict PortVlan
                 String bnamenew = "bridgenew";
                 String ifnamenew = "interfacenew";
                 VBridgeIfPath bifpathnew = new VBridgeIfPath(tname, bnamenew, ifnamenew);
                 reg = grsc.registerPortMap(containerName, bifpathnew, pv);
                 String required = containerName + ":" + bifpath.toString();
-                assertEquals(required, reg);
+                assertEquals(emsg, required, reg);
                 checkMapCache(cs, "vtn.portmap", containerName, bifpath, pv);
 
+                // add non-conflict PortVlan
                 PortVlan pvnew = new PortVlan(nc, (short)4094);
                 reg = grsc.registerPortMap(containerName, bifpathnew, pvnew);
                 required = containerName + ":" + bifpathnew.toString();
-                assertEquals(null, reg);
+                assertEquals(emsg, null, reg);
                 checkMapCache(cs, "vtn.portmap", containerName, bifpathnew, pvnew);
 
                 grsc.unregisterPortMap(pv);
 
+                // check if another entry exist after calling unregisterPortMap()
                 reg = grsc.registerPortMap(containerName, bifpath, pvnew);
                 required = containerName + ":" + bifpathnew.toString();
-                assertEquals(required, reg);
+                assertEquals(emsg, required, reg);
                 checkMapCache(cs, "vtn.portmap", containerName, bifpathnew, pvnew);
 
                 reg = grsc.registerPortMap(containerName, bifpathnew, pv);
                 required = containerName + ":" + bifpathnew.toString();
-                assertEquals(null, reg);
+                assertEquals(emsg, null, reg);
                 checkMapCache(cs, "vtn.portmap", containerName, bifpathnew, pv);
 
                 try {
@@ -272,6 +285,7 @@ public class GlobalResourceManagerTest extends TestBase {
 
         grsc.cleanUp(containerName);
 
+        // after clean up there isn't entry.
         vmap = (ConcurrentMap<Short, String>)cs.getCache("vtn.vlanmap");
         assertEquals(0, vmap.size());
         pmap = (ConcurrentMap<PortVlan, String>)cs.getCache("vtn.portmap");

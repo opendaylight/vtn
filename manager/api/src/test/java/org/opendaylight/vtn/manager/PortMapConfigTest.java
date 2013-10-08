@@ -29,9 +29,10 @@ public class PortMapConfigTest extends TestBase {
             for (SwitchPort port: createSwitchPorts(10)) {
                 for (short vlan = -5; vlan <= 5; vlan++) {
                     PortMapConfig pmconf = new PortMapConfig(node, port, vlan);
-                    assertEquals(port, pmconf.getPort());
-                    assertEquals(node, pmconf.getNode());
-                    assertEquals(vlan, pmconf.getVlan());
+                    String emsg = pmconf.toString();
+                    assertEquals(emsg, port, pmconf.getPort());
+                    assertEquals(emsg, node, pmconf.getNode());
+                    assertEquals(emsg, vlan, pmconf.getVlan());
                 }
             }
         }

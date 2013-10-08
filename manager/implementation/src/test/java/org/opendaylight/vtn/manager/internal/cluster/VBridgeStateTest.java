@@ -104,9 +104,9 @@ public class VBridgeStateTest extends TestBase {
         for (VNodeState state: states) {
             VBridgeState bst = new VBridgeState(state);
             assertSame(state, bst.getState());
-            assertEquals(fp, bst.getFaultedPaths());
-            assertEquals(0, bst.getFaultedPathSize());
-            assertFalse(bst.isDirty());
+            assertEquals(bst.toString(), fp, bst.getFaultedPaths());
+            assertEquals(bst.toString(), 0, bst.getFaultedPathSize());
+            assertFalse(bst.toString(), bst.isDirty());
         }
     }
 
@@ -121,8 +121,8 @@ public class VBridgeStateTest extends TestBase {
         // Change bridge state.
         for (VNodeState state: states) {
             assertSame(state, bst.setState(state));
-            assertTrue(bst.isDirty());
-            assertFalse(bst.isDirty());
+            assertTrue(state.toString(), bst.isDirty());
+            assertFalse(state.toString(), bst.isDirty());
         }
 
         // Add faulted paths.
@@ -134,22 +134,23 @@ public class VBridgeStateTest extends TestBase {
             ObjectPair<Node, Node> path = toNodePath(edge);
             Node src = path.getLeft();
             Node dst = path.getRight();
-            assertTrue(faulted.add(path));
+            String emsg = path.toString();
+            assertTrue(emsg, faulted.add(path));
             bst.addFaultedPath(src, dst);
-            assertTrue(bst.isDirty());
-            assertFalse(bst.isDirty());
-            assertSame(VNodeState.DOWN, bst.getState());
+            assertTrue(emsg, bst.isDirty());
+            assertFalse(emsg, bst.isDirty());
+            assertSame(emsg, VNodeState.DOWN, bst.getState());
 
             // Try to add the same path.
             bst.addFaultedPath(src, dst);
-            assertFalse(bst.isDirty());
+            assertFalse(emsg, bst.isDirty());
 
             Set<ObjectPair<Node, Node>> paths = bst.getFaultedPaths();
-            assertEquals(faulted, paths);
+            assertEquals(emsg, faulted, paths);
 
             // getFaultedPaths() must return a clone of the faulted path set.
             paths.clear();
-            assertEquals(faulted, bst.getFaultedPaths());
+            assertEquals(emsg, faulted, bst.getFaultedPaths());
         }
 
         // Resolve faulted paths.
@@ -165,12 +166,13 @@ public class VBridgeStateTest extends TestBase {
             routing.addPath(path, edge);
             List<ObjectPair<Node, Node>> resolved =
                 bst.removeResolvedPath(routing);
-            assertTrue(bst.isDirty());
-            assertFalse(bst.isDirty());
-            assertEquals(1, resolved.size());
-            assertEquals(path, resolved.get(0));
-            assertTrue(faulted.remove(path));
-            assertEquals(faulted, bst.getFaultedPaths());
+            String emsg = path.toString();
+            assertTrue(emsg, bst.isDirty());
+            assertFalse(emsg, bst.isDirty());
+            assertEquals(emsg, 1, resolved.size());
+            assertEquals(emsg, path, resolved.get(0));
+            assertTrue(emsg, faulted.remove(path));
+            assertEquals(emsg, faulted, bst.getFaultedPaths());
         }
 
         // Resolve the rest of faulted paths at a time.
