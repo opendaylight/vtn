@@ -53,6 +53,7 @@
     <!-- Parents -->
     <module>../checkstyle</module>
     <module>../common</module>
+    <module>../common.it</module>
     <module>../../common</module>
   </modules>
 
