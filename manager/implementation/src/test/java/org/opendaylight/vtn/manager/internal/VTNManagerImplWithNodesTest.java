@@ -1781,7 +1781,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         // receive flood + probe packet to incoming nodeconnector.
         assertEquals(mappedConnectors.get(bpath1).size(), transDatas.size());
-        MacTableEntry ent = table.get(pctx);
+        MacTableEntry ent = table.get(MacAddressTable.getTableKey(dst));
         assertNull(ent);
 
         // in case outgoing interface is disabled.

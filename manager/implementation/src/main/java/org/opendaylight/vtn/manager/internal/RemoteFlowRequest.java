@@ -102,6 +102,11 @@ public class RemoteFlowRequest {
     /**
      * Wait for completion of flow modification on remote cluster node.
      *
+     * <p>
+     *   This method is designed to be called by a single thread, and called
+     *   only once.
+     * </p>
+     *
      * @param limit    System absolute time in milliseconds which represents
      *                 deadline of the wait.
      * @param all      If {@code true} is passed, this method waits for all
@@ -113,38 +118,33 @@ public class RemoteFlowRequest {
      *          successfully. Otherwise {@code false} is returned.
      */
     synchronized boolean getResultAbs(long limit, boolean all) {
-        if (requestResult == null) {
-            boolean interrupted = false;
-            do {
-                long timeout = limit - System.currentTimeMillis();
-                if (timeout <= 0) {
-                    requestResult = FlowModResult.TIMEDOUT;
-                    return false;
-                }
-
-                try {
-                    wait(timeout);
-                } catch (InterruptedException e) {
-                    interrupted = true;
-                    break;
-                }
-                if (!all && (!failedSet.isEmpty() || !orphanSet.isEmpty())) {
-                    requestResult = FlowModResult.FAILED;
-                    return false;
-                }
-            } while (!requestSet.isEmpty());
-
-            if (requestSet.isEmpty() && failedSet.isEmpty() &&
-                orphanSet.isEmpty()) {
-                requestResult = FlowModResult.SUCCEEDED;
-            } else if (interrupted) {
-                requestResult = FlowModResult.INTERRUPTED;
-            } else {
-                requestResult = FlowModResult.FAILED;
-            }
+        if (requestResult != null) {
+            return (requestResult == FlowModResult.SUCCEEDED);
         }
 
-        return (requestResult == FlowModResult.SUCCEEDED);
+        Boolean result = updateResult(all);
+        if (result != null) {
+            return result.booleanValue();
+        }
+
+        do {
+            long timeout = limit - System.currentTimeMillis();
+            if (timeout <= 0) {
+                requestResult = FlowModResult.TIMEDOUT;
+                return false;
+            }
+
+            try {
+                wait(timeout);
+            } catch (InterruptedException e) {
+                requestResult = FlowModResult.INTERRUPTED;
+                return false;
+            }
+
+            result = updateResult(all);
+        } while (result == null);
+
+        return result.booleanValue();
     }
 
     /**
@@ -193,5 +193,28 @@ public class RemoteFlowRequest {
             requestSet.remove(name);
             notifyAll();
         }
+    }
+
+    /**
+     * Update the result of flow modification request.
+     *
+     * @param all  A boolean value passed to {@code all} argument of
+     *             {@link #getResultAbs(long, boolean)}.
+     * @return  A {@code Boolean} value is returned if the result of flow
+     *          modification request was determined.
+     *          {@code null} is returned if not yet determined.
+     */
+    private synchronized Boolean updateResult(boolean all) {
+        if (!failedSet.isEmpty() || !orphanSet.isEmpty()) {
+            requestResult = FlowModResult.FAILED;
+            if (!all) {
+                return Boolean.FALSE;
+            }
+        } else if (requestSet.isEmpty()) {
+            requestResult = FlowModResult.SUCCEEDED;
+            return Boolean.TRUE;
+        }
+
+        return null;
     }
 }

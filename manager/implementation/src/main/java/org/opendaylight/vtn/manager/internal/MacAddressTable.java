@@ -512,49 +512,44 @@ public class MacAddressTable {
     }
 
     /**
-     * Return the MAC address table entry associated with the destination
-     * address of the received packet.
+     * Return the MAC address table entry associated with the given MAC
+     * address.
      *
-     * @param pctx  The context of the received packet.
+     * <p>
+     *   This method sets the used flag of the MAC address table entry
+     *   if found.
+     * </p>
+     *
+     * @param key  A {@code Long} object which represents the MAC address.
      * @return  A MAC address table entry if found. {@code null} if not fonud.
      */
-    public MacTableEntry get(PacketContext pctx) {
-        byte[] dst = pctx.getDestinationAddress();
-        Long key = getTableKey(dst);
-
-        synchronized (this) {
-            Map<Long, MacTableEntry> table = macAddressTable;
-            if (table == null) {
-                return null;
-            }
-
-            MacTableEntry tent = table.get(key);
+    public synchronized MacTableEntry get(Long key) {
+        Map<Long, MacTableEntry> table = macAddressTable;
+        MacTableEntry tent;
+        if (table != null) {
+            tent = table.get(key);
             if (tent != null) {
                 // Turn the used flag on.
                 tent.setUsed();
             }
-
-            return tent;
+        } else {
+            tent = null;
         }
+
+        return tent;
     }
 
     /**
-     * Remove the MAC address table entry associated with the destination
-     * address of the received packet.
+     * Remove the given MAC address from this table.
      *
-     * @param pctx  The context of the received packet.
+     * @param key  A {@code Long} object which represents the MAC address.
      */
-    public void remove(PacketContext pctx) {
-        byte[] dst = pctx.getDestinationAddress();
-        Long key = getTableKey(dst);
-
-        synchronized (this) {
-            Map<Long, MacTableEntry> table = macAddressTable;
-            if (table != null) {
-                MacTableEntry tent = table.remove(key);
-                if (tent != null) {
-                    vtnManager.removeMacTableEntry(tent.getEntryId());
-                }
+    public synchronized void remove(Long key) {
+        Map<Long, MacTableEntry> table = macAddressTable;
+        if (table != null) {
+            MacTableEntry tent = table.remove(key);
+            if (tent != null) {
+                vtnManager.removeMacTableEntry(tent.getEntryId());
             }
         }
     }

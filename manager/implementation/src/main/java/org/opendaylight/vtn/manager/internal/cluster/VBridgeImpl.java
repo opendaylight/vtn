@@ -1549,67 +1549,20 @@ public final class VBridgeImpl implements Serializable {
         MacAddressTable table = mgr.getMacAddressTable(bridgePath);
         table.add(pctx);
 
-        ISwitchManager swMgr = mgr.getSwitchManager();
-        byte[] ctlrMac = swMgr.getControllerMAC();
         byte[] dst = pctx.getDestinationAddress();
-        if (Arrays.equals(ctlrMac, dst)) {
-            if (LOG.isTraceEnabled()) {
-                NodeConnector incoming = pctx.getIncomingNodeConnector();
-                LOG.trace("{}:{}: Ignore packet sent to controller: {}",
-                          getContainerName(), bridgePath,
-                          pctx.getDescription(incoming));
-            }
-            return;
-        }
-
-        if (!NetUtils.isUnicastMACAddr(dst)) {
-            // Flood the non-unicast packet.
-            flood(mgr, pctx);
+        if (isResponseToController(mgr, pctx, dst)) {
             return;
         }
 
         // Determine whether the destination address is known or not.
-        MacTableEntry tent = table.get(pctx);
+        MacTableEntry tent = getDestination(mgr, pctx, table, dst);
         if (tent == null) {
-            // Flood the received packet.
-            flood(mgr, pctx);
-            return;
-        }
-
-        // Ensure that the outgoing network is mapped to this bridge.
-        NodeConnector outgoing = tent.getPort();
-        short outVlan = tent.getVlan();
-        VBridgeNode bnode = match(mgr, MapType.ALL, outgoing, outVlan);
-        if (bnode == null) {
-            LOG.warn("{}:{}: Unexpected MAC address entry: {}",
-                     getContainerName(), bridgePath, tent);
-            Long key = MacAddressTable.getTableKey(dst);
-            pctx.addObsoleteEntry(key, tent);
-            table.remove(pctx);
-            flood(mgr, pctx);
-            return;
-        }
-
-        if (!bnode.isEnabled()) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("{}:{}: Drop packet due to disabled network: {}",
-                          getContainerName(), bnode.getPath(),
-                          pctx.getDescription(outgoing));
-            }
-            return;
-        }
-
-        if (!mgr.isEnabled(outgoing)) {
-            if (LOG.isWarnEnabled()) {
-                LOG.warn("{}:{}: Drop packet because outgoing port is down: " +
-                         "{}", getContainerName(), bridgePath,
-                         pctx.getDescription(outgoing));
-            }
             return;
         }
 
         // Ensure that the destination host is reachable.
         NodeConnector incoming = pctx.getIncomingNodeConnector();
+        NodeConnector outgoing = tent.getPort();
         Node snode = incoming.getNode();
         Node dnode = outgoing.getNode();
         Path path;
@@ -1627,6 +1580,7 @@ public final class VBridgeImpl implements Serializable {
         }
 
         // Forward the packet.
+        short outVlan = tent.getVlan();
         Ethernet frame = pctx.createFrame(outVlan);
         if (LOG.isTraceEnabled()) {
             LOG.trace("{}:{}: Forward packet to known host: {}",
@@ -1635,6 +1589,118 @@ public final class VBridgeImpl implements Serializable {
         }
         mgr.transmit(outgoing, frame);
 
+        // Install VTN flow.
+        installFlow(mgr, pctx, tent, path);
+    }
+
+    /**
+     * Determine whether the destination address of the received packet is
+     * this controller or not.
+     *
+     * @param mgr   VTN Manager service.
+     * @param pctx  The context of the received packet.
+     * @param dst   The destination MAC address of the received packet.
+     * @return  {@code true} is returned if the given destination MAC address
+     *          is same as the MAC address of this controller.
+     *          Otherwise {@code false} is returned.
+     */
+    private boolean isResponseToController(VTNManagerImpl mgr,
+                                           PacketContext pctx, byte[] dst) {
+        ISwitchManager swMgr = mgr.getSwitchManager();
+        byte[] ctlrMac = swMgr.getControllerMAC();
+        if (Arrays.equals(ctlrMac, dst)) {
+            if (LOG.isTraceEnabled()) {
+                NodeConnector incoming = pctx.getIncomingNodeConnector();
+                LOG.trace("{}:{}: Ignore packet sent to controller: {}",
+                          getContainerName(), bridgePath,
+                          pctx.getDescription(incoming));
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Return the MAC address table entry associated with the destination
+     * address of the received packet.
+     *
+     * <p>
+     *   Note that this method may flood the received packet to this bridge
+     *   if needed.
+     * </p>
+     *
+     * @param mgr    VTN Manager service.
+     * @param pctx   The context of the received packet.
+     * @param table  The MAC address table for this bridge.
+     * @param dst    The destination MAC address of the received packet.
+     * @return  A {@link MacTableEntry} object is returned if found.
+     *          {@code null} is returned if not found or if the received packet
+     *          should not be sent to this bridge.
+     */
+    private MacTableEntry getDestination(VTNManagerImpl mgr,
+                                         PacketContext pctx,
+                                         MacAddressTable table, byte[] dst) {
+        if (!NetUtils.isUnicastMACAddr(dst)) {
+            // Flood the non-unicast packet.
+            flood(mgr, pctx);
+            return null;
+        }
+
+        Long key = MacAddressTable.getTableKey(dst);
+        MacTableEntry tent = table.get(key);
+        if (tent == null) {
+            // Flood the received packet.
+            flood(mgr, pctx);
+            return null;
+        }
+
+        // Ensure that the outgoing network is mapped to this bridge.
+        NodeConnector outgoing = tent.getPort();
+        short outVlan = tent.getVlan();
+        VBridgeNode bnode = match(mgr, MapType.ALL, outgoing, outVlan);
+        if (bnode == null) {
+            LOG.warn("{}:{}: Unexpected MAC address entry: {}",
+                     getContainerName(), bridgePath, tent);
+            pctx.addObsoleteEntry(key, tent);
+            table.remove(key);
+            flood(mgr, pctx);
+            return null;
+        }
+
+        if (!bnode.isEnabled()) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}:{}: Drop packet due to disabled network: {}",
+                          getContainerName(), bnode.getPath(),
+                          pctx.getDescription(outgoing));
+            }
+            return null;
+        }
+
+        if (!mgr.isEnabled(outgoing)) {
+            if (LOG.isWarnEnabled()) {
+                LOG.warn("{}:{}: Drop packet because outgoing port is down: " +
+                         "{}", getContainerName(), bridgePath,
+                         pctx.getDescription(outgoing));
+            }
+            return null;
+        }
+
+        pctx.addNodePath(bnode.getPath());
+
+        return tent;
+    }
+
+    /**
+     * Install a VTN flow for the received packet.
+     *
+     * @param mgr   VTN Manager service.
+     * @param pctx  The context of the received packet.
+     * @param tent  The MAC address table entry associated with the destination
+     *              address of the received packet.
+     * @param path  Path to the destination address of the received packet.
+     */
+    private void installFlow(VTNManagerImpl mgr, PacketContext pctx,
+                             MacTableEntry tent, Path path) {
         // Create flow entries.
         VTNFlowDatabase fdb = mgr.getTenantFlowDB(getTenantName());
         if (fdb == null) {
@@ -1647,6 +1713,7 @@ public final class VBridgeImpl implements Serializable {
         // Purge obsolete flows before installing new flow.
         pctx.purgeObsoleteFlow(mgr, fdb);
 
+        NodeConnector incoming = pctx.getIncomingNodeConnector();
         VTNConfig vc = mgr.getVTNConfig();
         int pri = vc.getL2FlowPriority();
         VTNFlow vflow = fdb.create(mgr);
@@ -1664,6 +1731,9 @@ public final class VBridgeImpl implements Serializable {
         }
 
         // Create egress flow entry.
+        NodeConnector outgoing = tent.getPort();
+        short outVlan = tent.getVlan();
+        Node dnode = outgoing.getNode();
         assert incoming.getNode().equals(outgoing.getNode());
         match = pctx.createMatch(incoming);
         ActionList actions = new ActionList(dnode);
@@ -1676,8 +1746,8 @@ public final class VBridgeImpl implements Serializable {
 
         // Set flow dependency which specifies network elements relevant to
         // this VTN flow.
-        pctx.addNodePath(bnode.getPath());
         pctx.setFlowDependency(vflow);
+        byte[] dst = pctx.getDestinationAddress();
         vflow.addDependency(new MacVlan(dst, outVlan));
 
         // Install flow entries.

@@ -64,40 +64,13 @@ public class FlowAddTask extends RemoteFlowModTask {
     protected boolean execute() {
         // This class expects that the given VTN flow has at least one flow
         // entry.
-        VTNManagerImpl mgr = getVTNManager();
-        FlowGroupId gid = vtnFlow.getGroupId();
-        Iterator<FlowEntry> it = vtnFlow.getFlowEntries().iterator();
-        if (!it.hasNext()) {
-            LOG.error("{}: No flow entry in a VTN flow: {}",
-                      mgr.getContainerName(), gid);
-            return false;
-        }
-
-        FlowEntry ingress = it.next();
         List<FlowEntry> entries = new ArrayList<FlowEntry>();
-        while (it.hasNext()) {
-            entries.add(it.next());
-        }
-
-        // This class expects that the ingress flow is installed to local node.
-        IConnectionManager cnm = mgr.getConnectionManager();
-        ConnectionLocality cl = cnm.getLocalityStatus(ingress.getNode());
-        if (cl != ConnectionLocality.LOCAL) {
-            if (cl == ConnectionLocality.NOT_LOCAL) {
-                LOG.error("{}: Ingress flow must be installed to " +
-                          "local node: {}", mgr.getContainerName(),
-                          ingress);
-            } else {
-                LOG.error("{}: Target node of ingress flow entry is " +
-                          "disconnected: {}", mgr.getContainerName(),
-                          ingress);
-            }
-            return false;
-        }
+        FlowEntry ingress = getIngressFlow(entries);
 
         // Install flow entries except for ingress flow.
         // Ingress flow must be installed at last in order to avoid
         // PACKET_IN at intermediate switch on the flow path.
+        VTNManagerImpl mgr = getVTNManager();
         ArrayList<LocalFlowAddTask> local = new ArrayList<LocalFlowAddTask>();
         ArrayList<FlowEntry> remote = null;
         if (!entries.isEmpty()) {
@@ -129,7 +102,7 @@ public class FlowAddTask extends RemoteFlowModTask {
 
         // Put VTN flow into the cluster cache.
         ConcurrentMap<FlowGroupId, VTNFlow> db = mgr.getFlowDB();
-        db.put(gid, vtnFlow);
+        db.put(vtnFlow.getGroupId(), vtnFlow);
 
         // Install ingress flow.
         if (!installLocal(ingress)) {
@@ -242,5 +215,47 @@ public class FlowAddTask extends RemoteFlowModTask {
 
         ConcurrentMap<FlowGroupId, VTNFlow> db = mgr.getFlowDB();
         db.remove(gid);
+    }
+
+    /**
+     * Get the ingress flow of the target VTN flow.
+     *
+     * @param entries  A list of {@code FlowEntry} to store flow entries
+     *                 in the target VTN flow except for the ingress flow.
+     * @return  Upon successful completion, a {@code FlowEntry} object
+     *          associated with the ingress flow is returned.
+     *          Otherwise {@code null} is returned.
+     */
+    private FlowEntry getIngressFlow(List<FlowEntry> entries) {
+        VTNManagerImpl mgr = getVTNManager();
+        Iterator<FlowEntry> it = vtnFlow.getFlowEntries().iterator();
+        if (!it.hasNext()) {
+            LOG.error("{}: No flow entry in a VTN flow: {}",
+                      mgr.getContainerName(), vtnFlow.getGroupId());
+            return null;
+        }
+
+        FlowEntry ingress = it.next();
+        while (it.hasNext()) {
+            entries.add(it.next());
+        }
+
+        // This class expects that the ingress flow is installed to local node.
+        IConnectionManager cnm = mgr.getConnectionManager();
+        ConnectionLocality cl = cnm.getLocalityStatus(ingress.getNode());
+        if (cl != ConnectionLocality.LOCAL) {
+            if (cl == ConnectionLocality.NOT_LOCAL) {
+                LOG.error("{}: Ingress flow must be installed to " +
+                          "local node: {}", mgr.getContainerName(),
+                          ingress);
+            } else {
+                LOG.error("{}: Target node of ingress flow entry is " +
+                          "disconnected: {}", mgr.getContainerName(),
+                          ingress);
+            }
+            return null;
+        }
+
+        return ingress;
     }
 }

@@ -199,16 +199,16 @@ public class MacAddressTableTest extends TestBase {
                                           (short)-1, connectors.get(1), ARP.REQUEST);
 
             // get from empty table.
-            tent = tbl.get(dpctx);
+            tent = tbl.get(getTableKey(dpctx));
             assertNull(emsg, tent);
             mae = getEntry(tbl, ea);
             assertNull(emsg, mae);
 
             // add() and get() one data
             tbl.add(dpctx);
-            tent = tbl.get(dpctx);
+            tent = tbl.get(getTableKey(dpctx));
             assertNull(emsg, tent);
-            tent = tbl.get(rpctx);
+            tent = tbl.get(getTableKey(rpctx));
             assertNotNull(emsg, tent);
             assertTrue(emsg, tent.clearUsed());
             assertEquals(emsg, connectors.get(0), tent.getPort());
@@ -231,7 +231,7 @@ public class MacAddressTableTest extends TestBase {
 
             // add packet IP address changed
             tbl.add(ippctx);
-            tent = tbl.get(rpctx);
+            tent = tbl.get(getTableKey(rpctx));
             assertNotNull(emsg, tent);
             assertEquals(emsg, connectors.get(0), tent.getPort());
             assertEquals(emsg, 0, tent.getVlan());
@@ -253,7 +253,7 @@ public class MacAddressTableTest extends TestBase {
 
             // add packet vlan changed
             tbl.add(vlanpctx);
-            tent = tbl.get(rpctx);
+            tent = tbl.get(getTableKey(rpctx));
             assertNotNull(emsg, tent);
             assertEquals(emsg, connectors.get(0), tent.getPort());
             assertEquals(emsg, vlan, tent.getVlan());
@@ -266,7 +266,7 @@ public class MacAddressTableTest extends TestBase {
 
             // add packet set different nodeconnector
             tbl.add(ncpctx);
-            tent = tbl.get(rpctx);
+            tent = tbl.get(getTableKey(rpctx));
             assertNotNull(emsg, tent);
             assertEquals(emsg, connectors.get(1), tent.getPort());
             assertEquals(emsg, 0, tent.getVlan());
@@ -284,11 +284,11 @@ public class MacAddressTableTest extends TestBase {
             assertArrayEquals(emsg, src, eth.getValue());
 
             // remove entry
-            tbl.remove(rpctx);
-            assertNull(emsg, tbl.get(rpctx));
+            tbl.remove(getTableKey(rpctx));
+            assertNull(emsg, tbl.get(getTableKey(rpctx)));
 
             // check whether removed entry not included.
-            tent = tbl.get(rpctx);
+            tent = tbl.get(getTableKey(rpctx));
             assertNull(emsg, tent);
 
             // removeEntry()
@@ -311,7 +311,7 @@ public class MacAddressTableTest extends TestBase {
             assertNull(emsg, mae);
 
             // check whether removed entry not included.
-            tent = tbl.get(rpctx);
+            tent = tbl.get(getTableKey(rpctx));
             assertNull(emsg, tent);
 
             tall.add(dpctx);
@@ -540,5 +540,18 @@ public class MacAddressTableTest extends TestBase {
             unexpected(e);
         }
         return mae;
+    }
+
+    /**
+     * Return a {@code Long} object which represents the destination address
+     * of the given packet context.
+     *
+     * @param pctx  The packet context.
+     * @return  A {@code Long} object which represents the destination address
+     *          of the given packet context.
+     */
+    private Long getTableKey(PacketContext pctx) {
+        byte[] dst = pctx.getDestinationAddress();
+        return MacAddressTable.getTableKey(dst);
     }
 }

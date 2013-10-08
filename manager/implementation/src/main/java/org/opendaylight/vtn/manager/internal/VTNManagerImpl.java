@@ -675,7 +675,6 @@ public class VTNManagerImpl
         }
 
         resourceManager.addManager(this);
-
         serviceAvailable = true;
     }
 
@@ -953,7 +952,7 @@ public class VTNManagerImpl
 
         if (!curNode.isEmpty()) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("{}: Remove obsolte nodes from nodeDB: {}",
+                LOG.debug("{}: Remove obsolete nodes from nodeDB: {}",
                           containerName, curNode);
             }
             for (Node node: curNode) {
@@ -963,7 +962,7 @@ public class VTNManagerImpl
 
         if (!curPort.isEmpty()) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("{}: Remove obsolte ports from portDB: {}",
+                LOG.debug("{}: Remove obsolete ports from portDB: {}",
                           containerName, curPort);
             }
             for (NodeConnector nc: curPort) {
@@ -999,7 +998,7 @@ public class VTNManagerImpl
 
         if (!current.isEmpty()) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("{}: Remove obsolte ports from islDB: {}",
+                LOG.debug("{}: Remove obsolete ports from islDB: {}",
                           containerName, current);
             }
             for (NodeConnector nc: current) {
