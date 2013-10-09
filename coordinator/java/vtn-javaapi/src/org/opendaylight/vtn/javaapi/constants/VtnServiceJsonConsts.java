@@ -760,6 +760,7 @@ public final class VtnServiceJsonConsts {
 	public static final String SWITCHID_NOT_FOUND= "switchIdNotFound";
 	public static final String PORTID_NOT_FOUND = "portIdNotFound";
 	public static final String VNP = "vnp";
+	public static final String ODC = "odc";
 	public static final String DIFF = "diff";
 	public static final String DIFF_STATUS = "diff_status";
 	public static final String TWO = "2";

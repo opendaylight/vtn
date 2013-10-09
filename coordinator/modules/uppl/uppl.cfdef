@@ -20,6 +20,7 @@ defblock ipc_params {
   uppl_service_name = STRING: max=63;
   pfcdrv_service_name = STRING: max=63;
   ovrlaydrv_service_name = STRING: max=63;
+  odcdrv_service_name = STRING: max=63;
   sb_ipc_service_ids = BYTE[];
   logical_ipc_service_ids = BYTE[];
   uppl_ipc_service_ids = BYTE[];

@@ -466,7 +466,8 @@ public class CommonValidator {
 		Boolean valid = false;
 		if (VtnServiceJsonConsts.BYPASS.equalsIgnoreCase(input)
 				|| VtnServiceJsonConsts.PFC.equalsIgnoreCase(input)
-				|| VtnServiceJsonConsts.VNP.equalsIgnoreCase(input)) {
+				|| VtnServiceJsonConsts.VNP.equalsIgnoreCase(input)
+				|| VtnServiceJsonConsts.ODC.equalsIgnoreCase(input)) {
 			valid = true;
 		}
 		LOG.trace("Complete CommonValidator#isValidType");

@@ -90,6 +90,9 @@ TcDaemonName TcConvertDriverType(unc_keytype_ctrtype_t drv_type) {
     case UNC_CT_VNP:
       return TC_DRV_OVERLAY;
 
+    case UNC_CT_ODC:
+      return TC_DRV_ODL;
+
     /*case UNC_CT_LEGACY:
       return TC_DRV_LEGACY;*/
 

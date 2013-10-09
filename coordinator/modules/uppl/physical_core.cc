@@ -168,6 +168,7 @@ UpplReturnCode PhysicalCore::ReadConfigFile() {
   // Fill the driver name map
   drv_name_map_[UNC_CT_PFC] = ipcblock.getString("pfcdrv_service_name", "");
   drv_name_map_[UNC_CT_VNP] = ipcblock.getString("ovrlaydrv_service_name", "");
+  drv_name_map_[UNC_CT_ODC] = ipcblock.getString("odcdrv_service_name", "");
 
   int kSize = ipcblock.arraySize("sb_ipc_service_ids");
   uint8_t sb_ipc_service_ids[kSize];

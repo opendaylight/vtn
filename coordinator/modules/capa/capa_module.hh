@@ -31,6 +31,7 @@ namespace capa {
 #define CAPA_CONF_FILE_PFC      CAPA_CONF_DIR "/pfc_capa.conf"
 // #define CAPA_CONF_FILE_LEGACY   CAPA_CONF_DIR "/legacy_capa.conf"
 #define CAPA_CONF_FILE_VNP      CAPA_CONF_DIR "/vnp_capa.conf"
+#define CAPA_CONF_FILE_ODC      CAPA_CONF_DIR "/odc_capa.conf"
 
 class CapaModule : public pfc::core::Module, CapaIntf {
  public:
