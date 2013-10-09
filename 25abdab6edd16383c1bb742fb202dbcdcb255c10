@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da6255ed_8ced67f2",
+        "filename": "coordinator/modules/vtncacheutil/include/vtn_conf_data_element_op.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2013-10-09T18:30:31Z",
+      "side": 1,
+      "message": "key_ and value_ initializer are meaningless because they are updated below line.",
+      "revId": "25abdab6edd16383c1bb742fb202dbcdcb255c10",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_ec94e345",
+        "filename": "coordinator/modules/vtncacheutil/include/vtn_conf_data_element_op.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2013-10-09T18:30:31Z",
+      "side": 1,
+      "message": "This class has no destructor.\nWhere will above 2 objects be deleted?",
+      "revId": "25abdab6edd16383c1bb742fb202dbcdcb255c10",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
