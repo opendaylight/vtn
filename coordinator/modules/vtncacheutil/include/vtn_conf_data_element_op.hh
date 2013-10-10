@@ -29,9 +29,27 @@ namespace unc {
          **/
 
           CacheElementUtil(key* key_ty, value* value_ty, op opet):
-                         key_(key_ty), value_(value_ty), operation(opet) {
+                         operation(opet) {
+
+            key_ = new key();
+            PFC_ASSERT(key_ != NULL);
+            value_ = new value();
+            PFC_ASSERT(value_ != NULL);
+
+            memcpy(key_, key_ty, sizeof(key));
+            memcpy(value_, value_ty, sizeof(value));
             pfc_log_info("In constructor %s..", PFC_FUNCNAME);
           }
+
+          /**
+           ** Destructor to free the key struct, value structure
+           **/
+          ~CacheElementUtil() {
+            pfc_log_info("In destructor %s..", PFC_FUNCNAME);
+              delete key_;
+              delete value_;
+          }
+
 
           /**
           ** This method returns the Keytype given the key struct
