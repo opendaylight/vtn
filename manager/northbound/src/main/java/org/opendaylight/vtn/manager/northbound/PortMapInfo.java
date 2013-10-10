@@ -14,6 +14,8 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
 import org.opendaylight.vtn.manager.PortMapConfig;
 import org.opendaylight.vtn.manager.SwitchPort;
 
@@ -23,6 +25,7 @@ import org.opendaylight.controller.sal.core.NodeConnector;
  * {@code PortMapInfo} class provides JAXB mapping for port mapping
  * information.
  */
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "portmap")
 @XmlAccessorType(XmlAccessType.NONE)
 public class PortMapInfo extends PortMapConfig {
@@ -35,7 +38,7 @@ public class PortMapInfo extends PortMapConfig {
      * Identifier of node connector associated with the switch port actually
      * mapped to the virtual bridge interface.
      */
-    @XmlElement(name = "mapped", required = true)
+    @XmlElement(name = "mapped")
     private SwitchPort  mapped;
 
     /**

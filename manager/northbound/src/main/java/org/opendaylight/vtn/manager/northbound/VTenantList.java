@@ -16,11 +16,14 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
 import org.opendaylight.vtn.manager.VTenant;
 
 /**
  * A JAXB class which represents a list of virtual tenant information.
  */
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vtns")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VTenantList {

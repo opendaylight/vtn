@@ -211,16 +211,16 @@ const char* ODCVTNCommand::create_request_body(val_vtn_t& val_vtn) {
   int ret_val = 1;
   pfc_log_info("%s description", description);
   if (0 != strlen(description)) {
-    ret_val = json_obj.build(jobj, "@description", description);
+    ret_val = json_obj.build(jobj, "description", description);
     if (ret_val) {
       return NULL;
     }
   }
-  ret_val = json_obj.build(jobj, "@idleTimeout", idle_timeout_);
+  ret_val = json_obj.build(jobj, "idleTimeout", idle_timeout_);
   if (ret_val) {
     return NULL;
   }
-  ret_val = json_obj.build(jobj, "@hardTimeout", hard_timeout_);
+  ret_val = json_obj.build(jobj, "hardTimeout", hard_timeout_);
   if (ret_val) {
     return NULL;
   }

@@ -9,6 +9,7 @@
 
 package org.opendaylight.vtn.manager.northbound;
 
+import java.net.URI;
 import java.util.List;
 
 import javax.ws.rs.Consumes;
@@ -25,7 +26,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import javax.xml.bind.JAXBElement;
 
 import org.codehaus.enunciate.jaxrs.ResponseCode;
 import org.codehaus.enunciate.jaxrs.StatusCodes;
@@ -65,12 +65,6 @@ import org.opendaylight.controller.sal.utils.Status;
  */
 @Path("/{containerName}/vtns/{tenantName}/vbridges")
 public class VBridgeNorthbound extends VTNNorthBoundBase {
-    /**
-     * Request URI information.
-     */
-    @Context
-    private UriInfo  uriInfo;
-
     /**
      * Returns a list of all virtual L2 bridges in the virtual tenant.
      *
@@ -138,10 +132,11 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
     /**
      * Add a new virtual L2 bridge to the tenant.
      *
+     * @param uriInfo        Requested URI information.
      * @param containerName  The name of the container.
      * @param tenantName     The name of the virtual tenant.
      * @param bridgeName     The name of the virtual bridge.
-     * @param param          Virtual bridge configuration.
+     * @param bconf          Virtual bridge configuration.
      * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{bridgeName}")
@@ -157,17 +152,18 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
             @ResponseCode(code = 500, condition = "Failed to create bridge. Failure Reason included in HTTP Error response"),
             @ResponseCode(code = 503, condition = "One or more of Controller services are unavailable")})
     public Response addBridge(
+            @Context UriInfo uriInfo,
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
-            @TypeHint(VBridgeConfig.class) JAXBElement<VBridgeConfig> param) {
+            @TypeHint(VBridgeConfig.class) VBridgeConfig bconf) {
         checkPrivilege(containerName, Privilege.WRITE);
 
         IVTNManager mgr = getVTNManager(containerName);
         VBridgePath path = new VBridgePath(tenantName, bridgeName);
-        Status status = mgr.addBridge(path, param.getValue());
+        Status status = mgr.addBridge(path, bconf);
         if (status.isSuccess()) {
-            return Response.status(Response.Status.CREATED).build();
+            return Response.created(uriInfo.getRequestUri()).build();
         }
 
         throw getException(status);
@@ -185,7 +181,7 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
      *                       value.
      *                       If {@code false} is specified, all fields to
      *                       which is assigned {@code null} are not modified.
-     * @param param          Virtual bridge configuration.
+     * @param bconf          Virtual bridge configuration.
      * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{bridgeName}")
@@ -203,12 +199,12 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @DefaultValue("false") @QueryParam("all") boolean all,
-            @TypeHint(VBridgeConfig.class) JAXBElement<VBridgeConfig> param) {
+            @TypeHint(VBridgeConfig.class) VBridgeConfig bconf) {
         checkPrivilege(containerName, Privilege.WRITE);
 
         IVTNManager mgr = getVTNManager(containerName);
         VBridgePath path = new VBridgePath(tenantName, bridgeName);
-        Status status = mgr.modifyBridge(path, param.getValue(), all);
+        Status status = mgr.modifyBridge(path, bconf, all);
         if (status.isSuccess()) {
             return Response.ok().build();
         }
@@ -322,10 +318,11 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
     /**
      * Add a new VLAN mapping to the virtual L2 bridge.
      *
+     * @param uriInfo        Requested URI information.
      * @param containerName  The name of the container.
      * @param tenantName     The name of the virtual tenant.
      * @param bridgeName     The name of the virtual bridge.
-     * @param param          VLAN mapping configuration.
+     * @param vlconf         VLAN mapping configuration.
      * @return Response as dictated by the HTTP Response code.
      */
     @Path("{bridgeName}/vlanmaps")
@@ -341,16 +338,17 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
             @ResponseCode(code = 500, condition = "Failed to create mapping. Failure Reason included in HTTP Error response"),
             @ResponseCode(code = 503, condition = "One or more of Controller services are unavailable")})
     public Response addVlanMap(
+            @Context UriInfo uriInfo,
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
-            @TypeHint(VlanMapConfig.class) JAXBElement<VlanMapConfig> param) {
+            @TypeHint(VlanMapConfig.class) VlanMapConfig vlconf) {
         checkPrivilege(containerName, Privilege.WRITE);
 
         IVTNManager mgr = getVTNManager(containerName);
         VBridgePath path = new VBridgePath(tenantName, bridgeName);
         try {
-            VlanMap vmap = mgr.addVlanMap(path, param.getValue());
+            VlanMap vmap = mgr.addVlanMap(path, vlconf);
 
             // Return CREATED with Location header.
             String id = vmap.getId();
@@ -360,9 +358,8 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
                 builder.append('/');
             }
             builder.append(id);
-            Response resp = Response.status(Response.Status.CREATED).
-                header("Location", builder.toString()).build();
-            return resp;
+            URI vmapUri = URI.create(builder.toString());
+            return Response.created(vmapUri).build();
         } catch (VTNException e) {
             throw getException(e.getStatus());
         }

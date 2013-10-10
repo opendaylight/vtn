@@ -16,11 +16,14 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
 import org.opendaylight.vtn.manager.VBridge;
 
 /**
  * A JAXB class which represents a list of virtual L2 bridge information.
  */
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vbridges")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VBridgeList {

@@ -21,9 +21,10 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.xml.bind.JAXBElement;
+import javax.ws.rs.core.UriInfo;
 
 import org.codehaus.enunciate.jaxrs.ResponseCode;
 import org.codehaus.enunciate.jaxrs.StatusCodes;
@@ -135,11 +136,12 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
     /**
      * Add a new virtual interface to the virtual L2 bridge.
      *
+     * @param uriInfo        Requested URI information.
      * @param containerName  The name of the container.
      * @param tenantName     The name of the virtual tenant.
      * @param bridgeName     The name of the virtual bridge.
      * @param ifName         The name of the virtual bridge interface.
-     * @param param          Interface configuration.
+     * @param iconf          Interface configuration.
      * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{ifName}")
@@ -155,18 +157,19 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
             @ResponseCode(code = 500, condition = "Failed to create interface. Failure Reason included in HTTP Error response"),
             @ResponseCode(code = 503, condition = "One or more of Controller services are unavailable")})
     public Response addBridgeInterface(
+            @Context UriInfo uriInfo,
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("ifName") String ifName,
-            @TypeHint(VInterfaceConfig.class) JAXBElement<VInterfaceConfig> param) {
+            @TypeHint(VInterfaceConfig.class) VInterfaceConfig iconf) {
         checkPrivilege(containerName, Privilege.WRITE);
 
         IVTNManager mgr = getVTNManager(containerName);
         VBridgeIfPath path = new VBridgeIfPath(tenantName, bridgeName, ifName);
-        Status status = mgr.addBridgeInterface(path, param.getValue());
+        Status status = mgr.addBridgeInterface(path, iconf);
         if (status.isSuccess()) {
-            return Response.status(Response.Status.CREATED).build();
+            return Response.created(uriInfo.getRequestUri()).build();
         }
 
         throw getException(status);
@@ -186,7 +189,7 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
      *                       value.
      *                       If {@code false} is specified, all fields to
      *                       which is assigned {@code null} are not modified.
-     * @param param          Interface configuration.
+     * @param iconf          Interface configuration.
      * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{ifName}")
@@ -205,12 +208,12 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
             @PathParam("bridgeName") String bridgeName,
             @PathParam("ifName") String ifName,
             @DefaultValue("false") @QueryParam("all") boolean all,
-            @TypeHint(VInterfaceConfig.class) JAXBElement<VInterfaceConfig> param) {
+            @TypeHint(VInterfaceConfig.class) VInterfaceConfig iconf) {
         checkPrivilege(containerName, Privilege.WRITE);
 
         IVTNManager mgr = getVTNManager(containerName);
         VBridgeIfPath path = new VBridgeIfPath(tenantName, bridgeName, ifName);
-        Status status = mgr.modifyBridgeInterface(path, param.getValue(), all);
+        Status status = mgr.modifyBridgeInterface(path, iconf, all);
         if (status.isSuccess()) {
             return Response.ok().build();
         }
@@ -306,7 +309,7 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
      * @param tenantName     The name of the tenant.
      * @param bridgeName     The name of the bridge.
      * @param ifName         The name of the virtual bridge interface.
-     * @param param          Port mapping configuration.
+     * @param pmconf         Port mapping configuration.
      * @return Response as dictated by the HTTP Response code.
      */
     @Path("{ifName}/portmap")
@@ -325,12 +328,11 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("ifName") String ifName,
-            @TypeHint(PortMapConfig.class) JAXBElement<PortMapConfig> param) {
+            @TypeHint(PortMapConfig.class) PortMapConfig pmconf) {
         checkPrivilege(containerName, Privilege.WRITE);
 
         IVTNManager mgr = getVTNManager(containerName);
         VBridgeIfPath path = new VBridgeIfPath(tenantName, bridgeName, ifName);
-        PortMapConfig pmconf = param.getValue();
         if (pmconf == null) {
             // This should never happen.
             String desc = "Port map configuration is null";

@@ -16,9 +16,12 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
 /**
  * JAXB mapping for {@code InetAddress}.
  */
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "inetAddress")
 @XmlAccessorType(XmlAccessType.NONE)
 public class IpAddress {

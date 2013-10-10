@@ -16,10 +16,13 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
 /**
  * {@code BundleVersion} class describes version information of the
  * VTN Manager OSGi bundle.
  */
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "bundleVersion")
 @XmlAccessorType(XmlAccessType.NONE)
 public class BundleVersion implements Serializable {

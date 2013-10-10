@@ -152,6 +152,8 @@ public class VtnNorthboundIT {
     // static variable to pass response code from getJsonResult()
     private static Integer httpResponseCode = null;
 
+    private String  httpLocation;
+
     private String getJsonResult(String restUrl) {
         return getJsonResult(restUrl, "GET", null);
     }
@@ -163,6 +165,7 @@ public class VtnNorthboundIT {
     private String getJsonResult(String restUrl, String method, String body) {
         // Initialize response code to indicate error
         httpResponseCode = 400;
+        httpLocation = null;
 
         if (debugMsg) {
             System.out.println("HTTP method: " + method + " url: " + restUrl.toString());
@@ -195,8 +198,27 @@ public class VtnNorthboundIT {
 
             // Response code for success should be 2xx
             httpResponseCode = connection.getResponseCode();
-            if (httpResponseCode > 299)
+            if (httpResponseCode > 299) {
                 return httpResponseCode.toString();
+            }
+
+            if (httpResponseCode == HttpURLConnection.HTTP_CREATED) {
+                // Determine location.
+                for (int i = 0; true; i++) {
+                    String field = connection.getHeaderFieldKey(i);
+                    if (field == null) {
+                        if (i == 0) {
+                            continue;
+                        }
+                        break;
+                    }
+
+                    if (field.equalsIgnoreCase("location")) {
+                        httpLocation = connection.getHeaderField(i);
+                        break;
+                    }
+                }
+            }
 
             if (debugMsg) {
                 System.out.println("HTTP response code: " + connection.getResponseCode());
@@ -254,24 +276,31 @@ public class VtnNorthboundIT {
         // Test GET vtn in default container, expecting no results
         String result = getJsonResult(baseURL + "default/vtns");
         Assert.assertEquals(200, httpResponseCode.intValue());
-        Assert.assertEquals("{}", result);
-
-        // Test POST vtn1
-        String requestBody = "{}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname1, "POST", requestBody);
-        Assert.assertEquals(201, httpResponseCode.intValue());
-
-        // Test POST vtn2
-        requestBody = "{\"@description\":\"" + desc1 + "\", \"@idleTimeout\":\"" + itimeout1 + "\", \"@hardTimeout\":\""
-                + htimeout1 + "\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname2, "POST", requestBody);
-        Assert.assertEquals(201, httpResponseCode.intValue());
-
-        // Test GET all vtns in default container
-        result = getJsonResult(baseURL + "default/vtns");
         JSONTokener jt = new JSONTokener(result);
         JSONObject json = new JSONObject(jt);
         JSONArray vtnArray = json.getJSONArray("vtn");
+        Assert.assertEquals(0, vtnArray.length());
+
+        // Test POST vtn1
+        String requestBody = "{}";
+        String requestUri = baseURL + "default/vtns/" + tname1;
+        result = getJsonResult(requestUri, "POST", requestBody);
+        Assert.assertEquals(201, httpResponseCode.intValue());
+        Assert.assertEquals(requestUri, httpLocation);
+
+        // Test POST vtn2
+        requestBody = "{\"description\":\"" + desc1 + "\", \"idleTimeout\":\"" + itimeout1 + "\", \"hardTimeout\":\""
+                + htimeout1 + "\"}";
+        requestUri = baseURL + "default/vtns/" + tname2;
+        result = getJsonResult(requestUri, "POST", requestBody);
+        Assert.assertEquals(201, httpResponseCode.intValue());
+        Assert.assertEquals(requestUri, httpLocation);
+
+        // Test GET all vtns in default container
+        result = getJsonResult(baseURL + "default/vtns");
+        jt = new JSONTokener(result);
+        json = new JSONObject(jt);
+        vtnArray = json.getJSONArray("vtn");
         JSONObject vtn;
 
         Assert.assertEquals(200, httpResponseCode.intValue());
@@ -279,18 +308,14 @@ public class VtnNorthboundIT {
 
         for (int i = 0; i < vtnArray.length(); i++) {
             vtn = vtnArray.getJSONObject(i);
-            if (vtn.getString("@name").equals(tname1)) {
-                try {
-                    Assert.assertEquals("", vtn.getString("@description"));
-                } catch (JSONException expected) {
-                    assertThat(expected.getMessage(), is("JSONObject[\"@description\"] not found."));
-                }
-                Assert.assertEquals("300", vtn.getString("@idleTimeout"));
-                Assert.assertEquals("0", vtn.getString("@hardTimeout"));
-            } else if (vtn.getString("@name").equals(tname2)) {
-                Assert.assertEquals(desc1, vtn.getString("@description"));
-                Assert.assertEquals(itimeout1, vtn.getString("@idleTimeout"));
-                Assert.assertEquals(htimeout1, vtn.getString("@hardTimeout"));
+            if (vtn.getString("name").equals(tname1)) {
+                Assert.assertFalse(vtn.has("description"));
+                Assert.assertEquals("300", vtn.getString("idleTimeout"));
+                Assert.assertEquals("0", vtn.getString("hardTimeout"));
+            } else if (vtn.getString("name").equals(tname2)) {
+                Assert.assertEquals(desc1, vtn.getString("description"));
+                Assert.assertEquals(itimeout1, vtn.getString("idleTimeout"));
+                Assert.assertEquals(htimeout1, vtn.getString("hardTimeout"));
             } else {
                 // Unexpected vtn name
                 Assert.assertTrue(false);
@@ -309,13 +334,13 @@ public class VtnNorthboundIT {
         json = new JSONObject(jt);
 
         Assert.assertEquals(200, httpResponseCode.intValue());
-        Assert.assertEquals(tname2, json.getString("@name"));
-        Assert.assertEquals(desc1, json.getString("@description"));
-        Assert.assertEquals(itimeout1, json.getString("@idleTimeout"));
-        Assert.assertEquals(htimeout1, json.getString("@hardTimeout"));
+        Assert.assertEquals(tname2, json.getString("name"));
+        Assert.assertEquals(desc1, json.getString("description"));
+        Assert.assertEquals(itimeout1, json.getString("idleTimeout"));
+        Assert.assertEquals(htimeout1, json.getString("hardTimeout"));
 
         // Test PUT vtn1
-        requestBody = "{\"@description\":\"" + desc2 + "\", \"@idleTimeout\":\"" + itimeout2 + "\", \"@hardTimeout\":\""
+        requestBody = "{\"description\":\"" + desc2 + "\", \"idleTimeout\":\"" + itimeout2 + "\", \"hardTimeout\":\""
                 + htimeout2 + "\"}";
         String queryParameter = new QueryParameter("all", "true").getString();
 
@@ -333,13 +358,13 @@ public class VtnNorthboundIT {
         Assert.assertEquals(404, httpResponseCode.intValue());
 
         // Test PUT vtn expecting 415
-        requestBody = "{\"@description\":\"" + desc2 + "\", \"@idleTimeout\":\"" + itimeout3 + "\", \"@hardTimeout\":\""
+        requestBody = "{\"description\":\"" + desc2 + "\", \"idleTimeout\":\"" + itimeout3 + "\", \"hardTimeout\":\""
                 + htimeout2 + "\"}";
         result = getJsonResult(baseURL + "default/vtns/" + tname1 + queryParameter, "PUT", requestBody);
         Assert.assertEquals(415, httpResponseCode.intValue());
 
         // Test PUT vtn
-        requestBody = "{\"@description\":\"" + desc2 + "\", \"@idleTimeout\":\"" + itimeout2 + "\", \"@hardTimeout\":\""
+        requestBody = "{\"description\":\"" + desc2 + "\", \"idleTimeout\":\"" + itimeout2 + "\", \"hardTimeout\":\""
                 + htimeout3 + "\"}";
         result = getJsonResult(baseURL + "default/vtns/" + tname1 + queryParameter, "PUT", requestBody);
         Assert.assertEquals(200, httpResponseCode.intValue());
@@ -378,7 +403,10 @@ public class VtnNorthboundIT {
         // Test GET vBridges in default container, expecting no results
         String result = getJsonResult(baseURL + tname1 + "/vbridges");
         Assert.assertEquals(200, httpResponseCode.intValue());
-        Assert.assertEquals("{}", result);
+        JSONTokener jt = new JSONTokener(result);
+        JSONObject json = new JSONObject(jt);
+        JSONArray vBridgeArray = json.getJSONArray("vbridge");
+        Assert.assertEquals(0, vBridgeArray.length());
 
         // Test POST vBridge1 expecting 404
         String requestBody = "{}";
@@ -386,14 +414,16 @@ public class VtnNorthboundIT {
         Assert.assertEquals(404, httpResponseCode.intValue());
 
         // Test POST vBridge1 expecting 415
-        requestBody = "{\"@description\":\"" + desc1 + "\", \"@ageInterval\":\"" + ageinter3 + "\"}";
+        requestBody = "{\"description\":\"" + desc1 + "\", \"ageInterval\":\"" + ageinter3 + "\"}";
         result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname1 , "POST", requestBody);
         Assert.assertEquals(415, httpResponseCode.intValue());
 
         // Test POST vBridge1
         requestBody = "{}";
-        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname1, "POST", requestBody);
+        String requestUri = baseURL + tname1 + "/vbridges/" + bname1;
+        result = getJsonResult(requestUri, "POST", requestBody);
         Assert.assertEquals(201, httpResponseCode.intValue());
+        Assert.assertEquals(requestUri, httpLocation);
 
         // Test POST vBridge1 expecting 409
         requestBody = "{}";
@@ -401,15 +431,17 @@ public class VtnNorthboundIT {
         Assert.assertEquals(409, httpResponseCode.intValue());
 
         // Test POST vBridge2
-        requestBody = "{\"@description\":\"" + desc2 + "\", \"@ageInterval\":\"" + ageinter1 + "\"}";
-        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname2 , "POST", requestBody);
+        requestBody = "{\"description\":\"" + desc2 + "\", \"ageInterval\":\"" + ageinter1 + "\"}";
+        requestUri = baseURL + tname1 + "/vbridges/" + bname2;
+        result = getJsonResult(requestUri, "POST", requestBody);
         Assert.assertEquals(201, httpResponseCode.intValue());
+        Assert.assertEquals(requestUri, httpLocation);
 
         // Test GET all vBridges in default container
         result = getJsonResult(baseURL + tname1 + "/vbridges");
-        JSONTokener jt = new JSONTokener(result);
-        JSONObject json = new JSONObject(jt);
-        JSONArray vBridgeArray = json.getJSONArray("vbridge");
+        jt = new JSONTokener(result);
+        json = new JSONObject(jt);
+        vBridgeArray = json.getJSONArray("vbridge");
         JSONObject vBridge;
 
         Assert.assertEquals(200, httpResponseCode.intValue());
@@ -417,24 +449,19 @@ public class VtnNorthboundIT {
 
         for (int i = 0; i < vBridgeArray.length(); i++) {
             vBridge = vBridgeArray.getJSONObject(i);
-            if (vBridge.getString("@name").equals(bname1)) {
+            if (vBridge.getString("name").equals(bname1)) {
+                Assert.assertFalse(vBridge.has("description"));
 
                 try {
-                    Assert.assertEquals("", vBridge.getString("@description"));
+                    Assert.assertEquals("600", json.getString("ageInterval"));
                 } catch (JSONException expected) {
-                    assertThat(expected.getMessage(), is("JSONObject[\"@description\"] not found."));
+                    assertThat(expected.getMessage(), is("JSONObject[\"ageInterval\"] not found."));
                 }
 
-                try {
-                    Assert.assertEquals("600", json.getString("@ageInterval"));
-                } catch (JSONException expected) {
-                    assertThat(expected.getMessage(), is("JSONObject[\"@ageInterval\"] not found."));
-                }
-
-            } else if (vBridge.getString("@name").equals(bname2)) {
-                Assert.assertEquals(desc2, vBridge.getString("@description"));
-                Assert.assertEquals(ageinter1, vBridge.getString("@ageInterval"));
-                fault = vBridge.getString("@faults");
+            } else if (vBridge.getString("name").equals(bname2)) {
+                Assert.assertEquals(desc2, vBridge.getString("description"));
+                Assert.assertEquals(ageinter1, vBridge.getString("ageInterval"));
+                fault = vBridge.getString("faults");
             } else {
                 // Unexpected vBridge name
                 Assert.assertTrue(false);
@@ -455,14 +482,14 @@ public class VtnNorthboundIT {
         json = new JSONObject(jt);
 
         Assert.assertEquals(200, httpResponseCode.intValue());
-        Assert.assertEquals(bname2, json.getString("@name"));
-        Assert.assertEquals(desc2, json.getString("@description"));
-        Assert.assertEquals(ageinter1, json.getString("@ageInterval"));
-        Assert.assertEquals(fault, json.getString("@faults"));
-        Assert.assertEquals("0", json.getString("@state"));
+        Assert.assertEquals(bname2, json.getString("name"));
+        Assert.assertEquals(desc2, json.getString("description"));
+        Assert.assertEquals(ageinter1, json.getString("ageInterval"));
+        Assert.assertEquals(fault, json.getString("faults"));
+        Assert.assertEquals("0", json.getString("state"));
 
         // Test PUT vBridge1
-        requestBody = "{\"@description\":\"" + desc2 + "\", \"@ageInterval\":\"" + ageinter2 + "\"}";
+        requestBody = "{\"description\":\"" + desc2 + "\", \"ageInterval\":\"" + ageinter2 + "\"}";
         String queryParameter = new QueryParameter("all", "true").getString();
         result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname1 + queryParameter, "PUT", requestBody);
         Assert.assertEquals(200, httpResponseCode.intValue());
@@ -483,7 +510,7 @@ public class VtnNorthboundIT {
         Assert.assertEquals(404, httpResponseCode.intValue());
 
         // Test PUT vBridge1 expecting 415
-        requestBody = "{\"@description\":\"" + desc2 + "\", \"@ageInterval\":\"" + ageinter3 + "\"}";
+        requestBody = "{\"description\":\"" + desc2 + "\", \"ageInterval\":\"" + ageinter3 + "\"}";
         result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname1 + queryParameter, "PUT", requestBody);
         Assert.assertEquals(415, httpResponseCode.intValue());
 
@@ -521,7 +548,10 @@ public class VtnNorthboundIT {
         // Test GET vBridge Interfaces in default container, expecting no results
         String result = getJsonResult(baseURL + bname1 + "/interfaces");
         Assert.assertEquals(200, httpResponseCode.intValue());
-        Assert.assertEquals("{}", result);
+        JSONTokener jt = new JSONTokener(result);
+        JSONObject json = new JSONObject(jt);
+        JSONArray vbridgeifArray = json.getJSONArray("interface");
+        Assert.assertEquals(0, vbridgeifArray.length());
 
         // Test POST vBridge Interface1 expecting 404
         String requestBody = "{}";
@@ -529,36 +559,42 @@ public class VtnNorthboundIT {
         Assert.assertEquals(404, httpResponseCode.intValue());
 
         // Test POST vBridge Interface1 expecting 415
-//        requestBody = "{\"@description\":\"" + desc1 + "\", \"@enabled\":\"enaled\"}";
+//        requestBody = "{\"description\":\"" + desc1 + "\", \"enabled\":\"enaled\"}";
 //        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname1, "POST", requestBody);
 //        Assert.assertEquals(415, httpResponseCode.intValue());
 
         // Test POST vBridge Interface1
         requestBody = "{}";
-        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname1, "POST", requestBody);
+        String requestUri = baseURL + bname1 + "/interfaces/" + ifname1;
+        result = getJsonResult(requestUri, "POST", requestBody);
         Assert.assertEquals(201, httpResponseCode.intValue());
+        Assert.assertEquals(requestUri, httpLocation);
 
         // Test POST vBridge Interface1 expecting 409
         result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname1, "POST", requestBody);
         Assert.assertEquals(409, httpResponseCode.intValue());
 
         // Test POST vBridge Interface2
-        requestBody = "{\"@description\":\"" + desc1 + "\", \"@ageInterval\":true}";
-        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname2, "POST", requestBody);
+        requestBody = "{\"description\":\"" + desc1 + "\", \"ageInterval\":true}";
+        requestUri = baseURL + bname1 + "/interfaces/" + ifname2;
+        result = getJsonResult(requestUri, "POST", requestBody);
         Assert.assertEquals(201, httpResponseCode.intValue());
+        Assert.assertEquals(requestUri, httpLocation);
 
         // Test POST vBridge Interface3
-        requestBody = "{\"@description\":\"" + desc2 + "\", \"@ageInterval\":true}";
-        result = getJsonResult(baseURL + bname2 + "/interfaces/" + ifname3, "POST", requestBody);
+        requestBody = "{\"description\":\"" + desc2 + "\", \"ageInterval\":true}";
+        requestUri = baseURL + bname2 + "/interfaces/" + ifname3;
+        result = getJsonResult(requestUri, "POST", requestBody);
         Assert.assertEquals(201, httpResponseCode.intValue());
+        Assert.assertEquals(requestUri, httpLocation);
 
         testPortMappingAPI(baseURL, bname1, bname2, ifname2, ifname3);
 
         // Test GET all vBridge Interfaces in default container
         result = getJsonResult(baseURL + bname1 + "/interfaces");
-        JSONTokener jt = new JSONTokener(result);
-        JSONObject json = new JSONObject(jt);
-        JSONArray vbridgeifArray = json.getJSONArray("interface");
+        jt = new JSONTokener(result);
+        json = new JSONObject(jt);
+        vbridgeifArray = json.getJSONArray("interface");
         JSONObject vbridgeif;
 
         Assert.assertEquals(200, httpResponseCode.intValue());
@@ -566,30 +602,26 @@ public class VtnNorthboundIT {
 
         for (int i = 0; i < vbridgeifArray.length(); i++) {
             vbridgeif = vbridgeifArray.getJSONObject(i);
-            if (vbridgeif.getString("@name").equals(ifname1)) {
-                try {
-                    Assert.assertEquals(desc1, vbridgeif.getString("@description"));
-                } catch (JSONException expected) {
-                    assertThat(expected.getMessage(), is("JSONObject[\"@description\"] not found."));
-                }
+            if (vbridgeif.getString("name").equals(ifname1)) {
+                Assert.assertFalse(vbridgeif.has("description"));
 
                 try {
-                    Assert.assertEquals("true", vbridgeif.getString("@enabled"));
+                    Assert.assertEquals("true", vbridgeif.getString("enabled"));
                 } catch (JSONException expected) {
-                    assertThat(expected.getMessage(), is("JSONObject[\"@enabled\"] not found."));
+                    assertThat(expected.getMessage(), is("JSONObject[\"enabled\"] not found."));
                 }
-                Assert.assertEquals("-1", vbridgeif.getString("@state"));
-                Assert.assertEquals("-1", vbridgeif.getString("@entityState"));
-            } else if (vbridgeif.getString("@name").equals(ifname2)) {
-                Assert.assertEquals(desc1, vbridgeif.getString("@description"));
-                Assert.assertEquals("true", vbridgeif.getString("@enabled"));
-                Assert.assertEquals("0", vbridgeif.getString("@state"));
-                Assert.assertEquals("-1", vbridgeif.getString("@entityState"));
-            } else if (vbridgeif.getString("@name").equals(ifname3)) {
-                Assert.assertEquals(desc2, vbridgeif.getString("@description"));
-                Assert.assertEquals("true", vbridgeif.getString("@enabled"));
-                Assert.assertEquals("-1", vbridgeif.getString("@state"));
-                Assert.assertEquals("-1", vbridgeif.getString("@entityState"));
+                Assert.assertEquals("-1", vbridgeif.getString("state"));
+                Assert.assertEquals("-1", vbridgeif.getString("entityState"));
+            } else if (vbridgeif.getString("name").equals(ifname2)) {
+                Assert.assertEquals(desc1, vbridgeif.getString("description"));
+                Assert.assertEquals("true", vbridgeif.getString("enabled"));
+                Assert.assertEquals("0", vbridgeif.getString("state"));
+                Assert.assertEquals("-1", vbridgeif.getString("entityState"));
+            } else if (vbridgeif.getString("name").equals(ifname3)) {
+                Assert.assertEquals(desc2, vbridgeif.getString("description"));
+                Assert.assertEquals("true", vbridgeif.getString("enabled"));
+                Assert.assertEquals("-1", vbridgeif.getString("state"));
+                Assert.assertEquals("-1", vbridgeif.getString("entityState"));
             }
             else {
                 // Unexpected vBridge Interface name
@@ -607,15 +639,15 @@ public class VtnNorthboundIT {
         json = new JSONObject(jt);
 
         Assert.assertEquals(200, httpResponseCode.intValue());
-        Assert.assertEquals(ifname2, json.getString("@name"));
-        Assert.assertEquals(desc1, json.getString("@description"));
-        Assert.assertEquals("true", json.getString("@enabled"));
-        Assert.assertEquals("0", json.getString("@state"));
-        Assert.assertEquals("-1", json.getString("@entityState"));
+        Assert.assertEquals(ifname2, json.getString("name"));
+        Assert.assertEquals(desc1, json.getString("description"));
+        Assert.assertEquals("true", json.getString("enabled"));
+        Assert.assertEquals("0", json.getString("state"));
+        Assert.assertEquals("-1", json.getString("entityState"));
 
 
         // Test PUT vBridge interface1
-        requestBody = "{\"@description\":\"" + desc1 + "\", \"@enabled\":\"ture\"}";
+        requestBody = "{\"description\":\"" + desc1 + "\", \"enabled\":\"true\"}";
         String queryParameter = new QueryParameter("all", "true").getString();
         result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname1 + queryParameter, "PUT", requestBody);
         Assert.assertEquals(200, httpResponseCode.intValue());
@@ -626,7 +658,7 @@ public class VtnNorthboundIT {
         Assert.assertEquals(200, httpResponseCode.intValue());
 
         // Test PUT vBridge Interface2 expecting not change
-        requestBody = "{\"@description\":\"" + desc2 + "\", \"@enabled\":\"false\"}";
+        requestBody = "{\"description\":\"" + desc2 + "\", \"enabled\":\"false\"}";
         queryParameter = new QueryParameter("all", "false").getString();
         result = getJsonResult(baseURL + bname1 +"/interfaces/" + ifname2 + queryParameter, "PUT", requestBody);
         Assert.assertEquals(200, httpResponseCode.intValue());
@@ -638,7 +670,7 @@ public class VtnNorthboundIT {
         Assert.assertEquals(404, httpResponseCode.intValue());
 
         // Test PUT vBridge Interface1 expecting 415
-        requestBody = "{\"@description\":\"" + desc2 + "\", \"@enabled\":\"-\"}";
+        requestBody = "{\"description\":\"" + desc2 + "\", \"enabled\":\"-\"}";
         //result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname1 +queryParameter, "PUT", requestBody);
         //Assert.assertEquals(415, httpResponseCode.intValue());
     }
@@ -691,21 +723,21 @@ public class VtnNorthboundIT {
         Assert.assertEquals("", result);
 
         // Test PUT PortMapping expecting 400
-        String requestBody = "{\"@description\":\", \"@enabled\":\"ture\"}";
+        String requestBody = "{\"description\":\", \"enabled\":\"ture\"}";
         result = getJsonResult(baseURL + ifname + "/portmap/", "PUT", requestBody);
         Assert.assertEquals(400, httpResponseCode.intValue());
 
         // Test PUT PortMapping expecting 415
-        requestBody = "{\"@vlan\":" + vlan2 + ", \"node\":{\"type\":\""+ nodeType + "\", \"id\":\""
-                + nodeid + "\"}, \"port\":{\"@name\":\"" + pname
-                + "\", \"@type\":\"" + nodeType + "\", \"@id\":\"" + portnum + "\"}}";
+        requestBody = "{\"vlan\":" + vlan2 + ", \"node\":{\"type\":\""+ nodeType + "\", \"id\":\""
+                + nodeid + "\"}, \"port\":{\"name\":\"" + pname
+                + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum + "\"}}";
         result = getJsonResult(baseURL + ifname + "/portmap/", "PUT", requestBody);
         Assert.assertEquals(415, httpResponseCode.intValue());
 
         // Test PUT PortMapping expecting 404
-        requestBody = "{\"@vlan\":" + vlan1 + ", \"node\":{\"type\":\"" + nodeType + "\", \"id\":\""
-                + nodeid + "\"}, \"port\":{\"@name\":\"" + pname
-                + "\", \"@type\":\"" + nodeType + "\", \"@id\":\"" + portnum + "\"}}";
+        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" + nodeType + "\", \"id\":\""
+                + nodeid + "\"}, \"port\":{\"name\":\"" + pname
+                + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum + "\"}}";
         result = getJsonResult(baseURL + ifname_dammy + "/portmap/", "PUT", requestBody);
         Assert.assertEquals(404, httpResponseCode.intValue());
 
@@ -714,9 +746,9 @@ public class VtnNorthboundIT {
         Assert.assertEquals(200, httpResponseCode.intValue());
 
         // Test PUT PortMapping
-        requestBody = "{\"@vlan\":" + vlan3 + ", \"node\":{\"type\":\"" + nodeType + "\", \"id\":\""
-                + nodeid + "\"}, \"port\":{\"@name\":\"" + pname
-                + "\", \"@type\":\"" + nodeType + "\", \"@id\":\"" + portnum + "\"}}";
+        requestBody = "{\"vlan\":" + vlan3 + ", \"node\":{\"type\":\"" + nodeType + "\", \"id\":\""
+                + nodeid + "\"}, \"port\":{\"name\":\"" + pname
+                + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum + "\"}}";
         result = getJsonResult(url + bname2 + "/interfaces/" + ifname2 + "/portmap/", "PUT", requestBody);
         Assert.assertEquals(200, httpResponseCode.intValue());
 
@@ -733,17 +765,17 @@ public class VtnNorthboundIT {
         JSONObject portinfo = json.getJSONObject("port");
 
 
-        Assert.assertEquals(vlan1, json.getString("@vlan"));
+        Assert.assertEquals(vlan1, json.getString("vlan"));
         Assert.assertEquals(nodeType, nodeinfo.getString("type"));
         Assert.assertEquals(nodeid, nodeinfo.getString("id"));
-        Assert.assertEquals(pname, portinfo.getString("@name"));
-        Assert.assertEquals(nodeType, portinfo.getString("@type"));
-        Assert.assertEquals(portnum, portinfo.getString("@id"));
+        Assert.assertEquals(pname, portinfo.getString("name"));
+        Assert.assertEquals(nodeType, portinfo.getString("type"));
+        Assert.assertEquals(portnum, portinfo.getString("id"));
 
-        if (!portinfo.getString("@type").equals(nodeType)) {
+        if (!portinfo.getString("type").equals(nodeType)) {
             JSONObject mapinfo = json.getJSONObject("mapped");
-            Assert.assertEquals(nodeType, mapinfo.getString("@type"));
-            Assert.assertEquals(portnum, mapinfo.getString("@id"));
+            Assert.assertEquals(nodeType, mapinfo.getString("type"));
+            Assert.assertEquals(portnum, mapinfo.getString("id"));
         }
     }
 
@@ -783,43 +815,51 @@ public class VtnNorthboundIT {
         // Test GET VLAN Mapping
         String result = getJsonResult(baseURL + bname + "/vlanmaps");
         Assert.assertEquals(200, httpResponseCode.intValue());
-        Assert.assertEquals("{}", result);
+        JSONTokener jt = new JSONTokener(result);
+        JSONObject json = new JSONObject(jt);
+        JSONArray vLANMapArray = json.getJSONArray("vlanmap");
+        Assert.assertEquals(0, vLANMapArray.length());
 
         // Test POST VLAN Mapping expecting 404
-        String requestBody = "{\"@vlan\":\"" + vlan1 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
+        String requestBody = "{\"vlan\":\"" + vlan1 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
                 + nodeid1 + "\"}}";
         result = getJsonResult(baseURL + bname_dammy + "/vlanmaps", "POST", requestBody);
         Assert.assertEquals(404, httpResponseCode.intValue());
 
         // Test POST VLAN Mapping expecting 415
-        requestBody = "{\"@vlan\":\"" + vlan3 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
+        requestBody = "{\"vlan\":\"" + vlan3 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
                 + nodeid1 + "\"}}";
         result = getJsonResult(baseURL + bname + "/vlanmaps", "POST", requestBody);
         Assert.assertEquals(415, httpResponseCode.intValue());
 
         // Test POST VLAN Mapping
-        requestBody = "{\"@vlan\":\"" + vlan1 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
+        requestBody = "{\"vlan\":\"" + vlan1 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
                 + nodeid1 + "\"}}";
-        result = getJsonResult(baseURL + bname + "/vlanmaps", "POST", requestBody);
+        String requestUri = baseURL + bname + "/vlanmaps";
+        result = getJsonResult(requestUri, "POST", requestBody);
         Assert.assertEquals(201, httpResponseCode.intValue());
+        String loc = requestUri + "/" + nodeType + "-" + nodeid1 + "." + vlan1;
+        Assert.assertEquals(loc, httpLocation);
 
         // Test POST VLAN Mapping expecting 409
-        requestBody = "{\"@vlan\":\"" + vlan1 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
+        requestBody = "{\"vlan\":\"" + vlan1 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
                 + nodeid1 + "\"}}";
         result = getJsonResult(baseURL + bname + "/vlanmaps", "POST", requestBody);
         Assert.assertEquals(409, httpResponseCode.intValue());
 
         // Test POST VLAN Mapping
-        requestBody = "{\"@vlan\":\"" + vlan2 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
+        requestBody = "{\"vlan\":\"" + vlan2 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
                 + nodeid2 + "\"}}";
         result = getJsonResult(baseURL + bname + "/vlanmaps", "POST", requestBody);
         Assert.assertEquals(201, httpResponseCode.intValue());
+        loc = requestUri + "/" + nodeType + "-" + nodeid2 + "." + vlan2;
+        Assert.assertEquals(loc, httpLocation);
 
         // Test GET all  VLAN Mapping in default container
         result = getJsonResult(baseURL + bname + "/vlanmaps");
-        JSONTokener jt = new JSONTokener(result);
-        JSONObject json = new JSONObject(jt);
-        JSONArray vLANMapArray = json.getJSONArray("vlanmap");
+        jt = new JSONTokener(result);
+        json = new JSONObject(jt);
+        vLANMapArray = json.getJSONArray("vlanmap");
         JSONObject vLANMap;
 
         Assert.assertEquals(200, httpResponseCode.intValue());
@@ -828,13 +868,13 @@ public class VtnNorthboundIT {
         for (int i = 0; i < vLANMapArray.length(); i++) {
             vLANMap = vLANMapArray.getJSONObject(i);
             JSONObject nodeinfo = vLANMap.getJSONObject("node");
-            if (vLANMap.getString("@id").equals(nodeType + "-" + nodeid1 + "." + vlan1)) {
-                Assert.assertEquals(vlan1, vLANMap.getString("@vlan"));
+            if (vLANMap.getString("id").equals(nodeType + "-" + nodeid1 + "." + vlan1)) {
+                Assert.assertEquals(vlan1, vLANMap.getString("vlan"));
                 Assert.assertEquals(nodeType, nodeinfo.getString("type"));
                 Assert.assertEquals(nodeid1, nodeinfo.getString("id"));
 
-            } else if (vLANMap.getString("@id").equals(nodeType + "-" + nodeid2 + "." + vlan2)) {
-                Assert.assertEquals(vlan2, vLANMap.getString("@vlan"));
+            } else if (vLANMap.getString("id").equals(nodeType + "-" + nodeid2 + "." + vlan2)) {
+                Assert.assertEquals(vlan2, vLANMap.getString("vlan"));
                 Assert.assertEquals(nodeType, nodeinfo.getString("type"));
                 Assert.assertEquals(nodeid2, nodeinfo.getString("id"));
             }
@@ -854,8 +894,8 @@ public class VtnNorthboundIT {
         json = new JSONObject(jt);
         Assert.assertEquals(200, httpResponseCode.intValue());
 
-        Assert.assertEquals(nodeType + "-" + nodeid1 + "." + vlan1, json.getString("@id"));
-        Assert.assertEquals(vlan1, json.getString("@vlan"));
+        Assert.assertEquals(nodeType + "-" + nodeid1 + "." + vlan1, json.getString("id"));
+        Assert.assertEquals(vlan1, json.getString("vlan"));
         JSONObject nodeinfo = json.getJSONObject("node");
         Assert.assertEquals(nodeType, nodeinfo.getString("type"));
         Assert.assertEquals(nodeid1, nodeinfo.getString("id"));
@@ -896,7 +936,10 @@ public class VtnNorthboundIT {
         // Test GET all MAC address
         String result = getJsonResult(baseURL + bname + "/mac");
         Assert.assertEquals(200, httpResponseCode.intValue());
-        Assert.assertEquals("{}", result);
+        JSONTokener jt = new JSONTokener(result);
+        JSONObject json = new JSONObject(jt);
+        JSONArray macArray = json.getJSONArray("macentry");
+        Assert.assertEquals(0, macArray.length());
 
         // Test DELETE all MAC address
         result = getJsonResult(baseURL + bname + "/mac", "DELETE");
@@ -925,7 +968,7 @@ public class VtnNorthboundIT {
 
         JSONTokener jt = new JSONTokener(result);
         JSONObject json = new JSONObject(jt);
-        int api = json.getInt("@api");
+        int api = json.getInt("api");
         JSONObject bv = json.getJSONObject("bundle");
         Assert.assertTrue("API version: " + api, api > 0);
 
@@ -934,14 +977,14 @@ public class VtnNorthboundIT {
         Version ver = implBundle.getVersion();
         Assert.assertNotNull(ver);
 
-        Assert.assertEquals(ver.getMajor(), bv.getInt("@major"));
-        Assert.assertEquals(ver.getMinor(), bv.getInt("@minor"));
-        Assert.assertEquals(ver.getMicro(), bv.getInt("@micro"));
+        Assert.assertEquals(ver.getMajor(), bv.getInt("major"));
+        Assert.assertEquals(ver.getMinor(), bv.getInt("minor"));
+        Assert.assertEquals(ver.getMicro(), bv.getInt("micro"));
 
         String qf = ver.getQualifier();
-        String qfkey  ="@qualifier";
+        String qfkey  ="qualifier";
         if (qf == null || qf.isEmpty()) {
-            Assert.assertTrue(bv.isNull(qfkey));
+            Assert.assertFalse(bv.has(qfkey));
         } else {
             Assert.assertEquals(qf, bv.getString(qfkey));
         }

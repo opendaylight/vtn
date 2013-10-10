@@ -16,10 +16,13 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
 /**
  * {@code SwitchPort} class describes condition to identify a node connector
  * in a network element.
  */
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "switchport")
 @XmlAccessorType(XmlAccessType.NONE)
 public class SwitchPort implements Serializable {

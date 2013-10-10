@@ -168,12 +168,12 @@ const char* ODCVBRCommand::create_request_body(val_vbr_t& val_vbr) {
   int ret_val = 1;
 
   if (0 != strlen(description)) {
-    ret_val = json_obj.build(jobj, "@description", description);
+    ret_val = json_obj.build(jobj, "description", description);
     if (ret_val) {
       return NULL;
     }
   }
-  ret_val = json_obj.build(jobj, "@ageInterval", age_interval_);
+  ret_val = json_obj.build(jobj, "ageInterval", age_interval_);
   if (ret_val) {
     return NULL;
   }

@@ -15,12 +15,15 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
 import org.opendaylight.vtn.manager.BundleVersion;
 
 /**
  * {@code ManagerVersion} class describes version information of the
  * VTN Manager.
  */
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "version")
 @XmlAccessorType(XmlAccessType.NONE)
 public class ManagerVersion {

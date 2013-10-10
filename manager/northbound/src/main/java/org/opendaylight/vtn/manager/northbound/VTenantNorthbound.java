@@ -19,9 +19,10 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.xml.bind.JAXBElement;
+import javax.ws.rs.core.UriInfo;
 
 import org.codehaus.enunciate.jaxrs.ResponseCode;
 import org.codehaus.enunciate.jaxrs.StatusCodes;
@@ -116,9 +117,10 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
     /**
      * Add a new virtual tenant.
      *
+     * @param uriInfo        Requested URI information.
      * @param containerName  The name of the container.
      * @param tenantName     The name of the virtual tenant.
-     * @param param          Virtual tenant configuration.
+     * @param tconf          Virtual tenant configuration.
      * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{tenantName}")
@@ -134,16 +136,17 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
             @ResponseCode(code = 500, condition = "Failed to create tenant. Failure Reason included in HTTP Error response"),
             @ResponseCode(code = 503, condition = "One or more of Controller services are unavailable")})
     public Response addTenant(
+            @Context UriInfo uriInfo,
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
-            @TypeHint(VTenantConfig.class) JAXBElement<VTenantConfig> param) {
+            @TypeHint(VTenantConfig.class) VTenantConfig tconf) {
         checkPrivilege(containerName, Privilege.WRITE);
 
         IVTNManager mgr = getVTNManager(containerName);
         VTenantPath path = new VTenantPath(tenantName);
-        Status status = mgr.addTenant(path, param.getValue());
+        Status status = mgr.addTenant(path, tconf);
         if (status.isSuccess()) {
-            return Response.status(Response.Status.CREATED).build();
+            return Response.created(uriInfo.getRequestUri()).build();
         }
 
         throw getException(status);
@@ -160,7 +163,7 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
      *                       value.
      *                       If {@code false} is specified, all fields to
      *                       which is assigned {@code null} are not modified.
-     * @param param          Virtual tenant configuration.
+     * @param tconf          Virtual tenant configuration.
      * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{tenantName}")
@@ -177,12 +180,12 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @DefaultValue("false") @QueryParam("all") boolean all,
-            @TypeHint(VTenantConfig.class) JAXBElement<VTenantConfig> param) {
+            @TypeHint(VTenantConfig.class) VTenantConfig tconf) {
         checkPrivilege(containerName, Privilege.WRITE);
 
         IVTNManager mgr = getVTNManager(containerName);
         VTenantPath path = new VTenantPath(tenantName);
-        Status status = mgr.modifyTenant(path, param.getValue(), all);
+        Status status = mgr.modifyTenant(path, tconf, all);
         if (status.isSuccess()) {
             return Response.ok().build();
         }

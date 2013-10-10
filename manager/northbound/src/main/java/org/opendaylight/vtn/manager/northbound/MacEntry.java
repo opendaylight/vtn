@@ -18,6 +18,8 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
 import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.SwitchPort;
 
@@ -30,6 +32,7 @@ import org.opendaylight.controller.sal.packet.address.EthernetAddress;
  * {@code MacEntry} class provides JAXB mapping for MAC address table entry
  * leaned by the virtual L2 bridge.
  */
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "macentry")
 @XmlAccessorType(XmlAccessType.NONE)
 public class MacEntry {

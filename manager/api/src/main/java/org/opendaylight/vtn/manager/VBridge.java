@@ -14,10 +14,13 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
 /**
  * {@code VBridge} class describes information about the virtual layer 2
  * bridge.
  */
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vbridge")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VBridge extends VBridgeConfig {

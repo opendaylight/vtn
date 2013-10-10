@@ -16,11 +16,14 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
 import org.opendaylight.vtn.manager.VlanMap;
 
 /**
  * A JAXB class which represents a list of VLAN mapping information.
  */
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vlanmaps")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VlanMapList {

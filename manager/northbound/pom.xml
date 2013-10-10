@@ -75,6 +75,7 @@
               org.opendaylight.controller.sal.utils,
               org.opendaylight.controller.usermanager,
               org.opendaylight.vtn.manager,
+              org.codehaus.jackson.map.annotate,
               com.sun.jersey.spi.container.servlet,
               javax.ws.rs,
               javax.ws.rs.core,
@@ -83,6 +84,9 @@
               !org.codehaus.enunciate.jaxrs
             </Import-Package>
             <Web-ContextPath>/controller/nb/v2/vtn</Web-ContextPath>
+            <Jaxrs-Resources>
+              ,${classes;ANNOTATION;javax.ws.rs.Path}
+            </Jaxrs-Resources>
           </instructions>
         </configuration>
       </plugin>

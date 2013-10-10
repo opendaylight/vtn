@@ -526,8 +526,11 @@ public class VTNFlowDatabase {
         FlowEntry ingress = vflow.getFlowEntries().get(0);
         old = vtnFlows.put(ingress, vflow);
         if (old != null) {
-            LOG.info("{}:{}: Ingress flow is already installed: ingress={}",
-                     mgr.getContainerName(), tenantName, ingress);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}:{}: Ingress flow is already installed: " +
+                          "ingress={}", mgr.getContainerName(), tenantName,
+                          ingress);
+            }
             vtnFlows.put(ingress, old);
             groupFlows.remove(gid);
             return false;

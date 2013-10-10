@@ -17,11 +17,14 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
 import org.opendaylight.vtn.manager.MacAddressEntry;
 
 /**
  * A JAXB class which represents a list of MAC address table entry.
  */
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "macentries")
 @XmlAccessorType(XmlAccessType.NONE)
 public class MacEntryList {

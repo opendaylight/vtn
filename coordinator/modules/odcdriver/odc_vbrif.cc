@@ -66,7 +66,7 @@ const char* ODCVBRIfCommand::create_request_body_port_map(
   }
 
   if (0 != strlen(port_name.c_str())) {
-    ret_val = json_obj.build(jobj_port, "@name", port_name);
+    ret_val = json_obj.build(jobj_port, "name", port_name);
     if (ret_val) {
       pfc_log_debug("Failed in framing json request body");
       return NULL;
@@ -387,7 +387,7 @@ const char* ODCVBRIfCommand::create_request_body(pfcdrv_val_vbr_if_t& val_vtn) {
   int ret_val = 1;
   pfc_log_info("%s description", description);
   if (0 != strlen(description)) {
-    ret_val = json_obj.build(jobj, "@description", description);
+    ret_val = json_obj.build(jobj, "description", description);
     if (ret_val) {
       return NULL;
     }

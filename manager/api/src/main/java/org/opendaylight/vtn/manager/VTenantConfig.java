@@ -16,10 +16,13 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
 /**
  * {@code VTenantConfig} class describes configuration for the the virtual
  * tenant.
  */
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vtnconf")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VTenantConfig implements Serializable {

@@ -17,11 +17,14 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
 import org.opendaylight.controller.sal.core.Node;
 
 /**
  * {@code VlanMapConfig} class describes configuration for the VLAN mapping.
  */
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vlanmapconf")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VlanMapConfig implements Serializable {

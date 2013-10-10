@@ -207,6 +207,9 @@ public class VTNManagerIT extends TestBase {
                 mavenBundle("eclipselink", "javax.resource").versionAsInProject(),
                 mavenBundle("org.apache.felix", "org.apache.felix.fileinstall").versionAsInProject(),
 
+                mavenBundle("org.codehaus.jackson", "jackson-mapper-asl").versionAsInProject(),
+                mavenBundle("org.codehaus.jackson", "jackson-core-asl").versionAsInProject(),
+
                 mavenBundle("org.ops4j.pax.exam", "pax-exam-container-native"),
                 mavenBundle("org.ops4j.pax.exam", "pax-exam-junit4"),
                 mavenBundle("org.ops4j.pax.exam", "pax-exam-link-mvn"),
