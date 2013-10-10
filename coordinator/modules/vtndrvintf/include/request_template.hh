@@ -487,50 +487,56 @@ KtRequestHandler<key, val, command_ptr>::execute_cmd(
   <key, val, uint32_t> * > (cfgptr);
 
   if(ptr == NULL) {
-     pfc_log_info("CacheElementUtil ptr is NULL");
+     pfc_log_debug("CacheElementUtil ptr is NULL");
      return DRVAPI_RESPONSE_FAILURE;
   }
-  
+  unc_key_type_t keytype = cfgptr->get_type();
+  unc::driver::driver_command * drv_command_ptr_ =
+      drv_ptr->get_driver_command(keytype);
+
+  PFC_ASSERT(drv_command_ptr_ != NULL);
+  command_ptr * config_cmd_ptr = NULL;
+  config_cmd_ptr = static_cast<command_ptr *> (drv_command_ptr_);
   //unc_keytype_operation_t operat = cfgptr->get_operation();
   uint32_t operat = cfgptr->get_operation();
 
-  resp_code_ = command_ptr_->validate_op(
-                                   key_generic_,
-                                   val_generic_,
+  resp_code_ = config_cmd_ptr->validate_op(
+                                   *(ptr->getkey()),
+                                   *(ptr->getval()),
                                    conn,
                                     operat);
   if (resp_code_ != DRVAPI_RESPONSE_SUCCESS) {
-       pfc_log_info("%s: Validate op failed with resp_code ,%u",
+       pfc_log_debug("%s: Validate op failed with resp_code ,%u",
        PFC_FUNCNAME,resp_code_);
        return resp_code_;
   }
 
   switch (operat) {
     case UNC_OP_CREATE:
-       pfc_log_info("%s: Translate Create Command string", PFC_FUNCNAME);
-       resp_code_ = command_ptr_->create_cmd(*(ptr->getkey()), *(ptr->getval()), conn);
+       pfc_log_debug("%s: Translate Create Command string", PFC_FUNCNAME);
+       resp_code_ = config_cmd_ptr->create_cmd(*(ptr->getkey()), *(ptr->getval()), conn);
 
        break;
 
     case UNC_OP_DELETE:
 
-      pfc_log_info("%s: Translate Delete Command string", PFC_FUNCNAME);
+      pfc_log_debug("%s: Translate Delete Command string", PFC_FUNCNAME);
 
-      resp_code_ = command_ptr_->delete_cmd(*(ptr->getkey()), *(ptr->getval()), conn);
+      resp_code_ = config_cmd_ptr->delete_cmd(*(ptr->getkey()), *(ptr->getval()), conn);
 
       break;
 
     case UNC_OP_UPDATE:
 
-      pfc_log_info("%s: Translate Update Command string", PFC_FUNCNAME);
+      pfc_log_debug("%s: Translate Update Command string", PFC_FUNCNAME);
 
-      resp_code_ = command_ptr_->update_cmd(*(ptr->getkey()), *(ptr->getval()), conn);
+      resp_code_ = config_cmd_ptr->update_cmd(*(ptr->getkey()), *(ptr->getval()), conn);
 
       break;
 
     default:
 
-      pfc_log_info("%s: Invalid operation  ", PFC_FUNCNAME);
+      pfc_log_debug("%s: Invalid operation  ", PFC_FUNCNAME);
 
       resp_code_ = DRVAPI_RESPONSE_FAILURE;
 
