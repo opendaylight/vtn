@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da6255ed_b2e64643",
+        "filename": "coordinator/modules/vtncacheutil/include/vtn_conf_data_element_op.hh",
+        "patchSetId": 2
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2013-10-10T08:18:38Z",
+      "side": 1,
+      "message": "This log message seems to be only for debugging.\nPlease don\u0027t use pfc_log_info() for debugging.\n\nI think all pfc_log_info() calls in this file should be replaced with pfc_log_debug() or pfc_log_verbose().",
+      "revId": "edd2e375eac14ce4a3d37f47e939f46547ec5fdd",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
