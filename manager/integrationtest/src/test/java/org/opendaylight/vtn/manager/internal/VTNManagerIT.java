@@ -1998,7 +1998,9 @@ public class VTNManagerIT extends TestBase {
         VTenantPath tpath100 = new VTenantPath("tenant100");
         VTenantConfig tconf100 = new VTenantConfig("tenant 100");
         VTenant vtenant100 = new VTenant("tenant100", tconf100);
+        res = listener.restart(1);
         mgr.addTenant(tpath100, tconf100);
+        assertTrue(res.await(10L, TimeUnit.SECONDS));
         tenantList.delete();
         configFile.delete();
         configFile100.delete();
