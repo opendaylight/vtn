@@ -30,6 +30,12 @@ namespace unc {
 
           CacheElementUtil(key* key_ty, value* value_ty, op opet):
                          key_(key_ty), value_(value_ty), operation(opet) {
+
+            key_=new key();
+            value_=new value();
+
+            memcpy(key_, key_ty, sizeof(key));
+            memcpy(value_, value_ty, sizeof(value));
             pfc_log_info("In constructor %s..", PFC_FUNCNAME);
           }
 
