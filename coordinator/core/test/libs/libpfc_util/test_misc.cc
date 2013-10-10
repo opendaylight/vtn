@@ -340,6 +340,20 @@ test_errfunc(const char *fmt, va_list ap)
 	ASSERT_TRUE(PFC_TRUE);
 }
 
+static void
+wait_child(SignalHandler &sig, pid_t pid)
+{
+	time_t	limit(time(NULL) + 10);
+	struct timespec ts = {0, 1000000};
+
+	while (sig.getReceived() == 0) {
+		nanosleep(&ts, NULL);
+		ASSERT_EQ(0, waitpid(pid, NULL, WNOHANG));
+		time_t cur(time(NULL));
+		ASSERT_LE(cur, limit);
+	}
+}
+
 /*
  * Test
  *      pfc_ctrl_client_init()
@@ -610,8 +624,9 @@ TEST(misc, pfc_iostream_create_3)
 	TmpFile	tmp(CHILD_ERROR_FILE);
 	ASSERT_EQ(0, tmp.createFile());
 
-        SignalHandler  sigusr1(SIGUSR1);
-        ASSERT_TRUE(sigusr1.install());
+	SignalHandler  sigusr1(SIGUSR1);
+	sigusr1.bind(pthread_self());
+	ASSERT_TRUE(sigusr1.install());
 
 	fork_pid = fork();
 	ASSERT_GE(fork_pid, 0);
@@ -639,7 +654,7 @@ TEST(misc, pfc_iostream_create_3)
 		t_out.tv_sec = TEST_MISC_TIMEOUT_SEC;
 		t_out.tv_nsec = TEST_MISC_TIMEOUT_NSEC;
 
-                kill(getppid(), SIGUSR1);
+		kill(getppid(), SIGUSR1);
 		ret = pfc_iostream_read(stream, (void *)&buf_read, &si,
 					&t_out);
 
@@ -653,12 +668,12 @@ TEST(misc, pfc_iostream_create_3)
 
 	} else if (fork_pid > 0) {
 		/* Parent */
-		struct timespec ts = {0, 1000};
-		while (sigusr1.getReceived() == 0) {
-			nanosleep(&ts, NULL);
-		}
+		wait_child(sigusr1, fork_pid);
+		RETURN_ON_ERROR();
 
-		ts.tv_nsec = 10 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC);
+		struct timespec ts = {
+			0, 10 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC),
+		};
 		nanosleep(&ts, NULL);
 		ASSERT_EQ(0, kill(fork_pid, SIGINT));
 
@@ -700,8 +715,9 @@ TEST(misc, pfc_iostream_create_4)
 	TmpFile	tmp(CHILD_ERROR_FILE);
 	ASSERT_EQ(0, tmp.createFile());
 
-        SignalHandler  sigusr1(SIGUSR1);
-        ASSERT_TRUE(sigusr1.install());
+	SignalHandler  sigusr1(SIGUSR1);
+	sigusr1.bind(pthread_self());
+	ASSERT_TRUE(sigusr1.install());
 
 	fork_pid = fork();
 	ASSERT_GE(fork_pid, 0);
@@ -727,7 +743,7 @@ TEST(misc, pfc_iostream_create_4)
 
 		si = sizeof(buf_read);
 
-                kill(getppid(), SIGUSR1);
+		kill(getppid(), SIGUSR1);
 		ret = pfc_iostream_read(stream, (void *)&buf_read, &si,
 					NULL);
 
@@ -741,12 +757,12 @@ TEST(misc, pfc_iostream_create_4)
 
 	} else if (fork_pid > 0) {
 		/* Parent */
-		struct timespec ts = {0, 1000};
-		while (sigusr1.getReceived() == 0) {
-			nanosleep(&ts, NULL);
-		}
+		wait_child(sigusr1, fork_pid);
+		RETURN_ON_ERROR();
 
-		ts.tv_nsec = 10 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC);
+		struct timespec ts = {
+			0, 10 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC),
+		};
 		nanosleep(&ts, NULL);
 		ASSERT_EQ(0, kill(fork_pid, SIGINT));
 
@@ -792,8 +808,9 @@ TEST(misc, pfc_iostream_create_5)
 	sigset_t  smask;
 	sigemptyset(&smask);
 	sigaddset(&smask, SIGINT);
-        SignalHandler  sigusr1(SIGUSR1, &smask);
-        ASSERT_TRUE(sigusr1.install());
+	SignalHandler  sigusr1(SIGUSR1, &smask);
+	sigusr1.bind(pthread_self());
+	ASSERT_TRUE(sigusr1.install());
 
 	fork_pid = fork();
 	ASSERT_GE(fork_pid, 0);
@@ -821,7 +838,7 @@ TEST(misc, pfc_iostream_create_5)
 
 		si = sizeof(buf_read);
 
-                kill(getppid(), SIGUSR1);
+		kill(getppid(), SIGUSR1);
 		ret = pfc_iostream_read(stream, (void *)&buf_read, &si,
 					 NULL);
 
@@ -832,13 +849,14 @@ TEST(misc, pfc_iostream_create_5)
 
 	} else if (fork_pid > 0) {
 		/* Parent */
-		struct timespec ts = {0, 1000};
-		while (sigusr1.getReceived() == 0) {
-			nanosleep(&ts, NULL);
-		}
+		wait_child(sigusr1, fork_pid);
+		RETURN_ON_ERROR();
 
 		ASSERT_EQ(0, kill(fork_pid, SIGINT));
-		ts.tv_nsec = 100 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC);
+
+		struct timespec ts = {
+			0, 100 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC),
+		};
 		(void)nanosleep(&ts, NULL);
 		ASSERT_EQ(0, kill(fork_pid, SIGALRM));
 
@@ -1387,8 +1405,9 @@ TEST(misc, pfc_iostream_read_4)
 	TmpFile	tmp(CHILD_ERROR_FILE);
 	ASSERT_EQ(0, tmp.createFile());
 
-        SignalHandler  sigusr1(SIGUSR1);
-        ASSERT_TRUE(sigusr1.install());
+	SignalHandler  sigusr1(SIGUSR1);
+	sigusr1.bind(pthread_self());
+	ASSERT_TRUE(sigusr1.install());
 
 	fork_pid = fork();
 	ASSERT_GE(fork_pid, 0);
@@ -1414,7 +1433,7 @@ TEST(misc, pfc_iostream_read_4)
 
 		si = sizeof(buf_read);
 
-                kill(getppid(), SIGUSR1);
+		kill(getppid(), SIGUSR1);
 		ret = pfc_iostream_read(stream, (void *)&buf_read, &si,
 					 NULL);
 
@@ -1423,12 +1442,12 @@ TEST(misc, pfc_iostream_read_4)
 
 	} else if (fork_pid > 0) {
 		/* Parent */
-		struct timespec ts = {0, 1000};
-		while (sigusr1.getReceived() == 0) {
-			nanosleep(&ts, NULL);
-		}
+		wait_child(sigusr1, fork_pid);
+		RETURN_ON_ERROR();
 
-		ts.tv_nsec = 10 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC);
+		struct timespec ts = {
+			0, 10 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC),
+		};
 		nanosleep(&ts, NULL);
 		ASSERT_EQ(0, kill(fork_pid, SIGINT));
 
@@ -1758,8 +1777,9 @@ TEST(misc, pfc_iostream_write_4)
 	TmpFile	tmp(CHILD_ERROR_FILE);
 	ASSERT_EQ(0, tmp.createFile());
 
-        SignalHandler  sigusr1(SIGUSR1);
-        ASSERT_TRUE(sigusr1.install());
+	SignalHandler  sigusr1(SIGUSR1);
+	sigusr1.bind(pthread_self());
+	ASSERT_TRUE(sigusr1.install());
 
 	fork_pid = fork();
 	ASSERT_GE(fork_pid, 0);
@@ -1788,7 +1808,7 @@ TEST(misc, pfc_iostream_write_4)
 		CHILD_ASSERT_TRUE(tmp, buf_write != NULL);
 		si = tbuf.getSize();
 
-                kill(getppid(), SIGUSR1);
+		kill(getppid(), SIGUSR1);
 		ret = pfc_iostream_write(stream, buf_write, &si, NULL);
 
 		/* call back check */
@@ -1801,11 +1821,12 @@ TEST(misc, pfc_iostream_write_4)
 
 	} else if (fork_pid > 0) {
 		/* Parent */
-		struct timespec ts = {0, 1000};
-		while (sigusr1.getReceived() == 0) {
-			nanosleep(&ts, NULL);
-		}
+		wait_child(sigusr1, fork_pid);
+		RETURN_ON_ERROR();
 
+		struct timespec ts = {
+			0, 100 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC),
+		};
 		ts.tv_nsec = 100 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC);
 		nanosleep(&ts, NULL);
 		ASSERT_EQ(0, kill(fork_pid, SIGINT));
@@ -1848,8 +1869,9 @@ TEST(misc, pfc_iostream_write_5)
 	TmpFile	tmp(CHILD_ERROR_FILE);
 	ASSERT_EQ(0, tmp.createFile());
 
-        SignalHandler  sigusr1(SIGUSR1);
-        ASSERT_TRUE(sigusr1.install());
+	SignalHandler  sigusr1(SIGUSR1);
+	sigusr1.bind(pthread_self());
+	ASSERT_TRUE(sigusr1.install());
 
 	fork_pid = fork();
 	ASSERT_GE(fork_pid, 0);
@@ -1878,7 +1900,7 @@ TEST(misc, pfc_iostream_write_5)
 		CHILD_ASSERT_TRUE(tmp, buf_write != NULL);
 		si = tbuf.getSize();
 
-                kill(getppid(), SIGUSR1);
+		kill(getppid(), SIGUSR1);
 		ret = pfc_iostream_write(stream, buf_write, &si, NULL);
 
 		/* NOTREACHED */
@@ -1888,11 +1910,12 @@ TEST(misc, pfc_iostream_write_5)
 
 	} else if (fork_pid > 0) {
 		/* Parent */
-		struct timespec ts = {0, 1000};
-		while (sigusr1.getReceived() == 0) {
-			nanosleep(&ts, NULL);
-		}
+		wait_child(sigusr1, fork_pid);
+		RETURN_ON_ERROR();
 
+		struct timespec ts = {
+			0, 10 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC),
+		};
 		ts.tv_nsec = 10 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC);
 		nanosleep(&ts, NULL);
 		ASSERT_EQ(0, kill(fork_pid, SIGINT));
@@ -2810,11 +2833,11 @@ TEST(misc, cproto_cmd_read_1)
 	int client_sockfd;
 	cproto_sess_t session;
 	ctrl_cmdtype_t write_cmd[TEST_MISC_CMD_COUNT] = {
-            CTRL_CMDTYPE_NOP,
-            CTRL_CMDTYPE_QUIT,
-            CTRL_CMDTYPE_LOGLEVEL,
-            CTRL_CMDTYPE_MODLIST,
-        };
+		CTRL_CMDTYPE_NOP,
+		CTRL_CMDTYPE_QUIT,
+		CTRL_CMDTYPE_LOGLEVEL,
+		CTRL_CMDTYPE_MODLIST,
+	};
 	ctrl_cmdtype_t cmd = -1;
 	sigset_t mask;
 
