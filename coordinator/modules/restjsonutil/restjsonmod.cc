@@ -40,6 +40,6 @@ class RestJsonMod: public pfc::core::Module {
     return PFC_TRUE;
   }
 };
-}
-}
+}  // namespace restjson
+}  // namespace unc
 PFC_MODULE_IPC_DECL(unc::restjson::RestJsonMod, 0);

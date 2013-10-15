@@ -75,6 +75,13 @@ class JsonBuildParse {
      * @param[out] - const char* - converted from json object
      */
     static const char* json_obj_to_json_string(json_object* jobj);
+
+    /*
+     * Converts string to json object
+     * @param[in] - data - char pointer which needs to be converted to json obj
+     * @param[out] - converted json object
+     */
+    static json_object* string_to_json_object(char *data);
 };
 
 template<typename T>
@@ -112,11 +119,12 @@ int JsonBuildParse::parse(json_object* jobj, const std::string &key,
     jobj_getval = json_object_object_get(jobj, key.c_str());
   }
   if (json_object_is_type(jobj_getval, json_type_null)) {
-    return FAILURE;
+    return SUCCESS;
   }
+
   JsonType::get_value(jobj_getval, val);
   return SUCCESS;
 }
-}
-}
+}  //  namespace restjson
+}  //  namespace unc
 #endif  // RESTJSON_JSON_BUILD_PARSE_H_

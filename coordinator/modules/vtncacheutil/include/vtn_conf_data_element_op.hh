@@ -9,87 +9,112 @@
 #ifndef __VTN_CONF_DATA_ELEMENT_OP_HH__
 #define __VTN_CONF_DATA_ELEMENT_OP_HH__
 
+#include<string>
 #include "vtn_conf_utility.hh"
 #include "confignode.hh"
-#include<string>
 
 
 namespace unc {
-  namespace vtndrvcache {
-    template<typename key, typename value, typename op>
-      class CacheElementUtil: public  ConfigNode {
-        private:
-          key* key_;
-          value* value_;
-          op operation;
+namespace vtndrvcache {
+template<typename key, typename value, typename op>
+class CacheElementUtil: public  ConfigNode {
+ private:
+  key* key_;
+  value* value_;
+  op operation;
 
-        public:
-         /**
-         ** Constructor to set the key struct, value structure & operation
-         **/
+ public:
+  /**
+   ** Constructor to set the key struct, value structure & operation
+   **/
 
-          CacheElementUtil(key* key_ty, value* value_ty, op opet):
-                         key_(key_ty), value_(value_ty), operation(opet) {
-            pfc_log_info("In constructor %s..", PFC_FUNCNAME);
-          }
+  CacheElementUtil(key* key_ty, value* value_ty, op opet):
+      operation(opet) {
+        key_ = new key();
+        PFC_ASSERT(key_ != NULL);
+        value_ = new value();
+        PFC_ASSERT(value_ != NULL);
 
-          /**
-          ** This method returns the Keytype given the key struct
-          ** @param [out] - key_Type
-          **/
-          unc_key_type_t  get_type() {
-            pfc_log_info("In function %s..", PFC_FUNCNAME);
-            return ConfUtil::get_key_type(*key_);
-          }
+        memcpy(key_, key_ty, sizeof(key));
+        memcpy(value_, value_ty, sizeof(value));
+        pfc_log_debug("In constructor %s..", PFC_FUNCNAME);
+      }
 
-          /**
-          ** This method returns the search Key given the key struct
-          ** @param [out] - search key - string 
-          **/
-          std::string  get_key() {
-            pfc_log_info("In %s function ", PFC_FUNCNAME);
-            return ConfUtil::get_search_key(*key_);
-          }
+  /**
+   ** Destructor to free the key struct, value structure
+   **/
+  ~CacheElementUtil() {
+    pfc_log_debug("In destructor %s..", PFC_FUNCNAME);
+    if (key_ != NULL)
+      delete key_;
 
-          /**
-          ** This method returns the parent Key given the key struct
-          ** @param [out] - parent key - string 
-          **/
-          std::string  get_parent_key() {
-            pfc_log_info("In %s function ", PFC_FUNCNAME);
-            return ConfUtil::get_parent_key(*key_);
-          }
-
-          /**
-          ** This method returns the key struct
-          ** @param [out] - key* 
-          **/
-          key* getkey() {
-            pfc_log_info("In %s function ", PFC_FUNCNAME);
-            return key_;
-          }
-
-          /**
-          ** This method returns the value struct
-          ** @param [out] - key* 
-          **/
-          value* getval() {
-            pfc_log_info("Entering function %s..", PFC_FUNCNAME);
-            return value_;
-          }
-
-          /**
-          ** This method returns the operation 
-          ** @param [out] - op 
-          **/
-          op get_operation() {
-            pfc_log_info("Entering function %s..", PFC_FUNCNAME);
-            return operation;
-         }
-      };
+    if (value_ != NULL)
+      delete value_;
   }
-}
 
+  /**
+   ** This method returns the Keytype given the key struct
+   ** @param [out] - key_Type
+   **/
+  unc_key_type_t  get_type() {
+    pfc_log_debug("In function %s..", PFC_FUNCNAME);
+    if (key_ != NULL) {
+      return ConfUtil::get_key_type(*key_);
+    }
+    return  UNC_KT_INVALID;
+  }
 
+  /**
+   ** This method returns the search Key given the key struct
+   ** @param [out] - search key - string
+   **/
+  std::string  get_key() {
+    pfc_log_debug("In %s function ", PFC_FUNCNAME);
+    if (key_ != NULL) {
+      return ConfUtil::get_search_key(*key_);
+    }
+    return "";
+  }
 
+  /**
+   ** This method returns the parent Key given the key struct
+   ** @param [out] - parent key - string
+   **/
+  std::string  get_parent_key() {
+    pfc_log_debug("In %s function ", PFC_FUNCNAME);
+    if (key_ != NULL) {
+      return ConfUtil::get_parent_key(*key_);
+    }
+    return "";
+  }
+
+  /**
+   ** This method returns the key struct
+   ** @param [out] - key*
+   **/
+  key* getkey() {
+    pfc_log_debug("In %s function ", PFC_FUNCNAME);
+    return key_;
+  }
+
+  /**
+   ** This method returns the value struct
+   ** @param [out] - key*
+   **/
+  value* getval() {
+    pfc_log_debug("Entering function %s..", PFC_FUNCNAME);
+    return value_;
+  }
+
+  /**
+   ** This method returns the operation
+   ** @param [out] - op
+   **/
+  op get_operation() {
+    pfc_log_debug("Entering function %s..", PFC_FUNCNAME);
+    return operation;
+  }
+};
+}  // namespace vtndrvcache
+}  // namespace unc
 #endif

@@ -2213,7 +2213,9 @@ unc_keytype_ctrtype_t TcLibModule::GetControllerType() {
 pfc_ipcresp_t TcLibModule::ipcService(pfc::core::ipc::ServerSession& sess,
                                       pfc_ipcid_t service) {
   pfc_ipcresp_t resp_ret = TC_SUCCESS;
-  pfc::core::ScopedMutex m(tclib_ipc_control_mutex_);
+  if (service != TCLIB_NOTIFY_SESSION_CONFIG){
+    pfc::core::ScopedMutex m(tclib_ipc_control_mutex_);
+  }
 
   if (pTcLibInterface_ == NULL) {
     pfc_log_error("%s %d Handler is not registered: NULL",

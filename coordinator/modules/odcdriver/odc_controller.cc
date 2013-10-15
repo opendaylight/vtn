@@ -21,6 +21,8 @@ ODCController::ODCController(const key_ctr_t& key_ctr, const val_ctr_t& val_ctr)
   controller_name_(reinterpret_cast<const char*>(key_ctr.controller_name)),
   version_(reinterpret_cast<const char*>(val_ctr.version)),
   description_(reinterpret_cast<const char*>(val_ctr.description)),
+  user_name_(reinterpret_cast<const char*>(val_ctr.user)),
+  pass_word_(reinterpret_cast<const char*>(val_ctr.password)),
   audit_(val_ctr.enable_audit) {
   pfc_log_debug(" %s Entering Function" , PFC_FUNCNAME);
   pfc_log_debug(" %s Exiting Function" , PFC_FUNCNAME);
@@ -37,25 +39,10 @@ unc_keytype_ctrtype_t ODCController::get_controller_type() {
   return UNC_CT_ODC;
 }
 
-// Is ping need or not
-pfc_bool_t ODCController::is_ping_needed() {
+pfc_bool_t ODCController::get_audit_status() {
   pfc_log_debug(" %s Entering Function" , PFC_FUNCNAME);
   pfc_log_debug(" %s Exiting Function" , PFC_FUNCNAME);
-  return PFC_FALSE;
-}
-
-// Gets the ping interval
-uint32_t ODCController::get_ping_interval() {
-  pfc_log_debug(" %s Entering Function" , PFC_FUNCNAME);
-  pfc_log_debug(" %s Exiting Function" , PFC_FUNCNAME);
-  return 0;
-}
-
-// Gets the ping fail retry count
-uint32_t ODCController::get_ping_fail_retry_count() {
-  pfc_log_debug(" %s Entering Function" , PFC_FUNCNAME);
-  pfc_log_debug(" %s Exiting Function" , PFC_FUNCNAME);
-  return 0;
+  return audit_;
 }
 
 // Gets the controller id
@@ -72,18 +59,25 @@ std::string ODCController::get_host_address() {
   return ip_addr_;
 }
 
-// Ping controller or not
-pfc_bool_t ODCController::ping_controller() {
-  pfc_log_debug(" %s Entering Function" , PFC_FUNCNAME);
-  pfc_log_debug(" %s Exiting Function" , PFC_FUNCNAME);
-  return PFC_FALSE;
-}
-
 // Reset connect or not
 pfc_bool_t ODCController::reset_connect() {
   pfc_log_debug(" %s Entering Function" , PFC_FUNCNAME);
   pfc_log_debug(" %s Exiting Function" , PFC_FUNCNAME);
   return PFC_FALSE;
 }
+
+// Gets the user name
+std::string ODCController::get_user_name() {
+  pfc_log_debug(" %s Entering Function" , PFC_FUNCNAME);
+  pfc_log_debug(" %s Exiting Function" , PFC_FUNCNAME);
+  return user_name_;
 }
+
+// Gets the pass word
+std::string ODCController::get_pass_word() {
+  pfc_log_debug(" %s Entering Function" , PFC_FUNCNAME);
+  pfc_log_debug(" %s Exiting Function" , PFC_FUNCNAME);
+  return pass_word_;
 }
+}  //  namespace odcdriver
+}  //  namespace unc

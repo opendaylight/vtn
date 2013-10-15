@@ -137,6 +137,6 @@ class HttpClient {
     HttpResponse_t *response_;
     struct curl_slist *slist_;
 };
-}
-}
+}  // namespace restjson
+}  // namespace unc
 #endif  // RESTJSON_HTTP_CLIENT_H_

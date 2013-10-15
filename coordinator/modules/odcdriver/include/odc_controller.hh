@@ -40,35 +40,17 @@ class ODCController: public unc::driver::controller {
    */
   unc_keytype_ctrtype_t get_controller_type();
 
-  /**
-   * Ping needed for the ODC Conttoller or not
-   * @reval - pfc_bool_t - PFC_TRUE./ PFC_FALSE
-   */
-  pfc_bool_t is_ping_needed();
-
-  /*
-   *  Gets the ping interval
-   *  @retval - uint32_t - ping interval
-   */
-  uint32_t get_ping_interval();
-
-  /*
-   *  Gets the ping interval count
-   *  @retval - uint32_t - ping interval count
-   */
-  uint32_t get_ping_fail_retry_count();
-
   /*
    *  Gets the contoller id
    *  @retval - std::strin - controller id
    */
   std::string get_controller_id();
 
-  /*
-   *  ping conttoller available or nor
-   *  @retval - pfc_bool_t - PFC_TRUE/ PFC_FALSE
-   */
-  pfc_bool_t ping_controller();
+ /*
+  * Gets the audit status
+  * @retval - pfc_bool_t - returns audit status 
+  */
+  pfc_bool_t get_audit_status();
 
   /*
    *  rest connect set or not
@@ -82,14 +64,29 @@ class ODCController: public unc::driver::controller {
    */
   std::string get_host_address();
 
+  /*
+   *    * gets the user name
+   *       * @param[out] - string - user
+   *          */
+  std::string get_user_name();
+
+  /*
+   *    * Gets the pass word
+   *       * @param[out] - std::string - pass word
+   *          */
+  std::string get_pass_word();
+
+
  private:
   std::string ip_addr_;
   std::string controller_name_;
   std::string version_;
   std::string description_;
+  std::string user_name_;
+  std::string pass_word_;
   pfc_bool_t audit_;
 };
-}
-}
+}  // namespace odcdriver
+}  // namespace unc
 
 #endif

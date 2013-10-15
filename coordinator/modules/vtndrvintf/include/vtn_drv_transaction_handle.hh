@@ -11,14 +11,10 @@
 #ifndef _TCLIB_VTNDRVINTF_HH_
 #define _TCLIB_VTNDRVINTF_HH_
 
-#include <pfcxx/module.hh>
 #include <uncxx/tclib/tclib_interface.hh>
 #include <tclib_module.hh>
-#include <unc/keytype.h>
-#include <unc/tc/external/tc_services.h>
-#include <controller_fw.hh>
 #include <kt_handler.hh>
-#include <confignode.hh>
+#include <list>
 #include <string>
 #include <map>
 
@@ -27,11 +23,14 @@ namespace driver {
 
 class DriverTxnInterface : public unc::tclib::TcLibInterface {
  public:
+  typedef std::list<std::string> ::iterator ctr_iter;
+  typedef std::map<unc_key_type_t, pfc_ipcstdef_t*> kt_map;
+  typedef std::map <unc_key_type_t, KtHandler*> kt_handler_map;
   /**
    * @brief  - DriverTxnInterface constructor
    * */
   DriverTxnInterface(ControllerFramework *,
-                     std::map <unc_key_type_t, KtHandler*>&);
+                     kt_handler_map &);
   /**
    * @brief  - DriverTxnInterface destructor
    * */
@@ -111,7 +110,7 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
   unc::tclib::TcCommonRet HandleCommitGlobalAbort(uint32_t session_id,
                                  uint32_t config_id,
                                  unc::tclib::TcCommitOpAbortPhase fail_phase) {
-    return unc::tclib::TC_SUCCESS;
+    return unc::tclib::TC_FAILURE;
   }
 
   unc::tclib::TcCommonRet HandleAuditStart(uint32_t session_id,
@@ -143,21 +142,21 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
 
   unc::tclib::TcCommonRet HandleAuditVoteRequest(uint32_t session_id,
                                      std::string controller_id,
-                                    unc::tclib::TcControllerList controllers) {
-    return unc::tclib::TC_SUCCESS;
-  }
+                                    unc::tclib::TcControllerList controllers);
+    // return unc::tclib::TC_FAILURE;
+
 
   unc::tclib::TcCommonRet HandleAuditGlobalCommit(uint32_t session_id,
                                    std::string controller_id,
-                                   unc::tclib::TcControllerList controllers) {
-    return unc::tclib::TC_SUCCESS;
-  }
+                                   unc::tclib::TcControllerList controllers);
+    // return unc::tclib::TC_FAILURE;
+
 
   unc::tclib::TcCommonRet HandleAuditGlobalAbort(uint32_t session_id,
                                    unc_keytype_ctrtype_t ctr_type,
                                    std::string controller_id,
                                    unc::tclib::TcAuditOpAbortPhase fail_phase) {
-    return unc::tclib::TC_SUCCESS;
+    return unc::tclib::TC_FAILURE;
   }
 
   unc_keytype_ctrtype_t HandleGetControllerType() {
@@ -174,25 +173,24 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
 
   /**
    * @brief  - Method to handle TC commit request
-   *  */
+   **/
   unc::tclib::TcCommonRet HandleCommitGlobalCommit(uint32_t session_id,
                                     uint32_t config_id,
                                     unc::tclib::TcControllerList controllers);
   /**
-   * @brief  - Method to initialize map_kt_
-   *  */
+   * @brief  - Method to initialize pfc_ipcstdef_t pointer with keytype
+   **/
   void  initialize_map(void);
   /**
    * @brief  - Method to Abort the controller which failed in VOTE
-   *  */
+   **/
   void AbortControllers(unc::tclib::TcControllerList
                                           controllers);
 
  private:
   ControllerFramework* crtl_inst_;
-  std::map<unc_key_type_t, pfc_ipcstdef_t*> key_map_;
-  std::map<unc_key_type_t, pfc_ipcstdef_t*> val_map_;
-  std::map <unc_key_type_t, KtHandler*> kt_handler_map_;
+  kt_map key_map_, val_map_;
+  kt_handler_map kt_handler_map_;
 };
 }  // namespace driver
 }  // namespace unc

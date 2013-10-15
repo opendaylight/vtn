@@ -14,9 +14,14 @@
 #include <vtndrvintf_defs.h>
 #include <driver/driver_interface.hh>
 #include <driver/controller_interface.hh>
+#include <pfcxx/timer.hh>
+#include <pfcxx/task_queue.hh>
+#include <pfc/taskq.h>
+#include <pfc/thread.h>
 #include <map>
 #include <iterator>
 #include <string>
+#include <functional>
 #include <pfcxx/synch.hh>
 
 
@@ -33,12 +38,12 @@ class ControllerContainer {
   ControllerContainer():ctr(NULL), drv(NULL) {}
   controller* ctr;
   driver* drv;
-  pfc::core::Mutex  rw_mutex;  // Global Mutex lock
+  pfc::core::Mutex  rw_mutex;
 };
 
+
 /**
- * Class - ControllerFramework1
- * Base class
+ * Class - ControllerFramework
  * DataMembers : controller_list, driver_container, controller_list_rwlock
  * MemberFunctions : GetControllerConnectionByName,AddAndConfigureController
  * UpdateControllerConfiguration,RemoveControllerConfiguration.
@@ -46,11 +51,14 @@ class ControllerContainer {
  **/
 class ControllerFramework  {
  public:
-  /**
-    *@brief: constructor
-    **/
+  pfc::core::TaskQueue* taskq_;
 
-  ControllerFramework();
+  /**
+  *@brief: constructor
+  **/
+
+  explicit ControllerFramework(pfc::core::TaskQueue*);
+
   /**
     *@brief: destructor
     **/
@@ -68,22 +76,28 @@ class ControllerFramework  {
    *@brief: This function adds the respective controller information
    in the controller list
    **/
-
   void AddController(std::string& controller_name,
                      controller* , driver*);
+
+  /**
+   *@brief :This function  sets the time interval for every ping and the
+   * timer is get reset.
+   */
+  int PostTimer(std::string& controller_name, driver*, controller*);
 
   /**
    *@brief: This function updates the respective controller information
    in the controller list
    */
 
-  void UpdateControllerConfiguration(std::string& controller_name,
+  VtnDrvRetEnum UpdateControllerConfiguration(std::string& controller_name,
                                     controller*, driver*);
   /**
    *@brief:  This function removes the respective controller information
    in the controller list
    **/
-  VtnDrvRetEnum RemoveControllerConfiguration(std::string& controller_name);
+  VtnDrvRetEnum RemoveControllerConfiguration(std::string& controller_name,
+                                              controller*, driver*);
 
   /**
    *@Brief: This function is to get driver typw
@@ -92,17 +106,52 @@ class ControllerFramework  {
   driver* GetDriverInstance(unc_keytype_ctrtype_t controller_type);
 
   /**
-  *@Brief: This function is to register controller type and Driver*
+  *@Brief: This function is to stores the controller type and Driver*
   **/
 
-  void RegisterDriver(unc_keytype_ctrtype_t controller_type, driver*);
+  VtnDrvRetEnum RegisterDriver(unc_keytype_ctrtype_t controller_type, driver*);
+
+
+  /**
+   *@Brief: This function is to get the driver instance and controller
+   *instance for the respective controllers
+   */
+  VtnDrvRetEnum GetControllerInstance(std::string& controller_name,
+                                    controller**, driver**);
 
   private:
     std::map<std::string, ControllerContainer*>  controller_list;
     std::map<unc_keytype_ctrtype_t, driver*>  driver_container;
     pfc::core::ReadWriteLock controller_list_rwlock_;
-
 };
-}  //driver
-}  //unc
+
+/**
+ * Class - ReadParams
+ * DataMembers : ctlr_name_, ctr_fw_
+ * MemberFunctions : PingController()
+ **/
+
+class ReadParams : public std::unary_function < void, void> {
+  public:
+  std::string ctlr_name_;
+
+  unc::driver::ControllerFramework* ctr_fw_;
+
+  /**
+   *@Brief : constructor
+   **/
+  ReadParams(std::string, unc::driver::ControllerFramework*);
+
+  void operator() ()  {
+    PingController();
+  }
+
+  /**
+   *@Brief: Ping the controller and update the connection status
+   * based on the response
+   **/
+  VtnDrvRetEnum PingController();
+};
+}  // namespace driver
+}  // namespace unc
 #endif

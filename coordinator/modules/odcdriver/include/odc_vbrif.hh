@@ -18,6 +18,7 @@
 #include <odc_driver_common_defs.hh>
 #include <odc_controller.hh>
 #include <string>
+#include <sstream>
 
 namespace unc {
 namespace odcdriver {
@@ -106,6 +107,15 @@ class ODCVBRIfCommand: public unc::driver::vbrif_driver_command {
       unc::driver::controller* ctr, uint32_t op);
 
  private:
+    /*
+     *    * @brief  - get_controller_response and checks the resp code
+     *       * @param[in] - url to be set to
+     *          * @uint32_t - response code from the controller
+     *             */
+  uint32_t get_controller_response_code(std::string url,
+                                        unc::driver::controller* ctr,
+                                        unc::restjson::HttpMethod method,
+                                        const char* request_body);
   /*
    * @brief - Constructs url for vbrif
    * @param[in] - key_vbr_if_t - key structure of vbrif key structure
@@ -127,7 +137,7 @@ class ODCVBRIfCommand: public unc::driver::vbrif_driver_command {
    *            / DRVAPI_RESPONSE_FAILURE
    */
   drv_resp_code_t validate_create_vbrif(key_vbr_if_t& key_vbr_if,
-      unc::driver::controller* ctr);
+                                        unc::driver::controller* ctr);
 
   /*
    * @brief  - Validates Delete vbrif
@@ -137,7 +147,7 @@ class ODCVBRIfCommand: public unc::driver::vbrif_driver_command {
    *            / DRVAPI_RESPONSE_FAILURE
    */
   drv_resp_code_t validate_delete_vbrif(key_vbr_if_t& key_vbr_if,
-      unc::driver::controller* ctr);
+                                        unc::driver::controller* ctr);
 
   /*
    * @brief  - Validates Update vbrif
@@ -147,7 +157,7 @@ class ODCVBRIfCommand: public unc::driver::vbrif_driver_command {
    *            / DRVAPI_RESPONSE_FAILURE
    */
   drv_resp_code_t validate_update_vbrIf(key_vbr_if_t& key_vbr_if,
-      unc::driver::controller* ctr);
+                                        unc::driver::controller* ctr);
 
   /*
    * @brief  - Checks is_vtn_exists_in_controller
@@ -156,7 +166,7 @@ class ODCVBRIfCommand: public unc::driver::vbrif_driver_command {
    * @uint32_t - response code from the controller
    */
   uint32_t is_vtn_exists_in_controller(key_vbr_if_t& key_vbr_if,
-      unc::driver::controller* ctr);
+                                       unc::driver::controller* ctr);
 
   /*
    * @brief  - Checks is_vbr_exists_in_controller
@@ -165,7 +175,7 @@ class ODCVBRIfCommand: public unc::driver::vbrif_driver_command {
    * @uint32_t - response code from the controller
    */
   uint32_t is_vbrif_exists_in_controller(key_vbr_if_t& key_vbr_if,
-      unc::driver::controller* ctr);
+                                         unc::driver::controller* ctr);
 
   /*
    * @brief  - Checks is_vbrif_exists_in_controller
@@ -174,7 +184,7 @@ class ODCVBRIfCommand: public unc::driver::vbrif_driver_command {
    * @uint32_t - response code from the controller
    */
   uint32_t is_vbr_exists_in_controller(key_vbr_if_t& key_vbr_if,
-      unc::driver::controller* ctr);
+                                       unc::driver::controller* ctr);
 
   /*
    * @brief  - get_controller_response and checks the resp code
@@ -182,7 +192,7 @@ class ODCVBRIfCommand: public unc::driver::vbrif_driver_command {
    * @uint32_t - response code from the controller
    */
   uint32_t get_controller_response(std::string url,
-      unc::driver::controller* ctr);
+                                   unc::driver::controller* ctr);
 
   /*
    * @brief  - Creates the Request Body
@@ -191,6 +201,6 @@ class ODCVBRIfCommand: public unc::driver::vbrif_driver_command {
    */
   const char* create_request_body(pfcdrv_val_vbr_if_t& val_vtn);
 };
-}
-}
+}  // namespace odcdriver
+}  // namespace unc
 #endif

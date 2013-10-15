@@ -24,17 +24,16 @@ class KtHandler {
   * @brief -   Handling Request received from platform
   * @param[in] ServerSession, keyif_drv_request_header_t,ControllerFramework
   * @retval -  drv_resp_code_t
-  **/ 
+  **/
   virtual drv_resp_code_t handle_request(pfc::core::ipc::ServerSession &sess,
                                 keyif_drv_request_header_t &request_header,
-                                ControllerFramework* )=0;
+                                ControllerFramework*) = 0;
 
    /**
    * @brief - Converting ConfigNode pointer to Command
    * @param[in] ConfigNode*, controller*, driver*
    * @retval - drv_resp_code_t
    **/
- 
   virtual drv_resp_code_t  execute_cmd(unc::vtndrvcache::ConfigNode *cfgptr,
                                       unc::driver::controller* ctl_ptr,
                                       unc::driver::driver* drv_ptr)=0;
@@ -43,7 +42,7 @@ class KtHandler {
   * @brief - Retrieve Key struct
   * @param[in] ConfigNode*
   * @retval - drv_resp_code_t
-  **/ 
+  **/
   virtual void* get_key_struct(unc::vtndrvcache::ConfigNode *cfgptr)=0;
 
   /**
@@ -51,9 +50,8 @@ class KtHandler {
   * @param[in] ConfigNode*
   * @retval - drv_resp_code_t
   **/
-
   virtual void* get_val_struct(unc::vtndrvcache::ConfigNode *cfgptr)=0;
 };
-} //driver
-} //unc
+}  // namespace driver
+}  // namespace unc
 #endif

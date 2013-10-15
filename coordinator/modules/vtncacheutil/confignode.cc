@@ -6,8 +6,8 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-#include "include/confignode.hh"
-#include "include/keytree.hh"
+#include "confignode.hh"
+#include "keytree.hh"
 
 namespace unc {
 namespace vtndrvcache {
@@ -20,8 +20,8 @@ namespace vtndrvcache {
  * param[out] Kettype converted to
  * string
  */
-std::string TypeToStrFun(unc_key_type_t search_type) {
-  std::string typeStr;
+string TypeToStrFun(unc_key_type_t search_type) {
+  string typeStr;
   switch (search_type) {
     case UNC_KT_VTN:
       typeStr = string("UNC_KT_VTN");
@@ -51,9 +51,9 @@ std::string TypeToStrFun(unc_key_type_t search_type) {
 /**
  * @brief : default constructor
  */
-ConfigNode::ConfigNode() :node_key(""),parent_key(""),operation(0) {
+ConfigNode::ConfigNode() : operation_(0), cfgnode_count_(0) {
   pfc_log_trace("ConfigNode Constructor");
-  child_list.clear();
+  child_list_.clear();
 }
 
 /**
@@ -63,23 +63,32 @@ ConfigNode::ConfigNode() :node_key(""),parent_key(""),operation(0) {
  * param[in] value_list
  * param[out] TREE_OK
  */
-uint32_t ConfigNode::get_node_list(std::vector<ConfigNode*>&value_list) {
+uint32_t ConfigNode::get_node_list(vector<ConfigNode*>& value_list) {
   pfc_log_debug("Entering %s ", PFC_FUNCNAME);
-  if (child_list.size() <= 0) {
+
+  // If the node doesn't have any child, this return can be
+  // from the root node or to the recursive caller
+  if (child_list_.empty()) {
     pfc_log_debug("%s: No child list", PFC_FUNCNAME);
     return TREE_OK;
   }
-  std::map<unc_key_type_t, std::vector<ConfigNode*> >::iterator sb_itr =
-      child_list.begin();
-  std::map<unc_key_type_t, std::vector<ConfigNode*> >::iterator sb_itr_end =
-      child_list.end();
+
+  // Get the child list of each node
+  map<unc_key_type_t, vector<ConfigNode*> >::iterator sb_itr =
+      child_list_.begin();
+  map<unc_key_type_t, vector<ConfigNode*> >::iterator sb_itr_end =
+      child_list_.end();
+
+  // Iterate the child list and by make a recursive call to iterate
+  // the child list and hence the list is traversed in DFS order
+  // till the node has no children
 
   for (; sb_itr != sb_itr_end; ++sb_itr) {
-    std::vector<ConfigNode*>& node_list = sb_itr->second;
+    vector<ConfigNode*>& node_list = sb_itr->second;
 
     if (!node_list.empty()) {
-      std::vector<ConfigNode*>::iterator node_itr = node_list.begin();
-      std::vector<ConfigNode*>::iterator node_itr_end = node_list.end();
+      vector<ConfigNode*>::iterator node_itr = node_list.begin();
+      vector<ConfigNode*>::iterator node_itr_end = node_list.end();
 
       for (; node_itr != node_itr_end; ++node_itr) {
         value_list.push_back(*node_itr);
@@ -103,17 +112,17 @@ void ConfigNode::print(int level_index) {
   pfc_log_debug("%s: Entering function....", PFC_FUNCNAME);
   print_key(level_index);
 
-  if (child_list.size() > 0) {
-    std::map<unc_key_type_t, std::vector<ConfigNode*> >::iterator sb_itr =
-        child_list.begin();
-    std::map<unc_key_type_t,
-        std::vector<ConfigNode*> >::iterator sb_itr_end = child_list.end();
+  if (!child_list_.empty()) {
+    map<unc_key_type_t, vector<ConfigNode*> >::iterator sb_itr =
+        child_list_.begin();
+    map<unc_key_type_t,
+        vector<ConfigNode*> >::iterator sb_itr_end = child_list_.end();
 
     for (; sb_itr != sb_itr_end; sb_itr++) {
-      std::vector<ConfigNode*>& node_list = sb_itr->second;
-      if (node_list.size() > 0) {
-        std::vector<ConfigNode*>::iterator node_itr = node_list.begin();
-        std::vector<ConfigNode*>::iterator node_itr_end = node_list.end();
+      vector<ConfigNode*>& node_list = sb_itr->second;
+      if (!node_list.empty()) {
+        vector<ConfigNode*>::iterator node_itr = node_list.begin();
+        vector<ConfigNode*>::iterator node_itr_end = node_list.end();
 
         for (; node_itr != node_itr_end; node_itr++) {
           ConfigNode* node_ptr = *node_itr;
@@ -134,31 +143,38 @@ void ConfigNode::print(int level_index) {
 uint32_t ConfigNode::add_child_to_list(ConfigNode *node_ptr) {
   pfc_log_debug("%s:Entering", PFC_FUNCNAME);
 
-  std::map<unc_key_type_t, std::vector<ConfigNode*> >::iterator itr =
-      child_list.begin();
-  std::map<unc_key_type_t, std::vector<ConfigNode*> >::iterator itr_end =
-      child_list.end();
+  map<unc_key_type_t, vector<ConfigNode*> >::iterator itr;
+  map<unc_key_type_t, vector<ConfigNode*> >::iterator itr_end =
+      child_list_.end();
 
-  itr = child_list.find(node_ptr->get_type());
+  if (node_ptr == NULL) {
+    pfc_log_error("%s : ConfigNode is NULL", PFC_FUNCNAME);
+    return CACHEMGR_RESPONSE_FAILURE;
+  }
+
+  itr = child_list_.find(node_ptr->get_type());
 
   /* If the child list already present for that node type, add the new
      child to the list..... else create new child list */
   if (itr == itr_end) {
     pfc_log_debug("add_child_to_list: Child list NOT present for %s ",
                   TypeToStrFun(node_ptr->get_type()).c_str());
-    child_list.insert(
-        pair<unc_key_type_t, std::vector<ConfigNode*> > (
+    child_list_.insert(
+        pair<unc_key_type_t, vector<ConfigNode*> > (
             node_ptr->get_type(),
             vector<ConfigNode*> ()));
 
-    itr = child_list.find(node_ptr->get_type());
+    itr = child_list_.find(node_ptr->get_type());
   } else {
     pfc_log_debug("ConfigNode::AddChildNode: Child list present for %s ",
                   TypeToStrFun(node_ptr->get_type()).c_str());
   }
 
-  std::vector<ConfigNode*>& node_list = itr->second;
+  vector<ConfigNode*>& node_list = itr->second;
   node_list.push_back(node_ptr);
+  cfgnode_count_++;
+  pfc_log_debug("cfgnode_count_ %d", cfgnode_count_);
+
   pfc_log_debug("%s: AddChildNode: Exiting", PFC_FUNCNAME);
   return TREE_OK;
 }
@@ -168,50 +184,36 @@ uint32_t ConfigNode::add_child_to_list(ConfigNode *node_ptr) {
  * param[in] none
  * param[out]none
  */
-void ConfigNode::clear_kt_map() {
+
+
+uint32_t ConfigNode::clear_kt_map() {
   pfc_log_debug("%s:Entering", PFC_FUNCNAME);
-  std::map<unc_key_type_t, std::vector<ConfigNode*> >::iterator sb_itr =
-      child_list.begin();
-  std::map<unc_key_type_t, std::vector<ConfigNode*> >::iterator sb_itr_end =
-      child_list.end();
+  std::vector<ConfigNode*>delete_value_list;
+  if (!get_node_list(delete_value_list)) {
+    pfc_log_debug("%s:getnodelist success before del size%d", PFC_FUNCNAME,
+                              static_cast<int> (delete_value_list.size()));
+    vector<ConfigNode*>::iterator itr = delete_value_list.begin();
+    vector<ConfigNode*>::iterator itr_end = delete_value_list.end();
 
-  for (; sb_itr != sb_itr_end; ++sb_itr) {
-    std::vector<ConfigNode*>& node_list = sb_itr->second;
+    pfc_log_debug("%s", PFC_FUNCNAME);
+    ConfigNode* tmp;
 
-    if (!node_list.empty()) {
-      std::vector<ConfigNode*>::iterator node_itr = node_list.begin();
-      std::vector<ConfigNode*>::iterator node_itr_end = node_list.end();
+    for (; itr != itr_end; itr++) {
+      tmp = *itr;
 
-      for (; node_itr != node_itr_end; ++node_itr) {
-        if (*node_itr != NULL) {
-          delete *node_itr;
-        }
+      if (NULL != tmp) {
+        delete tmp;
+        tmp = NULL;
       }
     }
-    node_list.clear();
+    pfc_log_debug("%s:getnodelist success after del size%d", PFC_FUNCNAME,
+                            static_cast<int> (delete_value_list.size()));
+    delete_value_list.clear();
+    return CACHEMGR_RESPONSE_SUCCESS;
+  } else {
+    pfc_log_error("%s:getnodelist failed", PFC_FUNCNAME);
+    return CACHEMGR_RESPONSE_FAILURE;
   }
-  child_list.clear();
-  pfc_log_debug("%s:Exiting", PFC_FUNCNAME);
-}
-
-/**
- * @brief  This method read confignode from cache
- * param[in] keytype,confignode* vector
- * param[out]filled confignode* vector
- */
-uint32_t ConfigNode::read_all_cfgnode(unc_key_type_t key,
-                                      std::vector<ConfigNode*>& vec) {
-  pfc_log_debug("%s:Entering", PFC_FUNCNAME);
-  std::map<unc_key_type_t, std::vector<ConfigNode*> >::iterator sb_itr;
-  sb_itr = child_list.find(key);
-  if (sb_itr != child_list.end()) {
-    vec.reserve(sb_itr->second.size());
-    std::copy(sb_itr->second.begin(), sb_itr->second.end(),
-              back_inserter(vec));
-    return PFCDRVAPI_RESPONSE_SUCCESS;
-  }
-  pfc_log_debug("%s:Exiting", PFC_FUNCNAME);
-  return PFCDRVAPI_RESPONSE_FAILURE;
 }
 
 /**
@@ -221,11 +223,11 @@ uint32_t ConfigNode::read_all_cfgnode(unc_key_type_t key,
  */
 void RootNode::print_key(int level_index) {
   int num_spaces = level_index* NUM_SPACES;
-  std::string prefix_str = "";
+  string prefix_str;
 
   unc_key_type_t node_type = get_type();
 
-  for (int i = 0; i < num_spaces; i++)
+  for (int i = 0; i < num_spaces; ++i)
     prefix_str.append(" ");
   prefix_str.append(TypeToStrFun(node_type));
   prefix_str.append("->");
@@ -244,5 +246,5 @@ RootNode::RootNode() {
 RootNode::~RootNode() {
   pfc_log_debug("Entering default destructor %s..", PFC_FUNCNAME);
 }
-}  // vtndrvcache
-}  // unc
+}  // namespace vtndrvcache
+}  // namespace unc

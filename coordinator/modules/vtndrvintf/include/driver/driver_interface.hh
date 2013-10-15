@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2013 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made
  * available under the  terms of the Eclipse Public License v1.0 which
  * accompanies this  distribution, and is available at
@@ -21,12 +21,13 @@ namespace unc {
 namespace driver {
 
 
+
 class driver {
  public:
   // 2-phase commit support from CDF needed?
-  virtual pfc_bool_t is_2ph_commit_support_needed () =0;
+  virtual pfc_bool_t is_2ph_commit_support_needed() =0;
   // Can driver collect running config by itself?
-  virtual pfc_bool_t is_audit_collection_needed () =0;
+  virtual pfc_bool_t is_audit_collection_needed() =0;
   // add controller of this type
   virtual controller* add_controller(const key_ctr_t& key_ctr,
                                      const val_ctr_t& val_ctr)=0;
@@ -34,19 +35,30 @@ class driver {
   virtual controller* update_controller(const key_ctr_t& key_ctr,
                                         const val_ctr_t& val_ctr,
                                         controller* ctrl_inst)=0;
-  //REturn Type of Controller supported by driver
+  // REturn Type of Controller supported by driver
   virtual unc_keytype_ctrtype_t get_controller_type() =0;
   // delete controller of this type
   virtual pfc_bool_t delete_controller(controller* delete_inst)=0;
   // driver command for particular KT
   virtual driver_command* get_driver_command(unc_key_type_t key_type)=0;
   // transaction command, if no transaction needed, return NULL
-  virtual unc::tclib::TcCommonRet HandleVote(controller*)=0;
-  virtual unc::tclib::TcCommonRet HandleCommit(controller*)=0;
-  virtual unc::tclib::TcCommonRet HandleAbort(controller*)=0;
+  virtual unc::tclib::TcCommonRet HandleVote(controller* ctlptr)=0;
+  virtual unc::tclib::TcCommonRet HandleCommit(controller* ctlptr)=0;
+  virtual unc::tclib::TcCommonRet HandleAbort(controller* ctlptr)=0;
 
-  virtual ~driver() {}; 
+  // Invoked to learn if CDF needs to ping the controller
+  // to check if alive
+  virtual pfc_bool_t is_ping_needed() = 0;
+  // Ping Interval
+  virtual uint32_t  get_ping_interval() = 0;
+  // Ping Fail Retry Count
+  virtual uint32_t get_ping_fail_retry_count() = 0;
+
+  // PING function for the controller
+  virtual pfc_bool_t  ping_controller(unc::driver::controller*) = 0;
+
+  virtual ~driver() {}
 };
-}  // driver
-}  // unc
+}  // namespace driver
+}  // namespace unc
 #endif

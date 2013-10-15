@@ -6,7 +6,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-#include "include/keytree.hh"
+#include "keytree.hh"
 #include "unc/keytype.h"
 
 #define TREE_TABLE_SIZE 5
@@ -70,7 +70,7 @@ unc_key_type_t KeyTree::get_parenttype(unc_key_type_t search_type) {
 uint32_t KeyTree::get_nodelist_keytree(
     std::vector<ConfigNode*>&value_list) {
   pfc_log_debug("Entering %s function", PFC_FUNCNAME);
-  return node_tree.get_node_list(value_list);
+  return node_tree_.get_node_list(value_list);
 }
 
 /**
@@ -81,12 +81,12 @@ uint32_t KeyTree::get_nodelist_keytree(
 uint32_t KeyTree::append_commit_node(ConfigNode* value_list) {
   pfc_log_debug("Entering %s function", PFC_FUNCNAME);
   int err = 0;
-  cfg_node_list.push_back(value_list);
+  cfg_node_list_.push_back(value_list);
   err = add_child_to_hash(value_list);
   if ( TREE_OK != err ) {
     pfc_log_error("add_node_to_tree:add_child_to_hash Faild for: %s!!!!",
                   value_list->get_key().c_str());
-    return PFCDRVAPI_RESPONSE_FAILURE;
+    return CACHEMGR_RESPONSE_FAILURE;
   }
 
   return CACHEMGR_RESPONSE_SUCCESS;
@@ -108,14 +108,14 @@ void KeyTree::clear_commit_cache() {
  ** @param [out] - None
  **/
 void KeyTree::clear_cache_vector() {
-  vector<ConfigNode*>::const_iterator itr = cfg_node_list.begin();
-  vector<ConfigNode*>::const_iterator itr_end = cfg_node_list.end();
+  vector<ConfigNode*>::const_iterator itr = cfg_node_list_.begin();
+  vector<ConfigNode*>::const_iterator itr_end = cfg_node_list_.end();
   for (; itr != itr_end; ++itr) {
     if (*itr != NULL) {
       delete *itr;
     }
   }
-  cfg_node_list.clear();
+  cfg_node_list_.clear();
 }
 
 /**
@@ -134,14 +134,9 @@ void KeyTree::clear_search_cache() {
  ** @param [in] - None
  ** @param [out] - None
  **/
-void KeyTree::clear_audit_cache() {
-  clear_search_cache();
-  node_tree.clear_kt_map();
-}
-
-uint32_t KeyTree::read_all_cfgnode(unc_key_type_t key,
-                                   std::vector<ConfigNode*>& vec) {
-  return node_tree.read_all_cfgnode(key, vec);
+uint32_t KeyTree::clear_audit_cache() {
+  // clear_search_cache();
+  return node_tree_.clear_kt_map();
 }
 
 /**
@@ -151,7 +146,7 @@ uint32_t KeyTree::read_all_cfgnode(unc_key_type_t key,
  **/
 uint32_t KeyTree::append_audit_node(
     const std::vector<ConfigNode*>&value_list) {
-  pfc_log_info("%s: Entering function", PFC_FUNCNAME);
+  pfc_log_debug("%s: Entering function", PFC_FUNCNAME);
   uint32_t err = -1;
 
   ConfigNode*  tmp_cfgnode_ptr = NULL;
@@ -160,6 +155,7 @@ uint32_t KeyTree::append_audit_node(
   vector<ConfigNode*>::const_iterator it = value_list.begin();
   vector<ConfigNode*>::const_iterator itr_end = value_list.end();
 
+  // Iterate the vector of config nodes
   for (; it!= value_list.end(); it++) {
     if (*it == NULL) {
       pfc_log_error("RunningConfig::%s:%d: ConfigNode is NULL",
@@ -168,20 +164,25 @@ uint32_t KeyTree::append_audit_node(
     }
 
     tmp_cfgnode_ptr = *it;
+    pfc_log_debug("ConfigNode is valid");
     unc_key_type_t key_Type = tmp_cfgnode_ptr->get_type();
+    pfc_log_debug("key_Type:%u", key_Type);
     std::string key = tmp_cfgnode_ptr->get_key();
+    pfc_log_debug("key:%s", key.c_str());
     if (PFC_TRUE != is_already_present(key, key_Type)) {
-      pfc_log_trace("%s: Node Not Present in Tree..for:%s", PFC_FUNCNAME,
-                    key.c_str());
+      pfc_log_debug("%s: Node Not Present in Tree..for:%s keytype %d",
+                   PFC_FUNCNAME, key.c_str(), key_Type);
+      pfc_log_debug("%s: Parent Type Check %s ", PFC_FUNCNAME,
+                   tmp_cfgnode_ptr->get_parent_key().c_str());
       err = add_node_to_tree(tmp_cfgnode_ptr);
       if (TREE_OK != err) {
         pfc_log_error("%s: AddChildToTree faild err=%d", PFC_FUNCNAME, err);
         tmp_cfgnode_ptr = NULL;
-        return ERR_ADD_CHILD_TO_TREE_FAILD;
+        return ERR_ADD_CHILD_TO_TREE_FAILED;
       }
       real_cfgnode_ptr = tmp_cfgnode_ptr;
     } else {
-      pfc_log_trace("%s: Node already Present in Tree...", PFC_FUNCNAME);
+      pfc_log_debug("%s: Node already Present in Tree...", PFC_FUNCNAME);
       real_cfgnode_ptr = get_node_from_hash(key, key_Type);
       delete tmp_cfgnode_ptr;
       tmp_cfgnode_ptr = NULL;
@@ -190,7 +191,7 @@ uint32_t KeyTree::append_audit_node(
       }
     }
   }
-  pfc_log_info("%s: Exiting function", PFC_FUNCNAME);
+  pfc_log_debug("%s: Exiting function", PFC_FUNCNAME);
   return TREE_OK;
 }
 
@@ -201,8 +202,8 @@ uint32_t KeyTree::append_audit_node(
  **/
 uint32_t KeyTree::append_audit_node(
     ConfigNode* value_list) {
-  pfc_log_info("%s: Entering function", PFC_FUNCNAME);
-  uint32_t err = -1;
+  pfc_log_debug("%s: Entering function", PFC_FUNCNAME);
+  uint32_t err = CACHEMGR_APPEND_NODE_FAIL;
 
   ConfigNode*  tmp_cfgnode_ptr = NULL;
   ConfigNode*  real_cfgnode_ptr= NULL;
@@ -216,17 +217,19 @@ uint32_t KeyTree::append_audit_node(
   unc_key_type_t key_Type = tmp_cfgnode_ptr->get_type();
   std::string key = tmp_cfgnode_ptr->get_key();
   if (PFC_TRUE != is_already_present(key, key_Type)) {
-    pfc_log_trace("%s: Node Not Present in Tree..for:%s", PFC_FUNCNAME,
-                  key.c_str());
+    pfc_log_debug("%s: Node Not Present in Tree..for:%s keytype %d",
+                 PFC_FUNCNAME, key.c_str(), key_Type);
+    pfc_log_debug("%s: Parent Type Check %s ", PFC_FUNCNAME,
+                 tmp_cfgnode_ptr->get_parent_key().c_str());
     err = add_node_to_tree(tmp_cfgnode_ptr);
     if (TREE_OK != err) {
       pfc_log_error("%s: AddChildToTree faild err=%d", PFC_FUNCNAME, err);
       tmp_cfgnode_ptr = NULL;
-      return ERR_ADD_CHILD_TO_TREE_FAILD;
+      return ERR_ADD_CHILD_TO_TREE_FAILED;
     }
     real_cfgnode_ptr = tmp_cfgnode_ptr;
   } else {
-    pfc_log_trace("%s: Node already Present in Tree...", PFC_FUNCNAME);
+    pfc_log_debug("%s: Node already Present in Tree...", PFC_FUNCNAME);
     real_cfgnode_ptr = get_node_from_hash(key, key_Type);
     delete tmp_cfgnode_ptr;
     tmp_cfgnode_ptr = NULL;
@@ -235,7 +238,7 @@ uint32_t KeyTree::append_audit_node(
     }
   }
 
-  pfc_log_info("%s: Exiting function", PFC_FUNCNAME);
+  pfc_log_debug("%s: Exiting function", PFC_FUNCNAME);
   return TREE_OK;
 }
 
@@ -255,34 +258,38 @@ bool KeyTree:: validate_parentkey(ConfigNode* value_list) {
 /**
  ** Method to add node to the cache and search map by validation
  ** @param [in] - value_list
- ** @param [out] - TREE_OK/PFCDRVAPI_RESPONSE_FAILURE
+ ** @param [out] - TREE_OK/CACHEMGR_RESPONSE_FAILURE
  **/
 uint32_t KeyTree::add_node_to_tree(ConfigNode* child_ptr) {
   pfc_log_debug("%s: Entering function", PFC_FUNCNAME);
   if (NULL == child_ptr) {
     pfc_log_fatal("add_node_to_tree:Child Node is NULL!!!!!!");
-    return PFCDRVAPI_RESPONSE_FAILURE;
+    return CACHEMGR_RESPONSE_FAILURE;
   }
   std::string  parent_key = child_ptr->get_parent_key();
   unc_key_type_t parent_type = get_parenttype(child_ptr->get_type());
+
+  // Retrieve the parent from the map using parent_key & parent_type
   ConfigNode* parent_ptr = get_node_from_hash(parent_key, parent_type);
   if (NULL == parent_ptr) {
     pfc_log_fatal("Parent:%s  Not Present for:%s", parent_key.c_str(),
                   child_ptr->get_key().c_str());
-    return PFCDRVAPI_RESPONSE_FAILURE;
+    return CACHEMGR_RESPONSE_FAILURE;
   }
+  // Add the new node to child list of the parentnode using parent_ptr
   uint32_t err = parent_ptr->add_child_to_list(child_ptr);
   if ( TREE_OK != err ) {
     pfc_log_fatal("add_node_to_tree:add_child_to_list Faild for:%s!!!!",
                   child_ptr->get_key().c_str());
-    return PFCDRVAPI_RESPONSE_FAILURE;
+    return CACHEMGR_RESPONSE_FAILURE;
   }
+  // Add the new node to the search map
   err = add_child_to_hash(child_ptr);
 
   if ( TREE_OK != err ) {
     pfc_log_error("add_node_to_tree:add_child_to_hash Faild for: %s!!!!",
                   child_ptr->get_key().c_str());
-    return PFCDRVAPI_RESPONSE_FAILURE;
+    return CACHEMGR_RESPONSE_FAILURE;
   }
   pfc_log_debug("%s: Exiting function", PFC_FUNCNAME);
   return TREE_OK;
@@ -303,7 +310,7 @@ ConfigNode* KeyTree::get_node_from_hash(
     pfc_log_debug("Node Not Present for:%s", key.c_str());
     return NULL;
   }
-  pfc_log_trace("Node Present for:%s", key.c_str());
+  pfc_log_debug("Node Present for:%s", key.c_str());
   pfc_log_debug("%s: Exiting function", PFC_FUNCNAME);
   return itr->second;
 }
@@ -334,12 +341,12 @@ bool KeyTree::is_already_present(std::string key, unc_key_type_t key_Type) {
   configNodeHash::iterator itr;
   itr = configHashArr[key_Type].find(key);
   if (itr == configHashArr[key_Type].end()) {
-    pfc_log_trace("Node Not Present for: %s", key.c_str());
+    pfc_log_debug("Node Not Present for: %s", key.c_str());
     return false;
   }
-  pfc_log_trace("Node Present for: %s", key.c_str());
+  pfc_log_debug("Node Present for: %s", key.c_str());
   pfc_log_debug("%s: Exiting function", PFC_FUNCNAME);
   return true;
 }
-}
-}
+}  // namespace vtndrvcache
+}  // namespace unc

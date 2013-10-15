@@ -14,25 +14,25 @@
 #define ODCDRIVER_COMMON_DEFS_H_
 
 #include <string>
+#define TCLIB_MODULE_NAME "tclib"
 
 namespace unc {
 namespace odcdriver {
 
 const int ODC_PORT = 8080;
-const std::string USER_NAME = "admin";
-const std::string PASS_WORD = "admin";
+const std::string USER_NAME   = "admin";
+const std::string PASS_WORD   = "admin";
+const std::string DOM_NAME    = "(DEFAULT)";
+const std::string READ_VTN_URL = "/controller/nb/v2/vtn/default/vtns";
+const int CONNECTION_TIME_OUT = 30;
+const int REQUEST_TIME_OUT = 30;
+const uint32_t PING_INTERVAL = 10;
+const uint32_t PING_RETRY_COUNT = 5;
 
 typedef enum {
   ODC_DRV_SUCCESS = 0,
   ODC_DRV_FAILURE
 } odc_drv_resp_code_t;
-
-typedef enum {
-  HTTP_METHOD_POST = 0,
-  HTTP_METHOD_PUT,
-  HTTP_METHOD_DELETE,
-  HTTP_METHOD_READ
-} HttpMethod;
 
 typedef enum {
   RESP_BAD_REQUEST = 400,
@@ -47,6 +47,6 @@ typedef enum {
   RESP_OK = 200,
   RESP_UNKNOWN = 1
 } ServerResponseCode;
-}
-}
+}  // namespace odcdriver
+}  // namespace unc
 #endif  // ODCDRIVER_COMMON_DEFS_H_

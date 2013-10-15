@@ -10,20 +10,19 @@
  * http://www.eclipse.org/legal/epl-v10.html
  */
 
-/**
- * @brief   Handles VBR Command Formation"
- * @file    odc_vbr.hh
- *
- **/
-
 #ifndef _ODC_VBR_HH_
 #define _ODC_VBR_HH_
 
 #include <driver/driver_command.hh>
+#include <json_build_parse.hh>
+#include <vtn_conf_data_element_op.hh>
+#include <unc/upll_ipc_enum.h>
+#include <unc/pfcdriver_ipc_enum.h>
 #include <rest_client.hh>
 #include <odc_driver_common_defs.hh>
 #include <odc_controller.hh>
 #include <string>
+#include <vector>
 
 namespace unc {
 namespace odcdriver {
@@ -81,6 +80,29 @@ class ODCVBRCommand: public unc::driver::vbr_driver_command {
    */
   drv_resp_code_t validate_op(key_vbr_t& key_vbr, val_vbr_t& val_vbr,
       unc::driver::controller* ctr, uint32_t op);
+  /*
+   * @brief - get all the vbr child
+   * @param[in] - vtn_name - vtn name
+   * @param[in] - vbr_name - vbr name
+   * @param[in] - ctr - controller pointer
+   * @param[out] - cfgnode_vector - config node vector
+   */
+  drv_resp_code_t get_vbr_child(string vtn_name, string vbr_name,
+           unc::driver::controller* ctr,
+           vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
+
+
+  /*
+   * @brief - parse the vbr if data
+   * @param[in] - url to send the request
+   * @param[in] - ctr - controller pointer
+   * @param[in] - data from which parse should happen
+   * @param[out] - cfgnode_vector - config node vector
+   * @param[out] - drv_resp_code_t
+   */
+  drv_resp_code_t parse_vbrif_resp_data(string vtn_name, string vbr_name,
+                      string url, unc::driver::controller* ctr, char *data,
+                      vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
  private:
   /*
@@ -93,7 +115,7 @@ class ODCVBRCommand: public unc::driver::vbr_driver_command {
    * @param[in] - val - VTN value structure val_vtn_t
    * @retval - const char*  - request body formed
    */
-  const char* create_request_body(val_vbr_t& val_vtn);
+  const char* create_request_body(const val_vbr_t& val_vtn);
 
   /*
    * @brief  - Validates Create Vbr
@@ -135,7 +157,7 @@ class ODCVBRCommand: public unc::driver::vbr_driver_command {
    * @param[in] - ctr - Controller Connection
    * @uint32_t - response code from the controller
    */
-  uint32_t is_vtn_exists_in_controller(key_vbr_t& key_vbr,
+  uint32_t is_vtn_exists_in_controller(const key_vbr_t& key_vbr,
       unc::driver::controller* ctr);
 
   /*
@@ -153,11 +175,35 @@ class ODCVBRCommand: public unc::driver::vbr_driver_command {
    * @param[in] - url to be set to
    * @uint32_t - response code from the controller
    */
-  uint32_t get_controller_response(string url, unc::driver::controller* ctr);
+  uint32_t get_controller_response_code(std::string url,
+                               unc::driver::controller* ctr,
+                               unc::restjson::HttpMethod method,
+                               const char* request_body);
+  /*
+   * @brief - parse vbr if and append it to vector
+   * @param[in] - vtn , vbr name
+   * @param[in] - json object
+   * @param[in] - array index
+   * @param[in] - url to send request
+   * @param[in] - controller pointer
+   * @param[out] - config node vector
+   */
+  drv_resp_code_t parse_vbrif_append_vector(string vtn_name, string vbr_name,
+                      json_object *json_obj, int arr_idx, std::string url,
+                      unc::driver::controller* ctr,
+                      vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
+
+  /*
+   * @brief - read port map
+   * @param[in] - ctr - controller pointer
+   * @param[in] - url - to send the request
+   * @param[out] - json_object pointer - response from controller
+   */
+  json_object* read_portmap(unc::driver::controller* ctr, std::string url);
 
  private:
   std::string age_interval_;
 };
-}
-}
+}  // namespace odcdriver
+}  // namespace unc
 #endif

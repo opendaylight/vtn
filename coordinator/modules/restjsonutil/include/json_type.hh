@@ -81,6 +81,6 @@ class JsonType {
       return jobj_;
     }
 };
-}
-}
+}  // namespace restjson
+}  // namespace unc
 #endif  // RESTJSON_JSON_TYPE_H_

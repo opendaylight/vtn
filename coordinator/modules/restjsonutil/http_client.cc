@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2013 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made
  * available under the
  * terms of the Eclipse Public License v1.0 which
@@ -126,7 +126,7 @@ rest_resp_code_t HttpClient::set_operation_type(const HttpMethod operation) {
 
   switch (operation) {
     case HTTP_METHOD_POST: {
-      pfc_log_info("HTTP_METHOD_POST");
+      pfc_log_debug("HTTP_METHOD_POST");
       curlRetCode = curl_easy_setopt(handle_, CURLOPT_POST, 1);
       if (CURLE_OK != curlRetCode) {
         pfc_log_error(" SetRequest Body failed with curl error code %d",
@@ -193,7 +193,7 @@ rest_resp_code_t HttpClient::set_request_body(const char* requestbody) {
 
 // Sets Common Values to the CURL hanlde, Post the handle and writes the reponse
 rest_resp_code_t HttpClient::execute() {
-  pfc_log_info("%s Entering method ", PFC_FUNCNAME);
+  pfc_log_debug("%s Entering method ", PFC_FUNCNAME);
 
   rest_resp_code_t curl_ret_code = set_opt_common();
   if (SUCCESS != curl_ret_code) {
@@ -209,7 +209,7 @@ rest_resp_code_t HttpClient::execute() {
   if (SUCCESS != curl_ret_code) {
     return FAILURE;
   }
-  pfc_log_info("%s Exiting Execute method ", PFC_FUNCNAME);
+  pfc_log_debug("%s Exiting Execute method ", PFC_FUNCNAME);
   return SUCCESS;
 }
 
@@ -299,7 +299,7 @@ HttpContent_t* HttpClient::get_http_resp_body() {
   pfc_log_debug("%s, Entering function", PFC_FUNCNAME);
   if (NULL != response_) {
     if (NULL != response_->write_data) {
-      pfc_log_info("Output from server %s ", response_->write_data->memory);
+      pfc_log_debug("Output from server %s ", response_->write_data->memory);
       return response_->write_data;
     }
   }
@@ -314,7 +314,7 @@ rest_resp_code_t HttpClient::perform_http_req() {
   CURLcode curlRetCode = curl_easy_perform(handle_);
 
   if (CURLE_OK != curlRetCode) {
-    pfc_log_info("%d Error", curlRetCode);
+    pfc_log_debug("%d Error", curlRetCode);
     return FAILURE;
   }
 
@@ -364,5 +364,5 @@ size_t HttpClient::write_call_back(void *ptr, size_t size, size_t nmemb,
   pfc_log_debug("%s, Exiting function", PFC_FUNCNAME);
   return realsize;
 }
-}
-}
+}  // namespace restjson
+}  // namespace unc

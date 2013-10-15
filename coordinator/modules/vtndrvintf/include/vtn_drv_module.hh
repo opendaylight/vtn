@@ -31,12 +31,12 @@ namespace driver {
 
 class VtnDrvIntf :public pfc::core::Module {
  public:
-  
   /**
    *@brief: Constructor
    **/
 
   explicit VtnDrvIntf(const pfc_modattr_t* attr);
+  pfc::core::TaskQueue* taskq_;
 
   /**
    *@brief: Destructor
@@ -80,12 +80,16 @@ class VtnDrvIntf :public pfc::core::Module {
    **/
   KtHandler*  get_kt_handler(unc_key_type_t kt);
 
+  void  set_controller_instance(ControllerFramework* ctrl_inst) {
+    ctrl_inst_ =  ctrl_inst;
+  }
+
  private:
   std::map <unc_key_type_t, unc::driver::KtHandler*> map_kt_;
   pfc::core::ReadWriteLock kt_installer_wrlock_;
   pfc::core::ReadWriteLock drvcmds_installer_wrlock_;
   ControllerFramework* ctrl_inst_;
 };
-}  // driver
-}  // unc
+}  // namespace driver
+}  // namespace unc
 #endif

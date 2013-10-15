@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2013 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made
  * available under the
  * terms of the Eclipse Public License v1.0 which
@@ -22,14 +22,18 @@ RestClient::RestClient(const std::string &ipaddress, const int portnumber)
   mportnumber_(portnumber) {
   pfc_log_debug("%s Entering function", PFC_FUNCNAME);
   http_client_obj_ = new HttpClient();
-  http_client_obj_->init();
+  if (http_client_obj_ != NULL) {
+    http_client_obj_->init();
+  } else {
+    pfc_log_error(" init() nOT called");
+  }
   pfc_log_debug("%s Exiting function", PFC_FUNCNAME);
 }
 
 // Destructor
 RestClient::~RestClient() {
   pfc_log_debug("%s Entering function", PFC_FUNCNAME);
-  if (NULL != http_client_obj_) {
+  if (http_client_obj_ != NULL) {
     http_client_obj_->fini();
     delete http_client_obj_;
     http_client_obj_ = NULL;
@@ -58,6 +62,7 @@ rest_resp_code_t RestClient::set_username_password(const std::string &username,
 rest_resp_code_t RestClient::set_timeout(const int connectionTimeOut,
                                 const int reqTimeOut) {
   pfc_log_debug("%s Entering function", PFC_FUNCNAME);
+  PFC_ASSERT(NULL != http_client_obj_);
   rest_resp_code_t retval = http_client_obj_->set_connection_timeout(
                                               connectionTimeOut);
   if (FAILURE == retval) {
@@ -110,7 +115,7 @@ rest_resp_code_t RestClient::create_request_header(const std::string &url,
   if (FAILURE == retval) {
     return FAILURE;
   }
-  pfc_log_info("%s requestHeader", requestHeader.c_str());
+  pfc_log_debug("%s requestHeader", requestHeader.c_str());
 
   retval = http_client_obj_->set_operation_type(operation);
   pfc_log_debug("%s Exiting function", PFC_FUNCNAME);
@@ -131,6 +136,12 @@ uint32_t RestClient::send_request_and_get_response_code() {
   return respStructure.code;
 }
 
+// Get the response body
+HttpContent_t* RestClient::get_response_body() {
+  PFC_ASSERT(NULL != http_client_obj_);
+  return http_client_obj_->get_http_resp_body();
+}
+
 // Invokes HttpClient Class SetRequestBody Method
 rest_resp_code_t RestClient::set_request_body(const char* reqbody) {
   pfc_log_debug("%s Entering function", PFC_FUNCNAME);
@@ -140,5 +151,5 @@ rest_resp_code_t RestClient::set_request_body(const char* reqbody) {
   pfc_log_debug("%s Exiting function", PFC_FUNCNAME);
   return ret_val;
 }
-}
-}
+}  // namespace restjson
+}  // namespace unc

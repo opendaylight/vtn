@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) 2012-2013 NEC Corporation
  * All rights reserved.
- *  
+ *
  * This program and the accompanying materials are made
  * available under the
  * terms of the Eclipse Public License v1.0 which
@@ -71,11 +71,18 @@ class RestClient {
      */
     uint32_t send_request_and_get_response_code();
 
+    /*
+     * Gets the response body
+     * param[out] - HttpContent_t structure
+     */
+    HttpContent_t* get_response_body();
+
+
   private:
     HttpClient *http_client_obj_;
     const std::string mipaddress_;
     const int mportnumber_;
 };
-}
-}
+}  // namespace restjson
+}  // namespace unc
 #endif  // RESTJSON_REST_CLIENT_H_

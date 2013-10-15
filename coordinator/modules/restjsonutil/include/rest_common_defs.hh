@@ -59,6 +59,6 @@ typedef enum {
   RESP_OK = 200,
   RESP_UNKNOWN = 1
 } ServerResponseCode;
-}
-}
+}  // namespace restjson
+}  // namespace unc
 #endif  // RESTJSON_REST_COMMON_DEFS_H_
