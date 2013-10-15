@@ -1,0 +1,140 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da6255ed_79409c56",
+        "filename": "coordinator/modules/odcdriver/include/odc_controller.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 70,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2013-10-15T23:53:25Z",
+      "side": 1,
+      "message": "Could you delete extra spaces and asterisks, and align lines?",
+      "revId": "147fdf538e6e48d93208c21594c414fd3a13a4b8",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_f92b6c92",
+        "filename": "coordinator/modules/odcdriver/include/odc_controller.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 75,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2013-10-15T23:53:25Z",
+      "side": 1,
+      "message": "It seems that this method has no parameters.\n\nI think @param[out] should be used to describe an output parameter to which a method writes its output.\nOutput parameters are different from function returns.\n\nIf you want to describe data returned by a method, I think it is better to use @return rather than @param[out].",
+      "revId": "147fdf538e6e48d93208c21594c414fd3a13a4b8",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_d918a886",
+        "filename": "coordinator/modules/odcdriver/include/odc_root.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 115,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2013-10-15T23:53:25Z",
+      "side": 1,
+      "message": "Could you delete extra slashes?",
+      "revId": "147fdf538e6e48d93208c21594c414fd3a13a4b8",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_b91df475",
+        "filename": "coordinator/modules/odcdriver/include/odc_vbrif.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 114,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2013-10-15T23:53:25Z",
+      "side": 1,
+      "message": "Could you delete extra spaces?",
+      "revId": "147fdf538e6e48d93208c21594c414fd3a13a4b8",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_d4ff4f00",
+        "filename": "coordinator/modules/odcdriver/odc_vbr.cc",
+        "patchSetId": 1
+      },
+      "lineNbr": 440,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2013-10-15T23:53:25Z",
+      "side": 1,
+      "message": "I think you should use READ_VTN_URL defined in odc_driver_common_defs.hh.\nIs there any reason not to it?",
+      "revId": "147fdf538e6e48d93208c21594c414fd3a13a4b8",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_54135f5c",
+        "filename": "coordinator/modules/vtncacheutil/include/vtn_conf_utility.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2013-10-15T23:53:25Z",
+      "side": 1,
+      "message": "Are this log messages only for debugging? If so, please use pfc_log_debug() or pfc_log_verbose() for debugging.",
+      "revId": "147fdf538e6e48d93208c21594c414fd3a13a4b8",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_742543aa",
+        "filename": "coordinator/modules/vtndrvintf/controller_fw.cc",
+        "patchSetId": 1
+      },
+      "lineNbr": 353,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2013-10-15T23:53:25Z",
+      "side": 1,
+      "message": "It seems to me that this function does not return \"driver*\", but returns a value of VtnDrvRetEnum.\nFor example, the description should be like this:\n @return VTN_DRV_RET_SUCESS if it successfully gets instances and VTN_DRV_RET_FAILURE otherwise.",
+      "revId": "147fdf538e6e48d93208c21594c414fd3a13a4b8",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_543a3fce",
+        "filename": "coordinator/modules/vtndrvintf/include/vtn_drv_transaction_handle.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 146,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2013-10-15T23:53:25Z",
+      "side": 1,
+      "message": "Is there any reason to keep this line?",
+      "revId": "147fdf538e6e48d93208c21594c414fd3a13a4b8",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
