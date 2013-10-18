@@ -58,6 +58,8 @@ import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Common class for tests of {@link VTNManagerImpl}.
@@ -67,6 +69,7 @@ public class VTNManagerImplTestCommon extends TestBase {
     protected GlobalResourceManager resMgr;
     protected TestStub stubObj = null;
     protected static int stubMode = 0;
+    protected static int clusterMode = 0;
 
     /**
      *  Mock-up of IfHostListener.
@@ -647,6 +650,73 @@ public class VTNManagerImplTestCommon extends TestBase {
         @Override
         public void run() {
             latch.countDown();
+        }
+
+        /**
+         * Wait for completion of this task.
+         *
+         * @param timeout  The maximum time to wait.
+         * @param unit     The time unit of the {@code timeout} argument.
+         * @return  {@code true} is returned if this task completed.
+         *          Otherwise {@code false} is returned.
+         */
+        private boolean await(long timeout, TimeUnit unit) {
+            try {
+                return latch.await(timeout, unit);
+            } catch (InterruptedException e) {
+                return false;
+            }
+        }
+    }
+
+    /**
+     * Flush all pending tasks on the VTN flow thread.
+     */
+    protected void flushFlowTasks() {
+        flushFlowTasks(10000L);
+    }
+
+    /**
+     * Flush all pending tasks on the VTN flow thread.
+     */
+    protected void flushFlowTasks(long wait) {
+        NopFlowTask task = new NopFlowTask(vtnMgr);
+        vtnMgr.postFlowTask(task);
+        assertTrue(task.await(wait/1000, TimeUnit.SECONDS));
+    }
+
+    /**
+     *  A dummy flow task to flush pending tasks.
+     */
+    protected class NopFlowTask extends FlowModTask {
+        /**
+         * A latch to wait for completion.
+         */
+        private final CountDownLatch  latch = new CountDownLatch(1);
+
+        protected NopFlowTask(VTNManagerImpl mgr) {
+            super(mgr);
+        }
+
+        /**
+         * Wake up all threads waiting for this task.
+         *
+         * @return  {@code true} is always returned.
+         */
+        @Override
+        protected boolean execute() {
+            latch.countDown();
+            return true;
+        }
+
+        /**
+         * Return a logger object for this class.
+         *
+         * @return  A logger object.
+         */
+        @Override
+        protected Logger getLogger() {
+            return LoggerFactory.getLogger(getClass());
         }
 
         /**

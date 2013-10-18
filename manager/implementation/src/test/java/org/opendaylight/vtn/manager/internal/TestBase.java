@@ -225,6 +225,43 @@ public abstract class TestBase extends Assert {
     }
 
     /**
+     * Create a list of Short objects and a {@code null}.
+     *
+     * @param start    The first value.
+     * @param count    The number of Shorts to be created.
+     * @return A list of {@link Short}.
+     */
+    protected static List<Short> createShorts(short start, short count) {
+        return createShorts(start, count, true);
+    }
+
+    /**
+     * Create a list of Short objects.
+     *
+     * @param start    The first value.
+     * @param count    The number of Shorts to be created.
+     * @param setNull  Set {@code null} to returned list if {@code true}.
+     * @return A list of {@link Shorts}.
+     */
+    protected static List<Short> createShorts(short start, short count,
+                                              boolean setNull) {
+        List<Short> list = new ArrayList<Short>();
+        if (count > 0) {
+            if (setNull) {
+                list.add(null);
+                count--;
+            }
+
+            for (short i = 0; i < count; i++, start++) {
+                list.add(Short.valueOf(start));
+            }
+        }
+
+        return list;
+    }
+
+
+    /**
      * Create a list of integer objects and a {@code null}.
      *
      * @param start    The first value.

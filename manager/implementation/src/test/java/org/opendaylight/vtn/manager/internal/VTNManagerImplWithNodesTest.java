@@ -2784,38 +2784,4 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             assertSame(0, stub.getFlowEntries().size());
         }
     }
-
-    /**
-     * A dummy flow task to flush pending tasks.
-     */
-    private class NopFlowTask extends FlowModTask {
-        /**
-         * Construct a new task.
-         *
-         * @param mgr  VTN Manager service.
-         */
-        private NopFlowTask(VTNManagerImpl mgr) {
-            super(mgr);
-        }
-
-        /**
-         * Execute this task.
-         *
-         * @return  {@code true} is always returned.
-         */
-        @Override
-        protected boolean execute() {
-            return true;
-        }
-
-        /**
-         * Return a logger object for this class.
-         *
-         * @return  A logger object.
-         */
-        @Override
-        protected Logger getLogger() {
-            return LoggerFactory.getLogger(getClass());
-        }
-    }
 }

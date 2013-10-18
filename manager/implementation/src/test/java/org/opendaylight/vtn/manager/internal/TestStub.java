@@ -10,6 +10,7 @@
 package org.opendaylight.vtn.manager.internal;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -88,7 +89,7 @@ import org.opendaylight.vtn.manager.SwitchPort;
  *   Note that stubMode can be set to 0 or 2 or 3 only. (other is not implemented yet.)
  * </p>
  */
-class TestStub implements IClusterGlobalServices, IClusterContainerServices,
+public class TestStub implements IClusterGlobalServices, IClusterContainerServices,
     ISwitchManager, ITopologyManager, IDataPacketService, IRouting,
     IForwardingRulesManager, IfIptoHost, IConnectionManager {
 
@@ -104,6 +105,11 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
      *       (node0 and node1 connect with port-15, node0 and node2 connect with port-16)
      */
     private int stubMode = 0;
+
+    /**
+     * Number of Cluster nodes.
+     */
+    private int clusterMode = 0;
 
     /**
      * Set of existing node.
@@ -151,12 +157,18 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
     private SubnetConfig savedSubnetConfig = null;
 
     /**
-     * Installad flow entries.
+     * Installed flow entries.
      */
     private HashSet<FlowEntry>  flowEntries;
 
     /**
-     * Constractor of TestStub
+     * List of InetAddress of cluster nodes
+     */
+    List<InetAddress> nodeInetAddresses = null;
+
+
+    /**
+     * Constructor of TestStub
      */
     public TestStub() {
         stubMode = 0;
@@ -168,6 +180,12 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
      */
     public TestStub(int mode) {
         stubMode = mode;
+        setup();
+    }
+
+    public TestStub(int stub, int cluster) {
+        stubMode = stub;
+        clusterMode = cluster;
         setup();
     }
 
@@ -332,6 +350,21 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
                     nodeConnectorsISL.put(tail, new HashSet<Property>(1));
                     nodeConnectorsISL.put(head, new HashSet<Property>(1));
                 }
+            }
+        }
+
+        if (clusterMode > 0) {
+            nodeInetAddresses = new ArrayList<InetAddress>();
+
+            for (byte i = 0; i < clusterMode; i++) {
+                InetAddress ia = null;
+                try {
+                    ia = InetAddress.getByAddress(
+                            new byte[] {0x00, 0x00, 0x00, 0x00});
+                } catch (UnknownHostException e) {
+                    Assert.fail("failed to create InetAddress.");
+                }
+                nodeInetAddresses.add(ia);
             }
         }
     }
@@ -886,6 +919,9 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Status installFlowEntry(FlowEntry flow) {
+        if (flow == null) {
+            return new Status(StatusCode.NOTACCEPTABLE, null);
+        }
         if (flowEntries.add(flow)) {
             return new Status(StatusCode.SUCCESS, null);
         }
@@ -894,6 +930,9 @@ class TestStub implements IClusterGlobalServices, IClusterContainerServices,
 
     @Override
     public Status uninstallFlowEntry(FlowEntry flow) {
+        if (flow == null) {
+            return new Status(StatusCode.NOTACCEPTABLE, null);
+        }
         if (flowEntries.remove(flow)) {
             return new Status(StatusCode.SUCCESS, null);
         }
