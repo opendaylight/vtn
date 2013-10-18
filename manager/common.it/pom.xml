@@ -50,6 +50,10 @@
     <!-- OpenDaylight controller bundles -->
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
+      <artifactId>sal</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal.implementation</artifactId>
     </dependency>
     <dependency>

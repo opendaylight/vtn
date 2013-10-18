@@ -38,6 +38,9 @@
   </moduleSets>
   <fileSets>
     <fileSet>
+      <includes>
+        <include>opendaylight/**</include>
+      </includes>
       <excludes>
         <exclude>opendaylight/plugins/org.opendaylight.controller.arphandler-*.jar</exclude>
         <exclude>opendaylight/plugins/org.opendaylight.controller.samples.*.jar</exclude>
