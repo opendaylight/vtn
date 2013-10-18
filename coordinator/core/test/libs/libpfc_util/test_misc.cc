@@ -245,6 +245,53 @@ safe_path_test_data sptd[] = {
 	{"/etc/hosts/tmp", ENOTDIR}
 };
 
+static void
+wait_child(SignalHandler &sig, pid_t pid)
+{
+	time_t	limit(time(NULL) + 10);
+	struct timespec ts = {0, PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC};
+
+	while (sig.getReceived() == 0) {
+		nanosleep(&ts, NULL);
+		ASSERT_EQ(0, waitpid(pid, NULL, WNOHANG));
+		time_t cur(time(NULL));
+		ASSERT_LE(cur, limit);
+	}
+}
+
+static void
+do_kill_and_wait(pid_t pid, int sig, int &status)
+{
+	time_t  limit(time(NULL) + 10);
+	struct timespec ts = {
+		0, 100 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC),
+	};
+
+	status = 0;
+	for (;;) {
+		nanosleep(&ts, NULL);
+		ASSERT_EQ(0, kill(pid, sig));
+		pid_t cpid(waitpid(pid, &status, WNOHANG));
+		ASSERT_NE(-1, cpid) << "*** ERROR: " << strerror(errno);
+		if (cpid != 0) {
+			ASSERT_EQ(pid, cpid);
+			break;
+		}
+
+		time_t cur(time(NULL));
+		ASSERT_LE(cur, limit);
+	}
+}
+
+static void
+kill_and_wait(pid_t pid, int sig, int &status)
+{
+	do_kill_and_wait(pid, sig, status);
+        if (::testing::Test::HasFailure()) {
+		kill(pid, SIGKILL);
+	}
+}
+
 /*
  * Test
  *      pfc_is_safepath()
@@ -319,8 +366,10 @@ TEST(misc, pfc_flock_getowner)
 			ASSERT_EQ(0, ret);
 			ASSERT_EQ(0, own);
 
-			waitpid(fork_pid, &status, WUNTRACED);
+			kill_and_wait(fork_pid, 0, status);
+			RETURN_ON_ERROR();
 			ASSERT_TRUE(WIFEXITED(status));
+			ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 			VERIFY_CHILD(tmp);
 			ret = pfc_flock_unlock(lk);
 			ASSERT_EQ(0, ret);
@@ -338,20 +387,6 @@ test_errfunc(const char *fmt, va_list ap)
 	ASSERT_FALSE(err_flag);
 	err_flag = PFC_TRUE;
 	ASSERT_TRUE(PFC_TRUE);
-}
-
-static void
-wait_child(SignalHandler &sig, pid_t pid)
-{
-	time_t	limit(time(NULL) + 10);
-	struct timespec ts = {0, 1000000};
-
-	while (sig.getReceived() == 0) {
-		nanosleep(&ts, NULL);
-		ASSERT_EQ(0, waitpid(pid, NULL, WNOHANG));
-		time_t cur(time(NULL));
-		ASSERT_LE(cur, limit);
-	}
 }
 
 /*
@@ -489,8 +524,10 @@ TEST(misc, pfc_iostream_create_1)
 		ASSERT_EQ(buf_write[1], buf_read[1]);
 		ASSERT_EQ(buf_write[2], buf_read[2]);
 
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 
 		ret = pfc_iostream_destroy(stream);
@@ -582,8 +619,10 @@ TEST(misc, pfc_iostream_create_2)
 		ASSERT_EQ(buf_write[1], buf_read[1]);
 		ASSERT_EQ(buf_write[2], buf_read[2]);
 
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 
 		ret = pfc_iostream_destroy(stream);
@@ -641,7 +680,7 @@ TEST(misc, pfc_iostream_create_3)
 		CHILD_ASSERT_EQ(tmp, 0, ret);
 
 		/* set signal handler */
-		signal(SIGINT, test_misc_sig_handler);
+		sigset(SIGINT, test_misc_sig_handler);
 		iowait.iw_intrfunc = NULL;
 		iowait.iw_intrarg = NULL;
 		iowait.iw_sigmask = NULL;
@@ -662,7 +701,7 @@ TEST(misc, pfc_iostream_create_3)
 		CHILD_ASSERT_FALSE(tmp, test_misc_callback_true_flag);
 		CHILD_ASSERT_EQ(tmp, ETIMEDOUT, ret);
 		CHILD_ASSERT_TRUE(tmp, test_misc_sig_handler_flag);
-		test_misc_sig_handler_flag =PFC_FALSE;
+		test_misc_sig_handler_flag = PFC_FALSE;
 
 		_exit(EXIT_SUCCESS);
 
@@ -671,14 +710,10 @@ TEST(misc, pfc_iostream_create_3)
 		wait_child(sigusr1, fork_pid);
 		RETURN_ON_ERROR();
 
-		struct timespec ts = {
-			0, 10 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC),
-		};
-		nanosleep(&ts, NULL);
-		ASSERT_EQ(0, kill(fork_pid, SIGINT));
-
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, SIGINT, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -728,7 +763,7 @@ TEST(misc, pfc_iostream_create_4)
 		CHILD_ASSERT_NE(tmp, -1, sock);
 
 		/* set signal handler */
-		signal(SIGINT, test_misc_sig_handler);
+		sigset(SIGINT, test_misc_sig_handler);
 		iowait.iw_intrfunc = test_misc_callback_true;
 		iowait.iw_intrarg = NULL;
 		iowait.iw_sigmask = NULL;
@@ -760,14 +795,10 @@ TEST(misc, pfc_iostream_create_4)
 		wait_child(sigusr1, fork_pid);
 		RETURN_ON_ERROR();
 
-		struct timespec ts = {
-			0, 10 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC),
-		};
-		nanosleep(&ts, NULL);
-		ASSERT_EQ(0, kill(fork_pid, SIGINT));
-
-		waitpid(fork_pid, &status, WUNTRACED);
-		ASSERT_TRUE(!WIFSIGNALED(status));
+		kill_and_wait(fork_pid, SIGINT, status);
+		RETURN_ON_ERROR();
+		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -821,7 +852,7 @@ TEST(misc, pfc_iostream_create_5)
 		CHILD_ASSERT_NE(tmp, -1, sock);
 
 		/* set signal handler */
-		signal(SIGINT, test_misc_sig_handler);
+		sigset(SIGINT, test_misc_sig_handler);
 		iowait.iw_intrfunc = test_misc_callback_true;
 		iowait.iw_intrarg = NULL;
 		sigemptyset(&mask);
@@ -844,7 +875,6 @@ TEST(misc, pfc_iostream_create_5)
 
 		/* NOTREACHED */
 		CHILD_ASSERT_TRUE(tmp, PFC_FALSE);
-
 		_exit(EXIT_SUCCESS);
 
 	} else if (fork_pid > 0) {
@@ -852,18 +882,18 @@ TEST(misc, pfc_iostream_create_5)
 		wait_child(sigusr1, fork_pid);
 		RETURN_ON_ERROR();
 
-		ASSERT_EQ(0, kill(fork_pid, SIGINT));
-
 		struct timespec ts = {
 			0, 100 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC),
 		};
-		(void)nanosleep(&ts, NULL);
-		ASSERT_EQ(0, kill(fork_pid, SIGALRM));
 
-		waitpid(fork_pid, &status, WUNTRACED);
+		nanosleep(&ts, NULL);
+		ASSERT_EQ(0, kill(fork_pid, SIGINT));
+
+		kill_and_wait(fork_pid, SIGALRM, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFSIGNALED(status));
-		VERIFY_CHILD(tmp);
 		ASSERT_EQ(SIGALRM, WTERMSIG(status));
+		VERIFY_CHILD(tmp);
 	}
 }
 
@@ -1098,8 +1128,10 @@ TEST(misc, pfc_iostream_destroy_2)
 		ASSERT_EQ(buf_write[1], buf_read[1]);
 		ASSERT_EQ(buf_write[2], buf_read[2]);
 
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 
 		ret = pfc_iostream_destroy(stream);
@@ -1287,8 +1319,10 @@ TEST(misc, pfc_iostream_flush)
 		ASSERT_NE(buf_write[1], buf_read[1]);
 		ASSERT_NE(buf_write[2], buf_read[2]);
 
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 
 		ret = pfc_iostream_destroy(stream);
@@ -1418,7 +1452,7 @@ TEST(misc, pfc_iostream_read_4)
 		CHILD_ASSERT_NE(tmp, -1, sock);
 
 		/* set signal handler */
-		signal(SIGINT, test_misc_sig_handler);
+		sigset(SIGINT, test_misc_sig_handler);
 		iowait.iw_intrfunc = test_misc_callback_false;
 		iowait.iw_intrarg = NULL;
 		iowait.iw_sigmask = NULL;
@@ -1439,26 +1473,23 @@ TEST(misc, pfc_iostream_read_4)
 
 		/* NOTREACHED */
 		CHILD_ASSERT_TRUE(tmp, PFC_FALSE);
-
+		_exit(EXIT_SUCCESS);
 	} else if (fork_pid > 0) {
 		/* Parent */
 		wait_child(sigusr1, fork_pid);
 		RETURN_ON_ERROR();
 
 		struct timespec ts = {
-			0, 10 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC),
+			0, 100 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC),
 		};
 		nanosleep(&ts, NULL);
 		ASSERT_EQ(0, kill(fork_pid, SIGINT));
 
-		ts.tv_nsec = 100 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC);
-		nanosleep(&ts, NULL);
-		ASSERT_EQ(0, kill(fork_pid, SIGALRM));
-
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, SIGALRM, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFSIGNALED(status));
-		VERIFY_CHILD(tmp);
 		ASSERT_EQ(SIGALRM, WTERMSIG(status));
+		VERIFY_CHILD(tmp);
 	}
 }
 
@@ -1610,8 +1641,10 @@ TEST(misc, pfc_iostream_read_6)
 		ASSERT_TRUE(buf_write != NULL);
 		si = tbuf.getSize();
 
-		waitpid(fork_pid, &status, WUNTRACED);
-		ASSERT_TRUE(!WIFSIGNALED(status));
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
+		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 
 		ret = pfc_iostream_write(stream, buf_write, &si, NULL);
@@ -1704,8 +1737,10 @@ TEST(misc, pfc_iostream_write_1)
 					  TEST_MISC_BUFSIZE_OUT, NULL);
 		ASSERT_EQ(0, ret);
 
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 
 		ret = pfc_iostream_destroy(stream);
@@ -1790,7 +1825,7 @@ TEST(misc, pfc_iostream_write_4)
 		CHILD_ASSERT_NE(tmp, -1, sock);
 
 		/* set signal handler */
-		signal(SIGINT, test_misc_sig_handler);
+		sigset(SIGINT, test_misc_sig_handler);
 		iowait.iw_intrfunc = test_misc_callback_true;
 		iowait.iw_intrarg = NULL;
 		iowait.iw_sigmask = NULL;
@@ -1824,15 +1859,10 @@ TEST(misc, pfc_iostream_write_4)
 		wait_child(sigusr1, fork_pid);
 		RETURN_ON_ERROR();
 
-		struct timespec ts = {
-			0, 100 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC),
-		};
-		ts.tv_nsec = 100 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC);
-		nanosleep(&ts, NULL);
-		ASSERT_EQ(0, kill(fork_pid, SIGINT));
-
-		waitpid(fork_pid, &status, WUNTRACED);
-		ASSERT_TRUE(!WIFSIGNALED(status));
+		kill_and_wait(fork_pid, SIGINT, status);
+		RETURN_ON_ERROR();
+		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -1882,7 +1912,7 @@ TEST(misc, pfc_iostream_write_5)
 		CHILD_ASSERT_NE(tmp, -1, sock);
 
 		/* set signal handler */
-		signal(SIGINT, test_misc_sig_handler);
+		sigset(SIGINT, test_misc_sig_handler);
 		iowait.iw_intrfunc = test_misc_callback_false;
 		iowait.iw_intrarg = NULL;
 		iowait.iw_sigmask = NULL;
@@ -1901,11 +1931,11 @@ TEST(misc, pfc_iostream_write_5)
 		si = tbuf.getSize();
 
 		kill(getppid(), SIGUSR1);
+		sleep(1);
 		ret = pfc_iostream_write(stream, buf_write, &si, NULL);
 
 		/* NOTREACHED */
 		CHILD_ASSERT_TRUE(tmp, PFC_FALSE);
-
 		_exit(EXIT_SUCCESS);
 
 	} else if (fork_pid > 0) {
@@ -1914,20 +1944,16 @@ TEST(misc, pfc_iostream_write_5)
 		RETURN_ON_ERROR();
 
 		struct timespec ts = {
-			0, 10 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC),
+			0, 100 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC),
 		};
-		ts.tv_nsec = 10 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC);
 		nanosleep(&ts, NULL);
 		ASSERT_EQ(0, kill(fork_pid, SIGINT));
 
-		ts.tv_nsec = 100 * (PFC_CLOCK_NANOSEC / PFC_CLOCK_MILLISEC);
-		nanosleep(&ts, NULL);
-		ASSERT_EQ(0, kill(fork_pid, SIGALRM));
-
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, SIGALRM, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFSIGNALED(status));
-		VERIFY_CHILD(tmp);
 		ASSERT_EQ(SIGALRM, WTERMSIG(status));
+		VERIFY_CHILD(tmp);
 	}
 }
 
@@ -2938,8 +2964,10 @@ TEST(misc, cproto_cmd_read_1)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -3046,8 +3074,10 @@ TEST(misc, cproto_cmd_read_2)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -3164,8 +3194,10 @@ TEST(misc, cproto_cmd_read_3)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -3280,8 +3312,10 @@ TEST(misc, cproto_data_int32)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -3405,8 +3439,10 @@ TEST(misc, cproto_data_text_1)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -3531,8 +3567,10 @@ TEST(misc, cproto_data_text_2)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -3648,8 +3686,10 @@ TEST(misc, cproto_data_read_1)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -3768,8 +3808,10 @@ TEST(misc, cproto_data_read_2)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -3896,8 +3938,10 @@ TEST(misc, cproto_data_read_3)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -4024,8 +4068,10 @@ TEST(misc, cproto_data_read_4)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -4162,8 +4208,10 @@ TEST(misc, cproto_data_uint32_1)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -4287,8 +4335,10 @@ TEST(misc, cproto_data_uint32_2)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -4402,8 +4452,10 @@ TEST(misc, cproto_data_write_text)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -4505,8 +4557,10 @@ TEST(misc, cproto_handshake_read_1)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -4608,8 +4662,10 @@ TEST(misc, cproto_handshake_read_2)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -4722,8 +4778,10 @@ TEST(misc, cproto_handshake_read_3)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -4839,8 +4897,10 @@ TEST(misc, cproto_handshake_read_4)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -4953,8 +5013,10 @@ TEST(misc, cproto_handshake_read_5)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -5076,8 +5138,10 @@ TEST(misc, cproto_handshake_read_6)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -5226,8 +5290,10 @@ TEST(misc, cproto_resp_read_1)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
@@ -5378,8 +5444,10 @@ TEST(misc, cproto_resp_read_2)
 		ASSERT_EQ(0, ret);
 
 		int	status;
-		waitpid(fork_pid, &status, WUNTRACED);
+		kill_and_wait(fork_pid, 0, status);
+		RETURN_ON_ERROR();
 		ASSERT_TRUE(WIFEXITED(status));
+		ASSERT_EQ(EXIT_SUCCESS, WEXITSTATUS(status));
 		VERIFY_CHILD(tmp);
 	}
 }
