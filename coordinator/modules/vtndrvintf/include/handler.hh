@@ -1,14 +1,14 @@
-/*
- * Copyright (c) 2012-2013 NEC Corporation
- * All rights reserved.
- *
- * This program and the accompanying materials are made
- * available under the
- * terms of the Eclipse Public License v1.0 which
- * accompanies this
- * distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
- */
+ /*
+* Copyright (c) 2012-2013 NEC Corporation
+* All rights reserved.
+*
+* This program and the accompanying materials are made
+* available under the
+* terms of the Eclipse Public License v1.0 which
+* accompanies this
+* distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*/
 
 #ifndef __HANDLER_HH__
 #define __HANDLER_HH__
@@ -60,9 +60,6 @@ typedef enum {
   IPC_DATA_TYPE_INDEX, /* datatype=7 */
   IPC_KEY_TYPE_INDEX,  /* keytype=8 */
 } request_header_t;
-
-}  //driver 
-
-}  //unc
-
+}  // namespace driver
+}  // namespace unc
 #endif
