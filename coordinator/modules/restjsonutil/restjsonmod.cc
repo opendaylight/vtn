@@ -22,7 +22,7 @@ class RestJsonMod: public pfc::core::Module {
    */
   explicit RestJsonMod(const pfc_modattr_t *mattr) :
       pfc::core::Module(mattr) {
-  }
+      }
 
   /*
    * @brief - init method
@@ -40,6 +40,6 @@ class RestJsonMod: public pfc::core::Module {
     return PFC_TRUE;
   }
 };
-}
-}
+}  // namespace restjson
+}  // namespace unc
 PFC_MODULE_IPC_DECL(unc::restjson::RestJsonMod, 0);
