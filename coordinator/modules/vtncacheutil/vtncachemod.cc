@@ -13,19 +13,30 @@ namespace vtndrvcache {
 
 class vtndrvcachemod: public pfc::core::Module {
  public:
+  /**
+   ** @brief : vtndrvcachemod Constructor
+   **/
   explicit vtndrvcachemod(const pfc_modattr_t *mattr):
-                  pfc::core::Module(mattr) {
-  }
 
+  /**
+  ** @brief : Call Module constructor
+  **/
+  pfc::core::Module(mattr) { }
+
+  /**
+   ** @brief : Call init function to initialize module
+   **/
   pfc_bool_t  init() {
     return PFC_TRUE;
   }
 
+  /**
+   ** @brief : Call fini function to release module
+   **/
   pfc_bool_t  fini() {
     return PFC_TRUE;
   }
 };
-}
-}
-
+}  // namespace vtndrvcache
+}  // namespace unc
 PFC_MODULE_IPC_DECL(unc::vtndrvcache::vtndrvcachemod, 0);

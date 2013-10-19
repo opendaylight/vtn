@@ -80,7 +80,7 @@ TcMsgAudit::SendAbortRequest(AbortOnFailVector abort_on_fail_) {
     }
 
     if (PFC_EXPECT_TRUE(driver_id_ >= UNC_CT_PFC) &&
-        PFC_EXPECT_TRUE(driver_id_ <= UNC_CT_VNP)) {
+        PFC_EXPECT_TRUE(driver_id_ <= UNC_CT_ODC)) {
       util_resp = tc::TcClientSessionUtils::set_uint8(abortsess, driver_id_);
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
         TcClientSessionUtils::tc_session_close(&abortsess, conn);
@@ -178,7 +178,7 @@ TcMsgAudit::SendAuditTransEndRequest(AbortOnFailVector abort_on_fail_,
       return ReturnUtilResp(util_resp);
     }
     if (PFC_EXPECT_TRUE(driver_id_ >= UNC_CT_PFC) &&
-        PFC_EXPECT_TRUE(driver_id_ <= UNC_CT_VNP)) {
+        PFC_EXPECT_TRUE(driver_id_ <= UNC_CT_ODC)) {
       util_resp = tc::TcClientSessionUtils::set_uint8(end_sess, driver_id_);
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
         TcClientSessionUtils::tc_session_close(&end_sess, conn);
@@ -424,7 +424,7 @@ TcOperRet AuditTransaction::Execute() {
   /*validate driver_id_ and controller i
    * session-id can be 0 incase of driver-audit */
   if (PFC_EXPECT_TRUE(driver_id_ < UNC_CT_PFC) ||
-      PFC_EXPECT_TRUE(driver_id_ > UNC_CT_VNP) ||
+      PFC_EXPECT_TRUE(driver_id_ > UNC_CT_ODC) ||
       PFC_EXPECT_TRUE(controller_id_.empty())) {
     pfc_log_error("Invalid Driver/Controller ID");
     return TCOPER_RET_FAILURE;
@@ -452,8 +452,8 @@ TcOperRet AuditTransaction::Execute() {
     }
     case tclib::MSG_AUDIT_TRANS_START: {
       pfc_log_info("*** AUDIT TxSTART ***");
-      notifyorder_.push_back(TC_DRV_OPENFLOW);
-      notifyorder_.push_back(TC_DRV_OVERLAY);
+      notifyorder_.push_back(TC_DRV_ODL);
+      //notifyorder_.push_back(TC_DRV_OVERLAY);
       // notifyorder_.push_back(TC_DRV_LEGACY);
       notifyorder_.push_back(TC_UPLL);
       notifyorder_.push_back(TC_UPPL);
@@ -464,8 +464,7 @@ TcOperRet AuditTransaction::Execute() {
       notifyorder_.push_back(TC_UPPL);
       notifyorder_.push_back(TC_UPLL);
       // notifyorder_.push_back(TC_DRV_LEGACY);
-      notifyorder_.push_back(TC_DRV_OVERLAY);
-      notifyorder_.push_back(TC_DRV_OPENFLOW);
+      notifyorder_.push_back(TC_DRV_ODL);
       break;
     }
     default: {
@@ -1015,7 +1014,7 @@ TcOperRet TwoPhaseAudit::Execute() {
 
   /*validate controller_id_ and driver_id_*/
   if ((PFC_EXPECT_TRUE(driver_id_ < UNC_CT_PFC) ||
-       PFC_EXPECT_TRUE(driver_id_ > UNC_CT_VNP)) ||
+       PFC_EXPECT_TRUE(driver_id_ > UNC_CT_ODC)) ||
       PFC_EXPECT_TRUE(controller_id_.empty())) {
     pfc_log_error("Invalid Driver/Controller ID");
     return TCOPER_RET_FAILURE;

@@ -13,10 +13,10 @@
 
 include ../defs.mk
 
-CXX_SOURCES	=  $(wildcard *.cc) 
+CXX_SOURCES	    =       $(wildcard *.cc) 
 
-UNC_LIBS       +=    -lcurl \
-                     -ljson 
+UNC_LIBS       +=       -lcurl \
+												-ljson 
 
 include ../rules.mk
 
