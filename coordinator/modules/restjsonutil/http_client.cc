@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2013 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made
  * available under the
  * terms of the Eclipse Public License v1.0 which
@@ -18,12 +18,12 @@ namespace restjson {
 
 // Constructor
 HttpClient::HttpClient()
-: handle_(NULL),
-  response_(NULL),
-  slist_(NULL) {
-  pfc_log_debug("%s, Entering function", PFC_FUNCNAME);
-  pfc_log_debug("%s, Exiting function", PFC_FUNCNAME);
-}
+    : handle_(NULL),
+    response_(NULL),
+    slist_(NULL) {
+      pfc_log_debug("%s, Entering function", PFC_FUNCNAME);
+      pfc_log_debug("%s, Exiting function", PFC_FUNCNAME);
+    }
 
 // Destructor
 HttpClient::~HttpClient() {
@@ -72,7 +72,8 @@ void HttpClient::fini() {
 
 // Sets the Username and password to the CURL handle
 rest_resp_code_t HttpClient::set_username_password(const std::string &username,
-                                         const std::string &password) {
+                                                   const std::string
+                                                   &password) {
   pfc_log_debug("%s, Entering function", PFC_FUNCNAME);
   std::string username_password = "";
   username_password.append(username);
@@ -81,7 +82,7 @@ rest_resp_code_t HttpClient::set_username_password(const std::string &username,
   pfc_log_debug("%d CURLOPT_USERPWD", CURLOPT_USERPWD);
 
   CURLcode curlRetCode = curl_easy_setopt(handle_, CURLOPT_USERPWD,
-      username_password.c_str());
+                                          username_password.c_str());
   if (CURLE_OK != curlRetCode) {
     return FAILURE;
   }
@@ -91,12 +92,12 @@ rest_resp_code_t HttpClient::set_username_password(const std::string &username,
 
 // Sets the Connection TimeOut to the CURL handle
 rest_resp_code_t HttpClient::set_connection_timeout(
-                        const int connectionTimeOut) {
+    const int connectionTimeOut) {
   pfc_log_debug("%s, Entering function", PFC_FUNCNAME);
   pfc_log_debug("%d CURLOPT_CONNECTTIMEOUT", CURLOPT_CONNECTTIMEOUT);
 
   CURLcode curlRetCode = curl_easy_setopt(handle_, CURLOPT_CONNECTTIMEOUT,
-      connectionTimeOut);
+                                          connectionTimeOut);
   if (CURLE_OK != curlRetCode) {
     return FAILURE;
   }
@@ -108,7 +109,7 @@ rest_resp_code_t HttpClient::set_connection_timeout(
 rest_resp_code_t HttpClient::set_request_timeout(const int reqTimeOut) {
   pfc_log_debug("%s, Entering function", PFC_FUNCNAME);
   CURLcode curlRetCode = curl_easy_setopt(handle_, CURLOPT_TIMEOUT,
-      reqTimeOut);
+                                          reqTimeOut);
   if (CURLE_OK != curlRetCode) {
     return FAILURE;
   }
@@ -126,7 +127,7 @@ rest_resp_code_t HttpClient::set_operation_type(const HttpMethod operation) {
 
   switch (operation) {
     case HTTP_METHOD_POST: {
-      pfc_log_info("HTTP_METHOD_POST");
+      pfc_log_debug("HTTP_METHOD_POST");
       curlRetCode = curl_easy_setopt(handle_, CURLOPT_POST, 1);
       if (CURLE_OK != curlRetCode) {
         pfc_log_error(" SetRequest Body failed with curl error code %d",
@@ -135,7 +136,7 @@ rest_resp_code_t HttpClient::set_operation_type(const HttpMethod operation) {
         break;
       }
     }
-      break;
+    break;
 
     case HTTP_METHOD_PUT: {
       curlRetCode = curl_easy_setopt(handle_, CURLOPT_CUSTOMREQUEST, "PUT");
@@ -144,7 +145,7 @@ rest_resp_code_t HttpClient::set_operation_type(const HttpMethod operation) {
         break;
       }
     }
-      break;
+    break;
     case HTTP_METHOD_DELETE: {
       curlRetCode = curl_easy_setopt(handle_, CURLOPT_CUSTOMREQUEST, "DELETE");
       if (CURLE_OK != curlRetCode) {
@@ -152,7 +153,7 @@ rest_resp_code_t HttpClient::set_operation_type(const HttpMethod operation) {
         break;
       }
     }
-      break;
+    break;
     case HTTP_METHOD_GET: {
       curlRetCode = curl_easy_setopt(handle_, CURLOPT_HTTPGET, 1);
       if (CURLE_OK != curlRetCode) {
@@ -160,7 +161,7 @@ rest_resp_code_t HttpClient::set_operation_type(const HttpMethod operation) {
         break;
       }
     }
-      break;
+    break;
 
     default: {
       pfc_log_debug("Unsupported case type %d ", operation);
@@ -179,7 +180,7 @@ rest_resp_code_t HttpClient::set_request_body(const char* requestbody) {
   pfc_log_debug("requestbody : %s", requestbody);
 
   CURLcode curlRetCode = curl_easy_setopt(handle_, CURLOPT_POSTFIELDS,
-      requestbody);
+                                          requestbody);
 
   if (CURLE_OK != curlRetCode) {
     pfc_log_error(" SetRequest Body failed with curl error code %d",
@@ -193,7 +194,7 @@ rest_resp_code_t HttpClient::set_request_body(const char* requestbody) {
 
 // Sets Common Values to the CURL hanlde, Post the handle and writes the reponse
 rest_resp_code_t HttpClient::execute() {
-  pfc_log_info("%s Entering method ", PFC_FUNCNAME);
+  pfc_log_debug("%s Entering method ", PFC_FUNCNAME);
 
   rest_resp_code_t curl_ret_code = set_opt_common();
   if (SUCCESS != curl_ret_code) {
@@ -209,7 +210,7 @@ rest_resp_code_t HttpClient::execute() {
   if (SUCCESS != curl_ret_code) {
     return FAILURE;
   }
-  pfc_log_info("%s Exiting Execute method ", PFC_FUNCNAME);
+  pfc_log_debug("%s Exiting Execute method ", PFC_FUNCNAME);
   return SUCCESS;
 }
 
@@ -219,7 +220,7 @@ rest_resp_code_t HttpClient::set_request_header(const std::string&
   pfc_log_debug("%s, Entering function", PFC_FUNCNAME);
   CURLcode curlRetCode = CURLE_OK;
   curlRetCode = curl_easy_setopt(handle_, CURLOPT_URL,
-      (requestheader).c_str());
+                                 (requestheader).c_str());
 
   if (CURLE_OK != curlRetCode) {
     return FAILURE;
@@ -266,13 +267,13 @@ rest_resp_code_t HttpClient::set_opt_common() {
 rest_resp_code_t HttpClient::set_opt_write_data() {
   pfc_log_debug("%s, Entering function", PFC_FUNCNAME);
   CURLcode curlRetCode = curl_easy_setopt(handle_, CURLOPT_WRITEFUNCTION,
-      write_call_back);
+                                          write_call_back);
   if (CURLE_OK != curlRetCode) {
     return FAILURE;
   }
   curlRetCode = curl_easy_setopt(handle_, CURLOPT_WRITEDATA,
-      reinterpret_cast<void *>
-      (response_->write_data));
+                                 reinterpret_cast<void *>
+                                 (response_->write_data));
 
   if (CURLE_OK != curlRetCode) {
     return FAILURE;
@@ -299,7 +300,7 @@ HttpContent_t* HttpClient::get_http_resp_body() {
   pfc_log_debug("%s, Entering function", PFC_FUNCNAME);
   if (NULL != response_) {
     if (NULL != response_->write_data) {
-      pfc_log_info("Output from server %s ", response_->write_data->memory);
+      pfc_log_debug("Output from server %s ", response_->write_data->memory);
       return response_->write_data;
     }
   }
@@ -314,12 +315,12 @@ rest_resp_code_t HttpClient::perform_http_req() {
   CURLcode curlRetCode = curl_easy_perform(handle_);
 
   if (CURLE_OK != curlRetCode) {
-    pfc_log_info("%d Error", curlRetCode);
+    pfc_log_debug("%d Error", curlRetCode);
     return FAILURE;
   }
 
   curlRetCode = curl_easy_getinfo(handle_,
-      CURLINFO_RESPONSE_CODE, &(response_->code));
+                                  CURLINFO_RESPONSE_CODE, &(response_->code));
 
   if (CURLE_OK != curlRetCode) {
     return FAILURE;
@@ -331,7 +332,7 @@ rest_resp_code_t HttpClient::perform_http_req() {
 // Call back to get the response from the CURL and
 // write it to the resp structure
 size_t HttpClient::write_call_back(void *ptr, size_t size, size_t nmemb,
-                                 void *data) {
+                                   void *data) {
   pfc_log_debug("%s, Entering function", PFC_FUNCNAME);
   HttpContent_t *mem = reinterpret_cast<HttpContent_t*>(data);
 
@@ -364,5 +365,5 @@ size_t HttpClient::write_call_back(void *ptr, size_t size, size_t nmemb,
   pfc_log_debug("%s, Exiting function", PFC_FUNCNAME);
   return realsize;
 }
-}
-}
+}  // namespace restjson
+}  // namespace unc

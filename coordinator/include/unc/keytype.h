@@ -74,7 +74,8 @@ typedef enum {
 	UNC_KT_CTR_DOMAIN,
 	UNC_KT_LOGICAL_PORT,
 	UNC_KT_LOGICAL_MEMBER_PORT,
-	UNC_KT_BOUNDARY
+	UNC_KT_BOUNDARY,
+  UNC_KT_INVALID = 0x300
 } unc_key_type_t;
 
 /* Operation */

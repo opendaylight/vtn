@@ -1,7 +1,7 @@
-/* 
+/*
  * Copyright (c) 2012-2013 NEC Corporation
  * All rights reserved.
- *  
+ *
  * This program and the accompanying materials are made
  * available under the
  * terms of the Eclipse Public License v1.0 which
@@ -33,13 +33,13 @@ typedef enum {
 } HttpMethod;
 
 typedef struct {
-    char *memory;
-    int size;
+  char *memory;
+  int size;
 } HttpContent_t;
 
 typedef struct {
-    int code;
-    HttpContent_t *write_data;
+  int code;
+  HttpContent_t *write_data;
 } HttpResponse_t;
 
 typedef enum {
@@ -59,6 +59,6 @@ typedef enum {
   RESP_OK = 200,
   RESP_UNKNOWN = 1
 } ServerResponseCode;
-}
-}
+}  // namespace restjson
+}  // namespace unc
 #endif  // RESTJSON_REST_COMMON_DEFS_H_

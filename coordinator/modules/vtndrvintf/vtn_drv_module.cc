@@ -16,12 +16,10 @@ namespace unc {
 namespace driver {
 
 /**
- * VtnDrvIntf():
  * @brief     : constructor
  */
-
 VtnDrvIntf::VtnDrvIntf(const pfc_modattr_t* attr)
-: Module(attr), ctrl_inst_(new ControllerFramework()) {
+: Module(attr), taskq_(NULL), ctrl_inst_(NULL) {
   pfc_log_debug("Entering constructor %s..", PFC_FUNCNAME);
   pfc_log_debug("Existing constructor %s..", PFC_FUNCNAME);
 }
@@ -32,21 +30,25 @@ VtnDrvIntf::VtnDrvIntf(const pfc_modattr_t* attr)
  */
 VtnDrvIntf::~VtnDrvIntf() {
   pfc_log_debug("Entering default desstructor %s..", PFC_FUNCNAME);
-  if(ctrl_inst_)
+  if (ctrl_inst_)
     delete ctrl_inst_;
   pfc_log_debug("Existing default desstructor %s..", PFC_FUNCNAME);
 }
 
 /**
- * Init:
  * @brief     : This Function is called to load the vtndrvintf module
  * @param[in] : None
- * @retval    : pfc_bool_t
+ * @retval    : PFC_FALSE/PFC_TRUE
  */
 pfc_bool_t VtnDrvIntf::init(void) {
   pfc_log_debug("%s: Entering function..", PFC_FUNCNAME);
 
-  /****Initialize KT_Handler_Instance*****/
+  uint32_t concurrency = 1;
+  taskq_ = pfc::core::TaskQueue::create(concurrency);
+  ControllerFramework *ctrl_inst_= new ControllerFramework(taskq_);
+  set_controller_instance(ctrl_inst_);
+
+  //  Initialize KT_Handler_Instance
   KtHandler* vtn_req = new unc::driver::KtRequestHandler<key_vtn_t,
                                          val_vtn_t,
                                          unc::driver::vtn_driver_command>();
@@ -93,15 +95,26 @@ pfc_bool_t VtnDrvIntf::init(void) {
                                           UNC_KT_CONTROLLER,
                                           ctrl_req));
 
+  KtHandler* ktroot_req = new unc::driver::KtRequestHandler<key_root_t,
+                                   val_root_t,
+                                   unc::driver::root_driver_command>();
+  if (ktroot_req == NULL) {
+    pfc_log_error("KT_ROOT requrest handler is NULL");
+    return PFC_FALSE;
+  }
+  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
+                                          UNC_KT_ROOT,
+                                          ktroot_req));
+
   unc::tclib::TcLibModule* TcLibModule_obj =
         static_cast<unc::tclib::TcLibModule*>(pfc::core::Module::getInstance(
         "tclib"));
-  if(TcLibModule_obj == NULL) {
+  if (TcLibModule_obj == NULL) {
     pfc_log_error("tclib getInstance failed");
-  return PFC_TRUE;
+    return PFC_FALSE;
     }
 
-  if(ctrl_inst_ == NULL) {
+  if (ctrl_inst_ == NULL) {
     pfc_log_error("controller instance not created");
     return PFC_FALSE;
   }
@@ -114,27 +127,36 @@ pfc_bool_t VtnDrvIntf::init(void) {
 
 
 /**
- * fini:
  * @brief     : This Function is called to unload the vtndrvintf module
- * @param[in] : void
- * @retval    : pfc_bool_t
+ * @param[in] : None
+ * @retval    : PFC_TRUE 
  */
 pfc_bool_t VtnDrvIntf::fini(void) {
   pfc_log_debug("%s: Entering function..", PFC_FUNCNAME);
+
+  if (taskq_) {
+    delete taskq_;
+    taskq_ = NULL;
+  }
+
+  if (ctrl_inst_) {
+    delete ctrl_inst_;
+    ctrl_inst_ = NULL;
+  }
+
   pfc_log_debug("%s: Exiting function..", PFC_FUNCNAME);
   return PFC_TRUE;
 }
 
 
 /**
- * ipcService:
  * @brief     : This Function recevies the ipc request and process the same
- * @param[in] : sess
- * @retval    : pfc_ipcresp_t
+ * @param[in] : sess, service
+ * @retval    : PFC_IPCRESP_FATAL/PFC_IPCINT_EVSESS_OK
  */
 pfc_ipcresp_t VtnDrvIntf::ipcService(pfc::core::ipc::ServerSession& sess,
-    pfc_ipcid_t service) {
-  pfc_log_info("%s: Entering function..", PFC_FUNCNAME);
+                                     pfc_ipcid_t service) {
+  pfc_log_debug("%s: Entering function..", PFC_FUNCNAME);
 
   pfc::core::ipc::ServerSession* p_sess=&sess;
   keyif_drv_request_header_t request_hdr;
@@ -148,31 +170,31 @@ pfc_ipcresp_t VtnDrvIntf::ipcService(pfc::core::ipc::ServerSession& sess,
   }
 
   if (map_kt_.empty()) {
-    pfc_log_info("map_kt empty");
+    pfc_log_debug("map_kt empty");
     return PFC_IPCRESP_FATAL;
   }
     KtHandler *ptr_KT_Handler = get_kt_handler(request_hdr.key_type);
 
   if (ptr_KT_Handler == NULL) {
-    pfc_log_info("Key Type Not Supported %d", request_hdr.key_type);
+    pfc_log_debug("Key Type Not Supported %d", request_hdr.key_type);
     return PFC_IPCRESP_FATAL;
   }
 
   ptr_KT_Handler->handle_request(sess, request_hdr, ctrl_inst_);
 
   pfc_log_debug("%s: Exiting function..", PFC_FUNCNAME);
-  return 0;
+  return PFC_IPCINT_EVSESS_OK;
 }
 
 
 /**
- * GetRequestHeader:
  * @brief     : This function parse the session and fills
  *              keyif_drv_request_header_t
  * @param[in] : sess, request_hdr
- * @retval    : VtnDrvRetEnum
+ * @retval    : VTN_DRV_RET_FAILURE /VTN_DRV_RET_SUCCESS
  */
-VtnDrvRetEnum VtnDrvIntf::get_request_header(pfc::core::ipc::ServerSession* sess,
+VtnDrvRetEnum VtnDrvIntf::get_request_header(
+                                  pfc::core::ipc::ServerSession* sess,
                                   keyif_drv_request_header_t &request_hdr) {
   pfc_log_debug("Entering Function %s..", PFC_FUNCNAME);
 
@@ -188,7 +210,7 @@ VtnDrvRetEnum VtnDrvIntf::get_request_header(pfc::core::ipc::ServerSession* sess
   }
 
   request_hdr.key_type=(unc_key_type_t)keytype;
-  pfc_log_info("Keytype is %d", request_hdr.key_type);
+  pfc_log_debug("Keytype is %d", request_hdr.key_type);
 
   const char *ctr_name;
   err = sess->getArgument(IPC_CONTROLLER_ID_INDEX, ctr_name);
@@ -265,28 +287,26 @@ VtnDrvRetEnum VtnDrvIntf::get_request_header(pfc::core::ipc::ServerSession* sess
 }
 
 /**
- * get_kt_handler:
  * @brief     : This Function  returns the  kt_handler for
  *              the appropriate key types
- * @param[in] : kt
- * @retval    : kt_handler
+ * @param[in] : key type
+ * @retval    : KtHandler* 
  */
 KtHandler* VtnDrvIntf::get_kt_handler(unc_key_type_t kt) {
   return map_kt_.find(kt)->second;
 }
 
 /**
- * RegisterDriver:
  * @brief     : This Function is called to register the driver handler
  *              with respect to the controller type
  * @param[in] : *drvobj
- * @retval    : uint32_t
+ * @retval    : VTN_DRV_RET_SUCCESS
  */
 VtnDrvRetEnum VtnDrvIntf:: register_driver(driver *drvobj) {
   unc_keytype_ctrtype_t ctr_type = drvobj->get_controller_type();
   ctrl_inst_->RegisterDriver(ctr_type, drvobj);
   return VTN_DRV_RET_SUCCESS;
 }
-}  // driver
-}  // unc
+}  // namespace driver
+}  // namespace unc
 PFC_MODULE_IPC_DECL(unc::driver::VtnDrvIntf, 3);
