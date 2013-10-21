@@ -66,6 +66,9 @@ public class FlowAddTask extends RemoteFlowModTask {
         // entry.
         List<FlowEntry> entries = new ArrayList<FlowEntry>();
         FlowEntry ingress = getIngressFlow(entries);
+        if (ingress == null) {
+            return false;
+        }
 
         // Install flow entries except for ingress flow.
         // Ingress flow must be installed at last in order to avoid
