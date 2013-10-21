@@ -199,6 +199,7 @@ public class RemoteFlowRequestTest extends VTNManagerImplTestCommon {
             }
         }
 
+        Timer timer = new Timer();
         for (FlowModResult result0 : resultSet) {
             for (FlowModResult result1 : resultSet) {
                 for (Boolean all : createBooleans(false)) {
@@ -208,7 +209,6 @@ public class RemoteFlowRequestTest extends VTNManagerImplTestCommon {
 
                     TimerTask task = new ResultTimerTask(req,
                             entries.get(1).getFlowName(), result1, 1);
-                    Timer timer = new Timer();
                     timer.schedule(task, 10L);
 
                     long resTimeout = 1000L + System.currentTimeMillis();
@@ -217,28 +217,36 @@ public class RemoteFlowRequestTest extends VTNManagerImplTestCommon {
                                                    all.booleanValue());
                     long afterTime = System.currentTimeMillis();
 
+                    assertTrue(resTimeout > afterTime);
                     if (result0 == FlowModResult.SUCCEEDED
-                            && result1 == FlowModResult.SUCCEEDED) {
+                        && result1 == FlowModResult.SUCCEEDED) {
                         assertTrue(res);
-                        assertTrue(resTimeout > afterTime);
-                    } else if (result0 == FlowModResult.IGNORED
-                            && all == Boolean.TRUE) {
-                        assertFalse(res);
-                        assertTrue(resTimeout <= afterTime);
-                    } else if (result1 == FlowModResult.IGNORED
-                            && all == Boolean.TRUE) {
-                        // this case time out
-                        assertFalse(res);
-                        assertTrue(resTimeout <= afterTime);
-                    } else if ((result0 != FlowModResult.SUCCEEDED
-                            || result1 != FlowModResult.SUCCEEDED)
-                            && all == Boolean.TRUE) {
-                        // TODO: need to check
-
                     } else {
                         assertFalse(res);
-                        assertTrue(resTimeout > afterTime);
                     }
+                    task.cancel();
+                }
+            }
+        }
+
+        // Timed out test.
+        for (FlowModResult result: resultSet) {
+            for (Boolean all : createBooleans(false)) {
+                RemoteFlowRequest req = new RemoteFlowRequest(entries);
+                req.setResult(entries.get(0).getFlowName(), result, 1);
+
+                long resTimeout = 100L + System.currentTimeMillis();
+                boolean res = req.getResultAbs(resTimeout, all.booleanValue());
+                long afterTime = System.currentTimeMillis();
+
+                assertFalse(res);
+                if (!all.booleanValue() && result != FlowModResult.SUCCEEDED) {
+                    // getResultAbs() should return without waiting for
+                    // completion of all requests.
+                    assertTrue(resTimeout > afterTime);
+                } else {
+                    // Request should timed out.
+                    assertTrue(resTimeout <= afterTime);
                 }
             }
         }
@@ -261,13 +269,15 @@ public class RemoteFlowRequestTest extends VTNManagerImplTestCommon {
             req.setResult(entries.get(0).getFlowName(), FlowModResult.SUCCEEDED, 1);
 
             TimerTask task = new InterruptTask(Thread.currentThread());
-            Timer timer = new Timer();
             timer.schedule(task, 500L);
 
             long resTimeout = 1000L + System.currentTimeMillis();
 
             boolean res = req.getResultAbs(resTimeout, all.booleanValue());
             assertFalse(res);
+            task.cancel();
         }
+
+        timer.cancel();
     }
 }
