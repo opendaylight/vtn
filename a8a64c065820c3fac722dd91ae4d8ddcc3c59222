@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da6255ed_a549428d",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2013-10-21T07:09:54Z",
+      "side": 1,
+      "message": "I think this line should not be the first line,\nbecause you should describe summary of the commit\nin the first line.",
+      "revId": "a8a64c065820c3fac722dd91ae4d8ddcc3c59222",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_c5443676",
+        "filename": "coordinator/modules/tclib/tclib_module.cc",
+        "patchSetId": 2
+      },
+      "lineNbr": 2218,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2013-10-21T07:09:54Z",
+      "side": 1,
+      "message": "It seems to me that this instance of ScopedMutex class is destructed right after this block, so the above three lines have no meaning.\n\nIs this \"if statement\" really needed?",
+      "revId": "a8a64c065820c3fac722dd91ae4d8ddcc3c59222",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
