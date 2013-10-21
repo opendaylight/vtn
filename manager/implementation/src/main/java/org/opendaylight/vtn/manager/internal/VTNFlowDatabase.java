@@ -490,10 +490,10 @@ public class VTNFlowDatabase {
         FlowCollector collector = new FlowCollector();
         for (VTNFlow vflow: vflows) {
             // Remove this VTN flow from the database.
-            removeIndex(mgr, vflow);
-
-            // Collect flow entries to be uninstalled.
-            collector.collect(mgr, vflow);
+            if (removeIndex(mgr, vflow)) {
+                // Collect flow entries to be uninstalled.
+                collector.collect(mgr, vflow);
+            }
         }
 
         // Uninstall flow entries in background.
@@ -608,14 +608,19 @@ public class VTNFlowDatabase {
      *
      * @param mgr    VTN Manager service.
      * @param vflow  A VTN flow.
+     * @return  {@code true} is returned if the specified VTN flow was actually
+     *          removed. Otherwise {@code false} is returned.
      */
-    public synchronized void removeIndex(VTNManagerImpl mgr, VTNFlow vflow) {
+    public synchronized boolean removeIndex(VTNManagerImpl mgr, VTNFlow vflow) {
         FlowGroupId gid = vflow.getGroupId();
         if (groupFlows.remove(gid) != null) {
             removeFlowIndex(vflow);
             removeNodeIndex(vflow);
             removePortIndex(vflow);
+            return true;
         }
+
+        return false;
     }
 
     /**
