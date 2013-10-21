@@ -816,8 +816,7 @@ public class VTNFlowDatabaseTest extends VTNManagerImplTestCommon {
         }
 
         // specify non match flow
-        VTNFlow flow = flows.iterator().next();
-        VTNFlow flowNew = new VTNFlow(flow.getGroupId());
+        VTNFlow flowNew = new VTNFlow(new FlowGroupId("test_1"));
         NodeConnector innc
             = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short)1),
                                                          node0);
@@ -831,24 +830,21 @@ public class VTNFlowDatabaseTest extends VTNManagerImplTestCommon {
         int preEntries = stubObj.getFlowEntries().size();
 
         task = fdb.removeFlows(vtnMgr, flowsNew);
-        // TODO: is it correct?
-        assertNotNull(task);
+        assertNull(task);
         flushFlowTasks();
 
-//        assertEquals(preSize, db.values().size());
-//        assertEquals(preEntries, stubObj.getFlowEntries().size());
+        assertEquals(preSize, db.values().size());
+        assertEquals(preEntries, stubObj.getFlowEntries().size());
 
         // in case there are no flow entry.
         fdb.clear(vtnMgr);
         flushFlowTasks();
 
         task = fdb.removeFlows(vtnMgr, removeFlows);
-        // TODO: need to fix ?
-        // assertNull(task);
+        assertNull(task);
         flushFlowTasks();
         assertEquals(0, db.values().size());
         assertEquals(0, stubObj.getFlowEntries().size());
-
     }
 
     /**
