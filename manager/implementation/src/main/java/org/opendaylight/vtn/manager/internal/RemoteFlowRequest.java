@@ -205,16 +205,23 @@ public class RemoteFlowRequest {
      *          {@code null} is returned if not yet determined.
      */
     private synchronized Boolean updateResult(boolean all) {
-        if (!failedSet.isEmpty() || !orphanSet.isEmpty()) {
+        Boolean result;
+        if (failedSet.isEmpty() && orphanSet.isEmpty()) {
+            result = null;
+        } else {
             requestResult = FlowModResult.FAILED;
-            if (!all) {
-                return Boolean.FALSE;
-            }
-        } else if (requestSet.isEmpty()) {
-            requestResult = FlowModResult.SUCCEEDED;
-            return Boolean.TRUE;
+            result = Boolean.FALSE;
         }
 
-        return null;
+        if (requestSet.isEmpty()) {
+            if (result == null) {
+                requestResult = FlowModResult.SUCCEEDED;
+                result = Boolean.TRUE;
+            }
+        } else if (all) {
+            result = null;
+        }
+
+        return result;
     }
 }
