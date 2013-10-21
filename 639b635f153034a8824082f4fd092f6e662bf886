@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da6255ed_2b0081a9",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 3
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2013-10-21T23:42:55Z",
+      "side": 1,
+      "message": "I think this line makes people confused.\nI think the review comments for refs/changes/92/1892/1 does not appear in git repository, the review comments appears only on this Gerrit system.\n\nTherefore, I think you should delete this line.",
+      "revId": "639b635f153034a8824082f4fd092f6e662bf886",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_6bf679d9",
+        "filename": "coordinator/modules/tclib/tclib_module.cc",
+        "patchSetId": 3
+      },
+      "lineNbr": 2218,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2013-10-21T23:42:55Z",
+      "side": 1,
+      "message": "It seems to me that this instance of ScopedMutex class is destructed right after this block, so the above three lines have no meaning.\nIs this \"if statement\" really needed?",
+      "revId": "639b635f153034a8824082f4fd092f6e662bf886",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
