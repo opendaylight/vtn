@@ -1,0 +1,157 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da6255ed_6e8687bb",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/Activator.java",
+        "patchSetId": 3
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2013-10-23T10:04:40Z",
+      "side": 1,
+      "message": "Remove this line because this import is redundant.",
+      "revId": "304f94bf314c2e17495d7c8d715f359965412c20",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_4eaaa31a",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/Activator.java",
+        "patchSetId": 3
+      },
+      "lineNbr": 79,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2013-10-23T10:04:40Z",
+      "side": 1,
+      "message": "\"salListenerName\" is a unique listener identifier used by IListenDataPacket.\nIf neutron handler does not use IListenDataPacket, \"salListenerName\" does not need to be passed to setInterface() and a null can be passed to setInterface() as a property map.",
+      "revId": "304f94bf314c2e17495d7c8d715f359965412c20",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_2ea76f51",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/Activator.java",
+        "patchSetId": 3
+      },
+      "lineNbr": 83,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2013-10-23T10:04:40Z",
+      "side": 1,
+      "message": "There is no need to use ArrayList if you don\u0027t need to change dependencies dynamically. Use String array instead.",
+      "revId": "304f94bf314c2e17495d7c8d715f359965412c20",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_eec157e5",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/NetworkHandler.java",
+        "patchSetId": 3
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2013-10-23T10:04:40Z",
+      "side": 1,
+      "message": "Too long line. I think each line in the source code should be within 80 characters.\nThe first sentence in the Javadoc comment should end with a period.",
+      "revId": "304f94bf314c2e17495d7c8d715f359965412c20",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_ceb6938a",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/NetworkHandler.java",
+        "patchSetId": 3
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2013-10-23T10:04:40Z",
+      "side": 1,
+      "message": "Please write a more concrete document about return value.",
+      "revId": "304f94bf314c2e17495d7c8d715f359965412c20",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_0ebdcb68",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/NetworkHandler.java",
+        "patchSetId": 3
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2013-10-23T10:04:40Z",
+      "side": 1,
+      "message": "Put \"@Override\" annotation here to denote this method is inherited from INeutronNetworkAware.",
+      "revId": "304f94bf314c2e17495d7c8d715f359965412c20",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_8eb09b8c",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/NetworkHandler.java",
+        "patchSetId": 3
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2013-10-23T10:04:40Z",
+      "side": 1,
+      "message": "You should avoid using magic number as possible.\nI think this value should be defined as a constant (private static final) with a constant name that represents the meaning of this value.",
+      "revId": "304f94bf314c2e17495d7c8d715f359965412c20",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_aebb5f71",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/NetworkHandler.java",
+        "patchSetId": 3
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2013-10-23T10:04:40Z",
+      "side": 1,
+      "message": "\"@return\" doclet should not be written on void method.",
+      "revId": "304f94bf314c2e17495d7c8d715f359965412c20",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_0e64ab20",
+        "filename": "manager/neutron/src/test/java/org/opendaylight/vtn/manager/neutron/NetworkHandlerTest.java",
+        "patchSetId": 3
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2013-10-23T10:04:40Z",
+      "side": 1,
+      "message": "Remove this line because this import is redundant.",
+      "revId": "304f94bf314c2e17495d7c8d715f359965412c20",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
