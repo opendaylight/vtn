@@ -44,6 +44,7 @@
   <modules>
     <module>../api</module>
     <module>../implementation</module>
+    <module>../neutron</module>
     <module>../northbound</module>
 
     <!-- Tests -->
