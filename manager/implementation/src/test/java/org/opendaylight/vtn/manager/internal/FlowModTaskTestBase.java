@@ -347,6 +347,16 @@ public class FlowModTaskTestBase extends TestBase {
         public Status uninstallFlowEntryGroupAsync(String arg0) {
             return null;
         }
+
+        @Override
+        public List<FlowEntry> getFlowEntriesForNode(Node node) {
+            return null;
+        }
+
+        @Override
+        public List<FlowEntry> getInstalledFlowEntriesForNode(Node node) {
+            return null;
+        }
     }
 
     /**

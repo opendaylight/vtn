@@ -1109,6 +1109,16 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
         return null;
     }
 
+    @Override
+    public List<FlowEntry> getFlowEntriesForNode(Node node) {
+        return null;
+    }
+
+    @Override
+    public List<FlowEntry> getInstalledFlowEntriesForNode(Node node) {
+        return null;
+    }
+
     // IfIptoHost
 
     @Override
