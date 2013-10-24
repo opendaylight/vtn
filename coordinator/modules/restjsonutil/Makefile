@@ -14,12 +14,12 @@
 include ../defs.mk
 
 CXX_SOURCES	=	rest_client.cc \
-			http_client.cc \
-			json_build_parse.cc	\
-			restjsonmod.cc
+							http_client.cc \
+							json_build_parse.cc	\
+							restjsonmod.cc
 
 UNC_LIBS   +=   -lcurl \
-		-ljson
+								-ljson
 
 include ../rules.mk
 

@@ -1,38 +1,113 @@
+/*
+ * Copyright (c) 2012-2013 NEC Corporation
+ * All rights reserved.
+ *
+ * This program and the accompanying materials are made
+ * available under the  terms of the Eclipse Public License v1.0 which
+ * accompanies this  distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ */
+
 #ifndef __CONTROLLER_INTERFACE_HH__
 #define __CONTROLLER_INTERFACE_HH__
 
 #include <unc/keytype.h>
+#include <pfcxx/timer.hh>
 #include <keytree.hh>
+#include <string>
 
-namespace unc{
-namespace driver{
+namespace unc {
+namespace driver {
+
+typedef enum {
+  CONNECTION_UP = 0,
+  CONNECTION_DOWN
+}ConnectionStatus;
+
 
 class controller {
  public:
-  controller () :keytree_ptr(NULL) {}
+  /**
+   * @brief - Constructor of controller class
+   */
+  controller() :keytree_ptr(NULL),
+                timed_(NULL),
+                connection_status_(CONNECTION_DOWN) {}
+  /**
+   * @brief - Destructor of controller class
+   */
   virtual ~controller() {}
-  // Invoked to know the type of controller
-  virtual unc_keytype_ctrtype_t get_controller_type()=0;
-  // Invoked to learn if CDF needs to ping the controller
-  // to check if alive
-  virtual pfc_bool_t is_ping_needed ()=0;
-  // Ping Interval
-  virtual uint32_t get_ping_interval()=0;
-  // Ping Fail Retry Count
-  virtual uint32_t get_ping_fail_retry_count()=0;
-  // Get the controller ID
-  virtual std::string get_controller_id ()=0;
-  // PING function for the controller
-  virtual pfc_bool_t  ping_controller ()=0;
-  // Invoked on global commit failure
-  virtual pfc_bool_t  reset_connect ()=0;
-  // Gets the host address
+
+  /**
+   * @brief  - Method to get the type of controller
+   * @retval - unc_keytype_ctrtype_t Controller type
+   */
+  virtual unc_keytype_ctrtype_t get_controller_type() = 0;
+
+  /**
+   * @brief  - Method to get the controller ID
+   * @retval - string - Controller ID
+   */
+  virtual std::string get_controller_id() = 0;
+
+  /**
+   * @brief  - Method Invoked on global commit failure
+   * @retval - PFC_TRUE/PFC_FALSE
+   */
+  virtual pfc_bool_t  reset_connect() = 0;
+
+  /**
+   * @brief  - Method to get the host address
+   * @retval - string - hostaddress
+   */
   virtual std::string get_host_address() = 0;
-  // Invoked cache create element
+
+  /**
+   * @brief  - Method to get the audit status
+   * @retval - PFC_TRUE/PFC_FALSE
+   */
+  virtual pfc_bool_t get_audit_status() = 0;
+
+  /**
+   * @brief  - Method to get the  user name
+   * @retval - string - username configured
+   */
+  virtual std::string  get_user_name() = 0;
+
+  /**
+   * @brief  - Method to get the password
+   * @retval - string - password configured
+   */
+  virtual std::string get_pass_word() = 0;
+
+  /**
+   * @brief  - Method to return connection status of controller
+   * @retval - CONNECTION_UP/CONNECTION_DOWN
+   */
+  ConnectionStatus get_connection_status() {
+    return connection_status_;
+  }
+  /**
+   * @brief     - Method to set connection status of controller
+   * @param[in] - ConnectionStatus - CONNECTION_UP/CONNECTION_DOWN
+   */
+  void set_connection_status(ConnectionStatus conn_status) {
+    connection_status_ = conn_status;
+  }
+
+  /**
+   * @brief  - Keytree pointer to access cache manager
+   */
   unc::vtndrvcache::KeyTree *keytree_ptr;
+
+  /**
+   * @brief  - Timer Instance
+   */
+  pfc::core::Timer* timed_;
+
+ private:
+  ConnectionStatus connection_status_;
 };
-
-}  // driver
-}  // unc
-
+}  // namespace driver
+}  // namespace unc
 #endif
