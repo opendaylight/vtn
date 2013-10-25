@@ -86,6 +86,11 @@ public class FlowModTaskTestBase extends TestBase {
         }
 
         @Override
+        public Set<InetAddress> getControllers(Node node) {
+            return null;
+        }
+
+        @Override
         public ConnectionMgmtScheme getActiveScheme() {
             return null;
         }

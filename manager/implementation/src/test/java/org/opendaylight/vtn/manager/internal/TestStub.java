@@ -1228,6 +1228,11 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
         return null;
     }
 
+    @Override
+    public Set<InetAddress> getControllers(Node node) {
+        return null;
+    }
+
     // additional method for control stub
     public void addEdge(Edge edge) {
         Map<Node, List<Edge>> map = nodeEdges.get(edge.getTailNodeConnector().getNode());
