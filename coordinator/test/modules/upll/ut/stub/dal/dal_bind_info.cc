@@ -26,23 +26,23 @@ DalBindInfo::~DalBindInfo() {
 }
 
 bool DalBindInfo::BindInput(const DalColumnIndex column_index,
-                  const DalCDataType app_data_type,
-                  const size_t array_size,
-                  const void *bind_addr) {
+                            const DalCDataType app_data_type,
+                            const size_t array_size,
+                            const void *bind_addr) {
   return stub_getMappedResultCode(DalBindInfo::BIND_INPUT);
 }
 
 bool DalBindInfo::BindOutput(const DalColumnIndex column_index,
-                   const DalCDataType app_data_type,
-                   const size_t array_size,
-                   const void *bind_addr) {
+                             const DalCDataType app_data_type,
+                             const size_t array_size,
+                             const void *bind_addr) {
   return stub_getMappedResultCode(DalBindInfo::BIND_OUTPUT);
 }
 
 bool DalBindInfo::BindMatch(const DalColumnIndex column_index,
-                  const DalCDataType app_data_type,
-                  const size_t array_size,
-                  const void *bind_addr) {
+                            const DalCDataType app_data_type,
+                            const size_t array_size,
+                            const void *bind_addr) {
   return stub_getMappedResultCode(DalBindInfo::BIND_MATCH);
 }
 
@@ -55,11 +55,12 @@ bool  DalBindInfo::ResetDalOutBuffer() {
 }
 
 bool DalBindInfo::stub_getMappedResultCode(DalBindInfo::Method methodType) {
-if (0 != method_result_map.count(methodType))  {
-return method_result_map[methodType];
+  if (0 != method_result_map.count(methodType))  {
+    return method_result_map[methodType];
+  }
+  return false;
 }
-return false;
-}
+
 }
 }
 }

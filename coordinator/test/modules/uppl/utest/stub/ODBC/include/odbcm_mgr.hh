@@ -11,20 +11,22 @@
 
 #ifndef _ODBCM_MGR_HH_
 #define _ODBCM_MGR_HH_
+
 #include <iostream>
-//#include "/root/dev_july23/src/include/unc/keytype.h"
 #include <vector>
 #include <map>
 #include <string>
-#include "odbcm_common.hh"
-#include "odbcm_db_tableschema.hh"
+#include <odbcm_common.hh>
+#include <odbcm_db_tableschema.hh>
 
 namespace unc {
 namespace uppl {
+
 class QueryFactory;
 class QueryProcessor;
 class DBVarbind;
 class OdbcmConnectionHandler;
+
 /**ODBMCManager is a class, exposes the API methods to UPPL managers and
  * internal transaction coordinator (ITC)
  * - Singleton class
@@ -223,17 +225,23 @@ class ODBCManager {
     // Closes the Read Write connections
     ODBCM_RC_STATUS CloseRwConnection();
 
-  static void stub_setResultcode(ODBCManager::Method methodType ,ODBCM_RC_STATUS res_code) {
+    static void stub_setResultcode(ODBCManager::Method methodType ,ODBCM_RC_STATUS res_code) {
         method_resultcode_map.insert(std::make_pair(methodType,res_code));
     }
 
     static void stub_setSingleRecordExists(bool exists) {
-        exists_=exists;
+        exists_ = exists;
+    }
+
+    static void stub_setSiblingCount(uint32_t count) {
+        sibling_count = count;
     }
 
     static void clearStubData() {
-                method_resultcode_map.clear();
-        } 
+        method_resultcode_map.clear();
+        exists_ = false;
+        sibling_count = 0;
+    }
 
   private:
     /**constructor of ODBCManager class
@@ -276,6 +284,7 @@ class ODBCManager {
     ODBCM_RC_STATUS stub_getMappedResultCode(Method);
     static std::map<ODBCManager::Method,ODBCM_RC_STATUS> method_resultcode_map;
     static  bool exists_;
+    static uint32_t sibling_count;
 };
 }  // namespace uppl
 }  // namespace unc

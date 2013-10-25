@@ -18,8 +18,8 @@
 
 #include <map>
 #include <string>
-#include "odbcm_common.hh"
-#include "odbcm_db_tableschema.hh"
+#include <odbcm_common.hh>
+#include <odbcm_db_tableschema.hh>
 
 namespace unc {
 namespace uppl {

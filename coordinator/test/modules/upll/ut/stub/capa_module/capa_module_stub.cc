@@ -12,29 +12,46 @@
 namespace unc {
 namespace capa {
 
- std::map<CapaModuleStub::CapaMethod,bool>CapaModuleStub::method_capa_map;
-   uint32_t CapaModuleStub::max_instance_count_local;
-   uint32_t *CapaModuleStub::num_attrs_local;
-   uint8_t *CapaModuleStub::attrs_local;
+std::map<CapaModuleStub::CapaMethod,bool>CapaModuleStub::method_capa_map;
+uint32_t CapaModuleStub::max_instance_count_local;
+uint32_t *CapaModuleStub::num_attrs_local;
+uint8_t *CapaModuleStub::attrs_local;
 
-  void CapaModuleStub::stub_setResultcode(CapaModuleStub::CapaMethod methodType ,bool res_code) {
-	 method_capa_map.insert(std::make_pair(methodType,res_code));
-    }
+static CapaModuleStub  theInstance(NULL);
 
-  bool CapaModuleStub::stub_getMappedResultCode(CapaModuleStub::CapaMethod methodType)
-    {
-	  if (0!= method_capa_map.count(methodType))
-	  {
-		  return method_capa_map[methodType];
-	  }
-	  return false;
-    }
-
-  void CapaModuleStub::stub_clearStubData()
-  {
-	  method_capa_map.clear();
-  }
-
+void
+CapaModuleStub::stub_loadCapaModule(void)
+{
+  pfc::core::Module::capaModule = &theInstance;
 }
 
+void
+CapaModuleStub::stub_unloadCapaModule(void)
+{
+  pfc::core::Module::capaModule = NULL;
+}
+
+void
+CapaModuleStub::stub_setResultcode(CapaModuleStub::CapaMethod methodType,
+                                   bool res_code)
+{
+  method_capa_map.insert(std::make_pair(methodType,res_code));
+}
+
+bool
+CapaModuleStub::stub_getMappedResultCode(CapaModuleStub::CapaMethod methodType)
+{
+  if (method_capa_map.count(methodType) != 0) {
+    return method_capa_map[methodType];
+  }
+  return false;
+}
+
+void
+CapaModuleStub::stub_clearStubData()
+{
+  method_capa_map.clear();
+}
+
+}
 }

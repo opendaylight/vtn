@@ -1,13 +1,11 @@
 /*
-* Copyright (c) 2012-2013 NEC Corporation
-* All rights reserved.
-*
-* This program and the accompanying materials are made available under the
-* terms of the Eclipse Public License v1.0 which accompanies this
-* distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
-*/
-
-
+ * Copyright (c) 2012-2013 NEC Corporation
+ * All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
 
 #include <pfc/ipc.h>
 #include <netinet/in.h>
@@ -15,7 +13,7 @@
 #include <map>
 #include <list>
 #include <pfc/ipc_client.h>
-#include <pfcxx/ipc_server.hh>
+#include "ipc_server.hh"
 
 #ifndef _PFCXX_IPC_CLIENT_HH
 #define _PFCXX_IPC_CLIENT_HH
@@ -347,8 +345,12 @@ public:
     inline const pfc_hostaddr_t *
     getHostAddress(void) const
     {
-    	pfc_hostaddr_t* host((pfc_hostaddr_t*)malloc(sizeof( pfc_hostaddr_t)));
-        return host;
+        if (!_addr_initialized) {
+            _addr_initialized = true;
+            pfc_hostaddr_init_local(&_local_addr);
+        }
+
+        return &_local_addr;
     }
 
     inline const char *
@@ -360,8 +362,7 @@ public:
     inline pfc_ipcsess_t *
     getSession(void) const
     {
-         pfc_ipcsess_t* dummy;
-        return dummy;
+        return NULL;
     }
 
     inline pfc_bool_t
@@ -371,6 +372,9 @@ public:
     }
 
 private:
+    static pfc_hostaddr_t  _local_addr;
+    static bool            _addr_initialized;
+
     explicit IpcEvent(pfc_ipcevent_t *event) : _event(event) {}
     pfc_ipcevent_t    *_event;
 };

@@ -595,8 +595,9 @@ UpplReturnCode Kt_Controller::ReadInternal(OdbcmConnectionHandler *db_conn,
   }
   void *key_struct = ctr_key[0];
   void *val_struct = NULL;
+  val_ctr_st_t st_ctr_val;
   if (!ctr_val.empty()) {
-    val_ctr_st_t st_ctr_val = *(reinterpret_cast<val_ctr_st_t *> (ctr_val[0]));
+    st_ctr_val = *(reinterpret_cast<val_ctr_st_t *> (ctr_val[0]));
     val_struct = reinterpret_cast<void *>(&st_ctr_val.controller);
   }
   // Get read response from database

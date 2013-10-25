@@ -1,11 +1,11 @@
 /*
-* Copyright (c) 2012-2013 NEC Corporation
-* All rights reserved.
-*
-* This program and the accompanying materials are made available under the
-* terms of the Eclipse Public License v1.0 which accompanies this
-* distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
-*/
+ * Copyright (c) 2012-2013 NEC Corporation
+ * All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
 
 #ifndef	_PFCXX_MODULE_HH
 #define	_PFCXX_MODULE_HH
@@ -16,11 +16,10 @@
 
 #include <pfc/module.h>
 #include <pfc/log.h>
-#include <cxx/pfcxx/conf.hh>
-#include <cxx/pfcxx/event.hh>
-#include "cxx/pfcxx/ipc_client.hh"
-#include<string>
-
+#include <pfcxx/conf.hh>
+#include <pfcxx/event.hh>
+#include <pfcxx/ipc_client.hh>
+#include <string>
 
 namespace pfc {
 namespace core {

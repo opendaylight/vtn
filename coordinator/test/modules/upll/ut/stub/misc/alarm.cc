@@ -16,8 +16,8 @@
 #include <sys/un.h>
 #include <math.h>
 #include <string>
-#include "cxx/pfcxx/module.hh"
-#include "uncxx/alarm.hh"
+#include <pfcxx/module.hh>
+#include <alarm.hh>
 
 namespace pfc{
 namespace alarm{

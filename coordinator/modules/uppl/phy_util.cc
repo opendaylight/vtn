@@ -21,6 +21,19 @@ using unc::uppl::PhysicalLayer;
 using unc::uppl::ODBCMUtils;
 using unc::uppl::ODBCMTableColumns;
 
+/*
+ * Set UINT8 value to the specified TableAttrSchema.
+ */
+#define TABLE_ATTR_SCHEMA_UINT8_SET(schema, len, str, bufsize)          \
+  do {                                                                  \
+    ColumnAttrValue <unsigned char[(bufsize)]> *__v=                    \
+      new ColumnAttrValue <unsigned char[(bufsize)]>;                   \
+    strncpy(reinterpret_cast<char *>(__v->value), (str).c_str(),        \
+            (bufsize));                                                 \
+    (schema).p_table_attribute_value = __v;                             \
+    (schema).table_attribute_length = (len);                            \
+  } while (0)
+
 /**getRespHeaderFromReqHeader
  * @Description : This function is for giving response to logical using
  *                serversession object
@@ -591,149 +604,71 @@ void PhyUtil::FillDbSchema(ODBCMTableColumns attr_name, string attr_value,
       table_attr_schema.p_table_attribute_value = value;
       break;
     }
+
     case DATATYPE_IPV6:
-    {
-      ColumnAttrValue <unsigned char[16+1]> *value=
-          new ColumnAttrValue <unsigned char[16+1]>;
-      memset(&value->value, '\0', sizeof(value->value));
-      memcpy(value->value,
-             attr_value.c_str(), attr_length+1);
-      table_attr_schema.p_table_attribute_value = value;
-      table_attr_schema.table_attribute_length = attr_length;
+      TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
+                                  16 + 1);
       break;
-    }
+
     case DATATYPE_UINT8_ARRAY_2:
-    {
-      ColumnAttrValue <unsigned char[2+1]> *value=
-          new ColumnAttrValue <unsigned char[2+1]>;
-      memset(&value->value, '\0', sizeof(value->value));
-      memcpy(value->value,
-             attr_value.c_str(), attr_length+1);
-      table_attr_schema.p_table_attribute_value = value;
-      table_attr_schema.table_attribute_length = attr_length;
+      TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
+                                  2 + 1);
       break;
-    }
+
     case DATATYPE_UINT8_ARRAY_3:
-    {
-      ColumnAttrValue <unsigned char[3+1]> *value=
-          new ColumnAttrValue <unsigned char[3+1]>;
-      memset(&value->value, '\0', sizeof(value->value));
-      memcpy(value->value,
-             attr_value.c_str(), attr_length+1);
-      table_attr_schema.p_table_attribute_value = value;
-      table_attr_schema.table_attribute_length = attr_length;
+      TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
+                                  3 + 1);
       break;
-    }
+
     case DATATYPE_UINT8_ARRAY_6:
-    {
-      ColumnAttrValue <unsigned char[6+1]> *value=
-          new ColumnAttrValue <unsigned char[6+1]>;
-      memset(&value->value, '\0', sizeof(value->value));
-      memcpy(value->value,
-             attr_value.c_str(), attr_length+1);
-      table_attr_schema.p_table_attribute_value = value;
-      table_attr_schema.table_attribute_length = attr_length;
+      TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
+                                  6 + 1);
       break;
-    }
+
     case DATATYPE_UINT8_ARRAY_8:
-    {
-      ColumnAttrValue <unsigned char[8+1]> *value=
-          new ColumnAttrValue <unsigned char[8+1]>;
-      memset(&value->value, '\0', sizeof(value->value));
-      memcpy(value->value,
-             attr_value.c_str(), attr_length+1);
-      table_attr_schema.p_table_attribute_value = value;
-      table_attr_schema.table_attribute_length = attr_length;
+      TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
+                                  8 + 1);
       break;
-    }
+
     case DATATYPE_UINT8_ARRAY_9:
-    {
-      ColumnAttrValue <unsigned char[9+1]> *value=
-          new ColumnAttrValue <unsigned char[9+1]>;
-      memset(&value->value, '\0', sizeof(value->value));
-      memcpy(value->value,
-             attr_value.c_str(), attr_length+1);
-      table_attr_schema.p_table_attribute_value = value;
-      table_attr_schema.table_attribute_length = attr_length;
+      TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
+                                  9 + 1);
       break;
-    }
+
     case DATATYPE_UINT8_ARRAY_11:
-    {
-      ColumnAttrValue <unsigned char[11+1]> *value=
-          new ColumnAttrValue <unsigned char[11+1]>;
-      memset(&value->value, '\0', sizeof(value->value));
-      memcpy(value->value,
-             attr_value.c_str(), attr_length+1);
-      table_attr_schema.p_table_attribute_value = value;
-      table_attr_schema.table_attribute_length = attr_length;
+      TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
+                                  11 + 1);
       break;
-    }
+
     case DATATYPE_UINT8_ARRAY_16:
-    {
-      ColumnAttrValue <unsigned char[16+1]> *value=
-          new ColumnAttrValue <unsigned char[16+1]>;
-      memset(&value->value, '\0', sizeof(value->value));
-      memcpy(value->value,
-             attr_value.c_str(), attr_length+1);
-      table_attr_schema.p_table_attribute_value = value;
-      table_attr_schema.table_attribute_length = attr_length;
+      TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
+                                  16 + 1);
       break;
-    }
+
     case DATATYPE_UINT8_ARRAY_32:
-    {
-      ColumnAttrValue <unsigned char[32+1]> *value=
-          new ColumnAttrValue <unsigned char[32+1]>;
-      memset(value->value, '\0', sizeof(value->value));
-      memcpy(value->value,
-             attr_value.c_str(), attr_length+1);
-      table_attr_schema.p_table_attribute_value = value;
-      table_attr_schema.table_attribute_length = attr_length;
+      TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
+                                  32 + 1);
       break;
-    }
+
     case DATATYPE_UINT8_ARRAY_128:
-    {
-      ColumnAttrValue <unsigned char[128+1]> *value=
-          new ColumnAttrValue <unsigned char[128+1]>;
-      memset(value->value, '\0', sizeof(value->value));
-      memcpy(value->value,
-             attr_value.c_str(), attr_length+1);
-      table_attr_schema.p_table_attribute_value = value;
-      table_attr_schema.table_attribute_length = attr_length;
+      TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
+                                  128 + 1);
       break;
-    }
+
     case DATATYPE_UINT8_ARRAY_256:
-    {
-      ColumnAttrValue <unsigned char[256+1]> *value=
-          new ColumnAttrValue <unsigned char[256+1]>;
-      memset(&value->value, '\0', sizeof(value->value));
-      memcpy(value->value,
-             attr_value.c_str(), attr_length+1);
-      table_attr_schema.p_table_attribute_value = value;
-      table_attr_schema.table_attribute_length = attr_length;
+      TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
+                                  256 + 1);
       break;
-    }
+
     case DATATYPE_UINT8_ARRAY_257:
-    {
-      ColumnAttrValue <unsigned char[257+1]> *value=
-          new ColumnAttrValue <unsigned char[257+1]>;
-      memset(&value->value, '\0', sizeof(value->value));
-      memcpy(value->value,
-             attr_value.c_str(), attr_length+1);
-      table_attr_schema.p_table_attribute_value = value;
-      table_attr_schema.table_attribute_length = attr_length;
+      TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
+                                  257 + 1);
       break;
-    }
+
     case DATATYPE_UINT8_ARRAY_320:
-    {
-      ColumnAttrValue <unsigned char[320+1]> *value=
-          new ColumnAttrValue <unsigned char[320+1]>;
-      memset(&value->value, '\0', sizeof(value->value));
-      memcpy(value->value,
-             attr_value.c_str(), attr_length+1);
-      table_attr_schema.p_table_attribute_value = value;
-      table_attr_schema.table_attribute_length = attr_length;
+      TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
+                                  320 + 1);
       break;
-    }
   }
   table_attr_schema.request_attribute_type = attr_type;
   vect_attr.push_back(table_attr_schema);

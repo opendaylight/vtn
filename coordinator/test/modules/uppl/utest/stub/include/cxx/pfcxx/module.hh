@@ -1,12 +1,11 @@
 /*
-* Copyright (c) 2012-2013 NEC Corporation
-* All rights reserved.
-*
-* This program and the accompanying materials are made available under the
-* terms of the Eclipse Public License v1.0 which accompanies this
-* distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
-*/
-
+ * Copyright (c) 2012-2013 NEC Corporation
+ * All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
 
 #ifndef	_PFCXX_MODULE_HH
 #define	_PFCXX_MODULE_HH
@@ -16,19 +15,12 @@
  */
 
 #include <pfc/module.h>
-//#include <pfcxx/conf.hh>
 #include <pfc/log.h>
-#include <cxx/pfcxx/conf.hh>
-#include <cxx/pfcxx/event.hh>
-#include "cxx/pfcxx/ipc_client.hh"
-#include<string>
-/*const char * pfc_module_conf_getblock(const char * bname){
+#include <pfcxx/conf.hh>
+#include <pfcxx/event.hh>
+#include <pfcxx/ipc_client.hh>
+#include <string>
 
-   return "";
-}
-const char* pfc_module_conf_getmap(const char* name,const char* keyv) {
-return "";
-}*/
 namespace pfc {
 namespace core {
 
@@ -47,8 +39,7 @@ public:
     }
 
     static Module *getInstanceByType(const char *tname) {
-
-    	return capaModule;
+    	return NULL;
     }
 
     static inline pfc_bool_t
@@ -181,10 +172,8 @@ private:
     std::string _name;
     pfc_module_t _module;
 protected:
-    static Module* capaModule;
-    static Module* tcLib;
-    static Module* PhysicalLayer;
-
+    static Module *tcLib;
+    static Module *physical;
 };
 
 /*
@@ -193,58 +182,58 @@ protected:
 extern pfc_module_t	module_register(const pfc_modattr_t *mattr,
                                         pfc_modfac_t factory,
                                         const char *tname);
-#define PFC_MODULE_IPC_DECL(module_classi,physical) \
 
+#define PFC_MODULE_IPC_DECL(module_classi,physical)
+#define	PFC_MODULE_DECL(module_class)
+
+
+/*
+ * The ModuleConfBlock instance represents a bunch of parameters defined in
+ * the module configuration file.
+ * This class is only available in module source code.
+ */
 class ModuleConfBlock
 {
 public:
     /*
- *      * Create a block handle instance associated with a parameter block
- *           * in the module configuration file, specified by the block name.
- *                */
-    ModuleConfBlock(const char *bname)
-         {}
-
-    ModuleConfBlock(const std::string &bname)
- {}
+     * Create a block handle instance associated with a parameter block
+     * in the module configuration file, specified by the block name.
+     */
+    ModuleConfBlock(const char *bname) {}
+    ModuleConfBlock(const std::string &bname) {}
 
     /*
- *      * Create a block handle instance associated with a parameter map block
- *           * in the module configuration file, specified by the map name and its key.
- *                */
-    ModuleConfBlock(const char *mname, const char *key)
- {}
+     * Create a block handle instance associated with a parameter map block
+     * in the module configuration file, specified by the map name and its key.
+     */
+    ModuleConfBlock(const char *mname, const char *key) {}
+    ModuleConfBlock(const std::string &mname, const std::string &key) {}
 
-   ModuleConfBlock(const std::string &mname, const std::string &key)
- {}
     inline uint8_t
     getByte(const char *name, uint8_t defvalue)
     {
-        return static_cast<uint8_t>(0);
+        return defvalue;
     }
 
     inline uint8_t
     getByte(const std::string &name, uint8_t defvalue)
     {
-
-        return static_cast<uint8_t>(0);
+        return defvalue;
     }
 
-    /*
- *      * Return a C-styled string value.
- *           */
     inline const char *
     getString(const char *name, const char *defvalue)
     {
-        return "dummy";
+        return defvalue;
     }
 
     inline const char *
     getString(const std::string &name, const char *defvalue)
     {
-        return "dummy";
+        return defvalue;
     }
-   inline int
+
+    inline int
     arraySize(const char *name)
     {
         return 0;
@@ -259,29 +248,29 @@ public:
      inline uint32_t
     getUint32(const char *name, uint32_t defvalue)
     {
-        return static_cast<uint32_t>(0);
+        return defvalue;
     }
 
     inline uint32_t
     getUint32(const std::string &name, uint32_t defvalue)
     {
-        return static_cast<uint32_t>(0);
+        return defvalue;
     }
 
     inline uint8_t
     getByteAt(const char *name, uint32_t index, uint8_t defvalue)
     {
-        return static_cast<uint8_t>(0);
+        return defvalue;
     }
 
     inline uint8_t
     getByteAt(const std::string &name, uint32_t index, uint8_t defvalue)
     {
-        return static_cast<uint8_t>(0);
+        return defvalue;
     }
-
 };
-}
-}
-#endif
 
+}
+}
+
+#endif

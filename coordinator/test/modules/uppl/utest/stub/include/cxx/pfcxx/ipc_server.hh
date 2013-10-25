@@ -1,13 +1,11 @@
 /*
-* Copyright (c) 2012-2013 NEC Corporation
-* All rights reserved.
-*
-* This program and the accompanying materials are made available under the
-* terms of the Eclipse Public License v1.0 which accompanies this
-* distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
-*/
-
-
+ * Copyright (c) 2012-2013 NEC Corporation
+ * All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
 
 #include <pfc/ipc.h>
 #include <netinet/in.h>
@@ -15,13 +13,10 @@
 #include <map>
 #include <list>
 #include <vector>
-#include<iostream>
+#include <iostream>
 
 #ifndef _PFCXX_IPC_SERVER_HH
 #define _PFCXX_IPC_SERVER_HH
-
-//#define uint32_t int
-
 
 namespace pfc {
 namespace core {

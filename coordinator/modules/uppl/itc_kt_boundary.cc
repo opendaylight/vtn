@@ -377,9 +377,10 @@ UpplReturnCode Kt_Boundary::ReadInternal(OdbcmConnectionHandler *db_conn,
   }
   void *key_struct = boundary_key[0];
   void *val_struct = NULL;
+  val_boundary_st_t st_boundary_val;
   if (!boundary_val.empty()) {
-    val_boundary_st_t st_boundary_val =
-        *(reinterpret_cast<val_boundary_st_t *> (boundary_val[0]));
+    st_boundary_val =
+      *(reinterpret_cast<val_boundary_st_t *> (boundary_val[0]));
     val_struct = reinterpret_cast<void *>(&st_boundary_val.boundary);
   }
 

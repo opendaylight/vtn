@@ -17,13 +17,12 @@
 #include <pfcxx/ipc_server.hh>
 #include <pfcxx/ipc_client.hh>
 #include <pfcxx/synch.hh>
-#include "physicallayer.hh"
+#include <physicallayer.hh>
+
 class PhysicalLayerStub : public pfc::core::Module {
-
 public:
-
-static void loadphysicallayer();
-static void unloadphysicallayer();
-IPCConnectionManager* get_ipc_connection_manager();
+  static void loadphysicallayer();
+  static void unloadphysicallayer();
 };
+
 #endif

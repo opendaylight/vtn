@@ -19,6 +19,18 @@ unc_keytype_ctrtype_t TcLibModule::controllerType;
 uint32_t TcLibModule::keyIndex;
 TcLibInterface* TcLibModule::pTcLibInterface_=0;
 
+static TcLibModule  theInstance(NULL);
+
+void
+TcLibModule::stub_loadtcLibModule(void) {
+    pfc::core::Module::tcLib = &theInstance;
+}
+
+void
+TcLibModule::stub_unloadtcLibModule(void) {
+    pfc::core::Module::tcLib = NULL;
+}
+
 TcApiCommonRet TcLibModule::TcLibRegisterHandler(TcLibInterface* handler) {
 	pTcLibInterface_ = handler;
 	 return stub_getMappedResultCode(TcLibModule::REGISTER);

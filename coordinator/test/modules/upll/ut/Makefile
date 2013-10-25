@@ -11,156 +11,112 @@
 ## Makefile that run the unit tests for UPLL.
 ##
 
+GTEST_SRCROOT	:= ../../../..
+include ../../defs.mk
 
-GTEST_SRCROOT = ../../../../modules
+EXEC_NAME	:=  upll_ut
 
-CPPFLAGS  +=  
+TCLIB_STUBDIR	= stub/tclib_module
+CAPA_STUBDIR	= stub/capa_module
+DAL_STUBDIR	= stub/dal
+MISC_STUBDIR	= stub/misc
 
-INCLUDE = -Iinclude \
-					-Istub/include \
-					-Istub/include/cxx \
-					-Istub/include/cxx/pfcxx \
-					-Istub/include/core_include \
-					-Istub \
-					-Istub/tclib_module \
-					-Istub/capa_module \
-					-I$(GTEST_SRCROOT)/capa/include \
-					-Istub/dal \
-					-Istub/dal/include \
-					-I$(GTEST_SRCROOT)/upll \
-					-I$(GTEST_SRCROOT)/dal/ \
-					-I$(GTEST_SRCROOT) \
-					-I$(GTEST_SRCROOT)/../dist/target/objs/include \
-					-I$(GTEST_SRCROOT)/../dist/target/objs/core_include \
-					-I$(GTEST_SRCROOT)/../dist/target/objs/core/include \
-					-I$(GTEST_SRCROOT)/../core/include \
-					-I$(GTEST_SRCROOT)/../core/include/cxx \
-					-I$(GTEST_SRCROOT)/../include/ \
-					-I$(GTEST_SRCROOT)/../include/pfcapi/pfcapi_generic/ \
-					-I$(GTEST_SRCROOT)/../include/unc \
-					-I$(GTEST_SRCROOT)/upll/include \
-					-I$(GTEST_SRCROOT) \
-					-I$(GTEST_SRCROOT)/../test/modules/upll/ut \
-					-I$(GTEST_SRCROOT)/alarm/include\
-        
+UPLL_SRCDIR	= $(MODULE_SRCROOT)/upll
+CAPA_SRCDIR	= $(MODULE_SRCROOT)/capa
+DAL_SRCDIR	= $(MODULE_SRCROOT)/dal
+TCLIB_SRCDIR	= $(MODULE_SRCROOT)/tclib
+ALARM_SRCDIR	= $(MODULE_SRCROOT)/alarm
 
-CXXFLAGS += -g -fprofile-arcs -ftest-coverage -Dprivate=public	-Dprotected=public
+# Define a list of directories that contain source files.
+ALT_SRCDIRS	= $(UPLL_SRCDIR) $(CAPA_STUBDIR) $(DAL_STUBDIR)
+ALT_SRCDIRS	+= $(TCLIB_STUBDIR) $(MISC_STUBDIR)
 
-SOURCE_FILES = $(GTEST_SRCROOT)/upll/ipc_util.cc \
-							 $(GTEST_SRCROOT)/upll/ipct_st.cc  \
-							 $(GTEST_SRCROOT)/upll/config_mgr.cc \
-							 $(GTEST_SRCROOT)/upll/ctrlr_mgr.cc \
-							 $(GTEST_SRCROOT)/upll/key_tree.cc \
-							 $(GTEST_SRCROOT)/upll/tclib_intf_impl.cc \
-							 $(GTEST_SRCROOT)/upll/momgr_intf.cc \
-							 $(GTEST_SRCROOT)/upll/momgr_impl.cc \
-							 $(GTEST_SRCROOT)/upll/tx_mgr.cc \
-							 $(GTEST_SRCROOT)/upll/config_lock.cc \
-							 $(GTEST_SRCROOT)/upll/kt_util.cc \
-							 $(GTEST_SRCROOT)/upll/vtn_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vbr_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vbr_if_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vlanmap_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/nwm_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/nwm_host_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/iproute_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/dhcprelay_if_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/dhcprelay_server_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vrt_if_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vunk_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vunk_if_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vnode_child_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/momgr_util.cc \
-							 $(GTEST_SRCROOT)/upll/vnode_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/read_bulk.cc \
-							 $(GTEST_SRCROOT)/upll/vlink_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vrt_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vtn_flowfilter_entry_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vtn_flowfilter_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/flowlist_entry_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/flowlist_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/policingprofile_entry_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/policingprofile_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vbr_flowfilter_entry_momgr.cc\
-							 $(GTEST_SRCROOT)/upll/vbr_flowfilter_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vbr_if_flowfilter_entry_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vbr_if_flowfilter_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vbr_if_policingmap_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vbr_policingmap_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vrt_if_flowfilter_entry_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vrt_if_flowfilter_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vtn_policingmap_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vtep_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vtep_if_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vtep_grp_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vtepgrp_mem_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vtunnel_momgr.cc \
-							 $(GTEST_SRCROOT)/upll/vtunnel_if_momgr.cc \
+UT_INCDIRS_PREP		= stub/include stub/include/core_include
 
+UTXX_INCDIRS_PREP	= $(TCLIB_STUBDIR)
+UTXX_INCDIRS_PREP	+= $(CAPA_STUBDIR)
+UTXX_INCDIRS_PREP	+= $(DAL_STUBDIR)
+UTXX_INCDIRS_PREP	+= $(DAL_STUBDIR)/include
 
-SRC_OBJS = $(patsubst $(GTEST_SRCROOT)/upll/%.cc,$(OBJSDIR)/upll/%.o,$(SOURCE_FILES))
+EXTRA_CXX_INCDIRS	= $(MODULE_SRCROOT)
+EXTRA_CXX_INCDIRS	+= $(CAPA_SRCDIR)/include
+EXTRA_CXX_INCDIRS	+= $(UPLL_SRCDIR)
+EXTRA_CXX_INCDIRS	+= $(UPLL_SRCDIR)/include
+EXTRA_CXX_INCDIRS	+= $(DAL_SRCDIR)
+EXTRA_CXX_INCDIRS	+= $(TCLIB_SRCDIR)/include
+EXTRA_CXX_INCDIRS	+= $(ALARM_SRCDIR)/include
 
-UNITTEST_FILES = vbr_if_momgr_ut.cc vtn_momgr_ut.cc vbr_momgr_ut.cc 
+CPPFLAGS	+= -include ut_stub.h
 
-OBJSDIR = objs
+UPLL_SOURCES	= ipc_util.cc
+UPLL_SOURCES	+= ipct_st.cc 
+UPLL_SOURCES	+= config_mgr.cc
+UPLL_SOURCES	+= ctrlr_mgr.cc
+UPLL_SOURCES	+= key_tree.cc
+UPLL_SOURCES	+= tclib_intf_impl.cc
+UPLL_SOURCES	+= momgr_intf.cc
+UPLL_SOURCES	+= momgr_impl.cc
+UPLL_SOURCES	+= tx_mgr.cc
+UPLL_SOURCES	+= config_lock.cc
+UPLL_SOURCES	+= kt_util.cc
+UPLL_SOURCES	+= vtn_momgr.cc
+UPLL_SOURCES	+= vbr_momgr.cc
+UPLL_SOURCES	+= vbr_if_momgr.cc
+UPLL_SOURCES	+= vlanmap_momgr.cc
+UPLL_SOURCES	+= nwm_momgr.cc
+UPLL_SOURCES	+= nwm_host_momgr.cc
+UPLL_SOURCES	+= iproute_momgr.cc
+UPLL_SOURCES	+= dhcprelay_if_momgr.cc
+UPLL_SOURCES	+= dhcprelay_server_momgr.cc
+UPLL_SOURCES	+= vrt_if_momgr.cc
+UPLL_SOURCES	+= vunk_momgr.cc
+UPLL_SOURCES	+= vunk_if_momgr.cc
+UPLL_SOURCES	+= vnode_child_momgr.cc
+UPLL_SOURCES	+= momgr_util.cc
+UPLL_SOURCES	+= vnode_momgr.cc
+UPLL_SOURCES	+= read_bulk.cc
+UPLL_SOURCES	+= vlink_momgr.cc
+UPLL_SOURCES	+= vrt_momgr.cc
+UPLL_SOURCES	+= vtn_flowfilter_entry_momgr.cc
+UPLL_SOURCES	+= vtn_flowfilter_momgr.cc
+UPLL_SOURCES	+= flowlist_entry_momgr.cc
+UPLL_SOURCES	+= flowlist_momgr.cc
+UPLL_SOURCES	+= policingprofile_entry_momgr.cc
+UPLL_SOURCES	+= policingprofile_momgr.cc
+UPLL_SOURCES	+= vbr_flowfilter_entry_momgr.cc
+UPLL_SOURCES	+= vbr_flowfilter_momgr.cc
+UPLL_SOURCES	+= vbr_if_flowfilter_entry_momgr.cc
+UPLL_SOURCES	+= vbr_if_flowfilter_momgr.cc
+UPLL_SOURCES	+= vbr_if_policingmap_momgr.cc
+UPLL_SOURCES	+= vbr_policingmap_momgr.cc
+UPLL_SOURCES	+= vrt_if_flowfilter_entry_momgr.cc
+UPLL_SOURCES	+= vrt_if_flowfilter_momgr.cc
+UPLL_SOURCES	+= vtn_policingmap_momgr.cc
+UPLL_SOURCES	+= vtep_momgr.cc
+UPLL_SOURCES	+= vtep_if_momgr.cc
+UPLL_SOURCES	+= vtep_grp_momgr.cc
+UPLL_SOURCES	+= vtepgrp_mem_momgr.cc
+UPLL_SOURCES	+= vtunnel_momgr.cc
+UPLL_SOURCES	+= vtunnel_if_momgr.cc
 
-UT_OBJS_DIR = objs/ut
-UPLL_OBJS_DIR = objs/upll
+CAPA_SOURCES	= capa_module_stub.cc
+DAL_SOURCES	= dal_odbc_mgr.cc dal_bind_info.cc dal_schema.cc
+TCLIB_SOURCES	= tclib_module.cc
+MISC_SOURCES	= alarm.cc ipc_client.cc ipc_server.cc module.cc
 
-EXEC_NAME =  vbr_if_momgr_ut vbr_momgr_ut vtn_momgr_ut 
+UT_SOURCES	= vtn_momgr_ut.cc
+UT_SOURCES	+= vbr_momgr_ut.cc
+UT_SOURCES	+= vbr_if_momgr_ut.cc
 
-UT_LIBS = -L$(GTEST_SRCROOT)/../dist/target/objs/ldlibs -lpthread -lpfc_util -lgtest_main $(UT_OBJS_DIR)/upll_ut.a ./stub/stub_objs/stub.a ./stub/stub_objs/stub.a -lgcov
+CXX_SOURCES	= $(UT_SOURCES) util.cc
+CXX_SOURCES	+= $(UPLL_SOURCES) $(CAPA_SOURCES) $(DAL_SOURCES)
+CXX_SOURCES	+= $(TCLIB_SOURCES) $(MISC_SOURCES)
 
-LD_LIBRARY_PATH= $(GTEST_SRCROOT)/../dist/target/objs/ldlibs
-export LD_LIBRARY_PATH
-.NOTPARALLEL: createobjsupll createobjsut stub upll_lib ut_exe
-all  : createobjsupll createobjsut stub upll_lib ut_exe
-test : 
-			./vtn_momgr_ut
-			./vbr_momgr_ut
-	  	./vbr_if_momgr_ut	
-clean :
-	@(cd $(OBJSDIR)/ut/;  rm -f upll_ut.a *.o *.gcno *.gcov *.gcda);
-	@(cd $(OBJSDIR)/upll/;  rm -f *.o *.gcno *.gcov *.gcda);
-	@(cd ./stub/; $(MAKE) clean);
-	rm -f $(EXEC_NAME) *.gcov
+EXTRA_CXXFLAGS	+= -fprofile-arcs -ftest-coverage
+EXTRA_CXXFLAGS	+= -Dprivate=public -Dprotected=public
 
+UNC_LIBS	= libpfc_util libpfc libpfc_ipcsrv libpfc_ipcclnt
+UNC_LIBS	+= libpfcxx libpfcxx_ipcsrv libpfcxx_ipcclnt
+EXTRA_LDLIBS	+= -lgcov
 
-UT_OBJS = $(patsubst %.cc,$(OBJSDIR)/ut/%.o,$(UNITTEST_FILES))
-
-$(SRC_OBJS): $(OBJSDIR)/upll/%.o : $(GTEST_SRCROOT)/upll/%.cc 
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(INCLUDE) -c $< -o $@
-
-$(UT_OBJS): $(OBJSDIR)/ut/%.o : %.cc
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(INCLUDE) -c $< -o $@
-
-createobjsupll:
-	mkdir -p $(UPLL_OBJS_DIR)
-
-createobjsut:
-	mkdir -p $(UT_OBJS_DIR)
-
-stub:
-	@echo "****** Invoking stub makefile"
-	@($(MAKE) -C ./stub/ );
-
-.PHONY: stub upll_lib \
-
-upll_lib : $(UT_OBJS_DIR)/upll_ut.a
-
-$(UT_OBJS_DIR)/upll_ut.a : $(SRC_OBJS)
-		$(AR) $(ARFLAGS) $@ $^
-
-compile_ut:$(UT_OBJS)
-
-ut_exe : $(EXEC_NAME)
-
-vtn_momgr_ut : $(UT_OBJS_DIR)/vtn_momgr_ut.o
-	$(CXX) $^ -o $@ $(UT_LIBS)
-vbr_momgr_ut : $(UT_OBJS_DIR)/vbr_momgr_ut.o
-	$(CXX) $^ -o $@ $(UT_LIBS)
-vbr_if_momgr_ut : $(UT_OBJS_DIR)/vbr_if_momgr_ut.o
-	$(CXX) $^ -o $@ $(UT_LIBS)
-
-
-install: all
+include ../../rules.mk

@@ -19,10 +19,10 @@
 #define __DAL_DML_INTF_HH__
 
 #include <stdint.h>
-#include "include/dal_defines.hh"
-#include "dal_bind_info.hh"
-#include "include/dal_schema.hh"
-#include "dal_cursor.hh"
+#include <dal_defines.hh>
+#include <dal_bind_info.hh>
+#include <dal_schema.hh>
+#include <dal_cursor.hh>
 
 namespace unc {
 namespace upll {

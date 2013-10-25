@@ -12,12 +12,11 @@
  *  @brief   ODBC Manager
  *  @file    odbcm_utils.cc
  */
-#include  <sys/socket.h>
-#include  <arpa/inet.h>
-#include "odbcm_common.hh"
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <odbcm_common.hh>
 #include "odbcm_utils_stub.hh"
-#include "physical_common_def.hh"
-//#include "odbcm_db_varbind.hh"
+#include <physical_common_def.hh>
 
 namespace unc {
 namespace uppl {

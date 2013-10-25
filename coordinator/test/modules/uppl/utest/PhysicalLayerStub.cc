@@ -7,19 +7,27 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
+#include <gtest/gtest.h>
 #include "PhysicalLayerStub.hh"
+
 using namespace unc::uppl;
-void PhysicalLayerStub :: loadphysicallayer() {
+using namespace pfc::core;
 
-   pfc_modattr_t* modattr;
-   PhysicalLayer = new unc::uppl::PhysicalLayer(modattr);
+static PhysicalLayer  theInstance(NULL);
+static bool initialized = false;
+
+void
+PhysicalLayerStub::loadphysicallayer()
+{
+  Module::physical = &theInstance;
+  if (!initialized) {
+    initialized = true;
+    ASSERT_TRUE(theInstance.init());
+  }
 }
 
-IPCConnectionManager* PhysicalLayerStub::get_ipc_connection_manager() {
-  return new IPCConnectionManager;
-}
-
-void PhysicalLayerStub :: unloadphysicallayer() {
-
-   PhysicalLayer = NULL;
+void
+PhysicalLayerStub::unloadphysicallayer()
+{
+  Module::physical = NULL;
 }

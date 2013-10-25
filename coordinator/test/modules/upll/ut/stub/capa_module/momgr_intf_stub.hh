@@ -7,6 +7,8 @@
 * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
 */
 
+#ifndef	_TEST_UPLL_MOMGR_INTF_STUB_HH
+#define	_TEST_UPLL_MOMGR_INTF_STUB_HH
 
 #include "vbr_momgr.hh"
 
@@ -23,11 +25,11 @@ class VbrMoMgrStub : public VbrMoMgr {
   ~VbrMoMgrStub(){}
   bool GetCreateCapability(const char *ctrlr_name,
                                    unc_key_type_t keytype,
-                                   uint32_t *instnace_count,
+                                   uint32_t *instance_count,
                                    uint32_t *num_attrs,
                                    const uint8_t **attrs) {
-    instnace_count = max_inst_;
-    num_attrs = num_attrs_;
+    *instance_count = *max_inst_;
+    *num_attrs = *num_attrs_;
     if (*num_attrs == 0) return false;
     *attrs = attrs_;
     return true;
@@ -78,3 +80,4 @@ class VbrMoMgrStub : public VbrMoMgr {
 }  // namespace upll
 }  // namespace unc
 
+#endif	/* !_TEST_UPLL_MOMGR_INTF_STUB_HH */

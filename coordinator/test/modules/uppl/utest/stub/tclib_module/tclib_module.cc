@@ -1,12 +1,11 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
- * All rights reserved.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License v1.0 which accompanies this
- * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
- */
-
+* Copyright (c) 2012-2013 NEC Corporation
+* All rights reserved.
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License v1.0 which accompanies this
+* distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+*/
 
 #include "tclib_module.hh"
 
@@ -19,6 +18,18 @@ unc_keytype_ctrtype_t TcLibModule::driverId;
 unc_keytype_ctrtype_t TcLibModule::controllerType;
 uint32_t TcLibModule::keyIndex;
 TcLibInterface* TcLibModule::pTcLibInterface_=0;
+
+static TcLibModule  theInstance(NULL);
+
+void
+TcLibModule::stub_loadtcLibModule(void) {
+    pfc::core::Module::tcLib = &theInstance;
+}
+
+void
+TcLibModule::stub_unloadtcLibModule(void) {
+    pfc::core::Module::tcLib = NULL;
+}
 
 TcApiCommonRet TcLibModule::TcLibRegisterHandler(TcLibInterface* handler) {
 	pTcLibInterface_ = handler;
