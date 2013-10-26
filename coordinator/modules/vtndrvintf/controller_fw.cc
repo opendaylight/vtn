@@ -9,11 +9,12 @@
  */
 
 #include <controller_fw.hh>
+#include <pfcxx/ipc_server.hh>
+
+const std::string ctr_version = "1.0.0.0";
 
 namespace unc {
 namespace driver {
-
-
     /**
     * @brief : constructor
     */
@@ -75,7 +76,7 @@ namespace driver {
         pfc_log_debug("Ping not needed for the controller %s",
                      controller_name.c_str());
       }
-     pfc_log_debug("%s: Exiting function..", PFC_FUNCNAME);
+      pfc_log_debug("%s: Exiting function..", PFC_FUNCNAME);
      }
 
     /**
@@ -139,14 +140,23 @@ namespace driver {
 
       pfc_bool_t ping_status = drv_instance->ping_controller(ctr_instance);
 
+      pfc_log_debug("Controller ping status : %d", ping_status);
       if (ping_status == PFC_TRUE) {
+        if (ctr_instance->get_connection_status() == CONNECTION_DOWN) {
+          pfc_log_debug("Controller status is UP ctlr_name: %s",
+                     ctlr_name_.c_str());
+          // sendnotification as up
+          ctr_fw_->SendNotificationToPhysical(ctlr_name_, CONNECTION_UP);
+        }
         ctr_instance->set_connection_status(CONNECTION_UP);
-        pfc_log_debug("Controller staus is UP ctlr_name: %s",
-                     ctlr_name_.c_str());
       } else {
-        ctr_instance->set_connection_status(CONNECTION_DOWN);
-        pfc_log_debug("Controller staus is DOWN ctlr_name:%s",
+        if (ctr_instance->get_connection_status() == CONNECTION_UP) {
+          pfc_log_debug("Controller status is DOWN ctlr_name:%s",
                      ctlr_name_.c_str());
+          // sendNotification as down
+          ctr_fw_->SendNotificationToPhysical(ctlr_name_, CONNECTION_DOWN);
+        }
+        ctr_instance->set_connection_status(CONNECTION_DOWN);
       }
 
       ctr_fw_->PostTimer(ctlr_name_, drv_instance, ctr_instance);
@@ -389,5 +399,63 @@ namespace driver {
 
       return driver_container.find(controller_type)->second;
     }
+
+    /**
+     * @brief     : This function sends the status change notification to UPPL
+     * @param[in] : controllername, Status
+     * @retval    : None
+     */
+  void ControllerFramework::SendNotificationToPhysical(
+                                          std::string ctr_name,
+                                          ConnectionStatus type) {
+  pfc_log_debug("%s: Entering function", PFC_FUNCNAME);
+
+  key_ctr_t key_ctr;
+  val_ctr_st_t val_ctr_new;
+  val_ctr_st_t val_ctr_old;
+  memset(&key_ctr, 0, sizeof(key_ctr_t));
+  memset(&val_ctr_new, 0, sizeof(val_ctr_st_t));
+  memset(&val_ctr_old, 0, sizeof(val_ctr_st_t));
+  memset(val_ctr_new.valid, 0, 3);
+  val_ctr_new.valid[1] = UNC_VF_VALID;
+  val_ctr_new.valid[2] = UNC_VF_VALID;
+
+  int err = 0;
+
+  memcpy(key_ctr.controller_name, ctr_name.c_str(), ctr_name.length() + 1);
+  memcpy(val_ctr_new.actual_version,
+         ctr_version.c_str(), ctr_version.length() + 1);
+  if (type == CONNECTION_DOWN) {
+    val_ctr_new.oper_status = CONTROLLER_OPER_DOWN;
+    val_ctr_new.valid[kIdxOperStatus] = UNC_VF_VALID;
+    val_ctr_new.valid[kIdxActualVersion] = UNC_VF_INVALID;
+    val_ctr_old.oper_status = CONTROLLER_OPER_UP;
+    val_ctr_old.valid[kIdxOperStatus] = UNC_VF_VALID;
+  } else if (type == CONNECTION_UP) {
+    val_ctr_new.oper_status = CONTROLLER_OPER_UP;
+    val_ctr_new.valid[kIdxOperStatus] = UNC_VF_VALID;
+    val_ctr_new.valid[kIdxActualVersion] = UNC_VF_VALID;
+    val_ctr_old.oper_status = CONTROLLER_OPER_DOWN;
+    val_ctr_old.valid[kIdxOperStatus] = UNC_VF_VALID;
+  }
+  pfc::core::ipc::ServerEvent phys_ctr_event(
+                 (uint32_t) UNC_CTLR_STATE_EVENTS, err);
+
+  phys_ctr_event.addOutput(ctr_name);
+  phys_ctr_event.addOutput(domainID);
+  phys_ctr_event.addOutput((uint32_t) UNC_OP_UPDATE);
+  phys_ctr_event.addOutput((uint32_t) UNC_DT_STATE);
+  phys_ctr_event.addOutput((uint32_t) UNC_KT_CONTROLLER);
+  phys_ctr_event.addOutput(key_ctr);
+  phys_ctr_event.addOutput(val_ctr_new);
+  phys_ctr_event.addOutput(val_ctr_old);
+  phys_ctr_event.post();
+
+  pfc_log_debug("%s: Controller STATE CHANGE event posted.."
+    "{ old_state = (%u), new_state = (%u) }", PFC_FUNCNAME,
+                val_ctr_old.oper_status, val_ctr_new.oper_status);
+
+  pfc_log_debug("%s: Exiting function", PFC_FUNCNAME);
+}
 }  // namespace driver
 }  // namespace unc
