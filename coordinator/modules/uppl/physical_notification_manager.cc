@@ -22,6 +22,7 @@ using unc::uppl::PhysicalLayer;
 
 NotificationManager* NotificationManager::pfc_notification_manager_ = NULL;
 NotificationManager* NotificationManager::vnp_notification_manager_ = NULL;
+NotificationManager* NotificationManager::odc_notification_manager_ = NULL;
 
 /**
  * @Description : This function is used for handling different 
@@ -81,6 +82,12 @@ NotificationManager* NotificationManager::get_notification_manager(
     }
     physical_layer->notification_manager_mutex_.unlock();
     return vnp_notification_manager_;
+  } else if (ctr_type == UNC_CT_ODC) {
+    if (odc_notification_manager_ == NULL) {
+      odc_notification_manager_ = new NotificationManager();
+    }
+    physical_layer->notification_manager_mutex_.unlock();
+    return odc_notification_manager_;
   } else {
     physical_layer->notification_manager_mutex_.unlock();
   }

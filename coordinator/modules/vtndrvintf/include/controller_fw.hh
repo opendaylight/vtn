@@ -19,10 +19,14 @@
 #include <pfc/taskq.h>
 #include <pfc/thread.h>
 #include <pfcxx/synch.hh>
+#include <unc/uppl_common.h>
+#include <unc/unc_events.h>
 #include <functional>
 #include <iterator>
 #include <map>
 #include <string>
+
+#define domainID "domainname"
 
 namespace unc {
 namespace driver {
@@ -127,6 +131,14 @@ class ControllerFramework  {
    */
   VtnDrvRetEnum GetControllerInstance(std::string& controller_name,
                                       controller**, driver**);
+
+  /**
+   * @brief      - This function is to send controller status notifications
+   *               to UPPL
+   * @param[in]  - controller name,type
+   * @retval     - None
+   */
+  void SendNotificationToPhysical(std::string ctr_name, ConnectionStatus type);
 
  private:
   std::map<std::string, ControllerContainer*>  controller_list;

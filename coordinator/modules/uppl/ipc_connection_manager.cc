@@ -123,6 +123,10 @@ NotificationManager* IPCConnectionManager::get_notification_manager(
     return NotificationManager::get_notification_manager(
         UNC_CT_VNP);
   }
+  if (ctr_type == UNC_CT_ODC) {
+    return NotificationManager::get_notification_manager(
+        UNC_CT_ODC);
+  }
   return NULL;
 }
 
@@ -198,7 +202,7 @@ UpplReturnCode IPCConnectionManager::Finalize() {
 UpplReturnCode IPCConnectionManager::SendEventSubscription() {
   // Get Physical layer instance
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
-  IpcEventAttr attr_pfc, attr_vnp;
+  IpcEventAttr attr_pfc, attr_vnp, attr_odc;
   IpcEventMask mask(0);
   // Add events to mask
   if ((mask.add(UNC_PHYSICAL_EVENTS)) != 0) {
@@ -215,6 +219,8 @@ UpplReturnCode IPCConnectionManager::SendEventSubscription() {
   }
   attr_pfc.setPriority(150);
   attr_vnp.setPriority(150);
+  attr_odc.setPriority(150);
+
   if ((attr_pfc.addTarget(PFCDRIVER_IPC_SVC_NAME, mask)) != 0) {
     pfc_log_error("addTarget() failed for PFC driver\n");
     return UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
@@ -234,6 +240,18 @@ UpplReturnCode IPCConnectionManager::SendEventSubscription() {
       get_notification_manager(UNC_CT_VNP),
       &attr_vnp);
   pfc_log_debug("Event Subscribed for Overlay driver");
+
+  // Notification manager for ODC
+  if ((attr_odc.addTarget(ODCDRIVER_IPC_SVC_NAME, mask)) != 0) {
+    pfc_log_error("addTarget() failed for ODC driver\n");
+    return UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+  }
+  physical_layer->Module::addIpcEventHandler(
+      ODCDRIVER_IPC_CHN_NAME,
+      get_notification_manager(UNC_CT_ODC),
+      &attr_odc);
+
+  pfc_log_debug("Event Subscribed for ODC driver");
   return UPPL_RC_SUCCESS;
 }
 
@@ -262,6 +280,14 @@ UpplReturnCode  IPCConnectionManager::CancelEventSubscription() {
     pfc_log_error("removeIpcEventHandler() failed\n");
     return UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
   }
+  // Remove the Event Handler for ODC Driver
+  if ((physical_layer->Module::removeIpcEventHandler(
+      get_notification_manager(UNC_CT_ODC)))
+      != 0) {
+    pfc_log_error("removeIpcEventHandler() for ODC Driver failed\n");
+    return UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+  }
+
   NotificationManager::release_notification_manager();
   return UPPL_RC_SUCCESS;
 }
@@ -356,7 +382,7 @@ uint32_t IPCConnectionManager::StartNotificationTimer(
   map<string, TaskQueue *> :: iterator task_iter
       = queue_obj_.find(controller_name);
   if ((timer_iter != timer_obj_.end()) || (task_iter != queue_obj_.end())) {
-    pfc_log_warn("StartNotificationTimer::Timer object found for controller %s", 
+    pfc_log_warn("StartNotificationTimer::Timer object found for controller %s",
         controller_name.c_str());
     UpplReturnCode cancel_ret = CancelTimer(controller_name);
     if (cancel_ret != UPPL_RC_SUCCESS) {
@@ -377,7 +403,7 @@ uint32_t IPCConnectionManager::StartNotificationTimer(
           std::pair<std::string, TaskQueue*>(controller_name, taskq));
   if (tqmap_rc.second == false) {
     pfc_log_error("StartNotificationTimer - Error in inserting TaskQueue object");
-  } 
+  }
   AuditNotification func_obj;
   func_obj.controller_name_ = controller_name;
   timer_func_t timer_func = func_obj;
