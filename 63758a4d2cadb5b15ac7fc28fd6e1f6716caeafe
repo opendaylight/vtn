@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da6255ed_4eacdeed",
+        "filename": "coordinator/modules/uppl/ipc_connection_manager.cc",
+        "patchSetId": 1
+      },
+      "lineNbr": 242,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-10-28T03:05:48Z",
+      "side": 1,
+      "message": "Don\u0027t overwrite existing comments that are valid",
+      "revId": "63758a4d2cadb5b15ac7fc28fd6e1f6716caeafe",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_2eb9aa2e",
+        "filename": "coordinator/modules/uppl/physical_notification_manager.cc",
+        "patchSetId": 1
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-10-28T03:05:48Z",
+      "side": 1,
+      "message": "code is not aligned correctly",
+      "revId": "63758a4d2cadb5b15ac7fc28fd6e1f6716caeafe",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_0eb6e63d",
+        "filename": "coordinator/modules/vtndrvintf/controller_fw.cc",
+        "patchSetId": 1
+      },
+      "lineNbr": 419,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-10-28T03:05:48Z",
+      "side": 1,
+      "message": "Line 419 is not required",
+      "revId": "63758a4d2cadb5b15ac7fc28fd6e1f6716caeafe",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
