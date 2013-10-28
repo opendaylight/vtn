@@ -605,11 +605,6 @@ void PhyUtil::FillDbSchema(ODBCMTableColumns attr_name, string attr_value,
       break;
     }
 
-    case DATATYPE_IPV6:
-      TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
-                                  16 + 1);
-      break;
-
     case DATATYPE_UINT8_ARRAY_2:
       TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
                                   2 + 1);
@@ -640,6 +635,7 @@ void PhyUtil::FillDbSchema(ODBCMTableColumns attr_name, string attr_value,
                                   11 + 1);
       break;
 
+    case DATATYPE_IPV6:
     case DATATYPE_UINT8_ARRAY_16:
       TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
                                   16 + 1);
