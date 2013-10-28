@@ -71,11 +71,24 @@ public abstract class VTNNorthBoundBase {
      *
      * @param containerName  The name of the container.
      * @param priv  Access privilege.
-     * @throws UnauthorizedException  A client is not authorized.
+     * @throws UnauthorizedException
+     *    A client is not authorized.
+     * @throws ResourceNotFoundException
+     *    Invalid container name is specified.
      */
     protected void checkPrivilege(String containerName, Privilege priv) {
-        String name = getUserName();
+        IContainerManager containerManager = (IContainerManager)ServiceHelper.
+            getGlobalInstance(IContainerManager.class, this);
+        if (containerManager == null) {
+            serviceUnavailable("Container");
+        }
+        if (!containerManager.doesContainerExist(containerName)) {
+            String msg = containerName + ": " +
+                RestMessages.NOCONTAINER.toString();
+            throw new ResourceNotFoundException(msg);
+        }
 
+        String name = getUserName();
         if (!NorthboundUtils.isAuthorized(name, containerName, priv, this)) {
             String msg = "User is not authorized to perform this operation " +
                 "on container "+ containerName;
@@ -135,8 +148,8 @@ public abstract class VTNNorthBoundBase {
      *    Invalid container name is specified.
      */
     protected IVTNManager getVTNManager(String containerName) {
-        IVTNManager mgr = (IVTNManager)
-            getContainerService(IVTNManager.class, containerName);
+        IVTNManager mgr = (IVTNManager)ServiceHelper.
+            getInstance(IVTNManager.class, containerName, this);
         if (mgr == null) {
             serviceUnavailable("VTN Manager");
         }
@@ -157,40 +170,12 @@ public abstract class VTNNorthBoundBase {
      *    Invalid container name is specified.
      */
     protected IVTNFlowDebugger getVTNFlowDebugger(String containerName) {
-        IVTNFlowDebugger debugger = (IVTNFlowDebugger)
-            getContainerService(IVTNFlowDebugger.class, containerName);
+        IVTNFlowDebugger debugger = (IVTNFlowDebugger)ServiceHelper.
+            getInstance(IVTNFlowDebugger.class, containerName, this);
         if (debugger == null) {
             serviceUnavailable("VTN Flow Debugger");
         }
 
         return debugger;
-    }
-
-    /**
-     * Return the specified OSGi service bound to the specified container.
-     *
-     * @param cls            The targer class.
-     * @param containerName  The container name.
-     * @return  The OSGi service instance associated with the specified
-     *          container.
-     * @throws ServiceUnavailableException
-     *    Unable to get OSGi service.
-     * @throws ResourceNotFoundException
-     *    Invalid container name is specified.
-     */
-    private Object getContainerService(Class<?> cls, String containerName) {
-        IContainerManager containerManager = (IContainerManager)ServiceHelper.
-            getGlobalInstance(IContainerManager.class, this);
-        if (containerManager == null) {
-            serviceUnavailable("Container");
-        }
-
-        if (!containerManager.doesContainerExist(containerName)) {
-            String msg = containerName + ": " +
-                RestMessages.NOCONTAINER.toString();
-            throw new ResourceNotFoundException(msg);
-        }
-
-        return ServiceHelper.getInstance(cls, containerName, this);
     }
 }

@@ -863,27 +863,17 @@ public class VtnNorthboundIT extends TestBase {
                                "PUT", requestBody, "text/plain");
         Assert.assertEquals(415, httpResponseCode.intValue());
 
-        // auth failed.
-        result = getJsonResult(baseURL + "default/vtns", "GET", null, "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
+        // Authentication failure.
+        checkVTNError(GlobalConstants.DEFAULT.toString(), tname1, false,
+                      HttpURLConnection.HTTP_UNAUTHORIZED);
 
-        requestBody = "{}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname, "POST", requestBody,
-                               "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
-
-        result = getJsonResult(baseURL + "default/vtns/" + tname1, "GET", null,
-                               "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
-
-        requestBody = "{}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname1 + queryParameter,
-                               "PUT", requestBody, "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
-
-        result = getJsonResult(baseURL + "default/vtns/" + tname1, "DELETE", null,
-                               "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
+        // Invalid container name.
+        String[] invalid = {"bad_container", "version"};
+        for (String inv: invalid) {
+            checkVTNError(inv, tname1, true, HttpURLConnection.HTTP_NOT_FOUND);
+            checkVTNError(inv, tname1, false,
+                          HttpURLConnection.HTTP_UNAUTHORIZED);
+        }
 
         // Test DELETE vtn expecting 404, setting dummy container
         result = getJsonResult(baseURL + cont_dummy + "/vtns/" + tname1, "DELETE");
@@ -936,6 +926,39 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals(0, vtnArray.length());
 
         testVtnGlobal(baseURL);
+    }
+
+    /**
+     * Ensure that the VTN APIs return correct error response.
+     *
+     * @param containerName   The container name.
+     * @param tname           The tenant name for the test.
+     * @param auth            If {@code true}, the client sends authenticated
+     *                        request. Otherwise the client sends unauthorized
+     *                        request.
+     * @param expected        Expected HTTP response code.
+     */
+    private void checkVTNError(String containerName, String tname,
+                               boolean auth, int expected) {
+        String base = VTN_BASE_URL + containerName + "/vtns";
+        String ct = "Application/Json";
+        String body = "{}";
+        getJsonResult(base, "GET", null, ct,  auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        String uri = base + "/" + tname;
+        getJsonResult(uri, "POST", body, ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        getJsonResult(uri, "GET", null, ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        String qp = new QueryParameter("all", "true").toString();
+        getJsonResult(uri + qp, "PUT", body, ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        getJsonResult(uri, "DELETE", null, ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
     }
 
     /**
@@ -1377,28 +1400,19 @@ public class VtnNorthboundIT extends TestBase {
                                "PUT", requestBody, "text/plain");
         Assert.assertEquals(415, httpResponseCode.intValue());
 
-        // auth fail
-        requestBody = "{}";
-        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname1, "POST",
-                               requestBody, "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
+        // Authentication failure.
+        checkVBridgeError(GlobalConstants.DEFAULT.toString(), tname1, tname2,
+                          bname1, bname2, false,
+                          HttpURLConnection.HTTP_UNAUTHORIZED);
 
-        requestBody = "{\"description\":\"test\"}";
-        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname2 + queryParameter,
-                               "PUT", requestBody, "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
-
-        result = getJsonResult(baseURL + tname2 + "/vbridges", "GET", null, "application/json",
-                               false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
-
-        result = getJsonResult(baseURL + tname2 + "/vbridges/" + bname2, "GET", null,
-                               "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
-
-        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname2, "DELETE", null,
-                               "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
+        // Invalid container name.
+        String[] invalid = {"bad_container", "version"};
+        for (String inv: invalid) {
+            checkVBridgeError(inv, tname1, tname2, bname1, bname2, true,
+                              HttpURLConnection.HTTP_NOT_FOUND);
+            checkVBridgeError(inv, tname1, tname2, bname1, bname2, false,
+                              HttpURLConnection.HTTP_UNAUTHORIZED);
+        }
 
         // Test DELETE vBridge2
         result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname2, "DELETE");
@@ -1439,6 +1453,47 @@ public class VtnNorthboundIT extends TestBase {
         json = new JSONObject(jt);
         vBridgeArray = json.getJSONArray("vbridge");
         Assert.assertEquals(0, vBridgeArray.length());
+    }
+
+    /**
+     * Ensure that the VBridge APIs return correct error response.
+     *
+     * @param containerName   The container name.
+     * @param tname1          The tenant name for the test.
+     * @param tname2          The tenant name for the test.
+     * @param bname1          The bridge name for the test.
+     * @param bname2          The bridge name for the test.
+     * @param auth            If {@code true}, the client sends authenticated
+     *                        request. Otherwise the client sends unauthorized
+     *                        request.
+     * @param expected        Expected HTTP response code.
+     */
+    private void checkVBridgeError(String containerName, String tname1,
+                                   String tname2, String bname1, String bname2,
+                                   boolean auth, int expected) {
+        String base = VTN_BASE_URL + containerName + "/vtns/";
+        String ct = "Application/Json";
+        String body = "{}";
+        getJsonResult(base + tname1 + "/vbridges/" + bname1, "POST", body, ct,
+                      auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        String qp = new QueryParameter("all", "true").getString();
+        body = "{\"description\":\"test\"}";
+        getJsonResult(base + tname1 + "/vbridges/" + bname2 + qp, "PUT", body,
+                      ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        getJsonResult(base + tname2 + "/vbridges", "GET", null, ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        getJsonResult(base + tname2 + "/vbridges/" + bname2, "GET", null, ct,
+                      auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        getJsonResult(base + tname1 + "/vbridges/" + bname2, "DELETE", null,
+                      ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
     }
 
     /**
@@ -1850,29 +1905,21 @@ public class VtnNorthboundIT extends TestBase {
                                "PUT", requestBody, "text/plain");
         Assert.assertEquals(415, httpResponseCode.intValue());
 
-        // auth fail
-        result = getJsonResult(baseURL + bname1 + "/interfaces", "GET", null,
-                               "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
+        // Authentication failure.
+        checkVBridgeInterfaceError(GlobalConstants.DEFAULT.toString(), tname1,
+                                   bname1, bname2, ifname3, ifname2, false,
+                                   HttpURLConnection.HTTP_UNAUTHORIZED);
 
-        result = getJsonResult(baseURL + bname2 + "/interfaces/" + ifname3 , "GET", null,
-                               "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
-
-        requestBody = "{}";
-        result = getJsonResult(baseURL + bname2 + "/interfaces/" + ifname2,
-                               "POST", requestBody, "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
-
-        requestBody = "{}";
-        result = getJsonResult(baseURL + bname2 + "/interfaces/" + ifname3 + queryParameter,
-                               "PUT", requestBody, "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
-
-        result = getJsonResult(baseURL + bname2 + "/interfaces/" + ifname3, "DELETE", null,
-                               "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
-
+        // Invalid container name.
+        String[] invalid = {"bad_container", "version"};
+        for (String inv: invalid) {
+            checkVBridgeInterfaceError(inv, tname1, bname1, bname2, ifname3,
+                                       ifname2, true,
+                                       HttpURLConnection.HTTP_NOT_FOUND);
+            checkVBridgeInterfaceError(inv, tname1, bname1, bname2, ifname3,
+                                       ifname2, false,
+                                       HttpURLConnection.HTTP_UNAUTHORIZED);
+        }
 
         // delete  vBridge Interface3
         result = getJsonResult(baseURL + bname2 + "/interfaces/" + ifname3, "DELETE");
@@ -1885,6 +1932,50 @@ public class VtnNorthboundIT extends TestBase {
         // delete vBridge Interface5
         result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname5, "DELETE");
         Assert.assertEquals(200, httpResponseCode.intValue());
+    }
+
+    /**
+     * Ensure that the VBridge interface APIs return correct error response.
+     *
+     * @param containerName   The container name.
+     * @param tname           The tenant name for the test.
+     * @param bname1          The bridge name for the test.
+     * @param bname2          The bridge name for the test.
+     * @param ifname1         The interface name for the test.
+     * @param ifname2         The interface name for the test.
+     * @param auth            If {@code true}, the client sends authenticated
+     *                        request. Otherwise the client sends unauthorized
+     *                        request.
+     * @param expected        Expected HTTP response code.
+     */
+    private void checkVBridgeInterfaceError(String containerName,
+                                            String tname, String bname1,
+                                            String bname2, String ifname1,
+                                            String ifname2, boolean auth,
+                                            int expected) {
+        String base = VTN_BASE_URL + containerName + "/vtns/" + tname +
+            "/vbridges/";
+        String ct = "Application/Json";
+        getJsonResult(base + bname1 + "/interfaces", "GET", null, ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        getJsonResult(base + bname2 + "/interfaces/" + ifname1 , "GET", null,
+                      ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        String body = "{}";
+        getJsonResult(base + bname2 + "/interfaces/" + ifname2, "POST", body,
+                      ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        String qp = new QueryParameter("all", "true").toString();
+        getJsonResult(base + bname2 + "/interfaces/" + ifname1 + qp,
+                      "PUT", body, ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        getJsonResult(base + bname2 + "/interfaces/" + ifname1, "DELETE", null,
+                      ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
     }
 
     /**
@@ -2139,15 +2230,19 @@ public class VtnNorthboundIT extends TestBase {
         result = getJsonResult(baseURL + ifname + "/portmap/", "PUT", requestBody, "text/plain");
         Assert.assertEquals(415, httpResponseCode.intValue());
 
-        // auth fail
-        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT", requestBody,
-                               "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
+        // Authentication failure.
+        checkPortMapError(GlobalConstants.DEFAULT.toString(), tname, bname,
+                          ifname, false,
+                          HttpURLConnection.HTTP_UNAUTHORIZED);
 
-        result = getJsonResult(baseURL + ifname + "/portmap", "GET", null,
-                               "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
-
+        // Invalid container name.
+        String[] invalid = {"bad_container", "version"};
+        for (String inv: invalid) {
+            checkPortMapError(inv, tname, bname, ifname, true,
+                              HttpURLConnection.HTTP_NOT_FOUND);
+            checkPortMapError(inv, tname, bname, ifname, false,
+                              HttpURLConnection.HTTP_UNAUTHORIZED);
+        }
 
         // Test PUT PortMapping expecting 200
         // Test PUT PortMapping
@@ -2244,6 +2339,37 @@ public class VtnNorthboundIT extends TestBase {
     }
 
     /**
+     * Ensure that the port mapping APIs return correct error response.
+     *
+     * @param containerName   The container name.
+     * @param tname           The tenant name for the test.
+     * @param bname           The bridge name for the test.
+     * @param ifname          The interface name for the test.
+     * @param auth            If {@code true}, the client sends authenticated
+     *                        request. Otherwise the client sends unauthorized
+     *                        request.
+     * @param expected        Expected HTTP response code.
+     */
+    private void checkPortMapError(String containerName, String tname,
+                                   String bname, String ifname, boolean auth,
+                                   int expected) {
+        String uri = VTN_BASE_URL + containerName + "/vtns/" + tname +
+            "/vbridges/" + bname + "/interfaces/" + ifname + "/portmap";
+        String ct = "Application/Json";
+        String body = "{\"vlan\": 0, " +
+            "\"node\":{\"type\": \"OF\", \"id\": 1}, " +
+            "\"port\":{\"name\": \"port-2\"}}";
+        getJsonResult(uri, "PUT", body, ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        getJsonResult(uri, "GET", null, ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        getJsonResult(uri, "DELETE", null, ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+    }
+
+    /**
      * Test case for Port Mapping delete APIs.
      *
      * This method is called by {@code testVBridgeInterfaceDeleteAPI}.
@@ -2288,11 +2414,6 @@ public class VtnNorthboundIT extends TestBase {
         // setting dummy vbridge interface
         result = getJsonResult(baseURL + ifname_dummy + "/portmap", "DELETE");
         Assert.assertEquals(404, httpResponseCode.intValue());
-
-        // auth fail
-        result = getJsonResult(baseURL + ifname + "/portmap", "DELETE", null,
-                               "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
 
         // Test DELETE PortMapping
         result = getJsonResult(baseURL + ifname + "/portmap", "DELETE");
@@ -2465,25 +2586,18 @@ public class VtnNorthboundIT extends TestBase {
         result = getJsonResult(requestUri, "POST", requestBody);
         Assert.assertEquals(409, httpResponseCode.intValue());
 
-        // auth fail
-        requestBody = "{\"vlan\":\"" + vlan3 + "\",\"node\":{\"type\":\"" + nodeType
-                + "\",\"id\":\"" + nodeid1 + "\"}}";
-        requestUri = baseURL + bname + "/vlanmaps";
-        result = getJsonResult(requestUri, "POST", requestBody, "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
+        // Authentication failure.
+        checkVlanMapError(GlobalConstants.DEFAULT.toString(), tname, bname,
+                          bname2, false, HttpURLConnection.HTTP_UNAUTHORIZED);
 
-        result = getJsonResult(baseURL + bname + "/vlanmaps", "GET", null,
-                               "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
-
-        result = getJsonResult(baseURL + bname2 + "/vlanmaps/" + nodeType + "-" + nodeid1 + "." + vlan0,
-                               "GET", null, "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
-
-        result = getJsonResult(baseURL + bname2 + "/vlanmaps/" + nodeType + "-" + nodeid1 + "." + vlan0,
-                               "DELETE", null, "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
-
+        // Invalid container name.
+        String[] invalid = {"bad_container", "version"};
+        for (String inv: invalid) {
+            checkVlanMapError(inv, tname, bname, bname2, true,
+                              HttpURLConnection.HTTP_NOT_FOUND);
+            checkVlanMapError(inv, tname, bname, bname2, false,
+                              HttpURLConnection.HTTP_UNAUTHORIZED);
+        }
 
         // Test DELETE VLAN Mapping
         result = getJsonResult(baseURL + bname2 + "/vlanmaps/" + nodeType + "-" + nodeid1 + "." + vlan0, "DELETE");
@@ -2567,6 +2681,40 @@ public class VtnNorthboundIT extends TestBase {
 
         Assert.assertEquals(200, httpResponseCode.intValue());
         Assert.assertEquals(3, vLANMapArray.length());
+    }
+
+    /**
+     * Ensure that the VLAN mapping APIs return correct error response.
+     *
+     * @param containerName   The container name.
+     * @param tname           The tenant name for the test.
+     * @param bname1          The bridge name for the test.
+     * @param bname2          The bridge name for the test.
+     * @param auth            If {@code true}, the client sends authenticated
+     *                        request. Otherwise the client sends unauthorized
+     *                        request.
+     * @param expected        Expected HTTP response code.
+     */
+    private void checkVlanMapError(String containerName, String tname,
+                                   String bname1, String bname2, boolean auth,
+                                   int expected) {
+        String base = VTN_BASE_URL + containerName + "/vtns/" + tname +
+            "/vbridges/";
+        String ct = "Application/Json";
+        String body = "{\"vlan\": 0, \"node\":{\"type\":\"OF\",\"id\":1}}";
+        String uri = base + bname1 + "/vlanmaps";
+        getJsonResult(uri, "POST", body, ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        getJsonResult(uri, "GET", null, ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        uri = base + bname2 + "/vlanmaps/OF-1.0";
+        getJsonResult(uri, "GET", null, ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        getJsonResult(uri, "DELETE", null, ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
     }
 
     /**
@@ -2790,27 +2938,44 @@ public class VtnNorthboundIT extends TestBase {
         // GET a list of MAC entry in vBridge
         checkMacTableEntry(baseURL + bname, numEntry, expectedMacSet, vlan);
 
-        // auth faile
+        // Authentication failure.
         expectedMac = expectedMacSet.iterator().next();
-        result = getJsonResult(baseURL + bname + "/mac", "GET", null, "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
+        checkMacError(GlobalConstants.DEFAULT.toString(), tname, bname,
+                      expectedMac, false, HttpURLConnection.HTTP_UNAUTHORIZED);
 
-        result = getJsonResult(baseURL + bname + "/mac/" + expectedMac, "GET", null,
-                               "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
-
-        result = getJsonResult(baseURL + bname + "/mac/" + expectedMac, "DELETE", null,
-                               "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
-
-        result = getJsonResult(baseURL + bname + "/mac", "DELETE", null,
-                               "application/json", false);
-        Assert.assertEquals(401, httpResponseCode.intValue());
+        // Invalid container name.
+        String[] invalid = {"bad_container", "version"};
+        for (String inv: invalid) {
+            checkMacError(inv, tname, bname, expectedMac, true,
+                          HttpURLConnection.HTTP_NOT_FOUND);
+            checkMacError(inv, tname, bname, expectedMac, false,
+                          HttpURLConnection.HTTP_UNAUTHORIZED);
+        }
 
         // flush mac address table.
         result = getJsonResult(baseURL + bname + "/mac", "DELETE", null, "applicatin/json",
                                false);
         Assert.assertEquals(401, httpResponseCode.intValue());
+    }
+
+    private void checkMacError(String containerName, String tname,
+                               String bname, String mac, boolean auth,
+                               int expected) {
+        String base = VTN_BASE_URL + containerName + "/vtns/" + tname +
+            "/vbridges/" + bname + "/mac";
+        String ct = "Application/Json";
+        getJsonResult(base, "GET", null, ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        getJsonResult(base, "DELETE", null, ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        String uri = base + "/" + mac;
+        getJsonResult(uri, "GET", null, ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
+
+        getJsonResult(uri, "DELETE", null, ct, auth);
+        Assert.assertEquals(expected, httpResponseCode.intValue());
     }
 
     /**
@@ -2865,14 +3030,21 @@ public class VtnNorthboundIT extends TestBase {
     /**
      * Test case for getting version information APIs.
      *
-     * This method is called by {@core testVTNAPI}.
+     * This method is called by {@link #testVTNAPI()}.
      */
     private void testVtnGlobal(String base) throws JSONException {
         System.out.println("Starting IVTNGlobal JAXB client.");
 
+        // Authentication failure.
+        String uri = base + "version";
+        getJsonResult(uri, "GET", null, "Application/Json", false);
+        Assert.assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED,
+                            httpResponseCode.intValue());
+
         // Get version information of the VTN Manager.
-        String result = getJsonResult(base + "version");
-        Assert.assertEquals(200, httpResponseCode.intValue());
+        String result = getJsonResult(uri);
+        Assert.assertEquals(HttpURLConnection.HTTP_OK,
+                            httpResponseCode.intValue());
 
         JSONTokener jt = new JSONTokener(result);
         JSONObject json = new JSONObject(jt);
