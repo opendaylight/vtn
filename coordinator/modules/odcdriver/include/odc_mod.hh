@@ -23,9 +23,12 @@
 #include <arpa/inet.h>
 #include <unc/tc/external/tc_services.h>
 #include <string>
+#define PING_DEF_TIMEOUT 30
 
 namespace unc {
 namespace odcdriver {
+
+const std::string drv_ping_conf_blk = "ping_param";
 
 class ODCModule: public pfc::core::Module, public unc::driver::driver {
  public:
@@ -148,12 +151,19 @@ class ODCModule: public pfc::core::Module, public unc::driver::driver {
   uint32_t get_ping_fail_retry_count();
 
   /**
-   * @brief     - ping conttoller available or nor
+   * @brief     - ping controller available or not
    * @param[in] - Controller pointer
    * @return    - returns PFC_TRUE if controller is available/
    *              returns PFC_FALSE if controller is not available
    */
   pfc_bool_t ping_controller(unc::driver::controller*);
+
+  /**
+   * @brief     - Read configuration file of odcdriver
+   * @param[in] - None
+   * @return    - None
+   */
+  void read_conf_file();
 
  private:
   /**
@@ -163,6 +173,7 @@ class ODCModule: public pfc::core::Module, public unc::driver::driver {
    *              notification to tc
    */
   uint32_t notify_audit_start_to_tc(std::string controller_id);
+  uint32_t ping_timeout;
 };
 }  //  namespace odcdriver
 }  //  namespace unc
