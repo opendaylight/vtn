@@ -25,6 +25,8 @@ pfc_bool_t ODCModule::init() {
     pfc_log_debug("Register driver failed");
     return PFC_FALSE;
   }
+  pfc_log_debug(" %s Read Configuration file" , PFC_FUNCNAME);
+  read_conf_file();
   pfc_log_debug(" %s Exiting Function" , PFC_FUNCNAME);
   return PFC_TRUE;
 }
@@ -152,7 +154,7 @@ unc::driver::driver_command* ODCModule::get_driver_command(
 uint32_t ODCModule::get_ping_interval() {
   pfc_log_debug(" %s Entering Function" , PFC_FUNCNAME);
   pfc_log_debug(" %s Exiting Function" , PFC_FUNCNAME);
-  return PING_INTERVAL;
+  return ping_interval;
 }
 
 // Gets the ping fail retry count
@@ -195,6 +197,7 @@ pfc_bool_t ODCModule::ping_controller(unc::driver::controller* ctr) {
     return PFC_FALSE;
   }
   uint32_t resp = rest_util_obj.send_request_and_get_response_code();
+  pfc_log_debug(" %s Response ocde from Controller %d" , PFC_FUNCNAME, resp);
   if (RESP_OK != resp) {
     return PFC_FALSE;
   }
@@ -225,6 +228,22 @@ unc::tclib::TcCommonRet ODCModule::HandleAbort(unc::driver::controller*) {
   pfc_log_debug(" %s Entering Function" , PFC_FUNCNAME);
   pfc_log_debug(" %s Exiting Function" , PFC_FUNCNAME);
   return unc::tclib::TC_FAILURE;
+}
+
+void ODCModule::read_conf_file() {
+  pfc_log_trace(" %s Entering Function" , PFC_FUNCNAME);
+  pfc::core::ModuleConfBlock drv_block(drv_ping_conf_blk);
+  if (drv_block.getBlock() != PFC_CFBLK_INVALID) {
+    ping_interval = drv_block.getUint32("odcdrv_ping_interval",
+                                        ping_default_interval);
+    pfc_log_debug("%s: Block Handle is Valid,Ping Timeout %d", PFC_FUNCNAME,
+                  ping_interval);
+  } else {
+    ping_interval = ping_default_interval;
+    pfc_log_debug("%s: Block Handle is Invalid,set default Value %d",
+                  PFC_FUNCNAME, ping_interval);
+  }
+  pfc_log_trace("%s: Exiting function", PFC_FUNCNAME);
 }
 }  // namespace odcdriver
 }  // namespace unc
