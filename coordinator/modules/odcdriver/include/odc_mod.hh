@@ -26,6 +26,11 @@
 
 namespace unc {
 namespace odcdriver {
+// Configuration block to read from odcdriver.conf for controller ping parameter
+const std::string drv_ping_conf_blk = "ping_param";
+
+// Default interval(secs) to ping controller,if interval is not configured
+const uint32_t ping_default_interval = 30;
 
 class ODCModule: public pfc::core::Module, public unc::driver::driver {
  public:
@@ -148,12 +153,19 @@ class ODCModule: public pfc::core::Module, public unc::driver::driver {
   uint32_t get_ping_fail_retry_count();
 
   /**
-   * @brief     - ping conttoller available or nor
+   * @brief     - ping controller available or not
    * @param[in] - Controller pointer
    * @return    - returns PFC_TRUE if controller is available/
    *              returns PFC_FALSE if controller is not available
    */
   pfc_bool_t ping_controller(unc::driver::controller*);
+
+  /**
+   * @brief     - Read configuration file of odcdriver
+   * @param[in] - None
+   * @return    - None
+   */
+  void read_conf_file();
 
  private:
   /**
@@ -163,6 +175,9 @@ class ODCModule: public pfc::core::Module, public unc::driver::driver {
    *              notification to tc
    */
   uint32_t notify_audit_start_to_tc(std::string controller_id);
+
+  // Ping interval of controller in secs
+  uint32_t ping_interval;
 };
 }  //  namespace odcdriver
 }  //  namespace unc
