@@ -730,6 +730,26 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     }
 
     @Override
+    public Map<String, Property> getControllerProperties() {
+        return null;
+    }
+
+    @Override
+    public Property getControllerProperty(String propertyName) {
+        return null;
+    }
+
+    @Override
+    public Status setControllerProperty(Property property) {
+        return null;
+    }
+
+    @Override
+    public Status removeControllerProperty(String propertyName) {
+        return null;
+    }
+
+    @Override
     public Status updateNodeConfig(SwitchConfig switchConfig) {
         return null;
     }
