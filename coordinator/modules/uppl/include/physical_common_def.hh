@@ -27,6 +27,8 @@
 #define UPLL_IPC_CHN_NAME                   "lgcnwd"
 #define UPLL_IPC_SVC_NAME                   "upll"
 #define TCLIB_MODULE_NAME                   "tclib"
+#define ODCDRIVER_IPC_CHN_NAME              "drvodcd"
+#define ODCDRIVER_IPC_SVC_NAME              "vtndrvintf"
 
 const unsigned int UPPL_MAX_REP_CT = 10000;
 /*

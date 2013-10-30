@@ -46,6 +46,7 @@ class NotificationManager:public IpcEventHandler {
   ~NotificationManager() {}
   static NotificationManager* pfc_notification_manager_;
   static NotificationManager* vnp_notification_manager_;
+  static NotificationManager* odc_notification_manager_;
 };
 
 }  // namespace uppl
