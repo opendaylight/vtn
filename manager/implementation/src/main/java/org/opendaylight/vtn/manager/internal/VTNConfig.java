@@ -279,10 +279,19 @@ public class VTNConfig {
         File file = new File(dir, fname);
 
         // Load properties.
+        FileInputStream fis = null;
         Properties prop = new Properties(defaults);
         try {
-            prop.load(new FileInputStream(file));
+            fis = new FileInputStream(file);
+            prop.load(fis);
         } catch (IOException e) {
+        } finally {
+            if (fis != null) {
+                try {
+                    fis.close();
+                } catch (IOException e) {
+                }
+            }
         }
 
         return prop;

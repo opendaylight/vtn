@@ -17,14 +17,49 @@ import java.io.IOException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
  * test for {@link VTNConfig}
  */
 public class VTNConfigTest extends TestBase {
-    static String containerName = "unittest";
+
+    // Default value, min value, max value of nodeEdgeWait.
+    private final int  DEFAULT_NODE_EDGE_WAIT = 3000;
+    private final int  MIN_NODE_EDGE_WAIT = 0;
+    private final int  MAX_NODE_EDGE_WAIT = 600000;
+
+    // Default value, min value, max value of l2FlowPriority
+    private final int  DEFAULT_L2FLOW_PRIORITY = 10;
+    private final int  MIN_L2FLOW_PRIORITY = 1;
+    private final int  MAX_L2FLOW_PRIORITY = 999;
+
+    // Default value, min value, max value value of flowModTimeout
+    private final int  DEFAULT_FLOWMOD_TIMEOUT = 3000;
+    private final int  MIN_FLOWMOD_TIMEOUT = 100;
+    private final int  MAX_FLOWMOD_TIMEOUT = 60000;
+
+    // Default value, min value, max value of remoteFlowModTimeout
+    private final int  DEFAULT_REMOTE_FLOWMOD_TIMEOUT = 5000;
+    private final int  MIN_REMOTE_FLOWMOD_TIMEOUT = 1000;
+    private final int  MAX_REMOTE_FLOWMOD_TIMEOUT = 60000;
+
+    // Default value, min value, max value of remoteBulkFlowModTimeout
+    private final int  DEFAULT_REMOTE_BULK_FLOWMOD_TIMEOUT = 15000;
+    private final int  MIN_REMOTE_BULK_FLOWMOD_TIMEOUT = 3000;
+    private final int  MAX_REMOTE_BULK_FLOWMOD_TIMEOUT = 600000;
+
+    // Separaters between key and value.
+    private final String[] separaters = new String[] {"=", ":"};
+
+    // Configuration file name.
+    private final static String containerName = "unittest";
+    private final static String containerFilename = "vtnmanager-" + containerName + ".ini";
+    private final static String globalFilename = "vtnmanager.ini";
+
+    // The working directory used for test.
+    private final static String WORK_DIR = "work";
+
 
     @AfterClass
     public static void afterclass() {
@@ -33,116 +68,420 @@ public class VTNConfigTest extends TestBase {
 
     @Before
     public void before() {
+        File file = new File(WORK_DIR);
+        if (!file.exists()) {
+            file.mkdir();
+        }
+
         cleanup(false);
     }
 
     @After
     public void after() {
         cleanup(false);
+
+        File file = new File(WORK_DIR);
+        if (file.exists()) {
+            file.delete();
+        }
+    }
+
+    /**
+     * Test case for
+     * {@link VTNConfig#VTNConfig(String, String)},
+     * {@link VTNConfig#getNodeEdgeWait()}.
+     *
+     * This tests {@code nodeEdgeWait} parameter.
+     */
+    @Test
+    public void testVTNConfigNodeEdgeWait() {
+        String[] values = {
+                null, "empty", "",
+                String.valueOf(MIN_NODE_EDGE_WAIT),
+                String.valueOf(MIN_NODE_EDGE_WAIT - 1),
+                String.valueOf(MAX_NODE_EDGE_WAIT),
+                String.valueOf(MAX_NODE_EDGE_WAIT + 1),
+                "val"
+        };
+
+        testVTNConfig("nodeEdgeWait", DEFAULT_NODE_EDGE_WAIT,
+                      MIN_NODE_EDGE_WAIT, MAX_NODE_EDGE_WAIT, values);
+    }
+
+    /**
+     * Test case for
+     * {@link VTNConfig#VTNConfig(String, String)},
+     * {@link VTNConfig#getL2FlowPriority()}.
+     *
+     * This tests {@code l2FlowPriority} parameter.
+     */
+    @Test
+    public void testVTNConfigL2FlowPriority() {
+        String[] values = {
+                null, "empty", "",
+                String.valueOf(MIN_L2FLOW_PRIORITY),
+                String.valueOf(MIN_L2FLOW_PRIORITY - 1),
+                String.valueOf(MAX_L2FLOW_PRIORITY),
+                String.valueOf(MAX_L2FLOW_PRIORITY + 1),
+                "val"
+        };
+
+        testVTNConfig("l2FlowPriority", DEFAULT_L2FLOW_PRIORITY,
+                      MIN_L2FLOW_PRIORITY, MAX_L2FLOW_PRIORITY, values);
+    }
+
+    /**
+     * Test case for
+     * {@link VTNConfig#VTNConfig(String, String)},
+     * {@link VTNConfig#getFlowModTimeout()}.
+     *
+     * This tests {@code flowModTimeout} parameter.
+     */
+    @Test
+    public void testVTNConfigFlowModTimeout() {
+        String[] values = {
+                null, "empty", "",
+                String.valueOf(MIN_FLOWMOD_TIMEOUT),
+                String.valueOf(MIN_FLOWMOD_TIMEOUT - 1),
+                String.valueOf(MAX_FLOWMOD_TIMEOUT),
+                String.valueOf(MAX_FLOWMOD_TIMEOUT + 1),
+                "val"
+        };
+
+        testVTNConfig("flowModTimeout", DEFAULT_FLOWMOD_TIMEOUT,
+                      MIN_FLOWMOD_TIMEOUT, MAX_FLOWMOD_TIMEOUT, values);
+    }
+
+    /**
+     * Test case for
+     * {@link VTNConfig#VTNConfig(String, String)},
+     * {@link VTNConfig#getRemoteFlowModTimeout()}.
+     *
+     * This tests {@code remoteFlowModTimeout} parameter.
+     */
+    @Test
+    public void testVTNConfigRemoteFlowModTimeout() {
+        String[] values = {
+                null, "empty", "",
+                String.valueOf(MIN_REMOTE_FLOWMOD_TIMEOUT),
+                String.valueOf(MIN_REMOTE_FLOWMOD_TIMEOUT - 1),
+                String.valueOf(MAX_REMOTE_FLOWMOD_TIMEOUT),
+                String.valueOf(MAX_REMOTE_FLOWMOD_TIMEOUT + 1),
+                "val"
+        };
+
+        testVTNConfig("remoteFlowModTimeout", DEFAULT_REMOTE_FLOWMOD_TIMEOUT,
+                      MIN_REMOTE_FLOWMOD_TIMEOUT, MAX_REMOTE_FLOWMOD_TIMEOUT,
+                      values);
+    }
+
+     /**
+      * Test case for
+      * {@link VTNConfig#VTNConfig(String, String)},
+      * {@link VTNConfig#getRemoteBulkFlowModTimeout()}.
+      *
+      * This tests {@code remoteBulkFlowModTimeout} parameter.
+      */
+     @Test
+     public void testVTNConigNodeRemoteBulkFlowModTimeout() {
+        String[] values = {
+                null, "empty", "",
+                String.valueOf(MIN_REMOTE_BULK_FLOWMOD_TIMEOUT),
+                String.valueOf(MIN_REMOTE_BULK_FLOWMOD_TIMEOUT - 1),
+                String.valueOf(MAX_REMOTE_BULK_FLOWMOD_TIMEOUT),
+                String.valueOf(MAX_REMOTE_BULK_FLOWMOD_TIMEOUT + 1),
+                "val"
+        };
+
+        testVTNConfig("remoteBulkFlowModTimeout",
+                      DEFAULT_REMOTE_BULK_FLOWMOD_TIMEOUT,
+                      MIN_REMOTE_BULK_FLOWMOD_TIMEOUT,
+                      MAX_REMOTE_BULK_FLOWMOD_TIMEOUT, values);
     }
 
 
     /**
-     * Test case for
-     * {@link VTNConfig#VTNConfig(java.lang.String, java.lang.String)},
-     * {@link VTNConfig#getNodeEdgeWait()}.
+     * Common routine for test cases of {@link VTNConfig}.
+     *
+     * @param parameterString   A key String of parameter.
+     * @param defaultVal        A default value.
+     * @param minValue          A minimum value.
+     * @param maxValue          A maximum value.
+     * @param values            Values which is tested as parameter.
+     */
+    private void testVTNConfig(String parameterString, int defaultVal,
+                               int minValue, int maxValue, String[] values) {
+        cleanup(false);
+
+        for (String separater : separaters) {
+            for (String gval : values) {
+                // setup global .ini file.
+                FileWriter gWriter;
+                File gIniFile = new File(WORK_DIR, globalFilename);
+                if (gval != null && gval.equals("empty")) {
+                    // if null, create a empty file.
+                    try {
+                        assertTrue(gIniFile.createNewFile());
+                    } catch (IOException e) {
+                        unexpected(e);
+                    }
+                } else if (gval != null){
+                    String prop = parameterString + separater + gval;
+                    int ave = (minValue + maxValue) / 2;
+                    String propComment = "#" + parameterString + separater + ave;
+                    try {
+                        gWriter = new FileWriter(gIniFile);
+                        gWriter.write(prop);
+                        gWriter.write("\n");
+                        gWriter.write(propComment);
+                        gWriter.close();
+                    } catch (IOException e) {
+                        unexpected(e);
+                    }
+                } else {
+                    // in case of null delete configuration file.
+                    if (gIniFile.exists()) {
+                        assertTrue(gIniFile.delete());
+                    }
+                }
+
+                int realDefaultVal = defaultVal;
+                Integer v = null;
+                if (gval != null && !gval.equals("empty")) {
+                    try {
+                        v = Integer.decode(gval);
+                    } catch (NumberFormatException e) {
+                    }
+                }
+                if (v != null && v.intValue() >= minValue
+                        && v.intValue() <= maxValue) {
+                    realDefaultVal = v.intValue();
+                }
+
+                for (String cval : values) {
+                    String emsg = "global=" + gval + "," + "container=" + cval;
+
+                    // setup container .ini file
+                    FileWriter cWriter;
+                    File contIniFile = new File(WORK_DIR, containerFilename);
+                    VTNConfig conf;
+
+                    if (cval != null && cval.equals("empty")) {
+                        try {
+                            cWriter = new FileWriter(contIniFile);
+                            cWriter.close();
+                        } catch (IOException e) {
+                            unexpected(e);
+                        }
+                        conf = new VTNConfig(WORK_DIR, containerName);
+                    } else if (cval != null) {
+                        String prop = parameterString + separater + cval;
+                        int ave = (minValue + maxValue) / 4;
+                        String propComment = "#" + parameterString + separater + ave;
+                        try {
+                            cWriter = new FileWriter(contIniFile);
+                            cWriter.write(prop);
+                            cWriter.write("\n");
+                            cWriter.write(propComment);
+                            cWriter.close();
+                        } catch (IOException e) {
+                            unexpected(e);
+                        }
+                        conf = new VTNConfig(WORK_DIR, containerName);
+                    } else {
+                        // in case of null delete configuration file.
+                        if (contIniFile.exists()) {
+                            assertTrue(contIniFile.delete());
+                        }
+                        conf = new VTNConfig(WORK_DIR, "null");
+                    }
+
+                    Integer cv = null;
+                    if (cval != null && !cval.equals("empty")) {
+                        try {
+                            cv = Integer.decode(cval);
+                            if (cv.intValue() < minValue
+                                    || cv.intValue() > maxValue) {
+                                cv = Integer.valueOf(defaultVal);
+                            }
+                        } catch (NumberFormatException e) {
+                            cv = Integer.valueOf(defaultVal);
+                        }
+                    }
+
+                    int confValue = -100;
+                    if (parameterString.equals("nodeEdgeWait")) {
+                        confValue = conf.getNodeEdgeWait();
+                    } else if (parameterString.equals("l2FlowPriority")) {
+                        confValue = conf.getL2FlowPriority();
+                    } else if (parameterString.equals("flowModTimeout")) {
+                        confValue = conf.getFlowModTimeout();
+                    } else if (parameterString.equals("remoteFlowModTimeout")) {
+                        confValue = conf.getRemoteFlowModTimeout();
+                    } else if (parameterString.equals("remoteBulkFlowModTimeout")) {
+                        confValue = conf.getRemoteBulkFlowModTimeout();
+                    } else {
+                        fail("not supported test case.");
+                    }
+
+                    if (cv == null || cval.equals("empty")) {
+                        assertEquals(emsg, realDefaultVal, confValue);
+                    } else {
+                        assertEquals(emsg, cv.intValue(), confValue);
+                    }
+                    conf = null;
+
+                    if (contIniFile.exists()) {
+                        contIniFile.delete();
+                    }
+                }
+                if (gIniFile.exists()) {
+                    gIniFile.delete();
+                }
+            }
+        }
+    }
+
+    /**
+     * test cases for {@link VTNConfig}.
+     *
+     * This tests with Configuration file which include some properties.
      */
     @Test
-    public void testVTNConfig() {
-        String[] values = {null, "empty", "", "0", "-1", "1", "600000", "600001", "val"};
-        String dir = "./";
-        String filename = "vtnmanager-" + containerName + ".ini";
-        String gfilename = "vtnmanager.ini";
+    public void testVTNConfigAll() {
+        String[] parameterStrings = new String[] {
+                "nodeEdgeWait",
+                "l2FlowPriority",
+                "flowModTimeout",
+                "remoteFlowModTimeout",
+                "remoteBulkFlowModTimeout"
+        };
 
-        for (String gval : values) {
+        cleanup(false);
+
+        for (String separater : separaters) {
+            File gIniFile = new File(WORK_DIR, globalFilename);
+            if (gIniFile.exists()) {
+                assertTrue(gIniFile.delete());
+            }
+
+            File cIniFile = new File(WORK_DIR, containerFilename);
+            if (cIniFile.exists()) {
+                assertTrue(cIniFile.delete());
+            }
+
+            VTNConfig conf = new VTNConfig(WORK_DIR, containerName);
+
+            assertEquals(DEFAULT_NODE_EDGE_WAIT, conf.getNodeEdgeWait());
+            assertEquals(DEFAULT_L2FLOW_PRIORITY, conf.getL2FlowPriority());
+            assertEquals(DEFAULT_FLOWMOD_TIMEOUT, conf.getFlowModTimeout());
+            assertEquals(DEFAULT_REMOTE_FLOWMOD_TIMEOUT,
+                         conf.getRemoteFlowModTimeout());
+            assertEquals(DEFAULT_REMOTE_BULK_FLOWMOD_TIMEOUT,
+                         conf.getRemoteBulkFlowModTimeout());
+
             // setup global .ini file.
-            FileWriter gwriter;
-            File ginifile = new File(dir, gfilename);
-            if (gval != null && gval.equals("empty")) {
-                // if null, create a empty file.
-                try {
-                    ginifile.createNewFile();
-                } catch (IOException e) {
-                    unexpected(e);
-                }
-            } else if (gval != null){
-                String prop = "nodeEdgeWait=" + gval;
-                try {
-                    gwriter = new FileWriter(ginifile);
-                    gwriter.write(prop);
-                    gwriter.close();
-                } catch (IOException e) {
-                    unexpected(e);
-                }
+            FileWriter gWriter = null;
+            gIniFile = new File(WORK_DIR, globalFilename);
+            try {
+                gWriter = new FileWriter(gIniFile);
+            } catch (IOException e) {
+                unexpected(e);
             }
 
-            int defaultval = 3000;
-            Integer v = null;
-            if (gval != null && !gval.equals("empty")) {
-                try {
-                    v = Integer.decode(gval);
-                } catch (NumberFormatException e) {
-                }
-            }
-            if (v != null && v.intValue() >= 0 && v.intValue() <= 600000) {
-                defaultval = v.intValue();
-            }
+            for (String parameterString : parameterStrings) {
+                StringBuilder prop = new StringBuilder(parameterString + separater);
 
-            for (String cval : values) {
-                String emsg = "global=" + gval + "," + "container=" + cval;
-
-                // setup container .ini file
-                FileWriter writer;
-                File inifile = new File(dir, filename);
-                VTNConfig conf;
-
-                if (cval != null && cval.equals("empty")) {
-                    try {
-                        writer = new FileWriter(inifile);
-                        writer.close();
-                    } catch (IOException e) {
-                        unexpected(e);
-                    }
-                    conf = new VTNConfig(dir, containerName);
-                } else if (cval != null){
-                    String prop = "nodeEdgeWait=" + cval;
-                    try {
-                        writer = new FileWriter(inifile);
-                        writer.write(prop);
-                        writer.close();
-                    } catch (IOException e) {
-                        unexpected(e);
-                    }
-                    conf = new VTNConfig(dir, containerName);
-                } else { // cval == null
-                    conf = new VTNConfig(dir, "null");
-                }
-
-                Integer cv = null;
-                if (cval != null && !cval.equals("empty")) {
-                    try {
-                        cv = Integer.decode(cval);
-                        if (cv.intValue() < 0 || cv.intValue() > 600000) {
-                            cv = Integer.valueOf(3000);
-                        }
-                    } catch (NumberFormatException e) {
-                        cv = Integer.valueOf(3000);
-                    }
-                }
-                if (cv == null || cval.equals("empty")) {
-                    assertEquals(emsg, defaultval, conf.getNodeEdgeWait());
+                if (parameterString.equals("nodeEdgeWait")) {
+                    prop.append(MIN_NODE_EDGE_WAIT);
+                } else if (parameterString.equals("l2FlowPriority")) {
+                    prop.append(MIN_L2FLOW_PRIORITY);
+                } else if (parameterString.equals("flowModTimeout")) {
+                    prop.append(MIN_FLOWMOD_TIMEOUT);
+                } else if (parameterString.equals("remoteFlowModTimeout")) {
+                    prop.append(MIN_REMOTE_FLOWMOD_TIMEOUT);
+                } else if (parameterString.equals("remoteBulkFlowModTimeout")) {
+                    prop.append(MIN_REMOTE_BULK_FLOWMOD_TIMEOUT);
                 } else {
-                    assertEquals(emsg, cv.intValue(), conf.getNodeEdgeWait());
+                    fail("not supported test case.");
                 }
-                conf = null;
+                prop.append("\n");
 
-                if (inifile.exists()) {
-                    inifile.delete();
+                try {
+                    gWriter.write(prop.toString());
+                } catch (IOException e) {
+                    unexpected(e);
                 }
             }
-            if (ginifile.exists()) {
-                ginifile.delete();
+
+            try {
+                gWriter.close();
+            } catch (IOException e) {
+                unexpected(e);
             }
+
+            // setup container file
+            conf = new VTNConfig(WORK_DIR, containerName);
+
+            assertEquals(MIN_NODE_EDGE_WAIT, conf.getNodeEdgeWait());
+            assertEquals(MIN_L2FLOW_PRIORITY, conf.getL2FlowPriority());
+            assertEquals(MIN_FLOWMOD_TIMEOUT, conf.getFlowModTimeout());
+            assertEquals(MIN_REMOTE_FLOWMOD_TIMEOUT,
+                         conf.getRemoteFlowModTimeout());
+            assertEquals(MIN_REMOTE_BULK_FLOWMOD_TIMEOUT,
+                         conf.getRemoteBulkFlowModTimeout());
+
+            // setup container .ini file.
+            cIniFile = new File(WORK_DIR, containerFilename);
+            FileWriter cwriter = null;
+            try {
+                cwriter = new FileWriter(cIniFile);
+            } catch (IOException e) {
+                unexpected(e);
+            }
+            for (String parameterString : parameterStrings) {
+                StringBuilder prop = new StringBuilder(parameterString + separater);
+
+                if (parameterString.equals("nodeEdgeWait")) {
+                    prop.append(MAX_NODE_EDGE_WAIT);
+                } else if (parameterString.equals("l2FlowPriority")) {
+                    prop.append(MAX_L2FLOW_PRIORITY);
+                } else if (parameterString.equals("flowModTimeout")) {
+                    prop.append(MAX_FLOWMOD_TIMEOUT);
+                } else if (parameterString.equals("remoteFlowModTimeout")) {
+                    prop.append(MAX_REMOTE_FLOWMOD_TIMEOUT);
+                } else if (parameterString.equals("remoteBulkFlowModTimeout")) {
+                    prop.append(MAX_REMOTE_BULK_FLOWMOD_TIMEOUT);
+                } else {
+                    fail("not supported test case.");
+                }
+                prop.append("\n");
+
+                try {
+                    cwriter.write(prop.toString());
+                } catch (IOException e) {
+                    unexpected(e);
+                }
+            }
+
+            try {
+                cwriter.close();
+            } catch (IOException e) {
+                unexpected(e);
+            }
+
+            conf = new VTNConfig(WORK_DIR, containerName);
+
+            assertEquals(MAX_NODE_EDGE_WAIT, conf.getNodeEdgeWait());
+            assertEquals(MAX_L2FLOW_PRIORITY, conf.getL2FlowPriority());
+            assertEquals(MAX_FLOWMOD_TIMEOUT, conf.getFlowModTimeout());
+            assertEquals(MAX_REMOTE_FLOWMOD_TIMEOUT,
+                         conf.getRemoteFlowModTimeout());
+            assertEquals(MAX_REMOTE_BULK_FLOWMOD_TIMEOUT,
+                         conf.getRemoteBulkFlowModTimeout());
+
+            gIniFile.delete();
+            cIniFile.delete();
         }
     }
 
@@ -153,11 +492,7 @@ public class VTNConfigTest extends TestBase {
      *                  instead of {@code delete()}.
      */
     public static void cleanup(boolean isExit) {
-        String dir = "./";
-        String filename = "vtnmanager-" + containerName + ".ini";
-        String gfilename = "vtnmanager.ini";
-
-        File ginifile = new File(dir, gfilename);
+        File ginifile = new File(WORK_DIR, globalFilename);
         if (ginifile.exists()) {
             if (isExit) {
                 ginifile.deleteOnExit();
@@ -165,7 +500,8 @@ public class VTNConfigTest extends TestBase {
                 ginifile.delete();
             }
         }
-        File inifile = new File(dir, filename);
+
+        File inifile = new File(WORK_DIR, containerFilename);
         if (inifile.exists()) {
             if (isExit) {
                 inifile.deleteOnExit();
