@@ -94,6 +94,11 @@ public class VTNThreadPool {
     private volatile int  waiting;
 
     /**
+     * The number of pending wake-up signals.
+     */
+    private volatile int  pendingSignals;
+
+    /**
      * State of the thread pool.
      */
     private volatile int  poolState = STATE_RUNNING;
@@ -131,8 +136,11 @@ public class VTNThreadPool {
         }
 
         taskQueue.addLast(task);
-        if (waiting != 0) {
+
+        int pending = pendingSignals;
+        if (waiting > pending) {
             // The task will be executed on one of existing worker thread.
+            pendingSignals = pending + 1;
             notify();
         } else if (workerThreads.size() < poolSize) {
             // Expand the pool size.
@@ -276,14 +284,7 @@ public class VTNThreadPool {
                     return null;
                 }
 
-                waiting++;
-                try {
-                    wait(tmout);
-                } catch (InterruptedException e) {
-                } finally {
-                    waiting--;
-                }
-
+                waitForSignal(tmout);
                 if (taskQueue.size() != 0) {
                     break;
                 }
@@ -296,7 +297,7 @@ public class VTNThreadPool {
             } while (true);
         }
 
-        return taskQueue.remove();
+        return taskQueue.removeFirst();
     }
 
     /**
@@ -313,16 +314,34 @@ public class VTNThreadPool {
                 return null;
             }
 
-            waiting++;
-            try {
-                wait();
-            } catch (InterruptedException e) {
-            } finally {
-                waiting--;
-            }
+            waitForSignal(0);
         }
 
-        return taskQueue.remove();
+        return taskQueue.removeFirst();
+    }
+
+    /**
+     * Block the calling thread until the thread receives the wake-up signal.
+     *
+     * <p>
+     *   Note that this method always ignores {@code InterruptedException}.
+     * </p>
+     *
+     * @param timeout   The maximum time to wait in milliseconds.
+     *                  Zero means an infinite timeout.
+     */
+    private synchronized void waitForSignal(long timeout) {
+        waiting++;
+        try {
+            wait(timeout);
+        } catch (InterruptedException e) {
+        } finally {
+            waiting--;
+            int pending = pendingSignals - 1;
+            if (pending >= 0) {
+                pendingSignals = pending;
+            }
+        }
     }
 
     /**
