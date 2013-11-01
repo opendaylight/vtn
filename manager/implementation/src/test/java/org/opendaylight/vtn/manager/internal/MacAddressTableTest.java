@@ -11,6 +11,7 @@ package org.opendaylight.vtn.manager.internal;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
@@ -28,12 +29,14 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
+import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
+import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
 
 /**
  * JUnit test for {@link MacAddressTable}
@@ -291,6 +294,15 @@ public class MacAddressTableTest extends TestBase {
             tent = tbl.get(getTableKey(rpctx));
             assertNull(emsg, tent);
 
+            // remove entry again.
+            tbl.remove(getTableKey(rpctx));
+            assertNull(emsg, tbl.get(getTableKey(rpctx)));
+
+            // check whether removed entry not included.
+            tent = tbl.get(getTableKey(rpctx));
+            assertNull(emsg, tent);
+
+
             // removeEntry()
             tbl.add(dpctx);
             try {
@@ -321,13 +333,56 @@ public class MacAddressTableTest extends TestBase {
 
             iphost++;
         }
+
         tbl.destroy(true);
         tall.destroy(true);
 
-        // case for Multicast packet data
-        byte [] src = new byte[] {(byte)0xFF, (byte)0x00, (byte)0x00,
-                                    (byte)0x00, (byte)0x00, (byte)0x01};
-        byte [] sender = new byte[] {(byte)192, (byte)168, (byte)100, (byte)1};
+        // call each method after call destroy().
+        byte [] src = new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+        byte [] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
+        PacketContext pctx = createARPPacketContext(src, dst, sender, target,
+                                        (short)-1, connectors.get(0), ARP.REQUEST);
+        tbl.add(pctx);
+        InetAddress ipaddr = null;
+        try {
+            ipaddr = InetAddress.getByAddress(sender);
+        } catch (UnknownHostException e) {
+            unexpected(e);
+        }
+
+        long key = 1000L;
+        tent = new MacTableEntry(path1, key, connectors.get(0), (short) 0, ipaddr);
+
+        tbl.add(tent);
+        assertNull(tbl.get(key));
+
+        List<MacAddressEntry> entries = getEntries(tbl);
+        assertEquals(0, entries.size());
+
+        EthernetAddress ea = null;
+        try {
+            ea = new EthernetAddress(src);
+        } catch (ConstructionException e) {
+            unexpected(e);
+        }
+        assertNull(getEntry(tbl, ea));
+
+        mae = null;
+        try {
+            mae = tbl.removeEntry(ea);
+        } catch (VTNException e) {
+            unexpected(e);
+        }
+        assertNull(mae);
+
+        // check run normally in this condition.
+        tbl.remove(key);
+        tbl.destroy(true);
+
+        // case for a multicast packet data
+        src = new byte[] {(byte)0xFF, (byte)0x00, (byte)0x00,
+                          (byte)0x00, (byte)0x00, (byte)0x01};
+        sender = new byte[] {(byte)192, (byte)168, (byte)100, (byte)1};
 
         VBridgePath path = new VBridgePath("tenant1", "bridge1");
         MacAddressTable mtbl = new MacAddressTable(mgr, path, 600);
@@ -376,12 +431,27 @@ public class MacAddressTableTest extends TestBase {
         VBridgePath path4 = new VBridgePath("tenant1", "bridge4");
         VBridgePath path5 = new VBridgePath("tenant1", "bridge5");
         VBridgePath path6 = new VBridgePath("tenant1", "bridge6");
+        VBridgePath path7 = new VBridgePath("tenant1", "bridge7");
         MacAddressTable tbl1 = new MacAddressTable(mgr, path1, 600);
         MacAddressTable tbl2 = new MacAddressTable(mgr, path2, 1000);
         MacAddressTable tbl3 = new MacAddressTable(mgr, path3, 1000);
         MacAddressTable tbl4 = new MacAddressTable(mgr, path4, 1000);
         MacAddressTable tbl5 = new MacAddressTable(mgr, path5, 1000);
         MacAddressTable tbl6 = new MacAddressTable(mgr, path6, 1000);
+        MacAddressTable tbl7 = new MacAddressTable(mgr, path7, 1000);
+
+        InetAddress contIpAddr1 = null;
+        InetAddress contIpAddr2 = null;
+        try {
+            contIpAddr1
+                = InetAddress.getByAddress(new byte[] {(byte)192, (byte)168,
+                                                       (byte)100, (byte)254});
+            contIpAddr2
+                = InetAddress.getByAddress(new byte[] {(byte)192, (byte)168,
+                                                       (byte)100, (byte)253});
+        } catch (UnknownHostException e) {
+            unexpected(e);
+        }
 
         List<NodeConnector> connectors = createNodeConnectors(3, false);
         short vlan = 0;
@@ -389,6 +459,7 @@ public class MacAddressTableTest extends TestBase {
                                  (byte)0xff, (byte)0xff, (byte)0xff};
         byte[] target = new byte[] {(byte)192, (byte)168, (byte)100, (byte)250};
 
+        int id = 1000;
         for (byte iphost = 1; iphost <= 9; iphost++) {
             byte[] src = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
                                      (byte)0x00, (byte)0x00, (byte)iphost};
@@ -404,39 +475,177 @@ public class MacAddressTableTest extends TestBase {
             tbl5.add(pctx);
             tbl6.add(pctx);
 
+            InetAddress ipaddr = null;
+            try {
+                ipaddr = InetAddress.getByAddress(sender);
+            } catch (UnknownHostException e) {
+                unexpected(e);
+            }
+            MacTableEntryId mentid
+                    = new MacTableEntryId(((id % 2) == 0) ? contIpAddr1 : contIpAddr2,
+                                          (long) id, path7,
+                                          NetUtils.byteArray6ToLong(src));
+            MacTableEntry tent
+                    = new MacTableEntry(mentid, connectors.get(iphost % 3),
+                                        (short) (((vlan / 3) > 0) ? (vlan / 3) : -1),
+                                        ipaddr);
+            tbl7.add(tent);
+
+            id++;
             vlan++;
         }
 
+        // flush all entries.
         List<MacAddressEntry> list = null;
         tbl1.flush();
         list = getEntries(tbl1);
         assertNotNull(list);
         assertEquals(0, list.size());
 
-        tbl2.flush(connectors.get(0).getNode());
+        // flush entry relevant to specified Node.
+        NodeConnector nc = connectors.get(0);
+        tbl2.flush(nc.getNode());
         list = getEntries(tbl2);
         assertNotNull(list);
         assertEquals(6, list.size());
 
-        tbl3.flush(connectors.get(0).getNode(), (short)0);
+        // flush entry relevant to specified Node and vlan id.
+        tbl3.flush(nc.getNode(), (short)0);
         list = getEntries(tbl3);
         assertNotNull(list);
         assertEquals(8, list.size());
 
-        tbl4.flush(connectors.get(0));
+        // flush entry relevant to specified NodeConnector.
+        tbl4.flush(nc);
         list = getEntries(tbl4);
         assertNotNull(list);
         assertEquals(6, list.size());
 
-        tbl5.flush(connectors.get(0), (short)0);
+        // flush entry relevant to specified NodeConnector and vlan id.
+        tbl5.flush(nc, (short)0);
         list = getEntries(tbl5);
         assertNotNull(list);
         assertEquals(8, list.size());
 
+        // flush entry relevant to specified NodeConnector and vlan id.
         tbl6.flush((Node)null, (short)0);
         list = getEntries(tbl6);
         assertNotNull(list);
         assertEquals(6, list.size());
+
+        // flush entry relevant to specified controller IP address.
+        Set<InetAddress> addrs = new HashSet<InetAddress>();
+        addrs.add(contIpAddr1);
+        tbl7.flush(addrs);
+        list = getEntries(tbl7);
+        assertNotNull(list);
+        assertEquals(4, list.size());
+
+        // check execute normally after call destroy().
+        tbl1.destroy(true);
+
+        nc = connectors.get(0);
+        tbl1.flush(nc.getNode());
+        tbl1.flush(nc.getNode(), (short) 0);
+        tbl1.flush(nc);
+        tbl1.flush(nc, (short) 0);
+        tbl1.flush(new HashSet<InetAddress>());
+        tbl1.flush();
+    }
+
+    /**
+     * Test case for {@link entryUpdate() and entryDeleted()}
+     */
+    @Test
+    public void testEntryUpdatedAndDeleted() {
+        VTNManagerImpl mgr = vtnMgr;
+        VBridgePath path = new VBridgePath("tenant1", "bridge1");
+        MacAddressTable tbl = new MacAddressTable(mgr, path, 600);
+
+        InetAddress contIpAddr = null;
+        try {
+            contIpAddr
+                = InetAddress.getByAddress(new byte[] {(byte)192, (byte)168,
+                                                       (byte)100, (byte)254});
+        } catch (UnknownHostException e) {
+            unexpected(e);
+        }
+
+        List<NodeConnector> connectors = createNodeConnectors(3, false);
+        short vlan = 0;
+
+        int numEntries = 9;
+        for (byte iphost = 1; iphost <= numEntries; iphost++) {
+            byte[] src = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
+                                     (byte)0x00, (byte)0x00, (byte)iphost};
+            byte[] sender = new byte[] {(byte)192, (byte)168, (byte)100, (byte)iphost};
+
+            long key = NetUtils.byteArray6ToLong(src);
+            InetAddress ipaddr = null;
+            try {
+                ipaddr = InetAddress.getByAddress(sender);
+            } catch (UnknownHostException e) {
+                unexpected(e);
+            }
+            MacTableEntry tent
+                    = new MacTableEntry(path, key, connectors.get(iphost % 3),
+                                        (short) (((vlan / 3) > 0) ? (vlan / 3) : -1),
+                                        ipaddr);
+            InetAddress ipaddr2 = null;
+            try {
+                ipaddr = InetAddress.getByAddress(sender);
+            } catch (UnknownHostException e) {
+                unexpected(e);
+            }
+            MacTableEntry tent2
+                    = new MacTableEntry(path, key, connectors.get(iphost % 3),
+                                (short) (((vlan / 3) > 0) ? (vlan / 3) : -1),
+                                ipaddr2);
+            tbl.add(tent);
+
+            // add entry
+            tbl.entryUpdated(tent);
+            MacTableEntry gent = tbl.get(key);
+            assertEquals(tent, gent);
+
+            // overwrite entry.
+            tbl.entryUpdated(tent2);
+            gent = tbl.get(key);
+            assertEquals(tent2, gent);
+
+            // in case unmatched mac address is specified.
+            MacTableEntryId mentid = new MacTableEntryId(contIpAddr, 1000L, path, 0L);
+            tbl.entryDeleted(mentid);
+            assertEquals(tent2, gent);
+
+            // in case mac address match but entryID doesn't match.
+            mentid = new MacTableEntryId(contIpAddr, 1000L, path,
+                                         NetUtils.byteArray6ToLong(src));
+            tbl.entryDeleted(mentid);
+            assertEquals(tent2, gent);
+
+            // delete entry.
+            tbl.entryDeleted(tent2.getEntryId());
+            gent = tbl.get(key);
+            assertNull(gent);
+
+            // add entry again.
+            tbl.entryUpdated(tent);
+            gent = tbl.get(key);
+            assertEquals(tent, gent);
+
+            vlan++;
+        }
+
+        List<MacAddressEntry> entries = getEntries(tbl);
+        assertEquals(numEntries, entries.size());
+
+        // check execute normally after call destroy().
+        tbl.destroy(true);
+        MacTableEntry tent = new MacTableEntry(path, 0L, connectors.get(0),
+                                               (short) -1, contIpAddr);
+        tbl.entryUpdated(tent);
+        tbl.entryDeleted(tent.getEntryId());
     }
 
     /**
