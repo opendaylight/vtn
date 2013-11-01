@@ -11,23 +11,18 @@ package org.opendaylight.vtn.manager.internal;
 import static org.junit.Assert.*;
 
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Hashtable;
-import java.util.Iterator;
+
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimerTask;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.felix.dm.impl.ComponentImpl;
-import org.junit.After;
+
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.opendaylight.controller.clustering.services.IClusterGlobalServices;
 import org.opendaylight.controller.connectionmanager.ConnectionMgmtScheme;
 import org.opendaylight.controller.connectionmanager.IConnectionManager;
@@ -40,33 +35,23 @@ import org.opendaylight.controller.sal.connection.ConnectionConstants;
 import org.opendaylight.controller.sal.connection.ConnectionLocality;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.flowprogrammer.Flow;
-import org.opendaylight.controller.sal.flowprogrammer.IFlowProgrammerListener;
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchType;
-import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
-import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
-import org.opendaylight.vtn.manager.internal.VTNManagerImplTestCommon.NopFlowTask;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
-import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResultEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Common class for tests of FlowModTask.
  */
-public class FlowModTaskTestBase extends TestBase {
-    protected VTNManagerImpl vtnMgr = null;
-    protected GlobalResourceManager resMgr;
-    protected TestStub stubObj = null;
-    protected static int stubMode = 0;
-    protected static int clusterMode = 0;
+public class FlowModTaskTestBase extends TestUseVTNManagerBase {
 
+    /**
+     * Stub class of ConnectionManager.
+     */
     protected class ConnectionManagerStub implements IConnectionManager {
 
         @Override
@@ -122,6 +107,9 @@ public class FlowModTaskTestBase extends TestBase {
         }
     }
 
+    /**
+     * Stub class of FowrardingRulesManager.
+     */
     protected class ForwardingRulesManagerStub implements
             IForwardingRulesManager {
         /**
@@ -129,7 +117,6 @@ public class FlowModTaskTestBase extends TestBase {
          *  0 : installLocal() and uninstallLocal don't return.
          *  1 : installLocal() and uninstallLocal always return
          *      set code.
-         *
          */
         private int frmMode = 0;
 
@@ -139,7 +126,6 @@ public class FlowModTaskTestBase extends TestBase {
          * constructor
          */
         ForwardingRulesManagerStub () {
-
         }
 
         /**
@@ -368,20 +354,20 @@ public class FlowModTaskTestBase extends TestBase {
      * Stub of VTNManagerImpl.
      */
     protected class VTNManagerImplStub extends VTNManagerImpl {
-        Set<ClusterEvent> eventSet = new HashSet<ClusterEvent>();
+        Set<ClusterEvent> stubEventSet = new HashSet<ClusterEvent>();
 
         // Override postEvent() for tests.
         @Override
         public void postEvent(ClusterEvent cev) {
-           eventSet.add(cev);
+           stubEventSet.add(cev);
         }
 
         public Set<ClusterEvent> getClusterEventSetStub() {
-            return eventSet;
+            return stubEventSet;
         }
 
         public void clearClusterEventSetStub() {
-            eventSet.clear();
+            stubEventSet.clear();
         }
     }
 
@@ -444,6 +430,7 @@ public class FlowModTaskTestBase extends TestBase {
     }
 
     @Before
+    @Override
     public void before() {
         setupStartupDir();
 
@@ -471,111 +458,16 @@ public class FlowModTaskTestBase extends TestBase {
         startVTNManager(c);
     }
 
-    @After
-    public void after() {
-        stopVTNManager(true);
-        resMgr.destroy();
-
-        cleanupStartupDir();
-    }
-
     /**
-     * startup VTNManager
-     */
-    protected void startVTNManager(ComponentImpl c) {
-        vtnMgr.init(c);
-        vtnMgr.clearDisabledNode();
-    }
-
-    /**
-     * stop VTNManager
-     * @param clearCache    if true clear cache maintained in VTNManager.
-     */
-    protected void stopVTNManager(boolean clearCache) {
-        vtnMgr.stopping();
-        if (clearCache) {
-            vtnMgr.containerDestroy();
-        }
-        vtnMgr.stop();
-        vtnMgr.destroy();
-    }
-
-    /**
+     * set resource manager service
      *
+     * @param cmp   A ComponentImpl Object.
+     * @param cls   A IClusterGlobalServices service.
      */
     protected void setupResourceManager(ComponentImpl cmp,
                                         IClusterGlobalServices cls) {
         resMgr.setClusterGlobalService(cls);
         resMgr.init(cmp);
-    }
-
-    /**
-     * Flush all pending tasks on the VTN flow thread.
-     */
-    protected void flushFlowTasks() {
-        NopFlowTask task = new NopFlowTask(vtnMgr);
-        vtnMgr.postFlowTask(task);
-        assertTrue(task.await(10L, TimeUnit.SECONDS));
-    }
-
-    /**
-     * Flush all pending tasks on the VTN flow thread.
-     */
-    protected void flushFlowTasks(long wait) {
-        NopFlowTask task = new NopFlowTask(vtnMgr);
-        vtnMgr.postFlowTask(task);
-        assertTrue(task.await(wait, TimeUnit.SECONDS));
-    }
-
-    /**
-     *  A dummy flow task to flush pending tasks.
-     */
-    protected class NopFlowTask extends FlowModTask {
-        /**
-         * A latch to wait for completion.
-         */
-        private final CountDownLatch  latch = new CountDownLatch(1);
-
-        protected NopFlowTask(VTNManagerImpl mgr) {
-            super(mgr);
-        }
-
-        /**
-         * Wake up all threads waiting for this task.
-         *
-         * @return  {@code true} is always returned.
-         */
-        @Override
-        protected boolean execute() {
-            latch.countDown();
-            return true;
-        }
-
-        /**
-         * Return a logger object for this class.
-         *
-         * @return  A logger object.
-         */
-        @Override
-        protected Logger getLogger() {
-            return LoggerFactory.getLogger(getClass());
-        }
-
-        /**
-         * Wait for completion of this task.
-         *
-         * @param timeout  The maximum time to wait.
-         * @param unit     The time unit of the {@code timeout} argument.
-         * @return  {@code true} is returned if this task completed.
-         *          Otherwise {@code false} is returned.
-         */
-        private boolean await(long timeout, TimeUnit unit) {
-            try {
-                return latch.await(timeout, unit);
-            } catch (InterruptedException e) {
-                return false;
-            }
-        }
     }
 
     /**

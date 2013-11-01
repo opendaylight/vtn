@@ -32,8 +32,7 @@ import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 /**
  * test for {@link RemoteFlowRequest}.
  */
-public class RemoteFlowRequestTest extends VTNManagerImplTestCommon {
-
+public class RemoteFlowRequestTest extends TestUseVTNManagerBase {
 
     @BeforeClass
     static public void beforeClass() {

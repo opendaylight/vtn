@@ -36,7 +36,7 @@ import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 /**
  * JUnit test for {@link VTNFlowDatabaseTest}
  */
-public class VTNFlowDatabaseTest extends VTNManagerImplTestCommon {
+public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
 
     @BeforeClass
     public static void beforeClass() {
