@@ -8,18 +8,23 @@
  */
 package org.opendaylight.vtn.manager.internal;
 
-import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Hashtable;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentMap;
 
-import org.apache.felix.dm.impl.ComponentImpl;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opendaylight.controller.sal.core.ConstructionException;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.match.Match;
+import org.opendaylight.controller.sal.match.MatchField;
+import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IEEE8021Q;
@@ -28,22 +33,31 @@ import org.opendaylight.controller.sal.packet.PacketException;
 import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.EtherTypes;
-import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
+import org.opendaylight.controller.sal.utils.Status;
+import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VTenantConfig;
+import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
+import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
+import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 
 /**
  * JUnit test for {@link PacketContext}
  */
-public class PacketContextTest extends TestBase {
-    private VTNManagerImpl vtnMgr = null;
-    private GlobalResourceManager resMgr = null;
-    private TestStub stubObj = null;
+public class PacketContextTest extends TestUseVTNManagerBase {
+
+    @BeforeClass
+    public static void beforeClass() {
+        stubMode = 2;
+    }
 
     /**
      * Test case for getter methods.
@@ -61,13 +75,17 @@ public class PacketContextTest extends TestBase {
             for (short vlan : vlans) {
                 for (EthernetAddress ea : createEthernetAddresses(false)) {
                     byte[] bytes = ea.getValue();
-                    byte[] src = new byte[] { bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5] };
-                    byte[] sender = new byte[] { (byte) 192, (byte) 168, (byte) 0, iphost };
-                    byte[] sender2 = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) (iphost + 100) };
+                    byte[] src = new byte[] { bytes[0], bytes[1], bytes[2],
+                                              bytes[3], bytes[4], bytes[5] };
+                    byte[] sender = new byte[] { (byte) 192, (byte) 168,
+                                                 (byte) 0, iphost };
+                    byte[] sender2 = new byte[] { (byte) 192, (byte) 168,
+                                                  (byte) 0, (byte) (iphost + 100) };
 
                     testPacketContext(src, dst, sender, target, vlan, nc);
 
-                    ether = createARPPacket(src, dst, sender2, target, (vlan > 0) ? vlan : -1, ARP.REQUEST);
+                    ether = createARPPacket(src, dst, sender2, target,
+                                            (vlan > 0) ? vlan : -1, ARP.REQUEST);
                     testPacketContext(ether, src, dst, sender2, target, vlan, nc);
 
                     iphost++;
@@ -87,7 +105,8 @@ public class PacketContextTest extends TestBase {
      * @param vlan      VLAN ID
      * @param nc        Node Connector.
      */
-    private void testPacketContext(byte[] src, byte[] dst, byte[] sender, byte[] target, short vlan, NodeConnector nc) {
+    private void testPacketContext(byte[] src, byte[] dst, byte[] sender,
+                                   byte[] target, short vlan, NodeConnector nc) {
         InetAddress ipaddr = null;
         MacTableEntry me;
         PortVlan pv;
@@ -97,7 +116,8 @@ public class PacketContextTest extends TestBase {
         // createARPPacketContext create PacketContext
         // by using {@link PacketContext(RawPacket, Ethernet)}.
         PacketContext pc = createARPPacketContext(src, dst, sender, target,
-                                                (vlan > 0) ? vlan : -1, nc, ARP.REQUEST);
+                                                  (vlan > 0) ? vlan : -1, nc,
+                                                  ARP.REQUEST);
 
         VBridgePath path = new VBridgePath("tenant1", "bridge1");
         Long key = NetUtils.byteArray6ToLong(src);
@@ -139,8 +159,9 @@ public class PacketContextTest extends TestBase {
 
         // test getFrame()
         Ethernet ether = pc.getFrame();
-        checkOutEthernetPacket("", ether, EtherTypes.ARP, src, dst, vlan, EtherTypes.IPv4,
-                ARP.REQUEST, src, dst, sender, target);
+        checkOutEthernetPacket("", ether, EtherTypes.ARP, src, dst, vlan,
+                               EtherTypes.IPv4, ARP.REQUEST, src, dst,
+                               sender, target);
 
         // test createFrame()
         Ethernet newether;
@@ -352,8 +373,6 @@ public class PacketContextTest extends TestBase {
      */
     @Test
     public void testProbeInetAddress() {
-        startVTNManagerAfterRemoveConfigfiles();
-
         byte[] src = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
                                  (byte)0x00, (byte)0x00, (byte)0x01 };
         byte[] dst = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
@@ -366,8 +385,6 @@ public class PacketContextTest extends TestBase {
         Node node = NodeCreator.createOFNode(0L);
         NodeConnector ncIn
             = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short)10), node);
-        NodeConnector ncOut
-            = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short)11), node);
 
         // in case IPv4Packet.
         Ethernet eth = createIPv4Packet(src, dst, sender, target, vlan);
@@ -409,8 +426,161 @@ public class PacketContextTest extends TestBase {
         datas = stubObj.getTransmittedDataPacket();
 
         assertEquals(0, datas.size());
+    }
 
-        stopVTNManagerAndRemoveConfigfiles();
+    /**
+     * test case for {@link PacketContext#purgeObsoleteFlow(VTNManagerImpl, String)}.
+     */
+    @Test
+    public void testPurgeObsoleteFlow() {
+        // create a tenant and a bridge.
+        VTenantPath tpath = new VTenantPath("tenant");
+        VBridgePath bpath1 = new VBridgePath(tpath.getTenantName(), "bridge1");
+        VBridgePath bpath2 = new VBridgePath(tpath.getTenantName(), "bridge2");
+
+        Status st = vtnMgr.addTenant(tpath, new VTenantConfig("desc"));
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        st = vtnMgr.addBridge(bpath1, new VBridgeConfig(null));
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        st = vtnMgr.addBridge(bpath2, new VBridgeConfig(null));
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        short vlans[] = { 0, 1, 100, 4095 };
+        byte[] dst = new byte[] { (byte) 0xff, (byte) 0xff, (byte) 0xff,
+                                  (byte) 0xff, (byte) 0xff, (byte) 0xff };
+        byte[] target = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 250 };
+        byte[] sender = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 0 };
+
+        Node node = NodeCreator.createOFNode(Long.valueOf(0L));
+        NodeConnector innc = NodeConnectorCreator
+                .createOFNodeConnector(Short.valueOf((short) 1), node);
+        NodeConnector outnc = NodeConnectorCreator
+                .createOFNodeConnector(Short.valueOf((short) 2), node);
+
+        VTNFlowDatabase fdb = vtnMgr.getTenantFlowDB(tpath.getTenantName());
+        List<EthernetAddress> ethers = createEthernetAddresses(false);
+        Set <MacVlan> macvlans = new HashSet<MacVlan>();
+        byte iphost = 1;
+        int pri = 1;
+
+        // add obsolete entries.
+        int numEntries = 0;
+        for (short vlan : vlans) {
+            for (EthernetAddress ea : ethers) {
+                String msg = "";
+                byte[] bytes = ea.getValue();
+                byte[] src = new byte[] { bytes[0], bytes[1], bytes[2],
+                                          bytes[3], bytes[4], bytes[5] };
+                sender[3] = iphost;
+
+                PacketContext pctx = createARPPacketContext(src, dst, sender, target,
+                         (vlan > 0) ? vlan : -1, innc, ARP.REQUEST);
+
+                InetAddress ipaddr = null;
+                byte[] sip = pctx.getSourceIpAddress();
+                try {
+                    ipaddr = InetAddress.getByAddress(sip);
+                } catch (UnknownHostException e) {
+                    // This should never happen.
+                    fail(e.getMessage());
+                }
+
+                Long key = NetUtils.byteArray6ToLong(src);
+                MacTableEntry me;
+                if (vlan < 0) {
+                    assertEquals(msg, (short)0, pctx.getVlan());
+                    me = new MacTableEntry(bpath1, key, innc, (short) 0, ipaddr);
+                } else {
+                    assertEquals(vlan, pctx.getVlan());
+                    me = new MacTableEntry(bpath1, key, innc, vlan, ipaddr);
+                }
+
+                pctx.addObsoleteEntry(key, me);
+                Map<Long, MacTableEntry> macMaps = pctx.getObsoleteEntries();
+                assertEquals(me, macMaps.get(key));
+
+                VTNFlow flow = fdb.create(vtnMgr);
+                Match match = pctx.createMatch(innc);
+
+                // check match object.
+                for (MatchType type : match.getMatchesList()) {
+                    MatchField field = match.getField(type);
+                    if (type == MatchType.DL_SRC) {
+                        assertEquals(field.getValue(), src);
+                    } else if (type == MatchType.DL_DST) {
+                        assertEquals(field.getValue(), dst);
+                    } else if (type == MatchType.DL_VLAN) {
+                        assertEquals(field.getValue(), (vlan > 0) ? vlan : 0);
+                    } else if (type == MatchType.IN_PORT) {
+                        assertEquals(field.getValue(), innc);
+                    } else {
+                        fail("unknown matchfiled was found." + field.toString());
+                    }
+                }
+
+                ActionList actions = new ActionList(innc.getNode());
+                actions.addOutput(outnc);
+                flow.addFlow(vtnMgr, match, actions, pri);
+
+                // check method set dependency for MacVlan
+                assertFalse(flow.dependsOn(new MacVlan(src, vlan)));
+                pctx.setFlowDependency(flow);
+                assertTrue(flow.dependsOn(new MacVlan(src, vlan)));
+
+                // check method set dependency for virtual node path.
+                assertFalse(flow.dependsOn(tpath));
+                assertFalse(flow.dependsOn(bpath1));
+                pctx.addNodePath(tpath);
+                pctx.setFlowDependency(flow);
+                assertTrue(flow.dependsOn(tpath));
+                assertFalse(flow.dependsOn(bpath1));
+                pctx.addNodePath(bpath1);
+                pctx.setFlowDependency(flow);
+                assertTrue(flow.dependsOn(tpath));
+                assertTrue(flow.dependsOn(bpath1));
+                assertFalse(flow.dependsOn(bpath2));
+
+                // install and purge flow.
+                fdb.install(vtnMgr, flow);
+                flushFlowTasks();
+                numEntries++;
+                ConcurrentMap<FlowGroupId, VTNFlow> db = vtnMgr.getFlowDB();
+                assertEquals(numEntries, db.size());
+                assertEquals(numEntries, stubObj.getFlowEntries().size());
+
+                pctx.purgeObsoleteFlow(vtnMgr, tpath.getTenantName());
+                flushFlowTasks();
+                assertEquals(numEntries - 1, db.size());
+                assertEquals(numEntries - 1, stubObj.getFlowEntries().size());
+
+                fdb.install(vtnMgr, flow);
+                flushFlowTasks();
+                assertEquals(numEntries, db.size());
+                assertEquals(numEntries, stubObj.getFlowEntries().size());
+
+                // specify unmatch tanent name.
+                pctx.purgeObsoleteFlow(vtnMgr, "unknown");
+                flushFlowTasks();
+                assertEquals(numEntries, db.size());
+                assertEquals(numEntries, stubObj.getFlowEntries().size());
+
+                iphost++;
+            }
+        }
+
+        // remove flowEntry by specifing VBridgePath
+        fdb.removeFlows(vtnMgr, bpath2);
+        flushFlowTasks();
+        ConcurrentMap<FlowGroupId, VTNFlow> db = vtnMgr.getFlowDB();
+        assertEquals(numEntries, db.size());
+        assertEquals(numEntries, stubObj.getFlowEntries().size());
+
+        fdb.removeFlows(vtnMgr, bpath1);
+        flushFlowTasks();
+        assertEquals(0, db.size());
+        assertEquals(0, stubObj.getFlowEntries().size());
     }
 
 
@@ -467,45 +637,6 @@ public class PacketContextTest extends TestBase {
         return arp;
     }
 
-    /**
-     * start VTNManager after remove configuration files.
-     */
-    private void startVTNManagerAfterRemoveConfigfiles() {
-        setupStartupDir();
-
-        vtnMgr = new VTNManagerImpl();
-        resMgr = new GlobalResourceManager();
-        ComponentImpl c = new ComponentImpl(null, null, null);
-        stubObj = new TestStub(2);
-
-        Hashtable<String, String> properties = new Hashtable<String, String>();
-        properties.put("containerName", "default");
-        c.setServiceProperties(properties);
-
-        resMgr.setClusterGlobalService(stubObj);
-        resMgr.init(c);
-        vtnMgr.setResourceManager(resMgr);
-        vtnMgr.setClusterContainerService(stubObj);
-        vtnMgr.setSwitchManager(stubObj);
-        vtnMgr.setTopologyManager(stubObj);
-        vtnMgr.setDataPacketService(stubObj);
-
-        vtnMgr.setConnectionManager(stubObj);
-        vtnMgr.init(c);
-        vtnMgr.clearDisabledNode();
-    }
-
-    /**
-     * stop VTNManager and remove configuration files.
-     */
-    private void stopVTNManagerAndRemoveConfigfiles() {
-        vtnMgr.stopping();
-        vtnMgr.stop();
-        vtnMgr.destroy();
-        resMgr.destroy();
-
-        cleanupStartupDir();
-    }
     /**
      * create String of Error Message.
      */
