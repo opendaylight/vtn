@@ -78,8 +78,7 @@ public class GlobalResourceManager
     /**
      * The maximum number of threads in the thread pool for asynchronous tasks.
      */
-    private static final int  THREAD_POOL_MAXSIZE = 1;
-    // REVISIT: Pool size will be expanded later.
+    private static final int  THREAD_POOL_MAXSIZE = 8;
 
     /**
      * The number of milliseconds to keep threads in the thread pool for
