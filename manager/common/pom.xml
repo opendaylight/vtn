@@ -39,9 +39,12 @@
 
   <properties>
     <vtn.encoding>UTF-8</vtn.encoding>
-    <vtn.java.version.source>1.6</vtn.java.version.source>
-    <vtn.java.version.compliance>1.6</vtn.java.version.compliance>
-    <vtn.java.version.target>1.6</vtn.java.version.target>
+    <vtn.java.version.source>1.7</vtn.java.version.source>
+    <vtn.java.version.compliance>1.7</vtn.java.version.compliance>
+    <vtn.java.version.target>1.7</vtn.java.version.target>
+
+    <maven.compiler.source>${vtn.java.version.source}</maven.compiler.source>
+    <maven.compiler.target>${vtn.java.version.target}</maven.compiler.target>
 
     <sonar.host.url>https://sonar.opendaylight.org/</sonar.host.url>
     <projectinfo.version>2.6</projectinfo.version>
@@ -133,71 +136,31 @@
   </profiles>
 
   <repositories>
-    <!-- EBR release -->
-    <!-- http://repository.springsource.com/maven/bundles/release -->
+    <!-- OpenDayLight repository mirror -->
     <repository>
-      <id>ebr-bundles-release</id>
-      <name>ebr-bundles-release</name>
-      <url>${nexusproxy}/repositories/ebr-bundles-release/</url>
-    </repository>
-    <!-- EBR external -->
-    <!-- http://repository.springsource.com/maven/bundles/external -->
-    <repository>
-      <id>ebr-bundles-external</id>
-      <name>ebr-bundles-external</name>
-      <url>${nexusproxy}/repositories/ebr-bundles-external/</url>
-    </repository>
-    <!-- Maven repo1 -->
-    <!-- http://repo1.maven.org/maven2 -->
-    <repository>
-      <id>central</id>
-      <name>central</name>
-      <url>http://repo1.maven.org/maven2</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <releases>
-          <enabled>true</enabled>
-      </releases>
-    </repository>
-    <!-- Pax mirror -->
-    <!-- https://oss.sonatype.org/content/repositories/ops4j-releases -->
-    <repository>
-      <id>ops4j-releases</id>
-      <name>ops4j-releases</name>
-      <url>${nexusproxy}/repositories/ops4j-releases/</url>
-    </repository>
-    <!-- Third Packages hosted in local maven because not available in
-         other places -->
-    <repository>
-      <id>thirdparty</id>
-      <name>thirdparty</name>
-      <url>${nexusproxy}/repositories/thirdparty/</url>
-    </repository>
-    <!-- Jboss mirror -->
-    <!-- https://repository.jboss.org/nexus/content/repositories/releases -->
-    <repository>
-      <id>jboss.releases</id>
-      <name>jboss.releases</name>
-      <url>${nexusproxy}/repositories/jboss.releases/</url>
+      <id>opendaylight-mirror</id>
+      <name>opendaylight-mirror</name>
+      <url>${nexusproxy}/groups/public/</url>
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
       <releases>
         <enabled>true</enabled>
+        <updatePolicy>never</updatePolicy>
       </releases>
     </repository>
-    <!-- OpenDayLight Released artifact -->
-    <repository>
-      <id>opendaylight-release</id>
-      <name>opendaylight-release</name>
-      <url>${nexusproxy}/repositories/opendaylight.release/</url>
-    </repository>
+
     <!-- OpenDayLight Snapshot artifact -->
     <repository>
       <id>opendaylight-snapshot</id>
       <name>opendaylight-snapshot</name>
       <url>${nexusproxy}/repositories/opendaylight.snapshot/</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
     </repository>
   </repositories>
 
@@ -482,6 +445,8 @@
           <configuration>
             <source>${vtn.java.version.source}</source>
             <target>${vtn.java.version.target}</target>
+            <testSource>${vtn.java.version.source}</testSource>
+            <testTarget>${vtn.java.version.target}</testTarget>
           </configuration>
         </plugin>
 

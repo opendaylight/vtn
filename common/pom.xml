@@ -41,17 +41,18 @@
   </properties>
 
   <pluginRepositories>
+    <!-- OpenDayLight repository mirror -->
     <pluginRepository>
-      <id>central</id>
-      <name>central</name>
-      <url>http://repo1.maven.org/maven2</url>
-    </pluginRepository>
-
-    <!-- OpenDayLight Released artifact -->
-    <pluginRepository>
-      <id>opendaylight-release</id>
-      <name>opendaylight-release</name>
-      <url>${nexusproxy}/repositories/opendaylight.release/</url>
+      <id>opendaylight-mirror</id>
+      <name>opendaylight-mirror</name>
+      <url>${nexusproxy}/groups/public/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+        <updatePolicy>never</updatePolicy>
+      </releases>
     </pluginRepository>
 
     <!-- OpenDayLight Snapshot artifact -->
@@ -59,6 +60,12 @@
       <id>opendaylight-snapshot</id>
       <name>opendaylight-snapshot</name>
       <url>${nexusproxy}/repositories/opendaylight.snapshot/</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
     </pluginRepository>
   </pluginRepositories>
 
