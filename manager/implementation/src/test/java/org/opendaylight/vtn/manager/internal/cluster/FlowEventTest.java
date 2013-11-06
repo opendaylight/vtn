@@ -13,7 +13,7 @@ import static org.junit.Assert.*;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+
 
 import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.Test;
@@ -32,6 +32,7 @@ import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.FlowModTaskTestBase;
 import org.opendaylight.vtn.manager.internal.TestStub;
 import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
+
 
 /**
  * test for  {@link FlowAddEvent} and {@link FlowRemoveEvent}
@@ -116,9 +117,7 @@ public class FlowEventTest extends FlowModTaskTestBase {
             if (local) {
                 assertEquals(0, stubObj.getFlowEntries().size());
             } else {
-                NopFlowTask nop = new NopFlowTask(vtnMgr);
-                resMgr.executeAsync(nop);
-                nop.await(remoteTimeout, TimeUnit.MILLISECONDS);
+                flushAsyncTask(remoteTimeout);
 
                 assertEquals(2, stubObj.getFlowEntries().size());
             }
@@ -127,9 +126,7 @@ public class FlowEventTest extends FlowModTaskTestBase {
                     = new FlowRemoveEvent(flow.getFlowEntries());
             removeEvent.received(vtnMgr, local.booleanValue());
 
-            NopFlowTask nop = new NopFlowTask(vtnMgr);
-            resMgr.executeAsync(nop);
-            nop.await(remoteTimeout, TimeUnit.MILLISECONDS);
+            flushAsyncTask(remoteTimeout);
 
             assertEquals(0, stubObj.getFlowEntries().size());
 

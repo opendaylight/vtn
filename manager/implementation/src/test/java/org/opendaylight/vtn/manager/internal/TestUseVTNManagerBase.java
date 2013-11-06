@@ -10,7 +10,9 @@ package org.opendaylight.vtn.manager.internal;
 
 import static org.junit.Assert.*;
 
+import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -196,6 +198,64 @@ public class TestUseVTNManagerBase extends TestBase {
          *          Otherwise {@code false} is returned.
          */
         public boolean await(long timeout, TimeUnit unit) {
+            try {
+                return latch.await(timeout, unit);
+            } catch (InterruptedException e) {
+                return false;
+            }
+        }
+    }
+
+    /**
+     * The maximum number of threads in the thread pool for asynchronous tasks
+     * of VTN Manager.
+     *
+     * <p>
+     *  note: need to synchronize with the definition in GlobalResourceManager.
+     * </p>
+     */
+    private static final int  THREAD_POOL_MAXSIZE = 8;
+
+    /**
+     * Wait until specified number of threads run in thread pool.
+     *
+     * @param timeout   A waiting time.
+     */
+    protected void flushAsyncTask(long timeout) {
+        CountDownLatch latch = new CountDownLatch(THREAD_POOL_MAXSIZE);
+        Set<WaitThreadTask> waitTasks = new HashSet<WaitThreadTask>();
+
+        for (int i = 0; i < THREAD_POOL_MAXSIZE; i++) {
+            WaitThreadTask nop = new WaitThreadTask(timeout, latch);
+            vtnMgr.postAsync(nop);
+            waitTasks.add(nop);
+        }
+
+        for (WaitThreadTask task : waitTasks) {
+            task.await(timeout, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    /**
+     * A task thread class used for test.
+     * this task wait until a latch is counted down to zero.
+     */
+    private class WaitThreadTask implements Runnable {
+        protected long waitTime = 0;
+        protected CountDownLatch latch = null;
+
+        WaitThreadTask(long timeout, CountDownLatch latch) {
+            this.waitTime = timeout;
+            this.latch = latch;
+        }
+
+        @Override
+        synchronized public void run() {
+            latch.countDown();
+            await(waitTime, TimeUnit.SECONDS);
+        }
+
+        protected boolean await(long timeout, TimeUnit unit) {
             try {
                 return latch.await(timeout, unit);
             } catch (InterruptedException e) {
