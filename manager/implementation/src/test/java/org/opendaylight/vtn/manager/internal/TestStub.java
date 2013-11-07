@@ -938,7 +938,7 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     // IForwardingRulesManager
 
     @Override
-    public Status installFlowEntry(FlowEntry flow) {
+    public synchronized Status installFlowEntry(FlowEntry flow) {
         if (flow == null) {
             return new Status(StatusCode.NOTACCEPTABLE, null);
         }
@@ -949,7 +949,7 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     }
 
     @Override
-    public Status uninstallFlowEntry(FlowEntry flow) {
+    public synchronized Status uninstallFlowEntry(FlowEntry flow) {
         if (flow == null) {
             return new Status(StatusCode.NOTACCEPTABLE, null);
         }
@@ -1288,7 +1288,7 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
      *
      * @return  A set of installed flow entries.
      */
-    public Set<FlowEntry> getFlowEntries() {
+    public synchronized Set<FlowEntry> getFlowEntries() {
         return new HashSet<FlowEntry>(flowEntries);
     }
 }
