@@ -23,7 +23,7 @@ public class VTNExceptionTest extends TestBase {
      * Test method for
      * {@link VTNException#VTNException(Status)},
      * {@link VTNException#VTNException(StatusCode, String)},
-     * {@link VTNException#VTNException(Throwable)},
+     * {@link VTNException#VTNException(Status, Throwable)},
      * {@link VTNException#getStatus()},
      * {@link Throwable#getMessage()},
      * {@link Throwable#getCause()}.

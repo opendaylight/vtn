@@ -31,6 +31,7 @@ import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.controller.hosttracker.IfIptoHost;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.core.ConstructionException;
+import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.Ethernet;
@@ -41,6 +42,7 @@ import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
 import org.opendaylight.controller.switchmanager.Subnet;
+import org.opendaylight.controller.topologymanager.ITopologyManager;
 
 /**
  * ARP handler emulator.
@@ -437,8 +439,31 @@ public class ArpHandler {
             return PacketResult.IGNORED;
         }
 
-        // Send broadcast ARP request to discover host.
-        floodArpRequest(dstIp, subnet);
+        // Check to see if we know about the destination host.
+        IfIptoHost ht = vtnManager.getHostTracker();
+        HostNodeConnector host = ht.hostQuery(dstIp);
+        if (host != null && host.getVlan() == vlan) {
+            // Forward the packet to the known host.
+            NodeConnector outgoing = host.getnodeConnector();
+            Ethernet frame = pctx.createFrame(vlan);
+
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}: Forward packet to known host: {}",
+                          vtnManager.getContainerName(),
+                          pctx.getDescription(frame, outgoing, vlan));
+            }
+
+            vtnManager.transmit(outgoing, frame);
+        } else {
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}: Send broadcast ARP request to discover host: " +
+                          "addr={}, vlan={}", dstIp, vlan);
+            }
+
+            // Send broadcast ARP request to discover host.
+            floodArpRequest(dstIp, subnet);
+        }
+
         return PacketResult.KEEP_PROCESSING;
     }
 
@@ -468,26 +493,34 @@ public class ArpHandler {
      * @param subnet   A subnet to which the target belongs.
      */
     private void floodArpRequest(InetAddress target, Subnet subnet) {
+        ISwitchManager swMgr = vtnManager.getSwitchManager();
         Set<NodeConnector> ncSet = new HashSet<NodeConnector>();
         if (subnet.isFlatLayer2()) {
-            vtnManager.collectUpEdgePorts(ncSet);
+            for (Node node: swMgr.getNodes()) {
+                Set<NodeConnector> up = swMgr.getUpNodeConnectors(node);
+                if (up != null) {
+                    ncSet.addAll(up);
+                }
+            }
         } else {
             for (NodeConnector nc: subnet.getNodeConnectors()) {
-                if (vtnManager.isEnabled(nc) && vtnManager.isEdgePort(nc)) {
+                if (swMgr.isNodeConnectorEnabled(nc)) {
                     ncSet.add(nc);
                 }
             }
         }
 
-        ISwitchManager swMgr = vtnManager.getSwitchManager();
+        ITopologyManager topoMgr = vtnManager.getTopologyManager();
         byte[] src = swMgr.getControllerMAC();
-        byte[] dst = {-1, -1, -1, -1, -1, -1};
+        byte[] dst = NetUtils.getBroadcastMACAddr();
         byte[] spa = subnet.getNetworkAddress().getAddress();
         byte[] tpa = target.getAddress();
         short vlan = subnet.getVlan();
 
         for (NodeConnector nc: ncSet) {
-            sendArp(nc, ARP.REQUEST, src, dst, spa, tpa, vlan);
+            if (!swMgr.isSpecial(nc) && !topoMgr.isInternal(nc)) {
+                sendArp(nc, ARP.REQUEST, src, dst, spa, tpa, vlan);
+            }
         }
     }
 

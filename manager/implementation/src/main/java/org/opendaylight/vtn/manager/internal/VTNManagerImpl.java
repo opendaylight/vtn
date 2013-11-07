@@ -4289,7 +4289,7 @@ public class VTNManagerImpl
         }
 
         // Create an ARP request with specifying broadcast address.
-        byte[] bcast = {-1, -1, -1, -1, -1, -1};
+        byte[] bcast = NetUtils.getBroadcastMACAddr();
         Ethernet ether = createArpRequest(bcast, addr);
         if (ether == null) {
             return;
