@@ -2638,6 +2638,23 @@ public class VTNManagerImpl
      * @throws VTNException  The specified node is invalid.
      */
     public static void checkNode(Node node) throws VTNException {
+        // Currently only OpenFlow node is supported.
+        checkNode(node, true);
+    }
+
+    /**
+     * Check the specified node.
+     *
+     * @param node       Node to be tested.
+     * @param checkType  {@code true} means that this method should check
+     *                   whether the type of the given node is supported or
+     *                   not.
+     *                   {@code false} means that the caller does not care
+     *                   about node type.
+     * @throws VTNException  The specified node is invalid.
+     */
+    public static void checkNode(Node node, boolean checkType)
+        throws VTNException {
         if (node == null) {
             Status status = argumentIsNull("Node");
             throw new VTNException(status);
@@ -2650,9 +2667,20 @@ public class VTNManagerImpl
             throw new VTNException(StatusCode.BADREQUEST, msg);
         }
 
-        // Currently only OpenFlow node is supported.
-        if (!type.equals(Node.NodeIDType.OPENFLOW)) {
-            String msg = "Unsupported node type";
+        if (checkType) {
+            checkNodeType(type);
+        }
+    }
+
+    /**
+     * Check whether the given node type is supported by the VTN Manager.
+     *
+     * @param type  The node type to be tested.
+     * @throws VTNException  The specified node type is not supported.
+     */
+    private static void checkNodeType(String type) throws VTNException {
+        if (!Node.NodeIDType.OPENFLOW.equals(type)) {
+            String msg = "Unsupported node type: " + type;
             throw new VTNException(StatusCode.BADREQUEST, msg);
         }
     }
@@ -2664,6 +2692,23 @@ public class VTNManagerImpl
      * @throws VTNException  The specified node is invalid.
      */
     public static void checkNodeConnector(NodeConnector nc)
+        throws VTNException {
+        // Currently only OpenFlow node is supported.
+        checkNodeConnector(nc, true);
+    }
+
+    /**
+     * Check the specified node connector.
+     *
+     * @param nc         Node connector to be tested.
+     * @param checkType  {@code true} means that this method should check
+     *                   whether the type of the given node connector is
+     *                   supported or not.
+     *                   {@code false} means that the caller does not care
+     *                   about node connector type.
+     * @throws VTNException  The specified node is invalid.
+     */
+    public static void checkNodeConnector(NodeConnector nc, boolean checkType)
         throws VTNException {
         if (nc == null) {
             Status status = argumentIsNull("Node connector");
@@ -2677,13 +2722,27 @@ public class VTNManagerImpl
             throw new VTNException(StatusCode.BADREQUEST, msg);
         }
 
-        // Currently only OpenFlow node is supported.
-        if (!type.equals(NodeConnector.NodeConnectorIDType.OPENFLOW)) {
-            String msg = "Unsupported node connector type";
-            throw new VTNException(StatusCode.BADREQUEST, msg);
+        if (checkType) {
+            checkNodeConnectorType(type);
         }
 
-        checkNode(nc.getNode());
+        checkNode(nc.getNode(), checkType);
+    }
+
+    /**
+     * Check whether the given node connector type is supported by the
+     * VTN Manager.
+     *
+     * @param type  The node connector type to be tested.
+     * @throws VTNException  The specified node connector type is not
+     *                       supported.
+     */
+    private static void checkNodeConnectorType(String type)
+        throws VTNException {
+        if (!NodeConnector.NodeConnectorIDType.OPENFLOW.equals(type)) {
+            String msg = "Unsupported node connector type: " + type;
+            throw new VTNException(StatusCode.BADREQUEST, msg);
+        }
     }
 
     /**
@@ -4998,7 +5057,10 @@ public class VTNManagerImpl
         // Verify incoming node connector in the raw packet.
         NodeConnector nc = inPkt.getIncomingNodeConnector();
         try {
-            checkNodeConnector(nc);
+            // Here we need to accept non-OpenFlow packet.
+            // Node connector type check should be done only if the VTN is
+            // active.
+            checkNodeConnector(nc, false);
         } catch (VTNException e) {
             Status status = e.getStatus();
             LOG.error("{}: Ignore packet: {}", containerName,
@@ -5010,7 +5072,7 @@ public class VTNManagerImpl
         if (disabledNodes.containsKey(node)) {
             if (LOG.isTraceEnabled()) {
                 LOG.trace("{}: Ignore packet from disabled node: {}",
-                          containerName, nc.getNode());
+                          containerName, node);
             }
             return PacketResult.IGNORED;
         }
@@ -5049,6 +5111,10 @@ public class VTNManagerImpl
                 return arpHandler.receive(pctx);
             }
 
+            // Ensure that the packet was sent by an OpenFlow node. */
+            checkNodeType(node.getType());
+            checkNodeConnectorType(nc.getType());
+
             if (islDB.containsKey(nc)) {
                 LOG.debug("{}: Ignore packet from internal node connector: {}",
                           containerName, nc);
@@ -5078,6 +5144,11 @@ public class VTNManagerImpl
                     }
                 }
             }
+        } catch (VTNException e) {
+            Status status = e.getStatus();
+            LOG.error("{}: Ignore packet: {}", containerName,
+                      status.getDescription());
+            return PacketResult.IGNORED;
         } finally {
             unlock(rdlock);
         }
