@@ -1,11 +1,10 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2013 NEC Corporation
  * All rights reserved.
  *
- * This program and the accompanying materials are made
- * available under the  terms of the Eclipse Public License v1.0 which
- * accompanies this  distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
 #ifndef _TCLIB_VTNDRVINTF_HH_
@@ -342,7 +341,7 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
                                                  std::string controller_id,
                                                  unc::tclib::TcAuditOpAbortPhase
                                                  fail_phase) {
-    return unc::tclib::TC_FAILURE;
+    return unc::tclib::TC_SUCCESS;
   }
 
   /**
@@ -390,10 +389,21 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
    */
   void AbortControllers(unc::tclib::TcControllerList
                         controllers);
+  /**
+   * @brief       - Method to Handle the controller cache
+   * @param[in]   - controller name
+   * @param[in]   - controller*
+   * @param[in]   - driver*
+   * @retval      - TcCommonRet enum value
+   */
+  unc::tclib::TcCommonRet HandleCommitCache(std::string ctr_id,
+                                            controller* ctr,
+                                            driver* drv);
 
  private:
   ControllerFramework* crtl_inst_;
-  kt_map key_map_, val_map_;
+  kt_map key_map_;
+  kt_map val_map_;
   kt_handler_map kt_handler_map_;
 };
 }  // namespace driver

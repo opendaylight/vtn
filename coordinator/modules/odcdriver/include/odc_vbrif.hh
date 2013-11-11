@@ -1,13 +1,10 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2013 NEC Corporation
  * All rights reserved.
  *
- * This program and the accompanying materials are made
- * available under the
- * terms of the Eclipse Public License v1.0 which
- * accompanies this
- * distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
 #ifndef _ODC_VBRIF_HH
@@ -18,23 +15,27 @@
 #include <unc/upll_ipc_enum.h>
 #include <unc/pfcdriver_ipc_enum.h>
 #include <odc_driver_common_defs.hh>
+#include <vtn_conf_data_element_op.hh>
 #include <odc_controller.hh>
+#include <tclib_module.hh>
 #include <string>
+#include <vector>
 #include <sstream>
 
 namespace unc {
 namespace odcdriver {
-class ODCVBRIfCommand: public unc::driver::vbrif_driver_command {
+
+class OdcVbrIfCommand: public unc::driver::vbrif_driver_command {
  public:
   /**
    * @brief Default Constructor
    */
-  ODCVBRIfCommand();
+  OdcVbrIfCommand();
 
   /**
    * @brief Default Destructor
    */
-  ~ODCVBRIfCommand();
+  ~OdcVbrIfCommand();
 
   /**
    * @brief      - Creates VBRIf/ PortMap
@@ -59,18 +60,6 @@ class ODCVBRIfCommand: public unc::driver::vbrif_driver_command {
                              unc::driver::controller *conn);
 
   /**
-   * @brief                       - Updates  PortMap
-   * @param[in] vbrif_key         - key structure of VBRIf
-   * @param[in] vbrif_val         - value structure of VBRIf
-   * @param[in] conn              - Controller connection information
-   * @return uint32_t             - returns DRVAPI_RESPONSE_SUCCESS on updation of port_map
-   *                                successfully/returns DRVAPI_RESPONSE_FAILURE on failure
-   */
-  uint32_t update_cmd_port_map(key_vbr_if_t& vbrif_key,
-                               pfcdrv_val_vbr_if_t& vbrif_val,
-                               unc::driver::controller *conn);
-
-  /**
    * @brief                    - Deletes VBRIf
    * @param[in] key            - key structure of VBRIf
    * @param[in] val            - value structure of VBRIf
@@ -83,47 +72,72 @@ class ODCVBRIfCommand: public unc::driver::vbrif_driver_command {
                              unc::driver::controller *conn);
 
   /**
-   * @brief                - Deletes VBRIf/ PortMap
-   * @param[in] vbrif_key  - key structure of VBRIf
-   * @param[in] vbrif_val  - value structure of VBRIf
-   * @param[in] conn       - Controller connection information
-   * @retval uint32_t      - returns DRVAPI_RESPONSE_SUCCESS on deletion of
-   *                         PortMap /returns
-   *                         DRVAPI_RESPONSE_FAILURE on failure
+   * @brief                           - get all the vbr child
+   * @param[in] vtn_name              - vtn name
+   * @param[in] vbr_name              - vbr name
+   * @param[in] ctr                   - controller pointer
+   * @param[out] cfgnode_vector       - config node vector
+   * @return drv_resp_code_t          - returns DRVAPI_RESPONSE_SUCCESS on successfully retieving a vbr
+   *                                    child /returns DRVAPI_RESPONSE_FAILURE on failure
    */
-  uint32_t delete_cmd_port_map(key_vbr_if_t& vbrif_key,
-                               pfcdrv_val_vbr_if_t& vbrif_val,
-                               unc::driver::controller *conn);
-
+  drv_resp_code_t get_vbrif_list(std::string vtn_name,
+         std::string vbr_name, unc::driver::controller* ctr,
+       std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
   /**
-   * @brief                  - Validates the operation
-   * @param[in] - key        - VBRIF Key Structure key_vbr_if
-   * @param[in] - val        - VBRIF value structure pfcdrv_val_vbr_if_t
-   * @param[in] - ctr        - Controller pointer
-   * @param[in] - op         - operation
-   * @return drv_resp_code_t - returns DRVAPI_RESPONSE_SUCCESS on suceess of
-   *                           validation operation of VBRIf/returns
-   *                           DRVAPI_RESPONSE_FAILURE on failure
+   * @brief      - Method to fetch child configurations for the parent kt
+   * @param[in]  - controller pointer
+   * @param[in]  - parent key type pointer
+   * @param[out] - list of configurations
+   * @retval     - DRVAPI_RESPONSE_SUCCESS / DRVAPI_RESPONSE_FAILURE
    */
-  drv_resp_code_t validate_op(key_vbr_if_t& key,
-                              pfcdrv_val_vbr_if_t& val,
-                              unc::driver::controller* ctr,
-                              uint32_t op);
+  drv_resp_code_t fetch_config(unc::driver::controller* ctr, void* parent_key,
+                 std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
  private:
   /**
-   * @brief                    - get_controller_response and checks the res code
-   * @param[in] url            - url to be set to
-   * @param[in] ctr            - controller pointer
-   * @param[in] method         - HttpMethod enum
-   * @param[in] request_body   - request body
-   * @return uint32_t          - returns response code from the controller
+   * @brief                           - parse the vbr if data
+   * @param[in] vtn_name              - vtn name
+   * @param[in] vbr_name              - vbr name
+   * @param[in] url                   - url to send the request
+   * @param[in] ctr                   - controller pointer
+   * @param[in] data                  - data from which parse should happen
+   * @param[out] cfgnode_vector       - config node vector
+   * @return drv_resp_code_t          - returns DRVAPI_RESPONSE_SUCCESS on parsing the
+   *                                    response of vbrif/returns DRVAPI_RESPONSE_FAILURE on failure
    */
-  uint32_t get_controller_response_code(std::string url,
-                                        unc::driver::controller* ctr,
-                                        unc::restjson::HttpMethod method,
-                                        const char* request_body);
+  drv_resp_code_t parse_vbrif_response(std::string vtn_name,
+                        std::string vbr_name, std::string url,
+                       unc::driver::controller* ctr, char *data,
+  std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
   /**
+   * @brief                       - parse vbr if and append it to vector
+   * @param[in] vtn_name          - vtn name
+   * @param[in] vbr_name          - vbr name
+   * @param[in] json_obj          - json object
+   * @param[in] arr_idx           - array index
+   * @param[in] url               - url to send request
+   * @param[in] ctr               - controller pointer
+   * @param[out] cfgnode_vector   - config node vector
+   * @return drv_resp_code_t      - returns DRVAPI_RESPONSE_SUCCESS on parsing vbrif and appending
+   *                                vector/ returns DRVAPI_RESPONSE_FAILURE on failure
+   */
+  drv_resp_code_t fill_config_node_vector(std::string vtn_name,
+                                  std::string vbr_name, json_object *json_obj,
+                                            uint32_t arr_idx, std::string url,
+                                                 unc::driver::controller* ctr,
+                  std::vector< unc::vtndrvcache::ConfigNode *>&cfgnode_vector);
+
+
+  /**
+   * @brief                   - read portmap
+   * @param[in] - ctr         - controller pointer
+   * @param[in] - url         - url in string
+   * @param[out] - resp_code  - response code
+   * return json_object       - json object
+   */
+  json_object*  read_portmap(unc::driver::controller* ctr,
+                                             std::string url, int &resp_code);
+    /**
    * @brief                  - Constructs url for vbrif
    * @param[in] vbrif_key    - key structure of vbrif key structure
    * @return                 - returns the url of VBRIf
@@ -135,88 +149,50 @@ class ODCVBRIfCommand: public unc::driver::vbrif_driver_command {
    * @param[in]  vbrif_val     - VTN value structure val_vtn_t
    * @return  const char*      - returns the request body formed
    */
-  const char* create_request_body_port_map(pfcdrv_val_vbr_if_t& vbrif_val);
-
-  /**
-   * @brief                    - Validates Create vbrif
-   * @param[in] key_vbr_if     - VBRIF Key Structure key_vbr_if
-   * @param[in] ctr            - Controller pointer
-   * @return drv_resp_code_t   - returns DRVAPI_RESPONSE_SUCCESS on success of
-   *                             validate create of VBRIf / returns
-   *                             DRVAPI_RESPONSE_FAILURE on failure
-   */
-  drv_resp_code_t validate_create_vbrif(key_vbr_if_t& key_vbr_if,
-                                        unc::driver::controller* ctr);
-
-  /**
-   * @brief                  - Validates Delete vbrif
-   * @param[in] key_vbr_if   - VBRIF Key Structure key_vbr_if
-   * @param[in] ctr          - Controller pointer
-   * @return drv_resp_code_t - returns DRVAPI_RESPONSE_SUCCESS on success of
-   *                           validate delete of VBRIf/returns
-   *                           DRVAPI_RESPONSE_FAILURE on failure
-   */
-  drv_resp_code_t validate_delete_vbrif(key_vbr_if_t& key_vbr_if,
-                                        unc::driver::controller* ctr);
-
-  /**
-   * @brief                    - Validates Update vbrif
-   * @param[in] key_vbr_if     - VBRIF Key Structure key_vbr_if
-   * @param[in] ctr            - Controller pointer
-   * @return drv_resp_code_t   - returns DRVAPI_RESPONSE_SUCCESS on success of
-   *                             validate update of VBRIf/returns
-   *                             DRVAPI_RESPONSE_FAILURE on failure
-   */
-  drv_resp_code_t validate_update_vbrIf(key_vbr_if_t& key_vbr_if,
-                                        unc::driver::controller* ctr);
-
-  /**
-   * @brief                       - Checks is_vtn_exists_in_controller
-   * @param[in] key_vbr_if        - VBRIF Key Structure key_vbr_if
-   * @param[in] ctr               - Controller pointer
-   * @return unint32_t            - returns response code from the controller
-   *                                on checking whether the vtn exists in
-   *                                controller
-   */
-  uint32_t is_vtn_exists_in_controller(key_vbr_if_t& key_vbr_if,
-                                       unc::driver::controller* ctr);
-
-  /**
-   * @brief                      - Checks is_vbr_exists_in_controller
-   * @param[in] key_vbr_if       - VBRIF Key Structure key_vbr_if
-   * @param[in] ctr              - Controller pointer
-   * @return  unint32_t          - returns response code from the controller on
-   *                               checking whether the VBRIf exists in the
-   *                               controller
-   */
-  uint32_t is_vbrif_exists_in_controller(key_vbr_if_t& key_vbr_if,
-                                         unc::driver::controller* ctr);
-
-  /**
-   * @brief                      - Checks is_vbrif_exists_in_controller
-   * @param[in] key_vbr_if       - VBRIF Key Structure key_vbr_if
-   * @param[in] ctr              - Controller pointer
-   * @return uint32_t            - returns response code from the controller on
-   *                               checking whether the vbr exists in ctl
-   */
-  uint32_t is_vbr_exists_in_controller(key_vbr_if_t& key_vbr_if,
-                                       unc::driver::controller* ctr);
-
-  /**
-   * @brief                - get_controller_response and checks the resp code
-   * @param[in] url        - url to be set to
-   * @param[in] ctr        - controller pointer
-   * @return               - returns response code from the controller
-   */
-  uint32_t get_controller_response(std::string url,
-                                   unc::driver::controller* ctr);
+  json_object* create_request_body_port_map(pfcdrv_val_vbr_if_t& vbrif_val);
 
   /**
    * @brief                - Creates the Request Body
-   * @param[in] - val_vtn  - VTN value structure val_vtn_t
-   * @return - const char* - returns the request body formed
+   * @param[in] val_vtn    - VTN value structure val_vtn_t
+   * @return const char*   - returns the request body formed
    */
-  const char* create_request_body(pfcdrv_val_vbr_if_t& val_vtn);
+  json_object* create_request_body(pfcdrv_val_vbr_if_t& val_vtn);
+
+  /*
+   * @brief       - validated the format of logical port id
+   * @param[in]   - logical_port_id which needs to be validated
+   * @return      - returns ODC_DRV_SUCCESS/ ODC_DRV_FAILURE
+   */
+  uint32_t validate_logical_port_id(const std::string& logical_port_id);
+
+  /**
+   * @brief                    - reads conf file else default values for
+   *                             odc_port, connection time out, request timeout
+   * @param[out] - odc_port    - odc_port in uint32_t
+   * @param[out] - connection_time_out - in uint32_t
+   * @param[out] - request_time_out - in uint32_t
+   */
+  void read_conf_file(uint32_t &odc_port,
+                      uint32_t &connection_time_out,
+                      uint32_t &request_time_out);
+  /**
+   * @brief                      - gets the user name password from controller
+   *                               or conf file
+   * @param[in] - ctr_ptr        - Controller pointer
+   * @param[out] - username      - username is stored and used as out param
+   * @param[out] - password      - password is stored and used as out param
+   */
+  void read_user_name_password(std::string &user_name,
+                               std::string &password);
+
+  /**
+   * @brief                      - reads username password from conf file or
+   *                               default value
+   * @param[out] - username      - username - in string out param
+   * @param[out] - password      - password in string out param
+   */
+  void get_username_password(unc::driver::controller* ctr_ptr,
+                         std::string &user_name, std::string &password);
 };
 }  // namespace odcdriver
 }  // namespace unc

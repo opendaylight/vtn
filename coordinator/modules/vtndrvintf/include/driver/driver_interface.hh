@@ -1,11 +1,10 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2013 NEC Corporation
  * All rights reserved.
  *
- * This program and the accompanying materials are made
- * available under the  terms of the Eclipse Public License v1.0 which
- * accompanies this  distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
 #ifndef __CDF_DRIVER_INTERFACE_HH__
@@ -44,9 +43,9 @@ class driver {
   /**
    * @brief     - Method to update controller
    * @param[in] - key_ctr_t,val_ctr_t,controller*
-   * @retval    - controller* - Instance of controller
+   * @retval    - pfc_bool_t - PFC_TRUE
    */
-  virtual controller* update_controller(const key_ctr_t& key_ctr,
+  virtual pfc_bool_t update_controller(const key_ctr_t& key_ctr,
                                         const val_ctr_t& val_ctr,
                                         controller* ctrl_inst)=0;
 
@@ -68,7 +67,7 @@ class driver {
    * @param[in] - key_type
    * @retval    - driver_command* - command pointer of Keytype
    */
-  virtual driver_command* get_driver_command(unc_key_type_t key_type)=0;
+  virtual driver_command* create_driver_command(unc_key_type_t key_type)=0;
 
   /**
    * @brief     - Method to handle vote request of transaction

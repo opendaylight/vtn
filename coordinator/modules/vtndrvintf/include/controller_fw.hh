@@ -1,11 +1,10 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2013 NEC Corporation
  * All rights reserved.
  *
- * This program and the accompanying materials are made
- * available under the  terms of the Eclipse Public License v1.0 which
- * accompanies this  distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
 #ifndef _CONTROLLER_FRAMEWORK_HH_
@@ -19,6 +18,7 @@
 #include <pfc/taskq.h>
 #include <pfc/thread.h>
 #include <pfcxx/synch.hh>
+#include <uncxx/odc_log.hh>
 #include <unc/uppl_common.h>
 #include <unc/unc_events.h>
 #include <functional>
@@ -31,6 +31,9 @@
 namespace unc {
 namespace driver {
 
+//  Ping Interval of a controller when a controller is added/updated(secs)
+const uint32_t first_ping_interval = 10;
+
 /**
  * @brief       - This class contains the controller instance ,driver instance,
  *                mutex lock
@@ -41,6 +44,14 @@ class ControllerContainer {
   ControllerContainer():ctr(NULL), drv(NULL) {}
   controller* ctr;
   driver* drv;
+  ~ControllerContainer() {
+    pfc_log_trace("Entering ControllerContainer destructor");
+    if (NULL != ctr) {
+       delete ctr;
+       ctr = NULL;
+    }
+    pfc_log_trace("Exiting ControllerContainer destructor");
+  }
   pfc::core::Mutex  rw_mutex;
 };
 
@@ -71,8 +82,17 @@ class ControllerFramework  {
    * @param[in] - controller name ,controller**, driver**
    * @retval    - VTN_DRV_RET_FAILURE/VTN_DRV_RET_SUCCESS
    */
-  VtnDrvRetEnum GetDriverByControllerName(std::string& controller_name,
+  drv_resp_code_t GetDriverByControllerName(std::string& controller_name,
                                           controller**, driver**);
+
+  /**
+   * @brief       - This function  sets the time interval for every ping and the
+   *                timer is get reset.
+   * @param[in]   - controller name, driver*, controller*,ping_interval
+   * @retval      - int
+   */
+  int PostTimer(std::string& controller_name, driver*, controller*,
+                uint32_t ping_interval);
 
   /**
    * @brief      - This function adds the respective controller information
@@ -82,30 +102,23 @@ class ControllerFramework  {
    */
   void AddController(std::string& controller_name,
                      controller* , driver*);
-
   /**
-   * @brief        - This function  sets the time interval for every ping and the
-   *                timer is get reset.
-   * @param[in]   - controller name, driver*, controller*
-   * @retval      - int
-   */
-  int PostTimer(std::string& controller_name, driver*, controller*);
-
-  /**
-   * @brief         - This function updates the respective controller information
+   * @brief        - This function updates the respective controller information
    *                 in the controller list
-   * @param[in]     - controller name, controller*, driver*
+   * @param[in]    - controller name, controller*, driver*
    * @retval       - VTN_DRV_RET_FAILURE/ VTN_DRV_RET_SUCCESS
    */
-  VtnDrvRetEnum UpdateControllerConfiguration(std::string& controller_name,
-                                              controller*, driver*);
+  drv_resp_code_t UpdateControllerConfiguration(std::string& controller_name,
+                                               controller*, driver*,
+                                               const key_ctr_t& key_ctr,
+                                               const val_ctr_t& val_ctr);
   /**
    * @brief         - This function removes the respective controller information
    *                 in the controller list
    * @param[in]    - controller name, controller*, driver*
    * @retval       - VTN_DRV_RET_FAILURE/ VTN_DRV_RET_SUCCESS
    */
-  VtnDrvRetEnum RemoveControllerConfiguration(std::string& controller_name,
+  drv_resp_code_t RemoveControllerConfiguration(std::string& controller_name,
                                               controller*, driver*);
 
   /**
@@ -120,16 +133,18 @@ class ControllerFramework  {
    * @param[in]   - controller type, driver*
    * @retval      - VTN_DRV_RET_FAILURE/ VTN_DRV_RET_SUCCESS
    */
-  VtnDrvRetEnum RegisterDriver(unc_keytype_ctrtype_t controller_type, driver*);
+  drv_resp_code_t RegisterDriver(unc_keytype_ctrtype_t controller_type,
+                                 driver*);
 
 
   /**
    * @brief      - This function is to get the driver instance and controller
    *               instance for the respective controllers
-   * @param[in]  - controller name, controller**, driver**
+   * @param[in]  - controller name
+   * @param[out] - controller**, driver**
    * @retval     - VTN_DRV_RET_FAILURE/ VTN_DRV_RET_SUCCESS
    */
-  VtnDrvRetEnum GetControllerInstance(std::string& controller_name,
+  drv_resp_code_t GetControllerInstance(std::string& controller_name,
                                       controller**, driver**);
 
   /**
@@ -139,15 +154,15 @@ class ControllerFramework  {
    * @retval     - None
    */
   void SendNotificationToPhysical(std::string ctr_name, ConnectionStatus type);
+  pfc::core::Mutex controller_list_rwlock_;
 
  private:
   std::map<std::string, ControllerContainer*>  controller_list;
   std::map<unc_keytype_ctrtype_t, driver*>  driver_container;
-  pfc::core::ReadWriteLock controller_list_rwlock_;
 };
 
 /**
- * Class           - ReadParams
+ * Class           - This class is invokes the ping for the given timeout
  * DataMembers     - ctlr_name_, ctr_fw_
  * MemberFunctions - PingController()
  */
@@ -159,7 +174,8 @@ class ReadParams : public std::unary_function < void, void> {
   unc::driver::ControllerFramework* ctr_fw_;
 
   /**
-   * @brief - constructor
+   * @brief - parameterised constructor to initialize controller name and
+   *          ControllerFramework object
    */
   ReadParams(std::string, unc::driver::ControllerFramework*);
 
@@ -167,16 +183,16 @@ class ReadParams : public std::unary_function < void, void> {
    * @brief  - This fuction calls the method PingController()
    * @retval - None
    */
-  void operator() ()  {
+  void operator() () {
     PingController();
   }
 
   /**
    * @brief  - Ping the controller and update the connection status
    *           based on the response
-   * @retval - VTN_DRV_RET_FAILURE/ VTN_DRV_RET_SUCCESS
+   * @retval - None
    */
-  VtnDrvRetEnum PingController();
+  void PingController();
 };
 }  // namespace driver
 }  // namespace unc

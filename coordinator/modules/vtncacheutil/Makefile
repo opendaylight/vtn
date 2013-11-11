@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2013 NEC Corporation
+# Copyright (c) 2013 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -13,9 +13,9 @@
 
 include ../defs.mk
 
-CXX_SOURCES	=	keytree.cc \
+CXX_SOURCES = keytree.cc \
               confignode.cc \
-              vtncachemod.cc
+             	vtn_cache_mod.cc 
 
 include ../rules.mk
 
@@ -23,15 +23,15 @@ include ../rules.mk
 ## Targets:
 ##
 ## make all(default target)
-##	Build all binary distributions.
+##  Build all binary distributions.
 ##
 ## make installu
-##	Execute "make all" and install binary distributions into the
-##	installation directory.
+##  Execute "make all" and install binary distributions into the
+##  installation directory.
 ##
 ## make clean
-##	Remove binary distributions built by "make all".
+##  Remove binary distributions built by "make all".
 ##
 ## make clobber
-##	Execute "make clean" and remove header dependency files.
+##  Execute "make clean" and remove header dependency files.
 ##

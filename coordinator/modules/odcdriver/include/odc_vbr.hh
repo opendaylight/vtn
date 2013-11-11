@@ -1,13 +1,10 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2013 NEC Corporation
  * All rights reserved.
  *
- * This program and the accompanying materials are made
- * available under the
- * terms of the Eclipse Public License v1.0 which
- * accompanies this
- * distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
 #ifndef _ODC_VBR_HH_
@@ -21,105 +18,82 @@
 #include <rest_client.hh>
 #include <odc_driver_common_defs.hh>
 #include <odc_controller.hh>
+#include <odc_vtn.hh>
+#include <tclib_module.hh>
 #include <string>
 #include <vector>
+#include <sstream>
 
 namespace unc {
 namespace odcdriver {
 
-class ODCVBRCommand: public unc::driver::vbr_driver_command {
+class OdcVbrCommand: public unc::driver::vbr_driver_command {
  public:
   /**
    * @brief Default Constructor
    */
-  ODCVBRCommand();
+  OdcVbrCommand();
 
   /**
    * @brief Default Destructor
    */
-  ~ODCVBRCommand();
+  ~OdcVbrCommand();
 
   /**
-   * @brief                          - Creates VBR
+   * @brief                          - Constructs VBR command and send it to
+   *                                   rest interface
    * @param[in] key_vbr              - key structure of VBR
    * @param[in] val_vbr              - value structure of VBR
-   * @param[in] ControllerPointer    - Controller connection information
+   * @param[in] ctr                  - Controller pointrt
    * @return drv_resp_t              - returns DRVAPI_RESPONSE_SUCCESS on creating vbr successfully
    *                                   /returns DRVAPI_RESPONSE_FAILURE on failure
    */
 
   drv_resp_code_t create_cmd(key_vbr_t& key_vbr, val_vbr_t& val_vbr,
-                             unc::driver::controller *conn);
+                             unc::driver::controller *ctr);
 
   /**
-   * @brief                           - Updates VBR
+   * @brief                           - Constructs VBR update command and send
+   *                                    it to rest interface
    * @param[in] key_vbr               - key structure of VBR
    * @param[in] val_vbr               - value structure of VBR
-   * @param[in] ControllerPointer     - Controller connection information
+   * @param[in] ctr                   - Controller pointer
    * @return drv_resp_code_t          - returns DRVAPI_RESPONSE_SUCCESS on updating vbr successfully
    *                                    /returns DRVAPI_RESPONSE_FAILURE on failure
    */
   drv_resp_code_t update_cmd(key_vbr_t& key_vbr, val_vbr_t& val_vbr,
-                             unc::driver::controller* conn);
+                             unc::driver::controller* ctr);
 
   /**
-   * @brief                           - Deletes VBR
+   * @brief                           - Constructs VBR Delete command and send
+   *                                    it to rest interface
    * @param[in] key_vbr               - key structure of VBR
    * @param[in] val_vbr               - value structure of VBR
-   * @param[in] ControllerPointer     - Controller connection information
+   * @param[in] ctr                   - Controller pointer
    * @return  drv_resp_code_t         - returns DRVAPI_RESPONSE_SUCCESS on deleting a vbr
    *                                    / returns DRVAPI_RESPONSE_FAILURE on failure
    */
   drv_resp_code_t delete_cmd(key_vbr_t& key_vbr, val_vbr_t& val_vbr,
-                             unc::driver::controller *conn);
+                             unc::driver::controller *ctr);
 
   /**
-   * @brief                           - Validates the operation
-   * @param[in] key_vbr               - VBR Key Structure key_vbr_t
-   * @param[in] val_vbr               - VBR value structure val_vbr_t
-   * @param[in] ctr                   - Controller Pointer
-   * @param[in] op                    - operation
-   * @return drv_resp_code_t          - returns DRVAPI_RESPONSE_SUCCESS on validation operation success
-   *                                    /returns DRVAPI_RESPONSE_FAILURE on failure
+   * @brief                          - get vbr list - gets all the vbridge
+   *                                   under particular vtn
+   * @param[in]                      - vtn name
+   * @param[in] ctr                  - Controller pointer
+   * @param[out] cfg_node_vector      - cfg_node_vector out parameter contains
+   *                                   list of vbridge present for specified vtn
+   *                                   in controller
+   * @return drv_resp_code_t         - returns DRVAPI_RESPONSE_SUCCESS on
+   *                                   retrieving the vtn child successfully/
+   *                                   returns DRVAPI_RESPONSE_FAILURE on fail
    */
-  drv_resp_code_t validate_op(key_vbr_t& key_vbr, val_vbr_t& val_vbr,
-                              unc::driver::controller* ctr, uint32_t op);
-  /**
-   * @brief                           - get all the vbr child
-   * @param[in] vtn_name              - vtn name
-   * @param[in] vbr_name              - vbr name
-   * @param[in] ctr                   - controller pointer
-   * @param[out] cfgnode_vector       - config node vector
-   * @return drv_resp_code_t          - returns DRVAPI_RESPONSE_SUCCESS on successfully retieving a vbr
-   *                                    child /returns DRVAPI_RESPONSE_FAILURE on failure
-   */
-  drv_resp_code_t get_vbr_child(std::string vtn_name,
-                                std::string vbr_name,
+  drv_resp_code_t get_vbr_list(std::string vtnname,
                                 unc::driver::controller* ctr,
-                                std::vector< unc::vtndrvcache::ConfigNode *>
-                                &cfgnode_vector);
+                                std::vector<unc::vtndrvcache::ConfigNode *>
+                                &cfg_node_vector);
 
-  /**
-   * @brief                           - parse the vbr if data
-   * @param[in] vtn_name              - vtn name
-   * @param[in] vbr_name              - vbr name
-   * @param[in] url                   - url to send the request
-   * @param[in] ctr                   - controller pointer
-   * @param[in] data                  - data from which parse should happen
-   * @param[out] cfgnode_vector       - config node vector
-   * @return drv_resp_code_t          - returns DRVAPI_RESPONSE_SUCCESS on parsing the
-   *                                    response of vbrif/returns DRVAPI_RESPONSE_FAILURE on failure
-   */
-  drv_resp_code_t parse_vbrif_resp_data(std::string vtn_name,
-                                        std::string vbr_name,
-                                        std::string url,
-                                        unc::driver::controller* ctr,
-                                        char *data,
-                                        std::vector<
-                                        unc::vtndrvcache::ConfigNode *>
-                                        &cfgnode_vector);
-
- private:
+  private:
   /**
    * @brief               - gets the vbr url
    * @param[in] key_vbr   - vbr key structure
@@ -132,90 +106,37 @@ class ODCVBRCommand: public unc::driver::vbr_driver_command {
    * @param[in] val_vtn   - VTN value structure val_vtn_t
    * @return const char*  - returns the request body formed
    */
-  const char* create_request_body(const val_vbr_t& val_vtn);
+  json_object* create_request_body(const val_vbr_t& val_vtn);
 
   /**
-   * @brief                  - Validates Create Vbr
-   * @param[in] key_vbr      - VBR Key Structure key_vbr_t
-   * @param[in] ctr          - Controller Pointer
-   * @return drv_resp_code_t - returns DRVAPI_RESPONSE_SUCCESS on successfully
-   *                           validating creation of vbr/returns DRVAPI_RESPONSE_FAILURE on failure
+   * @brief                    - parse the vbr response data
+   * @param[in] data           - data which is the response from controller
+   * @param[in] vtn_name       - vtn name
+   * @param[out] cfg_node_vector - vector to which the resp to be pushed
+   * @return drv_resp_code_t   - returns DRVAPI_RESPONSE_SUCCESS on parsing vbr
+   *                             reponse data successfully/returns
+   *                             DRVAPI_RESPONSE_FAILURE on failure
    */
-  drv_resp_code_t validate_create_vbr(key_vbr_t& key_vbr,
-                                      unc::driver::controller* ctr);
+  drv_resp_code_t parse_vbr_response(char *data, std::string vtn_name,
+                                         unc::driver::controller* ctr,
+        std::vector< unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
 
   /**
-   * @brief                  - Validates Delete Vbr
-   * @param[in] key_vbr      - VBR Key Structure key_vbr_t
-   * @param[in] ctr          - Controller Pointer
-   * @return drv_resp_code_t - returns DRVAPI_RESPONSE_SUCCESS on deleting vbr
-   *                           / returns DRVAPI_RESPONSE_FAILURE on failure
+   * @brief                          - parse vbr information and append to the vector
+   * @param[in] ctr                  - controller pointer
+   * @param[in] json_obj_vbr         - json object which is to be parsed
+   * @param[in] arr_idx              - array index in int specifies the array
+   *                                   index  -1 denotes no array
+   * @param[out] cfg_node_vector       - vector to which config node needs
+   *                                   to be pushed
+   * @return drv_resp_code_t         - returns DRVAPI_RESPONSE_SUCCESS on
+   *                                   parsing vbr and appending to vector
+   *                                   successfully/returns
+   *                                   DRVAPI_RESPONSE_FAILURE on failure
    */
-  drv_resp_code_t validate_delete_vbr(key_vbr_t& key_vbr,
-                                      unc::driver::controller* ctr);
-
-  /**
-   * @brief                  - Validates Update Vbr
-   * @param[in] key_vbr      - VBR Key Structure key_vbr_t
-   * @param[in] ctr          - Controller Pointer
-   * @return drv_resp_code_t - returns DRVAPI_RESPONSE_SUCCESS on updating vbr
-   *                           /returns DRVAPI_RESPONSE_FAILURE on failure
-   */
-  drv_resp_code_t validate_update_vbr(key_vbr_t& key_vbr,
-                                      unc::driver::controller* ctr);
-
-  /**
-   * @brief                  - Checks is_vtn_exists_in_controller
-   * @param[in] key_vbr      - VBR Key Structure key_vbr_t
-   * @param[in] ctr          - Controller Pointer
-   * @return uint32_t        - returns the response code from the controller on checking whether
-   *                           the  vtn exists in controller
-   */
-  uint32_t is_vtn_exists_in_controller(const key_vbr_t& key_vbr,
-                                       unc::driver::controller* ctr);
-
-  /**
-   * @brief                  - Checks is_vtn_exists_in_controller
-   * @param[in] key_vbr      - VBR Key Structure key_vbr_t
-   * @param[in] ctr          - Controller Pointer
-   * @return uint32_t        - returns response code from the controller on checking
-   *                           whether the vbr exists in controller
-   */
-  uint32_t is_vbr_exists_in_controller(key_vbr_t& key_vbr,
-                                       unc::driver::controller* ctr);
-
-  /**
-   * @brief                  - GetControllerResponse and checks the resp code
-   * @param[in] url          - url to be set to
-   * @param[in] ctr          - controller pointer
-   * @param[in] method       - Http Method
-   * @param[in] request_body - request body
-   * @return uint32_t        - returns the response code from the controller
-   */
-  uint32_t get_controller_response_code(std::string url,
-                                        unc::driver::controller* ctr,
-                                        unc::restjson::HttpMethod method,
-                                        const char* request_body);
-  /**
-   * @brief                       - parse vbr if and append it to vector
-   * @param[in] vtn_name          - vtn name
-   * @param[in] vbr_name          - vbr name
-   * @param[in] json_obj          - json object
-   * @param[in] arr_idx           - array index
-   * @param[in] url               - url to send request
-   * @param[in] ctr               - controller pointer
-   * @param[out] cfgnode_vector   - config node vector
-   * @return drv_resp_code_t      - returns DRVAPI_RESPONSE_SUCCESS on parsing vbrif and appending
-   *                                vector/ returns DRVAPI_RESPONSE_FAILURE on failure
-   */
-  drv_resp_code_t parse_vbrif_append_vector(std::string vtn_name,
-                                            std::string vbr_name,
-                                            json_object *json_obj,
-                                            uint32_t arr_idx,
-                                            std::string url,
-                                            unc::driver::controller* ctr,
-                                            std::vector< unc::vtndrvcache::
-                                            ConfigNode *>&cfgnode_vector);
+  drv_resp_code_t fill_config_node_vector(unc::driver::controller* ctr,
+      json_object *json_obj_vbr, std::string vtn_name, uint32_t arr_idx,
+          std::vector< unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
 
   /**
    * @brief                      - read port map
@@ -225,8 +146,49 @@ class ODCVBRCommand: public unc::driver::vbr_driver_command {
    */
   json_object* read_portmap(unc::driver::controller* ctr, std::string url);
 
- private:
-  std::string age_interval_;
+  /**
+   * @brief                      - gets the user name password from controller
+   *                               or conf file
+   * @param[in] - ctr_ptr        - Controller pointer
+   * @param[out] - username      - username is stored and used as out param
+   * @param[out] - password      - password is stored and used as out param
+   */
+  void get_username_password(unc::driver::controller* ctr_ptr,
+                             std::string &user_name, std::string &password);
+
+  /**
+   * @brief                      - reads username password from conf file or
+   *                               default value
+   * @param[out] - username      - username - in string out param
+   * @param[out] - password      - password in string out param
+   */
+  void read_user_name_password(std::string &user_name,
+                               std::string &password);
+
+  /**
+   * @brief                    - reads conf file else default values for
+   *                             odc_port, connection time out, request timeout
+   * @param[out] - odc_port    - odc_port in uint32_t
+   * @param[out] - connection_time_out - in uint32_t
+   * @param[out] - request_time_out - in uint32_t
+   */
+  void read_conf_file(uint32_t &odc_port,
+                      uint32_t &connection_time_out,
+                      uint32_t &request_time_out);
+  /**
+   * @brief      - Method to fetch child configurations for the parent kt
+   * @param[in]  - controller pointer
+   * @param[in]  - parent key type pointer
+   * @param[out] - list of configurations
+   * @retval     - DRVAPI_RESPONSE_SUCCESS / DRVAPI_RESPONSE_FAILURE
+   */
+  drv_resp_code_t fetch_config(unc::driver::controller* ctr,
+                               void* parent_key,
+                               std::vector<unc::vtndrvcache::ConfigNode *>
+                                 &cfgnode_vector);
+
+  private:
+  uint32_t age_interval_;
 };
 }  // namespace odcdriver
 }  // namespace unc

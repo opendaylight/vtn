@@ -1,13 +1,10 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2013 NEC Corporation
  * All rights reserved.
  *
- * This program and the accompanying materials are made
- * available under the
- * terms of the Eclipse Public License v1.0 which
- * accompanies this
- * distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
 #ifndef _ODC_CONTROLLER_HH_
@@ -21,19 +18,19 @@
 namespace unc {
 namespace odcdriver {
 
-class ODCController: public unc::driver::controller {
+class OdcController: public unc::driver::controller {
  public:
   /**
    * @brief     - Parametrised Constructor
    * @param[in] - key_ctr (key structure for controller)
    * @param[in] - val_ctr (value structure for controller)
    */
-  ODCController(const key_ctr_t& key_ctr, const val_ctr_t& val_ctr);
+  OdcController(const key_ctr_t& key_ctr, const val_ctr_t& val_ctr);
 
   /**
    * @brief - Destructor
    */
-  ~ODCController();
+  ~OdcController();
 
   /**
    * @brief   - Gets the controller type
@@ -43,7 +40,7 @@ class ODCController: public unc::driver::controller {
 
   /**
    *  @brief   - Gets the contoller id
-   *  @return  - std::strinig(controller id)
+   *  @return  - std::string(controller id)
    */
   std::string get_controller_id();
 
@@ -76,6 +73,15 @@ class ODCController: public unc::driver::controller {
    * @return - std::string(password)
    */
   std::string get_pass_word();
+
+  /**
+   * @brief     - Updates the controller parameters
+   *              This method is called when KT_CTR update is received from UPPL
+   * @param[in] - key_ctr (key structure for controller)
+   * @param[in] - val_ctr (value structure for controller)
+   * @return    - PFC_TRUE on updation
+   */
+  pfc_bool_t update_ctr(const key_ctr_t& key_ctr, const val_ctr_t& val_ctr);
 
  private:
   std::string ip_addr_;

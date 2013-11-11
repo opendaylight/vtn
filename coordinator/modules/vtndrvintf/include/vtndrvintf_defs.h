@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2013 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -7,11 +7,14 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-#ifndef __VTNDRVINTF_DEFS_H_
-#define __VTNDRVINTF_DEFS_H_
+#ifndef _VTNDRVINTF_DEFS_H_
+#define _VTNDRVINTF_DEFS_H_
+
+#include <unc/keytype.h>
 
 typedef enum {
   VTN_DRV_RET_SUCCESS = 0,
   VTN_DRV_RET_FAILURE
 }VtnDrvRetEnum;
+
 #endif

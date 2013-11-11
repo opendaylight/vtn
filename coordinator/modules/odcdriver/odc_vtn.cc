@@ -1,13 +1,10 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2013 NEC Corporation
  * All rights reserved.
  *
- * This program and the accompanying materials are made
- * available under the
- * terms of the Eclipse Public License v1.0 which
- * accompanies this
- * distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
 #include <odc_vtn.hh>
@@ -16,533 +13,269 @@ namespace unc {
 namespace odcdriver {
 
 // Constructor
-ODCVTNCommand::ODCVTNCommand()
-    : idle_timeout_("300"),
-    hard_timeout_("0") {
-      pfc_log_debug("Entering function ... %s", PFC_FUNCNAME);
-      pfc_log_debug("Exiting function ... %s", PFC_FUNCNAME);
-    }
+OdcVtnCommand::OdcVtnCommand()
+: idle_timeout_(DEFAULT_IDLE_TIME_OUT),
+  hard_timeout_(DEFAULT_HARD_TIME_OUT) {
+  ODC_FUNC_TRACE;
+}
 
 // Destructor
-ODCVTNCommand::~ODCVTNCommand() {
-  pfc_log_debug("Entering function ... %s", PFC_FUNCNAME);
-  pfc_log_debug("Exiting function ... %s", PFC_FUNCNAME);
+OdcVtnCommand::~OdcVtnCommand() {
 }
 
-// validates the operation
-drv_resp_code_t ODCVTNCommand::validate_op(key_vtn_t& key_vtn,
-                                           val_vtn_t& val_vtn,
-                                           unc::driver::controller* ctr,
-                                           uint32_t op) {
-  pfc_log_debug("Entering function ... %s", PFC_FUNCNAME);
-  PFC_ASSERT(ctr != NULL);
-  drv_resp_code_t resp_code = DRVAPI_RESPONSE_FAILURE;
-
-  pfc_log_debug("operation received %d", op);
-  switch (op) {
-    case UNC_OP_CREATE:
-      resp_code = validate_create_vtn(key_vtn, ctr);
-      break;
-    case UNC_OP_UPDATE:
-      resp_code = validate_update_vtn(key_vtn, ctr);
-      break;
-    case UNC_OP_DELETE:
-      resp_code = validate_delete_vtn(key_vtn, ctr);
-      break;
-    default:
-      pfc_log_debug("Unknown operation %d", op);
-      break;
-  }
-  pfc_log_debug("Exiting function ... %s", PFC_FUNCNAME);
-  return resp_code;
-}
-
-// Validates create vtn
-drv_resp_code_t ODCVTNCommand::validate_create_vtn(const key_vtn_t& key_vtn,
-                                                   unc::driver::controller*
-                                                   ctr) {
-  pfc_log_debug("Entering function ... %s", PFC_FUNCNAME);
-  uint32_t resp_code = is_vtn_exists_in_controller(key_vtn, ctr);
-  pfc_log_debug("Response code for is_vtn_exists_in_controller %d", resp_code);
-
-  if (RESP_NOT_FOUND == resp_code) {
-    pfc_log_debug("Exiting function ... %s", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_SUCCESS;
-  } else {
-    pfc_log_debug("Exiting function ... %s", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-}
-
-// Validates delete vtn
-drv_resp_code_t ODCVTNCommand::validate_delete_vtn(const key_vtn_t& key_vtn,
-                                                   unc::driver::controller*
-                                                   ctr) {
-  pfc_log_debug("Entering function ... %s", PFC_FUNCNAME);
-  uint32_t resp_code = is_vtn_exists_in_controller(key_vtn, ctr);
-  pfc_log_debug("Response code for is_vtn_exists_in_controller %d", resp_code);
-  if (RESP_OK == resp_code) {
-    pfc_log_debug("Exiting function ... %s", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_SUCCESS;
-  } else {
-    pfc_log_debug("Exiting function ... %s", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-}
-
-// Validates update vtn
-drv_resp_code_t ODCVTNCommand::validate_update_vtn(const key_vtn_t& key_vtn,
-                                                   unc::driver::controller*
-                                                   ctr) {
-  pfc_log_debug("Entering function ... %s", PFC_FUNCNAME);
-  uint32_t resp_code = is_vtn_exists_in_controller(key_vtn, ctr);
-  pfc_log_debug("Response code for is_vtn_exists_in_controller %d", resp_code);
-
-  if (RESP_OK == resp_code) {
-    pfc_log_debug("Exiting function ... %s", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_SUCCESS;
-  } else {
-    pfc_log_debug("Exiting function ... %s", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-}
-
-// Checks if vtn exist in Controller or not
-uint32_t ODCVTNCommand::is_vtn_exists_in_controller(const key_vtn_t& key_vtn,
-                                                    unc::driver::controller*
-                                                    ctr) {
-  pfc_log_debug("Entering function ... %s", PFC_FUNCNAME);
-  const char* vtnname = NULL;
-  vtnname = reinterpret_cast<const char*>(key_vtn.vtn_name);
-  if (0 == strlen(vtnname)) {
-    return ODC_DRV_FAILURE;
-  }
-  std::string url = "";
-  url.append(VTN_URL);
-  url.append("/");
-  url.append(vtnname);
-  uint32_t response = get_controller_response_code(url, ctr,
-                                                   unc::restjson::
-                                                   HTTP_METHOD_GET,
-                                                   NULL);
-  pfc_log_debug("Response code from Controller is for vtn : %d ", response);
-  pfc_log_debug("Exiting function ... %s", PFC_FUNCNAME);
-  return response;
-}
-
-// Return controller response code
-uint32_t ODCVTNCommand::get_controller_response_code(std::string url,
-                                                     unc::driver::controller*
-                                                     ctr,
-                                                     unc::restjson::HttpMethod
-                                                     method,
-                                                     const char* request_body) {
-  pfc_log_debug("Entering function ... %s", PFC_FUNCNAME);
-  PFC_ASSERT(ctr != NULL);
-  std::string ipaddress = ctr->get_host_address();
-  pfc_log_debug("ip address of controller is %s", ipaddress.c_str());
-  if (0 == strlen(ipaddress.c_str())) {
-    return ODC_DRV_FAILURE;
-  }
-  if (( method != unc::restjson::HTTP_METHOD_POST ) &&
-      (method != unc::restjson::HTTP_METHOD_PUT) &&
-      (method != unc::restjson::HTTP_METHOD_DELETE) &&
-      (method != unc::restjson::HTTP_METHOD_GET)) {
-    pfc_log_debug("Invalid Method : %d", method);
-    pfc_log_debug("Exiting function ... %s", PFC_FUNCNAME);
-    return ODC_DRV_FAILURE;
-  }
-
-  std::string username_ctr = ctr->get_user_name();
-  std::string password_ctr = ctr->get_pass_word();
-
-  unc::restjson::RestClient rest_util_obj(ipaddress, ODC_PORT);
-  uint32_t retval = ODC_DRV_FAILURE;
-  if ((0 == strlen(username_ctr.c_str()))
-      || (0 == strlen(password_ctr.c_str()))) {
-    retval = rest_util_obj.set_username_password(USER_NAME, PASS_WORD);
-  } else {
-    retval = rest_util_obj.set_username_password(username_ctr, password_ctr);
-  }
-  if (ODC_DRV_FAILURE == retval) {
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-  retval = rest_util_obj.set_timeout(CONNECTION_TIME_OUT, REQUEST_TIME_OUT);
-  if (ODC_DRV_FAILURE == retval) {
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-  retval = rest_util_obj.create_request_header(url, method);
-  if (ODC_DRV_FAILURE == retval) {
-    pfc_log_debug("Failure in create request header : %d", retval);
-    return retval;
-  }
-  if ((method == unc::restjson::HTTP_METHOD_POST)
-      || (method == unc::restjson::HTTP_METHOD_PUT)) {
-    if (NULL != request_body) {
-      pfc_log_debug("Request Body  : %s", request_body);
-      retval = rest_util_obj.set_request_body(request_body);
-      if (ODC_DRV_FAILURE == retval) {
-        pfc_log_debug("Failure in set Request Body %d", retval);
-        return DRVAPI_RESPONSE_FAILURE;
-      }
-    }
-  }
-  uint32_t resp = rest_util_obj.send_request_and_get_response_code();
-  pfc_log_debug("Response code from Controller is : %d ", resp);
-  pfc_log_debug("Exiting function ... %s", PFC_FUNCNAME);
-  return resp;
-}
-
-// Create Command and send Request to Controller
-drv_resp_code_t ODCVTNCommand::create_cmd(key_vtn_t& key_vtn,
+// Constructs command to create Vtn and send it to rest interface to send to
+// controller
+drv_resp_code_t OdcVtnCommand::create_cmd(key_vtn_t& key_vtn,
                                           val_vtn_t& val_vtn,
                                           unc::driver::controller *ctr_ptr) {
-  pfc_log_debug("Entering function ... %s", PFC_FUNCNAME);
-  char* vtnname = NULL;
+  ODC_FUNC_TRACE;
   PFC_ASSERT(ctr_ptr != NULL);
+
+  char* vtnname = NULL;
   std::string url = "";
-  url.append(VTN_URL);
+  url.append(BASE_URL);
+  url.append(CONTAINER_NAME);
+  url.append(VTNS);
   url.append("/");
   std::string ipaddress = ctr_ptr->get_host_address();
-  if (0 == strlen(ipaddress.c_str())) {
-    return DRVAPI_RESPONSE_FAILURE;
-  }
   vtnname = reinterpret_cast<char*>(key_vtn.vtn_name);
   if (0 == strlen(vtnname)) {
+    pfc_log_error("Empty vtn name in %s", PFC_FUNCNAME);
     return DRVAPI_RESPONSE_FAILURE;
   }
   url.append(vtnname);
-  const char* request = create_request_body(val_vtn);
-  pfc_log_debug("Request body formed %s", request);
-  uint32_t resp = get_controller_response_code(url, ctr_ptr,
-                                               unc::restjson::HTTP_METHOD_POST,
-                                               request);
-  pfc_log_debug("response code returned in create vtn is %d", resp);
-  if (RESP_CREATED != resp) {
+  unc::restjson::JsonBuildParse json_obj;
+  json_object* jobj_req_body = create_request_body(val_vtn);
+  const char* request = NULL;
+  if (!(json_object_is_type(jobj_req_body, json_type_null))) {
+    request = json_obj.get_string(jobj_req_body);
+  }
+
+  std::string user_name = "";
+  std::string password = "";
+  get_username_password(ctr_ptr , user_name, password);
+  pfc_log_debug("Request body formed in create_cmd : %s", request);
+  uint32_t odc_port = 0;
+  uint32_t connect_time_out = 0;
+  uint32_t req_time_out = 0;
+  read_conf_file(odc_port, connect_time_out, req_time_out);
+
+  restjson::RestClient rest_client_obj(ipaddress, url, odc_port,
+                                       restjson::HTTP_METHOD_POST);
+  unc::restjson::HttpResponse_t* response = rest_client_obj.send_http_request(
+                                            user_name, password,
+                                            connect_time_out,
+                                            req_time_out, request);
+  json_object_put(jobj_req_body);
+  if (NULL == response) {
+    pfc_log_error("Error Occured while getting httpresponse");
     return DRVAPI_RESPONSE_FAILURE;
   }
-  pfc_log_debug("%s Exiting function", PFC_FUNCNAME);
+  int resp_code = response->code;
+  rest_client_obj.clear_http_response();
+  response = NULL;
+  pfc_log_debug("response code returned in create vtn is %d", resp_code);
+  if (HTTP_201_RESP_CREATED != resp_code) {
+    return DRVAPI_RESPONSE_FAILURE;
+  }
   return DRVAPI_RESPONSE_SUCCESS;
 }
 
+// Gets the user name password from the controller else from conf file
+void OdcVtnCommand::get_username_password(unc::driver::controller* ctr_ptr,
+                                          std::string &user_name,
+                                          std::string &password) {
+  ODC_FUNC_TRACE;
+  PFC_ASSERT(ctr_ptr != NULL);
+  std::string user_ctr = ctr_ptr->get_user_name();
+  std::string pass_ctr = ctr_ptr->get_pass_word();
+
+  if ((user_ctr.empty()) ||
+      (pass_ctr.empty())) {
+    read_user_name_password(user_name, password);
+  } else {
+    user_name = ctr_ptr->get_user_name();
+    password = ctr_ptr->get_pass_word();
+  }
+}
+
+// reads username password from conf file else from default value
+void OdcVtnCommand::read_user_name_password(std::string &user_name,
+                                            std::string &password) {
+  ODC_FUNC_TRACE;
+  pfc::core::ModuleConfBlock set_user_password_blk(SET_USER_PASSWORD_BLK);
+  if (set_user_password_blk.getBlock() != PFC_CFBLK_INVALID) {
+    user_name = set_user_password_blk.getString(
+        CONF_USER_NAME, DEFAULT_USER_NAME.c_str());
+
+    password  = set_user_password_blk.getString(
+        CONF_PASSWORD, DEFAULT_PASSWORD.c_str());
+    pfc_log_debug("%s: Block Handle is Valid,user_name_ %s", PFC_FUNCNAME,
+                  user_name.c_str());
+  }  else {
+    user_name = DEFAULT_USER_NAME;
+    password  = DEFAULT_PASSWORD;
+    pfc_log_debug("%s: Block Handle is InValid, get default user_name_ %s",
+                  PFC_FUNCNAME, user_name.c_str());
+  }
+}
+
 // Creates Request Body
-const char* ODCVTNCommand::create_request_body(const val_vtn_t& val_vtn) {
-  pfc_log_debug("%s Entering function", PFC_FUNCNAME);
+json_object* OdcVtnCommand::create_request_body(const val_vtn_t& val_vtn) {
+  ODC_FUNC_TRACE;
   unc::restjson::JsonBuildParse json_obj;
   const char* description = reinterpret_cast<const char*>(val_vtn.description);
   json_object *jobj = json_obj.create_json_obj();
   int ret_val = 1;
-  pfc_log_debug("%s description", description);
-  if (0 != strlen(description)) {
-    ret_val = json_obj.build(jobj, "description", description);
-    if (ret_val) {
-      return NULL;
+  if (UNC_VF_VALID == val_vtn.valid[UPLL_IDX_DESC_VTN]) {
+    if (0 != strlen(description)) {
+      ret_val = json_obj.build("description", description, jobj);
+      if (ret_val) {
+        pfc_log_error("Error occured in request body build %s", PFC_FUNCNAME);
+        json_object_put(jobj);
+        return NULL;
+      }
     }
   }
-  ret_val = json_obj.build(jobj, "idleTimeout", idle_timeout_);
-  if (ret_val) {
+  std::ostringstream hard_timeout_str_format;
+  hard_timeout_str_format << hard_timeout_;
+  std::ostringstream idle_timeout_str_format;
+  idle_timeout_str_format << idle_timeout_;
+  std::string idle_time_out = idle_timeout_str_format.str();
+  ret_val = json_obj.build("idleTimeout", idle_timeout_str_format.str(), jobj);
+  if (restjson::REST_OP_SUCCESS != ret_val) {
+    pfc_log_error("Error occured in request body build %s", PFC_FUNCNAME);
+    json_object_put(jobj);
     return NULL;
   }
-  ret_val = json_obj.build(jobj, "hardTimeout", hard_timeout_);
-  if (ret_val) {
+  ret_val = json_obj.build("hardTimeout", hard_timeout_str_format.str(), jobj);
+  if (restjson::REST_OP_SUCCESS != ret_val) {
+    pfc_log_error("Error occured in request body build %s", PFC_FUNCNAME);
+    json_object_put(jobj);
     return NULL;
   }
-  const char* req_body = json_obj.json_obj_to_json_string(jobj);
-  pfc_log_debug("%s json request ", req_body);
-  pfc_log_debug("%s Exiting function", PFC_FUNCNAME);
-  return req_body;
+  return jobj;
 }
 
 //  Command to update vtn  and Send request to Controller
-drv_resp_code_t ODCVTNCommand::update_cmd(key_vtn_t& key_vtn,
+drv_resp_code_t OdcVtnCommand::update_cmd(key_vtn_t& key_vtn,
                                           val_vtn_t& val_vtn,
                                           unc::driver::controller *ctr_ptr) {
-  pfc_log_debug("%s Entering function", PFC_FUNCNAME);
+  ODC_FUNC_TRACE;
   char* vtnname = NULL;
   PFC_ASSERT(ctr_ptr != NULL);
   std::string url = "";
-  url.append(VTN_URL);
+  url.append(BASE_URL);
+  url.append(CONTAINER_NAME);
+  url.append(VTNS);
   url.append("/");
   std::string ipaddress = ctr_ptr->get_host_address();
-  if (0 == strlen(ipaddress.c_str())) {
-    return DRVAPI_RESPONSE_FAILURE;
-  }
   vtnname = reinterpret_cast<char*>(key_vtn.vtn_name);
   if (0 == strlen(vtnname)) {
+    pfc_log_error("Empty vtn name in : %s", PFC_FUNCNAME);
     return DRVAPI_RESPONSE_FAILURE;
   }
   url.append(vtnname);
-  const char* request = create_request_body(val_vtn);
+  unc::restjson::JsonBuildParse json_obj;
+
+  json_object* jobj_request = create_request_body(val_vtn);
+  const char* request = NULL;
+  if (!(json_object_is_type(jobj_request, json_type_null))) {
+    request = json_obj.get_string(jobj_request);
+  }
   pfc_log_debug(" Request body formed %s", request);
-  uint32_t resp = get_controller_response_code(url, ctr_ptr,
-                                               unc::restjson::HTTP_METHOD_PUT,
-                                               request);
-  if (RESP_OK != resp) {
+
+  std::string user_name = "";
+  std::string password = "";
+  get_username_password(ctr_ptr, user_name, password);
+  pfc_log_debug("Request body formed in create_cmd : %s", request);
+  uint32_t odc_port = 0;
+  uint32_t connect_time_out = 0;
+  uint32_t req_time_out = 0;
+  read_conf_file(odc_port, connect_time_out, req_time_out);
+
+  restjson::RestClient rest_client_obj(ipaddress, url,
+                       odc_port, restjson::HTTP_METHOD_PUT);
+  unc::restjson::HttpResponse_t* response = rest_client_obj.send_http_request(
+      user_name, password, connect_time_out, req_time_out,
+      request);
+  json_object_put(jobj_request);
+  if (NULL == response) {
+    pfc_log_error("Error Occured while getting httpresponse");
     return DRVAPI_RESPONSE_FAILURE;
   }
-  pfc_log_debug("response code returned in updatevtn is %d", resp);
-  pfc_log_debug("%s Exiting function", PFC_FUNCNAME);
-
-  pfc_log_debug("%s Exiting function", PFC_FUNCNAME);
+  int resp_code = response->code;
+  pfc_log_debug("response code returned in updatevtn is %d", resp_code);
+  rest_client_obj.clear_http_response();
+  if (HTTP_200_RESP_OK != resp_code) {
+    return DRVAPI_RESPONSE_FAILURE;
+  }
   return DRVAPI_RESPONSE_SUCCESS;
 }
 
-// Get all child of vtns
-drv_resp_code_t ODCVTNCommand::get_vtn_child(std::string vtn_name,
-                                             unc::driver::controller* ctr,
-                                             std::vector< unc::vtndrvcache
-                                             ::ConfigNode *>
-                                             &cfgnode_vector) {
-  pfc_log_debug("%s Entering function", PFC_FUNCNAME);
-  if (0 == strlen(vtn_name.c_str())) {
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-  std::string url = "";
-  url.append(VTN_URL);
-  url.append("/");
-  url.append(vtn_name);
-  url.append("/vbridges");
-  pfc_log_debug("%s Entering function, url:%s", PFC_FUNCNAME, url.c_str());
-
-  PFC_ASSERT(NULL != ctr);
-  std::string ipaddress = ctr->get_host_address();
-  if (0 == strlen(ipaddress.c_str())) {
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-
-  restjson::RestClient rest_util_obj(ipaddress, ODC_PORT);
-  std::string username_ctr = ctr->get_user_name();
-  std::string password_ctr = ctr->get_pass_word();
-
-  uint32_t retval = ODC_DRV_FAILURE;
-  if ((0 == strlen(username_ctr.c_str()))
-      || (0 == strlen(password_ctr.c_str()))) {
-    retval = rest_util_obj.set_username_password(USER_NAME, PASS_WORD);
-  } else {
-    retval = rest_util_obj.set_username_password(username_ctr, password_ctr);
-  }
-  if (ODC_DRV_FAILURE == retval) {
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-  retval = rest_util_obj.set_timeout(CONNECTION_TIME_OUT, REQUEST_TIME_OUT);
-  if (ODC_DRV_FAILURE == retval) {
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-  retval = rest_util_obj.create_request_header(url, restjson::HTTP_METHOD_GET);
-  if (ODC_DRV_FAILURE == retval) {
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-  uint32_t resp = rest_util_obj.send_request_and_get_response_code();
-  if (RESP_OK != resp) {
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-  restjson::HttpContent_t* content =  rest_util_obj.get_response_body();
-  if (content == NULL) {
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-  char *data = content->memory;
-  pfc_log_debug("%s Exiting function", PFC_FUNCNAME);
-  return parse_vbr_resp_data(data, vtn_name, ctr, cfgnode_vector);
+//  fetch all child configuration for the parent key type(root)
+drv_resp_code_t OdcVtnCommand::fetch_config(unc::driver::controller* ctr,
+                                   void* parent_key,
+                                   std::vector<unc::vtndrvcache::ConfigNode *>
+                                   &cfgnode_vector) {
+  ODC_FUNC_TRACE;
+  return get_vtn_list(ctr, cfgnode_vector);
 }
 
 // Gets the Controller Response code
-drv_resp_code_t ODCVTNCommand::read_all(unc::driver::controller* ctr,
-                            std::vector<unc::vtndrvcache::ConfigNode *>
-                            &cfgnode_vector) {
-  pfc_log_debug("Entering function ... %s", PFC_FUNCNAME);
+drv_resp_code_t OdcVtnCommand::get_vtn_list(unc::driver::controller* ctr,
+                               std::vector<unc::vtndrvcache::ConfigNode *>
+                               &cfgnode_vector) {
+  ODC_FUNC_TRACE;
   PFC_ASSERT(NULL != ctr);
-  std::string ipaddress = ctr->get_host_address();
+  std::string ip_address = ctr->get_host_address();
+  std::string user_name = "";
+  std::string password = "";
+  get_username_password(ctr, user_name, password);
+  uint32_t odc_port = 0;
+  uint32_t connect_time_out = 0;
+  uint32_t req_time_out = 0;
+  read_conf_file(odc_port, connect_time_out, req_time_out);
+  std::string url = "";
+  url.append(BASE_URL);
+  url.append(CONTAINER_NAME);
+  url.append(VTNS);
+  restjson::RestClient rest_client_obj(ip_address, url,
+                                       odc_port, restjson::HTTP_METHOD_GET);
+  unc::restjson::HttpResponse_t* response = rest_client_obj.send_http_request(
+      user_name, password, connect_time_out, req_time_out,
+      NULL);
 
-  if (0 == strlen(ipaddress.c_str())) {
+  if (NULL == response) {
+    pfc_log_error("Error Occured while getting httpresponse -- ");
     return DRVAPI_RESPONSE_FAILURE;
   }
-  restjson::RestClient rest_util_obj(ipaddress, ODC_PORT);
-  std::string username_ctr = ctr->get_user_name();
-  std::string password_ctr = ctr->get_pass_word();
-
-  uint32_t retval = ODC_DRV_FAILURE;
-  if ((0 == strlen(username_ctr.c_str()))
-      || (0 == strlen(password_ctr.c_str()))) {
-    retval = rest_util_obj.set_username_password(USER_NAME, PASS_WORD);
-  } else {
-    retval = rest_util_obj.set_username_password(username_ctr, password_ctr);
-  }
-  if (ODC_DRV_FAILURE == retval) {
+  int resp_code = response->code;
+  if (HTTP_200_RESP_OK != resp_code) {
+    pfc_log_error("%d error resp ", resp_code);
+    rest_client_obj.clear_http_response();
     return DRVAPI_RESPONSE_FAILURE;
   }
-  retval = rest_util_obj.set_timeout(CONNECTION_TIME_OUT, REQUEST_TIME_OUT);
-  if (ODC_DRV_FAILURE == retval) {
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-
-  retval = rest_util_obj.create_request_header(VTN_URL,
-                                               restjson::HTTP_METHOD_GET);
-  if (ODC_DRV_FAILURE == retval) {
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-  uint32_t resp = rest_util_obj.send_request_and_get_response_code();
-  pfc_log_debug("%d resp ", resp);
-  if (RESP_OK != resp) {
-    pfc_log_debug("Error in response code");
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-  restjson::HttpContent_t* content =  rest_util_obj.get_response_body();
-  if (content == NULL) {
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-  char *data = content->memory;
-  pfc_log_debug("data in ODCVTN %s", data);
-  if (0 == strlen(data)) {
-    pfc_log_debug(" %s No vtn present in controller ", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_NO_SUCH_INSTANCE;
-  }
-  drv_resp_code_t ret_val =  parse_resp_data(data, cfgnode_vector);
-  pfc_log_debug("read_all_--  size, %d",
-                static_cast<int>(cfgnode_vector.size()));
-  pfc_log_debug("%s Exiting function", PFC_FUNCNAME);
-  return ret_val;
-}
-
-// Prsing fuction for vbridge after getting vbridge from controller
-drv_resp_code_t ODCVTNCommand::parse_vbr_resp_data(char *data,
-                                                   std::string vtn_name,
-                                                   unc::driver::controller* ctr,
-                                                   std::vector< unc::vtndrvcache
-                                                   ::ConfigNode *>
-                                                   &cfgnode_vector) {
-  pfc_log_debug("Entering function ... %s", PFC_FUNCNAME);
-  key_vbr_t key_vbr;
-  val_vbr_t val_vbr;
-  memset(&key_vbr, 0, sizeof(key_vbr_t));
-  memset(&val_vbr, 0, sizeof(val_vbr_t));
-
-  json_object* jobj = restjson::JsonBuildParse::string_to_json_object(data);
-  if (json_object_is_type(jobj, json_type_null)) {
-    pfc_log_error("Exit parse_vbr_resp_data. json_object_is_type error");
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-  pfc_log_debug("response data from controller : %s", data);
-  uint32_t array_length = 0;
-  json_object *json_obj_vbr = NULL;
-
-  uint32_t ret_val = restjson::JsonBuildParse::parse(jobj, "vbridge", -1 ,
-                                                json_obj_vbr);
-  if (ret_val) {
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-
-  if (json_object_is_type(json_obj_vbr, json_type_array)) {
-    array_length = restjson::JsonBuildParse::get_array_length(jobj, "vbridge");
-  }
-  pfc_log_debug(" array _length %d" , array_length);
-  if (json_object_is_type(jobj, json_type_null)) {
-    pfc_log_debug("%s jobj NULL", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-  for (uint32_t arr_idx = 0; arr_idx < array_length; arr_idx++) {
-    drv_resp_code_t retval = parse_vbr_append_vector(ctr, json_obj_vbr,
-                                                     vtn_name,
-                                                     arr_idx,
-                                                     cfgnode_vector);
-    if (DRVAPI_RESPONSE_FAILURE == retval) {
-      pfc_log_error("Error in parsing vbr resp data in %s", PFC_FUNCNAME);
-      return DRVAPI_RESPONSE_FAILURE;
+  if (NULL != response->write_data) {
+    if (NULL != response->write_data->memory) {
+      char *data = response->write_data->memory;
+      pfc_log_debug("vtns present : %s", data);
+      drv_resp_code_t ret_val =  parse_vtn_response(data, cfgnode_vector);
+      rest_client_obj.clear_http_response();
+      pfc_log_debug("read_all_--  size, %d",
+                    static_cast<int>(cfgnode_vector.size()));
+      return ret_val;
     }
   }
-  pfc_log_debug("cfgnode_vector.size: %d" ,
-                static_cast<int>(cfgnode_vector.size()));
-  pfc_log_debug("Exiting function ... %s", PFC_FUNCNAME);
-  return DRVAPI_RESPONSE_SUCCESS;
+  rest_client_obj.clear_http_response();
+  return DRVAPI_RESPONSE_FAILURE;
 }
 
-// each vbridge node append to cache
-drv_resp_code_t ODCVTNCommand::parse_vbr_append_vector(
-    unc::driver::controller* ctr, json_object *json_obj_vbr,
-    std::string vtn_name, uint32_t arr_idx,
-    std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
-  pfc_log_debug("Entering function ... %s", PFC_FUNCNAME);
-  key_vbr_t key_vbr;
-  val_vbr_t val_vbr;
-  memset(&key_vbr, 0, sizeof(key_vbr_t));
-  memset(&val_vbr, 0, sizeof(val_vbr_t));
-  std::string vbr_name = "";
-  std::string vbr_description = "";
-
-  uint32_t ret_val = restjson::JsonBuildParse::parse(json_obj_vbr, "name",
-                                                arr_idx, vbr_name);
-  if (ret_val) {
-    pfc_log_error("Error occured while parsing vbr name");
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-
-  ret_val = restjson::JsonBuildParse::parse(json_obj_vbr, "description",
-                                            arr_idx, vbr_description);
-  if (ret_val) {
-    pfc_log_error(" Error occured while parsing vbr description");
-    return DRVAPI_RESPONSE_FAILURE;
-  }
-  //  Fills the vbr KEY structure
-  strncpy(reinterpret_cast<char*> (key_vbr.vtn_key.vtn_name), vtn_name.c_str(),
-          sizeof(key_vbr.vtn_key.vtn_name) - 1);
-  pfc_log_debug("vtn :%s", reinterpret_cast<char*> (key_vbr.vtn_key.vtn_name));
-
-  strncpy(reinterpret_cast<char*> (key_vbr.vbridge_name), vbr_name.c_str(),
-          sizeof(key_vbr.vbridge_name) - 1);
-  pfc_log_error(" vbr :%s", reinterpret_cast<char*> (key_vbr.vbridge_name));
-
-  //  Fills the vbr VAL structure
-  if (0 == strlen(vbr_description.c_str())) {
-    val_vbr.valid[UPLL_IDX_DESC_VBR] = UNC_VF_INVALID;
-  } else {
-    strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
-            vbr_description.c_str(), sizeof(val_vbr.vbr_description) - 1);
-    val_vbr.valid[UPLL_IDX_DESC_VBR] = UNC_VF_VALID;
-  }
-  pfc_log_debug("desc :%s", reinterpret_cast<char*> (val_vbr.vbr_description));
-
-  std::string controller_name = ctr->get_controller_id();
-  if (0 == strlen(controller_name.c_str())) {
-    val_vbr.valid[UPLL_IDX_CONTROLLER_ID_VBR] = UNC_VF_INVALID;
-  } else {
-    strncpy(reinterpret_cast<char*>(val_vbr.controller_id),
-            controller_name.c_str(), sizeof(val_vbr.controller_id) - 1);
-    pfc_log_debug(" %s controller id",
-                  reinterpret_cast<char*>(val_vbr.controller_id));
-    val_vbr.valid[UPLL_IDX_CONTROLLER_ID_VBR] = UNC_VF_VALID;
-  }
-  std::string host_address = ctr->get_host_address();
-  if (0 == strlen(host_address.c_str())) {
-    val_vbr.valid[UPLL_IDX_HOST_ADDR_VBR] = UNC_VF_INVALID;
-  } else {
-    uint32_t val = inet_aton(host_address.c_str(), &val_vbr.host_addr);
-    if (val) {
-      pfc_log_debug(" %s host address", inet_ntoa(val_vbr.host_addr));
-      val_vbr.valid[UPLL_IDX_HOST_ADDR_VBR] = UNC_VF_VALID;
-    }
-  }
-  strncpy(reinterpret_cast<char*> (val_vbr.domain_id), DOM_NAME.c_str(),
-          sizeof(val_vbr.domain_id) - 1);
-  val_vbr.valid[UPLL_IDX_DOMAIN_ID_VBR] = UNC_VF_VALID;
-
-  unc::vtndrvcache::ConfigNode *cfgptr =
-      new unc::vtndrvcache::CacheElementUtil<key_vbr_t, val_vbr_t, uint32_t> (
-          &key_vbr,
-          &val_vbr,
-          uint32_t(UNC_OP_READ));
-  PFC_ASSERT(cfgptr != NULL);
-  cfgnode_vector.push_back(cfgptr);
-  pfc_log_debug("parse_vbr_append_vector Exiting. cfgnode_vector size: %d",
-                static_cast<int>(cfgnode_vector.size()));
-  pfc_log_debug("Exiting function ... %s", PFC_FUNCNAME);
-
-  return DRVAPI_RESPONSE_SUCCESS;
-}
-
-// each vtn node append to cache
-drv_resp_code_t ODCVTNCommand::parse_vtn_append_vector(
+// parse each vtn node append to cache
+drv_resp_code_t OdcVtnCommand::fill_config_node_vector(
     json_object *json_obj_vtn, int arr_idx,
     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
-  pfc_log_debug("Entering function ... %s", PFC_FUNCNAME);
+  ODC_FUNC_TRACE;
   key_vtn_t key_vtn;
   val_vtn_t val_vtn;
   memset(&key_vtn, 0, sizeof(key_vtn_t));
@@ -554,14 +287,14 @@ drv_resp_code_t ODCVTNCommand::parse_vtn_append_vector(
   uint32_t ret_val = restjson::JsonBuildParse::parse(json_obj_vtn, "name",
                                               arr_idx, vtn_name);
   pfc_log_debug(" vtn_name %s:", vtn_name.c_str());
-  if (ret_val) {
+  if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
     pfc_log_debug(" Error while parsing vtn name");
     return DRVAPI_RESPONSE_FAILURE;
   }
   ret_val = restjson::JsonBuildParse::parse(json_obj_vtn, "description",
                                             arr_idx, vtn_description);
   pfc_log_debug(" vtn_description %s:", vtn_description.c_str());
-  if (ret_val) {
+  if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
     pfc_log_debug(" Error while parsing vtn description");
     return DRVAPI_RESPONSE_FAILURE;
   }
@@ -587,31 +320,34 @@ drv_resp_code_t ODCVTNCommand::parse_vtn_append_vector(
       (&key_vtn, &val_vtn, uint32_t(UNC_OP_READ));
   PFC_ASSERT(cfgptr != NULL);
   cfgnode_vector.push_back(cfgptr);
-  pfc_log_debug("Exiting function ... %s", PFC_FUNCNAME);
   return DRVAPI_RESPONSE_SUCCESS;
 }
 
 // parsing function for converting controller response to driver format
-drv_resp_code_t ODCVTNCommand::parse_resp_data(char *data,
+drv_resp_code_t OdcVtnCommand::parse_vtn_response(char *data,
                                                std::vector< unc::vtndrvcache
                                                ::ConfigNode *>
                                                &cfgnode_vector) {
-  pfc_log_debug("Entering function ... %s", PFC_FUNCNAME);
-  json_object* jobj = restjson::JsonBuildParse::string_to_json_object(data);
+  ODC_FUNC_TRACE;
+  json_object* jobj = restjson::JsonBuildParse::get_json_object(data);
   if (json_object_is_type(jobj, json_type_null)) {
-    pfc_log_error("Exit. json_object_is_type error");
+    pfc_log_error("json_object_is_type error");
+    json_object_put(jobj);
     return DRVAPI_RESPONSE_FAILURE;
   }
   uint32_t array_length =0;
   json_object *json_obj_vtn = NULL;
   uint32_t ret_val = restjson::JsonBuildParse::parse(jobj, "vtn", -1,
                                                      json_obj_vtn);
-  if (ret_val) {
-    return DRVAPI_RESPONSE_FAILURE;
-  }
 
   if (json_object_is_type(json_obj_vtn, json_type_null)) {
-    pfc_log_debug("Parsing Error json_obj_vtn is null");
+    json_object_put(jobj);
+    pfc_log_error("Parsing Error json_obj_vtn is null");
+    return DRVAPI_RESPONSE_FAILURE;
+  }
+  if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
+    json_object_put(jobj);
+    pfc_log_error("Error in parsing the json_obj_vtn");
     return DRVAPI_RESPONSE_FAILURE;
   }
   if (json_object_is_type(json_obj_vtn, json_type_array)) {
@@ -620,53 +356,92 @@ drv_resp_code_t ODCVTNCommand::parse_resp_data(char *data,
   pfc_log_debug("vtn array length : %d", array_length);
   if (0 == array_length) {
     pfc_log_debug("inside 0==arraylength");
+    json_object_put(jobj);
     return DRVAPI_RESPONSE_NO_SUCH_INSTANCE;
   }
   for (uint32_t arr_idx = 0; arr_idx < array_length; arr_idx++) {
-    drv_resp_code_t ret_val = parse_vtn_append_vector(json_obj_vtn, arr_idx,
+    drv_resp_code_t ret_val = fill_config_node_vector(json_obj_vtn, arr_idx,
                                                       cfgnode_vector);
-    if (ret_val == DRVAPI_RESPONSE_FAILURE) {
-      pfc_log_debug(" return from parse_vtn_append_vector failure");
+    if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
+      json_object_put(jobj);
+      pfc_log_error("Error return from parse_vtn_append_vector failure");
       return ret_val;
     }
   }
-
-  pfc_log_debug("Exiting function ... %s", PFC_FUNCNAME);
+  json_object_put(jobj);
   return DRVAPI_RESPONSE_SUCCESS;
 }
 
 // Delete Request send to the Contoller
-drv_resp_code_t ODCVTNCommand::delete_cmd(key_vtn_t& key_vtn,
+drv_resp_code_t OdcVtnCommand::delete_cmd(key_vtn_t& key_vtn,
                                           val_vtn_t& val_vtn,
                                           unc::driver::controller *ctr_ptr) {
-  pfc_log_debug("%s Entering function", PFC_FUNCNAME);
+  ODC_FUNC_TRACE;
   char* vtnname = NULL;
   std::string url = "";
-  url.append(VTN_URL);
+  url.append(BASE_URL);
+  url.append(CONTAINER_NAME);
+  url.append(VTNS);
   url.append("/");
   PFC_ASSERT(ctr_ptr != NULL);
   std::string ipaddress = ctr_ptr->get_host_address();
-  if (0 == strlen(ipaddress.c_str())) {
-    return DRVAPI_RESPONSE_FAILURE;
-  }
   vtnname = reinterpret_cast<char*>(key_vtn.vtn_name);
   if (0 == strlen(vtnname)) {
+    pfc_log_error("Empty vtn name in %s", PFC_FUNCNAME);
     return DRVAPI_RESPONSE_FAILURE;
   }
   url.append(vtnname);
 
-  uint32_t resp = get_controller_response_code(url, ctr_ptr,
-                                               unc::restjson
-                                               ::HTTP_METHOD_DELETE,
-                                               NULL);
-  if (RESP_OK != resp) {
+  std::string user_name = "";
+  std::string password = "";
+  get_username_password(ctr_ptr , user_name, password);
+  uint32_t odc_port = 0;
+  uint32_t connect_time_out = 0;
+  uint32_t req_time_out = 0;
+  read_conf_file(odc_port, connect_time_out, req_time_out);
+
+  restjson::RestClient rest_client_obj(ipaddress, url,
+                                odc_port, restjson::HTTP_METHOD_DELETE);
+  unc::restjson::HttpResponse_t* response = rest_client_obj.send_http_request(
+      user_name, password, connect_time_out, req_time_out, NULL);
+
+  if (NULL == response) {
+    pfc_log_error("Error Occured while getting httpresponse");
     return DRVAPI_RESPONSE_FAILURE;
   }
-  pfc_log_debug("response code returned in delete vtn is %d", resp);
-  pfc_log_debug("%s Exiting function", PFC_FUNCNAME);
-
-  pfc_log_debug("%s Exiting function", PFC_FUNCNAME);
+  int resp_code = response->code;
+  pfc_log_debug("response code returned in delete vtn is %d", resp_code);
+  rest_client_obj.clear_http_response();
+  if (HTTP_200_RESP_OK != resp_code) {
+    return DRVAPI_RESPONSE_FAILURE;
+  }
   return DRVAPI_RESPONSE_SUCCESS;
+}
+
+// Reads set opt params from conf file if it fails reads from defs file
+void OdcVtnCommand:: read_conf_file(uint32_t &odc_port,
+                                 uint32_t &connection_time_out,
+                                 uint32_t &request_time_out) {
+  ODC_FUNC_TRACE;
+  pfc::core::ModuleConfBlock set_opt_blk(SET_OPT_BLK);
+  if (set_opt_blk.getBlock() != PFC_CFBLK_INVALID) {
+    odc_port  = set_opt_blk.getUint32(CONF_ODC_PORT, DEFAULT_ODC_PORT);
+
+    request_time_out = set_opt_blk.getUint32(
+        CONF_REQ_TIME_OUT, DEFAULT_REQ_TIME_OUT);
+
+    connection_time_out = set_opt_blk.getUint32(
+        CONF_CONNECT_TIME_OUT, DEFAULT_CONNECT_TIME_OUT);
+    pfc_log_debug("%s: Block Handle is Valid, odc_port_ %d ", PFC_FUNCNAME,
+                  odc_port);
+
+  } else {
+    odc_port   =  DEFAULT_ODC_PORT;
+    connection_time_out = DEFAULT_CONNECT_TIME_OUT;
+    request_time_out = DEFAULT_REQ_TIME_OUT;
+    pfc_log_debug("%s: Block Handle is Invalid,set default Value %d ",
+                  PFC_FUNCNAME, odc_port);
+  }
 }
 }  // namespace odcdriver
 }  // namespace unc

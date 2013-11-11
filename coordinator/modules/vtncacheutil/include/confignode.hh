@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2013 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,19 +11,23 @@
 
 #include <pfc/debug.h>
 #include <pfc/log.h>
+#include <unc/unc_base.h>
 #include <string>
 #include <map>
 #include <vector>
 #include "unc/keytype.h"
+#include "uncxx/odc_log.hh"
 
 unsigned const NUM_SPACES = 4;
+unsigned const CACHEMGR_CONFIGARR_SIZE = 50;
+
 
 namespace unc {
 namespace vtndrvcache {
 
 /**
  * @brief     : Returns the type string corresponding the the keytype. This is used
- to print the keytree structure
+ *            : to print the keytree structure
  * param[in]  : search_type
  * @retval    : string
  */
@@ -42,43 +46,51 @@ class ConfigNode {
   virtual ~ConfigNode() {}
 
   /**
-   * @brief    : Method to retrieve each node from the Keytree and populate in
-   *             the vector
-   * param[in] : value_list
-   * @retval   : iuint32_t
+   * @brief    : Method to retrieve node from the Keytree and populate in
+   *             the vector value_list
+   * param[in] : value_list(vector of ConfigNode*)
+   * @retval   : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS)
    */
-  uint32_t get_node_list(std::vector<ConfigNode*>&value_list);
+  drv_resp_code_t get_node_list(std::vector<ConfigNode*>&value_list);
 
   /**
    * @brief   : This virtual method returns the Keytype of a node
    * @retval  : unc_key_type_t
    */
-  virtual unc_key_type_t get_type() {
+  virtual unc_key_type_t get_type_name() {
     return (unc_key_type_t) -1;
   }
 
   /**
    * @brief   : This virtual method returns the Search Key of the node
-   * @retval  : string
+   * @retval  : string(return combined of child plus parent name and so on)
    */
-  virtual std::string get_key() {
+  virtual std::string get_key_generate() {
+    return "";
+  }
+
+  /**
+   * @brief   : This virtual method returns the name of the key
+   * @retval  : string (return name of vtn and vbridge)
+   */
+  virtual std::string get_key_name() {
     return "";
   }
 
   /**
    * @brief  : This virtual method returns the parent Key of the node
-   * @retval : string
+   * @retval : string(return combined of parent and parent name and so on)
    */
-  virtual std::string get_parent_key() {
+  virtual std::string get_parent_key_name() {
     return "";
   }
 
   /**
-   * @brief    : This method inserts the node in the cache
+   * @brief    : This method Adds the node under the given parent in cache
    * param[in] : confignode *
-   * @retval   : uint32_t
+   * @retval   : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS)
    */
-  uint32_t add_child_to_list(ConfigNode *node_ptr);
+  drv_resp_code_t add_child_to_list(ConfigNode *node_ptr);
 
   /**
    * @brief    : This method prints each node information
@@ -97,7 +109,7 @@ class ConfigNode {
 
   /**
    * @brief  : This virtual method returns the operation
-   * @retval : string
+   * @retval : uint32_t(create/update/delete)
    */
   virtual uint32_t get_operation() {
     return operation_;
@@ -108,14 +120,16 @@ class ConfigNode {
    * @param[in] : none
    * @retval    : node count
    */
-  uint32_t get_cfgnode_count() {
-    return cfgnode_count_;
-  }
 
  protected:
+  /**
+   * @brief : child_list_ is a map to contain the configuration in tree manner
+   */
   std::map<unc_key_type_t, std::vector<ConfigNode*> > child_list_;
+  /**
+   * @brief : Operation contain whether create/update/delete
+   */
   uint32_t operation_;
-  uint32_t cfgnode_count_;
 };
 
 class RootNode : public ConfigNode {
@@ -134,7 +148,7 @@ class RootNode : public ConfigNode {
    * @brief  : This method return root
    * @retval : UNC_KT_ROOT
    */
-  unc_key_type_t get_type() {
+  unc_key_type_t get_type_name() {
     return UNC_KT_ROOT;
   }
 

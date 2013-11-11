@@ -1,13 +1,10 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2013 NEC Corporation
  * All rights reserved.
  *
- * This program and the accompanying materials are made
- * available under the
- * terms of the Eclipse Public License v1.0 which
- * accompanies this
- * distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
 #ifndef __VTNDRVMOD_HH__
@@ -22,10 +19,8 @@
 #include <driver/driver_command.hh>
 #include <vtn_drv_transaction_handle.hh>
 #include <driver/driver_interface.hh>
-#include <vtndrvintf_defs.h>
 #include <request_template.hh>
 #include <map>
-#define PFC_IPCINT_EVSESS_OK 0
 
 namespace unc {
 namespace driver {
@@ -34,14 +29,10 @@ class VtnDrvIntf :public pfc::core::Module {
  public:
   /**
    * @brief     : Constructor
-   * @param[in] :  pfc_modattr_t*
+   * @param[in] : pfc_modattr_t*
    **/
   explicit VtnDrvIntf(const pfc_modattr_t* attr);
 
-  /**
-   * @brief : TaskQueue*
-   */
-  pfc::core::TaskQueue* taskq_;
 
   /**
    * @brief : Destructor
@@ -63,12 +54,12 @@ class VtnDrvIntf :public pfc::core::Module {
   pfc_bool_t fini(void);
 
   /**
-   * @brief     : This Function is called to register the driver handler
-   *              with respect to the controller type
-   * @param[in] : driver *
+   * @brief     : Used register the driver handler with respect to the
+   *              controller type
+   * @param[in] : driver pointer
    * @return    : VTN_DRV_RET_FAILURE /VTN_DRV_RET_SUCCESS
    **/
-  VtnDrvRetEnum register_driver(driver *drvobj);
+  VtnDrvRetEnum register_driver(driver *drv_obj);
 
   /**
    * @brief     : This Function recevies the ipc request and process the same
@@ -80,34 +71,38 @@ class VtnDrvIntf :public pfc::core::Module {
 
   /**
    * @brief     : This function parse the session and fills
-   *              keyif_drv_request_header_t
+   *              odl_drv_request_header_t
    * @param[in] : sess, request_hdr
    * @retval    : VTN_DRV_RET_FAILURE /VTN_DRV_RET_SUCCESS
    */
   VtnDrvRetEnum get_request_header(pfc::core::ipc::ServerSession*sess,
-                            keyif_drv_request_header_t &request_hdr);
+                            odl_drv_request_header_t &request_hdr);
 
   /**
-   * @brief     : This Function  returns the  kt_handler for
+   * @brief     : This Function  returns the key type handler pointer for
    *              the appropriate key types
    * @param[in] : key type
-   * @retval    : KtHandler*
+   * @retval    : KtHandler pointer
    */
   KtHandler*  get_kt_handler(unc_key_type_t kt);
 
   /**
-   * @brief     : This Function  intialize ctrl_inst
-   * @param[in] : ctrl_inst
+   * @brief     : This Function  intialize controller instance
+   * @param[in] : ControllerFramework pointer
    * @retval    : None
    */
   void  set_controller_instance(ControllerFramework* ctrl_inst) {
     ctrl_inst_ =  ctrl_inst;
   }
 
+  // used for Controller ping
+  pfc::core::TaskQueue* taskq_;
+
  private:
+  // To store key type handler pointer for supported keytypes
   std::map <unc_key_type_t, unc::driver::KtHandler*> map_kt_;
-  pfc::core::ReadWriteLock kt_installer_wrlock_;
-  pfc::core::ReadWriteLock drvcmds_installer_wrlock_;
+
+  // To store ControllerFramework instance
   ControllerFramework* ctrl_inst_;
 };
 }  // namespace driver

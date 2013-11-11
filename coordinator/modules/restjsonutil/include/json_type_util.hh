@@ -1,24 +1,22 @@
 /*
- * copyright (c) 2012-2013 nec corporation
- * all rights reserved.
+ * Copyright (c) 2013 NEC Corporation
+ * All rights reserved.
  *
- * this program and the accompanying materials are made
- * available under the
- * terms of the eclipse public license v1.0 which
- * accompanies this
- * distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-#ifndef restjson_json_type_h_
-#define restjson_json_type_h_
+#ifndef JSON_TYPE_UTIL_H_
+#define JSON_TYPE_UTIL_H_
 
 #include <json/json.h>
+#include <uncxx/odc_log.hh>
 #include <string>
 
 namespace unc {
 namespace restjson {
-class JsonType {
+class JsonTypeUtil {
  private:
   /**
    * json object
@@ -31,7 +29,8 @@ class JsonType {
    *                    - creates json object of type string
    * @param[in] strdata - string value
    */
-  explicit JsonType(std::string strdata) {
+  explicit JsonTypeUtil(std::string strdata) {
+    ODC_FUNC_TRACE;
     jobj_ = json_object_new_string(strdata.c_str());
   }
 
@@ -40,7 +39,8 @@ class JsonType {
    *                      - creates json object of type int
    * @param[in] intdata   -  integer value
    */
-  explicit JsonType(int intdata) {
+  explicit JsonTypeUtil(int intdata) {
+    ODC_FUNC_TRACE;
     jobj_ = json_object_new_int(intdata);
   }
 
@@ -49,7 +49,8 @@ class JsonType {
    *                      - Creates json object of type json object
    * @param[in] jsondata  - json object
    */
-  explicit JsonType(json_object* jsondata) {
+  explicit JsonTypeUtil(json_object* jsondata) {
+    ODC_FUNC_TRACE;
     jobj_ = jsondata;
   }
 
@@ -61,6 +62,7 @@ class JsonType {
    * return                 - None
    */
   static void get_value(json_object* jobjval, std::string &val) {
+    ODC_FUNC_TRACE;
     val = json_object_get_string(jobjval);
   }
 
@@ -72,6 +74,7 @@ class JsonType {
    * return                  - None
    */
   static void get_value(json_object* jobjval, int &val) {
+    ODC_FUNC_TRACE;
     val = json_object_get_int(jobjval);
   }
 
@@ -84,14 +87,16 @@ class JsonType {
    */
 
   static void get_value(json_object* jobjval, json_object*& jobjgetval) {
+    ODC_FUNC_TRACE;
     jobjgetval = jobjval;
   }
 
   /**
    * @brief                   - gets the JsonData
-   * @param[out] json_object* - json_object
+   * @return     json_object* - json_object
    */
   json_object* get_json_data() {
+    ODC_FUNC_TRACE;
     return jobj_;
   }
 };

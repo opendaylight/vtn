@@ -1,14 +1,11 @@
- /*
-* Copyright (c) 2012-2013 NEC Corporation
-* All rights reserved.
-*
-* This program and the accompanying materials are made
-* available under the
-* terms of the Eclipse Public License v1.0 which
-* accompanies this
-* distribution, and is available at
-* http://www.eclipse.org/legal/epl-v10.html
-*/
+/*
+ * Copyright (c) 2013 NEC Corporation
+ * All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
 
 #ifndef __HANDLER_HH__
 #define __HANDLER_HH__
@@ -32,21 +29,21 @@ typedef struct {
     uint32_t option1;  // Option1.
     uint32_t option2;  // Option2.
     uint32_t data_type;  // Data type.
-} keyif_drv_common_header_t;
+} odl_drv_common_header_t;
 
 typedef struct {
-    keyif_drv_common_header_t header;
+    odl_drv_common_header_t header;
     unc_key_type_t key_type;  // Key type.
     char controller_name[32];  // Controller Name.
     uint8_t version[32];  // Version.
-} keyif_drv_request_header_t;
+} odl_drv_request_header_t;
 
 typedef struct {
-    keyif_drv_common_header_t header;
+    odl_drv_common_header_t header;
     char controller_name[32];  // Controller Name.
     uint32_t result;  // Result code.
     uint32_t key_type;  // Key type.
-} keyif_drv_response_header_t;
+} odl_drv_response_header_t;
 
 typedef enum {
   IPC_SESSION_ID_INDEX = 0,  /* IPC session_id */

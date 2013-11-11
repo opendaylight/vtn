@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2013 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,9 +9,9 @@
 #ifndef __VTN_CONF_DATA_ELEMENT_OP_HH__
 #define __VTN_CONF_DATA_ELEMENT_OP_HH__
 
-#include<string>
-#include "vtn_conf_utility.hh"
+#include <string>
 #include "confignode.hh"
+#include "vtn_conf_utility.hh"
 
 namespace unc {
 namespace vtndrvcache {
@@ -20,14 +20,15 @@ class CacheElementUtil: public  ConfigNode {
  private:
   key* key_;
   value* value_;
-  op operation;
+  op operation_;
 
  public:
   /**
-   * @brief  : Constructor to set the key struct, value structure & operation
+   * @brief  : Constructor to set the key struct, value structure & operation_
    */
   CacheElementUtil(key* key_ty, value* value_ty, op opet):
-      operation(opet) {
+      operation_(opet) {
+        ODC_FUNC_TRACE;
         key_ = new key();
         PFC_ASSERT(key_ != NULL);
         value_ = new value();
@@ -35,14 +36,13 @@ class CacheElementUtil: public  ConfigNode {
 
         memcpy(key_, key_ty, sizeof(key));
         memcpy(value_, value_ty, sizeof(value));
-        pfc_log_debug("In constructor %s..", PFC_FUNCNAME);
       }
 
   /**
    * @brief : Destructor to free the key struct, value structure
    */
   ~CacheElementUtil() {
-    pfc_log_debug("In destructor %s..", PFC_FUNCNAME);
+    ODC_FUNC_TRACE;
     if (key_ != NULL)
       delete key_;
 
@@ -51,23 +51,20 @@ class CacheElementUtil: public  ConfigNode {
   }
 
   /**
-   * @brief       : This method returns the Keytype given the key struct
-   * @retval      : key_Type
+   * @brief  : This method returns the Keytype given the key struct
+   * @retval : key_type
    */
-  unc_key_type_t  get_type() {
-    pfc_log_debug("In function %s..", PFC_FUNCNAME);
-    if (key_ != NULL) {
-      return ConfUtil::get_key_type(*key_);
-    }
-    return  UNC_KT_INVALID;
+  unc_key_type_t  get_type_name() {
+    ODC_FUNC_TRACE;
+    return ConfUtil::get_key_type(*key_);
   }
 
   /**
-   * @brief        : This method returns the search Key given the key struct
-   * @retval       : string
+   * @brief   : This method returns the search Key given the key struct
+   * @retval  : string
    */
-  std::string  get_key() {
-    pfc_log_debug("In %s function ", PFC_FUNCNAME);
+  std::string  get_key_generate() {
+    ODC_FUNC_TRACE;
     if (key_ != NULL) {
       return ConfUtil::get_search_key(*key_);
     }
@@ -75,11 +72,23 @@ class CacheElementUtil: public  ConfigNode {
   }
 
   /**
-   * @brief       : This method returns the parent Key given the key struct
-   * @retval      : string
+   * @brief   : This method returns the Key name given the key struct
+   * @retval  : string
    */
-  std::string  get_parent_key() {
-    pfc_log_debug("In %s function ", PFC_FUNCNAME);
+  std::string get_key_name() {
+    ODC_FUNC_TRACE;
+    if (key_ != NULL) {
+      return ConfUtil::get_key(*key_);
+    }
+    return "";
+  }
+
+  /**
+   * @brief   : This method returns the parent Key given the key struct
+   * @retval  : string
+   */
+  std::string  get_parent_key_name() {
+    ODC_FUNC_TRACE;
     if (key_ != NULL) {
       return ConfUtil::get_parent_key(*key_);
     }
@@ -87,30 +96,30 @@ class CacheElementUtil: public  ConfigNode {
   }
 
   /**
-   * @brief        : This method returns the key struct
-   * @retval       : key*
+   * @brief   : This method returns the key struct
+   * @retval  : key*
    */
-  key* getkey() {
-    pfc_log_debug("In %s function ", PFC_FUNCNAME);
+  key* get_key_structure() {
+    ODC_FUNC_TRACE;
     return key_;
   }
 
   /**
-   * @brief        : This method returns the value struct
-   * @retval       : key*
+   * @brief   : This method returns the value struct
+   * @retval  : key*
    */
-  value* getval() {
-    pfc_log_debug("Entering function %s..", PFC_FUNCNAME);
+  value* get_val_structure() {
+    ODC_FUNC_TRACE;
     return value_;
   }
 
   /**
-   * @brief        : This method returns the operation
-   * @retval       : operation
+   * @brief  : This method returns the operation_
+   * @retval : operation_
    */
   op get_operation() {
-    pfc_log_debug("Entering function %s..", PFC_FUNCNAME);
-    return operation;
+    ODC_FUNC_TRACE;
+    return operation_;
   }
 };
 }  // namespace vtndrvcache

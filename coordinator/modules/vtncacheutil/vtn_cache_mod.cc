@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2013 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,16 +11,12 @@
 namespace unc {
 namespace vtndrvcache {
 
-class vtndrvcachemod: public pfc::core::Module {
+class VtnDrvCacheMod: public pfc::core::Module {
  public:
   /**
-   ** @brief : vtndrvcachemod Constructor
+   ** @brief : VtnDrvCacheMod Constructor
    **/
-  explicit vtndrvcachemod(const pfc_modattr_t *mattr):
-
-  /**
-  ** @brief : Call Module constructor
-  **/
+  explicit VtnDrvCacheMod(const pfc_modattr_t *mattr):
   pfc::core::Module(mattr) { }
 
   /**
@@ -39,4 +35,4 @@ class vtndrvcachemod: public pfc::core::Module {
 };
 }  // namespace vtndrvcache
 }  // namespace unc
-PFC_MODULE_IPC_DECL(unc::vtndrvcache::vtndrvcachemod, 0);
+PFC_MODULE_IPC_DECL(unc::vtndrvcache::VtnDrvCacheMod, 0);

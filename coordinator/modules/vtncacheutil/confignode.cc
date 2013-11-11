@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2013 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -19,38 +19,38 @@ namespace vtndrvcache {
  * @retval     : string
  */
 std::string TypeToStrFun(unc_key_type_t search_type) {
-  std::string typeStr;
+  std::string TypeStr;
   switch (search_type) {
     case UNC_KT_VTN:
-      typeStr = std::string("UNC_KT_VTN");
+      TypeStr = std::string("UNC_KT_VTN");
       break;
 
     case UNC_KT_VBRIDGE:
-      typeStr = std::string("UNC_KT_VBRIDGE");
+      TypeStr = std::string("UNC_KT_VBRIDGE");
       break;
 
     case UNC_KT_VBR_IF:
-      typeStr = std::string("UNC_KT_VBR_IF");
+      TypeStr = std::string("UNC_KT_VBR_IF");
       break;
 
     case UNC_KT_ROOT:
-      typeStr = std::string("UNC_KT_ROOT");
+      TypeStr = std::string("UNC_KT_ROOT");
       break;
 
     default:
-      typeStr = std::string("Unknown");
-      pfc_log_debug("%s: key_type = %d", PFC_FUNCNAME,
+      TypeStr = std::string("Unknown");
+      pfc_log_info("%s: key_type = %d", PFC_FUNCNAME,
                    search_type);
       break;
   }
-  return typeStr;
+  return TypeStr;
 }
 
 /**
  * @brief : default constructor
  */
-ConfigNode::ConfigNode() : operation_(0), cfgnode_count_(0) {
-  pfc_log_debug("Entering default constructor %s..", PFC_FUNCNAME);
+ConfigNode::ConfigNode() : operation_(0) {
+  ODC_FUNC_TRACE;
   child_list_.clear();
 }
 
@@ -58,16 +58,17 @@ ConfigNode::ConfigNode() : operation_(0), cfgnode_count_(0) {
  * @brief     : Method to retrieve each node from the Keytree and populate in
                 the vector
  * @param[in] : ConfigNode value_list
- * @retval    : TREE_OK
+ * @retval    : DRVAPI_RESPONSE_SUCCESS
  */
-uint32_t ConfigNode::get_node_list(std::vector<ConfigNode*>& value_list) {
-  pfc_log_debug("Entering %s ", PFC_FUNCNAME);
+drv_resp_code_t ConfigNode::get_node_list(
+    std::vector<ConfigNode*>& value_list) {
+  ODC_FUNC_TRACE;
 
   // If the node doesn't have any child, this return can be
   // from the root node or to the recursive caller
   if (child_list_.empty()) {
-    pfc_log_debug("%s: No child list", PFC_FUNCNAME);
-    return TREE_OK;
+    pfc_log_info("%s: No child list", PFC_FUNCNAME);
+    return DRVAPI_RESPONSE_SUCCESS;
   }
 
   // Get the child list of each node
@@ -94,16 +95,16 @@ uint32_t ConfigNode::get_node_list(std::vector<ConfigNode*>& value_list) {
     }
   }
 
-  return TREE_OK;
+  return DRVAPI_RESPONSE_SUCCESS;
 }
 
 /**
- * @brief     : This method prints each node information
+ * @brief     : This method prints each node information(Debug Purpose Only)
  * @param[in] : level_index
  * @retval    : None
  */
 void ConfigNode::print(int level_index) {
-  pfc_log_debug("%s: Entering function....", PFC_FUNCNAME);
+  ODC_FUNC_TRACE;
   print_key(level_index);
 
   if (!child_list_.empty()) {
@@ -125,17 +126,15 @@ void ConfigNode::print(int level_index) {
       }
     }
   }
-
-  pfc_log_debug("%s: Exiting function....", PFC_FUNCNAME);
 }
 
 /**
  * @brief     : This method inserts the node in the cache
  * @param[in] : confignode *
- * @retval    : CACHEMGR_RESPONSE_FAILURE / TREE_OK
+ * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
  */
-uint32_t ConfigNode::add_child_to_list(ConfigNode *node_ptr) {
-  pfc_log_debug("%s:Entering", PFC_FUNCNAME);
+drv_resp_code_t ConfigNode::add_child_to_list(ConfigNode *node_ptr) {
+  ODC_FUNC_TRACE;
 
   std::map<unc_key_type_t, std::vector<ConfigNode*> >::iterator itr;
   std::map<unc_key_type_t, std::vector<ConfigNode*> >::iterator itr_end =
@@ -143,47 +142,45 @@ uint32_t ConfigNode::add_child_to_list(ConfigNode *node_ptr) {
 
   if (node_ptr == NULL) {
     pfc_log_error("%s : ConfigNode is NULL", PFC_FUNCNAME);
-    return CACHEMGR_RESPONSE_FAILURE;
+    return DRVAPI_RESPONSE_FAILURE;
   }
 
-  itr = child_list_.find(node_ptr->get_type());
+  itr = child_list_.find(node_ptr->get_type_name());
 
   //  If the child list already present for that node type, add the new
   //  child to the list..... else create new child list
   if (itr == itr_end) {
-    pfc_log_debug("add_child_to_list: Child list NOT present for %s ",
-                  TypeToStrFun(node_ptr->get_type()).c_str());
+    pfc_log_info("add_child_to_list: Child list NOT present for %s ",
+                  TypeToStrFun(node_ptr->get_type_name()).c_str());
     child_list_.insert(
         std::pair<unc_key_type_t, std::vector<ConfigNode*> > (
-            node_ptr->get_type(),
+            node_ptr->get_type_name(),
             std::vector<ConfigNode*> ()));
 
-    itr = child_list_.find(node_ptr->get_type());
+    itr = child_list_.find(node_ptr->get_type_name());
   } else {
-    pfc_log_debug("ConfigNode::AddChildNode: Child list present for %s ",
-                  TypeToStrFun(node_ptr->get_type()).c_str());
+    pfc_log_info("ConfigNode::AddChildNode: Child list present for %s ",
+                  TypeToStrFun(node_ptr->get_type_name()).c_str());
   }
 
   std::vector<ConfigNode*>& node_list = itr->second;
   node_list.push_back(node_ptr);
-  cfgnode_count_++;
-  pfc_log_debug("cfgnode_count_ %d", cfgnode_count_);
 
-  pfc_log_debug("%s: AddChildNode: Exiting", PFC_FUNCNAME);
-  return TREE_OK;
+  return DRVAPI_RESPONSE_SUCCESS;
 }
 
 /**
  * @brief     : This method prints the Key of the
- *              particular node
+ *              particular node(Debug Purpose ONly)
  * @param[in] : level_index
  * @retval    : None
  */
 void RootNode::print_key(int level_index) {
+  ODC_FUNC_TRACE;
   int num_spaces = level_index* NUM_SPACES;
   std::string prefix_str;
 
-  unc_key_type_t node_type = get_type();
+  unc_key_type_t node_type = get_type_name();
 
   for (int i = 0; i < num_spaces; ++i)
     prefix_str.append(" ");
@@ -195,14 +192,14 @@ void RootNode::print_key(int level_index) {
  * @brief : default constructor
  */
 RootNode::RootNode() {
-  pfc_log_debug("Entering default constructor %s..", PFC_FUNCNAME);
+  ODC_FUNC_TRACE;
 }
 
 /**
  * @brief : default destructor
  */
 RootNode::~RootNode() {
-  pfc_log_debug("Entering default destructor %s..", PFC_FUNCNAME);
+  ODC_FUNC_TRACE;
 }
 }  // namespace vtndrvcache
 }  // namespace unc

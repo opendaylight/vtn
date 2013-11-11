@@ -1,21 +1,20 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2013 NEC Corporation
  * All rights reserved.
  *
- * This program and the accompanying materials are made
- * available under the
- * terms of the Eclipse Public License v1.0 which
- * accompanies this
- * distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
 #ifndef RESTJSON_JSON_BUILD_PARSE_H_
 #define RESTJSON_JSON_BUILD_PARSE_H_
 
 #include <json/json.h>
-#include <json_type.hh>
+#include <json_type_util.hh>
 #include <rest_common_defs.hh>
+#include <pfc/log.h>
+#include <uncxx/odc_log.hh>
 #include <string>
 
 namespace unc {
@@ -31,16 +30,16 @@ class JsonBuildParse {
 
   /**
    * @brief                    - Template method which build the json request
-   * @param[out] json_object*  - json object pointer to which the data should
-   *                             be added
    * @param[in] key            - string key to be added to the jsonobject
    * @param[in] T data         - template type which is the value to be added
    *                             for the specific key. Accepts type int,
    *                             string, bool, json_object
-   * @return                   - returns 0 on SUCCESS / 1 on FAILURE
+   * @param[out] json_object*  - json object pointer to which the data should
+   *                             be added
+   * @return                   - returns 0 on REST_OP_SUCCESS / 1 on REST_OP_FAILURE
    */
   template<typename T>
-static int build(json_object* jparent, const std::string &key, T data);
+  static int build(const std::string &key, T data, json_object* jparent);
 
   /**
    * @brief                     - Template method which parse the json object
@@ -52,19 +51,11 @@ static int build(json_object* jparent, const std::string &key, T data);
    * @param[out] T data         - template type which is the value to be added
    *                              for the specific key accepts type int,
    *                              string, bool, json_object
-   * return int                 - returns 0 on SUCCESS / 1 on FAILURE
+   * return int                 - returns 0 on REST_OP_SUCCESS / 1 on REST_OP_FAILURE
    */
   template<typename T>
-static int parse(json_object* jobj, const std::string &key,
+  static int parse(json_object* jobj, const std::string &key,
                  int arrindex, T &val);
-
-  /**
-   * @brief                   - Gets the type of the value for the specified key
-   * @param[in] json_object   - json object from which the val to be retieved
-   * @param[in] key           - value retrieved from the specified key
-   * return int               - returns enum value json type
-   */
-  static int get_type(json_object* jobj, const std::string &key);
 
   /**
    * GetArrayLength           - the length of the array
@@ -75,61 +66,80 @@ static int parse(json_object* jobj, const std::string &key,
   static int get_array_length(json_object* jobj, const std::string &key);
 
   /**
-   * @brief                      - Converts th ejson object to json string
+   * @brief                      - Converts the json object to json string
    * @param[in]  json_object*    - which needs to converted to json string
    * return const char*          - converted from json object
    */
-  static const char* json_obj_to_json_string(json_object* jobj);
+  static const char* get_string(json_object* jobj);
 
   /**
    * @brief                      - Converts string to json object
    * @param[in]  data            - char pointer which needs to be converted to
    *                               json obj
-   * @param[out] json_object*    - returns converted json object
+   * @return json_object*        - returns converted json object
    */
-  static json_object* string_to_json_object(char *data);
+  static json_object* get_json_object(char *data);
 };
 
+// Build the json request with the key and the template data
 template<typename T>
-int JsonBuildParse::build(json_object* jparent, const std::string &key,
-                          T data) {
+int JsonBuildParse::build(const std::string &key,
+                          T data, json_object* jparent) {
+  ODC_FUNC_TRACE;
+
+  // Check the jparent is null
   if (json_object_is_type(jparent, json_type_null)) {
-    return FAILURE;
+    pfc_log_error("json object is NULL ... ");
+    return REST_OP_FAILURE;
   }
 
+  // If japarent is of type object then procees else return FAILURE
   if (json_object_is_type(jparent, json_type_object)) {
-    json_object* jobj;
-    JsonType jsonutil_obj(data);
+    json_object* jobj = NULL;
+    JsonTypeUtil jsonutil_obj(data);
     jobj = jsonutil_obj.get_json_data();
     if (json_object_is_type(jobj, json_type_null)) {
-      return FAILURE;
+      pfc_log_error("json object for value is NULL");
+      return REST_OP_FAILURE;
     }
+    // Adds the data to the json object with key
     json_object_object_add(jparent, key.c_str(), jobj);
-    return SUCCESS;
+    return REST_OP_SUCCESS;
   }
-  return FAILURE;
+  pfc_log_error("jparent is not of the type json_object");
+  return REST_OP_FAILURE;
 }
 
+// Parse the json object with the given key and gets the value and assign it to
+// template val instance
 template<typename T>
 int JsonBuildParse::parse(json_object* jobj, const std::string &key,
                           int arrindex, T &val) {
+  ODC_FUNC_TRACE;
   if (json_object_is_type(jobj, json_type_null)) {
-    return FAILURE;
+    pfc_log_error("json object is NULL ... ");
+    return REST_OP_FAILURE;
   }
 
-  json_object * jobj_getval;
+  json_object * jobj_getval = NULL;
+
+  // arrindex != -1 means json_object is of type array
   if (-1 != arrindex) {
     json_object *jobj_array = json_object_array_get_idx(jobj, arrindex);
+    if (json_object_is_type(jobj, json_type_null)) {
+      pfc_log_error("json array object is NULL ... ");
+      return REST_OP_FAILURE;
+    }
     jobj_getval = json_object_object_get(jobj_array, key.c_str());
   } else {
     jobj_getval = json_object_object_get(jobj, key.c_str());
   }
-  if (json_object_is_type(jobj_getval, json_type_null)) {
-    return SUCCESS;
+  // Checks the json object value is not null
+  if (!(json_object_is_type(jobj_getval, json_type_null))) {
+    JsonTypeUtil::get_value(jobj_getval, val);
   }
-
-  JsonType::get_value(jobj_getval, val);
-  return SUCCESS;
+  // If json object is NULL , get_value is not called return REST_OP_SUCCESS
+  return REST_OP_SUCCESS;
 }
 }  //  namespace restjson
 }  //  namespace unc

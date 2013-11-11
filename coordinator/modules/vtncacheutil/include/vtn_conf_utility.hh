@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2013 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -23,8 +23,7 @@ class  ConfUtil {
    * @retval      : unc_key_type_t
    */
   static unc_key_type_t  get_key_type(const key_vtn_t&  key) {
-    pfc_log_debug("Entering function %s..", PFC_FUNCNAME);
-    pfc_log_debug("Exiting Function %s..", PFC_FUNCNAME);
+    ODC_FUNC_TRACE;
     return UNC_KT_VTN;
   }
 
@@ -34,20 +33,28 @@ class  ConfUtil {
    * @retval      : string
    */
   static std::string get_search_key(const key_vtn_t&  key) {
-    pfc_log_debug("Entering function %s..", PFC_FUNCNAME);
+    ODC_FUNC_TRACE;
     std::string key_str(reinterpret_cast<const char*>(&key.vtn_name));
-    pfc_log_debug("Exiting Function %s..", PFC_FUNCNAME);
     return key_str;
   }
 
+  /**
+   * @brief       : This method returns the name for UNC_KT_VTN
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_key(const key_vtn_t&  key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>(&key.vtn_name));
+    return key_str;
+  }
   /**
    * @brief       : This method returns the parent Key for UNC_KT_VTN
    * @param [in]  : key
    * @retval      : string
    */
   static std::string get_parent_key(const key_vtn_t&  key) {
-    pfc_log_debug("Entering function %s..", PFC_FUNCNAME);
-    pfc_log_debug("Exiting Function %s..", PFC_FUNCNAME);
+    ODC_FUNC_TRACE;
     return "ROOT";
   }
 
@@ -57,32 +64,43 @@ class  ConfUtil {
    * @retval      : unc_key_type_t
    */
   static unc_key_type_t  get_key_type(const key_vbr_t&  key) {
-    pfc_log_debug("Entering function %s..", PFC_FUNCNAME);
-    pfc_log_debug("Exiting Function %s..", PFC_FUNCNAME);
+    ODC_FUNC_TRACE;
     return UNC_KT_VBRIDGE;
   }
 
   /**
-   * @brief       :  This method returns the search Key for UNC_KT_VBRIDGE
+   * @brief       : This method returns the search Key for UNC_KT_VBRIDGE
    * @param [in]  : key
    * @retval      : string
    **/
   static std::string get_search_key(const key_vbr_t&  key) {
-    pfc_log_debug("Entering function %s..", PFC_FUNCNAME);
+    ODC_FUNC_TRACE;
     std::string key_str(reinterpret_cast<const char*>
                         (key.vtn_key.vtn_name));
     key_str += std::string(reinterpret_cast<const char*>
                            (key.vbridge_name));
-    pfc_log_debug("Exiting Function %s..", PFC_FUNCNAME);
     return key_str;
   }
+
+  /**
+   * @brief       : This method returns the name for UNC_KT_VBRIDGE
+   * @param [in]  : key
+   * @retval      : string
+   **/
+  static std::string get_key(const key_vbr_t&  key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.vbridge_name));
+    return key_str;
+  }
+
   /**
    * @brief       : This method returns the parent Key for UNC_KT_VBRIDGE
    * @param [in]  : key
    * @retval      : string
    */
   static std::string get_parent_key(const key_vbr_t&  key) {
-    pfc_log_debug("Entering function %s..", PFC_FUNCNAME);
+    ODC_FUNC_TRACE;
     std::string key_str = reinterpret_cast<const char*>
         (key.vtn_key.vtn_name);
     pfc_log_debug("Exiting Function %s.. vbr parentkey: %s", PFC_FUNCNAME,
@@ -96,8 +114,7 @@ class  ConfUtil {
    * @retval      : unc_key_type_t
    */
   static unc_key_type_t  get_key_type(const key_vbr_if_t&  key) {
-    pfc_log_debug("Entering function %s..", PFC_FUNCNAME);
-    pfc_log_debug("Exiting Function %s..", PFC_FUNCNAME);
+    ODC_FUNC_TRACE;
     return UNC_KT_VBR_IF;
   }
 
@@ -107,28 +124,37 @@ class  ConfUtil {
    * @retval      : search key - string
    */
   static std::string get_search_key(const key_vbr_if_t&  key) {
-    pfc_log_debug("Entering function %s..", PFC_FUNCNAME);
+    ODC_FUNC_TRACE;
     std::string key_str(reinterpret_cast<const char*>
                         (key.vbr_key.vtn_key.vtn_name));
     key_str += std::string(reinterpret_cast<const char*>
                            (key.vbr_key.vbridge_name));
     key_str += std::string(reinterpret_cast<const char*>(key.if_name));
-    pfc_log_debug("Exiting Function %s..", PFC_FUNCNAME);
     return key_str;
   }
 
+  /**
+   * @brief       : This method returns the name for UNC_KT_VBR_IF
+   * @param [in]  : key
+   * @retval      : search key - string
+   */
+  static std::string get_key(const key_vbr_if_t&  key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.if_name));
+    return key_str;
+  }
   /**
    * @brief       : This method returns the parent Key for UNC_KT_VBR_IF
    * @param [in]  : key
    * @retval      : parent key - string
    */
   static std::string get_parent_key(const key_vbr_if_t&  key) {
-    pfc_log_debug("Entering function %s..", PFC_FUNCNAME);
+    ODC_FUNC_TRACE;
     std::string key_str(reinterpret_cast<const char*>
                         (key.vbr_key.vtn_key.vtn_name));
     key_str += std::string(reinterpret_cast<const char*>
                            (key.vbr_key.vbridge_name));
-    pfc_log_debug("Exiting Function %s..", PFC_FUNCNAME);
     return key_str;
   }
 };
