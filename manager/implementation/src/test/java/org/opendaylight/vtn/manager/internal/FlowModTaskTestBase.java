@@ -50,64 +50,6 @@ import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 public class FlowModTaskTestBase extends TestUseVTNManagerBase {
 
     /**
-     * Stub class of ConnectionManager.
-     */
-    protected class ConnectionManagerStub implements IConnectionManager {
-
-        @Override
-        public Node connect(String arg0, Map<ConnectionConstants, String> arg1) {
-            return null;
-        }
-
-        @Override
-        public Node connect(String arg0, String arg1,
-                Map<ConnectionConstants, String> arg2) {
-            return null;
-        }
-
-        @Override
-        public Status disconnect(Node arg0) {
-            return null;
-        }
-
-        @Override
-        public Set<InetAddress> getControllers(Node node) {
-            return null;
-        }
-
-        @Override
-        public ConnectionMgmtScheme getActiveScheme() {
-            return null;
-        }
-
-        @Override
-        public Set<Node> getLocalNodes() {
-            return null;
-        }
-
-        @Override
-        public ConnectionLocality getLocalityStatus(Node arg0) {
-            if (arg0.getID().equals(Long.valueOf("0"))) {
-                return ConnectionLocality.LOCAL;
-            } else if (arg0.getID().equals(Long.valueOf("1"))) {
-                return ConnectionLocality.NOT_LOCAL;
-            } else {
-                return ConnectionLocality.NOT_CONNECTED;
-            }
-        }
-
-        @Override
-        public Set<Node> getNodes(InetAddress arg0) {
-            return null;
-        }
-
-        @Override
-        public boolean isLocal(Node arg0) {
-            return false;
-        }
-    }
-
-    /**
      * Stub class of FowrardingRulesManager.
      */
     protected class ForwardingRulesManagerStub implements
@@ -438,7 +380,7 @@ public class FlowModTaskTestBase extends TestUseVTNManagerBase {
         resMgr = new GlobalResourceManager();
         ComponentImpl c = new ComponentImpl(null, null, null);
         stubObj = new TestStub(stubMode);
-        ConnectionManagerStub cm = new ConnectionManagerStub();
+        TestStubCluster cm = new TestStubCluster(stubMode);
 
         Hashtable<String, String> properties = new Hashtable<String, String>();
         properties.put("containerName", "default");

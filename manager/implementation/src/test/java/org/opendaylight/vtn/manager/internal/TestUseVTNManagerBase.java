@@ -10,6 +10,9 @@ package org.opendaylight.vtn.manager.internal;
 
 import static org.junit.Assert.*;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Set;
@@ -19,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.After;
 import org.junit.Before;
+import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,43 +104,7 @@ public class TestUseVTNManagerBase extends TestBase {
      * Flush all pending tasks on the VTN task thread.
      */
     protected void flushTasks() {
-        NopTask task = new NopTask();
-        vtnMgr.postTask(task);
-        assertTrue(task.await(10, TimeUnit.SECONDS));
-    }
-
-    /**
-     * A dummy task to flush tasks on the VTN task thread.
-     */
-    private class NopTask implements Runnable {
-        /**
-         * A latch to wait for completion.
-         */
-        private final CountDownLatch  latch = new CountDownLatch(1);
-
-        /**
-         * Wake up all threads waiting for this task.
-         */
-        @Override
-        public void run() {
-            latch.countDown();
-        }
-
-        /**
-         * Wait for completion of this task.
-         *
-         * @param timeout  The maximum time to wait.
-         * @param unit     The time unit of the {@code timeout} argument.
-         * @return  {@code true} is returned if this task completed.
-         *          Otherwise {@code false} is returned.
-         */
-        private boolean await(long timeout, TimeUnit unit) {
-            try {
-                return latch.await(timeout, unit);
-            } catch (InterruptedException e) {
-                return false;
-            }
-        }
+        flushTasks(vtnMgr);
     }
 
     /**
@@ -262,5 +230,57 @@ public class TestUseVTNManagerBase extends TestBase {
                 return false;
             }
         }
+    }
+
+    /**
+     * setup configuraion file and restart VTN Manager
+     *
+     * @param timeout   A timeout value set to remoteFlowModTimeout.
+     */
+    private final String CONFIG_FILE_NAME = "vtnmanager.ini";
+    protected void setupVTNManagerForRemoteTaskTest(long localTimeout,
+                                                    long remoteTimeout) {
+        setupVTNManagerForRemoteTaskTest(GlobalConstants.STARTUPHOME.toString(),
+                               CONFIG_FILE_NAME, localTimeout, remoteTimeout);
+    }
+
+    protected void setupVTNManagerForRemoteTaskTest(String dir, String fileName,
+                                                    long localTimeout,
+                                                    long remoteTimeout) {
+        FileWriter gWriter;
+        File gIniFile = new File(dir, fileName);
+        try {
+            gWriter = new FileWriter(gIniFile);
+            if (localTimeout > 0) {
+                gWriter.write("flowModTimeout=" + localTimeout + "\n");
+            }
+            if (remoteTimeout > 0) {
+                gWriter.write("remoteFlowModTimeout=" + remoteTimeout);
+            }
+            gWriter.close();
+        } catch (IOException e) {
+            unexpected(e);
+        }
+
+
+        ComponentImpl c = new ComponentImpl(null, null, null);
+        Hashtable<String, String> properties = new Hashtable<String, String>();
+        properties.put("containerName", "default");
+        c.setServiceProperties(properties);
+
+        restartVTNManager(c);
+    }
+
+    /**
+     * remove configuration file.
+     */
+    protected void cleanupSetupFile() {
+        cleanupSetupFile(GlobalConstants.STARTUPHOME.toString(),
+                         CONFIG_FILE_NAME);
+    }
+
+    protected void cleanupSetupFile(String dir, String fileName) {
+        File gIniFile = new File(dir, fileName);
+        gIniFile.delete();
     }
 }

@@ -46,7 +46,7 @@ public class MacVlanTest extends TestBase {
     }
 
     /**
-     * Test case for
+     * Test method for
      * {@link MacVlan#equals(Object)} and
      * {@link MacVlan#hashCode()}.
      */
