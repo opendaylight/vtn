@@ -37,6 +37,7 @@ import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.FlowEventTestBase;
 import org.opendaylight.vtn.manager.internal.TestStub;
+import org.opendaylight.vtn.manager.internal.TestStubCluster;
 import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
@@ -90,14 +91,14 @@ public class FlowModResultEventTest extends FlowEventTestBase {
      */
     @Test
     public void testFlowModResultEvent() {
-        setupVTNManagerForTest();
+        setupVTNManagerForRemoteTaskTest(1000L);
 
         long timeout = vtnMgr.getVTNConfig().getFlowModTimeout();
         long remoteTimeout = vtnMgr.getVTNConfig().getRemoteFlowModTimeout();
 
         // set IClusterGlobalService to stub which work
         // as have multiple cluster nodes.
-        TestStub stubNew = new TestStub(2, 2);
+        TestStubCluster stubNew = new TestStubCluster(2);
         ComponentImpl c = new ComponentImpl(null, null, null);
         Hashtable<String, String> properties = new Hashtable<String, String>();
         properties.put("containerName", "default");
@@ -158,6 +159,9 @@ public class FlowModResultEventTest extends FlowEventTestBase {
 
        for (FlowModResult result : FlowModResult.values()) {
             for (Boolean local : createBooleans(false)) {
+                String emsg = "(FlowModResult)" + result.toString()
+                        + ",(local)" + local.toString();
+
                 // FlowModResultEvent is called from this timerTask.
                 TimerTask timerTask = new ResultTimerTask(vtnMgr, rent, result,
                                                           local.booleanValue());
@@ -169,7 +173,7 @@ public class FlowModResultEventTest extends FlowEventTestBase {
                 timerTask.cancel();
 
                 if (result == FlowModResult.SUCCEEDED && local == Boolean.FALSE) {
-                    checkRegsiterdFlowEntry(vtnMgr, 1, flow, flow, 2);
+                    checkRegsiterdFlowEntry(vtnMgr, 1, flow, flow, 2, emsg);
 
                     Set<ClusterEvent> events = getPostedClusterEvent();
                     assertEquals(1, events.size());
@@ -183,7 +187,7 @@ public class FlowModResultEventTest extends FlowEventTestBase {
                     flushFlowTasks(remoteTimeout * 3);
                     timer.cancel();
                 } else {
-                    checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+                    checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0, emsg);
 
                     Set<ClusterEvent> events = getPostedClusterEvent();
                     assertEquals(2, events.size());
@@ -195,7 +199,7 @@ public class FlowModResultEventTest extends FlowEventTestBase {
 
                 fdb.clear(vtnMgr);
                 flushFlowTasks(remoteTimeout * 3);
-                checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+                checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0, emsg);
                 clearPostedClusterEvent();
             }
         }
@@ -213,45 +217,10 @@ public class FlowModResultEventTest extends FlowEventTestBase {
      */
     private void checkRegsiterdFlowEntry(VTNManagerImpl mgr, int numFlows,
                                          VTNFlow registerdFlow, VTNFlow expectedFlow,
-                                         int numFlowEntries) {
+                                         int numFlowEntries, String emsg) {
         ConcurrentMap<FlowGroupId, VTNFlow> db = mgr.getFlowDB();
-        assertEquals(numFlows, db.size());
-        assertEquals(expectedFlow, db.get(registerdFlow.getGroupId()));
-        assertEquals(numFlowEntries, stubObj.getFlowEntries().size());
+        assertEquals(emsg, numFlows, db.size());
+        assertEquals(emsg, expectedFlow, db.get(registerdFlow.getGroupId()));
+        assertEquals(emsg, numFlowEntries, stubObj.getFlowEntries().size());
     }
-
-    /**
-     * setup configuraion file and restart VTN Manager
-     */
-    private final String CONFIG_FILE_NAME = "vtnmanager.ini";
-    private void setupVTNManagerForTest() {
-        FileWriter gWriter;
-        File gIniFile = new File(GlobalConstants.STARTUPHOME.toString(),
-                                 CONFIG_FILE_NAME);
-        try {
-            gWriter = new FileWriter(gIniFile);
-            gWriter.write("remoteFlowModTimeout=1000");
-            gWriter.close();
-        } catch (IOException e) {
-            unexpected(e);
-        }
-
-
-        ComponentImpl c = new ComponentImpl(null, null, null);
-        Hashtable<String, String> properties = new Hashtable<String, String>();
-        properties.put("containerName", "default");
-        c.setServiceProperties(properties);
-
-        restartVTNManager(c);
-    }
-
-    /**
-     * remove configuraion file.
-     */
-    private void cleanupSetupFile() {
-        File gIniFile = new File(GlobalConstants.STARTUPHOME.toString(),
-                                 CONFIG_FILE_NAME);
-        gIniFile.delete();
-    }
-
 }

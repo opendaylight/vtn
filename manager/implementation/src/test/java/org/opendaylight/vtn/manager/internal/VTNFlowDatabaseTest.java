@@ -216,29 +216,33 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         for (VTNFlow flow : flows) {
             int i = 0;
             for (FlowEntry ent : flow.getFlowEntries()) {
+                String emsg = ent.toString();
                 fdb.flowRemoved(vtnMgr, ent);
                 flushFlowTasks();
 
                 if (i == 0) {
-                VTNFlow regFlow = db.get(flow.getGroupId());
-                assertNull(regFlow);
-                assertEquals(numFlows - 1, db.values().size());
-                assertEquals(numFlows * 2 - 1, stubObj.getFlowEntries().size());
+                    VTNFlow regFlow = db.get(flow.getGroupId());
+                    assertNull(emsg, regFlow);
+                    assertEquals(emsg, numFlows - 1, db.values().size());
+                    assertEquals(emsg, numFlows * 2 - 1,
+                                 stubObj.getFlowEntries().size());
 
-                // because florwRemoved(VTNManagerImpl, FlowEntry) is invoked
-                // when VTN flow was expired, this invoked
-                // after FlowEnry have already been removed.
-                // in this test case need to remove FlowEntry in DB of stub.
-                stubObj.uninstallFlowEntry(ent);
+                    // because florwRemoved(VTNManagerImpl, FlowEntry) is invoked
+                    // when VTN flow was expired, this invoked
+                    // after FlowEnry have already been removed.
+                    // In this test case need to remove FlowEntry in DB of stub.
+                    stubObj.uninstallFlowEntry(ent);
 
-                Set<VTNFlow> revert = new HashSet<VTNFlow>();
-                revert.add(flow);
-                revertFlowEntries(vtnMgr, fdb, revert, numFlows, numFlows * 2);
+                    Set<VTNFlow> revert = new HashSet<VTNFlow>();
+                    revert.add(flow);
+                    revertFlowEntries(vtnMgr, fdb, revert, numFlows,
+                                      numFlows * 2);
                 } else {
                     VTNFlow regFlow = db.get(flow.getGroupId());
-                    assertNotNull(regFlow);
-                    assertEquals(numFlows, db.values().size());
-                    assertEquals(numFlows * 2, stubObj.getFlowEntries().size());
+                    assertNotNull(emsg, regFlow);
+                    assertEquals(emsg, numFlows, db.values().size());
+                    assertEquals(emsg, numFlows * 2,
+                                 stubObj.getFlowEntries().size());
                 }
 
                 i++;
@@ -551,9 +555,12 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         VBridgeIfPath bifpath = new VBridgeIfPath(tname, bname, ifname);
         Set<VTenantPath> pathSet = new HashSet<VTenantPath>();
         MacVlan[] macVlans = new MacVlan[] {
-                new MacVlan(new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, (short) 0),
-                new MacVlan(new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, (short) 4095),
-                new MacVlan(new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x01}, (short) 0),
+                new MacVlan(new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+                            (short) 0),
+                new MacVlan(new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+                            (short) 4095),
+                new MacVlan(new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x01},
+                            (short) 0),
         };
 
         int numEntries = 0;
@@ -638,10 +645,12 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
 
         // for MacVlan
         for (MacVlan macVlan : macVlans) {
+            String emsg = macVlan.toString();
             task = fdb.removeFlows(vtnMgr, macVlan);
-            assertNotNull(task);
+            assertNotNull(emsg, task);
             flushFlowTasks();
-            assertEquals(numEntries - 1, stubObj.getFlowEntries().size());
+            assertEquals(emsg,
+                         numEntries - 1, stubObj.getFlowEntries().size());
             revertFlows.clear();
             revertFlows = checkFlowDBEntriesMacVlan(vtnMgr, fdb, flows, macVlan);
 
@@ -658,7 +667,6 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         assertEquals(numEntries, stubObj.getFlowEntries().size());
         revertFlows.clear();
         revertFlows = checkFlowDBEntriesMacVlan(vtnMgr, fdb, flows, notMatchMv);
-
 
         // in case there are no flow entry.
         fdb.clear(vtnMgr);

@@ -28,12 +28,22 @@ import org.slf4j.LoggerFactory;
 
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
+import org.opendaylight.controller.sal.action.Action;
+import org.opendaylight.controller.sal.action.ActionType;
+import org.opendaylight.controller.sal.action.Output;
+import org.opendaylight.controller.sal.action.SetVlanId;
+import org.opendaylight.controller.sal.core.Config;
 import org.opendaylight.controller.sal.core.ConstructionException;
 import org.opendaylight.controller.sal.core.Edge;
+import org.opendaylight.controller.sal.core.Name;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.Property;
+import org.opendaylight.controller.sal.core.State;
 import org.opendaylight.controller.sal.core.UpdateType;
+import org.opendaylight.controller.sal.match.Match;
+import org.opendaylight.controller.sal.match.MatchField;
+import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IEEE8021Q;
@@ -61,6 +71,7 @@ import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
@@ -1171,7 +1182,12 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UNKNOWN, msg);
         }
 
-        mgr.notifyNodeConnector(chgNc, UpdateType.CHANGED, propMap);
+        Map<String, Property> newPropMap = new HashMap<String, Property>();
+        newPropMap.put(Name.NamePropName, new Name(""));
+        newPropMap.put(Config.ConfigPropName, new Config(Config.ADMIN_UP));
+        newPropMap.put(State.StatePropName, new State(State.EDGE_UP));
+
+        mgr.notifyNodeConnector(chgNc, UpdateType.CHANGED, newPropMap);
         if (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) {
             checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UP, msg);
         } else {
@@ -2112,7 +2128,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                 }
             }
 
-         }
+        }
 
         st = mgr.removeBridge(bpath2);
         assertEquals(StatusCode.SUCCESS, st.getCode());
@@ -2202,13 +2218,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             }
         }
 
-        InetAddress ia = null;
-        try {
-            ia = InetAddress.getByAddress(new byte[] {
-                    (byte)10, (byte)0, (byte)0, (byte)1});
-        } catch (UnknownHostException e) {
-            unexpected(e);
-        }
+        InetAddress ia = getInetAddressFromAddress(new byte[] {10, 0, 0, 0});
 
         InetAddress ia6 = null;
         try {
@@ -2472,10 +2482,10 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
      */
     private void testReceiveDataPacketCommonLoop(VTNManagerImpl mgr, VBridgePath bpath,
             MapType type, Set<PortVlan> mappedThis, TestStub stub, short bc,
-            EtherTypes ethtype, NodeConnector targetnc) {
+            EtherTypes ethtype, PortVlan targetPv) {
         ISwitchManager swmgr = mgr.getSwitchManager();
         byte[] cntMac = swmgr.getControllerMAC();
-        byte [] dst;
+        byte[] dst;
         if (bc > 0) {
             dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
                               (byte)0xff, (byte)0xff, (byte)0xff};
@@ -2483,22 +2493,22 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             dst = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
                               (byte)0xff, (byte)0xff, (byte)0x11};
         }
-        byte [] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
+        byte[] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
 
         for (PortVlan inPv : mappedThis) {
             NodeConnector inNc = inPv.getNodeConnector();
             short inVlan = inPv.getVlan();
-            if (targetnc != null && !targetnc.equals(inNc)) {
+            if (targetPv != null && !targetPv.equals(inPv)) {
                 continue;
             }
             byte iphost = 1;
             for (EthernetAddress ea : createEthernetAddresses(false)) {
                 String emsg = "(input portvlan)" + inPv.toString()
                         + ",(input eth)" + ea.toString();
-                byte [] bytes = ea.getValue();
-                byte [] src = new byte[] {bytes[0], bytes[1], bytes[2],
+                byte[] bytes = ea.getValue();
+                byte[] src = new byte[] {bytes[0], bytes[1], bytes[2],
                                           bytes[3], bytes[4], bytes[5]};
-                byte [] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)iphost};
+                byte[] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)iphost};
 
                 RawPacket inPkt = null;
                 if (ethtype.shortValue() == EtherTypes.IPv4.shortValue()) {
@@ -2514,7 +2524,10 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                 if (inNc != null &&
                     inNc.getType() == NodeConnector.NodeConnectorIDType.OPENFLOW) {
                     assertEquals(emsg, PacketResult.KEEP_PROCESSING, result);
+                    flushFlowTasks();
+                    Set<FlowEntry> flowEntries = stub.getFlowEntries();
                     expireFlows(mgr, stub);
+                    assertEquals(emsg, 0, flowEntries.size());
 
                     MacAddressEntry entry = null;
                     try {
@@ -2628,7 +2641,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             MapType type, Set<PortVlan> mappedThis, TestStub stub, short bc, EtherTypes ethtype) {
         ISwitchManager swmgr = mgr.getSwitchManager();
         byte[] cntMac = swmgr.getControllerMAC();
-        byte [] src;
+        byte[] src;
         if (bc > 0) {
             src = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
                               (byte)0xff, (byte)0xff, (byte)0xff};
@@ -2636,13 +2649,23 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             src = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
                               (byte)0xff, (byte)0xff, (byte)0x11};
         }
-        byte [] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
+        byte[] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
 
+        VTenant tenant = null;
+        try {
+            tenant = vtnMgr.getTenant(new VTenantPath(bpath.getTenantName()));
+        } catch (VTNException e) {
+            unexpected(e);
+        }
+
+        List<EthernetAddress> ethers = createEthernetAddresses(false);
         for (PortVlan learnedPv : mappedThis) {
             NodeConnector learnedNc = learnedPv.getNodeConnector();
+            Set<String> registerdFlows = new HashSet<String>();
+
             // first learned hosts to vbridge.
             testReceiveDataPacketCommonLoop(mgr, bpath, MapType.PORT, mappedThis,
-                    stub, (short)0, EtherTypes.IPv4, learnedNc);
+                    stub, (short)0, EtherTypes.IPv4, learnedPv);
 
             // mac addresses have been learned at this point.
             for (PortVlan inPortVlan : mappedThis) {
@@ -2650,15 +2673,16 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                 short inVlan = inPortVlan.getVlan();
                 byte tip = 1;
                 boolean first = false;
-                for (EthernetAddress ea: createEthernetAddresses(false)) {
+                int numExpectFlows = 0;
+                for (EthernetAddress ea: ethers) {
                     String emsg = "(learned portvlan)" + learnedPv.toString()
                             + "(input portvlan)"
                             + inPortVlan.toString() + ",(input eth)" + ea.toString();
 
-                    byte [] bytes = ea.getValue();
-                    byte [] dst = new byte[] {bytes[0], bytes[1], bytes[2],
-                                              bytes[3], bytes[4], bytes[5]};
-                    byte [] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)tip};
+                    byte[] bytes = ea.getValue();
+                    byte[] dst = new byte[] {bytes[0], bytes[1], bytes[2],
+                                             bytes[3], bytes[4], bytes[5]};
+                    byte[] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)tip};
 
                     RawPacket inPkt = null;
                     if (ethtype.shortValue() == EtherTypes.IPv4.shortValue()) {
@@ -2674,7 +2698,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                     if (inNc != null &&
                         inNc.getType() == NodeConnector.NodeConnectorIDType.OPENFLOW) {
                         assertEquals(emsg, PacketResult.KEEP_PROCESSING, result);
-                        expireFlows(mgr, stub);
+                        flushFlowTasks();
+                        Set<FlowEntry> flowEntries = stub.getFlowEntries();
 
                         MacAddressEntry entry = null;
                         try {
@@ -2688,13 +2713,16 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                             payload = payload.getPayload();
                         }
                         if (payload instanceof ARP) {
+                            // not used this case.
                             assertEquals(emsg, 1, entry.getInetAddresses().size());
                             assertArrayEquals(emsg, sender,
                                     entry.getInetAddresses().iterator().next().getAddress());
+
                         } else {
                             assertEquals(emsg, 0, entry.getInetAddresses().size());
                         }
 
+                        // Check output data packet.
                         List<RawPacket> transDatas = stub.getTransmittedDataPacket();
                         if (!first) {
                             assertEquals(emsg, 2, transDatas.size());
@@ -2737,6 +2765,20 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                                     (Ethernet)pkt, EtherTypes.IPv4, src, dst, outVlan);
                             }
                         }
+
+                        // Check flow entries.
+                        Node learnedNode = learnedNc.getNode();
+                        Node inNode = inPortVlan.getNodeConnector().getNode();
+                        if (learnedNode.equals(inNode)) {
+                            numExpectFlows++;
+                        } else {
+                            numExpectFlows += 2;
+                        }
+                        assertEquals(emsg, numExpectFlows, flowEntries.size());
+
+                        checkFlowEntries(learnedPv, inPortVlan, flowEntries,
+                                         registerdFlows, src, dst, tenant, emsg);
+
                     } else {
                         if (inNc != null) {
                             assertEquals(emsg, PacketResult.IGNORED, result);
@@ -2747,41 +2789,9 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                     tip++;
                 }
             }
-
+            expireFlows(mgr, stub);
             Status st = mgr.flushMacEntries(bpath);
             assertEquals(StatusCode.SUCCESS, st.getCode());
-        }
-    }
-
-    /**
-     * Expire flow entries.
-     *
-     * @param mgr    VTN Manager service.
-     * @param stub   Stub for OSGi service.
-     */
-    private void expireFlows(VTNManagerImpl mgr, TestStub stub) {
-        // Wait for all flow modifications to complete.
-        NopFlowTask task = new NopFlowTask(mgr);
-        mgr.postFlowTask(task);
-        assertSame(FlowModResult.SUCCEEDED, task.getResult(3000));
-
-        Set<FlowEntry> flows = stub.getFlowEntries();
-        if (!flows.isEmpty()) {
-            for (FlowEntry fent : flows) {
-                String flowName = fent.getFlowName();
-                if (flowName.endsWith("-0")) {
-                    Status status = stub.uninstallFlowEntry(fent);
-                    assertEquals("(FlowEntry)" + fent.toString(), StatusCode.SUCCESS,
-                            status.getCode());
-                    mgr.flowRemoved(fent.getNode(), fent.getFlow());
-                }
-            }
-
-            // Wait for all flow entries to be removed.
-            task = new NopFlowTask(mgr);
-            mgr.postFlowTask(task);
-            assertSame(FlowModResult.SUCCEEDED, task.getResult(3000));
-            assertSame(0, stub.getFlowEntries().size());
         }
     }
 }

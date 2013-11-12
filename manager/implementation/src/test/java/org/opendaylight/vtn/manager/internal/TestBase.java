@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
@@ -698,12 +700,8 @@ public abstract class TestBase extends Assert {
                 setFragmentOffset((short)0).
                 setTtl((byte)64);
 
-        try {
-            ip.setDestinationAddress(InetAddress.getByAddress(target));
-            ip.setSourceAddress(InetAddress.getByAddress(sender));
-        } catch (UnknownHostException e) {
-            unexpected(e);
-        }
+        ip.setDestinationAddress(getInetAddressFromAddress(target));
+        ip.setSourceAddress(getInetAddressFromAddress(sender));
 
         Ethernet eth = new Ethernet();
         eth.setSourceMACAddress(src).setDestinationMACAddress(dst);
@@ -837,6 +835,23 @@ public abstract class TestBase extends Assert {
         return createRawPacket(
                 createIPv4Packet(src, dst, sender, target, vlan), nc);
     }
+
+    /**
+     * get {@link InetAddreess} object from byte arrays.
+     *
+     * @param ipaddr    byte arrays of IP Address.
+     * @return  A InetAddress object.
+     */
+    protected InetAddress getInetAddressFromAddress(byte[] ipaddr) {
+        InetAddress inet = null;
+        try {
+            inet = InetAddress.getByAddress(ipaddr);
+        } catch (UnknownHostException e) {
+            unexpected(e);
+        }
+        return inet;
+    }
+
 
     /**
      * Join the separated strings with inserting a separator.
@@ -1082,6 +1097,49 @@ public abstract class TestBase extends Assert {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
             unexpected(e);
+        }
+    }
+
+    /**
+     * Flush all pending tasks on the VTN task thread.
+     */
+    protected void flushTasks(VTNManagerImpl vtnMgr) {
+        NopTask task = new NopTask();
+        vtnMgr.postTask(task);
+        assertTrue(task.await(10, TimeUnit.SECONDS));
+    }
+
+    /**
+     * A dummy task to flush tasks on the VTN task thread.
+     */
+    private class NopTask implements Runnable {
+        /**
+         * A latch to wait for completion.
+         */
+        private final CountDownLatch  latch = new CountDownLatch(1);
+
+        /**
+         * Wake up all threads waiting for this task.
+         */
+        @Override
+        public void run() {
+            latch.countDown();
+        }
+
+        /**
+         * Wait for completion of this task.
+         *
+         * @param timeout  The maximum time to wait.
+         * @param unit     The time unit of the {@code timeout} argument.
+         * @return  {@code true} is returned if this task completed.
+         *          Otherwise {@code false} is returned.
+         */
+        private boolean await(long timeout, TimeUnit unit) {
+            try {
+                return latch.await(timeout, unit);
+            } catch (InterruptedException e) {
+                return false;
+            }
         }
     }
 }

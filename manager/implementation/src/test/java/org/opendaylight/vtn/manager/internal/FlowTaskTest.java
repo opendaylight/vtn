@@ -301,7 +301,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
     public void testFlowTaskTestHavingRemoteNodes() {
         // set IClusterGlobalService to stub which work
         // as have multiple cluster nodes.
-        TestStub stubNew = new TestStub(2, 2);
+        TestStubCluster stubNew = new TestStubCluster(2);
         ComponentImpl c = new ComponentImpl(null, null, null);
         Hashtable<String, String> properties = new Hashtable<String, String>();
         properties.put("containerName", "default");

@@ -12,10 +12,21 @@ import static org.junit.Assert.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.hosttracker.IfHostListener;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
+import org.opendaylight.controller.sal.action.Action;
+import org.opendaylight.controller.sal.action.Output;
+import org.opendaylight.controller.sal.action.SetVlanId;
+import org.opendaylight.controller.sal.core.Node;
+import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
+import org.opendaylight.controller.sal.match.Match;
+import org.opendaylight.controller.sal.match.MatchField;
+import org.opendaylight.controller.sal.match.MatchType;
+import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 import org.opendaylight.vtn.manager.IVTNManager;
@@ -35,6 +46,9 @@ import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
+import org.opendaylight.vtn.manager.internal.TestUseVTNManagerBase.NopFlowTask;
+import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
+import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 
 /**
  * Common class for tests of {@link VTNManagerImpl}.
@@ -532,4 +546,152 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
             }
         }
     }
+
+    protected void checkFlowEntries(PortVlan learnedPv, PortVlan inPortVlan,
+            Set<FlowEntry> flowEntries, Set<String> registerdFlows,
+            byte[] src, byte[] dst, VTenant tenant,
+            String emsg) {
+        NodeConnector learnedNc = learnedPv.getNodeConnector();
+        Node learnedNode = learnedNc.getNode();
+        Node inNode = inPortVlan.getNodeConnector().getNode();
+
+        NodeConnector edgePort
+                = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15), inNode);
+        for (FlowEntry ent : flowEntries) {
+            if (!registerdFlows.add(ent.getFlowName())) {
+                continue;
+            }
+
+            if (ent.getFlowName().endsWith("-0")) {
+                assertEquals(inNode, ent.getNode());
+                for (Action act : ent.getFlow().getActions()) {
+                    switch (act.getType()) {
+                    case OUTPUT:
+                        Output out = (Output)act;
+                        if (learnedNode.equals(inNode)) {
+                            assertEquals(learnedNc, out.getPort());
+                        } else {
+                            assertEquals(emsg, edgePort, out.getPort());
+                        }
+                        break;
+                    case SET_VLAN_ID:
+                        if (learnedNode.equals(inNode)) {
+                            SetVlanId setVlan = (SetVlanId)act;
+                            assertEquals(setVlan.getVlanId(), learnedPv.getVlan());
+                        } else {
+                            fail("in this case SET_VLAN_ID is not set.");
+                        }
+                        break;
+                    case POP_VLAN:
+                        if (learnedNode.equals(inNode)) {
+                            assertTrue(learnedPv.getVlan() <= 0);
+                        } else {
+                            fail("in this case POP_VLAN is not set.");
+                        }
+                        break;
+                    default :
+                        fail("unexpected action type." + act.toString());
+                        break;
+                    }
+                }
+            } else if (ent.getFlowName().endsWith("-1")) {
+                assertEquals(learnedNode, ent.getNode());
+                for (Action act : ent.getFlow().getActions()) {
+                    switch (act.getType()) {
+                    case OUTPUT:
+                        Output out = (Output)act;
+                        assertEquals(learnedNc, out.getPort());
+                        break;
+                    case SET_VLAN_ID:
+                        SetVlanId setVlan = (SetVlanId)act;
+                        assertEquals(setVlan.getVlanId(), learnedPv.getVlan());
+                        break;
+                    case POP_VLAN:
+                        assertTrue(learnedPv.getVlan() <= 0);
+                        break;
+                    default :
+                        fail("unexpected action type." + act.toString());
+                        break;
+                    }
+                }
+            } else {
+                fail("not supported case.");
+            }
+
+            NodeConnector inEdgePort
+                = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15), learnedNode);
+
+            Match match = ent.getFlow().getMatch();
+            for (MatchType mtype : match.getMatchesList()) {
+                MatchField field = match.getField(mtype);
+                switch (mtype) {
+                case DL_SRC:
+                    assertArrayEquals(src, (byte[]) field.getValue());
+                    break;
+                case DL_DST:
+                    assertArrayEquals(dst, (byte[]) field.getValue());
+                    break;
+                case DL_VLAN:
+                    assertEquals(inPortVlan.getVlan(),
+                                 field.getValue());
+                    break;
+                case IN_PORT:
+                    if (ent.getFlowName().endsWith("-0")) {
+                        assertEquals(inPortVlan.getNodeConnector(),
+                                 (NodeConnector) field.getValue());
+                    } else {
+                        assertEquals(inEdgePort,
+                                (NodeConnector) field.getValue());
+                    }
+                    break;
+                default:
+                    fail("unexpected match type." + match.toString());
+                    break;
+                }
+            }
+
+            int pri = vtnMgr.getVTNConfig().getL2FlowPriority();
+            assertEquals(pri, ent.getFlow().getPriority());
+            if (ent.getFlowName().endsWith("-0")) {
+                assertEquals(tenant.getHardTimeout(), ent.getFlow().getHardTimeout());
+                assertEquals(tenant.getIdleTimeout(), ent.getFlow().getIdleTimeout());
+            } else {
+                assertEquals(0, ent.getFlow().getHardTimeout());
+                assertEquals(0, ent.getFlow().getIdleTimeout());
+            }
+        }
+    }
+
+    /**
+     * Expire flow entries.
+     *
+     * @param mgr    VTN Manager service.
+     * @param stub   Stub for OSGi service.
+     */
+    protected void expireFlows(VTNManagerImpl mgr, TestStub stub) {
+        // Wait for all flow modifications to complete.
+        NopFlowTask task = new NopFlowTask(mgr);
+        mgr.postFlowTask(task);
+        assertSame(FlowModResult.SUCCEEDED, task.getResult(3000));
+
+        Set<FlowEntry> flows = stub.getFlowEntries();
+        if (!flows.isEmpty()) {
+            for (FlowEntry fent : flows) {
+                String flowName = fent.getFlowName();
+                if (flowName.endsWith("-0")) {
+                    Status status = stub.uninstallFlowEntry(fent);
+                    assertEquals("(FlowEntry)" + fent.toString(), StatusCode.SUCCESS,
+                            status.getCode());
+                    mgr.flowRemoved(fent.getNode(), fent.getFlow());
+                }
+            }
+
+            // Wait for all flow entries to be removed.
+            task = new NopFlowTask(mgr);
+            mgr.postFlowTask(task);
+            assertSame(FlowModResult.SUCCEEDED, task.getResult(3000));
+            assertSame(0, stub.getFlowEntries().size());
+        }
+    }
+
 }
