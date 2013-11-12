@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da6255ed_c6641824",
+        "filename": "manager/implementation/src/test/java/org/opendaylight/vtn/manager/internal/cluster/ClusterEventIdTest.java",
+        "patchSetId": 2
+      },
+      "lineNbr": 47,
+      "author": {
+        "id": 526
+      },
+      "writtenOn": "2013-11-12T12:53:59Z",
+      "side": 1,
+      "message": "You mean \"0, Long.MAX_VALUE, Long.MIN_VALUE\", don\u0027t you?",
+      "revId": "d2f77ff52a4adf34e8ed849e999df9e8a6c89a6e",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
