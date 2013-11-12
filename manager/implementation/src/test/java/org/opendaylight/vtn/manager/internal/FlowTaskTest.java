@@ -48,6 +48,8 @@ public class FlowTaskTest extends FlowModTaskTestBase {
      */
     @Test
     public void testFlowTaskTest() {
+        setupVTNManagerForRemoteTaskTest(1000L, 1000L);
+
         long timeout = vtnMgr.getVTNConfig().getFlowModTimeout();
         long remoteTimeout = vtnMgr.getVTNConfig().getRemoteFlowModTimeout();
         VTNFlowDatabase fdb = new VTNFlowDatabase("test");
@@ -223,6 +225,8 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(remoteTimeout));
         checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+
+        cleanupSetupFile();
     }
 
     /**
@@ -299,9 +303,11 @@ public class FlowTaskTest extends FlowModTaskTestBase {
      */
     @Test
     public void testFlowTaskTestHavingRemoteNodes() {
+        setupVTNManagerForRemoteTaskTest(1000L, 1000L);
+
         // set IClusterGlobalService to stub which work
         // as have multiple cluster nodes.
-        TestStub stubNew = new TestStub(2, 2);
+        TestStubCluster stubNew = new TestStubCluster(2);
         ComponentImpl c = new ComponentImpl(null, null, null);
         Hashtable<String, String> properties = new Hashtable<String, String>();
         properties.put("containerName", "default");
@@ -459,6 +465,8 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(timeout));
         checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+
+        cleanupSetupFile();
     }
 
     /**
@@ -592,6 +600,8 @@ public class FlowTaskTest extends FlowModTaskTestBase {
      */
     @Test
     public void testGetResult() {
+        setupVTNManagerForRemoteTaskTest(1000L, 1000L);
+
         VTNFlowDatabase fdb = new VTNFlowDatabase("test");
         VTNFlow flow = fdb.create(vtnMgr);
         long timeout = vtnMgr.getVTNConfig().getFlowModTimeout();
@@ -652,6 +662,8 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         rmTask = new FlowRemoveTask(vtnMgr, flow.getGroupId(), ingress, it);
         timer.schedule(timerTask, timeoutRemote / 2);
         assertEquals(FlowModResult.INTERRUPTED, rmTask.getResult(timeoutRemote));
+
+        cleanupSetupFile();
     }
 
 

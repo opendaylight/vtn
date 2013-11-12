@@ -107,11 +107,6 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     private int stubMode = 0;
 
     /**
-     * Number of Cluster nodes.
-     */
-    private int clusterMode = 0;
-
-    /**
      * Set of existing node.
      */
     private Set<Node> nodes = null;
@@ -180,12 +175,6 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
      */
     public TestStub(int mode) {
         stubMode = mode;
-        setup();
-    }
-
-    public TestStub(int stub, int cluster) {
-        stubMode = stub;
-        clusterMode = cluster;
         setup();
     }
 
@@ -352,21 +341,6 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
                 }
             }
         }
-
-        if (clusterMode > 0) {
-            nodeInetAddresses = new ArrayList<InetAddress>();
-
-            for (byte i = 0; i < clusterMode; i++) {
-                InetAddress ia = null;
-                try {
-                    ia = InetAddress.getByAddress(
-                            new byte[] {0x00, 0x00, 0x00, 0x00});
-                } catch (UnknownHostException e) {
-                    Assert.fail("failed to create InetAddress.");
-                }
-                nodeInetAddresses.add(ia);
-            }
-        }
     }
 
     private Set<Node> getNodeSet(Set<Node> nodeSet) {
@@ -464,7 +438,10 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
 
     @Override
     public List<InetAddress> getClusteredControllers() {
-        return null;
+        List<InetAddress> list = new ArrayList<InetAddress>();
+        InetAddress loopbackAddress = InetAddress.getLoopbackAddress();
+        list.add(loopbackAddress);
+        return list;
     }
 
     @Override
@@ -474,7 +451,7 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
 
     @Override
     public boolean amICoordinator() {
-        return false;
+      return true;
     }
 
     // ISwitchManager
