@@ -63,6 +63,10 @@ public class VTNFlowTest extends FlowModTaskTestBase {
                 for (MatchType mtype : MatchType.values()) {
                     for (short vlan : vlans) {
                         for (int pri : priorities) {
+                            String emsg = "(tenant name)" + tname
+                                    + ",(port)" + port.toString()
+                                    + ",(vlan)" + vlan
+                                    + ",(priority)" + pri;
                             Match match = new Match();
                             match.setField(MatchType.IN_PORT, port);
 
@@ -95,9 +99,10 @@ public class VTNFlowTest extends FlowModTaskTestBase {
 
                             // check VTNFlow.
                             // entries.
-                            assertTrue(vflow.getFlowEntries().contains(fent));
-                            assertEquals(flowNodes, vflow.getFlowNodes());
-                            assertEquals(flowPorts, vflow.getFlowPorts());
+                            assertTrue(emsg,
+                                       vflow.getFlowEntries().contains(fent));
+                            assertEquals(emsg, flowNodes, vflow.getFlowNodes());
+                            assertEquals(emsg, flowPorts, vflow.getFlowPorts());
                         }
                     }
                 }
@@ -105,11 +110,13 @@ public class VTNFlowTest extends FlowModTaskTestBase {
 
             for (Integer idle : createIntegers(-1, 3, false)) {
                 for (Integer hard : createIntegers(-1, 3, false)) {
+                    String emsg = "(tenant name)" + tname
+                            + ",(idle)" + idle + ",(hard)" + hard;
                     vflow.setTimeout(idle.intValue(), hard.intValue());
 
                     Flow flow = vflow.getFlowEntries().get(0).getFlow();
-                    assertEquals(idle.shortValue(), flow.getIdleTimeout());
-                    assertEquals(hard.shortValue(), flow.getHardTimeout());
+                    assertEquals(emsg, idle.shortValue(), flow.getIdleTimeout());
+                    assertEquals(emsg, hard.shortValue(), flow.getHardTimeout());
                 }
             }
         }
@@ -185,15 +192,16 @@ public class VTNFlowTest extends FlowModTaskTestBase {
         for (String tname : createStrings("strings", false)) {
             gid = new FlowGroupId(tname);
             vflow = new VTNFlow(gid);
-            assertEquals(gid, vflow.getGroupId());
+            assertEquals(tname, gid, vflow.getGroupId());
 
             pathSet.add(new VTenantPath(tname));
             vflow.addDependency(pathSet);
 
             for (VTenantPath path : pathSet) {
-                assertTrue(vflow.dependsOn(new VTenantPath(path.getTenantName())));
+                assertTrue(path.toString(),
+                           vflow.dependsOn(new VTenantPath(path.getTenantName())));
             }
-            assertFalse(vflow.dependsOn(tpathNotMatch));
+            assertFalse(tname, vflow.dependsOn(tpathNotMatch));
         }
     }
 
@@ -221,10 +229,13 @@ public class VTNFlowTest extends FlowModTaskTestBase {
                 vflow.addDependency(mv);
 
                 for (MacVlan regMacVlan : mvSet) {
+                    String emsg = "(mvSet)" + mvSet.toString()
+                            + ",(regMacVlan)" + regMacVlan.toString();
                     byte[] mac = NetUtils.longToByteArray6(regMacVlan.getMacAddress());
-                    assertTrue(vflow.dependsOn(new MacVlan(mac, regMacVlan.getVlan())));
+                    assertTrue(emsg,
+                               vflow.dependsOn(new MacVlan(mac, regMacVlan.getVlan())));
                 }
-                assertFalse(vflow.dependsOn(mvNotMatch));
+                assertFalse(mv.toString(), vflow.dependsOn(mvNotMatch));
             }
         }
     }
@@ -375,10 +386,12 @@ public class VTNFlowTest extends FlowModTaskTestBase {
         }
 
         for (NodeConnector port : ncSet) {
+            String emsg = port.toString();
+
             // create by FlowGroupId(String)
             FlowGroupId gid = new FlowGroupId(tname);
             VTNFlow vflow = new VTNFlow(gid);
-            assertEquals(gid, vflow.getGroupId());
+            assertEquals(emsg, gid, vflow.getGroupId());
 
             Match match = new Match();
             match.setField(MatchType.IN_PORT, port);
@@ -386,17 +399,17 @@ public class VTNFlowTest extends FlowModTaskTestBase {
             actions.addOutput(port);
 
             vflow.addFlow(vtnMgr, match, actions, priority);
-            assertTrue(vflow.isLocal(vtnMgr));
+            assertTrue(emsg, vflow.isLocal(vtnMgr));
 
             // create by FlowGroupId(InetAddress, long, String)
             gid = new FlowGroupId(ipaddr, 0L, tname);
             vflow = new VTNFlow(gid);
-            assertEquals(gid, vflow.getGroupId());
+            assertEquals(emsg, gid, vflow.getGroupId());
             vflow.addFlow(vtnMgr, match, actions, priority);
             if (port.getNode().equals(node0)) {
-                assertTrue(vflow.isLocal(vtnMgr));
+                assertTrue(emsg, vflow.isLocal(vtnMgr));
             } else {
-                assertFalse(vflow.isLocal(vtnMgr));
+                assertFalse(emsg, vflow.isLocal(vtnMgr));
             }
         }
     }

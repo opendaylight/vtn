@@ -8,6 +8,11 @@
  */
 package org.opendaylight.vtn.manager.internal;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.vtn.manager.IVTNManagerAware;
 import org.opendaylight.vtn.manager.IVTNModeListener;
@@ -321,4 +326,48 @@ public class FlowEventTestBase extends FlowModTaskTestBase {
             assertNull(portMapChangedInfo);
         }
     };
+
+
+    /**
+     * Serialize and deserialize an object.
+     *
+     * <p>
+     *   Note: This method doesn't check if deserialized object equals
+     *   input object.
+     * </p>
+     *
+     * @param o  An object to be tested.
+     * @return  A deserialized object is returned.
+     */
+    public Object eventSerializeTest(Object o) {
+        // Serialize the given object.
+        byte[] bytes = null;
+        try {
+            ByteArrayOutputStream bout = new ByteArrayOutputStream();
+            ObjectOutputStream out = new ObjectOutputStream(bout);
+
+            out.writeObject(o);
+            out.close();
+            bytes = bout.toByteArray();
+        } catch (Exception e) {
+            unexpected(e);
+        }
+        assertTrue(bytes.length != 0);
+
+        // Deserialize the object.
+        Object newobj = null;
+        try {
+            ByteArrayInputStream bin = new ByteArrayInputStream(bytes);
+            ObjectInputStream in = new ObjectInputStream(bin);
+            newobj = in.readObject();
+            in.close();
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        assertNotSame(o, newobj);
+//        assertEquals(o, newobj);
+
+        return newobj;
+    }
 }
