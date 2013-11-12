@@ -31,11 +31,12 @@ import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.FlowModTaskTestBase;
 import org.opendaylight.vtn.manager.internal.TestStub;
+import org.opendaylight.vtn.manager.internal.TestStubCluster;
 import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 
 
 /**
- * test for  {@link FlowAddEvent} and {@link FlowRemoveEvent}
+ * JUnit Test for  {@link FlowAddEvent} and {@link FlowRemoveEvent}
  */
 public class FlowEventTest extends FlowModTaskTestBase {
 
@@ -69,7 +70,7 @@ public class FlowEventTest extends FlowModTaskTestBase {
 
         // set IClusterGlobalService to stub which work
         // as have multiple cluster nodes.
-        TestStub stubNew = new TestStub(2, 2);
+        TestStubCluster stubNew = new TestStubCluster(2);
         ComponentImpl c = new ComponentImpl(null, null, null);
         Hashtable<String, String> properties = new Hashtable<String, String>();
         properties.put("containerName", "default");
@@ -111,15 +112,17 @@ public class FlowEventTest extends FlowModTaskTestBase {
         flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
 
         for (Boolean local : createBooleans(false)) {
+            String emsg = local.toString();
+
             FlowAddEvent addEvent = new FlowAddEvent(flow.getFlowEntries());
             addEvent.received(vtnMgr, local.booleanValue());
 
             if (local) {
-                assertEquals(0, stubObj.getFlowEntries().size());
+                assertEquals(emsg, 0, stubObj.getFlowEntries().size());
             } else {
                 flushAsyncTask(remoteTimeout);
 
-                assertEquals(2, stubObj.getFlowEntries().size());
+                assertEquals(emsg, 2, stubObj.getFlowEntries().size());
             }
 
             FlowRemoveEvent removeEvent
@@ -128,8 +131,7 @@ public class FlowEventTest extends FlowModTaskTestBase {
 
             flushAsyncTask(remoteTimeout);
 
-            assertEquals(0, stubObj.getFlowEntries().size());
-
+            assertEquals(emsg, 0, stubObj.getFlowEntries().size());
         }
     }
 }
