@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da6255ed_fd5d6a16",
+        "filename": "coordinator/test/modules/restjsonutil/Makefile",
+        "patchSetId": 1
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-13T07:13:50Z",
+      "side": 1,
+      "message": "Remove the trailing white space and tabs",
+      "revId": "04b79a133e2f538f38a44fb5696a070ce05b2209",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_1d639edd",
+        "filename": "coordinator/test/modules/restjsonutil/ut/Makefile",
+        "patchSetId": 1
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-13T07:13:50Z",
+      "side": 1,
+      "message": "Remove trailing white spaces, tabs and fix alignment issues in the file",
+      "revId": "04b79a133e2f538f38a44fb5696a070ce05b2209",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_dd9ce6c2",
+        "filename": "coordinator/test/modules/restjsonutil/ut/stub/curl/curl.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-13T07:13:50Z",
+      "side": 1,
+      "message": "The #include gaurd can be the file name alone.",
+      "revId": "04b79a133e2f538f38a44fb5696a070ce05b2209",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
