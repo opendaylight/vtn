@@ -232,12 +232,14 @@ public class TestUseVTNManagerBase extends TestBase {
         }
     }
 
+    private final String CONFIG_FILE_NAME = "vtnmanager.ini";
+
     /**
      * setup configuraion file and restart VTN Manager
      *
-     * @param timeout   A timeout value set to remoteFlowModTimeout.
+     * @param localTimeout   A timeout value set to flowModTimeout.
+     * @param remoteTimeout  A timeout value set to remoteFlowModTimeout.
      */
-    private final String CONFIG_FILE_NAME = "vtnmanager.ini";
     protected void setupVTNManagerForRemoteTaskTest(long localTimeout,
                                                     long remoteTimeout) {
         setupVTNManagerForRemoteTaskTest(GlobalConstants.STARTUPHOME.toString(),

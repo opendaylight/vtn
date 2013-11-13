@@ -2558,11 +2558,11 @@ public class VTNManagerIT extends TestBase {
 
     /**
      * Test method for
-     * {@link VTNManager#getMacEntries(VBridgePath)},
-     * {@link VTNManager#getMacEntries(VBridgePath)},
-     * {@link VTNManager#getMacEntry(VBridgePath, DataLinkAddress)},
-     * {@link VTNManager#removeMacEntry(VBridgePath, DataLinkAddress)},
-     * {@link VTNManager#flushMacEntries(VBridgePath)}
+     * {@link VTNManagerImpl#getMacEntries(VBridgePath)},
+     * {@link VTNManagerImpl#getMacEntries(VBridgePath)},
+     * {@link VTNManagerImpl#getMacEntry(VBridgePath, DataLinkAddress)},
+     * {@link VTNManagerImpl#removeMacEntry(VBridgePath, DataLinkAddress)},
+     * {@link VTNManagerImpl#flushMacEntries(VBridgePath)}
      */
     @Test
     public void testMacEntry() {
@@ -3087,9 +3087,9 @@ public class VTNManagerIT extends TestBase {
     /**
      * put a Mac Address Table Entry to Mac Address Table of specified bridge.
      *
-     * @param mgr   VTNManagerImpl
-     * @param bpath VBridgePath
-     * @param nc    NodeConnector
+     * @param listenData  {@code IListenDataPacket} service.
+     * @param bpath       VBridgePath
+     * @param nc          NodeConnector
      */
     private void putMacTableEntry(IListenDataPacket listenData, VBridgePath bpath, NodeConnector nc) {
         byte[] src = new byte[] {(byte)0x00, (byte)0x01, (byte)0x01,

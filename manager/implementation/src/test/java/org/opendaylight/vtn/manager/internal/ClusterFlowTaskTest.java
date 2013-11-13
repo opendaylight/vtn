@@ -27,7 +27,7 @@ import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 
 /**
- * test for {@link ClusterAddTask} and {@link ClusterRemoveTask}.
+ * test for {@link ClusterFlowAddTask} and {@link ClusterFlowRemoveTask}.
  */
 public class ClusterFlowTaskTest extends FlowModTaskTestBase {
 
@@ -35,7 +35,7 @@ public class ClusterFlowTaskTest extends FlowModTaskTestBase {
      * Test method for
      * {@link ClusterFlowModTask#ClusterFlowModTask(VTNManagerImpl, FlowEntry)},
      * {@link ClusterFlowAddTask#ClusterFlowAddTask(VTNManagerImpl, FlowEntry)},
-     * {@link ClusterFlowAddTask#ClusterFlowRemoveTask(VTNManagerImpl, FlowEntry)},
+     * {@link ClusterFlowRemoveTask#ClusterFlowRemoveTask(VTNManagerImpl, FlowEntry)},
      */
     @Test
     public void testClusterFlowTask() {

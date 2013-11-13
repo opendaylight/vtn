@@ -243,7 +243,7 @@ public abstract class TestBase extends Assert {
      * @param start    The first value.
      * @param count    The number of Shorts to be created.
      * @param setNull  Set {@code null} to returned list if {@code true}.
-     * @return A list of {@link Shorts}.
+     * @return A list of {@link Short}.
      */
     protected static List<Short> createShorts(short start, short count,
                                               boolean setNull) {
@@ -684,7 +684,6 @@ public abstract class TestBase extends Assert {
      * @param sender    A sender address
      * @param target    A target address
      * @param vlan      specify vlan ID. if vlan < 0, vlan tag is not added.
-     * @param arptype   ARP.REQUEST or ARP.REPLY.
      * @return  A {@link Ethernet} object.
      */
     protected Ethernet createIPv4Packet(byte[] src, byte[] dst, byte[] sender,
@@ -827,7 +826,6 @@ public abstract class TestBase extends Assert {
      * @param target    A target address
      * @param vlan      specify vlan ID. if vlan < 0, vlan tag is not added.
      * @param nc        A node connector
-     * @param arptype ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
      * @return  A {@link PacketContext} object.
      */
     protected RawPacket createIPv4RawPacket(byte[] src, byte[] dst,
@@ -837,7 +835,7 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * get {@link InetAddreess} object from byte arrays.
+     * get {@link InetAddress} object from byte arrays.
      *
      * @param ipaddr    byte arrays of IP Address.
      * @return  A InetAddress object.

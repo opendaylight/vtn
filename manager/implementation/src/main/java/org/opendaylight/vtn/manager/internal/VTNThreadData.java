@@ -112,7 +112,8 @@ public final class VTNThreadData {
      * Schedule the VTN mode check.
      *
      * <p>
-     *   The VTN mode check will be executed by {@link #cleanUp()}.
+     *   The VTN mode check will be executed by
+     *   {@link #cleanUp(VTNManagerImpl)}.
      * </p>
      */
     void setModeChanged() {

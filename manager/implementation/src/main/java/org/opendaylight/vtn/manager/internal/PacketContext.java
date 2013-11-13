@@ -370,8 +370,8 @@ public class PacketContext {
      * Purge VTN flows relevant to obsolete MAC address table entries.
      *
      * <p>
-     *   Obsolte MAC address entries added by
-     *   {@link addObsoleteEntry(Long, MacTableEntry)} are removed.
+     *   This method removes obsolte MAC address entries added by
+     *   {@link #addObsoleteEntry(Long, MacTableEntry)}.
      * </p>
      *
      * @param mgr   VTN manager service.

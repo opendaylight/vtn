@@ -57,12 +57,14 @@ import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
  */
 public class GlobalResourceManagerTest extends TestBase {
     /**
-     * Cluster cache name associated with {@link #vlanMaps}.
+     * Cluster cache name associated with
+     * {@link GlobalResourceManager#vlanMaps}.
      */
     private static final String  CACHE_VLANMAP = "vtn.vlanmap";
 
     /**
-     * Cluster cache name associated with {@link #portMaps}.
+     * Cluster cache name associated with
+     * {@link GlobalResourceManager#portMaps}.
      */
     private static final String  CACHE_PORTMAP = "vtn.portmap";
 
@@ -458,7 +460,7 @@ public class GlobalResourceManagerTest extends TestBase {
     }
 
     /**
-     * test case for {@link GlobalResourceManager#exectuteAsync()}.
+     * test case for {@link GlobalResourceManager#executeAsync(Runnable)}.
      */
     @Test
     public void testExecuteAsync() {

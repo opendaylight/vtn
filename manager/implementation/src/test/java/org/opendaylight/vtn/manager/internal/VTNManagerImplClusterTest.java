@@ -69,6 +69,7 @@ import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.RawPacketEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VBridgeEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VBridgeIfEvent;
+import org.opendaylight.vtn.manager.internal.cluster.VNodeEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VlanMapEvent;
 
@@ -117,7 +118,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
 
     /**
      * test method for {@link VNodeEvent}.
-     * This test event class which inherit {@link VnodeEvent}.
+     * This test event class which inherit {@link VNodeEvent}.
      */
     @Test
     public void testClusterEvent() {
@@ -738,7 +739,8 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
 
     /**
      * common method for
-     * {@link testReceiveDataPacketBCLoop} and {@link testReceiveDataPacketUCLoop}.
+     * {@link #testReceiveDataPacketBCLoop(VTNManagerImpl, VBridgePath, MapType, Set, Set, TestStub)} and
+     * {@link #testReceiveDataPacketUCLoop(VTNManagerImpl, VBridgePath, MapType, Set, Set, TestStub)}.
      * this method expected that action for received packet is flooding to mapped port.
      */
     private void testReceiveDataPacketCommonLoop(VTNManagerImpl mgr, VBridgePath bpath,
@@ -912,7 +914,8 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
 
     /**
      * common method for
-     * {@link testReceiveDataPacketBCLoop} and {@link testReceiveDataPacketUCLoop}.
+     * {@link #testReceiveDataPacketBCLoop(VTNManagerImpl, VBridgePath, MapType, Set, Set, TestStub)} and
+     * {@link #testReceiveDataPacketUCLoop(VTNManagerImpl, VBridgePath, MapType, Set, Set, TestStub)}.
      * this method expected that action for received packet is a port host is connected to.
      *
      */

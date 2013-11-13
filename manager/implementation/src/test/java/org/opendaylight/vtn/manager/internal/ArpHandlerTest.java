@@ -73,7 +73,7 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * test case for {@link ArpHander#receive}
+     * test case for {@link ArpHandler#receive(PacketContext)}.
      */
     @Test
     public void testReceive() {
@@ -293,7 +293,8 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * test case for {@link ArpHander#probe} and {@link ArpHander#find}
+     * test case for {@link ArpHandler#probe(HostNodeConnector)} and
+     * {@link ArpHandler#find(InetAddress)}.
      */
     @Test
     public void testFindProbe() {

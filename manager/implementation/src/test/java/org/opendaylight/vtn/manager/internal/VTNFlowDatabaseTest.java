@@ -681,8 +681,9 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
     }
 
     /**
-     * Check entries in flowDB
-     * after {@link removeFlows(VTNManager, VTenantPath)} was invoked.
+     * Check entries in flowDB after
+     * {@link VTNFlowDatabase#removeFlows(VTNManagerImpl, VTenantPath)}
+     * was invoked.
      *
      * @param mgr   VTNManager service.
      * @param fdb   VTNFlowDatabase.
@@ -712,8 +713,8 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
     }
 
     /**
-     * Check Flow entries in flowDB
-     * after {@link removeFlows(VTNManager, MacVlan)} was invoked.
+     * Check Flow entries in flowDB after
+     * {@link VTNFlowDatabase#removeFlows(VTNManagerImpl, MacVlan)} was invoked.
      *
      * @param mgr       VTNManager service.
      * @param fdb       VTNFlowDatabase.
@@ -853,8 +854,8 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
     }
 
     /**
-     * Check Flow entries in flowDB
-     * after {@link removeFlows(VTNManager, List<VTNFlow>)} was invoked.
+     * Check Flow entries in flowDB after
+     * {@link VTNFlowDatabase#removeFlows(VTNManagerImpl, List)} was invoked.
      *
      * @param mgr           VTNManager service.
      * @param fdb           VTNFlowDatabase.
@@ -960,7 +961,7 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
      * Add FlowEntry to VTNFlow.
      *
      * @param   flow        A {@link VTNFlow}.
-     * @param   inPort      A ingress {@link NodeConector}.
+     * @param   inPort      A ingress {@link NodeConnector}.
      * @param   inVlan      A incoming VLAN ID.
      * @param   outPort     A outgoing {@link NodeConnector}.
      * @param   priority    A priority of FlowEntry.

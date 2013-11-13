@@ -36,7 +36,7 @@ import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 
 /**
- * test for {@link FlowAddTaskTest} and {@link FlowRemoveTaskTest}.
+ * test for {@link FlowAddTask} and {@link FlowRemoveTask}.
  */
 public class FlowTaskTest extends FlowModTaskTestBase {
 
@@ -235,8 +235,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
      * {@link FlowRemoveTask#execute()},
      * {@link FlowModTask#run()}.
      *
-     * In this case {@link installLocal()} and
-     * {@link uninstallLocal()} timeout.
+     * In case that local flow modification is timed out.
      */
     @Test
     public void testFlowTaskTestLocalTimeout() {

@@ -26,7 +26,7 @@ import org.opendaylight.controller.sal.utils.StatusCode;
  * This class represents an abstract task to be executed on VTN flow programmer
  * thread.
  *
- * @see VTNFlowProgrammer
+ * @see VTNFlowDatabase
  */
 public abstract class FlowModTask implements Runnable {
     /**

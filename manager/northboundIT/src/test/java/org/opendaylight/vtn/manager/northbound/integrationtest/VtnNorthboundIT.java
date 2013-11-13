@@ -247,8 +247,8 @@ public class VtnNorthboundIT extends TestBase {
      * @param method    A request method.
      * @param body      A request body send with request.
      * @param contentType A contentType of request.
-     * @param auth      if {@true} authorization succeed,
-     *                  else if {@false} authorization fails.
+     * @param auth      if {@code true} authorization succeed,
+     *                  else if {@code false} authorization fails.
      * @return  A returned result for request.
      */
     private String getJsonResult(String restUrl, String method, String body,
@@ -2994,11 +2994,11 @@ public class VtnNorthboundIT extends TestBase {
     /**
      * put a Mac Address Table Entry to Mac Address Table of specified bridge.
      *
-     * @param mgr   VTNManagerImpl Service.
-     * @param src   A source MAC Address.
-     * @param sender A sender IP addesss.
-     * @param bpath A VBridgePath.
-     * @param nc    A NodeConnector.
+     * @param listenData  {@code IListenDataPacket} service.
+     * @param bpath       A path to the virtual L2 bridge.
+     * @param src         A source MAC Address.
+     * @param sender      A sender IP addesss.
+     * @param nc          A NodeConnector.
      */
     private void putMacTableEntry(IListenDataPacket listenData, VBridgePath bpath,
                                   byte[] src, byte[] sender, NodeConnector nc) {

@@ -40,7 +40,7 @@ public class VTNNeutronUtilsTest extends TestBase {
 
     /**
      * Test method for
-     * {@link VTNNeutronUtils#getException()}.
+     * {@link VTNNeutronUtils#getException(Status)}.
      */
     @Test
     public void testGetException() {

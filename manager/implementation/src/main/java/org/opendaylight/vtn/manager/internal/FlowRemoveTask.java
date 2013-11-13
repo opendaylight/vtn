@@ -117,11 +117,6 @@ public class FlowRemoveTask extends RemoteFlowModTask {
     /**
      * Wait for completion of this task.
      *
-     * <p>
-     *   This method uses a timeout value returned by
-     *   {@link #getTaskTimeout()}.
-     * </p>
-     *
      * @return  {@link FlowModResult} which indicates the result of this task
      *          is returned.
      */

@@ -24,14 +24,14 @@ import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.FlowEventTestBase;
 
 /**
- * JUnit test for {@link VTenantEvent}
+ * JUnit test for {@link VTenantEvent}.
  */
 public class VTenantEventTest extends FlowEventTestBase {
 
     /**
      * Test case for getter methods and
      * {@link VNodeEvent#isSingleThreaded(boolean)} and
-     * {@link VNodeEvent#isSaveConfig(boolean)}.
+     * {@link VNodeEvent#isSaveConfig()}.
      */
     @Test
     public void testGetter() {

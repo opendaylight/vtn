@@ -87,7 +87,7 @@ public class VBridgeState implements Serializable {
      *
      * <p>
      *   If at least one faulted path exists in the bridge, the bridge state
-     *   is always changed to {@link VNodeState.DOWN}.
+     *   is always changed to {@link VNodeState#DOWN}.
      * </p>
      *
      * @param state  The state of the virtual bridge.
@@ -126,7 +126,7 @@ public class VBridgeState implements Serializable {
      * Add the given node path to the set of faulted node paths.
      *
      * <p>
-     *   The bridge state is always changed to {@link VNodeState.DOWN}
+     *   The bridge state is always changed to {@link VNodeState#DOWN}
      *   after the call of this method.
      * </p>
      *

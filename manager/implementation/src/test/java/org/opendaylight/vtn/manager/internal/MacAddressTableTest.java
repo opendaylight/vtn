@@ -113,8 +113,8 @@ public class MacAddressTableTest extends TestBase {
 
     /**
      * Test case for
-     * {@link MacAddressTable#MacAddressTable(VTNManagerImpl, String, int)} and
-     * {@link MacAddressTable#destroy()}
+     * {@link MacAddressTable#MacAddressTable(VTNManagerImpl, VBridgePath, int)} and
+     * {@link MacAddressTable#destroy(boolean)}
      */
     @Test
     public void testMacAddressTable() {
@@ -135,7 +135,7 @@ public class MacAddressTableTest extends TestBase {
     }
 
     /**
-     * Test case for {@link MacAddressTable#setAgeInterval(VTNManagerImpl, int)}
+     * Test case for {@link MacAddressTable#setAgeInterval(int)}.
      */
     @Test
     public void testSetAgeInterval() {
@@ -151,9 +151,9 @@ public class MacAddressTableTest extends TestBase {
 
     /**
      * Test case for
-     * {@link MacAddressTable#add(VTNManagerImpl, PacketContext)},
-     * {@link MacAddressTable#get(PacketContext)},
-     * {@link MacAddressTable#remove(PacketContext)},
+     * {@link MacAddressTable#add(PacketContext)},
+     * {@link MacAddressTable#get(Long)},
+     * {@link MacAddressTable#remove(Long)},
      * {@link MacAddressTable#getEntry(DataLinkAddress)},
      * {@link MacAddressTable#getEntries()}
      */
@@ -554,7 +554,8 @@ public class MacAddressTableTest extends TestBase {
     }
 
     /**
-     * Test case for {@link entryUpdate() and entryDeleted()}
+     * Test case for {@link MacAddressTable#entryUpdated(MacTableEntry)} and
+     * {@link MacAddressTable#entryDeleted(MacTableEntryId)}.
      */
     @Test
     public void testEntryUpdatedAndDeleted() {
@@ -649,7 +650,7 @@ public class MacAddressTableTest extends TestBase {
     }
 
     /**
-     * Test case for {@link age())}
+     * Test case for {@link MacAddressTable#age()}.
      */
     @Test
     public void testAge() {

@@ -351,7 +351,7 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
          *
          * @param count     A expected number of times vlanMapChanged() was called.
          * @param path      A VBridgePath expect to be notified.
-         * @param name      A map-id expect to be notified.
+         * @param id        A map-id expect to be notified.
          * @param type      A type expect to be notified.
          */
         synchronized void checkVlmapInfo(int count, VBridgePath path,
@@ -391,7 +391,7 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
          *
          * @param count     A expected number of times portMapChanged() was called.
          * @param path      A VBridgeIfPath expect to be notified.
-         * @param name      A PortMapConfig expect to be notified.
+         * @param pconf     A PortMapConfig expect to be notified.
          * @param type      A type expect to be notified.
          */
         synchronized void checkPmapInfo(int count, VBridgeIfPath path,

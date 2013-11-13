@@ -15,7 +15,7 @@ import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
- * JUnit Test for {@link FlowModresult}.
+ * JUnit Test for {@link FlowModResult}.
  */
 public class FlowModResultTest {
 

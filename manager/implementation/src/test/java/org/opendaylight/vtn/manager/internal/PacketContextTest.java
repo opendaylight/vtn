@@ -96,7 +96,7 @@ public class PacketContextTest extends TestUseVTNManagerBase {
     }
 
     /**
-     * Test case for {@link PacketContext(RawPacket raw, Ethernet ether)}
+     * Test case for {@link PacketContext#PacketContext(RawPacket, Ethernet)}.
      *
      * @param src       src MAC address.
      * @param dst       dst MAC address.
@@ -235,7 +235,7 @@ public class PacketContextTest extends TestUseVTNManagerBase {
     }
 
     /**
-     * Test case for {@link PacketContext(RawPacket raw, Ethernet ether)}
+     * Test case for {@link PacketContext#PacketContext(RawPacket, Ethernet)}.
      *
      * @param ether     Ethernet frame
      * @param src       src MAC address

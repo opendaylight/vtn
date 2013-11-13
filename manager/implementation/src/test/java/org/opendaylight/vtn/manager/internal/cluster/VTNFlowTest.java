@@ -166,7 +166,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
 
     /**
      * test case for
-     * {@link VTNFlow#addDependency(VTenantPath)},
+     * {@link VTNFlow#addDependency(Set)},
      * {@link VTNFlow#dependsOn(VTenantPath)}.
      */
     @Test

@@ -28,6 +28,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentMap;
 
+import org.apache.felix.dm.Component;
 import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -91,11 +92,15 @@ import org.opendaylight.vtn.manager.internal.cluster.FlowRemoveEvent;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
 import org.opendaylight.vtn.manager.internal.cluster.RawPacketEvent;
+import org.opendaylight.vtn.manager.internal.cluster.VBridgeIfImpl;
+import org.opendaylight.vtn.manager.internal.cluster.VBridgeImpl;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantEvent;
+import org.opendaylight.vtn.manager.internal.cluster.VTenantImpl;
+import org.opendaylight.vtn.manager.internal.cluster.VlanMapImpl;
 
 /**
- * JUnit test for {@link VTNManagerImplTest}.
+ * JUnit test for {@link VTNManagerImpl}.
  *
  * <p>
  * Tests of {@link VTenantImpl}, {@link VBridgeImpl}, {@link VBridgeIfImpl},
@@ -111,7 +116,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
     /**
      * Test method for
-     * {@link VTNManagerImpl#init()},
+     * {@link VTNManagerImpl#init(Component)},
      * {@link VTNManagerImpl#destroy()}
      */
     @Test
@@ -2980,7 +2985,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * Test method for {@link VTNManagerImpl#readObject(ObjectInputStream))}
+     * Test method for {@link VTNManagerImpl#readObject(ObjectInputStream)}.
      */
     @Test
     public void testReadObject() {

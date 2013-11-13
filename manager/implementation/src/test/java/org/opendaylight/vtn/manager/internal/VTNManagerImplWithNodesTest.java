@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.apache.felix.dm.Component;
 import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -78,6 +79,10 @@ import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
+import org.opendaylight.vtn.manager.internal.cluster.VBridgeIfImpl;
+import org.opendaylight.vtn.manager.internal.cluster.VBridgeImpl;
+import org.opendaylight.vtn.manager.internal.cluster.VTenantImpl;
+import org.opendaylight.vtn.manager.internal.cluster.VlanMapImpl;
 
 /**
  * JUnit test for {@link VTNManagerImplTest}.
@@ -98,7 +103,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
     /**
      * Test method for
-     * {@link VTNManagerImpl#init()},
+     * {@link VTNManagerImpl#init(Component)},
      * {@link VTNManagerImpl#destroy()}.
      * {@code resume()} method of some modules are also tested.
      */
@@ -223,7 +228,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
     /**
      * Test method for
-     * {@link VTNManagerImpl#init()},
+     * {@link VTNManagerImpl#init(Component)},
      * {@link VTNManagerImpl#destroy()}.
      * {@code resume()} method of some modules are also tested.
      *
@@ -1112,10 +1117,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
      * @param mgr       VTN Manager service.
      * @param bpath     VBridgePath which is checked.
      * @param ifp       VBridgeIfPath which is checked.
-     * @param nc        NodeConnector which is changed status
-     * @param otherNc   NodeConnector which is changed status but don't match mapped one.
-     * @param node      Node which is changed status
-     * @param onode     Node which is changed status but don't match mapped one.
+     * @param chgNc     NodeConnector which is changed status
+     * @param chgNode   Node which is changed status
      * @param pmconf    PortMapConfig. If there are no portmap, specify null.
      * @param vlconf    VlanMapConfig. If there are no vlanmap, specify null.
      * @param mapType   MapType
@@ -2167,7 +2170,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
     /**
      * Test method for
      * {@link VTNManagerImpl#find(InetAddress)},
-     * {@link internal.VTNManagerImpl#findHost(InetAddress, Set)},
+     * {@link VTNManagerImpl#findHost(InetAddress, Set)},
      * {@link VTNManagerImpl#probe(HostNodeConnector)},
      * {@link VTNManagerImpl#probeHost(HostNodeConnector)}.
      */
@@ -2477,7 +2480,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
     /**
      * common method for
-     * {@link testReceiveDataPacketBCLoop} and {@link testReceiveDataPacketUCLoop}.
+     * {@link #testReceiveDataPacketBCLoop(VTNManagerImpl, VBridgePath, MapType, Set, TestStub)} and
+     * {@link #testReceiveDataPacketUCLoop(VTNManagerImpl, VBridgePath, MapType, Set, TestStub)}.
      * this method expected that action for received packet is flooding to mapped port.
      */
     private void testReceiveDataPacketCommonLoop(VTNManagerImpl mgr, VBridgePath bpath,
@@ -2633,7 +2637,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
     /**
      * common method for
-     * {@link testReceiveDataPacketBCLoop} and {@link testReceiveDataPacketUCLoop}.
+     * {@link #testReceiveDataPacketBCLoop(VTNManagerImpl, VBridgePath, MapType, Set, TestStub)} and
+     * {@link #testReceiveDataPacketUCLoop(VTNManagerImpl, VBridgePath, MapType, Set, TestStub)}.
      * this method expected that action for received packet is a port host is connected to.
      *
      */

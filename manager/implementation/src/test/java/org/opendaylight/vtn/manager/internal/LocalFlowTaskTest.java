@@ -32,7 +32,7 @@ import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 
 /**
- * test for {@link LocalFlowTask}.
+ * test for {@link LocalFlowAddTask} and {@link LocalFlowRemoveTask}.
  */
 public class LocalFlowTaskTest extends FlowModTaskTestBase {
 

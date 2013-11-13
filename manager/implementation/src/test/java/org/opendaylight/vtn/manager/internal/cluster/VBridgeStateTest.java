@@ -194,7 +194,7 @@ public class VBridgeStateTest extends TestBase {
     }
 
     /**
-     * Test case for {@link VBridgeState#equals(object)} and
+     * Test case for {@link VBridgeState#equals(Object)} and
      * {@link VBridgeState#hashCode()}.
      */
     @Test
@@ -305,7 +305,7 @@ public class VBridgeStateTest extends TestBase {
     /**
      * Convert an edge to node path.
      *
-     * @param An edge.
+     * @param edge  An edge.
      * @return  A converted node path.
      */
     private ObjectPair<Node, Node> toNodePath(Edge edge) {

@@ -184,7 +184,7 @@ public class NetworkHandlerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link NetworkHandler#neutronNetworkUpdated(NeutronNetwork, NeutronNetwork)}.
+     * {@link NetworkHandler#neutronNetworkUpdated(NeutronNetwork)}.
      */
     @Test
     public void testNeutronNetworkUpdated() {

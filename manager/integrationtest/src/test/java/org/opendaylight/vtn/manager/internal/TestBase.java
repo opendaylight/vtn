@@ -563,7 +563,6 @@ public abstract class TestBase extends Assert {
      * @param sender    A sender address
      * @param target    A target address
      * @param vlan      specify val ID. if vlan < 0, vlan tag is not added.
-     * @param arptype   ARP.REQUEST or ARP.REPLY.
      * @return  A {@link Ethernet} object.
      */
     protected Ethernet createIPv4Packet (byte[] src, byte[] dst, byte[] sender, byte [] target, short vlan) {
@@ -670,7 +669,6 @@ public abstract class TestBase extends Assert {
      * @param target    A target address
      * @param vlan      specify val ID. if vlan < 0, vlan tag is not added.
      * @param nc        A node connector
-     * @param arptype   ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
      * @return  A {@link PacketContext}.
      */
     protected RawPacket createIPv4RawPacket (byte[] src, byte[] dst, byte[] sender, byte [] target, short vlan, NodeConnector nc) {
