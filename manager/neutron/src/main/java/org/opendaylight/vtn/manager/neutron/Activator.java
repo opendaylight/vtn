@@ -12,6 +12,7 @@ package org.opendaylight.vtn.manager.neutron;
 import org.apache.felix.dm.Component;
 
 import org.opendaylight.controller.networkconfig.neutron.INeutronNetworkAware;
+import org.opendaylight.controller.networkconfig.neutron.INeutronPortAware;
 import org.opendaylight.controller.sal.core.ComponentActivatorAbstractBase;
 
 import org.opendaylight.vtn.manager.IVTNManager;
@@ -48,7 +49,9 @@ public class Activator extends ComponentActivatorAbstractBase {
      */
     @Override
     public Object[] getImplementations() {
-        return new Object[]{NetworkHandler.class};
+        Object[] res = {NetworkHandler.class,
+                        PortHandler.class};
+        return res;
     }
 
     /**
@@ -70,6 +73,17 @@ public class Activator extends ComponentActivatorAbstractBase {
         if (imp.equals(NetworkHandler.class)) {
             // Export the services.
             c.setInterface(INeutronNetworkAware.class.getName(), null);
+
+            // Create service dependencies.
+            c.add(createServiceDependency().
+                  setService(IVTNManager.class).
+                  setCallbacks("setVTNManager", "unsetVTNManager").
+                  setRequired(true));
+        }
+
+        if (imp.equals(PortHandler.class)) {
+            // Export the services.
+            c.setInterface(INeutronPortAware.class.getName(), null);
 
             // Create service dependencies.
             c.add(createServiceDependency().
