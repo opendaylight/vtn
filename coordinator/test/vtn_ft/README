@@ -1,0 +1,32 @@
+FUNCTIONAL TEST Scripts for VTN COORDINATOR INTERACTION WITH VTN MANAGER
+
+
+Purpose
+======
+    * Intented to test the interface messages between VTN and VTN Coordinator
+    * This script will test all the create/update/delete of the components in the VTN Model.
+    * The script will issue requests to the VTN Coordinator and verify if the same VTN Component is created at the controller.
+
+
+Pre-Requisites
+==============
+    * VTN Coordinator must be running
+    * Instance of Controller with VTN Mananger is running
+    * Please run "yum install python-requests" to run the tests
+
+
+Configuration
+=============
+    * The data files are names with extension 'data'. 
+    * The controller related details can be edited in controller.data
+    * The VTN VBR attributes can be edited in vtn_vbr.data
+    * The coordinator Port and other details can be modified in vtn_testconfig.py
+
+
+Execution
+=========
+    * Please ensure the pre-requisites.
+    * To execute Controller related test cases
+      python controller.py
+    * To execute VTN-VBR cases
+      python vtn_vbr.py
