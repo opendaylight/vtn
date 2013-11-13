@@ -43,7 +43,9 @@ import org.opendaylight.vtn.manager.VlanMapConfig;
 
 import org.opendaylight.controller.northbound.commons.exception.ResourceNotFoundException;
 import org.opendaylight.controller.northbound.commons.exception.UnsupportedMediaTypeException;
+import org.opendaylight.controller.northbound.commons.exception.BadRequestException;
 import org.opendaylight.controller.sal.authorization.Privilege;
+import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.Status;
@@ -310,6 +312,74 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
         VBridgePath path = new VBridgePath(tenantName, bridgeName);
         try {
             return mgr.getVlanMap(path, mapId);
+        } catch (VTNException e) {
+            throw getException(e.getStatus());
+        }
+    }
+
+    /**
+     * Search for a VLAN mapping information associated with the specified
+     * VLAN ID and node.
+     *
+     * @param containerName  The name of the container.
+     * @param tenantName     The name of the virtual tenant.
+     * @param bridgeName     The name of the virtual bridge.
+     * @param vlan           VLAN ID in the VLAN mapping configuration.
+     *                       Zero is used if omitted.
+     *                       Note that this API never checks whether the
+     *                       specified VLAN ID is valid as VLAN ID.
+     * @param node           A string representation of a node in the VLAN
+     *                       mapping configuration.
+     *                       {@code null} is used if omitted.
+     * @return  VLAN mapping information associated with the specified VLAN
+     *          mapping configuration.
+     */
+    @Path("{bridgeName}/vlanmapsearch/byconf")
+    @GET
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @TypeHint(VlanMap.class)
+    @StatusCodes({
+            @ResponseCode(code = 200, condition = "Operation successful"),
+            @ResponseCode(code = 400, condition = "Failed to parse the specified VLAN ID or node due to malformed syntax."),
+            @ResponseCode(code = 401, condition = "Authentication failed"),
+            @ResponseCode(code = 404, condition = "The specified resource does not exist"),
+            @ResponseCode(code = 500, condition = "Failed due to internal error"),
+            @ResponseCode(code = 503, condition = "One or more of Controller Services are unavailable")})
+    public VlanMap getVlanMap(
+            @PathParam("containerName") String containerName,
+            @PathParam("tenantName") String tenantName,
+            @PathParam("bridgeName") String bridgeName,
+            @QueryParam("vlan") String vlan,
+            @QueryParam("node") String node) {
+        checkPrivilege(containerName, Privilege.READ);
+
+        IVTNManager mgr = getVTNManager(containerName);
+        VBridgePath path = new VBridgePath(tenantName, bridgeName);
+
+        short vid;
+        if (vlan == null) {
+            vid = 0;
+        } else {
+            try {
+                vid = Short.parseShort(vlan);
+            } catch (NumberFormatException e) {
+                throw new BadRequestException("Invalid VLAN ID.");
+            }
+        }
+
+        Node nd;
+        if (node == null) {
+            nd = null;
+        } else {
+            nd = Node.fromString(node);
+            if (nd == null) {
+                throw new BadRequestException("Invalid node.");
+            }
+        }
+
+        VlanMapConfig vlconf = new VlanMapConfig(nd, vid);
+        try {
+            return mgr.getVlanMap(path, vlconf);
         } catch (VTNException e) {
             throw getException(e.getStatus());
         }

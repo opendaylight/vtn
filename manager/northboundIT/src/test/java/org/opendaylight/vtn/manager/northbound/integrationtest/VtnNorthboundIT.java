@@ -2410,12 +2410,48 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals(0, vLANMapArray.length());
 
         // Test GET VLAN Mapping expecting 404, setting dummy vtn
-        result = getJsonResult(url + "default/vtns/" + tname_dummy + "/vbridges/" + bname + "/vlanmaps");
+        String searchByConf = "/vlanmapsearch/byconf";
+        String badTenant = url + "default/vtns/" + tname_dummy +
+            "/vbridges/" + bname;
+        result = getJsonResult(badTenant + "/vlanmaps");
         Assert.assertEquals(404, httpResponseCode.intValue());
+        result = getJsonResult(badTenant + searchByConf);
+        Assert.assertEquals(HttpURLConnection.HTTP_NOT_FOUND,
+                            httpResponseCode.intValue());
+        result = getJsonResult(badTenant + searchByConf + "?vlan=1");
+        Assert.assertEquals(HttpURLConnection.HTTP_NOT_FOUND,
+                            httpResponseCode.intValue());
 
         // Test GET VLAN Mapping expecting 404, setting dummy vbridge
         result = getJsonResult(baseURL + bname_dummy + "/vlanmaps");
         Assert.assertEquals(404, httpResponseCode.intValue());
+        result = getJsonResult(baseURL + bname_dummy + searchByConf);
+        Assert.assertEquals(HttpURLConnection.HTTP_NOT_FOUND,
+                            httpResponseCode.intValue());
+        result = getJsonResult(baseURL + bname_dummy + searchByConf +
+                               "?vlan=1");
+        Assert.assertEquals(HttpURLConnection.HTTP_NOT_FOUND,
+                            httpResponseCode.intValue());
+
+        // Specifying malformed VLAN ID and node.
+        String searchUrl = baseURL + bname + searchByConf;
+        result = getJsonResult(searchUrl + "?vlan=0x123");
+        Assert.assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
+                            httpResponseCode.intValue());
+        result = getJsonResult(searchUrl + "?node=InvalidNode");
+        Assert.assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
+                            httpResponseCode.intValue());
+
+        // Specifying VLAN ID and node which don't exist.
+        result = getJsonResult(searchUrl + "?vlan=0");
+        Assert.assertEquals(HttpURLConnection.HTTP_NOT_FOUND,
+                            httpResponseCode.intValue());
+        result = getJsonResult(searchUrl + "?node=OF|12345");
+        Assert.assertEquals(HttpURLConnection.HTTP_NOT_FOUND,
+                            httpResponseCode.intValue());
+        result = getJsonResult(searchUrl + "?vlan=0&node=OF|1000");
+        Assert.assertEquals(HttpURLConnection.HTTP_NOT_FOUND,
+                            httpResponseCode.intValue());
 
         // Test POST VLAN Mapping expecting 404, setting dummy vbridge
         String requestBody = "{\"vlan\":\"" + vlan1 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
@@ -2603,9 +2639,22 @@ public class VtnNorthboundIT extends TestBase {
         json = new JSONObject(jt);
         Assert.assertEquals(200, httpResponseCode.intValue());
 
-        Assert.assertEquals(nodeType + "-" + nodeid1 + "." + vlan1, json.getString("id"));
+        String mapId = nodeType + "-" + nodeid1 + "." + vlan1;
+        Assert.assertEquals(mapId, json.getString("id"));
         Assert.assertEquals(vlan1, json.getString("vlan"));
         JSONObject nodeinfo = json.getJSONObject("node");
+        Assert.assertEquals(nodeType, nodeinfo.getString("type"));
+        Assert.assertEquals(nodeid1, nodeinfo.getString("id"));
+
+        result = getJsonResult(baseURL + bname + searchByConf + "?vlan=" +
+                               vlan1 + "&node=" + nodeType + "|" + nodeid1);
+        Assert.assertEquals(HttpURLConnection.HTTP_OK,
+                            httpResponseCode.intValue());
+        jt = new JSONTokener(result);
+        json = new JSONObject(jt);
+        Assert.assertEquals(mapId, json.getString("id"));
+        Assert.assertEquals(vlan1, json.getString("vlan"));
+        nodeinfo = json.getJSONObject("node");
         Assert.assertEquals(nodeType, nodeinfo.getString("type"));
         Assert.assertEquals(nodeid1, nodeinfo.getString("id"));
 

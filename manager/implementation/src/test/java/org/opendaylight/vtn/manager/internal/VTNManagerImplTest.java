@@ -2029,6 +2029,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
      * {@link VTNManagerImpl#addVlanMap(VBridgePath, VlanMapConfig)},
      * {@link VTNManagerImpl#removeVlanMap(VBridgePath, java.lang.String)},
      * {@link VTNManagerImpl#getVlanMap(VBridgePath, java.lang.String)},
+     * {@link VTNManagerImpl#getVlanMap(VBridgePath, VlanMapConfig)},
      * {@link VTNManagerImpl#getVlanMaps(VBridgePath)}.
      */
     @Test
@@ -2070,6 +2071,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 VlanMap getmap = null;
                 try {
                     getmap = mgr.getVlanMap(bpath, map.getId());
+                    assertEquals(getmap, mgr.getVlanMap(bpath, vlconf));
                 } catch (VTNException e) {
                     unexpected(e);
                 }
@@ -2163,6 +2165,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
      * {@link VTNManagerImpl#addVlanMap(VBridgePath, VlanMapConfig)},
      * {@link VTNManagerImpl#removeVlanMap(VBridgePath, java.lang.String)},
      * {@link VTNManagerImpl#getVlanMap(VBridgePath, java.lang.String)},
+     * {@link VTNManagerImpl#getVlanMap(VBridgePath, VlanMapConfig)},
      * {@link VTNManagerImpl#getVlanMaps(VBridgePath)}.
      */
     @Test
@@ -2311,7 +2314,14 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         }
 
         try {
-            map = mgr.getVlanMap(bpath, null);
+            map = mgr.getVlanMap(bpath, (String)null);
+            fail("Throwing Exception was expected.");
+        } catch (VTNException e) {
+            assertEquals(StatusCode.BADREQUEST, e.getStatus().getCode());
+        }
+
+        try {
+            map = mgr.getVlanMap(bpath, (VlanMapConfig)null);
             fail("Throwing Exception was expected.");
         } catch (VTNException e) {
             assertEquals(StatusCode.BADREQUEST, e.getStatus().getCode());
@@ -2354,8 +2364,9 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         for (VBridgePath path : nbplist) {
             String emsg = (path == null) ? "null" : path.toString();
+            VlanMapConfig vlc = new VlanMapConfig(node, (short)0);
             try {
-                map = mgr.addVlanMap(path, new VlanMapConfig(node, (short) 0));
+                map = mgr.addVlanMap(path, vlc);
                 fail("Throwing Exception was expected.");
             } catch (VTNException e) {
                 assertEquals(emsg,
@@ -2368,6 +2379,14 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             } catch (VTNException e) {
                 assertEquals(emsg,
                         StatusCode.NOTFOUND, e.getStatus().getCode());
+            }
+
+            try {
+                map = mgr.getVlanMap(path, vlc);
+                fail("Throwing Exception was expected.");
+            } catch (VTNException e) {
+                assertEquals(emsg, StatusCode.NOTFOUND,
+                             e.getStatus().getCode());
             }
 
             try {
@@ -2390,6 +2409,13 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         try {
             map = mgr.getVlanMap(bpath, map.getId());
+            fail("Throwing Exception was expected.");
+        } catch (VTNException e) {
+            assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());
+        }
+
+        try {
+            map = mgr.getVlanMap(bpath, map);
             fail("Throwing Exception was expected.");
         } catch (VTNException e) {
             assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());

@@ -487,7 +487,7 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
 
     /**
      * check VTN configuration.
-     * note: this don't support a configuration which VBridge > 1
+     * note: this don't support a configuration which VBridge &gt; 1
      */
     protected void checkVTNconfig(VTenantPath tpath, List<VBridgePath> bpathlist,
             Map<VBridgeIfPath, PortMapConfig> pmaps, Map<VlanMap, VlanMapConfig> vmaps) {

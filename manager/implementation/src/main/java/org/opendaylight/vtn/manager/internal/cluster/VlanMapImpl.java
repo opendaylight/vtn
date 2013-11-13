@@ -52,7 +52,7 @@ public final class VlanMapImpl implements VBridgeNode, Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -784362913741696063L;
+    private static final long serialVersionUID = -7224821077858515527L;
 
     /**
      * Logger instance.
@@ -73,30 +73,44 @@ public final class VlanMapImpl implements VBridgeNode, Serializable {
     /**
      * Construct a VLAN mapping instance.
      *
-     * @param mgr    VTN Manager service.
-     * @param vbr    Virtual L2 bridge which includes this mapping.
+     * @param bpath  Path to the virtual L2 bridge which includes this mapping.
      * @param mapId  Identifier of the VLAN mapping.
      * @param vlconf  VLAN mapping configuration.
      */
-    VlanMapImpl(VTNManagerImpl mgr, VBridgeImpl vbr, String mapId,
-                VlanMapConfig vlconf) {
+    VlanMapImpl(VBridgePath bpath, String mapId, VlanMapConfig vlconf) {
         vlanMapConfig = vlconf;
-        setPath(vbr, mapId);
+        setPath(bpath, mapId);
+    }
 
-        Node node = vlconf.getNode();
+    /**
+     * Initialize the state of the VLAN mapping.
+     *
+     * @param mgr    VTN Manager service.
+     */
+    void initState(VTNManagerImpl mgr) {
+        Node node = vlanMapConfig.getNode();
         boolean valid = (node == null) ? true : checkNode(mgr, node);
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         db.put(mapPath, Boolean.valueOf(valid));
     }
 
     /**
+     * Return the identifier of this VLAN mapping.
+     *
+     * @return  The identifier of this VLAN mapping.
+     */
+    String getMapId() {
+        return mapPath.getMapId();
+    }
+
+    /**
      * Set VLAN mapping path.
      *
-     * @param vbr    Virtual L2 bridge which includes this mapping.
+     * @param bpath  Path to the virtual L2 bridge which includes this mapping.
      * @param mapId  Identifier of the VLAN mapping.
      */
-    void setPath(VBridgeImpl vbr, String mapId) {
-        mapPath = new VlanMapPath(vbr.getPath(), mapId);
+    void setPath(VBridgePath bpath, String mapId) {
+        mapPath = new VlanMapPath(bpath, mapId);
     }
 
     /**

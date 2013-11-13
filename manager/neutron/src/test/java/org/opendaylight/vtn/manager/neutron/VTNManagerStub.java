@@ -230,6 +230,12 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
+    public VlanMap getVlanMap(VBridgePath path, VlanMapConfig vlconf)
+        throws VTNException {
+        return null;
+    }
+
+    @Override
     public VlanMap addVlanMap(VBridgePath path, VlanMapConfig vlconf)
         throws VTNException {
         return null;

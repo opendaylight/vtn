@@ -73,7 +73,7 @@ public final class VTenantImpl implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 1119058818818252108L;
+    private static final long serialVersionUID = -5355990328326192973L;
 
     /**
      * Logger instance.
@@ -577,6 +577,28 @@ public final class VTenantImpl implements Serializable {
         try {
             VBridgeImpl vbr = getBridgeImpl(path);
             return vbr.getVlanMap(mapId);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Return information about the VLAN mapping which matches the specified
+     * VLAN mapping configuration in the specified virtual L2 bridge.
+     *
+     * @param path    Path to the bridge.
+     * @param vlconf  VLAN mapping configuration.
+     * @return  Information about the VLAN mapping which matches the specified
+     *          VLAN mapping information.
+     * @throws VTNException  An error occurred.
+     */
+    public VlanMap getVlanMap(VBridgePath path, VlanMapConfig vlconf)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VBridgeImpl vbr = getBridgeImpl(path);
+            return vbr.getVlanMap(vlconf);
         } finally {
             rdlock.unlock();
         }

@@ -202,6 +202,19 @@ public interface IVTNManager {
     VlanMap getVlanMap(VBridgePath path, String mapId) throws VTNException;
 
     /**
+     * Return information about the VLAN mapping which matches the specified
+     * VLAN mapping configuration in the specified virtual L2 bridge.
+     *
+     * @param path    Path to the bridge.
+     * @param vlconf  VLAN mapping configuration.
+     * @return  Information about the VLAN mapping which matches the specified
+     *          VLAN mapping configuration.
+     * @throws VTNException  An error occurred.
+     */
+    VlanMap getVlanMap(VBridgePath path, VlanMapConfig vlconf)
+        throws VTNException;
+
+    /**
      * Add a new VLAN mapping to the virtual L2 bridge.
      *
      * @param path    Path to the bridge.

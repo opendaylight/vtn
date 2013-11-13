@@ -4225,6 +4225,29 @@ public class VTNManagerImpl
     }
 
     /**
+     * Return information about the VLAN mapping which matches the specified
+     * VLAN mapping configuration in the specified virtual L2 bridge.
+     *
+     * @param path    Path to the bridge.
+     * @param vlconf  VLAN mapping configuration.
+     * @return  Information about the VLAN mapping which matches the specified
+     *          VLAN mapping configuration.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public VlanMap getVlanMap(VBridgePath path, VlanMapConfig vlconf)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.getVlanMap(path, vlconf);
+        } finally {
+            unlock(rdlock);
+        }
+    }
+
+    /**
      * Add a new VLAN mapping to the virtual L2 bridge.
      *
      * @param path    Path to the bridge.
