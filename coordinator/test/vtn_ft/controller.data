@@ -1,0 +1,17 @@
+[ControllerFirst]
+ipaddr=10.100.9.30
+controller_id=controller1
+description=First Test Controller
+type=odc
+version=1.0
+auditstatus=enable
+username=admin
+password=admin
+invalidusername=admininval
+invalidpassword=admininval
+url=/controllers/controller1.json
+port=8080
+
+[URL]
+url=/controllers.json
+
