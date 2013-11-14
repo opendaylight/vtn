@@ -639,55 +639,48 @@ public class NetworkHandler extends VTNNeutronUtils
     /**
      * Check if VLAN map configuration exist in vtn manager.
      *
-     * @param vlanID VLAN identifier provided by neutron.
+     * @param providerID VLAN identifier provided by neutron.
      * @return  VLAN map exist status in HTTP response status code.
      */
-    private int isVlanMapExist(String vlanID) {
+    private int isVlanMapExist(String providerID) {
         int result = HttpURLConnection.HTTP_NOT_FOUND;
-        short vlan = 0;
+        short vlanID = 0;
         try {
-            vlan = Short.parseShort(vlanID);
-        } catch (NumberFormatException nfe) {
-            LOG.trace(" Execption NFE, vlan-id - {} ", vlanID);
-            return HttpURLConnection.HTTP_BAD_REQUEST;
-        }
-
-        List<VTenant> listTenant = getTenants();
-        if (listTenant == null) {
-            LOG.trace("isVlanMapExist listTenant is null");
-            return result;
-        }
-        Iterator itrTenant = listTenant.iterator();
-        while(itrTenant.hasNext()) {
-            VTenant tmpTenant = (VTenant) itrTenant.next();
-            String tenantID = tmpTenant.getName();
-            LOG.trace("tenant-id - {} ", tenantID);
-            List<VBridge> listBridge = getBridges(tenantID);
-            if(listBridge == null) {
-            LOG.trace("isVlanMapExist listBridge is null");
-                continue;
+            vlanID = Short.parseShort(providerID);
+            List<VTenant> listTenant = getTenants();
+            if (listTenant == null) {
+                LOG.trace("isVlanMapExist listTenant is null");
+                return result;
             }
-            Iterator itrBridge = listBridge.iterator();
-            while (itrBridge.hasNext()) {
-                VBridge tmpBridge = (VBridge) itrBridge.next();
-                String bridgeID = tmpBridge.getName();
-                LOG.trace("bridge-id - {} ", bridgeID);
-                List<VlanMap> listvmap = getVlanMaps(tenantID, bridgeID);
-                if (listvmap == null) {
-                    LOG.trace("isVlanMapExist listvmap is null");
+            Iterator itrTenant = listTenant.iterator();
+            while(itrTenant.hasNext()) {
+                VTenant tmpTenant = (VTenant) itrTenant.next();
+                String tenantID = tmpTenant.getName();
+                LOG.trace("tenant-id - {} ", tenantID);
+                List<VBridge> listBridge = getBridges(tenantID);
+                if(listBridge == null) {
+                    LOG.trace("isVlanMapExist listBridge is null");
                     continue;
                 }
-                Iterator itrvmap = listvmap.iterator();
-                while(itrvmap.hasNext()) {
-                    VlanMap tmpVlanMap = (VlanMap) itrvmap.next();
-                    LOG.trace("tmpVlanMap.getVlan - {}, vlan - {} ",
-                            tmpVlanMap.getVlan(), vlan);
-                    if (vlan == tmpVlanMap.getVlan()) {
+                Iterator itrBridge = listBridge.iterator();
+                while (itrBridge.hasNext()) {
+                    VBridge tmpBridge = (VBridge) itrBridge.next();
+                    String bridgeID = tmpBridge.getName();
+                    LOG.trace("bridge-id - {} ", bridgeID);
+
+                    VlanMapConfig conf = new VlanMapConfig(null, vlanID);
+                    VBridgePath path = new VBridgePath(tenantID, bridgeID);
+                    if (getVTNManager().getVlanMap(path, conf) != null) {
                         result = HttpURLConnection.HTTP_OK;
                         return result;
                     }
                 }
             }
+        } catch (NumberFormatException nfe) {
+            LOG.trace(" Execption NFE, vlan-id - {} ", providerID);
+            return HttpURLConnection.HTTP_BAD_REQUEST;
+        } catch (VTNException e) {
+            result = getException(e.getStatus());
         }
         return result;
     }
@@ -730,6 +723,26 @@ public class NetworkHandler extends VTNNeutronUtils
             return getVTNManager().getVlanMaps(path);
         } catch (VTNException e) {
             LOG.error(" getVlanMaps error. status - {}",
+                    getException(e.getStatus()));
+            return null;
+        }
+    }
+
+    /**
+     * Returns a VLAN mapping information specified by the VLAN ID.
+     *
+     * @param tenantID tenant identifier provided by neutron.
+     * @param bridgeID bridge identifier provided by neutron.
+     * @param vlanID VLAN identifier provided by neutron.
+     * @return VLAN mapping information associated with the given VLAN ID.
+     */
+    private VlanMap getVlanMap(String tenantID, String bridgeID, short vlanID) {
+        VlanMapConfig conf = new VlanMapConfig(null, vlanID);
+        VBridgePath path = new VBridgePath(tenantID, bridgeID);
+        try {
+            return getVTNManager().getVlanMap(path, conf);
+        } catch (VTNException e) {
+            LOG.error(" getVlanMap error. status - {}",
                     getException(e.getStatus()));
             return null;
         }
