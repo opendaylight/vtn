@@ -38,6 +38,7 @@ import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IPv4;
 import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.packet.PacketResult;
+import org.opendaylight.controller.sal.routing.IRouting;
 import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
@@ -330,7 +331,8 @@ public class ArpHandler {
 
         if (LOG.isTraceEnabled()) {
             LOG.trace("{}: Subnet found: subnet={}, incoming={}, sender={}",
-                      vtnManager.getContainerName(), subnet, nc, sdrIp);
+                      vtnManager.getContainerName(), subnet, nc,
+                      sdrIp.getHostAddress());
         }
 
         HostNodeConnector requestor = null;
@@ -443,21 +445,30 @@ public class ArpHandler {
         IfIptoHost ht = vtnManager.getHostTracker();
         HostNodeConnector host = ht.hostQuery(dstIp);
         if (host != null && host.getVlan() == vlan) {
-            // Forward the packet to the known host.
+            // Forward the packet to the known host if a packet is reachable.
             NodeConnector outgoing = host.getnodeConnector();
-            Ethernet frame = pctx.createFrame(vlan);
+            if (isReachable(pctx, outgoing)) {
+                Ethernet frame = pctx.createFrame(vlan);
 
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("{}: Forward packet to known host: {}",
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("{}: Forward packet to known host: addr={}, {}",
+                              vtnManager.getContainerName(),
+                              dstIp.getHostAddress(),
+                              pctx.getDescription(frame, outgoing, vlan));
+                }
+
+                vtnManager.transmit(outgoing, frame);
+            } else if (LOG.isTraceEnabled()) {
+                LOG.trace("{}: No route: addr={}, incoming={}, host={}",
                           vtnManager.getContainerName(),
-                          pctx.getDescription(frame, outgoing, vlan));
+                          dstIp.getHostAddress(),
+                          pctx.getIncomingNodeConnector(), host);
             }
-
-            vtnManager.transmit(outgoing, frame);
         } else {
             if (LOG.isTraceEnabled()) {
                 LOG.trace("{}: Send broadcast ARP request to discover host: " +
-                          "addr={}, vlan={}", dstIp, vlan);
+                          "addr={}, vlan={}", vtnManager.getContainerName(),
+                          dstIp.getHostAddress(), vlan);
             }
 
             // Send broadcast ARP request to discover host.
@@ -465,6 +476,30 @@ public class ArpHandler {
         }
 
         return PacketResult.KEEP_PROCESSING;
+    }
+
+    /**
+     * Determine whether an incoming packet is reachable or not.
+     *
+     * @param pctx      The context of an incoming packet.
+     * @param outgoing  A {@code NodeConnector} associated with outgoing
+     *                  switch port.
+     * @return  {@code true} is returned if the specified packet is reachable
+     *          to {@code outgoing}. Otherwise {@code false} is returned.
+     */
+    private boolean isReachable(PacketContext pctx, NodeConnector outgoing) {
+        NodeConnector incoming = pctx.getIncomingNodeConnector();
+        Node src = incoming.getNode();
+        Node dst = outgoing.getNode();
+        boolean reachable;
+        if (src.equals(dst)) {
+            reachable = true;
+        } else {
+            IRouting routing = vtnManager.getRouting();
+            reachable = (routing.getRoute(src, dst) != null);
+        }
+
+        return reachable;
     }
 
     /**
