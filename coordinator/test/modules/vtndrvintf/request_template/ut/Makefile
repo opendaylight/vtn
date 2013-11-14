@@ -11,8 +11,8 @@
 ## Makefile that run the unit tests for VTNDRVINTF.
 ##
 
-GTEST_SRCROOT := ../../../..
-include ../../defs.mk
+GTEST_SRCROOT := ../../../../../
+include ../../../defs.mk
 
 EXEC_NAME :=  vtndrvintf_ut
 
@@ -58,4 +58,4 @@ EXTRA_CXXFLAGS += -Dprivate=public -Dprotected=public
 UNC_LIBS = libpfc_util
 EXTRA_LDLIBS += -lgcov
 
-include ../../rules.mk
+include ../../../rules.mk
