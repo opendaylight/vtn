@@ -10,7 +10,6 @@
 #ifndef RESTJSON_JSON_BUILD_PARSE_H_
 #define RESTJSON_JSON_BUILD_PARSE_H_
 
-#include <json/json.h>
 #include <json_type_util.hh>
 #include <rest_common_defs.hh>
 #include <pfc/log.h>

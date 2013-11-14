@@ -10,7 +10,7 @@
 #ifndef JSON_TYPE_UTIL_H_
 #define JSON_TYPE_UTIL_H_
 
-#include <json/json.h>
+#include <json.h>
 #include <uncxx/odc_log.hh>
 #include <string>
 

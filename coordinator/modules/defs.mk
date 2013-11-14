@@ -17,3 +17,4 @@ MODULE_BASEDIR	= ..
 
 include $(MODULE_SRCROOT)/modules/defs.mk
 include $(ODBC_DEFS_MK)
+include $(MODULE_CONFIG_MK)
