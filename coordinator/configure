@@ -17,7 +17,7 @@ use strict;
 use vars qw($UNC_PRODUCT_NAME $DEBUG_BUILD @UNLINK_ON_ERROR $YEAR_RANGE
 	    $SRCROOT $CORE_SRCROOT $VERSION_FILE $BLDDIR @PATH %DEFAULT_LIBPATH
 	    @PKG_CONFIG_LIBDIR @JAVA_LIBSPEC @JAVA_LIBRARY_PATH
-	    @TOMCAT_LIBSPEC @BUILD_ID_SPEC);
+	    @TOMCAT_LIBSPEC @BUILD_ID_SPEC %COMMAND_SPEC);
 
 use Cwd qw(abs_path);
 use DirHandle;
@@ -46,6 +46,8 @@ use constant	ODBC_DEFS_MK		=> 'odbc-defs.mk';
 use constant	ODBC_DEFS_MK_VAR	=> 'ODBC_DEFS_MK';
 use constant	ODBC_RULES_MK		=> 'odbc-rules.mk';
 use constant	ODBC_RULES_MK_VAR	=> 'ODBC_RULES_MK';
+use constant	MODULE_CONFIG_MK	=> 'module-config.mk';
+use constant	MODULE_CONFIG_MK_VAR	=> 'MODULE_CONFIG_MK';
 use constant	JAVA_EXT_MK		=> 'java-ext.mk';
 use constant	JAVA_EXT_MK_VAR		=> 'JAVA_EXT_MK';
 use constant	JAVA_EXT_RULES_MK	=> 'java-ext-rules.mk';
@@ -71,6 +73,11 @@ $DEBUG_BUILD = 1;
 use constant	ODBC_VERSION		=> 3;
 
 @PATH = ((DEFAULT_PATH), split(/:/, $ENV{PATH}));
+
+# Mandatory commands.
+%COMMAND_SPEC = ('pkg-config'	=> {ARG => ['--version'],
+				    PATTERN => ['\d+\.\d+'],
+				    EXPORT => 1});
 
 # Define required Java libraries.
 @JAVA_LIBSPEC = ({KEY => 'gson', DESC => 'Google gson',
@@ -116,6 +123,7 @@ sub checking(@);
 sub setup_java_libdir($);
 sub core_configure($);
 sub exec_command(\%@);
+sub verify_command($\%);
 sub compile_and_exec($%);
 sub canonicalize_path($);
 sub stringify($);
@@ -124,8 +132,10 @@ sub check_config_tests(\%\@);
 sub check_srcroot();
 sub check_version($);
 sub check_odbc($\%\%);
+sub check_json_c($\%\%);
 sub check_user_group($\%);
 sub check_user_group_impl($\%\%$);
+sub check_package($\%$%);
 sub check_perm($\%);
 sub check_perm_impl($\%\%);
 sub check_webapi_env($\%\%);
@@ -137,7 +147,7 @@ sub prepare($);
 sub create_dynamic_header($$);
 sub create_config_status(\@\%);
 sub create_config_mk($\%\%);
-sub create_odbc_defs_mk(\%\%);
+sub create_makefile($\%$);
 sub create_java_ext_mk(\%\%);
 sub create_java_link(\%\%);
 sub create_config_h($\%\@);
@@ -1526,10 +1536,6 @@ OUT
 		# Enable UNC build mode.
 		push(@args, '--enable-unc');
 
-		my $opt_make = sub {
-			return '--with-make-variable=' . $_[0];
-		};
-
 		# Specify object directories.
 		my $objdir = $me->get('objdir');
 		foreach my $map ({OPT => '--with-objdir',
@@ -1537,15 +1543,22 @@ OUT
 				 {OPT => '--with-java-objdir',
 				  VALUE => JAVAOBJ_DIR},
 				 {OPT => '--with-ldlibdir',
-				  VALUE => LDLIBS_DIR},
-				 {OPT => &$opt_make(main::ODBC_DEFS_MK_VAR()),
-				  VALUE => main::ODBC_DEFS_MK}) {
+				  VALUE => LDLIBS_DIR}) {
 			my $dir = $objdir . '/' . $map->{VALUE};
 			push(@args, $map->{OPT} . '=' . $dir);
 		}
 
-		push(@args, &$opt_make(main::ODBC_RULES_MK_VAR()) . '=' .
-		     $main::BLDDIR . '/' . main::ODBC_RULES_MK);
+		my (@makevars);
+		my $push_makevar = sub {
+			push(@makevars, join('=', $_[0], $_[1]));
+		};
+ 
+		&$push_makevar(main::ODBC_DEFS_MK_VAR(),
+			       $objdir . '/' . main::ODBC_DEFS_MK());
+		&$push_makevar(main::ODBC_RULES_MK_VAR(),
+			       $main::BLDDIR . '/' . main::ODBC_RULES_MK());
+		&$push_makevar(main::MODULE_CONFIG_MK_VAR(),
+			       $objdir . '/' . main::MODULE_CONFIG_MK());
 
 		# Specify product name.
 		push(@args, '--with-product-name=' . $main::UNC_PRODUCT_NAME);
@@ -1556,6 +1569,11 @@ OUT
 			$verfile = abs_path($main::VERSION_FILE);
 			push(@args, '--with-version-file=' . $verfile)
 				if (-f $verfile);
+		}
+
+		# Export make variables.
+		foreach my $vars (@makevars) {
+			push(@args, '--with-make-variable', $vars);
 		}
 
 		return \@args;
@@ -1729,13 +1747,15 @@ MAIN:
 	my $version = check_version($conf);
 
 	my $objdir = $conf->get('objdir');
-	my (%vars) = (SRCROOT		=> $SRCROOT,
-		      OBJROOT		=> $objdir,
-		      BLDDIR		=> $BLDDIR,
-		      CORE_SRCROOT	=> $CORE_SRCROOT,
-		      CORE_OBJROOT	=> $objdir . '/' . CORE_DIR,
-		      CORE_EXP_INCDIR	=> $objdir . '/core_include');
-	my (@hdefs);
+	my $modconf_mk = $objdir . '/' . MODULE_CONFIG_MK;
+	my (%vars) = (SRCROOT			=> $SRCROOT,
+		      OBJROOT			=> $objdir,
+		      BLDDIR			=> $BLDDIR,
+		      CORE_SRCROOT		=> $CORE_SRCROOT,
+		      CORE_OBJROOT		=> $objdir . '/' . CORE_DIR,
+		      CORE_EXP_INCDIR		=> $objdir . '/core_include',
+		      MODULE_CONFIG_MK_VAR()	=> $modconf_mk);
+	my (@hdefs, %modvars);
 
 	foreach my $key (@{$conf->getInstDirKeys()}) {
 		my $spec = $conf->getSpec($key);
@@ -1748,12 +1768,38 @@ MAIN:
 	# Fetch build configuration from core build environment.
 	my $jenv = parse_config_mk(%vars);
 
+	# Check whether mandatory commands are installed or not.
+	foreach my $key (sort(keys(%COMMAND_SPEC))) {
+		my $spec = $COMMAND_SPEC{$key};
+
+		eval {
+			verify_command($key, %$spec);
+		};
+		if ($@) {
+			my $err = "$@";
+			my $handler = $spec->{IGNORE_ERROR};
+			if ($handler) {
+				&$handler() if (ref($handler) eq 'CODE');
+			}
+			else {
+				chomp($err);
+				error($err);
+			}
+		}
+	}
+
 	# Set up additional Java library search path.
 	setup_java_libdir($conf);
 
 	# Ensure that unixODBC is installed.
 	my (%odbcvars);
 	check_odbc($conf, %vars, %odbcvars);
+
+	# Check for json-c library.
+	check_json_c($conf, %vars, %modvars);
+
+	# Check for curl library.
+	check_package($conf, %vars, 'libcurl', vars => \%modvars);
 
 	# Check user and group name.
 	check_user_group($conf, %vars);
@@ -1767,7 +1813,11 @@ MAIN:
 	prepare($conf);
 	create_config_h($conf, %$version, @hdefs);
 	create_config_mk($conf, %vars, %$version);
-	create_odbc_defs_mk(%vars, %odbcvars);
+	create_makefile($vars{ODBC_DEFS_MK_VAR()}, %odbcvars,
+			'ODBC build configuration.');
+	create_makefile($modconf_mk, %modvars,
+			'Configurations to be exported to module build ' .
+			'environment.');
 	create_java_ext_mk(%vars, %$wenv);
 	create_java_link(%$jenv, %$wenv);
 	create_config_status(@argv_saved, %vars);
@@ -1936,6 +1986,96 @@ sub exec_command(\%@)
 	else {
 		return -1;
 	}
+}
+
+sub verify_command($\%)
+{
+	my ($key, $spec) = @_;
+
+	my $desc = $spec->{DESC} || $key;
+	checking("for $desc");
+
+	my $names = $spec->{NAMES};
+	my $list = ($names) ? $names : [$key];
+	my $pattern = [];
+	foreach my $pat (@{$spec->{PATTERN}}) {
+		push(@$pattern, qr,$pat,);
+	}
+	my $npatterns = scalar(@$pattern);
+
+	my $found;
+	my $checkfd = $spec->{CHECKFD};
+	my $pathlist = $spec->{PATH} || \@PATH;
+
+	if (my $abspath = $spec->{ABSPATH}) {
+		my ($name, $dir) = fileparse($abspath);
+		$dir =~ s,/+$,,go;
+		$list = [$name];
+		$pathlist = [$dir];
+	}
+	foreach my $c (@$list) {
+		my $cmd;
+		foreach my $dir (@$pathlist) {
+			my $cpath = "$dir/$c";
+			if (-x $cpath) {
+				$cmd = $cpath;
+				last;
+			}
+		}
+		next unless ($cmd);
+		unless ($npatterns) {
+			$found = $cmd;
+			last;
+		}
+
+		my $matched = 0;
+		my $filter = sub {
+			my ($rh) = @_;
+
+			while (my $line = $rh->getline()) {
+				next unless ($matched < $npatterns);
+
+				my @newpat;
+				while (my $pat = shift(@$pattern)) {
+					if ($line =~ $pat) {
+						$matched++;
+						push(@newpat, @$pattern);
+						last;
+					}
+					else {
+						push(@newpat, $pat);
+					}
+				}
+				$pattern = \@newpat;
+			}
+		};
+
+		my (%opts) = (FILTER => $filter, FILTER_FD => $checkfd);
+		my $ret = exec_command(%opts, $cmd, @{$spec->{ARG}});
+		next unless ($ret == 0);
+
+		if ($matched == $npatterns) {
+			$found = $cmd;
+			last;
+		}
+	}
+
+	unless ($found) {
+		print "not found\n";
+		my $msg;
+		if (my $p = $spec->{ABSPATH}) {
+			$msg = "$desc ($p) is not found.";
+		}
+		else {
+			$msg = "$desc is not found.";
+		}
+		die "$msg\n";
+	}
+
+	print $found, "\n";
+	my $verify = $spec->{VERIFY};
+	&$verify($found, $spec) if ($verify);
+	$spec->{PATH} = $found;
 }
 
 sub compile_and_exec($%)
@@ -2354,8 +2494,16 @@ main(int argc, char **argv)
 OUT
 
 	(%t) = (CHECK => 'whether SQLAllocHandle() works', CODE => $code);
+	my (@test_ldflags);
+	foreach my $dir (@libpath) {
+		push(@test_ldflags, '-L' . $dir, '-Wl,-rpath,' . $dir);
+	}
+	foreach my $dir (@runpath) {
+		push(@test_ldflags, '-Wl,-rpath,' . $dir);
+	}
+	push(@test_ldflags, @$ldflags) if (defined($ldflags));
 	$t{CFLAGS} = $cppflags if (defined($cppflags));
-	$t{LDFLAGS} = $ldflags if (defined($ldflags));
+	$t{LDFLAGS} = \@test_ldflags if (@test_ldflags);
 	(@tests) = (\%t);
 	check_config_tests(%$vars, @tests);
 
@@ -2365,11 +2513,43 @@ OUT
 
 	$odbcvars->{ODBC_CPPFLAGS} = join(' ', @$cppflags)
 		if (defined($cppflags));
+	$odbcvars->{ODBC_LIBDIRS} = join(' ', @libpath) if (@libpath);
 	$odbcvars->{ODBC_LDFLAGS} = join(' ', @$ldflags)
 		if (defined($ldflags));
 
 	push(@runpath, @libpath);
 	$odbcvars->{ODBC_RUNPATH} = join(' ', @runpath) if (@runpath);
+}
+
+sub check_json_c($\%\%)
+{
+	my ($conf, $vars, $jsonvars) = @_;
+
+	my $code = <<'OUT';
+#include <stdio.h>
+#include <json.h>
+
+int
+main(int argc, char **argv)
+{
+	struct json_object	*json;
+
+	json = json_tokener_parse("{}");
+	if (is_error(json)) {
+		printf("NO:json_tokener_parse() returned NULL.\n");
+	}
+	else {
+		puts("OK:yes");
+	}
+
+	return 0;
+}
+OUT
+
+	my (%t) = (CHECK => 'whether json_tokener_parse() works',
+		   CODE => $code);
+	check_package($conf, %$vars, 'json-c', pkgnames => ['json-c', 'json'],
+		      vars => $jsonvars, tests => [\%t]);
 }
 
 sub check_user_group($\%)
@@ -2414,6 +2594,80 @@ sub check_user_group_impl($\%\%$)
 	print $value, "\n";
 	my $v = $uspec->{VAR_PREFIX} . uc($key);
 	$vars->{$v} = $value;
+}
+
+# Check whether the given package is installed using pkg-config.
+sub check_package($\%$%)
+{
+	my ($conf, $vars, $desc, %args) = @_;
+
+	checking("for pkg-config file of $desc");
+	my $optional = $args{optional};
+	my ($pkgname, $pcfile);
+	my $pkgnames = $args{pkgnames} || [$desc];
+	$pkgnames = [$pkgnames] unless (ref($pkgnames) eq 'ARRAY');
+	foreach my $name (@$pkgnames) {
+		$pcfile = search_pkgconfig(%$vars, $name);
+		if (defined($pcfile)) {
+			$pkgname = $name;
+			last;
+		}
+	}
+	unless ($pkgname) {
+		print "no\n";
+		error("$desc was not found.") unless ($optional);
+		return;
+	}
+	print $pcfile, "\n";
+
+	checking("for CFLAGS required by $desc");
+	my $pkg_config = $COMMAND_SPEC{'pkg-config'}->{PATH};
+	my %opts;
+	$opts{optional} = 1 if ($optional);
+	my $cflags = read_command_oneline(%opts, $pkg_config, '--cflags',
+					  $pkgname);
+	return unless (defined($cflags));
+	$cflags = fixup_cppflags($cflags);
+
+	checking("for LDFLAGS required by $desc");
+	my $ldflags = read_command_oneline(%opts, $pkg_config, '--libs',
+					   $pkgname);
+	return unless (defined($ldflags));
+	my (@libpath, @runpath);
+	$ldflags = fixup_ldflags($ldflags, @libpath, @runpath);
+
+	my (@test_ldflags);
+	foreach my $dir (@libpath) {
+		push(@test_ldflags, '-L' . $dir);
+	}
+	foreach my $dir (@runpath) {
+		push(@test_ldflags, '-Wl,-rpath,' . $dir);
+	}
+	push(@test_ldflags, @$ldflags) if (defined($ldflags));
+
+	my $tests = $args{tests};
+	if ($tests and @$tests) {
+		foreach my $t (@$tests) {
+			$t->{CFLAGS} = $cflags if (defined($cflags));
+			$t->{LDFLAGS} = \@test_ldflags if (@test_ldflags);
+		}
+
+		check_config_tests(%$vars, @$tests);
+	}
+
+	my $vprefix = $args{vprefix};
+	unless ($vprefix) {
+		$vprefix = uc($desc);
+		$vprefix =~ s,-,_,g;
+	}
+
+	my $result = $args{vars} || $vars;
+	$result->{$vprefix . '_CPPFLAGS'} = join(' ', @$cflags)
+		if (defined($cflags));
+	$result->{$vprefix . '_LIBDIRS'} = join(' ', @libpath) if (@libpath);
+	$result->{$vprefix . '_LDFLAGS'} = join(' ', @$ldflags)
+		if (defined($ldflags));
+	$result->{$vprefix . '_RUNPATH'} = join(' ', @runpath) if (@runpath);
 }
 
 sub check_perm($\%)
@@ -2776,17 +3030,21 @@ OUT
 	$fh->print(<<OUT);
 
 include \$(ODBC_DEFS_MK)
+include \$(MODULE_CONFIG_MK)
 include $defs_mk
 
 endif	# !UNC_CONFIG_MK_INCLUDED
 OUT
 }
 
-sub create_odbc_defs_mk(\%\%)
+sub create_makefile($\%$)
 {
-	my ($vars, $odbcvars) = @_;
+	my ($path, $vars, $comment) = @_;
 
-	my $path = $vars->{ODBC_DEFS_MK_VAR()};
+	my $fname = basename($path);
+	my $included = 'UNC_' . uc($fname) . '_INCLUDED';
+	$included =~ s,[-.],_,g;
+
 	print "== creating $path\n";
 	my $fh = FileHandle->new($path, O_CREAT|O_TRUNC|O_WRONLY, 0644) or
 		fatal("open($path) failed: $!");
@@ -2794,17 +3052,17 @@ sub create_odbc_defs_mk(\%\%)
 
 	$fh->print(<<OUT);
 ##
-## ODBC build configuration.
+## $comment
 ##
 
-ifndef	UNC_ODBC_DEFS_MK_INCLUDED
+ifndef	$included
 
-UNC_ODBC_DEFS_MK_INCLUDED	:= 1
+$included	:= 1
 
 OUT
 
-	foreach my $vname (sort(keys(%$odbcvars))) {
-		my $value = $odbcvars->{$vname};
+	foreach my $vname (sort(keys(%$vars))) {
+		my $value = $vars->{$vname};
 		$fh->print(<<OUT)
 $vname		:= $value
 OUT
@@ -2812,7 +3070,7 @@ OUT
 
 	$fh->print(<<OUT);
 
-endif	# !UNC_ODBC_DEFS_MK_INCLUDED
+endif	# !$included
 OUT
 }
 

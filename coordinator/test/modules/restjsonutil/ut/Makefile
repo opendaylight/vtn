@@ -47,6 +47,10 @@ EXTRA_CXXFLAGS += -fprofile-arcs -ftest-coverage
 EXTRA_CXXFLAGS += -Dprivate=public -Dprotected=public
 
 UNC_LIBS = libpfc_util
-EXTRA_LDLIBS += -lgcov -ljson
+
+EXTRA_CPPFLAGS		+= $(JSON_C_CPPFLAGS)
+EXTRA_LIBDIRS		+= $(JSON_C_LIBDIRS)
+EXTRA_LDLIBS		+= -lgcov $(JSON_C_LDFLAGS)
+EXTRA_RUNTIME_DIR	+= $(JSON_C_RUNPATH)
 
 include ../../rules.mk
