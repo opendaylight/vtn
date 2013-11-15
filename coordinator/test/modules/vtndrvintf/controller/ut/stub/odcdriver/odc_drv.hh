@@ -18,7 +18,7 @@ namespace driver {
 
 class OdcDriver : public unc::driver::driver {
  public:
-  explicit OdcDriver() { }
+  explicit OdcDriver() : ping_result(PFC_TRUE) {}
 
   pfc_bool_t init() {
     return PFC_TRUE;
@@ -57,7 +57,11 @@ class OdcDriver : public unc::driver::driver {
   }
 
   pfc_bool_t  ping_controller(unc::driver::controller*) {
-    return PFC_TRUE;
+    return ping_result;
+  }
+
+  void set_ping_result(pfc_bool_t result) {
+    ping_result = result;
   }
 
   unc::driver::driver_command* create_driver_command(unc_key_type_t key_type);
@@ -73,6 +77,9 @@ class OdcDriver : public unc::driver::driver {
   pfc_bool_t update_controller(const key_ctr_t& key_ctr,
                                      const val_ctr_t& val_ctr,
                                     unc::driver::controller* ctrl_inst);
+
+private:
+  pfc_bool_t  ping_result;
 };
 }  // namespace driver
 }  // namespace unc
