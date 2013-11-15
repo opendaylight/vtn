@@ -11,7 +11,7 @@
 #define JSON_TYPE_UTIL_H_
 
 #include <uncxx/odc_log.hh>
-#include <json/json.h>
+#include <json.h>
 #include <string>
 
 namespace unc {

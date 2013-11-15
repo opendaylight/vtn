@@ -10,7 +10,7 @@
 #ifndef RESTJSON_JSON_TYPE_H_
 #define RESTJSON_JSON_TYPE_H_
 
-#include <json/json.h>
+#include <json.h>
 #include <string>
 
 namespace unc {
