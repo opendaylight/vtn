@@ -56,7 +56,8 @@ public class PortHandler extends VTNNeutronUtils
         String[] vtnIDs = new String[VTN_IDENTIFIERS_IN_PORT];
         result = getVTNIdentifiers(port, vtnIDs);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" getVTNIdentifiers failed - result() ", result);
+            LOG.error(" canCreatePort getVTNIdentifiers failed, " +
+                    " result - {} ", result);
             return result;
         }
         String tenantID = vtnIDs[0];
@@ -65,7 +66,7 @@ public class PortHandler extends VTNNeutronUtils
 
         result = isTenantExist(tenantID);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" Tenant does not exist for tenant-id - {}, result {} ",
+            LOG.error(" Tenant does not exist for tenant-id - {}, result - {} ",
                    tenantID, result);
             return result;
         }
@@ -111,7 +112,7 @@ public class PortHandler extends VTNNeutronUtils
 
         int result = canCreatePort(port);
         if (result != HttpURLConnection.HTTP_CREATED) {
-            LOG.error(" Port create validation failed result - {} ", result);
+            LOG.error(" Port create validation failed, result - {} ", result);
             return;
         }
 
@@ -162,7 +163,8 @@ public class PortHandler extends VTNNeutronUtils
         String[] vtnIDs = new String[VTN_IDENTIFIERS_IN_PORT];
         result = getVTNIdentifiers(original, vtnIDs);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" getVTNIdentifiers failed - result() ", result);
+            LOG.error(" canUpdatePort getVTNIdentifiers failed, " +
+                    " result - {} ", result);
             return result;
         }
         String tenantID = vtnIDs[0];
@@ -196,7 +198,8 @@ public class PortHandler extends VTNNeutronUtils
         String[] vtnIDs = new String[VTN_IDENTIFIERS_IN_PORT];
         result = getVTNIdentifiers(port, vtnIDs);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" getVTNIdentifiers failed - result() ", result);
+            LOG.error(" neutronPortUpdated getVTNIdentifiers failed, " +
+                    " result - {} ", result);
             return;
         }
         String tenantID = vtnIDs[0];
@@ -248,7 +251,8 @@ public class PortHandler extends VTNNeutronUtils
         String[] vtnIDs = new String[VTN_IDENTIFIERS_IN_PORT];
         result = getVTNIdentifiers(port, vtnIDs);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" getVTNIdentifiers failed - result() ", result);
+            LOG.error(" canDeletePort getVTNIdentifiers failed, " +
+                    " result - {} ", result);
             return result;
         }
         String tenantID = vtnIDs[0];
@@ -277,7 +281,7 @@ public class PortHandler extends VTNNeutronUtils
 
         int result = canDeletePort(port);
         if  (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" deletePort validation failed - result {} ", result);
+            LOG.error(" deletePort validation failed, result - {} ", result);
             return;
         }
 
@@ -386,10 +390,8 @@ public class PortHandler extends VTNNeutronUtils
          * if admin state is changed set modify to true
          */
         Boolean portAdminState = port.getAdminStateUp();
-        if (portAdminState != null) {
-            if (portAdminState != vIf.getEnabled()) {
-                modify = true;
-            }
+        if ((portAdminState != null) && (portAdminState != vIf.getEnabled())) {
+            modify = true;
         }
         return modify;
     }
