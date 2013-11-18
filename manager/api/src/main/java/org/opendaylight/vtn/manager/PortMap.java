@@ -38,7 +38,7 @@ public class PortMap implements Serializable {
      * Construct a new port mapping information.
      *
      * @param pmconf  Port mapping configuration.
-     * @param nc      Node connector assiciated with the switch port actually
+     * @param nc      Node connector associated with the switch port actually
      *                mapped to the virtual bridge interface.
      */
     public PortMap(PortMapConfig pmconf, NodeConnector nc) {
