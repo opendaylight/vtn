@@ -287,7 +287,7 @@ public final class VlanMapImpl implements VBridgeNode, Serializable {
      */
     void transmit(VTNManagerImpl mgr, PacketContext pctx, Set<PortVlan> sent) {
         Set<NodeConnector> ports = getPorts(mgr);
-        if (ports == null) {
+        if (ports.isEmpty()) {
             LOG.trace("{}:{}: transmit: No port is available",
                       mgr.getContainerName(), mapPath);
             return;
@@ -368,7 +368,7 @@ public final class VlanMapImpl implements VBridgeNode, Serializable {
      *
      * @param mgr  VTN Manager service.
      * @return  A set of node connectors.
-     *          Node that {@code null} may be returned.
+     *          An empty set is returned if no node connector is available.
      */
     private Set<NodeConnector> getPorts(VTNManagerImpl mgr) {
         Node node = vlanMapConfig.getNode();
