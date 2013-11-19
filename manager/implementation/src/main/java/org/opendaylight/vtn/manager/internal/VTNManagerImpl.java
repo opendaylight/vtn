@@ -910,19 +910,21 @@ public class VTNManagerImpl
      */
     private void destroyCaches() {
         IClusterContainerServices cluster = clusterService;
-        cluster.destroyCache(CACHE_TENANT);
-        cluster.destroyCache(CACHE_STATE);
-        cluster.destroyCache(CACHE_NODES);
-        cluster.destroyCache(CACHE_PORTS);
-        cluster.destroyCache(CACHE_ISL);
-        cluster.destroyCache(CACHE_EVENT);
-        cluster.destroyCache(CACHE_FLOWS);
+        if (cluster != null) {
+            cluster.destroyCache(CACHE_TENANT);
+            cluster.destroyCache(CACHE_STATE);
+            cluster.destroyCache(CACHE_NODES);
+            cluster.destroyCache(CACHE_PORTS);
+            cluster.destroyCache(CACHE_ISL);
+            cluster.destroyCache(CACHE_EVENT);
+            cluster.destroyCache(CACHE_FLOWS);
 
-        if (macAddressDB != null) {
-            cluster.destroyCache(CACHE_MAC);
+            if (macAddressDB != null) {
+                cluster.destroyCache(CACHE_MAC);
+            }
+
+            LOG.debug("{}: Destroyed VTN caches.", containerName);
         }
-
-        LOG.debug("{}: Destroyed VTN caches.", containerName);
     }
 
     /**
