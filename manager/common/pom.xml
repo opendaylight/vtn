@@ -76,6 +76,9 @@
     <jacoco.version>0.5.3.201107060350</jacoco.version>
 
     <testvm.argLine>-Xmx1024m -XX:MaxPermSize=256m</testvm.argLine>
+
+    <!-- Exclude internal package from javadoc -->
+    <javadoc.exclude>*.internal</javadoc.exclude>
   </properties>
 
   <profiles>
@@ -232,7 +235,7 @@
           <version>true</version>
           <author>true</author>
           <keywords>true</keywords>
-          <excludePackageNames>*.internal:edu.uci.*</excludePackageNames>
+          <excludePackageNames>${javadoc.exclude}</excludePackageNames>
         </configuration>
       </plugin>
     </plugins>
@@ -470,7 +473,7 @@
             <version>true</version>
             <author>true</author>
             <keywords>true</keywords>
-            <excludePackageNames>net.sf.jnetlib.*:cern.*:corejava:*.internal:edu.uci.*</excludePackageNames>
+            <excludePackageNames>${javadoc.exclude}</excludePackageNames>
           </configuration>
         </plugin>
 
