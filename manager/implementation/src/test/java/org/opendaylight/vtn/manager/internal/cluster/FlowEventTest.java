@@ -8,12 +8,9 @@
  */
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import static org.junit.Assert.*;
-
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
-
 
 import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.Test;
@@ -30,7 +27,6 @@ import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.FlowModTaskTestBase;
-import org.opendaylight.vtn.manager.internal.TestStub;
 import org.opendaylight.vtn.manager.internal.TestStubCluster;
 import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 

@@ -11,7 +11,6 @@ package org.opendaylight.vtn.manager.internal;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -34,19 +33,17 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.opendaylight.controller.clustering.services.IClusterContainerServices;
-import org.opendaylight.controller.connectionmanager.ConnectionMgmtScheme;
 import org.opendaylight.controller.connectionmanager.IConnectionManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.forwardingrulesmanager.IForwardingRulesManager;
 import org.opendaylight.controller.hosttracker.IfHostListener;
 import org.opendaylight.controller.hosttracker.IfIptoHost;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
-import org.opendaylight.controller.sal.connection.ConnectionConstants;
-import org.opendaylight.controller.sal.connection.ConnectionLocality;
 import org.opendaylight.controller.sal.core.ConstructionException;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
+import org.opendaylight.controller.sal.flowprogrammer.Flow;
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.ARP;
@@ -117,7 +114,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
     /**
      * Test method for
      * {@link VTNManagerImpl#init(Component)},
-     * {@link VTNManagerImpl#destroy()}
+     * {@link VTNManagerImpl#destroy()}.
      */
     @Test
     public void testInitDestory() {
@@ -181,26 +178,17 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         // because cache remain, setting is taken over.
         checkVTNconfig(tpath, bpathlist, pmaps, vmaps);
 
-        // in case event remain.
-        stopVTNManager(false);
-        VTNManagerImpl.cleanUpConfigFile(containerName);
+        vtnMgr.saveConfiguration();
 
-        ConcurrentMap<ClusterEventId, ClusterEvent> clsmap
-            = (ConcurrentMap<ClusterEventId, ClusterEvent>) stubObj
-                .getCache(VTNManagerImpl.CACHE_EVENT);
-
-        FlowGroupId eid = new FlowGroupId("tenant");
-        VTNFlow flow = new VTNFlow(eid);
-        FlowModResultEvent ev = new FlowModResultEvent("test",
-                                                       FlowModResult.SUCCEEDED);
-        clsmap.put(eid, ev);
-
+        stopVTNManager(true);
+        vtnMgr.unsetClusterContainerService(stubObj);
         startVTNManager(c);
-        assertNull(clsmap.get(eid));
 
+        checkVTNconfig(tpath, bpathlist, pmaps, vmaps);
 
         // remove configuration files.
         stopVTNManager(true);
+        vtnMgr.setClusterContainerService(stubObj);
         VTNManagerImpl.cleanUpConfigFile(containerName);
         startVTNManager(c);
 
@@ -237,6 +225,124 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         stopVTNManager(true);
         VTNManagerImpl.cleanUpConfigFile(containerNameTest);
+    }
+
+    /**
+     * Test method for
+     * {@link VTNManagerImpl#init(Component)},
+     * {@link VTNManagerImpl#destroy()}.
+     *
+     * <p>
+     * In case that a cache is remained when cache is created.
+     * </p>
+     */
+    @Test
+    public void testInitEventAndFlowAndMacCacheRemainedCase() {
+        ComponentImpl c = new ComponentImpl(null, null, null);
+        Hashtable<String, String> properties = new Hashtable<String, String>();
+        String containerName = "default";
+        properties.put("containerName", containerName);
+        c.setServiceProperties(properties);
+
+        String tname = "vtn";
+        VTenantPath tpath = new VTenantPath(tname);
+        String bname = "vbridge";
+        VBridgePath bpath = new VBridgePath(tname, bname);
+        VBridgeIfPath ifpath1 = new VBridgeIfPath(tname, bname, "vif1");
+
+        List<VBridgePath> bpathlist = new ArrayList<VBridgePath>();
+        List<VBridgeIfPath> ifpathlist = new ArrayList<VBridgeIfPath>();
+        bpathlist.add(bpath);
+        ifpathlist.add(ifpath1);
+        createTenantAndBridgeAndInterface(vtnMgr, tpath, bpathlist, ifpathlist);
+
+        // in case event cache remain.
+        stopVTNManager(false);
+        VTNManagerImpl.cleanUpConfigFile(containerName);
+
+        ConcurrentMap<ClusterEventId, ClusterEvent> clsmap
+            = (ConcurrentMap<ClusterEventId, ClusterEvent>) stubObj
+                .getCache(VTNManagerImpl.CACHE_EVENT);
+
+        FlowGroupId gid = new FlowGroupId("test_tenant");
+        InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+        FlowGroupId gidRemote = new FlowGroupId(ipaddr, 0L, "test_tenant2");
+
+        VTNFlow flow = new VTNFlow(gid);
+        FlowModResultEvent ev = new FlowModResultEvent("test",
+                                                       FlowModResult.SUCCEEDED);
+        clsmap.put(gid, ev);
+
+        VTNFlow flowRemote = new VTNFlow(gid);
+        FlowModResultEvent evRemote = new FlowModResultEvent("remote",
+                                                       FlowModResult.SUCCEEDED);
+        clsmap.put(gidRemote, evRemote);
+
+        startVTNManager(c);
+        assertNull(clsmap.get(gid));
+        assertEquals(evRemote, clsmap.get(gidRemote));
+
+        // in case flow cache remain.
+        VTNFlowDatabase fdb = vtnMgr.getTenantFlowDB(tpath.getTenantName());
+        flow = fdb.create(vtnMgr);
+        Node node = NodeCreator.createOFNode(Long.valueOf(0L));
+        NodeConnector innc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("1"), node);
+        NodeConnector outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("2"), node);
+        Match match = new Match();
+        match.setField(MatchType.IN_PORT, innc);
+        ActionList actions = new ActionList(node);
+        actions.addOutput(outnc);
+        flow.addFlow(vtnMgr, match, actions, 1);
+
+        fdb.install(vtnMgr, flow);
+        flushFlowTasks();
+        assertEquals(1, vtnMgr.getFlowDB().size());
+
+        stopVTNManager(false);
+
+        ConcurrentMap<FlowGroupId, VTNFlow> flowMap
+            = (ConcurrentMap<FlowGroupId, VTNFlow>) stubObj
+                .getCache(VTNManagerImpl.CACHE_FLOWS);
+        gid = new FlowGroupId("test_tenant");
+        flow = new VTNFlow(gid);
+        flowMap.put(gid, flow);
+
+        // A entry not associated with existing tenant correctly is
+        // removed in initialization process.
+        startVTNManager(c);
+        assertEquals(1, vtnMgr.getFlowDB().size());
+
+        // in case MAC Address Table cache remain.
+        ipaddr = getInetAddressFromAddress(new byte[] {10, 0, 0, 1});
+        MacTableEntry tent = new MacTableEntry(bpath, 1L, innc,
+                (short) 0, ipaddr);
+        vtnMgr.putMacTableEntry(tent);
+        flushTasks();
+        List<MacAddressEntry> entries = getMacAddressEntries(tent.getEntryId());
+        assertEquals(0, entries.size());
+
+        stopVTNManager(false);
+        startVTNManager(c);
+
+        // when entry which is local entry is removed.
+        entries = getMacAddressEntries(tent.getEntryId());
+        assertEquals(0, entries.size());
+    }
+
+    /**
+     * Get MAC address entries.
+     * @param id    A {@link MacTableEntryId}.
+     * @return  A List of {@link MacAddressEntry}.
+     */
+    private List<MacAddressEntry> getMacAddressEntries(MacTableEntryId id) {
+        MacAddressTable table = vtnMgr.getMacAddressTable(id);
+        List<MacAddressEntry> entries = null;
+        try {
+            entries = table.getEntries();
+        } catch (VTNException e) {
+            unexpected(e);
+        }
+        return entries;
     }
 
     /**
@@ -451,7 +557,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
        mgr.addHostListener(hl1);
 
        // in case IHostListener specified with argument of removeHostListener()
-       // don't matchalready registered
+       // don't match already registered
        HostListener hlnew1 = new HostListener();
        HostListener hlnew2 = new HostListener();
        mgr.removeHostListener(hlnew2);
@@ -741,7 +847,6 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
     @Test
     public void testIVTNModeListener() {
         VTNManagerImpl mgr = vtnMgr;
-
         VTNModeListenerStub stub1 = new VTNModeListenerStub();
         VTNModeListenerStub stub2 = new VTNModeListenerStub();
 
@@ -846,6 +951,32 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         mgr.addVTNModeListener(stub1);
         stub1.checkCalledInfo(1, Boolean.FALSE);
 
+        // in case received event from other node.
+        InetAddress ipaddr = null;
+        try {
+            ipaddr = InetAddress.getByName("0.0.0.0");
+        } catch (Exception e) {
+            unexpected(e);
+        }
+        ClusterEventId evid = new ClusterEventId(ipaddr, 0);
+        VTenantConfig tconf = new VTenantConfig(null);
+        VTenant vtenant = new VTenant("tenant", tconf);
+        IClusterContainerServices cs = mgr.getClusterContainerService();
+        ConcurrentMap<String, VTenantImpl> tenantDB
+            = (ConcurrentMap<String, VTenantImpl>)cs.getCache("vtn.tenant");
+        VTenantImpl imp = null;
+        try {
+            imp = new VTenantImpl("default", tpath.getTenantName(), tconf);
+        } catch (VTNException e) {
+            unexpected(e);
+        }
+        tenantDB.put(tpath.getTenantName(), imp);
+
+        VTenantEvent ev = new VTenantEvent(tpath, vtenant, UpdateType.ADDED);
+        mgr.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT, false);
+        flushTasks();
+        stub1.checkCalledInfo(1, Boolean.TRUE);
+
         mgr.removeVTNModeListener(stub1);
     }
 
@@ -853,7 +984,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
      * Test method for
      * {@link VTNManagerImpl#addMacAddressTable(VBridgePath, int)},
      * {@link VTNManagerImpl#removeMacAddressTable(VBridgePath, boolean)},
-     * {@link VTNManagerImpl#getMacAddressTable(VBridgePath)}
+     * {@link VTNManagerImpl#getMacAddressTable(VBridgePath)}.
      */
     @Test
     public void testMacAddressTable() {
@@ -1469,7 +1600,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                     StatusCode.SUCCESS, st.getCode());
         }
 
-        // add mulitple entry.
+        // add multiple entries.
         for (String tname : tlist) {
             VTenantPath tpath = new VTenantPath(tname);
             Status st = mgr.addTenant(tpath, new VTenantConfig(null));
@@ -2529,7 +2660,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         st = mgr.removeTenant(tpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        // assign mutli portmaps to a vbridge
+        // assign multi portmaps to a vbridge
         String bname1 = "vbridge1";
         VBridgePath bpath1 = new VBridgePath(tname, bname1);
         String bname2 = "vbridge2";
@@ -3021,7 +3152,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
     /**
      * Test method for {@link VTNManagerImpl#entryUpdated}.
      *
-     *  This tests TenantEvent.
+     * This tests {@link TenantEvent}.
      */
     @Test
     public void testCacheEntryChangeTenantEvent() {
@@ -3163,6 +3294,14 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         checkFileExists(tenantList, true, true);
     }
 
+    /**
+     * Check if a specified file exists..
+     *
+     * @param file      A checked file.
+     * @param result    A expected result.
+     * @param remove    If {@true} specified file is removed after check.
+     *                  If {@false} specified file is created after check.
+     */
     private void checkFileExists(File file, boolean result, boolean remove) {
         boolean exists = file.exists();
         assertEquals(result, exists);
@@ -3181,7 +3320,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
     /**
      * Test method for {@link VTNManagerImpl#entryUpdated}.
-     * This tests RawPacketEvent.
+     * This tests {@link RawPacketEvent}.
      */
     @Test
     public void testCacheEntryChangeRawPacketEvent() {
@@ -3248,7 +3387,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
     /**
      * Test method for {@link VTNManagerImpl#entryUpdated}.
-     * This tests FlowEvent.
+     * This tests {@link FlowAddEvent} and {@link FlowRemoveEvent}.
      */
     @Test
     public void testCacheEntryChangeFlowEvent() {
@@ -3340,17 +3479,30 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             flushAsyncTask(remoteTimeout);
             assertEquals(emsg, 0, stubObj.getFlowEntries().size());
         }
+
+        // specify a name except for CACHE_EVENT as cacheName.
+        mgr.entryUpdated(evIdRemote, addEvent, VTNManagerImpl.CACHE_FLOWS, false);
+        flushAsyncTask(remoteTimeout);
+        assertEquals(0, stubObj.getFlowEntries().size());
+
+        mgr.entryUpdated(evIdRemote, addEvent, VTNManagerImpl.CACHE_MAC, false);
+        flushAsyncTask(remoteTimeout);
+        assertEquals(0, stubObj.getFlowEntries().size());
+
+        mgr.entryUpdated(evIdRemote, addEvent, VTNManagerImpl.CACHE_TENANT, false);
+        flushAsyncTask(remoteTimeout);
+        assertEquals(0, stubObj.getFlowEntries().size());
     }
 
     /**
      * Test case for {@link VTNManagerImpl#entryUpdated}.
-     * This tests FlowModResultEvent.
+     * This tests {@link FlowModResultEvent}.
      */
     @Test
     public void testCacheFlowModResult() {
 
         /**
-         * TimerTask used to invoke entryUpdated().
+         * TimerTask used to invoke {@code entryUpdated()}.
          */
         class ResultTimerTask extends TimerTask {
             private VTNManagerImpl vtnManager = null;
@@ -3448,7 +3600,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             rent = null;
         }
 
-        InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+        InetAddress ipaddr
+            = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
         ClusterEventId evidRemote = new ClusterEventId(ipaddr, 0);
         ClusterEventId evidLocal = new ClusterEventId();
 
@@ -3470,7 +3623,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 timerTask.cancel();
 
                 if (result == FlowModResult.SUCCEEDED && local == Boolean.FALSE) {
-                    checkRegsiterdFlowEntry(vtnMgr, 1, flow, flow, 2, emsg);
+                    checkRegisteredFlowEntry(vtnMgr, 1, flow, flow, 2, emsg);
 
                     timerTask = new ResultTimerTask(vtnMgr, evidRemote,
                                                     rent.getFlowName(),
@@ -3481,7 +3634,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                     flushFlowTasks(remoteTimeout * 3);
                     timer.cancel();
                 } else {
-                    checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0, emsg);
+                    checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0, emsg);
 
                     fdb.clear(vtnMgr);
                     flushFlowTasks(timeout);
@@ -3489,7 +3642,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
                 fdb.clear(vtnMgr);
                 flushFlowTasks(remoteTimeout * 3);
-                checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0, emsg);
+                checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0, emsg);
             }
         }
 
@@ -3504,14 +3657,13 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         fdb.install(vtnMgr, flow);
         flushFlowTasks(remoteTimeout * 3);
         timerTask.cancel();
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0, "");
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0, "");
 
         fdb.clear(vtnMgr);
         flushFlowTasks(timeout);
 
         cleanupSetupFile();
     }
-
 
     /**
      * Add flow entry.
@@ -3538,18 +3690,18 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * check specified Flow Entry is registerd correctly.
+     * check specified Flow Entry is registered correctly.
      *
      * @param numFlows          The number of Flows.
-     * @param registerdFlow     VTNFlow which is registerd.
+     * @param registeredFlow     VTNFlow which is registered.
      * @param numFlowEntries    The number of Flow Entries.
      */
-    private void checkRegsiterdFlowEntry(VTNManagerImpl mgr, int numFlows,
-                                         VTNFlow registerdFlow, VTNFlow expectedFlow,
+    private void checkRegisteredFlowEntry(VTNManagerImpl mgr, int numFlows,
+                                         VTNFlow registeredFlow, VTNFlow expectedFlow,
                                          int numFlowEntries, String emsg) {
         ConcurrentMap<FlowGroupId, VTNFlow> db = mgr.getFlowDB();
         assertEquals(emsg, numFlows, db.size());
-        assertEquals(emsg, expectedFlow, db.get(registerdFlow.getGroupId()));
+        assertEquals(emsg, expectedFlow, db.get(registeredFlow.getGroupId()));
         assertEquals(emsg, numFlowEntries, stubObj.getFlowEntries().size());
     }
 
@@ -3580,12 +3732,12 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         evIdSet.add(evIdRemote);
         evIdSet.add(evIdLocal);
 
+        Node node0 = NodeCreator.createOFNode(Long.valueOf(0L));
         for (FlowGroupId evid : evIdSet) {
             String emsg = evid.toString();
             VTNFlow flow = new VTNFlow(evid);
 
             // ingress
-            Node node0 = NodeCreator.createOFNode(Long.valueOf(0L));
             NodeConnector innc
                 = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("10"),
                                                              node0);
@@ -3641,11 +3793,57 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             mgr.entryDeleted(evid, VTNManagerImpl.CACHE_FLOWS, false);
             assertFalse(emsg, fdb.containsIngressFlow(ingress));
         }
+
+        // specify a name except for CACHE_FLOWS as cacheName.
+        VTNFlow flow = new VTNFlow(evIdRemote);
+        NodeConnector innc
+            = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("10"),
+                                                         node0);
+        NodeConnector outnc
+            = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
+                                                         node0);
+        Match match = new Match();
+        match.setField(MatchType.IN_PORT, innc);
+        match.setField(MatchType.DL_VLAN, (short) 1);
+        ActionList actions = new ActionList(outnc.getNode());
+        actions.addOutput(outnc);
+        int pri = 1;
+        flow.addFlow(vtnMgr, match, actions, pri);
+        FlowEntry ingress = flow.getFlowEntries().get(0);
+
+        mgr.entryUpdated(evIdRemote, flow, VTNManagerImpl.CACHE_EVENT, false);
+        assertFalse(fdb.containsIngressFlow(ingress));
+
+        mgr.entryUpdated(evIdRemote, flow, VTNManagerImpl.CACHE_MAC, false);
+        assertFalse(fdb.containsIngressFlow(ingress));
+
+        mgr.entryUpdated(evIdRemote, flow, VTNManagerImpl.CACHE_PORTS, false);
+        assertFalse(fdb.containsIngressFlow(ingress));
+
+        // specify invalid id.
+        mgr.entryDeleted(null, VTNManagerImpl.CACHE_FLOWS, false);
+        assertFalse(fdb.containsIngressFlow(ingress));
+
+        FlowGroupId gid = new FlowGroupId("badtenant");
+        mgr.entryUpdated(gid, flow, VTNManagerImpl.CACHE_FLOWS, false);
+        assertFalse(fdb.containsIngressFlow(ingress));
+
+        mgr.entryDeleted(gid, VTNManagerImpl.CACHE_FLOWS, false);
+        assertFalse(fdb.containsIngressFlow(ingress));
+
+        // specify a object except for VTNFlow.
+        mgr.entryUpdated(evIdRemote, flow, VTNManagerImpl.CACHE_FLOWS, false);
+        assertTrue(fdb.containsIngressFlow(ingress));
+
+        mgr.entryUpdated(evIdRemote, Integer.valueOf(0),
+                VTNManagerImpl.CACHE_FLOWS, false);
+
+        assertTrue(fdb.containsIngressFlow(ingress));
     }
 
     /**
      * Test method for {@link VTNManagerImpl#entryUpdated}.
-     * This tests FlowEvent.
+     * This tests MacAddressTableEvent.
      */
     @Test
     public void testCacheEntryChangeMacTableEntry() {
@@ -3713,15 +3911,63 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             entry = getMacAddressEntry(mgr, bpath, ea);
             assertNull(emsg, entry);
         }
+
+        // specify a name except for CACHE_MAC as cacheName.
+        MacTableEntry ent = new MacTableEntry(evidRemote, nc, (short) 0,
+                                              ipaddr);
+        mgr.entryUpdated(evidRemote, ent, VTNManagerImpl.CACHE_EVENT, false);
+        MacAddressEntry entry = getMacAddressEntry(mgr, bpath, ea);
+        assertNull(entry);
+
+        mgr.entryUpdated(evidRemote, ent, VTNManagerImpl.CACHE_FLOWS, false);
+        entry = getMacAddressEntry(mgr, bpath, ea);
+        assertNull(entry);
+
+        mgr.entryUpdated(evidRemote, ent, VTNManagerImpl.CACHE_NODES, false);
+        entry = getMacAddressEntry(mgr, bpath, ea);
+        assertNull(entry);
+
+        // specify invalid id
+        List<MacAddressEntry> entries = getMacAddressEntries(evidRemote);
+        int presize = entries.size();System.out.println(presize);
+        mgr.entryDeleted(null, VTNManagerImpl.CACHE_MAC, false);
+        entry = getMacAddressEntry(mgr, bpath, ea);
+        assertNull(entry);
+        assertEquals(presize, getMacAddressEntries(evidRemote).size());
+
+        VBridgePath bpathNew = new VBridgePath("tenant", "bbb");
+        MacTableEntryId eid = new MacTableEntryId(ipaddr, 0L, bpathNew, mac);
+        mgr.entryUpdated(eid, ent, VTNManagerImpl.CACHE_MAC, false);
+        assertNull(mgr.getMacAddressTable(eid));
+
+
+        mgr.entryUpdated(evidRemote, ent, VTNManagerImpl.CACHE_MAC, false);
+        entry = getMacAddressEntry(mgr, bpath, ea);
+        assertNotNull(entry);
+
+        mgr.entryDeleted(eid, VTNManagerImpl.CACHE_MAC, false);
+        assertNull(mgr.getMacAddressTable(eid));
+
+        mgr.entryDeleted(evidRemote, VTNManagerImpl.CACHE_MAC, false);
+        assertNull(mgr.getMacAddressTable(eid));
+
+
+        // specify invalid object
+        presize = entries.size();
+        mgr.entryUpdated(evidRemote, Integer.valueOf(0),
+                         VTNManagerImpl.CACHE_MAC, false);
+        entry = getMacAddressEntry(mgr, bpath, ea);
+        assertNull(entry);
+        assertEquals(presize, getMacAddressEntries(evidRemote).size());
     }
 
     /**
      * get Mac Address table Entry.
      *
      * @param mgr       A VTNManager service.
-     * @param bpath     A VBridgePath.
-     * @param ea        A EthernetAddress.
-     * @return  A MacAddressEtnry.
+     * @param bpath     A {@link VBridgePath}.
+     * @param ea        A {@link EthernetAddress}.
+     * @return  A {@link MacAddressEntry}.
      */
     private MacAddressEntry getMacAddressEntry(VTNManagerImpl mgr, VBridgePath bpath,
                                                EthernetAddress ea) {
@@ -3732,6 +3978,104 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             unexpected(e);
         }
         return entry;
+    }
+
+    /**
+     * Test method for {@link VTNManagerImpl#flowRemoved(Node, Flow))}.
+     */
+    @Test
+    public void testFlowRemoved() {
+        VTNManagerImpl mgr = vtnMgr;
+
+        // create tenant.
+        VTenantPath path = new VTenantPath("tenant");
+        Status st = mgr.addTenant(path, new VTenantConfig(""));
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        VTNFlowDatabase fdb = vtnMgr.getTenantFlowDB(path.getTenantName());
+
+        Node node0 = NodeCreator.createOFNode(Long.valueOf(0L));
+        Node node1 = NodeCreator.createOFNode(Long.valueOf(1L));
+        Node node10 = NodeCreator.createOFNode(Long.valueOf(10L));
+        Set<Node> nodeSet = new HashSet<Node>();
+        nodeSet.add(node0);
+        nodeSet.add(node1);
+
+        Set<VTNFlow> flows = new HashSet<VTNFlow>();
+        for (Node node : nodeSet) {
+            VTNFlow flow = fdb.create(vtnMgr);
+
+            // ingress
+            NodeConnector innc
+                = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("10"),
+                                                             node);
+            NodeConnector outnc
+                = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
+                                                             node);
+            Match match = new Match();
+            match.setField(MatchType.IN_PORT, innc);
+            match.setField(MatchType.DL_VLAN, (short) 1);
+            ActionList actions = new ActionList(outnc.getNode());
+            actions.addOutput(outnc);
+            int pri = 1;
+            flow.addFlow(vtnMgr, match, actions, pri);
+
+            // + local entry.
+            innc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("12"),
+                                                              node);
+            outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
+                                                               node);
+            flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+
+            fdb.install(mgr, flow);
+
+            flows.add(flow);
+        }
+
+        NodeConnector innc
+            = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("10"),
+                                                         node10);
+        NodeConnector outnc
+            = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
+                                                         node10);
+        Match match = new Match();
+        match.setField(MatchType.IN_PORT, innc);
+        match.setField(MatchType.DL_VLAN, (short) 1);
+        ActionList acts = new ActionList(outnc.getNode());
+        acts.addOutput(outnc);
+
+        FlowEntry badEntry = new FlowEntry("", "", new Flow(match, acts.get()),
+                                           node0);
+
+        flushFlowTasks();
+        assertEquals(4, stubObj.getFlowEntries().size());
+        assertEquals(2, mgr.getFlowDB().size());
+
+        for (VTNFlow flow : flows) {
+            FlowEntry entry = flow.getFlowEntries().iterator().next();
+            mgr.flowRemoved(entry.getNode(), entry.getFlow());
+            flushFlowTasks();
+            assertEquals(3, stubObj.getFlowEntries().size());
+            assertEquals(1, mgr.getFlowDB().size());
+
+            stubObj.uninstallFlowEntry(entry);
+            fdb.removeIndex(mgr, flow);
+            fdb.install(mgr, flow);
+            flushFlowTasks();
+            assertEquals(4, stubObj.getFlowEntries().size());
+            assertEquals(2, mgr.getFlowDB().size());
+
+            mgr.flowRemoved(node10, entry.getFlow());
+            flushFlowTasks();
+            assertEquals(4, stubObj.getFlowEntries().size());
+            assertEquals(2, mgr.getFlowDB().size());
+
+            mgr.flowRemoved(node10, badEntry.getFlow());
+            flushFlowTasks();
+            assertEquals(4, stubObj.getFlowEntries().size());
+            assertEquals(2, mgr.getFlowDB().size());
+
+        }
     }
 
     /**

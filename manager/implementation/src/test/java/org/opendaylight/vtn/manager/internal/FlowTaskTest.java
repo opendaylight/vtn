@@ -8,8 +8,6 @@
  */
 package org.opendaylight.vtn.manager.internal;
 
-import static org.junit.Assert.*;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -73,7 +71,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         FlowAddTask task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.SUCCEEDED, task.getResult(timeout));
-        checkRegsiterdFlowEntry(vtnMgr, 1, flow, flow, 1);
+        checkRegisteredFlowEntry(vtnMgr, 1, flow, flow, 1);
 
         Iterator<FlowEntry> it = flow.getFlowEntries().iterator();
         FlowEntry ingress = it.next();
@@ -81,16 +79,16 @@ public class FlowTaskTest extends FlowModTaskTestBase {
                                                   ingress, it);
         rtask.run();
         assertEquals(FlowModResult.SUCCEEDED, rtask.getResult());
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         task.run();
         assertEquals(FlowModResult.SUCCEEDED, task.getResult(timeout));
-        checkRegsiterdFlowEntry(vtnMgr, 1, flow, flow, 1);
+        checkRegisteredFlowEntry(vtnMgr, 1, flow, flow, 1);
 
         fdb.createIndex(vtnMgr, flow);
         fdb.clear(vtnMgr);
         flushFlowTasks(remoteTimeout);
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         // in case ingress + local.
         NodeConnector innc
@@ -103,18 +101,18 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.SUCCEEDED, task.getResult(timeout));
-        checkRegsiterdFlowEntry(vtnMgr, 1, flow, flow, 2);
+        checkRegisteredFlowEntry(vtnMgr, 1, flow, flow, 2);
 
         it = flow.getFlowEntries().iterator();
         ingress = it.next();
         rtask = new FlowRemoveTask(vtnMgr, flow.getGroupId(), ingress, it);
         rtask.run();
         assertEquals(FlowModResult.SUCCEEDED, rtask.getResult());
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         task.run();
         assertEquals(FlowModResult.SUCCEEDED, task.getResult(timeout));
-        checkRegsiterdFlowEntry(vtnMgr, 1, flow, flow, 2);
+        checkRegisteredFlowEntry(vtnMgr, 1, flow, flow, 2);
 
         // in case uninstallLocal() fails.
         ForwardingRulesManagerStub stub
@@ -130,7 +128,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         fdb.createIndex(vtnMgr, flow);
         fdb.clear(vtnMgr);
         flushFlowTasks(remoteTimeout);
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         // in case ingress + local + remote.
         // in this case failed to add remote flow entry.
@@ -142,18 +140,18 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(remoteTimeout));
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         it = flow.getFlowEntries().iterator();
         ingress = it.next();
         rtask = new FlowRemoveTask(vtnMgr, flow.getGroupId(), ingress, it);
         rtask.run();
         assertEquals(FlowModResult.FAILED, rtask.getResult());
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         fdb.clear(vtnMgr);
         flushFlowTasks(remoteTimeout);
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         // ingress + local + remote + not connected node.
         innc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("10"),
@@ -164,18 +162,18 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(remoteTimeout));
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         it = flow.getFlowEntries().iterator();
         ingress = it.next();
         rtask = new FlowRemoveTask(vtnMgr, flow.getGroupId(), ingress, it);
         rtask.run();
         assertEquals(FlowModResult.FAILED, rtask.getResult());
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         fdb.clear(vtnMgr);
         flushFlowTasks(remoteTimeout);
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         // ingress + remote
         // in this case fail to add remote flow entry.
@@ -192,7 +190,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         task = new FlowAddTask(vtnMgr, flowRemote);
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(remoteTimeout));
-        checkRegsiterdFlowEntry(vtnMgr, 0, flowRemote, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flowRemote, null, 0);
 
         // in case ingress is remote node.
         flow = fdb.create(vtnMgr);
@@ -204,7 +202,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(remoteTimeout));
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         // in case ingress is not connected node.
         flow = fdb.create(vtnMgr);
@@ -217,14 +215,14 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(remoteTimeout));
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         // empty flow
         flow = fdb.create(vtnMgr);
         task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(remoteTimeout));
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         cleanupSetupFile();
     }
@@ -235,7 +233,9 @@ public class FlowTaskTest extends FlowModTaskTestBase {
      * {@link FlowRemoveTask#execute()},
      * {@link FlowModTask#run()}.
      *
+     * <p>
      * In case that local flow modification is timed out.
+     * </p>
      */
     @Test
     public void testFlowTaskTestLocalTimeout() {
@@ -266,7 +266,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         FlowAddTask task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(timeout));
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         // in case ingress + local
         innc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("12"),
@@ -277,7 +277,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(timeout));
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         // in case thread is interrupted.
         TimerTask timerTask = new InterruptTask(Thread.currentThread());
@@ -287,7 +287,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         timer.schedule(timerTask, timeout / 2);
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(timeout));
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
     }
 
     /**
@@ -356,7 +356,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         FlowAddTask task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(remoteTimeout));
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         Set<ClusterEvent> events = getPostedClusterEvent();
         assertEquals(2, events.size());
@@ -367,7 +367,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         FlowRemoveTask rtask = new FlowRemoveTask(vtnMgr, flow.getGroupId(), ingress, it);
         rtask.run();
         assertEquals(FlowModResult.FAILED, rtask.getResult(remoteTimeout));
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         events = getPostedClusterEvent();
         assertEquals(1, events.size());
@@ -375,7 +375,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
 
         fdb.clear(vtnMgr);
         flushFlowTasks(remoteTimeout);
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         // ingress + local + remote.
         // in this case succeed to add and remove remote flow entry.
@@ -393,7 +393,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         task.run();
         assertEquals(FlowModResult.SUCCEEDED, task.getResult(remoteTimeout));
         // entry managed by local is installed.
-        checkRegsiterdFlowEntry(vtnMgr, 1, flow, flow, 2);
+        checkRegisteredFlowEntry(vtnMgr, 1, flow, flow, 2);
 
         events = getPostedClusterEvent();
         assertEquals(1, events.size());
@@ -407,7 +407,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         rtask = new FlowRemoveTask(vtnMgr, flow.getGroupId(), ingress, it);
         rtask.run();
         assertEquals(FlowModResult.SUCCEEDED, rtask.getResult(remoteTimeout));
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         events = getPostedClusterEvent();
         assertEquals(1, events.size());
@@ -415,7 +415,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
 
         fdb.clear(vtnMgr);
         flushFlowTasks(remoteTimeout);
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         // ingress + local + remote + not connected node.
         // in this case succeed to add and remove remote flow entry.
@@ -437,7 +437,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(remoteTimeout));
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         events = getPostedClusterEvent();
         // when include not connected node,
@@ -447,7 +447,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
 
         fdb.clear(vtnMgr);
         flushFlowTasks(remoteTimeout);
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         // in case installLocal() timeout.
         ForwardingRulesManagerStub frm = new ForwardingRulesManagerStub();
@@ -463,7 +463,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(timeout));
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         cleanupSetupFile();
     }
@@ -511,7 +511,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         FlowAddTask task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.SUCCEEDED, task.getResult(timeout));
-        checkRegsiterdFlowEntry(vtnMgr, 1, flow, flow, 2);
+        checkRegisteredFlowEntry(vtnMgr, 1, flow, flow, 2);
 
         gidset.add(flow.getGroupId());
         Iterator<FlowEntry> it = flow.getFlowEntries().iterator();
@@ -539,7 +539,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.SUCCEEDED, task.getResult(timeout));
-        checkRegsiterdFlowEntry(vtnMgr, 2, flow, flow, 4);
+        checkRegisteredFlowEntry(vtnMgr, 2, flow, flow, 4);
 
         gidset.add(flow.getGroupId());
         it = flow.getFlowEntries().iterator();
@@ -553,7 +553,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
                                                   entries);
         rtask.run();
         assertEquals(FlowModResult.SUCCEEDED, rtask.getResult());
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
 
         // remove with no entry existing.
         gidset.clear();
@@ -569,7 +569,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         rtask = new FlowRemoveTask(vtnMgr, gidset, ingress, entries);
         rtask.run();
         assertEquals(FlowModResult.FAILED, rtask.getResult(timeout));
-        checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0);
+        checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0);
     }
 
     /**
@@ -669,18 +669,18 @@ public class FlowTaskTest extends FlowModTaskTestBase {
     // private methods
 
     /**
-     * check specified Flow Entry is registerd correctly.
+     * check specified Flow Entry is registered correctly.
      *
      * @param numFlows          the number of Flows.
-     * @param registerdFlow     VTNFlow which is registerd.
+     * @param registeredFlow     VTNFlow which is registered.
      * @param numFlowEntries    the number of Flow Entries.
      */
-    private void checkRegsiterdFlowEntry(VTNManagerImpl mgr, int numFlows,
-                                         VTNFlow registerdFlow, VTNFlow expectedFlow,
+    private void checkRegisteredFlowEntry(VTNManagerImpl mgr, int numFlows,
+                                         VTNFlow registeredFlow, VTNFlow expectedFlow,
                                          int numFlowEntries) {
         ConcurrentMap<FlowGroupId, VTNFlow> db = mgr.getFlowDB();
         assertEquals(numFlows, db.size());
-        assertEquals(expectedFlow, db.get(registerdFlow.getGroupId()));
+        assertEquals(expectedFlow, db.get(registeredFlow.getGroupId()));
         assertEquals(numFlowEntries, stubObj.getFlowEntries().size());
     }
 }

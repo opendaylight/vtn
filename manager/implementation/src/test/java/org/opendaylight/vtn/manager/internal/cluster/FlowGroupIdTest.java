@@ -8,8 +8,6 @@
  */
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import static org.junit.Assert.*;
-
 import java.net.InetAddress;
 import java.util.HashSet;
 import java.util.Set;
@@ -90,7 +88,7 @@ public class FlowGroupIdTest extends TestBase {
             numSet++;
 
             // create object by FlowGroupId(InetAddress, long, String).
-            long[] values = new long[] {0, Long.MIN_VALUE, Long.MAX_VALUE};
+            long[] values = new long[] {-1L, Long.MIN_VALUE, Long.MAX_VALUE};
             for (long id : values) {
                 for (Set<InetAddress> iset : createInetAddresses(false)) {
                     for (InetAddress ipaddr : iset) {
@@ -105,15 +103,16 @@ public class FlowGroupIdTest extends TestBase {
                         numSet++;
                     }
                 }
+                ipSet.clear();
             }
         }
 
         assertEquals(numSet, cevSet.size());
     }
 
-    /*
+    /**
      * Test method for {@link FlowGroupId#toString()}.
-     * */
+     */
     @Test
     public void testToString() {
         ClusterEventId.setLocalAddress(null);

@@ -8,8 +8,6 @@
  */
 package org.opendaylight.vtn.manager;
 
-import static org.junit.Assert.*;
-
 import org.junit.Test;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -66,6 +64,12 @@ public class VTNExceptionTest extends TestBase {
         // in case null is specified.
         VTNException e = new VTNException(null);
         assertEquals(null, e.getCause());
+        assertEquals(null, e.getMessage());
+        assertEquals(null, e.getStatus());
+
+        VTNException et = new VTNException(StatusCode.INTERNALERROR, "message");
+        e = new VTNException((Status) null, et);
+        assertEquals(et, e.getCause());
         assertEquals(null, e.getMessage());
         assertEquals(null, e.getStatus());
     }

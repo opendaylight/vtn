@@ -8,12 +8,6 @@
  */
 package org.opendaylight.vtn.manager.internal;
 
-import static org.junit.Assert.*;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -27,7 +21,6 @@ import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
-import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 

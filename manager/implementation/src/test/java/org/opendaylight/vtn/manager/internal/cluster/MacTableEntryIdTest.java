@@ -8,8 +8,6 @@
  */
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import static org.junit.Assert.*;
-
 import java.net.InetAddress;
 import java.util.HashSet;
 import java.util.Set;
@@ -24,7 +22,7 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 /**
  * JUnit Test for {@link MacTableEntryId}.
  */
-public class MacTableEntryIdTest extends TestBase{
+public class MacTableEntryIdTest extends TestBase {
 
     /**
      * Test case for getter methods.
@@ -90,12 +88,12 @@ public class MacTableEntryIdTest extends TestBase{
 
     /**
      * Test method for
-     * {@link FlowGroupId#hashCode()},
-     * {@link FlowGroupId#equals(Object)}.
+     * {@link MacTableEntryId#hashCode()},
+     * {@link MacTableEntryId#equals(Object)}.
      */
     @Test
     public void testEquals() {
-        long[] values = new long[] {0, Long.MIN_VALUE, Long.MAX_VALUE};
+        long[] values = new long[] {-1L, Long.MIN_VALUE, Long.MAX_VALUE};
         Set<Object> cevSet = new HashSet<Object>();
         Set<InetAddress> ipSet = new HashSet<InetAddress>();
 
@@ -109,7 +107,7 @@ public class MacTableEntryIdTest extends TestBase{
                 for (EthernetAddress ea : createEthernetAddresses(false)) {
                     long mac = NetUtils.byteArray6ToLong(ea.getValue());
 
-                 // create object by MacTableEntryId(VBridgePath, long).
+                    // create object by MacTableEntryId(VBridgePath, long).
                     MacTableEntryId cev1 = new MacTableEntryId(bpath, mac);
                     MacTableEntryId cev2 = new MacTableEntryId(
                                             cev1.getControllerAddress(),
@@ -135,6 +133,7 @@ public class MacTableEntryIdTest extends TestBase{
                                 numSet++;
                             }
                         }
+                        ipSet.clear();
                     }
                 }
             }
@@ -144,7 +143,7 @@ public class MacTableEntryIdTest extends TestBase{
     }
 
     /**
-     * Test method for {@link FlowGroupId#toString()}.
+     * Test method for {@link MacTableEntryId#toString()}.
      */
     @Test
     public void testToString() {
@@ -187,7 +186,7 @@ public class MacTableEntryIdTest extends TestBase{
     }
 
     /**
-     * Ensure that {@link FlowGroupId} is serializable.
+     * Ensure that {@link MacTableEntryId} is serializable.
      */
     @Test
     public void testSerialize() {

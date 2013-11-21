@@ -8,8 +8,6 @@
  */
 package org.opendaylight.vtn.manager.internal;
 
-import static org.junit.Assert.*;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -50,24 +48,26 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
      */
     @Test
     public void testCreate() {
-        String tname = "testcreate";
         String tnameOther = "other";
-        VTNFlowDatabase fdb = new VTNFlowDatabase("testcreate");
         VTNFlowDatabase fdbOther = new VTNFlowDatabase("other");
-        VTNFlow testFlow0 = fdb.create(vtnMgr);
-        VTNFlow testFlow1 = fdb.create(vtnMgr);
-        VTNFlow otherFlow0 = fdbOther.create(vtnMgr);
 
-        assertNotNull(testFlow0);
-        assertNotNull(testFlow1);
-        assertNotNull(otherFlow0);
+        for (String tname : createStrings("testcreate", false)) {
+            VTNFlowDatabase fdb = new VTNFlowDatabase(tname);
+            VTNFlow testFlow0 = fdb.create(vtnMgr);
+            VTNFlow testFlow1 = fdb.create(vtnMgr);
+            VTNFlow otherFlow0 = fdbOther.create(vtnMgr);
 
-        assertEquals(tname, testFlow0.getGroupId().getTenantName());
-        assertEquals(tname, testFlow1.getGroupId().getTenantName());
-        assertEquals(tnameOther, otherFlow0.getGroupId().getTenantName());
+            assertNotNull(testFlow0);
+            assertNotNull(testFlow1);
+            assertNotNull(otherFlow0);
 
-        assertFalse(testFlow0.getGroupId().equals(testFlow1.getGroupId()));
-        assertFalse(testFlow0.getGroupId().equals(otherFlow0.getGroupId()));
+            assertEquals(tname, testFlow0.getGroupId().getTenantName());
+            assertEquals(tname, testFlow1.getGroupId().getTenantName());
+            assertEquals(tnameOther, otherFlow0.getGroupId().getTenantName());
+
+            assertFalse(testFlow0.getGroupId().equals(testFlow1.getGroupId()));
+            assertFalse(testFlow0.getGroupId().equals(otherFlow0.getGroupId()));
+        }
     }
 
     /**
@@ -681,16 +681,16 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
     }
 
     /**
-     * Check entries in flowDB after
+     * Check entries in {@code flowDB} after
      * {@link VTNFlowDatabase#removeFlows(VTNManagerImpl, VTenantPath)}
      * was invoked.
      *
      * @param mgr   VTNManager service.
-     * @param fdb   VTNFlowDatabase.
+     * @param fdb   {@link VTNFlowDatabase}.
      * @param flows flows initially installed.
-     * @param rpath VTenantPath.
+     * @param rpath {@link VTenantPath}.
      *              it is expected that a FlowEntry dependesOn this was removed.
-     * @return Set of VTNFlow which was removed.
+     * @return Set of {@link VTNFlow} which was removed.
      */
     private Set<VTNFlow> checkFlowDBEntriesVTenantPath (VTNManagerImpl mgr,
             VTNFlowDatabase fdb, Set<VTNFlow> flows, VTenantPath rpath) {
@@ -717,11 +717,12 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
      * {@link VTNFlowDatabase#removeFlows(VTNManagerImpl, MacVlan)} was invoked.
      *
      * @param mgr       VTNManager service.
-     * @param fdb       VTNFlowDatabase.
+     * @param fdb       {@link VTNFlowDatabase}.
      * @param flows     flows initially installed.
-     * @param macVlan   MacVlan.
-     *                  it is expected that a FlowEntry dependesOn this was removed.
-     * @return Set of VTNFlow which was removed.
+     * @param macVlan   {@link MacVlan}.
+     *                  it is expected that a {@link FlowEntry} dependesOn this
+     *                  was removed.
+     * @return Set of {@link VTNFlow} which was removed.
      */
     private Set<VTNFlow> checkFlowDBEntriesMacVlan (VTNManagerImpl mgr,
             VTNFlowDatabase fdb, Set<VTNFlow> flows, MacVlan macVlan) {
@@ -744,10 +745,10 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
     }
 
     /**
-     * Install FlowEntry which is specified.
+     * Install {@link FlowEntry} which is specified.
      *
      * @param mgr           VTN Manager service
-     * @param fdb           VTNFlowDatabase.
+     * @param fdb           {@link VTNFlowDatabase}.
      * @param revertFlows   VTNFlows which is installed.
      * @param numFlows      The expected number of VTNFlows after install.
      * @param numEntries    The expected number of FlowEntries after install.
@@ -858,7 +859,7 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
      * {@link VTNFlowDatabase#removeFlows(VTNManagerImpl, List)} was invoked.
      *
      * @param mgr           VTNManager service.
-     * @param fdb           VTNFlowDatabase.
+     * @param fdb           {@link VTNFlowDatabase}.
      * @param flows         flows initially installed.
      * @param removeFlows   List of VTNFlows which was removed.
      */
@@ -964,7 +965,7 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
      * @param   inPort      A ingress {@link NodeConnector}.
      * @param   inVlan      A incoming VLAN ID.
      * @param   outPort     A outgoing {@link NodeConnector}.
-     * @param   priority    A priority of FlowEntry.
+     * @param   priority    A priority of {@link FlowEntry}.
      * @return {@link VTNFlow}.
      */
     private VTNFlow addFlowEntry(VTNManagerImpl mgr, VTNFlow flow,

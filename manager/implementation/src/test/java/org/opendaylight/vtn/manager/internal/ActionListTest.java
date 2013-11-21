@@ -8,8 +8,6 @@
  */
 package org.opendaylight.vtn.manager.internal;
 
-import static org.junit.Assert.*;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,8 +30,7 @@ public class ActionListTest extends TestBase {
      */
     @Test
     public void testActionList() {
-//        short[] vlans = new short[] {-1, 0, 1, 4095, 4096};
-        short[] vlans = new short[] {0, 1, 100, 4095};
+        short[] vlans = new short[] {-1, 0, 1, 100, 4095, 4096};
 
         for (short vlan : vlans) {
             for (Node node : createNodes(4)) {
@@ -55,8 +52,10 @@ public class ActionListTest extends TestBase {
                 regActs = actList.get();
                 if (vlan == 0) {
                     assertTrue(emsg, regActs.contains(new PopVlan()));
-                } else {
+                } else if (vlan > 0){
                     assertTrue(emsg, regActs.contains(new SetVlanId((int) vlan)));
+                } else {
+                    numOutput--;
                 }
                 assertEquals(emsg, numOutput, regActs.size());
 

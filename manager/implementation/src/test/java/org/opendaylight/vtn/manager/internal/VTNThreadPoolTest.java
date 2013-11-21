@@ -8,16 +8,12 @@
  */
 package org.opendaylight.vtn.manager.internal;
 
-import static org.junit.Assert.*;
-
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
-import org.opendaylight.controller.sal.utils.StatusCode;
-import org.opendaylight.vtn.manager.VTNException;
 
 /**
  * test for {@link VTNThreadPool}

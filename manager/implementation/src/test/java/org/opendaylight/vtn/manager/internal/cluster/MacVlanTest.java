@@ -8,8 +8,6 @@
  */
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import static org.junit.Assert.*;
-
 import java.util.HashSet;
 import java.util.List;
 

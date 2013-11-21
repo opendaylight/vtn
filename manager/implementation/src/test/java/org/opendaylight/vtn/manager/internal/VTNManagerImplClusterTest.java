@@ -8,28 +8,28 @@
  */
 package org.opendaylight.vtn.manager.internal;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.apache.felix.dm.Component;
 import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
-import org.opendaylight.controller.sal.action.Action;
-import org.opendaylight.controller.sal.action.Output;
-import org.opendaylight.controller.sal.action.SetVlanId;
 import org.opendaylight.controller.sal.connection.ConnectionLocality;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.match.Match;
-import org.opendaylight.controller.sal.match.MatchField;
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.Ethernet;
@@ -63,13 +63,18 @@ import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
+import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
+import org.opendaylight.vtn.manager.internal.cluster.FlowModResultEvent;
+import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
+import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
 import org.opendaylight.vtn.manager.internal.cluster.PortMapEvent;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.RawPacketEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VBridgeEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VBridgeIfEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VNodeEvent;
+import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VlanMapEvent;
 
@@ -77,8 +82,8 @@ import org.opendaylight.vtn.manager.internal.cluster.VlanMapEvent;
  * JUnit test for {@link VTNManagerImplTest}.
  *
  * <p>
- * This test class test with using stub which return parameter
- * let VTNManager work on the environment some nodes exist in cluster mode.
+ * This test class test with using stub which simulate working
+ * on the environment some nodes exist in cluster mode.
  * </p>
  */
 public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
@@ -115,6 +120,255 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         vtnMgr.setConnectionManager(stubObj);
         startVTNManager(c);
     }
+
+    /**
+     * Test method for
+     * {@link VTNManagerImpl#init(Component)},
+     * {@link VTNManagerImpl#destroy()}.
+     */
+    @Test
+    public void testInitDestory() {
+        ComponentImpl c = new ComponentImpl(null, null, null);
+        Hashtable<String, String> properties = new Hashtable<String, String>();
+        String containerName = "default";
+        properties.put("containerName", containerName);
+        c.setServiceProperties(properties);
+        Map<VBridgeIfPath, PortMapConfig> pmaps
+                = new HashMap<VBridgeIfPath, PortMapConfig>();
+        Map<VlanMap, VlanMapConfig> vmaps = new HashMap<VlanMap, VlanMapConfig>();
+
+        String tname = "vtn";
+        VTenantPath tpath = new VTenantPath(tname);
+        String bname = "vbridge";
+        VBridgePath bpath = new VBridgePath(tname, bname);
+        VBridgeIfPath ifpath1 = new VBridgeIfPath(tname, bname, "vif1");
+        VBridgeIfPath ifpath2 = new VBridgeIfPath(tname, bname, "vif2");
+
+        List<VBridgePath> bpathlist = new ArrayList<VBridgePath>();
+        List<VBridgeIfPath> ifpathlist = new ArrayList<VBridgeIfPath>();
+        bpathlist.add(bpath);
+        ifpathlist.add(ifpath1);
+        createTenantAndBridgeAndInterface(vtnMgr, tpath, bpathlist, ifpathlist);
+
+        Status st = vtnMgr.addBridgeInterface(ifpath2,
+                new VInterfaceConfig(null, Boolean.FALSE));
+        ifpathlist.add(ifpath2);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        restartVTNManager(c);
+
+        pmaps.put(ifpath1, null);
+        pmaps.put(ifpath2, null);
+        checkVTNconfig(tpath, bpathlist, pmaps, null);
+
+        // add mappings
+        Node node = NodeCreator.createOFNode(0L);
+        SwitchPort port = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW,
+                                         String.valueOf(10));
+        PortMapConfig pmconf = new PortMapConfig(node, port, (short)0);
+        st = vtnMgr.setPortMap(ifpath1, pmconf);
+
+        VlanMapConfig vlconf = new VlanMapConfig(null, (short)4095);
+        VlanMap map = null;
+        try {
+            map = vtnMgr.addVlanMap(bpath, vlconf);
+        } catch (VTNException e) {
+            unexpected(e);
+        }
+        vmaps.put(map, vlconf);
+
+        restartVTNManager(c);
+
+        checkVTNconfig(tpath, bpathlist, pmaps, vmaps);
+
+        stopVTNManager(false);
+        VTNManagerImpl.cleanUpConfigFile(containerName);
+        startVTNManager(c);
+
+        // because cache remain, setting is taken over.
+        checkVTNconfig(tpath, bpathlist, pmaps, vmaps);
+
+        vtnMgr.saveConfiguration();
+
+        stopVTNManager(true);
+        vtnMgr.unsetClusterContainerService(stubObj);
+        startVTNManager(c);
+
+        checkVTNconfig(tpath, bpathlist, pmaps, vmaps);
+        stopVTNManager(true);
+        vtnMgr.setClusterContainerService(stubObj);
+
+        // remove configuration files.
+        stopVTNManager(true);
+        VTNManagerImpl.cleanUpConfigFile(containerName);
+        startVTNManager(c);
+
+        // after cache is cleared, there is no configuration.
+        List<VTenant> tlist = null;
+        try {
+            tlist = vtnMgr.getTenants();
+        } catch (VTNException e) {
+            unexpected(e);
+        }
+        assertNotNull(tlist);
+        assertEquals(0, tlist.size());
+
+        stopVTNManager(true);
+        VTNManagerImpl.cleanUpConfigFile(containerName);
+
+        c = new ComponentImpl(null, null, null);
+        c.setServiceProperties(null);
+        startVTNManager(c);
+        assertFalse(vtnMgr.isAvailable());
+
+        stopVTNManager(true);
+        VTNManagerImpl.cleanUpConfigFile(containerName);
+
+        // in case not "default" container
+        c = new ComponentImpl(null, null, null);
+        properties = new Hashtable<String, String>();
+        String containerNameTest = "test";
+        properties.put("containerName", containerNameTest);
+        c.setServiceProperties(properties);
+        startVTNManager(c);
+
+        createTenantAndBridgeAndInterface(vtnMgr, tpath, bpathlist, ifpathlist);
+
+        stopVTNManager(true);
+        VTNManagerImpl.cleanUpConfigFile(containerNameTest);
+    }
+
+    /**
+     * Test method for
+     * {@link VTNManagerImpl#init(Component)},
+     * {@link VTNManagerImpl#destroy()}.
+     *
+     * <p>
+     * In case that a cache is remained when cache is created in cluster mode.
+     * </p>
+     */
+   public void testInitEventAndFlowAndMacCacheRemainedCase() {
+        ComponentImpl c = new ComponentImpl(null, null, null);
+        Hashtable<String, String> properties = new Hashtable<String, String>();
+        String containerName = "default";
+        properties.put("containerName", containerName);
+        c.setServiceProperties(properties);
+
+        String tname = "vtn";
+        VTenantPath tpath = new VTenantPath(tname);
+        String bname = "vbridge";
+        VBridgePath bpath = new VBridgePath(tname, bname);
+        VBridgeIfPath ifpath1 = new VBridgeIfPath(tname, bname, "vif1");
+
+        List<VBridgePath> bpathlist = new ArrayList<VBridgePath>();
+        List<VBridgeIfPath> ifpathlist = new ArrayList<VBridgeIfPath>();
+        bpathlist.add(bpath);
+        ifpathlist.add(ifpath1);
+        createTenantAndBridgeAndInterface(vtnMgr, tpath, bpathlist, ifpathlist);
+
+        stopVTNManager(false);
+        VTNManagerImpl.cleanUpConfigFile(containerName);
+
+        ConcurrentMap<ClusterEventId, ClusterEvent> clsmap
+            = (ConcurrentMap<ClusterEventId, ClusterEvent>) stubObj
+                .getCache(VTNManagerImpl.CACHE_EVENT);
+
+        FlowGroupId gid = new FlowGroupId("test_tenant");
+        VTNFlow flow = new VTNFlow(gid);
+        FlowModResultEvent ev = new FlowModResultEvent("test",
+                                                       FlowModResult.SUCCEEDED);
+        clsmap.put(gid, ev);
+
+        startVTNManager(c);
+        assertNull(clsmap.get(gid));
+
+        // in case flow cache remain.
+        VTNFlowDatabase fdb = vtnMgr.getTenantFlowDB(tpath.getTenantName());
+        flow = fdb.create(vtnMgr);
+        Node node = NodeCreator.createOFNode(Long.valueOf(0L));
+        NodeConnector innc = NodeConnectorCreator
+                .createOFNodeConnector(Short.valueOf("1"), node);
+        NodeConnector outnc = NodeConnectorCreator
+                .createOFNodeConnector(Short.valueOf("2"), node);
+        Match match = new Match();
+        match.setField(MatchType.IN_PORT, innc);
+        ActionList actions = new ActionList(node);
+        actions.addOutput(outnc);
+        flow.addFlow(vtnMgr, match, actions, 1);
+
+        fdb.install(vtnMgr, flow);
+        flushFlowTasks();
+        assertEquals(1, vtnMgr.getFlowDB().size());
+
+        stopVTNManager(false);
+
+        ConcurrentMap<FlowGroupId, VTNFlow> flowMap
+            = (ConcurrentMap<FlowGroupId, VTNFlow>) stubObj
+                .getCache(VTNManagerImpl.CACHE_FLOWS);
+        gid = new FlowGroupId("test_tenant");
+        flow = new VTNFlow(gid);
+        flowMap.put(gid, flow);
+
+        // A entry not associated with existing tenant correctly is
+        // removed in initialization process.
+        startVTNManager(c);
+        assertEquals(1, vtnMgr.getFlowDB().size());
+
+        // in case MAC Address Table cache remain.
+        InetAddress ipaddr = getInetAddressFromAddress(new byte[] {10, 0, 0, 1});
+        MacTableEntry tent = new MacTableEntry(bpath, 1L, innc,
+                                               (short) 0, ipaddr);
+        vtnMgr.putMacTableEntry(tent);
+        flushTasks();
+        List<MacAddressEntry> entries = getMacAddressEntries(tent.getEntryId());
+        assertEquals(0, entries.size());
+        ConcurrentMap<MacTableEntryId, MacTableEntry> map = vtnMgr.getMacAddressDB();
+        assertEquals(1, map.size());
+
+        stopVTNManager(false);
+        startVTNManager(c);
+
+        // when entry which is local entry is removed.
+        entries = getMacAddressEntries(tent.getEntryId());
+        assertEquals(0, entries.size());
+        assertEquals(0, map.size());
+
+        // in case remote entry is remained.
+        InetAddress ipaddrRemote = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+        MacTableEntryId evidRemote = new MacTableEntryId(ipaddrRemote, 1L, bpath, 1L);
+
+        tent = new MacTableEntry(evidRemote, innc, (short) 0, ipaddr);
+        vtnMgr.putMacTableEntry(tent);
+        flushTasks();
+        entries = getMacAddressEntries(tent.getEntryId());
+        assertEquals(0, entries.size());
+        assertEquals(1, map.size());
+        stopVTNManager(false);
+        startVTNManager(c);
+
+        entries = getMacAddressEntries(tent.getEntryId());
+        assertEquals(1, entries.size());
+        assertEquals(1, map.size());
+
+    }
+
+    /**
+     * Get mac address entries.
+     *
+     * @param id    A {@link MacTableEntryId}.
+     * @return  List of {@link MacAddressEntry}.
+     */
+    private List<MacAddressEntry> getMacAddressEntries(MacTableEntryId id) {
+        MacAddressTable table = vtnMgr.getMacAddressTable(id);
+        List<MacAddressEntry> entries = null;
+        try {
+            entries = table.getEntries();
+        } catch (VTNException e) {
+            unexpected(e);
+        }
+        return entries;
+    }
+
 
     /**
      * test method for {@link VNodeEvent}.
@@ -215,7 +469,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         clsEvents.clear();
 
 
-        // add PortMap.
+        // add PortMap. When PortMap status is changed,
         // VBridge and VBridgeInterface status is also changed.
         Node node0 = NodeCreator.createOFNode(Long.valueOf("0"));
         SwitchPort port = new SwitchPort(node0.getType(), "10");
@@ -260,7 +514,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         checkPortMapEvent(clsEvents, 1, ifpath, pmconf, UpdateType.CHANGED);
         clsEvents.clear();
 
-        // clear PortMap.
+        // clear PortMap. When portmap is removed,
         // VBridge and VBridgeInterface status is also changed.
         st = mgr.setPortMap(ifpath, null);
         assertEquals(StatusCode.SUCCESS, st.getCode());
@@ -375,13 +629,14 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * Check VTenantEvent object.
+     * Check {@link VTenantEvent} object.
      *
-     * @param clsEvents A Map of cluster event.
-     * @param numEvents A number of events in clsEvents.
-     * @param tpath     A VTenantPath.
-     * @param tconf     A VTenantConfig.
-     * @param utype     A UpdateType.
+     * @param clsEvents A Map between {@link ClusterEventId} and
+     *                  {@link ClusterEvent}.
+     * @param numEvents A number of events in {@code clsEvents}.
+     * @param tpath     A {@link VTenantPath}.
+     * @param tconf     A {@link VTenantConfig}.
+     * @param utype     A {@link UpdateType}.
      */
     private void checkVTenantEvent(ConcurrentMap<ClusterEventId, ClusterEvent> clsEvents,
                                    int numEvents, VTenantPath tpath,
@@ -402,13 +657,14 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * Check VBridgeEVent.
+     * Check {@link VBridgeEvent}.
      *
-     * @param clsEvents A Map of cluster event.
-     * @param numEvents A number of events in clsEvents.
-     * @param bpath     A VBridgePath.
-     * @param bconf     A VBridgeConfig.
-     * @param utype     A UpdateType.
+     * @param clsEvents A Map between {@link ClusterEventId} and
+     *                  {@link ClusterEvent}.
+     * @param numEvents A number of events in {@code clsEvents}.
+     * @param bpath     A {@link VBridgePath}.
+     * @param bconf     A {@link VBridgeConfig}.
+     * @param utype     A {@link UpdateType}.
      */
     private void checkVBridgeEvent(ConcurrentMap<ClusterEventId, ClusterEvent> clsEvents,
                                    int numEvents, VBridgePath bpath,
@@ -425,13 +681,13 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * Check VBridgeEvent.
+     * Check {@link VBridgeEvent}.
      *
-     * @param bev   A VBridgeEvent.
-     * @param bpath A VBridgePath.
-     * @param bconf A VBridgeConfig.
-     * @param state A state of VBridge.
-     * @param utype A UpdateType.
+     * @param bev   A {@link VBridgeEvent}.
+     * @param bpath A {@link VBridgePath}.
+     * @param bconf A {@link VBridgeConfig}.
+     * @param state A state of {@link VBridge}.
+     * @param utype A {@link UpdateType}.
      */
     private void checkVBridgeEvent(VBridgeEvent bev, VBridgePath bpath,
                                    VBridgeConfig bconf, VNodeState state,
@@ -445,13 +701,14 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * Check VBridgeIfEvent.
+     * Check {@ linkVBridgeIfEvent}.
      *
-     * @param clsEvents A Map of cluster event.
-     * @param numEvents A number of events in clsEvents.
-     * @param ifpath    A VBridgeIfPath.
-     * @param ifconf    A VInterfaceConfig.
-     * @param utype     A UpdateType.
+     * @param clsEvents A Map between {@link ClusterEventId} and
+     *                  {@link ClusterEvent}.
+     * @param numEvents A number of events in {@code clsEvents}.
+     * @param ifpath    A {@link VBridgeIfPath}.
+     * @param ifconf    A {@link VInterfaceConfig}.
+     * @param utype     A {@link UpdateType}.
      */
     private void checkVBridgeIfEvent(ConcurrentMap<ClusterEventId, ClusterEvent> clsEvents,
                                      int numEvents, VBridgeIfPath ifpath,
@@ -471,14 +728,14 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * Check VBridgeIfEvent.
+     * Check {@link VBridgeIfEvent}.
      *
-     * @param ifev      A VBridgeIfEvent.
-     * @param ifpath    A VBridgeIfPath.
-     * @param ifconf    A VInterfaceConfig.
-     * @param state     A state of VInterface.
+     * @param ifev      A {@link VBridgeIfEvent}.
+     * @param ifpath    A {@link VBridgeIfPath}.
+     * @param ifconf    A {@link VInterfaceConfig}.
+     * @param state     A state of {@link VInterface}.
      * @param estate    A state of port mapped to.
-     * @param utype     A UpdateType.
+     * @param utype     A {@link UpdateType}.
      */
     private void checkVBridgeIfEvent(VBridgeIfEvent ifev, VBridgeIfPath ifpath,
                                      VInterfaceConfig ifconf,
@@ -493,13 +750,14 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * Check PortMapEvent.
+     * Check {@link PortMapEvent}.
      *
-     * @param clsEvents A Map of cluster event.
-     * @param numEvents A number of events in clsEvents.
-     * @param ifpath    A VBridgeIfPath.
-     * @param pmconf    A PortMapConfig.
-     * @param utype     A UpdateType.
+     * @param clsEvents A Map between {@link ClusterEventId} and
+     *                  {@link ClusterEvent}.
+     * @param numEvents A number of events in {@code clsEvents}.
+     * @param ifpath    A {@link VBridgeIfPath}.
+     * @param pmconf    A {@link PortMapConfig}.
+     * @param utype     A {@link UpdateType}.
      */
     private void checkPortMapEvent(ConcurrentMap<ClusterEventId, ClusterEvent> clsEvents,
                                    int numEvents, VBridgeIfPath ifpath,
@@ -517,12 +775,12 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * Check PortMapEvent.
+     * Check {@link PortMapEvent}.
      *
-     * @param ev        A PortMapEvent.
-     * @param ifpath    A VBridgeIfPath.
-     * @param pmconf    A PortMapConfig.
-     * @param utype     A UpdateType.
+     * @param ev        A {@link PortMapEvent}.
+     * @param ifpath    A {@link VBridgeIfPath}.
+     * @param pmconf    A {@link PortMapConfig}.
+     * @param utype     A {@link UpdateType}.
      */
     private void checkPortMapEvent(PortMapEvent ev,
                                    VBridgeIfPath ifpath, PortMapConfig pmconf,
@@ -540,12 +798,12 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * Check VlanMapEvent.
+     * Check {@link VlanMapEvent}.
      *
-     * @param ev    A VlanMapEvent.
-     * @param bpath A VBridgePath.
-     * @param map   A VlanMap.
-     * @param utype A UpdateType.
+     * @param ev    A {@link VlanMapEvent}.
+     * @param bpath A {@link VBridgePath}.
+     * @param map   A {@link VlanMap}.
+     * @param utype A {@link UpdateType}.
      */
     private void checkVlanMapEvent(VlanMapEvent ev,
                                    VBridgePath bpath, VlanMap map,
@@ -556,7 +814,80 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         assertEquals("VLAN mapping", ev.getTypeName());
     }
 
+    /**
+     * Test method for {@link VTNManagerImpl#entryUpdated}.
+     * This tests {@link RawPacketEvent}.
+     */
+    @Test
+    public void testCacheEntryChangeRawPacketEvent() {
+        VTNManagerImpl mgr = vtnMgr;
 
+        byte[] src = new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+        byte[] dst = new byte[] {(byte) 0xff, (byte) 0xff, (byte) 0xff,
+                                 (byte) 0xff, (byte) 0xff, (byte) 0xff};
+        byte[] sender = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 1};
+        byte[] target = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 10};
+        Node node0 = NodeCreator.createOFNode(Long.valueOf(0L));
+        Node node1 = NodeCreator.createOFNode(Long.valueOf(1L));
+        Set<Node> nodeSet = new HashSet<Node>();
+        nodeSet.add(node0);
+        nodeSet.add(node1);
+
+        InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+        ClusterEventId evidRemote = new ClusterEventId(ipaddr, 0);
+        ClusterEventId evidLocal = new ClusterEventId();
+        Set<ClusterEventId> evIdSet = new HashSet<ClusterEventId>();
+        evIdSet.add(evidLocal);
+        evIdSet.add(evidRemote);
+
+        for (Node node : nodeSet) {
+            NodeConnector innc = NodeConnectorCreator
+                    .createOFNodeConnector(Short.valueOf((short) 10), node);
+            NodeConnector outnc = NodeConnectorCreator
+                    .createOFNodeConnector(Short.valueOf((short) 11), node);
+            RawPacket pkt = createARPRawPacket(src, dst, sender, target,
+                                               (short) 0, innc, ARP.REQUEST);
+            RawPacketEvent ev = new RawPacketEvent(pkt, outnc);
+
+            for (ClusterEventId evid : evIdSet) {
+                String emsg = evid.toString();
+                // in case entry created, no operation is executed.
+                mgr.entryCreated(evid, VTNManagerImpl.CACHE_EVENT, true);
+                flushTasks();
+                assertEquals(emsg, 0, stubObj.getTransmittedDataPacket().size());
+
+                mgr.entryCreated(evid, VTNManagerImpl.CACHE_EVENT, false);
+                flushTasks();
+                assertEquals(emsg, 0, stubObj.getTransmittedDataPacket().size());
+
+                // update event.
+                mgr.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT, true);
+                flushTasks();
+                assertEquals(emsg, 0, stubObj.getTransmittedDataPacket().size());
+
+                mgr.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT, false);
+                flushTasks();
+                if (evid == evidRemote && node.equals(node0)) {
+                    assertEquals(emsg, 1,
+                            stubObj.getTransmittedDataPacket().size());
+                } else {
+                    assertEquals(emsg, 0,
+                            stubObj.getTransmittedDataPacket().size());
+                }
+
+                // in case entry deleted, no operation is executed.
+                mgr.entryDeleted(evid, VTNManagerImpl.CACHE_EVENT, true);
+                flushTasks();
+                assertEquals(emsg, 0,
+                         stubObj.getTransmittedDataPacket().size());
+
+                mgr.entryDeleted(evid, VTNManagerImpl.CACHE_EVENT, false);
+                flushTasks();
+                assertEquals(emsg, 0,
+                         stubObj.getTransmittedDataPacket().size());
+            }
+        }
+    }
 
     /**
      * Test method for {@link VTNManagerImpl#receiveDataPacket(RawPacket)}.
@@ -589,7 +920,6 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         mappedConnectors.put(bpath1, new HashSet<NodeConnector>());
         mappedConnectors.put(bpath2, new HashSet<NodeConnector>());
 
-        Node node2 = NodeCreator.createOFNode(2L);
         Set<Node> existNodes = swmgr.getNodes();
         Set<NodeConnector> existConnectors = new HashSet<NodeConnector>();
         for (Node node: existNodes) {
@@ -600,12 +930,15 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         vmapNodes.add(null);
 
         // add interface
-        for (short i = 0; i < 4; i++) {
+        final int NUM_INTERFACES = 2;
+        final int MAX_INTERFACE_VBRIDGE1 = 1;
+
+        for (short i = 0; i < NUM_INTERFACES; i++) {
             int inode = 0;
             for (Node node : existNodes) {
+                String bname = (i < MAX_INTERFACE_VBRIDGE1) ? bname1 : bname2;
                 String ifname = "vinterface" + inode + (i + 10);
-                VBridgeIfPath ifp = new VBridgeIfPath(tname, (i < 2) ? bname1 : bname2,
-                                                    ifname);
+                VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, ifname);
                 st = mgr.addBridgeInterface(ifp, new VInterfaceConfig(null, Boolean.TRUE));
                 assertEquals("(VBridgeIfPath)" + ifp.toString(),
                              StatusCode.SUCCESS, st.getCode());
@@ -618,13 +951,14 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
             Set<PortVlan> portMappedThis = new HashSet<PortVlan>();
             Set<PortVlan> portMappedOther = new HashSet<PortVlan>();
 
-            for (short i = 0; i < 4; i++) {
+            for (short i = 0; i < NUM_INTERFACES; i++) {
                 int inode = 0;
                 for (Node node : existNodes) {
                     short setvlan = (i != 1) ? vlan : 100;
+                    String bname = (i < MAX_INTERFACE_VBRIDGE1) ? bname1 : bname2;
                     String ifname = "vinterface" + inode + (i + 10);
-                    VBridgeIfPath ifp = new VBridgeIfPath(tname, (i < 2) ? bname1 : bname2,
-                                                            ifname);
+                    VBridgePath bpath = (i < MAX_INTERFACE_VBRIDGE1)? bpath1 : bpath2;
+                    VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, ifname);
                     SwitchPort port = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW,
                                                     String.valueOf(i + 10));
                     PortMapConfig pmconf = new PortMapConfig(node, port, setvlan);
@@ -635,10 +969,10 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
 
                     NodeConnector mapnc = NodeConnectorCreator.createOFNodeConnector(
                             Short.valueOf((short)(i + 10)), node);
-                    Set<NodeConnector> set  = mappedConnectors.get((i < 2)? bpath1 : bpath2);
+                    Set<NodeConnector> set  = mappedConnectors.get(bpath);
                     set.add(mapnc);
-                    mappedConnectors.put((i < 2) ? bpath1 : bpath2, set);
-                    if (i < 2) {
+                    mappedConnectors.put(bpath, set);
+                    if (i < MAX_INTERFACE_VBRIDGE1) {
                         portMappedThis.add(new PortVlan(mapnc, setvlan));
                     } else {
                         portMappedOther.add(new PortVlan(mapnc, setvlan));
@@ -690,18 +1024,20 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                     mappedThis.removeAll(transmitOtherNode);
                     mappedThis.removeAll(notTransmit);
 
-                    testReceiveDataPacketBCLoop(mgr, bpath1, MapType.PORT, mappedThis, transmitOtherNode, stub);
+                    testReceiveDataPacketBCLoop(mgr, bpath1, MapType.PORT,
+                            mappedThis, transmitOtherNode, stub);
 
                     st = mgr.flushMacEntries(bpath1);
                     assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
 
-                    testReceiveDataPacketUCLoop(mgr, bpath1, MapType.PORT, mappedThis, transmitOtherNode, stub);
+                    testReceiveDataPacketUCLoop(mgr, bpath1, MapType.PORT,
+                            mappedThis, transmitOtherNode, stub);
 
                     st = mgr.flushMacEntries(bpath1);
                     assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
 
                     testReceiveDataPacketUCLoopLearned(mgr, bpath1, MapType.PORT,
-                                                       mappedThis, transmitOtherNode, stub);
+                            mappedThis, transmitOtherNode, stub);
 
                     st = mgr.flushMacEntries(bpath1);
                     assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
@@ -944,7 +1280,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         List<EthernetAddress> ethers = createEthernetAddresses(false);
         for (PortVlan learnedPv : mappedThis) {
             NodeConnector learnedNc = learnedPv.getNodeConnector();
-            Set<String> registerdFlows = new HashSet<String>();
+            Set<String> registeredFlows = new HashSet<String>();
 
             // first learned hosts to vbridge.
             testReceiveDataPacketCommonLoop(mgr, bpath, MapType.PORT, mappedThis,
@@ -1060,7 +1396,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                         assertEquals(emsg, numExpectFlows, flowEntries.size());
 
                         checkFlowEntries(learnedPv, inPortVlan, flowEntries,
-                                         registerdFlows, src, dst, tenant, emsg);
+                                         registeredFlows, src, dst, tenant, emsg);
 
                     } else {
                         if (inNc != null) {

@@ -8,8 +8,6 @@
  */
 package org.opendaylight.vtn.manager.internal;
 
-import static org.junit.Assert.*;
-
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;

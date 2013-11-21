@@ -8,8 +8,6 @@
  */
 package org.opendaylight.vtn.manager.internal;
 
-import static org.junit.Assert.*;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,7 +44,6 @@ import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
-import org.opendaylight.vtn.manager.internal.TestUseVTNManagerBase.NopFlowTask;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 
@@ -56,7 +53,7 @@ import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
 
     /**
-     *  Mock-up of IfHostListener.
+     *  Mock-up of {@link IfHostListener}.
      */
     class HostListener implements IfHostListener {
         private int hostListenerCalled = 0;
@@ -78,7 +75,7 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
     }
 
     /**
-     * Mock-up of IVTNModeListener.
+     * Mock-up of {@link IVTNModeListener}.
      */
     class VTNModeListenerStub implements IVTNModeListener {
         private int calledCount = 0;
@@ -136,8 +133,10 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         }
 
         /**
-         * check information registered by vtnModeChanged().
-         * @param expCount  A expected number of times vtnModeChanged() was called.
+         * check information registered by {@code vtnModeChanged()}.
+         *
+         * @param expCount  A expected number of times {@code vtnModeChanged()}
+         *                  was called.
          * @param expMode   A expected mode.
          */
         void checkCalledInfo(int expCount, Boolean expMode) {
@@ -146,8 +145,9 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         }
 
         /**
-         * check information registered by vtnModeChanged().
-         * @param expCount  A expected number of times vtnModeChanged() was called.
+         * check information registered by {@code vtnModeChanged()}.
+         * @param expCount  A expected number of times {@code vtnModeChanged()}
+         *                  was called.
          */
         void checkCalledInfo(int expCount) {
             if (expCount >= 0) {
@@ -174,7 +174,7 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
     };
 
     /**
-     * Mock-up of IVTNManagerAware.
+     * Mock-up of {@link IVTNManagerAware}.
      */
     class VTNManagerAwareStub implements IVTNManagerAware {
         private final long sleepMilliTime = 10L;
@@ -226,10 +226,11 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         }
 
         /**
-         * check information notified by vtnChanged().
+         * check information notified by {@code vtnChanged()}.
          *
-         * @param count     A expected number of times vtnChanged() was called.
-         * @param path      A VTenantPath expect to be notified.
+         * @param count     A expected number of times {@code vtnChanged()}
+         *                  was called.
+         * @param path      A {@link VTenantPath} expect to be notified.
          * @param name      A name expect to be notified.
          * @param type      A type expect to be notified.
          */
@@ -266,10 +267,11 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         }
 
         /**
-         * check information notified by vBridgeChanged().
+         * check information notified by {@code vBridgeChanged()}.
          *
-         * @param count     A expected number of times vBridgeChanged() was called.
-         * @param path      A VBridgePath expect to be notified.
+         * @param count     A expected number of times {@code vBridgeChanged()}
+         *                  was called.
+         * @param path      A {@link VBridgePath} expect to be notified.
          * @param name      A name expect to be notified.
          * @param type      A type expect to be notified.
          */
@@ -306,11 +308,11 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         }
 
         /**
-         * check information notified by vBridgeInterfaceChanged().
+         * check information notified by {@code vBridgeInterfaceChanged()}.
          *
          * @param count     A expected number of times
-         *                  vBridgeInterfaceChanged() was called.
-         * @param path      A VBridgeIfPath expect to be notified.
+         *                  {@code vBridgeInterfaceChanged()} was called.
+         * @param path      A {@link VBridgeIfPath} expect to be notified.
          * @param name      A name expect to be notified.
          * @param type      A type expect to be notified.
          */
@@ -347,10 +349,11 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         }
 
         /**
-         * check information notified by vlanMapChanged().
+         * check information notified by {@code vlanMapChanged()}.
          *
-         * @param count     A expected number of times vlanMapChanged() was called.
-         * @param path      A VBridgePath expect to be notified.
+         * @param count     A expected number of times {@code vlanMapChanged()}
+         *                  was called.
+         * @param path      A {@link VBridgePath} expect to be notified.
          * @param id        A map-id expect to be notified.
          * @param type      A type expect to be notified.
          */
@@ -387,11 +390,12 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         }
 
         /**
-         * check information notified by portMapChanged().
+         * check information notified by {@code portMapChanged()}.
          *
-         * @param count     A expected number of times portMapChanged() was called.
-         * @param path      A VBridgeIfPath expect to be notified.
-         * @param pconf     A PortMapConfig expect to be notified.
+         * @param count     A expected number of times {@code portMapChanged()}
+         *                  was called.
+         * @param path      A {@link VBridgeIfPath} expect to be notified.
+         * @param pconf     A {@link PortMapConfig} expect to be notified.
          * @param type      A type expect to be notified.
          */
         synchronized void checkPmapInfo(int count, VBridgeIfPath path,
@@ -444,10 +448,13 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         }
     };
 
-
     /**
      * method for setup the environment.
      * create 1 Tenant and bridges
+     *
+     * @param mgr       VTNManager Service.
+     * @param tpath     A {@link VTenantPath} to be created.
+     * @param bpaths    A list of {@link VBridgePath} to be created.
      */
     protected void createTenantAndBridge(IVTNManager mgr, VTenantPath tpath,
             List<VBridgePath> bpaths) {
@@ -465,6 +472,11 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
     /**
      * method for setup the environment.
      * create 1 Tenant and bridges and vInterfaces
+     *
+     * @param mgr       VTNManager Service.
+     * @param tpath     A {@link VTenantPath} to be created.
+     * @param bpaths    A list of {@link VBridgePath} to be created.
+     * @param ifpaths   A list of {@link VBridgeIfPath} to be created.
      */
     protected void createTenantAndBridgeAndInterface(IVTNManager mgr, VTenantPath tpath,
             List<VBridgePath> bpaths, List<VBridgeIfPath> ifpaths) {
@@ -488,6 +500,13 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
     /**
      * check VTN configuration.
      * note: this don't support a configuration which VBridge &gt; 1
+     *
+     * @param tpath     A {@link VTenantPath} expected to exist.
+     * @param bpathlist A set of {@link VBridgePath} expected to exist.
+     * @param pmaps     A map between {@link VBridgeIfPath} expected to exist
+     *                  and {@link PortMapConfig}.
+     * @param vmaps     A map between {@link VlanMap} expected to exist and
+     *                  {@link VlanMapConfig}.
      */
     protected void checkVTNconfig(VTenantPath tpath, List<VBridgePath> bpathlist,
             Map<VBridgeIfPath, PortMapConfig> pmaps, Map<VlanMap, VlanMapConfig> vmaps) {
@@ -547,8 +566,22 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         }
     }
 
+    /**
+     * Check flow entries.
+     *
+     * @param learnedPv     Learned {@link PortVlan} of target host.
+     * @param inPortVlan    Ingress {@link PortVlan}.
+     * @param flowEntries   A Set of {@link FlowEntry} which was installed.
+     * @param registeredFlows   Set of string of {@link FlowEntry} which is
+     *                          already registered before.
+     *                          Registered flows are added to this.
+     * @param src           A source MAC address.
+     * @param dst           A destination MAC address.
+     * @param tenant        A {@link VTenant} installed flows.
+     * @param emsg          Error message.
+     */
     protected void checkFlowEntries(PortVlan learnedPv, PortVlan inPortVlan,
-            Set<FlowEntry> flowEntries, Set<String> registerdFlows,
+            Set<FlowEntry> flowEntries, Set<String> registeredFlows,
             byte[] src, byte[] dst, VTenant tenant,
             String emsg) {
         NodeConnector learnedNc = learnedPv.getNodeConnector();
@@ -558,10 +591,11 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         NodeConnector edgePort
                 = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15), inNode);
         for (FlowEntry ent : flowEntries) {
-            if (!registerdFlows.add(ent.getFlowName())) {
+            if (!registeredFlows.add(ent.getFlowName())) {
                 continue;
             }
 
+            // check Actions.
             if (ent.getFlowName().endsWith("-0")) {
                 assertEquals(inNode, ent.getNode());
                 for (Action act : ent.getFlow().getActions()) {
@@ -621,6 +655,7 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
             NodeConnector inEdgePort
                 = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15), learnedNode);
 
+            // check Match.
             Match match = ent.getFlow().getMatch();
             for (MatchType mtype : match.getMatchesList()) {
                 MatchField field = match.getField(mtype);
@@ -650,8 +685,11 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
                 }
             }
 
+            // check priority.
             int pri = vtnMgr.getVTNConfig().getL2FlowPriority();
             assertEquals(pri, ent.getFlow().getPriority());
+
+            // check setting of timeout.
             if (ent.getFlowName().endsWith("-0")) {
                 assertEquals(tenant.getHardTimeout(), ent.getFlow().getHardTimeout());
                 assertEquals(tenant.getIdleTimeout(), ent.getFlow().getIdleTimeout());

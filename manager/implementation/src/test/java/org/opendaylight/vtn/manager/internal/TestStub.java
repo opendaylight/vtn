@@ -86,7 +86,8 @@ import org.opendaylight.vtn.manager.SwitchPort;
  * This stub provides APIs implemented in Bundle in controller project.
  *
  * <p>
- *   Note that stubMode can be set to 0 or 2 or 3 only. (other is not implemented yet.)
+ *   Note that stubMode can be set to 0 or 2 or 3 only.
+ *   (other is not implemented yet.)
  * </p>
  */
 public class TestStub implements IClusterGlobalServices, IClusterContainerServices,
@@ -94,7 +95,7 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     IForwardingRulesManager, IfIptoHost, IConnectionManager {
 
     /*
-     * Mode of TestStub.
+     * Mode of {@link TestStub}.
      * Each mode corresponds to following configuration.
      *
      *   0 : no nodes
@@ -352,7 +353,7 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
 
     private Set<NodeConnector> getPortSet(Set<NodeConnector> ncSet) {
         if (ncSet == null) {
-            return new HashSet<NodeConnector>();
+            return null;
         }
         return new HashSet<NodeConnector>(ncSet);
     }
@@ -497,14 +498,11 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
 
     @Override
     public Subnet getSubnetByNetworkAddress(InetAddress networkAddress) {
-
-        if (stubMode >= 1) {
-            if (savedSubnetConfig != null) {
-                if (savedSubnet == null) {
-                    savedSubnet = new Subnet(savedSubnetConfig);
-                }
-                return savedSubnet;
+        if (savedSubnetConfig != null) {
+            if (savedSubnet == null) {
+                savedSubnet = new Subnet(savedSubnetConfig);
             }
+            return savedSubnet;
         }
 
         return null;
@@ -870,7 +868,11 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     @Override
     public Path getRoute(Node src, Node dst) {
         if (stubMode >= 1) {
-            List<Edge> edges = nodeEdges.get(src).get(dst);
+            Map<Node, List<Edge>> nodeEdgeMap = nodeEdges.get(src);
+            if (nodeEdgeMap == null) {
+                return null;
+            }
+            List<Edge> edges = nodeEdgeMap.get(dst);
             if (edges == null) {
                 return null;
             }
@@ -1135,7 +1137,7 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
                 Node node = NodeCreator.createOFNode(Long.valueOf(0));
                 NodeConnector nc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("10"), node);
                 try {
-                    hnode = new HostNodeConnector(mac, networkAddress, nc, (short)0);
+                    hnode = new HostNodeConnector(mac, networkAddress, nc, (short) 0);
                 } catch (ConstructionException e) {
                     return null;
                 }

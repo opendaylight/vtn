@@ -12,6 +12,7 @@ package org.opendaylight.vtn.manager.internal;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -52,11 +53,16 @@ import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
+import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
+import org.opendaylight.vtn.manager.internal.cluster.RawPacketEvent;
 
 /**
  * JUnit test for {@link VTNManagerImplTest}.
+ *
+ * <p>
  * Test a function disable some service for a newly detected node.
+ * </p>
  */
 public class VTNManagerImplDisableNodesTest extends TestBase {
     private VTNManagerImpl vtnMgr = null;
@@ -64,7 +70,7 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
     private int stubMode = 2;
 
     /**
-     * test case receive packet with having disabledNode.
+     * test case receive packet with existing entry in {@code disabledNode}.
      */
     @Test
     public void testWithHavingDisabledNode() {
@@ -364,7 +370,7 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
                         disabledPV.add(new PortVlan(pmapnc, pmapvlan));
                     }
 
-                    // a result of adding Node, specified Node setted to
+                    // a result of adding Node, specified Node set to
                     // disableNodes.
                     addNode(mgr, swMgr, disableNode);
 
@@ -426,6 +432,84 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
         stopVTNManager();
     }
 
+    /**
+     * Test method for {@link VTNManagerImpl#entryUpdated}.
+     * This tests {@link RawPacketEvent}.
+     */
+    @Test
+    public void testCacheEntryChangeRawPacketEvent() {
+        // set a value of EdgeTimeout to 600 sec.
+        setupVTNManager(600000);
+
+        VTNManagerImpl mgr = vtnMgr;
+        ISwitchManager swMgr = mgr.getSwitchManager();
+
+        byte[] src = new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+        byte[] dst = new byte[] {(byte) 0xff, (byte) 0xff, (byte) 0xff,
+                                 (byte) 0xff, (byte) 0xff, (byte) 0xff};
+        byte[] sender = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 1};
+        byte[] target = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 10};
+        Node node0 = NodeCreator.createOFNode(Long.valueOf(0L));
+        NodeConnector innc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 10), node0);
+        NodeConnector outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 11), node0);
+        RawPacket pkt = createARPRawPacket(src, dst, sender, target, (short) 0, innc, ARP.REQUEST);
+
+        RawPacketEvent ev = new RawPacketEvent(pkt, outnc);
+
+        InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+        ClusterEventId evidRemote = new ClusterEventId(ipaddr, 0);
+        ClusterEventId evidLocal = new ClusterEventId();
+
+        Set<ClusterEventId> evIdSet = new HashSet<ClusterEventId>();
+        evIdSet.add(evidLocal);
+        evIdSet.add(evidRemote);
+
+        for (Node disableNode : swMgr.getNodes()) {
+            for (ClusterEventId evid : evIdSet) {
+                mgr.clearDisabledNode();
+                addNode(mgr, swMgr, disableNode);
+
+                String emsg = evid.toString();
+                // in case entry created, no operation is executed.
+                mgr.entryCreated(evid, VTNManagerImpl.CACHE_EVENT, true);
+                flushTasks(mgr);
+                assertEquals(emsg, 0, stubObj.getTransmittedDataPacket().size());
+
+                mgr.entryCreated(evid, VTNManagerImpl.CACHE_EVENT, false);
+                flushTasks(mgr);
+                assertEquals(emsg, 0, stubObj.getTransmittedDataPacket().size());
+
+                // update event.
+                mgr.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT, true);
+                flushTasks(mgr);
+                assertEquals(emsg, 0, stubObj.getTransmittedDataPacket().size());
+
+                mgr.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT, false);
+                flushTasks(mgr);
+                if (evid == evidRemote && !disableNode.equals(node0)) {
+                    assertEquals(emsg, 1,
+                                 stubObj.getTransmittedDataPacket().size());
+                } else {
+                    assertEquals(emsg, 0,
+                                 stubObj.getTransmittedDataPacket().size());
+                }
+
+                // in case entry deleted, no operation is executed.
+                mgr.entryDeleted(evid, VTNManagerImpl.CACHE_EVENT, true);
+                flushTasks(mgr);
+                assertEquals(emsg, 0,
+                             stubObj.getTransmittedDataPacket().size());
+
+                mgr.entryDeleted(evid, VTNManagerImpl.CACHE_EVENT, false);
+                flushTasks(mgr);
+                assertEquals(emsg, 0,
+                             stubObj.getTransmittedDataPacket().size());
+            }
+        }
+
+        stopVTNManager();
+    }
+
 
     // private methods
 
@@ -433,7 +517,7 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
      * setup initfile
      *
      * @param containerName a container name.
-     * @param val nodeEdgeWait time (in milli seconds)
+     * @param val {@code nodeEdgeWait} time (in milliseconds)
      */
     private void setupInifile(String containerName, int val) {
         String dir = GlobalConstants.STARTUPHOME.toString();
@@ -454,7 +538,7 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
     /**
      * setup VTNManager.
      *
-     * @param edgeTimeoutVal    a time wait after new node detect in millsecond.
+     * @param edgeTimeoutVal    a time wait after new node detect in millisecond.
      */
     private void setupVTNManager(int edgeTimeoutVal) {
         File confdir = new File(GlobalConstants.STARTUPHOME.toString());
@@ -520,7 +604,7 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
     }
 
     /**
-     * method for setup a environment. create 1 Tenant and bridges and vinterfaces
+     * method for setup a environment. create 1 Tenant and bridges and vinterfaces.
      */
     private void createTenantAndBridgeAndInterface(IVTNManager mgr,
             VTenantPath tpath, List<VBridgePath> bpaths,
@@ -543,7 +627,7 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
     }
 
     /**
-     * remove and add specified node to add to disabledNode.
+     * remove and add specified node to add to {@code disabledNode}.
      *
      * @param mgr   a {@link VTNManagerImpl} object.
      * @param swmgr a {@link ISwitchManager} object.

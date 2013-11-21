@@ -8,8 +8,6 @@
  */
 package org.opendaylight.vtn.manager.internal;
 
-import static org.junit.Assert.*;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;

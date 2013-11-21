@@ -20,14 +20,13 @@ import java.util.Set;
 import org.junit.Test;
 import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
-import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.Path;
 import org.opendaylight.controller.sal.routing.IRouting;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 /**
- * Junit test for {@link VBridgeState}.
+ * JUnit test for {@link VBridgeState}.
  */
 public class VBridgeStateTest extends TestBase {
     private Set<ObjectPair<Node, Node>> fp = new HashSet<ObjectPair<Node, Node>>();

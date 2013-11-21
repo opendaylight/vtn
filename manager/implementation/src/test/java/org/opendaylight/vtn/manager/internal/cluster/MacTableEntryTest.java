@@ -16,9 +16,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
@@ -34,11 +32,8 @@ import org.opendaylight.vtn.manager.internal.TestBase;
  */
 public class MacTableEntryTest extends TestBase {
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
     /**
-     * Test case for getter methods.
+     * Test case for getter and setter methods.
      */
     @Test
     public void testGetter() {
@@ -54,9 +49,8 @@ public class MacTableEntryTest extends TestBase {
                             if (ips.size() == 0) {
                                 me = new MacTableEntry(path, mac, copy(nc),
                                                        vlan, null);
-                                assertTrue(me.getInetAddresses().isEmpty());
-                                assertTrue(me.clearProbeNeeded());
 
+                                assertTrue(me.clearProbeNeeded());
                             } else {
                                 for (InetAddress ip: ips) {
                                     if (me == null) {
@@ -68,14 +62,16 @@ public class MacTableEntryTest extends TestBase {
                                     }
                                     assertFalse(me.clearProbeNeeded());
                                 }
-
-                                assertEquals(ips, me.getInetAddresses());
                             }
 
-                            assertEquals(mac, me.getMacAddress());
-                            assertEquals(nc, me.getPort());
-                            assertEquals(vlan, me.getVlan());
-                            assertTrue(me.getUsed());
+                            checkMacTableEntry(me, ips, mac, nc, vlan);
+
+                            InetAddress ia
+                                = getInetAddressFromAddress(new byte[] {10, 1, 1, 100});
+                            me = new MacTableEntry(path, mac, copy(nc),
+                                                   vlan, ia);
+                            me.setInetAddresses(ips);
+                            checkMacTableEntry(me, ips, mac, nc, vlan);
 
                             MacTableEntryId id = me.getEntryId();
                             assertEquals(path, id.getBridgePath());
@@ -99,7 +95,26 @@ public class MacTableEntryTest extends TestBase {
     }
 
     /**
-     * Test case for {@link MacTableEntry#setUsed} and {@link MacTableEntry#clearUsed}
+     * Check fields of {@link MacTableEntry}.
+     *
+     * @param me    A checked {@link MacTableEntry}.
+     * @param ips   A set of IP Addresses which expected to set.
+     * @param mac   A expected MAC address.
+     * @param nc    A expected {@link NodeConnector}.
+     * @param vlan  A expected VLAN ID.
+     */
+    private void checkMacTableEntry(MacTableEntry me, Set<InetAddress> ips,
+            long mac, NodeConnector nc, short vlan) {
+        assertEquals(ips, me.getInetAddresses());
+        assertEquals(mac, me.getMacAddress());
+        assertEquals(nc, me.getPort());
+        assertEquals(vlan, me.getVlan());
+        assertTrue(me.getUsed());
+    }
+
+    /**
+     * Test case for {@link MacTableEntry#setUsed()} and
+     * {@link MacTableEntry#clearUsed()}
      */
     @Test
     public void testUsed() {
@@ -128,17 +143,17 @@ public class MacTableEntryTest extends TestBase {
         List<MacTableEntry> entries = createMacTableEntries();
         int loop = 3;
         for (MacTableEntry tent: entries) {
-            MacTableEntryId id = tent.getEntryId();
-            assertTrue(idSet.add(id));
+            MacTableEntryId id =  tent.getEntryId();
+            assertTrue(tent.toString(), idSet.add(id));
 
             for (int i = 0; i < loop; i++) {
                 MacTableEntryId newId = tent.reassignEntryId();
                 assertEquals(newId, tent.getEntryId());
                 assertTrue(idSet.add(newId));
             }
+            assertEquals((loop + 1), idSet.size());
+            idSet.clear();
         }
-
-        assertEquals(entries.size() * (loop + 1), idSet.size());
     }
 
     /**
@@ -242,19 +257,18 @@ public class MacTableEntryTest extends TestBase {
         for (VBridgePath path: createVBridgePaths()) {
             for (EthernetAddress ea: createEthernetAddresses(false)) {
                 long mac = NetUtils.byteArray6ToLong(ea.getValue());
+                MacTableEntryId id = new MacTableEntryId(path, mac);
                 for (NodeConnector nc: createNodeConnectors(2, false)) {
                     for (short vlan: vlans) {
                         for (Set<InetAddress> ips: createInetAddresses(false)) {
                             MacTableEntry me = null;
                             if (ips.size() == 0) {
-                                me = new MacTableEntry(path, mac, copy(nc),
-                                                       vlan, null);
+                                me = new MacTableEntry(id, copy(nc), vlan, null);
                             } else {
                                 for (InetAddress ip: ips) {
                                     if (me == null) {
-                                        me = new MacTableEntry(path, mac,
-                                                               copy(nc), vlan,
-                                                               ip);
+                                        me = new MacTableEntry(id, copy(nc),
+                                                               vlan, ip);
                                     } else {
                                         assertTrue(me.addInetAddress(ip));
                                     }

@@ -8,11 +8,6 @@
  */
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import static org.junit.Assert.*;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Set;
@@ -27,7 +22,6 @@ import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchType;
-import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.controller.sal.utils.Status;
@@ -36,7 +30,6 @@ import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.FlowEventTestBase;
-import org.opendaylight.vtn.manager.internal.TestStub;
 import org.opendaylight.vtn.manager.internal.TestStubCluster;
 import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
@@ -173,7 +166,7 @@ public class FlowModResultEventTest extends FlowEventTestBase {
                 timerTask.cancel();
 
                 if (result == FlowModResult.SUCCEEDED && local == Boolean.FALSE) {
-                    checkRegsiterdFlowEntry(vtnMgr, 1, flow, flow, 2, emsg);
+                    checkRegisteredFlowEntry(vtnMgr, 1, flow, flow, 2, emsg);
 
                     Set<ClusterEvent> events = getPostedClusterEvent();
                     assertEquals(1, events.size());
@@ -187,7 +180,7 @@ public class FlowModResultEventTest extends FlowEventTestBase {
                     flushFlowTasks(remoteTimeout * 3);
                     timer.cancel();
                 } else {
-                    checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0, emsg);
+                    checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0, emsg);
 
                     Set<ClusterEvent> events = getPostedClusterEvent();
                     assertEquals(2, events.size());
@@ -199,7 +192,7 @@ public class FlowModResultEventTest extends FlowEventTestBase {
 
                 fdb.clear(vtnMgr);
                 flushFlowTasks(remoteTimeout * 3);
-                checkRegsiterdFlowEntry(vtnMgr, 0, flow, null, 0, emsg);
+                checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0, emsg);
                 clearPostedClusterEvent();
             }
         }
@@ -209,18 +202,18 @@ public class FlowModResultEventTest extends FlowEventTestBase {
 
     // private methods
     /**
-     * check specified Flow Entry is registerd correctly.
+     * check specified Flow Entry is registered correctly.
      *
      * @param numFlows          The number of Flows.
-     * @param registerdFlow     VTNFlow which is registerd.
+     * @param registeredFlow    VTNFlow which is registered.
      * @param numFlowEntries    The number of Flow Entries.
      */
-    private void checkRegsiterdFlowEntry(VTNManagerImpl mgr, int numFlows,
-                                         VTNFlow registerdFlow, VTNFlow expectedFlow,
+    private void checkRegisteredFlowEntry(VTNManagerImpl mgr, int numFlows,
+                                         VTNFlow registeredFlow, VTNFlow expectedFlow,
                                          int numFlowEntries, String emsg) {
         ConcurrentMap<FlowGroupId, VTNFlow> db = mgr.getFlowDB();
         assertEquals(emsg, numFlows, db.size());
-        assertEquals(emsg, expectedFlow, db.get(registerdFlow.getGroupId()));
+        assertEquals(emsg, expectedFlow, db.get(registeredFlow.getGroupId()));
         assertEquals(emsg, numFlowEntries, stubObj.getFlowEntries().size());
     }
 }

@@ -72,7 +72,7 @@ public class TestUseVTNManagerBase extends TestBase {
     }
 
     /**
-     * startup VTNManager
+     * startup VTNManager.
      */
     protected void startVTNManager(ComponentImpl c) {
         vtnMgr.init(c);
@@ -80,7 +80,30 @@ public class TestUseVTNManagerBase extends TestBase {
     }
 
     /**
-     * stop VTNManager
+     * Change stub and Startup VTNManager.
+     *
+     * @param stub  TestStub object.
+     * @param c     ComponentImpl object.
+     */
+    protected void changeStubAndStartVTNManager(TestStub stub, ComponentImpl c) {
+        resMgr.setClusterGlobalService(stub);
+        resMgr.init(c);
+        vtnMgr.setResourceManager(resMgr);
+        vtnMgr.setClusterContainerService(stub);
+        vtnMgr.setSwitchManager(stub);
+        vtnMgr.setTopologyManager(stub);
+        vtnMgr.setDataPacketService(stub);
+        vtnMgr.setRouting(stub);
+        vtnMgr.setHostTracker(stub);
+        vtnMgr.setForwardingRuleManager(stub);
+        vtnMgr.setConnectionManager(stub);
+        startVTNManager(c);
+    }
+
+
+    /**
+     * stop VTNManager.
+     *
      * @param clearCache    if true clear cache maintained in VTNManager.
      */
     protected void stopVTNManager(boolean clearCache) {
@@ -179,7 +202,8 @@ public class TestUseVTNManagerBase extends TestBase {
      * of VTN Manager.
      *
      * <p>
-     *  note: need to synchronize with the definition in GlobalResourceManager.
+     *  note: need to synchronize with the definition
+     *  in {@link GlobalResourceManager}.
      * </p>
      */
     private static final int  THREAD_POOL_MAXSIZE = 8;
@@ -235,10 +259,10 @@ public class TestUseVTNManagerBase extends TestBase {
     private final String CONFIG_FILE_NAME = "vtnmanager.ini";
 
     /**
-     * setup configuraion file and restart VTN Manager
+     * setup configuration file and restart VTN Manager
      *
-     * @param localTimeout   A timeout value set to flowModTimeout.
-     * @param remoteTimeout  A timeout value set to remoteFlowModTimeout.
+     * @param localTimeout   A timeout value set to {@code flowModTimeout}.
+     * @param remoteTimeout  A timeout value set to {@code remoteFlowModTimeout}.
      */
     protected void setupVTNManagerForRemoteTaskTest(long localTimeout,
                                                     long remoteTimeout) {

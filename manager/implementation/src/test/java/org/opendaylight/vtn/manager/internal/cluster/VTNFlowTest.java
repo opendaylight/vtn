@@ -8,8 +8,6 @@
  */
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import static org.junit.Assert.*;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -162,6 +160,11 @@ public class VTNFlowTest extends FlowModTaskTestBase {
         assertEquals(1, vflow.getFlowNodes().size());
         assertEquals(1, vflow.getFlowPorts().size());
         assertEquals(node0, vflow.getFlowNodes().iterator().next());
+
+        // invoke setTimeout() for VTNFlow which have no flow entries.
+        vflow = new VTNFlow(gid);
+        vflow.setTimeout(100, 100);
+        assertEquals(0, vflow.getFlowEntries().size());
     }
 
     /**
@@ -417,8 +420,8 @@ public class VTNFlowTest extends FlowModTaskTestBase {
     /**
      * Set match Field.
      *
-     * @param match     A target Match object.
-     * @param mtype     A MatchType which is set.
+     * @param match     A target {@link Match} object.
+     * @param mtype     A {@link MatchType} which is set.
      * @return  Match object.
      */
     private Match setMatchField(Match match, MatchType mtype) {
@@ -428,10 +431,10 @@ public class VTNFlowTest extends FlowModTaskTestBase {
     /**
      * Set match Filed.
      *
-     * @param match     A target Match object.
-     * @param mtype     A MatchType which is set.
+     * @param match     A target {@link Match} object.
+     * @param mtype     A {@link MatchType} which is set.
      * @param vlan      A set VLAN ID. This is used when DL_OUTER_VLAN or DL_VLAN
-     *                  is specified as mtype.
+     *                  is specified as {@code mtype}.
      * @return  Match object.
      */
     private Match setMatchField(Match match, MatchType mtype, short vlan) {

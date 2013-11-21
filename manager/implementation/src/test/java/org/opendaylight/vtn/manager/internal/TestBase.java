@@ -618,9 +618,9 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * Create a list of {@code VBridgePath} objects.
+     * Create a list of {@link VBridgePath} objects.
      *
-     * @return  A list of {@code VBridgePath} objects.
+     * @return  A list of {@link VBridgePath} objects.
      */
     protected static List<VBridgePath> createVBridgePaths() {
         List<VBridgePath> list = new ArrayList<VBridgePath>();
@@ -993,7 +993,7 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * check a Ethernet packet whether expeceted parameters are set.
+     * check a Ethernet packet whether expected parameters are set.
      *
      * @param msg       if check is failed, report error with a this string.
      * @param eth       A input ethernet frame data.
@@ -1002,7 +1002,7 @@ public abstract class TestBase extends Assert {
      * @param srcMac    expected source mac address.
      * @param vlan      expected vlan id. (if expected untagged, specify 0 or less than 0)
      * @param protoType expected protocol type.
-     * @param opCode    expected opCode. if thish is not ARP, opCode is not checked.
+     * @param opCode    expected opCode. if this is not ARP, opCode is not checked.
      * @param senderMac expected sender HW address.
      * @param targetMac expected target HW address.
      * @param senderAddr    expected sender protocol address.

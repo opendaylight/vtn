@@ -8,8 +8,6 @@
  */
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import static org.junit.Assert.*;
-
 import java.net.InetAddress;
 import java.util.HashSet;
 import java.util.Set;
@@ -83,7 +81,7 @@ public class ClusterEventIdTest extends TestBase {
         assertEquals(1, cevSet.size());
 
         // create object by ClusterEvendId(long, InetAddress).
-        long[] values = new long[] {0, Long.MIN_VALUE, Long.MAX_VALUE};
+        long[] values = new long[] {-1L, Long.MIN_VALUE, Long.MAX_VALUE};
         int numSet = 1;
         for (long id : values) {
             for (Set<InetAddress> iset : createInetAddresses(false)) {
@@ -98,14 +96,15 @@ public class ClusterEventIdTest extends TestBase {
                     numSet++;
                 }
             }
+            ipSet.clear();
         }
 
         assertEquals(numSet, cevSet.size());
     }
 
-    /*
+    /**
      * Test method for {@link ClusterEventId#toString()}.
-     * */
+     */
     @Test
     public void testToString() {
         ClusterEventId.setLocalAddress(null);

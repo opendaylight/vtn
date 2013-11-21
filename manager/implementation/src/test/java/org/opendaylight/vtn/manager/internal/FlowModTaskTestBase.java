@@ -50,7 +50,7 @@ import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 public class FlowModTaskTestBase extends TestUseVTNManagerBase {
 
     /**
-     * Stub class of FowrardingRulesManager.
+     * Stub class of {@link IForwardingRulesManager}.
      */
     protected class ForwardingRulesManagerStub implements
             IForwardingRulesManager {
@@ -293,12 +293,12 @@ public class FlowModTaskTestBase extends TestUseVTNManagerBase {
     }
 
     /**
-     * Stub of VTNManagerImpl.
+     * Stub of {@link VTNManagerImpl}.
      */
     protected class VTNManagerImplStub extends VTNManagerImpl {
         Set<ClusterEvent> stubEventSet = new HashSet<ClusterEvent>();
 
-        // Override postEvent() for tests.
+        // Override {@code postEvent()} for tests.
         @Override
         public void postEvent(ClusterEvent cev) {
            stubEventSet.add(cev);
@@ -403,8 +403,8 @@ public class FlowModTaskTestBase extends TestUseVTNManagerBase {
     /**
      * set resource manager service
      *
-     * @param cmp   A ComponentImpl Object.
-     * @param cls   A IClusterGlobalServices service.
+     * @param cmp   A {@link ComponentImpl} Object.
+     * @param cls   A {@link IClusterGlobalServices} service.
      */
     protected void setupResourceManager(ComponentImpl cmp,
                                         IClusterGlobalServices cls) {
@@ -413,13 +413,13 @@ public class FlowModTaskTestBase extends TestUseVTNManagerBase {
     }
 
     /**
-     * Add FlowEntry to VTNFlow.
+     * Add {@link FlowEntry} to {@link VTNFlow}.
      *
      * @param   flow        A {@link VTNFlow}.
      * @param   inPort      A ingress {@link NodeConnector}.
      * @param   inVlan      A incoming VLAN ID.
      * @param   outPort     A outgoing {@link NodeConnector}.
-     * @param   priority    A priority of FlowEntry.
+     * @param   priority    A priority of {@link FlowEntry}.
      * @return {@link VTNFlow}.
      */
     protected VTNFlow addFlowEntry(VTNManagerImpl mgr, VTNFlow flow,

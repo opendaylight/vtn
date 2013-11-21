@@ -68,6 +68,10 @@ public class GlobalResourceManagerTest extends TestBase {
      */
     private static final String  CACHE_PORTMAP = "vtn.portmap";
 
+    /**
+     * Stub class of {@link IClusterGlobalServices}.
+     * This class is used to simulate cluster mode.
+     */
     class ClusterServiceStub implements IClusterGlobalServices {
         private ConcurrentMap<String, ConcurrentMap<?, ?>> caches = new ConcurrentHashMap<String, ConcurrentMap<?, ?>>();
 
@@ -657,8 +661,15 @@ public class GlobalResourceManagerTest extends TestBase {
         cleanupStartupDir();
     }
 
-
-    private List<MacAddressEntry> getMacEntries(VTNManagerImpl vtnMgr, VBridgePath bpath) {
+    /**
+     * Get MAC address entries
+     *
+     * @param vtnMgr    VTNManager service.
+     * @param bpath     A {@link VBridgePath}.
+     * @return  A list of {@link MacAddressEntry}.
+     */
+    private List<MacAddressEntry> getMacEntries(VTNManagerImpl vtnMgr,
+                                                VBridgePath bpath) {
         List<MacAddressEntry> entries = null;
         try {
             entries = vtnMgr.getMacEntries(bpath);
@@ -670,12 +681,13 @@ public class GlobalResourceManagerTest extends TestBase {
     }
 
     /**
-     * setup GlobalResourceManager
+     * setup {@link GlobalResourceManager}.
      * @param containerName A container name.
-     * @param stubObj       A TestStub object
-     * @return GlobalResourceManager
+     * @param stubObj       A {@link TestStub} object.
+     * @return {@link GlobalResourceManager}.
      */
-    private GlobalResourceManager setupGlobalResourceManager (String containerName, TestStub stubObj) {
+    private GlobalResourceManager setupGlobalResourceManager (String containerName,
+                                                              TestStub stubObj) {
         ComponentImpl c = new ComponentImpl(null, null, null);
         GlobalResourceManager grsc = new GlobalResourceManager();
 
@@ -691,10 +703,10 @@ public class GlobalResourceManagerTest extends TestBase {
 
     /**
      * check Map cache.
-     * @param cs            A IClusgerGlobalServices object.
+     * @param cs            A {@link IClusgerGlobalServices} object.
      * @param cacheName     A cache name.
      * @param containerName A container name.
-     * @param path          VBridgePath or VBridgeIfPath
+     * @param path          {@link VBridgePath} or {@link VBridgeIfPath}.
      * @param key   key value
      */
     private <T, S> void checkMapCache (IClusterGlobalServices cs, String cacheName,

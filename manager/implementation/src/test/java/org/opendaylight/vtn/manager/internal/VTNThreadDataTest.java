@@ -8,8 +8,6 @@
  */
 package org.opendaylight.vtn.manager.internal;
 
-import static org.junit.Assert.*;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
@@ -178,7 +176,7 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
     }
 
     /**
-     * Mock-up of IVTNModeListener.
+     * Mock-up of {@link IVTNModeListener}.
      */
     class VTNModeListenerStub implements IVTNModeListener {
         private int calledCount = 0;
@@ -237,8 +235,9 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
         }
 
         /**
-         * check information registered by vtnModeChanged().
-         * @param expCount  A expected number of times vtnModeChanged() was called.
+         * check information registered by {@code vtnModeChanged()}.
+         * @param expCount  A expected number of times {@code vtnModeChanged()}
+         *                  was called.
          * @param expMode   A expected mode.
          */
         void checkCalledInfo(int expCount, Boolean expMode) {
@@ -247,8 +246,9 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
         }
 
         /**
-         * check information registered by vtnModeChanged().
-         * @param expCount  A expected number of times vtnModeChanged() was called.
+         * check information registered by {@code vtnModeChanged()}.
+         * @param expCount  A expected number of times {@code vtnModeChanged()}
+         *                  was called.
          */
         void checkCalledInfo(int expCount) {
             if (expCount >= 0) {

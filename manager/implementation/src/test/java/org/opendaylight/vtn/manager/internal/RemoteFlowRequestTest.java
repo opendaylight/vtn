@@ -8,9 +8,6 @@
  */
 package org.opendaylight.vtn.manager.internal;
 
-import static org.junit.Assert.*;
-
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -47,8 +44,6 @@ public class RemoteFlowRequestTest extends TestUseVTNManagerBase {
      */
     @Test
     public void testRemoteFlowRequest() {
-        long timeout = vtnMgr.getVTNConfig().getRemoteFlowModTimeout();
-
         VTNFlowDatabase fdb = new VTNFlowDatabase("test");
         VTNFlow flow = fdb.create(vtnMgr);
 

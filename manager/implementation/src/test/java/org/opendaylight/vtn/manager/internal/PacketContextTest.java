@@ -461,7 +461,6 @@ public class PacketContextTest extends TestUseVTNManagerBase {
 
         VTNFlowDatabase fdb = vtnMgr.getTenantFlowDB(tpath.getTenantName());
         List<EthernetAddress> ethers = createEthernetAddresses(false);
-        Set <MacVlan> macvlans = new HashSet<MacVlan>();
         byte iphost = 1;
         int pri = 1;
 

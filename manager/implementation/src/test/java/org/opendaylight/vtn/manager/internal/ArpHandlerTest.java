@@ -8,7 +8,6 @@
  */
 package org.opendaylight.vtn.manager.internal;
 
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -47,22 +46,24 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
     /**
      * target IP address used test.
      */
-    private byte[] testTgtIp = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
+    private byte[] testTgtIp = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 250};
 
     /**
      * gateway IP address.
      */
-    private byte[] gwIp = new byte[] {(byte)192, (byte)168, (byte)0, (byte)254};
+    private byte[] gwIp = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 254};
 
     /**
      * target host IP address.
-     * TestStub maintains a HostNodeConnector information of this IP address Host.
+     * {@link TestStub} maintains a {@link HostNodeConnector} information of
+     * this IP address Host.
      */
-    private byte[] hostIp = new byte[] {(byte)192, (byte)168, (byte)0, (byte)251};
+    private byte[] hostIp = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 251};
 
     /**
      * target host  MAC address.
-     * When query HostNodeConnector of hostIp, TestStub return this MAC address.
+     * When query {@link HostNodeConnector} of {@code hostIp},
+     * {@link TestStub} return this MAC address.
      */
     private byte[] hostMac = new byte [] { 0x00, 0x00, 0x00, 0x11, 0x22, 0x33};
 
@@ -73,7 +74,7 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * test case for {@link ArpHandler#receive(PacketContext)}.
+     * Test case for {@link ArpHandler#receive(PacketContext)}.
      */
     @Test
     public void testReceive() {
@@ -81,25 +82,25 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
         TestStub stub = stubObj;
         ISwitchManager swMgr = mgr.getSwitchManager();
         ITopologyManager topoMgr = mgr.getTopologyManager();
-        byte [] src = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
-                                  (byte)0x00, (byte)0x00, (byte)0x11};
-        byte [] srcmc = new byte[] {(byte)0x01, (byte)0x00, (byte)0x00,
-                                    (byte)0x00, (byte)0x00, (byte)0x11};
-        byte [] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
-                                  (byte)0xff, (byte)0xff, (byte)0xff};
-        byte [] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
-        byte [] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
+        byte [] src = new byte[] {(byte) 0x00, (byte) 0x00, (byte) 0x00,
+                                  (byte) 0x00, (byte) 0x00, (byte) 0x11};
+        byte [] srcmc = new byte[] {(byte) 0x01, (byte) 0x00, (byte) 0x00,
+                                    (byte) 0x00, (byte) 0x00, (byte) 0x11};
+        byte [] dst = new byte[] {(byte) 0xff, (byte) 0xff, (byte) 0xff,
+                                  (byte) 0xff, (byte) 0xff, (byte) 0xff};
+        byte [] sender = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 1};
+        byte [] target = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 250};
 
         Set<Node> existNodes = swMgr.getNodes();
         Set<NodeConnector> existConnectors = new HashSet<NodeConnector>();
-        for (Node node: existNodes) {
+        for (Node node : existNodes) {
             existConnectors.addAll(swMgr.getNodeConnectors(node));
         }
 
         Set<Node> testNodes = new HashSet<Node>(existNodes);
         testNodes.add(null);
 
-        for (Node node: testNodes) {
+        for (Node node : testNodes) {
             int numMapped = 0;
             Set<NodeConnector> mappedThis = new HashSet<NodeConnector>();
             Set<NodeConnector> noMappedThis
@@ -135,33 +136,33 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
             // after 2 seconds, ARP requestor is expired.
             sleep(3000);
 
-            testReceiveDataPacketARPReplyReceive(mgr, null, (short)0,
+            testReceiveDataPacketARPReplyReceive(mgr, null, (short) 0,
                     mappedThis, noMappedThis, stub, true);
 
             // receive ARP request and ARP reply
-            testReceiveDataPacketBCLoop(mgr, null, (short)0,
+            testReceiveDataPacketBCLoop(mgr, null, (short) 0,
                     mappedThis, noMappedThis, stub);
 
-            testReceiveDataPacketARPReplyReceive(mgr, null, (short)0,
+            testReceiveDataPacketARPReplyReceive(mgr, null, (short) 0,
                     mappedThis, noMappedThis, stub, false);
 
             // receive a packet send to already learned.
-            testReceiveDataPacketBCLoopMatch(mgr, null, (short)0,
+            testReceiveDataPacketBCLoopMatch(mgr, null, (short) 0,
                     mappedThis, noMappedThis, stub);
 
             // receive a packet send to controller.
-            testReceiveDataPacketBCLoopToCont(mgr, null, (short)0,
+            testReceiveDataPacketBCLoopToCont(mgr, null, (short) 0,
                     mappedThis, noMappedThis, stub);
 
             // receive a packet have unicast dst.
-            testReceiveDataPacketUCLoop(mgr, null, (short)0,
+            testReceiveDataPacketUCLoop(mgr, null, (short) 0,
                     mappedThis, noMappedThis, stub);
 
             // receive packet form no mapped nodeconector.
             if (node != null && noMappedThis.size() != 0) {
                 NodeConnector nc = noMappedThis.iterator().next();
                 RawPacket inPkt = createARPRawPacket(src, dst, sender, target,
-                                                     (short)-1, nc, ARP.REPLY);
+                                                     (short) -1, nc, ARP.REPLY);
                 result = mgr.receiveDataPacket(inPkt);
                 List<RawPacket> transDatas = stub.getTransmittedDataPacket();
                 String emsg = "(Node)" + node.toString()
@@ -173,18 +174,142 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
             swMgr.removeSubnet(sconf);
         }
 
-        // invalid data received case
+        // invalid data received case.
         Set<NodeConnector> mappedThis = new HashSet<NodeConnector>();
-
         for (NodeConnector nc : existConnectors) {
             if (!topoMgr.isInternal(nc)) {
                     mappedThis.add(nc);
             }
         }
 
+        // subnet == null
+        NodeConnector nc = existConnectors.iterator().next();
+        RawPacket inPkt = createARPRawPacket(src, dst, sender, target, (short) -1,
+                                             nc, ARP.REPLY);
+        PacketResult result = mgr.receiveDataPacket(inPkt);
+        List<RawPacket> transDatas = stub.getTransmittedDataPacket();
+        assertEquals(PacketResult.IGNORED, result);
+        assertEquals(0, transDatas.size());
+
+        inPkt = createIPv4RawPacket(src, dst, sender, target, (short) -1, nc);
+        result = mgr.receiveDataPacket(inPkt);
+        transDatas = stub.getTransmittedDataPacket();
+        assertEquals(PacketResult.IGNORED, result);
+        assertEquals(0, transDatas.size());
+
+        // set subnet configuration.
+        SubnetConfig sconf = new SubnetConfig("test", "192.168.0.254/24", null);
+        swMgr.addSubnet(sconf);
+
+        // in case VLAN ID doesn't match.
+        InetAddress ia
+            = getInetAddressFromAddress(new byte[] { (byte) 192, (byte) 168,
+                                                     (byte) 0, (byte) 254 });
+
+        Subnet sub = swMgr.getSubnetByNetworkAddress(ia);
+        sub.setVlan((short) 2);
+
+        inPkt = createARPRawPacket(src, dst, sender, target, (short) -1,
+                                   nc, ARP.REPLY);
+        result = mgr.receiveDataPacket(inPkt);
+        transDatas = stub.getTransmittedDataPacket();
+        assertEquals(PacketResult.IGNORED, result);
+        assertEquals(0, transDatas.size());
+
+        // in case vlan match.
+        ia = getInetAddressFromAddress(hostIp);
+        sub = swMgr.getSubnetByNetworkAddress(ia);
+        sub.setVlan((short) 0);
+        for (Node node : existNodes) {
+            for (int i = 10; i < 11; i++) {
+                nc = NodeConnectorCreator
+                        .createOFNodeConnector(Short.valueOf((short) i), node);
+
+                inPkt = createIPv4RawPacket(src, dst, sender, hostIp,
+                                            (short) -1, nc);
+
+                result = mgr.receiveDataPacket(inPkt);
+                transDatas = stub.getTransmittedDataPacket();
+                assertEquals(PacketResult.KEEP_PROCESSING, result);
+                RawPacket raw = transDatas.get(0);
+                Packet outPkt = stubObj.decodeDataPacket(raw);
+                checkOutEthernetPacket("", (Ethernet) outPkt, EtherTypes.IPv4,
+                        src, dst, (short) 0, null, (short) -1,
+                        null, null, null, null);
+                assertEquals(1, transDatas.size());
+            }
+        }
+        Node node99 = NodeCreator.createOFNode(Long.valueOf(99L));
+        nc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("10"),
+                                                        node99);
+
+        inPkt = createIPv4RawPacket(src, dst, sender, hostIp, (short) -1, nc);
+        result = mgr.receiveDataPacket(inPkt);
+        transDatas = stub.getTransmittedDataPacket();
+        assertEquals(PacketResult.KEEP_PROCESSING, result);
+        assertEquals(0, transDatas.size());
+
+        // src is not a unicast packet.
+        inPkt = createARPRawPacket(srcmc, dst, sender, target, (short) -1,
+                                   nc, ARP.REQUEST);
+        result = mgr.receiveDataPacket(inPkt);
+        transDatas = stub.getTransmittedDataPacket();
+        assertEquals(PacketResult.KEEP_PROCESSING, result);
+        assertEquals(mappedThis.size(), transDatas.size());
+
+        // target IP == controller && dst == unicast
+        inPkt = createARPRawPacket(src, src, sender, gwIp, (short) -1,
+                                   nc, ARP.REQUEST);
+        result = mgr.receiveDataPacket(inPkt);
+        transDatas = stub.getTransmittedDataPacket();
+        assertEquals(PacketResult.KEEP_PROCESSING, result);
+        assertEquals(mappedThis.size(), transDatas.size());
+
+        // !isBroadCast(dst) && host.dladdr != dst
+        inPkt = createARPRawPacket(src, swMgr.getControllerMAC(), sender, gwIp,
+                                   (short) -1, nc, ARP.REQUEST);
+        result = mgr.receiveDataPacket(inPkt);
+        transDatas = stub.getTransmittedDataPacket();
+        assertEquals(PacketResult.KEEP_PROCESSING, result);
+        assertEquals(1, transDatas.size());
+
+        // host found and dst is not BC,
+        // but dst is not match
+        inPkt = createARPRawPacket(src, hostMac, sender, hostIp, (short) -1,
+                                   nc, ARP.REQUEST);
+        result = mgr.receiveDataPacket(inPkt);
+        transDatas = stub.getTransmittedDataPacket();
+        assertEquals(PacketResult.KEEP_PROCESSING, result);
+        assertEquals(1, transDatas.size());
+    }
+
+    /**
+     * Test case for {@link ArpHandler#receive(PacketContext)}.
+     * Tests invalid case.
+     */
+    @Test
+    public void testReceiveInvalidCase() {
+        VTNManagerImpl mgr = vtnMgr;
+        TestStub stub = stubObj;
+        ISwitchManager swMgr = mgr.getSwitchManager();
+        byte [] src = new byte[] { (byte) 0x00, (byte) 0x00, (byte) 0x00,
+                                   (byte) 0x00, (byte) 0x00, (byte) 0x11 };
+        byte [] srcmc = new byte[] { (byte) 0x01, (byte) 0x00, (byte) 0x00,
+                                     (byte) 0x00, (byte) 0x00, (byte) 0x11 };
+        byte [] dst = new byte[] { (byte) 0xff, (byte) 0xff, (byte) 0xff,
+                                   (byte) 0xff, (byte) 0xff, (byte) 0xff };
+        byte [] sender = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 1 };
+        byte [] target = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 250 };
+
+        Set<Node> existNodes = swMgr.getNodes();
+        Set<NodeConnector> existConnectors = new HashSet<NodeConnector>();
+        for (Node node: existNodes) {
+            existConnectors.addAll(swMgr.getNodeConnectors(node));
+        }
+
         // payload is !ARP && !IPv4
         NodeConnector nc = existConnectors.iterator().next();
-        RawPacket inPkt = createARPRawPacket(src, dst, sender, target, (short)-1,
+        RawPacket inPkt = createARPRawPacket(src, dst, sender, target, (short) -1,
                           nc, ARP.REQUEST);
         Ethernet pkt= (Ethernet)stub.decodeDataPacket(inPkt);
         LLDP lldp = new LLDP();
@@ -198,98 +323,91 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
         assertEquals(0, transDatas.size());
 
         // !ARP.REQUEST && !ARP.REPLY
-        inPkt = createARPRawPacket(src, dst, sender, target, (short)-1,
+        inPkt = createARPRawPacket(src, dst, sender, target, (short) -1,
                                             nc, ARP.PROTO_TYPE_IP);
         result = mgr.receiveDataPacket(inPkt);
         transDatas = stub.getTransmittedDataPacket();
         assertEquals(PacketResult.IGNORED, result);
         assertEquals(0, transDatas.size());
 
-        // subnet == null
-        inPkt = createARPRawPacket(src, dst, sender, target, (short)-1,
-                                   nc, ARP.REPLY);
-        result = mgr.receiveDataPacket(inPkt);
-        transDatas = stub.getTransmittedDataPacket();
-        assertEquals(PacketResult.IGNORED, result);
-        assertEquals(0, transDatas.size());
-
-        inPkt = createIPv4RawPacket(src, dst, sender, target, (short)-1, nc);
-        result = mgr.receiveDataPacket(inPkt);
-        transDatas = stub.getTransmittedDataPacket();
-        assertEquals(PacketResult.IGNORED, result);
-        assertEquals(0, transDatas.size());
-
+        // set subnet configuration.
         SubnetConfig sconf = new SubnetConfig("test", "192.168.0.254/24", null);
         swMgr.addSubnet(sconf);
 
-        // in case vlan don't match
-        InetAddress ia = null;
-        try {
-            ia = InetAddress.getByAddress(
-                    new byte[] {(byte)192, (byte)168, (byte)0, (byte)254});
-        } catch (UnknownHostException e) {
-            unexpected(e);
-        }
-        Subnet sub = swMgr.getSubnetByNetworkAddress(ia);
-        sub.setVlan((short) 2);
-
-        inPkt = createARPRawPacket(src, dst, sender, target, (short)-1,
-                                   nc, ARP.REPLY);
-        result = mgr.receiveDataPacket(inPkt);
-        transDatas = stub.getTransmittedDataPacket();
-        assertEquals(PacketResult.IGNORED, result);
-        assertEquals(0, transDatas.size());
-
-        sub.setVlan((short) 0);
-
-        // src is not a unicast packet
-        inPkt = createARPRawPacket(srcmc, dst, sender, target, (short)-1,
-                                   nc, ARP.REQUEST);
-        result = mgr.receiveDataPacket(inPkt);
-        transDatas = stub.getTransmittedDataPacket();
-        assertEquals(PacketResult.KEEP_PROCESSING, result);
-        assertEquals(mappedThis.size(), transDatas.size());
-
         // sender == target
-        inPkt = createARPRawPacket(srcmc, dst, sender, sender, (short)-1,
+        inPkt = createARPRawPacket(srcmc, dst, sender, sender, (short) -1,
                                    nc, ARP.REQUEST);
         result = mgr.receiveDataPacket(inPkt);
         transDatas = stub.getTransmittedDataPacket();
         assertEquals(PacketResult.IGNORED, result);
         assertEquals(0, transDatas.size());
-
-        // target IP == controller and dst == unicast
-        inPkt = createARPRawPacket(src, src, sender, gwIp, (short)-1,
-                                   nc, ARP.REQUEST);
-        result = mgr.receiveDataPacket(inPkt);
-        transDatas = stub.getTransmittedDataPacket();
-        assertEquals(PacketResult.KEEP_PROCESSING, result);
-        assertEquals(mappedThis.size(), transDatas.size());
-
-        // !isBroadCast(dst) && host.dladdr != dst
-        inPkt = createARPRawPacket(src, swMgr.getControllerMAC(), sender, gwIp,
-                                   (short)-1, nc, ARP.REQUEST);
-        result = mgr.receiveDataPacket(inPkt);
-        transDatas = stub.getTransmittedDataPacket();
-        assertEquals(PacketResult.KEEP_PROCESSING, result);
-        assertEquals(1, transDatas.size());
 
         // host found but dst is not match
-        inPkt = createARPRawPacket(src, src, sender, hostIp, (short)-1, nc,
+        inPkt = createARPRawPacket(src, src, sender, hostIp, (short) -1, nc,
                                    ARP.REQUEST);
         result = mgr.receiveDataPacket(inPkt);
         transDatas = stub.getTransmittedDataPacket();
         assertEquals(PacketResult.IGNORED, result);
         assertEquals(0, transDatas.size());
+    }
 
-        // host found and dst is not BC
-        // host found but dst is not match
-        inPkt = createARPRawPacket(src, hostMac, sender, hostIp, (short)-1,
+    /**
+     * Test case for {@link ArpHandler#receive(PacketContext)}.
+     * Tests invalid case.
+     */
+    @Test
+    public void testReceiveWithoutNodes() {
+
+        VTNManagerImpl mgr = vtnMgr;
+        TestStub stub = new TestStub(0);
+        mgr.setSwitchManager(stub);
+        mgr.setTopologyManager(stub);
+        ISwitchManager swMgr = mgr.getSwitchManager();
+        ITopologyManager topoMgr = mgr.getTopologyManager();
+
+        Set<Node> existNodes = swMgr.getNodes();
+        Set<NodeConnector> existConnectors = new HashSet<NodeConnector>();
+        for (Node node : existNodes) {
+            existConnectors.addAll(swMgr.getNodeConnectors(node));
+        }
+
+        Set<NodeConnector> mappedThis = new HashSet<NodeConnector>();
+        for (NodeConnector nc : existConnectors) {
+            if (!topoMgr.isInternal(nc)) {
+                    mappedThis.add(nc);
+            }
+        }
+
+        byte [] src = new byte[] { (byte) 0x00, (byte) 0x00, (byte) 0x00,
+                                   (byte) 0x00, (byte) 0x00, (byte) 0x11 };
+        byte [] dst = new byte[] { (byte) 0xff, (byte) 0xff, (byte) 0xff,
+                                   (byte) 0xff, (byte) 0xff, (byte) 0xff };
+        byte [] sender = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 1};
+        byte [] target = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 250};
+
+        SubnetConfig sconf = new SubnetConfig("test", "192.168.0.254/24", null);
+        swMgr.addSubnet(sconf);
+
+        Node node = NodeCreator.createOFNode(Long.valueOf("0"));
+        NodeConnector nc = NodeConnectorCreator
+                .createOFNodeConnector(Short.valueOf("10"), node);
+        RawPacket inPkt = createARPRawPacket(src, dst, sender, target, (short) -1,
+                                             nc, ARP.REQUEST);
+        PacketResult result = mgr.receiveDataPacket(inPkt);
+        List<RawPacket> transDatas = stub.getTransmittedDataPacket();
+        assertEquals(PacketResult.KEEP_PROCESSING, result);
+        assertEquals(0, transDatas.size());
+
+        sconf = new SubnetConfig("test", "192.168.0.254/24",
+                                 new ArrayList<String>());
+        swMgr.addSubnet(sconf);
+
+        inPkt = createARPRawPacket(src, dst, sender, target, (short) -1,
                                    nc, ARP.REQUEST);
         result = mgr.receiveDataPacket(inPkt);
         transDatas = stub.getTransmittedDataPacket();
         assertEquals(PacketResult.KEEP_PROCESSING, result);
-        assertEquals(1, transDatas.size());
+        assertEquals(0, transDatas.size());
     }
 
     /**
@@ -315,21 +433,17 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
         InetAddress ia6 = null;
         try {
             ia6 = InetAddress.getByAddress(new byte[]{
-                    (byte)0x20, (byte)0x01, (byte)0x04, (byte)0x20,
-                    (byte)0x02, (byte)0x81, (byte)0x10, (byte)0x04,
-                    (byte)0xe1, (byte)0x23, (byte)0xe6, (byte)0x88,
-                    (byte)0xd6, (byte)0x55, (byte)0xa1, (byte)0xb0});
+                    (byte) 0x20, (byte) 0x01, (byte) 0x04, (byte) 0x20,
+                    (byte) 0x02, (byte) 0x81, (byte) 0x10, (byte) 0x04,
+                    (byte) 0xe1, (byte) 0x23, (byte) 0xe6, (byte) 0x88,
+                    (byte) 0xd6, (byte) 0x55, (byte) 0xa1, (byte) 0xb0 });
         } catch (UnknownHostException e) {
             unexpected(e);
         }
 
-        InetAddress ia = null;
-        try {
-            ia = InetAddress.getByAddress(new byte[] {
-                    (byte)10, (byte)0, (byte)0, (byte)1});
-        } catch (UnknownHostException e) {
-            unexpected(e);
-        }
+        InetAddress ia
+            = getInetAddressFromAddress(new byte[] { (byte) 10, (byte) 0,
+                                                     (byte) 0, (byte) 1 });
 
         byte [] mac = new byte [] { 0x00, 0x00, 0x00, 0x11, 0x22, 0x33};
         for (Node node: testNodes) {
@@ -386,13 +500,15 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
             transDatas = stub.getTransmittedDataPacket();
             assertEquals(0, transDatas.size());
 
-            // probe
+            // test probe
             Node hnode = NodeCreator.createOFNode(0L);
             NodeConnector nc
                 = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("10"), hnode);
             HostNodeConnector host = null;
+            HostNodeConnector hostnull = null;
             try {
-                host = new HostNodeConnector(mac, ia, nc, (short)0);
+                host = new HostNodeConnector(mac, ia, nc, (short) 0);
+                hostnull = new HostNodeConnector(mac, ia, null, (short) 0);
             } catch (ConstructionException e) {
                 unexpected(e);
             }
@@ -412,6 +528,10 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
                     swMgr.getControllerMAC(), mac,
                     gwIp, ia.getAddress());
 
+            mgr.probe(hostnull);
+            transDatas = stub.getTransmittedDataPacket();
+            assertEquals(0, transDatas.size());
+
             swMgr.removeSubnet(sconf);
 
             // subnet == null
@@ -426,6 +546,8 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
 
         // if null
         mgr.probe(null);
+        List<RawPacket> transDatas = stub.getTransmittedDataPacket();
+        assertEquals(0, transDatas.size());
     }
 
 
@@ -472,7 +594,8 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
      }
 
     /**
-     * common method for ReceiveDataPacket test using ARPHandler.
+     * common method for {@link VTNManagerImpl#receiveDataPacket(RawPacket)}.
+     * This tests with using {@link ArpHandler}.
      */
     private void testReceiveDataPacketAHCommonLoop(VTNManagerImpl mgr, VBridgePath bpath,
             short vlan, Set<NodeConnector> mappedThis, Set<NodeConnector> noMappedThis,
@@ -487,16 +610,16 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
         byte[] target = targetIp;
 
         if (arpType == ARP.REPLY) {
-            src = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
-                              (byte)0xff, (byte)0xff, (byte)0x11};
+            src = new byte[] { (byte) 0x00, (byte) 0x00, (byte) 0x00,
+                               (byte) 0xff, (byte) 0xff, (byte) 0x11 };
             sender = targetIp;
         } else {
             if (isBc > 0) {
-                dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
-                                  (byte)0xff, (byte)0xff, (byte)0xff};
+                dst = new byte[] { (byte) 0xff, (byte) 0xff, (byte) 0xff,
+                                   (byte) 0xff, (byte) 0xff, (byte) 0xff };
             } else {
-                dst = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
-                                  (byte)0xff, (byte)0xff, (byte)0x11};
+                dst = new byte[] { (byte) 0x00, (byte) 0x00, (byte) 0x00,
+                                   (byte) 0xff, (byte) 0xff, (byte) 0x11 };
             }
         }
 
@@ -512,13 +635,15 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
                 if (arpType == ARP.REPLY) {
                     // in case test with ARP.REPLY packet,
                     // revese MAC address and IP address.
-                    dst = new byte[] {bytes[0], bytes[1], bytes[2],
-                                      bytes[3], bytes[4], bytes[5]};
-                    target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)iphost};
+                    dst = new byte[] { bytes[0], bytes[1], bytes[2],
+                                       bytes[3], bytes[4], bytes[5] };
+                    target = new byte[] { (byte) 192, (byte) 168,
+                                          (byte) 0, (byte) iphost };
                 } else {
-                    src = new byte[] {bytes[0], bytes[1], bytes[2],
-                                      bytes[3], bytes[4], bytes[5]};
-                    sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)iphost};
+                    src = new byte[] { bytes[0], bytes[1], bytes[2],
+                                       bytes[3], bytes[4], bytes[5] };
+                    sender = new byte[] { (byte) 192, (byte) 168,
+                                          (byte) 0, (byte) iphost };
                 }
 
                 RawPacket inPkt = null;

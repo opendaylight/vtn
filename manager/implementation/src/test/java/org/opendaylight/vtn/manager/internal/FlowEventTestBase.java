@@ -15,7 +15,6 @@ import java.io.ObjectOutputStream;
 
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.vtn.manager.IVTNManagerAware;
-import org.opendaylight.vtn.manager.IVTNModeListener;
 import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
 import org.opendaylight.vtn.manager.VBridge;
@@ -25,7 +24,6 @@ import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
-import org.opendaylight.vtn.manager.internal.VTNManagerImplTestCommon.VTNManagerAwareData;
 
 /**
  * Base class for Flow event test case.
@@ -33,8 +31,8 @@ import org.opendaylight.vtn.manager.internal.VTNManagerImplTestCommon.VTNManager
 public class FlowEventTestBase extends FlowModTaskTestBase {
 
     /**
-     * Add IVTNManagerAware service to VTNManager service.
-     * @param listener  IVTNManagerAware service.
+     * Add {@link IVTNManagerAware} service to VTNManager service.
+     * @param listener  {@link IVTNManagerAware} service.
      */
     public void addVTNManagerAware(IVTNManagerAware listener) {
         vtnMgr.addVTNManagerAware(listener);
@@ -58,7 +56,7 @@ public class FlowEventTestBase extends FlowModTaskTestBase {
     };
 
     /**
-     * Mock-up of IVTNManagerAware.
+     * Mock-up of {@link IVTNManagerAware}.
      */
     public class VTNManagerAwareStub implements IVTNManagerAware {
         private final long sleepMilliTime = 10L;
@@ -110,10 +108,11 @@ public class FlowEventTestBase extends FlowModTaskTestBase {
         }
 
         /**
-         * check information notified by vtnChanged().
+         * check information notified by {@code vtnChanged()}.
          *
-         * @param count     A expected number of times vtnChanged() was called.
-         * @param path      A VTenantPath expect to be notified.
+         * @param count     A expected number of times {@code vtnChanged()}
+         *                  was called.
+         * @param path      A {@link VTenantPath} expect to be notified.
          * @param type      A type expect to be notified.
          */
         public synchronized void checkVtnInfo(int count, VTenantPath path,
@@ -148,10 +147,11 @@ public class FlowEventTestBase extends FlowModTaskTestBase {
         }
 
         /**
-         * check information notified by vBridgeChanged().
+         * check information notified by {@code vBridgeChanged()}.
          *
-         * @param count     A expected number of times vBridgeChanged() was called.
-         * @param path      A VBridgePath expect to be notified.
+         * @param count     A expected number of times {@code vBridgeChanged()}
+         *                  was called.
+         * @param path      A {@link VBridgePath} expect to be notified.
          * @param name      A name expect to be notified.
          * @param type      A type expect to be notified.
          */
@@ -188,11 +188,11 @@ public class FlowEventTestBase extends FlowModTaskTestBase {
         }
 
         /**
-         * check information notified by vBridgeInterfaceChanged().
+         * check information notified by {@code vBridgeInterfaceChanged()}.
          *
          * @param count     A expected number of times
-         *                  vBridgeInterfaceChanged() was called.
-         * @param path      A VBridgeIfPath expect to be notified.
+         *                  {@code vBridgeInterfaceChanged()} was called.
+         * @param path      A {@link VBridgeIfPath} expect to be notified.
          * @param name      A name expect to be notified.
          * @param type      A type expect to be notified.
          */
@@ -229,10 +229,11 @@ public class FlowEventTestBase extends FlowModTaskTestBase {
         }
 
         /**
-         * check information notified by vlanMapChanged().
+         * check information notified by {@code vlanMapChanged()}.
          *
-         * @param count     A expected number of times vlanMapChanged() was called.
-         * @param path      A VBridgePath expect to be notified.
+         * @param count     A expected number of times {@code vlanMapChanged()}
+         *                  was called.
+         * @param path      A {@link VBridgePath} expect to be notified.
          * @param type      A type expect to be notified.
          */
         public synchronized void checkVlmapInfo(int count, VBridgePath path,
@@ -268,10 +269,11 @@ public class FlowEventTestBase extends FlowModTaskTestBase {
         }
 
         /**
-         * check information notified by portMapChanged().
+         * check information notified by {@code portMapChanged()}.
          *
-         * @param count     A expected number of times portMapChanged() was called.
-         * @param path      A VBridgeIfPath expect to be notified.
+         * @param count     A expected number of times {@code portMapChanged()}
+         *                  was called.
+         * @param path      A {@link VBridgeIfPath} expect to be notified.
          * @param pconf     A PortMapConfig expect to be notified.
          * @param type      A type expect to be notified.
          */
