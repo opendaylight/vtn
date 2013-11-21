@@ -118,50 +118,38 @@ https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):Ins
 
 == Installing VTN Manager from source code ==
 === Prior preparation ===
- 1. Install OpenDaylight Controller.
-    * Please refer Controller's Installation Guide.
-      https://wiki.opendaylight.org/view/OpenDaylight_Controller:Installation
+Prior preparation for installing VTN Manager is the same as OpenDaylight controller.
+Please see Controller's Installation Guide.
+    https://wiki.opendaylight.org/view/OpenDaylight_Controller:Installation
 
 === Build ===
+The procedure that follows assumes that you are installing VTN Manager
+on your local Linux machine.
+
  1. Download the code from the Git repository of VTN Project.
         git clone ssh://<username>@git.opendaylight.org:29418/vtn.git
           or
         git clone https://git.opendaylight.org/gerrit/p/vtn.git
 
-    The following instructions assume you install OpenDaylight Controller
-    in directory ${CONTROLLER_DIR}, and put the VTN source code in directory
-    ${VTN_DIR}.
-
-        ${CONTROLLER_DIR}=<Installation directory of OpenDaylight Controller>
+The following instructions assume you put the VTN source code
+in directory ${VTN_DIR}.
         ${VTN_DIR}=<Top of VTN source tree>
 
  2. Build the code of VTN Manager.
         cd ${VTN_DIR}
         mvn -f manager/dist/pom.xml install
 
- 3. Delete unused plugins in the plugin directory of the controller.
-    * arphandler
-    * simpleforwarding
-    * loadbalancer
-
-        cd  ${CONTROLLER_DIR}/plugins
-        rm org.opendaylight.controller.arphandler-<version>.jar
-        rm org.opendaylight.controller.samples.simpleforwarding-<version>.jar
-        rm org.opendaylight.controller.samples.loadbalancer-<version>.jar
-        rm org.opendaylight.controller.samples.loadbalancer.northbound-<version>.jar
-
- 4. Copy OSGi bundles of VTN Manager to the plugin directory of the controller.
-
-    cp ${VTN_DIR}/manager/dist/target/distribution.vtn-manager-<version>-osgipackage/opendaylight/plugins/*.jar ${CONTROLLER_DIR}/plugins/
-
 == Run the Controller with VTN Manager ==
-On Linux/Unix systems, execute run.sh.
+On Linux/Unix systems, execute run.sh in the installation directory of
+OpenDaylight Controller.
+The installation directory is usually
+${VTN_DIR}/manager/dist/target/distribution.vtn-manager-0.1.0-SNAPSHOT-osgipackage/opendaylight.
 
-        cd ${CONTROLLER_DIR}
+        cd ${VTN_DIR}/manager/dist/target/distribution.vtn-manager-0.1.0-SNAPSHOT-osgipackage/opendaylight
         ./run.sh
 
 Please see Controller's Installation Guide for more information.
-https://wiki.opendaylight.org/view/OpenDaylight_Controller:Installation
+    https://wiki.opendaylight.org/view/OpenDaylight_Controller:Installation
 
 === REST API ===
 VTN Manager provides REST API for virtual network functions.
@@ -174,7 +162,7 @@ Here is an example of how to create a virtual tenant network.
         curl --user "admin":"admin" -H "Accept: application/json" -H \
         "Content-type: application/json" -X POST \
         http://localhost:8080/controller/nb/v2/vtn/default/vtns/Tenant1 \
-        -d '{"@description": "My First Virtual Tenant Network"}'
+        -d '{"description": "My First Virtual Tenant Network"}'
 
 You can check the list of all tenants by executing the following command.
 
