@@ -3150,9 +3150,9 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * Test method for {@link VTNManagerImpl#entryUpdated}.
+     * Test method for {@link VTNManagerImpl#entryUpdated(ClusterEventId, Object, String, boolean)}.
      *
-     * This tests {@link TenantEvent}.
+     * This tests {@link VTenantEvent}.
      */
     @Test
     public void testCacheEntryChangeTenantEvent() {
@@ -3299,8 +3299,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
      *
      * @param file      A checked file.
      * @param result    A expected result.
-     * @param remove    If {@true} specified file is removed after check.
-     *                  If {@false} specified file is created after check.
+     * @param remove    If {@code true} specified file is removed after check.
+     *                  If {@code false} specified file is created after check.
      */
     private void checkFileExists(File file, boolean result, boolean remove) {
         boolean exists = file.exists();
@@ -3981,7 +3981,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * Test method for {@link VTNManagerImpl#flowRemoved(Node, Flow))}.
+     * Test method for {@link VTNManagerImpl#flowRemoved(Node, Flow)}.
      */
     @Test
     public void testFlowRemoved() {

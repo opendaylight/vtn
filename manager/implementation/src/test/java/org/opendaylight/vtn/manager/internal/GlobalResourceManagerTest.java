@@ -703,7 +703,7 @@ public class GlobalResourceManagerTest extends TestBase {
 
     /**
      * check Map cache.
-     * @param cs            A {@link IClusgerGlobalServices} object.
+     * @param cs            A {@link IClusterGlobalServices} object.
      * @param cacheName     A cache name.
      * @param containerName A container name.
      * @param path          {@link VBridgePath} or {@link VBridgeIfPath}.

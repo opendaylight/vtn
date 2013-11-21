@@ -701,7 +701,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * Check {@ linkVBridgeIfEvent}.
+     * Check {@link VBridgeIfEvent}.
      *
      * @param clsEvents A Map between {@link ClusterEventId} and
      *                  {@link ClusterEvent}.

@@ -1136,7 +1136,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
      * ({@code existNodeConnector}, {@code existISL}, {@code addTopoList}).
      *
      * @param mgr                   VTNManager service.
-     * @param existNodeConnector    A List of {@link NodeConnecotr} which is set
+     * @param existNodeConnector    A List of {@link NodeConnector} which is set
      *                              existing Nodeconnectors.
      * @param existISL              A List of {@link NodeConnector} which is set
      *                              existing ISLs.
