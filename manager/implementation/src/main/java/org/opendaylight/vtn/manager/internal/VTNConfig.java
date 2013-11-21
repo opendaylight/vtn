@@ -52,6 +52,11 @@ public class VTNConfig {
     private static final int  DEFAULT_REMOTE_BULK_FLOWMOD_TIMEOUT = 15000;
 
     /**
+     * Default value of {@link #cacheInitTimeout}.
+     */
+    private static final int  DEFAULT_CACHE_INIT_TIMEOUT = 3000;
+
+    /**
      * Indicates a field keeps an integer value.
      */
     @Retention(RetentionPolicy.RUNTIME)
@@ -199,6 +204,13 @@ public class VTNConfig {
         DEFAULT_REMOTE_BULK_FLOWMOD_TIMEOUT;
 
     /**
+     * The number of milliseconds to wait for completion of cluster cache
+     * initialization by another controller in the cluster.
+     */
+    @IntConfig(min = 100, max = 600000)
+    private int cacheInitTimeout  = DEFAULT_CACHE_INIT_TIMEOUT;
+
+    /**
      * Construct a new configuration object.
      *
      * @param dir            A path to directory which contains configuartion
@@ -256,6 +268,17 @@ public class VTNConfig {
      */
     public int getRemoteBulkFlowModTimeout() {
         return remoteBulkFlowModTimeout;
+    }
+
+    /**
+     * Return the number of milliseconds to wait for completion of cluster
+     * cache initialization by another controller in the cluster.
+     *
+     * @return  The number of milliseconds to wait for completion of cluster
+     *          cache initialization.
+     */
+    public int getCacheInitTimeout() {
+        return cacheInitTimeout;
     }
 
     /**

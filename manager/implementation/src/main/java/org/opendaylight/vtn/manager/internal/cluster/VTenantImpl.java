@@ -73,13 +73,23 @@ public final class VTenantImpl implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -5355990328326192973L;
+    private static final long serialVersionUID = 708952563270478996L;
 
     /**
      * Logger instance.
      */
     private static final Logger  LOG =
         LoggerFactory.getLogger(VTenantImpl.class);
+
+    /**
+     * Prefix of configuration file name.
+     */
+    public static final String  CONFIG_FILE_PREFIX = "vtn-";
+
+    /**
+     * Suffix of configuration file name.
+     */
+    public static final String  CONFIG_FILE_SUFFIX = ".conf";
 
     /**
      * Maximum value of flow timeout value.
@@ -135,7 +145,11 @@ public final class VTenantImpl implements Serializable {
     public static String getConfigFilePath(String containerName,
                                            String tenantName) {
         String root = GlobalConstants.STARTUPHOME.toString();
-        return root + "vtn-" + containerName + "-" + tenantName + ".conf";
+        StringBuilder builder = new StringBuilder(root);
+        builder.append(CONFIG_FILE_PREFIX).append(containerName).append('-').
+            append(tenantName).append(CONFIG_FILE_SUFFIX);
+
+        return builder.toString();
     }
 
     /**
@@ -784,7 +798,7 @@ public final class VTenantImpl implements Serializable {
      *   the configuration file.
      * </p>
      *
-     * @param mgr   VTN Manager service.
+     * @param mgr  VTN Manager service.
      */
     public void resume(VTNManagerImpl mgr) {
         Lock wrlock = rwLock.writeLock();
@@ -799,6 +813,8 @@ public final class VTenantImpl implements Serializable {
         } finally {
             wrlock.unlock();
         }
+
+        LOG.trace("{}:{}: Tenant was resumed", containerName, tenantName);
     }
 
     /**

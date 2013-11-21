@@ -478,6 +478,22 @@ public class GlobalResourceManager
     }
 
     /**
+     * Determine whether the given IP address is one of remote cluster node
+     * addresses or not.
+     *
+     * @param addr  IP address to be tested.
+     * @return  {@code true} is returned if the given IP address is one of
+     *          remote cluster node address.
+     *          Otherwise {@code false} is returned.
+     */
+    @Override
+    public boolean isRemoteClusterAddress(InetAddress addr) {
+        synchronized (remoteClusterNodes) {
+            return remoteClusterNodes.contains(addr);
+        }
+    }
+
+    /**
      * Clean up resources associated with the given container.
      *
      * @param containerName  The name of the container.

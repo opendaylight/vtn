@@ -68,6 +68,7 @@ import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
+import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.PortProperty;
 import org.opendaylight.vtn.manager.internal.cluster.RawPacketEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
@@ -217,6 +218,18 @@ public class VTNManagerImpl
      * The name of the cluster cache which keeps flow entries in the container.
      */
     static final String CACHE_FLOWS = "vtn.flows";
+
+    /**
+     * Pseudo tenant name used for the configuration file name which keeps
+     * a list of tenant names.
+     */
+    private static final String  FNAME_TENANT_NAMES = "tenant-names";
+
+    /**
+     * Polling interval, in milliseconds, to wait for completion of cluster
+     * cache initialization.
+     */
+    private static final long  CACHE_INIT_POLLTIME = 100L;
 
     /**
      * Keeps virtual tenant configurations in a container.
@@ -612,6 +625,89 @@ public class VTNManagerImpl
     }
 
     /**
+     * An implementation of {@link FilenameFilter} which selects VTN
+     * configuration files.
+     */
+    private static final class ConfigFileNameFilter implements FilenameFilter {
+        /**
+         * A set of valid tenant names.
+         */
+        private final Set<String>  validTenants;
+
+        /**
+         * Prefix of VTN configuration file name.
+         */
+        private final String  prefix;
+
+        /**
+         * The length of {@link #prefix}.
+         */
+        private final int  prefixLength;
+
+        /**
+         * The minimum length of VTN configuration file name.
+         */
+        private final int  minimumLength;
+
+        /**
+         * Construct a new filename filter which selects configuration files
+         * for obsolete tenants.
+         *
+         * @param cname    The name of the container.
+         * @param nameSet  A set of valid virtual tenant names.
+         *                 If a non-{@code null} value is specified,
+         *                 this object selects tenant configuration files
+         *                 only if its name is not contained in the given set.
+         *                 In that case this filter never selects the tenant
+         *                 name list file even if the given set is empty.
+         *                 If {@code null} is specified, all configuration
+         *                 files, including the tenant name list file, are
+         *                 selected.
+         */
+        private ConfigFileNameFilter(String cname, Set<String> nameSet) {
+            validTenants = nameSet;
+            StringBuilder builder =
+                new StringBuilder(VTenantImpl.CONFIG_FILE_PREFIX);
+            builder.append(cname).append('-');
+            prefix = builder.toString();
+            prefixLength = prefix.length();
+            minimumLength = prefixLength +
+                VTenantImpl.CONFIG_FILE_SUFFIX.length();
+        }
+
+        /**
+         * Determine whether the specified file should be selected or not.
+         *
+         * @param dir   The directory in which the file was found.
+         * @param name  The name of the file.
+         * @return      {@code true} is returned if the specified file name
+         *              should be selected.
+         *              Otherwise {@code false} is returned.
+         */
+        @Override
+        public boolean accept(File dir, String name) {
+            if (!name.startsWith(prefix) ||
+                !name.endsWith(VTenantImpl.CONFIG_FILE_SUFFIX)) {
+                return false;
+            }
+
+            int len = name.length() - minimumLength;
+            if (len <= 0) {
+                return false;
+            }
+
+            if (validTenants == null) {
+                return true;
+            }
+
+            // Parse tenant name part in the filename.
+            String tname = name.substring(prefixLength, prefixLength + len);
+            return !(FNAME_TENANT_NAMES.equals(tname) ||
+                     validTenants.contains(tname));
+        }
+    }
+
+    /**
      * Function called by the dependency manager when all the required
      * dependencies are satisfied.
      *
@@ -646,7 +742,8 @@ public class VTNManagerImpl
         }
 
         createCaches();
-        tenantListFileName = root + "vtn-" + cname + "-tenant-names.conf";
+        tenantListFileName =
+            VTenantImpl.getConfigFilePath(cname, FNAME_TENANT_NAMES);
 
         // Start VTN task thread.
         taskQueueThread = new TaskQueueThread("VTN Task Thread: " + cname);
@@ -2407,6 +2504,8 @@ public class VTNManagerImpl
         ObjectWriter wtr = new ObjectWriter();
         Status status = wtr.write(nameSet, tenantListFileName);
         if (status.isSuccess()) {
+            LOG.debug("{}: Save tenant names: {}", containerName,
+                      tenantListFileName);
             return status;
         }
 
@@ -2453,12 +2552,92 @@ public class VTNManagerImpl
     }
 
     /**
+     * Wait for cluster caches to be initialized by another controller in
+     * the cluster.
+     *
+     * @param path    A pseudo tenant path used for synchronization of
+     *                cluster cache initialization.
+     * @param myaddr  IP address of this controller in the cluster.
+     * @return  {@code true} is returned if this controller should load the
+     *          VTN configuration into cluster caches.
+     *          {@code false} is returned if cluster caches was initialized
+     *          by another controller in the cluster.
+     */
+    private boolean waitForCache(VTenantPath path, InetAddress myaddr) {
+        ObjectPair<InetAddress, Boolean> self =
+            new ObjectPair<InetAddress, Boolean>(myaddr, Boolean.FALSE);
+        long current = System.currentTimeMillis();
+        long limit = current + (long)vtnConfig.getCacheInitTimeout();
+        InetAddress provider = null;
+
+        // Try to associated a null tenant name with a pair of controller
+        // address and Boolean objects in the state DB.
+        ObjectPair<InetAddress, Boolean> another;
+        while ((another = (ObjectPair<InetAddress, Boolean>)
+                stateDB.putIfAbsent(path, self)) != null) {
+            Boolean loaded = another.getRight();
+            if (loaded.booleanValue()) {
+                // The VTN configuration was loaded by another controller
+                // in the cluster.
+                if (LOG.isDebugEnabled()) {
+                    InetAddress remote = another.getLeft();
+                    LOG.debug("{}: Cluster cache was initialized by {}",
+                              containerName, remote.getHostAddress());
+                }
+                return false;
+            }
+
+            InetAddress remote = another.getLeft();
+            if (!resourceManager.isRemoteClusterAddress(remote)) {
+                // Another controller in the cluster stopped while it was
+                // loading the VTN configuration.
+                LOG.warn("{}: Configuration provider seems dead: {}",
+                         containerName, remote.getHostAddress());
+
+                // Try to become configuration provider.
+                if (stateDB.replace(path, another, self)) {
+                    break;
+                }
+                continue;
+            }
+
+            if (current >= limit) {
+                LOG.warn("{}: Cluster cache initialization did not complete" +
+                         ": {}", containerName, remote.getHostAddress());
+                return true;
+            }
+
+            // Wait for completion of initialization by polling.
+            if (LOG.isDebugEnabled() && !remote.equals(provider)) {
+                LOG.debug("{}: Wait for {} to initialize cluster caches",
+                          containerName, remote.getHostAddress());
+                provider = remote;
+            }
+
+            try {
+                Thread.sleep(CACHE_INIT_POLLTIME);
+                current = System.currentTimeMillis();
+            } catch (InterruptedException e) {
+                LOG.warn(containerName + ": Interrupted", e);
+
+                // One more check should be done.
+                limit = current;
+            }
+        }
+
+        LOG.debug("{}: Became configuration provider", containerName);
+        return true;
+    }
+
+    /**
      * Load all virtual tenant configurations.
      */
     private void loadConfig() {
-        // Do NOT read configurations if we have already received them from
-        // another node.
-        if (tenantDB.isEmpty()) {
+        // Use a null tenant path for synchronization of cluster cache
+        // initialization.
+        VTenantPath path = new VTenantPath(null);
+        InetAddress myaddr = resourceManager.getControllerAddress();
+        if (waitForCache(path, myaddr)) {
             // Read tenant names.
             ObjectReader rdr = new ObjectReader();
             HashSet<String> nameSet = (HashSet<String>)
@@ -2468,10 +2647,28 @@ public class VTNManagerImpl
                     loadTenantConfig(name);
                 }
             }
+
+            // Notify controllers in the cluster of completion of cluster
+            // cache initialization.
+            ObjectPair<InetAddress, Boolean> self =
+                new ObjectPair<InetAddress, Boolean>(myaddr, Boolean.TRUE);
+            stateDB.put(path, self);
         } else {
+            Set<String> names = new HashSet<String>();
             for (VTenantImpl vtn: tenantDB.values()) {
+                // Resume VTN configuration in the cluster cache.
                 vtn.resume(this);
+                names.add(vtn.getName());
+
+                // Save configuration for this tenant.
+                vtn.saveConfig(null);
             }
+
+            // Remove configuration files for obsolete tenants.
+            cleanUpConfigFile(containerName, names);
+
+            // Save a list of tenant names.
+            saveTenantNames(names);
         }
     }
 
@@ -2485,11 +2682,15 @@ public class VTNManagerImpl
 
         // Read tenant configuration.
         ObjectReader rdr = new ObjectReader();
-        VTenantImpl vtn = (VTenantImpl)rdr.read(this, path);
-        if (vtn != null) {
+        VTenantImpl newvtn = (VTenantImpl)rdr.read(this, path);
+        if (newvtn != null) {
+            VTenantImpl vtn = tenantDB.putIfAbsent(tenantName, newvtn);
+            if (vtn == null) {
+                LOG.info("{}: Tenant was loaded: {}", containerName,
+                         newvtn.getVTenant());
+                vtn = newvtn;
+            }
             vtn.resume(this);
-            tenantDB.put(tenantName, vtn);
-            LOG.info("{}: Load tenant: {}", containerName, vtn.getVTenant());
         }
     }
 
@@ -2535,25 +2736,33 @@ public class VTNManagerImpl
     }
 
     /**
-     * Remove all configuration files associated with the container.
+     * Remove all configuration files associated with the container, including
+     * the tenant name list file.
      *
      * @param containerName  The name of the container.
      */
     static void cleanUpConfigFile(String containerName) {
-        StringBuilder builder = new StringBuilder("vtn-");
-        builder.append(containerName).append('-');
+        cleanUpConfigFile(containerName, null);
+    }
 
-        final String prefix = builder.toString();
-        final String suffix = ".conf";
-        final int minlen = prefix.length() + suffix.length();
-        FilenameFilter filter = new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return (name.startsWith(prefix) && name.endsWith(suffix) &&
-                        name.length() > minlen);
-            }
-        };
-
+    /**
+     * Remove configuration files associated with the container.
+     *
+     * @param containerName  The name of the container.
+     * @param validTenants   A set of valid virtual tenant names.
+     *                       If a non-{@code null} value is specified, this
+     *                       method removes tenant configuration files only if
+     *                       its name is not contained in the given set.
+     *                       In that case this method never removes the tenant
+     *                       name list file even if the given set is empty.
+     *                       If {@code null} is specified, all configuration
+     *                       files, including the tenant name list file, are
+     *                       removed.
+     */
+    private static void cleanUpConfigFile(String containerName,
+                                          final Set<String> validTenants) {
+        ConfigFileNameFilter filter =
+            new ConfigFileNameFilter(containerName, validTenants);
         File root = new File(GlobalConstants.STARTUPHOME.toString());
         File[] files = root.listFiles(filter);
         if (files != null) {
