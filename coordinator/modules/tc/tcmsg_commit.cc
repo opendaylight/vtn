@@ -174,6 +174,7 @@ TcMsgCommit::SendTransEndRequest(AbortOnFailVector abort_on_fail_) {
       }
     } else {
       pfc_log_error("Invalid Session/Config ID");
+      TcClientSessionUtils::tc_session_close(&end_sess, conn);
       return TCOPER_RET_FAILURE;
     }
     /*transmit trans end result*/
