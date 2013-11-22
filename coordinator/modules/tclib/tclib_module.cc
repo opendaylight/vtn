@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2013 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -51,8 +51,8 @@ const char* TcMsgOperTypeString[] = {
 
 
 /**
- * @brief      TcLibModule constructor 
- * @param[in]  *mattr Attribute of the Module 
+ * @brief      TcLibModule constructor
+ * @param[in]  *mattr Attribute of the Module
  */
 TcLibModule::TcLibModule(const pfc_modattr_t *mattr)
                    : pfc::core::Module(mattr) {
@@ -71,7 +71,7 @@ TcLibModule::TcLibModule(const pfc_modattr_t *mattr)
 }
 
 /**
- * @brief      TcLibModule destructor 
+ * @brief      TcLibModule destructor
  */
 TcLibModule::~TcLibModule() {
   pfc_log_info("%s %d destructor", __FUNCTION__, __LINE__);
@@ -106,7 +106,8 @@ TcApiCommonRet TcLibModule::TcLibRegisterHandler(TcLibInterface* handler) {
   if (handler == NULL)
     return TC_INVALID_PARAM;
 
-  tclib_mutex_.lock();
+  pfc::core::ScopedMutex m(tclib_mutex_);
+
   if (pTcLibInterface_ == NULL) {
     pfc_log_info("%s %d Registering the handler", __FUNCTION__, __LINE__);
     pTcLibInterface_ = handler;
@@ -115,14 +116,12 @@ TcApiCommonRet TcLibModule::TcLibRegisterHandler(TcLibInterface* handler) {
     pfc_log_error("%s %d Handler Already Registered", __FUNCTION__, __LINE__);
     ret = TC_HANDLER_ALREADY_ACTIVE;
   }
-  tclib_mutex_.unlock();
-
   return ret;
 }
 
 /**
  * @brief      Init of TcLibModule
- *             initialises the member variables 
+ *             initialises the member variables
  */
 pfc_bool_t TcLibModule::init() {
   pfc_log_info("%s %d tclib initialisation", __FUNCTION__, __LINE__);
@@ -150,7 +149,7 @@ pfc_bool_t TcLibModule::fini() {
 
 /**
  * @brief      Audit controller request invoked from driver modules
- * @param[in]  controller_id controller id intended for audit 
+ * @param[in]  controller_id controller id intended for audit
  * @retval     TC_API_COMMON_SUCCESS Audit controller request success
  * @retval     TC_API_FATAL on any api fatal failures
  * @retval     TC_API_COMMON_FAILURE on any handling failures
@@ -180,7 +179,7 @@ TcApiCommonRet TcLibModule::TcLibAuditControllerRequest
 
   /* Construct Message and send controller id to TC to start Audit
    * Create a client session towards the TC
-   * Fill the controller id also mention the service id 
+   * Fill the controller id also mention the service id
    */
   err = pfc_ipcclnt_altopen("uncd", &conn);
   if (err != 0 || conn == 0) {
@@ -255,14 +254,14 @@ TcApiCommonRet TcLibModule::TcLibAuditControllerRequest
  * @param[in]  config_id config id generated on acquire config mode for
  *             session_id
  * @retval     TC_API_COMMON_SUCCESS on validation is success
- * @retval     TC_INVALID_SESSION_ID if session id is invalid 
- * @retval     TC_INVALID_CONFIG_id if config id is invalid 
+ * @retval     TC_INVALID_SESSION_ID if session id is invalid
+ * @retval     TC_INVALID_CONFIG_id if config id is invalid
  */
 TcApiCommonRet TcLibModule::TcLibValidateUpdateMsg(uint32_t sessionid,
                                                    uint32_t configid) {
   TcApiCommonRet ret = TC_API_COMMON_SUCCESS;
 
-  tclib_mutex_.lock();
+  pfc::core::ScopedMutex m(tclib_mutex_);
   /* Validation of  session_id and config_id */
   if ((sessionid == TC_DEFAULT_VALUE) || (session_id_ != sessionid)) {
     pfc_log_error("%s %d Invalid session id %d",
@@ -274,20 +273,18 @@ TcApiCommonRet TcLibModule::TcLibValidateUpdateMsg(uint32_t sessionid,
                   __FUNCTION__, __LINE__, configid);
     ret = TC_INVALID_CONFIG_ID;
   }
-  tclib_mutex_.unlock();
-
   return ret;
 }
 
-/** 
-   * @brief      GetKeyIndex 
+/**
+   * @brief      GetKeyIndex
    *             Get of key index based on controller id, err_pos from
-   *             maps filled during driver result key map updates 
+   *             maps filled during driver result key map updates
    * @param[in]  controller_id controller id to which key type belongs
    * @param[in]  err_pos error position to which key index is required
    * @param[out] key_index index for the error position under controller id
-   * @retval     TC_API_COMMON_SUCCESS if key index successfully filled 
-   * @retval     TC_INVALID_PARAM if the err_pos is invalid 
+   * @retval     TC_API_COMMON_SUCCESS if key index successfully filled
+   * @retval     TC_INVALID_PARAM if the err_pos is invalid
    * @retval     TC_INVALID_KEY_TYPE if key type is invalid
    * @retval     TC_INVALID_CONTROLLER_ID if controller id is invalid
    */
@@ -337,7 +334,7 @@ TcApiCommonRet TcLibModule::GetKeyIndex(std::string controller_id,
 
 /**
  * @brief      Read of key types key and value data information from session
- * @param[in]  controller_id controller id for which key type involved 
+ * @param[in]  controller_id controller id for which key type involved
  * @param[in]  err_pos position of the key type in the key_list
  * @param[in]  key_type intended key type for which key and value to be read
  * @param[in]  key_def ipcstdef structure name for key
@@ -379,7 +376,7 @@ TcApiCommonRet TcLibModule::TcLibReadKeyValueDataInfo(std::string controller_id,
   // Read from the session based on key_index.
   idx = key_index;
   util_ret = tc::TcServerSessionUtils::get_uint32(sess_, idx,
-                                                       &local_key_type);
+                                                  &local_key_type);
   if (util_ret != tc::TCUTIL_RET_SUCCESS) {
     pfc_log_error("%s %d TcServerSessionUtils failed with %d",
                   __FUNCTION__, __LINE__, util_ret);
@@ -420,9 +417,9 @@ TcApiCommonRet TcLibModule::TcLibReadKeyValueDataInfo(std::string controller_id,
 
 /**
  * @brief      Write of controller id, response code and num of errors
- * @param[in]  controller_id controller id for which key type involved 
- * @param[in]  response_code response code from the UPLL/UPPL 
- * @param[in]  num_of_errors number of errors if any 
+ * @param[in]  controller_id controller id for which key type involved
+ * @param[in]  response_code response code from the UPLL/UPPL
+ * @param[in]  num_of_errors number of errors if any
  * @retval     TC_API_COMMON_SUCCESS on successful updation for key and value
  * @retval     TC_INVALID_OPER_STATE invalid oper state for write
  * @retval     TC_INVALID_CONTROLLER_ID invalid controller id
@@ -471,7 +468,7 @@ TcApiCommonRet TcLibModule::TcLibWriteControllerInfo(std::string controller_id,
 
 /**
  * @brief      Write of key type, key and data
- * @param[in]  controller_id controller id for which key type involved 
+ * @param[in]  controller_id controller id for which key type involved
  * @param[in]  key_type intended key type for which key and value to write
  * @param[in]  key_def ipcstdef structure name for key
  * @param[in]  value_def ipcstdef structure name for value
@@ -497,7 +494,7 @@ TcApiCommonRet TcLibModule::TcLibWriteKeyValueDataInfo(
                   __FUNCTION__, __LINE__);
     return TC_INVALID_OPER_STATE;
   }
-  /* Validate the controller id whether for same the earlier write 
+  /* Validate the controller id whether for same the earlier write
    * API is involved or not */
   if (controllerid_ != controller_id) {
     pfc_log_error("%s %d Invalid Controller id", __FUNCTION__, __LINE__);
@@ -638,7 +635,7 @@ TcCommonRet TcLibModule::UpdateControllerKeyList() {
       pfc_log_info("%s %d no errors ", __FUNCTION__, __LINE__);
       commit_phase_result_.push_back(ctrl_res);
       /* if no errors for the controller id, then the next index will
-       * have next controller id so incrementing only by 1 
+       * have next controller id so incrementing only by 1
        */
       continue;
     }
@@ -893,7 +890,7 @@ TcCommonRet TcLibModule::ValidateDriverAuditSequence(TcMsgOperType oper_type) {
       /* if audit of controller does not belongs to that driver
        * audit start will not be recieved, directly audit transaction
        * start will be sent. below condition is for that validation
-       */ 
+       */
       if ((audit_in_progress_ == PFC_TRUE) &&
           (oper_state_ == MSG_AUDIT_START))
         return TC_SUCCESS;
@@ -1066,47 +1063,41 @@ TcApiCommonRet TcLibModule::IsWriteKeyValueAllowed() {
  * @retval     TC_SUCCESS on successful updation
  * @retval     TC_FAILURE on any failure
  */
-TcCommonRet TcLibModule::NotifySessionConfig() {
+TcCommonRet TcLibModule::
+NotifySessionConfig(pfc::core::ipc::ServerSession *sess) {
   uint32_t argcount = 0, idx = 0;
   tc::TcUtilRet util_ret = tc::TCUTIL_RET_SUCCESS;
 
-  tclib_mutex_.lock();
-
+  pfc::core::ScopedMutex m(tclib_mutex_);
   /*read from the session and update the session and config id*/
-  if (sess_ != NULL) {
-    argcount = sess_->getArgCount();
+  if (sess != NULL) {
+    argcount = sess->getArgCount();
     pfc_log_info("%s %d session arg count %d",
                  __FUNCTION__, __LINE__, argcount);
   } else {
     pfc_log_error("%s %d session pointer is NULL", __FUNCTION__, __LINE__);
-    tclib_mutex_.unlock();
     return TC_FAILURE;
   }
   if (argcount == IPC_DEFAULT_ARG_COUNT) {
     pfc_log_error("%s %d Argument count is NULL", __FUNCTION__, __LINE__);
-    tclib_mutex_.unlock();
     return TC_FAILURE;
   }
 
-  util_ret = tc::TcServerSessionUtils::get_uint32(sess_, idx,
+  util_ret = tc::TcServerSessionUtils::get_uint32(sess, idx,
                                                        &session_id_);
   if (util_ret != tc::TCUTIL_RET_SUCCESS) {
     pfc_log_error("%s %d TcServerSessionUtils failed with %d",
                   __FUNCTION__, __LINE__, util_ret);
-    tclib_mutex_.unlock();
     return TC_FAILURE;
   }
 
   idx++;
-  util_ret = tc::TcServerSessionUtils::get_uint32(sess_, idx, &config_id_);
+  util_ret = tc::TcServerSessionUtils::get_uint32(sess, idx, &config_id_);
   if (util_ret != tc::TCUTIL_RET_SUCCESS) {
     pfc_log_error("%s %d TcServerSessionUtils failed with %d",
                   __FUNCTION__, __LINE__, util_ret);
-    tclib_mutex_.unlock();
     return TC_FAILURE;
   }
-
-  tclib_mutex_.unlock();
 
   pfc_log_info("%s %d Updated sessionid %d configid %d",
                __FUNCTION__, __LINE__, session_id_, config_id_);
@@ -1116,7 +1107,7 @@ TcCommonRet TcLibModule::NotifySessionConfig() {
 /**
  * @brief      commit transaction start/end operations invoking
  * @param[in]  oper_type operation type in commit trans start/end process
- * @param[in]  commit_trans_msg structure variable after reading from session 
+ * @param[in]  commit_trans_msg structure variable after reading from session
  * @retval     TC_SUCCESS on handle operation success
  * @retval     TC_FAILURE on handle operation failure
  */
@@ -1165,7 +1156,7 @@ TcCommonRet TcLibModule::CommitTransStartEnd(TcMsgOperType oper_type,
 /**
  * @brief      commit transaction vote/global operations towards UPLL/UPPL
  * @param[in]  oper_type operation type in commit trans vote/global process
- * @param[in]  commit_trans_msg structure variable after reading from session 
+ * @param[in]  commit_trans_msg structure variable after reading from session
  * @retval     TC_SUCCESS on handle operation success
  * @retval     TC_FAILURE on handle operation failure
  */
@@ -1268,6 +1259,8 @@ TcCommonRet TcLibModule::CommitVoteGlobal(TcMsgOperType oper_type,
  * @retval     TC_FAILURE on handle operation failure
  */
 TcCommonRet TcLibModule::CommitTransaction() {
+  pfc::core::ScopedMutex m(tclib_ipc_control_mutex_);
+
   TcCommonRet ret = TC_SUCCESS;
   TcApiCommonRet val_ret = TC_API_COMMON_SUCCESS;
   TcCommitTransactionMsg commit_trans_msg;
@@ -1316,6 +1309,8 @@ TcCommonRet TcLibModule::CommitTransaction() {
  * @retval     TC_FAILURE on handle operation failure
  */
 TcCommonRet TcLibModule::CommitDriverVoteGlobal() {
+  pfc::core::ScopedMutex m(tclib_ipc_control_mutex_);
+
   TcCommonRet ret = TC_SUCCESS;
   TcCommitDrvVoteGlobalMsg drv_vote_global_msg;
 
@@ -1364,6 +1359,8 @@ TcCommonRet TcLibModule::CommitDriverVoteGlobal() {
  * @retval     TC_FAILURE on handle operation failure
  */
 TcCommonRet TcLibModule::CommitDriverResult() {
+  pfc::core::ScopedMutex m(tclib_ipc_control_mutex_);
+
   TcCommonRet ret = TC_SUCCESS;
   TcApiCommonRet val_ret = TC_API_COMMON_SUCCESS;
   TcCommitDrvResultMsg drvresult_msg;
@@ -1426,6 +1423,8 @@ TcCommonRet TcLibModule::CommitDriverResult() {
  * @retval     TC_FAILURE on handle operation failure
  */
 TcCommonRet TcLibModule::CommitGlobalAbort() {
+  pfc::core::ScopedMutex m(tclib_ipc_control_mutex_);
+
   TcCommonRet ret = TC_SUCCESS;
   TcApiCommonRet val_ret = TC_API_COMMON_SUCCESS;
   TcCommitGlobalAbortMsg abort_msg;
@@ -1475,7 +1474,7 @@ TcCommonRet TcLibModule::CommitGlobalAbort() {
 /**
  * @brief      audit start/end, transaction start/end operations invoking
  * @param[in]  oper_type operation type in audit trans start/end process
- * @param[in]  audit_trans_msg structure variable after reading from session 
+ * @param[in]  audit_trans_msg structure variable after reading from session
  * @retval     TC_SUCCESS on handle operation success
  * @retval     TC_FAILURE on handle operation failure
  */
@@ -1556,7 +1555,7 @@ TcCommonRet TcLibModule::AuditTransStartEnd(TcMsgOperType oper_type,
 /**
  * @brief      audit transaction vote/global operations towards UPLL/UPPL
  * @param[in]  oper_type operation type in audit trans vote/global process
- * @param[in]  audit_trans_msg structure variable after reading from session 
+ * @param[in]  audit_trans_msg structure variable after reading from session
  * @retval     TC_SUCCESS on handle operation success
  * @retval     TC_FAILURE on handle operation failure
  */
@@ -1606,7 +1605,7 @@ TcCommonRet TcLibModule::AuditVoteGlobal(TcMsgOperType oper_type,
   if (driver_info.empty()) {
     pfc_log_info("%s %d Driver info is empty", __FUNCTION__, __LINE__);
     if (oper_type == MSG_AUDIT_GLOBAL) {
-      /* adding audit_result to the session which is filled by 
+      /* adding audit_result to the session which is filled by
        * HandleAuditGlobalCommit function
        */
       util_ret = tc::TcServerSessionUtils::set_uint8(sess_, audit_result);
@@ -1663,7 +1662,7 @@ TcCommonRet TcLibModule::AuditVoteGlobal(TcMsgOperType oper_type,
   }
 
   if (oper_type == MSG_AUDIT_GLOBAL) {
-    /* adding audit_result to the session which is filled by 
+    /* adding audit_result to the session which is filled by
      * HandleAuditGlobalCommit function
      */
     util_ret = tc::TcServerSessionUtils::set_uint8(sess_, audit_result);
@@ -1686,6 +1685,8 @@ TcCommonRet TcLibModule::AuditVoteGlobal(TcMsgOperType oper_type,
  * @retval     TC_FAILURE on handle operation failure
  */
 TcCommonRet TcLibModule::AuditTransaction() {
+  pfc::core::ScopedMutex m(tclib_ipc_control_mutex_);
+
   TcCommonRet ret = TC_SUCCESS;
   TcAuditTransactionMsg audit_trans_msg;
 
@@ -1738,6 +1739,8 @@ TcCommonRet TcLibModule::AuditTransaction() {
  * @retval     TC_FAILURE on handle operation failure
  */
 TcCommonRet TcLibModule::AuditDriverVoteGlobal() {
+  pfc::core::ScopedMutex m(tclib_ipc_control_mutex_);
+
   TcCommonRet ret = TC_SUCCESS;
   TcAuditDrvVoteGlobalMsg drv_vote_global_msg;
 
@@ -1786,6 +1789,8 @@ TcCommonRet TcLibModule::AuditDriverVoteGlobal() {
  * @retval     TC_FAILURE on handle operation failure
  */
 TcCommonRet TcLibModule::AuditDriverResult() {
+  pfc::core::ScopedMutex m(tclib_ipc_control_mutex_);
+
   TcCommonRet ret = TC_SUCCESS;
   TcAuditDrvResultMsg drvresult_msg;
 
@@ -1833,7 +1838,7 @@ TcCommonRet TcLibModule::AuditDriverResult() {
    */
 
   if (drvresult_msg.phase == TC_AUDIT_GLOBAL_COMMIT_PHASE) {
-    /* adding audit_result to the session which is filled by 
+    /* adding audit_result to the session which is filled by
      * HandleAuditDriverResult function (only for global commit phase
      * audit_result will be filled)
      */
@@ -1858,6 +1863,8 @@ TcCommonRet TcLibModule::AuditDriverResult() {
  * @retval     TC_FAILURE on handle operation failure
  */
 TcCommonRet TcLibModule::AuditGlobalAbort() {
+  pfc::core::ScopedMutex m(tclib_ipc_control_mutex_);
+
   TcCommonRet ret = TC_SUCCESS;
   TcAuditGlobalAbortMsg abort_msg;
 
@@ -1899,7 +1906,9 @@ TcCommonRet TcLibModule::AuditGlobalAbort() {
  * @retval     TC_SUCCESS on handle operation success
  * @retval     TC_FAILURE on handle operation failure
  */
-TcCommonRet TcLibModule::SaveConfiguaration() {
+TcCommonRet TcLibModule::SaveConfiguration() {
+  pfc::core::ScopedMutex m(tclib_ipc_control_mutex_);
+
   TcCommonRet ret = TC_SUCCESS;
   uint32_t argcount = 0, idx = 0, sess_id = 0;
   tc::TcUtilRet util_ret = tc::TCUTIL_RET_SUCCESS;
@@ -1936,7 +1945,7 @@ TcCommonRet TcLibModule::SaveConfiguaration() {
                   __FUNCTION__, __LINE__, ret);
     return ret;
   }
-  
+
   pfc_log_info("%s %d Handler returned with %d",
                __FUNCTION__, __LINE__, ret);
   return ret;
@@ -1948,6 +1957,8 @@ TcCommonRet TcLibModule::SaveConfiguaration() {
  * @retval     TC_FAILURE on handle operation failure
  */
 TcCommonRet TcLibModule::ClearStartup() {
+  pfc::core::ScopedMutex m(tclib_ipc_control_mutex_);
+
   TcCommonRet ret = TC_SUCCESS;
   uint32_t argcount = 0, idx = 0, sess_id = 0;
   tc::TcUtilRet util_ret = tc::TCUTIL_RET_SUCCESS;
@@ -1996,6 +2007,8 @@ TcCommonRet TcLibModule::ClearStartup() {
  * @retval     TC_FAILURE on handle operation failure
  */
 TcCommonRet TcLibModule::AbortCandidate() {
+  pfc::core::ScopedMutex m(tclib_ipc_control_mutex_);
+
   TcCommonRet ret = TC_SUCCESS;
   uint32_t argcount = 0, idx = 0, sess_id = 0, conf_id = 0;
   tc::TcUtilRet util_ret = tc::TCUTIL_RET_SUCCESS;
@@ -2040,7 +2053,7 @@ TcCommonRet TcLibModule::AbortCandidate() {
                   __FUNCTION__, __LINE__, ret);
     return ret;
   }
-  
+
   pfc_log_info("%s %d Handler returned with %d",
                __FUNCTION__, __LINE__, ret);
   return ret;
@@ -2052,6 +2065,8 @@ TcCommonRet TcLibModule::AbortCandidate() {
  * @retval     TC_FAILURE on handle operation failure
  */
 TcCommonRet TcLibModule::AuditConfig() {
+  pfc::core::ScopedMutex m(tclib_ipc_control_mutex_);
+
   TcCommonRet ret = TC_SUCCESS;
   TcAuditConfigMsg audit_config_msg;
 
@@ -2079,13 +2094,14 @@ TcCommonRet TcLibModule::AuditConfig() {
   return ret;
 }
 
-/** 
+/**
  * @brief      Setup Configuration Message sent to UPPL at the end of startup
  *             operation to send messages to driver
- * @retval     TC_SUCCESS clear startup handling success 
+ * @retval     TC_SUCCESS clear startup handling success
  * @retval     TC_FAILURE clear startup handling failed
  */
 TcCommonRet TcLibModule::Setup() {
+  pfc::core::ScopedMutex m(tclib_ipc_control_mutex_);
   TcCommonRet ret = TC_SUCCESS;
 
   if (pTcLibInterface_ == NULL) {
@@ -2106,12 +2122,13 @@ TcCommonRet TcLibModule::Setup() {
   return ret;
 }
 
-/** 
+/**
  * @brief      Setup Complete Message sent to UPPL during state changes
- * @retval     TC_SUCCESS clear startup handling success 
+ * @retval     TC_SUCCESS clear startup handling success
  * @retval     TC_FAILURE clear startup handling failed
  */
 TcCommonRet TcLibModule::SetupComplete() {
+  pfc::core::ScopedMutex m(tclib_ipc_control_mutex_);
   TcCommonRet ret = TC_SUCCESS;
 
   if (pTcLibInterface_ == NULL) {
@@ -2132,14 +2149,16 @@ TcCommonRet TcLibModule::SetupComplete() {
   return ret;
 }
 
-/** 
- * @brief      Get controller type invoked from TC to detect the controller type 
+/**
+ * @brief      Get controller type invoked from TC to detect the controller type
  *             for a controller
  * @retval     openflow/overlay/legacy if controller id matches
- * @retval     UNC_CT_UNKNOWN if controller id does not belong to 
+ * @retval     UNC_CT_UNKNOWN if controller id does not belong to
  *             any of controller type
  */
 unc_keytype_ctrtype_t TcLibModule::GetDriverId() {
+  pfc::core::ScopedMutex m(tclib_ipc_control_mutex_);
+
   unc_keytype_ctrtype_t ctr_type = UNC_CT_UNKNOWN;
   uint32_t argcount = 0;
 
@@ -2180,13 +2199,13 @@ unc_keytype_ctrtype_t TcLibModule::GetDriverId() {
   return ctr_type;
 }
 
-/** 
- * @brief      Get Controller Type 
+/**
+ * @brief      Get Controller Type
  *             Invoked from TC to detect the type of the controller
  *             Intended for the driver modules
  * @retval     openflow/overlay/legacy if controller id matches
  * @retval     none if requested for other than driver modules
- *             UPPL/UPLL modules should return UNC_CT_UNKNOWN 
+ *             UPPL/UPLL modules should return UNC_CT_UNKNOWN
  */
 unc_keytype_ctrtype_t TcLibModule::GetControllerType() {
   unc_keytype_ctrtype_t ctr_type = UNC_CT_UNKNOWN;
@@ -2209,11 +2228,10 @@ unc_keytype_ctrtype_t TcLibModule::GetControllerType() {
  * @param[in]  sess  - Session Id.
  * @param[in]  service - Represents the request sent from TC.
  * @retval     returns the response from the respective handling functions
- */  
+ */
 pfc_ipcresp_t TcLibModule::ipcService(pfc::core::ipc::ServerSession& sess,
                                       pfc_ipcid_t service) {
   pfc_ipcresp_t resp_ret = TC_SUCCESS;
-  pfc::core::ScopedMutex m(tclib_ipc_control_mutex_);
 
   if (pTcLibInterface_ == NULL) {
     pfc_log_error("%s %d Handler is not registered: NULL",
@@ -2227,11 +2245,18 @@ pfc_ipcresp_t TcLibModule::ipcService(pfc::core::ipc::ServerSession& sess,
       pfc_log_debug("setting IPC timeout to infinity failed");
     }
   }
-  sess_ = &sess;
+
+  /*configure mode can be released while internal driver audit is in progress
+   * to avoid session corruption, current session is passed directly to
+   * NotifySessionConfig API*/
+  if (service != TCLIB_NOTIFY_SESSION_CONFIG) {
+    /*assign current ipc session to class member*/
+    sess_ = &sess;
+  }
 
   switch (service) {
     case TCLIB_NOTIFY_SESSION_CONFIG:
-      resp_ret = (pfc_ipcresp_t)NotifySessionConfig();
+      resp_ret = (pfc_ipcresp_t)NotifySessionConfig(&sess);
       break;
     case TCLIB_COMMIT_TRANSACTION:
       resp_ret = (pfc_ipcresp_t)CommitTransaction();
@@ -2258,7 +2283,7 @@ pfc_ipcresp_t TcLibModule::ipcService(pfc::core::ipc::ServerSession& sess,
       resp_ret = (pfc_ipcresp_t)AuditGlobalAbort();
       break;
     case TCLIB_SAVE_CONFIG :
-      resp_ret = (pfc_ipcresp_t)SaveConfiguaration();
+      resp_ret = (pfc_ipcresp_t)SaveConfiguration();
       break;
     case TCLIB_CLEAR_STARTUP :
       resp_ret = (pfc_ipcresp_t)ClearStartup();
