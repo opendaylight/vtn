@@ -10,7 +10,7 @@
 #ifndef JSON_TYPE_UTIL_H_
 #define JSON_TYPE_UTIL_H_
 
-#include <json.h>
+#include <json/json.h>
 #include <uncxx/odc_log.hh>
 #include <string>
 
@@ -35,9 +35,19 @@ class JsonTypeUtil {
   }
 
   /**
+   * @brief               - parametrised constructor takes arg as unsigned int
+   *                        and  creates json object of type unsigned int
+   * @param[in] uintdata  - unsigned integer value
+   */
+  explicit JsonTypeUtil(uint uintdata) {
+    ODC_FUNC_TRACE;
+    jobj_ = json_object_new_int(uintdata);
+  }
+
+  /**
    * @brief               - parametrised constructor takes arg as int
-   *                      - creates json object of type int
-   * @param[in] intdata   -  integer value
+   *                        and  creates json object of type int
+   * @param[in] intdata  - integer value
    */
   explicit JsonTypeUtil(int intdata) {
     ODC_FUNC_TRACE;
@@ -64,6 +74,18 @@ class JsonTypeUtil {
   static void get_value(json_object* jobjval, std::string &val) {
     ODC_FUNC_TRACE;
     val = json_object_get_string(jobjval);
+  }
+
+  /**
+   * @brief                  - Function overloading getValue - returns the
+   *                           value of type unsigned int
+   * @param[in] jobjval      - json object from which the value to be retrieved
+   * @param[out] val         - the value stored in this unsigned int reference
+   * return                  - None
+   */
+  static void get_value(json_object* jobjval, uint &val) {
+    ODC_FUNC_TRACE;
+    val = json_object_get_int(jobjval);
   }
 
   /**

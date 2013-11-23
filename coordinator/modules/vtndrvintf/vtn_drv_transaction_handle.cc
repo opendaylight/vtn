@@ -340,9 +340,10 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitCache
 void  DriverTxnInterface::initialize_map() {
   ODC_FUNC_TRACE;
   uint32_t loop = 0;
-  unc_key_type_t KT[] = {UNC_KT_VTN, UNC_KT_VBRIDGE, UNC_KT_VBR_IF};
-  uint32_t size = sizeof KT/sizeof(unc_key_type_t);
-  for (loop = 0; loop < size; loop++) {
+  unc_key_type_t KT[] = {UNC_KT_VTN, UNC_KT_VBRIDGE, UNC_KT_VBR_IF,
+                         UNC_KT_VBR_VLANMAP};
+  uint32_t kt_size = sizeof KT/sizeof(unc_key_type_t);
+  for (loop = 0; loop < kt_size; loop++) {
     switch (KT[loop]) {
       case UNC_KT_VTN:
         {
@@ -379,6 +380,18 @@ void  DriverTxnInterface::initialize_map() {
         val_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
                                                                 stdef_vbrif));
         break;
+        }
+      case UNC_KT_VBR_VLANMAP:
+        {
+          pfc_ipcstdef_t *stdef_kvbrvlanmap = new pfc_ipcstdef_t;
+          PFC_IPC_STDEF_INIT(stdef_kvbrvlanmap, key_vlan_map);
+          pfc_ipcstdef_t *stdef_vbrvlanmap = new pfc_ipcstdef_t;
+          PFC_IPC_STDEF_INIT(stdef_vbrvlanmap, val_vlan_map);
+          key_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
+                                                          stdef_kvbrvlanmap));
+          val_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
+                                                           stdef_vbrvlanmap));
+          break;
         }
       default:
         break;
