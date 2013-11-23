@@ -23,7 +23,6 @@
 namespace unc {
 namespace driver {
 
-#define KT_ARR_SIZE 3
 typedef std::map <unc_key_type_t, KtHandler*> kt_handler_map;
 
 /**
@@ -501,7 +500,7 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::execute(
       resp_code_ = drv_command_ptr_->fetch_config(ctrl_ptr, NULL, cfg_list);
       pfc_log_debug("vtn resp_code_%u", resp_code_);
       if (resp_code_ != DRVAPI_RESPONSE_SUCCESS) {
-        pfc_log_error("%s:GetDriverByControllerName failed .rt,%u",
+        pfc_log_error("%s:GetDriverByControllerName failed VTN .rt,%u",
                        PFC_FUNCNAME, resp_code_);
         delete drv_command_ptr_;
         return resp_code_;
@@ -1154,14 +1153,16 @@ KtRequestHandler<key, val, command_class>::populate_response_header(
 
   /**
    * @brief  - This method initializes map for STDEF
-   * @retval -  void
+   * @retval - void
    **/
 template<typename key, typename val, typename command_class>
 void
 KtRequestHandler<key, val, command_class>::initialize_map() {
   uint32_t loop = 0;
-  unc_key_type_t KT[KT_ARR_SIZE] = {UNC_KT_VTN, UNC_KT_VBRIDGE, UNC_KT_VBR_IF};
-  for (; loop < KT_ARR_SIZE; loop++) {
+  unc_key_type_t KT[] = {UNC_KT_VTN, UNC_KT_VBRIDGE, UNC_KT_VBR_IF,
+                                    UNC_KT_VBR_VLANMAP};
+  uint32_t kt_size = sizeof KT/sizeof(unc_key_type_t);
+  for (; loop < kt_size; loop++) {
     switch (KT[loop]) {
       case UNC_KT_VTN:
         {
@@ -1198,6 +1199,18 @@ KtRequestHandler<key, val, command_class>::initialize_map() {
           val_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
                                                                stdef_vbrif));
           break;
+        }
+      case UNC_KT_VBR_VLANMAP:
+        {
+          pfc_ipcstdef_t *stdef_kvbrvlanmap = new pfc_ipcstdef_t;
+          PFC_IPC_STDEF_INIT(stdef_kvbrvlanmap, key_vlan_map);
+          pfc_ipcstdef_t *stdef_vbrvlanmap = new pfc_ipcstdef_t;
+          PFC_IPC_STDEF_INIT(stdef_vbrvlanmap, val_vlan_map);
+          key_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
+                                                          stdef_kvbrvlanmap));
+          val_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
+                                                           stdef_vbrvlanmap));
+         break;
         }
       default:
         break;

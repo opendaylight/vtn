@@ -66,7 +66,7 @@ class CacheElementUtil: public  ConfigNode {
   std::string  get_key_generate() {
     ODC_FUNC_TRACE;
     if (key_ != NULL) {
-      return ConfUtil::get_search_key(*key_);
+      return ConfUtil::get_search_key(*key_, *value_);
     }
     return "";
   }

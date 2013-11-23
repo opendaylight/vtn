@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2013 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made
@@ -25,7 +25,6 @@ namespace driver {
 
 /**
  * @brief       : This class store sthe controller* ,driver* , mutex lock
- * @DataMembers : 
  */
 class ControllerContainer {
  public:
@@ -57,8 +56,7 @@ class ControllerFramework  {
   /**
    *@brief: This function is to get the driver type
    for the respective controllers
-   **/  
- 
+   **/
   uint32_t GetDriverByControllerName(std::string& controller_name, controller*, driver*);
 
   /**
@@ -79,7 +77,7 @@ class ControllerFramework  {
   /**
    *@brief:  This function removes the respective controller information
    in the controller list
-   **/ 
+   **/
   void RemoveControllerConfiguration(std::string& controller_name);
 
   private:
