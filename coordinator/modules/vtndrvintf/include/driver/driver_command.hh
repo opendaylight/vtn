@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2012-2013 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -29,43 +29,44 @@ typedef struct val_root {
  * @desc:Base Class For Driver Commands
  */
 class driver_command {
-  public:
-    virtual ~driver_command() {}
-    virtual unc_key_type_t get_key_type()=0;
+ public:
+  virtual ~driver_command() {}
+  virtual unc_key_type_t get_key_type()=0;
 
-   /**
-    * @brief    - Method to revoke the commit with triggring audit for any
-                  failed Operation
-    * @param[in]- controller pointer
-    * @retval   - DRVAPI_RESPONSE_SUCCESS
-    */
-    virtual drv_resp_code_t revoke(unc::driver::controller* ctr_ptr) {
-      pfc_log_debug("%s Entering function", PFC_FUNCNAME);
+  /**
+   * @brief    - Method to revoke the commit with triggring audit for any
+   failed Operation
+   * @param[in]- controller pointer
+   * @retval   - DRVAPI_RESPONSE_SUCCESS
+   */
+  virtual drv_resp_code_t revoke(unc::driver::controller* ctr_ptr) {
+    pfc_log_debug("%s Entering function", PFC_FUNCNAME);
 
-      // Send start audit notification to TC
-      unc::tclib::TcLibModule* ptr_tclib_key_data = NULL;
-      ptr_tclib_key_data  = static_cast<unc::tclib::TcLibModule*>
-          (unc::tclib::TcLibModule::getInstance("tclib"));
+    // Send start audit notification to TC
+    unc::tclib::TcLibModule* ptr_tclib_key_data = NULL;
+    ptr_tclib_key_data  = static_cast<unc::tclib::TcLibModule*>
+        (unc::tclib::TcLibModule::getInstance("tclib"));
 
-      PFC_ASSERT(ptr_tclib_key_data != NULL);
+    PFC_ASSERT(ptr_tclib_key_data != NULL);
 
-      std::string controller_name = ctr_ptr->get_controller_id();
-      pfc_log_debug("revoke controller_name:%s", controller_name.c_str());
-      ptr_tclib_key_data->TcLibAuditControllerRequest(controller_name);
+    std::string controller_name = ctr_ptr->get_controller_id();
+    pfc_log_debug("revoke controller_name:%s", controller_name.c_str());
+    ptr_tclib_key_data->TcLibAuditControllerRequest(controller_name);
 
-      pfc_log_debug("%s Exiting function", PFC_FUNCNAME);
-      return DRVAPI_RESPONSE_SUCCESS;
-    }
-    /**
-     * @brief      - Method to fetch child configurations for the parent kt
-     * @param[in]  - controller pointer
-     * @param[in]  - parent key type pointer
-     * @param[out] - list of configurations
-     * @retval     - DRVAPI_RESPONSE_SUCCESS / DRVAPI_RESPONSE_FAILURE
-     */
-    virtual drv_resp_code_t fetch_config(unc::driver::controller* ctr,
-                            void* parent_key,
-                            std::vector<unc::vtndrvcache::ConfigNode *>&) = 0;
+    pfc_log_debug("%s Exiting function", PFC_FUNCNAME);
+    return DRVAPI_RESPONSE_SUCCESS;
+  }
+
+  /**
+   * @brief      - Method to fetch child configurations for the parent kt
+   * @param[in]  - controller pointer
+   * @param[in]  - parent key type pointer
+   * @param[out] - list of configurations
+   * @retval     - DRVAPI_RESPONSE_SUCCESS / DRVAPI_RESPONSE_FAILURE
+   */
+  virtual drv_resp_code_t fetch_config(unc::driver::controller* ctr,
+                             void* parent_key,
+                             std::vector<unc::vtndrvcache::ConfigNode *>&) = 0;
 };
 
 /*
@@ -177,6 +178,45 @@ class vbrif_driver_command: public driver_command {
    */
   unc_key_type_t get_key_type() {
     return UNC_KT_VBR_IF;
+  }
+};
+
+class vbrvlanmap_driver_command: public driver_command {
+ public:
+  /**
+   * @brief    - Method to create Vbr Vlan-Map in the controller
+   * @param[in]- key_vlan_map_t, val_vlan_map_t, controller*
+   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   */
+  virtual drv_resp_code_t create_cmd(key_vlan_map_t& key,
+                                     val_vlan_map_t& val,
+                                     unc::driver::controller *conn)=0;
+
+  /**
+   * @brief    - Method to update Vbr Vlan-Map in the controller
+   * @param[in]- key_vlan_map_t, val_vlan_map_t, controller*
+   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   */
+  virtual drv_resp_code_t update_cmd(key_vlan_map_t& key,
+                                     val_vlan_map_t& val,
+                                     unc::driver::controller *conn) = 0;
+
+  /**
+   * @brief    - Method to delete Vbr Vlan-Map in the controller
+   * @param[in]- key_vlan_map_t, val_vlan_map_t, controller*
+   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   */
+  virtual drv_resp_code_t delete_cmd(key_vlan_map_t& key,
+                                     val_vlan_map_t& val,
+                                     unc::driver::controller *conn) = 0;
+
+  /**
+   * @brief    - Method to return the Keytype
+   * @param[in]- None
+   * @retval   - unc_key_type_t - UNC_KT_VBR_VLANMAP
+   */
+  unc_key_type_t get_key_type() {
+    return UNC_KT_VBR_VLANMAP;
   }
 };
 

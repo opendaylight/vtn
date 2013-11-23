@@ -14,6 +14,7 @@
 #include <odc_vtn.hh>
 #include <odc_vbr.hh>
 #include <odc_vbrif.hh>
+#include <odc_vbr_vlanmap.hh>
 #include <odc_driver_common_defs.hh>
 #include <vtn_drv_module.hh>
 #include <arpa/inet.h>

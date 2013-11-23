@@ -21,6 +21,10 @@ namespace vtndrvcache {
 std::string TypeToStrFun(unc_key_type_t search_type) {
   std::string TypeStr;
   switch (search_type) {
+    case UNC_KT_ROOT:
+      TypeStr = std::string("UNC_KT_ROOT");
+      break;
+
     case UNC_KT_VTN:
       TypeStr = std::string("UNC_KT_VTN");
       break;
@@ -33,8 +37,8 @@ std::string TypeToStrFun(unc_key_type_t search_type) {
       TypeStr = std::string("UNC_KT_VBR_IF");
       break;
 
-    case UNC_KT_ROOT:
-      TypeStr = std::string("UNC_KT_ROOT");
+    case UNC_KT_VBR_VLANMAP:
+      TypeStr = std::string("UNC_KT_VBR_VLANMAP");
       break;
 
     default:

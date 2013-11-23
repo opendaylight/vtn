@@ -14,6 +14,7 @@
 #include <arpa/inet.h>
 #include <driver/controller_interface.hh>
 #include <string>
+#include <vector>
 
 namespace unc {
 namespace odcdriver {
@@ -82,6 +83,11 @@ class OdcController: public unc::driver::controller {
    * @return    - PFC_TRUE on updation
    */
   pfc_bool_t update_ctr(const key_ctr_t& key_ctr, const val_ctr_t& val_ctr);
+
+  /**
+   * @brief     - Vector to hold vlan-ids for verification purpose
+   */
+  std::vector<std::string> vlan_vector;
 
  private:
   std::string ip_addr_;

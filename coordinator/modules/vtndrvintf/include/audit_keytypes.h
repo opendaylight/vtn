@@ -7,12 +7,12 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-#ifndef _AUDIT_KT_H_
-#define _AUDIT_KT_H_
+#ifndef VTN_COORDINATOR_MODULES_VTNDRVINTF_INCLUDE_AUDIT_KEYTYPES_H_
+#define VTN_COORDINATOR_MODULES_VTNDRVINTF_INCLUDE_AUDIT_KEYTYPES_H_
 
 #include <unc/keytype.h>
 
-#define AUDIT_KT_SIZE 3
+#define AUDIT_KT_SIZE 4
 
 struct audit_key_type {
   unc_key_type_t key_type;
@@ -22,6 +22,7 @@ struct audit_key_type {
 audit_key_type audit_key[AUDIT_KT_SIZE] = {
                                {UNC_KT_VTN, UNC_KT_ROOT},
                                {UNC_KT_VBRIDGE, UNC_KT_VTN},
-                               {UNC_KT_VBR_IF, UNC_KT_VBRIDGE}
+                               {UNC_KT_VBR_IF, UNC_KT_VBRIDGE},
+                               {UNC_KT_VBR_VLANMAP, UNC_KT_VBRIDGE}
                              };
-#endif
+#endif  // VTN_COORDINATOR_MODULES_VTNDRVINTF_INCLUDE_AUDIT_KEYTYPES_H_

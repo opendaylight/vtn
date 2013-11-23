@@ -126,13 +126,13 @@ TEST(get_node_list, check) {
          sizeof(val1_obj.vbr_description));
 
   key_vbr_if key2_obj;
-  val_vbr_if val2_obj;
+  pfcdrv_val_vbr_if val2_obj;
   memcpy(key2_obj.vbr_key.vtn_key.vtn_name, "vtn1",
          sizeof(key2_obj.vbr_key.vtn_key.vtn_name));
   memcpy(key2_obj.vbr_key.vbridge_name, "vbr1",
          sizeof(key2_obj.vbr_key.vbridge_name));
   memcpy(key2_obj.if_name, "vbrif1", sizeof(key2_obj.if_name));
-  memcpy(val2_obj.description, "vbrif1_des", sizeof(val2_obj.description));
+  memcpy(val2_obj.vext_name, "vbrif1_des", sizeof(val2_obj.vext_name));
 
   ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
                        (&key_obj, &val_obj, operation);
@@ -144,8 +144,8 @@ TEST(get_node_list, check) {
   ret = cfg_obj->add_child_to_list(cfgptr);
   EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
 
-  ConfigNode *cfgptr2 = new CacheElementUtil<key_vbr_if, val_vbr_if, uint32_t>
-                        (&key2_obj, &val2_obj, operation);
+  ConfigNode *cfgptr2 = new CacheElementUtil<key_vbr_if, pfcdrv_val_vbr_if,
+                        uint32_t>(&key2_obj, &val2_obj, operation);
   ret = cfg_obj->add_child_to_list(cfgptr);
   EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
 

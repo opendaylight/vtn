@@ -105,9 +105,22 @@ pfc_bool_t VtnDrvIntf::init(void) {
           UNC_KT_VBR_IF,
           vbrif_req));
 
+  KtHandler* vbrvlanmap_req = new unc::driver::KtRequestHandler<key_vlan_map_t,
+      val_vlan_map_t,
+      unc::driver::vbrvlanmap_driver_command> (NULL);
+
+  if (vbrvlanmap_req == NULL) {
+    pfc_log_error("vbrvlanmap request handler is NULL");
+    return PFC_FALSE;
+  }
+
+  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
+          UNC_KT_VBR_VLANMAP,
+          vbrvlanmap_req));
+
   unc::tclib::TcLibModule* tclib_obj =
-        static_cast<unc::tclib::TcLibModule*>(pfc::core::Module::getInstance(
-        "tclib"));
+      static_cast<unc::tclib::TcLibModule*>(pfc::core::Module::getInstance(
+              "tclib"));
   if (tclib_obj == NULL) {
     pfc_log_error("tclib getInstance failed");
     return PFC_FALSE;
