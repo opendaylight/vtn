@@ -80,11 +80,21 @@ TEST(append_commit_node, Reterive_key_val) {
 
   key_vbr key1_obj;
   val_vbr val1_obj;
-
   memcpy(key1_obj.vtn_key.vtn_name, "vtn1", sizeof(key_obj.vtn_name));
   memcpy(key1_obj.vbridge_name, "vbr1", sizeof(key1_obj.vbridge_name));
   memcpy(val1_obj.vbr_description, "vbr1_des",
          sizeof(val1_obj.vbr_description));
+
+  key_vlan_map key2_obj;
+  val_vlan_map_t val2_obj;
+  memcpy(key2_obj.vbr_key.vtn_key.vtn_name, "vtn1",
+         sizeof(key2_obj.vbr_key.vtn_key.vtn_name));
+  memcpy(key2_obj.vbr_key.vbridge_name, "vbr1",
+         sizeof(key2_obj.vbr_key.vbridge_name));
+  memcpy(key2_obj.logical_port_id, "SW-00:00:00:00:00:00:00:01",
+         sizeof(key2_obj.logical_port_id));
+  key2_obj.logical_port_id_valid = 1;
+  val2_obj. vlan_id = 100;
 
   ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
                        (&key_obj, &val_obj, operation);
@@ -94,6 +104,10 @@ TEST(append_commit_node, Reterive_key_val) {
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, uint32_t>
                         (&key1_obj, &val1_obj, operation);
   ret = KeyTree_obj->append_commit_node(cfgptr1);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  ConfigNode *cfgptr2 = new CacheElementUtil<key_vlan_map_t, val_vlan_map_t,
+             uint32_t>(&key2_obj, &val2_obj, operation);
+  ret = KeyTree_obj->append_commit_node(cfgptr2);
   EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
 
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
@@ -114,6 +128,17 @@ TEST(append_commit_node, Reterive_key_val) {
       reinterpret_cast<char*>(tmp1_ptr->get_key_structure()->vbridge_name));
   EXPECT_STREQ(reinterpret_cast<char*>(val1_obj.vbr_description),
       reinterpret_cast<char*>(tmp1_ptr->get_val_structure()->vbr_description));
+
+  cfgptr2 = itr_ptr->NextItem();
+  CacheElementUtil<key_vlan_map, val_vlan_map, uint32_t> *tmp2_ptr =
+       static_cast<CacheElementUtil<key_vlan_map, val_vlan_map,
+                                          uint32_t>*> (cfgptr2);
+
+  EXPECT_EQ(1, (tmp2_ptr->get_key_structure()->logical_port_id_valid));
+  EXPECT_STREQ(reinterpret_cast<char*>(key2_obj.logical_port_id),
+      reinterpret_cast<char*>(tmp2_ptr->get_key_structure()->logical_port_id));
+  EXPECT_EQ(100, (tmp2_ptr->get_val_structure()->vlan_id));
+
   delete itr_ptr;
   delete KeyTree_obj;
   KeyTree_obj = NULL;
@@ -249,13 +274,13 @@ TEST(append_audit_node, Node_not_exist) {
          sizeof(val1_obj.vbr_description));
 
   key_vbr_if key2_obj;
-  val_vbr_if val2_obj;
+  pfcdrv_val_vbr_if_t val2_obj;
   memcpy(key2_obj.vbr_key.vtn_key.vtn_name, "vtn1",
          sizeof(key2_obj.vbr_key.vtn_key.vtn_name));
   memcpy(key2_obj.vbr_key.vbridge_name, "vbr1",
          sizeof(key2_obj.vbr_key.vbridge_name));
   memcpy(key2_obj.if_name, "vbrif1", sizeof(key2_obj.if_name));
-  memcpy(val2_obj.description, "vbrif1_des", sizeof(val2_obj.description));
+  memcpy(val2_obj.vext_name, "vbrif1_des", sizeof(val2_obj.vext_name));
 
   ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
                        (&key_obj, &val_obj, operation);
@@ -266,8 +291,8 @@ TEST(append_audit_node, Node_not_exist) {
                         (&key1_obj, &val1_obj, operation);
   ret = KeyTree_obj->append_audit_node(cfgptr1);
   EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
-  ConfigNode *cfgptr2 = new CacheElementUtil<key_vbr_if, val_vbr_if, uint32_t>
-                        (&key2_obj, &val2_obj, operation);
+  ConfigNode *cfgptr2 = new CacheElementUtil<key_vbr_if, pfcdrv_val_vbr_if_t,
+                        uint32_t>(&key2_obj, &val2_obj, operation);
   ret = KeyTree_obj->append_audit_node(cfgptr2);
   EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
   delete cfgptr2;
@@ -551,13 +576,13 @@ TEST(get_nodelist_keytree, check) {
          sizeof(val1_obj.vbr_description));
 
   key_vbr_if key2_obj;
-  val_vbr_if val2_obj;
+  pfcdrv_val_vbr_if_t val2_obj;
   memcpy(key2_obj.vbr_key.vtn_key.vtn_name, "vtn1",
          sizeof(key2_obj.vbr_key.vtn_key.vtn_name));
   memcpy(key2_obj.vbr_key.vbridge_name, "vbr1",
          sizeof(key2_obj.vbr_key.vbridge_name));
   memcpy(key2_obj.if_name, "vbrif1", sizeof(key2_obj.if_name));
-  memcpy(val2_obj.description, "vbrif1_des", sizeof(val2_obj.description));
+  memcpy(val2_obj.vext_name, "vbrif1_des", sizeof(val2_obj.vext_name));
 
   ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
                        (&key_obj, &val_obj, operation);
@@ -569,8 +594,8 @@ TEST(get_nodelist_keytree, check) {
   ret = KeyTree_obj->append_audit_node(cfgptr1);
   EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
 
-  ConfigNode *cfgptr2 = new CacheElementUtil<key_vbr_if, val_vbr_if, uint32_t>
-                        (&key2_obj, &val2_obj, operation);
+  ConfigNode *cfgptr2 = new CacheElementUtil<key_vbr_if, pfcdrv_val_vbr_if_t,
+                        uint32_t>(&key2_obj, &val2_obj, operation);
   ret = KeyTree_obj->append_audit_node(cfgptr2);
   EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
 
