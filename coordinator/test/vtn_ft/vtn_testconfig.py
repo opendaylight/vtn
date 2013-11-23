@@ -7,6 +7,7 @@
 # distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
 #
 
+
 #! /usr/bin/python
 
 import ConfigParser
@@ -34,6 +35,7 @@ controller_headers = {'Accept':'application/json', 'content-type': 'application/
 controller_url_part='/controller/nb/v2/vtn/default'
 VTNVBRDATA = "vtn_vbr.data"
 VBRIFDATA = "vtn_vbr_vbrif.data"
+VLANMAPDATA = "vtn_vbr_vlanmap.data"
 CONTROLLERDATA = "controller.data"
 
 

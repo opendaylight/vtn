@@ -32,3 +32,5 @@ Execution
       python vtn_vbr.py
     * To execute VBRIF Cases
       python vbrif_portmap.py
+    * To execute VLANMAP Cases
+      python vtn_vbr_vlanmap.py
