@@ -129,6 +129,11 @@ unc::driver::driver_command* ODCModule::create_driver_command(
       driver_cmd_ptr = new OdcVbrIfCommand();
       break;
     }
+    case UNC_KT_VBR_VLANMAP: {
+      pfc_log_debug("UNC_KT_VBR_VLANMAP key type received");
+      driver_cmd_ptr = new OdcVbrVlanMapCommand();
+      break;
+    }
     default:
       pfc_log_debug("Unknown keytype received : %d", key_type);
       break;
