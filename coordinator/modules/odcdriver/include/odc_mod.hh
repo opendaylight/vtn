@@ -14,6 +14,7 @@
 #include <odc_vtn.hh>
 #include <odc_vbr.hh>
 #include <odc_vbrif.hh>
+#include <odc_vbr_vlanmap.hh>
 #include <odc_driver_common_defs.hh>
 #include <vtn_drv_module.hh>
 #include <arpa/inet.h>
@@ -193,7 +194,7 @@ class ODCModule: public pfc::core::Module, public unc::driver::driver {
    * @param[out]  - password in string
    */
   void get_username_password(unc::driver::controller* ctr_ptr,
-                             std::string &user_name, std::string &password);
+                               std::string &user_name, std::string &password);
 
  private:
   uint32_t ping_interval;  // in seconds

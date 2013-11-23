@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2012-2013 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -177,6 +177,45 @@ class vbrif_driver_command: public driver_command {
    */
   unc_key_type_t get_key_type() {
     return UNC_KT_VBR_IF;
+  }
+};
+
+class vbrvlanmap_driver_command: public driver_command {
+  public:
+  /**
+   * @brief    - Method to create Vbr Vlan-Map in the controller
+   * @param[in]- key_vlan_map_t, val_vlan_map_t, controller*
+   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   */
+  virtual drv_resp_code_t create_cmd(key_vlan_map_t& key,
+                                     val_vlan_map_t& val,
+                                     unc::driver::controller *conn)=0;
+
+  /**
+   * @brief    - Method to update Vbr Vlan-Map in the controller
+   * @param[in]- key_vlan_map_t, val_vlan_map_t, controller*
+   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   */
+  virtual drv_resp_code_t update_cmd(key_vlan_map_t& key,
+                                     val_vlan_map_t& val,
+                                     unc::driver::controller *conn) = 0;
+
+  /**
+   * @brief    - Method to delete Vbr Vlan-Map in the controller
+   * @param[in]- key_vlan_map_t, val_vlan_map_t, controller*
+   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   */
+  virtual drv_resp_code_t delete_cmd(key_vlan_map_t& key,
+                                     val_vlan_map_t& val,
+                                     unc::driver::controller *conn) = 0;
+
+  /**
+   * @brief    - Method to return the Keytype
+   * @param[in]- None
+   * @retval   - unc_key_type_t - UNC_KT_VBR_VLANMAP
+   */
+  unc_key_type_t get_key_type() {
+    return UNC_KT_VBR_VLANMAP;
   }
 };
 
