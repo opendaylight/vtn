@@ -31,7 +31,8 @@ https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):Ins
  2. Install necessary packages. 
         yum install make glibc-devel gcc gcc-c++ boost-devel openssl-devel \
                     java-1.6.0-openjdk-devel ant perl-ExtUtils-MakeMaker \
-                    unixODBC-devel perl-Digest-SHA uuid libxslt
+                    unixODBC-devel perl-Digest-SHA uuid libxslt libcurl \
+                    libcurl-devel
 
  3. Download the following PostgreSQL 9.1 files from
     http://yum.postgresql.org/9.1/redhat/rhel-6-x86_64/ and install. 
@@ -48,10 +49,10 @@ https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):Ins
     * Extract under /usr/share/java.
         tar zxvf apache-tomcat-7.0.39.tar.gz -C /usr/share/java
 
- 5. Install gtest-devel.
+ 5. Install gtest-devel and json-c libraries
         wget http://dl.fedoraproject.org/pub/epel/6/i386/epel-release-6-8.noarch.rpm
         rpm -Uvh epel-release-6-8.noarch.rpm
-        yum install gtest-devel
+        yum install gtest-devel json-c json-c-devel
 
 === Build ===
  1. Download the code from git.
