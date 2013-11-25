@@ -41,16 +41,27 @@ CONFIGURE_ARGS	+= --includedir=none
 CONFIGURE_ARGS	+= --with-java-libdir=$(JAVA_LIBDIR)
 CONFIGURE_ARGS	+= --with-tomcat-libdir=$(TOMCAT_LIBDIR)
 
+# Determine JAVA_HOME.
+STRIP_VTN_JAVA_HOME	:= $(strip $(VTN_JAVA_HOME))
+ifeq	($(STRIP_VTN_JAVA_HOME),)
+STRIP_VTN_JAVA_HOME	:= $(strip $(JAVA_HOME))
+endif	# empty(VTN_JAVA_HOME)
+ifneq	($(STRIP_VTN_JAVA_HOME),)
+CONFIGURE_ARGS	+= --with-java-home="$(STRIP_VTN_JAVA_HOME)"
+endif	# !empty(VTN_JAVA_HOME)
+
 ifneq	($(strip $(VTN_DEBUG)),true)
 CONFIGURE_ARGS	+= --disable-debug
 endif	# VTN_DEBUG != true
 
-ifneq	($(strip $(VTN_BUILD_ID)),)
-CONFIGURE_ARGS	+= --with-build-id="$(VTN_BUILD_ID)"
+STRIP_VTN_BUILD_ID	:= $(strip $(VTN_BUILD_ID))
+ifneq	($(STRIP_VTN_BUILD_ID),)
+CONFIGURE_ARGS	+= --with-build-id="$(STRIP_VTN_BUILD_ID)"
 endif	# !empty(VTN_BUILD_ID)
 
-ifneq	($(strip $(VTN_SCM_REVISION)),)
-CONFIGURE_ARGS	+= --with-scm-revision="$(VTN_SCM_REVISION)"
+STRIP_VTN_SCM_REVISION	:= $(strip $(VTN_SCM_REVISION))
+ifneq	($(STRIP_VTN_SCM_REVISION),)
+CONFIGURE_ARGS	+= --with-scm-revision="$(STRIP_VTN_SCM_REVISION)"
 endif	# !empty(VTN_SCM_REVISION)
 
 all clean clobber:	$(CONFIG_STATUS) FRC

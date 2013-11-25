@@ -72,6 +72,7 @@
     <vtn.build.destdir>root</vtn.build.destdir>
     <vtn.build.prefix>/usr/local/vtn</vtn.build.prefix>
     <vtn.build.debug>false</vtn.build.debug>
+    <vtn.build.java.home></vtn.build.java.home>
 
     <!-- The number of GNU make jobs -->
     <vtn.build.jobs>1</vtn.build.jobs>
@@ -221,6 +222,7 @@
 		<argument>VTN_BUILD_ID=${vtn.build.id}</argument>
 		<argument>VTN_DESTDIR=${vtn.build.destdir}</argument>
 		<argument>VTN_PREFIX=${vtn.build.prefix}</argument>
+		<argument>VTN_JAVA_HOME=${vtn.build.java.home}</argument>
 		<argument>VTN_DEBUG=${vtn.build.debug}</argument>
 	      </arguments>
 	    </configuration>
