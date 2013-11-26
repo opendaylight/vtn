@@ -1,0 +1,327 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da6255ed_889f3cb4",
+        "filename": "coordinator/modules/odcdriver/include/odc_controller.hh",
+        "patchSetId": 3
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-26T10:57:34Z",
+      "side": 1,
+      "message": "indentation issue",
+      "revId": "5df97d09dd6f608762e707768b59433957a9c46f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_68a64812",
+        "filename": "coordinator/modules/odcdriver/include/odc_mod.hh",
+        "patchSetId": 3
+      },
+      "lineNbr": 197,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-26T10:57:34Z",
+      "side": 1,
+      "message": "extra spaces can be removed",
+      "revId": "5df97d09dd6f608762e707768b59433957a9c46f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_48a944de",
+        "filename": "coordinator/modules/odcdriver/include/odc_vbr_vlanmap.hh",
+        "patchSetId": 3
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-26T10:57:34Z",
+      "side": 1,
+      "message": "indentation is one space verify the same",
+      "revId": "5df97d09dd6f608762e707768b59433957a9c46f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_88d73c23",
+        "filename": "coordinator/modules/odcdriver/odc_vbr_vlanmap.cc",
+        "patchSetId": 3
+      },
+      "lineNbr": 81,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-26T10:57:34Z",
+      "side": 1,
+      "message": "Remove the above debug code if added for testing purposes",
+      "revId": "5df97d09dd6f608762e707768b59433957a9c46f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_a8bb20e4",
+        "filename": "coordinator/modules/odcdriver/odc_vbr_vlanmap.cc",
+        "patchSetId": 3
+      },
+      "lineNbr": 115,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-26T10:57:34Z",
+      "side": 1,
+      "message": "move the above parsing logic to a subroutine",
+      "revId": "5df97d09dd6f608762e707768b59433957a9c46f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_28cf3081",
+        "filename": "coordinator/modules/odcdriver/odc_vbr_vlanmap.cc",
+        "patchSetId": 3
+      },
+      "lineNbr": 167,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-26T10:57:34Z",
+      "side": 1,
+      "message": "handle else case to return error",
+      "revId": "5df97d09dd6f608762e707768b59433957a9c46f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_08ca2c6e",
+        "filename": "coordinator/modules/odcdriver/odc_vbr_vlanmap.cc",
+        "patchSetId": 3
+      },
+      "lineNbr": 178,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-26T10:57:34Z",
+      "side": 1,
+      "message": "Remove the above debug code if added for testing purposes",
+      "revId": "5df97d09dd6f608762e707768b59433957a9c46f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_88861c64",
+        "filename": "coordinator/modules/odcdriver/odc_vbr_vlanmap.cc",
+        "patchSetId": 3
+      },
+      "lineNbr": 927,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-26T10:57:34Z",
+      "side": 1,
+      "message": "spell check for vallues",
+      "revId": "5df97d09dd6f608762e707768b59433957a9c46f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_687d286e",
+        "filename": "coordinator/modules/odcdriver/odc_vbr_vlanmap.cc",
+        "patchSetId": 3
+      },
+      "lineNbr": 933,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-26T10:57:34Z",
+      "side": 1,
+      "message": "spell check for vallues",
+      "revId": "5df97d09dd6f608762e707768b59433957a9c46f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_2842903e",
+        "filename": "coordinator/modules/restjsonutil/include/json_type_util.hh",
+        "patchSetId": 3
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-26T10:57:34Z",
+      "side": 1,
+      "message": "This was changed in the below patch https://git.opendaylight.org/gerrit/#/c/2734/1. \n\nThis change is over written in the current patch.",
+      "revId": "5df97d09dd6f608762e707768b59433957a9c46f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_e84b5857",
+        "filename": "coordinator/modules/restjsonutil/include/json_type_util.hh",
+        "patchSetId": 3
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-26T10:57:34Z",
+      "side": 1,
+      "message": "extra space before int",
+      "revId": "5df97d09dd6f608762e707768b59433957a9c46f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_c846544f",
+        "filename": "coordinator/modules/restjsonutil/include/json_type_util.hh",
+        "patchSetId": 3
+      },
+      "lineNbr": 93,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-26T10:57:34Z",
+      "side": 1,
+      "message": "extra space before int",
+      "revId": "5df97d09dd6f608762e707768b59433957a9c46f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_686f68c6",
+        "filename": "coordinator/modules/vtndrvintf/include/audit_keytypes.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-26T10:57:34Z",
+      "side": 1,
+      "message": "The year is incorrect, update the same.",
+      "revId": "5df97d09dd6f608762e707768b59433957a9c46f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_487264ae",
+        "filename": "coordinator/modules/vtndrvintf/include/request_template.hh",
+        "patchSetId": 3
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-26T10:57:34Z",
+      "side": 1,
+      "message": "The year is incorrect, update the same.",
+      "revId": "5df97d09dd6f608762e707768b59433957a9c46f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_286970be",
+        "filename": "coordinator/test/modules/odcdriver/ut/stub/vtndrvintf/driver/driver_command.hh",
+        "patchSetId": 3
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-26T10:57:34Z",
+      "side": 1,
+      "message": "The year is incorrect, update the same.",
+      "revId": "5df97d09dd6f608762e707768b59433957a9c46f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_08646ce3",
+        "filename": "coordinator/test/modules/odcdriver/ut/stub/vtndrvintf/driver/driver_command.hh",
+        "patchSetId": 3
+      },
+      "lineNbr": 75,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-26T10:57:34Z",
+      "side": 1,
+      "message": "alignment issues",
+      "revId": "5df97d09dd6f608762e707768b59433957a9c46f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_e86238d7",
+        "filename": "coordinator/test/modules/odcdriver/ut/stub/vtndrvintf/driver/driver_command.hh",
+        "patchSetId": 3
+      },
+      "lineNbr": 111,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-26T10:57:34Z",
+      "side": 1,
+      "message": "indentation issues",
+      "revId": "5df97d09dd6f608762e707768b59433957a9c46f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_08910c52",
+        "filename": "coordinator/test/modules/odcdriver/ut/stub/vtndrvintf/driver/driver_command.hh",
+        "patchSetId": 3
+      },
+      "lineNbr": 185,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-26T10:57:34Z",
+      "side": 1,
+      "message": "indentation issue",
+      "revId": "5df97d09dd6f608762e707768b59433957a9c46f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_a89c40c1",
+        "filename": "coordinator/test/modules/vtncacheutil/ut/Makefile",
+        "patchSetId": 3
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2013-11-26T10:57:34Z",
+      "side": 1,
+      "message": "The is no change in the file other than extra spaces and tabs. revert back to the earlier version",
+      "revId": "5df97d09dd6f608762e707768b59433957a9c46f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
