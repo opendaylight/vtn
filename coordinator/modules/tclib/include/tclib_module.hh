@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2013 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -25,19 +25,19 @@ class TcLibInterface;
 class TcLibModule : public pfc::core::Module {
  public:
   /**
-   * @brief      TcLibModule constructor 
-   * @param[in]  *mattr Attribute of the Module 
+   * @brief      TcLibModule constructor
+   * @param[in]  *mattr Attribute of the Module
    */
-  TcLibModule(const pfc_modattr_t *mattr);
+  explicit TcLibModule(const pfc_modattr_t *mattr);
 
   /**
-   * @brief      TcLibModule destructor 
+   * @brief      TcLibModule destructor
    */
   ~TcLibModule();
 
   /**
    * @brief      Init of TcLibModule
-   *             initialises the member variables 
+   *             initialises the member variables
    */
   pfc_bool_t init();
 
@@ -52,7 +52,7 @@ class TcLibModule : public pfc::core::Module {
    * @param[in]  sess  - Session Id.
    * @param[in]  service - Represents the request sent from TC.
    * @retval     returns the response from the respective handling functions
-   */  
+   */
   pfc_ipcresp_t ipcService(pfc::core::ipc::ServerSession& sess,
                            pfc_ipcid_t service);
 
@@ -70,7 +70,7 @@ class TcLibModule : public pfc::core::Module {
 
   /**
    * @brief      Audit controller request invoked from driver modules
-   * @param[in]  controller_id controller id intended for audit 
+   * @param[in]  controller_id controller id intended for audit
    * @retval     TC_API_COMMON_SUCCESS Audit controller request success
    * @retval     TC_API_FATAL on any api fatal failures
    * @retval     TC_API_COMMON_FAILURE on any handling failures
@@ -83,14 +83,14 @@ class TcLibModule : public pfc::core::Module {
    * @param[in]  config_id config id generated on acquire config mode for
    *             session_id
    * @retval     TC_API_COMMON_SUCCESS on validation is success
-   * @retval     TC_INVALID_SESSION_ID if session id is invalid 
-   * @retval     TC_INVALID_CONFIG_id if config id is invalid 
+   * @retval     TC_INVALID_SESSION_ID if session id is invalid
+   * @retval     TC_INVALID_CONFIG_id if config id is invalid
    */
   TcApiCommonRet TcLibValidateUpdateMsg(uint32_t sessionid, uint32_t configid);
 
   /**
    * @brief      Read of key types key and value data information from session
-   * @param[in]  controller_id controller id for which key type involved 
+   * @param[in]  controller_id controller id for which key type involved
    * @param[in]  err_pos position of the key type in the key_list
    * @param[in]  key_type intended key type for which key and value to be read
    * @param[in]  key_def ipcstdef structure name for key
@@ -111,9 +111,9 @@ class TcLibModule : public pfc::core::Module {
                                            void* value_data);
   /**
    * @brief      Write of controller id, response code and num of errors
-   * @param[in]  controller_id controller id for which key type involved 
-   * @param[in]  response_code response code from the UPLL/UPPL 
-   * @param[in]  num_of_errors number of errors if any 
+   * @param[in]  controller_id controller id for which key type involved
+   * @param[in]  response_code response code from the UPLL/UPPL
+   * @param[in]  num_of_errors number of errors if any
    * @retval     TC_API_COMMON_SUCCESS on successful updation for key and value
    * @retval     TC_INVALID_OPER_STATE invalid oper state for write
    * @retval     TC_INVALID_CONTROLLER_ID invalid controller id
@@ -124,7 +124,7 @@ class TcLibModule : public pfc::core::Module {
                                           uint32_t num_of_errors);
   /**
    * @brief      Write of key type, key and data
-   * @param[in]  controller_id controller id for which key type involved 
+   * @param[in]  controller_id controller id for which key type involved
    * @param[in]  key_type intended key type for which key and value to write
    * @param[in]  key_def ipcstdef structure name for key
    * @param[in]  value_def ipcstdef structure name for value
@@ -213,7 +213,7 @@ class TcLibModule : public pfc::core::Module {
    */
   TcApiCommonRet IsWriteKeyValueAllowed();
 
-  uint32_t GetMatchTypeIndex (uint32_t cur_idx, uint32_t arg_count,
+  uint32_t GetMatchTypeIndex(uint32_t cur_idx, uint32_t arg_count,
                                 pfc_ipctype_t type);
   /**
    * @brief      Update of controller key list information
@@ -227,12 +227,12 @@ class TcLibModule : public pfc::core::Module {
    * @retval     TC_SUCCESS on successful updation
    * @retval     TC_FAILURE on any failure
    */
-  TcCommonRet NotifySessionConfig();
+  TcCommonRet NotifySessionConfig(pfc::core::ipc::ServerSession *sess);
 
   /**
    * @brief      commit transaction start/end operations invoking
    * @param[in]  oper_type operation type in commit trans start/end process
-   * @param[in]  commit_trans_msg structure variable after reading from session 
+   * @param[in]  commit_trans_msg structure variable after reading from session
    * @retval     TC_SUCCESS on handle operation success
    * @retval     TC_FAILURE on handle operation failure
    */
@@ -242,7 +242,7 @@ class TcLibModule : public pfc::core::Module {
   /**
    * @brief      commit transaction vote/global operations towards UPLL/UPPL
    * @param[in]  oper_type operation type in commit trans vote/global process
-   * @param[in]  commit_trans_msg structure variable after reading from session 
+   * @param[in]  commit_trans_msg structure variable after reading from session
    * @retval     TC_SUCCESS on handle operation success
    * @retval     TC_FAILURE on handle operation failure
    */
@@ -280,7 +280,7 @@ class TcLibModule : public pfc::core::Module {
   /**
    * @brief      audit start/end, transaction start/end operations invoking
    * @param[in]  oper_type operation type in audit trans start/end process
-   * @param[in]  audit_trans_msg structure variable after reading from session 
+   * @param[in]  audit_trans_msg structure variable after reading from session
    * @retval     TC_SUCCESS on handle operation success
    * @retval     TC_FAILURE on handle operation failure
    */
@@ -290,7 +290,7 @@ class TcLibModule : public pfc::core::Module {
   /**
    * @brief      audit transaction vote/global operations towards UPLL/UPPL
    * @param[in]  oper_type operation type in audit trans vote/global process
-   * @param[in]  audit_trans_msg structure variable after reading from session 
+   * @param[in]  audit_trans_msg structure variable after reading from session
    * @retval     TC_SUCCESS on handle operation success
    * @retval     TC_FAILURE on handle operation failure
    */
@@ -336,7 +336,7 @@ class TcLibModule : public pfc::core::Module {
    * @retval     TC_SUCCESS on handle operation success
    * @retval     TC_FAILURE on handle operation failure
    */
-  TcCommonRet SaveConfiguaration();
+  TcCommonRet SaveConfiguration();
 
   /**
    * @brief      Clear startup configuaration towards UPPL
@@ -359,50 +359,50 @@ class TcLibModule : public pfc::core::Module {
    */
   TcCommonRet AuditConfig();
 
-  /** 
+  /**
    * @brief      Setup Configuration Message sent to UPPL at the end of startup
    *             operation to send messages to driver
-   * @retval     TC_SUCCESS clear startup handling success 
+   * @retval     TC_SUCCESS clear startup handling success
    * @retval     TC_FAILURE clear startup handling failed
    */
   TcCommonRet Setup();
 
-  /** 
+  /**
    * @brief      Setup Complete Message sent to UPPL during state changes
-   * @retval     TC_SUCCESS clear startup handling success 
+   * @retval     TC_SUCCESS clear startup handling success
    * @retval     TC_FAILURE clear startup handling failed
    */
   TcCommonRet SetupComplete();
 
-  /** 
-   * @brief      Get controller type invoked from TC to detect the controller type 
+  /**
+   * @brief      Get controller type invoked from TC to detect the controller type
    *             for a controller
    * @retval     openflow/overlay/legacy if controller id matches
-   * @retval     UNC_CT_UNKNOWN if controller id does not belong to 
+   * @retval     UNC_CT_UNKNOWN if controller id does not belong to
    *             any of controller type
    */
   unc_keytype_ctrtype_t GetDriverId();
 
-  /** 
-   * @brief      Get Controller Type 
+  /**
+   * @brief      Get Controller Type
    *             Invoked from TC to detect the type of the controller
    *             Intended for the driver modules
    * @retval     openflow/overlay/legacy if controller id matches
    * @retval     none if requested for other than driver modules
-   *             UPPL/UPLL modules should return UNC_CT_UNKNOWN 
+   *             UPPL/UPLL modules should return UNC_CT_UNKNOWN
    */
   unc_keytype_ctrtype_t GetControllerType();
 
-  /** 
-   * @brief      GetKeyIndex 
+  /**
+   * @brief      GetKeyIndex
    *             Get of key index based on controller id, err_pos from
-   *             maps filled during driver result key map updates 
+   *             maps filled during driver result key map updates
    * @param[in]  controller_id controller id to which key type belongs
    * @param[in]  err_pos error position to which key index is required
    * @param[out] key_index index for the error position under controller id
-   * @retval     TC_API_COMMON_SUCCESS if key index successfully filled 
+   * @retval     TC_API_COMMON_SUCCESS if key index successfully filled
    * @retval     TC_INVALID_PARAM/TC_INVALID_KEY_TYPE/TC_INVALID_CONTROLLER_ID
-   *             if failed to fill the key index 
+   *             if failed to fill the key index
    */
   TcApiCommonRet GetKeyIndex(std::string controller_id,
                              uint32_t err_pos,
@@ -421,24 +421,24 @@ class TcLibModule : public pfc::core::Module {
   pfc::core::ipc::ServerSession *sess_;
 
   /**
-   * @brief      mutex control inside tclib service handling 
+   * @brief      mutex control inside tclib service handling
    */
   pfc::core::Mutex tclib_mutex_;
 
   /**
-   * @brief      mutex to control ipcservices handling 
+   * @brief      mutex to control ipcservices handling
    */
   pfc::core::Mutex tclib_ipc_control_mutex_;
 
   /**
    * @brief      Updated on recieving notify session/config id
-   *             used for validation of update messages 
+   *             used for validation of update messages
    */
   uint32_t session_id_;
 
   /**
    * @brief      Updated on recieving notify session/config id
-   *             used for validation of update messages 
+   *             used for validation of update messages
    */
   uint32_t config_id_;
 
@@ -449,14 +449,14 @@ class TcLibModule : public pfc::core::Module {
   std::string controllerid_;
 
   /**
-   * @brief      Updated on recieving the audit request for driver tclib 
+   * @brief      Updated on recieving the audit request for driver tclib
    *             loaded modules.
    *             used for valiadation of oper states in driver tclib modules
    */
   pfc_bool_t audit_in_progress_;
 
   /**
-   * @brief      Holds the current running oper state in tclib 
+   * @brief      Holds the current running oper state in tclib
    */
   TcMsgOperType oper_state_;
 
@@ -475,7 +475,7 @@ class TcLibModule : public pfc::core::Module {
    */
   TcCommitPhaseResult commit_phase_result_;
 };
-}  // tclib
-}  // unc
+}  // namespace tclib
+}  // namespace unc
 
 #endif /* _UNC_TCLIB_MODULE_HH_ */
