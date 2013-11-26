@@ -44,6 +44,10 @@ import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.forwardingrulesmanager.IForwardingRulesManager;
 import org.opendaylight.controller.forwardingrulesmanager.PortGroupConfig;
 import org.opendaylight.controller.forwardingrulesmanager.PortGroupProvider;
+import org.opendaylight.controller.hosttracker.HostIdFactory;
+import org.opendaylight.controller.hosttracker.IHostId;
+import org.opendaylight.controller.hosttracker.IPHostId;
+import org.opendaylight.controller.hosttracker.IPMacHostId;
 import org.opendaylight.controller.hosttracker.IfIptoHost;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.connection.ConnectionConstants;
@@ -1121,14 +1125,23 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     // IfIptoHost
 
     @Override
+    public HostNodeConnector hostFind(IHostId id) {
+        return null;
+    }
+
+    @Override
     public HostNodeConnector hostFind(InetAddress networkAddress) {
         return null;
     }
 
     @Override
-    public HostNodeConnector hostQuery(InetAddress networkAddress) {
+    public HostNodeConnector hostQuery(IHostId id) {
         if (stubMode >= 1) {
             HostNodeConnector hnode = null;
+            InetAddress networkAddress = getIpAddress(id);
+            if (networkAddress == null) {
+                return null;
+            }
             byte [] tgt = networkAddress.getAddress();
             byte [] ip = new byte[] {(byte)192, (byte)168, (byte)0, (byte)251};
             if (Arrays.equals(tgt, ip)) {
@@ -1149,7 +1162,23 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     }
 
     @Override
+    public HostNodeConnector hostQuery(InetAddress networkAddress) {
+        IHostId id = HostIdFactory.create(networkAddress, null);
+        return hostQuery(id);
+    }
+
+    @Override
+    public Future<HostNodeConnector> discoverHost(IHostId id) {
+        return null;
+    }
+
+    @Override
     public Future<HostNodeConnector> discoverHost(InetAddress networkAddress) {
+        return null;
+    }
+
+    @Override
+    public List<List<String>> getHostNetworkHierarchy(IHostId id) {
         return null;
     }
 
@@ -1180,6 +1209,12 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
 
     @Override
     public Status removeStaticHost(String networkAddress) {
+        return null;
+    }
+
+    @Override
+    public Status removeStaticHostUsingIPAndMac(String networkAddress,
+                                                String macAddress) {
         return null;
     }
 
@@ -1269,5 +1304,23 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
      */
     public synchronized Set<FlowEntry> getFlowEntries() {
         return new HashSet<FlowEntry>(flowEntries);
+    }
+
+    /**
+     * Return an IP address in the given host ID.
+     *
+     * @param id  A host ID.
+     * @return    An IP address in the given host ID.
+     *            {@code null} is returned if not set.
+     */
+    public InetAddress getIpAddress(IHostId id) {
+        if (id instanceof IPHostId) {
+            return ((IPHostId)id).getIpAddress();
+        }
+        if (id instanceof IPMacHostId) {
+            return ((IPMacHostId)id).getIpAddress();
+        }
+
+        return null;
     }
 }
