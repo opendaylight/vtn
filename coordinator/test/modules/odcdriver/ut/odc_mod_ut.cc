@@ -33,6 +33,7 @@ TEST(odcdriver, test_is_audit_collection_needed) {
 TEST(odcdriver, test_add_controller) {
   const pfc_modattr_t* obj_module = NULL;
   unc::odcdriver::ODCModule obj(obj_module);
+  unc::tclib::TcLibModule::stub_loadtcLibModule();
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr,  0,  sizeof(key_ctr_t));
@@ -166,6 +167,83 @@ TEST(odcdriver, test_update_controller) {
   ctr =  obj.add_controller(key_ctr_old,  val_ctr_old);
   pfc_bool_t updated_ctr =  obj.update_controller(key_ctr,  val_ctr,  ctr);
   EXPECT_EQ(updated_ctr,  1);
+  if (ctr != NULL) {
+    delete ctr;
+    ctr = NULL;
+  }
+}
+
+TEST(odcdriver, test_update_controller_version) {
+  const pfc_modattr_t* obj_module = NULL;
+  unc::odcdriver::ODCModule obj(obj_module);
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  memset(&key_ctr,  0,  sizeof(key_ctr_t));
+  memset(&val_ctr,  0,  sizeof(val_ctr_t));
+  unc::tclib::TcLibModule::stub_loadtcLibModule();
+  std::string ctr_name_new = "new_ctr";
+  strncpy(reinterpret_cast<char*>
+          (key_ctr.controller_name), ctr_name_new.c_str(),
+          sizeof(key_ctr.controller_name)-1);
+  std::string version_new = "version12223423428299990";
+  strncpy(reinterpret_cast<char*>(val_ctr.version),
+          version_new.c_str(),  sizeof(val_ctr.version) -1);
+  std::string description_new = "description122234";
+  strncpy(reinterpret_cast<char*>(val_ctr.description),
+          description_new.c_str(),  sizeof(val_ctr.description) -1);
+  std::string max_user_length_31_new = "user111111111111111111122222222";
+  strncpy(reinterpret_cast<char*>
+          (val_ctr.user),  max_user_length_31_new.c_str(),
+          sizeof(val_ctr.user) -1);
+
+  std::string pass_new =
+      "password12223423428299990746537568345364568734538sgdfhshdgfjhsdg";
+  strncpy(reinterpret_cast<char*>
+          (val_ctr.password),  pass_new.c_str(),  sizeof(val_ctr.password) -1);
+  std::string ip_add_new = "172.16.1.6";
+  inet_aton(ip_add_new.c_str(),  &val_ctr.ip_address);
+
+  val_ctr.enable_audit = PFC_TRUE;
+  key_ctr_t key_ctr_old;
+  val_ctr_t val_ctr_old;
+  memset(&key_ctr_old,  0,  sizeof(key_ctr_t));
+  memset(&val_ctr_old,  0,  sizeof(val_ctr_t));
+
+  std::string ctr_name = "old_ctr";
+  strncpy(reinterpret_cast<char*> (key_ctr_old.controller_name),
+          ctr_name.c_str(),
+          sizeof(key_ctr_old.controller_name));
+  std::string version = "version_old";
+  strncpy(reinterpret_cast<char*>(val_ctr_old.version),
+          version.c_str(),  sizeof(val_ctr_old.version) -1);
+
+  std::string description = "description";
+  strncpy(reinterpret_cast<char*>(val_ctr_old.description),
+          description.c_str(),  sizeof(val_ctr_old.description) -1);
+  std::string user = "user";
+  strncpy(reinterpret_cast<char*>(val_ctr_old.user),
+          user.c_str(),  sizeof(val_ctr_old.user) -1);
+
+  std::string pass = "password";
+  strncpy(reinterpret_cast<char*>(val_ctr_old.password),
+          pass.c_str(),  sizeof(val_ctr_old.password) -1);
+  val_ctr_old.enable_audit = PFC_FALSE;
+  std::string ip_add = "0";
+  inet_aton(ip_add.c_str(),  &val_ctr_old.ip_address);
+
+  unc::driver::controller* ctr;
+  ctr =  obj.add_controller(key_ctr_old,  val_ctr_old);
+
+  pfc_bool_t val =  obj.update_controller(key_ctr,  val_ctr,  ctr);
+  EXPECT_EQ(val, 1);
+  EXPECT_EQ(ctr->get_controller_id(),  ctr_name_new);
+  EXPECT_EQ(ctr->get_controller_type(),  UNC_CT_ODC);
+  EXPECT_EQ(ctr->get_audit_status(),  PFC_TRUE);
+  EXPECT_EQ(ctr->get_host_address(),  ip_add_new);
+  EXPECT_EQ(ctr->reset_connect(),  PFC_FALSE);
+  EXPECT_EQ(ctr->get_user_name(),  max_user_length_31_new);
+  EXPECT_EQ(ctr->get_pass_word(),  pass_new);
+  unc::tclib::TcLibModule::stub_unloadtcLibModule();
   if (ctr != NULL) {
     delete ctr;
     ctr = NULL;
@@ -497,6 +575,38 @@ TEST(odcdriver, test_ping_controller_SUCCESS) {
   unc::driver::controller* ctr = NULL;
   ctr =  obj.add_controller(key_ctr,  val_ctr);
   EXPECT_EQ(PFC_TRUE,  obj.ping_controller(ctr));
+  if (ctr != NULL) {
+    delete ctr;
+    ctr = NULL;
+  }
+}
+
+TEST(odcdriver, test_ping_controller_connection_status_success) {
+  const pfc_modattr_t* obj_module = NULL;
+  unc::odcdriver::ODCModule obj(obj_module);
+  unc::tclib::TcLibModule::stub_loadtcLibModule();
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  memset(&key_ctr,  0,  sizeof(key_ctr_t));
+  memset(&val_ctr,  0,  sizeof(val_ctr_t));
+
+  std::string ip_add = "172.16.0.2";
+  inet_aton(ip_add.c_str(),  &val_ctr.ip_address);
+  std::string ctr_name = "ctr_abc";
+  std::string user = "user";
+  strncpy(reinterpret_cast<char*>(val_ctr.user),  user.c_str(),
+          sizeof(val_ctr.user) -1);
+  std::string pass = "password";
+  strncpy(reinterpret_cast<char*>(val_ctr.password),  pass.c_str(),
+          sizeof(val_ctr.password) -1);
+  strncpy(reinterpret_cast<char*> (key_ctr.controller_name), ctr_name.c_str(),
+          sizeof(key_ctr.controller_name));
+  val_ctr.enable_audit = PFC_TRUE;
+  unc::driver::controller* ctr = NULL;
+  ctr =  obj.add_controller(key_ctr,  val_ctr);
+  EXPECT_EQ(PFC_TRUE,  obj.ping_controller(ctr));
+  EXPECT_EQ(0,  obj.get_ping_interval());
+  unc::tclib::TcLibModule::stub_unloadtcLibModule();
   if (ctr != NULL) {
     delete ctr;
     ctr = NULL;

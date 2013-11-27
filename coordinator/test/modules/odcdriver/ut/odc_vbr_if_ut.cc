@@ -13,6 +13,7 @@
 #include <gtest/gtest.h>
 #include <string>
 
+
 TEST(odcdriver,  create_cmd_valid) {
   unc::odcdriver::OdcVbrIfCommand obj;
   key_ctr_t key_ctr;
@@ -1030,7 +1031,6 @@ TEST(odcdriver,  update_cmd_port_map_invalid) {
             obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
-
 TEST(odcdriver,  update_cmd_port_map_valid_vlan) {
   unc::odcdriver::OdcVbrIfCommand obj;
   key_ctr_t key_ctr;
@@ -1064,16 +1064,15 @@ TEST(odcdriver,  update_cmd_port_map_valid_vlan) {
   vbrif_val.val_vbrif.portmap.tagged = 34;
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
           descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
+  vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_INVALID;
   std::string logical_port =  "PP-00:00:-0:00:00:00:00:00-namendfsjdfhsdbfhsdg";
   vbrif_val.val_vbrif.portmap.vlan_id =  0;
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  drv_resp_code_t err = obj.update_cmd(vbrif_key,  vbrif_val,  ctr);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+            obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
-  ctr = NULL;
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, err);
 }
 
 TEST(odcdriver,  create_cmd_port_map_valid_with_null_resp) {
@@ -1326,7 +1325,7 @@ TEST(odcdriver,  update_cmd_port_map_portmap_invalid) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
             obj.update_cmd
             (vbrif_key,  vbrif_val,  ctr));
   delete ctr;
@@ -1916,3 +1915,4 @@ TEST(odcdriver,  fetch_config_with_portmap_no_vlan) {
 
   delete ctr;
 }
+
