@@ -6,6 +6,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 #ifndef __VTNDRVMOD_STUB_HH__
 #define __VTNDRVMOD_STUB_HH__
 #include <driver/driver_command.hh>
@@ -17,7 +18,6 @@ typedef enum {
   VTN_DRV_RET_FAILURE
 }VtnDrvRetEnum;
 
-using namespace pfc::core;
 
 namespace unc {
 namespace driver {

@@ -6,7 +6,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 /*
  * C++ utilities for PFC IPC server.
  */
@@ -34,552 +33,552 @@ ServerSession::ServerSession()
 
 }
 
-int
+ int
 ServerSession::setTimeout(const pfc_timespec_t* /*timeout*/)
 {
-  return 0;
+    return 0;
 }
 
-int
+ int
 ServerSession::getClientAddress(pfc_ipccladdr_t& /*&claddr*/)
 {
-  return 0;
+    return 0;
 }
 
 // Signed 8-bit value.
-int
+ int
 ServerSession::addOutput(int8_t /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
-int
+ int
 ServerSession::addOutput( )
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
-int
+ int
 ServerSession::addOutputInt8(int8_t /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
 // Unsigned 8-bit value.
-int
+ int
 ServerSession::addOutput(uint8_t /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
-int
+ int
 ServerSession::addOutputUint8(uint8_t /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
 // Signed 16-bit value.
-int
+ int
 ServerSession::addOutput(int16_t /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
-int
+ int
 ServerSession::addOutputInt16(int16_t /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
 // Unsigned 16-bit value.
-int
+ int
 ServerSession::addOutput(uint16_t /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
-int
+ int
 ServerSession::addOutputUint16(uint16_t /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
 // Signed 32-bit value.
-int
+ int
 ServerSession::addOutput(int32_t /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
-int
+ int
 ServerSession::addOutputInt32(int32_t /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
 // Unsigned 32-bit value.
-int
+ int
 ServerSession::addOutput(uint32_t data)
 {
-  for (std::vector<uint32_t>::iterator it=add_output_list.begin(); it != add_output_list.end(); ++it)
-  {
-    if( data == *it )
-    {
-      return 0;
-    }
-  }
-  return 1;
+	 for (std::vector<uint32_t>::iterator it=add_output_list.begin(); it != add_output_list.end(); ++it)
+	 {
+		 if( data == *it )
+		 {
+			 return 0;
+		 }
+	 }
+	 return 1;
 
 }
 
-void
+ void
 ServerSession::stub_setAddOutput(uint32_t data)
 {
-  add_output_list.push_back(data);
+	add_output_list.push_back(data);
 }
 
-int
+ int
 ServerSession::addOutputUint32(uint32_t /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
 // Signed 64-bit value.
-int
+ int
 ServerSession::addOutput(int64_t /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
-int
+ int
 ServerSession::addOutputInt64(int64_t /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
 // Unsigned 64-bit value.
-int
+ int
 ServerSession::addOutput(uint64_t /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
-int
+ int
 ServerSession::addOutputUint64(uint64_t /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
 // Single precision floating point.
-int
+ int
 ServerSession::addOutput(float /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
-int
+ int
 ServerSession::addOutputFloat(float /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
 // Double precision floating point.
-int
+ int
 ServerSession::addOutput(double /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
-int
+ int
 ServerSession::addOutputDouble(double /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
 // IPv4 address.
-int
+ int
 ServerSession::addOutput(struct in_addr& /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
 // IPv6 address.
-int
+ int
 ServerSession::addOutput(struct in6_addr& /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
 // String. (pointer)
-int
+ int
 ServerSession::addOutput(const char* /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
 // String. (std::string)
-int
+ int
 ServerSession::addOutput(const std::string& /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
 // Binary data.
-int
+ int
 ServerSession::addOutput(const uint8_t* /*data*/, uint32_t /*length*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
 // IPC structure specified by pfc_ipcstdef_t.
-int
+ int
 ServerSession::addOutput(const pfc_ipcstdef_t&  /*def*/, pfc_cptr_t /*data*/)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
 
-int
+ int
 ServerSession::addOutput(val_ctr_st&)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
-int
+ int
 ServerSession::addOutput(val_ctr_domain_st&)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
-int
+ int
 ServerSession::addOutput(val_logical_port&)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
-int
+ int
 ServerSession::addOutput(val_switch&)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(val_port&)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(val_link&)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(val_boundary_st&)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(key_ctr&)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(val_ctr&)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(key_ctr_domain&)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(val_ctr_domain&)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(key_logical_port)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(val_logical_port_st&)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(key_logical_member_port)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(key_switch&)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(val_switch_st&)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(key_port)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(val_port_st&)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(key_link)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(val_link_st)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(key_boundary)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(val_boundary&)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(key_root&)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(val_path_fault_alarm_t&)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
-int
+ int
 ServerSession::addOutput(val_port_st_neighbor&)
 {
-  return addOutPut_;
+    return addOutPut_;
 }
 
 int ServerSession:: addOutput(key_vbr_if&) {
   return addOutPut_;
 }
 int ServerSession::addOutput(pfcdrv_val_vbr_if&) {
-  return addOutPut_;
+    return addOutPut_;
 
 }
 int ServerSession::addOutput(key_vbr&) {
-  return addOutPut_;
+    return addOutPut_;
 
 }
 int ServerSession::addOutput(val_vbr&) {
-  return addOutPut_;
+    return addOutPut_;
 
 }
 int ServerSession::addOutput(key_vtn&) {
-  return addOutPut_;
+    return addOutPut_;
 
 }
 int ServerSession::addOutput(val_vtn&) {
-  return addOutPut_;
+    return addOutPut_;
 
 }
 
-void
+ void
 ServerSession::stub_setAddOutput(int result)
 {
-  addOutPut_ = result;
+	addOutPut_ = result;
 }
 // Signed 8-bit integer.
-int
+ int
 ServerSession::getArgument(uint32_t /*index*/, int8_t&  /*&data*/)
 {
-  return result_;
+    return result_;
 }
 
 // Unsigned 8-bit integer.
-int
+ int
 ServerSession::getArgument(uint32_t /*index*/, uint8_t& /*data*/)
 {
-  return result_;
+    return result_;
 }
 
 // Signed 16-bit integer.
-int
+ int
 ServerSession::getArgument(uint32_t /*index*/, int16_t& /*&data*/)
 {
-  return result_;
+    return result_;
 }
 
 // Unsigned 16-bit integer.
-int
+ int
 ServerSession::getArgument(uint32_t /*index*/, uint16_t& /*&data*/)
 {
-  return result_;
+    return result_;
 }
 
 // Signed 32-bit integer.
-int
+ int
 ServerSession::getArgument(uint32_t /*index*/, int32_t& /*&data*/)
 {
-  return result_;
+    return result_;
 }
 
 // Unsigned 32-bit integer.
-int
+ int
 ServerSession::getArgument(uint32_t index, uint32_t &data)
 {
-  if (0 != arg_map.count(index))
-  {
-    data = arg_map[index];
-    return 0;
-  }
-  return 1;
+	if (0 != arg_map.count(index))
+		{
+			data = arg_map[index];
+			return 0;
+		}
+	return 1;
 }
 
 // Signed 64-bit integer.
-int
+ int
 ServerSession::getArgument(uint32_t /*index*/, int64_t& /*data*/)
 {
-  return result_;
+    return result_;
 }
 
 // Unsigned 64-bit integer.
-int
+ int
 ServerSession::getArgument(uint32_t /*index*/, uint64_t& /*data*/)
 {
-  return result_;
+    return result_;
 }
 
 // Single precision floating point.
-int
+ int
 ServerSession::getArgument(uint32_t /*index*/, float& /*data*/)
 {
-  return result_;
+    return result_;
 }
 
 // Double precision floating point.
-int
+ int
 ServerSession::getArgument(uint32_t /*index*/, double& /*data*/)
 {
-  return result_;
+    return result_;
 }
 
 // IPv4 address.
-int
+ int
 ServerSession::getArgument(uint32_t /*index*/, struct in_addr& /*data*/)
 {
-  return result_;
+    return result_;
 }
 
 // IPv6 address.
-int
+ int
 ServerSession::getArgument(uint32_t /*index*/, struct in6_addr& /*data*/)
 {
-  return result_;
+    return result_;
 }
 
-int
+ int
 ServerSession::getArgument(uint32_t /*index*/, const char*& /*data*/)
 {
-  return result_;
+    return result_;
 }
 
 
-int
+ int
 ServerSession::getArgument(uint32_t /*index*/, const uint8_t*&  /*data*/,
                            uint32_t& /*length*/)
 {
-  return result_;
+    return result_;
 }
 
-int
+ int
 ServerSession::getArgument(uint32_t /*index*/, const pfc_ipcstdef_t& /*def*/,
                            pfc_ptr_t /*datap*/)
 {
-  return result_;
+    return result_;
 }
-int
+ int
 ServerSession::getArgument(int /*index*/, key_ctr_t& /*data*/)
 {
-  return result_;
+    return result_;
 }
-int
+ int
 ServerSession::getArgument(int /*index*/, val_ctr_t& /*data*/)
 {
-  return result_;
+    return result_;
 }
-int
+ int
 ServerSession::getArgument(int /*index*/, key_ctr_domain_t& /*data*/)
 {
-  return result_;
+    return result_;
 }
-int
+ int
 ServerSession::getArgument(int /*index*/, key_boundary_t& /*data*/)
 {
-  return result_;
+    return result_;
 }
-int
+ int
 ServerSession::getArgument(int /*index*/, val_boundary_t& /*data*/)
 {
-  return result_;
+    return result_;
 }
-int
+ int
 ServerSession::getArgument(int /*index*/, val_ctr_domain_t& /*data*/)
 {
-  return result_;
+    return result_;
 }
-int
+ int
 ServerSession::getArgument(int /*index*/, key_logical_port_t& /*data*/)
 {
-  return result_;
+    return result_;
 }
-int
+ int
 ServerSession::getArgument(int /*index*/, val_logical_port_st_t& /*data*/)
 {
-  return result_;
+    return result_;
 }
-int
+ int
 ServerSession::getArgument(int /*index*/, key_logical_member_port_t& /*data*/)
 {
-  return result_;
+    return result_;
 }
-int
+ int
 ServerSession::getArgument(int /*index*/, key_switch_t& /*data*/)
 {
-  return result_;
+    return result_;
 }
-int
+ int
 ServerSession::getArgument(int /*index*/, val_switch_st_t& /*data*/)
 {
-  return result_;
+    return result_;
 }
-int
+ int
 ServerSession::getArgument(int /*index*/, key_port_t& /*data*/)
 {
-  return result_;
+    return result_;
 }
-int
+ int
 ServerSession::getArgument(int /*index*/, val_port_st_t& /*data*/)
 {
-  return result_;
+    return result_;
 }
-int
+ int
 ServerSession::getArgument(int /*index*/, key_link_t& /*data*/)
 {
-  return result_;
+    return result_;
 }
-int
+ int
 ServerSession::getArgument(int /*index*/, val_link_st_t& /*data*/)
 {
-  return result_;
+    return result_;
 }
 
 
@@ -588,23 +587,23 @@ int ServerSession:: getArgument(int, key_vbr_if&) {
   return result_;
 }
 int ServerSession::getArgument(int, pfcdrv_val_vbr_if&) {
-  return result_;
+    return result_;
 
 }
 int ServerSession::getArgument(int, key_vbr&) {
-  return result_;
+    return result_;
 
 }
 int ServerSession::getArgument(int, val_vbr&) {
-  return result_;
+    return result_;
 
 }
 int ServerSession::getArgument(int, key_vtn&) {
-  return result_;
+    return result_;
 
 }
 int ServerSession::getArgument(int, val_vtn&) {
-  return result_;
+    return result_;
 
 }
 
@@ -700,20 +699,20 @@ ServerSession::clearStubData(void)
 int ServerEvent::serverEventErr_=0;
 int ServerEvent::postResult_=1;
 
-void ServerEvent::stub_setserverEventErr(int err)
-{
-  serverEventErr_  = err;
-}
+ void ServerEvent::stub_setserverEventErr(int err)
+ {
+    	serverEventErr_  = err;
+ }
 
-void ServerEvent::clearStubData()
-{
-  ServerSession::clearStubData();
-}
+ void ServerEvent::clearStubData()
+ {
+     	ServerSession::clearStubData();
+ }
 
-void ServerEvent::stub_setPostResult(int result)
-{
-  postResult_=result;
-}
+ void ServerEvent::stub_setPostResult(int result)
+ {
+	  postResult_=result;
+ }
 
 }
 }

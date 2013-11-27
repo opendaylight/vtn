@@ -661,7 +661,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::create_update_cmd(
   ODC_FUNC_TRACE;
   PFC_ASSERT(ctr_ptr != NULL);
   std::string ip_address = ctr_ptr->get_host_address();
-  pfc_bool_t vlan_map_exists = PFC_FALSE;
+  pfc_bool_t b_swid_exists = PFC_FALSE;
   std::string strmapid = "";
   if (vlanmap_key.logical_port_id_valid != 0) {
     pfc_log_debug("%s: Logical_port_id is valid", PFC_FUNCNAME);
@@ -674,16 +674,11 @@ drv_resp_code_t OdcVbrVlanMapCommand::create_update_cmd(
       return DRVAPI_RESPONSE_FAILURE;
     }
   }
-  if (vlanmap_val.valid[UPLL_IDX_VLAN_ID_VM] != UNC_VF_VALID) {
-    pfc_log_error("%s: Received invalid Vlan_id",
-                    PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
-  }
   // Validate if vlanid already exists in controller
   drv_resp_code_t validate_resp = validate_vlan_exist(vlanmap_key,
                                                       vlanmap_val,
                                                       ctr_ptr,
-                                                      vlan_map_exists,
+                                                      b_swid_exists,
                                                       strmapid);
 
   if (validate_resp != DRVAPI_RESPONSE_SUCCESS) {
@@ -693,7 +688,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::create_update_cmd(
   }
   // If vlanid exists for same SwitchID/ANY delete the existing vlanmap
   // and create a new vlanmap
-  if (vlan_map_exists == PFC_TRUE) {
+  if (b_swid_exists == PFC_TRUE) {
     if (del_existing_vlanmap(vlanmap_key, ctr_ptr, strmapid) !=
         DRVAPI_RESPONSE_SUCCESS) {
       pfc_log_error("%s Delete of vlanmap failed", PFC_FUNCNAME);
@@ -960,27 +955,29 @@ json_object* OdcVbrVlanMapCommand::create_request_body(
   uint32_t ret_val = 1;
   std::string vlanid;
 
-  if (vlanmap_val.vlan_id == 0xFFFF) {
-    pfc_log_debug("%s: Vlan Untagged ", PFC_FUNCNAME);
-    vlanid = "0";
-  } else {
-    pfc_log_debug("%s: Vlan Tagged ", PFC_FUNCNAME);
-    std::ostringstream convert_vlanid;
-    convert_vlanid << vlanmap_val.vlan_id;
-    vlanid.append(convert_vlanid.str());
-  }
-  pfc_log_debug("%s: Vlanid: %s", PFC_FUNCNAME, vlanid.c_str());
-  if (!vlanid.empty()) {
-    ret_val = json_obj.build("vlan", vlanid, jobj_parent);
-    if (restjson::REST_OP_SUCCESS != ret_val) {
-      pfc_log_error("%s: Error in building vlanid in vlanmap", PFC_FUNCNAME);
-      json_object_put(jobj_parent);
-      return NULL;
+  if (UNC_VF_VALID == vlanmap_val.valid[UPLL_IDX_VLAN_ID_VM]) {
+    if (vlanmap_val.vlan_id == 0xFFFF) {
+      pfc_log_debug("%s: Vlan Untagged ", PFC_FUNCNAME);
+      vlanid = "0";
+    } else {
+      pfc_log_debug("%s: Vlan Tagged ", PFC_FUNCNAME);
+      std::ostringstream convert_vlanid;
+      convert_vlanid << vlanmap_val.vlan_id;
+      vlanid.append(convert_vlanid.str());
+    }
+    pfc_log_debug("%s: Vlanid: %s", PFC_FUNCNAME, vlanid.c_str());
+    if (!vlanid.empty()) {
+      ret_val = json_obj.build("vlan", vlanid, jobj_parent);
+      if (restjson::REST_OP_SUCCESS != ret_val) {
+        pfc_log_error("%s: Error in building vlanid in vlanmap", PFC_FUNCNAME);
+        json_object_put(jobj_parent);
+        return NULL;
+      }
     }
   }
 
   if (vlanmap_key.logical_port_id_valid != 0) {
-    json_object *jobj_node = json_obj.create_json_obj();
+  json_object *jobj_node = json_obj.create_json_obj();
     ret_val = json_obj.build("type", "OF", jobj_node);
     if (restjson::REST_OP_SUCCESS != ret_val) {
       pfc_log_error("%s: Error in building type in vlanmap", PFC_FUNCNAME);
@@ -1021,7 +1018,7 @@ json_object* OdcVbrVlanMapCommand::create_request_body(
 
 // Form URL for vbr vlanmap to send request to controller
 std::string OdcVbrVlanMapCommand::get_vbrvlanmap_url(
-    key_vlan_map_t& vbr_vlanmap_key) {
+                                             key_vlan_map_t& vbr_vlanmap_key) {
   ODC_FUNC_TRACE;
   char* vtnname = NULL;
   std::string url = "";

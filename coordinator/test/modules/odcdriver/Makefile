@@ -11,5 +11,5 @@
 ## Makefile that drives the production of unit tests.
 ##
 
-TEST_SRCROOT := ../../..
+TEST_SRCROOT	:= ../../..
 include $(TEST_SRCROOT)/test/build/subdirs.mk

@@ -7,26 +7,21 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-
-#include <cxx/pfcxx/module.hh>
+#include "cxx/pfcxx/module.hh"
 
 namespace pfc {
 namespace core {
 
-Module* Module::capaModule=NULL;
-Module* Module::tcLib=NULL;
-Module* Module::PhysicalLayer=NULL;
+Module* Module::capaModule = NULL;
+Module* Module::tcLib = NULL;
+
 
 Module*  Module::getModule(const char* moduleName) {
-  if (!strcmp(moduleName,"uppl"))
-  {
-    return PhysicalLayer;
-  }
-  else
-  {
+  if (!strcmp(moduleName, "tclib")) {
+    return tcLib;
+  } else {
     return NULL;
   }
 }
-
-}
-}
+}  // namespace core
+}  // namespace pfc

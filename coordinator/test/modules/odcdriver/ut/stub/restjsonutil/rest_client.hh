@@ -6,6 +6,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 #ifndef RESTJSON_REST_CLIENT_H_
 #define RESTJSON_REST_CLIENT_H_
 
@@ -64,6 +65,15 @@ class RestClient {
 
     std::string VBRIF_GET_RESP_PORT_MAP_NO_VLAN = "172.16.0.11";
 
+    std::string NOT_FOUND_404               = "172.16.0.12";
+    std::string SERVICE_UNAVAILABLE_503      = "172.16.0.13";
+    std::string VLAN_MAP_EMPTY               = "172.16.0.14";
+    std::string VLAN_MAP_RESP            = "172.16.0.15";
+    std::string VLAN_MAP_INCORRECT_RESP               = "172.16.0.16";
+    std::string VLAN_MAP_VLAN_INCORRECT_RESP               = "172.16.0.17";
+    std::string VLAN_MAP_RESP_ANY_0 = "172.16.0.18";
+    std::string NULL_RESP_DATA = "172.16.0.19";
+
     std::string port_map_url_create_valid = "";
     port_map_url_create_valid.append
         ("/controller/nb/v2/vtn/default/vtns/vtn1/vbridges/");
@@ -88,14 +98,23 @@ class RestClient {
     port_map_null_resp.append
         ("vbr1/interfaces/if_invalid/portmap");
 
-
-    if (ip_address_.compare(NULL_RESPONSE) ==  0) {
+    if (ip_address_.compare(CREATE_201) == 0) {
+      response_->code = 201;
+      return response_;
+    } else if (ip_address_.compare(NULL_RESPONSE) ==  0) {
+      clear_http_response();
       return NULL;
     } else if (ip_address_.compare(INVALID_RESPONSE) ==  0) {
       response_->code = 1;
       return response_;
-    }  else if (ip_address_.compare(CREATE_201) == 0) {
-      response_->code = 201;
+    } else if (ip_address_.compare(NOT_FOUND_404) ==  0) {
+      response_->code = 404;
+      return response_;
+    } else if (ip_address_.compare(NOT_FOUND_404) ==  0) {
+      response_->code = 404;
+      return response_;
+    } else if (ip_address_.compare(SERVICE_UNAVAILABLE_503) == 0) {
+      response_->code = 503;
       return response_;
     } else if (ip_address_.compare(UPDATE_DELETE_200) == 0) {
       response_->write_data->memory =
@@ -116,7 +135,6 @@ class RestClient {
       response_->code = 201;
       return response_;
     } else if (ip_address_.compare(UPDATE_DELETE_VBRIF_PORTMAP) == 0) {
-      std::cout << "-------444------" << url_;
       if (url_.compare(port_map_url_update_valid) == 0) {
         response_->code = 200;
         return response_;
@@ -172,7 +190,35 @@ class RestClient {
       response_->code = 200;
       response_->write_data->memory = const_cast<char *>("{\"vbridge\":[]}");
       return response_;
+    } else if (ip_address_.compare(VLAN_MAP_EMPTY) == 0) {
+      response_->code = 200;
+      response_->write_data->memory = const_cast<char *>("{\"vlanmap\":[]}");
+      return response_;
+    } else if (ip_address_.compare(VLAN_MAP_INCORRECT_RESP) == 0) {
+      response_->code = 200;
+      response_->write_data->memory = const_cast<char *>("{\"vlanmap:[]}");
+      return response_;
+
+    } else if (ip_address_.compare (VLAN_MAP_VLAN_INCORRECT_RESP) == 0) {
+      response_->code = 200;
+      response_->write_data->memory = const_cast<char *>("{\"vlanmap\":[{ \"id\":\"23}]}");
+      return response_;
+    } else if (ip_address_.compare (VLAN_MAP_RESP) == 0) {
+      response_->code = 200;
+      response_->write_data->memory = const_cast<char *>("{\"vlanmap\":[{ \"id\":\"OF-00:00:00:00:00:00:00:03.0\", \"vlan\":\"0\",\"node\": {\"type\":\"OF\", \"id\": \"00:00:00:00:00:00:00:03\"}}, {\"id\":\"ANY.7\", \"vlan\":\"7\"}]}");
+      return response_;
+    } else if (ip_address_.compare (VLAN_MAP_RESP_ANY_0) == 0) {
+      response_->code = 200;
+      response_->write_data->memory = const_cast<char *>("{\"vlanmap\":[{ \"id\":\"OF-00:00:00:00:00:00:00:03.10\", \"vlan\":\"10\",\"node\": {\"type\":\"OF\", \"id\": \"00:00:00:00:00:00:00:03\"}}, {\"id\":\"ANY.0\", \"vlan\":\"0\"}]}");
+      return response_;
+    } else if(ip_address_.compare(NULL_RESP_DATA) == 0) {
+      response_->code = 200;
+      delete response_->write_data;
+      response_->write_data = NULL;
+      return response_;
     }
+
+
     return NULL;
   }
 

@@ -308,7 +308,7 @@ drv_resp_code_t OdcVbrIfCommand::update_cmd(key_vbr_if_t& vbrif_key,
       return DRVAPI_RESPONSE_FAILURE;
     }
     port_map_json_req_body = create_request_body_port_map(val);
-    if (json_object_is_type(vbrif_json_request_body, json_type_null)) {
+    if (json_object_is_type(port_map_json_req_body, json_type_null)) {
       pfc_log_error("port map req body is null");
       json_object_put(vbrif_json_request_body);
       return DRVAPI_RESPONSE_FAILURE;
@@ -360,23 +360,25 @@ drv_resp_code_t OdcVbrIfCommand::update_cmd(key_vbr_if_t& vbrif_key,
     port_map_response = rest_client_obj_port_map.send_http_request(
         user_name, password, connect_time_out, req_time_out,
         port_map_req_body);
+    json_object_put(port_map_json_req_body);
     if (NULL == port_map_response) {
       pfc_log_error("Error Occured while getting httpresponse");
       return DRVAPI_RESPONSE_FAILURE;
     }
-
     port_map_resp_code = port_map_response->code;
     rest_client_obj_port_map.clear_http_response();
-    json_object_put(port_map_json_req_body);
-
+    if (HTTP_200_RESP_OK != port_map_resp_code) {
+      pfc_log_error("update portmap is not successful %d", resp_code);
+      return DRVAPI_RESPONSE_FAILURE;
+    }
   } else if ((val.val_vbrif.valid[UPLL_IDX_PM_VBRI] == UNC_VF_VALID_NO_VALUE)
              && (val.valid[PFCDRV_IDX_VAL_VBRIF] == UNC_VF_VALID)) {
     std::string port_map_url = "";
     port_map_url.append(vbrif_url);
     port_map_url.append("/portmap");
     restjson::RestClient rest_client_obj_port_map(ip_address, port_map_url,
-                                              odc_port,
-                                              restjson::HTTP_METHOD_DELETE);
+                                                  odc_port,
+                                                  restjson::HTTP_METHOD_DELETE);
     port_map_response = rest_client_obj_port_map.send_http_request(
         user_name, password, connect_time_out, req_time_out,
         NULL);
@@ -386,12 +388,12 @@ drv_resp_code_t OdcVbrIfCommand::update_cmd(key_vbr_if_t& vbrif_key,
     }
     port_map_resp_code = port_map_response->code;
     rest_client_obj_port_map.clear_http_response();
+    if (HTTP_200_RESP_OK != port_map_resp_code) {
+      pfc_log_error("delete portmap is not successful %d", resp_code);
+      return DRVAPI_RESPONSE_FAILURE;
+    }
   }
   pfc_log_debug("Response code from Ctl for portmap:%d", port_map_resp_code);
-  if (HTTP_200_RESP_OK != port_map_resp_code) {
-    pfc_log_error("update portmap is not successful %d", resp_code);
-    return DRVAPI_RESPONSE_FAILURE;
-  }
   return DRVAPI_RESPONSE_SUCCESS;
 }
 

@@ -11,6 +11,7 @@
 #define RESTJSON_JSON_BUILD_PARSE_H_
 
 #include <uncxx/odc_log.hh>
+#include <json/json.h>
 #include <json_type_util.hh>
 #include <rest_common_defs.hh>
 #include <pfc/log.h>

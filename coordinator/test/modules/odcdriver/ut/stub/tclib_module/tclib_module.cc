@@ -39,13 +39,13 @@ TcApiCommonRet TcLibModule::TcLibRegisterHandler(TcLibInterface* handler) {
 }
 
 TcApiCommonRet TcLibModule::TcLibAuditControllerRequest
-    (std::string controller_id) {
+(std::string controller_id) {
   return stub_getMappedResultCode(TcLibModule::AUDIT_CONTROLLER);
 }
 
 
 TcApiCommonRet TcLibModule::TcLibValidateUpdateMsg
-         (uint32_t sessionid, uint32_t configid) {
+(uint32_t sessionid, uint32_t configid) {
   return stub_getMappedResultCode(TcLibModule::VALIDATE_UPDATE);
 }
 
@@ -86,13 +86,13 @@ TcCommonRet TcLibModule::ValidateCommitOperSequence(TcMsgOperType oper_type) {
 
 
 TcCommonRet TcLibModule::TcLibModule::ValidateAuditOperSequence
-                (TcMsgOperType oper_type) {
+(TcMsgOperType oper_type) {
   return stub_getMappedResultCode(TcLibModule::VALIDATE_AUDIT_OPER);
 }
 
 
 TcCommonRet TcLibModule::ValidateUpllUpplCommitSequence
-              (TcMsgOperType oper_type) {
+(TcMsgOperType oper_type) {
   return stub_getMappedResultCode(TcLibModule::VALIDATE_UPLL_COMMIT);
 }
 
@@ -103,7 +103,7 @@ TcCommonRet TcLibModule::ValidateDriverCommitSequence(TcMsgOperType oper_type) {
 
 
 TcCommonRet TcLibModule::ValidateUpllUpplAuditSequence
-                 (TcMsgOperType oper_type) {
+(TcMsgOperType oper_type) {
   return stub_getMappedResultCode(TcLibModule::VALIDATE_UPLL_AUDIT);
 }
 
@@ -132,13 +132,13 @@ TcCommonRet TcLibModule::NotifySessionConfig() {
 
 
 TcCommonRet TcLibModule::CommitTransStartEnd(TcMsgOperType oper_type,
-                                TcCommitTransactionMsg commit_trans_msg) {
+                                 TcCommitTransactionMsg commit_trans_msg) {
   return stub_getMappedResultCode(TcLibModule::COMMIT_TRANS_START);
 }
 
 
 TcCommonRet TcLibModule::CommitVoteGlobal(TcMsgOperType oper_type,
-                                 TcCommitTransactionMsg commit_trans_msg) {
+                                TcCommitTransactionMsg commit_trans_msg) {
   return stub_getMappedResultCode(TcLibModule::COMMIT_VOTE_GLOBAL);
 }
 
@@ -163,12 +163,12 @@ TcCommonRet TcLibModule::CommitGlobalAbort() {
 }
 
 TcCommonRet TcLibModule::AuditTransStartEnd(TcMsgOperType oper_type,
-                                    TcAuditTransactionMsg audit_trans_msg) {
+                                 TcAuditTransactionMsg audit_trans_msg) {
   return stub_getMappedResultCode(TcLibModule::AUDIT_TRANS_START);
 }
 
 TcCommonRet TcLibModule::AuditVoteGlobal(TcMsgOperType oper_type,
-                                 TcAuditTransactionMsg audit_trans_msg) {
+                                TcAuditTransactionMsg audit_trans_msg) {
   return stub_getMappedResultCode(TcLibModule::AUDIT_VOTE_GLOBAL);
 }
 
@@ -231,7 +231,7 @@ TcApiCommonRet TcLibModule::GetKeyIndex(std::string controller_id,
 }
 
 TcApiCommonRet TcLibModule::stub_getMappedResultCode
-                         (TcLibModule::TCApiCommonRet methodType) {
+(TcLibModule::TCApiCommonRet methodType) {
   if (0 != method_tcapi_map.count(methodType)) {
     return method_tcapi_map[methodType];
   }
@@ -239,7 +239,7 @@ TcApiCommonRet TcLibModule::stub_getMappedResultCode
 }
 
 TcCommonRet TcLibModule::stub_getMappedResultCode
-                               (TcLibModule::TCCommonRet methodType) {
+(TcLibModule::TCCommonRet methodType) {
   if (0 != method_tccommon_map.count(methodType)) {
     return method_tccommon_map[methodType];
   }

@@ -6,8 +6,9 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-#ifndef _UT_STUB_H_
-#define _UT_STUB_H_
+
+#ifndef VTN_COORDINATOR_TEST_MODULES_ODCDRIVER_UT_UT_STUB_H_
+#define	VTN_COORDINATOR_TEST_MODULES_ODCDRIVER_UT_UT_STUB_H_
 
 /*
  * Include stub header files.
@@ -16,7 +17,7 @@
 #include "stub/include/core_include/pfc/module.h"
 #include "stub/include/core_include/pfc/ipc_client.h"
 
-#ifdef  __cplusplus
+#ifdef	__cplusplus
 #include "stub/include/cxx/pfcxx/ipc_server.hh"
 #include "stub/include/cxx/pfcxx/ipc_client.hh"
 #include "stub/include/cxx/pfcxx/module.hh"
@@ -26,6 +27,6 @@
 #include "stub/restjsonutil/json_type_util.hh"
 #include "stub/restjsonutil/rest_common_defs.hh"
 #include "stub/vtndrvintf/vtn_drv_module.hh"
-#endif  /*cplusplus */
+#endif	/*cplusplus */
 
-#endif  // _UT_STUB_H_
+#endif  // VTN_COORDINATOR_TEST_MODULES_ODCDRIVER_UT_UT_STUB_H_

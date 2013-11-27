@@ -6,8 +6,9 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-#ifndef __DRIVER_INTERFACE_HH__
-#define __DRIVER_INTERFACE_HH__
+
+#ifndef __CDF_DRIVER_INTERFACE_HH__
+#define __CDF_DRIVER_INTERFACE_HH__
 
 #include <driver/controller_interface.hh>
 #include <driver/driver_command.hh>

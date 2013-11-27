@@ -209,7 +209,7 @@ class ServerEvent
   ServerEvent(uint8_t type, int &err)
       : ServerSession()
     {
-      err = serverEventErr_;
+    	err = serverEventErr_;
     }
 
     ~ServerEvent()
@@ -220,7 +220,7 @@ class ServerEvent
     inline int
     post(void)
     {
-        std::cout<<" post(void) "<<std::endl;
+    	std::cout<<" post(void) "<<std::endl;
         return postResult_;
     }
 

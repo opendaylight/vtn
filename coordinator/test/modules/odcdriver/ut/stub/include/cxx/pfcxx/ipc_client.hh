@@ -152,6 +152,11 @@ public:
     static void stub_setinvoke(pfc_ipcresp_t ipcresp,int err);
 
 private:
+// TODO add comments
+// TODO keep only modifed files; rest take it from system directory
+// TODO keep all stubs inside stub directory
+// TODO all changes prefix/suffic with stub_/_stub.
+    //stub data
     static std::map<uint32_t,pfc_ipctype_t > arg_parameters;
     static std::map<uint32_t,std::string> structNameMap;//<index,structname>
     static std::map<uint32_t,uint32_t> arg_map;
@@ -336,8 +341,8 @@ public:
     inline const pfc_hostaddr_t *
     getHostAddress(void) const
     {
-      pfc_hostaddr_t* host((pfc_hostaddr_t*)malloc(sizeof( pfc_hostaddr_t)));
-      return host;
+    	pfc_hostaddr_t* host((pfc_hostaddr_t*)malloc(sizeof( pfc_hostaddr_t)));
+        return host;
     }
 
     inline const char *

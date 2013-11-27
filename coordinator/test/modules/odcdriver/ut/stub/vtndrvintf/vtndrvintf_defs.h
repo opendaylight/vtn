@@ -6,11 +6,12 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-#ifndef _VTNDRVINTF_DEFS_H_
-#define _VTNDRVINTF_DEFS_H_
+
+#ifndef VTN_COORDINATOR_TEST_MODULES_ODCDRIVER_UT_STUB_VTNDRVINTF_VTNDRVINTF_DEFS_H_
+#define VTN_COORDINATOR_TEST_MODULES_ODCDRIVER_UT_STUB_VTNDRVINTF_VTNDRVINTF_DEFS_H_
 
 typedef enum {
   VTN_DRV_RET_SUCCESS = 0,
   VTN_DRV_RET_FAILURE
 }VtnDrvRetEnum;
-#endif  // _VTNDRVINTF_DEFS_H_
+#endif  // VTN_COORDINATOR_TEST_MODULES_ODCDRIVER_UT_STUB_VTNDRVINTF_VTNDRVINTF_DEFS_H_
