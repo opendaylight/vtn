@@ -65,6 +65,7 @@ UT_SOURCES  += odc_vbr_ut.cc
 UT_SOURCES  += odc_vtn_ut.cc
 UT_SOURCES  += odc_mod_ut.cc
 UT_SOURCES  += odc_controller_ut.cc
+UT_SOURCES  += odc_vbr_vlanmap_ut.cc
 
 CXX_SOURCES += $(UT_SOURCES)
 CXX_SOURCES += $(ODCDRIVER_SOURCES) $(VTNCACHEUTIL_SOURCES) $(TCLIB_SOURCES)
