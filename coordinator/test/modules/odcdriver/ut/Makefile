@@ -34,7 +34,7 @@ ALARM_SRCDIR = $(MODULE_SRCROOT)/alarm
 ALT_SRCDIRS = $(ODCDRIVER_SRCDIR) $(VTNCACHEUTIL_SRCDIR)  $(RESTJSONUTIL_STUBDIR) $(VTNDRVINTF_STUBDIR)
 ALT_SRCDIRS += $(TCLIB_STUBDIR) $(MISC_STUBDIR)
 
-UT_INCDIRS_PREP = stub/include stub/include/core_include
+UT_INCDIRS_PREP  = stub/include stub/include/core_include
 
 EXTRA_CXX_INCDIRS = $(MODULE_SRCROOT)
 EXTRA_CXX_INCDIRS += $(STUBDIR)
@@ -49,7 +49,7 @@ CPPFLAGS += -include ut_stub.h
 
 ODCDRIVER_SOURCES = odc_controller.cc
 ODCDRIVER_SOURCES += odc_mod.cc
-ODCDRIVER_SOURCES += odc_vbr.cc
+ODCDRIVER_SOURCES += odc_vbr.c
 ODCDRIVER_SOURCES += odc_vtn.cc
 ODCDRIVER_SOURCES += odc_vbrif.cc
 ODCDRIVER_SOURCES += odc_vbr_vlanmap.cc
@@ -58,26 +58,27 @@ VTNCACHEUTIL_SOURCES = keytree.cc
 VTNCACHEUTIL_SOURCES += confignode.cc
 
 TCLIB_SOURCES = tclib_module.cc
-MISC_SOURCES  = ipc_client.cc ipc_server.cc module.cc
+MISC_SOURCES = ipc_client.cc ipc_server.cc module.cc
 
-UT_SOURCES  += odc_vbr_if_ut.cc
-UT_SOURCES  += odc_vbr_ut.cc
+UT_SOURCES += odc_vbr_if_ut.cc
+UT_SOURCES += odc_vbr_ut.cc
 UT_SOURCES  += odc_vtn_ut.cc
 UT_SOURCES  += odc_mod_ut.cc
 UT_SOURCES  += odc_controller_ut.cc
+UT_SOURCES  += odc_vbr_vlanmap_ut.cc
 
 CXX_SOURCES += $(UT_SOURCES)
 CXX_SOURCES += $(ODCDRIVER_SOURCES) $(VTNCACHEUTIL_SOURCES) $(TCLIB_SOURCES)
 CXX_SOURCES += $(MISC_SOURCES)
 
-EXTRA_CXXFLAGS  += -fprofile-arcs -ftest-coverage
-EXTRA_CXXFLAGS  += -Dprivate=public -Dprotected=public
+EXTRA_CXXFLAGS += -fprofile-arcs -ftest-coverage
+EXTRA_CXXFLAGS += -Dprivate=public -Dprotected=public
 
-UNC_LIBS = libpfc_util
-
-EXTRA_CPPFLAGS		+= $(JSON_C_CPPFLAGS)
-EXTRA_LIBDIRS		+= $(JSON_C_LIBDIRS)
-EXTRA_LDLIBS		+= -lgcov $(JSON_C_LDFLAGS)
-EXTRA_RUNTIME_DIR	+= $(JSON_C_RUNPATH)
+UNC_LIBS = libpfc_util # libpfc libpfc_ipcsrv libpfc_ipcclnt
+#UNC_LIBS += libpfcxx libpfcxx_ipcsrv libpfcxx_ipcclnt
+EXTRA_CPPFLAGS += $(JSON_C_CPPFLAGS)
+EXTRA_LIBDIRS += $(JSON_C_LIBDIRS)
+EXTRA_LDLIBS += -lgcov $(JSON_C_LDFLAGS)
+EXTRA_RUNTIME_DIR += $(JSON_C_RUNPATH)
 
 include ../../rules.mk
