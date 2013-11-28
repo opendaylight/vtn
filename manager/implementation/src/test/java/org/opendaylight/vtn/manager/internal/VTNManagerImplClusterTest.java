@@ -8,6 +8,8 @@
  */
 package org.opendaylight.vtn.manager.internal;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,10 +26,17 @@ import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.connection.ConnectionLocality;
+import org.opendaylight.controller.sal.core.Config;
+import org.opendaylight.controller.sal.core.ConstructionException;
+import org.opendaylight.controller.sal.core.Edge;
+import org.opendaylight.controller.sal.core.Name;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.core.Property;
+import org.opendaylight.controller.sal.core.State;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchType;
@@ -38,7 +47,9 @@ import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.packet.PacketResult;
 import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
+import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
 import org.opendaylight.controller.sal.utils.EtherTypes;
+import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.controller.sal.utils.Status;
@@ -46,6 +57,7 @@ import org.opendaylight.controller.sal.utils.StatusCode;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
 import org.opendaylight.controller.topologymanager.ITopologyManager;
 import org.opendaylight.vtn.manager.MacAddressEntry;
+import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
 import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.vtn.manager.VBridge;
@@ -68,6 +80,7 @@ import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResultEvent;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
+import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.PortMapEvent;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.RawPacketEvent;
@@ -76,6 +89,7 @@ import org.opendaylight.vtn.manager.internal.cluster.VBridgeIfEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VNodeEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantEvent;
+import org.opendaylight.vtn.manager.internal.cluster.VTenantImpl;
 import org.opendaylight.vtn.manager.internal.cluster.VlanMapEvent;
 
 /**
@@ -137,6 +151,28 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                 = new HashMap<VBridgeIfPath, PortMapConfig>();
         Map<VlanMap, VlanMapConfig> vmaps = new HashMap<VlanMap, VlanMapConfig>();
 
+        // create dummy file in startup directory.
+        String dir = GlobalConstants.STARTUPHOME.toString();
+        String prefix = VTenantImpl.CONFIG_FILE_PREFIX;
+        String suffix = VTenantImpl.CONFIG_FILE_SUFFIX;
+        String[] dummyFileNames = new String[] {
+                prefix + containerName + "-" + suffix,
+                "vtn" + suffix,
+                prefix + containerName + "-" + "config",
+                "config",
+                prefix + containerName + "-" + "notexist" + suffix
+        };
+        Set<File> fileSet = new HashSet<File>();
+        for (String fileName : dummyFileNames) {
+            File file = new File(dir, fileName);
+            try {
+                file.createNewFile();
+                fileSet.add(file);
+            } catch (IOException e) {
+                unexpected(e);
+            }
+        }
+
         String tname = "vtn";
         VTenantPath tpath = new VTenantPath(tname);
         String bname = "vbridge";
@@ -159,7 +195,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
 
         pmaps.put(ifpath1, null);
         pmaps.put(ifpath2, null);
-        checkVTNconfig(tpath, bpathlist, pmaps, null);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, null);
 
         // add mappings
         Node node = NodeCreator.createOFNode(0L);
@@ -178,28 +214,72 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         vmaps.put(map, vlconf);
 
         restartVTNManager(c);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
 
-        checkVTNconfig(tpath, bpathlist, pmaps, vmaps);
-
+        // start after configuration files is removed.
+        // because caches remain, setting is taken over.
         stopVTNManager(false);
         VTNManagerImpl.cleanUpConfigFile(containerName);
         startVTNManager(c);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
 
-        // because cache remain, setting is taken over.
-        checkVTNconfig(tpath, bpathlist, pmaps, vmaps);
+        // start after cache is cleared
+        // this case load from configuration files.
+        stopVTNManager(true);
+        startVTNManager(c);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
 
-        vtnMgr.saveConfiguration();
 
+        // in case another node is loading configuration and
+        // waiting process in self node timeout.
+        stopVTNManager(true);
+        createClusterCache(stubObj, true);
+
+        ConcurrentMap<VTenantPath, Object> stateDB
+            = (ConcurrentMap<VTenantPath, Object>) stubObj.getCache(VTNManagerImpl.CACHE_STATE);
+
+        VTenantPath tpathNull = new VTenantPath(null);
+        InetAddress ia
+            = getInetAddressFromAddress(new byte[] {(byte) 192, (byte) 168,
+                                                    (byte) 0, (byte) 2});
+        ObjectPair<InetAddress, Boolean> obj
+            = new ObjectPair<InetAddress, Boolean>(ia, Boolean.FALSE);
+        stateDB.put(tpathNull, obj);
+
+        startVTNManager(c);
+
+        // loaded from configuration file.
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+
+
+        // in case another node start loading configuration
+        // but loading doesn't finish and stop.
+        stopVTNManager(true);
+        createClusterCache(stubObj, true);
+        stateDB
+            = (ConcurrentMap<VTenantPath, Object>) stubObj.getCache(VTNManagerImpl.CACHE_STATE);
+
+        ia = getInetAddressFromAddress(new byte[] {(byte) 192, (byte) 168,
+                                                   (byte) 0, (byte) 99});
+        obj = new ObjectPair<InetAddress, Boolean>(ia, Boolean.FALSE);
+        assertNull(stateDB.put(tpathNull, obj));
+
+        startVTNManager(c);
+
+        // check whether configuration loaded from configuration file.
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+
+
+        // start with no cluster service.
         stopVTNManager(true);
         vtnMgr.unsetClusterContainerService(stubObj);
         startVTNManager(c);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
 
-        checkVTNconfig(tpath, bpathlist, pmaps, vmaps);
         stopVTNManager(true);
         vtnMgr.setClusterContainerService(stubObj);
 
         // remove configuration files.
-        stopVTNManager(true);
         VTNManagerImpl.cleanUpConfigFile(containerName);
         startVTNManager(c);
 
@@ -236,6 +316,17 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
 
         stopVTNManager(true);
         VTNManagerImpl.cleanUpConfigFile(containerNameTest);
+
+        // check if dummy files exist.
+        for (File file : fileSet) {
+            if (file.getName()
+                    .equals(prefix + containerName + "-" + "notexist" + suffix)) {
+                assertFalse(file.toString(), file.exists());
+            } else {
+                assertTrue(file.toString(), file.exists());
+                file.delete();
+            }
+        }
     }
 
     /**
@@ -247,7 +338,8 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
      * In case that a cache is remained when cache is created in cluster mode.
      * </p>
      */
-   public void testInitEventAndFlowAndMacCacheRemainedCase() {
+    @Test
+    public void testInitEventAndFlowAndMacCacheRemainedCase() {
         ComponentImpl c = new ComponentImpl(null, null, null);
         Hashtable<String, String> properties = new Hashtable<String, String>();
         String containerName = "default";
@@ -388,86 +480,147 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                         .getCache(VTNManagerImpl.CACHE_EVENT);
         clsEvents.clear();
 
+        VTNManagerAwareStub listener = new VTNManagerAwareStub();
+        mgr.addVTNManagerAware(listener);
+        flushTasks();
+
         // add vTenant.
         VTenantConfig tconf = new VTenantConfig(null, 300, 0);
         Status st = mgr.addTenant(tpath, tconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        checkVTenantEvent(clsEvents, 1, tpath, tconf, UpdateType.ADDED);
+        List<ClusterEvent> events = new ArrayList<ClusterEvent>(clsEvents.values());
+        checkVTenantEvent(events, 1, tpath, tconf, UpdateType.ADDED);
+        VTenantEvent tev = (VTenantEvent) events.get(0);
+
+        listener.checkVtnInfo(1, tpath, UpdateType.ADDED);
+        executeVTenantEvent(mgr, tpath, tev);
+        listener.checkVtnInfo(1, tpath, UpdateType.ADDED);
         clsEvents.clear();
 
         // change vTenant.
         tconf = new VTenantConfig("desc", 100, 200);
         st = mgr.modifyTenant(tpath, tconf, true);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        checkVTenantEvent(clsEvents, 1, tpath, tconf, UpdateType.CHANGED);
+        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        checkVTenantEvent(events, 1, tpath, tconf, UpdateType.CHANGED);
+        tev = (VTenantEvent) events.get(0);
+
+        listener.checkVtnInfo(1, tpath, UpdateType.CHANGED);
+        executeVTenantEvent(mgr, tpath, tev);
+        listener.checkVtnInfo(1, tpath, UpdateType.CHANGED);
         clsEvents.clear();
 
         // remove vTenant.
         st = mgr.removeTenant(tpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        checkVTenantEvent(clsEvents, 1, tpath, tconf, UpdateType.REMOVED);
+        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        checkVTenantEvent(events, 1, tpath, tconf, UpdateType.REMOVED);
+        tev = (VTenantEvent) events.get(0);
+
+        listener.checkVtnInfo(1, tpath, UpdateType.REMOVED);
+        executeVTenantEvent(mgr, tpath, tev);
+        listener.checkVtnInfo(1, tpath, UpdateType.REMOVED);
         clsEvents.clear();
 
         // add vTenant again for following tests.
         tconf = new VTenantConfig(null, 300, 0);
         st = mgr.addTenant(tpath, tconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        clsEvents.clear();
 
+        listener.checkVtnInfo(1, tpath, UpdateType.ADDED);
+        clsEvents.clear();
 
         // add vBridge.
         VBridgeConfig bconf = new VBridgeConfig(null, 600);
         st = mgr.addBridge(bpath, bconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        checkVBridgeEvent(clsEvents, 1, bpath, bconf, UpdateType.ADDED);
+        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        checkVBridgeEvent(events, 1, bpath, bconf, UpdateType.ADDED);
+        VBridgeEvent bev = (VBridgeEvent) events.get(0);
+
+        listener.checkVbrInfo(1, bpath, UpdateType.ADDED);
+        executeVBridgeEvent(mgr, bpath, bev, true);
+        listener.checkVbrInfo(1, bpath, UpdateType.ADDED);
         clsEvents.clear();
 
         // change vBridge.
         bconf = new VBridgeConfig("desc", 600);
         st = mgr.modifyBridge(bpath, bconf, true);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        checkVBridgeEvent(clsEvents, 1, bpath, bconf, UpdateType.CHANGED);
+        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        checkVBridgeEvent(events, 1, bpath, bconf, UpdateType.CHANGED);
+        bev = (VBridgeEvent) events.get(0);
+
+        listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
+        executeVBridgeEvent(mgr, bpath, bev, true);
+        listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
         clsEvents.clear();
 
         // remove vBridge.
         st = mgr.removeBridge(bpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        checkVBridgeEvent(clsEvents, 1, bpath, bconf, UpdateType.REMOVED);
+        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        checkVBridgeEvent(events, 1, bpath, bconf, UpdateType.REMOVED);
+        bev = (VBridgeEvent) events.get(0);
+
+        listener.checkVbrInfo(1, bpath, UpdateType.REMOVED);
+        executeVBridgeEvent(mgr, bpath, bev, true);
+        listener.checkVbrInfo(1, bpath, UpdateType.REMOVED);
         clsEvents.clear();
 
         // add vBridge for following tests.
         bconf = new VBridgeConfig(null, 600);
         st = mgr.addBridge(bpath, bconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        clsEvents.clear();
 
+        listener.checkVbrInfo(1, bpath, UpdateType.ADDED);
+        clsEvents.clear();
 
         // add vBridgeInterface.
         VInterfaceConfig ifconf = new VInterfaceConfig(null, Boolean.TRUE);
         st = mgr.addBridgeInterface(ifpath, ifconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        checkVBridgeIfEvent(clsEvents, 1, ifpath, ifconf, UpdateType.ADDED);
+        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        checkVBridgeIfEvent(events, 1, ifpath, ifconf, UpdateType.ADDED);
+        VBridgeIfEvent ifev = (VBridgeIfEvent) events.get(0);
+
+        listener.checkVIfInfo(1, ifpath, UpdateType.ADDED);
+        executeClusterEvent(mgr, ifpath, ifev, true);
+        listener.checkVIfInfo(1, ifpath, UpdateType.ADDED);
         clsEvents.clear();
 
         // change vBridgeInterface.
         ifconf = new VInterfaceConfig("description", Boolean.TRUE);
         st = mgr.modifyBridgeInterface(ifpath, ifconf, true);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        checkVBridgeIfEvent(clsEvents, 1, ifpath, ifconf, UpdateType.CHANGED);
+        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        checkVBridgeIfEvent(events, 1, ifpath, ifconf, UpdateType.CHANGED);
+        ifev = (VBridgeIfEvent) events.get(0);
+
+        listener.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
+        executeClusterEvent(mgr, ifpath, ifev, true);
+        listener.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
         clsEvents.clear();
 
-        // remote vBridgeInterface.
+        // remove vBridgeInterface.
         st = mgr.removeBridgeInterface(ifpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        checkVBridgeIfEvent(clsEvents, 1, ifpath, ifconf, UpdateType.REMOVED);
+        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        checkVBridgeIfEvent(events, 1, ifpath, ifconf, UpdateType.REMOVED);
+        ifev = (VBridgeIfEvent) events.get(0);
+
+        listener.checkVIfInfo(1, ifpath, UpdateType.REMOVED);
+        executeClusterEvent(mgr, ifpath, ifev, true);
+        listener.checkVIfInfo(1, ifpath, UpdateType.REMOVED);
         clsEvents.clear();
 
         // add vBridgeInterface for following tests.
         ifconf = new VInterfaceConfig(null, Boolean.TRUE);
         st = mgr.addBridgeInterface(ifpath, ifconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        clsEvents.clear();
 
+        listener.checkVIfInfo(1, ifpath, UpdateType.ADDED);
+        clsEvents.clear();
 
         // add PortMap. When PortMap status is changed,
         // VBridge and VBridgeInterface status is also changed.
@@ -477,11 +630,13 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         PortMapConfig pmconf = new PortMapConfig(node0, port, vlan);
         st = mgr.setPortMap(ifpath, pmconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        assertEquals(3, clsEvents.size());
-        VBridgeEvent bev = null;
-        VBridgeIfEvent ifev = null;
+        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        assertEquals(3, events.size());
+
+        bev = null;
+        ifev = null;
         PortMapEvent pmev = null;
-        for (ClusterEvent ev : clsEvents.values()) {
+        for (ClusterEvent ev : events) {
             if (ev instanceof VBridgeEvent) {
                 if (bev != null) {
                     fail("unexpected event was posted.(" + ev.toString() + ")");
@@ -489,6 +644,9 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                 bev = (VBridgeEvent) ev;
                 checkVBridgeEvent(bev, bpath, bconf,
                                   VNodeState.UP, UpdateType.CHANGED);
+                listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
+                executeVBridgeEvent(mgr, bpath, bev, false);
+                listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
             } else if (ev instanceof VBridgeIfEvent) {
                 if (ifev != null) {
                     fail("unexpected event was posted.(" + ev.toString() + ")");
@@ -497,12 +655,18 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                 checkVBridgeIfEvent(ifev, ifpath, ifconf,
                                     VNodeState.UP, VNodeState.UP,
                                     UpdateType.CHANGED);
+                listener.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
+                executeClusterEvent(mgr, ifpath, ifev, false);
+                listener.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
             } else if (ev instanceof PortMapEvent) {
                 if (pmev != null) {
                     fail("unexpected event was posted.(" + ev.toString() + ")");
                 }
                 pmev = (PortMapEvent) ev;
                 checkPortMapEvent(pmev, ifpath, pmconf, UpdateType.ADDED);
+                listener.checkPmapInfo(1, ifpath, pmconf, UpdateType.ADDED);
+                executeClusterEvent(mgr, ifpath, pmev, true);
+                listener.checkPmapInfo(1, ifpath, pmconf, UpdateType.ADDED);
             }
         }
         clsEvents.clear();
@@ -511,18 +675,27 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         pmconf = new PortMapConfig(node0, port, (short) 1);
         st = vtnMgr.setPortMap(ifpath, pmconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        checkPortMapEvent(clsEvents, 1, ifpath, pmconf, UpdateType.CHANGED);
+        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        assertEquals(1, events.size());
+        checkPortMapEvent(events, 1, ifpath, pmconf, UpdateType.CHANGED);
+        pmev = (PortMapEvent) events.get(0);
+
+        listener.checkPmapInfo(1, ifpath, pmconf, UpdateType.CHANGED);
+        executeClusterEvent(mgr, ifpath, pmev, true);
+        listener.checkPmapInfo(1, ifpath, pmconf, UpdateType.CHANGED);
         clsEvents.clear();
 
         // clear PortMap. When portmap is removed,
         // VBridge and VBridgeInterface status is also changed.
         st = mgr.setPortMap(ifpath, null);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        assertEquals(3, clsEvents.size());
+        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        assertEquals(3, events.size());
+        flushTasks();
         bev = null;
         ifev = null;
         pmev = null;
-        for (ClusterEvent ev : clsEvents.values()) {
+        for (ClusterEvent ev : events) {
             if (ev instanceof VBridgeEvent) {
                 if (bev != null) {
                     fail("unexpected event was posted.(" + ev.toString() + ")");
@@ -530,6 +703,9 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                 bev = (VBridgeEvent) ev;
                 checkVBridgeEvent(bev, bpath, bconf,
                                   VNodeState.UNKNOWN, UpdateType.CHANGED);
+                listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
+                executeVBridgeEvent(mgr, bpath, bev, false);
+                listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
             } else if (ev instanceof VBridgeIfEvent) {
                 if (ifev != null) {
                     fail("unexpected event was posted.(" + ev.toString() + ")");
@@ -538,16 +714,21 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                 checkVBridgeIfEvent(ifev, ifpath, ifconf,
                                     VNodeState.UNKNOWN, VNodeState.UNKNOWN,
                                     UpdateType.CHANGED);
+                listener.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
+                executeClusterEvent(mgr, ifpath, ifev, false);
+                listener.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
             } else if (ev instanceof PortMapEvent) {
                 if (pmev != null) {
                     fail("unexpected event was posted.(" + ev.toString() + ")");
                 }
                 pmev = (PortMapEvent) ev;
                 checkPortMapEvent(pmev, ifpath, pmconf, UpdateType.REMOVED);
+                listener.checkPmapInfo(1, ifpath, pmconf, UpdateType.REMOVED);
+                executeClusterEvent(mgr, ifpath, pmev, true);
+                listener.checkPmapInfo(1, ifpath, pmconf, UpdateType.REMOVED);
             }
         }
         clsEvents.clear();
-
 
         // add VlanMap.
         // VBridge status is also changed.
@@ -559,10 +740,12 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
             unexpected(e);
         }
         assertNotNull(map);
-        assertEquals(2, clsEvents.size());
+        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        assertEquals(2, events.size());
+
         bev = null;
         VlanMapEvent vlev = null;
-        for (ClusterEvent ev : clsEvents.values()) {
+        for (ClusterEvent ev : events) {
             if (ev instanceof VBridgeEvent) {
                 if (bev != null) {
                     fail("unexpected event was posted.(" + ev.toString() + ")");
@@ -570,12 +753,18 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                 bev = (VBridgeEvent) ev;
                 checkVBridgeEvent(bev, bpath, bconf,
                                   VNodeState.UP, UpdateType.CHANGED);
+                listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
+                executeVBridgeEvent(mgr, bpath, bev, false);
+                listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
             } else if (ev instanceof VlanMapEvent) {
                 if (vlev != null) {
                     fail("unexpected event was posted.(" + ev.toString() + ")");
                 }
                 vlev = (VlanMapEvent) ev;
                 checkVlanMapEvent(vlev, bpath, map, UpdateType.ADDED);
+                listener.checkVlmapInfo(1, bpath, map.getId(), UpdateType.ADDED);
+                executeClusterEvent(mgr, ifpath, vlev, true);
+                listener.checkVlmapInfo(1, bpath, map.getId(), UpdateType.ADDED);
             }
         }
         clsEvents.clear();
@@ -584,10 +773,12 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         // VBridge status is also changed.
         st = mgr.removeVlanMap(bpath, map.getId());
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        assertEquals(2, clsEvents.size());
+        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        assertEquals(2, events.size());
+
         bev = null;
         vlev = null;
-        for (ClusterEvent ev : clsEvents.values()) {
+        for (ClusterEvent ev : events) {
             if (ev instanceof VBridgeEvent) {
                 if (bev != null) {
                     fail("unexpected event was posted.(" + ev.toString() + ")");
@@ -595,20 +786,32 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                 bev = (VBridgeEvent) ev;
                 checkVBridgeEvent(bev, bpath, bconf,
                                   VNodeState.UNKNOWN, UpdateType.CHANGED);
+                listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
+                executeVBridgeEvent(mgr, bpath, bev, false);
+                listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
             } else if (ev instanceof VlanMapEvent) {
                 if (vlev != null) {
                     fail("unexpected event was posted.(" + ev.toString() + ")");
                 }
                 vlev = (VlanMapEvent) ev;
                 checkVlanMapEvent(vlev, bpath, map, UpdateType.REMOVED);
+                listener.checkVlmapInfo(1, bpath, map.getId(), UpdateType.REMOVED);
+                executeClusterEvent(mgr, ifpath, vlev, true);
+                listener.checkVlmapInfo(1, bpath, map.getId(), UpdateType.REMOVED);
             }
         }
         clsEvents.clear();
+        flushTasks();
+        listener.checkAllNull();
 
         // add port map and vlan map.
         pmconf = new PortMapConfig(node0, port, (short) 0);
         st = mgr.setPortMap(ifpath, pmconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
+        listener.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
+        listener.checkPmapInfo(1, ifpath, pmconf, UpdateType.ADDED);
 
         vlconf = new VlanMapConfig(node0, (short) 4095);
         try {
@@ -618,31 +821,41 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         }
         assertNotNull(map);
 
+        listener.checkVlmapInfo(1, bpath, map.getId(), UpdateType.ADDED);
         clsEvents.clear();
 
         // remove tenant.
-        // VTenantEvent, VBridgeEvent, VBridgeIfEvent,
-        // PortMapEvent and VlanMapEvent are posted.
+        // VTenantEvent, VBridgeEvent, VBridgeIfEvent, PortMapEvent and
+        // VlanMapEvent are posted.
         st = mgr.removeTenant(tpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        assertEquals(5, clsEvents.size());
+        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        assertEquals(5, events.size());
+
+        listener.checkVtnInfo(1, tpath, UpdateType.REMOVED);
+        listener.checkVbrInfo(1, bpath, UpdateType.REMOVED);
+        listener.checkVIfInfo(1, ifpath, UpdateType.REMOVED);
+        listener.checkPmapInfo(1, ifpath, pmconf, UpdateType.REMOVED);
+        listener.checkVlmapInfo(1, bpath, map.getId(), UpdateType.REMOVED);
+
+        flushTasks();
+        listener.checkAllNull();
     }
 
     /**
      * Check {@link VTenantEvent} object.
      *
-     * @param clsEvents A Map between {@link ClusterEventId} and
-     *                  {@link ClusterEvent}.
+     * @param events    A list of {@link ClusterEvent}.
      * @param numEvents A number of events in {@code clsEvents}.
      * @param tpath     A {@link VTenantPath}.
      * @param tconf     A {@link VTenantConfig}.
      * @param utype     A {@link UpdateType}.
      */
-    private void checkVTenantEvent(ConcurrentMap<ClusterEventId, ClusterEvent> clsEvents,
+    private void checkVTenantEvent(List<ClusterEvent> events,
                                    int numEvents, VTenantPath tpath,
                                    VTenantConfig tconf, UpdateType utype) {
-        assertEquals(numEvents, clsEvents.size());
-        for (ClusterEvent ev : clsEvents.values()) {
+        assertEquals(numEvents, events.size());
+        for (ClusterEvent ev : events) {
             if (ev instanceof VTenantEvent) {
                 VTenantEvent tev = (VTenantEvent)ev;
                 assertEquals(tpath, tev.getPath());
@@ -659,18 +872,17 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
     /**
      * Check {@link VBridgeEvent}.
      *
-     * @param clsEvents A Map between {@link ClusterEventId} and
-     *                  {@link ClusterEvent}.
+     * @param events    A list of {@link ClusterEvent}.
      * @param numEvents A number of events in {@code clsEvents}.
      * @param bpath     A {@link VBridgePath}.
      * @param bconf     A {@link VBridgeConfig}.
      * @param utype     A {@link UpdateType}.
      */
-    private void checkVBridgeEvent(ConcurrentMap<ClusterEventId, ClusterEvent> clsEvents,
+    private void checkVBridgeEvent(List<ClusterEvent> events,
                                    int numEvents, VBridgePath bpath,
                                    VBridgeConfig bconf, UpdateType utype) {
-        assertEquals(numEvents, clsEvents.size());
-        for (ClusterEvent ev : clsEvents.values()) {
+        assertEquals(numEvents, events.size());
+        for (ClusterEvent ev : events) {
             if (ev instanceof VBridgeEvent) {
                 VBridgeEvent bev = (VBridgeEvent)ev;
                 checkVBridgeEvent(bev, bpath, bconf, VNodeState.UNKNOWN, utype);
@@ -703,19 +915,18 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
     /**
      * Check {@link VBridgeIfEvent}.
      *
-     * @param clsEvents A Map between {@link ClusterEventId} and
-     *                  {@link ClusterEvent}.
+     * @param events    A list of {@link ClusterEvent}.
      * @param numEvents A number of events in {@code clsEvents}.
      * @param ifpath    A {@link VBridgeIfPath}.
      * @param ifconf    A {@link VInterfaceConfig}.
      * @param utype     A {@link UpdateType}.
      */
-    private void checkVBridgeIfEvent(ConcurrentMap<ClusterEventId, ClusterEvent> clsEvents,
+    private void checkVBridgeIfEvent(List<ClusterEvent> events,
                                      int numEvents, VBridgeIfPath ifpath,
                                      VInterfaceConfig ifconf,
-            UpdateType utype) {
-        assertEquals(numEvents, clsEvents.size());
-        for (ClusterEvent ev : clsEvents.values()) {
+                                     UpdateType utype) {
+        assertEquals(numEvents, events.size());
+        for (ClusterEvent ev : events) {
             if (ev instanceof VBridgeIfEvent) {
                 VBridgeIfEvent ifev = (VBridgeIfEvent)ev;
                 checkVBridgeIfEvent(ifev, ifpath, ifconf,
@@ -752,19 +963,18 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
     /**
      * Check {@link PortMapEvent}.
      *
-     * @param clsEvents A Map between {@link ClusterEventId} and
-     *                  {@link ClusterEvent}.
+     * @param events    A list of {@link ClusterEvent}.
      * @param numEvents A number of events in {@code clsEvents}.
      * @param ifpath    A {@link VBridgeIfPath}.
      * @param pmconf    A {@link PortMapConfig}.
      * @param utype     A {@link UpdateType}.
      */
-    private void checkPortMapEvent(ConcurrentMap<ClusterEventId, ClusterEvent> clsEvents,
+    private void checkPortMapEvent(List<ClusterEvent> events,
                                    int numEvents, VBridgeIfPath ifpath,
                                    PortMapConfig pmconf, UpdateType utype) {
 
-        assertEquals(numEvents, clsEvents.size());
-        for (ClusterEvent ev : clsEvents.values()) {
+        assertEquals(numEvents, events.size());
+        for (ClusterEvent ev : events) {
             if (ev instanceof PortMapEvent) {
                 PortMapEvent pmev = (PortMapEvent) ev;
                 checkPortMapEvent(pmev, ifpath, pmconf, utype);
@@ -787,12 +997,11 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                                    UpdateType utype) {
         assertEquals(ifpath, ev.getPath());
         assertEquals(pmconf, ev.getPortMap().getConfig());
-
         NodeConnector nc = NodeConnectorCreator
                 .createOFNodeConnector(Short.valueOf(pmconf.getPort().getId()),
                                        pmconf.getNode());
-        assertEquals(nc, ev.getPortMap().getNodeConnector());
-
+        PortMap pmap = new PortMap(pmconf, nc);
+        assertEquals(pmap, ev.getPortMap());
         assertEquals(utype, ev.getUpdateType());
         assertEquals("port mapping", ev.getTypeName());
     }
@@ -813,6 +1022,215 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         assertEquals(utype, ev.getUpdateType());
         assertEquals("VLAN mapping", ev.getTypeName());
     }
+
+    /**
+     * Execute {@link VTenantEvent} and check result.
+     *
+     * @param mgr       VTNManager service.
+     * @param path      A {@link VTenantPath}.
+     * @param event     A {@link VTenantEvent}.
+     */
+    private void executeVTenantEvent(VTNManagerImpl mgr, VTenantPath path,
+                                     VTenantEvent event) {
+        String tname = path.getTenantName();
+        String root = GlobalConstants.STARTUPHOME.toString();
+        String tenantListFileName = root + "vtn-default-tenant-names.conf";
+        String configFileName =
+            root + "vtn-" + "default" + "-" +  tname + ".conf";
+        File tenantList = new File(tenantListFileName);
+        File configFile = new File(configFileName);
+
+        Set<ClusterEventId> evIdSet = new HashSet<ClusterEventId>();
+        InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+        ClusterEventId evidRemote = new ClusterEventId(ipaddr, 0);
+        ClusterEventId evidLocal = new ClusterEventId();
+        evIdSet.add(evidLocal);
+        evIdSet.add(evidRemote);
+
+        for (ClusterEventId evId : evIdSet) {
+            if (event.getUpdateType() == UpdateType.ADDED
+                || event.getUpdateType() == UpdateType.CHANGED) {
+                tenantList.delete();
+                configFile.delete();
+                if (event.getUpdateType() == UpdateType.ADDED) {
+                    mgr.removeTenantFlowDB(tname);
+                }
+            } else {
+                if (!tenantList.exists()) {
+                    try {
+                        tenantList.createNewFile();
+                    } catch (IOException e) {
+                        unexpected(e);
+                    }
+                }
+                if (!configFile.exists()) {
+                    try {
+                        configFile.createNewFile();
+                    } catch (IOException e) {
+                        unexpected(e);
+                    }
+                }
+                if (mgr.getTenantFlowDB(tname) == null) {
+                    mgr.createTenantFlowDB(tname);
+                }
+            }
+
+            mgr.entryUpdated(evId, event, VTNManagerImpl.CACHE_EVENT, true);
+            flushTasks();
+            if (event.getUpdateType() == UpdateType.ADDED
+                    || event.getUpdateType() == UpdateType.CHANGED) {
+                assertFalse(tenantList.exists());
+                assertFalse(configFile.exists());
+                assertNull(mgr.getTenantFlowDB(tname));
+            } else {
+                assertTrue(tenantList.exists());
+                assertTrue(configFile.exists());
+                assertNotNull(mgr.getTenantFlowDB(tname));
+            }
+
+            mgr.entryUpdated(evId, event, VTNManagerImpl.CACHE_EVENT, false);
+            flushTasks();
+            switch (event.getUpdateType()) {
+            case ADDED:
+                if (evId == evidRemote) {
+                    assertTrue(tenantList.exists());
+                    assertTrue(configFile.exists());
+                    assertNotNull(mgr.getTenantFlowDB(tname));
+                } else {
+                    assertFalse(tenantList.exists());
+                    assertFalse(configFile.exists());
+                    assertNull(mgr.getTenantFlowDB(tname));
+                }
+                break;
+            case CHANGED:
+                if (evId == evidRemote) {
+                    assertFalse(tenantList.exists());
+                    assertTrue(configFile.exists());
+                } else {
+                    assertFalse(tenantList.exists());
+                    assertFalse(configFile.exists());
+                }
+                break;
+            case REMOVED:
+                if (evId == evidRemote) {
+                    assertTrue(tenantList.exists());
+                    assertFalse(configFile.exists());
+                    assertNull(mgr.getTenantFlowDB(tname));
+                } else {
+                    assertTrue(tenantList.exists());
+                    assertTrue(configFile.exists());
+                    assertNotNull(mgr.getTenantFlowDB(tname));
+                }
+                break;
+            default:
+                fail("Unexpected case.");
+                break;
+            }
+        }
+    }
+
+    /**
+     * Execute {@link VBridgeEvent} and check result.
+     *
+     * @param mgr       VTNManager service.
+     * @param path      A {@link VBridgePath}.
+     * @param event     A {@link VBridgeEvent}
+     * @param saveConfig    if {@code true} expect that configuration file is saved.
+     *                      if {@code false} expect that it isn't saved.
+     */
+    private void executeVBridgeEvent(VTNManagerImpl mgr, VBridgePath path,
+                                     VBridgeEvent event, boolean saveConfig) {
+        String tname = path.getTenantName();
+        String root = GlobalConstants.STARTUPHOME.toString();
+        String tenantListFileName = root + "vtn-default-tenant-names.conf";
+        String configFileName =
+            root + "vtn-" + "default" + "-" +  tname + ".conf";
+        File tenantList = new File(tenantListFileName);
+        File configFile = new File(configFileName);
+
+        Set<ClusterEventId> evIdSet = new HashSet<ClusterEventId>();
+        InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+        ClusterEventId evIdRemote = new ClusterEventId(ipaddr, 0);
+        ClusterEventId evIdLocal = new ClusterEventId();
+        evIdSet.add(evIdLocal);
+        evIdSet.add(evIdRemote);
+
+        for (ClusterEventId evId : evIdSet) {
+            configFile.delete();
+            if (mgr.getMacAddressTable(path) == null) {
+                mgr.addMacAddressTable(path, 600);
+            }
+
+            mgr.entryUpdated(evId, event, VTNManagerImpl.CACHE_EVENT, true);
+            flushTasks();
+            assertFalse(configFile.exists());
+            assertNotNull(mgr.getMacAddressTable(path));
+
+            mgr.entryUpdated(evId, event, VTNManagerImpl.CACHE_EVENT, false);
+            flushTasks();
+
+            if (evId == evIdRemote && saveConfig) {
+                assertTrue(configFile.exists());
+            } else {
+                assertFalse(configFile.exists());
+            }
+
+            if (evId == evIdRemote
+                    && event.getUpdateType() == UpdateType.REMOVED) {
+                assertNull(mgr.getMacAddressTable(path));
+
+            } else {
+                assertNotNull(mgr.getMacAddressTable(path));
+            }
+            assertTrue(tenantList.exists());
+        }
+    }
+
+    /**
+     * Execute {@link ClusterEvent} and check result.
+     *
+     * @param mgr       VTNManager service.
+     * @param path      A {@link VTenantPath} or object inherit it.
+     * @param event     A {@link ClusterEvent} or object inherit it.
+     * @param saveConfig    if {@code true} expect that configuration file is saved.
+     *                      if {@code false} expect that it isn't saved.
+     */
+    private void executeClusterEvent(VTNManagerImpl mgr, VTenantPath path,
+                                       ClusterEvent event, boolean saveConfig) {
+        String tname = path.getTenantName();
+        String root = GlobalConstants.STARTUPHOME.toString();
+        String tenantListFileName = root + "vtn-default-tenant-names.conf";
+        String configFileName =
+            root + "vtn-" + "default" + "-" +  tname + ".conf";
+        File tenantList = new File(tenantListFileName);
+        File configFile = new File(configFileName);
+
+        Set<ClusterEventId> evIdSet = new HashSet<ClusterEventId>();
+        InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+        ClusterEventId evIdRemote = new ClusterEventId(ipaddr, 0);
+        ClusterEventId evIdLocal = new ClusterEventId();
+        evIdSet.add(evIdLocal);
+        evIdSet.add(evIdRemote);
+
+        for (ClusterEventId evId : evIdSet) {
+            configFile.delete();
+
+            mgr.entryUpdated(evId, event, VTNManagerImpl.CACHE_EVENT, true);
+            flushTasks();
+            assertFalse(configFile.exists());
+
+            mgr.entryUpdated(evId, event, VTNManagerImpl.CACHE_EVENT, false);
+            flushTasks();
+
+            if (evId == evIdRemote && saveConfig) {
+                assertTrue(configFile.exists());
+            } else {
+                assertFalse(configFile.exists());
+            }
+            assertTrue(tenantList.exists());
+        }
+    }
+
 
     /**
      * Test method for {@link VTNManagerImpl#entryUpdated}.
@@ -887,6 +1305,408 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                          stubObj.getTransmittedDataPacket().size());
             }
         }
+    }
+
+    /**
+     * Test method for
+     * {@link VTNManagerImpl#notifyNode(Node, UpdateType, Map)},
+     * {@link VTNManagerImpl#notifyNodeConnector(NodeConnector, UpdateType, Map)},
+     * {@link VTNManagerImpl#edgeUpdate(java.util.List)}.
+     *
+     * <p>
+     * test with both port map and vlan map set in cluster mode.
+     * </p>
+     */
+    @Test
+    public void  testNotificationWithBothMapped() {
+        VTNManagerImpl mgr = vtnMgr;
+        Set<Node> nodeSet = new HashSet<Node>();
+
+        short[] vlans = new short[] { 0, 10, 4095 };
+
+        String tname = "vtn";
+        VTenantPath tpath = new VTenantPath(tname);
+        String bname = "vbridge";
+        VBridgePath bpath = new VBridgePath(tname, bname);
+        VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, "vinterface");
+        Status st = null;
+
+        List<VBridgePath> bpathlist = new ArrayList<VBridgePath>();
+        List<VBridgeIfPath> ifplist = new ArrayList<VBridgeIfPath>();
+        bpathlist.add(bpath);
+        ifplist.add(ifp);
+        createTenantAndBridgeAndInterface(mgr, tpath, bpathlist, ifplist);
+
+        PortMap pmap = null;
+        try {
+            pmap = mgr.getPortMap(ifp);
+        } catch (Exception e) {
+            unexpected(e);
+        }
+        assertNull(pmap);
+
+        Node pnode = NodeCreator.createOFNode(0L);
+        Node onode = NodeCreator.createOFNode(1L);
+        nodeSet.add(null);
+        nodeSet.add(pnode);
+        nodeSet.add(onode);
+
+        SwitchPort[] ports = new SwitchPort[] {
+                new SwitchPort("port-10", NodeConnector.NodeConnectorIDType.OPENFLOW, "10"),
+                new SwitchPort(null, NodeConnector.NodeConnectorIDType.OPENFLOW, "11"),
+                new SwitchPort("port-10", null, null),
+                new SwitchPort("port-10"),
+                new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "13"),
+        };
+
+        for (Node cnode : nodeSet) {
+            if (cnode == null) {
+                continue;
+            }
+            NodeConnector cnc
+                = NodeConnectorCreator
+                    .createOFNodeConnector(Short.valueOf((short)10), cnode);
+
+            for (Node pmapNode : nodeSet) {
+                if (pmapNode == null) {
+                    continue;
+                }
+                for (SwitchPort port : ports) {
+                    for (short vlan : vlans) {
+                        // add port map
+                        PortMapConfig pmconf = new PortMapConfig(pmapNode, port,
+                                                                 (short)vlan);
+                        String emsg = "(PortMapConfig)" + pmconf.toString();
+
+                        st = mgr.setPortMap(ifp, pmconf);
+                        assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
+
+                        PortMap map = null;
+                        try {
+                            map = mgr.getPortMap(ifp);
+                        } catch (Exception e) {
+                            unexpected(e);
+                        }
+                        assertEquals(emsg, pmconf, map.getConfig());
+                        assertNotNull(emsg, map.getNodeConnector());
+                        if(port.getId() != null) {
+                            assertEquals(emsg,
+                                         Short.parseShort(port.getId()),
+                                         map.getNodeConnector().getID());
+                        }
+                        if (port.getType() != null) {
+                            assertEquals(emsg,
+                                         port.getType(),
+                                         map.getNodeConnector().getType());
+                        }
+                        checkNodeStatus(mgr, bpath, ifp, VNodeState.UP,
+                                        VNodeState.UP, emsg);
+
+                        // add a vlanmap to a vbridge
+                        for (Node vmapNode : nodeSet) {
+                            for (short vvlan : vlans) {
+                                VlanMapConfig vlconf = new VlanMapConfig(vmapNode,
+                                                                         vvlan);
+                                String emsgVmap = "(VlanMapConfig)"
+                                              + vlconf.toString() + "," + emsg;
+                                VlanMap vmap = null;
+                                try {
+                                    vmap = mgr.addVlanMap(bpath, vlconf);
+                                    if (vmapNode != null
+                                            && vmapNode.getType() != NodeConnector.NodeConnectorIDType.OPENFLOW) {
+                                        fail("throwing Exception was expected.");
+                                    }
+                                } catch (VTNException e) {
+                                    if (vmapNode != null
+                                            && vmapNode.getType() == NodeConnector.NodeConnectorIDType.OPENFLOW) {
+                                        unexpected(e);
+                                    } else {
+                                        continue;
+                                    }
+                                }
+
+                                VlanMap getmap = null;
+                                try {
+                                    getmap = mgr.getVlanMap(bpath, vmap.getId());
+                                } catch (VTNException e) {
+                                    unexpected(e);
+                                }
+                                assertEquals(emsgVmap, getmap.getId(), vmap.getId());
+                                assertEquals(emsgVmap, getmap.getNode(), vmapNode);
+                                assertEquals(emsgVmap, getmap.getVlan(), vvlan);
+                                checkNodeStatus(mgr, bpath, ifp, VNodeState.UP,
+                                                VNodeState.UP, emsgVmap);
+
+                                // test for notification APIs.
+                                checkNotification (mgr, bpath, ifp, cnc,
+                                                   cnode, pmconf, vlconf,
+                                                   MapType.ALL, emsgVmap);
+
+                                st = mgr.removeVlanMap(bpath, vmap.getId());
+                                assertEquals(emsgVmap, StatusCode.SUCCESS, st.getCode());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        st = mgr.removeTenant(tpath);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+    }
+
+    /**
+     * Test Notification APIs.
+     *
+     * @param mgr       VTN Manager service.
+     * @param bpath     A {@link VBridgePath} which is checked.
+     * @param ifp       A {@link VBridgeIfPath} which is checked.
+     * @param chgNc     A {@link NodeConnector} which is changed status
+     * @param chgNode   A {@link Node} which is changed status
+     * @param pmconf    A {@link PortMapConfig}. If there are no portmap,
+     *                  specify null.
+     * @param vlconf    A {@link VlanMapConfig}. If there are no vlanmap,
+     *                  specify null.
+     * @param mapType   {@link MapType}.
+     * @param msg       A string output when assertion is failed.
+     */
+    protected void checkNotification (VTNManagerImpl mgr, VBridgePath bpath,
+                                      VBridgeIfPath ifp, NodeConnector chgNc,
+                                      Node chgNode, PortMapConfig pmconf,
+                                      VlanMapConfig vlconf, MapType mapType,
+                                      String msg) {
+        ISwitchManager swMgr = mgr.getSwitchManager();
+        ITopologyManager topoMgr = mgr.getTopologyManager();
+        VTenantPath tpath = new VTenantPath(bpath.getTenantName());
+
+        NodeConnector mapNc = null;
+        Node portMapNode = null;
+        Node vlanMapNode = null;
+        if (pmconf != null) {
+            Short s;
+            if (pmconf.getPort().getId() == null) {
+                String [] tkn = pmconf.getPort().getName().split("-");
+                s = Short.valueOf(tkn[1]);
+            } else {
+                s = Short.valueOf(pmconf.getPort().getId());
+            }
+            mapNc = NodeConnectorCreator.createOFNodeConnector(s, pmconf.getNode());
+            portMapNode = mapNc.getNode();
+        }
+        if (vlconf != null) {
+            vlanMapNode = vlconf.getNode();
+        }
+
+        // test for nodeconnector change notify.
+        Map<String, Property> propMap = null; // not used now.
+        checkMacTableEntry(mgr, bpath, true, msg);
+        putMacTableEntry(mgr, bpath, chgNc);
+        mgr.notifyNodeConnector(chgNc, UpdateType.REMOVED, propMap);
+        if (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) {
+            if (chgNc.equals(mapNc)) {
+                checkNodeStatus(mgr, bpath, ifp, VNodeState.DOWN, VNodeState.DOWN, msg);
+            } else {
+                checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UP, msg);
+            }
+        } else {
+            checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UNKNOWN, msg);
+        }
+        if (chgNc.equals(mapNc) || vlanMapNode == null || chgNode.equals(vlanMapNode)) {
+            checkMacTableEntry(mgr, bpath, true, msg);
+        } else {
+            checkMacTableEntry(mgr, bpath, false, msg);
+        }
+
+        propMap = swMgr.getNodeConnectorProps(chgNc);
+        mgr.notifyNodeConnector(chgNc, UpdateType.ADDED, propMap);
+        mgr.initISL();
+        if (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) {
+            checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UP, msg);
+        } else {
+            checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UNKNOWN, msg);
+        }
+
+        // add again
+        mgr.notifyNodeConnector(chgNc, UpdateType.ADDED, propMap);
+        if (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) {
+            checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UP, msg);
+        } else {
+            checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UNKNOWN, msg);
+        }
+
+        Map<String, Property> newPropMap = new HashMap<String, Property>();
+        newPropMap.put(Name.NamePropName, new Name(""));
+        newPropMap.put(Config.ConfigPropName, new Config(Config.ADMIN_UP));
+        newPropMap.put(State.StatePropName, new State(State.EDGE_UP));
+
+        mgr.notifyNodeConnector(chgNc, UpdateType.CHANGED, newPropMap);
+        if (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) {
+            checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UP, msg);
+        } else {
+            checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UNKNOWN, msg);
+        }
+        flushMacTableEntry(mgr, bpath);
+
+        // test for node change notify
+        Node node0 = NodeCreator.createOFNode(Long.valueOf("0"));
+        NodeConnector innc = NodeConnectorCreator
+                .createOFNodeConnector(Short.valueOf("10"), node0);
+        NodeConnector outnc = NodeConnectorCreator
+                .createOFNodeConnector(Short.valueOf("11"), node0);
+
+        VTNFlow flow = putFlowEntry(mgr, tpath.getTenantName(), innc, outnc);
+        putMacTableEntry(mgr, bpath, chgNc);
+        mgr.notifyNode(chgNode, UpdateType.REMOVED, propMap);
+        if (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) {
+            if (chgNode.equals(portMapNode)) {
+                checkNodeStatus(mgr, bpath, ifp, VNodeState.DOWN, VNodeState.DOWN, msg);
+                checkMacTableEntry(mgr, bpath, true, msg);
+            } else if (chgNode.equals(vlanMapNode)) {
+                checkNodeStatus(mgr, bpath, ifp, VNodeState.DOWN, VNodeState.UP, msg);
+                checkMacTableEntry(mgr, bpath, true, msg);
+            } else {
+                checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UP, msg);
+                checkMacTableEntry(mgr, bpath,
+                        (mapType.equals(MapType.ALL) && vlanMapNode == null) ? true : false,
+                        msg);
+            }
+        } else {
+            if (chgNode.equals(vlanMapNode)) {
+                checkNodeStatus(mgr, bpath, ifp, VNodeState.DOWN, VNodeState.UNKNOWN,msg);
+                checkMacTableEntry(mgr, bpath, true, msg);
+            } else {
+                checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UNKNOWN,msg);
+                checkMacTableEntry(mgr, bpath, (vlanMapNode == null) ? true : false, msg);
+            }
+        }
+
+        flushFlowTasks();
+        if (chgNc.getNode().equals(node0)) {
+            assertFalse(checkFlowEntry(mgr, flow));
+            for (FlowEntry ent : flow.getFlowEntries()) {
+                stubObj.uninstallFlowEntry(ent);
+            }
+        } else {
+            assertTrue(checkFlowEntry(mgr, flow));
+        }
+        mgr.removeAllFlows(tpath);
+        flushMacTableEntry(mgr, bpath);
+
+        mgr.initInventory();
+        mgr.initISL();
+        flow = putFlowEntry(mgr, tpath.getTenantName(), innc, outnc);
+        mgr.getNodeDB().remove(chgNode);
+        mgr.notifyNode(chgNode, UpdateType.ADDED, propMap);
+        if (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) {
+            if (chgNode.equals(portMapNode)) {
+                checkNodeStatus(mgr, bpath, ifp, VNodeState.DOWN, VNodeState.DOWN, msg);
+            } else {
+                checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UP, msg);
+            }
+        } else {
+            checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UNKNOWN, msg);
+        }
+
+        flushFlowTasks();
+        if (chgNc.getNode().equals(node0)) {
+            assertFalse(checkFlowEntry(mgr, flow));
+            for (FlowEntry ent : flow.getFlowEntries()) {
+                stubObj.uninstallFlowEntry(ent);
+            }
+        } else {
+            assertTrue(checkFlowEntry(mgr, flow));
+        }
+        mgr.removeAllFlows(tpath);
+
+        if (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) {
+            mgr.initInventory();
+            mgr.initISL();
+            mgr.getPortDB().remove(mapNc);
+            propMap = swMgr.getNodeConnectorProps(mapNc);
+            mgr.notifyNodeConnector(mapNc, UpdateType.ADDED, propMap);
+            checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UP, msg);
+        }
+
+        mgr.notifyNode(chgNode, UpdateType.CHANGED, propMap);
+        if (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) {
+            checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UP, msg);
+        } else {
+            checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UNKNOWN, msg);
+        }
+
+        // test for a edge changed notification
+        Map<Edge, Set<Property>> edges = topoMgr.getEdges();
+        for (Edge edge: edges.keySet()) {
+            List<TopoEdgeUpdate> topoList = new ArrayList<TopoEdgeUpdate>();
+            String emsgEdge = msg + ",(Edge)" + edge.toString();
+
+            TopoEdgeUpdate update =
+                new TopoEdgeUpdate(edge, null, UpdateType.REMOVED);
+            topoList.add(update);
+
+            Edge reverseEdge = null;
+            try {
+                reverseEdge = new Edge(edge.getHeadNodeConnector(),
+                        edge.getTailNodeConnector());
+            } catch (ConstructionException e) {
+                unexpected(e);
+            }
+            update = new TopoEdgeUpdate(reverseEdge, null, UpdateType.REMOVED);
+            topoList.add(update);
+
+            stubObj.deleteEdge(edge);
+            stubObj.deleteEdge(reverseEdge);
+            mgr.edgeUpdate(topoList);
+            checkNodeStatus(mgr, bpath, ifp, VNodeState.UP,
+                    (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) ? VNodeState.UP : VNodeState.UNKNOWN,
+                    emsgEdge);
+
+            topoList.clear();
+            update = new TopoEdgeUpdate(edge, null, UpdateType.ADDED);
+            topoList.add(update);
+            update = new TopoEdgeUpdate(reverseEdge, null, UpdateType.ADDED);
+            topoList.add(update);
+
+            stubObj.addEdge(edge);
+            stubObj.addEdge(reverseEdge);
+            mgr.edgeUpdate(topoList);
+            checkNodeStatus(mgr, bpath, ifp, VNodeState.UP,
+                    (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) ? VNodeState.UP : VNodeState.UNKNOWN,
+                            emsgEdge);
+
+            topoList.clear();
+            update = new TopoEdgeUpdate(edge, null, UpdateType.CHANGED);
+            topoList.add(update);
+            update = new TopoEdgeUpdate(reverseEdge, null, UpdateType.CHANGED);
+            topoList.add(update);
+
+            mgr.edgeUpdate(topoList);
+            checkNodeStatus(mgr, bpath, ifp, VNodeState.UP,
+                    (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) ? VNodeState.UP : VNodeState.UNKNOWN,
+                            emsgEdge);
+        }
+
+        // a edge consist of unmapped nodeconnector updated
+        Node node = NodeCreator.createOFNode(Long.valueOf(10));
+        NodeConnector head = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short)10), node);
+        NodeConnector tail = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short)11), node);
+        Edge edge = null;
+        try {
+             edge = new Edge(head, tail);
+        } catch (ConstructionException e) {
+            unexpected(e);
+        }
+        List<TopoEdgeUpdate> topoList = new ArrayList<TopoEdgeUpdate>();
+        TopoEdgeUpdate update = new TopoEdgeUpdate(edge, null, UpdateType.ADDED);
+        topoList.add(update);
+        mgr.edgeUpdate(topoList);
+        checkNodeStatus(mgr, bpath, ifp, VNodeState.UP,
+                (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) ? VNodeState.UP : VNodeState.UNKNOWN,
+                msg + "," + edge.toString());
+
+        // Reset inventory cache.
+        mgr.initInventory();
+        mgr.initISL();
     }
 
     /**
@@ -1045,6 +1865,27 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                     st = mgr.removeVlanMap(bpath1, map.getId());
                     assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
                 }
+            }
+        }
+
+        // in case packet received from ISL port.
+        byte[] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
+                                 (byte)0xff, (byte)0xff, (byte)0xff};
+        byte[] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
+        byte[] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
+        for (NodeConnector innc : existConnectors) {
+            if (!vtnMgr.isEdgePort(innc)) {
+                byte[] src = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
+                                         (byte)0x11, (byte)0x11, (byte)0x11};
+
+                RawPacket inPkt = createARPRawPacket(src, dst, sender, target,
+                                                     (short)-1, innc,
+                                                     ARP.REQUEST);
+
+                PacketResult result = mgr.receiveDataPacket(inPkt);
+                assertEquals(PacketResult.IGNORED, result);
+                List<RawPacket> transDatas = stub.getTransmittedDataPacket();
+                assertEquals(0, transDatas.size());
             }
         }
     }

@@ -18,7 +18,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * test for {@link VTNConfig}
+ * JUnit test for {@link VTNConfig}.
  */
 public class VTNConfigTest extends TestBase {
 
@@ -46,6 +46,12 @@ public class VTNConfigTest extends TestBase {
     private final int  DEFAULT_REMOTE_BULK_FLOWMOD_TIMEOUT = 15000;
     private final int  MIN_REMOTE_BULK_FLOWMOD_TIMEOUT = 3000;
     private final int  MAX_REMOTE_BULK_FLOWMOD_TIMEOUT = 600000;
+
+    // Default value, min value, max value of remoteBulkFlowModTimeout
+    private final int  DEFAULT_CACHE_INIT_TIMEOUT = 3000;
+    private final int  MIN_CACHE_INIT_TIMEOUT = 100;
+    private final int  MAX_CACHE_INIT_TIMEOUT = 600000;
+
 
     // Separaters between key and value.
     private final String[] separaters = new String[] {"=", ":"};
@@ -89,7 +95,7 @@ public class VTNConfigTest extends TestBase {
      * {@link VTNConfig#VTNConfig(String, String)},
      * {@link VTNConfig#getNodeEdgeWait()}.
      *
-     * This tests {@code nodeEdgeWait} parameter.
+     * This method tests {@code nodeEdgeWait} parameter.
      */
     @Test
     public void testVTNConfigNodeEdgeWait() {
@@ -111,7 +117,7 @@ public class VTNConfigTest extends TestBase {
      * {@link VTNConfig#VTNConfig(String, String)},
      * {@link VTNConfig#getL2FlowPriority()}.
      *
-     * This tests {@code l2FlowPriority} parameter.
+     * This method tests {@code l2FlowPriority} parameter.
      */
     @Test
     public void testVTNConfigL2FlowPriority() {
@@ -133,7 +139,7 @@ public class VTNConfigTest extends TestBase {
      * {@link VTNConfig#VTNConfig(String, String)},
      * {@link VTNConfig#getFlowModTimeout()}.
      *
-     * This tests {@code flowModTimeout} parameter.
+     * This method tests {@code flowModTimeout} parameter.
      */
     @Test
     public void testVTNConfigFlowModTimeout() {
@@ -155,7 +161,7 @@ public class VTNConfigTest extends TestBase {
      * {@link VTNConfig#VTNConfig(String, String)},
      * {@link VTNConfig#getRemoteFlowModTimeout()}.
      *
-     * This tests {@code remoteFlowModTimeout} parameter.
+     * This method tests {@code remoteFlowModTimeout} parameter.
      */
     @Test
     public void testVTNConfigRemoteFlowModTimeout() {
@@ -178,7 +184,7 @@ public class VTNConfigTest extends TestBase {
       * {@link VTNConfig#VTNConfig(String, String)},
       * {@link VTNConfig#getRemoteBulkFlowModTimeout()}.
       *
-      * This tests {@code remoteBulkFlowModTimeout} parameter.
+      * This method tests {@code remoteBulkFlowModTimeout} parameter.
       */
      @Test
      public void testVTNConigNodeRemoteBulkFlowModTimeout() {
@@ -197,6 +203,29 @@ public class VTNConfigTest extends TestBase {
                       MAX_REMOTE_BULK_FLOWMOD_TIMEOUT, values);
     }
 
+     /**
+      * Test case for
+      * {@link VTNConfig#VTNConfig(String, String)},
+      * {@link VTNConfig#getCacheInitTimeout()}.
+      *
+      * This method tests {@code cacheInitTimeout} parameter.
+      */
+     @Test
+     public void testVTNConigCacheInitTimeout() {
+        String[] values = {
+                null, "empty", "",
+                String.valueOf(MIN_CACHE_INIT_TIMEOUT),
+                String.valueOf(MIN_CACHE_INIT_TIMEOUT - 1),
+                String.valueOf(MAX_CACHE_INIT_TIMEOUT),
+                String.valueOf(MAX_CACHE_INIT_TIMEOUT + 1),
+                "val"
+        };
+
+        testVTNConfig("cacheInitTimeout",
+                      DEFAULT_CACHE_INIT_TIMEOUT,
+                      MIN_CACHE_INIT_TIMEOUT,
+                      MAX_CACHE_INIT_TIMEOUT, values);
+    }
 
     /**
      * Common routine for test cases of {@link VTNConfig}.
@@ -318,6 +347,8 @@ public class VTNConfigTest extends TestBase {
                         confValue = conf.getRemoteFlowModTimeout();
                     } else if (parameterString.equals("remoteBulkFlowModTimeout")) {
                         confValue = conf.getRemoteBulkFlowModTimeout();
+                    } else if (parameterString.equals("cacheInitTimeout")) {
+                        confValue = conf.getCacheInitTimeout();
                     } else {
                         fail("not supported test case.");
                     }
@@ -352,7 +383,8 @@ public class VTNConfigTest extends TestBase {
                 "l2FlowPriority",
                 "flowModTimeout",
                 "remoteFlowModTimeout",
-                "remoteBulkFlowModTimeout"
+                "remoteBulkFlowModTimeout",
+                "cacheInitTimeout"
         };
 
         cleanup(false);
@@ -377,6 +409,7 @@ public class VTNConfigTest extends TestBase {
                          conf.getRemoteFlowModTimeout());
             assertEquals(DEFAULT_REMOTE_BULK_FLOWMOD_TIMEOUT,
                          conf.getRemoteBulkFlowModTimeout());
+            assertEquals(DEFAULT_CACHE_INIT_TIMEOUT, conf.getCacheInitTimeout());
 
             // setup global .ini file.
             FileWriter gWriter = null;
@@ -400,6 +433,8 @@ public class VTNConfigTest extends TestBase {
                     prop.append(MIN_REMOTE_FLOWMOD_TIMEOUT);
                 } else if (parameterString.equals("remoteBulkFlowModTimeout")) {
                     prop.append(MIN_REMOTE_BULK_FLOWMOD_TIMEOUT);
+                } else if (parameterString.equals("cacheInitTimeout")) {
+                    prop.append(MIN_CACHE_INIT_TIMEOUT);
                 } else {
                     fail("not supported test case.");
                 }
@@ -428,6 +463,7 @@ public class VTNConfigTest extends TestBase {
                          conf.getRemoteFlowModTimeout());
             assertEquals(MIN_REMOTE_BULK_FLOWMOD_TIMEOUT,
                          conf.getRemoteBulkFlowModTimeout());
+            assertEquals(MIN_CACHE_INIT_TIMEOUT, conf.getCacheInitTimeout());
 
             // setup container .ini file.
             cIniFile = new File(WORK_DIR, containerFilename);
@@ -450,6 +486,8 @@ public class VTNConfigTest extends TestBase {
                     prop.append(MAX_REMOTE_FLOWMOD_TIMEOUT);
                 } else if (parameterString.equals("remoteBulkFlowModTimeout")) {
                     prop.append(MAX_REMOTE_BULK_FLOWMOD_TIMEOUT);
+                } else if (parameterString.equals("cacheInitTimeout")) {
+                    prop.append(MAX_CACHE_INIT_TIMEOUT);
                 } else {
                     fail("not supported test case.");
                 }
@@ -477,6 +515,7 @@ public class VTNConfigTest extends TestBase {
                          conf.getRemoteFlowModTimeout());
             assertEquals(MAX_REMOTE_BULK_FLOWMOD_TIMEOUT,
                          conf.getRemoteBulkFlowModTimeout());
+            assertEquals(MAX_CACHE_INIT_TIMEOUT, conf.getCacheInitTimeout());
 
             gIniFile.delete();
             cIniFile.delete();

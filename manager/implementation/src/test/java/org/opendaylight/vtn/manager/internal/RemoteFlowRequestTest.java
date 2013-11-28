@@ -27,7 +27,7 @@ import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 
 /**
- * test for {@link RemoteFlowRequest}.
+ * JUnit test for {@link RemoteFlowRequest}.
  */
 public class RemoteFlowRequestTest extends TestUseVTNManagerBase {
 

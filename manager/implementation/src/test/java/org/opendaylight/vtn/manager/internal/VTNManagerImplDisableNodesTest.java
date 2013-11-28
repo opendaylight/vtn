@@ -82,7 +82,6 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
         ITopologyManager topoMgr = mgr.getTopologyManager();
         TestStub stub = stubObj;
         short[] vlans = new short[] { 0, 10, 4095 };
-        Set<Node> nodeSet = new HashSet<Node>();
 
         String tname = "vtn";
         VTenantPath tpath = new VTenantPath(tname);
@@ -274,7 +273,6 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
         ITopologyManager topoMgr = mgr.getTopologyManager();
         TestStub stub = stubObj;
         short[] vlans = new short[] { 0, 10, 4095 };
-        Set<Node> nodeSet = new HashSet<Node>();
 
         String tname = "vtn";
         VTenantPath tpath = new VTenantPath(tname);

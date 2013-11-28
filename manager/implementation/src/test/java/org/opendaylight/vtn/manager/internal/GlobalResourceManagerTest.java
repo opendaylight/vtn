@@ -8,8 +8,6 @@
  */
 package org.opendaylight.vtn.manager.internal;
 
-import static org.junit.Assert.*;
-
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -52,8 +50,7 @@ import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 
 /**
- * JUnit test for {@link GlobalResourceManager}
- *
+ * JUnit test for {@link GlobalResourceManager}.
  */
 public class GlobalResourceManagerTest extends TestBase {
     /**
@@ -70,10 +67,11 @@ public class GlobalResourceManagerTest extends TestBase {
 
     /**
      * Stub class of {@link IClusterGlobalServices}.
-     * This class is used to simulate cluster mode.
+     * Some methods in this class always return null.
      */
     class ClusterServiceStub implements IClusterGlobalServices {
-        private ConcurrentMap<String, ConcurrentMap<?, ?>> caches = new ConcurrentHashMap<String, ConcurrentMap<?, ?>>();
+        private ConcurrentMap<String, ConcurrentMap<?, ?>> caches
+            = new ConcurrentHashMap<String, ConcurrentMap<?, ?>>();
 
         @Override
         public ConcurrentMap<?, ?> createCache(String cacheName,
@@ -142,21 +140,12 @@ public class GlobalResourceManagerTest extends TestBase {
 
         @Override
         public List<InetAddress> getClusteredControllers() {
-            List<InetAddress> list = new ArrayList<InetAddress>();
-
-            InetAddress ipaddr = getInetAddressFromAddress(new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 1});
-            list.add(ipaddr);
-
-            ipaddr = getInetAddressFromAddress(new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 2});
-            list.add(ipaddr);
-
-            return list;
+            return null;
         }
 
         @Override
         public InetAddress getMyAddress() {
-            InetAddress ipaddr = getInetAddressFromAddress(new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 1});
-            return ipaddr;
+            return null;
         }
 
         @Override
@@ -182,7 +171,7 @@ public class GlobalResourceManagerTest extends TestBase {
         ComponentImpl c = new ComponentImpl(null, null, null);
         GlobalResourceManager grsc = new GlobalResourceManager();
         TestStub stubObj = new TestStub(0);
-        IClusterGlobalServices cs = (IClusterGlobalServices)stubObj;
+        IClusterGlobalServices cs = (IClusterGlobalServices) stubObj;
 
         Hashtable<String, String> properties = new Hashtable<String, String>();
         properties.put("containerName", "default");
@@ -192,11 +181,11 @@ public class GlobalResourceManagerTest extends TestBase {
         grsc.init(c);
 
         ConcurrentMap<Short, String> vmap
-            = (ConcurrentMap<Short, String>)cs.getCache(CACHE_VLANMAP);
+            = (ConcurrentMap<Short, String>) cs.getCache(CACHE_VLANMAP);
         assertNull(vmap);
 
         ConcurrentMap<Short, String> pmap
-            = (ConcurrentMap<Short, String>)cs.getCache(CACHE_PORTMAP);
+            = (ConcurrentMap<Short, String>) cs.getCache(CACHE_PORTMAP);
         assertNull(pmap);
 
         InetAddress loopback = InetAddress.getLoopbackAddress();
@@ -205,44 +194,45 @@ public class GlobalResourceManagerTest extends TestBase {
 
         grsc.destroy();
 
+
+        List<IClusterGlobalServices> csSet = new ArrayList<IClusterGlobalServices>();
+
         // set TestStub to cluster global service.
-        grsc.setClusterGlobalService(stubObj);
-        grsc.init(c);
-
-        Timer tm = grsc.getTimer();
-        assertNotNull(tm);
-
-        vmap = (ConcurrentMap<Short, String>)cs.getCache(CACHE_VLANMAP);
-        assertNotNull(vmap);
-        assertEquals(0, vmap.size());
-
-        pmap = (ConcurrentMap<Short, String>)cs.getCache(CACHE_PORTMAP);
-        assertNotNull(pmap);
-        assertEquals(0, pmap.size());
-
-        evid = new  ClusterEventId();
-        assertEquals(loopback, evid.getControllerAddress());
-
-        grsc.init(c);
-
-        grsc.destroy();
+        csSet.add(stubObj);
 
         // in case IP address of controller is not loopback address.
-        ClusterServiceStub cls = new ClusterServiceStub();
-        grsc.setClusterGlobalService(cls);
-        grsc.init(c);
-        vmap = (ConcurrentMap<Short, String>)cs.getCache(CACHE_VLANMAP);
-        assertNotNull(vmap);
-        assertEquals(0, vmap.size());
+        TestStubCluster cls = new TestStubCluster(2);
+        csSet.add(cls);
 
-        pmap = (ConcurrentMap<Short, String>)cs.getCache(CACHE_PORTMAP);
-        assertNotNull(pmap);
-        assertEquals(0, pmap.size());
+        // in case methods of cluster service return null.
+        ClusterServiceStub clsnull = new ClusterServiceStub();
+        csSet.add(clsnull);
 
-        evid = new  ClusterEventId();
-        assertEquals(cls.getMyAddress(), evid.getControllerAddress());
+        for (IClusterGlobalServices service : csSet) {
+            grsc.setClusterGlobalService(service);
+            grsc.init(c);
 
-        grsc.destroy();
+            Timer tm = grsc.getTimer();
+            assertNotNull(tm);
+
+            vmap = (ConcurrentMap<Short, String>) cs.getCache(CACHE_VLANMAP);
+            assertNotNull(vmap);
+            assertEquals(0, vmap.size());
+
+            pmap = (ConcurrentMap<Short, String>) cs.getCache(CACHE_PORTMAP);
+            assertNotNull(pmap);
+            assertEquals(0, pmap.size());
+
+            evid = new  ClusterEventId();
+            if (service.getMyAddress() != null
+                    && !service.getMyAddress().equals(loopback)) {
+                assertEquals(service.getMyAddress(), evid.getControllerAddress());
+            } else {
+                assertEquals(loopback, evid.getControllerAddress());
+            }
+
+            grsc.destroy();
+        }
     }
 
     /**
@@ -275,59 +265,68 @@ public class GlobalResourceManagerTest extends TestBase {
      */
     @Test
     public void testRegisterVlanMap() {
-        String containerName = "default";
-        TestStub stubObj = new TestStub(0);
-        GlobalResourceManager grsc
-            = setupGlobalResourceManager(containerName, stubObj);
-        IClusterGlobalServices cs = (IClusterGlobalServices)stubObj;
+        List<String> containerNames = new ArrayList<String>();
+        containerNames.add("default");
+        containerNames.add("tenant");
 
-        String tname = "tenant";
-        String bname = "bridge";
-        VBridgePath bpath = new VBridgePath(tname, bname);
-        short vlan = 0;
-        String reg = grsc.registerVlanMap(containerName, bpath, vlan);
-        assertEquals(null, reg);
-        checkMapCache(cs, "vtn.vlanmap", containerName, bpath, vlan);
+        for (String containerName : containerNames) {
+            TestStub stubObj = new TestStub(0);
+            GlobalResourceManager grsc
+                = setupGlobalResourceManager(stubObj);
+            IClusterGlobalServices cs = (IClusterGlobalServices)stubObj;
 
-        // add the same VlanMap with different bpath
-        String bnamenew = "bridgenew";
-        VBridgePath bpathnew = new VBridgePath(tname, bnamenew);
-        reg = grsc.registerVlanMap(containerName, bpathnew, vlan);
-        String required = containerName + ":" + bpath.toString();
-        assertEquals(required, reg);
-        checkMapCache(cs, "vtn.vlanmap", containerName, bpath, vlan);
+            String tname = "tenant";
+            String bname = "bridge";
+            VBridgePath bpath = new VBridgePath(tname, bname);
+            short vlan = 0;
+            String reg = grsc.registerVlanMap(containerName, bpath, vlan);
+            assertEquals(null, reg);
+            checkMapCache(cs, "vtn.vlanmap", containerName, bpath, vlan);
 
-        // add with different vlan
-        reg = grsc.registerVlanMap(containerName, bpathnew, (short)4095);
-        required = containerName + ":" + bpath.toString();
-        assertEquals(null, reg);
-        checkMapCache(cs, "vtn.vlanmap", containerName, bpathnew, (short)4095);
+            // add the same VlanMap with different bpath
+            String bnamenew = "bridgenew";
+            VBridgePath bpathnew = new VBridgePath(tname, bnamenew);
+            reg = grsc.registerVlanMap(containerName, bpathnew, vlan);
+            String required = containerName + ":" + bpath.toString();
+            assertEquals(required, reg);
+            checkMapCache(cs, "vtn.vlanmap", containerName, bpath, vlan);
 
-        grsc.unregisterVlanMap((short)0);
+            reg = grsc.registerVlanMap("other", bpathnew, vlan);
+            assertEquals(required, reg);
+            checkMapCache(cs, "vtn.vlanmap", containerName, bpath, vlan);
 
-        // check if other setting exist after unregister entry a vlan == 0
-        reg = grsc.registerVlanMap(containerName, bpath, (short)4095);
-        required = containerName + ":" + bpathnew.toString();
-        assertEquals(required, reg);
-        checkMapCache(cs, "vtn.vlanmap", containerName, bpathnew, (short)4095);
+            // add with different VLAN ID
+            reg = grsc.registerVlanMap(containerName, bpathnew, (short) 4095);
+            required = containerName + ":" + bpath.toString();
+            assertEquals(null, reg);
+            checkMapCache(cs, "vtn.vlanmap", containerName, bpathnew, (short) 4095);
 
-        // set a entry vlan == 0 again
-        reg = grsc.registerVlanMap(containerName, bpathnew, (short)0);
-        required = containerName + ":" + bpathnew.toString();
-        assertEquals(null, reg);
-        checkMapCache(cs, "vtn.vlanmap", containerName, bpathnew, (short)0);
+            grsc.unregisterVlanMap((short) 0);
 
-        // try to unregister not registered
-        try {
-            grsc.unregisterVlanMap((short)1);
-            fail("throwing exception was expected.");
-        } catch (IllegalStateException e) {
-            // expected path
+            // check if other setting exist after unregister entry a VLAN ID == 0
+            reg = grsc.registerVlanMap(containerName, bpath, (short) 4095);
+            required = containerName + ":" + bpathnew.toString();
+            assertEquals(required, reg);
+            checkMapCache(cs, "vtn.vlanmap", containerName, bpathnew, (short) 4095);
+
+            // set a entry vlan == 0 again
+            reg = grsc.registerVlanMap(containerName, bpathnew, (short) 0);
+            required = containerName + ":" + bpathnew.toString();
+            assertEquals(null, reg);
+            checkMapCache(cs, "vtn.vlanmap", containerName, bpathnew, (short) 0);
+
+            // try to unregister not registered
+            try {
+                grsc.unregisterVlanMap((short) 1);
+                fail("throwing exception was expected.");
+            } catch (IllegalStateException e) {
+                // expected path
+            }
+
+            grsc.unregisterVlanMap((short) 0);
+            grsc.unregisterVlanMap((short) 4095);
+            grsc.destroy();
         }
-
-        grsc.unregisterVlanMap((short)0);
-        grsc.unregisterVlanMap((short)4095);
-        grsc.destroy();
     }
 
 
@@ -338,66 +337,80 @@ public class GlobalResourceManagerTest extends TestBase {
      */
     @Test
     public void testRegisterPortMap() {
-        short[] vlans = {0, 10, 4095};
-        String containerName = "default";
+        short[] vlans = { 0, 10, 4095 };
+        List<String> containerNames = new ArrayList<String>();
+        containerNames.add("default");
+        containerNames.add("tenant");
+
         TestStub stubObj = new TestStub(0);
-        GlobalResourceManager grsc = setupGlobalResourceManager(containerName, stubObj);
-        IClusterGlobalServices cs = (IClusterGlobalServices)stubObj;
 
-        for (NodeConnector nc : createNodeConnectors(3, false)) {
-            for (short vlan : vlans) {
-                String emsg = "(NodeConnector)" + nc.toString() + ",(vlan)" + vlan;
+        for (String containerName : containerNames) {
+            GlobalResourceManager grsc = setupGlobalResourceManager(stubObj);
+            IClusterGlobalServices cs = (IClusterGlobalServices)stubObj;
 
-                String tname = "tenant";
-                String bname = "bridge";
-                String ifname = "interface";
-                VBridgeIfPath bifpath = new VBridgeIfPath(tname, bname, ifname);
-                PortVlan pv = new PortVlan(nc, vlan);
-                String reg = grsc.registerPortMap(containerName, bifpath, pv);
-                assertEquals(emsg, null, reg);
-                checkMapCache(cs, "vtn.portmap", containerName, bifpath, pv);
+            for (NodeConnector nc : createNodeConnectors(3, false)) {
+                for (short vlan : vlans) {
+                    String emsg = "(NodeConnector)" + nc.toString()
+                            + ",(vlan)" + vlan;
 
-                // add conflict PortVlan
-                String bnamenew = "bridgenew";
-                String ifnamenew = "interfacenew";
-                VBridgeIfPath bifpathnew = new VBridgeIfPath(tname, bnamenew, ifnamenew);
-                reg = grsc.registerPortMap(containerName, bifpathnew, pv);
-                String required = containerName + ":" + bifpath.toString();
-                assertEquals(emsg, required, reg);
-                checkMapCache(cs, "vtn.portmap", containerName, bifpath, pv);
+                    String tname = "tenant";
+                    String bname = "bridge";
+                    String ifname = "interface";
+                    VBridgeIfPath bifpath = new VBridgeIfPath(tname, bname, ifname);
+                    PortVlan pv = new PortVlan(nc, vlan);
+                    String reg = grsc.registerPortMap(containerName, bifpath, pv);
+                    assertEquals(emsg, null, reg);
+                    checkMapCache(cs, "vtn.portmap", containerName, bifpath, pv);
 
-                // add non-conflict PortVlan
-                PortVlan pvnew = new PortVlan(nc, (short)4094);
-                reg = grsc.registerPortMap(containerName, bifpathnew, pvnew);
-                required = containerName + ":" + bifpathnew.toString();
-                assertEquals(emsg, null, reg);
-                checkMapCache(cs, "vtn.portmap", containerName, bifpathnew, pvnew);
+                    // add conflict PortVlan
+                    String bnamenew = "bridgenew";
+                    String ifnamenew = "interfacenew";
+                    VBridgeIfPath bifpathnew = new VBridgeIfPath(tname, bnamenew,
+                                                                 ifnamenew);
+                    reg = grsc.registerPortMap(containerName, bifpathnew, pv);
+                    String required = containerName + ":" + bifpath.toString();
+                    assertEquals(emsg, required, reg);
+                    checkMapCache(cs, "vtn.portmap", containerName, bifpath, pv);
 
-                grsc.unregisterPortMap(pv);
+                    reg = grsc.registerPortMap("other", bifpathnew, pv);
+                    assertEquals(emsg, required, reg);
+                    checkMapCache(cs, "vtn.portmap", containerName, bifpath, pv);
 
-                // check if another entry exist after calling unregisterPortMap()
-                reg = grsc.registerPortMap(containerName, bifpath, pvnew);
-                required = containerName + ":" + bifpathnew.toString();
-                assertEquals(emsg, required, reg);
-                checkMapCache(cs, "vtn.portmap", containerName, bifpathnew, pvnew);
+                    // add non-conflict PortVlan
+                    PortVlan pvnew = new PortVlan(nc, (short)4094);
+                    reg = grsc.registerPortMap(containerName, bifpathnew, pvnew);
+                    required = containerName + ":" + bifpathnew.toString();
+                    assertEquals(emsg, null, reg);
+                    checkMapCache(cs, "vtn.portmap", containerName, bifpathnew,
+                                  pvnew);
 
-                reg = grsc.registerPortMap(containerName, bifpathnew, pv);
-                required = containerName + ":" + bifpathnew.toString();
-                assertEquals(emsg, null, reg);
-                checkMapCache(cs, "vtn.portmap", containerName, bifpathnew, pv);
+                    grsc.unregisterPortMap(pv);
 
-                try {
-                    grsc.unregisterPortMap(new PortVlan(nc, (short)1));
-                    fail("throwing exception was expected.");
-                } catch (IllegalStateException e) {
+                    // check if another entry exist after calling unregisterPortMap()
+                    reg = grsc.registerPortMap(containerName, bifpath, pvnew);
+                    required = containerName + ":" + bifpathnew.toString();
+                    assertEquals(emsg, required, reg);
+                    checkMapCache(cs, "vtn.portmap", containerName, bifpathnew,
+                                  pvnew);
 
+                    reg = grsc.registerPortMap(containerName, bifpathnew, pv);
+                    required = containerName + ":" + bifpathnew.toString();
+                    assertEquals(emsg, null, reg);
+                    checkMapCache(cs, "vtn.portmap", containerName, bifpathnew, pv);
+
+                    try {
+                        grsc.unregisterPortMap(new PortVlan(nc, (short) 1));
+                        fail("throwing exception was expected.");
+                    } catch (IllegalStateException e) {
+
+                    }
+
+                    grsc.unregisterPortMap(pvnew);
+                    grsc.unregisterPortMap(pv);
                 }
-
-                grsc.unregisterPortMap(pvnew);
-                grsc.unregisterPortMap(pv);
             }
+            grsc.destroy();
         }
-        grsc.destroy();
     }
 
     /**
@@ -420,51 +433,58 @@ public class GlobalResourceManagerTest extends TestBase {
      */
     @Test
     public void testCleanUp() {
-        String containerName = "default";
-        TestStub stubObj = new TestStub(0);
-        GlobalResourceManager grsc = setupGlobalResourceManager(containerName, stubObj);
-        IClusterGlobalServices cs = (IClusterGlobalServices)stubObj;
+        List<String> containerNames = new ArrayList<String>();
+        containerNames.add("default");
+        containerNames.add("tenant");
 
-        String tname = "tenant";
-        String bname = "bridge";
-        VBridgePath bpath = new VBridgePath(tname, bname);
-        short vlan = 0;
-        String reg = grsc.registerVlanMap(containerName, bpath, vlan);
-        assertEquals(null, reg);
-        checkMapCache(cs, "vtn.vlanmap", containerName, bpath, vlan);
+        for (String containerName : containerNames) {
 
-        Node node = NodeCreator.createOFNode(Long.valueOf("0"));
-        NodeConnector nc
-            = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short)10), node);
-        String ifname = "interface";
-        VBridgeIfPath bifpath = new VBridgeIfPath(tname, bname, ifname);
-        PortVlan pv = new PortVlan(nc, vlan);
-        reg = grsc.registerPortMap(containerName, bifpath, pv);
-        assertEquals(null, reg);
-        checkMapCache(cs, "vtn.portmap", containerName, bifpath, pv);
+            TestStub stubObj = new TestStub(0);
 
-        grsc.cleanUp("clean");
+            GlobalResourceManager grsc = setupGlobalResourceManager(stubObj);
+            IClusterGlobalServices cs = (IClusterGlobalServices)stubObj;
 
-        ConcurrentMap<Short, String> vmap
-            = (ConcurrentMap<Short, String>)cs.getCache(CACHE_VLANMAP);
-        assertEquals(1, vmap.size());
-        ConcurrentMap<PortVlan, String> pmap
-            = (ConcurrentMap<PortVlan, String>)cs.getCache(CACHE_PORTMAP);
-        assertEquals(1, pmap.size());
+            String tname = "tenant";
+            String bname = "bridge";
+            VBridgePath bpath = new VBridgePath(tname, bname);
+            short vlan = 0;
+            String reg = grsc.registerVlanMap(containerName, bpath, vlan);
+            assertEquals(null, reg);
+            checkMapCache(cs, "vtn.vlanmap", containerName, bpath, vlan);
 
-        grsc.cleanUp(containerName);
+            Node node = NodeCreator.createOFNode(Long.valueOf("0"));
+            NodeConnector nc = NodeConnectorCreator
+                    .createOFNodeConnector(Short.valueOf((short) 10), node);
+            String ifname = "interface";
+            VBridgeIfPath bifpath = new VBridgeIfPath(tname, bname, ifname);
+            PortVlan pv = new PortVlan(nc, vlan);
+            reg = grsc.registerPortMap(containerName, bifpath, pv);
+            assertEquals(null, reg);
+            checkMapCache(cs, "vtn.portmap", containerName, bifpath, pv);
 
-        // after clean up there isn't entry.
-        vmap = (ConcurrentMap<Short, String>)cs.getCache(CACHE_VLANMAP);
-        assertEquals(0, vmap.size());
-        pmap = (ConcurrentMap<PortVlan, String>)cs.getCache(CACHE_PORTMAP);
-        assertEquals(0, pmap.size());
+            grsc.cleanUp("clean");
 
-        grsc.destroy();
+            ConcurrentMap<Short, String> vmap
+                = (ConcurrentMap<Short, String>) cs.getCache(CACHE_VLANMAP);
+            assertEquals(1, vmap.size());
+            ConcurrentMap<PortVlan, String> pmap
+                = (ConcurrentMap<PortVlan, String>) cs.getCache(CACHE_PORTMAP);
+            assertEquals(1, pmap.size());
+
+            grsc.cleanUp(containerName);
+
+            // after clean up there isn't entry.
+            vmap = (ConcurrentMap<Short, String>) cs.getCache(CACHE_VLANMAP);
+            assertEquals(0, vmap.size());
+            pmap = (ConcurrentMap<PortVlan, String>) cs.getCache(CACHE_PORTMAP);
+            assertEquals(0, pmap.size());
+
+            grsc.destroy();
+        }
     }
 
     /**
-     * test case for {@link GlobalResourceManager#executeAsync(Runnable)}.
+     * Test case for {@link GlobalResourceManager#executeAsync(Runnable)}.
      */
     @Test
     public void testExecuteAsync() {
@@ -518,14 +538,20 @@ public class GlobalResourceManagerTest extends TestBase {
     }
 
     /**
-     * test case for {@link GlobalResourceManager#getRemoteClusterSize()}.
+     * test case for
+     * {@link GlobalResourceManager#getRemoteClusterSize()} and
+     * {@link GlobalResourceManager#isRemoteClusterAddress(InetAddress)}.
      */
     @Test
     public void testGetRemoteClusterSize() {
+        InetAddress loopbackAddr = InetAddress.getLoopbackAddress();
+        InetAddress otherAddr
+            = getInetAddressFromAddress(new byte[] {(byte) 10, (byte) 0,
+                                                    (byte) 1, (byte) 99});
+
         ComponentImpl c = new ComponentImpl(null, null, null);
         GlobalResourceManager grsc = new GlobalResourceManager();
         TestStub stubObj = new TestStub(0);
-        IClusterGlobalServices cs = (IClusterGlobalServices)stubObj;
 
         Hashtable<String, String> properties = new Hashtable<String, String>();
         properties.put("containerName", "default");
@@ -540,30 +566,54 @@ public class GlobalResourceManagerTest extends TestBase {
         int numCont = grsc.getRemoteClusterSize();
         assertEquals(0, numCont);
 
+        assertFalse(grsc.isRemoteClusterAddress(loopbackAddr));
+        assertFalse(grsc.isRemoteClusterAddress(otherAddr));
+
         grsc.destroy();
 
         // 2 controllers.
-        ClusterServiceStub csStub = new ClusterServiceStub();
+        TestStubCluster csStub = new TestStubCluster(2);
         grsc.setClusterGlobalService(csStub);
         grsc.init(c);
 
         numCont = grsc.getRemoteClusterSize();
         assertEquals(1, numCont);
 
+        for (InetAddress addr : csStub.getClusteredControllers()) {
+            if (csStub.getMyAddress().equals(addr)) {
+                assertFalse(grsc.isRemoteClusterAddress(addr));
+            } else {
+                assertTrue(grsc.isRemoteClusterAddress(addr));
+            }
+        }
+        assertFalse(grsc.isRemoteClusterAddress(loopbackAddr));
+        assertFalse(grsc.isRemoteClusterAddress(otherAddr));
+
         grsc.destroy();
+
+        // if cluster service return null.
+        ClusterServiceStub clsnull = new ClusterServiceStub();
+        grsc.setClusterGlobalService(clsnull);
+        grsc.init(c);
+
+        assertEquals(0, grsc.getRemoteClusterSize());
+        assertFalse(grsc.isRemoteClusterAddress(loopbackAddr));
+        assertFalse(grsc.isRemoteClusterAddress(otherAddr));
+
 
         // no cluster service.
         grsc.unsetClusterGlobalService(csStub);
         grsc.init(c);
 
-        numCont = grsc.getRemoteClusterSize();
-        assertEquals(0, numCont);
+        assertEquals(0, grsc.getRemoteClusterSize());
+        assertFalse(grsc.isRemoteClusterAddress(loopbackAddr));
+        assertFalse(grsc.isRemoteClusterAddress(otherAddr));
 
         grsc.destroy();
     }
 
     /**
-     * test case for {@link GlobalResourceManager#coordinatorChanged()}.
+     * Test case for {@link GlobalResourceManager#coordinatorChanged()}.
      */
     @Test
     public void testCoordinatorChanged() {
@@ -596,7 +646,8 @@ public class GlobalResourceManagerTest extends TestBase {
         MacTableEntryId eid = new MacTableEntryId(bpath, mac);
 
         Node node = NodeCreator.createOFNode(0L);
-        NodeConnector nc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("10"), node);
+        NodeConnector nc = NodeConnectorCreator
+                .createOFNodeConnector(Short.valueOf("10"), node);
         InetAddress loopback = InetAddress.getLoopbackAddress();
         MacTableEntry entLoopback = new MacTableEntry(eid, nc, (short) 0, loopback);
 
@@ -605,15 +656,19 @@ public class GlobalResourceManagerTest extends TestBase {
         List<MacAddressEntry> entries = getMacEntries(vtnMgr, bpath);
         assertEquals(0, entries.size());
 
-        InetAddress ipaddr = getInetAddressFromAddress(new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 2});
+        InetAddress ipaddr
+            = getInetAddressFromAddress(new byte[] {(byte) 192, (byte) 168,
+                                                    (byte) 0, (byte) 2});
         mac = 2L;
         MacTableEntryId eidRemote = new MacTableEntryId(ipaddr, 2L, bpath, mac);
         MacTableEntry entRemote = new MacTableEntry(eidRemote, nc, (short) 0, ipaddr);
 
-        ipaddr = getInetAddressFromAddress(new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 3});
+        ipaddr = getInetAddressFromAddress(new byte[] { (byte) 192, (byte) 168,
+                                                        (byte) 0, (byte) 3});
         mac = 3L;
         MacTableEntryId eidRemote2 = new MacTableEntryId(ipaddr, 3L, bpath, mac);
-        MacTableEntry entRemote2 = new MacTableEntry(eidRemote2, nc, (short) 0, ipaddr);
+        MacTableEntry entRemote2 = new MacTableEntry(eidRemote2, nc, (short) 0,
+                                                     ipaddr);
 
         vtnMgr.putMacTableEntry(entRemote);
         vtnMgr.putMacTableEntry(entRemote2);
@@ -624,7 +679,7 @@ public class GlobalResourceManagerTest extends TestBase {
         assertEquals(0, entries.size());
 
         // add remote controller.
-        ClusterServiceStub csStub = new ClusterServiceStub();
+        TestStubCluster csStub = new TestStubCluster(2);
         vtnMgr.stop();
         resMgr.setClusterGlobalService(csStub);
         resMgr.init(c);
@@ -681,18 +736,15 @@ public class GlobalResourceManagerTest extends TestBase {
     }
 
     /**
-     * setup {@link GlobalResourceManager}.
-     * @param containerName A container name.
+     * Setup {@link GlobalResourceManager}.
      * @param stubObj       A {@link TestStub} object.
      * @return {@link GlobalResourceManager}.
      */
-    private GlobalResourceManager setupGlobalResourceManager (String containerName,
-                                                              TestStub stubObj) {
+    private GlobalResourceManager setupGlobalResourceManager (TestStub stubObj) {
         ComponentImpl c = new ComponentImpl(null, null, null);
         GlobalResourceManager grsc = new GlobalResourceManager();
 
         Hashtable<String, String> properties = new Hashtable<String, String>();
-        properties.put("containerName", containerName);
         c.setServiceProperties(properties);
 
         grsc.setClusterGlobalService(stubObj);
@@ -702,7 +754,7 @@ public class GlobalResourceManagerTest extends TestBase {
     }
 
     /**
-     * check Map cache.
+     * Check Map cache.
      * @param cs            A {@link IClusterGlobalServices} object.
      * @param cacheName     A cache name.
      * @param containerName A container name.
@@ -712,7 +764,7 @@ public class GlobalResourceManagerTest extends TestBase {
     private <T, S> void checkMapCache (IClusterGlobalServices cs, String cacheName,
             String containerName, T path, S key) {
         ConcurrentMap<S, String> map
-                = (ConcurrentMap<S, String>)cs.getCache(cacheName);
+                = (ConcurrentMap<S, String>) cs.getCache(cacheName);
         assertNotNull(map);
         String required = containerName + ":" + path.toString();
         String value = map.get(key);

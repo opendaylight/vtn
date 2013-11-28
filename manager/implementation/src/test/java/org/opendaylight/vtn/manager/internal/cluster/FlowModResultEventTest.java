@@ -13,7 +13,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ConcurrentMap;
 
 import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.Test;
@@ -29,15 +28,15 @@ import org.opendaylight.controller.sal.utils.StatusCode;
 import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.ActionList;
-import org.opendaylight.vtn.manager.internal.FlowEventTestBase;
+import org.opendaylight.vtn.manager.internal.FlowModTaskTestBase;
 import org.opendaylight.vtn.manager.internal.TestStubCluster;
 import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
 /**
- * test for {@link FlowModResultEvent}
+ * JUnit test for {@link FlowModResultEvent}.
  */
-public class FlowModResultEventTest extends FlowEventTestBase {
+public class FlowModResultEventTest extends FlowModTaskTestBase {
 
     /**
      * Test method for {@link FlowModResultEvent#isSingleThreaded(boolean)}.
@@ -197,23 +196,5 @@ public class FlowModResultEventTest extends FlowEventTestBase {
             }
         }
        cleanupSetupFile();
-    }
-
-
-    // private methods
-    /**
-     * check specified Flow Entry is registered correctly.
-     *
-     * @param numFlows          The number of Flows.
-     * @param registeredFlow    VTNFlow which is registered.
-     * @param numFlowEntries    The number of Flow Entries.
-     */
-    private void checkRegisteredFlowEntry(VTNManagerImpl mgr, int numFlows,
-                                         VTNFlow registeredFlow, VTNFlow expectedFlow,
-                                         int numFlowEntries, String emsg) {
-        ConcurrentMap<FlowGroupId, VTNFlow> db = mgr.getFlowDB();
-        assertEquals(emsg, numFlows, db.size());
-        assertEquals(emsg, expectedFlow, db.get(registeredFlow.getGroupId()));
-        assertEquals(emsg, numFlowEntries, stubObj.getFlowEntries().size());
     }
 }

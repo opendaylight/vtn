@@ -127,6 +127,28 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 = new HashMap<VBridgeIfPath, PortMapConfig>();
         Map<VlanMap, VlanMapConfig> vmaps = new HashMap<VlanMap, VlanMapConfig>();
 
+        // create dummy file in startup directory.
+        String dir = GlobalConstants.STARTUPHOME.toString();
+        String prefix = VTenantImpl.CONFIG_FILE_PREFIX;
+        String suffix = VTenantImpl.CONFIG_FILE_SUFFIX;
+        String[] dummyFileNames = new String[] {
+                prefix + containerName + "-" + suffix,
+                "vtn" + suffix,
+                prefix + containerName + "-" + "config",
+                "config",
+                prefix + containerName + "-" + "notexist" + suffix
+        };
+        Set<File> fileSet = new HashSet<File>();
+        for (String fileName : dummyFileNames) {
+            File file = new File(dir, fileName);
+            try {
+                assertTrue(file.createNewFile());
+                fileSet.add(file);
+            } catch (IOException e) {
+                unexpected(e);
+            }
+        }
+
         String tname = "vtn";
         VTenantPath tpath = new VTenantPath(tname);
         String bname = "vbridge";
@@ -149,7 +171,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         pmaps.put(ifpath1, null);
         pmaps.put(ifpath2, null);
-        checkVTNconfig(tpath, bpathlist, pmaps, null);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, null);
 
         // add mappings
         Node node = NodeCreator.createOFNode(0L);
@@ -167,24 +189,29 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         }
         vmaps.put(map, vlconf);
 
+        // start with having a configuration.
+        // this case, startup with cache.
         restartVTNManager(c);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
 
-        checkVTNconfig(tpath, bpathlist, pmaps, vmaps);
-
+        // start after configuration files is removed.
+        // because caches remain, setting is taken over.
         stopVTNManager(false);
         VTNManagerImpl.cleanUpConfigFile(containerName);
         startVTNManager(c);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
 
-        // because cache remain, setting is taken over.
-        checkVTNconfig(tpath, bpathlist, pmaps, vmaps);
+        // start after cache is cleared
+        // this case load from configuration files.
+        stopVTNManager(true);
+        startVTNManager(c);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
 
-        vtnMgr.saveConfiguration();
-
+        // start with no cluster service.
         stopVTNManager(true);
         vtnMgr.unsetClusterContainerService(stubObj);
         startVTNManager(c);
-
-        checkVTNconfig(tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
 
         // remove configuration files.
         stopVTNManager(true);
@@ -225,6 +252,17 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         stopVTNManager(true);
         VTNManagerImpl.cleanUpConfigFile(containerNameTest);
+
+        // check dummy files exist.
+        for (File file : fileSet) {
+            if (file.getName()
+                    .equals(prefix + containerName + "-" + "notexist" + suffix)) {
+                assertFalse(file.toString(), file.exists());
+            } else {
+                assertTrue(file.toString(), file.exists());
+                file.delete();
+            }
+        }
     }
 
     /**
@@ -660,13 +698,13 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         mgr.addVTNManagerAware(stub1);
         mgr.addVTNManagerAware(stub2);
         flushTasks();
-        stub1.checkVtnInfo(1, tpath, tname, UpdateType.ADDED);
-        stub2.checkVtnInfo(1, tpath, tname, UpdateType.ADDED);
+        stub1.checkVtnInfo(1, tpath, UpdateType.ADDED);
+        stub2.checkVtnInfo(1, tpath, UpdateType.ADDED);
 
         mgr.removeVTNManagerAware(stub2);
         mgr.addVTNManagerAware(stub2);
         flushTasks();
-        stub2.checkVtnInfo(1, tpath, tname, UpdateType.ADDED);
+        stub2.checkVtnInfo(1, tpath, UpdateType.ADDED);
         stub1.checkAllNull();
         stub2.checkAllNull();
 
@@ -675,14 +713,14 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VBridgePath bpath = new VBridgePath(tname, bname);
         st = mgr.addBridge(bpath, new VBridgeConfig(null));
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        stub1.checkVbrInfo(1, bpath, bname, UpdateType.ADDED);
-        stub2.checkVbrInfo(1, bpath, bname, UpdateType.ADDED);
+        stub1.checkVbrInfo(1, bpath, UpdateType.ADDED);
+        stub2.checkVbrInfo(1, bpath, UpdateType.ADDED);
 
         mgr.removeVTNManagerAware(stub2);
         mgr.addVTNManagerAware(stub2);
         flushTasks();
-        stub2.checkVtnInfo(1, tpath, tname, UpdateType.ADDED);
-        stub2.checkVbrInfo(1, bpath, bname, UpdateType.ADDED);
+        stub2.checkVtnInfo(1, tpath, UpdateType.ADDED);
+        stub2.checkVbrInfo(1, bpath, UpdateType.ADDED);
         stub1.checkAllNull();
         stub2.checkAllNull();
 
@@ -692,15 +730,15 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VInterfaceConfig ifconf = new VInterfaceConfig(null, null);
         st = mgr.addBridgeInterface(ifpath, ifconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        stub1.checkVIfInfo(1, ifpath, ifname, UpdateType.ADDED);
-        stub2.checkVIfInfo(1, ifpath, ifname, UpdateType.ADDED);
+        stub1.checkVIfInfo(1, ifpath, UpdateType.ADDED);
+        stub2.checkVIfInfo(1, ifpath, UpdateType.ADDED);
 
         mgr.removeVTNManagerAware(stub2);
         mgr.addVTNManagerAware(stub2);
         flushTasks();
-        stub2.checkVtnInfo(1, tpath, tname, UpdateType.ADDED);
-        stub2.checkVbrInfo(1, bpath, bname, UpdateType.ADDED);
-        stub2.checkVIfInfo(1, ifpath, ifname, UpdateType.ADDED);
+        stub2.checkVtnInfo(1, tpath, UpdateType.ADDED);
+        stub2.checkVbrInfo(1, bpath, UpdateType.ADDED);
+        stub2.checkVIfInfo(1, ifpath, UpdateType.ADDED);
         stub1.checkAllNull();
         stub2.checkAllNull();
 
@@ -713,19 +751,19 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         // after set this mapping
         // vbridge status and vInterface status are UNKNOWN -> DOWN.
-        stub1.checkVbrInfo(1, bpath, bname, UpdateType.CHANGED);
-        stub1.checkVIfInfo(1, ifpath, ifname, UpdateType.CHANGED);
+        stub1.checkVbrInfo(1, bpath, UpdateType.CHANGED);
+        stub1.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
         stub1.checkPmapInfo(1, ifpath, pmconf, UpdateType.ADDED);
-        stub2.checkVbrInfo(1, bpath, bname, UpdateType.CHANGED);
-        stub2.checkVIfInfo(1, ifpath, ifname, UpdateType.CHANGED);
+        stub2.checkVbrInfo(1, bpath, UpdateType.CHANGED);
+        stub2.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
         stub2.checkPmapInfo(1, ifpath, pmconf, UpdateType.ADDED);
 
         mgr.removeVTNManagerAware(stub2);
         mgr.addVTNManagerAware(stub2);
         flushTasks();
-        stub2.checkVtnInfo(1, tpath, tname, UpdateType.ADDED);
-        stub2.checkVbrInfo(1, bpath, bname, UpdateType.ADDED);
-        stub2.checkVIfInfo(1, ifpath, ifname, UpdateType.ADDED);
+        stub2.checkVtnInfo(1, tpath, UpdateType.ADDED);
+        stub2.checkVbrInfo(1, bpath, UpdateType.ADDED);
+        stub2.checkVIfInfo(1, ifpath, UpdateType.ADDED);
         stub2.checkPmapInfo(1, ifpath, pmconf, UpdateType.ADDED);
         stub1.checkAllNull();
         stub2.checkAllNull();
@@ -744,9 +782,9 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         mgr.removeVTNManagerAware(stub2);
         mgr.addVTNManagerAware(stub2);
         flushTasks();
-        stub2.checkVtnInfo(1, tpath, tname, UpdateType.ADDED);
-        stub2.checkVbrInfo(1, bpath, bname, UpdateType.ADDED);
-        stub2.checkVIfInfo(1, ifpath, ifname, UpdateType.ADDED);
+        stub2.checkVtnInfo(1, tpath, UpdateType.ADDED);
+        stub2.checkVbrInfo(1, bpath, UpdateType.ADDED);
+        stub2.checkVIfInfo(1, ifpath, UpdateType.ADDED);
         stub2.checkPmapInfo(1, ifpath, pmconf, UpdateType.ADDED);
         stub2.checkVlmapInfo(1, bpath, map.getId(), UpdateType.ADDED);
         stub1.checkAllNull();
@@ -758,15 +796,19 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         // modify a tenant setting
         st = mgr.modifyTenant(tpath, new VTenantConfig("desc"), false);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        stub1.checkVtnInfo(1, tpath, tname, UpdateType.CHANGED);
-        stub2.checkVtnInfo(1, tpath, tname, UpdateType.CHANGED);
+        stub1.checkVtnInfo(1, tpath, UpdateType.CHANGED);
+        stub2.checkVtnInfo(1, tpath, UpdateType.CHANGED);
+
+        flushTasks();
         stub1.checkAllNull();
         stub2.checkAllNull();
 
         st = mgr.modifyBridge(bpath, new VBridgeConfig("desc"), false);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        stub1.checkVbrInfo(1, bpath, bname, UpdateType.CHANGED);
-        stub2.checkVbrInfo(1, bpath, bname, UpdateType.CHANGED);
+        stub1.checkVbrInfo(1, bpath, UpdateType.CHANGED);
+        stub2.checkVbrInfo(1, bpath, UpdateType.CHANGED);
+
+        flushTasks();
         stub1.checkAllNull();
         stub2.checkAllNull();
 
@@ -774,8 +816,10 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         st = mgr.modifyBridgeInterface(ifpath,
                 new VInterfaceConfig("interface", Boolean.TRUE), false);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        stub1.checkVIfInfo(1, ifpath, ifname, UpdateType.CHANGED);
-        stub2.checkVIfInfo(1, ifpath, ifname, UpdateType.CHANGED);
+        stub1.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
+        stub2.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
+
+        flushTasks();
         stub1.checkAllNull();
         stub2.checkAllNull();
 
@@ -792,6 +836,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         assertEquals(StatusCode.SUCCESS, st.getCode());
         stub1.checkVlmapInfo(1, bpath, map.getId(), UpdateType.REMOVED);
         stub2.checkVlmapInfo(1, bpath, map.getId(), UpdateType.REMOVED);
+
+        flushTasks();
         stub1.checkAllNull();
         stub2.checkAllNull();
 
@@ -800,28 +846,34 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         // vBridge status and vInterface status is changed (DOWN->UNKNOWN)
-        stub1.checkVbrInfo(1, bpath, bname, UpdateType.CHANGED);
-        stub1.checkVIfInfo(1, ifpath, ifname, UpdateType.CHANGED);
+        stub1.checkVbrInfo(1, bpath, UpdateType.CHANGED);
+        stub1.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
         stub1.checkPmapInfo(1, ifpath, pmconf, UpdateType.REMOVED);
-        stub2.checkVbrInfo(1, bpath, bname, UpdateType.CHANGED);
-        stub2.checkVIfInfo(1, ifpath, ifname, UpdateType.CHANGED);
+        stub2.checkVbrInfo(1, bpath, UpdateType.CHANGED);
+        stub2.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
         stub2.checkPmapInfo(1, ifpath, pmconf, UpdateType.REMOVED);
+
+        flushTasks();
         stub1.checkAllNull();
         stub2.checkAllNull();
 
         // remove a vbridge interface
         st = mgr.removeBridgeInterface(ifpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        stub1.checkVIfInfo(1, ifpath, ifname, UpdateType.REMOVED);
-        stub2.checkVIfInfo(1, ifpath, ifname, UpdateType.REMOVED);
+        stub1.checkVIfInfo(1, ifpath, UpdateType.REMOVED);
+        stub2.checkVIfInfo(1, ifpath, UpdateType.REMOVED);
+
+        flushTasks();
         stub1.checkAllNull();
         stub2.checkAllNull();
 
         // remove a vbridge
         st = mgr.removeBridge(bpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        stub1.checkVbrInfo(1, bpath, bname, UpdateType.REMOVED);
-        stub2.checkVbrInfo(1, bpath, bname, UpdateType.REMOVED);
+        stub1.checkVbrInfo(1, bpath, UpdateType.REMOVED);
+        stub2.checkVbrInfo(1, bpath, UpdateType.REMOVED);
+
+        flushTasks();
         stub1.checkAllNull();
         stub2.checkAllNull();
 
@@ -831,8 +883,10 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         // remove a tenant
         st = mgr.removeTenant(tpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        stub1.checkVtnInfo(1, tpath, tname, UpdateType.REMOVED);
-        stub2.checkVtnInfo(1, tpath, tname, UpdateType.REMOVED);
+        stub1.checkVtnInfo(1, tpath, UpdateType.REMOVED);
+        stub2.checkVtnInfo(1, tpath, UpdateType.REMOVED);
+
+        flushTasks();
         stub1.checkAllNull();
         stub2.checkAllNull();
     }
@@ -3544,7 +3598,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         c.setServiceProperties(properties);
         stopVTNManager(true);
 
-        resMgr.setClusterGlobalService(stubNew);
+        resMgr.setClusterGlobalService(cm);
         resMgr.init(c);
         vtnMgr.setResourceManager((IVTNResourceManager) resMgr);
         vtnMgr.setConnectionManager(cm);
@@ -3630,13 +3684,11 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                                                     FlowModResult.SUCCEEDED,
                                                     false);
                     timer.schedule(timerTask, 100L);
-                    fdb.clear(vtnMgr);
-                    flushFlowTasks(remoteTimeout * 3);
+                    vtnMgr.removeAllFlows(path);
                     timer.cancel();
                 } else {
                     checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0, emsg);
-
-                    fdb.clear(vtnMgr);
+                    vtnMgr.removeAllFlows(path);
                     flushFlowTasks(timeout);
                 }
 
@@ -3663,46 +3715,6 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         flushFlowTasks(timeout);
 
         cleanupSetupFile();
-    }
-
-    /**
-     * Add flow entry.
-     *
-     * @param mgr       A VTNManager service.
-     * @param flow      A VTNFlow.
-     * @param inPort    A incoming port.
-     * @param inVlan    A incoming vlan id.
-     * @param outPort   A outgoing port.
-     * @param priority  priority of flow entry.
-     * @return  A VTNFlow.
-     */
-    private VTNFlow addFlowEntry(VTNManagerImpl mgr, VTNFlow flow,
-            NodeConnector inPort, short inVlan, NodeConnector outPort,
-            int priority) {
-        Match match = new Match();
-        match.setField(MatchType.IN_PORT, inPort);
-        match.setField(MatchType.DL_VLAN, inVlan);
-        ActionList actions = new ActionList(outPort.getNode());
-        actions.addOutput(outPort);
-        flow.addFlow(mgr, match, actions, priority);
-
-        return flow;
-    }
-
-    /**
-     * check specified Flow Entry is registered correctly.
-     *
-     * @param numFlows          The number of Flows.
-     * @param registeredFlow     VTNFlow which is registered.
-     * @param numFlowEntries    The number of Flow Entries.
-     */
-    private void checkRegisteredFlowEntry(VTNManagerImpl mgr, int numFlows,
-                                         VTNFlow registeredFlow, VTNFlow expectedFlow,
-                                         int numFlowEntries, String emsg) {
-        ConcurrentMap<FlowGroupId, VTNFlow> db = mgr.getFlowDB();
-        assertEquals(emsg, numFlows, db.size());
-        assertEquals(emsg, expectedFlow, db.get(registeredFlow.getGroupId()));
-        assertEquals(emsg, numFlowEntries, stubObj.getFlowEntries().size());
     }
 
     /**
@@ -3929,7 +3941,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         // specify invalid id
         List<MacAddressEntry> entries = getMacAddressEntries(evidRemote);
-        int presize = entries.size();System.out.println(presize);
+        int presize = entries.size();
         mgr.entryDeleted(null, VTNManagerImpl.CACHE_MAC, false);
         entry = getMacAddressEntry(mgr, bpath, ea);
         assertNull(entry);
@@ -4076,6 +4088,76 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             assertEquals(2, mgr.getFlowDB().size());
 
         }
+    }
+
+    /**
+     * test method for {@link VTNManagerImpl#removeAllFlows(VTenantPath).}
+     */
+    @Test
+    public void testRemoveAllFlows() {
+        VTNManagerImpl mgr = vtnMgr;
+
+        // create tenant.
+        VTenantPath path = new VTenantPath("tenant");
+        Status st = mgr.addTenant(path, new VTenantConfig(""));
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        VTenantPath anotherPath = new VTenantPath("another");
+        st = mgr.addTenant(anotherPath, new VTenantConfig(""));
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        VTenantPath notExistPath = new VTenantPath("not_exist");
+
+        // add flow.
+        VTNFlowDatabase fdb = vtnMgr.getTenantFlowDB(path.getTenantName());
+
+        Node node0 = NodeCreator.createOFNode(Long.valueOf(0L));
+        Set<Node> nodeSet = new HashSet<Node>();
+        nodeSet.add(node0);
+
+        Set<VTNFlow> flows = new HashSet<VTNFlow>();
+        VTNFlow flow = fdb.create(vtnMgr);
+
+        // ingress
+        NodeConnector innc
+            = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("10"),
+                                                         node0);
+        NodeConnector outnc
+            = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
+                                                         node0);
+        Match match = new Match();
+        match.setField(MatchType.IN_PORT, innc);
+        match.setField(MatchType.DL_VLAN, (short) 1);
+        ActionList actions = new ActionList(outnc.getNode());
+        actions.addOutput(outnc);
+        int pri = 1;
+        flow.addFlow(vtnMgr, match, actions, pri);
+
+        // + local entry.
+        innc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("12"),
+                                                          node0);
+        outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
+                                                           node0);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+
+        fdb.install(mgr, flow);
+        flows.add(flow);
+        flushFlowTasks();
+        assertEquals(2, stubObj.getFlowEntries().size());
+        assertEquals(1, mgr.getFlowDB().size());
+
+        // test removeAllFlows
+        mgr.removeAllFlows(anotherPath);
+        assertEquals(2, stubObj.getFlowEntries().size());
+        assertEquals(1, mgr.getFlowDB().size());
+
+        mgr.removeAllFlows(notExistPath);
+        assertEquals(2, stubObj.getFlowEntries().size());
+        assertEquals(1, mgr.getFlowDB().size());
+
+        mgr.removeAllFlows(path);
+        assertEquals(0, stubObj.getFlowEntries().size());
+        assertEquals(0, mgr.getFlowDB().size());
     }
 
     /**

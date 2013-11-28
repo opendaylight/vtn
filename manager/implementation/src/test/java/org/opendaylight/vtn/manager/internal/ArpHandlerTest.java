@@ -101,7 +101,6 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
         testNodes.add(null);
 
         for (Node node : testNodes) {
-            int numMapped = 0;
             Set<NodeConnector> mappedThis = new HashSet<NodeConnector>();
             Set<NodeConnector> noMappedThis
                     = new HashSet<NodeConnector>(existConnectors);
@@ -124,18 +123,17 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
             swMgr.addSubnet(sconf);
 
             noMappedThis.removeAll(mappedThis);
-            numMapped = mappedThis.size();
 
             // null
             PacketResult result = mgr.receiveDataPacket(null);
             assertEquals(PacketResult.IGNORED, result);
 
+            // receive ARP request and ARP reply.
+            // But because wait 3 seconds before receive ARP reply,
+            // ARP requestor is expired.
             testReceiveDataPacketBCLoop(mgr, null, (short)0,
                     mappedThis, noMappedThis, stub);
-
-            // after 2 seconds, ARP requestor is expired.
             sleep(3000);
-
             testReceiveDataPacketARPReplyReceive(mgr, null, (short) 0,
                     mappedThis, noMappedThis, stub, true);
 

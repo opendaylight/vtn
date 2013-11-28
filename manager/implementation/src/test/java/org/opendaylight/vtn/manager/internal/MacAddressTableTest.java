@@ -782,7 +782,9 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
 
             @Override
             public void run() {
-                tbl.add(pctx);
+                long key = NetUtils
+                        .byteArray6ToLong(pctx.getSourceAddress());
+                tbl.get(Long.valueOf(key));
             }
         }
 
@@ -812,16 +814,47 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
             unexpected(e);
         }
 
+        // create MacTableEntry added by remote node.
+        short vlanRemote = 0;
+        InetAddress ipRemoteNode
+            = getInetAddressFromAddress(new byte[] { 0, 0, 0, 0 });
+        InetAddress ipRemoteEnt
+            = getInetAddressFromAddress(new byte[] { (byte) 192, (byte) 168,
+                                                     (byte) 100, (byte) 1 });
+        long macKey = 99L;
+        MacTableEntryId evidRemote = new MacTableEntryId(ipRemoteNode, 0L,
+                                                         path, macKey);
+        MacTableEntry tentRemote = new MacTableEntry(evidRemote, nc,
+                                                     vlanRemote, ipRemoteEnt);
+        EthernetAddress eaRemote = null;
+        try {
+            eaRemote
+                = new EthernetAddress(NetUtils.longToByteArray6(macKey));
+        } catch (ConstructionException e) {
+            unexpected(e);
+        }
+
+        tbl.entryUpdated(tentRemote);
+
         tbl.add(pctx);
         MacAddressEntry mae = getEntry(tbl, ea);
         assertNotNull(mae);
         assertEquals(ea, mae.getAddress());
 
+        mae = getEntry(tbl, eaRemote);
+        assertNotNull(mae);
+        assertEquals(eaRemote, mae.getAddress());
+
         sleep(2500);
 
-        // expect the entry to be removed by aging task.
+        // expect the local entry to be removed by aging task.
+        // A entry installed by remote node isn't removed.
         mae = getEntry(tbl, ea);
         assertNull(mae);
+
+        mae = getEntry(tbl, eaRemote);
+        assertNotNull(mae);
+        assertEquals(eaRemote, mae.getAddress());
 
         Timer timer = new Timer();
         PutTableTask ptask = new PutTableTask(tbl, pctx);
@@ -831,10 +864,15 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
 
         sleep(2500);
 
-        // expect the entry to exist
+        // expect both entries to exist
         mae = getEntry(tbl, ea);
         assertNotNull(mae);
         assertEquals(ea, mae.getAddress());
+
+        mae = getEntry(tbl, eaRemote);
+        assertNotNull(mae);
+        assertEquals(eaRemote, mae.getAddress());
+
 
         timer.cancel();
         timer.purge();

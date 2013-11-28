@@ -10,10 +10,8 @@ package org.opendaylight.vtn.manager.internal;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -50,7 +48,7 @@ import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 
 /**
- * JUnit test for {@link PacketContext}
+ * JUnit test for {@link PacketContext}.
  */
 public class PacketContextTest extends TestUseVTNManagerBase {
 

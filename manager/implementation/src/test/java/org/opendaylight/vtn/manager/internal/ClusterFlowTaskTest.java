@@ -12,6 +12,8 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.core.Node;
@@ -28,6 +30,16 @@ import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
  * test for {@link ClusterFlowAddTask} and {@link ClusterFlowRemoveTask}.
  */
 public class ClusterFlowTaskTest extends FlowModTaskTestBase {
+
+    @Before
+    public void setupTimeoutConfig() {
+        setupVTNManagerForRemoteTaskTest(1000L, 1000L);
+    }
+
+    @After
+    public void cleaupTimeoutConfig() {
+        cleanupSetupFile();
+    }
 
     /**
      * Test method for
@@ -182,8 +194,6 @@ public class ClusterFlowTaskTest extends FlowModTaskTestBase {
      */
     @Test
     public void testGetResult() {
-        VTNFlowDatabase fdb = new VTNFlowDatabase("test");
-        VTNFlow vflow = fdb.create(vtnMgr);
         long timeout = vtnMgr.getVTNConfig().getFlowModTimeout();
 
         // getResult() timeout

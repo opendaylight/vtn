@@ -8,9 +8,6 @@
  */
 package org.opendaylight.vtn.manager.internal;
 
-import static org.junit.Assert.*;
-
-import java.net.InetAddress;
 import java.util.Hashtable;
 
 import java.util.HashSet;
@@ -24,15 +21,11 @@ import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.opendaylight.controller.clustering.services.IClusterGlobalServices;
-import org.opendaylight.controller.connectionmanager.ConnectionMgmtScheme;
-import org.opendaylight.controller.connectionmanager.IConnectionManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowConfig;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.forwardingrulesmanager.IForwardingRulesManager;
 import org.opendaylight.controller.forwardingrulesmanager.PortGroupConfig;
 import org.opendaylight.controller.forwardingrulesmanager.PortGroupProvider;
-import org.opendaylight.controller.sal.connection.ConnectionConstants;
-import org.opendaylight.controller.sal.connection.ConnectionLocality;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.match.Match;
@@ -45,7 +38,7 @@ import org.opendaylight.vtn.manager.internal.cluster.FlowModResultEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 
 /**
- * Common class for tests of FlowModTask.
+ * Common class for tests of {@link FlowModTask}.
  */
 public class FlowModTaskTestBase extends TestUseVTNManagerBase {
 
@@ -323,7 +316,6 @@ public class FlowModTaskTestBase extends TestUseVTNManagerBase {
         ((VTNManagerImplStub) vtnMgr).clearClusterEventSetStub();
     }
 
-
     /**
      * A timer task used to emulate remote event.
      */
@@ -416,9 +408,9 @@ public class FlowModTaskTestBase extends TestUseVTNManagerBase {
      * Add {@link FlowEntry} to {@link VTNFlow}.
      *
      * @param   flow        A {@link VTNFlow}.
-     * @param   inPort      A ingress {@link NodeConnector}.
-     * @param   inVlan      A incoming VLAN ID.
-     * @param   outPort     A outgoing {@link NodeConnector}.
+     * @param   inPort      An ingress {@link NodeConnector}.
+     * @param   inVlan      An incoming VLAN ID.
+     * @param   outPort     An outgoing {@link NodeConnector}.
      * @param   priority    A priority of {@link FlowEntry}.
      * @return {@link VTNFlow}.
      */
@@ -434,5 +426,4 @@ public class FlowModTaskTestBase extends TestUseVTNManagerBase {
 
         return flow;
     }
-
 }

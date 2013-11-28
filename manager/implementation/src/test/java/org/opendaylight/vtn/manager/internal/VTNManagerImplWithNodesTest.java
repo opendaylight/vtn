@@ -8,6 +8,8 @@
  */
 package org.opendaylight.vtn.manager.internal;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -24,16 +26,10 @@ import org.apache.felix.dm.Component;
 import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.opendaylight.controller.clustering.services.IClusterContainerServices;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
-import org.opendaylight.controller.sal.action.Action;
-import org.opendaylight.controller.sal.action.ActionType;
-import org.opendaylight.controller.sal.action.Output;
-import org.opendaylight.controller.sal.action.SetVlanId;
 import org.opendaylight.controller.sal.core.Config;
 import org.opendaylight.controller.sal.core.ConstructionException;
 import org.opendaylight.controller.sal.core.Edge;
@@ -43,9 +39,6 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.Property;
 import org.opendaylight.controller.sal.core.State;
 import org.opendaylight.controller.sal.core.UpdateType;
-import org.opendaylight.controller.sal.match.Match;
-import org.opendaylight.controller.sal.match.MatchField;
-import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IEEE8021Q;
@@ -55,6 +48,7 @@ import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
 import org.opendaylight.controller.sal.utils.EtherTypes;
+import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.controller.sal.utils.Status;
@@ -77,7 +71,6 @@ import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
-import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.PortProperty;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
@@ -117,6 +110,28 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         properties.put("containerName", containerName);
         c.setServiceProperties(properties);
 
+        // create dummy file in startup directory.
+        String dir = GlobalConstants.STARTUPHOME.toString();
+        String prefix = VTenantImpl.CONFIG_FILE_PREFIX;
+        String suffix = VTenantImpl.CONFIG_FILE_SUFFIX;
+        String[] dummyFileNames = new String[] {
+                prefix + containerName + "-" + suffix,
+                "vtn" + suffix,
+                prefix + containerName + "-" + "config",
+                "config",
+                prefix + containerName + "-" + "notexist" + suffix
+        };
+        Set<File> fileSet = new HashSet<File>();
+        for (String fileName : dummyFileNames) {
+            File file = new File(dir, fileName);
+            try {
+                file.createNewFile();
+                fileSet.add(file);
+            } catch (IOException e) {
+                unexpected(e);
+            }
+        }
+
         Map<VBridgeIfPath, PortMapConfig> pmaps = new HashMap<VBridgeIfPath, PortMapConfig>();
         Map<VlanMap, VlanMapConfig> vmaps = new HashMap<VlanMap, VlanMapConfig>();
         Map<VBridgePath, VNodeState> brstates = new HashMap<VBridgePath, VNodeState>();
@@ -149,12 +164,12 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         pmaps.put(ifpath1, null);
         pmaps.put(ifpath2, null);
         pmaps.put(ifpath3, null);
-        checkVTNconfig(tpath, bpathlist, pmaps, null);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, null);
 
         // add mapping
         Node node = NodeCreator.createOFNode(0L);
         SwitchPort port = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW,
-        String.valueOf(10));
+                                         String.valueOf(10));
         PortMapConfig pmconf = new PortMapConfig(node, port, (short)0);
         st = vtnMgr.setPortMap(ifpath1, pmconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
@@ -179,7 +194,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         }
         vmaps.put(map, vlconf);
 
-        checkVTNconfig(tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
 
         brstates.put(bpath, VNodeState.UP);
         ifstates.put(ifpath1, VNodeState.UP);
@@ -192,7 +207,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         // restart VTNManager and check configuration after restart.
         restartVTNManager(c);
 
-        checkVTNconfig(tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
         checkNodeState(tpath, brstates, ifstates);
 
         // add vlanmap to not existing node.
@@ -205,27 +220,88 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             unexpected(e);
         }
         vmaps.put(map, vlconf);
-        checkVTNconfig(tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
 
         brstates.put(bpath, VNodeState.DOWN);
         checkNodeState(tpath, brstates, ifstates);
 
-        restartVTNManager(c);
-
+        // start with having a configuration.
         // this case, startup with cache.
-        checkVTNconfig(tpath, bpathlist, pmaps, vmaps);
+        restartVTNManager(c);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
         checkNodeState(tpath, brstates, ifstates);
 
+        // start after configuration files is removed.
+        // because caches remain, setting is taken over.
+        stopVTNManager(false);
+        VTNManagerImpl.cleanUpConfigFile(containerName);
+        startVTNManager(c);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+        checkNodeState(tpath, brstates, ifstates);
+
+        // start after cache is cleared.
+        // this case load from configuration files.
         stopVTNManager(true);
-        // cleanup cache.
-        resMgr.cleanUp("default");
+        startVTNManager(c);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+
+        // start with no cluster service.
+        stopVTNManager(true);
+        vtnMgr.unsetClusterContainerService(stubObj);
+        startVTNManager(c);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+
+        // remove configuration files.
+        stopVTNManager(true);
+        vtnMgr.setClusterContainerService(stubObj);
+        VTNManagerImpl.cleanUpConfigFile(containerName);
         startVTNManager(c);
 
-        // this case, startup with no cache.
-        checkVTNconfig(tpath, bpathlist, pmaps, vmaps);
-        checkNodeState(tpath, brstates, ifstates);
+        // after cache is cleared, there is no configuration.
+        List<VTenant> tlist = null;
+        try {
+            tlist = vtnMgr.getTenants();
+        } catch (VTNException e) {
+            unexpected(e);
+        }
+        assertNotNull(tlist);
+        assertEquals(0, tlist.size());
+
 
         stopVTNManager(true);
+        VTNManagerImpl.cleanUpConfigFile(containerName);
+
+        c = new ComponentImpl(null, null, null);
+        c.setServiceProperties(null);
+        startVTNManager(c);
+        assertFalse(vtnMgr.isAvailable());
+
+        stopVTNManager(true);
+        VTNManagerImpl.cleanUpConfigFile(containerName);
+
+        // in case not "default" container
+        c = new ComponentImpl(null, null, null);
+        properties = new Hashtable<String, String>();
+        String containerNameTest = "test";
+        properties.put("containerName", containerNameTest);
+        c.setServiceProperties(properties);
+        startVTNManager(c);
+
+        createTenantAndBridgeAndInterface(vtnMgr, tpath, bpathlist, ifpathlist);
+
+        stopVTNManager(true);
+        VTNManagerImpl.cleanUpConfigFile(containerNameTest);
+
+        // check dummy files exist.
+        for (File file : fileSet) {
+            if (file.getName()
+                    .equals(prefix + containerName + "-" + "notexist" + suffix)) {
+                assertFalse(file.toString(), file.exists());
+            } else {
+                assertTrue(file.toString(), file.exists());
+                file.delete();
+            }
+        }
     }
 
     /**
@@ -1179,19 +1255,24 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                                               int islDBSize) {
         ConcurrentMap<Node, VNodeState> nodeMap
             = (ConcurrentMap<Node, VNodeState>) cs.getCache(CACHE_NODES);
+        List<Node> nodeMapList = new ArrayList<Node>(nodeMap.keySet());
         ConcurrentMap<NodeConnector, PortProperty> portMap
             = (ConcurrentMap<NodeConnector, PortProperty>) cs.getCache(CACHE_PORTS);
+        List<NodeConnector> portMapList
+            = new ArrayList<NodeConnector>(portMap.keySet());
         ConcurrentMap<NodeConnector, VNodeState> islMap
             = (ConcurrentMap<NodeConnector, VNodeState>) cs.getCache(CACHE_ISL);
+        List<NodeConnector> islMapList
+            = new ArrayList<NodeConnector>(islMap.keySet());
 
         if (nodeDBSize >= 0) {
-            assertEquals(nodeDBSize, nodeMap.size());
+            assertEquals(nodeDBSize, nodeMapList.size());
         }
         if (portDBSize >= 0) {
-            assertEquals(portDBSize, portMap.size());
+            assertEquals(portDBSize, portMapList.size());
         }
         if (islDBSize >= 0) {
-            assertEquals(islDBSize, islMap.size());
+            assertEquals(islDBSize, islMapList.size());
         }
     }
 
@@ -1505,8 +1586,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * same test with {@code testNotifyNodeAndNodeConnectorWithPortMap}.
-     * this test case do with vlan map setting.
+     * Same test with {@code testNotifyNodeAndNodeConnectorWithPortMap}.
+     * this test case do with VLAN map setting.
      */
     @Test
     public void testNotificationWithVlanMap() {
@@ -1581,6 +1662,10 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         assertEquals(StatusCode.SUCCESS, st.getCode());
     }
 
+    /**
+     * same test with {@code testNotifyNodeAndNodeConnectorWithPortMap}.
+     * this test case do with both port map and vlan map set.
+     */
     @Test
     public void  testNotificationWithBothMapped() {
         VTNManagerImpl mgr = vtnMgr;
@@ -1623,82 +1708,95 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                 new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "13"),
         };
 
-        Node cnode = NodeCreator.createOFNode(0L);
-        NodeConnector cnc
-            = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short)10), cnode);
-
-        for (Node pmapNode : nodeSet) {
-            if (pmapNode == null) {
+        for (Node cnode : nodeSet) {
+            if (cnode == null) {
                 continue;
             }
-            for (SwitchPort port : ports) {
-                for (short vlan : vlans) {
-                    // add port map
-                    PortMapConfig pmconf = new PortMapConfig(pmapNode, port, (short)vlan);
-                    String emsg = "(PortMapConfig)" + pmconf.toString();
+            NodeConnector cnc
+                = NodeConnectorCreator
+                    .createOFNodeConnector(Short.valueOf((short)10), cnode);
 
-                    st = mgr.setPortMap(ifp, pmconf);
-                    assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
+            for (Node pmapNode : nodeSet) {
+                if (pmapNode == null) {
+                    continue;
+                }
+                for (SwitchPort port : ports) {
+                    for (short vlan : vlans) {
+                        // add port map
+                        PortMapConfig pmconf = new PortMapConfig(pmapNode, port,
+                                                                 (short)vlan);
+                        String emsg = "(PortMapConfig)" + pmconf.toString();
 
-                    PortMap map = null;
-                    try {
-                        map = mgr.getPortMap(ifp);
-                    } catch (Exception e) {
-                        unexpected(e);
-                    }
-                    assertEquals(emsg, pmconf, map.getConfig());
-                    assertNotNull(emsg, map.getNodeConnector());
-                    if(port.getId() != null) {
-                        assertEquals(emsg,
-                                     Short.parseShort(port.getId()),
-                                     map.getNodeConnector().getID());
-                    }
-                    if (port.getType() != null) {
-                        assertEquals(emsg,
-                                     port.getType(), map.getNodeConnector().getType());
-                    }
-                    checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UP, emsg);
+                        st = mgr.setPortMap(ifp, pmconf);
+                        assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
 
-                    // add a vlanmap to a vbridge
-                    for (Node vmapNode : nodeSet) {
-                        for (short vvlan : vlans) {
-                            VlanMapConfig vlconf = new VlanMapConfig(vmapNode, vvlan);
-                            String emsgVmap = "(VlanMapConfig)" + vlconf.toString()
-                                              + "," + emsg;
-                            VlanMap vmap = null;
-                            try {
-                                vmap = mgr.addVlanMap(bpath, vlconf);
-                                if (vmapNode != null
-                                        && vmapNode.getType() != NodeConnector.NodeConnectorIDType.OPENFLOW) {
-                                    fail("throwing Exception was expected.");
+                        PortMap map = null;
+                        try {
+                            map = mgr.getPortMap(ifp);
+                        } catch (Exception e) {
+                            unexpected(e);
+                        }
+                        assertEquals(emsg, pmconf, map.getConfig());
+                        assertNotNull(emsg, map.getNodeConnector());
+                        if (port.getId() != null) {
+                            assertEquals(emsg,
+                                         Short.parseShort(port.getId()),
+                                         map.getNodeConnector().getID());
+                        }
+                        if (port.getType() != null) {
+                            assertEquals(emsg,
+                                         port.getType(),
+                                         map.getNodeConnector().getType());
+                        }
+                        checkNodeStatus(mgr, bpath, ifp, VNodeState.UP,
+                                        VNodeState.UP, emsg);
+
+                        // add a vlanmap to a vbridge
+                        for (Node vmapNode : nodeSet) {
+                            for (short vvlan : vlans) {
+                                VlanMapConfig vlconf = new VlanMapConfig(vmapNode,
+                                                                         vvlan);
+                                String emsgVmap = "(VlanMapConfig)"
+                                        + vlconf.toString() + "," + emsg;
+                                VlanMap vmap = null;
+                                try {
+                                    vmap = mgr.addVlanMap(bpath, vlconf);
+                                    if (vmapNode != null
+                                            && vmapNode.getType()
+                                                != NodeConnector.NodeConnectorIDType.OPENFLOW) {
+                                        fail("throwing Exception was expected.");
+                                    }
+                                } catch (VTNException e) {
+                                    if (vmapNode != null
+                                            && vmapNode.getType()
+                                                == NodeConnector.NodeConnectorIDType.OPENFLOW) {
+                                        unexpected(e);
+                                    } else {
+                                        continue;
+                                    }
                                 }
-                            } catch (VTNException e) {
-                                if (vmapNode != null
-                                        && vmapNode.getType() == NodeConnector.NodeConnectorIDType.OPENFLOW) {
+
+                                VlanMap getmap = null;
+                                try {
+                                    getmap = mgr.getVlanMap(bpath, vmap.getId());
+                                } catch (VTNException e) {
                                     unexpected(e);
-                                } else {
-                                    continue;
                                 }
+                                assertEquals(emsgVmap, getmap.getId(), vmap.getId());
+                                assertEquals(emsgVmap, getmap.getNode(), vmapNode);
+                                assertEquals(emsgVmap, getmap.getVlan(), vvlan);
+                                checkNodeStatus(mgr, bpath, ifp, VNodeState.UP,
+                                                VNodeState.UP, emsgVmap);
+
+                                // test for notification APIs.
+                                checkNotification(mgr, bpath, ifp, cnc, cnode,
+                                                  pmconf, vlconf, MapType.ALL,
+                                                  emsgVmap);
+
+                                st = mgr.removeVlanMap(bpath, vmap.getId());
+                                assertEquals(emsgVmap, StatusCode.SUCCESS,
+                                             st.getCode());
                             }
-
-                            VlanMap getmap = null;
-                            try {
-                                getmap = mgr.getVlanMap(bpath, vmap.getId());
-                            } catch (VTNException e) {
-                                unexpected(e);
-                            }
-                            assertEquals(emsgVmap, getmap.getId(), vmap.getId());
-                            assertEquals(emsgVmap, getmap.getNode(), vmapNode);
-                            assertEquals(emsgVmap, getmap.getVlan(), vvlan);
-                            checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UP,
-                                            emsgVmap);
-
-                            // test for notification APIs.
-                            checkNotification (mgr, bpath, ifp, cnc,
-                                cnode, pmconf, vlconf, MapType.ALL, emsgVmap);
-
-                            st = mgr.removeVlanMap(bpath, vmap.getId());
-                            assertEquals(emsgVmap, StatusCode.SUCCESS, st.getCode());
                         }
                     }
                 }
@@ -1721,9 +1819,10 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
      *                  specify null.
      * @param vlconf    A {@link VlanMapConfig}. If there are no vlanmap,
      *                  specify null.
-     * @param mapType   {@link MapType}
+     * @param mapType   {@link MapType}.
      * @param msg       A string output when assertion is failed.
      */
+
     private void checkNotification (VTNManagerImpl mgr, VBridgePath bpath, VBridgeIfPath ifp,
             NodeConnector chgNc, Node chgNode, PortMapConfig pmconf, VlanMapConfig vlconf,
             MapType mapType, String msg) {
@@ -1930,104 +2029,12 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         mgr.initISL();
     }
 
-
     /**
-     * check node and interface status specified vbridge and vinterface.
-     * @param mgr       VTN Manager service.
-     * @param bpath     A {@link VBridgePath} which is checked.
-     * @param ifp       A {@link VBridgeIfPath} which is checked.
-     * @param bstate    A state of {@link VBridge} which is expected.
-     * @param ifstate   A state of {@link VInterface} which is expected.
-     * @param msg       message strings print when assertion failed.
-     */
-    private void checkNodeStatus(VTNManagerImpl mgr, VBridgePath bpath, VBridgeIfPath ifp,
-            VNodeState bstate, VNodeState ifstate, String msg) {
-
-        VBridge brdg = null;
-        VInterface bif = null;
-        try {
-            if (ifp != null) {
-                bif = mgr.getBridgeInterface(ifp);
-            }
-            if (bpath != null) {
-                brdg = mgr.getBridge(bpath);
-            }
-        } catch (VTNException e) {
-            unexpected(e);
-        }
-
-        if (ifp != null) {
-            assertEquals("VBridgeInterface status: " + msg, ifstate, bif.getState());
-        }
-        if (bpath != null) {
-            assertEquals("VBridge status: " + msg, bstate, brdg.getState());
-        }
-     }
-
-    /**
-     * put a Mac Address Table Entry to Mac Address Table of specified bridge.
-     *
-     * @param mgr   VTN Manager service.
-     * @param bpath A {@link VBridgePath} of {@link VBridge} which is added entry.
-     * @param nc    Incoming NodeConnector.
-     */
-    private void putMacTableEntry(VTNManagerImpl mgr, VBridgePath bpath,
-                                  NodeConnector nc) {
-        byte[] src = new byte[] {(byte)0x00, (byte)0x01, (byte)0x01,
-                                 (byte)0x01, (byte)0x01, (byte)0x01,};
-        byte[] dst = new byte[] {(byte)0xFF, (byte)0xFF, (byte)0xFF,
-                                 (byte)0xFF, (byte)0xFF, (byte)0xFF};
-        byte[] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
-        byte[] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
-
-        PacketContext pctx = createARPPacketContext(src, dst, sender ,target,
-                                                    (short)-1, nc, ARP.REQUEST);
-        MacAddressTable tbl = mgr.getMacAddressTable(bpath);
-        tbl.add(pctx);
-    }
-
-    /**
-     * check a MAC Address Table Entry.
-     *
-     * @param mgr       VTN Manager service.
-     * @param bpath     {@link VBridgePath} of checked {@link VBridge}.
-     * @param isFlushed If {@code true}, a expected result is 0.
-     *                  If {@code false}, expected result is more than 0.
-     * @param msg       error message.
-     */
-    private void checkMacTableEntry(VTNManagerImpl mgr, VBridgePath bpath,
-                                    boolean isFlushed, String msg) {
-        MacAddressTable tbl = mgr.getMacAddressTable(bpath);
-
-        List<MacAddressEntry> list = null;
-        try {
-            list = tbl.getEntries();
-        } catch (VTNException e) {
-           unexpected(e);
-        }
-
-        if (isFlushed) {
-            assertEquals(msg, 0, list.size());
-        } else {
-            assertTrue(msg, list.size() > 0);
-        }
-    }
-
-    /**
-     * flush MAC Table
-     * @param mgr   VTN Manager service.
-     * @param bpath {@link VBridgePath} of {@link VBridge} which is flushed.
-     */
-    private void flushMacTableEntry(VTNManagerImpl mgr, VBridgePath bpath) {
-        mgr.flushMacEntries(bpath);
-    }
-
-    /**
-     * test for
+     * Test method for
      * {@link VTNManagerImpl#recalculateDone()}
      */
     @Test
-    public void testRecalculate() {
+    public void testRecalculateDone() {
         VTNManagerImpl mgr = vtnMgr;
         TestStub stub0 = new TestStub(0);
         TestStub stub3 = new TestStub(3);
@@ -2057,10 +2064,15 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         ifplist.add(ifp1);
         ifplist.add(ifp2);
         createTenantAndBridgeAndInterface(mgr, tpath, bpathlist, ifplist);
+        flushTasks();
 
         // Append one more listener to catch port mapping change events.
         VTNManagerAwareStub pmapAware = new VTNManagerAwareStub();
         mgr.addVTNManagerAware(pmapAware);
+        flushTasks();
+        pmapAware.checkVtnInfo(1, tpath, UpdateType.ADDED);
+        pmapAware.checkVbrInfo(1, bpath, UpdateType.ADDED);
+        pmapAware.checkVIfInfo(3, ifp2, UpdateType.ADDED);
 
         Node node0 = NodeCreator.createOFNode(0L);
         SwitchPort port = new SwitchPort(null,
@@ -2083,9 +2095,9 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         mgr.addVTNManagerAware(awareStub);
         flushTasks();
-        awareStub.checkVtnInfo(1, tpath, tname, UpdateType.ADDED);
-        awareStub.checkVbrInfo(1, bpath, bname, UpdateType.ADDED);
-        awareStub.checkVIfInfo(3, ifp2, ifname2, UpdateType.ADDED);
+        awareStub.checkVtnInfo(1, tpath, UpdateType.ADDED);
+        awareStub.checkVbrInfo(1, bpath, UpdateType.ADDED);
+        awareStub.checkVIfInfo(3, ifp2, UpdateType.ADDED);
         awareStub.checkPmapInfo(3, ifp2, pmconf, UpdateType.ADDED);
 
         // call with no fault status
@@ -2128,20 +2140,20 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                                    nc0, ARP.REPLY);
         result = mgr.receiveDataPacket(inPkt);
         assertEquals(PacketResult.KEEP_PROCESSING, result);
-        awareStub.checkVbrInfo(1, bpath, bname, UpdateType.CHANGED);
+        awareStub.checkVbrInfo(1, bpath, UpdateType.CHANGED);
 
         inPkt = createARPRawPacket(src0, src2, target, sender2,
                                    (vlan > 0) ? vlan : -1,
                                    nc0, ARP.REPLY);
         result = mgr.receiveDataPacket(inPkt);
         assertEquals(PacketResult.KEEP_PROCESSING, result);
-        awareStub.checkVbrInfo(1, bpath, bname, UpdateType.CHANGED);
+        awareStub.checkVbrInfo(1, bpath, UpdateType.CHANGED);
         checkVBridgeStatus(mgr, bpath, 2, VNodeState.DOWN);
 
-        // received again. this expect status is kept.
+        // received again. expect status is kept.
         result = mgr.receiveDataPacket(inPkt);
         assertEquals(PacketResult.KEEP_PROCESSING, result);
-        awareStub.checkVbrInfo(0, null, null, null);
+        awareStub.checkVbrInfo(0, null, null);
 
         pmconf = new PortMapConfig(node2, port, (short) 0);
         st = mgr.setPortMap(ifp2, pmconf);
@@ -2150,7 +2162,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         // expected not to recover from fault state
         mgr.recalculateDone();
         checkVBridgeStatus(mgr, bpath, 2, VNodeState.DOWN);
-        awareStub.checkVbrInfo(0, null, null, null);
+        awareStub.checkVbrInfo(0, null, null);
 
         // change path settings
         mgr.setRouting(stubObj);
@@ -2158,7 +2170,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         // expected to 1 path recover from fault state
         mgr.recalculateDone();
         checkVBridgeStatus(mgr, bpath, 1, VNodeState.DOWN);
-        awareStub.checkVbrInfo(1, bpath, bname, UpdateType.CHANGED);
+        awareStub.checkVbrInfo(1, bpath, UpdateType.CHANGED);
 
         // change path settings
         mgr.setRouting(stub3);
@@ -2166,7 +2178,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         // expected to recover from fault state
         mgr.recalculateDone();
         checkVBridgeStatus(mgr, bpath, 0, VNodeState.UP);
-        awareStub.checkVbrInfo(1, bpath, bname, UpdateType.CHANGED);
+        awareStub.checkVbrInfo(1, bpath, UpdateType.CHANGED);
 
         mgr.setSwitchManager(stubObj);
         mgr.setTopologyManager(stubObj);
@@ -3399,7 +3411,6 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
                         checkFlowEntries(learnedPv, inPortVlan, flowEntries,
                                          registeredFlows, src, dst, tenant, emsg);
-
                     } else {
                         if (inNc != null) {
                             assertEquals(emsg, PacketResult.IGNORED, result);

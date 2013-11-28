@@ -921,6 +921,39 @@ public abstract class TestBase extends Assert {
      * @return  A deserialized object is returned.
      */
     protected static Object serializeTest(Object o) {
+        Object newobj = SerializeAndDeserialize(o);
+
+        assertNotSame(o, newobj);
+        assertEquals(o, newobj);
+
+        return newobj;
+    }
+
+    /**
+     * Ensure that the given object is serializable.
+     *
+     * <p>
+     *   Note: This method doesn't check if deserialized object equals
+     *   input object.
+     * </p>
+     *
+     * @param o  An object to be tested.
+     * @return  A deserialized object is returned.
+     */
+    protected static Object eventSerializeTest(Object o) {
+        Object newobj = SerializeAndDeserialize(o);
+        assertNotSame(o, newobj);
+
+        return newobj;
+    }
+
+    /**
+     * Serialize and deserialize object.
+     *
+     * @param o An {@link Object} serialized and deserialized.
+     * @return A deserialized object.
+     */
+    private static Object SerializeAndDeserialize(Object o) {
         // Serialize the given object.
         byte[] bytes = null;
         try {
@@ -945,10 +978,6 @@ public abstract class TestBase extends Assert {
         } catch (Exception e) {
             unexpected(e);
         }
-
-        assertNotSame(o, newobj);
-        assertEquals(o, newobj);
-
         return newobj;
     }
 
@@ -996,7 +1025,7 @@ public abstract class TestBase extends Assert {
      * check a Ethernet packet whether expected parameters are set.
      *
      * @param msg       if check is failed, report error with a this string.
-     * @param eth       A input ethernet frame data.
+     * @param eth       An input ethernet frame data.
      * @param ethType   expected ethernet type.
      * @param destMac   expected destination mac address.
      * @param srcMac    expected source mac address.

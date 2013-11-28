@@ -10,7 +10,6 @@
 package org.opendaylight.vtn.manager.internal;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -83,7 +82,6 @@ import org.opendaylight.controller.switchmanager.Switch;
 import org.opendaylight.controller.switchmanager.SwitchConfig;
 import org.opendaylight.controller.topologymanager.ITopologyManager;
 import org.opendaylight.controller.topologymanager.TopologyUserLinkConfig;
-import org.opendaylight.vtn.manager.SwitchPort;
 
 /**
  * Stub module for Unit test of VTNManager.

@@ -15,12 +15,12 @@ import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
-import org.opendaylight.vtn.manager.internal.FlowEventTestBase;
+import org.opendaylight.vtn.manager.internal.VNodeEventTestBase;
 
 /**
  * JUnit Test for {@link RawPacketEvent}.
  */
-public class RawPacketEventTest extends FlowEventTestBase {
+public class RawPacketEventTest extends VNodeEventTestBase {
 
     /**
      * Test method for
@@ -70,5 +70,8 @@ public class RawPacketEventTest extends FlowEventTestBase {
 
         RawPacketEvent ev = new RawPacketEvent(pkt, outnc);
         eventSerializeTest(ev);
+
+        // Because RawPacketEvent has no getter method,
+        // equality of deserialized object isn't checked.
     }
 }

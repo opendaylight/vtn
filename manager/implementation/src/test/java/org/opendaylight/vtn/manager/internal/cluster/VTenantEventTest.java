@@ -19,12 +19,12 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
-import org.opendaylight.vtn.manager.internal.FlowEventTestBase;
+import org.opendaylight.vtn.manager.internal.VNodeEventTestBase;
 
 /**
  * JUnit test for {@link VTenantEvent}.
  */
-public class VTenantEventTest extends FlowEventTestBase {
+public class VTenantEventTest extends VNodeEventTestBase {
 
     /**
      * Test case for getter methods and
@@ -48,18 +48,7 @@ public class VTenantEventTest extends FlowEventTestBase {
 
                             VTenantEvent tevent
                                     = new VTenantEvent(tpath, vtenant, utype);
-
-                            assertEquals(emsg, tpath, tevent.getPath());
-                            assertEquals(emsg, "virtual tenant", tevent.getTypeName());
-                            assertEquals(emsg, utype, tevent.getUpdateType());
-                            assertEquals(emsg, vtenant, tevent.getObject());
-                            assertEquals(emsg, vtenant, tevent.getVTenant());
-                            assertTrue(emsg, tevent.isSaveConfig());
-
-                            for (Boolean local : createBooleans(false)) {
-                                assertTrue(emsg + "(local)" + local.toString(),
-                                        tevent.isSingleThreaded(local.booleanValue()));
-                            }
+                            checkVTenantEvent(tevent, tpath, tconf, utype, emsg);
                         }
                     }
                 }
@@ -88,6 +77,7 @@ public class VTenantEventTest extends FlowEventTestBase {
         // register stub.
         VTNManagerAwareStub stub = new VTNManagerAwareStub();
         addVTNManagerAware(stub);
+        flushTasks();
         stub.checkAllNull();
 
         // create tenant.
@@ -168,24 +158,45 @@ public class VTenantEventTest extends FlowEventTestBase {
                             = createVTenantConfig(desc, iv, hv);
                         VTenant vtenant = new VTenant(tname, tconf);
                         for (UpdateType utype : UpdateType.values()) {
-                            VTenantEvent tevent = new VTenantEvent(tpath, vtenant, utype);
+                            String emsg = "(VTenantPath)" + tpath.toString()
+                                    + ",(desc)" + desc  + ",(iv)" + iv
+                                    + ",(hv)" + hv;
 
-                            VTenantEvent newobj = (VTenantEvent) eventSerializeTest(tevent);
+                            VTenantEvent tevent
+                                = new VTenantEvent(tpath, vtenant, utype);
+                            VTenantEvent newobj
+                                = (VTenantEvent) eventSerializeTest(tevent);
 
-                            assertEquals(tpath, newobj.getPath());
-                            assertEquals("virtual tenant", newobj.getTypeName());
-                            assertEquals(utype, newobj.getUpdateType());
-                            assertEquals(vtenant, newobj.getObject());
-                            assertEquals(vtenant, newobj.getVTenant());
-                            assertTrue(newobj.isSaveConfig());
-
-                            for (Boolean local : createBooleans(false)) {
-                                assertTrue(newobj.isSingleThreaded(local.booleanValue()));
-                            }
+                            checkVTenantEvent(newobj, tpath, tconf, utype, emsg);
                         }
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Check {@link VTenantEvent} object.
+     *
+     * @param tev       A {@link VTenantEvent}.
+     * @param tpath     A {@link VTenantPath}.
+     * @param tconf     A {@link VTenantConfig}.
+     * @param utype     An {@link UpdateType}.
+     * @param emsg      Output error message.
+     */
+    private void checkVTenantEvent(VTenantEvent tev, VTenantPath tpath,
+                                   VTenantConfig tconf, UpdateType utype,
+                                   String emsg) {
+        assertEquals(emsg, tpath, tev.getPath());
+        VTenant tenant = new VTenant(tpath.getTenantName(), tconf);
+        assertEquals(emsg, tenant, tev.getVTenant());
+        assertEquals(emsg, tenant, tev.getObject());
+        assertEquals(emsg, utype, tev.getUpdateType());
+        assertEquals(emsg, "virtual tenant", tev.getTypeName());
+        assertTrue(emsg, tev.isSaveConfig());
+
+        for (Boolean local : createBooleans(false)) {
+            assertTrue(emsg, tev.isSingleThreaded(local.booleanValue()));
         }
     }
 }
