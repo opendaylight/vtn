@@ -43,6 +43,12 @@ const std::string CONF_CONNECT_TIME_OUT = "connect_time_out";
 const std::string CONF_REQ_TIME_OUT     = "request_time_out";
 const std::string SET_USER_PASSWORD_BLK = "user_password_param";
 
+const std::string NODE_TYPE_OF          = "OF-";
+const std::string NODE_TYPE_ANY         = "ANY";
+const std::string PERIOD                = ".";
+const std::string SW_PREFIX             = "SW-";
+const std::string UNTAGGED_VLANID       = "65535";
+
 const uint32_t DEFAULT_ODC_PORT                = 8080;
 const uint32_t DEFAULT_CONNECT_TIME_OUT        = 30;
 const uint32_t DEFAULT_REQ_TIME_OUT        = 30;
@@ -51,6 +57,10 @@ const uint32_t PING_RETRY_COUNT   = 5;
 const uint32_t DEFAULT_IDLE_TIME_OUT = 0;
 const uint32_t DEFAULT_HARD_TIME_OUT = 300;
 const uint32_t DEFAULT_AGE_INTERVAL  = 600;
+
+const uint32_t VTN_PARSE_FLAG = 0;
+const uint32_t VBR_PARSE_FLAG = 1;
+const uint32_t SWID_PARSE_FLAG = 2;
 
 typedef enum {
   ODC_DRV_SUCCESS = 0,

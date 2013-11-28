@@ -56,7 +56,9 @@ KeyTree::~KeyTree() {
 key_tree key_tree_table[] = {
   { UNC_KT_CONTROLLER, UNC_KT_ROOT, 0 },
   { UNC_KT_VTN, UNC_KT_ROOT, 1 },
-  { UNC_KT_VBRIDGE, UNC_KT_VTN, 0 }, { UNC_KT_VBR_IF, UNC_KT_VBRIDGE, 0 }
+  { UNC_KT_VBRIDGE, UNC_KT_VTN, 0 },
+  { UNC_KT_VBR_IF, UNC_KT_VBRIDGE, 0 },
+  { UNC_KT_VBR_VLANMAP, UNC_KT_VBRIDGE, 1 }
 };
 
 /**
