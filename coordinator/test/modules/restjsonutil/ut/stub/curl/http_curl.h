@@ -7,13 +7,9 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-#ifndef _UT_STUB_H_
-#define _UT_STUB_H_
+#ifndef HTTP_CURL_H_
+#define HTTP_CURL_H_
 
-/*
- * Include stub header files.
- */
+int test_flag;
 
-#include "stub/curl/curl.h"
-
-#endif  // _UT_STUB_H_
+#endif
