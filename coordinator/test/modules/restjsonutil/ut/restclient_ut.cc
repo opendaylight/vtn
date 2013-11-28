@@ -12,6 +12,56 @@
 #include <rest_client.hh>
 #include <string>
 
+
+TEST(RestClient, test_send_http_request) {
+  unc::restjson::RestClient rest_obj("11", "11" , 12 ,
+                                     unc::restjson::HTTP_METHOD_POST);
+  std::string user = "sdfsd";
+  std::string pwd = "sdf";
+  unc::restjson::HttpResponse_t * response;
+  response = rest_obj.send_http_request(user , pwd, 10  , 10, "ajfh");
+  EXPECT_TRUE(response == NULL);
+}
+TEST(RestClient, test_send_http_request_failure) {
+  unc::restjson::RestClient rest_obj("", "" , 0 ,
+                                     unc::restjson::HTTP_METHOD_POST);
+  std::string user = "sdfsd";
+  std::string pwd = "sdf";
+  unc::restjson::HttpResponse_t * response;
+  response = rest_obj.send_http_request(user , pwd, 10  , 10, "ajfh");
+  EXPECT_TRUE(response == NULL);
+}
+TEST(RestClient, test_send_http_request_failure_userpwd_null) {
+  unc::restjson::RestClient rest_obj("11", "11" , 12 ,
+                                     unc::restjson::HTTP_METHOD_POST);
+  std::string user = "";
+  std::string pwd = "dsdf";
+  unc::restjson::HttpResponse_t * response;
+  response = rest_obj.send_http_request(user , pwd, 10  , 10, "ajfh");
+  EXPECT_TRUE(response == NULL);
+}
+
+TEST(RestClient, test_send_http_request_failure_invalid_timeout) {
+  unc::restjson::RestClient rest_obj("11", "11" , 12 ,
+                                     unc::restjson::HTTP_METHOD_POST);
+  std::string user = "jdkgh";
+  std::string pwd = "dsdf";
+  unc::restjson::HttpResponse_t * response;
+  response = rest_obj.send_http_request(user , pwd, 0  , 5 , "ajfh");
+  EXPECT_TRUE(response == NULL);
+}
+
+
+TEST(RestClient, test_send_http_request_failure_request_null) {
+  unc::restjson::RestClient rest_obj("11", "11" , 12 ,
+                                     unc::restjson::HTTP_METHOD_POST);
+  std::string user = "jdkgh";
+  std::string pwd = "dsdf";
+  unc::restjson::HttpResponse_t * response;
+  response = rest_obj.send_http_request(user , pwd , 10  , 10, "");
+  EXPECT_TRUE(response == NULL);
+}
+
 TEST(RestClient, test_create_request_header_Emptyurl) {
   unc::restjson::RestClient rest_obj("1111", "", 12 ,
                                      unc::restjson::HTTP_METHOD_POST);
@@ -20,6 +70,7 @@ TEST(RestClient, test_create_request_header_Emptyurl) {
   EXPECT_EQ(retval, uint(1));
   rest_obj.clear_http_response();
 }
+
 
 TEST(RestClient, test_create_request_header_InvalidIpaddress) {
   unc::restjson::RestClient rest_obj("", "111", 12,
@@ -39,7 +90,14 @@ TEST(RestClient, test_create_request_header_InvalidPortNumber) {
   rest_obj.clear_http_response();
 }
 
-
+TEST(RestClient, test_create_request_header_INVALID) {
+  unc::restjson::RestClient rest_obj("11", "IN" , 12,
+                                     unc::restjson::HTTP_METHOD_POST);
+  std::string url = "sdfsd";
+  uint32_t retval =  rest_obj.create_request_header();
+  EXPECT_EQ(retval, uint(1));
+  rest_obj.clear_http_response();
+}
 TEST(RestClient, test_create_request_header) {
   unc::restjson::RestClient rest_obj("11", "11" , 12,
                                      unc::restjson::HTTP_METHOD_POST);
@@ -49,6 +107,14 @@ TEST(RestClient, test_create_request_header) {
   rest_obj.clear_http_response();
 }
 
+TEST(RestClient, test_create_request_header_portnumber_empty) {
+  unc::restjson::RestClient rest_obj("11", "11" , 0,
+                                     unc::restjson::HTTP_METHOD_POST);
+  std::string url = "sdfsd";
+  uint32_t retval =  rest_obj.create_request_header();
+  EXPECT_EQ(retval, uint(1));
+  rest_obj.clear_http_response();
+}
 TEST(RestClient, test_create_request_header_PUT) {
   unc::restjson::RestClient rest_obj("11", "11" , 12 ,
                                      unc::restjson::HTTP_METHOD_POST);
@@ -77,7 +143,6 @@ TEST(RestClient, test_SetInvalidUsername) {
   EXPECT_EQ(retval, uint(1));
   rest_obj.clear_http_response();
 }
-
 
 TEST(RestClient, test_SetInvalidPassword) {
   unc::restjson::RestClient rest_obj("11", "11" , 12 ,
@@ -121,6 +186,18 @@ TEST(RestClient, test_SetTimeoutValue) {
   rest_obj.clear_http_response();
 }
 
+TEST(RestClient, test_SetTimeoutValue_failure) {
+  unc::restjson::RestClient rest_obj("11", "11" , 12 ,
+                                     unc::restjson::HTTP_METHOD_POST);
+  test_flag = CURLOPT_CONNECTIONTIMEOUT_FAILURE;
+  uint32_t retval =  rest_obj.set_timeout(5, 5);
+  EXPECT_EQ(retval, uint(1));
+  test_flag = UNSET;
+  rest_obj.clear_http_response();
+}
+
+
+
 TEST(RestClient, test_set_request_body_Null) {
   unc::restjson::RestClient rest_obj("11", "11" , 12 ,
                                      unc::restjson::HTTP_METHOD_POST);
@@ -154,4 +231,16 @@ TEST(RestClient, test_set_request_body_LargeVal) {
   rest_obj.clear_http_response();
 }
 
+
+TEST(RestClient, test_send_http_request_failure_invalid_timeout_failure) {
+  unc::restjson::RestClient rest_obj("11", "11" , 12 ,
+                                     unc::restjson::HTTP_METHOD_POST);
+  std::string user = "jdkgh";
+  std::string pwd = "dsdf";
+  unc::restjson::HttpResponse_t * response;
+  test_flag = CURLOPT_CONNECTIONTIMEOUT_FAILURE;
+  response = rest_obj.send_http_request(user , pwd, 0  , 5 , "ajfh");
+  EXPECT_TRUE(response == NULL);
+  test_flag = UNSET;
+}
 

@@ -8,26 +8,32 @@
  */
 
 
+#ifndef HTTP_CLIENT_UT
+#define HTTP_CLIENT_UT
+#include <curl/http_curl.h>
 #include <http_client.hh>
 #include <gtest/gtest.h>
 #include <string>
-TEST(set_username_password_val, Test1) {
+
+TEST(HttpClient , set_username_password_val) {
   unc::restjson::HttpClient obj;
   obj.init();
   uint32_t val = obj.set_username_password("user", "pass");
   EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
   obj.fini();
+  obj.clear_http_response();
 }
 
-TEST(SetUsernamePassword, Test2) {
+TEST(HttpClient , SetUsernamePassword) {
   unc::restjson::HttpClient obj;
   obj.init();
   uint32_t val = obj.set_username_password("user", "i#$%^");
   EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
   obj.fini();
+  obj.clear_http_response();
 }
 
-TEST(SetUsernamePassword_failure_case1, Test3) {
+TEST(HttpClient , SetUsernamePassword_failure_case1) {
   unc::restjson::HttpClient obj;
   obj.init();
   uint32_t val =
@@ -35,260 +41,360 @@ TEST(SetUsernamePassword_failure_case1, Test3) {
                                 "QELKJHGQEO;GI;/ihggp");
   EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
   obj.fini();
+  obj.clear_http_response();
 }
 
-TEST(SetUsernamePassword_success, Test4) {
+TEST(HttpClient , SetUsernamePassword_null) {
+  unc::restjson::HttpClient obj;
+  obj.init();
+  uint32_t val = obj.set_username_password("", "");
+  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
+  obj.fini();
+  obj.clear_http_response();
+}
+
+
+TEST(HttpClient , SetUsernamePassword_valid) {
+  unc::restjson::HttpClient obj;
+  obj.init();
+  uint32_t val = obj.set_username_password("user", "imashndf");
+  EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
+  obj.fini();
+  obj.clear_http_response();
+}
+
+
+TEST(HttpClient , SetUsernamePassword_success) {
   unc::restjson::HttpClient obj;
   obj.init();
   uint32_t val = obj.set_username_password("user", "example");
   EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
   obj.fini();
+  obj.clear_http_response();
 }
 
-TEST(SetConnectionTimeOut, Test5) {
+TEST(HttpClient , SetConnectionTimeOut) {
   unc::restjson::HttpClient obj;
 
   obj.init();
+  test_flag = FAIL_TEST;
   uint32_t val = obj.set_connection_timeout(10);
   EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
+  test_flag = UNSET;
   obj.fini();
+  obj.clear_http_response();
 }
 
-TEST(SetConnectionTimeOut_success, Test6) {
+TEST(HttpClient , SetConnectionTimeOut_success) {
   unc::restjson::HttpClient obj;
-
   obj.init();
+  test_flag = FAIL_TEST;
   uint32_t val = obj.set_connection_timeout(0);
   EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
+  test_flag = UNSET;
   obj.fini();
+  obj.clear_http_response();
 }
 
-TEST(SetConnectionTimeOut_failure, Test8) {
+TEST(HttpClient , SetConnectionTimeOut_failure) {
   unc::restjson::HttpClient obj;
 
   obj.init();
-  uint32_t val = obj.set_connection_timeout(-1);
+  test_flag = CURLOPT_CONNECTIONTIMEOUT_FAILURE;
+  uint32_t val = obj.set_connection_timeout(5);
   EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
+  test_flag = UNSET;
   obj.fini();
+  obj.clear_http_response();
 }
 
 
-TEST(SetRequestTimeOut, Test9) {
+TEST(HttpClient , SetRequestTimeOut) {
   unc::restjson::HttpClient obj;
   obj.init();
+  test_flag = FAIL_TEST;
   uint32_t val = obj.set_request_timeout(10);
   EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
+  test_flag = UNSET;
   obj.fini();
+  obj.clear_http_response();
 }
 
-TEST(SetRequestTimeOut_success, Test10) {
+TEST(HttpClient , SetRequestTimeOut_success) {
   unc::restjson::HttpClient obj;
   obj.init();
+  test_flag = FAIL_TEST;
   uint32_t val = obj.set_request_timeout(0);
   EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
+  test_flag = UNSET;
   obj.fini();
+  obj.clear_http_response();
 }
 
-TEST(SetRequestTimeOut_failure, Test11) {
+TEST(HttpClient , SetRequestTimeOut_failure) {
   unc::restjson::HttpClient obj;
   obj.init();
-  uint32_t val = obj.set_request_timeout(-1);
+  test_flag = CURLOPT_TIMEOUT_FAILURE;
+  uint32_t val = obj.set_request_timeout(5);
   EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
+  test_flag = UNSET;
   obj.fini();
+  obj.clear_http_response();
 }
 
-TEST(SetOperationType, Test12) {
-  unc::restjson::HttpClient obj;
-  obj.init();
-  uint32_t val = obj.set_operation_type(unc::restjson::HTTP_METHOD_POST);
-  EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
-  obj.fini();
-}
 
-TEST(SetOperationType_failure_HTTP_METHOD_PUT, Test13) {
-  unc::restjson::HttpClient obj;
-  obj.init();
-  uint32_t val = obj.set_operation_type(unc::restjson::HTTP_METHOD_PUT);
-  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
-  obj.fini();
-}
-
-TEST(SetOperationType_failure_HTTP_METHOD_POST, Test14) {
-  unc::restjson::HttpClient obj;
-  obj.init();
-  uint32_t val = obj.set_operation_type(unc::restjson::HTTP_METHOD_POST);
-  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
-  obj.fini();
-}
-
-TEST(SetOperationType_failure_HTTP_METHOD_DELETE, Test15) {
-  unc::restjson::HttpClient obj;
-  obj.init();
-  uint32_t val = obj.set_operation_type(unc::restjson::HTTP_METHOD_DELETE);
-  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
-  obj.fini();
-}
-
-TEST(SetOperationType_failure_HTTP_METHOD_GET, Test16) {
-  unc::restjson::HttpClient obj;
-  obj.init();
-  uint32_t val = obj.set_operation_type(unc::restjson::HTTP_METHOD_GET);
-  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
-  obj.fini();
-}
-
-TEST(SetOperationType_PUT, Test17) {
+TEST(HttpClient , SetOperationType_success_HTTP_METHOD_PUT) {
   unc::restjson::HttpClient obj;
   obj.init();
   uint32_t val = obj.set_operation_type(unc::restjson::HTTP_METHOD_PUT);
   EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
   obj.fini();
+  obj.clear_http_response();
 }
 
-TEST(SetOperationType_GET, Test18) {
-  unc::restjson::HttpClient obj;
-  obj.init();
-  uint32_t val = obj.set_operation_type(unc::restjson::HTTP_METHOD_GET);
-  EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
-  obj.fini();
-}
-
-TEST(SetOperationType_delete, Test19) {
+TEST(HttpClient , SetOperationType_success_HTTP_METHOD_DELETE) {
   unc::restjson::HttpClient obj;
   obj.init();
   uint32_t val = obj.set_operation_type(unc::restjson::HTTP_METHOD_DELETE);
   EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
   obj.fini();
+  obj.clear_http_response();
 }
 
-TEST(set_request_header, Test20) {
+TEST(HttpClient , SetOperationType_PUT) {
+  unc::restjson::HttpClient obj;
+  obj.init();
+  uint32_t val = obj.set_operation_type(unc::restjson::HTTP_METHOD_PUT);
+  EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
+  obj.fini();
+  obj.clear_http_response();
+}
+
+
+TEST(HttpClient , SetOperationType_delete) {
+  unc::restjson::HttpClient obj;
+  obj.init();
+  uint32_t val = obj.set_operation_type(unc::restjson::HTTP_METHOD_DELETE);
+  EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
+  obj.fini();
+  obj.clear_http_response();
+}
+
+TEST(HttpClient , set_request_header) {
   unc::restjson::HttpClient obj;
   obj.init();
   uint32_t val = obj.set_url("example");
   EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
   obj.fini();
+  obj.clear_http_response();
 }
 
-TEST(set_request_header_failure, Test21) {
+TEST(HttpClient , set_request_header_failure) {
   unc::restjson::HttpClient obj;
   obj.init();
   uint32_t val = obj.set_url("");
   EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
   obj.fini();
+  obj.clear_http_response();
 }
-
-TEST(set_request_header_failure1, Test22) {
-  unc::restjson::HttpClient obj;
-  obj.init();
-  uint32_t val = obj.set_url("example");
-  EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
-  obj.fini();
-}
-
-
-TEST(set_request_body, Test23) {
-  unc::restjson::HttpClient obj;
-  obj.init();
-  uint32_t val = obj.set_request_body("example");
-  EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
-  obj.fini();
-}
-
-TEST(set_request_body_null, Test24) {
-  unc::restjson::HttpClient obj;
-  obj.init();
-  uint32_t val = obj.set_request_body("");
-  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
-  obj.fini();
-}
-
-TEST(set_request_body_null1, Test25) {
-  unc::restjson::HttpClient obj;
-  obj.init();
-  uint32_t val = obj.set_request_body(NULL);
-  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
-  obj.fini();
-}
-
-TEST(execute, Test26) {
-  unc::restjson::HttpClient obj;
-  obj.init();
-  uint32_t val = obj.send_request();
-  EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
-  obj.fini();
-}
-
-TEST(set_opt_common, Test27) {
+TEST(HttpClient , set_opt_common) {
   unc::restjson::HttpClient obj;
   obj.init();
   uint32_t val = obj.set_opt_common();
   EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
   obj.fini();
+  obj.clear_http_response();
 }
 
-
-TEST(set_opt_write_data, Test28) {
+TEST(HttpClient , set_request_header_failure_case) {
   unc::restjson::HttpClient obj;
   obj.init();
-  uint32_t val = obj.set_opt_write_data();
+  test_flag = CURLOPT_HTTPHEADER_FAILURE;
+  uint32_t val = obj.set_url("example");
+  EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
+  test_flag = UNSET;
+  obj.fini();
+  obj.clear_http_response();
+}
+
+TEST(HttpClient , set_request_body) {
+  unc::restjson::HttpClient obj;
+  obj.init();
+  uint32_t val = obj.set_request_body("example");
   EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
   obj.fini();
+  obj.clear_http_response();
+}
+
+TEST(HttpClient , set_request_body_null) {
+  unc::restjson::HttpClient obj;
+  obj.init();
+  uint32_t val = obj.set_request_body("");
+  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
+  obj.fini();
+  obj.clear_http_response();
+}
+
+TEST(HttpClient , set_request_body_null1) {
+  unc::restjson::HttpClient obj;
+  obj.init();
+  uint32_t val = obj.set_request_body(NULL);
+  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
+  obj.fini();
+  obj.clear_http_response();
+}
+
+TEST(HttpClient , set_opt_common_CURLOPT_FOLLOWLOCATION) {
+  unc::restjson::HttpClient obj;
+  obj.init();
+  test_flag = CURLOPT_FOLLOWLOCATION_FAILURE;
+  uint32_t val = obj.set_opt_common();
+  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
+  test_flag = UNSET;
+  obj.fini();
+  obj.clear_http_response();
+}
+TEST(HttpClient , set_opt_common_NOPROGRESS) {
+  unc::restjson::HttpClient obj;
+  obj.init();
+  test_flag = CURLOPT_NOPROGRESS_FAILURE;
+  uint32_t val = obj.set_opt_common();
+  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
+  test_flag = UNSET;
+  obj.fini();
+  obj.clear_http_response();
+}
+
+TEST(HttpClient , set_opt_common_NOSIGNAL) {
+  unc::restjson::HttpClient obj;
+  obj.init();
+  test_flag = CURLOPT_NOSIGNAL_FAILURE;
+  uint32_t val = obj.set_opt_common();
+  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
+  test_flag = UNSET;
+  obj.fini();
+  obj.clear_http_response();
 }
 
 
-TEST(perform_http_req, Test30) {
+TEST(HttpClient , set_opt_common_VERBOSE) {
+  unc::restjson::HttpClient obj;
+  obj.init();
+  test_flag = CURLOPT_VERBOSE_FAILURE;
+  uint32_t val = obj.set_opt_common();
+  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
+  test_flag = UNSET;
+  obj.fini();
+  obj.clear_http_response();
+}
+
+TEST(HttpClient , set_opt_write_data_WRITEFUNCTION) {
+  unc::restjson::HttpClient obj;
+  obj.init();
+  test_flag = CURLOPT_WRITEDATA_FAILURE;
+  uint32_t val = obj.set_opt_write_data();
+  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
+  test_flag = UNSET;
+  obj.fini();
+  obj.clear_http_response();
+}
+
+TEST(HttpClient , set_opt_write_data_WRITEDATA) {
+  unc::restjson::HttpClient obj;
+  obj.init();
+  test_flag = CURLOPT_WRITEFUNCTION_FAILURE;
+  uint32_t val = obj.set_opt_write_data();
+  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
+  test_flag = UNSET;
+  obj.fini();
+  obj.clear_http_response();
+}
+TEST(HttpClient , perform_http_req) {
   unc::restjson::HttpClient obj;
   obj.init();
   uint32_t val = obj.perform_http_req();
-  EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
+  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
   obj.fini();
+  obj.clear_http_response();
+}
+TEST(HttpClient , perform_http_req_failure_RESPONSECODE_NULL) {
+  unc::restjson::HttpClient obj;
+  obj.init();
+  test_flag = CURLOPT_GETINFO_FAILURE;
+  uint32_t val = obj.perform_http_req();
+  EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
+  test_flag = UNSET;
+  obj.fini();
+  obj.clear_http_response();
+}
+
+TEST(HttpClient , perform_http_req_failure) {
+  unc::restjson::HttpClient obj;
+  obj.init();
+  uint32_t val = obj.perform_http_req();
+  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
+  obj.fini();
+  obj.clear_http_response();
 }
 
 
-TEST(fini, Test31) {
+TEST(HttpClient , fini) {
   unc::restjson::HttpClient obj;
   obj.init();
   obj.fini();
+  obj.clear_http_response();
 }
 
-TEST(SetOperationNoPrgress_delete, Test32) {
+TEST(HttpClient , SetOperationNoPrgress_delete) {
   unc::restjson::HttpClient obj;
   obj.init();
   uint32_t val = obj.send_request();
+  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
   obj.fini();
-  EXPECT_EQ(val, unc::restjson::REST_OP_SUCCESS);
+  obj.clear_http_response();
+}
+TEST(HttpClient , send_request_set_opt_common_failure) {
+  unc::restjson::HttpClient obj;
+  obj.init();
+  test_flag = CURLOPT_VERBOSE_FAILURE;
+  uint32_t val = obj.send_request();
+  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
+  test_flag = UNSET;
   obj.fini();
+  obj.clear_http_response();
+}
+TEST(HttpClient , send_request_set_opt_write_data) {
+  unc::restjson::HttpClient obj;
+  obj.init();
+  test_flag = CURLOPT_WRITEFUNCTION_FAILURE;
+  uint32_t val = obj.send_request();
+  EXPECT_EQ(val, unc::restjson::REST_OP_FAILURE);
+  test_flag = UNSET;
+  obj.fini();
+  obj.clear_http_response();
 }
 
 
-TEST(get_http_resp_body, Test33) {
+TEST(HttpClient , get_http_resp_body) {
   unc::restjson::HttpClient obj;
   obj.init();
   unc::restjson::HttpResponse_t * response;
   response = obj.get_http_response();
   EXPECT_EQ(0, response->code);
   obj.fini();
+  obj.clear_http_response();
 }
 
-TEST(get_http_resp_body_failure_case, Test37) {
+TEST(HttpClient , get_http_resp_body_failure_case) {
   unc::restjson::HttpClient obj;
   obj.init();
-  unc::restjson::HttpResponse_t * response;
+  unc::restjson::HttpResponse_t * response = NULL;
   response = obj.get_http_response();
   EXPECT_EQ(0, response->code);
   obj.fini();
+  obj.clear_http_response();
 }
-
-TEST(get_http_resp_body_success, Test34) {
-  unc::restjson::HttpClient obj;
-  obj.init();
-  unc::restjson::HttpResponse_t * response;
-  response = obj.get_http_response();
-  EXPECT_EQ(0, response->code);
-  obj.fini();
-}
-
-TEST(get_http_resp_body_success, Test_write_call_back) {
+TEST(HttpClient , get_http_resp_body_success_result) {
   unc::restjson::HttpClient obj;
   obj.init();
   char *src = NULL;
@@ -309,10 +415,11 @@ TEST(get_http_resp_body_success, Test_write_call_back) {
   delete dest;
   dest = NULL;
   result = NULL;
+  obj.clear_http_response();
   obj.fini();
 }
 
-TEST(get_http_resp_body_success, Test_write_call_back_src_ptr_NULL) {
+TEST(HttpClient , write_call_back_src_ptr_NULL) {
   unc::restjson::HttpClient obj;
   obj.init();
   char *src;
@@ -324,10 +431,28 @@ TEST(get_http_resp_body_success, Test_write_call_back_src_ptr_NULL) {
   size_t retval = obj.write_call_back(src, size, nmemb, dest);
   EXPECT_EQ(retval, 0);
   delete dest;
+  obj.clear_http_response();
   obj.fini();
 }
 
-TEST(get_http_resp_body_success, Test_write_call_back_src_dest_NULL) {
+TEST(HttpClient , write_call_back_mem_NULL) {
+  unc::restjson::HttpClient obj;
+  obj.init();
+  char *src;
+  src = NULL;
+  size_t size = 0;
+  size_t nmemb = 0;
+  unc::restjson::HttpContent_t * dest = new unc::restjson::HttpContent_t;
+  dest->size = 0;
+  size_t retval = obj.write_call_back(src, size, nmemb, dest);
+  EXPECT_EQ(retval, 0);
+  delete dest;
+  obj.clear_http_response();
+  obj.fini();
+}
+
+
+TEST(HttpClient , write_call_back_src_dest_NULL) {
   unc::restjson::HttpClient obj;
   obj.init();
   char *src;
@@ -341,7 +466,7 @@ TEST(get_http_resp_body_success, Test_write_call_back_src_dest_NULL) {
   obj.clear_http_response();
 }
 
-TEST(get_http_resp_body_success, Test_write_call_back_realloc) {
+TEST(HttpClient , write_call_back_realloc) {
   unc::restjson::HttpClient obj;
   obj.init();
   char *src;
@@ -366,8 +491,21 @@ TEST(get_http_resp_body_success, Test_write_call_back_realloc) {
                char
                *>
                ("1{\"vbridge\": [ { \"name\": \"vbridge_1\",\"description\": \"1\" }, {\"name\": \"vbridge_2\" } ] }"));
+  obj.clear_http_response();
   free(dest->memory);
   delete dest;
   dest = NULL;
   obj.fini();
 }
+
+
+TEST(HttpClient , get_http_response) {
+  unc::restjson::HttpClient obj;
+  obj.init();
+  unc::restjson::HttpResponse_t * response;
+  response = obj.get_http_response();
+  EXPECT_EQ(response->code , 0);
+  obj.clear_http_response();
+  obj.fini();
+}
+#endif
