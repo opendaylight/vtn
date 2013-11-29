@@ -16,7 +16,7 @@
 #define FILESTR (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
 #define ODC_LOG(level, fmt, ...) do {                                   \
-  pfc_log_##level("%s:%d:%s: " fmt,FILESTR, __LINE__,                   \
+  pfc_log_##level("%s:%d:%s: " fmt , FILESTR, __LINE__,                   \
                   __FUNCTION__, ##__VA_ARGS__);                           \
 } while (0);
 

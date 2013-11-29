@@ -31,14 +31,13 @@ EXTRA_CXX_INCDIRS = $(STUBDIR)
 EXTRA_CXX_INCDIRS += $(MODULE_SRCROOT)
 EXTRA_CXX_INCDIRS += $(RESTJSONUTIL_SRCDIR)/include
 
-CPPFLAGS += -include ut_stub.h
-
 RESTJSONUTIL_SOURCES = http_client.cc
 RESTJSONUTIL_SOURCES += json_build_parse.cc
 RESTJSONUTIL_SOURCES += rest_client.cc
 
 UT_SOURCES = jsonbuildparse_ut.cc
 UT_SOURCES += restclient_ut.cc
+UT_SOURCES += httpclient_ut.cc
 
 CXX_SOURCES += $(UT_SOURCES)
 CXX_SOURCES += $(RESTJSONUTIL_SOURCES)
@@ -48,9 +47,9 @@ EXTRA_CXXFLAGS += -Dprivate=public -Dprotected=public
 
 UNC_LIBS = libpfc_util
 
-EXTRA_CPPFLAGS		+= $(JSON_C_CPPFLAGS)
-EXTRA_LIBDIRS		+= $(JSON_C_LIBDIRS)
-EXTRA_LDLIBS		+= -lgcov $(JSON_C_LDFLAGS)
-EXTRA_RUNTIME_DIR	+= $(JSON_C_RUNPATH)
+EXTRA_CPPFLAGS += $(JSON_C_CPPFLAGS)
+EXTRA_LIBDIRS += $(JSON_C_LIBDIRS)
+EXTRA_LDLIBS += -lgcov $(JSON_C_LDFLAGS)
+EXTRA_RUNTIME_DIR += $(JSON_C_RUNPATH)
 
 include ../../rules.mk

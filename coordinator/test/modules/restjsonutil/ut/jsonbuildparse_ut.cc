@@ -13,14 +13,14 @@
 #include <gtest/gtest.h>
 #include <string>
 
-TEST(CreateObj, Test1) {
+TEST(JsonBuildParse , CreateObj) {
   unc::restjson::JsonBuildParse obj;
   json_object *jobj = obj.create_json_obj();
   EXPECT_TRUE(jobj != NULL);
   json_object_put(jobj);
 }
 
-TEST(Build, Test2) {
+TEST(JsonBuildParse , Build) {
   unc::restjson::JsonBuildParse obj;
   json_object *jobj = json_object_new_object();
   json_object *jstring = json_object_new_string("dnu1");
@@ -30,7 +30,7 @@ TEST(Build, Test2) {
   json_object_put(jobj);
 }
 
-TEST(Build_int, Test3) {
+TEST(JsonBuildParse , Build_int) {
   unc::restjson::JsonBuildParse obj;
   json_object *jobj = json_object_new_object();
   json_object *jint = json_object_new_int(10);
@@ -40,7 +40,7 @@ TEST(Build_int, Test3) {
   json_object_put(jobj);
 }
 
-TEST(Build_null, Test4) {
+TEST(JsonBuildParse , Build_null) {
   unc::restjson::JsonBuildParse obj;
   json_object *jobj = json_object_new_object();
   json_object *jint = NULL;
@@ -50,7 +50,7 @@ TEST(Build_null, Test4) {
   json_object_put(jobj);
 }
 
-TEST(Build_null1, Test5) {
+TEST(JsonBuildParse , Build_null_pattern1) {
   unc::restjson::JsonBuildParse obj;
   json_object *jobj = json_object_new_object();
   json_object *jint = NULL;
@@ -60,7 +60,7 @@ TEST(Build_null1, Test5) {
   json_object_put(jobj);
 }
 
-TEST(Build_null3, Test6) {
+TEST(JsonBuildParse , Build_null_pattern2) {
   unc::restjson::JsonBuildParse obj;
   json_object *jobj;
   jobj = NULL;
@@ -72,7 +72,7 @@ TEST(Build_null3, Test6) {
 }
 
 
-TEST(Build_str, Test7) {
+TEST(JsonBuildParse , Build_str) {
   unc::restjson::JsonBuildParse obj;
   json_object *jobj = json_object_new_object();
   json_object *jobj1 = json_object_new_object();
@@ -87,7 +87,7 @@ TEST(Build_str, Test7) {
   json_object_put(jobj);
 }
 
-TEST(Build_str1, Test8) {
+TEST(JsonBuildParse , Build_str_pattern) {
   unc::restjson::JsonBuildParse obj;
   json_object *jobj = json_object_new_object();
   json_object *jobj1 = json_object_new_object();
@@ -108,7 +108,7 @@ TEST(Build_str1, Test8) {
   json_object_put(jobj);
 }
 
-TEST(get_string, Test16) {
+TEST(JsonBuildParse , get_string) {
   unc::restjson::JsonBuildParse obj;
   json_object *jobj = NULL;
   char *string =  const_cast<char *>("{ \"Name\": \"dnu1\" }");
@@ -119,7 +119,7 @@ TEST(get_string, Test16) {
   json_object_put(jobj);
 }
 
-TEST(get_string_null, Test17) {
+TEST(JsonBuildParse , get_string_null) {
   unc::restjson::JsonBuildParse obj;
   json_object *jobj;
   jobj = NULL;
@@ -127,7 +127,7 @@ TEST(get_string_null, Test17) {
   json_object_put(jobj);
 }
 
-TEST(get_string_str, Test18) {
+TEST(JsonBuildParse , get_string_str) {
   unc::restjson::JsonBuildParse obj;
   char *str = const_cast<char *>(
       "{\"sitename\" : [{\"port_no\" : 1, \"name\" : \"eth0\", \"registered_at\": \"2013-04-24T23:59:00Z\" },{ \"port_no\" : 2, \"name\" : \"eth1\", \"registered_at\": \"2013-04-24T23:59:00Z\"},{\"port_no\" : 1, \"name\" : \"vxlan1\", \"registered_at\": \"2013-04-24T23:59:00Z\" },{\"port_no\" : 65534, \"name\" : \"br1\", \"registered_at\": \"2013-04-24T23:59:00Z\" },{\"port_no\" : 65534, \"name\" : \"br0\", \"registered_at\": \"2013-04-24T23:59:00Z\" }]}");
@@ -143,7 +143,7 @@ TEST(get_string_str, Test18) {
 }
 
 
-TEST(get_string_int, Test19) {
+TEST(JsonBuildParse , get_string_int) {
   unc::restjson::JsonBuildParse obj;
   json_object *jobj = NULL;
   char *string = const_cast<char *>("{ \"Name\": 10 }");
@@ -155,7 +155,7 @@ TEST(get_string_int, Test19) {
 }
 
 
-TEST(get_string_null, Test20) {
+TEST(JsonBuildParse , get_null_string) {
   unc::restjson::JsonBuildParse obj;
   json_object *jobj= NULL;
   char *string = const_cast<char *>("{ \"Name\": null }");
@@ -167,7 +167,7 @@ TEST(get_string_null, Test20) {
 }
 
 
-TEST(get_array_length_size_case1, Test21) {
+TEST(JsonBuildParse , get_array_length_size_case1) {
   unc::restjson::JsonBuildParse obj;
   char *str = const_cast<char *>
       ("{\"example\" : [ { \"Name\": 10, \"Example\": \"dhanu1\" } ]}");
@@ -178,7 +178,7 @@ TEST(get_array_length_size_case1, Test21) {
   json_object_put(jobj);
 }
 
-TEST(get_array_length_null, Test22) {
+TEST(JsonBuildParse , get_array_length_null) {
   unc::restjson::JsonBuildParse obj;
   char *str = const_cast<char *>
       ("{\"example\" : [ { \"Name\": 10, \"Example\": \"dhanu1\" } ]}");
@@ -188,7 +188,7 @@ TEST(get_array_length_null, Test22) {
   json_object_put(jobj);
 }
 
-TEST(get_array_length_null_case1, Test23) {
+TEST(JsonBuildParse , get_array_length_null_case1) {
   unc::restjson::JsonBuildParse obj;
   char *str = const_cast<char *>("{\"example\" : {} }");
   json_object *jobj = json_tokener_parse(str);
@@ -197,8 +197,16 @@ TEST(get_array_length_null_case1, Test23) {
   json_object_put(jobj);
 }
 
+TEST(JsonBuildParse , get_array_length_null_case2) {
+  unc::restjson::JsonBuildParse obj;
+  char *str = const_cast<char *>("{ }");
+  json_object *jobj = json_tokener_parse(str);
+  int arr_len = obj.get_array_length(jobj, "");
+  EXPECT_EQ(arr_len, 0);
+  json_object_put(jobj);
+}
 
-TEST(get_array_length_nested_arr, Test24) {
+TEST(JsonBuildParse , get_array_length_nested_arr) {
   unc::restjson::JsonBuildParse obj;
   std::string str1 = "{\"example\" : [ { \"Name\": 10, ";
   std::string str2 = "\"categories\": [\"c\",[\"c++\",\"c\"] ]} ]}";
@@ -211,7 +219,7 @@ TEST(get_array_length_nested_arr, Test24) {
   json_object_put(jobj);
 }
 
-TEST(get_array_length_nested_arr_case1, Test25) {
+TEST(JsonBuildParse , get_array_length_nested_arr_case1) {
   unc::restjson::JsonBuildParse obj;
   std::string str1 = "{\"example\" :  { \"Name\": 10, \"categories\"";
   std::string str2 = ": [\"c\",[\"c++\",\"c\"] ]} }";
@@ -224,7 +232,7 @@ TEST(get_array_length_nested_arr_case1, Test25) {
   json_object_put(jobj);
 }
 
-TEST(get_array_length_nested_arr_case2, Test26) {
+TEST(JsonBuildParse , get_array_length_nested_arr_case2) {
   unc::restjson::JsonBuildParse obj;
   char *str = const_cast<char *>
       ("{\"example\" :  { \"Name\": 10, \"categories\": [{\"c\" : 10}]} }");
@@ -237,20 +245,20 @@ TEST(get_array_length_nested_arr_case2, Test26) {
 }
 
 
-TEST(Parse_arr, Test27) {
+TEST(JsonBuildParse , Parse_arr) {
   unc::restjson::JsonBuildParse obj;
   const char *str = reinterpret_cast<const char *>(
       "{\"example\" : [ { \"Name\": 10, \"Example\": \"dhanu1\" }, { \"Name\": 11, \"Sam\": \"dhanu11\" } ]}");
   json_object *jobj = json_tokener_parse(str);
   json_object *val = NULL;
   obj.parse(jobj, "example", -1, val);
-  int intval = 0;
+  uint intval = 0;
   obj.parse(val, "Name", 0, intval);
   EXPECT_EQ(10, intval);
   json_object_put(jobj);
 }
 
-TEST(Parse_str, Test28) {
+TEST(JsonBuildParse , Parse_str) {
   unc::restjson::JsonBuildParse obj;
   const char *str =
       reinterpret_cast<const char *>(
@@ -264,7 +272,7 @@ TEST(Parse_str, Test28) {
   json_object_put(jobj);
 }
 
-TEST(Parse_null, Test29) {
+TEST(JsonBuildParse , Parse_null) {
   unc::restjson::JsonBuildParse obj;
   json_object *jobj = NULL;
   json_object *val = NULL;
@@ -273,7 +281,7 @@ TEST(Parse_null, Test29) {
   json_object_put(jobj);
 }
 
-TEST(Parse_str_case1, Test30) {
+TEST(JsonBuildParse , Parse_str_case1) {
   unc::restjson::JsonBuildParse obj;
   const char *str =
       reinterpret_cast<const char *>(
@@ -293,7 +301,7 @@ TEST(Parse_str_case1, Test30) {
 }
 
 
-TEST(Parse_arr_ind, Test31) {
+TEST(JsonBuildParse , Parse_arr_ind) {
   unc::restjson::JsonBuildParse obj;
   const char *str =
       reinterpret_cast<const char *>(
@@ -306,13 +314,13 @@ TEST(Parse_arr_ind, Test31) {
   std::string str2 =
       "[ { \"port_no\": 1, \"name\": \"eth0\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 2, \"name\": \"eth1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 1, \"name\": \"vxlan1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 65534, \"name\": \"br1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 65534, \"name\": \"br0\", \"registered_at\": \"2013-04-24T23:59:00Z\" } ]";
   EXPECT_EQ(str2, str1);
-  int intval = 0;
+  uint intval = 0;
   obj.parse(val, "port_no", 2, intval);
   EXPECT_EQ(1, intval);
   json_object_put(jobj);
 }
 
-TEST(Parse_arr_index, Test32) {
+TEST(JsonBuildParse , Parse_arr_index) {
   unc::restjson::JsonBuildParse obj;
   const char *str =
       reinterpret_cast<const char *>(
@@ -331,7 +339,7 @@ TEST(Parse_arr_index, Test32) {
   json_object_put(jobj);
 }
 
-TEST(Parse_arr_index_case1, Test33) {
+TEST(JsonBuildParse , Parse_arr_index_case1) {
   unc::restjson::JsonBuildParse obj;
   const char *str =
       reinterpret_cast<const char *>(
@@ -350,7 +358,7 @@ TEST(Parse_arr_index_case1, Test33) {
   json_object_put(jobj);
 }
 
-TEST(Parse_arr_indexi_case2, Test34) {
+TEST(JsonBuildParse , Parse_arr_indexi_case2) {
   unc::restjson::JsonBuildParse obj;
   const char *str =
       reinterpret_cast<const char *>(
@@ -370,7 +378,7 @@ TEST(Parse_arr_indexi_case2, Test34) {
 }
 
 
-TEST(Parse_simple_arr, Test35) {
+TEST(JsonBuildParse , Parse_simple_arr) {
   unc::restjson::JsonBuildParse obj;
   const char *str =
       reinterpret_cast<const char *>(
@@ -390,7 +398,7 @@ TEST(Parse_simple_arr, Test35) {
 
 
 
-TEST(getval, Test36) {
+TEST(JsonBuildParse , getval) {
   json_object *jobj = json_object_new_string("value");
   std::string val;
   unc::restjson::JsonTypeUtil::get_value(jobj, val);
@@ -398,15 +406,15 @@ TEST(getval, Test36) {
   json_object_put(jobj);
 }
 
-TEST(getval_int, Test37) {
+TEST(JsonBuildParse , getval_int) {
   json_object *jobj = json_object_new_int(10);
-  int val = 0;
+  uint val = 0;
   unc::restjson::JsonTypeUtil::get_value(jobj, val);
   EXPECT_EQ(10, val);
   json_object_put(jobj);
 }
 
-TEST(getval_arr, Test38) {
+TEST(JsonBuildParse , getval_arr) {
   const char *str =
       reinterpret_cast<const char *>(
           "{\"sitename\" : [{\"port_no\" : NULL, \"name\" : \"eth0\"}, {\"registered_at\": \"2013-04-24T23:59:00Z\" }] }");
@@ -417,7 +425,7 @@ TEST(getval_arr, Test38) {
   json_object_put(jobj);
 }
 
-TEST(getval_str, Test39) {
+TEST(JsonBuildParse , getval_str) {
   json_object *jobj = json_object_new_string("value");
   std::string val;
   unc::restjson::JsonTypeUtil::get_value(jobj, val);
@@ -425,23 +433,23 @@ TEST(getval_str, Test39) {
   json_object_put(jobj);
 }
 
-TEST(getval_int_val, Test40) {
+TEST(JsonBuildParse , getval_int_val) {
   json_object *jobj = json_object_new_int(10);
-  int val = 0;
+  uint val = 0;
   unc::restjson::JsonTypeUtil::get_value(jobj, val);
   EXPECT_NE(val , 0);
   json_object_put(jobj);
 }
 
-TEST(getval_int_fail, Test41) {
+TEST(JsonBuildParse , getval_int_fail) {
   json_object *jobj = json_object_new_int(10);
-  int val = 0;
+  uint val = 0;
   unc::restjson::JsonTypeUtil::get_value(jobj, val);
   EXPECT_NE(val , 1);
   json_object_put(jobj);
 }
 
-TEST(getJson, Test42) {
+TEST(JsonBuildParse , getJson) {
   json_object *jobj1 = json_object_new_object();
   unc::restjson::JsonTypeUtil obj(jobj1);
   obj.get_json_data();
@@ -452,7 +460,7 @@ TEST(getJson, Test42) {
 
 
 
-TEST(get_array_length_null1, Test46) {
+TEST(JsonBuildParse , get_array_length_null1) {
   unc::restjson::JsonBuildParse obj;
   char *str = const_cast<char *>("{{\"port_no\" : NULL}");
   json_object *jobj = json_tokener_parse(str);
@@ -461,5 +469,15 @@ TEST(get_array_length_null1, Test46) {
   EXPECT_EQ(len, arr_len);
   json_object_put(jobj);
 }
+
+TEST(JsonBuildParse , get_json_object) {
+  unc::restjson::JsonBuildParse obj;
+  json_object *jobj1 = NULL;
+  char *string =  const_cast<char *>("{ \"Name\": \"dnu1\" }");
+  jobj1 = obj.get_json_object(string);
+  EXPECT_TRUE(jobj1 != NULL);
+  json_object_put(jobj1);
+}
+
 
 
