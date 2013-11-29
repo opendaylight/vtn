@@ -446,24 +446,7 @@ public class ArpHandler {
         HostNodeConnector host = ht.hostQuery(dstIp);
         if (host != null && host.getVlan() == vlan) {
             // Forward the packet to the known host if a packet is reachable.
-            NodeConnector outgoing = host.getnodeConnector();
-            if (isReachable(pctx, outgoing)) {
-                Ethernet frame = pctx.createFrame(vlan);
-
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("{}: Forward packet to known host: addr={}, {}",
-                              vtnManager.getContainerName(),
-                              dstIp.getHostAddress(),
-                              pctx.getDescription(frame, outgoing, vlan));
-                }
-
-                vtnManager.transmit(outgoing, frame);
-            } else if (LOG.isTraceEnabled()) {
-                LOG.trace("{}: No route: addr={}, incoming={}, host={}",
-                          vtnManager.getContainerName(),
-                          dstIp.getHostAddress(),
-                          pctx.getIncomingNodeConnector(), host);
-            }
+            forward(pctx, host);
         } else {
             if (LOG.isTraceEnabled()) {
                 LOG.trace("{}: Send broadcast ARP request to discover host: " +
@@ -476,6 +459,46 @@ public class ArpHandler {
         }
 
         return PacketResult.KEEP_PROCESSING;
+    }
+
+    /**
+     * Forward a received packet to the specified host.
+     *
+     * @param pctx  The context of an incoming packet.
+     * @param host  The destination host.
+     */
+    private void forward(PacketContext pctx, HostNodeConnector host) {
+        NodeConnector outgoing = host.getnodeConnector();
+        ISwitchManager swMgr = vtnManager.getSwitchManager();
+        if (!swMgr.isNodeConnectorEnabled(outgoing)) {
+            InetAddress dstIp = host.getNetworkAddress();
+            LOG.trace("{}: Port is down: addr={}, incoming={}, host={}",
+                      vtnManager.getContainerName(),
+                      dstIp.getHostAddress(),
+                      pctx.getIncomingNodeConnector(), host);
+            return;
+        }
+
+        if (isReachable(pctx, outgoing)) {
+            short vlan = host.getVlan();
+            Ethernet frame = pctx.createFrame(vlan);
+
+            if (LOG.isTraceEnabled()) {
+                InetAddress dstIp = host.getNetworkAddress();
+                LOG.trace("{}: Forward packet to known host: addr={}, {}",
+                          vtnManager.getContainerName(),
+                          dstIp.getHostAddress(),
+                          pctx.getDescription(frame, outgoing, vlan));
+            }
+
+            vtnManager.transmit(outgoing, frame);
+        } else if (LOG.isTraceEnabled()) {
+            InetAddress dstIp = host.getNetworkAddress();
+            LOG.trace("{}: No route: addr={}, incoming={}, host={}",
+                      vtnManager.getContainerName(),
+                      dstIp.getHostAddress(),
+                      pctx.getIncomingNodeConnector(), host);
+        }
     }
 
     /**
