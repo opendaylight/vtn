@@ -707,7 +707,7 @@ TEST(odcdriver,  create_cmd_port_map_invalid_data) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
