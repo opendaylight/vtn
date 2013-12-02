@@ -20,31 +20,135 @@ OdcVbrIfCommand::OdcVbrIfCommand() {
 OdcVbrIfCommand::~OdcVbrIfCommand() {
 }
 
-uint32_t OdcVbrIfCommand::validate_logical_port_id(
+odc_drv_resp_code_t OdcVbrIfCommand::validate_logical_port_id(
     const std::string& logical_port_id) {
   ODC_FUNC_TRACE;
   pfc_log_debug("logical port received : %s", logical_port_id.c_str());
-  if (logical_port_id.compare(0, 3, "PP-") != 0) {
+  //  First 3 characters should be PP-
+  if ((logical_port_id.compare(0, 3, PP_PREFIX) != 0) &&
+      (logical_port_id.size() < 28)) {
+    pfc_log_error("Logical port id is not with PP- prefix");
     return ODC_DRV_FAILURE;
   }
-  if ((logical_port_id.size() < 28) ||
-      (logical_port_id.compare(5, 1, ":") != 0) ||
-      (logical_port_id.compare(8, 1, ":") !=0) ||
-      (logical_port_id.compare(11, 1, ":") != 0) ||
-      (logical_port_id.compare(14, 1, ":") !=0) ||
-      (logical_port_id.compare(17, 1, ":") !=0) ||
-      (logical_port_id.compare(20, 1, ":") !=0) ||
-      (logical_port_id.compare(23, 1, ":") !=0) ||
-      (logical_port_id.compare(26, 1, "-") !=0))  {
-    pfc_log_error("Invalid logical_port_id");
+
+  //  Split Switch id and prefix
+  std::string switch_port = logical_port_id.substr(3);
+  size_t hyphen_occurence = switch_port.find("-");
+  if (hyphen_occurence == std::string::npos) {
+    pfc_log_error("Error in Validating the port");
+    return ODC_DRV_FAILURE;
+  }
+  //  Split switch id alone without port name
+  std::string switch_id = switch_port.substr(0, hyphen_occurence);
+  pfc_log_debug("Switch id in port map %s", switch_id.c_str());
+  char *switch_id_char = const_cast<char *> (switch_id.c_str());
+  char *save_ptr;
+  char *colon_tokener = strtok_r(switch_id_char, ":", &save_ptr);
+  int parse_occurence = 0;
+  while (colon_tokener != NULL) {
+    //  Split string with token ":" and length of splitted sw is 2
+    // 11:11:22:22:33:33:44:44 length of splitted by ":" is 2
+    if (2 != strlen(colon_tokener)) {
+      pfc_log_error("Invalid switch id format supported by Vtn Manager");
+      return ODC_DRV_FAILURE;
+    }
+    colon_tokener = strtok_r(NULL, ":", &save_ptr);
+    parse_occurence++;
+  }
+  //  After splitting the switch id with token ":"  the occurence should be 8
+  //  Eg : 11:11:22:22:33:33:44:44 by splitting with ":" the value is 8
+  if (parse_occurence != 8) {
+    pfc_log_error("Invalid format not supported by Vtn Manager");
     return ODC_DRV_FAILURE;
   }
   pfc_log_debug("Valid logical_port id");
   return ODC_DRV_SUCCESS;
 }
+
+//  Check the format of logical port id. If it is invalid converts to proper
+//  format
+odc_drv_resp_code_t OdcVbrIfCommand::check_logical_port_id_format(
+    std::string& logical_port_id) {
+  ODC_FUNC_TRACE;
+  odc_drv_resp_code_t logical_port_retval = validate_logical_port_id(
+      logical_port_id);
+  if (logical_port_retval != ODC_DRV_SUCCESS) {
+    pfc_log_debug("logical port needs to be converted to proper format");
+    logical_port_retval = convert_logical_port(logical_port_id);
+    if (logical_port_retval != ODC_DRV_SUCCESS) {
+      pfc_log_error("Failed during conversion of logical port id %s",
+                    logical_port_id.c_str());
+      return ODC_DRV_FAILURE;
+    }
+    logical_port_retval = validate_logical_port_id(logical_port_id);
+    if (logical_port_retval != ODC_DRV_SUCCESS) {
+      pfc_log_error("Failed during validation of logical port id %s",
+                    logical_port_id.c_str());
+      return ODC_DRV_FAILURE;
+    }
+  }
+  return logical_port_retval;
+}
+
+//  Converts the logical port id from PP-1111-2222-3333-4444-name to
+//  PP-11:11:22:22:33:33:44:44-name format
+odc_drv_resp_code_t OdcVbrIfCommand::convert_logical_port(
+    std::string &logical_port_id) {
+  ODC_FUNC_TRACE;
+  if ((logical_port_id.compare(0, 3, PP_PREFIX) != 0) &&
+      (logical_port_id.size() < 24)) {
+    pfc_log_error("%s: Logical_port_id doesn't have PP- prefix and"
+                  "less than required length", PFC_FUNCNAME);
+    return ODC_DRV_FAILURE;
+  }
+  //  Validate the format before conversion
+  std::string switch_id = logical_port_id.substr(3);
+  char *switch_id_validation = const_cast<char *> (switch_id.c_str());
+  char *save_ptr;
+  //  Split string with token "-"
+  char *string_token = strtok_r(switch_id_validation , "-", &save_ptr);
+  int occurence = 0;
+
+  while (string_token != NULL) {
+    //  Switch id token should be of length 4
+    if ((occurence < 4) && (4 != strlen(string_token))) {
+      pfc_log_error("Invalid Switch id format");
+      return ODC_DRV_FAILURE;
+    }
+    occurence++;
+    string_token = strtok_r(NULL, "-", &save_ptr);
+  }
+  //  Parsing string token by "-" length of parsed SW minimun 5
+  //  Eg : 1111-2222-3333-4444-portname length of SW parsed by token "-"
+  if (occurence < 5) {
+    pfc_log_error("Invalid Switch id format");
+    return ODC_DRV_FAILURE;
+  }
+  switch_id = logical_port_id.substr(3, 19);
+  pfc_log_debug("Switch id in port map %s", switch_id.c_str());
+  std::string port_name = logical_port_id.substr(23);
+
+  //  Converts 1111-2222-3333-4444 to 11:11:22:22:33:33:44:44
+  //  First occurence of colon is 2 and next occuerence of colon is obtained if
+  //  is incremented by 3
+  for (uint position = 2; position < switch_id.length(); position += 3) {
+    if (switch_id.at(position) == '-') {
+      switch_id.replace(position, 1 , COLON);
+    } else {
+      switch_id.insert(position, COLON);
+    }
+  }
+  logical_port_id = PP_PREFIX;
+  logical_port_id.append(switch_id);
+  logical_port_id.append(HYPHEN);
+  logical_port_id.append(port_name);
+  return ODC_DRV_SUCCESS;
+}
+
+
 // Creates Request Body for Port Map
 json_object* OdcVbrIfCommand::create_request_body_port_map(
-    pfcdrv_val_vbr_if_t& vbrif_val) {
+    pfcdrv_val_vbr_if_t& vbrif_val, const std::string &logical_port_id) {
   ODC_FUNC_TRACE;
   std::string switch_id = "";
   std::string port_name = "";
@@ -55,16 +159,10 @@ json_object* OdcVbrIfCommand::create_request_body_port_map(
     return NULL;
   }
 
-  std::string logical_port_id =
-      reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id);
+  pfc_log_debug("logical_port_id is %s", logical_port_id.c_str());
 
-  if (logical_port_id.length() > 0) {
-    pfc_log_debug("logical_port_id is %s", logical_port_id.c_str());
-    if (logical_port_id.compare(0, 3, "PP-") == 0) {
-      switch_id = logical_port_id.substr(3, 23);
-      port_name = logical_port_id.substr(27);
-    }
-  }
+  switch_id = logical_port_id.substr(3, 23);
+  port_name = logical_port_id.substr(27);
   if ((switch_id.empty()) || (port_name.empty())) {
     pfc_log_error("port name or switch id is empty");
     return NULL;
@@ -203,13 +301,15 @@ drv_resp_code_t OdcVbrIfCommand::create_cmd(key_vbr_if_t& vbrif_key,
   if (vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] == UNC_VF_VALID) {
     std::string logical_port_id =
         reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id);
-    uint32_t logical_port_retval = validate_logical_port_id(logical_port_id);
-    if (logical_port_retval != DRVAPI_RESPONSE_SUCCESS) {
+    odc_drv_resp_code_t logical_port_retval = check_logical_port_id_format(
+                                                            logical_port_id);
+    if (logical_port_retval != ODC_DRV_SUCCESS) {
       pfc_log_error("logical port id is Invalid");
       json_object_put(vbrif_json_request_body);
       return DRVAPI_RESPONSE_FAILURE;
     }
-    port_map_json_req_body = create_request_body_port_map(vbrif_val);
+    port_map_json_req_body = create_request_body_port_map(vbrif_val,
+                                                          logical_port_id);
     if (json_object_is_type(port_map_json_req_body, json_type_null)) {
       pfc_log_error("request body is null");
       json_object_put(vbrif_json_request_body);
@@ -301,13 +401,14 @@ drv_resp_code_t OdcVbrIfCommand::update_cmd(key_vbr_if_t& vbrif_key,
   if (val.val_vbrif.valid[UPLL_IDX_PM_VBRI] == UNC_VF_VALID) {
     std::string logical_port_id =
         reinterpret_cast<char*>(val.val_vbrif.portmap.logical_port_id);
-    uint32_t logical_port_retval = validate_logical_port_id(logical_port_id);
-    if (logical_port_retval != DRVAPI_RESPONSE_SUCCESS) {
+    odc_drv_resp_code_t logical_port_retval = check_logical_port_id_format(
+                                                      logical_port_id);
+    if (logical_port_retval != ODC_DRV_SUCCESS) {
       json_object_put(vbrif_json_request_body);
       pfc_log_error("logical port id is invalid");
       return DRVAPI_RESPONSE_FAILURE;
     }
-    port_map_json_req_body = create_request_body_port_map(val);
+    port_map_json_req_body = create_request_body_port_map(val, logical_port_id);
     if (json_object_is_type(port_map_json_req_body, json_type_null)) {
       pfc_log_error("port map req body is null");
       json_object_put(vbrif_json_request_body);
@@ -866,7 +967,7 @@ drv_resp_code_t OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
         return DRVAPI_RESPONSE_FAILURE;
       }
       logical_port.append(node_id);
-      logical_port.append("-");
+      logical_port.append(HYPHEN);
       logical_port.append(port_name);
       pfc_log_debug("logical port id %s", logical_port.c_str());
       strncpy(reinterpret_cast<char*>

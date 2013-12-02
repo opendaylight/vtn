@@ -32,17 +32,18 @@ drv_resp_code_t OdcVbrVlanMapCommand::fetch_config(
 
 // Validates VLAN exists or not
 drv_resp_code_t OdcVbrVlanMapCommand::validate_vlan_exist(
-                                              key_vlan_map_t &key_vlan_map,
-                                              val_vlan_map_t &val_vlan_map,
-                                              unc::driver::controller *ctr,
-                                               pfc_bool_t &is_switch_exist,
-                                                    std::string &port_id) {
+                                        key_vlan_map_t &key_vlan_map,
+                                        val_vlan_map_t &val_vlan_map,
+                                        const std::string &logical_port_id,
+                                        unc::driver::controller *ctr,
+                                        pfc_bool_t &is_switch_exist,
+                                        std::string &port_id) {
   ODC_FUNC_TRACE;
   if (key_vlan_map.logical_port_id_valid != 0) {
     // Validate request received with SwitchID
     drv_resp_code_t ret_val =
         check_switch_already_exists(key_vlan_map,
-                                val_vlan_map, ctr, is_switch_exist, port_id);
+                 val_vlan_map, logical_port_id, ctr, is_switch_exist, port_id);
     return ret_val;
   } else {
     // Validate request received without SwitchID
@@ -132,6 +133,7 @@ OdcVbrVlanMapCommand::check_ANY_already_exists(key_vlan_map_t &key_vlan_map,
 drv_resp_code_t OdcVbrVlanMapCommand::check_switch_already_exists(
     key_vlan_map_t &key_vlan_map,
     val_vlan_map_t &val_vlan_map,
+    const std::string &switch_id_req,
     unc::driver::controller *ctr_ptr,
     pfc_bool_t &is_switch_exist,
     std::string &port_id) {
@@ -148,9 +150,8 @@ drv_resp_code_t OdcVbrVlanMapCommand::check_switch_already_exists(
     vlan_id_req = 0;
   }
 
-  std::string switch_id_req = "";
   std::string logical_port_req = NODE_TYPE_OF;
-  switch_id_req = reinterpret_cast<char*>(key_vlan_map.logical_port_id);
+  pfc_log_debug(" Logical port id received %s", switch_id_req.c_str());
   // logical_port_id received in key structure should be prefixed with SW-
   if (switch_id_req.compare(0, 3, SW_PREFIX) == 0) {
     logical_port_req.append(switch_id_req.substr(3));
@@ -529,7 +530,7 @@ std::string OdcVbrVlanMapCommand::generate_string_for_vector(
 // Generate Mapping ID
 std::string OdcVbrVlanMapCommand::generate_vlanmap_id(
     key_vlan_map_t& vlanmap_key,
-    std::string str_vlanid) {
+    std::string str_vlanid, const std::string &logical_port_id) {
   ODC_FUNC_TRACE;
 
   // Mapid generated if LPID is set,will be of the form - OF-{SWID}.{VlanID}
@@ -542,8 +543,7 @@ std::string OdcVbrVlanMapCommand::generate_vlanmap_id(
   std::string str_mapid = "";
   if (vlanmap_key.logical_port_id_valid != 0) {
     pfc_log_debug("%s: Logical_port_id is valid", PFC_FUNCNAME);
-    std::string logical_port_id = reinterpret_cast<char*>
-        (vlanmap_key.logical_port_id);
+    pfc_log_debug(" Logical port id received %s", logical_port_id.c_str());
     std::string switch_id = "";
     if (0 != strlen(logical_port_id.c_str())) {
       switch_id = logical_port_id.substr(3, 23);
@@ -663,16 +663,18 @@ drv_resp_code_t OdcVbrVlanMapCommand::create_update_cmd(
   std::string ip_address = ctr_ptr->get_host_address();
   pfc_bool_t vlan_map_exists = PFC_FALSE;
   std::string strmapid = "";
+  std::string logical_port_id = "";
   if (vlanmap_key.logical_port_id_valid != 0) {
     pfc_log_debug("%s: Logical_port_id is valid", PFC_FUNCNAME);
-    std::string logical_port_id = reinterpret_cast<char*>
+    logical_port_id = reinterpret_cast<char*>
         (vlanmap_key.logical_port_id);
-    odc_drv_resp_code_t ret_val = validate_logical_port_id(logical_port_id);
+    odc_drv_resp_code_t ret_val = check_logical_port_id_format(logical_port_id);
     if (ret_val != ODC_DRV_SUCCESS) {
       pfc_log_error("%s: Validation for logical_port[%s] failed ",
                     PFC_FUNCNAME, logical_port_id.c_str());
       return DRVAPI_RESPONSE_FAILURE;
     }
+    pfc_log_debug(" Logical port id received %s", logical_port_id.c_str());
   }
   if (vlanmap_val.valid[UPLL_IDX_VLAN_ID_VM] != UNC_VF_VALID) {
     pfc_log_error("%s: Received invalid Vlan_id",
@@ -682,6 +684,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::create_update_cmd(
   // Validate if vlanid already exists in controller
   drv_resp_code_t validate_resp = validate_vlan_exist(vlanmap_key,
                                                       vlanmap_val,
+                                                      logical_port_id,
                                                       ctr_ptr,
                                                       vlan_map_exists,
                                                       strmapid);
@@ -709,7 +712,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::create_update_cmd(
   }
   unc::restjson::JsonBuildParse json_obj;
   json_object* vbrvlanmap_json_request_body = create_request_body(
-      vlanmap_key, vlanmap_val);
+      vlanmap_key, vlanmap_val, logical_port_id);
   const char* str_vlanmap_reqbody = json_obj.get_string(
       vbrvlanmap_json_request_body);
   pfc_log_debug("%s: Request body for vlanmap: %s ", PFC_FUNCNAME,
@@ -751,7 +754,12 @@ drv_resp_code_t OdcVbrVlanMapCommand::create_update_cmd(
   uint vlanid =  vlanmap_val.vlan_id;
   std::ostringstream convert_vlanid;
   convert_vlanid << vlanid;
-  std::string map_id = generate_vlanmap_id(vlanmap_key, convert_vlanid.str());
+  std::string map_id = generate_vlanmap_id(vlanmap_key, convert_vlanid.str(),
+                                           logical_port_id);
+  if (map_id.empty()) {
+    pfc_log_error("Error occured in generating vlan map id");
+    return DRVAPI_RESPONSE_FAILURE;
+  }
   std::string vtn_vbr_vlan_update = generate_string_for_vector(vtn_name_req,
                           vbr_name_req, map_id);
   if (vtn_vbr_vlan_update.empty()) {
@@ -801,21 +809,20 @@ void OdcVbrVlanMapCommand::update_vector(unc::driver::controller *ctr,
 // Generates vlan id from the vlan-map vector
 std::string
 OdcVbrVlanMapCommand::generate_vlanid_from_vector(unc::driver::controller *ctr,
-                                                  key_vlan_map_t &vlanmap_key) {
+                                             key_vlan_map_t &vlanmap_key,
+                                             std::string logical_portid_req) {
   ODC_FUNC_TRACE;
   std::string vtn_name_req = reinterpret_cast<char*>
       (vlanmap_key.vbr_key.vtn_key.vtn_name);
   std::string vbr_name_req = reinterpret_cast<char*>
       (vlanmap_key.vbr_key.vbridge_name);
-  std::string logical_portid_req = reinterpret_cast<char*>
-      (vlanmap_key.logical_port_id);
 
+  pfc_log_error(" Logical port id received %s", logical_portid_req.c_str());
   if ((0 == strlen(vtn_name_req.c_str())) ||
       (0 == strlen(vbr_name_req.c_str()))) {
     pfc_log_error("%s: Empty VTN/VBR name", PFC_FUNCNAME);
     return "";
   }
-
   std::string vtn_vbr_vlan_req = "";
   vtn_vbr_vlan_req.append(vtn_name_req);
   vtn_vbr_vlan_req.append(PERIOD);
@@ -852,6 +859,7 @@ OdcVbrVlanMapCommand::generate_vlanid_from_vector(unc::driver::controller *ctr,
       return vtn_vbr_vlan_data.substr(occurence+1);
     }
   }
+  pfc_log_error("No Values in vector");
   return "";
 }
 
@@ -874,23 +882,33 @@ drv_resp_code_t OdcVbrVlanMapCommand::delete_cmd(key_vlan_map_t&
   memcpy(parent_vbr.vbridge_name, vlanmap_key.vbr_key.vbridge_name,
          sizeof(vlanmap_key.vbr_key.vbridge_name));
 
-  std::string str_vlan_id = generate_vlanid_from_vector(ctr_ptr, vlanmap_key);
+  std::string str_mapping_id = "";
+  std::string logical_portid_req = "";
+  if (vlanmap_key.logical_port_id_valid != 0) {
+    logical_portid_req = reinterpret_cast<char*>
+        (vlanmap_key.logical_port_id);
+    odc_drv_resp_code_t ret_val = check_logical_port_id_format(
+                                                logical_portid_req);
+    if (ret_val != ODC_DRV_SUCCESS) {
+      pfc_log_error("%s: Validation for logical_port[%s] failed ",
+                    PFC_FUNCNAME, logical_portid_req.c_str());
+      return DRVAPI_RESPONSE_FAILURE;
+    }
+    std::string switch_id = logical_portid_req;
+    pfc_log_debug(" Logical port id received %s", logical_portid_req.c_str());
+    if (switch_id.compare(0, 3, SW_PREFIX) == 0) {
+      switch_id.erase(0, 2);
+    }
+    str_mapping_id.append("OF");
+    str_mapping_id.append(switch_id);
+  } else {
+    str_mapping_id.append(NODE_TYPE_ANY);
+  }
+  std::string str_vlan_id = generate_vlanid_from_vector(ctr_ptr,
+                                      vlanmap_key, logical_portid_req);
   if (str_vlan_id.empty()) {
     pfc_log_error("%s: Empty vlan id returned", PFC_FUNCNAME);
     return DRVAPI_RESPONSE_FAILURE;
-  }
-  std::string logical_portid_req = reinterpret_cast<char*>
-      (vlanmap_key.logical_port_id);
-  std::string str_mapping_id = "";
-  if (vlanmap_key.logical_port_id_valid != 0) {
-    if (logical_portid_req.compare(0, 3, SW_PREFIX) == 0) {
-      logical_portid_req.erase(0, 2);
-    }
-    std::string logical_port_OF = "OF";
-    logical_port_OF.append(logical_portid_req);
-    str_mapping_id.append(logical_port_OF);
-  } else {
-    str_mapping_id.append(NODE_TYPE_ANY);
   }
   str_mapping_id.append(PERIOD);
   str_mapping_id.append(str_vlan_id);
@@ -953,7 +971,8 @@ drv_resp_code_t OdcVbrVlanMapCommand::delete_cmd(key_vlan_map_t&
 
 // Creates request body for vbr vlanmap
 json_object* OdcVbrVlanMapCommand::create_request_body(
-    key_vlan_map_t& vlanmap_key, val_vlan_map_t& vlanmap_val) {
+    key_vlan_map_t& vlanmap_key, val_vlan_map_t& vlanmap_val,
+    const std::string &logical_port_id) {
   ODC_FUNC_TRACE;
   unc::restjson::JsonBuildParse json_obj;
   json_object *jobj_parent = json_obj.create_json_obj();
@@ -989,8 +1008,7 @@ json_object* OdcVbrVlanMapCommand::create_request_body(
       return NULL;
     }
 
-    std::string logical_port_id = reinterpret_cast<char*>
-        (vlanmap_key.logical_port_id);
+    pfc_log_debug(" Logical port id received %s", logical_port_id.c_str());
     std::string switch_id = "";
     if (0 != strlen(logical_port_id.c_str())) {
       switch_id = logical_port_id.substr(3, 23);
@@ -1055,23 +1073,108 @@ odc_drv_resp_code_t OdcVbrVlanMapCommand::validate_logical_port_id(
   ODC_FUNC_TRACE;
   pfc_log_debug("%s: Logical port received : %s", PFC_FUNCNAME,
                 logical_port_id.c_str());
-  if (logical_port_id.compare(0, 3, SW_PREFIX) != 0) {
-    pfc_log_error("%s: Logical_port_id doesn't have SW- prefix", PFC_FUNCNAME);
+  if ((logical_port_id.compare(0, 3, SW_PREFIX) != 0) &&
+      (logical_port_id.size() != 26)) {
+    pfc_log_error("%s: Logical_port_id doesn't have SW- prefix "
+                  "or not in proper length", PFC_FUNCNAME);
     return ODC_DRV_FAILURE;
   }
-  if ((logical_port_id.size() != 26) ||
-      (logical_port_id.compare(5, 1, ":") != 0) ||
-      (logical_port_id.compare(8, 1, ":") !=0) ||
-      (logical_port_id.compare(11, 1, ":") != 0) ||
-      (logical_port_id.compare(14, 1, ":") !=0) ||
-      (logical_port_id.compare(17, 1, ":") !=0) ||
-      (logical_port_id.compare(20, 1, ":") !=0) ||
-      (logical_port_id.compare(23, 1, ":") !=0)) {
-    pfc_log_error("%s: Invalid logical_port_id", PFC_FUNCNAME);
+  std::string switch_id = logical_port_id.substr(3);
+  char *switch_id_char = const_cast<char *> (switch_id.c_str());
+  char *save_ptr;
+  char *colon_tokener = strtok_r(switch_id_char, ":", &save_ptr);
+  int parse_occurence = 0;
+  while (colon_tokener != NULL) {
+    //  Split string with token ":" and length of splitted sw is 2
+    // 11:11:22:22:33:33:44:44 length of splitted by ":" is 2
+    if (2 != strlen(colon_tokener)) {
+      pfc_log_error("Invalid switch id format supported by Vtn Manager");
+      return ODC_DRV_FAILURE;
+    }
+    colon_tokener = strtok_r(NULL, ":", &save_ptr);
+    parse_occurence++;
+  }
+  //  After splitting the switch id with token ":"  the occurence should be 8
+  //  Eg : 11:11:22:22:33:33:44:44 by splitting with ":" the value is 8
+  if (parse_occurence != 8) {
+    pfc_log_error("Invalid format not supported by Vtn Manager");
     return ODC_DRV_FAILURE;
   }
   pfc_log_debug("%s: Valid logical_port id", PFC_FUNCNAME);
   return ODC_DRV_SUCCESS;
+}
+
+//  Converts the logical port id from SW-1111-2222-3333-4444 to
+//  SW-11:11:22:22:33:33:44:44 format
+odc_drv_resp_code_t OdcVbrVlanMapCommand::convert_logical_port(
+    std::string &logical_port_id) {
+  ODC_FUNC_TRACE;
+  if ((logical_port_id.compare(0, 3, SW_PREFIX) != 0) &&
+      (logical_port_id.size() != 22)) {
+    pfc_log_error("%s: Logical_port_id doesn't have SW- prefix"
+                  "or not in correct length", PFC_FUNCNAME);
+    return ODC_DRV_FAILURE;
+  }
+  //  Validate the format before conversion
+  std::string switch_id = logical_port_id.substr(3);
+  char *switch_id_validation = const_cast<char *> (switch_id.c_str());
+  char *save_ptr;
+  char *string_token = strtok_r(switch_id_validation, "-", &save_ptr);
+  int occurence = 0;
+
+  while (string_token != NULL) {
+    //  Switch id token should be of length 4  Eg : 1111-2222-3333-4444
+    if (4 != strlen(string_token)) {
+      pfc_log_error("Invalid Switch id format cannot convert"
+                    "to format supported by VTN Manager");
+      return ODC_DRV_FAILURE;
+    }
+    occurence++;
+    string_token = strtok_r(NULL, "-", &save_ptr);
+  }
+  //  token  "-" : length of parsed SW is 4
+  //  Eg : 1111-2222-3333-4444 length of SW parsed by token "-"
+  if (occurence != 4) {
+    pfc_log_error("Invalid Switch id format");
+    return ODC_DRV_FAILURE;
+  }
+  switch_id = logical_port_id.substr(3);
+  //  Convert SW-1111-2222-3333-4444 to SW-11:11:22:22:33:33:44:44 format
+  //  5 - position where the first colon comes , increment to 3 places is the
+  //  next colon comes
+  for (uint position = 5; position < logical_port_id.length(); position += 3) {
+    if (logical_port_id.at(position) == '-') {
+      logical_port_id.replace(position, 1 , COLON);
+    } else {
+      logical_port_id.insert(position, COLON);
+    }
+  }
+  return ODC_DRV_SUCCESS;
+}
+
+//  Check the format of logical port id. If it is invalid converts to proper
+//  format
+odc_drv_resp_code_t OdcVbrVlanMapCommand::check_logical_port_id_format(
+    std::string& logical_port_id) {
+  ODC_FUNC_TRACE;
+  odc_drv_resp_code_t logical_port_retval = validate_logical_port_id(
+      logical_port_id);
+  if (logical_port_retval != ODC_DRV_SUCCESS) {
+    pfc_log_debug("logical port needs to be converted to proper format");
+    logical_port_retval = convert_logical_port(logical_port_id);
+    if (logical_port_retval != ODC_DRV_SUCCESS) {
+      pfc_log_error("Failed during conversion of logical port id %s",
+                    logical_port_id.c_str());
+      return ODC_DRV_FAILURE;
+    }
+    logical_port_retval = validate_logical_port_id(logical_port_id);
+    if (logical_port_retval != ODC_DRV_SUCCESS) {
+      pfc_log_error("Failed during validation of logical port id %s",
+                    logical_port_id.c_str());
+      return ODC_DRV_FAILURE;
+    }
+  }
+  return logical_port_retval;
 }
 
 // Gets username password form controller or else conf file
