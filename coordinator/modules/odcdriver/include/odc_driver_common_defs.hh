@@ -46,7 +46,10 @@ const std::string SET_USER_PASSWORD_BLK = "user_password_param";
 const std::string NODE_TYPE_OF          = "OF-";
 const std::string NODE_TYPE_ANY         = "ANY";
 const std::string PERIOD                = ".";
+const std::string HYPHEN                = "-";
+const std::string COLON                 = ":";
 const std::string SW_PREFIX             = "SW-";
+const std::string PP_PREFIX             = "PP-";
 const std::string UNTAGGED_VLANID       = "65535";
 
 const uint32_t DEFAULT_ODC_PORT                = 8080;

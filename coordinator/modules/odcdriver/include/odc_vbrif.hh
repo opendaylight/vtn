@@ -147,9 +147,11 @@ class OdcVbrIfCommand: public unc::driver::vbrif_driver_command {
   /**
    * @brief                    - Creates the Request Body for portmap
    * @param[in]  vbrif_val     - VTN value structure val_vtn_t
+   * @param[in]  logical port  - logical port id
    * @return  const char*      - returns the request body formed
    */
-  json_object* create_request_body_port_map(pfcdrv_val_vbr_if_t& vbrif_val);
+  json_object* create_request_body_port_map(pfcdrv_val_vbr_if_t& vbrif_val,
+                                            const std::string &logical_port_id);
 
   /**
    * @brief                - Creates the Request Body
@@ -163,7 +165,8 @@ class OdcVbrIfCommand: public unc::driver::vbrif_driver_command {
    * @param[in]   - logical_port_id which needs to be validated
    * @return      - returns ODC_DRV_SUCCESS/ ODC_DRV_FAILURE
    */
-  uint32_t validate_logical_port_id(const std::string& logical_port_id);
+  odc_drv_resp_code_t validate_logical_port_id(const std::string&
+                                               logical_port_id);
 
   /**
    * @brief                    - reads conf file else default values for
@@ -193,6 +196,24 @@ class OdcVbrIfCommand: public unc::driver::vbrif_driver_command {
    */
   void get_username_password(unc::driver::controller* ctr_ptr,
                          std::string &user_name, std::string &password);
+
+  /**
+   * @brief                     - checks the logical port id format
+   * @param[in][out]            - logical_port_id
+   * @return                    - odc_drv_resp_code_t
+   */
+  odc_drv_resp_code_t check_logical_port_id_format(std::string&
+                                                   logical_port_id);
+
+  /**
+   * @brief                     - converts the format of logical
+   *                              port id
+   * @param[in][out]            - the converted logical
+   *                              port id
+   * @return odc_drv_resp_code_t- ODC_DRV_SUCCESS/
+   *                              ODC_DRV_FAILURE
+   */
+  odc_drv_resp_code_t convert_logical_port(std::string &logical_port_id);
 };
 }  // namespace odcdriver
 }  // namespace unc

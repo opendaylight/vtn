@@ -138,11 +138,13 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    * @brief                      - Creates the Request Body
    * @param[in] vlanmap_key      - key structure VBRVLANMAP
    * @param[in] vlanmap_val      - val structureof VBRVLANMAP
+   * @param[in] logical port id  - validated logical port id
    * @return json_object         - returns the request body formed in
    *                               json_object pointer
    */
   json_object* create_request_body(key_vlan_map_t& vlanmap_key,
-                                   val_vlan_map_t& vlanmap_val);
+                                   val_vlan_map_t& vlanmap_val,
+                                   const std::string &logical_port_id);
 
   /*
    * @brief                      - validates the format of logical port id
@@ -186,10 +188,12 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    *                               [Switchid.vlanid or ANY.vlanid]
    * @param[in]                  - key structure of VBR_VLANMAP
    * @param[in]                  - vlan id as string
+   * @param[in]                  - validated logical port id
    * @return string              - vlanmap id string
    */
   std::string generate_vlanmap_id(key_vlan_map_t& vlanmap_key,
-                                  std::string str_vlanid);
+                                  std::string str_vlanid,
+                                  const std::string &logical_port);
 
   /**
    * @brief                      - create/update vlan and send to restclient
@@ -218,15 +222,18 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    * @brief                      - generates vlan id from the vlan-map vector
    * @param[in] ctr_ptr          - controller pointer
    * @param[in] vlanmap_key      - key structure of vbrvlanmap
+   * @param[in] logical port     - validated logical port id
    * @retval                     - vlan id in the form of string
    */
   std::string generate_vlanid_from_vector(unc::driver::controller* ctr_ptr,
-                                           key_vlan_map_t &vlanmap_key);
+                                          key_vlan_map_t &vlanmap_key,
+                                          std::string logical_port);
 
   /**
    * @brief                      - check switch id exists in controller
    * @param[in] key_vlan_map     - VBRVLANMAP key structure
    * @param[in] val_vlan_map     - VBRVLANMAP val structure
+   * @param[in] logical port     - validated logical port
    * @param[in] ctr_ptr          - controller pointer
    * @param[out]is_switch_exist  - pfc_bool_t variable set to PFC_TRUE if switch
    *                               already exists in controller
@@ -236,6 +243,7 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    */
   drv_resp_code_t check_switch_already_exists(key_vlan_map_t &key_vlan_map,
                                               val_vlan_map_t &val_vlan_map,
+                                              const std::string &logical_port,
                                               unc::driver::controller *ctr_ptr,
                                               pfc_bool_t &is_switch_exist,
                                               std::string &port_id);
@@ -262,6 +270,7 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    * @brief                      - Validates VLAN exists or not
    * @param[in] key_vlan_map     - VBRVLANMAP key structure
    * @param[in] val_vlan_map     - VBRVLANMAP val structure
+   * @param[in] logical port     - validated logical port
    * @param[in] ctr_ptr          - controller pointer
    * @param[out]is_switch_exist  - pfc_bool_t variable set to PFC_TRUE if
    *                               "ANY"/switch id already exists in controller
@@ -271,6 +280,7 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    */
   drv_resp_code_t validate_vlan_exist(key_vlan_map_t &key_vlan_map,
                                       val_vlan_map_t &val_vlan_map,
+                                      const std::string &logical_port,
                                       unc::driver::controller *ctr,
                                       pfc_bool_t &is_switch_exist,
                                       std::string &port_id);
@@ -312,6 +322,23 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
   std::string generate_string_for_vector(const std::string &vtn_name,
                                          const std::string &vbr_name,
                                          const std::string &vlan_id);
+  /**
+   * @brief                     - checks the logical port id format
+   * @param[in][out]            - logical_port_id
+   * @return                    - odc_drv_resp_code_t
+   */
+  odc_drv_resp_code_t check_logical_port_id_format(std::string&
+                                                   logical_port_id);
+
+  /**
+   * @brief                     - converts the format of logical
+   *                              port id
+   * @param[in][out]            - the converted logical
+   *                              port id
+   * @return odc_drv_resp_code_t- ODC_DRV_SUCCESS/
+   *                              ODC_DRV_FAILURE
+   */
+  odc_drv_resp_code_t convert_logical_port(std::string &logical_port_id);
 };
 }  // namespace odcdriver
 }  // namespace unc
