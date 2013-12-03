@@ -23,6 +23,7 @@
   </parent>
 
   <artifactId>manager.integrationtest</artifactId>
+  <packaging>bundle</packaging>
 
   <scm>
     <connection>scm:git:https://git.opendaylight.org/gerrit/p/vtn.git</connection>
@@ -51,6 +52,39 @@
     </pluginManagement>
 
     <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>${maven-bundle.version}</version>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Export-Package>
+              org.opendaylight.vtn.manager.integrationtest.internal
+            </Export-Package>
+            <Import-Package>
+              org.opendaylight.controller.sal.action,
+              org.opendaylight.controller.sal.connection,
+              org.opendaylight.controller.sal.core,
+              org.opendaylight.controller.sal.flowprogrammer,
+              org.opendaylight.controller.sal.inventory,
+              org.opendaylight.controller.sal.match,
+              org.opendaylight.controller.sal.packet,
+              org.opendaylight.controller.sal.reader,
+              org.opendaylight.controller.sal.topology,
+              org.opendaylight.controller.sal.utils,
+              org.apache.felix.dm,
+              org.slf4j,
+              org.osgi.framework
+            </Import-Package>
+            <Bundle-Activator>
+              org.opendaylight.vtn.manager.integrationtest.internal.Activator
+            </Bundle-Activator>
+            <Service-Component>
+            </Service-Component>
+          </instructions>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
