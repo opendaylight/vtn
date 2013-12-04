@@ -176,9 +176,10 @@ pfc_ipcresp_t VtnDrvIntf::ipcService(pfc::core::ipc::ServerSession& sess,
                  PFC_FUNCNAME, result);
     return PFC_IPCRESP_FATAL;
   }
-
-  //Set Timeout as infinite for all operations
-  sess.setTimeout(NULL);
+  // Set Timeout as infinite for audit operation
+  if (request_hdr.key_type == UNC_KT_ROOT) {
+    sess.setTimeout(NULL);
+  }
 
   if (map_kt_.empty()) {
     pfc_log_debug("map_kt empty");
