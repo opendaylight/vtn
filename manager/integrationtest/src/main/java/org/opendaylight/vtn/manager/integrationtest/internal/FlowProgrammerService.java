@@ -88,7 +88,8 @@ public class FlowProgrammerService implements IPluginInFlowProgrammerService
      * Synchronously modify existing flow on the switch
      *
      * @param node
-     * @param flow
+     * @param oldFlow
+     * @param newFlow
      */
     public Status modifyFlow(Node node, Flow oldFlow, Flow newFlow){
         logger.debug("openflow stub FlowProgrammerService modifyFlow called.");
@@ -127,7 +128,8 @@ public class FlowProgrammerService implements IPluginInFlowProgrammerService
      * Asynchronously modify existing flow on the switch
      *
      * @param node
-     * @param flow
+     * @param oldFlow
+     * @param newFlow
      * @param rid
      */
     public Status modifyFlowAsync(Node node, Flow oldFlow, Flow newFlow, long rid){

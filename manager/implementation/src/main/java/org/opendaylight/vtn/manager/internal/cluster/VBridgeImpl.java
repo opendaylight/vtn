@@ -1754,7 +1754,7 @@ public final class VBridgeImpl implements Serializable {
         if (bnode == null) {
             LOG.warn("{}:{}: Unexpected MAC address entry: {}",
                      getContainerName(), bridgePath, tent);
-            pctx.addObsoleteEntry(key, tent);
+            pctx.addObsoleteEntry(tent);
             table.remove(key);
             flood(mgr, pctx);
             return null;

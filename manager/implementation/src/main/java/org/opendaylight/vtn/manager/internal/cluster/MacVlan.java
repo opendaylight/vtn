@@ -105,7 +105,7 @@ public class MacVlan implements Serializable {
      */
     @Override
     public int hashCode() {
-        return VTNManagerImpl.hashCode(macAddress);
+        return VTNManagerImpl.hashCode(macAddress) ^ vlan;
     }
 
     /**

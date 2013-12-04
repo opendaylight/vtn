@@ -888,6 +888,12 @@ public class MacAddressTable {
             }
             table.put(key, tent);
             vtnManager.putMacTableEntry(tent);
+
+            // Obsolete flow entries may remain when a host is moved to other
+            // switch port without changing link state. So we should remove
+            // flow entries for a new MAC address table entry.
+            pctx.addObsoleteEntry(tent);
+
             return tent;
         }
 
@@ -898,7 +904,7 @@ public class MacAddressTable {
         MacTableEntry newEnt = tent;
         if (vlan != curvlan || !port.equals(curport)) {
             // The host was moved to other network.
-            pctx.addObsoleteEntry(key, tent);
+            pctx.addObsoleteEntry(tent);
             vtnManager.removeMacTableEntry(tent.getEntryId());
 
             // Replace the table entry.
@@ -906,6 +912,9 @@ public class MacAddressTable {
             table.put(key, newEnt);
             vtnManager.putMacTableEntry(newEnt);
             changed = true;
+
+            // Remove obsolete flow entries for this MAC address.
+            pctx.addObsoleteEntry(newEnt);
         } else {
             if (ipaddr != null) {
                 // Append IP address to this entry.

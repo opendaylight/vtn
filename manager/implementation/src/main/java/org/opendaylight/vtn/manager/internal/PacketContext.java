@@ -10,9 +10,6 @@
 package org.opendaylight.vtn.manager.internal;
 
 import java.net.InetAddress;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.Set;
 import java.util.HashSet;
 
@@ -22,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
+import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 
@@ -98,10 +96,10 @@ public class PacketContext {
     private byte[] sourceInetAddress;
 
     /**
-     * Obsolete MAC address table entries.
+     * Obsolete layer 2 host entries.
      */
-    private final Map<Long, MacTableEntry>  obsoleteEntries =
-        new TreeMap<Long, MacTableEntry>();
+    private final Set<ObjectPair<MacVlan, NodeConnector>>  obsoleteHosts =
+        new HashSet<ObjectPair<MacVlan, NodeConnector>>();
 
     /**
      * Outgoing node connector.
@@ -333,28 +331,30 @@ public class PacketContext {
     }
 
     /**
-     * Add the specified MAC address table entry to obsolete entry map.
-     * packet.
+     * Add an obsolete layer 2 host entry specified by the MAC address table
+     * entry.
      *
-     * @param key   A long value which represents a MAC address.
      * @param tent  An obsolete MAC address table entry.
      */
-    public void addObsoleteEntry(Long key, MacTableEntry tent) {
-        obsoleteEntries.put(key, tent);
+    public void addObsoleteEntry(MacTableEntry tent) {
+        long mac = tent.getMacAddress();
+        MacVlan mvlan = new MacVlan(mac, tent.getVlan());
+        obsoleteHosts.add(new ObjectPair<MacVlan, NodeConnector>
+                          (mvlan, tent.getPort()));
     }
 
     /**
-     * Return a set of obsolete MAC address table entries.
+     * Return a set of obsolete layer 2 host entries.
      *
-     * @return  A set of obsolete MAC address table entries.
+     * @return  A set of obsolete layer 2 host entries.
      */
-    public Map<Long, MacTableEntry> getObsoleteEntries() {
-        return obsoleteEntries;
+    public Set<ObjectPair<MacVlan, NodeConnector>> getObsoleteEntries() {
+        return obsoleteHosts;
     }
 
 
     /**
-     * Purge VTN flows relevant to obsolete MAC address table entries.
+     * Purge VTN flows relevant to obsolete layer 2 host entries.
      *
      * @param mgr         VTN manager service.
      * @param tenantName  Name of the virtual tenant.
@@ -367,26 +367,21 @@ public class PacketContext {
     }
 
     /**
-     * Purge VTN flows relevant to obsolete MAC address table entries.
+     * Purge VTN flows relevant to obsolete layer 2 host entries.
      *
      * <p>
-     *   This method removes obsolte MAC address entries added by
-     *   {@link #addObsoleteEntry(Long, MacTableEntry)}.
+     *   This method removes obsolte layer 2 host entries added by
+     *   {@link #addObsoleteEntry(MacTableEntry)}.
      * </p>
      *
      * @param mgr   VTN manager service.
      * @param fdb   VTN flow database.
      */
     public void purgeObsoleteFlow(VTNManagerImpl mgr, VTNFlowDatabase fdb) {
-        for (Iterator<Map.Entry<Long, MacTableEntry>> it =
-                 obsoleteEntries.entrySet().iterator(); it.hasNext();) {
-            Map.Entry<Long, MacTableEntry> entry = it.next();
-            long addr = entry.getKey().longValue();
-            short vlan = entry.getValue().getVlan();
-            MacVlan mvlan = new MacVlan(addr, vlan);
-            fdb.removeFlows(mgr, mvlan);
-            it.remove();
+        for (ObjectPair<MacVlan, NodeConnector> host: obsoleteHosts) {
+            fdb.removeFlows(mgr, host.getLeft(), host.getRight());
         }
+        obsoleteHosts.clear();
     }
 
     /**

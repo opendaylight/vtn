@@ -10,9 +10,9 @@ package org.opendaylight.vtn.manager.internal;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
 import org.junit.BeforeClass;
@@ -44,6 +44,7 @@ import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
+import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 
@@ -148,12 +149,12 @@ public class PacketContextTest extends TestUseVTNManagerBase {
             fail(e.getMessage());
         }
 
-        pc.addObsoleteEntry(key, me);
+        pc.addObsoleteEntry(me);
 
-        TreeMap<Long, MacTableEntry> map = new TreeMap<Long, MacTableEntry>();
-        map.put(key, me);
-
-        assertEquals(msg, map, pc.getObsoleteEntries());
+        HashSet<ObjectPair<MacVlan, NodeConnector>> obsoletes =
+            new HashSet<ObjectPair<MacVlan, NodeConnector>>();
+        obsoletes.add(getL2Host(me));
+        assertEquals(msg, obsoletes, pc.getObsoleteEntries());
 
         // test getFrame()
         Ethernet ether = pc.getFrame();
@@ -284,12 +285,12 @@ public class PacketContextTest extends TestUseVTNManagerBase {
             me = new MacTableEntry(path, key, nc, vlan, ipaddr);
         }
 
-        pctx.addObsoleteEntry(key, me);
+        pctx.addObsoleteEntry(me);
 
-        TreeMap<Long, MacTableEntry> map = new TreeMap<Long, MacTableEntry>();
-        map.put(key, me);
-
-        assertEquals(msg, map, pctx.getObsoleteEntries());
+        HashSet<ObjectPair<MacVlan, NodeConnector>> obsoletes =
+            new HashSet<ObjectPair<MacVlan, NodeConnector>>();
+        obsoletes.add(getL2Host(me));
+        assertEquals(msg, obsoletes, pctx.getObsoleteEntries());
 
         // test getFrame()
         assertEquals(ether, pctx.getFrame());
@@ -494,9 +495,11 @@ public class PacketContextTest extends TestUseVTNManagerBase {
                     me = new MacTableEntry(bpath1, key, innc, vlan, ipaddr);
                 }
 
-                pctx.addObsoleteEntry(key, me);
-                Map<Long, MacTableEntry> macMaps = pctx.getObsoleteEntries();
-                assertEquals(me, macMaps.get(key));
+                pctx.addObsoleteEntry(me);
+                Set<ObjectPair<MacVlan, NodeConnector>> obsoletes =
+                    pctx.getObsoleteEntries();
+                assertTrue(obsoletes.contains(getL2Host(me)));
+                assertEquals(1, obsoletes.size());
 
                 VTNFlow flow = fdb.create(vtnMgr);
                 Match match = pctx.createMatch(innc);
@@ -520,6 +523,7 @@ public class PacketContextTest extends TestUseVTNManagerBase {
                 ActionList actions = new ActionList(innc.getNode());
                 actions.addOutput(outnc);
                 flow.addFlow(vtnMgr, match, actions, pri);
+                assertTrue(flow.getFlowPorts().contains(innc));
 
                 // check method set dependency for MacVlan
                 assertFalse(flow.dependsOn(new MacVlan(src, vlan)));
@@ -548,6 +552,8 @@ public class PacketContextTest extends TestUseVTNManagerBase {
                 assertEquals(numEntries, stubObj.getFlowEntries().size());
 
                 pctx.purgeObsoleteFlow(vtnMgr, tpath.getTenantName());
+                obsoletes = pctx.getObsoleteEntries();
+                assertTrue(obsoletes.isEmpty());
                 flushFlowTasks();
                 assertEquals(numEntries - 1, db.size());
                 assertEquals(numEntries - 1, stubObj.getFlowEntries().size());
@@ -557,8 +563,10 @@ public class PacketContextTest extends TestUseVTNManagerBase {
                 assertEquals(numEntries, db.size());
                 assertEquals(numEntries, stubObj.getFlowEntries().size());
 
-                // specify unmatch tanent name.
+                // specify unmatch tenant name.
                 pctx.purgeObsoleteFlow(vtnMgr, "unknown");
+                obsoletes = pctx.getObsoleteEntries();
+                assertTrue(obsoletes.isEmpty());
                 flushFlowTasks();
                 assertEquals(numEntries, db.size());
                 assertEquals(numEntries, stubObj.getFlowEntries().size());
@@ -682,5 +690,17 @@ public class PacketContextTest extends TestUseVTNManagerBase {
         builder.delete(builder.length() - 1, builder.length() - 1);
 
         return builder.toString();
+    }
+
+    /**
+     * Create a L2 host entry specified by the given MAC address table entry.
+     *
+     * @param tent  A MAC address table entry.
+     * @return      A pair of {@link MacVlan} object and a node connector
+     *              associated with a switch port.
+     */
+    private ObjectPair<MacVlan, NodeConnector> getL2Host(MacTableEntry tent) {
+        MacVlan mv = new MacVlan(tent.getMacAddress(), tent.getVlan());
+        return new ObjectPair<MacVlan, NodeConnector>(mv, tent.getPort());
     }
 }
