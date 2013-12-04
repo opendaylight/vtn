@@ -176,6 +176,13 @@ pfc_ipcresp_t VtnDrvIntf::ipcService(pfc::core::ipc::ServerSession& sess,
                  PFC_FUNCNAME, result);
     return PFC_IPCRESP_FATAL;
   }
+<<<<<<< HEAD
+=======
+  // Set Timeout as infinite for audit operation
+  if (request_hdr.key_type == UNC_KT_ROOT) {
+    sess.setTimeout(NULL);
+  }
+>>>>>>> 277ad0d... Fix Bug for Audit Failure due to timeout
 
   if (map_kt_.empty()) {
     pfc_log_debug("map_kt empty");
