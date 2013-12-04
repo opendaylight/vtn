@@ -1482,10 +1482,12 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         NodeConnector mapNc = null;
         Node portMapNode = null;
         Node vlanMapNode = null;
+        String portName = null;
         if (pmconf != null) {
+            portName = pmconf.getPort().getName();
             Short s;
             if (pmconf.getPort().getId() == null) {
-                String [] tkn = pmconf.getPort().getName().split("-");
+                String [] tkn = portName.split("-");
                 s = Short.valueOf(tkn[1]);
             } else {
                 s = Short.valueOf(pmconf.getPort().getId());
@@ -1518,6 +1520,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         }
 
         propMap = swMgr.getNodeConnectorProps(chgNc);
+        Name chgNcName = (Name)propMap.get(Name.NamePropName);
         mgr.notifyNodeConnector(chgNc, UpdateType.ADDED, propMap);
         mgr.initISL();
         if (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) {
@@ -1534,8 +1537,28 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
             checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UNKNOWN, msg);
         }
 
+        // Change the port name.
         Map<String, Property> newPropMap = new HashMap<String, Property>();
         newPropMap.put(Name.NamePropName, new Name(""));
+        newPropMap.put(Config.ConfigPropName, new Config(Config.ADMIN_UP));
+        newPropMap.put(State.StatePropName, new State(State.EDGE_UP));
+
+        mgr.notifyNodeConnector(chgNc, UpdateType.CHANGED, newPropMap);
+        if (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) {
+            VNodeState expected = (!chgNc.equals(mapNc) || portName == null ||
+                                   portName.equals(""))
+                ? VNodeState.UP : VNodeState.DOWN;
+            checkNodeStatus(mgr, bpath, ifp, expected, expected, msg);
+        } else {
+            checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UNKNOWN, msg);
+        }
+        flushMacTableEntry(mgr, bpath);
+
+        // Restore the port name.
+        newPropMap = new HashMap<String, Property>();
+        if (chgNcName != null) {
+            newPropMap.put(Name.NamePropName, chgNcName);
+        }
         newPropMap.put(Config.ConfigPropName, new Config(Config.ADMIN_UP));
         newPropMap.put(State.StatePropName, new State(State.EDGE_UP));
 

@@ -1117,6 +1117,27 @@ public final class VTenantImpl implements Serializable {
     }
 
     /**
+     * Remove MAC address table entries relevant to the specified pair of
+     * switch port and VLAN ID from all existing MAC address tables.
+     *
+     * <p>
+     *   This method must be called with holding the tenant lock.
+     * </p>
+     *
+     * @param mgr   VTN Manager service.
+     * @param port  A node connector associated with a switch port.
+     * @param vlan  A VLAN ID.
+     */
+    void removeMacTableEntries(VTNManagerImpl mgr, NodeConnector port,
+                               short vlan) {
+        for (VBridgeImpl vbr: vBridges.values()) {
+            VBridgePath path = vbr.getPath();
+            MacAddressTable table = mgr.getMacAddressTable(path);
+            table.flush(port, vlan);
+        }
+    }
+
+    /**
      * Merge the given VTN configuration to the current configuration.
      *
      * <p>
@@ -1251,7 +1272,7 @@ public final class VTenantImpl implements Serializable {
      * Return the virtual bridge instance associated with the given name.
      *
      * <p>
-     *   This method must be called with the tenant lock.
+     *   This method must be called with holding the tenant lock.
      * </p>
      *
      * @param path  Path to the bridge.
@@ -1279,7 +1300,7 @@ public final class VTenantImpl implements Serializable {
      * Return the MAC address table for the specified virtual bridge.
      *
      * <p>
-     *   This method must be called with the tenant lock.
+     *   This method must be called with holding the tenant lock.
      * </p>
      *
      * @param mgr   VTN manager service.
