@@ -177,6 +177,9 @@ pfc_ipcresp_t VtnDrvIntf::ipcService(pfc::core::ipc::ServerSession& sess,
     return PFC_IPCRESP_FATAL;
   }
 
+  //Set Timeout as infinite for all operations
+  sess.setTimeout(NULL);
+
   if (map_kt_.empty()) {
     pfc_log_debug("map_kt empty");
     return PFC_IPCRESP_FATAL;
