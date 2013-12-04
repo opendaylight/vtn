@@ -15,6 +15,8 @@ import java.util.concurrent.locks.Lock;
 
 import org.opendaylight.vtn.manager.VTenantPath;
 
+import org.opendaylight.controller.sal.core.NodeConnector;
+
 /**
  * {@code VTNThreadData} class describes a thread-local variable used for
  * the VTN Manager.
@@ -88,6 +90,30 @@ public final class VTNThreadData {
         VTNFlowDatabase fdb = mgr.getTenantFlowDB(path.getTenantName());
         if (fdb != null) {
             addTask(fdb.removeFlows(mgr, path));
+        }
+    }
+
+    /**
+     * Remove all VTN flows related to the given edge network.
+     *
+     * <p>
+     *   Flow removing will be executed in background.
+     *   If a {@code VTNThreadData} is bound to the calling thread,
+     *   the calling thread will wait for completion of flow removing
+     *   when {@link #cleanUp(VTNManagerImpl)} is called.
+     * </p>
+     *
+     * @param mgr         VTN Manager service.
+     * @param tenantName  The name of the virtual tenant.
+     * @param port        A node connector associated with a switch port.
+     * @param vlan        A VLAN ID.
+     * @see VTNFlowDatabase#removeFlows(VTNManagerImpl, NodeConnector, short)
+     */
+    public static void removeFlows(VTNManagerImpl mgr, String tenantName,
+                                   NodeConnector port, short vlan) {
+        VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
+        if (fdb != null) {
+            addTask(fdb.removeFlows(mgr, port, vlan));
         }
     }
 

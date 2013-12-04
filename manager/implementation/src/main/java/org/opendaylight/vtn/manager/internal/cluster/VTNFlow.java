@@ -25,6 +25,8 @@ import org.opendaylight.controller.connectionmanager.IConnectionManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.action.Action;
 import org.opendaylight.controller.sal.action.Output;
+import org.opendaylight.controller.sal.action.PopVlan;
+import org.opendaylight.controller.sal.action.SetVlanId;
 import org.opendaylight.controller.sal.connection.ConnectionLocality;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -52,7 +54,7 @@ public class VTNFlow implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -6425896731077560205L;
+    private static final long serialVersionUID = 4456038162062268062L;
 
     /**
      * The identifier of the flow group.
@@ -241,6 +243,77 @@ public class VTNFlow implements Serializable {
     }
 
     /**
+     * Determine whether the given pair of node connector and VLAN ID matches
+     * the network at the edge of the ingress flow or not.
+     *
+     * @param nc    A node connector associated with a switch port.
+     * @param vlan  A VLAN ID.
+     * @return  {@code true} is returned if the given pair of node connector
+     *          and VLAN ID matches the network at the edge of the ingress
+     *          flow. Otherwise {@code false} is returned.
+     */
+    public boolean isIncomingNetwork(NodeConnector nc, short vlan) {
+        if (flowEntries.size() == 0) {
+            return false;
+        }
+
+        // Both IN_PORT and DL_VLAN fields should be contained in an ingress
+        // flow entry.
+        Flow flow = flowEntries.get(0).getFlow();
+        Match match = flow.getMatch();
+        MatchField mf = match.getField(MatchType.IN_PORT);
+        if (!nc.equals(mf.getValue())) {
+            return false;
+        }
+
+        mf = match.getField(MatchType.DL_VLAN);
+        Short vid = (Short)mf.getValue();
+        return (vid.shortValue() == vlan);
+    }
+
+    /**
+     * Determine whether the given pair of node connector and VLAN ID matches
+     * the network at the edge of the egress flow or not.
+     *
+     * @param nc    A node connector associated with a switch port.
+     * @param vlan  A VLAN ID.
+     * @return  {@code true} is returned if the given pair of node connector
+     *          and VLAN ID matches the network at the edge of the egress flow.
+     *          Otherwise {@code false} is returned.
+     */
+    public boolean isOutgoingNetwork(NodeConnector nc, short vlan) {
+        int sz = flowEntries.size();
+        if (sz <= 0) {
+            return false;
+        }
+
+        List<Action> actions = flowEntries.get(sz - 1).getFlow().getActions();
+        if (actions == null) {
+            return false;
+        }
+
+        boolean portMatched = false, vlanMatched = false;
+        for (Action action: actions) {
+            if (action instanceof Output) {
+                Output out = (Output)action;
+                if (nc.equals(out.getPort())) {
+                    if (vlanMatched) {
+                        return true;
+                    }
+                    portMatched = true;
+                }
+            } else if (getOutputVlan(action) == vlan) {
+                if (portMatched) {
+                    return true;
+                }
+                vlanMatched = true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Update indices of flow entries.
      *
      * @param swMgr  Switch manager service. If a non-{@code null} value is
@@ -333,6 +406,27 @@ public class VTNFlow implements Serializable {
         for (FlowEntry fent: flowEntries) {
             updateIndex(swMgr, fent.getFlow(), fent.getNode());
         }
+    }
+
+    /**
+     * Return VLAN ID of outgoing packet set by the given action.
+     *
+     * @param action  An action in a flow entry.
+     * @return  If the given action removes the VLAN tag,
+     *          {@link MatchType#DL_VLAN_NONE} is returned.
+     *          A valid VLAN ID is returned if the given action sets it into
+     *          the VLAN TAG.
+     *          -1 is returned if the given action never sets a VLAN ID.
+     */
+    private short getOutputVlan(Action action) {
+        if (action instanceof PopVlan) {
+            return MatchType.DL_VLAN_NONE;
+        }
+        if (action instanceof SetVlanId) {
+            return (short)((SetVlanId)action).getVlanId();
+        }
+
+        return -1;
     }
 
     /**

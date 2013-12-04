@@ -472,13 +472,14 @@ public class PacketContext {
         //   - Source MAC address
         //   - Destination MAC address
         //   - VLAN ID
+        //   - Incoming port
         match.setField(MatchType.DL_SRC, getSourceAddress());
         match.setField(MatchType.DL_DST, getDestinationAddress());
 
         // This code expects MatchType.DL_VLAN_NONE is zero.
         match.setField(MatchType.DL_VLAN, getVlan());
 
-        // Set input port.
+        // Set incoming port.
         match.setField(MatchType.IN_PORT, inPort);
 
         return match;
