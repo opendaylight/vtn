@@ -395,6 +395,68 @@ public class VTNFlowDatabase {
     }
 
     /**
+     * Remove all VTN flows related to the given edge network.
+     *
+     * <p>
+     *   The edge network is specified by a pair of node connector and VLAN ID.
+     *   This method searches for VTN flows whose incoming or outgoing network
+     *   matches the specified pair of node connector and VLAN ID.
+     * </p>
+     *
+     * @param mgr   VTN Manager service.
+     * @param port  A node connector associated with a switch port.
+     * @param vlan  A VLAN ID.
+     * @return  A {@link FlowRemoveTask} object that will execute the actual
+     *          work is returned. {@code null} is returned if there is no flow
+     *          entry to be removed.
+     */
+    public synchronized FlowRemoveTask removeFlows(VTNManagerImpl mgr,
+                                                   NodeConnector port,
+                                                   short vlan) {
+        Set<VTNFlow> vflows = portFlows.get(port);
+        if (vflows == null) {
+            return null;
+        }
+
+        FlowCollector collector = new FlowCollector();
+        for (Iterator<VTNFlow> it = vflows.iterator(); it.hasNext();) {
+            VTNFlow vflow = it.next();
+            String type;
+            if (vflow.isIncomingNetwork(port, vlan)) {
+                type = "incoming";
+            } else if (vflow.isOutgoingNetwork(port, vlan)) {
+                type = "outgoing";
+            } else {
+                continue;
+            }
+
+            FlowGroupId gid = vflow.getGroupId();
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}:{}: Remove VTN flow which contains {} network:" +
+                          " port={}, vlan={}, group={}",
+                          mgr.getContainerName(), tenantName, type, port, vlan,
+                          gid);
+            }
+
+            // Remove this VTN flow from the database.
+            groupFlows.remove(gid);
+            removeFlowIndex(vflow);
+            removeNodeIndex(vflow);
+            it.remove();
+
+            // Collect flow entries to be uninstalled.
+            collector.collect(mgr, vflow);
+        }
+
+        if (vflows.isEmpty()) {
+            portFlows.remove(port);
+        }
+
+        // Uninstall flow entries in background.
+        return collector.uninstall(mgr);
+    }
+
+    /**
      * Remove all VTN flows related to the given virtual node.
      *
      * <p>
@@ -409,7 +471,8 @@ public class VTNFlowDatabase {
      *          work is returned. {@code null} is returned if there is no flow
      *          entry to be removed.
      */
-    public FlowRemoveTask removeFlows(VTNManagerImpl mgr, VTenantPath path) {
+    public synchronized FlowRemoveTask removeFlows(VTNManagerImpl mgr,
+                                                   VTenantPath path) {
         FlowCollector collector = new FlowCollector();
         for (Iterator<VTNFlow> it = vtnFlows.values().iterator();
              it.hasNext();) {

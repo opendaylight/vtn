@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
@@ -416,6 +417,11 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     @Override
     public void tbegin() throws NotSupportedException, SystemException {
 
+    }
+
+    @Override
+    public void tbegin(long timeout, TimeUnit unit)
+        throws NotSupportedException, SystemException {
     }
 
     @Override

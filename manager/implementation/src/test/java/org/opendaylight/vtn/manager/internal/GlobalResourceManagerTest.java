@@ -117,6 +117,11 @@ public class GlobalResourceManagerTest extends TestBase {
         }
 
         @Override
+        public void tbegin(long timeout, TimeUnit unit)
+            throws NotSupportedException, SystemException {
+        }
+
+        @Override
         public void tcommit() throws RollbackException,
                 HeuristicMixedException, HeuristicRollbackException,
                 SecurityException, IllegalStateException, SystemException {
