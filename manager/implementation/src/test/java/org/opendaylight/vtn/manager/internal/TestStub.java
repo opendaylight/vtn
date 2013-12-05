@@ -495,6 +495,11 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     }
 
     @Override
+    public Set<Switch> getConfiguredNotConnectedSwitches() {
+        return null;
+    }
+
+    @Override
     public List<SubnetConfig> getSubnetsConfigList() {
         return null;
     }

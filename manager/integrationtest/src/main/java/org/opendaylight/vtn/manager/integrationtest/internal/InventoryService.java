@@ -393,4 +393,8 @@ public class InventoryService implements IPluginInInventoryService {
         return nodeConnectorProps;
     }
 
+    @Override
+    public Set<Node> getConfiguredNotConnectedNodes() {
+        return null;
+    }
 }
