@@ -8,13 +8,13 @@
 
 package org.opendaylight.vtn.manager.integrationtest.internal;
 
-import org.eclipse.osgi.internal.baseadaptor.ArrayMap;
 import org.opendaylight.controller.sal.flowprogrammer.Flow;
 import org.opendaylight.controller.sal.flowprogrammer.IPluginInFlowProgrammerService;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
@@ -189,7 +189,7 @@ public class FlowProgrammerService implements IPluginInFlowProgrammerService
             return null;
         }
 
-       logger.trace("Start waiting for {} flow(s) to add to {}.", expectedAddFlows, node);
+        logger.trace("Start waiting for {} flow(s) to add to {}.", expectedAddFlows, node);
         CountDownLatch latch = new CountDownLatch(expectedAddFlows);
         mapLatch.put(node, latch);
         return latch;
@@ -201,6 +201,14 @@ public class FlowProgrammerService implements IPluginInFlowProgrammerService
             return 0;
         }
         return list.size();
+    }
+
+    public List<Flow> getFlows(Node node) {
+        List<Flow> list = mapNF.get(node);
+        if (list == null) {
+            return new ArrayList<Flow>();
+        }
+        return list;
     }
 
     private void addFlowInternal(Node node, Flow flow) {
