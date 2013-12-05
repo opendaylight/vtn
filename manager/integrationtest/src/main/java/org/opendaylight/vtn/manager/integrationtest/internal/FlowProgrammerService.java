@@ -189,7 +189,7 @@ public class FlowProgrammerService implements IPluginInFlowProgrammerService
             return null;
         }
 
-       logger.trace("Start waiting for {} flow(s) to add to {}.", expectedAddFlows, node);
+        logger.trace("Start waiting for {} flow(s) to add to {}.", expectedAddFlows, node);
         CountDownLatch latch = new CountDownLatch(expectedAddFlows);
         mapLatch.put(node, latch);
         return latch;
