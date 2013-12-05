@@ -188,6 +188,11 @@ pfc_ipcresp_t VtnDrvIntf::ipcService(pfc::core::ipc::ServerSession& sess,
     return PFC_IPCRESP_FATAL;
   }
 
+  // Set Timeout as infinite for audit operation
+  if (request_hdr.key_type == UNC_KT_ROOT) {
+    sess.setTimeout(NULL);
+  }
+
   resp_code = hnd_ptr->handle_request(sess, request_hdr, ctrl_inst_);
   if (resp_code != DRVAPI_RESPONSE_SUCCESS) {
     pfc_log_debug("handle_request fail for key:%d", request_hdr.key_type);
