@@ -89,6 +89,10 @@ import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.controller.sal.action.Action;
+import org.opendaylight.controller.sal.action.Output;
+import org.opendaylight.controller.sal.action.PopVlan;
+import org.opendaylight.controller.sal.action.SetVlanId;
 import org.opendaylight.controller.sal.core.ConstructionException;
 import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.IContainerListener;
@@ -98,8 +102,11 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
 import org.opendaylight.controller.sal.core.Property;
 import org.opendaylight.controller.sal.core.UpdateType;
+import org.opendaylight.controller.sal.flowprogrammer.Flow;
 import org.opendaylight.controller.sal.flowprogrammer.IPluginInFlowProgrammerService;
 import org.opendaylight.controller.sal.inventory.IPluginInInventoryService;
+import org.opendaylight.controller.sal.match.Match;
+import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.IListenDataPacket;
 import org.opendaylight.controller.sal.packet.IPluginInDataPacketService;
@@ -2068,7 +2075,7 @@ public class VTNManagerIT extends TestBase {
 
             for (VlanMapConfig vlconf : listVLanMapConf) {
 
-                String emsg_vl = emsg
+                String emsgVL = emsg
                         + "(VlanMapConfig)" + ((vlconf == null) ? "(null)" : vlconf.toString());
 
                 boolean exStatus = ((vbpath == null)
@@ -2081,9 +2088,9 @@ public class VTNManagerIT extends TestBase {
                     fail("throwing Exception was expected.");
                 } catch (VTNException e) {
                     if (bpath.equals(vbpath) && (vlconf != null)) {
-                        assertEquals(emsg_vl, StatusCode.CONFLICT, e.getStatus().getCode());
+                        assertEquals(emsgVL, StatusCode.CONFLICT, e.getStatus().getCode());
                     } else {
-                        checkExceptionStatus(e.getStatus(), exStatus, emsg_vl);
+                        checkExceptionStatus(e.getStatus(), exStatus, emsgVL);
                     }
                 } catch (Exception e) {
                     unexpected(e);
@@ -2094,11 +2101,11 @@ public class VTNManagerIT extends TestBase {
                         getmap = mgr.getVlanMap(vbpath, map.getId());
                         fail("throwing Exception was expected.");
                     } catch (VTNException e) {
-                        checkExceptionStatus(e.getStatus(), exStatus, emsg_vl);
+                        checkExceptionStatus(e.getStatus(), exStatus, emsgVL);
                     } catch (Exception e){
                         unexpected(e);
                     }
-                    assertNull(emsg_vl, getmap);
+                    assertNull(emsgVL, getmap);
                 }
 
                 if (!bpath.equals(vbpath) || (vlconf == null)) {
@@ -2106,7 +2113,7 @@ public class VTNManagerIT extends TestBase {
                         getmap = mgr.getVlanMap(vbpath, vlconf);
                         fail("throwing Exception was expected.");
                     } catch (VTNException e) {
-                        checkExceptionStatus(e.getStatus(), exStatus, emsg_vl);
+                        checkExceptionStatus(e.getStatus(), exStatus, emsgVL);
                     } catch (Exception e){
                         unexpected(e);
                     }
@@ -2118,18 +2125,18 @@ public class VTNManagerIT extends TestBase {
                 }
 
                 st = mgr.removeVlanMap(vbpath, map.getId());
-                checkExceptionStatus(st, exStatus, emsg_vl);
+                checkExceptionStatus(st, exStatus, emsgVL);
 
                 List<VlanMap> list = null;
                 try {
                     list = mgr.getVlanMaps(vbpath);
                     fail("throwing Exception was expected.");
                 } catch (VTNException e) {
-                    checkExceptionStatus(e.getStatus(), exStatus, emsg_vl);
+                    checkExceptionStatus(e.getStatus(), exStatus, emsgVL);
                 } catch (Exception e){
                     unexpected(e);
                 }
-                assertNull(emsg_vl, list);
+                assertNull(emsgVL, list);
             }
         }
 
@@ -2471,8 +2478,8 @@ public class VTNManagerIT extends TestBase {
 
         r = bc.getServiceReference(IPluginInInventoryService.class.getName());
         assertNotNull(r);
-        IPluginInInventoryService pin_ivs = (IPluginInInventoryService)(bc.getService(r));
-        assertNotNull(pin_ivs);
+        IPluginInInventoryService pinIVS = (IPluginInInventoryService)(bc.getService(r));
+        assertNotNull(pinIVS);
 
 
         List<Node> existNodes = new ArrayList<Node>();
@@ -2496,6 +2503,9 @@ public class VTNManagerIT extends TestBase {
         try {
             VInterface vif = mgr.getBridgeInterface(ifp1);
             assertEquals(VNodeState.UP, vif.getState());
+
+            VBridge vbr = mgr.getBridge(new VBridgePath(tname, bname1));
+            assertEquals(VNodeState.UP, vbr.getState());
         } catch (VTNException e) {
             unexpected(e);
         }
@@ -2505,7 +2515,7 @@ public class VTNManagerIT extends TestBase {
         st = mgr.setPortMap(ifp2, pmconf2);
         assertEquals(StatusCode.CONFLICT, st.getCode());
 
-        Name portName = (Name)pin_ivs.getNodeConnectorProps(Boolean.FALSE)
+        Name portName = (Name)pinIVS.getNodeConnectorProps(Boolean.FALSE)
                 .get(existConnectors.get(0)).get(Name.NamePropName);
         PortMapConfig pmconf3 = new PortMapConfig(node2, new SwitchPort(
                 portName.getStringValue(), null, null), (short) 10);
@@ -2533,11 +2543,11 @@ public class VTNManagerIT extends TestBase {
         ServiceReference r = bc.getServiceReference(ISwitchManager.class.getName());
         ISwitchManager swmgr = (ISwitchManager)(bc.getService(r));
 
-        IPluginInDataPacketService pin_dps = (IPluginInDataPacketService)ServiceHelper
+        IPluginInDataPacketService pinDPS = (IPluginInDataPacketService)ServiceHelper
             .getInstance(IPluginInDataPacketService.class, GlobalConstants.DEFAULT.toString(), this);
-        assertNotNull(pin_dps);
-        assertTrue(pin_dps instanceof DataPacketServices);
-        DataPacketServices dps = (DataPacketServices)pin_dps;
+        assertNotNull(pinDPS);
+        assertTrue(pinDPS instanceof DataPacketServices);
+        DataPacketServices dps = (DataPacketServices)pinDPS;
 
         short[] vlans = new short[] { 0, 10, 4095 };
 
@@ -2565,6 +2575,10 @@ public class VTNManagerIT extends TestBase {
         } catch (UnknownHostException e) {
             unexpected(e);
         }
+
+        // Wait 3000 (+ 100) ms to be removed from "disabled nodes".
+        // (Default value of "disabled" time is 3000 ms.)
+        sleep(3000 + 100);
 
         // Tests for invalid conditions
         HostNodeConnector hnc = null;
@@ -2636,7 +2650,7 @@ public class VTNManagerIT extends TestBase {
         // Make vBridge Interfaces and set a port mapping.
         List<VBridgeIfPath> listBIfPath = new ArrayList<VBridgeIfPath>();
         for (int i= 0; i < listBPath.size(); i++) {
-            VBridgePath bpath = (listBPath.toArray(new VBridgePath[listBPath.size()]))[i];
+            VBridgePath bpath = listBPath.get(i);
             st = mgr.addBridge(bpath, new VBridgeConfig(null, 10));
             assertEquals(StatusCode.SUCCESS, st.getCode());
 
@@ -2675,26 +2689,25 @@ public class VTNManagerIT extends TestBase {
         }
 
         // Test for port not found
-        NodeConnector nc_dead = null;
-        Short id_dead = new Short((short)0xDEAD);
+        NodeConnector ncDead = null;
+        Short idDead = new Short((short)0xDEAD);
         try {
-            nc_dead = new NodeConnector(NodeConnector.NodeConnectorIDType.OPENFLOW, id_dead, existNodes.get(0));
+            ncDead = new NodeConnector(NodeConnector.NodeConnectorIDType.OPENFLOW, idDead, existNodes.get(0));
         } catch (ConstructionException e) {
             unexpected(e);
         }
         SwitchPort swport =
-                new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, id_dead.toString());
-        VBridgeIfPath vif_dead =
-                new VBridgeIfPath((listBPath.toArray(new VBridgePath[listBPath.size()]))[0], "vif_dead");
-        st = mgr.addBridgeInterface(vif_dead, new VInterfaceConfig(null, Boolean.TRUE));
+                new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, idDead.toString());
+        VBridgeIfPath vifDead =
+                new VBridgeIfPath(listBPath.get(0), "vifDead");
+        st = mgr.addBridgeInterface(vifDead, new VInterfaceConfig(null, Boolean.TRUE));
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        st = mgr.setPortMap(vif_dead, new PortMapConfig(existNodes.get(0), swport, vlans[0]));
+        st = mgr.setPortMap(vifDead, new PortMapConfig(existNodes.get(0), swport, vlans[0]));
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        listBIfPath.add(vif_dead);
-        sleep(3000 + 100);
+        listBIfPath.add(vifDead);
 
         try {
-            hnc = new HostNodeConnector(mac, ip4addr, nc_dead, vlans[0]);
+            hnc = new HostNodeConnector(mac, ip4addr, ncDead, vlans[0]);
         } catch (ConstructionException e) {
             unexpected(e);
         }
@@ -2731,11 +2744,11 @@ public class VTNManagerIT extends TestBase {
         ServiceReference r = bc.getServiceReference(ISwitchManager.class.getName());
         ISwitchManager swmgr = (ISwitchManager)(bc.getService(r));
 
-        IPluginInDataPacketService pin_dps = (IPluginInDataPacketService)ServiceHelper
+        IPluginInDataPacketService pinDPS = (IPluginInDataPacketService)ServiceHelper
             .getInstance(IPluginInDataPacketService.class, GlobalConstants.DEFAULT.toString(), this);
-        assertNotNull(pin_dps);
-        assertTrue(pin_dps instanceof DataPacketServices);
-        DataPacketServices dps = (DataPacketServices)pin_dps;
+        assertNotNull(pinDPS);
+        assertTrue(pinDPS instanceof DataPacketServices);
+        DataPacketServices dps = (DataPacketServices)pinDPS;
 
         short[] vlans = new short[] { 0, 10, 4095 };
 
@@ -2866,25 +2879,25 @@ public class VTNManagerIT extends TestBase {
         assertEquals("bpath is null", listBPath.size(), dps.getPktCount());
 
         // Invalid port
-        Node node_dead = NodeCreator.createOFNode(221L);
-        Short ncID_dead = new Short((short) 221);
-        NodeConnector nc_dead =
-                NodeConnectorCreator.createNodeConnector(NodeConnectorIDType.OPENFLOW, ncID_dead, node_dead);
-        VBridgePath vbr_dead = new VBridgePath(tpath, "vbr_dead");
-        st = mgr.addBridge(vbr_dead, new VBridgeConfig(null, 10));
+        Node nodeDead = NodeCreator.createOFNode(221L);
+        Short ncIDDead = new Short((short) 221);
+        NodeConnector ncDead =
+                NodeConnectorCreator.createNodeConnector(NodeConnectorIDType.OPENFLOW, ncIDDead, nodeDead);
+        VBridgePath vbrDead = new VBridgePath(tpath, "vbrDead");
+        st = mgr.addBridge(vbrDead, new VBridgeConfig(null, 10));
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        listBPath.add(vbr_dead);
+        listBPath.add(vbrDead);
         Set<VBridgePath> setDead = new HashSet<VBridgePath>();
-        setDead.add(vbr_dead);
+        setDead.add(vbrDead);
 
-        VBridgeIfPath vif_dead = new VBridgeIfPath(vbr_dead, "vif_dead");
-        st = mgr.addBridgeInterface(vif_dead, new VInterfaceConfig(null, Boolean.TRUE));
-        listBIfPath.add(vif_dead);
+        VBridgeIfPath vifDead = new VBridgeIfPath(vbrDead, "vifDead");
+        st = mgr.addBridgeInterface(vifDead, new VInterfaceConfig(null, Boolean.TRUE));
+        listBIfPath.add(vifDead);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        SwitchPort swport_dead =
-                new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, ncID_dead.toString());
-        st = mgr.setPortMap(vif_dead, new PortMapConfig(node_dead, swport_dead, (short) 221));
+        SwitchPort swportDead =
+                new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, ncIDDead.toString());
+        st = mgr.setPortMap(vifDead, new PortMapConfig(nodeDead, swportDead, (short) 221));
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         dps.clearPkt();
@@ -3003,7 +3016,6 @@ public class VTNManagerIT extends TestBase {
         }
 
         List<Update> getUpdates() {
-//            sleep(10);
             return this.gotUpdates;
         }
 
@@ -3408,13 +3420,17 @@ public class VTNManagerIT extends TestBase {
         st = mgr.addBridge(vbr, new VBridgeConfig("Test"));
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        MacAddressEntry macAddr_temp = new MacAddressEntry(null, (short) 0, null, null);
+        MacAddressEntry macAddrTemp = new MacAddressEntry(null, (short) 0, null, null);
 
         List<EthernetAddress> ethers = createEthernetAddresses(false);
         List<DataLinkAddress> dladdrs = new ArrayList<DataLinkAddress>();
         dladdrs.addAll(ethers);
         dladdrs.add(new DataLinkAddressStub());
         dladdrs.add(null);
+
+        // Wait 3000 (+ 100) ms to be removed from "disabled nodes".
+        // (Default value of "disabled" time is 3000 ms.)
+        sleep(3000 + 100);
 
         for (VTenantPath tpath : tpathes) {
             boolean isValidTPath =
@@ -3462,8 +3478,8 @@ public class VTNManagerIT extends TestBase {
                 }
 
                 for (DataLinkAddress ea : dladdrs) {
-                    MacAddressEntry macAddrEntry = macAddr_temp;
-                    String emsg_ea = emsg + "(ether)" + ((ea == null) ? "(null)" : ea.toString());
+                    MacAddressEntry macAddrEntry = macAddrTemp;
+                    String emsgEA = emsg + "(ether)" + ((ea == null) ? "(null)" : ea.toString());
 
                     // Test for getMacEntry() (Abnormal state)
                     boolean isSuccess = false;
@@ -3472,50 +3488,50 @@ public class VTNManagerIT extends TestBase {
                         isSuccess = true;
                     } catch (VTNException e) {
                         if ((bpath == null) || (tpath.getTenantName() == null)) {
-                            assertEquals(emsg_ea, StatusCode.BADREQUEST, e.getStatus().getCode());
+                            assertEquals(emsgEA, StatusCode.BADREQUEST, e.getStatus().getCode());
                         } else if (isPresentT && (bpath.getBridgeName() == null)) {
-                            assertEquals(emsg_ea, StatusCode.BADREQUEST, e.getStatus().getCode());
+                            assertEquals(emsgEA, StatusCode.BADREQUEST, e.getStatus().getCode());
                         } else if (isValidBPath && (ea != null) && !isPresentB) {
-                            assertEquals(emsg_ea, StatusCode.NOTFOUND, e.getStatus().getCode());
+                            assertEquals(emsgEA, StatusCode.NOTFOUND, e.getStatus().getCode());
                         } else if (isPresentB && (ea == null)) {
-                            assertEquals(emsg_ea, StatusCode.BADREQUEST, e.getStatus().getCode());
+                            assertEquals(emsgEA, StatusCode.BADREQUEST, e.getStatus().getCode());
                         } else if (isPresentB && (ea != null)) {
                             // It is strange
                             unexpected(e);
                         } else {
                             // In this case, Status code is either BADREQUEST or NOTFOUND
-                            checkExceptionStatus(e.getStatus(), false, emsg_ea);
+                            checkExceptionStatus(e.getStatus(), false, emsgEA);
                         }
                     }
                     if (isSuccess) {
-                        assertNull(emsg_ea, macAddrEntry);
+                        assertNull(emsgEA, macAddrEntry);
                     }
 
                     // Test for removeMacEntry() (Abnormal state)
-                    macAddrEntry = macAddr_temp;
+                    macAddrEntry = macAddrTemp;
                     isSuccess = false;
                     try {
                         macAddrEntry = mgr.removeMacEntry(bpath, ea);
                         isSuccess = true;
                     } catch (VTNException e) {
                         if ((bpath == null) || (tpath.getTenantName() == null)) {
-                            assertEquals(emsg_ea, StatusCode.BADREQUEST, e.getStatus().getCode());
+                            assertEquals(emsgEA, StatusCode.BADREQUEST, e.getStatus().getCode());
                         } else if (isPresentT && (bpath.getBridgeName() == null)) {
-                            assertEquals(emsg_ea, StatusCode.BADREQUEST, e.getStatus().getCode());
+                            assertEquals(emsgEA, StatusCode.BADREQUEST, e.getStatus().getCode());
                         } else if (isValidBPath && (ea != null) && !isPresentB) {
-                            assertEquals(emsg_ea, StatusCode.NOTFOUND, e.getStatus().getCode());
+                            assertEquals(emsgEA, StatusCode.NOTFOUND, e.getStatus().getCode());
                         } else if (isPresentB && (ea == null)) {
-                            assertEquals(emsg_ea, StatusCode.BADREQUEST, e.getStatus().getCode());
+                            assertEquals(emsgEA, StatusCode.BADREQUEST, e.getStatus().getCode());
                         } else if (isPresentB && (ea != null)) {
                             // It is strange
                             unexpected(e);
                         } else {
                             // In this case, Status code is either BADREQUEST or NOTFOUND
-                            checkExceptionStatus(e.getStatus(), false, emsg_ea);
+                            checkExceptionStatus(e.getStatus(), false, emsgEA);
                         }
                     }
                     if (isSuccess) {
-                        assertNull(emsg_ea, macAddrEntry);
+                        assertNull(emsgEA, macAddrEntry);
                     }
                 } // end of DataLinkAddress
 
@@ -3552,21 +3568,21 @@ public class VTNManagerIT extends TestBase {
                 }
                 assertEquals(3, existConnectors.size());
 
-                List<VBridgePath> listVBr_temp = new ArrayList<VBridgePath>();
+                List<VBridgePath> listVBrTemp = new ArrayList<VBridgePath>();
                 List<VBridgePath> listVBr = new ArrayList<VBridgePath>();
                 for (int i = 2; i <= 3; i++) {
-                    VBridgePath vbr_temp = new VBridgePath(vtn, "vbr" + Integer.valueOf(i).toString());
-                    st = mgr.addBridge(vbr_temp, new VBridgeConfig(null));
+                    VBridgePath vbrTemp = new VBridgePath(vtn, "vbr" + Integer.valueOf(i).toString());
+                    st = mgr.addBridge(vbrTemp, new VBridgeConfig(null));
                     assertEquals(StatusCode.SUCCESS, st.getCode());
-                    listVBr_temp.add(vbr_temp);
+                    listVBrTemp.add(vbrTemp);
                 }
 
-                VBridgeIfPath vifpath = new VBridgeIfPath(listVBr_temp.get(1), "vif");
+                VBridgeIfPath vifpath = new VBridgeIfPath(listVBrTemp.get(1), "vif");
                 st = mgr.addBridgeInterface(vifpath, new VInterfaceConfig(null, Boolean.TRUE));
                 assertEquals(StatusCode.SUCCESS, st.getCode());
 
                 listVBr.add(vbr);
-                listVBr.addAll(listVBr_temp);
+                listVBr.addAll(listVBrTemp);
 
                 VlanMap map = null;
                 try {
@@ -3581,10 +3597,6 @@ public class VTNManagerIT extends TestBase {
                 st = mgr.setPortMap(vifpath, new PortMapConfig(existNodes.get(2), swport, (short) 1));
                 assertEquals(StatusCode.SUCCESS, st.getCode());
 
-                // Wait 3000 (+ 100) ms to be removed from "disabled nodes".
-                // (Default value of "disabled" time is 3000 ms.)
-                sleep(3000 + 100);
-
                 for (int j = 0; j < listVBr.size(); j++) {
                     for (int i = 0; i < ethers.size(); i++) {
                         EthernetAddress ea = ethers.get(i);
@@ -3596,7 +3608,7 @@ public class VTNManagerIT extends TestBase {
                         byte[] sender = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) (i + 1)};
                         byte[] target = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 250};
 
-                        String emsg_ea = emsg + "(ether)" + ea.toString();
+                        String emsgEA = emsg + "(ether)" + ea.toString();
 
                         EthernetAddress eaSrc = null;
                         try {
@@ -3608,9 +3620,26 @@ public class VTNManagerIT extends TestBase {
                         RawPacket inPkt = createARPRawPacket(src, dst, sender, target, (short)(j - 1),
                                 existConnectors.get(j), ARP.REQUEST);
                         PacketResult pktRes = listenDataPacket.receiveDataPacket(inPkt);
-                        assertEquals(emsg_ea, PacketResult.KEEP_PROCESSING, pktRes);
+                        assertEquals(emsgEA, PacketResult.KEEP_PROCESSING, pktRes);
 
-                        // Test for getMacEntry (Normal state)
+                        /*
+                         * Test for getMacEntry (Normal state)
+                         *
+                         * If "j" is 0 or 1, VLAN ID of ARP packet created above is set to "0".
+                         * Hence, we expect MAC Entry of listVBr.get(1) is always null,
+                         * and also expect MAC Entry of listVBr.get(2) is null when "j" is NOT 2.
+                         *
+                         * Following table is the relationship between "j" and "k".
+                         * "F" means expecting null. "T" means not expecting null.
+                         *
+                         *  k/j|0|1|2
+                         *  ---+-+-+-
+                         *  0  |T|T|F
+                         *  ---+-+-+-
+                         *  1  |F|F|F
+                         *  ---+-+-+-
+                         *  2  |F|F|T
+                         */
                         for (int k = 0; k < listVBr.size(); k++) {
                             MacAddressEntry entry = null;
                             try {
@@ -3619,11 +3648,11 @@ public class VTNManagerIT extends TestBase {
                                 unexpected(e);
                             }
                             if ((k == 1) || (j + k == 2) || ((j == 1) && (k == 2))) {
-                                assertNull(emsg_ea, entry);
+                                assertNull(emsgEA, entry);
                             } else {
-                                assertNotNull(emsg_ea, entry);
-                                assertEquals(emsg_ea, eaSrc, entry.getAddress());
-                                assertEquals(emsg_ea, existConnectors.get(j), entry.getNodeConnector());
+                                assertNotNull(emsgEA, entry);
+                                assertEquals(emsgEA, eaSrc, entry.getAddress());
+                                assertEquals(emsgEA, existConnectors.get(j), entry.getNodeConnector());
 
                                 Set<InetAddress> ips = entry.getInetAddresses();
                                 assertArrayEquals(emsg, sender, ips.iterator().next().getAddress());
@@ -3631,7 +3660,11 @@ public class VTNManagerIT extends TestBase {
                         } // end of "int k"
                     } // end of "int i"
 
-                    // Test for getMacEntries (Normal state)
+                    /*
+                     * Test for getMacEntries (Normal state).
+                     * The relationship between "j" and "k" is same as getMacEntry().
+                     * (See above.)
+                     */
                     for (int k = 0; k < listVBr.size(); k++) {
                         List<MacAddressEntry> list = null;
                         try {
@@ -3697,8 +3730,8 @@ public class VTNManagerIT extends TestBase {
                 st = mgr.removeBridgeInterface(vifpath);
                 assertEquals(StatusCode.SUCCESS, st.getCode());
 
-                for (VBridgePath vbr_temp : listVBr_temp) {
-                    st = mgr.removeBridge(vbr_temp);
+                for (VBridgePath vbrTemp : listVBrTemp) {
+                    st = mgr.removeBridge(vbrTemp);
                     assertEquals(StatusCode.SUCCESS, st.getCode());
                 }
             } // end of VBridgePath
@@ -4173,17 +4206,10 @@ public class VTNManagerIT extends TestBase {
     }
 
     /**
-     * test method for {@link ITopologyManagerAware}
-     */
-    @Test
-    public void testITopologyManagerAware() {
-        // TODO: edgeUpdate(), edgeOverUtilized(), edgeUtilBackToNormal()
-    }
-
-    /**
      * test method for {@link IContainerListener}
      */
     @Test
+    @Ignore
     public void testIContainerListener() {
         // TODO: tagUpdate(), containerFlowUpdated(), nodeConnecctorUpdated(),
         //       containerModeUpdated()
@@ -4302,35 +4328,26 @@ public class VTNManagerIT extends TestBase {
         st = vtnManager.addBridge(bpath, new VBridgeConfig(null));
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        // Make VLAN Map
-        VlanMapConfig vlconf = new VlanMapConfig(null, (short) 0);
-        VlanMap map = null;
-        try {
-            map = vtnManager.addVlanMap(bpath, vlconf);
-        } catch (VTNException e) {
-            unexpected(e);
-        }
-
         // Get FlowProgrammerService from openflow stub
         r = bc.getServiceReference(IPluginInFlowProgrammerService.class.getName());
-        IPluginInFlowProgrammerService pin_fps = (IPluginInFlowProgrammerService)(bc.getService(r));
-        assertNotNull(pin_fps);
-        assertTrue(pin_fps instanceof FlowProgrammerService);
-        FlowProgrammerService fps = (FlowProgrammerService)pin_fps;
+        IPluginInFlowProgrammerService pinFPS = (IPluginInFlowProgrammerService)(bc.getService(r));
+        assertNotNull(pinFPS);
+        assertTrue(pinFPS instanceof FlowProgrammerService);
+        FlowProgrammerService fps = (FlowProgrammerService)pinFPS;
 
         // Get InventoryService from openflow stub
-        IPluginInInventoryService pin_ivs = (IPluginInInventoryService)ServiceHelper
+        IPluginInInventoryService pinIVS = (IPluginInInventoryService)ServiceHelper
                 .getInstance(IPluginInInventoryService.class, GlobalConstants.DEFAULT.toString(), this);
-        assertNotNull(pin_ivs);
-        assertTrue(pin_ivs instanceof InventoryService);
-        InventoryService ivs = (InventoryService)pin_ivs;
+        assertNotNull(pinIVS);
+        assertTrue(pinIVS instanceof InventoryService);
+        InventoryService ivs = (InventoryService)pinIVS;
 
         // Get TopologyService from openflow stub
-        IPluginInTopologyService pin_tps = (IPluginInTopologyService)ServiceHelper
+        IPluginInTopologyService pinTPS = (IPluginInTopologyService)ServiceHelper
                 .getInstance(IPluginInTopologyService.class, GlobalConstants.DEFAULT.toString(), this);
-        assertNotNull(pin_tps);
-        assertTrue(pin_tps instanceof TopologyServices);
-        TopologyServices tps = (TopologyServices)pin_tps;
+        assertNotNull(pinTPS);
+        assertTrue(pinTPS instanceof TopologyServices);
+        TopologyServices tps = (TopologyServices)pinTPS;
 
         // Now, add Node and NodeConnectors
         ivs.addNode(mapNc);
@@ -4342,118 +4359,284 @@ public class VTNManagerIT extends TestBase {
         Set<Property> properties = new HashSet<Property>();
         tps.addEdge(listEdge, properties, UpdateType.ADDED);
 
-        // Study MAC Address
-        // from node0 to node0
-        byte iphost = 1;
-        List<EthernetAddress> ethers = createEthernetAddresses(false);
+        short vtnFlowPriorityDefault = 10;
+        short vtnFlowIdleTimeoutDefault = 300;
+        for (int mapType = 0; mapType < 2; mapType++) {
+            short mappedVlan = 0;
+            VlanMap map = null;
+            List<VBridgeIfPath> listVIFpath = null;
 
-        CountDownLatch latch = fps.setLatch(listNode.get(0), ethers.size());
-        for (EthernetAddress ea: ethers) {
-            List<NodeConnector> listNc = (List<NodeConnector>) mapNc.get(listNode.get(0));
-            NodeConnector reqNc = listNc.get(0);
-            NodeConnector replyNc = listNc.get(1);
+            switch (mapType) {
+            case 0 :
+                // Make VLAN Map
+                VlanMapConfig vlconf = new VlanMapConfig(null, mappedVlan);
+                try {
+                    map = vtnManager.addVlanMap(bpath, vlconf);
+                } catch (VTNException e) {
+                    unexpected(e);
+                }
+                break;
 
-            byte [] bytes = ea.getValue();
-            byte [] src =
-                    new byte[] {bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5]};
-            byte [] dstBC =
-                    new byte[] {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
-            byte [] dst = tgtMac;
-            byte [] sender = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) iphost};
-            byte [] target = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 250};
-            RawPacket inPkt =
-                    createARPRawPacket(src, dstBC, sender, target, (short) -1, reqNc, ARP.REQUEST);
-            result = listenDataPacket.receiveDataPacket(inPkt);
+            case 1 :
+                // Make Port Map
+                listVIFpath = new ArrayList<VBridgeIfPath>();
+                int i = 0;
+                for (Collection<NodeConnector> collectionNC : mapNc.values()) {
+                    assertTrue(collectionNC instanceof ArrayList);
+                    List<NodeConnector> list = (ArrayList<NodeConnector>)collectionNC;
 
-            // There is a topology, So in this case, returns "KEEP_PROCESSING".
-            assertEquals(PacketResult.KEEP_PROCESSING, result);
+                    // "2" and "3" are both used for connecting to other nodes. (Edge)
+                    for (int j = 0; j < 2; j++) {
+                        VBridgeIfPath vifpath = new VBridgeIfPath(bpath, "vif" + Integer.toString(i));
+                        st = vtnManager.addBridgeInterface(vifpath, new VInterfaceConfig(null, Boolean.TRUE));
+                        assertEquals(StatusCode.SUCCESS, st.getCode());
+                        listVIFpath.add(vifpath);
+                        i++;
 
-            inPkt = createARPRawPacket(dst, src, target, sender, (short) -1, replyNc, ARP.REPLY);
-            result = listenDataPacket.receiveDataPacket(inPkt);
+                        assertTrue(list.get(j).getID() instanceof Short);
+                        Short id = (Short)list.get(j).getID();
+                        SwitchPort swport =
+                                new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, id.toString());
+                        PortMapConfig pmconf =
+                                new PortMapConfig(list.get(j).getNode(), swport, mappedVlan);
+                        st = vtnManager.setPortMap(vifpath, pmconf);
+                        assertEquals(StatusCode.SUCCESS, st.getCode());
 
-            assertEquals(PacketResult.KEEP_PROCESSING, result);
-            iphost++;
-        }
+                        try {
+                            VInterface vif = vtnManager.getBridgeInterface(vifpath);
+                            assertEquals(VNodeState.UP, vif.getState());
+                        } catch (VTNException e) {
+                            unexpected(e);
+                        }
+                    }
+                }
+                break;
 
-        try {
-            assertTrue(latch.await(2L, TimeUnit.SECONDS));
-        } catch (InterruptedException e) {
-            unexpected(e);
-        }
+            default:
+                fail("Unsupported type");
+                break;
+            } // end if switch
 
-        for (int i = 0; i < 3; i++) {
-            String emsg = "(node)" + Integer.toString(i);
-            if (i == 0) {
-                assertEquals(emsg, ethers.size(), fps.getFlowCount(listNode.get(i)));
-            } else {
-                assertEquals(emsg, 0, fps.getFlowCount(listNode.get(i)));
+            // Check if VBridge is UP state.
+            try {
+                VBridge vbr = vtnManager.getBridge(bpath);
+                assertEquals(VNodeState.UP, vbr.getState());
+            } catch (VTNException e) {
+                unexpected(e);
             }
-        }
 
-        // from node1 to node0
-        latch = fps.setLatch(listNode.get(0), ethers.size());
-        CountDownLatch latch2 = fps.setLatch(listNode.get(1), ethers.size());
-        iphost = 1;
-        for (EthernetAddress ea: ethers) {
-            List<NodeConnector> listNc = (List<NodeConnector>) mapNc.get(listNode.get(0));
-            NodeConnector reqNc = null;
-            for (NodeConnector nc : listNc) {
-                if (!setInterSwLink.contains(nc)) {
-                    reqNc = nc;
-                    break;
+            // Study MAC Address
+            // from node0 to node0
+            byte iphost = 1;
+            List<EthernetAddress> ethers = createEthernetAddresses(false);
+            Map<Node, List<Flow>> mapNodeFlow = new HashMap<Node, List<Flow>>();
+
+            CountDownLatch latch = fps.setLatch(listNode.get(0), ethers.size());
+            for (EthernetAddress ea: ethers) {
+                List<NodeConnector> listNc = (List<NodeConnector>) mapNc.get(listNode.get(0));
+                NodeConnector reqNc = listNc.get(0);
+                NodeConnector replyNc = listNc.get(1);
+
+                byte [] bytes = ea.getValue();
+                byte [] src =
+                        new byte[] {bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5]};
+                byte [] dstBC =
+                        new byte[] {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
+                byte [] dst = tgtMac;
+                byte [] sender = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) iphost};
+                byte [] target = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 250};
+                RawPacket inPkt =
+                        createARPRawPacket(src, dstBC, sender, target, (short) -1, reqNc, ARP.REQUEST);
+                result = listenDataPacket.receiveDataPacket(inPkt);
+
+                // There is a topology, So in this case, returns "KEEP_PROCESSING".
+                assertEquals(PacketResult.KEEP_PROCESSING, result);
+
+                inPkt = createARPRawPacket(dst, src, target, sender, (short) -1, replyNc, ARP.REPLY);
+                result = listenDataPacket.receiveDataPacket(inPkt);
+
+                assertEquals(PacketResult.KEEP_PROCESSING, result);
+                iphost++;
+
+                // create Flow to check later.
+                Node flowNode = listNode.get(0);
+                Match match = createMatch(dst, src, mappedVlan, replyNc);
+                List<Action> actList = createActionList(reqNc, (mappedVlan));
+                Flow flow = new Flow(match, actList);
+                flow.setPriority(vtnFlowPriorityDefault);
+                flow.setIdleTimeout(vtnFlowIdleTimeoutDefault);
+
+                List<Flow> flowList = mapNodeFlow.get(flowNode);
+                if (flowList == null) {
+                    flowList = new ArrayList<Flow>();
+                    mapNodeFlow.put(flowNode, flowList);
+                }
+                flowList.add(flow);
+            }
+
+            try {
+                assertTrue(latch.await(2L, TimeUnit.SECONDS));
+            } catch (InterruptedException e) {
+                unexpected(e);
+            }
+
+            for (int i = 0; i < 3; i++) {
+                String emsg = "(node)" + Integer.toString(i);
+                Node checkedNode = listNode.get(i);
+                if (i == 0) {
+                    assertEquals(emsg, ethers.size(), fps.getFlowCount(checkedNode));
+
+                    List<Flow> installedFlows = fps.getFlows(checkedNode);
+                    List<Flow> flowList = mapNodeFlow.get(checkedNode);
+                    assertNotNull(emsg, installedFlows);
+                    assertNotNull(emsg, flowList);
+                    assertEquals(emsg, flowList.size(), installedFlows.size());
+
+                    for (Flow flow : flowList) {
+                        assertTrue(flow.toString(), installedFlows.contains(flow));
+                    }
+                } else {
+                    assertEquals(emsg, 0, fps.getFlowCount(checkedNode));
                 }
             }
-            listNc = (List<NodeConnector>) mapNc.get(listNode.get(1));
-            NodeConnector replyNc = null;
-            for (NodeConnector nc : listNc) {
-                if (!setInterSwLink.contains(nc)) {
-                    replyNc = nc;
-                    break;
+            mapNodeFlow.clear();
+
+            // from node1 to node0
+            latch = fps.setLatch(listNode.get(0), ethers.size());
+            CountDownLatch latch2 = fps.setLatch(listNode.get(1), ethers.size());
+            iphost = 1;
+            for (EthernetAddress ea: ethers) {
+                List<NodeConnector> listNc = (List<NodeConnector>) mapNc.get(listNode.get(0));
+                NodeConnector reqNc = null;
+                for (NodeConnector nc : listNc) {
+                    if (!setInterSwLink.contains(nc)) {
+                        reqNc = nc;
+                        break;
+                    }
+                }
+                listNc = (List<NodeConnector>) mapNc.get(listNode.get(1));
+                NodeConnector replyNc = null;
+                for (NodeConnector nc : listNc) {
+                    if (!setInterSwLink.contains(nc)) {
+                        replyNc = nc;
+                        break;
+                    }
+                }
+
+                Edge edge = null;
+                for (Edge e : listEdge) {
+                    if (e.getHeadNodeConnector().getNode().equals(replyNc.getNode())
+                            && e.getTailNodeConnector().getNode().equals(reqNc.getNode())) {
+                        edge = e;
+                        break;
+                    }
+                }
+
+                byte [] bytes = ea.getValue();
+                byte [] src =
+                        new byte[] {bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5]};
+                byte [] dstBC =
+                        new byte[] {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
+                byte [] dst = tgtMac;
+                byte [] sender = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) iphost};
+                byte [] target = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 250};
+                RawPacket inPkt =
+                        createARPRawPacket(src, dstBC, sender, target, (short) -1, reqNc, ARP.REQUEST);
+                result = listenDataPacket.receiveDataPacket(inPkt);
+
+                // There is a topology, So in this case, returns "KEEP_PROCESSING".
+                assertEquals(PacketResult.KEEP_PROCESSING, result);
+
+                inPkt = createARPRawPacket(dst, src, target, sender, (short) -1,
+                        replyNc, ARP.REPLY);
+                result = listenDataPacket.receiveDataPacket(inPkt);
+
+                assertEquals(PacketResult.KEEP_PROCESSING, result);
+                iphost++;
+
+                // create Flow on node1 to check later.
+                Node flowNode = replyNc.getNode();
+                Match match = createMatch(dst, src, mappedVlan, replyNc);
+                List<Action> actList = createActionList(edge.getHeadNodeConnector(), (short) -1);
+
+                Flow flow = new Flow(match, actList);
+                flow.setPriority(vtnFlowPriorityDefault);
+                flow.setIdleTimeout(vtnFlowIdleTimeoutDefault);
+
+                List<Flow> flowList = mapNodeFlow.get(flowNode);
+                if (flowList == null) {
+                    flowList = new ArrayList<Flow>();
+                    mapNodeFlow.put(flowNode, flowList);
+                }
+                flowList.add(flow);
+
+                // create Flow on node0 to check later.
+                flowNode = reqNc.getNode();
+                match = createMatch(dst, src, mappedVlan, edge.getTailNodeConnector());
+                actList = createActionList(reqNc, mappedVlan);
+
+                flow = new Flow(match, actList);
+                flow.setPriority(vtnFlowPriorityDefault);
+                flow.setIdleTimeout((short) 0);
+
+                flowList = mapNodeFlow.get(flowNode);
+                if (flowList == null) {
+                    flowList = new ArrayList<Flow>();
+                    mapNodeFlow.put(flowNode, flowList);
+                }
+                flowList.add(flow);
+            }
+
+            try {
+                assertTrue(latch.await(2L, TimeUnit.SECONDS));
+                assertTrue(latch2.await(2L, TimeUnit.SECONDS));
+            } catch (InterruptedException e) {
+                unexpected(e);
+            }
+
+            for (int i= 0; i < 3; i++) {
+                String emsg = "(node)" + Integer.toString(i);
+                Node checkedNode = listNode.get(i);
+                if (i == 2) {
+                    assertEquals(emsg, 0, fps.getFlowCount(checkedNode));
+                } else {
+                    assertEquals(emsg, ethers.size(), fps.getFlowCount(checkedNode));
+
+                    List<Flow> installedFlows = fps.getFlows(checkedNode);
+                    List<Flow> flowList = mapNodeFlow.get(checkedNode);
+                    assertNotNull(emsg, installedFlows);
+                    assertNotNull(emsg, flowList);
+                    assertEquals(flowList.size(), installedFlows.size());
+
+                    for (Flow flow : flowList) {
+                        assertTrue(emsg + flow.toString(), installedFlows.contains(flow));
+                    }
                 }
             }
 
-            byte [] bytes = ea.getValue();
-            byte [] src =
-                    new byte[] {bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5]};
-            byte [] dstBC =
-                    new byte[] {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
-            byte [] dst = tgtMac;
-            byte [] sender = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) iphost};
-            byte [] target = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 250};
-            RawPacket inPkt =
-                    createARPRawPacket(src, dstBC, sender, target, (short) -1, reqNc, ARP.REQUEST);
-            result = listenDataPacket.receiveDataPacket(inPkt);
+            switch (mapType) {
+            case 0 :
+                // Remove VLAN Map
+                assertNotNull(map);
+                st = vtnManager.removeVlanMap(bpath, map.getId());
+                assertEquals(StatusCode.SUCCESS, st.getCode());
+                break;
 
-            // There is a topology, So in this case, returns "KEEP_PROCESSING".
-            assertEquals(PacketResult.KEEP_PROCESSING, result);
+            case 1 :
+                // Remove Port Map
+                assertNotNull(listVIFpath);
+                assertFalse(listVIFpath.isEmpty());
+                for (VBridgeIfPath vifpath : listVIFpath) {
+                    st = vtnManager.removeBridgeInterface(vifpath);
+                    assertEquals(StatusCode.SUCCESS, st.getCode());
+                }
+                break;
 
-            inPkt = createARPRawPacket(dst, src, target, sender, (short) -1,
-                    replyNc, ARP.REPLY);
-            result = listenDataPacket.receiveDataPacket(inPkt);
-
-            assertEquals(PacketResult.KEEP_PROCESSING, result);
-            iphost++;
-        }
-
-        try {
-            assertTrue(latch.await(2L, TimeUnit.SECONDS));
-            assertTrue(latch2.await(2L, TimeUnit.SECONDS));
-        } catch (InterruptedException e) {
-            unexpected(e);
-        }
-
-        for (int i= 0; i < 3; i++) {
-            String emsg = "(node)" + Integer.toString(i);
-            if (i == 2) {
-                assertEquals(emsg, 0, fps.getFlowCount(listNode.get(i)));
-            } else {
-                assertEquals(emsg, ethers.size(), fps.getFlowCount(listNode.get(i)));
-            }
-        }
-
-
-        st = vtnManager.removeVlanMap(bpath, map.getId());
-        assertEquals(StatusCode.SUCCESS, st.getCode());
+            default :
+                fail("Unsupported type");
+                break;
+            } //end of switch
+        } // end of "int mapType"
 
         st = vtnManager.removeBridge(bpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
@@ -4464,13 +4647,37 @@ public class VTNManagerIT extends TestBase {
         assertEquals(StatusCode.SUCCESS, st.getCode());
     }
 
+    private Match createMatch(byte[] src, byte[] dst, short vlan, NodeConnector inport) {
+        Match match = new Match();
+        match.setField(MatchType.DL_SRC, src);
+        match.setField(MatchType.DL_DST, dst);
+        match.setField(MatchType.DL_VLAN, vlan);
+        match.setField(MatchType.IN_PORT, inport);
+
+        return match;
+    }
+
+    private List<Action> createActionList(NodeConnector outport, short vlan) {
+        List<Action> actList = new ArrayList<Action>();
+
+        if (vlan == 0) {
+            PopVlan pvlan = new PopVlan();
+            actList.add(pvlan);
+        } else if(vlan > 0) {
+            SetVlanId setvlan =new SetVlanId((int)vlan);
+            actList.add(setvlan);
+        }
+
+        Output out = new Output(outport);
+        actList.add(out);
+
+        return actList;
+    }
     /**
      * test method for {@link IListenRoutingUpdates}
      */
     @Test
     public void testIListenRoutingUpdates() {
-        // TODO: REVISIT recalculateDone();
-
         String tname = "vtn";
         VTenantPath tpath = new VTenantPath(tname);
         Status st = vtnManager.addTenant(tpath, new VTenantConfig(null));
@@ -4552,24 +4759,24 @@ public class VTNManagerIT extends TestBase {
 
         // Get FlowProgrammerService from openflow stub
         ServiceReference r = bc.getServiceReference(IPluginInFlowProgrammerService.class.getName());
-        IPluginInFlowProgrammerService pin_fps = (IPluginInFlowProgrammerService)(bc.getService(r));
-        assertNotNull(pin_fps);
-        assertTrue(pin_fps instanceof FlowProgrammerService);
-        FlowProgrammerService fps = (FlowProgrammerService)pin_fps;
+        IPluginInFlowProgrammerService pinFPS = (IPluginInFlowProgrammerService)(bc.getService(r));
+        assertNotNull(pinFPS);
+        assertTrue(pinFPS instanceof FlowProgrammerService);
+        FlowProgrammerService fps = (FlowProgrammerService)pinFPS;
 
         // Get InventoryService from openflow stub
-        IPluginInInventoryService pin_ivs = (IPluginInInventoryService)ServiceHelper
+        IPluginInInventoryService pinIVS = (IPluginInInventoryService)ServiceHelper
                 .getInstance(IPluginInInventoryService.class, GlobalConstants.DEFAULT.toString(), this);
-        assertNotNull(pin_ivs);
-        assertTrue(pin_ivs instanceof InventoryService);
-        InventoryService ivs = (InventoryService)pin_ivs;
+        assertNotNull(pinIVS);
+        assertTrue(pinIVS instanceof InventoryService);
+        InventoryService ivs = (InventoryService)pinIVS;
 
         // Get TopologyService from openflow stub
-        IPluginInTopologyService pin_tps = (IPluginInTopologyService)ServiceHelper
+        IPluginInTopologyService pinTPS = (IPluginInTopologyService)ServiceHelper
                 .getInstance(IPluginInTopologyService.class, GlobalConstants.DEFAULT.toString(), this);
-        assertNotNull(pin_tps);
-        assertTrue(pin_tps instanceof TopologyServices);
-        TopologyServices tps = (TopologyServices)pin_tps;
+        assertNotNull(pinTPS);
+        assertTrue(pinTPS instanceof TopologyServices);
+        TopologyServices tps = (TopologyServices)pinTPS;
 
         // Now, add Node and NodeConnectors
         ivs.addNode(mapNc);
@@ -4693,11 +4900,11 @@ public class VTNManagerIT extends TestBase {
         ServiceReference r = bc.getServiceReference(ISwitchManager.class.getName());
         ISwitchManager swmgr = (ISwitchManager)(bc.getService(r));
 
-        IPluginInDataPacketService pin_dps = (IPluginInDataPacketService)ServiceHelper
+        IPluginInDataPacketService pinDPS = (IPluginInDataPacketService)ServiceHelper
             .getInstance(IPluginInDataPacketService.class, GlobalConstants.DEFAULT.toString(), this);
-        assertNotNull(pin_dps);
-        assertTrue(pin_dps instanceof DataPacketServices);
-        DataPacketServices dps = (DataPacketServices)pin_dps;
+        assertNotNull(pinDPS);
+        assertTrue(pinDPS instanceof DataPacketServices);
+        DataPacketServices dps = (DataPacketServices)pinDPS;
 
         short[] vlans = new short[] { 0, 10, 4095 };
 
