@@ -210,7 +210,7 @@ drv_resp_code_t OdcVbrIfCommand::create_cmd(key_vbr_if_t& vbrif_key,
       return DRVAPI_RESPONSE_FAILURE;
     }
     port_map_json_req_body = create_request_body_port_map(vbrif_val);
-    if (json_object_is_type(vbrif_json_request_body, json_type_null)) {
+    if (json_object_is_type(port_map_json_req_body, json_type_null)) {
       pfc_log_error("request body is null");
       json_object_put(vbrif_json_request_body);
       return DRVAPI_RESPONSE_FAILURE;
