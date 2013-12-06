@@ -49,11 +49,8 @@ json_object* OdcVbrIfCommand::create_request_body_port_map(
   std::string switch_id = "";
   std::string port_name = "";
 
-  if (UNC_VF_VALID !=
-      vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM]) {
-    pfc_log_error("portmap - logical port valid flag is not set");
-    return NULL;
-  }
+  pfc_log_debug("VALUE RECEIVED for LOGICAL PORT %u" ,
+              vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM]);
 
   std::string logical_port_id =
       reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id);
@@ -201,6 +198,11 @@ drv_resp_code_t OdcVbrIfCommand::create_cmd(key_vbr_if_t& vbrif_key,
   }
   pfc_log_debug("%s Request body in create_cmd vbrif ", vbrif_req_body);
   if (vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] == UNC_VF_VALID) {
+    if (UNC_VF_VALID !=
+      vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM]) {
+      pfc_log_error("portmap - logical port valid flag is not set");
+      return DRVAPI_RESPONSE_FAILURE;
+    }
     std::string logical_port_id =
         reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id);
     uint32_t logical_port_retval = validate_logical_port_id(logical_port_id);
@@ -299,6 +301,11 @@ drv_resp_code_t OdcVbrIfCommand::update_cmd(key_vbr_if_t& vbrif_key,
   }
   pfc_log_debug("%s , Request body in update cmd vbrif", vbrif_req_body);
   if (val.val_vbrif.valid[UPLL_IDX_PM_VBRI] == UNC_VF_VALID) {
+    if (UNC_VF_INVALID ==
+      val.val_vbrif.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM]) {
+      pfc_log_error("portmap - logical port valid flag is not set");
+      return DRVAPI_RESPONSE_FAILURE;
+    }
     std::string logical_port_id =
         reinterpret_cast<char*>(val.val_vbrif.portmap.logical_port_id);
     uint32_t logical_port_retval = validate_logical_port_id(logical_port_id);

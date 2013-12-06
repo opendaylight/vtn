@@ -139,8 +139,11 @@ namespace driver {
 
       ctr_fw_->GetDriverByControllerName(ctlr_name_, &ctr_instance,
                                         &drv_instance);
-      PFC_ASSERT(ctr_instance != NULL);
-      PFC_ASSERT(drv_instance != NULL);
+      if ((ctr_instance == NULL) || (drv_instance == NULL)) {
+        pfc_log_error("%s: Controller (%s)/driver instance is NULL",
+                      PFC_FUNCNAME, ctlr_name_.c_str());
+        return;
+      }
 
       pfc_bool_t ping_status = drv_instance->ping_controller(ctr_instance);
 
