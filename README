@@ -28,28 +28,40 @@ https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):Ins
 == Installing VTN Coordinator from source code ==
 === Prior preparation ===
  1. Arrange a server where RHEL 6.1 or later is installed.
- 2. Install necessary packages. 
-        yum install make glibc-devel gcc gcc-c++ boost-devel openssl-devel \
-                    java-1.6.0-openjdk-devel ant perl-ExtUtils-MakeMaker \
-                    unixODBC-devel perl-Digest-SHA uuid libxslt libcurl \
-                    libcurl-devel
 
- 3. Download the following PostgreSQL 9.1 files from
-    http://yum.postgresql.org/9.1/redhat/rhel-6-x86_64/ and install. 
+ 2. Install necessary packages.
+        yum install make glibc-devel gcc gcc-c++ boost-devel openssl-devel \
+                    ant perl-ExtUtils-MakeMaker \
+                    unixODBC-devel perl-Digest-SHA uuid libxslt libcurl \
+                    libcurl-devel git
+
+ 3. Install JDK 7, and add the JAVA_HOME environment variable.
+    * RHEL 6.1
+        Download Oracle JDK 7 from the following page, and install it.
+          http://www.oracle.com/technetwork/java/javase/downloads/index.html
+        Set JAVA_HOME to the location of the JDK.
+          e.g.) export JAVA_HOME=/usr/java/default
+
+    * RHEL 6.4
+        Install OpenJDK 7.
+          yum install java-1.7.0-openjdk-devel
+        Set JAVA_HOME to the location of the JDK.
+          e.g.) export JAVA_HOME=/usr/lib/jvm/java-1.7.0-openjdk.x86_64
+
+ 4. Download the following PostgreSQL 9.1 files from
+    http://yum.postgresql.org/9.1/redhat/rhel-6-x86_64/ and install.
     * postgresql91-libs-9.1.9-1PGDG.rhel6.x86_64.rpm
     * postgresql91-9.1.9-1PGDG.rhel6.x86_64.rpm
     * postgresql91-server-9.1.9-1PGDG.rhel6.x86_64.rpm
     * postgresql91-contrib-9.1.9-1PGDG.rhel6.x86_64.rpm
     * postgresql91-odbc-09.00.0310-1PGDG.rhel6.x86_64.rpm
 
- 4. Install Maven.
+ 5. Install Maven.
     * Download Maven from the following page and install it folloiwng
       the instruction in the page.
       http://maven.apache.org/download.cgi
-    * Extract under /usr/share/java.
-        tar zxvf apache-tomcat-7.0.39.tar.gz -C /usr/share/java
 
- 5. Install gtest-devel and json-c libraries
+ 6. Install gtest-devel and json-c libraries
         wget http://dl.fedoraproject.org/pub/epel/6/i386/epel-release-6-8.noarch.rpm
         rpm -Uvh epel-release-6-8.noarch.rpm
         yum install gtest-devel json-c json-c-devel
@@ -106,7 +118,6 @@ https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):Ins
         /usr/local/vtn/bin/vtn_stop
 
 === WebAPI ===
- * Carry out VTN settings with WebAPI.
  * VTN Coordinator version information will be displayed if following command
    is executed when VTN has started successfully.
         $ curl -X GET -H 'content-type: application/json' -H 'username: admin' \
