@@ -10,12 +10,12 @@
 #ifndef _ODC_VBR_HH_
 #define _ODC_VBR_HH_
 
+#include <rest_util.hh>
 #include <driver/driver_command.hh>
 #include <json_build_parse.hh>
 #include <vtn_conf_data_element_op.hh>
 #include <unc/upll_ipc_enum.h>
 #include <unc/pfcdriver_ipc_enum.h>
-#include <rest_client.hh>
 #include <odc_driver_common_defs.hh>
 #include <odc_controller.hh>
 #include <odc_vtn.hh>
@@ -30,9 +30,10 @@ namespace odcdriver {
 class OdcVbrCommand: public unc::driver::vbr_driver_command {
  public:
   /**
-   * @brief Default Constructor
+   * @brief Parametrised Constructor
+   * @param[in] - conf file values
    */
-  OdcVbrCommand();
+  explicit OdcVbrCommand(unc::restjson::ConfFileValues_t conf_values);
 
   /**
    * @brief Default Destructor
@@ -147,35 +148,6 @@ class OdcVbrCommand: public unc::driver::vbr_driver_command {
   json_object* read_portmap(unc::driver::controller* ctr, std::string url);
 
   /**
-   * @brief                      - gets the user name password from controller
-   *                               or conf file
-   * @param[in] - ctr_ptr        - Controller pointer
-   * @param[out] - username      - username is stored and used as out param
-   * @param[out] - password      - password is stored and used as out param
-   */
-  void get_username_password(unc::driver::controller* ctr_ptr,
-                             std::string &user_name, std::string &password);
-
-  /**
-   * @brief                      - reads username password from conf file or
-   *                               default value
-   * @param[out] - username      - username - in string out param
-   * @param[out] - password      - password in string out param
-   */
-  void read_user_name_password(std::string &user_name,
-                               std::string &password);
-
-  /**
-   * @brief                    - reads conf file else default values for
-   *                             odc_port, connection time out, request timeout
-   * @param[out] - odc_port    - odc_port in uint32_t
-   * @param[out] - connection_time_out - in uint32_t
-   * @param[out] - request_time_out - in uint32_t
-   */
-  void read_conf_file(uint32_t &odc_port,
-                      uint32_t &connection_time_out,
-                      uint32_t &request_time_out);
-  /**
    * @brief      - Method to fetch child configurations for the parent kt
    * @param[in]  - controller pointer
    * @param[in]  - parent key type pointer
@@ -189,6 +161,7 @@ class OdcVbrCommand: public unc::driver::vbr_driver_command {
 
   private:
   uint32_t age_interval_;
+  unc::restjson::ConfFileValues_t conf_file_values_;
 };
 }  // namespace odcdriver
 }  // namespace unc

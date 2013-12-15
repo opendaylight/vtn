@@ -21,7 +21,7 @@
 #include "stub/include/cxx/pfcxx/ipc_client.hh"
 #include "stub/include/cxx/pfcxx/module.hh"
 #include "stub/tclib_module/tclib_module.hh"
-#include "stub/restjsonutil/rest_client.hh"
+#include "stub/restjsonutil/rest_util.hh"
 #include "stub/restjsonutil/json_build_parse.hh"
 #include "stub/restjsonutil/json_type_util.hh"
 #include "stub/restjsonutil/rest_common_defs.hh"

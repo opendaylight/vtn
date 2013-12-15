@@ -46,6 +46,15 @@ typedef enum {
   REST_OP_SUCCESS = 0,
   REST_OP_FAILURE
 } rest_resp_code_t;
+
+typedef struct {
+  uint32_t odc_port;
+  uint32_t request_time_out;
+  uint32_t connection_time_out;
+  std::string user_name;
+  std::string password;
+} ConfFileValues_t;
+
 }  // namespace restjson
 }  // namespace unc
 #endif  // RESTJSON_REST_COMMON_DEFS_H_

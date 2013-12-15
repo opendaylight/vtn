@@ -10,8 +10,8 @@
 #ifndef _ODC_VBR_VLANMAP_HH
 #define _ODC_VBR_VLANMAP_HH
 
+#include <rest_util.hh>
 #include <driver/driver_command.hh>
-#include <rest_client.hh>
 #include <unc/upll_ipc_enum.h>
 #include <odc_driver_common_defs.hh>
 #include <vtn_conf_data_element_op.hh>
@@ -27,9 +27,10 @@ namespace odcdriver {
 class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
  public:
   /**
-   * @brief Default Constructor
+   * @brief Parametrised Constructor
+   * @param[in] - conf file values
    */
-  OdcVbrVlanMapCommand();
+  explicit OdcVbrVlanMapCommand(unc::restjson::ConfFileValues_t conf_values);
 
   /**
    * @brief Default Destructor
@@ -153,35 +154,6 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    */
   odc_drv_resp_code_t validate_logical_port_id(
                                        const std::string& logical_port_id);
-
-  /**
-   * @brief                      - reads conf file for the values for
-   *                               odc_port, connection time out, request timeout
-   * @param[out]                 - odc_port
-   * @param[out] conn_time_out   - connection_time_out in seconds
-   * @param[out] req_time_out    - request_time_out in seconds
-   */
-  void read_conf_file(uint32_t &odc_port,
-                      uint32_t &conn_time_out,
-                      uint32_t &req_time_out);
-  /**
-   * @brief                      - gets the user name password from controller
-   *                               or conf file
-   * @param[out] - username      - username as string
-   * @param[out] - password      - password as string
-   */
-  void read_user_name_password(std::string &user_name,
-                               std::string &password);
-
-  /**
-   * @brief                      - reads username and password
-   * @param[in]  - ctr           - controller pointer
-   * @param[out] - username      - username as string
-   * @param[out] - password      - password as string
-   */
-  void get_username_password(unc::driver::controller* ctr_ptr,
-                             std::string &user_name,
-                             std::string &password);
 
   /**
    * @brief                      - Generate vlanmap id in the format
@@ -339,6 +311,9 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    *                              ODC_DRV_FAILURE
    */
   odc_drv_resp_code_t convert_logical_port(std::string &logical_port_id);
+
+ private:
+  unc::restjson::ConfFileValues_t conf_file_values_;
 };
 }  // namespace odcdriver
 }  // namespace unc

@@ -12,18 +12,12 @@
 
 %IPC related parameters
 
-defblock ping_param {
+defblock param {
   odcdrv_ping_interval = UINT32;
-}
-
-defblock opt_param {
- odc_port = UINT32;
- connect_time_out = UINT32;
- request_time_out = UINT32;
-}
-
-defblock user_password_param {
- user_name = STRING: max=31;
- password = STRING: max=256;
+  odc_port = UINT32;
+  connect_time_out = UINT32;
+  request_time_out = UINT32;
+  user_name = STRING: max=31;
+  password = STRING: max=256;
 }
 

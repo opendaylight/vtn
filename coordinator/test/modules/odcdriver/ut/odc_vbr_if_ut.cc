@@ -15,7 +15,11 @@
 
 
 TEST(odcdriver,  create_cmd_valid) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -54,7 +58,11 @@ TEST(odcdriver,  create_cmd_valid) {
 
 
 TEST(odcdriver,  create_cmd_valid_admin_disable) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -92,7 +100,11 @@ TEST(odcdriver,  create_cmd_valid_admin_disable) {
 
 
 TEST(odcdriver,  create_cmd_invalid_resp) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -128,7 +140,11 @@ TEST(odcdriver,  create_cmd_invalid_resp) {
   delete ctr;
 }
 TEST(odcdriver,  update_cmd_invalid_resp) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -164,7 +180,11 @@ TEST(odcdriver,  update_cmd_invalid_resp) {
   delete ctr;
 }
 TEST(odcdriver,  delete_cmd_invalid_resp) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -200,7 +220,11 @@ TEST(odcdriver,  delete_cmd_invalid_resp) {
   delete ctr;
 }
 TEST(odcdriver,  create_cmd_null_resp) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -238,7 +262,11 @@ TEST(odcdriver,  create_cmd_null_resp) {
 }
 
 TEST(odcdriver,  update_cmd_null_resp) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -276,7 +304,11 @@ TEST(odcdriver,  update_cmd_null_resp) {
 }
 
 TEST(odcdriver,  delete_cmd_null_resp) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -316,7 +348,11 @@ TEST(odcdriver,  delete_cmd_null_resp) {
 
 
 TEST(odcdriver,  create_cmd_empty_vtn) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -351,7 +387,11 @@ TEST(odcdriver,  create_cmd_empty_vtn) {
 
 
 TEST(odcdriver,  create_cmd_empty_vbr) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -385,7 +425,11 @@ TEST(odcdriver,  create_cmd_empty_vbr) {
 }
 
 TEST(odcdriver,  create_cmd_empty_vbr_if) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -418,7 +462,11 @@ TEST(odcdriver,  create_cmd_empty_vbr_if) {
   delete ctr;
 }
 TEST(odcdriver,  create_cmd_port_map_valid_no_values) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -456,7 +504,11 @@ TEST(odcdriver,  create_cmd_port_map_valid_no_values) {
   }
 }
 TEST(odcdriver,  create_cmd_port_map_valid_values) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -498,7 +550,11 @@ TEST(odcdriver,  create_cmd_port_map_valid_values) {
 }
 
 TEST(odcdriver,  create_cmd_port_map_valid_with_values) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -542,7 +598,11 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_values) {
 }
 
 TEST(odcdriver,  create_cmd_port_map_valid_invalid_logical_port) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -585,7 +645,11 @@ TEST(odcdriver,  create_cmd_port_map_valid_invalid_logical_port) {
 }
 
 TEST(odcdriver,  create_cmd_port_map_valid_with_invalid_port_values) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -626,7 +690,11 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_invalid_port_values) {
 }
 
 TEST(odcdriver,  create_cmd_port_map_valid_with_invalid_logical_port) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -668,7 +736,11 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_invalid_logical_port) {
 }
 
 TEST(odcdriver,  create_cmd_port_map_invalid_data) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -713,7 +785,11 @@ TEST(odcdriver,  create_cmd_port_map_invalid_data) {
 }
 
 TEST(odcdriver,  create_cmd_port_map_valid_with_vlanid_zero) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -757,7 +833,11 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_vlanid_zero) {
 }
 
 TEST(odcdriver,  create_cmd_port_map_in_diff_format) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -801,7 +881,11 @@ TEST(odcdriver,  create_cmd_port_map_in_diff_format) {
 }
 
 TEST(odcdriver,  create_cmd_port_map_in_proper_format_invalid) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -846,7 +930,11 @@ TEST(odcdriver,  create_cmd_port_map_in_proper_format_invalid) {
 }
 
 TEST(odcdriver,  create_cmd_port_map_in_diff_format_invalid) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -890,7 +978,11 @@ TEST(odcdriver,  create_cmd_port_map_in_diff_format_invalid) {
 }
 
 TEST(odcdriver,  create_cmd_port_map_valid_with_invlanid) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -935,7 +1027,11 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_invlanid) {
 
 
 TEST(odcdriver,  create_cmd_port_map_valid_with_vlanid) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -979,7 +1075,11 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_vlanid) {
 }
 
 TEST(odcdriver,  update_cmd_port_map_valid) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -1024,7 +1124,11 @@ TEST(odcdriver,  update_cmd_port_map_valid) {
   delete ctr;
 }
 TEST(odcdriver,  update_cmd_no_port_map) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -1071,7 +1175,11 @@ TEST(odcdriver,  update_cmd_no_port_map) {
 
 
 TEST(odcdriver,  update_cmd_port_map_delete_resp_null) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -1120,7 +1228,11 @@ TEST(odcdriver,  update_cmd_port_map_delete_resp_null) {
 
 
 TEST(odcdriver,  update_cmd_port_map_invalid) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -1165,7 +1277,11 @@ TEST(odcdriver,  update_cmd_port_map_invalid) {
   delete ctr;
 }
 TEST(odcdriver,  update_cmd_port_map_valid_vlan) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -1209,7 +1325,11 @@ TEST(odcdriver,  update_cmd_port_map_valid_vlan) {
 }
 
 TEST(odcdriver,  create_cmd_port_map_valid_with_null_resp) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -1254,7 +1374,11 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_null_resp) {
 
 
 TEST(odcdriver,  create_cmd_port_map_valid_with_invalid_logical) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -1299,7 +1423,11 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_invalid_logical) {
 }
 
 TEST(odcdriver,  create_cmd_port_map_valid_with_no_port_name) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -1343,7 +1471,11 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_no_port_name) {
 }
 
 TEST(odcdriver,  create_cmd_port_map_invalid) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -1383,7 +1515,11 @@ TEST(odcdriver,  create_cmd_port_map_invalid) {
   delete ctr;
 }
 TEST(odcdriver,  create_cmd_port_map_invalid_portmap) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -1424,7 +1560,11 @@ TEST(odcdriver,  create_cmd_port_map_invalid_portmap) {
 }
 
 TEST(odcdriver,  update_cmd_port_map_portmap_invalid) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -1465,7 +1605,11 @@ TEST(odcdriver,  update_cmd_port_map_portmap_invalid) {
 }
 
 TEST(odcdriver,  update_cmd_port_map_portmap) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -1505,7 +1649,11 @@ TEST(odcdriver,  update_cmd_port_map_portmap) {
 }
 
 TEST(odcdriver,  update_cmd_port_map_portmap_failure) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -1547,7 +1695,11 @@ TEST(odcdriver,  update_cmd_port_map_portmap_failure) {
 
 
 TEST(odcdriver,  update_cmd_port_map_update_portmap) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -1588,7 +1740,11 @@ TEST(odcdriver,  update_cmd_port_map_update_portmap) {
 }
 
 TEST(odcdriver,  update_cmd_empty_vtnname) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -1629,7 +1785,11 @@ TEST(odcdriver,  update_cmd_empty_vtnname) {
 }
 
 TEST(odcdriver,  delete_cmd_empty_vtnname) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -1670,7 +1830,11 @@ TEST(odcdriver,  delete_cmd_empty_vtnname) {
 }
 
 TEST(odcdriver,  update_cmd_delete_portmap) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -1712,7 +1876,11 @@ TEST(odcdriver,  update_cmd_delete_portmap) {
 
 
 TEST(odcdriver,  update_cmd_vbrif_success_portmap_failure) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -1754,7 +1922,11 @@ TEST(odcdriver,  update_cmd_vbrif_success_portmap_failure) {
 
 
 TEST(odcdriver,  update_cmd_vbrif_success_portmap_delete_failure) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -1797,7 +1969,11 @@ TEST(odcdriver,  update_cmd_vbrif_success_portmap_delete_failure) {
   delete ctr;
 }
 TEST(odcdriver,  fetch_config) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   key_vbr_t key_vbr;
@@ -1833,7 +2009,11 @@ TEST(odcdriver,  fetch_config) {
 }
 
 TEST(odcdriver,  fetch_config_empty_vtn) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   key_vbr_t key_vbr;
@@ -1869,7 +2049,11 @@ TEST(odcdriver,  fetch_config_empty_vtn) {
 }
 
 TEST(odcdriver,  fetch_config_empty_vtn_data) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   key_vbr_t key_vbr;
@@ -1906,7 +2090,11 @@ TEST(odcdriver,  fetch_config_empty_vtn_data) {
 
 
 TEST(odcdriver,  fetch_config_null_response) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   key_vbr_t key_vbr;
@@ -1942,7 +2130,11 @@ TEST(odcdriver,  fetch_config_null_response) {
 }
 
 TEST(odcdriver,  fetch_config_invalid_resp) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   key_vbr_t key_vbr;
@@ -1978,7 +2170,11 @@ TEST(odcdriver,  fetch_config_invalid_resp) {
 }
 
 TEST(odcdriver,  fetch_config_with_portmap) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   key_vbr_t key_vbr;
@@ -2013,7 +2209,11 @@ TEST(odcdriver,  fetch_config_with_portmap) {
   delete ctr;
 }
 TEST(odcdriver,  fetch_config_with_portmap_no_vlan) {
-  unc::odcdriver::OdcVbrIfCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   key_vbr_t key_vbr;

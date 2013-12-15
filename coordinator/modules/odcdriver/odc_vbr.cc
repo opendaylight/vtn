@@ -13,8 +13,9 @@ namespace unc {
 namespace odcdriver {
 
 // Constructor
-OdcVbrCommand::OdcVbrCommand()
-: age_interval_(DEFAULT_AGE_INTERVAL) {
+OdcVbrCommand::OdcVbrCommand(unc::restjson::ConfFileValues_t conf_values)
+: age_interval_(DEFAULT_AGE_INTERVAL),
+  conf_file_values_(conf_values) {
   ODC_FUNC_TRACE;
 }
 
@@ -29,7 +30,6 @@ drv_resp_code_t OdcVbrCommand::create_cmd(key_vbr_t& key_vbr,
                                           *ctr_ptr) {
   ODC_FUNC_TRACE;
   PFC_ASSERT(ctr_ptr != NULL);
-  std::string ipaddress = ctr_ptr->get_host_address();
 
   std::string vbr_url = get_vbr_url(key_vbr);
   if (vbr_url.empty()) {
@@ -43,20 +43,13 @@ drv_resp_code_t OdcVbrCommand::create_cmd(key_vbr_t& key_vbr,
   if (!(json_object_is_type(json_req_body, json_type_null))) {
     request = json_obj.get_string(json_req_body);
   }
-  std::string user_name = "";
-  std::string password = "";
-  get_username_password(ctr_ptr , user_name, password);
   pfc_log_debug("Request body formed in vbr create_cmd : %s", request);
-  uint32_t odc_port = 0;
-  uint32_t connect_time_out = 0;
-  uint32_t req_time_out = 0;
-  read_conf_file(odc_port, connect_time_out, req_time_out);
 
-  restjson::RestClient rest_client_obj(ipaddress, vbr_url,
-                                       odc_port, restjson::HTTP_METHOD_POST);
-  unc::restjson::HttpResponse_t* response = rest_client_obj.send_http_request(
-      user_name, password, connect_time_out, req_time_out,
-      request);
+  unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
+                  ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
+  unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
+     vbr_url, restjson::HTTP_METHOD_POST, request, conf_file_values_);
+
   json_object_put(json_req_body);
   if (NULL == response) {
     pfc_log_error("Error Occured while getting httpresponse");
@@ -64,7 +57,6 @@ drv_resp_code_t OdcVbrCommand::create_cmd(key_vbr_t& key_vbr,
   }
   int resp_code = response->code;
   pfc_log_debug("resp_code for create vbr is %d", resp_code);
-  rest_client_obj.clear_http_response();
 
   if (HTTP_201_RESP_CREATED != resp_code) {
     pfc_log_debug("check if vtn is stand-alone");
@@ -90,7 +82,7 @@ drv_resp_code_t OdcVbrCommand::create_cmd(key_vbr_t& key_vbr,
         memcpy(key_vtn.vtn_name, key_vbr.vtn_key.vtn_name,
                sizeof(key_vbr.vtn_key.vtn_name));
         pfc_log_debug("VTN name:%s", key_vtn.vtn_name);
-        OdcVtnCommand vtn_obj;
+        OdcVtnCommand vtn_obj(conf_file_values_);
         vtn_obj.delete_cmd(key_vtn, val_vtn, ctr_ptr);
       }
     }
@@ -105,7 +97,6 @@ drv_resp_code_t OdcVbrCommand::update_cmd(key_vbr_t& key_vbr,
                                  unc::driver::controller *ctr_ptr) {
   ODC_FUNC_TRACE;
   PFC_ASSERT(ctr_ptr != NULL);
-  std::string ipaddress = ctr_ptr->get_host_address();
 
   std::string vbr_url = get_vbr_url(key_vbr);
   if (vbr_url.empty()) {
@@ -118,20 +109,13 @@ drv_resp_code_t OdcVbrCommand::update_cmd(key_vbr_t& key_vbr,
   if (!(json_object_is_type(json_req_body, json_type_null))) {
     request = json_obj.get_string(json_req_body);
   }
-  std::string user_name = "";
-  std::string password = "";
-  get_username_password(ctr_ptr , user_name, password);
   pfc_log_debug("Request body formed in vbr update_cmd : %s", request);
-  uint32_t odc_port = 0;
-  uint32_t connect_time_out = 0;
-  uint32_t req_time_out = 0;
-  read_conf_file(odc_port, connect_time_out, req_time_out);
 
-  restjson::RestClient rest_client_obj(ipaddress, vbr_url,
-                                       odc_port, restjson::HTTP_METHOD_PUT);
-  unc::restjson::HttpResponse_t* response = rest_client_obj.send_http_request(
-      user_name, password, connect_time_out, req_time_out,
-      request);
+  unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
+                  ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
+  unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
+               vbr_url, restjson::HTTP_METHOD_PUT, request, conf_file_values_);
+
   json_object_put(json_req_body);
   if (NULL == response) {
     pfc_log_error("Error Occured while getting httpresponse");
@@ -139,7 +123,6 @@ drv_resp_code_t OdcVbrCommand::update_cmd(key_vbr_t& key_vbr,
   }
   int resp_code = response->code;
   pfc_log_debug("Response code from Ctl for vbr update cmd : %d ", resp_code);
-  rest_client_obj.clear_http_response();
   if (HTTP_200_RESP_OK != resp_code) {
     pfc_log_error("vbr is not updated , resp_code is : %d", resp_code);
     return DRVAPI_RESPONSE_FAILURE;
@@ -154,7 +137,6 @@ drv_resp_code_t OdcVbrCommand::delete_cmd(key_vbr_t& key_vbr,
                                           *ctr_ptr) {
   ODC_FUNC_TRACE;
   PFC_ASSERT(ctr_ptr != NULL);
-  std::string ipaddress = ctr_ptr->get_host_address();
 
   std::string vbr_url = get_vbr_url(key_vbr);
   pfc_log_debug("vbr_url:%s", vbr_url.c_str());
@@ -162,26 +144,18 @@ drv_resp_code_t OdcVbrCommand::delete_cmd(key_vbr_t& key_vbr,
     pfc_log_error("vbr url is empty");
     return DRVAPI_RESPONSE_FAILURE;
   }
-  std::string user_name = "";
-  std::string password = "";
-  get_username_password(ctr_ptr , user_name, password);
-  uint32_t odc_port = 0;
-  uint32_t connect_time_out = 0;
-  uint32_t req_time_out = 0;
-  read_conf_file(odc_port, connect_time_out, req_time_out);
 
-  restjson::RestClient rest_client_obj(ipaddress, vbr_url,
-                                       odc_port, restjson::HTTP_METHOD_DELETE);
-  unc::restjson::HttpResponse_t* response = rest_client_obj.send_http_request(
-      user_name, password, connect_time_out, req_time_out,
-      NULL);
+  unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
+                  ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
+  unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
+               vbr_url, restjson::HTTP_METHOD_DELETE, NULL, conf_file_values_);
+
   if (NULL == response) {
     pfc_log_error("Error Occured while getting httpresponse");
     return DRVAPI_RESPONSE_FAILURE;
   }
   int resp_code = response->code;
   pfc_log_debug("Response code from Ctl for delete vbr : %d ", resp_code);
-  rest_client_obj.clear_http_response();
   if (HTTP_200_RESP_OK != resp_code) {
     pfc_log_error("vbr delete is not success , resp_code id: %d", resp_code);
     return DRVAPI_RESPONSE_FAILURE;
@@ -243,7 +217,6 @@ drv_resp_code_t OdcVbrCommand::get_vbr_list(std::string vtn_name,
                                              &cfgnode_vector) {
   ODC_FUNC_TRACE;
   PFC_ASSERT(NULL != ctr);
-  std::string ipaddress = ctr->get_host_address();
 
   std::string url = "";
   url.append(BASE_URL);
@@ -254,19 +227,10 @@ drv_resp_code_t OdcVbrCommand::get_vbr_list(std::string vtn_name,
   url.append("/vbridges");
   pfc_log_debug("url:%s", url.c_str());
 
-  std::string user_name = "";
-  std::string password = "";
-  get_username_password(ctr, user_name, password);
-  uint32_t odc_port = 0;
-  uint32_t connect_time_out = 0;
-  uint32_t req_time_out = 0;
-  read_conf_file(odc_port, connect_time_out, req_time_out);
-
-  restjson::RestClient rest_client_obj(ipaddress, url,
-                                       odc_port, restjson::HTTP_METHOD_GET);
-  unc::restjson::HttpResponse_t* response = rest_client_obj.send_http_request(
-      user_name, password, connect_time_out, req_time_out,
-      NULL);
+  unc::restjson::RestUtil rest_util_obj(ctr->get_host_address(),
+                  ctr->get_user_name(), ctr->get_pass_word());
+  unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
+                    url, restjson::HTTP_METHOD_GET, NULL, conf_file_values_);
   if (NULL == response) {
     pfc_log_error("Error Occured while getting httpresponse");
     return DRVAPI_RESPONSE_FAILURE;
@@ -276,7 +240,6 @@ drv_resp_code_t OdcVbrCommand::get_vbr_list(std::string vtn_name,
 
   if (HTTP_200_RESP_OK != resp_code) {
     pfc_log_error("get vbridges is not succesful , resp_code %d", resp_code);
-    rest_client_obj.clear_http_response();
     return DRVAPI_RESPONSE_FAILURE;
   }
   if (NULL != response->write_data) {
@@ -286,11 +249,9 @@ drv_resp_code_t OdcVbrCommand::get_vbr_list(std::string vtn_name,
                                                      vtn_name,
                                                      ctr,
                                                      cfgnode_vector);
-       rest_client_obj.clear_http_response();
        return ret_code;
     }
   }
-  rest_client_obj.clear_http_response();
   return DRVAPI_RESPONSE_FAILURE;
 }
 
@@ -439,75 +400,6 @@ std::string OdcVbrCommand::get_vbr_url(key_vbr_t& key_vbr) {
   url.append("/vbridges/");
   url.append(vbrname);
   return url;
-}
-
-// Gets user name and password from controller ptr or
-// else gets the default values
-void OdcVbrCommand::get_username_password(unc::driver::controller* ctr_ptr,
-                                          std::string &user_name,
-                                          std::string &password) {
-  ODC_FUNC_TRACE;
-  PFC_ASSERT(ctr_ptr != NULL);
-  std::string user_ctr = ctr_ptr->get_user_name();
-  std::string pass_ctr = ctr_ptr->get_pass_word();
-
-  if ((user_ctr.empty()) ||
-      (pass_ctr.empty())) {
-    pfc_log_debug("gets username password from conf file");
-    read_user_name_password(user_name, password);
-  } else {
-    pfc_log_debug("gets username password from controller pointer");
-    user_name = ctr_ptr->get_user_name();
-    password = ctr_ptr->get_pass_word();
-  }
-}
-
-// Reads user name password from conf file. If it is empty reads the default
-// values
-void OdcVbrCommand::read_user_name_password(std::string &user_name,
-                                        std::string &password) {
-  ODC_FUNC_TRACE;
-  pfc::core::ModuleConfBlock set_user_password_blk(SET_USER_PASSWORD_BLK);
-  if (set_user_password_blk.getBlock() != PFC_CFBLK_INVALID) {
-    user_name = set_user_password_blk.getString(
-        CONF_USER_NAME, DEFAULT_USER_NAME.c_str());
-
-    password  = set_user_password_blk.getString(
-        CONF_PASSWORD, DEFAULT_PASSWORD.c_str());
-    pfc_log_debug("%s: Block Handle is Valid,user_name_ %s", PFC_FUNCNAME,
-                  user_name.c_str());
-  }  else {
-    user_name = DEFAULT_USER_NAME;
-    password  = DEFAULT_PASSWORD;
-    pfc_log_debug("%s: Block Handle is InValid, get user_name_from default %s",
-                  PFC_FUNCNAME, user_name.c_str());
-  }
-}
-
-// Reads set opt params from conf file if it fails reads from defs file
-void OdcVbrCommand:: read_conf_file(uint32_t &odc_port,
-                                uint32_t &connection_time_out,
-                                uint32_t &request_time_out) {
-  ODC_FUNC_TRACE;
-  pfc::core::ModuleConfBlock set_opt_blk(SET_OPT_BLK);
-  if (set_opt_blk.getBlock() != PFC_CFBLK_INVALID) {
-    odc_port  = set_opt_blk.getUint32(CONF_ODC_PORT, DEFAULT_ODC_PORT);
-
-    request_time_out = set_opt_blk.getUint32(
-        CONF_REQ_TIME_OUT, DEFAULT_REQ_TIME_OUT);
-
-    connection_time_out = set_opt_blk.getUint32(
-        CONF_CONNECT_TIME_OUT, DEFAULT_CONNECT_TIME_OUT);
-    pfc_log_debug("%s: Block Handle is Valid, odc_port_ %d", PFC_FUNCNAME,
-                  odc_port);
-
-  } else {
-    odc_port   =  DEFAULT_ODC_PORT;
-    connection_time_out = DEFAULT_CONNECT_TIME_OUT;
-    request_time_out = DEFAULT_REQ_TIME_OUT;
-    pfc_log_debug("%s: Block Handle is Invalid,set default Value %d",
-                  PFC_FUNCNAME, odc_port);
-  }
 }
 }  // namespace odcdriver
 }  // namespace unc

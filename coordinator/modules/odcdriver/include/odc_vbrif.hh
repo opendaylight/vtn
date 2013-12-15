@@ -10,8 +10,8 @@
 #ifndef _ODC_VBRIF_HH
 #define _ODC_VBRIF_HH
 
+#include <rest_util.hh>
 #include <driver/driver_command.hh>
-#include <rest_client.hh>
 #include <unc/upll_ipc_enum.h>
 #include <unc/pfcdriver_ipc_enum.h>
 #include <odc_driver_common_defs.hh>
@@ -28,9 +28,10 @@ namespace odcdriver {
 class OdcVbrIfCommand: public unc::driver::vbrif_driver_command {
  public:
   /**
-   * @brief Default Constructor
+   * @brief Parametrised Constructor
+   * @param[in] - conf file values
    */
-  OdcVbrIfCommand();
+  explicit OdcVbrIfCommand(unc::restjson::ConfFileValues_t conf_values);
 
   /**
    * @brief Default Destructor
@@ -169,35 +170,6 @@ class OdcVbrIfCommand: public unc::driver::vbrif_driver_command {
                                                logical_port_id);
 
   /**
-   * @brief                    - reads conf file else default values for
-   *                             odc_port, connection time out, request timeout
-   * @param[out] - odc_port    - odc_port in uint32_t
-   * @param[out] - connection_time_out - in uint32_t
-   * @param[out] - request_time_out - in uint32_t
-   */
-  void read_conf_file(uint32_t &odc_port,
-                      uint32_t &connection_time_out,
-                      uint32_t &request_time_out);
-  /**
-   * @brief                      - gets the user name password from controller
-   *                               or conf file
-   * @param[in] - ctr_ptr        - Controller pointer
-   * @param[out] - username      - username is stored and used as out param
-   * @param[out] - password      - password is stored and used as out param
-   */
-  void read_user_name_password(std::string &user_name,
-                               std::string &password);
-
-  /**
-   * @brief                      - reads username password from conf file or
-   *                               default value
-   * @param[out] - username      - username - in string out param
-   * @param[out] - password      - password in string out param
-   */
-  void get_username_password(unc::driver::controller* ctr_ptr,
-                         std::string &user_name, std::string &password);
-
-  /**
    * @brief                     - checks the logical port id format
    * @param[in][out]            - logical_port_id
    * @return                    - odc_drv_resp_code_t
@@ -214,6 +186,9 @@ class OdcVbrIfCommand: public unc::driver::vbrif_driver_command {
    *                              ODC_DRV_FAILURE
    */
   odc_drv_resp_code_t convert_logical_port(std::string &logical_port_id);
+
+ private:
+  unc::restjson::ConfFileValues_t conf_file_values_;
 };
 }  // namespace odcdriver
 }  // namespace unc

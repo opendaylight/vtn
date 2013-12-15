@@ -12,7 +12,9 @@
 namespace unc {
 namespace odcdriver {
 // Constructor
-OdcVbrVlanMapCommand::OdcVbrVlanMapCommand() {
+OdcVbrVlanMapCommand::OdcVbrVlanMapCommand(
+    unc::restjson::ConfFileValues_t conf_values)
+:conf_file_values_(conf_values) {
   ODC_FUNC_TRACE;
 }
 
@@ -284,7 +286,6 @@ drv_resp_code_t OdcVbrVlanMapCommand::get_vbrvlanmap_list(void* parent_key,
   // Construct URL to retrieve vlanmaps from controller
   // URL should be of the format "/controller/nb/v2/vtn/default/vtns/{vtnname}
   // /vbridges/{vbridgeName}/vlanmaps"
-  std::string ipaddress = ctr->get_host_address();
   std::string url = "";
   url.append(BASE_URL);
   url.append(CONTAINER_NAME);
@@ -295,19 +296,11 @@ drv_resp_code_t OdcVbrVlanMapCommand::get_vbrvlanmap_list(void* parent_key,
   url.append(vbr_name);
   url.append("/vlanmaps");
 
-  std::string user_name = "";
-  std::string password = "";
-  get_username_password(ctr, user_name, password);
-  uint32_t odc_port = 0;
-  uint32_t connect_time_out = 0;
-  uint32_t req_time_out = 0;
-  read_conf_file(odc_port, connect_time_out, req_time_out);
+  unc::restjson::RestUtil rest_util_obj(ctr->get_host_address(),
+                          ctr->get_user_name(), ctr->get_pass_word());
+  unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
+                 url, restjson::HTTP_METHOD_GET, NULL, conf_file_values_);
 
-  restjson::RestClient rest_client_obj(ipaddress, url,
-                                       odc_port, restjson::HTTP_METHOD_GET);
-  unc::restjson::HttpResponse_t* response = rest_client_obj.send_http_request(
-      user_name, password, connect_time_out, req_time_out,
-      NULL);
   if (NULL == response) {
     pfc_log_error("%s:Error Occured while getting http response", PFC_FUNCNAME);
     return DRVAPI_RESPONSE_FAILURE;
@@ -324,7 +317,6 @@ drv_resp_code_t OdcVbrVlanMapCommand::get_vbrvlanmap_list(void* parent_key,
       pfc_log_error("%s:VTN Manager service not operating inside controller %u",
                     PFC_FUNCNAME, resp_code);
     }
-    rest_client_obj.clear_http_response();
     return DRVAPI_RESPONSE_FAILURE;
   }
   if (NULL != response->write_data) {
@@ -334,11 +326,9 @@ drv_resp_code_t OdcVbrVlanMapCommand::get_vbrvlanmap_list(void* parent_key,
       // Parse the vlan-map GET response from controller
       parse_ret = parse_vbrvlanmap_response(parent_key, ctr, data,
                                             cfgnode_vector);
-      rest_client_obj.clear_http_response();
       return parse_ret;
     }
   }
-  rest_client_obj.clear_http_response();
   return DRVAPI_RESPONSE_FAILURE;
 }
 
@@ -603,21 +593,11 @@ drv_resp_code_t OdcVbrVlanMapCommand::del_existing_vlanmap(
   pfc_log_debug("%s: Final MapId url for delete %s", PFC_FUNCNAME,
                 del_vbr_vlanmap_url.c_str());
 
-  std::string ip_address = ctr_ptr->get_host_address();
-  std::string user_name = "";
-  std::string password = "";
-  get_username_password(ctr_ptr , user_name, password);
+  unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
+                  ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
 
-  uint32_t odc_port = 0;
-  uint32_t connect_time_out = 0;
-  uint32_t req_time_out = 0;
-  read_conf_file(odc_port, connect_time_out, req_time_out);
-
-  restjson::RestClient rest_client_obj(ip_address, del_vbr_vlanmap_url,
-                                       odc_port, restjson::HTTP_METHOD_DELETE);
-
-  unc::restjson::HttpResponse_t* response = rest_client_obj.send_http_request(
-      user_name, password, connect_time_out, req_time_out, NULL);
+  unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
+    del_vbr_vlanmap_url, restjson::HTTP_METHOD_DELETE, NULL, conf_file_values_);
 
   if (NULL == response) {
     pfc_log_error("%s: Error Occured while getting httpresponse", PFC_FUNCNAME);
@@ -626,8 +606,6 @@ drv_resp_code_t OdcVbrVlanMapCommand::del_existing_vlanmap(
   int resp_code = response->code;
   pfc_log_debug("%s: Response code from Ctl for delete vlanmap (%d) ",
                 PFC_FUNCNAME, resp_code);
-
-  rest_client_obj.clear_http_response();
 
   if (HTTP_200_RESP_OK != resp_code) {
     pfc_log_error("%s: Delete vlanmap is not successful %d",
@@ -660,7 +638,6 @@ drv_resp_code_t OdcVbrVlanMapCommand::create_update_cmd(
     unc::driver::controller* ctr_ptr) {
   ODC_FUNC_TRACE;
   PFC_ASSERT(ctr_ptr != NULL);
-  std::string ip_address = ctr_ptr->get_host_address();
   pfc_bool_t vlan_map_exists = PFC_FALSE;
   std::string strmapid = "";
   std::string logical_port_id = "";
@@ -718,19 +695,12 @@ drv_resp_code_t OdcVbrVlanMapCommand::create_update_cmd(
   pfc_log_debug("%s: Request body for vlanmap: %s ", PFC_FUNCNAME,
                 str_vlanmap_reqbody);
 
-  std::string user_name = "";
-  std::string password = "";
-  get_username_password(ctr_ptr , user_name, password);
-  uint32_t odc_port = 0;
-  uint32_t connect_time_out = 0;
-  uint32_t req_time_out = 0;
-  read_conf_file(odc_port, connect_time_out, req_time_out);
+  unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
+                  ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
+  unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
+          vbr_vlanmap_url, restjson::HTTP_METHOD_POST,
+          str_vlanmap_reqbody, conf_file_values_);
 
-  restjson::RestClient rest_client_obj(ip_address, vbr_vlanmap_url,
-                                       odc_port, restjson::HTTP_METHOD_POST);
-  unc::restjson::HttpResponse_t* response = rest_client_obj.send_http_request(
-      user_name, password, connect_time_out, req_time_out,
-      str_vlanmap_reqbody);
   json_object_put(vbrvlanmap_json_request_body);
   if (NULL == response) {
     pfc_log_error("%s: Error Occured while getting httpresponse",
@@ -740,7 +710,6 @@ drv_resp_code_t OdcVbrVlanMapCommand::create_update_cmd(
   int resp_code = response->code;
   pfc_log_debug("%s: Response code from Ctl for vlanmap create_cmd: %d",
                 PFC_FUNCNAME, resp_code);
-  rest_client_obj.clear_http_response();
   if (HTTP_201_RESP_CREATED != resp_code) {
     pfc_log_error("%s: Create/Update Vlanmap Failure.Response code %d",
                   PFC_FUNCNAME, resp_code);
@@ -926,21 +895,11 @@ drv_resp_code_t OdcVbrVlanMapCommand::delete_cmd(key_vlan_map_t&
   vbr_vlanmap_url.append(str_mapping_id);
   pfc_log_debug("%s: Vlanmap delete URL :%s", PFC_FUNCNAME,
                 vbr_vlanmap_url.c_str());
-  std::string ip_address = ctr_ptr->get_host_address();
-  std::string user_name = "";
-  std::string password = "";
-  get_username_password(ctr_ptr , user_name, password);
 
-  uint32_t odc_port = 0;
-  uint32_t connect_time_out = 0;
-  uint32_t req_time_out = 0;
-  read_conf_file(odc_port, connect_time_out, req_time_out);
-
-  restjson::RestClient rest_client_obj(ip_address, vbr_vlanmap_url,
-                                       odc_port, restjson::HTTP_METHOD_DELETE);
-  unc::restjson::HttpResponse_t* response = rest_client_obj.send_http_request(
-      user_name, password, connect_time_out, req_time_out,
-      NULL);
+  unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
+                  ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
+  unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
+       vbr_vlanmap_url, restjson::HTTP_METHOD_DELETE, NULL, conf_file_values_);
   if (NULL == response) {
     pfc_log_error("%s: Error Occured while getting httpresponse", PFC_FUNCNAME);
     return DRVAPI_RESPONSE_FAILURE;
@@ -948,7 +907,6 @@ drv_resp_code_t OdcVbrVlanMapCommand::delete_cmd(key_vlan_map_t&
   int resp_code = response->code;
   pfc_log_debug("%s: Response code from Ctrl for delete vlanmap(%d)",
                 PFC_FUNCNAME, resp_code);
-  rest_client_obj.clear_http_response();
   if (HTTP_200_RESP_OK != resp_code) {
     pfc_log_error("%s: Delete of vlanmap Failed.Response Code %d",
                   PFC_FUNCNAME, resp_code);
@@ -1176,73 +1134,5 @@ odc_drv_resp_code_t OdcVbrVlanMapCommand::check_logical_port_id_format(
   }
   return logical_port_retval;
 }
-
-// Gets username password form controller or else conf file
-void OdcVbrVlanMapCommand::get_username_password(unc::driver
-                                                 ::controller*
-                                                 ctr_ptr,
-                                                 std::string &user_name,
-                                                 std::string &password) {
-  ODC_FUNC_TRACE;
-  PFC_ASSERT(ctr_ptr != NULL);
-  std::string user_ctr = ctr_ptr->get_user_name();
-  std::string pass_ctr = ctr_ptr->get_pass_word();
-
-  if ((user_ctr.empty()) ||
-      (pass_ctr.empty())) {
-    read_user_name_password(user_name, password);
-  } else {
-    user_name = ctr_ptr->get_user_name();
-    password = ctr_ptr->get_pass_word();
-  }
-}
-
-// Reads username password from conf file else from default value
-void OdcVbrVlanMapCommand::read_user_name_password(std::string &user_name,
-                                                   std::string &password) {
-  ODC_FUNC_TRACE;
-  pfc::core::ModuleConfBlock set_user_password_blk(SET_USER_PASSWORD_BLK);
-  if (set_user_password_blk.getBlock() != PFC_CFBLK_INVALID) {
-    user_name = set_user_password_blk.getString(
-        CONF_USER_NAME, DEFAULT_USER_NAME.c_str());
-
-    password  = set_user_password_blk.getString(
-        CONF_PASSWORD, DEFAULT_PASSWORD.c_str());
-    pfc_log_debug("%s: Block Handle is Valid, user_name_ %s", PFC_FUNCNAME,
-                  user_name.c_str());
-  }  else {
-    user_name = DEFAULT_USER_NAME;
-    password  = DEFAULT_PASSWORD;
-    pfc_log_debug("%s: Block Handle is InValid, get default user_name%s",
-                  PFC_FUNCNAME, user_name.c_str());
-  }
-}
-
-// Reads set opt params from conf file if it fails reads from defs file
-void OdcVbrVlanMapCommand::read_conf_file(uint32_t &odc_port,
-                                          uint32_t &connection_time_out,
-                                          uint32_t &request_time_out) {
-  ODC_FUNC_TRACE;
-  pfc::core::ModuleConfBlock set_opt_blk(SET_OPT_BLK);
-  if (set_opt_blk.getBlock() != PFC_CFBLK_INVALID) {
-    odc_port  = set_opt_blk.getUint32(CONF_ODC_PORT, DEFAULT_ODC_PORT);
-
-    request_time_out = set_opt_blk.getUint32(
-        CONF_REQ_TIME_OUT, DEFAULT_REQ_TIME_OUT);
-
-    connection_time_out = set_opt_blk.getUint32(
-        CONF_CONNECT_TIME_OUT, DEFAULT_CONNECT_TIME_OUT);
-    pfc_log_debug("%s: Block Handle is Valid, odc_port_ %d", PFC_FUNCNAME,
-                  odc_port);
-
-  } else {
-    odc_port   =  DEFAULT_ODC_PORT;
-    connection_time_out = DEFAULT_CONNECT_TIME_OUT;
-    request_time_out = DEFAULT_REQ_TIME_OUT;
-    pfc_log_debug("%s: Block Handle is Invalid, set default Value %d",
-                  PFC_FUNCNAME, odc_port);
-  }
-}
-
 }  // namespace odcdriver
 }  // namespace unc

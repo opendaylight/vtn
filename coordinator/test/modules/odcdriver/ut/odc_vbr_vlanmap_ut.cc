@@ -35,7 +35,11 @@ TEST(odcdriver,  test_fetch_conf_vtn_name_empty) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   std::vector <unc::vtndrvcache::ConfigNode *> cfgnode_vector;
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr,
                                                          &key_vbr,
@@ -72,7 +76,11 @@ TEST(odcdriver,  test_fetch_conf_vbr_name_empty) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   std::vector <unc::vtndrvcache::ConfigNode *> cfgnode_vector;
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr,
                                                          &key_vbr,
@@ -108,7 +116,11 @@ TEST(odcdriver,  test_fetch_conf_null_response) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   std::vector <unc::vtndrvcache::ConfigNode *> cfgnode_vector;
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr,
                                                          &key_vbr,
@@ -144,7 +156,11 @@ TEST(odcdriver,  test_fetch_conf_null_response_data) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   std::vector <unc::vtndrvcache::ConfigNode *> cfgnode_vector;
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
@@ -182,7 +198,11 @@ TEST(odcdriver,  test_fetch_conf_not_found_response) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   std::vector <unc::vtndrvcache::ConfigNode *> cfgnode_vector;
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
@@ -218,7 +238,11 @@ TEST(odcdriver,  test_fetch_conf_service_unavilable_response) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   std::vector <unc::vtndrvcache::ConfigNode *> cfgnode_vector;
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
@@ -254,7 +278,11 @@ TEST(odcdriver,  test_fetch_conf_empty_response) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   std::vector <unc::vtndrvcache::ConfigNode *> cfgnode_vector;
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
@@ -289,7 +317,11 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_incorrect_response) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   std::vector <unc::vtndrvcache::ConfigNode *> cfgnode_vector;
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
@@ -325,7 +357,11 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_incorrect_response_body) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   std::vector <unc::vtndrvcache::ConfigNode *> cfgnode_vector;
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
@@ -361,7 +397,11 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_resp) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   std::vector <unc::vtndrvcache::ConfigNode *> cfgnode_vector;
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
@@ -445,7 +485,11 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_resp_max_vlanid) {
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
 
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   std::vector <unc::vtndrvcache::ConfigNode *> cfgnode_vector;
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
@@ -513,7 +557,11 @@ TEST(odcdriver,  test_fetch_conf_already_exist_vector) {
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
 
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   std::vector <unc::vtndrvcache::ConfigNode *> cfgnode_vector;
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
@@ -557,7 +605,11 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_resp_max_vlan_id_any) {
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
 
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   std::vector <unc::vtndrvcache::ConfigNode *> cfgnode_vector;
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
@@ -624,7 +676,11 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_incorrect_vlan_parse) {
   odc_ctr->vlan_vector.push_back("OF-00:00:00");
   pfc_bool_t is_switch_exist = PFC_FALSE;
   std::string port_id = "";
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
 
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, odc_vbr_vlanmap.validate_vlan_exist(
           key_vlan_map, val_vlan_map, switch_id, odc_ctr,
@@ -672,7 +728,11 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_same_ANY) {
   odc_ctr->vlan_vector.push_back("vtn1.vbr1.ANY.10");
   pfc_bool_t is_switch_exist = PFC_FALSE;
   std::string port_id = "";
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
 
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, odc_vbr_vlanmap.validate_vlan_exist(
           key_vlan_map, val_vlan_map, switch_id,
@@ -720,7 +780,11 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_same_sw) {
   odc_ctr->vlan_vector.push_back("vtn1.vbr1.OF-00:00:00:00:00:00:00:01.10");
   pfc_bool_t is_switch_exist = PFC_FALSE;
   std::string port_id = "";
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
 
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, odc_vbr_vlanmap.validate_vlan_exist(
           key_vlan_map, val_vlan_map, switch_id, odc_ctr,
@@ -771,7 +835,11 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_same_diff_vtn) {
   odc_ctr->vlan_vector.push_back("vtn2.vbr1.OF-00:00:00:00:00:00:00:01.10");
   pfc_bool_t is_switch_exist = PFC_FALSE;
   std::string port_id = "";
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, odc_vbr_vlanmap.validate_vlan_exist(
           key_vlan_map, val_vlan_map, switch_id,
           odc_ctr, is_switch_exist, port_id));
@@ -821,7 +889,11 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_same_diff_vbr) {
   odc_ctr->vlan_vector.push_back("vtn1.vbr2.OF-00:00:00:00:00:00:00:01.10");
   pfc_bool_t is_switch_exist = PFC_FALSE;
   std::string port_id = "";
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, odc_vbr_vlanmap.validate_vlan_exist(
           key_vlan_map, val_vlan_map, switch_id,
           odc_ctr, is_switch_exist, port_id));
@@ -871,7 +943,11 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_diff) {
   odc_ctr->vlan_vector.push_back("vtn1.vbr2.OF-00:00:00:00:00:00:00:01.10");
   pfc_bool_t is_switch_exist = PFC_FALSE;
   std::string port_id = "";
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, odc_vbr_vlanmap.validate_vlan_exist(
           key_vlan_map, val_vlan_map, switch_id,
           odc_ctr, is_switch_exist, port_id));
@@ -920,7 +996,11 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_diff_sw_exist) {
   pfc_bool_t is_switch_exist = PFC_FALSE;
   std::string port_id = "";
   std::string generated_port = "OF-00:00:00:00:00:00:00:01.20";
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, odc_vbr_vlanmap.validate_vlan_exist(
           key_vlan_map, val_vlan_map, switch_id,
           odc_ctr, is_switch_exist, port_id));
@@ -971,7 +1051,11 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_diff_any_exist) {
   pfc_bool_t is_switch_exist = PFC_FALSE;
   std::string port_id = "";
   std::string generated_port = "ANY.20";
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, odc_vbr_vlanmap.validate_vlan_exist(
           key_vlan_map, val_vlan_map, switch_id,
           odc_ctr, is_switch_exist, port_id));
@@ -1021,7 +1105,11 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_diff_vbr) {
   pfc_bool_t is_switch_exist = PFC_FALSE;
   std::string port_id = "";
   std::string generated_port = "ANY.20";
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, odc_vbr_vlanmap.validate_vlan_exist(
           key_vlan_map, val_vlan_map, switch_id,
           odc_ctr, is_switch_exist, port_id));
@@ -1070,7 +1158,11 @@ TEST(odcdriver,  test_validate_vlan_ANY_requested_vlan_wrong) {
   odc_ctr->vlan_vector.push_back("vtn2vbr2ANY10");
   pfc_bool_t is_switch_exist = PFC_FALSE;
   std::string port_id = "";
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, odc_vbr_vlanmap.validate_vlan_exist(
           key_vlan_map, val_vlan_map, switch_id,
           odc_ctr, is_switch_exist, port_id));
@@ -1118,7 +1210,11 @@ TEST(odcdriver,  test_validate_vlan_ANY_requested_vlan_same) {
   odc_ctr->vlan_vector.push_back("vtn1.vbr1.ANY.10");
   pfc_bool_t is_switch_exist = PFC_FALSE;
   std::string port_id = "";
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, odc_vbr_vlanmap.validate_vlan_exist(
           key_vlan_map, val_vlan_map, switch_id,
           odc_ctr, is_switch_exist, port_id));
@@ -1166,7 +1262,11 @@ TEST(odcdriver,  test_validate_vlan_ANY_requested_vlan_same_sw) {
   odc_ctr->vlan_vector.push_back("vtn1.vbr1.OF-00:00:00:00:00:00:00:01.10");
   pfc_bool_t is_switch_exist = PFC_FALSE;
   std::string port_id = "";
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, odc_vbr_vlanmap.validate_vlan_exist(
           key_vlan_map, val_vlan_map, switch_id,
           odc_ctr, is_switch_exist, port_id));
@@ -1215,7 +1315,11 @@ TEST(odcdriver,  test_validate_vlan_ANY_requested_vlan_same_ANY) {
   pfc_bool_t is_switch_exist = PFC_FALSE;
   std::string port_id = "";
   std::string genarate_id = "ANY.10";
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "";
+  conf_file.password = "";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, odc_vbr_vlanmap.validate_vlan_exist(
           key_vlan_map, val_vlan_map, switch_id,
           odc_ctr, is_switch_exist, port_id));
@@ -1266,7 +1370,11 @@ TEST(odcdriver,  test_validate_vlan_ANY_requested_vlan_diff_SW) {
   pfc_bool_t is_switch_exist = PFC_FALSE;
   std::string port_id = "";
   std::string genarate_id = "";
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, odc_vbr_vlanmap.validate_vlan_exist(
           key_vlan_map, val_vlan_map, switch_id,
           odc_ctr, is_switch_exist, port_id));
@@ -1312,7 +1420,11 @@ TEST(odcdriver, test_create_command_null_resp) {
     return;
   }
 
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.create_cmd(vlanmap_key, vlanmap_val, ctr));
   delete ctr;
@@ -1351,7 +1463,11 @@ TEST(odcdriver_mod, test_create_command_invalidreq) {
   if (ctr == NULL) {
     return;
   }
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.create_cmd(vlanmap_key, vlanmap_val, ctr));
   delete ctr;
@@ -1391,7 +1507,11 @@ TEST(odcdriver, test_create_cmd_invalid_vbrname) {
   if (ctr == NULL) {
     return;
   }
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.create_cmd(vlanmap_key, vlanmap_val, ctr));
   delete ctr;
@@ -1429,7 +1549,11 @@ TEST(odcdriver, test_create_cmd_invalid_vtnname) {
   if (ctr == NULL) {
     return;
   }
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.create_cmd(vlanmap_key, vlanmap_val, ctr));
   delete ctr;
@@ -1468,7 +1592,11 @@ TEST(odcdriver, test_create_cmd_invalid_format) {
   if (ctr == NULL) {
     return;
   }
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.create_cmd(vlanmap_key, vlanmap_val, ctr));
   delete ctr;
@@ -1508,7 +1636,11 @@ TEST(odcdriver, test_create_cmd) {
   if (ctr == NULL) {
     return;
   }
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
             obj.create_cmd(vlanmap_key, vlanmap_val, ctr));
   delete ctr;
@@ -1547,7 +1679,11 @@ TEST(odcdriver, test_create_cmd_logicalport_in_diff_format) {
   if (ctr == NULL) {
     return;
   }
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
             obj.create_cmd(vlanmap_key, vlanmap_val, ctr));
   delete ctr;
@@ -1586,7 +1722,11 @@ TEST(odcdriver, test_create_cmd_logicalport_in_diff_format_invalid) {
   if (ctr == NULL) {
     return;
   }
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.create_cmd(vlanmap_key, vlanmap_val, ctr));
   delete ctr;
@@ -1624,7 +1764,11 @@ TEST(odcdriver, test_create_cmd_validatevlan_failure) {
   if (ctr == NULL) {
     return;
   }
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.create_cmd(vlanmap_key, vlanmap_val, ctr));
   delete ctr;
@@ -1663,7 +1807,11 @@ TEST(odcdriver, test_update_cmd_vbrvlanmap) {
   if (ctr == NULL) {
     return;
   }
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
             obj.update_cmd(vlanmap_key, vlanmap_val, ctr));
   delete ctr;
@@ -1701,7 +1849,11 @@ TEST(odcdriver, test_create_cmd_validate_fail) {
   if (ctr == NULL) {
     return;
   }
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.create_cmd(vlanmap_key, vlanmap_val, ctr));
   delete ctr;
@@ -1741,7 +1893,11 @@ TEST(odcdriver, test_create_cmd_validate_failure) {
   if (ctr == NULL) {
     return;
   }
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.create_cmd(vlanmap_key, vlanmap_val, ctr));
   delete ctr;
@@ -1779,7 +1935,11 @@ TEST(odcdriver, test_create_cmd_validate_logicalportid_fail) {
   if (ctr == NULL) {
     return;
   }
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.create_cmd(vlanmap_key, vlanmap_val, ctr));
   delete ctr;
@@ -1818,7 +1978,11 @@ TEST(odcdriver, test_create_cmd_UNTAGGED) {
   if (ctr == NULL) {
     return;
   }
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
             obj.create_cmd(vlanmap_key, vlanmap_val, ctr));
   delete ctr;
@@ -1857,7 +2021,11 @@ TEST(odcdriver, test_create_update_invalid) {
   if (ctr == NULL) {
     return;
   }
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.create_cmd(vlanmap_key, vlanmap_val, ctr));
   delete ctr;
@@ -1895,7 +2063,11 @@ TEST(odcdriver, test_delete_existing_vlan_map_null_strid) {
     return;
   }
   const std::string str_mapping_id = "";
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
 
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.del_existing_vlanmap(vlanmap_key , ctr , str_mapping_id));
@@ -1932,7 +2104,11 @@ TEST(odcdriver, test_delete_existing_vlan_map_url_empty) {
     return;
   }
   const std::string str_mapping_id = "abc";
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
 
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.del_existing_vlanmap(vlanmap_key , ctr , str_mapping_id));
@@ -1970,7 +2146,11 @@ TEST(odcdriver, test_delete_existing_vlan_map_resp_null) {
     return;
   }
   const std::string str_mapping_id = "abc";
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
 
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.del_existing_vlanmap(vlanmap_key , ctr , str_mapping_id));
@@ -2009,7 +2189,11 @@ TEST(odcdriver, test_delete_existing_vlan_map__success) {
   }
   const std::string str_mapping_id
       = "/controller/nb/v2/vtn/default/vtns/vtn1/vbridges/";
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
 
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
             obj.del_existing_vlanmap(vlanmap_key , ctr , str_mapping_id));
@@ -2049,7 +2233,11 @@ TEST(odcdriver, test_delete_existing_vlan_map__not_202) {
   }
   const std::string str_mapping_id =
       "/controller/nb/v2/vtn/default/vtns/vtn1/vbridges/";
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
 
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.del_existing_vlanmap(vlanmap_key , ctr , str_mapping_id));
@@ -2089,7 +2277,11 @@ TEST(odcdriver, test_delete_existing_vlan_map_201_resp) {
     return;
   }
   std::string str_vlanid = "20";
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ("OF-00:00:00:00:00:00:00:01.20",
             obj.generate_vlanmap_id(vlanmap_key, str_vlanid, switch_id));
   if (ctr != NULL) {
@@ -2130,7 +2322,11 @@ TEST(odcdriver, generate_vlanmap_id_invalid) {
     return;
   }
   std::string str_vlanid = "20";
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ("ANY.20",
             obj.generate_vlanmap_id(vlanmap_key, str_vlanid, switch_id));
   if (ctr != NULL) {
@@ -2170,7 +2366,11 @@ TEST(odcdriver, generate_vlanmap_id_invalid_UNTAGGED_VLANID) {
     return;
   }
   std::string str_vlanid = "65535";
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ("ANY.0",
             obj.generate_vlanmap_id(vlanmap_key, str_vlanid, switch_id));
   if (ctr != NULL) {
@@ -2182,7 +2382,11 @@ TEST(odcdriver, generate_vlanmap_id_invalid_UNTAGGED_VLANID) {
 
 TEST(odcdriver, test_validate_logical_port_id) {
   std::string logicalportid = "SW-00:00:00:00:00:00:00:01";
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
             obj.validate_logical_port_id(logicalportid));
 }
@@ -2190,21 +2394,33 @@ TEST(odcdriver, test_validate_logical_port_id) {
 
 TEST(odcdriver, test_validate_logical_port_id_failure_case1) {
   std::string logicalportid = "SW-00:00:00:00:00:00:00";
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.validate_logical_port_id(logicalportid));
 }
 
 TEST(odcdriver, test_validate_logical_port_id_invalid) {
   std::string logicalportid = "00:00:00:00:00:00:00:01";
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.validate_logical_port_id(logicalportid));
 }
 
 TEST(odcdriver, test_validate_logical_port_id_incorrect) {
   std::string logicalportid = "SW-00:0000:00:0000:0001";
-  unc::odcdriver::OdcVbrVlanMapCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.validate_logical_port_id(logicalportid));
 }
@@ -2219,7 +2435,11 @@ TEST(odcdriver,  test_generate_vlanmap_id_untagged) {
   vlanmap_key.logical_port_id_valid = 1;
   std::string ret_val ="";
   std::string generated_id = "OF-00:00:00:00:00:00:00:02.0";
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   ret_val = odc_vbr_vlanmap.generate_vlanmap_id(
       vlanmap_key, vlan_id, logical_id);
   EXPECT_EQ(ret_val, generated_id);
@@ -2235,7 +2455,11 @@ TEST(odcdriver,  test_generate_vlanmap_id_valid) {
   vlanmap_key.logical_port_id_valid = 1;
   std::string ret_val ="";
   std::string generated_id = "OF-00:00:00:00:00:00:00:02.10";
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   ret_val = odc_vbr_vlanmap.generate_vlanmap_id(
       vlanmap_key, vlan_id, logical_id);
   EXPECT_EQ(ret_val, generated_id);
@@ -2251,7 +2475,11 @@ TEST(odcdriver,  test_generate_vlanmap_id_logical_port_id_invalid) {
   vlanmap_key.logical_port_id_valid = 0;
   std::string ret_val ="";
   std::string generated_id = "ANY.10";
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   ret_val = odc_vbr_vlanmap.generate_vlanmap_id(
       vlanmap_key, vlan_id, logical_id);
   EXPECT_EQ(ret_val, generated_id);
@@ -2281,7 +2509,11 @@ TEST(odcdriver,  test_delete_cmd_invalid_logicalport_id_1) {
   vlanmap_key.logical_port_id_valid = 1;
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   drv_resp_code_t ret_val = odc_vbr_vlanmap.delete_cmd(vlanmap_key,
                                                        vlanmap_val,
                                                        ctr);
@@ -2322,7 +2554,11 @@ TEST(odcdriver,  test_delete_cmd_invalid_logicalport_id_2) {
   unc::odcdriver::OdcController *odc_ctr =
       reinterpret_cast<unc::odcdriver::OdcController *>(ctr);
   odc_ctr->vlan_vector = vtn_vbr_vlan_vector;
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   drv_resp_code_t ret_val = odc_vbr_vlanmap.delete_cmd(vlanmap_key,
                                                        vlanmap_val,
                                                        ctr);
@@ -2362,7 +2598,11 @@ TEST(odcdriver,  test_delete_cmd_httpresponse_error) {
   unc::odcdriver::OdcController *odc_ctr =
       reinterpret_cast<unc::odcdriver::OdcController *>(ctr);
   odc_ctr->vlan_vector = vtn_vbr_vlan_vector;
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   drv_resp_code_t ret_val = odc_vbr_vlanmap.delete_cmd(vlanmap_key, vlanmap_val,
                                                        ctr);
   EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
@@ -2402,7 +2642,11 @@ TEST(odcdriver,  test_delete_cmd_invalid_http_responce) {
   unc::odcdriver::OdcController *odc_ctr =
       reinterpret_cast<unc::odcdriver::OdcController *>(ctr);
   odc_ctr->vlan_vector = vtn_vbr_vlan_vector;
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   drv_resp_code_t ret_val = odc_vbr_vlanmap.delete_cmd(vlanmap_key, vlanmap_val,
                                                        ctr);
   EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
@@ -2439,7 +2683,11 @@ TEST(odcdriver,  test_delete_cmd_vtn_name_empty) {
   unc::odcdriver::OdcController *odc_ctr =
       reinterpret_cast<unc::odcdriver::OdcController *>(ctr);
   odc_ctr->vlan_vector = vtn_vbr_vlan_vector;
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   drv_resp_code_t ret_val = odc_vbr_vlanmap.delete_cmd(vlanmap_key, vlanmap_val,
                                                        ctr);
   EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
@@ -2479,7 +2727,11 @@ TEST(odcdriver,  test_delete_cmd_valid) {
   unc::odcdriver::OdcController *odc_ctr =
       reinterpret_cast<unc::odcdriver::OdcController *>(ctr);
   odc_ctr->vlan_vector = vtn_vbr_vlan_vector;
-  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrVlanMapCommand odc_vbr_vlanmap(conf_file);
   drv_resp_code_t ret_val = odc_vbr_vlanmap.delete_cmd(vlanmap_key, vlanmap_val,
                                                        ctr);
   EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);

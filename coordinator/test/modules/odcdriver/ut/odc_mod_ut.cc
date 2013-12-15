@@ -573,6 +573,7 @@ TEST(odcdriver, test_ping_controller_SUCCESS) {
           (key_ctr.controller_name), ctr_name.c_str(),
           sizeof(key_ctr.controller_name));
   unc::driver::controller* ctr = NULL;
+  obj.read_conf_file();
   ctr =  obj.add_controller(key_ctr,  val_ctr);
   EXPECT_EQ(PFC_TRUE,  obj.ping_controller(ctr));
   if (ctr != NULL) {
@@ -603,9 +604,10 @@ TEST(odcdriver, test_ping_controller_connection_status_success) {
           sizeof(key_ctr.controller_name));
   val_ctr.enable_audit = PFC_TRUE;
   unc::driver::controller* ctr = NULL;
+  obj.read_conf_file();
   ctr =  obj.add_controller(key_ctr,  val_ctr);
   EXPECT_EQ(PFC_TRUE,  obj.ping_controller(ctr));
-  EXPECT_EQ(0,  obj.get_ping_interval());
+  EXPECT_EQ(30,  obj.get_ping_interval());
   unc::tclib::TcLibModule::stub_unloadtcLibModule();
   if (ctr != NULL) {
     delete ctr;
