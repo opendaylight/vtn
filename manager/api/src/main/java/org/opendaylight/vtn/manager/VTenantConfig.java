@@ -29,7 +29,7 @@ public class VTenantConfig implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 7446090329841381143L;
+    private static final long serialVersionUID = 2270106387652325893L;
 
     /**
      * An arbitrary description about the tenant.
@@ -125,12 +125,17 @@ public class VTenantConfig implements Serializable {
      * Return an {@code Integer} object which represents {@code idle_timeout}
      * value for flow entries.
      *
+     * <p>
+     *   This method is called by JAXB.
+     * </p>
+     *
      * @return  An {@code Integer} object which represents {@code idle_timeout}
      *          value. {@code null} is returned if this object does not keep
      *          the value.
      */
+    @SuppressWarnings("unused")
     @XmlAttribute(name = "idleTimeout")
-    public Integer getIdleTimeoutValue() {
+    private Integer getIdleTimeoutValue() {
         return (idleTimeout >= 0) ? Integer.valueOf(idleTimeout) : null;
     }
 
@@ -157,12 +162,17 @@ public class VTenantConfig implements Serializable {
      * Return an {@code Integer} object which represents {@code hard_timeout}
      * value for flow entries.
      *
+     * <p>
+     *   This method is called by JAXB.
+     * </p>
+     *
      * @return  An {@code Integer} object which represents {@code hard_timeout}
      *          value. {@code null} is returned if this object does not keep
      *          the value.
      */
+    @SuppressWarnings("unused")
     @XmlAttribute(name = "hardTimeout")
-    public Integer getHardTimeoutValue() {
+    private Integer getHardTimeoutValue() {
         return (hardTimeout >= 0) ? Integer.valueOf(hardTimeout) : null;
     }
 

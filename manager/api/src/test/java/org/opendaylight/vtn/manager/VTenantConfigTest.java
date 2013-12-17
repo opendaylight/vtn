@@ -34,17 +34,15 @@ public class VTenantConfigTest extends TestBase {
                     assertEquals(emsg, desc, tconf.getDescription());
                     if (iv == null || iv.intValue() < 0) {
                         assertEquals(emsg, -1, tconf.getIdleTimeout());
-                        assertNull(emsg, tconf.getIdleTimeoutValue());
                     } else {
-                        assertEquals(emsg, iv.intValue(), tconf.getIdleTimeout());
-                        assertEquals(emsg, iv, tconf.getIdleTimeoutValue());
+                        assertEquals(emsg, iv.intValue(),
+                                     tconf.getIdleTimeout());
                     }
                     if (hv == null || hv.intValue() < 0) {
                         assertEquals(emsg, -1, tconf.getHardTimeout());
-                        assertNull(emsg, tconf.getHardTimeoutValue());
                     } else {
-                        assertEquals(emsg, hv.intValue(), tconf.getHardTimeout());
-                        assertEquals(emsg, hv, tconf.getHardTimeoutValue());
+                        assertEquals(emsg, hv.intValue(),
+                                     tconf.getHardTimeout());
                     }
                 }
             }

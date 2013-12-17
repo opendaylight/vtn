@@ -655,8 +655,8 @@ public class VTNManagerIT extends TestBase {
                         }
 
                         String olddesc;
-                        Integer oldiv;
-                        Integer oldhv;
+                        int oldiv;
+                        int oldhv;
                         for (Integer iv : ivs) {
                             for (Integer hv : hvs) {
                                 VTenant tenant = null;
@@ -675,8 +675,8 @@ public class VTNManagerIT extends TestBase {
                                             unexpected(e);
                                         }
                                         olddesc = tenant.getDescription();
-                                        oldiv = tenant.getIdleTimeoutValue();
-                                        oldhv = tenant.getHardTimeoutValue();
+                                        oldiv = tenant.getIdleTimeout();
+                                        oldhv = tenant.getHardTimeout();
 
                                         tconf = createVTenantConfig(ndesc, iv, hv);
                                         st = mgr.modifyTenant(tpath, tconf, true);
@@ -728,8 +728,8 @@ public class VTNManagerIT extends TestBase {
                                         } else {
                                             assertEquals(emsg, tname, tenant.getName());
                                             assertEquals(emsg, olddesc, tenant.getDescription());
-                                            assertEquals(emsg, oldiv.intValue(), tenant.getIdleTimeout());
-                                            assertEquals(emsg, oldhv.intValue(), tenant.getHardTimeout());
+                                            assertEquals(emsg, oldiv, tenant.getIdleTimeout());
+                                            assertEquals(emsg, oldhv, tenant.getHardTimeout());
                                         }
                                     }
                                 }
@@ -740,8 +740,10 @@ public class VTNManagerIT extends TestBase {
                                 assertEquals("(name)" + tname + " Reset", StatusCode.SUCCESS, st.getCode());
 
                                 olddesc = (desc == null) ? null : new String(desc);
-                                oldiv = (orgiv == null || orgiv.intValue() < 0) ? new Integer(300) : orgiv;
-                                oldhv = (orghv == null || orghv.intValue() < 0) ? new Integer(0) : orghv;
+                                oldiv = (orgiv == null || orgiv.intValue() < 0)
+                                    ? 300 : orgiv.intValue();
+                                oldhv = (orghv == null || orghv.intValue() < 0)
+                                    ? 0 : orghv.intValue();
 
                                 // all == false
                                 tconf = createVTenantConfig(desc, iv, hv);
@@ -759,7 +761,8 @@ public class VTNManagerIT extends TestBase {
                                 } else if (iv == null || iv.intValue() < 0) {
                                     // idle_timeout is not set
                                     if (hv.intValue() > 0
-                                            && (oldiv.intValue() != 0 && oldiv.intValue() >= hv.intValue())) {
+                                            && (oldiv != 0 &&
+                                                oldiv >= hv.intValue())) {
                                         assertEquals(emsg,
                                                 StatusCode.BADREQUEST, st.getCode());
                                     } else if (hv.intValue() > 65535) {
@@ -816,15 +819,15 @@ public class VTNManagerIT extends TestBase {
                                     assertEquals(emsg, tname, tenant.getName());
                                     assertEquals(emsg, olddesc, tenant.getDescription());
                                     if (iv == null || iv.intValue() < 0) {
-                                        assertEquals(emsg,
-                                                oldiv.intValue(), tenant.getIdleTimeout());
+                                        assertEquals(emsg, oldiv,
+                                                     tenant.getIdleTimeout());
                                     } else {
                                         assertEquals(emsg,
                                                 iv.intValue(), tenant.getIdleTimeout());
                                     }
                                     if (hv == null || hv.intValue() < 0) {
-                                        assertEquals(emsg,
-                                                oldhv.intValue(), tenant.getHardTimeout());
+                                        assertEquals(emsg, oldhv,
+                                                     tenant.getHardTimeout());
                                     } else {
                                         assertEquals(emsg,
                                                 hv.intValue(), tenant.getHardTimeout());
@@ -832,8 +835,10 @@ public class VTNManagerIT extends TestBase {
                                 } else {
                                     assertEquals(emsg, tname, tenant.getName());
                                     assertEquals(emsg, olddesc, tenant.getDescription());
-                                    assertEquals(emsg, oldiv.intValue(), tenant.getIdleTimeout());
-                                    assertEquals(emsg, oldhv.intValue(), tenant.getHardTimeout());
+                                    assertEquals(emsg, oldiv,
+                                                 tenant.getIdleTimeout());
+                                    assertEquals(emsg, oldhv,
+                                                 tenant.getHardTimeout());
                                 }
 
                                 olddesc = tenant.getDescription();

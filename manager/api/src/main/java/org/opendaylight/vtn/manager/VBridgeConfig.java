@@ -29,7 +29,7 @@ public class VBridgeConfig implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 7501956469021832807L;
+    private static final long serialVersionUID = 7053592672687624121L;
 
     /**
      * An arbitrary description about the bridge.
@@ -100,13 +100,18 @@ public class VBridgeConfig implements Serializable {
      * Return an {@code Integer} object which represents the number of seconds
      * between MAC address table aging.
      *
+     * <p>
+     *   This method is called by JAXB.
+     * </p>
+     *
      * @return  An {@code Integer} object which represents the number of
      *          seconds between MAC address table aging.
      *          {@code null} is returned if this object does not keep the
      *          value.
      */
+    @SuppressWarnings("unused")
     @XmlAttribute(name = "ageInterval")
-    public Integer getAgeIntervalValue() {
+    private Integer getAgeIntervalValue() {
         return (ageInterval >= 0) ? Integer.valueOf(ageInterval) : null;
     }
 

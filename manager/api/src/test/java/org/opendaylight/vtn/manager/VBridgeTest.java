@@ -47,13 +47,11 @@ public class VBridgeTest extends TestBase {
                             assertEquals(emsg, desc, vbridge.getDescription());
                             assertEquals(emsg, flt, vbridge.getFaults());
                             if (ival == null || ival.intValue() < 0) {
-                                assertEquals(emsg, -1, vbridge.getAgeInterval());
-                                assertNull(emsg, vbridge.getAgeIntervalValue());
+                                assertEquals(emsg, -1,
+                                             vbridge.getAgeInterval());
                             } else {
                                 assertEquals(emsg, ival.intValue(),
                                              vbridge.getAgeInterval());
-                                assertEquals(emsg, ival,
-                                             vbridge.getAgeIntervalValue());
                             }
 
                             // null state should be interpreted as UNKNOWN.
@@ -258,10 +256,8 @@ public class VBridgeTest extends TestBase {
         assertEquals(flt, vbridge.getFaults());
         if (ival == null || ival.intValue() < 0) {
             assertEquals(-1, vbridge.getAgeInterval());
-            assertNull(vbridge.getAgeIntervalValue());
         } else {
             assertEquals(ival.intValue(), vbridge.getAgeInterval());
-            assertEquals(ival, vbridge.getAgeIntervalValue());
         }
         assertSame(required, vbridge.getState());
     }

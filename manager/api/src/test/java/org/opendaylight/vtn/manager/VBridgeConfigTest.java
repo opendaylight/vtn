@@ -32,11 +32,9 @@ public class VBridgeConfigTest extends TestBase {
                         + ((ival == null) ? "null" : ival.intValue());
                 if (ival == null || ival.intValue() < 0) {
                     assertEquals(emsg, -1, bconf.getAgeInterval());
-                    assertNull(emsg, bconf.getAgeIntervalValue());
                 } else {
                     assertEquals(emsg, ival.intValue(),
-                            bconf.getAgeInterval());
-                    assertEquals(emsg, ival, bconf.getAgeIntervalValue());
+                                 bconf.getAgeInterval());
                 }
             }
         }

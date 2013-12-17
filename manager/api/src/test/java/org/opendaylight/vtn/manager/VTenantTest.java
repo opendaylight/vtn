@@ -41,19 +41,15 @@ public class VTenantTest extends TestBase {
                         assertEquals(emsg, desc, vtenant.getDescription());
                         if (iv == null || iv.intValue() < 0) {
                             assertEquals(emsg, -1, vtenant.getIdleTimeout());
-                            assertNull(emsg, vtenant.getIdleTimeoutValue());
                         } else {
                             assertEquals(emsg, iv.intValue(),
                                          vtenant.getIdleTimeout());
-                            assertEquals(emsg, iv, vtenant.getIdleTimeoutValue());
                         }
                         if (hv == null || hv.intValue() < 0) {
                             assertEquals(emsg, -1, vtenant.getHardTimeout());
-                            assertNull(emsg, vtenant.getHardTimeoutValue());
                         } else {
                             assertEquals(emsg, hv.intValue(),
                                          vtenant.getHardTimeout());
-                            assertEquals(emsg, hv, vtenant.getHardTimeoutValue());
                         }
                     }
                 }
@@ -211,17 +207,13 @@ public class VTenantTest extends TestBase {
         assertEquals(desc, vtenant.getDescription());
         if (idle == null || idle.intValue() < 0) {
             assertEquals(-1, vtenant.getIdleTimeout());
-            assertNull(vtenant.getIdleTimeoutValue());
         } else {
             assertEquals(idle.intValue(), vtenant.getIdleTimeout());
-            assertEquals(idle, vtenant.getIdleTimeoutValue());
         }
         if (hard == null || hard.intValue() < 0) {
             assertEquals(-1, vtenant.getHardTimeout());
-            assertNull(vtenant.getHardTimeoutValue());
         } else {
             assertEquals(hard.intValue(), vtenant.getHardTimeout());
-            assertEquals(hard, vtenant.getHardTimeoutValue());
         }
     }
 }
