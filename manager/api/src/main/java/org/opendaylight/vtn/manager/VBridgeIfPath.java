@@ -17,7 +17,7 @@ public class VBridgeIfPath extends VBridgePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 9070687329308327585L;
+    private static final long serialVersionUID = -5494415245844633625L;
 
     /**
      * The name of the interface.
@@ -57,6 +57,21 @@ public class VBridgeIfPath extends VBridgePath {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected StringBuilder toStringBuilder() {
+        StringBuilder builder = super.toStringBuilder();
+        String name = ifName;
+        if (name == null) {
+            name = "<null>";
+        }
+        builder.append('.').append(name);
+
+        return builder;
+    }
+
+    /**
      * Determine whether the given object is identical to this object.
      *
      * @param o  An object to be compared.
@@ -92,22 +107,5 @@ public class VBridgeIfPath extends VBridgePath {
         }
 
         return h;
-    }
-
-    /**
-     * Return a string representation of this object.
-     *
-     * @return  A string representation of this object.
-     */
-    @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder(super.toString());
-        String name = ifName;
-        if (name == null) {
-            name = "<null>";
-        }
-        builder.append('.').append(name);
-
-        return builder.toString();
     }
 }

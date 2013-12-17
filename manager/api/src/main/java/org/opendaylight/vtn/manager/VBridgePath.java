@@ -17,7 +17,7 @@ public class VBridgePath extends VTenantPath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 7534766664277362064L;
+    private static final long serialVersionUID = 49188209943135523L;
 
     /**
      * The name of the bridge.
@@ -56,6 +56,21 @@ public class VBridgePath extends VTenantPath {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected StringBuilder toStringBuilder() {
+        StringBuilder builder = super.toStringBuilder();
+        String name = bridgeName;
+        if (name == null) {
+            name = "<null>";
+        }
+        builder.append('.').append(name);
+
+        return builder;
+    }
+
+    /**
      * Determine whether the given object is identical to this object.
      *
      * @param o  An object to be compared.
@@ -91,22 +106,5 @@ public class VBridgePath extends VTenantPath {
         }
 
         return h;
-    }
-
-    /**
-     * Return a string representation of this object.
-     *
-     * @return  A string representation of this object.
-     */
-    @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder(super.toString());
-        String name = bridgeName;
-        if (name == null) {
-            name = "<null>";
-        }
-        builder.append('.').append(name);
-
-        return builder.toString();
     }
 }

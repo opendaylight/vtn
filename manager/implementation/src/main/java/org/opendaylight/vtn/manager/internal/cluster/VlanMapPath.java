@@ -25,7 +25,7 @@ public class VlanMapPath extends VBridgePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 2252969356673452895L;
+    private static final long serialVersionUID = 556981779172308505L;
 
     /**
      * Identifier of the VLAN mapping.
@@ -56,6 +56,19 @@ public class VlanMapPath extends VBridgePath {
     }
 
     /**
+     * Return a {@link StringBuilder} object which contains a string
+     * representation of this object.
+     *
+     * @return  A {@link StringBuilder} object.
+     */
+    protected StringBuilder toStringBuilder() {
+        StringBuilder builder = super.toStringBuilder();
+        builder.append('.').append(mapId);
+
+        return builder;
+    }
+
+    /**
      * Determine whether the given object is identical to this object.
      *
      * @param o  An object to be compared.
@@ -82,18 +95,5 @@ public class VlanMapPath extends VBridgePath {
     @Override
     public int hashCode() {
         return super.hashCode() ^ mapId.hashCode();
-    }
-
-    /**
-     * Return a string representation of this object.
-     *
-     * @return  A string representation of this object.
-     */
-    @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder(super.toString());
-        builder.append('.').append(mapId);
-
-        return builder.toString();
     }
 }

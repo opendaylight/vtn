@@ -19,7 +19,7 @@ public class VTenantPath implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4898647140177601483L;
+    private static final long serialVersionUID = 5295435248672675596L;
 
     /**
      * The name of the tenant.
@@ -42,6 +42,20 @@ public class VTenantPath implements Serializable {
      */
     public String getTenantName() {
         return tenantName;
+    }
+
+    /**
+     * Return a {@link StringBuilder} object which contains a string
+     * representation of this object.
+     *
+     * A string contained in a returned {@link StringBuilder} is identical
+     * to a string returned by {@link #toString()}.
+     *
+     * @return  A {@link StringBuilder} object.
+     */
+    protected StringBuilder toStringBuilder() {
+        String name = (tenantName == null) ? "<null>" : tenantName;
+        return new StringBuilder(name);
     }
 
     /**
@@ -89,6 +103,6 @@ public class VTenantPath implements Serializable {
      */
     @Override
     public String toString() {
-        return (tenantName == null) ? "<null>" : tenantName;
+        return toStringBuilder().toString();
     }
 }
