@@ -36,7 +36,11 @@ TEST(odcdriver,  test_create_cmd_vbr) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,  obj.create_cmd(key_vbr,  val_vbr,  ctr));
   delete ctr;
   ctr = NULL;
@@ -64,7 +68,11 @@ TEST(odcdriver,  test_delete_cmd_vbr) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
             obj.delete_cmd(key_vbr,  val_vbr,  ctr));
   delete ctr;
@@ -94,7 +102,11 @@ TEST(odcdriver,  test_update_cmd_vbr) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
             obj.update_cmd(key_vbr,  val_vbr,  ctr));
   delete ctr;
@@ -125,7 +137,11 @@ TEST(odcdriver,  test_invalid_vtnname_create_cmd_vbr) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.create_cmd(key_vbr,  val_vbr,  ctr));
   delete ctr;
@@ -155,7 +171,11 @@ TEST(odcdriver,  test_create_cmd_invalid_vbr_name) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,  obj.create_cmd(key_vbr,  val_vbr,  ctr));
   delete ctr;
 }
@@ -182,7 +202,11 @@ TEST(odcdriver,  test_invalid_vtnname_update_cmd) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,  obj.update_cmd(key_vbr,  val_vbr,  ctr));
   delete ctr;
   ctr = NULL;
@@ -211,7 +235,11 @@ TEST(odcdriver,  test_update_cmd_invalid_vbr_name) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.update_cmd(key_vbr,  val_vbr,  ctr));
   delete ctr;
@@ -242,7 +270,11 @@ TEST(odcdriver,  test_invalid_vtnname_delete_cmd_vbr) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.delete_cmd(key_vbr,  val_vbr,  ctr));
   delete ctr;
@@ -272,7 +304,11 @@ TEST(odcdriver,  test_delete_cmd_invalid_vbr_name) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,  obj.delete_cmd(key_vbr,  val_vbr,  ctr));
   delete ctr;
   ctr = NULL;
@@ -302,7 +338,11 @@ TEST(odcdriver,  test_delete_cmd_invalid) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.delete_cmd(key_vbr,  val_vbr,  ctr));
   delete ctr;
@@ -331,7 +371,11 @@ TEST(odcdriver,  test_create_cmd_invalid) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.create_cmd(key_vbr,  val_vbr,  ctr));
   delete ctr;
@@ -363,7 +407,11 @@ TEST(odcdriver,  test_update_cmd_invalid) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.update_cmd(key_vbr,  val_vbr,  ctr));
   delete ctr;
@@ -393,7 +441,11 @@ TEST(odcdriver,  test_create_cmd_null_resp) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.create_cmd(key_vbr,  val_vbr,  ctr));
   delete ctr;
@@ -423,7 +475,11 @@ TEST(odcdriver,  test_update_cmd_null_resp) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.update_cmd(key_vbr,  val_vbr,  ctr));
   delete ctr;
@@ -452,7 +508,11 @@ TEST(odcdriver,  test_delete_cmd_null_resp) {
   std::string description =  "descrip";
   strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
           description.c_str(),  sizeof(val_vbr.vbr_description)-1);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.delete_cmd(key_vbr,  val_vbr,  ctr));
   delete ctr;
@@ -473,7 +533,11 @@ TEST(odcdriver,  test_get_vbr_list_empty_vtn_name) {
   inet_aton(ip_add.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   std::vector<unc::vtndrvcache::ConfigNode *> value_list;
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.fetch_config(ctr, &key_vtn, value_list));
@@ -501,7 +565,11 @@ TEST(odcdriver,  test_get_vbr_list_null_resp) {
   inet_aton(NULL_RESPONSE.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   std::vector<unc::vtndrvcache::ConfigNode *> value_list;
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.fetch_config(ctr, &key_vtn, value_list));
@@ -530,7 +598,11 @@ TEST(odcdriver,  test_get_vbr_list_invalid_resp) {
   inet_aton(INVALID_RESPONSE.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   std::vector<unc::vtndrvcache::ConfigNode *> value_list;
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.fetch_config(ctr, &key_vtn, value_list));
@@ -559,7 +631,11 @@ TEST(odcdriver,  test_get_vbr_list_valid_resp) {
   inet_aton(READ_VBR_VALID.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   std::vector<unc::vtndrvcache::ConfigNode *> value_list;
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
             obj.fetch_config(ctr, &key_vtn, value_list));
@@ -589,7 +665,11 @@ TEST(odcdriver,  test_get_vbr_list_valid_resp_no_vbr) {
   inet_aton(READ_VBR_NULL_DATA.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
-  unc::odcdriver::OdcVbrCommand obj;
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrCommand obj(conf_file);
   std::vector<unc::vtndrvcache::ConfigNode *> value_list;
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
             obj.fetch_config(ctr, &key_vtn, value_list));

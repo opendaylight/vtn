@@ -10,12 +10,12 @@
 #ifndef _ODC_MOD_HH__
 #define _ODC_MOD_HH__
 
-#include <rest_client.hh>
 #include <odc_vtn.hh>
 #include <odc_vbr.hh>
 #include <odc_vbrif.hh>
 #include <odc_vbr_vlanmap.hh>
 #include <odc_driver_common_defs.hh>
+#include <rest_util.hh>
 #include <vtn_drv_module.hh>
 #include <arpa/inet.h>
 #include <unc/tc/external/tc_services.h>
@@ -32,7 +32,8 @@ class ODCModule: public pfc::core::Module, public unc::driver::driver {
    */
   explicit ODCModule(const pfc_modattr_t*& obj)
       : Module(obj),
-        ping_interval(0) { }
+        ping_interval(0),
+        conf_file_values_() { }
   /**
    * @brief     - Gets the controller type
    * @param[in] - unc_keytype_ctrtype_t enum
@@ -168,36 +169,9 @@ class ODCModule: public pfc::core::Module, public unc::driver::driver {
    */
   uint32_t notify_audit_start_to_tc(std::string controller_id);
 
-  /**
-   * @brief     - reads odc_port, connection_timeout, request time out values form
-   *              conf file else take default vlaues
-   * @param[out] - odc_port in uint32_t
-   * @param[out] - connection_time_out in seconds
-   * @param[out] - request time out in seconds
-   */
-  void read_conf_file(uint32_t &odc_port,
-                      uint32_t &connection_time_out,
-                      uint32_t &request_time_out);
-
-  /**
-   * @brief      - reads user name password from conf file else take default
-   *               values
-   * @param[out]  - username in string
-   * @param[out]  - password in string
-   */
-  void read_user_name_password(std::string &user_name, std::string &password);
-
-  /**
-   * @brief      - gets user name password from controller pointer else read
-   *               conf file
-   * @param[out]  - username in string
-   * @param[out]  - password in string
-   */
-  void get_username_password(unc::driver::controller* ctr_ptr,
-                             std::string &user_name, std::string &password);
-
  private:
   uint32_t ping_interval;  // in seconds
+  unc::restjson::ConfFileValues_t conf_file_values_;
 };
 }  //  namespace odcdriver
 }  //  namespace unc

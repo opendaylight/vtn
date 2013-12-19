@@ -116,22 +116,22 @@ unc::driver::driver_command* ODCModule::create_driver_command(
   switch (key_type) {
     case UNC_KT_VTN: {
       pfc_log_debug("UNC_KT_VTN key type received");
-      driver_cmd_ptr = new OdcVtnCommand();
+      driver_cmd_ptr = new OdcVtnCommand(conf_file_values_);
       break;
     }
     case UNC_KT_VBRIDGE: {
       pfc_log_debug("UNC_KT_VBR key type received");
-      driver_cmd_ptr = new OdcVbrCommand();
+      driver_cmd_ptr = new OdcVbrCommand(conf_file_values_);
       break;
     }
     case UNC_KT_VBR_IF: {
       pfc_log_debug("UNC_KT_VBRIF key type received");
-      driver_cmd_ptr = new OdcVbrIfCommand();
+      driver_cmd_ptr = new OdcVbrIfCommand(conf_file_values_);
       break;
     }
     case UNC_KT_VBR_VLANMAP: {
       pfc_log_debug("UNC_KT_VBR_VLANMAP key type received");
-      driver_cmd_ptr = new OdcVbrVlanMapCommand();
+      driver_cmd_ptr = new OdcVbrVlanMapCommand(conf_file_values_);
       break;
     }
     default:
@@ -163,20 +163,15 @@ pfc_bool_t ODCModule::is_ping_needed() {
 pfc_bool_t ODCModule::ping_controller(unc::driver::controller* ctr) {
   ODC_FUNC_TRACE;
   PFC_ASSERT(ctr != NULL);
-  std::string ipaddress = ctr->get_host_address();
-  std::string user_name = "";
-  std::string password = "";
-  get_username_password(ctr, user_name, password);
-  uint32_t odc_port = 0;
-  uint32_t connect_time_out = 0;
-  uint32_t req_time_out = 0;
-  read_conf_file(odc_port, connect_time_out, req_time_out);
+  std::string url = "";
+  url.append(BASE_URL);
+  url.append(VERSION);
 
-  std::string url = "/controller/nb/v2/vtn/version";
-  restjson::RestClient rest_client_obj(ipaddress, url,
-                                       odc_port, restjson::HTTP_METHOD_GET);
-  unc::restjson::HttpResponse_t* response = rest_client_obj.send_http_request(
-      user_name, password, connect_time_out, req_time_out, NULL);
+  unc::restjson::RestUtil rest_util_obj(ctr->get_host_address(),
+                          ctr->get_user_name(), ctr->get_pass_word());
+  unc::restjson::HttpResponse_t* response =
+      rest_util_obj.send_http_request(
+          url, restjson::HTTP_METHOD_GET, NULL, conf_file_values_);
 
   if (NULL == response) {
     pfc_log_error("Error in getting response from controller");
@@ -184,7 +179,6 @@ pfc_bool_t ODCModule::ping_controller(unc::driver::controller* ctr) {
   }
   int resp_code = response->code;
   pfc_log_debug("Response code for ping controller  :%d", resp_code);
-  rest_client_obj.clear_http_response();
   if (HTTP_200_RESP_OK != resp_code) {
     pfc_log_error("Response code is : %d", resp_code);
     return PFC_FALSE;
@@ -197,71 +191,6 @@ pfc_bool_t ODCModule::ping_controller(unc::driver::controller* ctr) {
     notify_audit_start_to_tc(controller_name);
   }
   return PFC_TRUE;
-}
-
-// Gets the user name password from the controller pointer else from conf file
-void ODCModule::get_username_password(unc::driver::controller* ctr_ptr,
-                                      std::string &user_name,
-                                      std::string &password) {
-  ODC_FUNC_TRACE;
-  PFC_ASSERT(ctr_ptr != NULL);
-  std::string user_ctr = ctr_ptr->get_user_name();
-  std::string pass_ctr = ctr_ptr->get_pass_word();
-
-  if ((user_ctr.empty()) ||
-      (pass_ctr.empty())) {
-    read_user_name_password(user_name, password);
-  } else {
-    user_name = ctr_ptr->get_user_name();
-    password = ctr_ptr->get_pass_word();
-  }
-}
-
-// Reads username password from conf file else take default values
-void ODCModule::read_user_name_password(std::string &user_name,
-                                        std::string &password) {
-  ODC_FUNC_TRACE;
-  pfc::core::ModuleConfBlock set_user_password_blk(SET_USER_PASSWORD_BLK);
-  if (set_user_password_blk.getBlock() != PFC_CFBLK_INVALID) {
-    user_name = set_user_password_blk.getString(
-        CONF_USER_NAME, DEFAULT_USER_NAME.c_str());
-
-    password  = set_user_password_blk.getString(
-        CONF_PASSWORD, DEFAULT_PASSWORD.c_str());
-    pfc_log_debug("%s: Block Handle is Valid,user_name_ %s", PFC_FUNCNAME,
-                  user_name.c_str());
-  }  else {
-    user_name = DEFAULT_USER_NAME;
-    password  = DEFAULT_PASSWORD;
-    pfc_log_debug("%s: Block Handle is InValid,set default user_name_ %s",
-                  PFC_FUNCNAME, user_name.c_str());
-  }
-}
-
-// Reads set opt params from conf file if it fails reads from defs file
-void ODCModule:: read_conf_file(uint32_t &odc_port,
-                                uint32_t &connection_time_out,
-                                uint32_t &request_time_out) {
-  ODC_FUNC_TRACE;
-  pfc::core::ModuleConfBlock set_opt_blk(SET_OPT_BLK);
-  if (set_opt_blk.getBlock() != PFC_CFBLK_INVALID) {
-    odc_port  = set_opt_blk.getUint32(CONF_ODC_PORT, DEFAULT_ODC_PORT);
-
-    request_time_out = set_opt_blk.getUint32(
-        CONF_REQ_TIME_OUT, DEFAULT_REQ_TIME_OUT);
-
-    connection_time_out = set_opt_blk.getUint32(
-        CONF_CONNECT_TIME_OUT, DEFAULT_CONNECT_TIME_OUT);
-    pfc_log_debug("%s: Block Handle is Valid, odc_port_ %d", PFC_FUNCNAME,
-                  odc_port);
-
-  } else {
-    odc_port   =  DEFAULT_ODC_PORT;
-    connection_time_out = DEFAULT_CONNECT_TIME_OUT;
-    request_time_out = DEFAULT_REQ_TIME_OUT;
-    pfc_log_debug("%s: Block Handle is Invalid,set default Value %d",
-                  PFC_FUNCNAME, odc_port);
-  }
 }
 
 unc::tclib::TcCommonRet ODCModule::HandleVote(unc::driver::controller*) {
@@ -281,14 +210,31 @@ unc::tclib::TcCommonRet ODCModule::HandleAbort(unc::driver::controller*) {
 
 void ODCModule::read_conf_file() {
   ODC_FUNC_TRACE;
-  pfc::core::ModuleConfBlock drv_block(drv_ping_conf_blk);
+  pfc::core::ModuleConfBlock drv_block(DRV_CONF_BLK);
   if (drv_block.getBlock() != PFC_CFBLK_INVALID) {
-    ping_interval = drv_block.getUint32("odcdrv_ping_interval",
-                                        ping_default_interval);
+    ping_interval = drv_block.getUint32(CONF_PING_INTERVAL,
+                                        PING_DEFAULT_INTERVAL);
+    conf_file_values_.odc_port  = drv_block.getUint32(CONF_ODC_PORT,
+                                                      DEFAULT_ODC_PORT);
+    conf_file_values_.request_time_out = drv_block.getUint32(
+        CONF_REQ_TIME_OUT, DEFAULT_REQ_TIME_OUT);
+
+    conf_file_values_.connection_time_out = drv_block.getUint32(
+        CONF_CONNECT_TIME_OUT, DEFAULT_CONNECT_TIME_OUT);
+    conf_file_values_.user_name = drv_block.getString(
+        CONF_USER_NAME, DEFAULT_USER_NAME.c_str());
+
+    conf_file_values_.password  = drv_block.getString(
+        CONF_PASSWORD, DEFAULT_PASSWORD.c_str());
     pfc_log_debug("%s: Block Handle is Valid,Ping Timeout %d", PFC_FUNCNAME,
                   ping_interval);
   } else {
-    ping_interval = ping_default_interval;
+    ping_interval = PING_DEFAULT_INTERVAL;
+    conf_file_values_.odc_port   =  DEFAULT_ODC_PORT;
+    conf_file_values_.connection_time_out = DEFAULT_CONNECT_TIME_OUT;
+    conf_file_values_.request_time_out = DEFAULT_REQ_TIME_OUT;
+    conf_file_values_.user_name = DEFAULT_USER_NAME;
+    conf_file_values_.password  = DEFAULT_PASSWORD;
     pfc_log_debug("%s: Block Handle is Invalid,set default Value %d",
                   PFC_FUNCNAME, ping_interval);
   }

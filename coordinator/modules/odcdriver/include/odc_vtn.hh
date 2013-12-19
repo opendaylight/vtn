@@ -10,7 +10,7 @@
 #ifndef _ODC_VTN_HH_
 #define _ODC_VTN_HH_
 
-#include <rest_client.hh>
+#include <rest_util.hh>
 #include <driver/driver_command.hh>
 #include <odc_driver_common_defs.hh>
 #include <odc_controller.hh>
@@ -27,9 +27,10 @@ namespace odcdriver {
 class OdcVtnCommand: public unc::driver::vtn_driver_command {
  public:
   /**
-   * @brief Default Constructor
+   * @brief Parametrised Constructor
+   * @param[in] - conf file values
    */
-  OdcVtnCommand();
+  explicit OdcVtnCommand(unc::restjson::ConfFileValues_t conf_values);
 
   /**
    * @brief Default Destructor
@@ -134,36 +135,10 @@ class OdcVtnCommand: public unc::driver::vtn_driver_command {
   drv_resp_code_t parse_vtn_response(char *data,
                 std::vector< unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
 
-
-  /**
-   * @brief             - gets username password from controller or conf file
-   * @param[in]         - controller pointer
-   * @param[out]        - username in string
-   * @param[out]        - password in string
-   */
-  void get_username_password(unc::driver::controller* ctr_ptr,
-                             std::string &user_name, std::string &password);
-
-  /**
-   * @brief               - reads username password from conf file or default
-   *                        values
-   * @param[out] username - in string
-   * @param[out] password - in string
-   */
-  void read_user_name_password(std::string &user_name,
-                               std::string &password);
-
-  /**
-   * @brief - reads configuration file
-   * @return - void
-   */
-  void read_conf_file(uint32_t &odc_port,
-                      uint32_t &connection_time_out,
-                      uint32_t &request_time_out);
-
  private:
   uint32_t idle_timeout_;
   uint32_t hard_timeout_;
+  unc::restjson::ConfFileValues_t conf_file_values_;
 };
 }  // namespace odcdriver
 }  // namespace unc

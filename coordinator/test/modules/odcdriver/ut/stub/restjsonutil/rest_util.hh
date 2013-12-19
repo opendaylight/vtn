@@ -18,22 +18,18 @@
 namespace unc {
 namespace restjson {
 
-class RestClient {
+class RestUtil {
  public:
-  RestClient(std::string& ipaddress,
-             std::string& url,
-             uint32_t port,
-             HttpMethod method)
-      : ip_address_(ipaddress),
-      url_(url),
-      port_(port),
-      method_(method) {
+  RestUtil(const std::string& ipaddress,
+           const std::string& username,
+          const std::string& pass)
+      : ip_address_(ipaddress) {
         response_ = new HttpResponse_t;
         response_->code = 0;
         response_->write_data = new HttpContent_t;
       }
 
-  ~RestClient() {
+  ~RestUtil() {
     if (response_ !=  NULL) {
      if (response_->write_data != NULL) {
        delete response_->write_data;
@@ -44,11 +40,11 @@ class RestClient {
     }
   }
 
-  HttpResponse_t* send_http_request(std::string username,
-                                    std::string password,
-                                    uint32_t connect_time_out,
-                                    uint32_t req_time_out,
-                                    const char* request_body) {
+  HttpResponse_t* send_http_request(const std::string &url,
+                                    const unc::restjson::HttpMethod method,
+                                    const char* request,
+                                    const ConfFileValues_t &conf_file_values_) {
+    url_ = url;
     std::string NULL_RESPONSE = "172.16.0.0";
     std::string INVALID_RESPONSE = "172.0.0.0";
     std::string CREATE_201      = "172.16.0.1";
@@ -237,8 +233,6 @@ class RestClient {
   restjson::HttpResponse_t* response_;
   std::string ip_address_;
   std::string url_;
-  uint32_t port_;
-  HttpMethod method_;
 };
 }  // namespace restjson
 }  // namespace unc
