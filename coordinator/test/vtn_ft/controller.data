@@ -1,5 +1,6 @@
 [ControllerFirst]
 ipaddr=10.100.9.30
+invalid_ipaddr=10.10.0.1
 controller_id=controller1
 description=First Test Controller
 type=odc

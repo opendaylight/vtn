@@ -10,7 +10,7 @@
 
 #! /usr/bin/python
 
-import ConfigParser
+import ConfigParser, sys, time
 
 def ReadValues(filename,section):
     dict1 = {}
@@ -26,6 +26,12 @@ def ReadValues(filename,section):
             print("exception on %s!" % option)
             dict1[option] = None
     return dict1
+
+def InProgress(delay):
+    for i in range(delay):
+        time.sleep(1)
+        sys.stdout.write("\rWaiting..%ds.." %i)
+        sys.stdout.flush()
 
 
 
