@@ -57,8 +57,8 @@ namespace driver {
                   controller* controller_instance, driver* driver_instance) {
       ODC_FUNC_TRACE;
 
-      PFC_ASSERT(driver_instance != NULL);
-      PFC_ASSERT(controller_instance != NULL);
+      PFC_VERIFY(driver_instance != NULL);
+      PFC_VERIFY(controller_instance != NULL);
 
       ControllerContainer *controller_container = new ControllerContainer();
       controller_container->ctr = controller_instance;
@@ -100,7 +100,7 @@ namespace driver {
       pfc_timespec_t timeout;
       pfc_timeout_t time_out_id;
 
-      PFC_ASSERT(driver_instance != NULL);
+      PFC_VERIFY(driver_instance != NULL);
 
       if (ping_interval == 0) {
         pfc_log_debug("Ping interval is 0");
@@ -112,7 +112,7 @@ namespace driver {
 
         timeout.tv_sec = ping_interval;
         timeout.tv_nsec = 0;
-        PFC_ASSERT(controller_instance != NULL);
+        PFC_VERIFY(controller_instance != NULL);
         pfc::core::Timer* timer = controller_instance->timed_;
         ret = timer->post(&timeout, timer_func, &time_out_id);
 
@@ -195,8 +195,8 @@ namespace driver {
       std::map<std::string, ControllerContainer*>::iterator
            controller_list_iterator;
 
-      PFC_ASSERT(controller_instance != NULL);
-      PFC_ASSERT(driver_instance != NULL);
+      PFC_VERIFY(controller_instance != NULL);
+      PFC_VERIFY(driver_instance != NULL);
 
       ControllerContainer* controller_container(NULL);
       controller_list_rwlock_.lock();
@@ -214,7 +214,7 @@ namespace driver {
 
       if (controller_list_iterator != controller_list.end()) {
         controller_container = controller_list_iterator->second;
-        PFC_ASSERT(controller_container != NULL);
+        PFC_VERIFY(controller_container != NULL);
 
         controller_container->ctr = controller_instance;
 
@@ -264,8 +264,8 @@ namespace driver {
                               controller* controller_instance,
                               driver* driver_instance) {
       ODC_FUNC_TRACE;
-      PFC_ASSERT(controller_instance != NULL);
-      PFC_ASSERT(driver_instance != NULL);
+      PFC_VERIFY(controller_instance != NULL);
+      PFC_VERIFY(driver_instance != NULL);
 
       if (controller_list.size() == 0) {
         pfc_log_error("Controller name not found .List is Empty");
@@ -286,7 +286,7 @@ namespace driver {
 
       if (controller_list_iterator != controller_list.end()) {
         controller_container = controller_list_iterator->second;
-        PFC_ASSERT(controller_container != NULL);
+        PFC_VERIFY(controller_container != NULL);
 
         delete controller_container;
         controller_list.erase(controller_list_iterator);
@@ -396,8 +396,8 @@ namespace driver {
       *controller_instance = controller_container->ctr;
       *driver_instance = controller_container->drv;
 
-      PFC_ASSERT(*controller_instance != NULL);
-      PFC_ASSERT(*driver_instance != NULL);
+      PFC_VERIFY(*controller_instance != NULL);
+      PFC_VERIFY(*driver_instance != NULL);
 
       return DRVAPI_RESPONSE_SUCCESS;
     }
