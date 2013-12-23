@@ -1515,15 +1515,6 @@ TEST_F(DomainTest, DeleteKeyInstance_05) {
   EXPECT_EQ(UPPL_RC_SUCCESS, ret);
 }
 
-// FreeChildKeyStruct invalid index
-TEST_F(DomainTest, FreeChildKeyStruct_01) {
-  key_ctr_domain_t *k(new key_ctr_domain_t);
-  int child_class = 1;
-  Kt_Ctr_Domain  KtdomianObj;
-  int ret =  UPPL_RC_SUCCESS;
-  KtdomianObj.FreeChildKeyStruct(child_class, k);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
-}
 
 // FreeChildKeyStruct suceess
 TEST_F(DomainTest, FreeChildKeyStruct_02) {
@@ -1908,14 +1899,6 @@ TEST_F(DomainTest, ReadDomainValFromDB_05) {
   int ret =  KtdomianObj.ReadDomainValFromDB(db_conn,&k,&v,UNC_DT_CANDIDATE,oper_type,
                                           max_rep_ct,vect_val_ctr_domain_st,domain_id);
   EXPECT_EQ(UPPL_RC_SUCCESS, ret);
-}
-
-// GetChildClassPointer invalid index
-TEST_F(DomainTest, GetChildClassPointer_01) {
-  int KIndex = 1;
-  Kt_Ctr_Domain  KtdomianObj;
-  Kt_Base *child(KtdomianObj.GetChildClassPointer((KtDomainChildClass)KIndex));
-  ASSERT_TRUE(child == NULL);
 }
 
 // GetChildClassPointer suceess

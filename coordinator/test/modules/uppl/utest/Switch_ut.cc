@@ -1160,6 +1160,7 @@ TEST_F(SwitchTest, PerformRead_ReadSwtVal_Succes_03) {
   rh.key_type = UNC_KT_SWITCH;
   OdbcmConnectionHandler *db_conn =NULL;
   ServerSession sess;
+  pfc::core::ipc::ServerSession::set_rest(2);
   sess.stub_setAddOutput((uint32_t)0);
   sess.stub_setAddOutput((uint32_t)0);
   sess.stub_setAddOutput((uint32_t)UNC_OP_READ);
@@ -1237,6 +1238,8 @@ TEST_F(SwitchTest, PerformRead_ReadSwtVal_addOutput_fail) {
   OdbcmConnectionHandler *db_conn =NULL;
   ServerSession sess;
   ODBCManager::stub_setResultcode(ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+
+  pfc::core::ipc::ServerSession::set_rest(2);
   int ret =  KtSwitchObj.PerformRead(db_conn,(uint32_t)0,(uint32_t)0,&k,&v,(uint32_t)UNC_DT_STATE,(uint32_t)UNC_OP_READ,sess,(uint32_t)UNC_OPT1_NORMAL,(uint32_t)UNC_OPT2_L2DOMAIN,(uint32_t)1);
   EXPECT_EQ(UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
 }
@@ -1485,7 +1488,6 @@ TEST_F(SwitchTest, HandleDriverAlarm_02) {
   val_switch_st_t v;
   getKeyForKtSwitch1(k);
   memset(&v, 0, sizeof(val_switch_st_t));
-
   Kt_Switch KtSwitchObj;
   uint32_t alarm_type = UNC_FLOW_ENT_FULL;
   uint32_t oper_type = UNC_OP_CREATE;
@@ -1517,7 +1519,6 @@ TEST_F(SwitchTest, HandleDriverAlarm_04) {
   val_switch_st_t v;
   getKeyForKtSwitch1(k);
   memset(&v, 0, sizeof(val_switch_st_t));
-
   Kt_Switch KtSwitchObj;
   uint32_t alarm_type = UNC_OFS_LACK_FEATURES;
   uint32_t oper_type = UNC_OP_CREATE;

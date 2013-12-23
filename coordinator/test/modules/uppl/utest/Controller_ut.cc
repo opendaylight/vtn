@@ -1588,15 +1588,6 @@ TEST_F(ControllerTest, FreeChildKeyStruct_03) {
   KtctrObj.FreeChildKeyStruct(key, child_class);
   EXPECT_EQ(UPPL_RC_SUCCESS, ret);
 }
-// FreeChildKeyStruct invalid index
-TEST_F(ControllerTest, FreeChildKeyStruct_04) {
-  void *key = new key_logical_port_t;
-  int child_class = 3;
-  Kt_Controller  KtctrObj;
-  int ret =  UPPL_RC_SUCCESS;
-  KtctrObj.FreeChildKeyStruct(key, child_class);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
-}
 
 // getChildKeyStruct success
 TEST_F(ControllerTest, getChildKeyStruct_01) {
@@ -1623,16 +1614,7 @@ TEST_F(ControllerTest, getChildKeyStruct_03) {
   EXPECT_EQ(UPPL_RC_SUCCESS, ret);
 }
 
-// getChildKeyStruct invalid index
-TEST_F(ControllerTest, getChildKeyStruct_04) {
-  int child_class = 3;
-  Kt_Controller  KtctrObj;
-  int ret =  UPPL_RC_SUCCESS;
-  KtctrObj.getChildKeyStruct(child_class, "controller1");
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
-}
-
-//PerformRead with negative option1 
+//PerformRead with negative option1
 TEST_F(ControllerTest, PerformRead_Neg_option1_01) {
   key_ctr_t k;
   val_ctr v;

@@ -16,23 +16,26 @@ include ../../defs.mk
 
 EXEC_NAME	:=  uppl_ut
 
+COMMON_STUB_PATH = ../..
+
 MODULE_SRCROOT	= $(GTEST_SRCROOT)/modules
 
-ODBC_STUBDIR	= stub/ODBC
-CLSTAT_STUBDIR	= stub/clstat
-TCLIB_STUBDIR	= stub/tclib_module
-MISC_STUBDIR	= stub/misc
+ODBC_STUBDIR	  = $(COMMON_STUB_PATH)/stub/ODBC
+CLSTAT_STUBDIR	= $(COMMON_STUB_PATH)/stub/clstat
+TCLIB_STUBDIR	  = $(COMMON_STUB_PATH)/stub/tclib_module
+MISC_STUBDIR	  = $(COMMON_STUB_PATH)/stub/misc
 
-UPPL_SRCDIR	= $(MODULE_SRCROOT)/uppl
-TCLIB_SRCDIR	= $(MODULE_SRCROOT)/tclib
-ALARM_SRCDIR	= $(MODULE_SRCROOT)/alarm
+UPPL_SRCDIR	    = $(MODULE_SRCROOT)/uppl
+TCLIB_SRCDIR	  = $(MODULE_SRCROOT)/tclib
+ALARM_SRCDIR	  = $(MODULE_SRCROOT)/alarm
 
 # Define a list of directories that contain source files.
 ALT_SRCDIRS	= $(UPPL_SRCDIR) $(ODBC_STUBDIR) $(TCLIB_STUBDIR)
 ALT_SRCDIRS	+= $(MISC_STUBDIR)
 
-UT_INCDIRS_PREP		= stub/include stub/include/core_include
-UT_INCDIRS_PREP		+= $(CLSTAT_STUBDIR)
+CXX_INCDIRS += core/libs/
+UT_INCDIRS_PREP  =  ${COMMON_STUB_PATH} $(COMMON_STUB_PATH)/stub/include $(COMMON_STUB_PATH)/stub/include/core_include
+UT_INCDIRS_PREP += $(CLSTAT_STUBDIR)
 
 UTXX_INCDIRS_PREP	= $(TCLIB_STUBDIR)
 UTXX_INCDIRS_PREP	+= $(ODBC_STUBDIR)/include
@@ -82,7 +85,7 @@ UPPL_SOURCES	+= physicallayer.cc
 
 ODBC_SOURCES	= odbcm_mgr_stub.cc odbcm_utils_stub.cc
 TCLIB_SOURCES	= tclib_module.cc
-MISC_SOURCES	= alarm.cc ipc_client.cc ipc_server.cc module.cc
+MISC_SOURCES	= ipc_client.cc ipc_server.cc module.cc alarm.cc
 
 UT_SOURCES	= Boundary_ut.cc
 UT_SOURCES	+= Controller_ut.cc

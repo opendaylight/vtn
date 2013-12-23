@@ -142,6 +142,7 @@ TEST_F(BoundaryTest, Create_01) {
   Kt_Boundary  KtboundaryObj;
   ServerSession ses;
   OdbcmConnectionHandler *db_conn =NULL;
+  pfc::core::ipc::ServerSession::set_rest(2);
   int ret =  KtboundaryObj.Create(db_conn,session_id,configuration_id,&k,&v,UNC_DT_STATE,ses);
   EXPECT_EQ(UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
 }

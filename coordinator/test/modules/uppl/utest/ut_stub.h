@@ -14,7 +14,6 @@
  * Include stub header files.
  */
 
-#include "stub/include/core_include/pfc/ipc_client.h"
 #include "stub/clstat/clstat_api.h"
 
 #ifdef	__cplusplus
