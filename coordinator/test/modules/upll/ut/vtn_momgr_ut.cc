@@ -3387,6 +3387,8 @@ TEST_F(VtnMoMgrTest, ReadSingleCtlrlStation_vtn_valid_03) {
 
   key_vtnstation_controller_t *keyvtnsta
       (ZALLOC_TYPE(key_vtnstation_controller_t));
+uuu::upll_strncpy(keyvtnsta->controller_name,"controller_name", (kMaxLenCtrlrId
+                                                                   + 1));
   val_vtnstation_controller_st *valVtnsta
       (ZALLOC_TYPE(val_vtnstation_controller_st));
   uuu::upll_strncpy(valVtnsta->vtn_name,"vtn_name", (kMaxLenCtrlrId + 1));

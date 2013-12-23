@@ -14,8 +14,6 @@
  * Include stub header files.
  */
 
-#include "stub/include/core_include/pfc/ipc_client.h"
-
 #ifdef	__cplusplus
 #include "stub/include/cxx/pfcxx/ipc_server.hh"
 #include "stub/include/cxx/pfcxx/ipc_client.hh"
@@ -26,6 +24,7 @@
 #include "stub/dal/dal_odbc_mgr.hh"
 #include "stub/dal/dal_schema.hh"
 #include "stub/tclib_module/tclib_module.hh"
+
 #endif	/* __cplusplus */
 
 #endif	/* !_TEST_UPLL_UT_STUB_H */

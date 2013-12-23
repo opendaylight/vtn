@@ -13,10 +13,10 @@
 
 #include "pfc/log.h"
 
-#define FILE (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#define FILESTR (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
 #define ODC_LOG(level, fmt, ...) do {                                   \
-  pfc_log_##level("%s:%d:%s: " fmt, FILE, __LINE__,                   \
+  pfc_log_##level("%s:%d:%s: " fmt, FILESTR, __LINE__,                   \
                   __FUNCTION__, ##__VA_ARGS__);                           \
 } while (0);
 
@@ -37,7 +37,7 @@ class LogFuncTrace {
 };
 
 #define ODC_FUNC_TRACE                                                 \
-    LogFuncTrace func_trace___(FILE, __LINE__,   __FUNCTION__);
+    LogFuncTrace func_trace___(FILESTR, __LINE__,   __FUNCTION__);
 #else
 #define ODC_FUNC_TRACE
 #endif  // ODC_VERBOSE_DEBUG

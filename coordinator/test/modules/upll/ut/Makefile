@@ -16,10 +16,12 @@ include ../../defs.mk
 
 EXEC_NAME	:=  upll_ut
 
-TCLIB_STUBDIR	= stub/tclib_module
-CAPA_STUBDIR	= stub/capa_module
-DAL_STUBDIR	= stub/dal
-MISC_STUBDIR	= stub/misc
+COMMON_STUB_PATH = ../..
+
+TCLIB_STUBDIR	= $(COMMON_STUB_PATH)/stub/tclib_module
+CAPA_STUBDIR	= $(COMMON_STUB_PATH)/stub/capa_module
+DAL_STUBDIR	= $(COMMON_STUB_PATH)/stub/dal
+MISC_STUBDIR	= $(COMMON_STUB_PATH)/stub/misc
 
 UPLL_SRCDIR	= $(MODULE_SRCROOT)/upll
 CAPA_SRCDIR	= $(MODULE_SRCROOT)/capa
@@ -31,12 +33,15 @@ ALARM_SRCDIR	= $(MODULE_SRCROOT)/alarm
 ALT_SRCDIRS	= $(UPLL_SRCDIR) $(CAPA_STUBDIR) $(DAL_STUBDIR)
 ALT_SRCDIRS	+= $(TCLIB_STUBDIR) $(MISC_STUBDIR)
 
-UT_INCDIRS_PREP		= stub/include stub/include/core_include
+UT_INCDIRS_PREP		= ${COMMON_STUB_PATH} $(COMMON_STUB_PATH)/stub/include $(COMMON_STUB_PATH)/stub/include/core_include
 
 UTXX_INCDIRS_PREP	= $(TCLIB_STUBDIR)
 UTXX_INCDIRS_PREP	+= $(CAPA_STUBDIR)
 UTXX_INCDIRS_PREP	+= $(DAL_STUBDIR)
 UTXX_INCDIRS_PREP	+= $(DAL_STUBDIR)/include
+
+
+#UTXX_INCDIRS_PREP = $(CONTROLLER_STUBDIR)/driver
 
 EXTRA_CXX_INCDIRS	= $(MODULE_SRCROOT)
 EXTRA_CXX_INCDIRS	+= $(CAPA_SRCDIR)/include
@@ -102,7 +107,7 @@ UPLL_SOURCES	+= vtunnel_if_momgr.cc
 CAPA_SOURCES	= capa_module_stub.cc
 DAL_SOURCES	= dal_odbc_mgr.cc dal_bind_info.cc dal_schema.cc
 TCLIB_SOURCES	= tclib_module.cc
-MISC_SOURCES	= alarm.cc ipc_client.cc ipc_server.cc module.cc
+MISC_SOURCES	= ipc_client.cc ipc_server.cc module.cc alarm.cc
 
 UT_SOURCES	= vtn_momgr_ut.cc
 UT_SOURCES	+= vbr_momgr_ut.cc
