@@ -25,12 +25,33 @@ Configuration
 
 Execution
 =========
+
+SINGLE-CONTROLLER TEST CASES
+
     * Please ensure the pre-requisites.
     * To execute Controller related test cases
       python controller.py
     * To execute VTN-VBR cases
       python vtn_vbr.py
+    * To execute VTN-VBR-AUDIT cases
+      python vtn_vbr_audit.py
     * To execute VBRIF Cases
       python vbrif_portmap.py
+    * To execute VBRIF-AUDIT Cases
+      python vbrif_portmap_audit.py 
     * To execute VLANMAP Cases
-      python vtn_vbr_vlanmap.py
+      python vtn_vbr_vlanmap.py    
+
+MULTI-CONTROLLER TEST CASES
+
+    * Please ensure the pre-requisites.
+    * To execute VTN-VBR with multi-controller cases
+      python vtn_vbr_multi_controller.py
+    * To execute VTN-VBR-AUDIT with multi-controller cases
+      python vtn_vbr_audit_multi_controller.py 
+    * To execute VBRIF multi-controller Cases
+      python vbrif_portmap_multi_controller.p
+    * To execute VBRIF_AUDIT multi-controller Cases
+      python vbrif_portmap_audit_multi_controller.py
+    * To execute VLANMAP multi-controler Cases
+      python vtn_vbr_vlanmap_multi_controller.py
