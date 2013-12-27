@@ -8,16 +8,13 @@
 #
 
 
-
 #! /usr/bin/python
 
-import requests, json, collections, time
+import requests, json, collections, sys, time
 import vtn_testconfig
 CONTROLLERDATA = vtn_testconfig.CONTROLLERDATA
 coordinator_url=vtn_testconfig.coordinator_url
 def_header=vtn_testconfig.coordinator_headers
-
-
 
 def is_controller_deleted(controller_url=""):
     url= coordinator_url + controller_url
@@ -105,15 +102,15 @@ def add_controller(controller_id,type,version,ipaddr="",auditstatus="",
     audistst_set=0
 
 
-    url= coordinator_url + controller_url
+    url = coordinator_url + controller_url
     add_data = collections.defaultdict(dict)
 
     #Add default entried
 #  add_data += "'controller_id'" + ':' + controller_id
-    add_data['controller']['controller_id']=controller_id
+    add_data['controller']['controller_id'] = controller_id
 #  add_data += "," + "'type'" + ':' + type
-    add_data['controller']['type']=type
-    add_data['controller']['version']=version
+    add_data['controller']['type'] = type
+    add_data['controller']['version'] = version
     #add_data += "," + "'version'" + ':' + version
 
 
@@ -233,8 +230,8 @@ def test_controller_ops(blockname):
 
     print "Read from controller.data"
     print  "Read for %s", blockname
-    test_ipaddr=vtn_testconfig.ReadValues(CONTROLLERDATA ,blockname)['ipaddr']
-    test_controller_id=vtn_testconfig.ReadValues(CONTROLLERDATA ,
+    test_ipaddr = vtn_testconfig.ReadValues(CONTROLLERDATA ,blockname)['ipaddr']
+    test_controller_id = vtn_testconfig.ReadValues(CONTROLLERDATA ,
                                                  blockname)['controller_id']
     test_description = vtn_testconfig.ReadValues(CONTROLLERDATA ,
                                                  blockname)['description']
@@ -264,7 +261,7 @@ def test_controller_ops(blockname):
         print "Test Failed!!!"
         exit ()
 
-    time.sleep(15)
+    vtn_testconfig.InProgress(delay=15)
 
     print "******VALIDATE Attributes from Coordinator*******"
     print "validate Mandatory Controller Attributes "
@@ -300,7 +297,7 @@ def test_controller_ops(blockname):
         print "Test Failed!!!"
         exit ()
 
-    time.sleep(15)
+    vtn_testconfig.InProgress(delay=15)
     print "*****CHECK AUDITSTATUS***************"
     print "*****USES DEF USERNAME and PASSWORD***************"
     res = validate_controller_attributes(test_controller_id,version=test_version,ipaddr=test_ipaddr,operstatus ="up",auditstatus="enable",controller_url=test_url)
@@ -320,7 +317,7 @@ def test_controller_ops(blockname):
 
     print "*****CHECK OPERSTATUS DOWN***************"
 #Added to make sure audit operations complete!!
-    time.sleep (15)
+    vtn_testconfig.InProgress(delay=15)
     res = validate_controller_attributes(test_controller_id,version=test_version,ipaddr=test_ipaddr,operstatus ="down",auditstatus="enable",username=test_invalusername,password=test_invalpassword,controller_url=test_url)
     if res == 0:
         print "Test Success"
@@ -339,8 +336,9 @@ def test_controller_ops(blockname):
 
     print "*****CHECK OPERSTATUS UP Again***************"
     print "*****USES VALUES SET in ADD COMMAND***************"
+
 #Added to make sure audit operations complete!!
-    time.sleep (15)
+    vtn_testconfig.InProgress(delay=15)
     res = validate_controller_attributes(test_controller_id,version=test_version,ipaddr=test_ipaddr,operstatus ="up",auditstatus="enable",username=test_username,password=test_password,controller_url=test_url)
     if res == 0:
         print "Test Success"
@@ -397,7 +395,40 @@ def update_controller_ex(blockname,ipaddr="",version="",auditstatus="",
             auditstatus=auditstatus,description=description,
             username=username,password=password,controller_url=test_url)
 
+#To check the state of the conttroller
 
+def check_controller_state(blockname,state):
+    test_url =  vtn_testconfig.ReadValues(CONTROLLERDATA ,blockname)['url']
+    url = coordinator_url + test_url
+
+    r = requests.get(url,headers=def_header)
+    while(1):
+        try:
+            data = json.loads(r.text)
+            break
+        except ValueError:
+            continue
+
+    if data['controller']['operstatus'] == state:
+      return 0
+    else:
+      return 1
+
+#Wait until the controller state is up/down
+
+def wait_until_state(blockname,state):
+    #print "Wait until the controler state is",state
+    i = 1
+    retval = 1
+    test_controller_id = vtn_testconfig.ReadValues(CONTROLLERDATA ,blockname)['controller_id']
+    test_url =  vtn_testconfig.ReadValues(CONTROLLERDATA ,blockname)['url']
+    while(retval == 1):
+        sys.stdout.write("\rWaiting..%ds.." %i)
+        sys.stdout.flush()
+        time.sleep(4)
+        i+=4
+        retval = check_controller_state(blockname,state)
+    return 0
 
 # Main Block
 if __name__ == '__main__':
