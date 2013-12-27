@@ -14,18 +14,22 @@
 GTEST_SRCROOT := ../../../..
 include ../../defs.mk
 
+COMMON_STUB_PATH = ../..
+
 EXEC_NAME := tc_ut
 
 MODULE_SRCROOT = $(GTEST_SRCROOT)/modules
 TC_SRCDIR = $(MODULE_SRCROOT)/tc
 ALARM_SRCDIR = $(MODULE_SRCROOT)/alarm
-STUB_DIR = stub
+STUB_DIR = $(COMMON_STUB_PATH)/stub
 
 # Define a list of directories that contain source files.
 ALT_SRCDIRS = $(TC_SRCDIR) $(STUB_DIR) $(ALARM_SRCDIR)
 
 CXX_INCDIRS += core/include/cxx
 CXX_INCDIRS += core/libs/
+
+UT_INCDIRS_PREP = ${COMMON_STUB_PATH}
 
 EXTRA_CXX_INCDIRS = $(STUB_DIR)/include
 EXTRA_CXX_INCDIRS += $(MODULE_SRCROOT)
