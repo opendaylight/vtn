@@ -102,6 +102,7 @@ TEST_F(ControllerFrameworkTest, PingController_success) {
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
   ControllerFramework *CtrObj = new ControllerFramework(taskq_);
+  pfc::core::ipc::ServerSession::set_rest(1);
   ReadParams fun_obj(ctr_name, CtrObj);
   driver *drv_instance = static_cast <driver*>(new OdcDriver());
   controller *ctr_instance = static_cast <controller*>(new OdcController());
@@ -125,6 +126,7 @@ TEST_F(ControllerFrameworkTest, PingController_Failure) {
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
   ControllerFramework *CtrObj = new ControllerFramework(taskq_);
+  pfc::core::ipc::ServerSession::set_rest(1);
   ReadParams fun_obj(ctr_name, CtrObj);
   OdcDriver *odcdrv(new OdcDriver());
   driver *drv_instance = static_cast <driver*>(odcdrv);
@@ -139,6 +141,7 @@ TEST_F(ControllerFrameworkTest, PingController_Failure) {
   EXPECT_EQ(drv_instance, drv);
 
   odcdrv->set_ping_result(PFC_FALSE);
+
   fun_obj.PingController();
   EXPECT_EQ(CONNECTION_DOWN, ctr_instance->get_connection_status());
   delete CtrObj;
@@ -264,9 +267,9 @@ TEST_F(ControllerFrameworkTest, UpdateCtr_success) {
   std::string ctr_name_1 = "ctr_up";
   pfc_taskq_t id = 2;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_);
   const key_ctr_t *key_ctr = new key_ctr_t;
   const val_ctr_t *val_ctr = new val_ctr_t;
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_);
   driver *drv_instance = static_cast <driver*>(new OdcDriver());
   controller *ctr_instance = static_cast <controller*>(new OdcController());
   CtrObj->AddController(ctr_name_1, ctr_instance, drv_instance);
@@ -422,6 +425,7 @@ TEST_F(ControllerFrameworkTest, RegisterDriver_success) {
  * Test case for RegisterDriver() and GetDriverInstance()
  *   - Successful test using multiple drivers.
  */
+
 TEST_F(ControllerFrameworkTest, RegisterDriver_MultipleEntry_success) {
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
@@ -510,6 +514,7 @@ TEST_F(ControllerFrameworkTest, SendNotificationToPhysicalDown) {
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
   ControllerFramework *CtrObj = new ControllerFramework(taskq_);
+  pfc::core::ipc::ServerSession::set_rest(1);
   CtrObj->SendNotificationToPhysical(ctr_name, type);
   delete CtrObj;
   delete taskq_;

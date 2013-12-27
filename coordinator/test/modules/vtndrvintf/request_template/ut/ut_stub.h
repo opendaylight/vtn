@@ -14,14 +14,18 @@
  * Include stub header files.
  */
 
-#include "stub/include/core_include/pfc/ipc_client.h"
 #include "stub/ContrllerFrameworkStub/vtndrvintf_defs.h"
 
 #ifdef  __cplusplus
 #include "stub/include/cxx/pfcxx/ipc_server.hh"
 #include "stub/include/cxx/pfcxx/ipc_client.hh"
 #include "stub/include/cxx/pfcxx/module.hh"
+#include "stub/tclib_module/tclib_module.hh"
+#include "stub/tclib_module/tclib_interface.hh"
+#include "stub/tclib_module/tclib_struct_defs.hh"
+#include "stub/tclib_module/tclib_defs.hh"
 #include "stub/ContrllerFrameworkStub/controller_fw.hh"
+#include "stub/ContrllerFrameworkStub/driver/driver_interface.hh"
 #include "stub/ContrllerFrameworkStub/handler.hh"
 #include "stub/ContrllerFrameworkStub/kt_handler.hh"
 #include "stub/ContrllerFrameworkStub/vtn_drv_module.hh"
