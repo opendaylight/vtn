@@ -14,18 +14,19 @@
 GTEST_SRCROOT := ../../../..
 include ../../defs.mk
 
-EXEC_NAME :=  restjsonutil_ut
+COMMON_STUB_PATH = ../..
 
+EXEC_NAME :=  restjsonutil_ut
 MODULE_SRCROOT = $(GTEST_SRCROOT)/modules
 
-STUBDIR = stub
+STUBDIR = $(COMMON_STUB_PATH)/stub
 
 RESTJSONUTIL_SRCDIR = $(MODULE_SRCROOT)/restjsonutil
 
 # Define a list of directories that contain source files.
 ALT_SRCDIRS = $(RESTJSONUTIL_SRCDIR)
 
-UT_INCDIRS_PREP = stub/include stub/include/core_include
+UT_INCDIRS_PREP = $(COMMON_STUB_PATH)/stub/include $(COMMON_STUB_PATH)/stub/include/core_include
 
 EXTRA_CXX_INCDIRS = $(STUBDIR)
 EXTRA_CXX_INCDIRS += $(MODULE_SRCROOT)
