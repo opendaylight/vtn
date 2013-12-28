@@ -10,10 +10,12 @@
 
 #ifndef HTTP_CLIENT_UT
 #define HTTP_CLIENT_UT
-#include <curl/http_curl.h>
+
 #include <http_client.hh>
 #include <gtest/gtest.h>
 #include <string>
+
+int test_flag = FAIL_TEST;
 
 TEST(HttpClient , set_username_password_val) {
   unc::restjson::HttpClient obj;
