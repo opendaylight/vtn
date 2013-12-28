@@ -12,7 +12,7 @@
 #include <rest_client.hh>
 #include <string>
 
-
+extern int test_flag;
 TEST(RestClient, test_send_http_request) {
   unc::restjson::RestClient rest_obj("11", "11" , 12 ,
                                      unc::restjson::HTTP_METHOD_POST);
