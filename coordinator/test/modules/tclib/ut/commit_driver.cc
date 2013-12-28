@@ -14,8 +14,8 @@
 #include <gtest/gtest.h>
 #include <tclib_module.hh>
 #include <unc/keytype.h>
-#include <tclib_interface_stub.hh>
-#include <libtc_common.hh>
+#include <stub/tclib_module/tclib_interface_stub.hh>
+#include <stub/tclib_module/libtc_common.hh>
 #include <stdio.h>
 
 using namespace unc::tc;

@@ -15,11 +15,11 @@
  */
 
 #ifdef  __cplusplus
-#include "stub/include/pfcxx/ipc.hh"
-#include "stub/include/pfcxx/module.hh"
-#include "stub/include/pfcxx/stubs.hh"
-#include "stub/include/libtc_common.hh"
-#include "stub/include/tclib_interface_stub.hh"
+#include "stub/include/cxx/pfcxx/ipc.hh"
+#include "stub/include/cxx/pfcxx/module.hh"
+#include "stub/include/cxx/pfcxx/stubs.hh"
+#include "stub/tclib_module/libtc_common.hh"
+#include "stub/tclib_module/tclib_interface_stub.hh"
 #endif  /* __cplusplus */
 
 #endif  /* !_TEST_VTNDRVINTF_UT_STUB_H */

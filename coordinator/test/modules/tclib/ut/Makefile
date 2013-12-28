@@ -14,17 +14,22 @@
 GTEST_SRCROOT := ../../../..
 include ../../defs.mk
 
+COMMON_STUB_PATH = ../..
+
 EXEC_NAME  :=  tclib_ut
 
 MODULE_SRCROOT = $(GTEST_SRCROOT)/modules
 TCLIB_SRCDIR = $(MODULE_SRCROOT)/tclib
-STUB_DIR = stub
+MISC_STUBDIR = $(COMMON_STUB_PATH)/stub/misc
+STUB_DIR = $(COMMON_STUB_PATH)/stub
 
 # Define a list of directories that contain source files.
-ALT_SRCDIRS =  $(TCLIB_SRCDIR) $(STUB_DIR)
+ALT_SRCDIRS =  $(TCLIB_SRCDIR) $(STUB_DIR) $(MISC_STUBDIR)
 
 CXX_INCDIRS  +=  core/include/cxx
 CXX_INCDIRS  +=  core/libs/
+
+UT_INCDIRS_PREP = ${COMMON_STUB_PATH}
 
 EXTRA_CXX_INCDIRS = $(STUB_DIR)/include
 EXTRA_CXX_INCDIRS += $(MODULE_SRCROOT)
@@ -38,8 +43,9 @@ TCLIB_SOURCES = tclib_module.cc
 TCLIB_SOURCES += tclib_msg_util.cc
 
 STUB_SOURCES = tclib_interface_stub.cc
-STUB_SOURCES += module.cc
 STUB_SOURCES += stub_serversess.cc
+
+MISC_STUB_SOURCES = module.cc
 
 UT_SOURCES = tclib_common.cc
 UT_SOURCES += audit_operations.cc
@@ -53,6 +59,7 @@ MAIN_SRC = gtest_main.cc
 CXX_SOURCES += $(UT_SOURCES)
 CXX_SOURCES += $(TCLIB_SOURCES)
 CXX_SOURCES += $(STUB_SOURCES)
+CXX_SOURCES += $(MISC_STUB_SOURCES)
 CXX_SOURCES += $(MAIN_SRC)
 
 EXTRA_CXXFLAGS = -fprofile-arcs -ftest-coverage
