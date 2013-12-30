@@ -14,8 +14,6 @@
  * Include stub header files.
  */
 
-#include "stub/include/core_include/pfc/ipc_client.h"
-
 #ifdef __cplusplus
 #include "stub/include/cxx/pfcxx/ipc_server.hh"
 #include "stub/include/cxx/pfcxx/ipc_client.hh"

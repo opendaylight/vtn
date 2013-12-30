@@ -16,7 +16,7 @@
 #include <confignode.hh>
 #include <vtn_conf_utility.hh>
 #include <vtn_conf_data_element_op.hh>
-#include "../../../../modules/vtndrvintf/include/request_template.hh"
+#include "../../../../../modules/vtndrvintf/include/request_template.hh"
 
 TEST(KT_VTN, Validate_Request1) {
   unc::driver::kt_handler_map kt_map;
@@ -1726,7 +1726,7 @@ TEST(KT_ROOT, Validate_Request1) {
   ctrl_int->set_root_result(1);
 
   unc::driver::KtHandler* root_req =
-      new unc::driver::KtRequestHandler<unc::driver::key_root_t,
+      new unc::driver::KtRequestHandler<key_root_t,
           unc::driver::val_root_t,
           unc::driver::root_driver_command>(&kt_map);
 
@@ -1781,7 +1781,7 @@ TEST(KT_ROOT, Validate_Request2) {
   ctrl_int->set_root_result(2);
 
   unc::driver::KtHandler* root_req =
-      new unc::driver::KtRequestHandler<unc::driver::key_root_t,
+      new unc::driver::KtRequestHandler<key_root_t,
           unc::driver::val_root_t,
           unc::driver::root_driver_command>(&kt_map);
 
@@ -1835,7 +1835,7 @@ TEST(KT_ROOT, Validate_Request3) {
   ctrl_int->set_root_result(3);
 
   unc::driver::KtHandler* root_req =
-      new unc::driver::KtRequestHandler<unc::driver::key_root_t,
+      new unc::driver::KtRequestHandler<key_root_t,
           unc::driver::val_root_t,
           unc::driver::root_driver_command>(&kt_map);
 
@@ -1886,7 +1886,7 @@ TEST(KT_ROOT, Validate_Request4) {
   ctrl_int->set_root_result(3);
 
   unc::driver::KtHandler* root_req =
-      new unc::driver::KtRequestHandler<unc::driver::key_root_t,
+      new unc::driver::KtRequestHandler<key_root_t,
           unc::driver::val_root_t,
           unc::driver::root_driver_command>(&kt_map);
 
@@ -1928,3 +1928,57 @@ TEST(KT_ROOT, Validate_Request4) {
   root_req = NULL;
   EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
 }
+/*
+TEST(KT_VTN, ExecuteControllerStatusDown) {
+  unc::driver::kt_handler_map kt_map;
+  unc::driver::odl_drv_request_header_t driver_data;
+  unc::driver::ControllerFramework* ctrl_int =
+      new unc::driver::ControllerFramework;
+  unc::driver::controller::set_controller_status(1);
+
+  unc::driver::KtHandler* vtn_req =
+      new unc::driver::KtRequestHandler<key_vtn_t,
+          val_vtn_t,
+          unc::driver::vtn_driver_command>(&kt_map);
+
+  pfc::core::ipc::ServerSession sess;
+
+  sess.clearStubData();
+  sess.stub_setArgument_(0);
+  sess.stub_setArgument_(1);
+  sess.stub_setAddOutput(uint32_t(0));
+  sess.stub_setAddOutput(uint32_t(0));
+  sess.stub_setAddOutput(uint32_t(0));
+  sess.stub_setAddOutput(uint32_t(0));
+  sess.stub_setAddOutput(uint32_t(0));
+  sess.stub_setAddOutput(uint32_t(0));
+  sess.stub_setAddOutput(uint32_t(0));
+  sess.stub_setAddOutput(uint32_t(0));
+  sess.stub_setAddOutput(uint32_t(0));
+  sess.stub_setAddOutput(uint32_t(0));
+  sess.stub_setAddOutput(uint32_t(0));
+  sess.stub_setAddOutput(uint32_t(0));
+  sess.stub_setAddOutput(uint32_t(1));
+
+  driver_data.header.session_id     = 1;
+  driver_data.header.config_id      = 0;
+  driver_data.header.operation      = UNC_OP_CREATE;
+  driver_data.header.max_rep_count  = 0;
+  driver_data.header.option1        = 0;
+  driver_data.header.option2        = 0;
+  driver_data.header.data_type      = UNC_DT_CANDIDATE;
+
+  snprintf(reinterpret_cast<char*>(driver_data.controller_name),
+           32, "%s", "odcdriver");
+
+  driver_data.key_type              = UNC_KT_VTN;
+
+  uint32_t ret_val = vtn_req->handle_request(sess, driver_data, ctrl_int);
+  delete ctrl_int;
+  delete vtn_req;
+  ctrl_int = NULL;
+  vtn_req = NULL;
+
+  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+}
+*/
