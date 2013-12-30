@@ -13,19 +13,17 @@
  * Include stub header files.
  */
 
-#include "stub/include/core_include/pfc/module.h"
-#include "stub/include/core_include/pfc/ipc_client.h"
-
 #ifdef  __cplusplus
+#include "stub/tclib_module/tclib_module.hh"
 #include "stub/include/cxx/pfcxx/ipc_server.hh"
 #include "stub/include/cxx/pfcxx/ipc_client.hh"
 #include "stub/include/cxx/pfcxx/module.hh"
-#include "stub/tclib_module/tclib_module.hh"
-#include "stub/restjsonutil/rest_util.hh"
 #include "stub/restjsonutil/json_build_parse.hh"
+#include "stub/restjsonutil/rest_util.hh"
 #include "stub/restjsonutil/json_type_util.hh"
 #include "stub/restjsonutil/rest_common_defs.hh"
-#include "stub/vtndrvintf/vtn_drv_module.hh"
+#include "stub/ContrllerFrameworkStub/vtn_drv_module.hh"
+#include "stub/ContrllerFrameworkStub/controller_fw.hh"
 #endif  /*cplusplus */
 
 #endif  // _UT_STUB_H_
