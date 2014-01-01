@@ -13,6 +13,7 @@ Pre-Requisites
     * VTN Coordinator must be running
     * Instance of Controller with VTN Mananger is running
     * Please run "yum install python-requests" to run the tests
+    * Please run "yum install pexpect" to run the mininet related tests
 
 
 Configuration
@@ -21,6 +22,7 @@ Configuration
     * The controller related details can be edited in controller.data
     * The VTN VBR attributes can be edited in vtn_vbr.data
     * The coordinator Port and other details can be modified in vtn_testconfig.py
+    * The mininet related details can be edited in mininet_test.data
 
 
 Execution
@@ -55,3 +57,8 @@ MULTI-CONTROLLER TEST CASES
       python vbrif_portmap_audit_multi_controller.py
     * To execute VLANMAP multi-controler Cases
       python vtn_vbr_vlanmap_multi_controller.py
+
+SINGLE-CONTROLLER MININET TEST CASE
+   * Please ensure the pre-requisites.
+   * To execute mininet related test cases
+     python mininet_test.py

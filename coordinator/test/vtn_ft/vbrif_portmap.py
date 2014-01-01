@@ -123,7 +123,7 @@ def validate_vbrif_at_controller(vtn_blockname, vbr_blockname, vbrif_blockname,
 
 
 
-def create_portmap(vtn_blockname,vbr_blockname,vbrif_blockname):
+def create_portmap(vtn_blockname,vbr_blockname,vbrif_blockname,vlan_tagged=1):
     test_vtn_name=vtn_testconfig.ReadValues(VTNVBRDATA,vtn_blockname)['vtn_name']
     vtn_url=vtn_testconfig.ReadValues(VTNVBRDATA,vtn_blockname)['vtn_url']
     vbr_url=vtn_testconfig.ReadValues(VTNVBRDATA,vbr_blockname)['vbr_url']
@@ -144,8 +144,9 @@ def create_portmap(vtn_blockname,vbr_blockname,vbrif_blockname):
     vbrif_add = collections.defaultdict(dict)
 
     vbrif_add['portmap']['logical_port_id']=logical_port_id
-    vbrif_add['portmap']['vlan_id']=vlan_id
-    vbrif_add['portmap']['tagged']=tagged
+    if vlan_tagged == 1:
+      vbrif_add['portmap']['vlan_id']=vlan_id
+      vbrif_add['portmap']['tagged']=tagged
     print json.dumps(vbrif_add)
     r = requests.put(url,data=json.dumps(vbrif_add),headers=def_header)
     print r.status_code
