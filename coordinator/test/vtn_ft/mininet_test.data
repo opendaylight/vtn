@@ -1,0 +1,9 @@
+[MININET]
+mininet_ipaddr=10.100.9.151
+mininet_username=mininet
+ctr_id = 172.16.1.61
+ssh = ssh -l
+ctr_remote = sudo mn --controller=remote,ip=
+topo_tree = --topo tree,
+
+
