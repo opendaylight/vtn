@@ -1,0 +1,122 @@
+Virtualization Edition Guide for VTN
+-------------------------------------
+Download Virtualization Edition
+The OpenDaylight virtualization edition zip file can be downloaded from here:
+https://nexus.opendaylight.org/content/repositories/opendaylight.snapshot/org/opendaylight/integration/distributions-virtualization/0.1.0-SNAPSHOT/
+
+Note: Please visit the URL and choose the latest zip file to download.
+
+Supported Platforms
+-------------------
+---------------------------------------------------------------------------------------------------
+Supported Platform             |Java Version                                                       |
+----------------------------------------------------------------------------------------------------
+RHEL 6.1/CentOS 6.1 (64-Bit)   | Download Oracle JDK 7 from the following page, and install it     |
+                               | http://www.oracle.com/technetwork/java/javase/downloads/index.html|
+----------------------------------------------------------------------------------------------------
+RHEL 6.4/CentOS 6.4 (64-Bit)   | Install OpenJDK 7                                                 |
+                               | yum install java-1.7.0-openjdk-devel                              |
+----------------------------------------------------------------------------------------------------
+
+Installation
+------------
+Installing ODL Controller and Execution
+***************************************
+1.Unzip the file as follows
+unzip distributions-virtualization-0.1.0-<date_time_build_number>-osgipackage.zip
+
+2. This will create a directory with name opendaylight
+
+3. Please ensure the environment variable JAVA_HOME is set to the location of the JDK.
+
+4. Execute Controller for VTN using the below command
+   * cd opendaylight
+   * ./run.sh -virt vtn
+
+5. The Controller will be up and running with the components required for VTN virtualization.
+
+Installing the VTN Coordinator
+******************************
+1. The VTN Coordinator is available in the externalapps of the virtualization edition
+
+2. Install the VTN Coordinator using the command
+   * cd opendaylight/externalapps
+   * tar .C / -jxvf org.opendaylight.vtn.distribution.vtn-coordinator-5.0.0.0-<date_time_build_ref>-bin.tar.bz2
+
+3. This will install the Coordinator to /usr/local/vtn directory.
+
+4. If the VTN Coordinator need to be run on a different machine, Copy the org.opendaylight.vtn.distribution.vtn-coordinator-5.0.0.0-<date_time_build_ref>-bin.tar.bz2 and uncompress.
+
+Launch the VTN Coordinator
+--------------------------
+Prior Preparation
+*****************
+Install additional applications required for VTN Coordinator
+
+   * yum install perl-Digest-SHA uuid libxslt libcurl unixODBC
+   * wget http://dl.fedoraproject.org/pub/epel/6/i386/epel-release-6-8.noarch.rpm
+   * rpm -Uvh epel-release-6-8.noarch.rpm
+   * yum install json-c
+
+Installing Postgres Database
+****************************
+   *Download the following PostgreSQL 9.1 files from http://yum.postgresql.org/9.1/redhat/rhel-6-x86_64/ and install
+
+    postgresql91-libs-9.1.9-1PGDG.rhel6.x86_64.rpm
+    postgresql91-9.1.9-1PGDG.rhel6.x86_64.rpm
+    postgresql91-server-9.1.9-1PGDG.rhel6.x86_64.rpm
+    postgresql91-contrib-9.1.9-1PGDG.rhel6.x86_64.rpm
+    postgresql91-odbc-09.00.0310-1PGDG.rhel6.x86_64.rpm
+
+Install and Configure tomcat
+***************************
+1. Install Tomcat.
+
+   * Download the following file.
+      http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.39/bin/apache-tomcat-7.0.39.tar.gz
+
+   * Extract under /usr/share/java.
+      tar zxvf apache-tomcat-7.0.39.tar.gz -C /usr/share/java
+
+2. Carry out Tomcat settings.
+
+   * Create the following symbolic link.
+      ln -s /usr/local/vtn/tomcat/webapps/vtn-webapi /usr/share/java/apache-tomcat-7.0.39/webapps/vtn-webapi
+
+   * Add the following to common.loader of /usr/share/java/apache-tomcat-7.0.39/conf/catalina.properties.
+      /usr/local/vtn/tomcat/lib,/usr/local/vtn/tomcat/lib/*.jar
+
+   * Add the following to shared.loader of /usr/share/java/apache-tomcat-7.0.39/conf/catalina.properties.
+      /usr/local/vtn/tomcat/shared/lib/*.jar
+
+   * Add the following to <Server> of /usr/share/java/apache-tomcat-7.0.39/conf/server.xml.
+      <Listener className="org.opendaylight.vtn.tomcat.server.StateListener" />
+
+3. If the VTN Coordinator and the controller are deployed in the same server, then change the apache port from 8080 to some other number as available in the server. 8080 is the port used by the ODL. The ports need to be modified in the server.xml of the tomcat installation.
+
+Configure Database for VTN Coordinator
+--------------------------------------
+    /usr/local/vtn/sbin/db_setup
+
+Launch VTN Coordinator to accept requests
+-----------------------------------------
+   /usr/local/vtn/bin/vtn_start
+
+Launch tomcat to accept requests
+--------------------------------
+/usr/share/java/apache-tomcat-7.0.39/bin/catalina.sh start
+
+Test and use VTN Coordinator
+----------------------------
+1. The below command should yield such a response to ensure successful installation
+
+     curl -X GET -H 'content-type: application/json' -H 'username: admin' -H 'password: adminpass' \
+      -H 'ipaddr:127.0.0.1' http://<VTN_COORDINATOR_IP_ADDRESS>:8080/vtn-webapi/api_version.json
+
+     Response
+     {"api_version":{"version":"V1.0"}}
+
+2. Create and use VTN
+
+Please refer to the link https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):VTNCoordinator:RestApi:Contents for all the API details to create VTN and all its sub components.
+
