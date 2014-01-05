@@ -3274,10 +3274,12 @@ public class VtnNorthboundIT extends TestBase {
                 mavenBundle("org.opendaylight.vtn", "manager.northbound").versionAsInProject(),
                 mavenBundle("org.opendaylight.vtn", "manager.implementation").versionAsInProject(),
 
-                mavenBundle("org.codehaus.jackson", "jackson-mapper-asl").versionAsInProject(),
-                mavenBundle("org.codehaus.jackson", "jackson-core-asl").versionAsInProject(),
-                mavenBundle("org.codehaus.jackson", "jackson-jaxrs").versionAsInProject(),
-                mavenBundle("org.codehaus.jackson", "jackson-xc").versionAsInProject(),
+                mavenBundle("com.fasterxml.jackson.core", "jackson-annotations").versionAsInProject(),
+                mavenBundle("com.fasterxml.jackson.core", "jackson-core").versionAsInProject(),
+                mavenBundle("com.fasterxml.jackson.core", "jackson-databind").versionAsInProject(),
+                mavenBundle("com.fasterxml.jackson.jaxrs", "jackson-jaxrs-json-provider").versionAsInProject(),
+                mavenBundle("com.fasterxml.jackson.jaxrs", "jackson-jaxrs-base").versionAsInProject(),
+                mavenBundle("com.fasterxml.jackson.module", "jackson-module-jaxb-annotations").versionAsInProject(),
                 mavenBundle("org.codehaus.jettison", "jettison").versionAsInProject(),
 
                 mavenBundle("commons-io", "commons-io").versionAsInProject(),
@@ -3374,7 +3376,6 @@ public class VtnNorthboundIT extends TestBase {
                 mavenBundle("com.sun.jersey", "jersey-client").versionAsInProject(),
                 mavenBundle("com.sun.jersey", "jersey-server").versionAsInProject().startLevel(2),
                 mavenBundle("com.sun.jersey", "jersey-core").versionAsInProject().startLevel(2),
-                mavenBundle("com.sun.jersey", "jersey-json").versionAsInProject().startLevel(2),
 
                 junitBundles());
     }
