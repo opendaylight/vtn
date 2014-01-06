@@ -225,6 +225,112 @@ class  ConfUtil {
     }
     return key_str;
   }
+
+  /**
+   * @brief       : This method returns the Keytype for UNC_KT_SWITCH
+   * @param [in]  : key
+   * @retval      : unc_key_type_t
+   */
+  static unc_key_type_t  get_key_type(const key_switch_t&  key) {
+    ODC_FUNC_TRACE;
+    return UNC_KT_SWITCH;
+  }
+
+  /**
+   * @brief       : This method returns the Keytype for UNC_KT_PORT
+   * @param [in]  : key
+   * @retval      : unc_key_type_t
+   */
+  static unc_key_type_t  get_key_type(const key_port_t&  key) {
+    ODC_FUNC_TRACE;
+    return UNC_KT_PORT;
+  }
+
+  /**
+   * @brief       : This method returns the parent Key for UNC_KT_SWITCH
+   * @param [in]  : key
+   * @retval      : parent key - string
+   */
+  static std::string get_parent_key(const key_switch_t&  key) {
+    ODC_FUNC_TRACE;
+    return "ROOT";
+  }
+
+  /**
+   * @brief       : This method returns the parent Key for UNC_KT_PORT
+   * @param [in]  : key
+   * @retval      : parent key - string
+   */
+  static std::string get_parent_key(const key_port_t&  key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.sw_key.ctr_key.controller_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.sw_key.switch_id));
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the search Key for UNC_KT_SWITCH
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_search_key(const key_switch_t& key,
+                                    const val_switch_st& val) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.ctr_key.controller_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.switch_id));
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the search Key for UNC_KT_PORT
+   * @param [in]  : key
+   * @retval      : string
+   **/
+  static std::string get_search_key(const key_port_t& key,
+                                    const val_port_st_t& val) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.sw_key.ctr_key.controller_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.sw_key.switch_id));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.port_id));
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the name for UNC_KT_PORT
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_key(const key_port_t&  key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.sw_key.ctr_key.controller_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.sw_key.switch_id));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.port_id));
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the search Key for UNC_KT_SWITCH
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_key(const key_switch_t& key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.ctr_key.controller_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.switch_id));
+    return key_str;
+  }
 };
 }  // namespace vtndrvcache
 }  // namespace unc

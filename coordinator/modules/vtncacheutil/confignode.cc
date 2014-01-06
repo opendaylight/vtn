@@ -41,6 +41,14 @@ std::string TypeToStrFun(unc_key_type_t search_type) {
       TypeStr = std::string("UNC_KT_VBR_VLANMAP");
       break;
 
+    case UNC_KT_SWITCH:
+      TypeStr = std::string("UNC_KT_SWITCH");
+      break;
+
+    case UNC_KT_PORT:
+      TypeStr = std::string("UNC_KT_PORT");
+      break;
+
     default:
       TypeStr = std::string("Unknown");
       pfc_log_info("%s: key_type = %d", PFC_FUNCNAME,
@@ -60,7 +68,7 @@ ConfigNode::ConfigNode() : operation_(0) {
 
 /**
  * @brief     : Method to retrieve each node from the Keytree and populate in
-                the vector
+ the vector
  * @param[in] : ConfigNode value_list
  * @retval    : DRVAPI_RESPONSE_SUCCESS
  */
@@ -130,6 +138,85 @@ void ConfigNode::print(int level_index) {
       }
     }
   }
+}
+/**
+ * @brief     : This method traverse the list and delete child and then parent
+ *            : from the the cache and insert key into erased_key_list before
+ *            : doing delete operation
+ * @param[in] : confignode *, erased_key_list(vector contain structure)
+ * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
+ */
+drv_resp_code_t ConfigNode::delete_child_node(ConfigNode *node_ptr,
+                  std::vector<key_information>& erased_key_list) {
+  ODC_FUNC_TRACE;
+  std::map<unc_key_type_t, std::vector<ConfigNode*> >::iterator itr;
+  std::map<unc_key_type_t, std::vector<ConfigNode*> >::iterator itr_end =
+      child_list_.end();
+
+  if (node_ptr == NULL) {
+    pfc_log_error("%s : ConfigNode is NULL", PFC_FUNCNAME);
+    return DRVAPI_RESPONSE_FAILURE;
+  }
+
+  itr = child_list_.find(node_ptr->get_type_name());
+  if (itr == itr_end) {
+    pfc_log_error("no such configuration present");
+    return DRVAPI_RESPONSE_FAILURE;
+  } else {
+    std::vector<ConfigNode*>& node_list = itr->second;
+    if (!node_list.empty()) {
+      std::vector<ConfigNode*>::iterator node_itr = node_list.begin();
+      for (; node_itr != node_list.end(); ++node_itr) {
+        if (*node_itr == node_ptr) {
+          key_information key_info;
+          key_info.key = node_ptr->get_key_generate();
+          key_info.key_type = node_ptr->get_type_name();
+          erased_key_list.push_back(key_info);
+          node_list.erase(node_itr);
+          node_ptr->clear_child_list(erased_key_list);
+          delete node_ptr;
+          break;
+        }
+      }
+    }
+  }
+  return DRVAPI_RESPONSE_SUCCESS;
+}
+
+/**
+ * @brief     : This method traverse the child list if parent have and delete
+ *            :the nodes
+ * @param[in] : erased_key_list
+ * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
+ */
+drv_resp_code_t ConfigNode::clear_child_list(std::vector<key_information>&
+                                             erased_key_list) {
+  ODC_FUNC_TRACE;
+  if (!child_list_.empty()) {
+    std::map<unc_key_type_t, std::vector<ConfigNode*> >::iterator sb_itr =
+        child_list_.begin();
+    std::map<unc_key_type_t,
+        std::vector<ConfigNode*> >::iterator sb_itr_end = child_list_.end();
+
+    for (; sb_itr != sb_itr_end; sb_itr++) {
+      std::vector<ConfigNode*>& node_list = sb_itr->second;
+      if (!node_list.empty()) {
+        std::vector<ConfigNode*>::iterator node_itr = node_list.begin();
+        std::vector<ConfigNode*>::iterator node_itr_end = node_list.end();
+
+        for (; node_itr != node_itr_end; node_itr++) {
+          ConfigNode* node_ptr = *node_itr;
+          node_ptr->clear_child_list(erased_key_list);
+          key_information key_info;
+          key_info.key = node_ptr->get_key_generate();
+          key_info.key_type = node_ptr->get_type_name();
+          erased_key_list.push_back(key_info);
+          delete node_ptr;
+        }
+      }
+    }
+  }
+  return DRVAPI_RESPONSE_SUCCESS;
 }
 
 /**

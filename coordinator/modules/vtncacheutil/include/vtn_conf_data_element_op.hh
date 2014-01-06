@@ -114,6 +114,18 @@ class CacheElementUtil: public  ConfigNode {
   }
 
   /**
+   * @brief     : This method set the new val-structure
+   * @param [in]: new_value
+   * @retval    : void
+   */
+  void set_val_structure(value* new_value) {
+    ODC_FUNC_TRACE;
+    delete value_;
+    value_ = new value;
+    memcpy(value_, new_value, sizeof(value));
+  }
+
+  /**
    * @brief  : This method returns the operation_
    * @retval : operation_
    */
