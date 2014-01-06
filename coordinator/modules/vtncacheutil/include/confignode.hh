@@ -19,11 +19,24 @@
 #include "uncxx/odc_log.hh"
 
 unsigned const NUM_SPACES = 4;
-unsigned const CACHEMGR_CONFIGARR_SIZE = 50;
+unsigned const CACHEMGR_CONFIGARR_SIZE = 518;
 
 
 namespace unc {
 namespace vtndrvcache {
+
+/**
+ * @brief     : Structure key_information contain key and key_type, that help
+ *            : for remove entries from hash after delete node operation from
+ *            : cache
+ * param[in]  : NONE
+ * @retval    : NONE
+ */
+struct key_information {
+  key_information():key(), key_type() {}
+  std::string key;
+  unc_key_type_t key_type;
+};
 
 /**
  * @brief     : Returns the type string corresponding the the keytype. This is used
@@ -51,7 +64,7 @@ class ConfigNode {
    * param[in] : value_list(vector of ConfigNode*)
    * @retval   : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS)
    */
-  drv_resp_code_t get_node_list(std::vector<ConfigNode*>&value_list);
+  drv_resp_code_t get_node_list(std::vector<ConfigNode*>& value_list);
 
   /**
    * @brief   : This virtual method returns the Keytype of a node
@@ -91,6 +104,21 @@ class ConfigNode {
    * @retval   : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS)
    */
   drv_resp_code_t add_child_to_list(ConfigNode *node_ptr);
+
+  /**
+   * @brief    : This method delete the node from cache
+   * param[in] : confignode *, vector<key_information>
+   * @retval   : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS)
+   */
+  drv_resp_code_t delete_child_node(ConfigNode *node_ptr,
+                            std::vector<key_information>&);
+
+  /**
+   * @brief    : This method deletes the nodes under the given parent from cache
+   * param[in] : vector<key_information>
+   * @retval   : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS)
+   */
+  drv_resp_code_t clear_child_list(std::vector<key_information>&);
 
   /**
    * @brief    : This method prints each node information

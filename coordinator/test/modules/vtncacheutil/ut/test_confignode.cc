@@ -57,7 +57,6 @@ TEST(print, check) {
   cfgnode_obj->add_child_to_list(cfgptr);
   cfgnode_obj->print(level_index);
   delete cfgnode_obj;
-  delete cfgptr;
   delete KeyTree_obj;
   cfgnode_obj = NULL;
   cfgptr = NULL;
@@ -80,7 +79,6 @@ TEST(add_child_to_list, DRVAPI_RESPONSE_SUCCESS) {
   KeyTree_obj->append_audit_node(cfgptr);
 
   int ret = cfgnode_obj->add_child_to_list(cfgptr);
-  delete cfgptr;
   delete cfgnode_obj;
   delete KeyTree_obj;
   cfgnode_obj = NULL;
@@ -162,6 +160,87 @@ TEST(get_node_list, check) {
   KeyTree_obj = NULL;
   EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
 }
+TEST(TypeToStrFun, keytype_switch_port) {
+  std::string ret = TypeToStrFun(UNC_KT_VBR_VLANMAP);
+  EXPECT_EQ(ret, "UNC_KT_VBR_VLANMAP");
 
+  ret = TypeToStrFun(UNC_KT_SWITCH);
+  EXPECT_EQ(ret, "UNC_KT_SWITCH");
+
+  ret = TypeToStrFun(UNC_KT_PORT);
+  EXPECT_EQ(ret, "UNC_KT_PORT");
+}
+TEST(delete_child_node, empty_switch_port) {
+  KeyTree* KeyTree_obj;
+  KeyTree_obj = KeyTree::create_cache();
+  std::vector<key_information> erased_key_list;
+  ConfigNode* cfgptr2 = NULL;
+  uint32_t ret = KeyTree_obj->node_tree_.delete_child_node(cfgptr2,
+                                                  erased_key_list);
+  delete KeyTree_obj;
+  KeyTree_obj = NULL;
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+}
+TEST(delete_child_node, switch_port_config_not_present) {
+  int operation = 1;
+  KeyTree* KeyTree_obj;
+  KeyTree_obj = KeyTree::create_cache();
+  std::vector<key_information> erased_key_list;
+  //  add switch 0000-0000-0000-0001 to cache
+  key_switch key_switch_obj;
+  val_switch_st val_switch;
+  memcpy(key_switch_obj.ctr_key.controller_name, "odc1", sizeof(
+                      key_switch_obj.ctr_key.controller_name));
+  memcpy(key_switch_obj.switch_id, "0000-0000-0000-0001", sizeof(
+                                      key_switch_obj.switch_id));
+  memset(&val_switch, 0, sizeof(val_switch));
+  ConfigNode *cfgptr = new CacheElementUtil<key_switch, val_switch_st, uint32_t>
+                       (&key_switch_obj, &val_switch, operation);
+  uint32_t ret = KeyTree_obj->node_tree_.add_child_to_list(cfgptr);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+
+  key_port key_obj;
+  memcpy(key_obj.sw_key.ctr_key.controller_name, "odc1", sizeof(
+                       key_obj.sw_key.ctr_key.controller_name));
+  memcpy(key_obj.sw_key.switch_id, "0000-0000-0000-0001", sizeof(
+                                      key_obj.sw_key.switch_id));
+  memcpy(key_obj.port_id, "s2-eth3", sizeof(key_obj.port_id));
+
+  val_port_st val_obj;
+  memset(&val_obj, 0, sizeof(val_obj));
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, uint32_t>
+                       (&key_obj, &val_obj, operation);
+  ret = KeyTree_obj->node_tree_.delete_child_node(cfgptr1, erased_key_list);
+  delete KeyTree_obj;
+  KeyTree_obj = NULL;
+  delete cfgptr1;
+  cfgptr1 = NULL;
+  cfgptr = NULL;
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+}
+TEST(delete_child_node, delete_switch) {
+  int operation = 1;
+  KeyTree* KeyTree_obj;
+  KeyTree_obj = KeyTree::create_cache();
+  std::vector<key_information> erased_key_list;
+  //  add switch 0000-0000-0000-0001 to cache
+  key_switch key_switch_obj;
+  val_switch_st val_switch;
+  memcpy(key_switch_obj.ctr_key.controller_name, "odc1", sizeof(
+                       key_switch_obj.ctr_key.controller_name));
+  memcpy(key_switch_obj.switch_id, "0000-0000-0000-0001", sizeof(
+                                      key_switch_obj.switch_id));
+  memset(&val_switch, 0, sizeof(val_switch));
+  ConfigNode *cfgptr = new CacheElementUtil<key_switch, val_switch_st, uint32_t>
+                       (&key_switch_obj, &val_switch, operation);
+  uint32_t ret = KeyTree_obj->node_tree_.add_child_to_list(cfgptr);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+
+  ret = KeyTree_obj->node_tree_.delete_child_node(cfgptr, erased_key_list);
+  delete KeyTree_obj;
+  KeyTree_obj = NULL;
+  cfgptr = NULL;
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+}
 }  // namespace vtndrvcache
 }  // namespace unc

@@ -14,6 +14,7 @@
 #include <map>
 #include <string>
 #include "confignode.hh"
+#include "vtn_conf_data_element_op.hh"
 
 namespace unc {
 namespace vtndrvcache {
@@ -60,10 +61,56 @@ class KeyTree {
   drv_resp_code_t append_audit_node(ConfigNode* value_node);
 
   /**
-   * @brief      : Method to add individual confignode to the cache to support
-   *               two-phase commit.
-   * @param [in] : value_node
+   * @brief      : Method to add list of confignode to the cache to support
+   *               physical node audit
+   * @param [in] : value_list(a vector contain list of confignodes)
    * @retval     : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS)
+   */
+  drv_resp_code_t append_physical_attribute_configuration_list(
+        const std::vector<ConfigNode*>&value_list);
+
+  /**
+   * @brief      : Method to add individual confignode to the cache for physical
+   *               node
+   * @param [in] : value_node
+   * @retval     : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS/
+   *               DRVAPI_RESPONSE_FAILURE)
+   */
+  drv_resp_code_t append_Physical_attribute_node(ConfigNode* value_node);
+
+  /**
+   * @brief      : Method to update individual confignode to the cache for
+   *               physical node
+   * @param [in] : child_ptr
+   * @retval     : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS/
+   *               DRVAPI_RESPONSE_FAILURE)
+   */
+  drv_resp_code_t update_physical_attribute_node(ConfigNode* child_ptr);
+
+  /**
+   * @brief      : Method to delete individual confignode to the cache for
+   *               physical node
+   * @param [in] : child_ptr
+   * @retval     : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS/
+   *               DRVAPI_RESPONSE_FAILURE)
+   */
+  drv_resp_code_t delete_physical_attribute_node(ConfigNode* child_ptr);
+
+  /**
+   * @brief      : Method to return existing node from cache as per new compare
+   *               node
+   * @param [in] : new_compare_node
+   * @param [out]: old_node_for_update
+   * @retval     : boolean(true/false)
+   */
+  pfc_bool_t compare_is_physical_node_found(ConfigNode* new_compare_node,
+                                              ConfigNode*& old_node_for_update);
+
+  /**
+   * @brief      : Method to add individual confignode to the cache for Audit
+   * @param [in] : value_node
+   * @retval     : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS/
+   *               DRVAPI_RESPONSE_FAILURE)
    */
   drv_resp_code_t append_commit_node(ConfigNode* value_node);
 
@@ -246,6 +293,20 @@ class CommonIterator {
     return NULL;
   }
 
+  /**
+   * @brief   : Method to fetch first element from Keytree container
+   *            during physical audit
+   * @retval  : ConfigNode*
+   */
+  ConfigNode* PhysicalNodeFirstItem() {
+    ODC_FUNC_TRACE;
+    currentIndex_ = 0;
+    if (aggregate_ != NULL) {
+      aggregate_->get_nodelist_keytree();
+      return (*aggregate_)[currentIndex_];
+    }
+    return NULL;
+  }
 
   /**
    * @brief      : Method to check the end of Keytree container
