@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da6255ed_27a96891",
+        "filename": "coordinator/README",
+        "patchSetId": 1
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2014-01-06T04:27:33Z",
+      "side": 1,
+      "message": "remove white spaces and end of lines in this file",
+      "revId": "b3023320755c1ce817562f65c062eac32388436b",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_07aae484",
+        "filename": "coordinator/README",
+        "patchSetId": 1
+      },
+      "lineNbr": 95,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2014-01-06T04:27:33Z",
+      "side": 1,
+      "message": "correct the line breaks",
+      "revId": "b3023320755c1ce817562f65c062eac32388436b",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da6255ed_e7aeb097",
+        "filename": "coordinator/README",
+        "patchSetId": 1
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 595
+      },
+      "writtenOn": "2014-01-06T04:27:33Z",
+      "side": 1,
+      "message": "refer to the vtn coordinator REST API main wiki pages instead of the pdf file here",
+      "revId": "b3023320755c1ce817562f65c062eac32388436b",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
