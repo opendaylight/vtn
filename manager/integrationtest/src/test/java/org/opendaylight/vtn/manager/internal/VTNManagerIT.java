@@ -228,8 +228,9 @@ public class VTNManagerIT extends TestBase {
                 mavenBundle("eclipselink", "javax.resource").versionAsInProject(),
                 mavenBundle("org.apache.felix", "org.apache.felix.fileinstall").versionAsInProject(),
 
-                mavenBundle("org.codehaus.jackson", "jackson-mapper-asl").versionAsInProject(),
-                mavenBundle("org.codehaus.jackson", "jackson-core-asl").versionAsInProject(),
+                mavenBundle("com.fasterxml.jackson.core", "jackson-annotations").versionAsInProject(),
+                mavenBundle("com.fasterxml.jackson.core", "jackson-core").versionAsInProject(),
+                mavenBundle("com.fasterxml.jackson.core", "jackson-databind").versionAsInProject(),
 
                 mavenBundle("org.ops4j.pax.exam", "pax-exam-container-native"),
                 mavenBundle("org.ops4j.pax.exam", "pax-exam-junit4"),
@@ -3702,7 +3703,7 @@ public class VTNManagerIT extends TestBase {
                     try {
                         for (MacAddressEntry macEntry : mgr.getMacEntries(listVBr.get((j == 1) ? 0 : j))) {
                             assertTrue(macEntry.getAddress() instanceof EthernetAddress);
-                            assertFalse(emsg, eaSrc.equals((EthernetAddress)macEntry.getAddress()));
+                            assertFalse(emsg, eaSrc.equals(macEntry.getAddress()));
                         }
                     } catch (VTNException e) {
                         unexpected(e);
@@ -4243,7 +4244,7 @@ public class VTNManagerIT extends TestBase {
                         new byte[] {bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5]};
                 byte [] dst =
                         new byte[] {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
-                byte [] sender = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) iphost};
+                byte [] sender = new byte[] {(byte) 192, (byte) 168, (byte) 0, iphost};
                 byte [] target = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 250};
                 RawPacket inPkt =
                         createARPRawPacket(src, dst, sender, target, (short) -1, nc, ARP.REQUEST);
@@ -4443,7 +4444,7 @@ public class VTNManagerIT extends TestBase {
                 byte [] dstBC =
                         new byte[] {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
                 byte [] dst = tgtMac;
-                byte [] sender = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) iphost};
+                byte [] sender = new byte[] {(byte) 192, (byte) 168, (byte) 0, iphost};
                 byte [] target = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 250};
                 RawPacket inPkt =
                         createARPRawPacket(src, dstBC, sender, target, (short) -1, reqNc, ARP.REQUEST);
@@ -4538,7 +4539,7 @@ public class VTNManagerIT extends TestBase {
                 byte [] dstBC =
                         new byte[] {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
                 byte [] dst = tgtMac;
-                byte [] sender = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) iphost};
+                byte [] sender = new byte[] {(byte) 192, (byte) 168, (byte) 0, iphost};
                 byte [] target = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 250};
                 RawPacket inPkt =
                         createARPRawPacket(src, dstBC, sender, target, (short) -1, reqNc, ARP.REQUEST);
@@ -4664,7 +4665,7 @@ public class VTNManagerIT extends TestBase {
             PopVlan pvlan = new PopVlan();
             actList.add(pvlan);
         } else if(vlan > 0) {
-            SetVlanId setvlan =new SetVlanId((int)vlan);
+            SetVlanId setvlan =new SetVlanId(vlan);
             actList.add(setvlan);
         }
 

@@ -59,7 +59,7 @@
               org.opendaylight.controller.sal.core,
               org.opendaylight.controller.sal.packet.address,
               org.opendaylight.controller.sal.utils,
-              org.codehaus.jackson.map.annotate,
+              com.fasterxml.jackson.databind.annotation,
               javax.xml.bind,
               javax.xml.bind.annotation
             </Import-Package>
