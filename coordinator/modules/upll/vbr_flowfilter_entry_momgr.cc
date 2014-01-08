@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -3334,7 +3334,7 @@ upll_rc_t VbrFlowFilterEntryMoMgr::UpdateVnodeVal(ConfigKeyVal *ikey,
     }
     uuu::upll_strncpy(val_ff_entry->redirect_node,
       key_rename->old_unc_vnode_name,
-      (kMaxLenFlowListName + 1));
+      sizeof(val_ff_entry->redirect_node));
     val_ff_entry->valid[UPLL_IDX_REDIRECT_NODE_FFE] = UNC_VF_VALID;
     UPLL_LOG_DEBUG("valid and vbridge name (%d) (%s)",
                    val_ff_entry->valid[UPLL_IDX_REDIRECT_NODE_FFE],
@@ -3415,8 +3415,8 @@ upll_rc_t VbrFlowFilterEntryMoMgr::UpdateVnodeVal(ConfigKeyVal *ikey,
     }
     // Copy the new vbridge name into val_flowfilter_entry
     uuu::upll_strncpy(val_ff_entry_new->redirect_node,
-                     key_rename->new_unc_vnode_name,
-                    (kMaxLenFlowListName + 1));
+                      key_rename->new_unc_vnode_name,
+                      sizeof(val_ff_entry_new->redirect_node));
     val_ff_entry_new->valid[UPLL_IDX_REDIRECT_NODE_FFE] = UNC_VF_VALID;
     UPLL_LOG_DEBUG("vbridge name and valid (%d) (%s)",
                     val_ff_entry_new->valid[UPLL_IDX_FLOWLIST_NAME_FFE],
