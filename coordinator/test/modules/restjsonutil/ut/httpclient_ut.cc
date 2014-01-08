@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -431,7 +431,7 @@ TEST(HttpClient , write_call_back_src_ptr_NULL) {
   unc::restjson::HttpContent_t * dest = new unc::restjson::HttpContent_t;
   dest->size = 0;
   size_t retval = obj.write_call_back(src, size, nmemb, dest);
-  EXPECT_EQ(retval, 0);
+  EXPECT_EQ(0U, retval);
   delete dest;
   obj.clear_http_response();
   obj.fini();
@@ -447,7 +447,7 @@ TEST(HttpClient , write_call_back_mem_NULL) {
   unc::restjson::HttpContent_t * dest = new unc::restjson::HttpContent_t;
   dest->size = 0;
   size_t retval = obj.write_call_back(src, size, nmemb, dest);
-  EXPECT_EQ(retval, 0);
+  EXPECT_EQ(0U, retval);
   delete dest;
   obj.clear_http_response();
   obj.fini();
@@ -463,7 +463,7 @@ TEST(HttpClient , write_call_back_src_dest_NULL) {
   size_t nmemb = 16;
   unc::restjson::HttpContent_t * dest = NULL;
   size_t retval = obj.write_call_back(src, size, nmemb, dest);
-  EXPECT_EQ(retval, 0);
+  EXPECT_EQ(0U, retval);
   obj.fini();
   obj.clear_http_response();
 }
@@ -486,7 +486,7 @@ TEST(HttpClient , write_call_back_realloc) {
       (malloc((dest->size) * sizeof(dest->size)));
   memset(&(dest->memory[0]), '1', 1);
   size_t ret = obj.write_call_back(src, size, nmemb, dest);
-  EXPECT_EQ(ret, size * nmemb);
+  EXPECT_EQ(size * nmemb, ret);
   char *result = reinterpret_cast < char *>(dest->memory);
   EXPECT_STREQ(result,
                const_cast <

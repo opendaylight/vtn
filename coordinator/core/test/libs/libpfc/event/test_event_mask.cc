@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -34,12 +34,12 @@ TEST(pfc_event_mask_empty, mask)
 
 	// Empty
 	pfc_event_mask_empty(&mask);
-	EXPECT_EQ(0, mask);
+	EXPECT_EQ(static_cast<pfc_evmask_t>(0), mask);
 
 	// Overwrite
 	mask = (pfc_evmask_t)2;
 	pfc_event_mask_empty(&mask);
-	EXPECT_EQ(0, mask);
+	EXPECT_EQ(static_cast<pfc_evmask_t>(0), mask);
 }
 
 TEST(pfc_event_mask_add, mask)
@@ -53,11 +53,11 @@ TEST(pfc_event_mask_add, mask)
 
 	// Add
 	EXPECT_EQ(0, pfc_event_mask_add(&mask, 1));
-	EXPECT_EQ(2, mask);   // 0.....010
+	EXPECT_EQ(static_cast<pfc_evmask_t>(2), mask);	// 0.....010
 
 	// Re add
 	EXPECT_EQ(0, pfc_event_mask_add(&mask, 3));
-	EXPECT_EQ(10, mask); // 0...1010
+	EXPECT_EQ(static_cast<pfc_evmask_t>(10), mask);	// 0...1010
 }
 
 TEST(pfc_event_mask_add, type)
@@ -71,11 +71,11 @@ TEST(pfc_event_mask_add, type)
 
 	// Add normal value
 	EXPECT_EQ(0, pfc_event_mask_add(&mask, 1));
-	EXPECT_EQ(mask, 2);
+	EXPECT_EQ(static_cast<pfc_evmask_t>(2), mask);
 
 	// Add an invalid value
 	EXPECT_EQ(EINVAL, pfc_event_mask_add(&mask, 32));
-	EXPECT_EQ(mask, 2);
+	EXPECT_EQ(static_cast<pfc_evmask_t>(2), mask);
 }
 
 TEST(pfc_event_mask_delete, mask)

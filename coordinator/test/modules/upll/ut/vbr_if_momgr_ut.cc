@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -337,7 +337,7 @@ TEST_F(VbrIfMoMgrTest, FilterAttributes_CreateOperation) {
   valvbr1->valid[UPLL_IDX_DESC_VBRI] = UNC_VF_INVALID;
   val1 = reinterpret_cast<void *>(reinterpret_cast<char *>(valvbr1));
   val2 = reinterpret_cast<void *>(reinterpret_cast<char *>(valvbr1));
-  EXPECT_EQ(false, vbr.FilterAttributes(val1,val2,audit_status,op));
+  EXPECT_FALSE(vbr.FilterAttributes(val1,val2,audit_status,op));
 
   free(valvbr1);
 }
@@ -355,7 +355,7 @@ TEST_F(VbrIfMoMgrTest, FilterAttributes_OperationUpdate) {
   valvbr2->valid[UPLL_IDX_DESC_VBRI] = UNC_VF_INVALID;
   val1 = reinterpret_cast<void *>(reinterpret_cast<char *>(valvbr1));
   val2 = reinterpret_cast<void *>(reinterpret_cast<char *>(valvbr2));
-  EXPECT_EQ(true, vbr.FilterAttributes(val1,val2,audit_status,op));
+  EXPECT_TRUE(vbr.FilterAttributes(val1,val2,audit_status,op));
 
   free(valvbr1);
   free(valvbr2);
@@ -2196,7 +2196,7 @@ TEST_F(VbrIfMoMgrTest, GetRenameKeyBindInfo_PMainTbl)
   int nattr;
   MoMgrTables tbl = MAINTBL;
 
-  EXPECT_EQ(PFC_TRUE, obj.GetRenameKeyBindInfo(key_type, bin, nattr, tbl));
+  EXPECT_TRUE(obj.GetRenameKeyBindInfo(key_type, bin, nattr, tbl));
 }
 
 TEST_F(VbrIfMoMgrTest, GetRenameKeyBindInfo_FRenameTBL)
@@ -2206,7 +2206,7 @@ TEST_F(VbrIfMoMgrTest, GetRenameKeyBindInfo_FRenameTBL)
   BindInfo *bin;
   int nattr;
   MoMgrTables tbl = RENAMETBL;
-  EXPECT_EQ(PFC_FALSE, obj.GetRenameKeyBindInfo(key_type, bin, nattr, tbl));
+  EXPECT_FALSE(obj.GetRenameKeyBindInfo(key_type, bin, nattr, tbl));
 }
 
 TEST_F(VbrIfMoMgrTest, GetRenameKeyBindInfo_FRename)
@@ -2216,7 +2216,7 @@ TEST_F(VbrIfMoMgrTest, GetRenameKeyBindInfo_FRename)
   BindInfo *bin = NULL;
   int nattr = 0;
   MoMgrTables tbl = RENAMETBL;
-  EXPECT_EQ(PFC_FALSE, obj.GetRenameKeyBindInfo(key_type, bin, nattr, tbl));
+  EXPECT_FALSE(obj.GetRenameKeyBindInfo(key_type, bin, nattr, tbl));
 }
 
 TEST_F(VbrIfMoMgrTest, GetRenameKeyBindInfo_FNoTBL)
@@ -2226,7 +2226,7 @@ TEST_F(VbrIfMoMgrTest, GetRenameKeyBindInfo_FNoTBL)
   BindInfo *bin;
   int nattr;
   MoMgrTables tbl = CTRLRTBL;
-  EXPECT_EQ(PFC_FALSE, obj.GetRenameKeyBindInfo(key_type, bin, nattr, tbl));
+  EXPECT_FALSE(obj.GetRenameKeyBindInfo(key_type, bin, nattr, tbl));
 }
 
 TEST_F(VbrIfMoMgrTest, GetVbrIfValfromDBTrue){

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -830,7 +830,8 @@ TEST(cloexec, open)
 
     // EEXIST error.
     {
-        OpenCloExec	fd(path, O_RDWR | O_CREAT | O_EXCL);
+        const mode_t	mode(0644);
+        OpenCloExec	fd(path, O_RDWR | O_CREAT | O_EXCL, mode);
 
         ASSERT_EQ(-1, fd.getDescriptor());
         ASSERT_EQ(EEXIST, fd.getError());
@@ -867,7 +868,7 @@ TEST(cloexec, open)
         flags = fcntl(desc, F_GETFL);
         ASSERT_EQ(O_RDWR, flags & O_ACCMODE);
 
-        const size_t	fsize(0x10);
+        const off_t	fsize(0x10);
         ASSERT_EQ(0, ftruncate(desc, fsize));
 
         struct stat	sbuf;
@@ -984,7 +985,7 @@ TEST(cloexec, openat)
         flags = fcntl(desc, F_GETFL);
         ASSERT_EQ(O_RDWR, flags & O_ACCMODE);
 
-        const size_t	fsize(0x10);
+        const off_t	fsize(0x10);
         ASSERT_EQ(0, ftruncate(desc, fsize));
 
         struct stat	sbuf;
@@ -1041,7 +1042,9 @@ TEST(cloexec, openat_cwd)
 
     // EEXIST error.
     {
-        OpenAtCloExec	fd(PFC_AT_FDCWD, fname, O_RDWR | O_CREAT | O_EXCL);
+        const mode_t	mode(0644);
+        OpenAtCloExec	fd(PFC_AT_FDCWD, fname, O_RDWR | O_CREAT | O_EXCL,
+                           mode);
 
         ASSERT_EQ(-1, fd.getDescriptor());
         ASSERT_EQ(EEXIST, fd.getError());
@@ -1078,7 +1081,7 @@ TEST(cloexec, openat_cwd)
         flags = fcntl(desc, F_GETFL);
         ASSERT_EQ(O_RDWR, flags & O_ACCMODE);
 
-        const size_t	fsize(0x10);
+        const off_t	fsize(0x10);
         ASSERT_EQ(0, ftruncate(desc, fsize));
 
         struct stat	sbuf;
@@ -1172,7 +1175,7 @@ TEST(cloexec, fopen)
     TmpFile	tmpf("test_fopen_cloexec");
     ASSERT_EQ(0, tmpf.createFile());
     const char	*path(tmpf.getPath());
-    const size_t	fsize(0x1000);
+    const off_t	fsize(0x1000);
     {
         int	fd(open(path, O_RDWR));
         ASSERT_NE(-1, fd) << "errno = " << strerror(errno);
@@ -1238,7 +1241,7 @@ TEST(cloexec, fopen)
         ASSERT_EQ(O_WRONLY, flags & O_ACCMODE);
         ASSERT_EQ(O_APPEND, flags & O_APPEND);
 
-        size_t	off(lseek(desc, 0, SEEK_CUR));
+        off_t	off(lseek(desc, 0, SEEK_CUR));
         ASSERT_EQ(fsize, off);
     }
 
@@ -1283,7 +1286,7 @@ TEST(cloexec, fopen)
 
         // Target file must be truncated.
         ASSERT_EQ(0, fstat(desc, &sbuf));
-        ASSERT_EQ(static_cast<size_t>(0), sbuf.st_size);
+        ASSERT_EQ(static_cast<off_t>(0), sbuf.st_size);
     }
 
     // Read and write mode with file truncation.
@@ -1308,7 +1311,7 @@ TEST(cloexec, fopen)
 
         // Target file must be truncated.
         ASSERT_EQ(0, fstat(desc, &sbuf));
-        ASSERT_EQ(static_cast<size_t>(0), sbuf.st_size);
+        ASSERT_EQ(static_cast<off_t>(0), sbuf.st_size);
     }
 
     // Create a new file.
@@ -1327,13 +1330,13 @@ TEST(cloexec, fopen)
         ASSERT_EQ(O_RDWR, flags & O_ACCMODE);
         ASSERT_EQ(0, flags & O_APPEND);
 
-        const size_t	fsize(0x10);
+        const off_t	fsize(0x10);
         ASSERT_EQ(0, ftruncate(desc, fsize));
 
         struct stat	sbuf;
         ASSERT_EQ(0, fstat(desc, &sbuf));
         ASSERT_EQ(fsize, sbuf.st_size);
-        ASSERT_EQ(0666, sbuf.st_mode & 07777);
+        ASSERT_EQ(static_cast<mode_t>(0666), sbuf.st_mode & 07777);
     }
 
     // Specify dynamically generated mode string.
@@ -1417,7 +1420,7 @@ TEST(cloexec, fopen_macro)
     TmpFile	tmpf("test_fopen_cloexec");
     ASSERT_EQ(0, tmpf.createFile());
     const char	*path(tmpf.getPath());
-    const size_t	fsize(0x1000);
+    const off_t	fsize(0x1000);
     {
         int	fd(open(path, O_RDWR));
         ASSERT_NE(-1, fd) << "errno = " << strerror(errno);
@@ -1483,7 +1486,7 @@ TEST(cloexec, fopen_macro)
         ASSERT_EQ(O_WRONLY, flags & O_ACCMODE);
         ASSERT_EQ(O_APPEND, flags & O_APPEND);
 
-        size_t	off(lseek(desc, 0, SEEK_CUR));
+        off_t	off(lseek(desc, 0, SEEK_CUR));
         ASSERT_EQ(fsize, off);
     }
 
@@ -1503,8 +1506,8 @@ TEST(cloexec, fopen_macro)
         ASSERT_EQ(O_APPEND, flags & O_APPEND);
 
         // Initial file offset must be zero.
-        size_t	off(lseek(desc, 0, SEEK_CUR));
-        ASSERT_EQ(static_cast<size_t>(0), off);
+        off_t	off(lseek(desc, 0, SEEK_CUR));
+        ASSERT_EQ(static_cast<off_t>(0), off);
     }
 
     // Write only mode with file truncation.
@@ -1528,7 +1531,7 @@ TEST(cloexec, fopen_macro)
 
         // Target file must be truncated.
         ASSERT_EQ(0, fstat(desc, &sbuf));
-        ASSERT_EQ(static_cast<size_t>(0), sbuf.st_size);
+        ASSERT_EQ(static_cast<off_t>(0), sbuf.st_size);
     }
 
     // Read and write mode with file truncation.
@@ -1553,7 +1556,7 @@ TEST(cloexec, fopen_macro)
 
         // Target file must be truncated.
         ASSERT_EQ(0, fstat(desc, &sbuf));
-        ASSERT_EQ(static_cast<size_t>(0), sbuf.st_size);
+        ASSERT_EQ(static_cast<off_t>(0), sbuf.st_size);
     }
 
     // Create a new file.
@@ -1572,13 +1575,13 @@ TEST(cloexec, fopen_macro)
         ASSERT_EQ(O_RDWR, flags & O_ACCMODE);
         ASSERT_EQ(0, flags & O_APPEND);
 
-        const size_t	fsize(0x10);
+        const off_t	fsize(0x10);
         ASSERT_EQ(0, ftruncate(desc, fsize));
 
         struct stat	sbuf;
         ASSERT_EQ(0, fstat(desc, &sbuf));
         ASSERT_EQ(fsize, sbuf.st_size);
-        ASSERT_EQ(0666, sbuf.st_mode & 07777);
+        ASSERT_EQ(static_cast<mode_t>(0666), sbuf.st_mode & 07777);
     }
 }
 

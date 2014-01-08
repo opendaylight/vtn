@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -130,7 +130,7 @@ TEST(pfc_event_hold, event)
 
 		// Get the refptr of the released event
 		refptr = pfc_event_refptr(event);
-		ASSERT_EQ(1, refptr->pr_refcnt);
+		ASSERT_EQ(1U, refptr->pr_refcnt);
 
 		// Create checker thread
 		ASSERT_EQ(0, pfc_thread_create(&tc, &dtor_holder_checker, (void *)&sem, 0));

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -127,7 +127,7 @@ log_facility_value(const char *name, pfc_log_facl_t *fap)
 #define LOG_IDENT	"test"
 #ifndef LOG_INIT
 
-#define DEFAULT_RCOUNT	10
+#define DEFAULT_RCOUNT	10U
 #define DEFAULT_RSIZE	10000000U
 #define DEFAULT_LOGLVL	"info"
 

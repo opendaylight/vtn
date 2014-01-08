@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -254,7 +254,7 @@ TEST(JsonBuildParse , Parse_arr) {
   obj.parse(jobj, "example", -1, val);
   uint intval = 0;
   obj.parse(val, "Name", 0, intval);
-  EXPECT_EQ(10, intval);
+  EXPECT_EQ(10U, intval);
   json_object_put(jobj);
 }
 
@@ -316,7 +316,7 @@ TEST(JsonBuildParse , Parse_arr_ind) {
   EXPECT_EQ(str2, str1);
   uint intval = 0;
   obj.parse(val, "port_no", 2, intval);
-  EXPECT_EQ(1, intval);
+  EXPECT_EQ(1U, intval);
   json_object_put(jobj);
 }
 
@@ -410,7 +410,7 @@ TEST(JsonBuildParse , getval_int) {
   json_object *jobj = json_object_new_int(10);
   uint val = 0;
   unc::restjson::JsonTypeUtil::get_value(jobj, val);
-  EXPECT_EQ(10, val);
+  EXPECT_EQ(10U, val);
   json_object_put(jobj);
 }
 
@@ -437,7 +437,7 @@ TEST(JsonBuildParse , getval_int_val) {
   json_object *jobj = json_object_new_int(10);
   uint val = 0;
   unc::restjson::JsonTypeUtil::get_value(jobj, val);
-  EXPECT_NE(val , 0);
+  EXPECT_NE(0U, val);
   json_object_put(jobj);
 }
 
@@ -445,7 +445,7 @@ TEST(JsonBuildParse , getval_int_fail) {
   json_object *jobj = json_object_new_int(10);
   uint val = 0;
   unc::restjson::JsonTypeUtil::get_value(jobj, val);
-  EXPECT_NE(val , 1);
+  EXPECT_NE(1U, val);
   json_object_put(jobj);
 }
 

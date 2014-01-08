@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -497,7 +497,7 @@ test_sockaddr_in6(SockAddr &sa, struct in6_addr &iaddr, uint32_t port,
         (reinterpret_cast<const struct sockaddr_in6 *>(sap->sa_addr));
     ASSERT_EQ(AF_INET6, saddr->sin6_family);
     ASSERT_EQ(port, ntohs(saddr->sin6_port));
-    ASSERT_EQ(0, saddr->sin6_flowinfo);
+    ASSERT_EQ(0U, saddr->sin6_flowinfo);
     ASSERT_EQ(scope, saddr->sin6_scope_id);
     ASSERT_EQ(0, memcmp(&iaddr, &saddr->sin6_addr, sizeof(iaddr)));
     ASSERT_EQ(sizeof(*saddr), sap->sa_addrlen);

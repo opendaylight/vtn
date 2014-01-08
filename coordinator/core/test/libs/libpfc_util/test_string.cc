@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -68,7 +68,7 @@ TEST(string, strlcpy)
 {
     // Ensure that pfc_strlcpy() never touches the destination address if
     // zero is specified as buffer size.
-    ASSERT_EQ(3, pfc_strlcpy(NULL, "abc", 0));
+    ASSERT_EQ(3U, pfc_strlcpy(NULL, "abc", 0));
 
     static const char   *sources[] = {
         "",

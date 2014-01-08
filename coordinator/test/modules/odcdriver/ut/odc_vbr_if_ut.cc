@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -1997,7 +1997,7 @@ TEST(odcdriver,  fetch_config) {
       cfgnode_vector;
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
             obj.fetch_config(ctr, &key_vbr, cfgnode_vector));
-  EXPECT_EQ(1, cfgnode_vector.size());
+  EXPECT_EQ(1U, cfgnode_vector.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
        cfgnode_vector.begin(); it != cfgnode_vector.end(); ++it ) {
     if (*it != NULL) {
@@ -2037,7 +2037,7 @@ TEST(odcdriver,  fetch_config_empty_vtn) {
       cfgnode_vector;
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.fetch_config(ctr, &key_vbr, cfgnode_vector));
-  EXPECT_EQ(0, cfgnode_vector.size());
+  EXPECT_EQ(0U, cfgnode_vector.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
        cfgnode_vector.begin(); it != cfgnode_vector.end(); ++it ) {
     if (*it != NULL) {
@@ -2077,7 +2077,7 @@ TEST(odcdriver,  fetch_config_empty_vtn_data) {
       cfgnode_vector;
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.fetch_config(ctr, &key_vbr, cfgnode_vector));
-  EXPECT_EQ(0, cfgnode_vector.size());
+  EXPECT_EQ(0U, cfgnode_vector.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
        cfgnode_vector.begin(); it != cfgnode_vector.end(); ++it ) {
     if (*it != NULL) {
@@ -2118,7 +2118,7 @@ TEST(odcdriver,  fetch_config_null_response) {
       cfgnode_vector;
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.fetch_config(ctr, &key_vbr, cfgnode_vector));
-  EXPECT_EQ(0, cfgnode_vector.size());
+  EXPECT_EQ(0U, cfgnode_vector.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
        cfgnode_vector.begin(); it != cfgnode_vector.end(); ++it ) {
     if (*it != NULL) {
@@ -2158,7 +2158,7 @@ TEST(odcdriver,  fetch_config_invalid_resp) {
       cfgnode_vector;
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.fetch_config(ctr, &key_vbr, cfgnode_vector));
-  EXPECT_EQ(0, cfgnode_vector.size());
+  EXPECT_EQ(0U, cfgnode_vector.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
        cfgnode_vector.begin(); it != cfgnode_vector.end(); ++it ) {
     if (*it != NULL) {
@@ -2198,7 +2198,7 @@ TEST(odcdriver,  fetch_config_with_portmap) {
       cfgnode_vector;
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
             obj.fetch_config(ctr, &key_vbr, cfgnode_vector));
-  EXPECT_EQ(1, cfgnode_vector.size());
+  EXPECT_EQ(1U, cfgnode_vector.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
        cfgnode_vector.begin(); it != cfgnode_vector.end(); ++it ) {
     if (*it != NULL) {
@@ -2238,7 +2238,7 @@ TEST(odcdriver,  fetch_config_with_portmap_no_vlan) {
       cfgnode_vector;
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
             obj.fetch_config(ctr, &key_vbr, cfgnode_vector));
-  EXPECT_EQ(1, cfgnode_vector.size());
+  EXPECT_EQ(1U, cfgnode_vector.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
        cfgnode_vector.begin(); it != cfgnode_vector.end(); ++it ) {
     if (*it != NULL) {

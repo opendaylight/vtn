@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -639,8 +639,8 @@ void *thread_function_2(void *arg) {
 
   ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
   EXPECT_EQ(TC_LOCK_NO_CONFIG_SESSION_EXIST, ret);
-  EXPECT_EQ(0, session_id);
-  EXPECT_EQ(0, config_id);
+  EXPECT_EQ(0U, session_id);
+  EXPECT_EQ(0U, config_id);
   config_id = session_id = 100;
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -934,7 +934,7 @@ TEST(misc, pfc_iostream_create_file)
 
         size_t	size(len);
         ASSERT_EQ(0, pfc_iostream_write(stream, (void *)buf, &size, NULL));
-        ASSERT_EQ(len, size);
+        ASSERT_EQ(static_cast<size_t>(len), size);
     }
     ASSERT_EQ(0, pfc_iostream_flush(stream, NULL));
     ASSERT_EQ(0, pfc_iostream_shutdown(stream, PFC_IOSTREAM_SHUT_WR));
@@ -2230,9 +2230,9 @@ TEST(misc, pfc_iostream_cred_4)
     ASSERT_EQ(0, __pfc_iostream_recvcred(rstream, &t, &size, &cred, &tout));
     ASSERT_EQ(sizeof(t), size);
     ASSERT_EQ(buffer[1], t);
-    ASSERT_EQ(-1, cred.pid);
-    ASSERT_EQ(-1, cred.uid);
-    ASSERT_EQ(-1, cred.gid);
+    ASSERT_EQ(static_cast<pid_t>(-1), cred.pid);
+    ASSERT_EQ(static_cast<uid_t>(-1), cred.uid);
+    ASSERT_EQ(static_cast<gid_t>(-1), cred.gid);
 }
 
 /*
@@ -2604,9 +2604,9 @@ TEST(misc, pfc_iostream_cred_abs_4)
     ASSERT_EQ(0, __pfc_iostream_recvcred_abs(rstream, &t, &size, &cred, &abs));
     ASSERT_EQ(sizeof(t), size);
     ASSERT_EQ(buffer[1], t);
-    ASSERT_EQ(-1, cred.pid);
-    ASSERT_EQ(-1, cred.uid);
-    ASSERT_EQ(-1, cred.gid);
+    ASSERT_EQ(static_cast<pid_t>(-1), cred.pid);
+    ASSERT_EQ(static_cast<uid_t>(-1), cred.uid);
+    ASSERT_EQ(static_cast<gid_t>(-1), cred.gid);
 }
 
 /*

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013 NEC Corporation
+ * Copyright (c) 2011-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -115,7 +115,7 @@ TEST(mkdir, abs)
         ASSERT_EQ(0, pfc_mkdir(base, 0777));
         ASSERT_EQ(0, lstat(base, &sbuf));
         ASSERT_TRUE(S_ISDIR(sbuf.st_mode));
-        ASSERT_EQ(0777, sbuf.st_mode & PERM_MASK);
+        ASSERT_EQ(static_cast<mode_t>(0777), sbuf.st_mode & PERM_MASK);
 
         path = base;
         path += "/dir1";

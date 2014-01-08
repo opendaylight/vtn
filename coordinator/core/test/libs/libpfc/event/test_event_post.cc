@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -46,7 +46,7 @@ TEST(pfc_event_post, event)
 	test_event_c_impl(event_name, LOCALQ, 0, PFC_TRUE);
 }
 
-#define	EV_COUNT	50
+#define	EV_COUNT	50U
 #define	EV_NOR_TYP	PFC_EVTYPE_MIN
 #define	EV_EMR_TYP	PFC_EVTYPE_MAX
 
@@ -59,7 +59,7 @@ static volatile pfc_bool_t	fist_ev;
 	pfc_evhandler_t	ehid_emr;					\
 	pfc_event_t	ev[EV_COUNT];					\
 	pfc_event_t	ev_emr;						\
-	int	i;							\
+	uint32_t	i;						\
 									\
 	ev_count = 0;							\
 	fist_ev = PFC_TRUE;						\

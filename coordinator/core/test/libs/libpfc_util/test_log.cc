@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -180,7 +180,7 @@ LogFile::check(checkmode_t cmode)
     ASSERT_EQ(0, ret)
         << "*** ERROR: " << strerror(errno);
     ASSERT_TRUE(S_ISDIR(sbuf.st_mode));
-    ASSERT_EQ(0700, sbuf.st_mode & 07777);
+    ASSERT_EQ(static_cast<mode_t>(0700), sbuf.st_mode & 07777);
 
     std::string  parent(_base);
     parent.append("/");
@@ -191,11 +191,11 @@ LogFile::check(checkmode_t cmode)
 
     ASSERT_EQ(0, fstat(dfd, &sbuf));
     ASSERT_TRUE(S_ISDIR(sbuf.st_mode));
-    ASSERT_EQ(0700, sbuf.st_mode & 07777);
+    ASSERT_EQ(static_cast<mode_t>(0700), sbuf.st_mode & 07777);
 
     ASSERT_EQ(0, fstatat(dfd, _name.c_str(), &sbuf, AT_SYMLINK_NOFOLLOW));
     ASSERT_TRUE(S_ISREG(sbuf.st_mode));
-    ASSERT_EQ(0600, sbuf.st_mode & 07777);
+    ASSERT_EQ(static_cast<mode_t>(0600), sbuf.st_mode & 07777);
 
     if (cmode == CHECK_EMPTY) {
         ASSERT_EQ(static_cast<off_t>(0), sbuf.st_size);
@@ -331,7 +331,7 @@ LogLevelFile::check(pfc_log_level_t level)
     struct stat  sbuf;
     ASSERT_EQ(0, fstat(fd, &sbuf)) << "*** ERROR: " << strerror(errno);
     ASSERT_TRUE(S_ISREG(sbuf.st_mode));
-    ASSERT_EQ(0600, sbuf.st_mode & 07777);
+    ASSERT_EQ(static_cast<mode_t>(0600), sbuf.st_mode & 07777);
     ASSERT_EQ(1U, sbuf.st_size);
 
     char  data[1];
@@ -1327,7 +1327,7 @@ check_rotate(uint32_t nrotate)
     ASSERT_EQ(0, lstat(path.c_str(), &sbuf_cur))
         << "*** ERROR: " << strerror(errno);
     ASSERT_TRUE(S_ISREG(sbuf_cur.st_mode));
-    ASSERT_EQ(0600, sbuf_cur.st_mode & 07777);
+    ASSERT_EQ(static_cast<mode_t>(0600), sbuf_cur.st_mode & 07777);
     ASSERT_EQ(static_cast<off_t>(0), sbuf_cur.st_size);
 
     if (nrotate != 0) {
@@ -1422,7 +1422,7 @@ check_rotate(uint32_t nrotate)
         ASSERT_EQ(0, lstat(path.c_str(), &sbuf_new))
             << "*** ERROR: " << strerror(errno);
         ASSERT_TRUE(S_ISREG(sbuf_new.st_mode));
-        ASSERT_EQ(0600, sbuf_new.st_mode & 07777);
+        ASSERT_EQ(static_cast<mode_t>(0600), sbuf_new.st_mode & 07777);
         ASSERT_EQ(sbuf_cur.st_dev, sbuf_new.st_dev);
         ASSERT_EQ(sbuf_cur.st_ino, sbuf_new.st_ino);
         ASSERT_EQ(static_cast<off_t>(size), sbuf_new.st_size);
@@ -1620,7 +1620,7 @@ TEST_F(log, init_file)
         struct stat  sbuf;
         ASSERT_EQ(0, lstat(path, &sbuf)) << "*** ERROR: " << strerror(errno);
         ASSERT_TRUE(S_ISDIR(sbuf.st_mode));
-        ASSERT_EQ(0755, sbuf.st_mode & 07777);
+        ASSERT_EQ(static_cast<mode_t>(0755), sbuf.st_mode & 07777);
 
         std::string  &base(file.getBase());
         ASSERT_EQ(0, chmod(base.c_str(), 0700));

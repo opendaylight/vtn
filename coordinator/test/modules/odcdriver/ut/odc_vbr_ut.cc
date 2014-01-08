@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -573,7 +573,7 @@ TEST(odcdriver,  test_get_vbr_list_null_resp) {
   std::vector<unc::vtndrvcache::ConfigNode *> value_list;
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.fetch_config(ctr, &key_vtn, value_list));
-  EXPECT_EQ(0, value_list.size());
+  EXPECT_EQ(0U, value_list.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
        value_list.begin(); it !=  value_list.end(); ++it ) {
     if (*it !=  NULL) {
@@ -606,7 +606,7 @@ TEST(odcdriver,  test_get_vbr_list_invalid_resp) {
   std::vector<unc::vtndrvcache::ConfigNode *> value_list;
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             obj.fetch_config(ctr, &key_vtn, value_list));
-  EXPECT_EQ(0, value_list.size());
+  EXPECT_EQ(0U, value_list.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
        value_list.begin(); it !=  value_list.end(); ++it ) {
     if (*it !=  NULL) {
@@ -639,7 +639,7 @@ TEST(odcdriver,  test_get_vbr_list_valid_resp) {
   std::vector<unc::vtndrvcache::ConfigNode *> value_list;
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
             obj.fetch_config(ctr, &key_vtn, value_list));
-  EXPECT_EQ(2, value_list.size());
+  EXPECT_EQ(2U, value_list.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
        value_list.begin(); it !=  value_list.end(); ++it ) {
     if (*it !=  NULL) {
@@ -673,7 +673,7 @@ TEST(odcdriver,  test_get_vbr_list_valid_resp_no_vbr) {
   std::vector<unc::vtndrvcache::ConfigNode *> value_list;
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
             obj.fetch_config(ctr, &key_vtn, value_list));
-  EXPECT_EQ(0, value_list.size());
+  EXPECT_EQ(0U, value_list.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
        value_list.begin(); it !=  value_list.end(); ++it ) {
     if (*it !=  NULL) {

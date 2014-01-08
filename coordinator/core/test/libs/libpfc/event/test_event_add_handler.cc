@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -254,7 +254,8 @@ test_priority(pfc_bool_t count_only, TARGET_QUEUE qtype)
 
 	// Check the event handler counter
 	pfc_log_debug("Total %u handlers have been called.", me2p->counter);
-	ASSERT_EQ(PRI_LOWEST - PRI_HIGHEST + 1, me2p->counter);
+	ASSERT_EQ(static_cast<uint32_t>(PRI_LOWEST - PRI_HIGHEST + 1),
+		  me2p->counter);
 
 	// Unregister the event
 	pfc_log_debug("Unregister \"%s\" event.", event_name);

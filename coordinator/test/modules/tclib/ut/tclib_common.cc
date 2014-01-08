@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -33,9 +33,9 @@ TEST(test_13, test_ReleaseTransactionResources) {
 
   tclib_obj.ReleaseTransactionResources();
   EXPECT_EQ(MSG_NONE, tclib_obj.oper_state_);
-  EXPECT_EQ(0, tclib_obj.key_map_.size());
-  EXPECT_EQ(0, tclib_obj.controller_key_map_.size());
-  EXPECT_EQ(0, tclib_obj.commit_phase_result_.size());
+  EXPECT_EQ(0U, tclib_obj.key_map_.size());
+  EXPECT_EQ(0U, tclib_obj.controller_key_map_.size());
+  EXPECT_EQ(0U, tclib_obj.commit_phase_result_.size());
 
   TcControllerResult ctrl_res;
 
@@ -51,15 +51,15 @@ TEST(test_13, test_ReleaseTransactionResources) {
   tclib_obj.commit_phase_result_.push_back(ctrl_res);
 
   EXPECT_EQ(MSG_AUDIT_DRIVER_GLOBAL, tclib_obj.oper_state_);
-  EXPECT_EQ(1, tclib_obj.key_map_.size());
-  EXPECT_EQ(1, tclib_obj.controller_key_map_.size());
-  EXPECT_EQ(1, tclib_obj.commit_phase_result_.size());
+  EXPECT_EQ(1U, tclib_obj.key_map_.size());
+  EXPECT_EQ(1U, tclib_obj.controller_key_map_.size());
+  EXPECT_EQ(1U, tclib_obj.commit_phase_result_.size());
 
   tclib_obj.ReleaseTransactionResources();
   EXPECT_EQ(MSG_NONE, tclib_obj.oper_state_);
-  EXPECT_EQ(0, tclib_obj.key_map_.size());
-  EXPECT_EQ(0, tclib_obj.controller_key_map_.size());
-  EXPECT_EQ(0, tclib_obj.commit_phase_result_.size());
+  EXPECT_EQ(0U, tclib_obj.key_map_.size());
+  EXPECT_EQ(0U, tclib_obj.controller_key_map_.size());
+  EXPECT_EQ(0U, tclib_obj.commit_phase_result_.size());
 
   tclib_obj.fini();
 }
@@ -376,9 +376,9 @@ TEST(test_31, test_fini) {
   EXPECT_EQ(TC_DEFAULT_VALUE, tclib_obj.session_id_);
   EXPECT_EQ(TC_DEFAULT_VALUE, tclib_obj.config_id_);
   EXPECT_EQ(MSG_NONE, tclib_obj.oper_state_);
-  EXPECT_EQ(0, tclib_obj.key_map_.size());
-  EXPECT_EQ(0, tclib_obj.controller_key_map_.size());
-  EXPECT_EQ(0, tclib_obj.commit_phase_result_.size());
+  EXPECT_EQ(0U, tclib_obj.key_map_.size());
+  EXPECT_EQ(0U, tclib_obj.controller_key_map_.size());
+  EXPECT_EQ(0U, tclib_obj.commit_phase_result_.size());
   EXPECT_EQ(PFC_FALSE, tclib_obj.audit_in_progress_);
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -43,7 +43,8 @@ TEST(EventMask, EventMask2)
 		pfc_evtype_t evtype = 1;
 		em = new EventMask(evtype);
 		ASSERT_NE((EventMask *)NULL, em);
-		ASSERT_EQ(2, em->getValue());  // = 0...0010
+		// = 0...0010
+		ASSERT_EQ(static_cast<pfc_evmask_t>(2), em->getValue());
 		delete em;
 	}
 
@@ -53,7 +54,8 @@ TEST(EventMask, EventMask2)
 		pfc_evtype_t evtype = -1;
 		em = new EventMask(evtype);
 		ASSERT_NE((EventMask *)NULL, em);
-		ASSERT_EQ(0, em->getValue()); // = 0...00
+		// = 0...00
+		ASSERT_EQ(static_cast<pfc_evmask_t>(0), em->getValue());
 		delete em;
 	}
 }
@@ -68,7 +70,7 @@ TEST(EventMask, EventMask3)
 		EventMask *em = NULL;
 		em = new EventMask(em_org);
 		ASSERT_NE((EventMask *)NULL, em);
-		ASSERT_EQ(2, em->getValue());
+		ASSERT_EQ(static_cast<pfc_evmask_t>(2), em->getValue());
 		delete em;
 	}
 }
@@ -122,7 +124,7 @@ TEST(EventMask, empty)
 		EventMask *em = new EventMask();
 		em->empty();
 		pfc_evmask_t evmask = em->getValue();
-		EXPECT_EQ(0, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(0), evmask);
 		delete em;
 	}
 
@@ -132,7 +134,7 @@ TEST(EventMask, empty)
 		EventMask *em = new EventMask(static_cast<pfc_evtype_t>(1));
 		em->empty();
 		pfc_evmask_t evmask = em->getValue();
-		EXPECT_EQ(0, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(0), evmask);
 		delete em;
 	}
 
@@ -143,7 +145,7 @@ TEST(EventMask, empty)
 		EventMask *em = new EventMask(em_org);
 		em->empty();
 		pfc_evmask_t evmask = em->getValue();
-		EXPECT_EQ(0, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(0), evmask);
 		delete em;
 	}
 }
@@ -162,18 +164,18 @@ TEST(EventMask, add)
 		// normal test
 		em->add((pfc_evtype_t)2);
 		evmask = em->getValue();
-		EXPECT_EQ(4, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(4), evmask);
 
 		// overwrite test
 		em->add((pfc_evtype_t)0);
 		evmask = em->getValue();
-		EXPECT_EQ(5, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(5), evmask);
 
 		// abnormal test
 		em->empty();
 		em->add((pfc_evtype_t)32);
 		evmask = em->getValue();
-		EXPECT_EQ(0, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(0), evmask);
 
 		delete em;
 	}
@@ -188,18 +190,18 @@ TEST(EventMask, add)
 		// normal test
 		em->add((pfc_evtype_t)2);
 		evmask = em->getValue();
-		EXPECT_EQ(4, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(4), evmask);
 
 		// overwrite test
 		em->add((pfc_evtype_t)0);
 		evmask = em->getValue();
-		EXPECT_EQ(5, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(5), evmask);
 
 		// abnormal test
 		em->empty();
 		em->add((pfc_evtype_t)32);
 		evmask = em->getValue();
-		EXPECT_EQ(0, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(0), evmask);
 
 		delete em;
 	}
@@ -215,18 +217,18 @@ TEST(EventMask, add)
 		// normal test
 		em->add((pfc_evtype_t)2);
 		evmask = em->getValue();
-		EXPECT_EQ(4, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(4), evmask);
 
 		// overwrite test
 		em->add((pfc_evtype_t)0);
 		evmask = em->getValue();
-		EXPECT_EQ(5, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(5), evmask);
 
 		// abnormal test
 		em->empty();
 		em->add((pfc_evtype_t)32);
 		evmask = em->getValue();
-		EXPECT_EQ(0, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(0), evmask);
 
 		delete em;
 	}
@@ -247,18 +249,18 @@ TEST(EventMask, remove)
 		// normal test
 		em->remove((pfc_evtype_t)31);
 		evmask = em->getValue();
-		EXPECT_EQ(2147483647, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(2147483647), evmask);
 
 		// overwrite test
 		em->remove((pfc_evtype_t)29);
 		evmask = em->getValue();
-		EXPECT_EQ(1610612735, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(1610612735), evmask);
 
 		// abnormal test
 		em->empty();
 		em->remove((pfc_evtype_t)32);
 		evmask = em->getValue();
-		EXPECT_EQ(0, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(0), evmask);
 
 		delete em;
 	}
@@ -273,18 +275,18 @@ TEST(EventMask, remove)
 		// normal test
 		em->remove((pfc_evtype_t)31);
 		evmask = em->getValue();
-		EXPECT_EQ(2147483647, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(2147483647), evmask);
 
 		// overwrite test
 		em->remove((pfc_evtype_t)29);
 		evmask = em->getValue();
-		EXPECT_EQ(1610612735, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(1610612735), evmask);
 
 		// abnormal test
 		em->empty();
 		em->remove((pfc_evtype_t)32);
 		evmask = em->getValue();
-		EXPECT_EQ(0, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(0), evmask);
 
 		delete em;
 	}
@@ -300,18 +302,18 @@ TEST(EventMask, remove)
 		// normal test
 		em->remove((pfc_evtype_t)31);
 		evmask = em->getValue();
-		EXPECT_EQ(2147483647, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(2147483647), evmask);
 
 		// overwrite test
 		em->remove((pfc_evtype_t)29);
 		evmask = em->getValue();
-		EXPECT_EQ(1610612735, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(1610612735), evmask);
 
 		// abnormal test
 		em->empty();
 		em->remove((pfc_evtype_t)32);
 		evmask = em->getValue();
-		EXPECT_EQ(0, evmask);
+		EXPECT_EQ(static_cast<pfc_evmask_t>(0), evmask);
 
 		delete em;
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -37,7 +37,7 @@ TEST(postEmergency, event)
 	test_event_cxx_impl(event_name, LOCALQ, PFC_FALSE, PFC_FALSE, WITH_CNAME);
 }
 
-#define	NOR_EV_CNT	50
+#define	NOR_EV_CNT	50U
 #define	NOR_EV_TYP	PFC_EVTYPE_MIN
 #define	EMR_EV_TYP	PFC_EVTYPE_MAX
 
@@ -50,7 +50,7 @@ static volatile pfc_bool_t	ev_first;
 	char event_name[BUFSIZE];					\
 	Event *ev[NOR_EV_CNT];						\
 	Event *ev_emr;							\
-	int i;								\
+	uint32_t i;							\
 									\
 	ev_cnt = 0;							\
 	ev_first = PFC_TRUE;						\

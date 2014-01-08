@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -482,14 +482,14 @@ TEST(odcdriver, test_create_driver_command_vbrif_failure) {
 TEST(odcdriver, test_getpinginterval) {
   const pfc_modattr_t* obj_module = NULL;
   unc::odcdriver::ODCModule obj(obj_module);
-  EXPECT_EQ(0,  obj.get_ping_interval());
+  EXPECT_EQ(0U,  obj.get_ping_interval());
 }
 
 
 TEST(odcdriver, test_get_ping_fail_retry_count) {
   const pfc_modattr_t* obj_module = NULL;
   unc::odcdriver::ODCModule obj(obj_module);
-  EXPECT_EQ(5,  obj.get_ping_fail_retry_count());
+  EXPECT_EQ(5U,  obj.get_ping_fail_retry_count());
 }
 
 TEST(odcdriver, test_is_ping_needed) {
@@ -607,7 +607,7 @@ TEST(odcdriver, test_ping_controller_connection_status_success) {
   obj.read_conf_file();
   ctr =  obj.add_controller(key_ctr,  val_ctr);
   EXPECT_EQ(PFC_TRUE,  obj.ping_controller(ctr));
-  EXPECT_EQ(30,  obj.get_ping_interval());
+  EXPECT_EQ(30U,  obj.get_ping_interval());
   unc::tclib::TcLibModule::stub_unloadtcLibModule();
   if (ctr != NULL) {
     delete ctr;

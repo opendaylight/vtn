@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -626,7 +626,7 @@ TEST_F(VbrMoMgrTest, IsValidKey_InvalidIndex) {
   uint64_t index = uudst::vbridge::kDbiCtrlrName;
   key_vbr *key;
   GetKeyStruct(key);
-  EXPECT_EQ(false, obj.IsValidKey(reinterpret_cast<void *>(key), index));
+  EXPECT_FALSE(obj.IsValidKey(reinterpret_cast<void *>(key), index));
 
   free(key);
 }
@@ -641,7 +641,7 @@ TEST_F(VbrMoMgrTest, IsValidKey_InvalidVTNName) {
           vtn_name, strlen(vtn_name)+1);
   strncpy(reinterpret_cast<char *>(key->vbridge_name),
           vbr_name, strlen(vbr_name)+1);
-  EXPECT_EQ(false, obj.IsValidKey(reinterpret_cast<void *>(key), index));
+  EXPECT_FALSE(obj.IsValidKey(reinterpret_cast<void *>(key), index));
 
   free(key);
 }
@@ -657,7 +657,7 @@ TEST_F(VbrMoMgrTest, IsValidKey_InvalidVBRName) {
   strncpy(reinterpret_cast<char *>(key->vbridge_name),
           vbr_name, strlen(vbr_name)+1);
 
-  EXPECT_EQ(false, obj.IsValidKey(reinterpret_cast<void *>(key), index));
+  EXPECT_FALSE(obj.IsValidKey(reinterpret_cast<void *>(key), index));
 
   free(key);
 }
@@ -1303,7 +1303,7 @@ TEST_F(VbrMoMgrTest, FilterAttributes_CreateOperation) {
   valvbr1->valid[UPLL_IDX_DESC_VBR] = UNC_VF_INVALID;
   val1 = reinterpret_cast<void *>(reinterpret_cast<char *>(valvbr1));
   val2 = reinterpret_cast<void *>(reinterpret_cast<char *>(valvbr1));
-  EXPECT_EQ(false, vbr.FilterAttributes(val1,val2,audit_status,op));
+  EXPECT_FALSE(vbr.FilterAttributes(val1,val2,audit_status,op));
 
   free(valvbr1);
 }
@@ -1319,7 +1319,7 @@ TEST_F(VbrMoMgrTest, FilterAttributes_OperationUpdate) {
   valvbr1->valid[UPLL_IDX_DESC_VBR] = UNC_VF_INVALID;
   val1 = reinterpret_cast<void *>(reinterpret_cast<char *>(valvbr1));
   val2 = reinterpret_cast<void *>(reinterpret_cast<char *>(valvbr1));
-  EXPECT_EQ(true, vbr.FilterAttributes(val1,val2,audit_status,op));
+  EXPECT_TRUE(vbr.FilterAttributes(val1,val2,audit_status,op));
 
   free(valvbr1);
 }
@@ -1329,13 +1329,13 @@ TEST_F(VbrMoMgrTest, GetRenameKeyBindInfo) {
   BindInfo *binfo;
   int nattr;
 
-  EXPECT_EQ(PFC_TRUE, obj.GetRenameKeyBindInfo(UNC_KT_VBRIDGE, binfo, nattr, MAINTBL));
+  EXPECT_TRUE(obj.GetRenameKeyBindInfo(UNC_KT_VBRIDGE, binfo, nattr, MAINTBL));
 
   EXPECT_EQ(5, nattr);
   EXPECT_EQ(&VbrMoMgr::key_vbr_maintbl_bind_info[0], binfo);
 
 
-  EXPECT_EQ(PFC_TRUE, obj.GetRenameKeyBindInfo(UNC_KT_VBRIDGE, binfo, nattr, RENAMETBL));
+  EXPECT_TRUE(obj.GetRenameKeyBindInfo(UNC_KT_VBRIDGE, binfo, nattr, RENAMETBL));
 
   EXPECT_EQ(4, nattr);
   EXPECT_EQ(&VbrMoMgr::key_vbr_renametbl_update_bind_info[0], binfo);
@@ -1348,7 +1348,7 @@ TEST_F(VbrMoMgrTest, GetRenameKeyBindInfo_OutputUnknownTbl) {
   BindInfo *binfo = NULL;
   int nattr = 2;
 
-  EXPECT_EQ(false, vbr.GetRenameKeyBindInfo(key_type, binfo, nattr,CTRLRTBL ));
+  EXPECT_FALSE(vbr.GetRenameKeyBindInfo(key_type, binfo, nattr,CTRLRTBL ));
   EXPECT_EQ(2,nattr);
 }
 
@@ -1554,7 +1554,7 @@ TEST_F(VbrMoMgrTest, ValidateMessage_Success) {
 
   req->operation = UNC_OP_RENAME;
   req->datatype = UPLL_DT_IMPORT;
-  EXPECT_EQ(UPPL_RC_SUCCESS,obj.ValidateMessage(req, rename_ikey));
+  EXPECT_EQ(UPLL_RC_SUCCESS, obj.ValidateMessage(req, rename_ikey));
 
   req->operation = UNC_OP_READ_SIBLING;
   EXPECT_EQ(UPLL_RC_SUCCESS, obj.ValidateMessage(req, rename_ikey));

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -352,9 +352,12 @@ TEST_F(LinkTest, PerformSyntxCheck_10) {
  
   const char* strdes = "Alter the SV_INTERRUPT property of a signal handler. If interrupt is zero, system calls will be restarted after signal delivery kkkkkkkkkkkkkkkkkkk";
   
-  memset(v.link.description, '\0', 128);
-  memcpy(v.link.description,strdes , strlen(strdes));
-                      // uint8_t                 description[128];
+  // uint8_t                 description[128];
+  memset(v.link.description, '\0', sizeof(v.link.description));
+  strncpy(reinterpret_cast<char *>(v.link.description), strdes,
+          sizeof(v.link.description));
+  EXPECT_NE(static_cast<uint8_t>('\0'), v.link.description[127]);
+
   // uint8_t oper_status
   v.oper_status = 0;
   memset(v.valid, 1, 2);  // uint8_t

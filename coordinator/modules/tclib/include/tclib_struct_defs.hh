@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -18,8 +18,8 @@
 namespace unc {
 namespace tclib {
 
-#define TC_DEFAULT_VALUE 0
-#define DRV_RESULT_START_POS 3
+#define TC_DEFAULT_VALUE 0U
+#define DRV_RESULT_START_POS 3U
 
 /*
  * Filled for transaction start, vote request, global commit

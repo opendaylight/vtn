@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -107,7 +107,7 @@ TEST_F(VtnMoMgrTest, GetRenameKeyBindInfo_outputNull) {
   int nattr = 2;
   //MoMgrTables tbl;
 
-  EXPECT_EQ(PFC_TRUE, vtn.GetRenameKeyBindInfo(key_type, bin, nattr, MAINTBL));
+  EXPECT_TRUE(vtn.GetRenameKeyBindInfo(key_type, bin, nattr, MAINTBL));
 }
 
 // Verify the nattr is filled with proper value
@@ -117,7 +117,7 @@ TEST_F(VtnMoMgrTest, GetRenameKeyBindInfo_nattrFill) {
   BindInfo *bin = NULL;
   int nattr = 2;
 
-  EXPECT_EQ(PFC_TRUE, vtn.GetRenameKeyBindInfo(key_type, bin, nattr, MAINTBL));
+  EXPECT_TRUE(vtn.GetRenameKeyBindInfo(key_type, bin, nattr, MAINTBL));
   EXPECT_EQ(3, nattr);
 }
 
@@ -128,7 +128,7 @@ TEST_F(VtnMoMgrTest, GetRenameKeyBindInfo_ctrlTbl) {
   BindInfo *bin = NULL;
   int nattr = 2;
 
-  EXPECT_EQ(PFC_TRUE, vtn.GetRenameKeyBindInfo(key_type, bin, nattr, CTRLRTBL));
+  EXPECT_TRUE(vtn.GetRenameKeyBindInfo(key_type, bin, nattr, CTRLRTBL));
   EXPECT_EQ(3, nattr);
 }
 
@@ -139,7 +139,7 @@ TEST_F(VtnMoMgrTest, GetRenameKeyBindInfo_renameTbl) {
   BindInfo *bin = NULL;
   int nattr = 2;
 
-  EXPECT_EQ(PFC_TRUE, vtn.GetRenameKeyBindInfo(key_type, bin, nattr, RENAMETBL));
+  EXPECT_TRUE(vtn.GetRenameKeyBindInfo(key_type, bin, nattr, RENAMETBL));
   EXPECT_EQ(2, nattr);
 }
 
@@ -197,7 +197,7 @@ TEST_F(VtnMoMgrTest, IsValidKey_keyNull) {
   VtnMoMgr vtn;
   key_vtn_t *keyvtn = NULL;
   unsigned long index = 1;
-  EXPECT_EQ(false, vtn.IsValidKey(keyvtn, index));
+  EXPECT_FALSE(vtn.IsValidKey(keyvtn, index));
 }
 
 // Passing the vtn name to the function
@@ -238,7 +238,7 @@ TEST_F(VtnMoMgrTest, IsValidKey_vtnNameMaxExceeds) {
   unsigned long index = 0;
   memcpy(keyvtn->vtn_name, "vtnnkjdsokljhkjdsncvdsjkjdksdjjksd1",
          sizeof(keyvtn->vtn_name));
-  EXPECT_EQ(false, vtn.IsValidKey(keyvtn, index));
+  EXPECT_FALSE(vtn.IsValidKey(keyvtn, index));
   free(keyvtn);
 }
 
@@ -248,7 +248,7 @@ TEST_F(VtnMoMgrTest, IsValidKey_vtnNameEmpty) {
   key_vtn_t *keyvtn(ZALLOC_TYPE(key_vtn_t));
   unsigned long index = 0;
   strcpy((char *)keyvtn->vtn_name, (const char *)"");
-  EXPECT_EQ(false, vtn.IsValidKey(keyvtn, index));
+  EXPECT_FALSE(vtn.IsValidKey(keyvtn, index));
   free(keyvtn);
 }
 

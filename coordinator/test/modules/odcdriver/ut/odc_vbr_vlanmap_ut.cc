@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -45,7 +45,7 @@ TEST(odcdriver,  test_fetch_conf_vtn_name_empty) {
                                                          &key_vbr,
                                                          cfgnode_vector);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,  ret_val);
-  EXPECT_EQ(0, cfgnode_vector.size());
+  EXPECT_EQ(0U, cfgnode_vector.size());
 
   if (ctr != NULL) {
     delete ctr;
@@ -86,7 +86,7 @@ TEST(odcdriver,  test_fetch_conf_vbr_name_empty) {
                                                          &key_vbr,
                                                          cfgnode_vector);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,  ret_val);
-  EXPECT_EQ(0, cfgnode_vector.size());
+  EXPECT_EQ(0U, cfgnode_vector.size());
 
   if (ctr != NULL) {
     delete ctr;
@@ -126,7 +126,7 @@ TEST(odcdriver,  test_fetch_conf_null_response) {
                                                          &key_vbr,
                                                          cfgnode_vector);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,  ret_val);
-  EXPECT_EQ(0, cfgnode_vector.size());
+  EXPECT_EQ(0U, cfgnode_vector.size());
 
   if (ctr != NULL) {
     delete ctr;
@@ -165,7 +165,7 @@ TEST(odcdriver,  test_fetch_conf_null_response_data) {
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,  ret_val);
-  EXPECT_EQ(0, cfgnode_vector.size());
+  EXPECT_EQ(0U, cfgnode_vector.size());
 
   if (ctr != NULL) {
     delete ctr;
@@ -207,7 +207,7 @@ TEST(odcdriver,  test_fetch_conf_not_found_response) {
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,  ret_val);
-  EXPECT_EQ(0, cfgnode_vector.size());
+  EXPECT_EQ(0U, cfgnode_vector.size());
 
   if (ctr != NULL) {
     delete ctr;
@@ -247,7 +247,7 @@ TEST(odcdriver,  test_fetch_conf_service_unavilable_response) {
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,  ret_val);
-  EXPECT_EQ(0, cfgnode_vector.size());
+  EXPECT_EQ(0U, cfgnode_vector.size());
 
   if (ctr != NULL) {
     delete ctr;
@@ -287,7 +287,7 @@ TEST(odcdriver,  test_fetch_conf_empty_response) {
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,  ret_val);
-  EXPECT_EQ(0, cfgnode_vector.size());
+  EXPECT_EQ(0U, cfgnode_vector.size());
 
   if (ctr != NULL) {
     delete ctr;
@@ -326,7 +326,7 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_incorrect_response) {
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,  ret_val);
-  EXPECT_EQ(0, cfgnode_vector.size());
+  EXPECT_EQ(0U, cfgnode_vector.size());
 
   if (ctr != NULL) {
     delete ctr;
@@ -366,7 +366,7 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_incorrect_response_body) {
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,  ret_val);
-  EXPECT_EQ(0, cfgnode_vector.size());
+  EXPECT_EQ(0U, cfgnode_vector.size());
 
   if (ctr != NULL) {
     delete ctr;
@@ -406,7 +406,7 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_resp) {
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,  ret_val);
-  EXPECT_EQ(2, cfgnode_vector.size());
+  EXPECT_EQ(2U, cfgnode_vector.size());
   uint vlan_id = 0;
   std::string logical_id = "";
   int flag = 1;
@@ -494,7 +494,7 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_resp_max_vlanid) {
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,  ret_val);
-  EXPECT_EQ(2, cfgnode_vector.size());
+  EXPECT_EQ(2U, cfgnode_vector.size());
   std::string logical_id = "";
   key_vlan_map_t key_vlan_map;
   val_vlan_map_t val_vlan_map;
@@ -566,7 +566,7 @@ TEST(odcdriver,  test_fetch_conf_already_exist_vector) {
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,  ret_val);
-  EXPECT_EQ(2, cfgnode_vector.size());
+  EXPECT_EQ(2U, cfgnode_vector.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
        cfgnode_vector.begin(); it !=  cfgnode_vector.end(); ++it ) {
     if (*it != NULL) {
@@ -614,7 +614,7 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_resp_max_vlan_id_any) {
   drv_resp_code_t ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,  ret_val);
-  EXPECT_EQ(2, cfgnode_vector.size());
+  EXPECT_EQ(2U, cfgnode_vector.size());
   std::string logical_id = "";
   key_vlan_map_t key_vlan_map;
   val_vlan_map_t val_vlan_map;
@@ -2387,7 +2387,7 @@ TEST(odcdriver, test_validate_logical_port_id) {
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(unc::odcdriver::ODC_DRV_SUCCESS,
             obj.validate_logical_port_id(logicalportid));
 }
 
@@ -2399,7 +2399,7 @@ TEST(odcdriver, test_validate_logical_port_id_failure_case1) {
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(unc::odcdriver::ODC_DRV_FAILURE,
             obj.validate_logical_port_id(logicalportid));
 }
 
@@ -2410,7 +2410,7 @@ TEST(odcdriver, test_validate_logical_port_id_invalid) {
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(unc::odcdriver::ODC_DRV_FAILURE,
             obj.validate_logical_port_id(logicalportid));
 }
 
@@ -2421,7 +2421,7 @@ TEST(odcdriver, test_validate_logical_port_id_incorrect) {
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(unc::odcdriver::ODC_DRV_FAILURE,
             obj.validate_logical_port_id(logicalportid));
 }
 

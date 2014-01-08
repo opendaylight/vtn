@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -487,11 +487,11 @@ RedBlackTreeExTest::sequentialDescTest(uint32_t number)
     pfc_rbtree_ex_unlock(&_tree);
 
     ASSERT_EQ(RBNODE_NULL, _tree.rbx_tree.rb_root);
-    ASSERT_EQ(0, pfc_rbtree_ex_get_size(&_tree));
+    ASSERT_EQ(0U, pfc_rbtree_ex_get_size(&_tree));
 
     pfc_rbtree_ex_clear(&_tree, dtor, (pfc_ptr_t)this);
-    ASSERT_EQ(0, pfc_rbtree_ex_get_size(&_tree));
-    ASSERT_EQ(0, getDtorCount());
+    ASSERT_EQ(0U, pfc_rbtree_ex_get_size(&_tree));
+    ASSERT_EQ(0U, getDtorCount());
 }
 
 /*
@@ -691,11 +691,11 @@ RedBlackTreeExTest::randomTest(uint32_t number)
     pfc_rbtree_ex_unlock(&_tree);
 
     ASSERT_EQ(RBNODE_NULL, _tree.rbx_tree.rb_root);
-    ASSERT_EQ(0, pfc_rbtree_ex_get_size(&_tree));
+    ASSERT_EQ(0U, pfc_rbtree_ex_get_size(&_tree));
 
     pfc_rbtree_ex_clear(&_tree, dtor, (pfc_ptr_t)this);
-    ASSERT_EQ(0, pfc_rbtree_ex_get_size(&_tree));
-    ASSERT_EQ(0, getDtorCount());
+    ASSERT_EQ(0U, pfc_rbtree_ex_get_size(&_tree));
+    ASSERT_EQ(0U, getDtorCount());
 }
 
 /*
@@ -771,7 +771,7 @@ RedBlackTreeExTest::clearTest(uint32_t number)
     ASSERT_TRUE(pfc_rbtree_ex_isempty_l(&_tree));
     pfc_rbtree_ex_unlock(&_tree);
 
-    ASSERT_EQ(0, pfc_rbtree_ex_get_size(&_tree));
+    ASSERT_EQ(0U, pfc_rbtree_ex_get_size(&_tree));
     ASSERT_EQ(count, getDtorCount());
     ASSERT_EQ(RBNODE_NULL, _tree.rbx_tree.rb_root);
     ASSERT_TRUE(pfc_list_is_empty(&_nodes));
@@ -1683,11 +1683,11 @@ TEST_F(RedBlackTreeExTest, empty)
     }
 
     ASSERT_EQ(RBNODE_NULL, pfc_rbtree_ex_next(&_tree, NULL));
-    ASSERT_EQ(0, pfc_rbtree_ex_get_size(&_tree));
+    ASSERT_EQ(0U, pfc_rbtree_ex_get_size(&_tree));
 
     pfc_rbtree_ex_clear(&_tree, dtor, (pfc_ptr_t)this);
-    ASSERT_EQ(0, pfc_rbtree_ex_get_size(&_tree));
-    ASSERT_EQ(0, getDtorCount());
+    ASSERT_EQ(0U, pfc_rbtree_ex_get_size(&_tree));
+    ASSERT_EQ(0U, getDtorCount());
 }
 
 /*
@@ -1761,7 +1761,7 @@ TEST_F(RedBlackTreeExTest, one)
         if (i & 1) {
             pfc_rbtree_ex_clear(&_tree, dtor, (pfc_ptr_t)this);
             ASSERT_EQ(0U, pfc_rbtree_ex_get_size(&_tree));
-            ASSERT_EQ(1, getDtorCount());
+            ASSERT_EQ(1U, getDtorCount());
             ASSERT_EQ(RBNODE_NULL, pfc_rbtree_ex_remove(&_tree, key));
             ASSERT_EQ(0U, pfc_rbtree_ex_get_size(&_tree));
             resetDtorCount();
