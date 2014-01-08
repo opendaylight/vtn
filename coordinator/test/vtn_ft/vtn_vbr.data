@@ -11,6 +11,17 @@ description=second vtn
 controller_url=/controller/nb/v2/vtn/default/vtns/vtntwo
 vtn_url=/vtns/vtntwo
 
+[VtnThree]
+vtn_name=vtnthree
+description=third vtn
+controller_url=/controller/nb/v2/vtn/default/vtns/vtnthree
+vtn_url=/vtns/vtnthree
+
+[VtnFour]
+vtn_name=vtnfour
+description=fourth vtn
+controller_url=/controller/nb/v2/vtn/default/vtns/vtnfour
+vtn_url=/vtns/vtnfour
 
 [VbrOne]
 vbr_name=vbrone
@@ -20,7 +31,6 @@ domain_id=(DEFAULT)
 controller_url=/vbridges/vbrone
 vbr_url=/vbridges/vbrone
 
-
 [VbrTwo]
 vbr_name=vbrtwo
 controller_id=controller1
@@ -29,6 +39,21 @@ domain_id=(DEFAULT)
 controller_url=/vbridges/vbrtwo
 vbr_url=/vbridges/vbrtwo
 
+[VbrThree]
+vbr_name=vbrthree
+controller_id=controller2
+description=first vbr for controller2
+domain_id=(DEFAULT)
+controller_url=/vbridges/vbrthree
+vbr_url=/vbridges/vbrthree
+
+[VbrFour]
+vbr_name=vbrfour
+controller_id=controller2
+description=second vbr for controller2
+domain_id=(DEFAULT)
+controller_url=/vbridges/vbrfour
+vbr_url=/vbridges/vbrfour
 
 [VTNURL]
 url=/vtns.json

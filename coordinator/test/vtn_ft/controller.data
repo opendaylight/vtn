@@ -13,6 +13,21 @@ invalidpassword=admininval
 url=/controllers/controller1.json
 port=8080
 
+[ControllerSecond]
+ipaddr=10.100.9.31
+invalid_ipaddr=10.10.0.2
+controller_id=controller2
+description=Second Test Controller
+type=odc
+version=1.0
+auditstatus=enable
+username=admin
+password=admin
+invalidusername=admininval
+invalidpassword=admininval
+url=/controllers/controller2.json
+port=8080
+
 [URL]
 url=/controllers.json
 
