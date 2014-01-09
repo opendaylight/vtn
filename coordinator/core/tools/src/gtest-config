@@ -1,0 +1,110 @@
+#!/bin/sh
+
+#
+# Copyright (c) 2014 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+##
+## Stub for gtest-config script.
+## This script assumes that the Google Test is installed in standard location.
+##
+
+includedir="${GTEST_INCLUDEDIR:-/usr/include}"
+libdir="${GTEST_LIBDIR:-/usr/lib}"
+cxxflags="${GTEST_CXXFLAGS:--pthread}"
+
+print_usage()
+{
+    echo "Usage: gtest-config [OPTIONS]"
+}
+
+usage()
+{
+    print_usage
+    exit 1
+}
+
+help()
+{
+    print_usage
+
+    cat <<\EOF
+
+Options:
+    --includedir    Print installation directory for header files.
+    --libdir        Print installation directory for library files.
+    --cxxflags      Print C++ compiler options.
+    --libs          Print linker options.
+
+    --usage         Print brief usage.
+    --help          Print this help message.
+EOF
+}
+
+while test $# -gt 0; do
+    case $1 in
+        --includedir)
+            echo_includedir=yes
+            valid=yes
+            ;;
+
+        --cxxflags)
+            echo_cxxflags=yes
+            valid=yes
+            ;;
+
+        --libdir)
+            echo_libdir=yes
+            valid=yes
+            ;;
+
+        --libs)
+            echo_libs=yes
+            valid=yes
+            ;;
+
+        --usage)
+            print_usage
+            exit 0
+            ;;
+
+        --help)
+            help
+            exit 0
+            ;;
+
+        *)
+            usage
+            ;;
+    esac
+    shift
+done
+
+test "$valid" = yes || usage
+if test "$echo_includedir" = yes; then
+    test "$echo_libdir" = yes && usage
+    echo $includedir
+    exit 0
+fi
+
+if test "$echo_libdir" = yes; then
+    echo $libdir
+    exit 0
+fi
+
+output=""
+test "$echo_cxxflags" = yes && output="$output $cxxflags"
+
+if test "$echo_libs" = yes; then
+    test "$echo_cxxflags" = yes || output="$output $cxxflags"
+    output="$output -lgtest"
+fi
+
+echo $output
+
+exit 0

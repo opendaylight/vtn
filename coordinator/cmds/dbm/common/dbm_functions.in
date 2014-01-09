@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Copyright (c) 2012-2013 NEC Corporation
+# Copyright (c) 2012-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -67,6 +67,29 @@ PGCTL_START_WAIT=333
 PGCTL_STOP_WAIT=180
 
 clm_date() { date +'%y-%m-%d %H:%M:%S.%N'; }
+
+# expand_shm_param()
+#
+#      Expand SysV IPC Shared memory parameter if needed.
+#      (Linux specific)
+#
+# * input
+#      arg1:  Path to proc filesystem file
+#      arg2:  Value to be set
+#
+# * output
+#      Nothing
+#
+expand_shm_param()
+{
+	local path=$1
+	local value=$2
+
+	local cur=`cat $path`
+	if test -n "$cur" -a "$cur" -lt "$value"; then
+		echo "$value" > $path
+	fi
+}
 
 # check_user_permission()
 #
@@ -145,6 +168,11 @@ db_start()
 	rm -f $POSTLOGFILE
 	rm -f $PIDFILE
 	rm -f $lock_file
+
+	# Expand shared memory parameter if needed.
+	expand_shm_param /proc/sys/kernel/shmmax $SHMMAX
+	expand_shm_param /proc/sys/kernel/shmall $SHMALL
+
 	su -m $SUUSER -c \
 		"$PGINST/bin/pg_ctl start -D $PGDATA -w -t $PGCTL_START_WAIT" \
 		 > /dev/null
