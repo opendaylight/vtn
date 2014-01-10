@@ -122,6 +122,10 @@ class driver {
     return unc::tclib::TC_FAILURE;
   }
 
+  pfc_bool_t  get_physical_port_details(unc::driver::controller*) {
+  return PFC_TRUE;
+   }
+
   static driver* create_driver();
   static driver* driver_ptr;
   static void set_ctrl_instance(uint32_t ctrl_inst);

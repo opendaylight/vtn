@@ -264,23 +264,21 @@ KtRequestHandler<key, val, command_class>::execute(
 
   drv_resp_code_t resp_code_ = DRVAPI_RESPONSE_FAILURE;
 
-  // get controller and driver instance by passing controller name
-
-  resp_code_ = ctrl_int->GetDriverByControllerName(ctrl_name,
-                                                   &ctrl_ptr,
-                                                   &drv_ptr);
-  pfc_log_debug("%u:resp_code_. GetDriverByControllerName",
-                resp_code_);
-
-  if (resp_code_ != DRVAPI_RESPONSE_SUCCESS) {
-    pfc_log_error("%s:GetDriverByControllerName failed with re_code,%u",
-                  PFC_FUNCNAME, resp_code_);
-    return resp_code_;
-  }
+  controller_operation util_obj(ctrl_int, WRITE_TO_CONTROLLER, ctrl_name);
+  ctrl_ptr = util_obj.get_controller_handle();
+  drv_ptr = util_obj.get_driver_handle();
 
   PFC_ASSERT(drv_ptr != NULL);
 
   PFC_ASSERT(ctrl_ptr !=NULL);
+
+  pfc_log_debug("getting conn status..ctr nt NULL");
+  if (ctrl_ptr->get_connection_status() == CONNECTION_DOWN) {
+    //  check controller connection status, if down send disconnected
+    pfc_log_debug("%s Controller status is down, send disconnected",
+                                 PFC_FUNCNAME);
+    return DRVAPI_RESPONSE_CONTROLLER_DISCONNECTED;
+  }
 
   unc::driver::driver_command * drv_command_ptr_ =
       drv_ptr->create_driver_command(request_header.key_type);
@@ -447,17 +445,10 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::execute(
   unc::driver::controller* ctrl_ptr = NULL;
 
   drv_resp_code_t resp_code_ = DRVAPI_RESPONSE_FAILURE;
-  resp_code_ = ctrl_int->GetDriverByControllerName(ctrl_name,
-                                                   &ctrl_ptr,
-                                                   &drv_ptr);
-  pfc_log_debug("%u:resp_code_. GetDriverByControllerName,ctrl_name%s",
-                resp_code_, ctrl_name.c_str());
 
-  if (resp_code_ != DRVAPI_RESPONSE_SUCCESS) {
-    pfc_log_error("%s:GetDriverByControllerName failed .rt,%u",
-                  PFC_FUNCNAME, resp_code_);
-    return resp_code_;
-  }
+  controller_operation util_obj(ctrl_int, WRITE_TO_CONTROLLER, ctrl_name);
+  ctrl_ptr = util_obj.get_controller_handle();
+  drv_ptr = util_obj.get_driver_handle();
 
   PFC_ASSERT(drv_ptr != NULL);
 
@@ -597,8 +588,9 @@ KtRequestHandler<key_ctr_t, val_ctr_t, controller_command>::execute(
   switch (request_header.header.operation) {
     case UNC_OP_CREATE: {
       pfc_log_debug("%s: Creates new controller ", PFC_FUNCNAME);
-      drv_ptr = ctrl_int->GetDriverInstance((unc_keytype_ctrtype_t)
-                                            val_generic_.type);
+      controller_operation util_obj(ctrl_int, CONTROLLER_ADD, ctrl_name,
+                            (unc_keytype_ctrtype_t) val_generic_.type);
+      drv_ptr = util_obj.get_driver_handle();
       PFC_ASSERT(drv_ptr != NULL);
       ctl_ptr = drv_ptr->add_controller(key_generic_, val_generic_);
       if (ctl_ptr != NULL) {
@@ -613,13 +605,9 @@ KtRequestHandler<key_ctr_t, val_ctr_t, controller_command>::execute(
 
     case UNC_OP_UPDATE: {
       pfc_log_debug("%s: Updated Controller ", PFC_FUNCNAME);
-      resp_code_ = ctrl_int->GetControllerInstance(ctrl_name,
-                                                   &ctl_ptr, &drv_ptr);
-      if (resp_code_ != DRVAPI_RESPONSE_SUCCESS) {
-        pfc_log_error("%s:GetControllerInstance failed with rtcode,%u",
-                      PFC_FUNCNAME, resp_code_);
-        return resp_code_;
-      }
+      controller_operation util_obj(ctrl_int, CONTROLLER_UPDATE, ctrl_name);
+      ctl_ptr = util_obj.get_controller_handle();
+      drv_ptr = util_obj.get_driver_handle();
 
       PFC_ASSERT(drv_ptr != NULL);
       PFC_ASSERT(ctl_ptr != NULL);
@@ -631,13 +619,9 @@ KtRequestHandler<key_ctr_t, val_ctr_t, controller_command>::execute(
 
     case UNC_OP_DELETE: {
       pfc_log_debug("%s: deleted Controller ", PFC_FUNCNAME);
-      resp_code_ = ctrl_int->GetControllerInstance(ctrl_name,
-                                                   &ctl_ptr, &drv_ptr);
-      if (resp_code_ != DRVAPI_RESPONSE_SUCCESS) {
-        pfc_log_error("%s:GetControllerInstance failed with rtcode,%u",
-                      PFC_FUNCNAME, resp_code_);
-        return resp_code_;
-      }
+      controller_operation util_obj(ctrl_int, CONTROLLER_DELETE, ctrl_name);
+      ctl_ptr = util_obj.get_controller_handle();
+      drv_ptr = util_obj.get_driver_handle();
 
       PFC_ASSERT(drv_ptr != NULL);
       PFC_ASSERT(ctl_ptr != NULL);
@@ -867,9 +851,10 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
   std::string ctr_name(resp_hdr.controller_name);
   if (resp_hdr.header.data_type == UNC_DT_RUNNING) {
     pfc_log_debug("UNC_DT_RUNNING processing");
-    resp_code_ = ctrl_int->GetDriverByControllerName(ctr_name,
-                                                     &ctr,
-                                                     &drv);
+    controller_operation util_obj(ctrl_int, READ_FROM_CONTROLLER, ctr_name);
+    ctr = util_obj.get_controller_handle();
+    drv = util_obj.get_driver_handle();
+    resp_code_ = DRVAPI_RESPONSE_SUCCESS;
 
     if (resp_code_ == DRVAPI_RESPONSE_SUCCESS) {
       if (ctr->controller_cache == NULL) {

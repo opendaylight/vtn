@@ -8,6 +8,9 @@
  */
 
 #include <vtn_drv_module.hh>
+#include <pfcxx/ipc_server.hh>
+#include <request_template.hh>
+#include "unc/unc_events.h"
 
 namespace unc {
 namespace driver {
@@ -16,7 +19,8 @@ namespace driver {
  * @brief     : constructor
  */
 VtnDrvIntf::VtnDrvIntf(const pfc_modattr_t* attr)
-: Module(attr), taskq_(NULL), ctrl_inst_(NULL) {
+: Module(attr), taskq_(NULL), ctrl_inst_(NULL),
+    Domain_event_(PFC_FALSE) {
   ODC_FUNC_TRACE;
 }
 
@@ -40,10 +44,11 @@ VtnDrvIntf::~VtnDrvIntf() {
  */
 pfc_bool_t VtnDrvIntf::init(void) {
   ODC_FUNC_TRACE;
-
-  uint32_t concurrency = 1;
+  read_conf_file();
+  uint32_t concurrency = 2;
   taskq_ = pfc::core::TaskQueue::create(concurrency);
-  ControllerFramework *ctrl_inst_= new ControllerFramework(taskq_);
+  ControllerFramework *ctrl_inst_= new ControllerFramework(taskq_,
+                                        conf_parser_.time_interval);
   PFC_ASSERT(ctrl_inst_ != NULL);
   set_controller_instance(ctrl_inst_);
 
@@ -330,6 +335,326 @@ VtnDrvRetEnum VtnDrvIntf:: register_driver(driver *drv_obj) {
   ctrl_inst_->RegisterDriver(ctr_type, drv_obj);
   return VTN_DRV_RET_SUCCESS;
 }
+
+  /**
+   * @brief     - Read configuration file of vtndrvintf
+   * @param[in] - None
+   * @return    - None
+   */
+void VtnDrvIntf::read_conf_file() {
+  ODC_FUNC_TRACE;
+  pfc::core::ModuleConfBlock drv_block(timeinterval_conf_blk);
+  if (drv_block.getBlock() != PFC_CFBLK_INVALID) {
+    conf_parser_.time_interval =
+           drv_block.getUint32("physical_attributes_read_interval",
+                                        default_time_interval);
+    pfc_log_debug("%s: Block Handle is Valid,Time interval %d", PFC_FUNCNAME,
+                  conf_parser_.time_interval);
+  } else {
+    conf_parser_.time_interval = default_time_interval;
+    pfc_log_debug("%s: Block Handle is Invalid,set default Value %d",
+                  PFC_FUNCNAME, conf_parser_.time_interval);
+  }
+  pfc_log_debug("%s: Exiting function", PFC_FUNCNAME);
+}
+
+  /**
+   * @brief     : Method to post domain create events to UPPL
+   * @param[in] : ctr_name, Domain_name
+   * @retval    : None
+   */
+void VtnDrvIntf::domain_event(std::string controller_name,
+                              std::string domain_name) {
+  unc_event_mask_t mask_type = UNC_PHYSICAL_EVENTS;
+  int err = 0;
+  uint32_t controller_id_size = 0;
+  uint32_t domain_id_size = 0;
+  ODC_FUNC_TRACE;
+  key_ctr_domain_t key_ctr_domain;
+  val_ctr_domain_st val_ctr_domain_status;
+
+  controller_id_size = sizeof(key_ctr_domain.ctr_key.controller_name);
+  memset(&key_ctr_domain, 0, sizeof(key_ctr_domain_t));
+  memset(&val_ctr_domain_status, 0, sizeof(val_ctr_domain_st));
+  memset(key_ctr_domain.ctr_key.controller_name, '\0', controller_id_size);
+  strncpy(reinterpret_cast<char *> (key_ctr_domain.ctr_key.controller_name),
+          controller_name.c_str(), strlen(controller_name.c_str()));
+  domain_id_size = sizeof(key_ctr_domain.domain_name);
+  memset(key_ctr_domain.domain_name, '\0', domain_id_size);
+  strncpy(reinterpret_cast<char *> (key_ctr_domain.domain_name),
+          domain_name.c_str(),
+          strlen(domain_name.c_str()));
+  val_ctr_domain_status.valid[VAL_DOMAIN_STRUCT] = UNC_VF_VALID;
+  val_ctr_domain_status.domain.type = UPPL_DOMAIN_TYPE_DEFAULT;
+  val_ctr_domain_status.domain.valid[VAL_DOMAIN_EVENT_ATTR1] = UNC_VF_VALID;
+  val_ctr_domain_status.domain.valid[VAL_DOMAIN_EVENT_ATTR2] = UNC_VF_INVALID;
+  val_ctr_domain_status.valid[VAL_DOMAIN_EVENT_ATTR2] = UNC_VF_INVALID;
+  pfc::core::ipc::ServerEvent domain_event((uint32_t) mask_type, err);
+  domain_event.addOutput(controller_name);
+  domain_event.addOutput(domain_name);
+  domain_event.addOutput((uint32_t) UNC_OP_CREATE);
+  domain_event.addOutput((uint32_t) UNC_DT_STATE);
+  domain_event.addOutput((uint32_t) UNC_KT_CTR_DOMAIN);
+  domain_event.addOutput(key_ctr_domain);
+  domain_event.addOutput(val_ctr_domain_status);
+  domain_event.post();
+
+  pfc_log_debug("%s: Posting domain event", PFC_FUNCNAME);
+  Domain_event_ = PFC_TRUE;
+}
+
+  /**
+   * @brief     : Method to post logical port create/delete events to UPPL
+   * @param[in] : oper_type, key_struct, val_struct
+   * @retval    : None
+   */
+void VtnDrvIntf::logicalport_event(oper_type operation, key_logical_port_t
+                                   key_struct, val_logical_port_st
+                                   val_struct ) {
+  ODC_FUNC_TRACE;
+  unc_event_mask_t mask_type = UNC_PHYSICAL_EVENTS;
+  int err = 0;
+  std::string controller_name =
+      (const char*)key_struct.domain_key.ctr_key.controller_name;
+  std::string domain_name= (const char*)key_struct.domain_key.domain_name;
+  std::string logical_port_id = (const char*)key_struct.port_id;
+  pfc_log_debug("%s,key structure fields:"
+                "controller_name: %s,"
+                "domain_id: %s,"
+                "logicalport_id: %s", PFC_FUNCNAME, controller_name.c_str(),
+                domain_name.c_str(), logical_port_id.c_str());
+  if (Domain_event_ == PFC_FALSE) {
+     domain_event(controller_name, domain_name);  //  post domain event to UPPL
+  }
+  switch (operation) {
+    case VTN_LP_CREATE:
+      {
+        pfc_log_debug("Entering logicalport create event");
+        pfc::core::ipc::ServerEvent phys_lp_event((uint32_t) mask_type, err);
+        phys_lp_event.addOutput(controller_name);
+        phys_lp_event.addOutput(domain_name);
+        phys_lp_event.addOutput((uint32_t) UNC_OP_CREATE);
+        phys_lp_event.addOutput((uint32_t) UNC_DT_STATE);
+        phys_lp_event.addOutput((uint32_t) UNC_KT_LOGICAL_PORT);
+        phys_lp_event.addOutput(key_struct);
+        phys_lp_event.addOutput(val_struct);
+        phys_lp_event.post();
+        pfc_log_debug("Exiting logicalport create event");
+      }
+      break;
+    case VTN_LP_DELETE:
+      {
+        pfc_log_debug("Entering logicalport delete event");
+        pfc::core::ipc::ServerEvent phys_lp_event((uint32_t) mask_type, err);
+        phys_lp_event.addOutput(controller_name);
+        phys_lp_event.addOutput(domain_name);
+        phys_lp_event.addOutput((uint32_t) UNC_OP_DELETE);
+        phys_lp_event.addOutput((uint32_t) UNC_DT_STATE);
+        phys_lp_event.addOutput((uint32_t) UNC_KT_LOGICAL_PORT);
+        phys_lp_event.addOutput(key_struct);
+        phys_lp_event.post();
+        pfc_log_debug("Exiting logicalport delete event");
+      }
+      break;
+    default:
+        pfc_log_debug("%s:Invalid operation type:%d", PFC_FUNCNAME, operation);
+      break;
+      }
+  }
+
+  /**
+   * @brief     : Method to post switch create/delete events to UPPL
+   * @param[in] : oper_type, key_switch, val_switch_st
+   * @retval    : None
+   */
+void VtnDrvIntf::switch_event(oper_type operation, key_switch
+                                   key_struct, val_switch_st
+                                   val_struct ) {
+  ODC_FUNC_TRACE;
+  unc_event_mask_t mask_type = UNC_PHYSICAL_EVENTS;
+  int err = 0;
+  std::string controller_name =
+      (const char*)key_struct.ctr_key.controller_name;
+  std::string switch_id = (const char*)key_struct.switch_id;
+
+  pfc_log_debug("%s,key structure fields:"
+                "controller_name: %s,"
+                "switch_id: %s,", PFC_FUNCNAME, controller_name.c_str(),
+                switch_id.c_str());
+  switch (operation) {
+    case VTN_SWITCH_CREATE:
+      {
+        pfc_log_debug("Entering switch create event");
+        pfc::core::ipc::ServerEvent phys_switch_event((uint32_t)
+                                                      mask_type, err);
+        phys_switch_event.addOutput(controller_name);
+        phys_switch_event.addOutput(DEFAULT_DOMAIN_ID);
+        phys_switch_event.addOutput((uint32_t) UNC_OP_CREATE);
+        phys_switch_event.addOutput((uint32_t) UNC_DT_STATE);
+        phys_switch_event.addOutput((uint32_t) UNC_KT_SWITCH);
+        phys_switch_event.addOutput(key_struct);
+        phys_switch_event.addOutput(val_struct);
+        phys_switch_event.post();
+        pfc_log_debug("Exiting switch create event");
+      }
+      break;
+    case VTN_SWITCH_DELETE:
+      {
+        pfc_log_debug("Entering  switch delete event");
+        pfc::core::ipc::ServerEvent phys_switch_event((uint32_t)
+                                                      mask_type, err);
+        phys_switch_event.addOutput(controller_name);
+        phys_switch_event.addOutput(DEFAULT_DOMAIN_ID);
+        phys_switch_event.addOutput((uint32_t) UNC_OP_DELETE);
+        phys_switch_event.addOutput((uint32_t) UNC_DT_STATE);
+        phys_switch_event.addOutput((uint32_t) UNC_KT_SWITCH);
+        phys_switch_event.addOutput(key_struct);
+        phys_switch_event.post();
+        pfc_log_debug("Exiting switch delete event");
+      }
+      break;
+    default:
+        pfc_log_debug("%s:Invalid operation type:%d", PFC_FUNCNAME, operation);
+      break;
+  }
+}
+
+  /**
+   * @brief     : Method to post switch update events to UPPL
+   * @param[in] : oper_type, key_struct, val_struct
+   * @retval    : None
+   */
+void VtnDrvIntf::switch_event(oper_type operation, key_switch
+                                   key_struct, val_switch_st
+                                   new_val_struct, val_switch_st
+                                   old_val_struct) {
+  ODC_FUNC_TRACE;
+  unc_event_mask_t mask_type = UNC_PHYSICAL_EVENTS;
+  int err = 0;
+  std::string controller_name =
+      (const char*)key_struct.ctr_key.controller_name;
+  std::string switch_id = (const char*)key_struct.switch_id;
+
+  pfc_log_debug("%s,key structure fields:"
+                "controller_name: %s,"
+                "switch_id: %s,", PFC_FUNCNAME, controller_name.c_str(),
+                switch_id.c_str());
+  if (operation == VTN_SWITCH_UPDATE) {
+    pfc_log_debug("Entering switch update event");
+    pfc::core::ipc::ServerEvent phys_switch_event((uint32_t)
+                                                  mask_type, err);
+    phys_switch_event.addOutput(controller_name);
+    phys_switch_event.addOutput(DEFAULT_DOMAIN_ID);
+    phys_switch_event.addOutput((uint32_t) UNC_OP_UPDATE);
+    phys_switch_event.addOutput((uint32_t) UNC_DT_STATE);
+    phys_switch_event.addOutput((uint32_t) UNC_KT_SWITCH);
+    phys_switch_event.addOutput(key_struct);
+    phys_switch_event.addOutput(new_val_struct);
+    phys_switch_event.addOutput(old_val_struct);
+    phys_switch_event.post();
+    pfc_log_debug("Exiting switch update event");
+  } else {
+    pfc_log_debug("%s, Invalid operation, PFC_FUNCNAME", PFC_FUNCNAME);
+  }
+}
+
+  /**
+   * @brief     : Method to post port create/delete events to UPPL
+   * @param[in] : oper_type, key_port_t, val_port_st
+   * @retval    : None
+   */
+void VtnDrvIntf::port_event(oper_type operation, key_port_t
+                                   key_struct, val_port_st
+                                   val_struct ) {
+  ODC_FUNC_TRACE;
+  unc_event_mask_t mask_type = UNC_PHYSICAL_EVENTS;
+  int err = 0;
+  std::string controller_name =
+      (const char*)key_struct.sw_key.ctr_key.controller_name;
+  std::string switch_id = (const char*)key_struct.sw_key.switch_id;
+  std::string port_id = (const char*)key_struct.port_id;
+
+  pfc_log_debug("%s,key structure fields:"
+                "controller_name: %s,"
+                "switch_id: %s,"
+                "port_id: %s", PFC_FUNCNAME, controller_name.c_str(),
+                switch_id.c_str(), port_id.c_str());
+  switch (operation) {
+    case VTN_PORT_CREATE:
+      {
+        pfc_log_debug("Entering port create event");
+        pfc::core::ipc::ServerEvent phys_port_event((uint32_t) mask_type, err);
+        phys_port_event.addOutput(controller_name);
+        phys_port_event.addOutput(DEFAULT_DOMAIN_ID);
+        phys_port_event.addOutput((uint32_t) UNC_OP_CREATE);
+        phys_port_event.addOutput((uint32_t) UNC_DT_STATE);
+        phys_port_event.addOutput((uint32_t) UNC_KT_PORT);
+        phys_port_event.addOutput(key_struct);
+        phys_port_event.addOutput(val_struct);
+        phys_port_event.post();
+        pfc_log_debug("Exiting port create event");
+      }
+      break;
+    case VTN_PORT_DELETE:
+      {
+        pfc_log_debug("Entering port delete event");
+        pfc::core::ipc::ServerEvent phys_port_event((uint32_t) mask_type, err);
+        phys_port_event.addOutput(controller_name);
+        phys_port_event.addOutput(DEFAULT_DOMAIN_ID);
+        phys_port_event.addOutput((uint32_t) UNC_OP_DELETE);
+        phys_port_event.addOutput((uint32_t) UNC_DT_STATE);
+        phys_port_event.addOutput((uint32_t) UNC_KT_PORT);
+        phys_port_event.addOutput(key_struct);
+        phys_port_event.post();
+        pfc_log_debug("Exiting port delete event");
+      }
+      break;
+    default:
+        pfc_log_debug("%s:Invalid operation type:%d", PFC_FUNCNAME, operation);
+      break;
+  }
+}
+
+/**
+   * @brief     : Method to post port update events to UPPL
+   * @param[in] : oper_type, key_port_t, val_port_st
+   * @retval    : None
+   */
+void VtnDrvIntf::port_event(oper_type operation, key_port_t
+                                   key_struct, val_port_st
+                                   new_val_struct, val_port_st
+                                   old_val_struct) {
+  ODC_FUNC_TRACE;
+  unc_event_mask_t mask_type = UNC_PHYSICAL_EVENTS;
+  int err = 0;
+  std::string controller_name =
+      (const char*)key_struct.sw_key.ctr_key.controller_name;
+  std::string switch_id = (const char*)key_struct.sw_key.switch_id;
+  std::string port_id = (const char*)key_struct.port_id;
+
+  pfc_log_debug("%s,key structure fields:"
+                "controller_name: %s,"
+                "switch_id: %s,"
+                "port_id: %s", PFC_FUNCNAME, controller_name.c_str(),
+                switch_id.c_str(), port_id.c_str());
+  if (operation == VTN_PORT_UPDATE) {
+    pfc_log_debug("Entering port update event");
+    pfc::core::ipc::ServerEvent phys_port_event((uint32_t) mask_type, err);
+    phys_port_event.addOutput(controller_name);
+    phys_port_event.addOutput(DEFAULT_DOMAIN_ID);
+    phys_port_event.addOutput((uint32_t) UNC_OP_UPDATE);
+    phys_port_event.addOutput((uint32_t) UNC_DT_STATE);
+    phys_port_event.addOutput((uint32_t) UNC_KT_PORT);
+    phys_port_event.addOutput(key_struct);
+    phys_port_event.addOutput(new_val_struct);
+    phys_port_event.addOutput(old_val_struct);
+    phys_port_event.post();
+    pfc_log_debug("Exiting port update event");
+  } else {
+    pfc_log_debug("%s, Invalid operation, PFC_FUNCNAME", PFC_FUNCNAME);
+  }
+}
+
 }  // namespace driver
 }  // namespace unc
 PFC_MODULE_IPC_DECL(unc::driver::VtnDrvIntf, 3);

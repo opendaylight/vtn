@@ -13,10 +13,12 @@
 #include <odc_vtn.hh>
 #include <odc_vbr.hh>
 #include <odc_vbrif.hh>
+#include <odc_switch.hh>
+#include <odc_port.hh>
 #include <odc_vbr_vlanmap.hh>
 #include <odc_driver_common_defs.hh>
+#include <unc/keytype.h>
 #include <rest_util.hh>
-#include <vtn_drv_module.hh>
 #include <arpa/inet.h>
 #include <unc/tc/external/tc_services.h>
 #include <string>
@@ -134,6 +136,13 @@ class ODCModule: public pfc::core::Module, public unc::driver::driver {
   pfc_bool_t is_ping_needed();
 
   /**
+   * @brief   - Physicalconfiguration needed for the ODC Conttoller or not
+   * @return  - returns PFC_TRUE if Physicalconfiguration is need /
+   *            returns PFC_FALSE if Physicalconfiguration is not needed.
+   */
+  pfc_bool_t is_physicalconfig_needed();
+
+  /**
    * @brief  - Gets the ping interval
    * @return - returns the ping interval
    */
@@ -152,6 +161,13 @@ class ODCModule: public pfc::core::Module, public unc::driver::driver {
    *              returns PFC_FALSE if controller is not available
    */
   pfc_bool_t ping_controller(unc::driver::controller*);
+
+  /**
+   * @brief      - gets the physical port details
+   * @param[in]  - Controller pointer
+   * @return     - returns PFC_TRUE/PFC_FALSE
+   */
+  pfc_bool_t get_physical_port_details(unc::driver::controller* ctr);
 
  private:
   /**

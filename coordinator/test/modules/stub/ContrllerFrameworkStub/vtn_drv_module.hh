@@ -56,6 +56,33 @@ class VtnDrvIntf :public pfc::core::Module {
   VtnDrvRetEnum register_driver(driver *drv_obj) {
     return VTN_DRV_RET_SUCCESS;
   }
+  void logicalport_event(oper_type operation, key_logical_port_t key_struct,
+                         val_logical_port_st val_struct) {
+  }
+
+  void logicalport_event(oper_type operation, key_logical_port_t key_struct,
+                         val_logical_port_st new_val_struct, val_logical_port_st
+                         old_val_struct) {
+  }
+
+  void port_event(oper_type operation, key_port_t
+                  key_struct, val_port_st val_struct) {
+  }
+
+  void port_event(oper_type operation, key_port_t
+                  key_struct, val_port_st new_val_struct,
+                  val_port_st old_val_struct) {
+  }
+
+  void switch_event(oper_type operation, key_switch
+                    key_struct, val_switch_st val_struct) {
+  }
+
+  void switch_event(oper_type operation, key_switch
+                    key_struct, val_switch_st new_val_struct,
+                    val_switch_st old_val_struct) {
+  }
+
 };
 }  // namespace driver
 }  // namespace unc

@@ -54,6 +54,8 @@ ODCDRIVER_SOURCES += odc_vbr.cc
 ODCDRIVER_SOURCES += odc_vtn.cc
 ODCDRIVER_SOURCES += odc_vbrif.cc
 ODCDRIVER_SOURCES += odc_vbr_vlanmap.cc
+ODCDRIVER_SOURCES += odc_switch.cc
+ODCDRIVER_SOURCES += odc_port.cc
 
 VTNCACHEUTIL_SOURCES = keytree.cc
 VTNCACHEUTIL_SOURCES += confignode.cc

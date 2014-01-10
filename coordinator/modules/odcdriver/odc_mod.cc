@@ -7,6 +7,7 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
+#include <vtn_drv_module.hh>
 #include <odc_mod.hh>
 
 namespace unc {
@@ -159,6 +160,12 @@ pfc_bool_t ODCModule::is_ping_needed() {
   return PFC_TRUE;
 }
 
+// Is physicalconfiguration  need or not
+pfc_bool_t ODCModule::is_physicalconfig_needed() {
+  ODC_FUNC_TRACE;
+  return PFC_TRUE;
+}
+
 //  ping controller
 pfc_bool_t ODCModule::ping_controller(unc::driver::controller* ctr) {
   ODC_FUNC_TRACE;
@@ -189,6 +196,60 @@ pfc_bool_t ODCModule::ping_controller(unc::driver::controller* ctr) {
   if ((connection_status) && (new_audit_status)) {
     std::string controller_name = ctr->get_controller_id();
     notify_audit_start_to_tc(controller_name);
+  }
+  return PFC_TRUE;
+}
+
+// Gets the switch and its port details from Controller and notify UPPL
+pfc_bool_t ODCModule::get_physical_port_details(
+                          unc::driver::controller* ctr_ptr) {
+  ODC_FUNC_TRACE;
+  PFC_ASSERT(ctr_ptr != NULL);
+  OdcSwitch odc_switch_obj(conf_file_values_);
+  pfc_bool_t cache_empty = PFC_TRUE;
+
+  // Gets the SWITCH details
+  drv_resp_code_t ret_val = odc_switch_obj.fetch_config(ctr_ptr, cache_empty);
+  if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+    pfc_log_error("Error occured in getting switch details");
+    return PFC_FALSE;
+  }
+
+  std::auto_ptr<unc::vtndrvcache::CommonIterator>
+      itr_ptr(ctr_ptr->physical_port_cache->create_iterator());
+  unc::vtndrvcache::ConfigNode *cfgnode_cache = NULL;
+  for (cfgnode_cache = itr_ptr->PhysicalNodeFirstItem();
+       itr_ptr->IsDone() == false;
+       cfgnode_cache = itr_ptr->NextItem() ) {
+    if (cfgnode_cache == NULL) {
+      pfc_log_error("cfgnode is NULL before get_type");
+      delete ctr_ptr->physical_port_cache;
+      ctr_ptr->physical_port_cache = NULL;
+      return DRVAPI_RESPONSE_FAILURE;
+    }
+
+    unc_key_type_t key_type =  cfgnode_cache->get_type_name();
+    pfc_log_debug("key_type in odc_mod %d", key_type);
+    if (UNC_KT_SWITCH == key_type) {
+      unc::vtndrvcache::CacheElementUtil
+          <key_switch_t, val_switch_st_t, uint32_t> * cache_util_ptr =
+          static_cast <unc::vtndrvcache::CacheElementUtil
+          <key_switch_t, val_switch_st_t, uint32_t> * > (cfgnode_cache);
+
+      PFC_ASSERT(cache_util_ptr != NULL);
+      key_switch_t *key_switch = cache_util_ptr->get_key_structure();
+      if (NULL == key_switch) {
+        pfc_log_error("key_switch is NULL");
+        return PFC_FALSE;
+      }
+      OdcPort odc_port_obj(conf_file_values_);
+      //  Gets the port details of a particular SW
+      ret_val = odc_port_obj.fetch_config(ctr_ptr, key_switch, cache_empty);
+      if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+        pfc_log_error("Error occured in getting port details");
+        return PFC_FALSE;
+      }
+    }
   }
   return PFC_TRUE;
 }

@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 #include <arpa/inet.h>
 #include <vtn_drv_transaction_handle.hh>
+#include <controller_utils.hh>
 #include <stdio.h>
 #include <map>
 #include "../../../stub/tclib_module/tclib_interface.hh"
@@ -266,7 +267,7 @@ TEST_F(DriverTxnInterfaceTest, HandleCommitVoteRequest2PhTrue) {
   kt_handler_map map_kt_;
   unc::tclib::TcControllerList controller;
   controller.push_back("ctr_demo");
-  unc::driver::driver::set_ctrl_instance(0);
+  unc::driver::driver::set_ctrl_instance(1);
   unc::tclib::TcCommonRet ret_code = unc::tclib::TC_FAILURE;
   DriverTxnInterface *TxnObj = new DriverTxnInterface(CtrObj, map_kt_);
   EXPECT_EQ(ret_code, TxnObj->HandleCommitVoteRequest

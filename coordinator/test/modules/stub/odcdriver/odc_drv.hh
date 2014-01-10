@@ -60,6 +60,11 @@ class OdcDriver : public unc::driver::driver {
     return 10;
   }
 
+
+  pfc_bool_t  get_physical_port_details(unc::driver::controller*) {
+    return true;
+  }
+
   pfc_bool_t  ping_controller(unc::driver::controller*) {
     return ping_result;
   }
