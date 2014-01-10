@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,5 +14,27 @@ typedef enum {
   VTN_DRV_RET_SUCCESS = 0,
   VTN_DRV_RET_FAILURE
 }VtnDrvRetEnum;
+
+typedef enum
+{
+  UNC_OPERSTATUS_CRITERIA_ANY = 0,
+  UNC_OPERSTATUS_CRITERIA_ALL
+}unc_operstatus_criteria;
+
+namespace unc{
+namespace driver {
+typedef enum {
+  VTN_SWITCH_CREATE = 0,
+  VTN_SWITCH_UPDATE,
+  VTN_SWITCH_DELETE,
+  VTN_LP_CREATE,
+  VTN_LP_UPDATE,
+  VTN_LP_DELETE,
+  VTN_PORT_CREATE,
+  VTN_PORT_UPDATE,
+  VTN_PORT_DELETE
+}oper_type;
+}
+}
 #endif  // _VTNDRVINTF_DEFS_H_
 

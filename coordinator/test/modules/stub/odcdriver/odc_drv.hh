@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -58,6 +58,11 @@ class OdcDriver : public unc::driver::driver {
 
   uint32_t get_ping_interval() {
     return 10;
+  }
+
+
+  pfc_bool_t  get_physical_port_details(unc::driver::controller*) {
+    return true;
   }
 
   pfc_bool_t  ping_controller(unc::driver::controller*) {

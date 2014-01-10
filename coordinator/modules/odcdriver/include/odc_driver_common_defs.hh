@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -22,9 +22,13 @@ namespace unc {
 namespace odcdriver {
 
 const std::string BASE_URL              = "/controller/nb/v2/vtn";
+const std::string BASE_SW_URL           = "/controller/nb/v2/switchmanager";
 const std::string VERSION               = "/version";
 const std::string CONTAINER_NAME        = "/default";
 const std::string VTNS                  = "/vtns";
+const std::string NODES                 = "/nodes";
+const std::string NODE                  = "/node";
+const std::string NODE_OF               = "/OF";
 
 const std::string DEFAULT_USER_NAME     = "admin";
 const std::string DEFAULT_PASSWORD      = "admin";
@@ -46,8 +50,10 @@ const std::string NODE_TYPE_ANY         = "ANY";
 const std::string PERIOD                = ".";
 const std::string HYPHEN                = "-";
 const std::string COLON                 = ":";
+const std::string SLASH                 = "/";
 const std::string SW_PREFIX             = "SW-";
 const std::string PP_PREFIX             = "PP-";
+const std::string PP_OF_PREFIX          = "PP-OF:";
 const std::string UNTAGGED_VLANID       = "65535";
 
 const uint32_t DEFAULT_ODC_PORT         = 8080;
@@ -63,6 +69,11 @@ const uint32_t PING_DEFAULT_INTERVAL    = 30;
 const uint32_t VTN_PARSE_FLAG           = 0;
 const uint32_t VBR_PARSE_FLAG           = 1;
 const uint32_t SWID_PARSE_FLAG          = 2;
+const uint ADMIN_DOWN                   = 0;
+const uint ADMIN_UP                     = 1;
+const uint EDGE_UP                      = 1;
+
+const std::string switchmodel           = "OFS";
 
 typedef enum {
   ODC_DRV_SUCCESS = 0,
@@ -82,6 +93,52 @@ typedef enum {
   HTTP_201_RESP_CREATED               = 201,
   HTTP_200_RESP_OK                    = 200
 } ServerResponseCode;
+
+typedef enum {
+  VAL_SWITCH_ATTR = 0,
+  VAL_OPER_STAT_ATTR,
+  VAL_MAN_ATTR,
+  VAL_HARD_ATTR,
+  VAL_SOFT_ATTR,
+  VAL_ALARAM_INFO
+} SwitchValStFlags;
+
+typedef enum {
+  VAL_DESCRIPTION = 0,
+  VAL_MODEL,
+  VAL_SECURE_CHANNEL_IPV4ADDR_ATTR,
+  VAL_SECURE_CHANNEL_IPV6ADDR_ATTR,
+  VAL_ADMIN_STATUS,
+  VAL_DOMAINID_ATTR
+} SwitchValFlags;
+
+typedef enum {
+  VAL_LOGICAL_PORT_VALID = 0,
+  VAL_OPERSTATUS
+} LogicalPortValStFlag;
+
+typedef enum {
+  VAL_LOGICAL_PORT_DESCRIPTION = 0,
+  VAL_LOGICAL_PORT_TYPE,
+  VAL_LOGICAL_PORT_SWITCHID,
+  VAL_LOGICAL_PORT_PHYPORTID,
+  VAL_OPERSTATUS_CRITERIA,
+} LogicalPortValFlag;
+
+typedef enum {
+  VAL_PORT_STRUCT_ATTR = 0,
+} PortValStFlag;
+
+typedef enum {
+  VAL_PORT_EVENT_ATTR1 = 0,
+  VAL_PORT_EVENT_ATTR2,
+  VAL_PORT_EVENT_ATTR3,
+  VAL_PORT_EVENT_ATTR4,
+  VAL_PORT_EVENT_ATTR5,
+  VAL_PORT_EVENT_ATTR6,
+  VAL_PORT_EVENT_ATTR7,
+  VAL_PORT_EVENT_ATTR8
+} PortValFlags;
 }  //  namespace odcdriver
 }  //  namespace unc
 #endif  // ODCDRIVER_COMMON_DEFS_H_

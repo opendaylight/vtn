@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,6 +13,7 @@
 #include <uncxx/tclib/tclib_interface.hh>
 #include <tclib_module.hh>
 #include <kt_handler.hh>
+#include <controller_utils.hh>
 #include <list>
 #include <string>
 #include <map>
@@ -33,7 +34,7 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
   /**
    * @brief  - DriverTxnInterface destructor
    */
-  ~DriverTxnInterface() {}
+  ~DriverTxnInterface();
 
   /**
    * @brief     - Handles commit vote request
@@ -268,9 +269,7 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
                                          std::string
                                          controller_id,
                                          unc::tclib::TcAuditResult
-                                         audit_result) {
-    return unc::tclib::TC_SUCCESS;
-  }
+                                         audit_result);
 
   /**
    * @brief      - Handles Audit Transaction Start

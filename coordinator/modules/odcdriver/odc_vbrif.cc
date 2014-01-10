@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -71,6 +71,12 @@ odc_drv_resp_code_t OdcVbrIfCommand::validate_logical_port_id(
 odc_drv_resp_code_t OdcVbrIfCommand::check_logical_port_id_format(
     std::string& logical_port_id) {
   ODC_FUNC_TRACE;
+
+  // If First SIX digits are in the format PP-OF: change to PP-
+  if (logical_port_id.compare(0, 6, PP_OF_PREFIX) == 0) {
+     logical_port_id.replace(logical_port_id.find(PP_OF_PREFIX),
+                             PP_OF_PREFIX.length(), PP_PREFIX);
+  }
   odc_drv_resp_code_t logical_port_retval = validate_logical_port_id(
       logical_port_id);
   if (logical_port_retval != ODC_DRV_SUCCESS) {
@@ -824,7 +830,7 @@ drv_resp_code_t OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
       }
       std::string node_id = "";
       std::string port_name = "";
-      std::string logical_port = "PP-";
+      std::string logical_port = "PP-OF:";
 
       if ((json_object_is_type(jobj_node, json_type_null)) ||
           (json_object_is_type(jobj_port, json_type_null))) {

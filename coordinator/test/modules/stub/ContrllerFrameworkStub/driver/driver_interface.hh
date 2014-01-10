@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -121,6 +121,10 @@ class driver {
     }
     return unc::tclib::TC_FAILURE;
   }
+
+  pfc_bool_t  get_physical_port_details(unc::driver::controller*) {
+  return PFC_TRUE;
+   }
 
   static driver* create_driver();
   static driver* driver_ptr;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -16,6 +16,7 @@
 #include <confignode.hh>
 #include <vtn_conf_utility.hh>
 #include <vtn_conf_data_element_op.hh>
+#include <controller_utils.hh>
 #include "../../../../../modules/vtndrvintf/include/request_template.hh"
 
 TEST(KT_VTN, Validate_Request1) {

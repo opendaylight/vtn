@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -70,7 +70,7 @@ class ControllerFramework  {
   /**
    * @brief - constructor
    */
-  explicit ControllerFramework(pfc::core::TaskQueue*);
+  explicit ControllerFramework(pfc::core::TaskQueue*, uint32_t time_interval);
 
   /**
    * @brief   - destructor
@@ -93,6 +93,16 @@ class ControllerFramework  {
    */
   int PostTimer(std::string& controller_name, driver*, controller*,
                 uint32_t ping_interval);
+
+  /**
+   * @brief       - This function  sets the time interval to get controller
+   *                physical configuration and the
+   *                timer is get reset.
+   * @param[in]   - controller name, driver*, controller*,ping_interval
+   * @retval      - int
+   */
+  int post_physical_taskq(std::string& controller_name, driver*, controller*,
+                uint32_t time_interval);
 
   /**
    * @brief      - This function adds the respective controller information
@@ -155,6 +165,7 @@ class ControllerFramework  {
    */
   void SendNotificationToPhysical(std::string ctr_name, ConnectionStatus type);
   pfc::core::Mutex controller_list_rwlock_;
+  uint32_t time_interval_;  //  in seconds
 
  private:
   std::map<std::string, ControllerContainer*>  controller_list;
@@ -193,6 +204,41 @@ class ReadParams : public std::unary_function < void, void> {
    * @retval - None
    */
   void PingController();
+};
+
+/**
+ * Class           - This class is get the physical configuration from the
+ *                   controller for the given timeout
+ * DataMembers     - ctlr_name_, ctr_fw_
+ * MemberFunctions - GetPhysicalInfo()
+ */
+
+class ReadConfig : public std::unary_function < void, void> {
+ public:
+  std::string ctlr_name_;
+
+  unc::driver::ControllerFramework* ctr_fw_;
+
+  /**
+   * @brief - parameterised constructor to initialize controller name and
+   *          ControllerFramework object
+   */
+  ReadConfig(std::string, unc::driver::ControllerFramework*);
+
+  /**
+   * @brief  - This fuction calls the method GetPhysicalInfo()
+   * @retval - None
+   */
+  void operator() () {
+    GetPhysicalConfig();
+  }
+
+  /**
+   * @brief  - Function to get the physical configuration from
+   *           the controller
+   * @retval - None
+   */
+  void GetPhysicalConfig();
 };
 }  // namespace driver
 }  // namespace unc

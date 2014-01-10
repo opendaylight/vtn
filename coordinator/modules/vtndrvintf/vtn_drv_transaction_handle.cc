@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -22,6 +22,25 @@ DriverTxnInterface::DriverTxnInterface(ControllerFramework* ctrl_frame,
                             kt_handler_map &map_kt)
     : crtl_inst_(ctrl_frame), kt_handler_map_(map_kt) {
       initialize_map();
+    }
+
+
+/**
+ * @brief : Destructor
+ */
+DriverTxnInterface::~DriverTxnInterface() {
+  std::map<unc_key_type_t, pfc_ipcstdef_t*> :: iterator map_it;
+  for (map_it = key_map_.begin(); map_it != key_map_.end(); map_it++) {
+    delete map_it->second;
+    map_it->second = NULL;
+  }
+  for (map_it = val_map_.begin(); map_it != val_map_.end(); map_it++) {
+    delete map_it->second;
+    map_it->second = NULL;
+  }
+
+  key_map_.clear();
+  val_map_.clear();
 }
 
 /**
@@ -45,7 +64,7 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitGlobalCommit(
   controller* ctr = NULL;
   unc::tclib::TcCommonRet ret_code = unc::tclib::TC_SUCCESS;
   ctr_iter iter;
-
+  pfc_bool_t Abort = PFC_FALSE;
   unc::tclib::TcLibModule* tclib_ptr =
       static_cast<unc::tclib::TcLibModule*>
       (unc::tclib::TcLibModule::getInstance("tclib"));
@@ -54,43 +73,42 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitGlobalCommit(
   for (iter = controllers.begin(); iter != controllers.end(); iter++) {
     pfc_bool_t commit = PFC_FALSE;
     ctr_name = *iter;
-    drv_resp_code_t err_code = crtl_inst_->GetDriverByControllerName(ctr_name,
-                                                              &ctr, &drv);
-    pfc_log_debug("Inside controller list iteration %d", err_code);
-    if (err_code == DRVAPI_RESPONSE_SUCCESS) {
-      if (ctr != NULL) {
-        pfc_log_error("gettin conn status..ctr nt NULL");
-        if (ctr->get_connection_status() == CONNECTION_DOWN) {
-          //  check controller connection status, if down send disconnected
-          pfc_log_debug("%s Controller status is down, send disconnected", \
-                        PFC_FUNCNAME);
-          tclib_ptr->TcLibWriteControllerInfo(ctr_name,
-                (uint32_t)DRVAPI_RESPONSE_CONTROLLER_DISCONNECTED, 0);
-          continue;
-        }
-      }
-      commit =  drv->is_2ph_commit_support_needed();
-      if (commit == PFC_TRUE) {
-        ret_code = drv->HandleCommit(ctr);
-
-        if (ret_code != unc::tclib::TC_SUCCESS) {
-          AbortControllers(controllers);
-        return unc::tclib::TC_FAILURE;
-        } else {
-          pfc_log_debug("HandleCommitGlobalCommit success for controller:%s",
-                                                    ctr_name.c_str());
-        }
-      } else {
-        pfc_log_debug("TcLibWriteControllerInfo for controller:%s",
-                                                  ctr_name.c_str());
+    controller_operation util_obj(crtl_inst_, WRITE_TO_CONTROLLER, ctr_name);
+    ctr = util_obj.get_controller_handle();
+    drv = util_obj.get_driver_handle();
+    PFC_ASSERT(ctr != NULL);
+    PFC_ASSERT(drv != NULL);
+    if (ctr != NULL) {
+      pfc_log_error("gettin conn status..ctr nt NULL");
+      if (ctr->get_connection_status() == CONNECTION_DOWN) {
+        //  check controller connection status, if down send disconnected
+        pfc_log_debug("%s Controller status is down, send disconnected", \
+                      PFC_FUNCNAME);
         tclib_ptr->TcLibWriteControllerInfo(ctr_name,
-                                        (uint32_t)DRVAPI_RESPONSE_SUCCESS, 0);
+                      (uint32_t)DRVAPI_RESPONSE_CONTROLLER_DISCONNECTED, 0);
+        continue;
+      }
+    }
+    commit =  drv->is_2ph_commit_support_needed();
+    if (commit == PFC_TRUE) {
+      ret_code = drv->HandleCommit(ctr);
+
+      if (ret_code != unc::tclib::TC_SUCCESS) {
+        Abort = PFC_TRUE;
+        break;
+      } else {
+        pfc_log_debug("HandleCommitGlobalCommit success for controller:%s",
+                      ctr_name.c_str());
       }
     } else {
-      pfc_log_fatal("unable to get controller/driver connection pointer");
-      return unc::tclib::TC_FAILURE;
+      pfc_log_debug("TcLibWriteControllerInfo for controller:%s",
+                    ctr_name.c_str());
+      tclib_ptr->TcLibWriteControllerInfo(ctr_name,
+                                    (uint32_t)DRVAPI_RESPONSE_SUCCESS, 0);
     }
   }
+  if (Abort == PFC_TRUE)
+    AbortControllers(controllers);
   return ret_code;
 }
 
@@ -161,31 +179,28 @@ void DriverTxnInterface::AbortControllers(unc::tclib::TcControllerList
   for (iter = controllers.begin(); iter != controllers.end(); iter++) {
     pfc_bool_t Abort = PFC_FALSE;
     ctr_name = *iter;
-    drv_resp_code_t err_code = crtl_inst_->GetDriverByControllerName(ctr_name,
-                                                              &ctr, &drv);
+    controller_operation util_obj(crtl_inst_, WRITE_TO_CONTROLLER, ctr_name);
+    ctr = util_obj.get_controller_handle();
+    drv = util_obj.get_driver_handle();
     PFC_ASSERT(ctr != NULL);
     PFC_ASSERT(drv != NULL);
-    if (err_code == DRVAPI_RESPONSE_SUCCESS) {
-      Abort =  drv->is_2ph_commit_support_needed();
-      if (Abort == PFC_TRUE) {
-        ret_code = drv->HandleAbort(ctr);
-        if (ret_code == unc::tclib::TC_SUCCESS) {
-          pfc_log_debug("abort controller :%s ret_code %d", ctr_name.c_str(),
-                        ret_code);
-        } else {
-          pfc_log_error("abort controller :%s failed ret_code %d",
-                        ctr_name.c_str(), ret_code);
-        }
+    Abort =  drv->is_2ph_commit_support_needed();
+    if (Abort == PFC_TRUE) {
+      ret_code = drv->HandleAbort(ctr);
+      if (ret_code == unc::tclib::TC_SUCCESS) {
+        pfc_log_debug("abort controller :%s ret_code %d", ctr_name.c_str(),
+                      ret_code);
       } else {
-        if (ctr->controller_cache != NULL) {
-          pfc_log_debug("AbortControllers::delete controller_cache for:%s",
-                        ctr_name.c_str());
-          delete ctr->controller_cache;
-          ctr->controller_cache = NULL;
-        }
+        pfc_log_error("abort controller :%s failed ret_code %d",
+                      ctr_name.c_str(), ret_code);
       }
     } else {
-      pfc_log_error("unable to get controller/driver connection pointer");
+      if (ctr->controller_cache != NULL) {
+        pfc_log_debug("AbortControllers::delete controller_cache for:%s",
+                      ctr_name.c_str());
+        delete ctr->controller_cache;
+        ctr->controller_cache = NULL;
+      }
     }
   }  // for loop
 }
@@ -206,6 +221,7 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitVoteRequest(
                                         unc::tclib::TcControllerList
                                         controllers) {
   ODC_FUNC_TRACE;
+  pfc_bool_t Abort = PFC_FALSE;
   std::string ctr_name;
   driver* drv = NULL;
   controller* ctr = NULL;
@@ -220,42 +236,37 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitVoteRequest(
   for (iter = controllers.begin(); iter != controllers.end(); iter++) {
     pfc_bool_t vote = PFC_FALSE;
     ctr_name = *iter;
-    drv_resp_code_t err_code = crtl_inst_->GetDriverByControllerName(ctr_name,
-                                                              &ctr, &drv);
+    controller_operation util_obj(crtl_inst_, WRITE_TO_CONTROLLER, ctr_name);
+    ctr = util_obj.get_controller_handle();
+    drv = util_obj.get_driver_handle();
     PFC_ASSERT(ctr != NULL);
     PFC_ASSERT(drv != NULL);
-
-    if (err_code == DRVAPI_RESPONSE_SUCCESS) {
-      //  check controller connection status, if down send disconnected
-      if (ctr->get_connection_status() == CONNECTION_DOWN) {
-        pfc_log_debug("%s Controller status is down, send disconnected", \
-                       PFC_FUNCNAME);
-        tclib_ptr->TcLibWriteControllerInfo(ctr_name,
-                   (uint32_t)DRVAPI_RESPONSE_CONTROLLER_DISCONNECTED, 0);
-        ret_code = unc::tclib::TC_SUCCESS;
-        continue;
-      }
-      vote =  drv->is_2ph_commit_support_needed();
-      if (vote == PFC_TRUE) {
-        ret_code = drv->HandleVote(ctr);
-        if (ret_code != unc::tclib::TC_SUCCESS)
-          AbortControllers(controllers);
-          pfc_log_error("VOTE Failure in driver");
-          return unc::tclib::TC_FAILURE;
-      } else {
-        ret_code = HandleCommitCache(ctr_name, ctr, drv);
-        if (ret_code !=unc::tclib::TC_SUCCESS) {
-          pfc_log_error("VOTE Failure in driver, ret %u", ret_code);
-          AbortControllers(controllers);
-          pfc_log_debug("Exiting HandleCommitVoteRequest");
-          return unc::tclib::TC_FAILURE;
-        } else {
-          retc = DRVAPI_RESPONSE_SUCCESS;
-        }
+    if (ctr->get_connection_status() == CONNECTION_DOWN) {
+      pfc_log_debug("%s Controller status is down, send disconnected", \
+                    PFC_FUNCNAME);
+      tclib_ptr->TcLibWriteControllerInfo(ctr_name,
+                    (uint32_t)DRVAPI_RESPONSE_CONTROLLER_DISCONNECTED, 0);
+      ret_code = unc::tclib::TC_SUCCESS;
+      continue;
+    }
+    vote =  drv->is_2ph_commit_support_needed();
+    if (vote == PFC_TRUE) {
+      ret_code = drv->HandleVote(ctr);
+      if (ret_code != unc::tclib::TC_SUCCESS) {
+        Abort = PFC_TRUE;
+        pfc_log_error("VOTE Failure in driver");
+        break;
       }
     } else {
-      pfc_log_error("unable to get controller/driver connection pointer");
-      return unc::tclib::TC_FAILURE;
+      ret_code = HandleCommitCache(ctr_name, ctr, drv);
+      if (ret_code !=unc::tclib::TC_SUCCESS) {
+        pfc_log_error("VOTE Failure in driver, ret %u", ret_code);
+        AbortControllers(controllers);
+        pfc_log_debug("Exiting HandleCommitVoteRequest");
+        return unc::tclib::TC_FAILURE;
+      } else {
+        retc = DRVAPI_RESPONSE_SUCCESS;
+      }
     }
     if (ret_code == unc::tclib::TC_SUCCESS) {
       tclib_ptr->TcLibWriteControllerInfo(ctr_name, retc, 0);
@@ -266,6 +277,8 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitVoteRequest(
       ctr->controller_cache = NULL;
     }
   }  // for loop
+  if (Abort == PFC_TRUE)
+    AbortControllers(controllers);
   return ret_code;
 }
 
@@ -330,6 +343,33 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitCache
     return unc::tclib::TC_FAILURE;
   }
   return ret_code;
+}
+
+  /**
+   * @brief       - Handles Audit end
+   * @param[in]   - session id
+   * @param[in]   - controller type
+   * @param[in]   - controller id
+   * @param[in]   - audit result
+   * @retval      - returns TC_SUCCESS
+   */
+unc::tclib::TcCommonRet DriverTxnInterface::HandleAuditEnd(uint32_t session_id,
+                                       unc_keytype_ctrtype_t ctr_type,
+                                       std::string
+                                       controller_id,
+                                       unc::tclib::TcAuditResult
+                                       audit_result) {
+  controller* ctr = NULL;
+  controller_operation util_obj(crtl_inst_,
+                                READ_FROM_CONTROLLER,
+                                controller_id);
+  ctr = util_obj.get_controller_handle();
+  PFC_ASSERT(ctr != NULL);
+  if (audit_result == unc::tclib::TC_AUDIT_SUCCESS) {
+    pfc_log_debug("AUDIT_END result:%d", audit_result);
+    ctr->audit_result_ = PFC_TRUE;
+  }
+  return unc::tclib::TC_SUCCESS;
 }
 
 /**

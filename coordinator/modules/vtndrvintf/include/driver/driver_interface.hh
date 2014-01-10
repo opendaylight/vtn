@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -96,6 +96,13 @@ class driver {
   virtual pfc_bool_t is_ping_needed() = 0;
 
   /**
+   * @brief    - Method to check if physical configuration needed
+   *             by the controller
+   * @retval   - PFC_TRUE/PFC_FALSE
+   */
+  virtual pfc_bool_t is_physicalconfig_needed() = 0;
+
+  /**
    * @brief    - Method to retrive the ping Interval
    * @retval   - uint32_t - ping Interval in secs
    */
@@ -113,6 +120,13 @@ class driver {
    * @retval    - PFC_TRUE/PFC_FALSE
    */
   virtual pfc_bool_t  ping_controller(unc::driver::controller*) = 0;
+  /**
+   * @brief     - Method to get physical port derails from controller
+   * @param[in] - controller* -Instance of controller
+   * @retval    - PFC_TRUE/PFC_FALSE
+   */
+
+  virtual pfc_bool_t  get_physical_port_details(unc::driver::controller*) = 0;
 
   /**
    * @brief    - Virtual destructort
