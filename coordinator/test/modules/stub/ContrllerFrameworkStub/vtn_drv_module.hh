@@ -28,7 +28,8 @@ class VtnDrvIntf :public pfc::core::Module {
  public:
   explicit VtnDrvIntf(const pfc_modattr_t* attr);
 
-  ~VtnDrvIntf();
+  ~VtnDrvIntf() {
+  }
 
   pfc_bool_t init(void) {
     return PFC_TRUE;
@@ -37,6 +38,11 @@ class VtnDrvIntf :public pfc::core::Module {
   pfc_bool_t fini() {
     return PFC_TRUE;
   }
+  static VtnDrvIntf theInstance;
+
+  static void stub_loadVtnDrvModule(void);
+  static void stub_unloadVtnDrvModule(void);
+
   pfc_ipcresp_t ipcService(pfc::core::ipc::ServerSession& sess,
                            pfc_ipcid_t service) {
     //  return PFC_IPCINT_EVSESS_OK;
@@ -55,6 +61,32 @@ class VtnDrvIntf :public pfc::core::Module {
 
   VtnDrvRetEnum register_driver(driver *drv_obj) {
     return VTN_DRV_RET_SUCCESS;
+  }
+  void logicalport_event(oper_type operation, key_logical_port_t key_struct,
+                         val_logical_port_st val_struct) {
+  }
+
+  void logicalport_event(oper_type operation, key_logical_port_t key_struct,
+                         val_logical_port_st new_val_struct, val_logical_port_st
+                         old_val_struct) {
+  }
+
+  void port_event(oper_type operation, key_port_t
+                  key_struct, val_port_st val_struct) {
+  }
+
+  void port_event(oper_type operation, key_port_t
+                  key_struct, val_port_st new_val_struct,
+                  val_port_st old_val_struct) {
+  }
+
+  void switch_event(oper_type operation, key_switch
+                    key_struct, val_switch_st val_struct) {
+  }
+
+  void switch_event(oper_type operation, key_switch
+                    key_struct, val_switch_st new_val_struct,
+                    val_switch_st old_val_struct) {
   }
 };
 }  // namespace driver

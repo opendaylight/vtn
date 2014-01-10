@@ -63,6 +63,16 @@ class JsonTypeUtil {
     ODC_FUNC_TRACE;
     jobj_ = jsondata;
   }
+  /**
+   * @brief               - Parametrised constructor takes arg as json object
+   *                      - Creates json object of type json object
+   * @param[in] jsondata  - json object
+   */
+
+  explicit JsonTypeUtil(unsigned long long longdata) {
+    ODC_FUNC_TRACE;
+    jobj_ = json_object_new_int64(longdata);
+  }
 
   /**
    * @brief                 - Function overloading getValue - returns the value
@@ -111,6 +121,19 @@ class JsonTypeUtil {
   static void get_value(json_object* jobjval, json_object*& jobjgetval) {
     ODC_FUNC_TRACE;
     jobjgetval = jobjval;
+  }
+
+  /**
+   * @brief                   - Function overloading getValue - returns the
+   *                            value of type unsigned long long
+   * @param[in] jobjval       - json obj from which the value to be retrive
+   * @param[out] val          - the value stored in this json_object reference
+   * return                   - None
+   */
+
+  static void get_value(json_object* jobjval, unsigned long long& val) {
+    ODC_FUNC_TRACE;
+    val = json_object_get_int64(jobjval);
   }
 
   /**

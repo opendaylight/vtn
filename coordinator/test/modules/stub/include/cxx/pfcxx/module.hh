@@ -153,6 +153,7 @@ pfc_module_t _module;
 static Module* capaModule;
 static Module* tcLib;
 static Module *physical;
+static Module *vtndrv;
 };
 
 /*

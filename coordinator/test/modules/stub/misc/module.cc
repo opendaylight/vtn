@@ -16,6 +16,7 @@ namespace core {
 Module* Module::capaModule = NULL;
 Module* Module::tcLib = NULL;
 Module* Module::physical = NULL;
+Module* Module::vtndrv = NULL;
 
 
 
@@ -28,6 +29,9 @@ Module*  Module::getModule(const char* moduleName) {
   }
   if (!strcmp(moduleName, "tclib")) {
     return tcLib;
+  }
+  if (!strcmp(moduleName, "vtndrvintf")) {
+    return vtndrv;
   }
   return NULL;
 }

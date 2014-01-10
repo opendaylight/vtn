@@ -70,6 +70,21 @@ class RestUtil {
     std::string VLAN_MAP_RESP_ANY_0 = "172.16.0.18";
     std::string NULL_RESP_DATA = "172.16.0.19";
 
+
+    std::string SWITCH_RESP  = "172.16.0.20";
+    std::string SWITCH_RESP_UPDATE  = "172.16.0.21";
+    std::string SWITCH_RESP_DELETE = "172.16.0.22";
+
+    std::string PORT_RESP  = "172.16.0.23";
+    std::string PORT_RESP_UPDATE  = "172.16.0.24";
+    std::string PORT_RESP_DELETE = "172.16.0.25";
+
+    std::string PORT_RESP_EMPTY = "172.16.0.26";
+    std::string SWITCH_RESP_EMPTY = "172.16.0.27";
+    std::string SWITCH_RESP_ONE = "172.16.0.28";
+    std::string PORT_RESP_ONE = "172.16.0.29";
+    std::string PORT_RESP_TWO = "172.16.0.30";
+
     std::string port_map_url_create_valid = "";
     port_map_url_create_valid.append
         ("/controller/nb/v2/vtn/default/vtns/vtn1/vbridges/");
@@ -211,6 +226,52 @@ class RestUtil {
       response_->code = 200;
       delete response_->write_data;
       response_->write_data = NULL;
+      return response_;
+    } else if(ip_address_.compare(SWITCH_RESP) == 0) {
+      response_->code = 200;
+      response_->write_data->memory = const_cast<char *>("{\"nodeProperties\":[{\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:02\"},\"properties\":{\"tables\":{\"value\":-1},\"forwarding\":{\"value\":0},\"timeStamp\":{\"value\":1388174650189,\"name\":\"connectedSince\"},\"buffers\":{\"value\":256},\"description\":{\"value\":\"None\"},\"capabilities\":{\"value\":199},\"macAddress\":{\"value\":\"00:00:00:00:00:02\"},\"supportedFlowActions\":{\"value\":\"[Controller, Drop, Enqueue, HwPath, Output, PopVlan, SetDlDst,SetDlSrc, SetNwDst, SetNwSrc, SetNwTos, SetTpDst, SetTpSrc, SetVlanId, SetVlanPcp, SwPath]\"}}},{\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:03\"},\"properties\":{\"tables\":{\"value\":-1},\"forwarding\":{\"value\":0},\"timeStamp\":{\"value\":1388174650225,\"name\":\"connectedSince\"},\"buffers\":{\"value\":256},\"description\":{\"value\":\"None\"},\"capabilities\":{\"value\":199},\"macAddress\":{\"value\":\"00:00:00:00:00:03\"},\"supportedFlowActions\":{\"value\":\"[Controller, Drop, Enqueue, HwPath, Output, PopVlan, SetDlDst, SetDlSrc, SetNwDst, SetNwSrc, SetNwTos, SetTpDst, SetTpSrc, SetVlanId, SetVlanPcp, SwPath]\"}}}]}");
+      return response_;
+    } else if (ip_address_.compare(SWITCH_RESP_UPDATE) == 0) {
+      response_->code = 200;
+      response_->write_data->memory = const_cast<char *>("{\"nodeProperties\":[{\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:02\"},\"properties\":{\"tables\":{\"value\":-1},\"forwarding\":{\"value\":0},\"timeStamp\":{\"value\":1388174650189,\"name\":\"connectedSince\"},\"buffers\":{\"value\":256},\"description\":{\"value\":\"ONE\"},\"capabilities\":{\"value\":199},\"macAddress\":{\"value\":\"00:00:00:00:00:02\"},\"supportedFlowActions\":{\"value\":\"[Controller, Drop, Enqueue, HwPath, Output, PopVlan, SetDlDst,SetDlSrc, SetNwDst, SetNwSrc, SetNwTos, SetTpDst, SetTpSrc, SetVlanId, SetVlanPcp, SwPath]\"}}},{\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:04\"},\"properties\":{\"tables\":{\"value\":-1},\"forwarding\":{\"value\":0},\"timeStamp\":{\"value\":1388174650225,\"name\":\"connectedSince\"},\"buffers\":{\"value\":256},\"description\":{\"value\":\"None\"},\"capabilities\":{\"value\":199},\"macAddress\":{\"value\":\"00:00:00:00:00:03\"},\"supportedFlowActions\":{\"value\":\"[Controller, Drop, Enqueue, HwPath, Output, PopVlan, SetDlDst, SetDlSrc, SetNwDst, SetNwSrc, SetNwTos, SetTpDst, SetTpSrc, SetVlanId, SetVlanPcp, SwPath]\"}}}]}");
+     return response_;
+    }  else if (ip_address_.compare(SWITCH_RESP_DELETE) == 0) {
+      response_->code = 200;
+      response_->write_data->memory = const_cast<char *>("{\"nodeProperties\":[{\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:02\"},\"properties\":{\"tables\":{\"value\":-1},\"forwarding\":{\"value\":0},\"timeStamp\":{\"value\":1388174650189,\"name\":\"connectedSince\"},\"buffers\":{\"value\":256},\"description\":{\"value\":\"ONE\"},\"capabilities\":{\"value\":199},\"macAddress\":{\"value\":\"00:00:00:00:00:02\"},\"supportedFlowActions\":{\"value\":\"[Controller, Drop, Enqueue,HwPath, Output, PopVlan, SetDlDst,SetDlSrc, SetNwDst, SetNwSrc, SetNwTos, SetTpDst, SetTpSrc, SetVlanId, SetVlanPcp, SwPath]\"}}}]}");
+      return response_;
+    } else if(ip_address_.compare(SWITCH_RESP_ONE) == 0) {
+      response_->code = 200;
+      response_->write_data->memory = const_cast<char *>("{\"nodeProperties\":[{\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:01\"},\"properties\":{\"tables\":{\"value\":-1},\"forwarding\":{\"value\":0},\"timeStamp\":{\"value\":1388174650189,\"name\":\"connectedSince\"},\"buffers\":{\"value\":256},\"description\":{\"value\":\"ONE\"},\"capabilities\":{\"value\":199},\"macAddress\":{\"value\":\"00:00:00:00:00:02\"},\"supportedFlowActions\":{\"value\":\"[Controller, Drop, Enqueue,HwPath, Output, PopVlan, SetDlDst,SetDlSrc, SetNwDst, SetNwSrc, SetNwTos, SetTpDst, SetTpSrc, SetVlanId, SetVlanPcp, SwPath]\"}}}]}");
+      return response_;
+    } else if(ip_address_.compare(PORT_RESP_ONE) == 0) {
+      response_->code = 200;
+      response_->write_data->memory = const_cast<char *>("{\"nodeConnectorProperties\":[{\"nodeconnector\":{\"type\":\"SW\",\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:01\"},\"id\":\"0\"},\"properties\":{\"name\":{\"value\":\"s2\"},\"state\":{\"value\":0},\"config\":{\"value\":0}}},{\"nodeconnector\":{\"type\":\"OF\",\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:01\"},\"id\":\"1\"},\"properties\":{\"name\":{\"value\":\"s2-eth1\"},\"state\":{\"value\":1},\"config\":{\"value\":1},\"bandwidth\":{\"value\":10000000000}}}]}");
+      return response_;
+    } else if(ip_address_.compare(PORT_RESP_TWO) == 0) {
+      response_->code = 200;
+      response_->write_data->memory = const_cast<char *>("{\"nodeConnectorProperties\":[{\"nodeconnector\":{\"type\":\"SW\",\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:01\"},\"id\":\"0\"},\"properties\":{\"name\":{\"value\":\"s2\"},\"state\":{\"value\":0},\"config\":{\"value\":0}}},{\"nodeconnector\":{\"type\":\"OF\",\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:01\"},\"id\":\"1\"},\"properties\":{\"name\":{\"value\":\"s1-eth2\"},\"state\":{\"value\":1},\"config\":{\"value\":1},\"bandwidth\":{\"value\":10000000000}}},{\"nodeconnector\":{\"type\":\"OF\",\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:01\"},\"id\":\"1\"},\"properties\":{\"name\":{\"value\":\"s1-eth3\"},\"state\":{\"value\":1},\"config\":{\"value\":1},\"bandwidth\":{\"value\":10000000000}}}]}");
+      return response_;
+    }
+    else if(ip_address_.compare(SWITCH_RESP_EMPTY) == 0) {
+      response_->code = 200;
+      response_->write_data->memory = const_cast<char *>("{\"nodeProperties\":[]}");
+      return response_;
+    }
+    else if(ip_address_.compare(PORT_RESP) == 0) {
+      response_->code = 200;
+      response_->write_data->memory = const_cast<char *>("{\"nodeConnectorProperties\":[{\"nodeconnector\":{\"type\":\"SW\",\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:02\"},\"id\":\"0\"},\"properties\":{\"name\":{\"value\":\"s2\"},\"state\":{\"value\":0},\"config\":{\"value\":0}}},{\"nodeconnector\":{\"type\":\"OF\",\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:02\"},\"id\":\"1\"},\"properties\":{\"name\":{\"value\":\"s2-eth1\"},\"state\":{\"value\":1},\"config\":{\"value\":1},\"bandwidth\":{\"value\":10000000000}}},{\"nodeconnector\":{\"type\":\"OF\",\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:02\"},\"id\":\"3\"},\"properties\":{\"name\":{\"value\":\"s2-eth3\"},\"state\":{\"value\":1},\"config\":{\"value\":1},\"bandwidth\":{\"value\":10000000000}}},{\"nodeconnector\":{\"type\":\"OF\",\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:02\"},\"id\":\"2\"},\"properties\":{\"name\":{\"value\":\"s2-eth2\"},\"state\":{\"value\":1},\"config\":{\"value\":1},\"bandwidth\":{\"value\":10000000000}}}]}");
+      return response_;
+    } else if(ip_address_.compare(PORT_RESP_EMPTY) == 0) {
+      response_->code = 200;
+      response_->write_data->memory = const_cast<char *>("{\"nodeConnectorProperties\":[]}");
+      return response_;
+    } else if (ip_address_.compare(PORT_RESP_UPDATE) == 0) {
+      response_->code = 200;
+      response_->write_data->memory = const_cast<char *>("{\"nodeConnectorProperties\":[{\"nodeconnector\":{\"type\":\"SW\",\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:02\"},\"id\":\"0\"},\"properties\":{\"name\":{\"value\":\"s2\"},\"state\":{\"value\":0},\"config\":{\"value\":0}}},{\"nodeconnector\":{\"type\":\"OF\",\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:02\"},\"id\":\"1\"},\"properties\":{\"name\":{\"value\":\"s2-eth1\"},\"state\":{\"value\":0},\"config\":{\"value\":1},\"bandwidth\":{\"value\":10000000000}}},{\"nodeconnector\":{\"type\":\"OF\",\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:02\"},\"id\":\"3\"},\"properties\":{\"name\":{\"value\":\"s2-eth3\"},\"state\":{\"value\":1},\"config\":{\"value\":0},\"bandwidth\":{\"value\":10000000000}}},{\"nodeconnector\":{\"type\":\"OF\",\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:02\"},\"id\":\"2\"},\"properties\":{\"name\":{\"value\":\"s2-eth4\"},\"state\":{\"value\":0},\"config\":{\"value\":0},\"bandwidth\":{\"value\":10000000000}}}]}");
+     return response_;
+    } else if (ip_address_.compare(PORT_RESP_DELETE) == 0) {
+      response_->code = 200;
+      response_->write_data->memory = const_cast<char *>("{\"nodeConnectorProperties\":[{\"nodeconnector\":{\"type\":\"SW\",\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:02\"},\"id\":\"0\"},\"properties\":{\"name\":{\"value\":\"s2\"},\"state\":{\"value\":0},\"config\":{\"value\":0}}},{\"nodeconnector\":{\"type\":\"OF\",\"node\":{\"type\":\"OF\",\"id\":\"00:00:00:00:00:00:00:02\"},\"id\":\"1\"},\"properties\":{\"name\":{\"value\":\"s2-eth1\"},\"state\":{\"value\":1},\"config\":{\"value\":1},\"bandwidth\":{\"value\":10000000000}}}]}");
       return response_;
     }
 

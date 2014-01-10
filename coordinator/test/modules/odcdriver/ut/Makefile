@@ -54,10 +54,13 @@ ODCDRIVER_SOURCES += odc_vbr.cc
 ODCDRIVER_SOURCES += odc_vtn.cc
 ODCDRIVER_SOURCES += odc_vbrif.cc
 ODCDRIVER_SOURCES += odc_vbr_vlanmap.cc
+ODCDRIVER_SOURCES += odc_switch.cc
+ODCDRIVER_SOURCES += odc_port.cc
 
 VTNCACHEUTIL_SOURCES = keytree.cc
 VTNCACHEUTIL_SOURCES += confignode.cc
 VTNDRVINTF_STUB_SOURCES += controller_fw.cc
+VTNDRVINTF_STUB_SOURCES += vtn_drv_module.cc
 
 TCLIB_SOURCES = tclib_module.cc
 MISC_SOURCES  = ipc_client.cc ipc_server.cc module.cc
@@ -68,6 +71,8 @@ UT_SOURCES  += odc_vtn_ut.cc
 UT_SOURCES  += odc_mod_ut.cc
 UT_SOURCES  += odc_controller_ut.cc
 UT_SOURCES  += odc_vbr_vlanmap_ut.cc
+UT_SOURCES  += odc_switch_ut.cc
+UT_SOURCES  += odc_port_ut.cc
 
 CXX_SOURCES += $(UT_SOURCES)
 CXX_SOURCES += $(ODCDRIVER_SOURCES) $(VTNCACHEUTIL_SOURCES) $(TCLIB_SOURCES) $(VTNDRVINTF_STUB_SOURCES)
@@ -78,9 +83,9 @@ EXTRA_CXXFLAGS  += -Dprivate=public -Dprotected=public
 
 UNC_LIBS = libpfc_util
 
-EXTRA_CPPFLAGS		+= $(JSON_C_CPPFLAGS)
-EXTRA_LIBDIRS		+= $(JSON_C_LIBDIRS)
-EXTRA_LDLIBS		+= -lgcov $(JSON_C_LDFLAGS)
-EXTRA_RUNTIME_DIR	+= $(JSON_C_RUNPATH)
+EXTRA_CPPFLAGS    += $(JSON_C_CPPFLAGS)
+EXTRA_LIBDIRS     += $(JSON_C_LIBDIRS)
+EXTRA_LDLIBS      += -lgcov $(JSON_C_LDFLAGS)
+EXTRA_RUNTIME_DIR += $(JSON_C_RUNPATH)
 
 include ../../rules.mk

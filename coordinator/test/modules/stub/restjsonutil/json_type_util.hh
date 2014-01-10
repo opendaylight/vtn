@@ -45,6 +45,16 @@ class JsonTypeUtil {
   }
 
   /**
+   * @brief               - parametrised constructor takes arg as unsigned uint
+   *                        and  creates json object of type unsigned int
+   * @param[in] uintdata  - unsigned integer value
+   */
+  explicit JsonTypeUtil(uint uintdata) {
+    ODC_FUNC_TRACE;
+    jobj_ = json_object_new_int(uintdata);
+  }
+
+  /**
    * @brief               - Parametrised constructor takes arg as json object
    *                      - Creates json object of type json object
    * @param[in] jsondata  - json object
@@ -89,6 +99,31 @@ class JsonTypeUtil {
   static void get_value(json_object* jobjval, json_object*& jobjgetval) {
     ODC_FUNC_TRACE;
     jobjgetval = jobjval;
+  }
+
+  /**
+   * @brief                  - Function overloading getValue - returns the
+   *                           value of type unsigned int
+   * @param[in] jobjval      - json object from which the value to be retrieved
+   * @param[out] val         - the value stored in this unsigned int reference
+   * return                  - None
+   */
+  static void get_value(json_object* jobjval, uint &val) {
+    ODC_FUNC_TRACE;
+    val = json_object_get_int(jobjval);
+  }
+
+  /**
+   * @brief                   - Function overloading getValue - returns the
+   *                            value of type unsigned long long
+   * @param[in] jobjval       - json obj from which the value to be retrive
+   * @param[out] val          - the value stored in this json_object reference
+   * return                   - None
+   */
+
+  static void get_value(json_object* jobjval, unsigned long long& val) {
+    ODC_FUNC_TRACE;
+    val = json_object_get_int64(jobjval);
   }
 
   /**

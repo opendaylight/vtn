@@ -19,11 +19,24 @@
 #include <driver/driver_command.hh>
 #include <vtn_drv_transaction_handle.hh>
 #include <driver/driver_interface.hh>
-#include <request_template.hh>
+#include <string>
 #include <map>
 
 namespace unc {
 namespace driver {
+
+/*
+ *  The IPC event that the IPC server transmitted is received.
+ */
+enum {
+  VAL_DOMAIN_STRUCT = 0,
+  VAL_DOMAIN_EVENT_ATTR1 = 0,
+  VAL_DOMAIN_EVENT_ATTR2,
+  VAL_DOMAIN_EVENT_ATTR3,
+  VAL_DOMAIN_EVENT_ATTR4,
+  VAL_DOMAIN_EVENT_ATTR5
+};
+
 
 class VtnDrvIntf :public pfc::core::Module {
  public:
@@ -52,6 +65,17 @@ class VtnDrvIntf :public pfc::core::Module {
    * @return : PFC_TRUE/PFC_FALSE
    **/
   pfc_bool_t fini(void);
+  /**
+   * @brief     - Read configuration file of vtndrvintf
+   * @param[in] - None
+   * @return    - None
+   */
+  void read_conf_file();
+
+  //  structure to store configuration file parsed values
+  typedef struct {
+    uint32_t time_interval;
+  }conf_info;
 
   /**
    * @brief     : Used register the driver handler with respect to the
@@ -95,7 +119,53 @@ class VtnDrvIntf :public pfc::core::Module {
     ctrl_inst_ =  ctrl_inst;
   }
 
-  // used for Controller ping
+  /**
+   * @brief     : Method to post domain create events to UPPL
+   * @param[in] : ctr_name, domain_name
+   * @retval    : None
+   */
+  void domain_event(std::string ctr_name,
+                                std::string doamin_name);
+
+  /**
+   * @brief     : Method to post logical port create/delete  events to UPPL
+   * @param[in] : oper_type, key_logical_port_t, val_logical_port_st
+   * @retval    : None
+   */
+  void logicalport_event(oper_type operation, key_logical_port_t key_struct,
+                         val_logical_port_st val_struct);
+  /**
+   * @brief     : Method to post port create/delete events to UPPL
+   * @param[in] : oper_type, key_port_t, val_port_st
+   * @retval    : None
+   */
+  void port_event(oper_type operation, key_port_t
+             key_struct, val_port_st val_struct);
+  /**
+   * @brief     : Method to post port update events to UPPL
+   * @param[in] : oper_type, key_port_t, val_port_st, val_port_st
+   * @retval    : None
+   */
+  void port_event(oper_type operation, key_port_t
+             key_struct, val_port_st new_val_struct,
+             val_port_st old_val_struct);
+  /**
+   * @brief     : Method to post switch create/delete events to UPPL
+   * @param[in] : oper_type, key_switch, val_switch_st
+   * @retval    : None
+   */
+  void switch_event(oper_type operation, key_switch
+               key_struct, val_switch_st val_struct);
+  /**
+   * @brief     : Method to post switch update events to UPPL
+   * @param[in] : oper_type, key_switch, val_switch_st, val_switch_st
+   * @retval    : None
+   */
+  void switch_event(oper_type operation, key_switch
+               key_struct, val_switch_st new_val_struct,
+               val_switch_st old_val_struct);
+
+    // used for Controller ping
   pfc::core::TaskQueue* taskq_;
 
  private:
@@ -104,6 +174,10 @@ class VtnDrvIntf :public pfc::core::Module {
 
   // To store ControllerFramework instance
   ControllerFramework* ctrl_inst_;
+
+  conf_info conf_parser_;  //  conf file information
+
+  pfc_bool_t Domain_event_;
 };
 }  // namespace driver
 }  // namespace unc

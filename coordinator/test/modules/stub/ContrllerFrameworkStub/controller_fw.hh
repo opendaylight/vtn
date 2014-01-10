@@ -11,6 +11,7 @@
 #define __CONTROLLER_STUB_HH__
 
 #include <driver/driver_interface.hh>
+#include <driver/controller_interface.hh>
 #include <string>
 
 namespace unc {
