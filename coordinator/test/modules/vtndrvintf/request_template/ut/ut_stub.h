@@ -25,6 +25,7 @@
 #include "stub/tclib_module/tclib_struct_defs.hh"
 #include "stub/tclib_module/tclib_defs.hh"
 #include "stub/ContrllerFrameworkStub/controller_fw.hh"
+#include "stub/ContrllerFrameworkStub/controller_utils.hh"
 #include "stub/ContrllerFrameworkStub/driver/driver_interface.hh"
 #include "stub/ContrllerFrameworkStub/handler.hh"
 #include "stub/ContrllerFrameworkStub/kt_handler.hh"

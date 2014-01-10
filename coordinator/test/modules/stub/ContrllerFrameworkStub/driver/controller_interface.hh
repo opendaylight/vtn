@@ -13,6 +13,7 @@
 #include <unc/keytype.h>
 #include <keytree.hh>
 #include <string>
+//#include <controller_utils.hh>
 
 namespace unc {
 namespace driver {
@@ -24,7 +25,8 @@ typedef enum {
 
 class controller {
  public:
-  controller():controller_cache(NULL) {}
+  controller():controller_cache(NULL),
+  physical_port_cache(NULL){}
   static controller* create_controll();
   static void set_controller_status(uint32_t ctr_st);
   virtual ~controller() {
@@ -98,12 +100,18 @@ class controller {
   bool  ping_controller() {
     return true;
   }
+  pfc_bool_t get_physical_port_details(unc::driver::controller*) {
+    return true;
+  }
+
   bool reset_connect() {
     return 0;
   }
   unc::vtndrvcache::KeyTree *controller_cache;
+  unc::vtndrvcache::KeyTree *physical_port_cache;
   static controller * controller_ptr;
   static uint32_t set_status;
+  pfc_bool_t audit_result_;
 };
 }  // namespace driver
 }  // namespace unc

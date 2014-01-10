@@ -14,6 +14,7 @@
 #include <pfcxx/timer.hh>
 #include <pfcxx/synch.hh>
 #include <keytree.hh>
+#include <controller_utils.hh>
 #include <string>
 
 namespace unc {
@@ -30,7 +31,9 @@ class controller {
    * @brief - Constructor of controller class
    */
   controller() :controller_cache(NULL),
-                timed_(NULL), cond_var(PFC_FALSE),
+                physical_port_cache(NULL),
+                timed_(NULL), physical_timed_(NULL),
+                audit_result_(PFC_FALSE),
                 connection_status_(CONNECTION_DOWN) {}
   /**
    * @brief - Destructor of controller class
@@ -41,6 +44,14 @@ class controller {
       delete timed_;
       timed_ = NULL;
     }
+    if (physical_timed_ != NULL) {
+      delete physical_timed_;
+      physical_timed_ = NULL;
+    }
+  if (physical_port_cache != NULL) {
+         delete physical_port_cache;
+         physical_port_cache = NULL;
+       }
     pfc_log_trace("Exiting Virtual destructor of controller");
   }
 
@@ -116,13 +127,19 @@ class controller {
   unc::vtndrvcache::KeyTree *controller_cache;
 
   /**
+   * @brief  - Keytree pointer to access physical_port
+   */
+  unc::vtndrvcache::KeyTree *physical_port_cache;
+
+  /**
    * @brief  - Timer Instance
    */
   pfc::core::Timer* timed_;
-  // Condition variable
-  pfc::core::Condition rw_cond;
-  // Variable for condition to wait upon
-  pfc_bool_t cond_var;
+  pfc::core::Timer* physical_timed_;
+  controller_exclusion access_;
+
+  // flag to track the AUDIT result
+  pfc_bool_t audit_result_;
 
  private:
   ConnectionStatus connection_status_;
