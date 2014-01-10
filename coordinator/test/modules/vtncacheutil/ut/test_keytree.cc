@@ -1792,7 +1792,7 @@ TEST(compare_is_physical_node_found, switch_port_not_present_pass) {
           tmp_ptr->get_val_structure()->hardware));
   pfc_log_info("software= %s", reinterpret_cast<char*>(
           tmp_ptr->get_val_structure()->software));
-  pfc_log_info("alarms_status= %lu", tmp_ptr->get_val_structure()->
+  pfc_log_info("alarms_status= %" PFC_PFMT_u64, tmp_ptr->get_val_structure()->
                alarms_status);
   pfc_log_info("description= %s", reinterpret_cast<char*>(tmp_ptr->
                                  get_val_structure()->switch_val.description));
@@ -1807,7 +1807,7 @@ TEST(compare_is_physical_node_found, switch_port_not_present_pass) {
   delete new_compare_node;
   new_compare_node = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(check, true);
+  EXPECT_EQ(PFC_TRUE, check);
 }
 }  // namespace vtndrvcache
 }  // namespace unc
