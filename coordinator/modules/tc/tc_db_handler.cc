@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -409,8 +409,9 @@ TcOperRet TcDbHandler::GetConfTable(pfc_bool_t* auto_save) {
   SQLRETURN SQL_ret;
   HSTMT hstmt_get;
   std::string get_query;
-  SQLCHAR ret_data;
-  SQLINTEGER Db_err, query_length;
+  char ret_data[16];
+  SQLINTEGER query_length;
+  SQLLEN Db_err;
   TcOperRet retval = TCOPER_RET_SUCCESS;
   /*validate the row*/
   retval = IsRowExists(SAVE_CONF_TABLE, "auto_save");
@@ -425,9 +426,14 @@ TcOperRet TcDbHandler::GetConfTable(pfc_bool_t* auto_save) {
     pfc_log_error("Allocating statement handle failed: %d", SQL_ret);
     return TCOPER_RET_FAILURE;
   }
-  /*bind column to retrieve data*/
-  SQL_ret = SQLBindCol(hstmt_get, 1, SQL_C_CHAR, &ret_data, 5,
-             reinterpret_cast<SQLLEN*> (&Db_err));
+
+  /*
+   * Bind "auto_save" column to retrieve data
+   * Although PosqgreSQL ODBC driver can handle bool as SQL_C_BIT,
+   * we treat it as SQL_C_CHAR to keep compatibility with other DBMS.
+   */
+  SQL_ret = SQLBindCol(hstmt_get, 1, SQL_C_CHAR, ret_data, sizeof(ret_data),
+                       &Db_err);
   if ((SQL_ret != SQL_SUCCESS) && (SQL_ret != SQL_SUCCESS_WITH_INFO)) {
     GetErrorReason(SQL_ret, SQL_HANDLE_STMT, hstmt_get);
     return TCOPER_RET_FAILURE;
@@ -444,7 +450,10 @@ TcOperRet TcDbHandler::GetConfTable(pfc_bool_t* auto_save) {
   /*fetch data*/
   SQL_ret = SQLFetch(hstmt_get);
   if (SQL_ret == SQL_SUCCESS) {
-    if (ret_data == '0') {
+    // We expect false is converted into "0" or "false".
+    // NULL is treated as false.
+    if (Db_err == SQL_NULL_DATA || ret_data[0] == '0' ||
+        ret_data[0] == 'f' || ret_data[0] == 'F') {
       *auto_save = PFC_FALSE;
     } else {
       *auto_save = PFC_TRUE;
@@ -575,7 +584,8 @@ TcOperRet TcDbHandler::GetRecoveryTable(unc_keytype_datatype_t* db,
   HSTMT hstmt_get;
   std::string get_query;
   SQLINTEGER dbase, op;
-  SQLINTEGER Db_err[2], query_length;
+  SQLINTEGER query_length;
+  SQLLEN Db_err[2];
   TcOperRet retval = TCOPER_RET_SUCCESS;
   /*validate the row*/
   retval = IsRowExists(RECOVERY_TABLE, "database");
@@ -591,15 +601,13 @@ TcOperRet TcDbHandler::GetRecoveryTable(unc_keytype_datatype_t* db,
     return TCOPER_RET_FAILURE;
   }
   /*bind variables to fetch data from DB*/
-  SQL_ret = SQLBindCol(hstmt_get, 1, SQL_C_LONG, &dbase, 5,
-             reinterpret_cast<SQLLEN*> (&Db_err[0]));
+  SQL_ret = SQLBindCol(hstmt_get, 1, SQL_C_LONG, &dbase, 5, &Db_err[0]);
   if ((SQL_ret != SQL_SUCCESS) && (SQL_ret != SQL_SUCCESS_WITH_INFO)) {
     GetErrorReason(SQL_ret, SQL_HANDLE_STMT, hstmt_get);
     return TCOPER_RET_FAILURE;
   }
 
-  SQL_ret = SQLBindCol(hstmt_get, 2, SQL_C_LONG, &op, 5,
-             reinterpret_cast<SQLLEN*> (&Db_err[1]));
+  SQL_ret = SQLBindCol(hstmt_get, 2, SQL_C_LONG, &op, 5, &Db_err[1]);
   if ((SQL_ret != SQL_SUCCESS) && (SQL_ret != SQL_SUCCESS_WITH_INFO)) {
     GetErrorReason(SQL_ret, SQL_HANDLE_STMT, hstmt_get);
     return TCOPER_RET_FAILURE;
@@ -616,8 +624,8 @@ TcOperRet TcDbHandler::GetRecoveryTable(unc_keytype_datatype_t* db,
   /*fetch data*/
   SQL_ret = SQLFetch(hstmt_get);
   if (SQL_ret != SQL_NO_DATA) {
-    *db = (unc_keytype_datatype_t) dbase;
-    *oper = (TcServiceType) op;
+    *db = (unc_keytype_datatype_t)((Db_err[0] == SQL_NULL_DATA) ? 0 : dbase);
+    *oper = (TcServiceType)((Db_err[1] == SQL_NULL_DATA) ? 0 : op);
   }
   std::string op_string = ConvertOptoString(*oper);
   std::string dbase_string = ConvertDbasetoString(*db);
