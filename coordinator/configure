@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #
-# Copyright (c) 2012-2013 NEC Corporation
+# Copyright (c) 2012-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -139,6 +139,7 @@ sub check_package($\%$%);
 sub check_perm($\%);
 sub check_perm_impl($\%\%);
 sub check_webapi_env($\%\%);
+sub check_postgresql(\%);
 sub check_jar($\%\%$);
 sub check_jarfile($$$);
 sub check_tomcat_libdir($\%\%);
@@ -1709,6 +1710,13 @@ MAIN:
 	$SIG{INT} = $intr;
 	$SIG{TERM} = $intr;
 
+	# Update umask if it masks permission for current user.
+	my $um = umask;
+	if (($um & 0700) != 0) {
+		$um &= ~0700;
+		umask($um);
+	}
+
 	# Preserve arguments.
 	my (@argv_saved) = (@ARGV);
 
@@ -1810,6 +1818,9 @@ MAIN:
 	# Check build environment for WebAPI.
 	my $wenv = check_webapi_env($conf, %vars, %$jenv);
 
+	# Determine standard installation directory of PostgreSQL.
+	check_postgresql(%vars);
+
 	prepare($conf);
 	create_config_h($conf, %$version, @hdefs);
 	create_config_mk($conf, %vars, %$version);
@@ -1825,18 +1836,21 @@ MAIN:
 
 sub fatal(@)
 {
+	STDOUT->flush();
 	print STDERR "\n*** FATAL ERROR: ", @_, "\n";
 	exit 2;
 }
 
 sub error(@)
 {
+	STDOUT->flush();
 	print STDERR "\n*** ERROR: ", @_, "\n";
 	exit 1;
 }
 
 sub warning(@)
 {
+	STDOUT->flush();
 	if (ref($_[0]) eq 'ARRAY') {
 		print STDERR "\n";
 		foreach my $l (@{$_[0]}) {
@@ -2096,8 +2110,8 @@ sub compile_and_exec($%)
 
 	my $output = 'conftest';
 	my %opts;
-	my (@args) = ($cc);
-	foreach my $a ($cppflags, $cflags, $ldflags, $libs) {
+	my (@args) = ($cc, '-o', $output);
+	foreach my $a ($cppflags, $cflags, $src, $ldflags, $libs) {
 		if ($a) {
 			if (ref($a) eq 'ARRAY') {
 				push(@args, @$a);
@@ -2107,7 +2121,6 @@ sub compile_and_exec($%)
 			}
 		}
 	}
-	push(@args, '-o', $output, $src);
 
 	my $ccerr = $args{CC_ERROR};
 	if ($ccerr) {
@@ -2380,42 +2393,78 @@ sub check_odbc($\%\%)
 
 	checking('for odbc_config');
 	my $odbc_config = get_command($conf, 'odbc-config', 'ODBC_CONFIG');
-	unless (defined($odbc_config)) {
-		$odbc_config = search_command('odbc_config');
-		unless (defined($odbc_config)) {
-			print "no\n";
-			error("odbc_config was not found.");
+	$odbc_config = search_command('odbc_config')
+		unless (defined($odbc_config));
+	my ($cppflags, @defines, @incflags, $ldflags, @libpath, @runpath);
+	if (defined($odbc_config)) {
+		print $odbc_config, "\n";
+
+		checking('for ODBC version');
+		my (%opts) = (pattern => qr,^\d+$,);
+		my $ver = read_command_oneline(%opts, $odbc_config,
+					       '--odbcversion');
+
+		print $ver, "\n";
+		error("ODBC version ", ODBC_VERSION,
+		      " is required, but found version ", $ver)
+			if ($ver < ODBC_VERSION);
+
+		checking('for CPPFLAGS required by ODBC');
+		$opts{pattern} = qr,.*,;
+		$cppflags = read_command_oneline(%opts, $odbc_config,
+						 '--cflags');
+		$cppflags = fixup_cppflags($cppflags);
+
+		# Split "-D" options from CPPFLAGS.
+		if (defined($cppflags)) {
+			my $dpat = qr,^-D,;
+			foreach my $opt (@$cppflags) {
+				if ($opt =~ $dpat) {
+					push(@defines, $opt);
+				}
+				else {
+					push(@incflags, $opt);
+				}
+			}
 		}
+
+		checking('for LDFLAGS required by ODBC');
+		$ldflags = read_command_oneline(%opts, $odbc_config, '--libs');
+		$ldflags = fixup_ldflags($ldflags, @libpath, @runpath);
 	}
+	else {
+		print "no\n";
+		$ldflags = ['-lodbc'];
 
-	print $odbc_config, "\n";
+		my $ver = ODBC_VERSION;
+		my $code = <<OUT;
+#include <stdio.h>
+#include <odbcinst.h>
 
-	checking('for ODBC version');
-	my (%opts) = (pattern => qr,^\d+$,);
-	my $ver = read_command_oneline(%opts, $odbc_config, '--odbcversion');
+int
+main(int argc, char **argv)
+{
+#ifdef	ODBCVER
+	int	ver = ODBCVER >> 8;
 
-	print $ver, "\n";
-	error("ODBC version ", ODBC_VERSION,
-	      " is required, but found version ", $ver)
-		if ($ver < ODBC_VERSION);
+	if (ver < $ver) {
+		printf("ERROR:ODBC version %d is required, but found "
+		       "version %d.\\n", $ver, ver);
+	}
+	else {
+		printf("OK:%d\\n", ver);
+	}
+#else	/* !ODBCVER */
+	puts("ERROR:ODBCVER is not defined.");
+#endif	/* ODBCVER */
 
-	checking('for CPPFLAGS required by ODBC');
-	$opts{pattern} = qr,.*,;
-	my $cppflags = read_command_oneline(%opts, $odbc_config, '--cflags');
-	$cppflags = fixup_cppflags($cppflags);
+	return 0;
+}
+OUT
 
-	# Split "-D" options from CPPFLAGS.
-	my (@defines, @incflags);
-	if (defined($cppflags)) {
-		my $dpat = qr,^-D,;
-		foreach my $opt (@$cppflags) {
-			if ($opt =~ $dpat) {
-				push(@defines, $opt);
-			}
-			else {
-				push(@incflags, $opt);
-			}
-		}
+		my (%t) = (CHECK => 'for ODBC version', CODE => $code);
+		my (@tests) = (\%t);
+		check_config_tests(%$vars, @tests);
 	}
 
 	my $code = <<'OUT';
@@ -2460,11 +2509,6 @@ OUT
 			: 'none required';
 		print "   ++ ODBC_CPPFLAGS  = ", $msg, "\n";
 	}
-
-	checking('for LDFLAGS required by ODBC');
-	my $ldflags = read_command_oneline(%opts, $odbc_config, '--libs');
-	my (@libpath, @runpath);
-	$ldflags = fixup_ldflags($ldflags, @libpath, @runpath);
 
 	$code = <<'OUT';
 #include <stdio.h>
@@ -2622,7 +2666,9 @@ sub check_package($\%$%)
 
 	checking("for CFLAGS required by $desc");
 	my $pkg_config = $COMMAND_SPEC{'pkg-config'}->{PATH};
-	my %opts;
+	my $pcdir = dirname($pcfile);
+	my (%env) = (PKG_CONFIG_PATH => $pcdir);
+	my (%opts) = (ENV => \%env);
 	$opts{optional} = 1 if ($optional);
 	my $cflags = read_command_oneline(%opts, $pkg_config, '--cflags',
 					  $pkgname);
@@ -2746,6 +2792,26 @@ sub check_webapi_env($\%\%)
 	$vars->{JAVA_EXT_RULES_MK_VAR()} = $objdir . '/' . JAVA_EXT_RULES_MK;
 
 	return \%wenv;
+}
+
+sub check_postgresql(\%)
+{
+	my ($vars) = @_;
+
+	# Remarks: POSTGRES_ODBC_LIBDIR must end with '/'.
+	my $dist = $vars->{LINUX_DIST};
+	my ($pghome, $odbc_libdir);
+	if ($dist =~ /^(ubuntu|debian)/i) {
+		# No need to define ODBC library directory.
+		$pghome = '/usr/lib/postgresql/9.1';
+	}
+	else {
+		$pghome = '/usr/pgsql-9.1';
+		$odbc_libdir = '/usr/pgsql-9.1/lib/';
+	}
+
+	$vars->{POSTGRES_HOME} = $pghome;
+	$vars->{POSTGRES_ODBC_LIBDIR} = $odbc_libdir if ($odbc_libdir);
 }
 
 sub check_jar($\%\%$)
@@ -3355,9 +3421,19 @@ sub search_pkgconfig(\%$)
 
 	unless (@PKG_CONFIG_LIBDIR) {
 		# Initialize pkg-config library path.
-		my $libdir = ($vars->{UNC_LP64}) ? '/usr/lib64' : '/usr/lib';
 		my $env = $ENV{PKG_CONFIG_PATH};
 		(@PKG_CONFIG_LIBDIR) = split(/:/, $env) if ($env);
+
+		my $multiarch = $vars->{MULTIARCH};
+		my $libdir = '/usr/lib';
+		if ($multiarch) {
+			push(@PKG_CONFIG_LIBDIR,
+			     '/usr/lib/' . $multiarch . '/pkgconfig');
+		}
+		elsif ($vars->{UNC_LP64}) {
+			$libdir = '/usr/lib64';
+		}
+
 		push(@PKG_CONFIG_LIBDIR, $libdir . '/pkgconfig',
 		     '/usr/share/pkgconfig');
 	}

@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #
-# Copyright (c) 2010-2013 NEC Corporation
+# Copyright (c) 2010-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -15,15 +15,15 @@
 
 use strict;
 use vars qw(%COMMAND_SPEC %OSTYPE %OS_CONF %GCC_OSTYPE %ARCH %GCC_ARCH @PATH
-	    $C_OPT $CXX_OPT $C_DEBUG $CXX_DEBUG $DEBUG_BUILD
+	    $GCC_MULTIARCH $C_OPT $CXX_OPT $C_DEBUG $CXX_DEBUG $DEBUG_BUILD
 	    $PFC_VERSION $PFC_VERSION_MAJOR $PFC_VERSION_MINOR
 	    $PFC_VERSION_REVISION $PFC_VERSION_PATCHLEVEL $PFC_BUILD_ID
 	    $PFC_VERSION_STRING %OSDEP @CC_WARN @CXX_WARN $CC_MODE $CXX_MODE
 	    %ARCH_CC_MODEFLAGS %ARCH_CXX_MODEFLAGS $SHELL_PATH $PATH_SCRIPT
-	    $JAVA_PATH %DEFAULT_OSARCH_LIBPATH @DEFAULT_LIBPATH @LIBDIR_NAMES
+	    %DEFAULT_OSARCH_LIBPATH @DEFAULT_LIBPATH @LIBDIR_NAMES
 	    $PFC_PRODUCT_NAME %MAKEVAR_RESV %LINUX_DIST $PFC_SCM_REVISION
 	    @OPENSSL_TESTS @CONFIG_TESTS @CFLAGS_TESTS %REQUIRED_CFLAGS
-	    @UNLINK_ON_ERROR $YEAR_RANGE $JRE_HOME @JAVA_LIBRARY_PATH);
+	    @UNLINK_ON_ERROR $YEAR_RANGE @JAVA_LIBRARY_PATH);
 
 use Cwd qw(abs_path);
 use DirHandle;
@@ -73,7 +73,7 @@ int
 main(int argc, char **argv)
 {
 #ifdef	OPENSSL_VERSION_NUMBER
-	if (OPENSSL_VERSION_NUMBER < ${ver}UL) {
+	if ((unsigned long)OPENSSL_VERSION_NUMBER < ${ver}UL) {
 		printf("ERROR:Insecure OpenSSL version: %s\\n",
 		       OPENSSL_VERSION_TEXT);
 		return 0;
@@ -83,7 +83,7 @@ main(int argc, char **argv)
 		return 0;
 	}
 
-	printf("OK:0x%08x (%s)\\n", OPENSSL_VERSION_NUMBER,
+	printf("OK:0x%08lx (%s)\\n", (unsigned long)OPENSSL_VERSION_NUMBER,
 	       OPENSSL_VERSION_TEXT);
 
 	return 0;
@@ -2242,6 +2242,7 @@ use constant	DEFAULT_INCDIR		=> '/usr/include';
 use constant	TOOLBIN			=> TOOLS_DIR . '/bin';
 use constant	DEFS_MK			=> BUILD_DIR . '/defs.mk';
 use constant	CONFIG_STATUS		=> 'config.status';
+use constant	STUB_GTEST_CONFIG	=> TOOLS_DIR . '/src/gtest-config';
 
 use constant	VALUE_NONE		=> 'none';
 
@@ -2284,14 +2285,12 @@ $C_DEBUG = '-g';
 $CXX_DEBUG = '-g';
 $DEBUG_BUILD = 1;
 $SHELL_PATH = '/bin/sh';
-$JAVA_PATH = '/usr/bin/java';
-$JRE_HOME = '/usr/lib/jvm/jre-openjdk';
 $PATH_SCRIPT = '/bin:/usr/bin';
 
 # Compiler option for strict checking.
 use constant	GCC_WARN_OPTS		=>
 	qw(-Wall -Wextra -Wno-clobbered -Wno-unused-parameter
-           -Wno-unused-local-typedefs);
+           -Wno-unused-local-typedefs -Wno-unused-result -Wno-format-security);
 
 use constant	GCC_NO_STRICT_ALIAS	=> '-fno-strict-aliasing';
 
@@ -2372,12 +2371,8 @@ use constant	MODEL_ILP32	=> 'ILP32';
 				    ARG => ['--usage'],
 				    PATTERN => ['Usage: gtest-config'],
 				    DESC => 'gtest-config',
-				    IGNORE_ERROR => sub {
-					    warning("Unit test may be ",
-						    "disabled.");
-				    },
-				    EXPORT => 1,
-				    VERIFY => \&check_gtest},
+				    IGNORE_ERROR => 1,
+				    EXPORT => 1},
 		 ar		=> {EXPORT => 1},
 		 cat		=> {EXPORT => 1},
 		 mkdir		=> {EXPORT => 1},
@@ -2412,7 +2407,8 @@ sub check_srcroot();
 sub check_make($$);
 sub check_gcc($$);
 sub check_gxx($$);
-sub check_gtest($$);
+sub check_gtest($);
+sub check_gtest_config($);
 sub compile_and_exec($%);
 sub check_perl($);
 sub check_boost($);
@@ -2423,6 +2419,7 @@ sub check_config_tests(\@$\%);
 sub format_boost_version($);
 sub check_java(\%$);
 sub get_java_home($);
+sub check_java_home($);
 sub check_java_version($$%);
 sub check_jarfile($$$$);
 sub check_junit(\%$);
@@ -2435,6 +2432,7 @@ sub check_library_impl($$\%);
 sub is_default_header_path($);
 sub is_default_library_path($);
 sub check_gcc_arch($@);
+sub check_gcc_multiarch($);
 sub check_gcc_option($$$$$);
 sub check_gcc_ld($);
 sub check_os_arch($$$$);
@@ -2444,6 +2442,7 @@ sub create_java_config_mk($\%);
 sub create_config_h($$\@);
 sub create_openssl_const_h($\%);
 sub create_config_status(\@\%);
+sub create_gtest_config();
 sub parse_config_status($);
 sub prepare(\%@);
 sub setup($);
@@ -2452,9 +2451,12 @@ sub cpp_feature_key($);
 sub make_feature_key($);
 sub feature_setup(\%\@$);
 sub check_linux($\%);
+sub check_linux_dist();
 sub fedora_version($);
 sub redhat_version($);
 sub suse_version($);
+sub read_command_output(\%@);
+sub read_command_oneline(\%@);
 
 # Configuration key for additional features.
 use constant	FEATURE_KEYS		=> qw(refptr-debug tidlog);
@@ -3628,16 +3630,6 @@ OUT
 		   "system.",
 		   arg => OptSpec::OPTARG_FILE, default => \$main::SHELL_PATH,
 		   check => 'checkTargetAbsPath'],
-		  [OPTTYPE_STRING, 'java-path',
-		   "Specify absolute path to java command on the target " .
-		   "system.",
-		   arg => OptSpec::OPTARG_FILE, default => \$main::JAVA_PATH,
-		   check => 'checkTargetAbsPath'],
-		  [OPTTYPE_STRING, 'jre-home',
-		   "Specify absolute path to JRE home directory on the " .
-		   "target system.",
-		   arg => OptSpec::OPTARG_FILE, default => \$main::JRE_HOME,
-		   check => 'checkTargetAbsPath'],
 		  [OPTTYPE_STRING, 'path',
 		   "Specify PATH environment variable for scripts.",
 		   arg => OptSpec::OPTARG_PATH, default => \$main::PATH_SCRIPT,
@@ -3932,6 +3924,13 @@ MAIN:
 	$SIG{INT} = $intr;
 	$SIG{TERM} = $intr;
 
+	# Update umask if it masks permission for current user.
+	my $um = umask;
+	if (($um & 0700) != 0) {
+		$um &= ~0700;
+		umask($um);
+	}
+
 	# Preserve arguments.
 	my (@argv_saved) = (@ARGV);
 
@@ -3992,7 +3991,8 @@ MAIN:
 	my $gcc = $COMMAND_SPEC{gcc}->{PATH};
 	my $gxx = $COMMAND_SPEC{gxx}->{PATH};
 
-	($os, $arch) = check_os_arch($os, $arch, $gcc, $gxx);
+	my ($multiarch);
+	($os, $arch, $multiarch) = check_os_arch($os, $arch, $gcc, $gxx);
 	my ($config_os, $config_arch) = ($os, $arch);
 
 	# Determine compiler options for strict source check.
@@ -4064,11 +4064,10 @@ MAIN:
 		      TOOLS_DIR		=> $root . '/' . TOOLS_DIR,
 		      TOOLBIN		=> $root . '/' . TOOLBIN,
 		      SHELL_PATH	=> $SHELL_PATH,
-		      JAVA_PATH		=> $JAVA_PATH,
-		      JRE_HOME		=> $JRE_HOME,
 		      PATH_SCRIPT	=> $PATH_SCRIPT,
 		      OSTYPE		=> $os,
-		      ARCH		=> $arch);
+		      ARCH		=> $arch,
+		      MULTIARCH		=> $multiarch);
 
 	$PFC_BUILD_ID = $conf->get('build-id');
 	if (length($PFC_BUILD_ID) != 0) {
@@ -4138,6 +4137,12 @@ MAIN:
 	check_cflags_tests();
 	check_config_tests(@hdefs, $os, %vars);
 
+	# Check for Google Test.
+	unless (check_gtest($conf)) {
+		warning("Unit test may be disabled");
+		delete($COMMAND_SPEC{gtest_config}->{PATH});
+	}
+
 	# Call OS specific configuration subroutine.
 	my $osconf = $OS_CONF{$os};
 	&$osconf($conf, \%vars) if ($osconf);
@@ -4181,6 +4186,7 @@ MAIN:
 	create_config_h($conf, $prefix, @hdefs);
 	create_openssl_const_h($conf, %$openssl_var);
 	create_java_config_mk($vars{JAVA_CONFIG_MK}, %$jenv) if ($jenv);
+	create_gtest_config();
 	create_config_status(@argv_saved, %vars);
 
 	my $make = $COMMAND_SPEC{make}->{PATH};
@@ -4191,18 +4197,21 @@ MAIN:
 
 sub fatal(@)
 {
+	STDOUT->flush();
 	print STDERR "\n*** FATAL ERROR: ", @_, "\n";
 	exit 2;
 }
 
 sub error(@)
 {
+	STDOUT->flush();
 	print STDERR "\n*** ERROR: ", @_, "\n";
 	exit 1;
 }
 
 sub warning(@)
 {
+	STDOUT->flush();
 	print STDERR "\n*** WARNING: ", @_, "\n\n";
 }
 
@@ -4793,9 +4802,118 @@ OUT
 	unlink($output);
 }
 
-sub check_gtest($$)
+sub check_gtest($)
 {
-	my ($gtconfig, $spec) = @_;
+	my ($conf) = @_;
+
+	my $gtspec = $COMMAND_SPEC{gtest_config};
+	my $gtconfig = $gtspec->{PATH};
+	my (@gtconfig_args, $stub);
+	if ($gtconfig) {
+		return undef unless (check_gtest_config($gtconfig));
+		(@gtconfig_args) = ($gtconfig);
+	}
+	else {
+		# Use gtest-config stub which assumes that the Google Test is
+		# installed in standard location.
+		(@gtconfig_args) = ('/bin/sh', STUB_GTEST_CONFIG);
+		$stub = $conf->get('objdir') . '/gtest-config';
+	}
+
+	checking("whether Google Test works");
+	my (%opts, $gtest_inc, $gtest_cxxflags, $gtest_libdir, $gtest_libs);
+	eval {
+
+		$gtest_inc = read_command_oneline(%opts, @gtconfig_args,
+						  '--includedir');
+		$gtest_cxxflags = read_command_oneline(%opts, @gtconfig_args,
+						       '--cxxflags');
+		$gtest_libdir = read_command_oneline(%opts, @gtconfig_args,
+						     '--libdir');
+		$gtest_libs = read_command_oneline(%opts, @gtconfig_args,
+						   '--libs');
+	};
+	if ($@) {
+		my $err = "$@";
+		chomp($err);
+		print "no ($err)\n";
+		my $out = $opts{ERR_OUTPUT};
+		print "\n", @$out, "\n" if ($out);
+		return undef;
+	}
+
+	# Construct compiler options.
+	my (@cppflags, @ldflags);
+	my $space = qr,\s+,;
+
+	foreach my $dir (split($space, $gtest_inc)) {
+		push(@cppflags, '-I' . $dir)
+			unless (is_default_header_path($dir));
+	}
+
+	foreach my $dir (split($space, $gtest_libdir)) {
+		unless (is_default_library_path($dir)) {
+			push(@ldflags, '-L' . $dir, '-Wl,-rpath,' . $dir);
+		}
+	}
+
+	my (@cxxflags) = (@$CXX_MODE, split($space, $gtest_cxxflags));
+	my (@libs) = (split($space, $gtest_libs), '-lgtest_main');
+
+	my $code = <<'OUT';
+#include <unistd.h>
+#include <gtest/gtest.h>
+
+TEST(foo, test1)
+{
+	ASSERT_NE(static_cast<pid_t>(-1), getpid());
+}
+
+TEST(foo, test2)
+{
+	EXPECT_NE(static_cast<gid_t>(-1), getgid());
+}
+OUT
+
+	my @errout;
+	my $gxx = $COMMAND_SPEC{gxx}->{PATH};
+	(%opts) = (CC => $gxx, LIBS => \@libs);
+	$opts{CFLAGS} = \@cxxflags if (@cxxflags);
+	$opts{CPPFLAGS} = \@cppflags if (@cppflags);
+	$opts{LDFLAGS} = \@ldflags if (@ldflags);
+	$opts{CC_ERROR} = \@errout;
+
+	my $out;
+	eval {
+		$out = compile_and_exec($code, %opts);
+	};
+	if ($@) {
+		print "no (compilation failed)\n";
+		print "\n", @errout, "\n" if (@errout);
+
+		return undef;
+	}
+
+	my $pattern = qr,\[\s*PASSED\s*\]\s*2\s+tests\.,;
+	foreach my $line (@$out) {
+		if ($line =~ $pattern) {
+			print "yes\n";
+			if ($stub) {
+				$gtspec->{STUB} = 1;
+				$gtspec->{PATH} = $stub;
+			}
+			return 1;
+		}
+	}
+
+	print "no (test did not work)\n";
+
+	return undef;
+}
+
+sub check_gtest_config($)
+{
+	my ($gtconfig) = (@_);
 
 	checking("for Google Test version");
 
@@ -4811,8 +4929,7 @@ sub check_gtest($$)
 	my $ret = exec_command(%opts, $gtconfig, '--version');
 	unless ($ret == 0 and defined($version)) {
 		print "unknown version\n";
-		warning("Unit test may be disabled.");
-		die;
+		return undef;
 	}
 	print $version, "\n";
 
@@ -4820,9 +4937,11 @@ sub check_gtest($$)
 	$ret = exec_command(%opts, $gtconfig,
 			    '--min-version=' . GTEST_VERSION);
 	unless ($ret == 0) {
-		warning("Google Test is too old. Unit test may be disabled.");
-		die;
+		warning("Google Test is too old.");
+		return undef;
 	}
+
+	return 1;
 }
 
 sub compile_and_exec($%)
@@ -4843,8 +4962,8 @@ sub compile_and_exec($%)
 
 	my $output = 'conftest';
 	my %opts;
-	my (@args) = ($cc);
-	foreach my $a ($cppflags, $cflags, $ldflags, $libs) {
+	my (@args) = ($cc, '-o', $output);
+	foreach my $a ($cppflags, $cflags, $src, $ldflags, $libs) {
 		if ($a) {
 			if (ref($a) eq 'ARRAY') {
 				push(@args, @$a);
@@ -4854,7 +4973,6 @@ sub compile_and_exec($%)
 			}
 		}
 	}
-	push(@args, '-o', $output, $src);
 
 	my $ccerr = $args{CC_ERROR};
 	if ($ccerr) {
@@ -4957,10 +5075,6 @@ sub check_boost($)
 	my $gxx = $COMMAND_SPEC{gxx}->{PATH};
 	my (%opts) = (CC => $gxx, CFLAGS => $CXX_MODE, PREFIX => \@pfx);
 
-	my ($libname, $libdir) = check_library('boost_thread-mt', %opts);
-	warning("Boost reentrant library is not found.") unless ($libname);
-	undef $libdir if (is_default_library_path($libdir));
-
 	my (@cppflags);
 	push(@cppflags, '-I' . $incdir) if ($incdir);
 
@@ -5009,9 +5123,7 @@ OUT
 		}
 	}
 
-	my (%vars) = (BOOST_INCDIR => $incdir, BOOST_LIBDIR => $libdir);
-	$vars{BOOST_CPPFLAGS} = '-I$(BOOST_INCDIR)' if ($incdir);
-	$vars{BOOST_LDFLAGS} = '-L$(BOOST_LIBDIR)' if ($libdir);
+	my (%vars) = (BOOST_INCDIR => $incdir);
 
 	return \%vars;
 }
@@ -5367,7 +5479,14 @@ sub check_java(\%$)
 		$jobjdir = $conf->get('objdir') . '/jobjs';
 	}
 
+	checking('for JDK home directory');
 	my $jhome = get_java_home($conf);
+	unless ($jhome) {
+		print "not found\n";
+		error("OpenJDK is not found. Use --with-java-home.");
+	}
+	print "$jhome\n";
+
 	my $jmode = ($vars->{PFC_LP64}) ? '-d64' : '-d32';
 	check_java_version($jhome, 'java', option => [$jmode]);
 	check_java_version($jhome, 'javac');
@@ -5425,19 +5544,61 @@ sub get_java_home($)
 {
 	my ($conf) = @_;
 
-	checking('for JDK home directory');
-
 	my $jhome = $conf->get('java-home');
-	unless ($jhome) {
-		$jhome = '/usr/lib/jvm/java-openjdk';
-		my $st = stat($jhome);
-		unless ($st and S_ISDIR($st->mode())) {
-			print "not found\n";
-			error("OpenJDK is not found. Use --with-java-home.");
+	return $jhome if ($jhome);
+
+	# Search for OpenJDK under /usr/lib/jvm.
+	my $jvmdir = '/usr/lib/jvm';
+	my ($cur_maj, $cur_min, $cur_rev);
+	my $pat = qr,^java-(\d+)\.(\d+)\.(\d+)-openjdk,;
+	my $dirp = DirHandle->new($jvmdir);
+	return undef unless ($dirp);
+
+	while (my $dp = $dirp->read()) {
+		next unless ($dp =~ $pat);
+		my ($maj, $min, $rev) = ($1, $2, $3);
+		next unless ($maj > JDK_VERSION_MAJOR or
+			     ($maj == JDK_VERSION_MAJOR and
+			      $min >= JDK_VERSION_MINOR));
+		my $path = $jvmdir . '/' . $dp;
+		next unless (check_java_home($path));
+
+		if (!defined($cur_maj) or $cur_maj < $maj or
+		    ($cur_maj == $maj and
+		     ($cur_min < $min or
+		      ($cur_min == $min and $cur_rev < $rev)))) {
+			$cur_maj = $maj;
+			$cur_min = $min;
+			$cur_rev = $rev;
+			$jhome = $path;
 		}
 	}
+	undef $dirp;
+	return $jhome if ($jhome);
 
-	print "$jhome\n";
+	# Try /usr/lib/jvm/java-openjdk.
+	return check_java_home($jvmdir . '/java-openjdk');
+}
+
+sub check_java_home($)
+{
+	my ($jhome) = @_;
+
+	my $st = stat($jhome);
+	return undef unless ($st and S_ISDIR($st->mode()));
+
+	# Ensure that both JRE and javac exist.
+	my $javac = $jhome . '/bin/javac';
+	$st = stat($javac);
+	return undef unless ($st and S_ISREG($st->mode()));
+
+	my $jre = $jhome . '/jre';
+	$st = stat($jre);
+	return undef unless ($st and S_ISDIR($st->mode()));
+
+	my $java = $jre . '/bin/java';
+	$st = stat($java);
+	return undef unless ($st and S_ISREG($st->mode()));
 
 	return $jhome;
 }
@@ -5854,6 +6015,37 @@ sub check_gcc_arch($@)
 	return ($os, $arch);
 }
 
+sub check_gcc_multiarch($)
+{
+	my ($gcc) = @_;
+
+	checking("for multiarch library directory");
+
+	my $multiarch;
+	my $filter = sub {
+		my ($rh) = @_;
+
+		while (<$rh>) {
+			unless ($multiarch) {
+				chomp;
+				$multiarch = $_;
+			}
+		}
+	};
+
+	my (%opts) = (FILTER => $filter, ERR2OUT => 1);
+	my $ret = exec_command(%opts, $gcc, @$CC_MODE, '-print-multiarch');
+	if ($ret == 0 and $multiarch) {
+		print $multiarch, "\n";
+	}
+	else {
+		undef $multiarch;
+		print "none\n";
+	}
+
+	return $multiarch;
+}
+
 sub check_gcc_option($$$$$)
 {
 	my ($gcc, $option, $mode, $mandatory, $warn) = @_;
@@ -5988,8 +6180,8 @@ sub check_os_arch($$$$)
 	}
 	else {
 		$arch = $arch_gcc;
-		$CC_MODE = $ARCH_CC_MODEFLAGS{$arch};
-		$CXX_MODE = $ARCH_CXX_MODEFLAGS{$arch};
+		$CC_MODE = $ARCH_CC_MODEFLAGS{$arch} || [];
+		$CXX_MODE = $ARCH_CXX_MODEFLAGS{$arch} || [];
 	}
 
 	foreach my $elem ([$gcc, $CC_MODE], [$gxx, $CXX_MODE]) {
@@ -5997,18 +6189,33 @@ sub check_os_arch($$$$)
 		check_gcc_option($cc, $mode, undef, 1, []);
 	}
 
+	my $multiarch = check_gcc_multiarch($gcc);
+
 	# Set up default library search path.
 	my $libspec = $DEFAULT_OSARCH_LIBPATH{$os}->{$ARCH{$arch}};
-	if ($libspec) {
+	if ($multiarch) {
+		(@DEFAULT_LIBPATH) = ('/lib/' . $multiarch,
+				      '/usr/lib/' . $multiarch);
+		(@LIBDIR_NAMES) = qw(lib);
+	}
+	elsif ($libspec) {
 		(@DEFAULT_LIBPATH) = @{$libspec->{PATH}};
 		(@LIBDIR_NAMES) = @{$libspec->{NAME}};
 	}
 	else {
-		(@DEFAULT_LIBPATH) = qw(/lib /usr/lib);
 		(@LIBDIR_NAMES) = qw(lib);
 	}
 
-	return ($os, $arch);
+	my ($has_lib, $has_usrlib);
+	foreach my $dir (@DEFAULT_LIBPATH) {
+		$has_lib = 1 if ($dir eq '/lib');
+		$has_usrlib = 1 if ($dir eq '/usr/lib');
+	}
+
+	push(@DEFAULT_LIBPATH, '/lib') unless ($has_lib);
+	push(@DEFAULT_LIBPATH, '/usr/lib') unless ($has_usrlib);
+
+	return ($os, $arch, $multiarch);
 }
 
 sub create_config_mk($\%)
@@ -6296,6 +6503,23 @@ sub create_config_status(\@\%)
 	}
 }
 
+sub create_gtest_config()
+{
+	my $gtspec = $COMMAND_SPEC{gtest_config};
+	return unless ($gtspec->{STUB});
+
+	my $path = $gtspec->{PATH};
+	print "== creating $path\n";
+	my $src = FileHandle->new(STUB_GTEST_CONFIG) or
+		fatal("open(", STUB_GTEST_CONFIG, ") failed: $!");
+	my $dst = FileHandle->new($path, O_CREAT|O_TRUNC|O_WRONLY, 0755) or
+		fatal("open($path) failed: $!");
+
+	while (my $line = $src->getline()) {
+		$dst->print($line);
+	}
+}
+
 sub parse_config_status($)
 {
 	my ($file) = @_;
@@ -6406,19 +6630,63 @@ sub check_linux($\%)
 	my ($conf, $vars) = @_;
 
 	checking("for Linux distribution");
-
-	my ($dist, $abbrev) = ('unknown', 'unknown');
-	foreach my $file (keys(%LINUX_DIST)) {
-		my $func = $LINUX_DIST{$file};
-		my $fh = FileHandle->new($file);
-		if ($fh) {
-			($dist, $abbrev) = &$func($fh);
-			last;
-		}
-	}
+	my ($dist, $abbrev) = check_linux_dist();
+	$dist = 'unknown' unless (defined($dist));
+	$abbrev = 'unknown' unless (defined($abbrev));
 
 	print $dist, "\n";
 	$vars->{LINUX_DIST} = $abbrev;
+}
+
+sub check_linux_dist()
+{
+	foreach my $file (keys(%LINUX_DIST)) {
+		my $func = $LINUX_DIST{$file};
+		my $fh = FileHandle->new($file);
+		return &$func($fh) if ($fh);
+	}
+
+	# Try to determine OS using /etc/os-release.
+	my $fh = FileHandle->new('/etc/os-release');
+	return undef unless ($fh);
+
+	my $eqpat = qr,=,;
+	my ($name, $version, $id);
+	my $eval_str = sub {
+		my $str = $_[0];
+		my $s = eval "$str";
+		return (defined($s)) ? $s : $str;
+	};
+
+	while (my $line = $fh->getline()) {
+		my ($key, $value) = split($eqpat, $line, 2);
+		next unless (defined($key) and defined($value));
+		if ($key eq 'NAME') {
+			chomp($value);
+			$name = &$eval_str($value);
+		}
+		elsif ($key eq 'VERSION_ID') {
+			chomp($value);
+			$version = &$eval_str($value);
+		}
+		elsif ($key eq 'ID') {
+			chomp($value);
+			$id = &$eval_str($value);
+		}
+	}
+
+	if ($name and $version and $id) {
+		my $abbrev = $id;
+		if ($version =~ /^(\d+)/) {
+			$abbrev .= $1;
+		}
+
+		$name .= " $version";
+	
+		return ($name, $abbrev);
+	}
+
+	return undef;
 }
 
 sub fedora_version($)
@@ -6480,4 +6748,54 @@ sub suse_version($)
 	}
 
 	return ('SUSE Linux', 'SUSE');
+}
+
+sub read_command_output(\%@)
+{
+	my ($opts, @args) = @_;
+
+	my @out;
+	my $filter = sub {
+		my ($rh) = @_;
+
+		while (<$rh>) {
+			push(@out, $_);
+		}
+	};
+
+	my (%copts) = (%$opts);
+	$copts{FILTER} = $filter;
+	$copts{ERR2OUT} = 1;
+
+	my $ret = exec_command(%copts, @args);
+	unless ($ret == 0) {
+		my $cmd = join(' ', @args);
+		$opts->{ERR_OUTPUT} = \@out if (@out);
+		die "\"$cmd\" failed.\n";
+	}
+
+	return \@out;
+}
+
+sub read_command_oneline(\%@)
+{
+	my ($opts, @args) = @_;
+
+	my $out = read_command_output(%$opts, @args);
+
+	CHECK: {
+		last CHECK unless (@$out == 1);
+		my $ret = $out->[0] || '';
+		chomp($ret);
+
+		my $pat = $opts->{pattern};
+		last CHECK if ($pat and $ret !~ $pat);
+
+		return $ret;
+	}
+
+	my $cmd = join(' ', @args);
+	$opts->{ERR_OUTPUT} = $out if (@$out);
+
+	die "\"$cmd\" exited with unexpected output.\n";
 }
