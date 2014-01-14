@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2013 NEC Corporation
+# Copyright (c) 2013-2014 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -48,13 +48,19 @@
         <groupId>org.codehaus.enunciate</groupId>
         <artifactId>maven-enunciate-plugin</artifactId>
         <version>${enunciate.version}</version>
-        <dependencies>
-          <dependency>
-            <groupId>org.opendaylight.controller</groupId>
-            <artifactId>sal</artifactId>
-            <version>0.5.1-SNAPSHOT</version>
-          </dependency>
-        </dependencies>
+        <configuration>
+          <additionalClasspathEntries>
+            <!-- Specify VTN Manager public API sources. -->
+            <additionalClasspathEntry>
+              ${project.basedir}/../api/src/main/java
+            </additionalClasspathEntry>
+
+            <!-- Specify sources used only for REST API documentation. -->
+            <additionalClasspathEntry>
+              ${project.basedir}/src/enunciate
+            </additionalClasspathEntry>
+          </additionalClasspathEntries>
+        </configuration>
       </plugin>
 
       <plugin>

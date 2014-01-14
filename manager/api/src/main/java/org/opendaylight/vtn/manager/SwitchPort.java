@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -19,8 +19,24 @@ import javax.xml.bind.annotation.XmlRootElement;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * {@code SwitchPort} class describes condition to identify a node connector
- * in a network element.
+ * {@code SwitchPort} class describes the location of port of physical switch.
+ *
+ * <p>
+ *   This class is used to specify the physical switch port to be mapped during
+ *   configuration of port mapping.
+ * </p>
+ * <p>
+ *   {@code SwitchPort} class maintains only the information that identifies
+ *   the port within a physical switch, and does not maintain the information
+ *   that identifies the physical switch. A port of physical switch to be
+ *   mapped by port mapping is specified by the combination of
+ *   {@link org.opendaylight.controller.sal.core.Node} object
+ *   (<strong>node</strong> element for REST API), which identifies
+ *   the physical switch managed by the OpenDaylight controller, and
+ *   {@code SwitchPort} object.
+ * </p>
+ *
+ * @see  <a href="package-summary.html#port-map">Port mapping</a>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "switchport")
@@ -32,19 +48,59 @@ public class SwitchPort implements Serializable {
     private static final long serialVersionUID = -2599650909042057330L;
 
     /**
-     * The name of the switch port.
+     * The name of the physical switch port.
+     *
+     * <ul>
+     *   <li>
+     *     It is necessary to specify a character string with 1 or more
+     *     characters.
+     *   </li>
+     *   <li>
+     *     If this attribute is omitted, then it is necessary to specify
+     *     both <strong>type</strong> and <strong>id</strong> attributes.
+     *   </li>
+     * </ul>
      */
     @XmlAttribute
     private String  name;
 
     /**
-     * Type of the node connector.
+     * Type of the node connector corresponding to the physical switch port.
+     *
+     * <ul>
+     *   <li>
+     *     Specify <strong>"OF"</strong> for physical port of OpenFlow switch.
+     *   </li>
+     *   <li>
+     *     It should be specified along with the attribute <strong>id</strong>.
+     *   </li>
+     *   <li>
+     *     If this attribute is omitted, then it is necessary to specify the
+     *     attribute <strong>name</strong>.
+     *   </li>
+     * </ul>
      */
     @XmlAttribute
     private String  type;
 
     /**
-     * A string representation of the node connector ID.
+     * A string which represents identifier of the node connector corresponding
+     * to the physical switch port.
+     *
+     * <ul>
+     *   <li>
+     *     Specify a string representation of the port number for physical port
+     *     of OpenFlow switch.
+     *   </li>
+     *   <li>
+     *     It should be specified along with the attribute
+     *     <strong>type</strong>.
+     *   </li>
+     *   <li>
+     *     If this attribute is omitted, then it is necessary to specify the
+     *     attribute <strong>name</strong>.
+     *   </li>
+     * </ul>
      */
     @XmlAttribute
     private String  id;
@@ -57,29 +113,43 @@ public class SwitchPort implements Serializable {
     }
 
     /**
-     * Construct a new {@code SwitchPort} instance.
+     * Construct a new {@code SwitchPort} object which specifies the physical
+     * switch port by its name.
      *
-     * <p>
-     *   This constructor creates an instance to identify the node connector
-     *   by the name of the switch port.
-     * </p>
-     *
-     * @param name  The name of the switch port.
+     * @param name
+     *   The name of the physical switch port.
+     *   <ul>
+     *     <li>
+     *       A string containing 1 or more characters must be specified.
+     *     </li>
+     *     <li>
+     *       Exception will not occur even if {@code null} or an empty string
+     *       is specified, but there will be error if you specify such
+     *       {@code SwitchPort} object in API of {@link IVTNManager} service.
+     *     </li>
+     *   </ul>
      */
     public SwitchPort(String name) {
         this.name = name;
     }
 
     /**
-     * Construct a new {@code SwitchPort} instance.
+     * Construct a new {@code SwitchPort} object which specifies the physical
+     * switch port by type and identifier of the node connector.
      *
      * <p>
-     *   This constructor creates an instance to identify the node connector
-     *   by its type and ID.
+     *   Exception will not occur even if {@code null} or an empty string is
+     *   specified to {@code type} or {@code id}, but there will be error
+     *   if you specify such {@code SwitchPort} object in API of
+     *   {@link IVTNManager} service.
      * </p>
      *
      * @param type  The type of the node connector.
-     * @param id    Identifier of the node connector.
+     *              Specify <strong>"OF"</strong> for physical port of OpenFlow
+     *              switch.
+     * @param id    The identifier of the node connector.
+     *              Specify a string representation of the port number for
+     *              physical port of OpenFlow switch.
      */
     public SwitchPort(String type, String id) {
         this.type = type;
@@ -87,16 +157,49 @@ public class SwitchPort implements Serializable {
     }
 
     /**
-     * Construct a new {@code SwitchPort} instance.
+     * Construct a new {@code SwitchPort} object which specifies the physical
+     * switch port by its name, and a pair of type and identifier of the node
+     * connector.
      *
      * <p>
-     *   This constructor creates an instance to identify the node connector
-     *   by the name of the switch port and a pair of its type and ID.
+     *   {@linkplain <a href="package-summary.html#port-map">Port mapping</a>}
+     *   specified by an object created by this constructor is enabled only
+     *   when the physical switch port specified by {@code type} and {@code id}
+     *   exists and when the name of that port matches with the string
+     *   specified by {@code name}.
      * </p>
+     * <p>
+     *   Specifying {@code null} to argument is treated as the conditions
+     *   for that argument were not specified. However, if following conditions
+     *   are not met, there will be error if you specify such
+     *   {@code SwitchPort} object in API of {@link IVTNManager} service.
+     * </p>
+     * <ul>
+     *   <li>
+     *     If {@code null} is specified in {@code name}, then you need to
+     *     specify value other than {@code null} in both {@code type} and
+     *     {@code id} so that the node connector can be identified.
+     *   </li>
+     *   <li>
+     *     If {@code null} is specified in both {@code type} and {@code id},
+     *     then you need to specify a string containing 1 or more characters
+     *     in {@code name} so that the name of the physical switch port can
+     *     be identified.
+     *   </li>
+     *   <li>
+     *     If value other than {@code null} is specified in {@code type},
+     *     then you need to specify value other than {@code null} to
+     *     {@code id}, and vice versa.
+     *   </li>
+     * </ul>
      *
-     * @param name  The name of the switch port.
+     * @param name  The name of the physical switch port.
      * @param type  The type of the node connector.
-     * @param id    Identifier of the node connector.
+     *              Specify <strong>"OF"</strong> for physical port of OpenFlow
+     *              switch.
+     * @param id    The identifier of the node connector.
+     *              Specify a string representation of the port number for
+     *              physical port of OpenFlow switch.
      */
     public SwitchPort(String name, String type, String id) {
         this.name = name;
@@ -108,6 +211,7 @@ public class SwitchPort implements Serializable {
      * Return the name of the switch port.
      *
      * @return  The name of the switch port.
+     *          {@code null} is returned if name is not set.
      */
     public String getName() {
         return name;
@@ -117,6 +221,7 @@ public class SwitchPort implements Serializable {
      * Return the type of the node connector.
      *
      * @return  The type of the node connector.
+     *          {@code null} is returned if node connector type is not set.
      */
     public String getType() {
         return type;
@@ -125,7 +230,8 @@ public class SwitchPort implements Serializable {
     /**
      * Return a string representation of the node connector ID.
      *
-     * @return  The type of the node connector.
+     * @return  The identifier of the node connector.
+     *          {@code null} is returned if node connector ID is not set.
      */
     public String getId() {
         return id;
@@ -133,6 +239,24 @@ public class SwitchPort implements Serializable {
 
     /**
      * Determine whether the given object is identical to this object.
+     *
+     * <p>
+     *   {@code true} is returned only if all the following conditions are met.
+     * </p>
+     * <ul>
+     *   <li>
+     *     {@code o} is a {@code SwitchPort} object.
+     *   </li>
+     *   <li>
+     *     The following values stored in {@code o} are the same as in this
+     *     object.
+     *     <ul>
+     *       <li>The name of the physical switch port.</li>
+     *       <li>The type of the node connector.</li>
+     *       <li>The identifier of the node connector.</li>
+     *     </ul>
+     *   </li>
+     * </ul>
      *
      * @param o  An object to be compared.
      * @return   {@code true} if identical. Otherwise {@code false}.

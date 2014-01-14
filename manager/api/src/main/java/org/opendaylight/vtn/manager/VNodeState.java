@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,7 +11,11 @@ package org.opendaylight.vtn.manager;
 
 /**
  * {@code VNodeState} class represents the state of the virtual node in the
- * VTN, such as virtual L2 bridge.
+ * {@linkplain <a href="package-summary.html#VTN">VTN</a>}, such as
+ * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
+ *
+ * @see  <a href="package-summary.html#vBridge.status">vBridge status</a>
+ * @see  <a href="package-summary.html#vInterface.status">Virtual interface status</a>
  */
 public enum VNodeState {
     /**
@@ -20,19 +24,19 @@ public enum VNodeState {
     UNKNOWN,
 
     /**
-     * Node state value that indicates the node is down.
+     * Node state value that indicates the virtual node is down.
      */
     DOWN,
 
     /**
-     * Node state value that indicates the node is up.
+     * Node state value that indicates the virtual node is up.
      */
     UP;
 
     /**
-     * Return a numerical representtion of the node state.
+     * Return a numerical representation of this {@code VNodeState} object.
      *
-     * @return  A numerical representation of the node state.
+     * @return  A numerical representation of this object.
      */
     public int getValue() {
         return ordinal() - 1;
@@ -43,6 +47,7 @@ public enum VNodeState {
      *
      * @param st  A numerical representation of the node state.
      * @return  A {@code VNodeState} object.
+     *          {@link #UNKNOWN} is returned if an invalid value is specified.
      */
     public static VNodeState valueOf(int st) {
         int idx = st + 1;

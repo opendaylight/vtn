@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -19,8 +19,21 @@ import javax.xml.bind.annotation.XmlRootElement;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * {@code VTenantConfig} class describes configuration for the the virtual
- * tenant.
+ * {@code VTenantConfig} class describes configuration information about the
+ * VTN (virtual tenant network).
+ *
+ * <p>
+ *   This class is used for specifying the VTN information to the VTN Manager
+ *   during the creation or modification of the VTN.
+ * </p>
+ * <p>
+ *   If a value greater than 0 is configured in both
+ *   <strong>idleTimeout</strong> and <strong>hardTimeout</strong> attributes,
+ *   then the value specified in <strong>hardTimeout</strong> must be greater
+ *   than the value in <strong>idleTimeout</strong>.
+ * </p>
+ *
+ * @see  <a href="package-summary.html#VTN">VTN</a>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vtnconf")
@@ -32,7 +45,17 @@ public class VTenantConfig implements Serializable {
     private static final long serialVersionUID = 7446090329841381143L;
 
     /**
-     * An arbitrary description about the tenant.
+     * An arbitrary description of the VTN.
+     *
+     * <ul>
+     *   <li>
+     *     There are no restrictions on the permissible characters or length
+     *     of the string.
+     *   </li>
+     *   <li>
+     *     The description is not configured if omitted.
+     *   </li>
+     * </ul>
      */
     @XmlAttribute
     private String  description;
@@ -59,30 +82,76 @@ public class VTenantConfig implements Serializable {
     }
 
     /**
-     * Construct a new tenant configuration.
+     * Construct a new configuration information about the
+     * {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
      *
      * <p>
-     *   Timeout value of flow entries are determine by the system.
+     *   If this constructor is used, then flow entry timeout value becomes
+     *   unset.
      * </p>
      *
-     * @param desc  Description about the tenant.
+     * @param desc  An arbitrary description of the VTN.
+     *              Specifying {@code null} will imply that description is
+     *              not configured for the VTN.
      */
     public VTenantConfig(String desc) {
         this(desc, -1, -1);
     }
 
     /**
-     * Construct a new tenant configuration.
+     * Construct a new configuration information about the
+     * {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
      *
-     * @param desc  Description about the tenant.
-     * @param idle  The number of seconds to be set to {@code idle_timeout}
-     *              field in flow entries. Zero means an infinite timeout.
-     *              The value is determined by the system if a negative value
-     *              is passed.
-     * @param hard  The number of seconds to be set to {@code hard_timeout}
-     *              field in flow entries. Zero means an infinite timeout.
-     *              The value is determined by the system if a negative value
-     *              is passed.
+     * <p>
+     *   The value set in {@code hard} must be bigger than {@code idle} if the
+     *   value set in both {@code idle} and {@code hard} is bigger than 0.
+     *   Exception will not occur even if incorrect value is specified in
+     *   {@code idle} or {@code hard}, but there will be error if you specify
+     *   such {@code VTenantConfig} object in API of {@link IVTNManager}
+     *   service.
+     * </p>
+     *
+     * @param desc  An arbitrary description of the VTN.
+     *              Specifying {@code null} will imply that description is
+     *              not configured for the VTN.
+     * @param idle
+     *   The number of seconds that you want to configure in
+     *   {@code idle_timeout} of flow entry configured by the VTN.
+     *   <p>
+     *     The flow entries configured in switch by the VTN are removed
+     *     if they are not referred for the specified seconds.
+     *   </p>
+     *   <ul>
+     *     <li>
+     *       The range of value that can be specified is from
+     *       <strong>0</strong> to <strong>65535</strong>.
+     *     </li>
+     *     <li>
+     *       <strong>0</strong> means infinite time.
+     *     </li>
+     *     <li>
+     *       Negative value will be ignored and treated as if no value is set.
+     *     </li>
+     *   </ul>
+     * @param hard
+     *   The number of seconds that you want to configure in
+     *   {@code hard_timeout} of flow entry configured by the VTN.
+     *   <p>
+     *      The flow entries configured in switch by the VTN are removed
+     *      after the specified time elapses.
+     *   </p>
+     *   <ul>
+     *     <li>
+     *       The range of value that can be specified is from
+     *       <strong>0</strong> to <strong>65535</strong>.
+     *     </li>
+     *     <li>
+     *       <strong>0</strong> means infinite time.
+     *     </li>
+     *     <li>
+     *       Negative value will be ignored and treated as if no value is set.
+     *     </li>
+     *   </ul>
      */
     public VTenantConfig(String desc, int idle, int hard) {
         description = desc;
@@ -91,9 +160,10 @@ public class VTenantConfig implements Serializable {
     }
 
     /**
-     * Return description about the tenant.
+     * Return the description of the.
+     * {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
      *
-     * @return  Description about the tenant.
+     * @return  The description of the VTN.
      *          {@code null} is returned if description is not set.
      */
     public String getDescription() {
@@ -102,7 +172,6 @@ public class VTenantConfig implements Serializable {
 
     /**
      * Return {@code idle_timeout} field value for flow entries.
-     *
      *
      * @return  {@code idle_timeout} value to be set to flow entries.
      *          -1 is returned if this object does not keep the value.
@@ -122,12 +191,37 @@ public class VTenantConfig implements Serializable {
     }
 
     /**
-     * Return an {@code Integer} object which represents {@code idle_timeout}
+     * Return an {@link Integer} object which represents {@code idle_timeout}
      * value for flow entries.
      *
-     * @return  An {@code Integer} object which represents {@code idle_timeout}
-     *          value. {@code null} is returned if this object does not keep
-     *          the value.
+     * <p>
+     *   {@code null} is returned if this object does not keep the value.
+     * </p>
+     * <p>
+     *   Note that below description of return value of this method is
+     *   written for REST API document.
+     * </p>
+     *
+     * @return
+     *   The number of seconds that you want to configure in
+     *   {@code idle_timeout} of flow entry configured by the VTN.
+     *   The flow entries configured in switch by the VTN are removed
+     *   if they are not referred for the specified seconds.
+     *
+     *   <ul>
+     *     <li>
+     *       The range of value that can be specified is from
+     *       <strong>0</strong> to <strong>65535</strong>.
+     *     </li>
+     *     <li>
+     *       <strong>0</strong> means infinite time.
+     *     </li>
+     *     <li>
+     *       If a negative value is specified, then the specified value is
+     *       ignored and it will be treated as if it is omitted.
+     *     </li>
+     *   </ul>
+     * @deprecated  Only for JAXB. Use {@link #getIdleTimeout()} instead.
      */
     @XmlAttribute(name = "idleTimeout")
     public Integer getIdleTimeoutValue() {
@@ -141,7 +235,7 @@ public class VTenantConfig implements Serializable {
      *   This method is called by JAXB.
      * </p>
      *
-     * @param idle  An {@code Integer} object which represents
+     * @param idle  An {@link Integer} object which represents
      *              {@code idle_timeout} value for flow entries.
      */
     @SuppressWarnings("unused")
@@ -154,12 +248,37 @@ public class VTenantConfig implements Serializable {
     }
 
     /**
-     * Return an {@code Integer} object which represents {@code hard_timeout}
+     * Return an {@link Integer} object which represents {@code hard_timeout}
      * value for flow entries.
      *
-     * @return  An {@code Integer} object which represents {@code hard_timeout}
-     *          value. {@code null} is returned if this object does not keep
-     *          the value.
+     * <p>
+     *   {@code null} is returned if this object does not keep the value.
+     * </p>
+     * <p>
+     *   Note that below description of return value of this method is
+     *   written for REST API document.
+     * </p>
+     *
+     * @return
+     *   The number of seconds that you want to configure in
+     *   {@code hard_timeout} of flow entry configured by the VTN.
+     *   The flow entries configured in switch by the VTN are removed
+     *   after the specified time elapses.
+     *
+     *   <ul>
+     *     <li>
+     *       The range of value that can be specified is from
+     *       <strong>0</strong> to <strong>65535</strong>.
+     *     </li>
+     *     <li>
+     *       <strong>0</strong> means infinite time.
+     *     </li>
+     *     <li>
+     *       If a negative value is specified, then the specified value is
+     *       ignored and it will be treated as if it is omitted.
+     *     </li>
+     *   </ul>
+     * @deprecated  Only for JAXB. Use {@link #getHardTimeout()} instead.
      */
     @XmlAttribute(name = "hardTimeout")
     public Integer getHardTimeoutValue() {
@@ -173,7 +292,7 @@ public class VTenantConfig implements Serializable {
      *   This method is called by JAXB.
      * </p>
      *
-     * @param hard  An {@code Integer} object which represents
+     * @param hard  An {@link Integer} object which represents
      *              {@code hard_timeout} value for flow entries.
      */
     @SuppressWarnings("unused")
@@ -187,6 +306,31 @@ public class VTenantConfig implements Serializable {
 
     /**
      * Determine whether the given object is identical to this object.
+     *
+     * <p>
+     *   {@code true} is returned only if all the following conditions are met.
+     * </p>
+     * <ul>
+     *   <li>
+     *     {@code o} is a {@code VTenantConfig} object.
+     *   </li>
+     *   <li>
+     *     The following values stored in {@code o} are the same as in this
+     *     object.
+     *     <ul>
+     *       <li>
+     *         The description of the
+     *         {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
+     *       </li>
+     *       <li>
+     *         The number of seconds for {@code idle_timeout} of flow entry.
+     *       </li>
+     *       <li>
+     *         The number of seconds for {@code hard_timeout} of flow entry.
+     *       </li>
+     *     </ul>
+     *   </li>
+     * </ul>
      *
      * @param o  An object to be compared.
      * @return   {@code true} if identical. Otherwise {@code false}.

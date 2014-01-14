@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -22,14 +22,26 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.opendaylight.vtn.manager.MacAddressEntry;
 
 /**
- * A JAXB class which represents a list of MAC address table entry.
+ * {@link MacEntryList} class describes a list of MAC address information.
+ *
+ * <p>
+ *   This class is used to return a list of MAC address information learned
+ *   inside the MAC address table in the vBridge to REST client.
+ * </p>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "macentries")
 @XmlAccessorType(XmlAccessType.NONE)
 public class MacEntryList {
     /**
-     * A list of MAC address table entries.
+     * A list of {@link MacEntry} instances.
+     *
+     * <ul>
+     *   <li>
+     *     This element contains 0 or more {@link MacEntry} instances which
+     *     represent MAC address information.
+     *   </li>
+     * </ul>
      */
     @XmlElement(name = "macentry")
     private List<MacEntry>  entries;

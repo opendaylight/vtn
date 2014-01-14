@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -22,7 +22,47 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.opendaylight.controller.sal.core.Node;
 
 /**
- * {@code PortMapConfig} class describes configuration for the port mapping.
+ * {@code PortMapConfig} class describes configuration information about the
+ * port mapping.
+ *
+ * <p>
+ *   This class is used to specify configuration information about the port
+ *   mapping to the VTN Manager during configuration of port mapping.
+ * </p>
+ * <p>
+ *   Actual physical port of switch that gets mapped to a vBridge interface is
+ *   decided as follows.
+ * </p>
+ * <ul>
+ *   <li>
+ *     If the attribute <strong>{@link SwitchPort#getName() name}</strong> is
+ *     configured in the element <strong>{@link #getPort() port}</strong>,
+ *     then out of the physical ports in the switch specified in the element
+ *     <strong>{@link #getNode() node}</strong>, the physical port that has
+ *     the specified port name will get mapped.
+ *   </li>
+ *   <li>
+ *     If the attributes <strong>{@link SwitchPort#getType() type}</strong>
+ *     and <strong>{@link SwitchPort#getId() id}</strong> are configured in
+ *     the element <strong>{@link #getPort() port}</strong>, then out of the
+ *     physical ports in the switch specified in the element
+ *     <strong>{@link #getNode() node}</strong>, the physical port
+ *     corresponding to the specified
+ *     {@link org.opendaylight.controller.sal.core.NodeConnector} will get
+ *      mapped.
+ *   </li>
+ *   <li>
+ *     If all the attributes are configured in the element
+ *     <strong>{@link #getPort() port}</strong>, then out of the physical
+ *     ports in the switch specified in the element
+ *     <strong>{@link #getNode() node}</strong>, the physical port that meets
+ *     all the condition will get mapped. That is, port mapping will be
+ *     enabled only if the specified port name is configured for the specified
+ *     {@link org.opendaylight.controller.sal.core.NodeConnector}.
+ *   </li>
+ * </ul>
+ *
+ * @see  <a href="package-summary.html#port-map">Port mapping</a>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "portmapconf")
@@ -34,19 +74,42 @@ public class PortMapConfig implements Serializable {
     private static final long serialVersionUID = 1752903499492179337L;
 
     /**
-     * Network element associated with the target switch.
+     * Node information corresponding to the physical switch to be mapped
+     * to the virtual interface.
+     *
+     * <ul>
+     *   <li>This element is mandatory.</li>
+     * </ul>
      */
-    @XmlElement
+    @XmlElement(required = true)
     private Node  node;
 
    /**
-     * Condition to identify the target switch port.
+     * Condition for identifying the port of the switch specified by
+     * <strong>node</strong> element.
+     *
+     * <ul>
+     *   <li>This element is mandatory.</li>
+     * </ul>
      */
-    @XmlElement(name = "port")
+    @XmlElement(name = "port", required = true)
     private SwitchPort  port;
 
     /**
      * VLAN ID to be mapped to the virtual interface.
+     *
+     * <ul>
+     *   <li>
+     *     The range of value that can be specified is from
+     *     <strong>0</strong> to <strong>4095</strong>.
+     *   </li>
+     *   <li>
+     *     <strong>0</strong> implies untagged ethernet frame.
+     *   </li>
+     *   <li>
+     *     If omitted, it will be treated as <strong>0</strong> is specified.
+     *   </li>
+     * </ul>
      */
     @XmlAttribute
     private short  vlan;
@@ -59,13 +122,16 @@ public class PortMapConfig implements Serializable {
     }
 
     /**
-     * Construct a new port mapping information.
+     * Construct a new configuration information about the
+     * {@linkplain <a href="package-summary.html#port-map">port mapping</a>}.
      *
-     * @param node  Node associated with the target switch.
-     * @param port  Condition to identify the target switch port.
+     * @param node  {@link Node} object corresponding to the physical switch
+     *              to be mapped by the port mapping.
+     * @param port  A {@link SwitchPort} object that specifies the port within
+     *              {@code node}.
      * @param vlan  VLAN ID to be mapped.
-     *              Zero indicates that untagged Etnernet frames should be
-     *              mapped.
+     *              <strong>0</strong> indicates that untagged ethernet frames
+     *              should be mapped.
      */
     public PortMapConfig(Node node, SwitchPort port, short vlan) {
         this.node = node;
@@ -74,19 +140,24 @@ public class PortMapConfig implements Serializable {
     }
 
     /**
-     * Return the node associated with the target switch.
+     * Return the {@link Node} object corresponding to the physical switch
+     * to be mapped by the
+     * {@linkplain <a href="package-summary.html#port-map">port mapping</a>}.
      *
-     * @return  Node associated with the target switch.
+     * @return  The {@link Node} object corresponding to the physical switch
+     *          to be mapped.
      */
     public Node getNode() {
         return node;
     }
 
     /**
-     * Return a {@link SwitchPort} object which identifies the target switch
-     * port.
+     * Return a {@link SwitchPort} object which identifies the physical switch
+     * port to be mapped by the
+     * {@linkplain <a href="package-summary.html#port-map">port mapping</a>}.
      *
-     * @return  A {@link SwitchPort} object.
+     * @return  A {@link SwitchPort} object which identifies the physical
+     *          switch port to be mapped.
      */
     public SwitchPort getPort() {
         return port;
@@ -95,7 +166,8 @@ public class PortMapConfig implements Serializable {
     /**
      * Return the VLAN ID to be mapped.
      *
-     * @return  VLAN ID. Zero indicates that only untagged Ethernet frames
+     * @return  VLAN ID to be mapped.
+     *          <strong>0</strong> indicates that only untagged ethernet frames
      *          should be mapped.
      */
     public short getVlan() {
@@ -104,6 +176,27 @@ public class PortMapConfig implements Serializable {
 
     /**
      * Determine whether the given object is identical to this object.
+     *
+     * <p>
+     *   {@code true} is returned only if all the following conditions are met.
+     * </p>
+     * <ul>
+     *   <li>
+     *     {@code o} is a {@code PortMapConfig} object.
+     *   </li>
+     *   <li>
+     *     The following values stored in {@code o} are the same as in this
+     *     object.
+     *     <ul>
+     *       <li>{@link Node} object corresponding to the physical switch.</li>
+     *       <li>
+     *         {@link SwitchPort} object which identifies the physical switch
+     *         port.
+     *       </li>
+     *       <li>VLAN ID to be mapped.</li>
+     *     </ul>
+     *   </li>
+     * </ul>
      *
      * @param o  An object to be compared.
      * @return   {@code true} if identical. Otherwise {@code false}.

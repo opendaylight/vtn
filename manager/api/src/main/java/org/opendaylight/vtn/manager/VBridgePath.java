@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,8 +10,18 @@
 package org.opendaylight.vtn.manager;
 
 /**
- * {@code VBridgePath} class describes fully-qualified name of the virtual
- * layer 2 bridge in the virtual tenant.
+ * {@code VBridgePath} class describes the position of the
+ * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>} in the
+ * container.
+ *
+ * <p>
+ *   This class inherits {@link VTenantPath} and also stores the position
+ *   information of the {@linkplain <a href="package-summary.html#VTN">VTN</a>}
+ *   to which the vBridge belongs. An object of this class is used to identify
+ *   the vBridge while executing any operations against it.
+ * </p>
+ *
+ * @see  <a href="package-summary.html#vBridge">vBridge</a>
  */
 public class VBridgePath extends VTenantPath {
     /**
@@ -20,15 +30,25 @@ public class VBridgePath extends VTenantPath {
     private static final long serialVersionUID = 49188209943135523L;
 
     /**
-     * The name of the bridge.
+     * The name of the
+     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
      */
     private final String  bridgeName;
 
     /**
-     * Construct a path to the virtual L2 bridge.
+     * Construct a new object which represents the position of the
+     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>} inside
+     * the container.
      *
-     * @param tenantName  The name of the tenant.
-     * @param bridgeName  The name of the bridge.
+     * <p>
+     *   Exception will not occur even if incorrect name, such as {@code null},
+     *   is specified to {@code tenantName} or {@code bridgeName}, but there
+     *   will be error if you specify such {@code VBridgePath} object in API
+     *   of {@link IVTNManager} service.
+     * </p>
+     *
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      */
     public VBridgePath(String tenantName, String bridgeName) {
         super(tenantName);
@@ -36,10 +56,27 @@ public class VBridgePath extends VTenantPath {
     }
 
     /**
-     * Construct a path to the virtual L2 bridge.
+     * Construct a new object which represents the position of the
+     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>} inside
+     * the container.
      *
-     * @param tenantPath  Path to the virtual tenant.
-     * @param bridgeName  The name of the bridge.
+     * <p>
+     *   This constructor specifies the VTN to which the vBridge belongs
+     *   by using {@link VTenantPath}.
+     * </p>
+     *
+     * <p>
+     *   Exception will not occur even if incorrect name, such as {@code null},
+     *   is specified to {@code bridgeName}, but there will be error if you
+     *   specify such {@code VBridgePath} object in API of {@link IVTNManager}
+     *   service.
+     * </p>
+     *
+     * @param tenantPath  A {@code VTenantPath} object that specifies the
+     *                    position of the VTN.
+     *                    All the values in the specified object are copied to
+     *                    a new object.
+     * @param bridgeName  The name of the vBridge.
      * @throws NullPointerException  {@code tenantPath} is {@code null}.
      */
     public VBridgePath(VTenantPath tenantPath, String bridgeName) {
@@ -47,9 +84,10 @@ public class VBridgePath extends VTenantPath {
     }
 
     /**
-     * Return the name of the bridge.
+     * Return the name of the
+     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
      *
-     * @return  The name of the bridge.
+     * @return  The name of the vBridge.
      */
     public String getBridgeName() {
         return bridgeName;
@@ -72,6 +110,29 @@ public class VBridgePath extends VTenantPath {
 
     /**
      * Determine whether the given object is identical to this object.
+     *
+     * <p>
+     *   {@code true} is returned only if all the following conditions are met.
+     * </p>
+     * <ul>
+     *   <li>
+     *     {@code o} is a {@code VBridgePath} object.
+     *   </li>
+     *   <li>
+     *     The following values stored in {@code o} are the same as in this
+     *     object.
+     *     <ul>
+     *       <li>
+     *         The name of the
+     *         {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
+     *       </li>
+     *       <li>
+     *         The name of the
+     *         {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
+     *       </li>
+     *     </ul>
+     *   </li>
+     * </ul>
      *
      * @param o  An object to be compared.
      * @return   {@code true} if identical. Otherwise {@code false}.

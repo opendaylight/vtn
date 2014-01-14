@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -22,19 +22,41 @@ import org.opendaylight.vtn.manager.BundleVersion;
 /**
  * {@code ManagerVersion} class describes version information of the
  * VTN Manager.
+ *
+ * <p>
+ *   This class is used to return version information of the VTN Manager to
+ *   REST client.
+ * </p>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "version")
 @XmlAccessorType(XmlAccessType.NONE)
 public class ManagerVersion {
     /**
-     * API version of the VTN Manager.
+     * A numerical value which represents API version of the VTN Manager.
+     *
+     * <p>
+     *   API version is a numerical value equal to or greater than 1,
+     *   and it is incremented if API of the VTN manager is changed.
+     * </p>
+     * <ul>
+     *   <li>
+     *     Current VTN Manager returns <strong>1</strong> as API version.
+     *   </li>
+     * </ul>
      */
-    @XmlAttribute(name = "api")
+    @XmlAttribute(name = "api", required = true)
     private int  apiVersion;
 
     /**
-     * Version of the OSGi bundle which implements the VTN Manager.
+     * Version information of the OSGi bundle which implements the VTN Manager.
+     *
+     * <ul>
+     *   <li>
+     *     This element is omitted if version information of the OSGI bundle
+     *     is not available.
+     *   </li>
+     * </ul>
      */
     @XmlElement(name = "bundle")
     private BundleVersion  bundleVersion;

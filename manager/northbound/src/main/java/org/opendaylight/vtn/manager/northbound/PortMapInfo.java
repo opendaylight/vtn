@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -22,8 +22,13 @@ import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.controller.sal.core.NodeConnector;
 
 /**
- * {@code PortMapInfo} class provides JAXB mapping for port mapping
- * information.
+ * {@code PortMapInfo} class describes information about the port mapping
+ * configured in the vBridge interface.
+ *
+ * <p>
+ *   This class is used to return information about the port mapping to
+ *   REST client.
+ * </p>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "portmap")
@@ -35,8 +40,15 @@ public class PortMapInfo extends PortMapConfig {
     private static final long serialVersionUID =  7081865293009944033L;
 
     /**
-     * Identifier of node connector associated with the switch port actually
-     * mapped to the virtual bridge interface.
+     * {@link NodeConnector} information corresponding to the physical switch
+     * port actually mapped to the vBridge interface.
+     *
+     * <ul>
+     *   <li>
+     *     This element is omitted if no physical switch port meets the
+     *     condition specified by the port mapping configuration information.
+     *   </li>
+     * </ul>
      */
     @XmlElement(name = "mapped")
     private SwitchPort  mapped;

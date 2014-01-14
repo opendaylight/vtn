@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -22,7 +22,15 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.opendaylight.controller.sal.core.Node;
 
 /**
- * {@code VlanMapConfig} class describes configuration for the VLAN mapping.
+ * {@code VlanMapConfig} class describes configuration information about the
+ * VLAN mapping.
+ *
+ * <p>
+ *   This class is used to specify configuration information about the VLAN
+ *   mapping to the VTN Manager during configuration of VLAN mapping.
+ * </p>
+ *
+ * @see  <a href="package-summary.html#VLAN-map">VLAN mapping</a>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vlanmapconf")
@@ -34,13 +42,34 @@ public class VlanMapConfig implements Serializable {
     private static final long serialVersionUID = -70616068870223019L;
 
     /**
-     * Network element associated with the VLAN mapping.
+     * {@link Node} information corresponding to the physical switch to be
+     * mapped.
+     *
+     * <ul>
+     *   <li>
+     *     If this element is omitted, all switches managed by the OpenDaylight
+     *     controller will be mapped.
+     *   </li>
+     * </ul>
      */
     @XmlElement
     private Node  node;
 
     /**
-     * VLAN ID.
+     * VLAN ID to be mapped.
+     *
+     * <ul>
+     *   <li>
+     *     The range of value that can be specified is from
+     *     <strong>0</strong> to <strong>4095</strong>.
+     *   </li>
+     *   <li>
+     *     <strong>0</strong> implies untagged ethernet frame.
+     *   </li>
+     *   <li>
+     *     If omitted, it will be treated as <strong>0</strong> is specified.
+     *   </li>
+     * </ul>
      */
     @XmlAttribute
     private short  vlan;
@@ -53,11 +82,16 @@ public class VlanMapConfig implements Serializable {
     }
 
     /**
-     * Construct a new VLAN mapping configuration.
+     * Construct a new configuration information about the
+     * {@linkplain <a href="package-summary.html#VLAN-map">VLAN mapping</a>}.
      *
-     * @param node  Network element associated with the VLAN mapping.
-     * @param vlan  VLAN ID to be mapped. Zero means that untagged Ethernet
-     *              frames should be mapped.
+     * @param node  {@link Node} object corresponding to the physical switch
+     *              to be mapped by the VLAN mapping. Specify {@code null}
+     *              if you want to map all switches instead of identifying
+     *              particular switch.
+     * @param vlan  VLAN ID to be mapped.
+     *              <strong>0</strong> indicates that untagged ethernet frames
+     *              should be mapped.
      */
     public VlanMapConfig(Node node, short vlan) {
         this.node = node;
@@ -65,9 +99,13 @@ public class VlanMapConfig implements Serializable {
     }
 
     /**
-     * Return a node associated with the VLAN mapping.
+     * Return the {@link Node} object corresponding to the physical switch
+     * to be mapped by the
+     * {@linkplain <a href="package-summary.html#VLAN-map">VLAN mapping</a>}.
      *
-     * @return  A node associated with the VLAN mapping.
+     * @return  The {@link Node} object corresponding to the physical switch
+     *          to be mapped. {@code null} is returned if switch is not
+     *          specified.
      */
     public Node getNode() {
         return node;
@@ -76,20 +114,37 @@ public class VlanMapConfig implements Serializable {
     /**
      * Return the VLAN ID to be mapped.
      *
-     * @return  VLAN ID. Zero is returned if untagged Ethernet frame is
-     *          configured.
+     * @return  VLAN ID to be mapped.
+     *          <strong>0</strong> indicates that only untagged ethernet frames
+     *          should be mapped.
      */
     public short getVlan() {
         return vlan;
     }
 
     /**
-     * Determine whether the specified VLAN mapping configuration overlaps
-     * the VLAN mapping represented by this object.
+     * Determine whether there is a duplicate of the VLAN mapped by
+     * {@code VlanMapConfig} object.
      *
-     * @param vlconf  VLAN mapping configuration.
-     * @return  {@code true} is returned only if the specified VLAN mapping
-     *          overlaps this object.
+     * <p>
+     *   This method compares the configuration information stored in
+     *   {@code vlconf} and this object, and returns {@code true} only if all
+     *   the following conditions are met.
+     * </p>
+     * <ul>
+     *   <li>Same VLAN ID is configured in both objects.</li>
+     *   <li>
+     *     Same {@link Node} object is configured, or {@link Node} object
+     *     is not configured in one of the two.
+     *   </li>
+     * </ul>
+     *
+     * @param vlconf  A {@code VlanMapConfig} object to be tested.
+     * @return
+     *   {@code true} is returned only if the
+     *   {@linkplain <a href="package-summary.html#VLAN-map">VLAN mapping</a>}
+     *   specified by {@code vlconf} overlaps the VLAN mapping specified by
+     *    this object. Otherwise {@code false} is returned.
      * @throws NullPointerException  {@code vlconf} is {@code null}.
      */
     public boolean isOverlapped(VlanMapConfig vlconf) {
@@ -104,6 +159,23 @@ public class VlanMapConfig implements Serializable {
 
     /**
      * Determine whether the given object is identical to this object.
+     *
+     * <p>
+     *   {@code true} is returned only if all the following conditions are met.
+     * </p>
+     * <ul>
+     *   <li>
+     *     {@code o} is a {@code VlanMapConfig} object.
+     *   </li>
+     *   <li>
+     *     The following values stored in {@code o} are the same as in this
+     *     object.
+     *     <ul>
+     *       <li>{@link Node} object corresponding to the physical switch.</li>
+     *       <li>VLAN ID to be mapped.</li>
+     *     </ul>
+     *   </li>
+     * </ul>
      *
      * @param o  An object to be compared.
      * @return   {@code true} if identical. Otherwise {@code false}.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -19,8 +19,15 @@ import javax.xml.bind.annotation.XmlRootElement;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * {@code VBridgeConfig} class describes configuration for the virtual layer 2
- * bridge.
+ * {@code VBridgeConfig} class describes configuration information about the
+ * vBridge (virtual L2 bridge).
+ *
+ * <p>
+ *   This class is used for specifying the vBridge information to the
+ *   VTN Manager during the creation or modification of the vBridge.
+ * </p>
+ *
+ * @see  <a href="package-summary.html#vBridge">vBridge</a>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vbridgeconf")
@@ -32,13 +39,24 @@ public class VBridgeConfig implements Serializable {
     private static final long serialVersionUID = 7501956469021832807L;
 
     /**
-     * An arbitrary description about the bridge.
+     * An arbitrary description of the vBridge.
+     *
+     * <ul>
+     *   <li>
+     *     There are no restrictions on the permissible characters or length
+     *     of the string.
+     *   </li>
+     *   <li>
+     *     The description is not configured if omitted.
+     *   </li>
+     * </ul>
      */
     @XmlAttribute
     private String  description;
 
     /**
-     * The number of seconds between MAC address table aging.
+     * The number of seconds between
+     * {@linkplain <a href="package-summary.html#macTable.aging">MAC address table aging</a>}.
      */
     private int  ageInterval;
 
@@ -51,25 +69,50 @@ public class VBridgeConfig implements Serializable {
     }
 
     /**
-     * Construct a new virtual bridge configuration.
+     * Construct a new configuration information about the
+     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
      *
      * <p>
-     *   The interval of MAC address table aging is determined by the system.
+     *   The interval of
+     *   {@linkplain <a href="package-summary.html#macTable.aging">MAC address table aging</a>}
+     *   becomes unset if this constructor is used.
      * </p>
      *
-     * @param desc      Description about the bridge.
+     * @param desc  An arbitrary description of the vBridge.
+     *              Specifying {@code null} will imply that description is
+     *              not configured for the vBridge.
      */
     public VBridgeConfig(String desc) {
         this(desc, -1);
     }
 
     /**
-     * Construct a new virtual bridge configuration.
+     * Construct a new
+     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}
+     * configuration.
      *
-     * @param desc   Description about the bridge.
-     * @param age    The number of seconds between MAC address table aging.
-     *               The interval of MAC address aging is determined by the
-     *               system if a negative value is passed.
+     * <p>
+     *   Exception will not occur even if incorrect value is specified in
+     *   {@code age}, but there will be error if you specify such
+     *   {@code VBridgeConfig} object in API of {@link IVTNManager} service.
+     * </p>
+     *
+     * @param desc  An arbitrary description of the vBridge.
+     *              Specifying {@code null} will imply that description is
+     *              not configured for the vBridge.
+     * @param age
+     *   The interval of
+     *   {@linkplain <a href="package-summary.html#macTable.aging">MAC address table aging</a>}
+     *   in seconds.
+     *   <ul>
+     *     <li>
+     *       The range of value that can be specified is from
+     *       <strong>10</strong> to <strong>1000000</strong>.
+     *     </li>
+     *     <li>
+     *       Negative value will be ignored and treated as if no value is set.
+     *     </li>
+     *   </ul>
      */
     public VBridgeConfig(String desc, int age) {
         description = desc;
@@ -77,9 +120,10 @@ public class VBridgeConfig implements Serializable {
     }
 
     /**
-     * Return description about the bridge.
+     * Return the description of the
+     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
      *
-     * @return  Description about the bridge.
+     * @return  The description of the vBridge.
      *          {@code null} is returned if description is not set.
      */
     public String getDescription() {
@@ -87,7 +131,8 @@ public class VBridgeConfig implements Serializable {
     }
 
     /**
-     * Return the number of seconds between MAC address table aging.
+     * Return the interval in seconds between
+     * {@linkplain <a href="package-summary.html#macTable.aging">MAC address table aging</a>}.
      *
      * @return  The number of seconds between MAC address table aging.
      *          -1 is returned if this object does not keep the value.
@@ -97,13 +142,32 @@ public class VBridgeConfig implements Serializable {
     }
 
     /**
-     * Return an {@code Integer} object which represents the number of seconds
+     * Return an {@link Integer} object which represents the number of seconds
      * between MAC address table aging.
      *
-     * @return  An {@code Integer} object which represents the number of
-     *          seconds between MAC address table aging.
-     *          {@code null} is returned if this object does not keep the
-     *          value.
+     * <p>
+     *   {@code null} is returned if this object does not keep the value.
+     * </p>
+     * <p>
+     *   Note that below description of return value of this method is
+     *   written for REST API document.
+     * </p>
+     *
+     * @return
+     *   The interval, in seconds, of aging for MAC address table in the
+     *   vBridge.
+     *
+     *   <ul>
+     *     <li>
+     *       The range of value that can be specified is from
+     *       <strong>10</strong> to <strong>1000000</strong>.
+     *     </li>
+     *     <li>
+     *       If a negative value is specified, then the specified value is
+     *       ignored and it will be treated as if it is omitted.
+     *     </li>
+     *   </ul>
+     * @deprecated  Only for JAXB. Use {@link #getAgeInterval()} instead.
      */
     @XmlAttribute(name = "ageInterval")
     public Integer getAgeIntervalValue() {
@@ -117,7 +181,7 @@ public class VBridgeConfig implements Serializable {
      *   This method is called by JAXB.
      * </p>
      *
-     * @param age  An {@code Integer} object which represents the number of
+     * @param age  An {@link Integer} object which represents the number of
      *             seconds between MAC address table aging.
      */
     @SuppressWarnings("unused")
@@ -131,6 +195,29 @@ public class VBridgeConfig implements Serializable {
 
     /**
      * Determine whether the given object is identical to this object.
+     *
+     * <p>
+     *   {@code true} is returned only if all the following conditions are met.
+     * </p>
+     * <ul>
+     *   <li>
+     *     {@code o} is a {@code VBridgeConfig} object.
+     *   </li>
+     *   <li>
+     *     The following values stored in {@code o} are the same as in this
+     *     object.
+     *     <ul>
+     *       <li>
+     *         The description of the
+     *         {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
+     *       </li>
+     *       <li>
+     *         The interval of
+     *         {@linkplain <a href="package-summary.html#macTable.aging">MAC address table aging</a>}.
+     *       </li>
+     *     </ul>
+     *   </li>
+     * </ul>
      *
      * @param o  An object to be compared.
      * @return   {@code true} if identical. Otherwise {@code false}.

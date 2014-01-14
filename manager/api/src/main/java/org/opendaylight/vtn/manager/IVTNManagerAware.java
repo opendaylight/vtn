@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,65 +12,419 @@ package org.opendaylight.vtn.manager;
 import org.opendaylight.controller.sal.core.UpdateType;
 
 /**
- * This interface provides methods to notify listeners about the Virtual
- * Tenant Network changes.
+ * {@code IVTNManagerAware} defines the listener interface that monitors
+ * the status change of the VTN Manager inside the container.
+ *
+ * <p>
+ *   Once an OSGi service which implements {@code IVTNManagerAware} is
+ *   registered in the OSGi service registry, corresponding method is called
+ *   when the management information about the VTN Manager is changed.
+ * </p>
  */
 public interface IVTNManagerAware {
     /**
-     * Invoked when a virtual tenant is added, removed, or changed.
+     * Invoked when the information related to
+     * {@linkplain <a href="package-summary.html#VTN">VTN</a>} inside the
+     * container is changed.
      *
-     * @param path     Path to the tenant.
-     * @param vtenant  Information about the virtual tenant.
-     * @param type     {@code ADDED} if added.
-     *                 {@code REMOVED} if removed.
-     *                 {@code CHANGED} if changed.
+     * <p>
+     *   If at least one VTN exists in the container at the time of registering
+     *   {@code IVTNManagerAware} listener in the VTN Manager, then this
+     *   method is called with information about each VTN so that the
+     *   existence of these can be notified to listener.
+     *   {@code type} is specified as {@link UpdateType#ADDED} in such cases.
+     * </p>
+     *
+     * @param path     A {@link VTenantPath} object that specifies the
+     *                 position of the VTN.
+     * @param vtenant  A {@link VTenant} object which represents the VTN
+     *                 information.
+     * @param type
+     *   An {@link UpdateType} object which indicates the type of modification
+     *   is specified.
+     *   <ul>
+     *     <li>
+     *       {@link UpdateType#ADDED} is specified if a new VTN has been
+     *       created.
+     *       <ul>
+     *         <li>
+     *           The position of the newly created VTN is passed to
+     *           {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the newly created VTN is passed to
+     *           {@code vtenant}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       {@link UpdateType#CHANGED} is specified if information about the
+     *       specified VTN has been modified.
+     *       <ul>
+     *         <li>
+     *           The position of the modified VTN is passed to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the updated VTN is passed to
+     *           {@code vtenant}.
+     *         </li>
+     *         <li>
+     *           Change is notified in the following cases.
+     *           <ul>
+     *             <li>The VTN configuration has been changed.</li>
+     *           </ul>
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       {@link UpdateType#REMOVED} is specified if the specified VTN
+     *       has been removed.
+     *       <ul>
+     *         <li>
+     *           The position of the removed VTN is passed to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the VTN just prior to its removal is
+     *           passed to {@code vtenant}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *   </ul>
      */
     void vtnChanged(VTenantPath path, VTenant vtenant, UpdateType type);
 
     /**
-     * Invoked when a virtual L2 bridge is added, removed, or changed.
+     * Invoked when the information related to
+     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>} inside
+     * the container is changed.
      *
-     * @param path     Path to the bridge.
-     * @param vbridge  Information about the virtual L2 bridge.
-     * @param type     {@code ADDED} if added.
-     *                 {@code REMOVED} if removed.
-     *                 {@code CHANGED} if changed.
+     * <p>
+     *   If at least one vBridge exists in the container at the time of
+     *   registering {@code IVTNManagerAware} listener in the VTN Manager,
+     *   then this method is called with specifying information about each
+     *   vBridge so that the existence of these can be notified to listener.
+     * </p>
+     * <ul>
+     *   <li>
+     *     It is guaranteed that
+     *     {@link #vtnChanged(VTenantPath, VTenant, UpdateType)}, which
+     *     notifies the existence of the
+     *     {@linkplain <a href="package-summary.html#VTN">VTN</a>} to which
+     *     this vBridge belongs, is called first.
+     *   </li>
+     *   <li>
+     *     In that case {@link UpdateType#ADDED} is passed to {@code type}.
+     *   </li>
+     * </ul>
+     *
+     * @param path     A {@link VBridgePath} object that specifies the
+     *                 position of the vBridge.
+     * @param vbridge  A {@link VBridge} object which represents the vBridge
+     *                 information.
+     * @param type
+     *   An {@link UpdateType} object which indicates the type of modification
+     *   is specified.
+     *   <ul>
+     *     <li>
+     *       {@link UpdateType#ADDED} is specified if a new vBridge has been
+     *       created.
+     *       <ul>
+     *         <li>
+     *           The position of the newly created vBridge is passed to
+     *           {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the newly created vBridge is passed to
+     *           {@code vbridge}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       {@link UpdateType#CHANGED} is specified if information about the
+     *       specified vBridge has been modified.
+     *       <ul>
+     *         <li>
+     *           The position of the modified vBridge is passed to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the updated vBridge is passed to
+     *           {@code vbridge}.
+     *         </li>
+     *         <li>
+     *           Change is notified in the following cases.
+     *           <ul>
+     *             <li>The vBridge configuration has been changed.</li>
+     *             <li>The status of the vBridge has been changed.</li>
+     *           </ul>
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       {@link UpdateType#REMOVED} is specified if the specified vBridge
+     *       has been removed.
+     *       <ul>
+     *         <li>
+     *           The position of the removed vBridge is passed to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the vBridge just prior to its removal is
+     *           passed to {@code vbridge}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *   </ul>
      */
     void vBridgeChanged(VBridgePath path, VBridge vbridge, UpdateType type);
 
     /**
-     * Invoked when a virtual L2 bridge interface is added, removed, or
-     * changed.
+     * Invoked when the information related to the
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
+     * configured in
+     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>} inside
+     * the container is changed.
      *
-     * @param path    Path to the interface.
-     * @param viface  Information about the virtual interface.
-     * @param type    {@code ADDED} if added.
-     *                {@code REMOVED} if removed.
-     *                {@code CHANGED} if changed.
+     * <p>
+     *   If at least one vBridge interface exists in the container at the time
+     *   of registering {@code IVTNManagerAware} listener in the VTN Manager,
+     *   then this method is called with specifying information about each
+     *   vBridge interface so that the existence of these can be notified to
+     *   listener.
+     * </p>
+     * <ul>
+     *   <li>
+     *     It is guaranteed that
+     *     {@link #vBridgeChanged(VBridgePath, VBridge, UpdateType)}, which
+     *     notifies the existence of the vBridge to which this vBridge
+     *     interface belongs, is called first.
+     *   </li>
+     *   <li>
+     *     In that case {@link UpdateType#ADDED} is passed to {@code type}.
+     *   </li>
+     * </ul>
+     *
+     * @param path    A {@link VBridgeIfPath} object that specifies the
+     *                position of the vBridge interface.
+     * @param viface  A {@link VInterface} object which represents the vBridge
+     *                interface information.
+     * @param type
+     *   An {@link UpdateType} object which indicates the type of modification
+     *   is specified.
+     *   <ul>
+     *     <li>
+     *       {@link UpdateType#ADDED} is specified if a new vBridge interface
+     *       has been created.
+     *       <ul>
+     *         <li>
+     *           The position of the newly created vBridge interface is
+     *           passed to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the newly created vBridge interface is
+     *           passed to {@code viface}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       {@link UpdateType#CHANGED} is specified if information about the
+     *       specified vBridge interface has been modified.
+     *       <ul>
+     *         <li>
+     *           The position of the modified vBridge interface is specified
+     *           to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the updated vBridge interface is specified
+     *           to {@code viface}.
+     *         </li>
+     *         <li>
+     *           Change is notified in the following cases.
+     *           <ul>
+     *             <li>
+     *               The vBridge interface configuration has been changed.
+     *             </li>
+     *             <li>
+     *               The status of the vBridge interface has been changed.
+     *             </li>
+     *           </ul>
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       {@link UpdateType#REMOVED} is specified if the specified vBridge
+     *       interface has been removed.
+     *       <ul>
+     *         <li>
+     *           The position of the removed vBridge interface is passed to
+     *           {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the vBridge interface just prior to its
+     *           removal is passed to {@code viface}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *   </ul>
      */
     void vBridgeInterfaceChanged(VBridgeIfPath path, VInterface viface,
                                  UpdateType type);
 
     /**
-     * Invoked when a VLAN is mapped to the virtual L2 bridge, or unmapped.
+     * Invoked when the information related to the
+     * {@linkplain <a href="package-summary.html#VLAN-map">VLAN mapping</a>}
+     * configured in
+     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>} inside
+     * the container is changed.
      *
-     * @param path   Path to the bridge associated with the VLAN mapping.
-     * @param vlmap  Information about the VLAN mapping.
-     * @param type   {@code ADDED} if added.
-     *               {@code REMOVED} if removed.
+     * <p>
+     *   If at least one VLAN mapping configured in vBridge exists in the
+     *   container at the time of registering {@code IVTNManagerAware}
+     *   listener in the VTN Manager, then this method is called with
+     *   specifying information about each VLAN mapping so that the existence
+     *   of these can be notified to listener.
+     * </p>
+     * <ul>
+     *   <li>
+     *     It is guaranteed that
+     *     {@link #vBridgeChanged(VBridgePath, VBridge, UpdateType)}, which
+     *     notifies the existence of the vBridge wherein this VLAN mapping is
+     *     configured, is called first.
+     *   </li>
+     *   <li>
+     *     In that case {@link UpdateType#ADDED} is passed to {@code type}.
+     *   </li>
+     * </ul>
+     *
+     * @param path   A {@link VBridgePath} object that specifies the position
+     *               of the VBridge.
+     * @param vlmap  A {@link VlanMap} object which represents the VLAN mapping
+     *               information.
+     * @param type
+     *   An {@link UpdateType} object which indicates the type of modification
+     *   is specified.
+     *   <ul>
+     *     <li>
+     *       {@link UpdateType#ADDED} is specified if a new VLAN mapping has
+     *       been configured.
+     *       <ul>
+     *         <li>
+     *           The position of the vBridge in which the VLAN mapping is
+     *           configured is passed to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the VLAN mapping is passed to {@code vlmap}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       {@link UpdateType#REMOVED} is specified if the specified VLAN
+     *       mapping has been removed.
+     *       <ul>
+     *         <li>
+     *           The position of the vBridge from which the VLAN mapping is
+     *           removed is passed to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the VLAN mapping just prior to its removal
+     *           is passed to {@code vlmap}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       {@link UpdateType#CHANGED} will never be passed because
+     *       information of existing VLAN mapping cannot be changed.
+     *     </li>
+     *   </ul>
      */
     void vlanMapChanged(VBridgePath path, VlanMap vlmap, UpdateType type);
 
     /**
-     * Invoked when a mapping between virtual bridge interface between
-     * a physical switch port is established or destroyed.
+     * Invoked when the information related to the
+     * {@linkplain <a href="package-summary.html#port-map">port mapping</a>}
+     * configured in
+     * {@linkplain <a href="package-summary.html#vInterface">vBridge interface</a>}
+     * inside the container is changed.
      *
-     * @param path  Path to the bridge interface associated with the port
-     *              mapping.
-     * @param pmap  Information about the port mapping.
-     * @param type  {@code ADDED} if established.
-     *              {@code REMOVED} if destroyed.
-     *              {@code CHANGED} if changed.
+     * <p>
+     *   If at least one port mapping configured in vBridge interface exists
+     *   in the container at the time of registering {@code IVTNManagerAware}
+     *   listener in the VTN Manager, then this method is called with
+     *   specifying information about each port mapping so that the existence
+     *   of these can be notified to listener.
+     * </p>
+     * <ul>
+     *   <li>
+     *     It is guaranteed that
+     *     {@link #vBridgeInterfaceChanged(VBridgeIfPath, VInterface, UpdateType)},
+     *     which notifies the existence of the vBridge interface wherein this
+     *     port mapping is configured, is called first.
+     *   </li>
+     *   <li>
+     *     In that case {@link UpdateType#ADDED} is passed to {@code type}.
+     *   </li>
+     * </ul>
+     *
+     * @param path  A {@link VBridgeIfPath} object that specifies the position
+     *              of the vBridge interface.
+     * @param pmap  A {@link PortMap} object which represents the port mapping
+     *              information.
+     * @param type
+     *   An {@link UpdateType} object which indicates the type of modification
+     *   is specified.
+     *   <ul>
+     *     <li>
+     *       {@link UpdateType#ADDED} is specified if a new port mapping is
+     *       configured.
+     *       <ul>
+     *         <li>
+     *           The position of the vBridge interface in which the port
+     *           mapping is configured is passed to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the port mapping is passed to {@code pmap}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       {@link UpdateType#CHANGED} is specified if information about the
+     *       specified port mapping has been modified.
+     *       <ul>
+     *         <li>
+     *           The position of the modified vBridge interface in which the
+     *           port mapping is configured is passed to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the updated port mapping is specified to
+     *           {@code pmap}.
+     *         </li>
+     *         <li>
+     *           Change is notified in the following cases.
+     *           <ul>
+     *             <li>
+     *               The port mapping configuration has been changed.
+     *             </li>
+     *             <li>
+     *               The physical switch port actually mapped by the port
+     *               mapping has been changed.
+     *             </li>
+     *           </ul>
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       {@link UpdateType#REMOVED} is specified if the specified port
+     *       mapping has been removed.
+     *       <ul>
+     *         <li>
+     *           The position of the vBridge interface from which the port
+     *           mapping is removed is passed to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the port mapping just prior to its removal
+     *           is passed to {@code pmap}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *   </ul>
      */
     void portMapChanged(VBridgeIfPath path, PortMap pmap, UpdateType type);
 }

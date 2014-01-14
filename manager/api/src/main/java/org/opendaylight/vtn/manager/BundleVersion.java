@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -19,6 +19,11 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 /**
  * {@code BundleVersion} class describes version information of the
  * VTN Manager OSGi bundle.
+ *
+ * <p>
+ *   This class is used for passing OSGi bundle version of the VTN Manager to
+ *   other components.
+ * </p>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "bundleVersion")
@@ -40,25 +45,32 @@ public class BundleVersion implements Serializable {
     private static final int  HASHCODE_SHIFT_MINOR = 16;
 
     /**
-     * The major component of the bundle version identifier.
+     * The major component of the OSGi bundle version identifier.
      */
-    @XmlAttribute
+    @XmlAttribute(required = true)
     private int  major;
 
     /**
-     * The minor component of the bundle version identifier.
+     * The minor component of the OSGi bundle version identifier.
      */
-    @XmlAttribute
+    @XmlAttribute(required = true)
     private int  minor;
 
     /**
-     * The micro component of the bundle version identifier.
+     * The micro component of the OSGi bundle version identifier.
      */
-    @XmlAttribute
+    @XmlAttribute(required = true)
     private int  micro;
 
     /**
-     * The qualifier component of the bundle version identifier.
+     * The qualifier component of the OSGi bundle version identifier.
+     *
+     * <ul>
+     *   <li>
+     *     This attribute is omitted if the qualifier component is not set
+     *     in the OSGi bundle version identifier.
+     *   </li>
+     * </ul>
      */
     @XmlAttribute
     private String  qualifier;
@@ -71,14 +83,15 @@ public class BundleVersion implements Serializable {
     }
 
     /**
-     * Construct a new bundle version object.
+     * Construct a new {@code BundleVersion} object which represents the
+     * OSGi bundle version information.
      *
-     * @param major      The major component of the bundle version.
-     * @param minor      The minor component of the bundle version.
-     * @param micro      The micro component of the bundle version.
-     * @param qualifier  The qualifier component of the bundle version.
+     * @param major      The major component of the OSGi bundle version.
+     * @param minor      The minor component of the OSGi bundle version.
+     * @param micro      The micro component of the OSGi bundle version.
+     * @param qualifier  The qualifier component of the OSGi bundle version.
      *                   {@code null} can be specified if no qualifier is
-     *                   defined.
+     *                   defined in the OSGi bundle version.
      */
     public BundleVersion(int major, int minor, int micro, String qualifier) {
         this.major = major;
@@ -89,36 +102,36 @@ public class BundleVersion implements Serializable {
     }
 
     /**
-     * Return the major component of the bundle version.
+     * Return the major component of the OSGi bundle version.
      *
-     * @return  The major component of the bundle version.
+     * @return  The major component of the OSGi bundle version.
      */
     public int getMajor() {
         return major;
     }
 
     /**
-     * Return the minor component of the bundle version.
+     * Return the minor component of the OSGi bundle version.
      *
-     * @return  The minor component of the bundle version.
+     * @return  The minor component of the OSGi bundle version.
      */
     public int getMinor() {
         return minor;
     }
 
     /**
-     * Return the micro component of the bundle version.
+     * Return the micro component of the OSGi bundle version.
      *
-     * @return  The micro component of the bundle version.
+     * @return  The micro component of the OSGi bundle version.
      */
     public int getMicro() {
         return micro;
     }
 
     /**
-     * Return the qualifier component of the bundle version.
+     * Return the qualifier component of the OSGi bundle version.
      *
-     * @return  The qualifier component of the bundle version.
+     * @return  The qualifier component of the OSGi bundle version.
      *          {@code null} is returned if no qualifier is defined.
      */
     public String getQualifier() {
@@ -127,6 +140,25 @@ public class BundleVersion implements Serializable {
 
     /**
      * Determine whether the given object is identical to this object.
+     *
+     * <p>
+     *   {@code true} is returned only if all the following conditions are met.
+     * </p>
+     * <ul>
+     *   <li>
+     *     {@code o} is a {@code BundleVersion} object.
+     *   </li>
+     *   <li>
+     *     The following values stored in {@code o} are the same as in this
+     *     object.
+     *     <ul>
+     *       <li>The major component of the OSGi bundle version.</li>
+     *       <li>The minor component of the OSGi bundle version.</li>
+     *       <li>The micro component of the OSGi bundle version.</li>
+     *       <li>The qualifier component of the OSGi bundle version.</li>
+     *     </ul>
+     *   </li>
+     * </ul>
      *
      * @param o  An object to be compared.
      * @return   {@code true} if identical. Otherwise {@code false}.

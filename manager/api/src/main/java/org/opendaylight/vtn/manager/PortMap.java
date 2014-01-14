@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,8 +14,18 @@ import java.io.Serializable;
 import org.opendaylight.controller.sal.core.NodeConnector;
 
 /**
- * {@code PortMap} class describes information about mapping between virtual
- * bridge interface and physical switch port.
+ * {@code PortMap} class describes information about the
+ * {@linkplain <a href="package-summary.html#port-map">port mapping</a>}, which
+ * maps a physical switch port to a
+ * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
+ * in a {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
+ *
+ * <p>
+ *   The VTN Manager passes the port mapping information to other components
+ *   by passing {@code PortMap} object.
+ * </p>
+ *
+ * @see  <a href="package-summary.html#port-map">Port mapping</a>
  */
 public class PortMap implements Serializable {
     /**
@@ -24,22 +34,31 @@ public class PortMap implements Serializable {
     private static final long serialVersionUID = 9006400881038730332L;
 
     /**
-     * Port mapping configuration.
+     * {@linkplain <a href="package-summary.html#port-map">Port mapping</a>}
+     * configuration.
      */
     private final PortMapConfig  config;
 
     /**
-     * Node connector associated with the switch port actually mapped to the
-     * virtual bridge interface.
+     * Node connector corresponding to the the physical switch port actually
+     * mapped to the
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
+     * in the {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
      */
     private final NodeConnector  nodeConnector;
 
     /**
-     * Construct a new port mapping information.
+     * Construct a new object which represents information about the
+     * {@linkplain <a href="package-summary.html#port-map">port mapping</a>}.
      *
-     * @param pmconf  Port mapping configuration.
-     * @param nc      Node connector associated with the switch port actually
-     *                mapped to the virtual bridge interface.
+     * @param pmconf  A {@link PortMapConfig} object which contains
+     *                configuration information about port mapping.
+     * @param nc
+     *   A {@link NodeConnector} object corresponding to a physical switch port
+     *   actually mapped to the
+     *   {@linkplain <a href="package-summary.html#vInterface">vBridge interface</a>}.
+     *   Specify {@code null} if there is no physical switch port that
+     *   fulfills the conditions specified by {@code pmconf}.
      */
     public PortMap(PortMapConfig pmconf, NodeConnector nc) {
         this.config = pmconf;
@@ -47,20 +66,27 @@ public class PortMap implements Serializable {
     }
 
     /**
-     * Return the configuration for port mapping.
+     * Return the configuration for
+     * {@linkplain <a href="package-summary.html#port-map">port mapping</a>}.
      *
-     * @return  Port mapping configuration.
+     * @return  A {@link PortMapConfig} object which contains port mapping
+     *          configuration.
      */
     public PortMapConfig getConfig() {
         return config;
     }
 
     /**
-     * Return the node connector associated with the switch port actually
-     * mapped to the virtual bridge interface.
+     * Return the node connector corresponding to the physical switch port
+     * actually mapped to the
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
+     * in the
+     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
      *
-     * @return  A node connector. {@code null} is returned if the physical
-     *          switch port which matches the configuration is not found.
+     * @return  A {@link NodeConnector} object corresponding to the physical
+     *          swtich port actually mapped to the vBridge interface.
+     *          {@code null} is returned if no physical switch port meets the
+     *          conditions specified by the port mapping configuration.
      */
     public NodeConnector getNodeConnector() {
         return nodeConnector;
@@ -68,6 +94,31 @@ public class PortMap implements Serializable {
 
     /**
      * Determine whether the given object is identical to this object.
+     *
+     * <p>
+     *   {@code true} is returned only if all the following conditions are met.
+     * </p>
+     * <ul>
+     *   <li>
+     *     {@code o} is a {@code PortMap} object.
+     *   </li>
+     *   <li>
+     *     The following values stored in {@code o} are the same as in this
+     *     object.
+     *     <ul>
+     *       <li>
+     *         {@link PortMapConfig} object which represents the
+     *         {@linkplain <a href="package-summary.html#port-map">port mapping</a>}
+     *         configuration.
+     *       </li>
+     *       <li>
+     *         {@link NodeConnector} object corresponding to the physical
+     *         switch port actually mapped to the
+     *         {@linkplain <a href="package-summary.html#vInterface">vBridge interface</a>}.
+     *       </li>
+     *     </ul>
+     *   </li>
+     * </ul>
      *
      * @param o  An object to be compared.
      * @return   {@code true} if identical. Otherwise {@code false}.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -21,14 +21,26 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.opendaylight.vtn.manager.VTenant;
 
 /**
- * A JAXB class which represents a list of virtual tenant information.
+ * {@code VTenantList} class describes a list of VTN (virtual tenant network)
+ * information.
+ *
+ * <p>
+ *   This class is used to return a list of VTN information to REST client.
+ * </p>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vtns")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VTenantList {
     /**
-     * A list of virtual tenant information.
+     * A list of {@link VTenant} instances.
+     *
+     * <ul>
+     *   <li>
+     *     This element contains 0 or more {@link VTenant} instances which
+     *     represent VTN information.
+     *   </li>
+     * </ul>
      */
     @XmlElement(name = "vtn")
     private List<VTenant>  tenantList;
@@ -49,9 +61,9 @@ public class VTenantList {
     }
 
     /**
-     * Return a list of virtual tenant information.
+     * Return a list of VTN information.
      *
-     * @return A list of virtual tenant information.
+     * @return A list of VTN information.
      */
     List<VTenant> getList() {
         return tenantList;

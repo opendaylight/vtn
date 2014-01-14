@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -19,8 +19,16 @@ import javax.xml.bind.annotation.XmlRootElement;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * {@code VInterfaceConfig} class describes configuration for an interface
- * attached to the virtual layer 2 bridge.
+ * {@code VInterfaceConfig} class describes configuration information about the
+ * virtual interface.
+ *
+ * <p>
+ *   This class is used for specifying the virtual interface information to the
+ *   VTN Manager during the creation or modification of the virtual interface
+ *   in vBridge.
+ * </p>
+ *
+ * @see  <a href="package-summary.html#vInterface">Virtual interface</a>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "interfaceconf")
@@ -32,13 +40,33 @@ public class VInterfaceConfig implements Serializable {
     private static final long serialVersionUID = -6152398562520322469L;
 
     /**
-     * An arbitrary description about the interface.
+     * An arbitrary description of the virtual interface.
+     *
+     * <ul>
+     *   <li>
+     *     There are no restrictions on the permissible characters or length
+     *     of the string.
+     *   </li>
+     *   <li>
+     *     The description is not configured if omitted.
+     *   </li>
+     * </ul>
      */
     @XmlAttribute
     private String  description;
 
     /**
-     * Determine whether the interface is enabled or not.
+     * A boolean value which determines whether the virtual interface is to
+     * be enabled or not.
+     *
+     * <ul>
+     *   <li>
+     *     Specify {@code true} for enabling the virtual interface.
+     *   </li>
+     *   <li>
+     *     Specify {@code false} for disabling the virtual interface.
+     *   </li>
+     * </ul>
      */
     @XmlAttribute
     private Boolean  enabled;
@@ -51,15 +79,25 @@ public class VInterfaceConfig implements Serializable {
     }
 
     /**
-     * Construct a new interface configuration.
+     * Construct a new configuration information about the
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}.
      *
-     * @param desc    Description about the interface.
-     * @param enabled {@code Boolean.TRUE} means that the interface should be
-     *                enabled.
-     *                {@code Boolean.FALSE} means that the interface should be
-     *                disabled.
-     *                {@code null} is treated as default value or undefined
-     *                value.
+     * @param desc    An arbitrary description of the virtual interface.
+     *                Specifying {@code null} will imply that description is
+     *                not configured for the virtual interface.
+     * @param enabled
+     *   A boolean value which determines whether the virtual interface is
+     *   to be enabled or not.
+     *   <ul>
+     *     <li>
+     *       Specify {@link Boolean#TRUE} for enabling and
+     *       {@link Boolean#FALSE} for disabling the interface.
+     *     </li>
+     *     <li>
+     *       Specifying {@code null} will imply that description is not
+     *       configured for the interface.
+     *     </li>
+     *   </ul>
      */
     public VInterfaceConfig(String desc, Boolean enabled) {
         description = desc;
@@ -67,9 +105,10 @@ public class VInterfaceConfig implements Serializable {
     }
 
     /**
-     * Return description about the interface.
+     * Return the description of the
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}.
      *
-     * @return  Description about the interface.
+     * @return  The description of the virtual interface.
      *          {@code null} is returned if description is not set.
      */
     public String getDescription() {
@@ -77,11 +116,14 @@ public class VInterfaceConfig implements Serializable {
     }
 
     /**
-     * Determine whether the interface is enabled or not.
+     * Determine whether the
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
+     * is to be enabled or not.
      *
-     * @return  {@code Boolean.TRUE} if the interface is enabled.
-     *          {@code Boolean.FALSE} if the interface is disabled.
-     *          {@code null} if interface state is not specified.
+     * @return  {@link Boolean#TRUE} if the interface is configured as enable.
+     *          {@link Boolean#FALSE} if the interface is configured as
+     *          disable.
+     *          {@code null} if enable/disable configuration is not specified.
      */
     public Boolean getEnabled() {
         return enabled;
@@ -89,6 +131,26 @@ public class VInterfaceConfig implements Serializable {
 
     /**
      * Determine whether the given object is identical to this object.
+     *
+     * <p>
+     *   {@code true} is returned only if all the following conditions are met.
+     * </p>
+     * <ul>
+     *   <li>
+     *     {@code o} is a {@code VInterfaceConfig} object.
+     *   </li>
+     *   <li>
+     *     The following values stored in {@code o} are the same as in this
+     *     object.
+     *     <ul>
+     *       <li>
+     *         The description of the
+     *         {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}.
+     *       </li>
+     *       <li>Interface enable/disable configuration.</li>
+     *     </ul>
+     *   </li>
+     * </ul>
      *
      * @param o  An object to be compared.
      * @return   {@code true} if identical. Otherwise {@code false}.

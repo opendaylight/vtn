@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,10 +13,12 @@ import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
- * The {@code VTNException} class is an exception thrown by VTN Manager API.
+ * {@code VTNException} is an exception for notifying errors that occur in
+ *  OSGi services provided by the VTN Manager.
  *
  * <p>
- *   This exception is used to throw a failure status as an exception.
+ *   This exception is used for notifying the {@link Status} which indicates
+ *   the result of the operation.
  * </p>
  */
 public class VTNException extends Exception {
@@ -26,14 +28,20 @@ public class VTNException extends Exception {
     private static final long serialVersionUID = -3983343760793384085L;
 
     /**
-     * Operation status.
+     * The {@link Status} object which indicates the result of the operation.
      */
     private final Status  status;
 
     /**
-     * Construct a VTN manager exception.
+     * Construct a new {@code VTNException} object that internally stores
+     * the {@link Status} object specified by {@code status}.
      *
-     * @param status   A status to be delivered as exception.
+     * <p>
+     *   The message configured in {@code status} will get configured in
+     *   the message of the exception.
+     * </p>
+     *
+     * @param status   A {@code Status} object to be delivered as exception.
      */
     public VTNException(Status status) {
         super((status == null) ? null : status.toString());
@@ -41,10 +49,18 @@ public class VTNException extends Exception {
     }
 
     /**
-     * Consturct a VTN exception with SAL status and cause of exception.
+     * Consturct a new {@code VTNException} object that indicates the
+     * VTN Manager has caught an unexpected exception specified by
+     * {@code cause}.
      *
-     * @param status   A status to be delivered as exception.
-     * @param cause    The cause of an error.
+     * <p>
+     *   The message configured in {@code status} will get configured in
+     *   the message of the exception.
+     * </p>
+     *
+     * @param status   A {@code Status} object to be delivered as exception.
+     * @param cause    The {@link Throwable} object which indicates the cause
+     *                 of an error.
      */
     public VTNException(Status status, Throwable cause) {
         super((status == null) ? null : status.toString(), cause);
@@ -52,9 +68,15 @@ public class VTNException extends Exception {
     }
 
     /**
-     * Construct a VTN exception.
+     * Consturct a new {@code VTNException} object that internally stores
+     * the {@link Status} object created from {@code code} and {@code desc}.
      *
-     * @param code  The status code.
+     * <p>
+     *   A string specified by {@code desc} will get configured in
+     *   the message of the exception.
+     * </p>
+     *
+     * @param code  The status code which indicates the cause of error.
      * @param desc  Description about the status.
      */
     public VTNException(StatusCode code, String desc) {
@@ -62,20 +84,35 @@ public class VTNException extends Exception {
     }
 
     /**
-     * Construct a new VTN exception which represents an error caused by
-     * unexpected exception.
+     * Consturct a new {@code VTNException} object that internally stores
+     * the {@link Status} object created from {@code code} and {@code desc}.
+     *
+     * <ul>
+     *   <li>
+     *     The {@link Status} object for a new exception is created from
+     *     {@link StatusCode#INTERNALERROR} and the message specified by
+     *     {@code message}.
+     *   </li>
+     *   <li>
+     *     A string specified by {@code message} will get configured in
+     *     the message of the exception.
+     *   </li>
+     * </ul>
      *
      * @param message  The detailed message.
-     * @param cause    The cause of an error.
+     * @param cause    The {@link Throwable} object which indicates the cause
+     *                 of error.
      */
     public VTNException(String message, Throwable cause) {
         this(new Status(StatusCode.INTERNALERROR, message), cause);
     }
 
     /**
-     * Get status which indicates the cause of error.
+     * Return the {@link Status} object which indicates the result of the
+     * operation.
      *
-     * @return A status.
+     * @return  The {@link Status} object which indicates the result of the
+     *          operation.
      */
     public Status getStatus() {
         return status;

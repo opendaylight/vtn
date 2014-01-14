@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,8 +10,20 @@
 package org.opendaylight.vtn.manager;
 
 /**
- * {@code VBridgeIfPath} class describes fully-qualified name of the virtual
- * interface in the virtual L2 bridge.
+ * {@code VBridgeIfPath} class describes the position of the
+ * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
+ * in the {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
+ *
+ * <p>
+ *   This class inherits {@link VBridgePath} and also stores the position
+ *   information of the {@linkplain <a href="package-summary.html#VTN">VTN</a>}
+ *   and the vBridge to which the virtual interface belongs.
+ *   An object of this class is used to identify the vBridge interface while
+ *   executing any operations against it.
+ * </p>
+ *
+ * @see  <a href="package-summary.html#vBridge">vBridge</a>
+ * @see  <a href="package-summary.html#vInterface">Virtual interface</a>
  */
 public class VBridgeIfPath extends VBridgePath {
     /**
@@ -20,16 +32,26 @@ public class VBridgeIfPath extends VBridgePath {
     private static final long serialVersionUID = -5494415245844633625L;
 
     /**
-     * The name of the interface.
+     * The name of the
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}.
      */
     private final String  ifName;
 
     /**
-     * Construct a path to the virtual L2 bridge.
+     * Construct a new object which represents the position of the
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
+     * inside {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
      *
-     * @param tenantName  The name of the tenant.
-     * @param bridgeName  The name of the bridge.
-     * @param ifName      The name of the interface.
+     * <p>
+     *   Exception will not occur even if incorrect name, such as {@code null},
+     *   is specified to {@code tenantName}, {@code bridgeName}, or
+     *   {@code ifName}, but there will be error if you specify such
+     *   {@code VBridgeIfPath} object in API of {@link IVTNManager} service.
+     * </p>
+     *
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
+     * @param ifName      The name of the virtual interface.
      */
     public VBridgeIfPath(String tenantName, String bridgeName, String ifName) {
         super(tenantName, bridgeName);
@@ -37,10 +59,27 @@ public class VBridgeIfPath extends VBridgePath {
     }
 
     /**
-     * Construct a path to the virtual L2 bridge.
+     * Construct a new object which represents the position of the
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
+     * inside {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
      *
-     * @param bridgePath  Path to the virtual bridge.
-     * @param ifName      The name of the interface.
+     * <p>
+     *   This constructor specifies the vBridge to which the virtual interface
+     *   belongs by using {@link VBridgePath}.
+     * </p>
+     *
+     * <p>
+     *   Exception will not occur even if incorrect name, such as {@code null},
+     *   is specified to {@code ifName}, but there will be error if you
+     *   specify such {@code VBridgeIfPath} object in API of
+     *   {@link IVTNManager} service.
+     * </p>
+     *
+     * @param bridgePath  A {@link VBridgePath} object that specifies the
+     *                    position of the vBridge.
+     *                    All the values in the specified object are copied to
+     *                    a new object.
+     * @param ifName      The name of the virtual interface.
      * @throws NullPointerException  {@code bridgePath} is {@code null}.
      */
     public VBridgeIfPath(VBridgePath bridgePath, String ifName) {
@@ -48,9 +87,10 @@ public class VBridgeIfPath extends VBridgePath {
     }
 
     /**
-     * Return the name of the interface.
+     * Return the name of the
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}.
      *
-     * @return  The name of the interface.
+     * @return  The name of the virtual interface.
      */
     public String getInterfaceName() {
         return ifName;
@@ -73,6 +113,33 @@ public class VBridgeIfPath extends VBridgePath {
 
     /**
      * Determine whether the given object is identical to this object.
+     *
+     * <p>
+     *   {@code true} is returned only if all the following conditions are met.
+     * </p>
+     * <ul>
+     *   <li>
+     *     {@code o} is a {@code VBridgeIfPath} object.
+     *   </li>
+     *   <li>
+     *     The following values stored in {@code o} are the same as in this
+     *     object.
+     *     <ul>
+     *       <li>
+     *         The name of the
+     *         {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
+     *       </li>
+     *       <li>
+     *         The name of the
+     *         {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
+     *       </li>
+     *       <li>
+     *         The name of the
+     *         {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}.
+     *       </li>
+     *     </ul>
+     *   </li>
+     * </ul>
      *
      * @param o  An object to be compared.
      * @return   {@code true} if identical. Otherwise {@code false}.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -21,14 +21,26 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.opendaylight.vtn.manager.VBridge;
 
 /**
- * A JAXB class which represents a list of virtual L2 bridge information.
+ * {@code VBridgeList} class describes a list of vBridge (virtual L2 bridge)
+ * information.
+ *
+ * <p>
+ *   This class is used to return a list of vBridge information to REST client.
+ * </p>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vbridges")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VBridgeList {
     /**
-     * A list of virtual L2 bridge information.
+     * A list of {@link VBridge} instances.
+     *
+     * <ul>
+     *   <li>
+     *     This element contains 0 or more {@link VBridge} instances which
+     *     represent vBridge information.
+     *   </li>
+     * </ul>
      */
     @XmlElement(name = "vbridge")
     private List<VBridge>  bridgeList;

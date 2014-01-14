@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -21,14 +21,30 @@ import javax.xml.bind.annotation.XmlRootElement;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * JAXB mapping for a set of {@link IpAddress}.
+ * {@code IpAddressSet} class describes a set of IP addresses.
+ *
+ * <p>
+ *   An instance of {@code IpAddressSet} contains zero or more
+ *   {@link IpAddress} instances.
+ * </p>
+ * <ul>
+ *   <li>
+ *     Order of {@link IpAddress} instances in a {@code IpAddressSet} instance
+ *     is unspecified.
+ *   </li>
+ *   <li>
+ *     An {@code IpAddressSet} instance contains no duplicate
+ *     {@link IpAddress} insntances.
+ *   </li>
+ * </ul>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "inetAddresses")
 @XmlAccessorType(XmlAccessType.NONE)
 public class IpAddressSet {
     /**
-     * A set of IP address in text.
+     * A set of {@link IpAddress} instances which represents a set of
+     * IP addresses.
      */
     @XmlElement(name = "inetAddress")
     private final Set<IpAddress>  ipAddress = new HashSet<IpAddress>();

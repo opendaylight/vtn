@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,6 +10,18 @@
 package org.opendaylight.vtn.manager.northbound;
 
 import java.util.List;
+
+import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
+import static java.net.HttpURLConnection.HTTP_CONFLICT;
+import static java.net.HttpURLConnection.HTTP_CREATED;
+import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
+import static java.net.HttpURLConnection.HTTP_NOT_ACCEPTABLE;
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
+import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
+import static java.net.HttpURLConnection.HTTP_OK;
+import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
+import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
+import static java.net.HttpURLConnection.HTTP_UNSUPPORTED_TYPE;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -27,6 +39,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.codehaus.enunciate.jaxrs.ResponseCode;
+import org.codehaus.enunciate.jaxrs.ResponseHeader;
+import org.codehaus.enunciate.jaxrs.ResponseHeaders;
 import org.codehaus.enunciate.jaxrs.StatusCodes;
 import org.codehaus.enunciate.jaxrs.TypeHint;
 
@@ -45,41 +59,43 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.utils.Status;
 
 /**
- * Northbound REST APIs to handle virtual interfaces attached to virtual
- * layer 2 bridge.
- *
- * <br>
- * <br>
- * Authentication scheme : <b>HTTP Basic</b><br>
- * Authentication realm : <b>opendaylight</b><br>
- * Transport : <b>HTTP and HTTPS</b><br>
- * <br>
- * HTTPS Authentication is disabled by default. Administrator can enable it in
- * tomcat-server.xml after adding a proper keystore / SSL certificate from a
- * trusted authority.<br>
- * More info :
- * http://tomcat.apache.org/tomcat-7.0-doc/ssl-howto.html#Configuration
+ * This class provides Northbound REST APIs to handle virtual interface
+ * in vBridge.
  */
 @Path("/{containerName}/vtns/{tenantName}/vbridges/{bridgeName}/interfaces")
 public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
     /**
-     * Returns a list of all interfaces attached to the specified virtual L2
-     * bridge.
+     * Return information about all the virtual interfaces present in the
+     * specified vBridge.
      *
      * @param containerName  The name of the container.
-     * @param tenantName     The name of the tenant.
-     * @param bridgeName     The name of the bridge.
-     * @return  A list of virtual interfaces attached to the bridge.
+     * @param tenantName     The name of the VTN.
+     * @param bridgeName     The name of the vBridge.
+     * @return  <strong>interfaces</strong> element contains information about
+     *          all the virtual interfaces in the vBridge specified by the
+     *          requested URI.
      */
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     @TypeHint(VInterfaceList.class)
     @StatusCodes({
-            @ResponseCode(code = 200, condition = "Operation successful"),
-            @ResponseCode(code = 401, condition = "Authentication failed"),
-            @ResponseCode(code = 404, condition = "The specified resource does not exist"),
-            @ResponseCode(code = 500, condition = "Failed due to internal error"),
-            @ResponseCode(code = 503, condition = "One or more of Controller Services are unavailable")})
+        @ResponseCode(code = HTTP_OK,
+                      condition = "Operation completed successfully."),
+        @ResponseCode(code = HTTP_UNAUTHORIZED,
+                      condition = "User is not authorized to perform this " +
+                      "operation."),
+        @ResponseCode(code = HTTP_NOT_FOUND,
+                      condition = "<ul>" +
+                      "<li>The specified container does not exist.</li>" +
+                      "<li>The specified VTN does not exist.</li>" +
+                      "<li>The specified vBridge does not exist.</li>" +
+                      "</ul>"),
+        @ResponseCode(code = HTTP_INTERNAL_ERROR,
+                      condition = "Fatal internal error occurred in the " +
+                      "VTN Manager."),
+        @ResponseCode(code = HTTP_UNAVAILABLE,
+                      condition = "One or more of mandatory controller " +
+                      "services, such as the VTN Manager, are unavailable.")})
     public VInterfaceList getBridgeInterfaces(
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
@@ -98,25 +114,40 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
     }
 
     /**
-     * Returns a virtual L2 bridge interface information specified by the
-     * given name.
+     * Return information about the specified virtual interface inside the
+     * specified vBridge.
      *
      * @param containerName  The name of the container.
-     * @param tenantName     The name of the virtual tenant.
-     * @param bridgeName     The name of the virtual bridge.
-     * @param ifName         The name of the virtual bridge interface.
-     * @return  Interface information associated with the specified name.
+     * @param tenantName     The name of the VTN.
+     * @param bridgeName     The name of the vBridge.
+     * @param ifName         The name of the vBridge interface.
+     * @return  <strong>interface</strong> element contains information about
+     *          the vBridge interface specified by the requested URI.
      */
     @Path("{ifName}")
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     @TypeHint(VInterface.class)
     @StatusCodes({
-            @ResponseCode(code = 200, condition = "Operation successful"),
-            @ResponseCode(code = 401, condition = "Authentication failed"),
-            @ResponseCode(code = 404, condition = "The specified resource does not exist"),
-            @ResponseCode(code = 500, condition = "Failed due to internal error"),
-            @ResponseCode(code = 503, condition = "One or more of Controller Services are unavailable")})
+        @ResponseCode(code = HTTP_OK,
+                      condition = "Operation completed successfully."),
+        @ResponseCode(code = HTTP_UNAUTHORIZED,
+                      condition = "User is not authorized to perform this " +
+                      "operation."),
+        @ResponseCode(code = HTTP_NOT_FOUND,
+                      condition = "<ul>" +
+                      "<li>The specified container does not exist.</li>" +
+                      "<li>The specified VTN does not exist.</li>" +
+                      "<li>The specified vBridge does not exist.</li>" +
+                      "<li>The specified vBridge interface does not " +
+                      "exist.</li>" +
+                      "</ul>"),
+        @ResponseCode(code = HTTP_INTERNAL_ERROR,
+                      condition = "Fatal internal error occurred in the " +
+                      "VTN Manager."),
+        @ResponseCode(code = HTTP_UNAVAILABLE,
+                      condition = "One or more of mandatory controller " +
+                      "services, such as the VTN Manager, are unavailable.")})
     public VInterface getBridgeInterface(
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
@@ -134,28 +165,87 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
     }
 
     /**
-     * Add a new virtual interface to the virtual L2 bridge.
+     * Create a new virtual interface inside the specified vBridge.
      *
      * @param uriInfo        Requested URI information.
      * @param containerName  The name of the container.
-     * @param tenantName     The name of the virtual tenant.
-     * @param bridgeName     The name of the virtual bridge.
-     * @param ifName         The name of the virtual bridge interface.
-     * @param iconf          Interface configuration.
+     * @param tenantName     The name of the VTN.
+     * @param bridgeName     The name of the vBridge.
+     * @param ifName
+     *   The name of the vBridge interface to be created.
+     *   <ul>
+     *     <li>
+     *       The length of the name must be greater than <strong>0</strong>
+     *       and less than <strong>32</strong>.
+     *     </li>
+     *     <li>
+     *       The name must consist of US-ASCII alphabets, numbers, and
+     *       underscore ({@code '_'}).
+     *     </li>
+     *     <li>
+     *       The name must start with an US-ASCII alphabet or number.
+     *     </li>
+     *   </ul>
+     * @param iconf
+     *   <strong>interfaceconf</strong> element specifies the vBridge
+     *   interface configuration information.
+     *   <ul>
+     *     <li>
+     *       The description of the vBridge interface is not registered if
+     *       <strong>description</strong> attribute is omitted.
+     *     </li>
+     *     <li>
+     *       Enable/disable configuration is treated as <strong>true</strong>
+     *       if <strong>enabled</strong> attribute is omitted.
+     *     </li>
+     *   </ul>
      * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{ifName}")
     @POST
     @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @TypeHint(TypeHint.NO_CONTENT.class)
+    @ResponseHeaders({
+        @ResponseHeader(name = "Location",
+                        description = "URI corresponding to the newly " +
+                        "created vBridge interface, which is the same URI " +
+                        "specified in request.")})
     @StatusCodes({
-            @ResponseCode(code = 201, condition = "Interface created successfully"),
-            @ResponseCode(code = 401, condition = "Authentication failed"),
-            @ResponseCode(code = 404, condition = "The specified resource does not exist"),
-            @ResponseCode(code = 406, condition = "Cannot operate on Default Container when other Containers are active"),
-            @ResponseCode(code = 409, condition = "Failed to create interface due to conflicting name"),
-            @ResponseCode(code = 415, condition = "Invalid interface name passed in ifName parameter"),
-            @ResponseCode(code = 500, condition = "Failed to create interface. Failure Reason included in HTTP Error response"),
-            @ResponseCode(code = 503, condition = "One or more of Controller services are unavailable")})
+        @ResponseCode(code = HTTP_CREATED,
+                      condition = "vBridge interface was created " +
+                      "successfully."),
+        @ResponseCode(code = HTTP_BAD_REQUEST,
+                      condition = "Incorrect XML or JSON data is specified " +
+                      "in Request body."),
+        @ResponseCode(code = HTTP_UNAUTHORIZED,
+                      condition = "User is not authorized to perform this " +
+                      "operation."),
+        @ResponseCode(code = HTTP_NOT_FOUND,
+                      condition = "<ul>" +
+                      "<li>The specified container does not exist.</li>" +
+                      "<li>The specified VTN does not exist.</li>" +
+                      "<li>The specified vBridge does not exist.</li>" +
+                      "</ul>"),
+        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
+                      condition = "\"default\" is specified to " +
+                      "<u>{containerName}</u> and a container other than " +
+                      "the default container is present."),
+        @ResponseCode(code = HTTP_CONFLICT,
+                      condition = "The vBridge interface specified by the " +
+                      "requested URI already exists."),
+        @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
+                      condition = "<ul>" +
+                      "<li>Unsupported data type is specified in " +
+                      "<strong>Content-Type</strong> header.</li>" +
+                      "<li>Incorrect interface name is specified to " +
+                      "<u>{ifName}</u>.</li>" +
+                      "</ul>"),
+        @ResponseCode(code = HTTP_INTERNAL_ERROR,
+                      condition = "Fatal internal error occurred in the " +
+                      "VTN Manager."),
+        @ResponseCode(code = HTTP_UNAVAILABLE,
+                      condition = "One or more of mandatory controller " +
+                      "services, such as the VTN Manager, are unavailable.")})
     public Response addBridgeInterface(
             @Context UriInfo uriInfo,
             @PathParam("containerName") String containerName,
@@ -176,32 +266,76 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
     }
 
     /**
-     * Modify configuration of existing virtual interface in the virtual L2
-     * bridge.
+     * Modify configuration of existing virtual interface in the specified
+     * vBridge.
      *
      * @param containerName  The name of the container.
-     * @param tenantName     The name of the virtual tenant.
-     * @param bridgeName     The name of the virtual bridge.
-     * @param ifName         The name of the virtual bridge interface.
-     * @param all            If {@code true} is specified, all attributes
-     *                       of the interface are modified. {@code null} in
-     *                       request body field is interpreted as default
-     *                       value.
-     *                       If {@code false} is specified, all fields to
-     *                       which is assigned {@code null} are not modified.
-     * @param iconf          Interface configuration.
+     * @param tenantName     The name of the VTN.
+     * @param bridgeName     The name of the vBridge.
+     * @param ifName         The name of the vBridge interface.
+     * @param all
+     *   A boolean value to determine the treatment of attributes omitted in
+     *   <strong>interfaceconf</strong> element.
+     *   <ul>
+     *     <li>
+     *       If <strong>true</strong> is specified, all the attributes related
+     *       to vBridge interface are modified.
+     *       <ul>
+     *         <li>
+     *           The description of the vBridge interface will be deleted if
+     *           <strong>description</strong> attribute is omitted.
+     *         </li>
+     *         <li>
+     *           Enable/disable configuration will be changed to
+     *           <strong>true</strong> if <strong>enabled</strong> attribute
+     *           is omitted.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       If <strong>false</strong> is specified, omitted attributes are not
+     *       modified.
+     *     </li>
+     *   </ul>
+     * @param iconf
+     *   <strong>interfaceconf</strong> element specifies the vBridge
+     *   interface configuration information to be applied.
      * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{ifName}")
     @PUT
     @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @TypeHint(TypeHint.NO_CONTENT.class)
     @StatusCodes({
-            @ResponseCode(code = 200, condition = "Interface modified successfully"),
-            @ResponseCode(code = 401, condition = "Authentication failed"),
-            @ResponseCode(code = 404, condition = "The specified resource does not exist"),
-            @ResponseCode(code = 406, condition = "Cannot operate on Default Container when other Containers are active"),
-            @ResponseCode(code = 500, condition = "Failed to modify interface. Failure Reason included in HTTP Error response"),
-            @ResponseCode(code = 503, condition = "One or more of Controller services are unavailable")})
+        @ResponseCode(code = HTTP_OK,
+                      condition = "Operation completed successfully."),
+        @ResponseCode(code = HTTP_BAD_REQUEST,
+                      condition = "Incorrect XML or JSON data is specified " +
+                      "in Request body."),
+        @ResponseCode(code = HTTP_UNAUTHORIZED,
+                      condition = "User is not authorized to perform this " +
+                      "operation."),
+        @ResponseCode(code = HTTP_NOT_FOUND,
+                      condition = "<ul>" +
+                      "<li>The specified container does not exist.</li>" +
+                      "<li>The specified VTN does not exist.</li>" +
+                      "<li>The specified vBridge does not exist.</li>" +
+                      "<li>The specified vBridge interface does not " +
+                      "exist.</li>" +
+                      "</ul>"),
+        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
+                      condition = "\"default\" is specified to " +
+                      "<u>{containerName}</u> and a container other than " +
+                      "the default container is present."),
+        @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
+                      condition = "Unsupported data type is specified in " +
+                      "<strong>Content-Type</strong> header."),
+        @ResponseCode(code = HTTP_INTERNAL_ERROR,
+                      condition = "Fatal internal error occurred in the " +
+                      "VTN Manager."),
+        @ResponseCode(code = HTTP_UNAVAILABLE,
+                      condition = "One or more of mandatory controller " +
+                      "services, such as the VTN Manager, are unavailable.")})
     public Response modifyBridgeInterface(
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
@@ -222,24 +356,41 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
     }
 
     /**
-     * Delete a virtual interface from the virtual L2 bridge.
+     * Delete the specified vBridge interface.
      *
      * @param containerName  The name of the container.
-     * @param tenantName     The name of the virtual tenant.
-     * @param bridgeName     The name of the virtual bridge.
-     * @param ifName         The name of the virtual bridge interface.
-     * @return Response as dictated by the HTTP Response code.
+     * @param tenantName     The name of the VTN.
+     * @param bridgeName     The name of the vBridge.
+     * @param ifName         The name of the vBridge interface.
+     * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{ifName}")
     @DELETE
-    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @TypeHint(TypeHint.NO_CONTENT.class)
     @StatusCodes({
-            @ResponseCode(code = 200, condition = "Interface deleted successfully"),
-            @ResponseCode(code = 401, condition = "Authentication failed"),
-            @ResponseCode(code = 404, condition = "The specified resource does not exist"),
-            @ResponseCode(code = 406, condition = "Cannot operate on Default Container when other Containers are active"),
-            @ResponseCode(code = 500, condition = "Failed to delete interface. Failure Reason included in HTTP Error response"),
-            @ResponseCode(code = 503, condition = "One or more of Controller service is unavailable") })
+        @ResponseCode(code = HTTP_OK,
+                      condition = "Operation completed successfully."),
+        @ResponseCode(code = HTTP_UNAUTHORIZED,
+                      condition = "User is not authorized to perform this " +
+                      "operation."),
+        @ResponseCode(code = HTTP_NOT_FOUND,
+                      condition = "<ul>" +
+                      "<li>The specified container does not exist.</li>" +
+                      "<li>The specified VTN does not exist.</li>" +
+                      "<li>The specified vBridge does not exist.</li>" +
+                      "<li>The specified vBridge interface does not " +
+                      "exist.</li>" +
+                      "</ul>"),
+        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
+                      condition = "\"default\" is specified to " +
+                      "<u>{containerName}</u> and a container other than " +
+                      "the default container is present."),
+        @ResponseCode(code = HTTP_INTERNAL_ERROR,
+                      condition = "Fatal internal error occurred in the " +
+                      "VTN Manager."),
+        @ResponseCode(code = HTTP_UNAVAILABLE,
+                      condition = "One or more of mandatory controller " +
+                      "services, such as the VTN Manager, are unavailable.")})
     public Response deleteBridgeInterface(
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
@@ -258,26 +409,45 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
     }
 
     /**
-     * Returns a port mapping configuration on the virtual L2 bridge interface.
+     * Return information about the port mapping configured in the specified
+     * virtual interface in the vBridge.
      *
      * @param containerName  The name of the container.
-     * @param tenantName     The name of the tenant.
-     * @param bridgeName     The name of the bridge.
-     * @param ifName         The name of the virtual bridge interface.
-     * @return  A port mapping configuration. {@code null} is returned if no
-     *          port mapping is configured.
+     * @param tenantName     The name of the VTN.
+     * @param bridgeName     The name of the vBridge.
+     * @param ifName         The name of the vBridge interface.
+     * @return  <strong>portmap</strong> element contains information about
+     *          the port mapping configured in the vBridge interface specified
+     *          by the requested URI.
      */
     @Path("{ifName}/portmap")
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    @TypeHint(PortMap.class)
+    @TypeHint(PortMapInfo.class)
     @StatusCodes({
-            @ResponseCode(code = 200, condition = "Operation successful"),
-            @ResponseCode(code = 204, condition = "Port mapping is not configured on the specified interface"),
-            @ResponseCode(code = 401, condition = "Authentication failed"),
-            @ResponseCode(code = 404, condition = "The specified resource does not exist"),
-            @ResponseCode(code = 500, condition = "Failed due to internal error"),
-            @ResponseCode(code = 503, condition = "One or more of Controller Services are unavailable")})
+        @ResponseCode(code = HTTP_OK,
+                      condition = "Port mapping is configured in the " +
+                      "specified vBridge interface."),
+        @ResponseCode(code = HTTP_NO_CONTENT,
+                      condition = "Port mapping is not configured in the " +
+                      "specified vBridge interface."),
+        @ResponseCode(code = HTTP_UNAUTHORIZED,
+                      condition = "User is not authorized to perform this " +
+                      "operation."),
+        @ResponseCode(code = HTTP_NOT_FOUND,
+                      condition = "<ul>" +
+                      "<li>The specified container does not exist.</li>" +
+                      "<li>The specified VTN does not exist.</li>" +
+                      "<li>The specified vBridge does not exist.</li>" +
+                      "<li>The specified vBridge interface does not " +
+                      "exist.</li>" +
+                      "</ul>"),
+        @ResponseCode(code = HTTP_INTERNAL_ERROR,
+                      condition = "Fatal internal error occurred in the " +
+                      "VTN Manager."),
+        @ResponseCode(code = HTTP_UNAVAILABLE,
+                      condition = "One or more of mandatory controller " +
+                      "services, such as the VTN Manager, are unavailable.")})
     public PortMapInfo getPortMap(
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
@@ -302,27 +472,135 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
     }
 
     /**
-     * Establish port mapping between the virtual L2 bridge interface and
-     * the physical switch port.
+     * Configure port mapping in the specified virtual interface in the
+     * vBridge.
+     *
+     * <p>
+     *   On successful completion, then ethernet frame that flows through
+     *   the port of the physical switch specified by
+     *   <strong>portmapconf</strong> element will get mapped to the vBridge
+     *   interface specified by the requested URI.
+     * </p>
+     *
+     * <ul>
+     *   <li>
+     *     If port mapping is already configured in the specified vBridge
+     *     interface, the specified settings are applied after old
+     *     configuration is deleted.
+     *   </li>
+     *   <li>
+     *     This API does nothing and returns the status code
+     *     <strong>HTTP_OK</strong> (200) immediately if port mapping with
+     *     the same configuration information as <strong>portmapconf</strong>
+     *     element is already configured in the specified vBridge interface.
+     *   </li>
+     * </ul>
      *
      * @param containerName  The name of the container.
-     * @param tenantName     The name of the tenant.
-     * @param bridgeName     The name of the bridge.
-     * @param ifName         The name of the virtual bridge interface.
-     * @param pmconf         Port mapping configuration.
-     * @return Response as dictated by the HTTP Response code.
+     * @param tenantName     The name of the VTN.
+     * @param bridgeName     The name of the vBridge.
+     * @param ifName         The name of the vBridge interface.
+     * @param pmconf
+     *   <strong>portmapconf</strong> specifies the port mapping configuration
+     *   information.
+     *   <ul>
+     *     <li>
+     *       <strong>node</strong> element, which specifies the physical switch
+     *       to be mapped, must be configured.
+     *       <ul>
+     *         <li>
+     *           Currently, only OpenFlow switch can be specified to
+     *           <strong>node</strong> element.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       <strong>port</strong> element, which specifies the physical port
+     *       of the switch specified by <strong>node</strong> element, must be
+     *       configured.
+     *       <ul>
+     *         <li>
+     *           Currently, it is possible to configure only the physical ports
+     *           of OpenFlow switches.
+     *         </li>
+     *         <li>
+     *           Port mapping configuration will succeed even if the specified
+     *           physical port of the switch does not exist. Port mapping will
+     *           come into effect whenever, at a later point in time, the
+     *           specified physical port is found.
+     *           <ul>
+     *             <li>
+     *               However, when mapping is actually done with the specified
+     *               physical port, the port mapping will not be established if
+     *               that physical port and VLAN ID are mapped to another
+     *               vBridge interface.
+     *             </li>
+     *           </ul>
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       <strong>vlan</strong> attribute specifies the VLAN network to be
+     *       mapped by VLAN ID.
+     *       <ul>
+     *         <li>
+     *           If a value between <strong>1</strong> or more and
+     *           <strong>4095</strong> or less is configured, then the ethernet
+     *           frames that have this VLAN ID configured will get mapped to
+     *           the vBridge interface.
+     *         </li>
+     *         <li>
+     *           If <strong>0</strong> is configured, or <strong>vlan</strong>
+     *           attribute is omitted, untagged ethernet frames will get mapped
+     *           to the vBridge interface.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *   </ul>
+     * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{ifName}/portmap")
     @PUT
     @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @TypeHint(TypeHint.NO_CONTENT.class)
     @StatusCodes({
-            @ResponseCode(code = 200, condition = "Port mapping configured successfully"),
-            @ResponseCode(code = 401, condition = "Authentication failed"),
-            @ResponseCode(code = 404, condition = "The specified resource does not exist"),
-            @ResponseCode(code = 406, condition = "Cannot operate on Default Container when other Containers are active"),
-            @ResponseCode(code = 409, condition = "The specified port is already mapped"),
-            @ResponseCode(code = 500, condition = "Failed to create mapping. Failure Reason included in HTTP Error response"),
-            @ResponseCode(code = 503, condition = "One or more of Controller services are unavailable")})
+        @ResponseCode(code = HTTP_OK,
+                      condition = "Operation completed successfully."),
+        @ResponseCode(code = HTTP_BAD_REQUEST,
+                      condition = "Incorrect XML or JSON data is specified " +
+                      "in Request body."),
+        @ResponseCode(code = HTTP_UNAUTHORIZED,
+                      condition = "User is not authorized to perform this " +
+                      "operation."),
+        @ResponseCode(code = HTTP_NOT_FOUND,
+                      condition = "<ul>" +
+                      "<li>The specified container does not exist.</li>" +
+                      "<li>The specified VTN does not exist.</li>" +
+                      "<li>The specified vBridge does not exist.</li>" +
+                      "<li>The specified vBridge interface does not " +
+                      "exist.</li>" +
+                      "</ul>"),
+        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
+                      condition = "\"default\" is specified to " +
+                      "<u>{containerName}</u> and a container other than " +
+                      "the default container is present."),
+        @ResponseCode(code = HTTP_CONFLICT,
+                      condition = "The specified physical switch port is " +
+                      "present, and the specified VLAN ID is mapped to " +
+                      "another vBridge interface by port mapping."),
+        @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
+                      condition = "<ul>" +
+                      "<li>Unsupported data type is specified in " +
+                      "<strong>Content-Type</strong> header.</li>" +
+                      "<li>Incorrect value is configured in " +
+                      "<strong>portmapconf</strong> element.</li>" +
+                      "</ul>"),
+        @ResponseCode(code = HTTP_INTERNAL_ERROR,
+                      condition = "Fatal internal error occurred in the " +
+                      "VTN Manager."),
+        @ResponseCode(code = HTTP_UNAVAILABLE,
+                      condition = "One or more of mandatory controller " +
+                      "services, such as the VTN Manager, are unavailable.")})
     public Response setPortMap(
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
@@ -348,24 +626,48 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
     }
 
     /**
-     * Delete port mapping configuration.
+     * Delete port mapping configuration configured in the specified vBridge
+     * interface.
+     *
+     * <p>
+     *   This API does nothing and returns the status code
+     *   <strong>HTTP_OK</strong> (200) immediately if no port mapping is
+     *   configured in the specified vBridge interface.
+     * </p>
      *
      * @param containerName  The name of the container.
-     * @param tenantName     The name of the tenant.
-     * @param bridgeName     The name of the bridge.
-     * @param ifName         The name of the virtual bridge interface.
-     * @return Response as dictated by the HTTP Response code.
+     * @param tenantName     The name of the VTN.
+     * @param bridgeName     The name of the vBridge.
+     * @param ifName         The name of the vBridge interface.
+     * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{ifName}/portmap")
     @DELETE
-    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @TypeHint(TypeHint.NO_CONTENT.class)
     @StatusCodes({
-            @ResponseCode(code = 200, condition = "Port mapping deleted successfully"),
-            @ResponseCode(code = 401, condition = "Authentication failed"),
-            @ResponseCode(code = 404, condition = "The specified resource does not exist"),
-            @ResponseCode(code = 406, condition = "Cannot operate on Default Container when other Containers are active"),
-            @ResponseCode(code = 500, condition = "Failed to delete mapping. Failure Reason included in HTTP Error response"),
-            @ResponseCode(code = 503, condition = "One or more of Controller services are unavailable")})
+        @ResponseCode(code = HTTP_OK,
+                      condition = "Operation completed successfully."),
+        @ResponseCode(code = HTTP_UNAUTHORIZED,
+                      condition = "User is not authorized to perform this " +
+                      "operation."),
+        @ResponseCode(code = HTTP_NOT_FOUND,
+                      condition = "<ul>" +
+                      "<li>The specified container does not exist.</li>" +
+                      "<li>The specified VTN does not exist.</li>" +
+                      "<li>The specified vBridge does not exist.</li>" +
+                      "<li>The specified vBridge interface does not " +
+                      "exist.</li>" +
+                      "</ul>"),
+        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
+                      condition = "\"default\" is specified to " +
+                      "<u>{containerName}</u> and a container other than " +
+                      "the default container is present."),
+        @ResponseCode(code = HTTP_INTERNAL_ERROR,
+                      condition = "Fatal internal error occurred in the " +
+                      "VTN Manager."),
+        @ResponseCode(code = HTTP_UNAVAILABLE,
+                      condition = "One or more of mandatory controller " +
+                      "services, such as the VTN Manager, are unavailable.")})
     public Response unetPortMap(
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,

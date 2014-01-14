@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -21,14 +21,26 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.opendaylight.vtn.manager.VlanMap;
 
 /**
- * A JAXB class which represents a list of VLAN mapping information.
+ * {@code VlanMapList} class describes a list of VLAN mapping information.
+ *
+ * <p>
+ *   This class is used to return a list of VLAN mapping information to
+ *   REST client.
+ * </p>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vlanmaps")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VlanMapList {
     /**
-     * A list of VLAN mapping information.
+     * A list of {@link VlanMap} instances.
+     *
+     * <ul>
+     *   <li>
+     *     This element contains 0 or more {@link VlanMap} instances which
+     *     represent VLAN mapping information.
+     *   </li>
+     * </ul>
      */
     @XmlElement(name = "vlanmap")
     private List<VlanMap>  vmapList;

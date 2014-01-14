@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -29,40 +29,67 @@ import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 
 /**
- * {@code MacEntry} class provides JAXB mapping for MAC address table entry
- * leaned by the virtual L2 bridge.
+ * {@code MacEntry} class describes information about the MAC address
+ * learned inside vBridge.
+ *
+ * <p>
+ *   This class is used to return MAC address information inside the MAC
+ *   address table to REST client.
+ * </p>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "macentry")
 @XmlAccessorType(XmlAccessType.NONE)
 public class MacEntry {
     /**
-     * String representation of MAC address.
+     * A string representation of a learned MAC address.
+     *
+     * <ul>
+     *   <li>
+     *     A MAC address is represented by hexadecimal notation with
+     *     {@code ':'} inserted between octets.
+     *     (e.g. {@code "11:22:33:aa:bb:cc"})
+     *   </li>
+     * </ul>
      */
     @XmlAttribute
     private String  address;
 
     /**
-     * VLAN ID.
+     * A VLAN ID detected inside ethernet frame where MAC address was detected.
+     *
+     * <ul>
+     *   <li><strong>0</strong> implies that VLAN tag was not detected.</li>
+     * </ul>
      */
     @XmlAttribute
     private short  vlan;
 
     /**
-     * Node associated with the swtich where the MAC address is detected.
+     * {@link Node} information corresponding to the physical switch where
+     * MAC address was detected.
      */
     @XmlElement(required = true)
     private Node  node;
 
     /**
-     * Identifier of node connector associated with the switch port where the
-     * MAC address is detected.
+     * {@link NodeConnector} information corresponding to the physical switch
+     * port where MAC address was detected.
      */
     @XmlElement(required = true)
     private SwitchPort  port;
 
     /**
-     * A set of IP addresses found in the Ethernet frame.
+     * IP address information detected inside ethernet frame where MAC address
+     * was detected.
+     *
+     * <ul>
+     *   <li>
+     *     If multiple IP addresses corresponding to MAC address are detected,
+     *     this element contains all of them.
+     *   </li>
+     *   <li>This element will be omitted if no IP address is detected.</li>
+     * </ul>
      */
     private IpAddressSet  inetAddresses;
 
@@ -132,7 +159,7 @@ public class MacEntry {
 
     /**
      * Return a {@code SwitchPort} object which represents the switch port
-     * where the MAC address is detected.
+     * where the MAC address was detected.
      *
      * @return  A {@code SwitchPort} object.
      */
@@ -141,15 +168,25 @@ public class MacEntry {
     }
 
     /**
-     * Return an {@link IpAddressSet} object which keeps IP addresses
-     * associated with this MAC address entry.
+     * A set of IP addresses found in the ethernet frame where the MAC address
+     * was detected.
+     *
+     * <ul>
+     *   <li>
+     *     If multiple IP address corresponding to the MAC address are
+     *     detected, all detected IP addresses are configured.
+     *   </li>
+     *   <li>
+     *     This element is omitted if no IP address is detected.
+     *   </li>
+     * </ul>
      *
      * @return  An {@link IpAddressSet} object.
      *          {@code null} is returned if no IP address is associated
      *          with this MAC address entry.
      */
     @XmlElement(name = "inetAddresses")
-    IpAddressSet getInetAddresses() {
+    public IpAddressSet getInetAddresses() {
         return inetAddresses;
     }
 

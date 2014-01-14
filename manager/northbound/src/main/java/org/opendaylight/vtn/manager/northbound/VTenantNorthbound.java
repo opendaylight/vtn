@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -8,6 +8,17 @@
  */
 
 package org.opendaylight.vtn.manager.northbound;
+
+import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
+import static java.net.HttpURLConnection.HTTP_CONFLICT;
+import static java.net.HttpURLConnection.HTTP_CREATED;
+import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
+import static java.net.HttpURLConnection.HTTP_NOT_ACCEPTABLE;
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
+import static java.net.HttpURLConnection.HTTP_OK;
+import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
+import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
+import static java.net.HttpURLConnection.HTTP_UNSUPPORTED_TYPE;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -25,6 +36,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.codehaus.enunciate.jaxrs.ResponseCode;
+import org.codehaus.enunciate.jaxrs.ResponseHeader;
+import org.codehaus.enunciate.jaxrs.ResponseHeaders;
 import org.codehaus.enunciate.jaxrs.StatusCodes;
 import org.codehaus.enunciate.jaxrs.TypeHint;
 
@@ -39,37 +52,37 @@ import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.authorization.Privilege;
 
 /**
- * Northbound REST APIs to handle virtual tenants.
- *
- * <br>
- * <br>
- * Authentication scheme : <b>HTTP Basic</b><br>
- * Authentication realm : <b>opendaylight</b><br>
- * Transport : <b>HTTP and HTTPS</b><br>
- * <br>
- * HTTPS Authentication is disabled by default. Administrator can enable it in
- * tomcat-server.xml after adding a proper keystore / SSL certificate from a
- * trusted authority.<br>
- * More info :
- * http://tomcat.apache.org/tomcat-7.0-doc/ssl-howto.html#Configuration
+ * This class provides Northbound REST APIs to handle VTN
+ * (virtual tenant network).
  */
 @Path("/{containerName}/vtns")
 public class VTenantNorthbound extends VTNNorthBoundBase {
     /**
-     * Returns a list of all virtual tenants.
+     * Return information about all the VTNs present in the specified
+     * container.
      *
      * @param containerName  The name of the container.
-     * @return  A list of virtual tenants in the container.
+     * @return  <strong>vtns</strong> element contains information about all
+     *          the VTNs present in the container specified by the requested
+     *          URI.
      */
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     @TypeHint(VTenantList.class)
     @StatusCodes({
-            @ResponseCode(code = 200, condition = "Operation successful"),
-            @ResponseCode(code = 401, condition = "Authentication failed"),
-            @ResponseCode(code = 404, condition = "The specified resource does not exist"),
-            @ResponseCode(code = 500, condition = "Failed due to internal error"),
-            @ResponseCode(code = 503, condition = "One or more of Controller Services are unavailable")})
+        @ResponseCode(code = HTTP_OK,
+                      condition = "Operation completed successfully."),
+        @ResponseCode(code = HTTP_UNAUTHORIZED,
+                      condition = "User is not authorized to perform this " +
+                      "operation."),
+        @ResponseCode(code = HTTP_NOT_FOUND,
+                      condition = "The specified container does not exist."),
+        @ResponseCode(code = HTTP_INTERNAL_ERROR,
+                      condition = "Fatal internal error occurred in the " +
+                      "VTN Manager."),
+        @ResponseCode(code = HTTP_UNAVAILABLE,
+                      condition = "One or more of mandatory controller " +
+                      "services, such as the VTN Manager, are unavailable.")})
     public VTenantList getTenants(
             @PathParam("containerName") String containerName) {
         checkPrivilege(containerName, Privilege.READ);
@@ -84,22 +97,35 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
     }
 
     /**
-     * Returns a virtual tenant information specified by the given name.
+     * Return information about the specified VTN inside the specified
+     * container.
      *
      * @param containerName  The name of the container.
-     * @param tenantName     The name of the virtual tenant.
-     * @return  Tenant information associated with the specified name.
+     * @param tenantName     The name of the VTN.
+     * @return  <strong>vtn</strong> element contains information about the
+     *          VTN specified by the requested URI.
      */
     @Path("{tenantName}")
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     @TypeHint(VTenant.class)
     @StatusCodes({
-            @ResponseCode(code = 200, condition = "Operation successful"),
-            @ResponseCode(code = 401, condition = "Authentication failed"),
-            @ResponseCode(code = 404, condition = "The specified resource does not exist"),
-            @ResponseCode(code = 500, condition = "Failed due to internal error"),
-            @ResponseCode(code = 503, condition = "One or more of Controller Services are unavailable")})
+        @ResponseCode(code = HTTP_OK,
+                      condition = "Operation completed successfully."),
+        @ResponseCode(code = HTTP_UNAUTHORIZED,
+                      condition = "User is not authorized to perform this " +
+                      "operation."),
+        @ResponseCode(code = HTTP_NOT_FOUND,
+                      condition = "<ul>" +
+                      "<li>The specified container does not exist.</li>" +
+                      "<li>The specified VTN does not exist.</li>" +
+                      "</ul>"),
+        @ResponseCode(code = HTTP_INTERNAL_ERROR,
+                      condition = "Fatal internal error occurred in the " +
+                      "VTN Manager."),
+        @ResponseCode(code = HTTP_UNAVAILABLE,
+                      condition = "One or more of mandatory controller " +
+                      "services, such as the VTN Manager, are unavailable.")})
     public VTenant getTenant(
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName) {
@@ -115,26 +141,88 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
     }
 
     /**
-     * Add a new virtual tenant.
+     * Create a new VTN inside the specified container.
      *
      * @param uriInfo        Requested URI information.
      * @param containerName  The name of the container.
-     * @param tenantName     The name of the virtual tenant.
-     * @param tconf          Virtual tenant configuration.
+     * @param tenantName
+     *   The name of the VTN to be created.
+     *   <ul>
+     *     <li>
+     *       The length of the name must be greater than <strong>0</strong>
+     *       and less than <strong>32</strong>.
+     *     </li>
+     *     <li>
+     *       The name must consist of US-ASCII alphabets, numbers, and
+     *       underscore ({@code '_'}).
+     *     </li>
+     *     <li>
+     *       The name must start with an US-ASCII alphabet or number.
+     *     </li>
+     *   </ul>
+     * @param tconf
+     *   <strong>vtnconf</strong> element specifies the VTN configuration
+     *   information.
+     *   <ul>
+     *     <li>
+     *       The description of the VTN is not registered if
+     *       <strong>description</strong> attribute is omitted.
+     *     </li>
+     *     <li>
+     *       Idle timeout of flow entry will be treated as <strong>300</strong>
+     *       if <strong>idleTimeout</strong> attribute is omitted.
+     *     </li>
+     *     <li>
+     *       Hard timeout of flow entry will be treated as <strong>0</strong>
+     *       if <strong>hardTimeout</strong> attribute is omitted.
+     *     </li>
+     *   </ul>
      * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{tenantName}")
     @POST
     @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @TypeHint(TypeHint.NO_CONTENT.class)
+    @ResponseHeaders({
+        @ResponseHeader(name = "Location",
+                        description = "URI corresponding to the newly " +
+                        "created VTN, which is the same URI specified in " +
+                        "request.")})
     @StatusCodes({
-            @ResponseCode(code = 201, condition = "Tenant created successfully"),
-            @ResponseCode(code = 401, condition = "Authentication failed"),
-            @ResponseCode(code = 404, condition = "The specified resource does not exist"),
-            @ResponseCode(code = 406, condition = "Cannot operate on Default Container when other Containers are active"),
-            @ResponseCode(code = 409, condition = "Failed to create tenant due to conflicting name"),
-            @ResponseCode(code = 415, condition = "Invalid tenant name passed in tenantName parameter"),
-            @ResponseCode(code = 500, condition = "Failed to create tenant. Failure Reason included in HTTP Error response"),
-            @ResponseCode(code = 503, condition = "One or more of Controller services are unavailable")})
+        @ResponseCode(code = HTTP_CREATED,
+                      condition = "VTN was created successfully."),
+        @ResponseCode(code = HTTP_BAD_REQUEST,
+                      condition = "Incorrect XML or JSON data is specified " +
+                      "in Request body."),
+        @ResponseCode(code = HTTP_UNAUTHORIZED,
+                      condition = "User is not authorized to perform this " +
+                      "operation."),
+        @ResponseCode(code = HTTP_NOT_FOUND,
+                      condition = "The specified container does not exist."),
+        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
+                      condition = "\"default\" is specified to " +
+                      "<u>{containerName}</u> and a container other than " +
+                      "the default container is present."),
+        @ResponseCode(code = HTTP_CONFLICT,
+                      condition = "The VTN specified by the requested URI " +
+                      "already exists."),
+        @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
+                      condition = "<ul>" +
+                      "<li>Unsupported data type is specified in " +
+                      "<strong>Content-Type</strong> header.</li>" +
+                      "<li>Incorrect VTN name is specified to " +
+                      "<u>{tenantName}</u>.</li>" +
+                      "<li>Incorrect value is configured in " +
+                      "<strong>vtnconf</strong> element for " +
+                      "<strong>idleTimeout</strong> or " +
+                      "<strong>hardTimeout</strong> attribute.</li>" +
+                      "</ul>"),
+        @ResponseCode(code = HTTP_INTERNAL_ERROR,
+                      condition = "Fatal internal error occurred in the " +
+                      "VTN Manager."),
+        @ResponseCode(code = HTTP_UNAVAILABLE,
+                      condition = "One or more of mandatory controller " +
+                      "services, such as the VTN Manager, are unavailable.")})
     public Response addTenant(
             @Context UriInfo uriInfo,
             @PathParam("containerName") String containerName,
@@ -153,29 +241,81 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
     }
 
     /**
-     * Modify configuration of existing virtual tenant.
+     * Modify configuration of existing VTN in the specified container.
      *
      * @param containerName  The name of the container.
-     * @param tenantName     The name of the virtual tenant.
-     * @param all            If {@code true} is specified, all attributes
-     *                       of the tenant are modified. {@code null} in
-     *                       request body field is interpreted as default
-     *                       value.
-     *                       If {@code false} is specified, all fields to
-     *                       which is assigned {@code null} are not modified.
-     * @param tconf          Virtual tenant configuration.
+     * @param tenantName     The name of the VTN.
+     * @param all
+     *   A boolean value to determine the treatment of attributes omitted in
+     *   <strong>vtnconf</strong> element.
+     *   <ul>
+     *     <li>
+     *       If <strong>true</strong> is specified, all the attributes related
+     *       to VTN are modified.
+     *       <ul>
+     *         <li>
+     *           The description of the VTN will be deleted if
+     *           <strong>description</strong> attribute is omitted.
+     *         </li>
+     *         <li>
+     *           Idle timeout of flow entry will be treated as
+     *           <strong>300</strong> if <strong>idleTimeout</strong>
+     *           attribute is omitted.
+     *         </li>
+     *         <li>
+     *           Hard timeout of flow entry will be treated as
+     *           <strong>0</strong> if <strong>hardTimeout</strong>
+     *           attribute is omitted.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       If <strong>false</strong> is specified, omitted attributes are not
+     *       modified.
+     *     </li>
+     *   </ul>
+     * @param tconf
+     *   <strong>vtnconf</strong> element specifies the VTN configuration
+     *   information to be applied.
      * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{tenantName}")
     @PUT
     @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @TypeHint(TypeHint.NO_CONTENT.class)
     @StatusCodes({
-            @ResponseCode(code = 200, condition = "Tenant modified successfully"),
-            @ResponseCode(code = 401, condition = "Authentication failed"),
-            @ResponseCode(code = 404, condition = "The specified resource does not exist"),
-            @ResponseCode(code = 406, condition = "Cannot operate on Default Container when other Containers are active"),
-            @ResponseCode(code = 500, condition = "Failed to modify tenant. Failure Reason included in HTTP Error response"),
-            @ResponseCode(code = 503, condition = "One or more of Controller services are unavailable")})
+        @ResponseCode(code = HTTP_OK,
+                      condition = "Operation completed successfully."),
+        @ResponseCode(code = HTTP_BAD_REQUEST,
+                      condition = "Incorrect XML or JSON data is specified " +
+                      "in Request body."),
+        @ResponseCode(code = HTTP_UNAUTHORIZED,
+                      condition = "User is not authorized to perform this " +
+                      "operation."),
+        @ResponseCode(code = HTTP_NOT_FOUND,
+                      condition = "<ul>" +
+                      "<li>The specified container does not exist.</li>" +
+                      "<li>The specified VTN does not exist.</li>" +
+                      "</ul>"),
+        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
+                      condition = "\"default\" is specified to " +
+                      "<u>{containerName}</u> and a container other than " +
+                      "the default container is present."),
+        @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
+                      condition = "<ul>" +
+                      "<li>Unsupported data type is specified in " +
+                      "<strong>Content-Type</strong> header.</li>" +
+                      "<li>Incorrect value is configured in " +
+                      "<strong>vtnconf</strong> element for " +
+                      "<strong>idleTimeout</strong> or " +
+                      "<strong>hardTimeout</strong> attribute.</li>" +
+                      "</ul>"),
+        @ResponseCode(code = HTTP_INTERNAL_ERROR,
+                      condition = "Fatal internal error occurred in the " +
+                      "VTN Manager."),
+        @ResponseCode(code = HTTP_UNAVAILABLE,
+                      condition = "One or more of mandatory controller " +
+                      "services, such as the VTN Manager, are unavailable.")})
     public Response modifyTenant(
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
@@ -194,22 +334,41 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
     }
 
     /**
-     * Delete a virtual tenant.
+     * Delete the specified VTN.
+     *
+     * <p>
+     *   All the virtual networking node in the specified VTN, such as vBridge,
+     *   will also be deleted.
+     * </p>
      *
      * @param containerName  The name of the container.
-     * @param tenantName     The name of the virtual tenant.
-     * @return Response as dictated by the HTTP Response code.
+     * @param tenantName     The name of the VTN.
+     * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{tenantName}")
     @DELETE
-    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @TypeHint(TypeHint.NO_CONTENT.class)
     @StatusCodes({
-            @ResponseCode(code = 200, condition = "Tenant deleted successfully"),
-            @ResponseCode(code = 401, condition = "Authentication failed"),
-            @ResponseCode(code = 404, condition = "The specified resource does not exist"),
-            @ResponseCode(code = 406, condition = "Cannot operate on Default Container when other Containers are active"),
-            @ResponseCode(code = 500, condition = "Failed to delete tenant. Failure Reason included in HTTP Error response"),
-            @ResponseCode(code = 503, condition = "One or more of Controller service is unavailable") })
+        @ResponseCode(code = HTTP_OK,
+                      condition = "Operation completed successfully."),
+        @ResponseCode(code = HTTP_UNAUTHORIZED,
+                      condition = "User is not authorized to perform this " +
+                      "operation."),
+        @ResponseCode(code = HTTP_NOT_FOUND,
+                      condition = "<ul>" +
+                      "<li>The specified container does not exist.</li>" +
+                      "<li>The specified VTN does not exist.</li>" +
+                      "</ul>"),
+        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
+                      condition = "\"default\" is specified to " +
+                      "<u>{containerName}</u> and a container other than " +
+                      "the default container is present."),
+        @ResponseCode(code = HTTP_INTERNAL_ERROR,
+                      condition = "Fatal internal error occurred in the " +
+                      "VTN Manager."),
+        @ResponseCode(code = HTTP_UNAVAILABLE,
+                      condition = "One or more of mandatory controller " +
+                      "services, such as the VTN Manager, are unavailable.")})
     public Response deleteTenant(
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName) {
@@ -226,28 +385,42 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
     }
 
     /**
-     * Remove all flow entries in the specified virtual tenant.
+     * Remove all flow entries in the specified VTN.
      *
      * <p>
-     *   This interface is provided only for debugging purpose, and is
-     *   available only if the system property {@code vtn.debug} is defined
-     *   as {@code true}.
+     *   This API is provided only for debugging purpose, and is available
+     *   only if the system property <strong>vtn.debug</strong> is defined as
+     *   <strong>true</strong>.
      * </p>
      *
      * @param containerName  The name of the container.
-     * @param tenantName     The name of the virtual tenant.
-     * @return Response as dictated by the HTTP Response code.
+     * @param tenantName     The name of the VTN.
+     * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{tenantName}/flows")
     @DELETE
-    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @TypeHint(TypeHint.NO_CONTENT.class)
     @StatusCodes({
-            @ResponseCode(code = 200, condition = "Operation completed successfully"),
-            @ResponseCode(code = 401, condition = "Authentication failed"),
-            @ResponseCode(code = 404, condition = "The specified resource does not exist"),
-            @ResponseCode(code = 406, condition = "Cannot operate on Default Container when other Containers are active"),
-            @ResponseCode(code = 500, condition = "Failed to remove flow entries. Failure Reason included in HTTP Error response"),
-            @ResponseCode(code = 503, condition = "One or more of Controller service is unavailable") })
+        @ResponseCode(code = HTTP_OK,
+                      condition = "Operation completed successfully."),
+        @ResponseCode(code = HTTP_UNAUTHORIZED,
+                      condition = "User is not authorized to perform this " +
+                      "operation."),
+        @ResponseCode(code = HTTP_NOT_FOUND,
+                      condition = "<ul>" +
+                      "<li>The specified container does not exist.</li>" +
+                      "<li>The specified VTN does not exist.</li>" +
+                      "</ul>"),
+        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
+                      condition = "\"default\" is specified to " +
+                      "<u>{containerName}</u> and a container other than " +
+                      "the default container is present."),
+        @ResponseCode(code = HTTP_INTERNAL_ERROR,
+                      condition = "Fatal internal error occurred in the " +
+                      "VTN Manager."),
+        @ResponseCode(code = HTTP_UNAVAILABLE,
+                      condition = "One or more of mandatory controller " +
+                      "services, such as the VTN Manager, are unavailable.")})
     public Response removeAllFlows(
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName) {

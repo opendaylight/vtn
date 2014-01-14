@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -17,7 +17,17 @@ import javax.xml.bind.annotation.XmlRootElement;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * {@code VTenant} class describes information about the virtual tenant.
+ * {@code VTenant} class describes the VTN (virtual tenant network)
+ * information.
+ *
+ * <p>
+ *   {@code VTenant} class inherits {@link VTenantConfig} class, and
+ *   {@code VTenant} object contains the VTN configuration information.
+ *   The VTN Manager passes the VTN information to other components by
+ *   passing {@code VTenant} object.
+ * </p>
+ *
+ * @see  <a href="package-summary.html#VTN">VTN</a>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vtn")
@@ -29,7 +39,7 @@ public class VTenant extends VTenantConfig {
     private static final long serialVersionUID = -2091502158725895050L;
 
     /**
-     * The name of the tenant.
+     * The name of the VTN.
      */
     @XmlAttribute(required = true)
     private String  name;
@@ -43,10 +53,14 @@ public class VTenant extends VTenantConfig {
     }
 
     /**
-     * Construct a new tenant instance.
+     * Construct a new object which represents the
+     * {@linkplain <a href="package-summary.html#VTN">VTN</a>} information.
      *
-     * @param tenantName  The name of the tenant.
-     * @param tconf       Virtual tenant configuration.
+     * @param tenantName  The name of the VTN.
+     * @param tconf       A {@link VTenantConfig} object which contains the
+     *                    configuration information about the VTN.
+     *                    All values in {@code tconf} get copied to a new
+     *                    object.
      * @throws NullPointerException
      *    {@code tcode} is {@code null}.
      */
@@ -57,9 +71,10 @@ public class VTenant extends VTenantConfig {
     }
 
     /**
-     * Return the name of the tenant.
+     * Return the name of the
+     * {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
      *
-     * @return  The name of the tenant.
+     * @return  The name of the VTN.
      */
     public String getName() {
         return name;
@@ -67,6 +82,32 @@ public class VTenant extends VTenantConfig {
 
     /**
      * Determine whether the given object is identical to this object.
+     *
+     * <p>
+     *   {@code true} is returned only if all the following conditions are met.
+     * </p>
+     * <ul>
+     *   <li>
+     *     {@code o} is a {@code VTenantConfig} object.
+     *   </li>
+     *   <li>
+     *     The following values stored in {@code o} are the same as in this
+     *     object.
+     *     <ul>
+     *       <li>
+     *         The name of the
+     *         {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
+     *       </li>
+     *       <li>The description of the VTN.</li>
+     *       <li>
+     *         The number of seconds for {@code idle_timeout} of flow entry.
+     *       </li>
+     *       <li>
+     *         The number of seconds for {@code hard_timeout} of flow entry.
+     *       </li>
+     *     </ul>
+     *   </li>
+     * </ul>
      *
      * @param o  An object to be compared.
      * @return   {@code true} if identical. Otherwise {@code false}.

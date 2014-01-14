@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -19,7 +19,17 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.opendaylight.controller.sal.core.Node;
 
 /**
- * {@code VlanMap} class describes information about the VLAN mapping.
+ * {@code VlanMap} class describes information about the VLAN mapping, which
+ * maps a VLAN to a vBridge.
+ *
+ * <p>
+ *   {@code VlanMap} class inherits {@link VlanMapConfig} class, and
+ *   {@code VlanMap} object contains the configuration information about the
+ *   VLAN mapping. The VTN Manager passes the VLAN mapping information to
+ *   other components by passing {@code VlanMap} object.
+ * </p>
+ *
+ * @see  <a href="package-summary.html#VLAN-map">VLAN mapping</a>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vlanmap")
@@ -31,7 +41,8 @@ public class VlanMap extends VlanMapConfig {
     private static final long serialVersionUID = 7225775555870161356L;
 
     /**
-     * Unique identifier assigned to the VLAN mapping.
+     * The identifier assigned to the VLAN mapping, which is unique in the
+     * vBridge.
      */
     @XmlAttribute(required = true)
     private String  id;
@@ -45,12 +56,13 @@ public class VlanMap extends VlanMapConfig {
     }
 
     /**
-     * Construct a new VLAN mapping information.
+     * Construct a new object which represents information about the
+     * {@linkplain <a href="package-summary.html#VLAN-map">VLAN mapping</a>}.
      *
-     * @param id    Unique identifier of the VLAN mapping.
-     * @param node  Node associated with the VLAN mapping.
-     * @param vlan  VLAN ID to be mapped. Zero means that untagged Ethernet
-     *              frames should be mapped.
+     * @param id    The identifier assigned to the the VLAN mapping.
+     * @param node  A {@link Node} object specified in the VLAN mapping
+     *              configuration.
+     * @param vlan  The VLAN ID specified in the VLAN mapping configuration.
      */
     public VlanMap(String id, Node node, short vlan) {
         super(node, vlan);
@@ -58,7 +70,8 @@ public class VlanMap extends VlanMapConfig {
     }
 
     /**
-     * Return the identifier of the VLAN mapping.
+     * Return the identifier of the
+     * {@linkplain <a href="package-summary.html#VLAN-map">VLAN mapping</a>}.
      *
      * @return  The identifier of the VLAN mapping.
      */
@@ -68,6 +81,30 @@ public class VlanMap extends VlanMapConfig {
 
     /**
      * Determine whether the given object is identical to this object.
+     *
+     * <p>
+     *   {@code true} is returned only if all the following conditions are met.
+     * </p>
+     * <ul>
+     *   <li>
+     *     {@code o} is a {@code VlanMap} object.
+     *   </li>
+     *   <li>
+     *     The following values stored in {@code o} are the same as in this
+     *     object.
+     *     <ul>
+     *       <li>
+     *         {@link Node} object corresponding to the physical switch to be
+     *         mapped.
+     *       </li>
+     *       <li>VLAN ID to be mapped.</li>
+     *       <li>
+     *         The identifier of the
+     *         {@linkplain <a href="package-summary.html#VLAN-map">VLAN mapping</a>}.
+     *       </li>
+     *     </ul>
+     *   </li>
+     * </ul>
      *
      * @param o  An object to be compared.
      * @return   {@code true} if identical. Otherwise {@code false}.

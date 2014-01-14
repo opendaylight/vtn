@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,16 +10,22 @@
 package org.opendaylight.vtn.manager;
 
 /**
- * {@code IVTNGlobal} provides methods for application to access
- * container-independent resources of Virtual Tenant Network (VTN).
+ * {@code IVTNGlobal} is an interface that defines OSGi service for
+ * providing container independent functionalities of the VTN Manager.
+ *
+ * <p>
+ *   {@code IVTNGlobal} service is instantiated inside the OpenDaylight
+ *   controller only once, and it is registered in the OSGi service registry
+ *   as a global service.
+ * </p>
  */
 public interface IVTNGlobal {
     /**
-     * Return the API version of the VTN Manager.
+     * Return the number which represents the API version of the VTN Manager.
      *
      * <p>
-     *   The API version will be incremented when changes which breaks
-     *   compatibility is made to the API of VTN Manager.
+     *   The API version is a numerical value equal to or more than 1,
+     *   and it gets incremented when the API of the VTN Manager is changed.
      * </p>
      *
      * @return  The API version of the VTN Manager.
@@ -27,13 +33,13 @@ public interface IVTNGlobal {
     int getApiVersion();
 
     /**
-     * Return the version information of the OSGi bundle which implements
-     * the VTN Manager.
+     * Return a {@link BundleVersion} object which represents the version
+     * of the OSGi bundle which implements the VTN Manager.
      *
      * @return  A {@link BundleVersion} object which represents the version
      *          of the OSGi bundle which implements the VTN Manager.
-     *          {@code null} is returned if the VTN Manager is loaded by
-     *          a OSGi bundle class loader.
+     *          {@code null} is returned if the version of the OSGi bundle
+     *          could not be retrieved.
      */
     BundleVersion getBundleVersion();
 }

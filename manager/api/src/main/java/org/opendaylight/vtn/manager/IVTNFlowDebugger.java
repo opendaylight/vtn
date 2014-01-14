@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -21,16 +21,18 @@ import org.opendaylight.controller.sal.utils.Status;
  * </p>
  * <p>
  *   Although this interface is public to other packages, this interface does
- *   not provide any API. Applications other than VTN Manager must not use
+ *   not provide any API. Applications other than the VTN Manager must not use
  *   this interface.
  * </p>
  */
 public interface IVTNFlowDebugger {
     /**
-     * Remove all flow entries in the specified virtual tenant.
+     * Remove all flow entries in the specified VTN.
      *
-     * @param path   Path to the virtual tenant.
-     * @return  "Success" or failure reason.
+     * @param path   A {@link VTenantPath} object that specifies the position
+     *               of the VTN.
+     * @return  A {@link Status} object which indicates the result of the
+     *          operation.
      */
     Status removeAllFlows(VTenantPath path);
 }
