@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -527,7 +527,7 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
     /**
      * Test method for
      * {@link VTNFlowDatabase#removeFlows(VTNManagerImpl, VTenantPath)},
-     * {@link VTNFlowDatabase#removeFlows(VTNManagerImpl, MacVlan, NodeConnectorCreator)}.
+     * {@link VTNFlowDatabase#removeFlows(VTNManagerImpl, MacVlan, NodeConnector)}.
      */
     @Test
     public void testRemoveFlowsVTenantPathAndMacVlan() {
