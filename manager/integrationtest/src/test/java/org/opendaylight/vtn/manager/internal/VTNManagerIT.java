@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -118,6 +118,7 @@ import org.opendaylight.controller.sal.routing.IListenRoutingUpdates;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
 import org.opendaylight.controller.switchmanager.IInventoryListener;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
+import org.opendaylight.controller.switchmanager.Subnet;
 import org.opendaylight.controller.topologymanager.ITopologyManagerAware;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.Configuration;
@@ -4992,15 +4993,26 @@ public class VTNManagerIT extends TestBase {
                 unexpected(e);
             }
 
+            // ArpHandler.probe(HostNodeConnector) sends an ARP request only
+            // if a subnet matching destination address exists.
+            boolean found;
+            if (bpath == null) {
+                Subnet subnet = swmgr.getSubnetByNetworkAddress(ia);
+                found = (subnet != null && subnet.getVlan() == vlan);
+            } else {
+                found = true;
+            }
+            int count = (found) ? 1 : 0;
+
             dps.clearPkt();
             res = dps.setLatch(1);
             hostFinder.probe(hnode);
             try {
-                assertTrue(emsg, res.await(2L, TimeUnit.SECONDS));
+                assertEquals(emsg, found, res.await(2L, TimeUnit.SECONDS));
             } catch (Exception e) {
                 unexpected(e);
             }
-            assertEquals(emsg, 1, dps.getPktCount());
+            assertEquals(emsg, count, dps.getPktCount());
 
             // if null case
             dps.clearPkt();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -248,11 +248,9 @@ public class ArpHandler {
         }
 
         InetAddress addr = host.getNetworkAddress();
-        ISwitchManager swMgr = vtnManager.getSwitchManager();
-        Subnet subnet = swMgr.getSubnetByNetworkAddress(addr);
+        short vlan = host.getVlan();
+        Subnet subnet = getSubnet(addr, vlan);
         if (subnet == null) {
-            LOG.debug("{}: Can't find subnet matching IP {}",
-                      vtnManager.getContainerName(), addr);
             return;
         }
 
@@ -264,11 +262,11 @@ public class ArpHandler {
         }
 
         // Send an unicast ARP request to this host.
+        ISwitchManager swMgr = vtnManager.getSwitchManager();
         byte[] src = swMgr.getControllerMAC();
         byte[] dst = host.getDataLayerAddressBytes();
         byte[] spa = subnet.getNetworkAddress().getAddress();
         byte[] tpa = host.getNetworkAddress().getAddress();
-        short vlan = subnet.getVlan();
 
         sendArp(port, ARP.REQUEST, src, dst, spa, tpa, vlan);
     }
@@ -438,6 +436,11 @@ public class ArpHandler {
         short vlan = pctx.getVlan();
         Subnet subnet = getSubnet(dstIp, vlan);
         if (subnet == null) {
+            return PacketResult.IGNORED;
+        }
+        if (dstIp.equals(subnet.getNetworkAddress())) {
+            LOG.trace("{}: Ignore IPv4 packet destinated to default gateway",
+                      vtnManager.getContainerName());
             return PacketResult.IGNORED;
         }
 
