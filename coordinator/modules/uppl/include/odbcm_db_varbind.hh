@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -183,6 +183,8 @@ enum is_exists {
 typedef struct {
     SQLSMALLINT is_exists;
     SQLSMALLINT cs_row_status;
+    SQLLEN      ind_exists;
+    SQLLEN      ind_row_status;
 }is_row_exists_t;
 
 /** 
