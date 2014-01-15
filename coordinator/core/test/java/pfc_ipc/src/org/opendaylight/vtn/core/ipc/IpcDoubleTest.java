@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -34,14 +34,6 @@ public class IpcDoubleTest extends TestBase
 	 */
 	public void testCtorFloat()
 	{
-		String bitexp = System.getProperty("pflow.core.ipc.test.bitexp");
-		boolean output = false;
-		if ((bitexp != null) && 
-		    (bitexp.equals("show") || bitexp.equals("show-float"))) {
-			output = true;;
-			System.out.println("Number is converted from float in IpcDouble.");
-		}
-
 		float[] floats = {
 			Float.POSITIVE_INFINITY,
 			Float.NEGATIVE_INFINITY,
@@ -69,9 +61,6 @@ public class IpcDoubleTest extends TestBase
 			float f = floats[idx];
 			IpcDouble obj = new IpcDouble(f);
 			checkValue(obj, (double)f);
-			if (output) {
-				printFloatCheck(obj, f);
-			}
 		}
 	}
 
@@ -80,14 +69,6 @@ public class IpcDoubleTest extends TestBase
 	 */
 	public void testCtorDouble()
 	{
-		String bitexp = System.getProperty("pflow.core.ipc.test.bitexp");
-		boolean output = false;
-		if ((bitexp != null) && 
-		    (bitexp.equals("show") || bitexp.equals("show-double"))) {
-			output = true;;
-			System.out.println("Number is converted from double in IpcDouble.");
-		}
-
 		double[] doubles = {
 			Double.POSITIVE_INFINITY,
 			Double.NEGATIVE_INFINITY,
@@ -116,9 +97,6 @@ public class IpcDoubleTest extends TestBase
 			double d = doubles[idx];
 			IpcDouble obj = new IpcDouble(d);
 			checkValue(obj, d);
-			if (output) {
-				printDoubleCheck(obj, d);
-			}
 		}
 	}
 
@@ -127,14 +105,6 @@ public class IpcDoubleTest extends TestBase
 	 */
 	public void testCtorString()
 	{
-		String bitexp = System.getProperty("pflow.core.ipc.test.bitexp");
-		boolean output = false;
-		if ((bitexp != null) &&
-		    (bitexp.equals("show") || bitexp.equals("show-string"))) {
-			output = true;
-			System.out.println("Number is converted from String in IpcDouble.");
-		}
-
 		String[] strings = {
 			// NaN expressions.
 			"NaN",
@@ -239,9 +209,6 @@ public class IpcDoubleTest extends TestBase
 		for (int idx = 0; idx < strings.length; idx++) {
 			IpcDouble obj = new IpcDouble(strings[idx]);
 			checkValue(obj, required[idx]);
-			if (output) {
-				printStringCheck(obj, strings[idx], required[idx]);
-			}
 		}
 
 		// Invalid String.
@@ -375,9 +342,8 @@ public class IpcDoubleTest extends TestBase
 		HashSet<IpcDouble> set = new HashSet<IpcDouble>();
 		HashSet<Double> dset = new HashSet<Double>();
 		Random rand = new Random();
-		String randtype = System.getProperty("pflow.core.ipc.test.randtype");
-		String stats = System.getProperty("pflow.core.ipc.test.stats");
-		int already_count = 0;
+		String randtype =
+			System.getProperty("pflow.core.ipc.test.randtype");
 
 		for (int loop = 0; loop < 0x10000; loop++) {
 			double d;
@@ -395,17 +361,10 @@ public class IpcDoubleTest extends TestBase
 			if (dset.add(dobj)) {
 				assertTrue(set.add(obj));
 				assertFalse(set.add(obj));
-			} else {
-				already_count++;
 			}
 
 			obj = new IpcDouble(d);
 			assertFalse(set.add(obj));
-		}
-		if ((stats != null) &&
-		    (stats.equals("show") || stats.equals("check"))) {
-			System.out.println("Overlapped test pattern is "
-					   + already_count + " in IpcDouble.");
 		}
 	}
 
@@ -427,71 +386,5 @@ public class IpcDoubleTest extends TestBase
 		assertEquals(Double.toString(value), obj.toString());
 
 		assertEquals(IpcDataUnit.DOUBLE, obj.getType());
-	}
-
-	/**
-	 * Output input number, double casting number,  floatValue/doubleValue
-	 * in IpcDouble and their hexadecimal expressins when creating IpcDouble
-	 * using type double.
-	 *
-	 * @param obj		Created IpcDouble Object.
-	 * @param value		Input Number, which is used to create IpcDouble.
-	 */
-	private void printFloatCheck(IpcDouble obj, float value)
-	{
-		System.out.println("  Input:" + value +
-				   " = IpcDouble.String:" + obj.toString());
-		System.out.println("    float = " + value + " (" +
-				   Integer.toHexString(Float.floatToRawIntBits(value)) + ")");
-		System.out.println("    IpcDouble(float) = " + obj.floatValue() + " (" +
-				   Integer.toHexString(Float.floatToRawIntBits(obj.floatValue())) + ")");
-
-		double d = value;
-		System.out.println("    double casted = " + d + " (" +
-				   Long.toHexString(Double.doubleToRawLongBits(d))
-				   + ")");
-		System.out.println("    IpcDouble = " + obj.doubleValue() + " (" +
-				   Long.toHexString(Double.doubleToRawLongBits(obj.doubleValue()))
-				   + ")");
-	}
-
-
-	/**
-	 * Output input number, doubleValue in IpcDouble and their hexadecimal
-	 * expressins when creating IpcDouble using type double.
-	 *
-	 * @param obj		Created IpcDouble Object.
-	 * @param value		Input Number, which is used to create IpcDouble.
-	 */
-	private void printDoubleCheck(IpcDouble obj, double value)
-	{
-		System.out.println("  Input:" + value +
-				   " = IpcDoube.String:" + obj.toString());
-		System.out.println("    Double = " + value + " (" +
-				   Long.toHexString(Double.doubleToRawLongBits(value))
-				   + ")");
-		System.out.println("  IpcDouble = " +  obj.doubleValue() + " (" +
-				   Long.toHexString(Double.doubleToRawLongBits(obj.doubleValue()))
-				   + ")");
-	}
-
-	/**
-	 * Output doubleValue in IpcDouble, check number and thier hexadecimal
-	 * expressins when creating IpcDouble using class String.
-	 *
-	 * @param obj		Created IpcDouble Object.
-	 * @param value		Input String, which is used to create IpcDouble.
-	 * @param required	Check number that must be returned from IpcDouble.
-	 */
-	private void printStringCheck(IpcDouble obj, String value, double required)
-	{
-		System.out.println("  Input:" + value +
-				   " = IpcFlaot.String:" + obj.toString());
-		System.out.println("    IpcDouble = " + obj.doubleValue() + " (" +
-				   Long.toHexString(Double.doubleToRawLongBits(obj.doubleValue()))
-				   + ")");
-		System.out.println("    required float number = " + required + " (" +
-				   Long.toHexString(Double.doubleToRawLongBits(required))
-				   + ")");
 	}
 }

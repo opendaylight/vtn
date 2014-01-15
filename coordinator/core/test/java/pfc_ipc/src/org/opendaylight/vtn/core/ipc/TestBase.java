@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -281,7 +281,8 @@ public abstract class TestBase extends TestCase
 					_childOut.add(line);
 				}
 				else {
-					System.out.println(line);
+					fail("Unexpected output to stdout: " +
+					     line);
 				}
 			}
 
@@ -293,7 +294,8 @@ public abstract class TestBase extends TestCase
 					_childErr.add(line);
 				}
 				else {
-					System.err.println(line);
+					fail("Unexpected output to stderr: " +
+					     line);
 				}
 			}
 		}

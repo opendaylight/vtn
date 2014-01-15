@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -138,9 +138,6 @@ public class IpcUint64Test extends TestBase
 	 */
 	public void testCompareTo()
 	{
-		int[][]    comp_counts = new int[9][3];
-		String stats = System.getProperty("pflow.core.ipc.test.stats");
-
 		for (int loop = 0; loop < 10000; loop++) {
 			long i = getTestValue(loop % 0x700);
 			long j = getTestValue(loop % 0x1000);
@@ -151,57 +148,18 @@ public class IpcUint64Test extends TestBase
 			assertEquals(0, objj.compareTo(objj));
 
 			int answer = getCompareAnswer(i, j);
-			int pattern = getComparePattern(i, j);
-
 			int result = obji.compareTo(objj);
 			if (answer == 0) {
-				comp_counts[pattern][0]++;
 				assertEquals(0, result);
 			}
 			else if (answer < 0) {
-				comp_counts[pattern][1]++;
 				assertTrue(result < 0);
 			}
 			else {
-				comp_counts[pattern][2]++;
 				assertTrue(result > 0);
 			}			
 			assertEquals(UnsignedInteger.compare(i, j),
 				     obji.compareTo(objj));
-		}
-		// Output and check test situations.
-		if ((stats != null) &&
-		    (stats.equals("show") || stats.equals("check"))) {
-			System.out.println("Statistics for Comparing patterns "
-					   + "in IpcUint64 are ");
-			for (int pat = 0 ; pat < 9 ; pat++) {
-				System.out.println("  Pattern " + (pat + 1) + ":" +
-						   " Equal - " + comp_counts[pat][0] +
-						   ", Less than - " + comp_counts[pat][1] +
-						   ", Greater than - " + comp_counts[pat][2]);
-			}
-		}
-		if ((stats != null) && stats.equals("check")) {
-			String [] out_msg = {"\"Equal\"", "\"Less than\"",
-					     "\"Greater than\"" };
-			boolean[][] check = {
-				{true, true, true},
-				{false, true, false},
-				{false, true, false},
-				{false, false, true},
-				{true, false, false},
-				{false, false, true},
-				{false, false, true},
-				{false, true, false},
-				{true, true, true},
-			};
-			for (int pat = 0 ; pat < 9 ; pat++) {
-				for (int idx = 0 ; idx < 3 ; idx++) {
-					assertTrue("Not occurs for " + out_msg[idx] +
-						   " pattern for type-" + pat +".",
-						   (comp_counts[pat][idx] != 0) == check[pat][idx]);
-				}
-			}
 		}
 	}
 
@@ -213,8 +171,6 @@ public class IpcUint64Test extends TestBase
 	{
 		HashSet<IpcUint64> set = new HashSet<IpcUint64>();
 		HashSet<Long> lset = new HashSet<Long>();
-		String stats = System.getProperty("pflow.core.ipc.test.stats");
-		int already_count = 0;		
 
 		for (int loop = 0; loop < 10000; loop++) {
 			long l = getTestValue(loop);
@@ -227,17 +183,10 @@ public class IpcUint64Test extends TestBase
 			if (lset.add(lobj)) {
 				assertTrue(set.add(obj));
 				assertFalse(set.add(obj));
-			} else {
-				already_count++;
 			}
 
 			obj = new IpcUint64(l);
 			assertFalse(set.add(obj));
-		}
-		if ((stats != null) &&
-		    (stats.equals("show") || stats.equals("check"))) {
-			System.out.println("Overlapped test pattern is "
-					   + already_count + " in IpcUint64.");
 		}
 	}
 
@@ -326,36 +275,5 @@ public class IpcUint64Test extends TestBase
 				return 1;
 			}
 		}
-	}
-
-	/**
-	 * <p>
-	 * Detect comparing category. 
-	 * </p>
-	 * <p>
-	 *   This method uses for detecting a comparing category.
-	 * </p>
-	 *
-	 * @param	li	1st compared value..
-	 * @param	lj	2nd compared value.
-	 * @return	Return comparing category.
-	 */
-	private int getComparePattern(long li, long lj)
-	{
-		int pos = 0;
-
-		if (li == 0) {
-			pos += 1;
-		} else if (li > 0) {
-			pos += 2;
-		}
-
-		if (lj == 0) {
-			pos += 3;
-		} else if (lj > 0) {
-			pos += 6;
-		}
-
-		return pos;
 	}
 }

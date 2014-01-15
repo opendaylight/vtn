@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -845,7 +845,7 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
             try {
                 res.deserialize(data, 0, data.length * NetUtils.NumBitsInAByte);
             } catch (Exception e) {
-                System.out.println("deserialize failed.");
+                Assert.fail("deserialize failed: " + e);
                 return null;
             }
             return res;

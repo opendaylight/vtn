@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -150,8 +150,6 @@ public class IpcUint16Test extends TestBase
 	public void testCompareTo()
 	{
 		Random rand = new Random();
-		int[]  comp_counts = new int[3];
-		String stats = System.getProperty("pflow.core.ipc.test.stats");
 
 		for (int loop = 0; loop < 10000; loop++) {
 			int i = rand.nextInt() & 0xffff;
@@ -163,34 +161,13 @@ public class IpcUint16Test extends TestBase
 
 			int result = obji.compareTo(objj);
 			if (i == j) {
-				comp_counts[0]++;
 				assertEquals(0, result);
 			}
 			else if (i < j) {
-				comp_counts[1]++;
 				assertTrue(result < 0);
 			}
 			else {
-				comp_counts[2]++;
 				assertTrue(result > 0);
-			}
-		}
-		// Output and check test situations.
-		if ((stats != null) &&
-		    (stats.equals("show") || stats.equals("check"))) {
-			System.out.println("Statistics for Comparing patterns "
-					   + "in IpcUint16 are ");
-			System.out.println("  Equal - " + comp_counts[0] +
-					   ", Less than - " + comp_counts[1] +
-					   ", Greater than - " + comp_counts[2]);
-		}
-		if ((stats != null) && stats.equals("check")) {
-			String [] out_msg = {"\"Equal\"", "\"Less than\"",
-					     "\"Greater than\"" };
-			for (int idx = 0 ; idx < 3 ; idx++) {
-				assertTrue("Not occurs for " + out_msg[idx] +
-					   " pattern.",
-					   comp_counts[idx] != 0);
 			}
 		}
 	}

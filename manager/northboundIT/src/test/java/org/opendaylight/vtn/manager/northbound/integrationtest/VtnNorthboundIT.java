@@ -1,11 +1,12 @@
-/**
- * Copyright (c) 2013 NEC Corporation
+/*
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.northbound.integrationtest;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -80,7 +81,6 @@ public class VtnNorthboundIT extends TestBase {
     private IUserManager userManager = null;
     private IVTNManager vtnManager = null;
     private IListenDataPacket listenDataPacket = null;
-    private Boolean debugMsg = false;
     private Bundle  implBundle;
 
     /**
@@ -258,11 +258,8 @@ public class VtnNorthboundIT extends TestBase {
         httpResponseCode = 400;
         httpLocation = null;
 
-        if (debugMsg) {
-            System.out.println("HTTP method: " + method + " url: " + restUrl.toString());
-            if (body != null)
-                System.out.println("body" + body);
-        }
+        log.debug("HTTP method: {}, uri: {}", method, restUrl);
+        log.debug("Body: {}", body);
 
         try {
             URL url = new URL(restUrl);
@@ -317,10 +314,9 @@ public class VtnNorthboundIT extends TestBase {
                 }
             }
 
-            if (debugMsg) {
-                System.out.println("HTTP response code: " + connection.getResponseCode());
-                System.out.println("HTTP response message: " + connection.getResponseMessage());
-            }
+            log.debug("HTTP response code: {}", connection.getResponseCode());
+            log.debug("HTTP response message: {}",
+                      connection.getResponseMessage());
 
             InputStream is = connection.getInputStream();
             BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
@@ -362,7 +358,7 @@ public class VtnNorthboundIT extends TestBase {
      */
     @Test
     public void testVTNAPI() throws JSONException {
-        System.out.println("Starting VTN JAXB client.");
+        log.info("Starting VTN JAXB client.");
         String baseURL = VTN_BASE_URL;
 
         String tname1 = "testVtn1";
@@ -955,7 +951,7 @@ public class VtnNorthboundIT extends TestBase {
      * @throws JSONException  An error occurred.
      */
     private void testVBridgeAPI(String tname1, String tname2) throws JSONException {
-        System.out.println("Starting vBridge JAXB client.");
+        log.info("Starting vBridge JAXB client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -1462,7 +1458,7 @@ public class VtnNorthboundIT extends TestBase {
      * @throws JSONException  An error occurred.
      */
     private void testVBridgeInterfaceAPI(String tname1, String bname1, String bname2) throws JSONException {
-        System.out.println("Starting vBridge Intergace JAXB client.");
+        log.info("Starting vBridge Intergace JAXB client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -1928,7 +1924,7 @@ public class VtnNorthboundIT extends TestBase {
      * @throws JSONException  An error occurred.
      */
     private void testVBridgeInterfaceDeleteAPI(String tname, String bname) throws JSONException {
-        System.out.println("Starting delete vBridge Intergace JAXB client.");
+        log.info("Starting delete vBridge Intergace JAXB client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -2004,7 +2000,7 @@ public class VtnNorthboundIT extends TestBase {
      * @throws JSONException  An error occurred.
      */
     private void testPortMappingAPI(String tname, String bname, String bname2, String ifname, String ifname2) throws JSONException {
-        System.out.println("Starting Port Mapping JAXB client.");
+        log.info("Starting Port Mapping JAXB client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -2322,7 +2318,7 @@ public class VtnNorthboundIT extends TestBase {
      * @throws JSONException  An error occurred.
      */
     private void testPortMappingDeleteAPI(String tname, String bname, String ifname) throws JSONException {
-        System.out.println("Starting delete Port Mapping JAXB client.");
+        log.info("Starting delete Port Mapping JAXB client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -2374,7 +2370,7 @@ public class VtnNorthboundIT extends TestBase {
      * @throws JSONException  An error occurred.
      */
     private void testVLANMappingAPI(String tname, String bname) throws JSONException {
-        System.out.println("Starting VLAN Mapping JAXB client.");
+        log.info("Starting VLAN Mapping JAXB client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -2716,7 +2712,7 @@ public class VtnNorthboundIT extends TestBase {
      * @throws JSONException  An error occurred.
      */
     private void testVLANMappingDeleteAPI(String tname, String bname) throws JSONException {
-        System.out.println("Starting delete Port Mapping JAXB client.");
+        log.info("Starting delete Port Mapping JAXB client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -2791,7 +2787,7 @@ public class VtnNorthboundIT extends TestBase {
      * @throws JSONException  An error occurred.
      */
     private void testMacAddressAPI(String tname, String bname) throws JSONException {
-        System.out.println("Starting MAC address JAXB client.");
+        log.info("Starting MAC address JAXB client.");
         String url = VTN_BASE_URL;
 
         StringBuilder baseURL = new StringBuilder();
@@ -3018,7 +3014,7 @@ public class VtnNorthboundIT extends TestBase {
      * This method is called by {@link #testVTNAPI()}.
      */
     private void testVtnGlobal(String base) throws JSONException {
-        System.out.println("Starting IVTNGlobal JAXB client.");
+        log.info("Starting IVTNGlobal JAXB client.");
 
         // Authentication failure.
         String uri = base + "version";
@@ -3060,7 +3056,7 @@ public class VtnNorthboundIT extends TestBase {
      */
     @Test
     public void testServiceUnavailable() {
-        System.out.println("Starting Test with Service Unavailable.");
+        log.info("Starting Test with Service Unavailable.");
 
         // stop VTNManagerImpl.
         for (Bundle b: bc.getBundles()) {
