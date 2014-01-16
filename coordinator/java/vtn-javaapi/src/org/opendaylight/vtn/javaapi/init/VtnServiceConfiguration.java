@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -8,18 +8,13 @@
  */
 package org.opendaylight.vtn.javaapi.init;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Properties;
-import java.util.Scanner;
 
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
-import org.opendaylight.vtn.javaapi.util.OrderedProperties;
 import org.opendaylight.vtn.javaapi.util.VtnServiceUtil;
 
 /**
@@ -33,8 +28,6 @@ public final class VtnServiceConfiguration {
 
 	private static final Properties commonConfigProperties = new Properties();
 	private Properties appConfigProperties = null;
-	private OrderedProperties physicalErrorProperties = null;
-	private OrderedProperties logicalErrorProperties = null;
 
 	static {
 		try {
@@ -59,10 +52,6 @@ public final class VtnServiceConfiguration {
 
 		appConfigProperties = new Properties();
 
-		physicalErrorProperties = new OrderedProperties();
-
-		logicalErrorProperties = new OrderedProperties();
-
 		init();
 
 		LOG.trace("Complete VtnServiceConfiguration#VtnServiceConfiguration()");
@@ -86,7 +75,6 @@ public final class VtnServiceConfiguration {
 								.getResourceAsStream(
 										VtnServiceConsts.APP_CONF_FILEPATH));
 			}
-			loadErrorCodeProps();
 		} catch (final IOException e) {
 			VtnServiceInitManager
 					.getExceptionHandler()
@@ -100,80 +88,6 @@ public final class VtnServiceConfiguration {
 									.getErrorMessage(), e);
 		}
 		LOG.trace("Complete VtnServiceConfiguration#init()");
-	}
-
-	/**
-	 * Load Physical and Logical Error Code properties in the same order as
-	 * given in the properties file
-	 * 
-	 * @throws FileNotFoundException
-	 */
-	private void loadErrorCodeProps() {
-		/*
-		 * load logical error code and messages from properties files
-		 */
-		if (logicalErrorProperties != null) {
-			synchronized (logicalErrorProperties) {
-				final List<String> valueSet = new ArrayList<String>();
-				final List<String> keySet = new ArrayList<String>();
-				final Scanner scanner = new Scanner(Thread
-						.currentThread()
-						.getContextClassLoader()
-						.getResourceAsStream(
-								(VtnServiceConsts.UPLL_ERRORS_FILEPATH)));
-				Scanner lineParser = null;
-
-				/*
-				 * read properties one by one in the given order from properties
-				 * file
-				 */
-				while (scanner.hasNextLine()) {
-					final String line = scanner.nextLine();
-					lineParser = new Scanner(line);
-					lineParser.useDelimiter(VtnServiceConsts.EQUAL);
-					while (lineParser.hasNext()) {
-						keySet.add(lineParser.next());
-						valueSet.add(lineParser.next());
-					}
-				}
-
-				logicalErrorProperties.setKeySet(keySet);
-				logicalErrorProperties.setValueSet(valueSet);
-			}
-		}
-
-		/*
-		 * load physical error code and messages from properties files
-		 */
-		if (physicalErrorProperties != null) {
-			synchronized (physicalErrorProperties) {
-				final List<String> valueSet = new ArrayList<String>();
-				final List<String> keySet = new ArrayList<String>();
-				final Scanner scanner = new Scanner(Thread
-						.currentThread()
-						.getContextClassLoader()
-						.getResourceAsStream(
-								(VtnServiceConsts.UPPL_ERRORS_FILEPATH)));
-				Scanner lineParser = null;
-
-				/*
-				 * read properties one by one in the given order from properties
-				 * file
-				 */
-				while (scanner.hasNextLine()) {
-					final String line = scanner.nextLine();
-					lineParser = new Scanner(line);
-					lineParser.useDelimiter(VtnServiceConsts.EQUAL);
-					while (lineParser.hasNext()) {
-						keySet.add(lineParser.next());
-						valueSet.add(lineParser.next());
-					}
-				}
-
-				physicalErrorProperties.setKeySet(keySet);
-				physicalErrorProperties.setValueSet(valueSet);
-			}
-		}
 	}
 
 	/**
@@ -212,23 +126,5 @@ public final class VtnServiceConfiguration {
 		}
 		LOG.debug(key + VtnServiceConsts.COLON + configValue);
 		return configValue;
-	}
-
-	/**
-	 * Getter for Logical Properties File
-	 * 
-	 * @return
-	 */
-	public OrderedProperties getLogicalErrorProperties() {
-		return logicalErrorProperties;
-	}
-
-	/**
-	 * Getter for Physical Properties File
-	 * 
-	 * @return
-	 */
-	public OrderedProperties getPhysicalErrorProperties() {
-		return physicalErrorProperties;
 	}
 }

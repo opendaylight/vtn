@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -29,10 +29,10 @@ public enum UncJavaAPIErrorCode {
 	VALIDATION_ERROR("ER016","Validation Failure"),
 	
 	RESOURCE_SCAN_ERROR("ER017","Resource Package Scanning Failure"),
-	RESOURCE_LOAD_ERROR("ER018","Resource Lodding Failure"),
+	RESOURCE_LOAD_ERROR("ER018","Resource Loading Failure"),
 	
-	COMMON_CONFIG_ERROR("ER019","Resource Lodding Failure"),
-	APP_CONFIG_ERROR("ER020","Resource Lodding Failure"),
+	COMMON_CONFIG_ERROR("ER019","Resource Loading Failure"),
+	APP_CONFIG_ERROR("ER020","Resource Loading Failure"),
 	POOL_SIZE_ERROR("ER021","Connection Pool Size Invalid");
 	
 	private String errorCode;

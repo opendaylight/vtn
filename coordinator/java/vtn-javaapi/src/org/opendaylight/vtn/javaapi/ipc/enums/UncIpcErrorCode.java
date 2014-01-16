@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -8,13 +8,19 @@
  */
 package org.opendaylight.vtn.javaapi.ipc.enums;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
-import org.opendaylight.vtn.javaapi.init.VtnServiceConfiguration;
+import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
+import org.opendaylight.vtn.javaapi.exception.VtnServiceExceptionHandler;
 import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
-import org.opendaylight.vtn.javaapi.util.OrderedProperties;
+
+import org.opendaylight.vtn.core.util.Logger;
 
 public class UncIpcErrorCode {
 
@@ -34,47 +40,37 @@ public class UncIpcErrorCode {
 	
 	/**
 	 * Read the properties of logical and physical errors
-	 * Create objects for UncErrorBean and set them in Map
+	 * Create objects for UncErrorBean and set them in Map.
+	 *
+	 * @throws VtnServiceException   Failed to load error definition.
 	 */
-	public static void initializeErrorsMessages(){
-		VtnServiceConfiguration configuration = VtnServiceInitManager.getConfigurationMap();
+	public static void initializeErrorsMessages()
+		throws VtnServiceException {
+		Logger log = Logger.getLogger("UncIpcErrorCode");
+
+		try {
+			// Load the logical errors and put the error bean
+			// objects in the map.
+			loadErrorCodes(log, LOGICAL_CODES,
+				       VtnServiceConsts.UPLL_ERRORS_FILEPATH);
 		
-		/*
-		 * load the logical errors and put the error bean objects in the map 
-		 */
-		OrderedProperties upplErrorProperties = configuration.getPhysicalErrorProperties();
-		int index = 0;
-		for(String errorProp : upplErrorProperties.getValueSet()){
-			String values[] = errorProp.split(VtnServiceConsts.COLON);
-			UncErrorBean errorCodeBean = new UncErrorBean();
-			errorCodeBean.setErrorCode(values[0]);
-			errorCodeBean.setJavaAPIErrorMessage(values[1]);
-			errorCodeBean.setSouthboundErrorMessage(values[2]);
-			errorCodeBean.setErrorCodeKey(upplErrorProperties.getKeySet().get(index));
-			PHYSICAL_CODES.put(index, errorCodeBean);
-			index++;
+			// Load the physical errors and put the error bean
+			// objects in the map.
+			loadErrorCodes(log, PHYSICAL_CODES,
+				       VtnServiceConsts.UPPL_ERRORS_FILEPATH);
 		}
-		
-		/*
-		 * load the physical errors and put the error bean objects in the map 
-		 */
-		OrderedProperties upllErrorProperties = configuration.getLogicalErrorProperties();
-		index = 0;
-		for(String errorProp : upllErrorProperties.getValueSet()){
-			String values[] = errorProp.split(VtnServiceConsts.COLON);
-			UncErrorBean errorCodeBean = new UncErrorBean();
-			errorCodeBean.setErrorCode(values[0]);
-			errorCodeBean.setJavaAPIErrorMessage(values[1]);
-			errorCodeBean.setSouthboundErrorMessage(values[2]);
-			errorCodeBean.setErrorCodeKey(upllErrorProperties.getKeySet().get(index));
-			LOGICAL_CODES.put(index, errorCodeBean);
-			index++;
+		catch (Exception e) {
+			VtnServiceInitManager.getExceptionHandler().
+				raise("UncIpcErrorCode-loadErrorCodes()",
+				      UncJavaAPIErrorCode.APP_CONFIG_ERROR.
+				      getErrorCode(),
+				      UncJavaAPIErrorCode.APP_CONFIG_ERROR.
+				      getErrorMessage(), e);
 		}
-		
+
 		/*
 		 * load the TC errors and put the error enums objects in the map 
 		 */
-		index = 0;
 		for(UncTCEnums.OperationStatus operationStatus : UncTCEnums.OperationStatus.values()){
 			TC_CODES.put(operationStatus.getCode(), operationStatus);
 		}
@@ -82,7 +78,7 @@ public class UncIpcErrorCode {
 		/*
 		 * load the Session errors and put the error enums objects in the map 
 		 */
-		index = 0;
+		int index = 0;
 		for(UncSessionEnums.UsessIpcErrE operationStatus : UncSessionEnums.UsessIpcErrE.values()){
 			SESSION_CODES.put(index++, operationStatus);
 		}
@@ -102,7 +98,6 @@ public class UncIpcErrorCode {
 		for(UncSYSMGEnums.MgmtIpcErrorT operationStatus : UncSYSMGEnums.MgmtIpcErrorT.values()){
 			SYSMG_CODES.put(index++, operationStatus.getMessage());
 		}
-		
 	}
 	
 	/**
@@ -159,4 +154,77 @@ public class UncIpcErrorCode {
 		return SYSMG_CODES.get(errorKey);
 	}
 
+	/**
+	 * Load IPC error code from the property file specified by the given
+	 * resource name.
+	 *
+	 * @param log       A logger instance.
+	 * @param map       A map to store IPC error codes.
+	 * @param resource  The resource name corresponding to the property
+	 *                  file.
+	 * @throws FileNotFoundException
+	 *     Property file was not found.
+	 * @throws IOException
+	 *     Failed to load property file.
+	 */
+	private static void loadErrorCodes(Logger log,
+					   Map<Integer, UncErrorBean>map,
+					   String resource)
+		throws IOException {
+		// Load the give property file.
+		InputStream in = UncIpcErrorCode.class.getClassLoader().
+			getResourceAsStream(resource);
+		if (in == null) {
+			String msg =
+				"Property file was not found: " + resource;
+			log.error(msg);
+			throw new FileNotFoundException(msg);
+		}
+
+		Properties prop = new Properties();
+		try {
+			prop.load(in);
+		}
+		finally {
+			try {
+				in.close();
+			}
+			catch (Exception e) {
+				// Ignore this error.
+				log.warning("Failed to close IPC error " +
+					    "property: name=%s, error=%s",
+					    resource, e);
+			}
+		}
+
+		// Construct UncErrorBean instances.
+		for (int index = 0; true; index++) {
+			String key = prop.getProperty("key." + index);
+			if (key == null) {
+				break;
+			}
+
+			String code = prop.getProperty("code." + index);
+			if (code == null) {
+				break;
+			}
+
+			String java = prop.getProperty("java." + index);
+			if (java == null) {
+				break;
+			}
+
+			String south = prop.getProperty("south." + index);
+			if (south == null) {
+				break;
+			}
+
+			UncErrorBean uerr = new UncErrorBean();
+			uerr.setErrorCodeKey(key);
+			uerr.setErrorCode(code);
+			uerr.setJavaAPIErrorMessage(java);
+			uerr.setSouthboundErrorMessage(south);
+			map.put(index, uerr);
+		}
+	}
 }
