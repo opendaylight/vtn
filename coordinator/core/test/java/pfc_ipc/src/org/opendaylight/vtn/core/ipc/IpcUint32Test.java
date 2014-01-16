@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -185,9 +185,6 @@ public class IpcUint32Test extends TestBase
 	 */
 	public void testCompareTo()
 	{
-		int[]    comp_counts = new int[3];
-		String stats = System.getProperty("pflow.core.ipc.test.stats");
-
 		for (int loop = 0; loop < 10000; loop++) {
 			long i = getTestValueLong(loop);
 			long j = getTestValueLong(loop);
@@ -198,34 +195,13 @@ public class IpcUint32Test extends TestBase
 
 			int result = obji.compareTo(objj);
 			if (i == j) {
-				comp_counts[0]++;
 				assertEquals(0, result);
 			}
 			else if (i < j) {
-				comp_counts[1]++;
 				assertTrue(result < 0);
 			}
 			else {
-				comp_counts[2]++;
 				assertTrue(result > 0);
-			}
-		}
-		// Output and check test situations.
-		if ((stats != null) && 
-		    (stats.equals("show") || stats.equals("check"))) {
-			System.out.println("Statistics for Comparing patterns "
-					   + "in IpcUint32 are ");
-			System.out.println("  Equal - " + comp_counts[0] +
-					   ", Less than - " + comp_counts[1] +
-					   ", Greater than - " + comp_counts[2]);
-		}
-		if ((stats != null) && stats.equals("check")) {
-			String [] out_msg = {"\"Equal\"", "\"Less than\"",
-					     "\"Greater than\"" };
-			for (int idx = 0 ; idx < 3 ; idx++) {
-				assertTrue("Not occurs for " + out_msg[idx] +
-					   " pattern.",
-					   comp_counts[idx] != 0);
 			}
 		}
 	}
@@ -238,8 +214,6 @@ public class IpcUint32Test extends TestBase
 	{
 		HashSet<IpcUint32> set = new HashSet<IpcUint32>();
 		HashSet<Long> lset = new HashSet<Long>();
-		String stats = System.getProperty("pflow.core.ipc.test.stats");
-		int already_count = 0;	
 
 		for (int loop = 0; loop < 10000; loop++) {
 			long l = getTestValueLong(loop);
@@ -252,17 +226,10 @@ public class IpcUint32Test extends TestBase
 			if (lset.add(lobj)) {
 				assertTrue(set.add(obj));
 				assertFalse(set.add(obj));
-			} else {
-				already_count++;
 			}
 
 			obj = new IpcUint32(l);
 			assertFalse(set.add(obj));
-		}
-		if ((stats != null) && 
-		    (stats.equals("show") || stats.equals("check"))) {
-			System.out.println("Overlapped test pattern is "
-					   + already_count + " in IpcUint32.");
 		}
 	}
 

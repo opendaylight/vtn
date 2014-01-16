@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -232,8 +232,6 @@ public class IpcInet4AddressTest extends TestBase
 		HashSet<IpcInetAddress> set = new HashSet<IpcInetAddress>();
 		HashSet<InetAddress> iset = new HashSet<InetAddress>();
 		Random rand = new Random();
-		String stats = System.getProperty("pflow.core.ipc.test.stats");
-		int already_count = 0;
 
 		IpcInetAddress obj6 = null;
 		try {
@@ -261,8 +259,6 @@ public class IpcInet4AddressTest extends TestBase
 				if (iset.add(iaddr)) {
 					assertTrue(set.add(obj));
 					assertFalse(set.add(obj));
-				} else {
-					already_count++;
 				}
 			
 				obj = IpcInetAddress.create(raw);
@@ -271,11 +267,6 @@ public class IpcInet4AddressTest extends TestBase
 			catch (Exception e) {
 				fail("Unexpected exception: " + e);
 			}
-		}
-		if ((stats != null) &&
-		    (stats.equals("show") || stats.equals("check"))) {
-			System.out.println("Overlapped test pattern is "
-					   + already_count + " in IpcInet4Address.");
 		}
 	}
 
