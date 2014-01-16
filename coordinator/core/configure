@@ -21,7 +21,7 @@ use vars qw(%COMMAND_SPEC %OSTYPE %OS_CONF %GCC_OSTYPE %ARCH %GCC_ARCH @PATH
 	    $PFC_VERSION_STRING %OSDEP @CC_WARN @CXX_WARN $CC_MODE $CXX_MODE
 	    %ARCH_CC_MODEFLAGS %ARCH_CXX_MODEFLAGS $SHELL_PATH $PATH_SCRIPT
 	    %DEFAULT_OSARCH_LIBPATH @DEFAULT_LIBPATH @LIBDIR_NAMES
-	    $PFC_PRODUCT_NAME %MAKEVAR_RESV %LINUX_DIST $PFC_SCM_REVISION
+	    $PFC_PRODUCT_NAME %MAKEVAR_RESV @LINUX_DIST $PFC_SCM_REVISION
 	    @OPENSSL_TESTS @CONFIG_TESTS @CFLAGS_TESTS %REQUIRED_CFLAGS
 	    @UNLINK_ON_ERROR $YEAR_RANGE @JAVA_LIBRARY_PATH);
 
@@ -2308,9 +2308,11 @@ use constant	OSTYPE_LINUX		=> 'linux';
 	  });
 
 %OS_CONF = (OSTYPE_LINUX()	=> \&check_linux);
-%LINUX_DIST = ('/etc/fedora-release'	=> \&fedora_version,
-	       '/etc/redhat-release'	=> \&redhat_version,
-	       '/etc/SuSE-release'	=> \&suse_version);
+@LINUX_DIST = ({FILE => '/etc/fedora-release', CODE => \&fedora_version},
+	       {FILE => '/etc/redhat-release', CODE => \&redhat_version},
+	       {FILE => '/etc/SuSE-release', CODE => \&suse_version},
+	       {FILE => '/etc/os-release', CODE => \&os_release_version},
+	       {FILE => '/etc/lsb-release', CODE => \&lsb_version});
 
 # Supported architectures.
 use constant	ARCH_I386		=> 'i386';
@@ -2373,6 +2375,9 @@ use constant	MODEL_ILP32	=> 'ILP32';
 				    DESC => 'gtest-config',
 				    IGNORE_ERROR => 1,
 				    EXPORT => 1},
+		 lsb_release	=> {ARG => ['-h'],
+				    PATTERN => ['Usage: lsb_release '],
+				    IGNORE_ERROR => 1},
 		 ar		=> {EXPORT => 1},
 		 cat		=> {EXPORT => 1},
 		 mkdir		=> {EXPORT => 1},
@@ -2452,9 +2457,12 @@ sub make_feature_key($);
 sub feature_setup(\%\@$);
 sub check_linux($\%);
 sub check_linux_dist();
+sub check_lsb_release();
 sub fedora_version($);
 sub redhat_version($);
 sub suse_version($);
+sub os_release_version($);
+sub lsb_version($);
 sub read_command_output(\%@);
 sub read_command_oneline(\%@);
 
@@ -6640,50 +6648,98 @@ sub check_linux($\%)
 
 sub check_linux_dist()
 {
-	foreach my $file (keys(%LINUX_DIST)) {
-		my $func = $LINUX_DIST{$file};
+	foreach my $spec (@LINUX_DIST) {
+		my ($file, $func) = ($spec->{FILE}, $spec->{CODE});
 		my $fh = FileHandle->new($file);
-		return &$func($fh) if ($fh);
+		if ($fh) {
+			my ($dist, $abbrev) = &$func($fh);
+			return ($dist, $abbrev)
+				if (defined($dist) and defined($abbrev));
+		}
 	}
 
-	# Try to determine OS using /etc/os-release.
-	my $fh = FileHandle->new('/etc/os-release');
-	return undef unless ($fh);
+	# Try to determine distribution using lsb_release command.
+	return check_lsb_release();
+}
 
-	my $eqpat = qr,=,;
-	my ($name, $version, $id);
-	my $eval_str = sub {
-		my $str = $_[0];
-		my $s = eval "$str";
-		return (defined($s)) ? $s : $str;
+sub check_lsb_release()
+{
+	my $path = $COMMAND_SPEC{lsb_release}->{PATH};
+	return undef unless ($path);
+
+	my ($id, $rel, $desc);
+	my $filter = sub {
+		my ($rh) = @_;
+
+		my $sep = qr,\s*:\s*,;
+		while (<$rh>) {
+			my ($key, $value) = split($sep, $_, 2);
+			next unless ($value);
+			if ($key eq 'Distributor ID') {
+				chomp($value);
+				$id = $value unless ($value eq 'n/a');
+			}
+			elsif ($key eq 'Release') {
+				chomp($value);
+				$rel = $value unless ($value eq 'n/a');
+			}
+			elsif ($key eq 'Description') {
+				chomp($value);
+				$desc = $value unless ($value eq 'n/a');
+			}
+		}
 	};
 
-	while (my $line = $fh->getline()) {
-		my ($key, $value) = split($eqpat, $line, 2);
-		next unless (defined($key) and defined($value));
-		if ($key eq 'NAME') {
-			chomp($value);
-			$name = &$eval_str($value);
-		}
-		elsif ($key eq 'VERSION_ID') {
-			chomp($value);
-			$version = &$eval_str($value);
-		}
-		elsif ($key eq 'ID') {
-			chomp($value);
-			$id = &$eval_str($value);
-		}
-	}
+	my (%opts) = (FILTER => $filter, ERR2OUT => 1);
+	my $ret = exec_command(%opts, $path, '-a');
+	return undef unless ($ret == 0);
 
-	if ($name and $version and $id) {
-		my $abbrev = $id;
-		if ($version =~ /^(\d+)/) {
+	if ($id and defined($rel)) {
+		my $abbrev;
+		if ($id =~ /^Fedora/i) {
+			$abbrev = 'fc';
+		}
+		elsif ($id =~ /^RedHatEnterprise/i) {
+			$abbrev = 'el';
+		}
+		elsif ($id =~ /SUSE LINUX/i) {
+			$abbrev = 'SLES';
+		}
+		else {
+			$abbrev = lc($id);
+		}
+
+		my $name = ($desc) ? $desc : "$id $rel";
+		if ($rel =~ /^(\d+)/) {
 			$abbrev .= $1;
 		}
 
-		$name .= " $version";
-	
 		return ($name, $abbrev);
+	}
+
+	if ($desc) {
+		if ($desc =~ /^Fedora release (\d+) /) {
+			my $v = $1;
+			my $ver = "Fedora $v";
+			my $abbrev = "fc$v";
+
+			return ($ver, $abbrev);
+		}
+		if ($desc =~
+		    /^Red Hat Enterprise Linux .* release (\d+)\..*$/) {
+			my $v = $1;
+			my $ver = "Red Hat Enterprise Linux $v";
+			my $abbrev = "el$v";
+
+			return ($ver, $abbrev);
+		}
+		if ($desc =~ /^SUSE Linux Enterprise Server (\d+)/) {
+			my $v = $1;
+			my $ver = "SUSE Linux Enterprise Server $v";
+			my $abbrev = "SLES$v";
+
+			return ($ver, $abbrev);
+		}
 	}
 
 	return undef;
@@ -6748,6 +6804,91 @@ sub suse_version($)
 	}
 
 	return ('SUSE Linux', 'SUSE');
+}
+
+sub os_release_version($)
+{
+	my ($fh) = @_;
+
+	my $eqpat = qr,=,;
+	my ($name, $version, $id);
+	my $eval_str = sub {
+		my $str = $_[0];
+		my $s = eval "$str";
+		return (defined($s)) ? $s : $str;
+	};
+
+	while (my $line = $fh->getline()) {
+		my ($key, $value) = split($eqpat, $line, 2);
+		next unless (defined($key) and defined($value));
+		if ($key eq 'NAME') {
+			chomp($value);
+			$name = &$eval_str($value);
+		}
+		elsif ($key eq 'VERSION_ID') {
+			chomp($value);
+			$version = &$eval_str($value);
+		}
+		elsif ($key eq 'ID') {
+			chomp($value);
+			$id = &$eval_str($value);
+		}
+	}
+
+	if ($name and defined($version) and $id) {
+		my $abbrev = $id;
+		if ($version =~ /^(\d+)/) {
+			$abbrev .= $1;
+		}
+
+		$name .= " $version";
+	
+		return ($name, $abbrev);
+	}
+
+	return undef;
+}
+
+sub lsb_version($)
+{
+	my ($fh) = @_;
+
+	my $eqpat = qr,=,;
+	my ($id, $rel, $desc);
+	my $eval_str = sub {
+		my $str = $_[0];
+		my $s = eval "$str";
+		return (defined($s)) ? $s : $str;
+	};
+
+	while (my $line = $fh->getline()) {
+		my ($key, $value) = split($eqpat, $line, 2);
+		next unless (defined($key) and defined($value));
+		if ($key eq 'DISTRIB_ID') {
+			chomp($value);
+			$id = &$eval_str($value);
+		}
+		elsif ($key eq 'DISTRIB_RELEASE') {
+			chomp($value);
+			$rel = &$eval_str($value);
+		}
+		elsif ($key eq 'DISTRIB_DESCRIPTION') {
+			chomp($value);
+			$desc = &$eval_str($value);
+		}
+	}
+
+	if ($id and defined($rel)) {
+		my $abbrev = lc($id);
+		my $name = ($desc) ? $desc : "$id $rel";
+		if ($rel =~ /^(\d+)/) {
+			$abbrev .= $1;
+		}
+
+		return ($name, $abbrev);
+	}
+
+	return undef;
 }
 
 sub read_command_output(\%@)
