@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #
-# Copyright (c) 2013 NEC Corporation
+# Copyright (c) 2013-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -23,8 +23,6 @@ use POSIX;
 $PROGNAME = 'setup';
 
 use constant	CONFIG_MK	=> 'config.mk';
-use constant	VERSION_FILE	=> 'VERSION';
-
 use constant	KEY_SCM_REV	=> 'VTN_SCM_REVISION';
 
 sub usage($);

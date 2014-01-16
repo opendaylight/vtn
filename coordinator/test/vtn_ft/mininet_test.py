@@ -1,14 +1,13 @@
+#!/usr/bin/python
+
 #
-# Copyright (c) 2013 NEC Corporation
+# Copyright (c) 2013-2014 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License v1.0 which accompanies this
 # distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
 #
-
-
-#! /usr/bin/python
 
 import requests, json, collections, time, controller, vtn_vbr
 import vbrif_portmap, vtn_testconfig, pexpect
