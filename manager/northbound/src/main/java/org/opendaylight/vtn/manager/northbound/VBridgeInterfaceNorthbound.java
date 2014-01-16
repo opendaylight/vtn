@@ -668,7 +668,7 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
         @ResponseCode(code = HTTP_UNAVAILABLE,
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
-    public Response unetPortMap(
+    public Response deletePortMap(
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
