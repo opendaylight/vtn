@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da6255ed_5b3f8787",
+        "filename": "coordinator/test/modules/uppl/utest/Port_ut.cc",
+        "patchSetId": 2
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2014-01-16T08:39:48Z",
+      "side": 0,
+      "message": "Typo (Publc -\u003e Public)",
+      "revId": "355cc9ee3f5e7b9538e53cd55d1e1a61d3b73d08",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
