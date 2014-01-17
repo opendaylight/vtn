@@ -165,8 +165,7 @@ public class TestBase extends TestCase
 	 */
 	protected static void unexpected(Throwable t)
 	{
-		t.printStackTrace();
-		fail("Unexpected exception: " + t);
+		throw new AssertionError("Unexpected exception: " + t, t);
 	}
 
 	/**

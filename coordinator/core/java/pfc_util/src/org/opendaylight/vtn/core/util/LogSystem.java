@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -122,15 +122,8 @@ public final class LogSystem implements LogFatalHandler
 		int rsize = conf.getRotationSize();
 
 		File logFile = conf.getLogFile();
-		String logDir, logName;
-		if (logFile == null) {
-			logDir = null;
-			logName = null;
-		}
-		else {
-			logDir = logFile.getParent();
-			logName = logFile.getName();
-		}
+		String logDir = logFile.getParent();
+		String logName = logFile.getName();
 
 		File levelFile = conf.getLevelFile();
 		String levelDir, levelName;
@@ -220,9 +213,8 @@ public final class LogSystem implements LogFatalHandler
 	@Override
 	public void fatalError()
 	{
-		Date d = new Date();
-
-		System.err.println(d + ": Terminated by FATAL log handler.");
+		Logger log = _traceLog.getLogger("LogSystem");
+		log.error("Terminated by FATAL log handler.");
 		System.exit(FATAL_EXIT_STATUS);
 	}
 

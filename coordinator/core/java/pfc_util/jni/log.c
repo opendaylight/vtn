@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -103,7 +103,6 @@ Java_org_opendaylight_vtn_core_util_LogSystem_initializeLog(
 	const char	*lvldir = NULL, *lvlname = NULL;
 	JavaVM		*jvm;
 	pjni_log_t	*lp = &log_conf;
-	pfc_bool_t	sysonly;
 	pfc_log_conf_t	conf;
 	pfc_log_fatal_t	handler;
 
@@ -124,11 +123,6 @@ Java_org_opendaylight_vtn_core_util_LogSystem_initializeLog(
 		if (PFC_EXPECT_FALSE(lname == NULL)) {
 			goto out;
 		}
-		sysonly = PFC_FALSE;
-	}
-	else {
-		/* Disable trace log. */
-		sysonly = PFC_TRUE;
 	}
 
 	if (levelDir != NULL) {
@@ -188,7 +182,7 @@ Java_org_opendaylight_vtn_core_util_LogSystem_initializeLog(
 
 	/* Initialize the PFC-Core logging system. */
 	pfc_logconf_init(&conf, PFC_CFBLK_INVALID, identstr, handler);
-	pfc_logconf_setsyslog(&conf, sysonly);
+	pfc_logconf_setsyslog(&conf, PFC_FALSE);
 	pfc_logconf_setfacility(&conf, facility);
 	if (ldir != NULL) {
 		pfc_logconf_setpath(&conf, ldir, strlen(ldir), NULL, 0,

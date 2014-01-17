@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -46,10 +46,14 @@ public class LogConfigurationTest extends TestBase
 		// Without log file.
 		{
 			String ident = "conf-test-2";
-			LogConfiguration conf =
-				new LogConfiguration(ident, null);
-
-			checkDefault(conf, ident, null);
+			try {
+				LogConfiguration conf =
+					new LogConfiguration(ident, null);
+			}
+			catch (NullPointerException e) {}
+			catch (Exception e) {
+				unexpected(e);
+			}
 		}
 	}
 
@@ -139,7 +143,8 @@ public class LogConfigurationTest extends TestBase
 	 */
 	public void testSetFacility()
 	{
-		LogConfiguration conf = new LogConfiguration("ident", null);
+		File  f = new File("/foo/bar/log.txt");
+		LogConfiguration conf = new LogConfiguration("ident", f);
 		
 		try {
 			conf.setFacility(null);
@@ -224,7 +229,8 @@ public class LogConfigurationTest extends TestBase
 			"log/../../../test.log",
 		};
 
-		LogConfiguration conf = new LogConfiguration("ident", null);
+		File  f = new File("/foo/bar/log.txt");
+		LogConfiguration conf = new LogConfiguration("ident", f);
 		for (int i = 0; i < path.length; i++) {
 			File  file = new File(path[i]);
 			try {
@@ -291,7 +297,8 @@ public class LogConfigurationTest extends TestBase
 	 */
 	public void testSetLevel()
 	{
-		LogConfiguration conf = new LogConfiguration("ident", null);
+		File  f = new File("/foo/bar/log.txt");
+		LogConfiguration conf = new LogConfiguration("ident", f);
 
 		try {
 			conf.setLevel(null);
@@ -328,7 +335,8 @@ public class LogConfigurationTest extends TestBase
 	 */
 	public void testSetDefaultLevel()
 	{
-		LogConfiguration conf = new LogConfiguration("ident", null);
+		File  f = new File("/foo/bar/log.txt");
+		LogConfiguration conf = new LogConfiguration("ident", f);
 
 		try {
 			conf.setDefaultLevel(null);
@@ -374,7 +382,8 @@ public class LogConfigurationTest extends TestBase
 	 */
 	public void testSetFatalHandler()
 	{
-		LogConfiguration conf = new LogConfiguration("ident", null);
+		File  f = new File("/foo/bar/log.txt");
+		LogConfiguration conf = new LogConfiguration("ident", f);
 		LogFatalHandler handler = new LogFatalHandler() {
 			public void fatalError() {}
 		};

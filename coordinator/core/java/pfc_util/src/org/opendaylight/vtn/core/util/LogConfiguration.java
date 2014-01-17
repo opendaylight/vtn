@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -85,9 +85,7 @@ public final class LogConfiguration
 	 *   Construct a logging configuration.
 	 * </p>
 	 * <p>
-	 *   If {@code logFile} is null, the trace log messages are sent to
-	 *   the system logger (syslog).
-	 *   Otherwise trace log messages are stored to the file specified by
+	 *   Trace log messages are stored to the file specified by
 	 *   {@code logFile}.
 	 * </p>
 	 * <p>
@@ -121,7 +119,7 @@ public final class LogConfiguration
 	 * @param ident		An identifier string of the syslog.
 	 * @param logFile	An absolute path to the log file.
 	 * @throws NullPointerException
-	 *	{@code ident} is null.
+	 *	{@code ident} or {@code logFile} is null.
 	 * @throws IllegalArgumentException
 	 *	{@code ident} is empty.
 	 * @throws IllegalArgumentException
@@ -141,11 +139,9 @@ public final class LogConfiguration
 		if (ident.length() == 0) {
 			throw new IllegalArgumentException("ident is empty.");
 		}
-		if (logFile != null) {
-			checkFile(logFile);
-			_logFile = logFile;
-		}
 
+		checkFile(logFile);
+		_logFile = logFile;
 		_ident = ident;
 	}
 

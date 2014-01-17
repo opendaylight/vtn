@@ -1,7 +1,7 @@
 /* -*- mode: java; coding: utf-8; -*- */
 
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -1074,8 +1074,7 @@ public class IpcStructTest extends TestBase
 			addr6 = InetAddress.getByName("::1");
 		}
 		catch (Exception e) {
-			e.printStackTrace();
-			fail("Unexpected exception: " + e);
+			unexpected(e);
 		}
 
 		vmap.put("ut1_ipv4", IpcInetAddress.create(addr4));
@@ -1128,8 +1127,7 @@ public class IpcStructTest extends TestBase
 				getByName("fe80::234:abcd:ffce:5678");
 		}
 		catch (Exception e) {
-			e.printStackTrace();
-			fail("Unexpected exception: " + e);
+			unexpected(e);
 		}
 
 		nvmap.put("ut1_ipv4", IpcInetAddress.create(addr4));
@@ -4086,6 +4084,16 @@ abstract class TestArrayFieldImpl extends Assert
 		TestStruct.checkException(e, IllegalArgumentException.class,
 					  msg);
 	}
+
+	/**
+	 * Throw an error which indicates an unexpected exception is caught.
+	 *
+	 * @param t	A throwable.
+	 */
+	protected static void unexpected(Throwable t)
+	{
+		throw new AssertionError("Unexpected exception: " + t, t);
+	}
 }
 
 /**
@@ -5016,8 +5024,7 @@ class InetAddressArrayFieldTest extends TestArrayFieldImpl
 				array[i] = InetAddress.getByAddress(raw);
 			}
 			catch (Exception e) {
-				e.printStackTrace();
-				fail("Unexpected exception: " + e);
+				unexpected(e);
 			}
 		}
 
@@ -5039,8 +5046,7 @@ class InetAddressArrayFieldTest extends TestArrayFieldImpl
 			iaddr = InetAddress.getByName(addr);
 		}
 		catch (Exception e) {
-			e.printStackTrace();
-			fail("Unexpected exception: " + e);
+			unexpected(e);
 		}
 
 		return iaddr;
