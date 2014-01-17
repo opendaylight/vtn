@@ -426,6 +426,8 @@ def wait_until_state(blockname,state):
         sys.stdout.flush()
         time.sleep(4)
         i+=4
+        if i == 45:
+          return 1
         retval = check_controller_state(blockname,state)
     return 0
 
