@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -153,7 +153,7 @@ drv_resp_code_t KeyTree::append_physical_attribute_configuration_list(
   std::vector<ConfigNode*>::const_iterator it = value_list.begin();
   std::vector<ConfigNode*>::const_iterator itr_end = value_list.end();
   // Iterate the vector of config nodes
-  for (; it!= value_list.end(); it++) {
+  for (; it!= itr_end; it++) {
     if (*it == NULL) {
       pfc_log_error("RunningConfig::%s:%d: ConfigNode is NULL",
                     PFC_FUNCNAME, __LINE__);
@@ -334,7 +334,7 @@ drv_resp_code_t KeyTree::append_audit_configuration_list(
   std::vector<ConfigNode*>::const_iterator itr_end = value_list.end();
 
   // Iterate the vector of config nodes
-  for (; it!= value_list.end(); it++) {
+  for (; it!= itr_end; it++) {
     if (*it == NULL) {
       pfc_log_error("RunningConfig::%s:%d: ConfigNode is NULL",
                    PFC_FUNCNAME, __LINE__);
