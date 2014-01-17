@@ -26,7 +26,11 @@ def test_audit_vtn_vbr_vbrif():
 
     print "TEST 1: Test Audit VTenant with one VBridge one VBRIF"
   # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=15)
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
+      
     retval=vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
         print "VTN Create Failed"
@@ -54,8 +58,11 @@ def test_audit_vtn_vbr_vbrif():
      print "controller invalid_ip update failed"
      exit(1)
   # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=45)
+    retval = controller.wait_until_state('ControllerFirst',"down")
 
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
     retval=vbrif_portmap.create_vbrif('VtnOne','VbrOne','VbrIfOne')
     if retval != 0:
         print "VBRIF Create Failed"
@@ -69,7 +76,10 @@ def test_audit_vtn_vbr_vbrif():
      print "controller valid_ip update failed"
      exit(1)
    # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=45)
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
 
     retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst')
     if retval != 0:
@@ -125,7 +135,10 @@ def test_audit_multi_vbrif():
 
     print "TEST 2 : Test audit One vtn and one VBridge with Two Interfaces"
   # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=15)
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
     retval=vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
         print "VTN Create Failed"
@@ -143,7 +156,10 @@ def test_audit_multi_vbrif():
      print "controller invalid_ip update failed"
      exit(1)
   # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=45)
+    retval = controller.wait_until_state('ControllerFirst',"down")
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
 
     retval=vbrif_portmap.create_vbrif('VtnOne','VbrOne','VbrIfOne')
     if retval != 0:
@@ -162,7 +178,10 @@ def test_audit_multi_vbrif():
      print "controller valid_ip update failed"
      exit(1)
    # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=45)
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
 
     retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',position=1)
     if retval != 0:
@@ -242,7 +261,10 @@ def test_audit_vtn_multi_vbr_vbrif():
 
     print "TEST 3 : Audit One vtn and Two VBridges with Two Interfaces each"
   # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=15)
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
     retval=vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
         print "VTN Create Failed"
@@ -285,7 +307,10 @@ def test_audit_vtn_multi_vbr_vbrif():
      print "controller invalid_ip update failed"
      exit(1)
   # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=45)
+    retval = controller.wait_until_state('ControllerFirst',"down")
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
 
     retval = vbrif_portmap.delete_vbrif('VtnOne','VbrOne','VbrIfOne')
     if retval != 0:
@@ -314,7 +339,10 @@ def test_audit_vtn_multi_vbr_vbrif():
      print "controller valid_ip update failed"
      exit(1)
    # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=45)
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
 
     retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfThree','ControllerFirst',position=0)
     if retval != 0:
@@ -418,7 +446,10 @@ def test_audit_vtn_vbr_vbrif_portmap():
 
     print "TEST 4 : Test Audit with VTenant one VBridge one VBRIF and One PORTMAP"
   # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=15)
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
     retval=vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
         print "VTN Create Failed"
@@ -445,7 +476,10 @@ def test_audit_vtn_vbr_vbrif_portmap():
      print "controller invalid_ip update failed"
      exit(1)
   # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=45)
+    retval = controller.wait_until_state('ControllerFirst',"down")
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
 
     retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfOne');
     if retval != 0:
@@ -459,7 +493,10 @@ def test_audit_vtn_vbr_vbrif_portmap():
      print "controller valid_ip update failed"
      exit(1)
    # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=45)
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
 
     retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',presence="yes");
     if retval != 0:
@@ -534,7 +571,10 @@ def test_audit_vtn_multi_vbr_vbrif_portmap():
 
     print "TEST 5 : VTenant with one VBridge Two VBRIF and One PORTMAP each"
   # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=15)
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
     retval=vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
         print "VTN Create Failed"
@@ -583,7 +623,10 @@ def test_audit_vtn_multi_vbr_vbrif_portmap():
      print "controller invalid_ip update failed"
      exit(1)
   # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=45)
+    retval = controller.wait_until_state('ControllerFirst',"down")
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
 
     retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfTwo');
     if retval != 0:
@@ -597,7 +640,10 @@ def test_audit_vtn_multi_vbr_vbrif_portmap():
      print "controller valid_ip update failed"
      exit(1)
    # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=45)
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
 
     retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',presence="yes",position=1);
     if retval != 0:
@@ -622,7 +668,10 @@ def test_audit_vtn_multi_vbr_vbrif_portmap():
      print "controller invalid_ip update failed"
      exit(1)
   # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=45)
+    retval = controller.wait_until_state('ControllerFirst',"down")
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
 
     retval=vbrif_portmap.delete_portmap('VtnOne','VbrOne','VbrIfTwo');
     if retval != 0:
@@ -641,7 +690,10 @@ def test_audit_vtn_multi_vbr_vbrif_portmap():
      print "controller valid_ip update failed"
      exit(1)
    # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=45)
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
 
     retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',presence="no",position=1);
     if retval != 0:
@@ -709,7 +761,10 @@ def test_audit_vtn_vbr_multi_vbrif_portmap():
 
     print "TEST 6 : VTenant with one VBridge Two VBRIF1/VBRIF2 and One PORTMAP in VBRIF1"
   # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=15)
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
     retval=vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
         print "VTN Create Failed"
@@ -757,7 +812,10 @@ def test_audit_vtn_vbr_multi_vbrif_portmap():
      print "controller invalid_ip update failed"
      exit(1)
   # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=45)
+    retval = controller.wait_until_state('ControllerFirst',"down")
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
 
     retval=vbrif_portmap.delete_portmap('VtnOne','VbrOne','VbrIfOne');
     if retval != 0:
@@ -776,7 +834,10 @@ def test_audit_vtn_vbr_multi_vbrif_portmap():
      print "controller valid_ip update failed"
      exit(1)
    # Delay for AUDIT
-    vtn_testconfig.InProgress(delay=45)
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "controller state change failed"
+      exit(1)
 
     retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',presence="yes",position=0);
     if retval != 0:
