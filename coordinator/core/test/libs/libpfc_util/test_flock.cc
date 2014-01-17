@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -58,9 +58,10 @@
 
 /*
  * Allowable error, in nanoseconds, of time for which pfc_flock_rdlock() or
- * pfc_flock_wrlock() blocks.
+ * pfc_flock_wrlock() blocks. (5 seconds)
  */
-#define	FLK_BLOCKTIME_ERROR	500000000	/* 500 milliseconds */
+#define	FLK_BLOCKTIME_ERROR_SEC		5
+#define	FLK_BLOCKTIME_ERROR_NSEC	0
 
 /*
  * Abstract class which represents test context using sub_flock command.
@@ -269,7 +270,10 @@ BlockingLockTest::acquire(FlockCmd &cmd) throw(std::runtime_error)
         reqtime.tv_nsec = 0;
     }
 
-    pfc_timespec_t  errtime = {0, FLK_BLOCKTIME_ERROR};
+    pfc_timespec_t  errtime = {
+        FLK_BLOCKTIME_ERROR_SEC,
+        FLK_BLOCKTIME_ERROR_NSEC,
+    };
     if (pfc_clock_compare(&reqtime, &end) > 0) {
         pfc_timespec_t  ts = reqtime;
         pfc_timespec_sub(&ts, &end);
@@ -349,7 +353,10 @@ NonBlockingLockTest::acquire(FlockCmd &cmd) throw(std::runtime_error)
         reqtime.tv_nsec = 0;
     }
 
-    pfc_timespec_t  errtime = {0, FLK_BLOCKTIME_ERROR};
+    pfc_timespec_t  errtime = {
+        FLK_BLOCKTIME_ERROR_SEC,
+        FLK_BLOCKTIME_ERROR_NSEC,
+    };
     if (pfc_clock_compare(&reqtime, &end) > 0) {
         pfc_timespec_t  ts = reqtime;
         pfc_timespec_sub(&ts, &end);
