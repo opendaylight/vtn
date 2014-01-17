@@ -623,13 +623,12 @@ controller_operation::controller_operation(ControllerFramework *fw_ptr,
                                                         == PFC_TRUE ) {
         ctr_->access_.increment_read_wait_count();
         ctr_->access_.wait_until_update(ctl_fw_->controller_list_rwlock_);
-      } else {
         ctr_->access_.decrement_read_wait_count();
+      }
         uint32_t read_count = ctr_->access_.get_read_count();
         read_count++;
         ctr_->access_.set_read_count(read_count);
         ctl_fw_->controller_list_rwlock_.unlock();
-      }
       break;
     }
     case WRITE_TO_CONTROLLER: {
@@ -645,13 +644,12 @@ controller_operation::controller_operation(ControllerFramework *fw_ptr,
         ctr_->access_.increment_write_wait_count();
         ctr_->access_.wait_for_write(ctl_fw_->controller_list_rwlock_);
         pfc_log_debug("Write cond Wait");
-
-      } else {
+        ctr_->access_.decrement_write_wait_count();
+       }
         pfc_log_debug("WRITE in progress");
         ctr_->access_.set_write_in_progress();
         ctr_->access_.set_write_count(1);
         ctl_fw_->controller_list_rwlock_.unlock();
-      }
       break;
     }
     default:
@@ -664,6 +662,7 @@ controller_operation::~controller_operation() {
   switch (ctl_oper_) {
     case CONTROLLER_UPDATE: {
       ctr_->access_.set_controller_marked_for_update(PFC_FALSE);
+      ctr_->access_.update_completed();
       if (ctr_->access_.get_write_wait_count() > 0)
         ctr_->access_.release_write_wait();
       case CONTROLLER_DELETE:
