@@ -206,8 +206,8 @@ public class ArpHandler {
      * @param addr  IP Address encapsulated in InetAddress class
      */
     void find(InetAddress addr) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("{}: find() called: addr={}",
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("{}: find() called: addr={}",
                       vtnManager.getContainerName(), addr);
         }
 
@@ -236,8 +236,8 @@ public class ArpHandler {
      * @param host  The Host that needs to be probed
      */
     void probe(HostNodeConnector host) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("{}: probe() called: host={}",
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("{}: probe() called: host={}",
                       vtnManager.getContainerName(), host);
         }
 
@@ -353,8 +353,8 @@ public class ArpHandler {
             }
 
             // Notify the host tracker of new host entry.
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("{}: Notify new host: ipaddr={}, host={}",
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}: Notify new host: ipaddr={}, host={}",
                           vtnManager.getContainerName(),
                           sdrIp.getHostAddress(), requestor);
             }
@@ -612,8 +612,8 @@ public class ArpHandler {
             InetAddress tpa = host.getNetworkAddress();
             NodeConnector port = host.getnodeConnector();
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("{}: Sending ARP Reply: " +
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}: Sending ARP Reply: " +
                           "sender={}/{}, target={}/{}, vlan={}",
                           vtnManager.getContainerName(),
                           HexEncode.bytesToHexStringFormat(sha), spa,

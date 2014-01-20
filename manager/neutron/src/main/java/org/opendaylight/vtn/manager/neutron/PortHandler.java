@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -56,8 +56,8 @@ public class PortHandler extends VTNNeutronUtils
         String[] vtnIDs = new String[VTN_IDENTIFIERS_IN_PORT];
         result = getVTNIdentifiers(port, vtnIDs);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" canCreatePort getVTNIdentifiers failed, " +
-                    " result - {} ", result);
+            LOG.error("canCreatePort getVTNIdentifiers failed, result - {}",
+                      result);
             return result;
         }
         String tenantID = vtnIDs[0];
@@ -66,15 +66,15 @@ public class PortHandler extends VTNNeutronUtils
 
         result = isTenantExist(tenantID);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" Tenant does not exist for tenant-id - {}, result - {} ",
-                   tenantID, result);
+            LOG.error("Tenant does not exist for tenant-id - {}, result - {}",
+                      tenantID, result);
             return result;
         }
 
         result = isBridgeExist(tenantID, bridgeID);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" Bridge does not exist for tenant-id - {}," +
-                   " bridge-id - {}, result - {}",
+            LOG.error("Bridge does not exist for tenant-id - {}, " +
+                      "bridge-id - {}, result - {}",
                    tenantID, bridgeID, result);
             return result;
         }
@@ -112,7 +112,7 @@ public class PortHandler extends VTNNeutronUtils
 
         int result = canCreatePort(port);
         if (result != HttpURLConnection.HTTP_CREATED) {
-            LOG.error(" Port create validation failed, result - {} ", result);
+            LOG.error("Port create validation failed, result - {}", result);
             return;
         }
 
@@ -129,9 +129,9 @@ public class PortHandler extends VTNNeutronUtils
                                        portDesc,
                                        portAdminState);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" createBridgeInterface failed for tenant-id - {}," +
-                    " bridge-id - {}, port-id - {}, result - {} ",
-                    tenantID, bridgeID, portID, result);
+            LOG.error("createBridgeInterface failed for tenant-id - {}, " +
+                      "bridge-id - {}, port-id - {}, result - {}",
+                      tenantID, bridgeID, portID, result);
             return;
         }
 
@@ -163,8 +163,8 @@ public class PortHandler extends VTNNeutronUtils
         String[] vtnIDs = new String[VTN_IDENTIFIERS_IN_PORT];
         result = getVTNIdentifiers(original, vtnIDs);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" canUpdatePort getVTNIdentifiers failed, " +
-                    " result - {} ", result);
+            LOG.error("canUpdatePort getVTNIdentifiers failed, result - {}",
+                      result);
             return result;
         }
         String tenantID = vtnIDs[0];
@@ -176,9 +176,9 @@ public class PortHandler extends VTNNeutronUtils
          */
         result = isBridgeInterfaceExist(tenantID, bridgeID, portID);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" Interface does not exist for tenant-id - {}," +
-                   " bridge-id - {}, port-id - {}, result - {}",
-                   tenantID, bridgeID, portID, result);
+            LOG.error("Interface does not exist for tenant-id - {}, " +
+                      "bridge-id - {}, port-id - {}, result - {}",
+                      tenantID, bridgeID, portID, result);
         }
         return result;
     }
@@ -198,8 +198,8 @@ public class PortHandler extends VTNNeutronUtils
         String[] vtnIDs = new String[VTN_IDENTIFIERS_IN_PORT];
         result = getVTNIdentifiers(port, vtnIDs);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" neutronPortUpdated getVTNIdentifiers failed, " +
-                    " result - {} ", result);
+            LOG.error("neutronPortUpdated getVTNIdentifiers failed, " +
+                      "result - {}", result);
             return;
         }
         String tenantID = vtnIDs[0];
@@ -211,9 +211,9 @@ public class PortHandler extends VTNNeutronUtils
          */
         result = isBridgeInterfaceExist(tenantID, bridgeID, portID);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" Interface does not exist for tenant-id - {}," +
-                   " bridge-id - {}, port-id - {}, result - {}",
-                   tenantID, bridgeID, portID, result);
+            LOG.error("Interface does not exist for tenant-id - {}, " +
+                      "bridge-id - {}, port-id - {}, result - {}",
+                      tenantID, bridgeID, portID, result);
             return;
         }
 
@@ -229,9 +229,9 @@ public class PortHandler extends VTNNeutronUtils
                                            portDesc,
                                            portAdminState);
             if (result != HttpURLConnection.HTTP_OK) {
-                LOG.error(" Modifying bridge interface failed for " +
-                        "tenant-id - {}, bridge-id - {}, port-id - {}, " +
-                        "result - {} ", tenantID, bridgeID, portID, result);
+                LOG.error("Modifying bridge interface failed for " +
+                          "tenant-id - {}, bridge-id - {}, port-id - {}, " +
+                          "result - {}", tenantID, bridgeID, portID, result);
                 return;
             }
         }
@@ -251,8 +251,8 @@ public class PortHandler extends VTNNeutronUtils
         String[] vtnIDs = new String[VTN_IDENTIFIERS_IN_PORT];
         result = getVTNIdentifiers(port, vtnIDs);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" canDeletePort getVTNIdentifiers failed, " +
-                    " result - {} ", result);
+            LOG.error("canDeletePort getVTNIdentifiers failed, result - {}",
+                      result);
             return result;
         }
         String tenantID = vtnIDs[0];
@@ -264,9 +264,9 @@ public class PortHandler extends VTNNeutronUtils
          */
         result = isBridgeInterfaceExist(tenantID, bridgeID, portID);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" Interface does not exist for tenant-id - {}," +
-                   " bridge-id - {}, port-id - {}, result - {}",
-                   tenantID, bridgeID, portID, result);
+            LOG.error("Interface does not exist for tenant-id - {}, " +
+                      "bridge-id - {}, port-id - {}, result - {}",
+                      tenantID, bridgeID, portID, result);
         }
         return result;
     }
@@ -281,7 +281,7 @@ public class PortHandler extends VTNNeutronUtils
 
         int result = canDeletePort(port);
         if  (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" deletePort validation failed, result - {} ", result);
+            LOG.error("deletePort validation failed, result - {}", result);
             return;
         }
 
@@ -291,9 +291,9 @@ public class PortHandler extends VTNNeutronUtils
 
         result = deleteBridgeInterface(tenantID, bridgeID, portID);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" deleteBridgeInterface failed for tenant-id - {}, " +
-                    " bridge-id - {}, port-id - {}, result - {} ",
-                    tenantID, bridgeID, portID, result);
+            LOG.error("deleteBridgeInterface failed for tenant-id - {}, " +
+                      "bridge-id - {}, port-id - {}, result - {}",
+                      tenantID, bridgeID, portID, result);
         }
     }
 
@@ -310,7 +310,7 @@ public class PortHandler extends VTNNeutronUtils
          * To basic validation of the request
          */
         if (port == null) {
-            LOG.error(" port object not specified ");
+            LOG.error("port object not specified");
             return result;
         }
 
@@ -319,25 +319,25 @@ public class PortHandler extends VTNNeutronUtils
         String portUUID = port.getID();
 
         if ((tenantUUID == null) || (bridgeUUID == null) || portUUID == null) {
-            LOG.error(" neutron identifiers not specified");
+            LOG.error("neutron identifiers not specified");
             return result;
         }
 
         String tenantID = convertNeutronIDToVTNKey(tenantUUID);
         if (tenantID == null) {
-            LOG.error(" Invalid tenant identifier ");
+            LOG.error("Invalid tenant identifier");
             return result;
         }
 
         String bridgeID = convertNeutronIDToVTNKey(bridgeUUID);
         if (bridgeID == null) {
-            LOG.error(" Invalid bridge identifier ");
+            LOG.error("Invalid bridge identifier");
             return result;
         }
 
         String portID = convertNeutronIDToVTNKey(portUUID);
         if (portID == null) {
-            LOG.error(" Invalid port identifier ");
+            LOG.error("Invalid port identifier");
             return result;
         }
 
@@ -412,8 +412,8 @@ public class PortHandler extends VTNNeutronUtils
         try {
             return getVTNManager().getBridgeInterface(path);
         } catch (VTNException e) {
-            LOG.error(" getBridge error. status - {}",
-                    getException(e.getStatus()));
+            LOG.error("getBridgeInterface error, path - {}, e - {}", path,
+                      e.toString());
             return null;
         }
     }

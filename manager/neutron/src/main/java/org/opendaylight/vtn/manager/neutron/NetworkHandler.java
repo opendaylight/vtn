@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -66,34 +66,34 @@ public class NetworkHandler extends VTNNeutronUtils
         String[] vtnIDs = new String[VTN_IDENTIFIERS_IN_NETWORK];
         result = getVTNIdentifiers(network, vtnIDs);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" canCreateNetwork getVTNIdentifiers failed, " +
-                    " result - {} ", result);
+            LOG.error("canCreateNetwork getVTNIdentifiers failed, result - {}",
+                      result);
             return result;
         }
         String tenantID = vtnIDs[0];
         String bridgeID = vtnIDs[1];
 
-        LOG.trace(" tenantID - {}, bridgeID - {} ", tenantID, bridgeID);
+        LOG.trace("tenantID - {}, bridgeID - {}", tenantID, bridgeID);
 
         result = canCreateBridge(tenantID, bridgeID);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" canCreateBridge failed for tenant-id - {}, " +
-                    "bridge-id - {}, result - {} ",
-                    tenantID, bridgeID, result);
+            LOG.error("canCreateBridge failed for tenant-id - {}, " +
+                      "bridge-id - {}, result - {}",
+                      tenantID, bridgeID, result);
             return result;
         }
 
         Boolean shared = network.getShared();
         if ((shared != null) && (shared)) {
-            LOG.error(" Network shared attribute not supported ");
+            LOG.error("Network shared attribute not supported");
             return HttpURLConnection.HTTP_NOT_ACCEPTABLE;
         }
 
         result = canCreateVlanMap(network);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" canCreateVlanMap failed for tenant-id - {}, " +
-                    "bridge-id - {}, result - {} ",
-                    tenantID, bridgeID, result);
+            LOG.error("canCreateVlanMap failed for tenant-id - {}, " +
+                      "bridge-id - {}, result - {}",
+                      tenantID, bridgeID, result);
             return result;
         }
 
@@ -111,8 +111,8 @@ public class NetworkHandler extends VTNNeutronUtils
 
         result = canCreateNetwork(network);
         if (result != HttpURLConnection.HTTP_CREATED) {
-            LOG.error(" Bridge create validation failed for result - {} ",
-                    result);
+            LOG.error("Bridge create validation failed for result - {}",
+                      result);
             return;
         }
 
@@ -126,13 +126,13 @@ public class NetworkHandler extends VTNNeutronUtils
             // create vtn
             result = createTenant(tenantID);
             if (result != HttpURLConnection.HTTP_OK) {
-                LOG.error(" createTenant failed for tenant - {}, result - {} ",
-                        tenantID, result);
+                LOG.error("createTenant failed for tenant - {}, result - {}",
+                          tenantID, result);
                 return;
             }
             tenantCreated = true;
         } else if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" failed to create network, result - {} ", result);
+            LOG.error("failed to create network, result - {}", result);
             return;
         }
 
@@ -142,15 +142,15 @@ public class NetworkHandler extends VTNNeutronUtils
 
         result = createBridge(tenantID, bridgeID, networkDesc);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" createBridge failed for tenant-id {}, bridge-id - {}," +
-                    " result - {} ", tenantID, bridgeID, result);
+            LOG.error("createBridge failed for tenant-id {}, bridge-id - {}," +
+                      " result - {}", tenantID, bridgeID, result);
 
             // delete Tenant if created
             if (tenantCreated) {
                 result = deleteTenant(tenantID);
                 if (result != HttpURLConnection.HTTP_OK) {
-                    LOG.error(" deleteTenant failed for tenant-id - {}, " +
-                            "result - {} ", tenantID, result);
+                    LOG.error("deleteTenant failed for tenant-id - {}, " +
+                              "result - {}", tenantID, result);
                 }
             }
             return;
@@ -160,8 +160,8 @@ public class NetworkHandler extends VTNNeutronUtils
         // create vlanmap
         result = createVlanMap(network, tenantCreated, bridgeCreated);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.debug(" createVlanMap failed for vlan id - {}, result - {} ",
-                    network.getProviderSegmentationID(), result);
+            LOG.error("createVlanMap failed for vlan id - {}, result - {}",
+                      network.getProviderSegmentationID(), result);
 
         }
         return;
@@ -192,8 +192,8 @@ public class NetworkHandler extends VTNNeutronUtils
         String[] vtnIDs = new String[VTN_IDENTIFIERS_IN_NETWORK];
         result = getVTNIdentifiers(original, vtnIDs);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" canUpdateNetwork getVTNIdentifiers failed, " +
-                    " result - {} ", result);
+            LOG.error("canUpdateNetwork getVTNIdentifiers failed, result - {}",
+                      result);
             return result;
         }
         String tenantID = vtnIDs[0];
@@ -226,8 +226,8 @@ public class NetworkHandler extends VTNNeutronUtils
         String[] vtnIDs = new String[VTN_IDENTIFIERS_IN_NETWORK];
         int result = getVTNIdentifiers(network, vtnIDs);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" neutronNetworkUpdated getVTNIdentifiers failed, " +
-                    " result - {} ", result);
+            LOG.error("neutronNetworkUpdated getVTNIdentifiers failed, " +
+                      "result - {}", result);
             return;
         }
         String tenantID = vtnIDs[0];
@@ -238,15 +238,14 @@ public class NetworkHandler extends VTNNeutronUtils
          */
         result = isBridgeExist(tenantID, bridgeID);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" Tenant id - {} or  bridge id - {} does not exist ",
-                    tenantID, bridgeID);
+            LOG.error("Tenant id - {} or  bridge id - {} does not exist",
+                      tenantID, bridgeID);
             return;
         }
 
         Boolean shared = network.getShared();
         if ((shared != null) && (shared)) {
-            LOG.error(" Shared option - {} not supported in vtn ",
-                    shared);
+            LOG.error("Shared option - {} not supported in vtn", shared);
             return;
         }
 
@@ -260,17 +259,17 @@ public class NetworkHandler extends VTNNeutronUtils
         if (modify) {
             result = modifyBridge(tenantID, bridgeID, networkDesc);
             if (result != HttpURLConnection.HTTP_OK) {
-                LOG.error(" Modifying bridge description failed for " +
-                        " bridge id - {} , tenant id - {}, result - {} ",
-                       bridgeID, tenantID, result);
+                LOG.error("Modifying bridge description failed for " +
+                          "bridge id - {} , tenant id - {}, result - {}",
+                          bridgeID, tenantID, result);
                 return;
             }
         }
 
         result = modifyVlanMap(network);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" modifyVlanMap failed for vlan id - {}, result - {} ",
-                    network.getProviderSegmentationID(), result);
+            LOG.error("modifyVlanMap failed for vlan id - {}, result - {}",
+                      network.getProviderSegmentationID(), result);
         }
         return;
     }
@@ -289,8 +288,8 @@ public class NetworkHandler extends VTNNeutronUtils
         String[] vtnIDs = new String[VTN_IDENTIFIERS_IN_NETWORK];
         result = getVTNIdentifiers(network, vtnIDs);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" canDeleteNetwork getVTNIdentifiers failed, " +
-                   " result - {} ", result);
+            LOG.error("canDeleteNetwork getVTNIdentifiers failed, result - {}",
+                      result);
             return result;
         }
         String tenantID = vtnIDs[0];
@@ -319,8 +318,8 @@ public class NetworkHandler extends VTNNeutronUtils
 
         int result = canDeleteNetwork(network);
         if  (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" deleteNetwork validation failed for result - {} ",
-                    result);
+            LOG.error("deleteNetwork validation failed for result - {}",
+                      result);
             return;
         }
 
@@ -328,16 +327,16 @@ public class NetworkHandler extends VTNNeutronUtils
         String bridgeID = convertNeutronIDToVTNKey(network.getID());
         result = deleteBridge(tenantID, bridgeID);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" deleteBridge failed for tenant-id - {}, " +
-                    " Bridge-id - {}, result - {} ",
-                    tenantID, bridgeID, result);
+            LOG.error("deleteBridge failed for tenant-id - {}, " +
+                      "Bridge-id - {}, result - {}",
+                      tenantID, bridgeID, result);
         }
 
         if (!isVbridgesInTenant(tenantID)) {
             result = deleteTenant(tenantID);
             if (result != HttpURLConnection.HTTP_OK) {
-                LOG.error(" deleteTenant failed for tenant-id - {}, " +
-                       "result - {} ", tenantID, result);
+                LOG.error("deleteTenant failed for tenant-id - {}, " +
+                          "result - {}", tenantID, result);
             }
         }
     }
@@ -355,7 +354,7 @@ public class NetworkHandler extends VTNNeutronUtils
          * To basic validation of the request
          */
         if (network == null) {
-            LOG.error(" network object not specified ");
+            LOG.error("network object not specified");
             return result;
         }
 
@@ -363,19 +362,19 @@ public class NetworkHandler extends VTNNeutronUtils
         String bridgeUUID = network.getID();
 
         if ((tenantUUID == null) || (bridgeUUID == null)) {
-            LOG.error(" neutron identifiers not specified");
+            LOG.error("neutron identifiers not specified");
             return result;
         }
 
         String tenantID = convertNeutronIDToVTNKey(tenantUUID);
         if (tenantID == null) {
-            LOG.error(" Invalid tenant identifier ");
+            LOG.error("Invalid tenant identifier");
             return result;
         }
 
         String bridgeID = convertNeutronIDToVTNKey(bridgeUUID);
         if (bridgeID == null) {
-            LOG.error(" Invalid bridge identifier ");
+            LOG.error("Invalid bridge identifier");
             return result;
         }
 
@@ -394,8 +393,7 @@ public class NetworkHandler extends VTNNeutronUtils
         try {
             return getVTNManager().getTenants();
         } catch (VTNException e) {
-            LOG.error(" getTenants error. status - {}",
-                    getException(e.getStatus()));
+            LOG.error("getTenants error, {}", e.toString());
             return null;
         }
     }
@@ -449,8 +447,8 @@ public class NetworkHandler extends VTNNeutronUtils
         if ((list != null) && (!list.isEmpty()))  {
             return true;
         } else {
-            LOG.error(" vbridge list is null or empty for tenant-id - {} ",
-                    tenantID);
+            LOG.error("vbridge list is null or empty for tenant-id - {}",
+                      tenantID);
             return false;
         }
     }
@@ -466,8 +464,8 @@ public class NetworkHandler extends VTNNeutronUtils
         try {
             return getVTNManager().getBridges(path);
         } catch (VTNException e) {
-            LOG.error(" getBridges error. status - {}",
-                    getException(e.getStatus()));
+            LOG.error("getBridges error, path - {}, e - {}", path,
+                      e.toString());
             return null;
         }
     }
@@ -485,8 +483,8 @@ public class NetworkHandler extends VTNNeutronUtils
         try {
             return getVTNManager().getBridge(path);
         } catch (VTNException e) {
-            LOG.error(" getBridge error. status - {}",
-                    getException(e.getStatus()));
+            LOG.error("getBridge error, path - {}, e - {}", path,
+                      e.toString());
             return null;
         }
     }
@@ -643,7 +641,7 @@ public class NetworkHandler extends VTNNeutronUtils
             while(itrTenant.hasNext()) {
                 VTenant tmpTenant = (VTenant) itrTenant.next();
                 String tenantID = tmpTenant.getName();
-                LOG.trace("tenant-id - {} ", tenantID);
+                LOG.trace("tenant-id - {}", tenantID);
                 List<VBridge> listBridge = getBridges(tenantID);
                 if(listBridge == null) {
                     LOG.trace("isVlanMapExist listBridge is null");
@@ -653,7 +651,7 @@ public class NetworkHandler extends VTNNeutronUtils
                 while (itrBridge.hasNext()) {
                     VBridge tmpBridge = (VBridge) itrBridge.next();
                     String bridgeID = tmpBridge.getName();
-                    LOG.trace("bridge-id - {} ", bridgeID);
+                    LOG.trace("bridge-id - {}", bridgeID);
 
                     VlanMapConfig conf = new VlanMapConfig(null, vlanID);
                     VBridgePath path = new VBridgePath(tenantID, bridgeID);
@@ -664,10 +662,10 @@ public class NetworkHandler extends VTNNeutronUtils
                 }
             }
         } catch (NumberFormatException nfe) {
-            LOG.trace(" Execption NFE, vlan-id - {} ", providerID);
+            LOG.error("Execption NFE, vlan-id - {}", providerID);
             return HttpURLConnection.HTTP_BAD_REQUEST;
         } catch (VTNException e) {
-            LOG.trace(" Execption VTN , vlan-id - {} ", providerID);
+            LOG.error("Caught VTNException, vlan-id -  " + providerID, e);
             result = getException(e.getStatus());
         }
         return result;
@@ -685,8 +683,8 @@ public class NetworkHandler extends VTNNeutronUtils
         try {
             return getVTNManager().getVlanMaps(path);
         } catch (VTNException e) {
-            LOG.error(" getVlanMaps error. status - {}",
-                    getException(e.getStatus()));
+            LOG.error("getVlanMaps error, path - {}, e - {}", path,
+                      e.toString());
             return null;
         }
     }
@@ -711,7 +709,7 @@ public class NetworkHandler extends VTNNeutronUtils
 
         // validate vlanmap id
         if (network.getProviderSegmentationID() == null) {
-            LOG.error(" Segmentation ID not provided ");
+            LOG.error("Segmentation ID not provided");
             return HttpURLConnection.HTTP_BAD_REQUEST;
         }
 
@@ -720,7 +718,7 @@ public class NetworkHandler extends VTNNeutronUtils
         if (result == HttpURLConnection.HTTP_NOT_FOUND) {
             result = HttpURLConnection.HTTP_OK;
         } else if (result == HttpURLConnection.HTTP_OK) {
-            LOG.error(" Vlan-id - {} alreay in use ", vlanID);
+            LOG.error("Vlan-id - {} alreay in use", vlanID);
             result = HttpURLConnection.HTTP_CONFLICT;
         }
         return result;
@@ -739,7 +737,7 @@ public class NetworkHandler extends VTNNeutronUtils
                               boolean bridgeCreated) {
 
         if (network == null) {
-            LOG.debug(" Invalid request for CreateVlanMap ");
+            LOG.error("Invalid request for CreateVlanMap");
             return HttpURLConnection.HTTP_BAD_REQUEST;
         }
 
@@ -758,23 +756,23 @@ public class NetworkHandler extends VTNNeutronUtils
                                    providerID);
 
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" createVlanMap failed for vlan id - {}, result - {} ",
-                    providerID, result);
+            LOG.error("createVlanMap failed for vlan id - {}, result - {}",
+                      providerID, result);
 
             // delete bridge, tenant vtn if created
             if (bridgeCreated) {
                 result = deleteBridge(tenantID, bridgeID);
                 if (result != HttpURLConnection.HTTP_OK) {
-                    LOG.error(" deleteBridge failed for tenant-id - {}, " +
-                            " Bridge-id - {}, result - {} ",
-                            tenantID, bridgeID, result);
+                    LOG.error("deleteBridge failed for tenant-id - {}, " +
+                              "Bridge-id - {}, result - {}",
+                              tenantID, bridgeID, result);
                 }
             }
             if (tenantCreated) {
                 result = deleteTenant(tenantID);
                 if (result != HttpURLConnection.HTTP_OK) {
-                    LOG.error(" deleteTenant failed for tenant-id - {}, " +
-                            "result - {} ", tenantID, result);
+                    LOG.error("deleteTenant failed for tenant-id - {}, " +
+                              "result - {}", tenantID, result);
                 }
             }
         }
@@ -797,6 +795,8 @@ public class NetworkHandler extends VTNNeutronUtils
             getVTNManager().addVlanMap(path, conf);
             result = HttpURLConnection.HTTP_OK;
         } catch (VTNException e) {
+            LOG.error("createVlanMap error, path - {}, conf - {}, e - {}",
+                      path, conf, e.toString());
             result = getException(e.getStatus());
         }
         return result;
@@ -828,7 +828,7 @@ public class NetworkHandler extends VTNNeutronUtils
             }
             result = createVlanMap(tenantID, bridgeID, vlanID);
         } catch (NumberFormatException nfe) {
-            LOG.error(" Exception NFE vlan ID - {} ", providerID);
+            LOG.error("Exception NFE vlan ID - {}", providerID);
             result = HttpURLConnection.HTTP_BAD_REQUEST;
         }
         return result;
@@ -860,7 +860,7 @@ public class NetworkHandler extends VTNNeutronUtils
                     validateVlanMap = true;
                 }
             } else {
-                LOG.error(" Invalid network type ");
+                LOG.error("Invalid network type");
                 return HttpURLConnection.HTTP_BAD_REQUEST;
             }
 
@@ -870,8 +870,7 @@ public class NetworkHandler extends VTNNeutronUtils
                 if (result == HttpURLConnection.HTTP_NOT_FOUND) {
                     result = HttpURLConnection.HTTP_OK;
                 } else if (result == HttpURLConnection.HTTP_OK) {
-                    LOG.error(" Vlan-id - {} alreay in use ",
-                            deltaProviderID);
+                    LOG.error("Vlan-id - {} alreay in use", deltaProviderID);
                     result = HttpURLConnection.HTTP_CONFLICT;
                 }
             }
@@ -888,9 +887,9 @@ public class NetworkHandler extends VTNNeutronUtils
     private int modifyVlanMap(NeutronNetwork network) {
         int result = HttpURLConnection.HTTP_OK;
 
-        LOG.trace(" modify vlanmap");
+        LOG.trace("modify vlanmap");
         if (network == null) {
-            LOG.error(" Invalid request for modifyVlanMap ");
+            LOG.error("Invalid request for modifyVlanMap");
             return HttpURLConnection.HTTP_BAD_REQUEST;
         }
 
@@ -898,7 +897,7 @@ public class NetworkHandler extends VTNNeutronUtils
         String providerID = network.getProviderSegmentationID();
 
         if ((providerType == null) || (providerID == null)) {
-            LOG.trace(" Provider settings not configured return OK ");
+            LOG.trace("Provider settings not configured return OK");
             return HttpURLConnection.HTTP_OK;
         }
 
@@ -907,7 +906,7 @@ public class NetworkHandler extends VTNNeutronUtils
 
         if (providerType.equals(VTN_SUPPORTED_NETWORK_TYPE)) {
             result = deleteVlanMaps(tenantID, bridgeID);
-            LOG.trace(" modify vlanmap deleteVlanMaps, result - {}", result);
+            LOG.trace("modify vlanmap deleteVlanMaps, result - {}", result);
             if ((result == HttpURLConnection.HTTP_OK) ||
                    (result == HttpURLConnection.HTTP_NOT_FOUND)) {
                 result = createVlanMap(tenantID,
@@ -940,16 +939,17 @@ public class NetworkHandler extends VTNNeutronUtils
                               String mapID) {
         int result = HttpURLConnection.HTTP_NOT_FOUND;
 
-        LOG.trace(" tenant-id - {}, bridge-id - {}, map-id - {} ",
-                tenantID, bridgeID,  mapID);
+        LOG.trace("tenant-id - {}, bridge-id - {}, map-id - {}",
+                  tenantID, bridgeID,  mapID);
         VBridgePath path = new VBridgePath(tenantID, bridgeID);
         Status status = getVTNManager().removeVlanMap(path, mapID);
         if (status.isSuccess()) {
             result = HttpURLConnection.HTTP_OK;
-            LOG.trace(" deleteVlanMap result - {} ", result);
+            LOG.trace("deleteVlanMap result - {}", result);
         } else {
             result = getException(status);
-            LOG.debug(" deleteVlanMap error. result - {} ", result);
+            LOG.error("deleteVlanMap error. path - {}, map-id - {}, " +
+                      "result - {}", path, mapID, result);
         }
         return result;
     }
@@ -974,9 +974,9 @@ public class NetworkHandler extends VTNNeutronUtils
             String mapID = tmpVlanMap.getId();
             result = deleteVlanMap(tenantID, bridgeID, mapID);
             if (result != HttpURLConnection.HTTP_OK) {
-                LOG.debug(" deleteVlanMap failed for tenant-id - {}, " +
-                        "bridge-id - {}, map-id - {}, result - {} ",
-                        tenantID, bridgeID, mapID, result);
+                LOG.error("deleteVlanMap failed for tenant-id - {}, " +
+                          "bridge-id - {}, map-id - {}, result - {}",
+                          tenantID, bridgeID, mapID, result);
                 break;
             }
         }

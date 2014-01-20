@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -176,7 +176,7 @@ public class GlobalResourceManager
      * @param service  Cluster global service.
      */
     void setClusterGlobalService(IClusterGlobalServices service) {
-        LOG.debug("Set cluster service");
+        LOG.trace("Set cluster service: {}", service);
         clusterService = service;
     }
 
@@ -187,7 +187,7 @@ public class GlobalResourceManager
      */
     void unsetClusterGlobalService(IClusterGlobalServices service) {
         if (clusterService == service) {
-            LOG.debug("Unset cluster service");
+            LOG.trace("Unset cluster service: ", service);
             clusterService = null;
         }
     }
@@ -325,7 +325,7 @@ public class GlobalResourceManager
     @Override
     public void addManager(VTNManagerImpl mgr) {
         if (vtnManagers.addIfAbsent(mgr)) {
-            LOG.debug("{}: Add VTN Manager: {}", mgr.getContainerName(), mgr);
+            LOG.trace("{}: Add VTN Manager: {}", mgr.getContainerName(), mgr);
         }
     }
 
@@ -337,7 +337,7 @@ public class GlobalResourceManager
     @Override
     public void removeManager(VTNManagerImpl mgr) {
         if (vtnManagers.remove(mgr)) {
-            LOG.debug("{}: Remove VTN Manager: {}", mgr.getContainerName(),
+            LOG.trace("{}: Remove VTN Manager: {}", mgr.getContainerName(),
                       mgr);
         }
     }
@@ -500,7 +500,7 @@ public class GlobalResourceManager
      */
     @Override
     public void cleanUp(String containerName) {
-        LOG.debug("{}: Clean up resources", containerName);
+        LOG.trace("{}: Clean up resources", containerName);
 
         StringBuilder builder = new StringBuilder(containerName);
         String prefix = builder.append(MAPKEY_SEPARATOR).toString();

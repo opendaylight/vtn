@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -108,8 +108,8 @@ public class VTNNeutronUtils {
         assert !status.isSuccess();
 
         StatusCode code = status.getCode();
-        LOG.debug(" Execption code - {}, description - {}",
-                code, status.getDescription());
+        LOG.trace("Execption code - {}, description - {}",
+                  code, status.getDescription());
 
         if (code == StatusCode.BADREQUEST) {
             result = HttpURLConnection.HTTP_BAD_REQUEST;
@@ -138,7 +138,7 @@ public class VTNNeutronUtils {
             return false;
         }
         boolean isValid = false;
-        LOG.trace("id - {}, length - {} ", id, id.length());
+        LOG.trace("id - {}, length - {}", id, id.length());
         /**
          * check the string length
          * if length is 36 its a uuid do uuid validation
@@ -151,7 +151,7 @@ public class VTNNeutronUtils {
                 String toUUID = fromUUID.toString();
                 isValid = toUUID.equalsIgnoreCase(id);
             } catch(IllegalArgumentException e) {
-                LOG.error(" IllegalArgumentExecption for id - {} ", id);
+                LOG.error("IllegalArgumentExecption for id - {}", id);
                 isValid = false;
             }
         } else if ((id.length() > 0) && (id.length() <= KEYSTONE_ID_LEN)) {
@@ -174,7 +174,7 @@ public class VTNNeutronUtils {
         if (id == null) {
             return key;
         }
-        LOG.trace("id - {}, length - {} ", id, id.length());
+        LOG.trace("id - {}, length - {}", id, id.length());
         /**
          * VTN ID must be less than 32 bytes,
          * Shorten UUID string length from 36 to 31 as follows:
@@ -190,7 +190,7 @@ public class VTNNeutronUtils {
             tKey.deleteCharAt(UUID_VERSION_POS);
             key = tKey.toString();
         } catch(IllegalArgumentException ile) {
-            LOG.error(" Invalid UUID - {} ", id);
+            LOG.error("Invalid UUID - {}", id);
             key = null;
         }
         return key;
@@ -214,7 +214,7 @@ public class VTNNeutronUtils {
          * and reconvert it to VTN key
          */
 
-        LOG.trace(" id - {}, length - {} ", id, id.length());
+        LOG.trace("id - {}, length - {}", id, id.length());
         try {
             StringBuilder tKey = new StringBuilder();
             String tmpStr = id.substring(0, UUID_TIME_LOW);
@@ -243,10 +243,10 @@ public class VTNNeutronUtils {
                 key = convertUUIDToKey(tmpStr);
             }
         } catch(IndexOutOfBoundsException ibe) {
-            LOG.error(" Execption! Invalid UUID - {} ", id);
+            LOG.error("Execption! Invalid UUID - {}", id);
             key = null;
         } catch (IllegalArgumentException iae) {
-            LOG.error(" Execption! Invalid object ID - {} ", id);
+            LOG.error("Execption! Invalid object ID - {}", id);
             key = null;
         }
         return key;
@@ -264,8 +264,8 @@ public class VTNNeutronUtils {
             return key;
         }
 
-        LOG.trace(" neutronID - {}, length - {} ",
-                neutronID, neutronID.length());
+        LOG.trace("neutronID - {}, length - {}",
+                  neutronID, neutronID.length());
         if (!isValidNeutronID(neutronID)) {
             return key;
         }
@@ -291,12 +291,15 @@ public class VTNNeutronUtils {
         if (tenantID == null) {
             return HttpURLConnection.HTTP_BAD_REQUEST;
         }
+
+        VTenantPath path = new VTenantPath(tenantID);
         try {
-            VTenantPath path = new VTenantPath(tenantID);
             if (vtnManager.getTenant(path) != null) {
                 result = HttpURLConnection.HTTP_OK;
             }
         } catch (VTNException e) {
+            LOG.error("isTenantExist error, path - {}, e - {}", path,
+                      e.toString());
             result = getException(e.getStatus());
         }
         return result;
@@ -314,12 +317,15 @@ public class VTNNeutronUtils {
         if ((tenantID == null) || (bridgeID == null)) {
             return HttpURLConnection.HTTP_BAD_REQUEST;
         }
+
+        VBridgePath path = new VBridgePath(tenantID, bridgeID);
         try {
-            VBridgePath path = new VBridgePath(tenantID, bridgeID);
             if (vtnManager.getBridge(path) != null) {
                 result = HttpURLConnection.HTTP_OK;
             }
         } catch (VTNException e) {
+            LOG.error("isBridgeExist error, path - {}, e - {}", path,
+                      e.toString());
             result = getException(e.getStatus());
         }
         return result;
@@ -340,14 +346,15 @@ public class VTNNeutronUtils {
         if ((tenantID == null) || (bridgeID == null) || (portID == null)) {
             return HttpURLConnection.HTTP_BAD_REQUEST;
         }
+
+        VBridgeIfPath path = new VBridgeIfPath(tenantID, bridgeID, portID);
         try {
-            VBridgeIfPath path = new VBridgeIfPath(tenantID,
-                                                   bridgeID,
-                                                   portID);
             if (vtnManager.getBridgeInterface(path) != null) {
                 result = HttpURLConnection.HTTP_OK;
             }
         } catch (VTNException e) {
+            LOG.error("isBridgeInterfaceExist error, path - {}, e - {}", path,
+                      e.toString());
             result = getException(e.getStatus());
         }
         return result;
@@ -359,7 +366,7 @@ public class VTNNeutronUtils {
      * @param service  VTN manager service.
      */
     void setVTNManager(IVTNManager service) {
-        LOG.debug("Set vtn manager: {}", service);
+        LOG.trace("Set vtn manager: {}", service);
         vtnManager = service;
     }
 
@@ -370,7 +377,7 @@ public class VTNNeutronUtils {
      */
     void unsetVTNManager(IVTNManager service) {
         if (vtnManager == service) {
-            LOG.debug("Unset vtn manager: {}", service);
+            LOG.trace("Unset vtn manager: {}", service);
             vtnManager = null;
         }
     }

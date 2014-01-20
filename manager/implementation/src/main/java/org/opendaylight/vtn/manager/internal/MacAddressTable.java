@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -471,8 +471,8 @@ public class MacAddressTable {
             try {
                 HostNodeConnector host =
                     new HostNodeConnector(src, ipaddr, port, vlan);
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("{}: Notify new host: ipaddr={}, host={}",
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("{}: Notify new host: ipaddr={}, host={}",
                               getTableName(), ipaddr.getHostAddress(), host);
                 }
                 vtnManager.notifyHost(host);

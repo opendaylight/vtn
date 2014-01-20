@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -532,7 +532,7 @@ public class VTNManagerImpl
          */
         @Override
         public void run() {
-            LOG.debug("Start");
+            LOG.trace("Start");
             for (Runnable r = getTask(); r != null; r = getTask()) {
                 try {
                     r.run();
@@ -540,7 +540,7 @@ public class VTNManagerImpl
                     LOG.error("Exception occurred on a task thread.", e);
                 }
             }
-            LOG.debug("Exit");
+            LOG.trace("Exit");
         }
     }
 
@@ -725,7 +725,7 @@ public class VTNManagerImpl
             return;
         }
 
-        LOG.debug("{}: init() called", cname);
+        LOG.trace("{}: init() called", cname);
         containerName = cname;
 
         // Load static configuration.
@@ -780,14 +780,14 @@ public class VTNManagerImpl
      * has been registered to the OSGi service repository.
      */
     void started() {
-        LOG.debug("{}: started() called", containerName);
+        LOG.info("{}: VTN Manager has been started", containerName);
     }
 
     /**
      * Function called just before the dependency manager stops the service.
      */
     void stopping() {
-        LOG.debug("{}: stopping() called", containerName);
+        LOG.trace("{}: stopping() called", containerName);
 
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
@@ -804,7 +804,7 @@ public class VTNManagerImpl
      * "destroy()" calls.
      */
     void stop() {
-        LOG.debug("{}: stop() called", containerName);
+        LOG.trace("{}: stop() called", containerName);
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -823,7 +823,7 @@ public class VTNManagerImpl
      * example bundle is being stopped.
      */
     void destroy() {
-        LOG.debug("{}: destroy() called", containerName);
+        LOG.trace("{}: destroy() called", containerName);
         resourceManager.removeManager(this);
         vtnManagerAware.clear();
 
@@ -871,6 +871,8 @@ public class VTNManagerImpl
         if (destroying) {
             destroyCaches();
         }
+
+        LOG.info("{}: VTN Manager has been destroyed", containerName);
     }
 
     /**
@@ -967,7 +969,8 @@ public class VTNManagerImpl
         try {
             cs.createCache(cacheName, cmode);
         } catch (CacheExistException e) {
-            LOG.info("{}: {}: Cache already exists", containerName, cacheName);
+            LOG.debug("{}: {}: Cache already exists", containerName,
+                      cacheName);
         } catch (CacheConfigException e) {
             LOG.error("{}: {}: Invalid cache configuration: {}",
                       containerName, cacheName, cmode);
@@ -1545,7 +1548,7 @@ public class VTNManagerImpl
      * @param service  Cluster container service.
      */
     void setClusterContainerService(IClusterContainerServices service) {
-        LOG.debug("{}: Set cluster service: {}", containerName, service);
+        LOG.trace("{}: Set cluster service: {}", containerName, service);
         clusterService = service;
     }
 
@@ -1556,7 +1559,7 @@ public class VTNManagerImpl
      */
     void unsetClusterContainerService(IClusterContainerServices service) {
         if (clusterService == service) {
-            LOG.debug("{}: Unset cluster service: {}", containerName, service);
+            LOG.trace("{}: Unset cluster service: {}", containerName, service);
             clusterService = null;
         }
     }
@@ -1576,7 +1579,7 @@ public class VTNManagerImpl
      * @param service  Switch manager service.
      */
     void setSwitchManager(ISwitchManager service) {
-        LOG.debug("{}: Set switch manager: {}", containerName, service);
+        LOG.trace("{}: Set switch manager: {}", containerName, service);
         switchManager = service;
     }
 
@@ -1587,7 +1590,7 @@ public class VTNManagerImpl
      */
     void unsetSwitchManager(ISwitchManager service) {
         if (switchManager == service) {
-            LOG.debug("{}: Unset switch manager: {}", containerName, service);
+            LOG.trace("{}: Unset switch manager: {}", containerName, service);
             switchManager = null;
         }
     }
@@ -1607,7 +1610,7 @@ public class VTNManagerImpl
      * @param service  Topology manager service.
      */
     void setTopologyManager(ITopologyManager service) {
-        LOG.debug("{}: Set topology manager: {}", containerName, service);
+        LOG.trace("{}: Set topology manager: {}", containerName, service);
         topologyManager = service;
     }
 
@@ -1618,8 +1621,8 @@ public class VTNManagerImpl
      */
     void unsetTopologyManager(ITopologyManager service) {
         if (topologyManager == service) {
-            LOG.debug("{}: Unset topology manager: {}",
-                      containerName, service);
+            LOG.trace("{}: Unset topology manager: {}", containerName,
+                      service);
             topologyManager = null;
         }
     }
@@ -1639,8 +1642,8 @@ public class VTNManagerImpl
      * @param service  Forwarding rule manager service.
      */
     void setForwardingRuleManager(IForwardingRulesManager service) {
-        LOG.debug("{}: Set forwarding rule manager: {}",
-                  containerName, service);
+        LOG.trace("{}: Set forwarding rule manager: {}", containerName,
+                  service);
         fwRuleManager = service;
     }
 
@@ -1651,8 +1654,8 @@ public class VTNManagerImpl
      */
     void unsetForwardingRuleManager(IForwardingRulesManager service) {
         if (fwRuleManager == service) {
-            LOG.debug("{}: Unset forwarding rule manager: {}",
-                      containerName, service);
+            LOG.trace("{}: Unset forwarding rule manager: {}", containerName,
+                      service);
             fwRuleManager = null;
         }
     }
@@ -1672,7 +1675,7 @@ public class VTNManagerImpl
      * @param service  Routing service.
      */
     void setRouting(IRouting service) {
-        LOG.debug("{}: Set routing service: {}", containerName, service);
+        LOG.trace("{}: Set routing service: {}", containerName, service);
         routing = service;
     }
 
@@ -1683,7 +1686,7 @@ public class VTNManagerImpl
      */
     void unsetRouting(IRouting service) {
         if (routing == service) {
-            LOG.debug("{}: Unset routing service: {}", containerName, service);
+            LOG.trace("{}: Unset routing service: {}", containerName, service);
             routing = null;
         }
     }
@@ -1703,7 +1706,7 @@ public class VTNManagerImpl
      * @param service  Data packet service.
      */
     void setDataPacketService(IDataPacketService service) {
-        LOG.debug("{}: Set data packet service: {}", containerName, service);
+        LOG.trace("{}: Set data packet service: {}", containerName, service);
         dataPacketService = service;
     }
 
@@ -1714,8 +1717,8 @@ public class VTNManagerImpl
      */
     void unsetDataPacketService(IDataPacketService service) {
         if (dataPacketService == service) {
-            LOG.debug("{}: Unset data packet service: {}",
-                      containerName, service);
+            LOG.trace("{}: Unset data packet service: {}", containerName,
+                      service);
             dataPacketService = null;
         }
     }
@@ -1735,7 +1738,7 @@ public class VTNManagerImpl
      * @param service  Host tracker service.
      */
     void setHostTracker(IfIptoHost service) {
-        LOG.debug("{}: Set host tracker service: {}", containerName, service);
+        LOG.trace("{}: Set host tracker service: {}", containerName, service);
         hostTracker = service;
     }
 
@@ -1746,8 +1749,8 @@ public class VTNManagerImpl
      */
     void unsetHostTracker(IfIptoHost service) {
         if (hostTracker == service) {
-            LOG.debug("{}: Unset host tracker service: {}",
-                      containerName, service);
+            LOG.trace("{}: Unset host tracker service: {}", containerName,
+                      service);
             hostTracker = null;
         }
     }
@@ -1767,8 +1770,8 @@ public class VTNManagerImpl
      * @param service  Connection manager service.
      */
     void setConnectionManager(IConnectionManager service) {
-        LOG.debug("{}: Set connection manager service: {}",
-                  containerName, service);
+        LOG.trace("{}: Set connection manager service: {}", containerName,
+                  service);
         connectionManager = service;
     }
 
@@ -1779,7 +1782,7 @@ public class VTNManagerImpl
      */
     void unsetConnectionManager(IConnectionManager service) {
         if (connectionManager == service) {
-            LOG.debug("{}: Unset connection manager service: {}",
+            LOG.trace("{}: Unset connection manager service: {}",
                       containerName, service);
             connectionManager = null;
         }
@@ -1801,7 +1804,7 @@ public class VTNManagerImpl
      */
     void addHostListener(IfHostListener service) {
         if (hostListeners.addIfAbsent(service)) {
-            LOG.debug("Add host listener: {}", service);
+            LOG.trace("{}: Add host listener: {}", containerName, service);
         }
     }
 
@@ -1812,7 +1815,7 @@ public class VTNManagerImpl
      */
     void removeHostListener(IfHostListener service) {
         if (hostListeners.remove(service)) {
-            LOG.debug("Remove host listener: {}", service);
+            LOG.trace("{}: Remove host listener: {}", containerName, service);
         }
     }
 
@@ -1822,7 +1825,7 @@ public class VTNManagerImpl
      * @param service  VTN resource manager service.
      */
     void setResourceManager(IVTNResourceManager service) {
-        LOG.debug("Set VTN resource manager: {}", service);
+        LOG.trace("{}: Set VTN resource manager: {}", containerName, service);
         resourceManager = service;
     }
 
@@ -1833,7 +1836,8 @@ public class VTNManagerImpl
      */
     void unsetResourceManager(IVTNResourceManager service) {
         if (resourceManager == service) {
-            LOG.debug("Unset VTN resource manager: {}", service);
+            LOG.trace("{}: Unset VTN resource manager: {}", containerName,
+                      service);
             resourceManager = null;
         }
     }
@@ -1854,7 +1858,8 @@ public class VTNManagerImpl
      */
     void addVTNManagerAware(IVTNManagerAware service) {
         if (vtnManagerAware.addIfAbsent(service)) {
-            LOG.debug("Add VTN manager listener: {}", service);
+            LOG.trace("{}: Add VTN manager listener: {}", containerName,
+                      service);
             notifyConfiguration(service);
         }
     }
@@ -1866,7 +1871,8 @@ public class VTNManagerImpl
      */
     void removeVTNManagerAware(IVTNManagerAware service) {
         if (vtnManagerAware.remove(service)) {
-            LOG.debug("Remove VTN manager listener: {}", service);
+            LOG.trace("{}: Remove VTN manager listener: {}", containerName,
+                      service);
         }
     }
 
@@ -1877,7 +1883,8 @@ public class VTNManagerImpl
      */
     void addVTNModeListener(IVTNModeListener listener) {
         if (vtnModeListeners.addIfAbsent(listener)) {
-            LOG.debug("Add VTN mode listener: {}", listener);
+            LOG.trace("{}: Add VTN mode listener: {}", containerName,
+                      listener);
             notifyChange(listener, isActive());
         }
     }
@@ -1889,7 +1896,8 @@ public class VTNManagerImpl
      */
     void removeVTNModeListener(IVTNModeListener service) {
         if (vtnModeListeners.remove(service)) {
-            LOG.debug("Remove VTN mode listener: {}", service);
+            LOG.trace("{}: Remove VTN mode listener: {}", containerName,
+                      service);
         }
     }
 
@@ -2608,8 +2616,8 @@ public class VTNManagerImpl
             }
 
             // Wait for completion of initialization by polling.
-            if (LOG.isDebugEnabled() && !remote.equals(provider)) {
-                LOG.debug("{}: Wait for {} to initialize cluster caches",
+            if (LOG.isTraceEnabled() && !remote.equals(provider)) {
+                LOG.trace("{}: Wait for {} to initialize cluster caches",
                           containerName, remote.getHostAddress());
                 provider = remote;
             }
@@ -2625,7 +2633,7 @@ public class VTNManagerImpl
             }
         }
 
-        LOG.debug("{}: Became configuration provider", containerName);
+        LOG.trace("{}: Became configuration provider", containerName);
         return true;
     }
 
@@ -4576,8 +4584,8 @@ public class VTNManagerImpl
      */
     @Override
     public void findHost(InetAddress addr, Set<VBridgePath> pathSet) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("{}: findHost() called: addr={}, pathSet={}",
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("{}: findHost() called: addr={}, pathSet={}",
                       containerName, addr, pathSet);
         }
 
@@ -4630,8 +4638,8 @@ public class VTNManagerImpl
      */
     @Override
     public boolean probeHost(HostNodeConnector host) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("{}: probeHost() called: host={}", containerName, host);
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("{}: probeHost() called: host={}", containerName, host);
         }
 
         if (host == null) {
@@ -5317,7 +5325,7 @@ public class VTNManagerImpl
             if (decoded == null) {
                 LOG.error("{}: Ignore broken packet", containerName);
             } else {
-                LOG.debug("{}: Ignore non-ethernet packet: {}", containerName,
+                LOG.trace("{}: Ignore non-ethernet packet: {}", containerName,
                           decoded);
             }
             return PacketResult.IGNORED;
@@ -5397,7 +5405,7 @@ public class VTNManagerImpl
      */
     @Override
     public void recalculateDone() {
-        LOG.debug("{}: Shortest path recalculated", containerName);
+        LOG.trace("{}: Shortest path recalculated", containerName);
 
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
