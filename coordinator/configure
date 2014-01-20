@@ -72,6 +72,9 @@ $DEBUG_BUILD = 1;
 # Required ODBC version.
 use constant	ODBC_VERSION		=> 3;
 
+# Required json-c version.
+use constant	JSON_C_VERSION		=> '0.10';
+
 @PATH = ((DEFAULT_PATH), split(/:/, $ENV{PATH}));
 
 # Mandatory commands.
@@ -154,7 +157,7 @@ sub create_java_link(\%\%);
 sub create_config_h($\%\@);
 sub parse_config_status($);
 sub parse_config_mk(\%);
-sub search_pkgconfig(\%$);
+sub search_pkgconfig(\%$$$);
 sub make_symbol($$);
 sub get_command($$$);
 sub search_command($@);
@@ -2590,10 +2593,49 @@ main(int argc, char **argv)
 }
 OUT
 
-	my (%t) = (CHECK => 'whether json_tokener_parse() works',
-		   CODE => $code);
+	my (%t1) = (CHECK => 'whether json_tokener_parse() works',
+		    CODE => $code,
+		    MANDATORY => "json_tokener_parse() did not work.");
+
+	$code = <<'OUT';
+#include <stdio.h>
+#include <stdint.h>
+#include <json.h>
+
+#define	I64_VALUE	0x12345678abcdef01LL
+
+int
+main(int argc, char **argv)
+{
+	struct json_object	*json;
+
+	json = json_object_new_int64(I64_VALUE);
+	if (json == NULL) {
+		printf("NO:json_object_new_int64() returned NULL.\n");
+	}
+	else {
+		int64_t	i64 = json_object_get_int64(json);
+
+		if (i64 != I64_VALUE) {
+			printf("NO:json_object_get_int64() returned "
+			       "unexpected value: 0x%llx\n",
+			       (unsigned long long)i64);
+		}
+		else {
+			puts("OK:yes");
+		}
+	}
+
+	return 0;
+}
+OUT
+
+	my (%t2) = (CHECK => 'whether json-c supports int64_t',
+		    CODE => $code,
+		    MANDATORY => "int64_t support of json-c did not work.");
 	check_package($conf, %$vars, 'json-c', pkgnames => ['json-c', 'json'],
-		      vars => $jsonvars, tests => [\%t]);
+		      atleast => JSON_C_VERSION(), vars => $jsonvars,
+		      tests => [\%t1, \%t2]);
 }
 
 sub check_user_group($\%)
@@ -2645,13 +2687,18 @@ sub check_package($\%$%)
 {
 	my ($conf, $vars, $desc, %args) = @_;
 
-	checking("for pkg-config file of $desc");
+	my $atleast = $args{atleast};
+	my $pkgdesc = (defined($atleast)) ? "$desc (>= $atleast)" : $desc;
+	checking("for pkg-config file of $pkgdesc");
+
+	my $pkg_config = $COMMAND_SPEC{'pkg-config'}->{PATH};
 	my $optional = $args{optional};
 	my ($pkgname, $pcfile);
 	my $pkgnames = $args{pkgnames} || [$desc];
 	$pkgnames = [$pkgnames] unless (ref($pkgnames) eq 'ARRAY');
 	foreach my $name (@$pkgnames) {
-		$pcfile = search_pkgconfig(%$vars, $name);
+		$pcfile = search_pkgconfig(%$vars, $pkg_config, $name,
+					   $atleast);
 		if (defined($pcfile)) {
 			$pkgname = $name;
 			last;
@@ -2659,13 +2706,12 @@ sub check_package($\%$%)
 	}
 	unless ($pkgname) {
 		print "no\n";
-		error("$desc was not found.") unless ($optional);
+		error("$pkgdesc was not found.") unless ($optional);
 		return;
 	}
 	print $pcfile, "\n";
 
-	checking("for CFLAGS required by $desc");
-	my $pkg_config = $COMMAND_SPEC{'pkg-config'}->{PATH};
+	checking("for CFLAGS required by $pkgdesc");
 	my $pcdir = dirname($pcfile);
 	my (%env) = (PKG_CONFIG_PATH => $pcdir);
 	my (%opts) = (ENV => \%env);
@@ -2675,7 +2721,7 @@ sub check_package($\%$%)
 	return unless (defined($cflags));
 	$cflags = fixup_cppflags($cflags);
 
-	checking("for LDFLAGS required by $desc");
+	checking("for LDFLAGS required by $pkgdesc");
 	my $ldflags = read_command_oneline(%opts, $pkg_config, '--libs',
 					   $pkgname);
 	return unless (defined($ldflags));
@@ -3415,9 +3461,9 @@ sub parse_config_mk(\%)
 	return \%jenv;
 }
 
-sub search_pkgconfig(\%$)
+sub search_pkgconfig(\%$$$)
 {
-	my ($vars, $name) = @_;
+	my ($vars, $pkg_config, $name, $atleast) = @_;
 
 	unless (@PKG_CONFIG_LIBDIR) {
 		# Initialize pkg-config library path.
@@ -3441,7 +3487,17 @@ sub search_pkgconfig(\%$)
 	my $fname = $name . '.pc';
 	foreach my $dir (@PKG_CONFIG_LIBDIR) {
 		my $path = $dir . '/' . $fname;
-		return $path if (-f $path);
+		next unless (-f $path);
+
+		if (defined($atleast)) {
+			my (%env) = (PKG_CONFIG_PATH => $dir);
+			my (%opts) = (ENV => \%env);
+			my $ret = exec_command(%opts, $pkg_config,
+					       "--atleast-version=$atleast",
+					       $name);
+			next unless ($ret == 0);
+		}
+		return $path;
 	}
 
 	return undef;
@@ -3628,6 +3684,12 @@ sub fixup_ldflags($\@\@)
 		}
 
 		push(@flags, $arg) if (length($arg) > 0);
+	}
+
+	if (@$runpath == 0) {
+		foreach my $dir (@$libpath) {
+			&$add_path($dir, $runpath, \%rmap, '-Wl,-rpath,');
+		}
 	}
 
 	if (@flags) {
