@@ -194,10 +194,10 @@ drv_resp_code_t OdcPort::fill_config_node_vector(
   val_port.valid[kIdxPortLogicalPortId] = UNC_VF_VALID;
 
   if (ADMIN_UP == config_value) {
-    val_port.port.admin_status = UPPL_SWITCH_ADMIN_UP;
+    val_port.port.admin_status = UPPL_PORT_ADMIN_UP;
     val_port.port.valid[VAL_PORT_EVENT_ATTR3] = UNC_VF_VALID;
   } else if (ADMIN_DOWN == config_value)  {
-    val_port.port.admin_status = UPPL_SWITCH_ADMIN_DOWN;
+    val_port.port.admin_status = UPPL_PORT_ADMIN_DOWN;
     val_port.port.valid[VAL_PORT_EVENT_ATTR3] = UNC_VF_VALID;
   }
 
@@ -217,7 +217,7 @@ drv_resp_code_t OdcPort::fill_config_node_vector(
     }
   } else {
     pfc_log_debug("oper status of port is UNKNOWN");
-    val_port.oper_status = UPPL_SWITCH_OPER_UNKNOWN;
+    val_port.oper_status = UPPL_PORT_OPER_UNKNOWN;
     val_port.valid[VAL_PORT_EVENT_ATTR2] = UNC_VF_VALID;
   }
 
@@ -498,11 +498,11 @@ drv_resp_code_t OdcPort::add_event(unc::driver::controller *ctr_ptr,
   //  Send Notification to UPPL
   notify_physical(unc::driver::VTN_PORT_CREATE, key_port, val_port, NULL);
 
-  std::string port_id = reinterpret_cast<const char*> (key_port->port_id);
   //  Append to cache
   drv_resp_code_t  ret_val =
       ctr_ptr->physical_port_cache->append_Physical_attribute_node(cfg_node);
   if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+    delete_config_node(cfg_node);
     pfc_log_error(" Error in adding to cache");
     return ret_val;
   }
@@ -534,6 +534,7 @@ drv_resp_code_t OdcPort::update_event(unc::driver::controller *ctr_ptr,
   drv_resp_code_t  ret_val =
       ctr_ptr->physical_port_cache->update_physical_attribute_node(cfg_node);
   if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+    delete_config_node(cfg_node);
     pfc_log_error(" Error in updating to cache");
     return ret_val;
   }
@@ -563,10 +564,6 @@ drv_resp_code_t OdcPort::delete_event(unc::driver::controller *ctr_ptr,
       unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, uint32_t>
           *cfgptr_cache = static_cast<unc::vtndrvcache::CacheElementUtil
           <key_port_t, val_port_st_t, uint32_t>*> (cfgnode_cache);
-      if (NULL == cfgptr_cache) {
-        pfc_log_error("cfgptr_cache pointer is NULL");
-        return DRVAPI_RESPONSE_FAILURE;
-      }
 
       key_port_t *key_port_cache = cfgptr_cache->get_key_structure();
       if (NULL == key_port_cache) {

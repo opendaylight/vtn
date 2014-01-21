@@ -97,7 +97,7 @@ namespace driver {
         controller_instance->physical_timed_ = pfc::core::Timer::create(
             taskq_->getId());
         post_physical_taskq(controller_name, driver_instance,
-                            controller_instance, time_interval_);
+                            controller_instance, first_physical_task_interval);
       } else {
         pfc_log_debug("physicalconfig not needed for the controller %s",
                       controller_name.c_str());
@@ -320,7 +320,7 @@ namespace driver {
 
         if (physicalconfig_needed == PFC_TRUE) {
           post_physical_taskq(controller_name, driver_instance,
-                              controller_container->ctr, time_interval_);
+                    controller_container->ctr, first_physical_task_interval);
         } else {
           pfc_log_debug("physicalconfig not needed for the controller %s",
                         controller_name.c_str());
@@ -584,7 +584,8 @@ void ControllerFramework::SendNotificationToPhysical(
 controller_operation::controller_operation(ControllerFramework *fw_ptr,
                       ControllerOps operation, std::string ctl_id,
                       unc_keytype_ctrtype_t ctl_type)
-                      : ctl_fw_(fw_ptr), ctl_oper_(operation) {
+                      : ctl_fw_(fw_ptr), ctl_oper_(operation),
+                        ctr_(NULL), drv_(NULL) {
       ctl_fw_->controller_list_rwlock_.lock();
   pfc_log_debug(" Controller TYPE:%d", ctl_type);
       drv_ = ctl_fw_->GetDriverInstance(ctl_type);
@@ -592,7 +593,8 @@ controller_operation::controller_operation(ControllerFramework *fw_ptr,
 
 controller_operation::controller_operation(ControllerFramework *fw_ptr,
                               ControllerOps operation, std::string ctl_id)
-                              : ctl_fw_(fw_ptr), ctl_oper_(operation) {
+                              : ctl_fw_(fw_ptr), ctl_oper_(operation),
+                                ctr_(NULL), drv_(NULL) {
   ctl_fw_->controller_list_rwlock_.lock();
 
   ctl_fw_->GetDriverByControllerName(ctl_id, &ctr_, &drv_);
@@ -619,6 +621,7 @@ controller_operation::controller_operation(ControllerFramework *fw_ptr,
                                                       == PFC_TRUE ) {
         drv_= NULL;
         ctr_= NULL;
+        break;
       } else if ( ctr_->access_.get_controller_marked_for_update()
                                                         == PFC_TRUE ) {
         ctr_->access_.increment_read_wait_count();
@@ -639,6 +642,7 @@ controller_operation::controller_operation(ControllerFramework *fw_ptr,
         pfc_log_debug("can_delete_controller:TRUE");
         drv_= NULL;
         ctr_= NULL;
+        break;
       } else if ((write_count != 0) ||
               (ctr_->access_.get_controller_marked_for_update() == PFC_TRUE)) {
         ctr_->access_.increment_write_wait_count();
@@ -665,11 +669,11 @@ controller_operation::~controller_operation() {
       ctr_->access_.update_completed();
       if (ctr_->access_.get_write_wait_count() > 0)
         ctr_->access_.release_write_wait();
-      case CONTROLLER_DELETE:
-      case CONTROLLER_ADD:
+    }
+    case CONTROLLER_DELETE:
+    case CONTROLLER_ADD:
       ctl_fw_->controller_list_rwlock_.unlock();
       break;
-    }
     case READ_FROM_CONTROLLER:
     case WRITE_TO_CONTROLLER: {
       ctl_fw_->controller_list_rwlock_.lock();

@@ -254,6 +254,7 @@ drv_resp_code_t OdcSwitch::add_event(unc::driver::controller *ctr_ptr,
   drv_resp_code_t  ret_val =
       ctr_ptr->physical_port_cache->append_Physical_attribute_node(cfg_node);
   if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+    delete_config_node(cfg_node);
     pfc_log_error(" Error in adding to cache");
     return ret_val;
   }
@@ -287,6 +288,7 @@ drv_resp_code_t OdcSwitch::update_event(unc::driver::controller *ctr_ptr,
   drv_resp_code_t  ret_val =
       ctr_ptr->physical_port_cache->update_physical_attribute_node(cfg_node);
   if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+    delete_config_node(cfg_node);
     pfc_log_error(" Error in updating to cache");
     return ret_val;
   }
@@ -317,10 +319,7 @@ drv_resp_code_t OdcSwitch::delete_event(unc::driver::controller *ctr,
           <key_switch_t, val_switch_st_t, uint32_t>
           *cfgptr_cache = static_cast<unc::vtndrvcache::CacheElementUtil
           <key_switch_t, val_switch_st_t, uint32_t>*> (cfgnode_cache);
-      if (NULL == cfgptr_cache) {
-        pfc_log_error("cfgptr_cache is NULL");
-        return DRVAPI_RESPONSE_FAILURE;
-      }
+
       key_switch_t *key_switch_cache = cfgptr_cache->get_key_structure();
       if (key_switch_cache == NULL) {
         pfc_log_error("Key sswitch cache is empty");
@@ -341,10 +340,7 @@ drv_resp_code_t OdcSwitch::delete_event(unc::driver::controller *ctr,
       unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, uint32_t>
           *cfgptr_cache_port = static_cast<unc::vtndrvcache::CacheElementUtil
           <key_port_t, val_port_st_t, uint32_t>*> (cfgnode_cache);
-      if (NULL == cfgptr_cache_port) {
-        pfc_log_error("cfgptr_cache_port is NULL");
-        return DRVAPI_RESPONSE_FAILURE;
-      }
+
       key_port_t *key_port_cache = cfgptr_cache_port->get_key_structure();
       if (NULL == key_port_cache) {
         pfc_log_error("key_port_cache is NULL");
@@ -397,10 +393,7 @@ drv_resp_code_t OdcSwitch::delete_logical_port(unc::driver::controller *ctr,
       unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, uint32_t>
           *cfgptr_cache = static_cast<unc::vtndrvcache::CacheElementUtil
           <key_port_t, val_port_st_t, uint32_t>*> (cfg_node);
-      if (NULL == cfgptr_cache) {
-        pfc_log_error("cfgptr_cache is NULL");
-        return DRVAPI_RESPONSE_FAILURE;
-      }
+
       key_port_t *key_port = cfgptr_cache->get_key_structure();
       val_port_st_t *val_port = cfgptr_cache->get_val_structure();
       if ((NULL == key_port) || (NULL == val_port)) {
@@ -437,10 +430,7 @@ drv_resp_code_t OdcSwitch::delete_switch(unc::driver::controller *ctr,
           <key_switch_t, val_switch_st_t, uint32_t> *cfgptr_cache_sw =
           static_cast<unc::vtndrvcache::CacheElementUtil
           <key_switch_t, val_switch_st_t, uint32_t>*> (cfg_node);
-      if (NULL == cfgptr_cache_sw) {
-        pfc_log_error("cfgptr_cache_sw is NULL");
-        return DRVAPI_RESPONSE_FAILURE;
-      }
+
       key_switch_t *key_switch = cfgptr_cache_sw->get_key_structure();
       val_switch_st_t *val_switch = cfgptr_cache_sw->get_val_structure();
       if ((NULL == key_switch) || (NULL == val_switch)) {

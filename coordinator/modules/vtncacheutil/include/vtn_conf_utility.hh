@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -330,6 +330,67 @@ class  ConfUtil {
     key_str += std::string(reinterpret_cast<const char*>
                            (key.switch_id));
     return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the Keytype for UNC_KT_LINK
+   * @param [in]  : key
+   * @retval      : unc_key_type_t
+   */
+  static unc_key_type_t  get_key_type(const key_link_t&  key) {
+    ODC_FUNC_TRACE;
+    return UNC_KT_LINK;
+  }
+
+  /**
+   * @brief       : This method returns the search Key for UNC_KT_LINK
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_search_key(const key_link_t& key,
+                                    const val_link_st_t& val) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.ctr_key.controller_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.switch_id1));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.port_id1));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.switch_id2));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.port_id2));
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the name for UNC_KT_LINK
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_key(const key_link_t&  key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.ctr_key.controller_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.switch_id1));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.port_id1));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.switch_id2));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.port_id2));
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the parent Key for UNC_KT_LINK
+   * @param [in]  : key
+   * @retval      : parent key - string
+   */
+  static std::string get_parent_key(const key_link_t&  key) {
+    ODC_FUNC_TRACE;
+    return "ROOT";
   }
 };
 }  // namespace vtndrvcache

@@ -88,6 +88,14 @@ class VtnDrvIntf :public pfc::core::Module {
                     key_struct, val_switch_st new_val_struct,
                     val_switch_st old_val_struct) {
   }
+  void link_event(oper_type operation, key_link_t
+                                      key_struct, val_link_st val_struct) {
+  }
+
+  void link_event(oper_type operation, key_link_t
+                    key_struct, val_link_st_t new_val_struct,
+                    val_link_st_t old_val_struct) {
+  }
 };
 }  // namespace driver
 }  // namespace unc

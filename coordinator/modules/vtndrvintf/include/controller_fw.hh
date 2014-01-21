@@ -34,6 +34,11 @@ namespace driver {
 //  Ping Interval of a controller when a controller is added/updated(secs)
 const uint32_t first_ping_interval = 10;
 
+// physical task time interval for controller when a controller is
+// added/updated(secs)
+
+const uint32_t first_physical_task_interval = 15;
+
 /**
  * @brief       - This class contains the controller instance ,driver instance,
  *                mutex lock

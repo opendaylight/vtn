@@ -33,7 +33,6 @@ typedef enum {
  */
 class controller_exclusion {
  public:
-
   /**
    * @brief - constructor
    */

@@ -22,6 +22,7 @@ VtnDrvIntf::VtnDrvIntf(const pfc_modattr_t* attr)
 : Module(attr), taskq_(NULL), ctrl_inst_(NULL),
     Domain_event_(PFC_FALSE) {
   ODC_FUNC_TRACE;
+  memset(&conf_parser_, 0, sizeof(conf_info));
 }
 
 /**
@@ -408,8 +409,8 @@ void VtnDrvIntf::domain_event(std::string controller_name,
    * @param[in] : oper_type, key_struct, val_struct
    * @retval    : None
    */
-void VtnDrvIntf::logicalport_event(oper_type operation, key_logical_port_t
-                                   key_struct, val_logical_port_st
+void VtnDrvIntf::logicalport_event(oper_type operation, key_logical_port_t&
+                                   key_struct, val_logical_port_st&
                                    val_struct ) {
   ODC_FUNC_TRACE;
   unc_event_mask_t mask_type = UNC_PHYSICAL_EVENTS;
@@ -467,8 +468,8 @@ void VtnDrvIntf::logicalport_event(oper_type operation, key_logical_port_t
    * @param[in] : oper_type, key_switch, val_switch_st
    * @retval    : None
    */
-void VtnDrvIntf::switch_event(oper_type operation, key_switch
-                                   key_struct, val_switch_st
+void VtnDrvIntf::switch_event(oper_type operation, key_switch&
+                                   key_struct, val_switch_st&
                                    val_struct ) {
   ODC_FUNC_TRACE;
   unc_event_mask_t mask_type = UNC_PHYSICAL_EVENTS;
@@ -524,9 +525,9 @@ void VtnDrvIntf::switch_event(oper_type operation, key_switch
    * @param[in] : oper_type, key_struct, val_struct
    * @retval    : None
    */
-void VtnDrvIntf::switch_event(oper_type operation, key_switch
-                                   key_struct, val_switch_st
-                                   new_val_struct, val_switch_st
+void VtnDrvIntf::switch_event(oper_type operation, key_switch&
+                                   key_struct, val_switch_st&
+                                   new_val_struct, val_switch_st&
                                    old_val_struct) {
   ODC_FUNC_TRACE;
   unc_event_mask_t mask_type = UNC_PHYSICAL_EVENTS;
@@ -563,8 +564,8 @@ void VtnDrvIntf::switch_event(oper_type operation, key_switch
    * @param[in] : oper_type, key_port_t, val_port_st
    * @retval    : None
    */
-void VtnDrvIntf::port_event(oper_type operation, key_port_t
-                                   key_struct, val_port_st
+void VtnDrvIntf::port_event(oper_type operation, key_port_t&
+                                   key_struct, val_port_st&
                                    val_struct ) {
   ODC_FUNC_TRACE;
   unc_event_mask_t mask_type = UNC_PHYSICAL_EVENTS;
@@ -620,9 +621,9 @@ void VtnDrvIntf::port_event(oper_type operation, key_port_t
    * @param[in] : oper_type, key_port_t, val_port_st
    * @retval    : None
    */
-void VtnDrvIntf::port_event(oper_type operation, key_port_t
-                                   key_struct, val_port_st
-                                   new_val_struct, val_port_st
+void VtnDrvIntf::port_event(oper_type operation, key_port_t&
+                                   key_struct, val_port_st&
+                                   new_val_struct, val_port_st&
                                    old_val_struct) {
   ODC_FUNC_TRACE;
   unc_event_mask_t mask_type = UNC_PHYSICAL_EVENTS;
@@ -650,6 +651,116 @@ void VtnDrvIntf::port_event(oper_type operation, key_port_t
     phys_port_event.addOutput(old_val_struct);
     phys_port_event.post();
     pfc_log_debug("Exiting port update event");
+  } else {
+    pfc_log_debug("%s, Invalid operation, PFC_FUNCNAME", PFC_FUNCNAME);
+  }
+}
+
+/**
+ * @brief     : Method to post link create/delete events to UPPL
+ * @param[in] : oper_type, key_link_t, val_link_st
+ * @retval    : None
+ */
+void VtnDrvIntf::link_event(oper_type operation, key_link_t&
+                            key_struct, val_link_st&
+                            val_struct ) {
+  ODC_FUNC_TRACE;
+  unc_event_mask_t mask_type = UNC_PHYSICAL_EVENTS;
+  int err = 0;
+  std::string controller_name =
+      (const char*)key_struct.ctr_key.controller_name;
+  std::string switch_id1 = (const char*)key_struct.switch_id1;
+  std::string port_id1 = (const char*)key_struct.port_id1;
+  std::string switch_id2 = (const char*)key_struct.switch_id2;
+  std::string port_id2 = (const char*)key_struct.port_id2;
+
+  pfc_log_debug("%s,key structure fields:"
+                "controller_name: %s,"
+                "switch_id1: %s,"
+                "port_id1: %s", PFC_FUNCNAME, controller_name.c_str(),
+                switch_id1.c_str(), port_id1.c_str());
+
+  pfc_log_debug("switch_id2: %s,"
+                "port_id2: %s", switch_id2.c_str(), port_id2.c_str());
+
+  switch (operation) {
+    case VTN_LINK_CREATE:
+      {
+        pfc_log_debug("Entering link create event");
+        pfc::core::ipc::ServerEvent phys_link_event((uint32_t) mask_type, err);
+        phys_link_event.addOutput(controller_name);
+        phys_link_event.addOutput(DEFAULT_DOMAIN_ID);
+        phys_link_event.addOutput((uint32_t) UNC_OP_CREATE);
+        phys_link_event.addOutput((uint32_t) UNC_DT_STATE);
+        phys_link_event.addOutput((uint32_t) UNC_KT_LINK);
+        phys_link_event.addOutput(key_struct);
+        phys_link_event.addOutput(val_struct);
+        phys_link_event.post();
+        pfc_log_debug("Exiting link create event");
+      }
+      break;
+    case VTN_LINK_DELETE:
+      {
+        pfc_log_debug("Entering link delete event");
+        pfc::core::ipc::ServerEvent phys_link_event((uint32_t) mask_type, err);
+        phys_link_event.addOutput(controller_name);
+        phys_link_event.addOutput(DEFAULT_DOMAIN_ID);
+        phys_link_event.addOutput((uint32_t) UNC_OP_DELETE);
+        phys_link_event.addOutput((uint32_t) UNC_DT_STATE);
+        phys_link_event.addOutput((uint32_t) UNC_KT_LINK);
+        phys_link_event.addOutput(key_struct);
+        phys_link_event.post();
+        pfc_log_debug("Exiting link delete event");
+      }
+      break;
+    default:
+      pfc_log_debug("%s:Invalid operation type:%d", PFC_FUNCNAME, operation);
+      break;
+  }
+}
+
+/**
+ * @brief     : Method to post link update events to UPPL
+ * @param[in] : oper_type, key_link_t, val_link_st
+ * @retval    : None
+ */
+void VtnDrvIntf::link_event(oper_type operation, key_link_t&
+                            key_struct, val_link_st&
+                            new_val_struct, val_link_st&
+                            old_val_struct) {
+  ODC_FUNC_TRACE;
+  unc_event_mask_t mask_type = UNC_PHYSICAL_EVENTS;
+  int err = 0;
+
+  std::string controller_name =
+      (const char*)key_struct.ctr_key.controller_name;
+  std::string switch_id1 = (const char*)key_struct.switch_id1;
+  std::string port_id1 = (const char*)key_struct.port_id1;
+  std::string switch_id2 = (const char*)key_struct.switch_id2;
+  std::string port_id2 = (const char*)key_struct.port_id2;
+
+  pfc_log_debug("%s,key structure fields:"
+                "controller_name: %s,"
+                "switch_id1: %s,"
+                "port_id1: %s", PFC_FUNCNAME, controller_name.c_str(),
+                switch_id1.c_str(), port_id1.c_str());
+
+  pfc_log_debug("switch_id2: %s,"
+                "port_id2: %s", switch_id2.c_str(), port_id2.c_str());
+
+  if (operation == VTN_LINK_UPDATE) {
+    pfc_log_debug("Entering link update event");
+    pfc::core::ipc::ServerEvent phys_link_event((uint32_t) mask_type, err);
+    phys_link_event.addOutput(controller_name);
+    phys_link_event.addOutput(DEFAULT_DOMAIN_ID);
+    phys_link_event.addOutput((uint32_t) UNC_OP_UPDATE);
+    phys_link_event.addOutput((uint32_t) UNC_DT_STATE);
+    phys_link_event.addOutput((uint32_t) UNC_KT_LINK);
+    phys_link_event.addOutput(key_struct);
+    phys_link_event.addOutput(new_val_struct);
+    phys_link_event.addOutput(old_val_struct);
+    phys_link_event.post();
+    pfc_log_debug("Exiting link update event");
   } else {
     pfc_log_debug("%s, Invalid operation, PFC_FUNCNAME", PFC_FUNCNAME);
   }

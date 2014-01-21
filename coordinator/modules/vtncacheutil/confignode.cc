@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -47,6 +47,10 @@ std::string TypeToStrFun(unc_key_type_t search_type) {
 
     case UNC_KT_PORT:
       TypeStr = std::string("UNC_KT_PORT");
+      break;
+
+    case UNC_KT_LINK:
+      TypeStr = std::string("UNC_KT_LINK");
       break;
 
     default:
