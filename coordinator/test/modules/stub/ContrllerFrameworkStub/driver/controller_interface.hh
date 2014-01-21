@@ -93,6 +93,9 @@ class controller {
     }
     return CONNECTION_DOWN;
   }
+  void set_connection_status(uint32_t status) {
+    set_status = status;
+  }
   virtual std::string get_controller_id() {
     return "";
   }

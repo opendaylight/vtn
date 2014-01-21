@@ -107,7 +107,7 @@ drv_resp_code_t OdcPort::fill_config_node_vector(
   memset(&key_port, 0, sizeof(key_port_t));
   memset(&val_port, 0, sizeof(val_port_st_t));
 
-  json_object *json_obj_node_conn;
+  json_object *json_obj_node_conn = NULL;
   uint32_t ret_val = restjson::JsonBuildParse::parse(json_obj_node_conn_prop,
                                                      "nodeconnector",
                                                      arr_idx,
@@ -124,7 +124,8 @@ drv_resp_code_t OdcPort::fill_config_node_vector(
                                             "id",
                                             -1,
                                             node_conn_id);
-  if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
+  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+      (node_conn_id.empty())) {
     pfc_log_error(" Error while parsing node_conn_id");
     return DRVAPI_RESPONSE_FAILURE;
   }
@@ -147,7 +148,8 @@ drv_resp_code_t OdcPort::fill_config_node_vector(
                                             -1,
                                             node_type);
 
-  if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
+  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+      (node_type.empty())) {
     pfc_log_error(" Error while parsing node_type");
     return DRVAPI_RESPONSE_FAILURE;
   }
@@ -158,7 +160,8 @@ drv_resp_code_t OdcPort::fill_config_node_vector(
 
   ret_val = restjson::JsonBuildParse::parse(json_obj_node, "id",
                                             -1, node_id);
-  if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
+  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+      (node_id.empty())) {
     pfc_log_error(" Error while parsing node id");
     return DRVAPI_RESPONSE_FAILURE;
   }
@@ -276,7 +279,8 @@ drv_resp_code_t OdcPort::parse_port_properties_value(
                                             -1,
                                             name_value);
 
-  if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
+  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+      (name_value.empty())) {
     pfc_log_error(" Error while parsing node name value");
     return DRVAPI_RESPONSE_FAILURE;
   }

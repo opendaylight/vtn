@@ -103,7 +103,8 @@ drv_resp_code_t OdcSwitch::fill_config_node_vector(
                                             "id",
                                             -1,
                                             node_id);
-  if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
+  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+      (node_id.empty())) {
     pfc_log_error(" Error while parsing id");
     return DRVAPI_RESPONSE_FAILURE;
   }
