@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011-2013 NEC Corporation
+# Copyright (c) 2011-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -44,11 +44,30 @@ LDLIBS		+= $(GTEST_LDLIBS) -lgtest_main
 NAME		?=
 SUBNAME		?= *
 REPEAT		?=
-COLOR		?= yes
 
-ifeq	($(TERM),dumb)
+TERM		:= $(strip $(TERM))
+
+ifeq	($(TERM),kterm)
+COLOR		?= yes
+else ifeq ($(TERM),xterm)
+COLOR		?= yes
+else ifeq ($(TERM),xterm-color)
+COLOR		?= yes
+else ifeq ($(TERM),xterm-256color)
+COLOR		?= yes
+else ifeq ($(TERM),screen)
+COLOR		?= yes
+else ifeq ($(TERM),screen-256color)
+COLOR		?= yes
+else ifeq ($(TERM),linux)
+COLOR		?= yes
+else ifeq ($(TERM),cygwin)
+COLOR		?= yes
+endif	# TERM
+
+ifneq	($(strip $(JOB_NAME)),)
 COLOR		= no
-endif	# TERM == dumb
+endif	# !empty(JOB_NAME)
 
 GTEST_FILTER	= $(NAME:%=--gtest_filter='%.$(SUBNAME)')
 GTEST_REPEAT	= $(REPEAT:%=--gtest_repeat=%)
