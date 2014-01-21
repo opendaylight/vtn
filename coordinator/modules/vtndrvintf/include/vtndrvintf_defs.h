@@ -35,7 +35,10 @@ typedef enum {
   VTN_LP_DELETE,
   VTN_PORT_CREATE,
   VTN_PORT_UPDATE,
-  VTN_PORT_DELETE
+  VTN_PORT_DELETE,
+  VTN_LINK_CREATE,
+  VTN_LINK_UPDATE,
+  VTN_LINK_DELETE
 }oper_type;
 
 }  // namespace driver

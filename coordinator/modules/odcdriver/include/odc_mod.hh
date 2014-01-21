@@ -15,6 +15,7 @@
 #include <odc_vbrif.hh>
 #include <odc_switch.hh>
 #include <odc_port.hh>
+#include <odc_link.hh>
 #include <odc_vbr_vlanmap.hh>
 #include <odc_driver_common_defs.hh>
 #include <unc/keytype.h>

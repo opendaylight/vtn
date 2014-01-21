@@ -28,8 +28,11 @@ namespace driver {
 /*
  *  The IPC event that the IPC server transmitted is received.
  */
-enum {
-  VAL_DOMAIN_STRUCT = 0,
+enum ValDomainIndex {
+  VAL_DOMAIN_STRUCT = 0
+};
+
+enum ValDomainEventIndex {
   VAL_DOMAIN_EVENT_ATTR1 = 0,
   VAL_DOMAIN_EVENT_ATTR2,
   VAL_DOMAIN_EVENT_ATTR3,
@@ -90,7 +93,7 @@ class VtnDrvIntf :public pfc::core::Module {
    * @param[in] : sess, service
    * @retval    : PFC_IPCRESP_FATAL/PFC_IPCINT_EVSESS_OK
    */
-  pfc_ipcresp_t ipcService(pfc::core::ipc::ServerSession& sess,
+  pfc_ipcresp_t ipcService(pfc::core::ipc::ServerSession &sess,
                             pfc_ipcid_t service);
 
   /**
@@ -132,40 +135,62 @@ class VtnDrvIntf :public pfc::core::Module {
    * @param[in] : oper_type, key_logical_port_t, val_logical_port_st
    * @retval    : None
    */
-  void logicalport_event(oper_type operation, key_logical_port_t key_struct,
-                         val_logical_port_st val_struct);
+  void logicalport_event(oper_type operation,
+                         key_logical_port_t &key_struct,
+                         val_logical_port_st_t &val_struct);
   /**
    * @brief     : Method to post port create/delete events to UPPL
    * @param[in] : oper_type, key_port_t, val_port_st
    * @retval    : None
    */
-  void port_event(oper_type operation, key_port_t
-             key_struct, val_port_st val_struct);
+  void port_event(oper_type operation,
+                  key_port_t &key_struct,
+                  val_port_st_t &val_struct);
   /**
    * @brief     : Method to post port update events to UPPL
    * @param[in] : oper_type, key_port_t, val_port_st, val_port_st
    * @retval    : None
    */
-  void port_event(oper_type operation, key_port_t
-             key_struct, val_port_st new_val_struct,
-             val_port_st old_val_struct);
+  void port_event(oper_type operation,
+                  key_port_t &key_struct,
+                  val_port_st_t &new_val_struct,
+                  val_port_st_t &old_val_struct);
   /**
    * @brief     : Method to post switch create/delete events to UPPL
    * @param[in] : oper_type, key_switch, val_switch_st
    * @retval    : None
    */
-  void switch_event(oper_type operation, key_switch
-               key_struct, val_switch_st val_struct);
+  void switch_event(oper_type operation,
+                    key_switch_t &key_struct,
+                    val_switch_st_t &val_struct);
   /**
    * @brief     : Method to post switch update events to UPPL
    * @param[in] : oper_type, key_switch, val_switch_st, val_switch_st
    * @retval    : None
    */
-  void switch_event(oper_type operation, key_switch
-               key_struct, val_switch_st new_val_struct,
-               val_switch_st old_val_struct);
+  void switch_event(oper_type operation,
+                    key_switch_t &key_struct,
+                    val_switch_st_t &new_val_struct,
+                    val_switch_st_t &old_val_struct);
 
-    // used for Controller ping
+  /**
+   * @brief     : Method to post link create/delete events to UPPL
+   * @param[in] : oper_type, key_link_t, val_link_st
+   * @retval    : None
+   */
+  void link_event(oper_type operation,
+                  key_link_t &key_struct,
+                  val_link_st_t &val_struct);
+  /**
+   * @brief     : Method to post link update events to UPPL
+   * @param[in] : oper_type, key_link_t, val_link_st, val_link_st
+   * @retval    : None
+   */
+  void link_event(oper_type operation, key_link_t &key_struct,
+                  val_link_st_t &new_val_struct,
+                  val_link_st_t &old_val_struct);
+
+  // used for Controller ping
   pfc::core::TaskQueue* taskq_;
 
  private:
