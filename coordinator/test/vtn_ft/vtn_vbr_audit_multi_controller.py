@@ -24,14 +24,20 @@ def test_vtn_vbr_audit_multi_controller_1():
         print "Controller1 Create Failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerFirst',"up")
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     retval = controller.add_controller_ex('ControllerSecond')
     if retval != 0:
         print "Controller2 Create Failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerSecond',"up")
+    retval = controller.wait_until_state('ControllerSecond',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     print "****Create VTN****"
     retval = vtn_vbr.create_vtn('VtnOne')
@@ -78,7 +84,10 @@ def test_vtn_vbr_audit_multi_controller_1():
         print "controller1 invalid_ip update failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerFirst',"down")
+    retval = controller.wait_until_state('ControllerFirst',"down")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     test_invalid_ipaddr= vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerSecond')['invalid_ipaddr']
     retval = controller.update_controller_ex('ControllerSecond',ipaddr=test_invalid_ipaddr)
@@ -86,7 +95,10 @@ def test_vtn_vbr_audit_multi_controller_1():
         print "controller2 invalid_ip update failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerSecond',"down")
+    retval = controller.wait_until_state('ControllerSecond',"down")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     print "****Delete VBR****"
     retval = vtn_vbr.delete_vbr('VtnOne','VbrOne')
@@ -112,7 +124,10 @@ def test_vtn_vbr_audit_multi_controller_1():
         print "controller1 valid_ip update failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerFirst',"up")
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     test_controller_ipaddr= vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerSecond')['ipaddr']
     retval = controller.update_controller_ex('ControllerSecond',ipaddr=test_controller_ipaddr)
@@ -120,7 +135,10 @@ def test_vtn_vbr_audit_multi_controller_1():
         print "controller2 valid_ip update failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerSecond',"up")
+    retval = controller.wait_until_state('ControllerSecond',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     retval =  vtn_vbr.validate_vbr_at_controller('VtnOne','VbrOne','ControllerFirst',presence="no")
     if retval != 0:
@@ -165,14 +183,20 @@ def test_vtn_vbr_audit_multi_controller_2():
         print "Controller1 Create Failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerFirst',"up")
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     retval = controller.add_controller_ex('ControllerSecond')
     if retval != 0:
         print "Controller2 Create Failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerSecond',"up")
+    retval = controller.wait_until_state('ControllerSecond',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     print "****UPDATE Controller IP to invalid****"
     test_invalid_ipaddr= vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerFirst')['invalid_ipaddr']
@@ -181,7 +205,10 @@ def test_vtn_vbr_audit_multi_controller_2():
         print "controller1 invalid_ip update failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerFirst',"down")
+    retval = controller.wait_until_state('ControllerFirst',"down")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     test_invalid_ipaddr= vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerSecond')['invalid_ipaddr']
     retval = controller.update_controller_ex('ControllerSecond',ipaddr=test_invalid_ipaddr)
@@ -189,7 +216,10 @@ def test_vtn_vbr_audit_multi_controller_2():
         print "controller2 invalid_ip update failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerSecond',"down")
+    retval = controller.wait_until_state('ControllerSecond',"down")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     print "****Create VTN****"
     retval = vtn_vbr.create_vtn('VtnOne')
@@ -215,7 +245,10 @@ def test_vtn_vbr_audit_multi_controller_2():
         print "controller1 valid_ip update failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerFirst',"up")
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     test_controller_ipaddr= vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerSecond')['ipaddr']
     retval = controller.update_controller_ex('ControllerSecond',ipaddr=test_controller_ipaddr)
@@ -223,7 +256,10 @@ def test_vtn_vbr_audit_multi_controller_2():
         print "controller2 valid_ip update failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerSecond',"up")
+    retval = controller.wait_until_state('ControllerSecond',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     retval =  vtn_vbr.validate_vtn_at_controller('VtnOne','ControllerFirst')
     if retval != 0:
@@ -309,14 +345,20 @@ def test_multi_vtn_with_vbr_multi_controller_audit_test():
         print "Controller1 Create Failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerFirst',"up")
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     retval = controller.add_controller_ex('ControllerSecond')
     if retval != 0:
         print "Controller2 Create Failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerSecond',"up")
+    retval = controller.wait_until_state('ControllerSecond',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     retval = vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
@@ -405,7 +447,10 @@ def test_multi_vtn_with_vbr_multi_controller_audit_test():
         print "controller1 invalid_ip update failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerFirst',"down")
+    retval = controller.wait_until_state('ControllerFirst',"down")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     test_invalid_ipaddr= vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerSecond')['invalid_ipaddr']
     retval = controller.update_controller_ex('ControllerSecond',ipaddr=test_invalid_ipaddr)
@@ -413,7 +458,10 @@ def test_multi_vtn_with_vbr_multi_controller_audit_test():
         print "controller2 invalid_ip update failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerSecond',"down")
+    retval = controller.wait_until_state('ControllerSecond',"down")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     print "****DELETE VBR****"
     retval = vtn_vbr.delete_vbr('VtnOne','VbrOne')
@@ -443,7 +491,10 @@ def test_multi_vtn_with_vbr_multi_controller_audit_test():
         print "controller1 valid_ip update failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerFirst',"up")
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     test_controller_ipaddr= vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerSecond')['ipaddr']
     retval = controller.update_controller_ex('ControllerSecond',ipaddr=test_controller_ipaddr)
@@ -451,7 +502,10 @@ def test_multi_vtn_with_vbr_multi_controller_audit_test():
         print "controller2 valid_ip update failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerSecond',"up")
+    retval = controller.wait_until_state('ControllerSecond',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     retval =  vtn_vbr.validate_vbr_at_controller('VtnOne','VbrOne','ControllerFirst',presence="no")
     if retval != 0:
