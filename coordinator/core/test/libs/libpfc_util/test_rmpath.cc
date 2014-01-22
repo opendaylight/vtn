@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013 NEC Corporation
+ * Copyright (c) 2011-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -24,7 +24,7 @@
 #include "misc.hh"
 
 #define	RMPATH_TEST_DEPTH	4
-#define	RMPATH_PATH_MAX		256
+#define	RMPATH_PATH_MAX		512
 
 static int
 create_file(const char *dir, const char *name, mode_t perm=0644)
@@ -87,7 +87,7 @@ create_tree(const char *dir, uint32_t depth, uint32_t curdepth=0)
         curdepth++;
 
         for (int i = 0; i < 5; i++) {
-            char	dpath[128];
+            char	dpath[RMPATH_PATH_MAX];
 
             snprintf(dpath, sizeof(dpath), "%s/dir%d", dir, i);
             ASSERT_EQ(0, mkdir(dpath, 0755))
