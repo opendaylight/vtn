@@ -29,14 +29,20 @@ def test_vtn_vbr_multi_controller():
     if retval != 0:
         print "Controller Create Failed"
         exit(1)
-    controller.wait_until_state('ControllerFirst',"up")
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     print "CREATE ControllerSecond"
     retval = controller.add_controller_ex('ControllerSecond')
     if retval != 0:
         print "Controller Create Failed"
         exit(1)
-    controller.wait_until_state('ControllerSecond',"up")
+    retval = controller.wait_until_state('ControllerSecond',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     retval = vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
@@ -137,14 +143,20 @@ def test_vtn_multi_vbr_multi_controller():
     if retval != 0:
         print "Controller1 Create Failed"
         exit(1)
-    controller.wait_until_state('ControllerFirst',"up")
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     print "CREATE ControllerSecond"
     retval = controller.add_controller_ex('ControllerSecond')
     if retval != 0:
         print "Controller2 Create Failed"
         exit(1)
-    controller.wait_until_state('ControllerSecond',"up")
+    retval = controller.wait_until_state('ControllerSecond',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     retval = vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
@@ -246,12 +258,12 @@ def test_vtn_multi_vbr_multi_controller():
      print "VBR4/VTN2 Validate Failed"
      exit(1)
 
-    retval = vtn_vbr.validate_vtn_at_controller('VtnOne','ControllerFirst')
+    retval = vtn_vbr.validate_vtn_at_controller('VtnOne','ControllerFirst', presence="no")
     if retval != 0:
         print "VTN Validate Failed"
         exit(1)
 
-    retval=vtn_vbr.validate_vtn_at_controller('VtnTwo','ControllerSecond')
+    retval=vtn_vbr.validate_vtn_at_controller('VtnTwo','ControllerSecond', presence="no")
     if retval != 0:
         print "VTN Validate Failed"
         exit(1)
@@ -291,13 +303,19 @@ def test_multi_vtn_with_vbr_multi_controller():
     if retval != 0:
         print "Controller1 Create Failed"
         exit(1)
-    controller.wait_until_state('ControllerFirst',"up")
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     retval = controller.add_controller_ex('ControllerSecond')
     if retval != 0:
         print "Controller2 Create Failed"
         exit(1)
-    controller.wait_until_state('ControllerSecond',"up")
+    retval = controller.wait_until_state('ControllerSecond',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     retval = vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
@@ -423,7 +441,6 @@ def test_multi_vtn_with_vbr_multi_controller():
     if retval != 0:
         print "VTN Delete Failed in coordinator"
         exit(1)
-
 
     retval = vtn_vbr.delete_vtn('VtnTwo')
     if retval != 0:

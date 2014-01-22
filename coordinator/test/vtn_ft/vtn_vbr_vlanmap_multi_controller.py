@@ -30,7 +30,10 @@ def test_vtn_vbr_vlanmap_multi_controller():
         print "TEST 1 :Controller Create Failed"
         exit(1)
     # Delay for AUDIT
-    controller.wait_until_state('ControllerFirst',"up")
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     print "CREATE Controller2"
     retval = controller.add_controller_ex('ControllerSecond')
@@ -38,7 +41,10 @@ def test_vtn_vbr_vlanmap_multi_controller():
         print "TEST 1 :Controller Create Failed"
         exit(1)
     # Delay for AUDIT
-    controller.wait_until_state('ControllerSecond',"up")
+    retval = controller.wait_until_state('ControllerSecond',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     retval=vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
@@ -192,7 +198,10 @@ def test_vtn_vbr_vlanmap_with_vlanid_multi_controller():
         print "TEST 2 :Controller Create Failed"
         exit(1)
     # Delay for AUDIT
-    controller.wait_until_state('ControllerFirst',"up")
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     print "CREATE Controller2"
     retval = controller.add_controller_ex('ControllerSecond')
@@ -200,7 +209,10 @@ def test_vtn_vbr_vlanmap_with_vlanid_multi_controller():
         print "TEST 2 :Controller Create Failed"
         exit(1)
     # Delay for AUDIT
-    controller.wait_until_state('ControllerSecond',"up")
+    retval = controller.wait_until_state('ControllerSecond',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     retval=vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
@@ -355,7 +367,10 @@ def test_vtn_vbr_multi_vlanmap_multi_controller():
         print "TEST 3 :Controller1 Create Failed"
         exit(1)
     # Delay for AUDIT
-    controller.wait_until_state('ControllerFirst',"up")
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     print "CREATE Controller2"
     retval = controller.add_controller_ex('ControllerSecond')
@@ -363,7 +378,10 @@ def test_vtn_vbr_multi_vlanmap_multi_controller():
         print "TEST 3 :Controller2 Create Failed"
         exit(1)
     # Delay for AUDIT
-    controller.wait_until_state('ControllerSecond',"up")
+    retval = controller.wait_until_state('ControllerSecond',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     retval=vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
@@ -579,7 +597,10 @@ def test_vtn_vbr_vlanmap_vlanid_multi_controller():
         print "TEST 4 :Controller1 Create Failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerFirst',"up")
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     print "CREATE Controller2"
     retval = controller.add_controller_ex('ControllerSecond')
@@ -587,7 +608,10 @@ def test_vtn_vbr_vlanmap_vlanid_multi_controller():
         print "TEST 4 :Controller2 Create Failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerSecond',"up")
+    retval = controller.wait_until_state('ControllerSecond',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     retval=vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
@@ -704,12 +728,12 @@ def test_vtn_vbr_vlanmap_vlanid_multi_controller():
         print "After Delete VBR Validate Failed"
         exit(1)
 
-    retval=vtn_vbr.validate_vtn_at_controller('VtnOne','ControllerFirst',presence="yes")
+    retval=vtn_vbr.validate_vtn_at_controller('VtnOne','ControllerFirst',presence="no")
     if retval != 0:
         print "VTN Validate Failed after VBR Deleted"
         exit(1)
 
-    retval=vtn_vbr.validate_vtn_at_controller('VtnOne','ControllerSecond',presence="yes")
+    retval=vtn_vbr.validate_vtn_at_controller('VtnOne','ControllerSecond',presence="no")
     if retval != 0:
         print "VTN Validate Failed after VBR Deleted"
         exit(1)
@@ -743,7 +767,10 @@ def test_vtn_vbr_vlanmap_lg_id_multi_controller():
         print "TEST 5 :Controller1 Create Failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerFirst',"up")
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     print "CREATE Controller2"
     retval = controller.add_controller_ex('ControllerSecond')
@@ -751,7 +778,10 @@ def test_vtn_vbr_vlanmap_lg_id_multi_controller():
         print "TEST 5 :Controller2 Create Failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerSecond',"up")
+    retval = controller.wait_until_state('ControllerSecond',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     retval=vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
@@ -908,14 +938,20 @@ def test_vtn_vbr_vlanmap_no_vlanid_multi_controller():
         print "TEST 6 :Controller1 Create Failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerFirst',"up")
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     retval = controller.add_controller_ex('ControllerSecond')
     if retval != 0:
         print "TEST 6 :Controller2 Create Failed"
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerSecond',"up")
+    retval = controller.wait_until_state('ControllerSecond',"up")
+    if retval != 0:
+      print "Controller state check failed"
+      exit(1)
 
     retval=vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
