@@ -389,6 +389,7 @@ void DBVarbind::BindingOutput(int table_id) {
           break;
         }
       }
+      ODBCM_MEMSET(p_ctr_table, 0, sizeof(controller_table_t));
       BindOUTParameter = &DBVarbind::bind_controller_table_output;
       break;
     case CTR_DOMAIN_TABLE:
@@ -403,6 +404,7 @@ void DBVarbind::BindingOutput(int table_id) {
           break;
         }
       }
+      ODBCM_MEMSET(p_domain_table, 0, sizeof(ctr_domain_table_t));
       BindOUTParameter = &DBVarbind::bind_domain_table_output;
       break;
     case LOGICALPORT_TABLE:
@@ -420,6 +422,7 @@ void DBVarbind::BindingOutput(int table_id) {
       //  binary buffer length
       *p_logicalport_id1_len = ODBCM_SIZE_320;
       *p_switch_id1_len = ODBCM_SIZE_256;
+      ODBCM_MEMSET(p_logicalport_table, 0, sizeof(logicalport_table_t));
       BindOUTParameter= &DBVarbind::bind_logicalport_table_output;
       break;
     case LOGICAL_MEMBERPORT_TABLE:
@@ -436,6 +439,8 @@ void DBVarbind::BindingOutput(int table_id) {
       }
       *p_logicalport_id1_len = ODBCM_SIZE_320;
       *p_switch_id1_len = ODBCM_SIZE_256;
+      ODBCM_MEMSET(p_logical_memberport_table, 0,
+         sizeof(logical_memberport_table_t));
       BindOUTParameter= &DBVarbind::bind_logical_memberport_table_output;
       break;
     case SWITCH_TABLE:
@@ -453,6 +458,7 @@ void DBVarbind::BindingOutput(int table_id) {
       *p_switch_id1_len = ODBCM_SIZE_256;
       *p_ipv6_len = ODBCM_SIZE_16;
       *p_alarms_status_len = ODBCM_SIZE_16;
+      ODBCM_MEMSET(p_switch_table, 0, sizeof(switch_table_t));
       BindOUTParameter = &DBVarbind::bind_switch_table_output;
       break;
     case PORT_TABLE:
@@ -472,6 +478,7 @@ void DBVarbind::BindingOutput(int table_id) {
       *p_alarms_status_len = ODBCM_SIZE_16;
       *p_mac_len = ODBCM_SIZE_6;
       *p_speed_len = ODBCM_SIZE_16;
+      ODBCM_MEMSET(p_port_table, 0, sizeof(port_table_t));
       BindOUTParameter = &DBVarbind::bind_port_table_output;
       break;
     case LINK_TABLE:
@@ -488,6 +495,7 @@ void DBVarbind::BindingOutput(int table_id) {
       }
       *p_switch_id1_len = ODBCM_SIZE_256;
       *p_switch_id2_len = ODBCM_SIZE_256;
+      ODBCM_MEMSET(p_link_table, 0, sizeof(link_table_t));
       BindOUTParameter = &DBVarbind::bind_link_table_output;
       break;
     case BOUNDARY_TABLE:
@@ -504,6 +512,7 @@ void DBVarbind::BindingOutput(int table_id) {
       }
       *p_logicalport_id1_len = ODBCM_SIZE_320;
       *p_logicalport_id2_len = ODBCM_SIZE_320;
+      ODBCM_MEMSET(p_boundary_table, 0, sizeof(boundary_table_t));
       BindOUTParameter = &DBVarbind::bind_boundary_table_output;
       break;
     case IS_ROW_EXISTS:  //  Special case - no table is available
@@ -518,6 +527,7 @@ void DBVarbind::BindingOutput(int table_id) {
           break;
         }
       }
+      ODBCM_MEMSET(p_isrowexists, 0, sizeof(is_row_exists_t));
       BindOUTParameter = &DBVarbind::bind_is_row_exists_output;
       break;
     default:

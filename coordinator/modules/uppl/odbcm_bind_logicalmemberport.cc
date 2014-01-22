@@ -184,8 +184,6 @@ ODBCM_RC_STATUS DBVarbind::bind_logical_memberport_table_output(
   std::vector< TableAttrSchema >::iterator i;
   /**Flag to decide printing logs */
   uint8_t log_flag = 1;
-  SQLINTEGER  indptr = 0;  // Pointer to value that indicates the number of
-                           // bytes available to return
   /**Loop for iterate all the elements in the vector, the TableAttrSchema
   * table_attribute_name value will be compared and corresponding
   * structure member will be binded here*/
@@ -209,7 +207,7 @@ ODBCM_RC_STATUS DBVarbind::bind_logical_memberport_table_output(
             /*buffer to fetch values*/,
             ODBCM_SIZE_32+1,
         /**no.of bytes available to return*/
-            reinterpret_cast<SQLLEN*>(&indptr));
+            (&p_logical_memberport_table->cbname));
       /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -223,7 +221,7 @@ ODBCM_RC_STATUS DBVarbind::bind_logical_memberport_table_output(
               /*buffer to fetch values*/,
               ODBCM_SIZE_32+1,
           /**no.of bytes available to return*/
-              reinterpret_cast<SQLLEN*>(&indptr));
+              (&p_logical_memberport_table->cbdomain));
       /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -264,7 +262,8 @@ ODBCM_RC_STATUS DBVarbind::bind_logical_memberport_table_output(
               ++col_no,
               p_logical_memberport_table->szphysical_port_id,
               ODBCM_SIZE_32+1,
-              reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+              (&p_logical_memberport_table->cbpportid)
+              /*buffer to fetch values*/);
       /**set flag value 0 to print column binding details */
           log_flag = 0;
         }

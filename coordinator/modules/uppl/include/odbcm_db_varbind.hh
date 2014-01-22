@@ -205,6 +205,20 @@ typedef struct {
     SQLCHAR       svalid[ODBCM_SIZE_9+1];
     SQLSMALLINT   scs_row_status;
     SQLCHAR       scs_attr[ODBCM_SIZE_9+1];
+    SQLLEN        cbname;
+    SQLLEN        cbtype;
+    SQLLEN        cbversion;
+    SQLLEN        cbctrdesc;
+    SQLLEN        cbipaddr;
+    SQLLEN        cbuser;
+    SQLLEN        cbpass;
+    SQLLEN        cbenableaudit;
+    SQLLEN        cbport;
+    SQLLEN        cbaversion;
+    SQLLEN        cboperstatus;
+    SQLLEN        cbvalid;
+    SQLLEN        cbrowstatus;
+    SQLLEN        cbcsattr;
 }controller_table_t;
 
 /** 
@@ -220,6 +234,14 @@ typedef struct {
     SQLCHAR       svalid[ODBCM_SIZE_3+1];
     SQLSMALLINT   scs_row_status;
     SQLCHAR       scs_attr[ODBCM_SIZE_3+1];
+    SQLLEN        cbname;
+    SQLLEN        cbdomain;
+    SQLLEN        cbtype;
+    SQLLEN        cbdesc;
+    SQLLEN        cboperstatus;
+    SQLLEN        cbvalid;
+    SQLLEN        cbrowstatus;
+    SQLLEN        cbcsattr;
 }ctr_domain_table_t;
 
 /** 
@@ -237,6 +259,14 @@ typedef struct {
     SQLSMALLINT   soper_down_criteria;
     SQLSMALLINT   soper_status;
     SQLCHAR       svalid[ODBCM_SIZE_6+1];
+    SQLLEN        cbname;
+    SQLLEN        cbdomain;
+    SQLLEN        cbdesc;
+    SQLLEN        cbporttype;
+    SQLLEN        cbpportid;
+    SQLLEN        cbopercriteria;
+    SQLLEN        cboperstatus;
+    SQLLEN        cbvalid;
 }logicalport_table_t;
 
 /** 
@@ -249,6 +279,9 @@ typedef struct {
     SQLVARCHAR    szlogical_port_id[ODBCM_SIZE_320+1];
     SQLVARCHAR    szswitch_id[ODBCM_SIZE_256+1];
     SQLVARCHAR    szphysical_port_id[ODBCM_SIZE_32+1];
+    SQLLEN        cbname;
+    SQLLEN        cbdomain;
+    SQLLEN        cbpportid;
 }logical_memberport_table_t;
 
 /** 
@@ -270,6 +303,17 @@ typedef struct {
     SQLVARCHAR    szsoftware[ODBCM_SIZE_256+1];
     SQLUBIGINT    salarms_status;
     SQLCHAR       svalid[ODBCM_SIZE_11+1];
+    SQLLEN        cbname;
+    SQLLEN        cbdesc;
+    SQLLEN        cbmodel;
+    SQLLEN        cbipaddr;
+    SQLLEN        cbadminstatus;
+    SQLLEN        cbdomainname;
+    SQLLEN        cboperstatus;
+    SQLLEN        cbmanufacturer;
+    SQLLEN        cbhardware;
+    SQLLEN        cbsoftware;
+    SQLLEN        cbvalid;
 }switch_table_t;
 
 /** 
@@ -292,6 +336,16 @@ typedef struct {
     SQLUBIGINT    salarms_status;
     SQLCHAR       slogical_port_id[ODBCM_SIZE_320+1];
     SQLCHAR       svalid[ODBCM_SIZE_11+1];
+    SQLLEN        cbname;
+    SQLLEN        cbportid;
+    SQLLEN        cbportnumber;
+    SQLLEN        cbdesc;
+    SQLLEN        cbadminstatus;
+    SQLLEN        cbdirection;
+    SQLLEN        cbtavlan;
+    SQLLEN        cboperstatus;
+    SQLLEN        cbduplex;
+    SQLLEN        cbvalid;
 }port_table_t;
 
 /** 
@@ -307,6 +361,12 @@ typedef struct {
     SQLVARCHAR    szdescription[ODBCM_SIZE_128+1];
     SQLSMALLINT   soper_status;
     SQLCHAR       svalid[ODBCM_SIZE_2+1];
+    SQLLEN        cbname;
+    SQLLEN        cbport1;
+    SQLLEN        cbport2;
+    SQLLEN        cbdesc;
+    SQLLEN        cboperstatus;
+    SQLLEN        cbvalid;
 }link_table_t;
 
 /** 
@@ -326,6 +386,16 @@ typedef struct {
     SQLCHAR       svalid[ODBCM_SIZE_8+1];
     SQLSMALLINT   scs_row_status;
     SQLCHAR       scs_attr[ODBCM_SIZE_8+1];
+    SQLLEN        cbbid;
+    SQLLEN        cbdesc;
+    SQLLEN        cbctrname1;
+    SQLLEN        cbdomname1;
+    SQLLEN        cbctrname2;
+    SQLLEN        cbdomname2;
+    SQLLEN        cboperstatus;
+    SQLLEN        cbvalid;
+    SQLLEN        cbrowstatus;
+    SQLLEN        cbcsattr;
 }boundary_table_t;
 
 /**

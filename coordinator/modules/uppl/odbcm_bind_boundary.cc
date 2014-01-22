@@ -266,8 +266,6 @@ ODBCM_RC_STATUS DBVarbind::bind_boundary_table_output(
     std::vector<TableAttrSchema> &column_attr/*DBTableSchema->rowlist_entry*/,
         HSTMT &r_hstmt/**statement handler which carries the SQL Query*/) {
   SQLRETURN   odbc_rc = SQL_SUCCESS;  // odbc APIs return code
-  SQLINTEGER  indptr = 0;  // Pointer to value that indicates the number of
-                           // bytes available to return
   uint16_t    col_no = 0;  // column number
   /**Vector iterator to take the TableAttrSchema structures*/
   std::vector< TableAttrSchema >::iterator v_iter;
@@ -297,7 +295,8 @@ ODBCM_RC_STATUS DBVarbind::bind_boundary_table_output(
           p_boundary_table->szboundary_id/*buffer to fetch values*/,
           ODBCM_SIZE_32+1,
           /**no.of bytes available to return*/
-          reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+          (&p_boundary_table->cbbid)
+          /*buffer to fetch values*/);
           /**set flag value 0 to print column binding details */
           log_flag = 0;
          }
@@ -315,7 +314,8 @@ ODBCM_RC_STATUS DBVarbind::bind_boundary_table_output(
           ++col_no,
           p_boundary_table->szdescription,
           ODBCM_SIZE_128+1,
-          reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+          (&p_boundary_table->cbdesc)
+          /*buffer to fetch values*/);
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -327,7 +327,8 @@ ODBCM_RC_STATUS DBVarbind::bind_boundary_table_output(
           ++col_no,
           p_boundary_table->szcontroller_name1,
           ODBCM_SIZE_32+1,
-          reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+          (&p_boundary_table->cbctrname1)
+          /*buffer to fetch values*/);
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -339,7 +340,8 @@ ODBCM_RC_STATUS DBVarbind::bind_boundary_table_output(
           ++col_no,
           p_boundary_table->szdomain_name1,
           ODBCM_SIZE_32+1,
-          reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+          (&p_boundary_table->cbdomname1)
+          /*buffer to fetch values*/);
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -363,7 +365,8 @@ ODBCM_RC_STATUS DBVarbind::bind_boundary_table_output(
           ++col_no,
           p_boundary_table->szcontroller_name2,
           ODBCM_SIZE_32+1,
-          reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+          (&p_boundary_table->cbctrname2)
+          /*buffer to fetch values*/);
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -375,7 +378,7 @@ ODBCM_RC_STATUS DBVarbind::bind_boundary_table_output(
           ++col_no,
           p_boundary_table->szdomain_name2,
           ODBCM_SIZE_32+1,
-          reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+          (&p_boundary_table->cbdomname2)/*buffer to fetch values*/);
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -399,7 +402,8 @@ ODBCM_RC_STATUS DBVarbind::bind_boundary_table_output(
           ++col_no,
           reinterpret_cast<SQLSMALLINT*>(&p_boundary_table->soper_status),
           sizeof(SQLSMALLINT),
-          reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+          (&p_boundary_table->cboperstatus)
+          /*buffer to fetch values*/);
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -411,7 +415,8 @@ ODBCM_RC_STATUS DBVarbind::bind_boundary_table_output(
           ++col_no,
           p_boundary_table->svalid,
           ODBCM_SIZE_8+1,
-          reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+          (&p_boundary_table->cbvalid)
+          /*buffer to fetch values*/);
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -423,7 +428,8 @@ ODBCM_RC_STATUS DBVarbind::bind_boundary_table_output(
           ++col_no,
           reinterpret_cast<SQLSMALLINT*>(&p_boundary_table->scs_row_status),
           sizeof(SQLSMALLINT),
-          reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+          (&p_boundary_table->cbrowstatus)
+          /*buffer to fetch values*/);
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -435,7 +441,8 @@ ODBCM_RC_STATUS DBVarbind::bind_boundary_table_output(
           ++col_no,
           p_boundary_table->scs_attr,
           ODBCM_SIZE_8+1,
-          reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+          (&p_boundary_table->cbcsattr)
+          /*buffer to fetch values*/);
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }

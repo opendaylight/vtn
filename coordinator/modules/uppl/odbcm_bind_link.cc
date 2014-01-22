@@ -211,8 +211,6 @@ ODBCM_RC_STATUS DBVarbind::bind_link_table_output(
     std::vector<TableAttrSchema> &column_attr/*DBTableSchema->rowlist_ entry*/,
         HSTMT &r_hstmt/**statement handler which carries the SQL Query*/) {
   SQLRETURN odbc_rc = SQL_SUCCESS;  // odbc APIs return code
-  SQLINTEGER  indptr = 0;  // Pointer to value that indicates the number of
-                           // bytes available to return
   uint16_t col_no = 0;  // column number
   /**Vector iterator to take the TableAttrSchema structures*/
   std::vector< TableAttrSchema >::iterator i;
@@ -241,7 +239,7 @@ ODBCM_RC_STATUS DBVarbind::bind_link_table_output(
               p_link_table->szcontroller_name/*buffer to fetch values*/,
               ODBCM_SIZE_32+1,
           /**no.of bytes available to return*/
-            reinterpret_cast<SQLLEN*>(&indptr));
+            (&p_link_table->cbname));
           /**set flag value 0 to print column binding details */
             log_flag = 0;
         }
@@ -271,7 +269,8 @@ ODBCM_RC_STATUS DBVarbind::bind_link_table_output(
               r_hstmt,
               ++col_no,
               p_link_table->szport_id1, ODBCM_SIZE_32+1,
-              reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+              (&p_link_table->cbport1)
+              /*buffer to fetch values*/);
           /**set flag value 0 to print column binding details */
             log_flag = 0;
         }
@@ -296,7 +295,8 @@ ODBCM_RC_STATUS DBVarbind::bind_link_table_output(
               ++col_no,
               p_link_table->szport_id2,
               ODBCM_SIZE_32+1,
-              reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+              (&p_link_table->cbport2)
+              /*buffer to fetch values*/);
           /**set flag value 0 to print column binding details */
               log_flag = 0;
         }
@@ -308,7 +308,8 @@ ODBCM_RC_STATUS DBVarbind::bind_link_table_output(
               ++col_no,
               p_link_table->szdescription,
               ODBCM_SIZE_128+1,
-              reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+              (&p_link_table->cbdesc)
+              /*buffer to fetch values*/);
           /**set flag value 0 to print column binding details */
               log_flag = 0;
         }
@@ -320,7 +321,8 @@ ODBCM_RC_STATUS DBVarbind::bind_link_table_output(
               ++col_no,
               reinterpret_cast<SQLSMALLINT*>(&p_link_table->soper_status),
               sizeof(SQLSMALLINT),
-              reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+              (&p_link_table->cboperstatus)
+              /*buffer to fetch values*/);
           /**set flag value 0 to print column binding details */
             log_flag = 0;
         }
@@ -332,7 +334,8 @@ ODBCM_RC_STATUS DBVarbind::bind_link_table_output(
               ++col_no,
               p_link_table->svalid,
               ODBCM_SIZE_2+1,
-              reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+              (&p_link_table->cbvalid)
+              /*buffer to fetch values*/);
           /**set flag value 0 to print column binding details */
               log_flag = 0;
         }

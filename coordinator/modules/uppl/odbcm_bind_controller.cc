@@ -270,8 +270,6 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
     std::vector<TableAttrSchema> &column_attr/*DBTableSchema->rowlist_entry*/,
     HSTMT &r_hstmt/**statement handler which carries the SQL Query*/) {
   SQLRETURN odbc_rc = SQL_SUCCESS;  // odbc APIs return code
-  SQLINTEGER  indptr = 0;  // Pointer to value that indicates the number of
-                          // bytes available to return
   uint16_t col_no = 0;  // column number
   /**Flag to decide printing logs */
   uint8_t log_flag = 1;
@@ -300,7 +298,7 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
               p_ctr_table->szcontroller_name/*buffer to fetch values*/,
               ODBCM_SIZE_32+1,
               /**no.of bytes available to return*/
-              reinterpret_cast<SQLLEN*>(&indptr));
+              (&p_ctr_table->cbname));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -312,7 +310,7 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
               ++col_no,
               reinterpret_cast<SQLSMALLINT*>(&p_ctr_table->stype),
               sizeof(SQLSMALLINT),
-              reinterpret_cast<SQLLEN*>(&indptr));
+              (&p_ctr_table->cbtype));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -324,7 +322,7 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
               ++col_no,
               p_ctr_table->szversion,
               ODBCM_SIZE_32+1,
-              reinterpret_cast<SQLLEN*>(&indptr));
+              (&p_ctr_table->cbversion));
         }
         break;
       case CTR_DESCRIPTION:
@@ -334,7 +332,7 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
               ++col_no,
               p_ctr_table->szdescription,
               ODBCM_SIZE_128+1,
-              reinterpret_cast<SQLLEN*>(&indptr));
+              (&p_ctr_table->cbctrdesc));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -346,7 +344,7 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
               ++col_no,
               reinterpret_cast<SQLBIGINT*>(&p_ctr_table->szip_address),
               sizeof(SQLBIGINT),
-              reinterpret_cast<SQLLEN*>(&indptr));
+              (&p_ctr_table->cbipaddr));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -358,7 +356,7 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
               ++col_no,
               p_ctr_table->szuser_name,
               ODBCM_SIZE_32+1,
-              reinterpret_cast<SQLLEN*>(&indptr));
+              (&p_ctr_table->cbuser));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -370,7 +368,7 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
               ++col_no,
               p_ctr_table->szpassword,
               ODBCM_SIZE_257+1,
-              reinterpret_cast<SQLLEN*>(&indptr));
+              (&p_ctr_table->cbpass));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -382,7 +380,7 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
               ++col_no,
               reinterpret_cast<SQLSMALLINT*>(&p_ctr_table->senable_audit),
               sizeof(SQLSMALLINT),
-              reinterpret_cast<SQLLEN*>(&indptr));
+              (&p_ctr_table->cbenableaudit));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -394,7 +392,7 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
               ++col_no,
               p_ctr_table->szactual_version,
               ODBCM_SIZE_32+1,
-              reinterpret_cast<SQLLEN*>(&indptr));
+              (&p_ctr_table->cbaversion));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -406,7 +404,7 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
               ++col_no,
               reinterpret_cast<SQLSMALLINT*>(&p_ctr_table->soper_status),
               sizeof(SQLSMALLINT),
-              reinterpret_cast<SQLLEN*>(&indptr));
+              (&p_ctr_table->cboperstatus));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -418,7 +416,7 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
               ++col_no,
               p_ctr_table->svalid,
               ODBCM_SIZE_9+1,
-              reinterpret_cast<SQLLEN*>(&indptr));
+              (&p_ctr_table->cbvalid));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -430,7 +428,7 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
               ++col_no,
               reinterpret_cast<SQLSMALLINT*>(&p_ctr_table->scs_row_status),
               sizeof(SQLSMALLINT),
-              reinterpret_cast<SQLLEN*>(&indptr));
+              (&p_ctr_table->cbrowstatus));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -442,7 +440,7 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
               ++col_no,
               p_ctr_table->scs_attr,
               ODBCM_SIZE_9+1,
-              reinterpret_cast<SQLLEN*>(&indptr));
+              (&p_ctr_table->cbcsattr));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
