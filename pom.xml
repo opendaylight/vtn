@@ -11,15 +11,12 @@
 #
 -->
 
-<project
-  xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.opendaylight.vtn</groupId>
     <artifactId>common</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
     <relativePath>common</relativePath>
   </parent>
   <artifactId>distribution</artifactId>
@@ -29,7 +26,7 @@
     <connection>scm:git:https://git.opendaylight.org/gerrit/p/vtn.git</connection>
     <developerConnection>scm:git:ssh://git.opendaylight.org:29418/vtn.git</developerConnection>
     <url>https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_%28VTN%29:Main</url>
-    <tag>HEAD</tag>
+    <tag>master-tagforprepareonly-vtn-bulk-release-prepare-only-3</tag>
   </scm>
 
   <modules>
