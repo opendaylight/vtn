@@ -624,8 +624,8 @@ TcOperRet TcDbHandler::GetRecoveryTable(unc_keytype_datatype_t* db,
   /*fetch data*/
   SQL_ret = SQLFetch(hstmt_get);
   if (SQL_ret != SQL_NO_DATA) {
-    *db = (unc_keytype_datatype_t)((Db_err[0] == SQL_NULL_DATA) ? 0 : dbase);
-    *oper = (TcServiceType)((Db_err[1] == SQL_NULL_DATA) ? 0 : op);
+    *db = (unc_keytype_datatype_t)((Db_err[0] == SQL_NULL_DATA) ? UNC_DT_INVALID : dbase);
+    *oper = (TcServiceType)((Db_err[1] == SQL_NULL_DATA) ? TC_OP_INVALID : op);
   }
   std::string op_string = ConvertOptoString(*oper);
   std::string dbase_string = ConvertDbasetoString(*db);
