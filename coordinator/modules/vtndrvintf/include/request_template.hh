@@ -852,9 +852,9 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
     pfc_log_debug("UNC_DT_RUNNING processing");
     controller_operation util_obj(ctrl_int, READ_FROM_CONTROLLER, ctr_name);
     ctr = util_obj.get_controller_handle();
-    resp_code_ = DRVAPI_RESPONSE_SUCCESS;
 
-    if (resp_code_ == DRVAPI_RESPONSE_SUCCESS) {
+    if (ctr != NULL) {
+      resp_code_ = DRVAPI_RESPONSE_SUCCESS;
       if (ctr->controller_cache == NULL) {
         pfc_log_error("Not getting controller_cache ");
         return DRVAPI_RESPONSE_FAILURE;
@@ -964,12 +964,6 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
         pfc_log_debug("Add val success");
       }  // for loop
       //  delete cache
-      delete  ctr->controller_cache;
-      ctr->controller_cache = NULL;
-    } else {
-      pfc_log_fatal("%s: unable to get controller/driver pointer",
-                    PFC_FUNCNAME);
-      resp_code_ = DRVAPI_RESPONSE_FAILURE;
       delete  ctr->controller_cache;
       ctr->controller_cache = NULL;
     }

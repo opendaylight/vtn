@@ -59,7 +59,8 @@ key_tree key_tree_table[] = {
   { UNC_KT_VBRIDGE, UNC_KT_VTN, 0 }, { UNC_KT_VBR_IF, UNC_KT_VBRIDGE, 0 },
   { UNC_KT_VBR_VLANMAP, UNC_KT_VBRIDGE, 1 },
   { UNC_KT_SWITCH, UNC_KT_ROOT, 0 },
-  { UNC_KT_PORT, UNC_KT_SWITCH, 1 }
+  { UNC_KT_PORT, UNC_KT_SWITCH, 1 },
+  { UNC_KT_LINK, UNC_KT_ROOT, 0 }
 };
 
 /**
@@ -221,8 +222,8 @@ drv_resp_code_t KeyTree:: update_physical_attribute_node(
 
     old_port_ptr->set_val_structure(update_port_ptr->get_val_structure());
   } else if (type_check == "UNC_KT_SWITCH") {
-    CacheElementUtil<key_switch_t, val_switch_st_t, uint32_t> *update_switch_ptr =
-        static_cast <CacheElementUtil
+    CacheElementUtil<key_switch_t, val_switch_st_t, uint32_t>
+        *update_switch_ptr = static_cast <CacheElementUtil
         <key_switch_t, val_switch_st_t, uint32_t> * >(child_ptr);
 
 
@@ -231,6 +232,16 @@ drv_resp_code_t KeyTree:: update_physical_attribute_node(
         <key_switch_t, val_switch_st_t, uint32_t> * >(old_cfgptr);
 
     old_switch_ptr->set_val_structure(update_switch_ptr->get_val_structure());
+  } else if (type_check == "UNC_KT_LINK") {
+    CacheElementUtil<key_link_t, val_link_st_t, uint32_t> *update_link_ptr =
+        static_cast <CacheElementUtil
+        <key_link_t, val_link_st_t, uint32_t> * >(child_ptr);
+
+    CacheElementUtil<key_link_t, val_link_st_t, uint32_t> *old_link_ptr =
+        static_cast <CacheElementUtil
+        <key_link_t, val_link_st_t, uint32_t> * >(old_cfgptr);
+
+    old_link_ptr->set_val_structure(update_link_ptr->get_val_structure());
   } else {
     pfc_log_error("unmatched update request");
     return DRVAPI_RESPONSE_FAILURE;
@@ -271,7 +282,8 @@ drv_resp_code_t KeyTree:: delete_physical_attribute_node(
   std::string type_check = TypeToStrFun(child_ptr->get_type_name());
   pfc_log_info("type check for port/switch %s", type_check.c_str());
   std::vector<key_information> erased_key_list;
-  if ((type_check == "UNC_KT_PORT") || (type_check == "UNC_KT_SWITCH")) {
+  if ((type_check == "UNC_KT_PORT") || (type_check == "UNC_KT_SWITCH") ||
+      (type_check == "UNC_KT_LINK")) {
     err = parent_ptr->delete_child_node(old_cfgptr, erased_key_list);
     if ( DRVAPI_RESPONSE_SUCCESS != err ) {
       pfc_log_error("delete_child_to_list Faild for:%s!!!!",

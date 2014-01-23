@@ -23,6 +23,7 @@ namespace odcdriver {
 
 const std::string BASE_URL              = "/controller/nb/v2/vtn";
 const std::string BASE_SW_URL           = "/controller/nb/v2/switchmanager";
+const std::string BASE_TOPO_URL         = "/controller/nb/v2/topology";
 const std::string VERSION               = "/version";
 const std::string CONTAINER_NAME        = "/default";
 const std::string VTNS                  = "/vtns";
@@ -51,6 +52,7 @@ const std::string PERIOD                = ".";
 const std::string HYPHEN                = "-";
 const std::string COLON                 = ":";
 const std::string SLASH                 = "/";
+const std::string PIPE_SEPARATOR        = "|";
 const std::string SW_PREFIX             = "SW-";
 const std::string PP_PREFIX             = "PP-";
 const std::string PP_OF_PREFIX          = "PP-OF:";
@@ -139,6 +141,16 @@ typedef enum {
   VAL_PORT_EVENT_ATTR7,
   VAL_PORT_EVENT_ATTR8
 } PortValFlags;
+
+typedef enum {
+  VAL_LINK_STRUCT_ATTR = 0,
+  VAL_OPERSTATUS_ATTR
+} LinkValStFlags;
+
+typedef enum {
+  VAL_DESCRPTION_ATTR = 0
+} LinkValFlag;
+
 }  //  namespace odcdriver
 }  //  namespace unc
 #endif  // ODCDRIVER_COMMON_DEFS_H_

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made
@@ -14,10 +14,10 @@
 
 #include <pfcxx/module.hh>
 #include <pfcxx/synch.hh>
-#include "driver/driver_interface.hh"
 #include <map>
 #include <iterator>
 #include <string>
+#include "driver/driver_interface.hh"
 
 
 namespace unc {
@@ -57,14 +57,15 @@ class ControllerFramework  {
    *@brief: This function is to get the driver type
    for the respective controllers
    **/
-  uint32_t GetDriverByControllerName(std::string& controller_name, controller*, driver*);
+  uint32_t GetDriverByControllerName(std::string &controller_name,
+                                     controller*, driver*);
 
   /**
    *@brief: This function adds the respective controller information
    in the controller list
    **/
 
-  void AddController(std::string& controller_name,
+  void AddController(std::string &controller_name,
                      controller* , driver*);
 
   /**
@@ -72,18 +73,18 @@ class ControllerFramework  {
    in the controller list
    */
 
-  void UpdateControllerConfiguration(std::string& controller_name,
+  void UpdateControllerConfiguration(std::string &controller_name,
                                     controller*, driver*);
   /**
    *@brief:  This function removes the respective controller information
    in the controller list
    **/
-  void RemoveControllerConfiguration(std::string& controller_name);
+  void RemoveControllerConfiguration(std::string &controller_name);
 
   private:
     std::map<std::string, ControllerContainer*>  controller_list;
     pfc::core::ReadWriteLock controller_list_rwlock_;
 };
-}  //driver
-}  //unc
+}  // namespace driver
+}  // namespace unc
 #endif

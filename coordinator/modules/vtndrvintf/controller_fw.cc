@@ -14,526 +14,524 @@ const std::string ctr_version = "1.0.0.0";
 
 namespace unc {
 namespace driver {
-    /**
-    * @brief : constructor
-    */
-    ControllerFramework::ControllerFramework(pfc::core::TaskQueue* taskq_c,
-                                             uint32_t time_interval)  {
-      ODC_FUNC_TRACE;
-      taskq_ = taskq_c;
-      time_interval_ = time_interval;
+/**
+ * @brief : constructor
+ */
+ControllerFramework::ControllerFramework(pfc::core::TaskQueue* taskq_c,
+                                         uint32_t time_interval)  {
+  ODC_FUNC_TRACE;
+  taskq_ = taskq_c;
+  time_interval_ = time_interval;
+}
+
+/**
+ * @brief : constructor of ReadParams
+ */
+ReadParams::ReadParams(std::string ctr_name,
+                       unc::driver::ControllerFramework* fw_obj)
+                       :ctlr_name_(ctr_name),
+                       ctr_fw_(fw_obj) {}
+
+/**
+* @brief : constructor of ReadInfo
+*/
+ReadConfig::ReadConfig(std::string ctr_name,
+                       unc::driver::ControllerFramework* fw_obj)
+                       :ctlr_name_(ctr_name),
+                       ctr_fw_(fw_obj) {}
+
+/**
+* @brief : destructor
+*/
+ControllerFramework::~ControllerFramework() {
+  ODC_FUNC_TRACE;
+  if (!controller_list.empty()) {
+    for (std::map<std::string, ControllerContainer*>::iterator it =
+         controller_list.begin(); it != controller_list.end(); ++it) {
+      ControllerContainer* DeleteObject = it->second;
+      delete DeleteObject;
     }
+    controller_list.clear();
+  }
+}
 
-    /**
-     * @brief : constructor of ReadParams
-     */
-    ReadParams::ReadParams(std::string ctr_name,
-                           unc::driver::ControllerFramework* fw_obj)
-                           :ctlr_name_(ctr_name),
-                           ctr_fw_(fw_obj) {}
+/**
+ * @brief     : Adding new controller with controller information in
+ *              a map  and also checks  that ping is needed for the
+ *              particular controller or not
+ * @param[in] : controller name , controller*, driver*
+ * @retval    : None
+ **/
+void ControllerFramework::AddController(
+    std::string& controller_name,
+    controller* controller_instance, driver* driver_instance) {
+  ODC_FUNC_TRACE;
 
-    /**
-     * @brief : constructor of ReadInfo
-     */
-    ReadConfig::ReadConfig(std::string ctr_name,
-                           unc::driver::ControllerFramework* fw_obj)
-                           :ctlr_name_(ctr_name),
-                           ctr_fw_(fw_obj) {}
+  PFC_VERIFY(driver_instance != NULL);
+  PFC_VERIFY(controller_instance != NULL);
 
-    /**
-     * @brief : destructor
-     */
-    ControllerFramework::~ControllerFramework() {
-      ODC_FUNC_TRACE;
-      if (!controller_list.empty()) {
-      for (std::map<std::string, ControllerContainer*>::iterator it =
-       controller_list.begin(); it != controller_list.end(); ++it) {
-       ControllerContainer* DeleteObject = it->second;
-       delete DeleteObject;
-       }
-      controller_list.clear();
-      }
+  ControllerContainer *controller_container = new ControllerContainer();
+  controller_container->ctr = controller_instance;
+  controller_container->drv = driver_instance;
+
+  controller_list.insert(std::make_pair(controller_name,
+                                        controller_container));
+  pfc_log_debug("%s:Controller [%s] added successfully", PFC_FUNCNAME,
+                controller_name.c_str());
+
+  pfc_bool_t ping_needed = driver_instance->is_ping_needed();
+
+  if (ping_needed == PFC_TRUE) {
+    controller_instance->timed_ = pfc::core::Timer::create(
+        taskq_->getId());
+    PostTimer(controller_name, driver_instance, controller_instance,
+              first_ping_interval);
+  } else {
+    pfc_log_debug("Ping not needed for the controller %s",
+                  controller_name.c_str());
+  }
+  pfc_bool_t physicalconfig_needed =
+      driver_instance->is_physicalconfig_needed();
+
+  if (physicalconfig_needed == PFC_TRUE) {
+    controller_instance->physical_timed_ = pfc::core::Timer::create(
+        taskq_->getId());
+    post_physical_taskq(controller_name,
+                        driver_instance,
+                        controller_instance,
+                        first_physical_task_interval);
+  } else {
+    pfc_log_debug("physicalconfig not needed for the controller %s",
+                  controller_name.c_str());
+  }
+}
+
+/**
+ * @brief     : The time interval for every ping is set and the
+ *              timer is get reset.
+ * @param[in] : controller name , driver*
+ * @retval    : int
+ */
+
+int ControllerFramework::PostTimer(std::string& controller_name,
+                                   driver* driver_instance,
+                                   controller* controller_instance,
+                                   uint32_t ping_interval) {
+  ODC_FUNC_TRACE;
+  int ret = 0;
+  pfc_timespec_t timeout;
+  pfc_timeout_t time_out_id;
+
+  PFC_VERIFY(driver_instance != NULL);
+  pfc_log_debug("Ping interval is %d ", ping_interval);
+
+  if (ping_interval == 0) {
+    return ret;
+  } else {
+    ReadParams fun_obj(controller_name, this);
+    pfc::core::timer_func_t timer_func(fun_obj);
+
+    timeout.tv_sec = ping_interval;
+    timeout.tv_nsec = 0;
+    PFC_VERIFY(controller_instance != NULL);
+    pfc::core::Timer* timer = controller_instance->timed_;
+    ret = timer->post(&timeout, timer_func, &time_out_id);
+
+    if (ret != 0) {
+      pfc_log_fatal("Failed to post() for ping operation");
     }
+    pfc_log_debug("Timer successfully posted");
+  }
 
-    /**
-    * @brief     : Adding new controller with controller information in
-    *              a map  and also checks  that ping is needed for the
-    *              particular controller or not
-    * @param[in] : controller name , controller*, driver*
-    * @retval    : None
-    **/
-    void ControllerFramework::AddController(
-                  std::string& controller_name,
-                  controller* controller_instance, driver* driver_instance) {
-      ODC_FUNC_TRACE;
+  return ret;
+}
 
-      PFC_VERIFY(driver_instance != NULL);
-      PFC_VERIFY(controller_instance != NULL);
+/**
+ * @brief     : Ping the controller and update the connection status
+ *              based on the response
+ * @param[in] : None
+ * @retval    : None
+ */
 
-      ControllerContainer *controller_container = new ControllerContainer();
-      controller_container->ctr = controller_instance;
-      controller_container->drv = driver_instance;
+void ReadParams::PingController() {
+  ODC_FUNC_TRACE;
+  unc::driver::driver* drv_instance = NULL;
+  unc::driver::controller* ctr_instance = NULL;
 
-      controller_list.insert(std::make_pair(controller_name,
-                                            controller_container));
-      pfc_log_debug("%s:Controller [%s] added successfully", PFC_FUNCNAME,
+  controller_operation util_obj(ctr_fw_, READ_FROM_CONTROLLER, ctlr_name_);
+  ctr_instance = util_obj.get_controller_handle();
+  drv_instance = util_obj.get_driver_handle();
+
+  if ((NULL == ctr_instance) || (NULL == drv_instance)) {
+    pfc_log_error("%s: Controller (%s)/driver instance is NULL",
+                  PFC_FUNCNAME, ctlr_name_.c_str());
+    return;
+  }
+
+  pfc_bool_t ping_status = drv_instance->ping_controller(ctr_instance);
+
+  if (PFC_TRUE == ping_status) {
+    pfc_log_debug("Controller [%s] is reachable.Ping status: %d",
+                  ctlr_name_.c_str(), ping_status);
+    if (ctr_instance->get_connection_status() == CONNECTION_DOWN) {
+      //  sendnotification as up
+      ctr_fw_->SendNotificationToPhysical(ctlr_name_, CONNECTION_UP);
+      pfc_log_debug("Controller status is UP ctlr_name: %s",
+                    ctlr_name_.c_str());
+    }
+    ctr_instance->set_connection_status(CONNECTION_UP);
+  } else {
+    pfc_log_debug("Controller [%s] is unreachable.Ping status: %d",
+                  ctlr_name_.c_str(), ping_status);
+    if (ctr_instance->get_connection_status() == CONNECTION_UP) {
+      //  sendNotification as down
+      ctr_fw_->SendNotificationToPhysical(ctlr_name_, CONNECTION_DOWN);
+      pfc_log_debug("Controller status is DOWN ctlr_name:%s",
+                    ctlr_name_.c_str());
+    }
+    ctr_instance->set_connection_status(CONNECTION_DOWN);
+  }
+  uint32_t ping_interval = drv_instance->get_ping_interval();
+  ctr_fw_->PostTimer(ctlr_name_, drv_instance, ctr_instance, ping_interval);
+}
+
+/**
+ * @brief     : The time interval for every ping is set and the
+ *              timer is get reset.
+ * @param[in] : controller name , driver*
+ * @retval    : int
+ */
+
+int ControllerFramework::post_physical_taskq(std::string& controller_name,
+                                             driver* driver_instance,
+                                             controller* controller_instance,
+                                             uint32_t time_interval) {
+  ODC_FUNC_TRACE;
+  int ret = 0;
+  pfc_timespec_t timeout;
+  pfc_timeout_t time_out_id;
+
+  PFC_ASSERT(driver_instance != NULL);
+  pfc_log_debug("Time interval is %d ", time_interval);
+
+  if (time_interval == 0) {
+    return ret;
+  } else {
+    ReadConfig fun_obj(controller_name, this);
+    pfc::core::timer_func_t timer_func(fun_obj);
+
+    timeout.tv_sec = time_interval;
+    timeout.tv_nsec = 0;
+    PFC_ASSERT(controller_instance != NULL);
+    pfc::core::Timer* timer = controller_instance->physical_timed_;
+    ret = timer->post(&timeout, timer_func, &time_out_id);
+
+    if (ret != 0) {
+      pfc_log_fatal("Failed to post() for GetPhysicalConfig operation");
+    }
+    pfc_log_debug("Timer successfully posted for GetPhysicalConfig");
+  }
+
+  return ret;
+}
+
+/**
+ * @brief     : Method to get physical configuration from controller
+ *              at particular time interval
+ * @param[in] : None
+ * @retval    : None
+ */
+
+void ReadConfig::GetPhysicalConfig() {
+  ODC_FUNC_TRACE;
+  unc::driver::driver* drv_instance = NULL;
+  unc::driver::controller* ctr_instance = NULL;
+
+  controller_operation util_obj(ctr_fw_, READ_FROM_CONTROLLER, ctlr_name_);
+  ctr_instance = util_obj.get_controller_handle();
+  drv_instance = util_obj.get_driver_handle();
+  if ((NULL == ctr_instance) || (NULL == drv_instance)) {
+    pfc_log_error("%s: Controller (%s)/driver instance is NULL",
+                  PFC_FUNCNAME, ctlr_name_.c_str());
+    return;
+  }
+  if (ctr_instance->physical_port_cache == NULL) {
+    pfc_log_debug("physical_port Cache for controller created");
+    ctr_instance->physical_port_cache =
+        unc::vtndrvcache::KeyTree::create_cache();
+  }
+  if ((ctr_instance->get_connection_status() == CONNECTION_DOWN) ||
+      (ctr_instance->audit_result_ == PFC_FALSE)) {
+    pfc_log_error("Audit failed in controller");
+    return;
+  }
+  pfc_bool_t ping_status =
+      drv_instance->get_physical_port_details(ctr_instance);
+
+  if (PFC_TRUE == ping_status) {
+    pfc_log_debug("Controller [%s] is reachable.GetPhysicalInfo status: %d",
+                  ctlr_name_.c_str(), ping_status);
+  } else {
+    pfc_log_debug("Controller[%s] is unreachable.GetPhysicalInfo status:%d",
+                  ctlr_name_.c_str(), ping_status);
+  }
+
+  ctr_fw_->post_physical_taskq(ctlr_name_, drv_instance, ctr_instance,
+                               ctr_fw_->time_interval_);
+}
+
+/**
+ * @brief     : Updating controler as per controller name,if controllername
+ *              not found from list,it's consider as new controller and
+ *              add it to list
+ * @param[in] : controller_name, controller*, driver*
+ * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
+ */
+
+drv_resp_code_t ControllerFramework::UpdateControllerConfiguration(
+    std::string& controller_name,
+    controller* controller_instance, driver* driver_instance,
+    const key_ctr_t& key_ctr, const val_ctr_t& val_ctr) {
+  ODC_FUNC_TRACE;
+  std::map<std::string, ControllerContainer*>::iterator
+      controller_list_iterator;
+
+  PFC_VERIFY(controller_instance != NULL);
+  PFC_VERIFY(driver_instance != NULL);
+
+  ControllerContainer* controller_container(NULL);
+  driver_instance->update_controller(
+      key_ctr, val_ctr, controller_instance);
+
+  controller_list_iterator = controller_list.find(controller_name);
+  pfc_bool_t ping_needed = driver_instance->is_ping_needed();
+
+  pfc_bool_t physicalconfig_needed =
+      driver_instance->is_physicalconfig_needed();
+
+  if (controller_list_iterator != controller_list.end()) {
+    controller_container = controller_list_iterator->second;
+    PFC_VERIFY(controller_container != NULL);
+
+    controller_container->ctr = controller_instance;
+
+    if (physicalconfig_needed == PFC_TRUE) {
+      post_physical_taskq(controller_name,
+                          driver_instance,
+                          controller_container->ctr,
+                          first_physical_task_interval);
+    } else {
+      pfc_log_debug("physicalconfig not needed for the controller %s",
                     controller_name.c_str());
-
-      pfc_bool_t ping_needed = driver_instance->is_ping_needed();
-
-      if (ping_needed == PFC_TRUE) {
-        controller_instance->timed_ = pfc::core::Timer::create(
-                                                  taskq_->getId());
-        PostTimer(controller_name, driver_instance, controller_instance,
-                  first_ping_interval);
-      } else {
-        pfc_log_debug("Ping not needed for the controller %s",
-                     controller_name.c_str());
-      }
-      pfc_bool_t physicalconfig_needed =
-          driver_instance->is_physicalconfig_needed();
-
-      if (physicalconfig_needed == PFC_TRUE) {
-        controller_instance->physical_timed_ = pfc::core::Timer::create(
-            taskq_->getId());
-        post_physical_taskq(controller_name, driver_instance,
-                            controller_instance, time_interval_);
-      } else {
-        pfc_log_debug("physicalconfig not needed for the controller %s",
-                      controller_name.c_str());
-      }
-     }
-
-    /**
-    * @brief     : The time interval for every ping is set and the
-    *              timer is get reset.
-    * @param[in] : controller name , driver*
-    * @retval    : int
-    */
-
-    int ControllerFramework::PostTimer(std::string& controller_name,
-                                       driver* driver_instance,
-                                       controller* controller_instance,
-                                       uint32_t ping_interval) {
-      ODC_FUNC_TRACE;
-      int ret = 0;
-      pfc_timespec_t timeout;
-      pfc_timeout_t time_out_id;
-
-      PFC_VERIFY(driver_instance != NULL);
-
-      if (ping_interval == 0) {
-        pfc_log_debug("Ping interval is 0");
-        return ret;
-      } else {
-        pfc_log_debug("Ping interval is %d ", ping_interval);
-        ReadParams fun_obj(controller_name, this);
-        pfc::core::timer_func_t timer_func(fun_obj);
-
-        timeout.tv_sec = ping_interval;
-        timeout.tv_nsec = 0;
-        PFC_VERIFY(controller_instance != NULL);
-        pfc::core::Timer* timer = controller_instance->timed_;
-        ret = timer->post(&timeout, timer_func, &time_out_id);
-
-        if (ret != 0) {
-          pfc_log_fatal("Failed to post() for ping operation");
-        }
-        pfc_log_debug("Timer successfully posted");
-      }
-
-      return ret;
     }
-
-    /**
-    * @brief     : Ping the controller and update the connection status
-    *              based on the response
-    * @param[in] : None
-    * @retval    : None
-    */
-
-    void ReadParams::PingController() {
-      ODC_FUNC_TRACE;
-      unc::driver::driver* drv_instance = NULL;
-      unc::driver::controller* ctr_instance = NULL;
-
-      controller_operation util_obj(ctr_fw_, READ_FROM_CONTROLLER, ctlr_name_);
-      ctr_instance = util_obj.get_controller_handle();
-      drv_instance = util_obj.get_driver_handle();
-
-      if ((ctr_instance == NULL) || (drv_instance == NULL)) {
-        pfc_log_error("%s: Controller (%s)/driver instance is NULL",
-                      PFC_FUNCNAME, ctlr_name_.c_str());
-        return;
-      }
-
-      pfc_bool_t ping_status = drv_instance->ping_controller(ctr_instance);
-
-      if (ping_status == PFC_TRUE) {
-        pfc_log_debug("Controller [%s] is reachable.Ping status: %d",
-                      ctlr_name_.c_str(), ping_status);
-        if (ctr_instance->get_connection_status() == CONNECTION_DOWN) {
-          pfc_log_debug("Controller status is UP ctlr_name: %s",
-                     ctlr_name_.c_str());
-          //  sendnotification as up
-          ctr_fw_->SendNotificationToPhysical(ctlr_name_, CONNECTION_UP);
-        }
-        ctr_instance->set_connection_status(CONNECTION_UP);
-      } else {
-        pfc_log_debug("Controller [%s] is unreachable.Ping status: %d",
-                      ctlr_name_.c_str(), ping_status);
-        if (ctr_instance->get_connection_status() == CONNECTION_UP) {
-          pfc_log_debug("Controller status is DOWN ctlr_name:%s",
-                     ctlr_name_.c_str());
-          //  sendNotification as down
-          ctr_fw_->SendNotificationToPhysical(ctlr_name_, CONNECTION_DOWN);
-        }
-        ctr_instance->set_connection_status(CONNECTION_DOWN);
-      }
-      uint32_t ping_interval = drv_instance->get_ping_interval();
-      ctr_fw_->PostTimer(ctlr_name_, drv_instance, ctr_instance, ping_interval);
+    if (PFC_TRUE == ping_needed) {
+      PostTimer(controller_name, driver_instance, controller_container->ctr,
+                first_ping_interval);
+    } else {
+      pfc_log_debug("%s Ping not needed for the controller %s",
+                    PFC_FUNCNAME, controller_name.c_str());
     }
+  } else {
+    ControllerContainer* new_controller_container = new
+        ControllerContainer();
 
-    /**
-    * @brief     : The time interval for every ping is set and the
-    *              timer is get reset.
-    * @param[in] : controller name , driver*
-    * @retval    : int
-    */
+    pfc_log_trace("%s: Consider as a new controller to be add..",
+                  PFC_FUNCNAME);
+    new_controller_container->ctr = controller_instance;
+    new_controller_container->drv = driver_instance;
 
-    int ControllerFramework::post_physical_taskq(std::string& controller_name,
-                                       driver* driver_instance,
-                                       controller* controller_instance,
-                                       uint32_t time_interval) {
-      ODC_FUNC_TRACE;
-      int ret = 0;
-      pfc_timespec_t timeout;
-      pfc_timeout_t time_out_id;
+    controller_list.insert(std::make_pair(controller_name,
+                                          new_controller_container));
+    pfc_log_debug("Controller added successfully");
 
-      PFC_ASSERT(driver_instance != NULL);
-
-      if (time_interval == 0) {
-        pfc_log_debug("time interval is 0");
-        return ret;
-      } else {
-        pfc_log_debug("Time interval is %d ", time_interval);
-        ReadConfig fun_obj(controller_name, this);
-        pfc::core::timer_func_t timer_func(fun_obj);
-
-        timeout.tv_sec = time_interval;
-        timeout.tv_nsec = 0;
-        PFC_ASSERT(controller_instance != NULL);
-        pfc::core::Timer* timer = controller_instance->physical_timed_;
-        ret = timer->post(&timeout, timer_func, &time_out_id);
-
-        if (ret != 0) {
-          pfc_log_fatal("Failed to post() for GetPhysicalConfig operation");
-        }
-        pfc_log_debug("Timer successfully posted for GetPhysicalConfig");
-      }
-
-      return ret;
+    if (PFC_TRUE == physicalconfig_needed) {
+      controller_instance->physical_timed_ = pfc::core::Timer::create(
+          taskq_->getId());
+      post_physical_taskq(controller_name, driver_instance,
+                          new_controller_container->ctr,
+                          time_interval_);
+    } else {
+      pfc_log_debug("physicalconfig not needed for the controller %s",
+                    controller_name.c_str());
     }
-
-    /**
-    * @brief     : Method to get physical configuration from controller
-    *              at particular time interval
-    * @param[in] : None
-    * @retval    : None
-    */
-
-    void ReadConfig::GetPhysicalConfig() {
-      ODC_FUNC_TRACE;
-      unc::driver::driver* drv_instance = NULL;
-      unc::driver::controller* ctr_instance = NULL;
-
-      controller_operation util_obj(ctr_fw_, READ_FROM_CONTROLLER, ctlr_name_);
-      ctr_instance = util_obj.get_controller_handle();
-      drv_instance = util_obj.get_driver_handle();
-      if ((ctr_instance == NULL) || (drv_instance == NULL)) {
-        pfc_log_error("%s: Controller (%s)/driver instance is NULL",
-                      PFC_FUNCNAME, ctlr_name_.c_str());
-        return;
-      }
-      if (ctr_instance->physical_port_cache == NULL) {
-        pfc_log_debug("physical_port Cache for controller created");
-        ctr_instance->physical_port_cache =
-            unc::vtndrvcache::KeyTree::create_cache();
-      }
-      if ((ctr_instance->get_connection_status() == CONNECTION_DOWN) ||
-          (ctr_instance->audit_result_ == PFC_FALSE)) {
-        pfc_log_error("Audit failed in controller");
-        return;
-      }
-      pfc_bool_t ping_status =
-          drv_instance->get_physical_port_details(ctr_instance);
-
-      if (ping_status == PFC_TRUE) {
-        pfc_log_debug("Controller [%s] is reachable.GetPhysicalInfo status: %d",
-                      ctlr_name_.c_str(), ping_status);
-      } else {
-        pfc_log_debug("Controller[%s] is unreachable.GetPhysicalInfo status:%d",
-                      ctlr_name_.c_str(), ping_status);
-        }
-
-      ctr_fw_->post_physical_taskq(ctlr_name_, drv_instance, ctr_instance,
-                    ctr_fw_->time_interval_);
+    if (PFC_TRUE == ping_needed) {
+      new_controller_container->ctr->timed_ = pfc::core::Timer::create(
+          taskq_->getId());
+      PostTimer(controller_name, driver_instance,
+                new_controller_container->ctr,
+                first_ping_interval);
+    } else {
+      pfc_log_debug("%s Ping not needed for the controller %s",
+                    PFC_FUNCNAME, controller_name.c_str());
     }
+  }
+  return DRVAPI_RESPONSE_SUCCESS;
+}
 
-    /**
-    * @brief     : Updating controler as per controller name,if controllername
-    *              not found from list,it's consider as new controller and
-    *              add it to list
-    * @param[in] : controller_name, controller*, driver*
-    * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
-    */
+/**
+ * @brief     : This function removes the existing controller from list
+ * @param[in] : controller_name
+ * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
+ */
+drv_resp_code_t
+ControllerFramework::RemoveControllerConfiguration(
+    std::string& controller_name,
+    controller* controller_instance,
+    driver* driver_instance) {
+  ODC_FUNC_TRACE;
+  PFC_VERIFY(controller_instance != NULL);
+  PFC_VERIFY(driver_instance != NULL);
 
-    drv_resp_code_t ControllerFramework::UpdateControllerConfiguration(
-                    std::string& controller_name,
-                    controller* controller_instance, driver* driver_instance,
-                    const key_ctr_t& key_ctr, const val_ctr_t& val_ctr) {
-      ODC_FUNC_TRACE;
-      std::map<std::string, ControllerContainer*>::iterator
-           controller_list_iterator;
+  if (controller_list.size() == 0) {
+    pfc_log_error("Controller name not found .List is Empty");
+    return DRVAPI_RESPONSE_FAILURE;
+  }
 
-      PFC_VERIFY(controller_instance != NULL);
-      PFC_VERIFY(driver_instance != NULL);
+  std::map<std::string, ControllerContainer*>::iterator
+      controller_list_iterator;
 
-      ControllerContainer* controller_container(NULL);
-      driver_instance->update_controller(
-                                   key_ctr, val_ctr, controller_instance);
+  ControllerContainer* controller_container(NULL);
+  controller_list_iterator = controller_list.find(controller_name);
 
-      controller_list_iterator = controller_list.find(controller_name);
-      pfc_bool_t ping_needed = driver_instance->is_ping_needed();
+  if (controller_list_iterator != controller_list.end()) {
+    controller_container = controller_list_iterator->second;
+    PFC_VERIFY(controller_container != NULL);
 
-      pfc_bool_t physicalconfig_needed =
-          driver_instance->is_physicalconfig_needed();
+    delete controller_container;
+    controller_list.erase(controller_list_iterator);
+    pfc_log_debug("Existing controller configuration gets removed");
+  } else {
+    pfc_log_error("controller not found");
+    return DRVAPI_RESPONSE_FAILURE;
+  }
 
-      if (controller_list_iterator != controller_list.end()) {
-        controller_container = controller_list_iterator->second;
-        PFC_VERIFY(controller_container != NULL);
+  return DRVAPI_RESPONSE_SUCCESS;
+}
 
-        controller_container->ctr = controller_instance;
+/**
+ * GetDriverByControllerName:
+ * @brief     : This function gets the driver type for the appropriate
+ *              controllers
+ * @param[in] : controller_name, controller**, driver**
+ * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
+ */
+drv_resp_code_t ControllerFramework::GetDriverByControllerName(
+    std::string& controller_name,
+    controller** controller_instance,
+    driver** driver_instance) {
+  ODC_FUNC_TRACE;
 
-        pfc_log_debug("Controller updated successfully");
+  ControllerContainer* controller_container(NULL);
+  std::map<std::string, ControllerContainer*>::iterator
+      controller_list_iterator;
+  controller_list_iterator = controller_list.find(controller_name);
 
+  if (controller_list_iterator == controller_list.end()) {
+    pfc_log_error("controller name not found");
+    return  DRVAPI_RESPONSE_FAILURE;
+  }
 
-        if (physicalconfig_needed == PFC_TRUE) {
-          post_physical_taskq(controller_name, driver_instance,
-                              controller_container->ctr, time_interval_);
-        } else {
-          pfc_log_debug("physicalconfig not needed for the controller %s",
-                        controller_name.c_str());
-        }
-        if (ping_needed == PFC_TRUE) {
-          PostTimer(controller_name, driver_instance, controller_container->ctr,
-                    first_ping_interval);
-        } else {
-          pfc_log_debug("%s Ping not needed for the controller %s",
-                       PFC_FUNCNAME, controller_name.c_str());
-        }
-      } else {
-        ControllerContainer* new_controller_container = new
-                                               ControllerContainer();
+  controller_container = controller_list_iterator->second;
 
-        pfc_log_trace("%s: Consider as a new controller to be add..",
-                      PFC_FUNCNAME);
-        new_controller_container->ctr = controller_instance;
-        new_controller_container->drv = driver_instance;
+  *controller_instance = controller_container->ctr;
+  *driver_instance = controller_container->drv;
 
-        controller_list.insert(std::make_pair(controller_name,
-                                              new_controller_container));
-        pfc_log_debug("Controller added successfully");
-
-        if (physicalconfig_needed == PFC_TRUE) {
-          controller_instance->physical_timed_ = pfc::core::Timer::create(
-              taskq_->getId());
-          post_physical_taskq(controller_name, driver_instance,
-                  new_controller_container->ctr,
-                  time_interval_);
-        } else {
-          pfc_log_debug("physicalconfig not needed for the controller %s",
-                        controller_name.c_str());
-        }
-        if (ping_needed == PFC_TRUE) {
-          new_controller_container->ctr->timed_ = pfc::core::Timer::create(
-                                                  taskq_->getId());
-          PostTimer(controller_name, driver_instance,
-                    new_controller_container->ctr,
-                    first_ping_interval);
-        } else {
-          pfc_log_debug("%s Ping not needed for the controller %s",
-                       PFC_FUNCNAME, controller_name.c_str());
-        }
-      }
-      return DRVAPI_RESPONSE_SUCCESS;
-    }
-
-    /**
-    * @brief     : This function removes the existing controller from list
-    * @param[in] : controller_name
-    * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
-    */
-    drv_resp_code_t
-        ControllerFramework::RemoveControllerConfiguration(
-                              std::string& controller_name,
-                              controller* controller_instance,
-                              driver* driver_instance) {
-      ODC_FUNC_TRACE;
-      PFC_VERIFY(controller_instance != NULL);
-      PFC_VERIFY(driver_instance != NULL);
-
-      if (controller_list.size() == 0) {
-        pfc_log_error("Controller name not found .List is Empty");
-        return DRVAPI_RESPONSE_FAILURE;
-      }
-
-      std::map<std::string, ControllerContainer*>::iterator
-           controller_list_iterator;
-
-      ControllerContainer* controller_container(NULL);
-      controller_list_iterator = controller_list.find(controller_name);
-
-      if (controller_list_iterator != controller_list.end()) {
-        controller_container = controller_list_iterator->second;
-        PFC_VERIFY(controller_container != NULL);
-
-        delete controller_container;
-        controller_list.erase(controller_list_iterator);
-        pfc_log_debug("Existing controller configuration gets removed");
-      } else {
-        pfc_log_error("controller not found");
-        return DRVAPI_RESPONSE_FAILURE;
-      }
-
-      return DRVAPI_RESPONSE_SUCCESS;
-    }
-
-    /**
-    * GetDriverByControllerName:
-    * @brief     : This function gets the driver type for the appropriate
-    *              controllers
-    * @param[in] : controller_name, controller**, driver**
-    * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
-    */
-    drv_resp_code_t ControllerFramework::GetDriverByControllerName(
-                                    std::string& controller_name,
-                                    controller** controller_instance,
-                                    driver** driver_instance) {
-      ODC_FUNC_TRACE;
-
-      ControllerContainer* controller_container(NULL);
-      std::map<std::string, ControllerContainer*>::iterator
-          controller_list_iterator;
-      controller_list_iterator = controller_list.find(controller_name);
-
-      if (controller_list_iterator == controller_list.end()) {
-        pfc_log_error("controller name not found");
-        return  DRVAPI_RESPONSE_FAILURE;
-      }
-
-      controller_container = controller_list_iterator->second;
-
-      *controller_instance = controller_container->ctr;
-      *driver_instance = controller_container->drv;
-
-      if (*controller_instance == NULL || *driver_instance == NULL) {
-        pfc_log_error("controller instance or driver instance is NULL");
-        return DRVAPI_RESPONSE_FAILURE;
-      }
-      return DRVAPI_RESPONSE_SUCCESS;
-    }
+  if ((NULL == *controller_instance) || (NULL == *driver_instance)) {
+    pfc_log_error("controller instance or driver instance is NULL");
+    return DRVAPI_RESPONSE_FAILURE;
+  }
+  return DRVAPI_RESPONSE_SUCCESS;
+}
 
 
-    /**
-    * @brief     : This function stores the driver instance for the appropriate
-    *              controller type in map
-    * @param[in] : controller_type, driver*
-    * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
-    */
-    drv_resp_code_t ControllerFramework::RegisterDriver(
-                              unc_keytype_ctrtype_t controller_type,
-                              driver* driver_instance)  {
-      ODC_FUNC_TRACE;
+/**
+ * @brief     : This function stores the driver instance for the appropriate
+ *              controller type in map
+ * @param[in] : controller_type, driver*
+ * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
+ */
+drv_resp_code_t ControllerFramework::RegisterDriver(
+    unc_keytype_ctrtype_t controller_type,
+    driver* driver_instance)  {
+  ODC_FUNC_TRACE;
 
-      if (driver_instance == NULL) {
-        pfc_log_error("RegisterDriver:Driver instance is NULL");
-        return DRVAPI_RESPONSE_FAILURE;
-      }
+  if (NULL == driver_instance) {
+    pfc_log_error("RegisterDriver:Driver instance is NULL");
+    return DRVAPI_RESPONSE_FAILURE;
+  }
 
-      controller_list_rwlock_.lock();
-      driver_container.insert(std::make_pair(controller_type, driver_instance));
-      controller_list_rwlock_.unlock();
+  controller_list_rwlock_.lock();
+  driver_container.insert(std::make_pair(controller_type, driver_instance));
+  controller_list_rwlock_.unlock();
 
-      pfc_log_debug("driver instance populated");
-      return DRVAPI_RESPONSE_SUCCESS;
-    }
+  return DRVAPI_RESPONSE_SUCCESS;
+}
 
-    /**
-    * @brief     : This function gets the driver instance and ctl instance
-    *              for the appropriate without acquiring the lock controllers
-    * @param[in] : controller_name, controller*, driver*
-    * @param[out]: driver*
-    * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
-    */
-    drv_resp_code_t ControllerFramework::GetControllerInstance(
-                                    std::string& controller_name,
-                                    controller** controller_instance,
-                                    driver** driver_instance) {
-      ODC_FUNC_TRACE;
+/**
+ * @brief     : This function gets the driver instance and ctl instance
+ *              for the appropriate without acquiring the lock controllers
+ * @param[in] : controller_name, controller*, driver*
+ * @param[out]: driver*
+ * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
+ */
+drv_resp_code_t ControllerFramework::GetControllerInstance(
+    std::string& controller_name,
+    controller** controller_instance,
+    driver** driver_instance) {
+  ODC_FUNC_TRACE;
 
-      ControllerContainer* controller_container(NULL);
-      std::map<std::string, ControllerContainer*>::iterator
-          controller_list_iterator = controller_list.begin();
-      controller_list_iterator = controller_list.find(controller_name);
+  ControllerContainer* controller_container(NULL);
+  std::map<std::string, ControllerContainer*>::iterator
+      controller_list_iterator = controller_list.begin();
+  controller_list_iterator = controller_list.find(controller_name);
 
-      if (controller_list_iterator == controller_list.end()) {
-        pfc_log_error("Controller Name not found in the list");
-        return  DRVAPI_RESPONSE_FAILURE;
-      }
+  if (controller_list_iterator == controller_list.end()) {
+    pfc_log_error("Controller Name not found in the list");
+    return  DRVAPI_RESPONSE_FAILURE;
+  }
 
-      controller_container = controller_list_iterator->second;
+  controller_container = controller_list_iterator->second;
 
-      *controller_instance = controller_container->ctr;
-      *driver_instance = controller_container->drv;
+  *controller_instance = controller_container->ctr;
+  *driver_instance = controller_container->drv;
 
-      PFC_VERIFY(*controller_instance != NULL);
-      PFC_VERIFY(*driver_instance != NULL);
+  PFC_VERIFY(*controller_instance != NULL);
+  PFC_VERIFY(*driver_instance != NULL);
 
-      return DRVAPI_RESPONSE_SUCCESS;
-    }
+  return DRVAPI_RESPONSE_SUCCESS;
+}
 
-    /**
-     * @brief     : This function returns the driver instance for the appropriate
-     *              controller type
-     * @param[in] : controller_type
-     * @retval    : driver*
-     */
-    driver* ControllerFramework::GetDriverInstance(
-        unc_keytype_ctrtype_t controller_type) {
-      ODC_FUNC_TRACE;
-      if (driver_container.size() == 0) {
-        pfc_log_error("Driver list is empty");
-        return NULL;
-      }
-      std::map<unc_keytype_ctrtype_t, driver*>::iterator
-          iter = driver_container.begin();
-      iter = driver_container.find(controller_type);
-      if (iter == driver_container.end()) {
-        pfc_log_error("controller type not registered");
-      return NULL;
-      }
-      return iter->second;
-    }
+/**
+ * @brief     : This function returns the driver instance for the appropriate
+ *              controller type
+ * @param[in] : controller_type
+ * @retval    : driver*
+ */
+driver* ControllerFramework::GetDriverInstance(
+    unc_keytype_ctrtype_t controller_type) {
+  ODC_FUNC_TRACE;
+  if (driver_container.size() == 0) {
+    pfc_log_error("Driver list is empty");
+    return NULL;
+  }
+  std::map<unc_keytype_ctrtype_t, driver*>::iterator
+      iter = driver_container.begin();
+  iter = driver_container.find(controller_type);
+  if (iter == driver_container.end()) {
+    pfc_log_error("controller type not registered");
+    return NULL;
+  }
+  return iter->second;
+}
 
-    /**
-     * @brief     : This function sends the status change notification to UPPL
-     * @param[in] : controllername, Status
-     * @retval    : None
-     */
+/**
+ * @brief     : This function sends the status change notification to UPPL
+ * @param[in] : controllername, Status
+ * @retval    : None
+ */
 void ControllerFramework::SendNotificationToPhysical(
-                                          std::string ctr_name,
-                                          ConnectionStatus type) {
+    std::string ctr_name,
+    ConnectionStatus type) {
   ODC_FUNC_TRACE;
 
   key_ctr_t key_ctr;
@@ -564,7 +562,7 @@ void ControllerFramework::SendNotificationToPhysical(
     val_ctr_old.valid[kIdxOperStatus] = UNC_VF_VALID;
   }
   pfc::core::ipc::ServerEvent phys_ctr_event(
-                 (uint32_t) UNC_CTLR_STATE_EVENTS, err);
+      (uint32_t) UNC_CTLR_STATE_EVENTS, err);
 
   phys_ctr_event.addOutput(ctr_name);
   phys_ctr_event.addOutput(domainID);
@@ -577,24 +575,34 @@ void ControllerFramework::SendNotificationToPhysical(
   phys_ctr_event.post();
 
   pfc_log_debug("%s: Controller STATE CHANGE event posted.."
-    "{ old_state = (%u), new_state = (%u) }", PFC_FUNCNAME,
+                "{ old_state = (%u), new_state = (%u) }", PFC_FUNCNAME,
                 val_ctr_old.oper_status, val_ctr_new.oper_status);
 }
 
 controller_operation::controller_operation(ControllerFramework *fw_ptr,
-                      ControllerOps operation, std::string ctl_id,
-                      unc_keytype_ctrtype_t ctl_type)
-                      : ctl_fw_(fw_ptr), ctl_oper_(operation) {
-      ctl_fw_->controller_list_rwlock_.lock();
+                                           ControllerOps operation,
+                                           std::string ctl_id,
+                                           unc_keytype_ctrtype_t ctl_type)
+                                           : ctl_fw_(fw_ptr),
+                                           ctl_oper_(operation),
+                                           ctr_(NULL),
+                                           drv_(NULL) {
+  ODC_FUNC_TRACE;
+
+  ctl_fw_->controller_list_rwlock_.lock();
   pfc_log_debug(" Controller TYPE:%d", ctl_type);
-      drv_ = ctl_fw_->GetDriverInstance(ctl_type);
+  drv_ = ctl_fw_->GetDriverInstance(ctl_type);
 }
 
 controller_operation::controller_operation(ControllerFramework *fw_ptr,
-                              ControllerOps operation, std::string ctl_id)
-                              : ctl_fw_(fw_ptr), ctl_oper_(operation) {
+                                           ControllerOps operation,
+                                           std::string ctl_id)
+                                           : ctl_fw_(fw_ptr),
+                                           ctl_oper_(operation),
+                                           ctr_(NULL),
+                                           drv_(NULL) {
+  ODC_FUNC_TRACE;
   ctl_fw_->controller_list_rwlock_.lock();
-
   ctl_fw_->GetDriverByControllerName(ctl_id, &ctr_, &drv_);
 
   PFC_VERIFY(drv_);
@@ -616,40 +624,42 @@ controller_operation::controller_operation(ControllerFramework *fw_ptr,
     }
     case READ_FROM_CONTROLLER: {
       if ( ctr_->access_.can_delete_controller_marked_for_delete()
-                                                      == PFC_TRUE ) {
+          == PFC_TRUE ) {
         drv_= NULL;
         ctr_= NULL;
+        break;
       } else if ( ctr_->access_.get_controller_marked_for_update()
-                                                        == PFC_TRUE ) {
+                 == PFC_TRUE ) {
         ctr_->access_.increment_read_wait_count();
         ctr_->access_.wait_until_update(ctl_fw_->controller_list_rwlock_);
         ctr_->access_.decrement_read_wait_count();
       }
-        uint32_t read_count = ctr_->access_.get_read_count();
-        read_count++;
-        ctr_->access_.set_read_count(read_count);
-        ctl_fw_->controller_list_rwlock_.unlock();
+      uint32_t read_count = ctr_->access_.get_read_count();
+      read_count++;
+      ctr_->access_.set_read_count(read_count);
+      ctl_fw_->controller_list_rwlock_.unlock();
       break;
     }
     case WRITE_TO_CONTROLLER: {
       uint32_t write_count = ctr_->access_.get_write_count();
       pfc_log_debug("write count:%d", write_count);
       if ( ctr_->access_.can_delete_controller_marked_for_delete()
-                                                         == PFC_TRUE ) {
+          == PFC_TRUE ) {
         pfc_log_debug("can_delete_controller:TRUE");
         drv_= NULL;
         ctr_= NULL;
+        break;
       } else if ((write_count != 0) ||
-              (ctr_->access_.get_controller_marked_for_update() == PFC_TRUE)) {
+          (ctr_->access_.get_controller_marked_for_update() == PFC_TRUE)) {
         ctr_->access_.increment_write_wait_count();
         ctr_->access_.wait_for_write(ctl_fw_->controller_list_rwlock_);
         pfc_log_debug("Write cond Wait");
         ctr_->access_.decrement_write_wait_count();
-       }
-        pfc_log_debug("WRITE in progress");
-        ctr_->access_.set_write_in_progress();
-        ctr_->access_.set_write_count(1);
-        ctl_fw_->controller_list_rwlock_.unlock();
+      }
+      pfc_log_debug("WRITE in progress");
+      ctr_->access_.set_write_in_progress();
+      ctr_->access_.set_write_count(1);
+      ctl_fw_->controller_list_rwlock_.unlock();
       break;
     }
     default:
@@ -665,11 +675,11 @@ controller_operation::~controller_operation() {
       ctr_->access_.update_completed();
       if (ctr_->access_.get_write_wait_count() > 0)
         ctr_->access_.release_write_wait();
-      case CONTROLLER_DELETE:
-      case CONTROLLER_ADD:
+    }
+    case CONTROLLER_DELETE:
+    case CONTROLLER_ADD:
       ctl_fw_->controller_list_rwlock_.unlock();
       break;
-    }
     case READ_FROM_CONTROLLER:
     case WRITE_TO_CONTROLLER: {
       ctl_fw_->controller_list_rwlock_.lock();
@@ -687,7 +697,7 @@ controller_operation::~controller_operation() {
       if ( write_count <= 0 && ctr_->access_.get_write_wait_count() > 0 )
         ctr_->access_.release_write_wait();
       if ( write_count <= 0 && ctr_->access_.get_write_wait_count() == 0
-                                                     && read_count == 0 )
+          && read_count == 0 )
         ctr_->access_.delete_allow();
       ctl_fw_->controller_list_rwlock_.unlock();
       break;

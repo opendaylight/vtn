@@ -13,15 +13,9 @@
 typedef enum {
   VTN_DRV_RET_SUCCESS = 0,
   VTN_DRV_RET_FAILURE
-}VtnDrvRetEnum;
+} VtnDrvRetEnum;
 
-typedef enum
-{
-  UNC_OPERSTATUS_CRITERIA_ANY = 0,
-  UNC_OPERSTATUS_CRITERIA_ALL
-}unc_operstatus_criteria;
-
-namespace unc{
+namespace unc {
 namespace driver {
 typedef enum {
   VTN_SWITCH_CREATE = 0,
@@ -32,9 +26,12 @@ typedef enum {
   VTN_LP_DELETE,
   VTN_PORT_CREATE,
   VTN_PORT_UPDATE,
-  VTN_PORT_DELETE
-}oper_type;
-}
-}
+  VTN_PORT_DELETE,
+  VTN_LINK_CREATE,
+  VTN_LINK_UPDATE,
+  VTN_LINK_DELETE
+} oper_type;
+}  // namespace driver
+}  // namespace unc
 #endif  // _VTNDRVINTF_DEFS_H_
 

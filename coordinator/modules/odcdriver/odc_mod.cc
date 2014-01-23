@@ -251,6 +251,13 @@ pfc_bool_t ODCModule::get_physical_port_details(
       }
     }
   }
+  OdcLink odc_link_obj(conf_file_values_);
+  ret_val = odc_link_obj.fetch_config(ctr_ptr, cache_empty);
+  if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+    pfc_log_error("Error occured in getting link details");
+    return PFC_FALSE;
+  }
+
   return PFC_TRUE;
 }
 

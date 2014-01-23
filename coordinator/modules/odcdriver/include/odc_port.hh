@@ -15,6 +15,7 @@
 #include <odc_controller.hh>
 #include <unc/uppl_common.h>
 #include <vtn_drv_module.hh>
+#include <unc/unc_events.h>
 #include <vtndrvintf_defs.h>
 #include <string>
 #include <list>
@@ -46,7 +47,8 @@ class OdcPort {
    *                                   DRVAPI_RESPONSE_FAILURE on failure
    */
   drv_resp_code_t fetch_config(unc::driver::controller* ctr,
-              key_switch_t *parent_key, const pfc_bool_t cache_empty);
+                               key_switch_t *parent_key,
+                               const pfc_bool_t cache_empty);
 
   /**
    * @brief                           - notify logical port to physical
@@ -75,9 +77,11 @@ class OdcPort {
    *                                   successfully/returns
    *                                   DRVAPI_RESPONSE_FAILURE on failure
    */
-  drv_resp_code_t fill_config_node_vector(unc::driver::controller *ctr_ptr,
-                              json_object *json_obj_node_prop, int arr_idx,
-             std::vector<unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
+  drv_resp_code_t fill_config_node_vector(
+      unc::driver::controller *ctr_ptr,
+      json_object *json_obj_node_prop,
+      int arr_idx,
+      std::vector<unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
 
   /**
    * @brief                          - parses the port properties values from
@@ -92,10 +96,13 @@ class OdcPort {
    *                                    DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
    */
 
-  drv_resp_code_t parse_port_properties_value(int arr_idx,
-                      json_object *json_obj_node_conn, std::string &name_value,
-                          uint &state_value, uint &config_value,
-                          unsigned long long &speed);
+  drv_resp_code_t parse_port_properties_value(
+      int arr_idx,
+      json_object *json_obj_node_conn,
+      std::string &name_value,
+      uint &state_value,
+      uint &config_value,
+      unsigned long long &speed);
   /**
    * @brief                          - Compare whether cache empty or not
    * @param[in]                      - ctr controller pointer
@@ -105,9 +112,10 @@ class OdcPort {
    * @return drv_resp_code_t         - returns DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
    */
 
-  drv_resp_code_t compare_with_cache(unc::driver::controller *ctr_ptr,
-           std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector,
-            const std::string &switch_id, const pfc_bool_t cache_empty);
+  drv_resp_code_t compare_with_cache(
+      unc::driver::controller *ctr_ptr,
+      std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector,
+      const std::string &switch_id, const pfc_bool_t cache_empty);
 
   /**
    * @brief                          - Notify physical about the port event
@@ -116,8 +124,10 @@ class OdcPort {
    * @param[in] val_port             - value structure of port
    * @param[in] val_old_port         - old value structure used only in case of UPDATE
    */
-  void notify_physical(unc::driver::oper_type type, key_port_t *key_port,
-                       val_port_st_t *val_port, val_port_st_t *val_old_port);
+  void notify_physical(unc::driver::oper_type type,
+                       key_port_t *key_port,
+                       val_port_st_t *val_port,
+                       val_port_st_t *val_old_port);
   /**
    * @brief                          - update the local list maintained
    * @param[in] key_port             - key structure of port
@@ -169,10 +179,11 @@ class OdcPort {
    * @param[out] port_list           - local list maintained for delete contains port id
    * @return drv_resp_code_t         - return DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
    */
-  drv_resp_code_t verify_in_cache(unc::driver::controller *ctr_ptr,
-                  std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector,
-                                  const std::string &switch_id,
-                                  std::list<std::string> &port_list);
+  drv_resp_code_t verify_in_cache(
+      unc::driver::controller *ctr_ptr,
+      std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector,
+      const std::string &switch_id,
+      std::list<std::string> &port_list);
 
   /**
    * @brief                          - Check whether any attributes for existing port is modified
@@ -190,9 +201,10 @@ class OdcPort {
    * @param[out] cfgnode_vector       - to be filled with the response
    * return drv_resp_code_t           - return DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
    */
-  drv_resp_code_t parse_port_response(unc::driver::controller *ctr_ptr,
-                                      char *data,
-                 std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
+  drv_resp_code_t parse_port_response(
+      unc::driver::controller *ctr_ptr,
+      char *data,
+      std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
 
   /**
@@ -203,9 +215,9 @@ class OdcPort {
    * @param[out] val_logical_port     - val_logical_port struture
    */
   void fill_logical_port_structure(key_port_t *key_port,
-                                    val_port_st_t *val_port,
-                                    key_logical_port_t &key_logical_port,
-                                    val_logical_port_st_t &val_logical_port);
+                                   val_port_st_t *val_port,
+                                   key_logical_port_t &key_logical_port,
+                                   val_logical_port_st_t &val_logical_port);
 
   /**
    * @brief                           - fills logical port val structure
@@ -213,9 +225,10 @@ class OdcPort {
    * @param[in] val_port              - val port struture pointer
    * @param[out] val_logical_port     - val_logical_port struture
    */
-  void fill_logical_port_val_structure(key_port_t *key_port,
-                                 val_port_st_t *val_port,
-                                 val_logical_port_st_t &val_logical_port);
+  void fill_logical_port_val_structure(
+      key_port_t *key_port,
+      val_port_st_t *val_port,
+      val_logical_port_st_t &val_logical_port);
 
   /**
    * @brief                           - deletes port
@@ -225,9 +238,10 @@ class OdcPort {
    * @return drv_resp_code_t          - return DRVAPI_RESPONSE_SUCCESS/
    *                                    DRVAPI_RESPONSE_FAILURE
    */
-  drv_resp_code_t delete_port(unc::driver::controller *ctr,
-                              const std::map<std::string,
-                     unc::vtndrvcache::ConfigNode *> &cfg_node_delete_map);
+  drv_resp_code_t delete_port(
+      unc::driver::controller *ctr,
+      const std::map<std::string,
+      unc::vtndrvcache::ConfigNode *> &cfg_node_delete_map);
 
   /**
    * @brief                          - deletes config node
