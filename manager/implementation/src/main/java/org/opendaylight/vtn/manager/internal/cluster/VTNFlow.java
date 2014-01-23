@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -19,6 +19,7 @@ import java.util.HashSet;
 
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.ActionList;
+import org.opendaylight.vtn.manager.internal.NodeUtils;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
 import org.opendaylight.controller.connectionmanager.IConnectionManager;
@@ -345,7 +346,8 @@ public class VTNFlow implements Serializable {
 
                     // Eliminate special port from port index in order to
                     // reduce index size.
-                    if (swMgr == null || !swMgr.isSpecial(port)) {
+                    if (swMgr == null ||
+                        !NodeUtils.isSpecial(swMgr, port, null)) {
                         flowPorts.add(port);
                     }
                 }

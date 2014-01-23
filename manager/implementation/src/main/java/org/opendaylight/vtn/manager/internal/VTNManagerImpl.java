@@ -109,6 +109,7 @@ import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IDataPacketService;
 import org.opendaylight.controller.sal.packet.IEEE8021Q;
 import org.opendaylight.controller.sal.packet.IListenDataPacket;
+import org.opendaylight.controller.sal.packet.LLDP;
 import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.packet.PacketResult;
 import org.opendaylight.controller.sal.packet.RawPacket;
@@ -1251,10 +1252,10 @@ public class VTNManagerImpl
             return null;
         }
 
-        if (switchManager.isSpecial(nc)) {
+        if (NodeUtils.isSpecial(switchManager, nc, propMap)) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("{}: addPort: Ignore special port {}",
-                          containerName, nc);
+                LOG.debug("{}: addPort: Ignore special port {}, {}",
+                          containerName, nc, propMap);
             }
             return null;
         }
@@ -2887,20 +2888,7 @@ public class VTNManagerImpl
         }
 
         if (checkType) {
-            checkNodeType(type);
-        }
-    }
-
-    /**
-     * Check whether the given node type is supported by the VTN Manager.
-     *
-     * @param type  The node type to be tested.
-     * @throws VTNException  The specified node type is not supported.
-     */
-    private static void checkNodeType(String type) throws VTNException {
-        if (!Node.NodeIDType.OPENFLOW.equals(type)) {
-            String msg = "Unsupported node type: " + type;
-            throw new VTNException(StatusCode.BADREQUEST, msg);
+            NodeUtils.checkNodeType(type, id);
         }
     }
 
@@ -2942,26 +2930,10 @@ public class VTNManagerImpl
         }
 
         if (checkType) {
-            checkNodeConnectorType(type);
+            NodeUtils.checkNodeConnectorType(type, id);
         }
 
         checkNode(nc.getNode(), checkType);
-    }
-
-    /**
-     * Check whether the given node connector type is supported by the
-     * VTN Manager.
-     *
-     * @param type  The node connector type to be tested.
-     * @throws VTNException  The specified node connector type is not
-     *                       supported.
-     */
-    private static void checkNodeConnectorType(String type)
-        throws VTNException {
-        if (!NodeConnector.NodeConnectorIDType.OPENFLOW.equals(type)) {
-            String msg = "Unsupported node connector type: " + type;
-            throw new VTNException(StatusCode.BADREQUEST, msg);
-        }
     }
 
     /**
@@ -5332,8 +5304,12 @@ public class VTNManagerImpl
         }
 
         // Create a packet context.
-        PacketResult res = PacketResult.IGNORED;
         PacketContext pctx = new PacketContext(inPkt, (Ethernet)decoded);
+        Packet payload = pctx.getPayload();
+        if (payload instanceof LLDP) {
+            LOG.trace("{}: Ignore LLDP packet: {}", containerName, payload);
+            return PacketResult.IGNORED;
+        }
 
         byte[] src = pctx.getSourceAddress();
         byte[] ctlrMac = switchManager.getControllerMAC();
@@ -5345,6 +5321,7 @@ public class VTNManagerImpl
             return PacketResult.IGNORED;
         }
 
+        PacketResult res = PacketResult.IGNORED;
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -5354,8 +5331,8 @@ public class VTNManagerImpl
             }
 
             // Ensure that the packet was sent by an OpenFlow node. */
-            checkNodeType(node.getType());
-            checkNodeConnectorType(nc.getType());
+            NodeUtils.checkNodeType(node.getType(), node.getID());
+            NodeUtils.checkNodeConnectorType(nc.getType(), nc.getID());
 
             if (islDB.containsKey(nc)) {
                 LOG.debug("{}: Ignore packet from internal node connector: {}",
@@ -5475,6 +5452,9 @@ public class VTNManagerImpl
      */
     @Override
     public void flowRemoved(Node node, Flow flow) {
+        LOG.trace("{}: flowRemoved() called: node={}, flow={}",
+                  containerName, node, flow);
+
         VTNFlowDatabase found = null;
         String empty = "";
         FlowEntry entry = new FlowEntry(empty, empty, flow, node);

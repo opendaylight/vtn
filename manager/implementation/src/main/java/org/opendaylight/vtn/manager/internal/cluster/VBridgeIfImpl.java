@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -29,6 +29,7 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
+import org.opendaylight.vtn.manager.internal.NodeUtils;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
@@ -977,7 +978,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
             }
 
             // Currently only OpenFlow node connector is supported.
-            if (!type.equals(NodeConnector.NodeConnectorIDType.OPENFLOW)) {
+            if (!NodeUtils.isNodeConnectorSupported(type, id)) {
                 String msg = "Unsupported node connector type";
                 throw new VTNException(StatusCode.BADREQUEST, msg);
             }
@@ -1033,7 +1034,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
         if (name != null) {
             // Search for a switch port by its name.
             NodeConnector nc = swMgr.getNodeConnector(node, name);
-            if (nc == null || swMgr.isSpecial(nc)) {
+            if (nc == null || NodeUtils.isSpecial(swMgr, nc, null)) {
                 return null;
             }
             if (target != null && !target.equals(nc)) {
