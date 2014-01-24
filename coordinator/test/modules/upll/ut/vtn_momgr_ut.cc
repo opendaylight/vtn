@@ -259,10 +259,11 @@ TEST_F(VtnMoMgrTest, GetValid_nullValue) {
   void *val = NULL;
   uint64_t index = uudst::vtn::kDbiVtnOperStatus;
   uint8_t *valid = NULL;
+  uint8_t *compare_valid = NULL;
   upll_keytype_datatype_t dtType = UPLL_DT_STATE;
 
   EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.GetValid(val, index, valid, dtType, MAINTBL));
-  EXPECT_EQ(NULL, valid);
+  EXPECT_EQ(compare_valid, valid);
 }
 
 // Passing operstatus to the function

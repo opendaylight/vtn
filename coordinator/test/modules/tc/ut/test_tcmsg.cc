@@ -38,7 +38,8 @@ TEST(TcMsg, CreateInstance) {
   TcChannelNameMap daemon_names;
   /*invalid Opertype*/
   TcMsg* tcmsg =  TcMsg::CreateInstance(sess_id,  opertype,  daemon_names);
-  EXPECT_EQ(NULL, tcmsg);
+  TcMsg* compare_tcmsg = NULL;
+  EXPECT_EQ(compare_tcmsg, tcmsg);
 
   daemon_names = GetChannelNameMap(SET);
   int array_len = (sizeof(OpArray)/sizeof(int));
@@ -549,7 +550,8 @@ TEST(CommitSendAbortRequest, Execute)  {
   TestCommit Ctest(sess_id,  opertype);
   Ctest.channel_names_ =  GetChannelNameMap(SET);
 
-  Ctest.config_id_ =  SET; Ctest.session_id_ =  1;
+  Ctest.config_id_ =  SET;
+  Ctest.session_id_ =  1;
   retval =  Ctest.TestSendAbortRequest(PopulateAbortVector());
   EXPECT_EQ(TCOPER_RET_SUCCESS,  retval);
 
@@ -608,7 +610,8 @@ TEST(CommitSendTransEndRequest, Execute_Success)  {
   TcOperRet retval =  TCOPER_RET_SUCCESS;
   TestCommit Ctest(sess_id,  opertype);
   Ctest.channel_names_ =  (GetChannelNameMap(SET));
-  Ctest.config_id_ =  SET; Ctest.session_id_ =  1;
+  Ctest.config_id_ =  SET;
+  Ctest.session_id_ =  1;
   retval =  Ctest.TestSendTransEndRequest(PopulateAbortVector());
   EXPECT_EQ(TCOPER_RET_SUCCESS,  retval);
   CLEAR_STUB_FLAGS();
@@ -1005,7 +1008,7 @@ TEST(GetControllerInfo,  Execute)  {
   retval =  C2phase.TestGetControllerInfo(c_sess);
   EXPECT_EQ(TCOPER_RET_SUCCESS, retval);
   if (c_sess !=  0) {
-    TcClientSessionUtils::tc_session_close(&c_sess,conn);
+    TcClientSessionUtils::tc_session_close(&c_sess, conn);
     delete c_sess;
     c_sess =  NULL;
   }
@@ -1269,9 +1272,10 @@ TEST(AuditSendAbortRequest, Execute)  {
   TcMsgOperType opertype =  MSG_AUDIT_VOTE;
   TcOperRet retval =  TCOPER_RET_SUCCESS;
 
-  TestAudit Ctest(sess_id,  opertype);
+  TestAudit Ctest(sess_id, opertype);
   Ctest.channel_names_ =  GetChannelNameMap(SET);
-  Ctest.driver_id_ =  UNC_CT_PFC; Ctest.controller_id_ =  "C1";
+  Ctest.driver_id_ =  UNC_CT_PFC;
+  Ctest.controller_id_ =  "C1";
   retval =  Ctest.TestSendAbortRequest(PopulateAbortVector());
   EXPECT_EQ(TCOPER_RET_SUCCESS,  retval);
 

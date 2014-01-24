@@ -25,7 +25,7 @@ TEST_F(ControllerFrameworkTest, GetControllerInst_success) {
   std::string ctr_name = "ctr_demo";
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_,1);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   driver *drv_instance = static_cast <driver*>(new OdcDriver());
   controller *ctr_instance = static_cast <controller*>(new OdcController());
   CtrObj->AddController(ctr_name, ctr_instance, drv_instance);
@@ -46,7 +46,7 @@ TEST_F(ControllerFrameworkTest, GetDriver_success) {
   std::string ctr_name = "ctr_demo";
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_,1);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   driver *drv_instance = static_cast <driver*>(new OdcDriver());
   controller *ctr_instance = static_cast <controller*>(new OdcController());
   CtrObj->AddController(ctr_name, ctr_instance, drv_instance);
@@ -74,7 +74,7 @@ TEST_F(ControllerFrameworkTest, GetDriver_failure) {
   std::string ctr_name = "ctr_demo";
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_,1);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   driver *drv_instance = static_cast <driver*>(new OdcDriver());
   controller *ctr_instance = static_cast <controller*>(new OdcController());
   CtrObj->AddController(ctr_name, ctr_instance, drv_instance);
@@ -101,7 +101,7 @@ TEST_F(ControllerFrameworkTest, PingController_success) {
   std::string ctr_name = "ctr_post";
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_,1);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   pfc::core::ipc::ServerSession::set_rest(1);
   ReadParams fun_obj(ctr_name, CtrObj);
   driver *drv_instance = static_cast <driver*>(new OdcDriver());
@@ -125,7 +125,7 @@ TEST_F(ControllerFrameworkTest, PingController_Failure) {
   std::string ctr_name = "ctr_post";
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_,1);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   pfc::core::ipc::ServerSession::set_rest(1);
   ReadParams fun_obj(ctr_name, CtrObj);
   OdcDriver *odcdrv(new OdcDriver());
@@ -155,7 +155,7 @@ TEST_F(ControllerFrameworkTest, GetDriver_AfterUpdate) {
   const val_ctr_t* val_ctr = new val_ctr_t;
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_,1);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   driver *drv_instance = static_cast <driver*>(new OdcDriver());
   controller *ctr_instance = static_cast <controller*>(new OdcController());
   CtrObj->AddController(ctr_name_1, ctr_instance, drv_instance);
@@ -185,7 +185,7 @@ TEST_F(ControllerFrameworkTest, PostTimer) {
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
   uint32_t ping_interval = 0;
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_,1);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   driver *drv_instance = static_cast <driver*>(new OdcDriver());
   controller *ctr_instance = static_cast <controller*>(new OdcController());
   CtrObj->AddController(ctr_name, ctr_instance, drv_instance);
@@ -202,16 +202,18 @@ TEST_F(ControllerFrameworkTest, AddController_success) {
   std::string ctr_name = "ctr1";
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_,1);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   OdcDriver *drv_instance = new OdcDriver();
   OdcController *ctr_instance = new OdcController();
 
   driver *drv(NULL);
+  driver *compare_drv_ptr(NULL);
   controller *ctr(NULL);
+  controller *compare_ctr_ptr(NULL);
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             CtrObj->GetDriverByControllerName(ctr_name, &ctr, &drv));
-  EXPECT_EQ(NULL, ctr);
-  EXPECT_EQ(NULL, drv);
+  EXPECT_EQ(compare_ctr_ptr, ctr);
+  EXPECT_EQ(compare_drv_ptr, drv);
 
   CtrObj->AddController(ctr_name, ctr_instance, drv_instance);
 
@@ -234,7 +236,7 @@ TEST_F(ControllerFrameworkTest, Add_MultiCtr_success) {
   std::string ctr_name_2 = "ctr2";
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_,1);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   driver *drv_instance = static_cast <driver*>(new OdcDriver());
   driver *drv_instance1 = static_cast <driver*>(new OdcDriver());
   controller *ctr_instance = static_cast <controller*>(new OdcController());
@@ -267,7 +269,7 @@ TEST_F(ControllerFrameworkTest, UpdateCtr_success) {
   std::string ctr_name_1 = "ctr_up";
   pfc_taskq_t id = 2;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_,1);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   const key_ctr_t *key_ctr = new key_ctr_t;
   const val_ctr_t *val_ctr = new val_ctr_t;
   driver *drv_instance = static_cast <driver*>(new OdcDriver());
@@ -297,14 +299,16 @@ TEST_F(ControllerFrameworkTest, RemoveCtr_success) {
   std::string ctr_name = "ctr_remove";
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_,1);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   const key_ctr_t *key_ctr = new key_ctr_t;
   const val_ctr_t *val_ctr = new val_ctr_t;
   driver *drv_instance = static_cast <driver*>(new OdcDriver());
   controller *ctr_instance = static_cast <controller*>(new OdcController());
   CtrObj->AddController(ctr_name, ctr_instance, drv_instance);
 
+  controller *compare_ctr_ptr(NULL);
   controller *ctr(NULL);
+  driver *compare_drv_ptr(NULL);
   driver *drv(NULL);
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
             CtrObj->GetControllerInstance(ctr_name, &ctr, &drv));
@@ -325,8 +329,8 @@ TEST_F(ControllerFrameworkTest, RemoveCtr_success) {
   drv = NULL;
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             CtrObj->GetControllerInstance(ctr_name, &ctr, &drv));
-  EXPECT_EQ(NULL, ctr);
-  EXPECT_EQ(NULL, drv);
+  EXPECT_EQ(compare_ctr_ptr, ctr);
+  EXPECT_EQ(compare_drv_ptr, drv);
 
   delete CtrObj;
   delete key_ctr;
@@ -341,7 +345,7 @@ TEST_F(ControllerFrameworkTest, RemoveCtr_Failure) {
   std::string ctr_unknown = "ctr_unkown";
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_,1);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   const key_ctr_t *key_ctr = new key_ctr_t;
   const val_ctr_t *val_ctr = new val_ctr_t;
   driver *drv_instance = static_cast <driver*>(new OdcDriver());
@@ -384,7 +388,7 @@ TEST_F(ControllerFrameworkTest, RemoveController_List_Empty) {
   std::string ctr_name = "ctr1";
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_,1);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   OdcDriver *drv_instance = new OdcDriver();
   OdcController *ctr_instance = new OdcController();
   drv_resp_code_t ret_code;
@@ -406,11 +410,11 @@ TEST_F(ControllerFrameworkTest, RegisterDriver_success) {
   std::string ctr_name_1 = "ctr_add";
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_,1);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   unc_keytype_ctrtype_t controller_type = UNC_CT_ODC;
   OdcDriver *drv_instance = new OdcDriver();
-
-  EXPECT_EQ(NULL, CtrObj->GetDriverInstance(controller_type));
+  driver *compare_drv_ptr = NULL;
+  EXPECT_EQ(compare_drv_ptr, CtrObj->GetDriverInstance(controller_type));
   EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
             CtrObj->RegisterDriver(controller_type, drv_instance));
   EXPECT_EQ(drv_instance, CtrObj->GetDriverInstance(controller_type));
@@ -429,7 +433,8 @@ TEST_F(ControllerFrameworkTest, RegisterDriver_success) {
 TEST_F(ControllerFrameworkTest, RegisterDriver_MultipleEntry_success) {
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_,1);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
+  driver *compare_drv_ptr(NULL);
   struct testdrv {
     unc_keytype_ctrtype_t  type;
     OdcDriver *driver;
@@ -440,7 +445,7 @@ TEST_F(ControllerFrameworkTest, RegisterDriver_MultipleEntry_success) {
   };
 
   for (tdp = testdrv; tdp < PFC_ARRAY_LIMIT(testdrv); tdp++) {
-    EXPECT_EQ(NULL, CtrObj->GetDriverInstance(tdp->type));
+    EXPECT_EQ(compare_drv_ptr, CtrObj->GetDriverInstance(tdp->type));
   }
   for (tdp = testdrv; tdp < PFC_ARRAY_LIMIT(testdrv); tdp++) {
     tdp->driver = new OdcDriver();
@@ -463,12 +468,13 @@ TEST_F(ControllerFrameworkTest, RegisterDriver_MultipleEntry_success) {
 TEST_F(ControllerFrameworkTest, RegisterDriver_DrvInst_NULL) {
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_,1);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   unc_keytype_ctrtype_t controller_type = UNC_CT_ODC;
   OdcDriver *drv_instance = NULL;
+  driver *compare_drv_ptr = NULL;
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
             CtrObj->RegisterDriver(controller_type, drv_instance));
-  EXPECT_EQ(NULL, CtrObj->GetDriverInstance(controller_type));
+  EXPECT_EQ(compare_drv_ptr, CtrObj->GetDriverInstance(controller_type));
   delete taskq_;
   delete CtrObj;
   CtrObj = NULL;
@@ -478,7 +484,7 @@ TEST_F(ControllerFrameworkTest, GetDriver_CtrName_NotFound) {
   std::string ctr_name = "ctr_demo";
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_,1);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   driver *drv_instance = static_cast <driver*>(new OdcDriver());
   controller *ctr_instance = static_cast <controller*>(new OdcController());
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
@@ -495,7 +501,7 @@ TEST_F(ControllerFrameworkTest, GetControllerInst_CtrName_NotFound) {
   std::string ctr_name = "controller_unknown";
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_,1);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   driver *drv_instance = static_cast <driver*>(new OdcDriver());
   controller *ctr_instance = static_cast <controller*>(new OdcController());
   EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
@@ -513,7 +519,7 @@ TEST_F(ControllerFrameworkTest, SendNotificationToPhysicalDown) {
   ConnectionStatus type = CONNECTION_DOWN;
   pfc_taskq_t id = 1;
   pfc::core::TaskQueue* taskq_ = new pfc::core::TaskQueue(id);
-  ControllerFramework *CtrObj = new ControllerFramework(taskq_,1);
+  ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   pfc::core::ipc::ServerSession::set_rest(1);
   CtrObj->SendNotificationToPhysical(ctr_name, type);
   delete CtrObj;

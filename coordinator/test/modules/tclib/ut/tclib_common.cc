@@ -370,9 +370,10 @@ TEST(test_31, test_fini) {
   mattr.pma_name = "tclib";
   TcLibModule tclib_obj(&mattr);
   tclib_obj.init();
-
-  EXPECT_EQ(NULL, tclib_obj.pTcLibInterface_);
-  EXPECT_EQ(NULL, tclib_obj.sess_);
+  TcLibInterface *compare_ptr = NULL;
+  pfc::core::ipc::ServerSession *compare_sess_ptr = NULL;
+  EXPECT_EQ(compare_ptr, tclib_obj.pTcLibInterface_);
+  EXPECT_EQ(compare_sess_ptr, tclib_obj.sess_);
   EXPECT_EQ(TC_DEFAULT_VALUE, tclib_obj.session_id_);
   EXPECT_EQ(TC_DEFAULT_VALUE, tclib_obj.config_id_);
   EXPECT_EQ(MSG_NONE, tclib_obj.oper_state_);
