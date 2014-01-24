@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2013 NEC Corporation
+# Copyright (c) 2013-2014 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -183,105 +183,80 @@
     </dependency>
 
     <dependency>
-      <groupId>org.codehaus.enunciate</groupId>
-      <artifactId>enunciate-core-annotations</artifactId>
-      <version>${enunciate.version}</version>
-    </dependency>
-
-    <dependency>
       <groupId>equinoxSDK381</groupId>
       <artifactId>org.eclipse.equinox.ds</artifactId>
-      <version>1.4.0.v20120522-1841</version>
     </dependency>
     <dependency>
       <groupId>equinoxSDK381</groupId>
       <artifactId>org.eclipse.equinox.util</artifactId>
-      <version>1.0.400.v20120522-2049</version>
     </dependency>
     <dependency>
       <groupId>equinoxSDK381</groupId>
       <artifactId>org.eclipse.osgi.services</artifactId>
-      <version>3.3.100.v20120522-1822</version>
     </dependency>
     <dependency>
       <groupId>equinoxSDK381</groupId>
       <artifactId>org.eclipse.osgi</artifactId>
-      <version>3.8.1.v20120830-144521</version>
     </dependency>
     <dependency>
       <groupId>equinoxSDK381</groupId>
       <artifactId>org.apache.felix.gogo.command</artifactId>
-      <version>0.8.0.v201108120515</version>
     </dependency>
     <dependency>
       <groupId>equinoxSDK381</groupId>
       <artifactId>org.apache.felix.gogo.runtime</artifactId>
-      <version>0.8.0.v201108120515</version>
     </dependency>
     <dependency>
       <groupId>equinoxSDK381</groupId>
       <artifactId>org.apache.felix.gogo.shell</artifactId>
-      <version>0.8.0.v201110170705</version>
     </dependency>
     <dependency>
       <groupId>equinoxSDK381</groupId>
       <artifactId>org.eclipse.equinox.cm</artifactId>
-      <version>1.0.400.v20120522-1841</version>
     </dependency>
     <dependency>
       <groupId>equinoxSDK381</groupId>
       <artifactId>org.eclipse.equinox.console</artifactId>
-      <version>1.0.0.v20120522-1841</version>
     </dependency>
     <dependency>
       <groupId>equinoxSDK381</groupId>
       <artifactId>org.eclipse.equinox.launcher</artifactId>
-      <version>1.3.0.v20120522-1813</version>
     </dependency>
+
     <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.dependencymanager</artifactId>
-      <version>3.1.0</version>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
     </dependency>
+
     <dependency>
       <groupId>org.apache.felix</groupId>
       <artifactId>org.apache.felix.dependencymanager.shell</artifactId>
-      <version>3.0.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.spec.javax.transaction</groupId>
-      <artifactId>jboss-transaction-api_1.1_spec</artifactId>
-      <version>1.0.1.Final</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.jbossts.jta</groupId>
-      <artifactId>narayana-jta</artifactId>
-      <version>4.17.7.Final</version>
     </dependency>
     <dependency>
       <groupId>org.apache.felix</groupId>
       <artifactId>org.apache.felix.fileinstall</artifactId>
-      <version>3.1.6</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jboss.spec.javax.transaction</groupId>
+      <artifactId>jboss-transaction-api_1.1_spec</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <version>3.1</version>
+      <groupId>org.jboss.jbossts.jta</groupId>
+      <artifactId>narayana-jta</artifactId>
     </dependency>
+
     <dependency>
       <groupId>virgomirror</groupId>
       <artifactId>org.eclipse.jdt.core.compiler.batch</artifactId>
-      <version>3.8.0.I20120518-2145</version>
     </dependency>
     <dependency>
       <groupId>eclipselink</groupId>
       <artifactId>javax.persistence</artifactId>
-      <version>2.0.4.v201112161009</version>
     </dependency>
     <dependency>
       <groupId>eclipselink</groupId>
       <artifactId>javax.resource</artifactId>
-      <version>1.5.0.v200906010428</version>
     </dependency>
   </dependencies>
 

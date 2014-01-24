@@ -3206,8 +3206,6 @@ public class VtnNorthboundIT extends TestBase {
                 // Set the systemPackages (used by clustering)
                 systemPackages("sun.reflect", "sun.reflect.misc", "sun.misc"),
 
-                mavenBundle("javax.servlet", "servlet-api").versionAsInProject(),
-
                 mavenBundle("org.slf4j", "jcl-over-slf4j").versionAsInProject(),
                 mavenBundle("org.slf4j", "slf4j-api").versionAsInProject(),
                 mavenBundle("org.slf4j", "log4j-over-slf4j").versionAsInProject(),
