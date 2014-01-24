@@ -35,11 +35,11 @@ TEST(test_24, test_TcLibRegisterHandler) {
   mattr.pma_name = "tclib";
   TcLibModule tclib_obj(&mattr);
   tclib_obj.init();
-
+  TcLibInterface *compare_pTcLibInterface_ = NULL;
   //  pTcLibInterface_ NULL
   ret = tclib_obj.TcLibRegisterHandler(NULL);
   EXPECT_EQ(TC_INVALID_PARAM, ret);
-  EXPECT_EQ(NULL, tclib_obj.pTcLibInterface_);
+  EXPECT_EQ(compare_pTcLibInterface_, tclib_obj.pTcLibInterface_);
 
   TcLibInterfaceStub if_stub_obj;
   ret = tclib_obj.TcLibRegisterHandler(&if_stub_obj);
