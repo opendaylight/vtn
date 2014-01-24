@@ -3,7 +3,7 @@
 #
 # Copyright (c) 2012-2014 NEC Corporation
 # All rights reserved.
-# 
+#
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License v1.0 which accompanies this
 # distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -46,7 +46,11 @@ DBMUPDATECONFDIR=%INST_UNCWORKDIR%/db/etc
 
 DBMCONF=$DBMCONFDIR/unc_db_env.conf
 DBMPATHCONF=$DBMCONFDIR/pathinfo/unc_db_path_info.conf
+DBMPGSQLCONF=$DBMUPDATECONFDIR/pgsql.conf
 
+# Read $DBMPGSQLCONF first so that PostgreSQL path can be overwritten by
+# unc_db_env.conf.
+readconf $DBMPGSQLCONF
 readconf $DBMCONF
 readconf $DBMPATHCONF
 
@@ -56,7 +60,6 @@ SINGLEPOSTFILE=$DBMCONFDIR/postgresql.conf.single
 HBACONFFILE=$DBMCONFDIR/pg_hba.conf
 HBADATAFILE=$PGDATA/pg_hba.conf
 POSTLOGFILE=$PGDATA/postmaster.log
-ODBCDRVINIFILE=$DBMCONFDIR/odbcinst.ini
 ODBCINIORGFILE=$DBMCONFDIR/odbc.ini.org
 ODBCINIFILE=$DBMUPDATECONFDIR/odbc.ini
 ODBCINSTALLEDFILE=$DBMTMPDIR/unc_odbc_DSN.installed
@@ -113,7 +116,7 @@ check_user_permission()
 }
 
 # log_output()
-# 
+#
 #	Message is output in logfile for DB.
 #
 # * input
@@ -136,8 +139,29 @@ log_output()
 	echo "$(clm_date): $cmd_name[$pid]: $log_level : $message" >> $logfile
 }
 
+# log_fatal()
+#
+#      Record error log message and exit with status 1.
+#
+# * input
+#      arg1: message
+#      arg2: log file
+#
+# * output
+#      Never returns.
+#
+log_fatal()
+{
+	local msg=$1
+	local logfile=$2
+
+	log_output $$ ERROR $0 "$msg" $logfile
+	echo "*** Error: $msg"
+	exit 1
+}
+
 # db_access_check()
-# 
+#
 #	Check DB access
 #
 # * output
@@ -146,13 +170,13 @@ log_output()
 #
 db_access_check()
 {
-	su -m $SUUSER -c "psql -c \"select now();\"" > /dev/null
+	su -m $SUUSER -c "$PGINST/bin/psql -c \"select now();\"" > /dev/null
 	[ $? -ne 0 ] && return 1
 	return 0
 }
 
 # db_start()
-# 
+#
 #	Start DB
 #
 # * output
@@ -162,12 +186,20 @@ db_access_check()
 #
 db_start()
 {
-	local lock_file=/tmp/.s.PGSQL.$PGPORT.lock
+	# PostgreSQL server may be configured to use /var/run/postgresql as
+	# UNIX domain socket directory rather than /tmp.
+	local sockdir=/var/run/postgresql
+	[ -d $sockdir ] || mkdir -p $sockdir
+	chmod 02775 $sockdir
+	chown $SUUSER:$SUUSER $sockdir
+
+	local lock_file=".s.PGSQL.$PGPORT.lock"
 	db_access_check
 	[ $? -eq 0 ] && return 1
 	rm -f $POSTLOGFILE
 	rm -f $PIDFILE
-	rm -f $lock_file
+	rm -f "/tmp/$lock_file"
+	rm -f "$sockdir/$lock_file"
 
 	# Expand shared memory parameter if needed.
 	expand_shm_param /proc/sys/kernel/shmmax $SHMMAX
@@ -181,7 +213,7 @@ db_start()
 }
 
 # db_stop()
-# 
+#
 #	Stop DB
 #
 # * output
@@ -197,7 +229,7 @@ db_stop()
 }
 
 # db_stop_exec()
-# 
+#
 #	DB stop processing
 #
 # * input
@@ -219,7 +251,7 @@ db_stop_exec()
 }
 
 # kill_pg_process()
-# 
+#
 #	When processes of PostgreSQL existed, there are killed.
 #
 # * input
@@ -249,7 +281,7 @@ kill_pg_process()
 }
 
 # create_setting_hba_file()
-# 
+#
 #	create setting hba file.
 #
 # * input
@@ -275,7 +307,7 @@ create_setting_hba_file()
 }
 
 # copy_postgresql_conf()
-# 
+#
 #	copy postgresql.conf
 #
 # * input
@@ -296,7 +328,7 @@ copy_postgresql_conf()
 }
 
 # create_setting_file()
-# 
+#
 #	create setting file.
 #
 # * input
@@ -326,7 +358,7 @@ create_setting_file()
 }
 
 # odbc_common_setting()
-# 
+#
 #	odbc common setting.
 #
 # * input
@@ -355,7 +387,7 @@ odbc_common_setting()
 }
 
 # pgpass_setting()
-# 
+#
 #	.pgpass setting.
 #
 # * input
@@ -380,7 +412,7 @@ EOF
 }
 
 # export_pg_env()
-# 
+#
 #	An export does an environment variable of PostgreSQL.
 #
 # * input
