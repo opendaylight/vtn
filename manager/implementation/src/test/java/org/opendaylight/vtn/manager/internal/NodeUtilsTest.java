@@ -135,10 +135,10 @@ public class NodeUtilsTest extends TestBase {
                                              "node-9"));
 
         // MD-SAL openflow node connector.
-        for (long i = 0; i <= 5; i++) {
-            for (int j = 0; i <= 5; i++) {
+        for (long nodeId = 0; nodeId <= 5; nodeId++) {
+            for (int portId = 0; portId <= 5; portId++) {
                 StringBuilder builder = new StringBuilder("openflow:");
-                builder.append(i).append(':').append(j);
+                builder.append(nodeId).append(':').append(portId);
                 String id = builder.toString();
                 assertTrue(isNodeConnectorSupported(MD_SAL_TYPE, id));
             }
@@ -241,10 +241,10 @@ public class NodeUtilsTest extends TestBase {
                                       "node-9");
 
         // MD-SAL openflow node connector.
-        for (long i = 0; i <= 5; i++) {
-            for (int j = 0; i <= 5; i++) {
+        for (long nodeId = 0; nodeId <= 5; nodeId++) {
+            for (int portId = 0; portId <= 5; portId++) {
                 StringBuilder builder = new StringBuilder("openflow:");
-                builder.append(i).append(':').append(j);
+                builder.append(nodeId).append(':').append(portId);
                 String id = builder.toString();
                 try {
                     checkNodeConnectorType(MD_SAL_TYPE, id);
