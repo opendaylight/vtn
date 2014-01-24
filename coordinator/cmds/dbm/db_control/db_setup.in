@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #
-# Copyright (c) 2012-2013 NEC Corporation
+# Copyright (c) 2012-2014 NEC Corporation
 # All rights reserved.
-# 
+#
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License v1.0 which accompanies this
 # distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -15,6 +15,21 @@
 
 dbmf=%INST_SYSSCRIPTDIR%/dbm/dbm_functions
 [ -r $dbmf ] || { echo "dbm_functions not found"; exit 1; } && . $dbmf
+
+#
+# Candidates for PostgreSQL installation directory.
+#
+PGINST_LIST="/usr/pgsql* /usr/pgsql/* /usr/postgresql* /usr/postgresql/*"
+PGINST_LIST="$PGINST_LIST /usr/lib/pgsql* /usr/lib/pgsql/*"
+PGINST_LIST="$PGINST_LIST /usr/lib/postgresql* /usr/lib/postgresql/*"
+PGINST_LIST="$PGINST_LIST /usr /usr/local"
+PGINST_LIST="$PGINST_LIST /usr/local/pgsql* /usr/local/pgsql/*"
+PGINST_LIST="$PGINST_LIST /usr/local/postgresql* /usr/local/postgresql/*"
+
+#
+# Required PostgreSQL version.
+#
+PGSQL_VERSION_MAJOR=9
 
 # usage()
 #
@@ -89,7 +104,7 @@ db_setup_error()
 }
 
 # check_exists_db()
-# 
+#
 #	I check whether DB exists.
 #
 # * input
@@ -106,7 +121,7 @@ check_exists_db()
 }
 
 # create_db()
-# 
+#
 #	create DB.
 #
 # * input
@@ -132,11 +147,12 @@ create_db()
 	[ $? -ne 0 ] && db_setup_error dbstart
 	TMP_PGDATABASE=$PGDATABASE
 	PGDATABASE=postgres
-	su -m $SUUSER -c "psql -c \
+	local psql="$PGINST/bin/psql"
+	su -m $SUUSER -c "$psql -c \
 		\"ALTER USER $PGUSER PASSWORD '$PGPASSWORD'\"" \
 		> /dev/null 2> $TMPLOGFILE
 	[ $? -ne 0 ] && db_setup_error alterpass
-	su -m $SUUSER -c "psql -c \
+	su -m $SUUSER -c "$psql -c \
 		\"CREATE USER $UNC_DB_USER WITH NOSUPERUSER PASSWORD '$UNC_DB_PASSWORD';\"" \
 		> /dev/null 2> $TMPLOGFILE
 	[ $? -ne 0 ] && db_setup_error createuser
@@ -146,7 +162,7 @@ create_db()
 	[ $? -ne 0 ] && db_setup_error createdb
 	PGUSER=$UNC_DB_USER
 	for UNCDATASQLFILE in `ls -1 $UNCDATASQLDIR/*.sql`; do
-		su -m $SUUSER -c "psql -f $UNCDATASQLFILE" \
+		su -m $SUUSER -c "$psql -f $UNCDATASQLFILE" \
 			> /dev/null 2> $TMPLOGFILE
 		[ $? -ne 0 ] && db_setup_error createtable
 	done
@@ -178,6 +194,224 @@ directory_owner()
 	[ $? -ne 0 ] && data_copy_error
 }
 
+# check_pgsql_version()
+#
+#      Check PostgreSQL version.
+#
+# * input
+#      arg1:  Path to command provided by PostgreSQL.
+#
+# * output
+#      0:  Success
+#      1:  The given command cannot be used.
+#
+check_pgsql_version()
+{
+	[ -x "$1" ] || return 1
+	local vstr=`LC_ALL=C $1 --version 2>/dev/null | fgrep '(PostgreSQL)'`
+	[ -z "$vstr" ] && return 1
+	log_output $$ INFO $0 "$1 --version: $vstr" $LOGFILE
+
+	# Check major version.
+	local maj=`echo $vstr |
+		   sed -e 's/^.*(PostgreSQL) \([0-9]\{1,\}\)\..*$/\1/'`
+	[ -z "$maj" ] && return 1
+	[ "$maj" -lt $PGSQL_VERSION_MAJOR ] && return 1
+	[ "$maj" -gt $PGSQL_VERSION_MAJOR ] && return 0
+	[ -z "$PGSQL_VERSION_MINOR" ] && return 0
+
+	# Check minor version.
+	local min=`echo $vstr |
+	   sed -e 's/^.*(PostgreSQL) [0-9]\{1,\}\.\([0-9]\{1,\}\)\(\.[0-9]\{1,\}\)\{0,1\}$/\1/'`
+	[ -z "$min" ] && return 1
+	[ "$min" -lt "$PGSQL_VERSION_MINOR" ] && return 1
+
+	return 0
+}
+
+# check_pginst()
+#
+#      Verify that PGINST is valid.
+#
+# * input
+#      arg1: Path to PostgreSQL installation directory.
+#      arg2: If a non-empty string is specified, this function terminates the
+#            program on failure.
+#
+# * output
+#      0:  Success
+#      1:  The given directory does not contain expected PostgreSQL commands.
+#
+check_pginst()
+{
+	local dir="$1"
+	local exit_on_err="$2"
+
+	if [ ! -d "$dir" ]; then
+		[ -z "$exit_on_err" ] && return 1
+
+		log_fatal "PostgreSQL directory does not exist: $dir" $LOGFILE
+		# NOTREACHED
+	fi
+
+	for cmd in initdb createdb pg_ctl postgres psql; do
+		local path="$dir/bin/$cmd"
+		check_pgsql_version $path && continue
+		[ -z "$exit_on_err" ] && return 1
+
+		log_output $$ ERROR $0 "PostgreSQL test failed: $path" $LOGFILE
+		log_fatal "PostgreSQL was not found at $dir." $LOGFILE
+		# NOTREACHED
+	done
+
+	return 0
+}
+
+
+# detect_pgsql()
+#
+#      Determine PostgreSQL installation directory.
+#
+# * input
+#      None
+#
+# * output
+#      0:  PostgreSQL installation directory was set to PGINST.
+#      1:  PostgreSQL installation directory was not found.
+#
+detect_pgsql()
+{
+	local dir cmd
+	for dir in $PGINST_LIST; do
+		if check_pginst $dir; then
+			PGINST=$dir
+			return 0
+		fi
+	done
+
+	return 1
+}
+
+# detect_pgsql_odbc()
+#
+#      Determine path to PostgreSQL ODBC driver.
+#
+# * input
+#      None
+#
+# * output
+#      0:  Driver path was set to PGSQL_ODBC_DRIVER.
+#      1:  Driver was not found.
+#
+detect_pgsql_odbc()
+{
+	local dir libdir path
+	local libname="psqlodbcw.so"
+	local lp64=0
+	case `uname -m 2>/dev/null` in
+	     x86_64) lp64=1;;
+	     *) ;;
+	esac
+
+	for dir in $PGINST_LIST; do
+		[ "$lp64" = "1" ] && for libdir in lib64 lib64/odbc; do
+			path="$dir/$libdir/$libname"
+			if [ -f $path -a -r $path ]; then
+				PGSQL_ODBC_DRIVER=$path
+				return 0
+			fi
+		done
+
+		for libdir in lib lib/odbc; do
+			path="$dir/$libdir/$libname"
+			if [ -f $path -a -r $path ]; then
+				PGSQL_ODBC_DRIVER=$path
+				return 0
+			fi
+		done
+
+		[ -z "$MULTIARCH" ] && continue
+		for libdir in "lib/$MULTIARCH" "lib/$MULTIARCH/odbc"; do
+			path="$dir/$libdir/$libname"
+			if [ -f $path -a -r $path ]; then
+				PGSQL_ODBC_DRIVER=$path
+				return 0
+			fi
+		done
+	done
+
+	return 1
+}
+
+# setup_pgsql_conf()
+#
+#      Set up pgsql.conf file that keeps PostgreSQL installation path.
+#
+# * input
+#      None
+#
+# * output
+#      None
+#      Program exits on error.
+#
+setup_pgsql_conf()
+{
+	local writeconf=0
+
+	if [ -z "$PGINST" ]; then
+		# Determine PostgreSQL installation directory.
+		detect_pgsql
+		if [ -z "$PGINST" ]; then
+			log_fatal "PostgreSQL was not found." $LOGFILE
+			# NOTREACHED
+		fi
+		writeconf=1
+	else
+		check_pginst $PGINST 1
+	fi
+
+	if [ -z "$PGSQL_ODBC_DRIVER" ]; then
+		# Determine PostgreSQL ODBC driver path.
+		detect_pgsql_odbc
+		if [ -z "$PGSQL_ODBC_DRIVER" ]; then
+			log_fatal "PostgreSQL ODBC driver was not found." \
+				$LOGFILE
+			# NOTREACHED
+		fi
+		writeconf=1
+	elif [ ! -f "$PGSQL_ODBC_DRIVER" -o ! -r "$PGSQL_ODBC_DRIVER" ]; then
+		log_fatal \
+		  "PostgreSQL ODBC driver was not found: $PGSQL_ODBC_DRIVER" \
+		  $LOGFILE
+		# NOTREACHED
+	fi
+
+	[ "$writeconf" = "0" ] && return
+
+	local year=`date '+%Y'`
+	cat > $DBMPGSQLCONF <<EOF
+#
+# Copyright (c) 2012-$year NEC Corporation
+# All rights reserved.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+#
+# DO NOT EDIT THIS FILE
+#
+# This file is automatically generated by db_setup.
+#
+
+PGINST=$PGINST
+PGSQL_ODBC_DRIVER=$PGSQL_ODBC_DRIVER
+EOF
+
+	chmod 0644 $DBMPGSQLCONF
+}
+
 # odbc_driver_install()
 #
 #   Install odbc driver.
@@ -191,10 +425,21 @@ directory_owner()
 odbc_driver_install()
 {
 	/usr/bin/odbcinst -q -d -v -n UNC_DB_DRIVER > /dev/null 2> $TMPLOGFILE
-	if [ $? -ne 0 ]; then
-		/usr/bin/odbcinst -i -d -f $ODBCDRVINIFILE > $TMPLOGFILE
-		[ $? -ne 0 ] && db_setup_error odbc
-	fi
+	[ $? -eq 0 ] && return 0
+
+	# Create odbcinst.ini under temporary directory.
+	local odbcinst=$DBMTMPDIR/odbcinst.ini
+	cat > $odbcinst <<EOF
+[UNC_DB_DRIVER]
+Decription	= PostgreSQL ODBC
+Driver		= $PGSQL_ODBC_DRIVER
+Threading	= 2
+BoolsAsChar	= Yes
+EOF
+	/usr/bin/odbcinst -i -d -f $odbcinst > $TMPLOGFILE
+	local status=$?
+	rm -f $odbcinst
+	[ $status -ne 0 ] && db_setup_error odbc
 }
 
 # setup_db()
@@ -223,6 +468,7 @@ setup_db()
 		start_flg=0
 		[ -r $STARTFILE ] && start_flg=`cat $STARTFILE`
 
+		setup_pgsql_conf
 		directory_owner
 		odbc_driver_install
 		pgpass_setting 2> $TMPLOGFILE
