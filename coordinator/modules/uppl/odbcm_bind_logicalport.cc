@@ -250,8 +250,6 @@ ODBCM_RC_STATUS DBVarbind::bind_logicalport_table_output(
   std::vector< TableAttrSchema >::iterator i;
   /**Flag to decide printing logs */
   uint8_t log_flag = 1;
-  /** Pointer to value that indicates the number of bytes available to return*/
-  SQLINTEGER  indptr = 0;
    /**Loop for iterate all the elements in the vector, the TableAttrSchema
    * table_attribute_name value will be compared and corresponding
    * structure member will be binded here*/
@@ -274,7 +272,7 @@ ODBCM_RC_STATUS DBVarbind::bind_logicalport_table_output(
           p_logicalport_table->szController_name/*buffer to fetch values*/,
           ODBCM_SIZE_32+1,
           /**no.of bytes available to return*/
-          reinterpret_cast<SQLLEN*>(&indptr));
+          (&p_logicalport_table->cbname));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -287,7 +285,7 @@ ODBCM_RC_STATUS DBVarbind::bind_logicalport_table_output(
           p_logicalport_table->szdomain_name/*buffer to fetch values*/,
           ODBCM_SIZE_32+1,
           /**no.of bytes available to return*/
-          reinterpret_cast<SQLLEN*>(&indptr));
+          (&p_logicalport_table->cbdomain));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -317,7 +315,8 @@ ODBCM_RC_STATUS DBVarbind::bind_logicalport_table_output(
           ++col_no,
           p_logicalport_table->szdescription,
           ODBCM_SIZE_128+1,
-          reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+          (&p_logicalport_table->cbdesc)
+          /*buffer to fetch values*/);
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -328,7 +327,8 @@ ODBCM_RC_STATUS DBVarbind::bind_logicalport_table_output(
           ++col_no,
           reinterpret_cast<SQLSMALLINT*>(&p_logicalport_table->sport_type),
           sizeof(SQLSMALLINT),
-          reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+          (&p_logicalport_table->cbporttype)
+          /*buffer to fetch values*/);
           log_flag = 0;
         }
         break;
@@ -350,9 +350,10 @@ ODBCM_RC_STATUS DBVarbind::bind_logicalport_table_output(
           ++col_no,
           p_logicalport_table->szphysical_port_id,
           ODBCM_SIZE_32+1,
-          reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
-      /**set flag value 0 to print column binding details */
-      log_flag = 0;
+          (&p_logicalport_table->cbpportid)
+          /*buffer to fetch values*/);
+          /**set flag value 0 to print column binding details */
+          log_flag = 0;
         }
         break;
       case LP_OPER_DOWN_CRITERIA:
@@ -362,7 +363,8 @@ ODBCM_RC_STATUS DBVarbind::bind_logicalport_table_output(
           reinterpret_cast<SQLSMALLINT*>
           (&p_logicalport_table->soper_down_criteria),
           sizeof(SQLSMALLINT),
-          reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+          (&p_logicalport_table->cbopercriteria)
+          /*buffer to fetch values*/);
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -373,7 +375,8 @@ ODBCM_RC_STATUS DBVarbind::bind_logicalport_table_output(
           ++col_no,
           reinterpret_cast<SQLSMALLINT*>(&p_logicalport_table->soper_status),
           sizeof(SQLSMALLINT),
-          reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+          (&p_logicalport_table->cboperstatus)
+          /*buffer to fetch values*/);
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -384,7 +387,8 @@ ODBCM_RC_STATUS DBVarbind::bind_logicalport_table_output(
           ++col_no,
           p_logicalport_table->svalid,
           ODBCM_SIZE_6+1,
-          reinterpret_cast<SQLLEN*>(&indptr)/*buffer to fetch values*/);
+          (&p_logicalport_table->cbvalid)
+          /*buffer to fetch values*/);
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }

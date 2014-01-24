@@ -202,8 +202,6 @@ ODBCM_RC_STATUS DBVarbind::bind_domain_table_output(
     HSTMT &r_hstmt/**statement handler which carries the SQL Query*/) {
   int64_t odbc_rc = SQL_SUCCESS;  // odbc APIs return code
   uint16_t col_no = 0;  // column number
-  SQLINTEGER cbNumericType = 0;  // Pointer to value that indicates the number
-                           // of bytes available to return
   /**Vector iterator to take the TableAttrSchema structures*/
   std::vector< TableAttrSchema >::iterator i;
   /**Flag to decide printing logs */
@@ -231,7 +229,7 @@ ODBCM_RC_STATUS DBVarbind::bind_domain_table_output(
               p_domain_table->szcontroller_name/*buffer to fetch values*/,
               ODBCM_SIZE_32+1,
               /**no.of bytes available to return*/
-              reinterpret_cast<SQLLEN*>(&cbNumericType));
+              (&p_domain_table->cbname));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -243,7 +241,7 @@ ODBCM_RC_STATUS DBVarbind::bind_domain_table_output(
               ++col_no,
               p_domain_table->szdomain_name,
               ODBCM_SIZE_32+1,
-              reinterpret_cast<SQLLEN*>(&cbNumericType));
+              (&p_domain_table->cbdomain));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -255,7 +253,7 @@ ODBCM_RC_STATUS DBVarbind::bind_domain_table_output(
               ++col_no,
               reinterpret_cast<SQLSMALLINT*>(&p_domain_table->stype),
               sizeof(SQLSMALLINT),
-              reinterpret_cast<SQLLEN*>(&cbNumericType));
+              (&p_domain_table->cbtype));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -267,7 +265,7 @@ ODBCM_RC_STATUS DBVarbind::bind_domain_table_output(
               ++col_no,
               p_domain_table->szdescription,
               ODBCM_SIZE_128+1,
-              reinterpret_cast<SQLLEN*>(&cbNumericType));
+              (&p_domain_table->cbdesc));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -280,7 +278,7 @@ ODBCM_RC_STATUS DBVarbind::bind_domain_table_output(
               reinterpret_cast<SQLSMALLINT*>
               (&p_domain_table->soper_status),
               sizeof(SQLSMALLINT),
-              reinterpret_cast<SQLLEN*>(&cbNumericType));
+              (&p_domain_table->cboperstatus));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -292,7 +290,7 @@ ODBCM_RC_STATUS DBVarbind::bind_domain_table_output(
               ++col_no,
               p_domain_table->svalid,
               ODBCM_SIZE_3+1,
-              reinterpret_cast<SQLLEN*>(&cbNumericType));
+              (&p_domain_table->cbvalid));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -304,7 +302,7 @@ ODBCM_RC_STATUS DBVarbind::bind_domain_table_output(
               ++col_no,
               reinterpret_cast<SQLSMALLINT*>(&p_domain_table->scs_row_status),
               sizeof(SQLSMALLINT),
-              reinterpret_cast<SQLLEN*>(&cbNumericType));
+              (&p_domain_table->cbrowstatus));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -316,7 +314,7 @@ ODBCM_RC_STATUS DBVarbind::bind_domain_table_output(
               ++col_no,
               p_domain_table->scs_attr,
               ODBCM_SIZE_3+1,
-              reinterpret_cast<SQLLEN*>(&cbNumericType));
+              (&p_domain_table->cbcsattr));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
