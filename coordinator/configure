@@ -3,7 +3,7 @@
 #
 # Copyright (c) 2012-2014 NEC Corporation
 # All rights reserved.
-# 
+#
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License v1.0 which accompanies this
 # distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -142,7 +142,6 @@ sub check_package($\%$%);
 sub check_perm($\%);
 sub check_perm_impl($\%\%);
 sub check_webapi_env($\%\%);
-sub check_postgresql(\%);
 sub check_jar($\%\%$);
 sub check_jarfile($$$);
 sub check_tomcat_libdir($\%\%);
@@ -1556,7 +1555,7 @@ OUT
 		my $push_makevar = sub {
 			push(@makevars, join('=', $_[0], $_[1]));
 		};
- 
+
 		&$push_makevar(main::ODBC_DEFS_MK_VAR(),
 			       $objdir . '/' . main::ODBC_DEFS_MK());
 		&$push_makevar(main::ODBC_RULES_MK_VAR(),
@@ -1820,9 +1819,6 @@ MAIN:
 
 	# Check build environment for WebAPI.
 	my $wenv = check_webapi_env($conf, %vars, %$jenv);
-
-	# Determine standard installation directory of PostgreSQL.
-	check_postgresql(%vars);
 
 	prepare($conf);
 	create_config_h($conf, %$version, @hdefs);
@@ -2840,26 +2836,6 @@ sub check_webapi_env($\%\%)
 	return \%wenv;
 }
 
-sub check_postgresql(\%)
-{
-	my ($vars) = @_;
-
-	# Remarks: POSTGRES_ODBC_LIBDIR must end with '/'.
-	my $dist = $vars->{LINUX_DIST};
-	my ($pghome, $odbc_libdir);
-	if ($dist =~ /^(ubuntu|debian)/i) {
-		# No need to define ODBC library directory.
-		$pghome = '/usr/lib/postgresql/9.1';
-	}
-	else {
-		$pghome = '/usr/pgsql-9.1';
-		$odbc_libdir = '/usr/pgsql-9.1/lib/';
-	}
-
-	$vars->{POSTGRES_HOME} = $pghome;
-	$vars->{POSTGRES_ODBC_LIBDIR} = $odbc_libdir if ($odbc_libdir);
-}
-
 sub check_jar($\%\%$)
 {
 	my ($conf, $vars, $jenv, $spec) = @_;
@@ -3049,7 +3025,7 @@ sub create_dynamic_header($$)
 /*
  * Copyright (c) $yrange NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
