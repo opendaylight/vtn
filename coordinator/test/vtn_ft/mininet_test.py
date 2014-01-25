@@ -102,7 +102,10 @@ def test_vtn_mininet_ping_demo1():
         close_topology(child)
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerFirst', "up")
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+        print "controller state change failed"
+        exit(1)
 
     retval = vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
@@ -249,7 +252,10 @@ def test_vtn_mininet_ping_demo2():
         close_topology(child)
         exit(1)
   # Delay for AUDIT
-    controller.wait_until_state('ControllerFirst', "up")
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+        print "controller state change failed"
+        exit(1)
 
     retval = vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
