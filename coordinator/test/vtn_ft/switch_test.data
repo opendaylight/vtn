@@ -1,0 +1,43 @@
+#
+# Copyright (c) 2013-2014 NEC Corporation
+# All rights reserved.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+[SwitchOne]
+switch_id = 00:00:00:00:00:00:00:01
+description=switch1
+
+[SwitchTwo]
+switch_id=00:00:00:00:00:00:00:02
+description=switch2
+
+[SwitchThree]
+switch_id=00:00:00:00:00:00:00:03
+description=switch3
+
+[SwitchFour]
+switch_id=00:00:00:00:00:00:00:04
+description=switch4
+
+[SwitchFive]
+switch_id=00:00:00:00:00:00:00:05
+description=switch5
+
+[SwitchSix]
+switch_id=00:00:00:00:00:00:00:06
+description=switch6
+
+[SwitchSeven]
+switch_id=00:00:00:00:00:00:00:07
+description=switch7
+
+[GETURL]
+url=/detail.json
+controller_url=controller/nb/v2
+default_url=/property/description/
+sw_detail_url=/switches/detail.json
+switch_url=/switchmanager/default/node/OF/

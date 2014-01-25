@@ -43,6 +43,8 @@ VBRIFDATA = "vtn_vbr_vbrif.data"
 VLANMAPDATA = "vtn_vbr_vlanmap.data"
 CONTROLLERDATA = "controller.data"
 MININETDATA = "mininet_test.data"
+SWITCHDATA = "switch_test.data"
+PORTDATA = "port_test.data"
 
 if __name__ == '__main__':
   print 'Cannot Run this module as it holds only methods'
