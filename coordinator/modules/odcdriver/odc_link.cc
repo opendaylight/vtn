@@ -123,7 +123,8 @@ drv_resp_code_t OdcLink::fill_edge_value_map(
                                             -1,
                                             tail_node_id);
 
-  if (restjson::REST_OP_SUCCESS != ret_val) {
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
+      (tail_node_id.empty())) {
     pfc_log_error("Error while parsing node_id");
     return DRVAPI_RESPONSE_FAILURE;
   }
@@ -133,7 +134,8 @@ drv_resp_code_t OdcLink::fill_edge_value_map(
                                             -1,
                                             tail_id);
 
-  if (restjson::REST_OP_SUCCESS != ret_val) {
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
+      (tail_id.empty())) {
     pfc_log_error(" Error while parsing type id");
     return DRVAPI_RESPONSE_FAILURE;
   }
@@ -156,7 +158,8 @@ drv_resp_code_t OdcLink::fill_edge_value_map(
                                             -1,
                                             head_id);
 
-  if (restjson::REST_OP_SUCCESS != ret_val) {
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
+      (head_id.empty())) {
     pfc_log_error("Error while parsing head conn id");
     return DRVAPI_RESPONSE_FAILURE;
   }
@@ -178,7 +181,8 @@ drv_resp_code_t OdcLink::fill_edge_value_map(
                                             -1,
                                             head_node_id);
 
-  if (restjson::REST_OP_SUCCESS != ret_val) {
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
+      (head_node_id.empty())) {
     pfc_log_error("Error while parsing head conn id");
     return DRVAPI_RESPONSE_FAILURE;
   }
@@ -213,7 +217,8 @@ drv_resp_code_t OdcLink::fill_edge_value_map(
                                             -1,
                                             prop_name);
 
-  if (restjson::REST_OP_SUCCESS != ret_val) {
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
+      (prop_name.empty())) {
     pfc_log_error("Error while parsing prop name value");
     return DRVAPI_RESPONSE_FAILURE;
   }

@@ -371,7 +371,6 @@ void VtnDrvIntf::domain_event(std::string controller_name,
   int err = 0;
   uint32_t controller_id_size = 0;
   uint32_t domain_id_size = 0;
-  ODC_FUNC_TRACE;
   key_ctr_domain_t key_ctr_domain;
   val_ctr_domain_st val_ctr_domain_status;
 

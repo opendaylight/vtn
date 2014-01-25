@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -527,13 +527,14 @@ TEST(get_node_from_hash, get_null) {
   int ret = KeyTree_obj->append_audit_node(cfgptr);
 
   ConfigNode *tmp_ptr = NULL;
+  ConfigNode *compare_ptr = NULL;
   tmp_ptr =  KeyTree_obj->get_node_from_hash("vtn2", UNC_KT_VBRIDGE);
 
   delete KeyTree_obj;
   KeyTree_obj = NULL;
   cfgptr = NULL;
   EXPECT_EQ(ret, 0);
-  EXPECT_EQ(NULL, tmp_ptr);
+  EXPECT_EQ(compare_ptr, tmp_ptr);
 }
 
 TEST(get_node_from_hash, get_null1) {
@@ -541,11 +542,12 @@ TEST(get_node_from_hash, get_null1) {
   KeyTree_obj = KeyTree::create_cache();
 
   ConfigNode *tmp_ptr = NULL;
+  ConfigNode *compare_ptr = NULL;
   tmp_ptr =  KeyTree_obj->get_node_from_hash("vtn1", UNC_KT_VTN);
 
   delete KeyTree_obj;
   KeyTree_obj = NULL;
-  EXPECT_EQ(NULL, tmp_ptr);
+  EXPECT_EQ(compare_ptr, tmp_ptr);
 }
 
 TEST(get_nodelist_keytree, check) {
@@ -1808,6 +1810,775 @@ TEST(compare_is_physical_node_found, switch_port_not_present_pass) {
   new_compare_node = NULL;
   cfgptr = NULL;
   EXPECT_EQ(PFC_TRUE, check);
+}
+//  Append twoswitches and two ports  to keytree with
+//  append_Physical_attribute_node method and create one link between them
+TEST(append_Physical_attribute_node, single_link_sucess) {
+  int operation = 1;
+  KeyTree* KeyTree_obj = NULL;
+  KeyTree_obj = KeyTree::create_cache();
+  //  add switch 0000-0000-0000-0001 to cache
+  key_switch key_switch_obj;
+  val_switch_st val_switch;
+  memset(&key_switch_obj, 0, sizeof(key_switch_obj));
+  memset(&val_switch, 0, sizeof(val_switch));
+  memcpy(key_switch_obj.ctr_key.controller_name, "odc1", sizeof(
+          key_switch_obj.ctr_key.controller_name));
+  memcpy(key_switch_obj.switch_id, "0000-0000-0000-0001", sizeof(
+          key_switch_obj.switch_id));
+  ConfigNode *cfgptr_switch01 =
+      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, operation);
+  uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch01);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  //  add port s1-eth1 to switch 0000-0000-0000-0001
+  key_port key_obj;
+  val_port_st val_obj;
+  memset(&key_obj, 0, sizeof(key_obj));
+  memset(&val_obj, 0, sizeof(val_obj));
+  memcpy(key_obj.sw_key.ctr_key.controller_name, "odc1", sizeof(
+          key_obj.sw_key.ctr_key.controller_name));
+  memcpy(key_obj.sw_key.switch_id, "0000-0000-0000-0001", sizeof(
+          key_obj.sw_key.switch_id));
+  memcpy(key_obj.port_id, "s1-eth1", sizeof(key_obj.port_id));
+
+  memcpy(val_obj.port.description, "port-s1-eth1 connect to switch 01", sizeof(
+          val_obj.port.description));
+  ConfigNode *cfgptr_switch01_port_s1eth1 =
+      new CacheElementUtil<key_port, val_port_st, uint32_t>
+      (&key_obj, &val_obj, operation);
+
+  ret = KeyTree_obj->append_Physical_attribute_node(
+      cfgptr_switch01_port_s1eth1);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  //  add switch 0000-0000-0000-0002 to cache
+  key_switch key_switch_obj_sw02;
+  val_switch_st val_switch_sw02;
+  memset(&key_switch_obj_sw02, 0, sizeof(key_switch_obj_sw02));
+  memset(&val_switch_sw02, 0, sizeof(val_switch_sw02));
+  memcpy(key_switch_obj_sw02.ctr_key.controller_name, "odc1", sizeof(
+          key_switch_obj_sw02.ctr_key.controller_name));
+  memcpy(key_switch_obj_sw02.switch_id, "0000-0000-0000-0002", sizeof(
+          key_switch_obj_sw02.switch_id));
+  ConfigNode *cfgptr_switch02 =
+      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
+      (&key_switch_obj_sw02, &val_switch_sw02, operation);
+  ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch02);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  //  add port s2-eth2 to switch 0000-0000-0000-0002
+  key_port key_obj_s2eth2;
+  val_port_st val_obj_s2eth2;
+  memset(&key_obj_s2eth2, 0, sizeof(key_obj_s2eth2));
+  memset(&val_obj_s2eth2, 0, sizeof(val_obj_s2eth2));
+  memcpy(key_obj_s2eth2.sw_key.ctr_key.controller_name, "odc1", sizeof(
+          key_obj_s2eth2.sw_key.ctr_key.controller_name));
+  memcpy(key_obj_s2eth2.sw_key.switch_id, "0000-0000-0000-0002", sizeof(
+          key_obj_s2eth2.sw_key.switch_id));
+  memcpy(key_obj_s2eth2.port_id, "s2-eth2", sizeof(key_obj.port_id));
+
+  memcpy(val_obj_s2eth2.port.description, "port-s2-eth2 connect to switch 02",
+         sizeof(val_obj_s2eth2.port.description));
+  ConfigNode *cfgptr_switch02_port_s2eth2 =
+      new CacheElementUtil<key_port, val_port_st, uint32_t>
+      (&key_obj_s2eth2, &val_obj_s2eth2, operation);
+
+  ret = KeyTree_obj->append_Physical_attribute_node(
+      cfgptr_switch02_port_s2eth2);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  // add one link between switch01 to switch02
+  key_link  key_link_sw01sw02;
+  val_link_st  val_link_sw01sw02;
+  memset(&key_link_sw01sw02, 0, sizeof(key_link_sw01sw02));
+  memset(&val_link_sw01sw02, 0, sizeof(val_link_sw01sw02));
+
+  memcpy(key_link_sw01sw02.ctr_key.controller_name, "odc1", sizeof(
+         key_link_sw01sw02.ctr_key.controller_name));
+  memcpy(key_link_sw01sw02.switch_id1, "0000-0000-0000-0001", sizeof(
+          key_link_sw01sw02.switch_id1));
+  memcpy(key_link_sw01sw02.port_id1, "s1-eth1", sizeof(
+          key_link_sw01sw02.port_id1));
+  memcpy(key_link_sw01sw02.switch_id2, "0000-0000-0000-0002", sizeof(
+          key_link_sw01sw02.switch_id2));
+  memcpy(key_link_sw01sw02.port_id2, "s2-eth2", sizeof(
+          key_link_sw01sw02.port_id2));
+  memcpy(val_link_sw01sw02.link.description, "link sw01 to sw02", sizeof(
+          val_link_sw01sw02.link.description));
+  val_link_sw01sw02.oper_status = 1;
+  ConfigNode *cfgptr_link_sw01sw02 =
+      new CacheElementUtil<key_link, val_link_st, uint32_t>
+      (&key_link_sw01sw02, &val_link_sw01sw02, operation);
+  ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_link_sw01sw02);
+  CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
+  ConfigNode* cfgnode;
+  for (cfgnode = itr_ptr->PhysicalNodeFirstItem();
+       itr_ptr->IsDone() == false;
+       cfgnode = itr_ptr->NextItem() ) {
+    pfc_log_info("Node Present in Tree ..for:%s keytype %d",
+                 cfgnode->get_key_name().c_str(), cfgnode->get_type_name());
+  }
+  delete itr_ptr;
+
+  delete KeyTree_obj;
+  KeyTree_obj = NULL;
+  cfgptr_switch01 = NULL;
+  cfgptr_switch01_port_s1eth1 = NULL;
+  cfgptr_switch02 = NULL;
+  cfgptr_switch02_port_s2eth2 = NULL;
+  cfgptr_link_sw01sw02 = NULL;
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+}
+//  Append twoswitches and two ports  to keytree with
+//  append_Physical_attribute_node method and create bidirectional link
+//  between switches
+TEST(append_Physical_attribute_node, bidirectional_link_sucess) {
+  int operation = 1;
+  KeyTree* KeyTree_obj = NULL;
+  KeyTree_obj = KeyTree::create_cache();
+  //  add switch 0000-0000-0000-0001 to cache
+  key_switch key_switch_obj;
+  val_switch_st val_switch;
+  memset(&key_switch_obj, 0, sizeof(key_switch_obj));
+  memset(&val_switch, 0, sizeof(val_switch));
+  memcpy(key_switch_obj.ctr_key.controller_name, "odc1", sizeof(
+          key_switch_obj.ctr_key.controller_name));
+  memcpy(key_switch_obj.switch_id, "0000-0000-0000-0001", sizeof(
+          key_switch_obj.switch_id));
+  ConfigNode *cfgptr_switch01 =
+      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, operation);
+  uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch01);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  //  add port s1-eth1 to switch 0000-0000-0000-0001
+  key_port key_obj;
+  val_port_st val_obj;
+  memset(&key_obj, 0, sizeof(key_obj));
+  memset(&val_obj, 0, sizeof(val_obj));
+  memcpy(key_obj.sw_key.ctr_key.controller_name, "odc1", sizeof(
+          key_obj.sw_key.ctr_key.controller_name));
+  memcpy(key_obj.sw_key.switch_id, "0000-0000-0000-0001", sizeof(
+          key_obj.sw_key.switch_id));
+  memcpy(key_obj.port_id, "s1-eth1", sizeof(key_obj.port_id));
+
+  memcpy(val_obj.port.description, "port-s1-eth1 connect to switch 01", sizeof(
+          val_obj.port.description));
+  ConfigNode *cfgptr_switch01_port_s1eth1 =
+      new CacheElementUtil<key_port, val_port_st, uint32_t>
+      (&key_obj, &val_obj, operation);
+
+  ret = KeyTree_obj->append_Physical_attribute_node(
+      cfgptr_switch01_port_s1eth1);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  //  add switch 0000-0000-0000-0002 to cache
+  key_switch key_switch_obj_sw02;
+  val_switch_st val_switch_sw02;
+  memset(&key_switch_obj_sw02, 0, sizeof(key_switch_obj_sw02));
+  memset(&val_switch_sw02, 0, sizeof(val_switch_sw02));
+  memcpy(key_switch_obj_sw02.ctr_key.controller_name, "odc1", sizeof(
+          key_switch_obj_sw02.ctr_key.controller_name));
+  memcpy(key_switch_obj_sw02.switch_id, "0000-0000-0000-0002", sizeof(
+          key_switch_obj_sw02.switch_id));
+  ConfigNode *cfgptr_switch02 =
+      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
+      (&key_switch_obj_sw02, &val_switch_sw02, operation);
+  ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch02);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  //  add port s2-eth2 to switch 0000-0000-0000-0002
+  key_port key_obj_s2eth2;
+  val_port_st val_obj_s2eth2;
+  memset(&key_obj_s2eth2, 0, sizeof(key_obj_s2eth2));
+  memset(&val_obj_s2eth2, 0, sizeof(val_obj_s2eth2));
+  memcpy(key_obj_s2eth2.sw_key.ctr_key.controller_name, "odc1", sizeof(
+          key_obj_s2eth2.sw_key.ctr_key.controller_name));
+  memcpy(key_obj_s2eth2.sw_key.switch_id, "0000-0000-0000-0002", sizeof(
+          key_obj_s2eth2.sw_key.switch_id));
+  memcpy(key_obj_s2eth2.port_id, "s2-eth2", sizeof(key_obj.port_id));
+
+  memcpy(val_obj_s2eth2.port.description, "port-s2-eth2 connect to switch 02",
+         sizeof(val_obj_s2eth2.port.description));
+  ConfigNode *cfgptr_switch02_port_s2eth2 =
+      new CacheElementUtil<key_port, val_port_st, uint32_t>
+      (&key_obj_s2eth2, &val_obj_s2eth2, operation);
+
+  ret = KeyTree_obj->append_Physical_attribute_node(
+      cfgptr_switch02_port_s2eth2);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  // add one link between switch01 to switch02
+  key_link  key_link_sw01sw02;
+  val_link_st  val_link_sw01sw02;
+  memset(&key_link_sw01sw02, 0, sizeof(key_link_sw01sw02));
+  memset(&val_link_sw01sw02, 0, sizeof(val_link_sw01sw02));
+
+  memcpy(key_link_sw01sw02.ctr_key.controller_name, "odc1", sizeof(
+         key_link_sw01sw02.ctr_key.controller_name));
+  memcpy(key_link_sw01sw02.switch_id1, "0000-0000-0000-0001", sizeof(
+          key_link_sw01sw02.switch_id1));
+  memcpy(key_link_sw01sw02.port_id1, "s1-eth1", sizeof(
+          key_link_sw01sw02.port_id1));
+  memcpy(key_link_sw01sw02.switch_id2, "0000-0000-0000-0002", sizeof(
+          key_link_sw01sw02.switch_id2));
+  memcpy(key_link_sw01sw02.port_id2, "s2-eth2", sizeof(
+          key_link_sw01sw02.port_id2));
+  memcpy(val_link_sw01sw02.link.description, "link sw01 to sw02", sizeof(
+          val_link_sw01sw02.link.description));
+  val_link_sw01sw02.oper_status = 1;
+  ConfigNode *cfgptr_link_sw01sw02 =
+      new CacheElementUtil<key_link, val_link_st, uint32_t>
+      (&key_link_sw01sw02, &val_link_sw01sw02, operation);
+  ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_link_sw01sw02);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  // add one link between switch02 to switch01
+  key_link  key_link_sw02sw01;
+  val_link_st  val_link_sw02sw01;
+  memset(&key_link_sw02sw01, 0, sizeof(key_link_sw02sw01));
+  memset(&val_link_sw02sw01, 0, sizeof(val_link_sw02sw01));
+
+  memcpy(key_link_sw02sw01.ctr_key.controller_name, "odc1", sizeof(
+         key_link_sw02sw01.ctr_key.controller_name));
+  memcpy(key_link_sw02sw01.switch_id1, "0000-0000-0000-0002", sizeof(
+          key_link_sw02sw01.switch_id1));
+  memcpy(key_link_sw02sw01.port_id1, "s2-eth2", sizeof(
+          key_link_sw02sw01.port_id1));
+  memcpy(key_link_sw02sw01.switch_id2, "0000-0000-0000-0001", sizeof(
+          key_link_sw02sw01.switch_id2));
+  memcpy(key_link_sw02sw01.port_id2, "s1-eth1", sizeof(
+          key_link_sw02sw01.port_id2));
+  memcpy(val_link_sw02sw01.link.description, "link sw02 to sw01", sizeof(
+          val_link_sw02sw01.link.description));
+  val_link_sw02sw01.oper_status = 1;
+  ConfigNode *cfgptr_link_sw02sw01 =
+      new CacheElementUtil<key_link, val_link_st, uint32_t>
+      (&key_link_sw02sw01, &val_link_sw02sw01, operation);
+  ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_link_sw02sw01);
+  CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
+  ConfigNode* cfgnode;
+  for (cfgnode = itr_ptr->PhysicalNodeFirstItem();
+       itr_ptr->IsDone() == false;
+       cfgnode = itr_ptr->NextItem() ) {
+    pfc_log_info("Node Present in Tree ..for:%s keytype %d",
+                 cfgnode->get_key_name().c_str(), cfgnode->get_type_name());
+  }
+  delete itr_ptr;
+
+  delete KeyTree_obj;
+  KeyTree_obj = NULL;
+  cfgptr_switch01 = NULL;
+  cfgptr_switch01_port_s1eth1 = NULL;
+  cfgptr_switch02 = NULL;
+  cfgptr_switch02_port_s2eth2 = NULL;
+  cfgptr_link_sw01sw02 = NULL;
+  cfgptr_link_sw02sw01 = NULL;
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+}
+//  Append twoswitches and two ports  to keytree with
+//  append_Physical_attribute_node method and create one link between
+//  two switches and delete that link
+TEST(delete_physical_attribute_node, single_link__delete_sucess) {
+  int operation = 1;
+  KeyTree* KeyTree_obj = NULL;
+  KeyTree_obj = KeyTree::create_cache();
+  //  add switch 0000-0000-0000-0001 to cache
+  key_switch key_switch_obj;
+  val_switch_st val_switch;
+  memset(&key_switch_obj, 0, sizeof(key_switch_obj));
+  memset(&val_switch, 0, sizeof(val_switch));
+  memcpy(key_switch_obj.ctr_key.controller_name, "odc1", sizeof(
+          key_switch_obj.ctr_key.controller_name));
+  memcpy(key_switch_obj.switch_id, "0000-0000-0000-0001", sizeof(
+          key_switch_obj.switch_id));
+  ConfigNode *cfgptr_switch01 =
+      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, operation);
+  uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch01);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  //  add port s1-eth1 to switch 0000-0000-0000-0001
+  key_port key_obj;
+  val_port_st val_obj;
+  memset(&key_obj, 0, sizeof(key_obj));
+  memset(&val_obj, 0, sizeof(val_obj));
+  memcpy(key_obj.sw_key.ctr_key.controller_name, "odc1", sizeof(
+          key_obj.sw_key.ctr_key.controller_name));
+  memcpy(key_obj.sw_key.switch_id, "0000-0000-0000-0001", sizeof(
+          key_obj.sw_key.switch_id));
+  memcpy(key_obj.port_id, "s1-eth1", sizeof(key_obj.port_id));
+
+  memcpy(val_obj.port.description, "port-s1-eth1 connect to switch 01", sizeof(
+          val_obj.port.description));
+  ConfigNode *cfgptr_switch01_port_s1eth1 =
+      new CacheElementUtil<key_port, val_port_st, uint32_t>
+      (&key_obj, &val_obj, operation);
+
+  ret = KeyTree_obj->append_Physical_attribute_node(
+      cfgptr_switch01_port_s1eth1);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  //  add switch 0000-0000-0000-0002 to cache
+  key_switch key_switch_obj_sw02;
+  val_switch_st val_switch_sw02;
+  memset(&key_switch_obj_sw02, 0, sizeof(key_switch_obj_sw02));
+  memset(&val_switch_sw02, 0, sizeof(val_switch_sw02));
+  memcpy(key_switch_obj_sw02.ctr_key.controller_name, "odc1", sizeof(
+          key_switch_obj_sw02.ctr_key.controller_name));
+  memcpy(key_switch_obj_sw02.switch_id, "0000-0000-0000-0002", sizeof(
+          key_switch_obj_sw02.switch_id));
+  ConfigNode *cfgptr_switch02 =
+      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
+      (&key_switch_obj_sw02, &val_switch_sw02, operation);
+  ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch02);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  //  add port s2-eth2 to switch 0000-0000-0000-0002
+  key_port key_obj_s2eth2;
+  val_port_st val_obj_s2eth2;
+  memset(&key_obj_s2eth2, 0, sizeof(key_obj_s2eth2));
+  memset(&val_obj_s2eth2, 0, sizeof(val_obj_s2eth2));
+  memcpy(key_obj_s2eth2.sw_key.ctr_key.controller_name, "odc1", sizeof(
+          key_obj_s2eth2.sw_key.ctr_key.controller_name));
+  memcpy(key_obj_s2eth2.sw_key.switch_id, "0000-0000-0000-0002", sizeof(
+          key_obj_s2eth2.sw_key.switch_id));
+  memcpy(key_obj_s2eth2.port_id, "s2-eth2", sizeof(key_obj.port_id));
+
+  memcpy(val_obj_s2eth2.port.description, "port-s2-eth2 connect to switch 02",
+         sizeof(val_obj_s2eth2.port.description));
+  ConfigNode *cfgptr_switch02_port_s2eth2 =
+      new CacheElementUtil<key_port, val_port_st, uint32_t>
+      (&key_obj_s2eth2, &val_obj_s2eth2, operation);
+
+  ret = KeyTree_obj->append_Physical_attribute_node(
+      cfgptr_switch02_port_s2eth2);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  // add one link between switch01 to switch02
+  key_link  key_link_sw01sw02;
+  val_link_st  val_link_sw01sw02;
+  memset(&key_link_sw01sw02, 0, sizeof(key_link_sw01sw02));
+  memset(&val_link_sw01sw02, 0, sizeof(val_link_sw01sw02));
+
+  memcpy(key_link_sw01sw02.ctr_key.controller_name, "odc1", sizeof(
+         key_link_sw01sw02.ctr_key.controller_name));
+  memcpy(key_link_sw01sw02.switch_id1, "0000-0000-0000-0001", sizeof(
+          key_link_sw01sw02.switch_id1));
+  memcpy(key_link_sw01sw02.port_id1, "s1-eth1", sizeof(
+          key_link_sw01sw02.port_id1));
+  memcpy(key_link_sw01sw02.switch_id2, "0000-0000-0000-0002", sizeof(
+          key_link_sw01sw02.switch_id2));
+  memcpy(key_link_sw01sw02.port_id2, "s2-eth2", sizeof(
+          key_link_sw01sw02.port_id2));
+  memcpy(val_link_sw01sw02.link.description, "link sw01 to sw02", sizeof(
+          val_link_sw01sw02.link.description));
+  val_link_sw01sw02.oper_status = 1;
+  ConfigNode *cfgptr_link_sw01sw02 =
+      new CacheElementUtil<key_link, val_link_st, uint32_t>
+      (&key_link_sw01sw02, &val_link_sw01sw02, operation);
+  ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_link_sw01sw02);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
+  ConfigNode* cfgnode;
+  for (cfgnode = itr_ptr->PhysicalNodeFirstItem();
+       itr_ptr->IsDone() == false;
+       cfgnode = itr_ptr->NextItem() ) {
+    pfc_log_info("Before Delete link, Node Present in Tree for:%s keytype %d",
+                 cfgnode->get_key_name().c_str(), cfgnode->get_type_name());
+  }
+  delete itr_ptr;
+  // delete existing link between switch01 to switch02
+  key_link  key_link_delete_sw01sw02;
+  val_link_st  val_link_delete_sw01sw02;
+  memset(&key_link_delete_sw01sw02, 0, sizeof(key_link_delete_sw01sw02));
+  memset(&val_link_delete_sw01sw02, 0, sizeof(val_link_delete_sw01sw02));
+
+  memcpy(key_link_delete_sw01sw02.ctr_key.controller_name, "odc1", sizeof(
+         key_link_delete_sw01sw02.ctr_key.controller_name));
+  memcpy(key_link_delete_sw01sw02.switch_id1, "0000-0000-0000-0001", sizeof(
+          key_link_delete_sw01sw02.switch_id1));
+  memcpy(key_link_delete_sw01sw02.port_id1, "s1-eth1", sizeof(
+          key_link_delete_sw01sw02.port_id1));
+  memcpy(key_link_delete_sw01sw02.switch_id2, "0000-0000-0000-0002", sizeof(
+          key_link_delete_sw01sw02.switch_id2));
+  memcpy(key_link_delete_sw01sw02.port_id2, "s2-eth2", sizeof(
+          key_link_delete_sw01sw02.port_id2));
+  memcpy(val_link_delete_sw01sw02.link.description, "link sw01 to sw02",
+         sizeof(val_link_delete_sw01sw02.link.description));
+  val_link_delete_sw01sw02.oper_status = 1;
+  ConfigNode *cfgptr_link_delete_sw01sw02 =
+      new CacheElementUtil<key_link, val_link_st, uint32_t>
+      (&key_link_delete_sw01sw02, &val_link_delete_sw01sw02, operation);
+  ret = KeyTree_obj->delete_physical_attribute_node(
+      cfgptr_link_delete_sw01sw02);
+  CommonIterator* itr = KeyTree_obj->create_iterator();
+  ConfigNode* cfgnode_it;
+  for (cfgnode_it = itr->PhysicalNodeFirstItem();
+       itr->IsDone() == false;
+       cfgnode_it = itr->NextItem() ) {
+    pfc_log_info("After Delete link, Node Present in Tree for:%s keytype %d",
+                  cfgnode_it->get_key_name().c_str(),
+                  cfgnode_it->get_type_name());
+  }
+  delete itr;
+
+  delete KeyTree_obj;
+  KeyTree_obj = NULL;
+  cfgptr_switch01 = NULL;
+  cfgptr_switch01_port_s1eth1 = NULL;
+  cfgptr_switch02 = NULL;
+  cfgptr_switch02_port_s2eth2 = NULL;
+  cfgptr_link_sw01sw02 = NULL;
+  delete cfgptr_link_delete_sw01sw02;
+  cfgptr_link_delete_sw01sw02 = NULL;
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+}
+//  Append twoswitches and two ports  to keytree with
+//  append_Physical_attribute_node method and create bidirectional link
+//  between them and delete both link
+TEST(delete_physical_attribute_node, bidirectional_link_delete_sucess) {
+  int operation = 1;
+  KeyTree* KeyTree_obj = NULL;
+  KeyTree_obj = KeyTree::create_cache();
+  //  add switch 0000-0000-0000-0001 to cache
+  key_switch key_switch_obj;
+  val_switch_st val_switch;
+  memset(&key_switch_obj, 0, sizeof(key_switch_obj));
+  memset(&val_switch, 0, sizeof(val_switch));
+  memcpy(key_switch_obj.ctr_key.controller_name, "odc1", sizeof(
+          key_switch_obj.ctr_key.controller_name));
+  memcpy(key_switch_obj.switch_id, "0000-0000-0000-0001", sizeof(
+          key_switch_obj.switch_id));
+  ConfigNode *cfgptr_switch01 =
+      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, operation);
+  uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch01);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  //  add port s1-eth1 to switch 0000-0000-0000-0001
+  key_port key_obj;
+  val_port_st val_obj;
+  memset(&key_obj, 0, sizeof(key_obj));
+  memset(&val_obj, 0, sizeof(val_obj));
+  memcpy(key_obj.sw_key.ctr_key.controller_name, "odc1", sizeof(
+          key_obj.sw_key.ctr_key.controller_name));
+  memcpy(key_obj.sw_key.switch_id, "0000-0000-0000-0001", sizeof(
+          key_obj.sw_key.switch_id));
+  memcpy(key_obj.port_id, "s1-eth1", sizeof(key_obj.port_id));
+
+  memcpy(val_obj.port.description, "port-s1-eth1 connect to switch 01", sizeof(
+          val_obj.port.description));
+  ConfigNode *cfgptr_switch01_port_s1eth1 =
+      new CacheElementUtil<key_port, val_port_st, uint32_t>
+      (&key_obj, &val_obj, operation);
+
+  ret = KeyTree_obj->append_Physical_attribute_node(
+      cfgptr_switch01_port_s1eth1);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  //  add switch 0000-0000-0000-0002 to cache
+  key_switch key_switch_obj_sw02;
+  val_switch_st val_switch_sw02;
+  memset(&key_switch_obj_sw02, 0, sizeof(key_switch_obj_sw02));
+  memset(&val_switch_sw02, 0, sizeof(val_switch_sw02));
+  memcpy(key_switch_obj_sw02.ctr_key.controller_name, "odc1", sizeof(
+          key_switch_obj_sw02.ctr_key.controller_name));
+  memcpy(key_switch_obj_sw02.switch_id, "0000-0000-0000-0002", sizeof(
+          key_switch_obj_sw02.switch_id));
+  ConfigNode *cfgptr_switch02 =
+      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
+      (&key_switch_obj_sw02, &val_switch_sw02, operation);
+  ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch02);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  //  add port s2-eth2 to switch 0000-0000-0000-0002
+  key_port key_obj_s2eth2;
+  val_port_st val_obj_s2eth2;
+  memset(&key_obj_s2eth2, 0, sizeof(key_obj_s2eth2));
+  memset(&val_obj_s2eth2, 0, sizeof(val_obj_s2eth2));
+  memcpy(key_obj_s2eth2.sw_key.ctr_key.controller_name, "odc1", sizeof(
+          key_obj_s2eth2.sw_key.ctr_key.controller_name));
+  memcpy(key_obj_s2eth2.sw_key.switch_id, "0000-0000-0000-0002", sizeof(
+          key_obj_s2eth2.sw_key.switch_id));
+  memcpy(key_obj_s2eth2.port_id, "s2-eth2", sizeof(key_obj.port_id));
+
+  memcpy(val_obj_s2eth2.port.description, "port-s2-eth2 connect to switch 02",
+         sizeof(val_obj_s2eth2.port.description));
+  ConfigNode *cfgptr_switch02_port_s2eth2 =
+      new CacheElementUtil<key_port, val_port_st, uint32_t>
+      (&key_obj_s2eth2, &val_obj_s2eth2, operation);
+
+  ret = KeyTree_obj->append_Physical_attribute_node(
+      cfgptr_switch02_port_s2eth2);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  // add one link between switch01 to switch02
+  key_link  key_link_sw01sw02;
+  val_link_st  val_link_sw01sw02;
+  memset(&key_link_sw01sw02, 0, sizeof(key_link_sw01sw02));
+  memset(&val_link_sw01sw02, 0, sizeof(val_link_sw01sw02));
+
+  memcpy(key_link_sw01sw02.ctr_key.controller_name, "odc1", sizeof(
+         key_link_sw01sw02.ctr_key.controller_name));
+  memcpy(key_link_sw01sw02.switch_id1, "0000-0000-0000-0001", sizeof(
+          key_link_sw01sw02.switch_id1));
+  memcpy(key_link_sw01sw02.port_id1, "s1-eth1", sizeof(
+          key_link_sw01sw02.port_id1));
+  memcpy(key_link_sw01sw02.switch_id2, "0000-0000-0000-0002", sizeof(
+          key_link_sw01sw02.switch_id2));
+  memcpy(key_link_sw01sw02.port_id2, "s2-eth2", sizeof(
+          key_link_sw01sw02.port_id2));
+  memcpy(val_link_sw01sw02.link.description, "link sw01 to sw02", sizeof(
+          val_link_sw01sw02.link.description));
+  val_link_sw01sw02.oper_status = 1;
+  ConfigNode *cfgptr_link_sw01sw02 =
+      new CacheElementUtil<key_link, val_link_st, uint32_t>
+      (&key_link_sw01sw02, &val_link_sw01sw02, operation);
+  ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_link_sw01sw02);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  // add one link between switch02 to switch01
+  key_link  key_link_sw02sw01;
+  val_link_st  val_link_sw02sw01;
+  memset(&key_link_sw02sw01, 0, sizeof(key_link_sw02sw01));
+  memset(&val_link_sw02sw01, 0, sizeof(val_link_sw02sw01));
+
+  memcpy(key_link_sw02sw01.ctr_key.controller_name, "odc1", sizeof(
+         key_link_sw02sw01.ctr_key.controller_name));
+  memcpy(key_link_sw02sw01.switch_id1, "0000-0000-0000-0002", sizeof(
+          key_link_sw02sw01.switch_id1));
+  memcpy(key_link_sw02sw01.port_id1, "s2-eth2", sizeof(
+          key_link_sw02sw01.port_id1));
+  memcpy(key_link_sw02sw01.switch_id2, "0000-0000-0000-0001", sizeof(
+          key_link_sw02sw01.switch_id2));
+  memcpy(key_link_sw02sw01.port_id2, "s1-eth1", sizeof(
+          key_link_sw02sw01.port_id2));
+  memcpy(val_link_sw02sw01.link.description, "link sw02 to sw01", sizeof(
+          val_link_sw02sw01.link.description));
+  val_link_sw02sw01.oper_status = 1;
+  ConfigNode *cfgptr_link_sw02sw01 =
+      new CacheElementUtil<key_link, val_link_st, uint32_t>
+      (&key_link_sw02sw01, &val_link_sw02sw01, operation);
+  ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_link_sw02sw01);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
+  ConfigNode* cfgnode;
+  for (cfgnode = itr_ptr->PhysicalNodeFirstItem();
+       itr_ptr->IsDone() == false;
+       cfgnode = itr_ptr->NextItem() ) {
+    pfc_log_info("Before delete links, Node Present in Tree for:%s keytype %d",
+                 cfgnode->get_key_name().c_str(), cfgnode->get_type_name());
+  }
+  delete itr_ptr;
+  // delete existing link between switch01 to switch02
+  key_link  key_link_delete_sw01sw02;
+  val_link_st  val_link_delete_sw01sw02;
+  memset(&key_link_delete_sw01sw02, 0, sizeof(key_link_delete_sw01sw02));
+  memset(&val_link_delete_sw01sw02, 0, sizeof(val_link_delete_sw01sw02));
+
+  memcpy(key_link_delete_sw01sw02.ctr_key.controller_name, "odc1", sizeof(
+         key_link_delete_sw01sw02.ctr_key.controller_name));
+  memcpy(key_link_delete_sw01sw02.switch_id1, "0000-0000-0000-0001", sizeof(
+          key_link_delete_sw01sw02.switch_id1));
+  memcpy(key_link_delete_sw01sw02.port_id1, "s1-eth1", sizeof(
+          key_link_delete_sw01sw02.port_id1));
+  memcpy(key_link_delete_sw01sw02.switch_id2, "0000-0000-0000-0002", sizeof(
+          key_link_delete_sw01sw02.switch_id2));
+  memcpy(key_link_delete_sw01sw02.port_id2, "s2-eth2", sizeof(
+          key_link_delete_sw01sw02.port_id2));
+  memcpy(val_link_delete_sw01sw02.link.description, "delete link sw01 to sw02",
+         sizeof(val_link_delete_sw01sw02.link.description));
+  val_link_delete_sw01sw02.oper_status = 1;
+  ConfigNode *cfgptr_link_delete_sw01sw02 =
+      new CacheElementUtil<key_link, val_link_st, uint32_t>
+      (&key_link_delete_sw01sw02, &val_link_delete_sw01sw02, operation);
+  ret = KeyTree_obj->delete_physical_attribute_node(
+      cfgptr_link_delete_sw01sw02);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  // delete existing link between switch02 to switch01
+  key_link  key_link_delete_sw02sw01;
+  val_link_st  val_link_delete_sw02sw01;
+  memset(&key_link_delete_sw02sw01, 0, sizeof(key_link_delete_sw02sw01));
+  memset(&val_link_delete_sw02sw01, 0, sizeof(val_link_delete_sw02sw01));
+
+  memcpy(key_link_delete_sw02sw01.ctr_key.controller_name, "odc1", sizeof(
+         key_link_delete_sw02sw01.ctr_key.controller_name));
+  memcpy(key_link_delete_sw02sw01.switch_id1, "0000-0000-0000-0002", sizeof(
+          key_link_delete_sw02sw01.switch_id1));
+  memcpy(key_link_delete_sw02sw01.port_id1, "s2-eth2", sizeof(
+          key_link_delete_sw02sw01.port_id1));
+  memcpy(key_link_delete_sw02sw01.switch_id2, "0000-0000-0000-0001", sizeof(
+          key_link_delete_sw02sw01.switch_id2));
+  memcpy(key_link_delete_sw02sw01.port_id2, "s1-eth1", sizeof(
+          key_link_delete_sw02sw01.port_id2));
+  memcpy(val_link_delete_sw02sw01.link.description, "delete link sw02 to sw01",
+         sizeof(val_link_delete_sw02sw01.link.description));
+  val_link_delete_sw02sw01.oper_status = 1;
+  ConfigNode *cfgptr_link_delete_sw02sw01 =
+      new CacheElementUtil<key_link, val_link_st, uint32_t>
+      (&key_link_delete_sw02sw01, &val_link_delete_sw02sw01, operation);
+  ret = KeyTree_obj->delete_physical_attribute_node(
+      cfgptr_link_delete_sw02sw01);
+  CommonIterator* itr = KeyTree_obj->create_iterator();
+  ConfigNode* cfgnode_it;
+  for (cfgnode_it = itr->PhysicalNodeFirstItem();
+       itr->IsDone() == false;
+       cfgnode_it = itr->NextItem() ) {
+    pfc_log_info("After Delete link, Node Present in Tree for:%s keytype %d",
+                 cfgnode_it->get_key_name().c_str(),
+                 cfgnode_it->get_type_name());
+  }
+  delete itr;
+
+  delete KeyTree_obj;
+  KeyTree_obj = NULL;
+  cfgptr_switch01 = NULL;
+  cfgptr_switch01_port_s1eth1 = NULL;
+  cfgptr_switch02 = NULL;
+  cfgptr_switch02_port_s2eth2 = NULL;
+  cfgptr_link_sw01sw02 = NULL;
+  cfgptr_link_sw02sw01 = NULL;
+  delete cfgptr_link_delete_sw01sw02;
+  cfgptr_link_delete_sw01sw02 = NULL;
+  delete cfgptr_link_delete_sw02sw01;
+  cfgptr_link_delete_sw02sw01 = NULL;
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+}
+//  Append twoswitches and two ports  to keytree with
+//  append_Physical_attribute_node method and create one link between
+//  switches and update the link parameter oper_status/description
+TEST(update_physical_attribute_node, single_link_update_sucess) {
+  int operation = 1;
+  KeyTree* KeyTree_obj = NULL;
+  KeyTree_obj = KeyTree::create_cache();
+  //  add switch 0000-0000-0000-0001 to cache
+  key_switch key_switch_obj;
+  val_switch_st val_switch;
+  memset(&key_switch_obj, 0, sizeof(key_switch_obj));
+  memset(&val_switch, 0, sizeof(val_switch));
+  memcpy(key_switch_obj.ctr_key.controller_name, "odc1", sizeof(
+          key_switch_obj.ctr_key.controller_name));
+  memcpy(key_switch_obj.switch_id, "0000-0000-0000-0001", sizeof(
+          key_switch_obj.switch_id));
+  ConfigNode *cfgptr_switch01 =
+      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, operation);
+  uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch01);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  //  add port s1-eth1 to switch 0000-0000-0000-0001
+  key_port key_obj;
+  val_port_st val_obj;
+  memset(&key_obj, 0, sizeof(key_obj));
+  memset(&val_obj, 0, sizeof(val_obj));
+  memcpy(key_obj.sw_key.ctr_key.controller_name, "odc1", sizeof(
+          key_obj.sw_key.ctr_key.controller_name));
+  memcpy(key_obj.sw_key.switch_id, "0000-0000-0000-0001", sizeof(
+          key_obj.sw_key.switch_id));
+  memcpy(key_obj.port_id, "s1-eth1", sizeof(key_obj.port_id));
+
+  memcpy(val_obj.port.description, "port-s1-eth1 connect to switch 01", sizeof(
+          val_obj.port.description));
+  ConfigNode *cfgptr_switch01_port_s1eth1 =
+      new CacheElementUtil<key_port, val_port_st, uint32_t>
+      (&key_obj, &val_obj, operation);
+
+  ret = KeyTree_obj->append_Physical_attribute_node(
+      cfgptr_switch01_port_s1eth1);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  //  add switch 0000-0000-0000-0002 to cache
+  key_switch key_switch_obj_sw02;
+  val_switch_st val_switch_sw02;
+  memset(&key_switch_obj_sw02, 0, sizeof(key_switch_obj_sw02));
+  memset(&val_switch_sw02, 0, sizeof(val_switch_sw02));
+  memcpy(key_switch_obj_sw02.ctr_key.controller_name, "odc1", sizeof(
+          key_switch_obj_sw02.ctr_key.controller_name));
+  memcpy(key_switch_obj_sw02.switch_id, "0000-0000-0000-0002", sizeof(
+          key_switch_obj_sw02.switch_id));
+  ConfigNode *cfgptr_switch02 =
+      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
+      (&key_switch_obj_sw02, &val_switch_sw02, operation);
+  ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch02);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  //  add port s2-eth2 to switch 0000-0000-0000-0002
+  key_port key_obj_s2eth2;
+  val_port_st val_obj_s2eth2;
+  memset(&key_obj_s2eth2, 0, sizeof(key_obj_s2eth2));
+  memset(&val_obj_s2eth2, 0, sizeof(val_obj_s2eth2));
+  memcpy(key_obj_s2eth2.sw_key.ctr_key.controller_name, "odc1", sizeof(
+          key_obj_s2eth2.sw_key.ctr_key.controller_name));
+  memcpy(key_obj_s2eth2.sw_key.switch_id, "0000-0000-0000-0002", sizeof(
+          key_obj_s2eth2.sw_key.switch_id));
+  memcpy(key_obj_s2eth2.port_id, "s2-eth2", sizeof(key_obj.port_id));
+
+  memcpy(val_obj_s2eth2.port.description, "port-s2-eth2 connect to switch 02",
+         sizeof(val_obj_s2eth2.port.description));
+  ConfigNode *cfgptr_switch02_port_s2eth2 =
+      new CacheElementUtil<key_port, val_port_st, uint32_t>
+      (&key_obj_s2eth2, &val_obj_s2eth2, operation);
+
+  ret = KeyTree_obj->append_Physical_attribute_node(
+      cfgptr_switch02_port_s2eth2);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  // add one link between switch01 to switch02
+  key_link  key_link_sw01sw02;
+  val_link_st  val_link_sw01sw02;
+  memset(&key_link_sw01sw02, 0, sizeof(key_link_sw01sw02));
+  memset(&val_link_sw01sw02, 0, sizeof(val_link_sw01sw02));
+
+  memcpy(key_link_sw01sw02.ctr_key.controller_name, "odc1", sizeof(
+         key_link_sw01sw02.ctr_key.controller_name));
+  memcpy(key_link_sw01sw02.switch_id1, "0000-0000-0000-0001", sizeof(
+          key_link_sw01sw02.switch_id1));
+  memcpy(key_link_sw01sw02.port_id1, "s1-eth1", sizeof(
+          key_link_sw01sw02.port_id1));
+  memcpy(key_link_sw01sw02.switch_id2, "0000-0000-0000-0002", sizeof(
+          key_link_sw01sw02.switch_id2));
+  memcpy(key_link_sw01sw02.port_id2, "s2-eth2", sizeof(
+          key_link_sw01sw02.port_id2));
+  memcpy(val_link_sw01sw02.link.description, "link sw01 to sw02", sizeof(
+          val_link_sw01sw02.link.description));
+  val_link_sw01sw02.oper_status = 1;
+  ConfigNode *cfgptr_link_sw01sw02 =
+      new CacheElementUtil<key_link, val_link_st, uint32_t>
+      (&key_link_sw01sw02, &val_link_sw01sw02, operation);
+  ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_link_sw01sw02);
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  CacheElementUtil<key_link, val_link_st, uint32_t> *tmp_ptr_one =
+      static_cast<CacheElementUtil<key_link, val_link_st, uint32_t>*> (
+          cfgptr_link_sw01sw02);
+  pfc_log_info("Before update link parameter");
+  pfc_log_info("Description= %s", reinterpret_cast<char*>(
+          tmp_ptr_one->get_val_structure()->link.description));
+  pfc_log_info("oper_status= %d", tmp_ptr_one->get_val_structure()->
+               oper_status);
+  // Update the link parameter between switch01 to switch02
+  key_link  key_link_update_sw01sw02;
+  val_link_st  val_link_update_sw01sw02;
+  memset(&key_link_update_sw01sw02, 0, sizeof(key_link_update_sw01sw02));
+  memset(&val_link_update_sw01sw02, 0, sizeof(val_link_update_sw01sw02));
+
+  memcpy(key_link_update_sw01sw02.ctr_key.controller_name, "odc1", sizeof(
+         key_link_update_sw01sw02.ctr_key.controller_name));
+  memcpy(key_link_update_sw01sw02.switch_id1, "0000-0000-0000-0001", sizeof(
+          key_link_update_sw01sw02.switch_id1));
+  memcpy(key_link_update_sw01sw02.port_id1, "s1-eth1", sizeof(
+          key_link_update_sw01sw02.port_id1));
+  memcpy(key_link_update_sw01sw02.switch_id2, "0000-0000-0000-0002", sizeof(
+          key_link_update_sw01sw02.switch_id2));
+  memcpy(key_link_update_sw01sw02.port_id2, "s2-eth2", sizeof(
+          key_link_update_sw01sw02.port_id2));
+  memcpy(val_link_update_sw01sw02.link.description,
+         "link sw01 to sw02 parameter changes", sizeof(
+          val_link_update_sw01sw02.link.description));
+  val_link_update_sw01sw02.oper_status = 2;
+  ConfigNode *cfgptr_link_update_sw01sw02 =
+      new CacheElementUtil<key_link, val_link_st, uint32_t>
+      (&key_link_update_sw01sw02, &val_link_update_sw01sw02, operation);
+  ret = KeyTree_obj->update_physical_attribute_node(
+      cfgptr_link_update_sw01sw02);
+  CacheElementUtil<key_link, val_link_st, uint32_t> *tmp_ptr =
+      static_cast<CacheElementUtil<key_link, val_link_st, uint32_t>*> (
+          cfgptr_link_sw01sw02);
+  pfc_log_info("After update link parameter");
+  pfc_log_info("Description= %s", reinterpret_cast<char*>(
+          tmp_ptr->get_val_structure()->link.description));
+  pfc_log_info("oper_status= %d", tmp_ptr->get_val_structure()->oper_status);
+
+  delete KeyTree_obj;
+  KeyTree_obj = NULL;
+  cfgptr_switch01 = NULL;
+  cfgptr_switch01_port_s1eth1 = NULL;
+  cfgptr_switch02 = NULL;
+  cfgptr_switch02_port_s2eth2 = NULL;
+  cfgptr_link_sw01sw02 = NULL;
+  delete cfgptr_link_update_sw01sw02;
+  cfgptr_link_update_sw01sw02 = NULL;
+  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
 }
 }  // namespace vtndrvcache
 }  // namespace unc

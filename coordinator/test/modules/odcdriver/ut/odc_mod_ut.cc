@@ -560,6 +560,7 @@ TEST(odcdriver, test_ping_controller_SUCCESS) {
   memset(&key_ctr,  0,  sizeof(key_ctr_t));
   memset(&val_ctr,  0,  sizeof(val_ctr_t));
 
+  unc::tclib::TcLibModule::stub_loadtcLibModule();
   std::string ip_add = "172.16.0.2";
   inet_aton(ip_add.c_str(),  &val_ctr.ip_address);
   std::string ctr_name = "ctr_abc";
@@ -580,6 +581,7 @@ TEST(odcdriver, test_ping_controller_SUCCESS) {
     delete ctr;
     ctr = NULL;
   }
+  unc::tclib::TcLibModule::stub_unloadtcLibModule();
 }
 
 TEST(odcdriver, test_ping_controller_connection_status_success) {

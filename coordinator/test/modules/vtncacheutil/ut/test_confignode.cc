@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -241,6 +241,10 @@ TEST(delete_child_node, delete_switch) {
   KeyTree_obj = NULL;
   cfgptr = NULL;
   EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+}
+TEST(TypeToStrFun, keytype_kt_link) {
+  std::string ret = TypeToStrFun(UNC_KT_LINK);
+  EXPECT_EQ(ret, "UNC_KT_LINK");
 }
 }  // namespace vtndrvcache
 }  // namespace unc

@@ -15,11 +15,6 @@
 #include <gtest/gtest.h>
 #include <string>
 
-void read_conf_file_port(unc::restjson::ConfFileValues_t &conf_file) {
-  conf_file.odc_port = 8080;
-  conf_file.user_name = "admin";
-  conf_file.password = "admin";
-}
 
 TEST(odcdriver_port, test_port_one_add) {
   key_ctr_t key_ctr;
@@ -78,6 +73,11 @@ TEST(odcdriver_port, test_port_null_resp) {
   inet_aton(NULL_RESPONSE.c_str(),  &val_ctr.ip_address);
   key_switch_t key_switch;
   memset(&key_switch, 0, sizeof(key_switch_t));
+  std::string switch_id = "00:00:00:00:00:00:00:02";
+  //  Fills Key Structure
+  strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
+          sizeof(key_switch.switch_id)-1);
+
 
   unc::driver::controller *ctr =
       new unc::odcdriver::OdcController(key_ctr,  val_ctr);
@@ -102,6 +102,11 @@ TEST(odcdriver_port, test_port_invalid_resp) {
   inet_aton(INVALID_RESPONSE.c_str(),  &val_ctr.ip_address);
   key_switch_t key_switch;
   memset(&key_switch, 0, sizeof(key_switch_t));
+  std::string switch_id = "00:00:00:00:00:00:00:02";
+
+  strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
+          sizeof(key_switch.switch_id)-1);
+
 
   unc::driver::controller *ctr =
       new unc::odcdriver::OdcController(key_ctr,  val_ctr);
@@ -375,6 +380,7 @@ TEST(odcdriver_port, test_port_data_update) {
 
   EXPECT_EQ(ctr->physical_port_cache->cfg_list_count(), 5);
   switch_id = "00:00:00:00:00:00:00:02";
+  ctr->set_connection_status(0);
 
   inet_aton(SWITCH_RESP.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
@@ -545,8 +551,701 @@ TEST(odcdriver_port, test_port_data_update__empty) {
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
 }
 
+TEST(odcdriver_port, test_port_resp_one) {
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  memset(&key_ctr, 0, sizeof(key_ctr_t));
+  memset(&val_ctr,  0, sizeof(val_ctr_t));
+
+  unc::driver::VtnDrvIntf::stub_loadVtnDrvModule();
+  key_switch_t key_switch;
+  memset(&key_switch, 0, sizeof(key_switch_t));
+  std::string switch_id = "00:00:00:00:00:00:00:01";
+  //  Fills Key Structure
+  strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
+          sizeof(key_switch.switch_id)-1);
+
+  std::string SWITCH_RESP_ONE = "172.16.0.28";
+  std::string PORT_RESP_ONE = "172.16.0.29";
+
+  inet_aton(SWITCH_RESP_ONE.c_str(),  &val_ctr.ip_address);
+
+  unc::restjson::ConfFileValues_t conf_file;
+  unc::driver::controller *ctr =
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+  ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
+
+  pfc_bool_t cache_empty = PFC_TRUE;
+  unc::odcdriver::OdcSwitch obj_sw(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
 
+  inet_aton(PORT_RESP_ONE.c_str(),  &val_ctr.ip_address);
+  ctr->update_ctr(key_ctr, val_ctr);
+
+  unc::odcdriver::OdcPort obj(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+            obj.fetch_config(ctr, &key_switch, cache_empty));
+
+  int flag = 1;
+  std::auto_ptr<unc::vtndrvcache::CommonIterator>
+      itr_ptr(ctr->physical_port_cache->create_iterator());
+  unc::vtndrvcache::ConfigNode *cfgnode_cache = NULL;
+  for (cfgnode_cache = itr_ptr->PhysicalNodeFirstItem();
+       itr_ptr->IsDone() == false;
+       cfgnode_cache = itr_ptr->NextItem() ) {
+    unc_key_type_t key_type =  cfgnode_cache->get_type_name();
+    if (UNC_KT_PORT == key_type) {
+      unc::vtndrvcache::CacheElementUtil
+          <key_port_t, val_port_st_t, uint32_t> * cache_util_ptr =
+          static_cast <unc::vtndrvcache::CacheElementUtil
+          <key_port_t, val_port_st_t, uint32_t> * > (cfgnode_cache);
+      key_port_t *key_port = cache_util_ptr->get_key_structure();
+      std::string port_id = reinterpret_cast<char*> (key_port->port_id);
+      std::string node_id =
+          reinterpret_cast<char*> (key_port->sw_key.switch_id);
+      std::string ctr_name =
+          reinterpret_cast<char*> (key_port->sw_key.ctr_key.controller_name);
+
+      if (flag == 1) {
+        EXPECT_EQ(0, port_id.compare("s2-eth1"));
+        EXPECT_EQ(0, node_id.compare("00:00:00:00:00:00:00:01"));
+        flag++;
+      } else if (flag == 2) {
+        EXPECT_EQ(0, 1);
+        flag++;
+      }
+    }
+  }
+  delete ctr->physical_port_cache;
+  delete ctr;
+  ctr= NULL;
+  unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
+}
+
+TEST(odcdriver_port, test_port_resp_conn_wrong) {
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  memset(&key_ctr, 0, sizeof(key_ctr_t));
+  memset(&val_ctr,  0, sizeof(val_ctr_t));
+
+  unc::driver::VtnDrvIntf::stub_loadVtnDrvModule();
+  key_switch_t key_switch;
+  memset(&key_switch, 0, sizeof(key_switch_t));
+  std::string switch_id = "00:00:00:00:00:00:00:01";
+  //  Fills Key Structure
+  strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
+          sizeof(key_switch.switch_id)-1);
+
+  std::string SWITCH_RESP_ONE = "172.16.0.28";
+  std::string PORT_NODE_CONN_PROP_WRONG = "172.16.0.57";
+
+  inet_aton(SWITCH_RESP_ONE.c_str(),  &val_ctr.ip_address);
+
+  unc::restjson::ConfFileValues_t conf_file;
+  unc::driver::controller *ctr =
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+  ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
+
+  pfc_bool_t cache_empty = PFC_TRUE;
+  unc::odcdriver::OdcSwitch obj_sw(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+
+  inet_aton(PORT_NODE_CONN_PROP_WRONG.c_str(),  &val_ctr.ip_address);
+  ctr->update_ctr(key_ctr, val_ctr);
+  unc::odcdriver::OdcPort obj(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+            obj.fetch_config(ctr, &key_switch, cache_empty));
+  delete ctr->physical_port_cache;
+  delete ctr;
+  ctr= NULL;
+  unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
+}
+
+TEST(odcdriver_port, test_port_conn_wrong) {
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  memset(&key_ctr, 0, sizeof(key_ctr_t));
+  memset(&val_ctr,  0, sizeof(val_ctr_t));
+
+  unc::driver::VtnDrvIntf::stub_loadVtnDrvModule();
+  key_switch_t key_switch;
+  memset(&key_switch, 0, sizeof(key_switch_t));
+  std::string switch_id = "00:00:00:00:00:00:00:01";
+  //  Fills Key Structure
+  strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
+          sizeof(key_switch.switch_id)-1);
+
+  std::string SWITCH_RESP_ONE = "172.16.0.28";
+  std::string PORT_NODE_CONN_WRONG = "172.16.0.58";
+
+  inet_aton(SWITCH_RESP_ONE.c_str(),  &val_ctr.ip_address);
+
+  unc::restjson::ConfFileValues_t conf_file;
+  unc::driver::controller *ctr =
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+  ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
+
+  pfc_bool_t cache_empty = PFC_TRUE;
+  unc::odcdriver::OdcSwitch obj_sw(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+
+  inet_aton(PORT_NODE_CONN_WRONG.c_str(),  &val_ctr.ip_address);
+  ctr->update_ctr(key_ctr, val_ctr);
+  unc::odcdriver::OdcPort obj(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+            obj.fetch_config(ctr, &key_switch, cache_empty));
+  delete ctr->physical_port_cache;
+  delete ctr;
+  ctr= NULL;
+  unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
+}
+
+TEST(odcdriver_port, test_port_connwrong) {
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  memset(&key_ctr, 0, sizeof(key_ctr_t));
+  memset(&val_ctr,  0, sizeof(val_ctr_t));
+
+  unc::driver::VtnDrvIntf::stub_loadVtnDrvModule();
+  key_switch_t key_switch;
+  memset(&key_switch, 0, sizeof(key_switch_t));
+  std::string switch_id = "00:00:00:00:00:00:00:01";
+  //  Fills Key Structure
+  strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
+          sizeof(key_switch.switch_id)-1);
+
+  std::string SWITCH_RESP_ONE = "172.16.0.28";
+  std::string PORT_NODE_CONN_NODE_WRONG = "172.16.0.60";
+
+  inet_aton(SWITCH_RESP_ONE.c_str(),  &val_ctr.ip_address);
+
+  unc::restjson::ConfFileValues_t conf_file;
+  unc::driver::controller *ctr =
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+  ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
+
+  pfc_bool_t cache_empty = PFC_TRUE;
+  unc::odcdriver::OdcSwitch obj_sw(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+
+  inet_aton(PORT_NODE_CONN_NODE_WRONG.c_str(),  &val_ctr.ip_address);
+  ctr->update_ctr(key_ctr, val_ctr);
+  unc::odcdriver::OdcPort obj(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+            obj.fetch_config(ctr, &key_switch, cache_empty));
+  delete ctr->physical_port_cache;
+  delete ctr;
+  ctr= NULL;
+  unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
+}
+
+TEST(odcdriver_port, test_port_conn_type_wrong) {
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  memset(&key_ctr, 0, sizeof(key_ctr_t));
+  memset(&val_ctr,  0, sizeof(val_ctr_t));
+
+  unc::driver::VtnDrvIntf::stub_loadVtnDrvModule();
+  key_switch_t key_switch;
+  memset(&key_switch, 0, sizeof(key_switch_t));
+  std::string switch_id = "00:00:00:00:00:00:00:01";
+  //  Fills Key Structure
+  strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
+          sizeof(key_switch.switch_id)-1);
+
+  std::string SWITCH_RESP_ONE = "172.16.0.28";
+  std::string PORT_NODE_CONN_TYPE_WRONG = "172.16.0.61";
+
+  inet_aton(SWITCH_RESP_ONE.c_str(),  &val_ctr.ip_address);
+
+  unc::restjson::ConfFileValues_t conf_file;
+  unc::driver::controller *ctr =
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+  ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
+
+  pfc_bool_t cache_empty = PFC_TRUE;
+  unc::odcdriver::OdcSwitch obj_sw(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+
+  inet_aton(PORT_NODE_CONN_TYPE_WRONG.c_str(),  &val_ctr.ip_address);
+  ctr->update_ctr(key_ctr, val_ctr);
+  unc::odcdriver::OdcPort obj(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+            obj.fetch_config(ctr, &key_switch, cache_empty));
+  delete ctr->physical_port_cache;
+  delete ctr;
+  ctr= NULL;
+  unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
+}
+
+TEST(odcdriver_port, test_port_node_id_wrong) {
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  memset(&key_ctr, 0, sizeof(key_ctr_t));
+  memset(&val_ctr,  0, sizeof(val_ctr_t));
+
+  unc::driver::VtnDrvIntf::stub_loadVtnDrvModule();
+  key_switch_t key_switch;
+  memset(&key_switch, 0, sizeof(key_switch_t));
+  std::string switch_id = "00:00:00:00:00:00:00:01";
+  //  Fills Key Structure
+  strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
+          sizeof(key_switch.switch_id)-1);
+
+  std::string SWITCH_RESP_ONE = "172.16.0.28";
+  std::string PORT_NODE_ID_WRONG = "172.16.0.62";
+
+  inet_aton(SWITCH_RESP_ONE.c_str(),  &val_ctr.ip_address);
+
+  unc::restjson::ConfFileValues_t conf_file;
+  unc::driver::controller *ctr =
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+  ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
+
+  pfc_bool_t cache_empty = PFC_TRUE;
+  unc::odcdriver::OdcSwitch obj_sw(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+
+  inet_aton(PORT_NODE_ID_WRONG.c_str(),  &val_ctr.ip_address);
+  ctr->update_ctr(key_ctr, val_ctr);
+  unc::odcdriver::OdcPort obj(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+            obj.fetch_config(ctr, &key_switch, cache_empty));
+  delete ctr->physical_port_cache;
+  delete ctr;
+  ctr= NULL;
+  unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
+}
+
+TEST(odcdriver_port, test_port_node_conn_id_wrong) {
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  memset(&key_ctr, 0, sizeof(key_ctr_t));
+  memset(&val_ctr,  0, sizeof(val_ctr_t));
+
+  unc::driver::VtnDrvIntf::stub_loadVtnDrvModule();
+  key_switch_t key_switch;
+  memset(&key_switch, 0, sizeof(key_switch_t));
+  std::string switch_id = "00:00:00:00:00:00:00:01";
+  //  Fills Key Structure
+  strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
+          sizeof(key_switch.switch_id)-1);
+
+  std::string SWITCH_RESP_ONE = "172.16.0.28";
+  std::string PORT_NODE_CONN_ID_WRONG = "172.16.0.59";
 
 
+  inet_aton(SWITCH_RESP_ONE.c_str(),  &val_ctr.ip_address);
+
+  unc::restjson::ConfFileValues_t conf_file;
+  unc::driver::controller *ctr =
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+  ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
+
+  pfc_bool_t cache_empty = PFC_TRUE;
+  unc::odcdriver::OdcSwitch obj_sw(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+
+  inet_aton(PORT_NODE_CONN_ID_WRONG.c_str(),  &val_ctr.ip_address);
+  ctr->update_ctr(key_ctr, val_ctr);
+  unc::odcdriver::OdcPort obj(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+            obj.fetch_config(ctr, &key_switch, cache_empty));
+  delete ctr->physical_port_cache;
+  delete ctr;
+  ctr= NULL;
+  unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
+}
+
+TEST(odcdriver_port, test_port_node_id_SW_wrong) {
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  memset(&key_ctr, 0, sizeof(key_ctr_t));
+  memset(&val_ctr,  0, sizeof(val_ctr_t));
+
+  unc::driver::VtnDrvIntf::stub_loadVtnDrvModule();
+  key_switch_t key_switch;
+  memset(&key_switch, 0, sizeof(key_switch_t));
+  std::string switch_id = "00:00:00:00:00:00:00:01";
+  //  Fills Key Structure
+  strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
+          sizeof(key_switch.switch_id)-1);
+
+  std::string SWITCH_RESP_ONE = "172.16.0.28";
+  std::string PORT_NODE_ID_SW = "172.16.0.63";
+
+  inet_aton(SWITCH_RESP_ONE.c_str(),  &val_ctr.ip_address);
+
+  unc::restjson::ConfFileValues_t conf_file;
+  unc::driver::controller *ctr =
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+  ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
+
+  pfc_bool_t cache_empty = PFC_TRUE;
+  unc::odcdriver::OdcSwitch obj_sw(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+
+  inet_aton(PORT_NODE_ID_SW.c_str(),  &val_ctr.ip_address);
+  ctr->update_ctr(key_ctr, val_ctr);
+  unc::odcdriver::OdcPort obj(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+            obj.fetch_config(ctr, &key_switch, cache_empty));
+  delete ctr->physical_port_cache;
+  delete ctr;
+  ctr= NULL;
+  unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
+}
+
+TEST(odcdriver_port, test_port_node_prop_wrong) {
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  memset(&key_ctr, 0, sizeof(key_ctr_t));
+  memset(&val_ctr,  0, sizeof(val_ctr_t));
+
+  unc::driver::VtnDrvIntf::stub_loadVtnDrvModule();
+  key_switch_t key_switch;
+  memset(&key_switch, 0, sizeof(key_switch_t));
+  std::string switch_id = "00:00:00:00:00:00:00:01";
+  //  Fills Key Structure
+  strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
+          sizeof(key_switch.switch_id)-1);
+
+  std::string SWITCH_RESP_ONE = "172.16.0.28";
+  std::string PORT_NODE_PROP_WRONG = "172.16.0.64";
+
+  inet_aton(SWITCH_RESP_ONE.c_str(),  &val_ctr.ip_address);
+
+  unc::restjson::ConfFileValues_t conf_file;
+  unc::driver::controller *ctr =
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+  ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
+
+  pfc_bool_t cache_empty = PFC_TRUE;
+  unc::odcdriver::OdcSwitch obj_sw(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+
+  inet_aton(PORT_NODE_PROP_WRONG.c_str(),  &val_ctr.ip_address);
+  ctr->update_ctr(key_ctr, val_ctr);
+  unc::odcdriver::OdcPort obj(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+            obj.fetch_config(ctr, &key_switch, cache_empty));
+  delete ctr->physical_port_cache;
+  delete ctr;
+  ctr= NULL;
+  unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
+}
+
+TEST(odcdriver_port, test_port_node_prop_name_wrong) {
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  memset(&key_ctr, 0, sizeof(key_ctr_t));
+  memset(&val_ctr,  0, sizeof(val_ctr_t));
+
+  unc::driver::VtnDrvIntf::stub_loadVtnDrvModule();
+  key_switch_t key_switch;
+  memset(&key_switch, 0, sizeof(key_switch_t));
+  std::string switch_id = "00:00:00:00:00:00:00:01";
+  //  Fills Key Structure
+  strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
+          sizeof(key_switch.switch_id)-1);
+
+  std::string SWITCH_RESP_ONE = "172.16.0.28";
+  std::string PORT_NODE_PROP_NAME_WRONG = "172.16.0.65";
+
+  inet_aton(SWITCH_RESP_ONE.c_str(),  &val_ctr.ip_address);
+
+  unc::restjson::ConfFileValues_t conf_file;
+  unc::driver::controller *ctr =
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+  ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
+
+  pfc_bool_t cache_empty = PFC_TRUE;
+  unc::odcdriver::OdcSwitch obj_sw(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+
+  inet_aton(PORT_NODE_PROP_NAME_WRONG.c_str(),  &val_ctr.ip_address);
+  ctr->update_ctr(key_ctr, val_ctr);
+  unc::odcdriver::OdcPort obj(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+            obj.fetch_config(ctr, &key_switch, cache_empty));
+  delete ctr->physical_port_cache;
+  delete ctr;
+  ctr= NULL;
+  unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
+}
+
+TEST(odcdriver_port, test_port_node_prop_name_value_wrong) {
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  memset(&key_ctr, 0, sizeof(key_ctr_t));
+  memset(&val_ctr,  0, sizeof(val_ctr_t));
+
+  unc::driver::VtnDrvIntf::stub_loadVtnDrvModule();
+  key_switch_t key_switch;
+  memset(&key_switch, 0, sizeof(key_switch_t));
+  std::string switch_id = "00:00:00:00:00:00:00:01";
+  //  Fills Key Structure
+  strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
+          sizeof(key_switch.switch_id)-1);
+
+  std::string SWITCH_RESP_ONE = "172.16.0.28";
+  std::string PORT_NODE_PROP_NAME_VALUE_WRONG = "172.16.0.66";
+
+  inet_aton(SWITCH_RESP_ONE.c_str(),  &val_ctr.ip_address);
+
+  unc::restjson::ConfFileValues_t conf_file;
+  unc::driver::controller *ctr =
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+  ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
+
+  pfc_bool_t cache_empty = PFC_TRUE;
+  unc::odcdriver::OdcSwitch obj_sw(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+
+  inet_aton(PORT_NODE_PROP_NAME_VALUE_WRONG.c_str(),  &val_ctr.ip_address);
+  ctr->update_ctr(key_ctr, val_ctr);
+  unc::odcdriver::OdcPort obj(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+            obj.fetch_config(ctr, &key_switch, cache_empty));
+  delete ctr->physical_port_cache;
+  delete ctr;
+  ctr= NULL;
+  unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
+}
+
+TEST(odcdriver_port, test_port_node_prop_state_wrong) {
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  memset(&key_ctr, 0, sizeof(key_ctr_t));
+  memset(&val_ctr,  0, sizeof(val_ctr_t));
+
+  unc::driver::VtnDrvIntf::stub_loadVtnDrvModule();
+  key_switch_t key_switch;
+  memset(&key_switch, 0, sizeof(key_switch_t));
+  std::string switch_id = "00:00:00:00:00:00:00:01";
+  //  Fills Key Structure
+  strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
+          sizeof(key_switch.switch_id)-1);
+
+  std::string SWITCH_RESP_ONE = "172.16.0.28";
+  std::string PORT_NODE_PROP_STATE_WRONG = "172.16.0.67";
+
+  inet_aton(SWITCH_RESP_ONE.c_str(),  &val_ctr.ip_address);
+
+  unc::restjson::ConfFileValues_t conf_file;
+  unc::driver::controller *ctr =
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+  ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
+
+  pfc_bool_t cache_empty = PFC_TRUE;
+  unc::odcdriver::OdcSwitch obj_sw(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+
+  inet_aton(PORT_NODE_PROP_STATE_WRONG.c_str(),  &val_ctr.ip_address);
+  ctr->update_ctr(key_ctr, val_ctr);
+  unc::odcdriver::OdcPort obj(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+            obj.fetch_config(ctr, &key_switch, cache_empty));
+  delete ctr->physical_port_cache;
+  delete ctr;
+  ctr= NULL;
+  unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
+}
+
+TEST(odcdriver_port, test_port_node_prop_config_wrong) {
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  memset(&key_ctr, 0, sizeof(key_ctr_t));
+  memset(&val_ctr,  0, sizeof(val_ctr_t));
+
+  unc::driver::VtnDrvIntf::stub_loadVtnDrvModule();
+  key_switch_t key_switch;
+  memset(&key_switch, 0, sizeof(key_switch_t));
+  std::string switch_id = "00:00:00:00:00:00:00:01";
+  //  Fills Key Structure
+  strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
+          sizeof(key_switch.switch_id)-1);
+
+  std::string SWITCH_RESP_ONE = "172.16.0.28";
+  std::string PORT_NODE_PROP_CONFIG_WRONG = "172.16.0.69";
+
+  inet_aton(SWITCH_RESP_ONE.c_str(),  &val_ctr.ip_address);
+
+  unc::restjson::ConfFileValues_t conf_file;
+  unc::driver::controller *ctr =
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+  ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
+
+  pfc_bool_t cache_empty = PFC_TRUE;
+  unc::odcdriver::OdcSwitch obj_sw(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+
+  inet_aton(PORT_NODE_PROP_CONFIG_WRONG.c_str(),  &val_ctr.ip_address);
+  ctr->update_ctr(key_ctr, val_ctr);
+  unc::odcdriver::OdcPort obj(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+            obj.fetch_config(ctr, &key_switch, cache_empty));
+  delete ctr->physical_port_cache;
+  delete ctr;
+  ctr= NULL;
+  unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
+}
+
+TEST(odcdriver_port, test_port_node_prop_bandwidth_wrong) {
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  memset(&key_ctr, 0, sizeof(key_ctr_t));
+  memset(&val_ctr,  0, sizeof(val_ctr_t));
+
+  unc::driver::VtnDrvIntf::stub_loadVtnDrvModule();
+  key_switch_t key_switch;
+  memset(&key_switch, 0, sizeof(key_switch_t));
+  std::string switch_id = "00:00:00:00:00:00:00:01";
+  //  Fills Key Structure
+  strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
+          sizeof(key_switch.switch_id)-1);
+
+  std::string SWITCH_RESP_ONE = "172.16.0.28";
+  std::string PORT_NODE_PROP_BANDWIDTH_WRONG = "172.16.0.71";
+
+  inet_aton(SWITCH_RESP_ONE.c_str(),  &val_ctr.ip_address);
+
+  unc::restjson::ConfFileValues_t conf_file;
+  unc::driver::controller *ctr =
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+  ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
+
+  pfc_bool_t cache_empty = PFC_TRUE;
+  unc::odcdriver::OdcSwitch obj_sw(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+
+  inet_aton(PORT_NODE_PROP_BANDWIDTH_WRONG.c_str(),  &val_ctr.ip_address);
+  ctr->update_ctr(key_ctr, val_ctr);
+  unc::odcdriver::OdcPort obj(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+            obj.fetch_config(ctr, &key_switch, cache_empty));
+  delete ctr->physical_port_cache;
+  delete ctr;
+  ctr= NULL;
+  unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
+}
+
+TEST(odcdriver_port, test_port_resp_conf_unknown) {
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  memset(&key_ctr, 0, sizeof(key_ctr_t));
+  memset(&val_ctr,  0, sizeof(val_ctr_t));
+
+  unc::driver::VtnDrvIntf::stub_loadVtnDrvModule();
+  key_switch_t key_switch;
+  memset(&key_switch, 0, sizeof(key_switch_t));
+  std::string switch_id = "00:00:00:00:00:00:00:01";
+  //  Fills Key Structure
+  strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
+          sizeof(key_switch.switch_id)-1);
+
+  std::string SWITCH_RESP_ONE = "172.16.0.28";
+  std::string PORT_RESP_ONE = "172.16.0.29";
+
+  inet_aton(SWITCH_RESP_ONE.c_str(),  &val_ctr.ip_address);
+
+  unc::restjson::ConfFileValues_t conf_file;
+  unc::driver::controller *ctr =
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+  ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
+
+  ctr->set_connection_status(1);
+  pfc_bool_t cache_empty = PFC_TRUE;
+  unc::odcdriver::OdcSwitch obj_sw(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+
+
+  inet_aton(PORT_RESP_ONE.c_str(),  &val_ctr.ip_address);
+  ctr->update_ctr(key_ctr, val_ctr);
+
+  unc::odcdriver::OdcPort obj(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+            obj.fetch_config(ctr, &key_switch, cache_empty));
+  int flag = 1;
+  std::auto_ptr<unc::vtndrvcache::CommonIterator>
+      itr_ptr(ctr->physical_port_cache->create_iterator());
+  unc::vtndrvcache::ConfigNode *cfgnode_cache = NULL;
+  for (cfgnode_cache = itr_ptr->PhysicalNodeFirstItem();
+       itr_ptr->IsDone() == false;
+       cfgnode_cache = itr_ptr->NextItem() ) {
+    unc_key_type_t key_type =  cfgnode_cache->get_type_name();
+    if (UNC_KT_PORT == key_type) {
+      unc::vtndrvcache::CacheElementUtil
+          <key_port_t, val_port_st_t, uint32_t> * cache_util_ptr =
+          static_cast <unc::vtndrvcache::CacheElementUtil
+          <key_port_t, val_port_st_t, uint32_t> * > (cfgnode_cache);
+      key_port_t *key_port = cache_util_ptr->get_key_structure();
+      val_port_st_t *val_port = cache_util_ptr->get_val_structure();
+
+      std::string port_id = reinterpret_cast<char*> (key_port->port_id);
+      std::string node_id =
+          reinterpret_cast<char*> (key_port->sw_key.switch_id);
+      std::string ctr_name =
+          reinterpret_cast<char*> (key_port->sw_key.ctr_key.controller_name);
+
+      if (flag == 1) {
+        EXPECT_EQ(0, port_id.compare("s2-eth1"));
+        EXPECT_EQ(0, node_id.compare("00:00:00:00:00:00:00:01"));
+        EXPECT_EQ(UPPL_PORT_OPER_UNKNOWN, val_port->oper_status);
+
+        flag++;
+      } else if (flag == 2) {
+        EXPECT_EQ(0, 1);
+        flag++;
+      }
+    }
+  }
+  delete ctr->physical_port_cache;
+  delete ctr;
+  ctr= NULL;
+  unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
+}
+
+TEST(odcdriver_port, test_port_resp_parent_sw_NULL) {
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  memset(&key_ctr, 0, sizeof(key_ctr_t));
+  memset(&val_ctr,  0, sizeof(val_ctr_t));
+
+  unc::driver::VtnDrvIntf::stub_loadVtnDrvModule();
+  key_switch_t key_switch;
+  memset(&key_switch, 0, sizeof(key_switch_t));
+  std::string switch_id = "00:00:00:00:00:00:00:01";
+  //  Fills Key Structure
+  strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
+          sizeof(key_switch.switch_id)-1);
+
+  std::string SWITCH_RESP_ONE = "172.16.0.28";
+  std::string PORT_RESP_ONE = "172.16.0.29";
+
+  inet_aton(SWITCH_RESP_ONE.c_str(),  &val_ctr.ip_address);
+
+  unc::restjson::ConfFileValues_t conf_file;
+  unc::driver::controller *ctr =
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+  ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
+
+  ctr->set_connection_status(1);
+  pfc_bool_t cache_empty = PFC_TRUE;
+  unc::odcdriver::OdcSwitch obj_sw(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+
+
+  inet_aton(PORT_RESP_ONE.c_str(),  &val_ctr.ip_address);
+  ctr->update_ctr(key_ctr, val_ctr);
+
+  unc::odcdriver::OdcPort obj(conf_file);
+  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+            obj.fetch_config(ctr, NULL, cache_empty));
+  delete ctr->physical_port_cache;
+  delete ctr;
+  ctr= NULL;
+  unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
+}
 

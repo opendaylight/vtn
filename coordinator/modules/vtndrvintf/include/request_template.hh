@@ -854,7 +854,6 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
     ctr = util_obj.get_controller_handle();
 
     if (ctr != NULL) {
-      resp_code_ = DRVAPI_RESPONSE_SUCCESS;
       if (ctr->controller_cache == NULL) {
         pfc_log_error("Not getting controller_cache ");
         return DRVAPI_RESPONSE_FAILURE;
@@ -899,7 +898,7 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
       int err_ = sess.addOutput(resp_hdr.result);
       if (err_ != 0) {
         pfc_log_fatal("%s: Failed to send resp code audit:(err = %d)",
-                      PFC_FUNCNAME, resp_code_);
+                      PFC_FUNCNAME, err_);
         return DRVAPI_RESPONSE_FAILURE;
       }
 
@@ -966,14 +965,17 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
       //  delete cache
       delete  ctr->controller_cache;
       ctr->controller_cache = NULL;
+    } else {
+      pfc_log_error("%s: ctr is NULL", PFC_FUNCNAME);
+      return DRVAPI_RESPONSE_FAILURE;
     }
     pfc_log_debug("UNC_DT_RUNNING processing complete");
   } else {
        pfc_log_error("%s: unsupported datatype %u",
           PFC_FUNCNAME, resp_hdr.header.data_type);
-       resp_code_ = DRVAPI_RESPONSE_FAILURE;
+       return DRVAPI_RESPONSE_FAILURE;
   }
-  return resp_code_;
+  return DRVAPI_RESPONSE_SUCCESS;
 }
 
   /**
