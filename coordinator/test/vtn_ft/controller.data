@@ -8,7 +8,7 @@
 #
 
 [ControllerFirst]
-ipaddr=10.100.9.30
+ipaddr=10.100.9.43
 invalid_ipaddr=10.10.0.1
 controller_id=controller1
 description=First Test Controller
@@ -20,6 +20,7 @@ password=admin
 invalidusername=admininval
 invalidpassword=admininval
 url=/controllers/controller1.json
+get_url=/controllers/controller1
 port=8080
 
 [ControllerSecond]
@@ -35,6 +36,7 @@ password=admin
 invalidusername=admininval
 invalidpassword=admininval
 url=/controllers/controller2.json
+get_url=/controllers/controller2
 port=8080
 
 [URL]
