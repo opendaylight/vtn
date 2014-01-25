@@ -60,5 +60,17 @@ MULTI-CONTROLLER TEST CASES
 
 SINGLE-CONTROLLER MININET TEST CASE
    * Please ensure the pre-requisites.
+   * please edit the logicalportid and node_id based on your topology
+   * logicalportid details can be edited in vtn_vbr_vbrif.data
    * To execute mininet related test cases
      python mininet_test.py
+
+MULTI-CONTROLLER MININET TEST CASE
+   * Please ensure the pre-requisites.
+   * please edit the logicalportid and node_id based on your topology
+   * logicalportid details can be edited in vtn_vbr_vbrif.data
+   * Copy multitree.py file and keep it in your mininet VM
+   (https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):Installation:VTN_Manager#Multiple_Clusters_of_Controllers)
+   * Edit both the controller ip in multitree.py
+   * To execute multi controller mininet related test cases
+     python multi_ctr_mininet.py

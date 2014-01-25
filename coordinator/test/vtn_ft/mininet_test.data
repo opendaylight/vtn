@@ -14,5 +14,25 @@ ctr_id = 172.16.1.61
 ssh = ssh -l
 ctr_remote = sudo mn --controller=remote,ip=
 topo_tree = --topo tree,
+file_name = sudo python multitree.py
 
+[BOUNDARY]
+boundary_id = boundaryone
+domain1_id = (DEFAULT)
+domain2_id = (DEFAULT)
+logical_port1_id = PP-00:00:00:00:00:00:00:01-s1-eth3
+logical_port2_id = PP-00:00:00:00:00:00:00:04-s4-eth3
+url = /boundaries/boundaryone.json
 
+[VLINK]
+link_name = vlinkone
+vnode1_name = vbrone
+vnode2_name = vbrtwo
+if1_name = vbriftwo
+if2_name = vbriffour
+vlan_id = 50
+url = /vlinks/vlinkone.json
+
+[URL]
+url = /boundaries.json
+link_url = /vlinks.json
