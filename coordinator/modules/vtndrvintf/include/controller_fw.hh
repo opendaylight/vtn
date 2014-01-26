@@ -46,9 +46,11 @@ const uint32_t first_physical_task_interval = 15;
  */
 class ControllerContainer {
  public:
-  ControllerContainer():ctr(NULL), drv(NULL) {}
+  ControllerContainer():ctr(NULL), drv(NULL),
+  Domain_event_(PFC_FALSE) {}
   controller* ctr;
   driver* drv;
+  pfc_bool_t Domain_event_;
   ~ControllerContainer() {
     pfc_log_trace("Entering ControllerContainer destructor");
     if (NULL != ctr) {
@@ -169,6 +171,18 @@ class ControllerFramework  {
    * @retval     - None
    */
   void SendNotificationToPhysical(std::string ctr_name, ConnectionStatus type);
+  /**
+   * @brief      - This function is to Get the Domain event flag
+   * @param[in]  - controller name
+   * @retval     - PFC_TRUE/PFC_FALSE
+   */
+  pfc_bool_t GetDomainFlag(std::string ctr_name);
+  /**
+   * @brief      - This function is to Set the Domain event flag
+   * @param[in]  - controller name
+   * @retval     - None
+   */
+  void SetDomainFlag(std::string ctr_name);
   pfc::core::Mutex controller_list_rwlock_;
   uint32_t time_interval_;  //  in seconds
 

@@ -201,8 +201,6 @@ class VtnDrvIntf :public pfc::core::Module {
   ControllerFramework* ctrl_inst_;
 
   conf_info conf_parser_;  //  conf file information
-
-  pfc_bool_t Domain_event_;
 };
 }  // namespace driver
 }  // namespace unc
