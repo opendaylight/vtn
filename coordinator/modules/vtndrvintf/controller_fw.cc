@@ -579,6 +579,36 @@ void ControllerFramework::SendNotificationToPhysical(
                 val_ctr_old.oper_status, val_ctr_new.oper_status);
 }
 
+void ControllerFramework::SetDomainFlag(std::string ctr_name) {
+  ControllerContainer* controller_container(NULL);
+  std::map<std::string, ControllerContainer*>::iterator
+      controller_list_iterator = controller_list.begin();
+  controller_list_iterator = controller_list.find(ctr_name);
+
+  if (controller_list_iterator == controller_list.end()) {
+    pfc_log_error("Controller Name not found in the list");
+  } else {
+    controller_container = controller_list_iterator->second;
+    PFC_VERIFY(controller_container != NULL);
+    controller_container->Domain_event_ = PFC_TRUE;
+  }
+}
+
+pfc_bool_t ControllerFramework::GetDomainFlag(std::string ctr_name) {
+  ControllerContainer* controller_container(NULL);
+  std::map<std::string, ControllerContainer*>::iterator
+      controller_list_iterator = controller_list.begin();
+  controller_list_iterator = controller_list.find(ctr_name);
+
+  if (controller_list_iterator == controller_list.end()) {
+    pfc_log_error("Controller Name not found in the list");
+  } else {
+    controller_container = controller_list_iterator->second;
+    PFC_VERIFY(controller_container != NULL);
+    return controller_container->Domain_event_;
+  }
+  return PFC_TRUE;
+}
 controller_operation::controller_operation(ControllerFramework *fw_ptr,
                                            ControllerOps operation,
                                            std::string ctl_id,

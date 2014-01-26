@@ -19,8 +19,7 @@ namespace driver {
  * @brief     : constructor
  */
 VtnDrvIntf::VtnDrvIntf(const pfc_modattr_t* attr)
-: Module(attr), taskq_(NULL), ctrl_inst_(NULL),
-    Domain_event_(PFC_FALSE) {
+: Module(attr), taskq_(NULL), ctrl_inst_(NULL) {
   ODC_FUNC_TRACE;
   memset(&conf_parser_, 0, sizeof(conf_info));
 }
@@ -400,8 +399,8 @@ void VtnDrvIntf::domain_event(std::string controller_name,
   domain_event.addOutput(val_ctr_domain_status);
   domain_event.post();
 
-  pfc_log_debug("%s: Posting domain event", PFC_FUNCNAME);
-  Domain_event_ = PFC_TRUE;
+  pfc_log_debug("%s: Posting domain event for controller : %s", PFC_FUNCNAME,
+                                                 controller_name.c_str());
 }
 
 /**
@@ -414,6 +413,7 @@ void VtnDrvIntf::logicalport_event(oper_type operation,
                                    val_logical_port_st_t &val_struct ) {
   ODC_FUNC_TRACE;
   unc_event_mask_t mask_type = UNC_PHYSICAL_EVENTS;
+  pfc_bool_t Domain_event = PFC_TRUE;
   int err = 0;
   std::string controller_name =
       (const char*)key_struct.domain_key.ctr_key.controller_name;
@@ -424,8 +424,10 @@ void VtnDrvIntf::logicalport_event(oper_type operation,
                 "domain_id: %s,"
                 "logicalport_id: %s", PFC_FUNCNAME, controller_name.c_str(),
                 domain_name.c_str(), logical_port_id.c_str());
-  if (Domain_event_ == PFC_FALSE) {
+  Domain_event = ctrl_inst_->GetDomainFlag(controller_name);
+  if (Domain_event == PFC_FALSE) {
     domain_event(controller_name, domain_name);  //  post domain event to UPPL
+    ctrl_inst_->SetDomainFlag(controller_name);
   }
 
   pfc_log_debug("logicalport Operation received is %d", operation);
