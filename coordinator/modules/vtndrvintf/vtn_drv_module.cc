@@ -19,8 +19,7 @@ namespace driver {
  * @brief     : constructor
  */
 VtnDrvIntf::VtnDrvIntf(const pfc_modattr_t* attr)
-: Module(attr), taskq_(NULL), ctrl_inst_(NULL),
-    Domain_event_(PFC_FALSE) {
+: Module(attr), taskq_(NULL), ctrl_inst_(NULL) {
   ODC_FUNC_TRACE;
   memset(&conf_parser_, 0, sizeof(conf_info));
 }
@@ -401,7 +400,6 @@ void VtnDrvIntf::domain_event(std::string controller_name,
   domain_event.post();
 
   pfc_log_debug("%s: Posting domain event", PFC_FUNCNAME);
-  Domain_event_ = PFC_TRUE;
 }
 
 /**
@@ -424,14 +422,13 @@ void VtnDrvIntf::logicalport_event(oper_type operation,
                 "domain_id: %s,"
                 "logicalport_id: %s", PFC_FUNCNAME, controller_name.c_str(),
                 domain_name.c_str(), logical_port_id.c_str());
-  if (Domain_event_ == PFC_FALSE) {
-    domain_event(controller_name, domain_name);  //  post domain event to UPPL
-  }
 
   pfc_log_debug("logicalport Operation received is %d", operation);
   switch (operation) {
     case VTN_LP_CREATE:
       {
+        //  post domain event to UPPL
+        domain_event(controller_name, domain_name);
         pfc::core::ipc::ServerEvent phys_lp_event((uint32_t) mask_type, err);
         phys_lp_event.addOutput(controller_name);
         phys_lp_event.addOutput(domain_name);
