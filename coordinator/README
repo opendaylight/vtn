@@ -1,22 +1,17 @@
 Virtualization Edition Guide for VTN
 -------------------------------------
-Download Virtualization Edition
-The OpenDaylight virtualization edition zip file can be downloaded from here:
-https://nexus.opendaylight.org/content/repositories/opendaylight.snapshot/org/opendaylight/integration/distributions-virtualization/0.1.0-SNAPSHOT/
-
-Note: Please visit the URL and choose the latest zip file to download.
 
 Supported Platforms
 -------------------
----------------------------------------------------------------------------------------------------
-Supported Platform             |Java Version                                                       |
-----------------------------------------------------------------------------------------------------
-RHEL 6.1/CentOS 6.1 (64-Bit)   | Download Oracle JDK 7 from the following page, and install it     |
-                               | http://www.oracle.com/technetwork/java/javase/downloads/index.html|
-----------------------------------------------------------------------------------------------------
-RHEL 6.4/CentOS 6.4 (64-Bit)   | Install OpenJDK 7                                                 |
-                               | yum install java-1.7.0-openjdk-devel                              |
-----------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------
+Supported Platform  |Java Version                                                       |
+-----------------------------------------------------------------------------------------
+RHEL 6.1 (64-Bit)   | Download Oracle JDK 7 from the following page, and install it     |
+                    | http://www.oracle.com/technetwork/java/javase/downloads/index.html|
+-----------------------------------------------------------------------------------------
+RHEL 6.4 (64-Bit)   | Install OpenJDK 7                                                 |
+                    | yum install java-1.7.0-openjdk-devel                              |
+-----------------------------------------------------------------------------------------
 
 Installation
 ------------
@@ -118,5 +113,5 @@ Test and use VTN Coordinator
 
 2. Create and use VTN
 
-Please refer to the link https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):VTNCoordinator:RestApi:Contents for all the API details to create VTN and all its sub components.
+Please refer to the link https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_%28VTN%29:VTN_Coordinator:RestApi  for all the API details to create VTN and all its sub components.
 
