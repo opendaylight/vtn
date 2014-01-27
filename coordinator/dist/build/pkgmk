@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #
-# Copyright (c) 2013 NEC Corporation
+# Copyright (c) 2013-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -30,6 +30,9 @@ use constant	PATH_SBIN	=> '/sbin';
 use constant	PATH_USRBIN	=> '/usr/bin';
 use constant	PATH_USRSBIN	=> '/usr/sbin';
 
+use constant	FILE_PERM	=> 0644;
+use constant	FILE_BUFSIZE	=> 8192;
+
 $PAT_SO = qr,\.so$,;
 
 sub usage($);
@@ -38,6 +41,8 @@ sub find_tar();
 sub remove_solink($);
 sub create_package($$$$);
 sub exec_command(@);
+sub copy_files(\@);
+sub copy_file($$);
 
 MAIN:
 {
@@ -46,11 +51,12 @@ MAIN:
 	my $help = sub { usage(0); };
 	my $prefix = DEFAULT_PREFIX;
 	my $output = DEFAULT_OUTPUT;
-	my $tar;
+	my ($tar, @copyFiles);
 	usage(1) unless (GetOptions('help'		=> $help,
 				    'debug'		=> \$DEBUG,
 				    'p|prefix=s'	=> \$prefix,
 				    'o|output=s'	=> \$output,
+				    'c|copy-files=s'	=> \@copyFiles,
 				    'tar=s'		=> \$tar));
 	usage(1) unless (@ARGV == 1);
 
@@ -68,6 +74,7 @@ MAIN:
 			$tar = find_tar();
 		}
 
+		copy_files(@copyFiles);
 		remove_solink($root);
 		create_package($tar, $root, $prefix, $output);
 	};
@@ -104,6 +111,9 @@ Options:
 
     -p|--prefix <prefix>
        Specify installation prefix. Default is "$prefix".
+
+    -c|--copy-file <src>:<dst>
+       Copy the file specified by <src> to <dst>.
 
     --tar <file>
        Specify location of GNU tar program.
@@ -228,5 +238,49 @@ sub exec_command(@)
 		my $cmd = join(' ', @args);
 		my $st = sprintf("0x%x", $status);
 		die "Unexpected exit status: $st: $cmd\n";
+	}
+}
+
+sub copy_files(\@)
+{
+	my ($args) = @_;
+
+	my $sep = qr,\s*:\s*,;
+	foreach my $arg (@$args) {
+		my ($src, $dst) = split($sep, $arg, 2);
+		copy_file($src, $dst);
+	}
+}
+
+sub copy_file($$)
+{
+	my ($src, $dst) = @_;
+
+	print "--- Copying file: $src -> $dst\n";
+	my $fh = FileHandle->new($src);
+	die "Failed to open file: $src: $!\n" unless ($fh);
+
+	my $dir = dirname($dst);
+	mkpath($dir, undef, 0755) unless (-d $dir);
+
+	my $out = FileHandle->new($dst, O_WRONLY | O_CREAT | O_TRUNC,
+				  FILE_PERM);
+	die "Failed to create file: $dst: $!\n" unless ($out);
+
+	while (1) {
+		my $buf;
+		my $nbytes = $fh->sysread($buf, FILE_BUFSIZE);
+		die "Unable to read file: $src: $!\n"
+			unless (defined($nbytes));
+		last if ($nbytes == 0);
+
+		my $off = 0;
+		do {
+			my $ret = $out->syswrite($buf, $nbytes, $off);
+			die "Unable to write file: $dst: $!\n"
+				unless (defined($ret));
+			$nbytes -= $ret;
+			$off += $ret;
+		} until ($nbytes <= 0);
 	}
 }

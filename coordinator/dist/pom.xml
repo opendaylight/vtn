@@ -59,6 +59,9 @@
   </profiles>
 
   <properties>
+    <execplugin.version>1.1.1</execplugin.version>
+    <buildhelper.version>1.8</buildhelper.version>
+
     <!-- Run tests by default. -->
     <skipTests>false</skipTests>
     <maven.test.skip>false</maven.test.skip>
@@ -84,6 +87,13 @@
       ${vtn.pkg.name}-${vtn.pkg.classifier}.${vtn.pkg.type}
     </vtn.pkg.filename>
     <vtn.pkg.path>${basedir}/target/${vtn.pkg.filename}</vtn.pkg.path>
+
+    <vtn.readme.classifier>README</vtn.readme.classifier>
+    <vtn.readme.type>txt</vtn.readme.type>
+    <vtn.readme.filename>
+      ${vtn.pkg.name}-${vtn.readme.classifier}.${vtn.readme.type}
+    </vtn.readme.filename>
+    <vtn.readme.path>${basedir}/target/${vtn.readme.filename}</vtn.readme.path>
   </properties>
 
   <build>
@@ -176,7 +186,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <version>1.1.1</version>
+        <version>${execplugin.version}</version>
         <executions>
           <execution>
             <!-- Initialize build environment. -->
@@ -287,6 +297,8 @@
               <executable>perl</executable>
               <arguments>
                 <argument>build/pkgmk</argument>
+                <argument>-c</argument>
+                <argument>src/main/txt/README.txt:${vtn.readme.path}</argument>
                 <argument>-o</argument>
                 <argument>${vtn.pkg.path}</argument>
                 <argument>-p</argument>
@@ -323,7 +335,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
-        <version>1.8</version>
+        <version>${buildhelper.version}</version>
         <executions>
           <execution>
             <id>vtn-attach-artifacts</id>
@@ -337,6 +349,11 @@
                   <file>${vtn.pkg.path}</file>
                   <type>${vtn.pkg.type}</type>
                   <classifier>${vtn.pkg.classifier}</classifier>
+                </artifact>
+                <artifact>
+                  <file>${vtn.readme.path}</file>
+                  <type>${vtn.readme.type}</type>
+                  <classifier>${vtn.readme.classifier}</classifier>
                 </artifact>
               </artifacts>
             </configuration>
