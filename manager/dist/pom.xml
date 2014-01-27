@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2013 NEC Corporation
+# Copyright (c) 2013-2014 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -32,14 +32,6 @@
     <url>https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_%28VTN%29:Main</url>
     <tag>HEAD</tag>
   </scm>
-
-  <repositories>
-    <repository>
-      <id>svnkit-snapshots</id>
-      <name>svnkit-snapshots</name>
-      <url>${nexusproxy}/repositories/svnkit-snapshots/</url>
-    </repository>
-  </repositories>
 
   <modules>
     <module>../api</module>
@@ -81,7 +73,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>buildnumber-maven-plugin</artifactId>
-        <version>1.2</version>
+        <version>${buildnumber.version}</version>
         <executions>
           <execution>
             <phase>validate</phase>
@@ -93,33 +85,13 @@
         <configuration>
           <doCheck>false</doCheck>
           <doUpdate>false</doUpdate>
-          <providerImplementations>
-            <svn>javasvn</svn>
-          </providerImplementations>
           <revisionOnScmFailure>unknown</revisionOnScmFailure>
         </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>com.google.code.maven-scm-provider-svnjava</groupId>
-            <artifactId>maven-scm-provider-svnjava</artifactId>
-            <version>2.0.5</version>
-          </dependency>
-          <dependency>
-            <groupId>org.tmatesoft.svnkit</groupId>
-            <artifactId>svnkit</artifactId>
-            <version>1.7.4-v1</version>
-          </dependency>
-          <dependency>
-            <groupId>org.apache.maven.scm</groupId>
-            <artifactId>maven-scm-provider-svn-commons</artifactId>
-            <version>1.7</version>
-          </dependency>
-        </dependencies>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <version>2.8</version>
+        <version>${dependency.version}</version>
         <executions>
           <execution>
             <id>unpack-shared-resources</id>
