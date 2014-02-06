@@ -1,0 +1,296 @@
+#!/bin/bash
+# Script to Configure tomcat for VTN Coordinator
+# Uses the xml-starlet command
+
+
+TOMCAT_TAR_BALL_NAME="apache-tomcat-7.0.39.tar.gz"
+TOMCAT_DIRECTORY_NAME="apache-tomcat-7.0.39"
+TOMCAT_URL="http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.39/bin/"
+
+#Flags to set when parsing command line arguments
+CONFIGURE_OPTION=false
+TEST_OPTION=false
+#Download from URL is default unless user specifies path
+DOWNLOAD_OPTION=true
+PORT_NO=8080
+TOMCAT_TAR_PATH=""
+DOWNLOAD_COMMAND="wget"
+DOWNLOAD_OPTIONS=""
+TOMCAT_UNTAR_PATH="/usr/share/java"
+UNTAR_COMMAND=" tar zxvf"
+UNTAR_COMMAND_OPTIONS="-C $TOMCAT_UNTAR_PATH"
+COORDINATOR_INSTALL_PATH="%PREFIX%"
+COORDINATOR_WEBAPP_LINK="tomcat/webapps/vtn-webapi"
+COMMON_LOADER_LINE1="tomcat/lib"
+COMMON_LOADER_LINE2="tomcat/lib/*.jar"
+SHARED_LOADER_LINE="tomcat/shared/lib/*.jar"
+SERVER_LISTENER_CLASSNAME="org.opendaylight.vtn.tomcat.server.StateListener"
+CATALINA_PROP_FILE="conf/catalina.properties"
+SERVER_XML="conf/server.xml"
+XML_EDIT_COMMAND="xmlstarlet"
+XML_ADD_LISTENER="ed -L -s  /Server -t elem -n ListenerVtn -v "
+XML_ADD_CLASSNAME_VALUE="ed -L -i //ListenerVtn -t attr -n className -v"
+XML_MOVE_LISTENER_VTN="ed -L -r //ListenerVtn -v Listener"
+XML_CHANGE_CONNECTOR_PORT="ed -L -u /Server/Service/Connector/@port  -v"
+WEBAPI_CMD="curl -v -X GET -H content-type:application/json -H username:admin -H password:adminpass -H ipaddr:127.0.0.1"
+WEBAPI_CTRLURL="vtn-webapi/controllers.json"
+WEBAPI_VTNSURL="vtn-webapi/vtns.json"
+VTN_DAEMON_CHECK="bin/unc_dmctl status"
+
+
+# Prints usage for this script and exits
+usage () {
+cat << EOF
+    Usage: web_setup -c -r <location_of_tomcat_tarball>
+           - This will simply untar and configure tomcat in port:8080 for
+             VTN Coordinator
+
+          web_setup -c -r <location_of_tarball> -p <port_for_vtn_coordinator>
+          - This will untar the file, configure in the specified port
+
+          web_setup -c
+          - This will get the tarball from internet and configure default port:8080 for
+            VTN Coordinator
+
+          web_setup -t -p <port_for_vtn_coordinator>
+          - This will send CURL requests and report if VTN Coordinator is working
+          - It is assumed that the coordinator and catalina are up and running
+
+          web_setup -t
+          - This will use REST API requests to port:8080
+            and report if VTN Coordinator is working or not.
+          - It is assumed that the coordinator and catalina are up and running
+EOF
+	exit 0
+}
+
+# Check if the tomcat tar file is present in the path
+# passed as argument
+check_tar_file () {
+  if ! $($CONFIGURE_OPTION) ; then
+    return
+  fi
+  PATH_ARG=$1
+  [ -f $PATH_ARG/$TOMCAT_TAR_BALL_NAME ] && return
+  echo "TOMCAT tar file  $PATH_ARG/$TOMCAT_TAR_FILENAME not present"
+  exit 1
+}
+
+#Parse the list of command line arguments passed to the script
+parse_args () {
+  while [[ $# -gt 0 ]]; do
+  option="$1"
+  shift;
+  echo $option
+    case $option in
+      -c ) CONFIGURE_OPTION=true
+          ;;
+
+      -r ) TOMCAT_TAR_PATH="$1"
+           DOWNLOAD_OPTION=false
+          shift
+          ;;
+
+      -p ) PORT_NO="$1"
+          shift
+          ;;
+
+      -t ) TEST_OPTION=true
+           DOWNLOAD_OPTION=false
+          ;;
+
+      * ) usage
+          ;;
+    esac
+  done
+
+
+  if $($CONFIGURE_OPTION) ; then
+    if $($TEST_OPTION) ; then
+      echo "Both Configure and Test not execute together"
+      usage
+    fi
+  fi
+
+  if [[ "x$TOMCAT_TAR_PATH" != "x" ]]; then
+    check_tar_file $TOMCAT_TAR_PATH
+  fi
+}
+
+#function to trigger download of tomcat tar from URL using wget
+download_tomcat_tarball () {
+  if ! $($CONFIGURE_OPTION) ; then
+    return
+  fi
+  if $($DOWNLOAD_OPTION) ; then
+     TOMCAT_DOWNLOAD_URL="$TOMCAT_URL/$TOMCAT_TAR_BALL_NAME"
+     CMD="$DOWNLOAD_COMMAND $DOWNLOAD_OPTIONS $TOMCAT_DOWNLOAD_URL"
+     echo "Command to be executed for download:"
+     echo $CMD
+     $CMD
+     [[ $? -eq 0 ]] && return
+     echo "Download Failed, Please retry after setting proxy options"
+     exit 1
+  fi
+}
+
+#Used to Post Directory Esists eror
+directory_already_exists_error () {
+cat << EOF
+    The tomcat directory already exists in  $TOMCAT_UNTAR_PATH
+    Aborting...
+EOF
+    exit 1
+}
+
+#The tomcat tar is uncompressed to the desired location.
+untar_tomcat_tarball () {
+  if $($CONFIGURE_OPTION) ; then
+    [[ -d $TOMCAT_UNTAR_PATH/$TOMCAT_DIRECTORY_NAME ]] && directory_already_exists_error
+    CMD="$UNTAR_COMMAND  $TOMCAT_TAR_PATH/$TOMCAT_TAR_BALL_NAME $UNTAR_COMMAND_OPTIONS"
+    echo "Command to be executed"
+    echo $CMD
+    $CMD
+    [[ $? -eq 0 ]] && return
+    echo "Untar Failed, Please check if write access is available in /usr/share/java"
+    exit 1
+  fi
+}
+
+#Create softlink to vtn webapplications
+create_link_vtn_webapps () {
+  if  $($TEST_OPTION) ; then
+    return
+  fi
+  COMMAND="ln -s $COORDINATOR_INSTALL_PATH/tomcat/webapps/vtn-webapi $TOMCAT_UNTAR_PATH/$TOMCAT_DIRECTORY_NAME/webapps/vtn-webapi"
+  $COMMAND
+  [[ $? -eq 0 ]] && return
+  echo "Create softlink failed"
+  exit 1
+}
+
+
+#Add VTN common.loader entry to catalina.properties
+configure_catalina_properties_common_loader () {
+  if  $($TEST_OPTION) ; then
+    return
+  fi
+  CATALINA_FILE=$TOMCAT_UNTAR_PATH/$TOMCAT_DIRECTORY_NAME/$CATALINA_PROP_FILE
+  CATALINA_FILE_BAK=$TOMCAT_UNTAR_PATH/$TOMCAT_DIRECTORY_NAME/$CATALINA_PROP_FILE.bak
+  cat  $CATALINA_FILE | while read line ; do
+    echo $line | grep "^common.loader="
+    if [[ $? -eq 0 ]] ; then
+      COMMON_LOADER_VALUE=$(echo $line | cut -d= -f2)
+      VTN_COMMON_LOADER_VALUE="$COORDINATOR_INSTALL_PATH/$COMMON_LOADER_LINE1,$COORDINATOR_INSTALL_PATH/$COMMON_LOADER_LINE2"
+      echo "common.loader=$COMMON_LOADER_VALUE,$VTN_COMMON_LOADER_VALUE" >> $CATALINA_FILE_BAK
+    else
+      echo $line >> $CATALINA_FILE_BAK
+    fi
+  done
+  mv $CATALINA_FILE_BAK $CATALINA_FILE
+}
+
+#Add VTN shared.loader entry to catalina.properties
+configure_catalina_properties_shared_loader () {
+  if  $($TEST_OPTION) ; then
+    return
+  fi
+  CATALINA_FILE=$TOMCAT_UNTAR_PATH/$TOMCAT_DIRECTORY_NAME/$CATALINA_PROP_FILE
+  CATALINA_FILE_BAK=$TOMCAT_UNTAR_PATH/$TOMCAT_DIRECTORY_NAME/$CATALINA_PROP_FILE.bak
+  cat  $CATALINA_FILE | while read line ; do
+    echo $line | grep "^shared.loader="
+    if [[ $? -eq 0 ]]; then
+      SHARED_LOADER_VALUE=$(echo $line | cut -d= -f2)
+      VTN_SHARED_LOADER_VALUE="$COORDINATOR_INSTALL_PATH/$SHARED_LOADER_LINE"
+      echo "shared.loader=$VTN_SHARED_LOADER_VALUE" >> $CATALINA_FILE_BAK
+    else
+      echo $line >> $CATALINA_FILE_BAK
+    fi
+  done
+  mv $CATALINA_FILE_BAK $CATALINA_FILE
+}
+
+
+# Add listener to server.xml for VTN REST API
+configure_listener_server_xml () {
+  if  $($TEST_OPTION) ; then
+    return
+  fi
+  SERVER_XML_FILE=$TOMCAT_UNTAR_PATH/$TOMCAT_DIRECTORY_NAME/$SERVER_XML
+  $XML_EDIT_COMMAND $XML_ADD_LISTENER "" $SERVER_XML_FILE
+  if [[ $? -eq 0 ]] ; then
+    $XML_EDIT_COMMAND $XML_ADD_CLASSNAME_VALUE $SERVER_LISTENER_CLASSNAME $SERVER_XML_FILE
+    if [[ $? -eq 0 ]]; then
+      $XML_EDIT_COMMAND $XML_MOVE_LISTENER_VTN $SERVER_XML_FILE
+      [[ $? -eq 0 ]] && return
+    fi
+  fi
+  echo "Add Listener to server.xml failed"
+  exit 1
+}
+
+
+# Change Port in server.xml for VTN REST API if required
+configure_port_server_xml () {
+  if  $($TEST_OPTION) ; then
+    return
+  fi
+  if [[ $PORT_NO -eq 8080 ]]; then
+    return
+  fi
+  SERVER_XML_FILE=$TOMCAT_UNTAR_PATH/$TOMCAT_DIRECTORY_NAME/$SERVER_XML
+  $XML_EDIT_COMMAND $XML_CHANGE_CONNECTOR_PORT $PORT_NO $SERVER_XML_FILE
+  [[ $? -eq 0 ]] && return
+  echo "Changing Port failed"
+  exit 1
+}
+
+#Error function for test failures
+test_failed () {
+  echo "Testing Failed"
+  echo "Please ensure if VTN Coordinator and tomcate are Started"
+  exit 1
+}
+
+
+#Method sends a couple of request to VTN Coordinator REST interface and
+# checks the response
+test_rest_interface () {
+  if  $($CONFIGURE_OPTION) ; then
+    return
+  fi
+  CONTROLLERS_TEST="http://127.0.0.1:$PORT_NO/$WEBAPI_CTRLURL"
+  REST_RESP=$($WEBAPI_CMD $CONTROLLERS_TEST 2>/dev/null)
+  echo $REST_RESP | grep "controllers"
+  [[ $? -ne 0 ]] && test_failed
+  VTNS_TEST="http://127.0.0.1:$PORT_NO/$WEBAPI_VTNSURL"
+  REST_RESP=$($WEBAPI_CMD $VTNS_TEST 2>/dev/null)
+  echo $REST_RESP | grep "vtns"
+  [[ $? -ne 0 ]] && test_failed
+  echo "Tests Passed"
+  echo "VTN Coordinator is responding"
+}
+
+# Script Main
+#Parse Input Arguments
+parse_args $*
+#Download tomcat tarball from web if needed
+download_tomcat_tarball
+#Check if the tarball exists in the give location
+check_tar_file $PWD
+TOMCAT_TAR_PATH=$PWD
+#Uncompress the tarball
+untar_tomcat_tarball
+#Create link to VTN-WEAPI directory in tomcat webapps
+create_link_vtn_webapps
+#Change common.loader in catalina.properties
+configure_catalina_properties_common_loader
+#Change shared.loader in catalina.properties
+configure_catalina_properties_shared_loader
+#Add listener for VTN WEBAPI to server.xml
+configure_listener_server_xml
+#Add Port number to server.xml
+configure_port_server_xml
+#Test if the user wants to perform test
+#To Test, the user should start coordiantor as well as catalina
+test_rest_interface

@@ -21,7 +21,8 @@ include $(JAVA_CONFIG_MK)
 SYS_SCRIPTS_IN	=		\
 	uncd_start.in		\
 	uncd_stop.in		\
-	uncd_monitor.in
+	uncd_monitor.in \
+	web_setup.in
 
 # Script files to be installed to bin.
 BIN_SCRIPTS_IN	=		\
@@ -40,6 +41,7 @@ SED_RULE_LIST	+= 's,%INST_SYSSCRIPTDIR%,$(INST_SYSSCRIPTDIR),g'
 SED_RULE_LIST	+= 's,%INST_UNCWORKDIR%,$(INST_UNCWORKDIR),g'
 SED_RULE_LIST	+= 's,%PATH_SCRIPT%,$(PATH_SCRIPT),g'
 SED_RULE_LIST	+= 's,%SHELL_PATH%,$(SHELL_PATH),g'
+SED_RULE_LIST	+= 's,%PREFIX%,$(PREFIX),g'
 
 SED_RULES	= $(SED_RULE_LIST:%=-e %)
 
