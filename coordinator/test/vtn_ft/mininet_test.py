@@ -61,6 +61,7 @@ def close_topology(child):
         child.sendline('exit')
         print "Exiting Topology"
         child.close()
+        time.sleep(5)
     else:
         print "child process already closed"
 
