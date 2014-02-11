@@ -89,7 +89,7 @@ def test_vtn_mininet_ping_demo1():
     print "VTNONE->VBRONE->VBRIFONE->PORTMAP"
     print "VTNONE->VBRONE->VBRIFTWO->PORTMAP"
 
-    child = create_mininet_topology('MININET', 'ControllerFirst', '2')
+    child = create_mininet_topology('MININETONE', 'ControllerFirst', '2')
     if child.isalive() == True :
         print "Topology creation Success!!!"
     else:
@@ -239,7 +239,7 @@ def test_vtn_mininet_ping_demo2():
     print "VTNONE->VBRONE->VBRIFONE->PORTMAP"
     print "VTNONE->VBRONE->VBRIFTWO->PORTMAP"
 
-    child = create_mininet_topology('MININET', 'ControllerFirst', '2')
+    child = create_mininet_topology('MININETONE', 'ControllerFirst', '2')
     if child.isalive() == True :
         print "Topology creation Success!!!"
     else:
