@@ -221,7 +221,7 @@ def validate_vlink(vlink_blockname, vtn_blockname, presence="yes", position=0):
             return 1
 
 def test_multi_ctr_mininet_ping():
-    child = create_multicontroller_mininet_topology('MININET')
+    child = create_multicontroller_mininet_topology('MININETONE')
     if child.isalive() == True :
         print "Topology creation Success!!!"
     else:

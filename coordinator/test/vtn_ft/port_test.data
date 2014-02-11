@@ -58,24 +58,54 @@ port_name = s4-eth2
 logical_port_id = PP-OF:00:00:00:00:00:00:00:04-s4-eth2
 
 [PortEleven]
+port_id = 3
+port_name = s4-eth3
+logical_port_id = PP-OF:00:00:00:00:00:00:00:04-s4-eth3
+
+[PortTwelve]
 port_id = 1
 port_name = s5-eth1
 logical_port_id = PP-OF:00:00:00:00:00:00:00:05-s5-eth1
 
-[PortTwelve]
+[PortThirteen]
 port_id = 2
 port_name = s5-eth2
 logical_port_id = PP-OF:00:00:00:00:00:00:00:05-s5-eth2
 
-[PortThirteen]
+[PortFourteen]
+port_id = 3
+port_name = s5-eth3
+logical_port_id = PP-OF:00:00:00:00:00:00:00:05-s5-eth3
+
+[PortFifteen]
 port_id = 1
 port_name = s6-eth1
 logical_port_id = PP-OF:00:00:00:00:00:00:00:06-s6-eth1
 
-[PortFourteen]
+[PortSixteen]
 port_id = 2
 port_name = s6-eth2
 logical_port_id = PP-OF:00:00:00:00:00:00:00:06-s6-eth2
+
+[PortSeventeen]
+port_id = 3
+port_name = s6-eth3
+logical_port_id = PP-OF:00:00:00:00:00:00:00:06-s6-eth3
+
+[PortEighteen]
+port_id = 1
+port_name = s7-eth1
+logical_port_id = PP-OF:00:00:00:00:00:00:00:07-s7-eth1
+
+[PortNineteen]
+port_id = 2
+port_name = s7-eth2
+logical_port_id = PP-OF:00:00:00:00:00:00:00:07-s7-eth2
+
+[PortTwenty]
+port_id = 3
+port_name = s7-eth3
+logical_port_id = PP-OF:00:00:00:00:00:00:00:07-s7-eth3
 
 [URL]
 port_url = /ports/detail.json

@@ -7,10 +7,19 @@
 # distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
 #
 
-[MININET]
+[MININETONE]
 mininet_ipaddr=10.100.9.151
 mininet_username=mininet
-ctr_id = 172.16.1.61
+ctr_id = 10.100.9.41
+ssh = ssh -l
+ctr_remote = sudo mn --controller=remote,ip=
+topo_tree = --topo tree,
+file_name = sudo python multitree.py
+
+[MININETTWO]
+mininet_ipaddr=10.100.9.110
+mininet_username=mininet
+ctr_id = 10.100.9.43
 ssh = ssh -l
 ctr_remote = sudo mn --controller=remote,ip=
 topo_tree = --topo tree,
