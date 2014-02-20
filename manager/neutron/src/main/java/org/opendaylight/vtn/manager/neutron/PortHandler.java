@@ -40,13 +40,11 @@ public class PortHandler extends VTNNeutronUtils
      */
     private static final int VTN_IDENTIFIERS_IN_PORT = 3;
 
-
-
     /**
      * Invoked when a port creation is requested
      * to indicate if the specified port can be created.
      *
-     * @param port     An instance of proposed new Port Port object.
+     * @param port     An instance of proposed new Port object.
      * @return A HTTP status code to the creation request.
      */
     @Override
