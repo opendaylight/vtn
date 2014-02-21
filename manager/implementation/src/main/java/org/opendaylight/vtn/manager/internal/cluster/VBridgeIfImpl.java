@@ -1080,6 +1080,8 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
             if (!nc.equals(target)) {
                 return false;
             }
+        } else if (!pnode.equals(nc.getNode())) {
+            return false;
         }
 
         String name = port.getName();
