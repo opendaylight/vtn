@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -25,7 +25,7 @@ public class VlanMapPath extends VBridgePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 556981779172308505L;
+    private static final long serialVersionUID = -5858869883027125836L;
 
     /**
      * Identifier of the VLAN mapping.
@@ -69,6 +69,23 @@ public class VlanMapPath extends VBridgePath {
     }
 
     /**
+     * Determine whether all components in the given path equal to components
+     * in this object or not.
+     *
+     * @param path  An object to be compared.
+     * @return   {@code true} if all path components in {@code path} are
+     *           identical to components in this object.
+     *           Otherwise {@code false}.
+     */
+    protected final boolean equalsPath(VlanMapPath path) {
+        if (!equalsPath((VBridgePath)path)) {
+            return false;
+        }
+
+        return mapId.equals(path.mapId);
+    }
+
+    /**
      * Determine whether the given object is identical to this object.
      *
      * @param o  An object to be compared.
@@ -79,12 +96,11 @@ public class VlanMapPath extends VBridgePath {
         if (o == this) {
             return true;
         }
-        if (!(o instanceof VlanMapPath) || !super.equals(o)) {
+        if (o == null || !o.getClass().equals(VlanMapPath.class)) {
             return false;
         }
 
-        VlanMapPath path = (VlanMapPath)o;
-        return mapId.equals(path.mapId);
+        return equalsPath((VlanMapPath)o);
     }
 
     /**

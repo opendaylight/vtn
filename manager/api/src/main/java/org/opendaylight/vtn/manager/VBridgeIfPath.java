@@ -29,7 +29,7 @@ public class VBridgeIfPath extends VBridgePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -5494415245844633625L;
+    private static final long serialVersionUID = -4217150774548362963L;
 
     /**
      * The name of the
@@ -112,6 +112,27 @@ public class VBridgeIfPath extends VBridgePath {
     }
 
     /**
+     * Determine whether all components in the given path equal to components
+     * in this object or not.
+     *
+     * @param path  An object to be compared.
+     * @return   {@code true} if all path components in {@code path} are
+     *           identical to components in this object.
+     *           Otherwise {@code false}.
+     */
+    protected final boolean equalsPath(VBridgeIfPath path) {
+        if (!equalsPath((VBridgePath)path)) {
+            return false;
+        }
+
+        if (ifName == null) {
+            return (path.ifName == null);
+        }
+
+        return ifName.equals(path.ifName);
+    }
+
+    /**
      * Determine whether the given object is identical to this object.
      *
      * <p>
@@ -120,6 +141,8 @@ public class VBridgeIfPath extends VBridgePath {
      * <ul>
      *   <li>
      *     {@code o} is a {@code VBridgeIfPath} object.
+     *     Note that this method returns {@code false} if {@code o} is an
+     *     object of subclass of {@code VBridgeIfPath}.
      *   </li>
      *   <li>
      *     The following values stored in {@code o} are the same as in this
@@ -149,16 +172,11 @@ public class VBridgeIfPath extends VBridgePath {
         if (o == this) {
             return true;
         }
-        if (!(o instanceof VBridgeIfPath) || !super.equals(o)) {
+        if (o == null || !o.getClass().equals(VBridgeIfPath.class)) {
             return false;
         }
 
-        VBridgeIfPath path = (VBridgeIfPath)o;
-        if (ifName == null) {
-            return (path.ifName == null);
-        }
-
-        return ifName.equals(path.ifName);
+        return equalsPath((VBridgeIfPath)o);
     }
 
     /**

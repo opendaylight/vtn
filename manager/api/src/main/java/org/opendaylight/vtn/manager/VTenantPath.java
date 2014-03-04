@@ -27,7 +27,7 @@ public class VTenantPath implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 5295435248672675596L;
+    private static final long serialVersionUID = 6666863891351658965L;
 
     /**
      * The name of the {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
@@ -80,6 +80,23 @@ public class VTenantPath implements Serializable {
     }
 
     /**
+     * Determine whether all components in the given path equal to components
+     * in this object or not.
+     *
+     * @param path  An object to be compared.
+     * @return   {@code true} if all path components in {@code path} are
+     *           identical to components in this object.
+     *           Otherwise {@code false}.
+     */
+    protected final boolean equalsPath(VTenantPath path) {
+        if (tenantName == null) {
+            return (path.tenantName == null);
+        }
+
+        return tenantName.equals(path.tenantName);
+    }
+
+    /**
      * Determine whether the given object is identical to this object.
      *
      * <p>
@@ -88,6 +105,8 @@ public class VTenantPath implements Serializable {
      * <ul>
      *   <li>
      *     {@code o} is a {@code VTenantPath} object.
+     *     Note that this method returns {@code false} if {@code o} is an
+     *     object of subclass of {@code VTenantPath}.
      *   </li>
      *   <li>
      *     The name of the
@@ -104,16 +123,11 @@ public class VTenantPath implements Serializable {
         if (o == this) {
             return true;
         }
-        if (!(o instanceof VTenantPath)) {
+        if (o == null || !o.getClass().equals(VTenantPath.class)) {
             return false;
         }
 
-        VTenantPath path = (VTenantPath)o;
-        if (tenantName == null) {
-            return (path.tenantName == null);
-        }
-
-        return tenantName.equals(path.tenantName);
+        return equalsPath((VTenantPath)o);
     }
 
     /**
