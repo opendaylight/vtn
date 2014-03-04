@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,6 +14,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.internal.TestBase;
@@ -52,6 +53,7 @@ public class VlanMapPathTest extends TestBase {
         List<String> bnames = createStrings("bridge");
         List<String> mapIds = createStrings("mapId", false);
         for (String tname: tnames) {
+            VTenantPath tpath = new VTenantPath(tname);
             for (String bname: bnames) {
                 VBridgePath bp1 = new VBridgePath(tname, bname);
                 VBridgePath bp2 = new VBridgePath(copy(tname), copy(bname));
@@ -69,6 +71,15 @@ public class VlanMapPathTest extends TestBase {
                             ifPath.equals(p1));
                     assertFalse("(p2)" + p2.toString() + ",(ifPath)" + ifPath.toString(),
                             ifPath.equals(p2));
+
+                    // A instance of VTenantPath, VBridgePath must be treated
+                    // as different object even if it has the same path
+                    // component.
+                    assertFalse(p1.equals(tpath));
+                    assertFalse(tpath.equals(p1));
+
+                    assertFalse(p1.equals(bp1));
+                    assertFalse(bp1.equals(p1));
                 }
             }
         }

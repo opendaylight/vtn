@@ -27,7 +27,7 @@ public class VBridgePath extends VTenantPath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 49188209943135523L;
+    private static final long serialVersionUID = -8958896997703009257L;
 
     /**
      * The name of the
@@ -109,6 +109,27 @@ public class VBridgePath extends VTenantPath {
     }
 
     /**
+     * Determine whether all components in the given path equal to components
+     * in this object or not.
+     *
+     * @param path  An object to be compared.
+     * @return   {@code true} if all path components in {@code path} are
+     *           identical to components in this object.
+     *           Otherwise {@code false}.
+     */
+    protected final boolean equalsPath(VBridgePath path) {
+        if (!equalsPath((VTenantPath)path)) {
+            return false;
+        }
+
+        if (bridgeName == null) {
+            return (path.bridgeName == null);
+        }
+
+        return bridgeName.equals(path.bridgeName);
+    }
+
+    /**
      * Determine whether the given object is identical to this object.
      *
      * <p>
@@ -117,6 +138,8 @@ public class VBridgePath extends VTenantPath {
      * <ul>
      *   <li>
      *     {@code o} is a {@code VBridgePath} object.
+     *     Note that this method returns {@code false} if {@code o} is an
+     *     object of subclass of {@code VBridgePath}.
      *   </li>
      *   <li>
      *     The following values stored in {@code o} are the same as in this
@@ -142,16 +165,11 @@ public class VBridgePath extends VTenantPath {
         if (o == this) {
             return true;
         }
-        if (!(o instanceof VBridgePath) || !super.equals(o)) {
+        if (o == null || !o.getClass().equals(VBridgePath.class)) {
             return false;
         }
 
-        VBridgePath path = (VBridgePath)o;
-        if (bridgeName == null) {
-            return (path.bridgeName == null);
-        }
-
-        return bridgeName.equals(path.bridgeName);
+        return equalsPath((VBridgePath)o);
     }
 
     /**

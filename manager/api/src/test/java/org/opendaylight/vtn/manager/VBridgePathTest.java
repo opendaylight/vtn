@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -47,10 +47,16 @@ public class VBridgePathTest extends TestBase {
         List<String> tnames = createStrings("tenant");
         List<String> bnames = createStrings("bridge");
         for (String tname: tnames) {
+            VTenantPath tpath = new VTenantPath(tname);
             for (String bname: bnames) {
                 VBridgePath p1 = new VBridgePath(tname, bname);
                 VBridgePath p2 = new VBridgePath(copy(tname), copy(bname));
                 testEquals(set, p1, p2);
+
+                // VTenantPath object that has the same tenant name must be
+                // treated as different object.
+                assertFalse(p1.equals(tpath));
+                assertFalse(tpath.equals(p1));
             }
         }
 
