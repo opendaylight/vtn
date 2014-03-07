@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,8 +13,13 @@ import java.net.InetAddress;
 import java.util.Timer;
 
 import org.opendaylight.vtn.manager.VBridgeIfPath;
-import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.internal.cluster.MapReference;
+import org.opendaylight.vtn.manager.internal.cluster.NodeVlan;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
+import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
+
+import org.opendaylight.controller.sal.core.NodeConnector;
 
 /**
  * This interface defines an internal OSGi service which manages global
@@ -38,42 +43,98 @@ public interface IVTNResourceManager {
     /**
      * Register VLAN ID for VLAN mapping.
      *
-     * @param containerName  The name of the container.
-     * @param path           Path to the virtual bridge.
-     * @param vlan           VLAN ID to map.
+     * <p>
+     *   Note that this method must be called with holding the read/write lock
+     *   of {@code mgr} in writer mode.
+     * </p>
+     *
+     * @param mgr    VTN Manager service.
+     * @param path   Path to the VLAN mapping which maps the specified VLAN
+     *               network.
+     * @param nvlan  A {@link NodeVlan} object which specifies the VLAN network
+     *               to be mapped.
      * @return  {@code null} is returned on success.
-     *          On failure, fully-qualified name of the bridge which maps
-     *          the specified VLAN is returned.
+     *          On failure, a reference to the VLAN mapping which maps the
+     *          VLAN network specified by {@code nvlan} is returned.
+     * @throws VTNException  A fatal error occurred.
      */
-    String registerVlanMap(String containerName, VBridgePath path, short vlan);
+    MapReference registerVlanMap(VTNManagerImpl mgr, VlanMapPath path,
+                                 NodeVlan nvlan) throws VTNException;
 
     /**
      * Unregister VLAN mapping.
      *
-     * @param vlan  VLAN ID.
+     * <p>
+     *   Note that this method must be called with holding the read/write lock
+     *   of {@code mgr} in writer mode.
+     * </p>
+     *
+     * @param mgr    VTN Manager service.
+     * @param nvlan  A {@link NodeVlan} object which specifies the VLAN network
+     *               to be unmapped.
+     * @throws VTNException  A fatal error occurred.
      */
-    void unregisterVlanMap(short vlan);
+    void unregisterVlanMap(VTNManagerImpl mgr, NodeVlan nvlan)
+        throws VTNException;
 
     /**
      * Register mapping between physical switch port and virtual bridge
      * interface.
      *
-     * @param containerName  The name of the container.
-     * @param path           Path to the virtual bridge interface.
-     * @param pvlan          Identifier of the mapped switch port.
+     * <p>
+     *   If a non-{@code null} value is specified to {@code rmlan}, the port
+     *   mapping which maps the VLAN network specified by {@code rmlan} is
+     *   removed in one transaction.
+     * </p>
+     * <p>
+     *   Note that this method must be called with holding the read/write lock
+     *   of {@code mgr} in writer mode.
+     * </p>
+     *
+     * @param mgr    VTN Manager service.
+     * @param path   Path to the virtual bridge interface which maps the
+     *               specified VLAN network.
+     * @param pvlan  A {@link PortVlan} object which specifies the VLAN network
+     *               to be mapped. No port mapping is added if {@code null} is
+     *               specified.
+     * @param rmlan  A {@link PortVlan} object which specifies the VLAN network
+     *               to be unmapped. No port mapping is removed if {@code null}
+     *               is specified.
      * @return  {@code null} is returned on success.
-     *          On failure, fully-qualified name of the bridge interface
-     *          which maps the specified physical switch port is returned.
+     *          On failure, a reference to the port mapping which maps the
+     *          VLAN network specified by {@code pvlan} is returned.
+     * @throws VTNException  A fatal error occurred.
      */
-    String registerPortMap(String containerName, VBridgeIfPath path,
-                           PortVlan pvlan);
+    MapReference registerPortMap(VTNManagerImpl mgr, VBridgeIfPath path,
+                                 PortVlan pvlan, PortVlan rmlan)
+        throws VTNException;
 
     /**
      * Unregister port mapping.
      *
-     * @param pvlan  Identifier of the mapped switch port.
+     * <p>
+     *   Note that this method must be called with holding the read/write lock
+     *   of {@code mgr} in writer mode.
+     * </p>
+     *
+     * @param mgr    VTN Manager service.
+     * @param pvlan  A {@link PortVlan} object which specifies the VLAN network
+     *               to be unmapped.
+     * @throws VTNException  A fatal error occurred.
      */
-    void unregisterPortMap(PortVlan pvlan);
+    void unregisterPortMap(VTNManagerImpl mgr, PortVlan pvlan)
+        throws VTNException;
+
+    /**
+     * Determine whether the specified VLAN network is mapped by VLAN mapping
+     * or not.
+     *
+     * @param nvlan  A pair of the switch and the VLAN ID.
+     * @return  {@code true} is returned only if the given VLAN network is
+     *          mapped by VLAN mapping.
+     *          Otherwise {@code false} is returned.
+     */
+    boolean isVlanMapped(NodeVlan nvlan);
 
     /**
      * Determine whether the given switch port is mapped to the virtual
@@ -85,6 +146,18 @@ public interface IVTNResourceManager {
      *          Otherwise {@code false} is returned.
      */
     boolean isPortMapped(PortVlan pvlan);
+
+    /**
+     * Return a reference to virtual network mapping which maps the VLAN
+     * network specified by the switch port and the VLAN ID.
+     *
+     * @param nc    A node connector corresponding to the switch port.
+     *              Specifying {@code null} results in undefined behavior.
+     * @param vlan  A VLAN ID.
+     * @return      A {@link MapReference} object is returned if found.
+     *              {@code null} is returned if not found.
+     */
+    MapReference getMapReference(NodeConnector nc, short vlan);
 
     /**
      * Return the global timer.

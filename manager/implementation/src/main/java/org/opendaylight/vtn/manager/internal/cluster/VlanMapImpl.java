@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -27,6 +27,7 @@ import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
+import org.opendaylight.vtn.manager.internal.VlanMapPortFilter;
 
 import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
@@ -286,24 +287,24 @@ public final class VlanMapImpl implements VBridgeNode, Serializable {
      *              already processed.
      */
     void transmit(VTNManagerImpl mgr, PacketContext pctx, Set<PortVlan> sent) {
-        Set<NodeConnector> ports = getPorts(mgr);
+        // Determine edge ports of this VLAN mapping.
+        IVTNResourceManager resMgr = mgr.getResourceManager();
+        Node node = vlanMapConfig.getNode();
+        short vlan = vlanMapConfig.getVlan();
+        HashSet<NodeConnector> ports = new HashSet<NodeConnector>();
+        VlanMapPortFilter filter =
+            VlanMapPortFilter.create(resMgr, node, vlan, sent);
+        mgr.collectUpEdgePorts(ports, filter);
+
         if (ports.isEmpty()) {
             LOG.trace("{}:{}: transmit: No port is available",
                       mgr.getContainerName(), mapPath);
             return;
         }
 
-        IVTNResourceManager resMgr = mgr.getResourceManager();
-        short vlan = vlanMapConfig.getVlan();
         Ethernet frame = pctx.createFrame(vlan);
         for (NodeConnector nc: ports) {
             PortVlan pvlan = new PortVlan(nc, vlan);
-            if (resMgr.isPortMapped(pvlan)) {
-                // This switch port is mapped to virtual interface by port
-                // mapping. This packet should not be sent to this port
-                // because port mapping always overrides VLAN mapping.
-                continue;
-            }
             if (!sent.add(pvlan)) {
                 continue;
             }
@@ -361,20 +362,6 @@ public final class VlanMapImpl implements VBridgeNode, Serializable {
         if (changed) {
             db.put(mapPath, Boolean.valueOf(valid));
         }
-    }
-
-    /**
-     * Return a set of node connectors associated with this VLAN mapping.
-     *
-     * @param mgr  VTN Manager service.
-     * @return  A set of node connectors.
-     *          An empty set is returned if no node connector is available.
-     */
-    private Set<NodeConnector> getPorts(VTNManagerImpl mgr) {
-        Node node = vlanMapConfig.getNode();
-        HashSet<NodeConnector> ncSet = new HashSet<NodeConnector>();
-        mgr.collectUpEdgePorts(ncSet, node);
-        return ncSet;
     }
 
     /**

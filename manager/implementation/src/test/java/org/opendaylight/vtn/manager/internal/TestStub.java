@@ -97,6 +97,23 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     ISwitchManager, ITopologyManager, IDataPacketService, IRouting,
     IForwardingRulesManager, IfIptoHost, IConnectionManager {
 
+    /**
+     * The name of the cluster cache which keeps revision identifier of
+     * configuration per mapping type.
+     */
+    private static final String CACHE_CONFREVISION = "vtn.confrev";
+
+    /**
+     * Active cluster cache transactions per thread.
+     */
+    private static final ThreadLocal<TestTransaction>  CLUSTER_TRANSACTION =
+        new ThreadLocal<TestTransaction>();
+
+    /**
+     * Mode for cluster cache transaction test.
+     */
+    private TestTransaction.Mode  transactionTestMode = null;
+
     /*
      * Mode of {@link TestStub}.
      * Each mode corresponds to following configuration.
@@ -164,7 +181,6 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
      * List of InetAddress of cluster nodes
      */
     List<InetAddress> nodeInetAddresses = null;
-
 
     /**
      * Constructor of TestStub
@@ -368,8 +384,13 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
         return new HashMap<String, Property>(prop);
     }
 
+    /**
+     * All cluster caches.
+     */
+    private ConcurrentMap<String, ConcurrentMap<?, ?>> caches =
+        new ConcurrentHashMap<String, ConcurrentMap<?, ?>>();
+
     // IClusterGlobalServices, IClusterContainerServices
-    private ConcurrentMap<String, ConcurrentMap<?, ?>> caches = new ConcurrentHashMap<String, ConcurrentMap<?, ?>>();
 
     @Override
     public void removeContainerCaches(String containerName) {
@@ -382,7 +403,9 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
 
         ConcurrentMap<?, ?> res = this.caches.get(cacheName);
         if (res == null) {
-            res = new ConcurrentHashMap<Object, Object>();
+            res = (CACHE_CONFREVISION.equals(cacheName))
+                ? new ConfRevisionMap()
+                : new ConcurrentHashMap<Object, Object>();
             this.caches.put(cacheName, res);
             return res;
         }
@@ -416,28 +439,49 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
 
     @Override
     public void tbegin() throws NotSupportedException, SystemException {
-
+        tbegin(0, TimeUnit.SECONDS);
     }
 
     @Override
     public void tbegin(long timeout, TimeUnit unit)
         throws NotSupportedException, SystemException {
+        TestTransaction t = CLUSTER_TRANSACTION.get();
+        if (t != null) {
+            throw new SystemException("Cache transaction is already active.");
+        }
+
+        t = new TestTransaction(transactionTestMode, timeout, unit, caches);
+        CLUSTER_TRANSACTION.set(t);
+
     }
 
     @Override
     public void tcommit() throws RollbackException, HeuristicMixedException, HeuristicRollbackException,
             SecurityException, IllegalStateException, SystemException {
+        TestTransaction t = CLUSTER_TRANSACTION.get();
+        if (t == null) {
+            throw new SystemException("Cache transaction is not active.");
+        }
 
+        t.commit();
+        CLUSTER_TRANSACTION.remove();
     }
 
     @Override
     public void trollback() throws IllegalStateException, SecurityException, SystemException {
+        TestTransaction t = CLUSTER_TRANSACTION.get();
+        if (t == null) {
+            throw new SystemException("Cache transaction is not active.");
+        }
 
+        t.rollback();
+        t.restore(caches);
+        CLUSTER_TRANSACTION.remove();
     }
 
     @Override
-    public Transaction tgetTransaction() throws SystemException {
-        return null;
+    public Transaction tgetTransaction() {
+        return CLUSTER_TRANSACTION.get();
     }
 
     @Override
@@ -1331,5 +1375,14 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
         }
 
         return null;
+    }
+
+    /**
+     * Set mode for cluster cache transaction test.
+     *
+     * @param mode  Test mode.
+     */
+    public void setTransactionTestMode(TestTransaction.Mode mode) {
+        transactionTestMode = mode;
     }
 }

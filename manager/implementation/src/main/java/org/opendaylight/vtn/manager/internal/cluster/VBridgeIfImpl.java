@@ -339,6 +339,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
 
         NodeConnector mapped = ist.getMappedPort();
         IVTNResourceManager resMgr = mgr.getResourceManager();
+        PortVlan pvlan = null;
 
         // Search for the node connector specified by the configuration.
         NodeConnector nc = findNodeConnector(mgr, node, port);
@@ -349,15 +350,24 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
                 return ist.getState();
             }
 
-            // Ensure that the specified port is not mapped to any interface.
-            PortVlan pvlan = new PortVlan(nc, vlan);
-            String anotherIf =
-                resMgr.registerPortMap(getContainerName(), ifPath, pvlan);
-            if (anotherIf != null) {
-                String msg = "Specified port is mapped to " + anotherIf;
-                throw new VTNException(StatusCode.CONFLICT, msg);
-            }
+            pvlan = new PortVlan(nc, vlan);
+        }
 
+        PortVlan rmlan = (mapped == null)
+            ? null
+            : new PortVlan(mapped, oldconf.getVlan());
+
+        // Register port mapping, and unregister old port mapping if needed.
+        MapReference ref = resMgr.registerPortMap(mgr, ifPath, pvlan, rmlan);
+        if (ref != null) {
+            assert ref.getMapType() == MapType.PORT;
+
+            throw new VTNException(StatusCode.CONFLICT,
+                                   "Specified port is mapped to " +
+                                   ref.getAbsolutePath());
+        }
+
+        if (nc != null) {
             // The specified network may already be mapped by another VLAN
             // mapping. So we need to flush flow entries relevant to the
             // network.
@@ -370,14 +380,10 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
             vtn.removeMacTableEntries(mgr, nc, vlan);
         }
 
-        // Destroy old mapping.
         if (mapped != null) {
-            short oldVlan = oldconf.getVlan();
-            PortVlan pvlan = new PortVlan(mapped, oldVlan);
-            resMgr.unregisterPortMap(pvlan);
-
             // Purge all MAC address table entries and VTN flows relevant to
             // old mapping.
+            short oldVlan = oldconf.getVlan();
             MacAddressTable table = mgr.getMacAddressTable(parent.getPath());
             flushCache(mgr, table, mapped, oldVlan);
         }
@@ -1105,13 +1111,20 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
                             ConcurrentMap<VTenantPath, Object> db,
                             VBridgeIfState ist, NodeConnector nc,
                             boolean resuming) {
-        String containerName = getContainerName();
         short vlan = portMapConfig.getVlan();
         PortVlan pvlan = new PortVlan(nc, vlan);
         IVTNResourceManager resMgr = mgr.getResourceManager();
-        String anotherIf =
-            resMgr.registerPortMap(containerName, ifPath, pvlan);
-        if (anotherIf == null) {
+        MapReference ref;
+
+        try {
+            ref = resMgr.registerPortMap(mgr, ifPath, pvlan, null);
+        } catch (VTNException e) {
+            LOG.error(getContainerName() + ":" + ifPath +
+                      ": Failed to map port: "+ pvlan, e);
+            return false;
+        }
+
+        if (ref == null) {
             ist.setMappedPort(nc);
             db.put(ifPath, ist);
 
@@ -1137,7 +1150,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
         }
 
         LOG.error("{}:{}: Switch port is already mapped to {}: {}",
-                  getContainerName(), ifPath, anotherIf, nc);
+                  getContainerName(), ifPath, ref.getAbsolutePath(), pvlan);
         return false;
     }
 
@@ -1162,7 +1175,13 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
         short vlan = portMapConfig.getVlan();
         PortVlan pvlan = new PortVlan(ist.getMappedPort(), vlan);
         IVTNResourceManager resMgr = mgr.getResourceManager();
-        resMgr.unregisterPortMap(pvlan);
+        try {
+            resMgr.unregisterPortMap(mgr, pvlan);
+        } catch (VTNException e) {
+            LOG.error(getContainerName() + ":" + ifPath +
+                      ": Failed to unmap port: "+ pvlan, e);
+            // FALLTHROUGH
+        }
 
         ist.setMappedPort(null);
         db.put(ifPath, ist);

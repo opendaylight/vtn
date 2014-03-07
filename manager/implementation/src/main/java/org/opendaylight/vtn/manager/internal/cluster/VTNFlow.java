@@ -20,6 +20,7 @@ import java.util.HashSet;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.NodeUtils;
+import org.opendaylight.vtn.manager.internal.PortFilter;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
 import org.opendaylight.controller.connectionmanager.IConnectionManager;
@@ -55,7 +56,7 @@ public class VTNFlow implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 4456038162062268062L;
+    private static final long serialVersionUID = 2586894271137343163L;
 
     /**
      * The identifier of the flow group.
@@ -244,16 +245,26 @@ public class VTNFlow implements Serializable {
     }
 
     /**
-     * Determine whether the given pair of node connector and VLAN ID matches
-     * the network at the edge of the ingress flow or not.
+     * Determine whether the specified network matches the network configured
+     * in the ingress flow or not.
      *
-     * @param nc    A node connector associated with a switch port.
-     * @param vlan  A VLAN ID.
-     * @return  {@code true} is returned if the given pair of node connector
-     *          and VLAN ID matches the network at the edge of the ingress
-     *          flow. Otherwise {@code false} is returned.
+     * <p>
+     *   The network to be tested is specified by a pair of {@link PortFilter}
+     *   instance and VLAN ID. This method passes a {@link NodeConnector}
+     *   instance configured in the ingress flow to
+     *   {@link PortFilter#accept(NodeConnector, PortProperty)}, and
+     *   returns {@code false} if it returns {@code false}.
+     *   Note that {@code null} is always passed as port property.
+     * </p>
+     *
+     * @param filter  A {@link PortFilter} instance.
+     *                Specifying {@code null} results in undefined behavior.
+     * @param vlan    A VLAN ID.
+     * @return  {@code true} is returned if the specified network matches
+     *          the network configured in the ingress flow.
+     *          Otherwise {@code false} is returned.
      */
-    public boolean isIncomingNetwork(NodeConnector nc, short vlan) {
+    public boolean isIncomingNetwork(PortFilter filter, short vlan) {
         if (flowEntries.size() == 0) {
             return false;
         }
@@ -263,7 +274,8 @@ public class VTNFlow implements Serializable {
         Flow flow = flowEntries.get(0).getFlow();
         Match match = flow.getMatch();
         MatchField mf = match.getField(MatchType.IN_PORT);
-        if (!nc.equals(mf.getValue())) {
+        NodeConnector port = (NodeConnector)mf.getValue();
+        if (!filter.accept(port, null)) {
             return false;
         }
 
@@ -273,16 +285,26 @@ public class VTNFlow implements Serializable {
     }
 
     /**
-     * Determine whether the given pair of node connector and VLAN ID matches
-     * the network at the edge of the egress flow or not.
+     * Determine whether the specified network matches the network configured
+     * in the egress flow or not.
      *
-     * @param nc    A node connector associated with a switch port.
-     * @param vlan  A VLAN ID.
-     * @return  {@code true} is returned if the given pair of node connector
-     *          and VLAN ID matches the network at the edge of the egress flow.
+     * <p>
+     *   The network to be tested is specified by a pair of {@link PortFilter}
+     *   instance and VLAN ID. This method passes a {@link NodeConnector}
+     *   instance configured in the ingress flow to
+     *   {@link PortFilter#accept(NodeConnector, PortProperty)}, and
+     *   returns {@code false} if it returns {@code false}.
+     *   Note that {@code null} is always passed as port property.
+     * </p>
+     *
+     * @param filter  A {@link PortFilter} instance.
+     *                Specifying {@code null} results in undefined behavior.
+     * @param vlan    A VLAN ID.
+     * @return  {@code true} is returned if the specified network matches
+     *          the network configured in the egress flow.
      *          Otherwise {@code false} is returned.
      */
-    public boolean isOutgoingNetwork(NodeConnector nc, short vlan) {
+    public boolean isOutgoingNetwork(PortFilter filter, short vlan) {
         int sz = flowEntries.size();
         if (sz <= 0) {
             return false;
@@ -297,7 +319,7 @@ public class VTNFlow implements Serializable {
         for (Action action: actions) {
             if (action instanceof Output) {
                 Output out = (Output)action;
-                if (nc.equals(out.getPort())) {
+                if (filter.accept(out.getPort(), null)) {
                     if (vlanMatched) {
                         return true;
                     }

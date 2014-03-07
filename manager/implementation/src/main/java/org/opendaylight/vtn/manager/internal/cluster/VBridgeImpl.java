@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -44,12 +44,12 @@ import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
-import org.opendaylight.vtn.manager.internal.MapType;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNConfig;
 import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
+import org.opendaylight.vtn.manager.internal.VlanMapPortFilter;
 
 import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
@@ -79,7 +79,7 @@ public final class VBridgeImpl implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -8520771325355548289L;
+    private static final long serialVersionUID = -4760005898902580450L;
 
     /**
      * Logger instance.
@@ -133,12 +133,6 @@ public final class VBridgeImpl implements Serializable {
      */
     private final Map<String, VlanMapImpl> vlanMaps =
         new TreeMap<String, VlanMapImpl>();
-
-    /**
-     * VLAN mappings indexed by VLAN ID.
-     */
-    private transient Map<Short, VlanIdMap> vlanIdIndex =
-        new TreeMap<Short, VlanIdMap>();
 
     /**
      * Read write lock to synchronize per-bridge resources.
@@ -470,40 +464,49 @@ public final class VBridgeImpl implements Serializable {
 
         // Create ID for this VLAN mapping.
         Node node = vlconf.getNode();
-        StringBuilder idBuilder = new StringBuilder();
-        if (node == null) {
-            // Node is unspecified.
-            idBuilder.append(NODEID_ANY);
-        } else {
+        if (node != null) {
             VTNManagerImpl.checkNode(node);
-            idBuilder.append(node.getType()).append('-').
-                append(node.getNodeIDString());
         }
+        String id = createVlanMapId(node, vlan);
 
-        idBuilder.append('.').append((int)vlan);
+        // Create a VLAN mapping instance.
+        VlanMapImpl vmap = new VlanMapImpl(bridgePath, id, vlconf);
+
+        IVTNResourceManager resMgr = mgr.getResourceManager();
+        VlanMapPath path = (VlanMapPath)vmap.getPath();
+        NodeVlan nvlan = new NodeVlan(node, vlan);
 
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
-            // Create a VLAN mapping instance.
-            String id = idBuilder.toString();
-            VlanMapImpl vmap = new VlanMapImpl(bridgePath, id, vlconf);
+            // Register a new VLAN mapping to the resource manager.
+            MapReference ref = resMgr.registerVlanMap(mgr, path, nvlan);
+            if (ref != null) {
+                assert ref.getMapType() == MapType.VLAN;
 
-            // Update VLAN ID index.
-            boolean needreg = addVlanIdIndex(vmap);
-            if (needreg) {
-                // Ensure that the specified VLAN ID is not mapped to another
-                // bridge.
-                IVTNResourceManager resMgr = mgr.getResourceManager();
-                String anotherBridge =
-                    resMgr.registerVlanMap(getContainerName(), bridgePath,
-                                           vlan);
-                if (anotherBridge != null) {
-                    removeVlanIdIndex(vlconf);
-                    String msg = "VLAN ID " + vlan + " is mapped to " +
-                        anotherBridge;
-                    throw new VTNException(StatusCode.CONFLICT, msg);
+                String msg;
+                if (ref.isContained(getContainerName(), bridgePath)) {
+                    msg = "Already mapped to this bridge";
+                } else {
+                    StringBuilder builder = new StringBuilder("VLAN(");
+                    nvlan.appendContents(builder);
+                    builder.append(") is mapped to ").
+                        append(ref.getAbsolutePath());
+                    msg = builder.toString();
                 }
+                throw new VTNException(StatusCode.CONFLICT, msg);
+            }
+
+            if (node != null && mgr.exists(node) &&
+                resMgr.isVlanMapped(new NodeVlan(null, vlan))) {
+                // The specified VLAN network overlaps existing VLAN mapping
+                // configured with null node. So network caches releated to
+                // overlapped network must be flushed.
+                String tenantName = getTenantName();
+                VlanMapPortFilter filter =
+                    VlanMapPortFilter.create(resMgr, node, vlan, null);
+                VTNThreadData.removeFlows(mgr, tenantName, node, filter, vlan);
+                parent.removeMacTableEntries(mgr, filter, vlan);
             }
 
             vmap.initState(mgr);
@@ -547,19 +550,18 @@ public final class VBridgeImpl implements Serializable {
 
             VlanMapConfig vlconf = vmap.getVlanMapConfig();
             short vlan = vlconf.getVlan();
-            boolean unmapped = removeVlanIdIndex(vlconf);
             Node node = vlconf.getNode();
-            if (unmapped) {
-                // Flush MAC address table associated with this VLAN map.
-                // Although this may flush entries associated with the port
-                // mapping, it should never cause any problem.
-                MacAddressTable table = mgr.getMacAddressTable(bridgePath);
-                table.flush(node, vlan);
 
-                // Unregister VLAN mapping.
-                IVTNResourceManager resMgr = mgr.getResourceManager();
-                resMgr.unregisterVlanMap(vlan);
-            }
+            // Unregister VLAN mapping.
+            IVTNResourceManager resMgr = mgr.getResourceManager();
+            NodeVlan nvlan = new NodeVlan(node, vlan);
+            resMgr.unregisterVlanMap(mgr, nvlan);
+
+            // Flush MAC address table associated with this VLAN map.
+            // Although this may flush entries associated with the port
+            // mapping, it should never cause any problem.
+            MacAddressTable table = mgr.getMacAddressTable(bridgePath);
+            table.flush(node, vlan);
 
             VlanMap vlmap = new VlanMap(mapId, node, vlan);
             vmap.destroy(mgr, bridgePath, vlmap, true);
@@ -641,25 +643,11 @@ public final class VBridgeImpl implements Serializable {
             throw new VTNException(status);
         }
 
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
-        try {
-            short vlan = vlconf.getVlan();
-            VlanIdMap idmap = vlanIdIndex.get(vlan);
-            if (idmap != null) {
-                Node node = vlconf.getNode();
-                VlanMapImpl vmap = idmap.get(node);
-                if (vmap != null) {
-                    assert vlconf.equals(vmap.getVlanMapConfig());
-                    return new VlanMap(vmap.getMapId(), node, vlan);
-                }
-            }
-        } finally {
-            rdlock.unlock();
-        }
+        Node node = vlconf.getNode();
+        short vlan = vlconf.getVlan();
+        String id = createVlanMapId(node, vlan);
 
-        String msg = "VLAN mapping does not exist";
-        throw new VTNException(StatusCode.NOTFOUND, msg);
+        return getVlanMap(id);
     }
 
     /**
@@ -745,8 +733,17 @@ public final class VBridgeImpl implements Serializable {
             for (VlanMapImpl vmap: vlanMaps.values()) {
                 // Register VLAN mappings to the global resource manager.
                 VlanMapConfig vlconf = vmap.getVlanMapConfig();
+                Node node = vlconf.getNode();
                 short vlan = vlconf.getVlan();
-                resMgr.registerVlanMap(containerName, bridgePath, vlan);
+                NodeVlan nvlan = new NodeVlan(node, vlan);
+                try {
+                    resMgr.registerVlanMap(mgr, (VlanMapPath)vmap.getPath(),
+                                           nvlan);
+                } catch (Exception e) {
+                    LOG.error(containerName + ":" + bridgePath +
+                              ": Failed to resume VLAN mapping: " + nvlan, e);
+                    continue;
+                }
 
                 // Resume the VLAN mappings.
                 state = vmap.resume(mgr, state);
@@ -1000,15 +997,19 @@ public final class VBridgeImpl implements Serializable {
      * Send a unicast ARP request to the specified host.
      *
      * @param mgr   VTN manager service.
-     * @param type  Mapping type to be tested.
+     * @param ref   Reference to the virtual network mapping.
+     *              The specified reference must point the virtual node
+     *              contained in this vBridge.
      * @param pctx  The context of the ARP packet to send.
      * @return  A {@code Boolean} object is returned if the specified host
      *          belongs to this bridge. If a ARP request was actually sent to
      *          the network, {@code Boolean.TRUE} is returned.
      *          {@code null} is returned if the specified host does not
      *          belong to this bridge.
+     * @throws VTNException  An error occurred.
      */
-    Boolean probeHost(VTNManagerImpl mgr, MapType type, PacketContext pctx) {
+    boolean probeHost(VTNManagerImpl mgr, MapReference ref,
+                      PacketContext pctx) throws VTNException {
         NodeConnector nc = pctx.getOutgoingNodeConnector();
         assert nc != null;
         short vlan = pctx.getVlan();
@@ -1016,9 +1017,9 @@ public final class VBridgeImpl implements Serializable {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            VBridgeNode bnode = match(mgr, type, nc, vlan);
+            VBridgeNode bnode = match(mgr, ref, nc, vlan);
             if (bnode == null) {
-                return null;
+                return false;
             }
 
             if (!bnode.isEnabled()) {
@@ -1028,7 +1029,7 @@ public final class VBridgeImpl implements Serializable {
                               getContainerName(), bnode.getPath(),
                               pctx.getDescription(nc));
                 }
-                return Boolean.FALSE;
+                return false;
             }
 
             if (LOG.isTraceEnabled()) {
@@ -1041,19 +1042,23 @@ public final class VBridgeImpl implements Serializable {
             rdlock.unlock();
         }
 
-        return Boolean.TRUE;
+        return true;
     }
 
     /**
      * Handler for receiving the packet.
      *
      * @param mgr   VTN manager service.
-     * @param type  Mapping type to be tested.
+     * @param ref   Reference to the virtual network mapping.
+     *              The specified reference must point the virtual node
+     *              contained in this vBridge.
      * @param pctx  The context of the received packet.
      * @return  A {@code PacketResult} which indicates the result of handler.
      */
-    PacketResult receive(VTNManagerImpl mgr, MapType type, PacketContext pctx) {
+    PacketResult receive(VTNManagerImpl mgr, MapReference ref,
+                         PacketContext pctx) {
         NodeConnector incoming = pctx.getIncomingNodeConnector();
+        byte[] src = pctx.getSourceAddress();
         short vlan = pctx.getVlan();
 
         // Writer lock is required because this method may change the state
@@ -1061,7 +1066,7 @@ public final class VBridgeImpl implements Serializable {
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
-            VBridgeNode bnode = match(mgr, type, incoming, vlan);
+            VBridgeNode bnode = match(mgr, ref, incoming, vlan);
             if (bnode == null) {
                 return PacketResult.IGNORED;
             }
@@ -1143,10 +1148,15 @@ public final class VBridgeImpl implements Serializable {
                 String mapId = entry.getKey();
                 VlanMapImpl vmap = entry.getValue();
                 VlanMapConfig vlconf = vmap.getVlanMapConfig();
+                Node node = vlconf.getNode();
                 short vlan = vlconf.getVlan();
-                Short vid = Short.valueOf(vlan);
-                if (vlanIdIndex.remove(vid) != null) {
-                    resMgr.unregisterVlanMap(vlan);
+                NodeVlan nvlan = new NodeVlan(node, vlan);
+                try {
+                    resMgr.unregisterVlanMap(mgr, nvlan);
+                } catch (Exception e) {
+                    LOG.error(getContainerName() + ":" + bridgePath +
+                              ": Failed to unregister VLAN map: " + nvlan);
+                    // FALLTHROUGH
                 }
 
                 VlanMap vlmap = new VlanMap(mapId, vlconf.getNode(), vlan);
@@ -1368,77 +1378,6 @@ public final class VBridgeImpl implements Serializable {
 
         // Reset the lock.
         rwLock = new ReentrantReadWriteLock();
-
-        // Rebuild VLAN mapping index to reduce memory footprint.
-        vlanIdIndex = new TreeMap<Short, VlanIdMap>();
-        for (VlanMapImpl vmap: vlanMaps.values()) {
-            try {
-                addVlanIdIndex(vmap);
-            } catch (Exception e) {
-                // This should never happen. */
-                LOG.error("Unexpected exception", e);
-            }
-        }
-    }
-
-    /**
-     * Add the given VLAN mapping to the VLAN ID index.
-     *
-     * <p>
-     *   Note that this method must be called with holding the bridge write
-     *   lock.
-     * </p>
-     *
-     * @param vmap  VLAN mapping instance to be added.
-     * @return  {@code true} is returned if no other VLAN mapping in this
-     *          bridge does not map the same VLAN ID as the given VLAN mapping.
-     *          {@code false} is returned if at least one VLAN mapping in this
-     *          bridge maps the same VLAN ID as the given VLAN mapping.
-     * @throws VTNException
-     *     The VLAN associated with the given VLAN mapping is already mapped
-     *     to this bridge.
-     */
-    private boolean addVlanIdIndex(VlanMapImpl vmap) throws VTNException {
-        VlanMapConfig vlc = vmap.getVlanMapConfig();
-        short vlan = vlc.getVlan();
-        VlanIdMap idmap = vlanIdIndex.get(vlan);
-        boolean ret;
-        if (idmap == null) {
-            idmap = VlanIdMap.create(vmap);
-            vlanIdIndex.put(vlan, idmap);
-            ret = true;
-        } else {
-            assert !idmap.isEmpty();
-            idmap.add(vmap);
-            ret = false;
-        }
-
-        return ret;
-    }
-
-    /**
-     * Remove the given VLAN mapping from the VLAN ID index.
-     *
-     * <p>
-     *   Note that this method must be called with holding the bridge write
-     *   lock.
-     * </p>
-     *
-     * @param vlconf  VLAN mapping configuration.
-     * @return  {@code true} is returned if the VLAN ID associated with the
-     *          given VLAN mapping needs to be unregistered from the global
-     *          resource manager. Otherwise {@code false} is returned.
-     */
-    private boolean removeVlanIdIndex(VlanMapConfig vlconf) {
-        short vlan = vlconf.getVlan();
-        Node node = vlconf.getNode();
-        VlanIdMap idmap = vlanIdIndex.get(vlan);
-        boolean ret = idmap.remove(node);
-        if (ret) {
-            vlanIdIndex.remove(vlan);
-        }
-
-        return ret;
     }
 
     /**
@@ -1750,7 +1689,7 @@ public final class VBridgeImpl implements Serializable {
         // Ensure that the outgoing network is mapped to this bridge.
         NodeConnector outgoing = tent.getPort();
         short outVlan = tent.getVlan();
-        VBridgeNode bnode = match(mgr, MapType.ALL, outgoing, outVlan);
+        VBridgeNode bnode = match(mgr, outgoing, outVlan);
         if (bnode == null) {
             LOG.warn("{}:{}: Unexpected MAC address entry: {}",
                      getContainerName(), bridgePath, tent);
@@ -1848,43 +1787,99 @@ public final class VBridgeImpl implements Serializable {
     }
 
     /**
-     * Determine whether the network specified by the switch port and the
-     * VLAN ID is mapped to this bridge or not.
+     * Return the virtual network node in this vBridge which maps the
+     * specified VLAN network.
      *
      * <p>
      *   Note that this method must be called with holding the bridge lock.
      * </p>
      *
      * @param mgr   VTN Manager service.
-     * @param type  Mapping type to be tested.
      * @param nc    A node connector where the packet was received.
      * @param vlan  VLAN ID in the received packet.
      * @return  A {@code VBridgeNode} is returned if the network specified
      *          by {@code nc} and {@code vlan} is mapped to this bridge.
      *          Otherwise {@code null} is returned.
      */
-    private VBridgeNode match(VTNManagerImpl mgr, MapType type,
-                              NodeConnector nc, short vlan) {
-        if (type.match(MapType.PORT)) {
-            // Check whether the packet is mapped by port mappings or not.
-            for (VBridgeIfImpl vif: vInterfaces.values()) {
-                if (vif.match(mgr, nc, vlan)) {
-                    return vif;
-                }
+    private VBridgeNode match(VTNManagerImpl mgr, NodeConnector nc,
+                              short vlan) {
+        // Check whether the packet is mapped by port mapping or not.
+        for (VBridgeIfImpl vif: vInterfaces.values()) {
+            if (vif.match(mgr, nc, vlan)) {
+                return vif;
             }
         }
 
-        if (type.match(MapType.VLAN)) {
-            // Check whether the packet is mapped by VLAN mappings or not.
-            VlanIdMap idmap = vlanIdIndex.get(vlan);
-            if (idmap != null) {
-                Node node = nc.getNode();
-                VlanMapImpl vmap = idmap.match(node);
-                if (vmap != null) {
-                    return vmap;
-                }
-            }
+        // Check whether the packet is mapped by VLAN mapping or not.
+        String id = createVlanMapId(nc.getNode(), vlan);
+        VlanMapImpl vmap = vlanMaps.get(id);
+        if (vmap == null) {
+            // Try VLAN mapping which maps all switches.
+            id = createVlanMapId(null, vlan);
+            vmap = vlanMaps.get(id);
         }
+
+        return vmap;
+    }
+
+    /**
+     * Return the virtual network node in this vBridge which maps the
+     * specified VLAN network.
+     *
+     * <p>
+     *   Note that this method must be called with holding the bridge lock.
+     * </p>
+     *
+     * @param mgr   VTN Manager service.
+     * @param ref   Reference to the virtual network mapping.
+     *              The specified reference must point the virtual node
+     *              contained in this vBridge.
+     * @param nc    A node connector where the packet was received.
+     * @param vlan  VLAN ID in the received packet.
+     * @return  A {@code VBridgeNode} is returned if the network specified
+     *          by {@code nc} and {@code vlan} is mapped to this bridge.
+     *          Otherwise {@code null} is returned.
+     */
+    private VBridgeNode match(VTNManagerImpl mgr, MapReference ref,
+                              NodeConnector nc, short vlan) {
+        MapType type = ref.getMapType();
+        if (type == MapType.PORT) {
+            // Determine the interface specified by the mapping reference.
+            VBridgeIfPath ifPath = (VBridgeIfPath)ref.getPath();
+            String ifName = ifPath.getInterfaceName();
+            VBridgeIfImpl vif = vInterfaces.get(ifName);
+            if (vif == null) {
+                // This may happen if the virtual network mapping is changed
+                // by another cluster node.
+                LOG.warn("{}:{}: Failed to resolve port mapping reference: {}",
+                         getContainerName(), bridgePath, ref);
+
+                return null;
+            }
+
+            return (vif.match(mgr, nc, vlan)) ? vif : null;
+        }
+
+        if (type == MapType.VLAN) {
+            // Determine the VLAN mapping instance specified by the mapping
+            // reference.
+            VlanMapPath vpath = (VlanMapPath)ref.getPath();
+            String id = vpath.getMapId();
+            VlanMapImpl vmap = vlanMaps.get(id);
+            if (vmap == null) {
+                // This may happen if the virtual network mapping is changed
+                // by another cluster node.
+                LOG.warn("{}:{}: Failed to resolve VLAN mapping reference: {}",
+                         getContainerName(), bridgePath, ref);
+                // FALLTHROUGH
+            }
+
+            return vmap;
+        }
+
+        // This should never happen.
+        LOG.error("{}:{}: Unexpected mapping reference: {}",
+                  getContainerName(), bridgePath, ref);
 
         return null;
     }
@@ -1916,5 +1911,27 @@ public final class VBridgeImpl implements Serializable {
         for (VlanMapImpl vmap: vlanMaps.values()) {
             vmap.transmit(mgr, pctx, sent);
         }
+    }
+
+    /**
+     * Create an identifier for the VLAN mapping.
+     *
+     * @param node  A {@link Node} object corresponding to the physical switch.
+     * @param vlan  A VLAN ID to be mapped.
+     * @return  A string which represents an identifier of the VLAN mapping.
+     */
+    private String createVlanMapId(Node node, short vlan) {
+        StringBuilder idBuilder = new StringBuilder();
+        if (node == null) {
+            // Node is unspecified.
+            idBuilder.append(NODEID_ANY);
+        } else {
+            idBuilder.append(node.getType()).append('-').
+                append(node.getNodeIDString());
+        }
+
+        idBuilder.append('.').append((int)vlan);
+
+        return idBuilder.toString();
     }
 }

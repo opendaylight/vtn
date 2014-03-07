@@ -308,6 +308,52 @@ public class MacAddressTable {
     }
 
     /**
+     * Remove MAC address table entries associated with switch ports accepted
+     * by the given {@link PortFilter} instance and the specified VLAN ID.
+     *
+     * <p>
+     *   Note that {@code null} is always passed to
+     *   {@link PortFilter#accept(NodeConnector, PortProperty)} as port
+     *   property.
+     * </p>
+     */
+    private final class PortFilterEntryRemover extends EntryRemover {
+        /**
+         * A {@link PortFilter} instance which determines target ports.
+         */
+        private final PortFilter  filter;
+
+        /**
+         * The target VLAN ID.
+         */
+        private final short  vlan;
+
+        /**
+         * Construct a new entry remover.
+         *
+         * @param filter  A {@link PortFilter} instance.
+         * @param vlan    A VLAN ID.
+         */
+        protected PortFilterEntryRemover(PortFilter filter, short vlan) {
+            this.filter = filter;
+            this.vlan = vlan;
+        }
+
+        /**
+         * Determine whether the given entry should be removed or not.
+         *
+         * @param tent  A MAC address table entry.
+         * @return  {@code true} is returned if the given entry should be
+         *          removed. Otherwise {@code fales} is returned.
+         */
+        @Override
+        protected boolean match(MacTableEntry tent) {
+            return (tent.getVlan() == vlan &&
+                    filter.accept(tent.getPort(), null));
+        }
+    }
+
+    /**
      * Age MAC address table entries, and remove unused entries.
      */
     private final class AgedEntryRemover extends EntryRemover {
@@ -710,6 +756,21 @@ public class MacAddressTable {
         Map<Long, MacTableEntry> table = macAddressTable;
         if (table != null) {
             EntryRemover remover = new PortVlanEntryRemover(nc, vlan);
+            remover.remove(table);
+        }
+    }
+
+    /**
+     * Flush all MAC address table entries associated with ports accepted by
+     * the specified {@link PortFilter} instance and the specified VLAN ID.
+     *
+     * @param filter  A {@link PortFilter} instance.
+     * @param vlan    A VLAN ID.
+     */
+    public synchronized void flush(PortFilter filter, short vlan) {
+        Map<Long, MacTableEntry> table = macAddressTable;
+        if (table != null) {
+            EntryRemover remover = new PortFilterEntryRemover(filter, vlan);
             remover.remove(table);
         }
     }

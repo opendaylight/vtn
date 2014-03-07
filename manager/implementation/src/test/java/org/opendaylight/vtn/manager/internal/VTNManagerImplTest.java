@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal;
 
 import java.io.ByteArrayInputStream;
@@ -2406,12 +2407,12 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             assertEquals(StatusCode.CONFLICT, e.getStatus().getCode());
         }
 
+        // The same VLAN ID can be mapped as long as node differs.
         map = null;
         try {
             map = mgr.addVlanMap(bpath, new VlanMapConfig(node, (short) 0));
-            fail("Expected to throw Exception.");
         } catch (VTNException e) {
-            assertEquals(StatusCode.CONFLICT, e.getStatus().getCode());
+            unexpected(e);
         }
 
         try {
@@ -2439,12 +2440,13 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         st = mgr.removeVlanMap(bpath, map.getId());
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
+        // Although VLAN mappings which maps VLAN:1 on specific node exist,
+        // VLAN:1 on any switch can be mapped.
         map = null;
         try {
             map = mgr.addVlanMap(bpath, new VlanMapConfig(null, (short) 1));
-            fail("Expected to throw Exception.");
         } catch (VTNException e) {
-            assertEquals(StatusCode.CONFLICT, e.getStatus().getCode());
+            unexpected(e);
         }
 
         // invalid case
@@ -2548,8 +2550,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         // not found
         VBridgePath[] nbplist = new VBridgePath[] {
-                new VBridgePath(tname, "vbridg"),
-                new VBridgePath("vtn0", bname)
+            new VBridgePath(tname, "vbridg"),
+            new VBridgePath("vtn0", bname)
         };
 
         for (VBridgePath path : nbplist) {

@@ -1,11 +1,12 @@
-/**
- * Copyright (c) 2013 NEC Corporation
+/*
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal;
 
 import java.io.File;
@@ -47,11 +48,15 @@ public class VTNConfigTest extends TestBase {
     private final int  MIN_REMOTE_BULK_FLOWMOD_TIMEOUT = 3000;
     private final int  MAX_REMOTE_BULK_FLOWMOD_TIMEOUT = 600000;
 
-    // Default value, min value, max value of remoteBulkFlowModTimeout
+    // Default value, min value, max value of cacheInitTimeout
     private final int  DEFAULT_CACHE_INIT_TIMEOUT = 3000;
     private final int  MIN_CACHE_INIT_TIMEOUT = 100;
     private final int  MAX_CACHE_INIT_TIMEOUT = 600000;
 
+    // Default value, min value, max value of cacheTransactionTimeout
+    private final int  DEFAULT_CACHE_TRANSACTION_TIMEOUT = 10000;
+    private final int  MIN_CACHE_TRANSACTION_TIMEOUT = 100;
+    private final int  MAX_CACHE_TRANSACTION_TIMEOUT = 600000;
 
     // Separaters between key and value.
     private final String[] separaters = new String[] {"=", ":"};
@@ -227,6 +232,30 @@ public class VTNConfigTest extends TestBase {
                       MAX_CACHE_INIT_TIMEOUT, values);
     }
 
+     /**
+      * Test case for
+      * {@link VTNConfig#VTNConfig(String, String)},
+      * {@link VTNConfig#getCacheTransactionTimeout()}.
+      *
+      * This method tests {@code cacheTransactionTimeout} parameter.
+      */
+     @Test
+     public void testVTNConigCacheTransactionTimeout() {
+        String[] values = {
+                null, "empty", "",
+                String.valueOf(MIN_CACHE_TRANSACTION_TIMEOUT),
+                String.valueOf(MIN_CACHE_TRANSACTION_TIMEOUT - 1),
+                String.valueOf(MAX_CACHE_TRANSACTION_TIMEOUT),
+                String.valueOf(MAX_CACHE_TRANSACTION_TIMEOUT + 1),
+                "val"
+        };
+
+        testVTNConfig("cacheTransactionTimeout",
+                      DEFAULT_CACHE_TRANSACTION_TIMEOUT,
+                      MIN_CACHE_TRANSACTION_TIMEOUT,
+                      MAX_CACHE_TRANSACTION_TIMEOUT, values);
+    }
+
     /**
      * Common routine for test cases of {@link VTNConfig}.
      *
@@ -349,6 +378,9 @@ public class VTNConfigTest extends TestBase {
                         confValue = conf.getRemoteBulkFlowModTimeout();
                     } else if (parameterString.equals("cacheInitTimeout")) {
                         confValue = conf.getCacheInitTimeout();
+                    } else if (parameterString.
+                               equals("cacheTransactionTimeout")) {
+                        confValue = conf.getCacheTransactionTimeout();
                     } else {
                         fail("not supported test case.");
                     }
@@ -384,7 +416,8 @@ public class VTNConfigTest extends TestBase {
                 "flowModTimeout",
                 "remoteFlowModTimeout",
                 "remoteBulkFlowModTimeout",
-                "cacheInitTimeout"
+                "cacheInitTimeout",
+                "cacheTransactionTimeout"
         };
 
         cleanup(false);
@@ -409,7 +442,10 @@ public class VTNConfigTest extends TestBase {
                          conf.getRemoteFlowModTimeout());
             assertEquals(DEFAULT_REMOTE_BULK_FLOWMOD_TIMEOUT,
                          conf.getRemoteBulkFlowModTimeout());
-            assertEquals(DEFAULT_CACHE_INIT_TIMEOUT, conf.getCacheInitTimeout());
+            assertEquals(DEFAULT_CACHE_INIT_TIMEOUT,
+                         conf.getCacheInitTimeout());
+            assertEquals(DEFAULT_CACHE_TRANSACTION_TIMEOUT,
+                         conf.getCacheTransactionTimeout());
 
             // setup global .ini file.
             FileWriter gWriter = null;
@@ -435,6 +471,8 @@ public class VTNConfigTest extends TestBase {
                     prop.append(MIN_REMOTE_BULK_FLOWMOD_TIMEOUT);
                 } else if (parameterString.equals("cacheInitTimeout")) {
                     prop.append(MIN_CACHE_INIT_TIMEOUT);
+                } else if (parameterString.equals("cacheTransactionTimeout")) {
+                    prop.append(MIN_CACHE_TRANSACTION_TIMEOUT);
                 } else {
                     fail("not supported test case.");
                 }
@@ -464,6 +502,8 @@ public class VTNConfigTest extends TestBase {
             assertEquals(MIN_REMOTE_BULK_FLOWMOD_TIMEOUT,
                          conf.getRemoteBulkFlowModTimeout());
             assertEquals(MIN_CACHE_INIT_TIMEOUT, conf.getCacheInitTimeout());
+            assertEquals(MIN_CACHE_TRANSACTION_TIMEOUT,
+                         conf.getCacheTransactionTimeout());
 
             // setup container .ini file.
             cIniFile = new File(WORK_DIR, containerFilename);
@@ -488,6 +528,8 @@ public class VTNConfigTest extends TestBase {
                     prop.append(MAX_REMOTE_BULK_FLOWMOD_TIMEOUT);
                 } else if (parameterString.equals("cacheInitTimeout")) {
                     prop.append(MAX_CACHE_INIT_TIMEOUT);
+                } else if (parameterString.equals("cacheTransactionTimeout")) {
+                    prop.append(MAX_CACHE_TRANSACTION_TIMEOUT);
                 } else {
                     fail("not supported test case.");
                 }
@@ -516,6 +558,8 @@ public class VTNConfigTest extends TestBase {
             assertEquals(MAX_REMOTE_BULK_FLOWMOD_TIMEOUT,
                          conf.getRemoteBulkFlowModTimeout());
             assertEquals(MAX_CACHE_INIT_TIMEOUT, conf.getCacheInitTimeout());
+            assertEquals(MAX_CACHE_TRANSACTION_TIMEOUT,
+                         conf.getCacheTransactionTimeout());
 
             gIniFile.delete();
             cIniFile.delete();

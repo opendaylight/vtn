@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -7,9 +7,11 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.vtn.manager.internal;
+package org.opendaylight.vtn.manager.internal.cluster;
 
 import org.junit.Test;
+
+import org.opendaylight.vtn.manager.internal.TestBase;
 
 /**
  * JUnit test for {@link MapType}.
@@ -30,5 +32,15 @@ public class MapTypeTest extends TestBase {
 
         assertFalse(MapType.PORT.match(MapType.VLAN));
         assertFalse(MapType.VLAN.match(MapType.PORT));
+    }
+
+    /**
+     * Ensure that {@link MapType} is serializable.
+     */
+    @Test
+    public void testSerialize() {
+        for (MapType type: MapType.values()) {
+            serializeTest(type);
+        }
     }
 }

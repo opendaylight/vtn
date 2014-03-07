@@ -33,15 +33,22 @@ import org.osgi.framework.Version;
 import org.opendaylight.vtn.manager.BundleVersion;
 import org.opendaylight.vtn.manager.IVTNGlobal;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
-import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
+import org.opendaylight.vtn.manager.internal.cluster.MapReference;
+import org.opendaylight.vtn.manager.internal.cluster.MapType;
+import org.opendaylight.vtn.manager.internal.cluster.NodeVlan;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
+import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
 
 import org.opendaylight.controller.clustering.services.CacheConfigException;
 import org.opendaylight.controller.clustering.services.CacheExistException;
 import org.opendaylight.controller.clustering.services.IClusterGlobalServices;
 import org.opendaylight.controller.clustering.services.IClusterServices;
 import org.opendaylight.controller.clustering.services.ICoordinatorChangeAware;
+import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.utils.GlobalConstants;
+import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
  * {@code GlobalResourceManager} class manages global resources used by the
@@ -61,17 +68,18 @@ public class GlobalResourceManager
     public static final int  API_VERSION = 1;
 
     /**
-     * A character which separates the container name from the map key.
+     * The name of the cluster cache which keeps revision identifier of
+     * configuration per mapping type.
      */
-    private static final char  MAPKEY_SEPARATOR = ':';
+    private static final String CACHE_CONFREVISION = "vtn.confrev";
 
     /**
-     * Cluster cache name associated with {@link #vlanMaps}.
+     * The name of the cluster cache which keeps VLAN mappings.
      */
     private static final String  CACHE_VLANMAP = "vtn.vlanmap";
 
     /**
-     * Cluster cache name associated with {@link #portMaps}.
+     * The name of the cluster cache which keeps port mappings.
      */
     private static final String  CACHE_PORTMAP = "vtn.portmap";
 
@@ -93,14 +101,30 @@ public class GlobalResourceManager
     private static final long  THREAD_POOL_SHUTDOWN = 5000;
 
     /**
-     * VLAN IDs mapped to the virtual L2 bridge.
+     * Initial revision number of the global configuration.
      */
-    private ConcurrentMap<Short, String> vlanMaps;
+    private static final int  CONFIG_REV_INIT = 0;
 
     /**
-     * Physical switch ports mapped to the virtual L2 bridge interface.
+     * A map which keeps the current revision number for the global
+     * configuration of virtual mappings.
+     *
+     * <p>
+     *   This is used to avoid expensive {@link ConcurrentMap} methods.
+     *   Only {@link MapType#ALL} is used as map key.
+     * </p>
      */
-    private ConcurrentMap<PortVlan, String> portMaps;
+    private ConcurrentMap<MapType, Integer> configRevision;
+
+    /**
+     * A set of VLAN mappings established in all containers.
+     */
+    private ConcurrentMap<NodeVlan, MapReference> vlanMaps;
+
+    /**
+     * A set of port mappings established in all containers.
+     */
+    private ConcurrentMap<PortVlan, MapReference> portMaps;
 
     /**
      * Cluster container service instance.
@@ -132,6 +156,98 @@ public class GlobalResourceManager
      */
     private CopyOnWriteArrayList<VTNManagerImpl>  vtnManagers =
         new CopyOnWriteArrayList<VTNManagerImpl>();
+
+    /**
+     * This class is used to update virtual network mapping in a cluster
+     * cache transaction.
+     *
+     * @param <T>  The type of the object returned by this operation.
+     */
+    private abstract class ConfigTransaction<T> extends CacheTransaction<T> {
+        /**
+         * Determine whether the configuration was changed or not.
+         */
+        private boolean  changed = false;
+
+        /**
+         * Construct a new instance.
+         *
+         * @param config  A {@link VTNConfig} object.
+         */
+        private ConfigTransaction(VTNConfig config) {
+            super(clusterService, config.getCacheTransactionTimeout());
+        }
+
+        /**
+         * Execute a procedure in a cluster cache transaction.
+         *
+         * @return  An object returned by {@link #update()}.
+         * @throws CacheRetryException
+         *   Cluster cache operation should be retried from scratch.
+         * @throws VTNException
+         *   A fatal error occurred.
+         */
+        @Override
+        protected final T executeImpl() throws VTNException {
+            Integer ini = Integer.valueOf(CONFIG_REV_INIT);
+            Integer current = configRevision.putIfAbsent(MapType.ALL, ini);
+            if (current == null) {
+                current = ini;
+            }
+
+            T ret;
+            try {
+                ret = update();
+            } catch (VTNException e) {
+                // This exception may be caused because of cluster cache
+                // inconsistency. So we should check current revision number.
+                if (current.equals(configRevision.get(MapType.ALL))) {
+                    throw e;
+                }
+
+                throw new CacheRetryException();
+            }
+
+            if (changed) {
+                // Update revision number.
+                Integer rev = Integer.valueOf(current.intValue() + 1);
+                if (configRevision.replace(MapType.ALL, current, rev)) {
+                    return ret;
+                }
+            } else {
+                // Abort the current transaction.
+                abort();
+
+                // Ensure that revision number is not changed.
+                if (current.equals(configRevision.get(MapType.ALL))) {
+                    return ret;
+                }
+            }
+
+            throw new CacheRetryException();
+        }
+
+        /**
+         * Notify that the configuration has been changed successfully.
+         */
+        protected final void setChanged() {
+            changed = true;
+        }
+
+        /**
+         * Update the virtual mapping.
+         *
+         * <p>
+         *   {@link #setChanged()} must be called in this method if the
+         *   configuration has been changed.
+         * </p>
+         *
+         * @return  An arbitrary object.
+         * @throws VTNException
+         *   A fatal error occurred.
+         */
+        protected abstract T update() throws VTNException;
+    }
 
     /**
      * Function called by the dependency manager when all the required
@@ -202,20 +318,24 @@ public class GlobalResourceManager
         IClusterGlobalServices cluster = clusterService;
         if (cluster == null) {
             // Create dummy caches.
-            vlanMaps = new ConcurrentHashMap<Short, String>();
-            portMaps = new ConcurrentHashMap<PortVlan, String>();
+            configRevision = new ConcurrentHashMap<MapType, Integer>();
+            vlanMaps = new ConcurrentHashMap<NodeVlan, MapReference>();
+            portMaps = new ConcurrentHashMap<PortVlan, MapReference>();
 
             // Use loopback address as controller's address.
             controllerAddress = InetAddress.getLoopbackAddress();
         } else {
             Set<IClusterServices.cacheMode> cmode =
                 EnumSet.of(IClusterServices.cacheMode.TRANSACTIONAL);
+            createCache(cluster, CACHE_CONFREVISION, cmode);
             createCache(cluster, CACHE_VLANMAP, cmode);
             createCache(cluster, CACHE_PORTMAP, cmode);
 
-            vlanMaps = (ConcurrentMap<Short, String>)
+            configRevision = (ConcurrentMap<MapType, Integer>)
+                getCache(cluster, CACHE_CONFREVISION);
+            vlanMaps = (ConcurrentMap<NodeVlan, MapReference>)
                 getCache(cluster, CACHE_VLANMAP);
-            portMaps = (ConcurrentMap<PortVlan, String>)
+            portMaps = (ConcurrentMap<PortVlan, MapReference>)
                 getCache(cluster, CACHE_PORTMAP);
 
             controllerAddress = cluster.getMyAddress();
@@ -277,6 +397,149 @@ public class GlobalResourceManager
         return cache;
     }
 
+    /**
+     * Return the current revision number of the global configuration.
+     *
+     * @return  An {@link Integer} object which represents the current
+     *          revision number.
+     */
+    private Integer getConfigRevision() {
+        Integer rev = configRevision.get(MapType.ALL);
+        if (rev == null) {
+            rev = Integer.valueOf(CONFIG_REV_INIT);
+        }
+
+        return rev;
+    }
+
+    /**
+     * Remove the VLAN mapping which maps the network specified by
+     * {@link NodeVlan}.
+     *
+     * @param nvlan  A {@link NodeVlan} object which specifies the VLAN
+     *               network.
+     * @throws VTNException  A fatal error occurred.
+     */
+    private void removeVlanMap(NodeVlan nvlan) throws VTNException {
+        // Remove the VLAN mapping.
+        MapReference old = vlanMaps.remove(nvlan);
+        if (old == null) {
+            throw new VTNException(StatusCode.NOTFOUND,
+                                   "Trying to unmap unexpected VLAN: " +
+                                   nvlan);
+        }
+    }
+
+    /**
+     * Change port mapping configuration.
+     *
+     * @param pvlan  A {@link PortVlan} object which specifies the VLAN network
+     *               to be mapped. No port mapping is added if {@code null} is
+     *               specified.
+     * @param ref    A reference to the port mapping to be registered.
+     * @param rmlan  A {@link PortVlan} object which specifies the VLAN network
+     *               to be unmapped. No port mapping is removed if {@code null}
+     *               is specified.
+     * @return  {@code null} is returned on success.
+     *          On failure, a reference to the port mapping which maps the
+     *          VLAN network specified by {@code pvlan} is returned.
+     * @throws VTNException  A fatal error occurred.
+     */
+    private MapReference changePortMap(PortVlan pvlan, MapReference ref,
+                                       PortVlan rmlan) throws VTNException {
+        if (rmlan != null) {
+            // Remove the port mapping which maps rmlan.
+            if (portMaps.remove(rmlan) == null) {
+                // This should never happen.
+                throw new VTNException(StatusCode.NOTFOUND,
+                                       "Trying to unmap unexpected port: " +
+                                       rmlan);
+            }
+        }
+
+        return (pvlan != null)
+            ? portMaps.putIfAbsent(pvlan, ref)
+            : null;
+    }
+
+    /**
+     * Return a reference to virtual network mapping which maps the VLAN
+     * network specified by the switch port and the VLAN ID.
+     *
+     * @param nc    A node connector corresponding to the switch port.
+     *              Specifying {@code null} results in undefined behavior.
+     * @param vlan  A VLAN ID.
+     * @return      A {@link MapReference} object is returned if found.
+     *              {@code null} is returned if not found.
+     */
+    private MapReference getMapReferenceImpl(NodeConnector nc, short vlan) {
+        // Examine port mapping at first.
+        PortVlan pvlan = new PortVlan(nc, vlan);
+        MapReference ref = portMaps.get(pvlan);
+        if (ref != null) {
+            assert ref.getMapType() == MapType.PORT;
+            return ref;
+        }
+
+        // Examine VLAN mapping.
+        // Node that we must examine VLAN mapping with a specific node first.
+        NodeVlan nvlan = new NodeVlan(nc.getNode(), vlan);
+        ref = vlanMaps.get(nvlan);
+        if (ref == null) {
+            // Check the VLAN mapping which maps all switches.
+            nvlan = new NodeVlan(null, vlan);
+            ref = vlanMaps.get(nvlan);
+        }
+
+        assert ref == null || ref.getMapType() == MapType.VLAN;
+        return ref;
+    }
+
+    /**
+     * Remove all {@link MapReference} objects associated with the specified
+     * container from the map.
+     *
+     * @param map            A {@link Map} which contains {@link MapReference}
+     *                       objects as values.
+     * @param containerName  The name of the container.
+     * @param <T>            The type of keys in {@code map}.
+     * @return  {@code true} is returned at least one entry was removed.
+     *          {@code false} is returned if the specified map was not changed.
+     */
+    private <T> boolean removeMapReferences(Map<T, MapReference> map,
+                                            String containerName) {
+        Set<T> keys = new HashSet<T>();
+        for (Map.Entry<T, MapReference> entry: map.entrySet()) {
+            T key = entry.getKey();
+            MapReference ref = entry.getValue();
+            if (containerName.equals(ref.getContainerName())) {
+                keys.add(key);
+            }
+        }
+
+        if (keys.isEmpty()) {
+            return false;
+        }
+
+        for (T key: keys) {
+            map.remove(key);
+        }
+
+        return true;
+    }
+
+    /**
+     * Clean up resources associated with the given container.
+     *
+     * @param containerName  The name of the container.
+     * @return  {@code true} is returned the configuration was changed.
+     *          {@code false} is returned if not changed.
+     */
+    private boolean cleanUpImpl(String containerName) {
+        boolean ret = removeMapReferences(vlanMaps, containerName);
+        return (removeMapReferences(portMaps, containerName) || ret);
+    }
+
     // IVTNGlobal
 
     /**
@@ -300,8 +563,8 @@ public class GlobalResourceManager
      *
      * @return  A {@link BundleVersion} object which represents the version
      *          of the OSGi bundle which implements the VTN Manager.
-     *          {@code null} is returned if the VTN Manager is loaded by
-     *          a OSGi bundle class loader.
+     *          {@code null} is returned if the VTN Manager is not loaded by
+     *          an OSGi bundle class loader.
      */
     @Override
     public BundleVersion getBundleVersion() {
@@ -318,9 +581,7 @@ public class GlobalResourceManager
     // IVTNResourceManager
 
     /**
-     * Add the VTN Manager service.
-     *
-     * @param mgr  VTN Manager service.
+     * {@inheritDoc}
      */
     @Override
     public void addManager(VTNManagerImpl mgr) {
@@ -330,9 +591,7 @@ public class GlobalResourceManager
     }
 
     /**
-     * Remove the VTN Manager service.
-     *
-     * @param mgr  VTN Manager service.
+     * {@inheritDoc}
      */
     @Override
     public void removeManager(VTNManagerImpl mgr) {
@@ -343,80 +602,139 @@ public class GlobalResourceManager
     }
 
     /**
-     * Register VLAN ID for VLAN mapping.
-     *
-     * @param containerName  The name of the container.
-     * @param path           Path to the virtual bridge.
-     * @param vlan           VLAN ID to map.
-     * @return  {@code null} is returned on success.
-     *          On failure, fully-qualified name of the bridge which maps
-     *          the specified VLAN is returned.
+     * {@inheritDoc}
      */
     @Override
-    public String registerVlanMap(String containerName, VBridgePath path,
-                                  short vlan) {
-        StringBuilder builder = new StringBuilder(containerName);
-        builder.append(MAPKEY_SEPARATOR).append(path.toString());
-        String bname = builder.toString();
-        return vlanMaps.putIfAbsent(vlan, bname);
-    }
-
-    /**
-     * Unregister VLAN mapping.
-     *
-     * @param vlan  VLAN ID.
-     */
-    @Override
-    public void unregisterVlanMap(short vlan) {
-        if (vlanMaps.remove(vlan) == null) {
-            // This should never happen.
-            String msg = "Trying to unmap unexpected VLAN: " + vlan;
-            throw new IllegalStateException(msg);
+    public MapReference registerVlanMap(VTNManagerImpl mgr, VlanMapPath path,
+                                        final NodeVlan nvlan)
+        throws VTNException {
+        final MapReference ref =
+            new MapReference(MapType.VLAN, mgr.getContainerName(), path);
+        IClusterGlobalServices cluster = clusterService;
+        if (cluster == null) {
+            // This code is only for unit test.
+            return vlanMaps.putIfAbsent(nvlan, ref);
         }
+
+        // Register VLAN mapping in a cluster cache transaction.
+        ConfigTransaction<MapReference> xact =
+            new ConfigTransaction<MapReference>(mgr.getVTNConfig()) {
+            @Override
+            protected MapReference update() throws VTNException {
+                MapReference old = vlanMaps.putIfAbsent(nvlan, ref);
+                if (old == null) {
+                    setChanged();
+                }
+
+                return old;
+            }
+        };
+
+        return xact.execute();
     }
 
     /**
-     * Register mapping between physical switch port and virtual bridge
-     * interface.
-     *
-     * @param containerName  The name of the container.
-     * @param path           Path to the virtual bridge interface.
-     * @param pvlan          Identifier of the mapped switch port.
-     * @return  {@code null} is returned on success.
-     *          On failure, fully-qualified name of the bridge interface
-     *          which maps the specified physical switch port is returned.
+     * {@inheritDoc}
      */
     @Override
-    public String registerPortMap(String containerName, VBridgeIfPath path,
-                                  PortVlan pvlan) {
-        StringBuilder builder = new StringBuilder(containerName);
-        builder.append(MAPKEY_SEPARATOR).append(path.toString());
-        String ifname = builder.toString();
-        return portMaps.putIfAbsent(pvlan, ifname);
-    }
-
-    /**
-     * Unregister port mapping.
-     *
-     * @param pvlan  Identifier of the mapped switch port.
-     */
-    @Override
-    public void unregisterPortMap(PortVlan pvlan) {
-        if (portMaps.remove(pvlan) == null) {
-            // This should never happen.
-            String msg = "Trying to unmap unexpected port: " + pvlan;
-            throw new IllegalStateException(msg);
+    public void unregisterVlanMap(VTNManagerImpl mgr, final NodeVlan nvlan)
+        throws VTNException {
+        IClusterGlobalServices cluster = clusterService;
+        if (cluster == null) {
+            // This code is only for unit test.
+            removeVlanMap(nvlan);
+            return;
         }
+
+        // Unregister VLAN mapping in a cluster cache transaction.
+        ConfigTransaction<Object> xact =
+            new ConfigTransaction<Object>(mgr.getVTNConfig()) {
+            @Override
+            protected Object update() throws VTNException {
+                removeVlanMap(nvlan);
+                setChanged();
+                return null;
+            }
+        };
+
+        xact.execute();
     }
 
     /**
-     * Determine whether the given switch port is mapped to the virtual
-     * interface or not.
-     *
-     * @param pvlan  A pair of the switch port and the VLAN ID.
-     * @return  {@code true} is returned only if the given switch port is
-     *          mapped to the virtual interface.
-     *          Otherwise {@code false} is returned.
+     * {@inheritDoc}
+     */
+    @Override
+    public MapReference registerPortMap(VTNManagerImpl mgr, VBridgeIfPath path,
+                                        final PortVlan pvlan,
+                                        final PortVlan rmlan)
+        throws VTNException {
+        if (pvlan == null && rmlan == null) {
+            return null;
+        }
+
+        final MapReference ref = (pvlan == null)
+            ? null
+            : new MapReference(MapType.PORT, mgr.getContainerName(), path);
+        IClusterGlobalServices cluster = clusterService;
+        if (cluster == null) {
+            // This code is only for unit test.
+            return changePortMap(pvlan, ref, rmlan);
+        }
+
+        // Change port mappings in a cluster cache transaction.
+        ConfigTransaction<MapReference> xact =
+            new ConfigTransaction<MapReference>(mgr.getVTNConfig()) {
+            @Override
+            protected MapReference update() throws VTNException {
+                MapReference old = changePortMap(pvlan, ref, rmlan);
+                if (old == null) {
+                    setChanged();
+                }
+
+                return old;
+            }
+        };
+
+        return xact.execute();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void unregisterPortMap(VTNManagerImpl mgr, final PortVlan pvlan)
+        throws VTNException {
+        IClusterGlobalServices cluster = clusterService;
+        if (cluster == null) {
+            // This code is only for unit test.
+            changePortMap(null, null, pvlan);
+            return;
+        }
+
+        // Unregister port mapping in a cluster cache transaction.
+        ConfigTransaction<MapReference> xact =
+            new ConfigTransaction<MapReference>(mgr.getVTNConfig()) {
+            @Override
+            protected MapReference update() throws VTNException {
+                changePortMap(null, null, pvlan);
+                setChanged();
+                return null;
+            }
+        };
+
+        xact.execute();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isVlanMapped(NodeVlan nvlan) {
+        return vlanMaps.containsKey(nvlan);
+    }
+
+    /**
+     * {@inheritDoc}
      */
     @Override
     public boolean isPortMapped(PortVlan pvlan) {
@@ -424,9 +742,28 @@ public class GlobalResourceManager
     }
 
     /**
-     * Return the global timer.
-     *
-     * @return  The global timer.
+     * {@inheritDoc}
+     */
+    @Override
+    public  MapReference getMapReference(NodeConnector nc, short vlan) {
+        Integer current;
+        MapReference ref;
+
+        do {
+            // Read current revision.
+            current = getConfigRevision();
+
+            // Search for a virtual mapping which maps the given network.
+            ref = getMapReferenceImpl(nc, vlan);
+
+            // Ensure that the configuration is consistent.
+        } while (!current.equals(getConfigRevision()));
+
+        return ref;
+    }
+
+    /**
+     * {@inheritDoc}
      */
     @Override
     public Timer getTimer() {
@@ -434,17 +771,7 @@ public class GlobalResourceManager
     }
 
     /**
-     * Run the given command asynchronously.
-     *
-     * <p>
-     *   Note that this method exucutes the given command using a thread pool
-     *   which has multiple threads. So the order of the command execution is
-     *   unspecified.
-     * </p>
-     *
-     * @param command  The command to be executed.
-     * @return  {@code true} is returned if the specified task was submitted.
-     *          {@code false} is returned if the specified tas was rejected.
+     * {@inheritDoc}
      */
     @Override
     public boolean executeAsync(Runnable command) {
@@ -452,9 +779,7 @@ public class GlobalResourceManager
     }
 
     /**
-     * Return the IP address of the controller in the cluster.
-     *
-     * @return  The IP address of the controller.
+     * {@inheritDoc}
      */
     @Override
     public InetAddress getControllerAddress() {
@@ -462,13 +787,7 @@ public class GlobalResourceManager
     }
 
     /**
-     * Return the number of remote cluster nodes.
-     *
-     * <p>
-     *   Zero is returned if no remote node was found in the cluster.
-     * </p>
-     *
-     * @return  The number of remote cluster nodes.
+     * {@inheritDoc}
      */
     @Override
     public int getRemoteClusterSize() {
@@ -478,13 +797,7 @@ public class GlobalResourceManager
     }
 
     /**
-     * Determine whether the given IP address is one of remote cluster node
-     * addresses or not.
-     *
-     * @param addr  IP address to be tested.
-     * @return  {@code true} is returned if the given IP address is one of
-     *          remote cluster node address.
-     *          Otherwise {@code false} is returned.
+     * {@inheritDoc}
      */
     @Override
     public boolean isRemoteClusterAddress(InetAddress addr) {
@@ -494,36 +807,37 @@ public class GlobalResourceManager
     }
 
     /**
-     * Clean up resources associated with the given container.
-     *
-     * @param containerName  The name of the container.
+     * {@inheritDoc}
      */
     @Override
-    public void cleanUp(String containerName) {
+    public void cleanUp(final String containerName) {
         LOG.trace("{}: Clean up resources", containerName);
 
-        StringBuilder builder = new StringBuilder(containerName);
-        String prefix = builder.append(MAPKEY_SEPARATOR).toString();
-        Set<Short> vlanSet = new HashSet<Short>();
-        for (Map.Entry<Short, String> entry: vlanMaps.entrySet()) {
-            String name = entry.getValue();
-            if (name.startsWith(prefix)) {
-                vlanSet.add(entry.getKey());
-            }
-        }
-        for (Short vlan: vlanSet) {
-            vlanMaps.remove(vlan);
+        IClusterGlobalServices cluster = clusterService;
+        if (cluster == null) {
+            // This code is only for unit test.
+            cleanUpImpl(containerName);
+            return;
         }
 
-        Set<PortVlan> pvSet = new HashSet<PortVlan>();
-        for (Map.Entry<PortVlan, String> entry: portMaps.entrySet()) {
-            String name = entry.getValue();
-            if (name.startsWith(prefix)) {
-                pvSet.add(entry.getKey());
+        // Clean up caches in a cluster cache transaction.
+        String root = GlobalConstants.STARTUPHOME.toString();
+        VTNConfig config = new VTNConfig(root, containerName);
+        ConfigTransaction<Object> xact =
+            new ConfigTransaction<Object>(config) {
+            @Override
+            protected Object update() {
+                if (cleanUpImpl(containerName)) {
+                    setChanged();
+                }
+                return null;
             }
-        }
-        for (PortVlan pvlan: pvSet) {
-            portMaps.remove(pvlan);
+        };
+
+        try {
+            xact.execute();
+        } catch (Exception e) {
+            LOG.error(containerName + ": Failed to clean up resource", e);
         }
     }
 

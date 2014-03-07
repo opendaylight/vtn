@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -30,7 +30,7 @@ public class FlowGroupId extends ClusterEventId {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -5792856577909605564L;
+    private static final long serialVersionUID = 6418514196357442175L;
 
     /**
      * Prefix of the flow group name.

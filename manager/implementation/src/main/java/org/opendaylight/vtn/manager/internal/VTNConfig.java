@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -55,6 +55,11 @@ public class VTNConfig {
      * Default value of {@link #cacheInitTimeout}.
      */
     private static final int  DEFAULT_CACHE_INIT_TIMEOUT = 3000;
+
+    /**
+     * Default value of {@link #cacheTransactionTimeout}.
+     */
+    private static final int  DEFAULT_CACHE_TRANSACTION_TIMEOUT = 10000;
 
     /**
      * Indicates a field keeps an integer value.
@@ -208,7 +213,14 @@ public class VTNConfig {
      * initialization by another controller in the cluster.
      */
     @IntConfig(min = 100, max = 600000)
-    private int cacheInitTimeout  = DEFAULT_CACHE_INIT_TIMEOUT;
+    private int  cacheInitTimeout  = DEFAULT_CACHE_INIT_TIMEOUT;
+
+    /**
+     * The number of milliseconds to wait for cluster cache transaction to
+     * be established.
+     */
+    @IntConfig(min = 100, max = 600000)
+    private int  cacheTransactionTimeout = DEFAULT_CACHE_TRANSACTION_TIMEOUT;
 
     /**
      * Construct a new configuration object.
@@ -279,6 +291,17 @@ public class VTNConfig {
      */
     public int getCacheInitTimeout() {
         return cacheInitTimeout;
+    }
+
+    /**
+     * Return the number of milliseconds to wait for cluster cache transaction
+     * to be established.
+     *
+     * @return  The number of milliseconds to wait for cluster cache
+     *          transaction to be established.
+     */
+    public int getCacheTransactionTimeout() {
+        return cacheTransactionTimeout;
     }
 
     /**

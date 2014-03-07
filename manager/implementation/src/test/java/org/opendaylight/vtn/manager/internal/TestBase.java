@@ -36,8 +36,12 @@ import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.vtn.manager.VBridgeConfig;
+import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VTenantConfig;
+import org.opendaylight.vtn.manager.internal.cluster.MapReference;
+import org.opendaylight.vtn.manager.internal.cluster.MapType;
+import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
 
 import org.junit.Assert;
 
@@ -167,6 +171,40 @@ public abstract class TestBase extends Assert {
             ia = newset;
         }
         return ia;
+    }
+
+    /**
+     * Create a deep copy of the specified {@link MapReference} object.
+     *
+     * @param ref  A {@link MapReference} object to be copied.
+     * @return  A copied {@link MapReference} object.
+     */
+    protected static MapReference copy(MapReference ref) {
+        if (ref != null) {
+            MapType type = ref.getMapType();
+            String cname = copy(ref.getContainerName());
+            VBridgePath path = ref.getPath();
+            String tname = copy(path.getTenantName());
+            String bname = copy(path.getBridgeName());
+
+            VBridgePath newpath;
+            if (path instanceof VBridgeIfPath) {
+                VBridgeIfPath ipath = (VBridgeIfPath)path;
+                String iname = copy(ipath.getInterfaceName());
+                newpath = new VBridgeIfPath(tname, bname, iname);
+            } else if (path instanceof VlanMapPath) {
+                VlanMapPath vpath = (VlanMapPath)path;
+                String mapId = copy(vpath.getMapId());
+                VBridgePath bpath = new VBridgePath(tname, bname);
+                newpath = new VlanMapPath(bpath, mapId);
+            } else {
+                newpath = new VBridgePath(tname, bname);
+            }
+
+            ref = new MapReference(type, cname, newpath);
+        }
+
+        return ref;
     }
 
     /**
@@ -922,8 +960,12 @@ public abstract class TestBase extends Assert {
     protected static Object serializeTest(Object o) {
         Object newobj = SerializeAndDeserialize(o);
 
-        assertNotSame(o, newobj);
-        assertEquals(o, newobj);
+        if (o instanceof Enum) {
+            assertSame(o, newobj);
+        } else {
+            assertNotSame(o, newobj);
+            assertEquals(o, newobj);
+        }
 
         return newobj;
     }

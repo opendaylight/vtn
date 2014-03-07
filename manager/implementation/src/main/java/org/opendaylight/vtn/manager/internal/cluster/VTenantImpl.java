@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -44,8 +44,8 @@ import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
-import org.opendaylight.vtn.manager.internal.MapType;
 import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.PortFilter;
 import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
@@ -73,7 +73,7 @@ public final class VTenantImpl implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4329280599286706060L;
+    private static final long serialVersionUID = 1787875602878186647L;
 
     /**
      * Logger instance.
@@ -961,57 +961,52 @@ public final class VTenantImpl implements Serializable {
      * Send a unicast ARP request to the specified host.
      *
      * @param mgr   VTN manager service.
-     * @param type  Mapping type to be tested.
+     * @param ref   Reference to the virtual network mapping.
+     *              A virtual node pointed by {@code ref} must be contained
+     *              in this tenant.
      * @param pctx  The context of the ARP packet to send.
-     * @return  A {@code Boolean} object is returned if the specified host
-     *          belongs to this tenant. If a ARP request was actually sent to
-     *          the network, {@code Boolean.TRUE} is returned.
-     *          {@code null} is returned if the specified host does not
-     *          belong to this tenant.
+     * @return  {@code true} is returned if an ARP request was actually sent
+     *          to the network, Otherwise {@code false} is returned.
+     * @throws VTNException  An error occurred.
      */
-    public Boolean probeHost(VTNManagerImpl mgr, MapType type,
-                             PacketContext pctx) {
+    public boolean probeHost(VTNManagerImpl mgr, MapReference ref,
+                             PacketContext pctx) throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            for (VBridgeImpl vbr: vBridges.values()) {
-                Boolean res = vbr.probeHost(mgr, type, pctx);
-                if (res != null) {
-                    return res;
-                }
-            }
+            VBridgeImpl vbr = getBridgeImpl(ref.getPath());
+            return vbr.probeHost(mgr, ref, pctx);
         } finally {
             rdlock.unlock();
         }
-
-        return null;
     }
 
     /**
      * Handler for receiving the packet.
      *
      * @param mgr   VTN manager service.
-     * @param type  Mapping type to be tested.
+     * @param ref   Reference to the virtual network mapping.
+     *              A virtual node pointed by {@code ref} must be contained
+     *              in this tenant.
      * @param pctx  The context of the received packet.
-     * @return  A {@code PacketResult} which indicates the result of handler.
+     * @return  A {@code PacketResult} which indicates the result.
+     * @throws VTNException  An error occurred.
      */
-    public PacketResult receive(VTNManagerImpl mgr, MapType type,
-                                PacketContext pctx) {
+    public PacketResult receive(VTNManagerImpl mgr, MapReference ref,
+                                PacketContext pctx) throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            for (VBridgeImpl vbr: vBridges.values()) {
-                PacketResult res = vbr.receive(mgr, type, pctx);
-                if (res != PacketResult.IGNORED) {
-                    pctx.purgeObsoleteFlow(mgr, tenantName);
-                    return res;
-                }
+            VBridgeImpl vbr = getBridgeImpl(ref.getPath());
+            PacketResult res = vbr.receive(mgr, ref, pctx);
+            if (res != PacketResult.IGNORED) {
+                pctx.purgeObsoleteFlow(mgr, tenantName);
             }
+
+            return res;
         } finally {
             rdlock.unlock();
         }
-
-        return PacketResult.IGNORED;
     }
 
     /**
@@ -1134,6 +1129,40 @@ public final class VTenantImpl implements Serializable {
             VBridgePath path = vbr.getPath();
             MacAddressTable table = mgr.getMacAddressTable(path);
             table.flush(port, vlan);
+        }
+    }
+
+    /**
+     * Remove MAC address table entries relevant to the specified network
+     * from all existing MAC address tables.
+     *
+     * <p>
+     *   The method removes all MAC address table entries which meet all
+     *   the following conditions.
+     * </p>
+     * <ul>
+     *   <li>
+     *     The specified VLAN ID is configured in the entry.
+     *   </li>
+     *   <li>
+     *     A {@link NodeConnector} instance in the entry is accepted by
+     *     {@link PortFilter} instance passed to {@code filter}.
+     *   </li>
+     * </ul>
+     * <p>
+     *   This method must be called with holding the tenant lock.
+     * </p>
+     *
+     * @param mgr     VTN Manager service.
+     * @param filter  A {@link PortFilter} instance which selects switch ports.
+     * @param vlan    A VLAN ID.
+     */
+    void removeMacTableEntries(VTNManagerImpl mgr, PortFilter filter,
+                               short vlan) {
+        for (VBridgeImpl vbr: vBridges.values()) {
+            VBridgePath path = vbr.getPath();
+            MacAddressTable table = mgr.getMacAddressTable(path);
+            table.flush(filter, vlan);
         }
     }
 

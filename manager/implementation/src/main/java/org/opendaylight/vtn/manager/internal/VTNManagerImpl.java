@@ -68,6 +68,7 @@ import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
+import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.PortProperty;
 import org.opendaylight.vtn.manager.internal.cluster.RawPacketEvent;
@@ -2224,25 +2225,32 @@ public class VTNManagerImpl
      * <p>
      *   This method must be called with holding {@link #rwLock}.
      * </p>
+     * <p>
+     *   Switch ports to be collected can be selected by specifying
+     *   {@link PortFilter} instance to {@code filter}.
+     *   If a {@link PortFilter} instance is specified, this method collects
+     *   switch ports accepted by
+     *   {@link PortFilter#accept(NodeConnector, PortProperty)}.
+     * </p>
      *
      * @param portSet  A set of node connectors to store results.
-     * @param node     Node associated with SDN switch.
-     *                 If {@code null} is specified, this method collects all
-     *                 enabled edge ports.
+     * @param filter   A {@link PortFilter} instance which filters switch port.
+     *                 All switch ports are stored to {@code portSet} if
+     *                 {@code null} is specified.
      */
-    public void collectUpEdgePorts(Set<NodeConnector> portSet, Node node) {
-        if (node == null) {
+    public void collectUpEdgePorts(Set<NodeConnector> portSet,
+                                   PortFilter filter) {
+        if (filter == null) {
             collectUpEdgePorts(portSet);
             return;
         }
 
         for (Map.Entry<NodeConnector, PortProperty> entry: portDB.entrySet()) {
             NodeConnector port = entry.getKey();
-            if (port.getNode().equals(node)) {
-                PortProperty pp = entry.getValue();
-                if (pp.isEnabled() && !islDB.containsKey(port)) {
-                    portSet.add(port);
-                }
+            PortProperty pp = entry.getValue();
+            if (pp.isEnabled() && !islDB.containsKey(port) &&
+                filter.accept(port, pp)) {
+                portSet.add(port);
             }
         }
     }
@@ -3610,7 +3618,7 @@ public class VTNManagerImpl
             return;
         }
 
-        Lock wrlock = rwLock.readLock();
+        Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
             if (type == UpdateType.ADDED) {
@@ -4234,7 +4242,9 @@ public class VTNManagerImpl
      */
     @Override
     public Status removeBridge(VBridgePath path) {
-        VTNThreadData data = VTNThreadData.create(rwLock.readLock());
+        // Acquire writer lock because this operation may change existing
+        // virtual network mapping.
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
             checkUpdate();
 
@@ -4358,7 +4368,9 @@ public class VTNManagerImpl
      */
     @Override
     public Status removeBridgeInterface(VBridgeIfPath path) {
-        VTNThreadData data = VTNThreadData.create(rwLock.readLock());
+        // Acquire writer lock because this operation may change existing
+        // virtual network mapping.
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
             checkUpdate();
 
@@ -4450,7 +4462,9 @@ public class VTNManagerImpl
     @Override
     public VlanMap addVlanMap(VBridgePath path, VlanMapConfig vlconf)
         throws VTNException {
-        VTNThreadData data = VTNThreadData.create(rwLock.readLock());
+        // Acquire writer lock because this operation may change existing
+        // virtual network mapping.
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
             checkUpdate();
 
@@ -4476,7 +4490,9 @@ public class VTNManagerImpl
      */
     @Override
     public Status removeVlanMap(VBridgePath path, String mapId) {
-        VTNThreadData data = VTNThreadData.create(rwLock.readLock());
+        // Acquire writer lock because this operation may change existing
+        // virtual network mapping.
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
             checkUpdate();
 
@@ -4524,7 +4540,9 @@ public class VTNManagerImpl
      */
     @Override
     public Status setPortMap(VBridgeIfPath path, PortMapConfig pmconf) {
-        VTNThreadData data = VTNThreadData.create(rwLock.readLock());
+        // Acquire writer lock because this operation may change existing
+        // virtual network mapping.
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
             checkUpdate();
 
@@ -4637,7 +4655,9 @@ public class VTNManagerImpl
                       containerName, host);
             return false;
         }
-        Ethernet ether = createArpRequest(dst, target, host.getVlan());
+
+        short vlan = host.getVlan();
+        Ethernet ether = createArpRequest(dst, target, vlan);
         if (ether == null) {
             LOG.debug("{}: probeHost: Ignore request for {}: " +
                       "Invalid IP address", containerName, host);
@@ -4654,18 +4674,18 @@ public class VTNManagerImpl
                 return false;
             }
 
-            // Port mappings should precede VLAN mappings.
-            for (MapType type: MapType.values()) {
-                if (type == MapType.ALL) {
-                    break;
-                }
-
-                for (VTenantImpl vtn: tenantDB.values()) {
-                    Boolean res = vtn.probeHost(this, type, pctx);
-                    if (res != null) {
-                        return res.booleanValue();
-                    }
-                }
+            // Determine the virtual node that maps the given host.
+            MapReference ref = resourceManager.getMapReference(nc, vlan);
+            if (ref != null && containerName.equals(ref.getContainerName())) {
+                VBridgePath path = ref.getPath();
+                VTenantImpl vtn = getTenantImpl(path);
+                return vtn.probeHost(this, ref, pctx);
+            }
+        } catch (VTNException e) {
+            if (LOG.isDebugEnabled()) {
+                Status status = e.getStatus();
+                LOG.debug("{}: Ignore probe request: {}", containerName,
+                          status.getDescription());
             }
         } finally {
             unlock(rdlock);
@@ -5037,10 +5057,12 @@ public class VTNManagerImpl
             return;
         }
 
-        // Maintain the node DB.
+        // Acquire writer lock because this operation may change existing
+        // virtual network mapping.
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
+            // Maintain the node DB.
             if (type == UpdateType.ADDED) {
                 if (connectionManager.getLocalityStatus(node) ==
                     ConnectionLocality.LOCAL) {
@@ -5061,18 +5083,12 @@ public class VTNManagerImpl
                     return;
                 }
             }
-        } finally {
-            wrlock.unlock();
-        }
 
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
-        try {
             for (VTenantImpl vtn: tenantDB.values()) {
                 vtn.notifyNode(this, node, type);
             }
         } finally {
-            unlock(rdlock);
+            unlock(wrlock);
         }
     }
 
@@ -5087,11 +5103,13 @@ public class VTNManagerImpl
     @Override
     public void notifyNodeConnector(NodeConnector nc, UpdateType type,
                                     Map<String, Property> propMap) {
-        // Maintain the port DB.
+        // Acquire writer lock because this operation may change existing
+        // virtual network mapping.
         UpdateType utype = type;
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
+            // Maintain the port DB.
             if (type == UpdateType.REMOVED) {
                 if (!removePort(nc)) {
                     return;
@@ -5102,18 +5120,12 @@ public class VTNManagerImpl
                     return;
                 }
             }
-        } finally {
-            wrlock.unlock();
-        }
 
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
-        try {
             for (VTenantImpl vtn: tenantDB.values()) {
                 vtn.notifyNodeConnector(this, nc, utype);
             }
         } finally {
-            unlock(rdlock);
+            unlock(wrlock);
         }
     }
 
@@ -5243,7 +5255,7 @@ public class VTNManagerImpl
             return;
         }
 
-        Lock wrlock = rwLock.readLock();
+        Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
             inContainerMode = mode;
@@ -5321,7 +5333,6 @@ public class VTNManagerImpl
             return PacketResult.IGNORED;
         }
 
-        PacketResult res = PacketResult.IGNORED;
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -5339,7 +5350,7 @@ public class VTNManagerImpl
                           containerName, nc);
                 if (connectionManager.getLocalityStatus(node) ==
                     ConnectionLocality.LOCAL) {
-                    // This PACKET_IN may be caused by a obsolete flow entry.
+                    // This PACKET_IN may be caused by an obsolete flow entry.
                     // So all flow entries related to this port should be
                     // removed.
                     for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
@@ -5349,30 +5360,23 @@ public class VTNManagerImpl
                 return PacketResult.IGNORED;
             }
 
-            // Port mappings should precede VLAN mappings.
-            LOOP:
-            for (MapType type: MapType.values()) {
-                if (type == MapType.ALL) {
-                    break;
-                }
-
-                for (VTenantImpl vtn: tenantDB.values()) {
-                    res = vtn.receive(this, type, pctx);
-                    if (res != PacketResult.IGNORED) {
-                        break LOOP;
-                    }
-                }
+            // Determine virtual network mapping that maps the packet.
+            short vlan = pctx.getVlan();
+            MapReference ref = resourceManager.getMapReference(nc, vlan);
+            if (ref != null && containerName.equals(ref.getContainerName())) {
+                VBridgePath path = ref.getPath();
+                VTenantImpl vtn = getTenantImpl(path);
+                return vtn.receive(this, ref, pctx);
             }
         } catch (VTNException e) {
             Status status = e.getStatus();
             LOG.error("{}: Ignore packet: {}", containerName,
                       status.getDescription());
-            return PacketResult.IGNORED;
         } finally {
             unlock(rdlock);
         }
 
-        return res;
+        return PacketResult.IGNORED;
     }
 
     // IListenRoutingUpdates

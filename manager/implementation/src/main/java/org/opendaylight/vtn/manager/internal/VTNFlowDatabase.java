@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -360,6 +360,89 @@ public class VTNFlowDatabase {
     }
 
     /**
+     * Remove all VTN flows related to the edge network associated with the
+     * specified switch.
+     *
+     * <p>
+     *   The edge network is specified by a {@link Node} instances,
+     *   {@link PortFilter} instance, and VLAN ID.
+     *   {@link Node} instance specifies the target physical switch.
+     *   This method scans all VTN flows related to the specified
+     *   {@link Node} insntance, and removes it if the ingress or egress flow
+     *   entry meets all the following conditions.
+     * </p>
+     * <li>
+     *   <li>
+     *     The VLAN ID specified by {@code vlan} is configured in the flow
+     *     entry.
+     *   </li>
+     *   <li>
+     *     {@code true} is returned by the call of
+     *     {@link PortFilter#accept(NodeConnector, PortProperty)} on
+     *     {@code filter} with specifying {@link NodeConnector} instance
+     *     configured in the flow entry.
+     *     Note that {@code null} is always passed as port property to the
+     *     call.
+     *   </li>
+     * </li>
+     *
+     * @param mgr     VTN Manager service.
+     * @param node    A {@link Node} instance corresponding to the target
+     *                switch.
+     * @param filter  A {@link PortFilter} instance which selects switch ports.
+     * @param vlan    A VLAN ID.
+     * @return  A {@link FlowRemoveTask} object that will execute the actual
+     *          work is returned. {@code null} is returned if there is no flow
+     *          entry to be removed.
+     */
+    public synchronized FlowRemoveTask removeFlows(VTNManagerImpl mgr,
+                                                   Node node,
+                                                   PortFilter filter,
+                                                   short vlan) {
+        Set<VTNFlow> vflows = nodeFlows.get(node);
+        if (vflows == null) {
+            return null;
+        }
+
+        FlowCollector collector = new FlowCollector();
+        for (Iterator<VTNFlow> it = vflows.iterator(); it.hasNext();) {
+            VTNFlow vflow = it.next();
+            String type;
+            if (vflow.isIncomingNetwork(filter, vlan)) {
+                type = "incoming";
+            } else if (vflow.isOutgoingNetwork(filter, vlan)) {
+                type = "outgoing";
+            } else {
+                continue;
+            }
+
+            FlowGroupId gid = vflow.getGroupId();
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}:{}: Remove VTN flow which contains {} network:" +
+                          " node={}, vlan={}, group={}",
+                          mgr.getContainerName(), tenantName, type, node, vlan,
+                          gid);
+            }
+
+            // Remove this VTN flow from the database.
+            groupFlows.remove(gid);
+            removeFlowIndex(vflow);
+            removePortIndex(vflow);
+            it.remove();
+
+            // Collect flow entries to be uninstalled.
+            collector.collect(mgr, vflow);
+        }
+
+        if (vflows.isEmpty()) {
+            nodeFlows.remove(node);
+        }
+
+        // Uninstall flow entries in background.
+        return collector.uninstall(mgr);
+    }
+
+    /**
      * Remove all VTN flows related to the given switch port.
      *
      * @param mgr   VTN Manager service.
@@ -418,13 +501,14 @@ public class VTNFlowDatabase {
             return null;
         }
 
+        SpecificPortFilter filter = new SpecificPortFilter(port);
         FlowCollector collector = new FlowCollector();
         for (Iterator<VTNFlow> it = vflows.iterator(); it.hasNext();) {
             VTNFlow vflow = it.next();
             String type;
-            if (vflow.isIncomingNetwork(port, vlan)) {
+            if (vflow.isIncomingNetwork(filter, vlan)) {
                 type = "incoming";
-            } else if (vflow.isOutgoingNetwork(port, vlan)) {
+            } else if (vflow.isOutgoingNetwork(filter, vlan)) {
                 type = "outgoing";
             } else {
                 continue;

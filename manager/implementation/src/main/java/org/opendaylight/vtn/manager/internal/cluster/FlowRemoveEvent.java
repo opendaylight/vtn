@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -31,7 +31,7 @@ public class FlowRemoveEvent extends FlowModEvent {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -7125181635347239394L;
+    private static final long serialVersionUID = -4133633144252779271L;
 
     /**
      * Construct a new flow uninstall event.

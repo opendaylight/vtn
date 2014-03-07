@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -37,7 +37,7 @@ public class MacTableEntry implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -7148110187193307138L;
+    private static final long serialVersionUID = -4124929250094588401L;
 
     /**
      * A unique identifier for this entry in the cluster.
