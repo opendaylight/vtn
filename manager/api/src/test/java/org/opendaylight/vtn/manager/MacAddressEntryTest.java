@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager;
 
 import java.net.InetAddress;
@@ -22,24 +23,6 @@ import org.opendaylight.controller.sal.packet.address.EthernetAddress;
  * JUnit test for {@link MacAddressEntry}
  */
 public class MacAddressEntryTest extends TestBase {
-
-    // The Test class which implemented DataLinkAddress class.
-    class TestDataLink extends DataLinkAddress {
-        private static final long serialVersionUID = 5664547077536394233L;
-
-        TestDataLink() {
-
-        }
-
-        TestDataLink(String name) {
-            super(name);
-        }
-
-        public TestDataLink clone() {
-            return new TestDataLink(this.getName());
-        }
-    }
-
     /**
      * Test case for {@link MacAddressEntry} and getter method
      */
@@ -138,7 +121,6 @@ public class MacAddressEntryTest extends TestBase {
     public void testToString() {
         List<Set<InetAddress>> ips = createInetAddresses();
         String prefix = "MacAddressEntry[";
-        String suffix = "]";
         short vlans[] = { -10, 0, 1, 100, 4095 };
         for (NodeConnector nc : createNodeConnectors(3, false)) {
             for (Set<InetAddress> ipset : ips) {
@@ -150,10 +132,22 @@ public class MacAddressEntryTest extends TestBase {
                         String a = "address=" + ea;
                         String v = "vlan=" + vlan;
                         String c = "connector=" + nc;
-                        String i = "ipaddr=" + toString(ipset);
+
+                        // IP addresses are kept by unordered set.
+                        // So string representation of the object may be
+                        // changed by its order.
                         String required =
-                            joinStrings(prefix, suffix, ",", a, v, c, i);
-                        assertEquals(required, mae.toString());
+                            joinStrings(prefix, null, ",", a, v, c);
+                        String str = mae.toString();
+                        int idx = str.indexOf(",ipaddr={");
+                        assertTrue(idx > 0);
+                        assertEquals(required, str.substring(0, idx));
+
+                        Set<InetAddress> addrSet = getInetAddressSet(str);
+                        if (ipset == null) {
+                            ipset = new HashSet<InetAddress>();
+                        }
+                        assertEquals(ipset, addrSet);
                     }
                 }
             }
@@ -181,24 +175,35 @@ public class MacAddressEntryTest extends TestBase {
     }
 
     /**
-     * Return a string representation of the given {@code InetAddress} set.
+     * Construct a set of {@link InetAddress} instances from a string returned
+     * by {@link MacAddressEntry#toString()}.
      *
-     * @param ipaddrs  An set of {@code InetAddress}.
-     * @return  A string representation of the given set.
+     * @param str  A string returned by {@link MacAddressEntry#toString()}.
+     * @return  A set of {@link InetAddress} instances.
      */
-    private String toString(Set<InetAddress> ipaddrs) {
-        StringBuilder builder = new StringBuilder("{");
-        if (ipaddrs != null) {
-            char sep = 0;
-            for (InetAddress ip: ipaddrs) {
-                if (sep != 0) {
-                    builder.append(',');
-                }
-                builder.append(ip.getHostAddress());
-                sep = ',';
-            }
+    private Set<InetAddress> getInetAddressSet(String str) {
+        HashSet<InetAddress> set = new HashSet<InetAddress>();
+        String prefix = ",ipaddr={";
+        int start = str.indexOf(prefix);
+        if (start < 0) {
+            return set;
         }
 
-        return builder.append('}').toString();
+        start += prefix.length();
+        int end = str.lastIndexOf("}]");
+        if (end < start + 1) {
+            return set;
+        }
+
+        String istr = str.substring(start, end);
+        try {
+            for (String s: istr.split(",")) {
+                set.add(InetAddress.getByName(s));
+            }
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        return set;
     }
 }
