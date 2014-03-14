@@ -89,6 +89,47 @@ public class VlanMapPathTest extends TestBase {
     }
 
     /**
+     * Test case which verifies that {@link VTenantPath#compareTo(VTenantPath)}
+     * can handle {@link VlanMapPath} instance.
+     */
+    @Test
+    public void testCompareTo() {
+        int size = 0;
+        HashSet<VTenantPath> set = new HashSet<VTenantPath>();
+        for (String tname: createStrings("tenant_name")) {
+            VTenantPath path = new VTenantPath(tname);
+            assertTrue(set.add(path));
+            assertFalse(set.add(path));
+            size++;
+
+            // VTenantPath.compareTo() can accept VTenantPath variants.
+            for (String bname: createStrings("bridge_name")) {
+                VBridgePath bpath = new VBridgePath(path, bname);
+                assertTrue(set.add(bpath));
+                assertFalse(set.add(bpath));
+                size++;
+
+                for (String iname: createStrings("interface_name")) {
+                    VBridgeIfPath ipath = new VBridgeIfPath(bpath, iname);
+                    assertTrue(set.add(ipath));
+                    assertFalse(set.add(ipath));
+                    size++;
+
+                    if (iname != null) {
+                        VlanMapPath vpath = new VlanMapPath(bpath, iname);
+                        assertTrue(set.add(vpath));
+                        assertFalse(set.add(vpath));
+                        size++;
+                    }
+                }
+            }
+        }
+
+        assertEquals(size, set.size());
+        comparableTest(set);
+    }
+
+    /**
      * Test case for {@link VlanMapPath#toString()}.
      */
     @Test

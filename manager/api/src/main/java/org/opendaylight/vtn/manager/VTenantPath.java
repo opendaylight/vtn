@@ -10,6 +10,8 @@
 package org.opendaylight.vtn.manager;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * {@code VTenantPath} class describes the position of the
@@ -23,11 +25,11 @@ import java.io.Serializable;
  *
  * @see  <a href="package-summary.html#VTN">VTN</a>
  */
-public class VTenantPath implements Serializable {
+public class VTenantPath implements Serializable, Comparable<VTenantPath> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 6666863891351658965L;
+    private static final long serialVersionUID = -5024217337562580493L;
 
     /**
      * The name of the {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
@@ -97,6 +99,19 @@ public class VTenantPath implements Serializable {
     }
 
     /**
+     * Return a string list which contains all path components configured in
+     * this instance.
+     *
+     * @return  A string list which contains all path components.
+     * @since   Helium
+     */
+    protected List<String> getComponents() {
+        ArrayList<String> components = new ArrayList<String>();
+        components.add(tenantName);
+        return components;
+    }
+
+    /**
      * Determine whether the given object is identical to this object.
      *
      * <p>
@@ -123,7 +138,7 @@ public class VTenantPath implements Serializable {
         if (o == this) {
             return true;
         }
-        if (o == null || !o.getClass().equals(VTenantPath.class)) {
+        if (o == null || !o.getClass().equals(getClass())) {
             return false;
         }
 
@@ -137,7 +152,7 @@ public class VTenantPath implements Serializable {
      */
     @Override
     public int hashCode() {
-        int h = 0;
+        int h = getClass().hashCode();
         if (tenantName != null) {
             h ^= tenantName.hashCode();
         }
@@ -151,7 +166,81 @@ public class VTenantPath implements Serializable {
      * @return  A string representation of this object.
      */
     @Override
-    public String toString() {
+    public final String toString() {
         return toStringBuilder().toString();
+    }
+
+    // Comparable
+
+    /**
+     * Compare two {@code VTenantPath} instances numerically.
+     *
+     * <p>
+     *   This method can compare not only an instance of {@code VTenantPath}
+     *   but also an instance of class which inherits {@code VTenantPath}.
+     *   Comparison will be done as follows.
+     * </p>
+     * <ol>
+     *   <li>
+     *     Compare the number of path components.
+     *   </li>
+     *   <li>
+     *     Compare the name of the {@link Class} for both objects in
+     *     dictionary order.
+     *   </li>
+     *   <li>
+     *     Compare path components in dictionary order.
+     *   </li>
+     * </ol>
+     *
+     * @param  path  A {@code VTenantPath} instance to be compared.
+     * @return {@code 0} is returned if this instance is equal to the
+     *         specified instance.
+     *         A value less than {@code 0} is returned if this instance is
+     *         less than the specified instance.
+     *         A value greater than {@code 0} is returned if this instance is
+     *         greater than the specified instance.
+     * @since  Helium
+     */
+    @Override
+    public final int compareTo(VTenantPath path) {
+        List<String> components = getComponents();
+        List<String> otherComps = path.getComponents();
+        int size = components.size();
+        int otherSize = otherComps.size();
+        int ret = size - otherSize;
+        if (ret != 0) {
+            return ret;
+        }
+
+        Class<?> cls = getClass();
+        Class<?> otherCls = path.getClass();
+        if (!cls.equals(otherCls)) {
+            String name = cls.getName();
+            String otherName = otherCls.getName();
+            ret = name.compareTo(otherName);
+            if (ret != 0) {
+                return ret;
+            }
+        }
+
+        for (int i = 0; i < size; i++) {
+            String comp = components.get(i);
+            String other = otherComps.get(i);
+            if (comp == null) {
+                if (other != null) {
+                    return -1;
+                }
+            } else if (other == null) {
+                return 1;
+            } else {
+                ret = comp.compareTo(other);
+                if (ret != 0) {
+                    return ret;
+                }
+            }
+        }
+
+        return ret;
     }
 }

@@ -18,8 +18,10 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -39,6 +41,7 @@ import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VTenantConfig;
+import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 import org.opendaylight.vtn.manager.internal.cluster.MapType;
 import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
@@ -949,6 +952,103 @@ public abstract class TestBase extends Assert {
         assertTrue(set.add(o1));
         assertFalse(set.add(o1));
         assertFalse(set.add(o2));
+    }
+
+    /**
+     * Ensure that an instance of {@link VTenantPath} is comparable.
+     *
+     * @param set  A set of {@link VTenantPath} variants.
+     */
+    protected static void comparableTest(Set<VTenantPath> set) {
+        TreeSet<VTenantPath> treeSet = new TreeSet<VTenantPath>(set);
+
+        VTenantPath empty = new VTenantPath(null);
+        boolean added = set.add(empty);
+        assertEquals(added, treeSet.add(empty));
+        assertEquals(set, treeSet);
+
+        // The first element in the set must be a VTenantPath instance with
+        // null name.
+        Iterator<VTenantPath> it = treeSet.iterator();
+        assertTrue(it.hasNext());
+        VTenantPath prev = it.next();
+        assertEquals(VTenantPath.class, prev.getClass());
+        assertNull(prev.getTenantName());
+
+        Class<?> prevClass = VTenantPath.class;
+        HashSet<Class<?>> classSet = new HashSet<Class<?>>();
+        ArrayList<String> prevComponens = new ArrayList<String>();
+        prevComponens.add(null);
+
+        while (it.hasNext()) {
+            VTenantPath path = it.next();
+            assertTrue(prev.compareTo(path) < 0);
+            assertFalse(prev.equals(path));
+
+            ArrayList<String> components = new ArrayList<String>();
+            components.add(path.getTenantName());
+            if (path instanceof VBridgePath) {
+                components.add(((VBridgePath)path).getBridgeName());
+                if (path instanceof VBridgeIfPath) {
+                    components.add(((VBridgeIfPath)path).getInterfaceName());
+                } else if (path instanceof VlanMapPath) {
+                    components.add(((VlanMapPath)path).getMapId());
+                }
+            }
+
+            int prevSize = prevComponens.size();
+            int compSize = components.size();
+            Class<?> cls = path.getClass();
+            boolean classChanged = false;
+            if (prevSize == compSize) {
+                if (cls.equals(prevClass)) {
+                    checkPathOrder(prevComponens, components);
+                } else {
+                    String name = cls.getName();
+                    String prevName = prevClass.getName();
+                    assertTrue("name=" + name + ", prevName=" + prevName,
+                               prevName.compareTo(name) < 0);
+                    classChanged = true;
+                }
+            } else {
+                assertTrue(prevSize < compSize);
+                classChanged = true;
+            }
+
+            if (classChanged) {
+                assertTrue(classSet.add(cls));
+                prevClass = cls;
+            }
+
+            prevComponens = components;
+            prev = path;
+        }
+    }
+
+    /**
+     * Verify the order of the path components.
+     *
+     * @param lesser    A path components that should be less than
+     *                  {@code greater}.
+     * @param greater   A path components to be compared.
+     */
+    private static void checkPathOrder(List<String> lesser,
+                                       List<String> greater) {
+        for (int i = 0; i < lesser.size(); i++) {
+            String l = lesser.get(i);
+            String g = greater.get(i);
+            if (l == null) {
+                return;
+            }
+            assertNotNull(g);
+            int ret = l.compareTo(g);
+            if (ret != 0) {
+                assertTrue(ret < 0);
+                return;
+            }
+        }
+
+        fail("Identical: lesser=" + lesser + ", greater=" + greater);
     }
 
     /**

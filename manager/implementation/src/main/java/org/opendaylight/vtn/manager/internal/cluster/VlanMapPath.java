@@ -9,6 +9,8 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
+import java.util.List;
+
 import org.opendaylight.vtn.manager.VBridgePath;
 
 /**
@@ -25,7 +27,7 @@ public class VlanMapPath extends VBridgePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -5858869883027125836L;
+    private static final long serialVersionUID = 6126397569863923701L;
 
     /**
      * Identifier of the VLAN mapping.
@@ -86,6 +88,19 @@ public class VlanMapPath extends VBridgePath {
     }
 
     /**
+     * Return a string list which contains all path components configured in
+     * this instance.
+     *
+     * @return  A string list which contains all path components.
+     * @since   Helium
+     */
+    protected List<String> getComponents() {
+        List<String> components = super.getComponents();
+        components.add(mapId);
+        return components;
+    }
+
+    /**
      * Determine whether the given object is identical to this object.
      *
      * @param o  An object to be compared.
@@ -96,7 +111,7 @@ public class VlanMapPath extends VBridgePath {
         if (o == this) {
             return true;
         }
-        if (o == null || !o.getClass().equals(VlanMapPath.class)) {
+        if (o == null || !o.getClass().equals(getClass())) {
             return false;
         }
 

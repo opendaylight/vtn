@@ -9,6 +9,8 @@
 
 package org.opendaylight.vtn.manager;
 
+import java.util.List;
+
 /**
  * {@code VBridgePath} class describes the position of the
  * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>} in the
@@ -27,7 +29,7 @@ public class VBridgePath extends VTenantPath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -8958896997703009257L;
+    private static final long serialVersionUID = 7691022408395210393L;
 
     /**
      * The name of the
@@ -130,6 +132,15 @@ public class VBridgePath extends VTenantPath {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    protected List<String> getComponents() {
+        List<String> components = super.getComponents();
+        components.add(bridgeName);
+        return components;
+    }
+
+    /**
      * Determine whether the given object is identical to this object.
      *
      * <p>
@@ -165,7 +176,7 @@ public class VBridgePath extends VTenantPath {
         if (o == this) {
             return true;
         }
-        if (o == null || !o.getClass().equals(VBridgePath.class)) {
+        if (o == null || !o.getClass().equals(getClass())) {
             return false;
         }
 
