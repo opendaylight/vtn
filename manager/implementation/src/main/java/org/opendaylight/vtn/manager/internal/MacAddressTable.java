@@ -501,6 +501,13 @@ public class MacAddressTable {
 
         // Determine attributes of a new MAC address table entry.
         Long key = getTableKey(src);
+        if (key.longValue() == 0L) {
+            // Zero address should be ignored.
+            LOG.warn("{}: Ignore zero MAC address: {}",
+                     getTableName(), pctx.getFrame());
+            return;
+        }
+
         NodeConnector port = pctx.getIncomingNodeConnector();
         short vlan = pctx.getVlan();
         InetAddress ipaddr = getSourceInetAddress(pctx);

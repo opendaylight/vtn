@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -306,7 +306,7 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
         tall.destroy(true);
 
         // call each method after call destroy().
-        byte [] src = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+        byte [] src = new byte[] { 0x00, 0x01, 0x00, 0x00, 0x00, 0x00 };
         byte [] sender = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 1 };
         PacketContext pctx = createARPPacketContext(src, dst, sender, target,
                 (short) -1, connectors.get(0), ARP.REQUEST);

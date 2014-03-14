@@ -2910,6 +2910,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                                   (byte)0xFF, (byte)0xFF, (byte)0xFF};
         byte[] target2 = new byte[] {(byte)192, (byte)1, (byte)0, (byte)250};
 
+        int nignored = 0;
+
         for (EthernetAddress ea : ethers) {
             byte[] bytes = ea.getValue();
             byte[] src = new byte[] {bytes[0], bytes[1], bytes[2],
@@ -2959,17 +2961,26 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             } catch (VTNException e) {
                 unexpected(e);
             }
-            assertEquals(emsg, ea2, entry.getAddress());
-            assertEquals(emsg, ((vlan2 < 0) ? (short)0 : vlan2), entry.getVlan());
-            assertEquals(emsg, nc, entry.getNodeConnector());
 
-            ips = entry.getInetAddresses();
-            assertArrayEquals(emsg, sender2, ips.iterator().next().getAddress());
+            // The VTN Manager never learns zero MAC address.
+            if (NetUtils.byteArray6ToLong(src2) == 0L) {
+                nignored++;
+                assertNull(entry);
+            } else {
+                assertEquals(emsg, ea2, entry.getAddress());
+                assertEquals(emsg, ((vlan2 < 0) ? (short)0 : vlan2),
+                             entry.getVlan());
+                assertEquals(emsg, nc, entry.getNodeConnector());
 
-            try {
-                mgr.removeMacEntry(bpath, ea);
-            } catch (VTNException e) {
-                unexpected(e);
+                ips = entry.getInetAddresses();
+                assertArrayEquals(emsg, sender2,
+                                  ips.iterator().next().getAddress());
+
+                try {
+                    mgr.removeMacEntry(bpath, ea);
+                } catch (VTNException e) {
+                    unexpected(e);
+                }
             }
 
             iphost++;
@@ -3020,7 +3031,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             unexpected(e);
         }
         assertNotNull(list);
-        assertEquals(ethers.size(), list.size());
+        assertEquals(ethers.size() - nignored, list.size());
 
         st = mgr.flushMacEntries(bpath2);
         assertEquals(StatusCode.SUCCESS, st.getCode());

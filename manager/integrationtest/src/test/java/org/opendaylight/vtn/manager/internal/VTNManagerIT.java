@@ -85,6 +85,7 @@ import org.opendaylight.controller.hosttracker.hostAware.IHostFinder;
 import org.opendaylight.controller.sal.topology.IPluginInTopologyService;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.IObjectReader;
+import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.controller.sal.utils.Status;
@@ -3612,6 +3613,11 @@ public class VTNManagerIT extends TestBase {
 
                         String emsgEA = emsg + "(ether)" + ea.toString();
 
+                        // The VTN Manager never learns zero MAC address.
+                        if (NetUtils.byteArray6ToLong(src) == 0L) {
+                            src[5] = (byte)0xff;
+                        }
+
                         EthernetAddress eaSrc = null;
                         try {
                             eaSrc = new EthernetAddress(src);
@@ -3685,6 +3691,11 @@ public class VTNManagerIT extends TestBase {
                     // Test for removeMacEntry (Normal state)
                     byte[] bytes = ethers.get(0).getValue();
                     byte[] src = new byte[] {00, bytes[4], bytes[3], bytes[2], bytes[1], bytes[0]};
+
+                    // The VTN Manager never learns zero MAC address.
+                    if (NetUtils.byteArray6ToLong(src) == 0L) {
+                        src[5] = (byte)0xff;
+                    }
 
                     EthernetAddress eaSrc = null;
                     try {
