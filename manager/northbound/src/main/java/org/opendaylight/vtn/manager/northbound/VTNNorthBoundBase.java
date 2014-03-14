@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -20,13 +20,20 @@ import org.opendaylight.vtn.manager.IVTNManager;
 
 import org.opendaylight.controller.containermanager.IContainerManager;
 import org.opendaylight.controller.northbound.commons.RestMessages;
-import org.opendaylight.controller.northbound.commons.exception.InternalServerErrorException;
-import org.opendaylight.controller.northbound.commons.exception.NotAcceptableException;
-import org.opendaylight.controller.northbound.commons.exception.ResourceConflictException;
-import org.opendaylight.controller.northbound.commons.exception.ResourceNotFoundException;
-import org.opendaylight.controller.northbound.commons.exception.ServiceUnavailableException;
-import org.opendaylight.controller.northbound.commons.exception.UnauthorizedException;
-import org.opendaylight.controller.northbound.commons.exception.UnsupportedMediaTypeException;
+import org.opendaylight.controller.northbound.commons.exception.
+    BadRequestException;
+import org.opendaylight.controller.northbound.commons.exception.
+    InternalServerErrorException;
+import org.opendaylight.controller.northbound.commons.exception.
+    NotAcceptableException;
+import org.opendaylight.controller.northbound.commons.exception.
+    ResourceConflictException;
+import org.opendaylight.controller.northbound.commons.exception.
+    ResourceNotFoundException;
+import org.opendaylight.controller.northbound.commons.exception.
+    ServiceUnavailableException;
+import org.opendaylight.controller.northbound.commons.exception.
+    UnauthorizedException;
 import org.opendaylight.controller.northbound.commons.utils.NorthboundUtils;
 import org.opendaylight.controller.sal.authorization.Privilege;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
@@ -120,7 +127,7 @@ public abstract class VTNNorthBoundBase {
         StatusCode code = status.getCode();
         String desc = status.getDescription();
         if (code == StatusCode.BADREQUEST) {
-            return new UnsupportedMediaTypeException(desc);
+            return new BadRequestException(desc);
         }
         if (code == StatusCode.CONFLICT) {
             return new ResourceConflictException(desc);

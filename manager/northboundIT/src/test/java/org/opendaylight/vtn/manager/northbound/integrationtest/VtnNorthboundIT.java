@@ -546,45 +546,53 @@ public class VtnNorthboundIT extends TestBase {
         result = getJsonResult(baseURL + "default/vtns/" + "", "POST", requestBody);
         Assert.assertEquals(405, httpResponseCode.intValue());
 
-        // Test POST vtn expecting 415, setting the vtn that don't exist
+        // Test POST vtn expecting 400, specifying invalid tenant name.
         requestUri = baseURL + "default/vtns/" + desc3;
         result = getJsonResult(requestUri, "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test POST vtn expecting 415, setting "_" to  first letter of vBridgeName
+        // Test POST vtn expecting 400, specifying invalid tenant name
+        // which starts with "_".
         requestUri = baseURL + "default/vtns/" + "_testVtn";
         result = getJsonResult(requestUri, "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test POST vtn expecting 415, setting vtn name including symbol "@"
+        // Test POST vtn expecting 400, specifying invalid tenant name
+        // including symbol "@".
         requestUri = baseURL + "default/vtns/" + "test@Vtn";
         result = getJsonResult(requestUri, "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test POST vtn expecting 415, testing idle timeout of 65536
-        requestBody =  "{\"description\":\"" + desc1 + "\", \"idleTimeout\":\"65536\", \"hardTimeout\":\""
-                        + htimeout1 + "\"}";
+        // Test POST vtn expecting 400, specifying 65536 as idle timeout.
+        requestBody =  "{\"description\":\"" + desc1 +
+            "\", \"idleTimeout\":\"65536\", \"hardTimeout\":\"" +
+            htimeout1 + "\"}";
         requestUri = baseURL + "default/vtns/" + tname;
         result = getJsonResult(requestUri, "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test POST vtn expecting 415, testing hard timeout of 65536
-        requestBody =  "{\"description\":\"" + desc1 + "\", \"idleTimeout\":\"" + itimeout1 + "\", \"hardTimeout\":\"65536\"}";
+        // Test POST vtn expecting 400, specifying 65536 as hard timeout.
+        requestBody =  "{\"description\":\"" + desc1 +
+            "\", \"idleTimeout\":\"" + itimeout1 +
+            "\", \"hardTimeout\":\"65536\"}";
         requestUri = baseURL + "default/vtns/" + tname;
         result = getJsonResult(requestUri, "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test POST vtn expecting 415, Setting the value idle timeout  is greater than hard timeout
-        requestBody =  "{\"description\":\"" + desc1 + "\", \"idleTimeout\":\"" + itimeout2 + "\", \"hardTimeout\":\""+ htimeout1 +"\"}";
+        // Test POST vtn expecting 400, specifying idle timeout value greater
+        // than hard timeout.
+        requestBody =  "{\"description\":\"" + desc1 +
+            "\", \"idleTimeout\":\"" + itimeout2 +
+            "\", \"hardTimeout\":\""+ htimeout1 +"\"}";
         requestUri = baseURL + "default/vtns/" + tname;
         result = getJsonResult(requestUri, "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test POST vtn expecting 415, setting vBridgeName of 32 characters
+        // Test POST vtn expecting 400, specifying too long tenant name.
         requestBody =  "{}";
         requestUri = baseURL + "default/vtns/" + tname32;
         result = getJsonResult(requestUri, "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
         testVBridgeAPI(tname1, tname2);
 
@@ -791,22 +799,30 @@ public class VtnNorthboundIT extends TestBase {
         result = getJsonResult(baseURL + "default/vtns/" + tname1 + queryParameter, "PUT", requestBody);
         Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test PUT vtn expecting 415, setting idletimeout of 65540
-        requestBody = "{\"description\":\"" + desc2 + "\", \"idleTimeout\":\"" + timeout_over + "\", \"hardTimeout\":\""
-                + htimeout2 + "\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname1 + queryParameter, "PUT", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Test PUT vtn expecting 400, specifying 65540 as idle timeout.
+        requestBody = "{\"description\":\"" + desc2 +
+            "\", \"idleTimeout\":\"" + timeout_over +
+            "\", \"hardTimeout\":\"" + htimeout2 + "\"}";
+        result = getJsonResult(baseURL + "default/vtns/" + tname1 +
+                               queryParameter, "PUT", requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test PUT vtn expecting 415, setting hardtimeout of 65540
-        requestBody = "{\"description\":\"" + desc2 + "\", \"idleTimeout\":\"" + itimeout1 + "\", \"hardTimeout\":\""
-                + timeout_over + "\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname1 + queryParameter, "PUT", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Test PUT vtn expecting 400, specifying 65540 as hard timeout.
+        requestBody = "{\"description\":\"" + desc2 +
+            "\", \"idleTimeout\":\"" + itimeout1 +
+            "\", \"hardTimeout\":\"" + timeout_over + "\"}";
+        result = getJsonResult(baseURL + "default/vtns/" + tname1 +
+                               queryParameter, "PUT", requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test POST vtn expecting 415, Setting the value idle timeout  is greater than hard timeout
-        requestBody =  "{\"description\":\"" + desc1 + "\", \"idleTimeout\":\"" + itimeout2 + "\", \"hardTimeout\":\""+ htimeout1 +"\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname1 + queryParameter, "PUT", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Test PUT vtn expecting 400, specifying idle timeout value greater
+        // than hard timeout.
+        requestBody =  "{\"description\":\"" + desc1 +
+            "\", \"idleTimeout\":\"" + itimeout2 +
+            "\", \"hardTimeout\":\""+ htimeout1 +"\"}";
+        result = getJsonResult(baseURL + "default/vtns/" + tname1 +
+                               queryParameter, "PUT", requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
         // Test PUT vtn
         requestBody = "{\"description\":\"" + desc2 + "\", \"idleTimeout\":\"" + itimeout2 + "\", \"hardTimeout\":\""
@@ -996,10 +1012,12 @@ public class VtnNorthboundIT extends TestBase {
         result = getJsonResult(baseURL + tname_dummy + "/vbridges/" + bname1, "POST" , requestBody);
         Assert.assertEquals(404, httpResponseCode.intValue());
 
-        // Test POST vBridge1 expecting 415
-        requestBody = "{\"description\":\"" + desc1 + "\", \"ageInterval\":\"" + ageinter0 + "\"}";
-        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname1 , "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Test POST vBridge1 expecting 400, specifying too small ageInterval.
+        requestBody = "{\"description\":\"" + desc1 +
+            "\", \"ageInterval\":\"" + ageinter0 + "\"}";
+        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname1 ,
+                               "POST", requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
         // Test POST vBridge1
         requestBody = "{}";
@@ -1098,28 +1116,33 @@ public class VtnNorthboundIT extends TestBase {
         result = getJsonResult(requestUri, "POST", requestBody);
         Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test POST vBridge expecting 415, setting vBridgeName of 32 characters
+        // Test POST vBridge expecting 400, specifying too long vBridge name.
         requestBody = "{}";
         requestUri = baseURL + tname1 + "/vbridges/" + bname32;
         result = getJsonResult(requestUri, "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
         // Test POST vBridge expecting 405, setting "" to vBridge name
         result = getJsonResult(baseURL + tname1 + "/vbridges/" + "", "POST", requestBody);
         Assert.assertEquals(405, httpResponseCode.intValue());
 
-        // Test POST vBridge expecting 415, setting "_" to  first letter of vBridgeName
-        result = getJsonResult(baseURL + tname1 + "/vbridges/" + "_vbridgename", "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Test POST vBridge expecting 400, specifying invalid vBridge name
+        // which starts with "_".
+        result = getJsonResult(baseURL + tname1 + "/vbridges/" +
+                               "_vbridgename", "POST", requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test POST vBridge expecting 415, setting vBridge Name including symbol "@"
-        result = getJsonResult(baseURL + tname1 + "/vbridges/" + "vbridge@name", "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Test POST vBridge expecting 400, specifying invalid vBridge name
+        // including symbol "@".
+        result = getJsonResult(baseURL + tname1 + "/vbridges/" +
+                               "vbridge@name", "POST", requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test POST vBridge expecting 415, setting to ageInterval value greater than 1000000
+        // Test POST vBridge expecting 400, specifying too large ageInterval.
         requestBody = "{\"ageInterval\":\"" + ageinter_over + "\"}";
-        result = getJsonResult(baseURL + tname1 + "/vbridges/" + ebname, "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        result = getJsonResult(baseURL + tname1 + "/vbridges/" + ebname,
+                               "POST", requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
         // Test GET vBridges in default container, expecting 4 results
         result = getJsonResult(baseURL + tname1 + "/vbridges");
@@ -1303,22 +1326,30 @@ public class VtnNorthboundIT extends TestBase {
         result = getJsonResult(baseURL +  tname2 + "/vbridges/" + bname1 + queryParameter, "PUT", requestBody);
         Assert.assertEquals(404, httpResponseCode.intValue());
 
-        // Test PUT vBridge1 expecting 415, setting ageinterval value to 0 (queryparameter is false)
+        // Test PUT vBridge1 expecting 400, specifying too small ageInterval.
         queryParameter = new QueryParameter("all", "false").getString();
-        requestBody = "{\"description\":\"" + desc2 + "\", \"ageInterval\":\"" + ageinter0 + "\"}";
-        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname1 + queryParameter, "PUT", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        requestBody = "{\"description\":\"" + desc2 +
+            "\", \"ageInterval\":\"" + ageinter0 + "\"}";
+        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname1 +
+                               queryParameter, "PUT", requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test PUT vBridge1 expecting 415, setting ageinterval value to 0 (queryparameter is true)
+        // Test PUT vBridge1 expecting 400, specifying too small ageInterval
+        // ("all=true" is specified as query paramter).
         queryParameter = new QueryParameter("all", "true").getString();
-        requestBody = "{\"description\":\"" + desc2 + "\", \"ageInterval\":\"" + ageinter0 + "\"}";
-        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname1 + queryParameter, "PUT", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        requestBody = "{\"description\":\"" + desc2 +
+            "\", \"ageInterval\":\"" + ageinter0 + "\"}";
+        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname1 +
+                               queryParameter, "PUT", requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test PUT vBridge1 expecting 415, setting ageinterval value to 1000000 (queryparameter is true)
-        requestBody = "{\"description\":\"" + desc1 + "\", \"ageInterval\":\"" + ageinter_over + "\"}";
-        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname1 + queryParameter, "PUT", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Test PUT vBridge1 expecting 400, specifying too large ageInterval
+        // ("all=true" is specified as query paramter).
+        requestBody = "{\"description\":\"" + desc1 +
+            "\", \"ageInterval\":\"" + ageinter_over + "\"}";
+        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname1 +
+                               queryParameter, "PUT", requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
         testVLANMappingDeleteAPI(tname1, bname1);
         testMacAddressAPI(tname1, bname1);
@@ -1639,17 +1670,23 @@ public class VtnNorthboundIT extends TestBase {
         result = getJsonResult(baseURL + bname_dummy + "/interfaces/" + "", "POST", requestBody);
         Assert.assertEquals(405, httpResponseCode.intValue());
 
-        // Test POST vBridge Interface expecting 415, setting 32 characters to vbridgeIF name
-        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname32, "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Test POST vBridge Interface expecting 400, specifying too long
+        // interface name.
+        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname32,
+                               "POST", requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test POST vBridge Interface expecting 415, setting "_" to first letter to vbridgeIF name
-        result = getJsonResult(baseURL + bname1 + "/interfaces/" + "_ifname", "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Test POST vBridge Interface expecting 400, specifying invalid
+        // interface name which starts with "_".
+        result = getJsonResult(baseURL + bname1 + "/interfaces/" + "_ifname",
+                               "POST", requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test POST vBridge Interface expecting 415, setting to vbridgeIF name including "@"
-        result = getJsonResult(baseURL + bname1 + "/interfaces/" + "if@name", "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Test POST vBridge Interface expecting 400, specifying invalid
+        // interface name which includes "@".
+        result = getJsonResult(baseURL + bname1 + "/interfaces/" + "if@name",
+                               "POST", requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
         // Test GET vBridge Interface expecting 404, setting vtn that don't exist
         result = getJsonResult(url + "default/vtns/" + tname_dummy + "/vbridges/" + bname1 + "/interfaces/" + ifname1);
@@ -2042,89 +2079,114 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals(400, httpResponseCode.intValue());
 
 
-        // Test PUT PortMapping expecting 415
-        // setting over 4095 to vlan
-        requestBody = "{\"vlan\":" + vlan_over + ", \"node\":{\"type\":\""+ nodeType + "\", \"id\":\""
-                + nodeid + "\"}, \"port\":{\"name\":\"" + pname
-                + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum + "\"}}";
-        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Test PUT PortMapping expecting 400, specifying too large VLAN ID.
+        requestBody = "{\"vlan\":" + vlan_over + ", \"node\":{\"type\":\""+
+            nodeType + "\", \"id\":\"" + nodeid +
+            "\"}, \"port\":{\"name\":\"" + pname + "\", \"type\":\"" +
+            nodeType + "\", \"id\":\"" + portnum + "\"}}";
+        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT",
+                               requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // setting negative value to vlan
-        requestBody = "{\"vlan\":" + vlan_negative + ", \"node\":{\"type\":\""+ nodeType + "\", \"id\":\""
-                + nodeid + "\"}, \"port\":{\"name\":\"" + pname
-                + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum + "\"}}";
-        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Specifying a negative VLAN ID.
+        requestBody = "{\"vlan\":" + vlan_negative +
+            ", \"node\":{\"type\":\""+ nodeType + "\", \"id\":\"" + nodeid +
+            "\"}, \"port\":{\"name\":\"" + pname + "\", \"type\":\"" +
+            nodeType + "\", \"id\":\"" + portnum + "\"}}";
+        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT",
+                               requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // setting invalid type to node type
-        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\""+ test + "\", \"id\":\""
-                + nodeid + "\"}, \"port\":{\"name\":\"" + pname
-                + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum + "\"}}";
-        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Specifying invalid node type.
+        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\""+
+            test + "\", \"id\":\"" + nodeid + "\"}, \"port\":{\"name\":\"" +
+            pname + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum +
+            "\"}}";
+        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT",
+                               requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // setting requestBody without all node's elements
-        requestBody = "{\"vlan\":" + vlan1 + ", \"port\":{\"name\":\"" + pname
-                + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum + "\"}}";
-        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Without specifying node element.
+        requestBody = "{\"vlan\":" + vlan1 + ", \"port\":{\"name\":\"" +
+            pname + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum +
+            "\"}}";
+        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT",
+                               requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // setting requestBody without all port's elements
-        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\""+ nodeType + "\", \"id\":\""
-                + nodeid + "\"}}";
-        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Without specifying port element.
+        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\""+
+            nodeType + "\", \"id\":\"" + nodeid + "\"}}";
+        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT",
+                               requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // setting port elements without name and type
-        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\""+ nodeType + "\", \"id\":\""
-                + nodeid + "\"}, \"port\":{\"id\":\"" + portnum + "\"}}";
-        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Specifying incomplete port element.
+        //   - "id" is specified without "type".
+        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" +
+            nodeType + "\", \"id\":\"" + nodeid + "\"}, \"port\":{\"id\":\"" +
+            portnum + "\"}}";
+        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT",
+                               requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // setting port elements without name and id
-        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\""+ nodeType + "\", \"id\":\""
-                + nodeid + "\"}, \"port\":{\"type\":\"" + nodeType + "\"}}";
-        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Specifying incomplete port element.
+        //   - "name" and "id" are specified without "type",
+        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" +
+            nodeType + "\", \"id\":\"" + nodeid +
+            "\"}, \"port\":{\"type\":\"" + nodeType + "\"}}";
+        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT",
+                               requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // setting invalid type to port name
-        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\""+ nodeType + "\", \"id\":\""
-                + nodeid + "\"}, \"port\":{\"name\":\"" + ""
-                + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum + "\"}}";
-        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Specifying invalid port element.
+        //   - Invalid port type with specifying "name".
+        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" +
+            nodeType + "\", \"id\":\"" + nodeid +
+            "\"}, \"port\":{\"name\":\"" + "" + "\", \"type\":\"" +
+            nodeType + "\", \"id\":\"" + portnum + "\"}}";
+        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT",
+                               requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test PUT PortMapping for other vbridge and except node type
-        requestBody = "{\"vlan\":" + vlan0 + ", \"node\":{\"id\":\""
-                + nodeid + "\"}, \"port\":{\"name\":\"" + pname
-                + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum + "\"}}";
-        result = getJsonResult(url + "default/vtns/" + tname +"/vbridges/" + bname2 + "/interfaces/"
-                + ifname2 + "/portmap/", "PUT", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Specifying invalid node which does not contain node type.
+        requestBody = "{\"vlan\":" + vlan0 + ", \"node\":{\"id\":\"" + nodeid +
+            "\"}, \"port\":{\"name\":\"" + pname + "\", \"type\":\"" +
+            nodeType + "\", \"id\":\"" + portnum + "\"}}";
+        result = getJsonResult(url + "default/vtns/" + tname +"/vbridges/" +
+                               bname2 + "/interfaces/" + ifname2 +
+                               "/portmap/", "PUT", requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test PUT PortMapping for other vbridge and except node id
-        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" + nodeType + "\"}, \"port\":{\"name\":\"" + pname
-                + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum + "\"}}";
-        result = getJsonResult(url + "default/vtns/" + tname +"/vbridges/" + bname2 + "/interfaces/"
-                + ifname2 + "/portmap/", "PUT", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Specifying invalid node which does not contain node ID.
+        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" +
+            nodeType + "\"}, \"port\":{\"name\":\"" + pname +
+            "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum +
+            "\"}}";
+        result = getJsonResult(url + "default/vtns/" + tname +"/vbridges/" +
+                               bname2 + "/interfaces/" + ifname2 + "/portmap/",
+                               "PUT", requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test PUT PortMapping for other vbridge and except port type
-        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" + nodeType + "\", \"id\":\""
-                + nodeid + "\"}, \"port\":{\"name\":\"" + pname + "\", \"id\":\"" + portnum + "\"}}";
-        result = getJsonResult(url + "default/vtns/" + tname +"/vbridges/" + bname2 + "/interfaces/"
-                + ifname2 + "/portmap/", "PUT", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Specifying invalid port which does not contain port type.
+        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" +
+            nodeType + "\", \"id\":\"" + nodeid +
+            "\"}, \"port\":{\"name\":\"" + pname + "\", \"id\":\"" +
+            portnum + "\"}}";
+        result = getJsonResult(url + "default/vtns/" + tname +"/vbridges/" +
+                               bname2 + "/interfaces/" + ifname2 + "/portmap/",
+                               "PUT", requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test PUT PortMapping for other vbridge and except port id
-        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" + nodeType + "\", \"id\":\""
-                + nodeid + "\"}, \"port\":{\"name\":\"" + pname
-                + "\", \"type\":\"" + nodeType + "\"}}";
-        result = getJsonResult(url + "default/vtns/" + tname +"/vbridges/" + bname2 + "/interfaces/"
-                + ifname2 + "/portmap/", "PUT", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
-
+        // Specifying invalid port which does not contain port ID.
+        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" +
+            nodeType + "\", \"id\":\"" + nodeid +
+            "\"}, \"port\":{\"name\":\"" + pname + "\", \"type\":\"" +
+            nodeType + "\"}}";
+        result = getJsonResult(url + "default/vtns/" + tname +"/vbridges/" +
+                               bname2 + "/interfaces/" + ifname2 + "/portmap/",
+                               "PUT", requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
         // Test PUT PortMapping 400
         // setting invalid value to node id
@@ -2460,24 +2522,28 @@ public class VtnNorthboundIT extends TestBase {
         result = getJsonResult(baseURL + bname_dummy + "/vlanmaps", "POST", requestBody);
         Assert.assertEquals(404, httpResponseCode.intValue());
 
-        // Test POST VLAN Mapping expecting 415
-        // setting negative value to vlan
-        requestBody = "{\"vlan\":\"" + vlan_negative +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
-                + nodeid1 + "\"}}";
-        result = getJsonResult(baseURL + bname + "/vlanmaps", "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Test POST VLAN Mapping expecting 400
+        // Specifying a negative VLAN ID.
+        requestBody = "{\"vlan\":\"" + vlan_negative +
+            "\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\"" + nodeid1 +
+            "\"}}";
+        result = getJsonResult(baseURL + bname + "/vlanmaps", "POST",
+                               requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // setting 4096 to vlan
-        requestBody = "{\"vlan\":\"" + vlan_over +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
-                + nodeid1 + "\"}}";
-        result = getJsonResult(baseURL + bname + "/vlanmaps", "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Specifyin too large VLAN ID.
+        requestBody = "{\"vlan\":\"" + vlan_over +"\",\"node\":{\"type\":\"" +
+            nodeType +"\",\"id\":\"" + nodeid1 + "\"}}";
+        result = getJsonResult(baseURL + bname + "/vlanmaps", "POST",
+                               requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // setting invalid type to node type
-        requestBody = "{\"vlan\":\"" + vlan +"\",\"node\":{\"type\":\""+ "ERROR_TEST" +"\",\"id\":\""
-                + nodeid1 + "\"}}";
-        result = getJsonResult(baseURL + bname + "/vlanmaps", "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        // Specifyin invalid node type.
+        requestBody = "{\"vlan\":\"" + vlan +"\",\"node\":{\"type\":\"" +
+            "ERROR_TEST" +"\",\"id\":\"" + nodeid1 + "\"}}";
+        result = getJsonResult(baseURL + bname + "/vlanmaps", "POST",
+                               requestBody);
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
         // Test POST VLAN Mapping
         requestBody = "{\"vlan\":\"" + vlan1 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
@@ -2578,7 +2644,6 @@ public class VtnNorthboundIT extends TestBase {
         result = getJsonResult(requestUri, "POST", requestBody, "text/plain");
         Assert.assertEquals(415, httpResponseCode.intValue());
 
-
         // Test POST VLAN Mapping, except vlan
         requestBody = "{\"node\":{\"type\":\""+ nodeType +"\",\"id\":\"" + nodeid1 + "\"}}";
         requestUri = baseURL + bname + "/vlanmaps";
@@ -2587,17 +2652,21 @@ public class VtnNorthboundIT extends TestBase {
         loc = requestUri + "/" + nodeType + "-" + nodeid1 + "." + vlan0;
         Assert.assertEquals(loc, httpLocation);
 
-        // Test POST VLAN Mapping, setting requestBody without node's id
-        requestBody = "{\"vlan\":\"" + vlan +"\",\"node\":{\"type\":\""+ nodeType +"\"}}";
+        // Test POST VLAN Mapping, specifying invalid node which does not
+        // contain node ID.
+        requestBody = "{\"vlan\":\"" + vlan +"\",\"node\":{\"type\":\"" +
+            nodeType +"\"}}";
         requestUri = baseURL + bname + "/vlanmaps";
         result = getJsonResult(requestUri, "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
-        // Test POST VLAN Mapping, setting requestBody without node's type
-        requestBody = "{\"vlan\":\"" + vlan +"\",\"node\":{\"id\":\"" + nodeid1 + "\"}}";
+        // Test POST VLAN Mapping, specifying invalid node which does not
+        // contain node type.
+        requestBody = "{\"vlan\":\"" + vlan +"\",\"node\":{\"id\":\"" +
+            nodeid1 + "\"}}";
         requestUri = baseURL + bname2 + "/vlanmaps";
         result = getJsonResult(requestUri, "POST", requestBody);
-        Assert.assertEquals(415, httpResponseCode.intValue());
+        Assert.assertEquals(400, httpResponseCode.intValue());
 
         // Test POST VLAN Mapping, setting requestBody without node elements
         requestBody = "{\"vlan\":\"" + vlan3 +"\"}";

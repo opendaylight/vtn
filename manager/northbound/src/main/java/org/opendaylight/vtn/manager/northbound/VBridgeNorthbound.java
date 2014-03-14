@@ -210,8 +210,15 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
         @ResponseCode(code = HTTP_CREATED,
                       condition = "vBridge was created successfully."),
         @ResponseCode(code = HTTP_BAD_REQUEST,
-                      condition = "Incorrect XML or JSON data is specified " +
-                      "in Request body."),
+                      condition = "<ul>" +
+                      "<li>Incorrect XML or JSON data is specified " +
+                      "in Request body.</li>" +
+                      "<li>Incorrect vBridge name is specified to " +
+                      "<u>{bridgeName}</u>.</li>" +
+                      "<li>Incorrect value is configured in " +
+                      "<strong>vbridgeconf</strong> element for " +
+                      "<strong>ageInterval</strong> attribute.</li>" +
+                      "</ul>"),
         @ResponseCode(code = HTTP_UNAUTHORIZED,
                       condition = "User is not authorized to perform this " +
                       "operation."),
@@ -228,15 +235,8 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
                       condition = "The vBridge specified by the request URI " +
                       "already exists."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
-                      condition = "<ul>" +
-                      "<li>Unsupported data type is specified in " +
-                      "<strong>Content-Type</strong> header.</li>" +
-                      "<li>Incorrect vBridge name is specified to " +
-                      "<u>{bridgeName}</u>.</li>" +
-                      "<li>Incorrect value is configured in " +
-                      "<strong>vbridgeconf</strong> element for " +
-                      "<strong>ageInterval</strong> attribute.</li>" +
-                      "</ul>"),
+                      condition = "Unsupported data type is specified in " +
+                      "<strong>Content-Type</strong> header."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -304,8 +304,13 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
         @ResponseCode(code = HTTP_OK,
                       condition = "Operation completed successfully."),
         @ResponseCode(code = HTTP_BAD_REQUEST,
-                      condition = "Incorrect XML or JSON data is specified " +
-                      "in Request body."),
+                      condition = "<ul>" +
+                      "<li>Incorrect XML or JSON data is specified " +
+                      "in Request body.</li>" +
+                      "<li>Incorrect value is configured in " +
+                      "<strong>vbridgeconf</strong> element for " +
+                      "<strong>ageInterval</strong> attribute.</li>" +
+                      "</ul>"),
         @ResponseCode(code = HTTP_UNAUTHORIZED,
                       condition = "User is not authorized to perform this " +
                       "operation."),
@@ -320,13 +325,8 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
                       "<u>{containerName}</u> and a container other than " +
                       "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
-                      condition = "<ul>" +
-                      "<li>Unsupported data type is specified in " +
-                      "<strong>Content-Type</strong> header.</li>" +
-                      "<li>Incorrect value is configured in " +
-                      "<strong>vbridgeconf</strong> element for " +
-                      "<strong>ageInterval</strong> attribute.</li>" +
-                      "</ul>"),
+                      condition = "Unsupported data type is specified in " +
+                      "<strong>Content-Type</strong> header."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -452,6 +452,186 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
         } catch (VTNException e) {
             throw getException(e.getStatus());
         }
+    }
+
+    /**
+     * Configure VLAN mapping in the specified vBridge.
+     *
+     * @param uriInfo        Requested URI information.
+     * @param containerName  The name of the container.
+     * @param tenantName     The name of the VTN.
+     * @param bridgeName     The name of the vBridge.
+     * @param vlconf
+     *   <strong>vlanmapconf</strong> specifies the VLAN mapping configuration
+     *   information.
+     *   <ul>
+     *     <li>
+     *       It is possible to specify physical switch to be mapped to the
+     *       vBridge by <strong>node</strong> element.
+     *       <ul>
+     *         <li>
+     *           Currently, only OpenFlow switch can be specified to
+     *           <strong>node</strong> element.
+     *         </li>
+     *         <li>
+     *           VLAN mapping configuration will succeed even if the physical
+     *           switch specified by <strong>node</strong> element does not
+     *           exist. VLAN mapping will come into effect whenever,
+     *           at a later point in time, the specified physical switch is
+     *           found.
+     *         </li>
+     *         <li>
+     *           All the physical switches managed by the OpenDaylight
+     *           controller will be mapped if <strong>node</strong> element
+     *           is omitted.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       The VLAN network is mapped to the interface according to the
+     *       VLAN ID configured in <strong>vlan</strong> attribute.
+     *       <ul>
+     *         <li>
+     *           If a VLAN ID between <strong>1</strong> or more and
+     *           <strong>4095</strong> or less is configured, then the
+     *           ethernet frames that have this VLAN ID configured will get
+     *           mapped to the vBridge.
+     *         </li>
+     *         <li>
+     *           If <strong>0</strong> is configured, or <strong>vlan</strong>
+     *           attribute is omitted, untagged ethernet frames will get
+     *           mapped to the vBridge.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *   </ul>
+     * @return Response as dictated by the HTTP Response Status code.
+     */
+    @Path("{bridgeName}/vlanmaps")
+    @POST
+    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @TypeHint(TypeHint.NO_CONTENT.class)
+    @ResponseHeaders({
+        @ResponseHeader(name = "Location",
+                        description = "URI corresponding to the newly " +
+                        "configured VLAN mapping.<ul>" +
+                        "<li>The last path component of the URI is the " +
+                        "identifier assigned to the VLAN mapping.</li>" +
+                        "</ul>")})
+    @StatusCodes({
+        @ResponseCode(code = HTTP_CREATED,
+                      condition = "VLAN mapping was configured successfully."),
+        @ResponseCode(code = HTTP_BAD_REQUEST,
+                      condition = "<ul>" +
+                      "<li>Incorrect XML or JSON data is specified " +
+                      "in Request body.</li>" +
+                      "<li>Incorrect value is configured in " +
+                      "<strong>vlanmapconf</strong> element.</li>" +
+                      "</ul>"),
+        @ResponseCode(code = HTTP_UNAUTHORIZED,
+                      condition = "User is not authorized to perform this " +
+                      "operation."),
+        @ResponseCode(code = HTTP_NOT_FOUND,
+                      condition = "<ul>" +
+                      "<li>The specified container does not exist.</li>" +
+                      "<li>The specified VTN does not exist.</li>" +
+                      "<li>The specified vBridge does not exist.</li>" +
+                      "</ul>"),
+        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
+                      condition = "\"default\" is specified to " +
+                      "<u>{containerName}</u> and a container other than " +
+                      "the default container is present."),
+        @ResponseCode(code = HTTP_CONFLICT,
+                      condition = "The specified VLAN is already mapped " +
+                      "to the specified vBridge or another vBridge."),
+        @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
+                      condition = "Unsupported data type is specified in " +
+                      "<strong>Content-Type</strong> header."),
+        @ResponseCode(code = HTTP_INTERNAL_ERROR,
+                      condition = "Fatal internal error occurred in the " +
+                      "VTN Manager."),
+        @ResponseCode(code = HTTP_UNAVAILABLE,
+                      condition = "One or more of mandatory controller " +
+                      "services, such as the VTN Manager, are unavailable.")})
+    public Response addVlanMap(
+            @Context UriInfo uriInfo,
+            @PathParam("containerName") String containerName,
+            @PathParam("tenantName") String tenantName,
+            @PathParam("bridgeName") String bridgeName,
+            @TypeHint(VlanMapConfig.class) VlanMapConfig vlconf) {
+        checkPrivilege(containerName, Privilege.WRITE);
+
+        IVTNManager mgr = getVTNManager(containerName);
+        VBridgePath path = new VBridgePath(tenantName, bridgeName);
+        try {
+            VlanMap vmap = mgr.addVlanMap(path, vlconf);
+
+            // Return CREATED with Location header.
+            String id = vmap.getId();
+            String uri = uriInfo.getAbsolutePath().toASCIIString();
+            StringBuilder builder = new StringBuilder(uri);
+            if (uri.charAt(uri.length() - 1) != '/') {
+                builder.append('/');
+            }
+            builder.append(id);
+            URI vmapUri = URI.create(builder.toString());
+            return Response.created(vmapUri).build();
+        } catch (VTNException e) {
+            throw getException(e.getStatus());
+        }
+    }
+
+    /**
+     * Delete the specified VLAN mapping from the vBridge.
+     *
+     * @param containerName  The name of the container.
+     * @param tenantName     The name of the VTN.
+     * @param bridgeName     The name of the vBridge.
+     * @param mapId          The identifier of the VLAN mapping to be deleted.
+     * @return Response as dictated by the HTTP Response Status code.
+     */
+    @Path("{bridgeName}/vlanmaps/{mapId}")
+    @DELETE
+    @TypeHint(TypeHint.NO_CONTENT.class)
+    @StatusCodes({
+        @ResponseCode(code = HTTP_OK,
+                      condition = "Operation completed successfully."),
+        @ResponseCode(code = HTTP_UNAUTHORIZED,
+                      condition = "User is not authorized to perform this " +
+                      "operation."),
+        @ResponseCode(code = HTTP_NOT_FOUND,
+                      condition = "<ul>" +
+                      "<li>The specified container does not exist.</li>" +
+                      "<li>The specified VTN does not exist.</li>" +
+                      "<li>The specified vBridge does not exist.</li>" +
+                      "<li>The specified VLAN mapping is not configured in " +
+                      "the specified vBridge.</li>" +
+                      "</ul>"),
+        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
+                      condition = "\"default\" is specified to " +
+                      "<u>{containerName}</u> and a container other than " +
+                      "the default container is present."),
+        @ResponseCode(code = HTTP_INTERNAL_ERROR,
+                      condition = "Fatal internal error occurred in the " +
+                      "VTN Manager."),
+        @ResponseCode(code = HTTP_UNAVAILABLE,
+                      condition = "One or more of mandatory controller " +
+                      "services, such as the VTN Manager, are unavailable.")})
+    public Response deleteVlanMap(
+            @PathParam("containerName") String containerName,
+            @PathParam("tenantName") String tenantName,
+            @PathParam("bridgeName") String bridgeName,
+            @PathParam("mapId") String mapId) {
+        checkPrivilege(containerName, Privilege.WRITE);
+
+        IVTNManager mgr = getVTNManager(containerName);
+        VBridgePath path = new VBridgePath(tenantName, bridgeName);
+        Status status = mgr.removeVlanMap(path, mapId);
+        if (status.isSuccess()) {
+            return Response.ok().build();
+        }
+
+        throw getException(status);
     }
 
     /**
@@ -614,186 +794,6 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
         } catch (VTNException e) {
             throw getException(e.getStatus());
         }
-    }
-
-    /**
-     * Configure VLAN mapping in the specified vBridge.
-     *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
-     * @param vlconf
-     *   <strong>vlanmapconf</strong> specifies the VLAN mapping configuration
-     *   information.
-     *   <ul>
-     *     <li>
-     *       It is possible to specify physical switch to be mapped to the
-     *       vBridge by <strong>node</strong> element.
-     *       <ul>
-     *         <li>
-     *           Currently, only OpenFlow switch can be specified to
-     *           <strong>node</strong> element.
-     *         </li>
-     *         <li>
-     *           VLAN mapping configuration will succeed even if the physical
-     *           switch specified by <strong>node</strong> element does not
-     *           exist. VLAN mapping will come into effect whenever,
-     *           at a later point in time, the specified physical switch is
-     *           found.
-     *         </li>
-     *         <li>
-     *           All the physical switches managed by the OpenDaylight
-     *           controller will be mapped if <strong>node</strong> element
-     *           is omitted.
-     *         </li>
-     *       </ul>
-     *     </li>
-     *     <li>
-     *       The VLAN network is mapped to the interface according to the
-     *       VLAN ID configured in <strong>vlan</strong> attribute.
-     *       <ul>
-     *         <li>
-     *           If a VLAN ID between <strong>1</strong> or more and
-     *           <strong>4095</strong> or less is configured, then the
-     *           ethernet frames that have this VLAN ID configured will get
-     *           mapped to the vBridge.
-     *         </li>
-     *         <li>
-     *           If <strong>0</strong> is configured, or <strong>vlan</strong>
-     *           attribute is omitted, untagged ethernet frames will get
-     *           mapped to the vBridge.
-     *         </li>
-     *       </ul>
-     *     </li>
-     *   </ul>
-     * @return Response as dictated by the HTTP Response Status code.
-     */
-    @Path("{bridgeName}/vlanmaps")
-    @POST
-    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    @TypeHint(TypeHint.NO_CONTENT.class)
-    @ResponseHeaders({
-        @ResponseHeader(name = "Location",
-                        description = "URI corresponding to the newly " +
-                        "configured VLAN mapping.<ul>" +
-                        "<li>The last path component of the URI is the " +
-                        "identifier assigned to the VLAN mapping.</li>" +
-                        "</ul>")})
-    @StatusCodes({
-        @ResponseCode(code = HTTP_CREATED,
-                      condition = "VLAN mapping was configured successfully."),
-        @ResponseCode(code = HTTP_BAD_REQUEST,
-                      condition = "Incorrect XML or JSON data is specified " +
-                      "in Request body."),
-        @ResponseCode(code = HTTP_UNAUTHORIZED,
-                      condition = "User is not authorized to perform this " +
-                      "operation."),
-        @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
-                      "<li>The specified VTN does not exist.</li>" +
-                      "<li>The specified vBridge does not exist.</li>" +
-                      "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
-        @ResponseCode(code = HTTP_CONFLICT,
-                      condition = "The specified VLAN is already mapped " +
-                      "to the specified vBridge or another vBridge."),
-        @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
-                      condition = "<ul>" +
-                      "<li>Unsupported data type is specified in " +
-                      "<strong>Content-Type</strong> header.</li>" +
-                      "<li>Incorrect value is configured in " +
-                      "<strong>vlanmapconf</strong> element.</li>" +
-                      "</ul>"),
-        @ResponseCode(code = HTTP_INTERNAL_ERROR,
-                      condition = "Fatal internal error occurred in the " +
-                      "VTN Manager."),
-        @ResponseCode(code = HTTP_UNAVAILABLE,
-                      condition = "One or more of mandatory controller " +
-                      "services, such as the VTN Manager, are unavailable.")})
-    public Response addVlanMap(
-            @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
-            @PathParam("tenantName") String tenantName,
-            @PathParam("bridgeName") String bridgeName,
-            @TypeHint(VlanMapConfig.class) VlanMapConfig vlconf) {
-        checkPrivilege(containerName, Privilege.WRITE);
-
-        IVTNManager mgr = getVTNManager(containerName);
-        VBridgePath path = new VBridgePath(tenantName, bridgeName);
-        try {
-            VlanMap vmap = mgr.addVlanMap(path, vlconf);
-
-            // Return CREATED with Location header.
-            String id = vmap.getId();
-            String uri = uriInfo.getAbsolutePath().toASCIIString();
-            StringBuilder builder = new StringBuilder(uri);
-            if (uri.charAt(uri.length() - 1) != '/') {
-                builder.append('/');
-            }
-            builder.append(id);
-            URI vmapUri = URI.create(builder.toString());
-            return Response.created(vmapUri).build();
-        } catch (VTNException e) {
-            throw getException(e.getStatus());
-        }
-    }
-
-    /**
-     * Delete the specified VLAN mapping from the vBridge.
-     *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
-     * @param mapId          The identifier of the VLAN mapping to be deleted.
-     * @return Response as dictated by the HTTP Response Status code.
-     */
-    @Path("{bridgeName}/vlanmaps/{mapId}")
-    @DELETE
-    @TypeHint(TypeHint.NO_CONTENT.class)
-    @StatusCodes({
-        @ResponseCode(code = HTTP_OK,
-                      condition = "Operation completed successfully."),
-        @ResponseCode(code = HTTP_UNAUTHORIZED,
-                      condition = "User is not authorized to perform this " +
-                      "operation."),
-        @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
-                      "<li>The specified VTN does not exist.</li>" +
-                      "<li>The specified vBridge does not exist.</li>" +
-                      "<li>The specified VLAN mapping is not configured in " +
-                      "the specified vBridge.</li>" +
-                      "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
-        @ResponseCode(code = HTTP_INTERNAL_ERROR,
-                      condition = "Fatal internal error occurred in the " +
-                      "VTN Manager."),
-        @ResponseCode(code = HTTP_UNAVAILABLE,
-                      condition = "One or more of mandatory controller " +
-                      "services, such as the VTN Manager, are unavailable.")})
-    public Response deleteVlanMap(
-            @PathParam("containerName") String containerName,
-            @PathParam("tenantName") String tenantName,
-            @PathParam("bridgeName") String bridgeName,
-            @PathParam("mapId") String mapId) {
-        checkPrivilege(containerName, Privilege.WRITE);
-
-        IVTNManager mgr = getVTNManager(containerName);
-        VBridgePath path = new VBridgePath(tenantName, bridgeName);
-        Status status = mgr.removeVlanMap(path, mapId);
-        if (status.isSuccess()) {
-            return Response.ok().build();
-        }
-
-        throw getException(status);
     }
 
     /**

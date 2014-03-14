@@ -192,8 +192,16 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
         @ResponseCode(code = HTTP_CREATED,
                       condition = "VTN was created successfully."),
         @ResponseCode(code = HTTP_BAD_REQUEST,
-                      condition = "Incorrect XML or JSON data is specified " +
-                      "in Request body."),
+                      condition = "<ul>" +
+                      "<li>Incorrect XML or JSON data is specified " +
+                      "in Request body.</li>" +
+                      "<li>Incorrect VTN name is specified to " +
+                      "<u>{tenantName}</u>.</li>" +
+                      "<li>Incorrect value is configured in " +
+                      "<strong>vtnconf</strong> element for " +
+                      "<strong>idleTimeout</strong> or " +
+                      "<strong>hardTimeout</strong> attribute.</li>" +
+                      "</ul>"),
         @ResponseCode(code = HTTP_UNAUTHORIZED,
                       condition = "User is not authorized to perform this " +
                       "operation."),
@@ -207,16 +215,8 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
                       condition = "The VTN specified by the requested URI " +
                       "already exists."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
-                      condition = "<ul>" +
-                      "<li>Unsupported data type is specified in " +
-                      "<strong>Content-Type</strong> header.</li>" +
-                      "<li>Incorrect VTN name is specified to " +
-                      "<u>{tenantName}</u>.</li>" +
-                      "<li>Incorrect value is configured in " +
-                      "<strong>vtnconf</strong> element for " +
-                      "<strong>idleTimeout</strong> or " +
-                      "<strong>hardTimeout</strong> attribute.</li>" +
-                      "</ul>"),
+                      condition = "Unsupported data type is specified in " +
+                      "<strong>Content-Type</strong> header."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -287,8 +287,14 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
         @ResponseCode(code = HTTP_OK,
                       condition = "Operation completed successfully."),
         @ResponseCode(code = HTTP_BAD_REQUEST,
-                      condition = "Incorrect XML or JSON data is specified " +
-                      "in Request body."),
+                      condition = "<ul>" +
+                      "<li>Incorrect XML or JSON data is specified " +
+                      "in Request body.</li>" +
+                      "<li>Incorrect value is configured in " +
+                      "<strong>vtnconf</strong> element for " +
+                      "<strong>idleTimeout</strong> or " +
+                      "<strong>hardTimeout</strong> attribute.</li>" +
+                      "</ul>"),
         @ResponseCode(code = HTTP_UNAUTHORIZED,
                       condition = "User is not authorized to perform this " +
                       "operation."),
@@ -302,14 +308,8 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
                       "<u>{containerName}</u> and a container other than " +
                       "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
-                      condition = "<ul>" +
-                      "<li>Unsupported data type is specified in " +
-                      "<strong>Content-Type</strong> header.</li>" +
-                      "<li>Incorrect value is configured in " +
-                      "<strong>vtnconf</strong> element for " +
-                      "<strong>idleTimeout</strong> or " +
-                      "<strong>hardTimeout</strong> attribute.</li>" +
-                      "</ul>"),
+                      condition = "Unsupported data type is specified in " +
+                      "<strong>Content-Type</strong> header."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
