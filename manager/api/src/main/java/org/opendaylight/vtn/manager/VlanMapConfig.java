@@ -39,7 +39,7 @@ public class VlanMapConfig implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -70616068870223019L;
+    private static final long serialVersionUID = 606475725018224880L;
 
     /**
      * {@link Node} information corresponding to the physical switch to be
@@ -158,6 +158,21 @@ public class VlanMapConfig implements Serializable {
     }
 
     /**
+     * Append human readable strings which represents the contents of this
+     * object to the specified {@link StringBuilder}.
+     *
+     * @param builder  A {@link StringBuilder} instance.
+     * @return  A {@link StringBuilder} instance specified by {@code builder}.
+     */
+    StringBuilder appendContents(StringBuilder builder) {
+        if (node != null) {
+            builder.append("node=").append(node.toString()).append(",");
+        }
+
+        return builder.append("vlan=").append((int)vlan);
+    }
+
+    /**
      * Determine whether the given object is identical to this object.
      *
      * <p>
@@ -224,12 +239,7 @@ public class VlanMapConfig implements Serializable {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder("VlanMapConfig[");
-        if (node != null) {
-            builder.append("node=").append(node.toString()).append(",");
-        }
-
-        builder.append("vlan=").append((int)vlan).append(']');
-
+        appendContents(builder).append(']');
         return builder.toString();
     }
 }

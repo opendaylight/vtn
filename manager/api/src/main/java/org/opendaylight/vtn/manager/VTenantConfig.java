@@ -42,7 +42,7 @@ public class VTenantConfig implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 7446090329841381143L;
+    private static final long serialVersionUID = -2906937162063076543L;
 
     /**
      * An arbitrary description of the VTN.
@@ -305,6 +305,34 @@ public class VTenantConfig implements Serializable {
     }
 
     /**
+     * Append human readable strings which represents the contents of this
+     * object to the specified {@link StringBuilder}.
+     *
+     * @param builder  A {@link StringBuilder} instance.
+     * @param prefix   A string to be inserted before contents.
+     *                 {@code null} must not be specified.
+     * @return  A {@link StringBuilder} instance specified by {@code builder}.
+     */
+    StringBuilder appendContents(StringBuilder builder, String prefix) {
+        String pfx = prefix;
+        if (description != null) {
+            builder.append(pfx).append("desc=").append(description);
+            pfx = ",";
+        }
+
+        if (idleTimeout >= 0) {
+            builder.append(pfx).append("idleTimeout=").append(idleTimeout);
+            pfx = ",";
+        }
+
+        if (hardTimeout >= 0) {
+            builder.append(pfx).append("hardTimeout=").append(hardTimeout);
+        }
+
+        return builder;
+    }
+
+    /**
      * Determine whether the given object is identical to this object.
      *
      * <p>
@@ -379,28 +407,7 @@ public class VTenantConfig implements Serializable {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder("VTenantConfig[");
-        char sep = 0;
-        if (description != null) {
-            builder.append("desc=").append(description);
-            sep = ',';
-        }
-
-        if (idleTimeout >= 0) {
-            if (sep != 0) {
-                builder.append(sep);
-            }
-            builder.append("idleTimeout=").append(idleTimeout);
-            sep = ',';
-        }
-
-        if (hardTimeout >= 0) {
-            if (sep != 0) {
-                builder.append(sep);
-            }
-            builder.append("hardTimeout=").append(hardTimeout);
-        }
-        builder.append(']');
-
+        appendContents(builder, "").append(']');
         return builder.toString();
     }
 }

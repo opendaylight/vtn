@@ -369,25 +369,18 @@ public class VInterface extends VInterfaceConfig {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder("VInterface[");
+        String prefix;
         if (name != null) {
-            builder.append("name=").append(name).append(',');
+            builder.append("name=").append(name);
+            prefix = ",";
+        } else {
+            prefix = "";
         }
 
-        String desc = getDescription();
-        if (desc != null) {
-            builder.append("desc=").append(desc).append(',');
+        if (appendContents(builder, prefix)) {
+            prefix = ",";
         }
-
-        Boolean en = getEnabled();
-        if (en != null) {
-            if (en.booleanValue()) {
-                builder.append("enabled,");
-            } else {
-                builder.append("disabled,");
-            }
-        }
-
-        builder.append("state=").append(state.toString()).
+        builder.append(prefix).append("state=").append(state.toString()).
             append(",entityState=").append(entityState.toString()).append(']');
 
         return builder.toString();

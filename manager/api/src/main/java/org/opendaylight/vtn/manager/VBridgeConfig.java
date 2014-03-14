@@ -36,7 +36,7 @@ public class VBridgeConfig implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 7501956469021832807L;
+    private static final long serialVersionUID = 9009552129571959205L;
 
     /**
      * An arbitrary description of the vBridge.
@@ -194,6 +194,31 @@ public class VBridgeConfig implements Serializable {
     }
 
     /**
+     * Append human readable strings which represents the contents of this
+     * object to the specified {@link StringBuilder}.
+     *
+     * @param builder  A {@link StringBuilder} instance.
+     * @param prefix   A string to be inserted before contents.
+     *                 {@code null} must not be specified.
+     * @return  {@code true} if at least one character is appended to the
+     *          specified {@link StringBuilder} instance.
+     *          Otherwise {@code false}.
+     */
+    boolean appendContents(StringBuilder builder, String prefix) {
+        int len = builder.length();
+        String pfx = prefix;
+        if (description != null) {
+            builder.append(pfx).append("desc=").append(description);
+            pfx = ",";
+        }
+        if (ageInterval >= 0) {
+            builder.append(pfx).append("ageInterval=").append(ageInterval);
+        }
+
+        return (builder.length() != len);
+    }
+
+    /**
      * Determine whether the given object is identical to this object.
      *
      * <p>
@@ -266,17 +291,8 @@ public class VBridgeConfig implements Serializable {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder("VBridgeConfig[");
-        if (description != null) {
-            builder.append("desc=").append(description);
-        }
-        if (ageInterval >= 0) {
-            if (description != null) {
-                builder.append(',');
-            }
-            builder.append("ageInterval=").append(ageInterval);
-        }
+        appendContents(builder, "");
         builder.append(']');
-
         return builder.toString();
     }
 }

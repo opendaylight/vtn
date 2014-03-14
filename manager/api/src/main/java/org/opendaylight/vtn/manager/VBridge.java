@@ -306,21 +306,18 @@ public class VBridge extends VBridgeConfig {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder("VBridge[");
+        String prefix;
         if (name != null) {
-            builder.append("name=").append(name).append(',');
+            builder.append("name=").append(name);
+            prefix = ",";
+        } else {
+            prefix = "";
         }
 
-        String desc = getDescription();
-        if (desc != null) {
-            builder.append("desc=").append(desc).append(',');
+        if (appendContents(builder, prefix)) {
+            prefix = ",";
         }
-
-        int age = getAgeInterval();
-        if (age >= 0) {
-            builder.append("ageInterval=").append(age).append(',');
-        }
-
-        builder.append("faults=").append(faults).
+        builder.append(prefix).append("faults=").append(faults).
             append(",state=").append(state.toString()).append("]");
 
         return builder.toString();

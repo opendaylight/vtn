@@ -153,13 +153,7 @@ public class VlanMap extends VlanMapConfig {
             builder.append("id=").append(id).append(',');
         }
 
-        Node node = getNode();
-        if (node != null) {
-            builder.append("node=").append(node).append(',');
-        }
-
-        builder.append("vlan=").append((int)getVlan()).append(']');
-
+        appendContents(builder).append(']');
         return builder.toString();
     }
 }

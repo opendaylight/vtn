@@ -152,39 +152,15 @@ public class VTenant extends VTenantConfig {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder("VTenant[");
-        char sep = 0;
+        String prefix;
         if (name != null) {
             builder.append("name=").append(name);
-            sep = ',';
+            prefix = ",";
+        } else {
+            prefix = "";
         }
 
-        String desc = getDescription();
-        if (desc != null) {
-            if (sep != 0) {
-                builder.append(sep);
-            }
-            builder.append("desc=").append(desc);
-            sep = ',';
-        }
-
-        int idle = getIdleTimeout();
-        if (idle >= 0) {
-            if (sep != 0) {
-                builder.append(sep);
-            }
-            builder.append("idleTimeout=").append(idle);
-            sep = ',';
-        }
-
-        int hard = getHardTimeout();
-        if (hard >= 0) {
-            if (sep != 0) {
-                builder.append(sep);
-            }
-            builder.append("hardTimeout=").append(hard);
-        }
-        builder.append(']');
-
+        appendContents(builder, prefix).append(']');
         return builder.toString();
     }
 }

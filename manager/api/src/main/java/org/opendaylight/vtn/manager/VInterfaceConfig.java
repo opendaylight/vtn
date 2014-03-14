@@ -37,7 +37,7 @@ public class VInterfaceConfig implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -6152398562520322469L;
+    private static final long serialVersionUID = 4425846321318048040L;
 
     /**
      * An arbitrary description of the virtual interface.
@@ -130,6 +130,37 @@ public class VInterfaceConfig implements Serializable {
     }
 
     /**
+     * Append human readable strings which represents the contents of this
+     * object to the specified {@link StringBuilder}.
+     *
+     * @param builder  A {@link StringBuilder} instance.
+     * @param prefix   A string to be inserted before contents.
+     *                 {@code null} must not be specified.
+     * @return  {@code true} if at least one character is appended to the
+     *          specified {@link StringBuilder} instance.
+     *          Otherwise {@code false}.
+     */
+    boolean appendContents(StringBuilder builder, String prefix) {
+        int len = builder.length();
+        String pfx = prefix;
+        if (description != null) {
+            builder.append(pfx).append("desc=").append(description);
+            pfx = ",";
+        }
+
+        if (enabled != null) {
+            builder.append(pfx);
+            if (enabled.booleanValue()) {
+                builder.append("enabled");
+            } else {
+                builder.append("disabled");
+            }
+        }
+
+        return (builder.length() != len);
+    }
+
+    /**
      * Determine whether the given object is identical to this object.
      *
      * <p>
@@ -206,23 +237,8 @@ public class VInterfaceConfig implements Serializable {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder("VInterfaceConfig[");
-        if (description != null) {
-            builder.append("desc=").append(description);
-        }
-
-        if (enabled != null) {
-            if (description != null) {
-                builder.append(",");
-            }
-
-            if (enabled.booleanValue()) {
-                builder.append("enabled");
-            } else {
-                builder.append("disabled");
-            }
-        }
+        appendContents(builder, "");
         builder.append(']');
-
         return builder.toString();
     }
 }
