@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -37,7 +37,12 @@ public class MacTableEntry implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -7148110187193307138L;
+    private static final long serialVersionUID = 1179200149209477680L;
+
+    /**
+     * The maximum number of IP address probe request.
+     */
+    private static final int  MAX_IP_PROBE = 10;
 
     /**
      * A unique identifier for this entry in the cluster.
@@ -76,7 +81,7 @@ public class MacTableEntry implements Serializable {
     private transient boolean  used = true;
 
     /**
-     * {@code true} is set if a probe request for IP address should be sent.
+     * The number of IP address probe request to be sent.
      *
      * <p>
      *   Note that this field never affects object identity, and it is never
@@ -88,7 +93,7 @@ public class MacTableEntry implements Serializable {
      *   <li>{@link #writeObject(ObjectOutputStream)}</li>
      * </ul>
      */
-    private transient boolean  probeNeeded;
+    private transient int  probeCount;
 
     /**
      * Construct a new MAC address table entry.
@@ -126,8 +131,7 @@ public class MacTableEntry implements Serializable {
         this.vlan = vlan;
         if (ipaddr != null) {
             ipAddresses.add(ipaddr);
-        } else {
-            probeNeeded = true;
+            probeCount = MAX_IP_PROBE;
         }
     }
 
@@ -167,7 +171,7 @@ public class MacTableEntry implements Serializable {
      *          added.
      */
     public synchronized boolean addInetAddress(InetAddress ipaddr) {
-        probeNeeded = false;
+        probeCount = MAX_IP_PROBE;
         return ipAddresses.add(ipaddr);
     }
 
@@ -219,16 +223,22 @@ public class MacTableEntry implements Serializable {
     }
 
     /**
-     * Clear "probe needed" flag which determines whether a probe request for
+     * Determine whether a probe request for IP address should be sent or not,
      * IP address should be sent or not.
      *
      * @return  {@code true} is returned if a probe request for IP address
      *          should be sent. Otherwise {@code false}.
      */
-    public synchronized boolean clearProbeNeeded() {
-        // A probe for IP address should be sent only one time.
-        boolean ret = probeNeeded;
-        probeNeeded = false;
+    public synchronized boolean isProbeNeeded() {
+        int count = probeCount;
+        boolean ret;
+        if (count < MAX_IP_PROBE) {
+            probeCount = count + 1;
+            ret = true;
+        } else {
+            ret = false;
+        }
+
         return ret;
     }
 
@@ -289,9 +299,11 @@ public class MacTableEntry implements Serializable {
         throws IOException, ClassNotFoundException {
         in.defaultReadObject();
 
-        // Reset "used" and "probeNeeded" to initial value.
+        // Reset "used" to initial value.
         used = true;
-        probeNeeded = false;
+
+        // Disable IP address probe request.
+        probeCount = MAX_IP_PROBE;
     }
 
     /**

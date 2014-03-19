@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -2155,7 +2155,6 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                 NodeConnector inNc = inPortVlan.getNodeConnector();
                 short inVlan = inPortVlan.getVlan();
                 byte tip = 1;
-                boolean first = false;
                 int numExpectFlows = 0;
                 for (EthernetAddress ea: ethers) {
                     String emsg = "(learned portvlan)" + learnedPv.toString()
@@ -2207,12 +2206,9 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
 
                         // Check output data packet.
                         List<RawPacket> transDatas = stub.getTransmittedDataPacket();
-                        if (!first) {
-                            assertEquals(emsg, 2, transDatas.size());
-                            first = true;
-                        } else {
-                            assertEquals(emsg, 1, transDatas.size());
-                        }
+
+                        // IP address probe request should be sent.
+                        assertEquals(emsg, 2, transDatas.size());
 
                         for (RawPacket raw : transDatas) {
                             Packet pkt = stub.decodeDataPacket(raw);
