@@ -466,7 +466,6 @@ public class MacAddressTable {
         }
 
         // Notify the host tracker of new host entry.
-        boolean needProbe = tent.clearProbeNeeded();
         if (ipaddr != null) {
             try {
                 HostNodeConnector host =
@@ -488,7 +487,7 @@ public class MacAddressTable {
                     LOG.error(builder.toString(), e);
                 }
             }
-        } else if (needProbe) {
+        } else if (pctx.isIPv4() && tent.isProbeNeeded()) {
             // Try to detect IP address of the host.
             pctx.probeInetAddress(vtnManager);
         }

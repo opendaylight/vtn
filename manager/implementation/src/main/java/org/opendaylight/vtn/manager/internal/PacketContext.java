@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -418,6 +418,15 @@ public class PacketContext {
             append(", vlan=").append((int)vlan);
 
         return builder.toString();
+    }
+
+    /**
+     * Determine whether this packet is an IPv4 packet or not.
+     *
+     * @return  {@code true} is returned only if this packet is an IPv4 packet.
+     */
+    public boolean isIPv4() {
+        return (payload instanceof IPv4);
     }
 
     /**
