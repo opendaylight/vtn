@@ -1,11 +1,12 @@
-/**
- * Copyright (c) 2013 NEC Corporation
+/*
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal.cluster;
 
 import java.net.InetAddress;
@@ -31,6 +32,10 @@ import org.opendaylight.vtn.manager.internal.TestBase;
  * JUnit test for {@link MacTableEntry}
  */
 public class MacTableEntryTest extends TestBase {
+    /**
+     * The maximum number of IP address probe request.
+     */
+    private static final int  MAX_IP_PROBE = 10;
 
     /**
      * Test case for getter and setter methods.
@@ -49,8 +54,7 @@ public class MacTableEntryTest extends TestBase {
                             if (ips.size() == 0) {
                                 me = new MacTableEntry(path, mac, copy(nc),
                                                        vlan, null);
-
-                                assertTrue(me.clearProbeNeeded());
+                                checkProbeNeeded(me);
                             } else {
                                 for (InetAddress ip: ips) {
                                     if (me == null) {
@@ -60,7 +64,7 @@ public class MacTableEntryTest extends TestBase {
                                     } else {
                                         assertTrue(me.addInetAddress(ip));
                                     }
-                                    assertFalse(me.clearProbeNeeded());
+                                    checkProbeNeeded(me);
                                 }
                             }
 
@@ -177,10 +181,14 @@ public class MacTableEntryTest extends TestBase {
             }
             testEquals(set, tent1, tent2);
 
-            // Ensure that "used" and "probeNeeded" never affect object
+            // Ensure that "used" and "probeCount" never affect object
             // identity.
             tent1.clearUsed();
-            tent1.clearProbeNeeded();
+            assertEquals(tent2, tent1);
+            assertTrue(set.contains(tent1));
+            assertTrue(set.contains(tent2));
+
+            tent1.isProbeNeeded();
             assertEquals(tent2, tent1);
             assertTrue(set.contains(tent1));
             assertTrue(set.contains(tent2));
@@ -241,7 +249,7 @@ public class MacTableEntryTest extends TestBase {
         for (MacTableEntry tent1: createMacTableEntries()) {
             MacTableEntry tent2 = (MacTableEntry)serializeTest(tent1);
             assertTrue(tent2.getUsed());
-            assertFalse(tent2.clearProbeNeeded());
+            assertFalse(tent2.isProbeNeeded());
         }
     }
 
@@ -303,5 +311,21 @@ public class MacTableEntryTest extends TestBase {
         }
 
         return builder.append('}').toString();
+    }
+
+    /**
+     * Ensure that {@link MacTableEntry#isProbeNeeded()} works.
+     *
+     * @param tent  A {@link MacTableEntry} instance to be tested.
+     */
+    private void checkProbeNeeded(MacTableEntry tent) {
+        if (tent.getInetAddresses().isEmpty()) {
+            for (int i = 0; i < MAX_IP_PROBE; i++) {
+                assertTrue(tent.isProbeNeeded());
+            }
+        }
+        for (int i = 0; i < 10; i++) {
+            assertFalse(tent.isProbeNeeded());
+        }
     }
 }
