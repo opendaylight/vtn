@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -419,6 +419,19 @@ TcCommonRet TcLibMsgUtil::GetAuditTransactionMsg(
     pfc_log_error("%s %d TcServerSessionUtils failed with %d",
                   __FUNCTION__, __LINE__, util_ret);
     return TC_FAILURE;
+  }
+
+  /*reconnect attribute*/
+  if (audit_trans_msg.oper_type == MSG_AUDIT_START) {
+    uint8_t reconnect = 0;
+    idx++;
+    util_ret = tc::TcServerSessionUtils::get_uint8(session, idx, &reconnect);
+    if (util_ret != tc::TCUTIL_RET_SUCCESS) {
+      pfc_log_error("%s %d TcServerSessionUtils failed with %d",
+                    __FUNCTION__, __LINE__, util_ret);
+      return TC_FAILURE;
+    }
+    audit_trans_msg.reconnect_controller = (pfc_bool_t)reconnect;
   }
 
   // audit_result

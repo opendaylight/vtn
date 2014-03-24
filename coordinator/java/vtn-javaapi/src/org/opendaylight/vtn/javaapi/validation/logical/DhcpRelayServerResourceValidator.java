@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -31,7 +31,7 @@ public class DhcpRelayServerResourceValidator extends VtnServiceValidator {
 			.getLogger(DhcpRelayServerResourceValidator.class.getName());
 
 	private final AbstractResource resource;
-	final CommonValidator validator = new CommonValidator();
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new DHCP relay server resource validator.
@@ -49,7 +49,7 @@ public class DhcpRelayServerResourceValidator extends VtnServiceValidator {
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start DhcpRelayServerResourceValidator#validateUri()");
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.URI
@@ -119,8 +119,9 @@ public class DhcpRelayServerResourceValidator extends VtnServiceValidator {
 	 * DhcpRelayServer API
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start DhcpRelayServerResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of DhcpRelayServerResourceValidator");

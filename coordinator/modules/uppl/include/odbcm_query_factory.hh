@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -81,6 +81,7 @@ namespace uppl {
           (unc_keytype_datatype_t, std::string&);
 
       std::string getOrderByString(ODBCMTable, std::vector <std::string>&);
+
     private:
       /** To frame query for creating a row in db */
       SQLQUERY operation_createonerow

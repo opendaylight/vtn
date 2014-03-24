@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -48,25 +48,29 @@ public class VTepInterfacesResource extends AbstractResource {
 	/** The VTEP name. */
 	@UNCField("vtep_name")
 	private String vTepName;
+
 	/**
 	 * Gets the vtn name.
 	 * 
 	 * @return the vtn name
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
+
 	/**
 	 * Gets the v tep name.
 	 * 
 	 * @return the v tep name
 	 */
-	public String getvTepName() {
+	public final String getvTepName() {
 		return vTepName;
 	}
+
 	/** The Constant LOG. */
 	private static final Logger LOG = Logger
 			.getLogger(VTepInterfacesResource.class.getName());
+
 	/**
 	 * Instantiates a new v tep interfaces resource.
 	 */
@@ -76,6 +80,7 @@ public class VTepInterfacesResource extends AbstractResource {
 		setValidator(new InterfaceResourceValidator(this));
 		LOG.trace("Completed VTepInterfacesResource#VTepInterfacesResource()");
 	}
+
 	/**
 	 * Implementation of Post method of VtepInterface API
 	 * 
@@ -86,7 +91,8 @@ public class VTepInterfacesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VTepInterfacesResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -133,6 +139,7 @@ public class VTepInterfacesResource extends AbstractResource {
 		LOG.trace("Completed VTepInterfacesResource#post()");
 		return status;
 	}
+
 	/**
 	 * Implementation of Get method of VtepInterface API
 	 * 
@@ -143,7 +150,8 @@ public class VTepInterfacesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VTepInterfacesResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -176,7 +184,8 @@ public class VTepInterfacesResource extends AbstractResource {
 					getUriParameters(requestBody));
 			LOG.debug("Request packet created successfully for 1st call");
 			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet processed for 1st call with status" + status);
+			LOG.debug("Request packet processed for 1st call with status"
+					+ status);
 			LOG.debug("Complete Ipc framework call one");
 			if (status == ClientSession.RESP_FATAL) {
 				throw new VtnServiceException(
@@ -194,16 +203,16 @@ public class VTepInterfacesResource extends AbstractResource {
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.LIST);
 			final List<String> uriParameterList = getUriParameters(requestBody);
-			if (vTepInterfaceJson.get(VtnServiceJsonConsts.INTERFACES).isJsonArray()) {
-				JsonArray responseArray = vTepInterfaceJson.get(
-						VtnServiceJsonConsts.INTERFACES)
-						.getAsJsonArray();
+			if (vTepInterfaceJson.get(VtnServiceJsonConsts.INTERFACES)
+					.isJsonArray()) {
+				final JsonArray responseArray = vTepInterfaceJson.get(
+						VtnServiceJsonConsts.INTERFACES).getAsJsonArray();
 				vTepInterfaceJson = getResponseJsonArrayLogical(requestBody,
-                        requestProcessor, responseGenerator,
-                        responseArray, VtnServiceJsonConsts.INTERFACES,
-                        VtnServiceJsonConsts.IFNAME,
-                        IpcRequestPacketEnum.KT_VTEP_IF_GET,
-                        uriParameterList,VtnServiceIpcConsts.GET_VTEP_INTERFACE_RESPONSE);
+						requestProcessor, responseGenerator, responseArray,
+						VtnServiceJsonConsts.INTERFACES,
+						VtnServiceJsonConsts.IFNAME,
+						IpcRequestPacketEnum.KT_VTEP_IF_GET, uriParameterList,
+						VtnServiceIpcConsts.GET_VTEP_INTERFACE_RESPONSE);
 			}
 			LOG.trace("Response Packet created successfully for 1st request");
 			if ((VtnServiceJsonConsts.STATE).equalsIgnoreCase(dataType)
@@ -236,7 +245,8 @@ public class VTepInterfacesResource extends AbstractResource {
 													.ordinal()));
 					LOG.debug("Request packet created successfully for 2nd call");
 					status = requestProcessor.processIpcRequest();
-					LOG.debug("Request packet processed for 2nd call with status" + status);
+					LOG.debug("Request packet processed for 2nd call with status"
+							+ status);
 					neighbor = responseGenerator.getNeighborResponse(
 							requestProcessor.getIpcResponsePacket(),
 							requestBody, VtnServiceJsonConsts.SHOW);
@@ -275,6 +285,7 @@ public class VTepInterfacesResource extends AbstractResource {
 		LOG.trace("Completed VTepInterfacesResource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 

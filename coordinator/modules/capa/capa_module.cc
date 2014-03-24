@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -76,7 +76,7 @@ pfc_bool_t CapaModule::fini(void) {
     delete ccc;
   }
   ctrlr_common_map_.clear();
-#endif 
+#endif
   return PFC_TRUE;
 }
 
@@ -99,7 +99,6 @@ void CapaModule::LoadParentVersion(pfc_conf_t confp,
 
 bool CapaModule::LoadActualVersion(pfc_conf_t confp, const std::string version,
                                    std::list<ActualVersion> &version_list) {
-
   pfc_cfblk_t ver_def_cfblk = pfc_conf_get_map(confp, "version_definition",
                                                version.c_str());
 
@@ -107,7 +106,7 @@ bool CapaModule::LoadActualVersion(pfc_conf_t confp, const std::string version,
   uint32_t           actual_count         = 0;
   uint32_t           actual_version_size  = 0;
   uint32_t           array_index          = 0;
-  
+
   /* Clear actual version list */
   version_list.clear();
 
@@ -116,7 +115,6 @@ bool CapaModule::LoadActualVersion(pfc_conf_t confp, const std::string version,
   pfc_log_verbose(" Actual version count is %u", actual_count);
 
   for (uint32_t index = 0; index <actual_count; index++) {
-
     actual_version_size = pfc_conf_array_size(ver_def_cfblk, "actual_version");
 
     if ((actual_version_size == 0) || (actual_version_size%4 != 0)) {
@@ -126,13 +124,17 @@ bool CapaModule::LoadActualVersion(pfc_conf_t confp, const std::string version,
 
     memset(&actual_version, 0, sizeof(ActualVersion));
     actual_version.major1  = pfc_conf_array_int32at(ver_def_cfblk,
-                                                 "actual_version", array_index++, 0);
+                                                 "actual_version",
+                                                 array_index++, 0);
     actual_version.major2  = pfc_conf_array_int32at(ver_def_cfblk,
-                                                 "actual_version", array_index++, 0);
+                                                 "actual_version",
+                                                 array_index++, 0);
     actual_version.minor   = pfc_conf_array_int32at(ver_def_cfblk,
-                                                 "actual_version", array_index++, 0);
+                                                 "actual_version",
+                                                 array_index++, 0);
     actual_version.update  = pfc_conf_array_int32at(ver_def_cfblk,
-                                                 "actual_version", array_index++, 0);
+                                                 "actual_version",
+                                                 array_index++, 0);
     version_list.push_back(actual_version);
   }
   return true;
@@ -140,16 +142,16 @@ bool CapaModule::LoadActualVersion(pfc_conf_t confp, const std::string version,
 
 bool CapaModule::ValidateVersion(unc_keytype_ctrtype_t ctrlr_type,
                                  std::string config_version,
-                                 uint8_t pfc_version_major1, 
+                                 uint8_t pfc_version_major1,
                                  uint8_t pfc_version_major2,
                                  uint8_t pfc_version_minor,
                                  uint8_t pfc_version_update) {
-
   pfc_log_info("Validates Configuration version and actual version ");
 
   struct CapaCtrlrCommon    *ccc = ctrlr_common_map_.find(ctrlr_type)->second;
   std::list<ActualVersion>  actual_version_list;
   ActualVersion             actual;
+  std::map<std::string, std::list<ActualVersion> >::iterator act_ver_it;
 
   if (ccc == NULL) {
     pfc_log_warn("Failed to find Capa controller common");
@@ -157,13 +159,14 @@ bool CapaModule::ValidateVersion(unc_keytype_ctrtype_t ctrlr_type,
   }
   memset(&actual, 0, sizeof(ActualVersion));
 
-  if (ccc->actual_version_map_.count(config_version) == 0) {
+  act_ver_it = ccc->actual_version_map_.find(config_version);
+  if (act_ver_it == ccc->actual_version_map_.end()) {
     pfc_log_debug("Configuration version is not a member of "
                   "actual version map");
     return false;
   }
 
-  actual_version_list = ccc->actual_version_map_.find(config_version)->second;
+  actual_version_list =  act_ver_it->second;
 
   while (!actual_version_list.empty()) {
     actual = actual_version_list.front();
@@ -172,22 +175,26 @@ bool CapaModule::ValidateVersion(unc_keytype_ctrtype_t ctrlr_type,
     pfc_log_verbose("Actual version : : (%d.%d.%d.%d)",
                     actual.major1, actual.major2, actual.minor, actual.update);
 
-    if ((actual.major1 == -1) || ((uint8_t)actual.major1 < pfc_version_major1)) {
+    if ((actual.major1 == -1) ||
+        ((uint8_t)actual.major1 < pfc_version_major1)) {
       return true;
-    } 
+    }
 
     if (((uint8_t)actual.major1 == pfc_version_major1)) {
-      if ((actual.major2 == -1) || ((uint8_t)actual.major2 < pfc_version_major2)) {
+      if ((actual.major2 == -1) ||
+          ((uint8_t)actual.major2 < pfc_version_major2)) {
         return true;
       }
 
       if ((uint8_t)actual.major2 == pfc_version_major2) {
-        if ((actual.minor == -1) || ((uint8_t)actual.minor < pfc_version_minor)) {
+        if ((actual.minor == -1)
+            || ((uint8_t)actual.minor < pfc_version_minor)) {
           return true;
         }
 
         if ((uint8_t)actual.minor == pfc_version_minor) {
-          if ((actual.update == -1) || ((uint8_t)actual.update <= pfc_version_update)) {
+          if ((actual.update == -1) ||
+              ((uint8_t)actual.update <= pfc_version_update)) {
             return true;
           }
         }
@@ -212,7 +219,7 @@ bool CapaModule::LoadCapabilityFile(unc_keytype_ctrtype_t ctrlr_type) {
   } else if (ctrlr_type == UNC_CT_LEGACY) {
       pfc_log_info("\n \n ******CAPA**** UNC_CT_LEGACY type %d", ctrlr_type);
       capa_file = CAPA_CONF_FILE_LEGACY;
-  */      
+  */
   } else if (ctrlr_type == UNC_CT_VNP) {
       pfc_log_info("\n \n *****CAPA**** UNC_CT_VNP type %d", ctrlr_type);
       capa_file = CAPA_CONF_FILE_VNP;
@@ -228,10 +235,13 @@ bool CapaModule::LoadCapabilityFile(unc_keytype_ctrtype_t ctrlr_type) {
   /* Lock capability database */
   ScopedReadWriteLock lock(capa_module_lock_, true);
 
-  if (ctrlr_common_map_.count(ctrlr_type) == 0) {
+  std::map<unc_keytype_ctrtype_t, CapaCtrlrCommon*>::iterator ctrlr_comm_it =
+    ctrlr_common_map_.find(ctrlr_type);
+
+  if (ctrlr_comm_it == ctrlr_common_map_.end()) {
     return false;
   }
-  struct CapaCtrlrCommon *ccc = ctrlr_common_map_.find(ctrlr_type)->second;
+  struct CapaCtrlrCommon *ccc = ctrlr_comm_it->second;
 
   /* Clear file */
   ccc->capa_map.clear();
@@ -275,7 +285,8 @@ bool CapaModule::LoadCapabilityFile(unc_keytype_ctrtype_t ctrlr_type) {
     }
     pfc_log_verbose("Loading capability for version: %s", version_name);
     // current_version = version_name;
-    // TODO Why it is repeated LoadParentCapability(confp, version_name);
+    // TODO(capa): Why it is repeated
+    // LoadParentCapability(confp, version_name);
     CtrlrCapability *cap_ptr = new CtrlrCapability;
     if (false == cap_ptr->LoadCtrlrCapability(confp, version_name)) {
       pfc_log_error("Failed to load capability for %s", version_name);
@@ -305,11 +316,11 @@ bool CapaModule::LoadCapabilityFile(unc_keytype_ctrtype_t ctrlr_type) {
 // for that controller type
 
 bool CapaModule::LoadCapabilityFiles(void) {
-	LoadCapabilityFile(UNC_CT_PFC);
-	// LoadCapabilityFile(UNC_CT_LEGACY);
-	LoadCapabilityFile(UNC_CT_VNP);
-	LoadCapabilityFile(UNC_CT_ODC);
-	return true;
+  LoadCapabilityFile(UNC_CT_PFC);
+  // LoadCapabilityFile(UNC_CT_LEGACY);
+  LoadCapabilityFile(UNC_CT_VNP);
+  LoadCapabilityFile(UNC_CT_ODC);
+  return true;
 }
 
 bool CapaModule::GetCreateCapability(unc_keytype_ctrtype_t ctrlr_type,
@@ -319,13 +330,16 @@ bool CapaModule::GetCreateCapability(unc_keytype_ctrtype_t ctrlr_type,
                                      uint32_t *num_attrs,
                                      const uint8_t  **attrs) {
   ScopedReadWriteLock lock(capa_module_lock_, false);
-  if (ctrlr_common_map_.count(ctrlr_type) == 0) {
+  std::map<unc_keytype_ctrtype_t, CapaCtrlrCommon*>::iterator ctrlr_comm_it =
+      ctrlr_common_map_.find(ctrlr_type);
+
+  if (ctrlr_comm_it == ctrlr_common_map_.end()) {
     pfc_log_verbose("Bad ctrlr_type %d", ctrlr_type);
     return false;
   }
-  struct CapaCtrlrCommon *ccc = ctrlr_common_map_.find(ctrlr_type)->second;
+  struct CapaCtrlrCommon *ccc = ctrlr_comm_it->second;
   std::map<std::string, CtrlrCapability*>::iterator verit =
-       ccc->capa_map.find(version);
+      ccc->capa_map.find(version);
   if (verit == ccc->capa_map.end()) {
     pfc_log_verbose("Version %s not found", version.c_str());
     return false;
@@ -342,11 +356,14 @@ bool CapaModule::GetUpdateCapability(unc_keytype_ctrtype_t ctrlr_type,
                                      uint32_t *num_attrs,
                                      const uint8_t  **attrs) {
   ScopedReadWriteLock lock(capa_module_lock_, false);
-  if (ctrlr_common_map_.count(ctrlr_type) == 0) {
+
+  std::map<unc_keytype_ctrtype_t, CapaCtrlrCommon*>::iterator ctrlr_comm_it =
+      ctrlr_common_map_.find(ctrlr_type);
+  if (ctrlr_comm_it == ctrlr_common_map_.end()) {
     pfc_log_verbose("Bad ctrlr_type %d", ctrlr_type);
     return false;
   }
-  struct CapaCtrlrCommon *ccc = ctrlr_common_map_.find(ctrlr_type)->second;
+  struct CapaCtrlrCommon *ccc = ctrlr_comm_it->second;
   std::map<std::string, CtrlrCapability*>::iterator verit =
       ccc->capa_map.find(version);
   if (verit == ccc->capa_map.end()) {
@@ -363,15 +380,18 @@ bool CapaModule::GetReadCapability(unc_keytype_ctrtype_t ctrlr_type,
                                    uint32_t *num_attrs,
                                    const uint8_t  **attrs) {
   ScopedReadWriteLock lock(capa_module_lock_, false);
-  if (ctrlr_common_map_.count(ctrlr_type) == 0) {
+
+  std::map<unc_keytype_ctrtype_t, CapaCtrlrCommon*>::iterator ctrlr_comm_it =
+      ctrlr_common_map_.find(ctrlr_type);
+  if (ctrlr_comm_it == ctrlr_common_map_.end()) {
     pfc_log_verbose("Bad ctrlr_type %d", ctrlr_type);
     return false;
   }
-  struct CapaCtrlrCommon *ccc = ctrlr_common_map_.find(ctrlr_type)->second;
+  struct CapaCtrlrCommon *ccc = ctrlr_comm_it->second;
   std::map<std::string, CtrlrCapability*>::iterator verit =
-        ccc->capa_map.find(version);
+      ccc->capa_map.find(version);
   if (verit == ccc->capa_map.end()) {
-     return false;
+    return false;
   }
   CtrlrCapability* cap_ptr = verit->second;
   bool ret = cap_ptr->GetReadCapability(keytype, num_attrs, attrs);
@@ -384,11 +404,14 @@ bool CapaModule::GetStateCapability(unc_keytype_ctrtype_t ctrlr_type,
                                     uint32_t *num_attrs,
                                     const uint8_t  **attrs) {
   ScopedReadWriteLock lock(capa_module_lock_, false);
-  if (ctrlr_common_map_.count(ctrlr_type) == 0) {
+
+  std::map<unc_keytype_ctrtype_t, CapaCtrlrCommon*>::iterator ctrlr_comm_it =
+      ctrlr_common_map_.find(ctrlr_type);
+  if (ctrlr_comm_it == ctrlr_common_map_.end()) {
     pfc_log_verbose("Bad ctrlr_type %d", ctrlr_type);
     return false;
   }
-  struct CapaCtrlrCommon *ccc = ctrlr_common_map_.find(ctrlr_type)->second;
+  struct CapaCtrlrCommon *ccc = ctrlr_comm_it->second;
   std::map<std::string, CtrlrCapability*>::iterator verit =
   ccc->capa_map.find(version);
   if (verit == (ccc->capa_map).end()) {
@@ -404,11 +427,14 @@ bool CapaModule::GetInstanceCount(unc_keytype_ctrtype_t ctrlr_type,
                                   unc_key_type_t keytype,
                                   uint32_t &instance_count) {
   ScopedReadWriteLock lock(capa_module_lock_, false);
-  if (ctrlr_common_map_.count(ctrlr_type) == 0) {
+
+  std::map<unc_keytype_ctrtype_t, CapaCtrlrCommon*>::iterator ctrlr_comm_it =
+    ctrlr_common_map_.find(ctrlr_type);
+  if (ctrlr_comm_it == ctrlr_common_map_.end()) {
     pfc_log_verbose("Bad ctrlr_type %d", ctrlr_type);
     return false;
   }
-  struct CapaCtrlrCommon *ccc = ctrlr_common_map_.find(ctrlr_type)->second;
+  struct CapaCtrlrCommon *ccc = ctrlr_comm_it->second;
   std::map<std::string, CtrlrCapability*>::iterator verit =
        (ccc->capa_map).find(version);
   if (verit == (ccc->capa_map).end()) {
@@ -430,6 +456,7 @@ std::string CapaModule::GetCtrlrParentVersion(const std::string &version) {
   parent_version = verit->second;
   return parent_version;
 }
+
 
 void CapaModule::VerboseDumpAll() {
   std::map<unc_keytype_ctrtype_t, CapaCtrlrCommon*>::iterator comm_ctrlr_it;
@@ -506,9 +533,47 @@ void CapaModule::VerboseDump(unc_keytype_ctrtype_t ctrlr_type,
     }
   }
 }
+
+bool CapaModule::GetSupportedVersion(unc_keytype_ctrtype_t ctrlr_type,
+                                 std::string config_version,
+                                 uint8_t* version_major1,
+                                 uint8_t* version_major2,
+                                 uint8_t* version_minor,
+                                 uint8_t* version_update) {
+  pfc_log_info("Fetches th actual version from configured version");
+
+  struct CapaCtrlrCommon    *ccc = ctrlr_common_map_.find(ctrlr_type)->second;
+  std::list<ActualVersion>  actual_version_list;
+  ActualVersion             actual;
+  std::map<std::string, std::list<ActualVersion> >::iterator act_ver_it;
+
+  if (ccc == NULL) {
+    pfc_log_warn("Failed to find Capa controller common");
+    return false;
+  }
+  memset(&actual, 0, sizeof(ActualVersion));
+
+  act_ver_it = ccc->actual_version_map_.find(config_version);
+  if (act_ver_it == ccc->actual_version_map_.end()) {
+    pfc_log_debug("Configuration version is not a member of "
+                  "actual version map");
+    return false;
+  }
+
+  actual_version_list =  act_ver_it->second;
+
+  actual = actual_version_list.front();
+
+  *version_major1 = actual.major1;
+  *version_major2 = actual.major2;
+  *version_minor  = actual.minor;
+  *version_update  = actual.update;
+
+  return true;
+}
                                                                        // NOLINT
-}  // capa
-}  // unc
+}  // namespace capa
+}  // namespace unc
 
 PFC_MODULE_DECL(unc::capa::CapaModule);
 

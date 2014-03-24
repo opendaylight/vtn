@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -17,7 +17,7 @@
 #include "unc/upll_errno.h"
 
 #define GET_VALID_MAINCTRL(tbl, l_val_ctrl_ff, l_val_ff, en) \
-  (tbl == MAINTBL) ? &(l_val_ff->valid[en]) : &(l_val_ctrl_ff->valid[en])
+    (tbl == MAINTBL) ? &(l_val_ff->valid[en]) : &(l_val_ctrl_ff->valid[en])
 
 namespace unc {
 namespace upll {
@@ -209,137 +209,137 @@ BindInfo PolicingProfileEntryMoMgr::policingprofileentry_bind_info[] = {
     offsetof(val_policingprofile_entry_t, cs_attr[2]),
     uud::kDalUint8, 1 },
   { uudst::policingprofile_entry::kDbiCsCbs, CS_VAL, offsetof(
-      val_policingprofile_entry_t, cs_attr[3]),
+          val_policingprofile_entry_t, cs_attr[3]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry::kDbiCsPir, CS_VAL, offsetof(
-      val_policingprofile_entry_t, cs_attr[4]),
+          val_policingprofile_entry_t, cs_attr[4]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry::kDbiCsPbs, CS_VAL, offsetof(
-      val_policingprofile_entry_t, cs_attr[5]),
+          val_policingprofile_entry_t, cs_attr[5]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry::kDbiCsGreenAction, CS_VAL, offsetof(
-      val_policingprofile_entry_t, cs_attr[6]),
+          val_policingprofile_entry_t, cs_attr[6]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry::kDbiCsGreenPriority, CS_VAL, offsetof(
-      val_policingprofile_entry_t, cs_attr[7]),
+          val_policingprofile_entry_t, cs_attr[7]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry::kDbiCsGreenDscp, CS_VAL, offsetof(
-      val_policingprofile_entry_t, cs_attr[8]),
+          val_policingprofile_entry_t, cs_attr[8]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry::kDbiCsGreenDrop, CS_VAL, offsetof(
-      val_policingprofile_entry_t, cs_attr[9]),
+          val_policingprofile_entry_t, cs_attr[9]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry::kDbiCsYellowAction, CS_VAL, offsetof(
-      val_policingprofile_entry_t, cs_attr[10]),
+          val_policingprofile_entry_t, cs_attr[10]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry::kDbiCsYellowPriority, CS_VAL, offsetof(
-      val_policingprofile_entry_t, cs_attr[11]),
+          val_policingprofile_entry_t, cs_attr[11]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry::kDbiCsYellowDscp, CS_VAL, offsetof(
-      val_policingprofile_entry_t, cs_attr[12]),
+          val_policingprofile_entry_t, cs_attr[12]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry::kDbiCsYellowDrop, CS_VAL, offsetof(
-      val_policingprofile_entry_t, cs_attr[13]),
+          val_policingprofile_entry_t, cs_attr[13]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry::kDbiCsRedAction, CS_VAL, offsetof(
-      val_policingprofile_entry_t, cs_attr[14]),
+          val_policingprofile_entry_t, cs_attr[14]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry::kDbiCsRedPriority, CS_VAL, offsetof(
-      val_policingprofile_entry_t, cs_attr[15]),
+          val_policingprofile_entry_t, cs_attr[15]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry::kDbiCsRedDscp, CS_VAL, offsetof(
-      val_policingprofile_entry_t, cs_attr[16]),
+          val_policingprofile_entry_t, cs_attr[16]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry::kDbiCsRedDrop, CS_VAL, offsetof(
-      val_policingprofile_entry_t, cs_attr[17]),
+          val_policingprofile_entry_t, cs_attr[17]),
   uud::kDalUint8, 1 }
 };
 
 BindInfo PolicingProfileEntryMoMgr::
-  policingprofileentry_controller_bind_info[] = {
+policingprofileentry_controller_bind_info[] = {
   { uudst::policingprofile_entry_ctrlr::kDbiPolicingProfileName,
     CFG_KEY,
     offsetof(key_policingprofile_entry_t,
              policingprofile_key.policingprofile_name),
-  uud::kDalChar,
-  (kMaxLenPolicingProfileName + 1) },
+    uud::kDalChar,
+    (kMaxLenPolicingProfileName + 1) },
   { uudst::policingprofile_entry_ctrlr::kDbiSequenceNum, CFG_KEY, offsetof(
-      key_policingprofile_entry_t, sequence_num),
+          key_policingprofile_entry_t, sequence_num),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiCtrlrName, CK_VAL, offsetof(
-      key_user_data_t, ctrlr_id),
+          key_user_data_t, ctrlr_id),
   uud::kDalChar, kMaxLenCtrlrId + 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiFlags, CK_VAL, offsetof(
-      key_user_data_t, flags),
+          key_user_data_t, flags),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiValidFlowlist, CFG_META_VAL,
-      offsetof(val_policingprofile_entry_ctrl_t, valid[0]),
-  uud::kDalUint8, 1 },
+    offsetof(val_policingprofile_entry_ctrl_t, valid[0]),
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiValidRate, CFG_META_VAL, offsetof(
-      val_policingprofile_entry_ctrl_t, valid[1]),
+          val_policingprofile_entry_ctrl_t, valid[1]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiValidCir, CFG_META_VAL, offsetof(
-      val_policingprofile_entry_ctrl_t, valid[2]),
+          val_policingprofile_entry_ctrl_t, valid[2]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiValidCbs, CFG_META_VAL, offsetof(
-      val_policingprofile_entry_ctrl_t, valid[3]),
+          val_policingprofile_entry_ctrl_t, valid[3]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiValidPir, CFG_META_VAL, offsetof(
-      val_policingprofile_entry_ctrl_t, valid[4]),
+          val_policingprofile_entry_ctrl_t, valid[4]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiValidPbs, CFG_META_VAL, offsetof(
-      val_policingprofile_entry_ctrl_t, valid[5]),
+          val_policingprofile_entry_ctrl_t, valid[5]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiValidGreenAction, CFG_META_VAL,
-      offsetof(val_policingprofile_entry_ctrl_t, valid[6]),
-  uud::kDalUint8, 1 },
+    offsetof(val_policingprofile_entry_ctrl_t, valid[6]),
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiValidGreenPriority, CFG_META_VAL,
     offsetof(val_policingprofile_entry_ctrl_t, valid[7]),
-  uud::kDalUint8, 1 },
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiValidGreenDscp, CFG_META_VAL,
-      offsetof(val_policingprofile_entry_ctrl_t, valid[8]),
-  uud::kDalUint8, 1 },
+    offsetof(val_policingprofile_entry_ctrl_t, valid[8]),
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiValidGreenDrop, CFG_META_VAL,
-      offsetof(val_policingprofile_entry_ctrl_t, valid[9]),
-  uud::kDalUint8, 1 },
+    offsetof(val_policingprofile_entry_ctrl_t, valid[9]),
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiValidYellowAction, CFG_META_VAL,
-      offsetof(val_policingprofile_entry_ctrl_t, valid[10]),
-  uud::kDalUint8, 1 },
+    offsetof(val_policingprofile_entry_ctrl_t, valid[10]),
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiValidYellowPriority, CFG_META_VAL,
-      offsetof(val_policingprofile_entry_ctrl_t, valid[11]),
-  uud::kDalUint8, 1 },
+    offsetof(val_policingprofile_entry_ctrl_t, valid[11]),
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiValidYellowDscp, CFG_META_VAL,
-      offsetof(val_policingprofile_entry_ctrl_t, valid[12]),
-  uud::kDalUint8, 1 },
+    offsetof(val_policingprofile_entry_ctrl_t, valid[12]),
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiValidYellowDrop, CFG_META_VAL,
-      offsetof(val_policingprofile_entry_ctrl_t, valid[13]),
-  uud::kDalUint8, 1 },
+    offsetof(val_policingprofile_entry_ctrl_t, valid[13]),
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiValidRedAction, CFG_META_VAL,
-      offsetof(val_policingprofile_entry_ctrl_t, valid[14]),
-  uud::kDalUint8, 1 },
+    offsetof(val_policingprofile_entry_ctrl_t, valid[14]),
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiValidRedPriority, CFG_META_VAL,
-      offsetof(val_policingprofile_entry_ctrl_t, valid[15]),
-  uud::kDalUint8, 1 },
+    offsetof(val_policingprofile_entry_ctrl_t, valid[15]),
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiValidRedDscp, CFG_META_VAL,
-      offsetof(val_policingprofile_entry_ctrl_t, valid[16]),
-  uud::kDalUint8, 1 },
+    offsetof(val_policingprofile_entry_ctrl_t, valid[16]),
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiValidRedDrop, CFG_META_VAL,
-      offsetof(val_policingprofile_entry_ctrl_t, valid[17]),
-  uud::kDalUint8, 1 },
+    offsetof(val_policingprofile_entry_ctrl_t, valid[17]),
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiCsRowStatus, CS_VAL, offsetof(
-      val_policingprofile_entry_ctrl_t, cs_row_status),
+          val_policingprofile_entry_ctrl_t, cs_row_status),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiCsFlowlist, CS_VAL, offsetof(
-      val_policingprofile_entry_ctrl_t, cs_attr[0]),
+          val_policingprofile_entry_ctrl_t, cs_attr[0]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiCsRate, CS_VAL, offsetof(
-      val_policingprofile_entry_ctrl_t, cs_attr[1]),
+          val_policingprofile_entry_ctrl_t, cs_attr[1]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiCsCir, CS_VAL, offsetof(
-      val_policingprofile_entry_ctrl_t, cs_attr[2]),
+          val_policingprofile_entry_ctrl_t, cs_attr[2]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiCsCbs, CS_VAL, offsetof(
-      val_policingprofile_entry_ctrl_t, cs_attr[3]),
+          val_policingprofile_entry_ctrl_t, cs_attr[3]),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiCsPir, CS_VAL,
     offsetof(val_policingprofile_entry_ctrl_t, cs_attr[4]),
@@ -355,68 +355,68 @@ BindInfo PolicingProfileEntryMoMgr::
     uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiCsGreenDscp, CS_VAL,
     offsetof(val_policingprofile_entry_ctrl_t, cs_attr[8]),
-  uud::kDalUint8, 1 },
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiCsGreenDrop, CS_VAL,
     offsetof(val_policingprofile_entry_ctrl_t, cs_attr[9]),
-  uud::kDalUint8, 1 },
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiCsYellowAction, CS_VAL,
     offsetof(val_policingprofile_entry_ctrl_t, cs_attr[10]),
-  uud::kDalUint8, 1 },
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiCsYellowPriority, CS_VAL,
     offsetof(val_policingprofile_entry_ctrl_t, cs_attr[11]),
     uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiCsYellowDscp, CS_VAL,
     offsetof(val_policingprofile_entry_ctrl_t, cs_attr[12]),
-  uud::kDalUint8, 1 },
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiCsYellowDrop, CS_VAL,
     offsetof(val_policingprofile_entry_ctrl_t, cs_attr[13]),
-  uud::kDalUint8, 1 },
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiCsRedAction, CS_VAL,
     offsetof(val_policingprofile_entry_ctrl_t, cs_attr[14]),
-  uud::kDalUint8, 1 },
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiCsRedPriority, CS_VAL,
     offsetof(val_policingprofile_entry_ctrl_t, cs_attr[15]),
     uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiCsRedDscp, CS_VAL,
     offsetof(val_policingprofile_entry_ctrl_t, cs_attr[16]),
-  uud::kDalUint8, 1 },
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiCsRedDrop, CS_VAL,
     offsetof(val_policingprofile_entry_ctrl_t, cs_attr[17]),
-  uud::kDalUint8, 1 } };
+    uud::kDalUint8, 1 } };
 
 BindInfo PolicingProfileEntryMoMgr::rename_policingprofile_entry_main_tbl[] = {
   { uudst::policingprofile_entry::kDbiPolicingProfileName, CFG_MATCH_KEY,
     offsetof(key_policingprofile_entry_t,
              policingprofile_key.policingprofile_name),
-  uud::kDalChar, kMaxLenPolicingProfileName + 1 },
+    uud::kDalChar, kMaxLenPolicingProfileName + 1 },
   { uudst::policingprofile_entry::kDbiSequenceNum, CFG_MATCH_KEY, offsetof(
-      key_policingprofile_entry_t, sequence_num),
+          key_policingprofile_entry_t, sequence_num),
   uud::kDalUint8, 1 },
   { uudst::policingprofile_entry::kDbiPolicingProfileName, CFG_INPUT_KEY,
     offsetof(key_rename_vnode_info_t, new_policingprofile_name),
-  uud::kDalChar, kMaxLenPolicingProfileName + 1 },
+    uud::kDalChar, kMaxLenPolicingProfileName + 1 },
   { uudst::policingprofile_entry::kDbiFlags, CK_VAL,
     offsetof(key_user_data_t, flags), uud::kDalUint8, 1 } };
 
 BindInfo PolicingProfileEntryMoMgr::rename_policingprofile_entry_ctrl_tbl[] = {
   { uudst::policingprofile_entry_ctrlr::kDbiPolicingProfileName, CFG_MATCH_KEY,
     offsetof(key_policingprofile_entry_t,
-        policingprofile_key.policingprofile_name),
+             policingprofile_key.policingprofile_name),
     uud::kDalChar, kMaxLenPolicingProfileName + 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiSequenceNum, CFG_MATCH_KEY,
     offsetof(key_policingprofile_entry_t, sequence_num),
-  uud::kDalUint8, 1 },
+    uud::kDalUint8, 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiPolicingProfileName, CFG_INPUT_KEY,
     offsetof(key_rename_vnode_info_t, new_policingprofile_name),
     uud::kDalChar, kMaxLenPolicingProfileName + 1 },
   { uudst::policingprofile_entry_ctrlr::kDbiFlags, CK_VAL, offsetof(
-    key_user_data_t, flags),
-     uud::kDalUint8, 1 } };
+          key_user_data_t, flags),
+  uud::kDalUint8, 1 } };
 
 bool PolicingProfileEntryMoMgr::GetRenameKeyBindInfo(unc_key_type_t key_type,
-    BindInfo *&binfo,
-    int &nattr,
-  MoMgrTables tbl) {
+                                                     BindInfo *&binfo,
+                                                     int &nattr,
+                                                     MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   if (MAINTBL == tbl) {
     nattr = NUM_PP_KEY_MAIN_COL;
@@ -432,13 +432,15 @@ bool PolicingProfileEntryMoMgr::GetRenameKeyBindInfo(unc_key_type_t key_type,
 
 PolicingProfileEntryMoMgr::PolicingProfileEntryMoMgr() :  MoMgrImpl() {
   UPLL_FUNC_TRACE;
-  // Rename operation is not support for this KT
+  //  Rename operation is not support for this KT
   ntable = MAX_MOMGR_TBLS;
   table = new Table *[ntable];
 
   /* For Main Table */
-  table[MAINTBL]= new Table(uudst::kDbiPolicingProfileEntryTbl,
-      UNC_KT_POLICING_PROFILE_ENTRY, policingprofileentry_bind_info,
+  table[MAINTBL]= new Table(
+      uudst::kDbiPolicingProfileEntryTbl,
+      UNC_KT_POLICING_PROFILE_ENTRY,
+      policingprofileentry_bind_info,
       IpctSt::kIpcStKeyPolicingprofileEntry,
       IpctSt::kIpcStValPolicingprofileEntry,
       uudst::policingprofile_entry::kDbiPolicingProfileEntryNumCols);
@@ -447,20 +449,22 @@ PolicingProfileEntryMoMgr::PolicingProfileEntryMoMgr() :  MoMgrImpl() {
   table[RENAMETBL] = NULL;
 
   /* For Controller Table */
-  table[CTRLRTBL] = new Table(uudst::kDbiPolicingProfileEntryCtrlrTbl,
-      UNC_KT_POLICING_PROFILE_ENTRY, policingprofileentry_controller_bind_info,
-      IpctSt::kIpcStKeyPolicingprofileEntry, IpctSt::kIpcInvalidStNum,
+  table[CTRLRTBL] = new Table(
+      uudst::kDbiPolicingProfileEntryCtrlrTbl,
+      UNC_KT_POLICING_PROFILE_ENTRY,
+      policingprofileentry_controller_bind_info,
+      IpctSt::kIpcStKeyPolicingprofileEntry,
+      IpctSt::kIpcInvalidStNum,
       uudst::policingprofile_entry_ctrlr::kDbiPolicingProfileEntryCtrlrNumCols);
 
   nchild = 0;
   child = NULL;
-  cur_instance_count = 0;
 };
 
 
 upll_rc_t PolicingProfileEntryMoMgr::AllocVal(ConfigVal *&ck_val,
-    upll_keytype_datatype_t dt_type,
-    MoMgrTables tbl) {
+                                              upll_keytype_datatype_t dt_type,
+                                              MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   void *val; /* *ck_nxtval;*/
   int array_size = 0;
@@ -474,27 +478,27 @@ upll_rc_t PolicingProfileEntryMoMgr::AllocVal(ConfigVal *&ck_val,
           (ConfigKeyVal::Malloc(sizeof(val_policingprofile_entry_t)));
       array_size =
           (sizeof(reinterpret_cast
-                 <val_policingprofile_entry_ctrl*>(val)->valid)/
+                  <val_policingprofile_entry_ctrl*>(val)->valid)/
            sizeof(reinterpret_cast
                   <val_policingprofile_entry_ctrl *>(val)->valid[0]));
       for (int index = 0; index < array_size; index++) {
         reinterpret_cast<val_policingprofile_entry_ctrl *>(val)->valid[index] =
-          UNC_VF_INVALID;
+            UNC_VF_INVALID;
       }
       ck_val = new ConfigVal(IpctSt::kIpcStValPolicingprofileEntry, val);
       break;
     case CTRLRTBL:
       val = reinterpret_cast<void *>(ConfigKeyVal::Malloc(
-            sizeof(val_policingprofile_entry_ctrl_t)));
+              sizeof(val_policingprofile_entry_ctrl_t)));
       array_size =
           (sizeof(reinterpret_cast
-                 <val_policingprofile_entry_ctrl*>(val)->valid)/
-          sizeof(reinterpret_cast
-                 <val_policingprofile_entry_ctrl*>(val)->valid[0]));
+                  <val_policingprofile_entry_ctrl*>(val)->valid)/
+           sizeof(reinterpret_cast
+                  <val_policingprofile_entry_ctrl*>(val)->valid[0]));
 
       for (int index = 0; index < array_size; index++) {
         reinterpret_cast<val_policingprofile_entry_ctrl *>(val)->valid[index] =
-          UNC_VF_INVALID;
+            UNC_VF_INVALID;
       }
       ck_val = new ConfigVal(IpctSt::kIpcInvalidStNum, val);
       break;
@@ -529,7 +533,7 @@ upll_rc_t PolicingProfileEntryMoMgr::GetChildConfigKey(
   }
   if (NULL == pkey) {
     UPLL_LOG_DEBUG("error Generated::Key type not supported :-");
-//    if(key_ppe) free(key_ppe);
+    //     if ( key_ppe) free(key_ppe);
     return UPLL_RC_ERR_GENERIC;
   }
   if (okey) {
@@ -571,10 +575,10 @@ upll_rc_t PolicingProfileEntryMoMgr::GetChildConfigKey(
                  key_ppe->policingprofile_key.policingprofile_name);
   UPLL_LOG_DEBUG("GetChildConfigKey  %d",
                  key_ppe->sequence_num);
-  
+
   if ((okey) && !(okey->get_key())) {
     UPLL_LOG_TRACE("okey not NULL profile name updated");
-    okey->SetKey(IpctSt::kIpcStKeyPolicingprofileEntry, key_ppe);    
+    okey->SetKey(IpctSt::kIpcStKeyPolicingprofileEntry, key_ppe);
   }
 
   if (!okey) {
@@ -596,33 +600,34 @@ upll_rc_t PolicingProfileEntryMoMgr::GetRenamedUncKey(
   upll_rc_t result_code = UPLL_RC_ERR_GENERIC;
   ConfigKeyVal *unc_key = NULL;
   UPLL_LOG_TRACE("%s GetRenamedUncKey pp_entry start",
-                  ctrlr_key->ToStrAll().c_str());
+                 ctrlr_key->ToStrAll().c_str());
   if ((NULL == ctrlr_key) || (NULL == ctrlr_id) || (NULL == dmi)) {
     UPLL_LOG_DEBUG(" PolicingProfileEntryMoMgr::GetRenamedUncKey Failed.");
     return result_code;
   }
   key_policingprofile_entry_t *ctrlr_policingprofile_entry_key =
-    reinterpret_cast<key_policingprofile_entry_t *>(ctrlr_key->get_key());
+      reinterpret_cast<key_policingprofile_entry_t *>(ctrlr_key->get_key());
   if (NULL == ctrlr_policingprofile_entry_key) {
     UPLL_LOG_DEBUG(" PolicingProfileEntryMoMgr::GetRenamedUncKey Failed.");
     return result_code;
   }
   DbSubOp dbop = { kOpReadSingle, kOpMatchCtrlr, kOpInOutNone };
   val_rename_policingprofile_t *rename_policingprofile =
-    reinterpret_cast<val_rename_policingprofile_t *>(ConfigKeyVal::Malloc(
-          sizeof(val_rename_policingprofile_t)));
+      reinterpret_cast<val_rename_policingprofile_t *>(ConfigKeyVal::Malloc(
+              sizeof(val_rename_policingprofile_t)));
   if (!rename_policingprofile) {
     UPLL_LOG_DEBUG("rename_policingprofile NULL");
     return result_code;
   }
   uuu::upll_strncpy(
       rename_policingprofile->policingprofile_newname,
-      ctrlr_policingprofile_entry_key->policingprofile_key.policingprofile_name,
+      ctrlr_policingprofile_entry_key->
+      policingprofile_key.policingprofile_name,
       (kMaxLenPolicingProfileName + 1));
   rename_policingprofile->valid[UPLL_IDX_RENAME_PROFILE_RPP] = UNC_VF_VALID;
   MoMgrImpl *mgr =
-    reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>(GetMoManager(
-            UNC_KT_POLICING_PROFILE)));
+      reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>(GetMoManager(
+                  UNC_KT_POLICING_PROFILE)));
   if (!mgr) {
     UPLL_LOG_TRACE("mgr failed");
     if (rename_policingprofile) free(rename_policingprofile);
@@ -640,20 +645,21 @@ upll_rc_t PolicingProfileEntryMoMgr::GetRenamedUncKey(
     return UPLL_RC_ERR_GENERIC;
   }
   unc_key->AppendCfgVal(IpctSt::kIpcStValRenamePolicingprofile,
-      rename_policingprofile);
+                        rename_policingprofile);
   if (ctrlr_id)
     SET_USER_DATA_CTRLR(unc_key, ctrlr_id);
 
   UPLL_LOG_DEBUG("ctrlr_id (%s)", ctrlr_id);
   result_code = mgr->ReadConfigDB(unc_key, dt_type, UNC_OP_READ, dbop, dmi,
-      RENAMETBL);
+                                  RENAMETBL);
   if (UPLL_RC_SUCCESS == result_code) {
     key_policingprofile_entry_t *policingprofile_entry =
-      reinterpret_cast<key_policingprofile_entry_t *>(unc_key->get_key());
+        reinterpret_cast<key_policingprofile_entry_t *>(unc_key->get_key());
     uuu::upll_strncpy(
-      ctrlr_policingprofile_entry_key->policingprofile_key.policingprofile_name,
-      policingprofile_entry->policingprofile_key.policingprofile_name,
-      (kMaxLenPolicingProfileName + 1));
+        ctrlr_policingprofile_entry_key->
+        policingprofile_key.policingprofile_name,
+        policingprofile_entry->policingprofile_key.policingprofile_name,
+        (kMaxLenPolicingProfileName + 1));
   } else if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
     UPLL_LOG_DEBUG("ReadConfigDB failed %d", result_code);
     DELETE_IF_NOT_NULL(unc_key);
@@ -664,7 +670,7 @@ upll_rc_t PolicingProfileEntryMoMgr::GetRenamedUncKey(
   DELETE_IF_NOT_NULL(unc_key);
 
   val_policingprofile_entry_t *val_ppe =
-    reinterpret_cast<val_policingprofile_entry_t *>(GetVal(ctrlr_key));
+      reinterpret_cast<val_policingprofile_entry_t *>(GetVal(ctrlr_key));
   if (!val_ppe) {
     UPLL_LOG_DEBUG("val_ppe NULL");
     return UPLL_RC_SUCCESS;
@@ -675,8 +681,8 @@ upll_rc_t PolicingProfileEntryMoMgr::GetRenamedUncKey(
   }
   ConfigKeyVal *fl_ckv = NULL;
   val_rename_flowlist_t *rename_flowlist =
-    reinterpret_cast<val_rename_flowlist_t *>(ConfigKeyVal::Malloc(
-          sizeof(val_rename_flowlist_t)));
+      reinterpret_cast<val_rename_flowlist_t *>(ConfigKeyVal::Malloc(
+              sizeof(val_rename_flowlist_t)));
 
   if (!rename_flowlist) {
     UPLL_LOG_DEBUG("rename_flowlist NULL");
@@ -687,8 +693,8 @@ upll_rc_t PolicingProfileEntryMoMgr::GetRenamedUncKey(
                     (kMaxLenFlowListName + 1));
   rename_flowlist->valid[UPLL_IDX_RENAME_FLOWLIST_RFL] = UNC_VF_VALID;
   MoMgrImpl *mgr_fl =
-    reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>(GetMoManager(
-            UNC_KT_FLOWLIST)));
+      reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>(GetMoManager(
+                  UNC_KT_FLOWLIST)));
   if (!mgr_fl) {
     UPLL_LOG_TRACE("mgr failed");
     if (rename_flowlist) free(rename_flowlist);
@@ -707,7 +713,7 @@ upll_rc_t PolicingProfileEntryMoMgr::GetRenamedUncKey(
     return UPLL_RC_ERR_GENERIC;
   }
   fl_ckv->AppendCfgVal(IpctSt::kIpcStValRenameFlowlist,
-      rename_flowlist);
+                       rename_flowlist);
 
   UPLL_LOG_DEBUG("ctrlr_id ppe (%s)", ctrlr_id);
 
@@ -715,10 +721,10 @@ upll_rc_t PolicingProfileEntryMoMgr::GetRenamedUncKey(
     SET_USER_DATA_CTRLR(fl_ckv, ctrlr_id);
 
   result_code = mgr_fl->ReadConfigDB(fl_ckv, dt_type, UNC_OP_READ, dbop, dmi,
-      RENAMETBL);
+                                     RENAMETBL);
   if (UPLL_RC_SUCCESS == result_code) {
     key_flowlist_t *key_flowlist =
-      reinterpret_cast<key_flowlist_t *>(fl_ckv->get_key());
+        reinterpret_cast<key_flowlist_t *>(fl_ckv->get_key());
     uuu::upll_strncpy(val_ppe->flowlist,
                       key_flowlist->flowlist_name,
                       (kMaxLenFlowListName + 1));
@@ -729,15 +735,15 @@ upll_rc_t PolicingProfileEntryMoMgr::GetRenamedUncKey(
     return result_code;
   }
   UPLL_LOG_TRACE("%s GetRenamedUncKey pp_entry end",
-                  ctrlr_key->ToStrAll().c_str());
+                 ctrlr_key->ToStrAll().c_str());
   DELETE_IF_NOT_NULL(fl_ckv);
   mgr_fl = NULL;
   return UPLL_RC_SUCCESS;
 }
 
 upll_rc_t PolicingProfileEntryMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
-    ConfigKeyVal *&req,
-    MoMgrTables tbl) {
+                                                     ConfigKeyVal *&req,
+                                                     MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   if (NULL == req) {
     return UPLL_RC_ERR_GENERIC;
@@ -756,56 +762,64 @@ upll_rc_t PolicingProfileEntryMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
   if (tmp) {
     if (tbl == MAINTBL) {
       val_policingprofile_entry_t *ival =
-        reinterpret_cast<val_policingprofile_entry_t *>(GetVal(req));
+          reinterpret_cast<val_policingprofile_entry_t *>(GetVal(req));
       if (NULL != ival) {
         val_policingprofile_entry_t *policingprofile_entry_val =
-          reinterpret_cast<val_policingprofile_entry_t *>
-          (ConfigKeyVal::Malloc(sizeof(val_policingprofile_entry_t)));
+            reinterpret_cast<val_policingprofile_entry_t *>
+            (ConfigKeyVal::Malloc(sizeof(val_policingprofile_entry_t)));
         memcpy(policingprofile_entry_val, ival,
-            sizeof(val_policingprofile_entry_t));
+               sizeof(val_policingprofile_entry_t));
         tmp1 = new ConfigVal(IpctSt::kIpcStValPolicingprofileEntry,
-            policingprofile_entry_val);
-       // free(policingprofile_entry_val);  //  TODO(check whether req)
+                             policingprofile_entry_val);
+        if (NULL == tmp1) {
+          UPLL_LOG_DEBUG("Null Pointer:");
+          FREE_IF_NOT_NULL(policingprofile_entry_val);
+          return UPLL_RC_ERR_GENERIC;
+        }
+
+        //  free(policingprofile_entry_val);  //   TODO(check whether req)
       }
     } else if (CTRLRTBL == tbl) {
       val_policingprofile_entry_ctrl_t *ival =
-        reinterpret_cast<val_policingprofile_entry_ctrl_t *>(GetVal(req));
+          reinterpret_cast<val_policingprofile_entry_ctrl_t *>(GetVal(req));
       if (NULL != ival) {
         val_policingprofile_entry_ctrl_t *entry_val =
-          reinterpret_cast<val_policingprofile_entry_ctrl_t *>
-          (ConfigKeyVal::Malloc(sizeof(val_policingprofile_entry_ctrl_t)));
+            reinterpret_cast<val_policingprofile_entry_ctrl_t *>
+            (ConfigKeyVal::Malloc(sizeof(val_policingprofile_entry_ctrl_t)));
         memcpy(entry_val, ival, sizeof(val_policingprofile_entry_ctrl_t));
         tmp1 = new ConfigVal(IpctSt::kIpcInvalidStNum, entry_val);
-      //  free(entry_val);  //  TODO(check whether req)
+        if (NULL == tmp1) {
+          UPLL_LOG_DEBUG("Null Pointer:");
+          FREE_IF_NOT_NULL(entry_val);
+          return UPLL_RC_ERR_GENERIC;
+        }
+        //   free(entry_val);  //   TODO(check whether req)
       }
     } else {
       return UPLL_RC_ERR_GENERIC;
     }
-
-    if (NULL == tmp1) {
-      UPLL_LOG_DEBUG("Null Pointer:");
-      return UPLL_RC_ERR_GENERIC;
+    if (tmp1 != NULL) {
+      tmp1->set_user_data(tmp->get_user_data());
     }
-    tmp1->set_user_data(tmp->get_user_data());
   }
   key_policingprofile_entry_t *tkey =
       reinterpret_cast<key_policingprofile_entry_t *>(req->get_key());
   if (NULL == tkey) {
-    delete tmp1;  // COV RESOURCE LEAK
+    delete tmp1;  //  COV RESOURCE LEAK
     return UPLL_RC_ERR_GENERIC;
   }
 
   key_policingprofile_entry_t *policingprofile_entry =
-    reinterpret_cast<key_policingprofile_entry_t *>
-    (ConfigKeyVal::Malloc(sizeof(key_policingprofile_entry_t)));
+      reinterpret_cast<key_policingprofile_entry_t *>
+      (ConfigKeyVal::Malloc(sizeof(key_policingprofile_entry_t)));
   memcpy(policingprofile_entry, tkey,
          sizeof(key_policingprofile_entry_t));
 
   okey = new ConfigKeyVal(UNC_KT_POLICING_PROFILE_ENTRY,
-      IpctSt::kIpcStKeyPolicingprofileEntry,
-      policingprofile_entry, tmp1);
+                          IpctSt::kIpcStKeyPolicingprofileEntry,
+                          policingprofile_entry, tmp1);
   SET_USER_DATA(okey, req);
-  //  free(policingprofile_entry);  //TODO (check whether req)
+  //   free(policingprofile_entry);  // TODO (check whether req)
   UPLL_LOG_DEBUG(" PolicingProfileEntryMoMgr::Successful Compilation ");
   return UPLL_RC_SUCCESS;
 }
@@ -813,33 +827,34 @@ upll_rc_t PolicingProfileEntryMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
 upll_rc_t PolicingProfileEntryMoMgr::UpdateAuditConfigStatus(
     unc_keytype_configstatus_t cs_status,
     uuc::UpdateCtrlrPhase phase,
-    ConfigKeyVal *&ckv_running) {
+    ConfigKeyVal *&ckv_running,
+    DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   val_policingprofile_entry_ctrl_t *val;
   val = (ckv_running != NULL) ? reinterpret_cast
       <val_policingprofile_entry_ctrl_t *>(GetVal(
-          ckv_running)) :  NULL;
+              ckv_running)) :  NULL;
   if (NULL == val) {
     return UPLL_RC_ERR_GENERIC;
   }
   if (uuc::kUpllUcpCreate == phase )
     val->cs_row_status = cs_status;
   if ((uuc::kUpllUcpUpdate == phase) &&
-           (val->cs_row_status == UNC_CS_INVALID ||
-            val->cs_row_status == UNC_CS_NOT_APPLIED))
+      (val->cs_row_status == UNC_CS_INVALID ||
+       val->cs_row_status == UNC_CS_NOT_APPLIED))
     val->cs_row_status = cs_status;
   for (unsigned int loop = 0; loop < sizeof(val->valid)/sizeof(val->valid[0]);
-      ++loop) {
+       ++loop) {
     if ((cs_status == UNC_CS_INVALID && UNC_VF_VALID == val->valid[loop]) ||
-         cs_status == UNC_CS_APPLIED)
-       val->cs_attr[loop] = cs_status;
+        cs_status == UNC_CS_APPLIED)
+      val->cs_attr[loop] = cs_status;
   }
   return result_code;
 }
 
 bool PolicingProfileEntryMoMgr::CompareKey(ConfigKeyVal *key1,
-    ConfigKeyVal *key2) {
+                                           ConfigKeyVal *key2) {
   UPLL_FUNC_TRACE;
   bool match = false;
   if (NULL == key1 || NULL == key2) {
@@ -853,37 +868,39 @@ bool PolicingProfileEntryMoMgr::CompareKey(ConfigKeyVal *key1,
   key_policingprofile_entry_t *policingprofile_entry_key1,
                               *policingprofile_entry_key2;
   policingprofile_entry_key1 =
-    reinterpret_cast<key_policingprofile_entry_t *>(key1->get_key());
+      reinterpret_cast<key_policingprofile_entry_t *>(key1->get_key());
   policingprofile_entry_key2 =
-    reinterpret_cast<key_policingprofile_entry_t *>(key2->get_key());
+      reinterpret_cast<key_policingprofile_entry_t *>(key2->get_key());
 
   if (NULL == policingprofile_entry_key1 ||
-     NULL == policingprofile_entry_key2) {
+      NULL == policingprofile_entry_key2) {
     return match;
   }
   if (strcmp(
-        reinterpret_cast<const char *>(policingprofile_entry_key1->
-            policingprofile_key.policingprofile_name),
-        reinterpret_cast<const char *>(policingprofile_entry_key2->
-            policingprofile_key.policingprofile_name)) == 0 &&
+          reinterpret_cast<const char *>(
+              policingprofile_entry_key1->
+              policingprofile_key.policingprofile_name),
+          reinterpret_cast<const char *>
+          (policingprofile_entry_key2->
+           policingprofile_key.policingprofile_name)) == 0 &&
       policingprofile_entry_key1->sequence_num ==
       policingprofile_entry_key2->sequence_num) {
     match = true;
-    UPLL_LOG_DEBUG(" PolicingProfileEntryMoMgr::CompareKey,"
+    UPLL_LOG_DEBUG(" PolicingProfileEntryMoMgr::CompareKey, "
                    " Both Keys are same");
   }
   return match;
 }
 
 upll_rc_t PolicingProfileEntryMoMgr::MergeValidate(unc_key_type_t keytype,
-    const char *ctrlr_id,
-    ConfigKeyVal *ikey,
-    DalDmlIntf *dmi) {
+                                                   const char *ctrlr_id,
+                                                   ConfigKeyVal *ikey,
+                                                   DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   MoMgrImpl *mgr =
-    reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>(GetMoManager(
-            UNC_KT_POLICING_PROFILE)));
+      reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>(GetMoManager(
+                  UNC_KT_POLICING_PROFILE)));
   if (!mgr) {
     UPLL_LOG_DEBUG("Invalid mgr param");
     return UPLL_RC_ERR_GENERIC;
@@ -895,10 +912,10 @@ upll_rc_t PolicingProfileEntryMoMgr::MergeValidate(unc_key_type_t keytype,
 }
 
 upll_rc_t PolicingProfileEntryMoMgr::RenameMo(IpcReqRespHeader *req,
-    ConfigKeyVal *ikey,
-    DalDmlIntf *dmi,
-    const char *ctrlr_id) {
-  // No Implementation for RenameMo.
+                                              ConfigKeyVal *ikey,
+                                              DalDmlIntf *dmi,
+                                              const char *ctrlr_id) {
+  //  No Implementation for RenameMo.
   UPLL_FUNC_TRACE;
   UPLL_LOG_DEBUG(
       " PolicingProfileEntryMoMgr::Alolocation of Memory is successful ");
@@ -911,13 +928,13 @@ upll_rc_t PolicingProfileEntryMoMgr::IsReferenced(
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   ConfigKeyVal *okey = NULL;
   result_code = UpdateConfigDB(ikey,
-                  dt_type, UNC_OP_READ, dmi, CTRLRTBL);
+                               dt_type, UNC_OP_READ, dmi, CTRLRTBL);
   if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code) {
     return UPLL_RC_ERR_CFG_SEMANTIC;
   } else if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
     return result_code;
   }
-  // Change to GetParentKey
+  //  Change to GetParentKey
   result_code = GetPolicingprofileKeyVal(okey, ikey);
   if (result_code != UPLL_RC_SUCCESS) {
     UPLL_LOG_DEBUG("Memory is not allocated for okey %d", result_code);
@@ -925,11 +942,11 @@ upll_rc_t PolicingProfileEntryMoMgr::IsReferenced(
     return result_code;
   }
   MoMgrImpl *mgr =
-    reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>(GetMoManager(
-            UNC_KT_POLICING_PROFILE)));
+      reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>(GetMoManager(
+                  UNC_KT_POLICING_PROFILE)));
   if (!mgr) {
     UPLL_LOG_DEBUG("Invalid mgr param");
-    DELETE_IF_NOT_NULL(okey);  // RESOURCE LEAK
+    DELETE_IF_NOT_NULL(okey);  //  RESOURCE LEAK
     return UPLL_RC_ERR_GENERIC;
   }
 
@@ -949,7 +966,7 @@ upll_rc_t PolicingProfileEntryMoMgr::GetPolicingprofileKeyVal(
   UPLL_FUNC_TRACE;
 
   key_policingprofile_entry_t *key_policingprofile_entry =
-    reinterpret_cast<key_policingprofile_entry_t *>(ikey->get_key());
+      reinterpret_cast<key_policingprofile_entry_t *>(ikey->get_key());
 
   if (NULL == key_policingprofile_entry) {
     UPLL_LOG_DEBUG("PolicingProfileEntryMoMgr:: Invalid key");
@@ -957,16 +974,16 @@ upll_rc_t PolicingProfileEntryMoMgr::GetPolicingprofileKeyVal(
   }
 
   key_policingprofile_t *key_policingprofile =
-    reinterpret_cast<key_policingprofile_t *>(ConfigKeyVal::Malloc(
-          sizeof(key_policingprofile_t)));
+      reinterpret_cast<key_policingprofile_t *>(ConfigKeyVal::Malloc(
+              sizeof(key_policingprofile_t)));
   uuu::upll_strncpy(
       key_policingprofile->policingprofile_name,
       key_policingprofile_entry->policingprofile_key.policingprofile_name,
       (kMaxLenPolicingProfileName + 1));
 
   okey = new ConfigKeyVal(UNC_KT_POLICING_PROFILE,
-      IpctSt::kIpcStKeyPolicingprofile, key_policingprofile,
-      NULL);
+                          IpctSt::kIpcStKeyPolicingprofile, key_policingprofile,
+                          NULL);
 
   if (okey) {
     SET_USER_DATA(okey, ikey);
@@ -987,91 +1004,85 @@ upll_rc_t PolicingProfileEntryMoMgr::GetRenamedControllerKey(
   }
   upll_rc_t result_code = UPLL_RC_ERR_GENERIC;
   ConfigKeyVal *okey = NULL;
-  uint8_t rename = 0;
   DbSubOp dbop = { kOpReadSingle, kOpMatchCtrlr, kOpInOutFlag };
 
-  IsRenamed(ikey, dt_type, dmi, rename);
-  if (!rename) {
-    UPLL_LOG_DEBUG("Key not Renamed");
-    return UPLL_RC_SUCCESS;
-  }
   /* PolicingProfile_name is  renamed */
-  if (rename & PP_RENAME_FLAG) {
-    MoMgrImpl *ppmgr = static_cast<MoMgrImpl*>
-    ((const_cast<MoManager*>(GetMoManager(UNC_KT_POLICING_PROFILE))));
-    result_code = ppmgr->GetChildConfigKey(okey, NULL);
-    if (UPLL_RC_SUCCESS != result_code) {
-      UPLL_LOG_DEBUG("GetChildConfigKey fail (%d)", result_code);
-      return UPLL_RC_ERR_GENERIC;
-    }
+  MoMgrImpl *ppmgr = static_cast<MoMgrImpl*>
+      ((const_cast<MoManager*>(GetMoManager(UNC_KT_POLICING_PROFILE))));
+  result_code = ppmgr->GetChildConfigKey(okey, NULL);
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_DEBUG("GetChildConfigKey fail (%d)", result_code);
+    return UPLL_RC_ERR_GENERIC;
+  }
 
-    if (ctrlr_dom != NULL)
+  if (NULL != ctrlr_dom) {
     SET_USER_DATA_CTRLR(okey, ctrlr_dom->ctrlr);
+  } else {
+    UPLL_LOG_DEBUG("ctrlr null");
+    DELETE_IF_NOT_NULL(okey);
+    return UPLL_RC_ERR_GENERIC;
+  }
 
-    UPLL_LOG_DEBUG("ctrlr : %s; domain : %s", ctrlr_dom->ctrlr,
-                    ctrlr_dom->domain);
+  UPLL_LOG_DEBUG("ctrlr : %s; domain : %s", ctrlr_dom->ctrlr,
+                 ctrlr_dom->domain);
 
-    uuu::upll_strncpy(
-     reinterpret_cast<key_policingprofile_t *>(okey->get_key())->policingprofile_name,
-     reinterpret_cast <key_policingprofile_entry *>
-     (ikey->get_key())->policingprofile_key.policingprofile_name,
-     (kMaxLenPolicingProfileName + 1));
+  uuu::upll_strncpy(
+      reinterpret_cast<key_policingprofile_t *>
+      (okey->get_key())->policingprofile_name,
+      reinterpret_cast <key_policingprofile_entry *>
+      (ikey->get_key())->policingprofile_key.policingprofile_name,
+      (kMaxLenPolicingProfileName + 1));
 
-    UPLL_LOG_DEBUG("profile name (%s) (%s)",
-     reinterpret_cast<key_policingprofile_t *>(okey->get_key())->policingprofile_name,
-     reinterpret_cast <key_policingprofile_entry *>
-     (ikey->get_key())->policingprofile_key.policingprofile_name);
-    
-    /* ctrlr_name */
-    result_code = ppmgr->ReadConfigDB(okey, dt_type, UNC_OP_READ, dbop, dmi,
-                  RENAMETBL);  // COVERITY CHECKED RETURN
-    if (result_code != UPLL_RC_SUCCESS) {
-      if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
-        UPLL_LOG_DEBUG("ReadConfigDB no instance");
-        DELETE_IF_NOT_NULL(okey);
-        return UPLL_RC_SUCCESS;
-      }
-      DELETE_IF_NOT_NULL(okey);      
-      UPLL_LOG_DEBUG("ReadConfigDB failed (%d)", result_code);
-      return result_code;
-    }
-    /* Null check missing */
+  UPLL_LOG_DEBUG("profile name (%s) (%s)",
+                 reinterpret_cast<key_policingprofile_t *>(okey->get_key())->
+                 policingprofile_name,
+                 reinterpret_cast <key_policingprofile_entry *>
+                 (ikey->get_key())->policingprofile_key.policingprofile_name);
+
+  /* ctrlr_name */
+  result_code = ppmgr->ReadConfigDB(okey, dt_type, UNC_OP_READ, dbop, dmi,
+                                    RENAMETBL);  //  COVERITY CHECKED RETURN
+  if ((result_code != UPLL_RC_SUCCESS) &&
+      (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code)) {
+    DELETE_IF_NOT_NULL(okey);
+    UPLL_LOG_DEBUG("ReadConfigDB failed (%d)", result_code);
+    return result_code;
+  }
+  /* Null check missing */
+  if (UPLL_RC_SUCCESS == result_code) {
     val_rename_policingprofile_t *rename_val =
-      reinterpret_cast<val_rename_policingprofile_t *>(GetVal(okey));
+        reinterpret_cast<val_rename_policingprofile_t *>(GetVal(okey));
     if (!rename_val) {
       UPLL_LOG_DEBUG("rename_val null");
       DELETE_IF_NOT_NULL(okey);
       return UPLL_RC_ERR_GENERIC;
     }
-    
+
     uuu::upll_strncpy(
         reinterpret_cast<key_policingprofile_entry_t *>
         (ikey->get_key())->policingprofile_key.policingprofile_name,
         rename_val->policingprofile_newname,
         (kMaxLenPolicingProfileName + 1));
-    DELETE_IF_NOT_NULL(okey);
   }
+  DELETE_IF_NOT_NULL(okey);
   /* rename flowlist */
-  if (rename & FLOWLIST_RENAME) {
-    UPLL_LOG_DEBUG("flowlist name renamed");
-    // Since during delete there wont be val structure
-    if (NULL == GetVal(ikey)) {
-      return UPLL_RC_SUCCESS;
-    }
+  UPLL_LOG_DEBUG("flowlist name renamed");
+  //  Since during delete there wont be val structure
+  val_policingprofile_entry_t *val_ppe =
+      reinterpret_cast<val_policingprofile_entry_t*>(GetVal(ikey));
+  if (NULL == val_ppe) {
+    return UPLL_RC_SUCCESS;
+  }
+  if (strlen(reinterpret_cast<char *>
+             (val_ppe->flowlist))) {
     MoMgrImpl *mgrflist = static_cast<MoMgrImpl*>
-    ((const_cast<MoManager*> (GetMoManager(UNC_KT_FLOWLIST))));
+        ((const_cast<MoManager*> (GetMoManager(UNC_KT_FLOWLIST))));
     result_code = mgrflist->GetChildConfigKey(okey, NULL);
     if (result_code != UPLL_RC_SUCCESS) {
       UPLL_LOG_DEBUG("GetChildConfigKey fail");
       return result_code;
     }
-    if (NULL != ctrlr_dom) {
-      SET_USER_DATA_CTRLR(okey, ctrlr_dom->ctrlr);
-    } else {
-      UPLL_LOG_DEBUG("ctrlr null");
-      DELETE_IF_NOT_NULL(okey);
-      return UPLL_RC_ERR_GENERIC;
-    }
+    SET_USER_DATA_CTRLR(okey, ctrlr_dom->ctrlr);
 
     UPLL_LOG_DEBUG("ctrlr : %s;", ctrlr_dom->ctrlr);
 
@@ -1082,42 +1093,41 @@ upll_rc_t PolicingProfileEntryMoMgr::GetRenamedControllerKey(
         kMaxLenFlowListName + 1);
 
     UPLL_LOG_DEBUG("flowlist name (%s) (%s)",
-        reinterpret_cast<key_flowlist_t *>(okey->get_key())->flowlist_name,
-        reinterpret_cast<val_policingprofile_entry_t *>
-        (ikey->get_cfg_val()->get_val())->flowlist);
+                   reinterpret_cast<key_flowlist_t *>(okey->get_key())->
+                   flowlist_name,
+                   reinterpret_cast<val_policingprofile_entry_t *>
+                   (ikey->get_cfg_val()->get_val())->flowlist);
 
     DbSubOp dbop = { kOpReadSingle, kOpMatchCtrlr, kOpInOutFlag };
     /* ctrlr_name */
     result_code =  mgrflist->ReadConfigDB(okey, dt_type,
-                                UNC_OP_READ, dbop, dmi, RENAMETBL);
-    if ( result_code != UPLL_RC_SUCCESS ) {
-      if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
-        UPLL_LOG_DEBUG("ReadConfigDB no instance");
-        DELETE_IF_NOT_NULL(okey);
-        return UPLL_RC_SUCCESS;
-      }
+                                          UNC_OP_READ, dbop, dmi, RENAMETBL);
+    if ((result_code != UPLL_RC_SUCCESS ) &&
+        (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code)) {
       UPLL_LOG_DEBUG("ReadConfigDB fail");
-      DELETE_IF_NOT_NULL(okey);
-       return UPLL_RC_ERR_GENERIC;
-    }
-    val_rename_flowlist_t *rename_val =
-        reinterpret_cast <val_rename_flowlist_t*>(GetVal(okey));
-
-    if (!rename_val) {
-      UPLL_LOG_DEBUG("flowlist is not valid");
       DELETE_IF_NOT_NULL(okey);
       return UPLL_RC_ERR_GENERIC;
     }
-    uuu::upll_strncpy(
-    reinterpret_cast<val_policingprofile_entry_t *>
-    (ikey->get_cfg_val()->get_val())->flowlist,
-    rename_val->flowlist_newname,
-    (kMaxLenFlowListName + 1));
+    if (UPLL_RC_SUCCESS == result_code) {
+      val_rename_flowlist_t *rename_val =
+          reinterpret_cast <val_rename_flowlist_t*>(GetVal(okey));
+
+      if (!rename_val) {
+        UPLL_LOG_DEBUG("flowlist is not valid");
+        DELETE_IF_NOT_NULL(okey);
+        return UPLL_RC_ERR_GENERIC;
+      }
+      uuu::upll_strncpy(
+          reinterpret_cast<val_policingprofile_entry_t *>
+          (ikey->get_cfg_val()->get_val())->flowlist,
+          rename_val->flowlist_newname,
+          (kMaxLenFlowListName + 1));
+    }
     DELETE_IF_NOT_NULL(okey);
   }
 
   UPLL_LOG_DEBUG("%s GetRenamedCtrl pp_entry end",
-      (ikey->ToStrAll()).c_str());
+                 (ikey->ToStrAll()).c_str());
   UPLL_LOG_DEBUG("GetRenamedControllerKey is successful ");
   return UPLL_RC_SUCCESS;
 }
@@ -1132,10 +1142,10 @@ upll_rc_t PolicingProfileEntryMoMgr::TxUpdateController(
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   DalResultCode dal_result = uud::kDalRcSuccess;
   ConfigKeyVal *req = NULL, *nreq = NULL, *ck_main = NULL;
-  controller_domain ctrlr_dom;  // UNINIT
+  controller_domain ctrlr_dom;  //  UNINIT
   ctrlr_dom.ctrlr = NULL;
   ctrlr_dom.domain = NULL;
-  DalCursor *dal_cursor_handle;
+  DalCursor *dal_cursor_handle = NULL;
   IpcResponse resp;
   memset(&resp, 0, sizeof(resp));
   if (uuc::kUpllUcpDelete == phase) {
@@ -1169,6 +1179,7 @@ upll_rc_t PolicingProfileEntryMoMgr::TxUpdateController(
     if (result_code != UPLL_RC_SUCCESS)
       break;
     ck_main = NULL;
+    bool driver_resp = false;
     if ((op == UNC_OP_CREATE) || (op == UNC_OP_DELETE)) {
       result_code = DupConfigKeyVal(ck_main, req, MAINTBL);
       if (result_code != UPLL_RC_SUCCESS) {
@@ -1186,15 +1197,19 @@ upll_rc_t PolicingProfileEntryMoMgr::TxUpdateController(
         dal_cursor_handle = NULL;
         return UPLL_RC_ERR_GENERIC;
       }
-      result_code = TxUpdateProcess(ck_main, &resp,
-                                    op, dmi, &ctrlr_dom);
-      affected_ctrlr_set->insert((const char *)ctrlr_dom.ctrlr);
-      if (result_code != UPLL_RC_SUCCESS) {
+      result_code = TxUpdateProcess(ck_main,
+                                    &resp,
+                                    op,
+                                    dmi,
+                                    &ctrlr_dom,
+                                    affected_ctrlr_set,
+                                    &driver_resp);
+      if (result_code != UPLL_RC_SUCCESS && driver_resp) {
         UPLL_LOG_DEBUG("TxUpdateProcess Returns error %d", result_code);
         upll_keytype_datatype_t dt_type = (UNC_OP_DELETE == op)?
             UPLL_DT_RUNNING:UPLL_DT_CANDIDATE;
         upll_rc_t local_rc = GetRenamedUncKey(resp.ckv_data, dt_type, dmi,
-                                       ctrlr_dom.ctrlr);
+                                              ctrlr_dom.ctrlr);
         if (UPLL_RC_SUCCESS != local_rc &&
             UPLL_RC_ERR_NO_SUCH_INSTANCE != local_rc) {
           UPLL_LOG_DEBUG("GetRenamedUncKey failed %d", local_rc);
@@ -1203,8 +1218,13 @@ upll_rc_t PolicingProfileEntryMoMgr::TxUpdateController(
           result_code = UPLL_RC_ERR_GENERIC;
           break;
         }
+        SET_USER_DATA_CTRLR(resp.ckv_data, ctrlr_dom.ctrlr);
         *err_ckv = resp.ckv_data;
         DELETE_IF_NOT_NULL(ck_main);
+        break;
+      } else if (result_code != UPLL_RC_SUCCESS) {
+        DELETE_IF_NOT_NULL(ck_main);
+        DELETE_IF_NOT_NULL(resp.ckv_data);
         break;
       }
       DELETE_IF_NOT_NULL(resp.ckv_data);
@@ -1242,11 +1262,14 @@ upll_rc_t PolicingProfileEntryMoMgr::GetControllerSpan(
   return result_code;
 }
 
-upll_rc_t PolicingProfileEntryMoMgr::TxUpdateProcess(ConfigKeyVal *ck_main,
+upll_rc_t PolicingProfileEntryMoMgr::TxUpdateProcess(
+    ConfigKeyVal *ck_main,
     IpcResponse *ipc_resp,
     unc_keytype_operation_t op,
     DalDmlIntf *dmi,
-    controller_domain *ctrlr_dom) {
+    controller_domain *ctrlr_dom,
+    set<string> *affected_ctrlr_set,
+    bool *driver_resp) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code;
   /* read from main table */
@@ -1264,7 +1287,7 @@ upll_rc_t PolicingProfileEntryMoMgr::TxUpdateProcess(ConfigKeyVal *ck_main,
                                UNC_OP_READ, dbop, dmi, MAINTBL);
     if (result_code != UPLL_RC_SUCCESS) {
       UPLL_LOG_DEBUG("%s Policingprofile Entry read failed %d",
-          (dup_ckmain->ToStrAll()).c_str(), result_code);
+                     (dup_ckmain->ToStrAll()).c_str(), result_code);
       delete dup_ckmain;
       return result_code;
     }
@@ -1278,22 +1301,25 @@ upll_rc_t PolicingProfileEntryMoMgr::TxUpdateProcess(ConfigKeyVal *ck_main,
   result_code = SendIpcReq(ipc_resp->header.clnt_sess_id,
                            ipc_resp->header.config_id, op,
                            UPLL_DT_CANDIDATE, dup_ckmain, ctrlr_dom, ipc_resp);
-  if (result_code == UPLL_RC_ERR_RESOURCE_DISCONNECTED) {
+  if (result_code == UPLL_RC_ERR_CTR_DISCONNECTED) {
     UPLL_LOG_DEBUG("Controller disconnected");
     result_code = UPLL_RC_SUCCESS;
   }
   if (result_code != UPLL_RC_SUCCESS) {
     UPLL_LOG_DEBUG("IpcSend failed %d", result_code);
+    *driver_resp = true;
   }
+  affected_ctrlr_set->insert((const char *)ctrlr_dom->ctrlr);
   if ((op == UNC_OP_CREATE) && dup_ckmain) {
     delete dup_ckmain;
     dup_ckmain = NULL;
   }
-  return result_code;
+  UPLL_LOG_TRACE("Driver response received %d", *driver_resp)
+      return result_code;
 }
 
 upll_rc_t PolicingProfileEntryMoMgr::FilterAttributes(
-        ConfigKeyVal *ckv_main, ConfigKeyVal *ckv_ctrlr) {
+    ConfigKeyVal *ckv_main, ConfigKeyVal *ckv_ctrlr) {
   UPLL_FUNC_TRACE;
   val_policingprofile_entry_t *val_main = reinterpret_cast
       <val_policingprofile_entry_t *>(GetVal(ckv_main));
@@ -1303,8 +1329,8 @@ upll_rc_t PolicingProfileEntryMoMgr::FilterAttributes(
     return UPLL_RC_ERR_GENERIC;
   }
   for (unsigned int loop = 0;
-        loop < sizeof(val_ctrlr->valid) /
-        sizeof(val_ctrlr->valid[0]); ++loop) {
+       loop < sizeof(val_ctrlr->valid) /
+       sizeof(val_ctrlr->valid[0]); ++loop) {
     val_main->valid[loop] = val_ctrlr->valid[loop];
   }
   return UPLL_RC_SUCCESS;
@@ -1316,8 +1342,8 @@ upll_rc_t PolicingProfileEntryMoMgr::TxCopyCandidateToRunning(
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   DalResultCode db_result;
-  unc_keytype_operation_t op[] = {  UNC_OP_DELETE,UNC_OP_CREATE,
-                                   UNC_OP_UPDATE };
+  unc_keytype_operation_t op[] = {  UNC_OP_DELETE, UNC_OP_CREATE,
+    UNC_OP_UPDATE };
   int nop = sizeof(op) / sizeof(op[0]);
   ConfigKeyVal *ppe_key = NULL, *req = NULL, *nreq = NULL,
                *pp_ck_run = NULL;
@@ -1331,35 +1357,42 @@ upll_rc_t PolicingProfileEntryMoMgr::TxCopyCandidateToRunning(
   CtrlrCommitStatusList::iterator ccsListItr;
   CtrlrCommitStatus *ccStatusPtr;
 
-  if ((ctrlr_commit_status == NULL) || (dmi == NULL)) {
-    UPLL_LOG_DEBUG(
-        " PolicingProfileEntryMoMgr::ctrlr_commit_statusm, dmi is not valid ");
-    return UPLL_RC_ERR_GENERIC;
-  }
-  for (ccsListItr = ctrlr_commit_status->begin();
-      ccsListItr != ctrlr_commit_status->end(); ++ccsListItr) {
-    ccStatusPtr = *ccsListItr;
-    ctrlr_id = reinterpret_cast<uint8_t *>(&ccStatusPtr->ctrlr_id);
-    ctrlr_result[ccStatusPtr->ctrlr_id] = ccStatusPtr->upll_ctrlr_result;
-    if (ccStatusPtr->upll_ctrlr_result != UPLL_RC_SUCCESS) {
-      for (ConfigKeyVal *ck_err = ccStatusPtr->err_ckv; ck_err != NULL;
-           ck_err = ck_err->get_next_cfg_key_val()) {
-        if (ck_err->get_key_type() != keytype) continue;
-        result_code = GetRenamedUncKey(ck_err, UPLL_DT_CANDIDATE, dmi,
-            ctrlr_id);
-        if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_DEBUG(
-              " PolicingProfileEntryMoMgr::GetRenamedUncKey is successful -%d",
-              result_code);
-          return result_code;
+  if (ctrlr_commit_status != NULL) {
+    for (ccsListItr = ctrlr_commit_status->begin();
+         ccsListItr != ctrlr_commit_status->end(); ++ccsListItr) {
+      ccStatusPtr = *ccsListItr;
+      ctrlr_id = reinterpret_cast<uint8_t *>(&ccStatusPtr->ctrlr_id);
+      ctrlr_result[ccStatusPtr->ctrlr_id] = ccStatusPtr->upll_ctrlr_result;
+      if (ccStatusPtr->upll_ctrlr_result != UPLL_RC_SUCCESS) {
+        for (ConfigKeyVal *ck_err = ccStatusPtr->err_ckv; ck_err != NULL;
+             ck_err = ck_err->get_next_cfg_key_val()) {
+          if (ck_err->get_key_type() != keytype) continue;
+          result_code = GetRenamedUncKey(ck_err, UPLL_DT_CANDIDATE, dmi,
+                                         ctrlr_id);
+          if (result_code != UPLL_RC_SUCCESS) {
+            UPLL_LOG_DEBUG(
+                " PolicingProfileEntryMoMgr::GetRenamedUncKey is "
+                "successful -%d",
+                result_code);
+            return result_code;
+          }
         }
       }
     }
   }
   for (int i = 0; i < nop; i++) {
+    cfg1_cursor = NULL;
     if (op[i] != UNC_OP_UPDATE) {
-      result_code = DiffConfigDB(UPLL_DT_CANDIDATE, UPLL_DT_RUNNING, op[i], req,
-          nreq, &cfg1_cursor, dmi, NULL, MAINTBL,true);
+      result_code = DiffConfigDB(UPLL_DT_CANDIDATE,
+                                 UPLL_DT_RUNNING,
+                                 op[i],
+                                 req,
+                                 nreq,
+                                 &cfg1_cursor,
+                                 dmi,
+                                 NULL,
+                                 MAINTBL,
+                                 true);
       while (result_code == UPLL_RC_SUCCESS) {
         db_result = dmi->GetNextRecord(cfg1_cursor);
         result_code = DalToUpllResCode(db_result);
@@ -1386,6 +1419,7 @@ upll_rc_t PolicingProfileEntryMoMgr::TxCopyCandidateToRunning(
   }
 
   for (int i = 0; i < nop; i++) {
+    cfg1_cursor = NULL;
     MoMgrTables tbl = (op[i] == UNC_OP_UPDATE)?MAINTBL:CTRLRTBL;
     result_code = DiffConfigDB(UPLL_DT_CANDIDATE, UPLL_DT_RUNNING, op[i], req,
                                nreq, &cfg1_cursor, dmi, NULL, tbl, true);
@@ -1398,11 +1432,12 @@ upll_rc_t PolicingProfileEntryMoMgr::TxCopyCandidateToRunning(
         break;
 
       if (op[i] == UNC_OP_UPDATE) {
-        DbSubOp dbop = { kOpReadMultiple, kOpMatchNone, kOpInOutCtrlr |kOpInOutCs };
+        DbSubOp dbop = { kOpReadMultiple, kOpMatchNone,
+          kOpInOutCtrlr |kOpInOutCs };
         result_code = GetChildConfigKey(ppe_ctrlr_key, req);
         if (result_code != UPLL_RC_SUCCESS) {
           UPLL_LOG_DEBUG("GetChildConfigKey is failed resultcode=%d",
-              result_code);
+                         result_code);
           DELETE_IF_NOT_NULL(req);
           DELETE_IF_NOT_NULL(nreq);
           dmi->CloseCursor(cfg1_cursor, true);
@@ -1432,8 +1467,9 @@ upll_rc_t PolicingProfileEntryMoMgr::TxCopyCandidateToRunning(
               continue;
             }
           } else  {
-            UPLL_LOG_DEBUG("DB err while reading records from ctrlrtbl, err %d",
-                result_code);
+            UPLL_LOG_DEBUG("DB err while reading records from "
+                           "ctrlrtbl, err %d",
+                           result_code);
             DELETE_IF_NOT_NULL(req);
             DELETE_IF_NOT_NULL(nreq);
             DELETE_IF_NOT_NULL(ppe_ctrlr_key);
@@ -1444,7 +1480,6 @@ upll_rc_t PolicingProfileEntryMoMgr::TxCopyCandidateToRunning(
 
         for (ConfigKeyVal *tmp = ppe_ctrlr_key; tmp != NULL; tmp =
              tmp->get_next_cfg_key_val()) {
-
           GET_USER_DATA_CTRLR(tmp, ctrlr_id);
           string controller(reinterpret_cast<char *>(ctrlr_id));
 
@@ -1453,7 +1488,7 @@ upll_rc_t PolicingProfileEntryMoMgr::TxCopyCandidateToRunning(
           result_code = GetChildConfigKey(ppe_key, req);
           if (result_code != UPLL_RC_SUCCESS) {
             UPLL_LOG_DEBUG("GetChildConfigKey is failed resultcode=%d",
-                result_code);
+                           result_code);
             DELETE_IF_NOT_NULL(req);
             DELETE_IF_NOT_NULL(nreq);
             DELETE_IF_NOT_NULL(ppe_ctrlr_key);
@@ -1472,13 +1507,20 @@ upll_rc_t PolicingProfileEntryMoMgr::TxCopyCandidateToRunning(
             return result_code;
           }
           static_cast<val_policingprofile_entry_t *>
-            (GetVal(ppe_key))->cs_row_status =
-            static_cast<val_policingprofile_entry_t *>
-            (GetVal(nreq))->cs_row_status;
+              (GetVal(ppe_key))->cs_row_status =
+              static_cast<val_policingprofile_entry_t *>
+              (GetVal(nreq))->cs_row_status;
 
-          result_code = UpdateConfigStatus(ppe_key, op[i],
-                                           ctrlr_result[controller], nreq,
-                                           dmi, tmp);
+          if (ctrlr_result.empty()) {
+            UPLL_LOG_TRACE("ctrlr_commit_status is NULL.");
+            result_code = UpdateConfigStatus(ppe_key, op[i],
+                                             UPLL_RC_ERR_CTR_DISCONNECTED, nreq,
+                                             dmi, tmp);
+          } else {
+            result_code = UpdateConfigStatus(ppe_key, op[i],
+                                             ctrlr_result[controller], nreq,
+                                             dmi, tmp);
+          }
           if (result_code != UPLL_RC_SUCCESS) break;
 
           void *fle_val1 = GetVal(tmp);
@@ -1505,7 +1547,7 @@ upll_rc_t PolicingProfileEntryMoMgr::TxCopyCandidateToRunning(
             DELETE_IF_NOT_NULL(nreq);
             dmi->CloseCursor(cfg1_cursor, true);
             return result_code;
-          }  // COV UNREACHABLE
+          }  //  COV UNREACHABLE
           EnqueCfgNotification(op[i], UPLL_DT_RUNNING,
                                tmp);
           DELETE_IF_NOT_NULL(ppe_key);
@@ -1513,7 +1555,9 @@ upll_rc_t PolicingProfileEntryMoMgr::TxCopyCandidateToRunning(
         DELETE_IF_NOT_NULL(ppe_ctrlr_key);
       } else {
         if (op[i] == UNC_OP_CREATE) {
-          DbSubOp dbop = { kOpReadSingle, kOpMatchNone, kOpInOutFlag |kOpInOutCs };
+          DbSubOp dbop = { kOpReadSingle,
+            kOpMatchNone,
+            kOpInOutFlag |kOpInOutCs };
           result_code = GetChildConfigKey(ppe_key, req);
           if (UPLL_RC_SUCCESS != result_code) {
             UPLL_LOG_DEBUG("GetChildConfigKey failed %d", result_code);
@@ -1521,8 +1565,12 @@ upll_rc_t PolicingProfileEntryMoMgr::TxCopyCandidateToRunning(
             DELETE_IF_NOT_NULL(nreq);
             dmi->CloseCursor(cfg1_cursor, true);
           }
-          result_code = ReadConfigDB(ppe_key, UPLL_DT_RUNNING /*UPLL_DT_CANDIDATE*/,
-              UNC_OP_READ, dbop, dmi, MAINTBL);
+          result_code = ReadConfigDB(ppe_key,
+                                     UPLL_DT_RUNNING /*UPLL_DT_CANDIDATE*/,
+                                     UNC_OP_READ,
+                                     dbop,
+                                     dmi,
+                                     MAINTBL);
           if ((result_code != UPLL_RC_SUCCESS) &&
               (result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE)) {
             UPLL_LOG_DEBUG("ReadConfigDB is failed -%d", result_code);
@@ -1536,9 +1584,12 @@ upll_rc_t PolicingProfileEntryMoMgr::TxCopyCandidateToRunning(
            * to the cs_status of first controller
            */
           uint32_t cur_instance_count;
-          result_code = GetInstanceCount(ppe_key, NULL,
-              UPLL_DT_CANDIDATE, &cur_instance_count,
-              dmi, CTRLRTBL);
+          result_code = GetInstanceCount(ppe_key,
+                                         NULL,
+                                         UPLL_DT_CANDIDATE,
+                                         &cur_instance_count,
+                                         dmi,
+                                         CTRLRTBL);
           if (UPLL_RC_SUCCESS != result_code) {
             UPLL_LOG_DEBUG("GetInstanceCount failed %d", result_code);
             DELETE_IF_NOT_NULL(ppe_key);
@@ -1549,7 +1600,7 @@ upll_rc_t PolicingProfileEntryMoMgr::TxCopyCandidateToRunning(
           }
           if (cur_instance_count == 1)
             reinterpret_cast<val_policingprofile_entry*>(GetVal(ppe_key))->
-              cs_row_status = UNC_CS_UNKNOWN ;
+                cs_row_status = UNC_CS_UNKNOWN;
           /* Capability check
            * req_header->operation = op[i];
            * strcpy((char*)req_header->datatype, (char*)UNC_DT_CANDIDATE);
@@ -1567,22 +1618,35 @@ upll_rc_t PolicingProfileEntryMoMgr::TxCopyCandidateToRunning(
 
           GET_USER_DATA_CTRLR(ppe_ctrlr_key, ctrlr_id);
           string controller(reinterpret_cast<char *>(ctrlr_id));
-          result_code = UpdateConfigStatus(ppe_key, op[i],
-              ctrlr_result[controller], nreq,
-              dmi, ppe_ctrlr_key);
+          if (ctrlr_result.empty()) {
+            UPLL_LOG_TRACE("ctrlr_commit_status is NULL.");
+            result_code = UpdateConfigStatus(ppe_key, op[i],
+                                             UPLL_RC_ERR_CTR_DISCONNECTED,
+                                             nreq,
+                                             dmi,
+                                             ppe_ctrlr_key);
+          } else {
+            result_code = UpdateConfigStatus(ppe_key,
+                                             op[i],
+                                             ctrlr_result[controller],
+                                             nreq,
+                                             dmi,
+                                             ppe_ctrlr_key);
+          }
         } else if (op[i] == UNC_OP_DELETE) {
-          //Reading Main Running DB for delete op
-          DbSubOp dbop1 = { kOpReadSingle, kOpMatchNone, kOpInOutFlag | kOpInOutCs };
+          // Reading Main Running DB for delete op
+          DbSubOp dbop1 = { kOpReadSingle, kOpMatchNone,
+            kOpInOutFlag | kOpInOutCs };
           result_code = GetChildConfigKey(pp_ck_run, req);
           if (result_code != UPLL_RC_SUCCESS) {
             UPLL_LOG_DEBUG("GetChildConfigKey is failed resultcode=%d",
-                result_code);
+                           result_code);
             DELETE_IF_NOT_NULL(req);
             dmi->CloseCursor(cfg1_cursor, true);
             return result_code;
           }
           result_code = ReadConfigDB(pp_ck_run, UPLL_DT_RUNNING,
-              UNC_OP_READ, dbop1, dmi, MAINTBL);
+                                     UNC_OP_READ, dbop1, dmi, MAINTBL);
           if (result_code != UPLL_RC_SUCCESS &&
               result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) {
             UPLL_LOG_DEBUG("Unable to read configuration from RunningDB");
@@ -1595,9 +1659,11 @@ upll_rc_t PolicingProfileEntryMoMgr::TxCopyCandidateToRunning(
           if (result_code == UPLL_RC_SUCCESS) {
             GET_USER_DATA_CTRLR(req, ctrlr_id);
             string controller(reinterpret_cast<char *>(ctrlr_id));
-            result_code = SetPPEntryConsolidatedStatus(pp_ck_run, ctrlr_id, dmi);
+            result_code = SetPPEntryConsolidatedStatus(pp_ck_run,
+                                                       ctrlr_id, dmi);
             if (result_code != UPLL_RC_SUCCESS) {
-              UPLL_LOG_DEBUG("Could not set consolidated status %d", result_code);
+              UPLL_LOG_DEBUG("Could not set consolidated status %d",
+                             result_code);
               DELETE_IF_NOT_NULL(pp_ck_run);
               DELETE_IF_NOT_NULL(req);
               DELETE_IF_NOT_NULL(nreq);
@@ -1663,8 +1729,10 @@ upll_rc_t PolicingProfileEntryMoMgr::TxCopyCandidateToRunning(
 }
 
 upll_rc_t PolicingProfileEntryMoMgr::UpdateMainTbl(ConfigKeyVal *ppe_key,
-      unc_keytype_operation_t op, uint32_t driver_result,
-      ConfigKeyVal *nreq, DalDmlIntf *dmi) {
+                                                   unc_keytype_operation_t op,
+                                                   uint32_t driver_result,
+                                                   ConfigKeyVal *nreq,
+                                                   DalDmlIntf *dmi) {
   ConfigKeyVal *ck_ppe = NULL;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   val_policingprofile_entry_t *ppe_val = NULL;
@@ -1703,7 +1771,8 @@ upll_rc_t PolicingProfileEntryMoMgr::UpdateMainTbl(ConfigKeyVal *ppe_key,
       }
       CompareValidValue(ppeval, nppeval, true);
       ppe_val->cs_row_status =
-             reinterpret_cast<val_policingprofile_entry_t *>(GetVal(nreq))->cs_row_status;
+          reinterpret_cast<val_policingprofile_entry_t *>
+          (GetVal(nreq))->cs_row_status;
 
       break;
     case UNC_OP_DELETE:
@@ -1723,143 +1792,143 @@ upll_rc_t PolicingProfileEntryMoMgr::UpdateMainTbl(ConfigKeyVal *ppe_key,
 }
 
 bool PolicingProfileEntryMoMgr::CompareValidValue(void *&val1, void *val2,
-    bool copy_to_running) {
+                                                  bool copy_to_running) {
   UPLL_FUNC_TRACE;
   bool invalid_attr = true;
   val_policingprofile_entry_t *val_pp_entry1 =
-    reinterpret_cast<val_policingprofile_entry_t *>(val1);
+      reinterpret_cast<val_policingprofile_entry_t *>(val1);
   val_policingprofile_entry_t *val_pp_entry2 =
-    reinterpret_cast<val_policingprofile_entry_t *>(val2);
+      reinterpret_cast<val_policingprofile_entry_t *>(val2);
 
-//  if (audit) {
-    for (unsigned int loop = 0;
-        loop < sizeof(val_pp_entry1->valid) /
-        sizeof(val_pp_entry1->valid[0]); ++loop) {
-      if (val_pp_entry1->valid[loop] == UNC_VF_INVALID
-          && val_pp_entry2->valid[loop] == UNC_VF_VALID) {
-        val_pp_entry1->valid[loop] = UNC_VF_VALID_NO_VALUE;
-      }
+  //   if (audit) {
+  for (unsigned int loop = 0;
+       loop < sizeof(val_pp_entry1->valid) /
+       sizeof(val_pp_entry1->valid[0]); ++loop) {
+    if (val_pp_entry1->valid[loop] == UNC_VF_INVALID
+        && val_pp_entry2->valid[loop] == UNC_VF_VALID) {
+      val_pp_entry1->valid[loop] = UNC_VF_VALID_NO_VALUE;
     }
-//  }
+  }
+  //   }
 
   if (val_pp_entry1->valid[UPLL_IDX_FLOWLIST_PPE] == (UNC_VF_VALID)
       && val_pp_entry2->valid[UPLL_IDX_FLOWLIST_PPE] == UNC_VF_VALID) {
     if (strcmp(reinterpret_cast<char *>(val_pp_entry1->flowlist),
-          reinterpret_cast<const char *>(val_pp_entry2->flowlist)) != 0)
+               reinterpret_cast<const char *>(val_pp_entry2->flowlist)) != 0)
       val_pp_entry1->valid[UPLL_IDX_FLOWLIST_PPE] = UNC_VF_VALID;
   }
   if (val_pp_entry1->valid[UPLL_IDX_RATE_PPE] == UNC_VF_VALID
       && val_pp_entry2->valid[UPLL_IDX_RATE_PPE] == UNC_VF_VALID) {
     if (val_pp_entry1->rate == val_pp_entry2->rate) {
       val_pp_entry1->valid[UPLL_IDX_RATE_PPE] =
-      (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
+          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
     }
   }
   if (val_pp_entry1->valid[UPLL_IDX_CIR_PPE] == UNC_VF_VALID
       && val_pp_entry2->valid[UPLL_IDX_CIR_PPE] == UNC_VF_VALID) {
     if (val_pp_entry1->cir == val_pp_entry2->cir)
       val_pp_entry1->valid[UPLL_IDX_CIR_PPE] =
-      (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
+          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   if (val_pp_entry1->valid[UPLL_IDX_CBS_PPE] == UNC_VF_VALID
       && val_pp_entry2->valid[UPLL_IDX_CBS_PPE] == UNC_VF_VALID) {
     if (val_pp_entry1->cbs == val_pp_entry2->cbs)
       val_pp_entry1->valid[UPLL_IDX_CBS_PPE] =
-      (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
+          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   if (val_pp_entry1->valid[UPLL_IDX_PIR_PPE] == UNC_VF_VALID
       && val_pp_entry2->valid[UPLL_IDX_PIR_PPE] == UNC_VF_VALID) {
     if (val_pp_entry1->pir == val_pp_entry2->pir)
       val_pp_entry1->valid[UPLL_IDX_PIR_PPE] =
-      (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
+          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   if (val_pp_entry1->valid[UPLL_IDX_PBS_PPE] == UNC_VF_VALID
       && val_pp_entry2->valid[UPLL_IDX_PBS_PPE] == UNC_VF_VALID) {
     if (val_pp_entry1->pbs == val_pp_entry2->pbs)
       val_pp_entry1->valid[UPLL_IDX_PBS_PPE] =
-      (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
+          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   if (val_pp_entry1->valid[UPLL_IDX_GREEN_ACTION_PPE] == UNC_VF_VALID
       && val_pp_entry2->valid[UPLL_IDX_GREEN_ACTION_PPE] == UNC_VF_VALID) {
     if (val_pp_entry1->green_action == val_pp_entry2->green_action)
       val_pp_entry1->valid[UPLL_IDX_GREEN_ACTION_PPE] =
-      (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
+          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   if (val_pp_entry1->valid[UPLL_IDX_GREEN_PRIORITY_PPE] == UNC_VF_VALID
       && val_pp_entry2->valid[UPLL_IDX_GREEN_PRIORITY_PPE] == UNC_VF_VALID) {
     if (val_pp_entry1->green_action_priority ==
         val_pp_entry2->green_action_priority)
       val_pp_entry1->valid[UPLL_IDX_GREEN_PRIORITY_PPE] =
-      (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
+          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   if (val_pp_entry1->valid[UPLL_IDX_GREEN_DSCP_PPE] == UNC_VF_VALID
       && val_pp_entry2->valid[UPLL_IDX_GREEN_DSCP_PPE] == UNC_VF_VALID) {
     if (val_pp_entry1->green_action_dscp == val_pp_entry2->green_action_dscp)
       val_pp_entry1->valid[UPLL_IDX_GREEN_DSCP_PPE] =
-      (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
+          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   if (val_pp_entry1->valid[UPLL_IDX_GREEN_DROP_PPE] == UNC_VF_VALID
       && val_pp_entry2->valid[UPLL_IDX_GREEN_DROP_PPE] == UNC_VF_VALID) {
     if (val_pp_entry1->green_action_drop_precedence ==
         val_pp_entry2->green_action_drop_precedence)
       val_pp_entry1->valid[UPLL_IDX_GREEN_DROP_PPE] =
-      (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
+          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   if (val_pp_entry1->valid[UPLL_IDX_YELLOW_ACTION_PPE] == UNC_VF_VALID
       && val_pp_entry2->valid[UPLL_IDX_YELLOW_ACTION_PPE] == UNC_VF_VALID) {
     if (val_pp_entry1->yellow_action == val_pp_entry2->yellow_action)
       val_pp_entry1->valid[UPLL_IDX_YELLOW_ACTION_PPE] =
-      (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
+          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   if (val_pp_entry1->valid[UPLL_IDX_YELLOW_PRIORITY_PPE] == UNC_VF_VALID
       && val_pp_entry2->valid[UPLL_IDX_YELLOW_PRIORITY_PPE] == UNC_VF_VALID) {
     if (val_pp_entry1->yellow_action_priority ==
         val_pp_entry2->yellow_action_priority)
       val_pp_entry1->valid[UPLL_IDX_YELLOW_PRIORITY_PPE] =
-      (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
+          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   if (val_pp_entry1->valid[UPLL_IDX_YELLOW_DSCP_PPE] == UNC_VF_VALID
       && val_pp_entry2->valid[UPLL_IDX_YELLOW_DSCP_PPE] == UNC_VF_VALID) {
     if (val_pp_entry1->yellow_action_dscp == val_pp_entry2->yellow_action_dscp)
       val_pp_entry1->valid[UPLL_IDX_YELLOW_DSCP_PPE] =
-      (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
+          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   if (val_pp_entry1->valid[UPLL_IDX_YELLOW_DROP_PPE] == UNC_VF_VALID
       && val_pp_entry2->valid[UPLL_IDX_YELLOW_DROP_PPE] == UNC_VF_VALID) {
     if (val_pp_entry1->yellow_action_drop_precedence ==
         val_pp_entry2->yellow_action_drop_precedence)
       val_pp_entry1->valid[UPLL_IDX_YELLOW_DROP_PPE] =
-      (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
+          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   if (val_pp_entry1->valid[UPLL_IDX_RED_ACTION_PPE] == UNC_VF_VALID
       && val_pp_entry2->valid[UPLL_IDX_RED_ACTION_PPE] == UNC_VF_VALID) {
     if (val_pp_entry1->red_action == val_pp_entry2->red_action)
       val_pp_entry1->valid[UPLL_IDX_RED_ACTION_PPE] =
-      (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
+          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   if (val_pp_entry1->valid[UPLL_IDX_RED_PRIORITY_PPE] == UNC_VF_VALID
       && val_pp_entry2->valid[UPLL_IDX_RED_PRIORITY_PPE] == UNC_VF_VALID) {
     if (val_pp_entry1->red_action_priority ==
         val_pp_entry2->red_action_priority)
       val_pp_entry1->valid[UPLL_IDX_RED_PRIORITY_PPE] =
-      (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
+          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   if (val_pp_entry1->valid[UPLL_IDX_RED_DSCP_PPE] == UNC_VF_VALID
       && val_pp_entry2->valid[UPLL_IDX_RED_DSCP_PPE] == UNC_VF_VALID) {
     if (val_pp_entry1->red_action_dscp ==
         val_pp_entry2->red_action_dscp)
       val_pp_entry1->valid[UPLL_IDX_RED_DSCP_PPE] =
-      (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
+          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   if (val_pp_entry1->valid[UPLL_IDX_RED_DROP_PPE] == UNC_VF_VALID
       && val_pp_entry2->valid[UPLL_IDX_RED_DROP_PPE] == UNC_VF_VALID) {
     if (val_pp_entry1->red_action_drop_precedence ==
         val_pp_entry2->red_action_drop_precedence)
       val_pp_entry1->valid[UPLL_IDX_RED_DROP_PPE] =
-      (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
+          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   for (unsigned int loop = 0;
-      loop < sizeof(val_pp_entry1->valid)/ sizeof(uint8_t); ++loop) {
+       loop < sizeof(val_pp_entry1->valid)/ sizeof(uint8_t); ++loop) {
     if ((UNC_VF_VALID == (uint8_t) val_pp_entry1->valid[loop]) ||
         (UNC_VF_VALID_NO_VALUE == (uint8_t) val_pp_entry1->valid[loop]))
       invalid_attr = false;
@@ -1868,9 +1937,9 @@ bool PolicingProfileEntryMoMgr::CompareValidValue(void *&val1, void *val2,
 }
 
 upll_rc_t PolicingProfileEntryMoMgr::ReadRecord(IpcReqRespHeader *req,
-    ConfigKeyVal *ikey,
-    DalDmlIntf *dmi,
-    unc_keytype_operation_t op) {
+                                                ConfigKeyVal *ikey,
+                                                DalDmlIntf *dmi,
+                                                unc_keytype_operation_t op) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code;
 
@@ -1891,18 +1960,18 @@ upll_rc_t PolicingProfileEntryMoMgr::ReadRecord(IpcReqRespHeader *req,
 
   if (result_code != UPLL_RC_ERR_INSTANCE_EXISTS) {
     UPLL_LOG_DEBUG(" PolicingProfileEntryMoMgr::UpdateConfigDB is failed :-%d",
-        result_code);
+                   result_code);
     return UPLL_RC_ERR_NO_SUCH_INSTANCE;
   }
   switch (req->datatype) {
-    // Retrieving config information
-    case UPLL_DT_CANDIDATE:  // MIXED ENUMS
+    //  Retrieving config information
+    case UPLL_DT_CANDIDATE:  //  MIXED ENUMS
     case UPLL_DT_RUNNING:
     case UPLL_DT_STARTUP:
     case UPLL_DT_STATE:
       if (req->option1 == UNC_OPT1_NORMAL) {
         result_code = ReadConfigDB(ikey, req->datatype, req->operation, dbop,
-            dmi, MAINTBL);
+                                   dmi, MAINTBL);
         if (result_code != UPLL_RC_SUCCESS) {
           UPLL_LOG_DEBUG(
               " PolicingProfileEntryMoMgr::ReadConfigDB is Successful :-%d",
@@ -1916,11 +1985,11 @@ upll_rc_t PolicingProfileEntryMoMgr::ReadRecord(IpcReqRespHeader *req,
 
       break;
 
-    case UPLL_DT_IMPORT:  // MIXED ENUMS
+    case UPLL_DT_IMPORT:  //  MIXED ENUMS
       if (req->option1 == UNC_OPT1_NORMAL) {
         result_code = GetRenamedUncKey(ikey, req->datatype, dmi, NULL);
         result_code = ReadConfigDB(ikey, req->datatype, req->operation, dbop,
-            dmi, MAINTBL);
+                                   dmi, MAINTBL);
         if (result_code != UPLL_RC_SUCCESS) {
           UPLL_LOG_DEBUG(
               " PolicingProfileEntryMoMgr::ReadConfigDB is Successful :-%d",
@@ -1937,23 +2006,23 @@ upll_rc_t PolicingProfileEntryMoMgr::ReadRecord(IpcReqRespHeader *req,
     default:
       UPLL_LOG_DEBUG(" PolicingProfileEntryMoMgr::Operation not allowed:-");
       return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT;
-  }  // end of switch
+  }  //  end of switch
   UPLL_LOG_DEBUG(" PolicingProfileEntryMoMgr::ReadMo is Successful :-%d",
-      result_code);
+                 result_code);
   return UPLL_RC_SUCCESS;
 }
 
 upll_rc_t PolicingProfileEntryMoMgr::ReadMo(IpcReqRespHeader *req,
-    ConfigKeyVal *ikey,
-    DalDmlIntf *dmi) {
+                                            ConfigKeyVal *ikey,
+                                            DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   controller_domain ctrlr_dom;
   result_code = ValidateMessage(req, ikey);
   if (result_code != UPLL_RC_SUCCESS) {
-      UPLL_LOG_DEBUG("ValidateMessage failed result_code %d",
-                    result_code);
-      return result_code;
+    UPLL_LOG_DEBUG("ValidateMessage failed result_code %d",
+                   result_code);
+    return result_code;
   }
   result_code = ReadInfoFromDB(req, ikey, dmi, &ctrlr_dom);
   if (result_code != UPLL_RC_SUCCESS) {
@@ -1963,8 +2032,8 @@ upll_rc_t PolicingProfileEntryMoMgr::ReadMo(IpcReqRespHeader *req,
 }
 
 upll_rc_t PolicingProfileEntryMoMgr::ReadSiblingMo(IpcReqRespHeader *req,
-    ConfigKeyVal *ikey,
-    DalDmlIntf *dmi) {
+                                                   ConfigKeyVal *ikey,
+                                                   DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   controller_domain ctrlr_dom;
@@ -1980,7 +2049,7 @@ upll_rc_t PolicingProfileEntryMoMgr::ReadSiblingMo(IpcReqRespHeader *req,
   }
   return result_code;
 
-  // return ReadRecord(req, ikey, dmi, UNC_OP_READ_SIBLING);
+  //  return ReadRecord(req, ikey, dmi, UNC_OP_READ_SIBLING);
 }
 
 upll_rc_t PolicingProfileEntryMoMgr::GetParentConfigKey(ConfigKeyVal *&okey,
@@ -1991,7 +2060,7 @@ upll_rc_t PolicingProfileEntryMoMgr::GetParentConfigKey(ConfigKeyVal *&okey,
     UPLL_LOG_DEBUG(" Input Key is NULL");
     return UPLL_RC_ERR_GENERIC;
   }
-  DELETE_IF_NOT_NULL(okey); 
+  DELETE_IF_NOT_NULL(okey);
   unc_key_type_t ikey_type = ikey->get_key_type();
   if (ikey_type != UNC_KT_POLICING_PROFILE_ENTRY) {
     UPLL_LOG_DEBUG(" Invalid key type received. Key type - %d", ikey_type);
@@ -2025,9 +2094,9 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateRate(
 
   /* validate Rate */
   if (ValidateNumericRange(val_ppe->rate,
-        (uint8_t) UPLL_POLICINGPROFILE_RATE_KBPS,
-        (uint8_t) UPLL_POLICINGPROFILE_RATE_PPS, true,
-        true)) {
+                           (uint8_t) UPLL_POLICINGPROFILE_RATE_KBPS,
+                           (uint8_t) UPLL_POLICINGPROFILE_RATE_PPS, true,
+                           true)) {
     UPLL_LOG_DEBUG(" Rate validation is success");
 
     /** validate cir if filled */
@@ -2036,13 +2105,13 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateRate(
 
       /** check cir range */
       if (!(ValidateNumericRange(val_ppe->cir, kMinRateType,
-              kMaxRateType, true, true))) {
+                                 kMaxRateType, true, true))) {
         UPLL_LOG_DEBUG(" CIR validation failed");
         return UPLL_RC_ERR_CFG_SYNTAX;
       }
     } else if ((operation == UNC_OP_UPDATE || operation == UNC_OP_CREATE)
-        && (val_ppe->valid[UPLL_IDX_CIR_PPE]
-          == UNC_VF_VALID_NO_VALUE)) {
+               && (val_ppe->valid[UPLL_IDX_CIR_PPE]
+                   == UNC_VF_VALID_NO_VALUE)) {
       UPLL_LOG_DEBUG("Reset CIR");
       val_ppe->cir = 0;
     }
@@ -2053,13 +2122,13 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateRate(
 
       /** check cbs range */
       if (!(ValidateNumericRange(val_ppe->cbs, kMinBurstSize,
-              kMaxBurstSize, true, true))) {
+                                 kMaxBurstSize, true, true))) {
         UPLL_LOG_DEBUG(" CBS validation failed");
         return UPLL_RC_ERR_CFG_SYNTAX;
       }
     } else if ((operation == UNC_OP_UPDATE || operation == UNC_OP_CREATE)
-        && (val_ppe->valid[UPLL_IDX_CBS_PPE]
-          == UNC_VF_VALID_NO_VALUE)) {
+               && (val_ppe->valid[UPLL_IDX_CBS_PPE]
+                   == UNC_VF_VALID_NO_VALUE)) {
       UPLL_LOG_DEBUG("Reset CBS");
       val_ppe->cbs = 0;
     }
@@ -2070,13 +2139,13 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateRate(
 
       /** check pir range */
       if (!(ValidateNumericRange(val_ppe->pir, kMinRateType,
-              kMaxRateType, true, true))) {
+                                 kMaxRateType, true, true))) {
         UPLL_LOG_DEBUG(" PIR validation failed");
         return UPLL_RC_ERR_CFG_SYNTAX;
       }
     } else if ((operation == UNC_OP_UPDATE || operation == UNC_OP_CREATE)
-        && (val_ppe->valid[UPLL_IDX_PIR_PPE]
-          == UNC_VF_VALID_NO_VALUE)) {
+               && (val_ppe->valid[UPLL_IDX_PIR_PPE]
+                   == UNC_VF_VALID_NO_VALUE)) {
       UPLL_LOG_DEBUG("Reset PIR");
       val_ppe->pir = 0;
     }
@@ -2087,19 +2156,19 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateRate(
 
       /** check pbs range */
       if (!(ValidateNumericRange(val_ppe->pbs, kMinBurstSize,
-              kMaxBurstSize, true, true))) {
+                                 kMaxBurstSize, true, true))) {
         UPLL_LOG_DEBUG(" PBS validation failed");
         return UPLL_RC_ERR_CFG_SYNTAX;
       }
     } else if ((operation == UNC_OP_UPDATE || operation == UNC_OP_CREATE)
-        && (val_ppe->valid[UPLL_IDX_PBS_PPE]
-          == UNC_VF_VALID_NO_VALUE)) {
+               && (val_ppe->valid[UPLL_IDX_PBS_PPE]
+                   == UNC_VF_VALID_NO_VALUE)) {
       UPLL_LOG_DEBUG("Reset PBS");
       val_ppe->pbs = 0;
     }
     if (UNC_OP_CREATE == operation) {
       if ((UNC_VF_VALID == val_ppe->valid[UPLL_IDX_PIR_PPE])
-        && (UNC_VF_VALID == val_ppe->valid[UPLL_IDX_CIR_PPE])) {
+          && (UNC_VF_VALID == val_ppe->valid[UPLL_IDX_CIR_PPE])) {
         if (val_ppe->pir < val_ppe->cir) {
           UPLL_LOG_DEBUG("cir is greated");
           return UPLL_RC_ERR_CFG_SYNTAX;
@@ -2124,15 +2193,16 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateColorAction(
   if (val_ppe->valid[UPLL_IDX_GREEN_ACTION_PPE]
       == UNC_VF_VALID) {
     if (!(ValidateNumericRange(val_ppe->green_action,
-            (uint8_t) UPLL_POLICINGPROFILE_ACT_PASS,
-            (uint8_t) UPLL_POLICINGPROFILE_ACT_PENALTY, true,
-            true))) {
+                               (uint8_t) UPLL_POLICINGPROFILE_ACT_PASS,
+                               (uint8_t) UPLL_POLICINGPROFILE_ACT_PENALTY,
+                               true,
+                               true))) {
       UPLL_LOG_DEBUG("green_action syntax validation failed");
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
   } else if ((operation == UNC_OP_UPDATE || operation == UNC_OP_CREATE)
-      && (val_ppe->valid[UPLL_IDX_GREEN_ACTION_PPE]
-        == UNC_VF_VALID_NO_VALUE)) {
+             && (val_ppe->valid[UPLL_IDX_GREEN_ACTION_PPE]
+                 == UNC_VF_VALID_NO_VALUE)) {
     UPLL_LOG_DEBUG("Reset green_action");
     val_ppe->green_action = 0;
   }
@@ -2141,15 +2211,16 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateColorAction(
   if (val_ppe->valid[UPLL_IDX_RED_ACTION_PPE]
       == UNC_VF_VALID) {
     if (!(ValidateNumericRange(val_ppe->red_action,
-            (uint8_t) UPLL_POLICINGPROFILE_ACT_PASS,
-            (uint8_t) UPLL_POLICINGPROFILE_ACT_PENALTY, true,
-            true))) {
+                               (uint8_t) UPLL_POLICINGPROFILE_ACT_PASS,
+                               (uint8_t) UPLL_POLICINGPROFILE_ACT_PENALTY,
+                               true,
+                               true))) {
       UPLL_LOG_DEBUG("red_action syntax validation failed");
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
   } else if ((operation == UNC_OP_UPDATE || operation == UNC_OP_CREATE)
-      && (val_ppe->valid[UPLL_IDX_RED_ACTION_PPE]
-        == UNC_VF_VALID_NO_VALUE)) {
+             && (val_ppe->valid[UPLL_IDX_RED_ACTION_PPE]
+                 == UNC_VF_VALID_NO_VALUE)) {
     UPLL_LOG_DEBUG("Reset red_action");
     val_ppe->red_action = 0;
   }
@@ -2158,15 +2229,16 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateColorAction(
   if (val_ppe->valid[UPLL_IDX_YELLOW_ACTION_PPE]
       == UNC_VF_VALID) {
     if (!(ValidateNumericRange(val_ppe->yellow_action,
-            (uint8_t) UPLL_POLICINGPROFILE_ACT_PASS,
-            (uint8_t) UPLL_POLICINGPROFILE_ACT_PENALTY, true,
-            true))) {
+                               (uint8_t) UPLL_POLICINGPROFILE_ACT_PASS,
+                               (uint8_t) UPLL_POLICINGPROFILE_ACT_PENALTY,
+                               true,
+                               true))) {
       UPLL_LOG_DEBUG("yellow_action syntax validation failed");
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
   } else if ((operation == UNC_OP_UPDATE || operation == UNC_OP_CREATE)
-      && (val_ppe->valid[UPLL_IDX_YELLOW_ACTION_PPE]
-        == UNC_VF_VALID_NO_VALUE)) {
+             && (val_ppe->valid[UPLL_IDX_YELLOW_ACTION_PPE]
+                 == UNC_VF_VALID_NO_VALUE)) {
     UPLL_LOG_DEBUG("Reset yellow_action");
     val_ppe->yellow_action = 0;
   }
@@ -2185,21 +2257,21 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateColorPriority(
         == UPLL_POLICINGPROFILE_ACT_PENALTY) {
       /** check green_action_priority range */
       if (!ValidateNumericRange(
-            val_ppe->green_action_priority, kMinVlanPriority,
-            kMaxVlanPriority, true, true)) {
+              val_ppe->green_action_priority, kMinVlanPriority,
+              kMaxVlanPriority, true, true)) {
         UPLL_LOG_DEBUG("green_action_priority syntax validation failed");
         return UPLL_RC_ERR_CFG_SYNTAX;
       }
     } else {
       UPLL_LOG_DEBUG("Error Green_action_priority configured but green_action"
-          "is not UPLL_POLICINGPROFILE_ACT_PENALTY");
+                     "is not UPLL_POLICINGPROFILE_ACT_PENALTY");
 
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
 
   } else if ((operation == UNC_OP_UPDATE || operation == UNC_OP_CREATE)
-      && (val_ppe->valid[UPLL_IDX_GREEN_PRIORITY_PPE]
-        == UNC_VF_VALID_NO_VALUE)) {
+             && (val_ppe->valid[UPLL_IDX_GREEN_PRIORITY_PPE]
+                 == UNC_VF_VALID_NO_VALUE)) {
     UPLL_LOG_DEBUG("Reset green_priority");
     val_ppe->green_action_priority = 0;
   }
@@ -2211,21 +2283,21 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateColorPriority(
         == UPLL_POLICINGPROFILE_ACT_PENALTY) {
       /** check green_action_priority range */
       if (!ValidateNumericRange(val_ppe->red_action_priority,
-            kMinVlanPriority, kMaxVlanPriority, true,
-            true)) {
+                                kMinVlanPriority, kMaxVlanPriority, true,
+                                true)) {
         UPLL_LOG_DEBUG("red_action_priority syntax validation failed");
         return UPLL_RC_ERR_CFG_SYNTAX;
       }
     } else {
       UPLL_LOG_DEBUG("Error red_action_priority configured but red_action"
-          "is not UPLL_POLICINGPROFILE_ACT_PENALTY");
+                     "is not UPLL_POLICINGPROFILE_ACT_PENALTY");
 
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
 
   } else if ((operation == UNC_OP_UPDATE || operation == UNC_OP_CREATE)
-      && (val_ppe->valid[UPLL_IDX_RED_PRIORITY_PPE]
-        == UNC_VF_VALID_NO_VALUE)) {
+             && (val_ppe->valid[UPLL_IDX_RED_PRIORITY_PPE]
+                 == UNC_VF_VALID_NO_VALUE)) {
     UPLL_LOG_DEBUG("Reset red_priority");
     val_ppe->red_action_priority = 0;
   }
@@ -2237,20 +2309,21 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateColorPriority(
         == UPLL_POLICINGPROFILE_ACT_PENALTY) {
       /** check yellow_action_priority range */
       if (!ValidateNumericRange(
-            val_ppe->yellow_action_priority, kMinVlanPriority,
-            kMaxVlanPriority, true, true)) {
+              val_ppe->yellow_action_priority, kMinVlanPriority,
+              kMaxVlanPriority, true, true)) {
         UPLL_LOG_DEBUG("yellow_action_priority syntax validation failed");
         return UPLL_RC_ERR_CFG_SYNTAX;
       }
     } else {
-      UPLL_LOG_DEBUG("Error yellow_action_priority configured but yellow_action"
-          "is not UPLL_POLICINGPROFILE_ACT_PENALTY");
+      UPLL_LOG_DEBUG("Error yellow_action_priority configured but"
+                     "yellow_action"
+                     "is not UPLL_POLICINGPROFILE_ACT_PENALTY");
 
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
   } else if ((operation == UNC_OP_UPDATE || operation == UNC_OP_CREATE)
-      && (val_ppe->valid[UPLL_IDX_YELLOW_PRIORITY_PPE]
-        == UNC_VF_VALID_NO_VALUE)) {
+             && (val_ppe->valid[UPLL_IDX_YELLOW_PRIORITY_PPE]
+                 == UNC_VF_VALID_NO_VALUE)) {
     UPLL_LOG_DEBUG("Reset yellow priority");
     val_ppe->yellow_action_priority = 0;
   }
@@ -2269,20 +2342,21 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateColorPrecedence(
         == UPLL_POLICINGPROFILE_ACT_PENALTY) {
       /** check green_action_drop_precedence range */
       if (!(ValidateNumericRange(
-          val_ppe->green_action_drop_precedence,
-          kMinPrecedence, kMaxPrecedence, true, true))) {
-        UPLL_LOG_DEBUG("green_action_drop_precedence syntax validation failed");
+                  val_ppe->green_action_drop_precedence,
+                  kMinPrecedence, kMaxPrecedence, true, true))) {
+        UPLL_LOG_DEBUG("green_action_drop_precedence syntax"
+                       "validation failed");
         return UPLL_RC_ERR_CFG_SYNTAX;
       }
     } else {
       UPLL_LOG_DEBUG("Error Green_action_drop_precedence configured but"
-                    " green_action is not UPLL_POLICINGPROFILE_ACT_PENALTY");
+                     " green_action is not UPLL_POLICINGPROFILE_ACT_PENALTY");
 
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
   } else if ((operation == UNC_OP_UPDATE || operation == UNC_OP_CREATE)
-      && (val_ppe->valid[UPLL_IDX_GREEN_DROP_PPE]
-          == UNC_VF_VALID_NO_VALUE)) {
+             && (val_ppe->valid[UPLL_IDX_GREEN_DROP_PPE]
+                 == UNC_VF_VALID_NO_VALUE)) {
     UPLL_LOG_DEBUG("Reset Green_action_drop_precedence");
     val_ppe->green_action_drop_precedence = 0;
   }
@@ -2293,8 +2367,8 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateColorPrecedence(
         == UPLL_POLICINGPROFILE_ACT_PENALTY) {
       /** check green_action_drop_precedence range */
       if (!(ValidateNumericRange(
-          val_ppe->red_action_drop_precedence, kMinPrecedence,
-          kMaxPrecedence, true, true))) {
+                  val_ppe->red_action_drop_precedence, kMinPrecedence,
+                  kMaxPrecedence, true, true))) {
         UPLL_LOG_DEBUG("red_action_drop_precedence syntax validation failed");
         return UPLL_RC_ERR_CFG_SYNTAX;
       }
@@ -2305,8 +2379,8 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateColorPrecedence(
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
   } else if ((operation == UNC_OP_UPDATE || operation == UNC_OP_CREATE)
-      && (val_ppe->valid[UPLL_IDX_RED_DROP_PPE]
-          == UNC_VF_VALID_NO_VALUE)) {
+             && (val_ppe->valid[UPLL_IDX_RED_DROP_PPE]
+                 == UNC_VF_VALID_NO_VALUE)) {
     UPLL_LOG_DEBUG("Reset red_action_drop_precedence");
     val_ppe->red_action_drop_precedence = 0;
   }
@@ -2318,20 +2392,20 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateColorPrecedence(
         == UPLL_POLICINGPROFILE_ACT_PENALTY) {
       /** check yellow_action_drop_precedence range */
       if (!(ValidateNumericRange(
-          val_ppe->yellow_action_drop_precedence,
-          kMinPrecedence, kMaxPrecedence, true, true))) {
+                  val_ppe->yellow_action_drop_precedence,
+                  kMinPrecedence, kMaxPrecedence, true, true))) {
         UPLL_LOG_DEBUG("yellow_action_drop_precedence syntax check failed");
         return UPLL_RC_ERR_CFG_SYNTAX;
       }
     } else {
       UPLL_LOG_DEBUG("Error yellow_action_drop_precedence configured but"
-                    " yellow_action is not UPLL_POLICINGPROFILE_ACT_PENALTY");
+                     " yellow_action is not UPLL_POLICINGPROFILE_ACT_PENALTY");
 
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
   } else if ((operation == UNC_OP_UPDATE || operation == UNC_OP_CREATE)
-      && (val_ppe->valid[UPLL_IDX_YELLOW_DROP_PPE]
-          == UNC_VF_VALID_NO_VALUE)) {
+             && (val_ppe->valid[UPLL_IDX_YELLOW_DROP_PPE]
+                 == UNC_VF_VALID_NO_VALUE)) {
     UPLL_LOG_DEBUG("Reset yellow_action_drop_precedence");
     val_ppe->yellow_action_drop_precedence = 0;
   }
@@ -2350,19 +2424,19 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateColorDscp(
         == UPLL_POLICINGPROFILE_ACT_PENALTY) {
       /** Use common function to check green_action_dscp range */
       if (!ValidateNumericRange(val_ppe->green_action_dscp,
-            kMinIPDscp, kMaxIPDscp, true, true)) {
+                                kMinIPDscp, kMaxIPDscp, true, true)) {
         UPLL_LOG_DEBUG("green_action_dscp syntax validation failed");
         return UPLL_RC_ERR_CFG_SYNTAX;
       }
     } else {
       UPLL_LOG_DEBUG("Error Green_action_dscp configured but green_action"
-          "is not UPLL_POLICINGPROFILE_ACT_PENALTY");
+                     "is not UPLL_POLICINGPROFILE_ACT_PENALTY");
 
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
   } else if ((operation == UNC_OP_UPDATE || operation == UNC_OP_CREATE)
-      && (val_ppe->valid[UPLL_IDX_GREEN_DSCP_PPE]
-        == UNC_VF_VALID_NO_VALUE)) {
+             && (val_ppe->valid[UPLL_IDX_GREEN_DSCP_PPE]
+                 == UNC_VF_VALID_NO_VALUE)) {
     UPLL_LOG_DEBUG("Reset green_action_dscp");
     val_ppe->green_action_dscp = 0;
   }
@@ -2373,19 +2447,19 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateColorDscp(
         == UPLL_POLICINGPROFILE_ACT_PENALTY) {
       /** check green_action_dscp range */
       if (!ValidateNumericRange(val_ppe->red_action_dscp,
-            kMinIPDscp, kMaxIPDscp, true, true)) {
+                                kMinIPDscp, kMaxIPDscp, true, true)) {
         UPLL_LOG_DEBUG("red_action_dscp syntax validation failed");
         return UPLL_RC_ERR_CFG_SYNTAX;
       }
     } else {
       UPLL_LOG_DEBUG("Error red_action_dscp configured but red_action"
-          "is not UPLL_POLICINGPROFILE_ACT_PENALTY");
+                     "is not UPLL_POLICINGPROFILE_ACT_PENALTY");
 
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
   } else if ((operation == UNC_OP_UPDATE || operation == UNC_OP_CREATE)
-      && (val_ppe->valid[UPLL_IDX_RED_DSCP_PPE]
-        == UNC_VF_VALID_NO_VALUE)) {
+             && (val_ppe->valid[UPLL_IDX_RED_DSCP_PPE]
+                 == UNC_VF_VALID_NO_VALUE)) {
     UPLL_LOG_DEBUG("Reset Red action dscp");
     val_ppe->red_action_dscp = 0;
   }
@@ -2397,28 +2471,29 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateColorDscp(
         == UPLL_POLICINGPROFILE_ACT_PENALTY) {
       /** check yellow_action_dscp range */
       if (!ValidateNumericRange(val_ppe->yellow_action_dscp,
-            kMinIPDscp, kMaxIPDscp, true, true)) {
+                                kMinIPDscp, kMaxIPDscp, true, true)) {
         UPLL_LOG_DEBUG("yellow_action_dscp syntax validation failed");
         return UPLL_RC_ERR_CFG_SYNTAX;
       }
     } else {
       UPLL_LOG_DEBUG("Error yellow_action_dscp configured but yellow_action"
-          "is not UPLL_POLICINGPROFILE_ACT_PENALTY");
+                     "is not UPLL_POLICINGPROFILE_ACT_PENALTY");
 
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
   } else if ((operation == UNC_OP_UPDATE || operation == UNC_OP_CREATE)
-      && (val_ppe->valid[UPLL_IDX_YELLOW_DSCP_PPE]
-        == UNC_VF_VALID_NO_VALUE)) {
+             && (val_ppe->valid[UPLL_IDX_YELLOW_DSCP_PPE]
+                 == UNC_VF_VALID_NO_VALUE)) {
     UPLL_LOG_DEBUG("Reset yellow action dscp");
     val_ppe->yellow_action_dscp = 0;
   }
   return UPLL_RC_SUCCESS;
 }
 
-upll_rc_t PolicingProfileEntryMoMgr::ValidateCapability(IpcReqRespHeader *req,
-                                          ConfigKeyVal *ikey,
-                                          const char* ctrlr_name) {
+upll_rc_t PolicingProfileEntryMoMgr::ValidateCapability(
+    IpcReqRespHeader *req,
+    ConfigKeyVal *ikey,
+    const char* ctrlr_name) {
   UPLL_FUNC_TRACE;
 
   if ((NULL == req) || (NULL == ikey)) {
@@ -2433,9 +2508,9 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateCapability(IpcReqRespHeader *req,
     UPLL_LOG_DEBUG("ctrlr_name is NULL");
     return UPLL_RC_ERR_GENERIC;
   }
- 
+
   UPLL_LOG_TRACE("ctrlr_name(%s), operation : (%d)",
-               ctrlr_name, req->operation);
+                 ctrlr_name, req->operation);
 
   bool ret_code = false;
   uint32_t max_instance_count = 0;
@@ -2445,19 +2520,12 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateCapability(IpcReqRespHeader *req,
   switch (req->operation) {
     case UNC_OP_CREATE: {
       ret_code = GetCreateCapability(ctrlr_name, ikey->get_key_type(),
-                                        &max_instance_count, &max_attrs, &attrs);
-
-      if (ret_code && (max_instance_count != 0) &&
-          (cur_instance_count >= max_instance_count)) {
-        UPLL_LOG_DEBUG("Instance count %d exceeds %d", cur_instance_count,
-                      max_instance_count);
-        return UPLL_RC_ERR_EXCEEDS_RESOURCE_LIMIT;
-      }
+                                     &max_instance_count, &max_attrs, &attrs);
       break;
     }
     case UNC_OP_UPDATE: {
       ret_code = GetUpdateCapability(ctrlr_name, ikey->get_key_type(),
-                                        &max_attrs, &attrs);
+                                     &max_attrs, &attrs);
       break;
     }
     default: {
@@ -2466,7 +2534,7 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateCapability(IpcReqRespHeader *req,
                                       &max_attrs, &attrs);
       else
         ret_code = GetReadCapability(ctrlr_name, ikey->get_key_type(),
-                                      &max_attrs, &attrs);
+                                     &max_attrs, &attrs);
     }
   }
 
@@ -2478,16 +2546,17 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateCapability(IpcReqRespHeader *req,
   }
 
   val_policingprofile_entry_t *val_policingprofile_entry =
-        reinterpret_cast<val_policingprofile_entry_t *>(
-           GetVal(ikey));
+      reinterpret_cast<val_policingprofile_entry_t *>(
+          GetVal(ikey));
 
   if (val_policingprofile_entry) {
     if (max_attrs > 0) {
       return ValPolicingProfileEntryAttributeSupportCheck(
-            val_policingprofile_entry, attrs);
+          val_policingprofile_entry, attrs);
     } else {
-      UPLL_LOG_DEBUG("Attribute list is empty for operation %d", req->operation);
-      return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR; 
+      UPLL_LOG_DEBUG("Attribute list is empty for operation %d",
+                     req->operation);
+      return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
     }
   }
   return UPLL_RC_SUCCESS;
@@ -2495,8 +2564,8 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateCapability(IpcReqRespHeader *req,
 
 upll_rc_t PolicingProfileEntryMoMgr::
 ValPolicingProfileEntryAttributeSupportCheck(
-  val_policingprofile_entry_t *val_policingprofile_entry,
-  const uint8_t *attrs) {
+    val_policingprofile_entry_t *val_policingprofile_entry,
+    const uint8_t *attrs) {
   UPLL_FUNC_TRACE;
 
   if ((val_policingprofile_entry->valid[UPLL_IDX_FLOWLIST_PPE] ==
@@ -2576,7 +2645,7 @@ void PolicingProfileEntryMoMgr::ValidateGreenFieldAttribute(
   UPLL_FUNC_TRACE;
 
   if ((val_policingprofile_entry->valid[UPLL_IDX_GREEN_ACTION_PPE]
-      == UNC_VF_VALID)
+       == UNC_VF_VALID)
       || (val_policingprofile_entry->valid[UPLL_IDX_GREEN_ACTION_PPE]
           == UNC_VF_VALID_NO_VALUE)) {
     if (attrs[unc::capa::policingprofile_entry::kCapGreenAction] == 0) {
@@ -2587,7 +2656,7 @@ void PolicingProfileEntryMoMgr::ValidateGreenFieldAttribute(
   }
 
   if ((val_policingprofile_entry->valid[UPLL_IDX_GREEN_PRIORITY_PPE]
-      == UNC_VF_VALID)
+       == UNC_VF_VALID)
       || (val_policingprofile_entry->valid[UPLL_IDX_GREEN_PRIORITY_PPE]
           == UNC_VF_VALID_NO_VALUE)) {
     if (attrs[unc::capa::policingprofile_entry::kCapGreenPriority] == 0) {
@@ -2598,18 +2667,18 @@ void PolicingProfileEntryMoMgr::ValidateGreenFieldAttribute(
   }
 
   if ((val_policingprofile_entry->valid[UPLL_IDX_GREEN_DSCP_PPE] ==
-        UNC_VF_VALID)
+       UNC_VF_VALID)
       || (val_policingprofile_entry->valid[UPLL_IDX_GREEN_DSCP_PPE]
           == UNC_VF_VALID_NO_VALUE)) {
     if (attrs[unc::capa::policingprofile_entry::kCapGreenDscp] == 0) {
       UPLL_LOG_DEBUG("GREEN_DSCP attr is not supported by ctrlr");
       val_policingprofile_entry->valid[UPLL_IDX_GREEN_DSCP_PPE] =
           UNC_VF_NOT_SUPPORTED;
-    } 
+    }
   }
 
   if ((val_policingprofile_entry->valid[UPLL_IDX_GREEN_DROP_PPE] ==
-      UNC_VF_VALID)
+       UNC_VF_VALID)
       || (val_policingprofile_entry->valid[UPLL_IDX_GREEN_DROP_PPE]
           == UNC_VF_VALID_NO_VALUE)) {
     if (attrs[unc::capa::policingprofile_entry::kCapGreenDrop] == 0) {
@@ -2626,7 +2695,7 @@ void PolicingProfileEntryMoMgr::ValidateYellowFieldAttribute(
   UPLL_FUNC_TRACE;
 
   if ((val_policingprofile_entry->valid[UPLL_IDX_YELLOW_ACTION_PPE]
-      == UNC_VF_VALID)
+       == UNC_VF_VALID)
       || (val_policingprofile_entry->valid[UPLL_IDX_YELLOW_ACTION_PPE]
           == UNC_VF_VALID_NO_VALUE)) {
     if (attrs[unc::capa::policingprofile_entry::kCapYellowAction] == 0) {
@@ -2637,18 +2706,18 @@ void PolicingProfileEntryMoMgr::ValidateYellowFieldAttribute(
   }
 
   if ((val_policingprofile_entry->valid[UPLL_IDX_YELLOW_PRIORITY_PPE]
-      == UNC_VF_VALID)
+       == UNC_VF_VALID)
       || (val_policingprofile_entry->valid[UPLL_IDX_YELLOW_PRIORITY_PPE]
           == UNC_VF_VALID_NO_VALUE)) {
     if (attrs[unc::capa::policingprofile_entry::kCapYellowPriority] == 0) {
       UPLL_LOG_DEBUG("YELLOW_PRIORITY attr is not supported by ctrlr");
       val_policingprofile_entry->valid[UPLL_IDX_YELLOW_PRIORITY_PPE] =
           UNC_VF_NOT_SUPPORTED;
-    } 
+    }
   }
 
   if ((val_policingprofile_entry->valid[UPLL_IDX_YELLOW_DSCP_PPE]
-      == UNC_VF_VALID)
+       == UNC_VF_VALID)
       || (val_policingprofile_entry->valid[UPLL_IDX_YELLOW_DSCP_PPE]
           == UNC_VF_VALID_NO_VALUE)) {
     if (attrs[unc::capa::policingprofile_entry::kCapYellowDscp] == 0) {
@@ -2659,7 +2728,7 @@ void PolicingProfileEntryMoMgr::ValidateYellowFieldAttribute(
   }
 
   if ((val_policingprofile_entry->valid[UPLL_IDX_YELLOW_DROP_PPE]
-      == UNC_VF_VALID)
+       == UNC_VF_VALID)
       || (val_policingprofile_entry->valid[UPLL_IDX_YELLOW_DROP_PPE]
           == UNC_VF_VALID_NO_VALUE)) {
     if (attrs[unc::capa::policingprofile_entry::kCapYellowDrop] == 0) {
@@ -2676,7 +2745,7 @@ void PolicingProfileEntryMoMgr::ValidateRedFieldAttribute(
   UPLL_FUNC_TRACE;
 
   if ((val_policingprofile_entry->valid[UPLL_IDX_RED_ACTION_PPE]
-      == UNC_VF_VALID)
+       == UNC_VF_VALID)
       || (val_policingprofile_entry->valid[UPLL_IDX_RED_ACTION_PPE]
           == UNC_VF_VALID_NO_VALUE)) {
     if (attrs[unc::capa::policingprofile_entry::kCapRedAction] == 0) {
@@ -2687,7 +2756,7 @@ void PolicingProfileEntryMoMgr::ValidateRedFieldAttribute(
   }
 
   if ((val_policingprofile_entry->valid[UPLL_IDX_RED_PRIORITY_PPE]
-      == UNC_VF_VALID)
+       == UNC_VF_VALID)
       || (val_policingprofile_entry->valid[UPLL_IDX_RED_PRIORITY_PPE]
           == UNC_VF_VALID_NO_VALUE)) {
     if (attrs[unc::capa::policingprofile_entry::kCapRedPriority] == 0) {
@@ -2719,7 +2788,7 @@ void PolicingProfileEntryMoMgr::ValidateRedFieldAttribute(
 }
 
 upll_rc_t PolicingProfileEntryMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
-    ConfigKeyVal *ikey) {
+                                                     ConfigKeyVal *ikey) {
   UPLL_FUNC_TRACE;
   if (NULL == ikey || NULL ==(ikey->get_key()) ||
       NULL != okey) {
@@ -2729,13 +2798,13 @@ upll_rc_t PolicingProfileEntryMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
 
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   key_rename_vnode_info_t *key_rename =
-    reinterpret_cast<key_rename_vnode_info_t *>(ikey->get_key());
+      reinterpret_cast<key_rename_vnode_info_t *>(ikey->get_key());
 
   key_policingprofile_entry_t *key_policingprofile =
-    reinterpret_cast<key_policingprofile_entry_t *>(ConfigKeyVal::Malloc(
-          sizeof(key_policingprofile_entry_t)));
+      reinterpret_cast<key_policingprofile_entry_t *>(ConfigKeyVal::Malloc(
+              sizeof(key_policingprofile_entry_t)));
   if (!strlen(
-        reinterpret_cast<char *>(key_rename->old_policingprofile_name))) {
+          reinterpret_cast<char *>(key_rename->old_policingprofile_name))) {
     UPLL_LOG_DEBUG("key_rename->old_policingprofile_name NULL");
     if (key_policingprofile) free(key_policingprofile);
     return UPLL_RC_ERR_GENERIC;
@@ -2746,8 +2815,8 @@ upll_rc_t PolicingProfileEntryMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
       (kMaxLenPolicingProfileName + 1));
 
   okey = new ConfigKeyVal(UNC_KT_POLICING_PROFILE_ENTRY,
-      IpctSt::kIpcStKeyPolicingprofileEntry,
-      key_policingprofile, NULL);
+                          IpctSt::kIpcStKeyPolicingprofileEntry,
+                          key_policingprofile, NULL);
   if (!okey) {
     UPLL_LOG_DEBUG("okey NULL");
     return UPLL_RC_ERR_GENERIC;
@@ -2755,10 +2824,11 @@ upll_rc_t PolicingProfileEntryMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
   return result_code;
 }
 
-upll_rc_t PolicingProfileEntryMoMgr::UpdateVnodeVal(ConfigKeyVal *ikey,
-                                             DalDmlIntf *dmi,
-                                             upll_keytype_datatype_t data_type,
-                                             bool &no_rename) {
+upll_rc_t PolicingProfileEntryMoMgr::UpdateVnodeVal(
+    ConfigKeyVal *ikey,
+    DalDmlIntf *dmi,
+    upll_keytype_datatype_t data_type,
+    bool &no_rename) {
   UPLL_FUNC_TRACE;
   ConfigKeyVal *okey = NULL;
   ConfigKeyVal *kval = NULL;
@@ -2767,12 +2837,12 @@ upll_rc_t PolicingProfileEntryMoMgr::UpdateVnodeVal(ConfigKeyVal *ikey,
   upll_rc_t result_code = UPLL_RC_SUCCESS;
 
   key_rename_vnode_info_t *key_rename =
-  reinterpret_cast<key_rename_vnode_info_t *>(ikey->get_key());
-  UPLL_LOG_TRACE("old name (%s) (%s)",key_rename->old_flowlist_name,
-              key_rename->new_flowlist_name);
+      reinterpret_cast<key_rename_vnode_info_t *>(ikey->get_key());
+  UPLL_LOG_TRACE("old name (%s) (%s)", key_rename->old_flowlist_name,
+                 key_rename->new_flowlist_name);
   val_policingprofile_entry_t *val_ppe =
-         reinterpret_cast<val_policingprofile_entry_t *>
-         (ConfigKeyVal::Malloc(sizeof(val_policingprofile_entry_t))); 
+      reinterpret_cast<val_policingprofile_entry_t *>
+      (ConfigKeyVal::Malloc(sizeof(val_policingprofile_entry_t)));
   if (!val_ppe) {
     UPLL_LOG_TRACE("val_ppe Failed");
     return UPLL_RC_ERR_GENERIC;
@@ -2792,17 +2862,18 @@ upll_rc_t PolicingProfileEntryMoMgr::UpdateVnodeVal(ConfigKeyVal *ikey,
     return UPLL_RC_ERR_GENERIC;
   }
   uuu::upll_strncpy(val_ppe->flowlist, key_rename->old_flowlist_name,
-      (kMaxLenFlowListName + 1));
+                    (kMaxLenFlowListName + 1));
   val_ppe->valid[UPLL_IDX_FLOWLIST_PPE] = UNC_VF_VALID;
   UPLL_LOG_DEBUG("policer name and valid (%d) (%s)",
-                  val_ppe->valid[UPLL_IDX_FLOWLIST_PPE], val_ppe->flowlist);
-  okey->SetCfgVal(new ConfigVal (IpctSt::kIpcStValPolicingprofileEntry, val_ppe));
+                 val_ppe->valid[UPLL_IDX_FLOWLIST_PPE], val_ppe->flowlist);
+  okey->SetCfgVal(new ConfigVal(IpctSt::kIpcStValPolicingprofileEntry,
+                                 val_ppe));
 
   DbSubOp dbop = { kOpReadMultiple, kOpMatchNone, kOpInOutFlag };
 
-  // Read the record of key structure and old policer name in maintbl
+  //  Read the record of key structure and old policer name in maintbl
   result_code = ReadConfigDB(okey, data_type, UNC_OP_READ, dbop, dmi,
-    MAINTBL);
+                             MAINTBL);
   if (UPLL_RC_SUCCESS != result_code) {
     UPLL_LOG_DEBUG(" ReadConfigDB failed ");
     DELETE_IF_NOT_NULL(okey);
@@ -2810,7 +2881,7 @@ upll_rc_t PolicingProfileEntryMoMgr::UpdateVnodeVal(ConfigKeyVal *ikey,
   }
   ConfigKeyVal *first_ckv = okey;
   while (okey != NULL) {
-    // Update the new flowlist name in MAINTBL
+    //  Update the new flowlist name in MAINTBL
     result_code = GetChildConfigKey(kval, okey);
     if (UPLL_RC_SUCCESS != result_code) {
       UPLL_LOG_DEBUG("GetChildConfigKey kval NULL");
@@ -2818,14 +2889,14 @@ upll_rc_t PolicingProfileEntryMoMgr::UpdateVnodeVal(ConfigKeyVal *ikey,
       return result_code;
     }
 
-    // Copy the new flowlist name in val_policingprofile_entry
+    //  Copy the new flowlist name in val_policingprofile_entry
     val_policingprofile_entry_t *val1 =
-         reinterpret_cast<val_policingprofile_entry_t *>
-         (ConfigKeyVal::Malloc(sizeof(val_policingprofile_entry_t)));
+        reinterpret_cast<val_policingprofile_entry_t *>
+        (ConfigKeyVal::Malloc(sizeof(val_policingprofile_entry_t)));
     if (!val1) return UPLL_RC_ERR_GENERIC;
     memset(val1, 0, sizeof(val_policingprofile_entry_t));
 
-    // New name null check
+    //  New name null check
     if (!strlen(reinterpret_cast<char *>(key_rename->new_flowlist_name))) {
       if (val1) free(val1);
       UPLL_LOG_DEBUG("new_policingprofile_name NULL");
@@ -2833,14 +2904,15 @@ upll_rc_t PolicingProfileEntryMoMgr::UpdateVnodeVal(ConfigKeyVal *ikey,
       DELETE_IF_NOT_NULL(first_ckv);
       return UPLL_RC_ERR_GENERIC;
     }
-    // Copy the new flowlist name into val_policingprofile_entry_t
-     uuu::upll_strncpy(val1->flowlist, key_rename->new_flowlist_name,
-      (kMaxLenFlowListName + 1));
+    //  Copy the new flowlist name into val_policingprofile_entry_t
+    uuu::upll_strncpy(val1->flowlist, key_rename->new_flowlist_name,
+                      (kMaxLenFlowListName + 1));
     val1->valid[UPLL_IDX_FLOWLIST_PPE] = UNC_VF_VALID;
     UPLL_LOG_DEBUG("policer name and valid (%d) (%s)",
-                    val1->valid[UPLL_IDX_FLOWLIST_PPE], val1->flowlist);
+                   val1->valid[UPLL_IDX_FLOWLIST_PPE], val1->flowlist);
 
-    ConfigVal *cval1 = new ConfigVal(IpctSt::kIpcStValPolicingprofileEntry, val1);
+    ConfigVal *cval1 = new ConfigVal(IpctSt::kIpcStValPolicingprofileEntry,
+                                     val1);
 
     kval->SetCfgVal(cval1);
 
@@ -2853,12 +2925,12 @@ upll_rc_t PolicingProfileEntryMoMgr::UpdateVnodeVal(ConfigKeyVal *ikey,
 
     SET_USER_DATA_FLAGS(kval, rename);
 
-    // Update the new flowlist name in MAINTBL
+    //  Update the new flowlist name in MAINTBL
     result_code = UpdateConfigDB(kval, data_type, UNC_OP_UPDATE, dmi,
-                  MAINTBL);
+                                 MAINTBL);
     if (UPLL_RC_SUCCESS != result_code) {
       UPLL_LOG_DEBUG("Create record Err in vtnpolicingmaptbl CANDIDATE DB(%d)",
-        result_code);
+                     result_code);
       DELETE_IF_NOT_NULL(kval);
       DELETE_IF_NOT_NULL(first_ckv);
       return result_code;
@@ -2874,9 +2946,9 @@ upll_rc_t PolicingProfileEntryMoMgr::UpdatePolicingProfileEntryRenamed(
     ConfigKeyVal *rename_info, DalDmlIntf *dmi,
     upll_keytype_datatype_t data_type) {
   UPLL_FUNC_TRACE;
-  uint8_t rename = 0;  // UNINIT
+  uint8_t rename = 0;  //  UNINIT
   uint8_t *ctrlr_id = NULL;
-  if (!rename_info || !rename_info->get_key()) {  // COVERITY FORWARD NULL
+  if (!rename_info || !rename_info->get_key()) {  //  COVERITY FORWARD NULL
     return UPLL_RC_ERR_GENERIC;
   }
   GET_USER_DATA_CTRLR(rename_info, ctrlr_id);
@@ -2902,12 +2974,17 @@ upll_rc_t PolicingProfileEntryMoMgr::UpdatePolicingProfileEntryRenamed(
     return UPLL_RC_ERR_GENERIC;
   }
   uuu::upll_strncpy(
-                    key_rename->new_flowlist_name,
-                    reinterpret_cast<key_rename_vnode_info *>
-                    (rename_info->get_key())->new_flowlist_name,
-                    (kMaxLenFlowListName + 1));
+      key_rename->new_flowlist_name,
+      reinterpret_cast<key_rename_vnode_info *>
+      (rename_info->get_key())->new_flowlist_name,
+      (kMaxLenFlowListName + 1));
   DbSubOp dbop1 = { kOpReadMultiple, kOpMatchNone, kOpInOutFlag };
-  result_code = ReadConfigDB(okey, data_type, UNC_OP_READ, dbop1, dmi, MAINTBL);
+  result_code = ReadConfigDB(okey,
+                             data_type,
+                             UNC_OP_READ,
+                             dbop1,
+                             dmi,
+                             MAINTBL);
   if (UPLL_RC_SUCCESS != result_code) {
     free(key_rename);
     return result_code;
@@ -2915,25 +2992,25 @@ upll_rc_t PolicingProfileEntryMoMgr::UpdatePolicingProfileEntryRenamed(
   while (okey) {
     result_code = GetChildConfigKey(tmp_key, okey);
     if (result_code != UPLL_RC_SUCCESS) {
-      free(key_rename);  // COV RESOURCE LEAK FIC
+      free(key_rename);  //  COV RESOURCE LEAK FIC
       return result_code;
     }
     result_code = GetChildConfigKey(ctrlr_tmp_key, okey);
     if (result_code != UPLL_RC_SUCCESS) {
-      // COV RESOURCE LEAK FIX
+      //  COV RESOURCE LEAK FIX
       delete tmp_key;
       free(key_rename);
       return result_code;
     }
-    if (!tmp_key || !(tmp_key->get_key())) {  // COVERITY FORWARD NULL
-      delete ctrlr_tmp_key;  // COV RESOURCE LEAK FIX
+    if (!tmp_key || !(tmp_key->get_key())) {  //  COVERITY FORWARD NULL
+      delete ctrlr_tmp_key;  //  COV RESOURCE LEAK FIX
       free(key_rename);
       delete tmp_key;
       return UPLL_RC_ERR_GENERIC;
     }
-    // COVERITY FORWARD NULL
+    //  COVERITY FORWARD NULL
     if (!ctrlr_tmp_key || !(ctrlr_tmp_key->get_key())) {
-      // COV RESOURCE LEAK FIX
+      //  COV RESOURCE LEAK FIX
       free(key_rename);
       delete ctrlr_tmp_key;
       delete tmp_key;
@@ -2944,12 +3021,16 @@ upll_rc_t PolicingProfileEntryMoMgr::UpdatePolicingProfileEntryRenamed(
     SET_USER_DATA_FLAGS(tmp_key, rename);
     SET_USER_DATA_FLAGS(ctrlr_tmp_key, rename);
     tmp_key->AppendCfgKeyVal(table[MAINTBL]->get_key_type(),
-        IpctSt::kIpcInvalidStNum, key_rename, NULL);
+                             IpctSt::kIpcInvalidStNum, key_rename, NULL);
     ctrlr_tmp_key->AppendCfgKeyVal(table[MAINTBL]->get_key_type(),
-        IpctSt::kIpcInvalidStNum, key_rename, NULL);
+                                   IpctSt::kIpcInvalidStNum, key_rename, NULL);
     DbSubOp dbop = { kOpNotRead, kOpMatchNone, kOpInOutFlag };
-    result_code = UpdateRenameKey(tmp_key, data_type, UNC_OP_UPDATE, dmi, &dbop,
-        MAINTBL);
+    result_code = UpdateRenameKey(tmp_key,
+                                  data_type,
+                                  UNC_OP_UPDATE,
+                                  dmi,
+                                  &dbop,
+                                  MAINTBL);
     if (UPLL_RC_SUCCESS != result_code) {
       DELETE_IF_NOT_NULL(tmp_key);
       DELETE_IF_NOT_NULL(ctrlr_tmp_key);
@@ -2959,19 +3040,19 @@ upll_rc_t PolicingProfileEntryMoMgr::UpdatePolicingProfileEntryRenamed(
     SET_USER_DATA_CTRLR(ctrlr_tmp_key, ctrlr_id);
     DbSubOp dbop1 = { kOpNotRead, kOpMatchCtrlr, kOpInOutFlag };
     result_code = UpdateRenameKey(tmp_key, data_type, UNC_OP_UPDATE, dmi,
-        &dbop1, CTRLRTBL);
+                                  &dbop1, CTRLRTBL);
     if (UPLL_RC_SUCCESS != result_code) {
       DELETE_IF_NOT_NULL(tmp_key);
       DELETE_IF_NOT_NULL(ctrlr_tmp_key);
       DELETE_IF_NOT_NULL(okey);
       return result_code;
     }
-    // Check with Sarath - Start
+    //  Check with Sarath - Start
     DELETE_IF_NOT_NULL(tmp_key);
     DELETE_IF_NOT_NULL(ctrlr_tmp_key);
     okey = okey->get_next_cfg_key_val();
   }
-  DELETE_IF_NOT_NULL(okey);  // Logically dead code
+  DELETE_IF_NOT_NULL(okey);  //  Logically dead code
   FREE_IF_NOT_NULL(key_rename);
   return result_code;
 }
@@ -2979,12 +3060,13 @@ upll_rc_t PolicingProfileEntryMoMgr::UpdatePolicingProfileEntryRenamed(
 bool PolicingProfileEntryMoMgr::IsValidKey(void *ikey, uint64_t index) {
   UPLL_FUNC_TRACE;
   key_policingprofile_entry *key =
-    reinterpret_cast<key_policingprofile_entry *>(ikey);
+      reinterpret_cast<key_policingprofile_entry *>(ikey);
   upll_rc_t ret_val = UPLL_RC_SUCCESS;
 
   if (index == uudst::policingprofile_entry::kDbiPolicingProfileName) {
     ret_val = ValidateKey(
-        reinterpret_cast<char *>(key->policingprofile_key.policingprofile_name),
+        reinterpret_cast<char *>
+        (key->policingprofile_key.policingprofile_name),
         kMinLenPolicingProfileName, kMaxLenPolicingProfileName);
     if (ret_val != UPLL_RC_SUCCESS) {
       UPLL_LOG_TRACE("Policingprofile Name is not valid(%d)", ret_val);
@@ -2993,8 +3075,8 @@ bool PolicingProfileEntryMoMgr::IsValidKey(void *ikey, uint64_t index) {
   }
   if (index == uudst::policingprofile_entry::kDbiSequenceNum) {
     if (!ValidateNumericRange(key->sequence_num,
-          kMinPolicingProfileSeqNum,
-          kMaxPolicingProfileSeqNum, true, true)) {
+                              kMinPolicingProfileSeqNum,
+                              kMaxPolicingProfileSeqNum, true, true)) {
       UPLL_LOG_DEBUG("Sequence number Syntax validation failed ");
       return false;
     }
@@ -3009,7 +3091,7 @@ upll_rc_t PolicingProfileEntryMoMgr::GetPolicingProfileEntryCtrlrKeyval(
   upll_rc_t result_code = UPLL_RC_SUCCESS;
 
   if (NULL == policingprofile_name || NULL == ctrlr_id ||
-     NULL != ppe_keyval) {
+      NULL != ppe_keyval) {
     return UPLL_RC_ERR_GENERIC;
   }
 
@@ -3019,7 +3101,7 @@ upll_rc_t PolicingProfileEntryMoMgr::GetPolicingProfileEntryCtrlrKeyval(
   }
 
   key_policingprofile_entry_t *key_policingprofie =
-    reinterpret_cast<key_policingprofile_entry_t *>(ppe_keyval->get_key());
+      reinterpret_cast<key_policingprofile_entry_t *>(ppe_keyval->get_key());
   uuu::upll_strncpy(
       key_policingprofie->policingprofile_key.policingprofile_name,
       policingprofile_name,
@@ -3037,8 +3119,8 @@ upll_rc_t PolicingProfileEntryMoMgr::PolicingProfileEntryCtrlrTblOper(
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   ConfigKeyVal *ppe_ckv = NULL;
   result_code = GetPolicingProfileEntryCtrlrKeyval(ppe_ckv,
-      policingprofile_name,
-      ctrlr_id);
+                                                   policingprofile_name,
+                                                   ctrlr_id);
   if (UPLL_RC_SUCCESS != result_code) {
     DELETE_IF_NOT_NULL(ppe_ckv);
     return result_code;
@@ -3064,7 +3146,7 @@ upll_rc_t PolicingProfileEntryMoMgr::PolicingProfileEntryCtrlrTblOper(
     }
     DbSubOp dbop = { kOpReadExist, kOpMatchCtrlr, kOpInOutNone };
     result_code = mgr->UpdateConfigDB(okey, dt_type, UNC_OP_READ, dmi, &dbop,
-      CTRLRTBL);
+                                      CTRLRTBL);
     if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
       UPLL_LOG_DEBUG("Delete in entry table");
       result_code = CtrlrTblDelete(ppe_ckv, dmi, dt_type);
@@ -3089,7 +3171,7 @@ upll_rc_t PolicingProfileEntryMoMgr::PolicingProfileEntryCtrlrTblOper(
   } else {
     result_code = UPLL_RC_ERR_NO_SUCH_OPERATION;
   }
-  DELETE_IF_NOT_NULL(ppe_ckv);  // COV RESOURCE LEAK FIX
+  DELETE_IF_NOT_NULL(ppe_ckv);  //  COV RESOURCE LEAK FIX
   return result_code;
 }
 
@@ -3122,14 +3204,14 @@ upll_rc_t PolicingProfileEntryMoMgr::DecrementRefCount(
       return UPLL_RC_ERR_GENERIC;
     }
     if (UNC_VF_VALID == temp_ppe_val->valid[UPLL_IDX_FLOWLIST_PPE ]) {
-     FlowListMoMgr *flowlist_mgr = reinterpret_cast<FlowListMoMgr *>
-      (const_cast<MoManager *> (GetMoManager(UNC_KT_FLOWLIST)));
-     if (NULL == flowlist_mgr) {
-       UPLL_LOG_DEBUG("flowlist_mgr is NULL");
-       DELETE_IF_NOT_NULL(temp_ckv);
-       return UPLL_RC_ERR_GENERIC;
-     }
-     result_code = flowlist_mgr->AddFlowListToController(
+      FlowListMoMgr *flowlist_mgr = reinterpret_cast<FlowListMoMgr *>
+          (const_cast<MoManager *> (GetMoManager(UNC_KT_FLOWLIST)));
+      if (NULL == flowlist_mgr) {
+        UPLL_LOG_DEBUG("flowlist_mgr is NULL");
+        DELETE_IF_NOT_NULL(temp_ckv);
+        return UPLL_RC_ERR_GENERIC;
+      }
+      result_code = flowlist_mgr->AddFlowListToController(
           reinterpret_cast<char *>(temp_ppe_val->flowlist), dmi,
           reinterpret_cast<char *>(ctrlr_id), dt_type, UNC_OP_DELETE);
       if (result_code != UPLL_RC_SUCCESS) {
@@ -3138,7 +3220,7 @@ upll_rc_t PolicingProfileEntryMoMgr::DecrementRefCount(
         }
         UPLL_LOG_DEBUG("AddFlowListToController failed err code(%d)",
                        result_code)
-        DELETE_IF_NOT_NULL(temp_ckv);
+            DELETE_IF_NOT_NULL(temp_ckv);
         return result_code;
       }
     }
@@ -3178,9 +3260,9 @@ upll_rc_t PolicingProfileEntryMoMgr::CtrlrTblDelete(
       return UPLL_RC_ERR_GENERIC;
     }
     if (UNC_VF_VALID == temp_ppe_val->valid[UPLL_IDX_FLOWLIST_PPE ]) {
-     FlowListMoMgr *flowlist_mgr = reinterpret_cast<FlowListMoMgr *>
-      (const_cast<MoManager *> (GetMoManager(UNC_KT_FLOWLIST)));
-     result_code = flowlist_mgr->AddFlowListToController(
+      FlowListMoMgr *flowlist_mgr = reinterpret_cast<FlowListMoMgr *>
+          (const_cast<MoManager *> (GetMoManager(UNC_KT_FLOWLIST)));
+      result_code = flowlist_mgr->AddFlowListToController(
           reinterpret_cast<char *>(temp_ppe_val->flowlist), dmi,
           reinterpret_cast<char *>(ctrlr_id), dt_type, UNC_OP_DELETE);
       if (result_code != UPLL_RC_SUCCESS) {
@@ -3190,7 +3272,7 @@ upll_rc_t PolicingProfileEntryMoMgr::CtrlrTblDelete(
         }
         UPLL_LOG_DEBUG("AddFlowListToController failed err code(%d)",
                        result_code)
-        DELETE_IF_NOT_NULL(temp_ckv);
+            DELETE_IF_NOT_NULL(temp_ckv);
         return result_code;
       }
     }
@@ -3199,7 +3281,7 @@ upll_rc_t PolicingProfileEntryMoMgr::CtrlrTblDelete(
   DELETE_IF_NOT_NULL(temp_ckv);
   DbSubOp dbop = { kOpNotRead, kOpMatchCtrlr, kOpInOutNone };
   result_code = UpdateConfigDB(ppe_ckv, dt_type, UNC_OP_DELETE, dmi, &dbop,
-      CTRLRTBL);
+                               CTRLRTBL);
   if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
     return UPLL_RC_SUCCESS;
   } else if (UPLL_RC_SUCCESS != result_code) {
@@ -3216,7 +3298,12 @@ upll_rc_t PolicingProfileEntryMoMgr::CtrlrTblCreate(
 
   DbSubOp dbop = { kOpReadMultiple, kOpMatchNone, kOpInOutCs };
 
-  result_code = ReadConfigDB(ppe_ckv, dt_type, UNC_OP_READ, dbop, dmi, MAINTBL);
+  result_code = ReadConfigDB(ppe_ckv,
+                             dt_type,
+                             UNC_OP_READ,
+                             dbop,
+                             dmi,
+                             MAINTBL);
   if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
     UPLL_LOG_DEBUG("No entry in policingprofile entry maintbl");
     return UPLL_RC_SUCCESS;
@@ -3241,20 +3328,20 @@ upll_rc_t PolicingProfileEntryMoMgr::CtrlrTblCreate(
       return UPLL_RC_ERR_GENERIC;
     }
     if (UNC_VF_VALID == temp_ppe_val->valid[UPLL_IDX_FLOWLIST_PPE ]) {
-     FlowListMoMgr *flowlist_mgr = reinterpret_cast<FlowListMoMgr *>
-      (const_cast<MoManager *> (GetMoManager(UNC_KT_FLOWLIST)));
-     if (NULL == flowlist_mgr) {
-       UPLL_LOG_DEBUG("flowlist_mgr is NULL");
-       free(req_header);
-       return UPLL_RC_ERR_GENERIC;
-     }
-     result_code = flowlist_mgr->AddFlowListToController(
+      FlowListMoMgr *flowlist_mgr = reinterpret_cast<FlowListMoMgr *>
+          (const_cast<MoManager *> (GetMoManager(UNC_KT_FLOWLIST)));
+      if (NULL == flowlist_mgr) {
+        UPLL_LOG_DEBUG("flowlist_mgr is NULL");
+        free(req_header);
+        return UPLL_RC_ERR_GENERIC;
+      }
+      result_code = flowlist_mgr->AddFlowListToController(
           reinterpret_cast<char *>(temp_ppe_val->flowlist), dmi,
           reinterpret_cast<char *>(ctrlr_id), dt_type, UNC_OP_CREATE);
       if (result_code != UPLL_RC_SUCCESS) {
         UPLL_LOG_DEBUG("AddFlowListToController failed err code(%d)",
                        result_code)
-        free(req_header);
+            free(req_header);
         return result_code;
       }
     }
@@ -3266,97 +3353,75 @@ upll_rc_t PolicingProfileEntryMoMgr::CtrlrTblCreate(
       return result_code;
     }
     SET_USER_DATA_CTRLR(new_ppe, ctrlr_id);
-    DbSubOp dbop1 = { kOpReadSingle, kOpMatchCtrlr, kOpInOutNone };
-    result_code = ReadConfigDB(new_ppe, dt_type, UNC_OP_READ, dbop1, dmi,
-                                 CTRLRTBL);
-    if (UPLL_RC_SUCCESS == result_code) {
-      ppe_ckv = ppe_ckv->get_next_cfg_key_val();
-      DELETE_IF_NOT_NULL(new_ppe);
-      continue;
-    } else if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
-      UPLL_LOG_DEBUG("CtrlrTbl create failed %d", result_code);
-      free(req_header);
-      DELETE_IF_NOT_NULL(new_ppe);
-      return result_code;
-    }
     val_policingprofile_entry_ctrl_t *val_ctrlr =
-      reinterpret_cast<val_policingprofile_entry_ctrl_t*>(GetVal(new_ppe));
+        reinterpret_cast<val_policingprofile_entry_ctrl_t *>
+        (ConfigKeyVal::Malloc(
+                sizeof(val_policingprofile_entry_ctrl_t)));
     if (NULL == val_ctrlr) {
       free(req_header);
       DELETE_IF_NOT_NULL(new_ppe);
       return UPLL_RC_ERR_GENERIC;
     }
+    new_ppe->AppendCfgVal(IpctSt::kIpcInvalidStNum, val_ctrlr);
     val_policingprofile_entry_t *val =
-      reinterpret_cast<val_policingprofile_entry_t *>(GetVal(ppe_ckv));
+        reinterpret_cast<val_policingprofile_entry_t *>(GetVal(ppe_ckv));
     val_ctrlr->cs_row_status = (unc_keytype_configstatus_t)val->cs_row_status;
 
-    // capability check
-    ConfigKeyVal *temp_key = NULL;
-    result_code = GetChildConfigKey(temp_key, NULL);
-    if (UPLL_RC_SUCCESS != result_code) {
-      DELETE_IF_NOT_NULL(new_ppe);
-      free(req_header);
-      UPLL_LOG_DEBUG("GetChildConfigKey failed(%d)",result_code);
-      return result_code;
-    }
-
-    result_code = GetInstanceCount(temp_key,
-                                 reinterpret_cast<char*>(ctrlr_id),
-                                 dt_type,
-                                 &cur_instance_count,
-                                 dmi, CTRLRTBL);
-    DELETE_IF_NOT_NULL(temp_key);
-
-    if (UPLL_RC_SUCCESS != result_code) {
-      DELETE_IF_NOT_NULL(new_ppe);
-      free(req_header);
-      UPLL_LOG_DEBUG("GetInstanceCount failed(%d)",result_code);
-      return result_code;
-    }
-
+    //  capability check
     result_code = ValidateCapability(
-      req_header, ppe_ckv, reinterpret_cast<char *>(ctrlr_id));
+        req_header, ppe_ckv, reinterpret_cast<char *>(ctrlr_id));
     unc_keytype_ctrtype_t ctrlrtype = UNC_CT_UNKNOWN;
     uuc::CtrlrMgr *ctrlr_mgr = uuc::CtrlrMgr::GetInstance();
     if (result_code != UPLL_RC_SUCCESS) {
-      // Policingprofile is not supported for other than PFC Controller
-      // so skip adding entry for such sontroller in ctrlr table
+      //  Policingprofile is not supported for other than PFC Controller
+      //  so skip adding entry for such sontroller in ctrlr table
       DELETE_IF_NOT_NULL(new_ppe);
       if ((!ctrlr_mgr->GetCtrlrType(reinterpret_cast<char *>(ctrlr_id),
-                     dt_type, &ctrlrtype)) || (ctrlrtype != UNC_CT_PFC)) {
-          result_code = UPLL_RC_SUCCESS; 
-          UPLL_LOG_DEBUG("Controller type is  %d", ctrlrtype);
-          ppe_ckv = ppe_ckv->get_next_cfg_key_val();
-          continue;
-       }
-       free(req_header);
-       UPLL_LOG_DEBUG("Key not supported by controller");
-       return result_code;
+                                    dt_type,
+                                    &ctrlrtype)) || (ctrlrtype !=
+                                                     UNC_CT_PFC)) {
+        result_code = UPLL_RC_SUCCESS;
+        UPLL_LOG_DEBUG("Controller type is  %d", ctrlrtype);
+        ppe_ckv = ppe_ckv->get_next_cfg_key_val();
+        continue;
+      }
+      free(req_header);
+      UPLL_LOG_DEBUG("Key not supported by controller");
+      return result_code;
     }
 
     for (unsigned int loop = 0;
          loop < (sizeof(val_ctrlr->valid)/sizeof(val_ctrlr->valid[0]));
          loop++) {
       if (val->valid[loop] == UNC_VF_NOT_SUPPORTED)
-         val_ctrlr->valid[loop] = UNC_VF_INVALID;
+        val_ctrlr->valid[loop] = UNC_VF_INVALID;
       else
         val_ctrlr->valid[loop] = val->valid[loop];
-      UPLL_LOG_DEBUG("valid of %d - %d  ctrlrtbl - %d", loop,  val->valid[loop],
-                       val_ctrlr->valid[loop]);
+      UPLL_LOG_DEBUG("valid of %d - %d  ctrlrtbl - %d",
+                     loop,
+                     val->valid[loop],
+                     val_ctrlr->valid[loop]);
     }
-    //Audit
+    // Audit
     if (UPLL_DT_AUDIT == dt_type) {
       UPLL_LOG_DEBUG("Audit db setting cs");
       for (unsigned int loop = 0;
-         loop < (sizeof(val_ctrlr->valid)/sizeof(val_ctrlr->valid[0]));
-         loop++) {
-        val_ctrlr->cs_attr[loop] = (unc_keytype_configstatus_t)val->cs_attr[loop];
+           loop < (sizeof(val_ctrlr->valid)/sizeof(val_ctrlr->valid[0]));
+           loop++) {
+        val_ctrlr->cs_attr[loop] = (unc_keytype_configstatus_t)
+            val->cs_attr[loop];
       }
-      val_ctrlr->cs_row_status = (unc_keytype_configstatus_t)val->cs_row_status;
+      val_ctrlr->cs_row_status = (unc_keytype_configstatus_t)
+          val->cs_row_status;
     }
     result_code = UpdateConfigDB(new_ppe, dt_type, UNC_OP_CREATE, dmi,
-        CTRLRTBL);
+                                 CTRLRTBL);
     if (UPLL_RC_SUCCESS != result_code) {
+      if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code) {
+        ppe_ckv = ppe_ckv->get_next_cfg_key_val();
+        DELETE_IF_NOT_NULL(new_ppe);
+        continue;
+      }
       DELETE_IF_NOT_NULL(new_ppe);
       free(req_header);
       return result_code;
@@ -3369,7 +3434,7 @@ upll_rc_t PolicingProfileEntryMoMgr::CtrlrTblCreate(
 }
 
 upll_rc_t PolicingProfileEntryMoMgr::SetConsolidatedStatus(ConfigKeyVal *ikey,
-    DalDmlIntf *dmi) {
+                                                           DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   ConfigKeyVal *ckv = NULL;
@@ -3379,7 +3444,7 @@ upll_rc_t PolicingProfileEntryMoMgr::SetConsolidatedStatus(ConfigKeyVal *ikey,
     return result_code;
   }
   result_code = ReadConfigDB(ckv, UPLL_DT_RUNNING, UNC_OP_READ, dbop, dmi,
-      CTRLRTBL);
+                             CTRLRTBL);
   if (UPLL_RC_SUCCESS != result_code) {
     delete ckv;
     return result_code;
@@ -3388,30 +3453,30 @@ upll_rc_t PolicingProfileEntryMoMgr::SetConsolidatedStatus(ConfigKeyVal *ikey,
   std::list < unc_keytype_configstatus_t > list_cs_row;
   val_policingprofile_entry_ctrl_t *val;
   for (unsigned int loop = 0; loop < sizeof(val->valid)/sizeof(val->valid[0]);
-      ++loop) {
+       ++loop) {
     std::list < unc_keytype_configstatus_t > list_attr;
     vec_attr.push_back(list_attr);
   }
   ConfigKeyVal *temp_ckv = ckv;
   for (; temp_ckv != NULL; temp_ckv = temp_ckv->get_next_cfg_key_val()) {
     val = reinterpret_cast<val_policingprofile_entry_ctrl_t *>
-                          (GetVal(temp_ckv));
+        (GetVal(temp_ckv));
     list_cs_row.push_back((unc_keytype_configstatus_t) val->cs_row_status);
     for (unsigned int loop = 0; loop < sizeof(val->valid)/
-        sizeof(val->valid[0]); ++loop) {
+         sizeof(val->valid[0]); ++loop) {
       vec_attr[loop].push_back((unc_keytype_configstatus_t)
-        val->cs_attr[loop]);
+                               val->cs_attr[loop]);
     }
   }
   val_policingprofile_entry_t *val_temp =
-    reinterpret_cast<val_policingprofile_entry_t *>(GetVal(ikey));
+      reinterpret_cast<val_policingprofile_entry_t *>(GetVal(ikey));
   val_temp->cs_row_status = GetConsolidatedCsStatus(list_cs_row);
   for (unsigned int loop = 0; loop < sizeof(val->valid)/
-      sizeof(val->valid[0]); ++loop) {
+       sizeof(val->valid[0]); ++loop) {
     val_temp->cs_attr[loop] = GetConsolidatedCsStatus(vec_attr[loop]);
   }
   result_code = UpdateConfigDB(ikey, UPLL_DT_RUNNING, UNC_OP_UPDATE, dmi,
-      MAINTBL);
+                               MAINTBL);
   if (UPLL_RC_SUCCESS != result_code) {
     return result_code;
   }
@@ -3428,7 +3493,8 @@ upll_rc_t PolicingProfileEntryMoMgr::ReadPolicingProfileEntry(
   const uint8_t *attrs = NULL;
   uint32_t max_attrs = 0;
   upll_rc_t result_code;
-  if (NULL == policingprofile_name || (!ctrlr_id) || (!dmi)) {  // FORWARD NULL
+  if (NULL == policingprofile_name || (!ctrlr_id) || (!dmi)) {
+    //  FORWARD NULL
     return UPLL_RC_ERR_GENERIC;
   }
   if (NULL != ppe_ckv) {
@@ -3440,7 +3506,7 @@ upll_rc_t PolicingProfileEntryMoMgr::ReadPolicingProfileEntry(
     return result_code;
   }
   key_policingprofile_entry_t *key =
-    reinterpret_cast<key_policingprofile_entry_t *>(ppe_ckv->get_key());
+      reinterpret_cast<key_policingprofile_entry_t *>(ppe_ckv->get_key());
   if (!key) {
     delete ppe_ckv;
     return UPLL_RC_ERR_GENERIC;
@@ -3451,7 +3517,12 @@ upll_rc_t PolicingProfileEntryMoMgr::ReadPolicingProfileEntry(
       (kMaxLenPolicingProfileName + 1));
   key->sequence_num = seq_num;
   DbSubOp dbop = { kOpReadMultiple, kOpMatchNone, kOpInOutCs };
-  result_code = ReadConfigDB(ppe_ckv, dt_type, UNC_OP_READ, dbop, dmi, MAINTBL);
+  result_code = ReadConfigDB(ppe_ckv,
+                             dt_type,
+                             UNC_OP_READ,
+                             dbop,
+                             dmi,
+                             MAINTBL);
   if (UPLL_RC_SUCCESS != result_code) {
     delete ppe_ckv;
     return result_code;
@@ -3467,100 +3538,102 @@ upll_rc_t PolicingProfileEntryMoMgr::ReadPolicingProfileEntry(
     SET_USER_DATA_CTRLR(ctrlr_ckv, ctrlr_id);
     DbSubOp dbop1 = { kOpReadSingle, kOpMatchCtrlr, kOpInOutCs };
     result_code = ReadConfigDB(ctrlr_ckv, dt_type, UNC_OP_READ, dbop1, dmi,
-        CTRLRTBL);
+                               CTRLRTBL);
     if (UPLL_RC_SUCCESS != result_code) {
       delete ppe_ckv;
       delete ctrlr_ckv;
       return result_code;
     }
     val_policingprofile_entry_t *val =
-      reinterpret_cast<val_policingprofile_entry_t *>(GetVal(temp_ckv));
+        reinterpret_cast<val_policingprofile_entry_t *>(GetVal(temp_ckv));
     val_policingprofile_entry_ctrl_t *ctrl_val =
-      reinterpret_cast<val_policingprofile_entry_ctrl_t *>(GetVal(ctrlr_ckv));
+        reinterpret_cast<val_policingprofile_entry_ctrl_t *>
+        (GetVal(ctrlr_ckv));
     val->cs_row_status = ctrl_val->cs_row_status;
     bool ret_code = false;
 
     if ((opt1 == UNC_OPT1_DETAIL) && (dt_type == UPLL_DT_STATE)) {
       ret_code = GetStateCapability(ctrlr_id, UNC_KT_POLICING_PROFILE_ENTRY,
-                                      &max_attrs, &attrs);
-      if (!ret_code ) {
-        UPLL_LOG_DEBUG("GetStateCapability Is failed in PolicingProfileEntry %d",
-                    ret_code);
+                                    &max_attrs, &attrs);
+      if (!ret_code) {
+        UPLL_LOG_DEBUG("GetStateCapability Is failed in"
+                       "PolicingProfileEntry %d",
+                       ret_code);
         return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
       }
-      if (max_attrs>0) {
+      if (max_attrs > 0) {
         result_code =  ValPolicingProfileEntryAttributeSupportCheck(
-                                     val, attrs);
+            val, attrs);
       }
       for (unsigned int loop = 0; loop <
-          sizeof(val->valid[loop]/sizeof(val->valid[0])); loop++) {
+           sizeof(val->valid[loop]/sizeof(val->valid[0])); loop++) {
         val->cs_attr[loop] = ctrl_val->cs_attr[loop];
       }
     } else {
       for (unsigned int loop = 0; loop <
-          sizeof(val->valid[loop]/sizeof(val->valid[0])); loop++) {
+           sizeof(val->valid[loop]/sizeof(val->valid[0])); loop++) {
         val->valid[loop] = ctrl_val->valid[loop];
         val->cs_attr[loop] = ctrl_val->cs_attr[loop];
       }
     }
 
-  if (val->valid[UPLL_IDX_FLOWLIST_PPE] != UNC_VF_VALID) {
+    if (val->valid[UPLL_IDX_FLOWLIST_PPE] != UNC_VF_VALID) {
       uuu::upll_strncpy(val->flowlist,
-                      "\0", (kMaxLenFlowListName + 1));
-  }
-  if (val->valid[UPLL_IDX_CBS_PPE] != UNC_VF_VALID) {
-    val->cbs = 0;
-  }
-  if (val->valid[UPLL_IDX_PIR_PPE] != UNC_VF_VALID) {
-    val->pir = 0;
-  }
-  if (val->valid[UPLL_IDX_PBS_PPE] != UNC_VF_VALID) {
-    val->pbs = 0;
-  }
-  if (val->valid[UPLL_IDX_GREEN_ACTION_PPE] != UNC_VF_VALID) {
-    val->green_action = 0;
-  }
-  if (val->valid[UPLL_IDX_GREEN_PRIORITY_PPE] != UNC_VF_VALID) {
-    val->green_action_priority = 0;
-  }
-  if (val->valid[UPLL_IDX_GREEN_DSCP_PPE] != UNC_VF_VALID) {
-    val->green_action_dscp = 0;
-  }
-  if (val->valid[UPLL_IDX_GREEN_DROP_PPE] != UNC_VF_VALID) {
-    val->green_action_drop_precedence = 0;
-  }
+                        "\0", (kMaxLenFlowListName + 1));
+    }
+    if (val->valid[UPLL_IDX_CBS_PPE] != UNC_VF_VALID) {
+      val->cbs = 0;
+    }
+    if (val->valid[UPLL_IDX_PIR_PPE] != UNC_VF_VALID) {
+      val->pir = 0;
+    }
+    if (val->valid[UPLL_IDX_PBS_PPE] != UNC_VF_VALID) {
+      val->pbs = 0;
+    }
+    if (val->valid[UPLL_IDX_GREEN_ACTION_PPE] != UNC_VF_VALID) {
+      val->green_action = 0;
+    }
+    if (val->valid[UPLL_IDX_GREEN_PRIORITY_PPE] != UNC_VF_VALID) {
+      val->green_action_priority = 0;
+    }
+    if (val->valid[UPLL_IDX_GREEN_DSCP_PPE] != UNC_VF_VALID) {
+      val->green_action_dscp = 0;
+    }
+    if (val->valid[UPLL_IDX_GREEN_DROP_PPE] != UNC_VF_VALID) {
+      val->green_action_drop_precedence = 0;
+    }
 
-  if (val->valid[UPLL_IDX_YELLOW_ACTION_PPE] != UNC_VF_VALID) {
-    val->yellow_action = 0;
-  }
+    if (val->valid[UPLL_IDX_YELLOW_ACTION_PPE] != UNC_VF_VALID) {
+      val->yellow_action = 0;
+    }
 
-  if (val->valid[UPLL_IDX_YELLOW_PRIORITY_PPE] != UNC_VF_VALID) {
-    val->yellow_action_priority = 0;
-  }
+    if (val->valid[UPLL_IDX_YELLOW_PRIORITY_PPE] != UNC_VF_VALID) {
+      val->yellow_action_priority = 0;
+    }
 
-  if (val->valid[UPLL_IDX_YELLOW_DSCP_PPE] != UNC_VF_VALID) {
-    val->yellow_action_dscp = 0;
-  }
+    if (val->valid[UPLL_IDX_YELLOW_DSCP_PPE] != UNC_VF_VALID) {
+      val->yellow_action_dscp = 0;
+    }
 
-  if (val->valid[UPLL_IDX_YELLOW_DROP_PPE] != UNC_VF_VALID) {
-    val->yellow_action_drop_precedence = 0;
-  }
+    if (val->valid[UPLL_IDX_YELLOW_DROP_PPE] != UNC_VF_VALID) {
+      val->yellow_action_drop_precedence = 0;
+    }
 
-  if (val->valid[UPLL_IDX_RED_ACTION_PPE] != UNC_VF_VALID) {
-    val->red_action = 0;
-  }
+    if (val->valid[UPLL_IDX_RED_ACTION_PPE] != UNC_VF_VALID) {
+      val->red_action = 0;
+    }
 
-  if (val->valid[UPLL_IDX_RED_PRIORITY_PPE] != UNC_VF_VALID) {
-    val->red_action_priority = 0;
-  }
+    if (val->valid[UPLL_IDX_RED_PRIORITY_PPE] != UNC_VF_VALID) {
+      val->red_action_priority = 0;
+    }
 
-  if (val->valid[UPLL_IDX_RED_DSCP_PPE] != UNC_VF_VALID) {
-    val->red_action_dscp = 0;
-  }
+    if (val->valid[UPLL_IDX_RED_DSCP_PPE] != UNC_VF_VALID) {
+      val->red_action_dscp = 0;
+    }
 
-  if (val->valid[UPLL_IDX_RED_DROP_PPE] != UNC_VF_VALID) {
-    val->red_action_drop_precedence = 0;
-  }
+    if (val->valid[UPLL_IDX_RED_DROP_PPE] != UNC_VF_VALID) {
+      val->red_action_drop_precedence = 0;
+    }
 
     temp_ckv = temp_ckv->get_next_cfg_key_val();
     delete ctrlr_ckv;
@@ -3569,9 +3642,9 @@ upll_rc_t PolicingProfileEntryMoMgr::ReadPolicingProfileEntry(
 }
 
 upll_rc_t PolicingProfileEntryMoMgr::GetValid(void *val, uint64_t index,
-    uint8_t *&valid,
-    upll_keytype_datatype_t dt_type,
-    MoMgrTables tbl) {
+                                              uint8_t *&valid,
+                                              upll_keytype_datatype_t dt_type,
+                                              MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   val_policingprofile_entry_t *val_ppe = NULL;
   val_policingprofile_entry_ctrl_t *val_ppe_ctrl = NULL;
@@ -3588,93 +3661,93 @@ upll_rc_t PolicingProfileEntryMoMgr::GetValid(void *val, uint64_t index,
   switch (index) {
     case uudst::policingprofile_entry::kDbiFlowlist:
       valid  = GET_VALID_MAINCTRL(tbl, val_ppe_ctrl, val_ppe,
-                                   UPLL_IDX_FLOWLIST_PPE);
-        break;
+                                  UPLL_IDX_FLOWLIST_PPE);
+      break;
 
     case uudst::policingprofile_entry::kDbiRate:
       valid  = GET_VALID_MAINCTRL(tbl, val_ppe_ctrl, val_ppe,
-                                   UPLL_IDX_RATE_PPE);
-        break;
+                                  UPLL_IDX_RATE_PPE);
+      break;
 
     case uudst::policingprofile_entry::kDbiCir:
       valid  = GET_VALID_MAINCTRL(tbl, val_ppe_ctrl, val_ppe,
-                                   UPLL_IDX_CIR_PPE);
-        break;
+                                  UPLL_IDX_CIR_PPE);
+      break;
 
     case uudst::policingprofile_entry::kDbiCbs:
       valid  = GET_VALID_MAINCTRL(tbl, val_ppe_ctrl, val_ppe,
-                                   UPLL_IDX_CBS_PPE);
-        break;
+                                  UPLL_IDX_CBS_PPE);
+      break;
 
     case uudst::policingprofile_entry::kDbiPir:
       valid  = GET_VALID_MAINCTRL(tbl, val_ppe_ctrl, val_ppe,
-                                   UPLL_IDX_PIR_PPE);
-        break;
+                                  UPLL_IDX_PIR_PPE);
+      break;
 
     case uudst::policingprofile_entry::kDbiPbs:
       valid  = GET_VALID_MAINCTRL(tbl, val_ppe_ctrl, val_ppe,
-                                   UPLL_IDX_PBS_PPE);
-        break;
+                                  UPLL_IDX_PBS_PPE);
+      break;
 
     case uudst::policingprofile_entry::kDbiGreenAction:
       valid  = GET_VALID_MAINCTRL(tbl, val_ppe_ctrl, val_ppe,
-                                   UPLL_IDX_GREEN_ACTION_PPE);
-        break;
+                                  UPLL_IDX_GREEN_ACTION_PPE);
+      break;
 
     case uudst::policingprofile_entry::kDbiGreenPriority:
       valid  = GET_VALID_MAINCTRL(tbl, val_ppe_ctrl, val_ppe,
-                                   UPLL_IDX_GREEN_PRIORITY_PPE);
-        break;
+                                  UPLL_IDX_GREEN_PRIORITY_PPE);
+      break;
 
     case uudst::policingprofile_entry::kDbiGreenDscp:
       valid  = GET_VALID_MAINCTRL(tbl, val_ppe_ctrl, val_ppe,
-                                   UPLL_IDX_GREEN_DSCP_PPE);
-        break;
+                                  UPLL_IDX_GREEN_DSCP_PPE);
+      break;
 
     case uudst::policingprofile_entry::kDbiGreenDrop:
       valid  = GET_VALID_MAINCTRL(tbl, val_ppe_ctrl, val_ppe,
-                                   UPLL_IDX_GREEN_DROP_PPE);
-        break;
+                                  UPLL_IDX_GREEN_DROP_PPE);
+      break;
 
     case uudst::policingprofile_entry::kDbiYellowAction:
       valid  = GET_VALID_MAINCTRL(tbl, val_ppe_ctrl, val_ppe,
-                                   UPLL_IDX_YELLOW_ACTION_PPE);
-        break;
+                                  UPLL_IDX_YELLOW_ACTION_PPE);
+      break;
 
     case uudst::policingprofile_entry::kDbiYellowPriority:
       valid  = GET_VALID_MAINCTRL(tbl, val_ppe_ctrl, val_ppe,
-                                   UPLL_IDX_YELLOW_PRIORITY_PPE);
-        break;
+                                  UPLL_IDX_YELLOW_PRIORITY_PPE);
+      break;
 
     case uudst::policingprofile_entry::kDbiYellowDscp:
       valid  = GET_VALID_MAINCTRL(tbl, val_ppe_ctrl, val_ppe,
-                                   UPLL_IDX_YELLOW_DSCP_PPE);
-        break;
+                                  UPLL_IDX_YELLOW_DSCP_PPE);
+      break;
 
     case uudst::policingprofile_entry::kDbiYellowDrop:
       valid  = GET_VALID_MAINCTRL(tbl, val_ppe_ctrl, val_ppe,
-                                   UPLL_IDX_YELLOW_DROP_PPE);
-        break;
+                                  UPLL_IDX_YELLOW_DROP_PPE);
+      break;
 
     case uudst::policingprofile_entry::kDbiRedAction:
       valid  = GET_VALID_MAINCTRL(tbl, val_ppe_ctrl, val_ppe,
-                                   UPLL_IDX_RED_ACTION_PPE);
-        break;
+                                  UPLL_IDX_RED_ACTION_PPE);
+      break;
 
     case uudst::policingprofile_entry::kDbiRedPriority:
       valid  = GET_VALID_MAINCTRL(tbl, val_ppe_ctrl, val_ppe,
-                                   UPLL_IDX_RED_PRIORITY_PPE);
-        break;
+                                  UPLL_IDX_RED_PRIORITY_PPE);
+      break;
 
     case uudst::policingprofile_entry::kDbiRedDscp:
       valid  = GET_VALID_MAINCTRL(tbl, val_ppe_ctrl, val_ppe,
-                                   UPLL_IDX_RED_DSCP_PPE);
-        break;
+                                  UPLL_IDX_RED_DSCP_PPE);
+      break;
 
     case uudst::policingprofile_entry::kDbiRedDrop:
       valid  = GET_VALID_MAINCTRL(tbl, val_ppe_ctrl, val_ppe,
-                                   UPLL_IDX_RED_DROP_PPE);
-        break;
+                                  UPLL_IDX_RED_DROP_PPE);
+      break;
 
     default :
       valid = NULL;
@@ -3684,7 +3757,7 @@ upll_rc_t PolicingProfileEntryMoMgr::GetValid(void *val, uint64_t index,
 }
 
 upll_rc_t PolicingProfileEntryMoMgr::IsFlowlistConfigured(
-  const char* flowlist_name, DalDmlIntf *dmi) {
+    const char* flowlist_name, DalDmlIntf *dmi) {
   upll_rc_t result_code = UPLL_RC_ERR_GENERIC;
   ConfigKeyVal *ckv = NULL;
   result_code = GetChildConfigKey(ckv, NULL);
@@ -3695,7 +3768,7 @@ upll_rc_t PolicingProfileEntryMoMgr::IsFlowlistConfigured(
       reinterpret_cast<val_policingprofile_entry_t*>
       (ConfigKeyVal::Malloc(sizeof(val_policingprofile_entry_t)));
   uuu::upll_strncpy(ppe_val->flowlist, flowlist_name,
-      (kMaxLenFlowListName + 1));
+                    (kMaxLenFlowListName + 1));
   ppe_val->valid[UPLL_IDX_POLICERNAME_PM] = UNC_VF_VALID;
   ckv->AppendCfgVal(IpctSt::kIpcStValPolicingprofileEntry, ppe_val);
   DbSubOp dbop = {kOpReadMultiple, kOpMatchNone, kOpInOutNone};
@@ -3734,7 +3807,7 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateMessage(IpcReqRespHeader *req,
 
   if (UNC_KT_POLICING_PROFILE_ENTRY != key->get_key_type()) {
     UPLL_LOG_DEBUG("Received keytype (%d) is not KT_POLICINGPROFILE_ENTRY!!",
-        key->get_key_type());
+                   key->get_key_type());
     return UPLL_RC_ERR_BAD_REQUEST;
   }
 
@@ -3751,8 +3824,8 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateMessage(IpcReqRespHeader *req,
   if (UPLL_RC_SUCCESS !=
       (rt_code = ValidatePolicingProfileEntryKey(key, req->operation))) {
     UPLL_LOG_DEBUG("KT_POLICING_PROFILE_ENTRY key structure syntax "
-                    "validation failed: Err code-%d",
-                     rt_code);
+                   "validation failed: Err code-%d",
+                   rt_code);
     return rt_code;
   }
 
@@ -3787,28 +3860,31 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidatePolicingProfileEntryKey(
 
   rt_code = ValidateKey(
       reinterpret_cast<char *>(key_policingprofile_entry->
-        policingprofile_key.policingprofile_name),
-        kMinLenPolicingProfileName, kMaxLenPolicingProfileName);
+                               policingprofile_key.policingprofile_name),
+      kMinLenPolicingProfileName, kMaxLenPolicingProfileName);
 
   if (UPLL_RC_SUCCESS != rt_code) {
     UPLL_LOG_DEBUG("PolicingProfile Name(%s) syntax validation failed: "
-        "err code - %d", key_policingprofile_entry->policingprofile_key.
-        policingprofile_name , rt_code);
+                   "err code - %d",
+                   key_policingprofile_entry->policingprofile_key.
+                   policingprofile_name , rt_code);
     return rt_code;
   }
 
   if ((op != UNC_OP_READ_SIBLING_COUNT) &&
       (op != UNC_OP_READ_SIBLING_BEGIN)) {
-   /** when policingprofile name is set to "flood",
-    *  seq_num should be set as 1 */
-    if (strcmp(reinterpret_cast<char *>(key_policingprofile_entry->
-               policingprofile_key.policingprofile_name), "flood") == 0) {
+    /** when policingprofile name is set to "flood",
+     *  seq_num should be set as 1 */
+    if (strcmp(reinterpret_cast<char *>(
+                key_policingprofile_entry->
+                policingprofile_key.policingprofile_name),
+            "flood") == 0) {
       if (key_policingprofile_entry->sequence_num == 1) {
         UPLL_LOG_DEBUG("valid sequence_num filled for profile_name-flood");
         return UPLL_RC_SUCCESS;
       } else {
         UPLL_LOG_DEBUG("Error Invalid sequence_num for policing name-flood(%d)",
-            key_policingprofile_entry->sequence_num);
+                       key_policingprofile_entry->sequence_num);
         return UPLL_RC_ERR_CFG_SEMANTIC;
       }
     }
@@ -3817,14 +3893,14 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidatePolicingProfileEntryKey(
                               kMinPolicingProfileSeqNum,
                               kMaxPolicingProfileSeqNum, true, true)) {
       UPLL_LOG_DEBUG("SeqNum(%d) syntax validation failed: err code - %d",
-                      key_policingprofile_entry->sequence_num, rt_code);
+                     key_policingprofile_entry->sequence_num, rt_code);
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
   } else {
     if (key_policingprofile_entry->sequence_num) {
-      // reset the sequence number
-      // for sibling read and count
-      // operation
+      //  reset the sequence number
+      //  for sibling read and count
+      //  operation
       key_policingprofile_entry->sequence_num = 0;
     }
   }
@@ -3868,41 +3944,25 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidatePolicingprofileEntryVal(
 }
 
 upll_rc_t PolicingProfileEntryMoMgr::UpdateMo(IpcReqRespHeader *req,
-                              ConfigKeyVal *ikey,
-                              DalDmlIntf *dmi) {
+                                              ConfigKeyVal *ikey,
+                                              DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
 
   upll_rc_t result_code = UPLL_RC_ERR_GENERIC;
   if (NULL == ikey || NULL == req || !(ikey->get_key())) {
-     UPLL_LOG_ERROR("Given Input is Empty");
-     return UPLL_RC_ERR_GENERIC;
+    UPLL_LOG_ERROR("Given Input is Empty");
+    return UPLL_RC_ERR_GENERIC;
   }
-  UPLL_LOG_ERROR("UpdateMo for %d", ikey->get_key_type());
+  UPLL_LOG_TRACE("UpdateMo for %d", ikey->get_key_type());
   result_code = ValidateMessage(req, ikey);
   if (UPLL_RC_SUCCESS != result_code) {
-      UPLL_LOG_ERROR("Validation Message is Failed ");
-      return result_code;
-  }
-  ConfigKeyVal *okey = NULL;
-  result_code = GetChildConfigKey(okey, ikey);
-  if (UPLL_RC_SUCCESS != result_code) {
-    UPLL_LOG_DEBUG("GetChildConfigKey Failed %d", result_code);
+    UPLL_LOG_ERROR("Validation Message is Failed ");
     return result_code;
   }
-  DbSubOp dbop = {kOpReadSingle, kOpMatchNone,
-    kOpInOutCtrlr | kOpInOutDomain | kOpInOutFlag};
-  result_code = ReadConfigDB(okey, req->datatype, UNC_OP_READ,
-                             dbop, dmi, MAINTBL);
-  if (UPLL_RC_SUCCESS != result_code) {
-      UPLL_LOG_ERROR("Record does Not Exists");
-      delete okey;
-      return result_code;
-  }
-  delete okey;
   result_code = ValidateAttribute(ikey, dmi, req);
   if (UPLL_RC_SUCCESS  != result_code) {
-      UPLL_LOG_ERROR("Validate Attribute is Failed");
-      return result_code;
+    UPLL_LOG_ERROR("Validate Attribute is Failed");
+    return result_code;
   }
   DbSubOp dbop1 = {kOpNotRead, kOpMatchNone, kOpInOutFlag};
   result_code = UpdateConfigDB(ikey, req->datatype, UNC_OP_UPDATE,
@@ -3933,21 +3993,16 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateAttribute(ConfigKeyVal *ikey,
     return result_code;
   }
 
-  result_code = SetRenameFlag(ikey, dmi, req);
-  if (UPLL_RC_SUCCESS != result_code) {
-    UPLL_LOG_DEBUG("SetRenameFlag failed %d", result_code);
-    return result_code;
-  }
   return result_code;
 }
 
 upll_rc_t PolicingProfileEntryMoMgr::SetRenameFlag(ConfigKeyVal *ikey,
-    DalDmlIntf *dmi,
-    IpcReqRespHeader *req) {
+                                                   DalDmlIntf *dmi,
+                                                   IpcReqRespHeader *req) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   val_policingprofile_entry_t *val_ppe = reinterpret_cast
-    <val_policingprofile_entry_t *>(GetVal(ikey));
+      <val_policingprofile_entry_t *>(GetVal(ikey));
   if (!val_ppe) {
     UPLL_LOG_DEBUG("Val is NULL");
     return UPLL_RC_ERR_GENERIC;
@@ -3960,8 +4015,8 @@ upll_rc_t PolicingProfileEntryMoMgr::SetRenameFlag(ConfigKeyVal *ikey,
       return result_code;
     }
     MoMgrImpl *mgr =
-      reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>(GetMoManager(
-              UNC_KT_POLICING_PROFILE)));
+        reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>(GetMoManager(
+                    UNC_KT_POLICING_PROFILE)));
     if (!mgr) {
       UPLL_LOG_DEBUG("mgr is NULL");
       DELETE_IF_NOT_NULL(pkey);
@@ -3976,19 +4031,19 @@ upll_rc_t PolicingProfileEntryMoMgr::SetRenameFlag(ConfigKeyVal *ikey,
     }
     UPLL_LOG_DEBUG("Flag from parent : %d", rename);
     DELETE_IF_NOT_NULL(pkey);
-    // Check flowlist is renamed
+    //  Check flowlist is renamed
     if ((UNC_VF_VALID == val_ppe->valid[UPLL_IDX_FLOWLIST_PPE]) &&
         ((UNC_OP_CREATE == req->operation))) {
       ConfigKeyVal *fl_ckv = NULL;
       result_code = GetFlowlistConfigKey(reinterpret_cast<const char *>
-          (val_ppe->flowlist), fl_ckv, dmi);
+                                         (val_ppe->flowlist), fl_ckv, dmi);
       if (UPLL_RC_SUCCESS != result_code) {
         UPLL_LOG_DEBUG("GetFlowlistConfigKey failed %d", result_code);
         return result_code;
       }
       MoMgrImpl *fl_mgr =
-      reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>(GetMoManager(
-              UNC_KT_FLOWLIST)));
+          reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>(GetMoManager(
+                      UNC_KT_FLOWLIST)));
       if (NULL == fl_mgr) {
         UPLL_LOG_DEBUG("fl_mgr is NULL");
         DELETE_IF_NOT_NULL(fl_ckv);
@@ -4001,7 +4056,8 @@ upll_rc_t PolicingProfileEntryMoMgr::SetRenameFlag(ConfigKeyVal *ikey,
         return result_code;
       }
       if (fl_rename & 0x01) {
-        rename |= FLOWLIST_RENAME;  // TODO Check for correct flag value
+        rename |= FLOWLIST_RENAME;  // TODO(upll) :
+                                    // Check for correct flag value
       }
       DELETE_IF_NOT_NULL(fl_ckv);
     }
@@ -4016,14 +4072,14 @@ upll_rc_t PolicingProfileEntryMoMgr::SetRenameFlag(ConfigKeyVal *ikey,
     if (UNC_VF_VALID == val_ppe->valid[UPLL_IDX_FLOWLIST_PPE]) {
       ConfigKeyVal *fl_ckv = NULL;
       result_code = GetFlowlistConfigKey(reinterpret_cast<const char *>
-          (val_ppe->flowlist), fl_ckv, dmi);
+                                         (val_ppe->flowlist), fl_ckv, dmi);
       if (UPLL_RC_SUCCESS != result_code) {
         UPLL_LOG_DEBUG("GetFlowlistConfigKey failed %d", result_code);
         return result_code;
       }
       MoMgrImpl *fl_mgr =
-      reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>(GetMoManager(
-              UNC_KT_FLOWLIST)));
+          reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>(GetMoManager(
+                      UNC_KT_FLOWLIST)));
       if (NULL == fl_mgr) {
         UPLL_LOG_DEBUG("fl_mgr is NULL");
         DELETE_IF_NOT_NULL(fl_ckv);
@@ -4036,14 +4092,16 @@ upll_rc_t PolicingProfileEntryMoMgr::SetRenameFlag(ConfigKeyVal *ikey,
         return result_code;
       }
       if (fl_rename & 0x01) {
-        rename |= FLOWLIST_RENAME;  // TODO Check for correct flag value
+        rename |= FLOWLIST_RENAME;  // TODO(upll) : Check for correct
+        // flag value
       } else {
         rename = rename & NO_FLOWLIST_RENAME;
       }
       DELETE_IF_NOT_NULL(fl_ckv);
     } else if (UNC_VF_VALID_NO_VALUE == val_ppe->valid
                [UPLL_IDX_FLOWLIST_PPE]) {
-       rename |= ~FLOWLIST_RENAME; // TODO Check for correct flag value. No rename flowlist value should be set
+      rename |= ~FLOWLIST_RENAME;  // TODO(upll) : Check for correct flag value.
+      //  No rename flowlist value should be set
     }
     SET_USER_DATA_FLAGS(ikey, rename);
   }
@@ -4051,13 +4109,13 @@ upll_rc_t PolicingProfileEntryMoMgr::SetRenameFlag(ConfigKeyVal *ikey,
 }
 
 upll_rc_t PolicingProfileEntryMoMgr::GetFlowlistConfigKey(
-        const char *flowlist_name, ConfigKeyVal *&okey,
-        DalDmlIntf *dmi) {
+    const char *flowlist_name, ConfigKeyVal *&okey,
+    DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_ERR_GENERIC;
   MoMgrImpl *mgr =
       reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>(GetMoManager(
-              UNC_KT_FLOWLIST)));
+                  UNC_KT_FLOWLIST)));
   result_code = mgr->GetChildConfigKey(okey, NULL);
   if (UPLL_RC_SUCCESS != result_code) {
     UPLL_LOG_DEBUG("GetChildConfigKey failed %d", result_code);
@@ -4066,8 +4124,8 @@ upll_rc_t PolicingProfileEntryMoMgr::GetFlowlistConfigKey(
   key_flowlist_t *okey_key = reinterpret_cast<key_flowlist_t *>
       (okey->get_key());
   uuu::upll_strncpy(okey_key->flowlist_name,
-        flowlist_name,
-        (kMaxLenFlowListName+1));
+                    flowlist_name,
+                    (kMaxLenFlowListName+1));
   return UPLL_RC_SUCCESS;
 }
 
@@ -4077,7 +4135,7 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidatePolicingProfileName(
   UPLL_FUNC_TRACE;
   upll_rc_t rt_code = UPLL_RC_ERR_GENERIC;
 
-  // if policing profile is applied in policing map return error 
+  //  if policing profile is applied in policing map return error
   if (req->operation == UNC_OP_CREATE) {
     rt_code = ValidatePolicingProfileEntryInPolicingMap(ikey, dmi, req);
     if (rt_code != UPLL_RC_SUCCESS) {
@@ -4085,44 +4143,6 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidatePolicingProfileName(
       return rt_code;
     }
   }
-  /* validate policingprofile name */
-  key_policingprofile_entry_t *ppe_key =reinterpret_cast
-    <key_policingprofile_entry_t *>(ikey->get_key());
-
-  /** check policingprofile_name exists in KT_POLICINGPROFILE table */
-  MoMgrImpl *mgr =
-    reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>(GetMoManager(
-            UNC_KT_POLICING_PROFILE)));
-  if (NULL == mgr) {
-    return UPLL_RC_ERR_GENERIC;
-  }
-  ConfigKeyVal *pp_ckv = NULL;
-  rt_code = mgr->GetChildConfigKey(pp_ckv, NULL);
-  if (UPLL_RC_SUCCESS != rt_code) {
-    UPLL_LOG_DEBUG("GetChildConfigKey fails %d", rt_code);
-    return rt_code;
-  }
-  key_policingprofile_t *pp_key = reinterpret_cast<key_policingprofile_t *>
-      (pp_ckv->get_key());
-  if (NULL == pp_key) {
-    UPLL_LOG_DEBUG("PolicingProfile key is NULL");
-    delete pp_ckv;
-    return UPLL_RC_ERR_GENERIC;
-  }
-  uuu::upll_strncpy(pp_key->policingprofile_name,
-    ppe_key->policingprofile_key.policingprofile_name,
-    kMaxLenPolicingProfileName+1);
-
-  rt_code = mgr->UpdateConfigDB(pp_ckv, req->datatype,
-                UNC_OP_READ, dmi);
-
-  if (rt_code != UPLL_RC_ERR_INSTANCE_EXISTS) {
-    UPLL_LOG_DEBUG("policingprofile name does not exists in "
-        "KT_POLICINGPROFILE table");
-    delete pp_ckv;
-    return UPLL_RC_ERR_PARENT_DOES_NOT_EXIST;
-  }
-  delete pp_ckv;
   return UPLL_RC_SUCCESS;
 }
 
@@ -4133,7 +4153,7 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidatePolicingProfileEntryValue(
   upll_rc_t rt_code = UPLL_RC_ERR_GENERIC;
   bool check = false;
   val_policingprofile_entry_t *val_ppe = reinterpret_cast
-    <val_policingprofile_entry_t *>(GetVal(ikey));
+      <val_policingprofile_entry_t *>(GetVal(ikey));
 
   if (val_ppe != NULL) {
     rt_code = ValidateFlowList(ikey, dmi, req);
@@ -4144,64 +4164,71 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidatePolicingProfileEntryValue(
     uint32_t operation = req->operation;
     if (UNC_OP_CREATE == operation) {
       if ((val_ppe->valid[UPLL_IDX_FLOWLIST_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_RATE_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_CIR_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_CBS_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_PIR_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_PBS_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_GREEN_ACTION_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_GREEN_PRIORITY_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_GREEN_DSCP_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_GREEN_DROP_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_YELLOW_ACTION_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_YELLOW_PRIORITY_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_YELLOW_DSCP_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_YELLOW_DROP_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_RED_ACTION_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_RED_PRIORITY_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_RED_DSCP_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_RED_DROP_PPE] == UNC_VF_VALID)) {
+          || (val_ppe->valid[UPLL_IDX_RATE_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_CIR_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_CBS_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_PIR_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_PBS_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_GREEN_ACTION_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_GREEN_PRIORITY_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_GREEN_DSCP_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_GREEN_DROP_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_YELLOW_ACTION_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_YELLOW_PRIORITY_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_YELLOW_DSCP_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_YELLOW_DROP_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_RED_ACTION_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_RED_PRIORITY_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_RED_DSCP_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_RED_DROP_PPE] == UNC_VF_VALID)) {
         check = true;
       }
     } else if (UNC_OP_UPDATE == operation) {
       if ((val_ppe->valid[UPLL_IDX_FLOWLIST_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_RATE_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_CIR_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_CBS_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_PIR_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_PBS_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_GREEN_ACTION_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_GREEN_PRIORITY_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_GREEN_DSCP_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_GREEN_DROP_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_YELLOW_ACTION_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_YELLOW_PRIORITY_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_YELLOW_DSCP_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_YELLOW_DROP_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_RED_ACTION_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_RED_PRIORITY_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_RED_DSCP_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_RED_DROP_PPE] == UNC_VF_VALID)
-      || (val_ppe->valid[UPLL_IDX_FLOWLIST_PPE] == UNC_VF_VALID_NO_VALUE)
-      || (val_ppe->valid[UPLL_IDX_RATE_PPE] == UNC_VF_VALID_NO_VALUE)
-      || (val_ppe->valid[UPLL_IDX_CIR_PPE] == UNC_VF_VALID_NO_VALUE)
-      || (val_ppe->valid[UPLL_IDX_CBS_PPE] == UNC_VF_VALID_NO_VALUE)
-      || (val_ppe->valid[UPLL_IDX_PIR_PPE] == UNC_VF_VALID_NO_VALUE)
-      || (val_ppe->valid[UPLL_IDX_PBS_PPE] == UNC_VF_VALID_NO_VALUE)
-      || (val_ppe->valid[UPLL_IDX_GREEN_ACTION_PPE] == UNC_VF_VALID_NO_VALUE)
-      || (val_ppe->valid[UPLL_IDX_GREEN_PRIORITY_PPE] == UNC_VF_VALID_NO_VALUE)
-      || (val_ppe->valid[UPLL_IDX_GREEN_DSCP_PPE] == UNC_VF_VALID_NO_VALUE)
-      || (val_ppe->valid[UPLL_IDX_GREEN_DROP_PPE] == UNC_VF_VALID_NO_VALUE)
-      || (val_ppe->valid[UPLL_IDX_YELLOW_ACTION_PPE] == UNC_VF_VALID_NO_VALUE)
-      || (val_ppe->valid[UPLL_IDX_YELLOW_PRIORITY_PPE] == UNC_VF_VALID_NO_VALUE)
-      || (val_ppe->valid[UPLL_IDX_YELLOW_DSCP_PPE] == UNC_VF_VALID_NO_VALUE)
-      || (val_ppe->valid[UPLL_IDX_YELLOW_DROP_PPE] == UNC_VF_VALID_NO_VALUE)
-      || (val_ppe->valid[UPLL_IDX_RED_ACTION_PPE] == UNC_VF_VALID_NO_VALUE)
-      || (val_ppe->valid[UPLL_IDX_RED_PRIORITY_PPE] == UNC_VF_VALID_NO_VALUE)
-      || (val_ppe->valid[UPLL_IDX_RED_DSCP_PPE] == UNC_VF_VALID_NO_VALUE)
-      || (val_ppe->valid[UPLL_IDX_RED_DROP_PPE] == UNC_VF_VALID_NO_VALUE)) {
-        check = true;
-      }
+          || (val_ppe->valid[UPLL_IDX_RATE_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_CIR_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_CBS_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_PIR_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_PBS_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_GREEN_ACTION_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_GREEN_PRIORITY_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_GREEN_DSCP_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_GREEN_DROP_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_YELLOW_ACTION_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_YELLOW_PRIORITY_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_YELLOW_DSCP_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_YELLOW_DROP_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_RED_ACTION_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_RED_PRIORITY_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_RED_DSCP_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_RED_DROP_PPE] == UNC_VF_VALID)
+          || (val_ppe->valid[UPLL_IDX_FLOWLIST_PPE] == UNC_VF_VALID_NO_VALUE)
+          || (val_ppe->valid[UPLL_IDX_RATE_PPE] == UNC_VF_VALID_NO_VALUE)
+          || (val_ppe->valid[UPLL_IDX_CIR_PPE] == UNC_VF_VALID_NO_VALUE)
+          || (val_ppe->valid[UPLL_IDX_CBS_PPE] == UNC_VF_VALID_NO_VALUE)
+          || (val_ppe->valid[UPLL_IDX_PIR_PPE] == UNC_VF_VALID_NO_VALUE)
+          || (val_ppe->valid[UPLL_IDX_PBS_PPE] == UNC_VF_VALID_NO_VALUE)
+          || (val_ppe->valid[UPLL_IDX_GREEN_ACTION_PPE] ==
+              UNC_VF_VALID_NO_VALUE)
+          || (val_ppe->valid[UPLL_IDX_GREEN_PRIORITY_PPE] ==
+              UNC_VF_VALID_NO_VALUE)
+          || (val_ppe->valid[UPLL_IDX_GREEN_DSCP_PPE] == UNC_VF_VALID_NO_VALUE)
+          || (val_ppe->valid[UPLL_IDX_GREEN_DROP_PPE] == UNC_VF_VALID_NO_VALUE)
+          || (val_ppe->valid[UPLL_IDX_YELLOW_ACTION_PPE] ==
+              UNC_VF_VALID_NO_VALUE)
+          || (val_ppe->valid[UPLL_IDX_YELLOW_PRIORITY_PPE] ==
+              UNC_VF_VALID_NO_VALUE)
+          || (val_ppe->valid[UPLL_IDX_YELLOW_DSCP_PPE] ==
+              UNC_VF_VALID_NO_VALUE)
+          || (val_ppe->valid[UPLL_IDX_YELLOW_DROP_PPE] ==
+              UNC_VF_VALID_NO_VALUE)
+          || (val_ppe->valid[UPLL_IDX_RED_ACTION_PPE] == UNC_VF_VALID_NO_VALUE)
+          || (val_ppe->valid[UPLL_IDX_RED_PRIORITY_PPE] ==
+              UNC_VF_VALID_NO_VALUE)
+          || (val_ppe->valid[UPLL_IDX_RED_DSCP_PPE] == UNC_VF_VALID_NO_VALUE)
+          || (val_ppe->valid[UPLL_IDX_RED_DROP_PPE] == UNC_VF_VALID_NO_VALUE)) {
+            check = true;
+          }
     }
     if (check) {
       rt_code = ValidatePolicingProfileEntryInPolicingMap(ikey, dmi, req);
@@ -4217,20 +4244,22 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidatePolicingProfileEntryValue(
 
       if (UPLL_RC_SUCCESS != rt_code) {
         UPLL_LOG_DEBUG(
-            " PolicingProfileEntryname Syntax validation failed :Err Code - %d",
+            " PolicingProfileEntryname Syntax validation failed"
+            ":Err Code - %d",
             rt_code);
         return rt_code;
       }
     } else if ((val_ppe->valid[UPLL_IDX_CIR_PPE]
-        == UNC_VF_VALID)
-        || (val_ppe->valid[UPLL_IDX_CBS_PPE] == UNC_VF_VALID)
-        || (val_ppe->valid[UPLL_IDX_PIR_PPE] == UNC_VF_VALID)
-        || (val_ppe->valid[UPLL_IDX_PBS_PPE] == UNC_VF_VALID)) {
+                == UNC_VF_VALID)
+               || (val_ppe->valid[UPLL_IDX_CBS_PPE] == UNC_VF_VALID)
+               || (val_ppe->valid[UPLL_IDX_PIR_PPE] == UNC_VF_VALID)
+               || (val_ppe->valid[UPLL_IDX_PBS_PPE] == UNC_VF_VALID)) {
       UPLL_LOG_DEBUG("Error Rate is not filled but its subsequent field "
                      "filled");
       return UPLL_RC_ERR_CFG_SYNTAX;
     } else if ((operation == UNC_OP_UPDATE)
-        && (val_ppe->valid[UPLL_IDX_RATE_PPE] == UNC_VF_VALID_NO_VALUE)) {
+               && (val_ppe->valid[UPLL_IDX_RATE_PPE] ==
+                   UNC_VF_VALID_NO_VALUE)) {
       UPLL_LOG_DEBUG("Reset Rate");
       val_ppe->rate = 0;
     }
@@ -4240,17 +4269,17 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidatePolicingProfileEntryValue(
 
     if (UPLL_RC_SUCCESS != rt_code) {
       UPLL_LOG_DEBUG(" Color action syntax validation failed :Err Code - %d",
-                    rt_code);
+                     rt_code);
       return rt_code;
     }
 
     /** Validate red_action_priority, green_action_priority,
-     yellow_action_priority */
+      yellow_action_priority */
     rt_code = ValidateColorPriority(val_ppe, operation);
 
     if (UPLL_RC_SUCCESS != rt_code) {
       UPLL_LOG_DEBUG(" Color priority syntax validation failed :Err Code - %d",
-                    rt_code);
+                     rt_code);
       return rt_code;
     }
 
@@ -4259,7 +4288,7 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidatePolicingProfileEntryValue(
 
     if (UPLL_RC_SUCCESS != rt_code) {
       UPLL_LOG_DEBUG(" Color precedence syntax validation failed:Err Code- %d",
-                    rt_code);
+                     rt_code);
       return rt_code;
     }
 
@@ -4281,7 +4310,7 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateFlowList(
   upll_rc_t rt_code = UPLL_RC_ERR_GENERIC;
 
   val_policingprofile_entry_t *ppe_val = reinterpret_cast
-    <val_policingprofile_entry_t *>(GetVal(ikey));
+      <val_policingprofile_entry_t *>(GetVal(ikey));
   if (ppe_val->valid[UPLL_IDX_FLOWLIST_PPE] == UNC_VF_VALID) {
     rt_code = ValidateKey(reinterpret_cast<char*>(ppe_val->flowlist),
                           kMinLenFlowListName,
@@ -4305,25 +4334,26 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateFlowList(
       return rt_code;
     }
     key_flowlist_t *fl_key = reinterpret_cast
-      <key_flowlist_t *>(fl_ckv->get_key());
+        <key_flowlist_t *>(fl_ckv->get_key());
     uuu::upll_strncpy(fl_key->flowlist_name,
-      ppe_val->flowlist,
-      kMaxLenFlowListName+1);
+                      ppe_val->flowlist,
+                      kMaxLenFlowListName+1);
 
     rt_code = mgr->UpdateConfigDB(fl_ckv, req->datatype,
-                UNC_OP_READ, dmi);
+                                  UNC_OP_READ, dmi);
 
     delete fl_ckv;
     if (rt_code != UPLL_RC_ERR_INSTANCE_EXISTS) {
       UPLL_LOG_DEBUG("flowlist name does not exists in "
-          "KT_FLOWLIST table");
+                     "KT_FLOWLIST table");
       return UPLL_RC_ERR_CFG_SEMANTIC;
     }
   } else if ((req->operation == UNC_OP_UPDATE ||
               req->operation == UNC_OP_CREATE)
-        && (ppe_val->valid[UPLL_IDX_FLOWLIST_PPE] == UNC_VF_VALID_NO_VALUE)) {
-      UPLL_LOG_DEBUG("Reset Flowlist name ");
-      memset(ppe_val->flowlist, '\0', sizeof(ppe_val->flowlist));
+             && (ppe_val->valid[UPLL_IDX_FLOWLIST_PPE] ==
+                 UNC_VF_VALID_NO_VALUE)) {
+    UPLL_LOG_DEBUG("Reset Flowlist name ");
+    memset(ppe_val->flowlist, '\0', sizeof(ppe_val->flowlist));
   }
   return UPLL_RC_SUCCESS;
 }
@@ -4336,16 +4366,16 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidatePolicingProfileEntryInPolicingMap(
 
   upll_rc_t result_code = UPLL_RC_ERR_GENERIC;
   val_policingmap_t *val_policingmap = reinterpret_cast<val_policingmap_t *>
-    (ConfigKeyVal::Malloc(sizeof(val_policingmap_t)));
+      (ConfigKeyVal::Malloc(sizeof(val_policingmap_t)));
   key_policingprofile_entry_t *key_ppe = reinterpret_cast
-    <key_policingprofile_entry_t *>(ikey->get_key());
+      <key_policingprofile_entry_t *>(ikey->get_key());
   uuu::upll_strncpy(val_policingmap->policer_name,
-    key_ppe->policingprofile_key.policingprofile_name,
-    (kMaxLenPolicingProfileName + 1));
+                    key_ppe->policingprofile_key.policingprofile_name,
+                    (kMaxLenPolicingProfileName + 1));
   val_policingmap->valid[UPLL_IDX_POLICERNAME_PM] = UNC_VF_VALID;
 
   ConfigVal *tempval = new ConfigVal(IpctSt::kIpcStValPolicingmap,
-      val_policingmap);
+                                     val_policingmap);
   MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>
       (const_cast<MoManager*>(GetMoManager(UNC_KT_VTN_POLICINGMAP)));
   if (!mgr) {
@@ -4363,31 +4393,31 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidatePolicingProfileEntryInPolicingMap(
 
   DbSubOp dbop = { kOpReadSingle, kOpMatchNone, kOpInOutNone };
   result_code = mgr->ReadConfigDB(vtn_ckv, req->datatype, UNC_OP_READ, dbop,
-      dmi, MAINTBL);
+                                  dmi, MAINTBL);
   if (result_code == UPLL_RC_SUCCESS) {
     UPLL_LOG_DEBUG("Policing profile name used in VTN_POLICINGMAP table");
     DELETE_IF_NOT_NULL(vtn_ckv);
     return UPLL_RC_ERR_CFG_SEMANTIC;
   } else if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
     UPLL_LOG_DEBUG("Policing profile name check in pm failed %d",
-          result_code);
+                   result_code);
     DELETE_IF_NOT_NULL(vtn_ckv);
     return result_code;
   }
   DELETE_IF_NOT_NULL(vtn_ckv);
 
   val_policingmap_t *val_policingmap1 =
-    reinterpret_cast<val_policingmap_t *>
-    (ConfigKeyVal::Malloc(sizeof(val_policingmap_t)));
+      reinterpret_cast<val_policingmap_t *>
+      (ConfigKeyVal::Malloc(sizeof(val_policingmap_t)));
   uuu::upll_strncpy(val_policingmap1->policer_name,
-    key_ppe->policingprofile_key.policingprofile_name,
-    (kMaxLenPolicingProfileName + 1));
+                    key_ppe->policingprofile_key.policingprofile_name,
+                    (kMaxLenPolicingProfileName + 1));
   val_policingmap1->valid[UPLL_IDX_POLICERNAME_PM ] = UNC_VF_VALID;
   ConfigVal *tempval1 = new ConfigVal(IpctSt::kIpcStValPolicingmap,
-      val_policingmap1);
+                                      val_policingmap1);
   mgr =
-    reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>(GetMoManager(
-            UNC_KT_VBR_POLICINGMAP)));
+      reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>(GetMoManager(
+                  UNC_KT_VBR_POLICINGMAP)));
   if (!mgr) {
     DELETE_IF_NOT_NULL(tempval1);
     return UPLL_RC_ERR_GENERIC;
@@ -4402,31 +4432,31 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidatePolicingProfileEntryInPolicingMap(
   vbr_ckv->AppendCfgVal(tempval1);
 
   result_code = mgr->ReadConfigDB(vbr_ckv, req->datatype, UNC_OP_READ, dbop,
-      dmi, MAINTBL);
+                                  dmi, MAINTBL);
   if (result_code == UPLL_RC_SUCCESS) {
     UPLL_LOG_DEBUG("Policing profile name used in VTN_POLICINGMAP table");
     DELETE_IF_NOT_NULL(vbr_ckv);
     return UPLL_RC_ERR_CFG_SEMANTIC;
   } else if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
     UPLL_LOG_DEBUG("Policing profile name check in pm failed %d",
-          result_code);
+                   result_code);
     DELETE_IF_NOT_NULL(vbr_ckv);
     return result_code;
   }
   DELETE_IF_NOT_NULL(vbr_ckv);
 
   val_policingmap_t *val_policingmap2 =
-    reinterpret_cast<val_policingmap_t *>
-    (ConfigKeyVal::Malloc(sizeof(val_policingmap_t)));
+      reinterpret_cast<val_policingmap_t *>
+      (ConfigKeyVal::Malloc(sizeof(val_policingmap_t)));
   uuu::upll_strncpy(val_policingmap2->policer_name,
-    key_ppe->policingprofile_key.policingprofile_name,
-    (kMaxLenPolicingProfileName + 1));
+                    key_ppe->policingprofile_key.policingprofile_name,
+                    (kMaxLenPolicingProfileName + 1));
   val_policingmap2->valid[UPLL_IDX_POLICERNAME_PM ] = UNC_VF_VALID;
   ConfigVal *tempval2 = new ConfigVal(IpctSt::kIpcStValPolicingmap,
-      val_policingmap2);
+                                      val_policingmap2);
   mgr =
-    reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>(GetMoManager(
-            UNC_KT_VBRIF_POLICINGMAP)));
+      reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>(GetMoManager(
+                  UNC_KT_VBRIF_POLICINGMAP)));
   if (!mgr) {
     DELETE_IF_NOT_NULL(tempval2);
     return UPLL_RC_ERR_GENERIC;
@@ -4441,14 +4471,14 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidatePolicingProfileEntryInPolicingMap(
   vbrif_ckv->AppendCfgVal(tempval2);
 
   result_code = mgr->ReadConfigDB(vbrif_ckv, req->datatype, UNC_OP_READ, dbop,
-      dmi, MAINTBL);
+                                  dmi, MAINTBL);
   if (result_code == UPLL_RC_SUCCESS) {
     DELETE_IF_NOT_NULL(vbrif_ckv);
     UPLL_LOG_DEBUG("Policing profile name used in VTN_POLICINGMAP table");
     return UPLL_RC_ERR_CFG_SEMANTIC;
   } else if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
     UPLL_LOG_DEBUG("Policing profile name check in pm failed %d",
-          result_code);
+                   result_code);
     DELETE_IF_NOT_NULL(vbrif_ckv);
     return result_code;
   }
@@ -4458,7 +4488,7 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidatePolicingProfileEntryInPolicingMap(
 }
 
 upll_rc_t PolicingProfileEntryMoMgr::GetFlowListEntryConfigKey(
-        ConfigKeyVal *&okey, ConfigKeyVal *ikey) {
+    ConfigKeyVal *&okey, ConfigKeyVal *ikey) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
 
@@ -4466,11 +4496,11 @@ upll_rc_t PolicingProfileEntryMoMgr::GetFlowListEntryConfigKey(
       <val_policingprofile_entry_t *>(GetVal(ikey));
   key_flowlist_entry_t *out_key = reinterpret_cast
       <key_flowlist_entry_t *>(ConfigKeyVal::
-     Malloc(sizeof(key_flowlist_entry_t)));
+                               Malloc(sizeof(key_flowlist_entry_t)));
   uuu::upll_strncpy(out_key->flowlist_key.flowlist_name,
-      val->flowlist, kMaxLenFlowListName);
+                    val->flowlist, kMaxLenFlowListName);
   okey = new ConfigKeyVal(UNC_KT_FLOWLIST_ENTRY,
-             IpctSt::kIpcStKeyFlowlistEntry, out_key, NULL);
+                          IpctSt::kIpcStKeyFlowlistEntry, out_key, NULL);
   if (!okey)
     return UPLL_RC_ERR_GENERIC;
   return result_code;
@@ -4489,10 +4519,15 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateValidElements(
   key_policingprofile_entry_t *ppe_key = reinterpret_cast
       <key_policingprofile_entry_t *>(ppe_ckv->get_key());
   uuu::upll_strncpy(ppe_key->policingprofile_key.policingprofile_name,
-    policingprofile_name, kMaxLenPolicingProfileName);
+                    policingprofile_name, kMaxLenPolicingProfileName);
 
   DbSubOp dbop = { kOpReadMultiple, kOpMatchNone, kOpInOutNone };
-  result_code = ReadConfigDB(ppe_ckv, dt_type, UNC_OP_READ, dbop, dmi, MAINTBL);
+  result_code = ReadConfigDB(ppe_ckv,
+                             dt_type,
+                             UNC_OP_READ,
+                             dbop,
+                             dmi,
+                             MAINTBL);
   if (UPLL_RC_SUCCESS != result_code) {
     UPLL_LOG_DEBUG("No entry in policingprofile entry maintbl");
     delete ppe_ckv;
@@ -4501,7 +4536,7 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateValidElements(
   ConfigKeyVal *temp_ppe_ckv = ppe_ckv;
   while (NULL != temp_ppe_ckv) {
     val_policingprofile_entry_t *val_ppe = reinterpret_cast
-      <val_policingprofile_entry_t *>(GetVal(temp_ppe_ckv));
+        <val_policingprofile_entry_t *>(GetVal(temp_ppe_ckv));
     if (UNC_VF_VALID != val_ppe->valid[UPLL_IDX_FLOWLIST_PPE ]) {
       UPLL_LOG_DEBUG("Attribute flowlist is not valid");
       DELETE_IF_NOT_NULL(ppe_ckv);
@@ -4516,7 +4551,7 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateValidElements(
       }
       MoMgrImpl *fle_mgr =
           reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>(GetMoManager(
-            UNC_KT_FLOWLIST_ENTRY)));
+                      UNC_KT_FLOWLIST_ENTRY)));
       if (NULL == fle_mgr) {
         UPLL_LOG_DEBUG("fle_mgr is NULL");
         DELETE_IF_NOT_NULL(ppe_ckv);
@@ -4524,7 +4559,10 @@ upll_rc_t PolicingProfileEntryMoMgr::ValidateValidElements(
         return UPLL_RC_ERR_GENERIC;
       }
       result_code = fle_mgr->UpdateConfigDB(okey,
-                  dt_type, UNC_OP_READ, dmi, MAINTBL);
+                                            dt_type,
+                                            UNC_OP_READ,
+                                            dmi,
+                                            MAINTBL);
       if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
         UPLL_LOG_DEBUG("No seq number for given flowlist");
         DELETE_IF_NOT_NULL(ppe_ckv);
@@ -4623,15 +4661,16 @@ upll_rc_t PolicingProfileEntryMoMgr::IsFlowListMatched(
     return result_code;
   }
   val_policingprofile_entry_t *val_ppe = reinterpret_cast
-    <val_policingprofile_entry_t *>(ConfigKeyVal::
-     Malloc(sizeof(val_policingprofile_entry_t)));
+      <val_policingprofile_entry_t *>(ConfigKeyVal::
+                                      Malloc(sizeof(
+                                              val_policingprofile_entry_t)));
   val_ppe->valid[UPLL_IDX_FLOWLIST_PPE ] = UNC_VF_VALID;
   uuu::upll_strncpy(val_ppe->flowlist, flowlist_name,
-    kMaxLenFlowListName + 1);
+                    kMaxLenFlowListName + 1);
   ppe_ckv->AppendCfgVal(IpctSt::kIpcStValPolicingprofileEntry, val_ppe);
   DbSubOp dbop = {kOpReadMultiple, kOpMatchNone, kOpInOutNone};
   result_code = ReadConfigDB(ppe_ckv, dt_type, UNC_OP_READ, dbop, dmi,
-                  MAINTBL);
+                             MAINTBL);
   if (UPLL_RC_SUCCESS != result_code) {
     DELETE_IF_NOT_NULL(ppe_ckv);
     if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
@@ -4652,7 +4691,7 @@ upll_rc_t PolicingProfileEntryMoMgr::IsFlowListMatched(
     }
     DbSubOp dbop1 = {kOpReadMultiple, kOpMatchNone, kOpInOutNone};
     result_code = ReadConfigDB(ctrlr_ppe_ckv, dt_type, UNC_OP_READ, dbop1, dmi,
-                    CTRLRTBL);
+                               CTRLRTBL);
     if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
       DELETE_IF_NOT_NULL(ppe_ckv);
       DELETE_IF_NOT_NULL(ctrlr_ppe_ckv);
@@ -4680,8 +4719,8 @@ upll_rc_t PolicingProfileEntryMoMgr::SetValidAudit(ConfigKeyVal *&ikey) {
     return UPLL_RC_ERR_GENERIC;
   }
   for (unsigned int loop = 0;
-        loop < sizeof(val->valid) / sizeof(val->valid[0]);
-        ++loop) {
+       loop < sizeof(val->valid) / sizeof(val->valid[0]);
+       ++loop) {
     val->cs_attr[loop] = UNC_CS_APPLIED;
   }
   val->cs_row_status = UNC_CS_APPLIED;
@@ -4689,98 +4728,100 @@ upll_rc_t PolicingProfileEntryMoMgr::SetValidAudit(ConfigKeyVal *&ikey) {
 }
 
 bool PolicingProfileEntryMoMgr::FilterAttributes(void *&val1,
-                                          void *val2,
-                                          bool copy_to_running,
-                                          unc_keytype_operation_t op) {
+                                                 void *val2,
+                                                 bool copy_to_running,
+                                                 unc_keytype_operation_t op) {
   UPLL_FUNC_TRACE;
   if (op != UNC_OP_CREATE)
     return CompareValidValue(val1, val2, copy_to_running);
   return false;
 }
 
-upll_rc_t PolicingProfileEntryMoMgr::UpdateConfigStatus(ConfigKeyVal *main_ckv,
-                                     unc_keytype_operation_t op,
-                                     uint32_t driver_result,
-                                     ConfigKeyVal *upd_key,
-                                     DalDmlIntf *dmi,
-                                     ConfigKeyVal *ctrlr_key) {
+upll_rc_t PolicingProfileEntryMoMgr::UpdateConfigStatus(
+    ConfigKeyVal *main_ckv,
+    unc_keytype_operation_t op,
+    uint32_t driver_result,
+    ConfigKeyVal *upd_key,
+    DalDmlIntf *dmi,
+    ConfigKeyVal *ctrlr_key) {
   UPLL_FUNC_TRACE;
   val_policingprofile_entry_ctrl_t *ppe_val;
   unc_keytype_configstatus_t  ctrlr_status;
-  uint8_t cs_status; 
+  uint8_t cs_status;
   val_policingprofile_entry_t *val_ppe_main = reinterpret_cast
       <val_policingprofile_entry_t *>(GetVal(main_ckv));
-  ctrlr_status = 
-    (driver_result == UPLL_RC_SUCCESS) ? UNC_CS_APPLIED : UNC_CS_NOT_APPLIED;
+  ctrlr_status =
+      (driver_result == UPLL_RC_SUCCESS) ? UNC_CS_APPLIED : UNC_CS_NOT_APPLIED;
   ppe_val = reinterpret_cast<val_policingprofile_entry_ctrl_t *>
-                            (GetVal(ctrlr_key));
+      (GetVal(ctrlr_key));
   if (ppe_val == NULL) return UPLL_RC_ERR_GENERIC;
-    cs_status = (val_ppe_main->cs_row_status);
+  cs_status = (val_ppe_main->cs_row_status);
 
   UPLL_LOG_TRACE("cs_status %d ctrlr_status %d\n", cs_status, ctrlr_status);
   if (op == UNC_OP_CREATE) {
     ppe_val->cs_row_status = ctrlr_status;
-  if (val_ppe_main->cs_row_status == UNC_CS_UNKNOWN) {
-        /* first entry in ctrlr table */
+    if (val_ppe_main->cs_row_status == UNC_CS_UNKNOWN) {
+      /* first entry in ctrlr table */
       cs_status = ctrlr_status;
-  } else if (val_ppe_main->cs_row_status == UNC_CS_APPLIED) {
+    } else if (val_ppe_main->cs_row_status == UNC_CS_APPLIED) {
       if (ctrlr_status == UNC_CS_NOT_APPLIED) {
-          cs_status = UNC_CS_PARTIALLY_APPLIED;
+        cs_status = UNC_CS_PARTIALLY_APPLIED;
       }
 
     } else if (val_ppe_main->cs_row_status == UNC_CS_NOT_APPLIED) {
-        if (ctrlr_status == UNC_CS_APPLIED) {
-          cs_status =  UNC_CS_PARTIALLY_APPLIED;
+      if (ctrlr_status == UNC_CS_APPLIED) {
+        cs_status =  UNC_CS_PARTIALLY_APPLIED;
       }
     } else if (val_ppe_main->cs_row_status == UNC_CS_INVALID) {
       cs_status = UNC_CS_INVALID;
     } else {
-        cs_status = UNC_CS_PARTIALLY_APPLIED;
+      cs_status = UNC_CS_PARTIALLY_APPLIED;
     }
     val_ppe_main->cs_row_status = cs_status;
   }
-  // Updating the Controller cs_row_status
-   val_policingprofile_entry_ctrl *run_ctrlr_val = 
-                reinterpret_cast<val_policingprofile_entry_ctrl_t *>
-                                              (GetVal(upd_key));
+  //  Updating the Controller cs_row_status
+  val_policingprofile_entry_ctrl *run_ctrlr_val =
+      reinterpret_cast<val_policingprofile_entry_ctrl_t *>
+      (GetVal(upd_key));
   if ((op == UNC_OP_UPDATE) && (upd_key != NULL)) {
     if (run_ctrlr_val != NULL)
       ppe_val->cs_row_status = run_ctrlr_val->cs_row_status;
   }
 
   for (unsigned int loop = 0; loop < sizeof(val_ppe_main->valid)/
-      sizeof(val_ppe_main->valid[0]); ++loop) {
-   if (val_ppe_main->valid[loop] != UNC_VF_INVALID) {
-     if (ppe_val->cs_attr[loop] != UNC_CS_NOT_SUPPORTED)
-       ppe_val->cs_attr[loop] = ctrlr_status;
-     else
-       ppe_val->cs_attr[loop] = UNC_CS_NOT_SUPPORTED;
+       sizeof(val_ppe_main->valid[0]); ++loop) {
+    if (val_ppe_main->valid[loop] != UNC_VF_INVALID) {
+      if (ppe_val->cs_attr[loop] != UNC_CS_NOT_SUPPORTED)
+        ppe_val->cs_attr[loop] = ctrlr_status;
+      else
+        ppe_val->cs_attr[loop] = UNC_CS_NOT_SUPPORTED;
 
-   if (op == UNC_OP_CREATE ) {
-     if (val_ppe_main->cs_attr[loop] == UNC_CS_INVALID) {
-       cs_status = UNC_CS_INVALID;
-     } if (val_ppe_main->cs_attr[loop] == ctrlr_status) {
-       cs_status = ctrlr_status;
-     } else if (ctrlr_status == UNC_CS_APPLIED) {
-       if (val_ppe_main->cs_attr[loop] == UNC_CS_UNKNOWN) {
-         cs_status = ctrlr_status;
-       } else if (val_ppe_main->cs_attr[loop] == UNC_CS_NOT_APPLIED) {
-         val_ppe_main->cs_attr[loop] = UNC_CS_PARTIALLY_APPLIED;
-       } else {
-         cs_status = val_ppe_main->cs_attr[loop];
-       }
-     } else if(ctrlr_status == UNC_CS_NOT_APPLIED) {
-       if(val_ppe_main->cs_attr[loop] == UNC_CS_NOT_APPLIED) {
-         cs_status =  UNC_CS_NOT_APPLIED;
-       }
-     } else {
-       cs_status =  UNC_CS_PARTIALLY_APPLIED;
-     }
-     val_ppe_main->cs_attr[loop]  = cs_status;
-     UPLL_LOG_DEBUG("Main tbl cs_attr : %d", val_ppe_main->cs_attr[loop]);
-   }
+      if (op == UNC_OP_CREATE) {
+        if (val_ppe_main->cs_attr[loop] == UNC_CS_INVALID) {
+          cs_status = UNC_CS_INVALID;
+        }
+        if (val_ppe_main->cs_attr[loop] == ctrlr_status) {
+          cs_status = ctrlr_status;
+        } else if (ctrlr_status == UNC_CS_APPLIED) {
+          if (val_ppe_main->cs_attr[loop] == UNC_CS_UNKNOWN) {
+            cs_status = ctrlr_status;
+          } else if (val_ppe_main->cs_attr[loop] == UNC_CS_NOT_APPLIED) {
+            val_ppe_main->cs_attr[loop] = UNC_CS_PARTIALLY_APPLIED;
+          } else {
+            cs_status = val_ppe_main->cs_attr[loop];
+          }
+        } else if (ctrlr_status == UNC_CS_NOT_APPLIED) {
+          if (val_ppe_main->cs_attr[loop] == UNC_CS_NOT_APPLIED) {
+            cs_status =  UNC_CS_NOT_APPLIED;
+          }
+        } else {
+          cs_status =  UNC_CS_PARTIALLY_APPLIED;
+        }
+        val_ppe_main->cs_attr[loop]  = cs_status;
+        UPLL_LOG_DEBUG("Main tbl cs_attr : %d", val_ppe_main->cs_attr[loop]);
+      }
+    }
   }
- }
   return UPLL_RC_SUCCESS;
 }
 
@@ -4796,9 +4837,9 @@ upll_rc_t PolicingProfileEntryMoMgr::Get_Tx_Consolidated_Status(
       break;
     case UNC_CS_PARTIALLY_APPLIED:
       if (current_ctrlr_cs == UNC_CS_NOT_APPLIED) {
-        // Todo: if this vtn has caused it then to change to applied.
+        //  Todo: if this vtn has caused it then to change to applied.
         status = (drv_result_status != UNC_CS_APPLIED) ?
-          UNC_CS_PARTIALLY_APPLIED : drv_result_status;
+            UNC_CS_PARTIALLY_APPLIED : drv_result_status;
       }
       break;
     case UNC_CS_APPLIED:
@@ -4806,16 +4847,17 @@ upll_rc_t PolicingProfileEntryMoMgr::Get_Tx_Consolidated_Status(
     case UNC_CS_INVALID:
     default:
       status = (drv_result_status == UNC_CS_NOT_APPLIED)?
-        UNC_CS_PARTIALLY_APPLIED:
-        (status == UNC_CS_UNKNOWN)?drv_result_status:status;
+          UNC_CS_PARTIALLY_APPLIED:
+          (status == UNC_CS_UNKNOWN)?drv_result_status:status;
       break;
   }
   return UPLL_RC_SUCCESS;
 }
 
-upll_rc_t PolicingProfileEntryMoMgr::SetPPEntryConsolidatedStatus(ConfigKeyVal *ikey,
-                                                                  uint8_t *ctrlr_id,
-                                                                  DalDmlIntf *dmi)  {
+upll_rc_t PolicingProfileEntryMoMgr::SetPPEntryConsolidatedStatus(
+    ConfigKeyVal *ikey,
+    uint8_t *ctrlr_id,
+    DalDmlIntf *dmi)  {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   ConfigKeyVal *ctrlr_ckv = NULL;
@@ -4824,7 +4866,7 @@ upll_rc_t PolicingProfileEntryMoMgr::SetPPEntryConsolidatedStatus(ConfigKeyVal *
   bool applied = false, not_applied = false, invalid = false;
   unc_keytype_configstatus_t c_status = UNC_CS_NOT_APPLIED;
   DbSubOp dbop = { kOpReadMultiple, kOpMatchNone,
-                   kOpInOutCtrlr | kOpInOutCs };
+    kOpInOutCtrlr | kOpInOutCs };
   if (!ikey || !dmi) {
     UPLL_LOG_DEBUG("Invalid Input");
     return UPLL_RC_ERR_GENERIC;
@@ -4834,7 +4876,11 @@ upll_rc_t PolicingProfileEntryMoMgr::SetPPEntryConsolidatedStatus(ConfigKeyVal *
     UPLL_LOG_DEBUG("GetChildConfigKey failed err code %d", result_code);
     return result_code;
   }
-  result_code = ReadConfigDB(ctrlr_ckv, UPLL_DT_RUNNING, UNC_OP_READ, dbop, dmi,
+  result_code = ReadConfigDB(ctrlr_ckv,
+                             UPLL_DT_RUNNING,
+                             UNC_OP_READ,
+                             dbop,
+                             dmi,
                              CTRLRTBL);
   if (UPLL_RC_SUCCESS != result_code) {
     UPLL_LOG_DEBUG("ReadConfigDB from ctrltbl failed err code %d",
@@ -4844,9 +4890,9 @@ upll_rc_t PolicingProfileEntryMoMgr::SetPPEntryConsolidatedStatus(ConfigKeyVal *
   }
 
   for (ConfigKeyVal *tmp = ctrlr_ckv; tmp != NULL;
-                     tmp = tmp->get_next_cfg_key_val()) {
+       tmp = tmp->get_next_cfg_key_val()) {
     ctrlr_val = reinterpret_cast<val_policingprofile_entry_ctrl_t *>
-                (GetVal(tmp));
+        (GetVal(tmp));
     if (!ctrlr_val) {
       UPLL_LOG_DEBUG("Controller Value is empty");
       tmp = NULL;
@@ -4856,15 +4902,15 @@ upll_rc_t PolicingProfileEntryMoMgr::SetPPEntryConsolidatedStatus(ConfigKeyVal *
     GET_USER_DATA_CTRLR(tmp, pp_exist_on_ctrlr);
     if (!strcmp(reinterpret_cast<char *>(pp_exist_on_ctrlr),
                 reinterpret_cast<char *>(ctrlr_id)))
-      continue;  // skipping entry of deleted controller
+      continue;  //  skipping entry of deleted controller
 
     switch (ctrlr_val->cs_row_status) {
       case UNC_CS_APPLIED:
         applied = true;
-      break;
+        break;
       case UNC_CS_NOT_APPLIED:
         not_applied = true;
-      break;
+        break;
       case UNC_CS_INVALID:
         invalid = true;
         break;
@@ -4872,14 +4918,15 @@ upll_rc_t PolicingProfileEntryMoMgr::SetPPEntryConsolidatedStatus(ConfigKeyVal *
         UPLL_LOG_DEBUG("Invalid status");
         DELETE_IF_NOT_NULL(ctrlr_ckv);
         break;
-        // return UPLL_RC_ERR_GENERIC;
+        //  return UPLL_RC_ERR_GENERIC;
     }
     pp_exist_on_ctrlr = NULL;
   }
   UPLL_LOG_DEBUG("PPE - applied %d not_applied %d", applied, not_applied);
   if (invalid) {
     c_status = UNC_CS_INVALID;
-  } if (applied && !not_applied) {
+  }
+  if (applied && !not_applied) {
     c_status = UNC_CS_APPLIED;
   } else if (!applied && not_applied) {
     c_status = UNC_CS_NOT_APPLIED;
@@ -4888,7 +4935,7 @@ upll_rc_t PolicingProfileEntryMoMgr::SetPPEntryConsolidatedStatus(ConfigKeyVal *
   } else {
     c_status = UNC_CS_APPLIED;
   }
-  // Set cs_status
+  //  Set cs_status
   val_policingprofile_entry_t *val = static_cast
       <val_policingprofile_entry_t *>(GetVal(ikey));
   val->cs_row_status = c_status;
@@ -4896,45 +4943,46 @@ upll_rc_t PolicingProfileEntryMoMgr::SetPPEntryConsolidatedStatus(ConfigKeyVal *
        sizeof(val->valid)/sizeof(val->valid[0]);
        ++loop) {
     for (ConfigKeyVal *tmp = ctrlr_ckv; tmp != NULL;
-                     tmp = tmp->get_next_cfg_key_val()) {
-      ctrlr_val = reinterpret_cast<val_policingprofile_entry_ctrl_t *>(GetVal(tmp));
+         tmp = tmp->get_next_cfg_key_val()) {
+      ctrlr_val = reinterpret_cast<val_policingprofile_entry_ctrl_t *>
+          (GetVal(tmp));
 
       GET_USER_DATA_CTRLR(tmp, pp_exist_on_ctrlr);
-      UPLL_LOG_DEBUG("Controller name in DB %s",pp_exist_on_ctrlr);
+      UPLL_LOG_DEBUG("Controller name in DB %s", pp_exist_on_ctrlr);
       if (!strcmp(reinterpret_cast<char *>(pp_exist_on_ctrlr),
-                reinterpret_cast<char *>(ctrlr_id)))
-        continue;  // skipping entry of deleted controller
-       if (ctrlr_val->valid[loop] == UNC_VF_VALID) {
+                  reinterpret_cast<char *>(ctrlr_id)))
+        continue;  //  skipping entry of deleted controller
+      if (ctrlr_val->valid[loop] == UNC_VF_VALID) {
         switch (ctrlr_val->cs_attr[loop]) {
           case UNC_CS_APPLIED:
             applied = true;
-        break;
-        case UNC_CS_NOT_APPLIED:
-          not_applied = true;
-        break;
-        case UNC_CS_INVALID:
-          invalid = true;
-        break;
-        default:
-          UPLL_LOG_DEBUG("Invalid status %d", ctrlr_val->cs_attr[loop]);
+            break;
+          case UNC_CS_NOT_APPLIED:
+            not_applied = true;
+            break;
+          case UNC_CS_INVALID:
+            invalid = true;
+            break;
+          default:
+            UPLL_LOG_DEBUG("Invalid status %d", ctrlr_val->cs_attr[loop]);
         }
       }
     }
     if (invalid) {
       c_status = UNC_CS_INVALID;
     } else if (applied && !not_applied) {
-        c_status = UNC_CS_APPLIED;
+      c_status = UNC_CS_APPLIED;
     } else if (!applied && not_applied) {
-        c_status = UNC_CS_NOT_APPLIED;
+      c_status = UNC_CS_NOT_APPLIED;
     } else if (applied && not_applied) {
-        c_status = UNC_CS_PARTIALLY_APPLIED;
+      c_status = UNC_CS_PARTIALLY_APPLIED;
     } else {
-        c_status = UNC_CS_APPLIED;
+      c_status = UNC_CS_APPLIED;
     }
     val->cs_attr[loop] = c_status;
     applied = not_applied =false;
   }
-  
+
   DbSubOp dbop_update = {kOpNotRead, kOpMatchNone, kOpInOutCs};
   result_code = UpdateConfigDB(ikey, UPLL_DT_RUNNING, UNC_OP_UPDATE, dmi,
                                &dbop_update, MAINTBL);

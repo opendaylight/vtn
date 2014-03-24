@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -14,9 +14,10 @@ import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.resources.AbstractResource;
 
-public class DifferenceConfigResourceValidator extends VtnServiceValidator{
+public class DifferenceConfigResourceValidator extends VtnServiceValidator {
 
-	private static final Logger LOG = Logger.getLogger(DifferenceConfigResourceValidator.class.getName());
+	private static final Logger LOG = Logger
+			.getLogger(DifferenceConfigResourceValidator.class.getName());
 
 	public DifferenceConfigResourceValidator(final AbstractResource resource) {
 
@@ -26,8 +27,9 @@ public class DifferenceConfigResourceValidator extends VtnServiceValidator{
 	 * Validate request Json for UNC Difference Config API.
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.info("Validation not required for Diffrence Config API");
 	}
 }

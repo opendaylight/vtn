@@ -285,10 +285,10 @@ void ReadConfig::GetPhysicalConfig() {
  *              not found from list,it's consider as new controller and
  *              add it to list
  * @param[in] : controller_name, controller*, driver*
- * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
+ * @retval    : UNC_DRV_RC_ERR_GENERIC / UNC_RC_SUCCESS
  */
 
-drv_resp_code_t ControllerFramework::UpdateControllerConfiguration(
+UncRespCode ControllerFramework::UpdateControllerConfiguration(
     std::string& controller_name,
     controller* controller_instance, driver* driver_instance,
     const key_ctr_t& key_ctr, const val_ctr_t& val_ctr) {
@@ -365,15 +365,15 @@ drv_resp_code_t ControllerFramework::UpdateControllerConfiguration(
                     PFC_FUNCNAME, controller_name.c_str());
     }
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**
  * @brief     : This function removes the existing controller from list
  * @param[in] : controller_name
- * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
+ * @retval    : UNC_DRV_RC_ERR_GENERIC / UNC_RC_SUCCESS
  */
-drv_resp_code_t
+UncRespCode
 ControllerFramework::RemoveControllerConfiguration(
     std::string& controller_name,
     controller* controller_instance,
@@ -384,7 +384,7 @@ ControllerFramework::RemoveControllerConfiguration(
 
   if (controller_list.size() == 0) {
     pfc_log_error("Controller name not found .List is Empty");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   std::map<std::string, ControllerContainer*>::iterator
@@ -402,10 +402,10 @@ ControllerFramework::RemoveControllerConfiguration(
     pfc_log_debug("Existing controller configuration gets removed");
   } else {
     pfc_log_error("controller not found");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**
@@ -413,9 +413,9 @@ ControllerFramework::RemoveControllerConfiguration(
  * @brief     : This function gets the driver type for the appropriate
  *              controllers
  * @param[in] : controller_name, controller**, driver**
- * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
+ * @retval    : UNC_DRV_RC_ERR_GENERIC / UNC_RC_SUCCESS
  */
-drv_resp_code_t ControllerFramework::GetDriverByControllerName(
+UncRespCode ControllerFramework::GetDriverByControllerName(
     std::string& controller_name,
     controller** controller_instance,
     driver** driver_instance) {
@@ -428,7 +428,7 @@ drv_resp_code_t ControllerFramework::GetDriverByControllerName(
 
   if (controller_list_iterator == controller_list.end()) {
     pfc_log_error("controller name not found");
-    return  DRVAPI_RESPONSE_FAILURE;
+    return  UNC_DRV_RC_ERR_GENERIC;
   }
 
   controller_container = controller_list_iterator->second;
@@ -438,9 +438,9 @@ drv_resp_code_t ControllerFramework::GetDriverByControllerName(
 
   if ((NULL == *controller_instance) || (NULL == *driver_instance)) {
     pfc_log_error("controller instance or driver instance is NULL");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 
@@ -448,23 +448,23 @@ drv_resp_code_t ControllerFramework::GetDriverByControllerName(
  * @brief     : This function stores the driver instance for the appropriate
  *              controller type in map
  * @param[in] : controller_type, driver*
- * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
+ * @retval    : UNC_DRV_RC_ERR_GENERIC / UNC_RC_SUCCESS
  */
-drv_resp_code_t ControllerFramework::RegisterDriver(
+UncRespCode ControllerFramework::RegisterDriver(
     unc_keytype_ctrtype_t controller_type,
     driver* driver_instance)  {
   ODC_FUNC_TRACE;
 
   if (NULL == driver_instance) {
     pfc_log_error("RegisterDriver:Driver instance is NULL");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   controller_list_rwlock_.lock();
   driver_container.insert(std::make_pair(controller_type, driver_instance));
   controller_list_rwlock_.unlock();
 
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**
@@ -472,9 +472,9 @@ drv_resp_code_t ControllerFramework::RegisterDriver(
  *              for the appropriate without acquiring the lock controllers
  * @param[in] : controller_name, controller*, driver*
  * @param[out]: driver*
- * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
+ * @retval    : UNC_DRV_RC_ERR_GENERIC / UNC_RC_SUCCESS
  */
-drv_resp_code_t ControllerFramework::GetControllerInstance(
+UncRespCode ControllerFramework::GetControllerInstance(
     std::string& controller_name,
     controller** controller_instance,
     driver** driver_instance) {
@@ -487,7 +487,7 @@ drv_resp_code_t ControllerFramework::GetControllerInstance(
 
   if (controller_list_iterator == controller_list.end()) {
     pfc_log_error("Controller Name not found in the list");
-    return  DRVAPI_RESPONSE_FAILURE;
+    return  UNC_DRV_RC_ERR_GENERIC;
   }
 
   controller_container = controller_list_iterator->second;
@@ -498,7 +498,7 @@ drv_resp_code_t ControllerFramework::GetControllerInstance(
   PFC_VERIFY(*controller_instance != NULL);
   PFC_VERIFY(*driver_instance != NULL);
 
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**

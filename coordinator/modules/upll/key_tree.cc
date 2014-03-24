@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -54,8 +54,10 @@ bool KeyTree::AddKeyType(unc_key_type_t parent, unc_key_type_t child) {
 }
 
 KeyTreeNode *KeyTree::GetNode(unc_key_type_t key_type) {
-  if (all_kt_map_.count(key_type))
-    return all_kt_map_[key_type];
+  std::map<unc_key_type_t, KeyTreeNode*>::iterator it
+      = all_kt_map_.find(key_type);
+  if (it != all_kt_map_.end())
+    return it->second;
   return NULL;
 }
 
@@ -220,11 +222,11 @@ bool KeyTree::PostorderIterator::Next(unc_key_type_t *next_key_type) {
       next_node_ = next_node_->children.front();
     }
     UPLL_LOG_VERBOSE("moving to sibling's descendant %d",
-                    ((next_node_) ? next_node_->key_type : 0));
+                     ((next_node_) ? next_node_->key_type : 0));
   } else {
     next_node_ = next_node_->parent;
     UPLL_LOG_VERBOSE("moving to the parent %d",
-                    ((next_node_) ? next_node_->key_type : 0));
+                     ((next_node_) ? next_node_->key_type : 0));
     if (next_node_ == keytree_->GetRoot()) {
       next_node_ = NULL;
     }

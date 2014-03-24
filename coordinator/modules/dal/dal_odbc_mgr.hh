@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -17,6 +17,7 @@
 
 #include <sql.h>
 #include <string>
+#include <set>
 #include "pfcxx/module.hh"
 #include "unc/config.h"
 #include "dal_defines.hh"
@@ -86,6 +87,7 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
     DalResultCode DisconnectFromDb() const;
 
     inline DalConnType get_conn_type() { return conn_type_; }
+    inline DalConnState get_conn_state() { return conn_state_; }
 
     /**
      * CommitTransaction
@@ -438,6 +440,10 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      * CreateRecord
      *   Creates the record in table with the given input data for 
      *   the given cfg_type
+     *   Performs parent existence check if cfg_type is UPLL_DT_IMPORT
+     *   Performs existence check and parent existence check if
+     *   kDalRcGeneralError is returned. This is done to get proper error
+     *   codes when Database cannot.
      *
      * @param[in] cfg_type        - Configuration Type for which the record
      *                              has to be created
@@ -680,8 +686,8 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
 
     /**
      * CopyModifiedRecords
-     *   Copies the entire records of table from source configuration to
-     *   destination configuration.
+     *   Copies the modified records of table from source configuration to
+     *   destination configuration based on the operation.
      *
      * @param[in] dest_cfg_type   - Configuration Type where the records to be
      *                              copied (not equal to src_cfg_type)
@@ -691,6 +697,7 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      * @param[in] output_and_match_attr_info
      *                            - Bind Information for output and match
      *                            - columns
+     * @param[in] op              - Operation to be performed for Copy.
      *
      * @return DalResultCode      - kDalRcSuccess in case of success
      *                            - Valid errorcode otherwise
@@ -699,12 +706,14 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      *
      * Note:
      * Information on Copy Logic
-     * 1. Remove the records from dest_cfg_type that are result of
-     *    GetDeletedRecords(dest_cfg_type, src_cfg_type, ...)
-     * 2. Add the records in dest_cfg_type that are result of
-     *    GetCreatedRecords(dest_cfg_type, src_cfg_type, ...)
-     * 3. Update the records in dest_cfg_type with the records from 
-     *    src_cfg_type that are result of
+     * 1. For DELETE operation, Remove the records from dest_cfg_type that are
+     *    result of GetDeletedRecords(dest_cfg_type, src_cfg_type, ...)
+     *    This should be called for Child schema first and then parent schema
+     *    if Parent-Child relationship is established.
+     * 2. For CREATE operation, Add the records in dest_cfg_type that are
+     *    result of GetCreatedRecords(dest_cfg_type, src_cfg_type, ...)
+     * 3. For UPDATE operation, Update the records in dest_cfg_type with the
+     *    records from src_cfg_type that are result of
      *    GetUpdatedRecords(dest_cfg_type, src_cfg_type, ...)
      * 4. Recommended to use this API, where difference between both the
      *    configurations are comparitively lesser.
@@ -736,50 +745,8 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
                     const UpllCfgType dest_cfg_type,
                     const UpllCfgType src_cfg_type,
                     const DalTableIndex table_index,
-                    const DalBindInfo *output_and_match_attr_info) const;
-
-    /**
-     * CopyModifiedInsertRecords
-     *   Inserts the additional records of table from source configuration to
-     *   destination configuration.
-     *
-     * @param[in] dest_cfg_type   - Configuration Type where the records to be
-     *                              copied (not equal to src_cfg_type)
-     * @param[in] src_cfg_type    - Configuration Type from where the records
-     *                              will be copied (not equal to dest_cfg_type)
-     * @param[in] table_index     - Valid Index of the table
-     * @param[in] output_and_match_attr_info
-     *                            - Bind Information for output and match
-     *                            - columns
-     *
-     * @return DalResultCode      - kDalRcSuccess in case of success
-     *                            - Valid errorcode otherwise
-     *                              On successful execution, both the
-     *                              configurations have same records.
-     *
-     * Note:
-     * Information on Copy Logic
-     * 1. Add the records in dest_cfg_type that are result of
-     *    GetCreatedRecords(dest_cfg_type, src_cfg_type, ...)
-     *    
-     * Information on usage of DalBindInfo
-     *  1. Valid instance of DalBindInfo with same table_index used in this API
-     *  2. BindInput if used for any attributes, ignored.
-     *  3. BindMatch if used for any attributes, ignored.
-     *  4. BindOutput is optional.
-     *     BindOutput, if used, copy the values of bound columns from
-     *     src_cfg_type to dst_cfg_type
-     *     BindOutput, if not used, copy the values of all columns from
-     *     src_cfg_type to dst_cfg_type
-     *     Since the bound value is not used for this API, it is ok to bind
-     *     dummy address. Do not pass NULL address.
-     *
-     */
-    DalResultCode CopyModifiedInsertRecords(
-                    const UpllCfgType dest_cfg_type,
-                    const UpllCfgType src_cfg_type,
-                    const DalTableIndex table_index,
-                    const DalBindInfo *output_and_match_attr_info) const;
+                    const DalBindInfo *output_and_match_attr_info,
+                    const unc_keytype_operation_t op) const;
 
     /**
      * CopyMatchingRecords
@@ -892,6 +859,27 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
                          const size_t max_record_count,
                          const DalBindInfo *bind_info,
                          DalCursor **cursor) const;
+
+    // Clears all the tables from dirty list
+    inline void ClearDirty() const {
+      delete_dirty.clear();
+      create_dirty.clear();
+      update_dirty.clear();
+    }
+
+    // Add all the tables to dirty list
+    inline void MakeAllDirty() const {
+      delete_dirty.clear();
+      create_dirty.clear();
+      update_dirty.clear();
+      for (uint16_t tbl_idx = schema::table::kDbiVtnTbl;
+           tbl_idx < schema::table::kDalNumTables; tbl_idx++) {
+        delete_dirty.insert(tbl_idx);
+        create_dirty.insert(tbl_idx);
+        update_dirty.insert(tbl_idx);
+      }
+    }  // DalOdbcMgr::MakeAllDirty
+
   private:
     /**
      * SetConnAttributes
@@ -1017,14 +1005,72 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
                                const DalBindInfo *bind_info = NULL,
                                const uint32_t max_count = 1) const;
 
+    /**
+     * CheckParentInstance
+     *   Checks the parent of the given instance with parent key values from
+     *   the given DalBindInfo in Database for the given cfg_type
+     *
+     * @param[in] cfg_type        - Configuration Type for which the record
+     *                              has to be created
+     * @param[in] table_index     - Valid Index of the table
+     * @param[in] input_attr_info - Bind Information for the given table_index
+     *
+     * @return DalResultCode      - kDalRcSuccess in case of success
+     *                            - Valid errorcode otherwise
+     *
+     * Note:
+     * Information on usage of DalBindInfo
+     *  1. Valid instance of DalBindInfo with same table_index used in this API
+     *  2. BindInput is mandatory for the interested attributes.
+     *     It is mandatory to bind input for all primary keys.
+     *  3. BindMatch if used for any attributes, ignored.
+     *  4. BindOutput if used for any attributes, ignored.
+     */
+    DalResultCode CheckParentInstance(const UpllCfgType cfg_type,
+                                      const DalTableIndex table_index,
+                                      const DalBindInfo *input_attr_info) const;
+
+
+    /**
+     * CheckInstance
+     *   Checks the instance with primary key values from the given
+     *   DalBindInfo in Database for the given cfg_type
+     *
+     * @param[in] cfg_type        - Configuration Type for which the record
+     *                              has to be created
+     * @param[in] table_index     - Valid Index of the table
+     * @param[in] input_attr_info - Bind Information for the given table_index
+     *
+     * @return DalResultCode      - kDalRcSuccess in case of success
+     *                            - Valid errorcode otherwise
+     *
+     * Note:
+     * Information on usage of DalBindInfo
+     *  1. Valid instance of DalBindInfo with same table_index used in this API
+     *  2. BindInput is mandatory for the interested attributes.
+     *     It is mandatory to bind input for all primary keys.
+     *  3. BindMatch if used for any attributes, ignored.
+     *  4. BindOutput if used for any attributes, ignored.
+     */
+    DalResultCode CheckInstance(const UpllCfgType cfg_type,
+                                const DalTableIndex table_index,
+                                const DalBindInfo *input_attr_info) const;
+
     inline DalResultCode FreeHandle(const SQLSMALLINT handle_type,
                                     SQLHANDLE handle) const;
 
     std::string GetConnString(const DalConnType conn_type) const;
 
+    mutable std::set<uint32_t> create_dirty;
+       // List of tables modified by candidate create operation
+    mutable std::set<uint32_t> delete_dirty;
+       // List of tables modified by candidate delete operation
+    mutable std::set<uint32_t> update_dirty;
+       // List of tables modified by candidate update operation
     SQLHANDLE dal_env_handle_;   // Environment Handle
     SQLHANDLE dal_conn_handle_;  // Connection Handle
     mutable DalConnType conn_type_;  // Connection Type
+    mutable DalConnState conn_state_;  // Connection State
 };  // class DalOdbcMgr
 
 }  // namespace dal

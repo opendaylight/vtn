@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -33,7 +33,7 @@ public class VtnServiceExceptionHandler {
 	 * @throws VtnServiceException
 	 *             the vtn service exception
 	 */
-	public void raise(final String errorContext, final String errorCode,
+	public final void raise(final String errorContext, final String errorCode,
 			final String errorText, final Exception exception)
 			throws VtnServiceException {
 		/*
@@ -72,7 +72,7 @@ public class VtnServiceExceptionHandler {
 	 * @param exception
 	 *            the throwable exception
 	 */
-	public void handle(final String errorContext, final String errorCode,
+	public final void handle(final String errorContext, final String errorCode,
 			final String errorText, final Exception exception) {
 		/*
 		 * raise the exception for final handling and log the exception after

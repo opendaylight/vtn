@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -29,62 +29,63 @@ class VtunnelIfMoMgr : public VnodeChildMoMgr {
  private:
   static BindInfo       vtunnel_if_bind_info[];
 
-  /* @brief      Returns admin and portmap information if portmap is 
-   *             valid. Else returns NULL for portmap 
-   *              
+  /* @brief      Returns admin and portmap information if portmap is
+   *             valid. Else returns NULL for portmap
+   *
    * @param[in]   ikey     Pointer to ConfigKeyVal
-   * @param[out]  valid_pm portmap is valid 
+   * @param[out]  valid_pm portmap is valid
    * @param[out]  pm       pointer to portmap informtation if valid_pm
-   * @param[out]  valid_admin admin_status valid value 
+   * @param[out]  valid_admin admin_status valid value
    * @param[out]  admin_status  value of admin_status
    *
    * @retval  UPLL_RC_SUCCESS      Completed successfully.
    * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
-   * 
-   **/ 
+   *
+   **/
   virtual upll_rc_t GetPortMap(ConfigKeyVal *ikey, uint8_t &valid_pm,
-                                val_port_map_t *&pm,
-                                uint8_t &valid_admin,
-                                uint8_t &admin_status) {
-     UPLL_FUNC_TRACE;
-     if (ikey == NULL) return UPLL_RC_ERR_GENERIC;
-     val_vtunnel_if *ifval = reinterpret_cast<val_vtunnel_if *>
-                                                (GetVal(ikey));
-     if (!ifval) {
-       UPLL_LOG_DEBUG("Invalid param");
-       return UPLL_RC_ERR_GENERIC;
-     }
-     valid_pm = ifval->valid[UPLL_IDX_PORT_MAP_VTNL_IF];
-     if (valid_pm == UNC_VF_VALID)
-       pm = &ifval->portmap;
-     else
-       pm = NULL;
-     valid_admin = ifval->valid[UPLL_IDX_ADMIN_ST_VTNL_IF];
-     admin_status = ifval->admin_status;
-     return UPLL_RC_SUCCESS;
+                               val_port_map_t *&pm,
+                               uint8_t &valid_admin,
+                               uint8_t &admin_status) {
+    UPLL_FUNC_TRACE;
+    if (ikey == NULL) return UPLL_RC_ERR_GENERIC;
+    val_vtunnel_if *ifval = reinterpret_cast<val_vtunnel_if *>
+        (GetVal(ikey));
+    if (!ifval) {
+      UPLL_LOG_DEBUG("Invalid param");
+      return UPLL_RC_ERR_GENERIC;
+    }
+    valid_pm = ifval->valid[UPLL_IDX_PORT_MAP_VTNL_IF];
+    if (valid_pm == UNC_VF_VALID)
+      pm = &ifval->portmap;
+    else
+      pm = NULL;
+    valid_admin = ifval->valid[UPLL_IDX_ADMIN_ST_VTNL_IF];
+    admin_status = ifval->admin_status;
+    return UPLL_RC_SUCCESS;
   }
 
   /**
-   * @brief  Gets the valid array position of the variable in the value 
-   *         structure from the table in the specified configuration  
+   * @brief  Gets the valid array position of the variable in the value
+   *         structure from the table in the specified configuration
    *
-   * @param[in]     val      pointer to the value structure 
+   * @param[in]     val      pointer to the value structure
    * @param[in]     indx     database index for the variable
-   * @param[out]    valid    position of the variable in the valid array - 
+   * @param[out]    valid    position of the variable in the valid array -
    *                          NULL if valid does not exist.
    * @param[in]     dt_type  specifies the configuration
-   * @param[in]     tbl      specifies the table containing the given value 
+   * @param[in]     tbl      specifies the table containing the given value
    *
    **/
   upll_rc_t GetValid(void *val, uint64_t indx, uint8_t *&valid,
-           upll_keytype_datatype_t dt_type, MoMgrTables tbl);
+                     upll_keytype_datatype_t dt_type, MoMgrTables tbl);
 
   upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *ikey) {
-    return UPLL_RC_SUCCESS;
+    UPLL_LOG_INFO("Not supported for this keytype. Returning Generic Error");
+    return UPLL_RC_ERR_GENERIC;
   }
   bool GetRenameKeyBindInfo(unc_key_type_t key_type, BindInfo *&binfo,
-                                    int &nattr,
-                                    MoMgrTables tbl) {
+                            int &nattr,
+                            MoMgrTables tbl) {
     return true;
   }
   /**
@@ -97,12 +98,12 @@ class VtunnelIfMoMgr : public VnodeChildMoMgr {
    *
    **/
   bool FilterAttributes(void *&val1, void *val2, bool copy_to_running,
-                                unc_keytype_operation_t op);
+                        unc_keytype_operation_t op);
 
   /**
    * @brief  Compares the valid value between two database records.
    * 	     if both the values are same, update the valid flag for corresponding
-   * 	     attribute as invalid in the first record. 
+   * 	     attribute as invalid in the first record.
    *
    * @param[in/out]  val1   first record value instance.
    * @param[in]      val2   second record value instance.
@@ -115,18 +116,18 @@ class VtunnelIfMoMgr : public VnodeChildMoMgr {
                               DalDmlIntf *dmi,
                               IpcReqRespHeader *req);
   /**
-     * @brief  Duplicates the input configkeyval including the key and val.  
-     * based on the tbl specified.
-     *
-     * @param[in]  okey   Output Configkeyval - allocated within the function
-     * @param[in]  req    Input ConfigKeyVal to be duplicated.
-     * @param[in]  tbl    specifies if the val structure belongs to the main table/ controller table or rename table.
-     *
-     * @retval         UPLL_RC_SUCCESS      Successfull completion.
-     * @retval         UPLL_RC_ERR_GENERIC  Failure case.
-     **/
+   * @brief  Duplicates the input configkeyval including the key and val.
+   * based on the tbl specified.
+   *
+   * @param[in]  okey   Output Configkeyval - allocated within the function
+   * @param[in]  req    Input ConfigKeyVal to be duplicated.
+   * @param[in]  tbl    specifies if the val structure belongs to the main table/ controller table or rename table.
+   *
+   * @retval         UPLL_RC_SUCCESS      Successfull completion.
+   * @retval         UPLL_RC_ERR_GENERIC  Failure case.
+   **/
   upll_rc_t DupConfigKeyVal(ConfigKeyVal *&okey,
-                   ConfigKeyVal *&req, MoMgrTables tbl = MAINTBL);
+                            ConfigKeyVal *&req, MoMgrTables tbl = MAINTBL);
 
   /* @brief     To convert the value structure read from DB to
    *            VTNService during READ operations
@@ -139,53 +140,57 @@ class VtunnelIfMoMgr : public VnodeChildMoMgr {
   upll_rc_t AdaptValToVtnService(ConfigKeyVal *ikey);
 
   /**
-     * @brief  Allocates for the specified val in the given configuration in the     * specified table.   
-     *
-     * @param[in/out]  ck_val   Reference pointer to configval structure 
-     *                          allocated.      
-     * @param[in]      dt_type  specifies the configuration candidate/running/
-     *                          state 
-     * @param[in]      tbl      specifies if the corresponding table is the  
-     *                          main table / controller table or rename table.
-     *
-     * @retval         UPLL_RC_SUCCESS      Successfull completion.
-     * @retval         UPLL_RC_ERR_GENERIC  Failure case.
-     **/
+   * @brief  Allocates for the specified val in the given configuration in the     * specified table.
+   *
+   * @param[in/out]  ck_val   Reference pointer to configval structure
+   *                          allocated.
+   * @param[in]      dt_type  specifies the configuration candidate/running/
+   *                          state
+   * @param[in]      tbl      specifies if the corresponding table is the
+   *                          main table / controller table or rename table.
+   *
+   * @retval         UPLL_RC_SUCCESS      Successfull completion.
+   * @retval         UPLL_RC_ERR_GENERIC  Failure case.
+   **/
   upll_rc_t AllocVal(ConfigVal *&ck_val, upll_keytype_datatype_t dt_type,
-          MoMgrTables tbl = MAINTBL);
-/**
-    * @brief      Method to get a configkeyval of a specified keytype from an input configkeyval
-    *
-    * @param[in/out]  okey                 pointer to output ConfigKeyVal 
-    * @param[in]      parent_key           pointer to the configkeyval from which the output configkey val is initialized.
-    *
-    * @retval         UPLL_RC_SUCCESS      Successfull completion.
-    * @retval         UPLL_RC_ERR_GENERIC  Failure case.
-    */
+                     MoMgrTables tbl = MAINTBL);
+  /**
+   * @brief      Method to get a configkeyval of a specified keytype from an input configkeyval
+   *
+   * @param[in/out]  okey                 pointer to output ConfigKeyVal
+   * @param[in]      parent_key           pointer to the configkeyval from which the output configkey val is initialized.
+   *
+   * @retval         UPLL_RC_SUCCESS      Successfull completion.
+   * @retval         UPLL_RC_ERR_GENERIC  Failure case.
+   */
   upll_rc_t GetChildConfigKey(ConfigKeyVal *&okey,
-      ConfigKeyVal *parent_key);
-/**
-    * @brief      Method to get a configkeyval of the parent keytype 
-    *
-    * @param[in/out]  okey           pointer to parent ConfigKeyVal 
-    * @param[in]      ikey           pointer to the child configkeyval from 
-    * which the parent configkey val is obtained.
-    *
-    * @retval         UPLL_RC_SUCCESS      Successfull completion.
-    * @retval         UPLL_RC_ERR_GENERIC  Failure case.
-    **/
+                              ConfigKeyVal *parent_key);
+  /**
+   * @brief      Method to get a configkeyval of the parent keytype
+   *
+   * @param[in/out]  okey           pointer to parent ConfigKeyVal
+   * @param[in]      ikey           pointer to the child configkeyval from
+   * which the parent configkey val is obtained.
+   *
+   * @retval         UPLL_RC_SUCCESS      Successfull completion.
+   * @retval         UPLL_RC_ERR_GENERIC  Failure case.
+   **/
   upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *ikey);
 
-  /* @brief         Populate val_vtn_neighbor for the READ/READ_SIBLING operations  
-   *              
-   * @param[in/out] key   Pointer to the ConfigKeyVal Structure                    
+  upll_rc_t IsLogicalPortAndVlanIdInUse(ConfigKeyVal *ckv,
+                                        DalDmlIntf *dmi,
+                                        IpcReqRespHeader *req);
+
+  /* @brief         Populate val_vtn_neighbor for the READ/READ_SIBLING operations
+   *
+   * @param[in/out] key   Pointer to the ConfigKeyVal Structure
    * @param[in]     dmi    Pointer to the DalDmlIntf(DB Interface)
-   * 
+   *
    * @retval  UPLL_RC_SUCCESS                    Completed successfully.
    * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
    * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource disconnected.
    * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
-   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist 
+   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist
    *
    **/
   upll_rc_t PopulateDriverDeleteCkv(ConfigKeyVal *&vnpCkv,
@@ -193,16 +198,19 @@ class VtunnelIfMoMgr : public VnodeChildMoMgr {
                                     upll_keytype_datatype_t dt_type);
 
   /**
-     * @brief  Update config status for commit result and vote result.
-     *
-     * @param[in/out]  ckv_running  ConfigKeyVal instance.
-     * @param[in]      cs_status    either UNC_CS_INVALID or UNC_CS_APPLIED.
-     * @param[in]      phase        specify the phase (CREATE,DELETE or UPDATE)
-     *
-     **/
+   * @brief  Update config status for commit result and vote result.
+   *
+   * @param[in/out]  ckv_running  ConfigKeyVal instance.
+   * @param[in]      cs_status    either UNC_CS_INVALID or UNC_CS_APPLIED.
+   * @param[in]      phase        specify the phase (CREATE,DELETE or UPDATE)
+   * @param[in]      dmi          Pointer to the DalDmlIntf(DB Interface)
+   *
+   **/
   upll_rc_t UpdateAuditConfigStatus(unc_keytype_configstatus_t cs_status,
-                                     uuc::UpdateCtrlrPhase phase,
-                                         ConfigKeyVal *&ckv_running);
+                                    uuc::UpdateCtrlrPhase phase,
+                                    ConfigKeyVal *&ckv_running,
+                                    DalDmlIntf *dmi);
+
   upll_rc_t UpdateConfigStatus(ConfigKeyVal *vtunnelif_keyval,
                                unc_keytype_operation_t op,
                                uint32_t result,
@@ -248,7 +256,7 @@ class VtunnelIfMoMgr : public VnodeChildMoMgr {
    * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
    */
   upll_rc_t ValidateVTunnelIfValue(val_vtunnel_if_t *val_vtunnel_if,
-      uint32_t operation = UNC_OP_INVALID);
+                                   uint32_t operation = UNC_OP_INVALID);
 
   /**
    * @Brief Validates the syntax for KT_VTUNNEL_IF keytype value structure.
@@ -278,7 +286,7 @@ class VtunnelIfMoMgr : public VnodeChildMoMgr {
    */
 
   upll_rc_t ValidateCapability(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-      const char * crtlr_name);
+                               const char * crtlr_name);
 
   /**
    * @Brief Checks if the specified key type and
@@ -295,7 +303,7 @@ class VtunnelIfMoMgr : public VnodeChildMoMgr {
    */
   upll_rc_t ValVTunnelIfAttributeSupportCheck(
       val_vtunnel_if_t *val_vtunnel_if,
-  const uint8_t* attrs, unc_keytype_operation_t operation);
+      const uint8_t* attrs, unc_keytype_operation_t operation);
 
   /* @brief         This is semantic check for KEY_VTUNNEL_IF key type
    *                in the update operation.
@@ -322,14 +330,14 @@ class VtunnelIfMoMgr : public VnodeChildMoMgr {
     delete[] table;
   }
   /**
-    * @brief      Method to check if individual portions of a key are valid
-    *
-    * @param[in/out]  ikey                 pointer to ConfigKeyVal referring to a UNC resource
-    * @param[in]      index                db index associated with the variable
-    *
-    * @retval         true                 input key is valid
-    * @retval         false                input key is invalid.
-    **/
+   * @brief      Method to check if individual portions of a key are valid
+   *
+   * @param[in/out]  ikey                 pointer to ConfigKeyVal referring to a UNC resource
+   * @param[in]      index                db index associated with the variable
+   *
+   * @retval         true                 input key is valid
+   * @retval         false                input key is invalid.
+   **/
   bool IsValidKey(void *tkey, uint64_t index);
 
   /* @brief         Updates vtunnelif structure
@@ -347,7 +355,7 @@ class VtunnelIfMoMgr : public VnodeChildMoMgr {
                             upll_keytype_datatype_t datatype,
                             DalDmlIntf *dmi);
 };
-}  // namesapce vtn
+}  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc
 #endif

@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -40,7 +40,7 @@ bool MoManager::GetMaxInstanceCount(const char *ctrlr_name,
   unc::capa::CapaIntf *capa = reinterpret_cast<unc::capa::CapaIntf *>(
       pfc::core::Module::getInstance("capa"));
   if (capa == NULL) {
-    pfc_log_fatal("%s:%d: CapaModule is not found", __FUNCTION__, __LINE__);
+    UPLL_LOG_FATAL("CapaModule is not found");
     return false;
   }
 
@@ -68,9 +68,9 @@ bool MoManager::GetCreateCapability(const char *ctrlr_name,
   }
 
   unc::capa::CapaModule *capa = reinterpret_cast<unc::capa::CapaModule *>(
-    pfc::core::Module::getInstance("capa"));
+      pfc::core::Module::getInstance("capa"));
   if (capa == NULL) {
-    pfc_log_fatal("%s:%d: CapaModule is not found", __FUNCTION__, __LINE__);
+    UPLL_LOG_FATAL("CapaModule is not found");
     return false;
   }
 
@@ -97,9 +97,9 @@ bool MoManager::GetUpdateCapability(const char *ctrlr_name,
   }
 
   unc::capa::CapaModule *capa = reinterpret_cast<unc::capa::CapaModule *>(
-    pfc::core::Module::getInstance("capa"));
+      pfc::core::Module::getInstance("capa"));
   if (capa == NULL) {
-    pfc_log_fatal("%s:%d: CapaModule is not found", __FUNCTION__, __LINE__);
+    UPLL_LOG_FATAL("CapaModule is not found");
     return false;
   }
 
@@ -126,9 +126,9 @@ bool MoManager::GetReadCapability(const char *ctrlr_name,
   }
 
   unc::capa::CapaModule *capa = reinterpret_cast<unc::capa::CapaModule *>(
-    pfc::core::Module::getInstance("capa"));
+      pfc::core::Module::getInstance("capa"));
   if (capa == NULL) {
-    pfc_log_fatal("%s:%d: CapaModule is not found", __FUNCTION__, __LINE__);
+    UPLL_LOG_FATAL("CapaModule is not found");
     return false;
   }
 
@@ -154,9 +154,9 @@ bool MoManager::GetStateCapability(const char *ctrlr_name,
   }
 
   unc::capa::CapaModule *capa = reinterpret_cast<unc::capa::CapaModule *>(
-    pfc::core::Module::getInstance("capa"));
+      pfc::core::Module::getInstance("capa"));
   if (capa == NULL) {
-    pfc_log_fatal("CapaModule is not found");
+    UPLL_LOG_FATAL("CapaModule is not found");
     return false;
   }
 

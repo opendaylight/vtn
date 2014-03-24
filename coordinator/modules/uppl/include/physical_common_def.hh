@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -17,6 +17,7 @@
 #define _PHYSICAL_COMMON_DEF_HH_
 #include <unc/base.h>
 #include <unc/unc_events.h>
+#include <unc/unc_base.h>
 #include <string>
 
 #define UPPL_IPC_NOTIFICATION_HANDLER_NAME  "UpplNotificationManager"
@@ -231,6 +232,48 @@ struct driver_event_header {
   uint32_t operation;
   uint32_t data_type;
   uint32_t key_type;
+};
+
+struct lp_struct {
+  uint8_t switch_id[256];
+  uint8_t port_id[32];
+  uint8_t port_type;
+};
+
+struct lmp_struct {
+  uint8_t switch_id[256];
+  uint8_t port_id[32];
+};
+
+struct port_struct {
+  uint8_t port_id[32];
+};
+
+struct boundary_val {
+  uint8_t controller_type;
+  uint8_t controller_name[32];
+  uint8_t domain_name[32];
+  uint8_t logical_port_id[320];
+  lp_struct lp_str;
+  uint8_t boundary_id[32];
+};
+
+struct boundary_record {
+  uint8_t boundary_id[32];
+  uint8_t ctr_name1[32];
+  uint8_t dom_name1[32];
+  uint8_t lp_id1[320];
+  uint8_t port_type1;
+  uint8_t sw_id1[256];
+  uint8_t port_id1[32];
+  bool is_filled1;
+  uint8_t ctr_name2[32];
+  uint8_t dom_name2[32];
+  uint8_t lp_id2[320];
+  uint8_t port_type2;
+  uint8_t sw_id2[256];
+  uint8_t port_id2[32];
+  bool is_filled2;
 };
 
 struct driver_alarm_header {

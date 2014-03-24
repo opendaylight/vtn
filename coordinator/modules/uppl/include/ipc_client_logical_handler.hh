@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -22,6 +22,7 @@
 #include <pfcxx/module.hh>
 #include <pfcxx/ipc_client.hh>
 #include "unc/uppl_common.h"
+#include "unc/unc_base.h"
 
 namespace unc {
 namespace uppl {
@@ -34,7 +35,7 @@ namespace uppl {
 
 class IPCClientLogicalHandler {
  public:
-  UpplReturnCode CheckInUseInLogical(unc_key_type_t k_type,
+  UncRespCode CheckInUseInLogical(unc_key_type_t k_type,
                                      void *key_str,
                                      uint32_t data_type);
   static IPCClientLogicalHandler* get_ipc_client_logical_handler();

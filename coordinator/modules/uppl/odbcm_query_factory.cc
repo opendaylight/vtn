@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -1003,8 +1003,8 @@ SQLQUERY* QueryFactory::operation_iscandidatedirty() {
   db_table_list_map = p_odbc_mgr->get_db_table_list_map_();
   if (db_table_list_map.size() <= 0) {
     pfc_log_debug("ODBCM::QueryFactory::IsCandidateDirty: "
-      "Table list size is invalid:%d",
-      static_cast<int>(db_table_list_map.size()));
+      "Table list size is invalid:%" PFC_PFMT_SSIZE_T,
+      db_table_list_map.size());
     delete []p_cand_db;
     return NULL;
   }
@@ -1144,6 +1144,13 @@ SQLQUERY QueryFactory::operation_getbulkrows(unc_keytype_datatype_t db_name,
       GetTableName(db_table_schema.table_name_);
   if (db_table_schema.primary_keys_.size() != 0) {
     getbulk_query << getbulk_where.str();
+    if (db_name == UNC_DT_CANDIDATE) {
+     getbulk_query << " and cs_row_status != " << DELETED;
+     pfc_log_debug("Excluding Deleted rows of Candidate");
+    }
+  } else if (db_name == UNC_DT_CANDIDATE) {
+    getbulk_query << " where cs_row_status != " << DELETED;
+    pfc_log_debug("Excluding(Else) Deleted rows of Candidate");
   }
   getbulk_query << getOrderByString(db_table_schema.table_name_,
                   db_table_schema.primary_keys_) << " ASC ";
@@ -1472,7 +1479,7 @@ SQLQUERY QueryFactory::operation_getsiblingrows(
   getsibling_query << " FROM " << prefix << ODBCManager::get_ODBCManager()->
       GetTableName(db_table_schema.table_name_);
   if (db_table_schema.primary_keys_.size() != 0) {
-    getsibling_query << getsibling_where.str();    
+    getsibling_query << getsibling_where.str();
   }
   getsibling_query << getOrderByString(db_table_schema.table_name_,
                                          db_table_schema.primary_keys_);
@@ -1578,8 +1585,8 @@ SQLQUERY* QueryFactory::operation_commit_all_config(
   /** Table list is empty, return NULL */
   if (db_table_list_map.size() <= 0) {
     pfc_log_debug("ODBCM::QueryFactory::CommitAllConfiguration: "
-      "Table list size is invalid:%d",
-      static_cast<int>(db_table_list_map.size()));
+      "Table list size is invalid:%" PFC_PFMT_SSIZE_T,
+      db_table_list_map.size());
     delete []p_commit_db;
     return NULL;
   }

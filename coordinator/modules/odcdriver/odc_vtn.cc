@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -26,7 +26,7 @@ OdcVtnCommand::~OdcVtnCommand() {
 
 // Constructs command to create Vtn and send it to rest interface to send to
 // controller
-drv_resp_code_t OdcVtnCommand::create_cmd(key_vtn_t& key_vtn,
+UncRespCode OdcVtnCommand::create_cmd(key_vtn_t& key_vtn,
                                           val_vtn_t& val_vtn,
                                           unc::driver::controller *ctr_ptr) {
   ODC_FUNC_TRACE;
@@ -41,7 +41,7 @@ drv_resp_code_t OdcVtnCommand::create_cmd(key_vtn_t& key_vtn,
   vtnname = reinterpret_cast<char*>(key_vtn.vtn_name);
   if (0 == strlen(vtnname)) {
     pfc_log_error("Empty vtn name in %s", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   url.append(vtnname);
   unc::restjson::JsonBuildParse json_obj;
@@ -61,14 +61,14 @@ drv_resp_code_t OdcVtnCommand::create_cmd(key_vtn_t& key_vtn,
   json_object_put(jobj_req_body);
   if (NULL == response) {
     pfc_log_error("Error Occured while getting httpresponse");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   int resp_code = response->code;
   pfc_log_debug("response code returned in create vtn is %d", resp_code);
   if (HTTP_201_RESP_CREATED != resp_code) {
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 // Creates Request Body
@@ -81,7 +81,7 @@ json_object* OdcVtnCommand::create_request_body(const val_vtn_t& val_vtn) {
   if (UNC_VF_VALID == val_vtn.valid[UPLL_IDX_DESC_VTN]) {
     if (0 != strlen(description)) {
       ret_val = json_obj.build("description", description, jobj);
-      if (ret_val) {
+      if (restjson::REST_OP_SUCCESS != ret_val) {
         pfc_log_error("Error occured in request body build %s", PFC_FUNCNAME);
         json_object_put(jobj);
         return NULL;
@@ -109,7 +109,7 @@ json_object* OdcVtnCommand::create_request_body(const val_vtn_t& val_vtn) {
 }
 
 //  Command to update vtn  and Send request to Controller
-drv_resp_code_t OdcVtnCommand::update_cmd(key_vtn_t& key_vtn,
+UncRespCode OdcVtnCommand::update_cmd(key_vtn_t& key_vtn,
                                           val_vtn_t& val_vtn,
                                           unc::driver::controller *ctr_ptr) {
   ODC_FUNC_TRACE;
@@ -123,7 +123,7 @@ drv_resp_code_t OdcVtnCommand::update_cmd(key_vtn_t& key_vtn,
   vtnname = reinterpret_cast<char*>(key_vtn.vtn_name);
   if (0 == strlen(vtnname)) {
     pfc_log_error("Empty vtn name in : %s", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   url.append(vtnname);
   unc::restjson::JsonBuildParse json_obj;
@@ -145,18 +145,18 @@ drv_resp_code_t OdcVtnCommand::update_cmd(key_vtn_t& key_vtn,
   json_object_put(jobj_request);
   if (NULL == response) {
     pfc_log_error("Error Occured while getting httpresponse");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   int resp_code = response->code;
   pfc_log_debug("response code returned in updatevtn is %d", resp_code);
   if (HTTP_200_RESP_OK != resp_code) {
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 //  fetch all child configuration for the parent key type(root)
-drv_resp_code_t OdcVtnCommand::fetch_config(unc::driver::controller* ctr,
+UncRespCode OdcVtnCommand::fetch_config(unc::driver::controller* ctr,
                                    void* parent_key,
                                    std::vector<unc::vtndrvcache::ConfigNode *>
                                    &cfgnode_vector) {
@@ -165,7 +165,7 @@ drv_resp_code_t OdcVtnCommand::fetch_config(unc::driver::controller* ctr,
 }
 
 // Gets the Controller Response code
-drv_resp_code_t OdcVtnCommand::get_vtn_list(unc::driver::controller* ctr,
+UncRespCode OdcVtnCommand::get_vtn_list(unc::driver::controller* ctr,
                                std::vector<unc::vtndrvcache::ConfigNode *>
                                &cfgnode_vector) {
   ODC_FUNC_TRACE;
@@ -182,28 +182,28 @@ drv_resp_code_t OdcVtnCommand::get_vtn_list(unc::driver::controller* ctr,
 
   if (NULL == response) {
     pfc_log_error("Error Occured while getting httpresponse -- ");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   int resp_code = response->code;
   if (HTTP_200_RESP_OK != resp_code) {
     pfc_log_error("%d error resp ", resp_code);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   if (NULL != response->write_data) {
     if (NULL != response->write_data->memory) {
       char *data = response->write_data->memory;
       pfc_log_debug("vtns present : %s", data);
-      drv_resp_code_t ret_val =  parse_vtn_response(data, cfgnode_vector);
+      UncRespCode ret_val =  parse_vtn_response(data, cfgnode_vector);
       pfc_log_debug("read_all_--  size, %d",
                     static_cast<int>(cfgnode_vector.size()));
       return ret_val;
     }
   }
-  return DRVAPI_RESPONSE_FAILURE;
+  return UNC_DRV_RC_ERR_GENERIC;
 }
 
 // parse each vtn node append to cache
-drv_resp_code_t OdcVtnCommand::fill_config_node_vector(
+UncRespCode OdcVtnCommand::fill_config_node_vector(
     json_object *json_obj_vtn, int arr_idx,
     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
   ODC_FUNC_TRACE;
@@ -218,16 +218,16 @@ drv_resp_code_t OdcVtnCommand::fill_config_node_vector(
   uint32_t ret_val = restjson::JsonBuildParse::parse(json_obj_vtn, "name",
                                               arr_idx, vtn_name);
   pfc_log_debug(" vtn_name %s:", vtn_name.c_str());
-  if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
+  if (restjson::REST_OP_SUCCESS != ret_val) {
     pfc_log_debug(" Error while parsing vtn name");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   ret_val = restjson::JsonBuildParse::parse(json_obj_vtn, "description",
                                             arr_idx, vtn_description);
   pfc_log_debug(" vtn_description %s:", vtn_description.c_str());
-  if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
+  if (restjson::REST_OP_SUCCESS != ret_val) {
     pfc_log_debug(" Error while parsing vtn description");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   //  Fills Key Structure
   strncpy(reinterpret_cast<char*> (key_vtn.vtn_name), vtn_name.c_str(),
@@ -251,11 +251,11 @@ drv_resp_code_t OdcVtnCommand::fill_config_node_vector(
       (&key_vtn, &val_vtn, uint32_t(UNC_OP_READ));
   PFC_ASSERT(cfgptr != NULL);
   cfgnode_vector.push_back(cfgptr);
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 // parsing function for converting controller response to driver format
-drv_resp_code_t OdcVtnCommand::parse_vtn_response(char *data,
+UncRespCode OdcVtnCommand::parse_vtn_response(char *data,
                                                std::vector< unc::vtndrvcache
                                                ::ConfigNode *>
                                                &cfgnode_vector) {
@@ -264,7 +264,7 @@ drv_resp_code_t OdcVtnCommand::parse_vtn_response(char *data,
   if (json_object_is_type(jobj, json_type_null)) {
     pfc_log_error("json_object_is_type error");
     json_object_put(jobj);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   uint32_t array_length =0;
   json_object *json_obj_vtn = NULL;
@@ -274,12 +274,12 @@ drv_resp_code_t OdcVtnCommand::parse_vtn_response(char *data,
   if (json_object_is_type(json_obj_vtn, json_type_null)) {
     json_object_put(jobj);
     pfc_log_error("Parsing Error json_obj_vtn is null");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
-  if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
+  if (restjson::REST_OP_SUCCESS != ret_val) {
     json_object_put(jobj);
     pfc_log_error("Error in parsing the json_obj_vtn");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   if (json_object_is_type(json_obj_vtn, json_type_array)) {
     array_length = restjson::JsonBuildParse::get_array_length(jobj, "vtn");
@@ -288,23 +288,23 @@ drv_resp_code_t OdcVtnCommand::parse_vtn_response(char *data,
   if (0 == array_length) {
     pfc_log_debug("inside 0==arraylength");
     json_object_put(jobj);
-    return DRVAPI_RESPONSE_NO_SUCH_INSTANCE;
+    return UNC_RC_NO_SUCH_INSTANCE;
   }
   for (uint32_t arr_idx = 0; arr_idx < array_length; arr_idx++) {
-    drv_resp_code_t ret_val = fill_config_node_vector(json_obj_vtn, arr_idx,
+    UncRespCode ret_val = fill_config_node_vector(json_obj_vtn, arr_idx,
                                                       cfgnode_vector);
-    if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
+    if (UNC_RC_SUCCESS != ret_val) {
       json_object_put(jobj);
       pfc_log_error("Error return from parse_vtn_append_vector failure");
       return ret_val;
     }
   }
   json_object_put(jobj);
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 // Delete Request send to the Contoller
-drv_resp_code_t OdcVtnCommand::delete_cmd(key_vtn_t& key_vtn,
+UncRespCode OdcVtnCommand::delete_cmd(key_vtn_t& key_vtn,
                                           val_vtn_t& val_vtn,
                                           unc::driver::controller *ctr_ptr) {
   ODC_FUNC_TRACE;
@@ -318,7 +318,7 @@ drv_resp_code_t OdcVtnCommand::delete_cmd(key_vtn_t& key_vtn,
   vtnname = reinterpret_cast<char*>(key_vtn.vtn_name);
   if (0 == strlen(vtnname)) {
     pfc_log_error("Empty vtn name in %s", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   url.append(vtnname);
 
@@ -329,14 +329,14 @@ drv_resp_code_t OdcVtnCommand::delete_cmd(key_vtn_t& key_vtn,
 
   if (NULL == response) {
     pfc_log_error("Error Occured while getting httpresponse");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   int resp_code = response->code;
   pfc_log_debug("response code returned in delete vtn is %d", resp_code);
   if (HTTP_200_RESP_OK != resp_code) {
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 }  // namespace odcdriver
 }  // namespace unc

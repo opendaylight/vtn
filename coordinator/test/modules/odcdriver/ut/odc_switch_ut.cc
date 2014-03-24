@@ -28,7 +28,7 @@ TEST(odcdriver_switch, test_switch_null_resp) {
 
   pfc_bool_t cache_empty = PFC_FALSE;
   unc::odcdriver::OdcSwitch obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj.fetch_config(ctr, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
   ctr= NULL;
@@ -48,7 +48,7 @@ TEST(odcdriver_switch, test_switch_invalid_resp) {
 
   pfc_bool_t cache_empty = PFC_FALSE;
   unc::odcdriver::OdcSwitch obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj.fetch_config(ctr, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
   ctr= NULL;
@@ -68,7 +68,7 @@ TEST(odcdriver_switch, test_switch_data) {
   unc::restjson::ConfFileValues_t conf_file;
   pfc_bool_t cache_empty = PFC_FALSE;
   unc::odcdriver::OdcSwitch obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj.fetch_config(ctr, cache_empty));
   int flag = 1;
   std::auto_ptr<unc::vtndrvcache::CommonIterator>
       itr_ptr(ctr->physical_port_cache->create_iterator());
@@ -112,7 +112,7 @@ TEST(odcdriver_switch, test_switch_data_update) {
   unc::restjson::ConfFileValues_t conf_file;
   pfc_bool_t cache_empty = PFC_FALSE;
   unc::odcdriver::OdcSwitch obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj.fetch_config(ctr, cache_empty));
   int flag = 1;
   std::auto_ptr<unc::vtndrvcache::CommonIterator>
       itr_ptr(ctr->physical_port_cache->create_iterator());
@@ -147,7 +147,7 @@ TEST(odcdriver_switch, test_switch_data_update) {
   unc::driver::VtnDrvIntf::stub_loadVtnDrvModule();
 
   flag = 1;
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj.fetch_config(ctr, cache_empty));
   for (cfgnode_cache = itr_ptr->PhysicalNodeFirstItem();
        itr_ptr->IsDone() == false;
        cfgnode_cache = itr_ptr->NextItem() ) {
@@ -196,7 +196,7 @@ TEST(odcdriver_switch, test_switch_data_delete) {
   pfc_bool_t cache_empty = PFC_FALSE;
   unc::restjson::ConfFileValues_t conf_file;
   unc::odcdriver::OdcSwitch obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj.fetch_config(ctr, cache_empty));
   int flag = 1;
   std::auto_ptr<unc::vtndrvcache::CommonIterator>
       itr_ptr(ctr->physical_port_cache->create_iterator());
@@ -229,7 +229,7 @@ TEST(odcdriver_switch, test_switch_data_delete) {
   unc::driver::VtnDrvIntf::stub_loadVtnDrvModule();
 
   flag = 1;
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj.fetch_config(ctr, cache_empty));
   for (cfgnode_cache = itr_ptr->PhysicalNodeFirstItem();
        itr_ptr->IsDone() == false;
        cfgnode_cache = itr_ptr->NextItem() ) {
@@ -273,7 +273,7 @@ TEST(odcdriver_switch, test_switch_data_update_same) {
   unc::restjson::ConfFileValues_t conf_file;
   pfc_bool_t cache_empty = PFC_FALSE;
   unc::odcdriver::OdcSwitch obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj.fetch_config(ctr, cache_empty));
   int flag = 1;
   std::auto_ptr<unc::vtndrvcache::CommonIterator>
       itr_ptr(ctr->physical_port_cache->create_iterator());
@@ -300,7 +300,7 @@ TEST(odcdriver_switch, test_switch_data_update_same) {
 
 
   flag = 1;
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj.fetch_config(ctr, cache_empty));
   for (cfgnode_cache = itr_ptr->PhysicalNodeFirstItem();
        itr_ptr->IsDone() == false;
        cfgnode_cache = itr_ptr->NextItem() ) {
@@ -346,7 +346,7 @@ TEST(odcdriver_switch, test_switch_resp_nodeprop_wrong) {
   unc::restjson::ConfFileValues_t conf_file;
   pfc_bool_t cache_empty = PFC_FALSE;
   unc::odcdriver::OdcSwitch obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj.fetch_config(ctr, cache_empty));
 
   delete ctr->physical_port_cache;
   delete ctr;
@@ -367,7 +367,7 @@ TEST(odcdriver_switch, test_switch_resp_node_prop_node_wrong) {
   unc::restjson::ConfFileValues_t conf_file;
   pfc_bool_t cache_empty = PFC_FALSE;
   unc::odcdriver::OdcSwitch obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -390,7 +390,7 @@ TEST(odcdriver_switch, test_switch_resp_node_prop_id_wrong) {
   unc::restjson::ConfFileValues_t conf_file;
   pfc_bool_t cache_empty = PFC_FALSE;
   unc::odcdriver::OdcSwitch obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -413,7 +413,7 @@ TEST(odcdriver_switch, test_switch_node_prop_id_wrong) {
   unc::restjson::ConfFileValues_t conf_file;
   pfc_bool_t cache_empty = PFC_FALSE;
   unc::odcdriver::OdcSwitch obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;

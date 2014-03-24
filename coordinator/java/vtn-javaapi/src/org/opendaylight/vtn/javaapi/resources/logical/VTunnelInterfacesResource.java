@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -54,19 +54,22 @@ public class VTunnelInterfacesResource extends AbstractResource {
 	 * 
 	 * @return the vtn name
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
+
 	/**
 	 * Gets the v tunnel name.
 	 * 
 	 * @return the v tunnel name
 	 */
-	public String getvTunnelName() {
+	public final String getvTunnelName() {
 		return vTunnelName;
 	}
+
 	private static final Logger LOG = Logger
 			.getLogger(VTunnelInterfacesResource.class.getName());
+
 	/**
 	 * Instantiates a new Interface Resource Validator resource.
 	 */
@@ -76,6 +79,7 @@ public class VTunnelInterfacesResource extends AbstractResource {
 		setValidator(new InterfaceResourceValidator(this));
 		LOG.trace("Completed VTunnelInterfacesResource#VTunnelInterfaceResource()");
 	}
+
 	/**
 	 * Implementation of Post method of VTunnel Interface API
 	 * 
@@ -86,7 +90,8 @@ public class VTunnelInterfacesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VTunnelInterfacesResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -135,6 +140,7 @@ public class VTunnelInterfacesResource extends AbstractResource {
 		LOG.trace("Complete VTunnelInterfacesResource#post()");
 		return status;
 	}
+
 	/**
 	 * Implementation of Get method of VTunnel Interface API
 	 * 
@@ -145,7 +151,8 @@ public class VTunnelInterfacesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VTunnelInterfacesResource#get()");
 
 		ClientSession session = null;
@@ -195,16 +202,17 @@ public class VTunnelInterfacesResource extends AbstractResource {
 					.getVTunnelInterfaceResourceResponse(
 							requestProcessor.getIpcResponsePacket(),
 							requestBody, VtnServiceJsonConsts.LIST);
-			if (vtunnelInterfacesJson.get(VtnServiceJsonConsts.INTERFACES).isJsonArray()) {
-				JsonArray responseArray = vtunnelInterfacesJson.get(
-						VtnServiceJsonConsts.INTERFACES)
-						.getAsJsonArray();
-				vtunnelInterfacesJson = getResponseJsonArrayLogical(requestBody,
-                        requestProcessor, responseGenerator,
-                        responseArray, VtnServiceJsonConsts.INTERFACES,
-                        VtnServiceJsonConsts.IFNAME,
-                        IpcRequestPacketEnum.KT_VTUNNEL_IF_GET,
-                        uriParameterList,VtnServiceIpcConsts.GET_VTUNNEL_INTERFACE_RESPONSE);
+			if (vtunnelInterfacesJson.get(VtnServiceJsonConsts.INTERFACES)
+					.isJsonArray()) {
+				final JsonArray responseArray = vtunnelInterfacesJson.get(
+						VtnServiceJsonConsts.INTERFACES).getAsJsonArray();
+				vtunnelInterfacesJson = getResponseJsonArrayLogical(
+						requestBody, requestProcessor, responseGenerator,
+						responseArray, VtnServiceJsonConsts.INTERFACES,
+						VtnServiceJsonConsts.IFNAME,
+						IpcRequestPacketEnum.KT_VTUNNEL_IF_GET,
+						uriParameterList,
+						VtnServiceIpcConsts.GET_VTUNNEL_INTERFACE_RESPONSE);
 			}
 			LOG.trace("Response Packet created successfully for 1st request");
 			if ((VtnServiceJsonConsts.STATE).equalsIgnoreCase(dataType)
@@ -277,6 +285,7 @@ public class VTunnelInterfacesResource extends AbstractResource {
 		LOG.trace("Completed VTunnelInterfaceResource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 

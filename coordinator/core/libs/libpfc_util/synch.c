@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -50,7 +50,7 @@ pfc_mutex_init(pfc_mutex_t *mutexp, pfc_mutextype_t type)
 		err = pthread_mutexattr_settype(&attr,
 						PTHREAD_MUTEX_RECURSIVE);
 		if (PFC_EXPECT_FALSE(err != 0)) {
-			return err;
+			goto out;
 		}
 	}
 	else if (USE_ERRORCHECK_MUTEX) {
@@ -58,11 +58,16 @@ pfc_mutex_init(pfc_mutex_t *mutexp, pfc_mutextype_t type)
 		err = pthread_mutexattr_settype(&attr,
 						PTHREAD_MUTEX_ERRORCHECK);
 		if (PFC_EXPECT_FALSE(err != 0)) {
-			return err;
+			goto out;
 		}
 	}
 
-	return pthread_mutex_init((pthread_mutex_t *)mutexp, &attr);
+	err = pthread_mutex_init((pthread_mutex_t *)mutexp, &attr);
+
+out:
+	pthread_mutexattr_destroy(&attr);
+
+	return err;
 }
 
 /*

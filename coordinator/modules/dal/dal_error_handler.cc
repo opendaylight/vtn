@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -121,6 +121,10 @@ static const DalErrMap dal_err_map[] = {
 
   // 23000 Integrity Constraint - may not happen in this appln
   {"23000", kDalRcGeneralError},
+  // 23503 Foreign Key violation
+  {"23503", kDalRcParentNotFound},
+  // 23505 Unique Constraint violation
+  {"23505", kDalRcRecordAlreadyExists},
 
   // 24000 Invalid Cursor State
   {"24000", kDalRcInvalidCursor},
@@ -293,16 +297,6 @@ DalErrorHandler::ProcessOdbcErrors(const SQLSMALLINT handle_type,
                                    const SQLHANDLE handle,
                                    const SQLRETURN sql_rc,
                                    DalResultCode *dal_rc) {
-  const uint16_t kDalSqlStateLen = 6;
-  const uint16_t kDalSqlErrMsgLen = 256;
-  SQLCHAR sql_state[kDalSqlStateLen];
-  SQLCHAR err_msg[kDalSqlErrMsgLen];
-  SQLINTEGER err_code = 0;
-  SQLSMALLINT err_msg_len = 0;
-
-  memset(sql_state, 0, kDalSqlStateLen);
-  memset(err_msg, 0, kDalSqlErrMsgLen);
-
   switch (sql_rc) {
     // Success
     case SQL_SUCCESS:
@@ -363,6 +357,12 @@ DalErrorHandler::ProcessOdbcErrors(const SQLSMALLINT handle_type,
       {
         SQLRETURN rc = SQL_SUCCESS;
         uint16_t rec_no = 1;
+        const uint16_t kDalSqlStateLen = 6;
+        const uint16_t kDalSqlErrMsgLen = 256;
+        SQLCHAR sql_state[kDalSqlStateLen];
+        SQLCHAR err_msg[kDalSqlErrMsgLen];
+        SQLINTEGER err_code = 0;
+        SQLSMALLINT err_msg_len = 0;
 
         do {
           err_code = 0;

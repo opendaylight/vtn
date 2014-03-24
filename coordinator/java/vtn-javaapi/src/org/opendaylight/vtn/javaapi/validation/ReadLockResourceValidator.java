@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -27,7 +27,7 @@ public class ReadLockResourceValidator extends VtnServiceValidator {
 			.getLogger(ReadLockResourceValidator.class.getName());
 
 	/** The validator. */
-	final CommonValidator validator = new CommonValidator();
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new read lock resource validator.
@@ -43,8 +43,9 @@ public class ReadLockResourceValidator extends VtnServiceValidator {
 	 * Validate request json for Read Lock API
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("ReadLockResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of ReadLockResourceValidator");
@@ -52,7 +53,7 @@ public class ReadLockResourceValidator extends VtnServiceValidator {
 		try {
 			if (requestBody != null && VtnServiceConsts.PUT.equals(method)) {
 				isValid = validatePut(requestBody);
-			}else {
+			} else {
 				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 				isValid = false;
 			}

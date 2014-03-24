@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -55,7 +55,7 @@ public class VlanMapsResource extends AbstractResource {
 	 * 
 	 * @return the vtn name
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
@@ -64,7 +64,7 @@ public class VlanMapsResource extends AbstractResource {
 	 * 
 	 * @return the vbr name
 	 */
-	public String getVbrName() {
+	public final String getVbrName() {
 		return vbrName;
 	}
 
@@ -88,7 +88,8 @@ public class VlanMapsResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VlanMapsResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -171,7 +172,8 @@ public class VlanMapsResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VlanMapsResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -203,14 +205,15 @@ public class VlanMapsResource extends AbstractResource {
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.LIST);
 			if (responseJson.get(VtnServiceJsonConsts.VLANMAPS).isJsonArray()) {
-				JsonArray responseArray = responseJson.get(
+				final JsonArray responseArray = responseJson.get(
 						VtnServiceJsonConsts.VLANMAPS).getAsJsonArray();
 				responseJson = getResponseJsonArrayLogical(requestBody,
-                        requestProcessor, responseGenerator,
-                        responseArray, VtnServiceJsonConsts.VLANMAPS,
-                        VtnServiceJsonConsts.VLANMAPID,
-                        IpcRequestPacketEnum.KT_VBR_VLANMAP_GET,
-                        uriParameterList,VtnServiceIpcConsts.GET_VBRIDGE_VLANMAP_RESPONSE);
+						requestProcessor, responseGenerator, responseArray,
+						VtnServiceJsonConsts.VLANMAPS,
+						VtnServiceJsonConsts.VLANMAPID,
+						IpcRequestPacketEnum.KT_VBR_VLANMAP_GET,
+						uriParameterList,
+						VtnServiceIpcConsts.GET_VBRIDGE_VLANMAP_RESPONSE);
 			}
 			setInfo(responseJson);
 			LOG.debug("Response object created successfully");

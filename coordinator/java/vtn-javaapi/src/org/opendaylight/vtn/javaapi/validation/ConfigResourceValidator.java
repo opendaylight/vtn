@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -25,8 +25,6 @@ public class ConfigResourceValidator extends VtnServiceValidator {
 	private static final Logger LOG = Logger
 			.getLogger(ConfigResourceValidator.class.getName());
 
-	final CommonValidator validator = new CommonValidator();
-
 	/**
 	 * Instantiates a new config resource validator.
 	 * 
@@ -41,15 +39,16 @@ public class ConfigResourceValidator extends VtnServiceValidator {
 	 * Configuration API.
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start ConfigResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of ConfigResourceValidator");
 		boolean isValid = false;
 		if (requestBody != null && VtnServiceConsts.PUT.equals(method)) {
 			isValid = validatePut(requestBody);
-		}else {
+		} else {
 			setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 			isValid = false;
 		}

@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -10,14 +10,15 @@
 #ifndef _USESS_BASE_COMMON_HH_
 #define _USESS_BASE_COMMON_HH_
 
+#include <string>
 #include "usess_def.hh"
 
 namespace unc {
 namespace usess {
 
-class UsessBaseCommon
-{
-public:
+class UsessBaseCommon {
+public
+    :
   UsessBaseCommon(void);
   ~UsessBaseCommon(void);
 
@@ -32,7 +33,6 @@ public:
                    const std::string& hash_key) const;
   bool CheckRegular(const char* check_str,
                     const std::string& regular_str) const;
-
 };
 
 }  // namespace usess

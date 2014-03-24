@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -24,7 +24,7 @@ const char* UsessConfUser::kConfBlockName_ = "usess_conf_user";
 const usess_conf_user_t UsessConfUser::kDefaultConf_ = {
                         HASH_TYPE_MD5,              // .hash_type
                         32,                         // .user_length
-                        "[[:alpha:]_][[:alnum:]_]+",// .user_regular
+                        "[[:alpha:]_][[:alnum:]_]+",  // .user_regular
                         72,                         // .passwd_length
                         "[[:alnum:][:graph:]]+"     // .passwd_regular
 };
@@ -36,10 +36,9 @@ const usess_conf_user_t UsessConfUser::kDefaultConf_ = {
  * @brief   Constructor.
  * @param   nothing.
  * @return  nothing.
- * @note    
+ * @note
  */
-UsessConfUser::UsessConfUser(void)
-{
+UsessConfUser::UsessConfUser(void) {
   data_ = kDefaultConf_;
 }
 
@@ -48,10 +47,9 @@ UsessConfUser::UsessConfUser(void)
  * @brief   Destructor.
  * @param   nothing.
  * @return  nothing.
- * @note    
+ * @note
  */
-UsessConfUser::~UsessConfUser(void)
-{
+UsessConfUser::~UsessConfUser(void) {
 }
 
 
@@ -59,10 +57,9 @@ UsessConfUser::~UsessConfUser(void)
  * @brief   Configuration file data load.
  * @param   nothing.
  * @return  Processing result.
- * @note    
+ * @note
  */
-usess_ipc_err_e UsessConfUser::LoadConf(void)
-{
+usess_ipc_err_e UsessConfUser::LoadConf(void) {
   pfc::core::ModuleConfBlock conf_block(kConfBlockName_);
 
 
@@ -97,10 +94,9 @@ usess_ipc_err_e UsessConfUser::LoadConf(void)
  * @brief   configuration data access.
  * @param   nothing.
  * @return  Processing result.
- * @note    
+ * @note
  */
-const usess_conf_user_t& UsessConfUser::data(void) const
-{
+const usess_conf_user_t& UsessConfUser::data(void) const {
   return data_;
 }
 

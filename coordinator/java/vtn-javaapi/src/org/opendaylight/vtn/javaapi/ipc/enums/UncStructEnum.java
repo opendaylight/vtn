@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -27,7 +27,7 @@ public enum UncStructEnum {
 	KeyDhcpRelayIf("key_dhcp_relay_if"),
 	KeyDhcpRelayServer("key_dhcp_relay_server"),
 	KeyVunknown("key_vunknown"),
-	//vUnknown(""),
+	// vUnknown(""),
 	KeyFlowListEntry("key_flowlist_entry"),
 	ValFlowListEntry("val_flowlist_entry"),
 	KeyVtnstationController("key_vtnstation_controller"),
@@ -63,7 +63,7 @@ public enum UncStructEnum {
 	KeyVrtIfFlowFilterEntry("key_vrt_if_flowfilter_entry"),
 	ValVrtArpEntrySt("val_vrt_arp_entry_st"),
 	KeyVbrIfFlowFilter("key_vbr_if_flowfilter"),
-	//ValVbrL2DomainSt(""),
+	// ValVbrL2DomainSt(""),
 	KeyStaticIpRoute("key_static_ip_route"),
 	ValStaticIpRoute("val_static_ip_route"),
 	KeyVbrFlowFilter("key_vbr_flowfilter"),
@@ -92,18 +92,33 @@ public enum UncStructEnum {
 	KeyBoundary("key_boundary"),
 	ValBoundary("val_boundary"),
 
-	//usess_ipc_req_sess_id(""),
+	// usess_ipc_req_sess_id(""),
 	usessIpcReqUserPasswd("usess_ipc_req_user_passwd"),
 	KeyPort("key_port"),
-	KeyLink("key_link"), 
-	ValPort("val_port"), 
+	KeyLink("key_link"),
+	ValPort("val_port"),
 	ValPortSt("val_port_st"),
 	ValPortStNeighbour("val_port_st_neighbor"),
 	KeyLogicalPort("key_logical_port"),
 	KeyLogicalMemberPort("key_logical_member_port"),
-	UsessIpcReqSessEnable("usess_ipc_req_sess_enable");
+	UsessIpcReqSessEnable("usess_ipc_req_sess_enable"),
 
-
+	// Vtn Data Flow
+	KeyVtnDataflow("key_vtn_dataflow"),
+	ValVtnDataflow("val_vtn_dataflow"),
+	// VTerminal
+	KeyVterm("key_vterm"),
+	ValVterm("val_vterm"),
+	KeyVtermIf("key_vterm_if"),
+	ValVtermIf("val_vterm_if"),
+	ValVtermIfSt("val_vterm_if_st"),
+	KeyVtermIfFlowFilter("key_vterm_if_flowfilter"),
+	KeyVtermIfFlowFilterEntry("key_vterm_if_flowfilter_entry"),
+	KeyDataFlow("key_dataflow"),
+	KeyCtrDataFlow("key_ctr_dataflow"),
+	// VTN Mapping
+	KeyVtnController("key_vtn_controller"),
+	ValVtnMappingControllerSt("val_vtn_mapping_controller_st");
 	private String value;
 
 	private UncStructEnum(final String value) {

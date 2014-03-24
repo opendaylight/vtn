@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,6 +13,7 @@
 #include <rest_util.hh>
 #include <driver/driver_command.hh>
 #include <unc/upll_ipc_enum.h>
+#include <unc/pfcdriver_ipc_enum.h>
 #include <odc_driver_common_defs.hh>
 #include <vtn_conf_data_element_op.hh>
 #include <odc_controller.hh>
@@ -43,12 +44,13 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    * @param[in] key              - key structure of VBR_VLANMAP
    * @param[in] val              - value structure of VBR_VLANMAP
    * @param[in] conn             - Controller pointer
-   * @retval drv_resp_code_t     - returns DRVAPI_RESPONSE SUCCESS on creation
+   * @retval UncRespCode         - returns DRVAPI_RESPONSE SUCCESS on creation
    *                             - of VBR_VLANMAP successfully
-   *                               /returns DRVAPI_RESPONSE_FAILURE on failure
+   *                               /returns UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t create_cmd(key_vlan_map_t& key, val_vlan_map_t& val,
-                             unc::driver::controller *conn);
+  UncRespCode create_cmd(key_vlan_map_t& key,
+                         pfcdrv_val_vlan_map_t& val,
+                         unc::driver::controller *conn);
 
   /**
    * @brief                      - Forms VBR_VLANMAP command and send it to
@@ -56,12 +58,13 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    * @param[in] key              - key structure of VBR_VLANMAP
    * @param[in] val              - value structure of VBR_VLANMAP
    * @param[in] conn             - Controller pointer
-   * @retval drv_resp_code_t     - returns DRVAPI_RESPONSE_SUCCESS on
+   * @retval UncRespCode         - returns UNC_RC_SUCCESS on
    *                             - updation of VBR_VLANMAP successfully
-   *                             - returns DRVAPI_RESPONSE_FAILURE on failure
+   *                             - returns UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t update_cmd(key_vlan_map_t& key, val_vlan_map_t& val,
-                             unc::driver::controller *conn);
+  UncRespCode update_cmd(key_vlan_map_t& key,
+                         pfcdrv_val_vlan_map_t& val,
+                         unc::driver::controller *conn);
 
   /**
    * @brief                      - Deletes VBR_VLANMAP and send it to restclient
@@ -69,23 +72,25 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    * @param[in] key              - key structure of VBR_VLANMAP
    * @param[in] val              - value structure of VBR_VLANMAP
    * @param[in] conn             - Controller pointer
-   * @return drv_resp_code_t     - returns DRVAPI_RESPONSE_SUCCESS on deletion of
+   * @return UncRespCode         - returns UNC_RC_SUCCESS on deletion of
    *                             - VBRIf successfully /returns
-   *                             - DRVAPI_RESPONSE_FAILURE on failure
+   *                             - UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t delete_cmd(key_vlan_map_t& key, val_vlan_map_t& val,
-                             unc::driver::controller *conn);
+  UncRespCode delete_cmd(key_vlan_map_t& key,
+                         pfcdrv_val_vlan_map_t& val,
+                         unc::driver::controller *conn);
 
   /**
    * @brief                      - Method to fetch child configurations for the parent kt
    * @param[in] ctr              - controller pointer
    * @param[in] parent_key       - parent key type pointer
    * @param[out] cfgnode_vector  - config node vector
-   * @retval                     - DRVAPI_RESPONSE_SUCCESS / DRVAPI_RESPONSE_FAILURE
+   * @retval                     - UNC_RC_SUCCESS / UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t fetch_config
-      (unc::driver::controller* ctr, void* parent_key,
-       std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
+  UncRespCode fetch_config(
+      unc::driver::controller* ctr,
+      void* parent_key,
+      std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
  private:
   /**
@@ -93,12 +98,13 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    * @param[in] parent_key       - parent key type pointer
    * @param[in] ctr              - controller pointer
    * @param[out] cfgnode_vector  - config node vector
-   * @return drv_resp_code_t     - returns DRVAPI_RESPONSE_SUCCESS on success
-   *                              /returns DRVAPI_RESPONSE_FAILURE on failure
+   * @return UncRespCode         - returns UNC_RC_SUCCESS on success
+   *                              /returns UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t get_vbrvlanmap_list(void* parent_key,
-                            unc::driver::controller* ctr,
-    std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
+  UncRespCode get_vbrvlanmap_list(
+      void* parent_key,
+      unc::driver::controller* ctr,
+      std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
   /**
    * @brief                      - parse the VBR_VLANMAP data
@@ -106,12 +112,14 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    * @param[in] ctr              - controller pointer
    * @param[in] data             - data from which parse should happen
    * @param[out] cfgnode_vector  - config node vector
-   * @return drv_resp_code_t     - returns DRVAPI_RESPONSE_SUCCESS on parsing the
-   *                              response of vbrif/returns DRVAPI_RESPONSE_FAILURE on failure
+   * @return UncRespCode         - returns UNC_RC_SUCCESS on parsing the
+   *                              response of vbrif/returns UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t parse_vbrvlanmap_response(void *parent_key,
-                      unc::driver::controller* ctr, char *data,
-       std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
+  UncRespCode parse_vbrvlanmap_response(
+      void *parent_key,
+      unc::driver::controller* ctr,
+      char *data,
+      std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
   /**
    * @brief                      - parse VBR_VLANMAP and append it to config
@@ -121,12 +129,15 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    * @param[in] json_obj         - json_object pointer contains the controller response
    * @param[in] arr_idx          - array index of vlanmap
    * @param[out] cfgnode_vector  - config node vector
-   * @return drv_resp_code_t     - returns DRVAPI_RESPONSE_SUCCESS on success
-   *                               / returns DRVAPI_RESPONSE_FAILURE on failure
+   * @return UncRespCode         - returns UNC_RC_SUCCESS on success
+   *                               / returns UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t fill_config_node_vector(void *parent_key,
-    unc::driver::controller* ctr, json_object *jobj, uint32_t arr_idx,
-          std::vector< unc::vtndrvcache::ConfigNode *>&cfgnode_vector);
+  UncRespCode fill_config_node_vector(
+      void *parent_key,
+      unc::driver::controller* ctr,
+      json_object *jobj,
+      uint32_t arr_idx,
+      std::vector< unc::vtndrvcache::ConfigNode *>&cfgnode_vector);
 
   /**
    * @brief                      - Constructs url for VBR_VLANMAP
@@ -144,7 +155,7 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    *                               json_object pointer
    */
   json_object* create_request_body(key_vlan_map_t& vlanmap_key,
-                                   val_vlan_map_t& vlanmap_val,
+                                   pfcdrv_val_vlan_map_t& vlanmap_val,
                                    const std::string &logical_port_id);
 
   /*
@@ -153,7 +164,7 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    * @return                     - returns ODC_DRV_SUCCESS/ ODC_DRV_FAILURE
    */
   odc_drv_resp_code_t validate_logical_port_id(
-                                       const std::string& logical_port_id);
+      const std::string& logical_port_id);
 
   /**
    * @brief                      - Generate vlanmap id in the format
@@ -172,23 +183,25 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    * @param[in] vlanmap_key      - key structure of VBR_VLANMAP
    * @param[in] vlanmap_val      - value structure of VBR_VLANMAP
    * @param[in] ctr_ptr          - controller pointer
-   * @retval drv_resp_code_t     - returns DRVAPI_RESPONSE_SUCCESS/
-   *                             - DRVAPI_RESPONSE_FAILURE
+   * @retval UncRespCode         - returns UNC_RC_SUCCESS/
+   *                             - UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t create_update_cmd(key_vlan_map_t& vlanmap_key,
-                                    val_vlan_map_t& vlanmap_val,
-                                    unc::driver::controller* ctr_ptr);
+  UncRespCode create_update_cmd(key_vlan_map_t& vlanmap_key,
+                                pfcdrv_val_vlan_map_t& vlanmap_val,
+                                unc::driver::controller* ctr_ptr);
   /**
    * @brief                      - Delete vlan-map configuration from controller by
    *                               sending request to rest client interface
    * @param[in] vlanmap_key      - key structure of VBR_VLANMAP
    * @param[in] ctr_ptr          - controller pointer
    * @param[in]  port_id         - port id
-   * @retval drv_resp_code_t     - returns DRVAPI_RESPONSE_SUCCESS/
-   *                             - DRVAPI_RESPONSE_FAILURE
+   * @retval UncRespCode         - returns UNC_RC_SUCCESS/
+   *                             - UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t del_existing_vlanmap(key_vlan_map_t& vlanmap_key,
-      unc::driver::controller* ctr_ptr, const std::string &port_id);
+  UncRespCode del_existing_vlanmap(
+      key_vlan_map_t& vlanmap_key,
+      unc::driver::controller* ctr_ptr,
+      const std::string &port_id);
 
   /**
    * @brief                      - generates vlan id from the vlan-map vector
@@ -210,15 +223,15 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    * @param[out]is_switch_exist  - pfc_bool_t variable set to PFC_TRUE if switch
    *                               already exists in controller
    * @param[out] port_id         - existing switch id in controller
-   * @return drv_resp_code_t     - returns
-   *                               DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode         - returns
+   *                               UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t check_switch_already_exists(key_vlan_map_t &key_vlan_map,
-                                              val_vlan_map_t &val_vlan_map,
-                                              const std::string &logical_port,
-                                              unc::driver::controller *ctr_ptr,
-                                              pfc_bool_t &is_switch_exist,
-                                              std::string &port_id);
+  UncRespCode check_switch_already_exists(key_vlan_map_t &key_vlan_map,
+                                          pfcdrv_val_vlan_map_t &val_vlan_map,
+                                          const std::string &logical_port,
+                                          unc::driver::controller *ctr_ptr,
+                                          pfc_bool_t &is_switch_exist,
+                                          std::string &port_id);
 
   /*
    * @brief                      - Check  "ANY" vlan-id (vlan-id not associated
@@ -229,14 +242,14 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    * @param[out]is_switch_exist  - pfc_bool_t variable set to PFC_TRUE if "ANY"
    *                               already exists in controller
    * @param[out] port_id         - existing "ANY" vlan-id stored in controller
-   * @return drv_resp_code_t     - returns
-   *                               DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode         - returns
+   *                               UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t check_ANY_already_exists(key_vlan_map_t &key_vlan_map,
-                                           val_vlan_map_t &val_vlan_map,
-                                           unc::driver::controller *ctr,
-                                           pfc_bool_t &is_switch_exist,
-                                           std::string &port_id);
+  UncRespCode check_ANY_already_exists(key_vlan_map_t &key_vlan_map,
+                                       pfcdrv_val_vlan_map_t &val_vlan_map,
+                                       unc::driver::controller *ctr,
+                                       pfc_bool_t &is_switch_exist,
+                                       std::string &port_id);
 
   /*
    * @brief                      - Validates VLAN exists or not
@@ -247,22 +260,22 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    * @param[out]is_switch_exist  - pfc_bool_t variable set to PFC_TRUE if
    *                               "ANY"/switch id already exists in controller
    * @param[out] port_id         - existing "ANY"/SW id stored in the controller
-   * @return drv_resp_code_t     - returns
-   *                               DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode         - returns
+   *                               UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t validate_vlan_exist(key_vlan_map_t &key_vlan_map,
-                                      val_vlan_map_t &val_vlan_map,
-                                      const std::string &logical_port,
-                                      unc::driver::controller *ctr,
-                                      pfc_bool_t &is_switch_exist,
-                                      std::string &port_id);
+  UncRespCode validate_vlan_exist(key_vlan_map_t &key_vlan_map,
+                                  pfcdrv_val_vlan_map_t &val_vlan_map,
+                                  const std::string &logical_port,
+                                  unc::driver::controller *ctr,
+                                  pfc_bool_t &is_switch_exist,
+                                  std::string &port_id);
 
   /**
    * @brief                      - Deletes particular entry from vlan-map vector
    * @param[in] ctr_             - controller pointer
    * @param[in] vtn_vbr_vlan     - this entry needs to be deleted
    */
-  void delete_from_vector(unc::driver::controller *ctr ,
+  void delete_from_vector(unc::driver::controller *ctr,
                           std::string vtn_vbr_vlan);
 
   /**
@@ -270,7 +283,8 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    * @param[in] ctr              - controller pointer
    * @param[in] vtn_vbr_vlan     - this entry needs to be updated into vector
    */
-  void update_vector(unc::driver::controller *ctr , std::string vtn_vbr_vlan);
+  void update_vector(unc::driver::controller *ctr,
+                     std::string vtn_vbr_vlan);
 
   /**
    * @brief                      - parses the vector and gets vtn, vbr, sw id as out param
@@ -299,8 +313,8 @@ class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
    * @param[in][out]            - logical_port_id
    * @return                    - odc_drv_resp_code_t
    */
-  odc_drv_resp_code_t check_logical_port_id_format(std::string&
-                                                   logical_port_id);
+  odc_drv_resp_code_t check_logical_port_id_format(
+      std::string& logical_port_id);
 
   /**
    * @brief                     - converts the format of logical

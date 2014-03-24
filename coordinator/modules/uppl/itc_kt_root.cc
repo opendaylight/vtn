@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -77,10 +77,10 @@ Kt_Base* Kt_Root::GetChildClassPointer(KtRootChildClass KIndex) {
  * configuration_id-ipc configuration id used for TC validation
  * data_type-UNC_DT_*,type of database
  * sess-ServerSession object where the request argument present
- * @return    : UPPL_RC_ERR_OPERATION_NOT_ALLOWED
+ * @return    : UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED
  * */
 
-UpplReturnCode Kt_Root::Create(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Root::Create(OdbcmConnectionHandler *db_conn,
                                uint32_t session_id,
                                uint32_t configuration_id,
                                void* key_struct,
@@ -94,15 +94,15 @@ UpplReturnCode Kt_Root::Create(OdbcmConnectionHandler *db_conn,
       0,
       0,
       data_type,
-      UPPL_RC_ERR_OPERATION_NOT_ALLOWED};
+      UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED};
   pfc_log_debug("Create Operation not allowed on KT_ROOT");
   int err = PhyUtil::sessOutRespHeader(sess, rsh);
   err |= sess.addOutput((uint32_t) UNC_KT_ROOT);
   err |= sess.addOutput(*reinterpret_cast<key_root_t*>(key_struct));
   if (err != 0) {
-    return UPPL_RC_ERR_IPC_WRITE_ERROR;
+    return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 
@@ -114,9 +114,9 @@ UpplReturnCode Kt_Root::Create(OdbcmConnectionHandler *db_conn,
  * configuration_id-ipc configuration id used for TC validation
  * data_type-UNC_DT_*,type of database
  * sess-ServerSession object where the request argument present
- * @return    : UPPL_RC_ERR_OPERATION_NOT_ALLOWED
+ * @return    : UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED
  * */
-UpplReturnCode Kt_Root::Update(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Root::Update(OdbcmConnectionHandler *db_conn,
                                uint32_t session_id,
                                uint32_t configuration_id,
                                void* key_struct,
@@ -131,15 +131,15 @@ UpplReturnCode Kt_Root::Update(OdbcmConnectionHandler *db_conn,
       0,
       0,
       data_type,
-      UPPL_RC_ERR_OPERATION_NOT_ALLOWED};
+      UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED};
   pfc_log_debug("Update Operation not allowed on KT_ROOT");
   int err = PhyUtil::sessOutRespHeader(sess, rsh);
   err |= sess.addOutput((uint32_t) UNC_KT_ROOT);
   err |= sess.addOutput(*reinterpret_cast<key_root_t*>(key_struct));
   if (err != 0) {
-    return UPPL_RC_ERR_IPC_WRITE_ERROR;
+    return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 
@@ -151,9 +151,9 @@ UpplReturnCode Kt_Root::Update(OdbcmConnectionHandler *db_conn,
  * configuration_id-ipc configuration id used for TC validation
  * data_type-UNC_DT_*,type of database
  * sess-ServerSession object where the request argument present
- * @return    : UPPL_RC_ERR_OPERATION_NOT_ALLOWED
+ * @return    : UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED
  * */
-UpplReturnCode Kt_Root::Delete(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Root::Delete(OdbcmConnectionHandler *db_conn,
                                uint32_t session_id,
                                uint32_t configuration_id,
                                void* key_struct,
@@ -167,15 +167,15 @@ UpplReturnCode Kt_Root::Delete(OdbcmConnectionHandler *db_conn,
       0,
       0,
       data_type,
-      UPPL_RC_ERR_OPERATION_NOT_ALLOWED};
+      UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED};
   pfc_log_debug("Delete Operation not allowed on KT_ROOT");
   int err = PhyUtil::sessOutRespHeader(sess, rsh);
   err |= sess.addOutput((uint32_t) UNC_KT_ROOT);
   err |= sess.addOutput(*reinterpret_cast<key_root_t*>(key_struct));
   if (err != 0) {
-    return UPPL_RC_ERR_IPC_WRITE_ERROR;
+    return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**ReadBulk
@@ -193,11 +193,11 @@ UpplReturnCode Kt_Root::Delete(OdbcmConnectionHandler *db_conn,
  * bool parent_call-flag to indicate whether function called by parent
  * bool is_read_next-flag to indicate whether requested operation is 
  *                 UNC_OP_READ_NEXT
- * @return    : UPPL_RC_SUCCESS is returned when the response
+ * @return    : UNC_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
- * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
+ * UNC_UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_Root::ReadBulk(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Root::ReadBulk(OdbcmConnectionHandler *db_conn,
                                  void* key_struct,
                                  uint32_t data_type,
                                  uint32_t &max_rep_ct,
@@ -206,11 +206,11 @@ UpplReturnCode Kt_Root::ReadBulk(OdbcmConnectionHandler *db_conn,
                                  pfc_bool_t is_read_next,
                                  ReadRequest *read_req) {
   pfc_log_debug("Inside ReadBulk of Kt_ROOT");
-  UpplReturnCode read_status = UPPL_RC_SUCCESS;
+  UncRespCode read_status = UNC_RC_SUCCESS;
   if (max_rep_ct == 0) {
-    // Count is 0, return UPPL_RC_SUCCESS
+    // Count is 0, return UNC_RC_SUCCESS
     pfc_log_debug("KT_ROOT - Count is 0, return Success");
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   if ((unc_keytype_datatype_t)data_type == UNC_DT_CANDIDATE ||
       (unc_keytype_datatype_t)data_type == UNC_DT_RUNNING ||
@@ -244,16 +244,16 @@ UpplReturnCode Kt_Root::ReadBulk(OdbcmConnectionHandler *db_conn,
       delete child[kIdx];
       child[kIdx] = NULL;
       if (max_rep_ct <= 0) {
-        // Count reached 0, return UPPL_RC_SUCCESS
-        return UPPL_RC_SUCCESS;
+        // Count reached 0, return UNC_RC_SUCCESS
+        return UNC_RC_SUCCESS;
       }
     }
   } else {
     pfc_log_debug(
         "READ_NEXT and READ_BULK operations are not allowed on the data types"
         " other than DT_CANDIDATE, DT_RUNNING, DT_STARTUP and DT_STATE");
-    read_status = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
-    return UPPL_RC_SUCCESS;
+    read_status = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    return UNC_RC_SUCCESS;
   }
   pfc_log_debug("read_status=%d", read_status);
   return read_status;

@@ -281,7 +281,7 @@ std::string OdcVbrIfCommand::get_vbrif_url(key_vbr_if_t& vbrif_key) {
 
 
 // Create Command for vbrif
-drv_resp_code_t OdcVbrIfCommand::create_cmd(key_vbr_if_t& vbrif_key,
+UncRespCode OdcVbrIfCommand::create_cmd(key_vbr_if_t& vbrif_key,
                                             pfcdrv_val_vbr_if_t& vbrif_val,
                                             unc::driver::controller*
                                             ctr_ptr) {
@@ -290,7 +290,7 @@ drv_resp_code_t OdcVbrIfCommand::create_cmd(key_vbr_if_t& vbrif_key,
   std::string vbrif_url = get_vbrif_url(vbrif_key);
   if (vbrif_url.empty()) {
     pfc_log_error("vbrif url is empty");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   json_object* vbrif_json_request_body = create_request_body(vbrif_val);
   json_object* port_map_json_req_body = NULL;
@@ -306,7 +306,7 @@ drv_resp_code_t OdcVbrIfCommand::create_cmd(key_vbr_if_t& vbrif_key,
       vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM]) {
       pfc_log_error("portmap - logical port valid flag is not set");
       json_object_put(vbrif_json_request_body);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     std::string logical_port_id =
         reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id);
@@ -315,14 +315,14 @@ drv_resp_code_t OdcVbrIfCommand::create_cmd(key_vbr_if_t& vbrif_key,
     if (logical_port_retval != ODC_DRV_SUCCESS) {
       pfc_log_error("logical port id is Invalid");
       json_object_put(vbrif_json_request_body);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     port_map_json_req_body = create_request_body_port_map(vbrif_val,
                                                           logical_port_id);
     if (json_object_is_type(port_map_json_req_body, json_type_null)) {
       pfc_log_error("request body is null");
       json_object_put(vbrif_json_request_body);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     port_map_req_body = json_obj.get_string(port_map_json_req_body);
     pfc_log_debug("%s request body for portmap ", port_map_req_body);
@@ -339,14 +339,14 @@ drv_resp_code_t OdcVbrIfCommand::create_cmd(key_vbr_if_t& vbrif_key,
   if (NULL == response) {
     pfc_log_error("Error Occured while getting httpresponse");
     json_object_put(port_map_json_req_body);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   int resp_code = response->code;
   pfc_log_debug("Response code from Ctl for vbrif create_cmd: %d", resp_code);
   if (HTTP_201_RESP_CREATED != resp_code) {
     pfc_log_error("create vbrif is not success , resp_code %d", resp_code);
     json_object_put(port_map_json_req_body);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   // VBR_IF successful...Check for PortMap
   if (vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] == UNC_VF_VALID) {
@@ -359,21 +359,21 @@ drv_resp_code_t OdcVbrIfCommand::create_cmd(key_vbr_if_t& vbrif_key,
     json_object_put(port_map_json_req_body);
     if (NULL == port_map_response) {
       pfc_log_error("Error Occured while getting httpresponse");
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     int resp_code = port_map_response->code;
     if (HTTP_200_RESP_OK != resp_code) {
       pfc_log_error("port map  update is not success,rep_code: %d", resp_code);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
   } else {
     pfc_log_debug("No Port map");
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 // Update command for vbrif command
-drv_resp_code_t OdcVbrIfCommand::update_cmd(key_vbr_if_t& vbrif_key,
+UncRespCode OdcVbrIfCommand::update_cmd(key_vbr_if_t& vbrif_key,
                                             pfcdrv_val_vbr_if_t& val,
                                             unc::driver::controller
                                             *ctr_ptr) {
@@ -381,7 +381,7 @@ drv_resp_code_t OdcVbrIfCommand::update_cmd(key_vbr_if_t& vbrif_key,
   PFC_ASSERT(ctr_ptr != NULL);
   std::string vbrif_url = get_vbrif_url(vbrif_key);
   if (vbrif_url.empty()) {
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   json_object* vbrif_json_request_body = create_request_body(val);
   json_object* port_map_json_req_body = NULL;
@@ -397,7 +397,7 @@ drv_resp_code_t OdcVbrIfCommand::update_cmd(key_vbr_if_t& vbrif_key,
       val.val_vbrif.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM]) {
       pfc_log_error("portmap - logical port valid flag is not set");
       json_object_put(vbrif_json_request_body);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     std::string logical_port_id =
         reinterpret_cast<char*>(val.val_vbrif.portmap.logical_port_id);
@@ -406,13 +406,13 @@ drv_resp_code_t OdcVbrIfCommand::update_cmd(key_vbr_if_t& vbrif_key,
     if (logical_port_retval != ODC_DRV_SUCCESS) {
       json_object_put(vbrif_json_request_body);
       pfc_log_error("logical port id is invalid");
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     port_map_json_req_body = create_request_body_port_map(val, logical_port_id);
     if (json_object_is_type(port_map_json_req_body, json_type_null)) {
       pfc_log_error("port map req body is null");
       json_object_put(vbrif_json_request_body);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     port_map_req_body = json_obj.get_string(port_map_json_req_body);
     pfc_log_debug("%s request body for portmap ", port_map_req_body);
@@ -430,14 +430,14 @@ drv_resp_code_t OdcVbrIfCommand::update_cmd(key_vbr_if_t& vbrif_key,
   if (NULL == response) {
     pfc_log_error("Error Occured while getting httpresponse");
     json_object_put(port_map_json_req_body);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   int resp_code = response->code;
   pfc_log_debug("Response code from Ctl for update vbrif : %d ", resp_code);
   if (HTTP_200_RESP_OK != resp_code) {
     pfc_log_error("update vbrif is not successful %d", resp_code);
     json_object_put(port_map_json_req_body);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   uint32_t port_map_resp_code = ODC_DRV_FAILURE;
@@ -455,12 +455,12 @@ drv_resp_code_t OdcVbrIfCommand::update_cmd(key_vbr_if_t& vbrif_key,
     json_object_put(port_map_json_req_body);
     if (NULL == port_map_response) {
       pfc_log_error("Error Occured while getting httpresponse");
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     port_map_resp_code = port_map_response->code;
     if (HTTP_200_RESP_OK != port_map_resp_code) {
       pfc_log_error("update portmap is not successful %d", resp_code);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
   } else if ((val.val_vbrif.valid[UPLL_IDX_PM_VBRI] == UNC_VF_VALID_NO_VALUE)
              && (val.valid[PFCDRV_IDX_VAL_VBRIF] == UNC_VF_VALID)) {
@@ -472,20 +472,20 @@ drv_resp_code_t OdcVbrIfCommand::update_cmd(key_vbr_if_t& vbrif_key,
 
     if (NULL == port_map_response) {
       pfc_log_error("Error Occured while getting httpresponse");
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     port_map_resp_code = port_map_response->code;
     if (HTTP_200_RESP_OK != port_map_resp_code) {
       pfc_log_error("delete portmap is not successful %d", resp_code);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
   }
   pfc_log_debug("Response code from Ctl for portmap:%d", port_map_resp_code);
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 // Delete Command for vbr if
-drv_resp_code_t OdcVbrIfCommand::delete_cmd(key_vbr_if_t& vbrif_key,
+UncRespCode OdcVbrIfCommand::delete_cmd(key_vbr_if_t& vbrif_key,
                                             pfcdrv_val_vbr_if_t& val,
                                   unc::driver::controller* ctr_ptr) {
   ODC_FUNC_TRACE;
@@ -495,7 +495,7 @@ drv_resp_code_t OdcVbrIfCommand::delete_cmd(key_vbr_if_t& vbrif_key,
   pfc_log_debug("vbrif_url:%s", vbrif_url.c_str());
   if (vbrif_url.empty()) {
     pfc_log_error("brif url is empty");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
@@ -505,15 +505,15 @@ drv_resp_code_t OdcVbrIfCommand::delete_cmd(key_vbr_if_t& vbrif_key,
                         restjson::HTTP_METHOD_DELETE, NULL, conf_file_values_);
   if (NULL == response) {
     pfc_log_error("Error Occured while getting httpresponse");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   int resp_code = response->code;
   pfc_log_debug("Response code from Ctl for delete vbrif : %d ", resp_code);
   if (HTTP_200_RESP_OK != resp_code) {
     pfc_log_error("delete vbrif is not successful %d", resp_code);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 // Creates request body for vbr if
@@ -550,7 +550,7 @@ json_object* OdcVbrIfCommand::create_request_body(
 }
 
 //  fetch child configurations for the parent kt(vbr)
-drv_resp_code_t OdcVbrIfCommand::fetch_config(unc::driver::controller* ctr,
+UncRespCode OdcVbrIfCommand::fetch_config(unc::driver::controller* ctr,
                                      void* parent_key,
                                      std::vector<unc::vtndrvcache::ConfigNode *>
                                      &cfgnode_vector) {
@@ -570,14 +570,14 @@ drv_resp_code_t OdcVbrIfCommand::fetch_config(unc::driver::controller* ctr,
 }
 
 // Getting  vbridge child if available
-drv_resp_code_t OdcVbrIfCommand::get_vbrif_list(std::string vtn_name,
+UncRespCode OdcVbrIfCommand::get_vbrif_list(std::string vtn_name,
                   std::string vbr_name, unc::driver::controller* ctr,
        std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
   ODC_FUNC_TRACE;
   PFC_ASSERT(ctr != NULL);
   if ((0 == strlen(vtn_name.c_str())) || (0 == strlen(vbr_name.c_str()))) {
     pfc_log_error("Empty vtn / vbr name");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   std::string url = "";
   url.append(BASE_URL);
@@ -596,26 +596,26 @@ drv_resp_code_t OdcVbrIfCommand::get_vbrif_list(std::string vtn_name,
 
   if (NULL == response) {
     pfc_log_error("Error Occured while getting httpresponse");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   int resp_code = response->code;
   pfc_log_debug("Response code from Ctlfor get vbrif : %d ", resp_code);
   if (HTTP_200_RESP_OK != resp_code) {
     pfc_log_error("rest_util_obj send_request fail");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   if (NULL != response->write_data) {
     if (NULL != response->write_data->memory) {
       char *data = response->write_data->memory;
-      drv_resp_code_t parse_ret = DRVAPI_RESPONSE_FAILURE;
+      UncRespCode parse_ret = UNC_DRV_RC_ERR_GENERIC;
       parse_ret = parse_vbrif_response(vtn_name, vbr_name, url, ctr, data,
                                        cfgnode_vector);
       return parse_ret;
     }
   }
-  return DRVAPI_RESPONSE_FAILURE;
+  return UNC_DRV_RC_ERR_GENERIC;
 }
-drv_resp_code_t OdcVbrIfCommand::parse_vbrif_response(std::string vtn_name,
+UncRespCode OdcVbrIfCommand::parse_vbrif_response(std::string vtn_name,
                                      std::string vbr_name, std::string url,
                                   unc::driver::controller* ctr, char *data,
             std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
@@ -624,7 +624,7 @@ drv_resp_code_t OdcVbrIfCommand::parse_vbrif_response(std::string vtn_name,
       get_json_object(data);
   if (json_object_is_type(jobj, json_type_null)) {
     pfc_log_error("json_object_is_null");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   uint32_t array_length = 0;
   json_object *json_obj_vbrif = NULL;
@@ -634,13 +634,13 @@ drv_resp_code_t OdcVbrIfCommand::parse_vbrif_response(std::string vtn_name,
   if (json_object_is_type(json_obj_vbrif, json_type_null)) {
     pfc_log_error("json vbrif is null");
     json_object_put(jobj);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   if (restjson::REST_OP_SUCCESS != ret_val) {
     json_object_put(jobj);
     pfc_log_error("JsonBuildParse::parse fail");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   if (json_object_is_type(json_obj_vbrif, json_type_array)) {
     array_length = restjson::JsonBuildParse::get_array_length(jobj,
@@ -648,18 +648,18 @@ drv_resp_code_t OdcVbrIfCommand::parse_vbrif_response(std::string vtn_name,
   }
 
   pfc_log_debug("interface array_length:%d", array_length);
-  drv_resp_code_t resp_code = DRVAPI_RESPONSE_FAILURE;
+  UncRespCode resp_code = UNC_DRV_RC_ERR_GENERIC;
   for (uint32_t arr_idx = 0; arr_idx < array_length; arr_idx++) {
     pfc_log_debug("inside array_length for loop");
     resp_code = fill_config_node_vector(vtn_name, vbr_name, json_obj_vbrif,
                                           arr_idx, url, ctr, cfgnode_vector);
-    if (DRVAPI_RESPONSE_FAILURE == resp_code) {
+    if (UNC_DRV_RC_ERR_GENERIC == resp_code) {
       json_object_put(jobj);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
   }
   json_object_put(jobj);
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 // Reading port-map from active controller
 json_object* OdcVbrIfCommand::read_portmap(unc::driver::controller* ctr,
@@ -695,7 +695,7 @@ json_object* OdcVbrIfCommand::read_portmap(unc::driver::controller* ctr,
   return NULL;
 }
 
-drv_resp_code_t OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
+UncRespCode OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
                                   std::string vbr_name, json_object *json_obj,
                uint32_t arr_idx, std::string url, unc::driver::controller* ctr,
                 std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
@@ -713,19 +713,19 @@ drv_resp_code_t OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
                                                           arr_idx, name);
   if (restjson::REST_OP_SUCCESS != ret_val) {
     pfc_log_error("JsonBuildParse::parse fail.");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   pfc_log_debug("vbr_if name: %s", name.c_str());
   if (strlen(name.c_str()) == 0) {
     pfc_log_error("NO vbr_if name");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   ret_val = unc::restjson::JsonBuildParse::parse(json_obj,
                                                  "description",
                                                  arr_idx, description);
   if (restjson::REST_OP_SUCCESS != ret_val) {
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   pfc_log_debug("vbr_if description: %s", description.c_str());
   //  Fills the vbrif KEY structure
@@ -758,7 +758,7 @@ drv_resp_code_t OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
                                                  "enabled",
                                                  arr_idx, admin_status);
   if (restjson::REST_OP_SUCCESS != ret_val) {
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   val_vbr_if.val_vbrif.valid[UPLL_IDX_ADMIN_STATUS_VBRI] = UNC_VF_VALID;
@@ -774,7 +774,7 @@ drv_resp_code_t OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
   json_object *jobj = read_portmap(ctr, url, resp_code);
   if (0 == resp_code) {
     pfc_log_error("Error while reading portmap");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   pfc_log_debug("Response code from Ctl for portmap read : %d ", resp_code);
   if (HTTP_204_NO_CONTENT == resp_code) {
@@ -785,7 +785,7 @@ drv_resp_code_t OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
                   unc::restjson::JsonBuildParse::get_string(jobj));
     if (json_object_is_type(jobj, json_type_null)) {
       pfc_log_error("null jobj no portmap");
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     } else {
       val_vbr_if.val_vbrif.valid[UPLL_IDX_PM_VBRI] = UNC_VF_VALID;
       std::string vlanid = "0";
@@ -794,7 +794,7 @@ drv_resp_code_t OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
       if (restjson::REST_OP_SUCCESS != ret_val) {
         json_object_put(jobj);
         pfc_log_debug("vlan parse error");
-        return DRVAPI_RESPONSE_FAILURE;
+        return UNC_DRV_RC_ERR_GENERIC;
       }
       pfc_log_debug("vlan id in portmap read %s", vlanid.c_str());
       if (0 == atoi(vlanid.c_str())) {
@@ -819,14 +819,14 @@ drv_resp_code_t OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
       if (restjson::REST_OP_SUCCESS != ret_val) {
         pfc_log_debug("node is null");
         json_object_put(jobj);
-        return DRVAPI_RESPONSE_FAILURE;
+        return UNC_DRV_RC_ERR_GENERIC;
       }
       ret_val = unc::restjson::JsonBuildParse::parse(jobj, "port",
                                                      -1, jobj_port);
       if (restjson::REST_OP_SUCCESS != ret_val) {
         json_object_put(jobj);
         pfc_log_debug("Parsing error in port");
-        return DRVAPI_RESPONSE_FAILURE;
+        return UNC_DRV_RC_ERR_GENERIC;
       }
       std::string node_id = "";
       std::string port_name = "";
@@ -835,22 +835,22 @@ drv_resp_code_t OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
       if ((json_object_is_type(jobj_node, json_type_null)) ||
           (json_object_is_type(jobj_port, json_type_null))) {
         pfc_log_error("node or port json object is null");
-        return DRVAPI_RESPONSE_FAILURE;
+        return UNC_DRV_RC_ERR_GENERIC;
       }
 
       ret_val = unc::restjson::JsonBuildParse::parse(jobj_node, "id",
                                                      -1, node_id);
-      if (ret_val) {
+      if (restjson::REST_OP_SUCCESS != ret_val) {
         json_object_put(jobj);
         pfc_log_debug("id parse error");
-        return DRVAPI_RESPONSE_FAILURE;
+        return UNC_DRV_RC_ERR_GENERIC;
       }
       ret_val = unc::restjson::JsonBuildParse::parse(jobj_port, "name",
                                                      -1, port_name);
       if (restjson::REST_OP_SUCCESS != ret_val) {
         json_object_put(jobj);
         pfc_log_debug("name parse error");
-        return DRVAPI_RESPONSE_FAILURE;
+        return UNC_DRV_RC_ERR_GENERIC;
       }
       logical_port.append(node_id);
       logical_port.append(HYPHEN);
@@ -872,7 +872,7 @@ drv_resp_code_t OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
   } else {
     pfc_log_error("Error in response code while reading port map:%d",
                   resp_code);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   unc::vtndrvcache::ConfigNode *cfgptr =
@@ -883,7 +883,7 @@ drv_resp_code_t OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
                                              uint32_t(UNC_OP_READ));
   PFC_ASSERT(cfgptr != NULL);
   cfgnode_vector.push_back(cfgptr);
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 }  // namespace odcdriver
 }  // namespace unc

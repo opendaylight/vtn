@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -44,7 +44,7 @@ TEST(TcAuditOperations, TcGetMinArgCount) {
                                            unc_map_,
                                            audit_);
   int argcount = tc_auditoperations.TestTcGetMinArgCount();
-  EXPECT_EQ(3, argcount);
+  EXPECT_EQ(4, argcount);
   DEL_AUDIT_PARAMS();
 }
 
@@ -59,7 +59,7 @@ TEST(TcAuditOperations, TcCheckOperArgCount) {
   EXPECT_EQ(TC_OPER_INVALID_INPUT,
             tc_auditoperations.TcCheckOperArgCount(avail_count));
 
-  avail_count = 3;
+  avail_count = 4;
   EXPECT_EQ(TC_OPER_SUCCESS,
             tc_auditoperations.TcCheckOperArgCount(avail_count));
   DEL_AUDIT_PARAMS();

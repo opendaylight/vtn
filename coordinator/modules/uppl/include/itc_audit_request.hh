@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -48,41 +48,41 @@ class AuditRequest:public ITCReq  {
  public:
   AuditRequest();
   ~AuditRequest();
-  UpplReturnCode StartAudit(OdbcmConnectionHandler *db_conn,
+  UncRespCode StartAudit(OdbcmConnectionHandler *db_conn,
                             unc_keytype_ctrtype_t driver_id,
                             string controller_id);
-  UpplReturnCode StartAuditTransaction(uint32_t session_id,
+  UncRespCode StartAuditTransaction(uint32_t session_id,
                                        unc_keytype_ctrtype_t driver_id,
                                        string controller_id);
-  UpplReturnCode HandleAuditGlobalCommit(uint32_t session_id,
+  UncRespCode HandleAuditGlobalCommit(uint32_t session_id,
                                          uint32_t driver_id,
                                          string controller_id,
                                          TcDriverInfoMap& driver_info,
                                          TcAuditResult& audit_result);
-  UpplReturnCode HandleAuditVoteRequest(OdbcmConnectionHandler *db_conn,
+  UncRespCode HandleAuditVoteRequest(OdbcmConnectionHandler *db_conn,
                                         uint32_t session_id,
                                         uint32_t driver_id,
                                         string controller_id,
                                         TcDriverInfoMap &driver_info);
-  UpplReturnCode HandleAuditDriverResult(uint32_t session_id,
+  UncRespCode HandleAuditDriverResult(uint32_t session_id,
                                          string controller_id,
                                          TcCommitPhaseType commitphase,
                                          TcCommitPhaseResult driver_result,
                                          TcAuditResult& audit_result) {
     audit_result = unc::tclib::TC_AUDIT_SUCCESS;
-    return UPPL_RC_SUCCESS;}
-  UpplReturnCode HandleAuditAbort(uint32_t session_id,
+    return UNC_RC_SUCCESS;}
+  UncRespCode HandleAuditAbort(uint32_t session_id,
                                   unc_keytype_ctrtype_t driver_id,
                                   string controller_id,
                                   TcAuditOpAbortPhase operation_phase);
-  UpplReturnCode EndAuditTransaction(uint32_t session_id,
+  UncRespCode EndAuditTransaction(uint32_t session_id,
                                      unc_keytype_ctrtype_t& driver_id,
                                      string controller_id);
-  UpplReturnCode EndAudit(OdbcmConnectionHandler *db_conn,
+  UncRespCode EndAudit(OdbcmConnectionHandler *db_conn,
                           unc_keytype_ctrtype_t driver_id,
                           string controller_id,
                           TcAuditResult audit_result);
-  UpplReturnCode MergeAuditDbToRunning(OdbcmConnectionHandler *db_conn,
+  UncRespCode MergeAuditDbToRunning(OdbcmConnectionHandler *db_conn,
                                        string controller_name);
 
  private:

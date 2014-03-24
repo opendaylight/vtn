@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -20,11 +20,11 @@ namespace unc {
 namespace driver {
 class KtHandler {
  public:
-  virtual drv_resp_code_t handle_request(pfc::core::ipc::ServerSession &sess,
+  virtual UncRespCode handle_request(pfc::core::ipc::ServerSession &sess,
                                     odl_drv_request_header_t &request_header,
                                          ControllerFramework* crtl_fw)=0;
 
-  virtual drv_resp_code_t  execute_cmd(unc::vtndrvcache::ConfigNode *cfgptr,
+  virtual UncRespCode  execute_cmd(unc::vtndrvcache::ConfigNode *cfgptr,
                                        unc::driver::controller* ctl_ptr,
                                        unc::driver::driver* drv_ptr)=0;
 

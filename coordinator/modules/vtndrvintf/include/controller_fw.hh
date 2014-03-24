@@ -89,7 +89,7 @@ class ControllerFramework  {
    * @param[in] - controller name ,controller**, driver**
    * @retval    - VTN_DRV_RET_FAILURE/VTN_DRV_RET_SUCCESS
    */
-  drv_resp_code_t GetDriverByControllerName(std::string& controller_name,
+  UncRespCode GetDriverByControllerName(std::string& controller_name,
                                           controller**, driver**);
 
   /**
@@ -125,7 +125,7 @@ class ControllerFramework  {
    * @param[in]    - controller name, controller*, driver*
    * @retval       - VTN_DRV_RET_FAILURE/ VTN_DRV_RET_SUCCESS
    */
-  drv_resp_code_t UpdateControllerConfiguration(std::string& controller_name,
+  UncRespCode UpdateControllerConfiguration(std::string& controller_name,
                                                controller*, driver*,
                                                const key_ctr_t& key_ctr,
                                                const val_ctr_t& val_ctr);
@@ -135,7 +135,7 @@ class ControllerFramework  {
    * @param[in]    - controller name, controller*, driver*
    * @retval       - VTN_DRV_RET_FAILURE/ VTN_DRV_RET_SUCCESS
    */
-  drv_resp_code_t RemoveControllerConfiguration(std::string& controller_name,
+  UncRespCode RemoveControllerConfiguration(std::string& controller_name,
                                               controller*, driver*);
 
   /**
@@ -150,7 +150,7 @@ class ControllerFramework  {
    * @param[in]   - controller type, driver*
    * @retval      - VTN_DRV_RET_FAILURE/ VTN_DRV_RET_SUCCESS
    */
-  drv_resp_code_t RegisterDriver(unc_keytype_ctrtype_t controller_type,
+  UncRespCode RegisterDriver(unc_keytype_ctrtype_t controller_type,
                                  driver*);
 
 
@@ -161,7 +161,7 @@ class ControllerFramework  {
    * @param[out] - controller**, driver**
    * @retval     - VTN_DRV_RET_FAILURE/ VTN_DRV_RET_SUCCESS
    */
-  drv_resp_code_t GetControllerInstance(std::string& controller_name,
+  UncRespCode GetControllerInstance(std::string& controller_name,
                                       controller**, driver**);
 
   /**

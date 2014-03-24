@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -27,6 +27,7 @@
 #include "physical_itc.hh"
 #include "unc_state_handler.hh"
 #include "controller_version.hh"
+#include "capa_intf.hh"
 
 using std::vector;
 using std::map;
@@ -86,21 +87,21 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      * @param[in] :
      */
 
-    UpplReturnCode InitializePhysical();
+    UncRespCode InitializePhysical();
 
     /**
      * @Description : This function finalizes physical core members
      * @param[in] :
      */
 
-    UpplReturnCode FinalizePhysical();
+    UncRespCode FinalizePhysical();
 
     /**
      * @Description : This function reads config from file
      * @param[in] :
      */
 
-    UpplReturnCode ReadConfigFile();
+    UncRespCode ReadConfigFile();
 
     /**
      * @Description : This function reads controller capability config
@@ -108,7 +109,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      * @param[in] :
      */
 
-    UpplReturnCode ReadCtrlrStaticCapability();
+    UncRespCode ReadCtrlrStaticCapability();
 
     /**
      * @Description : This function validates key type controller capability map
@@ -116,7 +117,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      * @param[in] : key_type - Key type from NB
      */
 
-    UpplReturnCode ValidateKeyTypeInCtrlrCap(string version,
+    UncRespCode ValidateKeyTypeInCtrlrCap(string version,
                                              uint32_t key_type);
 
     /**
@@ -127,7 +128,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      * @param[in] : attribute_name - name of the attribute associated
      */
 
-    UpplReturnCode ValidateAttribInCtrlrCap(string version,
+    UncRespCode ValidateAttribInCtrlrCap(string version,
                                             uint32_t key_type,
                                             string attribute_name);
 
@@ -138,7 +139,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      * @param[in] : key_type - Key type from NB
      */
 
-    UpplReturnCode GetScalabilityNumber(string version,
+    UncRespCode GetScalabilityNumber(string version,
                                         uint32_t key_type,
                                         uint32_t &scalability_num);
 
@@ -148,7 +149,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      * @param[in] :
      */
 
-    UpplReturnCode SendEventSubscripToDriver();
+    UncRespCode SendEventSubscripToDriver();
 
     /**
      * @Description : This function sends cancel event subscription request to
@@ -156,7 +157,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      * @param[in] :
      */
 
-    UpplReturnCode CancelEventSubscripInDriver();
+    UncRespCode CancelEventSubscripInDriver();
 
     /**
      * @Description : This function validates the config ID by sending
@@ -165,7 +166,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      * @param[in] : config_id - Configuration ID
      */
 
-    UpplReturnCode ValidateConfigId(uint32_t session_id, uint32_t config_id);
+    UncRespCode ValidateConfigId(uint32_t session_id, uint32_t config_id);
 
     /**
      * @Description : This function validates if the operation is valid
@@ -173,7 +174,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      * @param[in] : operation_type - type of operation requested
      */
 
-    UpplReturnCode ValidateStandbyRequests(uint32_t operation_type);
+    UncRespCode ValidateStandbyRequests(uint32_t operation_type);
 
     /**
      * @Description : This inline function gives the instance of
@@ -207,7 +208,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      * @param[in] : controller_id - Controller identification
      */
 
-    UpplReturnCode SendControllerDisconnectAlarm(string controller_id);
+    UncRespCode SendControllerDisconnectAlarm(string controller_id);
 
     /**
      * @Description : This function sends CONROLLER_CONNECT alarm to
@@ -220,7 +221,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      * @param[in] : controller_id - Controller identification
      */
 
-    UpplReturnCode SendControllerConnectAlarm(string controller_id);
+    UncRespCode SendControllerConnectAlarm(string controller_id);
 
      /**
      *@Description : This function sends EVENT_HANDLING_SUCCESS alarm to
@@ -232,7 +233,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      * event_failed - Additional details about failed event handling
      *
      **/
-    UpplReturnCode SendEventHandlingSuccessAlarm(string controller_id,
+    UncRespCode SendEventHandlingSuccessAlarm(string controller_id,
                                                  string event_details);
 
      /**
@@ -242,7 +243,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      * event_failed - Additional details about failed event handling
      *
      **/
-    UpplReturnCode SendEventHandlingFailureAlarm(string controller_id,
+    UncRespCode SendEventHandlingFailureAlarm(string controller_id,
                                                 string event_details);
 
     /**
@@ -253,8 +254,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      * @param[in] : driver_name - driver name is filled in this variable
      *
      */
-
-    UpplReturnCode GetDriverName(unc_keytype_ctrtype_t controller_type,
+    UncRespCode GetDriverName(unc_keytype_ctrtype_t controller_type,
                                  string &driver_name);
 
     /**
@@ -348,6 +348,18 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
     TcCommonRet HandleAuditStart(uint32_t session_id,
                                  unc_keytype_ctrtype_t driver_id,
                                  string controller_id);
+    /**
+     * @Description : This is a dummy function. TcLibInterface has pure virtual
+     *                functions. All functions has to have an implementation to
+     *                avoid runtime conflicts
+     */
+    TcCommonRet HandleAuditStart(uint32_t session_id,
+                                 unc_keytype_ctrtype_t driver_id,
+                                 string controller_id,
+                                 pfc_bool_t force_reconnect) {
+      /*this should not called by UPPL*/
+      return unc::tclib::TC_FAILURE;
+    }
     /**
      * @Description : This function will be called back when TC sends user
      *                Audit End request to UPPL
@@ -520,8 +532,26 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
       return unknown_controller_count_;
     }
     vector<string> event_handling_controller_alarm_;
-    UpplReturnCode RaiseEventHandlingAlarm(string controller_name);
-    UpplReturnCode ClearEventHandlingAlarm(string controller_name);
+    UncRespCode RaiseEventHandlingAlarm(string controller_name);
+    UncRespCode ClearEventHandlingAlarm(string controller_name);
+
+    /**
+    *  @Description : This is a map to keep the alarms which has been sent to
+    *  node manager detail
+    */
+    std::map<std::string, bool> alarm_status_map_;
+    UncRespCode remove_ctr_from_alarm_status_map(
+         std::string , std::string);
+    static unc::capa::CapaIntf *GetCapaInterface();
+    /* Variable to hold max dataflow traversal count to verify during dataflow
+     * traversal, dataflow traversal is limited by this count value
+     *  */
+    uint32_t uppl_max_dataflowtraversal_;
+    /*variable to hold the max. allowed RO db connections */
+    uint32_t uppl_max_ro_db_connections_;
+    /*this flag enables to send the user initiated operations 
+    *          recovery alarm to nodemgr */
+    bool system_transit_state_;
 
   private:
     /* PhysicalCore Instance */
@@ -563,21 +593,25 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      * number of unknown controllers should be allowed
      */
     uint32_t unknown_controller_count_;
-
     /* This variable contains the InternalTransactionCoordinator singleton
      *  object
      */
     InternalTransactionCoordinator* internal_transaction_coordinator_;
 
     /* Constructor */
-    PhysicalCore() {
-      internal_transaction_coordinator_ = NULL;
-      audit_notfn_timeout_ = 0;
-      unknown_controller_count_ = 0;
+    PhysicalCore() :
+      uppl_max_dataflowtraversal_(0),
+      uppl_max_ro_db_connections_(0),
+      system_transit_state_(false),
+      audit_notfn_timeout_(0),
+      unknown_controller_count_(0),
+      internal_transaction_coordinator_(NULL) {
     }
     /* Destructor */
-    ~PhysicalCore() {}
-
+    ~PhysicalCore() {
+      if (!alarm_status_map_.empty())
+        alarm_status_map_.clear();
+    }
     cap_iter GetVersionIterator(ControllerVersion version_in);
 };
 }  // namespace uppl

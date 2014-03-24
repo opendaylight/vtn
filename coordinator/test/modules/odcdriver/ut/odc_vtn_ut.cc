@@ -34,7 +34,7 @@ TEST(odcdriver, test_in_valid_vtnname_empty_create_cmd) {
   conf_file.password = "admin";
 
   unc::odcdriver::OdcVtnCommand obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE , obj.create_cmd(key_vtn, val_vtn, ctr));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC , obj.create_cmd(key_vtn, val_vtn, ctr));
   delete ctr;
   ctr= NULL;
 }
@@ -62,7 +62,7 @@ TEST(odcdriver, test_in_valid_vtnname_empty_update_cmd) {
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVtnCommand obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE , obj.update_cmd(key_vtn, val_vtn, ctr));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC , obj.update_cmd(key_vtn, val_vtn, ctr));
   delete ctr;
   ctr= NULL;
 }
@@ -87,7 +87,7 @@ TEST(odcdriver, test_in_valid_vtnname_empty_delete_cmd) {
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVtnCommand obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE , obj.delete_cmd(key_vtn, val_vtn, ctr));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC , obj.delete_cmd(key_vtn, val_vtn, ctr));
 
   delete ctr;
   ctr= NULL;
@@ -115,7 +115,7 @@ TEST(odcdriver, test_invalid_ipaddress_empty_create_cmd) {
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVtnCommand obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE , obj.create_cmd(key_vtn, val_vtn, ctr));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC , obj.create_cmd(key_vtn, val_vtn, ctr));
   if (ctr != NULL) {
     delete ctr;
     ctr= NULL;
@@ -145,7 +145,7 @@ TEST(odcdriver, test_null_response_update_cmd) {
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVtnCommand obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE ,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC ,
             obj.update_cmd(key_vtn, val_vtn, ctr));
   delete ctr;
   ctr= NULL;
@@ -174,7 +174,7 @@ TEST(odcdriver, test_null_response_delete_cmd) {
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVtnCommand obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE ,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC ,
             obj.delete_cmd(key_vtn, val_vtn, ctr));
   delete ctr;
   ctr= NULL;
@@ -207,7 +207,7 @@ TEST(odcdriver,  test_delete_cmd) {
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVtnCommand obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj.delete_cmd(key_vtn, val_vtn, ctr));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj.delete_cmd(key_vtn, val_vtn, ctr));
   delete ctr;
   ctr= NULL;
 }
@@ -240,7 +240,7 @@ TEST(odcdriver,  test_delete_cmd_failure) {
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVtnCommand obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj.delete_cmd(key_vtn, val_vtn, ctr));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj.delete_cmd(key_vtn, val_vtn, ctr));
   delete ctr;
   ctr= NULL;
 }
@@ -269,7 +269,7 @@ TEST(odcdriver,  invalid_response_create_cmd) {
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVtnCommand obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj.create_cmd(key_vtn, val_vtn, ctr));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj.create_cmd(key_vtn, val_vtn, ctr));
   delete ctr;
   ctr= NULL;
 }
@@ -296,7 +296,7 @@ TEST(odcdriver,  invalid_response_update_cmd) {
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVtnCommand obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj.update_cmd(key_vtn, val_vtn, ctr));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj.update_cmd(key_vtn, val_vtn, ctr));
   delete ctr;
   ctr= NULL;
 }
@@ -327,7 +327,7 @@ TEST(odcdriver,  test_update_cmd) {
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVtnCommand obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj.update_cmd(key_vtn, val_vtn, ctr));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj.update_cmd(key_vtn, val_vtn, ctr));
   delete ctr;
   ctr= NULL;
 }
@@ -357,7 +357,7 @@ TEST(odcdriver,  test_valid_create_cmd) {
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVtnCommand obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj.create_cmd(key_vtn, val_vtn, ctr));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj.create_cmd(key_vtn, val_vtn, ctr));
   delete ctr;
   ctr= NULL;
 }
@@ -395,7 +395,7 @@ TEST(odcdriver,  read_all_valid_) {
   unc::odcdriver::OdcVtnCommand obj(conf_file);
   std::vector<unc::vtndrvcache::ConfigNode *> value_list;
   void *ptr = NULL;
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,  obj.fetch_config(ctr, ptr, value_list));
+  EXPECT_EQ(UNC_RC_SUCCESS,  obj.fetch_config(ctr, ptr, value_list));
   EXPECT_EQ(2U,  value_list.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
        value_list.begin(); it != value_list.end(); ++it ) {
@@ -439,7 +439,7 @@ TEST(odcdriver,  read_all_invalid_resp) {
   unc::odcdriver::OdcVtnCommand obj(conf_file);
   std::vector<unc::vtndrvcache::ConfigNode *> value_list;
   void *ptr = NULL;
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,  obj.fetch_config(ctr, ptr, value_list));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,  obj.fetch_config(ctr, ptr, value_list));
   EXPECT_EQ(0U,  value_list.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
        value_list.begin(); it != value_list.end(); ++it ) {
@@ -483,7 +483,7 @@ TEST(odcdriver,  get_vtn_list_invalid_resp) {
   unc::odcdriver::OdcVtnCommand obj(conf_file);
   std::vector<unc::vtndrvcache::ConfigNode *> value_list;
   void *ptr = NULL;
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, ptr, value_list));
   EXPECT_EQ(0U,  value_list.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
@@ -528,7 +528,7 @@ TEST(odcdriver,  read_all_valid_resp_no_vtn) {
   unc::odcdriver::OdcVtnCommand obj(conf_file);
   std::vector<unc::vtndrvcache::ConfigNode *> value_list;
   void *ptr = NULL;
-  EXPECT_EQ(16, obj.fetch_config(ctr, ptr, value_list));
+  EXPECT_EQ(UNC_RC_NO_SUCH_INSTANCE, obj.fetch_config(ctr, ptr, value_list));
   EXPECT_EQ(0U,  value_list.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
        value_list.begin(); it != value_list.end(); ++it ) {
@@ -572,7 +572,7 @@ TEST(odcdriver, test_create_cmd_controller_username) {
           pass.c_str(),  sizeof(val_ctr.password)-1);
 
   unc::odcdriver::OdcVtnCommand obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE , obj.create_cmd(key_vtn, val_vtn, ctr));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC , obj.create_cmd(key_vtn, val_vtn, ctr));
   delete ctr;
   ctr= NULL;
 }

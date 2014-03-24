@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -52,8 +52,10 @@ const std::vector<IpctSt::IpcStructNum>& KtUtil::GetCfgMsgTemplate(
     unc_key_type_t kt) {
   UPLL_FUNC_TRACE;
   static std::vector<IpctSt::IpcStructNum> dummy;
-  if (kt_msg_templates_.count(kt) > 0) {
-    return kt_msg_templates_[kt]->kt_cfg_msg;
+  std::map<unc_key_type_t, KtMsgTemplate*>::iterator it
+      = kt_msg_templates_.find(kt);
+  if ( it != kt_msg_templates_.end() ) {
+    return it->second->kt_cfg_msg;
   }
   return dummy;
 }
@@ -111,7 +113,8 @@ void KtUtil::Init() {
   // UNC_KT_VBR_VLANMAP
   tmpl = new KtMsgTemplate();
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVlanMap);
-  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStValVlanMap);
+  /* VlanmapOnBoundary: Added new val struct */
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStPfcdrvValVlanMap);
   kt_msg_templates_[UNC_KT_VBR_VLANMAP] = tmpl;
   // UNC_KT_VBR_NWMONITOR
   tmpl = new KtMsgTemplate();
@@ -246,6 +249,10 @@ void KtUtil::Init() {
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVlink);
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStValVlink);
   kt_msg_templates_[UNC_KT_VLINK] = tmpl;
+  // UNC_KT_VTN_DATAFLOW
+  tmpl = new KtMsgTemplate();
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVtnDataflow);
+  kt_msg_templates_[UNC_KT_VTN_DATAFLOW] = tmpl;
 }
 
 
@@ -256,7 +263,7 @@ void KtUtil::Init() {
  * @param stnum
  * @param data
  *
- * @return 
+ * @return
  */
 std::string KtUtil::KtStructToStr(IpctSt::IpcStructNum stnum, void *data) {
   std::stringstream ss;
@@ -557,6 +564,9 @@ std::string KtUtil::KtStructToStr(IpctSt::IpcStructNum stnum, void *data) {
     case IpctSt::kIpcStPfcdrvValVbrifPolicingmap:
       return IpcStructToStr(
           *reinterpret_cast<pfcdrv_val_vbrif_policingmap*>(data));
+      /* VlanmapOnBoundary: Added new val struct */
+    case IpctSt::kIpcStPfcdrvValVlanMap:
+      return IpcStructToStr(*reinterpret_cast<pfcdrv_val_vlan_map*>(data));
       // Physical structures
     case IpctSt::kIpcStKeyCtr:
       return IpcStructToStr(*reinterpret_cast<key_ctr*>(data));
@@ -585,6 +595,8 @@ std::string KtUtil::KtStructToStr(IpctSt::IpcStructNum stnum, void *data) {
       return IpcStructToStr(*reinterpret_cast<vnpdrv_val_vtunnel*>(data));
     case IpctSt::kIpcStVnpdrvValVtunnelIf:
       return IpcStructToStr(*reinterpret_cast<vnpdrv_val_vtunnel_if*>(data));
+    case IpctSt::kIpcStKeyVtnDataflow:
+      return IpcStructToStr(*reinterpret_cast<key_vtn_dataflow*>(data));
   }
   return ss.str();
 }
@@ -716,6 +728,17 @@ std::string KtUtil::IpcStructToStr(const key_vtn& key_vtn) {
   std::stringstream ss;
   ss << "   -----   key_vtn   -----   " << endl;
   ss << "   -->vtn_name " << key_vtn.vtn_name << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const key_vtn_dataflow& key_vtn_df) {
+  std::stringstream ss;
+  ss << "   -----   key_vtn_dataflow   -----   " << endl;
+  ss << "   -->vtn_name " << key_vtn_df.vtn_key.vtn_name << endl;
+  ss << "   -->vnode_name " << key_vtn_df.vnode_id << endl;
+  ss << "   -->vlan_id " << key_vtn_df.vlanid << endl;
+  ss << "   -->source_mac_addr " <<
+      MacAddrToStr(key_vtn_df.src_mac_address) << endl;
   return ss.str();
 }
 
@@ -1522,7 +1545,7 @@ std::string KtUtil::IpcStructToStr(const val_flowfilter& val_flowfilter) {
 }
 
 std::string KtUtil::IpcStructToStr(const val_vtn_flowfilter_controller_st&
-                              val_cnler_st) {
+                                   val_cnler_st) {
   std::stringstream ss;
   ss << "   -----   val_vtn_flowfilter_controller_st   -----   " << endl;
   ss << "   -->valid " << VALID_ARRAY_TO_STR(val_cnler_st.valid);
@@ -1562,7 +1585,7 @@ std::string KtUtil::IpcStructToStr(const val_flowlist_entry_st& val_cnler_st) {
 }
 
 std::string KtUtil::IpcStructToStr(const key_vtn_flowfilter_entry&
-                              key_vtn_flowfilter_entry) {
+                                   key_vtn_flowfilter_entry) {
   std::stringstream ss;
   ss << "   -----   key_vtn_flowfilter_entry   -----   " << endl;
   // ss << "   -->flowfilter_key " << endl;
@@ -1614,7 +1637,7 @@ std::string KtUtil::IpcStructToStr(const key_vbr_flowfilter& data) {
 }
 
 std::string KtUtil::IpcStructToStr(const key_vbr_flowfilter_entry&
-                              key_vbr_flowfilter_entry) {
+                                   key_vbr_flowfilter_entry) {
   std::stringstream ss;
   ss << "   -----   key_vbr_flowfilter_entry   -----   " << endl;
   // ss << "   -->flowfilter_key " << endl;
@@ -1660,7 +1683,7 @@ std::string KtUtil::IpcStructToStr(const val_flowfilter_entry_st& data) {
 }
 
 std::string KtUtil::IpcStructToStr(const key_vbr_if_flowfilter&
-                              key_vbr_if_flowfilter) {
+                                   key_vbr_if_flowfilter) {
   std::stringstream ss;
   ss << "   -----   key_vbr_if_flowfilter   -----   " << endl;
   // ss << "   -->if_key " << endl;
@@ -1670,7 +1693,7 @@ std::string KtUtil::IpcStructToStr(const key_vbr_if_flowfilter&
 }
 
 std::string KtUtil::IpcStructToStr(const key_vbr_if_flowfilter_entry&
-                              key_vbr_if_flowfilter_entry) {
+                                   key_vbr_if_flowfilter_entry) {
   std::stringstream ss;
   ss << "   -----   key_vbr_if_flowfilter_entry   -----   " << endl;
   // ss << "   -->flowfilter_key " << endl;
@@ -1681,7 +1704,7 @@ std::string KtUtil::IpcStructToStr(const key_vbr_if_flowfilter_entry&
 }
 
 std::string KtUtil::IpcStructToStr(const key_vrt_if_flowfilter&
-                              key_vrt_if_flowfilter) {
+                                   key_vrt_if_flowfilter) {
   std::stringstream ss;
   ss << "   -----   key_vrt_if_flowfilter   -----   " << endl;
   // ss << "   -->if_key " << endl;
@@ -1714,7 +1737,7 @@ std::string KtUtil::IpcStructToStr(const val_policingprofile& data) {
 }
 
 std::string KtUtil::IpcStructToStr(const val_rename_policingprofile&
-                              val_rename_policingprofile) {
+                                   val_rename_policingprofile) {
   std::stringstream ss;
   ss << "   -----   val_rename_policingprofile   -----   " << endl;
   ss << "   -->valid " << VALID_ARRAY_TO_STR(val_rename_policingprofile.valid);
@@ -1724,7 +1747,7 @@ std::string KtUtil::IpcStructToStr(const val_rename_policingprofile&
 }
 
 std::string KtUtil::IpcStructToStr(const key_policingprofile_entry&
-                              key_policingprofile_entry) {
+                                   key_policingprofile_entry) {
   std::stringstream ss;
   ss << "   -----   key_policingprofile_entry   -----   " << endl;
   // ss << "   -->policingprofile_key " << endl;
@@ -1778,7 +1801,7 @@ std::string KtUtil::IpcStructToStr(const val_policingmap& data) {
 }
 
 std::string KtUtil::IpcStructToStr(const val_policingmap_controller_st&
-                              val_cnler_st) {
+                                   val_cnler_st) {
   std::stringstream ss;
   ss << "   -----   val_policingmap_controller_st   -----   " << endl;
   ss << "   -->valid " << VALID_ARRAY_TO_STR(val_cnler_st.valid);
@@ -1813,7 +1836,7 @@ std::string KtUtil::IpcStructToStr(const val_policingmap_switch_st& data) {
 }
 
 std::string KtUtil::IpcStructToStr(const key_vtn_policingmap_controller&
-                              key_vtn_policingmap_controller) {
+                                   key_vtn_policingmap_controller) {
   std::stringstream ss;
   ss << "   -----   key_vtn_policingmap_controller   -----   " << endl;
   // ss << "   -->vtn_key " << endl;
@@ -2018,6 +2041,17 @@ std::string KtUtil::IpcStructToStr(const pfcdrv_val_vbrif_policingmap &data) {
   ss << "   -->valid: " << VALID_ARRAY_TO_STR(data.valid);
   ss << IpcStructToStr(data.val_policing_map);
   ss << IpcStructToStr(data.val_vbrif_vextif);
+  return ss.str();
+}
+
+/* VlanmapOnBoundary: Added new val struct */
+std::string KtUtil::IpcStructToStr(const pfcdrv_val_vlan_map &data) {
+  std::stringstream ss;
+  ss << "   -----   pfcdrv_val_vlan_map   -----   " << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(data.valid);
+  ss << "   -->val.vm.valid " << VALID_ARRAY_TO_STR(data.vm.valid);
+  ss << "   -->vm.vlan_id " << data.vm.vlan_id << endl;
+  ss << "   -->bdry_ref_count " << data.bdry_ref_count << endl;
   return ss.str();
 }
 

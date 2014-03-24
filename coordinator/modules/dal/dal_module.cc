@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -32,7 +32,8 @@ pfc_bool_t DalModule::init(void) {
 
 pfc_bool_t DalModule::fini(void) {
   pfc_log_notice("Fini");
-  DalErrorHandler::ClearErrorMap();
+  // There could be transactions in progress. So not clearing error map.
+  // DalErrorHandler::ClearErrorMap();
 
   return PFC_TRUE;
 }

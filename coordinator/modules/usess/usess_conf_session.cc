@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -26,8 +26,7 @@ const char* UsessConfSession::kConfMapKey_[ID_NUM] =
     {"cli", "web_api", "web_ui", "fixed"};
 
 // configuration data default value.
-const usess_conf_session_t UsessConfSession::UsessConfSession::kDefaultConf_ =
-{
+const usess_conf_session_t UsessConfSession::UsessConfSession::kDefaultConf_ = {
   {true, 64},                   // .global
   {{{   1,   127}, {true, 16}},  // .local[0] CLI connect.
   {{1024, 65535}, {true, 64}},  // .local[1] WEB API connect.
@@ -45,8 +44,7 @@ const usess_conf_session_t UsessConfSession::UsessConfSession::kDefaultConf_ =
  * @return  nothing.
  * @note    
  */
-UsessConfSession::UsessConfSession(void)
-{
+UsessConfSession::UsessConfSession(void) {
   data_ = kDefaultConf_;
 }
 
@@ -57,8 +55,7 @@ UsessConfSession::UsessConfSession(void)
  * @return  nothing.
  * @note    
  */
-UsessConfSession::~UsessConfSession(void)
-{
+UsessConfSession::~UsessConfSession(void) {
 }
 
 
@@ -68,8 +65,7 @@ UsessConfSession::~UsessConfSession(void)
  * @return  Processing result.
  * @note    
  */
-usess_ipc_err_e UsessConfSession::LoadConf(void)
-{
+usess_ipc_err_e UsessConfSession::LoadConf(void) {
   pfc::core::ModuleConfBlock global(kConfBlockName_);
 
   pfc::core::ModuleConfBlock cli(kConfMapName_, kConfMapKey_[ID_CLI]);
@@ -137,8 +133,7 @@ usess_ipc_err_e UsessConfSession::LoadConf(void)
  * @return  Processing result.
  * @note    
  */
-const usess_conf_session_t& UsessConfSession::data(void) const
-{
+const usess_conf_session_t& UsessConfSession::data(void) const {
   return data_;
 }
 

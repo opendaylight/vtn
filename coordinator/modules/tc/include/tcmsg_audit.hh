@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -40,6 +40,9 @@ class AuditTransaction : public TcMsgAudit {
  public:
   AuditTransaction(uint32_t sess_id, unc::tclib::TcMsgOperType oper);
   TcOperRet Execute();
+  void SetReconnect(pfc_bool_t force_reconnect);
+
+  pfc_bool_t reconnect_controller_;
 
  protected:
   TcOperRet SendRequest(std::string channel_name);

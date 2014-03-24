@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -88,7 +88,8 @@ public class IpcRequestProcessor {
 	 * 
 	 * @return the request packet
 	 */
-	public void setServiceInfo(final String serviceName, final int serviceId) {
+	public final void setServiceInfo(final String serviceName,
+			final int serviceId) {
 		this.serviceName = serviceName;
 		this.serviceId = serviceId;
 	}
@@ -98,7 +99,7 @@ public class IpcRequestProcessor {
 	 * 
 	 * @return the request packet
 	 */
-	public IpcRequestPacket getRequestPacket() {
+	public final IpcRequestPacket getRequestPacket() {
 		LOG.trace("Return from IpcRequestProcessor#getRequestPacket()");
 		return requestPacket;
 	}
@@ -115,10 +116,10 @@ public class IpcRequestProcessor {
 	 * @throws VtnServiceException
 	 *             the vtn service exception
 	 */
-	public void createIpcRequestPacket(
+	public final void createIpcRequestPacket(
 			final IpcRequestPacketEnum requestPacketEnum,
 			final JsonObject requestBody, final List<String> uriParameters)
-					throws VtnServiceException {
+			throws VtnServiceException {
 
 		LOG.trace("Start IpcRequestProcessor#createIpcRequestPacket()");
 
@@ -217,7 +218,8 @@ public class IpcRequestProcessor {
 				requestPacket.setOperation(new IpcUint32(
 						UncOperationEnum.UNC_OP_READ_SIBLING_COUNT.ordinal()));
 			} else if (opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)
-					|| opType.equalsIgnoreCase(VtnServiceJsonConsts.NORMAL)) {
+					|| opType.equalsIgnoreCase(VtnServiceJsonConsts.NORMAL)
+					|| opType.equalsIgnoreCase(VtnServiceJsonConsts.INFO)) {
 				/*
 				 * No need to update option1 value on the basis of "op"
 				 * parameter's value requestPacket.setOption1(new
@@ -235,7 +237,7 @@ public class IpcRequestProcessor {
 					// operation type is read_sibling_begin, if index is null
 					requestPacket.setOperation(new IpcUint32(
 							UncOperationEnum.UNC_OP_READ_SIBLING_BEGIN
-							.ordinal()));
+									.ordinal()));
 				}
 			} else {
 				LOG.debug("No need to change the operation type i.e. READ");
@@ -298,7 +300,7 @@ public class IpcRequestProcessor {
 		} else {
 			// if not available, then get the default value and set to IPC
 			// request packet
-			VtnServiceConfiguration configuration = VtnServiceInitManager
+			final VtnServiceConfiguration configuration = VtnServiceInitManager
 					.getConfigurationMap();
 			requestPacket.setMaxRepCount(new IpcUint32(configuration
 					.getConfigValue(VtnServiceConsts.MAX_REP_DEFAULT)));
@@ -315,7 +317,8 @@ public class IpcRequestProcessor {
 	 * @throws VtnServiceException
 	 *             the vtn service exception
 	 */
-	public IpcDataUnit[] getIpcResponsePacket() throws VtnServiceException {
+	public final IpcDataUnit[] getIpcResponsePacket()
+			throws VtnServiceException {
 
 		LOG.trace("Start IpcRequestProcessor#getIpcResponsePacket()");
 		IpcDataUnit[] ipcDataUnits = null;
@@ -330,7 +333,7 @@ public class IpcRequestProcessor {
 				// with key and value structures
 				final int size = session.getResponseCount();
 				ipcDataUnits = new IpcDataUnit[size
-				                               - VtnServiceConsts.IPC_RESUL_CODE_INDEX - 1];
+						- VtnServiceConsts.IPC_RESUL_CODE_INDEX - 1];
 				// iterate response one by one after Result Code
 				int index = 0;
 				for (int i = VtnServiceConsts.IPC_RESUL_CODE_INDEX + 1; i < size; i++) {
@@ -342,11 +345,11 @@ public class IpcRequestProcessor {
 		} catch (final IpcException e) {
 			exceptionHandler.raise(
 					Thread.currentThread().getStackTrace()[1].getClassName()
-					+ VtnServiceConsts.HYPHEN
-					+ Thread.currentThread().getStackTrace()[1]
-							.getMethodName(),
-							UncJavaAPIErrorCode.IPC_OP_ERROR.getErrorCode(),
-							UncJavaAPIErrorCode.IPC_OP_ERROR.getErrorMessage(), e);
+							+ VtnServiceConsts.HYPHEN
+							+ Thread.currentThread().getStackTrace()[1]
+									.getMethodName(),
+					UncJavaAPIErrorCode.IPC_OP_ERROR.getErrorCode(),
+					UncJavaAPIErrorCode.IPC_OP_ERROR.getErrorMessage(), e);
 		}
 		LOG.trace("Complete IpcRequestProcessor#getIpcResponsePacket()");
 		return ipcDataUnits;
@@ -407,7 +410,7 @@ public class IpcRequestProcessor {
 		errorJson.add(VtnServiceJsonConsts.ERROR, error);
 	}
 
-	public JsonObject getErrorJson() {
+	public final JsonObject getErrorJson() {
 		return errorJson;
 	}
 
@@ -416,7 +419,7 @@ public class IpcRequestProcessor {
 	 * 
 	 * @return the exception handler
 	 */
-	public VtnServiceExceptionHandler getExceptionHandler() {
+	public final VtnServiceExceptionHandler getExceptionHandler() {
 		LOG.trace("Return from IpcRequestProcessor#getExceptionHandler()");
 		return exceptionHandler;
 	}
@@ -436,7 +439,7 @@ public class IpcRequestProcessor {
 	 */
 	private IpcStruct getIpcStructure(final String structName,
 			final JsonObject requestBody, final List<String> uriParameters)
-					throws VtnServiceException {
+			throws VtnServiceException {
 
 		LOG.trace("Start IpcRequestProcessor#getIpcStructure()");
 		IpcStruct ipcStruct = null;
@@ -454,22 +457,22 @@ public class IpcRequestProcessor {
 				// get the method name to get the IpcStruct object for given key
 				method = sourceClass.getMethod(
 						VtnServiceConsts.STRUCT_METHOD_PREFIX + structName
-						+ VtnServiceConsts.STRUCT_METHOD_POSTFIX,
+								+ VtnServiceConsts.STRUCT_METHOD_POSTFIX,
 						JsonObject.class, List.class);
 				// get IpcStruct object
 				ipcStruct = (IpcStruct) method.invoke(stuctGenerator,
 						requestBody, uriParameters);
 			} catch (final Exception e) {
 				exceptionHandler
-				.raise(Thread.currentThread().getStackTrace()[1]
-						.getClassName()
-						+ VtnServiceConsts.HYPHEN
-						+ Thread.currentThread().getStackTrace()[1]
-								.getMethodName(),
+						.raise(Thread.currentThread().getStackTrace()[1]
+								.getClassName()
+								+ VtnServiceConsts.HYPHEN
+								+ Thread.currentThread().getStackTrace()[1]
+										.getMethodName(),
 								UncJavaAPIErrorCode.INTERNAL_ERROR
-								.getErrorCode(),
+										.getErrorCode(),
 								UncJavaAPIErrorCode.INTERNAL_ERROR
-								.getErrorMessage(), e);
+										.getErrorMessage(), e);
 			}
 		}
 		LOG.trace("Complete IpcRequestProcessor#getIpcStructure()");
@@ -483,7 +486,7 @@ public class IpcRequestProcessor {
 	 * @throws VtnServiceException
 	 *             the vtn service exception
 	 */
-	public int processIpcRequest() throws VtnServiceException {
+	public final int processIpcRequest() throws VtnServiceException {
 
 		LOG.trace("Start IpcRequestProcessor#processIpcRequest()");
 		int status = ClientSession.RESP_FATAL;
@@ -546,31 +549,35 @@ public class IpcRequestProcessor {
 								.getResponse(VtnServiceConsts.IPC_RESUL_CODE_INDEX));
 				LOG.debug("Result code received: " + resultCode);
 				final int keyType = requestPacket.getKeyType().intValue();
-				
-				if(requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ.ordinal()
-							|| requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ_SIBLING_BEGIN.ordinal()
-							|| requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ_SIBLING.ordinal()
-							|| requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ_SIBLING_COUNT.ordinal()){
-					  if (keyType >= UncCommonEnum.MIN_LOGICAL_KEYTYPE
-								  && keyType <= UncCommonEnum.MAX_LOGICAL_KEYTYPE
-								  && Integer.parseInt(resultCode) == VtnServiceConsts.UPLL_RC_ERR_NO_SUCH_INSTANCE) {
-							noSuchInstanceFlag = true;
-							LOG.debug("No such instance case for UPLL");
-					  } else if (keyType >= UncCommonEnum.MIN_PHYSICAL_KEYTYPE
-								  && keyType <= UncCommonEnum.MAX_PHYSICAL_KEYTYPE
-								  && Integer.parseInt(resultCode) == VtnServiceConsts.UPPL_RC_ERR_NO_SUCH_INSTANCE) {
-							noSuchInstanceFlag = true;
-							LOG.debug("No such instance case for UPPL");
-					  } else {
-							LOG.debug(" Either Key Type does not exists or operation is not success");
-					  }                             
-                }
-				
+
+				if (requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ
+						.ordinal()
+						|| requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ_SIBLING_BEGIN
+								.ordinal()
+						|| requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ_SIBLING
+								.ordinal()
+						|| requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ_SIBLING_COUNT
+								.ordinal()) {
+					if (keyType >= UncCommonEnum.MIN_LOGICAL_KEYTYPE
+							&& keyType <= UncCommonEnum.MAX_LOGICAL_KEYTYPE
+							&& Integer.parseInt(resultCode) == VtnServiceConsts.UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+						noSuchInstanceFlag = true;
+						LOG.debug("No such instance case for UPLL");
+					} else if (keyType >= UncCommonEnum.MIN_PHYSICAL_KEYTYPE
+							&& keyType <= UncCommonEnum.MAX_PHYSICAL_KEYTYPE
+							&& Integer.parseInt(resultCode) == VtnServiceConsts.UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+						noSuchInstanceFlag = true;
+						LOG.debug("No such instance case for UPPL");
+					} else {
+						LOG.debug(" Either Key Type does not exists or operation is not success");
+					}
+				}
+
 				// if return code is not success, then create the error Json for
 				// received result code
 				if (null == resultCode
 						|| UncIpcErrorCode.RC_SUCCESS != Integer
-						.parseInt(resultCode)) {
+								.parseInt(resultCode)) {
 					if (noSuchInstanceFlag) {
 						status = UncResultCode.UNC_SUCCESS.getValue();
 					} else {
@@ -584,11 +591,11 @@ public class IpcRequestProcessor {
 		} catch (final IpcException e) {
 			exceptionHandler.raise(
 					Thread.currentThread().getStackTrace()[1].getClassName()
-					+ VtnServiceConsts.HYPHEN
-					+ Thread.currentThread().getStackTrace()[1]
-							.getMethodName(),
-							UncJavaAPIErrorCode.IPC_OP_ERROR.getErrorCode(),
-							UncJavaAPIErrorCode.IPC_OP_ERROR.getErrorMessage(), e);
+							+ VtnServiceConsts.HYPHEN
+							+ Thread.currentThread().getStackTrace()[1]
+									.getMethodName(),
+					UncJavaAPIErrorCode.IPC_OP_ERROR.getErrorCode(),
+					UncJavaAPIErrorCode.IPC_OP_ERROR.getErrorMessage(), e);
 		}
 		LOG.trace("Complete IpcRequestProcessor#processIpcRequest()");
 		return status;

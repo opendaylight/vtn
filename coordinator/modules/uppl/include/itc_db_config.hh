@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -29,17 +29,17 @@ class DBConfigurationRequest : public ITCReq {
  public:
   DBConfigurationRequest();
   ~DBConfigurationRequest();
-  UpplReturnCode LoadAndCommitStartup(OdbcmConnectionHandler *db_conn);
-  UpplReturnCode ClearStartUpDb(OdbcmConnectionHandler *db_conn);
-  UpplReturnCode AbortCandidateDb(OdbcmConnectionHandler *db_conn);
-  UpplReturnCode  SaveRunningToStartUp(OdbcmConnectionHandler *db_conn);
-  UpplReturnCode SendDeletedControllerToLogical(
+  UncRespCode LoadAndCommitStartup(OdbcmConnectionHandler *db_conn);
+  UncRespCode ClearStartUpDb(OdbcmConnectionHandler *db_conn);
+  UncRespCode AbortCandidateDb(OdbcmConnectionHandler *db_conn);
+  UncRespCode  SaveRunningToStartUp(OdbcmConnectionHandler *db_conn);
+  UncRespCode SendDeletedControllerToLogical(
       OdbcmConnectionHandler *db_conn);
-  UpplReturnCode SendCreatedControllerToLogical(
+  UncRespCode SendCreatedControllerToLogical(
       OdbcmConnectionHandler *db_conn);
-  UpplReturnCode SendUpdatedControllerToLogical(
+  UncRespCode SendUpdatedControllerToLogical(
       OdbcmConnectionHandler *db_conn);
-  UpplReturnCode SendAppliedControllerToLogical(
+  UncRespCode SendAppliedControllerToLogical(
       OdbcmConnectionHandler *db_conn);
 };
 }  // namespace uppl

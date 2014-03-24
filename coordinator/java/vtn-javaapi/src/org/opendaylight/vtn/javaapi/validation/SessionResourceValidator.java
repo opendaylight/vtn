@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -30,7 +30,7 @@ public class SessionResourceValidator extends VtnServiceValidator {
 
 	/** The instance of AbstractResource. */
 	private final AbstractResource resource;
-	final CommonValidator validator = new CommonValidator();
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new session resource validator.
@@ -48,7 +48,7 @@ public class SessionResourceValidator extends VtnServiceValidator {
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start SessionResourceValidator#validateUri()");
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.URI
@@ -57,10 +57,10 @@ public class SessionResourceValidator extends VtnServiceValidator {
 				&& ((SessionResource) resource).getSessionId() != null
 				&& !((SessionResource) resource).getSessionId().trim()
 						.isEmpty()) {
-			/*if (Long.parseLong(((SessionResource) resource).getSessionId()
-					.trim()) >= 0) {
-				isValid = true;
-			}*/
+			/*
+			 * if (Long.parseLong(((SessionResource) resource).getSessionId()
+			 * .trim()) >= 0) { isValid = true; }
+			 */
 			isValid = validator.isValidRange(((SessionResource) resource)
 					.getSessionId().trim(), VtnServiceJsonConsts.LONG_VAL_1,
 					VtnServiceJsonConsts.LONG_VAL_4294967295);
@@ -77,8 +77,9 @@ public class SessionResourceValidator extends VtnServiceValidator {
 	 * Validate request json for Create Session API and List Sessions API.
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start SessionResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of SessionResourceValidator");
@@ -212,9 +213,11 @@ public class SessionResourceValidator extends VtnServiceValidator {
 									.trim()
 									.equalsIgnoreCase(VtnServiceJsonConsts.OPER);
 				} else {
-					requestBody.getAsJsonObject(VtnServiceJsonConsts.SESSION).remove(VtnServiceJsonConsts.USERNAME);
-					requestBody.getAsJsonObject(VtnServiceJsonConsts.SESSION).addProperty(VtnServiceJsonConsts.USERNAME,
-							VtnServiceJsonConsts.OPER);
+					requestBody.getAsJsonObject(VtnServiceJsonConsts.SESSION)
+							.remove(VtnServiceJsonConsts.USERNAME);
+					requestBody.getAsJsonObject(VtnServiceJsonConsts.SESSION)
+							.addProperty(VtnServiceJsonConsts.USERNAME,
+									VtnServiceJsonConsts.OPER);
 				}
 			}
 			// validation for key: type
@@ -239,9 +242,11 @@ public class SessionResourceValidator extends VtnServiceValidator {
 									.equalsIgnoreCase(
 											VtnServiceJsonConsts.WEBUI);
 				} else {
-					requestBody.getAsJsonObject(VtnServiceJsonConsts.SESSION).remove(VtnServiceJsonConsts.TYPE);
-					requestBody.getAsJsonObject(VtnServiceJsonConsts.SESSION).addProperty(VtnServiceJsonConsts.TYPE,
-							VtnServiceJsonConsts.WEBUI);
+					requestBody.getAsJsonObject(VtnServiceJsonConsts.SESSION)
+							.remove(VtnServiceJsonConsts.TYPE);
+					requestBody.getAsJsonObject(VtnServiceJsonConsts.SESSION)
+							.addProperty(VtnServiceJsonConsts.TYPE,
+									VtnServiceJsonConsts.WEBUI);
 				}
 			}
 			// validation for key: info

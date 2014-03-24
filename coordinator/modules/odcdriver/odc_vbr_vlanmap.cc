@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -24,7 +24,7 @@ OdcVbrVlanMapCommand::~OdcVbrVlanMapCommand() {
 }
 
 // fetch child configurations for the parent kt(vbr)
-drv_resp_code_t OdcVbrVlanMapCommand::fetch_config(
+UncRespCode OdcVbrVlanMapCommand::fetch_config(
     unc::driver::controller* ctr,
     void* parent_key,
     std::vector <unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
@@ -33,23 +33,23 @@ drv_resp_code_t OdcVbrVlanMapCommand::fetch_config(
 }
 
 // Validates VLAN exists or not
-drv_resp_code_t OdcVbrVlanMapCommand::validate_vlan_exist(
-                                        key_vlan_map_t &key_vlan_map,
-                                        val_vlan_map_t &val_vlan_map,
-                                        const std::string &logical_port_id,
-                                        unc::driver::controller *ctr,
-                                        pfc_bool_t &is_switch_exist,
-                                        std::string &port_id) {
+UncRespCode OdcVbrVlanMapCommand::validate_vlan_exist(
+  key_vlan_map_t &key_vlan_map,
+  pfcdrv_val_vlan_map_t &val_vlan_map,
+  const std::string &logical_port_id,
+  unc::driver::controller *ctr,
+  pfc_bool_t &is_switch_exist,
+  std::string &port_id) {
   ODC_FUNC_TRACE;
   if (key_vlan_map.logical_port_id_valid != 0) {
     // Validate request received with SwitchID
-    drv_resp_code_t ret_val =
+    UncRespCode ret_val =
         check_switch_already_exists(key_vlan_map,
                  val_vlan_map, logical_port_id, ctr, is_switch_exist, port_id);
     return ret_val;
   } else {
     // Validate request received without SwitchID
-    drv_resp_code_t  ret_val = check_ANY_already_exists
+    UncRespCode  ret_val = check_ANY_already_exists
         (key_vlan_map, val_vlan_map, ctr, is_switch_exist, port_id);
       return ret_val;
   }
@@ -57,14 +57,15 @@ drv_resp_code_t OdcVbrVlanMapCommand::validate_vlan_exist(
 
 // Check  "ANY" vlan-id (vlan-id not associated with any switch)
 // exists in controller
-drv_resp_code_t
-OdcVbrVlanMapCommand::check_ANY_already_exists(key_vlan_map_t &key_vlan_map,
-                                              val_vlan_map_t  &val_vlan_map,
-                                              unc::driver::controller *ctr,
-                                              pfc_bool_t &is_switch_exist,
-                                              std::string &port_id) {
+UncRespCode
+OdcVbrVlanMapCommand::check_ANY_already_exists(
+    key_vlan_map_t &key_vlan_map,
+    pfcdrv_val_vlan_map_t  &val_vlan_map,
+    unc::driver::controller *ctr,
+    pfc_bool_t &is_switch_exist,
+    std::string &port_id) {
   ODC_FUNC_TRACE;
-  uint vlan_id_req = val_vlan_map.vlan_id;
+  uint vlan_id_req = val_vlan_map.vm.vlan_id;
   std::string vtn_name_req =
       reinterpret_cast<char*>(key_vlan_map.vbr_key.vtn_key.vtn_name);
   std::string vbr_name_req =
@@ -87,7 +88,7 @@ OdcVbrVlanMapCommand::check_ANY_already_exists(key_vlan_map_t &key_vlan_map,
     size_t vlan_occurence = vtn_vbr_vlan_data.find_last_of(PERIOD);
     if (vlan_occurence == std::string::npos) {
       pfc_log_error("%s: Error in parsing data", PFC_FUNCNAME);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     std::string vlan_id = vtn_vbr_vlan_data.substr(vlan_occurence+1);
     uint vlan_id_ctr = atoi(vlan_id.c_str());
@@ -101,7 +102,7 @@ OdcVbrVlanMapCommand::check_ANY_already_exists(key_vlan_map_t &key_vlan_map,
         (vbr_name_ctr.empty()) ||
         (switch_id_ctr.empty())) {
       pfc_log_error("Error in parsing values ");
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
 
     if (vlan_id_req != vlan_id_ctr) {
@@ -125,22 +126,22 @@ OdcVbrVlanMapCommand::check_ANY_already_exists(key_vlan_map_t &key_vlan_map,
           }
     } else {
       pfc_log_error("%s: VLANID Conflict for Node type ANY!!!", PFC_FUNCNAME);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 // Check if switch id exists in controller
-drv_resp_code_t OdcVbrVlanMapCommand::check_switch_already_exists(
+UncRespCode OdcVbrVlanMapCommand::check_switch_already_exists(
     key_vlan_map_t &key_vlan_map,
-    val_vlan_map_t &val_vlan_map,
+    pfcdrv_val_vlan_map_t &val_vlan_map,
     const std::string &switch_id_req,
     unc::driver::controller *ctr_ptr,
     pfc_bool_t &is_switch_exist,
     std::string &port_id) {
   ODC_FUNC_TRACE;
-  uint vlan_id_req = val_vlan_map.vlan_id;
+  uint vlan_id_req = val_vlan_map.vm.vlan_id;
   std::string vtn_name_req = reinterpret_cast<char*>
       (key_vlan_map.vbr_key.vtn_key.vtn_name);
   std::string vbr_name_req = reinterpret_cast<char*>
@@ -160,7 +161,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::check_switch_already_exists(
   } else {
     pfc_log_error("%s: Request logical port is not in the format of SW-",
                   PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   unc::odcdriver::OdcController *odc_ctr =
@@ -173,7 +174,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::check_switch_already_exists(
     size_t vlan_occurence = vtn_vbr_vlan_data.find_last_of(PERIOD);
     if (vlan_occurence == std::string::npos) {
       pfc_log_error("%s: Error in parsing vlan-id", PFC_FUNCNAME);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     std::string vlan_id = vtn_vbr_vlan_data.substr(vlan_occurence+1);
     uint vlan_id_ctr = atoi(vlan_id.c_str());
@@ -186,7 +187,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::check_switch_already_exists(
          (vbr_name_ctr.empty()) ||
          (switch_id_ctr.empty())) {
       pfc_log_error("%s: Error in parsing values", PFC_FUNCNAME);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
 
     if (vlan_id_req == vlan_id_ctr) {
@@ -196,22 +197,22 @@ drv_resp_code_t OdcVbrVlanMapCommand::check_switch_already_exists(
             pfc_log_error("%s:VLAN ID Conflict for SWID in Request & "
                               "ANY in Controller %s",
                               PFC_FUNCNAME, switch_id_ctr.c_str());
-            return DRVAPI_RESPONSE_FAILURE;
+            return UNC_DRV_RC_ERR_GENERIC;
           } else if (logical_port_req.compare(switch_id_ctr) == 0) {
             pfc_log_error("%s: VLANID Conflict for SWID in Request & "
                           "Controller (%s)!!!",
                           PFC_FUNCNAME, switch_id_ctr.c_str());
-            return DRVAPI_RESPONSE_FAILURE;
+            return UNC_DRV_RC_ERR_GENERIC;
           }
         } else {
           pfc_log_error("%s:VLAN id Conflict in different vbridges "
                         "under same VTN", PFC_FUNCNAME);
-          return DRVAPI_RESPONSE_FAILURE;
+          return UNC_DRV_RC_ERR_GENERIC;
         }
       } else {
         pfc_log_error("%s:VLAN id Conflict in different "
                       "vbridges under different VTN", PFC_FUNCNAME);
-        return DRVAPI_RESPONSE_FAILURE;
+        return UNC_DRV_RC_ERR_GENERIC;
       }
     } else {
       if ((vtn_name_req.compare(vtn_name_ctr) == 0) &&
@@ -228,7 +229,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::check_switch_already_exists(
       }
     }
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 // parses the vector and gets vtn, vbr, sw id as out param
@@ -262,7 +263,7 @@ void OdcVbrVlanMapCommand::parse_data_from_vector(
 }
 
 // Getting vbridge vlanmap if available
-drv_resp_code_t OdcVbrVlanMapCommand::get_vbrvlanmap_list(void* parent_key,
+UncRespCode OdcVbrVlanMapCommand::get_vbrvlanmap_list(void* parent_key,
                                                           unc::driver
                                                           ::controller* ctr,
                                                           std::vector
@@ -280,7 +281,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::get_vbrvlanmap_list(void* parent_key,
   PFC_ASSERT(ctr != NULL);
   if ((0 == strlen(vtn_name.c_str())) || (0 == strlen(vbr_name.c_str()))) {
     pfc_log_error("%s: Empty VTN/VBR name", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   // Construct URL to retrieve vlanmaps from controller
@@ -303,7 +304,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::get_vbrvlanmap_list(void* parent_key,
 
   if (NULL == response) {
     pfc_log_error("%s:Error Occured while getting http response", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   int resp_code = response->code;
   pfc_log_debug("%s: Response code (%d) from Ctrl for get vbrvlanmap",
@@ -317,23 +318,23 @@ drv_resp_code_t OdcVbrVlanMapCommand::get_vbrvlanmap_list(void* parent_key,
       pfc_log_error("%s:VTN Manager service not operating inside controller %u",
                     PFC_FUNCNAME, resp_code);
     }
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   if (NULL != response->write_data) {
     if (NULL != response->write_data->memory) {
       char *data = response->write_data->memory;
-      drv_resp_code_t parse_ret = DRVAPI_RESPONSE_FAILURE;
+      UncRespCode parse_ret = UNC_DRV_RC_ERR_GENERIC;
       // Parse the vlan-map GET response from controller
       parse_ret = parse_vbrvlanmap_response(parent_key, ctr, data,
                                             cfgnode_vector);
       return parse_ret;
     }
   }
-  return DRVAPI_RESPONSE_FAILURE;
+  return UNC_DRV_RC_ERR_GENERIC;
 }
 
 // Parse the VBR_VLANMAP data
-drv_resp_code_t OdcVbrVlanMapCommand::parse_vbrvlanmap_response(
+UncRespCode OdcVbrVlanMapCommand::parse_vbrvlanmap_response(
                                                             void *parent_key,
                                                 unc::driver::controller* ctr,
                                                                   char *data,
@@ -342,7 +343,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::parse_vbrvlanmap_response(
   json_object* jobj = unc::restjson::JsonBuildParse::get_json_object(data);
   if (json_object_is_type(jobj, json_type_null)) {
     pfc_log_error("%s: json_object_is_null", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   uint32_t array_length = 0;
   json_object *json_obj_vbrvlanmap = NULL;
@@ -354,13 +355,13 @@ drv_resp_code_t OdcVbrVlanMapCommand::parse_vbrvlanmap_response(
   if (json_object_is_type(json_obj_vbrvlanmap, json_type_null)) {
     pfc_log_error("%s: json vbrvlanmap is null", PFC_FUNCNAME);
     json_object_put(jobj);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   if (restjson::REST_OP_SUCCESS != ret_val) {
     json_object_put(jobj);
     pfc_log_error("%s: JsonBuildParse::parse fail", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   // If more than 0 vlanmap configurations are present,retrieve the array length
   if (json_object_is_type(json_obj_vbrvlanmap, json_type_array)) {
@@ -368,40 +369,39 @@ drv_resp_code_t OdcVbrVlanMapCommand::parse_vbrvlanmap_response(
                                                               "vlanmap");
   }
 
-  drv_resp_code_t resp_code = DRVAPI_RESPONSE_FAILURE;
+  UncRespCode resp_code = UNC_DRV_RC_ERR_GENERIC;
 
   // Loop for all vlanmap configurations and cache it
   for (uint32_t arr_idx = 0; arr_idx < array_length; arr_idx++) {
     resp_code = fill_config_node_vector(parent_key, ctr, json_obj_vbrvlanmap,
                                         arr_idx, cfgnode_vector);
-    if (DRVAPI_RESPONSE_FAILURE == resp_code) {
+    if (UNC_DRV_RC_ERR_GENERIC == resp_code) {
       json_object_put(jobj);
       pfc_log_error("%s: fill_config_node_vector failed", PFC_FUNCNAME);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
   }
   json_object_put(jobj);
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 // Parse VBR_VLANMAP and append it to confignode vector
-drv_resp_code_t OdcVbrVlanMapCommand::fill_config_node_vector(void *parent_key,
+UncRespCode OdcVbrVlanMapCommand::fill_config_node_vector(void *parent_key,
                                                   unc::driver::controller* ctr,
                                                              json_object *jobj,
                                                               uint32_t arr_idx,
                 std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
   ODC_FUNC_TRACE;
   key_vlan_map_t key_vlan_map;
-  val_vlan_map_t val_vlan_map;
+  pfcdrv_val_vlan_map_t val_vlan_map;
   memset(&key_vlan_map, 0, sizeof(key_vlan_map_t));
-  memset(&val_vlan_map, 0, sizeof(val_vlan_map_t));
-  val_vlan_map.valid[UPLL_IDX_VLAN_ID_VM] = UNC_VF_VALID;
+  memset(&val_vlan_map, 0, sizeof(pfcdrv_val_vlan_map_t));
   std::string vlan = "0";
   int ret_val = unc::restjson::JsonBuildParse::parse(jobj, "vlan", arr_idx,
                                                      vlan);
   if (restjson::REST_OP_SUCCESS != ret_val) {
     pfc_log_error("%s: Parse error for vlanid", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   pfc_log_debug("%s: Vlan id parsed %s", PFC_FUNCNAME, vlan.c_str());
   std::string id = "";
@@ -409,25 +409,27 @@ drv_resp_code_t OdcVbrVlanMapCommand::fill_config_node_vector(void *parent_key,
                                                  id);
   if (restjson::REST_OP_SUCCESS != ret_val) {
     pfc_log_error("%s: Parse error for id", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   pfc_log_debug("%s: ID parsed %s", PFC_FUNCNAME, id.c_str());
   if (id.empty()) {
     pfc_log_error("%s: id is empty", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
-  val_vlan_map.vlan_id = atoi(vlan.c_str());
-  if (val_vlan_map.vlan_id == 0) {
-    val_vlan_map.vlan_id = 0xFFFF;
+  val_vlan_map.valid[PFCDRV_IDX_VAL_VLAN_MAP] = UNC_VF_VALID;
+  val_vlan_map.vm.valid[UPLL_IDX_VLAN_ID_VM] = UNC_VF_VALID;
+  val_vlan_map.vm.vlan_id = atoi(vlan.c_str());
+  if (val_vlan_map.vm.vlan_id == 0) {
+    val_vlan_map.vm.vlan_id = 0xFFFF;
     pfc_log_debug("%s: Vlan id untagged set as %d", PFC_FUNCNAME,
-                  val_vlan_map.vlan_id);
+                  val_vlan_map.vm.vlan_id);
   }
   json_object *jobj_node = NULL;
   ret_val = unc::restjson::JsonBuildParse::parse(jobj, "node", arr_idx,
                                                  jobj_node);
   if (restjson::REST_OP_SUCCESS != ret_val) {
     pfc_log_error("%s: Parse Error for node", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   if (json_object_is_type(jobj_node, json_type_null)) {
@@ -440,7 +442,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::fill_config_node_vector(void *parent_key,
 
     if (restjson::REST_OP_SUCCESS != ret_val) {
       pfc_log_error("%s: Parse Error for ID", PFC_FUNCNAME);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     switch_id.append(node_id);
     strncpy(reinterpret_cast<char*>
@@ -458,7 +460,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::fill_config_node_vector(void *parent_key,
 
   if ((parent_vtn_name.empty()) || (parent_vbr_name.empty())) {
     pfc_log_error("%s: VTN/VBR name is empty", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   strncpy(reinterpret_cast<char*> (key_vlan_map.vbr_key.vtn_key.vtn_name),
           parent_vtn_name.c_str(), strlen(parent_vtn_name.c_str()));
@@ -469,7 +471,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::fill_config_node_vector(void *parent_key,
   // Cache the parsed vlanmap configurations
   unc::vtndrvcache::ConfigNode *cfgptr =
       new unc::vtndrvcache::CacheElementUtil
-      <key_vlan_map_t, val_vlan_map_t, uint32_t>
+      <key_vlan_map_t, pfcdrv_val_vlan_map_t, uint32_t>
       (&key_vlan_map, &val_vlan_map, uint32_t(UNC_OP_READ));
   PFC_ASSERT(cfgptr != NULL);
   cfgnode_vector.push_back(cfgptr);
@@ -494,7 +496,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::fill_config_node_vector(void *parent_key,
   if (PFC_FALSE == is_data_exist) {
     odc_ctr->vlan_vector.push_back(vtn_vbr_vlan);
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 std::string OdcVbrVlanMapCommand::generate_string_for_vector(
@@ -553,9 +555,9 @@ std::string OdcVbrVlanMapCommand::generate_vlanmap_id(
 }
 
 // Create Command for vbr vlanmap
-drv_resp_code_t OdcVbrVlanMapCommand::create_cmd(
+UncRespCode OdcVbrVlanMapCommand::create_cmd(
     key_vlan_map_t& vlanmap_key,
-    val_vlan_map_t& vlanmap_val,
+    pfcdrv_val_vlan_map_t& vlanmap_val,
     unc::driver::controller* ctr_ptr) {
 
   ODC_FUNC_TRACE;
@@ -563,9 +565,9 @@ drv_resp_code_t OdcVbrVlanMapCommand::create_cmd(
 }
 
 // Update Command for vbr vlanmap
-drv_resp_code_t OdcVbrVlanMapCommand::update_cmd(
+UncRespCode OdcVbrVlanMapCommand::update_cmd(
     key_vlan_map_t& vlanmap_key,
-    val_vlan_map_t& vlanmap_val,
+    pfcdrv_val_vlan_map_t& vlanmap_val,
     unc::driver::controller* ctr_ptr) {
 
   ODC_FUNC_TRACE;
@@ -573,7 +575,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::update_cmd(
 }
 
 // Delete vlan-map from controller
-drv_resp_code_t OdcVbrVlanMapCommand::del_existing_vlanmap(
+UncRespCode OdcVbrVlanMapCommand::del_existing_vlanmap(
     key_vlan_map_t& vlanmap_key,
     unc::driver::controller*
     ctr_ptr, const std::string &str_mapping_id) {
@@ -582,11 +584,11 @@ drv_resp_code_t OdcVbrVlanMapCommand::del_existing_vlanmap(
   std::string del_vbr_vlanmap_url = get_vbrvlanmap_url(vlanmap_key);
   if (del_vbr_vlanmap_url.empty()) {
     pfc_log_error("%s: vlanmap url is empty", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   if (str_mapping_id.empty()) {
     pfc_log_error("%s: MapID received is empty", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   del_vbr_vlanmap_url.append(str_mapping_id);
@@ -601,7 +603,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::del_existing_vlanmap(
 
   if (NULL == response) {
     pfc_log_error("%s: Error Occured while getting httpresponse", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   int resp_code = response->code;
   pfc_log_debug("%s: Response code from Ctl for delete vlanmap (%d) ",
@@ -610,7 +612,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::del_existing_vlanmap(
   if (HTTP_200_RESP_OK != resp_code) {
     pfc_log_error("%s: Delete vlanmap is not successful %d",
                   PFC_FUNCNAME, resp_code);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   std::string vtn_name_req =
@@ -621,20 +623,20 @@ drv_resp_code_t OdcVbrVlanMapCommand::del_existing_vlanmap(
                                                 vbr_name_req, str_mapping_id);
   if (vtn_vbr_vlan_delete.empty()) {
     pfc_log_debug("vtn/vbr/id is empty");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
 
   // Entry from search vector is removed
   delete_from_vector(ctr_ptr, vtn_vbr_vlan_delete);
 
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 // Create or Update Command for vbr vlanmap
-drv_resp_code_t OdcVbrVlanMapCommand::create_update_cmd(
+UncRespCode OdcVbrVlanMapCommand::create_update_cmd(
     key_vlan_map_t& vlanmap_key,
-    val_vlan_map_t& vlanmap_val,
+    pfcdrv_val_vlan_map_t& vlanmap_val,
     unc::driver::controller* ctr_ptr) {
   ODC_FUNC_TRACE;
   PFC_ASSERT(ctr_ptr != NULL);
@@ -649,35 +651,35 @@ drv_resp_code_t OdcVbrVlanMapCommand::create_update_cmd(
     if (ret_val != ODC_DRV_SUCCESS) {
       pfc_log_error("%s: Validation for logical_port[%s] failed ",
                     PFC_FUNCNAME, logical_port_id.c_str());
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     pfc_log_debug(" Logical port id received %s", logical_port_id.c_str());
   }
-  if (vlanmap_val.valid[UPLL_IDX_VLAN_ID_VM] != UNC_VF_VALID) {
+  if (vlanmap_val.vm.valid[UPLL_IDX_VLAN_ID_VM] != UNC_VF_VALID) {
     pfc_log_error("%s: Received invalid Vlan_id",
                     PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   // Validate if vlanid already exists in controller
-  drv_resp_code_t validate_resp = validate_vlan_exist(vlanmap_key,
-                                                      vlanmap_val,
-                                                      logical_port_id,
-                                                      ctr_ptr,
-                                                      vlan_map_exists,
-                                                      strmapid);
+  UncRespCode validate_resp = validate_vlan_exist(vlanmap_key,
+                                                  vlanmap_val,
+                                                  logical_port_id,
+                                                  ctr_ptr,
+                                                  vlan_map_exists,
+                                                  strmapid);
 
-  if (validate_resp != DRVAPI_RESPONSE_SUCCESS) {
+  if (UNC_RC_SUCCESS != validate_resp) {
     pfc_log_error("%s Validation of vlanmap failed, validate_resp(%u)",
                   PFC_FUNCNAME, validate_resp);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   // If vlanid exists for same SwitchID/ANY delete the existing vlanmap
   // and create a new vlanmap
-  if (vlan_map_exists == PFC_TRUE) {
+  if (PFC_TRUE == vlan_map_exists) {
     if (del_existing_vlanmap(vlanmap_key, ctr_ptr, strmapid) !=
-        DRVAPI_RESPONSE_SUCCESS) {
+        UNC_RC_SUCCESS) {
       pfc_log_error("%s Delete of vlanmap failed", PFC_FUNCNAME);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
   }
 
@@ -685,7 +687,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::create_update_cmd(
   pfc_log_debug("%s: Vlanmap url %s ", PFC_FUNCNAME, vbr_vlanmap_url.c_str());
   if (vbr_vlanmap_url.empty()) {
     pfc_log_error("%s: Vlanmap url is empty", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   unc::restjson::JsonBuildParse json_obj;
   json_object* vbrvlanmap_json_request_body = create_request_body(
@@ -705,7 +707,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::create_update_cmd(
   if (NULL == response) {
     pfc_log_error("%s: Error Occured while getting httpresponse",
                   PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   int resp_code = response->code;
   pfc_log_debug("%s: Response code from Ctl for vlanmap create_cmd: %d",
@@ -713,30 +715,30 @@ drv_resp_code_t OdcVbrVlanMapCommand::create_update_cmd(
   if (HTTP_201_RESP_CREATED != resp_code) {
     pfc_log_error("%s: Create/Update Vlanmap Failure.Response code %d",
                   PFC_FUNCNAME, resp_code);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   std::string vtn_name_req =
       reinterpret_cast<char*>(vlanmap_key.vbr_key.vtn_key.vtn_name);
   std::string vbr_name_req =
       reinterpret_cast<char*>(vlanmap_key.vbr_key.vbridge_name);
 
-  uint vlanid =  vlanmap_val.vlan_id;
+  uint vlanid =  vlanmap_val.vm.vlan_id;
   std::ostringstream convert_vlanid;
   convert_vlanid << vlanid;
   std::string map_id = generate_vlanmap_id(vlanmap_key, convert_vlanid.str(),
                                            logical_port_id);
   if (map_id.empty()) {
     pfc_log_error("Error occured in generating vlan map id");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   std::string vtn_vbr_vlan_update = generate_string_for_vector(vtn_name_req,
                           vbr_name_req, map_id);
   if (vtn_vbr_vlan_update.empty()) {
     pfc_log_error("vtn/vbr/switch id is empty in %s", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   update_vector(ctr_ptr,  vtn_vbr_vlan_update);
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 // Deletes particular entry from vlan-map vector
@@ -833,13 +835,10 @@ OdcVbrVlanMapCommand::generate_vlanid_from_vector(unc::driver::controller *ctr,
 }
 
 // Delete Command for vbr vlan-map
-drv_resp_code_t OdcVbrVlanMapCommand::delete_cmd(key_vlan_map_t&
-                                                 vlanmap_key,
-                                                 val_vlan_map_t&
-                                                 vlanmap_val,
-                                                 unc::driver
-                                                 ::controller*
-                                                 ctr_ptr) {
+UncRespCode OdcVbrVlanMapCommand::delete_cmd(
+    key_vlan_map_t& vlanmap_key,
+    pfcdrv_val_vlan_map_t& vlanmap_val,
+    unc::driver::controller* ctr_ptr) {
   ODC_FUNC_TRACE;
   PFC_ASSERT(ctr_ptr != NULL);
 
@@ -861,7 +860,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::delete_cmd(key_vlan_map_t&
     if (ret_val != ODC_DRV_SUCCESS) {
       pfc_log_error("%s: Validation for logical_port[%s] failed ",
                     PFC_FUNCNAME, logical_portid_req.c_str());
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     std::string switch_id = logical_portid_req;
     pfc_log_debug(" Logical port id received %s", logical_portid_req.c_str());
@@ -877,7 +876,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::delete_cmd(key_vlan_map_t&
                                       vlanmap_key, logical_portid_req);
   if (str_vlan_id.empty()) {
     pfc_log_error("%s: Empty vlan id returned", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   str_mapping_id.append(PERIOD);
   str_mapping_id.append(str_vlan_id);
@@ -890,7 +889,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::delete_cmd(key_vlan_map_t&
 
   if (vbr_vlanmap_url.empty()) {
     pfc_log_error("%s: vlanmap url is empty", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   vbr_vlanmap_url.append(str_mapping_id);
   pfc_log_debug("%s: Vlanmap delete URL :%s", PFC_FUNCNAME,
@@ -902,7 +901,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::delete_cmd(key_vlan_map_t&
        vbr_vlanmap_url, restjson::HTTP_METHOD_DELETE, NULL, conf_file_values_);
   if (NULL == response) {
     pfc_log_error("%s: Error Occured while getting httpresponse", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   int resp_code = response->code;
   pfc_log_debug("%s: Response code from Ctrl for delete vlanmap(%d)",
@@ -910,7 +909,7 @@ drv_resp_code_t OdcVbrVlanMapCommand::delete_cmd(key_vlan_map_t&
   if (HTTP_200_RESP_OK != resp_code) {
     pfc_log_error("%s: Delete of vlanmap Failed.Response Code %d",
                   PFC_FUNCNAME, resp_code);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   std::string vtn_name_req =
       reinterpret_cast<char*>(vlanmap_key.vbr_key.vtn_key.vtn_name);
@@ -921,15 +920,16 @@ drv_resp_code_t OdcVbrVlanMapCommand::delete_cmd(key_vlan_map_t&
                                                vbr_name_req, str_mapping_id);
   if (vtn_vbr_vlan_delete.empty()) {
     pfc_log_error("vtn/vbr/switch id is empty in %s", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   delete_from_vector(ctr_ptr, vtn_vbr_vlan_delete);
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 // Creates request body for vbr vlanmap
 json_object* OdcVbrVlanMapCommand::create_request_body(
-    key_vlan_map_t& vlanmap_key, val_vlan_map_t& vlanmap_val,
+    key_vlan_map_t& vlanmap_key,
+    pfcdrv_val_vlan_map_t& vlanmap_val,
     const std::string &logical_port_id) {
   ODC_FUNC_TRACE;
   unc::restjson::JsonBuildParse json_obj;
@@ -937,13 +937,13 @@ json_object* OdcVbrVlanMapCommand::create_request_body(
   uint32_t ret_val = 1;
   std::string vlanid;
 
-  if (vlanmap_val.vlan_id == 0xFFFF) {
+  if (vlanmap_val.vm.vlan_id == 0xFFFF) {
     pfc_log_debug("%s: Vlan Untagged ", PFC_FUNCNAME);
     vlanid = "0";
   } else {
     pfc_log_debug("%s: Vlan Tagged ", PFC_FUNCNAME);
     std::ostringstream convert_vlanid;
-    convert_vlanid << vlanmap_val.vlan_id;
+    convert_vlanid << vlanmap_val.vm.vlan_id;
     vlanid.append(convert_vlanid.str());
   }
   pfc_log_debug("%s: Vlanid: %s", PFC_FUNCNAME, vlanid.c_str());

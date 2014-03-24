@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -80,7 +80,11 @@ ODBCM_RC_STATUS ODBCManager::ODBCM_Initialize() {
         "Could not allocate connection environment !!");
     return ODBCM_RC_CONNECTION_ERROR;
   }
-
+  PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+  PhysicalCore* physical_core = physical_layer->get_physical_core();
+  conn_max_limit_ = physical_core->uppl_max_ro_db_connections_;
+  pfc_log_debug("conn_max_limit__ (from conf file) = %d",
+                                                conn_max_limit_);
   pfc_log_info("ODBCM::ODBCManager::Initialize: "
       "ODBCM initialized !!!");
   /**set Flag for the status of init*/
@@ -129,7 +133,7 @@ ODBCM_RC_STATUS ODBCManager::CreateOneRow(unc_keytype_datatype_t db_name,
     * query processor and db_varbind objects */
   HSTMT             create_stmt       = NULL;
   SQLHDBC rw_conn_handle = conn_obj->get_conn_handle();
-  ODBCM_STATEMENT_CREATE(rw_conn_handle, create_stmt);
+  ODBCM_STATEMENT_CREATE(rw_conn_handle, create_stmt, odbc_rc);
   QueryFactory      *query_factory    = NULL;
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
   QueryProcessor    *query_processor  = NULL;
@@ -273,11 +277,11 @@ ODBCM_RC_STATUS ODBCManager::CreateOneRow(unc_keytype_datatype_t db_name,
               CREATEONEROW, create_stmt);
     if (status == ODBCM_RC_SUCCESS) {
       /** Commit all active transactions on this connection */
-      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT);
+      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT, status);
       pfc_log_debug("ODBCM::ODBCManager::CreateOneRow:row is created");
     } else {
       /** Rollback all active transactions on this connection */
-      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK);
+      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK, status);
       pfc_log_debug("ODBCM::ODBCManager::CreateOneRow:row is not created");
     }
   } else {
@@ -308,7 +312,8 @@ ODBCM_RC_STATUS ODBCManager::DeleteOneRow(unc_keytype_datatype_t db_name,
                                           DBTableSchema &db_table_schema,
                                           OdbcmConnectionHandler *conn_obj ) {
   PHY_FINI_READ_LOCK();
-  string              delete_query = "";  // receiving the query from queryfactory
+  string              delete_query = "";  // receiving the query
+                                          //  from queryfactory
   SQLRETURN           odbc_rc   = ODBCM_RC_SUCCESS;  // SQL API rc
   ODBCM_RC_STATUS     status    = ODBCM_RC_SUCCESS;  // other method rc
   ODBCMTable          table_id  = UNKNOWN_TABLE;
@@ -328,7 +333,7 @@ ODBCM_RC_STATUS ODBCManager::DeleteOneRow(unc_keytype_datatype_t db_name,
     * query processor and db_varbind objects */
   HSTMT               delete_stmt = NULL;
   SQLHDBC rw_conn_handle = conn_obj->get_conn_handle();
-  ODBCM_STATEMENT_CREATE(rw_conn_handle, delete_stmt);
+  ODBCM_STATEMENT_CREATE(rw_conn_handle, delete_stmt, odbc_rc);
   QueryFactory        *query_factory = NULL;
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
   QueryProcessor      *query_processor = NULL;
@@ -406,7 +411,7 @@ ODBCM_RC_STATUS ODBCManager::DeleteOneRow(unc_keytype_datatype_t db_name,
     return status;
   }
   pfc_log_debug("ODBCM::ODBCManager::DeleteOneRow: "
-      "row_list size : %d ", static_cast<int>(rlist.size()));
+      "row_list size : %" PFC_PFMT_SIZE_T, rlist.size());
   // db_table_schema.PrintDBTableSchema();
   if (rlist.size() > 1) {
     pfc_log_debug("ODBCM::ODBCManager::DeleteOneRow: "
@@ -455,11 +460,11 @@ ODBCM_RC_STATUS ODBCManager::DeleteOneRow(unc_keytype_datatype_t db_name,
     }
     if (status == ODBCM_RC_SUCCESS) {
       /** Commit all active transactions on this connection*/
-      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT);
+      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT, status);
       pfc_log_debug("ODBCM::ODBCManager::DeleteOneRow:row is deleted");
     } else {
       /** Rollback all active transactions on this connection*/
-      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK);
+      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK, status);
       pfc_log_debug("ODBCM::ODBCManager::DeleteOneRow:row is not deleted");
     }
   } else {
@@ -510,7 +515,7 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
   /** Allocation for sql stmt */
   HSTMT           update_stmt = NULL;
   SQLHDBC rw_conn_handle = conn_obj->get_conn_handle();
-  ODBCM_STATEMENT_CREATE(rw_conn_handle, update_stmt);
+  ODBCM_STATEMENT_CREATE(rw_conn_handle, update_stmt, odbc_rc);
   /** Create query_factory, query processor, dbvarbind obj */
   QueryFactory    *query_factory = NULL;
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
@@ -601,8 +606,8 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
     std::vector< TableAttrSchema >::iterator iter_vector;
     uint32_t pkey_size =  primarykeys.size();
     pfc_log_debug("ODBCM::ODBCManager::UpdateOneRow: "
-      "primary keys size %d, rowlist vector size %d",
-      pkey_size, static_cast<int>((*iter).size()));
+      "primary keys size %d, rowlist vector size %" PFC_PFMT_SIZE_T,
+      pkey_size, (*iter).size());
     iter_vector = (*iter).begin();
 
     for (uint32_t loop = 0; loop < (*iter).size(); loop++) {
@@ -620,7 +625,7 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
       return status;
     } else {
       pfc_log_debug("ODBCM::ODBCManager::UpdateOneRow: "
-        "Vector size with pkeys %d", static_cast<int>((*iter).size()));
+        "Vector size with pkeys %" PFC_PFMT_SIZE_T, (*iter).size());
       if ((*iter).size() >= pkey_size) {
         uint32_t index = 0;
         for (iter_vector = (*iter).begin();
@@ -634,7 +639,7 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
         }
         pfc_log_debug("ODBCM::ODBCManager::UpdateOneRow: primary keys"
             " value are removed from attributes_vector to skip from update."
-            " vector size = %d", static_cast<int>((*iter).size()));
+            " vector size = %" PFC_PFMT_SIZE_T, (*iter).size());
       }
     }
   } else {
@@ -643,7 +648,7 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
   iter = rlist.begin();
   if (iter != rlist.end()) {
     pfc_log_debug("ODBCM::ODBCManager::UpdateOneRow: "
-      "rowlist vector size: %d", static_cast<int>((*iter).size()));
+      "rowlist vector size: %" PFC_PFMT_SIZE_T, (*iter).size());
     /** To filling the values into binded structure variables */
     status = (db_varbind->*db_varbind->FillINPUTValues)((*iter));
     if (status != ODBCM_RC_SUCCESS) {
@@ -673,11 +678,11 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
               CREATEONEROW, update_stmt);
     if (status == ODBCM_RC_SUCCESS) {
       /** Commit all active transactions on this connection*/
-      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT);
+      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT, status);
       pfc_log_info("ODBCM::ODBCManager::UpdateOneRow:row is updated");
     } else {
       /** Rollback all active transactions on this connection*/
-      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK);
+      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK, status);
       pfc_log_info("ODBCM::ODBCManager::UpdateOneRow:row is not updated");
     }
   } else {
@@ -708,7 +713,8 @@ ODBCM_RC_STATUS ODBCManager::GetOneRow(
     DBTableSchema &db_table_schema, OdbcmConnectionHandler *conn_obj) {
   PHY_FINI_READ_LOCK();
   /** Initialise the local variables */
-  string            getone_query = "";  /* to receive the query from queryfactory */
+  string            getone_query = "";  // to receive the
+                                    // query from queryfactory
   SQLRETURN         odbc_rc  = ODBCM_RC_SUCCESS;  //  SQL API rc
   ODBCM_RC_STATUS   status   = ODBCM_RC_SUCCESS;  //  Other method rc
   ODBCMTable        table_id = UNKNOWN_TABLE;
@@ -716,7 +722,7 @@ ODBCM_RC_STATUS ODBCManager::GetOneRow(
 
   HSTMT read_stmt = NULL;  /* statement for getonerow */
   SQLHDBC ro_conn_handle = conn_obj->get_conn_handle();
-  ODBCM_STATEMENT_CREATE(ro_conn_handle, read_stmt);
+  ODBCM_STATEMENT_CREATE(ro_conn_handle, read_stmt, odbc_rc);
 
   /** DBTableSchema row_list - get from parameter */
   std::list < std::vector <TableAttrSchema> >& rlist =
@@ -749,6 +755,10 @@ ODBCM_RC_STATUS ODBCManager::GetOneRow(
   /* prepare the sql statement using constructed sql string */
   status = query_processor->PrepareQueryStatement(
             getone_query, read_stmt);
+  if (status == ODBCM_RC_CONNECTION_ERROR) {
+    err_connx_list_.push_back(conn_obj->get_using_session_id());
+  }
+
   if (status !=  ODBCM_RC_SUCCESS) {
     pfc_log_error("ODBCM::ODBCManager::GetOneRow: "
         "Error in preparing query statement: %s"
@@ -823,6 +833,9 @@ ODBCM_RC_STATUS ODBCManager::GetOneRow(
     }
     /** Execute the ReadDBQuery with the above statement */
     status = query_processor->ExecuteReadDBQuery(GETONEROW, read_stmt);
+    if (status == ODBCM_RC_CONNECTION_ERROR) {
+      err_connx_list_.push_back(conn_obj->get_using_session_id());
+    }
     if (status != ODBCM_RC_SUCCESS &&
         status != ODBCM_RC_SUCCESS_WITH_INFO) {
       pfc_log_debug("ODBCM::ODBCManager::GetOneRow: "
@@ -895,7 +908,7 @@ ODBCM_RC_STATUS ODBCManager::ClearOneRow(unc_keytype_datatype_t db_name,
   /** statement for clearonerow */
   HSTMT clearone_stmt = NULL;
   SQLHDBC rw_conn_handle = conn_obj->get_conn_handle();
-  ODBCM_STATEMENT_CREATE(rw_conn_handle, clearone_stmt);
+  ODBCM_STATEMENT_CREATE(rw_conn_handle, clearone_stmt, odbc_rc);
   /** Create query_factory and query processor objects */
   QueryFactory    *query_factory    = NULL;
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
@@ -985,11 +998,11 @@ ODBCM_RC_STATUS ODBCManager::ClearOneRow(unc_keytype_datatype_t db_name,
             CLEARONEROW, clearone_stmt);
     if (status == ODBCM_RC_SUCCESS) {
       /** Commit all active transactions on this connection*/
-      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT);
+      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT, status);
       pfc_log_info("ODBCM::ODBCManager::ClearOneRow:row is cleared");
     } else {
       /** Rollback all active transactions on this connection*/
-      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK);
+      ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK, status);
       pfc_log_info("ODBCM::ODBCManager::ClearOneRow:row is not cleared");
     }
   } else {
@@ -1031,7 +1044,7 @@ ODBCM_RC_STATUS ODBCManager::IsRowExists(
   /** Statement for isrowexists */
   HSTMT           rowexists_stmt   = NULL;
   SQLHDBC ro_conn_handle = conn_obj->get_conn_handle();
-  ODBCM_STATEMENT_CREATE(ro_conn_handle, rowexists_stmt);
+  ODBCM_STATEMENT_CREATE(ro_conn_handle, rowexists_stmt, odbc_rc);
   /** Create query_factory and query processor objects */
   QueryFactory    *query_factory    = NULL;
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
@@ -1056,6 +1069,10 @@ ODBCM_RC_STATUS ODBCManager::IsRowExists(
   /** Prepare the query statement */
   status = query_processor->PrepareQueryStatement(
             query, rowexists_stmt);
+  if (status == ODBCM_RC_CONNECTION_ERROR) {
+    err_connx_list_.push_back(conn_obj->get_using_session_id());
+  }
+
   if (status != ODBCM_RC_SUCCESS) {
     pfc_log_error("ODBCM::ODBCManager::IsRowExists: "
         "Error in preparing query statement");
@@ -1144,6 +1161,9 @@ ODBCM_RC_STATUS ODBCManager::IsRowExists(
    * string from queryfactory */
   status  = query_processor->ExecuteGroupOperationQuery(ISROWEXISTS,
                                                         rowexists_stmt);
+  if (status == ODBCM_RC_CONNECTION_ERROR) {
+    err_connx_list_.push_back(conn_obj->get_using_session_id());
+  }
   if ((status == ODBCM_RC_ROW_EXISTS || status == ODBCM_RC_SUCCESS)
       && db_varbind->p_isrowexists->is_exists == EXISTS &&
       db_varbind->p_isrowexists->cs_row_status != UNKNOWN) {
@@ -1225,7 +1245,7 @@ ODBCM_RC_STATUS ODBCManager::GetBulkRows(
     * was successfully created */
   HSTMT           read_stmt         = NULL;
   SQLHDBC ro_conn_handle = conn_obj->get_conn_handle();
-  ODBCM_STATEMENT_CREATE(ro_conn_handle, read_stmt);
+  ODBCM_STATEMENT_CREATE(ro_conn_handle, read_stmt, odbc_rc);
   /** Create query_factory and query processor objects */
   QueryFactory    *query_factory    = NULL;
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
@@ -1256,6 +1276,10 @@ ODBCM_RC_STATUS ODBCManager::GetBulkRows(
   /* prepare sql statment with constructed query string  */
   status = query_processor->PrepareQueryStatement(
             getbulk_query, read_stmt);
+  if (status == ODBCM_RC_CONNECTION_ERROR) {
+    err_connx_list_.push_back(conn_obj->get_using_session_id());
+  }
+
   if (status !=  ODBCM_RC_SUCCESS) {
     pfc_log_error("ODBCM::ODBCManager::GetBulkRows: "
         "Error in preparing query statement: %s",
@@ -1326,6 +1350,9 @@ ODBCM_RC_STATUS ODBCManager::GetBulkRows(
   }
   /** Execute the ReadDBQuery with the above statement */
   status = query_processor->ExecuteReadDBQuery(GETBULKROWS, read_stmt);
+  if (status == ODBCM_RC_CONNECTION_ERROR) {
+    err_connx_list_.push_back(conn_obj->get_using_session_id());
+  }
   /** Fill the database output in dbtableschema */
   if (status != ODBCM_RC_SUCCESS) {
     pfc_log_debug("ODBCM::ODBCManager::GetBulkRows: "
@@ -1340,6 +1367,10 @@ ODBCM_RC_STATUS ODBCManager::GetBulkRows(
   /**  Fetch the no. of row return in last executed query */
   odbc_rc = SQLRowCount(read_stmt, &row_count);
   ODBCM_PROCESS_HANDLE_CHECK(read_stmt, odbc_rc);
+
+  if (odbc_rc == ODBCM_RC_CONNECTION_ERROR) {
+    err_connx_list_.push_back(conn_obj->get_using_session_id());
+  }
   if (odbc_rc != ODBCM_RC_SUCCESS &&
       odbc_rc != ODBCM_RC_SUCCESS_WITH_INFO) {
     pfc_log_debug("ODBCM::ODBCManager::GetBulkRows: "
@@ -1427,8 +1458,8 @@ ODBCM_RC_STATUS ODBCManager::GetBulkRows(
     }
   }
   db_table_schema.set_row_list(rlist);
-  pfc_log_debug("ODBCM::ODBCManager::GetBulkRows:dbtableschema list size: %d",
-               static_cast<int>(db_table_schema.row_list_.size()));
+  pfc_log_debug("ODBCM::ODBCManager::GetBulkRows:dbtableschema list size: %"
+               PFC_PFMT_SIZE_T, db_table_schema.row_list_.size());
   status = ODBCM_RC_SUCCESS;
   // db_table_schema.PrintDBTableSchema();
   /* Freeing all allocated memory */
@@ -1472,7 +1503,7 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingCount(
   HSTMT stmt = NULL;  // statement for getsiblingcount
   SQLHDBC ro_conn_handle = conn_obj->get_conn_handle();
   /* Do sql allocate for sql stmt */
-  ODBCM_STATEMENT_CREATE(ro_conn_handle, stmt);
+  ODBCM_STATEMENT_CREATE(ro_conn_handle, stmt, odbc_rc);
 
   /** Create query_factory and query processor objects */
   QueryFactory *query_factory = NULL;
@@ -1509,6 +1540,10 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingCount(
   }
   /* Prepare the query statement */
   status = query_processor->PrepareQueryStatement(QUERY, stmt);
+  if (status == ODBCM_RC_CONNECTION_ERROR) {
+    err_connx_list_.push_back(conn_obj->get_using_session_id());
+  }
+
   if (status != ODBCM_RC_SUCCESS) {
     pfc_log_error("ODBCM::ODBCManager::GetSiblingCount: Error in "
         "preparing query statement: %s",
@@ -1622,7 +1657,7 @@ ODBCM_RC_STATUS ODBCManager::GetRowCount(
   count = 0;
   SQLHDBC ro_conn_handle = conn_obj->get_conn_handle();
   /** Do sql allocate for sql stmt */
-  ODBCM_STATEMENT_CREATE(ro_conn_handle, stmt);
+  ODBCM_STATEMENT_CREATE(ro_conn_handle, stmt, odbc_rc);
   /** Create query_factory and query processor objects */
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
   ODBCM_CREATE_OBJECT(query_processor, QueryProcessor);
@@ -1727,7 +1762,7 @@ ODBCM_RC_STATUS ODBCManager::GetModifiedRows(
   HSTMT get_stmt = NULL;
   SQLHDBC ro_conn_handle = conn_obj->get_conn_handle();
   /* Do sql allocate for sql stmt */
-  ODBCM_STATEMENT_CREATE(ro_conn_handle, get_stmt);
+  ODBCM_STATEMENT_CREATE(ro_conn_handle, get_stmt, odbc_rc);
 
   QueryFactory *query_factory = NULL;
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
@@ -1769,6 +1804,10 @@ ODBCM_RC_STATUS ODBCManager::GetModifiedRows(
 
   /* Prepare the query statement */
   status = query_processor->PrepareQueryStatement(QUERY, get_stmt);
+  if (status == ODBCM_RC_CONNECTION_ERROR) {
+    err_connx_list_.push_back(conn_obj->get_using_session_id());
+  }
+
   if (status != ODBCM_RC_SUCCESS) {
     pfc_log_error("ODBCM::ODBCManager::GetModifiedRows: "
       "Error in preparing query statement: %s",
@@ -1808,6 +1847,9 @@ ODBCM_RC_STATUS ODBCManager::GetModifiedRows(
   /** Fetch the no. of row return in last executed query */
   odbc_rc = SQLRowCount(get_stmt, &iRow_count);
   ODBCM_PROCESS_HANDLE_CHECK(get_stmt, odbc_rc);
+  if (odbc_rc == ODBCM_RC_CONNECTION_ERROR) {
+    err_connx_list_.push_back(conn_obj->get_using_session_id());
+  }
   if (odbc_rc != ODBCM_RC_SUCCESS &&
       odbc_rc != ODBCM_RC_SUCCESS_WITH_INFO) {
     pfc_log_debug("ODBCM::ODBCManager::GetModifiedRows: "
@@ -1897,8 +1939,8 @@ ODBCM_RC_STATUS ODBCManager::GetModifiedRows(
 
   db_table_schema.set_row_list(rlist);
   pfc_log_debug("ODBCM::ODBCManager::GetModifiedRows:"
-      "dbtableschema list size: %d",
-      static_cast<int>(db_table_schema.row_list_.size()));
+      "dbtableschema list size: %" PFC_PFMT_SIZE_T,
+      db_table_schema.row_list_.size());
   status = ODBCM_RC_SUCCESS;
   // db_table_schema.PrintDBTableSchema();
   /** Freeing all allocated memory */
@@ -1944,7 +1986,7 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingCount(
   HSTMT stmt = NULL;
   SQLHDBC ro_conn_handle = conn_obj->get_conn_handle();
   /* sql handle allocate for sql stmt */
-  ODBCM_STATEMENT_CREATE(ro_conn_handle, stmt);
+  ODBCM_STATEMENT_CREATE(ro_conn_handle, stmt, odbc_rc);
   /** Create query_factory object */
   QueryFactory *query_factory = NULL;
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
@@ -1982,6 +2024,10 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingCount(
   }
   /** Prepare the query statement */
   status = query_processor->PrepareQueryStatement(QUERY, stmt);
+  if (status == ODBCM_RC_CONNECTION_ERROR) {
+    err_connx_list_.push_back(conn_obj->get_using_session_id());
+  }
+
   if (status != ODBCM_RC_SUCCESS) {
     pfc_log_error("ODBCM::ODBCManager::GetSiblingCount(with filter): "
       "Error in preparing statement: %s",
@@ -2026,6 +2072,9 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingCount(
     }
     status = query_processor->ExecuteReadDBQuery(
               GETSIBLINGCOUNT_FILTER, stmt);
+    if (status == ODBCM_RC_CONNECTION_ERROR) {
+      err_connx_list_.push_back(conn_obj->get_using_session_id());
+    }
     if (status != ODBCM_RC_SUCCESS) {
       pfc_log_debug("ODBCM::ODBCManager::GetSiblingCount(with filter): "
                       "ExecuteReadDBQuery status %s",
@@ -2115,7 +2164,7 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingRows(
   HSTMT get_stmt = NULL;
   SQLHDBC ro_conn_handle = conn_obj->get_conn_handle();
   /* Do sql allocate for sql stmt */
-  ODBCM_STATEMENT_CREATE(ro_conn_handle, get_stmt);
+  ODBCM_STATEMENT_CREATE(ro_conn_handle, get_stmt, odbc_rc);
 
   QueryFactory *query_factory = NULL;
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
@@ -2154,6 +2203,10 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingRows(
 
   /** prepare sql statment with constructed query string  */
   status = query_processor->PrepareQueryStatement(QUERY, get_stmt);
+  if (status == ODBCM_RC_CONNECTION_ERROR) {
+    err_connx_list_.push_back(conn_obj->get_using_session_id());
+  }
+
   if (status !=  ODBCM_RC_SUCCESS) {
     pfc_log_error("ODBCM::ODBCManager::GetSiblingRows: "
         "Error in preparing query statement: %s",
@@ -2225,6 +2278,9 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingRows(
   /** Execute the ReadDBQuery with the above statement */
   status = query_processor->ExecuteReadDBQuery(
                                                GETSIBLINGROWS, get_stmt);
+  if (status == ODBCM_RC_CONNECTION_ERROR) {
+    err_connx_list_.push_back(conn_obj->get_using_session_id());
+  }
   /** Fill the database output in dbtableschema */
   if (status != ODBCM_RC_SUCCESS) {
     pfc_log_error("ODBCM::ODBCManager::GetSiblingRows: "
@@ -2240,6 +2296,9 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingRows(
    * executed query */
   odbc_rc = SQLRowCount(get_stmt, &iRow_count);
   ODBCM_PROCESS_HANDLE_CHECK(get_stmt, odbc_rc);
+  if (odbc_rc == ODBCM_RC_CONNECTION_ERROR) {
+    err_connx_list_.push_back(conn_obj->get_using_session_id());
+  }
   if (odbc_rc != ODBCM_RC_SUCCESS &&
       odbc_rc != ODBCM_RC_SUCCESS_WITH_INFO) {
     pfc_log_debug("ODBCM::ODBCManager::GetSiblingRows: "
@@ -2325,8 +2384,8 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingRows(
 
   db_table_schema.set_row_list(rlist);
   pfc_log_debug("ODBCM::ODBCManager::GetSiblingRows: "
-      "dbtableschema list size:%d",
-      static_cast<int>(db_table_schema.row_list_.size()));
+      "dbtableschema list size:%" PFC_PFMT_SIZE_T,
+      db_table_schema.row_list_.size());
   status = ODBCM_RC_SUCCESS;
   // db_table_schema.PrintDBTableSchema();
   /* Freeing all allocated memory */

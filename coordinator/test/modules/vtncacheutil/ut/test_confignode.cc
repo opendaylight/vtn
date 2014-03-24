@@ -63,7 +63,7 @@ TEST(print, check) {
   KeyTree_obj = NULL;
 }
 
-TEST(add_child_to_list, DRVAPI_RESPONSE_SUCCESS) {
+TEST(add_child_to_list, UNC_RC_SUCCESS) {
   ConfigNode *cfgnode_obj = new ConfigNode;
   uint32_t operation = 1;
   KeyTree *KeyTree_obj;
@@ -84,10 +84,10 @@ TEST(add_child_to_list, DRVAPI_RESPONSE_SUCCESS) {
   cfgnode_obj = NULL;
   cfgptr = NULL;
   KeyTree_obj = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 
-TEST(add_child_to_list, DRVAPI_RESPONSE_FAILURE) {
+TEST(add_child_to_list, UNC_DRV_RC_ERR_GENERIC) {
   ConfigNode *cfgnode_obj = new ConfigNode;
   KeyTree *KeyTree_obj;
   KeyTree_obj = KeyTree::create_cache();
@@ -101,7 +101,7 @@ TEST(add_child_to_list, DRVAPI_RESPONSE_FAILURE) {
   cfgptr = NULL;
   KeyTree_obj = NULL;
   cfgnode_obj = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 
 TEST(get_node_list, check) {
@@ -135,17 +135,17 @@ TEST(get_node_list, check) {
   ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
                        (&key_obj, &val_obj, operation);
   int ret = cfg_obj->add_child_to_list(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, uint32_t>
                         (&key1_obj, &val1_obj, operation);
   ret = cfg_obj->add_child_to_list(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
   ConfigNode *cfgptr2 = new CacheElementUtil<key_vbr_if, pfcdrv_val_vbr_if,
                         uint32_t>(&key2_obj, &val2_obj, operation);
   ret = cfg_obj->add_child_to_list(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
   ret = cfg_obj->get_node_list(value_list);
   delete cfg_obj;
@@ -158,7 +158,7 @@ TEST(get_node_list, check) {
   cfgptr1 = NULL;
   cfgptr = NULL;
   KeyTree_obj = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 TEST(TypeToStrFun, keytype_switch_port) {
   std::string ret = TypeToStrFun(UNC_KT_VBR_VLANMAP);
@@ -179,7 +179,7 @@ TEST(delete_child_node, empty_switch_port) {
                                                   erased_key_list);
   delete KeyTree_obj;
   KeyTree_obj = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 TEST(delete_child_node, switch_port_config_not_present) {
   int operation = 1;
@@ -197,7 +197,7 @@ TEST(delete_child_node, switch_port_config_not_present) {
   ConfigNode *cfgptr = new CacheElementUtil<key_switch, val_switch_st, uint32_t>
                        (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->node_tree_.add_child_to_list(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
   key_port key_obj;
   memcpy(key_obj.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -216,7 +216,7 @@ TEST(delete_child_node, switch_port_config_not_present) {
   delete cfgptr1;
   cfgptr1 = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 TEST(delete_child_node, delete_switch) {
   int operation = 1;
@@ -234,13 +234,13 @@ TEST(delete_child_node, delete_switch) {
   ConfigNode *cfgptr = new CacheElementUtil<key_switch, val_switch_st, uint32_t>
                        (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->node_tree_.add_child_to_list(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
   ret = KeyTree_obj->node_tree_.delete_child_node(cfgptr, erased_key_list);
   delete KeyTree_obj;
   KeyTree_obj = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 TEST(TypeToStrFun, keytype_kt_link) {
   std::string ret = TypeToStrFun(UNC_KT_LINK);

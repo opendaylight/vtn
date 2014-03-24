@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2013 NEC Corporation
+# Copyright (c) 2012-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -84,7 +84,8 @@ CXX_SOURCES	=			\
 	test_hash_util.cc		\
 	test_pseudo_rand.cc		\
 	test_pidfile.cc			\
-	test_time.cc
+	test_time.cc			\
+	test_proc.cc
 
 CXX_SOURCES	+=		\
 	child.cc		\

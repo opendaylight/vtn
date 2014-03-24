@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -48,7 +48,7 @@ public class DhcpRelayServersResource extends AbstractResource {
 	 * 
 	 * @return the vtn name
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
@@ -56,7 +56,7 @@ public class DhcpRelayServersResource extends AbstractResource {
 	 * 
 	 * @return the vrt name
 	 */
-	public String getVrtName() {
+	public final String getVrtName() {
 		return vrtName;
 	}
 
@@ -83,7 +83,8 @@ public class DhcpRelayServersResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start DhcpRelayServersResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -143,7 +144,8 @@ public class DhcpRelayServersResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start DhcpRelayServersResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -165,7 +167,7 @@ public class DhcpRelayServersResource extends AbstractResource {
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			/*
 			 * setInfo(responseGenerator.getDHCPRelayServerResponse(
 			 * requestProcessor.getIpcResponsePacket(), requestBody,
@@ -176,7 +178,7 @@ public class DhcpRelayServersResource extends AbstractResource {
 							requestProcessor.getIpcResponsePacket(),
 							requestBody, VtnServiceJsonConsts.LIST);
 			if (responseJson.get(VtnServiceJsonConsts.SERVERS).isJsonArray()) {
-				JsonArray responseArray = responseJson.get(
+				final JsonArray responseArray = responseJson.get(
 						VtnServiceJsonConsts.SERVERS).getAsJsonArray();
 				responseJson = getResponseJsonArrayLogical(requestBody,
 						requestProcessor, responseGenerator, responseArray,

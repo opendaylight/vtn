@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -87,6 +87,13 @@ class TcLibModule : public pfc::core::Module {
    * @retval     TC_INVALID_CONFIG_id if config id is invalid
    */
   TcApiCommonRet TcLibValidateUpdateMsg(uint32_t sessionid, uint32_t configid);
+
+  /**
+   * @brief       Gives current session_id and config_id to upll,upll,pfcdriver
+   * @param[out]  current session_id
+   * @param[out]  current config_id
+   */
+  void GetSessionAttributes(uint32_t* session_id, uint32_t* config_id);
 
   /**
    * @brief      Read of key types key and value data information from session

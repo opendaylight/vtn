@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -17,51 +17,51 @@
 #define _ODBCM_MGR_HH_
 #include <unc/keytype.h>
 #include <vector>
+#include <list>
 #include <map>
 #include <string>
 #include "odbcm_common.hh"
 #include "odbcm_db_tableschema.hh"
-
-
 namespace unc {
 namespace uppl {
+
+/*
+ * Rollback the specified transaction with ignoring result.
+ */
+#define ODBCM_ROLLBACK_TRANSACTION(conn)                                \
+  do {                                                                  \
+    if ((conn) != NULL) {                                               \
+      SQLRETURN __rc(SQLEndTran(SQL_HANDLE_DBC, (conn), SQL_ROLLBACK)); \
+      ODBCM_DBC_HANDLE_CHECK((conn), __rc);                             \
+    }                                                                   \
+  } while (0)
+
 /**macro for ending the current transaction with rollback or commit state*/
-#define ODBCM_END_TRANSACTION(__conn__, __trans__) \
-  if (NULL != __conn__) {\
-    SQLRETURN transaction_rc = SQLEndTran(SQL_HANDLE_DBC, __conn__, __trans__);\
-    ODBCM_DBC_HANDLE_CHECK(__conn__, transaction_rc); \
+#define ODBCM_END_TRANSACTION(conn, trans, status) \
+  if (NULL != (conn)) {\
+    SQLRETURN transaction_rc = SQLEndTran(SQL_HANDLE_DBC, (conn), (trans));\
+    ODBCM_DBC_HANDLE_CHECK((conn), transaction_rc); \
     if (transaction_rc != ODBCM_RC_SUCCESS &&\
         transaction_rc != ODBCM_RC_SUCCESS_WITH_INFO) \
-      status = ODBCM_RC_TRANSACTION_ERROR; \
+      (status) = ODBCM_RC_TRANSACTION_ERROR; \
   }
 
 /**macro to allocate memory for SQL statement handler*/
-#define ODBCM_STATEMENT_CREATE(__connhandle__, __stmt__) \
-  if (NULL != __connhandle__) { \
-    odbc_rc = SQLAllocHandle(SQL_HANDLE_STMT, __connhandle__, &__stmt__); \
-    ODBCM_STMT_HANDLE_CHECK(__stmt__, __connhandle__, odbc_rc); \
+#define ODBCM_STATEMENT_CREATE(conn_handle, stmt, odbc_rc) \
+  if (NULL != (conn_handle)) { \
+    (odbc_rc) = SQLAllocHandle(SQL_HANDLE_STMT, (conn_handle), &(stmt)); \
+    ODBCM_STMT_HANDLE_CHECK((stmt), (conn_handle), (odbc_rc)); \
 }
 
-/**macro to free the statement handle*/
-#define ODBCM_FREE_STMT(__stmt__) \
-  if (NULL != __stmt__) \
-    odbc_rc = SQLFreeHandle(SQL_HANDLE_STMT, __stmt__); \
-  if (odbc_rc != ODBCM_RC_SUCCESS) \
-    status = ODBCM_RC_MEMORY_ERROR;
-
 /**macro to free the memory allocated object*/
-#define ODBCM_FREE_MEMORY(__object__) \
-  if (NULL != (__object__)) \
-    delete __object__;
-
-/**macro to allocate memory for string object*/
-#define ODBCM_STRING_MEM_ALLOCATE(__str__) \
-  __str__ = new std::string();
+#define ODBCM_FREE_MEMORY(object) \
+  if (NULL != (object)) \
+    delete (object);
 
 /**macro to create object instance from class*/
-#define ODBCM_CREATE_OBJECT(__obj__, __class__) \
-  __obj__ = new __class__();                    \
-  if (__obj__ == NULL) \
+#define ODBCM_CREATE_OBJECT(obj, class) \
+  (obj) = new (class)();                    \
+  if ((obj) == NULL) \
     pfc_log_fatal("ODBCM::ODBCManager:: " \
               "Internal object memory allocation is failed");
 
@@ -69,21 +69,21 @@ namespace uppl {
  * 1. transaction flag setting - READ_COMMITTED
  * 2. transaction flag setting - AUTOCOMMIT OFF
  * */
-#define ODBCM_SET_CONNECTION_ATTRIBUTE(__connhandle__, __odbcrc__) \
-  __odbcrc__ = SQLSetConnectAttr(__connhandle__, SQL_ATTR_TXN_ISOLATION, \
+#define ODBCM_SET_CONNECTION_ATTRIBUTE(conn_handle, odbc_rc) \
+  (odbc_rc) = SQLSetConnectAttr((conn_handle), SQL_ATTR_TXN_ISOLATION, \
       (SQLPOINTER)SQL_TXN_READ_COMMITTED, 0);  \
-  ODBCM_DBC_HANDLE_CHECK(__connhandle__, __odbcrc__); \
-  if (__odbcrc__ != ODBCM_RC_SUCCESS && \
-  __odbcrc__ != ODBCM_RC_SUCCESS_WITH_INFO) { \
+  ODBCM_DBC_HANDLE_CHECK((conn_handle), (odbc_rc)); \
+  if ((odbc_rc) != ODBCM_RC_SUCCESS && \
+  (odbc_rc) != ODBCM_RC_SUCCESS_WITH_INFO) { \
     pfc_log_info("ODBCM::ODBCManager:: " \
                  "Error in SQLSetConnectAttr"); \
     return ODBCM_RC_CONNECTION_ERROR; \
   } \
-  __odbcrc__ = SQLSetConnectAttr(__connhandle__, SQL_ATTR_AUTOCOMMIT, \
+  (odbc_rc) = SQLSetConnectAttr((conn_handle), SQL_ATTR_AUTOCOMMIT, \
       (SQLPOINTER)SQL_AUTOCOMMIT_OFF, SQL_NTS); \
-  ODBCM_DBC_HANDLE_CHECK(__connhandle__, __odbcrc__); \
-  if (__odbcrc__ != ODBCM_RC_SUCCESS && \
-     __odbcrc__ != ODBCM_RC_SUCCESS_WITH_INFO) { \
+  ODBCM_DBC_HANDLE_CHECK((conn_handle), (odbc_rc)); \
+  if ((odbc_rc) != ODBCM_RC_SUCCESS && \
+     (odbc_rc) != ODBCM_RC_SUCCESS_WITH_INFO) { \
     pfc_log_info("ODBCM::ODBCManager:: " \
                "Error in SQLSetConnectAttr"); \
                return ODBCM_RC_CONNECTION_ERROR; \
@@ -125,6 +125,15 @@ class ODBCManager {
     /**close the connection at the end of application, free the allocated
      * handlers and environment */
     ODBCM_RC_STATUS CloseDBConnection(OdbcmConnectionHandler *conn_obj);
+
+    ODBCM_RC_STATUS AssignDBConnection(OdbcmConnectionHandler *&db_conn,
+                             uint32_t session_id, uint32_t config_id = 0);
+    ODBCM_RC_STATUS PoolDBConnection(OdbcmConnectionHandler *&conn_obj,
+                            uint32_t session_id, uint32_t config_id = 0);
+    ODBCM_RC_STATUS FreeingConnections(bool IsAllOrUnused);
+    // Closes the Read Write connections
+    ODBCM_RC_STATUS CloseRwConnection();
+
     /** getter method for db_table_list_map_ private member*/
     std::map<int, std::vector<std::string> >& get_db_table_list_map_();
     /** getter method for odbcm_tables_column_map_ private member*/
@@ -276,8 +285,7 @@ class ODBCManager {
                                    QueryFactory*,
                                    QueryProcessor*);
     std::string GetColumnName(ODBCMTableColumns);
-    // Closes the Read Write connections
-    ODBCM_RC_STATUS CloseRwConnection();
+    std::list<uint32_t> err_connx_list_;
 
   private:
     /**constructor of ODBCManager class
@@ -316,6 +324,9 @@ class ODBCManager {
     // Connection handles to store nb and sb rw connection
     OdbcmConnectionHandler *rw_nb_conn_obj_;
     OdbcmConnectionHandler *rw_sb_conn_obj_;
+    std::map<uint32_t, OdbcmConnectionHandler*> conpool_inuse_map_;
+    std::list<OdbcmConnectionHandler*> conpool_free_list_;
+    uint32_t conn_max_limit_;
 };
 }  // namespace uppl
 }  // namespace unc

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -625,6 +625,57 @@ enum val_policingmap_switch_st_index {
 enum val_policingmap_controller_index {
   UPLL_IDX_SEQ_NUM_PMC = 0    /* sequence_num */
 };
+
+/* valid array enum in val_vtn_dataflow_cmn */
+enum val_vtn_dataflow_cmn_index {
+  UPLL_IDX_CONTROLLER_ID_VVDC = 0,           /* Controller id */
+  UPLL_IDX_CONTROLLER_TYPE_VVDC,             /* Controller type */
+  UPLL_IDX_FLOW_ID_VVDC,                     /* Flow id */
+  UPLL_IDX_CREATED_TIME_VVDC,                /* Created time */
+  UPLL_IDX_IDLE_TIMEOUT_VVDC,                /* Idle timeout */
+  UPLL_IDX_HARD_TIMEOUT_VVDC,                /* Hard timeout */
+  UPLL_IDX_INGRESS_VNODE_VVDC,               /* Ingress vNode */
+  UPLL_IDX_INGRESS_VINTERFACE_VVDC,          /* Ingress vNode interface */
+  UPLL_IDX_INGRESS_SWITCH_ID_VVDC,           /* Ingress switch id */
+  UPLL_IDX_INGRESS_PORT_ID_VVDC,             /* Ingress port id */
+  UPLL_IDX_INGRESS_LOGICAL_PORT_ID_VVDC,     /* Ingress logical port id */
+  UPLL_IDX_INGRESS_DOMAIN_VVDC,              /* Ingress domain */
+  UPLL_IDX_EGRESS_VNODE_VVDC,                /* Egress vNode */
+  UPLL_IDX_EGRESS_VINTERFACE_VVDC,           /* Egress vNode interface */
+  UPLL_IDX_EGRESS_SWITCH_ID_VVDC,            /* Egress switch id */
+  UPLL_IDX_EGRESS_PORT_ID_VVDC,              /* Egress port id */
+  UPLL_IDX_EGRESS_LOGICAL_PORT_ID_VVDC,     /* Ingress logical port id */
+  UPLL_IDX_EGRESS_DOMAIN_VVDC,               /* Egress domain */
+  UPLL_IDX_MATCH_COUNT_VVDC,                 /* Number of match */
+  UPLL_IDX_ACTION_COUNT_VVDC,                /* Number of count */
+  UPLL_IDX_PATH_INFO_COUNT_VVDC              /* Number of path */
+};
+
+/* valid array enum in val_vtn_dataflow_path_info */
+enum val_vtn_dataflow_path_info_index {
+  UPLL_IDX_IN_VNODE_VVDPI = 0, /* In VTN node */
+  UPLL_IDX_IN_VIF_VVDPI,       /* In VTN interface */
+  UPLL_IDX_OUT_VNODE_VVDPI,    /* Out VTN node */
+  UPLL_IDX_OUT_VIF_VVDPI,      /* Out VTN interface */
+  UPLL_IDX_VLINK_FLAG_VVDPI,   /* Vlink flag */
+  UPLL_IDX_STATUS_VVDPI        /* flow status */
+};
+
+enum val_vtn_dataflow_status {
+  UPLL_DATAFLOW_PATH_STATUS_NORMAL_=0,  /* Normal data flow */
+  UPLL_DATAFLOW_PATH_STATUS_DROP        /* Dropped data flow */
+};
+
+enum val_vtn_dataflow_vlink_flag {
+  UPLL_DATAFLOW_PATH_VLINK_NOT_EXISTS_ =0,  /* Vlink Not Exist */
+  UPLL_DATAFLOW_PATH_VLINK_EXISTS        /* Vlink Exist */
+};
+
+enum val_vtn_dataflow_index {
+  UPLL_IDX_REASON_VVD = 0,      /* Reason */
+  UPLL_IDX_CTRLR_DOMAIN_COUNT_VVD   /* Hop count */
+};
+
 
 UNC_C_END_DECL
 

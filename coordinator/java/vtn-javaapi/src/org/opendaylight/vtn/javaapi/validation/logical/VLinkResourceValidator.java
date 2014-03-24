@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -24,21 +24,28 @@ import org.opendaylight.vtn.javaapi.validation.VtnServiceValidator;
  * The Class VLinkResourceValidator validates request Json object for Vlink API.
  */
 public class VLinkResourceValidator extends VtnServiceValidator {
-
+	/**
+	 * logger for debugging.
+	 */
 	private static final Logger LOG = Logger
 			.getLogger(VLinkResourceValidator.class.getName());
-
+	/**
+	 * Abstract resource.
+	 */
 	private final AbstractResource resource;
-	final CommonValidator validator = new CommonValidator();
+	/**
+	 * common validations.
+	 */
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new vlink resource validator.
 	 * 
-	 * @param resource
+	 * @param mappingResource
 	 *            the instance of AbstractResource
 	 */
-	public VLinkResourceValidator(final AbstractResource resource) {
-		this.resource = resource;
+	public VLinkResourceValidator(final AbstractResource mappingResource) {
+		this.resource = mappingResource;
 	}
 
 	/**
@@ -47,7 +54,7 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start VLinkResourceValidator#validateUri()");
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.URI
@@ -87,9 +94,18 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 	/**
 	 * Validate request Json object for get, put and post method of Vlink API.
 	 */
+	/**
+	 * @param method
+	 *            , to get type of method
+	 * @param requestBody
+	 *            , for request
+	 * @throws VtnServiceException
+	 *             , for vtn exception
+	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start VLinkResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of FlowListResourceValidator");
@@ -437,9 +453,7 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 				if (boundary.has(VtnServiceJsonConsts.VLANID)
 						&& boundary.has(VtnServiceJsonConsts.NO_VLAN_ID)) {
 					isValid = false;
-				}
-				// validation for key: boundary_id(optional)
-				else if (boundary.has(VtnServiceJsonConsts.VLANID)) {
+				} else if (boundary.has(VtnServiceJsonConsts.VLANID)) {
 					setInvalidParameter(VtnServiceJsonConsts.VLANID);
 					if (boundary
 							.getAsJsonPrimitive(VtnServiceJsonConsts.VLANID)
@@ -448,19 +462,16 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 									.getAsJsonPrimitive(
 											VtnServiceJsonConsts.VLANID)
 									.getAsString().trim().isEmpty()) {
-						isValid = validator
-								.isValidRange(
-										boundary.getAsJsonPrimitive(
-												VtnServiceJsonConsts.VLANID)
-												.getAsString().trim(),
-										VtnServiceJsonConsts.VAL_1,
-										VtnServiceJsonConsts.VAL_4095);
+						isValid = validator.isValidRange(
+								boundary.getAsJsonPrimitive(
+										VtnServiceJsonConsts.VLANID)
+										.getAsString().trim(),
+								VtnServiceJsonConsts.VAL_1,
+								VtnServiceJsonConsts.VAL_4095);
 					} else {
 						isValid = false;
 					}
-				}
-				// validation for key: no_vlan_id
-				else if (boundary.has(VtnServiceJsonConsts.NO_VLAN_ID)) {
+				} else if (boundary.has(VtnServiceJsonConsts.NO_VLAN_ID)) {
 					setInvalidParameter(VtnServiceJsonConsts.NO_VLAN_ID);
 					if (boundary.getAsJsonPrimitive(
 							VtnServiceJsonConsts.NO_VLAN_ID).getAsString() != null
@@ -476,9 +487,7 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 					} else {
 						isValid = false;
 					}
-				}/* else {
-					isValid = false;
-				}*/
+				}
 				if (isValid) {
 					setInvalidParameter(VtnServiceJsonConsts.BOUNDARYID);
 					if (boundary.has(VtnServiceJsonConsts.BOUNDARYID)
@@ -496,9 +505,7 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 										.getAsString().trim().isEmpty();
 					}
 				}
-			}/* else {
-				isValid = false;
-			}*/
+			}
 		}
 		LOG.trace("Complete VLinkResourceValidator#commonValidation()");
 		return isValid;

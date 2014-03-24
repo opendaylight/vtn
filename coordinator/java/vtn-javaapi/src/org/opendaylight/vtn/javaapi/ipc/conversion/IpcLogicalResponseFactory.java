@@ -1,12 +1,15 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.ipc.conversion;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -14,11 +17,13 @@ import com.google.gson.JsonPrimitive;
 import org.opendaylight.vtn.core.ipc.IpcDataUnit;
 import org.opendaylight.vtn.core.ipc.IpcStruct;
 import org.opendaylight.vtn.core.util.Logger;
+import org.opendaylight.vtn.core.util.UnsignedInteger;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.ipc.enums.PomStatsIndex;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncPhysicalStructIndexEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncStructIndexEnum;
 
 public class IpcLogicalResponseFactory {
@@ -675,7 +680,7 @@ public class IpcLogicalResponseFactory {
 									valVbrMacEntrySt, VtnServiceIpcConsts.TYPE));
 				}
 				/*
-				 * add valid port_name from value structure
+				 * add valid IF_name from value structure
 				 */
 				validBit = valVbrMacEntrySt
 						.getByte(
@@ -687,7 +692,7 @@ public class IpcLogicalResponseFactory {
 						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 					setValueToJsonObject(validBit, macEntries,
-							VtnServiceJsonConsts.PORTNAME,
+							VtnServiceJsonConsts.IFNAME,
 							IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
 									valVbrMacEntrySt,
 									VtnServiceIpcConsts.IFNAME));
@@ -972,6 +977,7 @@ public class IpcLogicalResponseFactory {
 										valFlowFilterEntryStruct,
 										VtnServiceIpcConsts.REDIRECTPORT));
 					}
+
 					validBit = valFlowFilterEntryStruct
 							.getByte(
 									VtnServiceIpcConsts.VALID,
@@ -1604,6 +1610,7 @@ public class IpcLogicalResponseFactory {
 				root.add(rootJsonName, vBypassArray);
 			} else {
 				root.add(rootJsonName, vBypassList);
+
 			}
 		}
 		LOG.debug("response Json: " + root.toString());
@@ -1710,6 +1717,7 @@ public class IpcLogicalResponseFactory {
 					LOG.debug("Operation : normal Skip value struture");
 					index++;
 				}
+
 				if (getType.equals(VtnServiceJsonConsts.SHOW)
 						&& dataType
 								.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
@@ -1874,8 +1882,10 @@ public class IpcLogicalResponseFactory {
 	 * @param responseStruct
 	 * @param pomStatsIndexSet
 	 */
-	public void getPomStats(final JsonObject targetJson,
-			final IpcStruct responseStruct, final PomStatsIndex pomStatsIndexSet) {
+	public void
+			getPomStats(final JsonObject targetJson,
+					final IpcStruct responseStruct,
+					final PomStatsIndex pomStatsIndexSet) {
 		LOG.trace("Start getPomStats");
 		byte validBit;
 		// pom stats starts
@@ -3371,6 +3381,7 @@ public class IpcLogicalResponseFactory {
 										valFlowFilterEntryStruct,
 										VtnServiceIpcConsts.REDIRECTPORT));
 					}
+
 					validBit = valFlowFilterEntryStruct
 							.getByte(
 									VtnServiceIpcConsts.VALID,
@@ -5367,7 +5378,8 @@ public class IpcLogicalResponseFactory {
 	}
 
 	public JsonObject getPortMapResponse(final IpcDataUnit[] responsePacket,
-			final JsonObject requestBody, final String getType, String ifType) {
+			final JsonObject requestBody, final String getType,
+			final String ifType) {
 		LOG.trace("Start getPortMapResponse");
 		final JsonObject root = new JsonObject();
 
@@ -5384,7 +5396,7 @@ public class IpcLogicalResponseFactory {
 		for (int index = 0; index < responsePacket.length; index++) {
 
 			portMap = new JsonObject();
-			byte validBit=0;
+			byte validBit = 0;
 			// There is no use of key type
 			LOG.debug("Skip key type: no use");
 			index++;
@@ -5426,7 +5438,7 @@ public class IpcLogicalResponseFactory {
 						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
 
-					IpcStruct valPortMapStruct = IpcDataUnitWrapper
+					final IpcStruct valPortMapStruct = IpcDataUnitWrapper
 							.getInnerIpcStruct(valIfStruct,
 									VtnServiceJsonConsts.PORTMAP);
 					/*
@@ -5910,6 +5922,7 @@ public class IpcLogicalResponseFactory {
 										valFlowFilterEntryStruct,
 										VtnServiceIpcConsts.REDIRECTPORT));
 					}
+
 					validBit = valFlowFilterEntryStruct
 							.getByte(
 									VtnServiceIpcConsts.VALID,
@@ -6309,7 +6322,7 @@ public class IpcLogicalResponseFactory {
 				final String nextHopAddr = IpcDataUnitWrapper
 						.getIpcStructIpv4Value(keyStaticIpRouteStruct,
 								VtnServiceIpcConsts.NEXT_HOP_ADDR);
-				
+
 				// no use of value structure
 				LOG.debug("no use of value structure");
 				index++;
@@ -6532,7 +6545,7 @@ public class IpcLogicalResponseFactory {
 										valVtepStruct,
 										VtnServiceJsonConsts.DOMAINID));
 					}
-				
+
 					/*
 					 * If data type is set as "state", then value structure will
 					 * also contain the state information
@@ -6590,8 +6603,7 @@ public class IpcLogicalResponseFactory {
 						}
 
 					}
-				}
-					 else {
+				} else {
 					LOG.debug("Operation : normal Skip value struture");
 					index++;
 					if (dataType.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
@@ -6819,7 +6831,7 @@ public class IpcLogicalResponseFactory {
 							VtnServiceIpcConsts.MAP_TYPE))) {
 				setValueToJsonObject(validBit, vtnStation,
 						VtnServiceJsonConsts.MAPTYPE,
-						VtnServiceJsonConsts.OFS_MAP);
+						VtnServiceJsonConsts.PORTMAP);
 			} else if (UncStructIndexEnum.ValVbrIfMapType.UPLL_IF_VLAN_MAP
 					.getValue().equals(
 							IpcDataUnitWrapper.getIpcStructUint8Value(
@@ -6827,7 +6839,7 @@ public class IpcLogicalResponseFactory {
 									VtnServiceIpcConsts.MAP_TYPE))) {
 				setValueToJsonObject(validBit, vtnStation,
 						VtnServiceJsonConsts.MAPTYPE,
-						VtnServiceJsonConsts.VLAN_MAP);
+						VtnServiceJsonConsts.VLANMAP);
 			}
 			LOG.debug("MapType :"
 					+ IpcDataUnitWrapper.getIpcStructUint8Value(
@@ -7544,24 +7556,24 @@ public class IpcLogicalResponseFactory {
 		} else {
 			vtnStationsArray = new JsonArray();
 			LOG.debug("Skip Key Type, Key Structure and Count of VTN-Stations");
-			for (int index = 3; index < responsePacket.length; ) {
+			for (int index = 3; index < responsePacket.length;) {
 
 				vtnStation = new JsonObject();
 				byte validBit;
-								
+
 				final IpcStruct valVtnstationControllerSt = (IpcStruct) responsePacket[index++];
 				createVtnStationConstJson(vtnStation, valVtnstationControllerSt);
-		
-				if (opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
-                                        LOG.debug("op : detail");
-                                        final IpcStruct valVtnstationControllerStat = (IpcStruct) responsePacket[index++];
 
-                                        final JsonObject vtnStationStats = new JsonObject();
-                                        addVtnStationStatsData(vtnStationStats,
-                                                        valVtnstationControllerStat);
-                                        vtnStation.add(VtnServiceJsonConsts.STATISTICS,
-                                                        vtnStationStats);
-                                }
+				if (opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
+					LOG.debug("op : detail");
+					final IpcStruct valVtnstationControllerStat = (IpcStruct) responsePacket[index++];
+
+					final JsonObject vtnStationStats = new JsonObject();
+					addVtnStationStatsData(vtnStationStats,
+							valVtnstationControllerStat);
+					vtnStation.add(VtnServiceJsonConsts.STATISTICS,
+							vtnStationStats);
+				}
 
 				// for ipaddrs parameter
 				validBit = valVtnstationControllerSt
@@ -7583,8 +7595,9 @@ public class IpcLogicalResponseFactory {
 										.getIpcDataUnitValue(responsePacket[index++]));
 						ipaddrsArray.add(ipaddrs);
 					}
-					if(ipaddrsArray.size() > 0){
-						vtnStation.add(VtnServiceJsonConsts.IPADDRS, ipaddrsArray);						
+					if (ipaddrsArray.size() > 0) {
+						vtnStation.add(VtnServiceJsonConsts.IPADDRS,
+								ipaddrsArray);
 					}
 					LOG.debug("count of ipv4 address : " + ipv4_count);
 
@@ -7599,11 +7612,9 @@ public class IpcLogicalResponseFactory {
 						.ordinal()
 						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 								.ordinal()) {
-					final int ipv6_count = Integer
-							.parseInt(IpcDataUnitWrapper
-									.getIpcStructUint32Value(
-											valVtnstationControllerSt,
-											VtnServiceIpcConsts.IPV6_COUNT));
+					final int ipv6_count = Integer.parseInt(IpcDataUnitWrapper
+							.getIpcStructUint32Value(valVtnstationControllerSt,
+									VtnServiceIpcConsts.IPV6_COUNT));
 					final JsonArray ipaddrsArray = new JsonArray();
 					for (int i = 0; i < ipv6_count; i++) {
 						final JsonPrimitive ipaddrs = new JsonPrimitive(
@@ -7611,10 +7622,11 @@ public class IpcLogicalResponseFactory {
 										.getIpcDataUnitValue(responsePacket[index++]));
 						ipaddrsArray.add(ipaddrs);
 					}
-					if(ipaddrsArray.size() > 0){
-						vtnStation.add(VtnServiceJsonConsts.IPV6ADDRS, ipaddrsArray);						
+					if (ipaddrsArray.size() > 0) {
+						vtnStation.add(VtnServiceJsonConsts.IPV6ADDRS,
+								ipaddrsArray);
 					}
-					LOG.debug("count of ip64 address : " + ipv6_count);
+					LOG.debug("count of ipv6 address : " + ipv6_count);
 				}
 
 				// add current json object to array, if it has been initialized
@@ -7863,4 +7875,1715 @@ public class IpcLogicalResponseFactory {
 		LOG.trace("Complete getIpRouteResponse");
 		return root;
 	}
+
+	// U12 Implementaion
+
+	/**
+	 * Used for Vtnmapping Response
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @param getType
+	 * @return JsonObject
+	 */
+	public JsonObject getVtnMappingResponse(final IpcDataUnit[] responsePacket,
+			final JsonObject requestBody, final String getType) {
+
+		LOG.trace("Start getVtnMappingResponse");
+		final JsonObject root = new JsonObject();
+		JsonObject vtnMapping = null;
+		JsonArray vtnMappingArray = null;		
+		JsonArray vtnMappingInfosJsonArray = null;
+
+		LOG.debug("getType: " + getType);
+		String rootJsonName;
+		/*
+		 * get type (show or list) will be required to resolve root json name
+		 * here it will be mapping for show and mappings for list
+		 */
+		if (getType.equals(VtnServiceJsonConsts.SHOW)) {
+			rootJsonName = VtnServiceJsonConsts.MAPPING;
+		} else {
+			rootJsonName = VtnServiceJsonConsts.MAPPINGS;
+			// json array will be required for list type of cases
+			vtnMappingArray = new JsonArray();
+		}
+		LOG.debug("Json Name :" + rootJsonName);
+
+		String opType = VtnServiceJsonConsts.NORMAL;
+		if (requestBody.has(VtnServiceJsonConsts.OP)) {
+			opType = requestBody.get(VtnServiceJsonConsts.OP).getAsString();
+		}
+
+		for (int index = 0; index < responsePacket.length; index++) {
+			vtnMapping = new JsonObject();
+			LOG.debug("initial index :" + index);
+			// ignore key-type
+			index++;
+			/*
+			 * add mandatory informations from key structure
+			 */
+			LOG.debug("domainId index :" + index);
+			final IpcStruct keyVtnControllerStruct = (IpcStruct) responsePacket[index++];
+			final String controllerId = IpcDataUnitWrapper
+					.getIpcStructUint8ArrayValue(keyVtnControllerStruct,
+							VtnServiceIpcConsts.CONTROLLERNAME);
+			final String domainId = IpcDataUnitWrapper
+					.getIpcStructUint8ArrayValue(keyVtnControllerStruct,
+							VtnServiceIpcConsts.DOMAINID);
+
+			vtnMapping.addProperty(VtnServiceJsonConsts.MAPPINGID, controllerId
+					+ VtnServiceJsonConsts.HYPHEN + domainId);
+
+			vtnMapping.addProperty(VtnServiceJsonConsts.CONTROLLERID,
+					controllerId);
+			vtnMapping.addProperty(VtnServiceJsonConsts.DOMAINID, domainId);
+			// get count of value structure
+			LOG.debug("count index :" + index);
+			final int count = Integer.valueOf(IpcDataUnitWrapper
+					.getIpcDataUnitValue(responsePacket[index++]));
+
+			if (opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)
+					|| getType.equalsIgnoreCase(VtnServiceJsonConsts.SHOW)) {
+				vtnMappingInfosJsonArray = new JsonArray();
+
+				for (int valIndex = 0; valIndex < count; valIndex++) {
+					final JsonObject vtnMappingInfojsonObject = new JsonObject();
+					/*
+					 * this part is always required in Show, but not required in
+					 * List + "normal" op type
+					 */
+
+					byte validBit;
+					/*
+					 * add valid informations from value structure
+					 */
+					LOG.debug("valVtnMappingStruct index :" + index);
+					final IpcStruct valVtnMappingStruct = (IpcStruct) responsePacket[index++];
+					validBit = valVtnMappingStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valVtnMappingControllerStIndex.UPLL_IDX_SWITCH_ID_VMCS
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit,
+								vtnMappingInfojsonObject,
+								VtnServiceJsonConsts.SWITCHID,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valVtnMappingStruct,
+										VtnServiceIpcConsts.SWITCHID));
+					}
+					validBit = valVtnMappingStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valVtnMappingControllerStIndex.UPLL_IDX_PORT_NAME_VMCS
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit,
+								vtnMappingInfojsonObject,
+								VtnServiceJsonConsts.PORTNAME,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valVtnMappingStruct,
+										VtnServiceIpcConsts.PORTNAME));
+					}
+
+					validBit = valVtnMappingStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valVtnMappingControllerStIndex.UPLL_IDX_LOGICAL_PORT_ID_VMCS
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit,
+								vtnMappingInfojsonObject,
+								VtnServiceJsonConsts.LOGICAL_PORT_ID,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valVtnMappingStruct,
+										VtnServiceIpcConsts.LOGICAL_PORT_ID));
+					}
+
+					validBit = valVtnMappingStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valVtnMappingControllerStIndex.UPLL_IDX_VLAN_ID_VMCS
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						
+						
+						String vLanIdValue = IpcDataUnitWrapper.getIpcStructUint16Value(
+								valVtnMappingStruct,
+								VtnServiceIpcConsts.VLANID);
+						
+						if (!vLanIdValue.equalsIgnoreCase(VtnServiceJsonConsts.VLAN_ID_65535)){
+							setValueToJsonObject(validBit,
+									vtnMappingInfojsonObject,
+									VtnServiceJsonConsts.VLANID, vLanIdValue);
+						}
+					}
+					validBit = valVtnMappingStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valVtnMappingControllerStIndex.UPLL_IDX_TAGGED_VMCS
+											.ordinal());
+
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						if (IpcDataUnitWrapper
+								.getIpcStructUint8Value(valVtnMappingStruct,
+										VtnServiceIpcConsts.TAGGED)
+								.equals(UncStructIndexEnum.vlan_tagged.UPLL_VLAN_TAGGED
+										.getValue())) {
+							setValueToJsonObject(validBit,
+									vtnMappingInfojsonObject,
+									VtnServiceJsonConsts.TAGGED,
+									VtnServiceJsonConsts.TRUE);
+						} else if (IpcDataUnitWrapper
+								.getIpcStructUint8Value(valVtnMappingStruct,
+										VtnServiceIpcConsts.TAGGED)
+								.equals(UncStructIndexEnum.vlan_tagged.UPLL_VLAN_UNTAGGED
+										.getValue())) {
+							setValueToJsonObject(validBit,
+									vtnMappingInfojsonObject,
+									VtnServiceJsonConsts.TAGGED,
+									VtnServiceJsonConsts.FALSE);
+						}
+						LOG.debug("Tagged :"
+								+ IpcDataUnitWrapper.getIpcStructUint8Value(
+										valVtnMappingStruct,
+										VtnServiceIpcConsts.TAGGED));
+					}
+
+					validBit = valVtnMappingStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valVtnMappingControllerStIndex.UPLL_IDX_MAP_TYPE_VMCS
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+			
+					if (UncStructIndexEnum.ValVbrIfMapType.UPLL_IF_OFS_MAP.getValue()
+								.equals(IpcDataUnitWrapper.getIpcStructUint8Value(
+										valVtnMappingStruct,
+										VtnServiceIpcConsts.MAP_TYPE))) {
+							setValueToJsonObject(validBit, vtnMappingInfojsonObject,
+									VtnServiceJsonConsts.MAPTYPE,
+									VtnServiceJsonConsts.PORTMAP);
+						} else if (UncStructIndexEnum.ValVbrIfMapType.UPLL_IF_VLAN_MAP
+								.getValue().equals(
+										IpcDataUnitWrapper.getIpcStructUint8Value(
+												valVtnMappingStruct,
+												VtnServiceIpcConsts.MAP_TYPE))) {
+							setValueToJsonObject(validBit, vtnMappingInfojsonObject,
+									VtnServiceJsonConsts.MAPTYPE,
+									VtnServiceJsonConsts.VLANMAP);
+						}else {
+							LOG.debug("MapType : invalid");
+						}
+						LOG.debug("MapType :"
+								+ IpcDataUnitWrapper.getIpcStructUint8Value(
+										valVtnMappingStruct,
+										VtnServiceIpcConsts.MAP_TYPE));
+					
+					}
+					validBit = valVtnMappingStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valVtnMappingControllerStIndex.UPLL_IDX_VBR_NAME_VMCS
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit,
+								vtnMappingInfojsonObject,
+								VtnServiceJsonConsts.VBRNAME,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valVtnMappingStruct,
+										VtnServiceIpcConsts.VBRNAME));
+					}
+
+					validBit = valVtnMappingStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valVtnMappingControllerStIndex.UPLL_IDX_VBR_IF_NAME_VMCS
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit,
+								vtnMappingInfojsonObject,
+								VtnServiceJsonConsts.IFNAME,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valVtnMappingStruct,
+										VtnServiceIpcConsts.VBRIFNAME));
+					}
+
+					vtnMappingInfosJsonArray.add(vtnMappingInfojsonObject);
+				}
+				vtnMapping.add(VtnServiceJsonConsts.MAPPINGINFOS,
+						vtnMappingInfosJsonArray);	
+			} else {
+				vtnMapping.remove(VtnServiceJsonConsts.CONTROLLERID);
+				vtnMapping.remove(VtnServiceJsonConsts.DOMAINID);
+				index = index + count;
+			}
+			if (null != vtnMappingArray) {
+				vtnMappingArray.add(vtnMapping);
+			}
+		}
+		/*
+		 * finally add either array or single object to root json object and
+		 * return the same.
+		 */
+		if (null != vtnMappingArray) {
+			LOG.debug("List VTN Mapping JSON :" + vtnMappingArray);
+			root.add(rootJsonName, vtnMappingArray);
+		} else {
+			LOG.debug("Show VTN Mapping JSON :" + vtnMapping);
+			root.add(rootJsonName, vtnMapping);
+		}
+		LOG.debug("response Json: " + root.toString());
+		LOG.trace("Complete getVtnMappingResponse");
+
+		return root;
+	}
+
+	/**
+	 * Used for Show VTN Data Flow response
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @param getType
+	 * @return JsonObject
+	 */
+	public JsonObject getVtnDataFlowResponse(
+			final IpcDataUnit[] responsePacket, final JsonObject requestBody,
+			final String getType) {
+		LOG.trace("Start getVtnDataFlowResponse");
+		final JsonObject root = new JsonObject();
+		final JsonArray vtnDataFlowArray = new JsonArray();
+		if (responsePacket.length != 0) {
+			int index = 2;
+			final int totalFlowCount = Integer.parseInt(IpcDataUnitWrapper
+					.getIpcDataUnitValue(responsePacket[index++]));
+
+			for (int i = 0; i < totalFlowCount; i++) {
+				final IpcStruct valVtnDataFlowStruct = (IpcStruct) responsePacket[index++];
+				LOG.debug("totalFlowCount:" + totalFlowCount);
+				final JsonObject vtnDataflow = new JsonObject();
+				byte validBit = 0;
+				validBit = valVtnDataFlowStruct
+						.getByte(
+								VtnServiceIpcConsts.VALID,
+								UncStructIndexEnum.valVtnDataflowIndex.UPLL_IDX_REASON_VVD
+										.ordinal());
+				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+						.ordinal()
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+								.ordinal()) {
+					{
+						final int reason = Integer.parseInt(IpcDataUnitWrapper
+								.getIpcStructUint32Value(valVtnDataFlowStruct,
+										VtnServiceIpcConsts.REASON));
+						// getting type of reason field a
+						String reasonForJson = VtnServiceConsts.EMPTY_STRING;
+						if (reason == UncStructIndexEnum.UncDataflowReason.UNC_DF_RES_SUCCESS
+								.ordinal()) {
+							reasonForJson = VtnServiceJsonConsts.REASON_SUCCESS;
+						} else if (reason == UncStructIndexEnum.UncDataflowReason.UNC_DF_RES_OPERATION_NOT_SUPPORTED
+								.ordinal()) {
+							reasonForJson = VtnServiceJsonConsts.REASON_NOT_SUPP;
+						} else if (reason == UncStructIndexEnum.UncDataflowReason.UNC_DF_RES_EXCEEDS_FLOW_LIMIT
+								.ordinal()) {
+							reasonForJson = VtnServiceJsonConsts.REASON_EXCD_LIM;
+						} else if (reason == UncStructIndexEnum.UncDataflowReason.UNC_DF_RES_CTRLR_DISCONNECTED
+								.ordinal()) {
+							reasonForJson = VtnServiceJsonConsts.REASON_CTRL_DISC;
+						} else if (reason == UncStructIndexEnum.UncDataflowReason.UNC_DF_RES_EXCEEDS_HOP_LIMIT
+								.ordinal()) {
+							reasonForJson = VtnServiceJsonConsts.REASON_EXCD_HOP;
+						} else if (reason == UncStructIndexEnum.UncDataflowReason.UNC_DF_RES_DST_NOT_REACHED
+								.ordinal()) {
+							reasonForJson = VtnServiceJsonConsts.REASON_DST_NOT_REACHED;
+						} else if (reason == UncStructIndexEnum.UncDataflowReason.UNC_DF_RES_FLOW_NOT_FOUND
+								.ordinal()) {
+							reasonForJson = VtnServiceJsonConsts.REASON_FLOW_NOTFOUND;
+						} else if (reason == UncStructIndexEnum.UncDataflowReason.UNC_DF_RES_SYSTEM_ERROR
+								.ordinal()) {
+							reasonForJson = VtnServiceJsonConsts.REASON_SYS_ERROR;
+						}
+						// assigning reason field in dataflow Json
+						setValueToJsonObject(validBit, vtnDataflow,
+								VtnServiceJsonConsts.REASON, reasonForJson);
+						LOG.debug("reason:" + reasonForJson);
+					}
+				}
+				final JsonArray ctrlDomainDataFlowArray = new JsonArray();
+				validBit = valVtnDataFlowStruct
+						.getByte(
+								VtnServiceIpcConsts.VALID,
+								UncStructIndexEnum.valVtnDataflowIndex.UPLL_IDX_CTRLR_DOMAIN_COUNT_VVD
+										.ordinal());
+				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+						.ordinal()
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+								.ordinal()) {
+					final int controllerDomainCount = Integer
+							.parseInt(IpcDataUnitWrapper
+									.getIpcStructUint32Value(
+											valVtnDataFlowStruct,
+											VtnServiceIpcConsts.CONTROLLER_DOMAIN_COUNT));
+					LOG.debug("Controller Domain Count:"
+							+ controllerDomainCount);
+
+					for (int j = 0; j < controllerDomainCount; j++) {
+						final AtomicInteger atomicIndex = new AtomicInteger(
+								index);
+						ctrlDomainDataFlowArray
+								.add(getControllerDomainDataFlow(
+										responsePacket, atomicIndex,
+										requestBody));
+						index = atomicIndex.get();
+					}
+
+					vtnDataflow.add(
+							VtnServiceJsonConsts.CONTROLLER_DOMAIN_DATAFLOWS,
+							ctrlDomainDataFlowArray);
+					LOG.debug("VTN Data Flow Json:" + vtnDataflow);
+				}
+				vtnDataFlowArray.add(vtnDataflow);
+				LOG.debug("vtn dataFlowArray Json:" + vtnDataFlowArray);
+			}
+		}
+		root.add(VtnServiceJsonConsts.DATAFLOWS, vtnDataFlowArray);
+		LOG.debug("root Json :" + root);
+		LOG.trace("Complete getVtnDataFlowResponse");
+		return root;
+
+	}
+
+	/**
+	 * get ControllerDomainDataFlow method is Used for VtnDataFlow Response
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @param getType
+	 * @return JsonObject
+	 */
+	private JsonObject getControllerDomainDataFlow(
+			final IpcDataUnit[] responsePacket, final AtomicInteger index,
+			final JsonObject requestBody) {
+		LOG.trace("getControllerDomainDataFlow started");
+		byte validBit;
+		final JsonObject controllerDomainFlow = new JsonObject();
+		final IpcStruct valVtnDataFlowCmnStruct = (IpcStruct) responsePacket[index
+				.getAndIncrement()];
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_CONTROLLER_ID_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, controllerDomainFlow,
+					VtnServiceJsonConsts.CONTROLLERID,
+					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+							valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.CONTROLLER_ID));
+		}
+
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_CONTROLLER_TYPE_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			if (IpcDataUnitWrapper
+					.getIpcStructUint8Value(valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.CONTROLER_TYPE)
+					.equals(UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_UNKNOWN
+							.getValue())) {
+				setValueToJsonObject(validBit, controllerDomainFlow,
+						VtnServiceJsonConsts.CONTROLER_TYPE,
+						VtnServiceJsonConsts.BYPASS);
+
+			} else if (IpcDataUnitWrapper
+					.getIpcStructUint8Value(valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.CONTROLER_TYPE).equals(
+							UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_PFC
+									.getValue())) {
+				setValueToJsonObject(validBit, controllerDomainFlow,
+						VtnServiceJsonConsts.CONTROLER_TYPE,
+						VtnServiceJsonConsts.PFC);
+
+			} else if (IpcDataUnitWrapper
+					.getIpcStructUint8Value(valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.CONTROLER_TYPE).equals(
+							UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_VNP
+									.getValue())) {
+				setValueToJsonObject(validBit, controllerDomainFlow,
+						VtnServiceJsonConsts.CONTROLER_TYPE,
+						VtnServiceJsonConsts.VNP);
+
+			} else {
+				LOG.debug("Controller Type invalid");
+			}
+			LOG.debug("Controller Type :"
+					+ IpcDataUnitWrapper.getIpcStructUint8Value(
+							valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.CONTROLER_TYPE));
+		}
+
+		validBit = valVtnDataFlowCmnStruct.getByte(VtnServiceIpcConsts.VALID,
+				UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_FLOW_ID_VVDC
+						.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, controllerDomainFlow,
+					VtnServiceJsonConsts.FLOW_ID,
+					IpcDataUnitWrapper.getIpcStructUint64Value(
+							valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.FLOW_ID));
+		}
+
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_CREATED_TIME_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, controllerDomainFlow,
+					VtnServiceJsonConsts.CREATEDTIME,
+					IpcDataUnitWrapper.getIpcStructUint64Value(
+							valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.CREATED_TIME));
+		}
+
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_IDLE_TIMEOUT_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, controllerDomainFlow,
+					VtnServiceJsonConsts.IDLETIMEOUT,
+					IpcDataUnitWrapper.getIpcStructUint32Value(
+							valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.IDLE_TIMEOUT));
+		}
+
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_HARD_TIMEOUT_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, controllerDomainFlow,
+					VtnServiceJsonConsts.HARDTIMEOUT,
+					IpcDataUnitWrapper.getIpcStructUint32Value(
+							valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.HARD_TIMEOUT));
+		}
+
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_INGRESS_VNODE_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, controllerDomainFlow,
+					VtnServiceJsonConsts.INGRESS_VNODE_NAME,
+					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+							valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.INGRESS_VNODE));
+		}
+
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_INGRESS_VINTERFACE_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, controllerDomainFlow,
+					VtnServiceJsonConsts.INGRESS_IF_NAME,
+					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+							valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.INGRESS_VINTERFACE));
+		}
+
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_INGRESS_SWITCH_ID_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, controllerDomainFlow,
+					VtnServiceJsonConsts.INGRESS_SWITCH_ID,
+					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+							valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.INGRESS_SWITCH_ID));
+		}
+
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_INGRESS_PORT_ID_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, controllerDomainFlow,
+					VtnServiceJsonConsts.INGRESS_PORT_NAME,
+					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+							valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.INGRESS_PORT_ID));
+		}
+
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_INGRESS_LOGICAL_PORT_ID_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, controllerDomainFlow,
+					VtnServiceJsonConsts.INGRESS_LOGICAL_PORT_ID,
+					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+							valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.INGRESS_LOGICAL_PORT_ID));
+		}
+
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_INGRESS_DOMAIN_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, controllerDomainFlow,
+					VtnServiceJsonConsts.INGRESS_DOMAIN_ID,
+					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+							valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.INGRESS_DOMAIN));
+		}
+
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_EGRESS_VNODE_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, controllerDomainFlow,
+					VtnServiceJsonConsts.EGRESS_VNODE_NAME,
+					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+							valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.EGRESS_VNODE));
+		}
+
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_EGRESS_VINTERFACE_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, controllerDomainFlow,
+					VtnServiceJsonConsts.EGRESS_IF_NAME,
+					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+							valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.EGRESS_VINTERFACE));
+		}
+
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_EGRESS_SWITCH_ID_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, controllerDomainFlow,
+					VtnServiceJsonConsts.EGRESS_SWITCH_ID,
+					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+							valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.EGRESS_SWITCH_ID));
+		}
+
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_EGRESS_PORT_ID_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, controllerDomainFlow,
+					VtnServiceJsonConsts.EGRESS_PORT_NAME,
+					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+							valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.EGRESS_PORT_ID));
+		}
+
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_EGRESS_LOGICAL_PORT_ID_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, controllerDomainFlow,
+					VtnServiceJsonConsts.EGRESS_LOGICAL_PORT_ID,
+					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+							valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.EGRESS_LOGICAL_PORT_ID));
+		}
+
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_EGRESS_DOMAIN_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, controllerDomainFlow,
+					VtnServiceJsonConsts.EGRESS_DOMAIN_ID,
+					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+							valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.EGRESS_DOMAIN));
+		}
+
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_MATCH_COUNT_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+
+			controllerDomainFlow.add(
+					VtnServiceJsonConsts.MATCH,
+					getDataFlowMatchInfo(responsePacket, index, validBit,
+							controllerDomainFlow, valVtnDataFlowCmnStruct));
+
+		}
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_ACTION_COUNT_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			controllerDomainFlow.add(
+					VtnServiceJsonConsts.ACTION,
+					getDataFlowActionInfo(responsePacket, index,
+							controllerDomainFlow, valVtnDataFlowCmnStruct));
+			LOG.debug(" Controller domain data flow Json :"
+					+ controllerDomainFlow);
+		}
+
+		validBit = valVtnDataFlowCmnStruct
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.valVtnDataflowCmnIndex.UPLL_IDX_PATH_INFO_COUNT_VVDC
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+
+			controllerDomainFlow.add(
+					VtnServiceJsonConsts.PATHINFOS,
+					getDataFlowPathInfo(responsePacket, index,
+							valVtnDataFlowCmnStruct));
+			LOG.debug(" Controller domain data flow Json :"
+					+ controllerDomainFlow);
+		}
+		LOG.trace("getControllerDomainDataFlow completed");
+		return controllerDomainFlow;
+	}
+
+	/**
+	 * This method is Used to generate Flow path info Json
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @param getType
+	 * @return JsonObject
+	 */
+	private JsonArray getDataFlowPathInfo(final IpcDataUnit[] responsePacket,
+			final AtomicInteger index, final IpcStruct valVtnDataFlowCmnStruct) {
+		LOG.trace("getDataFlowPathInfo stated");
+		final JsonArray pathInfoArray = new JsonArray();
+		final int pathInfoCount = Integer.parseInt(IpcDataUnitWrapper
+				.getIpcStructUint32Value(valVtnDataFlowCmnStruct,
+						VtnServiceIpcConsts.PATH_INFO_COUNT));
+		LOG.debug("path_info_count:" + pathInfoCount);
+		for (int k = 0; k < pathInfoCount; k++) {
+			final JsonObject pathInfoBoundry = new JsonObject();
+			byte validBit;
+			final IpcStruct valVtnDataFlowPathInfo = (IpcStruct) responsePacket[index
+					.getAndIncrement()];
+			validBit = valVtnDataFlowPathInfo
+					.getByte(
+							VtnServiceIpcConsts.VALID,
+							UncStructIndexEnum.valVtnDataflowPathInfo.UPLL_IDX_IN_VNODE_VVDPI
+									.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+					.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				setValueToJsonObject(validBit, pathInfoBoundry,
+						VtnServiceJsonConsts.IN_VNODE_NAME,
+						IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+								valVtnDataFlowPathInfo,
+								VtnServiceIpcConsts.IN_VNODE));
+
+			}
+
+			validBit = valVtnDataFlowPathInfo
+					.getByte(
+							VtnServiceIpcConsts.VALID,
+							UncStructIndexEnum.valVtnDataflowPathInfo.UPLL_IDX_IN_VIF_VVDPI
+									.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+					.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				setValueToJsonObject(validBit, pathInfoBoundry,
+						VtnServiceJsonConsts.IN_IF_NAME,
+						IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+								valVtnDataFlowPathInfo,
+								VtnServiceIpcConsts.IN_VIF));
+
+			}
+
+			validBit = valVtnDataFlowPathInfo
+					.getByte(
+							VtnServiceIpcConsts.VALID,
+							UncStructIndexEnum.valVtnDataflowPathInfo.UPLL_IDX_OUT_VNODE_VVDPI
+									.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+					.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				setValueToJsonObject(validBit, pathInfoBoundry,
+						VtnServiceJsonConsts.OUT_VNODE_NAME,
+						IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+								valVtnDataFlowPathInfo,
+								VtnServiceIpcConsts.OUT_VNODE));
+
+			}
+
+			validBit = valVtnDataFlowPathInfo
+					.getByte(
+							VtnServiceIpcConsts.VALID,
+							UncStructIndexEnum.valVtnDataflowPathInfo.UPLL_IDX_OUT_VIF_VVDPI
+									.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+					.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				setValueToJsonObject(validBit, pathInfoBoundry,
+						VtnServiceJsonConsts.OUT_IF_NAME,
+						IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+								valVtnDataFlowPathInfo,
+								VtnServiceIpcConsts.OUT_VIF));
+
+			}
+
+			validBit = valVtnDataFlowPathInfo
+					.getByte(
+							VtnServiceIpcConsts.VALID,
+							UncStructIndexEnum.valVtnDataflowPathInfo.UPLL_IDX_VLINK_FLAG_VVDPI
+									.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+					.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+
+				final int linkValue = Integer.parseInt(IpcDataUnitWrapper
+						.getIpcStructUint8Value(valVtnDataFlowPathInfo,
+								VtnServiceIpcConsts.VLINK_FLAG));
+				String link = VtnServiceConsts.EMPTY_STRING;
+				if (linkValue == UncStructIndexEnum.valVtnDataflowPathInfoVlinkType.UPLL_DATAFLOW_PATH_VLINK_NOT_EXISTS
+						.ordinal()) {
+					link = VtnServiceJsonConsts.NOT_EXISTS;
+				} else if (linkValue == UncStructIndexEnum.valVtnDataflowPathInfoVlinkType.UPLL_DATAFLOW_PATH_VLINK_EXISTS
+						.ordinal()) {
+					link = VtnServiceJsonConsts.EXISTS;
+				}
+				setValueToJsonObject(validBit, pathInfoBoundry,
+						VtnServiceJsonConsts.VLINK_FLAG, link);
+			}
+			validBit = valVtnDataFlowPathInfo
+					.getByte(
+							VtnServiceIpcConsts.VALID,
+							UncStructIndexEnum.valVtnDataflowPathInfo.UPLL_IDX_STATUS_VVDPI
+									.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+					.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+
+				final int statusValue = Integer.parseInt(IpcDataUnitWrapper
+						.getIpcStructUint8Value(valVtnDataFlowPathInfo,
+								VtnServiceIpcConsts.STATUS));
+				String status = VtnServiceConsts.EMPTY_STRING;
+				if (statusValue == UncStructIndexEnum.valVtnDataflowPathInfoStatusType.UPLL_DATAFLOW_PATH_STATUS_NORMAL
+						.ordinal()) {
+					status = VtnServiceJsonConsts.NORMAL;
+				} else if (statusValue == UncStructIndexEnum.valVtnDataflowPathInfoStatusType.UPLL_DATAFLOW_PATH_STATUS_DROP
+						.ordinal()) {
+					status = VtnServiceJsonConsts.DROP;
+				}
+				setValueToJsonObject(validBit, pathInfoBoundry,
+						VtnServiceJsonConsts.STATUS, status);
+
+			}
+			pathInfoArray.add(pathInfoBoundry);
+
+		}
+		LOG.debug("pathInfoArray Json:" + pathInfoArray);
+		LOG.trace("getDataFlowPathInfo completed");
+		return pathInfoArray;
+	}
+
+	/**
+	 * This method is Used to generate Match Flow info Json
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @param getType
+	 * @return JsonObject
+	 */
+	private JsonObject getDataFlowMatchInfo(final IpcDataUnit[] responsePacket,
+			final AtomicInteger index, final byte validBit,
+			final JsonObject controlerFlow,
+			final IpcStruct valDfDataFlowCmnStruct) {
+		LOG.trace("getDataFlowMatchInfo started");
+		final int matchCount = Integer.parseInt(IpcDataUnitWrapper
+				.getIpcStructUint32Value(valDfDataFlowCmnStruct,
+						VtnServiceIpcConsts.MATCH_COUNT));
+		LOG.debug("MATCH_COUNT:" + matchCount);
+		// match JsonObject will hold all below jsonObject as per requiremnts
+		final JsonObject match = new JsonObject();
+
+		JsonArray inportJsonArray = null;
+		JsonArray srcMacJsonArray = null;
+		JsonArray dstMacJsonArray = null;
+		JsonArray srcMaskJsonArray = null;
+		JsonArray dstMaskJsonArray = null;
+		JsonArray macEtherTypeJsonArray = null;
+		JsonArray vlanIdJsonArray = null;
+		JsonArray vlanPriorityJsonArray = null;
+		JsonArray ipTosJsonArray = null;
+		JsonArray ipProtoJsonArray = null;
+		JsonArray ipDstAddrJsonArray = null;
+		JsonArray ipDstAddrMaskJsonArray = null;
+		JsonArray ipSrcAddrJsonArray = null;
+		JsonArray ipSrcAddrMaskJsonArray = null;
+		JsonArray l4DstPortIcmpTypeJsonArray = null;
+		JsonArray l4DstPortIcmpTypeMaskJsonArray = null;
+		JsonArray l4SrcPortIcmpTypeJsonArray = null;
+		JsonArray l4SrcPortIcmpTypeMaskJsonArray = null;
+		JsonArray ipV6DstAddJsonArray = null;
+		JsonArray ipV6DstAddrMaskJsonArray = null;
+		JsonArray ipV6SrcAddrJsonArray = null;
+		JsonArray ipV6SrcAddrMaskJsonArray = null;
+		JsonPrimitive element = null;
+		for (int i = 0; i < matchCount; i++) {
+			final IpcStruct valDfFlowMatchStruct = (IpcStruct) responsePacket[index
+					.getAndIncrement()];
+
+			final int matchtype = Integer.parseInt(IpcDataUnitWrapper
+					.getIpcStructUint32Value(valDfFlowMatchStruct,
+							VtnServiceIpcConsts.MATCH_TYPE));
+			LOG.debug("MATCH TYPE:" + matchtype);
+			// match type will help in resolving response in match info
+			if (matchtype == UncStructIndexEnum.UncDataflowFlowMatchType.UNC_MATCH_IN_PORT
+					.ordinal()) {
+				final IpcStruct valDfFlowMatchInPort = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+				// set inport
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructUint32Value(valDfFlowMatchInPort,
+								VtnServiceIpcConsts.IN_PORT).toString());
+
+				if (null == inportJsonArray) {
+					inportJsonArray = new JsonArray();
+				}
+				inportJsonArray.add(element);
+				LOG.debug("set validBit for in_port :" + validBit);
+
+			} else if (matchtype == UncStructIndexEnum.UncDataflowFlowMatchType.UNC_MATCH_DL_DST
+					.ordinal()) {
+				final IpcStruct valDfFlowMatchDlAddr = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+				element = new JsonPrimitive(IpcDataUnitWrapper.getMacAddress(
+						valDfFlowMatchDlAddr, VtnServiceIpcConsts.DL_ADDR));
+				if (null == dstMacJsonArray) {
+					dstMacJsonArray = new JsonArray();
+				}
+				dstMacJsonArray.add(element);
+				LOG.debug("set validbit for macdst :" + validBit);
+
+				final String s = IpcDataUnitWrapper.getIpcStructUint8Value(
+						valDfFlowMatchDlAddr, VtnServiceIpcConsts.V_MASK);
+
+				if (Integer.parseInt(s) == UncStructIndexEnum.Valid.UNC_VF_VALID
+						.ordinal()) {
+					element = new JsonPrimitive(IpcDataUnitWrapper
+							.getMacAddress(valDfFlowMatchDlAddr,
+									VtnServiceIpcConsts.DL_ADDR_MASK)
+							.toString());
+					if (null == dstMaskJsonArray) {
+						dstMaskJsonArray = new JsonArray();
+					}
+					dstMaskJsonArray.add(element);
+					LOG.debug("set validbit for macdst :" + validBit);
+				}
+			} else if (matchtype == UncStructIndexEnum.UncDataflowFlowMatchType.UNC_MATCH_DL_SRC
+					.ordinal()) {
+				final IpcStruct valDfFlowMatchDlAddr = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+				element = new JsonPrimitive(IpcDataUnitWrapper.getMacAddress(
+						valDfFlowMatchDlAddr, VtnServiceIpcConsts.DL_ADDR)
+						.toString());
+				if (null == srcMacJsonArray) {
+					srcMacJsonArray = new JsonArray();
+				}
+				srcMacJsonArray.add(element);
+				LOG.debug("set validbit for macsrc  :" + validBit);
+
+				final String s = IpcDataUnitWrapper.getIpcStructUint8Value(
+						valDfFlowMatchDlAddr, VtnServiceIpcConsts.V_MASK);
+
+				if (Integer.parseInt(s) == UncStructIndexEnum.Valid.UNC_VF_VALID
+						.ordinal()) {
+					element = new JsonPrimitive(IpcDataUnitWrapper
+							.getMacAddress(valDfFlowMatchDlAddr,
+									VtnServiceIpcConsts.DL_ADDR_MASK)
+							.toString());
+					if (null == srcMaskJsonArray) {
+						srcMaskJsonArray = new JsonArray();
+					}
+					srcMaskJsonArray.add(element);
+					LOG.debug("set validbit for macdst  :" + validBit);
+				}
+			} else if (matchtype == UncStructIndexEnum.UncDataflowFlowMatchType.UNC_MATCH_DL_TYPE
+					.ordinal()) {
+				final IpcStruct valDfFlowMatchDlType = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+				element= new JsonPrimitive(IpcDataUnitWrapper.getIpcStructUint16HexaValue(
+						valDfFlowMatchDlType, VtnServiceIpcConsts.DL_TYPE)
+						.toString());
+				if (null == macEtherTypeJsonArray) {
+					macEtherTypeJsonArray = new JsonArray();
+				}
+				macEtherTypeJsonArray.add(element);
+				LOG.debug("set validbit for etherntype :" + validBit);
+
+			} else if (matchtype == UncStructIndexEnum.UncDataflowFlowMatchType.UNC_MATCH_VLAN_ID
+					.ordinal()) {
+				final IpcStruct valDfFlowMatchVlanVid = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructUint16Value(valDfFlowMatchVlanVid,
+								VtnServiceIpcConsts.VLAN_ID).toString());
+				if (null == vlanIdJsonArray) {
+					vlanIdJsonArray = new JsonArray();
+				}
+				if(element.getAsString().equals(VtnServiceJsonConsts.VLAN_ID_65535)){
+					element = new JsonPrimitive(VtnServiceJsonConsts.EMPTY);
+					vlanIdJsonArray.add(element);
+				}else{
+					vlanIdJsonArray.add(element);
+				}
+				
+
+				LOG.debug("set validbit for vlan_id  :" + validBit);
+
+			} else if (matchtype == UncStructIndexEnum.UncDataflowFlowMatchType.UNC_MATCH_VLAN_PCP
+					.ordinal()) {
+				final IpcStruct valDfFlowMatchVlanpcp = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructUint8Value(valDfFlowMatchVlanpcp,
+								VtnServiceIpcConsts.VLAN_PCP).toString());
+				if (null == vlanPriorityJsonArray) {
+					vlanPriorityJsonArray = new JsonArray();
+				}
+				vlanPriorityJsonArray.add(element);
+				LOG.debug("set validbit for vlanpriority  :" + validBit);
+
+			} else if (matchtype == UncStructIndexEnum.UncDataflowFlowMatchType.UNC_MATCH_IP_TOS
+					.ordinal()) {
+
+				final IpcStruct valDfFlowMatchIpTos = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+			    final String hexString =
+                        UnsignedInteger.toHexString(Long
+                                .valueOf(IpcDataUnitWrapper
+                                        .getIpcStructUint8Value(
+                                                valDfFlowMatchIpTos,
+                                                VtnServiceIpcConsts.IP_TOS)));
+                element = new JsonPrimitive("0x" + hexString);
+				if (null == ipTosJsonArray) {
+					ipTosJsonArray = new JsonArray();
+				}
+				ipTosJsonArray.add(element);
+				LOG.debug("set validbit for iptos :" + validBit);
+
+			} else if (matchtype == UncStructIndexEnum.UncDataflowFlowMatchType.UNC_MATCH_IP_PROTO
+					.ordinal()) {
+
+				final IpcStruct valDfFlowMatchIpProto = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructUint8Value(valDfFlowMatchIpProto,
+								VtnServiceIpcConsts.IP_PROTO).toString());
+				if (null == ipProtoJsonArray) {
+					ipProtoJsonArray = new JsonArray();
+				}
+				ipProtoJsonArray.add(element);
+				LOG.debug("set validbit for  ipproto :" + validBit);
+
+			} else if (matchtype == UncStructIndexEnum.UncDataflowFlowMatchType.UNC_MATCH_IPV4_SRC
+					.ordinal()) {
+				final IpcStruct valDfFlowMatchIpv4Addr = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructIpv4Value(valDfFlowMatchIpv4Addr,
+								VtnServiceIpcConsts.IPV4_ADDR).toString());
+				if (null == ipSrcAddrJsonArray) {
+					ipSrcAddrJsonArray = new JsonArray();
+				}
+				ipSrcAddrJsonArray.add(element);
+				LOG.debug("set validbit for ipsrc :" + validBit);
+
+				final String s = IpcDataUnitWrapper.getIpcStructUint8Value(
+						valDfFlowMatchIpv4Addr, VtnServiceIpcConsts.V_MASK);
+				if (Integer.parseInt(s) == UncStructIndexEnum.Valid.UNC_VF_VALID
+						.ordinal()) {
+					element = new JsonPrimitive(IpcDataUnitWrapper
+							.getIpcStructIpv4Value(valDfFlowMatchIpv4Addr,
+									VtnServiceIpcConsts.IPV4_ADDR_MASK)
+							.toString());
+					if (null == ipSrcAddrMaskJsonArray) {
+						ipSrcAddrMaskJsonArray = new JsonArray();
+
+					}
+					ipSrcAddrMaskJsonArray.add(element);
+					LOG.debug("set validBit for ipv4_mask:" + validBit);
+				}
+			} else if (matchtype == UncStructIndexEnum.UncDataflowFlowMatchType.UNC_MATCH_IPV4_DST
+					.ordinal()) {
+				final IpcStruct valDfFlowMatchIpv4Addr = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructIpv4Value(valDfFlowMatchIpv4Addr,
+								VtnServiceIpcConsts.IPV4_ADDR).toString());
+				if (null == ipDstAddrJsonArray) {
+					ipDstAddrJsonArray = new JsonArray();
+				}
+				ipDstAddrJsonArray.add(element);
+				LOG.debug("set validbit for ipdst  :" + validBit);
+
+				final String s = IpcDataUnitWrapper.getIpcStructUint8Value(
+						valDfFlowMatchIpv4Addr, VtnServiceIpcConsts.V_MASK);
+				if (Integer.parseInt(s) == UncStructIndexEnum.Valid.UNC_VF_VALID
+						.ordinal()) {
+					element = new JsonPrimitive(IpcDataUnitWrapper
+							.getIpcStructIpv4Value(valDfFlowMatchIpv4Addr,
+									VtnServiceIpcConsts.IPV4_ADDR_MASK)
+							.toString());
+					if (null == ipDstAddrMaskJsonArray) {
+						ipDstAddrMaskJsonArray = new JsonArray();
+					}
+					ipDstAddrMaskJsonArray.add(element);
+					LOG.debug("set validbit for ipv4_mask:" + validBit);
+				}
+			} else if (matchtype == UncStructIndexEnum.UncDataflowFlowMatchType.UNC_MATCH_IPV6_SRC
+					.ordinal()) {
+
+				final IpcStruct valdfflowmatchIpv6Addr = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructIpv6Value(valdfflowmatchIpv6Addr,
+								VtnServiceIpcConsts.IPV6_ADDR).toString());
+				if (null == ipV6SrcAddrJsonArray) {
+					ipV6SrcAddrJsonArray = new JsonArray();
+				}
+				ipV6SrcAddrJsonArray.add(element);
+				LOG.debug("set validbit for ipv6src  :" + validBit);
+
+				final String s = IpcDataUnitWrapper.getIpcStructUint8Value(
+						valdfflowmatchIpv6Addr, VtnServiceIpcConsts.V_MASK);
+
+				if (Integer.parseInt(s) == UncStructIndexEnum.Valid.UNC_VF_VALID
+						.ordinal()) {
+					element = new JsonPrimitive(IpcDataUnitWrapper
+							.getIpcStructIpv6Value(valdfflowmatchIpv6Addr,
+									VtnServiceIpcConsts.IPV6_ADDR_MASK)
+							.toString());
+					if (null == ipV6SrcAddrMaskJsonArray) {
+						ipV6SrcAddrMaskJsonArray = new JsonArray();
+					}
+					ipV6SrcAddrMaskJsonArray.add(element);
+					LOG.debug("set validbit for ipv6_mask:" + validBit);
+				}
+			} else if (matchtype == UncStructIndexEnum.UncDataflowFlowMatchType.UNC_MATCH_IPV6_DST
+					.ordinal()) {
+
+				final IpcStruct valdfflowmatchIpv6Addr = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructIpv6Value(valdfflowmatchIpv6Addr,
+								VtnServiceIpcConsts.IPV6_ADDR).toString());
+				if (null == ipV6DstAddJsonArray) {
+					ipV6DstAddJsonArray = new JsonArray();
+				}
+				ipV6DstAddJsonArray.add(element);
+				LOG.debug("set validbit for ipv6dst  :" + validBit);
+
+				final String s = IpcDataUnitWrapper.getIpcStructUint8Value(
+						valdfflowmatchIpv6Addr, VtnServiceIpcConsts.V_MASK);
+
+				if (Integer.parseInt(s) == UncStructIndexEnum.Valid.UNC_VF_VALID
+						.ordinal()) {
+					element = new JsonPrimitive(IpcDataUnitWrapper
+							.getIpcStructIpv6Value(valdfflowmatchIpv6Addr,
+									VtnServiceIpcConsts.IPV6_ADDR_MASK)
+							.toString());
+					if (null == ipV6DstAddrMaskJsonArray) {
+						ipV6DstAddrMaskJsonArray = new JsonArray();
+					}
+					ipV6DstAddrMaskJsonArray.add(element);
+					LOG.debug("set validbit for ipv6_mask:" + validBit);
+				}
+			} else if (matchtype == UncStructIndexEnum.UncDataflowFlowMatchType.UNC_MATCH_TP_SRC
+					.ordinal()) {
+
+				final IpcStruct valDfFlowMatchTpPort = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructUint16Value(valDfFlowMatchTpPort,
+								VtnServiceIpcConsts.TP_PORT).toString());
+				if (null == l4SrcPortIcmpTypeJsonArray) {
+					l4SrcPortIcmpTypeJsonArray = new JsonArray();
+				}
+				l4SrcPortIcmpTypeJsonArray.add(element);
+
+				LOG.debug("set validbit for tpsrc :" + validBit);
+
+				final String s = IpcDataUnitWrapper.getIpcStructUint8Value(
+						valDfFlowMatchTpPort, VtnServiceIpcConsts.V_MASK);
+
+				if (Integer.parseInt(s) == UncStructIndexEnum.Valid.UNC_VF_VALID
+						.ordinal()) {
+
+					element = new JsonPrimitive(IpcDataUnitWrapper
+							.getIpcStructUint16Value(valDfFlowMatchTpPort,
+									VtnServiceIpcConsts.TP_PORT_MASK)
+							.toString());
+					if (null == l4SrcPortIcmpTypeMaskJsonArray) {
+						l4SrcPortIcmpTypeMaskJsonArray = new JsonArray();
+					}
+					l4SrcPortIcmpTypeMaskJsonArray.add(element);
+					LOG.debug("set validbit for tpsrcmask :" + validBit);
+				}
+			} else if (matchtype == UncStructIndexEnum.UncDataflowFlowMatchType.UNC_MATCH_TP_DST
+					.ordinal()) {
+
+				final IpcStruct valDfFlowMatchTpPort = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructUint16Value(valDfFlowMatchTpPort,
+								VtnServiceIpcConsts.TP_PORT).toString());
+				if (null == l4DstPortIcmpTypeJsonArray) {
+					l4DstPortIcmpTypeJsonArray = new JsonArray();
+				}
+				l4DstPortIcmpTypeJsonArray.add(element);
+				LOG.debug("set validbit for tpdst  :" + validBit);
+
+				final String s = IpcDataUnitWrapper.getIpcStructUint8Value(
+						valDfFlowMatchTpPort, VtnServiceIpcConsts.V_MASK);
+
+				if (Integer.parseInt(s) == UncStructIndexEnum.Valid.UNC_VF_VALID
+						.ordinal()) {
+					element = new JsonPrimitive(IpcDataUnitWrapper
+							.getIpcStructUint16Value(valDfFlowMatchTpPort,
+									VtnServiceIpcConsts.TP_PORT_MASK)
+							.toString());
+
+					if (null == l4DstPortIcmpTypeMaskJsonArray) {
+						l4DstPortIcmpTypeMaskJsonArray = new JsonArray();
+					}
+					l4DstPortIcmpTypeMaskJsonArray.add(element);
+				}
+			} else {
+				LOG.debug("Type : invalid");
+			}
+
+		}
+		if (null != inportJsonArray) {
+			match.add(VtnServiceJsonConsts.INPORT, inportJsonArray);
+		}
+		if (null != dstMacJsonArray) {
+			match.add(VtnServiceJsonConsts.MACDSTADDR, dstMacJsonArray);
+		}
+		if (dstMaskJsonArray != null) {
+			match.add(VtnServiceJsonConsts.MACDSTADDR_MASK, dstMaskJsonArray);
+		}
+		if (srcMacJsonArray != null) {
+			match.add(VtnServiceJsonConsts.MACSRCADDR, srcMacJsonArray);
+		}
+		if (srcMaskJsonArray != null) {
+			match.add(VtnServiceJsonConsts.MACSRCADDR_MASK, srcMaskJsonArray);
+		}
+		if (macEtherTypeJsonArray != null) {
+			match.add(VtnServiceJsonConsts.MACETHERTYPE, macEtherTypeJsonArray);
+		}
+		if (vlanIdJsonArray != null) {
+			match.add(VtnServiceJsonConsts.VLAN_ID, vlanIdJsonArray);
+		}
+		if (vlanPriorityJsonArray != null) {
+			match.add(VtnServiceJsonConsts.VLAN_PRIORITY, vlanPriorityJsonArray);
+		}
+		if (ipTosJsonArray != null) {
+			match.add(VtnServiceJsonConsts.IPTOS, ipTosJsonArray);
+		}
+		if (ipProtoJsonArray != null) {
+			match.add(VtnServiceJsonConsts.IPPROTO, ipProtoJsonArray);
+		}
+		if (ipSrcAddrJsonArray != null) {
+			match.add(VtnServiceJsonConsts.IPSRCADDR, ipSrcAddrJsonArray);
+		}
+		if (ipSrcAddrMaskJsonArray != null) {
+			match.add(VtnServiceJsonConsts.IPSRCADDR_MASK,
+					ipSrcAddrMaskJsonArray);
+		}
+		if (ipDstAddrJsonArray != null) {
+			match.add(VtnServiceJsonConsts.IPDSTADDR, ipDstAddrJsonArray);
+		}
+		if (ipDstAddrMaskJsonArray != null) {
+			match.add(VtnServiceJsonConsts.IPDSTADDR_MASK,
+					ipDstAddrMaskJsonArray);
+		}
+		if (ipV6SrcAddrJsonArray != null) {
+			match.add(VtnServiceJsonConsts.IPV6SRCADDR, ipV6SrcAddrJsonArray);
+		}
+		if (ipV6SrcAddrMaskJsonArray != null) {
+			match.add(VtnServiceJsonConsts.IPV6SRCADDR_MASK,
+					ipV6SrcAddrMaskJsonArray);
+		}
+		if (ipV6DstAddJsonArray != null) {
+			match.add(VtnServiceJsonConsts.IPV6DSTADDR, ipV6DstAddJsonArray);
+		}
+		if (ipV6DstAddrMaskJsonArray != null) {
+			match.add(VtnServiceJsonConsts.IPV6DSTADDR_MASK,
+					ipV6DstAddrMaskJsonArray);
+		}
+		if (l4SrcPortIcmpTypeJsonArray != null) {
+			match.add(VtnServiceJsonConsts.L4SRCPORT_ICMPTYPE,
+					l4SrcPortIcmpTypeJsonArray);
+		}
+		if (l4SrcPortIcmpTypeMaskJsonArray != null) {
+			match.add(VtnServiceJsonConsts.L4SRCPORT_ICMPTYPE_MASK,
+					l4SrcPortIcmpTypeMaskJsonArray);
+		}
+		if (l4DstPortIcmpTypeJsonArray != null) {
+			match.add(VtnServiceJsonConsts.L4DSTPORT_ICMPTYPE,
+					l4DstPortIcmpTypeJsonArray);
+		}
+		if (l4DstPortIcmpTypeMaskJsonArray != null) {
+			match.add(VtnServiceJsonConsts.L4DSTPORT_ICMPTYPE_MASK,
+					l4DstPortIcmpTypeMaskJsonArray);
+		}
+		LOG.debug("match Json :" + match);
+		LOG.trace("getDataFlowMatchInfo completed");
+		return match;
+	}
+
+	/**
+	 * This method is Used to generate Action Flow info Json
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @param getType
+	 * @return JsonObject
+	 */
+	private JsonObject getDataFlowActionInfo(
+			final IpcDataUnit[] responsePacket, final AtomicInteger index,
+			final JsonObject controlerFlow,
+			final IpcStruct valVtnDataFlowCmnStruct) {
+		LOG.trace("getDataFlowActionInfo started");
+		final int actionCount = Integer.parseInt(IpcDataUnitWrapper
+				.getIpcStructUint32Value(valVtnDataFlowCmnStruct,
+						VtnServiceIpcConsts.ACTION_COUNT));
+		LOG.debug("acount_count:" + actionCount);
+		final JsonObject action = new JsonObject();
+		JsonArray outputPortJsonArray = null;
+		JsonArray enqueuePortJsonArray = null;
+		JsonArray queueIdJsonArray = null;
+		JsonArray setDstMacAddrJsonArray = null;
+		JsonArray setSrcMAcAddrJsonArray = null;
+		JsonArray setVlanIdJsonArray = null;
+		JsonArray setVlanPriorityJsonArray = null;
+		JsonArray setDstAddrJsonArray = null;
+		JsonArray setSrcIpAddrJsonArray = null;
+		JsonArray setIpTosJsonArray = null;
+		JsonArray setDstL4PortIcmpTypeJsonArray = null;
+		JsonArray setSrcL4PortIcmpTypeJsonArray = null;
+		JsonArray setIpV6DstAddrJsonArray = null;
+		JsonArray setIpv6SrcAddrJsonArray = null;
+		JsonArray setStripVlanJsonArray = null;
+		JsonPrimitive element = null;
+		int actionType;
+		for (int i = 0; i < actionCount; i++) {
+
+			final IpcStruct valDataFlowAction = (IpcStruct) responsePacket[index
+					.getAndIncrement()];
+
+			actionType = Integer.parseInt(IpcDataUnitWrapper
+					.getIpcStructUint32Value(valDataFlowAction,
+							VtnServiceIpcConsts.ACTION_TYPE));
+			LOG.debug("actiontype :" + actionType);
+			if (actionType == UncStructIndexEnum.UncDataflowFlowActionType.UNC_ACTION_OUTPUT
+					.ordinal()) {
+
+				final IpcStruct valDfFlowActionOutputPort = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructUint32Value(valDfFlowActionOutputPort,
+								VtnServiceIpcConsts.OUTPUT_PORT).toString());
+				if (null == outputPortJsonArray) {
+					outputPortJsonArray = new JsonArray();
+				}
+				outputPortJsonArray.add(element);
+
+			} else if (actionType == UncStructIndexEnum.UncDataflowFlowActionType.UNC_ACTION_SET_ENQUEUE
+					.ordinal()) {
+
+				final IpcStruct valDfFlowActionEnqueuePort = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructUint32Value(valDfFlowActionEnqueuePort,
+								VtnServiceIpcConsts.OUTPUT_PORT).toString());
+				if (null == enqueuePortJsonArray) {
+					enqueuePortJsonArray = new JsonArray();
+				}
+				enqueuePortJsonArray.add(element);
+
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructUint16Value(valDfFlowActionEnqueuePort,
+								VtnServiceIpcConsts.ENQUEUE_ID).toString());
+				if (null == queueIdJsonArray) {
+					queueIdJsonArray = new JsonArray();
+
+				}
+				queueIdJsonArray.add(element);
+
+			} else if (actionType == UncStructIndexEnum.UncDataflowFlowActionType.UNC_ACTION_SET_DL_DST
+					.ordinal()) {
+				final IpcStruct valDfFlowActionSetDlAddr = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+				element = new JsonPrimitive(IpcDataUnitWrapper.getMacAddress(
+						valDfFlowActionSetDlAddr, VtnServiceIpcConsts.DL_ADDR)
+						.toString());
+				if (null == setDstMacAddrJsonArray) {
+					setDstMacAddrJsonArray = new JsonArray();
+				}
+				setDstMacAddrJsonArray.add(element);
+
+			} else if (actionType == UncStructIndexEnum.UncDataflowFlowActionType.UNC_ACTION_SET_DL_SRC
+					.ordinal()) {
+				final IpcStruct valDfFlowActionSetDlAddr = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+				element = new JsonPrimitive(IpcDataUnitWrapper.getMacAddress(
+						valDfFlowActionSetDlAddr, VtnServiceIpcConsts.DL_ADDR)
+						.toString());
+				if (null == setSrcMAcAddrJsonArray) {
+					setSrcMAcAddrJsonArray = new JsonArray();
+				}
+				setSrcMAcAddrJsonArray.add(element);
+
+			} else if (actionType == UncStructIndexEnum.UncDataflowFlowActionType.UNC_ACTION_SET_VLAN_ID
+					.ordinal()) {
+				final IpcStruct valDfFlowActionSetVlanId = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructUint16Value(valDfFlowActionSetVlanId,
+								VtnServiceIpcConsts.VLAN_ID).toString());
+			
+				if (null == setVlanIdJsonArray) {
+					setVlanIdJsonArray = new JsonArray();
+
+				}
+				if(element.getAsString().equals(VtnServiceJsonConsts.VLAN_ID_65535)){
+					element = new JsonPrimitive(VtnServiceJsonConsts.EMPTY);
+					setVlanIdJsonArray.add(element);
+				}else{
+					setVlanIdJsonArray.add(element);
+				}
+				
+
+			} else if (actionType == UncStructIndexEnum.UncDataflowFlowActionType.UNC_ACTION_SET_VLAN_PCP
+					.ordinal()) {
+				final IpcStruct valDfFlowActionSetVlanPcp = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructUint8Value(valDfFlowActionSetVlanPcp,
+								VtnServiceIpcConsts.VLAN_PCP).toString());
+				if (null == setVlanPriorityJsonArray) {
+					setVlanPriorityJsonArray = new JsonArray();
+
+				}
+				setVlanPriorityJsonArray.add(element);
+
+			} else if (actionType == UncStructIndexEnum.UncDataflowFlowActionType.UNC_ACTION_STRIP_VLAN
+					.ordinal()) {
+				element = new JsonPrimitive(VtnServiceJsonConsts.TRUE);
+				if (null == setStripVlanJsonArray) {
+					setStripVlanJsonArray = new JsonArray();
+				}
+				setStripVlanJsonArray.add(element);				
+				index.getAndIncrement();			
+			} else if (actionType == UncStructIndexEnum.UncDataflowFlowActionType.UNC_ACTION_SET_IPV4_DST
+					.ordinal()) {
+				final IpcStruct valDfFlowActionSetIpv4 = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructIpv4Value(valDfFlowActionSetIpv4,
+								VtnServiceIpcConsts.IPV4_ADDR).toString());
+
+				if (null == setDstAddrJsonArray) {
+					setDstAddrJsonArray = new JsonArray();
+
+				}
+				setDstAddrJsonArray.add(element);
+
+			} else if (actionType == UncStructIndexEnum.UncDataflowFlowActionType.UNC_ACTION_SET_IPV4_SRC
+					.ordinal()) {
+				final IpcStruct valDfFlowActionSetIpv4 = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructIpv4Value(valDfFlowActionSetIpv4,
+								VtnServiceIpcConsts.IPV4_ADDR).toString());
+				if (null == setSrcIpAddrJsonArray) {
+					setSrcIpAddrJsonArray = new JsonArray();
+				}
+				setSrcIpAddrJsonArray.add(element);
+
+			} else if (actionType == UncStructIndexEnum.UncDataflowFlowActionType.UNC_ACTION_SET_IP_TOS
+					.ordinal()) {
+				final IpcStruct valDfFlowActionSetIpTos = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+                final String hexString =
+                        UnsignedInteger.toHexString(Long
+                                .valueOf(IpcDataUnitWrapper
+                                        .getIpcStructUint8Value(
+                                                valDfFlowActionSetIpTos,
+                                                VtnServiceIpcConsts.IP_TOS)));
+                element = new JsonPrimitive("0x" + hexString);
+                
+				if (null == setIpTosJsonArray) {
+					setIpTosJsonArray = new JsonArray();
+				}
+				setIpTosJsonArray.add(element);
+
+			} else if (actionType == UncStructIndexEnum.UncDataflowFlowActionType.UNC_ACTION_SET_TP_DST
+					.ordinal()) {
+				final IpcStruct valDfFlowActionSetTpPort = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructUint16Value(valDfFlowActionSetTpPort,
+								VtnServiceIpcConsts.TP_PORT).toString());
+				if (null == setDstL4PortIcmpTypeJsonArray) {
+					setDstL4PortIcmpTypeJsonArray = new JsonArray();
+				}
+				setDstL4PortIcmpTypeJsonArray.add(element);
+
+			} else if (actionType == UncStructIndexEnum.UncDataflowFlowActionType.UNC_ACTION_SET_TP_SRC
+					.ordinal()) {
+				final IpcStruct valDfFlowActionSetTpPort = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructUint16Value(valDfFlowActionSetTpPort,
+								VtnServiceIpcConsts.TP_PORT).toString());
+				if (null == setSrcL4PortIcmpTypeJsonArray) {
+					setSrcL4PortIcmpTypeJsonArray = new JsonArray();
+				}
+				setSrcL4PortIcmpTypeJsonArray.add(element);
+
+			} else if (actionType == UncStructIndexEnum.UncDataflowFlowActionType.UNC_ACTION_SET_IPV6_DST
+					.ordinal()) {
+
+				final IpcStruct valDfFlowActionSetIpv6 = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+				element = new JsonPrimitive(
+						IpcDataUnitWrapper.getIpcStructIpv6Value(
+								valDfFlowActionSetIpv6,
+								VtnServiceIpcConsts.IPV6_ADDR));
+				if (null == setIpV6DstAddrJsonArray) {
+					setIpV6DstAddrJsonArray = new JsonArray();
+				}
+				setIpV6DstAddrJsonArray.add(element);
+
+			} else if (actionType == UncStructIndexEnum.UncDataflowFlowActionType.UNC_ACTION_SET_IPV6_SRC
+					.ordinal()) {
+
+				final IpcStruct valDfFlowActionSetIpv6 = (IpcStruct) responsePacket[index
+						.getAndIncrement()];
+
+				element = new JsonPrimitive(
+						IpcDataUnitWrapper.getIpcStructIpv6Value(
+								valDfFlowActionSetIpv6,
+								VtnServiceIpcConsts.IPV6_ADDR));
+				if (null == setIpv6SrcAddrJsonArray) {
+					setIpv6SrcAddrJsonArray = new JsonArray();
+				}
+				setIpv6SrcAddrJsonArray.add(element);
+
+			} else {
+				LOG.debug("Type : invalid");
+			}
+		}
+		if (outputPortJsonArray != null) {
+			action.add(VtnServiceJsonConsts.OUTPUTPORT, outputPortJsonArray);
+		}
+		if (enqueuePortJsonArray != null) {
+			action.add(VtnServiceJsonConsts.ENQUEUEPORT, enqueuePortJsonArray);
+		}
+		if (queueIdJsonArray != null) {
+			action.add(VtnServiceJsonConsts.QUEUE_ID, queueIdJsonArray);
+		}
+		if (setDstMacAddrJsonArray != null) {
+			action.add(VtnServiceJsonConsts.SETMACDSTADDR,
+					setDstMacAddrJsonArray);
+		}
+		if (setSrcMAcAddrJsonArray != null) {
+			action.add(VtnServiceJsonConsts.SETMACSRCADDR,
+					setSrcMAcAddrJsonArray);
+		}
+		if (setVlanIdJsonArray != null) {
+			action.add(VtnServiceJsonConsts.SETVLAN_ID, setVlanIdJsonArray);
+		}
+		if (setVlanPriorityJsonArray != null) {
+			action.add(VtnServiceJsonConsts.SETVLAN_PRIORITY,
+					setVlanPriorityJsonArray);
+		}
+		if (setStripVlanJsonArray != null) {
+			action.add(VtnServiceJsonConsts.STRIPVLAN, setStripVlanJsonArray);
+		}
+		if (setDstAddrJsonArray != null) {
+			action.add(VtnServiceJsonConsts.SETIPDSTADDR, setDstAddrJsonArray);
+		}
+		if (setSrcIpAddrJsonArray != null) {
+			action.add(VtnServiceJsonConsts.SETIPSRCADDR, setSrcIpAddrJsonArray);
+		}
+		if (setIpTosJsonArray != null) {
+			action.add(VtnServiceJsonConsts.SETIPTOS, setIpTosJsonArray);
+		}
+		if (setDstL4PortIcmpTypeJsonArray != null) {
+			action.add(VtnServiceJsonConsts.SETL4DSTPORT_ICMPTYPE,
+					setDstL4PortIcmpTypeJsonArray);
+		}
+		if (setSrcL4PortIcmpTypeJsonArray != null) {
+			action.add(VtnServiceJsonConsts.SETL4SRCPORT_ICMPTYPE,
+					setSrcL4PortIcmpTypeJsonArray);
+		}
+		if (setIpV6DstAddrJsonArray != null) {
+			action.add(VtnServiceJsonConsts.SETIPV6DSTADDR,
+					setIpV6DstAddrJsonArray);
+		}
+		if (setIpv6SrcAddrJsonArray != null) {
+			action.add(VtnServiceJsonConsts.SETIPV6SRCADDR,
+					setIpv6SrcAddrJsonArray);
+		}
+		LOG.debug("action json:" + action);
+		return action;
+	}
+
 }

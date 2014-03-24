@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -58,7 +58,8 @@ public class BoundariesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts BoundariesResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -116,7 +117,8 @@ public class BoundariesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts BoundariesResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -155,23 +157,20 @@ public class BoundariesResource extends AbstractResource {
 			 * requestProcessor.getIpcResponsePacket(), requestBody,
 			 * VtnServiceJsonConsts.LIST));
 			 */
-				JsonObject responseJson = responseGenerator
-						.getBoundaryResponse(
-								requestProcessor.getIpcResponsePacket(),
-								requestBody, VtnServiceJsonConsts.LIST);
-				if (responseJson.get(VtnServiceJsonConsts.BOUNDARIES)
-						.isJsonArray()) {
-					JsonArray responseArray = responseJson.get(
-							VtnServiceJsonConsts.BOUNDARIES).getAsJsonArray();
-					responseJson = getResponseJsonArrayPhysical(requestBody,
-							requestProcessor, responseGenerator, responseArray,
-							VtnServiceJsonConsts.BOUNDARIES,
-							VtnServiceJsonConsts.BOUNDARYID,
-							IpcRequestPacketEnum.KT_BOUNDARY_GET,
-							uriParameterList,
-							VtnServiceIpcConsts.GET_BOUNDARY_RESPONSE);
-				}
-				setInfo(responseJson);
+			JsonObject responseJson = responseGenerator.getBoundaryResponse(
+					requestProcessor.getIpcResponsePacket(), requestBody,
+					VtnServiceJsonConsts.LIST);
+			if (responseJson.get(VtnServiceJsonConsts.BOUNDARIES).isJsonArray()) {
+				final JsonArray responseArray = responseJson.get(
+						VtnServiceJsonConsts.BOUNDARIES).getAsJsonArray();
+				responseJson = getResponseJsonArrayPhysical(requestBody,
+						requestProcessor, responseGenerator, responseArray,
+						VtnServiceJsonConsts.BOUNDARIES,
+						VtnServiceJsonConsts.BOUNDARYID,
+						IpcRequestPacketEnum.KT_BOUNDARY_GET, uriParameterList,
+						VtnServiceIpcConsts.GET_BOUNDARY_RESPONSE);
+			}
+			setInfo(responseJson);
 			LOG.debug("Response object created successfully");
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {

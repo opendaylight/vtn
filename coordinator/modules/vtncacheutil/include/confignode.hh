@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -62,9 +62,9 @@ class ConfigNode {
    * @brief    : Method to retrieve node from the Keytree and populate in
    *             the vector value_list
    * param[in] : value_list(vector of ConfigNode*)
-   * @retval   : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS)
+   * @retval   : UncRespCode(UNC_RC_SUCCESS)
    */
-  drv_resp_code_t get_node_list(std::vector<ConfigNode*>& value_list);
+  UncRespCode get_node_list(std::vector<ConfigNode*>& value_list);
 
   /**
    * @brief   : This virtual method returns the Keytype of a node
@@ -101,24 +101,24 @@ class ConfigNode {
   /**
    * @brief    : This method Adds the node under the given parent in cache
    * param[in] : confignode *
-   * @retval   : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS)
+   * @retval   : UncRespCode(UNC_RC_SUCCESS)
    */
-  drv_resp_code_t add_child_to_list(ConfigNode *node_ptr);
+  UncRespCode add_child_to_list(ConfigNode *node_ptr);
 
   /**
    * @brief    : This method delete the node from cache
    * param[in] : confignode *, vector<key_information>
-   * @retval   : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS)
+   * @retval   : UncRespCode(UNC_RC_SUCCESS)
    */
-  drv_resp_code_t delete_child_node(ConfigNode *node_ptr,
+  UncRespCode delete_child_node(ConfigNode *node_ptr,
                             std::vector<key_information>&);
 
   /**
    * @brief    : This method deletes the nodes under the given parent from cache
    * param[in] : vector<key_information>
-   * @retval   : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS)
+   * @retval   : UncRespCode(UNC_RC_SUCCESS)
    */
-  drv_resp_code_t clear_child_list(std::vector<key_information>&);
+  UncRespCode clear_child_list(std::vector<key_information>&);
 
   /**
    * @brief    : This method prints each node information

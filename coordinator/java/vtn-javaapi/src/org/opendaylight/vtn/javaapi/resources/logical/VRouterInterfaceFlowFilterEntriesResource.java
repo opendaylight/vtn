@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -38,7 +38,8 @@ import org.opendaylight.vtn.javaapi.validation.logical.VBridgeFlowFilterEntriesR
  * 
  */
 /* This class handles post and get methods */
-@UNCVtnService(path = "/vtns/{vtn_name}/vrouters/{vrt_name}/interfaces/{if_name}/flowfilters/{ff_type}/flowfilterentries")
+@UNCVtnService(
+		path = "/vtns/{vtn_name}/vrouters/{vrt_name}/interfaces/{if_name}/flowfilters/{ff_type}/flowfilterentries")
 public class VRouterInterfaceFlowFilterEntriesResource extends AbstractResource {
 
 	/** The VTN name. */
@@ -72,28 +73,28 @@ public class VRouterInterfaceFlowFilterEntriesResource extends AbstractResource 
 	/**
 	 * @return the vtnName
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
 	/**
 	 * @return the vrtName
 	 */
-	public String getVrtName() {
+	public final String getVrtName() {
 		return vrtName;
 	}
 
 	/**
 	 * @return the ifName
 	 */
-	public String getIfName() {
+	public final String getIfName() {
 		return ifName;
 	}
 
 	/**
 	 * @return the ffType
 	 */
-	public String getFfType() {
+	public final String getFfType() {
 		return ffType;
 	}
 
@@ -107,7 +108,8 @@ public class VRouterInterfaceFlowFilterEntriesResource extends AbstractResource 
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VRouterInterfaceFlowFilterEntriesResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -167,7 +169,8 @@ public class VRouterInterfaceFlowFilterEntriesResource extends AbstractResource 
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VRouterInterfaceFlowFilterEntriesResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -202,10 +205,14 @@ public class VRouterInterfaceFlowFilterEntriesResource extends AbstractResource 
 							requestBody, VtnServiceJsonConsts.LIST);
 			if (responseJson.get(VtnServiceJsonConsts.FLOWFILTERENTRIES)
 					.isJsonArray()) {
-				JsonArray responseArray = responseJson.get(
-						VtnServiceJsonConsts.FLOWFILTERENTRIES).getAsJsonArray();
-				responseJson = getResponseJsonArrayLogical(requestBody,
-						requestProcessor, responseGenerator, responseArray,
+				final JsonArray responseArray = responseJson.get(
+						VtnServiceJsonConsts.FLOWFILTERENTRIES)
+						.getAsJsonArray();
+				responseJson = getResponseJsonArrayLogical(
+						requestBody,
+						requestProcessor,
+						responseGenerator,
+						responseArray,
 						VtnServiceJsonConsts.FLOWFILTERENTRIES,
 						VtnServiceJsonConsts.SEQNUM,
 						IpcRequestPacketEnum.KT_VRTIF_FLOWFILTER_ENTRY_GET,

@@ -2,7 +2,7 @@
 #define _ITC_TRANSACTION_REQUEST_HH_
 
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -54,57 +54,54 @@ class TransactionRequest : public ITCReq {
     vector<key_ctr_domain> domain_created;
     vector<key_ctr_domain> domain_updated;
     vector<key_ctr_domain> domain_deleted;
-    set<string>set_controller_oflow;
-    set<string>set_controller_vnp;
-    map<unc_keytype_ctrtype_t, vector<string> > driver_controller_info_map_;
-    UpplReturnCode SendControllerNotification(OdbcmConnectionHandler *db_conn,
+    UncRespCode SendControllerNotification(OdbcmConnectionHandler *db_conn,
                                               vector<void *> vec_old_val_ctr);
-    UpplReturnCode SendDomainNotification(
+    UncRespCode SendDomainNotification(
         OdbcmConnectionHandler *db_conn,
         vector<void *> vec_old_val_ctr_domain);
-    UpplReturnCode SendBoundaryNotification(
+    UncRespCode SendBoundaryNotification(
         OdbcmConnectionHandler *db_conn,
         vector<void *> vec_old_val_boundary);
     void SendControllerInfo(OdbcmConnectionHandler *db_conn,
                             uint32_t operation_type,
                             uint32_t session_id,
                             uint32_t config_id);
-    UpplReturnCode GetModifiedConfiguration(OdbcmConnectionHandler *db_conn,
+    UncRespCode GetModifiedConfiguration(OdbcmConnectionHandler *db_conn,
                                             CsRowStatus row_status);
     void ClearMaps();
-    UpplReturnCode GetModifiedController(OdbcmConnectionHandler *db_conn,
+    UncRespCode GetModifiedController(OdbcmConnectionHandler *db_conn,
                                          CsRowStatus row_status);
-    UpplReturnCode GetModifiedDomain(OdbcmConnectionHandler *db_conn,
+    UncRespCode GetModifiedDomain(OdbcmConnectionHandler *db_conn,
                                      CsRowStatus row_status);
-    UpplReturnCode GetModifiedBoundary(OdbcmConnectionHandler *db_conn,
+    UncRespCode GetModifiedBoundary(OdbcmConnectionHandler *db_conn,
                                        CsRowStatus row_status);
 
   public:
     TransactionRequest();
     ~TransactionRequest();
-    UpplReturnCode StartTransaction(OdbcmConnectionHandler *db_conn,
+    UncRespCode StartTransaction(OdbcmConnectionHandler *db_conn,
                                     uint32_t session_id, uint32_t config_id);
-    UpplReturnCode HandleVoteRequest(uint32_t session_id, uint32_t config_id,
+    UncRespCode HandleVoteRequest(uint32_t session_id, uint32_t config_id,
                                  TcDriverInfoMap &driver_info);
-    UpplReturnCode HandleDriverResult(OdbcmConnectionHandler *db_conn,
+    UncRespCode HandleDriverResult(OdbcmConnectionHandler *db_conn,
                                       uint32_t session_id,
                                       uint32_t config_id,
                                       TcCommitPhaseType phase,
                                       TcCommitPhaseResult
                                       driver_result);
-    UpplReturnCode HandleGlobalCommitRequest(uint32_t session_id,
+    UncRespCode HandleGlobalCommitRequest(uint32_t session_id,
                                    uint32_t config_id,
                                    TcDriverInfoMap &driver_info);
-    UpplReturnCode HandleDriverGlobalCommitResult(uint32_t session_id,
+    UncRespCode HandleDriverGlobalCommitResult(uint32_t session_id,
                                       uint32_t config_id,
                                       TcCommitPhaseType
                                       commitphase,
                                       TcCommitPhaseResult driver_result);
 
-    UpplReturnCode AbortTransaction(uint32_t session_id,
+    UncRespCode AbortTransaction(uint32_t session_id,
                                 uint32_t config_id,
                                 TcCommitOpAbortPhase operation_phase);
-    UpplReturnCode EndTransaction(OdbcmConnectionHandler *db_conn,
+    UncRespCode EndTransaction(OdbcmConnectionHandler *db_conn,
                                   uint32_t session_id,
                                   uint32_t config_id,
                                   TcTransEndResult trans_res);

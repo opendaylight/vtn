@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -17,8 +17,7 @@ static PhysicalLayer  theInstance(NULL);
 static bool initialized = false;
 
 void
-PhysicalLayerStub::loadphysicallayer()
-{
+PhysicalLayerStub::loadphysicallayer() {
   Module::physical = &theInstance;
   if (!initialized) {
     initialized = true;
@@ -27,7 +26,6 @@ PhysicalLayerStub::loadphysicallayer()
 }
 
 void
-PhysicalLayerStub::unloadphysicallayer()
-{
+PhysicalLayerStub::unloadphysicallayer() {
   Module::physical = NULL;
 }

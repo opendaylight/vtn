@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -8,6 +8,7 @@
  */
 package org.opendaylight.vtn.javaapi.connection;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -63,7 +64,7 @@ public final class IpcConnPool {
 			throws VtnServiceException {
 
 		LOG.trace("Start IpcConnPool#init()");
-		VtnServiceConfiguration configuration = VtnServiceInitManager
+		final VtnServiceConfiguration configuration = VtnServiceInitManager
 				.getConfigurationMap();
 		/*
 		 * Create the ChaneelAddress instances for each of the IPC server after
@@ -145,7 +146,7 @@ public final class IpcConnPool {
 		if (channelAddressesMap != null && !channelAddressesMap.isEmpty()) {
 
 			channelConnectionMap = new HashMap<ChannelAddress, Set<IpcChannelConnection>>();
-			sessionMap = new HashMap<ClientSession, IpcChannelConnection>();
+			sessionMap = Collections.synchronizedMap(new HashMap<ClientSession, IpcChannelConnection>());
 			int poolSize = 0;
 
 			// retrieve the key set for Channel Address
@@ -312,6 +313,7 @@ public final class IpcConnPool {
 				// at a time only one thread can destroy the session
 				synchronized (ipcChannelConnection) {
 					ipcChannelConnection.destroySession(session);
+					sessionMap.remove(session);
 				}
 			}
 		}

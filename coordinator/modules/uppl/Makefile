@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2013 NEC Corporation
+# Copyright (c) 2012-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -29,6 +29,8 @@ CXX_SOURCES	= physicallayer.cc \
 		itc_kt_state_base.cc \
 		itc_kt_root.cc \
 		itc_kt_controller.cc \
+		itc_kt_dataflow.cc \
+		itc_kt_ctr_dataflow.cc \
 		itc_kt_ctr_domain.cc \
 		itc_kt_logicalport.cc \
 		itc_kt_logical_member_port.cc \
@@ -69,6 +71,10 @@ CFDEF_FILES = odbcm.cfdef	\
 
 MODULE_EXTRA_FILES = uppl_ctr_capability.conf	\
 		     odbcm.conf
+
+EXTRA_INCDIRS   = $(CURDIR)/ \
+                  $(CURDIR)/../capa/include \
+                  $(CURDIR)/../capa
 
 include ../rules.mk
 

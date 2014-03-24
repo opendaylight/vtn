@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -27,11 +27,13 @@
 #include "tclib_module.hh"
 
 #include "unc/upll_svc.h"
+#include "upll_util.hh"
 #include "ipc_util.hh"
 #include "key_tree.hh"
 #include "momgr_intf.hh"
 #include "tclib_intf_impl.hh"
 #include "config_lock.hh"
+#include "dbconn_mgr.hh"
 
 namespace unc {
 namespace upll {
@@ -50,12 +52,12 @@ enum upll_alarm_category_t {
 
 class UpllConfigMgr {
  public:
-   /**
-    * @brief Creates a singleton instance of UpllConfigMgr if one is not already
-    * constructed.
-    *
-    * @return Pointer to newly constructed or exsting instance of UpllConfigMgr
-    */
+  /**
+   * @brief Creates a singleton instance of UpllConfigMgr if one is not already
+   * constructed.
+   *
+   * @return Pointer to newly constructed or exsting instance of UpllConfigMgr
+   */
   static UpllConfigMgr *GetUpllConfigMgr() {
     if (!singleton_instance_) {
       singleton_instance_ = new UpllConfigMgr();
@@ -197,7 +199,7 @@ class UpllConfigMgr {
    * @brief Controller down event handler
    *
    * @param[in] ctrlr_name  name of the controller
-   * @param[in] operstatus  operational status of controller 
+   * @param[in] operstatus  operational status of controller
    */
   void OnControllerStatusChange(const char *ctrlr_name, bool operstatus);
 
@@ -267,7 +269,8 @@ class UpllConfigMgr {
   upll_rc_t OnTxStart(uint32_t session_id, uint32_t config_id,
                       ConfigKeyVal **err_ckv);
   upll_rc_t OnAuditTxStart(const char *ctrlr_id,
-                        uint32_t session_id, uint32_t config_id);
+                           uint32_t session_id, uint32_t config_id,
+                           ConfigKeyVal **err_ckv);
   upll_rc_t OnTxVote(const std::set<std::string> **affected_ctrlr_list,
                      ConfigKeyVal **err_ckv);
   upll_rc_t OnAuditTxVote(const char *ctrlr_id,
@@ -294,8 +297,10 @@ class UpllConfigMgr {
   const KeyTree &GetConfigKeyTree() { return cktt_; }
 
   MoManager *GetMoManager(unc_key_type_t kt) {
-    if (upll_kt_momgrs_.count(kt) > 0 )
-      return upll_kt_momgrs_[kt];
+    std::map<unc_key_type_t, MoManager*>::iterator it =
+        upll_kt_momgrs_.find(kt);
+    if (it != upll_kt_momgrs_.end() )
+      return it->second;
     return NULL;
   }
 
@@ -312,19 +317,32 @@ class UpllConfigMgr {
     sys_state_rwlock_.unlock();
     return state;
   }
+
   void SetClusterState(bool active) {
     sys_state_rwlock_.wrlock();
     node_active_ = active;
     tclib_impl_.SetClusterState(active);
     sys_state_rwlock_.unlock();
+    dbcm_->TerminateAllDbConns();
     if (active) {
-      DalOpenInitialConnections();
-      OnAuditEnd("", true);
-      ClearImport(0, 0, true);
+      upll_rc_t urc;
+      dbcm_->InitializeDbConnections();
+      DalOdbcMgr *dbinst = dbcm_->GetConfigRwConn();
+      dbinst->MakeAllDirty();
+      dbcm_->ReleaseRwConn(dbinst);
+      urc = OnAuditEnd("", true);
+      if (urc != UPLL_RC_SUCCESS) {
+        UPLL_LOG_FATAL("Failed to clear audit tables, urc=%d", urc);
+      }
+      urc = ClearImport(0, 0, true);
+      if (urc != UPLL_RC_SUCCESS) {
+        UPLL_LOG_FATAL("Failed to clear import tables, urc=%d", urc);
+      }
     } else {
-      DalCloseInitialConnections();
+      // dbcm_->TerminateAllDbConns();
     }
   }
+
   bool IsActiveNode() {
     bool state;
     sys_state_rwlock_.rdlock();
@@ -332,6 +350,21 @@ class UpllConfigMgr {
     sys_state_rwlock_.unlock();
     return state;
   }
+
+  upll_rc_t ContinueActiveProcess() {
+    if (IsShuttingDown()) {
+      UPLL_LOG_INFO("Shutting down, cannot commit");
+      return UPLL_RC_ERR_SHUTTING_DOWN;
+    }
+
+    if (!IsActiveNode()) {
+      UPLL_LOG_INFO("Node is not active, cannot commit");
+      return UPLL_RC_ERR_NOT_SUPPORTED_BY_STANDBY;
+    }
+    return UPLL_RC_SUCCESS;
+  }
+
+  uint32_t GetDbROConnLimitFrmConfFile();
   bool SendOperStatusAlarm(const char *vtn_name, const char *vnode_name,
                            const char *vif_name, bool assert_alarm);
 
@@ -384,12 +417,6 @@ class UpllConfigMgr {
                            const char *ctrlr_id, uint32_t operation);
   upll_rc_t ImportCtrlrConfig(const char *ctrlr_id, upll_keytype_datatype_t dt);
 
-  // Helper functions or DB operations
-  upll_rc_t DalOpen(DalOdbcMgr **dom, bool read_write_conn, const char *caller);
-  upll_rc_t DalClose(DalOdbcMgr *dom, bool commit, const char *caller);
-  upll_rc_t DalOpenInitialConnections();
-  upll_rc_t DalCloseInitialConnections();
-
   bool SendInvalidConfigAlarm(string ctrlr_name, bool assert_alarm);
 
 
@@ -411,6 +438,7 @@ class UpllConfigMgr {
   bool import_in_progress_;
   string import_ctrlr_id_;
   string audit_ctrlr_id_;
+  KTxCtrlrAffectedState audit_ctrlr_affected_state_;
   pfc::core::Mutex  commit_mutex_lock_;
   pfc::core::Mutex  import_mutex_lock_;
   pfc::core::Mutex  audit_mutex_lock_;
@@ -419,11 +447,7 @@ class UpllConfigMgr {
   // Initail database connections. When node turns ACTIVE, intial connections
   // are mode, and when node turns STANDBY from ACTIVE, initial connections are
   // closed.
-  pfc::core::Mutex rw_dom_mutex_lock_;
-  DalOdbcMgr config_rw_dom_;
-  DalOdbcMgr config_ro_dom_;
-  DalOdbcMgr import_rw_dom_;
-  DalOdbcMgr alarm_rw_dom_;
+  UpllDbConnMgr *dbcm_;
 
   int32_t alarm_fd;
 

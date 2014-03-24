@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -55,7 +55,7 @@ class ReadRequest: public ITCReq {
   public:
     ReadRequest();
     ~ReadRequest();
-    UpplReturnCode ProcessReq(ServerSession &session,
+    UncRespCode ProcessReq(ServerSession &session,
                               physical_request_header &obj_req_hdr);
     void AddToBuffer(BulkReadBuffer objBuffer) {
       vect_bulk_read_buffer.push_back(objBuffer);
@@ -70,6 +70,8 @@ class ReadRequest: public ITCReq {
     key_root_t key_root_obj;
     key_ctr_t key_ctr_obj;
     val_ctr_t val_ctr_obj;
+    key_dataflow_t key_dataflow_obj;
+    key_ctr_dataflow_t key_ctr_dataflow_obj;
     key_ctr_domain_t key_domain_obj;
     val_ctr_domain_t val_domain_obj;
     key_logical_port_t key_logical_port_obj;
@@ -84,14 +86,14 @@ class ReadRequest: public ITCReq {
     key_boundary_t key_boundary_obj;
     val_boundary_t val_boundary_obj;
     vector<BulkReadBuffer> vect_bulk_read_buffer;
-    UpplReturnCode ProcessReadOperation(OdbcmConnectionHandler *db_conn,
+    UncRespCode ProcessReadOperation(OdbcmConnectionHandler *db_conn,
                                         ServerSession &session,
                                         Kt_Base *KtObj,
                                         physical_request_header &obj_req_hdr,
                                         void* key_struct,
                                         void* val_struct,
                                         uint32_t operation_type);
-    UpplReturnCode FrameReadBulkResponse(ServerSession &session,
+    UncRespCode FrameReadBulkResponse(ServerSession &session,
                                          uint32_t session_id,
                                          uint32_t config_id,
                                          uint32_t operation,
@@ -101,6 +103,12 @@ class ReadRequest: public ITCReq {
     void GetControllerStructure(ServerSession &session,
                                 void * &key_struct,
                                 void * &val_struct,
+                                physical_response_header &rsh);
+    void GetDataflowStructure(ServerSession &session,
+                                void * &key_struct,
+                                physical_response_header &rsh);
+    void GetCtrDataflowStructure(ServerSession &session,
+                                void * &key_struct,
                                 physical_response_header &rsh);
     void GetDomainStructure(ServerSession &session,
                             void * &key_struct,

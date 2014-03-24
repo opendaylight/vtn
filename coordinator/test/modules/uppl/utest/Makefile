@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013 NEC Corporation
+# Copyright (c) 2013-2014 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -28,6 +28,7 @@ MISC_STUBDIR	  = $(COMMON_STUB_PATH)/stub/misc
 UPPL_SRCDIR	    = $(MODULE_SRCROOT)/uppl
 TCLIB_SRCDIR	  = $(MODULE_SRCROOT)/tclib
 ALARM_SRCDIR	  = $(MODULE_SRCROOT)/alarm
+CAPA_SRCDIR	    = $(MODULE_SRCROOT)/capa
 
 # Define a list of directories that contain source files.
 ALT_SRCDIRS	= $(UPPL_SRCDIR) $(ODBC_STUBDIR) $(TCLIB_STUBDIR)
@@ -44,6 +45,8 @@ EXTRA_CXX_INCDIRS	= $(MODULE_SRCROOT)
 EXTRA_CXX_INCDIRS	+= $(UPPL_SRCDIR)/include
 EXTRA_CXX_INCDIRS	+= $(TCLIB_SRCDIR)/include
 EXTRA_CXX_INCDIRS	+= $(ALARM_SRCDIR)/include
+EXTRA_CXX_INCDIRS	+= $(CAPA_SRCDIR)/.
+EXTRA_CXX_INCDIRS	+= $(CAPA_SRCDIR)/include
 
 CPPFLAGS	+= -include ut_stub.h
 
@@ -82,6 +85,8 @@ UPPL_SOURCES	+= physical_itc.cc
 UPPL_SOURCES	+= physical_notification_manager.cc 
 UPPL_SOURCES	+= unc_state_handler.cc 
 UPPL_SOURCES	+= physicallayer.cc
+UPPL_SOURCES  += itc_kt_ctr_dataflow.cc
+UPPL_SOURCES  += itc_kt_dataflow.cc
 
 ODBC_SOURCES	= odbcm_mgr_stub.cc odbcm_utils_stub.cc
 TCLIB_SOURCES	= tclib_module.cc

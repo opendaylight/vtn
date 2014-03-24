@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -261,6 +261,9 @@ typedef struct {
 #define BDRY_VALID_STR          "valid"
 #define BDRY_ROW_STATUS_STR     "cs_row_status"
 #define BDRY_ATTR_STR           "cs_attr"
+#define VLAN_ID_STR             "vlan_id"
+
+#define CTR_DATAFLOW_FLOWID_STR "flow_id"
 
 #define PHY_FINI_READ_LOCK() \
   if (PhysicalLayer::phyFiniFlag == 1) { \
@@ -272,7 +275,8 @@ typedef struct {
   if (PhysicalLayer::phyFiniFlag == 1) { \
     pfc_log_info("PhysicalLayer:: Fini is invoked already ..!!"); \
     return ODBCM_RC_GENERAL_ERROR; \
-  }
+  } \
+
 
 /**Macro to fill the DBTableSchema Object instance with given input values.
  * In the case of static access. (memory might be allocated earlier, here reuse
@@ -280,21 +284,21 @@ typedef struct {
 #define ODBCM_FILL_ATTRIBUTE_INFO(attr_var, \
     attr_name, attr_value, attr_length, attr_type, attr_vector) \
     { \
-  attr_var.table_attribute_name = attr_name; \
-  attr_var.p_table_attribute_value = reinterpret_cast<void*>(&attr_value); \
-  attr_var.table_attribute_length = attr_length;\
-  attr_var.request_attribute_type = attr_type; \
-  attr_vector.push_back(attr_var); \
+  (attr_var).table_attribute_name = (attr_name); \
+  (attr_var).p_table_attribute_value = reinterpret_cast<void*>(&(attr_value)); \
+  (attr_var).table_attribute_length = (attr_length);\
+  (attr_var).request_attribute_type = (attr_type); \
+  (attr_vector).push_back(attr_var); \
     }
 
 #define ODBCM_FILL_ATTRIBUTE_INFOS(attr_var, \
     attr_name, attr_value, attr_length, attr_type, attr_vector) \
     { \
-  attr_var.table_attribute_name = attr_name; \
-  attr_var.p_table_attribute_value = reinterpret_cast<void*>(attr_value); \
-  attr_var.table_attribute_length = attr_length;\
-  attr_var.request_attribute_type = attr_type; \
-  attr_vector.push_back(attr_var); \
+  (attr_var).table_attribute_name = (attr_name); \
+  (attr_var).p_table_attribute_value = reinterpret_cast<void*>(attr_value); \
+  (attr_var).table_attribute_length = (attr_length);\
+  (attr_var).request_attribute_type = (attr_type); \
+  (attr_vector).push_back(attr_var); \
     }
 
 /**return type of query factory methods*/

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -49,21 +49,21 @@ Kt_Link::~Kt_Link() {
  * key_struct - the key for the new kt link instance
  * data_type - UNC_DT_* , delete only allowed in state
  * key_type - UNC_KT_LINK,value of unc_key_type_t
- * @return    : UPPL_RC_SUCCESS is returned when the delete
+ * @return    : UNC_RC_SUCCESS is returned when the delete
  * is done successfully.
- * UPPL_RC_ERR_* is returned when the delete is error
+ * UNC_UPPL_RC_ERR_* is returned when the delete is error
  * */
-UpplReturnCode Kt_Link::DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Link::DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
                                           void* key_struct,
                                           uint32_t data_type,
                                           uint32_t key_type) {
-  UpplReturnCode delete_status = UPPL_RC_SUCCESS;
+  UncRespCode delete_status = UNC_RC_SUCCESS;
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   // Check operation is allowed on the given DT, skip the check if flag is true
   if ((unc_keytype_datatype_t)data_type != UNC_DT_STATE &&
       (unc_keytype_datatype_t)data_type != UNC_DT_IMPORT) {
     pfc_log_error("Delete operation is provided on unsupported data type");
-    return UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   }
   // Structure used to send request to ODBC
   DBTableSchema kt_link_dbtableschema;
@@ -85,13 +85,13 @@ UpplReturnCode Kt_Link::DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
     if (delete_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
       pfc_log_fatal("DB connection not available or cannot access DB");
-      delete_status = UPPL_RC_ERR_DB_ACCESS;
+      delete_status = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else if (delete_db_status == ODBCM_RC_ROW_NOT_EXISTS) {
       pfc_log_error("given instance does not exist");
-      delete_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+      delete_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     } else {
       // log error to log daemon
-      delete_status = UPPL_RC_ERR_DB_DELETE;
+      delete_status = UNC_UPPL_RC_ERR_DB_DELETE;
     }
   } else {
     pfc_log_info("Delete of a link in data_type(%d) is success",
@@ -107,11 +107,11 @@ UpplReturnCode Kt_Link::DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
  * value_struct - the value for the kt link instance
  * data_type - UNC_DT_* , read allowed in state
  * operation_type-UNC_OP_*,type of operation
- * @return    : UPPL_RC_SUCCESS is returned when the response
+ * @return    : UNC_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
- * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
+ * UNC_UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_Link::ReadInternal(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Link::ReadInternal(OdbcmConnectionHandler *db_conn,
                                      vector<void *> &key_val,
                                      vector<void *> &val_struct,
                                      uint32_t data_type,
@@ -130,7 +130,7 @@ UpplReturnCode Kt_Link::ReadInternal(OdbcmConnectionHandler *db_conn,
     void_val_struct = val_struct[0];
   }
   uint32_t option = 0;
-  UpplReturnCode read_status = ReadLinkValFromDB(db_conn, key_struct,
+  UncRespCode read_status = ReadLinkValFromDB(db_conn, key_struct,
                                                  void_val_struct,
                                                  data_type,
                                                  operation_type,
@@ -140,7 +140,7 @@ UpplReturnCode Kt_Link::ReadInternal(OdbcmConnectionHandler *db_conn,
                                                  option);
   key_val.clear();
   val_struct.clear();
-  if (read_status == UPPL_RC_SUCCESS) {
+  if (read_status == UNC_RC_SUCCESS) {
     pfc_log_debug("Read operation is success");
     for (unsigned int iIndex = 0 ; iIndex < vect_val_link_st.size();
         ++iIndex) {
@@ -164,11 +164,11 @@ UpplReturnCode Kt_Link::ReadInternal(OdbcmConnectionHandler *db_conn,
  * max_rep_ct - specifies number of rows to be returned
  * parent_call - indicates whether parent has called this readbulk
  * is_read_next - indicates whether this function is invoked from readnext
- * @return    : UPPL_RC_SUCCESS is returned when the response
+ * @return    : UNC_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
- * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
+ * UNC_UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_Link::ReadBulk(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Link::ReadBulk(OdbcmConnectionHandler *db_conn,
                                  void* key_struct,
                                  uint32_t data_type,
                                  uint32_t &max_rep_ct,
@@ -176,7 +176,7 @@ UpplReturnCode Kt_Link::ReadBulk(OdbcmConnectionHandler *db_conn,
                                  pfc_bool_t parent_call,
                                  pfc_bool_t is_read_next,
                                  ReadRequest *read_req) {
-  UpplReturnCode read_status = UPPL_RC_SUCCESS;
+  UncRespCode read_status = UNC_RC_SUCCESS;
   key_link_t* obj_key_link=
       reinterpret_cast<key_link_t*>(key_struct);
   string str_controller_name =
@@ -193,13 +193,13 @@ UpplReturnCode Kt_Link::ReadBulk(OdbcmConnectionHandler *db_conn,
     // Not supported
     pfc_log_debug("ReadBulk operation is not allowed in %d data type",
                   data_type);
-    read_status = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    read_status = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
     pfc_log_debug("read_status=%d", read_status);
     return read_status;
   }
   if (max_rep_ct == 0) {
     pfc_log_debug("max_rep_ct is 0");
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   vector<val_link_st_t> vect_val_link_st;
   vector<key_link_t> vect_link_id;
@@ -210,7 +210,7 @@ UpplReturnCode Kt_Link::ReadBulk(OdbcmConnectionHandler *db_conn,
                                  vect_val_link_st,
                                  vect_link_id);
   pfc_log_debug("read_status from kt_link is %d", read_status);
-  if (read_status == UPPL_RC_SUCCESS) {
+  if (read_status == UNC_RC_SUCCESS) {
     // For each link , read the values
     vector<val_link_st_t> ::iterator vect_iter = vect_val_link_st.begin();
     vector<key_link_t> ::iterator link_iter = vect_link_id.begin();
@@ -241,10 +241,10 @@ UpplReturnCode Kt_Link::ReadBulk(OdbcmConnectionHandler *db_conn,
       read_req->AddToBuffer(obj_sep_buffer);
       --max_rep_ct;
       if (max_rep_ct == 0) {
-        return UPPL_RC_SUCCESS;
+        return UNC_RC_SUCCESS;
       }
     }
-  } else if (read_status == UPPL_RC_ERR_DB_ACCESS) {
+  } else if (read_status == UNC_UPPL_RC_ERR_DB_ACCESS) {
     pfc_log_debug("Ktlink ReadBulk - Returning DB Access Error");
     return read_status;
   }
@@ -265,12 +265,12 @@ UpplReturnCode Kt_Link::ReadBulk(OdbcmConnectionHandler *db_conn,
         is_read_next,
         read_req);
     pfc_log_debug("read_status from next kin Kt_Port is %d", read_status);
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   pfc_log_debug("link reached end of table");
   pfc_log_debug("read_status=%d", read_status);
-  if (read_status == UPPL_RC_ERR_NO_SUCH_INSTANCE) {
-    read_status = UPPL_RC_SUCCESS;
+  if (read_status == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+    read_status = UNC_RC_SUCCESS;
   }
   return read_status;
 }
@@ -284,11 +284,11 @@ UpplReturnCode Kt_Link::ReadBulk(OdbcmConnectionHandler *db_conn,
  * max_rep_ct- specifies number of rows to be returned
  * vect_val_link - indicates the fetched values from db of val_link type
  * vect_link_id - indicates the fetched link names from db
- * @return    : UPPL_RC_SUCCESS is returned when the response
+ * @return    : UNC_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
- * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
+ * UNC_UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_Link::ReadBulkInternal(
+UncRespCode Kt_Link::ReadBulkInternal(
     OdbcmConnectionHandler *db_conn,
     void* key_struct,
     uint32_t data_type,
@@ -297,7 +297,7 @@ UpplReturnCode Kt_Link::ReadBulkInternal(
     vector<key_link_t> &vect_link_id) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   void *val_struct = NULL;
-  UpplReturnCode read_status = UPPL_RC_SUCCESS;
+  UncRespCode read_status = UNC_RC_SUCCESS;
   ODBCM_RC_STATUS read_db_status = ODBCM_RC_SUCCESS;
   DBTableSchema kt_link_dbtableschema;
   vector<ODBCMOperator> operator_vector;
@@ -325,7 +325,7 @@ UpplReturnCode Kt_Link::ReadBulkInternal(
   for (; index < no_of_query ; ++index) {
     if (kt_link_dbtableschema.primary_keys_.size() <2) {
     pfc_log_debug("No record found");
-      read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+      read_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
       break;
     }
     // Read rows from DB
@@ -336,18 +336,18 @@ UpplReturnCode Kt_Link::ReadBulkInternal(
     pfc_log_debug("GetBulkRows return: %d", read_db_status);
     if (read_db_status == ODBCM_RC_RECORD_NOT_FOUND) {
       pfc_log_debug("No record found");
-      read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+      read_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
       // Update the primary key vector
       kt_link_dbtableschema.primary_keys_.pop_back();
       pfc_log_debug(
-          "Primary key vector size %d",
-          static_cast<int>(kt_link_dbtableschema.primary_keys_.size()));
+          "Primary key vector size %"
+           PFC_PFMT_SIZE_T, kt_link_dbtableschema.primary_keys_.size());
     } else if (read_db_status == ODBCM_RC_CONNECTION_ERROR) {
-      read_status = UPPL_RC_ERR_DB_ACCESS;
+      read_status = UNC_UPPL_RC_ERR_DB_ACCESS;
       pfc_log_error("Read operation has failed with error %d", read_db_status);
       break;
     } else if (read_db_status == ODBCM_RC_SUCCESS) {
-      read_status = UPPL_RC_SUCCESS;
+      read_status = UNC_RC_SUCCESS;
       pfc_log_debug("Received success response from db");
       uint32_t max_rep_ct_new = 0;
         FillLinkValueStructure(db_conn, kt_link_dbtableschema,
@@ -365,15 +365,15 @@ UpplReturnCode Kt_Link::ReadBulkInternal(
 
       kt_link_dbtableschema.primary_keys_.pop_back();
     } else {
-      read_status = UPPL_RC_ERR_DB_GET;
+      read_status = UNC_UPPL_RC_ERR_DB_GET;
       break;
     }
   }  // for loop end
   if (vect_val_link_st.empty() && index == 4) {
       pfc_log_debug("No record found");
-      read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+      read_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     } else if (!vect_val_link_st.empty()) {
-      read_status = UPPL_RC_SUCCESS;
+      read_status = UNC_RC_SUCCESS;
     }
 
   return read_status;
@@ -387,16 +387,16 @@ UpplReturnCode Kt_Link::ReadBulkInternal(
  * value_struct - the value for the kt link instance
  * data_type - UNC_DT_*,type of database
  * operation_type - UNC_OP*,type of operation
- * @return    : UPPL_RC_SUCCESS is returned when the validation is successful
- * UPPL_RC_ERR_* is returned when validation is failure
+ * @return    : UNC_RC_SUCCESS is returned when the validation is successful
+ * UNC_UPPL_RC_ERR_* is returned when validation is failure
  * */
-UpplReturnCode Kt_Link::PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Link::PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
                                                 void* key_struct,
                                                 void* val_struct,
                                                 uint32_t operation,
                                                 uint32_t data_type) {
   pfc_log_info("Performing Syntax Validation of KT_LINK");
-  UpplReturnCode ret_code = UPPL_RC_SUCCESS;
+  UncRespCode ret_code = UNC_RC_SUCCESS;
   pfc_ipcresp_t mandatory = PFC_TRUE;
 
   // Validate key structure
@@ -405,34 +405,34 @@ UpplReturnCode Kt_Link::PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
   map<string, Kt_Class_Attr_Syntax> attr_syntax_map =
       attr_syntax_map_all[UNC_KT_LINK];
   IS_VALID_STRING_KEY(CTR_NAME_STR, value, operation, ret_code, mandatory);
-  if (ret_code != UPPL_RC_SUCCESS) {
-    return UPPL_RC_ERR_CFG_SYNTAX;
+  if (ret_code != UNC_RC_SUCCESS) {
+    return UNC_UPPL_RC_ERR_CFG_SYNTAX;
   }
 
   value = reinterpret_cast<char*>(key->switch_id1);
   IS_VALID_STRING_KEY(LINK_SWITCH_ID1_STR, value, operation,
                       ret_code, mandatory);
-  if (ret_code != UPPL_RC_SUCCESS) {
-    return UPPL_RC_ERR_CFG_SYNTAX;
+  if (ret_code != UNC_RC_SUCCESS) {
+    return UNC_UPPL_RC_ERR_CFG_SYNTAX;
   }
 
   value = reinterpret_cast<char*>(key->port_id1);
   IS_VALID_STRING_KEY(LINK_PORT_ID1_STR, value, operation, ret_code, mandatory);
-  if (ret_code != UPPL_RC_SUCCESS) {
-    return UPPL_RC_ERR_CFG_SYNTAX;
+  if (ret_code != UNC_RC_SUCCESS) {
+    return UNC_UPPL_RC_ERR_CFG_SYNTAX;
   }
 
   value = reinterpret_cast<char*>(key->switch_id2);
   IS_VALID_STRING_KEY(LINK_SWITCH_ID2_STR, value, operation,
                       ret_code, mandatory);
-  if (ret_code != UPPL_RC_SUCCESS) {
-    return UPPL_RC_ERR_CFG_SYNTAX;
+  if (ret_code != UNC_RC_SUCCESS) {
+    return UNC_UPPL_RC_ERR_CFG_SYNTAX;
   }
 
   value = reinterpret_cast<char*>(key->port_id2);
   IS_VALID_STRING_KEY(LINK_PORT_ID2_STR, value, operation, ret_code, mandatory);
-  if (ret_code != UPPL_RC_SUCCESS) {
-    return UPPL_RC_ERR_CFG_SYNTAX;
+  if (ret_code != UNC_RC_SUCCESS) {
+    return UNC_UPPL_RC_ERR_CFG_SYNTAX;
   }
 
   // Validate value structure
@@ -444,8 +444,8 @@ UpplReturnCode Kt_Link::PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
     string value = reinterpret_cast<char*>(link_value->description);
     IS_VALID_STRING_VALUE(LINK_DESCRIPTION_STR, value, operation,
                           valid_val, ret_code, mandatory);
-    if (ret_code != UPPL_RC_SUCCESS) {
-      return UPPL_RC_ERR_CFG_SYNTAX;
+    if (ret_code != UNC_RC_SUCCESS) {
+      return UNC_UPPL_RC_ERR_CFG_SYNTAX;
     }
   }
   return ret_code;
@@ -458,16 +458,16 @@ UpplReturnCode Kt_Link::PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
  * value_struct - specifies value of KT_LINK
  * operation - UNC_OP*,type of operation
  * data_type - UNC_DT*,type of database
- * @return    : UPPL_RC_SUCCESS if semantic valition is successful
- * or UPPL_RC_ERR_* if failed
+ * @return    : UNC_RC_SUCCESS if semantic valition is successful
+ * or UNC_UPPL_RC_ERR_* if failed
  * */
-UpplReturnCode Kt_Link::PerformSemanticValidation(
+UncRespCode Kt_Link::PerformSemanticValidation(
     OdbcmConnectionHandler *db_conn,
     void* key_struct,
     void* val_struct,
     uint32_t operation,
     uint32_t data_type) {
-  UpplReturnCode status = UPPL_RC_SUCCESS;
+  UncRespCode status = UNC_RC_SUCCESS;
   pfc_log_debug("Inside PerformSemanticValidation of KT_LINK");
   // Check whether the given instance of link exists in DB
   key_link_t *obj_key_link = reinterpret_cast<key_link_t*>(key_struct);
@@ -482,17 +482,17 @@ UpplReturnCode Kt_Link::PerformSemanticValidation(
   link_vect_key_value.push_back(port_id1);
   link_vect_key_value.push_back(switch_id2);
   link_vect_key_value.push_back(port_id2);
-  UpplReturnCode key_status = IsKeyExists(db_conn,
+  UncRespCode key_status = IsKeyExists(db_conn,
                                           (unc_keytype_datatype_t)data_type,
                                           link_vect_key_value);
   pfc_log_debug("IsKeyExists status %d", key_status);
   // In case of Create operation, key should not exist
   if (operation == UNC_OP_CREATE) {
-    if (key_status == UPPL_RC_SUCCESS) {
+    if (key_status == UNC_RC_SUCCESS) {
       pfc_log_error("Key instance already exists");
       pfc_log_error("Hence Create operation not allowed");
-      status = UPPL_RC_ERR_INSTANCE_EXISTS;
-    } else if (key_status == UPPL_RC_ERR_DB_ACCESS) {
+      status = UNC_UPPL_RC_ERR_INSTANCE_EXISTS;
+    } else if (key_status == UNC_UPPL_RC_ERR_DB_ACCESS) {
       pfc_log_error("DB Access failure");
       status = key_status;
     } else {
@@ -502,19 +502,19 @@ UpplReturnCode Kt_Link::PerformSemanticValidation(
   } else if (operation == UNC_OP_UPDATE || operation == UNC_OP_DELETE ||
       operation == UNC_OP_READ) {
     // In case of update/delete/read operation, key should exist
-    if (key_status == UPPL_RC_ERR_DB_ACCESS) {
+    if (key_status == UNC_UPPL_RC_ERR_DB_ACCESS) {
       pfc_log_error("DB Access failure");
       status = key_status;
-    } else if (key_status != UPPL_RC_SUCCESS) {
+    } else if (key_status != UNC_RC_SUCCESS) {
       pfc_log_error("Key instance does not exist");
       pfc_log_error("Hence update/delete/read operation not allowed");
-      status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+      status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     } else {
       pfc_log_info("key instance exist update/del/read operation allowed");
     }
   }
 
-  if (operation == UNC_OP_CREATE && status == UPPL_RC_SUCCESS) {
+  if (operation == UNC_OP_CREATE && status == UNC_RC_SUCCESS) {
     vector<string> parent_vect_key_value;
     parent_vect_key_value.push_back(controller_name);
     Kt_Controller KtObj;
@@ -522,12 +522,12 @@ UpplReturnCode Kt_Link::PerformSemanticValidation(
     if (data_type == UNC_DT_IMPORT) {
       parent_data_type = UNC_DT_RUNNING;
     }
-    UpplReturnCode parent_key_status = KtObj.IsKeyExists(
+    UncRespCode parent_key_status = KtObj.IsKeyExists(
         db_conn, (unc_keytype_datatype_t)parent_data_type,
         parent_vect_key_value);
     pfc_log_debug("Parent IsKeyExists status %d", parent_key_status);
-    if (parent_key_status != UPPL_RC_SUCCESS) {
-      status = UPPL_RC_ERR_PARENT_DOES_NOT_EXIST;
+    if (parent_key_status != UNC_RC_SUCCESS) {
+      status = UNC_UPPL_RC_ERR_PARENT_DOES_NOT_EXIST;
     }
   }
   pfc_log_debug("Return Code SemanticValidation: %d", status);
@@ -540,17 +540,16 @@ UpplReturnCode Kt_Link::PerformSemanticValidation(
  * @param[in] : data_type-UNC_DT_*,type of database
  * key_struct-void* to kt key structure
  * value_struct-void* to kt value structure
- * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*, 
- * UPPL_RC_SUCCESS is returned when the response
+ * @return    : UNC_RC_SUCCESS or UNC_UPPL_RC_ERR*, 
+ * UNC_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
- * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
+ * UNC_UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_Link::HandleOperStatus(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Link::HandleOperStatus(OdbcmConnectionHandler *db_conn,
                                          uint32_t data_type,
                                          void *key_struct,
                                          void *value_struct) {
   if (key_struct != NULL) {
-    FN_START_TIME("HandleOperStatus", "Link");
     key_link_t *obj_key_link =
         reinterpret_cast<key_link_t*>(key_struct);
     string controller_name = (const char*)obj_key_link->ctr_key.controller_name;
@@ -561,10 +560,10 @@ UpplReturnCode Kt_Link::HandleOperStatus(OdbcmConnectionHandler *db_conn,
     uint8_t ctrl_oper_status = 0;
     UpplLinkOperStatus link_oper_status = UPPL_LINK_OPER_UNKNOWN;
     Kt_Controller controller;
-    UpplReturnCode read_status = controller.GetOperStatus(
+    UncRespCode read_status = controller.GetOperStatus(
         db_conn, data_type, reinterpret_cast<void*>(&ctr_key),
         ctrl_oper_status);
-    if (read_status == UPPL_RC_SUCCESS) {
+    if (read_status == UNC_RC_SUCCESS) {
       pfc_log_info("Controller's oper_status %d", ctrl_oper_status);
       if (ctrl_oper_status ==
           (UpplControllerOperStatus) UPPL_CONTROLLER_OPER_UP) {
@@ -577,16 +576,14 @@ UpplReturnCode Kt_Link::HandleOperStatus(OdbcmConnectionHandler *db_conn,
     // Update oper_status in link table
     read_status = SetOperStatus(db_conn, data_type, key_struct,
                                 link_oper_status);
-    if (read_status != UPPL_RC_SUCCESS &&
-        read_status != UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+    if (read_status != UNC_RC_SUCCESS &&
+        read_status != UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE) {
       // log error
       pfc_log_error("oper_status update operation failed");
-      FN_END_TIME("HandleOperStatus", "Link");
-      return UPPL_RC_ERR_DB_ACCESS;
+      return UNC_UPPL_RC_ERR_DB_ACCESS;
     }
-    FN_END_TIME("HandleOperStatus", "Link");
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /** SetOperStatus
@@ -595,11 +592,11 @@ UpplReturnCode Kt_Link::HandleOperStatus(OdbcmConnectionHandler *db_conn,
  * @param[in] : key_struct-void* to link key strcuture
  * data_type-UNC_DT_*,type of database
  * oper_status-any value of UpplLinkOperStatus
- * @return    : UPPL_RC_SUCCESS/ERR*, UPPL_RC_SUCCESS is returned when the
+ * @return    : UNC_RC_SUCCESS/ERR*, UNC_RC_SUCCESS is returned when the
  * response is added to ipc session successfully.
- * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
+ * UNC_UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  */
-UpplReturnCode Kt_Link::SetOperStatus(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Link::SetOperStatus(OdbcmConnectionHandler *db_conn,
                                       uint32_t data_type,
                                       void* key_struct,
                                       UpplLinkOperStatus oper_status) {
@@ -665,18 +662,18 @@ UpplReturnCode Kt_Link::SetOperStatus(OdbcmConnectionHandler *db_conn,
           kt_link_dbtableschema, db_conn);
   if (update_db_status == ODBCM_RC_ROW_NOT_EXISTS) {
     pfc_log_info("No instance available for update");
-    return UPPL_RC_ERR_NO_SUCH_INSTANCE;
+    return UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
   } else if (update_db_status != ODBCM_RC_SUCCESS) {
     // log error
     pfc_log_error("oper_status update operation failed");
-    return UPPL_RC_ERR_DB_UPDATE;
+    return UNC_UPPL_RC_ERR_DB_UPDATE;
   } else {
     // Notify operstatus change to northbound
     uint8_t old_oper_status = 0;
-    UpplReturnCode read_status = GetOperStatus(db_conn, data_type,
+    UncRespCode read_status = GetOperStatus(db_conn, data_type,
                                                key_struct,
                                                old_oper_status);
-    if (read_status == UPPL_RC_SUCCESS) {
+    if (read_status == UNC_RC_SUCCESS) {
       val_link_st old_val_link, new_val_link;
       memset(&old_val_link, 0, sizeof(old_val_link));
       memset(&new_val_link, 0, sizeof(new_val_link));
@@ -687,9 +684,9 @@ UpplReturnCode Kt_Link::SetOperStatus(OdbcmConnectionHandler *db_conn,
       int err = 0;
       // Send notification to Northbound
       ServerEvent ser_evt((pfc_ipcevtype_t)UPPL_EVENTS_KT_LINK, err);
-      northbound_event_header rsh = {UNC_OP_UPDATE,
+      northbound_event_header rsh = {static_cast<uint32_t>(UNC_OP_UPDATE),
           data_type,
-          UNC_KT_LINK};
+          static_cast<uint32_t>(UNC_KT_LINK)};
       err = PhyUtil::sessOutNBEventHeader(ser_evt, rsh);
       err |= ser_evt.addOutput(*obj_key_link);
       err |= ser_evt.addOutput(new_val_link);
@@ -697,7 +694,7 @@ UpplReturnCode Kt_Link::SetOperStatus(OdbcmConnectionHandler *db_conn,
       if (err == 0) {
         PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
         // Notify operstatus modifications
-        UpplReturnCode status = (UpplReturnCode) physical_layer
+        UncRespCode status = (UncRespCode) physical_layer
             ->get_ipc_connection_manager()->SendEvent(&ser_evt);
         pfc_log_debug("Event notification status %d", status);
       } else {
@@ -705,26 +702,26 @@ UpplReturnCode Kt_Link::SetOperStatus(OdbcmConnectionHandler *db_conn,
       }
     }
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /** IsKeyExists
  * @Description : This function checks whether the link_id exists in DB
  * @param[in] : data type - UNC_DT_*,type of database
  * key value - Contains link_id
- * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR* based on operation type
+ * @return    : UNC_RC_SUCCESS or UNC_UPPL_RC_ERR* based on operation type
  * */
-UpplReturnCode Kt_Link::IsKeyExists(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Link::IsKeyExists(OdbcmConnectionHandler *db_conn,
                                     unc_keytype_datatype_t data_type,
                                     const vector<string> &key_values) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   //  void* key_struct;
   //  key_link_t *obj_key_link = reinterpret_cast<key_link_t*>(key_struct);
-  UpplReturnCode check_status = UPPL_RC_SUCCESS;
+  UncRespCode check_status = UNC_RC_SUCCESS;
   if (key_values.empty()) {
     // No key given, return failure
     pfc_log_info("No key given. Returning error");
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
 
   string controller_name = key_values[0];
@@ -788,12 +785,12 @@ UpplReturnCode Kt_Link::IsKeyExists(OdbcmConnectionHandler *db_conn,
   if (check_db_status == ODBCM_RC_CONNECTION_ERROR) {
     // log error to log daemon
     pfc_log_error("DB connection not available or cannot access DB");
-    check_status = UPPL_RC_ERR_DB_ACCESS;
+    check_status = UNC_UPPL_RC_ERR_DB_ACCESS;
   } else if (check_db_status == ODBCM_RC_ROW_EXISTS) {
     pfc_log_debug("DB returned success for Row exists");
   } else {
     pfc_log_info("DB Returned failure for IsRowExists");
-    check_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+    check_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
   }
   pfc_log_debug("check_status = %d", check_status);
   return check_status;
@@ -813,7 +810,7 @@ UpplReturnCode Kt_Link::IsKeyExists(OdbcmConnectionHandler *db_conn,
  * row_status-CsRowStatus value
  * is_filtering-flag to indicate whether filter option is enabled
  * is_state-flag to indicate whether data type is DT_STATE
- * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
+ * @return    : UNC_RC_SUCCESS or UNC_UPPL_RC_ERR*
  * */
 void Kt_Link::PopulateDBSchemaForKtTable(
     OdbcmConnectionHandler *db_conn,
@@ -1099,8 +1096,8 @@ void Kt_Link::FillLinkValueStructure(
     vect_obj_val_link.push_back(obj_val_link);
     // populate key structure
     link_id.push_back(obj_key_link);
-    pfc_log_debug("result - vect_obj_val_link size: %d",
-                  (unsigned int) vect_obj_val_link.size());
+    pfc_log_debug("result - vect_obj_val_link size: %"
+                   PFC_PFMT_SIZE_T, vect_obj_val_link.size());
   }
   return;
 }
@@ -1118,9 +1115,9 @@ void Kt_Link::FillLinkValueStructure(
  * sess-object of ServerSession where the arguments present
  * option1,option2-UNC_OPT1,OPT2_*,additional info for read operations
  * max_rep_ct-max no. of records to be read
- * @return    : UPPL_RC_SUCCESS or UPPL_RC_ERR*
+ * @return    : UNC_RC_SUCCESS or UNC_UPPL_RC_ERR*
  * */
-UpplReturnCode Kt_Link::PerformRead(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Link::PerformRead(OdbcmConnectionHandler *db_conn,
                                     uint32_t session_id,
                                     uint32_t configuration_id,
                                     void* key_struct,
@@ -1141,7 +1138,7 @@ UpplReturnCode Kt_Link::PerformRead(OdbcmConnectionHandler *db_conn,
       option1,
       option2,
       data_type,
-      0};
+      static_cast<uint32_t>(0)};
   if (operation_type == UNC_OP_READ) {
     max_rep_ct = 1;
   }
@@ -1149,19 +1146,19 @@ UpplReturnCode Kt_Link::PerformRead(OdbcmConnectionHandler *db_conn,
   key_link_t *obj_key_link = reinterpret_cast<key_link_t*>(key_struct);
   if (option1 != UNC_OPT1_NORMAL) {
     pfc_log_error("PerformRead provided on unsupported option1");
-    rsh.result_code = UPPL_RC_ERR_INVALID_OPTION1;
+    rsh.result_code = UNC_UPPL_RC_ERR_INVALID_OPTION1;
     int err = PhyUtil::sessOutRespHeader(sess, rsh);
     err |= sess.addOutput((uint32_t)UNC_KT_LINK);
     err |= sess.addOutput(*obj_key_link);
     if (err != 0) {
       pfc_log_debug("addOutput failed for physical_response_header");
-      return UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
 
 
-  UpplReturnCode read_status = UPPL_RC_SUCCESS;
+  UncRespCode read_status = UNC_RC_SUCCESS;
   // Read operations will return switch_st
   if ((unc_keytype_datatype_t)data_type == UNC_DT_STATE &&
       option1 == UNC_OPT1_NORMAL) {
@@ -1170,15 +1167,15 @@ UpplReturnCode Kt_Link::PerformRead(OdbcmConnectionHandler *db_conn,
         option2 != UNC_OPT2_MATCH_BOTH_SWITCH &&
         option2 != UNC_OPT2_NONE) {
       pfc_log_error("PerformRead provided on unsupported option2");
-      rsh.result_code = UPPL_RC_ERR_INVALID_OPTION2;
+      rsh.result_code = UNC_UPPL_RC_ERR_INVALID_OPTION2;
       int err = PhyUtil::sessOutRespHeader(sess, rsh);
       err |= sess.addOutput((uint32_t)UNC_KT_LINK);
       err |= sess.addOutput(*obj_key_link);
       if (err != 0) {
         pfc_log_debug("addOutput failed for physical_response_header");
-        return UPPL_RC_ERR_IPC_WRITE_ERROR;
+        return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
       }
-      return UPPL_RC_SUCCESS;
+      return UNC_RC_SUCCESS;
     }
     vector<key_link_t> vect_link_id;
     vector<val_link_t> vect_val_link;
@@ -1197,16 +1194,16 @@ UpplReturnCode Kt_Link::PerformRead(OdbcmConnectionHandler *db_conn,
     int err = PhyUtil::sessOutRespHeader(sess, rsh);
     if (err != 0) {
       pfc_log_error("Failure in addOutput");
-      return UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
-    if (read_status != UPPL_RC_SUCCESS) {
+    if (read_status != UNC_RC_SUCCESS) {
       pfc_log_error("Read operation failed with %d", read_status);
       sess.addOutput((uint32_t)UNC_KT_LINK);
       sess.addOutput(*obj_key_link);
-      return UPPL_RC_SUCCESS;
+      return UNC_RC_SUCCESS;
     }
-    pfc_log_debug("From db, vect_link_id size is %d",
-                  static_cast<int>(vect_link_id.size()));
+    pfc_log_debug("From db, vect_link_id size is %"
+                  PFC_PFMT_SIZE_T, vect_link_id.size());
     for (unsigned int index = 0;
         index < vect_link_id.size();
         ++index) {
@@ -1221,15 +1218,15 @@ UpplReturnCode Kt_Link::PerformRead(OdbcmConnectionHandler *db_conn,
   } else {
     // Invalid data type
     pfc_log_error("Read operation is provided on unsupported data type");
-    rsh.result_code = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    rsh.result_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
     int err = PhyUtil::sessOutRespHeader(sess, rsh);
     err |= sess.addOutput((uint32_t)UNC_KT_LINK);
     if (err != 0) {
       pfc_log_debug("addOutput failed for physical_response_header");
-      return UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /** ReadLinkValFromDB
@@ -1246,11 +1243,11 @@ UpplReturnCode Kt_Link::PerformRead(OdbcmConnectionHandler *db_conn,
  * option1,option2-additional info for read operations,UNC_OPT1/OPT2_* 
  * is_state-flag to indicate whether data type is DT_STATE
  * @return    : Success or associated error code,
- * UPPL_RC_SUCCESS is returned when the response
+ * UNC_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
- * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
+ * UNC_UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_Link::ReadLinkValFromDB(
+UncRespCode Kt_Link::ReadLinkValFromDB(
     OdbcmConnectionHandler *db_conn,
     void* key_struct,
     void* val_struct,
@@ -1264,10 +1261,10 @@ UpplReturnCode Kt_Link::ReadLinkValFromDB(
     pfc_bool_t is_state) {
   if (operation_type < UNC_OP_READ) {
     // Unsupported operation type for this function
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
-  UpplReturnCode read_status = UPPL_RC_SUCCESS;
+  UncRespCode read_status = UNC_RC_SUCCESS;
   ODBCM_RC_STATUS read_db_status = ODBCM_RC_SUCCESS;
 
   // Construct TableAttrSchema structure
@@ -1300,15 +1297,16 @@ UpplReturnCode Kt_Link::ReadLinkValFromDB(
                        vect_prim_key_operations,
                        (unc_keytype_operation_t)operation_type, db_conn);
   } else if (operation_type == UNC_OP_READ_SIBLING) {
-    pfc_log_debug("Ktlink:Primarykeysize: %d",
-                    (uint32_t)kt_link_dbtableschema.primary_keys_.size());
+    pfc_log_debug("Ktlink:Primarykeysize: %"
+                    PFC_PFMT_SIZE_T,
+                    kt_link_dbtableschema.primary_keys_.size());
     pfc_log_debug("Inside READ SIBLING part");
     uint32_t index = 0;
     uint32_t no_of_query = 4;  // Link has 4 primary keys other than controller
     for (; index < no_of_query ; ++index) {
       if (kt_link_dbtableschema.primary_keys_.size() < 2) {
         pfc_log_debug("No record found");
-        read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+        read_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
         break;
       }
       read_db_status = physical_layer->get_odbc_manager()-> \
@@ -1318,14 +1316,14 @@ UpplReturnCode Kt_Link::ReadLinkValFromDB(
                   db_conn);
          kt_link_dbtableschema.primary_keys_.pop_back();
       if (read_db_status == ODBCM_RC_RECORD_NOT_FOUND) {
-        read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+        read_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
       } else if (read_db_status == ODBCM_RC_CONNECTION_ERROR) {
-         read_status = UPPL_RC_ERR_DB_ACCESS;
+         read_status = UNC_UPPL_RC_ERR_DB_ACCESS;
          pfc_log_error("Read operation has failed with error %d",
                                   read_db_status);
          return read_status;
       } else if (read_db_status == ODBCM_RC_SUCCESS) {
-        read_status = UPPL_RC_SUCCESS;
+        read_status = UNC_RC_SUCCESS;
         uint32_t max_rep_ct_new = 0;
         pfc_log_debug("Received success response from db");
         FillLinkValueStructure(db_conn, kt_link_dbtableschema,
@@ -1340,16 +1338,16 @@ UpplReturnCode Kt_Link::ReadLinkValFromDB(
         }
         max_rep_ct -= max_rep_ct_new;
       } else {
-        read_status = UPPL_RC_ERR_DB_GET;
+        read_status = UNC_UPPL_RC_ERR_DB_GET;
         return read_status;
       }
     }  // for end
     if (vect_val_link_st.empty() && index == 4) {
       pfc_log_debug("No record found");
-      read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+      read_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     } else if (!vect_val_link_st.empty()) {
       max_rep_ct = vect_val_link_st.size();
-      read_status = UPPL_RC_SUCCESS;
+      read_status = UNC_RC_SUCCESS;
     }
     return read_status;
   } else {
@@ -1362,14 +1360,14 @@ UpplReturnCode Kt_Link::ReadLinkValFromDB(
   // except read sibling - all other reads following block will fill the values
   if (read_db_status == ODBCM_RC_RECORD_NOT_FOUND) {
     pfc_log_debug("No record found");
-    read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+    read_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     return read_status;
   } else if (read_db_status == ODBCM_RC_CONNECTION_ERROR) {
-    read_status = UPPL_RC_ERR_DB_ACCESS;
+    read_status = UNC_UPPL_RC_ERR_DB_ACCESS;
     pfc_log_error("Read operation has failed with error %d", read_db_status);
     return read_status;
   } else if (read_db_status != ODBCM_RC_SUCCESS) {
-    read_status = UPPL_RC_ERR_DB_GET;
+    read_status = UNC_UPPL_RC_ERR_DB_GET;
     // log error to log daemon
     pfc_log_error("Read operation has failed with error %d", read_db_status);
     return read_status;
@@ -1380,12 +1378,12 @@ UpplReturnCode Kt_Link::ReadLinkValFromDB(
                          max_rep_ct,
                          operation_type,
                          link_id);
-  pfc_log_debug("vect_val_link_st size: %d",
-                (unsigned int)vect_val_link_st.size());
-  pfc_log_debug("link_id size: %d", (unsigned int)link_id.size());
+  pfc_log_debug("vect_val_link_st size: %"
+                PFC_PFMT_SIZE_T, vect_val_link_st.size());
+  pfc_log_debug("link_id size: %" PFC_PFMT_SIZE_T, link_id.size());
   if (vect_val_link_st.empty()) {
     // Read failed , return error
-    read_status = UPPL_RC_ERR_DB_GET;
+    read_status = UNC_UPPL_RC_ERR_DB_GET;
     // log error to log daemon
     pfc_log_error("Read operation has failed after reading response");
     return read_status;
@@ -1436,16 +1434,16 @@ void Kt_Link::Fill_Attr_Syntax_Map() {
  * @param[in] : key_struct-void* to link key structure
  * val_link_valid_st-instance of val_link_st_t
  * @return    : Success or associated error code
- * UPPL_RC_SUCCESS is returned when the response
+ * UNC_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
- * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
+ * UNC_UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
-UpplReturnCode Kt_Link::GetLinkValidFlag(
+UncRespCode Kt_Link::GetLinkValidFlag(
     OdbcmConnectionHandler *db_conn,
     void *key_struct,
     val_link_st_t &val_link_valid_st,
     uint32_t data_type) {
-  UpplReturnCode return_code = UPPL_RC_SUCCESS;
+  UncRespCode return_code = UNC_RC_SUCCESS;
   vector<void *> vectVal_link;
   vector<void *> vectkey_link;
   vectkey_link.push_back(key_struct);
@@ -1453,7 +1451,7 @@ UpplReturnCode Kt_Link::GetLinkValidFlag(
   return_code = ReadInternal(db_conn, vectkey_link,
                              vectVal_link,
                              data_type, UNC_OP_READ);
-  if (return_code == UPPL_RC_SUCCESS) {
+  if (return_code == UNC_RC_SUCCESS) {
     val_link_st_t *obj_new_link_val_vect =
         reinterpret_cast<val_link_st_t*> (vectVal_link[0]);
     if (obj_new_link_val_vect != NULL) {
@@ -1483,11 +1481,11 @@ UpplReturnCode Kt_Link::GetLinkValidFlag(
  * param[out]:
  * oper_status-indicates the oper status of link whether up or down
  * @return    : Success or associated error code
- * UPPL_RC_SUCCESS is returned when the response
+ * UNC_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
- * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
+ * UNC_UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  */
-UpplReturnCode Kt_Link::GetOperStatus(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Link::GetOperStatus(OdbcmConnectionHandler *db_conn,
                                       uint32_t data_type,
                                       void* key_struct,
                                       uint8_t &oper_status) {
@@ -1557,7 +1555,7 @@ UpplReturnCode Kt_Link::GetOperStatus(OdbcmConnectionHandler *db_conn,
           kt_link_dbtableschema, db_conn);
   if (update_db_status != ODBCM_RC_SUCCESS) {
     pfc_log_info("oper_status read operation failed %d", update_db_status);
-    return UPPL_RC_ERR_DB_GET;
+    return UNC_UPPL_RC_ERR_DB_GET;
   }
 
   // read the oper_status value
@@ -1585,7 +1583,7 @@ UpplReturnCode Kt_Link::GetOperStatus(OdbcmConnectionHandler *db_conn,
       }
     }
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /** FrameValidValue
@@ -1593,9 +1591,9 @@ UpplReturnCode Kt_Link::GetOperStatus(OdbcmConnectionHandler *db_conn,
  * @param[in] : attr_value-attribute value in string
  * obj_val_link-object of val_link_st
  * @return    : Success or associated error code
- * UPPL_RC_SUCCESS is returned when the response
+ * UNC_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
- * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
+ * UNC_UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
 void Kt_Link::FrameValidValue(string attr_value,
                               val_link_st &obj_val_link) {
@@ -1624,9 +1622,9 @@ void Kt_Link::FrameValidValue(string attr_value,
  * vect_prim_keys-vector<string> conatining link keys
  * vect_prim_keys_operation-instance of vector<ODBCMOperator>
  * @return    : Success or associated error code
- * UPPL_RC_SUCCESS is returned when the response
+ * UNC_RC_SUCCESS is returned when the response
  * is added to ipc session successfully.
- * UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
+ * UNC_UPPL_RC_ERR_* is returned when ipc response could not be added to sess.
  * */
 void Kt_Link::PopulatePrimaryKeys(
     uint32_t operation_type,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -90,22 +90,22 @@ Kt_Base* Kt_LogicalPort::GetChildClassPointer(KtLogicalPortChildClass KIndex) {
  *                data type  - UNC_DT_*,delete allowed only in STATE and IMPORT
  *                key_type   - indicates the key type 
  * @return      : indicates the delete status of the row -
- *                UPPL_RC_SUCCESS is returned when delete is done successfully.
- * 		  UPPL_RC_ERR_* is returned when delete is failed	
+ *                UNC_RC_SUCCESS is returned when delete is done successfully.
+ * 		  UNC_UPPL_RC_ERR_* is returned when delete is failed	
  **/
-UpplReturnCode Kt_LogicalPort::DeleteKeyInstance(
+UncRespCode Kt_LogicalPort::DeleteKeyInstance(
     OdbcmConnectionHandler *db_conn,
     void* key_struct,
     uint32_t data_type,
     uint32_t key_type) {
-  UpplReturnCode delete_status = UPPL_RC_SUCCESS;
+  UncRespCode delete_status = UNC_RC_SUCCESS;
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
 
   // Check whether operation is allowed on the given DT type
   if (((unc_keytype_datatype_t)data_type != UNC_DT_STATE) &&
       ((unc_keytype_datatype_t)data_type != UNC_DT_IMPORT)) {
     pfc_log_error("Delete operation is provided on unsupported data type");
-    delete_status = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    delete_status = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
     return delete_status;
   } else {
     pfc_log_debug("Delete instance for logical port is supported");
@@ -140,20 +140,20 @@ UpplReturnCode Kt_LogicalPort::DeleteKeyInstance(
     child[child_class] = GetChildClassPointer(
         (KtLogicalPortChildClass)child_class);
     if (child[child_class] != NULL) {
-      UpplReturnCode ch_delete_status = child[child_class]->DeleteKeyInstance(
+      UncRespCode ch_delete_status = child[child_class]->DeleteKeyInstance(
           db_conn, child_key_struct,
           data_type,
           UNC_KT_LOGICAL_MEMBER_PORT);
       delete child[child_class];
       child[child_class] = NULL;
       FreeChildKeyStruct(child_class, child_key_struct);
-      if (ch_delete_status == UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+      if (ch_delete_status == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE) {
         pfc_log_debug("No child exists");
-      } else if (ch_delete_status != UPPL_RC_SUCCESS) {
+      } else if (ch_delete_status != UNC_RC_SUCCESS) {
         // child delete failed, so return error
         pfc_log_error("Delete failed for child %d with error %d",
                       child_class, ch_delete_status);
-        delete_status = UPPL_RC_ERR_CFG_SEMANTIC;
+        delete_status = UNC_UPPL_RC_ERR_CFG_SEMANTIC;
         break;
       }
     } else {
@@ -205,21 +205,21 @@ UpplReturnCode Kt_LogicalPort::DeleteKeyInstance(
     if (delete_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
       pfc_log_fatal("DB connection not available or cannot access DB");
-      delete_status = UPPL_RC_ERR_DB_ACCESS;
+      delete_status = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else if (delete_db_status == ODBCM_RC_ROW_NOT_EXISTS) {
       pfc_log_error("given instance does not exist");
-      delete_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+      delete_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     } else {
       // log error to log daemon
       pfc_log_error("Delete operation has failed in logicalport table");
-      delete_status = UPPL_RC_ERR_DB_DELETE;
+      delete_status = UNC_UPPL_RC_ERR_DB_DELETE;
     }
   } else {
     // deletion success send notification to boundary to
     // update operstatus to invalid
-    delete_status = UPPL_RC_SUCCESS;
+    delete_status = UNC_RC_SUCCESS;
     int err = InvokeBoundaryNotifyOperStatus(db_conn, data_type, key_struct);
-    if (err != UPPL_RC_SUCCESS) {
+    if (err != UNC_RC_SUCCESS) {
       pfc_log_error(
           "Delete instance: notify request for boundary is failed %d", err);
     }
@@ -237,10 +237,10 @@ UpplReturnCode Kt_LogicalPort::DeleteKeyInstance(
  *                operation_type - indicates the operation type supported i.e.
  *                                 UNC_OP_READ
  * @return      : It returns the read status of a row in logical port table
- *                UPPL_RC_SUCCESS - if read operation is success
- *                UPPL_RC_ERR_* - if read operation is a failure
+ *                UNC_RC_SUCCESS - if read operation is success
+ *                UNC_UPPL_RC_ERR_* - if read operation is a failure
  * */
-UpplReturnCode Kt_LogicalPort::ReadInternal(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_LogicalPort::ReadInternal(OdbcmConnectionHandler *db_conn,
                                             vector<void *> &key_val,
                                             vector<void *> &val_struct,
                                             uint32_t data_type,
@@ -259,7 +259,7 @@ UpplReturnCode Kt_LogicalPort::ReadInternal(OdbcmConnectionHandler *db_conn,
     void_val_struct = val_struct[0];
   }
   // Get read response from database
-  UpplReturnCode read_status = ReadLogicalPortValFromDB(
+  UncRespCode read_status = ReadLogicalPortValFromDB(
       db_conn, key_struct,
       void_val_struct,
       data_type,
@@ -270,7 +270,7 @@ UpplReturnCode Kt_LogicalPort::ReadInternal(OdbcmConnectionHandler *db_conn,
       vect_logicalport_id);
   key_val.clear();
   val_struct.clear();
-  if (read_status == UPPL_RC_SUCCESS) {
+  if (read_status == UNC_RC_SUCCESS) {
     pfc_log_debug("Read operation is success");
     for (unsigned int iIndex = 0 ; iIndex < vect_val_logical_port_st.size();
         ++iIndex) {
@@ -300,10 +300,10 @@ UpplReturnCode Kt_LogicalPort::ReadInternal(OdbcmConnectionHandler *db_conn,
  *                               function is invoked from readnext
  * @return      : It returns the read bulk operation status in
  *                logical port table
- *                UPPL_RC_SUCCESS - if read operation is success
- *                UPPL_RC_ERR_* - if read operation is a failure
+ *                UNC_RC_SUCCESS - if read operation is success
+ *                UNC_UPPL_RC_ERR_* - if read operation is a failure
  **/
-UpplReturnCode Kt_LogicalPort::ReadBulk(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_LogicalPort::ReadBulk(OdbcmConnectionHandler *db_conn,
                                         void* key_struct,
                                         uint32_t data_type,
                                         uint32_t &max_rep_ct,
@@ -311,14 +311,14 @@ UpplReturnCode Kt_LogicalPort::ReadBulk(OdbcmConnectionHandler *db_conn,
                                         pfc_bool_t parent_call,
                                         pfc_bool_t is_read_next,
                                         ReadRequest *read_req) {
-  UpplReturnCode read_status = UPPL_RC_SUCCESS;
+  UncRespCode read_status = UNC_RC_SUCCESS;
   key_logical_port_t obj_key_logical_port=
       *(reinterpret_cast<key_logical_port_t*>(key_struct));
   if ((unc_keytype_datatype_t)data_type != UNC_DT_STATE) {
     // Not supported
     pfc_log_debug("ReadBulk operation is not allowed in %d data type",
                   data_type);
-    read_status = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    read_status = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
     return read_status;
   }
   string str_controller_name = reinterpret_cast<char *>(obj_key_logical_port.
@@ -334,7 +334,7 @@ UpplReturnCode Kt_LogicalPort::ReadBulk(OdbcmConnectionHandler *db_conn,
   // Check for child call
   if (max_rep_ct == 0) {
     pfc_log_info("max_rep_ct is 0");
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   if (child_index == -1 &&
       !str_logicalport_id.empty()) {
@@ -343,10 +343,10 @@ UpplReturnCode Kt_LogicalPort::ReadBulk(OdbcmConnectionHandler *db_conn,
     vect_key_value.push_back(str_controller_name);
     vect_key_value.push_back(str_domain_name);
     vect_key_value.push_back(str_logicalport_id);
-    UpplReturnCode key_exist_status = IsKeyExists(
+    UncRespCode key_exist_status = IsKeyExists(
         db_conn, (unc_keytype_datatype_t)data_type,
         vect_key_value);
-    if (key_exist_status == UPPL_RC_SUCCESS) {
+    if (key_exist_status == UNC_RC_SUCCESS) {
       log_port_exists = PFC_TRUE;
     }
   }
@@ -356,8 +356,8 @@ UpplReturnCode Kt_LogicalPort::ReadBulk(OdbcmConnectionHandler *db_conn,
                                  max_rep_ct, vect_val_logical_port_st,
                                  vect_logicalport_id);
 
-  pfc_log_debug("Read status from logical_port is %d with result size %d",
-                read_status, static_cast<int>(vect_logicalport_id.size()));
+  pfc_log_debug("Read status from logical_port is %d with result size %"
+                PFC_PFMT_SIZE_T, read_status, vect_logicalport_id.size());
   if (log_port_exists == PFC_TRUE) {
     vect_logicalport_id.insert(vect_logicalport_id.begin(),
                                obj_key_logical_port);
@@ -365,7 +365,7 @@ UpplReturnCode Kt_LogicalPort::ReadBulk(OdbcmConnectionHandler *db_conn,
     vect_val_logical_port_st.insert(vect_val_logical_port_st.begin(),
                                     dummy_val_log_port);
   }
-  if (read_status == UPPL_RC_SUCCESS ||
+  if (read_status == UNC_RC_SUCCESS ||
       log_port_exists == PFC_TRUE) {
     vector<val_logical_port_st_t>::iterator vect_iter =
         vect_val_logical_port_st.begin();
@@ -399,14 +399,15 @@ UpplReturnCode Kt_LogicalPort::ReadBulk(OdbcmConnectionHandler *db_conn,
         --max_rep_ct;
         if (max_rep_ct == 0) {
           pfc_log_debug("max_rep_ct reached zero, so returning");
-          return UPPL_RC_SUCCESS;
+          return UNC_RC_SUCCESS;
         }
       }
       log_port_exists = PFC_FALSE;
       str_logicalport_id =
           reinterpret_cast<char *>((*logicalport_iter).port_id);
       int st_child_index = KIdxLogicalMemberPort;
-      pfc_log_debug("child_index=%d st_child_index=%d", child_index, st_child_index);
+      pfc_log_debug("child_index=%d st_child_index=%d",
+                    child_index, st_child_index);
 /*
           (child_index >= 0 && child_index <= KIdxLogicalMemberPort) \
           ? child_index+1 : KIdxLogicalMemberPort;
@@ -426,7 +427,7 @@ UpplReturnCode Kt_LogicalPort::ReadBulk(OdbcmConnectionHandler *db_conn,
           continue;
         }
         pfc_log_debug("Calling child %d read bulk", kIdx);
-        UpplReturnCode ch_read_status = child[kIdx]->ReadBulk(
+        UncRespCode ch_read_status = child[kIdx]->ReadBulk(
             db_conn, child_key_struct,
             data_type,
             max_rep_ct,
@@ -441,13 +442,13 @@ UpplReturnCode Kt_LogicalPort::ReadBulk(OdbcmConnectionHandler *db_conn,
         FreeChildKeyStruct(kIdx, child_key_struct);
         if (max_rep_ct == 0) {
           pfc_log_debug("max_rep_ct reached zero, so returning");
-          return UPPL_RC_SUCCESS;
+          return UNC_RC_SUCCESS;
         }
       }
       // reset child index
       child_index = -1;
     }
-  } else if (read_status == UPPL_RC_ERR_DB_ACCESS) {
+  } else if (read_status == UNC_UPPL_RC_ERR_DB_ACCESS) {
     pfc_log_debug("KtLogicalPort ReadBulk - Returning DB Access Error");
     return read_status;
   }
@@ -474,12 +475,12 @@ UpplReturnCode Kt_LogicalPort::ReadBulk(OdbcmConnectionHandler *db_conn,
         read_req);
     pfc_log_debug("read status from next kin Kt_Domain is %d",
                   read_status);
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   pfc_log_debug("logical port - reached end of table");
   pfc_log_debug("read_status=%d", read_status);
-  if (read_status == UPPL_RC_ERR_NO_SUCH_INSTANCE) {
-    read_status = UPPL_RC_SUCCESS;
+  if (read_status == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+    read_status = UNC_RC_SUCCESS;
   }
   return read_status;
 }
@@ -501,10 +502,10 @@ UpplReturnCode Kt_LogicalPort::ReadBulk(OdbcmConnectionHandler *db_conn,
  *                of logical port
  * @return      : It returns the read bulk operation status in logical port
  *                table
- *                UPPL_RC_SUCCESS - if read operation is success
- *                UPPL_RC_ERR_* - if read operation is a failure
+ *                UNC_RC_SUCCESS - if read operation is success
+ *                UNC_UPPL_RC_ERR_* - if read operation is a failure
  **/
-UpplReturnCode Kt_LogicalPort::ReadBulkInternal(
+UncRespCode Kt_LogicalPort::ReadBulkInternal(
     OdbcmConnectionHandler *db_conn,
     void* key_struct,
     void* val_struct,
@@ -513,10 +514,10 @@ UpplReturnCode Kt_LogicalPort::ReadBulkInternal(
     vector<val_logical_port_st_t> &vect_val_logical_port,
     vector<key_logical_port_t> &vect_logical_port_id) {
   if (max_rep_ct <= 0) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
-  UpplReturnCode read_status = UPPL_RC_SUCCESS;
+  UncRespCode read_status = UNC_RC_SUCCESS;
   ODBCM_RC_STATUS read_db_status = ODBCM_RC_SUCCESS;
   DBTableSchema kt_logicalport_dbtableschema;
   // Populate DBSchema for logicalport_table
@@ -534,14 +535,14 @@ UpplReturnCode Kt_LogicalPort::ReadBulkInternal(
                   (unc_keytype_operation_t)UNC_OP_READ_BULK, db_conn);
   if (read_db_status == ODBCM_RC_RECORD_NOT_FOUND) {
     pfc_log_debug("No record found");
-    read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+    read_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     return read_status;
   } else if (read_db_status == ODBCM_RC_CONNECTION_ERROR) {
-    read_status = UPPL_RC_ERR_DB_ACCESS;
+    read_status = UNC_UPPL_RC_ERR_DB_ACCESS;
     pfc_log_error("Read operation has failed with error %d", read_db_status);
     return read_status;
   } else if (read_db_status != ODBCM_RC_SUCCESS) {
-    read_status = UPPL_RC_ERR_DB_GET;
+    read_status = UNC_UPPL_RC_ERR_DB_GET;
     // log error to log daemon
     pfc_log_error("Read operation has failed with error %d", read_db_status);
     return read_status;
@@ -567,17 +568,17 @@ UpplReturnCode Kt_LogicalPort::ReadBulkInternal(
  *                data_type - indicates the data base type i.e UNC_DT_STATE
  *                            or UNC_DT_IMPORT
  * @return      : Return code of the syntax validation will be sent
- *                UPPL_RC_SUCCESS - if Syntax Validation is success
- *                UPPL_RC_ERR_CFG_SYNTAX - if syntax validation fails
+ *                UNC_RC_SUCCESS - if Syntax Validation is success
+ *                UNC_UPPL_RC_ERR_CFG_SYNTAX - if syntax validation fails
  * */
-UpplReturnCode Kt_LogicalPort::PerformSyntaxValidation(
+UncRespCode Kt_LogicalPort::PerformSyntaxValidation(
     OdbcmConnectionHandler *db_conn,
     void* key_struct,
     void* val_struct,
     uint32_t operation,
     uint32_t data_type) {
   pfc_log_info("Syntax Validation of UNC_KT_LOGICAL_PORT");
-  UpplReturnCode ret_code = UPPL_RC_SUCCESS;
+  UncRespCode ret_code = UNC_RC_SUCCESS;
   pfc_ipcresp_t mandatory = PFC_TRUE;
   map<string, Kt_Class_Attr_Syntax> attr_syntax_map =
       attr_syntax_map_all[UNC_KT_LOGICAL_PORT];
@@ -586,20 +587,20 @@ UpplReturnCode Kt_LogicalPort::PerformSyntaxValidation(
   string value =
       reinterpret_cast<char*>(key->domain_key.ctr_key.controller_name);
   IS_VALID_STRING_KEY(CTR_NAME_STR, value, operation, ret_code, mandatory);
-  if (ret_code != UPPL_RC_SUCCESS) {
-    return UPPL_RC_ERR_CFG_SYNTAX;
+  if (ret_code != UNC_RC_SUCCESS) {
+    return UNC_UPPL_RC_ERR_CFG_SYNTAX;
   }
 
   value = reinterpret_cast<char*>(key->domain_key.domain_name);
   IS_VALID_STRING_KEY(DOMAIN_NAME_STR, value, operation, ret_code, mandatory);
-  if (ret_code != UPPL_RC_SUCCESS) {
-    return UPPL_RC_ERR_CFG_SYNTAX;
+  if (ret_code != UNC_RC_SUCCESS) {
+    return UNC_UPPL_RC_ERR_CFG_SYNTAX;
   }
 
   value = reinterpret_cast<char*>(key->port_id);
   IS_VALID_STRING_KEY(LP_PORT_ID_STR, value, operation, ret_code, mandatory);
-  if (ret_code != UPPL_RC_SUCCESS) {
-    return UPPL_RC_ERR_CFG_SYNTAX;
+  if (ret_code != UNC_RC_SUCCESS) {
+    return UNC_UPPL_RC_ERR_CFG_SYNTAX;
   }
   // Validate value structure
   if (val_struct != NULL) {
@@ -612,16 +613,16 @@ UpplReturnCode Kt_LogicalPort::PerformSyntaxValidation(
     string value = reinterpret_cast<char*>(val_lp->description);
     IS_VALID_STRING_VALUE(LP_DESCRIPTION_STR, value, operation,
                           valid_val, ret_code, mandatory);
-    if (ret_code != UPPL_RC_SUCCESS) {
-      return UPPL_RC_ERR_CFG_SYNTAX;
+    if (ret_code != UNC_RC_SUCCESS) {
+      return UNC_UPPL_RC_ERR_CFG_SYNTAX;
     }
 
     // Validate port_type
     valid_val = PhyUtil::uint8touint(val_lp->valid[kIdxLogicalPortType]);
     if (valid_val == UNC_VF_VALID) {
       ret_code = ValidatePortType(val_lp->port_type);
-      if (ret_code != UPPL_RC_SUCCESS) {
-        return UPPL_RC_ERR_CFG_SYNTAX;
+      if (ret_code != UNC_RC_SUCCESS) {
+        return UNC_UPPL_RC_ERR_CFG_SYNTAX;
       }
     }
 
@@ -630,8 +631,8 @@ UpplReturnCode Kt_LogicalPort::PerformSyntaxValidation(
     valid_val = PhyUtil::uint8touint(val_lp->valid[kIdxLogicalPortSwitchId]);
     IS_VALID_STRING_VALUE(LP_SWITCH_ID_STR, value, operation,
                           valid_val, ret_code, mandatory);
-    if (ret_code != UPPL_RC_SUCCESS) {
-      return UPPL_RC_ERR_CFG_SYNTAX;
+    if (ret_code != UNC_RC_SUCCESS) {
+      return UNC_UPPL_RC_ERR_CFG_SYNTAX;
     }
 
     // validate physical port id
@@ -646,8 +647,8 @@ UpplReturnCode Kt_LogicalPort::PerformSyntaxValidation(
                                      valid[kIdxLogicalPortOperDownCriteria]);
     IS_VALID_INT_VALUE(LP_OPER_DOWN_CRITERIA_STR, val_lp->oper_down_criteria,
                        operation, valid_val, ret_code, mandatory);
-    if (ret_code != UPPL_RC_SUCCESS) {
-      return UPPL_RC_ERR_CFG_SYNTAX;
+    if (ret_code != UNC_RC_SUCCESS) {
+      return UNC_UPPL_RC_ERR_CFG_SYNTAX;
     }
   }
   return ret_code;
@@ -665,17 +666,17 @@ UpplReturnCode Kt_LogicalPort::PerformSyntaxValidation(
  *                data_type - indicates the data base type i.e UNC_DT_STATE
  *                            or UNC_DT_IMPORT  
  * @return      : return code of the semantic validation will be returned
- *                UPPL_RC_SUCCESS - if Semantic Validation is success
- *                UPPL_RC_ERR_* - if semantic validation is failure  
+ *                UNC_RC_SUCCESS - if Semantic Validation is success
+ *                UNC_UPPL_RC_ERR_* - if semantic validation is failure  
  **/
-UpplReturnCode Kt_LogicalPort::PerformSemanticValidation(
+UncRespCode Kt_LogicalPort::PerformSemanticValidation(
     OdbcmConnectionHandler *db_conn,
     void* key_struct,
     void* val_struct,
     uint32_t operation,
     uint32_t data_type) {
   pfc_log_info("Inside PerformSemanticValidation of KT_LOGICAL_PORT");
-  UpplReturnCode status = UPPL_RC_SUCCESS;
+  UncRespCode status = UNC_RC_SUCCESS;
   key_logical_port *obj_key =
       reinterpret_cast<key_logical_port_t*>(key_struct);
 
@@ -689,41 +690,41 @@ UpplReturnCode Kt_LogicalPort::PerformSemanticValidation(
   sw_vect_key_value.push_back(domain_name);
   sw_vect_key_value.push_back(port_id);
 
-  UpplReturnCode KeyStatus = IsKeyExists(
+  UncRespCode KeyStatus = IsKeyExists(
       db_conn, (unc_keytype_datatype_t)data_type,
       sw_vect_key_value);
   pfc_log_debug("IsKeyExists status %d", KeyStatus);
 
   if (operation == UNC_OP_CREATE) {
-    if (KeyStatus == UPPL_RC_SUCCESS) {
+    if (KeyStatus == UNC_RC_SUCCESS) {
       pfc_log_error("Key instance already exists");
       pfc_log_error("Hence create operation not allowed");
-      status = UPPL_RC_ERR_INSTANCE_EXISTS;
+      status = UNC_UPPL_RC_ERR_INSTANCE_EXISTS;
     } else {
       pfc_log_info("key instance not exist create operation allowed");
     }
   } else if (operation == UNC_OP_UPDATE || operation == UNC_OP_DELETE ||
       operation == UNC_OP_READ) {
     // In case of update/delete/read operation, key should exist
-    if (KeyStatus != UPPL_RC_SUCCESS) {
+    if (KeyStatus != UNC_RC_SUCCESS) {
       pfc_log_error("Key instance does not exist");
       pfc_log_error("Hence update/delete/read operation not allowed");
-      status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+      status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     } else {
       pfc_log_info(
           "key instance exist update/del/read operation allowed");
     }
   }
-  if (operation == UNC_OP_CREATE && status == UPPL_RC_SUCCESS) {
+  if (operation == UNC_OP_CREATE && status == UNC_RC_SUCCESS) {
     vector<string> parent_vect_key_value;
     parent_vect_key_value.push_back(controller_name);
     parent_vect_key_value.push_back(domain_name);
     Kt_Ctr_Domain KtObj;
-    UpplReturnCode parent_key_status = KtObj.IsKeyExists(
+    UncRespCode parent_key_status = KtObj.IsKeyExists(
         db_conn, (unc_keytype_datatype_t)data_type, parent_vect_key_value);
     pfc_log_debug("Parent IsKeyExists status %d", parent_key_status);
-    if (parent_key_status != UPPL_RC_SUCCESS) {
-      status = UPPL_RC_ERR_PARENT_DOES_NOT_EXIST;
+    if (parent_key_status != UNC_RC_SUCCESS) {
+      status = UNC_UPPL_RC_ERR_PARENT_DOES_NOT_EXIST;
     }
   }
   pfc_log_debug("Return Code SemanticValidation: %d", status);
@@ -742,34 +743,34 @@ UpplReturnCode Kt_LogicalPort::PerformSemanticValidation(
  *                  value_struct - void pointer to be type cast into logical
  *                  port value structure type
  * @return        : the oper status result from db will be returned
- *                  UPPL_RC_SUCCESS - in case oper status is received from DB
- *                  UPPL_RC_ERR_* - if unable to receive oper status from DB
+ *                  UNC_RC_SUCCESS - in case oper status is received from DB
+ *                  UNC_UPPL_RC_ERR_* - if unable to receive oper status from DB
  **/
-UpplReturnCode Kt_LogicalPort::HandleDriverAlarms(
+UncRespCode Kt_LogicalPort::HandleDriverAlarms(
     OdbcmConnectionHandler *db_conn,
     uint32_t data_type,
     uint32_t alarm_type,
     uint32_t oper_type,
     void* key_struct,
     void* val_struct) {
-  UpplReturnCode status = UPPL_RC_SUCCESS;
+  UncRespCode status = UNC_RC_SUCCESS;
   // Following alarms are sent for kt_logicalport
   if (alarm_type != UNC_SUBDOMAIN_SPLIT) {
     pfc_log_info("%d alarm received for logical port is ignored", alarm_type);
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   pfc_log_info("UNC_SUBDOMAIN_SPLIT alarm sent by driver");
   uint8_t oper_status_db = 0;
-  UpplReturnCode read_status = GetOperStatus(db_conn, data_type,
+  UncRespCode read_status = GetOperStatus(db_conn, data_type,
                                              key_struct,
                                              oper_status_db);
-  if (read_status != UPPL_RC_SUCCESS) {
+  if (read_status != UNC_RC_SUCCESS) {
     pfc_log_info("Unable to get current oper_status from db");
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   if (oper_status_db == UPPL_LOGICAL_PORT_OPER_UNKNOWN) {
     pfc_log_info("Logical Port oper is unknown, not processing alarm");
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   UpplLogicalPortOperStatus old_oper_status =
       (UpplLogicalPortOperStatus)oper_status_db;
@@ -784,7 +785,7 @@ UpplReturnCode Kt_LogicalPort::HandleDriverAlarms(
   pfc_log_info("Oper_status to be set to  db: %d", new_oper_status);
   if (new_oper_status == old_oper_status) {
     pfc_log_debug("Old and new oper status are same, so do nothing");
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   if (new_oper_status == UPPL_LOGICAL_PORT_OPER_UP) {
     GetOperStatusFromOperDownCriteria(db_conn, data_type,
@@ -795,21 +796,21 @@ UpplReturnCode Kt_LogicalPort::HandleDriverAlarms(
   pfc_log_info("Oper_status to be set to  db: %d", new_oper_status);
   if (new_oper_status == old_oper_status) {
     pfc_log_debug("Old and new oper status are same, so do nothing");
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   // Set oper_status update in DB
   status = SetOperStatus(db_conn, data_type, key_struct, NULL, new_oper_status);
   pfc_log_debug("Update oper_status return: %d", status);
-  if (status == UPPL_RC_SUCCESS) {
+  if (status == UNC_RC_SUCCESS) {
     // Call NotifyOperStatus of referred key types
     key_logical_port_t *key_lp = reinterpret_cast<key_logical_port_t*>
     (key_struct);
     string controller_name =
         (const char*)(key_lp->domain_key.ctr_key.controller_name);
     vector<OperStatusHolder> ref_oper_status;
-    GET_ADD_CTRL_OPER_STATUS(controller_name);
+    GET_ADD_CTRL_OPER_STATUS(controller_name, ref_oper_status);
     ADD_LP_PORT_OPER_STATUS(*key_lp,
-                            new_oper_status);
+                            new_oper_status, ref_oper_status);
     status = NotifyOperStatus(db_conn, data_type,
                               key_struct, val_struct, ref_oper_status);
     pfc_log_debug("Notify oper_status return: %d", status);
@@ -827,24 +828,22 @@ UpplReturnCode Kt_LogicalPort::HandleDriverAlarms(
  *                type
  *                value struct - void pointer to be cast into logical port
  *                value type
- * @return      : UPPL_RC_SUCCESS - if oper status update in db is successful
- *                UPPL_RC_ERR_* - if oper status update in db is failure
+ * @return      : UNC_RC_SUCCESS - if oper status update in db is successful
+ *                UNC_UPPL_RC_ERR_* - if oper status update in db is failure
  **/
-UpplReturnCode Kt_LogicalPort::HandleOperStatus(
+UncRespCode Kt_LogicalPort::HandleOperStatus(
     OdbcmConnectionHandler *db_conn,
     uint32_t data_type,
     void *key_struct,
     void *value_struct,
     vector<OperStatusHolder> &ref_oper_status,
     unc_key_type_t caller_kt) {
-  FN_START_TIME("HandleOperStatus", "LogicalPort");
-  UpplReturnCode return_code = UPPL_RC_SUCCESS;
+  UncRespCode return_code = UNC_RC_SUCCESS;
   pfc_log_debug("LogicalPort Handle Oper Status Enter");
 
   if (key_struct == NULL) {
     pfc_log_debug("Key struct is not available in request");
-    return_code = UPPL_RC_ERR_BAD_REQUEST;
-    FN_END_TIME("HandleOperStatus", "LogicalPort");
+    return_code = UNC_UPPL_RC_ERR_BAD_REQUEST;
     return return_code;
   }
   key_logical_port_t *obj_key_logical_port =
@@ -894,19 +893,18 @@ UpplReturnCode Kt_LogicalPort::HandleOperStatus(
   memset(&ctr_key, '\0', sizeof(key_ctr_t));
   memcpy(ctr_key.controller_name, controller_name.c_str(),
          (controller_name.length())+1);
-  UpplReturnCode read_oper_status = get_oper_status(
+  UncRespCode read_oper_status = get_oper_status(
       ref_oper_status,
       UNC_KT_CONTROLLER,
       reinterpret_cast<void*>(&ctr_key),
       ctrl_oper_status);
-  if (read_oper_status != UPPL_RC_SUCCESS) {
+  if (read_oper_status != UNC_RC_SUCCESS) {
     Kt_Controller controller;
-    UpplReturnCode read_status = controller.GetOperStatus(
+    UncRespCode read_status = controller.GetOperStatus(
         db_conn, data_type, reinterpret_cast<void*>(&ctr_key),
         ctrl_oper_status);
-    if (read_status != UPPL_RC_SUCCESS) {
+    if (read_status != UNC_RC_SUCCESS) {
       pfc_log_info("Controller's oper_status read returned failure");
-      FN_END_TIME("HandleOperStatus", "LogicalPort");
       return return_code;
     }
   }
@@ -924,7 +922,6 @@ UpplReturnCode Kt_LogicalPort::HandleOperStatus(
     // Notify referred classes
     return_code = NotifyOperStatus(db_conn, data_type, key_struct,
                                    NULL, ref_oper_status);
-    FN_END_TIME("HandleOperStatus", "LogicalPort");
     return return_code;
   }
   pfc_log_info("Controller's oper_status %d", ctrl_oper_status);
@@ -943,8 +940,8 @@ UpplReturnCode Kt_LogicalPort::HandleOperStatus(
                                        UNC_KT_SWITCH,
                                        reinterpret_cast<void*>(&switch_key),
                                        switch_oper_status);
-    UpplReturnCode read_status = UPPL_RC_SUCCESS;
-    if (read_oper_status != UPPL_RC_SUCCESS) {
+    UncRespCode read_status = UNC_RC_SUCCESS;
+    if (read_oper_status != UNC_RC_SUCCESS) {
       // get switch oper status:
       logical_port_oper_status =
           UPPL_LOGICAL_PORT_OPER_UNKNOWN;
@@ -953,8 +950,8 @@ UpplReturnCode Kt_LogicalPort::HandleOperStatus(
           db_conn, data_type,
           reinterpret_cast<void*>(&switch_key), switch_oper_status);
     }
-    if (read_oper_status == UPPL_RC_SUCCESS ||
-        read_status == UPPL_RC_SUCCESS) {
+    if (read_oper_status == UNC_RC_SUCCESS ||
+        read_status == UNC_RC_SUCCESS) {
       pfc_log_info("switch oper_status %d", switch_oper_status);
       if (switch_oper_status ==
           (UpplSwitchOperStatus) UPPL_SWITCH_OPER_UP) {
@@ -992,7 +989,7 @@ UpplReturnCode Kt_LogicalPort::HandleOperStatus(
           reinterpret_cast<void *> (&(*keyItr)),
           value_struct,
           logical_port_oper_status);
-      if (return_code != UPPL_RC_SUCCESS) {
+      if (return_code != UNC_RC_SUCCESS) {
         ++keyItr;
         continue;
       }
@@ -1001,7 +998,7 @@ UpplReturnCode Kt_LogicalPort::HandleOperStatus(
     } else if (caller_kt != UNC_KT_SWITCH) {
       // Check oper_status of associated port
       uint8_t port_oper_status = 0;
-      UpplReturnCode port_status = UPPL_RC_SUCCESS;
+      UncRespCode port_status = UNC_RC_SUCCESS;
       key_port_t obj_key_port;
       memset(&obj_key_port, '\0', sizeof(key_port_t));
       memcpy(obj_key_port.sw_key.ctr_key.controller_name,
@@ -1017,13 +1014,13 @@ UpplReturnCode Kt_LogicalPort::HandleOperStatus(
                                          UNC_KT_PORT,
                                          reinterpret_cast<void*>(&obj_key_port),
                                          port_oper_status);
-      if (read_oper_status != UPPL_RC_SUCCESS) {
+      if (read_oper_status != UNC_RC_SUCCESS) {
         port_status = GetPortOperStatus(
             db_conn, obj_key_port,
             &port_oper_status, data_type);
       }
-      if ((read_oper_status == UPPL_RC_SUCCESS ||
-          port_status == UPPL_RC_SUCCESS) &&
+      if ((read_oper_status == UNC_RC_SUCCESS ||
+          port_status == UNC_RC_SUCCESS) &&
           port_oper_status == UPPL_PORT_OPER_DOWN) {
         logical_port_oper_status = UPPL_LOGICAL_PORT_OPER_DOWN;
       }
@@ -1042,10 +1039,12 @@ UpplReturnCode Kt_LogicalPort::HandleOperStatus(
     vector<key_logical_port_t>::iterator keyItr =
         vectLogicalPortKey.begin();
     for (; keyItr != vectLogicalPortKey.end(); ++keyItr) {
-      if (return_code == UPPL_RC_SUCCESS) {
+      if (return_code == UNC_RC_SUCCESS) {
         // Call referred classes' notify oper_status functions
         key_logical_port_t key_lp = (*keyItr);
-        ADD_LP_PORT_OPER_STATUS(key_lp, logical_port_oper_status);
+        ADD_LP_PORT_OPER_STATUS(key_lp,
+                                logical_port_oper_status,
+                                ref_oper_status);
         return_code = NotifyOperStatus(
             db_conn, data_type, reinterpret_cast<void *> (&(*keyItr)),
             NULL, ref_oper_status);
@@ -1058,7 +1057,6 @@ UpplReturnCode Kt_LogicalPort::HandleOperStatus(
     pfc_log_debug("Logicalport sibling count is 0");
   }
   pfc_log_debug("LogicalPort Handle Oper Status End");
-  FN_END_TIME("HandleOperStatus", "LogicalPort");
   return return_code;
 }
 
@@ -1073,10 +1071,10 @@ UpplReturnCode Kt_LogicalPort::HandleOperStatus(
  *                value type
  *                logical_port_oper_status - indicates the logical port oper
  *                status i.e. either UP or DOWN
- * @return      : UPPL_RC_SUCCESS - if port oper status is retrieved correctly
- *                UPPL_RC_ERR_* - if port oper status cannot be retrieved
+ * @return      : UNC_RC_SUCCESS - if port oper status is retrieved correctly
+ *                UNC_UPPL_RC_ERR_* - if port oper status cannot be retrieved
  **/
-UpplReturnCode Kt_LogicalPort::GetOperStatusFromOperDownCriteria(
+UncRespCode Kt_LogicalPort::GetOperStatusFromOperDownCriteria(
     OdbcmConnectionHandler *db_conn,
     uint32_t data_type,
     void *key_struct,
@@ -1090,10 +1088,10 @@ UpplReturnCode Kt_LogicalPort::GetOperStatusFromOperDownCriteria(
                                        value_struct,
                                        vectOperStatus, PFC_FALSE);
   // get oper down from DB
-  UpplReturnCode return_code = UPPL_RC_SUCCESS;
+  UncRespCode return_code = UNC_RC_SUCCESS;
   return_code = GetOperDownCriteria(db_conn, data_type,
                                     key_struct, oper_down_criteria);
-  if (return_code != UPPL_RC_SUCCESS) {
+  if (return_code != UNC_RC_SUCCESS) {
     pfc_log_info("Logicalport OperStatusFromOperDownCriteria read error");
     return return_code;
   }
@@ -1134,7 +1132,7 @@ UpplReturnCode Kt_LogicalPort::GetOperStatusFromOperDownCriteria(
     pfc_log_debug("Logicalport OperStatusFromOperDownCriteria Any status:%d",
                   logical_port_oper_status);
   } else {
-    return_code = UPPL_RC_ERR_BAD_REQUEST;
+    return_code = UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   pfc_log_debug("Exit logical port OperStatusFromOperDownCriteria");
   return return_code;
@@ -1152,10 +1150,10 @@ UpplReturnCode Kt_LogicalPort::GetOperStatusFromOperDownCriteria(
  *                vectOperStatus - vector to hold the oper status of port 
  *                is_delete_call - bool variable to check whether delete call
  *                                 is madwe by the parent class 
- * @return      : UPPL_RC_SUCCESS - if port oper status is read correctly
- *                UPPL_RC_ERR_* - if port oper status read returned failure
+ * @return      : UNC_RC_SUCCESS - if port oper status is read correctly
+ *                UNC_UPPL_RC_ERR_* - if port oper status read returned failure
  **/
-UpplReturnCode Kt_LogicalPort::HandleOperDownCriteriaFromPortStatus(
+UncRespCode Kt_LogicalPort::HandleOperDownCriteriaFromPortStatus(
     OdbcmConnectionHandler *db_conn,
     uint32_t data_type,
     void *key_struct,
@@ -1163,11 +1161,11 @@ UpplReturnCode Kt_LogicalPort::HandleOperDownCriteriaFromPortStatus(
     vector<uint32_t> &vectOperStatus,
     pfc_bool_t is_delete_call) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
-  UpplReturnCode return_code = UPPL_RC_SUCCESS;
+  UncRespCode return_code = UNC_RC_SUCCESS;
 
   pfc_log_debug("Entering Logical port Handle OperDownCriteriaFromPortStatus");
   if (key_struct == NULL) {
-    return_code = UPPL_RC_ERR_BAD_REQUEST;
+    return_code = UNC_UPPL_RC_ERR_BAD_REQUEST;
     return return_code;
   }
   key_logical_port_t *obj_key_logical_port =
@@ -1280,7 +1278,7 @@ UpplReturnCode Kt_LogicalPort::HandleOperDownCriteriaFromPortStatus(
         }
       }
 
-      UpplReturnCode read_status = UPPL_RC_SUCCESS;
+      UncRespCode read_status = UNC_RC_SUCCESS;
       Kt_Port port;
       key_port_t obj_key_port;
       string port_controller_name = (const char*) logical_memeber_port.
@@ -1325,7 +1323,7 @@ UpplReturnCode Kt_LogicalPort::HandleOperDownCriteriaFromPortStatus(
       read_status = port.GetOperStatus(
           db_conn, data_type, reinterpret_cast<void*>(&obj_key_port),
           port_oper_status);
-      if (read_status == UPPL_RC_SUCCESS) {
+      if (read_status == UNC_RC_SUCCESS) {
         pfc_log_debug("port oper_status in logport: %d", port_oper_status);
         vectOperStatus.push_back(port_oper_status);
       } else {
@@ -1349,11 +1347,11 @@ UpplReturnCode Kt_LogicalPort::HandleOperDownCriteriaFromPortStatus(
  *                key_struct - void pointer to be cast into logical port key
  *                type
  *                oper_down_criteria - specifies the oper down criteria
- * @return      : UPPL_RC_SUCCESS - if oper down read criteria from db is
+ * @return      : UNC_RC_SUCCESS - if oper down read criteria from db is
  *                success
- *                UPPL_RC_ERR_* - if oper down read criteria from db is failure
+ *                UNC_UPPL_RC_ERR_* - if oper down read criteria from db is failure
  **/
-UpplReturnCode Kt_LogicalPort::GetOperDownCriteria(
+UncRespCode Kt_LogicalPort::GetOperDownCriteria(
     OdbcmConnectionHandler *db_conn,
     uint32_t data_type,
     void* key_struct,
@@ -1417,7 +1415,7 @@ UpplReturnCode Kt_LogicalPort::GetOperDownCriteria(
   if (read_db_status != ODBCM_RC_SUCCESS) {
     // log error
     pfc_log_error("oper down criteria read operation failed");
-    return UPPL_RC_ERR_DB_GET;
+    return UNC_UPPL_RC_ERR_DB_GET;
   }
 
   // read the oper_down_criteria value
@@ -1447,7 +1445,7 @@ UpplReturnCode Kt_LogicalPort::GetOperDownCriteria(
       }
     }
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /** 
@@ -1456,15 +1454,15 @@ UpplReturnCode Kt_LogicalPort::GetOperDownCriteria(
  *                            or UNC_DT_IMPORT
  *                key_struct - void pointer to be type cast into logical port
  *                key type
- * @return      : UPPL_RC_SUCCESS - if boundary oper status is changed in DB
- *                UPPL_RC_ERR_* - if there are no boundaries associated with
+ * @return      : UNC_RC_SUCCESS - if boundary oper status is changed in DB
+ *                UNC_UPPL_RC_ERR_* - if there are no boundaries associated with
  *                the controller name
  **/
-UpplReturnCode Kt_LogicalPort::InvokeBoundaryNotifyOperStatus(
+UncRespCode Kt_LogicalPort::InvokeBoundaryNotifyOperStatus(
     OdbcmConnectionHandler *db_conn,
     uint32_t data_type,
     void *key_struct) {
-  UpplReturnCode return_code = UPPL_RC_SUCCESS;
+  UncRespCode return_code = UNC_RC_SUCCESS;
   key_logical_port_t *obj_key_logical_port =
       reinterpret_cast<key_logical_port_t*>(key_struct);
 
@@ -1476,11 +1474,13 @@ UpplReturnCode Kt_LogicalPort::InvokeBoundaryNotifyOperStatus(
       (const char*)obj_key_logical_port->port_id;
   vector<OperStatusHolder> ref_oper_status;
   // Get controller oper status
-  GET_ADD_CTRL_OPER_STATUS(controller_name);
+  GET_ADD_CTRL_OPER_STATUS(controller_name, ref_oper_status);
   uint8_t lp_oper_status = 0;
   read_status = GetOperStatus(
       db_conn, data_type, key_struct, lp_oper_status);
-  ADD_LP_PORT_OPER_STATUS(*obj_key_logical_port, lp_oper_status);
+  ADD_LP_PORT_OPER_STATUS(*obj_key_logical_port,
+                          lp_oper_status,
+                          ref_oper_status);
   // Notify UNC_KT_BOUNDARY
   Kt_Boundary boundary;
   val_boundary_t obj_val_boundary1;
@@ -1529,18 +1529,18 @@ UpplReturnCode Kt_LogicalPort::InvokeBoundaryNotifyOperStatus(
  *                port key type
  *                value_struct - void pointer type to be type cast into logical
  *                port key type
- * @return      : UPPL_RC_SUCCESS - if the oper status notification in key type
+ * @return      : UNC_RC_SUCCESS - if the oper status notification in key type
  *                boundary is changed successfully
- *                UPPL_RC_ERR_* - if the oper status notification in key type
+ *                UNC_UPPL_RC_ERR_* - if the oper status notification in key type
  *                boundary fails
  **/
-UpplReturnCode Kt_LogicalPort::NotifyOperStatus(
+UncRespCode Kt_LogicalPort::NotifyOperStatus(
     OdbcmConnectionHandler *db_conn,
     uint32_t data_type,
     void *key_struct,
     void *value_struct,
     vector<OperStatusHolder> &ref_oper_status) {
-  UpplReturnCode return_code = UPPL_RC_SUCCESS;
+  UncRespCode return_code = UNC_RC_SUCCESS;
   key_logical_port_t *obj_key_logical_port =
       reinterpret_cast<key_logical_port_t*>(key_struct);
 
@@ -1612,11 +1612,11 @@ UpplReturnCode Kt_LogicalPort::NotifyOperStatus(
  *                key_struct - void pointer type to be type cast into logical
  *                port key type
  *                oper_status - Stores the oper status received from DB 
- * @return      : UPPL_RC_SUCCESS - if oper status is reads successfully  from
+ * @return      : UNC_RC_SUCCESS - if oper status is reads successfully  from
  *                the DB
- *                UPPL_RC_ERR_DB_GET if oper staus read operation failed from DB
+ *                UNC_UPPL_RC_ERR_DB_GET if oper staus read operation failed from DB
  **/
-UpplReturnCode Kt_LogicalPort::GetOperStatus(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_LogicalPort::GetOperStatus(OdbcmConnectionHandler *db_conn,
                                              uint32_t data_type,
                                              void* key_struct,
                                              uint8_t &oper_status) {
@@ -1669,7 +1669,7 @@ UpplReturnCode Kt_LogicalPort::GetOperStatus(OdbcmConnectionHandler *db_conn,
   if (read_db_status != ODBCM_RC_SUCCESS) {
     // log error
     pfc_log_error("oper_status read operation failed");
-    return UPPL_RC_ERR_DB_GET;
+    return UNC_UPPL_RC_ERR_DB_GET;
   }
 
   // read the oper_status value
@@ -1699,7 +1699,7 @@ UpplReturnCode Kt_LogicalPort::GetOperStatus(OdbcmConnectionHandler *db_conn,
       }
     }
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /** 
@@ -1714,7 +1714,7 @@ UpplReturnCode Kt_LogicalPort::GetOperStatus(OdbcmConnectionHandler *db_conn,
  *                oper_statuus - value of oper status to be updated in DB
  * @return      : Success or associated error code
  **/
-UpplReturnCode Kt_LogicalPort::SetOperStatus(
+UncRespCode Kt_LogicalPort::SetOperStatus(
     OdbcmConnectionHandler *db_conn,
     uint32_t data_type,
     void* key_struct,
@@ -1727,7 +1727,7 @@ UpplReturnCode Kt_LogicalPort::SetOperStatus(
       reinterpret_cast<val_logical_port_st_t*>(val_struct);
   // Get existing oper_status
   uint8_t old_oper_status = 0;
-  UpplReturnCode read_status = GetOperStatus(db_conn, data_type,
+  UncRespCode read_status = GetOperStatus(db_conn, data_type,
                                              key_struct,
                                              old_oper_status);
   vector<TableAttrSchema> vect_table_attr_schema;
@@ -1786,9 +1786,9 @@ UpplReturnCode Kt_LogicalPort::SetOperStatus(
                         vect_table_attr_schema);
   string valid_flag;
   // Update valid flag as well
-  UpplReturnCode get_ret = GetValidFlag(db_conn, data_type,
+  UncRespCode get_ret = GetValidFlag(db_conn, data_type,
                                         key_struct, &valid_flag);
-  if (get_ret == UPPL_RC_SUCCESS) {
+  if (get_ret == UNC_RC_SUCCESS) {
     string new_valid = valid_flag.substr(0, 5);
     new_valid += "1";
     pfc_log_debug("New Valid to be set: %s", new_valid.c_str());
@@ -1813,10 +1813,10 @@ UpplReturnCode Kt_LogicalPort::SetOperStatus(
   } else if (update_db_status != ODBCM_RC_SUCCESS) {
     // log error
     pfc_log_error("oper_status update operation failed");
-    return UPPL_RC_ERR_DB_UPDATE;
+    return UNC_UPPL_RC_ERR_DB_UPDATE;
   } else if (old_oper_status != oper_status) {
     // Notify operstatus change to northbound
-    if (read_status == UPPL_RC_SUCCESS && data_type != UNC_DT_IMPORT) {
+    if (read_status == UNC_RC_SUCCESS && data_type != UNC_DT_IMPORT) {
       val_logical_port_st old_val_logical_port, new_val_logical_port;
       memset(&old_val_logical_port, 0, sizeof(val_logical_port_st));
       memset(&new_val_logical_port, 0, sizeof(val_logical_port_st));
@@ -1843,7 +1843,7 @@ UpplReturnCode Kt_LogicalPort::SetOperStatus(
                       (IpctUtil::get_string(old_val_logical_port)).c_str());
         PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
         // Notify operstatus modifications
-        UpplReturnCode status = (UpplReturnCode) physical_layer
+        UncRespCode status = (UncRespCode) physical_layer
             ->get_ipc_connection_manager()->SendEvent(&ser_evt);
         pfc_log_debug("Event notification status %d", status);
       } else {
@@ -1851,7 +1851,7 @@ UpplReturnCode Kt_LogicalPort::SetOperStatus(
       }
     }
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /** 
@@ -1860,19 +1860,19 @@ UpplReturnCode Kt_LogicalPort::SetOperStatus(
  *                            or UNC_DT_IMPORT
  *                key value - vector to hold the key structure values to be 
  *                            checked in DB 
- * @return      : UPPL_RC_SUCCESS - if the row exist in DB
- *                UPPL_RC_NO_SUCH_INSTANCE - if the row doesnt exist in DB
+ * @return      : UNC_RC_SUCCESS - if the row exist in DB
+ *                UNC_UPPL_RC_NO_SUCH_INSTANCE - if the row doesnt exist in DB
  **/
-UpplReturnCode Kt_LogicalPort::IsKeyExists(
+UncRespCode Kt_LogicalPort::IsKeyExists(
     OdbcmConnectionHandler *db_conn,
     unc_keytype_datatype_t data_type,
     const vector<string> &key_values) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
-  UpplReturnCode check_status = UPPL_RC_SUCCESS;
+  UncRespCode check_status = UNC_RC_SUCCESS;
   if (key_values.empty()) {
     // No key given, return failure
     pfc_log_error("No key given. Returning error");
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   string controller_name = key_values[0];
   string domain_name = key_values[1];
@@ -1920,7 +1920,7 @@ UpplReturnCode Kt_LogicalPort::IsKeyExists(
     pfc_log_debug("DB returned success for Row exists");
   } else {
     pfc_log_info("DB Returned failure for IsRowExists");
-    check_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+    check_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
   }
   return check_status;
 }
@@ -1930,13 +1930,13 @@ UpplReturnCode Kt_LogicalPort::IsKeyExists(
  *                given key struct, value struct, data_type, operation,
  *                option1 and option
  * @param[in]   : kt_logicalport_dbtableschema - object of type DBTableSchema 
- *  		  key_struct - void pointer to be type cast into logical port key type
- *  		  val_struct - void pointer to be type cast into logical port value type
- *  		  operation_type - specifies the operation type i.e
- *  		                   UNC_OP_READ or
- *  		                   UNC_OP_READ_SIBLING_BEGIN etc  
- *  		  option1/option2 - specifies any additional option for populating in DB
- *  		  vect_key_operations - vector of type ODBCMOperator    
+ *        key_struct - void pointer to be type cast into logical port key type
+ *        val_struct - void pointer to be type cast into logical port value type
+ *        operation_type - specifies the operation type i.e
+ *                         UNC_OP_READ or
+ *                         UNC_OP_READ_SIBLING_BEGIN etc  
+ *        option1/option2 - specifies any additional option for populating in DB
+ *        vect_key_operations - vector of type ODBCMOperator    
  *                old_value_struct - holds the old value structure of the
  *                logical port key type
  *                row_status - enum indicating the row status of logicalport
@@ -2281,8 +2281,12 @@ void Kt_LogicalPort::FillLogicalPortValueStructure(
           memset(lp_valid, '\0', sizeof(lp_valid));
           PhyUtil::GetValueFromDbSchemaStr(tab_schema, lp_valid,
                                            DATATYPE_UINT8_ARRAY_6);
-          memset(obj_val_logical_port_st.valid, '\0', sizeof(obj_val_logical_port_st.valid));
-          memset(obj_val_logical_port.valid, '\0', sizeof(obj_val_logical_port.valid));
+          memset(obj_val_logical_port_st.valid,
+                 '\0',
+                 sizeof(obj_val_logical_port_st.valid));
+          memset(obj_val_logical_port.valid,
+                 '\0',
+                 sizeof(obj_val_logical_port.valid));
           FrameValidValue(reinterpret_cast<const char*> (lp_valid),
                           obj_val_logical_port_st,
                           obj_val_logical_port);
@@ -2301,10 +2305,10 @@ void Kt_LogicalPort::FillLogicalPortValueStructure(
     vect_obj_val_logical_port.push_back(obj_val_logical_port_st);
     // populate key structure
     vect_logical_port_id.push_back(obj_key_logical_port);
-    pfc_log_debug("result - vect_obj_val_logical_port size: %d",
-                  (unsigned int) vect_obj_val_logical_port.size());
-    pfc_log_debug("result - vect_logical_port_id size: %d",
-                  (unsigned int) vect_logical_port_id.size());
+    pfc_log_debug("result - vect_obj_val_logical_port size: %"
+                  PFC_PFMT_SIZE_T, vect_obj_val_logical_port.size());
+    pfc_log_debug("result - vect_logical_port_id size: %"
+                  PFC_PFMT_SIZE_T, vect_logical_port_id.size());
   }
   return;
 }
@@ -2326,10 +2330,10 @@ void Kt_LogicalPort::FillLogicalPortValueStructure(
  *                option1,option2 - specifies any additional condition for read
  *                operation
  *                max_rep_ct - indicates the maximum repetition count
- * @return      : UPPL_RC_SUCCESS - if the read operation is successful
- *                UPPL_RC_ERR_* - read operation failed
+ * @return      : UNC_RC_SUCCESS - if the read operation is successful
+ *                UNC_UPPL_RC_ERR_* - read operation failed
  **/
-UpplReturnCode Kt_LogicalPort::PerformRead(
+UncRespCode Kt_LogicalPort::PerformRead(
     OdbcmConnectionHandler *db_conn,
     uint32_t session_id,
     uint32_t configuration_id,
@@ -2359,41 +2363,41 @@ UpplReturnCode Kt_LogicalPort::PerformRead(
   // Invalid operation
   if (option1 != UNC_OPT1_NORMAL) {
     pfc_log_error("PerformRead provided on unsupported option1");
-    rsh.result_code = UPPL_RC_ERR_INVALID_OPTION1;
+    rsh.result_code = UNC_UPPL_RC_ERR_INVALID_OPTION1;
     int err = PhyUtil::sessOutRespHeader(sess, rsh);
     err |= sess.addOutput((uint32_t)UNC_KT_LOGICAL_PORT);
     if (err != 0) {
       pfc_log_debug("addOutput failed for physical_response_header");
-      return UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
 
   if (option2 != UNC_OPT2_NONE) {
     pfc_log_error("PerformRead provided on unsupported option2");
-    rsh.result_code = UPPL_RC_ERR_INVALID_OPTION2;
+    rsh.result_code = UNC_UPPL_RC_ERR_INVALID_OPTION2;
     int err = PhyUtil::sessOutRespHeader(sess, rsh);
     err |= sess.addOutput((uint32_t)UNC_KT_LOGICAL_PORT);
     if (err != 0) {
       pfc_log_debug("addOutput failed for physical_response_header");
-      return UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
 
-  UpplReturnCode read_status = UPPL_RC_SUCCESS;
+  UncRespCode read_status = UNC_RC_SUCCESS;
 
   if ((unc_keytype_datatype_t)data_type != UNC_DT_STATE) {
     pfc_log_error("Read operation is provided on unsupported data type");
-    rsh.result_code = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    rsh.result_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
     int err = PhyUtil::sessOutRespHeader(sess, rsh);
     err |= sess.addOutput((uint32_t)UNC_KT_LOGICAL_PORT);
     err |= sess.addOutput(*obj_key_logical_port);
     if (err != 0) {
       pfc_log_debug("addOutput failed for physical_response_header");
-      return UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   // Read operations will return logical_port_st based on modified fd
   vector<key_logical_port_t> vect_logicalport_id;
@@ -2413,11 +2417,11 @@ UpplReturnCode Kt_LogicalPort::PerformRead(
   int err = PhyUtil::sessOutRespHeader(sess, rsh);
   if (err != 0) {
     pfc_log_error("Failure in addOutput");
-    return UPPL_RC_ERR_IPC_WRITE_ERROR;
+    return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
   }
 
   pfc_log_debug("read status val in performread = %d", read_status);
-  if (read_status == UPPL_RC_SUCCESS) {
+  if (read_status == UNC_RC_SUCCESS) {
     for (unsigned int index = 0; index < vect_logicalport_id.size();
         ++index) {
       sess.addOutput((uint32_t)UNC_KT_LOGICAL_PORT);
@@ -2436,7 +2440,7 @@ UpplReturnCode Kt_LogicalPort::PerformRead(
   }
 
   pfc_log_debug("Perform Read completed");
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 /** ReadLogicalPortValFromDB
  * @Description : This function is used to read KT_LOGICAL_PORT instance in
@@ -2455,10 +2459,10 @@ UpplReturnCode Kt_LogicalPort::PerformRead(
  *                val_logical_port_st_t structure
  *                logicalport_id - vector of type key_logical_port_t to store
  *                the logical port id
- * @return      : UPPL_RC_SUCCESS - read operation is success
- *                UPPL_RC_ERR_DB_GET - read operation is failure  
+ * @return      : UNC_RC_SUCCESS - read operation is success
+ *                UNC_UPPL_RC_ERR_DB_GET - read operation is failure  
  **/
-UpplReturnCode Kt_LogicalPort::ReadLogicalPortValFromDB(
+UncRespCode Kt_LogicalPort::ReadLogicalPortValFromDB(
     OdbcmConnectionHandler *db_conn,
     void* key_struct,
     void* val_struct,
@@ -2470,10 +2474,10 @@ UpplReturnCode Kt_LogicalPort::ReadLogicalPortValFromDB(
     vector<key_logical_port_t> &logicalport_id) {
   if (operation_type < UNC_OP_READ) {
     // Unsupported operation type for this function
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
-  UpplReturnCode read_status = UPPL_RC_SUCCESS;
+  UncRespCode read_status = UNC_RC_SUCCESS;
   ODBCM_RC_STATUS read_db_status = ODBCM_RC_SUCCESS;
   DBTableSchema kt_logicalport_dbtableschema;
   void* old_value_struct;
@@ -2496,14 +2500,14 @@ UpplReturnCode Kt_LogicalPort::ReadLogicalPortValFromDB(
   }
   if (read_db_status == ODBCM_RC_RECORD_NOT_FOUND) {
     pfc_log_debug("No record found");
-    read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+    read_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     return read_status;
   } else if (read_db_status == ODBCM_RC_CONNECTION_ERROR) {
-    read_status = UPPL_RC_ERR_DB_ACCESS;
+    read_status = UNC_UPPL_RC_ERR_DB_ACCESS;
     pfc_log_error("Read operation has failed with error %d", read_db_status);
     return read_status;
   } else if (read_db_status != ODBCM_RC_SUCCESS) {
-    read_status = UPPL_RC_ERR_DB_GET;
+    read_status = UNC_UPPL_RC_ERR_DB_GET;
     // log error to log daemon
     pfc_log_error("Read operation has failed with error %d", read_db_status);
     return read_status;
@@ -2513,12 +2517,13 @@ UpplReturnCode Kt_LogicalPort::ReadLogicalPortValFromDB(
                                 max_rep_ct,
                                 operation_type,
                                 logicalport_id);
-  pfc_log_debug("vect_val_logical_port_st size: %d",
-                (unsigned int)vect_val_logical_port_st.size());
-  pfc_log_debug("logicalport_id size: %d", (unsigned int)logicalport_id.size());
+  pfc_log_debug("vect_val_logical_port_st size: %"
+                PFC_PFMT_SIZE_T, vect_val_logical_port_st.size());
+  pfc_log_debug("logicalport_id size: %" PFC_PFMT_SIZE_T,
+                 logicalport_id.size());
   if (vect_val_logical_port_st.empty()) {
     // Read failed , return error
-    read_status = UPPL_RC_ERR_DB_GET;
+    read_status = UNC_UPPL_RC_ERR_DB_GET;
     // log error to log daemon
     pfc_log_error("Read operation has failed after reading response");
     return read_status;
@@ -2765,15 +2770,15 @@ void Kt_LogicalPort::GetAllPortId(OdbcmConnectionHandler *db_conn,
  *                logical port key type
  *                val_logical_port_valid_st - value structure of logical port
  *                key type
- * @return      : UPPL_RC_SUCCESS - value structure read from DB is success
- *                UPPL_RC_ERR_* - value structure read from DB is failure
+ * @return      : UNC_RC_SUCCESS - value structure read from DB is success
+ *                UNC_UPPL_RC_ERR_* - value structure read from DB is failure
  **/
-UpplReturnCode Kt_LogicalPort::GetLogicalPortValidFlag(
+UncRespCode Kt_LogicalPort::GetLogicalPortValidFlag(
     OdbcmConnectionHandler *db_conn,
     void *key_struct,
     val_logical_port_st_t &val_logical_port_valid_st,
     uint32_t data_type) {
-  UpplReturnCode return_code = UPPL_RC_SUCCESS;
+  UncRespCode return_code = UNC_RC_SUCCESS;
   // read the value structure from db
   vector<void *> vectVal_logicalport;
   vector<void *> vectkey_logicalport;
@@ -2781,7 +2786,7 @@ UpplReturnCode Kt_LogicalPort::GetLogicalPortValidFlag(
   return_code = ReadInternal(db_conn, vectkey_logicalport,
                              vectVal_logicalport,
                              data_type, UNC_OP_READ);
-  if (return_code == UPPL_RC_SUCCESS) {
+  if (return_code == UNC_RC_SUCCESS) {
     val_logical_port_st_t *obj_new_logicalport_val_vect =
         reinterpret_cast<val_logical_port_st_t*> (vectVal_logicalport[0]);
     if (obj_new_logicalport_val_vect != NULL) {
@@ -2834,11 +2839,11 @@ void Kt_LogicalPort::FrameValidValue(
  *                key_struct - void pointer type to be type cast to logical port
  *                key structure
  *                valid_flag - string pointer to hold the valid flag
- * @return      : UPPL_RC_SUCCESS - if valid flag is received from db
- *                UPPL_RC_DB_GET - if there is error in receiving the valid
+ * @return      : UNC_RC_SUCCESS - if valid flag is received from db
+ *                UNC_UPPL_RC_DB_GET - if there is error in receiving the valid
  *                flag from DB
  **/
-UpplReturnCode Kt_LogicalPort::GetValidFlag(
+UncRespCode Kt_LogicalPort::GetValidFlag(
     OdbcmConnectionHandler *db_conn,
     uint32_t data_type,
     void* key_struct,
@@ -2898,7 +2903,7 @@ UpplReturnCode Kt_LogicalPort::GetValidFlag(
   if (read_db_status != ODBCM_RC_SUCCESS) {
     // log error
     pfc_log_error("valid flag read operation failed");
-    return UPPL_RC_ERR_DB_GET;
+    return UNC_UPPL_RC_ERR_DB_GET;
   }
 
   // read the valid value
@@ -2927,7 +2932,7 @@ UpplReturnCode Kt_LogicalPort::GetValidFlag(
       }
     }
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /** 
@@ -2937,18 +2942,18 @@ UpplReturnCode Kt_LogicalPort::GetValidFlag(
  *                key_logical_port_t
  *                port_oper_status - poiter to store the oper status 
  *                data_type - indicates the data base type 
- * @return      : UPPL_RC_SUCCESS - if oper status value is received from DB
- *                UPPL_RC_ERR_* - if there is failure in receiving oper status
+ * @return      : UNC_RC_SUCCESS - if oper status value is received from DB
+ *                UNC_UPPL_RC_ERR_* - if there is failure in receiving oper status
  *                value from DB
  **/
-UpplReturnCode Kt_LogicalPort::GetPortOperStatus(
+UncRespCode Kt_LogicalPort::GetPortOperStatus(
     OdbcmConnectionHandler *db_conn,
     key_port_t &obj_key_port,
     uint8_t *port_oper_status,
     uint32_t data_type) {
   pfc_log_debug("Decide oper_status based on physical port oper_status");
   Kt_Port port;
-  UpplReturnCode read_status = port.GetOperStatus(
+  UncRespCode read_status = port.GetOperStatus(
       db_conn, data_type, reinterpret_cast<void*>(&obj_key_port),
       *port_oper_status);
   pfc_log_debug("Oper Status return %d, value %d", read_status,
@@ -2960,11 +2965,11 @@ UpplReturnCode Kt_LogicalPort::GetPortOperStatus(
  * @Description : This function gets all the logical ports associated with
  *                given controller/domain/switch
  * @param[in]   : controller_name - string to store the controller_name
- * 		  domain_name - string to store the domain_name
- * 		  switch_id - string to store the switch_id
- * 		  phy_port_id - string to store the physical port id
- * 		  vectLogicalPortKey - vector of type key_logical_port_t
- * 		  data_type - indicates the data base type UNC_DT_*              
+ *      domain_name - string to store the domain_name
+ *      switch_id - string to store the switch_id
+ *      phy_port_id - string to store the physical port id
+ *      vectLogicalPortKey - vector of type key_logical_port_t
+ *      data_type - indicates the data base type UNC_DT_*              
  * @return      : None
  **/
 void Kt_LogicalPort::GetAllLogicalPort(
@@ -3081,14 +3086,14 @@ void Kt_LogicalPort::GetAllLogicalPort(
  * @return      : Success if port type is within allowed values or
  *                else return failure
  **/
-UpplReturnCode Kt_LogicalPort::ValidatePortType(uint8_t port_type) {
+UncRespCode Kt_LogicalPort::ValidatePortType(uint8_t port_type) {
   if (port_type == UPPL_LP_SWITCH ||
       port_type == UPPL_LP_PHYSICAL_PORT ||
       port_type == UPPL_LP_TRUNK_PORT ||
       port_type == UPPL_LP_SUBDOMAIN ||
       port_type == UPPL_LP_TUNNEL_ENDPOINT) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   pfc_log_info("Invalid Logical Port Type provided %d", port_type);
-  return UPPL_RC_ERR_CFG_SYNTAX;
+  return UNC_UPPL_RC_ERR_CFG_SYNTAX;
 }

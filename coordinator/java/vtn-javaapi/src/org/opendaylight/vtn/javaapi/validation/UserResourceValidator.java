@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -30,7 +30,7 @@ public class UserResourceValidator extends VtnServiceValidator {
 	private final AbstractResource resource;
 
 	/** The validator. */
-	final CommonValidator validator = new CommonValidator();
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new user resource validator.
@@ -48,7 +48,7 @@ public class UserResourceValidator extends VtnServiceValidator {
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start UserResourceValidator#validateUri()");
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.URI
@@ -69,8 +69,9 @@ public class UserResourceValidator extends VtnServiceValidator {
 	 * Validate request json for Set Password API
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start UserResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of UserResourceValidator");
@@ -113,9 +114,9 @@ public class UserResourceValidator extends VtnServiceValidator {
 						.getAsJsonObject()
 						.getAsJsonPrimitive(VtnServiceJsonConsts.PASSWORD)
 						.getAsString() != null) {
-			String password = requestBody.get(VtnServiceJsonConsts.PASSWORD)
-					.getAsJsonObject().get(VtnServiceJsonConsts.PASSWORD)
-					.getAsString();
+			final String password = requestBody
+					.get(VtnServiceJsonConsts.PASSWORD).getAsJsonObject()
+					.get(VtnServiceJsonConsts.PASSWORD).getAsString();
 			requestBody.remove(VtnServiceJsonConsts.PASSWORD);
 			requestBody.addProperty(VtnServiceJsonConsts.PASSWORD, password);
 		}

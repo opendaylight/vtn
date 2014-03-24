@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -30,7 +30,7 @@ public class VLanMapResourceValidator extends VtnServiceValidator {
 			.getLogger(VLanMapResourceValidator.class.getName());
 
 	private final AbstractResource resource;
-	final CommonValidator validator = new CommonValidator();
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new vlan map resource validator.
@@ -48,7 +48,7 @@ public class VLanMapResourceValidator extends VtnServiceValidator {
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start VLanMapResourceValidator#validateUri()");
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.URI
@@ -135,8 +135,9 @@ public class VLanMapResourceValidator extends VtnServiceValidator {
 	 * Validate request Json object for get, put and post method of VLanMap API.
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start VLanMapResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of VLanMapResourceValidator");
@@ -303,15 +304,14 @@ public class VLanMapResourceValidator extends VtnServiceValidator {
 			if (vLanMap.has(VtnServiceJsonConsts.VLANID)
 					&& vLanMap.has(VtnServiceJsonConsts.NO_VLAN_ID)) {
 				isValid = false;
-			}
-			// validation for key: vlan_id
-			else if (vLanMap.has(VtnServiceJsonConsts.VLANID)) {
+			} else if (vLanMap.has(VtnServiceJsonConsts.VLANID)) {
 				setInvalidParameter(VtnServiceJsonConsts.VLANID);
 				if (vLanMap.getAsJsonPrimitive(VtnServiceJsonConsts.VLANID)
 						.getAsString() != null
 						&& !vLanMap
 								.getAsJsonPrimitive(VtnServiceJsonConsts.VLANID)
 								.getAsString().trim().isEmpty()) {
+					// validation for key: vlan_id
 					isValid = validator.isValidRange(vLanMap
 							.getAsJsonPrimitive(VtnServiceJsonConsts.VLANID)
 							.getAsString().trim(), VtnServiceJsonConsts.VAL_1,
@@ -319,9 +319,7 @@ public class VLanMapResourceValidator extends VtnServiceValidator {
 				} else {
 					isValid = false;
 				}
-			}
-			// validation for key: no_vlan_id
-			else if (vLanMap.has(VtnServiceJsonConsts.NO_VLAN_ID)) {
+			} else if (vLanMap.has(VtnServiceJsonConsts.NO_VLAN_ID)) {
 				setInvalidParameter(VtnServiceJsonConsts.NO_VLAN_ID);
 				if (vLanMap.getAsJsonPrimitive(VtnServiceJsonConsts.NO_VLAN_ID)
 						.getAsString() != null
@@ -329,6 +327,7 @@ public class VLanMapResourceValidator extends VtnServiceValidator {
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.NO_VLAN_ID)
 								.getAsString().trim().isEmpty()) {
+					// validation for key: no_vlan_id
 					final String no_vlan_id = vLanMap
 							.getAsJsonPrimitive(VtnServiceJsonConsts.NO_VLAN_ID)
 							.getAsString().trim();

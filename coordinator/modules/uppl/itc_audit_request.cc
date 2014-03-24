@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -25,6 +25,10 @@
 #include "itc_kt_link.hh"
 #include "itc_kt_boundary.hh"
 #include "ipc_client_configuration_handler.hh"
+#include "tclib_module.hh"
+
+using unc::tclib::TcLibModule;
+
 
 namespace unc {
 namespace uppl {
@@ -53,11 +57,11 @@ AuditRequest::~AuditRequest() {
  * @param[in]   : driver_id - Specifies one of the following controller type,
  *                PFC,VNP,Bypass    
  *                controller_id - controller name to which the audit to start
- * @return      : UPPL_RC_SUCCESS if the Audit is success for the controller 
- *                or UPPL_RC_ERR_*
+ * @return      : UNC_RC_SUCCESS if the Audit is success for the controller 
+ *                or UNC_UPPL_RC_ERR_*
  * */
 
-UpplReturnCode AuditRequest::StartAudit(OdbcmConnectionHandler *db_conn,
+UncRespCode AuditRequest::StartAudit(OdbcmConnectionHandler *db_conn,
                                         unc_keytype_ctrtype_t driver_id,
                                         string controller_id) {
   pfc_log_info("Processing StartAudit");
@@ -74,10 +78,10 @@ UpplReturnCode AuditRequest::StartAudit(OdbcmConnectionHandler *db_conn,
   /* Checks controller existence and its oper status */
   pfc_log_debug("Get controller oper Status");
   val_ctr_st_t obj_val_ctr_st;
-  UpplReturnCode read_status =
+  UncRespCode read_status =
       KtObj.GetOperStatus(db_conn, UNC_DT_RUNNING,
                           reinterpret_cast<void *>(&obj_key_ctr), oper_status);
-  if (read_status == UPPL_RC_SUCCESS) {
+  if (read_status == UNC_RC_SUCCESS) {
     // Checking the audit precondition
     if (oper_status == UPPL_CONTROLLER_OPER_DOWN ||
         oper_status == UPPL_CONTROLLER_OPER_UP ||
@@ -85,23 +89,26 @@ UpplReturnCode AuditRequest::StartAudit(OdbcmConnectionHandler *db_conn,
       obj_val_ctr_st.oper_status = UPPL_CONTROLLER_OPER_AUDITING;
       memset(obj_val_ctr_st.valid, '\0', sizeof(obj_val_ctr_st.valid));
       obj_val_ctr_st.valid[kIdxOperStatus] = 1;
-      FN_START_TIME("Audit::HandleOperStatus", "Controller");
-      UpplReturnCode handle_oper_status = KtObj.HandleOperStatus(
+      UncRespCode handle_oper_status = KtObj.HandleOperStatus(
           db_conn, UNC_DT_RUNNING, reinterpret_cast<void *>(&obj_key_ctr),
           reinterpret_cast<void *>(&obj_val_ctr_st),
           true);
       pfc_log_debug("Handle Oper Status return: %d", handle_oper_status);
-      FN_END_TIME("Audit::HandleOperStatus", "Controller");
-      return UPPL_RC_SUCCESS;
+      return UNC_RC_SUCCESS;
     } else {
-      // return UPPL_RC_ERR_AUDIT_FAILURE;
+      // return UNC_UPPL_RC_ERR_AUDIT_FAILURE;
     }
   } else {
     pfc_log_error("Unable to get controller oper status");
-    return UPPL_RC_ERR_AUDIT_FAILURE;
+    TcLibModule* tclib_ptr = static_cast<TcLibModule*>
+        (TcLibModule::getInstance(TCLIB_MODULE_NAME));
+    tclib_ptr->TcLibWriteControllerInfo(controller_id.c_str(),
+                                        UNC_RC_INTERNAL_ERR,
+                                        0);
+    return UNC_UPPL_RC_ERR_AUDIT_FAILURE;
   }
 
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**StartAuditTransaction
@@ -111,15 +118,15 @@ UpplReturnCode AuditRequest::StartAudit(OdbcmConnectionHandler *db_conn,
  *                driver_id - Specifies one of the following controller type-
  *                PFC,VNP,Bypass
  *                controller_id - controller name in which the audit to start
- * @return      : UPPL_RC_SUCCESS if the AuditTransaction is success for the
- *                controller or UPPL_RC_ERR_* for audit transaction failure
+ * @return      : UNC_RC_SUCCESS if the AuditTransaction is success for the
+ *                controller or UNC_UPPL_RC_ERR_* for audit transaction failure
  * */
-UpplReturnCode AuditRequest::StartAuditTransaction(
+UncRespCode AuditRequest::StartAuditTransaction(
     uint32_t session_id,
     unc_keytype_ctrtype_t driver_id,
     string controller_id)  {
   pfc_log_info("Returning success for StartAuditTransaction");
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**HandleAuditVoteRequest
@@ -131,10 +138,10 @@ UpplReturnCode AuditRequest::StartAuditTransaction(
  *                PFC,VNP,Bypass
  *                controller_id - controller name in which the audit occurs
  * @param[out]  : driver_info - contains the controller list
- * @return      : UPPL_RC_SUCCESS if the AuditVoteRequest is success or 
- *                UPPL_RC_ERR_* if AuditVoteRequest is failed.
+ * @return      : UNC_RC_SUCCESS if the AuditVoteRequest is success or 
+ *                UNC_UPPL_RC_ERR_* if AuditVoteRequest is failed.
  * */
-UpplReturnCode AuditRequest::HandleAuditVoteRequest(
+UncRespCode AuditRequest::HandleAuditVoteRequest(
     OdbcmConnectionHandler *db_conn,
     uint32_t session_id,
     uint32_t driver_id,
@@ -153,14 +160,19 @@ UpplReturnCode AuditRequest::HandleAuditVoteRequest(
          controller_id.length()+1);
   vector<void *> vect_ctr_key, vect_ctr_val;
   vect_ctr_key.push_back(reinterpret_cast<void *>(&obj_key_ctr));
-  UpplReturnCode read_status = KtObj.ReadInternal(
+  UncRespCode read_status = KtObj.ReadInternal(
       db_conn, vect_ctr_key, vect_ctr_val,
       (unc_keytype_datatype_t)UNC_DT_RUNNING,
       UNC_OP_READ);
-  if (read_status != UPPL_RC_SUCCESS) {
+  if (read_status != UNC_RC_SUCCESS) {
     pfc_log_error("Could not get details for controller %s",
                   controller_id.c_str());
-    return UPPL_RC_ERR_AUDIT_FAILURE;
+    TcLibModule* tclib_ptr = static_cast<TcLibModule*>
+        (TcLibModule::getInstance(TCLIB_MODULE_NAME));
+    tclib_ptr->TcLibWriteControllerInfo(controller_id.c_str(),
+                                        UNC_RC_INTERNAL_ERR,
+                                        0);
+    return UNC_UPPL_RC_ERR_AUDIT_FAILURE;
   }
   pfc_log_debug("Read operation is success");
   val_ctr_st_t *obj_val_ctr =
@@ -190,7 +202,7 @@ UpplReturnCode AuditRequest::HandleAuditVoteRequest(
     delete obj_val_ctr;
     obj_val_ctr = NULL;
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**HandleAuditGlobalCommit
@@ -202,11 +214,11 @@ UpplReturnCode AuditRequest::HandleAuditVoteRequest(
  *                controller_id - controller name in which the audit occurs
  *                driver_info - contains the controller list
  * @param[out]  : audit result - specifies the TC audit result 
- * @return      : UPPL_RC_SUCCESS if the AuditGlobalCommit is success for the
- *                controller or UPPL_RC_ERR_* for the failure
+ * @return      : UNC_RC_SUCCESS if the AuditGlobalCommit is success for the
+ *                controller or UNC_UPPL_RC_ERR_* for the failure
  * */
 
-UpplReturnCode AuditRequest::HandleAuditGlobalCommit(
+UncRespCode AuditRequest::HandleAuditGlobalCommit(
     uint32_t session_id,
     uint32_t driver_id,
     string controller_id,
@@ -214,7 +226,7 @@ UpplReturnCode AuditRequest::HandleAuditGlobalCommit(
     TcAuditResult& audit_result) {
   pfc_log_info("Returing Success for HandleAuditGlobalCommit");
   audit_result = unc::tclib::TC_AUDIT_SUCCESS;
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 
@@ -226,17 +238,17 @@ UpplReturnCode AuditRequest::HandleAuditGlobalCommit(
  *                PFC,VNP,Bypass
  *                controller_id - controller name in which the audit occurs
  *                operation_phase - 
- * @return      : UPPL_RC_SUCCESS if the AuditGlobalAbort is success for the
- *                controller or UPPL_RC_ERR_* for the failure 
+ * @return      : UNC_RC_SUCCESS if the AuditGlobalAbort is success for the
+ *                controller or UNC_UPPL_RC_ERR_* for the failure 
  * */
 
-UpplReturnCode AuditRequest::HandleAuditAbort(
+UncRespCode AuditRequest::HandleAuditAbort(
     uint32_t session_id,
     unc_keytype_ctrtype_t driver_id,
     string controller_id,
     TcAuditOpAbortPhase operation_phase) {
   pfc_log_info("Returing success for HandleAuditAbort");
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**EndAuditTransaction
@@ -245,15 +257,15 @@ UpplReturnCode AuditRequest::HandleAuditAbort(
  *                driver_id - Specifies one of the following controller type-
  *                PFC,VNP,Bypass
  *                controller_id - controller name in which the audit occurs 
- * @return      : UPPL_RC_SUCCESS if the EndAuditTransaction is success for the
- *                controller or UPPL_RC_ERR_* for the failure
+ * @return      : UNC_RC_SUCCESS if the EndAuditTransaction is success for the
+ *                controller or UNC_UPPL_RC_ERR_* for the failure
  * */
-UpplReturnCode AuditRequest::EndAuditTransaction(
+UncRespCode AuditRequest::EndAuditTransaction(
     uint32_t session_id,
     unc_keytype_ctrtype_t& drivertype,
     string controller_id) {
   pfc_log_info("Returning success for EndAuditTransaction");
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**EndAudit
@@ -263,10 +275,10 @@ UpplReturnCode AuditRequest::EndAuditTransaction(
  *                PFC,VNP,Bypass
  *                controller_id - controller name in which the audit occurs
  *                audit result - specifies the TC audit result
- * @return      : UPPL_RC_SUCCESS if the End Audit is success for the controller
- *                or returns UPPL_RC_ERR_ if the Audit is failed
+ * @return      : UNC_RC_SUCCESS if the End Audit is success for the controller
+ *                or returns UNC_UPPL_RC_ERR_ if the Audit is failed
  * */
-UpplReturnCode AuditRequest::EndAudit(OdbcmConnectionHandler *db_conn,
+UncRespCode AuditRequest::EndAudit(OdbcmConnectionHandler *db_conn,
                                       unc_keytype_ctrtype_t driver_id,
                                       string controller_id,
                                       TcAuditResult audit_result) {
@@ -286,14 +298,12 @@ UpplReturnCode AuditRequest::EndAudit(OdbcmConnectionHandler *db_conn,
     obj_val_ctr_st.oper_status = oper_status;
     memset(obj_val_ctr_st.valid, '\0', sizeof(obj_val_ctr_st.valid));
     obj_val_ctr_st.valid[kIdxOperStatus] = 1;
-    FN_START_TIME("Audit::HandleOperStatus", "Controller");
-    UpplReturnCode handle_oper_status = kt_controller.HandleOperStatus(
+    UncRespCode handle_oper_status = kt_controller.HandleOperStatus(
         db_conn, UNC_DT_RUNNING,
         key_ctr_prt,
         reinterpret_cast<void *>(&obj_val_ctr_st),
         true);
     pfc_log_debug("Handle Oper Status return: %d", handle_oper_status);
-    FN_END_TIME("Audit::HandleOperStatus", "Controller");
     // Add the controller to controller_in_audit vector
     IPCConnectionManager *ipc_mgr = PhysicalLayer::get_instance()->
         get_ipc_connection_manager();
@@ -313,25 +323,25 @@ UpplReturnCode AuditRequest::EndAudit(OdbcmConnectionHandler *db_conn,
     obj_val_ctr_st.oper_status = oper_status;
     memset(obj_val_ctr_st.valid, '\0', sizeof(obj_val_ctr_st.valid));
     obj_val_ctr_st.valid[kIdxOperStatus] = 1;
-    UpplReturnCode handle_oper_status = kt_controller.HandleOperStatus(
+    UncRespCode handle_oper_status = kt_controller.HandleOperStatus(
         db_conn, UNC_DT_RUNNING,
         key_ctr_prt,
         reinterpret_cast<void *>(&obj_val_ctr_st),
         true);
     pfc_log_debug("Handle Oper Status return: %d", handle_oper_status);
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**MergeAuditDbToRunning
  * @Description : This function is used to Merge audit and running db at
  *                end Audit and clear the import db.
  * @param[in]   : controller name - controller name in which the audit occurs
- * @return      : UPPL_RC_SUCCESS if the updation of running DB with the
- *                imported value is success or UPPL_RC_ERR_* for failure of 
+ * @return      : UNC_RC_SUCCESS if the updation of running DB with the
+ *                imported value is success or UNC_UPPL_RC_ERR_* for failure of 
  *                merging
  * */
-UpplReturnCode AuditRequest::MergeAuditDbToRunning(
+UncRespCode AuditRequest::MergeAuditDbToRunning(
     OdbcmConnectionHandler *db_conn,
     string controller_name) {
   pfc_log_info("MergeAuditDbToRunning-controller_name: %s",
@@ -339,13 +349,13 @@ UpplReturnCode AuditRequest::MergeAuditDbToRunning(
   // Check for MergeImportRunning Lock
   ScopedReadWriteLock eventDoneLock(PhysicalLayer::get_events_done_lock_(),
                                     PFC_TRUE);  // write lock
-  UpplReturnCode return_code = UPPL_RC_SUCCESS;
+  UncRespCode return_code = UNC_RC_SUCCESS;
   // Remove the controller_name from controller_in_audit list
   return_code = PhysicalLayer::get_instance()->get_ipc_connection_manager()->
       removeControllerFromAuditList(controller_name);
-  if (return_code != UPPL_RC_SUCCESS) {
+  if (return_code != UNC_RC_SUCCESS) {
     // Not required to do merge, return SUCCESS
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   for (unsigned int index = 0;
       index < STATE_OBJECTS; ++index) {
@@ -364,20 +374,20 @@ UpplReturnCode AuditRequest::MergeAuditDbToRunning(
     key_import.push_back(key_struct);
     vector<void*> val_running, val_import;
     pfc_log_debug("Reading from running db for index %d", index);
-    UpplReturnCode read_running_status = class_pointer->ReadInternal(
+    UncRespCode read_running_status = class_pointer->ReadInternal(
         db_conn, key_running,
         val_running,
         (uint32_t) UNC_DT_RUNNING,
         (uint32_t) UNC_OP_READ_SIBLING_BEGIN);
     // Read from Import DB
     pfc_log_debug("Reading from import db for index %d", index);
-    UpplReturnCode read_import_status = class_pointer->ReadInternal(
+    UncRespCode read_import_status = class_pointer->ReadInternal(
         db_conn, key_import,
         val_import,
         (uint32_t) UNC_DT_IMPORT,
         (uint32_t) UNC_OP_READ_SIBLING_BEGIN);
-    if (read_running_status != UPPL_RC_SUCCESS &&
-        read_import_status != UPPL_RC_SUCCESS) {
+    if (read_running_status != UNC_RC_SUCCESS &&
+        read_import_status != UNC_RC_SUCCESS) {
       pfc_log_debug(
           "Reading values from both import and running db failed for index %d",
           index);
@@ -387,10 +397,10 @@ UpplReturnCode AuditRequest::MergeAuditDbToRunning(
       }
       continue;
     }
-    pfc_log_debug("No.of entries from running db %d",
-                  static_cast<int>(key_running.size()));
-    pfc_log_debug("No.of entries from import db %d",
-                  static_cast<int>(key_import.size()));
+    pfc_log_debug("No.of entries from running db %"
+                  PFC_PFMT_SIZE_T, key_running.size());
+    pfc_log_debug("No.of entries from import db %"
+                  PFC_PFMT_SIZE_T, key_import.size());
     // Iterate RUNNING and compare with IMPORT
     // Update Running if values mismatch with Import
     // Delete entries from Running if not found in Import
@@ -633,9 +643,9 @@ void AuditNotification::operator() ()  {
   pfc_log_debug("Received Audit Notification timer out controller %s",
                 controller_name_.c_str());
   AuditRequest audit_req;
-  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  UncRespCode db_ret = UNC_RC_SUCCESS;
   OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
-  if (db_ret != UPPL_RC_SUCCESS) {
+  if (db_ret != UNC_RC_SUCCESS) {
     pfc_log_error("Error in opening DB connection");
   } else {
     audit_req.MergeAuditDbToRunning(&db_conn, controller_name_);
@@ -687,19 +697,19 @@ void AuditRequest::UpdateRunningDbWithImportDb(
       // Update running db with import value
       pfc_log_debug("Update running db with import db value");
       void *old_val_struct = NULL;
-      UpplReturnCode update_status = class_pointer->
+      UncRespCode update_status = class_pointer->
           UpdateKeyInstance(
               db_conn, reinterpret_cast<void *>(key_running[iIndex]),
               reinterpret_cast<void *>(val_import[jIndex]),
               (uint32_t)UNC_DT_STATE,
               key_type,
               old_val_struct);
-      if (update_status != UPPL_RC_SUCCESS) {
+      if (update_status != UNC_RC_SUCCESS) {
         pfc_log_error("Update failed for existing key");
         continue;
       }
       // Send value change notification to north bound - val_st
-      UpplReturnCode notfn_status =
+      UncRespCode notfn_status =
           class_pointer->ConfigurationChangeNotification(
               (uint32_t)UNC_DT_STATE,
               key_type,
@@ -707,11 +717,11 @@ void AuditRequest::UpdateRunningDbWithImportDb(
               reinterpret_cast<void *>(key_running[iIndex]),
               reinterpret_cast<void *>(val_running[iIndex]),
               reinterpret_cast<void *>(val_import[jIndex]));
-      if (notfn_status != UPPL_RC_SUCCESS) {
+      if (notfn_status != UNC_RC_SUCCESS) {
         pfc_log_error("Failed sending update notification");
       }
       // Old value structure memory clean up
-      if(old_val_struct != NULL) {
+      if (old_val_struct != NULL) {
         class_pointer->ClearValueStructure(key_type,
                         old_val_struct);
         old_val_struct = NULL;
@@ -721,15 +731,15 @@ void AuditRequest::UpdateRunningDbWithImportDb(
     if (present_in_import == false) {
       // Delete instance from running db
       pfc_log_debug("Delete existing entries from running db");
-      UpplReturnCode delete_status = class_pointer->DeleteKeyInstance(
+      UncRespCode delete_status = class_pointer->DeleteKeyInstance(
           db_conn, reinterpret_cast<void *>(key_running[iIndex]),
           (uint32_t)UNC_DT_STATE,
           key_type);
-      if (delete_status != UPPL_RC_SUCCESS) {
+      if (delete_status != UNC_RC_SUCCESS) {
         pfc_log_error("Delete failed for existing key");
       }
       // Send value change notification to north bound - val_st
-      UpplReturnCode notfn_status =
+      UncRespCode notfn_status =
           class_pointer->ConfigurationChangeNotification(
               (uint32_t)UNC_DT_STATE,
               key_type,
@@ -737,7 +747,7 @@ void AuditRequest::UpdateRunningDbWithImportDb(
               reinterpret_cast<void *>(key_running[iIndex]),
               NULL,
               NULL);
-      if (notfn_status != UPPL_RC_SUCCESS) {
+      if (notfn_status != UNC_RC_SUCCESS) {
         pfc_log_error("Failed sending delete notification");
       }
     }
@@ -778,9 +788,9 @@ void AuditRequest::AddToRunningDbFromImportDb(
       continue;
     }
     // Create instance in running db
-    UpplReturnCode create_status = UPPL_RC_SUCCESS;
+    UncRespCode create_status = UNC_RC_SUCCESS;
     // Validate key
-    UpplReturnCode validate_status = UPPL_RC_SUCCESS;
+    UncRespCode validate_status = UNC_RC_SUCCESS;
     if (index == Notfn_Logical_Member_Port) {
       validate_status = class_pointer->ValidateRequest(
           db_conn,
@@ -794,7 +804,7 @@ void AuditRequest::AddToRunningDbFromImportDb(
           reinterpret_cast<void *>(val_import[iIndex]),
           UNC_OP_CREATE, UNC_DT_STATE, key_type);
     }
-    if (validate_status != UPPL_RC_SUCCESS) {
+    if (validate_status != UNC_RC_SUCCESS) {
       pfc_log_info("Validation failed for index %d", index);
       continue;
     }
@@ -812,9 +822,9 @@ void AuditRequest::AddToRunningDbFromImportDb(
           (uint32_t)UNC_DT_STATE,
           key_type);
     }
-    if (create_status == UPPL_RC_SUCCESS) {
+    if (create_status == UNC_RC_SUCCESS) {
       // Send value change notification to north bound - val_st
-      UpplReturnCode notfn_status = UPPL_RC_SUCCESS;
+      UncRespCode notfn_status = UNC_RC_SUCCESS;
       if (index == Notfn_Logical_Member_Port) {
         notfn_status =
             class_pointer->ConfigurationChangeNotification(
@@ -834,7 +844,7 @@ void AuditRequest::AddToRunningDbFromImportDb(
                 NULL,
                 reinterpret_cast<void *>(val_import[iIndex]));
       }
-      if (notfn_status != UPPL_RC_SUCCESS) {
+      if (notfn_status != UNC_RC_SUCCESS) {
         pfc_log_error("Failed sending create notification");
       }
     } else {

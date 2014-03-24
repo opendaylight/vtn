@@ -24,7 +24,7 @@ OdcPort::~OdcPort() {
 
 
 // Get logical port information in the controller
-drv_resp_code_t OdcPort::fetch_config(
+UncRespCode OdcPort::fetch_config(
     unc::driver::controller *ctr_ptr,
     key_switch_t *parent_switch,
     const pfc_bool_t cache_empty) {
@@ -34,7 +34,7 @@ drv_resp_code_t OdcPort::fetch_config(
 
   if (NULL == parent_switch) {
     pfc_log_error("parent_switch is NULL");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   std::vector<unc::vtndrvcache::ConfigNode *> cfgnode_vector;
   std::string switch_id = reinterpret_cast<const char*>
@@ -42,7 +42,7 @@ drv_resp_code_t OdcPort::fetch_config(
 
   if (switch_id.empty()) {
     pfc_log_error("Switch id is empty");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   std::string url = "";
   url.append(BASE_SW_URL);
@@ -63,24 +63,24 @@ drv_resp_code_t OdcPort::fetch_config(
 
   if (NULL == response) {
     pfc_log_error("Error Occured while getting httpresponse");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   int resp_code = response->code;
   if (HTTP_200_RESP_OK != resp_code) {
     pfc_log_error("Response code is not OK , resp : %d", resp_code);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   if (NULL != response->write_data) {
     if (NULL != response->write_data->memory) {
       char *data = response->write_data->memory;
       pfc_log_trace("All nodes : %s", data);
-      drv_resp_code_t ret_val =
+      UncRespCode ret_val =
           parse_port_response(ctr_ptr, data, cfgnode_vector);
       pfc_log_debug("Number of Ports in Switch %s is, %d", switch_id.c_str(),
                     static_cast<int>(cfgnode_vector.size()));
-      if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+      if (UNC_RC_SUCCESS != ret_val) {
         pfc_log_error("Error while parsing the port response");
         return ret_val;
       }
@@ -92,11 +92,11 @@ drv_resp_code_t OdcPort::fetch_config(
     }
   }
   pfc_log_error("Response in NULL");
-  return DRVAPI_RESPONSE_FAILURE;
+  return UNC_DRV_RC_ERR_GENERIC;
 }
 
 // parse each port and append to cache
-drv_resp_code_t OdcPort::fill_config_node_vector(
+UncRespCode OdcPort::fill_config_node_vector(
     unc::driver::controller *ctr_ptr,
     json_object *json_obj_node_conn_prop,
     int arr_idx,
@@ -113,10 +113,10 @@ drv_resp_code_t OdcPort::fill_config_node_vector(
                                                      arr_idx,
                                                      json_obj_node_conn);
 
-  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
   (json_object_is_type(json_obj_node_conn, json_type_null))) {
     pfc_log_error(" Error while parsing node");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   std::string node_conn_id = "";
@@ -124,10 +124,10 @@ drv_resp_code_t OdcPort::fill_config_node_vector(
                                             "id",
                                             -1,
                                             node_conn_id);
-  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
       (node_conn_id.empty())) {
     pfc_log_error(" Error while parsing node_conn_id");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   json_object *json_obj_node = NULL;
@@ -138,32 +138,32 @@ drv_resp_code_t OdcPort::fill_config_node_vector(
                                             -1,
                                             json_obj_node);
 
-  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
       (json_object_is_type(json_obj_node, json_type_null))) {
     pfc_log_error(" Error while parsing port or json obj is NULL");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   ret_val = restjson::JsonBuildParse::parse(json_obj_node_conn,
                                             "type",
                                             -1,
                                             node_type);
 
-  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
       (node_type.empty())) {
     pfc_log_error(" Error while parsing node_type");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   if (node_type.compare("SW") == 0) {
     pfc_log_debug("SW type is received");
-    return DRVAPI_RESPONSE_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
 
   ret_val = restjson::JsonBuildParse::parse(json_obj_node, "id",
                                             -1, node_id);
-  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
       (node_id.empty())) {
     pfc_log_error(" Error while parsing node id");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   std::string name_value = "";
@@ -177,9 +177,9 @@ drv_resp_code_t OdcPort::fill_config_node_vector(
                                         config_value,
                                         speed);
 
-  if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
+  if (UNC_RC_SUCCESS != ret_val) {
     pfc_log_error("Error in  parsing node conn properties");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   //  Fills Key Structure
@@ -240,11 +240,11 @@ drv_resp_code_t OdcPort::fill_config_node_vector(
     (&key_port, &val_port, uint32_t(UNC_OP_READ));
   PFC_VERIFY(cfgptr != NULL);
   cfgnode_vector.push_back(cfgptr);
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 // parse the port properties vale
-drv_resp_code_t OdcPort::parse_port_properties_value(
+UncRespCode OdcPort::parse_port_properties_value(
     int arr_idx,
     json_object *json_obj_node_conn,
     std::string &name_value,
@@ -257,10 +257,10 @@ drv_resp_code_t OdcPort::parse_port_properties_value(
                                                 "properties",
                                                 arr_idx,
                                                 json_obj_node_prop);
-  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
       (json_object_is_type(json_obj_node_prop, json_type_null))) {
     pfc_log_error(" Error while parsing node properties");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   json_object *json_obj_node_prop_name = NULL;
   ret_val = restjson::JsonBuildParse::parse(json_obj_node_prop,
@@ -268,10 +268,10 @@ drv_resp_code_t OdcPort::parse_port_properties_value(
                                             -1,
                                             json_obj_node_prop_name);
 
-  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
       (json_object_is_type(json_obj_node_prop_name, json_type_null))) {
     pfc_log_error(" Error while parsing node name");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   ret_val = restjson::JsonBuildParse::parse(json_obj_node_prop_name,
@@ -279,10 +279,10 @@ drv_resp_code_t OdcPort::parse_port_properties_value(
                                             -1,
                                             name_value);
 
-  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
       (name_value.empty())) {
     pfc_log_error(" Error while parsing node name value");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   json_object *json_obj_node_prop_state = NULL;
@@ -291,10 +291,10 @@ drv_resp_code_t OdcPort::parse_port_properties_value(
                                             -1,
                                             json_obj_node_prop_state);
 
-  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
       (json_object_is_type(json_obj_node_prop_state, json_type_null))) {
     pfc_log_error(" Error while parsing node state properties");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   ret_val = restjson::JsonBuildParse::parse(json_obj_node_prop_state,
@@ -302,9 +302,9 @@ drv_resp_code_t OdcPort::parse_port_properties_value(
                                             -1,
                                             state_value);
 
-  if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
+  if (restjson::REST_OP_SUCCESS != ret_val) {
     pfc_log_error(" Error while parsing node state value properties");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   json_object *json_obj_node_prop_config = NULL;
@@ -313,10 +313,10 @@ drv_resp_code_t OdcPort::parse_port_properties_value(
                                             -1,
                                             json_obj_node_prop_config);
 
-  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
       (json_object_is_type(json_obj_node_prop_config, json_type_null))) {
     pfc_log_error(" Error while parsing node config properties");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   ret_val = restjson::JsonBuildParse::parse(json_obj_node_prop_config,
@@ -324,9 +324,9 @@ drv_resp_code_t OdcPort::parse_port_properties_value(
                                             -1,
                                             config_value);
 
-  if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
+  if (restjson::REST_OP_SUCCESS != ret_val) {
     pfc_log_error(" Error while parsing node config properties");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   json_object *json_obj_node_prop_speed = NULL;
@@ -335,10 +335,10 @@ drv_resp_code_t OdcPort::parse_port_properties_value(
                                             -1,
                                             json_obj_node_prop_speed);
 
-  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
       (json_object_is_type(json_obj_node_prop_speed, json_type_null))) {
     pfc_log_error(" Error while parsing node bandwidth properties");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   ret_val = restjson::JsonBuildParse::parse(json_obj_node_prop_speed,
@@ -346,26 +346,26 @@ drv_resp_code_t OdcPort::parse_port_properties_value(
                                             -1,
                                             speed);
 
-  if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
+  if (restjson::REST_OP_SUCCESS != ret_val) {
     pfc_log_error(" Error while parsing node bandwidth properties");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 //  Compare whether cache empty or not
-drv_resp_code_t OdcPort::compare_with_cache(
+UncRespCode OdcPort::compare_with_cache(
     unc::driver::controller *ctr_ptr,
     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector,
     const std::string &switch_id, const pfc_bool_t cache_empty) {
   ODC_FUNC_TRACE;
   if (NULL == ctr_ptr->physical_port_cache) {
     pfc_log_error("Cache is empty");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   std::list<std::string> port_list;
-  drv_resp_code_t ret_val = DRVAPI_RESPONSE_FAILURE;
+  UncRespCode ret_val = UNC_DRV_RC_ERR_GENERIC;
 
   if (PFC_TRUE == cache_empty) {
     for (std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
@@ -373,10 +373,10 @@ drv_resp_code_t OdcPort::compare_with_cache(
       unc::vtndrvcache::ConfigNode *cfgnode_cache = *it;
       if (NULL == cfgnode_cache) {
         pfc_log_error("cfgnode_cache is NULL");
-        return DRVAPI_RESPONSE_FAILURE;
+        return UNC_DRV_RC_ERR_GENERIC;
       }
       ret_val = add_event(ctr_ptr, cfgnode_cache, port_list);
-      if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+      if (UNC_RC_SUCCESS != ret_val) {
         pfc_log_error("Error in adding to cache");
         return ret_val;
       }
@@ -385,7 +385,7 @@ drv_resp_code_t OdcPort::compare_with_cache(
     ret_val = verify_in_cache(ctr_ptr, cfgnode_vector, switch_id, port_list);
     return ret_val;
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 //  Notify physical about the port event
@@ -529,7 +529,7 @@ void OdcPort::update_list(key_port_t *key_port,
 }
 
 //  Add event for Port
-drv_resp_code_t OdcPort::add_event(unc::driver::controller *ctr_ptr,
+UncRespCode OdcPort::add_event(unc::driver::controller *ctr_ptr,
                                    unc::vtndrvcache::ConfigNode *cfg_node,
                                    std::list<std::string> &port_list) {
   ODC_FUNC_TRACE;
@@ -542,15 +542,15 @@ drv_resp_code_t OdcPort::add_event(unc::driver::controller *ctr_ptr,
 
   if ((NULL == key_port) || (NULL == val_port)) {
     pfc_log_error("key_port/val_port is NULL");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   //  Send Notification to UPPL
   notify_physical(unc::driver::VTN_PORT_CREATE, key_port, val_port, NULL);
 
   //  Append to cache
-  drv_resp_code_t  ret_val =
+  UncRespCode  ret_val =
       ctr_ptr->physical_port_cache->append_Physical_attribute_node(cfg_node);
-  if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+  if (UNC_RC_SUCCESS != ret_val) {
     delete_config_node(cfg_node);
     pfc_log_error(" Error in adding to cache");
     return ret_val;
@@ -560,7 +560,7 @@ drv_resp_code_t OdcPort::add_event(unc::driver::controller *ctr_ptr,
 }
 
 // Update event for Port
-drv_resp_code_t OdcPort::update_event(unc::driver::controller *ctr_ptr,
+UncRespCode OdcPort::update_event(unc::driver::controller *ctr_ptr,
                                       unc::vtndrvcache::ConfigNode *cfg_node,
                                       val_port_st_t *val_old_port,
                                       std::list<std::string> &port_list) {
@@ -574,16 +574,16 @@ drv_resp_code_t OdcPort::update_event(unc::driver::controller *ctr_ptr,
 
   if ((NULL == key_port) || (NULL == val_port) || (NULL == val_old_port)) {
     pfc_log_error("key_port/val_port is NULL");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   // Send notification to UPPL
   notify_physical(unc::driver::VTN_PORT_UPDATE, key_port,
                                   val_port, val_old_port);
 
   // Append to cache
-  drv_resp_code_t  ret_val =
+  UncRespCode  ret_val =
       ctr_ptr->physical_port_cache->update_physical_attribute_node(cfg_node);
-  if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+  if (UNC_RC_SUCCESS != ret_val) {
     delete_config_node(cfg_node);
     pfc_log_error(" Error in updating to cache");
     return ret_val;
@@ -594,7 +594,7 @@ drv_resp_code_t OdcPort::update_event(unc::driver::controller *ctr_ptr,
 }
 
 // Check Delete event for Port
-drv_resp_code_t OdcPort::delete_event(unc::driver::controller *ctr_ptr,
+UncRespCode OdcPort::delete_event(unc::driver::controller *ctr_ptr,
                                       const std::string &switch_id,
                                       std::list<std::string> &port_list) {
   ODC_FUNC_TRACE;
@@ -608,7 +608,7 @@ drv_resp_code_t OdcPort::delete_event(unc::driver::controller *ctr_ptr,
        cfgnode_cache = itr_ptr->NextItem() ) {
     if (NULL == cfgnode_cache) {
       pfc_log_error("cfgnode is NULL before get_type");
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_PORT == key_type) {
@@ -619,7 +619,7 @@ drv_resp_code_t OdcPort::delete_event(unc::driver::controller *ctr_ptr,
       key_port_t *key_port_cache = cfgptr_cache->get_key_structure();
       if (NULL == key_port_cache) {
         pfc_log_error("key_port_cache is NULL");
-        return DRVAPI_RESPONSE_FAILURE;
+        return UNC_DRV_RC_ERR_GENERIC;
       }
       std::string switch_id_cache = reinterpret_cast<const char*>
           (key_port_cache->sw_key.switch_id);
@@ -645,7 +645,7 @@ drv_resp_code_t OdcPort::delete_event(unc::driver::controller *ctr_ptr,
   return delete_port(ctr_ptr, cfg_node_delete_map);
 }
 
-drv_resp_code_t OdcPort::delete_port(
+UncRespCode OdcPort::delete_port(
     unc::driver::controller *ctr_ptr,
     const std::map<std::string,
     unc::vtndrvcache::ConfigNode *> &cfg_node_delete_map) {
@@ -658,7 +658,7 @@ drv_resp_code_t OdcPort::delete_port(
     unc::vtndrvcache::ConfigNode *cfg_node = iter->second;
     if (NULL == cfg_node) {
       pfc_log_error("cfgnode is NULL before get_type");
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
 
     unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, uint32_t>
@@ -670,20 +670,20 @@ drv_resp_code_t OdcPort::delete_port(
 
     if ((NULL == key_port) || (NULL == val_port)) {
       pfc_log_error("key_port/val_port is NULL");
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     // Send notification to UPPL
     notify_physical(unc::driver::VTN_PORT_DELETE, key_port, val_port, NULL);
 
     // Delete from cache
-    drv_resp_code_t  ret_val =
+    UncRespCode  ret_val =
         ctr_ptr->physical_port_cache->delete_physical_attribute_node(cfg_node);
-    if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+    if (UNC_RC_SUCCESS != ret_val) {
       pfc_log_error(" Error in deleting in cache");
       return ret_val;
     }
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 // Deletes config node
@@ -696,7 +696,7 @@ void OdcPort::delete_config_node(unc::vtndrvcache::ConfigNode *cfg_node) {
 }
 
 //  Verify in cache whether port aleady exists or not
-drv_resp_code_t OdcPort::verify_in_cache(
+UncRespCode OdcPort::verify_in_cache(
     unc::driver::controller *ctr_ptr,
     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector,
     const std::string &switch_id,
@@ -710,7 +710,7 @@ drv_resp_code_t OdcPort::verify_in_cache(
     unc::vtndrvcache::ConfigNode *cfg_node = *ctr_iterator;
     if (NULL == cfg_node) {
       pfc_log_error("cfg_node is NULL");
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, uint32_t>
         *cfgnode_ctr = static_cast<unc::vtndrvcache::CacheElementUtil
@@ -719,7 +719,7 @@ drv_resp_code_t OdcPort::verify_in_cache(
     val_port_st_t *val_port_ctr = cfgnode_ctr->get_val_structure();
     if (NULL == val_port_ctr) {
       pfc_log_error("val_port_ctr is NULL");
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
 
     std::string port_id_ctr = reinterpret_cast<const char*>
@@ -734,8 +734,8 @@ drv_resp_code_t OdcPort::verify_in_cache(
 
     if (PFC_FALSE == exist_in_cache) {
       pfc_log_trace("Port %s not exist in cache", port_id_ctr.c_str());
-      drv_resp_code_t  ret_val = add_event(ctr_ptr, cfgnode_ctr, port_list);
-      if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+      UncRespCode  ret_val = add_event(ctr_ptr, cfgnode_ctr, port_list);
+      if (ret_val != UNC_RC_SUCCESS) {
         pfc_log_error("Error occured in adding to cache");
         return ret_val;
       }
@@ -750,15 +750,15 @@ drv_resp_code_t OdcPort::verify_in_cache(
 
       if ((NULL == key_port) || (NULL == val_port_cache)) {
         pfc_log_error("key_port/val_port_cache is NULL");
-        return DRVAPI_RESPONSE_FAILURE;
+        return UNC_DRV_RC_ERR_GENERIC;
       }
       pfc_bool_t sw_update = is_port_modified(val_port_ctr, val_port_cache);
       if (PFC_TRUE == sw_update) {
         pfc_log_trace("Port is %s, its parameters are updated",
                                             port_id_ctr.c_str());
-        drv_resp_code_t  ret_val =
+        UncRespCode  ret_val =
             update_event(ctr_ptr, cfgnode_ctr, val_port_cache, port_list);
-        if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+        if (UNC_RC_SUCCESS != ret_val) {
           pfc_log_error("error in updating the cache");
           return ret_val;
         }
@@ -771,7 +771,7 @@ drv_resp_code_t OdcPort::verify_in_cache(
     }
   }
   // Check for delete
-  drv_resp_code_t  ret_val = delete_event(ctr_ptr, switch_id, port_list);
+  UncRespCode  ret_val = delete_event(ctr_ptr, switch_id, port_list);
   return ret_val;
 }
 
@@ -801,14 +801,14 @@ pfc_bool_t OdcPort::is_port_modified(val_port_st_t *val_port_ctr,
 }
 
 // parsing function for converting controller response to driver format
-drv_resp_code_t OdcPort::parse_port_response(
+UncRespCode OdcPort::parse_port_response(
     unc::driver::controller *ctr_ptr, char *data,
     std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
   ODC_FUNC_TRACE;
   json_object* jobj = restjson::JsonBuildParse::get_json_object(data);
   if (json_object_is_type(jobj, json_type_null)) {
     pfc_log_error("json_object_is_type error");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   uint32_t array_length =0;
   json_object *json_obj_node_conn_prop = NULL;
@@ -817,11 +817,11 @@ drv_resp_code_t OdcPort::parse_port_response(
                                 -1,
                                 json_obj_node_conn_prop);
 
-  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
       (json_object_is_type(json_obj_node_conn_prop, json_type_null))) {
     json_object_put(jobj);
     pfc_log_error("Parsing Error json_obj_node_conn_prop is null");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   if (json_object_is_type(json_obj_node_conn_prop, json_type_array)) {
@@ -831,19 +831,19 @@ drv_resp_code_t OdcPort::parse_port_response(
   if (0 == array_length) {
     pfc_log_debug("No nodes port present");
     json_object_put(jobj);
-    return DRVAPI_RESPONSE_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   for (uint32_t arr_idx = 0; arr_idx < array_length; arr_idx++) {
-    drv_resp_code_t ret_val = fill_config_node_vector(ctr_ptr,
+    UncRespCode ret_val = fill_config_node_vector(ctr_ptr,
                           json_obj_node_conn_prop, arr_idx, cfgnode_vector);
-    if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
+    if (UNC_RC_SUCCESS != ret_val) {
       json_object_put(jobj);
       pfc_log_error("Error return from parse_node_append_vector failure");
       return ret_val;
     }
   }
   json_object_put(jobj);
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 }  // namespace odcdriver
 }  // namespace unc

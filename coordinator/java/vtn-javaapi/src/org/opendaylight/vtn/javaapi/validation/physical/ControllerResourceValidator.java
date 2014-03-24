@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -26,7 +26,7 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 			.getLogger(ControllerResourceValidator.class.getName());
 
 	private final AbstractResource resource;
-	final CommonValidator validator = new CommonValidator();
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new controller resource validator.
@@ -44,7 +44,7 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start ControllerResourceValidator#validateUri()");
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.CONTROLLERID);
@@ -68,8 +68,9 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 	 * Validate request json for put, post and get method of controller API
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start ControlleResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of ControllerResourceValidator");
@@ -86,7 +87,7 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 			} else if (isValid && requestBody != null
 					&& VtnServiceConsts.PUT.equals(method)) {
 				isValid = validatePut(requestBody);
-			}else if (isValid) {
+			} else if (isValid) {
 				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 				isValid = false;
 			}
@@ -114,7 +115,7 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 	 * 
 	 * @return true, if is valid get
 	 */
-	public boolean validateGet(final JsonObject requestBody,
+	public final boolean validateGet(final JsonObject requestBody,
 			final boolean opFlag) {
 		LOG.trace("Start ControllerResourceValidator#isValidGet");
 		boolean isValid = true;

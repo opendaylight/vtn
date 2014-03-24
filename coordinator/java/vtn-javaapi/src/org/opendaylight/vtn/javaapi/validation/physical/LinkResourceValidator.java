@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -15,7 +15,6 @@ import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
 import org.opendaylight.vtn.javaapi.resources.AbstractResource;
-import org.opendaylight.vtn.javaapi.resources.physical.LinkResource;
 import org.opendaylight.vtn.javaapi.resources.physical.LinksResource;
 import org.opendaylight.vtn.javaapi.validation.CommonValidator;
 import org.opendaylight.vtn.javaapi.validation.VtnServiceValidator;
@@ -25,55 +24,42 @@ import org.opendaylight.vtn.javaapi.validation.VtnServiceValidator;
  * API.
  */
 public class LinkResourceValidator extends VtnServiceValidator {
-
+	/**
+	 * Logger for debugging purpose.
+	 */
 	private static final Logger LOG = Logger
 			.getLogger(LinkResourceValidator.class.getName());
-
+	/**
+	 * resource , the instance of AbstractResource.
+	 */
 	private final AbstractResource resource;
-	final CommonValidator validator = new CommonValidator();
+	/**
+	 * validator object for common validations.
+	 */
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new link resource validator.
 	 * 
-	 * @param switchResource
-	 *            the instance of AbstractResource
+	 * @param resource
+	 *            , the instance of AbstractResource
 	 */
 	public LinkResourceValidator(final AbstractResource resource) {
 		this.resource = resource;
 	}
 
 	/**
-	 * Validate uri parameters for Link API
+	 * Validate uri parameters for Link API .
 	 * 
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start LinkResourceValidator#validateUri()");
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.URI
 				+ VtnServiceJsonConsts.CONTROLLERID);
-		if (resource instanceof LinkResource
-				&& ((LinkResource) resource).getControllerId() != null
-				&& !((LinkResource) resource).getControllerId().trim()
-						.isEmpty()) {
-			isValid = validator.isValidMaxLengthAlphaNum(
-					((LinkResource) resource).getControllerId().trim(),
-					VtnServiceJsonConsts.LEN_31);
-			if (isValid) {
-				setInvalidParameter(VtnServiceJsonConsts.URI
-						+ VtnServiceJsonConsts.LINKNAME);
-				if (((LinkResource) resource).getLinkName() != null
-						&& !((LinkResource) resource).getLinkName().trim()
-								.isEmpty()) {
-					isValid = linkNameValidator(((LinkResource) resource)
-							.getLinkName().trim());
-				} else {
-					isValid = false;
-				}
-			}
-			setListOpFlag(false);
-		} else if (resource instanceof LinksResource
+		if (resource instanceof LinksResource
 				&& ((LinksResource) resource).getControllerId() != null
 				&& !((LinksResource) resource).getControllerId().trim()
 						.isEmpty()) {
@@ -87,7 +73,7 @@ public class LinkResourceValidator extends VtnServiceValidator {
 	}
 
 	/**
-	 * Validate link name
+	 * Validate link name .
 	 * 
 	 * @param link
 	 *            value to be validated
@@ -121,11 +107,20 @@ public class LinkResourceValidator extends VtnServiceValidator {
 	}
 
 	/**
-	 * Validate request json get method of Link API
+	 * Validate request JSON for get methods of Data Flow API.
+	 */
+	/**
+	 * @param method
+	 *            , contains info about get,post ,delete.
+	 * @param requestBody
+	 *            , contains request param.
+	 * @throws VtnServiceException
+	 *             , vtnexcpetion is thrown.
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start LinkResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of LinkResourceValidator");
@@ -136,7 +131,7 @@ public class LinkResourceValidator extends VtnServiceValidator {
 					&& VtnServiceConsts.GET.equals(method)) {
 				isValid = validateGet(requestBody, isListOpFlag());
 				updateOpParameterForList(requestBody);
-			}else if (isValid) {
+			} else if (isValid) {
 				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 				isValid = false;
 			}
@@ -157,14 +152,15 @@ public class LinkResourceValidator extends VtnServiceValidator {
 	}
 
 	/**
-	 * Validate get request json for Link API
+	 * Validate get request json for Link API .
 	 * 
 	 * @param requestBody
-	 *            the request Json object
-	 * 
+	 *            , the request Json object .
+	 * @param opFlag
+	 *            , to resolve operation type .
 	 * @return true, if is valid get
 	 */
-	public boolean validateGet(final JsonObject requestBody,
+	public final boolean validateGet(final JsonObject requestBody,
 			final boolean opFlag) {
 		LOG.trace("Start LinkResourceValidator#ValidGet");
 		boolean isValid = true;
@@ -212,10 +208,7 @@ public class LinkResourceValidator extends VtnServiceValidator {
 				setInvalidParameter(VtnServiceJsonConsts.INDEX);
 				if (requestBody.has(VtnServiceJsonConsts.INDEX)
 						&& requestBody.getAsJsonPrimitive(
-								VtnServiceJsonConsts.INDEX).getAsString() != null
-						&& !requestBody
-								.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
-								.getAsString().isEmpty()) {
+								VtnServiceJsonConsts.INDEX).getAsString() != null) {
 					isValid = linkNameValidator(requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
 							.getAsString().trim());
@@ -263,6 +256,18 @@ public class LinkResourceValidator extends VtnServiceValidator {
 						.getAsString().trim(), VtnServiceJsonConsts.LEN_255);
 			}
 		}
+		// validation for key: Link Name
+		if (isValid) {
+			setInvalidParameter(VtnServiceJsonConsts.LINKNAME);
+			if (requestBody.has(VtnServiceJsonConsts.LINKNAME)
+					&& requestBody.getAsJsonPrimitive(
+							VtnServiceJsonConsts.LINKNAME).getAsString() != null) {
+				isValid = linkNameValidator(requestBody
+						.getAsJsonPrimitive(VtnServiceJsonConsts.LINKNAME)
+						.getAsString().trim());
+			}
+		}
+
 		LOG.trace("Complete LinkResourceValidator#isValidGet");
 		return isValid;
 	}

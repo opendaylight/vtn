@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -23,6 +23,17 @@ DalOdbcMgr::DalOdbcMgr(void) {
 }
 
 DalOdbcMgr::~DalOdbcMgr(void) {
+}
+
+DalOdbcMgr* DalOdbcMgr::GetAlarmRwConn() {
+  return new DalOdbcMgr();
+}
+
+upll_rc_t DalOdbcMgr::DalTxClose(DalOdbcMgr *dom, bool commit) {
+  return UPLL_RC_SUCCESS;
+}
+
+void ReleaseRwConn(DalOdbcMgr *dom) {
 }
 
 DalResultCode DalOdbcMgr::Init(void) {
@@ -163,9 +174,11 @@ DalResultCode DalOdbcMgr::CopyEntireRecords(
 }
 
 DalResultCode DalOdbcMgr::CopyModifiedRecords(
-  const UpllCfgType dest_cfg_type, const UpllCfgType src_cfg_type,
-  const DalTableIndex table_index,
-  const DalBindInfo *output_and_match_attr_info)  {
+                                    const UpllCfgType dest_cfg_type,
+                                    const UpllCfgType src_cfg_type,
+                                    const DalTableIndex table_index,
+                                    const DalBindInfo *bind_info,
+                                    const unc_keytype_operation_t op) const {
   return stub_getMappedResultCode(DalOdbcMgr::COPY_MODIFY);
 }
 

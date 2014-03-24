@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -38,6 +38,7 @@ public class VtnsResource extends AbstractResource {
 	/** The Constant LOG. */
 	private static final Logger LOG = Logger.getLogger(VtnsResource.class
 			.getName());
+
 	/**
 	 * Instantiates a new vtns resource.
 	 */
@@ -46,6 +47,7 @@ public class VtnsResource extends AbstractResource {
 		setValidator(new VtnResourceValidator(this));
 		LOG.trace("Completed VtnsResource#VtnsResource()");
 	}
+
 	/**
 	 * Implementation of Post method of vtn API
 	 * 
@@ -80,14 +82,14 @@ public class VtnsResource extends AbstractResource {
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
 			getExceptionHandler()
-			.raise(Thread.currentThread().getStackTrace()[1]
-					.getClassName()
-					+ VtnServiceConsts.HYPHEN
-					+ Thread.currentThread().getStackTrace()[1]
-							.getMethodName(),
+					.raise(Thread.currentThread().getStackTrace()[1]
+							.getClassName()
+							+ VtnServiceConsts.HYPHEN
+							+ Thread.currentThread().getStackTrace()[1]
+									.getMethodName(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR
-							.getErrorMessage(), e);
+									.getErrorMessage(), e);
 			throw e;
 		} finally {
 			if (status == ClientSession.RESP_FATAL) {
@@ -104,6 +106,7 @@ public class VtnsResource extends AbstractResource {
 		LOG.trace("Completed VtnsResource#put()");
 		return status;
 	}
+
 	/**
 	 * Implementation of Get method of vtn API
 	 * 
@@ -138,36 +141,38 @@ public class VtnsResource extends AbstractResource {
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
 			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
-			/*setInfo(responseGenerator.getVtnResponse(
-					requestProcessor.getIpcResponsePacket(), requestBody,
-					VtnServiceJsonConsts.LIST));*/
+			/*
+			 * setInfo(responseGenerator.getVtnResponse(
+			 * requestProcessor.getIpcResponsePacket(), requestBody,
+			 * VtnServiceJsonConsts.LIST));
+			 */
 			JsonObject responseJson = responseGenerator.getVtnResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.LIST);
 			if (responseJson.get(VtnServiceJsonConsts.VTNS).isJsonArray()) {
-				JsonArray responseArray = responseJson.get(
+				final JsonArray responseArray = responseJson.get(
 						VtnServiceJsonConsts.VTNS).getAsJsonArray();
 
 				responseJson = getResponseJsonArrayLogical(requestBody,
-						requestProcessor,responseGenerator,
-						responseArray, VtnServiceJsonConsts.VTNS,
+						requestProcessor, responseGenerator, responseArray,
+						VtnServiceJsonConsts.VTNS,
 						VtnServiceJsonConsts.VTNNAME,
-						IpcRequestPacketEnum.KT_VTN_GET,
-						uriParameterList,VtnServiceIpcConsts.GET_VTN_RESPONSE);
+						IpcRequestPacketEnum.KT_VTN_GET, uriParameterList,
+						VtnServiceIpcConsts.GET_VTN_RESPONSE);
 			}
 			setInfo(responseJson);
 			LOG.debug("Response object created successfully");
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
 			getExceptionHandler()
-			.raise(Thread.currentThread().getStackTrace()[1]
-					.getClassName()
-					+ VtnServiceConsts.HYPHEN
-					+ Thread.currentThread().getStackTrace()[1]
-							.getMethodName(),
+					.raise(Thread.currentThread().getStackTrace()[1]
+							.getClassName()
+							+ VtnServiceConsts.HYPHEN
+							+ Thread.currentThread().getStackTrace()[1]
+									.getMethodName(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR
-							.getErrorMessage(), e);
+									.getErrorMessage(), e);
 			throw e;
 		} finally {
 			if (status == ClientSession.RESP_FATAL) {
@@ -184,6 +189,7 @@ public class VtnsResource extends AbstractResource {
 		LOG.trace("Completed VtnsResource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 

@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -27,10 +27,16 @@
 #include "./keytype_upll_ext.h"
 #include "ipct_st.hh"
 #include "uncxx/upll_log.hh"
+
+#include "upll_validation.hh"
+
 namespace unc {
 namespace upll {
+
 static const uint32_t kIpcTimeoutPing = 330;
 static const uint32_t kIpcTimeoutImport = 300;
+static const uint32_t kIpcTimeoutDataflow = 3600;
+static const uint32_t kIpcTimeoutVtnstation = 300;
 
 namespace ipc_util {
 
@@ -42,6 +48,12 @@ static const uint32_t kKeyTreeRespMandatoryFields = 10;
 static const uint32_t kKeyTreeDriverRespMandatoryFields = 12;
 static const uint32_t kPhyConfigNotificationMandatoryFields = 4;
 static const uint32_t kPfcDrvierAlarmMandatoryFields = 7;
+
+typedef struct key_user_data {
+  uint8_t ctrlr_id[unc::upll::kt_momgr::kMaxLenCtrlrId+1];
+  uint8_t domain_id[unc::upll::kt_momgr::kMaxLenDomainId+1];
+  uint8_t flags;
+} key_user_data_t;
 
 // NOTE: ConfigVal assumes the pointers passed in to this class are allocated
 // with Malloc() function and calls free() for freeing the memory.
@@ -176,7 +188,7 @@ class ConfigKeyVal {
 
   inline ConfigKeyVal *get_next_cfg_key_val() const { return next_ckv_; }
   void AppendCfgKeyVal(unc_key_type_t kt, IpctSt::IpcStructNum st_num,
-                           void *key, ConfigVal *cv = NULL) {
+                       void *key, ConfigVal *cv = NULL) {
     AppendCfgKeyVal(new ConfigKeyVal(kt, st_num, key, cv));
   }
   void AppendCfgKeyVal(ConfigKeyVal *cfg_kv);
@@ -265,8 +277,8 @@ class ConfigNotification {
  public:
   // {New and old(optional) values can be given in keyval}
   ConfigNotification(unc_keytype_operation_t operation,
-                          unc_keytype_datatype_t datatype,
-                          ConfigKeyVal *ckv_data) {
+                     unc_keytype_datatype_t datatype,
+                     ConfigKeyVal *ckv_data) {
     operation_ = operation;
     datatype_ = datatype;
     ckv_ = ckv_data;
@@ -317,7 +329,7 @@ class IpcUtil {
   static upll_rc_t GetCtrlrTypeFromPhy(const char *ctrlr_name,
                                        upll_keytype_datatype_t dt,
                                        unc_keytype_ctrtype_t *ctrlr_type);
-  static upll_rc_t DriverResultCodeToKtURC(unc_keytype_ctrtype_t ctrlr_type,
+  static upll_rc_t DriverResultCodeToKtURC(unc_keytype_operation_t operation,
                                            uint32_t driver_result_code);
   static bool SendReqToDriver(const char *ctrlr_name, char *domain_id,
                               const char *service_name, pfc_ipcid_t service_id,

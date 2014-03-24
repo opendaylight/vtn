@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -220,9 +220,13 @@ class DalQueryBuilder {
      *   converts token string to enum constants
      *
      * @param[in] tokenstr    - replacement token string
+     * @param[in] start_pos   - replacement token string:start position
+     * @param[in] length      - replacement token string:length
      * @return DalQuerytoken  - valid DalQuerytoken enum on success
      */
-    DalQuerytoken str_to_num(const std::string &tokenstr) const;
+    DalQuerytoken str_to_num(const std::string &tokenstr,
+                             const size_t start_pos,
+                             const size_t length) const;
 
     /* get_config_prefix
      *   verifies config type, and adds appropriate config type prefix
@@ -234,19 +238,17 @@ class DalQueryBuilder {
     bool get_config_prefix(const UpllCfgType type,
                            std::string &config_type) const;
 
-    /* next_token
+    /* next_token_pos
      *   keep finding tokens in sql template until all token found
      *
      * @param[in] query_template    - query template specific to API
-     * @param[in] start_position    - next start position of each token
-     * @param[out] token            - actual token string which need to replace
+     * @param[in/out] start_position    - next start position of each token
      * @param[in/out] last_position - last end position of previous token
      * @return bool                 - true on success else false
      */
-    bool next_token(const std::string &query_template,
-                    const size_t start_position,
-                    std::string *token,
-                    size_t *last_position) const;
+    bool next_token_pos(const std::string &query_template,
+                        size_t &start_position,
+                        size_t &last_position) const;
 
     /* get_bind_str
      *   generate column's or table name string according to token, and it

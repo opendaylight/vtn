@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -38,6 +38,7 @@ public class FlowListsResource extends AbstractResource {
 
 	private static final Logger LOG = Logger.getLogger(FlowListsResource.class
 			.getName());
+
 	/**
 	 * Instantiates a new flow lists resource.
 	 */
@@ -47,6 +48,7 @@ public class FlowListsResource extends AbstractResource {
 		setValidator(new FlowListResourceValidator(this));
 		LOG.trace("Completed FlowListsResource#FlowListsResource()");
 	}
+
 	/**
 	 * Implementation of post method of Flow Lists
 	 * 
@@ -57,7 +59,8 @@ public class FlowListsResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts FlowListsRsesource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -82,14 +85,14 @@ public class FlowListsResource extends AbstractResource {
 
 		} catch (final VtnServiceException e) {
 			getExceptionHandler()
-			.raise(Thread.currentThread().getStackTrace()[1]
-					.getClassName()
-					+ VtnServiceConsts.HYPHEN
-					+ Thread.currentThread().getStackTrace()[1]
-							.getMethodName(),
+					.raise(Thread.currentThread().getStackTrace()[1]
+							.getClassName()
+							+ VtnServiceConsts.HYPHEN
+							+ Thread.currentThread().getStackTrace()[1]
+									.getMethodName(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR
-							.getErrorMessage(), e);
+									.getErrorMessage(), e);
 			throw e;
 		} finally {
 			if (status == ClientSession.RESP_FATAL) {
@@ -106,6 +109,7 @@ public class FlowListsResource extends AbstractResource {
 		LOG.trace("Completed FlowListsRsesource#post()");
 		return status;
 	}
+
 	/**
 	 * Implementation of get method of Flow Lists
 	 * 
@@ -116,7 +120,8 @@ public class FlowListsResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts FlowListsRsesource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -139,7 +144,7 @@ public class FlowListsResource extends AbstractResource {
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			/*
 			 * setInfo(responseGenerator.getFlowListResponse(
 			 * requestProcessor.getIpcResponsePacket(), requestBody,
@@ -149,16 +154,15 @@ public class FlowListsResource extends AbstractResource {
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.LIST);
 			if (responseJson.get(VtnServiceJsonConsts.FLOWLISTS).isJsonArray()) {
-				JsonArray responseArray = responseJson.get(
+				final JsonArray responseArray = responseJson.get(
 						VtnServiceJsonConsts.FLOWLISTS).getAsJsonArray();
 
-
 				responseJson = getResponseJsonArrayLogical(requestBody,
-						requestProcessor, responseGenerator,
-						responseArray, VtnServiceJsonConsts.FLOWLISTS,
+						requestProcessor, responseGenerator, responseArray,
+						VtnServiceJsonConsts.FLOWLISTS,
 						VtnServiceJsonConsts.FLNAME,
-						IpcRequestPacketEnum.KT_FLOWLIST_GET,
-						uriParameterList,VtnServiceIpcConsts.GET_FLOW_LIST_RESPONSE);
+						IpcRequestPacketEnum.KT_FLOWLIST_GET, uriParameterList,
+						VtnServiceIpcConsts.GET_FLOW_LIST_RESPONSE);
 
 			}
 			setInfo(responseJson);
@@ -167,14 +171,14 @@ public class FlowListsResource extends AbstractResource {
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
 			getExceptionHandler()
-			.raise(Thread.currentThread().getStackTrace()[1]
-					.getClassName()
-					+ VtnServiceConsts.HYPHEN
-					+ Thread.currentThread().getStackTrace()[1]
-							.getMethodName(),
+					.raise(Thread.currentThread().getStackTrace()[1]
+							.getClassName()
+							+ VtnServiceConsts.HYPHEN
+							+ Thread.currentThread().getStackTrace()[1]
+									.getMethodName(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR
-							.getErrorMessage(), e);
+									.getErrorMessage(), e);
 			throw e;
 		} finally {
 			if (status == ClientSession.RESP_FATAL) {
@@ -191,12 +195,13 @@ public class FlowListsResource extends AbstractResource {
 		LOG.trace("Complete FlowListsRsesource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 
 	 * @return
 	 */
-	private List<String> getUriParameters(JsonObject requestBody) {
+	private List<String> getUriParameters(final JsonObject requestBody) {
 		LOG.trace("Start FlowListsRsesource#getUriParameters()");
 		final List<String> uriParameters = new ArrayList<String>();
 		if (requestBody != null && requestBody.has(VtnServiceJsonConsts.INDEX)) {

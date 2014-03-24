@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -20,7 +20,7 @@
 #include <string>
 #include "physicallayer.hh"
 #include "itc_kt_state_base.hh"
-
+#include "ipc_client_configuration_handler.hh"
 #define ALARM_UPPL_ALARMS_DEFAULT_FLOW 0x01
 #define ALARM_UPPL_ALARMS_PORT_DIRECTION 0x02
 #define ALARM_UPPL_ALARMS_PORT_CONGES 0x04
@@ -32,18 +32,18 @@ class Kt_Port: public Kt_State_Base {
 
   ~Kt_Port();
 
-  UpplReturnCode DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
+  UncRespCode DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
                                    void* key_struct,
                                    uint32_t data_type,
                                    uint32_t key_type);
 
-  UpplReturnCode ReadInternal(OdbcmConnectionHandler *db_conn,
+  UncRespCode ReadInternal(OdbcmConnectionHandler *db_conn,
                               vector<void *> &key_val,
                               vector<void *> &val_struct,
                               uint32_t data_type,
                               uint32_t operation_type);
 
-  UpplReturnCode ReadBulk(OdbcmConnectionHandler *db_conn,
+  UncRespCode ReadBulk(OdbcmConnectionHandler *db_conn,
                           void* key_struct,
                           uint32_t data_type,
                           uint32_t &max_rep_ct,
@@ -52,57 +52,57 @@ class Kt_Port: public Kt_State_Base {
                           pfc_bool_t is_read_next,
                           ReadRequest *read_req);
 
-  UpplReturnCode PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
+  UncRespCode PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
                                          void* key_struct,
                                          void* val_struct,
                                          uint32_t operation,
                                          uint32_t data_type);
 
-  UpplReturnCode PerformSemanticValidation(OdbcmConnectionHandler *db_conn,
+  UncRespCode PerformSemanticValidation(OdbcmConnectionHandler *db_conn,
                                            void* key_struct,
                                            void* val_struct,
                                            uint32_t operation,
                                            uint32_t data_type);
 
-  UpplReturnCode HandleDriverAlarms(OdbcmConnectionHandler *db_conn,
+  UncRespCode HandleDriverAlarms(OdbcmConnectionHandler *db_conn,
                                     uint32_t data_type,
                                     uint32_t alarm_type,
                                     uint32_t oper_type,
                                     void* key_struct,
                                     void* val_struct);
-  UpplReturnCode HandleOperStatus(OdbcmConnectionHandler *db_conn,
+  UncRespCode HandleOperStatus(OdbcmConnectionHandler *db_conn,
                                   uint32_t data_type,
                                   void *key_struct,
                                   void *value_struct);
 
-  UpplReturnCode NotifyOperStatus(OdbcmConnectionHandler *db_conn,
+  UncRespCode NotifyOperStatus(OdbcmConnectionHandler *db_conn,
                                   uint32_t data_type,
                                   void *key_struct,
                                   void *value_struct,
                                   vector<OperStatusHolder> &ref_oper_status);
 
-  UpplReturnCode GetOperStatus(OdbcmConnectionHandler *db_conn,
+  UncRespCode GetOperStatus(OdbcmConnectionHandler *db_conn,
                                uint32_t data_type,
                                void* key_struct,
                                uint8_t &oper_status);
 
-  UpplReturnCode GetAlarmStatus(OdbcmConnectionHandler *db_conn,
+  UncRespCode GetAlarmStatus(OdbcmConnectionHandler *db_conn,
                                 uint32_t data_type,
                                 void* key_struct,
                                 uint64_t &alarms_status);
 
-  UpplReturnCode IsKeyExists(OdbcmConnectionHandler *db_conn,
+  UncRespCode IsKeyExists(OdbcmConnectionHandler *db_conn,
                              unc_keytype_datatype_t data_type,
                              const vector<string>& key_values);
 
   void Fill_Attr_Syntax_Map();
-  UpplReturnCode UpdatePortValidFlag(OdbcmConnectionHandler *db_conn,
+  UncRespCode UpdatePortValidFlag(OdbcmConnectionHandler *db_conn,
                                      void *key_struct,
                                      void *val_struct,
                                      val_port_st_t &val_port_valid_st,
                                      unc_keytype_validflag_t valid_val,
                                      uint32_t data_type);
-  UpplReturnCode PopulateSchemaForValidFlag(OdbcmConnectionHandler *db_conn,
+  UncRespCode PopulateSchemaForValidFlag(OdbcmConnectionHandler *db_conn,
                                             void* key_struct,
                                             void* val_struct,
                                             string new_val,
@@ -177,7 +177,7 @@ class Kt_Port: public Kt_State_Base {
                               uint32_t operation_type,
                               vector<key_port_t> &port_id);
 
-  UpplReturnCode PerformRead(OdbcmConnectionHandler *db_conn,
+  UncRespCode PerformRead(OdbcmConnectionHandler *db_conn,
                              uint32_t session_id,
                              uint32_t configuration_id,
                              void* key_struct,
@@ -189,7 +189,7 @@ class Kt_Port: public Kt_State_Base {
                              uint32_t option2,
                              uint32_t max_rep_ct);
 
-  UpplReturnCode ReadPortValFromDB(OdbcmConnectionHandler *db_conn,
+  UncRespCode ReadPortValFromDB(OdbcmConnectionHandler *db_conn,
                                    void* key_struct,
                                    void* val_struct,
                                    uint32_t data_type,
@@ -198,18 +198,18 @@ class Kt_Port: public Kt_State_Base {
                                    vector<val_port_st_t> &vect_val_port_st,
                                    vector<key_port_t> &port_id);
 
-  UpplReturnCode ReadBulkInternal(OdbcmConnectionHandler *db_conn,
+  UncRespCode ReadBulkInternal(OdbcmConnectionHandler *db_conn,
                                   void* key_struct,
                                   void* value_struct,
                                   uint32_t data_type,
                                   uint32_t max_rep_ct,
                                   vector<val_port_st_t> &vect_val_port,
                                   vector<key_port_t> &vect_port_id);
-  UpplReturnCode SetOperStatus(OdbcmConnectionHandler *db_conn,
+  UncRespCode SetOperStatus(OdbcmConnectionHandler *db_conn,
                                uint32_t data_type,
                                void* key_struct,
                                UpplPortOperStatus oper_status);
-  UpplReturnCode ReadNeighbor(OdbcmConnectionHandler *db_conn,
+  UncRespCode ReadNeighbor(OdbcmConnectionHandler *db_conn,
       void* key_struct,
       void* val_struct,
       uint32_t data_type,
@@ -229,7 +229,7 @@ class Kt_Port: public Kt_State_Base {
         uint8_t operation_type,
         val_port_st_t *val_port_valid_st,
         stringstream &valid);
-    UpplReturnCode SubDomainOperStatusHandling(
+    UncRespCode SubDomainOperStatusHandling(
         OdbcmConnectionHandler *db_conn,
         uint32_t data_type,
         string controller_name,

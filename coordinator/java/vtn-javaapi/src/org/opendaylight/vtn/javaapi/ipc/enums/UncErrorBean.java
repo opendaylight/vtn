@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -14,29 +14,37 @@ public class UncErrorBean {
 	private String errorCode;
 	private String javaAPIErrorMessage;
 	private String southboundErrorMessage;
-	
-	public String getErrorCodeKey() {
+
+	public final String getErrorCodeKey() {
 		return errorCodeKey;
 	}
-	public void setErrorCodeKey(String errorCodeKey) {
+
+	public final void setErrorCodeKey(final String errorCodeKey) {
 		this.errorCodeKey = errorCodeKey;
 	}
-	public String getErrorCode() {
+
+	public final String getErrorCode() {
 		return errorCode;
 	}
-	public void setErrorCode(String errorCode) {
+
+	public final void setErrorCode(final String errorCode) {
 		this.errorCode = errorCode;
 	}
-	public String getJavaAPIErrorMessage() {
+
+	public final String getJavaAPIErrorMessage() {
 		return javaAPIErrorMessage;
 	}
-	public void setJavaAPIErrorMessage(String javaAPIErrorMessage) {
+
+	public final void setJavaAPIErrorMessage(final String javaAPIErrorMessage) {
 		this.javaAPIErrorMessage = javaAPIErrorMessage;
 	}
-	public String getSouthboundErrorMessage() {
+
+	public final String getSouthboundErrorMessage() {
 		return southboundErrorMessage;
 	}
-	public void setSouthboundErrorMessage(String southboundErrorMessage) {
+
+	public final void setSouthboundErrorMessage(
+			final String southboundErrorMessage) {
 		this.southboundErrorMessage = southboundErrorMessage;
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -70,7 +70,7 @@ ODBCM_RC_STATUS ODBCManager::ClearDatabase(unc_keytype_datatype_t db_name,
 
   SQLHDBC rw_conn_handle = conn_obj->get_conn_handle();
   /** Allocate for db statement handle */
-  ODBCM_STATEMENT_CREATE(rw_conn_handle, clear_stmt);
+  ODBCM_STATEMENT_CREATE(rw_conn_handle, clear_stmt, odbc_rc);
   /** Create query_factory and query processor objects */
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
   ODBCM_CREATE_OBJECT(query_processor, QueryProcessor);
@@ -92,11 +92,11 @@ ODBCM_RC_STATUS ODBCManager::ClearDatabase(unc_keytype_datatype_t db_name,
               CLEARDATABASE, cleardb_query, clear_stmt);
   if (status == ODBCM_RC_SUCCESS) {
     /** Commit all active transactions on this connection*/
-    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT);
+    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT, status);
     pfc_log_info("ODBCM::ODBCManager::ClearDatabase:database is cleared");
   } else {
     /** Rollback all active transactions on this connection*/
-    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK);
+    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK, status);
     pfc_log_info("ODBCM::ODBCManager::ClearDatabase:database is not cleared");
   }
   /* Freeing all allocated memory */
@@ -142,7 +142,7 @@ ODBCM_RC_STATUS ODBCManager::CopyDatabase(
   }
   SQLHDBC rw_conn_handle = conn_obj->get_conn_handle();
   /** Create p_query_factory and query processor objects */
-  ODBCM_STATEMENT_CREATE(rw_conn_handle, copy_stmt);
+  ODBCM_STATEMENT_CREATE(rw_conn_handle, copy_stmt, odbc_rc);
   ODBCM_CREATE_OBJECT(p_query_factory, QueryFactory);
   ODBCM_CREATE_OBJECT(query_processor, QueryProcessor);
   /** Set the FPTR */
@@ -162,11 +162,11 @@ ODBCM_RC_STATUS ODBCManager::CopyDatabase(
     COPYDATABASE, p_copydb_query, copy_stmt);
   if (status == ODBCM_RC_SUCCESS) {
     /** Commit all active transactions on this connection*/
-    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT);
+    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT, status);
     pfc_log_info("ODBCM::ODBCManager::CopyDatabase:database is copied");
   } else {
     /** Rollback all active transactions on this connection*/
-    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK);
+    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK, status);
     pfc_log_info("ODBCM::ODBCManager::CopyDatabase:database is not copied");
   }
   /* Freeing all allocated memory */
@@ -202,7 +202,7 @@ ODBCM_RC_STATUS ODBCManager::IsCandidateDirty(
 
   SQLHDBC ro_conn_handle = conn_obj->get_conn_handle();
   /** Allocate for db statement handle */
-  ODBCM_STATEMENT_CREATE(ro_conn_handle, isdirty_stmt);
+  ODBCM_STATEMENT_CREATE(ro_conn_handle, isdirty_stmt, odbc_rc);
   /** Create query_factory and query processor objects */
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
   ODBCM_CREATE_OBJECT(query_processor, QueryProcessor);
@@ -222,6 +222,9 @@ ODBCM_RC_STATUS ODBCManager::IsCandidateDirty(
   /** Execute the query statements as a single transaction */
   status = query_processor->ExecuteTransaction(
             ISCANDIDATEDIRTY, query, isdirty_stmt);
+  if (status == ODBCM_RC_CONNECTION_ERROR) {
+    err_connx_list_.push_back(conn_obj->get_using_session_id());
+  }
   if ((status == ODBCM_RC_STMT_ERROR) ||
       (status == ODBCM_RC_DATA_ERROR)) {
     pfc_log_error("ODBCM::ODBCManager::IsCandidateDirty: "
@@ -282,7 +285,7 @@ ODBCM_RC_STATUS ODBCManager::CommitAllConfiguration(
   }
   SQLHDBC rw_conn_handle = conn_obj->get_conn_handle();
   /** Create query_factory and query processor objects */
-  ODBCM_STATEMENT_CREATE(rw_conn_handle, commit_stmt);
+  ODBCM_STATEMENT_CREATE(rw_conn_handle, commit_stmt, odbc_rc);
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
   ODBCM_CREATE_OBJECT(query_processor, QueryProcessor);
   /** Fptr for queryfactory to construct COMMITALLCONFIG query */
@@ -336,12 +339,12 @@ ODBCM_RC_STATUS ODBCManager::CommitAllConfiguration(
   }
   if (status == ODBCM_RC_SUCCESS) {
     /** Commit all active transactions on this connection*/
-    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT);
+    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT, status);
     pfc_log_info("ODBCM::ODBCManager::CommitAllConfiguration: "
         "ODBCM level commit is completed");
   } else {
     /** Rollback all active transactions on this connection*/
-    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK);
+    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK, status);
     pfc_log_info("ODBCM::ODBCManager::CommitAllConfiguration: "
         "ODBCM level commit is not completed");
   }
@@ -375,7 +378,7 @@ ODBCM_RC_STATUS ODBCManager::ClearOneInstance(
 
   SQLHDBC rw_conn_handle = conn_obj->get_conn_handle();
   /** Do sql allocate for sql stmt */
-  ODBCM_STATEMENT_CREATE(rw_conn_handle, stmt);
+  ODBCM_STATEMENT_CREATE(rw_conn_handle, stmt, odbc_rc);
   /** Create query_factory and query processor objects */
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
   ODBCM_CREATE_OBJECT(query_processor, QueryProcessor);
@@ -397,11 +400,11 @@ ODBCM_RC_STATUS ODBCManager::ClearOneInstance(
   status = query_processor->ExecuteTransaction(
       CLEARONEINSTANCE, QUERY, stmt);
   if (status == ODBCM_RC_SUCCESS) {
-    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT);
+    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT, status);
     pfc_log_info("ODBCM::ODBCManager::ClearOneInstance: "
       "given one instance is cleared");
   } else {
-    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK);
+    ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK, status);
     pfc_log_info("ODBCM::ODBCManager::ClearOneInstance: "
       "given one instance is not cleared");
   }
@@ -412,6 +415,9 @@ ODBCM_RC_STATUS ODBCManager::ClearOneInstance(
   if (QUERY != NULL) {
     delete []QUERY;
     QUERY = NULL;
+  }
+  if (status == ODBCM_RC_CONNECTION_ERROR) {
+    err_connx_list_.push_back(conn_obj->get_using_session_id());
   }
   return status;
 }

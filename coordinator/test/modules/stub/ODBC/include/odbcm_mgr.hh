@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -70,6 +70,13 @@ class ODBCManager {
   /**close the connection at the end of application, free the allocated
    * handlers and environment */
   ODBCM_RC_STATUS CloseDBConnection(OdbcmConnectionHandler *conn_obj);
+
+  ODBCM_RC_STATUS AssignDBConnection(OdbcmConnectionHandler *&db_conn,
+                                     uint32_t session_id, uint32_t config_id = 0);
+  ODBCM_RC_STATUS PoolDBConnection(OdbcmConnectionHandler *&conn_obj,
+                                   uint32_t session_id, uint32_t config_id = 0);
+  ODBCM_RC_STATUS FreeingConnections(bool IsAllOrUnused);
+
   /** getter method for db_table_list_map_ private member*/
   std::map<int, std::vector<std::string> >& get_db_table_list_map_();
   /** getter method for odbcm_tables_column_map_ private member*/

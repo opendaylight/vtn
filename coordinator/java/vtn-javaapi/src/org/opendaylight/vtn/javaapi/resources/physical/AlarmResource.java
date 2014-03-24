@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -57,12 +57,13 @@ public class AlarmResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start Alarm#put()");
 		ClientSession session = null;
 		int status = ClientSession.RESP_FATAL;
 		try {
-            LOG.debug("Start Ipc framework call");
+			LOG.debug("Start Ipc framework call");
 			session = getConnPool().getSession(
 					UncSYSMGEnums.SYSMG_IPC_CHANNEL_NAME,
 					UncSYSMGEnums.NOMG_IPC_SERVICE_NAME,
@@ -74,7 +75,7 @@ public class AlarmResource extends AbstractResource {
 					.getAsString().trim()));
 			LOG.info("Request packet created successfully");
 			status = session.invoke();
-			LOG.info("Request packet processed with status:" +status);
+			LOG.info("Request packet processed with status:" + status);
 			if (status != UncSYSMGEnums.NodeIpcErrorT.NOMG_E_OK.ordinal()) {
 				LOG.info("Error occurred while performing operation");
 				createNoMgErrorInfo(UncIpcErrorCode.getNodeCodes(status));
@@ -83,7 +84,7 @@ public class AlarmResource extends AbstractResource {
 				LOG.info("Opeartion successfully performed");
 				status = UncResultCode.UNC_SUCCESS.getValue();
 			}
-            LOG.debug("Complete Ipc framework call");
+			LOG.debug("Complete Ipc framework call");
 		} catch (final IpcException e) {
 			getExceptionHandler()
 					.raise(Thread.currentThread().getStackTrace()[1]
@@ -117,7 +118,7 @@ public class AlarmResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get() throws VtnServiceException {
+	public final int get() throws VtnServiceException {
 		LOG.trace("Start AlarmResourcee#get()");
 		ClientSession session = null;
 		int status = ClientSession.RESP_FATAL;
@@ -129,7 +130,7 @@ public class AlarmResource extends AbstractResource {
 					UncSYSMGEnums.NodeMgrServiceID.kAlarmStatusListGet
 							.ordinal(), getExceptionHandler());
 			status = session.invoke();
-			LOG.info("Request packet processed with status:"+status);
+			LOG.info("Request packet processed with status:" + status);
 			if (status != UncSYSMGEnums.NodeIpcErrorT.NOMG_E_OK.ordinal()) {
 				LOG.info("Error occurred while performing operation");
 				createNoMgErrorInfo(UncIpcErrorCode.getNodeCodes(status));
@@ -192,44 +193,96 @@ public class AlarmResource extends AbstractResource {
 		LOG.trace("Start AlarmResource#createGetResponse()");
 		final int count = session.getResponseCount();
 		final JsonArray alarmJsonArray = new JsonArray();
-		//LOG.info("response:"+ ipcResponseStruct.toString());
+		// LOG.info("response:"+ ipcResponseStruct.toString());
 		// convert IPC Structure into Json
 		final JsonObject response = new JsonObject();
 		for (int i = VtnServiceJsonConsts.VAL_1; i < count; i++) {
-		final JsonObject sessionDetails = new JsonObject();
-		final IpcStruct ipcResponseStruct = (IpcStruct) session.getResponse(i++);
-		// add AlarmNo to response json
-		sessionDetails.addProperty(VtnServiceJsonConsts.ALARMNO, IpcDataUnitWrapper.getIpcStructUint64Value(ipcResponseStruct, VtnServiceJsonConsts.ALARMNO).toString());
-		// add TimeStamp to response json
-		sessionDetails.addProperty(VtnServiceJsonConsts.TIMESTAMP, IpcDataUnitWrapper.getIpcStructInt64Value(ipcResponseStruct, VtnServiceIpcConsts.TIME_STAMP).toString());			
-		// add type to response json
-		if(IpcDataUnitWrapper.getIpcStructUint8Value(ipcResponseStruct,VtnServiceJsonConsts.SEVERITY).toString().equals(UncSYSMGEnums.AlarmLevelT.ALM_EMERG.getValue())){
-			sessionDetails.addProperty(	VtnServiceJsonConsts.SEVERITY,VtnServiceJsonConsts.EMERGENCY);
-		} else if(IpcDataUnitWrapper.getIpcStructUint8Value(ipcResponseStruct,	VtnServiceJsonConsts.SEVERITY).toString().equals(UncSYSMGEnums.AlarmLevelT.ALM_ALERT.getValue())){
-			sessionDetails.addProperty(VtnServiceJsonConsts.SEVERITY,VtnServiceJsonConsts.ALERT);
-		}else if(IpcDataUnitWrapper.getIpcStructUint8Value(ipcResponseStruct,	VtnServiceJsonConsts.SEVERITY).toString().equals(UncSYSMGEnums.AlarmLevelT.ALM_CRITICAL.getValue())){
-			sessionDetails.addProperty(VtnServiceJsonConsts.SEVERITY,VtnServiceJsonConsts.CRITICAL);
-		}else if(IpcDataUnitWrapper.getIpcStructUint8Value(ipcResponseStruct,	VtnServiceJsonConsts.SEVERITY).toString().equals(UncSYSMGEnums.AlarmLevelT.ALM_ERROR.getValue())){
-			sessionDetails.addProperty(VtnServiceJsonConsts.SEVERITY,VtnServiceJsonConsts.ERROR);
-		}else if(IpcDataUnitWrapper.getIpcStructUint8Value(ipcResponseStruct,	VtnServiceJsonConsts.SEVERITY).toString().equals(UncSYSMGEnums.AlarmLevelT.ALM_WARNING.getValue())){
-			sessionDetails.addProperty(VtnServiceJsonConsts.SEVERITY,VtnServiceJsonConsts.WARNING);
-		}else if(IpcDataUnitWrapper.getIpcStructUint8Value(ipcResponseStruct,	VtnServiceJsonConsts.SEVERITY).toString().equals(UncSYSMGEnums.AlarmLevelT.ALM_NOTICE.getValue())){
-			sessionDetails.addProperty(VtnServiceJsonConsts.SEVERITY,VtnServiceJsonConsts.NOTICE);
-		}else if(IpcDataUnitWrapper.getIpcStructUint8Value(ipcResponseStruct,	VtnServiceJsonConsts.SEVERITY).toString().equals(UncSYSMGEnums.AlarmLevelT.ALM_INFO.getValue())){
-			sessionDetails.addProperty(VtnServiceJsonConsts.SEVERITY,VtnServiceJsonConsts.INFORMATION);
-		}else if(IpcDataUnitWrapper.getIpcStructUint8Value(ipcResponseStruct,	VtnServiceJsonConsts.SEVERITY).toString().equals(UncSYSMGEnums.AlarmLevelT.ALM_DEBUG.getValue())){
-			sessionDetails.addProperty(VtnServiceJsonConsts.SEVERITY,VtnServiceJsonConsts.DEBUG);
-		}
-		// add user name to response json
-		if(IpcDataUnitWrapper.getIpcStructUint8Value(ipcResponseStruct,VtnServiceJsonConsts.TYPE).toString().equals(VtnServiceJsonConsts.ONE)){
-			sessionDetails.addProperty(	VtnServiceJsonConsts.TYPE,VtnServiceJsonConsts.OCCURRED);
-		} else if(IpcDataUnitWrapper.getIpcStructUint8Value(ipcResponseStruct,	VtnServiceJsonConsts.TYPE).toString().equals(VtnServiceJsonConsts.TWO)){
-			sessionDetails.addProperty(VtnServiceJsonConsts.TYPE,VtnServiceJsonConsts.RECOVERED);
-		}
-		sessionDetails.addProperty(VtnServiceJsonConsts.VTNNAME, ((IpcString)session.getResponse(i++)).toString());
-		sessionDetails.addProperty(VtnServiceJsonConsts.SUMMARY, ((IpcString)session.getResponse(i++)).toString());
-		sessionDetails.addProperty(VtnServiceJsonConsts.MESSAGE, ((IpcString)session.getResponse(i++)).toString());
-		alarmJsonArray.add(sessionDetails);
+			final JsonObject sessionDetails = new JsonObject();
+			final IpcStruct ipcResponseStruct = (IpcStruct) session
+					.getResponse(i++);
+			// add AlarmNo to response json
+			sessionDetails.addProperty(
+					VtnServiceJsonConsts.ALARMNO,
+					IpcDataUnitWrapper.getIpcStructUint64Value(
+							ipcResponseStruct, VtnServiceJsonConsts.ALARMNO)
+							.toString());
+			// add TimeStamp to response json
+			sessionDetails.addProperty(
+					VtnServiceJsonConsts.TIMESTAMP,
+					IpcDataUnitWrapper.getIpcStructInt64Value(
+							ipcResponseStruct, VtnServiceIpcConsts.TIME_STAMP)
+							.toString());
+			// add type to response json
+			if (IpcDataUnitWrapper
+					.getIpcStructUint8Value(ipcResponseStruct,
+							VtnServiceJsonConsts.SEVERITY).toString()
+					.equals(UncSYSMGEnums.AlarmLevelT.ALM_EMERG.getValue())) {
+				sessionDetails.addProperty(VtnServiceJsonConsts.SEVERITY,
+						VtnServiceJsonConsts.EMERGENCY);
+			} else if (IpcDataUnitWrapper
+					.getIpcStructUint8Value(ipcResponseStruct,
+							VtnServiceJsonConsts.SEVERITY).toString()
+					.equals(UncSYSMGEnums.AlarmLevelT.ALM_ALERT.getValue())) {
+				sessionDetails.addProperty(VtnServiceJsonConsts.SEVERITY,
+						VtnServiceJsonConsts.ALERT);
+			} else if (IpcDataUnitWrapper
+					.getIpcStructUint8Value(ipcResponseStruct,
+							VtnServiceJsonConsts.SEVERITY).toString()
+					.equals(UncSYSMGEnums.AlarmLevelT.ALM_CRITICAL.getValue())) {
+				sessionDetails.addProperty(VtnServiceJsonConsts.SEVERITY,
+						VtnServiceJsonConsts.CRITICAL);
+			} else if (IpcDataUnitWrapper
+					.getIpcStructUint8Value(ipcResponseStruct,
+							VtnServiceJsonConsts.SEVERITY).toString()
+					.equals(UncSYSMGEnums.AlarmLevelT.ALM_ERROR.getValue())) {
+				sessionDetails.addProperty(VtnServiceJsonConsts.SEVERITY,
+						VtnServiceJsonConsts.ERROR);
+			} else if (IpcDataUnitWrapper
+					.getIpcStructUint8Value(ipcResponseStruct,
+							VtnServiceJsonConsts.SEVERITY).toString()
+					.equals(UncSYSMGEnums.AlarmLevelT.ALM_WARNING.getValue())) {
+				sessionDetails.addProperty(VtnServiceJsonConsts.SEVERITY,
+						VtnServiceJsonConsts.WARNING);
+			} else if (IpcDataUnitWrapper
+					.getIpcStructUint8Value(ipcResponseStruct,
+							VtnServiceJsonConsts.SEVERITY).toString()
+					.equals(UncSYSMGEnums.AlarmLevelT.ALM_NOTICE.getValue())) {
+				sessionDetails.addProperty(VtnServiceJsonConsts.SEVERITY,
+						VtnServiceJsonConsts.NOTICE);
+			} else if (IpcDataUnitWrapper
+					.getIpcStructUint8Value(ipcResponseStruct,
+							VtnServiceJsonConsts.SEVERITY).toString()
+					.equals(UncSYSMGEnums.AlarmLevelT.ALM_INFO.getValue())) {
+				sessionDetails.addProperty(VtnServiceJsonConsts.SEVERITY,
+						VtnServiceJsonConsts.INFORMATION);
+			} else if (IpcDataUnitWrapper
+					.getIpcStructUint8Value(ipcResponseStruct,
+							VtnServiceJsonConsts.SEVERITY).toString()
+					.equals(UncSYSMGEnums.AlarmLevelT.ALM_DEBUG.getValue())) {
+				sessionDetails.addProperty(VtnServiceJsonConsts.SEVERITY,
+						VtnServiceJsonConsts.DEBUG);
+			}
+			// add user name to response json
+			if (IpcDataUnitWrapper
+					.getIpcStructUint8Value(ipcResponseStruct,
+							VtnServiceJsonConsts.TYPE).toString()
+					.equals(VtnServiceJsonConsts.ONE)) {
+				sessionDetails.addProperty(VtnServiceJsonConsts.TYPE,
+						VtnServiceJsonConsts.OCCURRED);
+			} else if (IpcDataUnitWrapper
+					.getIpcStructUint8Value(ipcResponseStruct,
+							VtnServiceJsonConsts.TYPE).toString()
+					.equals(VtnServiceJsonConsts.TWO)) {
+				sessionDetails.addProperty(VtnServiceJsonConsts.TYPE,
+						VtnServiceJsonConsts.RECOVERED);
+			}
+			sessionDetails.addProperty(VtnServiceJsonConsts.VTNNAME,
+					((IpcString) session.getResponse(i++)).toString());
+			sessionDetails.addProperty(VtnServiceJsonConsts.SUMMARY,
+					((IpcString) session.getResponse(i++)).toString());
+			sessionDetails.addProperty(VtnServiceJsonConsts.MESSAGE,
+					((IpcString) session.getResponse(i++)).toString());
+			alarmJsonArray.add(sessionDetails);
 		}
 		response.add(VtnServiceJsonConsts.ALARMS, alarmJsonArray);
 		LOG.trace("Completed AlarmResource#createGetResponse()");

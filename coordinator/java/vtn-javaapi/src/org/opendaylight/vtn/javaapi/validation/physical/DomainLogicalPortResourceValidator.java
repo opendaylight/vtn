@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -15,7 +15,6 @@ import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
 import org.opendaylight.vtn.javaapi.resources.AbstractResource;
-import org.opendaylight.vtn.javaapi.resources.physical.DomainLogicalPortResource;
 import org.opendaylight.vtn.javaapi.resources.physical.DomainLogicalPortsResource;
 import org.opendaylight.vtn.javaapi.validation.CommonValidator;
 import org.opendaylight.vtn.javaapi.validation.VtnServiceValidator;
@@ -30,7 +29,7 @@ public class DomainLogicalPortResourceValidator extends VtnServiceValidator {
 			.getLogger(DomainLogicalPortResourceValidator.class.getName());
 
 	private final AbstractResource resource;
-	final CommonValidator validator = new CommonValidator();
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new DomainLogicalPort resource validator.
@@ -48,48 +47,12 @@ public class DomainLogicalPortResourceValidator extends VtnServiceValidator {
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start DomainLogicalPortResourceValidator#validateUri()");
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.URI
 				+ VtnServiceJsonConsts.CONTROLLERID);
-		if (resource instanceof DomainLogicalPortResource
-				&& ((DomainLogicalPortResource) resource).getControllerId() != null
-				&& !((DomainLogicalPortResource) resource).getControllerId()
-						.trim().isEmpty()) {
-			isValid = validator.isValidMaxLengthAlphaNum(
-					((DomainLogicalPortResource) resource).getControllerId()
-							.trim(), VtnServiceJsonConsts.LEN_31);
-			if (isValid) {
-				setInvalidParameter(VtnServiceJsonConsts.URI
-						+ VtnServiceJsonConsts.DOMAINID);
-				if (((DomainLogicalPortResource) resource).getDomainId() != null
-						&& !((DomainLogicalPortResource) resource)
-								.getDomainId().trim().isEmpty()) {
-					isValid = validator.isValidDomainId(
-							((DomainLogicalPortResource) resource)
-									.getDomainId().trim(),
-							VtnServiceJsonConsts.LEN_31);
-				} else {
-					isValid = false;
-				}
-			}
-			if (isValid) {
-				setInvalidParameter(VtnServiceJsonConsts.URI
-						+ VtnServiceJsonConsts.LOGICAL_PORT_ID);
-				if (((DomainLogicalPortResource) resource).getLogicalPortId() != null
-						&& !((DomainLogicalPortResource) resource)
-								.getLogicalPortId().trim().isEmpty()) {
-					isValid = validator.isValidMaxLength(
-							((DomainLogicalPortResource) resource)
-									.getLogicalPortId().trim(),
-							VtnServiceJsonConsts.LEN_319);
-				} else {
-					isValid = false;
-				}
-			}
-			setListOpFlag(false);
-		} else if (resource instanceof DomainLogicalPortsResource) {
+		if (resource instanceof DomainLogicalPortsResource) {
 			if (((DomainLogicalPortsResource) resource).getcontrollerId() != null
 					&& !((DomainLogicalPortsResource) resource)
 							.getcontrollerId().trim().isEmpty()) {
@@ -119,8 +82,9 @@ public class DomainLogicalPortResourceValidator extends VtnServiceValidator {
 	}
 
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start DomainLogicalPortResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of DomainLogicalPortResourceValidator");
@@ -232,6 +196,23 @@ public class DomainLogicalPortResourceValidator extends VtnServiceValidator {
 				 * .getAsJsonPrimitive(VtnServiceJsonConsts.MAX)
 				 * .getAsString().trim()); }
 				 */
+			}
+		}
+		if (isValid) {
+			setInvalidParameter(VtnServiceJsonConsts.LOGICAL_PORT_ID);
+			if (requestBody.has(VtnServiceJsonConsts.LOGICAL_PORT_ID)
+					&& requestBody.getAsJsonPrimitive(
+							VtnServiceJsonConsts.LOGICAL_PORT_ID).getAsString() != null
+					&& !requestBody
+							.getAsJsonPrimitive(
+									VtnServiceJsonConsts.LOGICAL_PORT_ID)
+							.getAsString().isEmpty()) {
+				isValid = validator.isValidMaxLength(
+						requestBody
+								.getAsJsonPrimitive(
+										VtnServiceJsonConsts.LOGICAL_PORT_ID)
+								.getAsString().trim(),
+						VtnServiceJsonConsts.LEN_319);
 			}
 		}
 		LOG.trace("Complete DomainLogicalPortResourceValidator#isValidGet");

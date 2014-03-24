@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -28,7 +28,7 @@ public class FlowFilterEntriesResourceValidator extends VtnServiceValidator {
 	private static final Logger LOG = Logger
 			.getLogger(FlowFilterEntriesResourceValidator.class.getName());
 	private final AbstractResource resource;
-	final CommonValidator validator = new CommonValidator();
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new flow filter entries resource validator.
@@ -46,7 +46,7 @@ public class FlowFilterEntriesResourceValidator extends VtnServiceValidator {
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start FlowFilterEntriesResourceValidator#validateUri()");
 		boolean isValid = false;
 		// For FlowFilterEntriesResource instance
@@ -87,8 +87,9 @@ public class FlowFilterEntriesResourceValidator extends VtnServiceValidator {
 	 * API.
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start FlowFilterEntriesResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of FlowFilterEntriesResourceValidator");
@@ -159,9 +160,10 @@ public class FlowFilterEntriesResourceValidator extends VtnServiceValidator {
 							.getAsString() != null
 					&& !ffEntry.getAsJsonPrimitive(VtnServiceJsonConsts.SEQNUM)
 							.getAsString().trim().isEmpty()) {
-				isValid = validator.isValidRange(ffEntry
-						.getAsJsonPrimitive(VtnServiceJsonConsts.SEQNUM)
-						.getAsString().trim(), VtnServiceJsonConsts.VAL_1,
+				isValid = validator.isValidRange(
+						ffEntry.getAsJsonPrimitive(VtnServiceJsonConsts.SEQNUM)
+								.getAsString().trim(),
+						VtnServiceJsonConsts.VAL_1,
 						VtnServiceJsonConsts.VAL_65535);
 			} else {
 				isValid = false;

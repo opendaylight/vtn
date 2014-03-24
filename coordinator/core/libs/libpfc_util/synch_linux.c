@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -40,11 +40,13 @@ pfc_cond_init(pfc_cond_t *condp)
 
 	/* Use monotonic clock. */
 	err = pthread_condattr_setclock(&cattr, CLOCK_MONOTONIC);
-	if (PFC_EXPECT_FALSE(err != 0)) {
-		return err;
+	if (PFC_EXPECT_TRUE(err == 0)) {
+		err = pthread_cond_init((pthread_cond_t *)condp, &cattr);
 	}
 
-	return pthread_cond_init((pthread_cond_t *)condp, &cattr);
+	pthread_condattr_destroy(&cattr);
+
+	return err;
 }
 
 /*

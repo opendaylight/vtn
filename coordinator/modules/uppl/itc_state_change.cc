@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -49,10 +49,10 @@ SystemStateChangeRequest::~SystemStateChangeRequest() {
  *                Gets the controller list from database and send the DELETE
  *                request to driver
  * @param[in]   : None
- * @return      : UPPL_RC_SUCCESS if the system state is changed to standby
- *                or UPPL_RC_ERR_* if the switchover fails
+ * @return      : UNC_RC_SUCCESS if the system state is changed to standby
+ *                or UNC_UPPL_RC_ERR_* if the switchover fails
  * */
-UpplReturnCode SystemStateChangeRequest::SystemStateChangeToStandBy(
+UncRespCode SystemStateChangeRequest::SystemStateChangeToStandBy(
     OdbcmConnectionHandler *db_conn) {
   pfc_log_info("Start SystemStateChangeToStandBy");
   Kt_Controller kt_ctr;
@@ -60,24 +60,24 @@ UpplReturnCode SystemStateChangeRequest::SystemStateChangeToStandBy(
   key_ctr_t key_ctr_obj;
   memset(&key_ctr_obj, 0, sizeof(key_ctr_obj));
   vect_ctr_key.push_back(reinterpret_cast<void *>(&key_ctr_obj));
-  UpplReturnCode read_status = kt_ctr.ReadInternal(db_conn, vect_ctr_key,
+  UncRespCode read_status = kt_ctr.ReadInternal(db_conn, vect_ctr_key,
                                                    vect_ctr_val,
                                                    UNC_DT_RUNNING,
                                                    UNC_OP_READ_SIBLING_BEGIN);
-  if (read_status != UPPL_RC_SUCCESS) {
+  if (read_status != UNC_RC_SUCCESS) {
     pfc_log_info("read from running db is %d", read_status);
     // Check for entries in candidate db
     return read_status;
   }
-  UpplReturnCode err = UPPL_RC_SUCCESS;
+  UncRespCode err = UNC_RC_SUCCESS;
   IPCClientDriverHandler pfc_drv_handler(UNC_CT_PFC, err);
-  if (err != UPPL_RC_SUCCESS) {
+  if (err != UNC_RC_SUCCESS) {
     pfc_log_error("Cannot open session to PFC driver");
     return err;
   }
-  err = UPPL_RC_SUCCESS;
+  err = UNC_RC_SUCCESS;
   IPCClientDriverHandler vnp_drv_handler(UNC_CT_VNP, err);
-  if (err != UPPL_RC_SUCCESS) {
+  if (err != UNC_RC_SUCCESS) {
     pfc_log_error("Cannot open session to VNP driver");
     return err;
   }
@@ -117,7 +117,7 @@ UpplReturnCode SystemStateChangeRequest::SystemStateChangeToStandBy(
         UNC_DT_RUNNING, UNC_KT_CONTROLLER};
     int err = PhyUtil::sessOutDriverReqHeader(*cli_session, rqh);
     err |= cli_session->addOutput(*ctr_key);
-    if (err != UPPL_RC_SUCCESS) {
+    if (err != UNC_RC_SUCCESS) {
       pfc_log_info("Could not open driver ipc session");
       // Release memory allocated for key struct
       delete ctr_key;
@@ -128,7 +128,7 @@ UpplReturnCode SystemStateChangeRequest::SystemStateChangeToStandBy(
       continue;
     }
     // Send the request to driver
-    UpplReturnCode driver_response = UPPL_RC_SUCCESS;
+    UncRespCode driver_response = UNC_RC_SUCCESS;
     driver_response_header rsp;
     if (controller_type == UNC_CT_PFC) {
       driver_response = pfc_drv_handler.SendReqAndGetResp(rsp);
@@ -138,7 +138,7 @@ UpplReturnCode SystemStateChangeRequest::SystemStateChangeToStandBy(
     }
 
     pfc_log_debug("driver_response is  %d", driver_response);
-    if (driver_response != UPPL_RC_SUCCESS) {
+    if (driver_response != UNC_RC_SUCCESS) {
       pfc_log_info(
           "Controller disconnect request failed at "
           "driver with error %d", driver_response);
@@ -153,8 +153,11 @@ UpplReturnCode SystemStateChangeRequest::SystemStateChangeToStandBy(
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   PhysicalCore* physical_core = physical_layer->get_physical_core();
   physical_core->set_system_state(UPPL_SYSTEM_ST_STANDBY);
+  // To clear the internal alarm details holding map
+  physical_core->alarm_status_map_.clear();
+
   pfc_log_info("SystemStateChangeToStandby returned SUCCESS");
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**SystemStateChangeToActive
@@ -162,40 +165,48 @@ UpplReturnCode SystemStateChangeRequest::SystemStateChangeToStandBy(
  *                Gets the controller list from database and send the CREATE
  *                request to driver
  * @param[in]   : None
- * @return      : UPPL_RC_SUCCESS if the system state is changed to active
- *                or UPPL_RC_ERR_* if the switchover fails
+ * @return      : UNC_RC_SUCCESS if the system state is changed to active
+ *                or UNC_UPPL_RC_ERR_* if the switchover fails
  * */
-UpplReturnCode SystemStateChangeRequest::SystemStateChangeToActive(
+UncRespCode SystemStateChangeRequest::SystemStateChangeToActive(
     OdbcmConnectionHandler *db_conn) {
   pfc_log_info("Start SystemStateChangeToActive");
   /* Get all the controller entry from running db */
+  PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+  PhysicalCore* physical_core = physical_layer->get_physical_core();
+  // To clear the internal alarm details holding map
+  physical_core->alarm_status_map_.clear();
   Kt_Controller kt_ctr;
   vector<void *> vect_ctr_key, vect_ctr_val;
   key_ctr_t key_ctr_obj;
   memset(&key_ctr_obj, '\0', sizeof(key_ctr_t));
   vect_ctr_key.push_back(reinterpret_cast<void *>(&key_ctr_obj));
-  UpplReturnCode read_status = kt_ctr.ReadInternal(db_conn, vect_ctr_key,
+  UncRespCode read_status = kt_ctr.ReadInternal(db_conn, vect_ctr_key,
                                                    vect_ctr_val,
                                                    UNC_DT_RUNNING,
                                                    UNC_OP_READ_SIBLING_BEGIN);
-  if (read_status != UPPL_RC_SUCCESS) {
+  if (read_status != UNC_RC_SUCCESS) {
     pfc_log_info("read from running db is %d", read_status);
     // Check for entries in candidate db
     return SendCandidateInfoToLogical(db_conn);
   }
 
-  UpplReturnCode err = UPPL_RC_SUCCESS;
+  UncRespCode err = UNC_RC_SUCCESS;
   IPCClientDriverHandler pfc_drv_handler(UNC_CT_PFC, err);
-  if (err != UPPL_RC_SUCCESS) {
+  if (err != UNC_RC_SUCCESS) {
     pfc_log_error("Cannot open session to PFC driver");
     return err;
   }
-  err = UPPL_RC_SUCCESS;
+  err = UNC_RC_SUCCESS;
   IPCClientDriverHandler vnp_drv_handler(UNC_CT_VNP, err);
-  if (err != UPPL_RC_SUCCESS) {
+  if (err != UNC_RC_SUCCESS) {
     pfc_log_error("Cannot open session to VNP driver");
     return err;
   }
+  pfc_log_debug("Setting system_transit_state_ to be true:%d",
+                physical_core->system_transit_state_);
+  physical_core->system_transit_state_ = true;  // for sending recovery
+                                          //  alarm to node manager.
   for (uint32_t ctrIndex = 0; ctrIndex < vect_ctr_key.size();
       ctrIndex ++) {
     key_ctr_t *ctr_key =
@@ -207,27 +218,37 @@ UpplReturnCode SystemStateChangeRequest::SystemStateChangeToActive(
     unc_keytype_ctrtype_t controller_type =
         (unc_keytype_ctrtype_t)
         (PhyUtil::uint8touint(obj_val_ctr->controller.type));
+    std::string alarm_category = "1";
+    std::string map_key = "";
+    map_key.append(controller_name).append("#").append(alarm_category);
+    physical_core->alarm_status_map_.insert(
+      std::pair<std::string, bool> (map_key, true));
+    alarm_category = "3";
+    map_key = "";
+    map_key.append(controller_name).append("#").append(alarm_category);
+    physical_core->alarm_status_map_.insert(
+      std::pair<std::string, bool> (map_key, true));
     if (controller_type != UNC_CT_UNKNOWN) {
       pfc_log_info("Set the oper Status of controller as down %s",
                    controller_name.c_str());
       uint8_t oper_status = UPPL_CONTROLLER_OPER_DOWN;
-      UpplReturnCode operation_status = kt_ctr.SetOperStatus(
+      UncRespCode operation_status = kt_ctr.SetOperStatus(
           db_conn,
           UNC_DT_RUNNING,
           vect_ctr_key[ctrIndex],
           oper_status);
-      if (operation_status != UPPL_RC_SUCCESS) {
+      if (operation_status != UNC_RC_SUCCESS) {
         pfc_log_error("Unable to set the oper status of controller as down");
       }
     }
     // Sending the Controller Update Information to Logical Layer
-    UpplReturnCode upll_result = kt_ctr.SendUpdatedControllerInfoToUPLL(
+    UncRespCode upll_result = kt_ctr.SendUpdatedControllerInfoToUPLL(
         UNC_DT_CANDIDATE,
         UNC_OP_CREATE,
         UNC_KT_CONTROLLER,
         vect_ctr_key[ctrIndex],
         reinterpret_cast<void*>(&obj_val_ctr->controller));
-    if (upll_result != UPPL_RC_SUCCESS) {
+    if (upll_result != UNC_RC_SUCCESS) {
       pfc_log_info("Failed to send the controller %s in candidate to UPLL",
                    controller_name.c_str());
     }
@@ -237,7 +258,7 @@ UpplReturnCode SystemStateChangeRequest::SystemStateChangeToActive(
         UNC_KT_CONTROLLER,
         vect_ctr_key[ctrIndex],
         reinterpret_cast<void*>(&obj_val_ctr->controller));
-    if (upll_result != UPPL_RC_SUCCESS) {
+    if (upll_result != UNC_RC_SUCCESS) {
       pfc_log_info("Failed to send the controller %s in running to UPLL",
                    controller_name.c_str());
     }
@@ -267,7 +288,7 @@ UpplReturnCode SystemStateChangeRequest::SystemStateChangeToActive(
     int err = PhyUtil::sessOutDriverReqHeader(*cli_session, rqh);
     err |= cli_session->addOutput(*ctr_key);
     err |= cli_session->addOutput(obj_val_ctr->controller);
-    if (err != UPPL_RC_SUCCESS) {
+    if (err != UNC_RC_SUCCESS) {
       pfc_log_error("Could not add objects to driver ipc session");
       // Release memory allocated for key struct
       delete ctr_key;
@@ -279,7 +300,7 @@ UpplReturnCode SystemStateChangeRequest::SystemStateChangeToActive(
     }
     pfc_log_info("Sending connect request to driver");
     // Send the request to driver
-    UpplReturnCode driver_response = UPPL_RC_SUCCESS;
+    UncRespCode driver_response = UNC_RC_SUCCESS;
     driver_response_header rsp;
     if (controller_type == UNC_CT_PFC) {
       driver_response = pfc_drv_handler.SendReqAndGetResp(rsp);
@@ -289,7 +310,7 @@ UpplReturnCode SystemStateChangeRequest::SystemStateChangeToActive(
     }
 
     pfc_log_debug("driver_response is  %d", driver_response);
-    if (err !=0 || driver_response != UPPL_RC_SUCCESS) {
+    if (err !=0 || driver_response != UNC_RC_SUCCESS) {
       pfc_log_error(
           "Could not connect to controller %s, driver returned error %d",
           controller_name.c_str(), driver_response);
@@ -302,17 +323,18 @@ UpplReturnCode SystemStateChangeRequest::SystemStateChangeToActive(
     obj_val_ctr = NULL;
   }
   pfc_log_info("SystemStateChangeToActive returned SUCCESS");
-  return UPPL_RC_SUCCESS;
+  physical_core->system_transit_state_ = false;
+  return UNC_RC_SUCCESS;
 }
 
 /**SendCandidateInfoToLogical
  * @Description : This function gets the controller list from candidate database
  *                and send the update request to logical
  * @param[in]   : None
- * @return      : UPPL_RC_SUCCESS if the logical is updated
- *                or UPPL_RC_ERR_* if the update fails
+ * @return      : UNC_RC_SUCCESS if the logical is updated
+ *                or UNC_UPPL_RC_ERR_* if the update fails
  * */
-UpplReturnCode SystemStateChangeRequest::SendCandidateInfoToLogical(
+UncRespCode SystemStateChangeRequest::SendCandidateInfoToLogical(
     OdbcmConnectionHandler *db_conn) {
   /* Get all the controller entry from candidate db */
   Kt_Controller kt_ctr;
@@ -320,13 +342,13 @@ UpplReturnCode SystemStateChangeRequest::SendCandidateInfoToLogical(
   key_ctr_t key_ctr_obj;
   memset(&key_ctr_obj, '\0', sizeof(key_ctr_t));
   vect_ctr_key.push_back(reinterpret_cast<void *>(&key_ctr_obj));
-  UpplReturnCode read_status = kt_ctr.ReadInternal(db_conn, vect_ctr_key,
+  UncRespCode read_status = kt_ctr.ReadInternal(db_conn, vect_ctr_key,
                                                    vect_ctr_val,
                                                    UNC_DT_CANDIDATE,
                                                    UNC_OP_READ_SIBLING_BEGIN);
-  if (read_status != UPPL_RC_SUCCESS) {
+  if (read_status != UNC_RC_SUCCESS) {
     pfc_log_info("read from candidate db is %d", read_status);
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
 
   for (uint32_t ctrIndex = 0; ctrIndex < vect_ctr_key.size();
@@ -338,13 +360,13 @@ UpplReturnCode SystemStateChangeRequest::SendCandidateInfoToLogical(
     val_ctr_st_t *obj_val_ctr =
         reinterpret_cast<val_ctr_st_t*>(vect_ctr_val[ctrIndex]);
     // Sending the Controller Update Information to Logical Layer
-    UpplReturnCode upll_result = kt_ctr.SendUpdatedControllerInfoToUPLL(
+    UncRespCode upll_result = kt_ctr.SendUpdatedControllerInfoToUPLL(
         UNC_DT_CANDIDATE,
         UNC_OP_CREATE,
         UNC_KT_CONTROLLER,
         vect_ctr_key[ctrIndex],
         reinterpret_cast<void*>(&obj_val_ctr->controller));
-    if (upll_result != UPPL_RC_SUCCESS) {
+    if (upll_result != UNC_RC_SUCCESS) {
       pfc_log_info("Failed to send the controller %s in candidate to UPLL",
                    controller_name.c_str());
     }
@@ -355,7 +377,7 @@ UpplReturnCode SystemStateChangeRequest::SendCandidateInfoToLogical(
     delete obj_val_ctr;
     obj_val_ctr = NULL;
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 }  // namespace uppl
 }  // namespace unc

@@ -11,6 +11,8 @@
 
 import requests, json, collections, sys, time
 import vtn_testconfig
+import resp_code
+
 CONTROLLERDATA = vtn_testconfig.CONTROLLERDATA
 coordinator_url=vtn_testconfig.coordinator_url
 def_header=vtn_testconfig.coordinator_headers
@@ -20,9 +22,9 @@ def is_controller_deleted(controller_url=""):
     print url
     r = requests.get(url,headers=def_header)
     print r.status_code
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_GET_SUCCESS:
         return 1
-    data=json.loads(r.text)
+    data=json.loads(r.content)
     print data['controller']
     if data['controller'] != None:
         return 1
@@ -38,10 +40,10 @@ def validate_controller_attributes(controller_id,ipaddr="",version="",
     print url
     print def_header
     r = requests.get(url,headers=def_header)
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_GET_SUCCESS:
         return 1
 
-    data=json.loads(r.text)
+    data=json.loads(r.content)
     print data
     print data['controller']
 
@@ -146,8 +148,8 @@ def add_controller(controller_id,type,version,ipaddr="",auditstatus="",
     r = requests.post(url,data=json.dumps(add_data),headers=def_header)
     print r.status_code
     print r.headers
-    print r.text
-    if r.status_code == 200:
+    print r.content
+    if r.status_code == resp_code.RESP_CREATE_SUCCESS:
         return 0
     else:
         return 1
@@ -162,8 +164,8 @@ def delete_controller(controller_url=""):
     r = requests.delete(url,headers=def_header)
     print r.status_code
     print r.headers
-    print r.text
-    if r.status_code == 200:
+    print r.content
+    if r.status_code == resp_code.RESP_DELETE_SUCCESS:
         return 0
     else:
         return 1
@@ -215,8 +217,8 @@ def update_controller(controller_id,ipaddr="",version="",auditstatus="",
     r = requests.put(url,data=json.dumps(update_data),headers=def_header)
     print r.status_code
     print r.headers
-    print r.text
-    if r.status_code == 200:
+    print r.content
+    if r.status_code == resp_code.RESP_UPDATE_SUCCESS:
         return 0
     else:
         return 1
@@ -403,7 +405,7 @@ def check_controller_state(blockname,state):
     r = requests.get(url,headers=def_header)
     while(1):
         try:
-            data = json.loads(r.text)
+            data = json.loads(r.content)
             break
         except ValueError:
             continue

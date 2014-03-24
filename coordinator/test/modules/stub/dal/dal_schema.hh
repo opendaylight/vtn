@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -134,15 +134,18 @@ enum kVbrVlanMapIndex {
   kDbiLogicalPortId,
   kDbiLogicalPortIdValid,
   kDbiVlanid,
+  kDbiBdryRefCount,
   kDbiCtrlrName,
   kDbiDomainId,
   kDbiVbrVlanMapFlags,
   kDbiValidVlanid,
+  kDbiValidBdryRefCount,
   kDbiCsRowStatus,
   kDbiCsVlanid,
   kDbiVbrVlanMapNumCols
 };
 }
+
 
 namespace vbridge_interface {
 static const uint8_t kVbrIfNumPks = 3;

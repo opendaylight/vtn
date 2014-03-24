@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -40,15 +40,18 @@ public class FlowListEntriesResource extends AbstractResource {
 	/** the FlowList Name. */
 	@UNCField("fl_name")
 	private String flName;
+
 	/**
 	 * @return the fl name
 	 */
-	public String getFlName() {
+	public final String getFlName() {
 		return flName;
 	}
+
 	/** The Constant LOG. */
 	private static final Logger LOG = Logger
 			.getLogger(FlowListEntriesResource.class.getName());
+
 	/**
 	 * Instantiates a new flow list entrys resource.
 	 */
@@ -58,6 +61,7 @@ public class FlowListEntriesResource extends AbstractResource {
 		setValidator(new FlowListEntryResourceValidator(this));
 		LOG.trace("Start FlowListEntriesResource#FlowListEntriesResource()");
 	}
+
 	/**
 	 * Implementation of post method of FlowListEntries
 	 * 
@@ -68,7 +72,8 @@ public class FlowListEntriesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts FlowListEntriesResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -92,14 +97,14 @@ public class FlowListEntriesResource extends AbstractResource {
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
 			getExceptionHandler()
-			.raise(Thread.currentThread().getStackTrace()[1]
-					.getClassName()
-					+ VtnServiceConsts.HYPHEN
-					+ Thread.currentThread().getStackTrace()[1]
-							.getMethodName(),
+					.raise(Thread.currentThread().getStackTrace()[1]
+							.getClassName()
+							+ VtnServiceConsts.HYPHEN
+							+ Thread.currentThread().getStackTrace()[1]
+									.getMethodName(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR
-							.getErrorMessage(), e);
+									.getErrorMessage(), e);
 			throw e;
 		} finally {
 			if (status == ClientSession.RESP_FATAL) {
@@ -117,6 +122,7 @@ public class FlowListEntriesResource extends AbstractResource {
 		LOG.trace("Completed FlowListEntriesResource#post()");
 		return status;
 	}
+
 	/**
 	 * Implementation of get method of FlowListEntries
 	 * 
@@ -127,7 +133,8 @@ public class FlowListEntriesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts FlowListEntriesResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -150,37 +157,42 @@ public class FlowListEntriesResource extends AbstractResource {
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
-			/*	setInfo(responseGenerator.getFlowListEntryResponse(
-					requestProcessor.getIpcResponsePacket(), requestBody,
-					VtnServiceJsonConsts.LIST));*/
-			JsonObject responseJson = responseGenerator.getFlowListEntryResponse(
-					requestProcessor.getIpcResponsePacket(), requestBody,
-					VtnServiceJsonConsts.LIST);
-			if (responseJson.get(VtnServiceJsonConsts.FLOWLISTENTRIES).isJsonArray()) {
-				JsonArray responseArray = responseJson.get(
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			/*
+			 * setInfo(responseGenerator.getFlowListEntryResponse(
+			 * requestProcessor.getIpcResponsePacket(), requestBody,
+			 * VtnServiceJsonConsts.LIST));
+			 */
+			JsonObject responseJson = responseGenerator
+					.getFlowListEntryResponse(
+							requestProcessor.getIpcResponsePacket(),
+							requestBody, VtnServiceJsonConsts.LIST);
+			if (responseJson.get(VtnServiceJsonConsts.FLOWLISTENTRIES)
+					.isJsonArray()) {
+				final JsonArray responseArray = responseJson.get(
 						VtnServiceJsonConsts.FLOWLISTENTRIES).getAsJsonArray();
 
 				responseJson = getResponseJsonArrayLogical(requestBody,
-						requestProcessor, responseGenerator,
-						responseArray, VtnServiceJsonConsts.FLOWLISTENTRIES,
+						requestProcessor, responseGenerator, responseArray,
+						VtnServiceJsonConsts.FLOWLISTENTRIES,
 						VtnServiceJsonConsts.SEQNUM,
 						IpcRequestPacketEnum.KT_FLOWLIST_ENTRY_GET,
-						uriParameterList,VtnServiceIpcConsts.GET_FLOW_LIST_ENTRY_RESPONSE);
+						uriParameterList,
+						VtnServiceIpcConsts.GET_FLOW_LIST_ENTRY_RESPONSE);
 			}
 			setInfo(responseJson);
 			LOG.debug("Response object created successfully");
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
 			getExceptionHandler()
-			.raise(Thread.currentThread().getStackTrace()[1]
-					.getClassName()
-					+ VtnServiceConsts.HYPHEN
-					+ Thread.currentThread().getStackTrace()[1]
-							.getMethodName(),
+					.raise(Thread.currentThread().getStackTrace()[1]
+							.getClassName()
+							+ VtnServiceConsts.HYPHEN
+							+ Thread.currentThread().getStackTrace()[1]
+									.getMethodName(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR
-							.getErrorMessage(), e);
+									.getErrorMessage(), e);
 			throw e;
 		} finally {
 			if (status == ClientSession.RESP_FATAL) {
@@ -199,18 +211,20 @@ public class FlowListEntriesResource extends AbstractResource {
 		LOG.trace("Completed FlowListEntriesResource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 
 	 * @return
 	 */
-	private List<String> getUriParameters(JsonObject requestBody) {
+	private List<String> getUriParameters(final JsonObject requestBody) {
 		LOG.trace("Start FlowListEntriesResource#getUriParameters()");
 		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(flName);
 		if (requestBody != null && requestBody.has(VtnServiceJsonConsts.INDEX)) {
 
-			uriParameters.add(requestBody.get(VtnServiceJsonConsts.INDEX).getAsString());
+			uriParameters.add(requestBody.get(VtnServiceJsonConsts.INDEX)
+					.getAsString());
 		}
 		LOG.trace("Completed FlowListEntriesResource#getUriParameters()");
 		return uriParameters;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -96,38 +96,35 @@ public class SwitchesResource extends AbstractResource {
 					uriParameterList);
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet processed with status:"+status);
+			LOG.debug("Request packet processed with status:" + status);
 			final IpcPhysicalResponseFactory responseGenerator = new IpcPhysicalResponseFactory();
-			/*setInfo(responseGenerator.getSwitchResponse(
-					requestProcessor.getIpcResponsePacket(), requestBody,
-					VtnServiceJsonConsts.LIST));*/
 			JsonObject responseJson = responseGenerator.getSwitchResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.LIST);
 			if (responseJson.get(VtnServiceJsonConsts.SWITCHES).isJsonArray()) {
-				JsonArray responseArray = responseJson.get(
+				final JsonArray responseArray = responseJson.get(
 						VtnServiceJsonConsts.SWITCHES).getAsJsonArray();
 
 				responseJson = getResponseJsonArrayPhysical(requestBody,
-						requestProcessor, responseGenerator,
-						responseArray, VtnServiceJsonConsts.SWITCHES,
+						requestProcessor, responseGenerator, responseArray,
+						VtnServiceJsonConsts.SWITCHES,
 						VtnServiceJsonConsts.SWITCHID,
-						IpcRequestPacketEnum.KT_SWITCH_GET,
-						uriParameterList,VtnServiceIpcConsts.GET_SWITCH_RESPONSE);
+						IpcRequestPacketEnum.KT_SWITCH_GET, uriParameterList,
+						VtnServiceIpcConsts.GET_SWITCH_RESPONSE);
 			}
 			setInfo(responseJson);
 			LOG.debug("Response object created successfully");
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
 			getExceptionHandler()
-			.raise(Thread.currentThread().getStackTrace()[1]
-					.getClassName()
-					+ VtnServiceConsts.HYPHEN
-					+ Thread.currentThread().getStackTrace()[1]
-							.getMethodName(),
+					.raise(Thread.currentThread().getStackTrace()[1]
+							.getClassName()
+							+ VtnServiceConsts.HYPHEN
+							+ Thread.currentThread().getStackTrace()[1]
+									.getMethodName(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR
-							.getErrorMessage(), e);
+									.getErrorMessage(), e);
 			throw e;
 		} finally {
 			if (status == ClientSession.RESP_FATAL) {
@@ -148,6 +145,8 @@ public class SwitchesResource extends AbstractResource {
 	/**
 	 * Add URI parameters to list
 	 * 
+	 * @param requestBody
+	 *            ,for handling the request.
 	 * @return
 	 */
 	private List<String> getUriParameters(final JsonObject requestBody) {

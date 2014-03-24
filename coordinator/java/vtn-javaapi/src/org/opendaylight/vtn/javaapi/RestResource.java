@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -7,6 +7,8 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 package org.opendaylight.vtn.javaapi;
+
+import java.sql.Connection;
 
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.util.Logger;
@@ -19,6 +21,7 @@ import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
 import org.opendaylight.vtn.javaapi.reflect.AnnotationReflect;
 import org.opendaylight.vtn.javaapi.resources.AbstractResource;
+import org.opendaylight.vtn.javaapi.resources.ConfigResource;
 import org.opendaylight.vtn.javaapi.util.VtnServiceUtil;
 
 /**
@@ -36,12 +39,15 @@ public class RestResource implements VtnServiceResource {
 	private long configID;
 
 	private transient AbstractResource resource;
-	private transient final VtnServiceExceptionHandler exceptionHandler;
+	private final transient VtnServiceExceptionHandler exceptionHandler;
 
 	/* Resource path and Response information instances */
 	private String path;
 	private transient JsonObject info;
-
+	
+	/* OpenStack DB Connection instance */
+	Connection openStackConnection;
+	
 	/**
 	 * Instantiates a new rest resource.
 	 */
@@ -104,6 +110,9 @@ public class RestResource implements VtnServiceResource {
 					resource.setExceptionHandler(exceptionHandler);
 				}
 				resource.setConnPool();
+				if (resource instanceof ConfigResource) {
+					resource.setOpenStackConnection(openStackConnection);
+				}
 			}
 		} catch (final RuntimeException exception) {
 			exceptionHandler.handle(
@@ -136,9 +145,9 @@ public class RestResource implements VtnServiceResource {
 				final JsonObject errorJsonObject = new JsonObject();
 				final JsonObject error = new JsonObject();
 				error.addProperty(VtnServiceJsonConsts.CODE,
-						UncCommonEnum.UncResultCode.UNC_CLIENT_ERROR.getValue());
+						UncCommonEnum.UncResultCode.UNC_NOT_FOUND.getValue());
 				error.addProperty(VtnServiceJsonConsts.MSG,
-						VtnServiceConsts.RESOURCE_PATH_INCORRECT);
+						UncCommonEnum.UncResultCode.UNC_NOT_FOUND.getMessage());
 				errorJsonObject.add(VtnServiceJsonConsts.ERROR, error);
 				info = errorJsonObject;
 			}
@@ -151,7 +160,7 @@ public class RestResource implements VtnServiceResource {
 	 * 
 	 * @return the resource path
 	 */
-	public String getPath() {
+	public final String getPath() {
 		LOG.trace("Return from RestResource#getResourcePath()");
 		LOG.debug("Return value for path : " + path);
 		return path;
@@ -162,7 +171,7 @@ public class RestResource implements VtnServiceResource {
 	 * 
 	 */
 	@Override
-	public int delete() {
+	public final int delete() {
 		LOG.trace("Start RestResource#delete()");
 		int responseCode = UncCommonEnum.UncResultCode.UNC_CLIENT_ERROR
 				.getValue();
@@ -184,6 +193,8 @@ public class RestResource implements VtnServiceResource {
 				// if response is not success, then set the info for error
 				if (responseCode != UncResultCode.UNC_SUCCESS.getValue()) {
 					info = resource.getInfo();
+				} else {
+					openStackConnection = resource.getOpenStackConnection();
 				}
 			} catch (final VtnServiceException exception) {
 				exceptionHandler.handle(
@@ -217,7 +228,7 @@ public class RestResource implements VtnServiceResource {
 	 * 
 	 */
 	@Override
-	public int delete(final JsonObject queryString) {
+	public final int delete(final JsonObject queryString) {
 		LOG.trace("Start RestResource#delete()");
 		int responseCode = UncResultCode.UNC_CLIENT_ERROR.getValue();
 		/*
@@ -237,6 +248,8 @@ public class RestResource implements VtnServiceResource {
 				// if response is not success, then set the info for error
 				if (responseCode != UncResultCode.UNC_SUCCESS.getValue()) {
 					info = resource.getInfo();
+				} else {
+					openStackConnection = resource.getOpenStackConnection();
 				}
 			} catch (final VtnServiceException exception) {
 				exceptionHandler.handle(
@@ -270,7 +283,7 @@ public class RestResource implements VtnServiceResource {
 	 * 
 	 */
 	@Override
-	public int get() {
+	public final int get() {
 		LOG.trace("Start RestResource#get()");
 		int responseCode = UncResultCode.UNC_CLIENT_ERROR.getValue();
 		/*
@@ -287,6 +300,7 @@ public class RestResource implements VtnServiceResource {
 						.getValue();
 				responseCode = resource.get();
 				info = resource.getInfo();
+				openStackConnection = resource.getOpenStackConnection();
 			} catch (final VtnServiceException exception) {
 				exceptionHandler.handle(
 						Thread.currentThread().getStackTrace()[1]
@@ -320,7 +334,7 @@ public class RestResource implements VtnServiceResource {
 	 * 
 	 */
 	@Override
-	public int get(final JsonObject queryString) {
+	public final int get(final JsonObject queryString) {
 		LOG.trace("Start RestResource#get()");
 		int responseCode = UncResultCode.UNC_CLIENT_ERROR.getValue();
 		/*
@@ -339,6 +353,7 @@ public class RestResource implements VtnServiceResource {
 						.getValue();
 				responseCode = resource.get(queryString);
 				info = resource.getInfo();
+				openStackConnection = resource.getOpenStackConnection();
 			} catch (final VtnServiceException exception) {
 				exceptionHandler.handle(
 						Thread.currentThread().getStackTrace()[1]
@@ -372,7 +387,7 @@ public class RestResource implements VtnServiceResource {
 	 * 
 	 */
 	@Override
-	public int post(final JsonObject requestBody) {
+	public final int post(final JsonObject requestBody) {
 		LOG.trace("Start RestResource#post()");
 		int responseCode = UncResultCode.UNC_CLIENT_ERROR.getValue();
 		/*
@@ -392,6 +407,8 @@ public class RestResource implements VtnServiceResource {
 				// if response is not success, then set the info for error
 				if (responseCode != UncResultCode.UNC_SUCCESS.getValue()) {
 					info = resource.getInfo();
+				} else {
+					openStackConnection = resource.getOpenStackConnection();
 				}
 			} catch (final VtnServiceException exception) {
 				exceptionHandler.handle(
@@ -425,7 +442,7 @@ public class RestResource implements VtnServiceResource {
 	 * 
 	 */
 	@Override
-	public int put(final JsonObject requestBody) {
+	public final int put(final JsonObject requestBody) {
 		LOG.trace("Start RestResource#put()");
 		int responseCode = UncResultCode.UNC_CLIENT_ERROR.getValue();
 		/*
@@ -445,6 +462,8 @@ public class RestResource implements VtnServiceResource {
 				// if response is not success, then set the info for error
 				if (responseCode != UncResultCode.UNC_SUCCESS.getValue()) {
 					info = resource.getInfo();
+				} else {
+					openStackConnection = resource.getOpenStackConnection();
 				}
 			} catch (final VtnServiceException exception) {
 				exceptionHandler.handle(
@@ -478,7 +497,7 @@ public class RestResource implements VtnServiceResource {
 	 * 
 	 * @return the config id
 	 */
-	public long getConfigID() {
+	public final long getConfigID() {
 		LOG.trace("Return from RestResource#getConfigId()");
 		LOG.debug("Return value for configID : " + configID);
 		return configID;
@@ -490,7 +509,7 @@ public class RestResource implements VtnServiceResource {
 	 * @param configId
 	 *            the new config id
 	 */
-	public void setConfigID(final long configId) {
+	public final void setConfigID(final long configId) {
 		LOG.trace("Start RestResource#setConfigId()");
 		LOG.debug("Input value for configId : " + configId);
 		this.configID = configId;
@@ -505,7 +524,7 @@ public class RestResource implements VtnServiceResource {
 	 * 
 	 * @return the session id
 	 */
-	public long getSessionID() {
+	public final long getSessionID() {
 		LOG.trace("Return from RestResource#getSessionId()");
 		LOG.debug("Return value for sessionID : " + sessionID);
 		return sessionID;
@@ -517,7 +536,7 @@ public class RestResource implements VtnServiceResource {
 	 * @param sessionId
 	 *            the new session id
 	 */
-	public void setSessionID(final long sessionId) {
+	public final void setSessionID(final long sessionId) {
 		LOG.trace("Start RestResource#setSessionId()");
 		LOG.debug("Input value for sessionId : " + sessionId);
 		this.sessionID = sessionId;
@@ -532,7 +551,7 @@ public class RestResource implements VtnServiceResource {
 	 * 
 	 * @return the info
 	 */
-	public JsonObject getInfo() {
+	public final JsonObject getInfo() {
 		LOG.trace("Return from RestResource#getInfo()");
 		if (resource != null) {
 			info = resource.getInfo();
@@ -563,13 +582,14 @@ public class RestResource implements VtnServiceResource {
 		try {
 			resource.getValidator().validate(requestType, resource);
 		} catch (final Exception exception) {
-			resource.createErrorInfo(UncCommonEnum.UncResultCode.UNC_CLIENT_ERROR
+			resource.createErrorInfo(UncCommonEnum.UncResultCode.UNC_INVALID_ARGUMENT
 					.getValue());
 			final JsonObject error = resource.getInfo().getAsJsonObject(
 					VtnServiceJsonConsts.ERROR);
 			error.addProperty(VtnServiceJsonConsts.MSG,
 					error.get(VtnServiceJsonConsts.MSG).getAsString()
-							+ resource.getValidator().getInvalidParameter());
+							+ resource.getValidator().getInvalidParameter()
+							+ VtnServiceConsts.CLOSE_SMALL_BRACES);
 			exceptionHandler.raise(
 					Thread.currentThread().getStackTrace()[1].getClassName()
 							+ VtnServiceConsts.HYPHEN
@@ -599,18 +619,36 @@ public class RestResource implements VtnServiceResource {
 			/*
 			 * remove the parameters which contains empty strings
 			 */
-			if(VtnServiceConsts.POST.equals(requestType)){
+			if (VtnServiceConsts.POST.equals(requestType)
+					&& !VtnServiceUtil.isOpenStackResurce(resource)) {
 				VtnServiceUtil.removeEmptyParamas(requestBody);
 			}
 			resource.getValidator().validate(requestType, requestBody);
 		} catch (final Exception exception) {
-			resource.createErrorInfo(UncCommonEnum.UncResultCode.UNC_CLIENT_ERROR
-					.getValue());
-			final JsonObject error = resource.getInfo().getAsJsonObject(
-					VtnServiceJsonConsts.ERROR);
-			error.addProperty(VtnServiceJsonConsts.MSG,
-					error.get(VtnServiceJsonConsts.MSG).getAsString()
-							+ resource.getValidator().getInvalidParameter());
+			if (resource
+					.getValidator()
+					.getInvalidParameter()
+					.equals(UncCommonEnum.UncResultCode.UNC_INVALID_FORMAT
+							.getMessage())) {
+				resource.createErrorInfo(UncCommonEnum.UncResultCode.UNC_INVALID_FORMAT
+						.getValue());
+			} else if (resource
+					.getValidator()
+					.getInvalidParameter()
+					.equals(UncCommonEnum.UncResultCode.UNC_METHOD_NOT_ALLOWED
+							.getMessage())) {
+				resource.createErrorInfo(UncCommonEnum.UncResultCode.UNC_METHOD_NOT_ALLOWED
+						.getValue());
+			} else {
+				resource.createErrorInfo(UncCommonEnum.UncResultCode.UNC_INVALID_ARGUMENT
+						.getValue());
+				final JsonObject error = resource.getInfo().getAsJsonObject(
+						VtnServiceJsonConsts.ERROR);
+				error.addProperty(VtnServiceJsonConsts.MSG,
+						error.get(VtnServiceJsonConsts.MSG).getAsString()
+								+ resource.getValidator().getInvalidParameter()
+								+ VtnServiceConsts.CLOSE_SMALL_BRACES);
+			}
 			exceptionHandler.raise(
 					Thread.currentThread().getStackTrace()[1].getClassName()
 							+ VtnServiceConsts.HYPHEN
@@ -625,6 +663,11 @@ public class RestResource implements VtnServiceResource {
 		}
 	}
 
+	/**
+	 * 
+	 * @param requestBody
+	 * @throws VtnServiceException
+	 */
 	private void validateJsonOp(final JsonObject requestBody)
 			throws VtnServiceException {
 		try {
@@ -657,4 +700,13 @@ public class RestResource implements VtnServiceResource {
 		}
 	}
 
+	/**
+	 * Return the resource instance corresponding to resourcePath set by
+	 * setPath() interface
+	 * 
+	 * @return
+	 */
+	public AbstractResource getResource() {
+		return resource;
+	}
 }

@@ -177,7 +177,7 @@ class  ConfUtil {
    * @retval      : search key - string
    */
   static std::string get_search_key(const key_vlan_map_t &key,
-                                    const val_vlan_map_t &val) {
+                                    const pfcdrv_val_vlan_map_t &val) {
     ODC_FUNC_TRACE;
     std::string key_str(reinterpret_cast<const char*>
                         (key.vbr_key.vtn_key.vtn_name));
@@ -189,7 +189,7 @@ class  ConfUtil {
     } else {
      key_str += std::string("ANY.");
      char buff[10];
-     snprintf(buff, sizeof(buff), "%u", val.vlan_id);
+     snprintf(buff, sizeof(buff), "%u", val.vm.vlan_id);
      key_str += std::string(buff);
     }
     return key_str;

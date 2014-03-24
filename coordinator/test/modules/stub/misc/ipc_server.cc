@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -340,6 +340,27 @@ int
 ServerSession::addOutput(val_boundary&) {
   return addOutPut_;
 }
+
+int
+ServerSession::addOutput(key_dataflow&) {
+  return addOutPut_;
+}
+
+int
+ServerSession::addOutput(val_port_stats&) {
+  return addOutPut_;
+}
+
+int
+ServerSession::addOutput(val_switch_st_detail&) {
+  return addOutPut_;
+}
+
+int
+ServerSession::addOutput(val_df_data_flow_st_t&) {
+  return addOutPut_;
+}
+
 int
 ServerSession::addOutput(key_root_t&) {
   //        return addOutPut_;
@@ -351,15 +372,21 @@ ServerSession::addOutput(key_root_t&) {
     return local;
   }
 }
+
 int
 ServerSession::addOutput(val_path_fault_alarm_t&) {
   return addOutPut_;
 }
+
 int
 ServerSession::addOutput(val_port_st_neighbor&) {
   return addOutPut_;
 }
 
+int
+ServerSession::addOutput(key_ctr_dataflow&) {
+  return addOutPut_;
+}
 
 int
 ServerSession::addOutput(key_vtn_t&) {
@@ -647,6 +674,11 @@ ServerSession::getArgument(int index, val_vbr_t& data) {
 }
 
 int
+ServerSession::getArgument(int, key_ctr_dataflow&) {
+  return result_;
+}
+
+int
 ServerSession::getArgument(int /*index*/, key_vbr_if_t& /*data*/) {
   return result_;
 }
@@ -655,8 +687,10 @@ ServerSession::getArgument(int /*index*/, val_vbr_if_t& /*data*/) {
   return result_;
 }
 
-
-
+int
+ServerSession::getArgument(int, key_dataflow&) {
+  return result_;
+}
 
 int
 ServerSession::getArgument(int /*index*/, pfcdrv_val_vbr_if_t& /*data*/) {
@@ -743,7 +777,7 @@ ServerSession::clearStubData(void) {
 }
 
 int ServerEvent::serverEventErr_= 0;
-int ServerEvent::postResult_= 1;
+int ServerEvent::postResult_= UNC_UPPL_RC_FAILURE;
 
 void ServerEvent::stub_setserverEventErr(int err) {
   serverEventErr_ = err;

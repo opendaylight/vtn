@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -26,11 +26,11 @@ namespace uppl {
 class ControllerVersion {
  public:
   explicit ControllerVersion(string version,
-                             UpplReturnCode &return_code);
+                             UncRespCode &return_code);
 
   ~ControllerVersion() {}
 
-  UpplReturnCode ParseControllerVersion(string version);
+  UncRespCode ParseControllerVersion(string version);
 
   bool operator<(const ControllerVersion &val) const;
 

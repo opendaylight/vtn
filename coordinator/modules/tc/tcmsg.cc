@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -260,7 +260,6 @@ TcOperRet
 TcMsg::ForwardResponseInternal(pfc::core::ipc::ServerSession& srv_sess,
                                pfc::core::ipc::ClientSession* clnt_sess,
                                pfc_bool_t decr_resp) {
-  
   uint32_t respcount = clnt_sess->getResponseCount();
   if (PFC_EXPECT_TRUE(respcount == 0)) {
     pfc_log_info("session is empty");
@@ -273,7 +272,7 @@ TcMsg::ForwardResponseInternal(pfc::core::ipc::ServerSession& srv_sess,
   } else {
     to_index = respcount;
   }
-  
+
   if (clnt_sess->forwardTo(srv_sess, from_index, to_index)
       != TCOPER_RET_SUCCESS) {
     pfc_log_fatal("forwardTo failed!!");
@@ -292,9 +291,9 @@ TcOperRet
 TcMsg::ForwardResponseToVTN(pfc::core::ipc::ServerSession& srv_sess) {
   pfc_log_debug("TcMsg::ForwardResponseToVTN() entry");
   TcOperRet ret = TCOPER_RET_SUCCESS;
-  
+
   if (sess_) {
-    pfc_log_info("forward client session data");    
+    pfc_log_info("forward client session data");
     ret = ForwardResponseInternal(srv_sess, sess_, PFC_FALSE);
     if (ret != TCOPER_RET_SUCCESS) {
       pfc_log_info("forwarding session data to VTN failed");
@@ -303,7 +302,7 @@ TcMsg::ForwardResponseToVTN(pfc::core::ipc::ServerSession& srv_sess) {
   }
 
   if (upll_sess_) {
-    pfc_log_info("forward UPLL session data");    
+    pfc_log_info("forward UPLL session data");
     if (PFC_EXPECT_TRUE(opertype_ == tclib::MSG_AUDIT_GLOBAL)) {
       /*filtering audit_result of global commit*/
       ret = ForwardResponseInternal(srv_sess, upll_sess_, PFC_TRUE);
@@ -317,7 +316,7 @@ TcMsg::ForwardResponseToVTN(pfc::core::ipc::ServerSession& srv_sess) {
   }
 
   if (uppl_sess_) {
-    pfc_log_info("forward UPPL session data");    
+    pfc_log_info("forward UPPL session data");
     if (PFC_EXPECT_TRUE(opertype_ == tclib::MSG_AUDIT_GLOBAL)) {
       /*filtering audit_result of global commit*/
       ret = ForwardResponseInternal(srv_sess, uppl_sess_, PFC_TRUE);

@@ -31,9 +31,9 @@ TEST_F(ControllerFrameworkTest, GetControllerInst_success) {
   CtrObj->AddController(ctr_name, ctr_instance, drv_instance);
   controller *ctr(NULL);
   driver *drv(NULL);
-  drv_resp_code_t ret_code(CtrObj->GetControllerInstance(ctr_name, &ctr,
+  UncRespCode ret_code(CtrObj->GetControllerInstance(ctr_name, &ctr,
                                                          &drv));
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, ret_code);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret_code);
   EXPECT_EQ(ctr_instance, ctr);
   EXPECT_EQ(drv_instance, drv);
   delete CtrObj;
@@ -52,16 +52,16 @@ TEST_F(ControllerFrameworkTest, GetDriver_success) {
   CtrObj->AddController(ctr_name, ctr_instance, drv_instance);
   controller *ctr(NULL);
   driver *drv(NULL);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             CtrObj->GetControllerInstance(ctr_name, &ctr, &drv));
   EXPECT_EQ(ctr_instance, ctr);
   EXPECT_EQ(drv_instance, drv);
 
   ctr = NULL;
   drv = NULL;
-  drv_resp_code_t ret_code(CtrObj->GetDriverByControllerName(ctr_name, &ctr,
+  UncRespCode ret_code(CtrObj->GetDriverByControllerName(ctr_name, &ctr,
                                                              &drv));
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, ret_code);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret_code);
   EXPECT_EQ(ctr_instance, ctr);
   EXPECT_EQ(drv_instance, drv);
   delete CtrObj;
@@ -80,16 +80,16 @@ TEST_F(ControllerFrameworkTest, GetDriver_failure) {
   CtrObj->AddController(ctr_name, ctr_instance, drv_instance);
   controller *ctr(NULL);
   driver *drv(NULL);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             CtrObj->GetControllerInstance(ctr_name, &ctr, &drv));
   EXPECT_EQ(ctr_instance, ctr);
   EXPECT_EQ(drv_instance, drv);
 
   ctr = NULL;
   drv = NULL;
-  drv_resp_code_t ret_code(CtrObj->GetDriverByControllerName(ctr_name, &ctr,
+  UncRespCode ret_code(CtrObj->GetDriverByControllerName(ctr_name, &ctr,
                                                              &drv));
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, ret_code);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret_code);
   EXPECT_EQ(ctr_instance, ctr);
   EXPECT_EQ(drv_instance, drv);
   delete CtrObj;
@@ -109,9 +109,9 @@ TEST_F(ControllerFrameworkTest, PingController_success) {
   CtrObj->AddController(ctr_name, ctr_instance, drv_instance);
   driver *drv(NULL);
   controller *ctr(NULL);
-  drv_resp_code_t ret_code(CtrObj->GetDriverByControllerName(ctr_name, &ctr,
+  UncRespCode ret_code(CtrObj->GetDriverByControllerName(ctr_name, &ctr,
                                                              &drv));
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, ret_code);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret_code);
   EXPECT_EQ(ctr_instance, ctr);
   EXPECT_EQ(drv_instance, drv);
   fun_obj.PingController();
@@ -134,9 +134,9 @@ TEST_F(ControllerFrameworkTest, PingController_Failure) {
   CtrObj->AddController(ctr_name, ctr_instance, drv_instance);
   driver *drv(NULL);
   controller *ctr(NULL);
-  drv_resp_code_t ret_code(CtrObj->GetDriverByControllerName(ctr_name, &ctr,
+  UncRespCode ret_code(CtrObj->GetDriverByControllerName(ctr_name, &ctr,
                                                              &drv));
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, ret_code);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret_code);
   EXPECT_EQ(ctr_instance, ctr);
   EXPECT_EQ(drv_instance, drv);
 
@@ -160,16 +160,16 @@ TEST_F(ControllerFrameworkTest, GetDriver_AfterUpdate) {
   controller *ctr_instance = static_cast <controller*>(new OdcController());
   CtrObj->AddController(ctr_name_1, ctr_instance, drv_instance);
 
-  drv_resp_code_t ret_code;
+  UncRespCode ret_code;
   ret_code = CtrObj->UpdateControllerConfiguration(ctr_name_1, ctr_instance,
                                                    drv_instance, *key_ctr,
                                                    *val_ctr);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, ret_code);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret_code);
 
   driver *drv(NULL);
   controller *ctr(NULL);
   ret_code = CtrObj->GetDriverByControllerName(ctr_name_1, &ctr, &drv);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, ret_code);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret_code);
   EXPECT_EQ(ctr_instance, ctr);
   EXPECT_EQ(drv_instance, drv);
   delete CtrObj;
@@ -210,7 +210,7 @@ TEST_F(ControllerFrameworkTest, AddController_success) {
   driver *compare_drv_ptr(NULL);
   controller *ctr(NULL);
   controller *compare_ctr_ptr(NULL);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             CtrObj->GetDriverByControllerName(ctr_name, &ctr, &drv));
   EXPECT_EQ(compare_ctr_ptr, ctr);
   EXPECT_EQ(compare_drv_ptr, drv);
@@ -219,7 +219,7 @@ TEST_F(ControllerFrameworkTest, AddController_success) {
 
   drv = NULL;
   ctr = NULL;
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             CtrObj->GetDriverByControllerName(ctr_name, &ctr, &drv));
   EXPECT_EQ(ctr_instance, ctr);
   EXPECT_EQ(drv_instance, drv);
@@ -246,14 +246,14 @@ TEST_F(ControllerFrameworkTest, Add_MultiCtr_success) {
 
   controller *ctr(NULL);
   driver *drv(NULL);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             CtrObj->GetControllerInstance(ctr_name_1, &ctr, &drv));
   EXPECT_EQ(ctr_instance, ctr);
   EXPECT_EQ(drv_instance, drv);
 
   ctr = NULL;
   drv = NULL;
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             CtrObj->GetControllerInstance(ctr_name_2, &ctr, &drv));
   EXPECT_EQ(ctr_instance1, ctr);
   EXPECT_EQ(drv_instance1, drv);
@@ -278,15 +278,15 @@ TEST_F(ControllerFrameworkTest, UpdateCtr_success) {
 
   controller *ctr(NULL);
   driver* drv(NULL);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             CtrObj->GetControllerInstance(ctr_name_1, &ctr, &drv));
   EXPECT_EQ(ctr_instance, ctr);
   EXPECT_EQ(drv_instance, drv);
 
-  drv_resp_code_t ret_code;
+  UncRespCode ret_code;
   ret_code = CtrObj->UpdateControllerConfiguration(ctr_name_1, ctr, drv,
                                                    *key_ctr, *val_ctr);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, ret_code);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret_code);
   delete CtrObj;
   delete key_ctr;
   delete val_ctr;
@@ -310,24 +310,24 @@ TEST_F(ControllerFrameworkTest, RemoveCtr_success) {
   controller *ctr(NULL);
   driver *compare_drv_ptr(NULL);
   driver *drv(NULL);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             CtrObj->GetControllerInstance(ctr_name, &ctr, &drv));
   EXPECT_EQ(ctr_instance, ctr);
   EXPECT_EQ(drv_instance, drv);
 
-  drv_resp_code_t ret_code;
+  UncRespCode ret_code;
   ret_code = CtrObj->UpdateControllerConfiguration(ctr_name, ctr_instance,
                                                    drv_instance, *key_ctr,
                                                    *val_ctr);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, ret_code);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret_code);
 
   ret_code = CtrObj->RemoveControllerConfiguration(ctr_name, ctr_instance,
                                                    drv_instance);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, ret_code);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret_code);
 
   ctr = NULL;
   drv = NULL;
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             CtrObj->GetControllerInstance(ctr_name, &ctr, &drv));
   EXPECT_EQ(compare_ctr_ptr, ctr);
   EXPECT_EQ(compare_drv_ptr, drv);
@@ -354,24 +354,24 @@ TEST_F(ControllerFrameworkTest, RemoveCtr_Failure) {
 
   controller *ctr(NULL);
   driver *drv(NULL);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             CtrObj->GetControllerInstance(ctr_name, &ctr, &drv));
   EXPECT_EQ(ctr_instance, ctr);
   EXPECT_EQ(drv_instance, drv);
 
-  drv_resp_code_t ret_code;
+  UncRespCode ret_code;
   ret_code = CtrObj->UpdateControllerConfiguration(ctr_name, ctr_instance,
                                                    drv_instance, *key_ctr,
                                                    *val_ctr);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, ret_code);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret_code);
 
   ret_code = CtrObj->RemoveControllerConfiguration(ctr_unknown, ctr_instance,
                                                    drv_instance);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, ret_code);
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, ret_code);
 
   ctr = NULL;
   drv = NULL;
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             CtrObj->GetControllerInstance(ctr_name, &ctr, &drv));
   EXPECT_EQ(ctr_instance, ctr);
   EXPECT_EQ(drv_instance, drv);
@@ -391,10 +391,10 @@ TEST_F(ControllerFrameworkTest, RemoveController_List_Empty) {
   ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   OdcDriver *drv_instance = new OdcDriver();
   OdcController *ctr_instance = new OdcController();
-  drv_resp_code_t ret_code;
+  UncRespCode ret_code;
   ret_code = CtrObj->RemoveControllerConfiguration(ctr_name, ctr_instance,
                                                    drv_instance);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, ret_code);
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, ret_code);
   delete taskq_;
   delete drv_instance;
   delete ctr_instance;
@@ -415,7 +415,7 @@ TEST_F(ControllerFrameworkTest, RegisterDriver_success) {
   OdcDriver *drv_instance = new OdcDriver();
   driver *compare_drv_ptr = NULL;
   EXPECT_EQ(compare_drv_ptr, CtrObj->GetDriverInstance(controller_type));
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             CtrObj->RegisterDriver(controller_type, drv_instance));
   EXPECT_EQ(drv_instance, CtrObj->GetDriverInstance(controller_type));
 
@@ -449,7 +449,7 @@ TEST_F(ControllerFrameworkTest, RegisterDriver_MultipleEntry_success) {
   }
   for (tdp = testdrv; tdp < PFC_ARRAY_LIMIT(testdrv); tdp++) {
     tdp->driver = new OdcDriver();
-    EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+    EXPECT_EQ(UNC_RC_SUCCESS,
               CtrObj->RegisterDriver(tdp->type, tdp->driver));
   }
   for (tdp = testdrv; tdp < PFC_ARRAY_LIMIT(testdrv); tdp++) {
@@ -472,7 +472,7 @@ TEST_F(ControllerFrameworkTest, RegisterDriver_DrvInst_NULL) {
   unc_keytype_ctrtype_t controller_type = UNC_CT_ODC;
   OdcDriver *drv_instance = NULL;
   driver *compare_drv_ptr = NULL;
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             CtrObj->RegisterDriver(controller_type, drv_instance));
   EXPECT_EQ(compare_drv_ptr, CtrObj->GetDriverInstance(controller_type));
   delete taskq_;
@@ -487,7 +487,7 @@ TEST_F(ControllerFrameworkTest, GetDriver_CtrName_NotFound) {
   ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   driver *drv_instance = static_cast <driver*>(new OdcDriver());
   controller *ctr_instance = static_cast <controller*>(new OdcController());
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             CtrObj->GetDriverByControllerName(ctr_name, &ctr_instance,
                                               &drv_instance));
   delete taskq_;
@@ -504,7 +504,7 @@ TEST_F(ControllerFrameworkTest, GetControllerInst_CtrName_NotFound) {
   ControllerFramework *CtrObj = new ControllerFramework(taskq_, 1);
   driver *drv_instance = static_cast <driver*>(new OdcDriver());
   controller *ctr_instance = static_cast <controller*>(new OdcController());
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             CtrObj->GetControllerInstance(ctr_name, &ctr_instance,
                                           &drv_instance));
   delete taskq_;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -46,55 +46,55 @@ class KeyTree {
   /**
    * @brief       : Method to add confignode lists to the cache for Audit
    * @param [in]  : value_list(contain multiple nodes in a vector)
-   * @retval      : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS/
-   *                DRVAPI_RESPONSE_FAILURE)
+   * @retval      : UncRespCode(UNC_RC_SUCCESS/
+   *                UNC_DRV_RC_ERR_GENERIC)
    */
-  drv_resp_code_t append_audit_configuration_list(
+  UncRespCode append_audit_configuration_list(
         const std::vector<ConfigNode*>&value_list);
 
   /**
    * @brief      : Method to add individual confignode to the cache for Audit
    * @param [in] : value_node
-   * @retval     : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS/
-   *               DRVAPI_RESPONSE_FAILURE)
+   * @retval     : UncRespCode(UNC_RC_SUCCESS/
+   *               UNC_DRV_RC_ERR_GENERIC)
    */
-  drv_resp_code_t append_audit_node(ConfigNode* value_node);
+  UncRespCode append_audit_node(ConfigNode* value_node);
 
   /**
    * @brief      : Method to add list of confignode to the cache to support
    *               physical node audit
    * @param [in] : value_list(a vector contain list of confignodes)
-   * @retval     : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS)
+   * @retval     : UncRespCode(UNC_RC_SUCCESS)
    */
-  drv_resp_code_t append_physical_attribute_configuration_list(
+  UncRespCode append_physical_attribute_configuration_list(
         const std::vector<ConfigNode*>&value_list);
 
   /**
    * @brief      : Method to add individual confignode to the cache for physical
    *               node
    * @param [in] : value_node
-   * @retval     : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS/
-   *               DRVAPI_RESPONSE_FAILURE)
+   * @retval     : UncRespCode(UNC_RC_SUCCESS/
+   *               UNC_DRV_RC_ERR_GENERIC)
    */
-  drv_resp_code_t append_Physical_attribute_node(ConfigNode* value_node);
+  UncRespCode append_Physical_attribute_node(ConfigNode* value_node);
 
   /**
    * @brief      : Method to update individual confignode to the cache for
    *               physical node
    * @param [in] : child_ptr
-   * @retval     : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS/
-   *               DRVAPI_RESPONSE_FAILURE)
+   * @retval     : UncRespCode(UNC_RC_SUCCESS/
+   *               UNC_DRV_RC_ERR_GENERIC)
    */
-  drv_resp_code_t update_physical_attribute_node(ConfigNode* child_ptr);
+  UncRespCode update_physical_attribute_node(ConfigNode* child_ptr);
 
   /**
    * @brief      : Method to delete individual confignode to the cache for
    *               physical node
    * @param [in] : child_ptr
-   * @retval     : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS/
-   *               DRVAPI_RESPONSE_FAILURE)
+   * @retval     : UncRespCode(UNC_RC_SUCCESS/
+   *               UNC_DRV_RC_ERR_GENERIC)
    */
-  drv_resp_code_t delete_physical_attribute_node(ConfigNode* child_ptr);
+  UncRespCode delete_physical_attribute_node(ConfigNode* child_ptr);
 
   /**
    * @brief      : Method to return existing node from cache as per new compare
@@ -109,10 +109,10 @@ class KeyTree {
   /**
    * @brief      : Method to add individual confignode to the cache for Audit
    * @param [in] : value_node
-   * @retval     : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS/
-   *               DRVAPI_RESPONSE_FAILURE)
+   * @retval     : UncRespCode(UNC_RC_SUCCESS/
+   *               UNC_DRV_RC_ERR_GENERIC)
    */
-  drv_resp_code_t append_commit_node(ConfigNode* value_node);
+  UncRespCode append_commit_node(ConfigNode* value_node);
 
   /**
    * @brief  : Method to create the iterator of Keytree
@@ -180,9 +180,9 @@ class KeyTree {
    * @brief      : Method to traverse the tree in DFS order and populate
    *               the nodes into the vector
    * @param [in] : value_list
-   * @retval     : DRVAPI_RESPONSE_SUCCESS
+   * @retval     : UNC_RC_SUCCESS
    */
-  drv_resp_code_t get_nodelist_keytree();
+  UncRespCode get_nodelist_keytree();
   /**
    * @brief      : Method to return the Parent given the child_type
    * @param [in] : child_type
@@ -193,10 +193,10 @@ class KeyTree {
   /**
    * @brief      : Method to add individual Config node to the cache
    * @param [in] : child_ptr
-   * @retval     : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS/
-   *               DRVAPI_RESPONSE_FAILURE)
+   * @retval     : UncRespCode(UNC_RC_SUCCESS/
+   *               UNC_DRV_RC_ERR_GENERIC)
    */
-  drv_resp_code_t add_node_to_tree(ConfigNode* child_ptr);
+  UncRespCode add_node_to_tree(ConfigNode* child_ptr);
 
   /**
    * @brief      : Method to search and retrieve the node from the search map
@@ -209,9 +209,9 @@ class KeyTree {
   /**
    * @brief      : Method to insert node to the search map
    * @param [in] : child_ptr
-   * @retval     : drv_resp_code_t(DRVAPI_RESPONSE_SUCCESS)
+   * @retval     : UncRespCode(UNC_RC_SUCCESS)
    */
-  drv_resp_code_t add_child_to_hash(ConfigNode* child_ptr);
+  UncRespCode add_child_to_hash(ConfigNode* child_ptr);
 
 
   /**

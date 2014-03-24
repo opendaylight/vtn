@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -54,20 +54,20 @@ pfc_bool_t NotificationRequest::ProcessEvent(const IpcEvent &event) {
   pfc_ipcevtype_t event_type(event.getType());
   if (event_type == UNC_PHYSICAL_EVENTS ||
       event_type == UNC_CTLR_STATE_EVENTS) {
-    UpplReturnCode err = ProcessNotificationEvents(event);
-    if (err != UPPL_RC_SUCCESS) {
+    UncRespCode err = ProcessNotificationEvents(event);
+    if (err != UNC_RC_SUCCESS) {
       pfc_log_error("ProcessNotificationEvents failed error no: %d", err);
       return PFC_FALSE;
     }
   } else if (event_type == UNC_ALARMS) {
-    UpplReturnCode err = ProcessAlarmEvents(event);
-    if (err != UPPL_RC_SUCCESS) {
+    UncRespCode err = ProcessAlarmEvents(event);
+    if (err != UNC_RC_SUCCESS) {
       pfc_log_error("ProcessAlarmEvents failed error no: %d", err);
       return PFC_FALSE;
     }
   } else {
     pfc_log_error("Invalid event type error no: %d",
-                  UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED);
+                  UNC_UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED);
     return PFC_FALSE;
   }
   return PFC_TRUE;
@@ -86,7 +86,7 @@ pfc_bool_t NotificationRequest::ProcessEvent(const IpcEvent &event) {
  * @return   :Success or associated error code
  **/
 
-UpplReturnCode NotificationRequest::InvokeKtDriverEvent(
+UncRespCode NotificationRequest::InvokeKtDriverEvent(
     OdbcmConnectionHandler *db_conn,
     uint32_t operation,
     uint32_t data_type,
@@ -95,7 +95,7 @@ UpplReturnCode NotificationRequest::InvokeKtDriverEvent(
     void *old_val_struct,
     uint32_t key_type) {
   Kt_State_Base *ObjStateNotify = NULL;
-  UpplReturnCode status = UPPL_RC_SUCCESS;
+  UncRespCode status = UNC_RC_SUCCESS;
   switch (key_type) {
     case UNC_KT_PORT: {
       ObjStateNotify = new Kt_Port();
@@ -119,7 +119,7 @@ UpplReturnCode NotificationRequest::InvokeKtDriverEvent(
     }
     default: {
       pfc_log_error("Invalid key type\n");
-      return UPPL_RC_ERR_KEYTYPE_NOT_SUPPORTED;
+      return UNC_UPPL_RC_ERR_KEYTYPE_NOT_SUPPORTED;
     }
   }
   switch (operation) {
@@ -158,7 +158,7 @@ UpplReturnCode NotificationRequest::InvokeKtDriverEvent(
     {
       pfc_log_error("Invalid operation type\n");
       delete ObjStateNotify;
-      return UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+      return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
     }
   }
   return status;
@@ -170,23 +170,23 @@ UpplReturnCode NotificationRequest::InvokeKtDriverEvent(
  * @param[in]:event- an object of IpcEvent,contains the event posted by driver.
  * @return   :Success or associated error code
  **/
-UpplReturnCode NotificationRequest::ProcessNotificationEvents(
+UncRespCode NotificationRequest::ProcessNotificationEvents(
     const IpcEvent &event) {
   pfc_log_info("Inside ProcessNotificationEvents of NotificationRequest");
-  UpplReturnCode status = UPPL_RC_SUCCESS;
+  UncRespCode status = UNC_RC_SUCCESS;
   ClientSession sess(event.getSession());
 
   /*validate valid response count for Notification event structure*/
   uint32_t resp_count = sess.getResponseCount();
   if (resp_count < (uint32_t)6) {
     pfc_log_error("Invalid event structure - Resp Count %d", resp_count);
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   driver_event_header event_header;
   uint32_t header_parse = PhyUtil::sessGetDriverEventHeader(sess, event_header);
   if (header_parse != 0) {
     pfc_log_error("Unable to parse event header successfully");
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   uint32_t data_type = event_header.data_type;
   uint32_t operation = event_header.operation;
@@ -197,7 +197,7 @@ UpplReturnCode NotificationRequest::ProcessNotificationEvents(
       status = ProcessPortEvents(&sess,
                                  data_type,
                                  operation);
-      if (status == UPPL_RC_ERR_BAD_REQUEST) {
+      if (status == UNC_UPPL_RC_ERR_BAD_REQUEST) {
         return status;
       }
       break;
@@ -207,7 +207,7 @@ UpplReturnCode NotificationRequest::ProcessNotificationEvents(
       status = ProcessSwitchEvents(&sess,
                                    data_type,
                                    operation);
-      if (status == UPPL_RC_ERR_BAD_REQUEST) {
+      if (status == UNC_UPPL_RC_ERR_BAD_REQUEST) {
         return status;
       }
       break;
@@ -217,7 +217,7 @@ UpplReturnCode NotificationRequest::ProcessNotificationEvents(
       status = ProcessLinkEvents(&sess,
                                  data_type,
                                  operation);
-      if (status == UPPL_RC_ERR_BAD_REQUEST) {
+      if (status == UNC_UPPL_RC_ERR_BAD_REQUEST) {
         return status;
       }
       break;
@@ -227,7 +227,7 @@ UpplReturnCode NotificationRequest::ProcessNotificationEvents(
       status = ProcessControllerEvents(&sess,
                                        data_type,
                                        operation);
-      if (status == UPPL_RC_ERR_BAD_REQUEST) {
+      if (status == UNC_UPPL_RC_ERR_BAD_REQUEST) {
         return status;
       }
       break;
@@ -237,7 +237,7 @@ UpplReturnCode NotificationRequest::ProcessNotificationEvents(
       status = ProcessDomainEvents(&sess,
                                    data_type,
                                    operation);
-      if (status == UPPL_RC_ERR_BAD_REQUEST) {
+      if (status == UNC_UPPL_RC_ERR_BAD_REQUEST) {
         return status;
       }
       break;
@@ -247,7 +247,7 @@ UpplReturnCode NotificationRequest::ProcessNotificationEvents(
       status = ProcessLogicalPortEvents(&sess,
                                         data_type,
                                         operation);
-      if (status == UPPL_RC_ERR_BAD_REQUEST) {
+      if (status == UNC_UPPL_RC_ERR_BAD_REQUEST) {
         return status;
       }
       break;
@@ -257,7 +257,7 @@ UpplReturnCode NotificationRequest::ProcessNotificationEvents(
       status = ProcessLogicalMemeberPortEvents(&sess,
                                                data_type,
                                                operation);
-      if (status == UPPL_RC_ERR_BAD_REQUEST) {
+      if (status == UNC_UPPL_RC_ERR_BAD_REQUEST) {
         return status;
       }
       break;
@@ -265,7 +265,7 @@ UpplReturnCode NotificationRequest::ProcessNotificationEvents(
     default:
     {
       pfc_log_error("Invalid key type\n");
-      return UPPL_RC_ERR_KEYTYPE_NOT_SUPPORTED;
+      return UNC_UPPL_RC_ERR_KEYTYPE_NOT_SUPPORTED;
     }
   }
   return status;
@@ -296,32 +296,32 @@ void NotificationRequest::GetNotificationDT(OdbcmConnectionHandler *db_conn,
  * @param[in]:event-an object of IpcEvent,contains the event posted by driver
  * @return   :Success or associated error code
  **/
-UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
+UncRespCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
   pfc_log_info("Inside ProcessAlarmEvents of NotificationRequest");
   // Check for MergeImportRunning Lock
   ScopedReadWriteLock eventDoneLock(
       PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
-  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  UncRespCode db_ret = UNC_RC_SUCCESS;
   OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
-  if (db_ret != UPPL_RC_SUCCESS) {
+  if (db_ret != UNC_RC_SUCCESS) {
     pfc_log_error("Error in opening DB connection");
-    return UPPL_RC_ERR_DB_ACCESS;
+    return UNC_UPPL_RC_ERR_DB_ACCESS;
   }
-  UpplReturnCode status = UPPL_RC_SUCCESS;
+  UncRespCode status = UNC_RC_SUCCESS;
   ClientSession sess(event.getSession());
 
   /*validate valid response count for Notification event structure*/
   uint32_t resp_count = sess.getResponseCount();
   if (resp_count < (uint32_t)7) {
     pfc_log_error("Invalid alarm structure");
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   /*Get key type, operation type and alarm type from IpcEvent*/
   driver_alarm_header alarm_header;
   uint32_t header_parse = PhyUtil::sessGetDriverAlarmHeader(sess, alarm_header);
   if (header_parse != 0) {
     pfc_log_error("Unable to parse alarms header successfully");
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   uint32_t data_type = alarm_header.data_type;
   pfc_log_debug("Alarm Type %d", alarm_header.alarm_type);
@@ -332,15 +332,21 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
     int read_err = sess.getResponse((uint32_t)6, key_ctr);
     if (read_err != 0) {
       pfc_log_error("Key not received for controller");
-      return UPPL_RC_ERR_BAD_REQUEST;
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
     }
     pfc_log_info("%s", IpctUtil::get_string(key_ctr).c_str());
+    if ((alarm_header.operation != UNC_OP_CREATE) &&
+        (alarm_header.operation != UNC_OP_DELETE)) {
+      pfc_log_info("Invalid alarm operation : %d",
+                   alarm_header.operation);
+      return UNC_UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED;
+    }
     if (alarm_header.alarm_type == UNC_PHYS_PATH_FAULT) {
       val_phys_path_fault_alarm_t val_ctr_alarm_struct;
       int read_err = sess.getResponse((uint32_t)7, val_ctr_alarm_struct);
       if (read_err != 0) {
         pfc_log_error("Value not received for controller");
-        return UPPL_RC_ERR_BAD_REQUEST;
+        return UNC_UPPL_RC_ERR_BAD_REQUEST;
       }
       string controller_name = reinterpret_cast<char *>
       (key_ctr.controller_name);
@@ -355,7 +361,7 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
     } else {
       pfc_log_info("Invalid alarm type for UNC_KT_CONTROLLER: %d",
                    alarm_header.alarm_type);
-      return UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED;
+      return UNC_UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED;
     }
   } else  if (alarm_header.key_type ==  UNC_KT_CTR_DOMAIN) {
     /*process domain related alarm*/
@@ -364,17 +370,23 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
     int read_err = sess.getResponse((uint32_t)6, key_ctr_domain);
     if (read_err != 0) {
       pfc_log_error("Key not received for ctr domain");
-      return UPPL_RC_ERR_BAD_REQUEST;
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
     }
     pfc_log_info("%s", IpctUtil::get_string(key_ctr_domain).c_str());
-    Kt_Base *NotifyDomain = new Kt_Ctr_Domain();
-    if (NotifyDomain == NULL) {
-      pfc_log_error("Memory not allocated for Notifydomain");
-      return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    if ((alarm_header.operation != UNC_OP_CREATE) &&
+        (alarm_header.operation != UNC_OP_DELETE)) {
+      pfc_log_info("Invalid alarm operation : %d",
+                   alarm_header.operation);
+      return UNC_UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED;
     }
     if (alarm_header.alarm_type ==  UNC_COREDOMAIN_SPLIT) {
       string controller_name = reinterpret_cast<char *>
       (key_ctr_domain.ctr_key.controller_name);
+      Kt_Base *NotifyDomain = new Kt_Ctr_Domain();
+      if (NotifyDomain == NULL) {
+        pfc_log_error("Memory not allocated for Notifydomain");
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+      }
       GetNotificationDT(&db_conn, controller_name, data_type);
       status = NotifyDomain->HandleDriverAlarms(
           &db_conn, data_type, alarm_header.alarm_type, alarm_header.operation,
@@ -385,8 +397,7 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
     } else {
       pfc_log_info("Invalid alarm type for UNC_KT_CTR_DOMAIN: %d",
                    alarm_header.alarm_type);
-      delete NotifyDomain;
-      return UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED;
+      return UNC_UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED;
     }
   }  else  if (alarm_header.key_type ==  UNC_KT_LOGICAL_PORT) {
     /*process logical port related alarm*/
@@ -395,17 +406,23 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
     int read_err = sess.getResponse((uint32_t)6, key_logicalport);
     if (read_err != 0) {
       pfc_log_error("Key not received for logical port");
-      return UPPL_RC_ERR_BAD_REQUEST;
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
     }
     pfc_log_info("%s", IpctUtil::get_string(key_logicalport).c_str());
-    Kt_Base *NotifyLogicalPort = new Kt_LogicalPort();
-    if (NotifyLogicalPort  == NULL) {
-      pfc_log_error("Memory not allocated for NotifyLogicalPort");
-      return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    if ((alarm_header.operation != UNC_OP_CREATE) &&
+        (alarm_header.operation != UNC_OP_DELETE)) {
+      pfc_log_info("Invalid alarm operation : %d",
+                   alarm_header.operation);
+      return UNC_UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED;
     }
     if (alarm_header.alarm_type == UNC_SUBDOMAIN_SPLIT) {
       string controller_name = reinterpret_cast<char *>
       (key_logicalport.domain_key.ctr_key.controller_name);
+      Kt_Base *NotifyLogicalPort = new Kt_LogicalPort();
+      if (NotifyLogicalPort  == NULL) {
+        pfc_log_error("Memory not allocated for NotifyLogicalPort");
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+      }
       GetNotificationDT(&db_conn, controller_name, data_type);
       status = NotifyLogicalPort->HandleDriverAlarms(
           &db_conn, data_type, alarm_header.alarm_type, alarm_header.operation,
@@ -416,8 +433,7 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
     } else {
       pfc_log_info("Invalid alarm type for UNC_KT_LOGICAL_PORT: %d",
                    alarm_header.alarm_type);
-      delete NotifyLogicalPort;
-      return UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED;
+      return UNC_UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED;
     }
   }  else  if (alarm_header.key_type ==  UNC_KT_PORT) {
     /*process port related alarm*/
@@ -426,19 +442,25 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
     int read_err = sess.getResponse((uint32_t)6, port_key);
     if (read_err != 0) {
       pfc_log_error("Key not received for port");
-      return UPPL_RC_ERR_BAD_REQUEST;
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
     }
     pfc_log_info("%s", IpctUtil::get_string(port_key).c_str());
-    Kt_Base *NotifyPort = new Kt_Port();
-    if (NotifyPort  == NULL) {
-      pfc_log_error("Memory not allocated for NotifyPort");
-      return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    if ((alarm_header.operation != UNC_OP_CREATE) &&
+        (alarm_header.operation != UNC_OP_DELETE)) {
+      pfc_log_info("Invalid alarm operation : %d",
+                   alarm_header.operation);
+      return UNC_UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED;
     }
     if ((alarm_header.alarm_type ==  UNC_DEFAULT_FLOW) ||
         (alarm_header.alarm_type ==  UNC_PORT_DIRECTION) ||
         (alarm_header.alarm_type ==  UNC_PORT_CONGES)) {
       string controller_name = reinterpret_cast<char *>
       (port_key.sw_key.ctr_key.controller_name);
+      Kt_Base *NotifyPort = new Kt_Port();
+      if (NotifyPort  == NULL) {
+        pfc_log_error("Memory not allocated for NotifyPort");
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+      }
       GetNotificationDT(&db_conn, controller_name, data_type);
       status = NotifyPort->HandleDriverAlarms(
           &db_conn, data_type, alarm_header.alarm_type, alarm_header.operation,
@@ -449,8 +471,7 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
     } else {
       pfc_log_info("Invalid alarm type for UNC_KT_PORT: %d",
                    alarm_header.alarm_type);
-      delete NotifyPort;
-      return UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED;
+      return UNC_UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED;
     }
   }  else  if (alarm_header.key_type ==  UNC_KT_SWITCH) {
     /*process controller related alarm*/
@@ -459,18 +480,24 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
     int read_err = sess.getResponse((uint32_t)6, switch_key);
     if (read_err != 0) {
       pfc_log_error("Key not received for switch");
-      return UPPL_RC_ERR_BAD_REQUEST;
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
     }
     pfc_log_info("%s", IpctUtil::get_string(switch_key).c_str());
-    Kt_Base *NotifySwitch = new Kt_Switch();
-    if (NotifySwitch  == NULL) {
-      pfc_log_error("Memory not allocated for NotifySwitch");
-      return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    if ((alarm_header.operation != UNC_OP_CREATE) &&
+        (alarm_header.operation != UNC_OP_DELETE)) {
+      pfc_log_info("Invalid alarm operation : %d",
+                   alarm_header.operation);
+      return UNC_UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED;
     }
     if ((alarm_header.alarm_type ==  UNC_FLOW_ENT_FULL) ||
         (alarm_header.alarm_type ==  UNC_OFS_LACK_FEATURES)) {
       string controller_name = reinterpret_cast<char *>
       (switch_key.ctr_key.controller_name);
+      Kt_Base *NotifySwitch = new Kt_Switch();
+      if (NotifySwitch  == NULL) {
+        pfc_log_error("Memory not allocated for NotifySwitch");
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+      }
       GetNotificationDT(&db_conn, controller_name, data_type);
       status = NotifySwitch->HandleDriverAlarms(
           &db_conn, data_type, alarm_header.alarm_type, alarm_header.operation,
@@ -481,8 +508,7 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
     } else {
       pfc_log_info("Invalid alarm type for UNC_KT_SWITCH: %d",
                    alarm_header.alarm_type);
-      delete NotifySwitch;
-      return UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED;
+      return UNC_UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED;
     }
   } else {
     pfc_log_info("Invalid key type : %d", alarm_header.key_type);
@@ -498,26 +524,26 @@ UpplReturnCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
  * operation-type of operation UNC_OP_CREATE/UPDATE/DELETE
  * @return   :Success or associated error code
  **/
-UpplReturnCode NotificationRequest::ProcessPortEvents(
+UncRespCode NotificationRequest::ProcessPortEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
   // Check for MergeImportRunning Lock
   ScopedReadWriteLock eventDoneLock(
       PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
-  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  UncRespCode db_ret = UNC_RC_SUCCESS;
   OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
-  if (db_ret != UPPL_RC_SUCCESS) {
+  if (db_ret != UNC_RC_SUCCESS) {
     pfc_log_error("Error in opening DB connection");
-    return UPPL_RC_ERR_DB_ACCESS;
+    return UNC_UPPL_RC_ERR_DB_ACCESS;
   }
-  UpplReturnCode status = UPPL_RC_SUCCESS;
+  UncRespCode status = UNC_RC_SUCCESS;
   key_port_t port_key;
   memset(&port_key, '\0', sizeof(key_port_t));
   int read_err = sess->getResponse((uint32_t)5, port_key);
   if (read_err != 0) {
     pfc_log_error("Key not received for port");
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   pfc_log_info("%s", IpctUtil::get_string(port_key).c_str());
   string controller_name = reinterpret_cast<char *>
@@ -529,7 +555,7 @@ UpplReturnCode NotificationRequest::ProcessPortEvents(
     read_err = sess->getResponse((uint32_t)6, new_val_port);
     if (read_err != 0) {
       pfc_log_error("New value not received for port");
-      return UPPL_RC_ERR_BAD_REQUEST;
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
     }
     pfc_log_info("NEWVAL: %s", IpctUtil::get_string(new_val_port).c_str());
   }
@@ -538,7 +564,7 @@ UpplReturnCode NotificationRequest::ProcessPortEvents(
     read_err = sess->getResponse((uint32_t)7, old_val_port);
     if (read_err != 0) {
       pfc_log_error("Old value not received for port");
-      return UPPL_RC_ERR_BAD_REQUEST;
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
     }
     pfc_log_info("OLDVAL: %s",
                  IpctUtil::get_string(old_val_port).c_str());
@@ -560,27 +586,27 @@ UpplReturnCode NotificationRequest::ProcessPortEvents(
  * operation-type of operation UNC_OP_CREATE/UPDATE/DELETE
  * @return   :Success or associated error code
  **/
-UpplReturnCode NotificationRequest::ProcessSwitchEvents(
+UncRespCode NotificationRequest::ProcessSwitchEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
   // Check for MergeImportRunning Lock
   ScopedReadWriteLock eventDoneLock(
       PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
-  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  UncRespCode db_ret = UNC_RC_SUCCESS;
   OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
-  if (db_ret != UPPL_RC_SUCCESS) {
+  if (db_ret != UNC_RC_SUCCESS) {
     pfc_log_error("Error in opening DB connection");
-    return UPPL_RC_ERR_DB_ACCESS;
+    return UNC_UPPL_RC_ERR_DB_ACCESS;
   }
-  UpplReturnCode status = UPPL_RC_SUCCESS;
+  UncRespCode status = UNC_RC_SUCCESS;
   /*process switch add, switch update and switch delete events*/
   key_switch_t switch_key;
   memset(&switch_key, '\0', sizeof(key_switch_t));
   int read_err = sess->getResponse((uint32_t)5, switch_key);
   if (read_err != 0) {
     pfc_log_error("Key not received for switch");
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   pfc_log_info("%s", IpctUtil::get_string(switch_key).c_str());
   string controller_name = reinterpret_cast<char *>
@@ -593,7 +619,7 @@ UpplReturnCode NotificationRequest::ProcessSwitchEvents(
     read_err = sess->getResponse((uint32_t)6, new_val_switch);
     if (read_err != 0) {
       pfc_log_error("New value not received for switch");
-      return UPPL_RC_ERR_BAD_REQUEST;
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
     }
     pfc_log_info("NEWVAL: %s",
                  IpctUtil::get_string(new_val_switch).c_str());
@@ -602,7 +628,7 @@ UpplReturnCode NotificationRequest::ProcessSwitchEvents(
     read_err = sess->getResponse((uint32_t)7, old_val_switch);
     if (read_err != 0) {
       pfc_log_error("Old value not received for switch");
-      return UPPL_RC_ERR_BAD_REQUEST;
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
     }
     pfc_log_info("OLDVAL: %s",
                  IpctUtil::get_string(old_val_switch).c_str());
@@ -624,27 +650,27 @@ UpplReturnCode NotificationRequest::ProcessSwitchEvents(
  * operation-type of operation UNC_OP_CREATE/UPDATE/DELETE
  * @return   :Success or associated error code
  **/
-UpplReturnCode NotificationRequest:: ProcessLinkEvents(
+UncRespCode NotificationRequest:: ProcessLinkEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
   // Check for MergeImportRunning Lock
   ScopedReadWriteLock eventDoneLock(
       PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
-  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  UncRespCode db_ret = UNC_RC_SUCCESS;
   OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
-  if (db_ret != UPPL_RC_SUCCESS) {
+  if (db_ret != UNC_RC_SUCCESS) {
     pfc_log_error("Error in opening DB connection");
-    return UPPL_RC_ERR_DB_ACCESS;
+    return UNC_UPPL_RC_ERR_DB_ACCESS;
   }
-  UpplReturnCode status = UPPL_RC_SUCCESS;
+  UncRespCode status = UNC_RC_SUCCESS;
   /*process link add, link update and link delete events*/
   key_link_t key_link;
   memset(&key_link, '\0', sizeof(key_link_t));
   int read_err = sess->getResponse((uint32_t)5, key_link);
   if (read_err != 0) {
     pfc_log_error("Key not received for link");
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   pfc_log_info("%s", IpctUtil::get_string(key_link).c_str());
   string controller_name = reinterpret_cast<char *>
@@ -655,7 +681,7 @@ UpplReturnCode NotificationRequest:: ProcessLinkEvents(
     read_err = sess->getResponse((uint32_t)6, new_val_link);
     if (read_err != 0) {
       pfc_log_error("New value not received for link");
-      return UPPL_RC_ERR_BAD_REQUEST;
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
     }
     pfc_log_info("NEWVAL: %s",
                  IpctUtil::get_string(new_val_link).c_str());
@@ -664,7 +690,7 @@ UpplReturnCode NotificationRequest:: ProcessLinkEvents(
     read_err = sess->getResponse((uint32_t)7, old_val_link);
     if (read_err != 0) {
       pfc_log_error("Old value not received for link");
-      return UPPL_RC_ERR_BAD_REQUEST;
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
     }
     pfc_log_info("OLDVAL: %s",
                  IpctUtil::get_string(old_val_link).c_str());
@@ -685,11 +711,11 @@ UpplReturnCode NotificationRequest:: ProcessLinkEvents(
  * operation-type of operation UNC_OP_CREATE/UPDATE/DELETE
  * @return   :Success or associated error code
  **/
-UpplReturnCode NotificationRequest:: ProcessControllerEvents(
+UncRespCode NotificationRequest:: ProcessControllerEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
-  UpplReturnCode status = UPPL_RC_SUCCESS;
+  UncRespCode status = UNC_RC_SUCCESS;
   /*process controller add, controller update and controller delete events*/
   key_ctr_t key_ctr;
   memset(&key_ctr, '\0', sizeof(key_ctr_t));
@@ -697,29 +723,29 @@ UpplReturnCode NotificationRequest:: ProcessControllerEvents(
   int read_err = sess->getResponse((uint32_t)5, key_ctr);
   if (read_err != 0) {
     pfc_log_error("Key not received for controller");
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   pfc_log_info("%s", IpctUtil::get_string(key_ctr).c_str());
   Kt_Controller NotifyController;
   read_err = sess->getResponse((uint32_t)6, new_val_ctr);
   if (read_err != 0) {
     pfc_log_error("New value not received for controller");
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   pfc_log_info("NEWVAL: %s", IpctUtil::get_string(new_val_ctr).c_str());
   read_err = sess->getResponse((uint32_t)7, old_val_ctr);
   if (read_err != 0) {
     pfc_log_error("Old value not received for controller");
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   pfc_log_info("OLDVAL: %s", IpctUtil::get_string(old_val_ctr).c_str());
   pfc_bool_t is_events_done = PFC_FALSE;
   uint8_t driver_oper_status = new_val_ctr.oper_status;
-  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  UncRespCode db_ret = UNC_RC_SUCCESS;
   OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
-  if (db_ret != UPPL_RC_SUCCESS) {
+  if (db_ret != UNC_RC_SUCCESS) {
     pfc_log_error("Error in opening DB connection");
-    return UPPL_RC_ERR_DB_ACCESS;
+    return UNC_UPPL_RC_ERR_DB_ACCESS;
   }
   if (driver_oper_status == CONTROLLER_EVENTS_DONE) {
     // CONTROLLER_OPER_UP can be set
@@ -737,22 +763,22 @@ UpplReturnCode NotificationRequest:: ProcessControllerEvents(
     if (is_controller_in_audit == PFC_TRUE) {
       pfc_log_debug("Calling MergeAuditDbToRunning");
       // To cancel the already running timer in Audit
-      UpplReturnCode cancel_ret = ipc_mgr->CancelTimer(controller_name);
-      if (cancel_ret != UPPL_RC_SUCCESS) {
+      UncRespCode cancel_ret = ipc_mgr->CancelTimer(controller_name);
+      if (cancel_ret != UNC_RC_SUCCESS) {
         pfc_log_info("Failure in cancelling timer for controller %s",
                      controller_name.c_str());
       }
       AuditRequest audit_req;
-      UpplReturnCode merge_auditdb =
+      UncRespCode merge_auditdb =
           audit_req.MergeAuditDbToRunning(&db_conn, reinterpret_cast<char *>
       (key_ctr.controller_name));
-      if (merge_auditdb != UPPL_RC_SUCCESS) {
+      if (merge_auditdb != UNC_RC_SUCCESS) {
         pfc_log_info("Merge of audit and running db failed");
       }
     } else {
       pfc_log_info("End of events received non-audit controller %s",
                    controller_name.c_str());
-      return UPPL_RC_ERR_BAD_REQUEST;
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
     }
     is_events_done = PFC_TRUE;
   }
@@ -777,27 +803,27 @@ UpplReturnCode NotificationRequest:: ProcessControllerEvents(
  * operation-type of operation UNC_OP_CREATE/UPDATE/DELETE
  * @return   :Success or associated error code
  **/
-UpplReturnCode NotificationRequest:: ProcessDomainEvents(
+UncRespCode NotificationRequest:: ProcessDomainEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
   // Check for MergeImportRunning Lock
   ScopedReadWriteLock eventDoneLock(
       PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
-  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  UncRespCode db_ret = UNC_RC_SUCCESS;
   OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
-  if (db_ret != UPPL_RC_SUCCESS) {
+  if (db_ret != UNC_RC_SUCCESS) {
     pfc_log_error("Error in opening DB connection");
-    return UPPL_RC_ERR_DB_ACCESS;
+    return UNC_UPPL_RC_ERR_DB_ACCESS;
   }
-  UpplReturnCode status = UPPL_RC_SUCCESS;
+  UncRespCode status = UNC_RC_SUCCESS;
   /*process domain add, domain update and domain delete events*/
   key_ctr_domain_t key_ctr_domain;
   memset(&key_ctr_domain, '\0', sizeof(key_ctr_domain_t));
   int read_err = sess->getResponse((uint32_t)5, key_ctr_domain);
   if (read_err != 0) {
     pfc_log_error("Key not received for controller");
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   pfc_log_info("%s", IpctUtil::get_string(key_ctr_domain).c_str());
   string controller_name = reinterpret_cast<char *>
@@ -808,7 +834,7 @@ UpplReturnCode NotificationRequest:: ProcessDomainEvents(
     read_err = sess->getResponse((uint32_t)6, new_val_ctr_domain_t);
     if (read_err != 0) {
       pfc_log_error("New value not received for ctr domain");
-      return UPPL_RC_ERR_BAD_REQUEST;
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
     }
     pfc_log_info("NEWVAL: %s",
                  IpctUtil::get_string(new_val_ctr_domain_t).c_str());
@@ -829,26 +855,26 @@ UpplReturnCode NotificationRequest:: ProcessDomainEvents(
  * operation-type of operation UNC_OP_CREATE/UPDATE/DELETE
  * @return   :Success or associated error code
  **/
-UpplReturnCode NotificationRequest:: ProcessLogicalPortEvents(
+UncRespCode NotificationRequest:: ProcessLogicalPortEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
   // Check for MergeImportRunning Lock
   ScopedReadWriteLock eventDoneLock(
       PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
-  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  UncRespCode db_ret = UNC_RC_SUCCESS;
   OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
-  if (db_ret != UPPL_RC_SUCCESS) {
+  if (db_ret != UNC_RC_SUCCESS) {
     pfc_log_error("Error in opening DB connection");
-    return UPPL_RC_ERR_DB_ACCESS;
+    return UNC_UPPL_RC_ERR_DB_ACCESS;
   }
-  UpplReturnCode status = UPPL_RC_SUCCESS;
+  UncRespCode status = UNC_RC_SUCCESS;
   key_logical_port_t key_logical_port;
   memset(&key_logical_port, '\0', sizeof(key_logical_port_t));
   int read_err = sess->getResponse((uint32_t)5, key_logical_port);
   if (read_err != 0) {
     pfc_log_error("Key not received for logical port");
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   pfc_log_info("%s", IpctUtil::get_string(key_logical_port).c_str());
   string controller_name = reinterpret_cast<char *>
@@ -859,7 +885,7 @@ UpplReturnCode NotificationRequest:: ProcessLogicalPortEvents(
     read_err = sess->getResponse((uint32_t)6, new_val_logical_port_t);
     if (read_err != 0) {
       pfc_log_error("New value not received for logical port");
-      return UPPL_RC_ERR_BAD_REQUEST;
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
     }
     pfc_log_info("NEWVAL: %s",
                  IpctUtil::get_string(new_val_logical_port_t).c_str());
@@ -881,26 +907,26 @@ UpplReturnCode NotificationRequest:: ProcessLogicalPortEvents(
  * operation-type of operation UNC_OP_CREATE/UPDATE/DELETE
  * @return   :Success or associated error code
  **/
-UpplReturnCode NotificationRequest:: ProcessLogicalMemeberPortEvents(
+UncRespCode NotificationRequest:: ProcessLogicalMemeberPortEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
   // Check for MergeImportRunning Lock
   ScopedReadWriteLock eventDoneLock(
       PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
-  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  UncRespCode db_ret = UNC_RC_SUCCESS;
   OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
-  if (db_ret != UPPL_RC_SUCCESS) {
+  if (db_ret != UNC_RC_SUCCESS) {
     pfc_log_error("Error in opening DB connection");
-    return UPPL_RC_ERR_DB_ACCESS;
+    return UNC_UPPL_RC_ERR_DB_ACCESS;
   }
-  UpplReturnCode status = UPPL_RC_SUCCESS;
+  UncRespCode status = UNC_RC_SUCCESS;
   key_logical_member_port_t logical_member_port_key;
   memset(&logical_member_port_key, '\0', sizeof(key_logical_member_port_t));
   int read_err = sess->getResponse((uint32_t)5, logical_member_port_key);
   if (read_err != 0) {
     pfc_log_error("Key not received for logical port");
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   pfc_log_info("%s", IpctUtil::get_string(logical_member_port_key).c_str());
   string controller_name =
@@ -911,7 +937,7 @@ UpplReturnCode NotificationRequest:: ProcessLogicalMemeberPortEvents(
   Kt_State_Base *NotifyLogicalMemberPort = new Kt_LogicalMemberPort();
   if (NotifyLogicalMemberPort == NULL) {
     pfc_log_error("Memory not allocated for NotifyLogicalMemberPort_\n");
-    return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
   }
   status = NotifyLogicalMemberPort->HandleDriverEvents(
       &db_conn, reinterpret_cast<void*>(&logical_member_port_key),

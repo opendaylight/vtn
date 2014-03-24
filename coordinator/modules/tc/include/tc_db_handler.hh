@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -43,9 +43,11 @@ class TcDbHandler {
     TcOperRet GetConfTable(pfc_bool_t* auto_save);
     /*methods to access TC_RECOVERY_TABLE*/
     TcOperRet UpdateRecoveryTable(unc_keytype_datatype_t data_base,
-                                  TcServiceType operation);
+                                  TcServiceType operation,
+                                  uint32_t failover_instance = 0);
     TcOperRet GetRecoveryTable(unc_keytype_datatype_t* db,
-                               TcServiceType* oper);
+                               TcServiceType* oper,
+                               uint32_t* failover_instance);
     /*checks whether the row exists with a value*/
     TcOperRet IsRowExists(std::string table_name, std::string attribute);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -15,13 +15,15 @@
  */
 
 #ifdef	__cplusplus
+#include "stub/clstat/clstat_api.h"
 #include "stub/include/cxx/pfcxx/ipc_server.hh"
 #include "stub/include/cxx/pfcxx/ipc_client.hh"
+#include "stub/include/cxx/pfcxx/synch.hh"
 #include "stub/include/cxx/pfcxx/module.hh"
 #include "stub/dal/dal_cursor.hh"
+#include "stub/dal/dal_odbc_mgr.hh"
 #include "stub/dal/dal_dml_intf.hh"
 #include "stub/dal/dal_bind_info.hh"
-#include "stub/dal/dal_odbc_mgr.hh"
 #include "stub/dal/dal_schema.hh"
 #include "stub/tclib_module/tclib_module.hh"
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -35,7 +35,8 @@ import org.opendaylight.vtn.javaapi.validation.logical.InterfaceResourceValidato
 /**
  * The Class DhcpRelayInterfacesResource implements post and get methods.
  */
-@UNCVtnService(path = "/vtns/{vtn_name}/vrouters/{vrt_name}/dhcprelay/interfaces")
+@UNCVtnService(
+		path = "/vtns/{vtn_name}/vrouters/{vrt_name}/dhcprelay/interfaces")
 public class DhcpRelayInterfacesResource extends AbstractResource {
 	/** The vtn name. */
 	@UNCField("vtn_name")
@@ -47,14 +48,14 @@ public class DhcpRelayInterfacesResource extends AbstractResource {
 	/**
 	 * @return the vtn name
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
 	/**
 	 * @return the vrt name
 	 */
-	public String getVrtName() {
+	public final String getVrtName() {
 		return vrtName;
 	}
 
@@ -81,7 +82,8 @@ public class DhcpRelayInterfacesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start DhcpRelayInterfacesResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -142,7 +144,8 @@ public class DhcpRelayInterfacesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start DhcpRelayInterfacesResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -162,7 +165,7 @@ public class DhcpRelayInterfacesResource extends AbstractResource {
 					uriParameterList);
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			/*
 			 * setInfo(responseGenerator.getDhcpRelayInterfaceResponse(
 			 * requestProcessor.getIpcResponsePacket(), requestBody,
@@ -173,7 +176,7 @@ public class DhcpRelayInterfacesResource extends AbstractResource {
 							requestProcessor.getIpcResponsePacket(),
 							requestBody, VtnServiceJsonConsts.LIST);
 			if (responseJson.get(VtnServiceJsonConsts.INTERFACES).isJsonArray()) {
-				JsonArray responseArray = responseJson.get(
+				final JsonArray responseArray = responseJson.get(
 						VtnServiceJsonConsts.INTERFACES).getAsJsonArray();
 				responseJson = getResponseJsonArrayLogical(requestBody,
 						requestProcessor, responseGenerator, responseArray,

@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -62,7 +62,6 @@ KtAttrMap kam_dhcp_relay_server[] = {
 };
 
 KtAttrMap kam_dhcp_relay_interface[] = {
-
 };
 
 KtAttrMap kam_static_ip_route[] = {
@@ -289,7 +288,44 @@ KtAttrMap kam_vrouter_if_flow_filter_entry[] = {
   { "dscp", vrt_if_flowfilter_entry::kCapDscp },
   { "priority", vrt_if_flowfilter_entry::kCapPriority }
 };
+// ****************adding for physical module***********/
 
+KtAttrMap kam_controller[] = {
+  { "type", controller::kType},
+  { "version", controller::kVersion},
+  { "description", controller::kDescription},
+  { "ip_address", controller::kIp_address},
+  { "user", controller::kUser_name},
+  { "password", controller::kPassword},
+  { "enable_audit", controller::kEnableAudit}
+};
+KtAttrMap kam_ctr_domain[] =  {
+};
+
+
+KtAttrMap kam_logical_port[] = {
+};
+
+KtAttrMap kam_switch[] =  {
+};
+
+KtAttrMap kam_port[] = {
+};
+
+KtAttrMap kam_link[] = {
+};
+
+KtAttrMap kam_boundary[] = {
+};
+
+KtAttrMap kam_ctr_data_flow[] = {
+};
+
+KtAttrMap kam_data_flow[] =  {
+};
+
+KtAttrMap kam_vtn_dataflow[] = {
+};
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
 #endif
@@ -305,13 +341,17 @@ KtMap kt_map[] = {
     &kam_vbr_if[0] },
   { "vrouter", UNC_KT_VROUTER, ARRAY_SIZE(kam_vrouter),
     &kam_vrouter[0] },
-  { "dhcp_relay_server", UNC_KT_DHCPRELAY_SERVER, ARRAY_SIZE(kam_dhcp_relay_server),
+  { "dhcp_relay_server", UNC_KT_DHCPRELAY_SERVER,
+    ARRAY_SIZE(kam_dhcp_relay_server),
     &kam_dhcp_relay_server[0] },
-  { "dhcp_relay_interface", UNC_KT_DHCPRELAY_IF, ARRAY_SIZE(kam_dhcp_relay_interface),
+  { "dhcp_relay_interface", UNC_KT_DHCPRELAY_IF,
+    ARRAY_SIZE(kam_dhcp_relay_interface),
     &kam_dhcp_relay_interface[0] },
-  { "static_ip_route", UNC_KT_VRT_IPROUTE, ARRAY_SIZE(kam_static_ip_route),
+  { "static_ip_route", UNC_KT_VRT_IPROUTE,
+    ARRAY_SIZE(kam_static_ip_route),
     &kam_static_ip_route[0] },
-  { "vrouter_interface", UNC_KT_VRT_IF, ARRAY_SIZE(kam_vrouter_interface),
+  { "vrouter_interface", UNC_KT_VRT_IF,
+    ARRAY_SIZE(kam_vrouter_interface),
     &kam_vrouter_interface[0] },
 #if 0
   { "vunknown", UNC_KT_VUNKNOWN, ARRAY_SIZE(kam_vunknown),
@@ -335,7 +375,8 @@ KtMap kt_map[] = {
     &kam_vlink[0] },
   { "network_monitor_group", UNC_KT_VBR_NWMONITOR, ARRAY_SIZE(kam_nwm),
     &kam_nwm[0] },
-  { "network_monitor_ip_host", UNC_KT_VBR_NWMONITOR_HOST, ARRAY_SIZE(kam_nwm_host),
+  { "network_monitor_ip_host", UNC_KT_VBR_NWMONITOR_HOST,
+    ARRAY_SIZE(kam_nwm_host),
     &kam_nwm_host[0] },
 
   { "flow_list", UNC_KT_FLOWLIST,
@@ -393,6 +434,24 @@ KtMap kt_map[] = {
     ARRAY_SIZE(kam_vrouter_if_flow_filter_entry),
     &kam_vrouter_if_flow_filter_entry[0] },
 
+  { "controller", UNC_KT_CONTROLLER, ARRAY_SIZE(kam_controller),
+    &kam_controller[0] },
+  { "ctr_domain", UNC_KT_CTR_DOMAIN, ARRAY_SIZE(kam_ctr_domain),
+    &kam_ctr_domain[0] },
+  { "switch", UNC_KT_SWITCH, ARRAY_SIZE(kam_switch),
+    &kam_switch[0] },
+  { "port", UNC_KT_PORT, ARRAY_SIZE(kam_port),
+    &kam_port[0] },
+  { "link", UNC_KT_LINK, ARRAY_SIZE(kam_link),
+    &kam_link[0] },
+  { "boundary", UNC_KT_BOUNDARY, ARRAY_SIZE(kam_boundary),
+    &kam_boundary[0] },
+  { "dataflow", UNC_KT_DATAFLOW, ARRAY_SIZE(kam_data_flow),
+    &kam_data_flow[0] },
+  { "ctr_dataflow", UNC_KT_CTR_DATAFLOW, ARRAY_SIZE(kam_ctr_data_flow),
+    &kam_ctr_data_flow[0] },
+  { "vtn_dataflow", UNC_KT_VTN_DATAFLOW, ARRAY_SIZE(kam_vtn_dataflow),
+    &kam_vtn_dataflow[0] },
   { NULL, UNC_KT_ROOT, 0, NULL }
 };
 

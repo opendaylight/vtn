@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -37,12 +37,12 @@ const unsigned int UPLL_RESPONSE_COUNT = 3;
  *                types
  *                key_str - void pointer
  *                data_type - UNC_DT_* Specifies the datatype
- * @return      : UPPL_RC_SUCCESS is returned when the response
+ * @return      : UNC_RC_SUCCESS is returned when the response
  *                is added to ipc session successfully.
- *                UPPL_RC_ERR_* is returned when ipc response could not
+ *                UNC_UPPL_RC_ERR_* is returned when ipc response could not
  *                be added to session
  **/
-UpplReturnCode IPCClientLogicalHandler::CheckInUseInLogical(
+UncRespCode IPCClientLogicalHandler::CheckInUseInLogical(
     unc_key_type_t key_type,
     void* key_str,
     uint32_t data_type) {
@@ -52,9 +52,9 @@ UpplReturnCode IPCClientLogicalHandler::CheckInUseInLogical(
   int err = pfc_ipcclnt_altopen(UPLL_IPC_CHANNEL_NAME, &connp);
   if (err != 0) {
     pfc_log_error("Could not open upll ipc session");
-    return UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
+    return UNC_UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
   }
-  UpplReturnCode return_code = UPPL_RC_SUCCESS;
+  UncRespCode return_code = UNC_RC_SUCCESS;
   ClientSession sess(connp, UPLL_IPC_SERVICE_NAME,
                      UPLL_GLOBAL_CONFIG_SVC_ID, err);
   pfc_log_debug("After client session object creation");
@@ -64,7 +64,7 @@ UpplReturnCode IPCClientLogicalHandler::CheckInUseInLogical(
     if (err != 0) {
       pfc_log_error("Unable to close ipc connection");
     }
-    return UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
+    return UNC_UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
   }
   sess.addOutput((uint32_t)UPLL_IS_KEY_TYPE_IN_USE_OP);
   sess.addOutput(data_type);
@@ -91,19 +91,19 @@ UpplReturnCode IPCClientLogicalHandler::CheckInUseInLogical(
       if (err != 0) {
         pfc_log_error("Unable to close ipc connection");
       }
-      return UPPL_RC_ERR_KEYTYPE_NOT_SUPPORTED;
+      return UNC_UPPL_RC_ERR_KEYTYPE_NOT_SUPPORTED;
   }
   uint32_t oper_type;
   uint32_t result_code = UPLL_RC_SUCCESS;
   pfc_ipcresp_t resp;
   err = sess.invoke(resp);
-  if (err != 0 || resp != UPPL_RC_SUCCESS) {
+  if (err != 0 || resp != UNC_RC_SUCCESS) {
     pfc_log_error("Session invocation to logical failed");
     err = pfc_ipcclnt_altclose(connp);
     if (err != 0) {
       pfc_log_error("Unable to close ipc connection");
     }
-    return UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
+    return UNC_UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
   }
   if (sess.getResponseCount() != UPLL_RESPONSE_COUNT) {
     pfc_log_error("Proper response not received from logical");
@@ -111,7 +111,7 @@ UpplReturnCode IPCClientLogicalHandler::CheckInUseInLogical(
     if (err != 0) {
       pfc_log_error("Unable to close ipc connection");
     }
-    return UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
+    return UNC_UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
   }
   uint32_t resp_index = 0;
   int err1 = sess.getResponse(resp_index++, oper_type);
@@ -122,7 +122,7 @@ UpplReturnCode IPCClientLogicalHandler::CheckInUseInLogical(
   if (err1 != 0 || err2 != 0 || err3 != 0) {
     pfc_log_error(
         "getResponse failed while receiving response from logical");
-    return_code = UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
+    return_code = UNC_UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
   } else {
     if (result_code == UPLL_RC_ERR_NO_SUCH_NAME ||
         result_code == UPLL_RC_ERR_NO_SUCH_DATATYPE ||
@@ -137,8 +137,8 @@ UpplReturnCode IPCClientLogicalHandler::CheckInUseInLogical(
     pfc_log_error("Unable to close ipc connection");
   }
   pfc_log_debug("in_use value : %d", in_use);
-  if (return_code == UPPL_RC_SUCCESS && in_use == 1)
-    return UPPL_RC_ERR_CFG_SEMANTIC;
+  if (return_code == UNC_RC_SUCCESS && in_use == 1)
+    return UNC_UPPL_RC_ERR_CFG_SEMANTIC;
   return return_code;
 }
 

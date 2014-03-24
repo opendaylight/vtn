@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -29,24 +29,32 @@ attr_syntax_map_all;
  *                  data_type - UNC_DT_*, read allowed in
  *                  candidate/running/startup/state
  *                  key_type - specifies the kt instance
- * * @return      : UPPL_RC_SUCCESS is returned when the response
+ * * @return      : UNC_RC_SUCCESS is returned when the response
  *                  is added to ipc session successfully.
- *                  UPPL_RC_ERR_* is returned when ipc response
+ *                  UNC_UPPL_RC_ERR_* is returned when ipc response
  *                  could not be added to sess.
  * */
-UpplReturnCode Kt_Base::ValidateRequest(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Base::ValidateRequest(OdbcmConnectionHandler *db_conn,
                                         void* key_struct,
                                         void* val_struct,
                                         uint32_t operation,
                                         uint32_t data_type,
                                         uint32_t key_type) {
-  UpplReturnCode status = UPPL_RC_SUCCESS;
+  UncRespCode status = UNC_RC_SUCCESS;
   pfc_log_debug("Inside ValidateRequest of KT_BASE for Key type: %d", key_type);
   switch (key_type) {
     case UNC_KT_ROOT: {
       status = ValidateKtRoot(operation,
                               data_type);
-      if (status != UPPL_RC_SUCCESS) {
+      if (status != UNC_RC_SUCCESS) {
+        return status;
+      }
+    }
+    break;
+    case UNC_KT_DATAFLOW: {
+      status = ValidateKtDataflow(operation,
+                              data_type);
+      if (status != UNC_RC_SUCCESS) {
         return status;
       }
     }
@@ -55,7 +63,15 @@ UpplReturnCode Kt_Base::ValidateRequest(OdbcmConnectionHandler *db_conn,
     case UNC_KT_BOUNDARY: {
       status = ValidateKtCtrlBdry(operation,
                                   data_type);
-      if (status != UPPL_RC_SUCCESS) {
+      if (status != UNC_RC_SUCCESS) {
+        return status;
+      }
+    }
+    break;
+    case UNC_KT_CTR_DATAFLOW: {
+      status = ValidateKtCtrDataflow(operation,
+                              data_type);
+      if (status != UNC_RC_SUCCESS) {
         return status;
       }
     }
@@ -63,7 +79,7 @@ UpplReturnCode Kt_Base::ValidateRequest(OdbcmConnectionHandler *db_conn,
     case UNC_KT_CTR_DOMAIN: {
       status = ValidateKtCtrDomain(operation,
                                    data_type);
-      if (status != UPPL_RC_SUCCESS) {
+      if (status != UNC_RC_SUCCESS) {
         return status;
       }
     }
@@ -75,14 +91,14 @@ UpplReturnCode Kt_Base::ValidateRequest(OdbcmConnectionHandler *db_conn,
     case UNC_KT_LINK: {
       status = ValidateKtState(operation,
                                data_type);
-      if (status != UPPL_RC_SUCCESS) {
+      if (status != UNC_RC_SUCCESS) {
         return status;
       }
     }
     break;
     default : {
       pfc_log_error("Key type not supported");
-      return UPPL_RC_ERR_KEYTYPE_NOT_SUPPORTED;
+      return UNC_UPPL_RC_ERR_KEYTYPE_NOT_SUPPORTED;
     }
   }
   if (operation == UNC_OP_READ || operation == UNC_OP_CREATE ||
@@ -91,7 +107,7 @@ UpplReturnCode Kt_Base::ValidateRequest(OdbcmConnectionHandler *db_conn,
                                      val_struct,
                                      operation,
                                      data_type);
-    if (status != UPPL_RC_SUCCESS) {
+    if (status != UNC_RC_SUCCESS) {
       // log error and send error response
       pfc_log_error("Syntax validation failed");
       // return the actual response
@@ -102,7 +118,7 @@ UpplReturnCode Kt_Base::ValidateRequest(OdbcmConnectionHandler *db_conn,
                                          val_struct,
                                          operation,
                                          data_type);
-      if (status != UPPL_RC_SUCCESS) {
+      if (status != UNC_RC_SUCCESS) {
         // log error and send error response
         pfc_log_error("Semantic validation failed");
         // return the actual response
@@ -124,12 +140,12 @@ UpplReturnCode Kt_Base::ValidateRequest(OdbcmConnectionHandler *db_conn,
  *                  sess - ipc server session where the
  *                  response has to be added
  *                  option1/option2 - specifies any additional
- * * @return      : UPPL_RC_SUCCESS is returned when the response
+ * * @return      : UNC_RC_SUCCESS is returned when the response
  *                  is added to ipc session successfully.
- *                  UPPL_RC_ERR_* is returned when ipc response could not
+ *                  UNC_UPPL_RC_ERR_* is returned when ipc response could not
  *                  be added to sess.
  * */
-UpplReturnCode Kt_Base::Read(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Base::Read(OdbcmConnectionHandler *db_conn,
                              uint32_t session_id,
                              uint32_t configuration_id,
                              void* key_struct,
@@ -160,12 +176,13 @@ UpplReturnCode Kt_Base::Read(OdbcmConnectionHandler *db_conn,
  *                  readnext allowed in candidate/running/startup/state
  *                  sess - ipc server session
  *                  where the response has to be added
- * * @return      : UPPL_RC_SUCCESS is returned when the response
+ * * @return      : UNC_RC_SUCCESS is returned when the response
  *                  is added to ipc session successfully.
- *                  UPPL_RC_ERR_* is returned when ipc
+ *                  UNC_UPPL_RC_ERR_* is returned when ipc
  *                  response could not be added to sess.
  * */
-UpplReturnCode Kt_Base::ReadNext(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Base::ReadNext(OdbcmConnectionHandler *db_conn,
+                                 uint32_t client_sess_id,
                                  void* key_struct,
                                  uint32_t data_type,
                                  ReadRequest *read_req) {
@@ -192,12 +209,12 @@ UpplReturnCode Kt_Base::ReadNext(OdbcmConnectionHandler *db_conn,
  *                  option1/option2 - specifies any additional
  *                  condition for read operation
  *                  max_rep_ct - specifies number of rows to be returned
- * * @return      : UPPL_RC_SUCCESS is returned when the response
+ * * @return      : UNC_RC_SUCCESS is returned when the response
  *                  is added to ipc session successfully.
- *                  UPPL_RC_ERR_* is returned when ipc
+ *                  UNC_UPPL_RC_ERR_* is returned when ipc
  *                  response could not be added to sess.
  * */
-UpplReturnCode Kt_Base::ReadSiblingBegin(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Base::ReadSiblingBegin(OdbcmConnectionHandler *db_conn,
                                          uint32_t session_id,
                                          uint32_t configuration_id,
                                          void* key_struct,
@@ -207,7 +224,7 @@ UpplReturnCode Kt_Base::ReadSiblingBegin(OdbcmConnectionHandler *db_conn,
                                          uint32_t option1,
                                          uint32_t option2,
                                          uint32_t &max_rep_ct) {
-  UpplReturnCode read_status = PerformRead(db_conn, session_id,
+  UncRespCode read_status = PerformRead(db_conn, session_id,
                                            configuration_id,
                                            key_struct,
                                            val_struct,
@@ -233,12 +250,12 @@ UpplReturnCode Kt_Base::ReadSiblingBegin(OdbcmConnectionHandler *db_conn,
  *                  option1/option2 - specifies any additional
  *                  condition for read operation
  *                  max_rep_ct - specifies number of rows to be returned
- * * @return      : UPPL_RC_SUCCESS is returned when the response
+ * * @return      : UNC_RC_SUCCESS is returned when the response
  *                  is added to ipc session successfully.
- *                  UPPL_RC_ERR_* is returned when ipc response
+ *                  UNC_UPPL_RC_ERR_* is returned when ipc response
  *                  could not be added to sess.
  * */
-UpplReturnCode Kt_Base::ReadSibling(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Base::ReadSibling(OdbcmConnectionHandler *db_conn,
                                     uint32_t session_id,
                                     uint32_t configuration_id,
                                     void* key_struct,
@@ -248,7 +265,7 @@ UpplReturnCode Kt_Base::ReadSibling(OdbcmConnectionHandler *db_conn,
                                     uint32_t option1,
                                     uint32_t option2,
                                     uint32_t &max_rep_ct) {
-  UpplReturnCode read_status = PerformRead(db_conn, session_id,
+  UncRespCode read_status = PerformRead(db_conn, session_id,
                                            configuration_id,
                                            key_struct,
                                            val_struct,
@@ -274,12 +291,12 @@ UpplReturnCode Kt_Base::ReadSibling(OdbcmConnectionHandler *db_conn,
  *                  option1/option2 - specifies any additional condition
  *                  for read operation
  *                  max_rep_ct - specifies number of rows to be returned
- * * @return      : UPPL_RC_SUCCESS is returned when the response
+ * * @return      : UNC_RC_SUCCESS is returned when the response
  *                  is added to ipc session successfully.
- *                  UPPL_RC_ERR_* is returned when ipc response
+ *                  UNC_UPPL_RC_ERR_* is returned when ipc response
  *                  could not be added to sess.
  * */
-UpplReturnCode Kt_Base::ReadSiblingCount(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Base::ReadSiblingCount(OdbcmConnectionHandler *db_conn,
                                          uint32_t session_id,
                                          uint32_t configuration_id,
                                          void* key_struct,
@@ -301,14 +318,14 @@ UpplReturnCode Kt_Base::ReadSiblingCount(OdbcmConnectionHandler *db_conn,
       0};
   if (option1 != UNC_OPT1_NORMAL) {
     pfc_log_error("Sibling Count is provided on unsupported option1");
-    rsh.result_code = UPPL_RC_ERR_INVALID_OPTION1;
+    rsh.result_code = UNC_UPPL_RC_ERR_INVALID_OPTION1;
     int err = PhyUtil::sessOutRespHeader(sess, rsh);
     err |= AddKeyStructuretoSession(key_type, &sess, key_struct);
     if (err != 0) {
       pfc_log_debug("addOutput failed for physical_response_header");
-      return UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
-    return (UpplReturnCode)rsh.result_code;
+    return (UncRespCode)rsh.result_code;
   }
   uint32_t count = 0;
   // Structure used to send request to ODBC
@@ -336,9 +353,9 @@ UpplReturnCode Kt_Base::ReadSiblingCount(OdbcmConnectionHandler *db_conn,
   // count
   if (read_db_status != ODBCM_RC_SUCCESS) {
     if (read_db_status == ODBCM_RC_CONNECTION_ERROR) {
-      rsh.result_code = UPPL_RC_ERR_DB_ACCESS;
+      rsh.result_code = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else {
-      rsh.result_code = UPPL_RC_ERR_DB_GET;
+      rsh.result_code = UNC_UPPL_RC_ERR_DB_GET;
     }
     // log error to log daemon
     pfc_log_error("Sibling Count operation has failed");
@@ -346,21 +363,21 @@ UpplReturnCode Kt_Base::ReadSiblingCount(OdbcmConnectionHandler *db_conn,
     err |= AddKeyStructuretoSession(key_type, &sess, key_struct);
     if (err != 0) {
       pfc_log_debug("addOutput failed for physical_response_header");
-      return UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
-    return (UpplReturnCode)rsh.result_code;
+    return (UncRespCode)rsh.result_code;
   } else {
     pfc_log_info("Count from DB: %d", count);
   }
-  rsh.result_code = UPPL_RC_SUCCESS;
+  rsh.result_code = UNC_RC_SUCCESS;
   int err = PhyUtil::sessOutRespHeader(sess, rsh);
   err |= AddKeyStructuretoSession(key_type, &sess, key_struct);
   if (err != 0) {
     pfc_log_debug("addOutput failed for physical_response_header");
-    return UPPL_RC_ERR_IPC_WRITE_ERROR;
+    return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
   }
   sess.addOutput(count);
-  return (UpplReturnCode)rsh.result_code;
+  return (UncRespCode)rsh.result_code;
 }
 
 /** ConfigurationChangeNotification
@@ -371,10 +388,10 @@ UpplReturnCode Kt_Base::ReadSiblingCount(OdbcmConnectionHandler *db_conn,
  *                  key_struct - specifies the key instance of KT
  *                  old_val_struct - old value struct of kt
  *                  new_val_struct - new value struct of kt
- * * @return      : UPPL_RC_SUCCESS is notified to northbound successfully or
- *                  UPPL_RC_ERR*
+ * * @return      : UNC_RC_SUCCESS is notified to northbound successfully or
+ *                  UNC_UPPL_RC_ERR*
  * */
-UpplReturnCode Kt_Base::ConfigurationChangeNotification(
+UncRespCode Kt_Base::ConfigurationChangeNotification(
     uint32_t data_type,
     uint32_t key_type,
     uint32_t oper_type,
@@ -382,7 +399,7 @@ UpplReturnCode Kt_Base::ConfigurationChangeNotification(
     void* old_val_struct,
     void* new_val_struct) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
-  UpplReturnCode status = UPPL_RC_SUCCESS;
+  UncRespCode status = UNC_RC_SUCCESS;
   int err = 0;
   pfc_ipcevtype_t event_type = GetEventType(key_type);
   // Create ServerEvent object to be sent to NB
@@ -403,9 +420,9 @@ UpplReturnCode Kt_Base::ConfigurationChangeNotification(
   if (err != 0) {
     pfc_log_error(
         "Server Event addOutput failed, return IPC_WRITE_ERROR");
-    status = UPPL_RC_ERR_IPC_WRITE_ERROR;
+    status = UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
   } else {
-    status = (UpplReturnCode) physical_layer->get_ipc_connection_manager()->
+    status = (UncRespCode) physical_layer->get_ipc_connection_manager()->
         SendEvent(&ser_evt);
     pfc_log_info(
         "Configuration notification status: %d for operation %d",
@@ -477,6 +494,11 @@ int Kt_Base::AddKeyStructuretoSession(uint32_t key_type,
   switch (key_type) {
     case UNC_KT_CONTROLLER: {
       key_ctr_t *obj_key = reinterpret_cast<key_ctr_t*>(key_struct);
+      err |= sess->addOutput(*obj_key);
+      break;
+    }
+    case UNC_KT_DATAFLOW: {
+      key_dataflow_t *obj_key = reinterpret_cast<key_dataflow_t*>(key_struct);
       err |= sess->addOutput(*obj_key);
       break;
     }
@@ -823,44 +845,74 @@ void Kt_Base::ClearValueStructure(uint32_t key_type,
   }
 }
 
-UpplReturnCode Kt_Base::ValidateKtRoot(uint32_t operation,
+UncRespCode Kt_Base::ValidateKtRoot(uint32_t operation,
                                        uint32_t data_type) {
   if ((operation != UNC_OP_READ_NEXT) && (operation != UNC_OP_READ_BULK)) {
     pfc_log_error("Operations other than READ_NEXT and READ_BULK"
         "are not allowed");
-    return UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   }
   if ((data_type != UNC_DT_CANDIDATE) && (data_type != UNC_DT_STARTUP) &&
       (data_type != UNC_DT_RUNNING) && (data_type != UNC_DT_STATE)) {
     pfc_log_error("Data type other than STARTUP/CANDIDATE/RUNNING/STATE"
         "are not allowed");
-    return UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
-UpplReturnCode Kt_Base::ValidateKtCtrlBdry(uint32_t operation,
+UncRespCode Kt_Base::ValidateKtDataflow(uint32_t operation,
+                                       uint32_t data_type) {
+  if (operation != UNC_OP_READ) {
+    pfc_log_error("Operations other than READ"
+        " are not allowed");
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+  }
+  if (data_type != UNC_DT_STATE) {
+    pfc_log_error("Data type other than STATE"
+        " are not allowed");
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+  }
+  return UNC_RC_SUCCESS;
+}
+
+UncRespCode Kt_Base::ValidateKtCtrlBdry(uint32_t operation,
                                            uint32_t data_type) {
   if ( (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE ||
       operation == UNC_OP_DELETE) && data_type != UNC_DT_CANDIDATE) {
     pfc_log_error("Configuration operation only allowed in CANDIDATE DB");
-    return UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   } else if (operation >= UNC_OP_READ && data_type != UNC_DT_CANDIDATE &&
       data_type != UNC_DT_STARTUP && data_type != UNC_DT_RUNNING &&
       data_type != UNC_DT_STATE) {
     pfc_log_error(
         "Read operations are not allowed in requested data type %d",
         data_type);
-    return UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   } else if (!(operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE ||
       operation == UNC_OP_DELETE || operation >= UNC_OP_READ)) {
     pfc_log_error("Invalid operation type");
-    return UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
-UpplReturnCode Kt_Base::ValidateKtCtrDomain(uint32_t operation,
+UncRespCode Kt_Base::ValidateKtCtrDataflow(uint32_t operation,
+                                       uint32_t data_type) {
+  if (operation != UNC_OP_READ) {
+    pfc_log_error("Operations other than READ"
+        "are not allowed");
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+  }
+  if (data_type != UNC_DT_STATE) {
+    pfc_log_error("Data type other than STATE "
+        "are not allowed");
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+  }
+  return UNC_RC_SUCCESS;
+}
+
+UncRespCode Kt_Base::ValidateKtCtrDomain(uint32_t operation,
                                             uint32_t data_type) {
   if ((operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE ||
       operation == UNC_OP_DELETE) && data_type != UNC_DT_CANDIDATE &&
@@ -868,43 +920,43 @@ UpplReturnCode Kt_Base::ValidateKtCtrDomain(uint32_t operation,
     pfc_log_error(
         "Configuration operation only allowed in "
         "CANDIDATE/STATE/IMPORT DB");
-    return UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   } else if (operation >= UNC_OP_READ && data_type != UNC_DT_CANDIDATE &&
       data_type != UNC_DT_STARTUP && data_type != UNC_DT_RUNNING &&
       data_type != UNC_DT_STATE) {
     pfc_log_error(
         "Read operations are not allowed in requested data type");
-    return UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   } else if (!(operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE ||
       operation == UNC_OP_DELETE || operation >= UNC_OP_READ)) {
     pfc_log_error("Invalid operation type");
-    return UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
-UpplReturnCode Kt_Base::ValidateKtState(uint32_t operation,
+UncRespCode Kt_Base::ValidateKtState(uint32_t operation,
                                         uint32_t data_type) {
   if (operation >= UNC_OP_READ && data_type != UNC_DT_STATE) {
     pfc_log_error(
         "Read operations are not allowed in requested data type");
-    return UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   } else if ( data_type != UNC_DT_STATE &&
       (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE ||
           operation == UNC_OP_DELETE) &&
           data_type != UNC_DT_IMPORT) {
     pfc_log_error("Configuration operation only allowed in STATE DB");
-    return UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   } else if (!(operation >= UNC_OP_READ ||
       operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE ||
       operation == UNC_OP_DELETE)) {
     pfc_log_error("Invalid operation type");
-    return UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
-UpplReturnCode Kt_Base::get_oper_status(
+UncRespCode Kt_Base::get_oper_status(
     vector<OperStatusHolder> &ref_oper_status,
     unc_key_type_t key_type,
     void* key_struct,
@@ -944,11 +996,11 @@ UpplReturnCode Kt_Base::get_oper_status(
       oper_status = kt_oper_status.get_oper_status();
       pfc_log_debug("Returning oper_status from internal structure %d",
                     oper_status);
-      return UPPL_RC_SUCCESS;
+      return UNC_RC_SUCCESS;
     }
   }
   pfc_log_debug("oper_status not found in internal structure");
-  return UPPL_RC_ERR_NO_SUCH_INSTANCE;
+  return UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
 }
 
 void Kt_Base::ClearOperStatusHolder(vector<OperStatusHolder> &ref_oper_status) {

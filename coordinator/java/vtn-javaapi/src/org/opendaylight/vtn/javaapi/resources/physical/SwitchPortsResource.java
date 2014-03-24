@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -14,6 +14,7 @@ import java.util.List;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
+import org.opendaylight.vtn.core.ipc.IpcStruct;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
@@ -29,20 +30,29 @@ import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncOperationEnum;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncOption1Enum;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncPhysicalStructIndexEnum;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncStructEnum;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncStructIndexEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncUPPLEnums;
 import org.opendaylight.vtn.javaapi.resources.AbstractResource;
 import org.opendaylight.vtn.javaapi.validation.physical.SwitchPortResourceValidator;
 
+/**
+ *
+ */
 @UNCVtnService(path = "/controllers/{controller_id}/switches/{switch_id}/ports")
 public class SwitchPortsResource extends AbstractResource {
-
+	/**
+ *
+ */
 	private static final Logger LOG = Logger
 			.getLogger(SwitchPortsResource.class.getName());
 
 	/** The controller Id. */
 	@UNCField("controller_id")
 	private String controllerId;
-	/** The Switch Id */
+	/** The Switch Id. */
 	@UNCField("switch_id")
 	private String switchId;
 
@@ -57,13 +67,21 @@ public class SwitchPortsResource extends AbstractResource {
 
 	/**
 	 * Get Switch Port list information by calling get API of SwitchPorts
-	 * resources
+	 * resources.
+	 * 
+	 * @param requestBody
+	 *            , handles request Json.
+	 * @throws VtnServiceException
+	 *             , In case any Exception is thrown.
+	 * @return result code ,as an integer for status of opetration
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts SwitchPortsResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
+		JsonObject root = null;
 		int status = ClientSession.RESP_FATAL;
 		try {
 			LOG.debug("Start Ipc framework call");
@@ -77,52 +95,126 @@ public class SwitchPortsResource extends AbstractResource {
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_PORT_GET, requestBody,
 					getUriParameters(requestBody));
+
+			LOG.debug("Request Packet 1st call created successfully");
+
+			final IpcPhysicalResponseFactory responseGenerator = new IpcPhysicalResponseFactory();
+			JsonArray switchPortArray = null;
+            if (requestBody.has(VtnServiceJsonConsts.OP)
+                    && requestBody.get(VtnServiceJsonConsts.OP).getAsString()
+                            .equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
+                requestProcessor
+                        .getRequestPacket()
+                        .setOption1(
+                                IpcDataUnitWrapper
+                                        .setIpcUint32Value(UncOption1Enum.UNC_OPT1_DETAIL
+                                                .ordinal()));
+            }
+			if (!requestBody.has(VtnServiceJsonConsts.PORTNAME)) {
+
+				if (requestBody.has(VtnServiceJsonConsts.PORT_ID)) {
+					final IpcStruct valPortStruct = new IpcStruct(
+							UncStructEnum.ValPort.getValue());
+					valPortStruct
+							.set(VtnServiceIpcConsts.VALID,
+									UncPhysicalStructIndexEnum.UpplValPortIndex.kIdxPortNumber
+											.ordinal(),
+									IpcDataUnitWrapper
+											.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
+													.ordinal()));
+
+					valPortStruct.set(VtnServiceIpcConsts.PORT_NUMBER,
+							IpcDataUnitWrapper.setIpcUint32Value(requestBody
+									.get(VtnServiceJsonConsts.PORT_ID)
+									.getAsInt()));
+
+					final IpcStruct valPortStStruct = new IpcStruct(
+							UncStructEnum.ValPortSt.getValue());
+					valPortStStruct
+							.set(VtnServiceIpcConsts.VALID,
+									UncPhysicalStructIndexEnum.UpplValPortStIndex.kIdxPortSt
+											.ordinal(),
+									IpcDataUnitWrapper
+											.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
+													.ordinal()));
+
+					valPortStStruct.set(VtnServiceJsonConsts.PORT,
+							valPortStruct);
+
+					requestProcessor.getRequestPacket().setValStruct(
+							valPortStStruct);
+				}
+				status = requestProcessor.processIpcRequest();
+				LOG.debug("Request packet 1st call processed with status:"
+						+ status);
+				if (status == ClientSession.RESP_FATAL) {
+					throw new VtnServiceException(
+							Thread.currentThread().getStackTrace()[1]
+									.getClassName()
+									+ VtnServiceConsts.HYPHEN
+									+ Thread.currentThread().getStackTrace()[1]
+											.getMethodName(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR
+									.getErrorMessage());
+				}
+
+				root = responseGenerator.getSwitchPortResponse(
+						requestProcessor.getIpcResponsePacket(), requestBody);
+
+				if (root.get(VtnServiceJsonConsts.PORTS).isJsonArray()) {
+					switchPortArray = root
+							.getAsJsonArray(VtnServiceJsonConsts.PORTS);
+
+					root = getResponseJsonArrayPhysical(
+							requestBody,
+							requestProcessor,
+							responseGenerator,
+							switchPortArray,
+							VtnServiceJsonConsts.PORTS,
+							VtnServiceJsonConsts.PORTNAME,
+							IpcRequestPacketEnum.KT_PORT_GET,
+							getUriParameters(requestBody),
+							VtnServiceIpcConsts.GET_SWITCH_PORT_INTERFACE_RESPONSE);
+				}
+
+			} else {
+				requestProcessor.getRequestPacket().setOperation(
+						IpcDataUnitWrapper
+								.setIpcUint32Value(UncOperationEnum.UNC_OP_READ
+										.ordinal()));
+				status = requestProcessor.processIpcRequest();
+				LOG.debug("Request packet 1st call processed with status:"
+						+ status);
+				if (status == ClientSession.RESP_FATAL) {
+					throw new VtnServiceException(
+							Thread.currentThread().getStackTrace()[1]
+									.getClassName()
+									+ VtnServiceConsts.HYPHEN
+									+ Thread.currentThread().getStackTrace()[1]
+											.getMethodName(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR
+									.getErrorMessage());
+				}
+
+				root = responseGenerator.getSwitchPortResponse(
+						requestProcessor.getIpcResponsePacket(), requestBody);
+			}
+
 			String opType = VtnServiceJsonConsts.NORMAL;
 			if (requestBody.has(VtnServiceJsonConsts.OP)) {
 				opType = requestBody.get(VtnServiceJsonConsts.OP).getAsString();
 			}
-			LOG.debug("Request Packet 1st call created successfully");
-			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet 1st call processed with status:"+status);
-			if (status == ClientSession.RESP_FATAL) {
-				throw new VtnServiceException(
-						Thread.currentThread().getStackTrace()[1]
-								.getClassName()
-								+ VtnServiceConsts.HYPHEN
-								+ Thread.currentThread().getStackTrace()[1]
-										.getMethodName(),
-						UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
-						UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorMessage());
-			}
-			/*
-			 * get type (show or list) will be required to resolve root json
-			 * name here it will be Ports for list
-			 */
-			JsonObject root = null;
-			final IpcPhysicalResponseFactory responseGenerator = new IpcPhysicalResponseFactory();
-			final List<String> uriParameterList = getUriParameters(requestBody);
-			if (opType.equalsIgnoreCase(VtnServiceJsonConsts.COUNT)
-					|| opType.equalsIgnoreCase(VtnServiceJsonConsts.NORMAL)) {
-				root = responseGenerator.getSwitchPortResponse(
-						requestProcessor.getIpcResponsePacket(), requestBody,
-						VtnServiceJsonConsts.LIST);
-			} else {
-				root = responseGenerator.getSwitchPortResponse(
-						requestProcessor.getIpcResponsePacket(), requestBody,
-						VtnServiceJsonConsts.LIST);
-				JsonArray switchPortArray = root
-						.getAsJsonArray(VtnServiceJsonConsts.PORTS);
-				JsonArray switchPortArrayRes = new JsonArray();
-				root = getResponseJsonArrayPhysical(requestBody,
-                        requestProcessor, responseGenerator,
-                        switchPortArray, VtnServiceJsonConsts.PORTS,
-                        VtnServiceJsonConsts.PORTNAME,
-                        IpcRequestPacketEnum.KT_PORT_GET,
-                        uriParameterList,VtnServiceIpcConsts.GET_SWITCH_PORT_INTERFACE_RESPONSE);
+
+			if (opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)
+					|| opType.equalsIgnoreCase(VtnServiceJsonConsts.INFO)) {
 				requestProcessor.setServiceInfo(UncUPPLEnums.UPPL_IPC_SVC_NAME,
 						UncUPPLEnums.ServiceID.UPPL_SVC_READREQ.ordinal());
+				switchPortArray = root
+						.getAsJsonArray(VtnServiceJsonConsts.PORTS);
 				for (int index = 0; index < switchPortArray.size(); index++) {
-					JsonObject switchPort = (JsonObject) switchPortArray
+					final JsonObject switchPort = (JsonObject) switchPortArray
 							.get(index);
 					requestBody.addProperty(VtnServiceJsonConsts.INDEX,
 							switchPort.get(VtnServiceJsonConsts.PORTNAME)
@@ -138,7 +230,8 @@ public class SwitchPortsResource extends AbstractResource {
 													.ordinal()));
 					LOG.debug("Request Packet for 2nd created successfully");
 					status = requestProcessor.processIpcRequest();
-					LOG.debug("Request packet 2nd call processed with status:"+status);
+					LOG.debug("Request packet 2nd call processed with status:"
+							+ status);
 					if (status == ClientSession.RESP_FATAL) {
 						throw new VtnServiceException(
 								Thread.currentThread().getStackTrace()[1]
@@ -152,12 +245,10 @@ public class SwitchPortsResource extends AbstractResource {
 								UncJavaAPIErrorCode.IPC_SERVER_ERROR
 										.getErrorMessage());
 					}
-					switchPortArrayRes.add(responseGenerator
-							.getSwitchPortMemberResponse(
-									requestProcessor.getIpcResponsePacket(),
-									switchPort, VtnServiceJsonConsts.LIST));
+					responseGenerator.getSwitchPortMemberResponse(
+							requestProcessor.getIpcResponsePacket(),
+							switchPort, VtnServiceJsonConsts.LIST);
 				}
-				root.add(VtnServiceJsonConsts.PORTS, switchPortArrayRes);
 			}
 			setInfo(root);
 			LOG.debug("Response object created successfully");
@@ -191,15 +282,23 @@ public class SwitchPortsResource extends AbstractResource {
 	}
 
 	/**
-	 * Add URI parameters to list
-	 * @return
+	 * Add URI parameters to list.
+	 * 
+	 * @param requestBody
+	 *            , handles request Json
+	 * @return List , as list of strings consisting all URI paramters.
 	 */
-	private List<String> getUriParameters(JsonObject requestBody) {
+	private List<String> getUriParameters(final JsonObject requestBody) {
 		LOG.trace("Starts SwitchPortsResource#getUriParameters()");
 		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(controllerId);
 		uriParameters.add(switchId);
-		if (requestBody != null && requestBody.has(VtnServiceJsonConsts.INDEX)) {
+		if (requestBody != null
+				&& requestBody.has(VtnServiceJsonConsts.PORTNAME)) {
+			uriParameters.add(requestBody.get(VtnServiceJsonConsts.PORTNAME)
+					.getAsString());
+		} else if (requestBody != null
+				&& requestBody.has(VtnServiceJsonConsts.INDEX)) {
 			uriParameters.add(requestBody.get(VtnServiceJsonConsts.INDEX)
 					.getAsString());
 		}
@@ -210,14 +309,14 @@ public class SwitchPortsResource extends AbstractResource {
 	/**
 	 * @return the controllerId
 	 */
-	public String getControllerId() {
+	public final String getControllerId() {
 		return controllerId;
 	}
 
 	/**
 	 * @return the controllerId
 	 */
-	public String getSwitchId() {
+	public final String getSwitchId() {
 		return switchId;
 	}
 

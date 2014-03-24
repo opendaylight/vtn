@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -30,7 +30,7 @@ public class IpRouteResourceValidator extends VtnServiceValidator {
 			.getLogger(IpRouteResourceValidator.class.getName());
 
 	private final AbstractResource resource;
-	final CommonValidator validator = new CommonValidator();
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new Ip Route resource validator.
@@ -48,7 +48,7 @@ public class IpRouteResourceValidator extends VtnServiceValidator {
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start IpRouteResourceValidator#validateUri()");
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.URI
@@ -82,8 +82,9 @@ public class IpRouteResourceValidator extends VtnServiceValidator {
 	 * Validate request Json object for get method of IpRoute API.
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start IpRouteResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of IpRouteResourceValidator");

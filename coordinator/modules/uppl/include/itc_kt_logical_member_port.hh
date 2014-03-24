@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -30,12 +30,12 @@ class Kt_LogicalMemberPort : public Kt_State_Base {
 
   ~Kt_LogicalMemberPort();
 
-  UpplReturnCode DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
+  UncRespCode DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
       void* key_struct,
       uint32_t data_type,
       uint32_t key_type);
 
-  UpplReturnCode ReadBulk(OdbcmConnectionHandler *db_conn,
+  UncRespCode ReadBulk(OdbcmConnectionHandler *db_conn,
                           void* key_struct,
                           uint32_t data_type,
                           uint32_t &max_rep_ct,
@@ -44,24 +44,24 @@ class Kt_LogicalMemberPort : public Kt_State_Base {
                           pfc_bool_t is_read_next,
                           ReadRequest *read_req);
 
-  UpplReturnCode PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
+  UncRespCode PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
                                          void* key_struct,
                                          void* val_struct,
                                          uint32_t operation,
                                          uint32_t data_type);
 
-  UpplReturnCode PerformSemanticValidation(OdbcmConnectionHandler *db_conn,
+  UncRespCode PerformSemanticValidation(OdbcmConnectionHandler *db_conn,
                                            void* key_struct,
                                            void* val_struct,
                                            uint32_t operation,
                                            uint32_t data_type);
 
-  UpplReturnCode IsKeyExists(OdbcmConnectionHandler *db_conn,
+  UncRespCode IsKeyExists(OdbcmConnectionHandler *db_conn,
                              unc_keytype_datatype_t data_type,
                              const vector<string>& key_values);
 
   void Fill_Attr_Syntax_Map();
-  UpplReturnCode ReadInternal(OdbcmConnectionHandler *db_conn,
+  UncRespCode ReadInternal(OdbcmConnectionHandler *db_conn,
                               vector<void *> &key_val,
                               vector<void *> &val_struct,
                               uint32_t data_type,
@@ -130,7 +130,7 @@ class Kt_LogicalMemberPort : public Kt_State_Base {
       uint32_t operation_type,
       vector<key_logical_member_port_t> &logical_mem_port);
 
-  UpplReturnCode PerformRead(OdbcmConnectionHandler *db_conn,
+  UncRespCode PerformRead(OdbcmConnectionHandler *db_conn,
                              uint32_t session_id,
                              uint32_t configuration_id,
                              void* key_struct,
@@ -142,7 +142,7 @@ class Kt_LogicalMemberPort : public Kt_State_Base {
                              uint32_t option2,
                              uint32_t max_rep_ct);
 
-  UpplReturnCode ReadLogicalMemberPortValFromDB(OdbcmConnectionHandler *db_conn,
+  UncRespCode ReadLogicalMemberPortValFromDB(OdbcmConnectionHandler *db_conn,
       void* key_struct,
       uint32_t data_type,
       uint32_t operation_type,
@@ -150,7 +150,7 @@ class Kt_LogicalMemberPort : public Kt_State_Base {
       vector<key_logical_member_port_t> &logical_mem_port,
       pfc_bool_t is_state = PFC_FALSE);
 
-  UpplReturnCode ReadBulkInternal(OdbcmConnectionHandler *db_conn,
+  UncRespCode ReadBulkInternal(OdbcmConnectionHandler *db_conn,
       void* key_struct,
       uint32_t data_type,
       uint32_t max_rep_ct,

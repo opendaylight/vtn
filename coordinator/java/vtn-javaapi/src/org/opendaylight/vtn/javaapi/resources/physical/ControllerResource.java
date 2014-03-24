@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -51,7 +51,7 @@ public class ControllerResource extends AbstractResource {
 	/**
 	 * @return the controllerId
 	 */
-	public String getControllerId() {
+	public final String getControllerId() {
 		return controllerId;
 	}
 
@@ -65,7 +65,8 @@ public class ControllerResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts ControllerResource#put()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -84,18 +85,18 @@ public class ControllerResource extends AbstractResource {
 					getUriParameters());
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet processed with status:"+status);
+			LOG.debug("Request packet processed with status:" + status);
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
 			getExceptionHandler()
-			.raise(Thread.currentThread().getStackTrace()[1]
-					.getClassName()
-					+ VtnServiceConsts.HYPHEN
-					+ Thread.currentThread().getStackTrace()[1]
-							.getMethodName(),
+					.raise(Thread.currentThread().getStackTrace()[1]
+							.getClassName()
+							+ VtnServiceConsts.HYPHEN
+							+ Thread.currentThread().getStackTrace()[1]
+									.getMethodName(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR
-							.getErrorMessage(), e);
+									.getErrorMessage(), e);
 			throw e;
 		} finally {
 			if (status == ClientSession.RESP_FATAL) {
@@ -120,7 +121,7 @@ public class ControllerResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Starts ControllerResource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -139,18 +140,18 @@ public class ControllerResource extends AbstractResource {
 					getNullJsonObject(), getUriParameters());
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet processed with status:"+status);
+			LOG.debug("Request packet processed with status:" + status);
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
 			getExceptionHandler()
-			.raise(Thread.currentThread().getStackTrace()[1]
-					.getClassName()
-					+ VtnServiceConsts.HYPHEN
-					+ Thread.currentThread().getStackTrace()[1]
-							.getMethodName(),
+					.raise(Thread.currentThread().getStackTrace()[1]
+							.getClassName()
+							+ VtnServiceConsts.HYPHEN
+							+ Thread.currentThread().getStackTrace()[1]
+									.getMethodName(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR
-							.getErrorMessage(), e);
+									.getErrorMessage(), e);
 			throw e;
 		} finally {
 			if (status == ClientSession.RESP_FATAL) {
@@ -178,7 +179,8 @@ public class ControllerResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts ControllerResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -197,7 +199,7 @@ public class ControllerResource extends AbstractResource {
 					getUriParameters());
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet processed with status:"+status);
+			LOG.debug("Request packet processed with status:" + status);
 			final IpcPhysicalResponseFactory responseGenerator = new IpcPhysicalResponseFactory();
 			setInfo(responseGenerator.getControllerResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
@@ -206,14 +208,14 @@ public class ControllerResource extends AbstractResource {
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
 			getExceptionHandler()
-			.raise(Thread.currentThread().getStackTrace()[1]
-					.getClassName()
-					+ VtnServiceConsts.HYPHEN
-					+ Thread.currentThread().getStackTrace()[1]
-							.getMethodName(),
+					.raise(Thread.currentThread().getStackTrace()[1]
+							.getClassName()
+							+ VtnServiceConsts.HYPHEN
+							+ Thread.currentThread().getStackTrace()[1]
+									.getMethodName(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR
-							.getErrorMessage(), e);
+									.getErrorMessage(), e);
 			throw e;
 		} finally {
 			if (status == ClientSession.RESP_FATAL) {

@@ -80,7 +80,7 @@ def create_boundary(boundary_blockname, controller1_blockname, controller2_block
     print json.dumps(boundary_add)
     r = requests.post(url, data=json.dumps(boundary_add), headers=def_header)
     print r.status_code
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_CREATE_SUCCESS:
          return 1
     else:
          return 0
@@ -93,7 +93,7 @@ def delete_boundary(blockname):
 
     r = requests.delete(url, headers=def_header)
     print r.status_code
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_DELETE_SUCCESS:
          return 1
     else:
          return 0
@@ -108,12 +108,12 @@ def validate_boundary(blockname, presence="yes", position=0):
     print r.status_code
 
     if presence == "no":
-         if r.status_code == 404:
+         if r.status_code == resp_code.RESP_NOT_FOUND:
              return 0
-         if r.status_code != 200:
+         if r.status_code != resp_code.RESP_GET_SUCCESS:
              return 1
 
-    data = json.loads(r.text)
+    data = json.loads(r.content)
 
     if presence == "no":
       print data['boundaries']
@@ -163,7 +163,7 @@ def create_vlink(vlink_blockname, boundary_blockname, vtn_blockname):
     print json.dumps(vlink_add)
     r = requests.post(url, data=json.dumps(vlink_add), headers=def_header)
     print r.status_code
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_CREATE_SUCCESS:
          return 1
     else:
          return 0
@@ -178,7 +178,7 @@ def delete_vlink(vlink_blockname, vtn_blockname):
 
     r = requests.delete(url, headers=def_header)
     print r.status_code
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_DELETE_SUCCESS:
          return 1
     else:
          return 0
@@ -195,12 +195,12 @@ def validate_vlink(vlink_blockname, vtn_blockname, presence="yes", position=0):
     print r.status_code
 
     if presence == "no":
-         if r.status_code == 404:
+         if r.status_code == resp_code.RESP_NOT_FOUND:
              return 0
-         if r.status_code != 200:
+         if r.status_code != resp_code.RESP_GET_SUCCESS:
              return 1
 
-    data = json.loads(r.text)
+    data = json.loads(r.content)
 
     if presence == "no":
       print data['vlinks']

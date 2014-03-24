@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -137,19 +137,19 @@ SystemStateChangeRequest
  *                   argument present
  *                   session_id - ipc session id used for TC validation
  *                   config_id - configuration id used for TC validation
- * @return         : UPPL_RC_SUCCESS - will be returned if the config ID
+ * @return         : UNC_RC_SUCCESS - will be returned if the config ID
  *                   and session ID are valid
- *                   UPPL_RC_ERR_INVALID_CONFIGID will be returned if 
- *                   config id is invalid or UPPL_RC_ERR_INVALID_SESSIONID
+ *                   UNC_UPPL_RC_ERR_INVALID_CONFIGID will be returned if 
+ *                   config id is invalid or UNC_UPPL_RC_ERR_INVALID_SESSIONID
  *                   will be returned if session id is invalid
  **/
-UpplReturnCode InternalTransactionCoordinator::PerformConfigIdValidation(
+UncRespCode InternalTransactionCoordinator::PerformConfigIdValidation(
     ServerSession &session,
     uint32_t sessionId,
     uint32_t configId) {
   // pass config id received in the message to the physical core for validation
 
-  UpplReturnCode validation_status = PhysicalLayer::get_instance() \
+  UncRespCode validation_status = PhysicalLayer::get_instance() \
       ->get_physical_core() \
       ->ValidateConfigId(sessionId, configId);
   return validation_status;
@@ -161,14 +161,14 @@ UpplReturnCode InternalTransactionCoordinator::PerformConfigIdValidation(
  *                id must be 0. For READ operations the service id must be 1
  * @param[in]   : session - Object of ServerSession
                   service_id - type of ipc service id
- * @return      : UPPL_RC_SUCCESS - will be returned if service id validation 
- *                is success for appropriate operation type else UPPL_RC_ERR_*
+ * @return      : UNC_RC_SUCCESS - will be returned if service id validation 
+ *                is success for appropriate operation type else UNC_UPPL_RC_ERR_*
  *                will be returned. 
  **/
-UpplReturnCode InternalTransactionCoordinator::ProcessReq(
+UncRespCode InternalTransactionCoordinator::ProcessReq(
     ServerSession &session,
     pfc_ipcid_t service_id) {
-  UpplReturnCode resp_code = UPPL_RC_SUCCESS;
+  UncRespCode resp_code = UNC_RC_SUCCESS;
   int err = 0;
   if (service_id == 1 || service_id == 0) {
     // create request header object to get arguments from session
@@ -176,35 +176,35 @@ UpplReturnCode InternalTransactionCoordinator::ProcessReq(
     int parse_ret = PhyUtil::sessGetReqHeader(session, obj_req_hdr);
     if (parse_ret != 0) {
       pfc_log_error("Unable to parse ipc structure. BAD_REQUEST error");
-      return UPPL_RC_ERR_BAD_REQUEST;
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
     }
     PhyUtil::printReqHeader(obj_req_hdr);
     physical_response_header rsh;
     PhyUtil::getRespHeaderFromReqHeader(obj_req_hdr, rsh);
 
     // get system state to discard the config requests in case of standby
-    UpplReturnCode standby_status = UPPL_RC_SUCCESS;
+    UncRespCode standby_status = UNC_RC_SUCCESS;
     standby_status = PhysicalLayer::get_instance()->get_physical_core() \
         ->ValidateStandbyRequests(obj_req_hdr.operation);
 
-    if (standby_status != UPPL_RC_SUCCESS) {
-      rsh.result_code = UPPL_RC_ERR_NOT_SUPPORTED_BY_STANDBY;
+    if (standby_status != UNC_RC_SUCCESS) {
+      rsh.result_code = UNC_UPPL_RC_ERR_NOT_SUPPORTED_BY_STANDBY;
       pfc_log_error("Config not allowed in standby");
       err = PhyUtil::sessOutRespHeader(session, rsh);
       if (err != 0) {
-        return UPPL_RC_ERR_IPC_WRITE_ERROR;
+        return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
       }
-      return UPPL_RC_SUCCESS;
+      return UNC_RC_SUCCESS;
     }
     if (obj_req_hdr.data_type < UNC_DT_STATE ||
         obj_req_hdr.data_type > UNC_DT_AUDIT) {
-      rsh.result_code = UPPL_RC_ERR_DATATYPE_NOT_SUPPORTED;
+      rsh.result_code = UNC_UPPL_RC_ERR_DATATYPE_NOT_SUPPORTED;
       pfc_log_error("datatype not supported");
       err = PhyUtil::sessOutRespHeader(session, rsh);
       if (err != 0) {
-        return UPPL_RC_ERR_IPC_WRITE_ERROR;
+        return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
       }
-      return UPPL_RC_SUCCESS;
+      return UNC_RC_SUCCESS;
     }
     switch (obj_req_hdr.operation) {
       case UNC_OP_CREATE:
@@ -213,16 +213,16 @@ UpplReturnCode InternalTransactionCoordinator::ProcessReq(
         if (service_id != 0) {
           pfc_log_error(
               "Config Operation is provided with ServiceId other than 0");
-          return UPPL_RC_ERR_BAD_REQUEST;
+          return UNC_UPPL_RC_ERR_BAD_REQUEST;
         }
         resp_code = ProcessConfigRequest(session, obj_req_hdr, rsh);
         break;
       case UNC_OP_CONTROL:
         pfc_log_info("Inside control request request - NOT_SUPPORTED");
-        rsh.result_code = UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+        rsh.result_code = UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
         err = PhyUtil::sessOutRespHeader(session, rsh);
         if (err != 0) {
-          return UPPL_RC_ERR_IPC_WRITE_ERROR;
+          return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
         }
         break;
       case UNC_OP_READ:
@@ -234,18 +234,18 @@ UpplReturnCode InternalTransactionCoordinator::ProcessReq(
         if (service_id != 1) {
           pfc_log_error(
               "Read Operation is provided with ServiceId other than 1");
-          return UPPL_RC_ERR_BAD_REQUEST;
+          return UNC_UPPL_RC_ERR_BAD_REQUEST;
         }
         resp_code = ProcessReadRequest(session, obj_req_hdr, rsh);
         break;
       default:
-        rsh.result_code = UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+        rsh.result_code = UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
         pfc_log_error("Operation not supported");
         err = PhyUtil::sessOutRespHeader(session, rsh);
         if (err != 0) {
-          return UPPL_RC_ERR_IPC_WRITE_ERROR;
+          return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
         }
-        return UPPL_RC_SUCCESS;
+        return UNC_RC_SUCCESS;
     }
   } else if (service_id == 2) {
     uint32_t operation;
@@ -264,7 +264,7 @@ UpplReturnCode InternalTransactionCoordinator::ProcessReq(
       default:
         pfc_log_error("Operation not allowed due to bad request type");
         session.addOutput(operation);
-        session.addOutput((uint32_t)UPPL_RC_ERR_OPERATION_NOT_SUPPORTED);
+        session.addOutput((uint32_t)UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED);
     }
   }
   return resp_code;
@@ -274,20 +274,20 @@ UpplReturnCode InternalTransactionCoordinator::ProcessReq(
  * @Description : This function process the received notification event
  *                by creating notify req object
  * @param[in]   : object of IpcEvent class
- * @return      : UPPL_RC_SUCCESS is returned when the response is added
+ * @return      : UNC_RC_SUCCESS is returned when the response is added
  *                to ipc session successfully.
- *                UPPL_RC_ERR_* is returned when ipc response could not
+ *                UNC_UPPL_RC_ERR_* is returned when ipc response could not
  *                be added to sess.
  **/
-UpplReturnCode InternalTransactionCoordinator::ProcessEvent(
+UncRespCode InternalTransactionCoordinator::ProcessEvent(
     const IpcEvent &event) {
-  UpplReturnCode resp_code = UPPL_RC_SUCCESS;
+  UncRespCode resp_code = UNC_RC_SUCCESS;
   NotificationRequest notify_req;
   pfc_bool_t resp = notify_req.ProcessEvent(event);
   if (resp == PFC_TRUE) {
-    resp_code = UPPL_RC_SUCCESS;
+    resp_code = UNC_RC_SUCCESS;
   } else {
-    resp_code = UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+    resp_code = UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
   }
   return resp_code;
 }
@@ -299,29 +299,29 @@ UpplReturnCode InternalTransactionCoordinator::ProcessEvent(
  *                argument present
  *                obj_req_hdr - object of physical request header
  *                &rsh - object of the physical response header 
- * @return      : UPPL_RC_SUCCESS if validation of config_id is success
- *                or UPPL_RC_ERR_* if validation fails.
+ * @return      : UNC_RC_SUCCESS if validation of config_id is success
+ *                or UNC_UPPL_RC_ERR_* if validation fails.
  **/
-UpplReturnCode InternalTransactionCoordinator::ProcessConfigRequest(
+UncRespCode InternalTransactionCoordinator::ProcessConfigRequest(
     ServerSession &session,
     physical_request_header &obj_req_hdr,
     physical_response_header &rsh) {
-  UpplReturnCode resp_code = UPPL_RC_SUCCESS;
-  UpplReturnCode validate_status = PerformConfigIdValidation(
+  UncRespCode resp_code = UNC_RC_SUCCESS;
+  UncRespCode validate_status = PerformConfigIdValidation(
       session,
       obj_req_hdr.client_sess_id,
       obj_req_hdr.config_id);
-  if (validate_status != UPPL_RC_SUCCESS) {
-    if (validate_status == UPPL_RC_ERR_INVALID_CONFIGID) {
+  if (validate_status != UNC_RC_SUCCESS) {
+    if (validate_status == UNC_UPPL_RC_ERR_INVALID_CONFIGID) {
       pfc_log_error("ITC::Process Req:: Config id validation failed");
     }
-    if (validate_status == UPPL_RC_ERR_INVALID_SESSIONID) {
+    if (validate_status == UNC_UPPL_RC_ERR_INVALID_SESSIONID) {
       pfc_log_error("ITC::Process Req:: Session id validation failed");
     }
     rsh.result_code = validate_status;
     int err = PhyUtil::sessOutRespHeader(session, rsh);
     if (err != 0) {
-      return UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
     return resp_code;
   }
@@ -329,15 +329,15 @@ UpplReturnCode InternalTransactionCoordinator::ProcessConfigRequest(
     set_config_request_status(true);
     // create configuration req object to invoke processreq function.
     ConfigurationRequest configuration_req;
-    resp_code = (UpplReturnCode) configuration_req.ProcessReq(session,
+    resp_code = (UncRespCode) configuration_req.ProcessReq(session,
                                                               obj_req_hdr);
     set_config_request_status(false);
   } else {
-    rsh.result_code = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    rsh.result_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
     pfc_log_error("Parallel Config operations are not allowed");
     int err = PhyUtil::sessOutRespHeader(session, rsh);
     if (err != 0) {
-      return UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
   }
   return resp_code;
@@ -350,10 +350,10 @@ UpplReturnCode InternalTransactionCoordinator::ProcessConfigRequest(
  *                argument present
  *                obj_req_hdr - object of physical request header
  *                &rsh - object of the physical response header
- * @return      : UPPL_RC_SUCCESS if validation of config_id is success
- *                or UPPL_RC_ERR_* if validation fails.
+ * @return      : UNC_RC_SUCCESS if validation of config_id is success
+ *                or UNC_UPPL_RC_ERR_* if validation fails.
  **/
-UpplReturnCode InternalTransactionCoordinator::ProcessReadRequest(
+UncRespCode InternalTransactionCoordinator::ProcessReadRequest(
     ServerSession &session,
     physical_request_header &obj_req_hdr,
     physical_response_header &rsh) {
@@ -361,37 +361,37 @@ UpplReturnCode InternalTransactionCoordinator::ProcessReadRequest(
       obj_req_hdr.data_type == UNC_DT_RUNNING ||
       obj_req_hdr.data_type == UNC_DT_CANDIDATE ||
       obj_req_hdr.data_type == UNC_DT_STARTUP)) {
-    rsh.result_code = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    rsh.result_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
     pfc_log_error("operation not allowed for this dt state");
     int err = PhyUtil::sessOutRespHeader(session, rsh);
     if (err != 0) {
-      return UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   if (obj_req_hdr.data_type == UNC_DT_CANDIDATE) {
-    UpplReturnCode validate_status = PerformConfigIdValidation(
+    UncRespCode validate_status = PerformConfigIdValidation(
         session,
         obj_req_hdr.client_sess_id,
         obj_req_hdr.config_id);
-    if (validate_status != UPPL_RC_SUCCESS) {
-      if (validate_status == UPPL_RC_ERR_INVALID_CONFIGID) {
+    if (validate_status != UNC_RC_SUCCESS) {
+      if (validate_status == UNC_UPPL_RC_ERR_INVALID_CONFIGID) {
         pfc_log_error("ITC::Process Req:: Config id validation failed");
       }
-      if (validate_status == UPPL_RC_ERR_INVALID_SESSIONID) {
+      if (validate_status == UNC_UPPL_RC_ERR_INVALID_SESSIONID) {
         pfc_log_error("ITC::Process Req:: Session id validation failed");
       }
       rsh.result_code = validate_status;
       int err = PhyUtil::sessOutRespHeader(session, rsh);
       if (err != 0) {
-        return UPPL_RC_ERR_IPC_WRITE_ERROR;
+        return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
       }
-      return UPPL_RC_SUCCESS;
+      return UNC_RC_SUCCESS;
     }
   }
   // Form read request object to invoke process request function
   ReadRequest read_req;
-  return (UpplReturnCode) read_req.ProcessReq(session, obj_req_hdr);
+  return (UncRespCode) read_req.ProcessReq(session, obj_req_hdr);
 }
 
 /**ProcessImportRequest
@@ -400,22 +400,22 @@ UpplReturnCode InternalTransactionCoordinator::ProcessReadRequest(
  * @param[in]   : session - Object of ServerSession where the request
  *                argument present
  *                operation - UNC_OP_* specifies the operation
- * @return      : UPPL_RC_SUCCESS is returned when the response is added
+ * @return      : UNC_RC_SUCCESS is returned when the response is added
  *                to ipc session successfully.
- *                UPPL_RC_ERR_* is returned when ipc response could not
+ *                UNC_UPPL_RC_ERR_* is returned when ipc response could not
  *                be added to sess.
  **/
-UpplReturnCode InternalTransactionCoordinator::ProcessImportRequest(
+UncRespCode InternalTransactionCoordinator::ProcessImportRequest(
     ServerSession &session,
     uint32_t operation) {
   if (PhysicalLayer::get_instance()->get_physical_core()
       ->get_system_state() == UPPL_SYSTEM_ST_STANDBY) {
     pfc_log_info("Import Operations not allowed in standby");
     session.addOutput(operation);
-    session.addOutput(UPPL_RC_ERR_NOT_SUPPORTED_BY_STANDBY);
-    return UPPL_RC_SUCCESS;
+    session.addOutput(UNC_UPPL_RC_ERR_NOT_SUPPORTED_BY_STANDBY);
+    return UNC_RC_SUCCESS;
   }
-  UpplReturnCode ret_code = UPPL_RC_SUCCESS;
+  UncRespCode ret_code = UNC_RC_SUCCESS;
   key_ctr_t obj_key_ctr;
   memset(&obj_key_ctr, 0, sizeof(key_ctr_t));
   if (operation == UNC_OP_IMPORT_CONTROLLER_CONFIG) {
@@ -425,18 +425,18 @@ UpplReturnCode InternalTransactionCoordinator::ProcessImportRequest(
     if (err != 0) {
       pfc_log_info(
           "ctr_name is not present in UNC_OP_IMPORT_CONTROLLER_CONFIG");
-      return UPPL_RC_ERR_BAD_REQUEST;
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
     }
     pfc_log_debug("Controller name received %s", ctr_name);
     memcpy(obj_key_ctr.controller_name, ctr_name, strlen(ctr_name)+1);
   }
   if (config_request_status() == true) {
-    ret_code = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    ret_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
     pfc_log_error("Import not allowed- operation in progress");
   } else {
-    UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+    UncRespCode db_ret = UNC_RC_SUCCESS;
     OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteNb, db_ret);
-    if (db_ret != UPPL_RC_SUCCESS) {
+    if (db_ret != UNC_RC_SUCCESS) {
       pfc_log_fatal("DB Connection failure for operation %d",
                     operation);
       return db_ret;
@@ -445,7 +445,7 @@ UpplReturnCode InternalTransactionCoordinator::ProcessImportRequest(
     ImportRequest import_req;
     ret_code = import_req.ProcessRequest(&db_conn, operation,
                                          obj_key_ctr);
-    if (ret_code == UPPL_RC_SUCCESS) {
+    if (ret_code == UNC_RC_SUCCESS) {
       if (operation == UNC_OP_IMPORT_CONTROLLER_CONFIG) {
         controller_in_import_ = (const char*) obj_key_ctr.controller_name;
       } else if (operation == UNC_OP_CLEAR_IMPORT_CONFIG) {
@@ -455,7 +455,7 @@ UpplReturnCode InternalTransactionCoordinator::ProcessImportRequest(
   }
   session.addOutput(operation);
   session.addOutput((uint32_t)ret_code);
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**ProcessIsCandidateDirty
@@ -464,17 +464,17 @@ UpplReturnCode InternalTransactionCoordinator::ProcessImportRequest(
  * @param[in]   : session - Object of ServerSession where the request
  *                argument present
  *                operation - UNC_OP_* specifies the operation
- * @return      : UPPL_RC_SUCCESS is returned when the response is added
+ * @return      : UNC_RC_SUCCESS is returned when the response is added
  *                to ipc session successfully.
- *                UPPL_RC_ERR_* is returned when ipc response could not
+ *                UNC_UPPL_RC_ERR_* is returned when ipc response could not
  *                be added to sess.
  **/
-UpplReturnCode InternalTransactionCoordinator::ProcessIsCandidateDirty(
+UncRespCode InternalTransactionCoordinator::ProcessIsCandidateDirty(
     ServerSession &session,
     uint32_t operation) {
-  UpplReturnCode db_ret = UPPL_RC_SUCCESS, resp_code = UPPL_RC_SUCCESS;
+  UncRespCode db_ret = UNC_RC_SUCCESS, resp_code = UNC_RC_SUCCESS;
   OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteNb, db_ret);
-  if (db_ret != UPPL_RC_SUCCESS) {
+  if (db_ret != UNC_RC_SUCCESS) {
     pfc_log_fatal("DB Connection failure for operation %d",
                   operation);
     return db_ret;
@@ -486,14 +486,14 @@ UpplReturnCode InternalTransactionCoordinator::ProcessIsCandidateDirty(
   if (db_status == ODBCM_RC_CANDIDATE_DIRTY) {
     dirty_status = 1;
   } else if (db_status != ODBCM_RC_SUCCESS) {
-    resp_code = UPPL_RC_ERR_DB_GET;
+    resp_code = UNC_UPPL_RC_ERR_DB_GET;
   }
   int err = session.addOutput(operation);
   err |= session.addOutput((uint32_t)resp_code);
   err |= session.addOutput(dirty_status);
   if (err != 0) {
     pfc_log_info("Error in sending IsCandidateDirty response");
-    resp_code = UPPL_RC_ERR_IPC_WRITE_ERROR;
+    resp_code = UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
   }
   return resp_code;
 }

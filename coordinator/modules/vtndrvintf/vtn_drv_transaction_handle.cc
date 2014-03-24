@@ -85,7 +85,7 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitGlobalCommit(
         pfc_log_debug("%s Controller status is down, send disconnected", \
                       PFC_FUNCNAME);
         tclib_ptr->TcLibWriteControllerInfo(ctr_name,
-                      (uint32_t)DRVAPI_RESPONSE_CONTROLLER_DISCONNECTED, 0);
+                      (uint32_t)UNC_RC_CTR_DISCONNECTED, 0);
         continue;
       }
     }
@@ -104,7 +104,7 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitGlobalCommit(
       pfc_log_debug("TcLibWriteControllerInfo for controller:%s",
                     ctr_name.c_str());
       tclib_ptr->TcLibWriteControllerInfo(ctr_name,
-                                    (uint32_t)DRVAPI_RESPONSE_SUCCESS, 0);
+                                    (uint32_t)UNC_RC_SUCCESS, 0);
     }
   }
   if (Abort == PFC_TRUE)
@@ -225,7 +225,7 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitVoteRequest(
   std::string ctr_name;
   driver* drv = NULL;
   controller* ctr = NULL;
-  uint32_t retc = DRVAPI_RESPONSE_FAILURE;
+  uint32_t retc = UNC_DRV_RC_ERR_GENERIC;
   ctr_iter  iter;
   unc::tclib::TcCommonRet ret_code = unc::tclib::TC_SUCCESS;
   unc::tclib::TcLibModule* tclib_ptr =
@@ -245,7 +245,7 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitVoteRequest(
       pfc_log_debug("%s Controller status is down, send disconnected", \
                     PFC_FUNCNAME);
       tclib_ptr->TcLibWriteControllerInfo(ctr_name,
-                    (uint32_t)DRVAPI_RESPONSE_CONTROLLER_DISCONNECTED, 0);
+                    (uint32_t)UNC_RC_CTR_DISCONNECTED, 0);
       ret_code = unc::tclib::TC_SUCCESS;
       continue;
     }
@@ -265,7 +265,7 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitVoteRequest(
         pfc_log_debug("Exiting HandleCommitVoteRequest");
         return unc::tclib::TC_FAILURE;
       } else {
-        retc = DRVAPI_RESPONSE_SUCCESS;
+        retc = UNC_RC_SUCCESS;
       }
     }
     if (ret_code == unc::tclib::TC_SUCCESS) {
@@ -293,7 +293,7 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitCache
                                              controller* ctr,
                                              driver* drv) {
   ODC_FUNC_TRACE;
-  uint32_t retc = DRVAPI_RESPONSE_FAILURE;
+  uint32_t retc = UNC_DRV_RC_ERR_GENERIC;
   unc::tclib::TcCommonRet ret_code = unc::tclib::TC_FAILURE;
   PFC_ASSERT(ctr != NULL);
 
@@ -322,7 +322,7 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitCache
       }
       PFC_ASSERT(hnd_ptr != NULL);
       retc = hnd_ptr->execute_cmd(cfgnode, ctr, drv);
-      if (retc == DRVAPI_RESPONSE_SUCCESS)
+      if (retc == UNC_RC_SUCCESS)
         ret_code = unc::tclib::TC_SUCCESS;
       // any command execution failed for controller write the error to Tclib
       if (ret_code != unc::tclib::TC_SUCCESS) {

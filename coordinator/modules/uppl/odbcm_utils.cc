@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -15,6 +15,7 @@
 #include  <arpa/inet.h>
 #include "odbcm_common.hh"
 #include "odbcm_utils.hh"
+#include "physicallayer.hh"
 #include "physical_common_def.hh"
 #include "odbcm_db_varbind.hh"
 
@@ -619,6 +620,12 @@ ODBCM_RC_STATUS ODBCMUtils::OdbcmHandleDiagnosticsPrint(
     if (rc != ODBCM_RC_FAILED) {
       if (rc == ODBCM_RC_COMMON_LINK_FAILURE) {
         pfc_log_error("ODBCM::ODBCMUtills:: ODBCM_RC_COMMON_LINK_FAILURE");
+        PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+        PhysicalCore* physical_core = physical_layer->get_physical_core();
+        physical_layer->get_odbc_manager()->FreeingConnections(false);
+        if (physical_core->system_transit_state_ == true) {
+          return ODBCM_RC_FAILED;
+        }
         return ODBCM_RC_CONNECTION_ERROR;
       }
       pfc_log_debug("ODBCM::ODBCMUtils::SQLGetDiagRec: SQLState: %s,"
@@ -760,6 +767,71 @@ void ODBCMUtils::OdbcmTransRollback(SQLHANDLE hdbc) {
     pfc_log_debug("ODBCM::ODBCMUtils::OdbcmTransRollback:"
       " Transaction rolled back successfully.\n");
   }
+}
+
+/**
+*@Description : db connection pool - semaphore access 
+                initializes semaphore using SETVAL
+*@param[in]   : int val 
+*@return      : int
+*/
+int ODBCMUtils::set_semvalue(int val) {
+  union semun sem_union;  // sem_union;
+
+  sem_union.val = val;
+  if ( semctl ( sem_id, 0, SETVAL, sem_union ) == -1 ) return ( 0 );
+  return 1;
+}
+
+/**
+*@Description : delete semaphore
+*@param[in]   : None
+*@return      : int 
+*/
+int ODBCMUtils::del_semvalue() {
+  union semun sem_union;  // sem_union;
+
+  sem_union.val = 1;
+  if ( semctl ( sem_id, 0, IPC_RMID, sem_union ) == -1 ) return ( 0 );
+  return 1;
+}
+
+/**
+*@Description : set semaphore down
+*@param[in]   : None
+*@return      : int 
+*/
+int ODBCMUtils::SEM_DOWN() {
+  struct sembuf b;
+
+  b.sem_num = 0;
+  b.sem_op = -1;  // P(), i.e. down()
+  b.sem_flg = SEM_UNDO;
+  if (semop(sem_id, &b, 1)== -1) {
+    pfc_log_debug("Semaphore DOWN() failed!");
+    return 0;
+  }
+
+  return 1;
+}
+
+/**
+*@Description : set semaphore up 
+*@param[in]   : None
+*@return      : int 
+*/
+int ODBCMUtils::SEM_UP() {
+  struct sembuf b;
+
+  b.sem_num = 0;  /* Operate on semaphore 0 */
+  /* Wait for value to equal 0 */
+  b.sem_op =  1;  // V(), i.e. UP()
+  b.sem_flg = SEM_UNDO;
+  if (semop(sem_id, &b, 1)== -1) {
+    pfc_log_debug("Semaphore UP() failed!");
+    return 0;
+  }
+  return 1;
 }
 
 }  // namespace uppl

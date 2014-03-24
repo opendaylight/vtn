@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -50,7 +50,7 @@ TEST(TcDbOperations, TcValidateOperType) {
                                      &sess_,
                                      db_handler,
                                      unc_map_);
-  stub_srv_uint32=1;
+  stub_srv_uint32 = 1;
   tc_dboperations.tc_oper_  =  TC_OP_RUNNING_SAVE;
   EXPECT_EQ(TC_OPER_SUCCESS, tc_dboperations.TcValidateOperType());
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -19,6 +19,7 @@
 #include "ipc_client_configuration_handler.hh"
 #include "physicallayer.hh"
 #include "physical_common_def.hh"
+#include "unc/unc_base.h"
 
 using unc::uppl::IPCClientDriverHandler;
 
@@ -33,19 +34,19 @@ Ktclasses,Audit,Import and ITC class.
 
 
 IPCClientDriverHandler::IPCClientDriverHandler(
-    unc_keytype_ctrtype_t cntr_type, UpplReturnCode &err) {
+    unc_keytype_ctrtype_t cntr_type, UncRespCode &err) {
   if (cntr_type == UNC_CT_PFC ||
-      cntr_type == UNC_CT_VNP || 
+      cntr_type == UNC_CT_VNP ||
       cntr_type == UNC_CT_ODC ) {
     controller_type = cntr_type;
     PhysicalCore* physical_core = PhysicalCore::get_physical_core();
     /* Getting the driver name from uppl.conf */
-    UpplReturnCode driver_name_status = physical_core->GetDriverName(
+    UncRespCode driver_name_status = physical_core->GetDriverName(
         controller_type, driver_name);
-    if (driver_name_status != UPPL_RC_SUCCESS) {
+    if (driver_name_status != UNC_RC_SUCCESS) {
       pfc_log_error("Unable to get the driver name for controller type %d",
                     cntr_type);
-      err = UPPL_RC_ERR_BAD_REQUEST;
+      err = UNC_UPPL_RC_ERR_BAD_REQUEST;
     }
     pfc_log_info("Creating a session to driver %s", driver_name.c_str());
     connp = 0;
@@ -58,7 +59,7 @@ IPCClientDriverHandler::IPCClientDriverHandler(
     int clnt_err = pfc_ipcclnt_altopen(chn_name.c_str(), &connp);
     if (clnt_err != 0) {
       pfc_log_error("Could not open driver ipc session");
-      err = UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
+      err = UNC_UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
     }
     pfc_ipcid_t service = PFCDRIVER_SVID_PHYSICAL;
     if (cntr_type == UNC_CT_VNP) {
@@ -67,7 +68,7 @@ IPCClientDriverHandler::IPCClientDriverHandler(
     cli_session = new ClientSession(connp, driver_name, service, clnt_err);
     if (cli_session == NULL) {
       pfc_log_error("Could not get driver ipc session");
-      err = UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
+      err = UNC_UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
     } else if (clnt_err != 0) {
       pfc_log_error("Could not get driver ipc session, error is %d", err);
       err = ConvertDriverErrorCode(clnt_err);
@@ -79,7 +80,7 @@ IPCClientDriverHandler::IPCClientDriverHandler(
     controller_type = UNC_CT_UNKNOWN;
     driver_name = "";
     chn_name =  "";
-    err = UPPL_RC_ERR_BAD_REQUEST;
+    err = UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
 }
 
@@ -101,41 +102,71 @@ ClientSession* IPCClientDriverHandler::ResetAndGetSession() {
   return cli_session;
 }
 
-UpplReturnCode IPCClientDriverHandler::SendReqAndGetResp(
+UncRespCode IPCClientDriverHandler::SendReqAndGetResp(
     driver_response_header &rsp) {
   pfc_ipcresp_t resp = 0;
   uint8_t err = cli_session->invoke(resp);
   pfc_log_debug("DriverHandler err = %d, resp = %d",
                 err, resp);
   if (err != 0 || resp != 0) {
-    return UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
+    return UNC_UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
   } else {
     err = PhyUtil::sessGetDriverRespHeader(*cli_session, rsp);
     pfc_log_debug("DriverHandler resp err = %d, rsp.result_code=%d",
                   err, rsp.result_code);
     if (err != 0) {
-      return UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
+      return UNC_UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
     } else {
       return ConvertDriverErrorCode(rsp.result_code);
     }
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
-UpplReturnCode IPCClientDriverHandler::ConvertDriverErrorCode(
+UncRespCode IPCClientDriverHandler::ConvertDriverErrorCode(
     uint32_t drv_err_code) {
   switch (controller_type) {
     case UNC_CT_PFC:
     case UNC_CT_ODC:
     case UNC_CT_VNP:
       switch (drv_err_code) {
-        case 0:
-          return UPPL_RC_SUCCESS;
+        case UNC_RC_SUCCESS:
+          return UNC_RC_SUCCESS;
+        case UNC_RC_CTRLAPI_FAILURE:
+        case UNC_DRV_RC_DAEMON_INACTIVE:
+          return UNC_UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
+        case UNC_DRV_RC_INVALID_REQUEST_FORMAT:
+        case UNC_DRV_RC_INVALID_SESSION_ID:
+        case UNC_DRV_RC_INVALID_CONFIG_ID:
+        case UNC_DRV_RC_INVALID_OPERATION:
+        case UNC_DRV_RC_INVALID_OPTION1:
+        case UNC_DRV_RC_INVALID_OPTION2:
+        case UNC_DRV_RC_INVALID_DATATYPE:
+        case UNC_DRV_RC_INVALID_KEYTYPE:
+        case UNC_DRV_RC_MISSING_KEY_STRUCT:
+        case UNC_DRV_RC_MISSING_VAL_STRUCT:
+        case UNC_RC_CONFIG_INVAL:
+          return UNC_UPPL_RC_ERR_INVALID_STATE;
+        case UNC_DRV_RC_ERR_ATTRIBUTE_SYNTAX:
+          return UNC_UPPL_RC_ERR_CFG_SYNTAX;
+        case UNC_DRV_RC_ERR_ATTRIBUTE_SEMANTIC:
+          return UNC_UPPL_RC_ERR_CFG_SEMANTIC;
+        case UNC_RC_CTR_DISCONNECTED:
+        case UNC_RC_REQ_NOT_SENT_TO_CTR:
+        case UNC_RC_CTR_CONFIG_STATUS_ERR:
+        case UNC_RC_CTR_BUSY:
+          return UNC_UPPL_RC_ERR_CTRLR_DISCONNECTED;
+        case UNC_RC_NO_SUCH_INSTANCE:
+          return UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
+        case UNC_RC_INTERNAL_ERR:
+          return UNC_UPPL_RC_ERR_INVALID_STATE;
+        case UNC_DRV_RC_ERR_NOT_SUPPORTED_BY_CTRLR:
+          return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
         default:
-          return UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
+          return UNC_UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
       }
-        default:
-          return UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
+      default:
+        return UNC_UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
   }
 }
 

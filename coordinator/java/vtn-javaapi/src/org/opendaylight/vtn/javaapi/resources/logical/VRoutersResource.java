@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -56,7 +56,7 @@ public class VRoutersResource extends AbstractResource {
 	/**
 	 * @return the vtnName
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
@@ -70,7 +70,8 @@ public class VRoutersResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VRoutersResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -130,7 +131,8 @@ public class VRoutersResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VRoutersResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -152,7 +154,7 @@ public class VRoutersResource extends AbstractResource {
 			LOG.debug("Request Packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			/*
 			 * setInfo(responseGenerator.getVRouterResponse(
 			 * requestProcessor.getIpcResponsePacket(), requestBody,
@@ -162,7 +164,7 @@ public class VRoutersResource extends AbstractResource {
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.LIST);
 			if (responseJson.get(VtnServiceJsonConsts.VROUTERS).isJsonArray()) {
-				JsonArray responseArray = responseJson.get(
+				final JsonArray responseArray = responseJson.get(
 						VtnServiceJsonConsts.VROUTERS).getAsJsonArray();
 				responseJson = getResponseJsonArrayLogical(requestBody,
 						requestProcessor, responseGenerator, responseArray,

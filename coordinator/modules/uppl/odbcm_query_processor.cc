@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -301,8 +301,8 @@ ODBCM_RC_STATUS QueryProcessor::ExecuteTransaction(
                         ODBCMUtils::get_RC_Details(odbc_rc).c_str());
           return (ODBCM_RC_STATUS)odbc_rc;
         }
-        pfc_log_debug("ODBCM::QueryProcessor::ExecuteTransaction: "
-            "%ld rows with cs_row_status not as APPLIED", row_count);
+        pfc_log_debug("ODBCM::QueryProcessor::ExecuteTransaction: %ld"
+                      " rows with cs_row_status not as APPLIED", row_count);
         /* Close the cursor */
         odbc_rc = SQLCloseCursor(hstmt);
         //  ODBCM_PROCESS_HANDLE_CHECK(hstmt, odbc_rc);

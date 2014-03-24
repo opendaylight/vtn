@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -36,7 +36,8 @@ import org.opendaylight.vtn.javaapi.validation.logical.VRouterInterfaceResourceV
 /**
  * The Class VRouterInterfaceResource implements put, delete and get methods.
  */
-@UNCVtnService(path = "/vtns/{vtn_name}/vrouters/{vrt_name}/interfaces/{if_name}")
+@UNCVtnService(
+		path = "/vtns/{vtn_name}/vrouters/{vrt_name}/interfaces/{if_name}")
 public class VRouterInterfaceResource extends AbstractResource {
 
 	/** The vtn name. */
@@ -54,21 +55,21 @@ public class VRouterInterfaceResource extends AbstractResource {
 	/**
 	 * @return the vtnName
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
 	/**
 	 * @return the vrtName
 	 */
-	public String getVrtName() {
+	public final String getVrtName() {
 		return vrtName;
 	}
 
 	/**
 	 * @return the ifName
 	 */
-	public String getIfName() {
+	public final String getIfName() {
 		return ifName;
 	}
 
@@ -92,7 +93,7 @@ public class VRouterInterfaceResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Start VRouterInterfaceResource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -152,7 +153,8 @@ public class VRouterInterfaceResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VRouterInterfaceResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -172,7 +174,8 @@ public class VRouterInterfaceResource extends AbstractResource {
 					getUriParameters());
 			LOG.debug("Request Packet created successfully for 1st call");
 			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet processed for 1st call with status" + status);
+			LOG.debug("Request packet processed for 1st call with status"
+					+ status);
 			if (status == ClientSession.RESP_FATAL) {
 				throw new VtnServiceException(
 						Thread.currentThread().getStackTrace()[1]
@@ -195,7 +198,8 @@ public class VRouterInterfaceResource extends AbstractResource {
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.SHOW);
 			LOG.debug("Response object created successfully for 1st request");
-			if ((VtnServiceJsonConsts.STATE).equalsIgnoreCase(dataType) && !(vrtInterfaceJson.get(VtnServiceJsonConsts.INTERFACE) instanceof JsonNull)) {
+			if ((VtnServiceJsonConsts.STATE).equalsIgnoreCase(dataType)
+					&& !(vrtInterfaceJson.get(VtnServiceJsonConsts.INTERFACE) instanceof JsonNull)) {
 				requestProcessor.setServiceInfo(
 						UncUPLLEnums.UPLL_IPC_SERVICE_NAME,
 						UncUPLLEnums.ServiceID.UPLL_READ_SVC_ID.ordinal());
@@ -210,7 +214,8 @@ public class VRouterInterfaceResource extends AbstractResource {
 												.ordinal())));
 				LOG.debug("Request packet created successfully for 2nd call");
 				status = requestProcessor.processIpcRequest();
-				LOG.debug("Request packet processed for 2nd call with status" + status);
+				LOG.debug("Request packet processed for 2nd call with status"
+						+ status);
 				neighbor = responseGenerator.getNeighborResponse(
 						requestProcessor.getIpcResponsePacket(), requestBody,
 						VtnServiceJsonConsts.SHOW);
@@ -258,7 +263,8 @@ public class VRouterInterfaceResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VRouterInterfaceResource#put()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;

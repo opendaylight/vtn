@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -34,7 +34,7 @@ public class VTepGroupResourceValidator extends VtnServiceValidator {
 			.getLogger(VTepGroupResourceValidator.class.getName());
 
 	private final AbstractResource resource;
-	final CommonValidator validator = new CommonValidator();
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new v tep group resource validator.
@@ -52,7 +52,7 @@ public class VTepGroupResourceValidator extends VtnServiceValidator {
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start VTepGroupResourceValidator#validateUri()");
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.URI
@@ -96,8 +96,9 @@ public class VTepGroupResourceValidator extends VtnServiceValidator {
 	 * API.
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start VTepGroupResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of VTepGroupResourceValidator");

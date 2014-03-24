@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -50,13 +50,13 @@ struct build_stamp {
 #define PHY_FINI_IPC_LOCK(return_code) \
   if (PhysicalLayer::phyFiniFlag == 1) { \
     pfc_log_info("PhysicalLayer Fini is invoked already ..!!"); \
-    return return_code; \
+    return (return_code); \
   } \
   ScopedReadWriteLock ipcFiniLock(PhysicalLayer::get_phy_fini_phycore_lock_(), \
       PFC_FALSE); \
   if (PhysicalLayer::phyFiniFlag == 1) { \
     pfc_log_info("PhysicalLayer:: Fini is invoked already ..!!"); \
-    return return_code; \
+    return (return_code); \
   }
 
 #define PHY_FINI_EVENT_LOCK() \
@@ -72,23 +72,40 @@ struct build_stamp {
   }
 
 #define OPEN_DB_CONNECTION_TC_REQUEST(conn_type) \
-  UpplReturnCode db_ret = UPPL_RC_SUCCESS; \
+  UncRespCode db_ret = UNC_RC_SUCCESS; \
   /* Create a new odbcm connection */ \
-  OdbcmConnectionHandler db_conn(conn_type, db_ret, \
+  OdbcmConnectionHandler db_conn((conn_type), db_ret, \
       PhysicalLayer::get_instance()->get_odbc_manager()); \
-  if (db_ret != UPPL_RC_SUCCESS) { \
+  if (db_ret != UNC_RC_SUCCESS) { \
     /* Error in opening db connection */ \
     pfc_log_error("Error in opening DB connection"); \
+    TcLibModule* tclib_ptr = static_cast<TcLibModule*> \
+                (TcLibModule::getInstance(TCLIB_MODULE_NAME)); \
+    tclib_ptr->TcLibWriteControllerInfo("", UNC_RC_INTERNAL_ERR, 0); \
     return unc::tclib::TC_FAILURE; \
   }
 
+/* Create a new odbcm connection */
+#define OPEN_DB_CONNECTION_WITH_POOL(conn_type, \
+                   db_ret, db_conn, session_id, config_id) \
+  ScopedDBConnection  scope_dbconn((conn_type), (db_ret), \
+                     (db_conn), (session_id), (config_id), \
+                     physical_layer->get_odbc_manager()); \
+  if ((db_ret) != UNC_RC_SUCCESS) { \
+    physical_layer->get_odbc_manager()->\
+                 FreeingConnections(false/*Unused conn free*/); \
+    PhysicalCore* physical_core = physical_layer->get_physical_core();\
+    if (physical_core->system_transit_state_ == true) \
+      pfc_log_warn("odbc connection assignation is failed !!"); \
+    else \
+      pfc_log_error("odbc connection assignation is failed !!"); \
+  }
+
 #define OPEN_DB_CONNECTION(conn_type, db_ret) \
-  /* Create a new odbcm connection */ \
-  OdbcmConnectionHandler db_conn(conn_type, db_ret, \
+  OdbcmConnectionHandler db_conn((conn_type), (db_ret), \
       PhysicalLayer::get_instance()->get_odbc_manager());
 
 namespace unc {
-
 namespace uppl {
 /**************************************************************************
 It is a singleton class which will instantiate other UPPL's classes. 
@@ -106,8 +123,8 @@ class PhysicalLayer : public pfc::core::Module {
   pfc_bool_t init(void);
   pfc_bool_t fini(void);
   static PhysicalLayer* get_instance();
-  UpplReturnCode InitializePhysicalSubModules();
-  UpplReturnCode FinalizePhysicalSubModules();
+  UncRespCode InitializePhysicalSubModules();
+  UncRespCode FinalizePhysicalSubModules();
   pfc_ipcresp_t ipcService(ServerSession &session,
                            pfc_ipcid_t service_id);
   PhysicalCore* get_physical_core();
@@ -132,6 +149,7 @@ class PhysicalLayer : public pfc::core::Module {
   static Mutex ipc_server_hdlr_mutex_;
   static Mutex notification_manager_mutex_;
   static Mutex ODBCManager_mutex_;
+  static Mutex db_conpool_mutex_;
   static ReadWriteLock phy_fini_db_lock_;
   static ReadWriteLock phy_fini_phycore_lock_;
   static ReadWriteLock phy_fini_event_lock_;

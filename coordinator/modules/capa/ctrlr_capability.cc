@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -322,7 +322,7 @@ KtAttrCapability::~KtAttrCapability() {
 
 bool KtAttrCapability::Init(uint32_t num_attrs) {
   num_attrs_ = num_attrs;
-  if (num_attrs == 0 ) {
+  if ( num_attrs == 0 ) {
     // KTs without any configuration attributes exist.
     // Just to avoid null pointers, and zero size allocation, keep 1 byte memory
     // Class varaible num_attrs_ still will be zero
@@ -400,5 +400,5 @@ bool KtAttrCapability::GetStateCapability(uint32_t *num_attrs,
   *state = (const uint8_t *)state_cap_;
   return true;
 }
-}  /* capa */
-}  /* unc */
+}  // namespace capa
+}  // namespace unc

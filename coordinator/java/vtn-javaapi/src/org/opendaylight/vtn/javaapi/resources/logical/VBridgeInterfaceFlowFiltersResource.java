@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -31,7 +31,8 @@ import org.opendaylight.vtn.javaapi.validation.logical.FlowFilterResourceValidat
  * The Class VBridgeInterfaceFlowFiltersResource implements post method.
  */
 
-@UNCVtnService(path = "/vtns/{vtn_name}/vbridges/{vbr_name}/interfaces/{if_name}/flowfilters")
+@UNCVtnService(
+		path = "/vtns/{vtn_name}/vbridges/{vbr_name}/interfaces/{if_name}/flowfilters")
 public class VBridgeInterfaceFlowFiltersResource extends AbstractResource {
 	/** The VTN name. */
 	@UNCField("vtn_name")
@@ -45,8 +46,7 @@ public class VBridgeInterfaceFlowFiltersResource extends AbstractResource {
 
 	/** The Constant LOG. */
 	private static final Logger LOG = Logger
-			.getLogger(VBridgeInterfaceFlowFiltersResource.class
-					.getName());
+			.getLogger(VBridgeInterfaceFlowFiltersResource.class.getName());
 
 	/**
 	 * Instantiates a new v bridge interface flow filters resource.
@@ -63,7 +63,7 @@ public class VBridgeInterfaceFlowFiltersResource extends AbstractResource {
 	 * 
 	 * @return the VTN name
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
@@ -72,7 +72,7 @@ public class VBridgeInterfaceFlowFiltersResource extends AbstractResource {
 	 * 
 	 * @return the VBR name
 	 */
-	public String getVbrName() {
+	public final String getVbrName() {
 		return vbrName;
 	}
 
@@ -81,7 +81,7 @@ public class VBridgeInterfaceFlowFiltersResource extends AbstractResource {
 	 * 
 	 * @return the if name
 	 */
-	public String getIfName() {
+	public final String getIfName() {
 		return ifName;
 	}
 
@@ -95,7 +95,8 @@ public class VBridgeInterfaceFlowFiltersResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VBridgeInterfaceFlowFiltersResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -149,7 +150,7 @@ public class VBridgeInterfaceFlowFiltersResource extends AbstractResource {
 	 * 
 	 * @return
 	 */
-	private List<String> getUriParameters() {		
+	private List<String> getUriParameters() {
 		LOG.trace("Start VBridgeInterfaceFlowFiltersResource#getUriParameters()");
 		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(vtnName);

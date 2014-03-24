@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -50,14 +50,14 @@ public class StaticIpRoutesResource extends AbstractResource {
 	 * 
 	 * @return the vtn name
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
 	/**
 	 * @return the vrt name
 	 */
-	public String getVrtName() {
+	public final String getVrtName() {
 		return vrtName;
 	}
 
@@ -84,7 +84,8 @@ public class StaticIpRoutesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start StaticIpRoutesResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -99,15 +100,15 @@ public class StaticIpRoutesResource extends AbstractResource {
 			LOG.debug("Session created successfully");
 			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
 					getConfigID(), getExceptionHandler());
-			/*if (requestBody != null
-					&& requestBody.has(VtnServiceJsonConsts.STATIC_IPROUTE)
-					&& !((JsonObject) requestBody
-							.get(VtnServiceJsonConsts.STATIC_IPROUTE))
-							.has(VtnServiceJsonConsts.NMG_NAME)) {
-				((JsonObject) requestBody
-						.get(VtnServiceJsonConsts.STATIC_IPROUTE)).addProperty(
-						VtnServiceJsonConsts.NMG_NAME, "");
-			}*/
+			/*
+			 * if (requestBody != null &&
+			 * requestBody.has(VtnServiceJsonConsts.STATIC_IPROUTE) &&
+			 * !((JsonObject) requestBody
+			 * .get(VtnServiceJsonConsts.STATIC_IPROUTE))
+			 * .has(VtnServiceJsonConsts.NMG_NAME)) { ((JsonObject) requestBody
+			 * .get(VtnServiceJsonConsts.STATIC_IPROUTE)).addProperty(
+			 * VtnServiceJsonConsts.NMG_NAME, ""); }
+			 */
 			final List<String> uriParameterList = getUriParameters(requestBody);
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_VRT_IPROUTE_CREATE, requestBody,
@@ -119,7 +120,7 @@ public class StaticIpRoutesResource extends AbstractResource {
 			String ipAddr = null;
 			String nextHopAddr = null;
 			String prefix = null;
-			//String nmgName = null;
+			// String nmgName = null;
 			String staticIpRouteId = null;
 			if (requestBody != null
 					&& requestBody.has(VtnServiceJsonConsts.STATIC_IPROUTE)
@@ -141,14 +142,16 @@ public class StaticIpRoutesResource extends AbstractResource {
 				prefix = ((JsonObject) requestBody
 						.get(VtnServiceJsonConsts.STATIC_IPROUTE)).get(
 						VtnServiceJsonConsts.PREFIX).getAsString();
-			/*	nmgName = ((JsonObject) requestBody
-						.get(VtnServiceJsonConsts.STATIC_IPROUTE)).get(
-						VtnServiceJsonConsts.NMG_NAME).getAsString();*/
+				/*
+				 * nmgName = ((JsonObject) requestBody
+				 * .get(VtnServiceJsonConsts.STATIC_IPROUTE)).get(
+				 * VtnServiceJsonConsts.NMG_NAME).getAsString();
+				 */
 				staticIpRouteId = ipAddr + VtnServiceJsonConsts.HYPHEN
 						+ nextHopAddr + VtnServiceJsonConsts.HYPHEN + prefix;
 			}
-			JsonObject root = new JsonObject();
-			JsonObject staticIpRoute = new JsonObject();
+			final JsonObject root = new JsonObject();
+			final JsonObject staticIpRoute = new JsonObject();
 			staticIpRoute.addProperty(VtnServiceJsonConsts.STATICIPROUTEID,
 					staticIpRouteId);
 			root.add(VtnServiceJsonConsts.STATIC_IPROUTE, staticIpRoute);
@@ -192,7 +195,8 @@ public class StaticIpRoutesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 
 		LOG.trace("Start StaticIpRoutesResource#get()");
 		ClientSession session = null;
@@ -215,7 +219,7 @@ public class StaticIpRoutesResource extends AbstractResource {
 			LOG.debug("Request Packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			/*
 			 * setInfo(responseGenerator.getStaticIpRouteResponse(
 			 * requestProcessor.getIpcResponsePacket(), requestBody,
@@ -227,7 +231,7 @@ public class StaticIpRoutesResource extends AbstractResource {
 							requestBody, VtnServiceJsonConsts.LIST);
 			if (responseJson.get(VtnServiceJsonConsts.STATIC_IPROUTES)
 					.isJsonArray()) {
-				JsonArray responseArray = responseJson.get(
+				final JsonArray responseArray = responseJson.get(
 						VtnServiceJsonConsts.STATIC_IPROUTES).getAsJsonArray();
 				responseJson = getResponseJsonArrayLogical(requestBody,
 						requestProcessor, responseGenerator, responseArray,

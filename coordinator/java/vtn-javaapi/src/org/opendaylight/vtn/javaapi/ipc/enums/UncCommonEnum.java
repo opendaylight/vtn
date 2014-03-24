@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -19,7 +19,7 @@ public class UncCommonEnum {
 	public static final int MAX_PHYSICAL_KEYTYPE = 0x3ff;
 
 	/* Enumeration for Configuration Status. */
-	public enum ConfigStatus{
+	public enum ConfigStatus {
 		UNC_CS_UNKNOWN,
 		UNC_CS_APPLIED,
 		UNC_CS_PARTIALLY_APPLIED,
@@ -28,21 +28,9 @@ public class UncCommonEnum {
 		UNC_CS_NOT_SUPPORTED
 	}
 
-	/* Enumeration for Valid flag. */
-//	public enum ValidFlag{
-//		UNC_VF_INVALID,
-//		UNC_VF_VALID,
-//		UNC_VF_VALID_NO_VALUE,
-//		UNC_VF_NOT_SUPPORTED,
-//		UNC_VF_VALUE_NOT_MODIFIED
-//	}
-
 	/* Controller type enum. */
-	public enum ControllerType{
-		UNC_CT_UNKNOWN,
-		UNC_CT_OPENFLOW,
-		UNC_CT_OVERLAY,
-		UNC_CT_LEGACY
+	public enum ControllerType {
+		UNC_CT_UNKNOWN, UNC_CT_OPENFLOW, UNC_CT_OVERLAY, UNC_CT_LEGACY
 	}
 
 	/* Operation Status */
@@ -65,14 +53,23 @@ public class UncCommonEnum {
 	/* JavaAPI return code */
 	public enum UncResultCode {
 
-		UNC_SUCCESS(200,"Success"),
-		UNC_CLIENT_ERROR(400,"Validation error for: "),
-		UNC_SERVER_ERROR(500, "IPC server error");
+		UNC_SUCCESS(200, "Success"),
+		UNC_CLIENT_ERROR(400, "Invalid Argument("),
+		UNC_INVALID_FORMAT(40001, "Invalid Format"),
+		UNC_INVALID_ARGUMENT(40002, "Invalid Argument("),
+		UNC_NOT_FOUND(40400, "Not Found"),
+		UNC_METHOD_NOT_ALLOWED(40500, "Method Not Allowed"),
+		UNC_CONFLICT_FOUND(40901, "Duplicate Entity Exists"),
+		UNC_TOO_MANY_ENTITIES_FOUND(40902, "Too Many Entities Exis"),
+		UNC_SERVER_ERROR(500, "Internal Server Error"),
+		UNC_INTERNAL_SERVER_ERROR(50000, "Internal Server Error"),
+		UNC_SERVICE_UNAVILABLE(50301, "Server Busy"),
+		UNC_CTRL_NOT_FOUND(50051, "Controller Does Not Exist");
 
 		private final int value;
 		private final String message;
 
-		private UncResultCode(final int value, final String message){
+		private UncResultCode(final int value, final String message) {
 			this.value = value;
 			this.message = message;
 		}
@@ -80,7 +77,7 @@ public class UncCommonEnum {
 		public int getValue() {
 			return value;
 		}
-		
+
 		public String getMessage() {
 			return message;
 		}

@@ -1,15 +1,15 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.ipc.conversion;
 
-import java.net.Inet4Address;
-import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import org.opendaylight.vtn.core.util.Logger;
@@ -33,10 +33,10 @@ public class IpAddressUtil {
 	public static byte[] textToNumericFormatV4(final String ipV4Add) {
 		LOG.trace("Start textToNumericFormatV4 : " + ipV4Add);
 		byte[] responseArray = null;
-		if (ipV4Add.split(VtnServiceConsts.DOT_REGEX).length == ipV4Size) {
+		if (ipV4Add.split(VtnServiceConsts.DOT_REGEX).length == ipV4Size && ipV4Add.trim().equals(ipV4Add)) {
 			try {
-				responseArray = Inet4Address.getByName(ipV4Add).getAddress();
-			} catch (UnknownHostException e) {
+				responseArray = InetAddress.getByName(ipV4Add).getAddress();
+			} catch (final UnknownHostException e) {
 				responseArray = null;
 				LOG.error("incorrect format ipv4 address " + e.getMessage());
 			}
@@ -57,10 +57,10 @@ public class IpAddressUtil {
 	public static byte[] textToNumericFormatV6(final String ipV6Add) {
 		LOG.trace("Start textToNumericFormatV6 : " + ipV6Add);
 		byte[] responseArray = null;
-		if (ipV6Add.split(VtnServiceConsts.COLON).length == ipV6Size) {
+		if (ipV6Add.split(VtnServiceConsts.COLON).length == ipV6Size && ipV6Add.trim().equals(ipV6Add)) {
 			try {
-				responseArray = Inet6Address.getByName(ipV6Add).getAddress();
-			} catch (UnknownHostException e) {
+				responseArray = InetAddress.getByName(ipV6Add).getAddress();
+			} catch (final UnknownHostException e) {
 				responseArray = null;
 				LOG.error("incorrect format ipv6 address " + e.getMessage());
 			}

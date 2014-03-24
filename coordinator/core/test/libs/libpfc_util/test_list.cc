@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <list>
 
 #include <pfc/base.h>
 #include <pfc/list.h>
@@ -33,6 +34,16 @@ typedef struct {
     int        data;
 } list_ent_t;
 
+#define LISTENT_PTR(elem)                               \
+    PFC_CAST_CONTAINER((elem), list_ent_t, list_hdr)
+
+#define LISTENT_SETUP(head, ent, i)                     \
+    do {                                                \
+        (ent)->data = (i);                              \
+        pfc_list_push_tail((head), &(ent)->list_hdr);   \
+    } while (0)
+
+typedef std::list<int>  intlist_t;
 
 /*
  *
@@ -44,6 +55,9 @@ PFC_ATTR_UNUSED static void dump_list (pfc_list_t *head);
 static int  list_size (pfc_list_t *head);
 static void verify_size (pfc_list_t *head, int size);
 static void verify_links (pfc_list_t *head);
+static void verify_list_ent(pfc_list_t *head, intlist_t &required);
+static void setup_list_ent(list_ent_t *entries, size_t nentries,
+                           pfc_list_t *head, intlist_t &required);
 static void base_list_use_case_1 (int ent_num, int push_tail, int pop_tail);
 static void base_list_use_case_2 (int ent_num, int remove_odd, int in_order);
 static void base_list_use_case_3 (int ent_num);
@@ -100,6 +114,218 @@ TEST(simple_list, use_case_1_3)
     }
 }
 
+/*
+ * Test for PFC_LIST_FOREACH().
+ */
+TEST(simple_list, foreach)
+{
+    list_ent_t  entries[20];
+    pfc_list_t  head;
+    intlist_t   required;
+    setup_list_ent(entries, PFC_ARRAY_CAPACITY(entries), &head, required);
+
+    pfc_list_t *elem;
+    int i(0);
+    PFC_LIST_FOREACH(&head, elem) {
+        list_ent_t  *ent(LISTENT_PTR(elem));
+        ASSERT_EQ(&entries[i], ent);
+        ASSERT_EQ(i, ent->data);
+        i++;
+    }
+}
+
+/*
+ * Test for PFC_LIST_REV_FOREACH().
+ */
+TEST(simple_list, rev_foreach)
+{
+    list_ent_t  entries[20];
+    pfc_list_t  head;
+    intlist_t   required;
+    setup_list_ent(entries, PFC_ARRAY_CAPACITY(entries), &head, required);
+
+    pfc_list_t *elem;
+    int i(static_cast<int>(PFC_ARRAY_CAPACITY(entries) - 1));
+    PFC_LIST_REV_FOREACH(&head, elem) {
+        list_ent_t  *ent(LISTENT_PTR(elem));
+        ASSERT_EQ(&entries[i], ent);
+        ASSERT_EQ(i, ent->data);
+        i--;
+    }
+}
+
+/*
+ * Test for PFC_LIST_FOREACH_FROM().
+ */
+TEST(simple_list, foreach_from)
+{
+    list_ent_t  entries[20];
+    pfc_list_t  head;
+    intlist_t   required;
+    setup_list_ent(entries, PFC_ARRAY_CAPACITY(entries), &head, required);
+
+    for (int from(0); (size_t)from < PFC_ARRAY_CAPACITY(entries); from++) {
+        pfc_list_t *elem;
+        int i(from);
+        PFC_LIST_FOREACH_FROM(&head, &entries[from].list_hdr, elem) {
+            list_ent_t  *ent(LISTENT_PTR(elem));
+            ASSERT_EQ(&entries[i], ent);
+            ASSERT_EQ(i, ent->data);
+            i++;
+        }
+    }
+}
+
+/*
+ * Test for PFC_LIST_REV_FOREACH_FROM().
+ */
+TEST(simple_list, rev_foreach_from)
+{
+    list_ent_t  entries[20];
+    pfc_list_t  head;
+    intlist_t   required;
+    setup_list_ent(entries, PFC_ARRAY_CAPACITY(entries), &head, required);
+
+    for (int from(0); (size_t)from < PFC_ARRAY_CAPACITY(entries); from++) {
+        pfc_list_t *elem;
+        int i(from);
+        PFC_LIST_REV_FOREACH_FROM(&head, &entries[from].list_hdr, elem) {
+            list_ent_t  *ent(LISTENT_PTR(elem));
+            ASSERT_EQ(&entries[i], ent);
+            ASSERT_EQ(i, ent->data);
+            i--;
+        }
+    }
+}
+
+/*
+ * Test for PFC_LIST_FOREACH_SAFE().
+ */
+TEST(simple_list, foreach_safe)
+{
+    list_ent_t  entries[20];
+    pfc_list_t  head;
+    intlist_t   required;
+    setup_list_ent(entries, PFC_ARRAY_CAPACITY(entries), &head, required);
+
+    pfc_list_t *elem, *next;
+    int i(0);
+    PFC_LIST_FOREACH_SAFE(&head, elem, next) {
+        list_ent_t  *ent(LISTENT_PTR(elem));
+        ASSERT_EQ(&entries[i], ent);
+        ASSERT_EQ(i, ent->data);
+
+        pfc_list_remove(elem);
+        memset(ent, 0, sizeof(*ent));
+        required.remove(i);
+        verify_list_ent(&head, required);
+        i++;
+    }
+
+    ASSERT_TRUE(required.empty());
+}
+
+/*
+ * Test for PFC_LIST_REV_FOREACH_SAFE().
+ */
+TEST(simple_list, rev_foreach_safe)
+{
+    list_ent_t  entries[20];
+    pfc_list_t  head;
+    intlist_t   required;
+    setup_list_ent(entries, PFC_ARRAY_CAPACITY(entries), &head, required);
+
+    pfc_list_t *elem, *next;
+    int i(static_cast<int>(PFC_ARRAY_CAPACITY(entries) - 1));
+    PFC_LIST_REV_FOREACH_SAFE(&head, elem, next) {
+        list_ent_t  *ent(LISTENT_PTR(elem));
+        ASSERT_EQ(&entries[i], ent);
+        ASSERT_EQ(i, ent->data);
+
+        pfc_list_remove(elem);
+        memset(ent, 0, sizeof(*ent));
+        required.remove(i);
+        verify_list_ent(&head, required);
+        i--;
+    }
+
+    ASSERT_TRUE(required.empty());
+}
+
+/*
+ * Test for PFC_LIST_FOREACH_SAFE_FROM().
+ */
+TEST(simple_list, foreach_safe_from)
+{
+    list_ent_t  entries[20];
+    pfc_list_t  head;
+    intlist_t   required;
+    setup_list_ent(entries, PFC_ARRAY_CAPACITY(entries), &head, required);
+
+    int nentries(static_cast<int>(PFC_ARRAY_CAPACITY(entries)));
+    int from(nentries >> 1);
+    while (nentries > 0) {
+        pfc_list_t *elem, *next;
+        int i(from);
+        PFC_LIST_FOREACH_SAFE_FROM(&head, &entries[from].list_hdr,
+                                   elem, next) {
+            list_ent_t  *ent(LISTENT_PTR(elem));
+            ASSERT_EQ(&entries[i], ent);
+            ASSERT_EQ(i, ent->data);
+
+            pfc_list_remove(elem);
+            memset(ent, 0, sizeof(*ent));
+            required.remove(i);
+            verify_list_ent(&head, required);
+            nentries--;
+            i++;
+        }
+
+        from >>= 1;
+    }
+
+    ASSERT_TRUE(required.empty());
+}
+
+/*
+ * Test for PFC_LIST_REV_FOREACH_SAFE_FROM().
+ */
+TEST(simple_list, rev_foreach_safe_from)
+{
+    list_ent_t  entries[20];
+    pfc_list_t  head;
+    intlist_t   required;
+    setup_list_ent(entries, PFC_ARRAY_CAPACITY(entries), &head, required);
+
+    int nentries(static_cast<int>(PFC_ARRAY_CAPACITY(entries)));
+    int from(nentries >> 1);
+    while (nentries > 0) {
+        pfc_list_t *elem, *next;
+        int i(from);
+        PFC_LIST_REV_FOREACH_SAFE_FROM(&head, &entries[from].list_hdr,
+                                       elem, next) {
+            list_ent_t  *ent(LISTENT_PTR(elem));
+            ASSERT_EQ(&entries[i], ent);
+            ASSERT_EQ(i, ent->data);
+
+            pfc_list_remove(elem);
+            memset(ent, 0, sizeof(*ent));
+            required.remove(i);
+            verify_list_ent(&head, required);
+            nentries--;
+            i--;
+        }
+
+        if (nentries == 1) {
+            from = static_cast<int>(PFC_ARRAY_CAPACITY(entries) - 1);
+        }
+        else {
+            from += (nentries >> 1);
+        }
+    }
+
+    ASSERT_TRUE(required.empty());
+}
 
 /*
  *
@@ -160,6 +386,37 @@ verify_links (pfc_list_t *head)
     }
 }
 
+static void
+verify_list_ent(pfc_list_t *head, intlist_t &required)
+{
+    intlist_t::iterator it(required.begin());
+    intlist_t::iterator end(required.end());
+    pfc_list_t *prev(head);
+    for (pfc_list_t *elem(head->pl_next); elem != head;
+         prev = elem, elem = elem->pl_next, it++) {
+        ASSERT_EQ(prev, elem->pl_prev);
+
+        list_ent_t *ent(LISTENT_PTR(elem));
+        ASSERT_TRUE(end != it);
+        ASSERT_EQ(*it, ent->data);
+    }
+
+    ASSERT_TRUE(end == it);
+}
+
+static void
+setup_list_ent(list_ent_t *entries, size_t nentries, pfc_list_t *head,
+               intlist_t &required)
+{
+    pfc_list_init(head);
+
+    list_ent_t *ent(entries);
+    for (int i(0); (size_t)i < nentries; i++, ent++) {
+        LISTENT_SETUP(head, ent, i);
+        required.push_back(i);
+    }
+    verify_list_ent(head, required);
+}
 
 /*
  *

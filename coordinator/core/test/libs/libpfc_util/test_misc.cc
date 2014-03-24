@@ -238,7 +238,7 @@ public:
  * Test Data
  *      pfc_is_safepath()
  */
-safe_path_test_data sptd[] = {
+static safe_path_test_data sptd[] = {
 	{"invalid", EINVAL},
 	{TOO_LONG_NAME, ENAMETOOLONG},
 	{"/homehomehome", ENOENT},

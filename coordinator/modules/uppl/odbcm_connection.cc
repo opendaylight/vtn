@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -26,10 +26,12 @@ using unc::uppl::ODBCMTable;
 using unc::uppl::QueryFactory;
 using unc::uppl::QueryProcessor;
 using unc::uppl::DBVarbind;
+using unc::uppl::ODBCMUtils;
 extern pfc_cfdef_t odbcm_cfdef;
 
 /* static variable initialization */
 ODBCManager *ODBCManager::ODBCManager_ = NULL;
+int ODBCMUtils::sem_id = 0;
 
 /**
  * @Description : Constructor function which creates/initializes
@@ -42,7 +44,8 @@ ODBCManager::ODBCManager()
           //  initialize the ODBCMInit flag
           IsODBCManager_initialized(0),
           /** Initialize the ODBCManager members */
-          phy_conn_env_(NULL) {
+          phy_conn_env_(NULL),
+          conn_max_limit_(0) {
   rw_nb_conn_obj_ = NULL;
   rw_sb_conn_obj_ = NULL;
 }
@@ -67,6 +70,10 @@ ODBCManager::~ODBCManager() {
     db_table_list_map_.clear();
   /**to clear the OdbcmSQLStateMap elements*/
   ODBCMUtils::ClearOdbcmSQLStateMap();
+
+  FreeingConnections(true);
+  ODBCMUtils::del_semvalue();
+
   /** Free the uppl db connection and environments */
   ODBCM_RC_STATUS rw_disconn_status = CloseRwConnection();
   pfc_log_debug("ODBCM::ODBCManager::CloseRwConnection Status %d",
@@ -365,7 +372,7 @@ ODBCM_RC_STATUS ODBCManager::OpenDBConnection(
         return ODBCM_RC_SUCCESS;
       }
       if (set_rw_connection_handle_(conn_handle) != ODBCM_RC_SUCCESS) {
-        pfc_log_error("ODBCM::ODBCManager::OpenDBConnection: "
+        pfc_log_fatal("ODBCM::ODBCManager::OpenDBConnection: "
             "Error in set_rw_connection_handle_ ");
         return ODBCM_RC_CONNECTION_ERROR;
       }
@@ -382,7 +389,7 @@ ODBCM_RC_STATUS ODBCManager::OpenDBConnection(
         return ODBCM_RC_SUCCESS;
       }
       if (set_rw_connection_handle_(conn_handle) != ODBCM_RC_SUCCESS) {
-        pfc_log_error("ODBCM::ODBCManager::OpenDBConnection: "
+        pfc_log_fatal("ODBCM::ODBCManager::OpenDBConnection: "
             "Error in set_rw_connection_handle_ ");
         return ODBCM_RC_CONNECTION_ERROR;
       }
@@ -409,7 +416,7 @@ ODBCM_RC_STATUS ODBCManager::OpenDBConnection(
       pfc_log_error("ODBCM::ODBCManager::OpenDBConnection: "
           "Invalid connection type %d !! ",
           conn_obj->get_conn_type());
-      break;
+      return ODBCM_RC_CONNECTION_ERROR;
   }
   // *************************************************************************
   // Set the matching condition for using an existing connection in the pool
@@ -507,6 +514,277 @@ ODBCM_RC_STATUS ODBCManager::OpenDBConnection(
       conn_obj->get_conn_type());
   return ODBCM_RC_SUCCESS;
 }
+/**
+ @Description : When NB request comes, this function assigns db conn.
+ *              to service the request. If the free pool has connection,
+ *              that shall be assigned, if free pool does not have conn.
+ *              it will create and assign new connection, if the exisitng
+ *              no. of conns. not reached to conn.max.limit.if max conn.limit
+ *              reached, subsequent requests shall wait (using semaphore) for
+ *              db connection.
+ *              If read request from configure mode shall be serviced by
+ *              RW conn. only.
+ * @param[in]  : uint32_t session_id, uint32_t config_id
+ * @param[out] : OdbcmConnectionHandler *&db_conn
+ * @return     : ODBCM_RC_STATUS
+ **/
+ODBCM_RC_STATUS ODBCManager::AssignDBConnection(
+                             OdbcmConnectionHandler *&db_conn,
+                             uint32_t session_id, uint32_t config_id) {
+  pfc_log_trace("Entered into AssignDBConnection"
+                " session_id = %d, config_id = %d", session_id, config_id);
+  PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+  UncRespCode db_ret = UNC_RC_SUCCESS;
+  /**RW conn shall be reused for READ which is op belongs to same session*/
+  physical_layer->db_conpool_mutex_.lock();
+  if (config_id > 0) {
+    pfc_log_trace("RW conn req. for config mode READ operation");
+    if (rw_nb_conn_obj_ != NULL) {
+      db_conn = rw_nb_conn_obj_;
+      pfc_log_trace("RW conn is assigned for READ operation");
+    } else {  /*if RW connection not available allocate conn handle and return*/
+      pfc_log_trace("RW conn is NULL !!, Allocate RW connection and store/"
+                                      "assign for read req.");
+      rw_nb_conn_obj_ = new OdbcmConnectionHandler(
+                            unc::uppl::kOdbcmConnReadWriteNb,
+                            db_ret,
+                            PhysicalLayer::get_instance()->get_odbc_manager());
+      if (db_ret == UNC_RC_SUCCESS && rw_nb_conn_obj_ != NULL) {
+        db_conn = rw_nb_conn_obj_;
+      } else {
+        pfc_log_error("RW connection assignation failed!! conn. not available");
+        return ODBCM_RC_CONNECTION_ERROR;
+      }
+      pfc_log_trace("RW conn is allocated and assigned for READ operation");
+    }
+    physical_layer->db_conpool_mutex_.unlock();
+    return ODBCM_RC_SUCCESS;
+  }
+  //  if config id < 0 - READ operation
+  if (!conpool_free_list_.empty()) {
+    //  take connection from list assign to request.
+    db_conn = conpool_free_list_.front();
+    pfc_log_trace("Free %" PFC_PFMT_SIZE_T " RO conn(s) available in conn pool "
+             "and 1 is assigned for READ operation", conpool_free_list_.size());
+    db_conn->set_using_session_id(session_id);
+    conpool_inuse_map_[session_id] = db_conn;
+    conpool_free_list_.pop_front();  // free pool is poped
+    pfc_log_trace("Existing RO conn is assgined for request sess_id = %d",
+                  session_id);
+  } else {
+    pfc_log_trace("Free RO conn is NOT available in conn pool");
+    //  create new connection if no.of conn does not reach conn_max_limit
+    pfc_log_debug("In use conn pool size = %" PFC_PFMT_SIZE_T,
+                                           conpool_inuse_map_.size());
+    pfc_log_debug("max allowed no. of conn  = %d", conn_max_limit_);
+    if (conpool_inuse_map_.size() < conn_max_limit_) {
+      db_conn = new OdbcmConnectionHandler(unc::uppl::kOdbcmConnReadOnly,
+            db_ret, PhysicalLayer::get_instance()->get_odbc_manager());
+      if (db_ret != UNC_RC_SUCCESS) {
+        pfc_log_error("db RO connection creation is failed.!!");
+        //  In case of error in Read connection, all unused Read connections
+        physical_layer->db_conpool_mutex_.unlock();
+        return ODBCM_RC_CONNECTION_ERROR;
+      }
+
+      conpool_inuse_map_[session_id] = db_conn;
+      pfc_log_trace("RO conn is created and assgined for request sess_id = %d",
+                    session_id);
+    } else {
+      /*put request on WAIT state using semaphore. WAIT state shall be 
+      * release !SEM_UP() after any one of the read connection is freed */
+
+      ODBCMUtils::sem_id  = semget((key_t)1234, 1, 0666 | IPC_CREAT);
+      pfc_log_trace("READ will be blocked by Semaphore SEM_ID = %d",
+                                              ODBCMUtils::sem_id);
+      do {
+        if (!ODBCMUtils::set_semvalue(0)) {  //  request will be blocked
+          pfc_log_info("Semaphore initialized failed!");
+          physical_layer->db_conpool_mutex_.unlock();
+          return ODBCM_RC_FAILED;
+        }
+        pfc_log_trace("READ Entered into WAIT state"
+                " session_id = %d, config_id = %d", session_id, config_id);
+        physical_layer->db_conpool_mutex_.unlock();
+        if (!ODBCMUtils::SEM_DOWN()) {
+          pfc_log_debug("entering critical section failed!");
+          return ODBCM_RC_FAILED;
+        }
+        pfc_log_trace("SEM UP is done!! DB Connection will be assigned... ");
+        physical_layer->db_conpool_mutex_.lock();
+        //  take connection from list assign to request.
+        if (conpool_free_list_.empty()) {
+          pfc_log_info("After SEM release, no conn available in free pool");
+        }
+      } while (conpool_free_list_.empty());
+      db_conn = conpool_free_list_.front();
+      pfc_log_trace("Free %" PFC_PFMT_SIZE_T " RO conn(s) available"
+                    " in conn pool and 1 is assigned for READ operation",
+                    conpool_free_list_.size());
+      conpool_inuse_map_[session_id] = db_conn;
+      conpool_free_list_.pop_front();  // free pool is poped
+      pfc_log_trace("Freed RO conn is assgined for request sess_id = %d",
+                    session_id);
+    }
+  }
+  physical_layer->db_conpool_mutex_.unlock();
+  if (db_conn == NULL) {
+    pfc_log_info("After SEM release, db_conn is NULL");
+    return ODBCM_RC_FAILED;
+  }
+  pfc_log_debug("db_conn type is %d", db_conn->get_conn_type());
+  return ODBCM_RC_SUCCESS;
+}
+
+
+/**
+* @Description : when the read request completes the operation, the db conn
+*                will be pooled instead of disconnect and free them. if any
+*                read request waiting for db conn. signal will be passed to
+*                that request (by semaphore)
+* @param[in]   : OdbcmConnectionHandler *&conn_obj, uint32_t session_id,
+*                uint32_t config_id
+* @return      : ODBCM_RC_STATUS
+**/
+ODBCM_RC_STATUS ODBCManager::PoolDBConnection(OdbcmConnectionHandler *&conn_obj,
+                             uint32_t session_id, uint32_t config_id) {
+  pfc_log_trace("PoolDBConnection - session_id = %d, config_id = %d",
+                                            session_id, config_id);
+  if (config_id > 0) {  // RW conn is used for configure sess. READ, NO-POOL.
+    pfc_log_debug("Read uses RWconn,NO-POOL required (ENDTRANS-ROLLBACK DONE)");
+    SQLHDBC conn_handle = conn_obj->get_conn_handle();
+    ODBCM_ROLLBACK_TRANSACTION(conn_handle);
+    return ODBCM_RC_SUCCESS;
+  }
+
+  //  Freeing erroneous db connections
+  PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+  if (!err_connx_list_.empty()) {
+    physical_layer->db_conpool_mutex_.lock();
+    pfc_log_debug("Erroneous %" PFC_PFMT_SIZE_T
+                  " RO Connection is present and about to free",
+                  err_connx_list_.size());
+    std::list<uint32_t>::iterator err_iter;
+    err_iter = err_connx_list_.begin();
+    std::map<uint32_t, OdbcmConnectionHandler*>::iterator cpool_iter =
+                           conpool_inuse_map_.begin();
+    for ( ; err_iter != err_connx_list_.end(); err_iter++) {
+      if (!conpool_inuse_map_.empty()) {
+        cpool_iter = conpool_inuse_map_.find(*err_iter);
+        pfc_log_info("error conn found in pool map is %d", session_id);
+        if (cpool_iter != conpool_inuse_map_.end()) {
+          SQLHDBC conn_handle = conn_obj->get_conn_handle();
+          ODBCM_ROLLBACK_TRANSACTION(conn_handle);
+          delete (*cpool_iter).second;
+          conpool_inuse_map_.erase(cpool_iter);
+          pfc_log_debug("Err DB Conn is freed now..(ENDTRANS-ROLLBACK DONE)!!");
+        }
+      }
+    }
+    err_connx_list_.clear();
+    physical_layer->db_conpool_mutex_.unlock();
+  }
+
+  PhysicalCore* physical_core = physical_layer->get_physical_core();
+  if (physical_core->system_transit_state_ == true) {
+    pfc_log_info("UNC is in transit state");
+    FreeingConnections(false);
+    return ODBCM_RC_FAILED;
+  }
+  physical_layer->db_conpool_mutex_.lock();
+
+  std::map<uint32_t, OdbcmConnectionHandler*>::iterator cpool_iter =
+                           conpool_inuse_map_.begin();
+  bool process_waiting = false;
+
+  if (!conpool_inuse_map_.empty()) {
+    cpool_iter = conpool_inuse_map_.find(session_id);
+    pfc_log_info("session id to find conn in pool map is %d", session_id);
+  } else {
+    pfc_log_error("conpool_inuse_map_ is empty !!");
+    cpool_iter = conpool_inuse_map_.end();
+  }
+
+  if (conpool_inuse_map_.size() >= conn_max_limit_) {
+    process_waiting = true;
+    pfc_log_trace("Another READ shall be waiting for free DB conn !!");
+  }
+
+  if (cpool_iter != conpool_inuse_map_.end()) {
+    SQLHDBC conn_handle = conn_obj->get_conn_handle();
+    ODBCM_ROLLBACK_TRANSACTION(conn_handle);
+    conpool_free_list_.push_back(conn_obj);
+    conpool_inuse_map_.erase(cpool_iter);
+    pfc_log_debug("DB Conn is pooled now..(ENDTRANS-ROLLBACK DONE)!!");
+  } else { /*could be error case*/
+    // free all unused db connections
+    while (!conpool_free_list_.empty()) {
+      delete conpool_free_list_.back();
+      conpool_free_list_.pop_back();
+    }
+    ODBCMUtils::del_semvalue();
+    pfc_log_error("DB Conn RECALL error!! all read connection shall be freed");
+  }
+
+  if (process_waiting == true) {
+    pfc_log_info("release the critical section ! SEM_UP - session_id");
+    if (!ODBCMUtils::SEM_UP()) {
+      pfc_log_info("leaving from critical section failed!");
+      physical_layer->db_conpool_mutex_.unlock();
+      return ODBCM_RC_FAILED;
+    }
+    pfc_log_trace("semaphore UP is happened to signal the waiting req");
+  }
+  physical_layer->db_conpool_mutex_.unlock();
+  return ODBCM_RC_SUCCESS;
+}
+
+/**
+* @Description : this function will free the existing connections
+*                if the IsAllOrUnused is true, used, unused conn.
+*                will be freed and closed permanentely.
+*                if the IsAllOrUnused is false, only unused conn.
+*                will be freed and closed permanentely.
+* @param[in]   : bool IsAllOrUnused
+* @return      : ODBCM_RC_STATUS
+**/
+ODBCM_RC_STATUS ODBCManager::FreeingConnections(bool IsAllOrUnused) {
+  pfc_log_trace("Freeing unused Connections ... ");
+  PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+  physical_layer->db_conpool_mutex_.lock();
+
+  if (!conpool_free_list_.empty()) {
+    pfc_log_debug("Unused %" PFC_PFMT_SIZE_T
+                  " RO Connection is present and about to free",
+                  conpool_free_list_.size());
+    std::list<OdbcmConnectionHandler*>::iterator cpoolfree_iter;
+    cpoolfree_iter = conpool_free_list_.begin();
+    for ( ; cpoolfree_iter != conpool_free_list_.end(); cpoolfree_iter++) {
+      delete *cpoolfree_iter;  // destructor intern calls the closeDBconnection
+      pfc_log_debug("Unused RO Connection is freed");
+    }
+    conpool_free_list_.clear();
+  }
+
+  if (IsAllOrUnused != false) { /*All conn. freed including used one */
+  pfc_log_trace("Freeing used Connections ... ");
+  std::map<uint32_t, OdbcmConnectionHandler*>::iterator cpoolinuse_iter;
+  if (!conpool_inuse_map_.empty()) {
+    pfc_log_debug("used %"PFC_PFMT_SIZE_T
+                  " RO Connection is present and about to free",
+                  conpool_inuse_map_.size());
+    cpoolinuse_iter = conpool_inuse_map_.begin();
+    for ( ; cpoolinuse_iter != conpool_inuse_map_.end(); cpoolinuse_iter++) {
+      delete (*cpoolinuse_iter).second;  // destructor intern calls
+                                         // the closeDBconnection
+      pfc_log_debug("used RO Connection is freed");
+    }
+    conpool_inuse_map_.clear();
+  }
+  }
+  physical_layer->db_conpool_mutex_.unlock();
+  return ODBCM_RC_SUCCESS;
+}
 
 /**
  * @Description : This function will close the existing database connection
@@ -526,13 +804,13 @@ ODBCM_RC_STATUS ODBCManager::CloseDBConnection(
       return ODBCM_RC_SUCCESS;
     }
     pfc_log_debug("Read Write connection will not be closed now");
-    ODBCM_RC_STATUS status = ODBCM_RC_SUCCESS;
-    ODBCM_END_TRANSACTION(conn_handle, SQL_ROLLBACK);
-    return status;
+    ODBCM_ROLLBACK_TRANSACTION(conn_handle);
+    return ODBCM_RC_SUCCESS;
   }
   /*  to disconnect */
   if (NULL != conn_handle) {
     SQLRETURN odbc_rc = 0;
+    ODBCM_ROLLBACK_TRANSACTION(conn_handle);
     odbc_rc = SQLDisconnect(conn_handle);
     odbc_rc = SQLFreeHandle(SQL_HANDLE_DBC, conn_handle);
     conn_handle = NULL;

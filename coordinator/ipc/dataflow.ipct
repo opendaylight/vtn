@@ -1,0 +1,218 @@
+#
+# Copyright (c) 2013-2014 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+include "uppl.ipct";
+include "upll.ipct";
+
+ipc_struct val_df_flow_match {
+    UINT32  match_type;
+};
+
+ipc_struct val_df_flow_match_in_port {
+    UINT32   in_port;
+};
+
+ipc_struct val_df_flow_match_dl_addr {
+    UINT8   dl_addr[6];
+    UINT8   v_mask;
+    UINT8   dl_addr_mask[6];
+};
+
+ipc_struct val_df_flow_match_dl_type {
+    UINT16  dl_type;
+};
+
+ipc_struct val_df_flow_match_vlan_id{
+    UINT16   vlan_id;
+};
+
+ipc_struct val_df_flow_match_vlan_pcp {
+    UINT8   vlan_pcp;
+};
+
+ipc_struct val_df_flow_match_ip_tos {
+    UINT8   ip_tos;
+};
+
+ipc_struct val_df_flow_match_ip_proto {
+    UINT8  ip_proto;
+};
+
+ipc_struct val_df_flow_match_ipv4_addr {
+    IPV4    ipv4_addr;
+    UINT8   v_mask;
+    IPV4    ipv4_addr_mask;
+};
+
+ipc_struct val_df_flow_match_tp_port
+{
+    UINT16  tp_port;
+    UINT8   v_mask;
+    UINT16  tp_port_mask;
+};
+
+ipc_struct val_df_flow_match_ipv6_addr {
+    IPV6    ipv6_addr;
+    UINT8   v_mask;
+    IPV6    ipv6_addr_mask;
+};
+
+   
+ipc_struct val_df_flow_action {
+    UINT32  action_type;    	
+};
+
+ipc_struct val_df_flow_action_output_port {
+    UINT32  output_port;    
+};
+
+ipc_struct val_df_flow_action_enqueue_port {
+    UINT32  output_port;
+    UINT16  enqueue_id;     
+};
+
+ipc_struct val_df_flow_action_set_dl_addr {
+    UINT8   dl_addr[6];
+};
+
+ipc_struct val_df_flow_action_set_vlan_id {
+    UINT16  vlan_id;        
+};
+
+ipc_struct val_df_flow_action_set_vlan_pcp {
+    UINT8   vlan_pcp;      
+};
+
+ipc_struct val_df_flow_action_set_ipv4 {
+    IPV4    ipv4_addr;
+};
+
+ipc_struct val_df_flow_action_set_ip_tos {
+    UINT8   ip_tos;
+};
+
+ipc_struct val_df_flow_action_set_tp_port {
+    UINT16  tp_port;
+};
+
+ipc_struct val_df_flow_action_set_ipv6 {
+    IPV6    ipv6_addr;
+};
+
+ipc_struct val_df_data_flow_path_info {
+    UINT8   switch_id[256]; 
+    UINT8   in_port[32];   
+    UINT8   out_port[32];
+    UINT8   valid[3];
+};
+
+ipc_struct val_df_data_flow_cmn {
+    UINT8   controller_name[32];
+    UINT8   controller_type;
+    UINT64  flow_id;
+    UINT32  status;
+    UINT32  flow_type;
+    UINT32  policy_index;
+    UINT32  vtn_id;
+    UINT8   ingress_switch_id[256];
+    UINT8   in_port[32];
+    UINT64  in_station_id;
+    UINT8   in_domain[32];
+    UINT8   egress_switch_id[256];
+    UINT8   out_port[32];
+    UINT64  out_station_id;
+    UINT8   out_domain[32];
+    UINT32  path_info_count;
+    UINT32  match_count;
+    UINT32  action_count;
+    UINT8   valid[18];
+};
+
+ipc_struct val_df_data_flow {
+    UINT32  reason;
+    UINT32  controller_count;
+    UINT8   valid[2];
+};
+
+ipc_struct val_df_data_flow_st {
+    UINT64  packets;
+    UINT64  octets;
+    UINT32  duration;
+    UINT8   valid[3];
+};
+
+
+##
+## UNC_KT_DATAFLOW ipc structure
+##
+ipc_struct key_dataflow {
+  UINT8  controller_name[32];
+  UINT8  switch_id[256];
+  UINT8  port_id[32];
+  UINT16 vlan_id;
+  UINT8  src_mac_address[6];
+};
+
+##
+## UNC_KT_CTR_DATAFLOW ipc structure
+##
+ipc_struct key_ctr_dataflow {
+  key_ctr ctr_key;
+  UINT64 flow_id;
+};
+
+ipc_struct key_vtn_dataflow {
+  key_vtn  vtn_key;
+  UINT8    vnode_id[32];
+  UINT16   vlanid;
+  UINT8    src_mac_address[6];
+};
+
+ipc_struct val_vtn_dataflow {
+  UINT8                  valid[2];  
+  UINT32                 reason;
+  UINT32                 ctrlr_domain_count;
+};
+
+ipc_struct val_vtn_dataflow_cmn {
+  UINT8                          valid[21];
+  UINT8                          controller_id[32];
+  UINT8                          controller_type;
+  UINT64                         flow_id; 
+  UINT64                         created_time; 
+  UINT32                         idle_timeout;
+  UINT32                         hard_timeout;
+  UINT8                          ingress_vnode[32];
+  UINT8                          ingress_vinterface[32];
+  UINT8                          ingress_switch_id[256];
+  UINT8                          ingress_port_id[32];
+  UINT8                          ingress_logical_port_id[320]; 
+  UINT8                          ingress_domain[32];  
+  UINT8                          egress_vnode[32];
+  UINT8                          egress_vinterface[32];
+  UINT8                          egress_switch_id[256];
+  UINT8                          egress_port_id[32];
+  UINT8                          egress_logical_port_id[320]; 
+  UINT8                          egress_domain[32];  
+  UINT32                         match_count;
+  UINT32                         action_count; 
+  UINT32                         path_info_count;
+};
+
+
+ipc_struct val_vtn_dataflow_path_info {
+  UINT8   valid[6];
+  UINT8   in_vnode[32];
+  UINT8   in_vif[32];
+  UINT8   out_vnode[32];
+  UINT8   out_vif[32];
+  UINT8   vlink_flag;     
+  UINT8   status;
+};
+

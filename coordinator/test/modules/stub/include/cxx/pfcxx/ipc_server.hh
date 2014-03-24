@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -50,7 +50,6 @@ class ServerSession {
    */
   int   setTimeout(const pfc_timespec_t *timeout = NULL);
   int   getClientAddress(pfc_ipccladdr_t &claddr);
-
   int   addOutput(int8_t data);
   int   addOutputInt8(int8_t data);
   int   addOutput(uint8_t data);
@@ -104,13 +103,17 @@ class ServerSession {
   int addOutput(key_root& data);
   int addOutput(val_path_fault_alarm_t& data);
   int addOutput(val_port_st_neighbor& data);
-
-  int  addOutput(val_vbr_if_t&);
-  int  addOutput(key_vbr_if_t&);
-  int  addOutput(val_vbr_t&);
-  int  addOutput(key_vbr_t&);
-  int  addOutput(val_vtn_t&);
-  int  addOutput(key_vtn_t&);
+  int addOutput(val_port_stats&);
+  int addOutput(val_vbr_if_t&);
+  int addOutput(key_vbr_if_t&);
+  int addOutput(val_vbr_t&);
+  int addOutput(key_vbr_t&);
+  int addOutput(val_vtn_t&);
+  int addOutput(key_vtn_t&);
+  int addOutput(key_dataflow&);
+  int addOutput(val_switch_st_detail_t&);
+  int addOutput(val_df_data_flow_st_t&);
+  int addOutput(key_ctr_dataflow&);
 
   int   getArgument(uint32_t index, int8_t &data);
   int   getArgument(uint32_t index, uint8_t &data);
@@ -152,7 +155,8 @@ class ServerSession {
   int getArgument(int index, val_port_st_t& key);
   int getArgument(int index, key_link_t& key);
   int getArgument(int index, val_link_st_t& key);
-
+  int getArgument(int, key_ctr_dataflow_t&);
+  int getArgument(int, key_dataflow_t&);
 
   uint32_t getArgCount(void);
   int   getArgType(uint32_t index, pfc_ipctype_t &type);

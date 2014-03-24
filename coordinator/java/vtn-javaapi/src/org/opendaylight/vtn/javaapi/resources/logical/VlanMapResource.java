@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -36,7 +36,8 @@ import org.opendaylight.vtn.javaapi.validation.logical.VLanMapResourceValidator;
  * @version 1.0
  */
 /* This class handles delete, put and get methods */
-@UNCVtnService(path = "/vtns/{vtn_name}/vbridges/{vbr_name}/vlanmaps/{vlanmap_id}")
+@UNCVtnService(
+		path = "/vtns/{vtn_name}/vbridges/{vbr_name}/vlanmaps/{vlanmap_id}")
 public class VlanMapResource extends AbstractResource {
 	/** The vtn name. */
 	@UNCField("vtn_name")
@@ -56,7 +57,7 @@ public class VlanMapResource extends AbstractResource {
 	 * 
 	 * @return the vtn name
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
@@ -65,7 +66,7 @@ public class VlanMapResource extends AbstractResource {
 	 * 
 	 * @return the vbr name
 	 */
-	public String getVbrName() {
+	public final String getVbrName() {
 		return vbrName;
 	}
 
@@ -74,7 +75,7 @@ public class VlanMapResource extends AbstractResource {
 	 * 
 	 * @return the vlan map id
 	 */
-	public String getVlanMapId() {
+	public final String getVlanMapId() {
 		return vlanMapId;
 	}
 
@@ -95,7 +96,7 @@ public class VlanMapResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Start VlanMapResource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -154,7 +155,8 @@ public class VlanMapResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VlanMapResource#put()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -213,7 +215,8 @@ public class VlanMapResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VlanMapResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -234,7 +237,7 @@ public class VlanMapResource extends AbstractResource {
 			LOG.debug("Request Packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			setInfo(responseGenerator.getVlanMapResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.SHOW));

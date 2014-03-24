@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -58,7 +58,7 @@ public class SessionResource extends AbstractResource {
 	 * 
 	 * @return the session id
 	 */
-	public String getSessionId() {
+	public final String getSessionId() {
 		return sessionId;
 	}
 
@@ -70,7 +70,7 @@ public class SessionResource extends AbstractResource {
 	 *             the vtn service exception
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Starts SessionResource#delete()");
 		ClientSession session = null;
 		int status = ClientSession.RESP_FATAL;
@@ -107,7 +107,7 @@ public class SessionResource extends AbstractResource {
 			session.addOutput(usessIpcReqSessDel);
 			LOG.info("Request packet created successfully");
 			status = session.invoke();
-			LOG.info("Request packet processed with status:"+status);
+			LOG.info("Request packet processed with status:" + status);
 			if (status != UncSessionEnums.UsessIpcErrE.USESS_E_OK.ordinal()) {
 				LOG.info("Error occurred while performing operation");
 				createSessionErrorInfo(UncIpcErrorCode.getSessionCodes(status));
@@ -161,7 +161,7 @@ public class SessionResource extends AbstractResource {
 	 *             the vtn service exception
 	 */
 	@Override
-	public int get() throws VtnServiceException {
+	public final int get() throws VtnServiceException {
 		LOG.trace("Starts SessionResource#get()");
 		ClientSession session = null;
 		int status = ClientSession.RESP_FATAL;
@@ -199,7 +199,7 @@ public class SessionResource extends AbstractResource {
 			session.addOutput(usessIpcReqSessDetail);
 			LOG.info("Request packet created successfully");
 			status = session.invoke();
-			LOG.info("Request packet processed with status:"+status);
+			LOG.info("Request packet processed with status:" + status);
 			if (status != UncSessionEnums.UsessIpcErrE.USESS_E_OK.ordinal()) {
 				LOG.info("Error occurred while performing operation");
 				createSessionErrorInfo(UncIpcErrorCode.getSessionCodes(status));
@@ -291,7 +291,7 @@ public class SessionResource extends AbstractResource {
 				.equals(UncSessionEnums.UsessTypeE.USESS_TYPE_WEB_UI.getValue())) {
 			sessJson.addProperty(VtnServiceJsonConsts.TYPE,
 					VtnServiceJsonConsts.WEBUI);
-		} else{
+		} else {
 			LOG.debug("Incorrect value for type");
 		}
 		LOG.debug("type:"
@@ -307,7 +307,7 @@ public class SessionResource extends AbstractResource {
 		} else if (VtnServiceIpcConsts.USESS_USER_WEB_OPER.equals(userName)) {
 			sessJson.addProperty(VtnServiceJsonConsts.USERNAME,
 					VtnServiceJsonConsts.OPER);
-		} else{
+		} else {
 			LOG.debug("Incorrect value for user_name");
 		}
 		// add user type to response json
@@ -323,7 +323,7 @@ public class SessionResource extends AbstractResource {
 				.equals(UncSessionEnums.UserTypeE.USER_TYPE_OPER.getValue())) {
 			sessJson.addProperty(VtnServiceJsonConsts.USERTYPE,
 					VtnServiceJsonConsts.OPER);
-		} else{
+		} else {
 			LOG.debug("Incorrect value for user_type");
 		}
 		LOG.debug("usertype:"
@@ -393,7 +393,7 @@ public class SessionResource extends AbstractResource {
 						.getValue())) {
 			sessJson.addProperty(VtnServiceJsonConsts.MODE,
 					VtnServiceJsonConsts.UNKNOWN);
-		} else{
+		} else {
 			LOG.debug("Incorrect value for mode");
 		}
 		LOG.debug("mode: "
@@ -416,7 +416,7 @@ public class SessionResource extends AbstractResource {
 						.getValue())) {
 			sessJson.addProperty(VtnServiceJsonConsts.CONFIGSTATUS,
 					VtnServiceJsonConsts.ENABLE);
-		} else{
+		} else {
 			LOG.debug("Incorrect value for config_status");
 		}
 		LOG.debug("configstatus: "

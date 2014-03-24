@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013 NEC Corporation
+ * Copyright (c) 2011-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -362,9 +362,11 @@ child_alloc(void)
 		/* Initialize reference counter for callback and flags. */
 		cep->ce_ncallbacks = 0;
 		cep->ce_flags = 0;
+
+		return &cep->ce_cmd;
 	}
 
-	return &cep->ce_cmd;
+	return NULL;
 }
 
 /*

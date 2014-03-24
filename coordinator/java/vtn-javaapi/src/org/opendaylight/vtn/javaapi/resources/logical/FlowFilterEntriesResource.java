@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -39,7 +39,8 @@ import org.opendaylight.vtn.javaapi.validation.logical.FlowFilterEntriesResource
  */
 /* This class handles post and get methods */
 
-@UNCVtnService(path = "/vtns/{vtn_name}/flowfilters/{ff_type}/flowfilterentries")
+@UNCVtnService(
+		path = "/vtns/{vtn_name}/flowfilters/{ff_type}/flowfilterentries")
 public class FlowFilterEntriesResource extends AbstractResource {
 	/** The vtn name. */
 	@UNCField("vtn_name")
@@ -49,6 +50,7 @@ public class FlowFilterEntriesResource extends AbstractResource {
 	private String ffType;
 	private static final Logger LOG = Logger
 			.getLogger(FlowFilterEntriesResource.class.getName());
+
 	/**
 	 * Instantiates a new flow filter entries resource.
 	 */
@@ -58,18 +60,21 @@ public class FlowFilterEntriesResource extends AbstractResource {
 		setValidator(new FlowFilterEntriesResourceValidator(this));
 		LOG.trace("Start FlowFilterEntriesResource#FlowFilterEntriesResource()");
 	}
+
 	/**
 	 * @return the vtnName
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
+
 	/**
 	 * @return the ffType
 	 */
-	public String getFfType() {
+	public final String getFfType() {
 		return ffType;
 	}
+
 	/**
 	 * Implementation of post method of FlowFilterEntries
 	 * 
@@ -80,7 +85,8 @@ public class FlowFilterEntriesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts FlowFilterEntriesResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -128,6 +134,7 @@ public class FlowFilterEntriesResource extends AbstractResource {
 		LOG.trace("Completed FlowFilterEntriesResource#post()");
 		return status;
 	}
+
 	/**
 	 * Implementation of get method of FlowFilterEntries
 	 * 
@@ -138,7 +145,8 @@ public class FlowFilterEntriesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts FlowFilterEntriesResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -161,37 +169,43 @@ public class FlowFilterEntriesResource extends AbstractResource {
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
-			/*setInfo(responseGenerator.getVtnFlowFilterEntryResponse(
-					requestProcessor.getIpcResponsePacket(), requestBody,
-					VtnServiceJsonConsts.LIST));*/
-			JsonObject responseJson = responseGenerator.getVtnFlowFilterEntryResponse(
-					requestProcessor.getIpcResponsePacket(), requestBody,
-					VtnServiceJsonConsts.LIST);
-			if (responseJson.get(VtnServiceJsonConsts.FLOWFILTERENTRIES).isJsonArray()) {
-				JsonArray responseArray = responseJson.get(
-						VtnServiceJsonConsts.FLOWFILTERENTRIES).getAsJsonArray();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			/*
+			 * setInfo(responseGenerator.getVtnFlowFilterEntryResponse(
+			 * requestProcessor.getIpcResponsePacket(), requestBody,
+			 * VtnServiceJsonConsts.LIST));
+			 */
+			JsonObject responseJson = responseGenerator
+					.getVtnFlowFilterEntryResponse(
+							requestProcessor.getIpcResponsePacket(),
+							requestBody, VtnServiceJsonConsts.LIST);
+			if (responseJson.get(VtnServiceJsonConsts.FLOWFILTERENTRIES)
+					.isJsonArray()) {
+				final JsonArray responseArray = responseJson.get(
+						VtnServiceJsonConsts.FLOWFILTERENTRIES)
+						.getAsJsonArray();
 
 				responseJson = getResponseJsonArrayLogical(requestBody,
-						requestProcessor, responseGenerator,
-						responseArray, VtnServiceJsonConsts.FLOWFILTERENTRIES,
+						requestProcessor, responseGenerator, responseArray,
+						VtnServiceJsonConsts.FLOWFILTERENTRIES,
 						VtnServiceJsonConsts.SEQNUM,
 						IpcRequestPacketEnum.KT_VTN_FLOWFILTER_ENTRY_GET,
-						uriParameterList,VtnServiceIpcConsts.GET_VTN_FLOW_FILETER_ENTRY_RESPONSE);
+						uriParameterList,
+						VtnServiceIpcConsts.GET_VTN_FLOW_FILETER_ENTRY_RESPONSE);
 			}
 			setInfo(responseJson);
 			LOG.debug("Response object created successfully");
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
 			getExceptionHandler()
-			.raise(Thread.currentThread().getStackTrace()[1]
-					.getClassName()
-					+ VtnServiceConsts.HYPHEN
-					+ Thread.currentThread().getStackTrace()[1]
-							.getMethodName(),
+					.raise(Thread.currentThread().getStackTrace()[1]
+							.getClassName()
+							+ VtnServiceConsts.HYPHEN
+							+ Thread.currentThread().getStackTrace()[1]
+									.getMethodName(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR
-							.getErrorMessage(), e);
+									.getErrorMessage(), e);
 			throw e;
 		} finally {
 			if (status == ClientSession.RESP_FATAL) {
@@ -208,12 +222,13 @@ public class FlowFilterEntriesResource extends AbstractResource {
 		LOG.trace("Completed FlowFilterEntriesResource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 
 	 * @return parameter list
 	 */
-	private List<String> getUriParameters(JsonObject requestBody) {
+	private List<String> getUriParameters(final JsonObject requestBody) {
 		final List<String> uriParameters = new ArrayList<String>();
 		LOG.trace("Start FlowFilterEntriesResource#getUriParameters()");
 		uriParameters.add(vtnName);

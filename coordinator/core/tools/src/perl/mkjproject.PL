@@ -18,7 +18,7 @@ $fh->print($Config{startperl}, "\n");
 $fh->print(<<'EOF');
 
 #
-# Copyright (c) 2012-2013 NEC Corporation
+# Copyright (c) 2012-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -601,7 +601,7 @@ MAIN:
 	}
 
 	my ($pclasspath, @jarclpath);
-	if (@classpath or @extlibs) {
+	if (@classpath or @extlibs or @build_cp) {
 		$pclasspath = create_classpath($proj, 'pkg.build.classpath',
 					       classpath => \@classpath,
 					       build_classpath => \@build_cp,

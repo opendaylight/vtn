@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -41,6 +41,7 @@ public class FlowFiltersResource extends AbstractResource {
 	private String vtnName;
 	private static final Logger LOG = Logger
 			.getLogger(FlowFiltersResource.class.getName());
+
 	/**
 	 * Instantiates a new flow filters resource.
 	 */
@@ -50,14 +51,16 @@ public class FlowFiltersResource extends AbstractResource {
 		setValidator(new FlowFilterResourceValidator(this));
 		LOG.trace("Completed FlowFiltersResource#FlowFiltersResource()");
 	}
+
 	/**
 	 * Gets the vtn name.
 	 * 
 	 * @return the vtn name
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
+
 	/**
 	 * Implementation of Post method of Flow Fliter API
 	 * 
@@ -68,7 +71,8 @@ public class FlowFiltersResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts FlowFiltersResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -124,6 +128,7 @@ public class FlowFiltersResource extends AbstractResource {
 		LOG.trace("Completed FlowFiltersResource#post()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 

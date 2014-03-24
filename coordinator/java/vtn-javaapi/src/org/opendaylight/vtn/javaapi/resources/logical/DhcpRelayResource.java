@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -43,6 +43,7 @@ public class DhcpRelayResource extends AbstractResource {
 	private String vrtName;
 	private static final Logger LOG = Logger.getLogger(DhcpRelayResource.class
 			.getName());
+
 	/**
 	 * Instantiates a new dhcp relay resource.
 	 */
@@ -52,18 +53,21 @@ public class DhcpRelayResource extends AbstractResource {
 		setValidator(new DhcpRelayResourceValidator(this));
 		LOG.trace("Complete DhcpRelayResource#DhcpRelayResource()");
 	}
+
 	/**
 	 * @return the vtnName
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
+
 	/**
 	 * @return the vrtName
 	 */
-	public String getVrtName() {
+	public final String getVrtName() {
 		return vrtName;
 	}
+
 	/**
 	 * Implementation of get method of DhcpRelay
 	 * 
@@ -74,7 +78,8 @@ public class DhcpRelayResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start DhcpRelayResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -95,7 +100,7 @@ public class DhcpRelayResource extends AbstractResource {
 			LOG.debug("Request Packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			setInfo(responseGenerator.getDhcpRelayResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.SHOW));
@@ -112,9 +117,7 @@ public class DhcpRelayResource extends AbstractResource {
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR
 									.getErrorMessage(), e);
 			throw e;
-		}
-
-		finally {
+		} finally {
 			if (status == ClientSession.RESP_FATAL) {
 				if (null != requestProcessor.getErrorJson()) {
 					setInfo(requestProcessor.getErrorJson());
@@ -129,6 +132,7 @@ public class DhcpRelayResource extends AbstractResource {
 		LOG.trace("Complete DhcpRelayResource#get()");
 		return status;
 	}
+
 	/**
 	 * Implementation of put method of DhcpRelay
 	 * 
@@ -139,7 +143,8 @@ public class DhcpRelayResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start DhcpRelayResource#put()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -187,12 +192,13 @@ public class DhcpRelayResource extends AbstractResource {
 		LOG.trace("Completed  DhcpRelayResource#put()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 
 	 * @return
 	 */
-	private List<String> getUriParameters() {		
+	private List<String> getUriParameters() {
 		LOG.trace("Start DhcpRelayResource#getUriParameters()");
 		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(vtnName);

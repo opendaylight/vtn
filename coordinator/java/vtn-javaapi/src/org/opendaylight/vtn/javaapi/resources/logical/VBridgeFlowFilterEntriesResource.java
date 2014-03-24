@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -37,7 +37,8 @@ import org.opendaylight.vtn.javaapi.validation.logical.VBridgeFlowFilterEntriesR
  * 
  */
 
-@UNCVtnService(path = "/vtns/{vtn_name}/vbridges/{vbr_name}/flowfilters/{ff_type}/flowfilterentries")
+@UNCVtnService(
+		path = "/vtns/{vtn_name}/vbridges/{vbr_name}/flowfilters/{ff_type}/flowfilterentries")
 public class VBridgeFlowFilterEntriesResource extends AbstractResource {
 	/** The vtn name. */
 	@UNCField("vtn_name")
@@ -66,21 +67,21 @@ public class VBridgeFlowFilterEntriesResource extends AbstractResource {
 	/**
 	 * @return the vtnName
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
 	/**
 	 * @return the vbrName
 	 */
-	public String getVbrName() {
+	public final String getVbrName() {
 		return vbrName;
 	}
 
 	/**
 	 * @return the ffType
 	 */
-	public String getFfType() {
+	public final String getFfType() {
 		return ffType;
 	}
 
@@ -94,7 +95,8 @@ public class VBridgeFlowFilterEntriesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VBridgeFlowFilterEntriesResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -154,7 +156,8 @@ public class VBridgeFlowFilterEntriesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VBridgeFlowFilterEntriesResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -182,20 +185,27 @@ public class VBridgeFlowFilterEntriesResource extends AbstractResource {
 			 * requestProcessor.getIpcResponsePacket(), requestBody,
 			 * VtnServiceJsonConsts.LIST));
 			 */
-            JsonObject responseJson = responseGenerator.getVBridgeFlowFilterEntryResponse(
-                    requestProcessor.getIpcResponsePacket(), requestBody,
-                    VtnServiceJsonConsts.LIST);
-            if (responseJson.get(VtnServiceJsonConsts.FLOWFILTERENTRIES).isJsonArray()) {
-              JsonArray responseArray = responseJson.get(
-                          VtnServiceJsonConsts.FLOWFILTERENTRIES).getAsJsonArray();
-              responseJson = getResponseJsonArrayLogical(requestBody,
-                          requestProcessor, responseGenerator,
-                          responseArray, VtnServiceJsonConsts.FLOWFILTERENTRIES,
-                          VtnServiceJsonConsts.SEQNUM,
-                          IpcRequestPacketEnum.KT_VBR_FLOWFILTER_ENTRY_GET,
-                          uriParameterList,VtnServiceIpcConsts.GET_VBRIDGE_FLOW_FILTER_ENTRY_RESPONSE);
-            }
-            setInfo(responseJson);
+			JsonObject responseJson = responseGenerator
+					.getVBridgeFlowFilterEntryResponse(
+							requestProcessor.getIpcResponsePacket(),
+							requestBody, VtnServiceJsonConsts.LIST);
+			if (responseJson.get(VtnServiceJsonConsts.FLOWFILTERENTRIES)
+					.isJsonArray()) {
+				final JsonArray responseArray = responseJson.get(
+						VtnServiceJsonConsts.FLOWFILTERENTRIES)
+						.getAsJsonArray();
+				responseJson = getResponseJsonArrayLogical(
+						requestBody,
+						requestProcessor,
+						responseGenerator,
+						responseArray,
+						VtnServiceJsonConsts.FLOWFILTERENTRIES,
+						VtnServiceJsonConsts.SEQNUM,
+						IpcRequestPacketEnum.KT_VBR_FLOWFILTER_ENTRY_GET,
+						uriParameterList,
+						VtnServiceIpcConsts.GET_VBRIDGE_FLOW_FILTER_ENTRY_RESPONSE);
+			}
+			setInfo(responseJson);
 			LOG.debug("Response object created successfully");
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {

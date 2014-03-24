@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -439,6 +439,7 @@ TcLockRet TcLock::TcOperationIsAllowed(uint32_t session_id,
   case TC_ACT:
     break;
   case TC_SBY:
+  case TC_ACT_FAIL:
     if (operation != TC_ACQUIRE_READ_SESSION &&
         operation != TC_ACQUIRE_READ_LOCK_FOR_STATE_TRANSITION) {
       return TC_LOCK_INVALID_UNC_STATE;

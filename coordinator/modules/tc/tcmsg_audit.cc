@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -166,7 +166,7 @@ TcMsgAudit::SendAuditTransEndRequest(AbortOnFailVector abort_on_fail_,
       return TCOPER_RET_FATAL;
     }
     /*append data to channel */
-    pfc_log_info("notify Audit/TxEnd to %s", channel_name.c_str());
+    pfc_log_info("notify AuditTxEnd to %s", channel_name.c_str());
     util_resp = tc::TcClientSessionUtils::set_uint8(end_sess, oper);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
       TcClientSessionUtils::tc_session_close(&end_sess, conn);
@@ -294,7 +294,15 @@ unc_keytype_ctrtype_t GetDriverId::GetResult() {
  **/
 AuditTransaction::AuditTransaction(uint32_t sess_id,
                                    tclib::TcMsgOperType oper)
-:TcMsgAudit(sess_id, oper) {}
+:TcMsgAudit(sess_id , oper), reconnect_controller_(PFC_FALSE) {}
+
+/*!\brief method to set reconnect option
+ * @param[in] force_reconnect - option to perforn audit after reconnecting with
+ * the controller*/ 
+void AuditTransaction::SetReconnect(pfc_bool_t force_reconnect) {
+  reconnect_controller_ = force_reconnect;
+}
+
 
 /*!\brief this method sends send Audit/Transaction START/END
  *request to recipient modules.
@@ -335,6 +343,13 @@ AuditTransaction::SendRequest(std::string channel_name) {
   util_resp = tc::TcClientSessionUtils::set_string(sess_, controller_id_);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
     return ReturnUtilResp(util_resp);
+  }
+  if (opertype_ == tclib::MSG_AUDIT_START) {
+    util_resp = tc::TcClientSessionUtils::
+        set_uint8(sess_, (uint8_t)reconnect_controller_);
+    if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      return ReturnUtilResp(util_resp);
+    }
   }
   if (opertype_ == tclib::MSG_AUDIT_TRANS_END) {
     util_resp = tc::TcClientSessionUtils::set_uint8(sess_, trans_result_);
@@ -398,6 +413,7 @@ AuditTransaction::SendRequest(std::string channel_name) {
                              PFC_EXPECT_TRUE(opertype_ ==
                                              tclib::MSG_AUDIT_TRANS_END)))) {
     pfc_log_error("Audit end/Transaction end failure");
+    audit_result_ = tclib::TC_AUDIT_FAILURE;
     ret_val = TCOPER_RET_FATAL;
   }
   /*session is not closed in case of failure as its contents
@@ -453,7 +469,7 @@ TcOperRet AuditTransaction::Execute() {
     case tclib::MSG_AUDIT_TRANS_START: {
       pfc_log_info("*** AUDIT TxSTART ***");
       notifyorder_.push_back(TC_DRV_ODL);
-      //notifyorder_.push_back(TC_DRV_OVERLAY);
+      // notifyorder_.push_back(TC_DRV_OVERLAY);
       // notifyorder_.push_back(TC_DRV_LEGACY);
       notifyorder_.push_back(TC_UPLL);
       notifyorder_.push_back(TC_UPPL);
@@ -632,6 +648,7 @@ TwoPhaseAudit::HandleDriverResultResponse(pfc::core::ipc::ClientSession*
       PFC_EXPECT_TRUE(opertype_ ==  tclib::MSG_AUDIT_VOTE)) {
     pfc_log_info("failure response for vote-driver result");
     trans_result_ = tclib::TRANS_END_FAILURE;
+    audit_result_ = tclib::TC_AUDIT_FAILURE;
     ret_val = SendAbortRequest(abort_on_fail_);
     if (PFC_EXPECT_TRUE(ret_val == TCOPER_RET_SUCCESS)) {
       ret_val = TCOPER_RET_ABORT;
@@ -642,6 +659,7 @@ TwoPhaseAudit::HandleDriverResultResponse(pfc::core::ipc::ClientSession*
   } else if (PFC_EXPECT_TRUE(resp == tclib::TC_FAILURE) &&
              PFC_EXPECT_TRUE(opertype_ == tclib::MSG_AUDIT_GLOBAL)) {
     pfc_log_info("failure response for global commit-driver result");
+    audit_result_ = tclib::TC_AUDIT_FAILURE;
     ret_val = TCOPER_RET_FATAL;
   } else {
      pfc_log_info("success response for driver result");
@@ -871,6 +889,7 @@ TwoPhaseAudit::SendRequestToDriver() {
     } else if (PFC_EXPECT_TRUE(tclib::TC_FAILURE == resp) &&
                PFC_EXPECT_TRUE(opertype_ ==  tclib::MSG_AUDIT_GLOBAL)) {
       pfc_log_error("Failure response from %s", channel_name.c_str());
+      audit_result_ = tclib::TC_AUDIT_FAILURE;
       ret_val = TCOPER_RET_FATAL;
     }
     if (ret_val == TCOPER_RET_SUCCESS) {
@@ -988,6 +1007,7 @@ TwoPhaseAudit::SendRequest(std::string channel_name) {
              PFC_EXPECT_TRUE(opertype_ == tclib::MSG_AUDIT_GLOBAL)) {
     pfc_log_error("Failure response from %s",
                   channel_name.c_str());
+    audit_result_ = tclib::TC_AUDIT_FAILURE;
     ret_val = TCOPER_RET_FATAL;
   }
   /*delete the session pointer*/

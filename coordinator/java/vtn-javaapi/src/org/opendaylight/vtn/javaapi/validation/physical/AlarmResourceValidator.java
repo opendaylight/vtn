@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -31,7 +31,7 @@ public class AlarmResourceValidator extends VtnServiceValidator {
 			.getLogger(AlarmResourceValidator.class.getName());
 
 	private final AbstractResource resource;
-	final CommonValidator validator = new CommonValidator();
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new alarm resource validator.
@@ -49,7 +49,7 @@ public class AlarmResourceValidator extends VtnServiceValidator {
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start AlarmResourceValidator#validateUri()");
 		boolean isValid = false;
 		if (resource instanceof AlarmResource) {
@@ -64,8 +64,9 @@ public class AlarmResourceValidator extends VtnServiceValidator {
 	 * Validate request JSON for Clear Alarms API.
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start AlarmResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of AlarmResourceValidator");
@@ -114,9 +115,11 @@ public class AlarmResourceValidator extends VtnServiceValidator {
 				&& !requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.ALARMNO)
 						.getAsString().trim().isEmpty()) {
-			isValid = validator.isValidAlarmRange(new BigInteger(requestBody
-					.getAsJsonPrimitive(VtnServiceJsonConsts.ALARMNO)
-					.getAsString().trim()), VtnServiceJsonConsts.BIG_VAL0,
+			isValid = validator.isValidBigIntegerRangeString(new BigInteger(
+					requestBody
+							.getAsJsonPrimitive(VtnServiceJsonConsts.ALARMNO)
+							.getAsString().trim()),
+					VtnServiceJsonConsts.BIG_VAL0,
 					VtnServiceJsonConsts.BIG_VAL_9999999999999999999);
 		} else {
 			isValid = false;

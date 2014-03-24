@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -84,10 +84,12 @@ CREATE TABLE su_vbr_vlanmap_tbl (
     logical_port_id varchar(320) default ' ',
     logical_port_id_valid smallint default 0,
     vlanid integer default 0,
+    bdry_ref_count bigint default 0,
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_vlanid smallint default 0,
+    valid_bdry_ref_count smallint default 0,
     cs_rowstatus smallint default 3,
     cs_vlanid smallint default 3,
   PRIMARY KEY(vtn_name, vbridge_name, logical_port_id, logical_port_id_valid));
@@ -1064,7 +1066,8 @@ CREATE TABLE ca_vbr_tbl (
     cs_host_addr smallint default 3,
     cs_host_addr_mask smallint default 3,
     flags smallint default 0,
-  PRIMARY KEY(vtn_name, vbridge_name));
+  PRIMARY KEY(vtn_name, vbridge_name),
+  FOREIGN KEY(vtn_name) REFERENCES ca_vtn_tbl(vtn_name));
 
 CREATE TABLE ca_vbr_vlanmap_tbl (
     vtn_name varchar(32) default ' ',
@@ -1072,13 +1075,16 @@ CREATE TABLE ca_vbr_vlanmap_tbl (
     logical_port_id varchar(320) default ' ',
     logical_port_id_valid smallint default 0,
     vlanid integer default 0,
+    bdry_ref_count bigint default 0,
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_vlanid smallint default 0,
+    valid_bdry_ref_count smallint default 0,
     cs_rowstatus smallint default 3,
     cs_vlanid smallint default 3,
-  PRIMARY KEY(vtn_name, vbridge_name, logical_port_id, logical_port_id_valid));
+  PRIMARY KEY(vtn_name, vbridge_name, logical_port_id, logical_port_id_valid),
+  FOREIGN KEY(vtn_name, vbridge_name) REFERENCES ca_vbr_tbl(vtn_name, vbridge_name));
 
 CREATE TABLE ca_vbr_if_tbl (
     vtn_name varchar(32) default ' ',
@@ -1114,7 +1120,8 @@ CREATE TABLE ca_vbr_if_tbl (
     cs_logical_port_id smallint default 3,
     cs_vlanid smallint default 3,
     cs_tagged smallint default 3,
-  PRIMARY KEY(vtn_name, vbridge_name, if_name));
+  PRIMARY KEY(vtn_name, vbridge_name, if_name),
+  FOREIGN KEY(vtn_name, vbridge_name) REFERENCES ca_vbr_tbl(vtn_name, vbridge_name));
 
 CREATE TABLE ca_vrt_tbl (
     vtn_name varchar(32) default ' ',
@@ -1136,7 +1143,8 @@ CREATE TABLE ca_vrt_tbl (
     cs_domain_id smallint default 3,
     cs_vrt_description smallint default 3,
     cs_dhcprelay_admin_status smallint default 3,
-  PRIMARY KEY(vtn_name, vrouter_name));
+  PRIMARY KEY(vtn_name, vrouter_name),
+  FOREIGN KEY(vtn_name) REFERENCES ca_vtn_tbl(vtn_name));
 
 CREATE TABLE ca_vrt_if_tbl (
     vtn_name varchar(32) default ' ',
@@ -1164,7 +1172,8 @@ CREATE TABLE ca_vrt_if_tbl (
     cs_mask smallint default 3,
     cs_mac_addr smallint default 3,
     cs_admin_status smallint default 3,
-  PRIMARY KEY(vtn_name, vrouter_name, if_name));
+  PRIMARY KEY(vtn_name, vrouter_name, if_name),
+  FOREIGN KEY(vtn_name, vrouter_name) REFERENCES ca_vrt_tbl(vtn_name, vrouter_name));
 
 CREATE TABLE ca_vnode_rename_tbl (
     ctrlr_vtn_name varchar(32) default ' ',
@@ -1212,7 +1221,8 @@ CREATE TABLE ca_vlink_tbl (
     cs_boundary_name smallint default 3,
     cs_vlanid smallint default 3,
     cs_description smallint default 3,
-  PRIMARY KEY(vtn_name, vlink_name));
+  PRIMARY KEY(vtn_name, vlink_name),
+  FOREIGN KEY(vtn_name) REFERENCES ca_vtn_tbl(vtn_name));
 
 CREATE TABLE ca_vlink_rename_tbl (
     ctrlr_vtn_name varchar(32) default ' ',
@@ -1237,7 +1247,8 @@ CREATE TABLE ca_static_ip_route_tbl (
     valid_metric smallint default 0,
     cs_rowstatus smallint default 3,
     cs_metric smallint default 3,
-  PRIMARY KEY(vtn_name, vrouter_name, dst_ip_addr, mask, next_hop_addr, nwm_name));
+  PRIMARY KEY(vtn_name, vrouter_name, dst_ip_addr, mask, next_hop_addr, nwm_name),
+  FOREIGN KEY(vtn_name, vrouter_name) REFERENCES ca_vrt_tbl(vtn_name, vrouter_name));
 
 CREATE TABLE ca_dhcp_relay_server_tbl (
     vtn_name varchar(32) default ' ',
@@ -1247,7 +1258,8 @@ CREATE TABLE ca_dhcp_relay_server_tbl (
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
-  PRIMARY KEY(vtn_name, vrouter_name, server_ip_addr));
+  PRIMARY KEY(vtn_name, vrouter_name, server_ip_addr),
+  FOREIGN KEY(vtn_name, vrouter_name) REFERENCES ca_vrt_tbl(vtn_name, vrouter_name));
 
 CREATE TABLE ca_dhcp_relay_if_tbl (
     vtn_name varchar(32) default ' ',
@@ -1257,7 +1269,8 @@ CREATE TABLE ca_dhcp_relay_if_tbl (
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
-  PRIMARY KEY(vtn_name, vrouter_name, if_name));
+  PRIMARY KEY(vtn_name, vrouter_name, if_name),
+  FOREIGN KEY(vtn_name, vrouter_name) REFERENCES ca_vrt_tbl(vtn_name, vrouter_name));
 
 CREATE TABLE ca_vbr_nwmon_grp_tbl (
     vtn_name varchar(32) default ' ',
@@ -1272,7 +1285,8 @@ CREATE TABLE ca_vbr_nwmon_grp_tbl (
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
     cs_admin_status smallint default 3,
-  PRIMARY KEY(vtn_name, vbridge_name, nwm_name));
+  PRIMARY KEY(vtn_name, vbridge_name, nwm_name),
+  FOREIGN KEY(vtn_name, vbridge_name) REFERENCES ca_vbr_tbl(vtn_name, vbridge_name));
 
 CREATE TABLE ca_vbr_nwmon_host_tbl (
     vtn_name varchar(32) default ' ',
@@ -1298,7 +1312,8 @@ CREATE TABLE ca_vbr_nwmon_host_tbl (
     cs_failure_count smallint default 3,
     cs_recovery_count smallint default 3,
     cs_wait_time smallint default 3,
-  PRIMARY KEY(vtn_name, vbridge_name, nwm_name, host_address));
+  PRIMARY KEY(vtn_name, vbridge_name, nwm_name, host_address),
+  FOREIGN KEY(vtn_name, vbridge_name, nwm_name) REFERENCES ca_vbr_nwmon_grp_tbl(vtn_name, vbridge_name, nwm_name));
 
 CREATE TABLE ca_vunknown_tbl (
     vtn_name varchar(32) default ' ',
@@ -1314,7 +1329,8 @@ CREATE TABLE ca_vunknown_tbl (
     cs_description smallint default 3,
     cs_type smallint default 3,
     cs_domain_id smallint default 3,
-  PRIMARY KEY(vtn_name, vunknown_name));
+  PRIMARY KEY(vtn_name, vunknown_name),
+  FOREIGN KEY(vtn_name) REFERENCES ca_vtn_tbl(vtn_name));
 
 CREATE TABLE ca_vunknown_if_tbl (
     vtn_name varchar(32) default ' ',
@@ -1329,7 +1345,8 @@ CREATE TABLE ca_vunknown_if_tbl (
     cs_rowstatus smallint default 3,
     cs_description smallint default 3,
     cs_admin_status smallint default 3,
-  PRIMARY KEY(vtn_name, vunknown_name, if_name));
+  PRIMARY KEY(vtn_name, vunknown_name, if_name),
+  FOREIGN KEY(vtn_name, vunknown_name) REFERENCES ca_vunknown_tbl(vtn_name, vunknown_name));
 
 CREATE TABLE ca_vtep_tbl (
     vtn_name varchar(32) default ' ',
@@ -1348,7 +1365,8 @@ CREATE TABLE ca_vtep_tbl (
     cs_description smallint default 3,
     cs_controller_name smallint default 3,
     cs_domain_id smallint default 3,
-  PRIMARY KEY(vtn_name, vtep_name));
+  PRIMARY KEY(vtn_name, vtep_name),
+  FOREIGN KEY(vtn_name) REFERENCES ca_vtn_tbl(vtn_name));
 
 CREATE TABLE ca_vtep_if_tbl (
     vtn_name varchar(32) default ' ',
@@ -1378,7 +1396,8 @@ CREATE TABLE ca_vtep_if_tbl (
     cs_logical_port_id smallint default 3,
     cs_vlanid smallint default 3,
     cs_tagged smallint default 3,
-  PRIMARY KEY(vtn_name, vtep_name, if_name));
+  PRIMARY KEY(vtn_name, vtep_name, if_name),
+  FOREIGN KEY(vtn_name, vtep_name) REFERENCES ca_vtep_tbl(vtn_name, vtep_name));
 
 CREATE TABLE ca_vtep_grp_tbl (
     vtn_name varchar(32) default ' ',
@@ -1391,7 +1410,8 @@ CREATE TABLE ca_vtep_grp_tbl (
     cs_rowstatus smallint default 3,
     cs_controller_name smallint default 3,
     cs_description smallint default 3,
-  PRIMARY KEY(vtn_name, vtepgrp_name));
+  PRIMARY KEY(vtn_name, vtepgrp_name),
+  FOREIGN KEY(vtn_name) REFERENCES ca_vtn_tbl(vtn_name));
 
 CREATE TABLE ca_vtep_grp_mem_tbl (
     vtn_name varchar(32) default ' ',
@@ -1401,7 +1421,8 @@ CREATE TABLE ca_vtep_grp_mem_tbl (
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
-  PRIMARY KEY(vtn_name, vtepgrp_name, vtepgrp_member_name));
+  PRIMARY KEY(vtn_name, vtepgrp_name, vtepgrp_member_name),
+  FOREIGN KEY(vtn_name, vtepgrp_name) REFERENCES ca_vtep_grp_tbl(vtn_name, vtepgrp_name));
 
 CREATE TABLE ca_vtunnel_tbl (
     vtn_name varchar(32) default ' ',
@@ -1429,7 +1450,8 @@ CREATE TABLE ca_vtunnel_tbl (
     cs_underlay_vtn_name smallint default 3,
     cs_vtepgrp_name smallint default 3,
     cs_label smallint default 3,
-  PRIMARY KEY(vtn_name, vtunnel_name));
+  PRIMARY KEY(vtn_name, vtunnel_name),
+  FOREIGN KEY(vtn_name) REFERENCES ca_vtn_tbl(vtn_name));
 
 CREATE TABLE ca_vtunnel_if_tbl (
     vtn_name varchar(32) default ' ',
@@ -1459,7 +1481,8 @@ CREATE TABLE ca_vtunnel_if_tbl (
     cs_logical_port_id smallint default 3,
     cs_vlanid smallint default 3,
     cs_tagged smallint default 3,
-  PRIMARY KEY(vtn_name, vtunnel_name, if_name));
+  PRIMARY KEY(vtn_name, vtunnel_name, if_name),
+  FOREIGN KEY(vtn_name, vtunnel_name) REFERENCES ca_vtunnel_tbl(vtn_name, vtunnel_name));
 
 CREATE TABLE ca_flowlist_tbl (
     flowlist_name varchar(33) default ' ',
@@ -1557,7 +1580,8 @@ CREATE TABLE ca_flowlist_entry_tbl (
     cs_icmp_code smallint default 3,
     cs_icmpv6_type smallint default 3,
     cs_icmpv6_code smallint default 3,
-  PRIMARY KEY(flowlist_name, sequence_num));
+  PRIMARY KEY(flowlist_name, sequence_num),
+  FOREIGN KEY(flowlist_name) REFERENCES ca_flowlist_tbl(flowlist_name));
 
 CREATE TABLE ca_flowlist_entry_ctrlr_tbl (
     flowlist_name varchar(33) default ' ',
@@ -1690,7 +1714,8 @@ CREATE TABLE ca_policingprofile_entry_tbl (
     cs_red_priority smallint default 3,
     cs_red_dscp smallint default 3,
     cs_red_drop smallint default 3,
-  PRIMARY KEY(policingprofile_name, sequence_num));
+  PRIMARY KEY(policingprofile_name, sequence_num),
+  FOREIGN KEY(policingprofile_name) REFERENCES ca_policingprofile_tbl(policingprofile_name));
 
 CREATE TABLE ca_policingprofile_entry_ctrlr_tbl (
     policingprofile_name varchar(33) default ' ',
@@ -1741,7 +1766,8 @@ CREATE TABLE ca_vtn_flowfilter_tbl (
     direction smallint default 0,
     flags smallint default 0,
     cs_rowstatus smallint default 3,
-  PRIMARY KEY(vtn_name, direction));
+  PRIMARY KEY(vtn_name, direction),
+  FOREIGN KEY(vtn_name) REFERENCES ca_vtn_tbl(vtn_name));
 
 CREATE TABLE ca_vtn_flowfilter_ctrlr_tbl (
     vtn_name varchar(32) default ' ',
@@ -1773,7 +1799,8 @@ CREATE TABLE ca_vtn_flowfilter_entry_tbl (
     cs_nwn_name smallint default 3,
     cs_dscp smallint default 3,
     cs_priority smallint default 3,
-  PRIMARY KEY(vtn_name, direction, sequence_num));
+  PRIMARY KEY(vtn_name, direction, sequence_num),
+  FOREIGN KEY(vtn_name, direction) REFERENCES ca_vtn_flowfilter_tbl(vtn_name, direction));
 
 CREATE TABLE ca_vtn_flowfilter_entry_ctrlr_tbl (
     vtn_name varchar(32) default ' ',
@@ -1803,7 +1830,8 @@ CREATE TABLE ca_vbr_flowfilter_tbl (
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
-  PRIMARY KEY(vtn_name, vbr_name, direction));
+  PRIMARY KEY(vtn_name, vbr_name, direction),
+  FOREIGN KEY(vtn_name, vbr_name) REFERENCES ca_vbr_tbl(vtn_name, vbridge_name));
 
 CREATE TABLE ca_vbr_flowfilter_entry_tbl (
     vtn_name varchar(32) default ' ',
@@ -1841,7 +1869,8 @@ CREATE TABLE ca_vbr_flowfilter_entry_tbl (
     cs_nwm_name smallint default 3,
     cs_dscp smallint default 3,
     cs_priority smallint default 3,
-  PRIMARY KEY(vtn_name, vbr_name, direction, sequence_num));
+  PRIMARY KEY(vtn_name, vbr_name, direction, sequence_num),
+  FOREIGN KEY(vtn_name, vbr_name, direction) REFERENCES ca_vbr_flowfilter_tbl(vtn_name, vbr_name, direction));
 
 CREATE TABLE ca_vbr_if_flowfilter_tbl (
     vtn_name varchar(32) default ' ',
@@ -1852,7 +1881,8 @@ CREATE TABLE ca_vbr_if_flowfilter_tbl (
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
-  PRIMARY KEY(vtn_name, vbr_name, vbr_if_name, direction));
+  PRIMARY KEY(vtn_name, vbr_name, vbr_if_name, direction),
+  FOREIGN KEY(vtn_name, vbr_name, vbr_if_name) REFERENCES ca_vbr_if_tbl(vtn_name, vbridge_name, if_name));
 
 CREATE TABLE ca_vbr_if_flowfilter_entry_tbl (
     vtn_name varchar(32) default ' ',
@@ -1891,7 +1921,8 @@ CREATE TABLE ca_vbr_if_flowfilter_entry_tbl (
     cs_nwm_name smallint default 3,
     cs_dscp smallint default 3,
     cs_priority smallint default 3,
-  PRIMARY KEY(vtn_name, vbr_name, vbr_if_name, direction, sequence_num));
+  PRIMARY KEY(vtn_name, vbr_name, vbr_if_name, direction, sequence_num),
+  FOREIGN KEY(vtn_name, vbr_name, vbr_if_name, direction) REFERENCES ca_vbr_if_flowfilter_tbl(vtn_name, vbr_name, vbr_if_name, direction));
 
 CREATE TABLE ca_vrt_if_flowfilter_tbl (
     vtn_name varchar(32) default ' ',
@@ -1902,7 +1933,8 @@ CREATE TABLE ca_vrt_if_flowfilter_tbl (
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
-  PRIMARY KEY(vtn_name, vrt_name, vrt_if_name, direction));
+  PRIMARY KEY(vtn_name, vrt_name, vrt_if_name, direction),
+  FOREIGN KEY(vtn_name, vrt_name, vrt_if_name) REFERENCES ca_vrt_if_tbl(vtn_name, vrouter_name, if_name));
 
 CREATE TABLE ca_vrt_if_flowfilter_entry_tbl (
     vtn_name varchar(32) default ' ',
@@ -1941,7 +1973,8 @@ CREATE TABLE ca_vrt_if_flowfilter_entry_tbl (
     cs_nwm_name smallint default 3,
     cs_dscp smallint default 3,
     cs_priority smallint default 3,
-  PRIMARY KEY(vtn_name, vrt_name, vrt_if_name, direction, sequence_num));
+  PRIMARY KEY(vtn_name, vrt_name, vrt_if_name, direction, sequence_num),
+  FOREIGN KEY(vtn_name, vrt_name, vrt_if_name, direction) REFERENCES ca_vrt_if_flowfilter_tbl(vtn_name, vrt_name, vrt_if_name, direction));
 
 CREATE TABLE ca_vtn_policingmap_tbl (
     vtn_name varchar(32) default ' ',
@@ -1950,7 +1983,8 @@ CREATE TABLE ca_vtn_policingmap_tbl (
     valid_policername smallint default 0,
     cs_rowstatus smallint default 3,
     cs_policername smallint default 3,
-  PRIMARY KEY(vtn_name));
+  PRIMARY KEY(vtn_name),
+  FOREIGN KEY(vtn_name) REFERENCES ca_vtn_tbl(vtn_name));
 
 CREATE TABLE ca_vtn_policingmap_ctrlr_tbl (
     vtn_name varchar(32) default ' ',
@@ -1973,7 +2007,8 @@ CREATE TABLE ca_vbr_policingmap_tbl (
     valid_policername smallint default 0,
     cs_rowstatus smallint default 3,
     cs_policername smallint default 3,
-  PRIMARY KEY(vtn_name, vbr_name));
+  PRIMARY KEY(vtn_name, vbr_name),
+  FOREIGN KEY(vtn_name, vbr_name) REFERENCES ca_vbr_tbl(vtn_name, vbridge_name));
 
 CREATE TABLE ca_vbr_if_policingmap_tbl (
     vtn_name varchar(32) default ' ',
@@ -1986,7 +2021,8 @@ CREATE TABLE ca_vbr_if_policingmap_tbl (
     valid_policername smallint default 0,
     cs_rowstatus smallint default 3,
     cs_policername smallint default 3,
-  PRIMARY KEY(vtn_name, vbr_name, vbr_if_name));
+  PRIMARY KEY(vtn_name, vbr_name, vbr_if_name),
+  FOREIGN KEY(vtn_name, vbr_name, vbr_if_name) REFERENCES ca_vbr_if_tbl(vtn_name, vbridge_name, if_name));
 
 CREATE TABLE ca_ctrlr_tbl (
     name varchar(32) default ' ',
@@ -2069,10 +2105,12 @@ CREATE TABLE ru_vbr_vlanmap_tbl (
     logical_port_id varchar(320) default ' ',
     logical_port_id_valid smallint default 0,
     vlanid integer default 0,
+    bdry_ref_count bigint default 0,
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_vlanid smallint default 0,
+    valid_bdry_ref_count smallint default 0,
     cs_rowstatus smallint default 3,
     cs_vlanid smallint default 3,
   PRIMARY KEY(vtn_name, vbridge_name, logical_port_id, logical_port_id_valid));
@@ -3057,10 +3095,12 @@ CREATE TABLE im_vbr_vlanmap_tbl (
     logical_port_id varchar(320) default ' ',
     logical_port_id_valid smallint default 0,
     vlanid integer default 0,
+    bdry_ref_count bigint default 0,
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_vlanid smallint default 0,
+    valid_bdry_ref_count smallint default 0,
     cs_rowstatus smallint default 1,
     cs_vlanid smallint default 1,
   PRIMARY KEY(vtn_name, vbridge_name, logical_port_id, logical_port_id_valid));
@@ -4045,10 +4085,12 @@ CREATE TABLE au_vbr_vlanmap_tbl (
     logical_port_id varchar(320) default ' ',
     logical_port_id_valid smallint default 0,
     vlanid integer default 0,
+    bdry_ref_count bigint default 0,
     controller_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_vlanid smallint default 0,
+    valid_bdry_ref_count smallint default 0,
     cs_rowstatus smallint default 1,
     cs_vlanid smallint default 1,
   PRIMARY KEY(vtn_name, vbridge_name, logical_port_id, logical_port_id_valid));
@@ -4960,3 +5002,10 @@ CREATE TABLE au_vbr_if_policingmap_tbl (
     cs_rowstatus smallint default 1,
     cs_policername smallint default 1,
   PRIMARY KEY(vtn_name, vbr_name, vbr_if_name));
+
+CREATE INDEX ca_vbr_if_tbl_semindex ON ca_vbr_if_tbl USING btree (logical_port_id, controller_name, domain_id, valid_portmap, valid_logical_port_id);
+CREATE INDEX ca_policingprofile_entry_tbl_semindex ON ca_policingprofile_entry_tbl USING btree (flowlist, valid_flowlist);
+CREATE INDEX ca_vtn_policingmap_tbl_semindex ON ca_vtn_policingmap_tbl USING btree (policername, valid_policername);
+CREATE INDEX ca_vbr_policingmap_tbl_semindex ON ca_vbr_policingmap_tbl USING btree (policername, valid_policername);
+CREATE INDEX ca_vbr_if_policingmap_tbl_semindex ON ca_vbr_if_policingmap_tbl USING btree (policername, valid_policername);
+CREATE INDEX ru_vbr_if_tbl_showindex ON ru_vbr_if_tbl (vtn_name, vex_name, valid_vex_name);

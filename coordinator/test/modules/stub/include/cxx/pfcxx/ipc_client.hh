@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -81,13 +81,18 @@ class ClientSession {
   int   addOutput(const std::string &data);
   int   addOutput(const uint8_t *data, uint32_t length);
   int   addOutput(const pfc_ipcstdef_t &def, pfc_cptr_t data);
-  int    addOutput(val_logical_port_st&);
-  int    addOutput(val_logical_port&);
-  int    addOutput(key_boundary_t&);
+  int   addOutput(val_logical_port_st&);
+  int   addOutput(val_logical_port&);
+  int   addOutput(key_boundary_t&);
   int   addOutput(val_ctr&);
   int   addOutput(key_logical_port);
-  int    addOutput(key_ctr&);
+  int   addOutput(key_ctr&);
   int   addOutput(void);
+  int   addOutput(key_port&);
+  int   addOutput(key_switch&);
+  int   addOutput(key_ctr_dataflow&);
+  int   addOutput(key_dataflow&);
+
 
   int   getResponse(uint32_t index, int8_t &data);
   int   getResponse(uint32_t index, uint8_t &data);
@@ -110,19 +115,27 @@ class ClientSession {
                     pfc_ptr_t datap);
 
 
-  int    getResponse(uint32_t, val_ctr_domain_st&);
-  int    getResponse(uint32_t, val_port_st&);
-  int    getResponse(uint32_t, key_switch_t&);
-  int    getResponse(uint32_t, val_phys_path_fault_alarm_t&);
-  int    getResponse(uint32_t, key_ctr&);
+  int   getResponse(uint32_t, val_ctr_domain_st&);
+  int   getResponse(uint32_t, val_port_st&);
+  int   getResponse(uint32_t, key_switch_t&);
+  int   getResponse(uint32_t, val_phys_path_fault_alarm_t&);
+  int   getResponse(uint32_t, key_ctr&);
   int   getResponse(uint32_t, key_ctr_domain_t&);
   int   getResponse(uint32_t, val_switch_st&);
   int   getResponse(uint32_t, val_link_st&);
   int   getResponse(uint32_t, val_ctr_st&);
   int   getResponse(uint32_t, key_link_t&);
   int   getResponse(uint32_t, key_port_t&);
-
-
+  int   getResponse(uint32_t, val_port_stats_t&);
+  int   getResponse(uint32_t, val_switch_st_detail_t&);
+  int   getResponse(uint32_t, val_df_data_flow_st_t&);
+  int   getResponse(uint32_t, key_dataflow_t&);
+  int   getResponse(uint32_t, pfcdrv_network_mon_alarm_data_t&);
+  int   getResponse(uint32_t, key_vtn&);
+  int   getResponse(uint32_t, pfcdrv_policier_alarm_data_t&);
+  int   getResponse(uint32_t, val_path_fault_alarm_t&);
+  int   getResponse(uint32_t, key_boundary_t&);
+  int   getResponse(uint32_t, val_boundary_st_t&);
   uint32_t getResponseCount(void);
   int getResponseType(uint32_t index, pfc_ipctype_t& type);
 

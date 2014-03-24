@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -37,12 +37,14 @@ public class VBypassResource extends AbstractResource {
 	/** The vtn name. */
 	@UNCField("vtn_name")
 	private String vtnName;
+
 	/**
 	 * @return the vtn name
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
+
 	/** The vbypass name. */
 	@UNCField("vbypass_name")
 	private String vbypassName;
@@ -50,11 +52,13 @@ public class VBypassResource extends AbstractResource {
 	/**
 	 * @return the VBypass name
 	 */
-	public String getVbypassName() {
+	public final String getVbypassName() {
 		return vbypassName;
 	}
+
 	private static final Logger LOG = Logger.getLogger(VBypassResource.class
 			.getName());
+
 	/**
 	 * Instantiates a new VBypass resource.
 	 */
@@ -64,6 +68,7 @@ public class VBypassResource extends AbstractResource {
 		setValidator(new VBypassResourceValidator(this));
 		LOG.trace("Completed VBypassResource#VBypassResource()");
 	}
+
 	/**
 	 * Implementation of put method of VBypass
 	 * 
@@ -74,7 +79,8 @@ public class VBypassResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts VBypassResource#put()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -122,6 +128,7 @@ public class VBypassResource extends AbstractResource {
 		LOG.trace("Completed VBypassResource#put()");
 		return status;
 	}
+
 	/**
 	 * Implementation of delete method of VBypass
 	 * 
@@ -129,7 +136,7 @@ public class VBypassResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Starts VBypassResource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -177,6 +184,7 @@ public class VBypassResource extends AbstractResource {
 		LOG.trace("Completed VBypassResource#delete()");
 		return status;
 	}
+
 	/**
 	 * Implementation of get method of VBypass
 	 * 
@@ -187,7 +195,8 @@ public class VBypassResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts VBypassResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -208,7 +217,7 @@ public class VBypassResource extends AbstractResource {
 			LOG.debug("Request Packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			setInfo(responseGenerator.getVBypassResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.SHOW));
@@ -240,6 +249,7 @@ public class VBypassResource extends AbstractResource {
 		LOG.trace("Completed VBypassResource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 
@@ -247,7 +257,7 @@ public class VBypassResource extends AbstractResource {
 	 */
 	private List<String> getUriParameters() {
 		LOG.trace("Start VBypassResource#getUriParameters()");
-		List<String> uriParameters = new ArrayList<String>();
+		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(vtnName);
 		uriParameters.add(vbypassName);
 		LOG.trace("Completed VBypassResource#getUriParameters()");

@@ -257,6 +257,24 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
   }
 
   /**
+   * @brief      Handling of audit start in driver modules for audit operation
+   * @param[in]  session_id
+   *             session on which audit request sent (user audit)
+   *             session id will be 0 for driver audit
+   * @param[in]  ctr_type controller type openflow/overlay/legacy
+   * @param[in]  controller_id controller id intended for audit
+   * @param[in]  force_reconnect set to audit controller after reconnecting.
+   * @retval     TC_SUCCESS audit start success
+   * @retval     TC_FAILURE audit start failed
+   */
+  unc::tclib::TcCommonRet HandleAuditStart(uint32_t session_id,
+                                           unc_keytype_ctrtype_t ctr_type,
+                                           std::string controller_id,
+                                           pfc_bool_t force_reconnect) {
+    return unc::tclib::TC_SUCCESS;
+  }
+
+  /**
    * @brief       - Handles Audit end
    * @param[in]   - session id
    * @param[in]   - controller type

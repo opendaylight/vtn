@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -38,7 +38,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key vtn struct
 	 */
-	public IpcStruct getKeyVtnStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyVtnStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		/*
 		 * ipc_struct KeyVtn { UINT8 vtn_name[32]; };
@@ -75,7 +75,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the val_vtn struct
 	 */
-	public IpcStruct getValVtnStruct(final JsonObject requestBody,
+	public final IpcStruct getValVtnStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		LOG.trace("Start getValVtnStruct");
 		final IpcStruct valVtnStruct = IpcDataUnitWrapper
@@ -122,7 +122,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key vrt struct
 	 */
-	public IpcStruct getKeyVrtStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyVrtStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		LOG.trace("Start getKeyVrtStruct");
 		final IpcStruct keyVtnVrtStruct = IpcDataUnitWrapper
@@ -167,8 +167,8 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key dhcp relay if struct
 	 */
-	public IpcStruct getKeyDhcpRelayIfStruct(final JsonObject requestBody,
-			final List<String> uriParameters) {
+	public final IpcStruct getKeyDhcpRelayIfStruct(
+			final JsonObject requestBody, final List<String> uriParameters) {
 
 		// Lower level structure
 		/*
@@ -266,7 +266,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key flow list struct
 	 */
-	public IpcStruct getKeyFlowListStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyFlowListStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		// low level structure
 		/*
@@ -307,7 +307,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the val flow list struct
 	 */
-	public IpcStruct getValFlowListStruct(final JsonObject requestBody,
+	public final IpcStruct getValFlowListStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		LOG.trace("Start ValFlowListStruct");
 		final IpcStruct valFlowListStruct = IpcDataUnitWrapper
@@ -377,8 +377,8 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key flow list entry struct
 	 */
-	public IpcStruct getKeyFlowListEntryStruct(final JsonObject requestBody,
-			final List<String> uriParameters) {
+	public final IpcStruct getKeyFlowListEntryStruct(
+			final JsonObject requestBody, final List<String> uriParameters) {
 		// low level structure
 		/*
 		 * ipc_struct key_flowlist_entry { key_flowlist flowlist_key; UINT16
@@ -427,14 +427,15 @@ public class IpcStructFactory {
 	 *            the request body
 	 * @return the val flow list entry struct
 	 */
-	public IpcStruct getValFlowListEntryStruct(final JsonObject requestBody,
-			final List<String> uriParameters) {
+	public final IpcStruct getValFlowListEntryStruct(
+			final JsonObject requestBody, final List<String> uriParameters) {
 		LOG.trace("Start getValFlowListEntryStruct");
 		final IpcStruct valFlowListEntryStruct = IpcDataUnitWrapper
 				.setIpcStructValue(UncStructEnum.ValFlowListEntry.getValue());
 		if (requestBody != null
 				&& requestBody.has(VtnServiceJsonConsts.FLOWLISTENTRY)) {
-			JsonObject flowListEntry = requestBody.getAsJsonObject(VtnServiceJsonConsts.FLOWLISTENTRY);
+			final JsonObject flowListEntry = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.FLOWLISTENTRY);
 			if (flowListEntry.has(VtnServiceJsonConsts.MACDSTADDR)) {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -443,10 +444,15 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				IpcDataUnitWrapper.setMacAddress(
-						valFlowListEntryStruct,
-						VtnServiceIpcConsts.MACDST,flowListEntry.get(VtnServiceJsonConsts.MACDSTADDR).getAsString(),
-						UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_MAC_DST_FLE.ordinal());
+				IpcDataUnitWrapper
+						.setMacAddress(
+								valFlowListEntryStruct,
+								VtnServiceIpcConsts.MACDST,
+								flowListEntry.get(
+										VtnServiceJsonConsts.MACDSTADDR)
+										.getAsString(),
+								UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_MAC_DST_FLE
+										.ordinal());
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -464,11 +470,15 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				IpcDataUnitWrapper.setMacAddress(
-						valFlowListEntryStruct,
-						VtnServiceIpcConsts.MACSRC,
-						flowListEntry.get(VtnServiceJsonConsts.MACSRCADDR).getAsString(),
-						UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_MAC_SRC_FLE.ordinal());
+				IpcDataUnitWrapper
+						.setMacAddress(
+								valFlowListEntryStruct,
+								VtnServiceIpcConsts.MACSRC,
+								flowListEntry.get(
+										VtnServiceJsonConsts.MACSRCADDR)
+										.getAsString(),
+								UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_MAC_SRC_FLE
+										.ordinal());
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -486,10 +496,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowListEntryStruct.set(
-						VtnServiceIpcConsts.MAC_ETH_TYPE,
-						IpcDataUnitWrapper.setIpcUint16HexaValue(flowListEntry.get(VtnServiceJsonConsts.MACETHERTYPE).getAsString(),
-								valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_MAC_ETH_TYPE_FLE.ordinal()));
+				valFlowListEntryStruct
+						.set(VtnServiceIpcConsts.MAC_ETH_TYPE,
+								IpcDataUnitWrapper
+										.setIpcUint16HexaValue(
+												flowListEntry
+														.get(VtnServiceJsonConsts.MACETHERTYPE)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_MAC_ETH_TYPE_FLE
+														.ordinal()));
 				LOG.debug("macethertype:"
 						+ flowListEntry.get(VtnServiceJsonConsts.MACETHERTYPE)
 								.getAsString());
@@ -510,10 +526,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowListEntryStruct.set(
-						VtnServiceIpcConsts.DST_IP,
-						IpcDataUnitWrapper.setIpcInet4AddressValue(flowListEntry.get(VtnServiceJsonConsts.IPDSTADDR).getAsString(),
-								valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_DST_IP_FLE.ordinal()));
+				valFlowListEntryStruct
+						.set(VtnServiceIpcConsts.DST_IP,
+								IpcDataUnitWrapper
+										.setIpcInet4AddressValue(
+												flowListEntry
+														.get(VtnServiceJsonConsts.IPDSTADDR)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_DST_IP_FLE
+														.ordinal()));
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -531,10 +553,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowListEntryStruct.set(
-						VtnServiceIpcConsts.DST_IP_PREFIXLEN,
-						IpcDataUnitWrapper.setIpcUint8Value(flowListEntry.get(VtnServiceJsonConsts.IPDSTADDRPREFIX).getAsString(), 
-								valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_DST_IP_PREFIX_FLE.ordinal()));
+				valFlowListEntryStruct
+						.set(VtnServiceIpcConsts.DST_IP_PREFIXLEN,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(
+												flowListEntry
+														.get(VtnServiceJsonConsts.IPDSTADDRPREFIX)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_DST_IP_PREFIX_FLE
+														.ordinal()));
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -552,10 +580,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowListEntryStruct.set(
-						VtnServiceIpcConsts.SRC_IP,
-						IpcDataUnitWrapper.setIpcInet4AddressValue(flowListEntry.get(VtnServiceJsonConsts.IPSRCADDR).getAsString(),
-								valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_SRC_IP_FLE.ordinal()));
+				valFlowListEntryStruct
+						.set(VtnServiceIpcConsts.SRC_IP,
+								IpcDataUnitWrapper
+										.setIpcInet4AddressValue(
+												flowListEntry
+														.get(VtnServiceJsonConsts.IPSRCADDR)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_SRC_IP_FLE
+														.ordinal()));
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -573,10 +607,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowListEntryStruct.set(
-						VtnServiceIpcConsts.SRC_IP_PREFIXLEN,
-						IpcDataUnitWrapper.setIpcUint8Value(flowListEntry.get(VtnServiceJsonConsts.IPSRCADDRPREFIX).getAsString(), 
-								valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_SRC_IP_PREFIX_FLE.ordinal()));
+				valFlowListEntryStruct
+						.set(VtnServiceIpcConsts.SRC_IP_PREFIXLEN,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(
+												flowListEntry
+														.get(VtnServiceJsonConsts.IPSRCADDRPREFIX)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_SRC_IP_PREFIX_FLE
+														.ordinal()));
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -595,10 +635,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowListEntryStruct.set(
-						VtnServiceIpcConsts.VLAN_PRIORITY,
-						IpcDataUnitWrapper.setIpcUint8Value(flowListEntry.get(VtnServiceJsonConsts.MACVLANPRIORITY).getAsString(), 
-								valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_VLAN_PRIORITY_FLE.ordinal()));
+				valFlowListEntryStruct
+						.set(VtnServiceIpcConsts.VLAN_PRIORITY,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(
+												flowListEntry
+														.get(VtnServiceJsonConsts.MACVLANPRIORITY)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_VLAN_PRIORITY_FLE
+														.ordinal()));
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -616,10 +662,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowListEntryStruct.set(
-						VtnServiceIpcConsts.DST_IPV6,
-						IpcDataUnitWrapper.setIpcInet6AddressValue(flowListEntry.get(VtnServiceJsonConsts.IPV6DSTADDR).getAsString(),
-								valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_DST_IP_V6_FLE.ordinal()));
+				valFlowListEntryStruct
+						.set(VtnServiceIpcConsts.DST_IPV6,
+								IpcDataUnitWrapper
+										.setIpcInet6AddressValue(
+												flowListEntry
+														.get(VtnServiceJsonConsts.IPV6DSTADDR)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_DST_IP_V6_FLE
+														.ordinal()));
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -637,10 +689,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowListEntryStruct.set(
-						VtnServiceIpcConsts.DST_IPV6_PREFIXLEN,
-						IpcDataUnitWrapper.setIpcUint8Value(flowListEntry.get(VtnServiceJsonConsts.IPV6DSTADDRPREFIX).getAsString(), 
-								valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_DST_IP_V6_PREFIX_FLE.ordinal()));
+				valFlowListEntryStruct
+						.set(VtnServiceIpcConsts.DST_IPV6_PREFIXLEN,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(
+												flowListEntry
+														.get(VtnServiceJsonConsts.IPV6DSTADDRPREFIX)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_DST_IP_V6_PREFIX_FLE
+														.ordinal()));
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -658,10 +716,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowListEntryStruct.set(
-						VtnServiceIpcConsts.SRC_IPV6,
-						IpcDataUnitWrapper.setIpcInet6AddressValue(flowListEntry.get(VtnServiceJsonConsts.IPV6SRCADDR).getAsString(),
-								valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_SRC_IP_V6_FLE.ordinal()));
+				valFlowListEntryStruct
+						.set(VtnServiceIpcConsts.SRC_IPV6,
+								IpcDataUnitWrapper
+										.setIpcInet6AddressValue(
+												flowListEntry
+														.get(VtnServiceJsonConsts.IPV6SRCADDR)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_SRC_IP_V6_FLE
+														.ordinal()));
 				LOG.debug("ipv6srcaddr:"
 						+ flowListEntry.get(VtnServiceJsonConsts.IPV6SRCADDR)
 								.getAsString());
@@ -682,10 +746,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowListEntryStruct.set(
-						VtnServiceIpcConsts.SRC_IPV6_PREFIXLEN,
-						IpcDataUnitWrapper.setIpcUint8Value(flowListEntry.get(VtnServiceJsonConsts.IPV6SRCADDRPREFIX).getAsString(), 
-								valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_SRC_IP_V6_PREFIX_FLE.ordinal()));
+				valFlowListEntryStruct
+						.set(VtnServiceIpcConsts.SRC_IPV6_PREFIXLEN,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(
+												flowListEntry
+														.get(VtnServiceJsonConsts.IPV6SRCADDRPREFIX)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_SRC_IP_V6_PREFIX_FLE
+														.ordinal()));
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -703,10 +773,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowListEntryStruct.set(
-						VtnServiceIpcConsts.IP_PROTO,
-						IpcDataUnitWrapper.setIpcUint8Value(flowListEntry.get(VtnServiceJsonConsts.IPPROTO).getAsString(), 
-								valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_IP_PROTOCOL_FLE.ordinal()));
+				valFlowListEntryStruct
+						.set(VtnServiceIpcConsts.IP_PROTO,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(
+												flowListEntry
+														.get(VtnServiceJsonConsts.IPPROTO)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_IP_PROTOCOL_FLE
+														.ordinal()));
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -727,8 +803,13 @@ public class IpcStructFactory {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.IP_DSCP,
 								IpcDataUnitWrapper
-										.setIpcUint8Value(flowListEntry.get(VtnServiceJsonConsts.IPDSCP).getAsString(), 
-												valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_IP_DSCP_FLE.ordinal()));
+										.setIpcUint8Value(
+												flowListEntry
+														.get(VtnServiceJsonConsts.IPDSCP)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_IP_DSCP_FLE
+														.ordinal()));
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -746,10 +827,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowListEntryStruct.set(
-						VtnServiceIpcConsts.L4_DST_PORT,
-						IpcDataUnitWrapper.setIpcUint16Value(flowListEntry.get(VtnServiceJsonConsts.L4DSTPORT).getAsString(),
-								valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_L4_DST_PORT_FLE.ordinal()));
+				valFlowListEntryStruct
+						.set(VtnServiceIpcConsts.L4_DST_PORT,
+								IpcDataUnitWrapper
+										.setIpcUint16Value(
+												flowListEntry
+														.get(VtnServiceJsonConsts.L4DSTPORT)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_L4_DST_PORT_FLE
+														.ordinal()));
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -767,10 +854,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowListEntryStruct.set(
-						VtnServiceIpcConsts.L4_DST_PORT_ENDPT,
-						IpcDataUnitWrapper.setIpcUint16Value(flowListEntry.get(VtnServiceJsonConsts.L4DSTENDPORT).getAsString(),
-								valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_L4_DST_PORT_ENDPT_FLE.ordinal()));
+				valFlowListEntryStruct
+						.set(VtnServiceIpcConsts.L4_DST_PORT_ENDPT,
+								IpcDataUnitWrapper
+										.setIpcUint16Value(
+												flowListEntry
+														.get(VtnServiceJsonConsts.L4DSTENDPORT)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_L4_DST_PORT_ENDPT_FLE
+														.ordinal()));
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -788,10 +881,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowListEntryStruct.set(
-						VtnServiceIpcConsts.L4_SRC_PORT,
-						IpcDataUnitWrapper.setIpcUint16Value(flowListEntry.get(VtnServiceJsonConsts.L4SRCPORT).getAsString(),
-								valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_L4_SRC_PORT_FLE.ordinal()));
+				valFlowListEntryStruct
+						.set(VtnServiceIpcConsts.L4_SRC_PORT,
+								IpcDataUnitWrapper
+										.setIpcUint16Value(
+												flowListEntry
+														.get(VtnServiceJsonConsts.L4SRCPORT)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_L4_SRC_PORT_FLE
+														.ordinal()));
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -809,10 +908,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowListEntryStruct.set(
-						VtnServiceIpcConsts.L4_SRC_PORT_ENDPT,
-						IpcDataUnitWrapper.setIpcUint16Value(flowListEntry.get(VtnServiceJsonConsts.L4SRCENDPORT).getAsString(),
-								valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_L4_SRC_PORT_ENDPT_FLE.ordinal()));
+				valFlowListEntryStruct
+						.set(VtnServiceIpcConsts.L4_SRC_PORT_ENDPT,
+								IpcDataUnitWrapper
+										.setIpcUint16Value(
+												flowListEntry
+														.get(VtnServiceJsonConsts.L4SRCENDPORT)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_L4_SRC_PORT_ENDPT_FLE
+														.ordinal()));
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -830,10 +935,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowListEntryStruct.set(
-						VtnServiceIpcConsts.ICMP_TYPE,
-						IpcDataUnitWrapper.setIpcUint8Value(flowListEntry.get(VtnServiceJsonConsts.ICMPTYPENUM).getAsString(), 
-								valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_ICMP_TYPE_FLE.ordinal()));
+				valFlowListEntryStruct
+						.set(VtnServiceIpcConsts.ICMP_TYPE,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(
+												flowListEntry
+														.get(VtnServiceJsonConsts.ICMPTYPENUM)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_ICMP_TYPE_FLE
+														.ordinal()));
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -851,10 +962,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowListEntryStruct.set(
-						VtnServiceIpcConsts.ICMP_CODE,
-						IpcDataUnitWrapper.setIpcUint8Value(flowListEntry.get(VtnServiceJsonConsts.ICMPCODENUM).getAsString(), 
-								valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_ICMP_CODE_FLE.ordinal()));
+				valFlowListEntryStruct
+						.set(VtnServiceIpcConsts.ICMP_CODE,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(
+												flowListEntry
+														.get(VtnServiceJsonConsts.ICMPCODENUM)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_ICMP_CODE_FLE
+														.ordinal()));
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -872,10 +989,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowListEntryStruct.set(
-						VtnServiceIpcConsts.ICMPV6_TYPE,
-						IpcDataUnitWrapper.setIpcUint8Value(flowListEntry.get(VtnServiceJsonConsts.IPV6ICMPTYPENUM).getAsString(), 
-								valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_ICMP_V6_TYPE_FLE.ordinal()));
+				valFlowListEntryStruct
+						.set(VtnServiceIpcConsts.ICMPV6_TYPE,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(
+												flowListEntry
+														.get(VtnServiceJsonConsts.IPV6ICMPTYPENUM)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_ICMP_V6_TYPE_FLE
+														.ordinal()));
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -893,10 +1016,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowListEntryStruct.set(
-						VtnServiceIpcConsts.ICMPV6_CODE,
-						IpcDataUnitWrapper.setIpcUint8Value(flowListEntry.get(VtnServiceJsonConsts.IPV6ICMPCODENUM).getAsString(), 
-								valFlowListEntryStruct, UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_ICMP_V6_CODE_FLE.ordinal()));
+				valFlowListEntryStruct
+						.set(VtnServiceIpcConsts.ICMPV6_CODE,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(
+												flowListEntry
+														.get(VtnServiceJsonConsts.IPV6ICMPCODENUM)
+														.getAsString(),
+												valFlowListEntryStruct,
+												UncStructIndexEnum.ValFlowlistEntryIndex.UPLL_IDX_ICMP_V6_CODE_FLE
+														.ordinal()));
 			} else {
 				valFlowListEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -923,7 +1052,7 @@ public class IpcStructFactory {
 	 *            the URI parameters
 	 * @return the key v tunnel if struct
 	 */
-	public IpcStruct getKeyVtunnelIfStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyVtunnelIfStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		LOG.trace("Start getKeyVtunnelIfStruct");
 		final IpcStruct KeyVTunnelIfStruct = IpcDataUnitWrapper
@@ -969,7 +1098,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the val v tunnel if struct
 	 */
-	public IpcStruct getValVtunnelIfStruct(final JsonObject requestBody,
+	public final IpcStruct getValVtunnelIfStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		LOG.trace("Start getValVtunnelIfStruct");
 		final IpcStruct ValVTunnelIfStruct = IpcDataUnitWrapper
@@ -1016,14 +1145,22 @@ public class IpcStructFactory {
 					ValVTunnelIfStruct
 							.set(VtnServiceJsonConsts.ADMIN_STATUS,
 									IpcDataUnitWrapper
-											.setIpcUint8Value(UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_ENABLE.getValue(),
-													ValVTunnelIfStruct, UncStructIndexEnum.ValVtunnelIfIndex.UPLL_IDX_ADMIN_ST_VTNL_IF.ordinal()));
+											.setIpcUint8Value(
+													UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_ENABLE
+															.getValue(),
+													ValVTunnelIfStruct,
+													UncStructIndexEnum.ValVtunnelIfIndex.UPLL_IDX_ADMIN_ST_VTNL_IF
+															.ordinal()));
 				} else {
 					ValVTunnelIfStruct
 							.set(VtnServiceJsonConsts.ADMIN_STATUS,
 									IpcDataUnitWrapper
-											.setIpcUint8Value(UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_DISABLE.getValue(),
-													ValVTunnelIfStruct, UncStructIndexEnum.ValVtunnelIfIndex.UPLL_IDX_ADMIN_ST_VTNL_IF.ordinal()));
+											.setIpcUint8Value(
+													UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_DISABLE
+															.getValue(),
+													ValVTunnelIfStruct,
+													UncStructIndexEnum.ValVtunnelIfIndex.UPLL_IDX_ADMIN_ST_VTNL_IF
+															.ordinal()));
 				}
 				LOG.debug("adminstatus:"
 						+ requestBody
@@ -1138,7 +1275,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key vlink struct
 	 */
-	public IpcStruct getKeyVlinkStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyVlinkStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		LOG.trace("Start getKeyVlinkStruct");
 		final IpcStruct KeyVlinkStruct = IpcDataUnitWrapper
@@ -1183,13 +1320,14 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the val vlink struct
 	 */
-	public IpcStruct getValVlinkStruct(final JsonObject requestBody,
+	public final IpcStruct getValVlinkStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		LOG.trace("Start getValVlinkStruct");
 		final IpcStruct ValVlinkStruct = IpcDataUnitWrapper
 				.setIpcStructValue(UncStructEnum.ValVlink.getValue());
 		if (requestBody != null && requestBody.has(VtnServiceJsonConsts.VLINK)) {
-			JsonObject vLink = requestBody.getAsJsonObject(VtnServiceJsonConsts.VLINK);
+			final JsonObject vLink = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.VLINK);
 			if (vLink.has(VtnServiceJsonConsts.ADMINSTATUS)) {
 				ValVlinkStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -1203,14 +1341,22 @@ public class IpcStructFactory {
 					ValVlinkStruct
 							.set(VtnServiceJsonConsts.ADMIN_STATUS,
 									IpcDataUnitWrapper
-											.setIpcUint8Value(UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_ENABLE.getValue(),
-													ValVlinkStruct,UncStructIndexEnum.ValVlinkIndex.UPLL_IDX_ADMIN_STATUS_VLNK.ordinal()));
+											.setIpcUint8Value(
+													UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_ENABLE
+															.getValue(),
+													ValVlinkStruct,
+													UncStructIndexEnum.ValVlinkIndex.UPLL_IDX_ADMIN_STATUS_VLNK
+															.ordinal()));
 				} else {
 					ValVlinkStruct
 							.set(VtnServiceJsonConsts.ADMIN_STATUS,
 									IpcDataUnitWrapper
-											.setIpcUint8Value(UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_DISABLE.getValue(),
-													ValVlinkStruct,UncStructIndexEnum.ValVlinkIndex.UPLL_IDX_ADMIN_STATUS_VLNK.ordinal()));
+											.setIpcUint8Value(
+													UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_DISABLE
+															.getValue(),
+													ValVlinkStruct,
+													UncStructIndexEnum.ValVlinkIndex.UPLL_IDX_ADMIN_STATUS_VLNK
+															.ordinal()));
 				}
 				LOG.debug("adminstatus:"
 						+ vLink.get(VtnServiceJsonConsts.ADMINSTATUS)
@@ -1236,7 +1382,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.VNODE1NAME,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vLink.get(VtnServiceJsonConsts.VNODE1NAME)
+												vLink.get(
+														VtnServiceJsonConsts.VNODE1NAME)
 														.getAsString(),
 												ValVlinkStruct,
 												UncStructIndexEnum.ValVlinkIndex.UPLL_IDX_VNODE1_NAME_VLNK
@@ -1262,7 +1409,8 @@ public class IpcStructFactory {
 						.set(VtnServiceIpcConsts.VNODE1IFNAME,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vLink.get(VtnServiceJsonConsts.IF1NAME)
+												vLink.get(
+														VtnServiceJsonConsts.IF1NAME)
 														.getAsString(),
 												ValVlinkStruct,
 												UncStructIndexEnum.ValVlinkIndex.UPLL_IDX_VNODE1_IF_NAME_VLNK
@@ -1288,7 +1436,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.VNODE2NAME,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vLink.get(VtnServiceJsonConsts.VNODE2NAME)
+												vLink.get(
+														VtnServiceJsonConsts.VNODE2NAME)
 														.getAsString(),
 												ValVlinkStruct,
 												UncStructIndexEnum.ValVlinkIndex.UPLL_IDX_VNODE2_NAME_VLNK
@@ -1314,7 +1463,8 @@ public class IpcStructFactory {
 						.set(VtnServiceIpcConsts.VNODE2IFNAME,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vLink.get(VtnServiceJsonConsts.IF2NAME)
+												vLink.get(
+														VtnServiceJsonConsts.IF2NAME)
 														.getAsString(),
 												ValVlinkStruct,
 												UncStructIndexEnum.ValVlinkIndex.UPLL_IDX_VNODE2_IF_NAME_VLNK
@@ -1328,8 +1478,9 @@ public class IpcStructFactory {
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_INVALID
 												.ordinal()));
 			}
-			if (vLink.has(VtnServiceJsonConsts.BOUNDARYMAP)){
-					JsonObject boundaryMap = vLink.getAsJsonObject(VtnServiceJsonConsts.BOUNDARYMAP);
+			if (vLink.has(VtnServiceJsonConsts.BOUNDARYMAP)) {
+				final JsonObject boundaryMap = vLink
+						.getAsJsonObject(VtnServiceJsonConsts.BOUNDARYMAP);
 				if (boundaryMap.has(VtnServiceJsonConsts.BOUNDARYID)) {
 					ValVlinkStruct
 							.set(VtnServiceIpcConsts.VALID,
@@ -1366,9 +1517,16 @@ public class IpcStructFactory {
 									IpcDataUnitWrapper
 											.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 													.ordinal()));
-					ValVlinkStruct.set(VtnServiceJsonConsts.VLANID,
-							IpcDataUnitWrapper.setIpcUint16Value(boundaryMap.get(VtnServiceJsonConsts.VLANID).getAsString(),
-									ValVlinkStruct, UncStructIndexEnum.ValVlinkIndex.UPLL_IDX_VLAN_ID_VLNK.ordinal()));
+					ValVlinkStruct
+							.set(VtnServiceJsonConsts.VLANID,
+									IpcDataUnitWrapper
+											.setIpcUint16Value(
+													boundaryMap
+															.get(VtnServiceJsonConsts.VLANID)
+															.getAsString(),
+													ValVlinkStruct,
+													UncStructIndexEnum.ValVlinkIndex.UPLL_IDX_VLAN_ID_VLNK
+															.ordinal()));
 				} else if (boundaryMap.has(VtnServiceJsonConsts.NO_VLAN_ID)) {
 					LOG.debug("Valid NO VLAN ID Case");
 					ValVlinkStruct
@@ -1381,8 +1539,11 @@ public class IpcStructFactory {
 					ValVlinkStruct
 							.set(VtnServiceJsonConsts.VLANID,
 									IpcDataUnitWrapper
-											.setIpcUint16HexaValue(VtnServiceIpcConsts.VLAN_ID_DEFAULT_VALUE,
-													ValVlinkStruct, UncStructIndexEnum.ValVlinkIndex.UPLL_IDX_VLAN_ID_VLNK.ordinal()));
+											.setIpcUint16HexaValue(
+													VtnServiceIpcConsts.VLAN_ID_DEFAULT_VALUE,
+													ValVlinkStruct,
+													UncStructIndexEnum.ValVlinkIndex.UPLL_IDX_VLAN_ID_VLNK
+															.ordinal()));
 				} else {
 					LOG.debug("InValid VLAN ID Case");
 					ValVlinkStruct
@@ -1444,7 +1605,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key vtep struct
 	 */
-	public IpcStruct getKeyVtepStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyVtepStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		LOG.trace("Start getKeyVtepStruct");
 		final IpcStruct KeyVtepStruct = IpcDataUnitWrapper
@@ -1485,7 +1646,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the Val VTEP struct
 	 */
-	public IpcStruct getValVtepStruct(final JsonObject requestBody,
+	public final IpcStruct getValVtepStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		/*
 		 * ipc_struct val_vtep { UINT8 valid[23]; UINT8 cs_row_status; UINT8
@@ -1496,7 +1657,8 @@ public class IpcStructFactory {
 		final IpcStruct ValVtepStruct = IpcDataUnitWrapper
 				.setIpcStructValue(UncStructEnum.ValVtep.getValue());
 		if (requestBody != null && requestBody.has(VtnServiceJsonConsts.VTEP)) {
-			JsonObject vtep = requestBody.getAsJsonObject(VtnServiceJsonConsts.VTEP);
+			final JsonObject vtep = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.VTEP);
 			if (vtep.has(VtnServiceJsonConsts.DESCRIPTION)) {
 				ValVtepStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -1509,7 +1671,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.DESCRIPTION,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vtep.get(VtnServiceJsonConsts.DESCRIPTION)
+												vtep.get(
+														VtnServiceJsonConsts.DESCRIPTION)
 														.getAsString(),
 												ValVtepStruct,
 												UncStructIndexEnum.ValVtepVndex.UPLL_IDX_DESC_VTEP
@@ -1535,7 +1698,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.CONTROLLERID,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vtep.get(VtnServiceJsonConsts.CONTROLLERID)
+												vtep.get(
+														VtnServiceJsonConsts.CONTROLLERID)
 														.getAsString(),
 												ValVtepStruct,
 												UncStructIndexEnum.ValVtepVndex.UPLL_IDX_CONTROLLER_ID_VTEP
@@ -1561,7 +1725,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.DOMAINID,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vtep.get(VtnServiceJsonConsts.DOMAINID)
+												vtep.get(
+														VtnServiceJsonConsts.DOMAINID)
 														.getAsString(),
 												ValVtepStruct,
 												UncStructIndexEnum.ValVtepVndex.UPLL_IDX_DOMAIN_ID_VTEP
@@ -1592,7 +1757,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key vtep if struct
 	 */
-	public IpcStruct getKeyVtepIfStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyVtepIfStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		LOG.trace("Start getKeyVtepIfStruct");
 		final IpcStruct KeyVtepIfStruct = IpcDataUnitWrapper
@@ -1638,7 +1803,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the Val VTEP Interface struct
 	 */
-	public IpcStruct getValVtepIfStruct(final JsonObject requestBody,
+	public final IpcStruct getValVtepIfStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		LOG.trace("Start getValVtepIfStruct");
 		final IpcStruct ValVtepIfStruct = IpcDataUnitWrapper
@@ -1686,14 +1851,22 @@ public class IpcStructFactory {
 					ValVtepIfStruct
 							.set(VtnServiceJsonConsts.ADMIN_STATUS,
 									IpcDataUnitWrapper
-											.setIpcUint8Value(UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_ENABLE.getValue(),
-													ValVtepIfStruct,UncStructIndexEnum.ValVtepIfIndex.UPLL_IDX_ADMIN_ST_VTEPI.ordinal()));
+											.setIpcUint8Value(
+													UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_ENABLE
+															.getValue(),
+													ValVtepIfStruct,
+													UncStructIndexEnum.ValVtepIfIndex.UPLL_IDX_ADMIN_ST_VTEPI
+															.ordinal()));
 				} else {
 					ValVtepIfStruct
 							.set(VtnServiceJsonConsts.ADMIN_STATUS,
 									IpcDataUnitWrapper
-											.setIpcUint8Value(UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_DISABLE.getValue(),
-													ValVtepIfStruct,UncStructIndexEnum.ValVtepIfIndex.UPLL_IDX_ADMIN_ST_VTEPI.ordinal()));
+											.setIpcUint8Value(
+													UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_DISABLE
+															.getValue(),
+													ValVtepIfStruct,
+													UncStructIndexEnum.ValVtepIfIndex.UPLL_IDX_ADMIN_ST_VTEPI
+															.ordinal()));
 				}
 				LOG.debug("adminstatus:"
 						+ requestBody
@@ -1806,7 +1979,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key vbr if flow filter entry struct
 	 */
-	public IpcStruct getKeyVbrIfFlowFilterEntryStruct(
+	public final IpcStruct getKeyVbrIfFlowFilterEntryStruct(
 			final JsonObject requestBody, final List<String> uriParameters) {
 		LOG.trace("Start getKeyVbrIfFlowFilterEntryStruct");
 		final IpcStruct KeyVbrIfFlowFilterEntryStruct = IpcDataUnitWrapper
@@ -1852,8 +2025,8 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key vrt if flow filter struct
 	 */
-	public IpcStruct getKeyVrtIfFlowFilterStruct(final JsonObject requestBody,
-			final List<String> uriParameters) {
+	public final IpcStruct getKeyVrtIfFlowFilterStruct(
+			final JsonObject requestBody, final List<String> uriParameters) {
 		LOG.trace("Start getKeyVrtIfFlowFilterStruct");
 		final IpcStruct KeyVrtIfFlowFilterStruct = IpcDataUnitWrapper
 				.setIpcStructValue(UncStructEnum.KeyVrtIfFlowFilter.getValue());
@@ -1922,7 +2095,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key vrt if flow filter entry struct
 	 */
-	public IpcStruct getKeyVrtIfFlowFilterEntryStruct(
+	public final IpcStruct getKeyVrtIfFlowFilterEntryStruct(
 			final JsonObject requestBody, final List<String> uriParameters) {
 		LOG.trace("Start getKeyVrtIfFlowFilterEntryStruct");
 		final IpcStruct KeyVrtIfFlowFilterEntryStruct = IpcDataUnitWrapper
@@ -1969,8 +2142,8 @@ public class IpcStructFactory {
 	 * @return the key vbr IfFlow Filter
 	 */
 
-	public IpcStruct getKeyVbrIfFlowFilterStruct(final JsonObject requestBody,
-			final List<String> uriParameters) {
+	public final IpcStruct getKeyVbrIfFlowFilterStruct(
+			final JsonObject requestBody, final List<String> uriParameters) {
 		LOG.trace("Start getKeyVbrIfFlowFilterStruct");
 		final IpcStruct keyVbrIfFlowFilterStruct = IpcDataUnitWrapper
 				.setIpcStructValue(UncStructEnum.KeyVbrIfFlowFilter.getValue());
@@ -2041,7 +2214,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key vbr struct
 	 */
-	public IpcStruct getKeyVbrStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyVbrStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		// Lower level structure
 		/*
@@ -2088,7 +2261,7 @@ public class IpcStructFactory {
 	 *            the request body
 	 * @return the val vbr struct
 	 */
-	public IpcStruct getValVbrStruct(final JsonObject requestBody,
+	public final IpcStruct getValVbrStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		/*
 		 * ipc_struct val_vbr { UINT8 valid[5]; UINT8 cs_row_status; UINT8
@@ -2100,7 +2273,8 @@ public class IpcStructFactory {
 				.setIpcStructValue(UncStructEnum.ValVbr.getValue());
 		if (requestBody != null
 				&& requestBody.has(VtnServiceJsonConsts.VBRIDGE)) {
-			JsonObject vBridge = requestBody.getAsJsonObject(VtnServiceJsonConsts.VBRIDGE);
+			final JsonObject vBridge = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.VBRIDGE);
 			if (vBridge.has(VtnServiceJsonConsts.CONTROLLERID)) {
 				valVbrStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -2113,7 +2287,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.CONTROLLERID,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vBridge.get(VtnServiceJsonConsts.CONTROLLERID)
+												vBridge.get(
+														VtnServiceJsonConsts.CONTROLLERID)
 														.getAsString(),
 												valVbrStruct,
 												UncStructIndexEnum.ValVbrIndex.UPLL_IDX_CONTROLLER_ID_VBR
@@ -2139,7 +2314,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.DOMAINID,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vBridge.get(VtnServiceJsonConsts.DOMAINID)
+												vBridge.get(
+														VtnServiceJsonConsts.DOMAINID)
 														.getAsString(),
 												valVbrStruct,
 												UncStructIndexEnum.ValVbrIndex.UPLL_IDX_DOMAIN_ID_VBR
@@ -2165,7 +2341,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.VBRDESCRIPTION,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vBridge.get(VtnServiceJsonConsts.DESCRIPTION)
+												vBridge.get(
+														VtnServiceJsonConsts.DESCRIPTION)
 														.getAsString(),
 												valVbrStruct,
 												UncStructIndexEnum.ValVbrIndex.UPLL_IDX_DESC_VBR
@@ -2195,7 +2372,8 @@ public class IpcStructFactory {
 											.ordinal()));
 		} else if (requestBody != null
 				&& requestBody.has(VtnServiceJsonConsts.IPADDRESS)) {
-			JsonObject ipAddress = requestBody.getAsJsonObject(VtnServiceJsonConsts.IPADDRESS);
+			final JsonObject ipAddress = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.IPADDRESS);
 			valVbrStruct
 					.set(VtnServiceIpcConsts.VALID,
 							UncStructIndexEnum.ValVbrIndex.UPLL_IDX_CONTROLLER_ID_VBR
@@ -2225,10 +2403,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valVbrStruct.set(VtnServiceIpcConsts.HOST_ADDR,
-						IpcDataUnitWrapper
-								.setIpcInet4AddressValue(ipAddress.get(VtnServiceJsonConsts.IPADDR).getAsString(),
-										valVbrStruct, UncStructIndexEnum.ValVbrIndex.UPLL_IDX_HOST_ADDR_VBR.ordinal()));
+				valVbrStruct
+						.set(VtnServiceIpcConsts.HOST_ADDR,
+								IpcDataUnitWrapper
+										.setIpcInet4AddressValue(
+												ipAddress
+														.get(VtnServiceJsonConsts.IPADDR)
+														.getAsString(),
+												valVbrStruct,
+												UncStructIndexEnum.ValVbrIndex.UPLL_IDX_HOST_ADDR_VBR
+														.ordinal()));
 			} else {
 				valVbrStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -2246,10 +2430,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valVbrStruct.set(VtnServiceIpcConsts.HOST_ADDR_PREFIXLEN,
-						IpcDataUnitWrapper
-								.setIpcUint8Value(ipAddress.get(VtnServiceJsonConsts.PREFIX).getAsString(),
-										valVbrStruct, UncStructIndexEnum.ValVbrIndex.UPLL_IDX_HOST_ADDR_PREFIXLEN_VBR.ordinal()));
+				valVbrStruct
+						.set(VtnServiceIpcConsts.HOST_ADDR_PREFIXLEN,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(
+												ipAddress
+														.get(VtnServiceJsonConsts.PREFIX)
+														.getAsString(),
+												valVbrStruct,
+												UncStructIndexEnum.ValVbrIndex.UPLL_IDX_HOST_ADDR_PREFIXLEN_VBR
+														.ordinal()));
 			} else {
 				valVbrStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -2312,7 +2502,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key vlan map struct
 	 */
-	public IpcStruct getKeyVlanMapStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyVlanMapStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		/*
 		 * 
@@ -2355,7 +2545,7 @@ public class IpcStructFactory {
 			}
 		} else if (uriParameters != null
 				&& uriParameters.size() == UncIndexEnum.THREE.ordinal()) {
-			String VlanMapId[] = uriParameters.get(2).split(
+			final String VlanMapId[] = uriParameters.get(2).split(
 					VtnServiceJsonConsts.VLANMAPIDSEPERATOR, 2);
 			if (VlanMapId.length == UncIndexEnum.TWO.ordinal()) {
 				keyVlanMapStruct
@@ -2386,7 +2576,7 @@ public class IpcStructFactory {
 	 *            the request body
 	 * @return the val vlan map struct
 	 */
-	public IpcStruct getValVlanMapStruct(final JsonObject requestBody,
+	public final IpcStruct getValVlanMapStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		final IpcStruct valVlanMapStruct = new IpcStruct(
 				UncStructEnum.ValVlanMap.getValue());
@@ -2406,12 +2596,18 @@ public class IpcStructFactory {
 							IpcDataUnitWrapper
 									.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 											.ordinal()));
-			valVlanMapStruct.set(
-					VtnServiceJsonConsts.VLANID,
-					IpcDataUnitWrapper.setIpcUint16Value(requestBody
-							.getAsJsonObject(VtnServiceJsonConsts.VLANMAP)
-							.get(VtnServiceJsonConsts.VLANID).getAsString(),
-							valVlanMapStruct, UncStructIndexEnum.ValVlanMapIndex.UPLL_IDX_VLAN_ID_VM.ordinal()));
+			valVlanMapStruct
+					.set(VtnServiceJsonConsts.VLANID,
+							IpcDataUnitWrapper
+									.setIpcUint16Value(
+											requestBody
+													.getAsJsonObject(
+															VtnServiceJsonConsts.VLANMAP)
+													.get(VtnServiceJsonConsts.VLANID)
+													.getAsString(),
+											valVlanMapStruct,
+											UncStructIndexEnum.ValVlanMapIndex.UPLL_IDX_VLAN_ID_VM
+													.ordinal()));
 		} else if (requestBody != null
 				&& requestBody.has(VtnServiceJsonConsts.VLANMAP)
 				&& requestBody.getAsJsonObject(VtnServiceJsonConsts.VLANMAP)
@@ -2426,8 +2622,11 @@ public class IpcStructFactory {
 			valVlanMapStruct
 					.set(VtnServiceJsonConsts.VLANID,
 							IpcDataUnitWrapper
-									.setIpcUint16HexaValue(VtnServiceIpcConsts.VLAN_ID_DEFAULT_VALUE,
-											valVlanMapStruct, UncStructIndexEnum.ValVlanMapIndex.UPLL_IDX_VLAN_ID_VM.ordinal()));
+									.setIpcUint16HexaValue(
+											VtnServiceIpcConsts.VLAN_ID_DEFAULT_VALUE,
+											valVlanMapStruct,
+											UncStructIndexEnum.ValVlanMapIndex.UPLL_IDX_VLAN_ID_VM
+													.ordinal()));
 		} else {
 			valVlanMapStruct
 					.set(VtnServiceIpcConsts.VALID,
@@ -2451,8 +2650,8 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key vtn flow filter struct
 	 */
-	public IpcStruct getKeyVtnFlowFilterStruct(final JsonObject requestBody,
-			final List<String> uriParameters) {
+	public final IpcStruct getKeyVtnFlowFilterStruct(
+			final JsonObject requestBody, final List<String> uriParameters) {
 		// Lower level structure
 		/*
 		 * ipc_struct KeyVtnFlowFilter { KeyVtn vtn_key; UINT8 input_direction;
@@ -2528,7 +2727,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key vtn flow filter entry struct
 	 */
-	public IpcStruct getKeyVtnFlowFilterEntryStruct(
+	public final IpcStruct getKeyVtnFlowFilterEntryStruct(
 			final JsonObject requestBody, final List<String> uriParameters) {
 		// Lower level structure
 		/*
@@ -2582,7 +2781,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key vunknown struct
 	 */
-	public IpcStruct getKeyVunknownStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyVunknownStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		/*
 		 * ipc_struct KeyVunknown { KeyVtn vtn_key; UINT8 vunknown_name[32]; };
@@ -2604,13 +2803,12 @@ public class IpcStructFactory {
 				&& requestBody.has(VtnServiceJsonConsts.VBYPASS)
 				&& ((JsonObject) requestBody.get(VtnServiceJsonConsts.VBYPASS))
 						.has(VtnServiceJsonConsts.VBYPASS_NAME)) {
-			keyVunknownStruct
-					.set(VtnServiceIpcConsts.VUNKNOWNNAME,
-							IpcDataUnitWrapper
-									.setIpcUint8ArrayValue(((JsonObject) requestBody
-											.get(VtnServiceJsonConsts.VBYPASS))
-											.get(VtnServiceJsonConsts.VBYPASS_NAME)
-											.getAsString()));
+			keyVunknownStruct.set(VtnServiceIpcConsts.VUNKNOWNNAME,
+					IpcDataUnitWrapper
+							.setIpcUint8ArrayValue(((JsonObject) requestBody
+									.get(VtnServiceJsonConsts.VBYPASS)).get(
+									VtnServiceJsonConsts.VBYPASS_NAME)
+									.getAsString()));
 		} else if (uriParameters != null
 				&& uriParameters.size() == UncIndexEnum.TWO.ordinal()) {
 			keyVunknownStruct.set(VtnServiceIpcConsts.VUNKNOWNNAME,
@@ -2634,7 +2832,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key vunk if struct
 	 */
-	public IpcStruct getKeyVunkIfStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyVunkIfStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		/*
 		 * ipc_struct key_vunk_if { key_vunknown vunk_key; UINT8 if_name[32]; };
@@ -2683,7 +2881,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key vrt if struct
 	 */
-	public IpcStruct getKeyVrtIfStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyVrtIfStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		// Lower level structure
 		/*
@@ -2730,7 +2928,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key vtunnel struct
 	 */
-	public IpcStruct getKeyVtunnelStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyVtunnelStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 
 		// Lower level structure
@@ -2780,8 +2978,8 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key static ip route struct
 	 */
-	public IpcStruct getKeyStaticIpRouteStruct(final JsonObject requestBody,
-			final List<String> uriParameters) {
+	public final IpcStruct getKeyStaticIpRouteStruct(
+			final JsonObject requestBody, final List<String> uriParameters) {
 		// Lower level structure
 		/*
 		 * ipc_struct key_static_ip_route { key_vrt vrt_key; IPV4 dst_addr;
@@ -2799,7 +2997,7 @@ public class IpcStructFactory {
 		keyStaticIpRouteStruct.set(VtnServiceIpcConsts.VRTKEY, keyVtnVrtStruct);
 		if (requestBody != null
 				&& requestBody.has(VtnServiceJsonConsts.STATIC_IPROUTE)) {
-			JsonObject staticIpRoute = requestBody
+			final JsonObject staticIpRoute = requestBody
 					.getAsJsonObject(VtnServiceJsonConsts.STATIC_IPROUTE);
 			if (staticIpRoute.has(VtnServiceJsonConsts.IPADDR)
 					&& staticIpRoute.has(VtnServiceJsonConsts.PREFIX)
@@ -2818,8 +3016,8 @@ public class IpcStructFactory {
 								.setIpcInet4AddressValue(staticIpRoute.get(
 										VtnServiceJsonConsts.NEXTHOPADDR)
 										.getAsString()));
-				
-			} else if (staticIpRoute.has(VtnServiceJsonConsts.NEXTHOPADDR)){
+
+			} else if (staticIpRoute.has(VtnServiceJsonConsts.NEXTHOPADDR)) {
 				keyStaticIpRouteStruct.set(VtnServiceIpcConsts.NEXT_HOP_ADDR,
 						IpcDataUnitWrapper
 								.setIpcInet4AddressValue(staticIpRoute.get(
@@ -2855,7 +3053,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the val vtn flow filter entry struct
 	 */
-	public IpcStruct getValVtnFlowFilterEntryStruct(
+	public final IpcStruct getValVtnFlowFilterEntryStruct(
 			final JsonObject requestBody, final List<String> uriParameters) {
 		// Lower level structure
 		/*
@@ -2873,8 +3071,8 @@ public class IpcStructFactory {
 				UncStructEnum.ValVtnFlowFilterEntry.getValue());
 		if (requestBody != null
 				&& requestBody.has(VtnServiceJsonConsts.FLOWFILTERENTRY)) {
-			JsonObject flowFilterEntry = requestBody.getAsJsonObject(
-					VtnServiceJsonConsts.FLOWFILTERENTRY);
+			final JsonObject flowFilterEntry = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.FLOWFILTERENTRY);
 			if (flowFilterEntry.has(VtnServiceJsonConsts.FLNAME)) {
 				valVtnFlowFilterEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -2887,7 +3085,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.FLOWLISTNAME,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												flowFilterEntry.get(VtnServiceJsonConsts.FLNAME)
+												flowFilterEntry
+														.get(VtnServiceJsonConsts.FLNAME)
 														.getAsString(),
 												valVtnFlowFilterEntryStruct,
 												UncStructIndexEnum.ValVtnFlowfilterEntryIndex.UPLL_IDX_FLOWLIST_NAME_VFFE
@@ -2909,21 +3108,24 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				if (flowFilterEntry.get(VtnServiceJsonConsts.ACTIONTYPE).getAsString()
+				if (flowFilterEntry.get(VtnServiceJsonConsts.ACTIONTYPE)
+						.getAsString()
 						.equalsIgnoreCase(VtnServiceJsonConsts.PASS)) {
 					valVtnFlowFilterEntryStruct
 							.set(VtnServiceJsonConsts.ACTION,
 									IpcDataUnitWrapper
 											.setIpcUint8Value(UncStructIndexEnum.FlowfilterAction.UPLL_FLOWFILTER_ACT_PASS
 													.ordinal()));
-				} else if (flowFilterEntry.get(VtnServiceJsonConsts.ACTIONTYPE).getAsString()
+				} else if (flowFilterEntry.get(VtnServiceJsonConsts.ACTIONTYPE)
+						.getAsString()
 						.equalsIgnoreCase(VtnServiceJsonConsts.DROP)) {
 					valVtnFlowFilterEntryStruct
 							.set(VtnServiceJsonConsts.ACTION,
 									IpcDataUnitWrapper
 											.setIpcUint8Value(UncStructIndexEnum.FlowfilterAction.UPLL_FLOWFILTER_ACT_DROP
 													.ordinal()));
-				} else if (flowFilterEntry.get(VtnServiceJsonConsts.ACTIONTYPE).getAsString()
+				} else if (flowFilterEntry.get(VtnServiceJsonConsts.ACTIONTYPE)
+						.getAsString()
 						.equalsIgnoreCase(VtnServiceJsonConsts.REDIRECT)) {
 					valVtnFlowFilterEntryStruct
 							.set(VtnServiceJsonConsts.ACTION,
@@ -2952,7 +3154,8 @@ public class IpcStructFactory {
 						.set(VtnServiceIpcConsts.NWMNAME,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												flowFilterEntry.get(VtnServiceJsonConsts.NMGNAME)
+												flowFilterEntry
+														.get(VtnServiceJsonConsts.NMGNAME)
 														.getAsString(),
 												valVtnFlowFilterEntryStruct,
 												UncStructIndexEnum.ValVtnFlowfilterEntryIndex.UPLL_IDX_NWN_NAME_VFFE
@@ -2974,10 +3177,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valVtnFlowFilterEntryStruct.set(
-						VtnServiceJsonConsts.DSCP,
-						IpcDataUnitWrapper.setIpcUint8Value(flowFilterEntry.get(VtnServiceJsonConsts.DSCP).getAsString(),
-								valVtnFlowFilterEntryStruct,UncStructIndexEnum.ValVtnFlowfilterEntryIndex.UPLL_IDX_DSCP_VFFE.ordinal()));
+				valVtnFlowFilterEntryStruct
+						.set(VtnServiceJsonConsts.DSCP,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(
+												flowFilterEntry
+														.get(VtnServiceJsonConsts.DSCP)
+														.getAsString(),
+												valVtnFlowFilterEntryStruct,
+												UncStructIndexEnum.ValVtnFlowfilterEntryIndex.UPLL_IDX_DSCP_VFFE
+														.ordinal()));
 			} else {
 				valVtnFlowFilterEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -2995,10 +3204,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valVtnFlowFilterEntryStruct.set(
-						VtnServiceJsonConsts.PRIORITY,
-						IpcDataUnitWrapper.setIpcUint8Value(flowFilterEntry.get(VtnServiceJsonConsts.PRIORITY).getAsString(),
-								valVtnFlowFilterEntryStruct,UncStructIndexEnum.ValVtnFlowfilterEntryIndex.UPLL_IDX_PRIORITY_VFFE.ordinal()));
+				valVtnFlowFilterEntryStruct
+						.set(VtnServiceJsonConsts.PRIORITY,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(
+												flowFilterEntry
+														.get(VtnServiceJsonConsts.PRIORITY)
+														.getAsString(),
+												valVtnFlowFilterEntryStruct,
+												UncStructIndexEnum.ValVtnFlowfilterEntryIndex.UPLL_IDX_PRIORITY_VFFE
+														.ordinal()));
 			} else {
 				valVtnFlowFilterEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -3025,7 +3240,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the val vunknown struct
 	 */
-	public IpcStruct getValVunknownStruct(final JsonObject requestBody,
+	public final IpcStruct getValVunknownStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		// Lower level structure
 		/*
@@ -3038,7 +3253,8 @@ public class IpcStructFactory {
 				UncStructEnum.ValVunknown.getValue());
 		if (requestBody != null
 				&& requestBody.has(VtnServiceJsonConsts.VBYPASS)) {
-			JsonObject vByPass = requestBody.getAsJsonObject(VtnServiceJsonConsts.VBYPASS);
+			final JsonObject vByPass = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.VBYPASS);
 			if (vByPass.has(VtnServiceJsonConsts.DESCRIPTION)) {
 				valValVunknownStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -3051,7 +3267,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.DESCRIPTION,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vByPass.get(VtnServiceJsonConsts.DESCRIPTION)
+												vByPass.get(
+														VtnServiceJsonConsts.DESCRIPTION)
 														.getAsString(),
 												valValVunknownStruct,
 												UncStructIndexEnum.ValVunknownIndex.UPLL_IDX_DESC_VUN
@@ -3111,7 +3328,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.DOMAINID,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vByPass.get(VtnServiceJsonConsts.DOMAINID)
+												vByPass.get(
+														VtnServiceJsonConsts.DOMAINID)
 														.getAsString(),
 												valValVunknownStruct,
 												UncStructIndexEnum.ValVunknownIndex.UPLL_IDX_DOMAIN_ID_VUN
@@ -3137,7 +3355,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.CONTROLLERID,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vByPass.get(VtnServiceJsonConsts.CONTROLLERID)
+												vByPass.get(
+														VtnServiceJsonConsts.CONTROLLERID)
 														.getAsString(),
 												valValVunknownStruct,
 												UncStructIndexEnum.ValVunknownIndex.UPLL_IDX_CONTROLLER_ID_VUN
@@ -3168,7 +3387,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the val vunk if struct
 	 */
-	public IpcStruct getValVunkIfStruct(final JsonObject requestBody,
+	public final IpcStruct getValVunkIfStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		// Lower level structure
 		/*
@@ -3183,7 +3402,8 @@ public class IpcStructFactory {
 				.setIpcStructValue(UncStructEnum.ValVunkIf.getValue());
 		if (requestBody != null
 				&& requestBody.has(VtnServiceJsonConsts.INTERFACE)) {
-			JsonObject vunkIf = requestBody.getAsJsonObject(VtnServiceJsonConsts.INTERFACE);
+			final JsonObject vunkIf = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.INTERFACE);
 			if (vunkIf.has(VtnServiceJsonConsts.DESCRIPTION)) {
 				valVunkIfStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -3196,7 +3416,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.DESCRIPTION,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vunkIf.get(VtnServiceJsonConsts.DESCRIPTION)
+												vunkIf.get(
+														VtnServiceJsonConsts.DESCRIPTION)
 														.getAsString(),
 												valVunkIfStruct,
 												UncStructIndexEnum.ValVunkIfIndex.UPLL_IDX_DESC_VUNI
@@ -3223,14 +3444,22 @@ public class IpcStructFactory {
 					valVunkIfStruct
 							.set(VtnServiceJsonConsts.ADMIN_STATUS,
 									IpcDataUnitWrapper
-											.setIpcUint8Value(UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_ENABLE.getValue(),
-													valVunkIfStruct, UncStructIndexEnum.ValVunkIfIndex.UPLL_IDX_ADMIN_ST_VUNI.ordinal()));
+											.setIpcUint8Value(
+													UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_ENABLE
+															.getValue(),
+													valVunkIfStruct,
+													UncStructIndexEnum.ValVunkIfIndex.UPLL_IDX_ADMIN_ST_VUNI
+															.ordinal()));
 				} else {
 					valVunkIfStruct
 							.set(VtnServiceJsonConsts.ADMIN_STATUS,
 									IpcDataUnitWrapper
-											.setIpcUint8Value(UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_DISABLE.getValue(),
-													valVunkIfStruct, UncStructIndexEnum.ValVunkIfIndex.UPLL_IDX_ADMIN_ST_VUNI.ordinal()));
+											.setIpcUint8Value(
+													UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_DISABLE
+															.getValue(),
+													valVunkIfStruct,
+													UncStructIndexEnum.ValVunkIfIndex.UPLL_IDX_ADMIN_ST_VUNI
+															.ordinal()));
 				}
 				LOG.debug("adminstatus:"
 						+ vunkIf.get(VtnServiceJsonConsts.ADMINSTATUS)
@@ -3261,8 +3490,8 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the struct
 	 */
-	public IpcStruct getKeyVbrFlowFilterStruct(final JsonObject requestBody,
-			final List<String> uriParameters) {
+	public final IpcStruct getKeyVbrFlowFilterStruct(
+			final JsonObject requestBody, final List<String> uriParameters) {
 		// Lower level structure
 		/*
 		 * ipc_struct KeyVbrFlowFilter { keyVbr vbr_key; UINT8 direction; };
@@ -3335,7 +3564,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the struct
 	 */
-	public IpcStruct getKeyVbrFlowFilterEntryStruct(
+	public final IpcStruct getKeyVbrFlowFilterEntryStruct(
 			final JsonObject requestBody, final List<String> uriParameters) {
 		/*
 		 * ipc_struct key_vbr_flowfilter_entry { key_vbr_flowfilter
@@ -3385,8 +3614,8 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the valflowfilterEntry struct
 	 */
-	public IpcStruct getValFlowfilterEntryStruct(final JsonObject requestBody,
-			final List<String> uriParameters) {
+	public final IpcStruct getValFlowfilterEntryStruct(
+			final JsonObject requestBody, final List<String> uriParameters) {
 		/*
 		 * ipc_struct val_flowfilter_entry { UINT8 valid[9]; UINT8
 		 * cs_row_status; UINT8 cs_attr[9]; UINT8 flowlist_name[32+1]; UINT8
@@ -3399,8 +3628,8 @@ public class IpcStructFactory {
 				.setIpcStructValue(UncStructEnum.ValFlowfilterEntry.getValue());
 		if (requestBody != null
 				&& requestBody.has(VtnServiceJsonConsts.FLOWFILTERENTRY)) {
-			JsonObject flowFilterEntry = requestBody.getAsJsonObject(
-					VtnServiceJsonConsts.FLOWFILTERENTRY);
+			final JsonObject flowFilterEntry = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.FLOWFILTERENTRY);
 			if (flowFilterEntry.has(VtnServiceJsonConsts.FLNAME)) {
 				valFlowfilterEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -3413,7 +3642,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.FLOWLISTNAME,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												flowFilterEntry.get(VtnServiceJsonConsts.FLNAME)
+												flowFilterEntry
+														.get(VtnServiceJsonConsts.FLNAME)
 														.getAsString(),
 												valFlowfilterEntryStruct,
 												UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_FLOWLIST_NAME_FFE
@@ -3435,14 +3665,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				if (flowFilterEntry.get(VtnServiceJsonConsts.ACTIONTYPE).getAsString()
+				if (flowFilterEntry.get(VtnServiceJsonConsts.ACTIONTYPE)
+						.getAsString()
 						.equalsIgnoreCase(VtnServiceJsonConsts.PASS)) {
 					valFlowfilterEntryStruct
 							.set(VtnServiceIpcConsts.ACTION,
 									IpcDataUnitWrapper
 											.setIpcUint8Value(UncStructIndexEnum.FlowfilterAction.UPLL_FLOWFILTER_ACT_PASS
 													.ordinal()));
-				} else if (flowFilterEntry.get(VtnServiceJsonConsts.ACTIONTYPE).getAsString()
+				} else if (flowFilterEntry.get(VtnServiceJsonConsts.ACTIONTYPE)
+						.getAsString()
 						.equalsIgnoreCase(VtnServiceJsonConsts.DROP)) {
 					valFlowfilterEntryStruct
 							.set(VtnServiceIpcConsts.ACTION,
@@ -3469,7 +3701,7 @@ public class IpcStructFactory {
 												.ordinal()));
 			}
 			if (flowFilterEntry.has(VtnServiceJsonConsts.REDIRECTDST)) {
-				JsonObject redirectDst = flowFilterEntry
+				final JsonObject redirectDst = flowFilterEntry
 						.getAsJsonObject(VtnServiceJsonConsts.REDIRECTDST);
 				if (redirectDst.has(VtnServiceJsonConsts.VNODENAME)) {
 					valFlowfilterEntryStruct
@@ -3534,10 +3766,15 @@ public class IpcStructFactory {
 											.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 													.ordinal()));
 					// valFlowfilterEntryStruct.set(VtnServiceIpcConsts.MODIFYDSTMACADDR,IpcDataUnitWrapper.setIpcUint8ArrayValue(requestBody.getAsJsonObject(VtnServiceJsonConsts.FLOWFILTERENTRY).getAsJsonObject(VtnServiceJsonConsts.REDIRECTDST).get(VtnServiceJsonConsts.MACDSTADDR).getAsString()));
-					IpcDataUnitWrapper.setMacAddress(valFlowfilterEntryStruct,
-							VtnServiceIpcConsts.MODIFYDSTMACADDR, redirectDst
-									.get(VtnServiceJsonConsts.MACDSTADDR).getAsString(),
-									UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_MODIFY_DST_MAC_FFE.ordinal());
+					IpcDataUnitWrapper
+							.setMacAddress(
+									valFlowfilterEntryStruct,
+									VtnServiceIpcConsts.MODIFYDSTMACADDR,
+									redirectDst.get(
+											VtnServiceJsonConsts.MACDSTADDR)
+											.getAsString(),
+									UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_MODIFY_DST_MAC_FFE
+											.ordinal());
 				} else {
 					valFlowfilterEntryStruct
 							.set(VtnServiceIpcConsts.VALID,
@@ -3555,10 +3792,15 @@ public class IpcStructFactory {
 									IpcDataUnitWrapper
 											.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 													.ordinal()));
-					IpcDataUnitWrapper.setMacAddress(valFlowfilterEntryStruct,
-							VtnServiceIpcConsts.MODIFYSRCMACADDR, redirectDst
-									.get(VtnServiceJsonConsts.MACSRCADDR).getAsString(),
-									UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_MODIFY_SRC_MAC_FFE.ordinal());
+					IpcDataUnitWrapper
+							.setMacAddress(
+									valFlowfilterEntryStruct,
+									VtnServiceIpcConsts.MODIFYSRCMACADDR,
+									redirectDst.get(
+											VtnServiceJsonConsts.MACSRCADDR)
+											.getAsString(),
+									UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_MODIFY_SRC_MAC_FFE
+											.ordinal());
 				} else {
 					valFlowfilterEntryStruct
 							.set(VtnServiceIpcConsts.VALID,
@@ -3581,7 +3823,8 @@ public class IpcStructFactory {
 						.set(VtnServiceIpcConsts.NWMNAME,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												flowFilterEntry.get(VtnServiceJsonConsts.NMGNAME)
+												flowFilterEntry
+														.get(VtnServiceJsonConsts.NMGNAME)
 														.getAsString(),
 												valFlowfilterEntryStruct,
 												UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_NWM_NAME_FFE
@@ -3603,10 +3846,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowfilterEntryStruct.set(
-						VtnServiceIpcConsts.DSCP,
-						IpcDataUnitWrapper.setIpcUint8Value(flowFilterEntry.get(VtnServiceJsonConsts.DSCP).getAsString(),
-								valFlowfilterEntryStruct, UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_DSCP_FFE.ordinal()));
+				valFlowfilterEntryStruct
+						.set(VtnServiceIpcConsts.DSCP,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(
+												flowFilterEntry
+														.get(VtnServiceJsonConsts.DSCP)
+														.getAsString(),
+												valFlowfilterEntryStruct,
+												UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_DSCP_FFE
+														.ordinal()));
 			} else {
 				valFlowfilterEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -3624,10 +3873,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowfilterEntryStruct.set(
-						VtnServiceIpcConsts.PRIORITY,
-						IpcDataUnitWrapper.setIpcUint8Value(flowFilterEntry.get(VtnServiceJsonConsts.PRIORITY).getAsString(),
-								valFlowfilterEntryStruct, UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_PRIORITY_FFE.ordinal()));
+				valFlowfilterEntryStruct
+						.set(VtnServiceIpcConsts.PRIORITY,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(
+												flowFilterEntry
+														.get(VtnServiceJsonConsts.PRIORITY)
+														.getAsString(),
+												valFlowfilterEntryStruct,
+												UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_PRIORITY_FFE
+														.ordinal()));
 			} else {
 				valFlowfilterEntryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -3654,7 +3909,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the struct
 	 */
-	public IpcStruct getKeyVbrIfStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyVbrIfStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		// Lower level structure
 		/*
@@ -3700,7 +3955,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the valPortMapStruct
 	 */
-	public IpcStruct getValPortMapStruct(final JsonObject requestBody,
+	public final IpcStruct getValPortMapStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		/*
 		 * ipc_struct val_port_map { UINT8 valid[5]; UINT8 cs_attr[5]; UINT8
@@ -3712,7 +3967,8 @@ public class IpcStructFactory {
 				.setIpcStructValue(UncStructEnum.ValPortMap.getValue());
 		if (requestBody != null
 				&& requestBody.has(VtnServiceJsonConsts.PORTMAP)) {
-			JsonObject portMap = requestBody.getAsJsonObject(VtnServiceJsonConsts.PORTMAP);
+			final JsonObject portMap = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.PORTMAP);
 			if (portMap.has(VtnServiceJsonConsts.LOGICAL_PORT_ID)) {
 				valPortMapStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -3725,7 +3981,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.LOGICAL_PORT_ID,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												portMap.get(VtnServiceJsonConsts.LOGICAL_PORT_ID)
+												portMap.get(
+														VtnServiceJsonConsts.LOGICAL_PORT_ID)
 														.getAsString(),
 												valPortMapStruct,
 												UncStructIndexEnum.ValPortMapIndex.UPLL_IDX_LOGICAL_PORT_ID_PM
@@ -3747,12 +4004,17 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valPortMapStruct.set(VtnServiceJsonConsts.VLANID,
-						IpcDataUnitWrapper
-								.setIpcUint16Value(portMap.get(VtnServiceJsonConsts.VLANID).getAsString(),
-										valPortMapStruct, UncStructIndexEnum.ValPortMapIndex.UPLL_IDX_VLAN_ID_PM.ordinal()));
-			} 
-			else {
+				valPortMapStruct
+						.set(VtnServiceJsonConsts.VLANID,
+								IpcDataUnitWrapper
+										.setIpcUint16Value(
+												portMap.get(
+														VtnServiceJsonConsts.VLANID)
+														.getAsString(),
+												valPortMapStruct,
+												UncStructIndexEnum.ValPortMapIndex.UPLL_IDX_VLAN_ID_PM
+														.ordinal()));
+			} else {
 				valPortMapStruct
 						.set(VtnServiceIpcConsts.VALID,
 								UncStructIndexEnum.ValPortMapIndex.UPLL_IDX_VLAN_ID_PM
@@ -3774,15 +4036,24 @@ public class IpcStructFactory {
 					valPortMapStruct
 							.set(VtnServiceJsonConsts.TAGGED,
 									IpcDataUnitWrapper
-											.setIpcUint8Value(UncStructIndexEnum.vlan_tagged.UPLL_VLAN_TAGGED.getValue(),
-													valPortMapStruct, UncStructIndexEnum.ValPortMapIndex.UPLL_IDX_TAGGED_PM.ordinal()));
-				} else if (portMap.get(VtnServiceJsonConsts.TAGGED).getAsString()
-						.equalsIgnoreCase(VtnServiceJsonConsts.FALSE)){
+											.setIpcUint8Value(
+													UncStructIndexEnum.vlan_tagged.UPLL_VLAN_TAGGED
+															.getValue(),
+													valPortMapStruct,
+													UncStructIndexEnum.ValPortMapIndex.UPLL_IDX_TAGGED_PM
+															.ordinal()));
+				} else if (portMap.get(VtnServiceJsonConsts.TAGGED)
+						.getAsString()
+						.equalsIgnoreCase(VtnServiceJsonConsts.FALSE)) {
 					valPortMapStruct
 							.set(VtnServiceJsonConsts.TAGGED,
 									IpcDataUnitWrapper
-											.setIpcUint8Value(UncStructIndexEnum.vlan_tagged.UPLL_VLAN_UNTAGGED.getValue(),
-													valPortMapStruct, UncStructIndexEnum.ValPortMapIndex.UPLL_IDX_TAGGED_PM.ordinal()));
+											.setIpcUint8Value(
+													UncStructIndexEnum.vlan_tagged.UPLL_VLAN_UNTAGGED
+															.getValue(),
+													valPortMapStruct,
+													UncStructIndexEnum.ValPortMapIndex.UPLL_IDX_TAGGED_PM
+															.ordinal()));
 				} else {
 					valPortMapStruct
 							.set(VtnServiceIpcConsts.VALID,
@@ -3793,7 +4064,8 @@ public class IpcStructFactory {
 													.ordinal()));
 				}
 				LOG.debug("tagged:"
-						+ portMap.get(VtnServiceJsonConsts.TAGGED).getAsString());
+						+ portMap.get(VtnServiceJsonConsts.TAGGED)
+								.getAsString());
 			} else {
 				valPortMapStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -3820,7 +4092,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the valVbrIfStruct
 	 */
-	public IpcStruct getValVbrIfStruct(final JsonObject requestBody,
+	public final IpcStruct getValVbrIfStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		/*
 		 * ipc_struct val_vbr_if { UINT8 valid[3]; UINT8 admin_status; UINT8
@@ -3834,7 +4106,8 @@ public class IpcStructFactory {
 				.setIpcStructValue(UncStructEnum.ValVbrIf.getValue());
 		if (requestBody != null
 				&& requestBody.has(VtnServiceJsonConsts.INTERFACE)) {
-			JsonObject vbrIf = requestBody.getAsJsonObject(VtnServiceJsonConsts.INTERFACE);
+			final JsonObject vbrIf = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.INTERFACE);
 			if (vbrIf.has(VtnServiceJsonConsts.ADMINSTATUS)) {
 				valVbrIfStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -3848,14 +4121,22 @@ public class IpcStructFactory {
 					valVbrIfStruct
 							.set(VtnServiceJsonConsts.ADMIN_STATUS,
 									IpcDataUnitWrapper
-											.setIpcUint8Value(UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_ENABLE.getValue(), 
-													valVbrIfStruct, UncStructIndexEnum.ValVbrIfIndex.UPLL_IDX_ADMIN_STATUS_VBRI.ordinal()));
+											.setIpcUint8Value(
+													UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_ENABLE
+															.getValue(),
+													valVbrIfStruct,
+													UncStructIndexEnum.ValVbrIfIndex.UPLL_IDX_ADMIN_STATUS_VBRI
+															.ordinal()));
 				} else {
 					valVbrIfStruct
 							.set(VtnServiceJsonConsts.ADMIN_STATUS,
 									IpcDataUnitWrapper
-											.setIpcUint8Value(UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_DISABLE.getValue(), 
-													valVbrIfStruct, UncStructIndexEnum.ValVbrIfIndex.UPLL_IDX_ADMIN_STATUS_VBRI.ordinal()));
+											.setIpcUint8Value(
+													UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_DISABLE
+															.getValue(),
+													valVbrIfStruct,
+													UncStructIndexEnum.ValVbrIfIndex.UPLL_IDX_ADMIN_STATUS_VBRI
+															.ordinal()));
 				}
 				LOG.debug("adminstatus"
 						+ vbrIf.get(VtnServiceJsonConsts.ADMINSTATUS)
@@ -3881,7 +4162,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.DESCRIPTION,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vbrIf.get(VtnServiceJsonConsts.DESCRIPTION)
+												vbrIf.get(
+														VtnServiceJsonConsts.DESCRIPTION)
 														.getAsString(),
 												valVbrIfStruct,
 												UncStructIndexEnum.ValVbrIfIndex.UPLL_IDX_DESC_VBRI
@@ -3992,7 +4274,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the val vrt struct
 	 */
-	public IpcStruct getValVrtStruct(final JsonObject requestBody,
+	public final IpcStruct getValVrtStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		// Lower level structure
 		/*
@@ -4005,7 +4287,8 @@ public class IpcStructFactory {
 				.setIpcStructValue(UncStructEnum.ValVrt.getValue());
 		if (requestBody != null
 				&& requestBody.has(VtnServiceJsonConsts.VROUTER)) {
-			JsonObject vRouter = requestBody.getAsJsonObject(VtnServiceJsonConsts.VROUTER);
+			final JsonObject vRouter = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.VROUTER);
 			if (vRouter.has(VtnServiceJsonConsts.CONTROLLERID)) {
 				valVrtStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -4018,7 +4301,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.CONTROLLERID,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vRouter.get(VtnServiceJsonConsts.CONTROLLERID)
+												vRouter.get(
+														VtnServiceJsonConsts.CONTROLLERID)
 														.getAsString(),
 												valVrtStruct,
 												UncStructIndexEnum.ValVrtIndex.UPLL_IDX_CONTROLLER_ID_VRT
@@ -4044,7 +4328,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.DOMAINID,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vRouter.get(VtnServiceJsonConsts.DOMAINID)
+												vRouter.get(
+														VtnServiceJsonConsts.DOMAINID)
 														.getAsString(),
 												valVrtStruct,
 												UncStructIndexEnum.ValVrtIndex.UPLL_IDX_DOMAIN_ID_VRT
@@ -4070,7 +4355,8 @@ public class IpcStructFactory {
 						.set(VtnServiceIpcConsts.VRTDESCRIPTION,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vRouter.get(VtnServiceJsonConsts.DESCRIPTION)
+												vRouter.get(
+														VtnServiceJsonConsts.DESCRIPTION)
 														.getAsString(),
 												valVrtStruct,
 												UncStructIndexEnum.ValVrtIndex.UPLL_IDX_DESC_VRT
@@ -4130,14 +4416,22 @@ public class IpcStructFactory {
 					valVrtStruct
 							.set(VtnServiceIpcConsts.DHCPRELAYADMINSTATUS,
 									IpcDataUnitWrapper
-											.setIpcUint8Value(UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_ENABLE.getValue(),
-													valVrtStruct, UncStructIndexEnum.ValVrtIndex.UPLL_IDX_DHCP_RELAY_ADMIN_STATUS_VRT.ordinal()));
+											.setIpcUint8Value(
+													UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_ENABLE
+															.getValue(),
+													valVrtStruct,
+													UncStructIndexEnum.ValVrtIndex.UPLL_IDX_DHCP_RELAY_ADMIN_STATUS_VRT
+															.ordinal()));
 				} else {
 					valVrtStruct
 							.set(VtnServiceIpcConsts.DHCPRELAYADMINSTATUS,
 									IpcDataUnitWrapper
-											.setIpcUint8Value(UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_DISABLE.getValue(),
-													valVrtStruct, UncStructIndexEnum.ValVrtIndex.UPLL_IDX_DHCP_RELAY_ADMIN_STATUS_VRT.ordinal()));
+											.setIpcUint8Value(
+													UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_DISABLE
+															.getValue(),
+													valVrtStruct,
+													UncStructIndexEnum.ValVrtIndex.UPLL_IDX_DHCP_RELAY_ADMIN_STATUS_VRT
+															.ordinal()));
 				}
 				LOG.debug("dhcp_relay_status"
 						+ requestBody
@@ -4170,7 +4464,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the val vrt if struct
 	 */
-	public IpcStruct getValVrtIfStruct(final JsonObject requestBody,
+	public final IpcStruct getValVrtIfStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		// Lower level structure
 		/*
@@ -4183,7 +4477,8 @@ public class IpcStructFactory {
 				.setIpcStructValue(UncStructEnum.ValVrtIf.getValue());
 		if (requestBody != null
 				&& requestBody.has(VtnServiceJsonConsts.INTERFACE)) {
-			JsonObject vRouterIf = requestBody.getAsJsonObject(VtnServiceJsonConsts.INTERFACE);
+			final JsonObject vRouterIf = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.INTERFACE);
 			if (vRouterIf.has(VtnServiceJsonConsts.DESCRIPTION)) {
 				valVrtIfStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -4196,7 +4491,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.DESCRIPTION,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vRouterIf.get(VtnServiceJsonConsts.DESCRIPTION)
+												vRouterIf
+														.get(VtnServiceJsonConsts.DESCRIPTION)
 														.getAsString(),
 												valVrtIfStruct,
 												UncStructIndexEnum.ValVrtIfIndex.UPLL_IDX_DESC_VI
@@ -4218,10 +4514,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valVrtIfStruct.set(VtnServiceIpcConsts.IP_ADDR,
-						IpcDataUnitWrapper
-								.setIpcInet4AddressValue(vRouterIf.get(VtnServiceJsonConsts.IPADDR).getAsString(),
-										valVrtIfStruct, UncStructIndexEnum.ValVrtIfIndex.UPLL_IDX_IP_ADDR_VI.ordinal()));
+				valVrtIfStruct
+						.set(VtnServiceIpcConsts.IP_ADDR,
+								IpcDataUnitWrapper
+										.setIpcInet4AddressValue(
+												vRouterIf
+														.get(VtnServiceJsonConsts.IPADDR)
+														.getAsString(),
+												valVrtIfStruct,
+												UncStructIndexEnum.ValVrtIfIndex.UPLL_IDX_IP_ADDR_VI
+														.ordinal()));
 			} else {
 				valVrtIfStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -4239,10 +4541,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valVrtIfStruct.set(VtnServiceIpcConsts.PREFIXLEN,
-						IpcDataUnitWrapper
-								.setIpcUint8Value(vRouterIf.get(VtnServiceJsonConsts.PREFIX).getAsString(),
-										valVrtIfStruct, UncStructIndexEnum.ValVrtIfIndex.UPLL_IDX_PREFIXLEN_VI.ordinal()));
+				valVrtIfStruct
+						.set(VtnServiceIpcConsts.PREFIXLEN,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(
+												vRouterIf
+														.get(VtnServiceJsonConsts.PREFIX)
+														.getAsString(),
+												valVrtIfStruct,
+												UncStructIndexEnum.ValVrtIfIndex.UPLL_IDX_PREFIXLEN_VI
+														.ordinal()));
 			} else {
 				valVrtIfStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -4260,13 +4568,13 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-			
-				IpcDataUnitWrapper
-						.setMacAddress(
-								valVrtIfStruct,
-								VtnServiceIpcConsts.MACADDR,
-								vRouterIf.get(VtnServiceJsonConsts.MACADDR).getAsString(),
-								UncStructIndexEnum.ValVrtIfIndex.UPLL_IDX_MAC_ADDR_VI.ordinal());
+
+				IpcDataUnitWrapper.setMacAddress(valVrtIfStruct,
+						VtnServiceIpcConsts.MACADDR,
+						vRouterIf.get(VtnServiceJsonConsts.MACADDR)
+								.getAsString(),
+						UncStructIndexEnum.ValVrtIfIndex.UPLL_IDX_MAC_ADDR_VI
+								.ordinal());
 			} else {
 				valVrtIfStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -4284,19 +4592,28 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				if (vRouterIf.get(VtnServiceJsonConsts.ADMINSTATUS).getAsString()
+				if (vRouterIf.get(VtnServiceJsonConsts.ADMINSTATUS)
+						.getAsString()
 						.equalsIgnoreCase(VtnServiceJsonConsts.DISABLE)) {
 					valVrtIfStruct
 							.set(VtnServiceJsonConsts.ADMIN_STATUS,
 									IpcDataUnitWrapper
-											.setIpcUint8Value(UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_DISABLE.getValue(),
-													valVrtIfStruct, UncStructIndexEnum.ValVrtIfIndex.UPLL_IDX_ADMIN_ST_VI.ordinal()));
+											.setIpcUint8Value(
+													UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_DISABLE
+															.getValue(),
+													valVrtIfStruct,
+													UncStructIndexEnum.ValVrtIfIndex.UPLL_IDX_ADMIN_ST_VI
+															.ordinal()));
 				} else {
 					valVrtIfStruct
 							.set(VtnServiceJsonConsts.ADMIN_STATUS,
 									IpcDataUnitWrapper
-											.setIpcUint8Value(UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_ENABLE.getValue(),
-													valVrtIfStruct, UncStructIndexEnum.ValVrtIfIndex.UPLL_IDX_ADMIN_ST_VI.ordinal()));
+											.setIpcUint8Value(
+													UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_ENABLE
+															.getValue(),
+													valVrtIfStruct,
+													UncStructIndexEnum.ValVrtIfIndex.UPLL_IDX_ADMIN_ST_VI
+															.ordinal()));
 				}
 				LOG.debug("adminstatus:"
 						+ vRouterIf.get(VtnServiceJsonConsts.ADMINSTATUS)
@@ -4327,7 +4644,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the val vtunnel struct
 	 */
-	public IpcStruct getValVtunnelStruct(final JsonObject requestBody,
+	public final IpcStruct getValVtunnelStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		// Lower level structure
 		/*
@@ -4341,7 +4658,8 @@ public class IpcStructFactory {
 				.setIpcStructValue(UncStructEnum.ValVtunnel.getValue());
 		if (requestBody != null
 				&& requestBody.has(VtnServiceJsonConsts.VTUNNEL)) {
-			JsonObject vTunnel = requestBody.getAsJsonObject(VtnServiceJsonConsts.VTUNNEL);
+			final JsonObject vTunnel = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.VTUNNEL);
 			if (vTunnel.has(VtnServiceJsonConsts.DESCRIPTION)) {
 				valVtunnelStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -4354,7 +4672,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.DESCRIPTION,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vTunnel.get(VtnServiceJsonConsts.DESCRIPTION)
+												vTunnel.get(
+														VtnServiceJsonConsts.DESCRIPTION)
 														.getAsString(),
 												valVtunnelStruct,
 												UncStructIndexEnum.ValVtunnelIndex.UPLL_IDX_DESC_VTNL
@@ -4380,7 +4699,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.CONTROLLERID,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vTunnel.get(VtnServiceJsonConsts.CONTROLLERID)
+												vTunnel.get(
+														VtnServiceJsonConsts.CONTROLLERID)
 														.getAsString(),
 												valVtunnelStruct,
 												UncStructIndexEnum.ValVtunnelIndex.UPLL_IDX_CONTROLLER_ID_VTNL
@@ -4406,7 +4726,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.DOMAINID,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vTunnel.get(VtnServiceJsonConsts.DOMAINID)
+												vTunnel.get(
+														VtnServiceJsonConsts.DOMAINID)
 														.getAsString(),
 												valVtunnelStruct,
 												UncStructIndexEnum.ValVtunnelIndex.UPLL_IDX_DOMAIN_ID_VTNL
@@ -4432,7 +4753,8 @@ public class IpcStructFactory {
 						.set(VtnServiceIpcConsts.VTNNAME,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vTunnel.get(VtnServiceJsonConsts.VTNNAME)
+												vTunnel.get(
+														VtnServiceJsonConsts.VTNNAME)
 														.getAsString(),
 												valVtunnelStruct,
 												UncStructIndexEnum.ValVtunnelIndex.UPLL_IDX_VTN_NAME_VTNL
@@ -4458,7 +4780,8 @@ public class IpcStructFactory {
 						.set(VtnServiceIpcConsts.VTEPGRPNAME,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												vTunnel.get(VtnServiceJsonConsts.VTEPGROUPNAME)
+												vTunnel.get(
+														VtnServiceJsonConsts.VTEPGROUPNAME)
 														.getAsString(),
 												valVtunnelStruct,
 												UncStructIndexEnum.ValVtunnelIndex.UPLL_IDX_VTEP_GRP_NAME_VTNL
@@ -4482,9 +4805,15 @@ public class IpcStructFactory {
 												.ordinal()));
 
 				valVtunnelStruct
-						.set(VtnServiceIpcConsts.LABEL, IpcDataUnitWrapper
-								.setIpcUint32Value(vTunnel.get(VtnServiceJsonConsts.LABEL).getAsString(),
-										valVtunnelStruct, UncStructIndexEnum.ValVtunnelIndex.UPLL_IDX_LABEL_VTNL.ordinal()));
+						.set(VtnServiceIpcConsts.LABEL,
+								IpcDataUnitWrapper
+										.setIpcUint32Value(
+												vTunnel.get(
+														VtnServiceJsonConsts.LABEL)
+														.getAsString(),
+												valVtunnelStruct,
+												UncStructIndexEnum.ValVtunnelIndex.UPLL_IDX_LABEL_VTNL
+														.ordinal()));
 			} else {
 				valVtunnelStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -4511,7 +4840,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key vtn flow filter entry struct
 	 */
-	public IpcStruct getKeyVtnFlowfilterControllerStruct(
+	public final IpcStruct getKeyVtnFlowfilterControllerStruct(
 			final JsonObject requestBody, final List<String> uriParameters) {
 		// Lower level structure
 		/*
@@ -4564,7 +4893,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the val vtn flow filter entry struct
 	 */
-	public IpcStruct getValFlowFilterControllerStruct(
+	public final IpcStruct getValFlowFilterControllerStruct(
 			final JsonObject requestBody, final List<String> uriParameters) {
 		// Lower level structure
 		/*
@@ -4617,10 +4946,13 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valFlowFilterContollerStruct.set(
-						VtnServiceIpcConsts.SEQUENCENUM, IpcDataUnitWrapper
-								.setIpcUint16Value(uriParameters.get(2),
-								valFlowFilterContollerStruct, UncStructIndexEnum.ValFlowfilterControllerIndex.UPLL_IDX_SEQ_NUM_FFC.ordinal()));
+				valFlowFilterContollerStruct
+						.set(VtnServiceIpcConsts.SEQUENCENUM,
+								IpcDataUnitWrapper.setIpcUint16Value(
+										uriParameters.get(2),
+										valFlowFilterContollerStruct,
+										UncStructIndexEnum.ValFlowfilterControllerIndex.UPLL_IDX_SEQ_NUM_FFC
+												.ordinal()));
 			} else {
 				valFlowFilterContollerStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -4648,7 +4980,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the val vtep group struct.
 	 */
-	public IpcStruct getKeyVtepGrpStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyVtepGrpStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		/*
 		 * ipc_struct key_vtep_grp { key_vtn vtn_key; UINT8 vtepgrp_name[32]; };
@@ -4696,8 +5028,8 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the val vtep group struct.
 	 */
-	public IpcStruct getKeyVtepGrpMemberStruct(final JsonObject requestBody,
-			final List<String> uriParameters) {
+	public final IpcStruct getKeyVtepGrpMemberStruct(
+			final JsonObject requestBody, final List<String> uriParameters) {
 		/*
 		 * ipc_struct key_vtep_grp_member { key_vtep_grp vtepgrp_key; UINT8
 		 * vtepmember_name[32]; };
@@ -4736,7 +5068,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the val vtep grp struct
 	 */
-	public IpcStruct getValVtepGrpStruct(final JsonObject requestBody,
+	public final IpcStruct getValVtepGrpStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		/*
 		 * ipc_struct val_vtep_grp { UINT8 valid[2]; UINT8 cs_row_status; UINT8
@@ -4747,7 +5079,7 @@ public class IpcStructFactory {
 				UncStructEnum.ValVtepGrp.getValue());
 		if (requestBody != null
 				&& requestBody.has(VtnServiceJsonConsts.VTEPGROUP)) {
-			JsonObject vTepGroup = requestBody
+			final JsonObject vTepGroup = requestBody
 					.getAsJsonObject(VtnServiceJsonConsts.VTEPGROUP);
 			if (vTepGroup.has(VtnServiceJsonConsts.CONTROLLERID)) {
 				valVtepGrpStruct
@@ -4818,8 +5150,8 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the val vtep grp struct
 	 */
-	public IpcStruct getValStaticIpRouteStruct(final JsonObject requestBody,
-			final List<String> uriParameters) {
+	public final IpcStruct getValStaticIpRouteStruct(
+			final JsonObject requestBody, final List<String> uriParameters) {
 		/*
 		 * ipc_struct val_static_ip_route { UINT8 valid[2]; UINT8 cs_row_status;
 		 * UINT8 cs_attr[2]; IPV4 next_hop_addr; UINT16 group_metric; };
@@ -4839,12 +5171,18 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valStaticIpRouteStruct.set(
-						VtnServiceIpcConsts.GROUP_METRIC,
-						IpcDataUnitWrapper.setIpcUint16Value(requestBody
-								.getAsJsonObject(VtnServiceJsonConsts.STATIC_IPROUTE)
-								.get(VtnServiceJsonConsts.GROUPMETRIC).getAsString(),
-								valStaticIpRouteStruct, UncStructIndexEnum.ValStaticIpRouteIndex.UPLL_IDX_GROUP_METRIC_SIR.ordinal()));
+				valStaticIpRouteStruct
+						.set(VtnServiceIpcConsts.GROUP_METRIC,
+								IpcDataUnitWrapper
+										.setIpcUint16Value(
+												requestBody
+														.getAsJsonObject(
+																VtnServiceJsonConsts.STATIC_IPROUTE)
+														.get(VtnServiceJsonConsts.GROUPMETRIC)
+														.getAsString(),
+												valStaticIpRouteStruct,
+												UncStructIndexEnum.ValStaticIpRouteIndex.UPLL_IDX_GROUP_METRIC_SIR
+														.ordinal()));
 			} else {
 				valStaticIpRouteStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -4871,7 +5209,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return key_vtnstation_controller struct
 	 */
-	public IpcStruct getKeyVtnstationControllerStruct(
+	public final IpcStruct getKeyVtnstationControllerStruct(
 			final JsonObject requestBody, final List<String> uriParameters) {
 		/*
 		 * ipc_struct key_vtnstation_controller { UINT8 controller_name[32]; };
@@ -4911,7 +5249,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return val_vtnstation_controller_st struct
 	 */
-	public IpcStruct getValVtnstationControllerStStruct(
+	public final IpcStruct getValVtnstationControllerStStruct(
 			final JsonObject requestBody, final List<String> uriParameters) {
 		/*
 		 * ipc_struct val_vtnstation_controller_st { UINT8 valid[15]; UINT64
@@ -4957,10 +5295,14 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				IpcDataUnitWrapper.setMacAddress(valVtnstationControllerSt,
-						VtnServiceIpcConsts.MAC_ADDR,
-						requestBody.get(VtnServiceJsonConsts.MACADDR).getAsString(),
-						UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_MAC_ADDR_VSCS.ordinal());
+				IpcDataUnitWrapper
+						.setMacAddress(
+								valVtnstationControllerSt,
+								VtnServiceIpcConsts.MAC_ADDR,
+								requestBody.get(VtnServiceJsonConsts.MACADDR)
+										.getAsString(),
+								UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_MAC_ADDR_VSCS
+										.ordinal());
 			} else {
 				valVtnstationControllerSt
 						.set(VtnServiceIpcConsts.VALID,
@@ -4979,10 +5321,14 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valVtnstationControllerSt.set(VtnServiceIpcConsts.IPV4_COUNT,
-						IpcDataUnitWrapper
-								.setIpcUint32Value(VtnServiceJsonConsts.ONE,
-										valVtnstationControllerSt, UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_IPV4_COUNT_VSCS.ordinal()));
+				valVtnstationControllerSt
+						.set(VtnServiceIpcConsts.IPV4_COUNT,
+								IpcDataUnitWrapper
+										.setIpcUint32Value(
+												VtnServiceJsonConsts.ONE,
+												valVtnstationControllerSt,
+												UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_IPV4_COUNT_VSCS
+														.ordinal()));
 			} else {
 				valVtnstationControllerSt
 						.set(VtnServiceIpcConsts.VALID,
@@ -5001,10 +5347,14 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				valVtnstationControllerSt.set(VtnServiceIpcConsts.IPV6_COUNT,
-						IpcDataUnitWrapper
-								.setIpcUint32Value(VtnServiceJsonConsts.ONE, 
-										valVtnstationControllerSt, UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_IPV6_COUNT_VSCS.ordinal()));
+				valVtnstationControllerSt
+						.set(VtnServiceIpcConsts.IPV6_COUNT,
+								IpcDataUnitWrapper
+										.setIpcUint32Value(
+												VtnServiceJsonConsts.ONE,
+												valVtnstationControllerSt,
+												UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_IPV6_COUNT_VSCS
+														.ordinal()));
 			} else {
 				valVtnstationControllerSt
 						.set(VtnServiceIpcConsts.VALID,
@@ -5071,7 +5421,8 @@ public class IpcStructFactory {
 												.ordinal()));
 			}
 			// for vlan_id parameter
-			if (requestBody.has(VtnServiceJsonConsts.VLANID) || requestBody.has(VtnServiceJsonConsts.NO_VLAN_ID)) {
+			if (requestBody.has(VtnServiceJsonConsts.VLANID)
+					|| requestBody.has(VtnServiceJsonConsts.NO_VLAN_ID)) {
 				valVtnstationControllerSt
 						.set(VtnServiceIpcConsts.VALID,
 								UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_VLAN_ID_VSCS
@@ -5080,18 +5431,25 @@ public class IpcStructFactory {
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
 				if (requestBody.has(VtnServiceJsonConsts.VLANID)) {
-					valVtnstationControllerSt.set(
-							VtnServiceIpcConsts.VLANID,
-							IpcDataUnitWrapper.setIpcUint16Value(requestBody.get(
-									VtnServiceJsonConsts.VLANID).getAsString(),
-									valVtnstationControllerSt, UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_VLAN_ID_VSCS.ordinal()));
+					valVtnstationControllerSt
+							.set(VtnServiceIpcConsts.VLANID,
+									IpcDataUnitWrapper
+											.setIpcUint16Value(
+													requestBody
+															.get(VtnServiceJsonConsts.VLANID)
+															.getAsString(),
+													valVtnstationControllerSt,
+													UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_VLAN_ID_VSCS
+															.ordinal()));
 				} else {
 					valVtnstationControllerSt
 							.set(VtnServiceIpcConsts.VLANID,
 									IpcDataUnitWrapper
-											.setIpcUint16HexaValue(VtnServiceIpcConsts.VLAN_ID_DEFAULT_VALUE,
-													valVtnstationControllerSt, 
-													UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_VLAN_ID_VSCS.ordinal()));
+											.setIpcUint16HexaValue(
+													VtnServiceIpcConsts.VLAN_ID_DEFAULT_VALUE,
+													valVtnstationControllerSt,
+													UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_VLAN_ID_VSCS
+															.ordinal()));
 				}
 			} else {
 				valVtnstationControllerSt
@@ -5250,7 +5608,7 @@ public class IpcStructFactory {
 	/**
 	 * Physical Ipc structures
 	 */
-	public IpcStruct getKeyCtrDomainStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyCtrDomainStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		// Key structure
 		/*
@@ -5296,7 +5654,7 @@ public class IpcStructFactory {
 	 * @param uriParameters
 	 * @return
 	 */
-	public IpcStruct getKeySwitchStruct(final JsonObject requestBody,
+	public final IpcStruct getKeySwitchStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		// Key structure
 		/*
@@ -5331,7 +5689,7 @@ public class IpcStructFactory {
 	 * @param uriParameters
 	 * @return
 	 */
-	public IpcStruct getKeyLinkStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyLinkStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		// Key structure
 		/*
@@ -5349,24 +5707,9 @@ public class IpcStructFactory {
 					uriParameters.subList(0, 1));
 			keyLink.set(VtnServiceIpcConsts.CTR_KEY, keyLinkStruct);
 		}
-		if (requestBody != null && requestBody.has(VtnServiceJsonConsts.INDEX)) {
-			String linkName[] = requestBody.get(VtnServiceJsonConsts.INDEX)
-					.getAsString().split(VtnServiceJsonConsts.LINKSAPERATOR);
-			if (linkName.length == UncIndexEnum.FOUR.ordinal()) {
-				keyLink.set(VtnServiceIpcConsts.SWITCH_ID1,
-						IpcDataUnitWrapper.setIpcUint8ArrayValue(linkName[0]));
-				keyLink.set(VtnServiceIpcConsts.PORT_ID1,
-						IpcDataUnitWrapper.setIpcUint8ArrayValue(linkName[1]));
-				keyLink.set(VtnServiceIpcConsts.SWITCH_ID2,
-						IpcDataUnitWrapper.setIpcUint8ArrayValue(linkName[2]));
-				keyLink.set(VtnServiceIpcConsts.PORT_ID2,
-						IpcDataUnitWrapper.setIpcUint8ArrayValue(linkName[3]));
-			} else {
-				LOG.error("Value of linkname is incorrect");
-			}
-		} else if (uriParameters != null
+		if (uriParameters != null
 				&& uriParameters.size() == UncIndexEnum.TWO.ordinal()) {
-			String linkName[] = uriParameters.get(1).split(
+			final String linkName[] = uriParameters.get(1).split(
 					VtnServiceJsonConsts.LINKSAPERATOR);
 			if (linkName.length == UncIndexEnum.FOUR.ordinal()) {
 				keyLink.set(VtnServiceIpcConsts.SWITCH_ID1,
@@ -5411,7 +5754,7 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the key Ctr struct
 	 */
-	public IpcStruct getKeyCtrStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyCtrStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		/*
 		 * ipc_struct key_ctr{ UINT8 controller_name[32]; };
@@ -5452,14 +5795,15 @@ public class IpcStructFactory {
 	 *            the uri parameters
 	 * @return the Val Ctr struct
 	 */
-	public IpcStruct getValCtrStruct(final JsonObject requestBody,
+	public final IpcStruct getValCtrStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		LOG.trace("Start getValCtrStruct");
 		final IpcStruct valCtrStruct = IpcDataUnitWrapper
 				.setIpcStructValue(UncStructEnum.ValCtr.getValue());
 		if (requestBody != null
 				&& requestBody.has(VtnServiceJsonConsts.CONTROLLER)) {
-			JsonObject controller = requestBody.getAsJsonObject(VtnServiceJsonConsts.CONTROLLER);
+			final JsonObject controller = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.CONTROLLER);
 			if (controller.has(VtnServiceJsonConsts.TYPE)) {
 				valCtrStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -5475,14 +5819,16 @@ public class IpcStructFactory {
 									IpcDataUnitWrapper
 											.setIpcUint8Value(UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_UNKNOWN
 													.ordinal()));
-				} else if (controller.get(VtnServiceJsonConsts.TYPE).getAsString()
+				} else if (controller.get(VtnServiceJsonConsts.TYPE)
+						.getAsString()
 						.equalsIgnoreCase(VtnServiceJsonConsts.PFC)) {
 					valCtrStruct
 							.set(VtnServiceJsonConsts.TYPE,
 									IpcDataUnitWrapper
 											.setIpcUint8Value(UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_PFC
 													.ordinal()));
-				} else if (controller.get(VtnServiceJsonConsts.TYPE).getAsString()
+				} else if (controller.get(VtnServiceJsonConsts.TYPE)
+						.getAsString()
 						.equalsIgnoreCase(VtnServiceJsonConsts.VNP)) {
 					valCtrStruct
 							.set(VtnServiceJsonConsts.TYPE,
@@ -5498,7 +5844,8 @@ public class IpcStructFactory {
 													.ordinal()));
 				}
 				LOG.debug("type:"
-						+ controller.get(VtnServiceJsonConsts.TYPE).getAsString());
+						+ controller.get(VtnServiceJsonConsts.TYPE)
+								.getAsString());
 			} else {
 				valCtrStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -5520,7 +5867,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.VERSION,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												controller.get(VtnServiceJsonConsts.VERSION)
+												controller
+														.get(VtnServiceJsonConsts.VERSION)
 														.getAsString(),
 												valCtrStruct,
 												UncPhysicalStructIndexEnum.UpplValCtrIndex.kIdxVersion
@@ -5546,7 +5894,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.DESCRIPTION,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												controller.get(VtnServiceJsonConsts.DESCRIPTION)
+												controller
+														.get(VtnServiceJsonConsts.DESCRIPTION)
 														.getAsString(),
 												valCtrStruct,
 												UncPhysicalStructIndexEnum.UpplValCtrIndex.kIdxDescription
@@ -5571,8 +5920,13 @@ public class IpcStructFactory {
 				valCtrStruct
 						.set(VtnServiceIpcConsts.IP_ADDRESS,
 								IpcDataUnitWrapper
-										.setIpcInet4AddressValue(controller.get(VtnServiceJsonConsts.IPADDR).getAsString(),
-												valCtrStruct, UncPhysicalStructIndexEnum.UpplValCtrIndex.kIdxIpAddress.ordinal()));
+										.setIpcInet4AddressValue(
+												controller
+														.get(VtnServiceJsonConsts.IPADDR)
+														.getAsString(),
+												valCtrStruct,
+												UncPhysicalStructIndexEnum.UpplValCtrIndex.kIdxIpAddress
+														.ordinal()));
 			} else {
 				valCtrStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -5594,7 +5948,8 @@ public class IpcStructFactory {
 						.set(VtnServiceIpcConsts.USER,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												controller.get(VtnServiceJsonConsts.USERNAME)
+												controller
+														.get(VtnServiceJsonConsts.USERNAME)
 														.getAsString(),
 												valCtrStruct,
 												UncPhysicalStructIndexEnum.UpplValCtrIndex.kIdxUser
@@ -5620,7 +5975,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.PASSWORD,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												controller.get(VtnServiceJsonConsts.PASSWORD)
+												controller
+														.get(VtnServiceJsonConsts.PASSWORD)
 														.getAsString(),
 												valCtrStruct,
 												UncPhysicalStructIndexEnum.UpplValCtrIndex.kIdxPassword
@@ -5642,14 +5998,16 @@ public class IpcStructFactory {
 								IpcDataUnitWrapper
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
-				if (controller.get(VtnServiceJsonConsts.AUDITSTATUS).getAsString()
+				if (controller.get(VtnServiceJsonConsts.AUDITSTATUS)
+						.getAsString()
 						.equalsIgnoreCase(VtnServiceJsonConsts.DISABLE)) {
 					valCtrStruct
 							.set(VtnServiceIpcConsts.ENABLE_AUDIT,
 									IpcDataUnitWrapper
 											.setIpcUint8Value(UncPhysicalStructIndexEnum.UpplControllerAuditStatus.UPPL_AUTO_AUDIT_DISABLED
 													.ordinal()));
-				} else if (controller.get(VtnServiceJsonConsts.AUDITSTATUS).getAsString()
+				} else if (controller.get(VtnServiceJsonConsts.AUDITSTATUS)
+						.getAsString()
 						.equalsIgnoreCase(VtnServiceJsonConsts.ENABLE)) {
 					valCtrStruct
 							.set(VtnServiceIpcConsts.ENABLE_AUDIT,
@@ -5669,6 +6027,7 @@ public class IpcStructFactory {
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_INVALID
 												.ordinal()));
 			}
+
 		} else {
 			LOG.warning("request body and uri parameters are not correct for getValCtrStruct");
 		}
@@ -5677,7 +6036,7 @@ public class IpcStructFactory {
 		return valCtrStruct;
 	}
 
-	public IpcStruct getValCtrDomainStruct(final JsonObject requestBody,
+	public final IpcStruct getValCtrDomainStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		/*
 		 * ipc_struct val_ctr_domain { UINT8 type; UINT8 description[128]; UINT8
@@ -5687,7 +6046,8 @@ public class IpcStructFactory {
 		final IpcStruct valCtrDomainStruct = IpcDataUnitWrapper
 				.setIpcStructValue(UncStructEnum.ValCtrDomain.getValue());
 		if (requestBody != null && requestBody.has(VtnServiceJsonConsts.DOMAIN)) {
-			JsonObject domain = requestBody.getAsJsonObject(VtnServiceJsonConsts.DOMAIN);
+			final JsonObject domain = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.DOMAIN);
 			if (domain.has(VtnServiceJsonConsts.TYPE)) {
 				valCtrDomainStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -5734,7 +6094,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.DESCRIPTION,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												domain.get(VtnServiceJsonConsts.DESCRIPTION)
+												domain.get(
+														VtnServiceJsonConsts.DESCRIPTION)
 														.getAsString(),
 												valCtrDomainStruct,
 												UncPhysicalStructIndexEnum.UpplValDomainIndex.kIdxDomainDescription
@@ -5756,7 +6117,7 @@ public class IpcStructFactory {
 		return valCtrDomainStruct;
 	}
 
-	public IpcStruct getKeyBoundaryStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyBoundaryStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		/*
 		 * ipc_struct key_boundary { UINT8 boundary_id[32]; };
@@ -5788,7 +6149,7 @@ public class IpcStructFactory {
 		return keyBoundaryStruct;
 	}
 
-	public IpcStruct getValBoundaryStruct(final JsonObject requestBody,
+	public final IpcStruct getValBoundaryStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		/*
 		 * ipc_struct val_boundary { UINT8 description[128]; UINT8
@@ -5802,7 +6163,8 @@ public class IpcStructFactory {
 				.setIpcStructValue(UncStructEnum.ValBoundary.getValue());
 		if (requestBody != null
 				&& requestBody.has(VtnServiceJsonConsts.BOUNDARY)) {
-			JsonObject boundary = requestBody.getAsJsonObject(VtnServiceJsonConsts.BOUNDARY);
+			final JsonObject boundary = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.BOUNDARY);
 			if (boundary.has(VtnServiceJsonConsts.DESCRIPTION)) {
 				valBoundaryStruct
 						.set(VtnServiceIpcConsts.VALID,
@@ -5815,7 +6177,8 @@ public class IpcStructFactory {
 						.set(VtnServiceJsonConsts.DESCRIPTION,
 								IpcDataUnitWrapper
 										.setIpcUint8ArrayValue(
-												boundary.get(VtnServiceJsonConsts.DESCRIPTION)
+												boundary.get(
+														VtnServiceJsonConsts.DESCRIPTION)
 														.getAsString(),
 												valBoundaryStruct,
 												UncPhysicalStructIndexEnum.UpplValBoundaryIndex.kIdxBoundaryDescription
@@ -5830,7 +6193,8 @@ public class IpcStructFactory {
 												.ordinal()));
 			}
 			if (boundary.has(VtnServiceJsonConsts.LINK)) {
-				JsonObject link = boundary.getAsJsonObject(VtnServiceJsonConsts.LINK);
+				final JsonObject link = boundary
+						.getAsJsonObject(VtnServiceJsonConsts.LINK);
 				if (link.has(VtnServiceJsonConsts.CONTROLLER1ID)) {
 					valBoundaryStruct
 							.set(VtnServiceIpcConsts.VALID,
@@ -5843,7 +6207,8 @@ public class IpcStructFactory {
 							.set(VtnServiceIpcConsts.CONTROLLER_NAME1,
 									IpcDataUnitWrapper
 											.setIpcUint8ArrayValue(
-													link.get(VtnServiceJsonConsts.CONTROLLER1ID)
+													link.get(
+															VtnServiceJsonConsts.CONTROLLER1ID)
 															.getAsString(),
 													valBoundaryStruct,
 													UncPhysicalStructIndexEnum.UpplValBoundaryIndex.kIdxBoundaryControllerName1
@@ -5869,7 +6234,8 @@ public class IpcStructFactory {
 							.set(VtnServiceIpcConsts.DOMAIN_NAME1,
 									IpcDataUnitWrapper
 											.setIpcUint8ArrayValue(
-													link.get(VtnServiceJsonConsts.DOMAIN1_ID)
+													link.get(
+															VtnServiceJsonConsts.DOMAIN1_ID)
 															.getAsString(),
 													valBoundaryStruct,
 													UncPhysicalStructIndexEnum.UpplValBoundaryIndex.kIdxBoundaryDomainName1
@@ -5895,7 +6261,8 @@ public class IpcStructFactory {
 							.set(VtnServiceIpcConsts.LOGICAL_PORT_ID1,
 									IpcDataUnitWrapper
 											.setIpcUint8ArrayValue(
-													link.get(VtnServiceJsonConsts.LOGICAL_PORT1_ID)
+													link.get(
+															VtnServiceJsonConsts.LOGICAL_PORT1_ID)
 															.getAsString(),
 													valBoundaryStruct,
 													UncPhysicalStructIndexEnum.UpplValBoundaryIndex.kIdxBoundaryLogicalPortId1
@@ -5921,7 +6288,8 @@ public class IpcStructFactory {
 							.set(VtnServiceIpcConsts.CONTROLLER_NAME2,
 									IpcDataUnitWrapper
 											.setIpcUint8ArrayValue(
-													link.get(VtnServiceJsonConsts.CONTROLLER2ID)
+													link.get(
+															VtnServiceJsonConsts.CONTROLLER2ID)
 															.getAsString(),
 													valBoundaryStruct,
 													UncPhysicalStructIndexEnum.UpplValBoundaryIndex.kIdxBoundaryControllerName2
@@ -5947,7 +6315,8 @@ public class IpcStructFactory {
 							.set(VtnServiceIpcConsts.DOMAIN_NAME2,
 									IpcDataUnitWrapper
 											.setIpcUint8ArrayValue(
-													link.get(VtnServiceJsonConsts.DOMAIN2_ID)
+													link.get(
+															VtnServiceJsonConsts.DOMAIN2_ID)
 															.getAsString(),
 													valBoundaryStruct,
 													UncPhysicalStructIndexEnum.UpplValBoundaryIndex.kIdxBoundaryDomainName2
@@ -5973,7 +6342,8 @@ public class IpcStructFactory {
 							.set(VtnServiceIpcConsts.LOGICAL_PORT_ID2,
 									IpcDataUnitWrapper
 											.setIpcUint8ArrayValue(
-													link.get(VtnServiceJsonConsts.LOGICAL_PORT2_ID)
+													link.get(
+															VtnServiceJsonConsts.LOGICAL_PORT2_ID)
 															.getAsString(),
 													valBoundaryStruct,
 													UncPhysicalStructIndexEnum.UpplValBoundaryIndex.kIdxBoundaryLogicalPortId2
@@ -6080,8 +6450,7 @@ public class IpcStructFactory {
 							IpcDataUnitWrapper
 									.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_INVALID
 											.ordinal()));
-		}
-		else {
+		} else {
 			LOG.warning("request body and uri parameters are not correct for getValCtrStruct");
 		}
 		LOG.info("Value Structure: " + valBoundaryStruct.toString());
@@ -6096,7 +6465,7 @@ public class IpcStructFactory {
 	 * @param uriParameters
 	 * @return
 	 */
-	public IpcStruct getKeyPortStruct(final JsonObject requestBody,
+	public final IpcStruct getKeyPortStruct(final JsonObject requestBody,
 			final List<String> uriParameters) {
 		/*
 		 * ipc_struct key_port { key_switch sw_key; UINT8 port_id[32]; };
@@ -6125,8 +6494,8 @@ public class IpcStructFactory {
 		return keyPortStruct;
 	}
 
-	public IpcStruct getValVrtArpEntryStStruct(final JsonObject requestBody,
-			final List<String> uriParameters) {
+	public final IpcStruct getValVrtArpEntryStStruct(
+			final JsonObject requestBody, final List<String> uriParameters) {
 		/*
 		 * ipc_struct val_vrt_arp_entry_st { UINT8 valid[4]; UINT8 macaddr[6];
 		 * IPV4 ip_addr; UINT8 type; UINT8 if_name[32]; };
@@ -6180,8 +6549,8 @@ public class IpcStructFactory {
 		return ValArpStruct;
 	}
 
-	public IpcStruct getKeyLogicalPortStruct(final JsonObject requestBody,
-			final List<String> uriParameters) {
+	public final IpcStruct getKeyLogicalPortStruct(
+			final JsonObject requestBody, final List<String> uriParameters) {
 		/*
 		 * ipc_struct key_logical_port { key_ctr_domain domain_key; UINT8 port
 		 * _id[320]; };
@@ -6211,7 +6580,7 @@ public class IpcStructFactory {
 		return keyLogicalPortStruct;
 	}
 
-	public IpcStruct getKeyLogicalMemberPortStruct(
+	public final IpcStruct getKeyLogicalMemberPortStruct(
 			final JsonObject requestBody, final List<String> uriParameters) {
 		/*
 		 * ipc_struct key_logical_member_port { key_logical_port
@@ -6253,5 +6622,176 @@ public class IpcStructFactory {
 		LOG.info("Key Structure: " + keyLogicalMemberPortStruct.toString());
 		LOG.trace("Complete getKeyLogicalMemberPortStruct");
 		return keyLogicalMemberPortStruct;
+	}
+
+	// Added New key Structure and Value Structure for U12 Requirement
+	/**
+	 * Gets the Key Vtn Controller struct.
+	 * 
+	 * @param requestBody
+	 *            the request body
+	 * @param uriParameters
+	 *            the uri parameters
+	 * @return the Key Vtn Controller struct
+	 */
+	public final IpcStruct getKeyVtnControllerStruct(
+			final JsonObject requestBody, final List<String> uriParameters) {
+		LOG.trace("Start getKeyVtnControllerStruct");
+
+		final IpcStruct KeyVtnControllerStruct = IpcDataUnitWrapper
+				.setIpcStructValue(UncStructEnum.KeyVtnController.getValue());
+		IpcStruct keyVtnStruct = null;
+		if (uriParameters != null
+				&& uriParameters.size() >= UncIndexEnum.ONE.ordinal()) {
+			keyVtnStruct = getKeyVtnStruct(requestBody,
+					uriParameters.subList(0, 1));
+		}
+		KeyVtnControllerStruct.set(VtnServiceIpcConsts.VTNKEY, keyVtnStruct);
+		if (uriParameters != null
+				&& uriParameters.size() == UncIndexEnum.TWO.ordinal()) {
+
+			final String mappingId[] = uriParameters.get(1).split(
+					VtnServiceJsonConsts.HYPHEN);
+			KeyVtnControllerStruct
+					.set(VtnServiceJsonConsts.CONTROLLERNAME,
+							IpcDataUnitWrapper
+									.setIpcUint8ArrayValue(mappingId[VtnServiceJsonConsts.VAL_0]));
+			KeyVtnControllerStruct
+					.set(VtnServiceJsonConsts.DOMAINID,
+							IpcDataUnitWrapper
+									.setIpcUint8ArrayValue(mappingId[VtnServiceJsonConsts.VAL_1]));
+
+		} else {
+			LOG.warning("request body and uri parameters are not correct for getKeyVtnControllerStruct");
+		}
+		LOG.info("Key Structure: " + KeyVtnControllerStruct.toString());
+		LOG.trace("Complete getKeyVtnControllerStruct");
+		return KeyVtnControllerStruct;
+	}
+
+	// VTN Data Flow key Structure
+	public final IpcStruct getKeyVtnDataflowStruct(
+			final JsonObject requestBody, final List<String> uriParameters) {
+		LOG.trace("Start getKeyVtnDataflowStruct");
+		final IpcStruct keyVtnDataFlowStruct = IpcDataUnitWrapper
+				.setIpcStructValue(UncStructEnum.KeyVtnDataflow.getValue());
+		IpcStruct keyVtnStruct = null;
+		if (uriParameters != null
+				&& uriParameters.size() == UncIndexEnum.ONE.ordinal()) {
+			keyVtnStruct = getKeyVtnStruct(requestBody, uriParameters);
+		}
+		keyVtnDataFlowStruct.set(VtnServiceIpcConsts.VTNKEY, keyVtnStruct);
+		if (requestBody != null) {
+			keyVtnDataFlowStruct
+					.set(VtnServiceIpcConsts.VNODEID, IpcDataUnitWrapper
+							.setIpcUint8ArrayValue((requestBody
+									.get(VtnServiceJsonConsts.VNODENAME)
+									.getAsString())));
+			if (requestBody.has(VtnServiceJsonConsts.VLANID)) {
+				LOG.debug("Valid VLAN ID Case");
+				keyVtnDataFlowStruct.set(
+						VtnServiceIpcConsts.VLANID1,
+						IpcDataUnitWrapper.setIpcUint16Value(requestBody.get(
+								VtnServiceJsonConsts.VLANID).getAsString()));
+			} else if (requestBody.has(VtnServiceJsonConsts.NO_VLAN_ID)) {
+				LOG.debug("Valid NO VLAN ID Case");
+				keyVtnDataFlowStruct
+						.set(VtnServiceIpcConsts.VLANID1,
+								IpcDataUnitWrapper
+										.setIpcUint16HexaValue(VtnServiceIpcConsts.VLAN_ID_DEFAULT_VALUE));
+			}
+			IpcDataUnitWrapper.setMacAddress(keyVtnDataFlowStruct,
+					VtnServiceIpcConsts.SRC_MAC_ADDRESS,
+					requestBody.get(VtnServiceJsonConsts.SRCMACADDR)
+							.getAsString(), 0);
+		} else {
+			LOG.warning("request body and uri parameters are not correct for getKeyVtnDataflowStruct");
+		}
+		LOG.info("Key Structure: " + keyVtnDataFlowStruct.toString());
+		LOG.trace("Complete getKeyVtnDataflowStruct");
+		return keyVtnDataFlowStruct;
+	}
+
+	/**
+	 * Gets the key DataFlow struct.
+	 * 
+	 * @param requestBody
+	 *            the request body
+	 * @param uriParameters
+	 *            the uri parameters
+	 * @return the key DataFlow struct
+	 */
+
+	public final IpcStruct getKeyDataFlowStruct(final JsonObject requestBody,
+			final List<String> uriParameters) {
+		LOG.trace("Start getKeyDataFlowStruct");
+		final IpcStruct keyDataFlowStruct = IpcDataUnitWrapper
+				.setIpcStructValue(UncStructEnum.KeyDataFlow.getValue());
+		if (requestBody != null) {
+			keyDataFlowStruct.set(VtnServiceIpcConsts.CONTROLLERNAME,
+					IpcDataUnitWrapper.setIpcUint8ArrayValue((requestBody
+							.get(VtnServiceJsonConsts.CONTROLLERID)
+							.getAsString())));
+			keyDataFlowStruct
+					.set(VtnServiceIpcConsts.SWITCHID, IpcDataUnitWrapper
+							.setIpcUint8ArrayValue((requestBody
+									.get(VtnServiceJsonConsts.SWITCHID)
+									.getAsString())));
+			keyDataFlowStruct
+					.set(VtnServiceIpcConsts.PORT_ID, IpcDataUnitWrapper
+							.setIpcUint8ArrayValue((requestBody
+									.get(VtnServiceJsonConsts.PORTNAME)
+									.getAsString())));
+
+			if (requestBody.has(VtnServiceJsonConsts.VLANID)) {
+				LOG.debug("Valid VLAN ID Case");
+				keyDataFlowStruct.set(
+						VtnServiceJsonConsts.VLANID,
+						IpcDataUnitWrapper.setIpcUint16Value(requestBody.get(
+								VtnServiceJsonConsts.VLANID).getAsString()));
+			} else if (requestBody.has(VtnServiceJsonConsts.NO_VLAN_ID)) {
+				LOG.debug("Valid NO VLAN ID Case");
+				keyDataFlowStruct
+						.set(VtnServiceJsonConsts.VLANID,
+								IpcDataUnitWrapper
+										.setIpcUint16HexaValue(VtnServiceIpcConsts.VLAN_ID_DEFAULT_VALUE));
+			}
+			IpcDataUnitWrapper.setMacAddress(keyDataFlowStruct,
+					VtnServiceIpcConsts.SRC_MAC_ADDRESS,
+					requestBody.get(VtnServiceJsonConsts.SRCMACADDR)
+							.getAsString(), 0);
+		} else {
+			LOG.error("request body and uri parameters are not correct for getKeyDataFlowStruct");
+		}
+		LOG.info("Key Structure: " + keyDataFlowStruct.toString());
+		LOG.trace("Complete getKeyDataFlowStruct");
+		return keyDataFlowStruct;
+	}
+
+	// key_ctr_dataflow
+
+	public final IpcStruct getKeyCtrDataFlowStruct(
+			final JsonObject requestBody, final List<String> uriParameters) {
+		IpcStruct keyCtrStruct = null;
+
+		if (uriParameters != null
+				&& uriParameters.size() >= UncIndexEnum.ONE.ordinal()) {
+			// create key structure for Controller
+			keyCtrStruct = getKeyCtrStruct(requestBody, uriParameters);
+		}
+		LOG.trace("Start getKeyCtrDataFlowStruct");
+		final IpcStruct keyCtrDataFlowStruct = IpcDataUnitWrapper
+				.setIpcStructValue(UncStructEnum.KeyCtrDataFlow.getValue());
+		if (requestBody != null) {
+			keyCtrDataFlowStruct.set(VtnServiceIpcConsts.CTR_KEY, keyCtrStruct);
+			keyCtrDataFlowStruct.set(VtnServiceIpcConsts.FLOW_ID,
+					IpcDataUnitWrapper.setIpcUint64Value((requestBody
+							.get(VtnServiceJsonConsts.FLOW_ID).getAsString())));
+		} else {
+			LOG.warning("request body and uri parameters are not correct for getKeyCtrDataFlowStruct");
+		}
+		LOG.info("Key Structure: " + keyCtrDataFlowStruct.toString());
+		LOG.trace("Complete getKeyCtrDataFlowStruct");
+		return keyCtrDataFlowStruct;
 	}
 }

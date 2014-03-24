@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -8,6 +8,9 @@
  */
 
 package org.opendaylight.vtn.javaapi.resources;
+
+import java.sql.Connection;
+import java.sql.SQLException;
 
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
@@ -19,6 +22,7 @@ import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
+import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.javaapi.ipc.conversion.IpcDataUnitWrapper;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
@@ -59,10 +63,12 @@ public class ConfigResource extends AbstractResource {
 	 *             the vtn service exception
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts ConfigResource#put()");
 		ClientSession session = null;
 		int status = ClientSession.RESP_FATAL;
+		int operationStatus = -99999;
 		try {
 			LOG.debug("Start Ipc framework call");
 			if (requestBody != null) {
@@ -116,7 +122,7 @@ public class ConfigResource extends AbstractResource {
 				LOG.warning("Request body is not correct");
 			}
 			status = session.invoke();
-			LOG.info("Request packet processed with status:"+status);
+			LOG.info("Request packet processed with status:" + status);
 			final int operationType = Integer.parseInt(IpcDataUnitWrapper
 					.getIpcDataUnitValue(session
 							.getResponse(VtnServiceJsonConsts.VAL_0)));
@@ -124,7 +130,7 @@ public class ConfigResource extends AbstractResource {
 					.getIpcDataUnitValue(session
 							.getResponse(VtnServiceJsonConsts.VAL_1));
 			String configId = null;
-			int operationStatus = VtnServiceIpcConsts.INVALID_OPEARTION_STATUS;
+			operationStatus = VtnServiceIpcConsts.INVALID_OPEARTION_STATUS;
 			if (operationType == UncTCEnums.ServiceType.TC_OP_CANDIDATE_COMMIT
 					.ordinal()) {
 				configId = IpcDataUnitWrapper.getIpcDataUnitValue(session
@@ -155,7 +161,7 @@ public class ConfigResource extends AbstractResource {
 			}
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
-			LOG.info("Error occured while performing getSession operation");
+			LOG.error("Error occured while performing getSession operation");
 			getExceptionHandler()
 					.raise(Thread.currentThread().getStackTrace()[1]
 							.getClassName()
@@ -167,7 +173,7 @@ public class ConfigResource extends AbstractResource {
 									.getErrorMessage(), e);
 			throw e;
 		} catch (final IpcException e) {
-			LOG.info("Error occured while performing addOutput operation");
+			LOG.error("Error occured while performing addOutput operation");
 			getExceptionHandler()
 					.raise(Thread.currentThread().getStackTrace()[1]
 							.getClassName()
@@ -185,8 +191,50 @@ public class ConfigResource extends AbstractResource {
 			}
 			// destroy session by common handler
 			getConnPool().destroySession(session);
+			performOpenStackDBOperation(operationStatus);
 		}
 		LOG.trace("Completed ConfigResource#put()");
 		return status;
+	}
+
+	/**
+	 * Perform DB commit or rollback, as per status if UNC commit operation
+	 * 
+	 * @param operationStatus
+	 * @throws VtnServiceException
+	 * 
+	 */
+	private void performOpenStackDBOperation(int operationStatus)
+			throws VtnServiceException {
+		Connection connection = getOpenStackConnection();
+		// perform only when connection is not null
+		if (connection != null) {
+			try {
+				if (operationStatus == UncTCEnums.OperationStatus.TC_OPER_SUCCESS
+						.getCode()) {
+					LOG.debug("Commit operation");
+					connection.commit();
+				} else {
+					LOG.debug("Rollback operation");
+					connection.rollback();
+				}
+			} catch (SQLException e) {
+				LOG.error("Error occured performing database commit/rollback operation");
+				getExceptionHandler()
+						.raise(Thread.currentThread().getStackTrace()[1]
+								.getClassName()
+								+ VtnServiceConsts.HYPHEN
+								+ Thread.currentThread().getStackTrace()[1]
+										.getMethodName(),
+								UncJavaAPIErrorCode.INTERNAL_ERROR
+										.getErrorCode(),
+								UncJavaAPIErrorCode.INTERNAL_ERROR
+										.getErrorMessage(), e);
+			} finally {
+				LOG.info("Free connection...");
+				VtnServiceInitManager.getDbConnectionPoolMap().freeConnection(
+						connection);
+			}
+		}
 	}
 }

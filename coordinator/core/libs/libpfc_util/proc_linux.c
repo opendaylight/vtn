@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -163,6 +163,9 @@ pfc_proc_getcmdline(pid_t pid, pfc_listm_t *listp)
 	err = proc_buf_readline(&pbuf, fp);
 	fclose(fp);
 	if (PFC_EXPECT_FALSE(err != 0)) {
+		if (err < 0) {
+			err = ENODATA;
+		}
 		goto out;
 	}
 

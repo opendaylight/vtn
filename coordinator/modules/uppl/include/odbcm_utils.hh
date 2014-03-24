@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -15,15 +15,27 @@
 #ifndef _ODBCM_UTILS_HH_
 #define _ODBCM_UTILS_HH_
 
-#include <map>
+#include <sys/ipc.h>
+#include <sys/sem.h>
 #include <string>
+#include <map>
 #include "odbcm_common.hh"
 #include "odbcm_db_tableschema.hh"
 
 namespace unc {
 namespace uppl {
-
-
+#if defined(__GNU_LIBRARY__) && !defined(_SEM_SEMUN_UNDEFINED)
+  /* union semun is defined by including <sys/sem.h> */
+#else
+  /* according to X/OPEN we have to define it ourselves */
+  union semun {
+    int val;                  /* value for SETVAL */
+    struct semid_ds *buf;     /* buffer for IPC_STAT, IPC_SET */
+    unsigned short *array;    /* array for GETALL, SETALL */
+                              /* Linux specific part: */
+    struct seminfo *__buf;    /* buffer for IPC_INFO */
+  };
+#endif
 typedef struct {
   const ODBCM_RC_STATUS rcode;
   const std::string rc_string;
@@ -53,7 +65,7 @@ const char g_log_db_name[7][20] = {
  */
 #if ODBCM_DEBUG
 #define odbcm_debug_info(fmt, ...) \
-  pfc_log_debug(fmt, ##__VA_ARGS__);
+  pfc_log_debug((fmt), ##__VA_ARGS__);
 #else
 #define odbcm_debug_info(fmt, ...) (void)0
 #endif
@@ -73,9 +85,9 @@ const char g_log_db_name[7][20] = {
  * Macro for database environment handle checking
  */
 #define ODBCM_ENV_HANDLE_CHECK(henv, odbcm_rc)                \
-  if (odbcm_rc != SQL_SUCCESS) {                              \
+  if ((odbcm_rc) != SQL_SUCCESS) {                              \
     ODBCM_RC_STATUS rc = ODBCMUtils::OdbcmHandleInfoPrint(    \
-        SQL_HANDLE_ENV, henv, odbcm_rc, __LINE__, __FILE__);  \
+        SQL_HANDLE_ENV, (henv), (odbcm_rc), __LINE__, __FILE__);  \
     if (rc != SQL_SUCCESS)                                    \
     return (ODBCM_RC_STATUS)rc;                               \
   }
@@ -84,25 +96,25 @@ const char g_log_db_name[7][20] = {
  * Macro for database connection handle checking
  */
 #define ODBCM_DBC_HANDLE_CHECK(hdbc, odbcm_rc)                \
-  if (odbcm_rc != SQL_SUCCESS) {                              \
+  if ((odbcm_rc) != SQL_SUCCESS) {                              \
     ODBCM_RC_STATUS rc = ODBCMUtils::OdbcmHandleInfoPrint(    \
-        SQL_HANDLE_DBC, hdbc, odbcm_rc, __LINE__, __FILE__);  \
+        SQL_HANDLE_DBC, (hdbc), (odbcm_rc), __LINE__, __FILE__);  \
     if (rc != SQL_SUCCESS)                                    \
-      odbcm_rc = rc;                                          \
+      (odbcm_rc) = rc;                                          \
   }
 
 /* 
  * Macro for query statement handle checking
  */
 #define ODBCM_STMT_HANDLE_CHECK(hstmt, hdbc, odbcm_rc)        \
-  if (NULL != hstmt) {                                        \
-    if (odbcm_rc != SQL_SUCCESS) {                              \
+  if (NULL != (hstmt)) {                                        \
+    if ((odbcm_rc) != SQL_SUCCESS) {                              \
       ODBCM_RC_STATUS rc = ODBCMUtils::OdbcmHandleInfoPrint(    \
-          SQL_HANDLE_STMT, hstmt, odbcm_rc, __LINE__, __FILE__);\
+          SQL_HANDLE_STMT, (hstmt), (odbcm_rc), __LINE__, __FILE__);\
       if (rc == SQL_ERROR)                                      \
-      ODBCMUtils::OdbcmStmtResourcesFree(hstmt);                \
+      ODBCMUtils::OdbcmStmtResourcesFree((hstmt));                \
       if (rc != SQL_SUCCESS)                                    \
-      ODBCMUtils::OdbcmTransRollback(hdbc);                     \
+      ODBCMUtils::OdbcmTransRollback((hdbc));                     \
       if (rc != SQL_SUCCESS) return (ODBCM_RC_STATUS)rc;        \
     }                                                           \
   }
@@ -111,12 +123,12 @@ const char g_log_db_name[7][20] = {
  * Macro for database parameters handle checking
  */
 #define ODBCM_PARAM_HANDLE_CHECK(hstmt, odbcm_rc)             \
-    if (odbcm_rc != SQL_SUCCESS ||                            \
-      odbcm_rc != SQL_SUCCESS_WITH_INFO) {                    \
+    if ((odbcm_rc) != SQL_SUCCESS ||                            \
+      (odbcm_rc) != SQL_SUCCESS_WITH_INFO) {                    \
       ODBCM_RC_STATUS rc = ODBCMUtils::OdbcmHandleInfoPrint(  \
-        SQL_HANDLE_STMT, hstmt, odbcm_rc, __LINE__, __FILE__);\
+        SQL_HANDLE_STMT, (hstmt), (odbcm_rc), __LINE__, __FILE__);\
         if (rc == SQL_ERROR)                                  \
-          ODBCMUtils::OdbcmStmtResourcesFree(hstmt);          \
+          ODBCMUtils::OdbcmStmtResourcesFree((hstmt));          \
         return (ODBCM_RC_STATUS)rc;                           \
     }
 
@@ -124,15 +136,15 @@ const char g_log_db_name[7][20] = {
  * Macro for database process handle checking
  */
 #define ODBCM_PROCESS_HANDLE_CHECK(hstmt, odbcm_rc)           \
-    if (odbcm_rc != SQL_SUCCESS) {                            \
+    if ((odbcm_rc) != SQL_SUCCESS) {                            \
       ODBCM_RC_STATUS rc = ODBCMUtils::OdbcmHandleInfoPrint(  \
-        SQL_HANDLE_STMT, hstmt, odbcm_rc, __LINE__, __FILE__);\
+        SQL_HANDLE_STMT, (hstmt), (odbcm_rc), __LINE__, __FILE__);\
         if (rc == SQL_ERROR ||                                \
             rc == SQL_STILL_EXECUTING ||                      \
             rc == SQL_NEED_DATA ) {                           \
-          ODBCMUtils::OdbcmStmtResourcesFree(hstmt);          \
+          ODBCMUtils::OdbcmStmtResourcesFree((hstmt));          \
          }                                                    \
-        odbcm_rc = (ODBCM_RC_STATUS)rc;                     \
+        (odbcm_rc) = (ODBCM_RC_STATUS)rc;                     \
     }
 
 /*
@@ -175,6 +187,8 @@ class ODBCMUtils {
      * Destructor of ODBCMUtils
      */
     ~ODBCMUtils();
+
+     static int sem_id;
 
     /*
      * Info about the SQL error
@@ -254,6 +268,16 @@ class ODBCMUtils {
     static std::string get_ipv6_string(uint8_t *ipv6_address);
 
     //  static ODBCM_RC_STATUS Intialize_RCode_String();
+
+    // initializes semaphore using SETVAL
+    static int set_semvalue(int val);
+
+    // delete semaphore
+    static int del_semvalue();
+
+    static int SEM_DOWN();
+    static int SEM_UP();
+
 
   private:
     /** No private members */

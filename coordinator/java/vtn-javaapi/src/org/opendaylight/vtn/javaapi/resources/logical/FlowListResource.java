@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -37,16 +37,19 @@ public class FlowListResource extends AbstractResource {
 	/** The FlowList Name. */
 	@UNCField("fl_name")
 	private String flName;
+
 	/**
 	 * Gets the fl name.
 	 * 
 	 * @return the fl name
 	 */
-	public String getFlName() {
+	public final String getFlName() {
 		return flName;
 	}
+
 	private static final Logger LOG = Logger.getLogger(FlowListResource.class
 			.getName());
+
 	/**
 	 * Instantiates a new flow list resource.
 	 */
@@ -56,6 +59,7 @@ public class FlowListResource extends AbstractResource {
 		setValidator(new FlowListResourceValidator(this));
 		LOG.trace("Completed FlowListResource#FlowListResource()");
 	}
+
 	/**
 	 * Implementation of delete method of FlowList
 	 * 
@@ -63,7 +67,7 @@ public class FlowListResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Starts FlowListRsesource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -111,6 +115,7 @@ public class FlowListResource extends AbstractResource {
 		LOG.trace("Completed FlowListRsesource#delete()");
 		return status;
 	}
+
 	/**
 	 * Implementation of get method of Flow List
 	 * 
@@ -121,7 +126,8 @@ public class FlowListResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts FlowListRsesource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -142,7 +148,7 @@ public class FlowListResource extends AbstractResource {
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			setInfo(responseGenerator.getFlowListResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.SHOW));
@@ -174,6 +180,7 @@ public class FlowListResource extends AbstractResource {
 		LOG.trace("Completed FlowListRsesource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 

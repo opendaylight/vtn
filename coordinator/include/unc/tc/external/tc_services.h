@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -9,6 +9,8 @@
 
 #ifndef SRC_INCLUDE_UNC_TC_EXTERNAL_TC_SERVICES_H_
 #define SRC_INCLUDE_UNC_TC_EXTERNAL_TC_SERVICES_H_
+
+#include <unc/unc_base.h>
 
 /* Values used to establish Client Session with TC Module */
 #define UNC_CHANNEL_NAME "uncd"
@@ -56,13 +58,13 @@ typedef enum {
 /* List of Return Values and Operation Status Values */
 typedef enum {
   /* System Failover */
-  TC_OPER_FAILURE = -11,
+  TC_OPER_FAILURE       = UNC_TC_OPER_FAILURE,
   /* Invalid Input Values Passed*/
-  TC_OPER_INVALID_INPUT = -10,
-  TC_OPER_SUCCESS = 0,
-  TC_CONFIG_NOT_PRESENT,
+  TC_OPER_INVALID_INPUT = UNC_TC_OPER_INVALID_INPUT,
+  TC_OPER_SUCCESS       = UNC_RC_SUCCESS,
+  TC_CONFIG_NOT_PRESENT = UNC_TC_CONFIG_NOT_PRESENT,
   TC_CONFIG_PRESENT,
-  TC_INVALID_CONFIG_ID,
+  TC_INVALID_CONFIG_ID, 
   TC_INVALID_OPERATION_TYPE,
   TC_INVALID_SESSION_ID,
   TC_INVALID_STATE,

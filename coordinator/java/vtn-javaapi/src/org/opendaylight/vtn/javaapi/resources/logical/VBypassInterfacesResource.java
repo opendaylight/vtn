@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -48,24 +48,28 @@ public class VBypassInterfacesResource extends AbstractResource {
 	/** The vbypass name. */
 	@UNCField("vbypass_name")
 	private String vbypassName;
+
 	/**
 	 * Gets the vtn name.
 	 * 
 	 * @return the vtn name
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
+
 	/**
 	 * Gets the vbypass name.
 	 * 
 	 * @return the vbypass name
 	 */
-	public String getVbypassName() {
+	public final String getVbypassName() {
 		return vbypassName;
 	}
+
 	private static final Logger LOG = Logger
 			.getLogger(VBypassInterfacesResource.class.getName());
+
 	/**
 	 * Instantiates a new vBypass interfaces resource.
 	 */
@@ -75,6 +79,7 @@ public class VBypassInterfacesResource extends AbstractResource {
 		setValidator(new InterfaceResourceValidator(this));
 		LOG.trace("Completed VBypassInterfacesResource#VBypassInterfacesResource()");
 	}
+
 	/**
 	 * Implementation of Post method of VBypass Interface API
 	 * 
@@ -85,7 +90,8 @@ public class VBypassInterfacesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VBypassInterfacesResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -108,14 +114,14 @@ public class VBypassInterfacesResource extends AbstractResource {
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
 			getExceptionHandler()
-			.raise(Thread.currentThread().getStackTrace()[1]
-					.getClassName()
-					+ VtnServiceConsts.HYPHEN
-					+ Thread.currentThread().getStackTrace()[1]
-							.getMethodName(),
+					.raise(Thread.currentThread().getStackTrace()[1]
+							.getClassName()
+							+ VtnServiceConsts.HYPHEN
+							+ Thread.currentThread().getStackTrace()[1]
+									.getMethodName(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR
-							.getErrorMessage(), e);
+									.getErrorMessage(), e);
 			throw e;
 		} finally {
 			if (status == ClientSession.RESP_FATAL) {
@@ -132,6 +138,7 @@ public class VBypassInterfacesResource extends AbstractResource {
 		LOG.trace("Completed VBypassInterfacesResource#post()");
 		return status;
 	}
+
 	/**
 	 * Implementation of Get method of VBypass Interface API
 	 * 
@@ -142,7 +149,8 @@ public class VBypassInterfacesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts VBypassInterfaceResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -164,7 +172,8 @@ public class VBypassInterfacesResource extends AbstractResource {
 					uriParameterList);
 			LOG.debug("Request packet created successfully for 1st request");
 			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet for 1st request processed with status" + status);
+			LOG.debug("Request packet for 1st request processed with status"
+					+ status);
 			if (status == ClientSession.RESP_FATAL) {
 				throw new VtnServiceException(
 						Thread.currentThread().getStackTrace()[1]
@@ -172,12 +181,12 @@ public class VBypassInterfacesResource extends AbstractResource {
 								+ VtnServiceConsts.HYPHEN
 								+ Thread.currentThread().getStackTrace()[1]
 										.getMethodName(),
-										UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
-										UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorMessage());
+						UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
+						UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorMessage());
 			}
 			JsonObject neighbor = null;
 			JsonObject vbypassInterfacesJson = null;
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			String dataType = null;
 			if (requestBody.has(VtnServiceJsonConsts.TARGETDB)) {
 				dataType = requestBody.get(VtnServiceJsonConsts.TARGETDB)
@@ -188,27 +197,32 @@ public class VBypassInterfacesResource extends AbstractResource {
 				opType = requestBody.get(VtnServiceJsonConsts.OP).getAsString();
 			}
 			JsonObject interfacesJson = null;
-			JsonArray interfaceArray = new JsonArray();
-			/*vbypassInterfacesJson = responseGenerator.getVBypassInterfaceResponse(
-					requestProcessor.getIpcResponsePacket(), requestBody,
-					VtnServiceJsonConsts.LIST);*/
-			vbypassInterfacesJson = responseGenerator.getVBypassInterfaceResponse(
-					requestProcessor.getIpcResponsePacket(), requestBody,
-					VtnServiceJsonConsts.LIST);
-			if (vbypassInterfacesJson.get(VtnServiceJsonConsts.INTERFACES).isJsonArray()) {
-				JsonArray responseArray = vbypassInterfacesJson.get(
+			final JsonArray interfaceArray = new JsonArray();
+			/*
+			 * vbypassInterfacesJson =
+			 * responseGenerator.getVBypassInterfaceResponse(
+			 * requestProcessor.getIpcResponsePacket(), requestBody,
+			 * VtnServiceJsonConsts.LIST);
+			 */
+			vbypassInterfacesJson = responseGenerator
+					.getVBypassInterfaceResponse(
+							requestProcessor.getIpcResponsePacket(),
+							requestBody, VtnServiceJsonConsts.LIST);
+			if (vbypassInterfacesJson.get(VtnServiceJsonConsts.INTERFACES)
+					.isJsonArray()) {
+				final JsonArray responseArray = vbypassInterfacesJson.get(
 						VtnServiceJsonConsts.INTERFACES).getAsJsonArray();
 
-				vbypassInterfacesJson = getResponseJsonArrayLogical(requestBody,
-						requestProcessor, responseGenerator,
+				vbypassInterfacesJson = getResponseJsonArrayLogical(
+						requestBody, requestProcessor, responseGenerator,
 						responseArray, VtnServiceJsonConsts.INTERFACES,
 						VtnServiceJsonConsts.IFNAME,
-						IpcRequestPacketEnum.KT_VUNK_IF_GET,
-						uriParameterList,VtnServiceIpcConsts.GET_VBYPASS_INTERFACE_RESPONSE);
+						IpcRequestPacketEnum.KT_VUNK_IF_GET, uriParameterList,
+						VtnServiceIpcConsts.GET_VBYPASS_INTERFACE_RESPONSE);
 			}
 			if (VtnServiceJsonConsts.STATE.equalsIgnoreCase(dataType)
 					&& opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
-				Iterator<JsonElement> interfaceIterator = vbypassInterfacesJson
+				final Iterator<JsonElement> interfaceIterator = vbypassInterfacesJson
 						.get(VtnServiceJsonConsts.INTERFACES).getAsJsonArray()
 						.iterator();
 				requestProcessor.setServiceInfo(
@@ -216,27 +230,28 @@ public class VBypassInterfacesResource extends AbstractResource {
 						UncUPLLEnums.ServiceID.UPLL_READ_SVC_ID.ordinal());
 				while (interfaceIterator.hasNext()) {
 					interfacesJson = interfaceIterator.next().getAsJsonObject();
-					String ifName = interfacesJson.get(
+					final String ifName = interfacesJson.get(
 							VtnServiceJsonConsts.IFNAME).getAsString();
 					requestBody.addProperty(VtnServiceJsonConsts.INDEX, ifName);
 					requestProcessor.createIpcRequestPacket(
 							IpcRequestPacketEnum.KT_VUNK_IF_GET, requestBody,
 							getUriParameters(requestBody));
 					requestProcessor
-					.getRequestPacket()
-					.setOption2(
-							IpcDataUnitWrapper
-							.setIpcUint32Value(UncOption2Enum.UNC_OPT2_NEIGHBOR
-									.ordinal()));
+							.getRequestPacket()
+							.setOption2(
+									IpcDataUnitWrapper
+											.setIpcUint32Value(UncOption2Enum.UNC_OPT2_NEIGHBOR
+													.ordinal()));
 					requestProcessor
-					.getRequestPacket()
-					.setOperation(
-							IpcDataUnitWrapper
-							.setIpcUint32Value(UncOperationEnum.UNC_OP_READ
-									.ordinal()));
+							.getRequestPacket()
+							.setOperation(
+									IpcDataUnitWrapper
+											.setIpcUint32Value(UncOperationEnum.UNC_OP_READ
+													.ordinal()));
 					LOG.debug("Request packet created successfully for 2nd request");
 					status = requestProcessor.processIpcRequest();
-					LOG.debug("Request packet for 2nd request processed with status" + status);
+					LOG.debug("Request packet for 2nd request processed with status"
+							+ status);
 					neighbor = responseGenerator.getNeighborResponse(
 							requestProcessor.getIpcResponsePacket(),
 							requestBody, VtnServiceJsonConsts.SHOW);
@@ -252,14 +267,14 @@ public class VBypassInterfacesResource extends AbstractResource {
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
 			getExceptionHandler()
-			.raise(Thread.currentThread().getStackTrace()[1]
-					.getClassName()
-					+ VtnServiceConsts.HYPHEN
-					+ Thread.currentThread().getStackTrace()[1]
-							.getMethodName(),
+					.raise(Thread.currentThread().getStackTrace()[1]
+							.getClassName()
+							+ VtnServiceConsts.HYPHEN
+							+ Thread.currentThread().getStackTrace()[1]
+									.getMethodName(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
 							UncJavaAPIErrorCode.IPC_SERVER_ERROR
-							.getErrorMessage(), e);
+									.getErrorMessage(), e);
 			throw e;
 		} finally {
 			if (status == ClientSession.RESP_FATAL) {
@@ -276,14 +291,15 @@ public class VBypassInterfacesResource extends AbstractResource {
 		LOG.trace("Completed VBypassInterfacesResource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 
 	 * @return parameter list
 	 */
-	private List<String> getUriParameters(JsonObject requestBody) {
+	private List<String> getUriParameters(final JsonObject requestBody) {
 		LOG.trace("Start VBypassInterfacesResource#getUriParameters()");
-		List<String> uriParameters = new ArrayList<String>();
+		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(vtnName);
 		uriParameters.add(vbypassName);
 		if (requestBody != null && requestBody.has(VtnServiceJsonConsts.INDEX)) {

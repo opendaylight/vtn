@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -41,7 +41,7 @@ const DalColumnSchema vtn_schema[] =  {
   {"cs_rowstatus", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_description", SQL_SMALLINT, SQL_C_SHORT, 1}
 };
-}
+}  // namespace vtn
 
 namespace vtn_controller {
 const DalColumnSchema vtn_controller_schema[] =  {
@@ -58,7 +58,7 @@ const DalColumnSchema vtn_controller_schema[] =  {
   {"cs_rowstatus", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_description", SQL_SMALLINT, SQL_C_SHORT, 1}
 };
-}
+}  // namespace vtn_controller
 
 namespace vtn_rename {
 const DalColumnSchema vtn_rename_schema[] =  {
@@ -67,7 +67,7 @@ const DalColumnSchema vtn_rename_schema[] =  {
   {"domain_id", SQL_VARCHAR, SQL_C_CHAR, 32},
   {"unc_vtn_name", SQL_VARCHAR, SQL_C_CHAR, 32}
 };
-}
+}  // namespace vtn_rename
 
 namespace vbridge {
 const DalColumnSchema vbridge_schema[] =  {
@@ -95,7 +95,7 @@ const DalColumnSchema vbridge_schema[] =  {
   {"cs_host_addr_mask", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"flags", SQL_SMALLINT, SQL_C_SHORT, 1}
 };
-}
+}  // namespace vbridge
 
 namespace vbridge_vlanmap {
 const DalColumnSchema vbridge_vlanmap_schema[] =  {
@@ -104,14 +104,16 @@ const DalColumnSchema vbridge_vlanmap_schema[] =  {
   {"logical_port_id", SQL_VARCHAR, SQL_C_CHAR, 320},
   {"logical_port_id_valid", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"vlanid", SQL_INTEGER, SQL_C_ULONG, 1},
+  {"bdry_ref_count", SQL_BIGINT, SQL_C_UBIGINT, 1},
   {"controller_name", SQL_VARCHAR, SQL_C_CHAR, 32},
   {"domain_id", SQL_VARCHAR, SQL_C_CHAR, 32},
   {"flags", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"valid_vlanid", SQL_SMALLINT, SQL_C_SHORT, 1},
+  {"valid_bdry_ref_count", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_rowstatus", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_vlanid", SQL_SMALLINT, SQL_C_SHORT, 1}
 };
-}
+}  // namespace vbridge_vlanmap
 
 namespace vbridge_interface {
 const DalColumnSchema vbridge_interface_schema[] =  {
@@ -149,7 +151,7 @@ const DalColumnSchema vbridge_interface_schema[] =  {
   {"cs_vlanid", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_tagged", SQL_SMALLINT, SQL_C_SHORT, 1}
 };
-}
+}  // namespace vbridge_interface
 
 namespace vrouter {
 const DalColumnSchema vrouter_schema[] =  {
@@ -173,7 +175,7 @@ const DalColumnSchema vrouter_schema[] =  {
   {"cs_vrt_description", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_dhcprelay_admin_status", SQL_SMALLINT, SQL_C_SHORT, 1}
 };
-}
+}  // namespace vrouter
 
 namespace vrouter_interface {
 const DalColumnSchema vrouter_interface_schema[] =  {
@@ -203,7 +205,7 @@ const DalColumnSchema vrouter_interface_schema[] =  {
   {"cs_mac_addr", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_admin_status", SQL_SMALLINT, SQL_C_SHORT, 1}
 };
-}
+}  // namespace vrouter_interface
 
 namespace vnode_rename {
 const DalColumnSchema vnode_rename_schema[] =  {
@@ -214,7 +216,7 @@ const DalColumnSchema vnode_rename_schema[] =  {
   {"unc_vtn_name", SQL_VARCHAR, SQL_C_CHAR, 32},
   {"unc_vnode_name", SQL_VARCHAR, SQL_C_CHAR, 32}
 };
-}
+}  // namespace vnode_rename
 
 namespace vlink {
 const DalColumnSchema vlink_schema[] =  {
@@ -255,7 +257,7 @@ const DalColumnSchema vlink_schema[] =  {
   {"cs_vlanid", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_description", SQL_SMALLINT, SQL_C_SHORT, 1}
 };
-}
+}  // namespace vlink
 
 namespace vlink_rename {
 const DalColumnSchema vlink_rename_schema[] =  {
@@ -266,7 +268,7 @@ const DalColumnSchema vlink_rename_schema[] =  {
   {"unc_vtn_name", SQL_VARCHAR, SQL_C_CHAR, 32},
   {"unc_vlink_name", SQL_VARCHAR, SQL_C_CHAR, 32}
 };
-}
+}  // namespace vlink_rename
 
 namespace static_ip_route {
 const DalColumnSchema static_ip_route_schema[] =  {
@@ -284,7 +286,7 @@ const DalColumnSchema static_ip_route_schema[] =  {
   {"cs_rowstatus", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_metric", SQL_SMALLINT, SQL_C_SHORT, 1}
 };
-}
+}  // namespace static_ip_route
 
 namespace dhcprelay_server {
 const DalColumnSchema dhcprelay_server_schema[] =  {
@@ -296,7 +298,7 @@ const DalColumnSchema dhcprelay_server_schema[] =  {
   {"flags", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_rowstatus", SQL_SMALLINT, SQL_C_SHORT, 1}
 };
-}
+}  // namespace dhcprelay_server
 
 namespace dhcprelay_interface {
 const DalColumnSchema dhcprelay_interface_schema[] =  {
@@ -308,7 +310,7 @@ const DalColumnSchema dhcprelay_interface_schema[] =  {
   {"flags", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_rowstatus", SQL_SMALLINT, SQL_C_SHORT, 1}
 };
-}
+}  // namespace dhcprelay_interface
 
 namespace vbridge_networkmonitor_group {
 const DalColumnSchema vbridge_networkmonitor_group_schema[] =  {
@@ -325,7 +327,7 @@ const DalColumnSchema vbridge_networkmonitor_group_schema[] =  {
   {"cs_rowstatus", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_admin_status", SQL_SMALLINT, SQL_C_SHORT, 1}
 };
-}
+}  // namespace vbridge_networkmonitor_group
 
 namespace vbridge_networkmonitor_host {
 const DalColumnSchema vbridge_networkmonitor_host_schema[] =  {
@@ -353,7 +355,7 @@ const DalColumnSchema vbridge_networkmonitor_host_schema[] =  {
   {"cs_recovery_count", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_wait_time", SQL_SMALLINT, SQL_C_SHORT, 1}
 };
-}
+}  // namespace vbridge_networkmonitor_host
 
 namespace vunknown {
 const DalColumnSchema vunknown_schema[] =  {
@@ -371,7 +373,7 @@ const DalColumnSchema vunknown_schema[] =  {
   {"cs_type", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_domain_id", SQL_SMALLINT, SQL_C_SHORT, 1}
 };
-}
+}  // namespace vunknown
 
 namespace vunknown_interface {
 const DalColumnSchema vunknown_interface_schema[] =  {
@@ -388,7 +390,7 @@ const DalColumnSchema vunknown_interface_schema[] =  {
   {"cs_description", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_admin_status", SQL_SMALLINT, SQL_C_SHORT, 1},
 };
-}
+}  // namespace vunknown_interface
 
 namespace vtep {
 const DalColumnSchema vtep_schema[] =  {
@@ -409,7 +411,7 @@ const DalColumnSchema vtep_schema[] =  {
   {"cs_controller_name", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_domain_id", SQL_SMALLINT, SQL_C_SHORT, 1}
 };
-}
+}  // namespace vtep
 
 namespace vtep_interface {
 const DalColumnSchema vtep_interface_schema[] =  {
@@ -441,7 +443,7 @@ const DalColumnSchema vtep_interface_schema[] =  {
   {"cs_vlanid", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_tagged", SQL_SMALLINT, SQL_C_SHORT, 1}
 };
-}
+}  // namespace vtep_interface
 
 namespace vtep_group {
 const DalColumnSchema vtep_group_schema[] =  {
@@ -456,7 +458,7 @@ const DalColumnSchema vtep_group_schema[] =  {
   {"cs_controller_name", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_description", SQL_SMALLINT, SQL_C_SHORT, 1},
 };
-}
+}  // namespace vtep_group
 
 namespace vtep_groupmember {
 const DalColumnSchema vtep_groupmember_schema[] =  {
@@ -468,7 +470,7 @@ const DalColumnSchema vtep_groupmember_schema[] =  {
   {"flags", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_rowstatus", SQL_SMALLINT, SQL_C_SHORT, 1},
 };
-}
+}  // namespace vtep_groupmember
 
 namespace vtunnel {
 const DalColumnSchema vtunnel_schema[] =  {
@@ -498,7 +500,7 @@ const DalColumnSchema vtunnel_schema[] =  {
   {"cs_vtepgrp_name", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_label", SQL_SMALLINT, SQL_C_SHORT, 1}
 };
-}
+}  // namespace vtunnel
 
 namespace vtunnel_interface {
 const DalColumnSchema vtunnel_interface_schema[] =  {
@@ -530,7 +532,7 @@ const DalColumnSchema vtunnel_interface_schema[] =  {
   {"cs_vlanid", SQL_SMALLINT, SQL_C_SHORT, 1},
   {"cs_tagged", SQL_SMALLINT, SQL_C_SHORT, 1}
 };
-}
+}  // namespace vtunnel_interface
 
 // L2/L3 MoMgrs Schema End
 
@@ -557,7 +559,7 @@ const DalColumnSchema flowlist_ctrlr_schema[] = {
   { "cs_rowstatus", SQL_SMALLINT, SQL_C_SHORT, 1 },
   { "cs_ip_type", SQL_SMALLINT, SQL_C_SHORT, 1 }
 };  // flowlist_ctrlr_schema
-}  // namespace flowlist ctrlr
+}  // namespace flowlist_ctrlr
 
 namespace flowlist_rename {
 const DalColumnSchema flowlist_rename_schema[] = {
@@ -1111,7 +1113,7 @@ const DalColumnSchema vbr_if_policingmap_schema[] = {
   { "cs_rowstatus", SQL_SMALLINT, SQL_C_SHORT, 1 },
   { "cs_policername", SQL_SMALLINT, SQL_C_SHORT, 1 }
 };  // vbr_policingmap_schema
-}  // namespace vbr_policingmap
+}  // namespace vbr_if_policingmap
 
 // POM MoMgrs Schema End
 
@@ -1126,6 +1128,64 @@ const DalColumnSchema ctrlr_schema[] = {
   { "state", SQL_SMALLINT, SQL_C_SHORT, 1 }
 };
 }  // namespace ctrlr
+
+// Relational Schema - Shows parent-child relation
+const DalRelnSchema relational_schema[] = {
+// VTN Schemas
+  { kDalNumTables, 0 },  // VTN Schema
+  { kDalNumTables, 0 },  // VTN Controller Schema
+  { kDalNumTables, 0 },  // VTN Rename Schema
+  { kDbiVtnTbl, 1 },  // Vbridge Schema
+  { kDbiVbrTbl, 2 },  // Vbridge Vlanmap Schema
+  { kDbiVbrTbl, 2 },  // Vbridge Interface Schema
+  { kDbiVtnTbl, 1 },  // Vrouter Schema
+  { kDbiVrtTbl, 2 },  // Vrouter Interface Schema
+  { kDalNumTables, 0 },  // Vnode Rename Schema
+  { kDbiVtnTbl, 1 },  // Vlink Schema
+  { kDalNumTables, 0 },  // Vlink Rename Schema
+  { kDbiVrtTbl, 2 },  // Static IP Route Schema
+  { kDbiVrtTbl, 2 },  // Dhcp Relay Server Schema
+  { kDbiVrtTbl, 2 },  // Dhcp Relay Interface Schema
+  { kDbiVbrTbl, 2 },  // Vbridge Network Monitor Schema
+  { kDbiVbrNwMonTbl, 3 },  // Vbridge Network Monitor Host Schema
+  { kDbiVtnTbl, 1 },  // Vunknown Schema
+  { kDbiVunknownTbl, 2 },  // Vunknown Interface Schema
+  { kDbiVtnTbl, 1 },  // Vtep Schema
+  { kDbiVtepTbl, 2 },  // Vtep Interface Schema
+  { kDbiVtnTbl, 1 },  // Vtep Group Schema
+  { kDbiVtepGrpTbl, 2 },  // Vtep Group Member Schema
+  { kDbiVtnTbl, 1 },  // Vtunnel Schema
+  { kDbiVtunnelTbl, 2 },  // Vtunnel Interface Schema
+
+// POM schemas
+  { kDalNumTables, 0 },  // Flowlist Schema
+  { kDalNumTables, 0 },  // Flowlist Controller Schema
+  { kDalNumTables, 0 },  // Flowlist Rename Schema
+  { kDbiFlowListTbl, 1 },  // Flowlist Entry Schema
+  { kDalNumTables, 0 },  // Flowlist Entry Controller Schema
+  { kDalNumTables, 0 },  // Policing profile Schema
+  { kDalNumTables, 0 },  // Policing profile Controller Schema
+  { kDalNumTables, 0 },  // Policing profile Rename Schema
+  { kDbiPolicingProfileTbl, 1 },  // Policing profile Entry Schema
+  { kDalNumTables, 0 },  // Policing profile Entry Controller Schema
+  { kDbiVtnTbl, 1 },  // VTN Flowfilter Schema
+  { kDalNumTables, 0 },  // VTN Flowfilter Controller Schema
+  { kDbiVtnFlowFilterTbl, 2 },  // VTN Flowfilter Entry Schema
+  { kDalNumTables, 0 },  // VTN Flowfilter Entry Controller Schema
+  { kDbiVbrTbl, 2 },  // Vbridge Flowfilter Schema
+  { kDbiVbrFlowFilterTbl, 3 },  // Vbridge Flowfilter Entry Schema
+  { kDbiVbrIfTbl, 3 },  // Vbridge Interface Flowfilter Schema
+  { kDbiVbrIfFlowFilterTbl, 4 },  // Vbridge Interface Flowfilter Entry Schema
+  { kDbiVrtIfTbl, 3 },  // Vrouter Interface Flowfilter Schema
+  { kDbiVrtIfFlowFilterTbl, 4 },  // Vrouter Interface Flowfilter Entry Schema
+  { kDbiVtnTbl, 1 },  // VTN Policing Map Schema
+  { kDalNumTables, 0 },  // VTN Policing Map Controller Schema
+  { kDbiVbrTbl, 2 },  // Vbridge Policing Map Schema
+  { kDbiVbrIfTbl, 3 },  // Vbridge Interface Policing Map Schema
+
+// Ctrlr Schema
+  { kDalNumTables, 0 }  // Controller Schema
+};  // Relational schema
 
 const DalTableSchema table_schema[] = {
   // L2/L3 MoMgr table Schema Info Start

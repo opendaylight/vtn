@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -33,7 +33,8 @@ import org.opendaylight.vtn.javaapi.validation.logical.FlowFilterResourceValidat
  * 
  */
 
-@UNCVtnService(path = "/vtns/{vtn_name}/vrouters/{vrt_name}/interfaces/{if_name}/flowfilters")
+@UNCVtnService(
+		path = "/vtns/{vtn_name}/vrouters/{vrt_name}/interfaces/{if_name}/flowfilters")
 public class VRouterInterfaceFlowFiltersResource extends AbstractResource {
 
 	/** The VTN name. */
@@ -48,8 +49,7 @@ public class VRouterInterfaceFlowFiltersResource extends AbstractResource {
 
 	/** The Constant LOG. */
 	private static final Logger LOG = Logger
-			.getLogger(VRouterInterfaceFlowFiltersResource.class
-					.getName());
+			.getLogger(VRouterInterfaceFlowFiltersResource.class.getName());
 
 	/**
 	 * Instantiates a new v router interface flow filters resource.
@@ -64,21 +64,21 @@ public class VRouterInterfaceFlowFiltersResource extends AbstractResource {
 	/**
 	 * @return the vtnName
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
 	/**
 	 * @return the vrtName
 	 */
-	public String getVrtName() {
+	public final String getVrtName() {
 		return vrtName;
 	}
 
 	/**
 	 * @return the ifName
 	 */
-	public String getIfName() {
+	public final String getIfName() {
 		return ifName;
 	}
 
@@ -92,7 +92,8 @@ public class VRouterInterfaceFlowFiltersResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VRouterInterfaceFlowFiltersResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;

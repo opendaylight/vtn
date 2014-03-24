@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -33,7 +33,7 @@ TEST(TcReadOperations, TcGetMinArgCount) {
                                          unc_map_, readq_);
   int argcount  =  tc_readoperations.TestTcGetMinArgCount();
   EXPECT_EQ(2, argcount);
-   DEL_AUDIT_PARAMS();
+  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcReadOperations, TcCheckOperArgCount) {
@@ -50,7 +50,7 @@ TEST(TcReadOperations, TcCheckOperArgCount) {
   avail_count = 2;
   EXPECT_EQ(TC_OPER_SUCCESS,
   tc_readoperations.TcCheckOperArgCount(avail_count));
-   DEL_AUDIT_PARAMS();
+  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcReadOperations, TcCheckOperArgCount_ReadAcquire) {
@@ -70,7 +70,7 @@ TEST(TcReadOperations, TcCheckOperArgCount_ReadAcquire) {
   avail_count  =  UNC_READ_OPER_ARG_COUNT_MAX;
   EXPECT_EQ(TC_OPER_SUCCESS,
   tc_readoperations.TcCheckOperArgCount(avail_count));
-   DEL_AUDIT_PARAMS();
+  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcReadOperations, TcCheckOperArgCount_ReadRelease) {
@@ -91,7 +91,7 @@ TEST(TcReadOperations, TcCheckOperArgCount_ReadRelease) {
   avail_count  =  UNC_READ_RELEASE_ARG_COUNT+1;
   EXPECT_EQ(TC_OPER_INVALID_INPUT,
   tc_readoperations.TcCheckOperArgCount(avail_count));
-   DEL_AUDIT_PARAMS();
+  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcReadOperations, TcCheckOperArgCount_Success) {
@@ -103,7 +103,7 @@ TEST(TcReadOperations, TcCheckOperArgCount_Success) {
   uint32_t avail_count = 2;
   EXPECT_EQ(TC_OPER_SUCCESS,
   tc_readoperations.TcCheckOperArgCount(avail_count));
-   DEL_AUDIT_PARAMS();
+  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcReadOperations, TcValidateOperType) {
@@ -116,7 +116,7 @@ TEST(TcReadOperations, TcValidateOperType) {
   tc_readoperations.tc_oper_  =  TC_OP_READ_ACQUIRE;
   EXPECT_EQ(TC_OPER_SUCCESS,
   tc_readoperations.TcValidateOperType());
-   DEL_AUDIT_PARAMS();
+  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcReadOperations, TcValidateOperType_Failure) {
@@ -127,7 +127,7 @@ TEST(TcReadOperations, TcValidateOperType_Failure) {
                                          unc_map_, readq_);
   EXPECT_EQ(TC_INVALID_OPERATION_TYPE,
   tc_readoperations.TcValidateOperType());
-   DEL_AUDIT_PARAMS();
+  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcReadOperations, HandleMsgRet_Fatal) {
@@ -139,7 +139,7 @@ TEST(TcReadOperations, HandleMsgRet_Fatal) {
                                          unc_map_, readq_);
   // check code change define value
   EXPECT_EQ(TC_SYSTEM_FAILURE, tc_readoperations.HandleMsgRet(msgret));
-   DEL_AUDIT_PARAMS();
+  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcReadOperations, HandleMsgRet_Abort) {
@@ -150,7 +150,7 @@ TEST(TcReadOperations, HandleMsgRet_Abort) {
                                          db_handler,
                                          unc_map_, readq_);
   EXPECT_EQ(TC_OPER_ABORT, tc_readoperations.HandleMsgRet(msgret));
-   DEL_AUDIT_PARAMS();
+  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcReadOperations, HandleMsgRet_Success) {
@@ -161,7 +161,7 @@ TEST(TcReadOperations, HandleMsgRet_Success) {
                                          db_handler,
                                          unc_map_, readq_);
   EXPECT_EQ(TC_OPER_SUCCESS, tc_readoperations.HandleMsgRet(msgret));
-   DEL_AUDIT_PARAMS();
+  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcReadOperations, TcValidateOperParams) {
@@ -171,7 +171,7 @@ TEST(TcReadOperations, TcValidateOperParams) {
                                          db_handler,
                                          unc_map_, readq_);
   EXPECT_EQ(TC_OPER_SUCCESS, tc_readoperations.TcValidateOperParams());
-   DEL_AUDIT_PARAMS();
+  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcReadOperations, TcValidateOperParams_ReadRelease) {
@@ -186,7 +186,7 @@ TEST(TcReadOperations, TcValidateOperParams_ReadRelease) {
 
   EXPECT_EQ(TC_OPER_SUCCESS,
   tc_readoperations.TcValidateOperParams());
-   DEL_AUDIT_PARAMS();
+  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcReadOperations, TcValidateOperParams_RetFailure) {
@@ -197,7 +197,7 @@ TEST(TcReadOperations, TcValidateOperParams_RetFailure) {
                                          db_handler,
                                          unc_map_, readq_);
   EXPECT_EQ(TC_OPER_SUCCESS, tc_readoperations.TcValidateOperParams());
-   DEL_AUDIT_PARAMS();
+  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcReadOperations, TcValidateOperParams_OperFailure) {
@@ -222,7 +222,7 @@ TEST(TcReadOperations, TcValidateOperParams_OperFailure) {
   tc_readoperations.arg_timeout_  =  PFC_TRUE;
   stub_srv_uint32  =  -1;
   EXPECT_EQ(TC_OPER_FAILURE, tc_readoperations.TcValidateOperParams());
-   DEL_AUDIT_PARAMS();
+  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcReadOperations, TcValidateOperParams_OperFailureWithTimeout) {
@@ -238,7 +238,7 @@ TEST(TcReadOperations, TcValidateOperParams_OperFailureWithTimeout) {
   tc_readoperations.timeout_  =  10;
   tc_readoperations.read_handle_  =  NULL;
   EXPECT_EQ(TC_OPER_FAILURE, tc_readoperations.TcValidateOperParams());
-   DEL_AUDIT_PARAMS();
+  DEL_AUDIT_PARAMS();
 }
 
 
@@ -300,7 +300,7 @@ TEST(TcReadOperations, TcGetExclusion_ReadAcquire_Success) {
   tc_readoperations.tclock_  =  tc_lock_;
   // Check error Code and change
   EXPECT_EQ(TC_OPER_FAILURE, tc_readoperations.TcGetExclusion());
-   DEL_AUDIT_PARAMS();
+  DEL_AUDIT_PARAMS();
 }
 
 
@@ -319,7 +319,7 @@ TEST(TcReadOperations, TcReleaseExclusion) {
                                          db_handler,
                                          unc_map_, readq);
   EXPECT_EQ(TC_OPER_SUCCESS, tc_readoperations.TcReleaseExclusion());
-   DEL_AUDIT_PARAMS();
+  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcReadOperations, HandleLockRet) {
@@ -341,7 +341,7 @@ TEST(TcReadOperations, HandleLockRet) {
 
   ret  =  TC_LOCK_INVALID_SESSION_ID;
   // CHange  to define
-  EXPECT_EQ(5, tc_readoperations.HandleLockRet(ret));
+  EXPECT_EQ(104, tc_readoperations.HandleLockRet(ret));
 
   ret  =  TC_LOCK_ALREADY_ACQUIRED;
   EXPECT_EQ(TC_SESSION_ALREADY_ACTIVE, tc_readoperations.HandleLockRet(ret));
@@ -387,7 +387,7 @@ TEST(TcReadOperations, SendAdditionalResponse_Success) {
                                          unc_map_, readq_);
   EXPECT_EQ(TC_OPER_SUCCESS,
   tc_readoperations.SendAdditionalResponse(oper_stat));
-   DEL_AUDIT_PARAMS();
+  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcReadOperations, SendAdditionalResponse_Failure) {

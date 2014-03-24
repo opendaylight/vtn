@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -75,6 +75,7 @@ typedef struct {
   uint32_t session_id;
   unc_keytype_ctrtype_t driver_id;
   std::string controller_id;
+  uint8_t reconnect_controller; /*filled only for audit start*/
   TcAuditResult audit_result; /* filled only for audit end */
   TcTransEndResult end_result; /* filled for transaction end */
 }TcAuditTransactionMsg;
@@ -135,7 +136,7 @@ typedef struct {
   unc_keytype_datatype_t db_type;
   TcServiceType service_type;
 }TcAuditConfigMsg;
-}  // tclib
-}  // unc
+}  // namespace tclib
+}  // namespace unc
 
 #endif /* _UNC_TCLIB_STRUCT_DEFS_HH_ */

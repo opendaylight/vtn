@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -34,7 +34,7 @@ public class IpcRequestPacket {
 	 * 
 	 * @return the session id
 	 */
-	public IpcUint32 getSessionId() {
+	public final IpcUint32 getSessionId() {
 		return sessionId;
 	}
 
@@ -44,7 +44,7 @@ public class IpcRequestPacket {
 	 * @param sessionId
 	 *            the new session id
 	 */
-	public void setSessionId(final IpcUint32 sessionId) {
+	public final void setSessionId(final IpcUint32 sessionId) {
 		this.sessionId = sessionId;
 	}
 
@@ -53,7 +53,7 @@ public class IpcRequestPacket {
 	 * 
 	 * @return the config id
 	 */
-	public IpcUint32 getConfigId() {
+	public final IpcUint32 getConfigId() {
 		return configId;
 	}
 
@@ -63,7 +63,7 @@ public class IpcRequestPacket {
 	 * @param configId
 	 *            the new config id
 	 */
-	public void setConfigId(final IpcUint32 configId) {
+	public final void setConfigId(final IpcUint32 configId) {
 		this.configId = configId;
 	}
 
@@ -72,7 +72,7 @@ public class IpcRequestPacket {
 	 * 
 	 * @return the operation
 	 */
-	public IpcUint32 getOperation() {
+	public final IpcUint32 getOperation() {
 		return operation;
 	}
 
@@ -82,7 +82,7 @@ public class IpcRequestPacket {
 	 * @param opretaion
 	 *            the new operation
 	 */
-	public void setOperation(final IpcUint32 operation) {
+	public final void setOperation(final IpcUint32 operation) {
 		this.operation = operation;
 	}
 
@@ -91,7 +91,7 @@ public class IpcRequestPacket {
 	 * 
 	 * @return the max rep count
 	 */
-	public IpcUint32 getMaxRepCount() {
+	public final IpcUint32 getMaxRepCount() {
 		return maxRepCount;
 	}
 
@@ -101,7 +101,7 @@ public class IpcRequestPacket {
 	 * @param maxRepCount
 	 *            the new max rep count
 	 */
-	public void setMaxRepCount(final IpcUint32 maxRepCount) {
+	public final void setMaxRepCount(final IpcUint32 maxRepCount) {
 		this.maxRepCount = maxRepCount;
 	}
 
@@ -110,7 +110,7 @@ public class IpcRequestPacket {
 	 * 
 	 * @return the option1
 	 */
-	public IpcUint32 getOption1() {
+	public final IpcUint32 getOption1() {
 		return option1;
 	}
 
@@ -120,7 +120,7 @@ public class IpcRequestPacket {
 	 * @param option1
 	 *            the new option1
 	 */
-	public void setOption1(final IpcUint32 option1) {
+	public final void setOption1(final IpcUint32 option1) {
 		this.option1 = option1;
 	}
 
@@ -129,7 +129,7 @@ public class IpcRequestPacket {
 	 * 
 	 * @return the option2
 	 */
-	public IpcUint32 getOption2() {
+	public final IpcUint32 getOption2() {
 		return option2;
 	}
 
@@ -139,7 +139,7 @@ public class IpcRequestPacket {
 	 * @param option2
 	 *            the new option2
 	 */
-	public void setOption2(final IpcUint32 option2) {
+	public final void setOption2(final IpcUint32 option2) {
 		this.option2 = option2;
 	}
 
@@ -148,7 +148,7 @@ public class IpcRequestPacket {
 	 * 
 	 * @return the data type
 	 */
-	public IpcUint32 getDataType() {
+	public final IpcUint32 getDataType() {
 		return dataType;
 	}
 
@@ -158,7 +158,7 @@ public class IpcRequestPacket {
 	 * @param dataType
 	 *            the new data type
 	 */
-	public void setDataType(final IpcUint32 dataType) {
+	public final void setDataType(final IpcUint32 dataType) {
 		this.dataType = dataType;
 	}
 
@@ -167,7 +167,7 @@ public class IpcRequestPacket {
 	 * 
 	 * @return the key type
 	 */
-	public IpcUint32 getKeyType() {
+	public final IpcUint32 getKeyType() {
 		return keyType;
 	}
 
@@ -177,7 +177,7 @@ public class IpcRequestPacket {
 	 * @param keyType
 	 *            the new key type
 	 */
-	public void setKeyType(final IpcUint32 keyType) {
+	public final void setKeyType(final IpcUint32 keyType) {
 		this.keyType = keyType;
 	}
 
@@ -186,7 +186,7 @@ public class IpcRequestPacket {
 	 * 
 	 * @return the key struct
 	 */
-	public IpcStruct getKeyStruct() {
+	public final IpcStruct getKeyStruct() {
 		return keyStruct;
 	}
 
@@ -196,7 +196,7 @@ public class IpcRequestPacket {
 	 * @param keyStruct
 	 *            the new key struct
 	 */
-	public void setKeyStruct(final IpcStruct keyStruct) {
+	public final void setKeyStruct(final IpcStruct keyStruct) {
 		this.keyStruct = keyStruct;
 	}
 
@@ -205,7 +205,7 @@ public class IpcRequestPacket {
 	 * 
 	 * @return the val struct
 	 */
-	public IpcStruct getValStruct() {
+	public final IpcStruct getValStruct() {
 		return valStruct;
 	}
 
@@ -215,7 +215,7 @@ public class IpcRequestPacket {
 	 * @param valStruct
 	 *            the new val struct
 	 */
-	public void setValStruct(final IpcStruct valStruct) {
+	public final void setValStruct(final IpcStruct valStruct) {
 		this.valStruct = valStruct;
 	}
 
@@ -224,7 +224,7 @@ public class IpcRequestPacket {
 	 * 
 	 * @return
 	 */
-	public IpcDataUnit[] getExtraDataUnits() {
+	public final IpcDataUnit[] getExtraDataUnits() {
 		return extraDataUnits;
 	}
 
@@ -233,7 +233,7 @@ public class IpcRequestPacket {
 	 * 
 	 * @param extraDataUnits
 	 */
-	public void setExtraDataUnits(final IpcDataUnit[] extraDataUnits) {
+	public final void setExtraDataUnits(final IpcDataUnit[] extraDataUnits) {
 		this.extraDataUnits = extraDataUnits;
 	}
 }

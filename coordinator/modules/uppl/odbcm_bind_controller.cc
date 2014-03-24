@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -385,7 +385,7 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
           log_flag = 0;
         }
         break;
-      case CTR_ACTUAL_VERSION:
+     case CTR_ACTUAL_VERSION:
         if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_32) {
           odbc_rc = BindCol_SQL_VARCHAR(
               r_hstmt,
@@ -609,7 +609,7 @@ ODBCM_RC_STATUS DBVarbind::fill_controller_table(
           ODBCM_MEMSET(&p_ctr_table->senable_audit, 0, sizeof(SQLSMALLINT));
           p_ctr_table->senable_audit = audit_value.value;
           odbcm_debug_info("ODBCM::DBVarbind::fill:CTR_TABLE: "
-              "enable_audit = %d", p_ctr_table->senable_audit);
+              "senable_audit = %d", p_ctr_table->senable_audit);
         }
         break;
       case CTR_ACTUAL_VERSION:

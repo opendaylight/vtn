@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -10,17 +10,19 @@ package org.opendaylight.vtn.javaapi.ipc.enums;
 
 public class UncStructIndexEnum {
 	// valid
-	public enum Valid{
+	public enum Valid {
 		UNC_VF_INVALID,
 		UNC_VF_VALID,
 		UNC_VF_VALID_NO_VALUE,
 		UNC_VF_NOT_SUPPORTED,
 		UNC_VF_VALUE_NOT_MODIFIED
 	};
+
 	// vtn
-	public enum ValVtnIndex{
+	public enum ValVtnIndex {
 		UPLL_IDX_DESC_VTN
 	};
+
 	// vtn response
 	public enum ValVtnStIndex {
 		UPLL_IDX_OPER_STATUS_VS,
@@ -32,12 +34,12 @@ public class UncStructIndexEnum {
 	public enum ValVtunnelIfIndex {
 		UPLL_IDX_DESC_VTNL_IF,
 		UPLL_IDX_ADMIN_ST_VTNL_IF,
-		  UPLL_IDX_PORT_MAP_VTNL_IF
+		UPLL_IDX_PORT_MAP_VTNL_IF
 
 	};
 
 	public enum ValVlinkIndex {
-		UPLL_IDX_ADMIN_STATUS_VLNK ,
+		UPLL_IDX_ADMIN_STATUS_VLNK,
 		UPLL_IDX_VNODE1_NAME_VLNK,
 		UPLL_IDX_VNODE1_IF_NAME_VLNK,
 		UPLL_IDX_VNODE2_NAME_VLNK,
@@ -56,34 +58,32 @@ public class UncStructIndexEnum {
 
 	public enum ValVtepIfIndex {
 
-		UPLL_IDX_DESC_VTEPI ,
-		UPLL_IDX_ADMIN_ST_VTEPI,
-		UPLL_IDX_PORT_MAP_VTEPI
+		UPLL_IDX_DESC_VTEPI, UPLL_IDX_ADMIN_ST_VTEPI, UPLL_IDX_PORT_MAP_VTEPI
 
 	};
 
-	public enum ValVtepGroupMemberIndex{
-		UPLL_IDX_VTEPGRP_KEY,
-		UPLL_IDX_VTEPMEMBER_NAME
+	public enum ValVtepGroupMemberIndex {
+		UPLL_IDX_VTEPGRP_KEY, UPLL_IDX_VTEPMEMBER_NAME
 	};
+
 	public enum FlowlistIpType {
-		UPLL_FLOWLIST_TYPE_IP("0"),
-		UPLL_FLOWLIST_TYPE_IPV6("1");
+		UPLL_FLOWLIST_TYPE_IP("0"), UPLL_FLOWLIST_TYPE_IPV6("1");
 		private final String value;
 
-
-		private FlowlistIpType(final String value){
+		private FlowlistIpType(final String value) {
 			this.value = value;
 		}
 
-		public String getValue(){
+		public String getValue() {
 			return value;
 		}
 
 	};
-	public	enum ValFlowlistIndex {
+
+	public enum ValFlowlistIndex {
 		UPLL_IDX_IP_TYPE_FL
 	};
+
 	public enum ValFlowlistEntryIndex {
 		UPLL_IDX_MAC_DST_FLE,
 		UPLL_IDX_MAC_SRC_FLE,
@@ -108,6 +108,7 @@ public class UncStructIndexEnum {
 		UPLL_IDX_ICMP_V6_TYPE_FLE,
 		UPLL_IDX_ICMP_V6_CODE_FLE
 	};
+
 	public enum ValVtnFlowfilterEntryIndex {
 		UPLL_IDX_FLOWLIST_NAME_VFFE,
 		UPLL_IDX_ACTION_VFFE,
@@ -115,8 +116,8 @@ public class UncStructIndexEnum {
 		UPLL_IDX_DSCP_VFFE,
 		UPLL_IDX_PRIORITY_VFFE
 	};
-	
-	//ValVbr for VBridge APIs
+
+	// ValVbr for VBridge APIs
 	public enum ValVbrIndex {
 		UPLL_IDX_CONTROLLER_ID_VBR,
 		UPLL_IDX_DOMAIN_ID_VBR,
@@ -125,26 +126,22 @@ public class UncStructIndexEnum {
 		UPLL_IDX_HOST_ADDR_PREFIXLEN_VBR
 	};
 
-	//ValVbrSt for response of VBridge APIs
-	public enum ValVbrStIndex{
+	// ValVbrSt for response of VBridge APIs
+	public enum ValVbrStIndex {
 		UPLL_IDX_OPER_STATUS_VBRS,
 	};
 
-	//ValVbrIf for VBridgeInterface APIs
+	// ValVbrIf for VBridgeInterface APIs
 	public enum ValVbrIfIndex {
-		UPLL_IDX_ADMIN_STATUS_VBRI,
-		UPLL_IDX_DESC_VBRI,
-		UPLL_IDX_PM_VBRI
+		UPLL_IDX_ADMIN_STATUS_VBRI, UPLL_IDX_DESC_VBRI, UPLL_IDX_PM_VBRI
 	};
 
-	//ValPortMap for VBridgeInterface APIs
+	// ValPortMap for VBridgeInterface APIs
 	public enum ValPortMapIndex {
-			  UPLL_IDX_LOGICAL_PORT_ID_PM,
-			  UPLL_IDX_VLAN_ID_PM,
-			  UPLL_IDX_TAGGED_PM
+		UPLL_IDX_LOGICAL_PORT_ID_PM, UPLL_IDX_VLAN_ID_PM, UPLL_IDX_TAGGED_PM
 	};
 
-	//ValFlowfilterEntry
+	// ValFlowfilterEntry
 	public enum ValFlowfilterEntryIndex {
 		UPLL_IDX_FLOWLIST_NAME_FFE,
 		UPLL_IDX_ACTION_FFE,
@@ -157,40 +154,36 @@ public class UncStructIndexEnum {
 		UPLL_IDX_PRIORITY_FFE
 	};
 
-	//FFType_Direction
+	// FFType_Direction
 
 	public enum FlowfilterDirection {
-		UPLL_FLOWFILTER_DIR_IN("0"),
-		UPLL_FLOWFILTER_DIR_OUT("1");
+		UPLL_FLOWFILTER_DIR_IN("0"), UPLL_FLOWFILTER_DIR_OUT("1");
 		private final String value;
 
-
-		private FlowfilterDirection(final String value){
+		private FlowfilterDirection(final String value) {
 			this.value = value;
 		}
 
-		public String getValue(){
+		public String getValue() {
 			return value;
 		}
 	};
 
-	//Action
+	// Action
 	public enum FlowfilterAction {
 		UPLL_FLOWFILTER_ACT_PASS("0"),
 		UPLL_FLOWFILTER_ACT_DROP("1"),
 		UPLL_FLOWFILTER_ACT_REDIRECT("2");
 		private final String value;
 
-
-		private FlowfilterAction(final String value){
+		private FlowfilterAction(final String value) {
 			this.value = value;
 		}
 
-		public String getValue(){
+		public String getValue() {
 			return value;
 		}
 	};
-
 
 	public enum ValVrtIndex {
 		UPLL_IDX_CONTROLLER_ID_VRT,
@@ -198,6 +191,7 @@ public class UncStructIndexEnum {
 		UPLL_IDX_DESC_VRT,
 		UPLL_IDX_DHCP_RELAY_ADMIN_STATUS_VRT
 	};
+
 	// ValVrtIf
 	public enum ValVrtIfIndex {
 		UPLL_IDX_DESC_VI,
@@ -206,6 +200,7 @@ public class UncStructIndexEnum {
 		UPLL_IDX_MAC_ADDR_VI,
 		UPLL_IDX_ADMIN_ST_VI,
 	};
+
 	// ValVtunnel
 	public enum ValVtunnelIndex {
 		UPLL_IDX_DESC_VTNL,
@@ -217,28 +212,26 @@ public class UncStructIndexEnum {
 
 	};
 
-	public enum  ValLabelType {
-		UPLL_LBL_TYP_MPLS,
-		UPLL_LBL_TYPE_VNI,
-		UPLL_LBL_TYPE_VSID
+	public enum ValLabelType {
+		UPLL_LBL_TYP_MPLS, UPLL_LBL_TYPE_VNI, UPLL_LBL_TYPE_VSID
 	};
+
 	// VUnkown
 	public enum ValVunknownIndex {
-		UPLL_IDX_DESC_VUN ,
+		UPLL_IDX_DESC_VUN,
 		UPLL_IDX_TYPE_VUN,
 		UPLL_IDX_CONTROLLER_ID_VUN,
 		UPLL_IDX_DOMAIN_ID_VUN
 	};
+
 	// VUnknown Interface
 	public enum ValVunkIfIndex {
-		UPLL_IDX_DESC_VUNI,
-		UPLL_IDX_ADMIN_ST_VUNI
+		UPLL_IDX_DESC_VUNI, UPLL_IDX_ADMIN_ST_VUNI
 	};
 
 	// flow filter Entry controller
 	public enum ValFlowfilterControllerIndex {
-		UPLL_IDX_DIRECTION_FFC,
-		UPLL_IDX_SEQ_NUM_FFC
+		UPLL_IDX_DIRECTION_FFC, UPLL_IDX_SEQ_NUM_FFC
 	};
 
 	/*
@@ -252,93 +245,84 @@ public class UncStructIndexEnum {
 	};
 
 	public enum ValAdminStatus {
-		UPLL_ADMIN_ENABLE("1"),
-		UPLL_ADMIN_DISABLE("2");
+		UPLL_ADMIN_ENABLE("1"), UPLL_ADMIN_DISABLE("2");
 		private final String value;
 
-
-		private ValAdminStatus(final String value){
+		private ValAdminStatus(final String value) {
 			this.value = value;
 		}
 
 		/**
-		 *
+		 * 
 		 * @return the value
 		 */
-		public String getValue(){
+		public String getValue() {
 			return value;
 		}
 	};
 
 	public enum ValVbrPortType {
-		UPLL_PORT,
-		UPLL_TRUNK
+		UPLL_PORT, UPLL_TRUNK
 	};
 
-/*	public enum TagStatus{
-		UPPL_UNTAG,
-		UPPL_TAG
+	/*
+	 * public enum TagStatus{ UPPL_UNTAG, UPPL_TAG
+	 * 
+	 * };
+	 */
 
-	};*/
-	
-/*	public enum TagStatus {
-		UPPL_UNTAG("0"),
-		UPPL_TAG("1");
+	/*
+	 * public enum TagStatus { UPPL_UNTAG("0"), UPPL_TAG("1");
+	 * 
+	 * private final String value;
+	 * 
+	 * private TagStatus(final String value) { this.value = value; }
+	 *//**
+	 * 
+	 * @return the value
+	 */
+	/*
+	 * public String getValue(){ return value; } };
+	 */
+
+	public enum vlan_tagged {
+		UPLL_VLAN_UNTAGGED("0"), UPLL_VLAN_TAGGED("1");
 
 		private final String value;
 
-		private TagStatus(final String value) {
+		private vlan_tagged(final String value) {
 			this.value = value;
 		}
 
-		*//**
-		 *
-		 * @return the value
-		 *//*
-		public String getValue(){
+		public String getValue() {
 			return value;
 		}
-	};*/
-	
-	public enum vlan_tagged {
-		   UPLL_VLAN_UNTAGGED("0"),
-		   UPLL_VLAN_TAGGED("1");
-		   
-		   private final String value;
 
-			private vlan_tagged(final String value) {
-				this.value = value;
-			}
-			public String getValue(){
-				return value;
-			}
-		   
-		};
+	};
 
 	public enum ValStaticIpRouteIndex {
 		UPLL_IDX_GROUP_METRIC_SIR
 	};
 
-	//ValVlanMap
+	// ValVlanMap
 	public enum ValVlanMapIndex {
 		UPLL_IDX_VLAN_ID_VM
 	};
 
-
-	//ValVbrvalVbrMacEntrySt
+	// ValVbrvalVbrMacEntrySt
 	public enum valVbrMacEntryStIndex {
 		UPLL_IDX_MAC_ADDR_VMES,
 		UPLL_IDX_TYPE_VMES,
 		UPLL_IDX_IF_NAME_VMES,
 		UPLL_IDX_IF_KIND_VMES
 	};
+
 	public enum ValVrtStIndex {
 		UPLL_IDX_OPER_STATUS_VRTS
 	};
 
 	public enum ValMacEntry {
-		UPLL_MAC_ENTRY_STATIC("0"),
-		UPLL_MAC_ENTRY_DYNAMIC("1");
+		UPLL_MAC_ENTRY_STATIC("0"), UPLL_MAC_ENTRY_DYNAMIC("1");
 
 		private final String value;
 
@@ -347,75 +331,72 @@ public class UncStructIndexEnum {
 		}
 
 		/**
-		 *
+		 * 
 		 * @return the value
 		 */
-		public String getValue(){
+		public String getValue() {
 			return value;
 		}
 	};
 
 	public enum ValVtnFlowfilterControllerStIndex {
-		UPLL_IDX_DIRECTION_VFFCS ,     
-		UPLL_IDX_SEQ_NUM_VFFCS,           
-		UPLL_IDX_FLOW_LIST_VFFCS,         
-		UPLL_IDX_IP_TYPE_VFFCS,           
-		UPLL_IDX_ACTION_VFFCS,            
-		UPLL_IDX_DSCP_VFFCS,              
+		UPLL_IDX_DIRECTION_VFFCS,
+		UPLL_IDX_SEQ_NUM_VFFCS,
+		UPLL_IDX_FLOW_LIST_VFFCS,
+		UPLL_IDX_IP_TYPE_VFFCS,
+		UPLL_IDX_ACTION_VFFCS,
+		UPLL_IDX_DSCP_VFFCS,
 		UPLL_IDX_PRIORITY_VFFCS,
-		UPLL_IDX_NWM_STATUS_VFFCS,          
-		UPLL_IDX_SOFTWARE_VFFCS,          
-		UPLL_IDX_EXIST_VFFCS,             
-		UPLL_IDX_EXPIRE_VFFCS,            
-		UPLL_IDX_TOTAL_VFFCS              
+		UPLL_IDX_NWM_STATUS_VFFCS,
+		UPLL_IDX_SOFTWARE_VFFCS,
+		UPLL_IDX_EXIST_VFFCS,
+		UPLL_IDX_EXPIRE_VFFCS,
+		UPLL_IDX_TOTAL_VFFCS
 
 	};
 
-	//val_vbr_l2_domain_st
+	// val_vbr_l2_domain_st
 	public enum valVbrL2DomainStIndex {
-		UPLL_IDX_L2_DOMAIN_ID_VL2DS,
-		UPLL_IDX_OFS_COUNT_VL2DS
+		UPLL_IDX_L2_DOMAIN_ID_VL2DS, UPLL_IDX_OFS_COUNT_VL2DS
 	};
 
-	//val_vbr_l2_domain_member_st
+	// val_vbr_l2_domain_member_st
 	public enum valVbrL2DomainMemberStIndex {
-		UPLL_IDX_SWITCH_ID_VL2DMS,
-		UPLL_IDX_VLAN_ID_VL2DMS
+		UPLL_IDX_SWITCH_ID_VL2DMS, UPLL_IDX_VLAN_ID_VL2DMS
 
 	};
+
 	public enum ValDhcpRelayIfStIndex {
-		UPLL_IDX_IF_NAME_DRIS,
-		UPLL_IDX_DHCP_RELAY_STATUS_DRIS
+		UPLL_IDX_IF_NAME_DRIS, UPLL_IDX_DHCP_RELAY_STATUS_DRIS
 	};
 
 	public enum ValPomStatsIndex {
-		UPLL_IDX_STATS_PACKETS,
-		UPLL_IDX_STATS_BYTES
+		UPLL_IDX_STATS_PACKETS, UPLL_IDX_STATS_BYTES
 	};
 
 	public enum ValFlowlistEntryStIndex {
-		UPLL_IDX_SEQ_NUM_FLES ,
+		UPLL_IDX_SEQ_NUM_FLES,
 		UPLL_IDX_SOFTWARE_FLES,
 		UPLL_IDX_EXIST_FLES,
 		UPLL_IDX_EXPIRE_FLES,
 		UPLL_IDX_TOTAL_FLES
 	};
 
-	//val_flowfilter_entry_st
+	// val_flowfilter_entry_st
 	public enum ValFlowfilterEntryStIndex {
 		UPLL_IDX_SEQ_NUM_FFES,
-		UPLL_IDX_NWM_STATUS_FFES,          
-		UPLL_IDX_SOFTWARE_FFES,         
-		UPLL_IDX_EXIST_FFES,            
-		UPLL_IDX_EXPIRE_FFES,           
-		UPLL_IDX_TOTAL_FFES             
+		UPLL_IDX_NWM_STATUS_FFES,
+		UPLL_IDX_SOFTWARE_FFES,
+		UPLL_IDX_EXIST_FFES,
+		UPLL_IDX_EXPIRE_FFES,
+		UPLL_IDX_TOTAL_FFES
 
 	};
 
-
-	public enum ValVtunnelStIndex  {
+	public enum ValVtunnelStIndex {
 		UPLL_IDX_OPER_STATUS_VTNLS
 	};
+
 	public enum ValVlinkStIndex {
 		UPLL_IDX_OPER_STATUS_VLNKS
 	};
@@ -423,47 +404,47 @@ public class UncStructIndexEnum {
 	public enum ValVrtIfStIndex {
 		UPLL_IDX_OPER_STATUS_VRTIS
 	};
+
 	public enum ValVtnNeighborIndex {
 		UPLL_IDX_CONN_VNODE_NAME_VN,
 		UPLL_IDX_CONN_VNODE_IF_NAME_VN,
 		UPLL_IDX_CONN_VLINK_NAME_VN
 	};
+
 	public enum ValVtepIfStIndex {
 		UPLL_IDX_IF_OPER_STATUS_VTEPIS
 	};
+
 	public enum PfcStatus {
-		PFC_TRUE("1"),
-		PFC_FALSE("0");
+		PFC_TRUE("1"), PFC_FALSE("0");
 		private final String value;
 
-
-		private PfcStatus(final String value){
+		private PfcStatus(final String value) {
 			this.value = value;
 		}
 
-		public String getValue(){
+		public String getValue() {
 			return value;
 		}
 	};
 
-	public  enum ValOperStatus {
-		UPLL_OPER_STATUS_UP ("1"),
+	public enum ValOperStatus {
+		UPLL_OPER_STATUS_UP("1"),
 		UPLL_OPER_STATUS_DOWN("2"),
 		UPLL_OPER_STATUS_UNKNOWN("3");
 		private final String value;
 
-
-		private ValOperStatus(final String value){
+		private ValOperStatus(final String value) {
 			this.value = value;
 		}
 
-		public String getValue(){
+		public String getValue() {
 			return value;
 		}
 	};
 
 	public enum val_vrt_ip_route_st_index {
-		UPLL_IDX_DESTINATION_VIRS ,
+		UPLL_IDX_DESTINATION_VIRS,
 		UPLL_IDX_GATEWAY_VIRS,
 		UPLL_IDX_PREFIXLEN_VIRS,
 		UPLL_IDX_FLAGS_VIRS,
@@ -474,10 +455,8 @@ public class UncStructIndexEnum {
 		UPLL_IDX_GR_METRIC_VIRS
 	};
 
-
-
 	public enum val_vrt_arp_entry_st_index {
-		UPLL_IDX_MAC_ADDR_VAES ,
+		UPLL_IDX_MAC_ADDR_VAES,
 		UPLL_IDX_IP_ADDR_VAES,
 		UPLL_IDX_TYPE_VAES,
 		UPLL_IDX_IF_NAME_VAES
@@ -498,8 +477,8 @@ public class UncStructIndexEnum {
 		UPLL_IDX_GROUP_METRIC_SIR
 	};
 
-	public	enum ValVtnstationControllerStIndex {
-		UPLL_IDX_STATION_ID_VSCS ,
+	public enum ValVtnstationControllerStIndex {
+		UPLL_IDX_STATION_ID_VSCS,
 		UPLL_IDX_CREATED_TIME_VSCS,
 		UPLL_IDX_MAC_ADDR_VSCS,
 		UPLL_IDX_IPV4_COUNT_VSCS,
@@ -516,40 +495,40 @@ public class UncStructIndexEnum {
 		UPLL_IDX_VBR_IF_STATUS_VSCS
 	};
 
-	public	enum val_vbr_port_type {
-		UPLL_PORT ,
-		UPLL_TRUNK
+	public enum val_vbr_port_type {
+		UPLL_PORT, UPLL_TRUNK
 	};
+
 	public enum ValVbrIfMapType {
-		UPLL_IF_OFS_MAP("0"),
-		UPLL_IF_VLAN_MAP("1");
-		
-		private String value;
-		
-		private ValVbrIfMapType(String value) {
+		UPLL_IF_OFS_MAP("0"), UPLL_IF_VLAN_MAP("1");
+
+		private final String value;
+
+		private ValVbrIfMapType(final String value) {
 			this.value = value;
 		}
-		
+
 		public String getValue() {
 			return value;
 		}
 	};
+
 	public enum ValVtnMapStatus {
-		UPLL_VTN_MAP_VALID("0"),
-		UPLL_VTN_MAP_INVALID("1");
-		
-		private String value;
-		
-		private ValVtnMapStatus(String value) {
+		UPLL_VTN_MAP_VALID("0"), UPLL_VTN_MAP_INVALID("1");
+
+		private final String value;
+
+		private ValVtnMapStatus(final String value) {
 			this.value = value;
 		}
-		
+
 		public String getValue() {
 			return value;
 		}
 	};
-	public	enum ValVtnStationControllerStatIndex {
-		UPLL_IDX_ALL_TX_PKT_VSCS ,
+
+	public enum ValVtnStationControllerStatIndex {
+		UPLL_IDX_ALL_TX_PKT_VSCS,
 		UPLL_IDX_ALL_RX_PKT_VSCS,
 		UPLL_IDX_ALL_TX_BYTS_VSCS,
 		UPLL_IDX_ALL_RX_BYTS_VSCS,
@@ -573,10 +552,8 @@ public class UncStructIndexEnum {
 		UPLL_IDX_EXPD_DRP_RX_BYTS_VSCS
 	};
 
-
 	public enum val_vtunnel_if_index {
-		UPLL_IDX_DESC_VTNL_IF ,
-		UPLL_IDX_ADMIN_ST_VTNL_IF
+		UPLL_IDX_DESC_VTNL_IF, UPLL_IDX_ADMIN_ST_VTNL_IF
 	};
 
 	public enum val_vtunnel_if_st_index {
@@ -584,119 +561,241 @@ public class UncStructIndexEnum {
 	};
 
 	public enum ValDhcpRelayIfStatus {
-		UPLL_DR_IF_INACTIVE("0"),
-		UPLL_DR_IF_ACTIVE("1"),
-		UPLL_DR_IF_STARTING("2"),
-		UPLL_DR_IF_WAITING("3"),
-		UPLL_DR_IF_ERROR("4");
+		UPLL_DR_IF_INACTIVE("0"), UPLL_DR_IF_ACTIVE("1"), UPLL_DR_IF_STARTING(
+				"2"), UPLL_DR_IF_WAITING("3"), UPLL_DR_IF_ERROR("4");
 		private final String value;
 
-
-		private ValDhcpRelayIfStatus(final String value){
+		private ValDhcpRelayIfStatus(final String value) {
 			this.value = value;
 		}
 
-		public String getValue(){
+		public String getValue() {
 			return value;
 		}
 	};
-	
-	public enum  ValVunknowntype {
-		  VUNKNOWN_TYPE_BRIDGE("0") ,
-				  VUNKNOWN_TYPE_ROUTER("1");
-		  private final String value;
 
+	public enum ValVunknowntype {
+		VUNKNOWN_TYPE_BRIDGE("0"), VUNKNOWN_TYPE_ROUTER("1");
+		private final String value;
 
-			private ValVunknowntype(final String value){
-				this.value = value;
-			}
+		private ValVunknowntype(final String value) {
+			this.value = value;
+		}
 
-			public String getValue(){
-				return value;
-			}
-				}; 
-				
-	public enum val_vtep_grp_index {
-		UPLL_IDX_CONTROLLER_ID_VTEPG,
-		UPLL_IDX_DESCRIPTION_VTEPG
+		public String getValue() {
+			return value;
+		}
 	};
+
+	public enum val_vtep_grp_index {
+		UPLL_IDX_CONTROLLER_ID_VTEPG, UPLL_IDX_DESCRIPTION_VTEPG
+	};
+
 	public enum ValVrtIpRouteStIndex {
-		 UPLL_IDX_DESTINATION_VIRS,
-		 UPLL_IDX_GATEWAY_VIRS,
-		 UPLL_IDX_PREFIXLEN_VIRS,
-		 UPLL_IDX_FLAGS_VIRS,
-		 UPLL_IDX_METRIC_VIRS,
-		 UPLL_IDX_USE_VIRS,
-		 UPLL_IDX_IF_NAME_VIRS,
-		 UPLL_IDX_NW_MONITOR_GR_VIRS,
-		 UPLL_IDX_GR_METRIC_VIRS
-		};
-		
-		public enum ValMacEntryIfKind {
-			UPLL_MAC_ENTRY_BLANK("0"),
-			UPLL_MAC_ENTRY_TRUNK("1");
+		UPLL_IDX_DESTINATION_VIRS,
+		UPLL_IDX_GATEWAY_VIRS,
+		UPLL_IDX_PREFIXLEN_VIRS,
+		UPLL_IDX_FLAGS_VIRS,
+		UPLL_IDX_METRIC_VIRS,
+		UPLL_IDX_USE_VIRS,
+		UPLL_IDX_IF_NAME_VIRS,
+		UPLL_IDX_NW_MONITOR_GR_VIRS,
+		UPLL_IDX_GR_METRIC_VIRS
+	};
 
-			private final String value;
+	public enum ValMacEntryIfKind {
+		UPLL_MAC_ENTRY_BLANK("0"), UPLL_MAC_ENTRY_TRUNK("1");
 
-			private ValMacEntryIfKind(final String value) {
-				this.value = value;
-			}
+		private final String value;
 
-			/**
-			 *
-			 * @return the value
-			 */
-			public String getValue(){
-				return value;
-			}
-		};
-		public enum ValAlarmStatus {
-			  UPLL_ALARM_CLEAR("0"),
-			  UPLL_ALARM_RAISE("1");
+		private ValMacEntryIfKind(final String value) {
+			this.value = value;
+		}
 
-				private final String value;
+		/**
+		 * 
+		 * @return the value
+		 */
+		public String getValue() {
+			return value;
+		}
+	};
 
-				private ValAlarmStatus(final String value) {
-					this.value = value;
-				}
+	public enum ValAlarmStatus {
+		UPLL_ALARM_CLEAR("0"), UPLL_ALARM_RAISE("1");
 
-				/**
-				 *
-				 * @return the value
-				 */
-				public String getValue(){
-					return value;
-				}
-			};
-			
-			
-			public  enum UpplControllerOperStatus {
-				 UPPL_CONTROLLER_OPER_DOWN("0"),
-				 UPPL_CONTROLLER_OPER_UP("1"),
-				 UPPL_CONTROLLER_OPER_WAITING_AUDIT("2"),
-				 UPPL_CONTROLLER_OPER_AUDITING("3");
-				private final String value;
+		private final String value;
 
+		private ValAlarmStatus(final String value) {
+			this.value = value;
+		}
 
-				private UpplControllerOperStatus(final String value){
-					this.value = value;
-				}
+		/**
+		 * 
+		 * @return the value
+		 */
+		public String getValue() {
+			return value;
+		}
+	};
 
-				public String getValue(){
-					return value;
-				}
-			};
-			public  enum DirtyStatus {
-				FALSE("0"),
-				TRUE("1");
-				private final String value;
+	public enum UpplControllerOperStatus {
+		UPPL_CONTROLLER_OPER_DOWN("0"),
+		UPPL_CONTROLLER_OPER_UP("1"),
+		UPPL_CONTROLLER_OPER_WAITING_AUDIT("2"),
+		UPPL_CONTROLLER_OPER_AUDITING("3");
+		private final String value;
 
-				private DirtyStatus(final String value){
-					this.value = value;
-				}
+		private UpplControllerOperStatus(final String value) {
+			this.value = value;
+		}
 
-				public String getValue(){
-					return value;
-				}
-			};
+		public String getValue() {
+			return value;
+		}
+	};
+
+	public enum DirtyStatus {
+		FALSE("0"), TRUE("1");
+		private final String value;
+
+		private DirtyStatus(final String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return value;
+		}
+	};
+
+	// U12 ENUM constant
+	public enum valVtnMappingControllerStIndex {
+		UPLL_IDX_SWITCH_ID_VMCS,
+		UPLL_IDX_PORT_NAME_VMCS,
+		UPLL_IDX_LOGICAL_PORT_ID_VMCS,
+		UPLL_IDX_VLAN_ID_VMCS,
+		UPLL_IDX_TAGGED_VMCS,
+		UPLL_IDX_MAP_TYPE_VMCS,
+		UPLL_IDX_VBR_NAME_VMCS,
+		UPLL_IDX_VBR_IF_NAME_VMCS
+	};
+
+	public enum valVtermIndex {
+		UPLL_IDX_CONTROLLER_ID_VTERM,
+		UPLL_IDX_DOMAIN_ID_VTERM,
+		UPLL_IDX_DESC_VTERM
+
+	};
+
+	public enum valVtermStIndex {
+		UPLL_IDX_OPER_STATUS_VTERMS
+
+	};
+
+	public enum valVtermIfIndex {
+		UPLL_IDX_ADMIN_STATUS_VTERMI, UPLL_IDX_DESC_VTERMI, UPLL_IDX_PM_VTERMI
+	};
+
+	public enum valVtermIfStIndex {
+		UPLL_IDX_OPER_STATUS_VTERMIS
+
+	};
+
+	public enum valVtnDataflowIndex {
+		UPLL_IDX_REASON_VVD, UPLL_IDX_CTRLR_DOMAIN_COUNT_VVD
+	};
+
+	public enum valVtnDataflowCmnIndex {
+		UPLL_IDX_CONTROLLER_ID_VVDC,
+		UPLL_IDX_CONTROLLER_TYPE_VVDC,
+		UPLL_IDX_FLOW_ID_VVDC,
+		UPLL_IDX_CREATED_TIME_VVDC,
+		UPLL_IDX_IDLE_TIMEOUT_VVDC,
+		UPLL_IDX_HARD_TIMEOUT_VVDC,
+		UPLL_IDX_INGRESS_VNODE_VVDC,
+		UPLL_IDX_INGRESS_VINTERFACE_VVDC,
+		UPLL_IDX_INGRESS_SWITCH_ID_VVDC,
+		UPLL_IDX_INGRESS_PORT_ID_VVDC,
+		UPLL_IDX_INGRESS_LOGICAL_PORT_ID_VVDC,
+		UPLL_IDX_INGRESS_DOMAIN_VVDC,
+		UPLL_IDX_EGRESS_VNODE_VVDC,
+		UPLL_IDX_EGRESS_VINTERFACE_VVDC,
+		UPLL_IDX_EGRESS_SWITCH_ID_VVDC,
+		UPLL_IDX_EGRESS_PORT_ID_VVDC,
+		UPLL_IDX_EGRESS_LOGICAL_PORT_ID_VVDC,
+		UPLL_IDX_EGRESS_DOMAIN_VVDC,
+		UPLL_IDX_MATCH_COUNT_VVDC,
+		UPLL_IDX_ACTION_COUNT_VVDC,
+		UPLL_IDX_PATH_INFO_COUNT_VVDC
+	};
+
+	public enum valVtnDataflowPathInfo {
+		UPLL_IDX_IN_VNODE_VVDPI,
+		UPLL_IDX_IN_VIF_VVDPI,
+		UPLL_IDX_OUT_VNODE_VVDPI,
+		UPLL_IDX_OUT_VIF_VVDPI,
+		UPLL_IDX_VLINK_FLAG_VVDPI,
+		UPLL_IDX_STATUS_VVDPI
+
+	};
+
+	public enum valVtnDataflowPathInfoVlinkType {
+		UPLL_DATAFLOW_PATH_VLINK_NOT_EXISTS, UPLL_DATAFLOW_PATH_VLINK_EXISTS
+	};
+
+	public enum valVtnDataflowPathInfoStatusType {
+		UPLL_DATAFLOW_PATH_STATUS_NORMAL, UPLL_DATAFLOW_PATH_STATUS_DROP
+	};
+
+	public enum ValDataFlowMatchVmaskvalue {
+		UNC_MATCH_MASK_INVALID, UNC_MATCH_MASK_VALID;
+
+	};
+
+	public enum UncDataflowFlowMatchType {
+		UNC_MATCH_IN_PORT,
+		UNC_MATCH_DL_SRC,
+		UNC_MATCH_DL_DST,
+		UNC_MATCH_DL_TYPE,
+		UNC_MATCH_VLAN_ID,
+		UNC_MATCH_VLAN_PCP,
+		UNC_MATCH_IP_TOS,
+		UNC_MATCH_IP_PROTO,
+		UNC_MATCH_IPV4_SRC,
+		UNC_MATCH_IPV4_DST,
+		UNC_MATCH_IPV6_SRC,
+		UNC_MATCH_IPV6_DST,
+		UNC_MATCH_TP_SRC,
+		UNC_MATCH_TP_DST;
+	}
+
+	public enum UncDataflowFlowActionType {
+		UNC_ACTION_OUTPUT,
+		UNC_ACTION_SET_ENQUEUE,
+		UNC_ACTION_SET_DL_SRC,
+		UNC_ACTION_SET_DL_DST,
+		UNC_ACTION_SET_VLAN_ID,
+		UNC_ACTION_SET_VLAN_PCP,
+		UNC_ACTION_STRIP_VLAN,
+		UNC_ACTION_SET_IPV4_SRC,
+		UNC_ACTION_SET_IPV4_DST,
+		UNC_ACTION_SET_IP_TOS,
+		UNC_ACTION_SET_TP_SRC,
+		UNC_ACTION_SET_TP_DST,
+		UNC_ACTION_SET_IPV6_SRC,
+		UNC_ACTION_SET_IPV6_DST;
+
+	};
+
+	public enum UncDataflowReason {
+		UNC_DF_RES_SUCCESS,
+		UNC_DF_RES_OPERATION_NOT_SUPPORTED,
+		UNC_DF_RES_EXCEEDS_FLOW_LIMIT,
+		UNC_DF_RES_CTRLR_DISCONNECTED,
+		UNC_DF_RES_EXCEEDS_HOP_LIMIT,
+		UNC_DF_RES_DST_NOT_REACHED,
+		UNC_DF_RES_FLOW_NOT_FOUND,
+		UNC_DF_RES_SYSTEM_ERROR
+	};
+
 }

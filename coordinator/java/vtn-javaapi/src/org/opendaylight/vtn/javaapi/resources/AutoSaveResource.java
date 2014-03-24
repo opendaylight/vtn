@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -58,7 +58,8 @@ public class AutoSaveResource extends AbstractResource {
 	 *             the vtn service exception
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts AutoSaveResource#put()");
 		ClientSession session = null;
 		int status = ClientSession.RESP_FATAL;
@@ -98,7 +99,7 @@ public class AutoSaveResource extends AbstractResource {
 					.setIpcUint32Value(getSessionID()));
 			LOG.info("Request packet created successfully");
 			status = session.invoke();
-			LOG.info("Request packet processed with status:"+status);
+			LOG.info("Request packet processed with status:" + status);
 			final String operationType = IpcDataUnitWrapper
 					.getIpcDataUnitValue(session
 							.getResponse(VtnServiceJsonConsts.VAL_0));
@@ -169,7 +170,7 @@ public class AutoSaveResource extends AbstractResource {
 	 *             the vtn service exception
 	 */
 	@Override
-	public int get() throws VtnServiceException {
+	public final int get() throws VtnServiceException {
 		LOG.trace("Starts AutoSaveResource#get()");
 		ClientSession session = null;
 		int status = ClientSession.RESP_FATAL;
@@ -187,7 +188,7 @@ public class AutoSaveResource extends AbstractResource {
 					.setIpcUint32Value(getSessionID()));
 			LOG.info("Request packet created successfully");
 			status = session.invoke();
-			LOG.info("Request packet processed with status:"+status);
+			LOG.info("Request packet processed with status:" + status);
 			final String operationType = IpcDataUnitWrapper
 					.getIpcDataUnitValue(session
 							.getResponse(VtnServiceJsonConsts.VAL_0));

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -15,7 +15,7 @@ import java.math.BigInteger;
  */
 public final class VtnServiceJsonConsts {
 	public static final String SLASH = "/";
-	public static final String URI = "URI#";
+	public static final String URI = "";
 	public static final String ENABLE = "enable";
 	public static final String DISABLE = "disable";
 
@@ -28,7 +28,7 @@ public final class VtnServiceJsonConsts {
 	public static final String RUNNING = "running";
 	public static final String STATE = "state";
 	public static final String OP = "op";
-	public static final String NONE = ""; // webui specific, not related to VTN
+	public static final String NONE = "none";
 	// API
 	public static final String SHOW = "show"; // webui specific, not related to
 	// VTN API
@@ -97,6 +97,7 @@ public final class VtnServiceJsonConsts {
 	public static final String TRUNKPORTNAME = "trunk_port_name";
 	public static final String BOUNDARIES = "boundaries";
 	public static final String BOUNDARYID = "boundary_id";
+	public static final String L4PORT = "l4port";
 
 	// Logical
 	public static final String VTNS = "vtns";
@@ -541,6 +542,9 @@ public final class VtnServiceJsonConsts {
 	public static final String FLOWENTRYACTIONS = "flowentryactions";
 	public static final String PROFILEENTRY = "profileentry";
 
+	// VTerminal
+	public static final String VTERMINALNAME = "vterminal_name";
+
 	// Flood Policing
 	public static final String TWORATETHREECOLOR = "tworatethreecolor";
 	public static final String METER = "meter";
@@ -621,8 +625,8 @@ public final class VtnServiceJsonConsts {
 	public static final String TAGGED = "tagged";
 	public static final String TRUE = "true";
 	public static final String FALSE = "false";
-	public static final String CODE = "code";
-	public static final String MSG = "msg";
+	public static final String CODE = "err_code";
+	public static final String MSG = "err_msg";
 	public static final String ERROR = "error";
 	public static final String MPLS = "mpls";
 	public static final String VNI = "vni";
@@ -631,6 +635,7 @@ public final class VtnServiceJsonConsts {
 	// INTEGER
 	public static final int LEN_15 = 15;
 	public static final int LEN_19 = 19;
+	public static final int LEN_24 = 24;
 	public static final int LEN_31 = 31;
 	public static final int LEN_32 = 32;
 	public static final int LEN_63 = 63;
@@ -654,9 +659,15 @@ public final class VtnServiceJsonConsts {
 	public static final int VAL_4095 = 4095;
 	public static final int VAL_65535 = 65535;
 	public static final BigInteger BIG_VAL0 = new BigInteger("0");
-	public static final BigInteger BIG_VAL = new BigInteger("4294967295");
-	public static final BigInteger BIG_VAL_18446744073709551615 = new BigInteger("18446744073709551615");
-	public static final BigInteger BIG_VAL_9999999999999999999 = new BigInteger("9999999999999999999");
+	public static final BigInteger BIG_VAL1 = new BigInteger("1");
+	public static final BigInteger BIG_VAL_4294967040 = new BigInteger(
+			"4294967040");
+	public static final BigInteger BIG_VAL_18446744073709551999 = new BigInteger(
+			"18446744073709551999");
+	public static final BigInteger BIG_VAL_9999999999999999999 = new BigInteger(
+			"9999999999999999999");
+	public static final BigInteger BIG_VAL_18446744073709551615 = new BigInteger(
+			"18446744073709551615");
 	public static final long LONG_VAL_0 = 0L;
 	public static final long LONG_VAL_1 = 1L;
 	public static final long LONG_VAL_4294967295 = 4294967295L;
@@ -688,26 +699,27 @@ public final class VtnServiceJsonConsts {
 	public static final String DOMAIN2_ID = "domain2_id";
 	public static final String DEFAULT = "default";
 	public static final String PORT_ID = "port_id";
-	public static final String LINKSAPERATOR="\\.";
-	public static final String LINKCONCATENATOR=".";
+	public static final String LINKSAPERATOR = "\\.";
+	public static final String LINKCONCATENATOR = ".";
 	public static final String UNKNOWN = "unknown";
 	public static final String BYPASS = "bypass";
 	public static final String PFC = "pfc";
 	public static final String LEGACY = "legacy";
 	public static final String OVERLAY = "overlay";
-	//public static final String WAITINGAUDIT ="waiting_audit";
+	// public static final String WAITINGAUDIT ="waiting_audit";
 	public static final String AUDITING = "auditing";
 	public static final String HYPHEN = "-";
 	public static final int LEN_256 = 256;
 	public static final int LEN_4 = 4;
 	public static final int VAL_2 = 2;
 	public static final int VAL_3 = 3;
-	public static final int LEN_20=20;
-
+	public static final int VAL_4 = 4;
+	public static final int VAL_6 = 6;
+	public static final int LEN_20 = 20;
 
 	public static final String WAITING_AUDIT = "waiting_audit";
-	public static final String MANUFACTURER="manufacturer";
-	public static final String ALARMSSTATUS="alarmsstatus";
+	public static final String MANUFACTURER = "manufacturer";
+	public static final String ALARMSSTATUS = "alarmsstatus";
 	public static final String TRUNK_ALLOWED_VLAN = "trunk_allowed_vlan";
 	public static final String LOGICAL_PORT_ID = "logical_port_id";
 	public static final String CONNECTED_PORT_ID = "port_name";
@@ -715,28 +727,28 @@ public final class VtnServiceJsonConsts {
 	public static final String PORT1_NAME = "port1_name";
 	public static final String PORT2_NAME = "port2_name";
 	public static final String ACTUALVERSION = "actual_version";
-	public static final String LOGICALPORT1ID="logical_port1_id";
-	public static final String DOMAIN1ID="domain1_id";
-	public static final String LOGICALPORT2ID="logical_port2_id";
-	public static final String DOMAIN2ID="domain2_id";
+	public static final String LOGICALPORT1ID = "logical_port1_id";
+	public static final String DOMAIN1ID = "domain1_id";
+	public static final String LOGICALPORT2ID = "logical_port2_id";
+	public static final String DOMAIN2ID = "domain2_id";
 	public static final String DOMAINLPORT = "logicalport";
 	public static final String DOMAINLPORTS = "logicalports";
 	public static final String OPERDOWNCRITERIA = "operstatus_criteria";
-	public static final String NMG_STATUS="nmg_status";
+	public static final String NMG_STATUS = "nmg_status";
 	public static final String ROUTER = "router";
 	public static final String BRIDGE = "bridge";
 
 	public static final String DIRECTION_INTERNAL = "internal";
 	public static final String DIRECTION_EXTERNAL = "external";
 	public static final String DIRECTION_UNKNOWN = "unknown";
-	//public static final String LOGICALPORT_ID = "logical_port_id";
-	public static final String LOGICALPORT= "logical_port";
-	public static final String LOGICALPORTS= "logical_ports";
-	public static final String MEMBER_PORTS="member_ports";
-	public static final String SUBDOMAIN ="subdomain";
-	public static final String OPERDOWN_CRITERIA ="operdown_criteria";
-	public static final String ANY ="any";
-	public static final String VLANMAPIDSEPERATOR="-";
+	// public static final String LOGICALPORT_ID = "logical_port_id";
+	public static final String LOGICALPORT = "logical_port";
+	public static final String LOGICALPORTS = "logical_ports";
+	public static final String MEMBER_PORTS = "member_ports";
+	public static final String SUBDOMAIN = "subdomain";
+	public static final String OPERDOWN_CRITERIA = "operdown_criteria";
+	public static final String ANY = "any";
+	public static final String VLANMAPIDSEPERATOR = "-";
 	public static final String LPID = "lpid";
 	public static final String NOLPID = "no_lpid";
 	public static final String IPROUTES = "iproutes";
@@ -757,7 +769,7 @@ public final class VtnServiceJsonConsts {
 	public static final String RAISE = "raise";
 	public static final String TUNNEL_ENDPOINT = "tunnel_endpoint";
 	public static final String DEFAULT_DOMAIN_ID = "(DEFAULT)";
-	public static final String SWITCHID_NOT_FOUND= "switchIdNotFound";
+	public static final String SWITCHID_NOT_FOUND = "switchIdNotFound";
 	public static final String PORTID_NOT_FOUND = "portIdNotFound";
 	public static final String VNP = "vnp";
 	public static final String ODC = "odc";
@@ -766,8 +778,157 @@ public final class VtnServiceJsonConsts {
 	public static final String TWO = "2";
 	public static final String DEL = "del";
 	public static final String V = "V";
-	//Constatnts for portmap under overlay
+	// Constatnts for portmap under overlay
 	public static final String VTUNNEL_INTERFACE_PORTMAP = "VTunnelInterfacePortMap";
 	public static final String VTEP_INTERFACE_PORTMAP = "VTepInterfacePortMap";
 	public static final String VBRIDGE_INTERFACE_PORTMAP = "VBridgeInterfacePortMap";
+	public static final String DATAFLOWS = "dataflows";
+	// vterminal
+	public static final String VTERMINAL = "vterminal";
+	public static final String VTERMINALS = "vterminals";
+	public static final String VTERMINAL_NAME = "vterminal_name";
+	public static final String VTERM_DESCRIPTION = "vterm_description";
+	public static final String SRCMAC = "srcmac";
+	public static final String RX_PACKETS = "rx_packets";
+	public static final String TX_PACKETS = "tx_packets";
+	public static final String TX_BYTES = "rx_bytes";
+	public static final String RX_BYTES = "tx_bytes";
+	public static final String RX_DROPPED = "rx_dropped";
+	public static final String TX_DROPPED = "tx_dropped";
+	public static final String RX_ERRORS = "rx_errors";
+	public static final String TX_ERRORS = "tx_errors";
+	public static final String RX_FRAME_ERR = "rx_frame_err";
+	public static final String RX_OVER_ERR = "rx_over_err";
+	public static final String RX_CRC_ERRS = "rx_crc_err";
+	public static final String COLLISIONS = "collisions";
+
+	// dataflow
+
+	public static final String MAPPINGID = "mapping_id";
+	public static final String MAPPING = "mapping";
+	public static final String MAPPINGS = "mappings";
+	// VTN Data Flow
+	public static final String REASON = "reason";
+	public static final String CONTROLER_TYPE = "controller_type";
+	public static final String FLOW_ID = "flow_id";
+	public static final String FLOW_TYPE = "type";
+	public static final String POLICY_INDEX = "policy_index";
+	public static final String MATCH_TYPE = "match_type";
+	public static final String IN_PORT = "inport";
+	public static final String DL_ADDR = "dl_addr";
+	public static final String V_MASK = "v_mask";
+	public static final String DL_ADDR_MASK = "dl_addr_mask";
+	public static final String DL_TYPE = "dl_type";
+	public static final String VLAN_VID = "vlan_vid";
+	public static final String VLAN_PCP = "vlan_pcp";
+	public static final String IP_TOS = "ip_tos";
+	public static final String IP_PROTO = "ipproto";
+	public static final String IPV4_ADDR = "ipv4_addr";
+	public static final String IPV4_ADDR_MASK = "ipv4_addr_mask";
+	public static final String TP_PORT = "tp_port";
+	public static final String TP_PORT_MASK = "tp_port_mask";
+	public static final String IPV6_ADDR = "ipv6_addr";
+	public static final String VTN_ID = "vtn_id";
+	public static final String INGRESS_SWITCH_ID = "ingress_switch_id";
+	public static final String INGRESS_STATION_ID = "ingress_station_id";
+	public static final String EGRESS_SWITCH_ID = "egress_switch_id";
+	public static final String EGRESS_STATION_ID = "egress_station_id";
+	public static final String OUTPORT = "outport";
+	public static final String ENQUEUE_ID = "enqueue_id";
+	public static final String QUEUE_ID = "queue_id";
+	public static final String ENQUEUEPORT = "enqueueport";
+	public static final String MACSRC = "macsrc";
+	public static final String MACDST = "macdst";
+	public static final String ETHERNATETYPE = "ethertype";
+	public static final String VLAN_ID = "vlan_id";
+	public static final String IPSRC = "ipsrc";
+	public static final String IPDST = "ipdst";
+	public static final String IPV6DST = "ipv6src";
+	public static final String IPV6SRC = "ipv6dst";
+	public static final String TPSRC = "tpsrc";
+	public static final String TSDST = "tpdst";
+	public static final String IPTOS = "iptos";
+	public static final String SWITCH_ID = "switch_id";
+	public static final String INPORT = "inport";
+	public static final String TPDST = "tpdst";
+	public static final String PATHINFOS = "pathinfos";
+	public static final String CONTROLLER_DATAFLOWS = "controller_dataflows";
+	public static final String REASON_SUCCESS = "success";
+	public static final String REASON_NOT_SUPP = "operation not supported";
+	public static final String REASON_EXCD_LIM = "exceeds flow limit";
+	public static final String REASON_CTRL_DISC = "controller disconnected";
+	public static final String REASON_EXCD_HOP = "exceeds hop limit ";
+	public static final String REASON_DST_NOT_REACHED = "dst not reached";
+	public static final String REASON_FLOW_NOTFOUND = "flow not found";
+	public static final String REASON_SYS_ERROR = "system error";
+	public static final String RES_SUCCESS = "success";
+	public static final String RES_EXCEEDS_FLOW_LIMIT = "exceeds flow limit";
+	public static final String RES_EXCEEDS_HOP_LIMIT = "exceeds hop limit";
+	public static final String RES_DST_NOT_REACHED = "dst_not_reached";
+	public static final String RES_CTRLR_DISCONNECTED = "controller_disconnected";
+	public static final String RES_OPERATION_NOT_SUPPORTED = "operation not supported";
+	public static final String RES_FLOW_NOT_FOUND = "flow_not_found";
+	public static final String RES_SYSTEM_ERROR = "system_error";
+	public static final String CONTROLLER_DOMAIN_DATAFLOWS = "controller_domain_dataflows";
+	public static final String IDLETIMEOUT = "idletimeout";
+	public static final String HARDTIMEOUT = "hardtimeout";
+	public static final String INGRESS_VNODE_NAME = "ingress_vnode_name";
+	public static final String INGRESS_IF_NAME = "ingress_if_name";
+	public static final String INGRESS_PORT_NAME = "ingress_port_name";
+	public static final String INGRESS_LOGICAL_PORT_ID = "ingress_logical_port_id";
+	public static final String INGRESS_DOMAIN_ID = "ingress_domain_id";
+	public static final String EGRESS_VNODE_NAME = "egress_vnode_name";
+	public static final String EGRESS_IF_NAME = "egress_if_name";
+	public static final String EGRESS_PORT_NAME = "egress_port_name";
+	public static final String EGRESS_LOGICAL_PORT_ID = "egress_logical_port_id";
+	public static final String EGRESS_DOMAIN_ID = "egress_domain_id";
+	public static final String IN_VNODE_NAME = "in_vnode_name";
+	public static final String IN_IF_NAME = "in_if_name";
+	public static final String OUT_VNODE_NAME = "out_vnode_name";
+	public static final String OUT_IF_NAME = "out_if_name";
+	public static final String VLINK_FLAG = "vlink_flag";
+	public static final String COORDINATOR_VERSION = "coordinator_version";
+
+	public static final String VLAN_PRIORITY = "vlan_priority";
+
+	public static final String SRCMACADDR = "srcmacaddr";
+	public static final String SETMACSRCADDR = "setmacsrcaddr";
+	public static final String SETMACDSTADDR = "setmacdstaddr";
+	public static final String SETVLAN_ID = "setvlan_id";
+	public static final String SETVLAN_PRIORITY = "setvlan_priority";
+	public static final String SETIPSRCADDR = "setipsrcaddr";
+	public static final String SETIPDSTADDR = "setipdstaddr";
+	public static final String SETIPTOS = "setiptos";
+	public static final String SETL4SRCPORT_ICMPTYPE = "setl4srcport_icmptype";
+	public static final String SETL4DSTPORT_ICMPTYPE = "setl4dstport_icmptype";
+	public static final String SETIPV6DSTADDR = "setipv6dstaddr";
+	public static final String SETIPV6SRCADDR = "setipv6srcaddr";
+	public static final String OUTPUTPORT = "outputport";
+	public static final String MACDSTADDR_MASK = "macdstaddr_mask";
+	public static final String MACSRCADDR_MASK = "macsrcaddr_mask";
+	public static final String IPSRCADDR_MASK = "ipsrcaddr_mask";
+	public static final String IPDSTADDR_MASK = "ipdstaddr_mask";
+	public static final String IPV6SRCADDR_MASK = "ipv6srcaddr_mask";
+	public static final String IPV6DSTADDR_MASK = "ipv6dstaddr_mask";
+	public static final String L4SRCPORT_ICMPTYPE = "l4srcport_icmptype";
+	public static final String L4DSTPORT_ICMPTYPE = "l4dstport_icmptype";
+	public static final String L4SRCPORT_ICMPTYPE_MASK = "l4srcport_icmptype_mask";
+	public static final String L4DSTPORT_ICMPTYPE_MASK = "l4dstport_icmptype_mask";
+	public static final String STATUS_INIT = "init";
+	public static final String STATUS_ACTIVATING = "activating";
+	public static final String STATUS_ACTIVE = "active";
+	public static final String STATUS_SWITCHING = "switching";
+	public static final String IN_PORT_NAME = "in_port_name";
+	public static final String OUT_PORT_NAME = "out_port_name";
+	public static final String FLOWCOUNT = "flowcount";
+	public static final String RX_FRAMEERR = "rx_frameerr";
+	public static final String RX_CRCERR = "rx_crcerr";
+	public static final String RX_OVERERR = "rx_overerr";
+	public static final String NOT_EXISTS = "not_exists";
+	public static final String EXISTS = "exists";
+	public static final String MAPPINGINFOS = "mappinginfos";
+	public static final String VLAN_ID_65535 = "65535";
+	public static final String EMPTY = "";
+	public static final String STRIPVLAN = "stripvlan";
+
 }

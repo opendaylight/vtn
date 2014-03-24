@@ -52,108 +52,108 @@ namespace uppl {
 /* 
  * uppl memcpy macro
  */
-#define ODBCM_MEMCPY(__dst__, __src__, __size__)                      \
-  if (__src__ != NULL && __size__ > 0)                                \
-  memcpy(__dst__, __src__, __size__);
+#define ODBCM_MEMCPY(dst, src, size)                      \
+  if ((src) != NULL && (size) > 0)                                \
+  memcpy((dst), (src), (size));
 /* 
  * uppl memset macro
  */
-#define ODBCM_MEMSET(__dst__, __val__, __size__)                      \
-  memset(__dst__, __val__, __size__);
+#define ODBCM_MEMSET(dst, val, size)                      \
+  memset((dst), (val), (size));
 /* 
  * Allocate memory for ColumnAttrValue template, 
  * this will be called up in the fetch functions
  */
-#define ODBCM_ALLOCATE_COLUMN_ATTRVALUE_T(__dt__, __Tname__)          \
-  ColumnAttrValue <__dt__> *__Tname__ = new ColumnAttrValue <__dt__>; \
-  ODBCM_MEMSET(__Tname__, '\0', sizeof(__dt__));
+#define ODBCM_ALLOCATE_COLUMN_ATTRVALUE_T(dt, T_name)          \
+  ColumnAttrValue <dt> *(T_name) = new ColumnAttrValue <dt>; \
+  ODBCM_MEMSET((T_name), '\0', sizeof(dt));
 
 /* 
  * To bind the input datatypes
  * for binding SQL_VARCHAR data type
  */
-#define BindInputParameter_SQL_VARCHAR(__stmt__, __param_no__,        \
-  __col_size__,  __decimal__,  __buffer__, __buf_len__, __lenptr__)   \
-  SQLBindParameter(__stmt__, __param_no__, SQL_PARAM_INPUT,           \
-      SQL_C_CHAR, SQL_VARCHAR, __col_size__, __decimal__,             \
-      __buffer__, __buf_len__, __lenptr__)
+#define BindInputParameter_SQL_VARCHAR(stmt, param_no,        \
+  col_size, decimal, buffer, buf_len, lenptr)   \
+  SQLBindParameter((stmt), (param_no), SQL_PARAM_INPUT,           \
+      SQL_C_CHAR, SQL_VARCHAR, (col_size), (decimal),             \
+      (buffer), (buf_len), (lenptr))
 /* 
  * For binding SQL_SMALLINT data type
  */
-#define BindInputParameter_SQL_SMALLINT(__stmt__, __param_no__,       \
-    __col_size__, __decimal__,  __buffer__, __buf_len__, __lenptr__)  \
-      SQLBindParameter(__stmt__, __param_no__, SQL_PARAM_INPUT,       \
-      SQL_C_SHORT, SQL_SMALLINT, __col_size__, __decimal__,           \
-      __buffer__, __buf_len__, __lenptr__)
+#define BindInputParameter_SQL_SMALLINT(stmt, param_no,       \
+    col_size, decimal, buffer, buf_len, lenptr)  \
+      SQLBindParameter((stmt), (param_no), SQL_PARAM_INPUT,       \
+      SQL_C_SHORT, SQL_SMALLINT, (col_size), (decimal),           \
+      (buffer), (buf_len), (lenptr))
 /* 
  * For binding SQL_INTIGER data type
  */
-#define BindInputParameter_SQL_INTEGER(__stmt__, __param_no__,        \
-    __col_size__, __decimal__,  __buffer__, __buf_len__, __lenptr__)  \
-    SQLBindParameter(__stmt__, __param_no__, SQL_PARAM_INPUT,         \
-      SQL_C_LONG, SQL_INTEGER, __col_size__, __decimal__,             \
-      __buffer__, __buf_len__, __lenptr__)
+#define BindInputParameter_SQL_INTEGER(stmt, param_no,        \
+    col_size, decimal, buffer, buf_len, lenptr)  \
+    SQLBindParameter((stmt), (param_no), SQL_PARAM_INPUT,         \
+      SQL_C_LONG, SQL_INTEGER, (col_size), (decimal),             \
+      (buffer), (buf_len), (lenptr))
 /* 
  * For binding SQL_BIGINT( data type
  */
-#define BindInputParameter_SQL_BIGINT(__stmt__, __param_no__,         \
-    __col_size__, __decimal__,  __buffer__, __buf_len__, __lenptr__)  \
-    SQLBindParameter(__stmt__, __param_no__, SQL_PARAM_INPUT,         \
-      SQL_C_UBIGINT, SQL_BIGINT, __col_size__, __decimal__,           \
-      __buffer__, __buf_len__, __lenptr__)
+#define BindInputParameter_SQL_BIGINT(stmt, param_no,         \
+    col_size, decimal, buffer, buf_len, lenptr)  \
+    SQLBindParameter((stmt), (param_no), SQL_PARAM_INPUT,         \
+      SQL_C_UBIGINT, SQL_BIGINT, (col_size), (decimal),           \
+      (buffer), (buf_len), (lenptr))
 /* 
  * For binding SQL_CHAR data type
  */
-#define BindInputParameter_SQL_CHAR(__stmt__, __param_no__,           \
-    __col_size__, __decimal__,  __buffer__, __buf_len__, __lenptr__)  \
-    SQLBindParameter(__stmt__, __param_no__, SQL_PARAM_INPUT,         \
-      SQL_C_CHAR, SQL_CHAR, __col_size__, __decimal__,                \
-      __buffer__, __buf_len__, __lenptr__)
+#define BindInputParameter_SQL_CHAR(stmt, param_no,           \
+    col_size, decimal, buffer, buf_len, lenptr)  \
+    SQLBindParameter((stmt), (param_no), SQL_PARAM_INPUT,         \
+      SQL_C_CHAR, SQL_CHAR, (col_size), (decimal),                \
+      (buffer), (buf_len), (lenptr))
 /*
  * For binding SQL_BINARY data type 
  * calculate the length of buffer and assign to lenptr
  */
-#define BindInputParameter_SQL_BINARY(__stmt__, __param_no__,         \
-    __col_size__, __decimal__,  __buffer__, __buf_len__, __lenptr__)  \
-    SQLBindParameter(__stmt__, __param_no__, SQL_PARAM_INPUT,         \
-      SQL_C_BINARY, SQL_BINARY, __col_size__, __decimal__,            \
-      __buffer__, __buf_len__, __lenptr__)
+#define BindInputParameter_SQL_BINARY(stmt, param_no,         \
+    col_size, decimal, buffer, buf_len, lenptr)  \
+    SQLBindParameter((stmt), (param_no), SQL_PARAM_INPUT,         \
+      SQL_C_BINARY, SQL_BINARY, (col_size), (decimal),            \
+      (buffer), (buf_len), (lenptr))
 /* 
  * To bind the output datatypes 
  * For binding SQL_VARCHAR data type
  */
-#define BindCol_SQL_VARCHAR(__stmt__, __param_no__, __buffer__,   \
-    __col_size__, __lenptr__)                                     \
-    SQLBindCol(__stmt__, __param_no__, SQL_C_CHAR, __buffer__,    \
-      __col_size__, __lenptr__)
+#define BindCol_SQL_VARCHAR(stmt, param_no, buffer,   \
+    col_size, lenptr)                                     \
+    SQLBindCol((stmt), (param_no), SQL_C_CHAR, (buffer),    \
+      (col_size), (lenptr))
 /*
  * For binding SQL_SMALLINT data type
  */
-#define BindCol_SQL_SMALLINT(__stmt__, __param_no__, __buffer__,  \
-    __col_size__,  __lenptr__)                                    \
-    SQLBindCol(__stmt__, __param_no__, SQL_C_SHORT, __buffer__,   \
-      __col_size__, __lenptr__)
+#define BindCol_SQL_SMALLINT(stmt, param_no, buffer,  \
+    col_size, lenptr)                                    \
+    SQLBindCol((stmt), (param_no), SQL_C_SHORT, (buffer),   \
+      (col_size), (lenptr))
 /* 
  * For binding SQL_INTEGER data type
  */
-#define BindCol_SQL_INTEGER(__stmt__, __param_no__, __buffer__,   \
-    __col_size__,  __lenptr__)                                    \
-    SQLBindCol(__stmt__, __param_no__, SQL_C_LONG, __buffer__,    \
-      __col_size__, __lenptr__)
+#define BindCol_SQL_INTEGER(stmt, param_no, buffer,   \
+    col_size, lenptr)                                    \
+    SQLBindCol((stmt), (param_no), SQL_C_LONG, (buffer),    \
+      (col_size), (lenptr))
 /* 
  * For binding SQL_BIGINT data type
  */
-#define BindCol_SQL_BIGINT(__stmt__, __param_no__, __buffer__,    \
-    __col_size__, __lenptr__)                                     \
-    SQLBindCol(__stmt__, __param_no__, SQL_C_UBIGINT, __buffer__, \
-      __col_size__, __lenptr__)
+#define BindCol_SQL_BIGINT(stmt, param_no, buffer,    \
+    col_size, lenptr)                                     \
+    SQLBindCol((stmt), (param_no), SQL_C_UBIGINT, (buffer), \
+      (col_size), (lenptr))
 /* 
  * For binding SQL_BINARY data type
  */
-#define BindCol_SQL_BINARY(__stmt__, __param_no__, __buffer__,    \
-    __col_size__,  __lenptr__)                                    \
-    SQLBindCol(__stmt__, __param_no__, SQL_C_BINARY,  __buffer__, \
-      __col_size__, __lenptr__)
+#define BindCol_SQL_BINARY(stmt, param_no, buffer,    \
+    col_size, lenptr)                                    \
+    SQLBindCol((stmt), (param_no), SQL_C_BINARY, (buffer), \
+      (col_size), (lenptr))
 
 /*
  * Binding types, Input binding or Output binding

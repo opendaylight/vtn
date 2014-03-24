@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -9,6 +9,8 @@
 
 
 #include <tc_operations.hh>
+#include <alarm.hh>
+#include <unc/component.h>
 
 #define UNC_NO_ARGS 0
 
@@ -38,12 +40,14 @@ uint32_t TcStartUpOperations::TcGetMinArgCount() {
  * @brief Get Arguments for operation
  */
 TcOperStatus
-  TcStartUpOperations::HandleArgs() {
-    if ( is_switch_ == PFC_FALSE ) {
-      return TC_OPER_SUCCESS;
-    }
+TcStartUpOperations::HandleArgs() {
+  if ( is_switch_ == PFC_FALSE ) {
+    return TC_OPER_SUCCESS;
+  }
+  uint32_t failover_instance = 0;
   TcOperRet ret = db_hdlr_->GetRecoveryTable(&database_type_,
-                                            &fail_oper_);
+                                            &fail_oper_,
+                                            &failover_instance);
   if ( ret != TCOPER_RET_SUCCESS ) {
     return TC_OPER_FAILURE;
   }
@@ -140,12 +144,10 @@ TcOperStatus
 TcOperStatus
   TcStartUpOperations::SendResponse(TcOperStatus ret_) {
   if (ret_ == TC_OPER_SUCCESS) {
-    if ( is_switch_ == PFC_TRUE ) {
-      TcOperRet ret= db_hdlr_->UpdateRecoveryTable(UNC_DT_INVALID,
-                                                   TC_OP_INVALID);
-      if ( ret != TCOPER_RET_SUCCESS )
-        return TC_SYSTEM_FAILURE;
-    }
+    TcOperRet ret= db_hdlr_->UpdateRecoveryTable(UNC_DT_INVALID,
+                                                 TC_OP_INVALID);
+    if ( ret != TCOPER_RET_SUCCESS )
+      return TC_SYSTEM_FAILURE;
   }
   return ret_;
 }
@@ -157,6 +159,52 @@ TcOperStatus
   TcStartUpOperations::SendAdditionalResponse(TcOperStatus oper_stat) {
     return oper_stat;
 }
+
+/*method to raise alarm for Audit DB failure*/
+TcOperStatus
+TcStartUpOperations::SendAuditDBFailNotice(uint32_t alarm_id) {
+  std::string alm_msg, dbType;
+  std::string alm_msg_summary;
+  std::string vtn_name = "";
+  pfc::alarm::alarm_info_with_key_t* data =
+      new pfc::alarm::alarm_info_with_key_t;
+
+  if (database_type_ == UNC_DT_RUNNING) {
+    alm_msg = "Audit of Running DB failed";
+    alm_msg_summary = "Audit of Running DB failed";
+    dbType = "DB_Running";
+  } else if (database_type_ == UNC_DT_STARTUP) {
+    alm_msg = "Audit of Startup DB failed";
+    alm_msg_summary = "Audit of Startup DB failed";
+    dbType = "DB_Startup";
+  } else if (database_type_ == UNC_DT_CANDIDATE) {
+    alm_msg = "Audit of Candidate DB failed";
+    alm_msg_summary = "Audit of Candidate DB failed";
+    dbType = "DB_Candidate";
+  }
+  data->alarm_class = pfc::alarm::ALM_CRITICAL;
+  data->alarm_kind = 1;
+  data->apl_No = UNCCID_TC;
+  data->alarm_category = 1;
+  data->alarm_key_size = dbType.length();
+  data->alarm_key = new uint8_t[dbType.length()+1];
+  memcpy(data->alarm_key, dbType.c_str(), dbType.length()+1);
+
+  pfc::alarm::alarm_return_code_t ret =
+      pfc::alarm::pfc_alarm_send_with_key(vtn_name,
+                                          alm_msg,
+                                          alm_msg_summary,
+                                          data, alarm_id);
+  if (ret != pfc::alarm::ALM_OK) {
+    delete []data->alarm_key;
+    delete data;
+    return TC_OPER_FAILURE;
+  }
+  delete []data->alarm_key;
+  delete data;
+  return TC_OPER_SUCCESS;
+}
+
 
 }  // namespace tc
 }  // namespace unc

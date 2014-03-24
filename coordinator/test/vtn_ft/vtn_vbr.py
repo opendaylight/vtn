@@ -11,6 +11,7 @@
 
 import requests, json, collections, time, controller
 import vtn_testconfig
+import resp_code
 
 VTNVBRDATA=vtn_testconfig.VTNVBRDATA
 CONTROLLERDATA=vtn_testconfig.CONTROLLERDATA
@@ -35,7 +36,7 @@ def create_vtn(blockname):
     vtn_add['vtn']['description']=test_vtn_description
     r = requests.post(url,data=json.dumps(vtn_add),headers=def_header)
     print r.status_code
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_CREATE_SUCCESS:
         return 1
     else:
         return 0
@@ -50,7 +51,7 @@ def delete_vtn(blockname):
 
     r = requests.delete(url,headers=def_header)
     print r.status_code
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_DELETE_SUCCESS:
         return 1
     else:
         return 0
@@ -70,13 +71,13 @@ def validate_vtn_at_controller(vtn_blockname, controller_blockname, presence="ye
     print r.status_code
 
     if presence == "no":
-        if r.status_code == 404:
+        if r.status_code == resp_code.RESP_NOT_FOUND:
             return 0
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_GET_SUCCESS:
         return 1
 
 
-    data=json.loads(r.text)
+    data=json.loads(r.content)
 
     print data
 
@@ -129,7 +130,7 @@ def create_vbr(vtn_blockname,vbr_blockname,controller_blockname):
 
     r = requests.post(url,data=json.dumps(vbr_add),headers=def_header)
     print r.status_code
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_CREATE_SUCCESS:
         return 1
     else:
         return 0
@@ -150,7 +151,7 @@ def delete_vbr(vtn_blockname,vbr_blockname):
 
     r = requests.delete(url,headers=def_header)
     print r.status_code
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_DELETE_SUCCESS:
         return 1
     else:
         return 0
@@ -173,14 +174,14 @@ def validate_vbr_at_controller(vtn_blockname, vbr_blockname,controller_blockname
     print r.status_code
 
     if presence == "no":
-        if r.status_code == 404:
+        if r.status_code == resp_code.RESP_NOT_FOUND:
             return 0
 
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_GET_SUCCESS:
         return 1
 
 
-    data=json.loads(r.text)
+    data=json.loads(r.content)
 
     vtn_content=data['vbridge'][position]
 
@@ -241,7 +242,7 @@ def test_vtn_vbr():
 
     retval = delete_vbr('VtnOne','VbrOne')
     if retval != 0:
-        print "VBR/VTN Delete Failed"
+        print "VBR/VTN Delete Failed----"
         exit(1)
 
     retval=validate_vbr_at_controller('VtnOne','VbrOne','ControllerFirst',presence="no")

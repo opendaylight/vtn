@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -27,11 +27,10 @@ namespace usess {
  * @brief   Constructor.
  * @param   database  : database instance.
  * @return  nothing.
- * @note    
+ * @note
  */
 UsessUser::UsessUser(mgmtdb::MgmtDatabase& database) : name(), passwd_digest(),
-        expiration(), created(), modified(), database_(database)
-{
+        expiration(), created(), modified(), database_(database) {
   // initialize class data member.
   passwd_type = HASH_TYPE_UNKNOWN;
   type = USER_TYPE_UNKNOWN;
@@ -42,10 +41,9 @@ UsessUser::UsessUser(mgmtdb::MgmtDatabase& database) : name(), passwd_digest(),
  * @brief   Destructor.
  * @param   nothing.
  * @return  nothing.
- * @note    
+ * @note
  */
-UsessUser::~UsessUser(void)
-{
+UsessUser::~UsessUser(void) {
 }
 
 /*
@@ -54,10 +52,9 @@ UsessUser::~UsessUser(void)
  * @return  USESS_E_OK             : Success.
  *          USESS_E_INVALID_USER   : Invalid user name.
  *          USESS_E_NG             : Error.
- * @note    
+ * @note
  */
-usess_ipc_err_e UsessUser::Retrieve(const std::string& name)
-{
+usess_ipc_err_e UsessUser::Retrieve(const std::string& name) {
   int16_t fetch_type[] = {SQL_VARCHAR, SQL_INTEGER, SQL_VARCHAR, SQL_INTEGER};
   usess_ipc_err_e func_rtn = USESS_E_NG;
   mgmtdb::db_err_e db_rtn = mgmtdb::DB_E_NG;
@@ -81,7 +78,8 @@ usess_ipc_err_e UsessUser::Retrieve(const std::string& name)
   db_rtn = database_.Exec(sql_statement, false,
         sizeof(fetch_type)/sizeof(fetch_type[0]), fetch_type, exec_value);
   RETURN_IF((db_rtn != mgmtdb::DB_E_OK || exec_value.size() == 0),
-      USESS_E_INVALID_USER, "Failure select sql exec(tbl_unc_usess_user). err=%d",
+      USESS_E_INVALID_USER,
+      "Failure select sql exec(tbl_unc_usess_user). err=%d",
       db_rtn);
 
   // Save the user data to class members.
@@ -101,26 +99,25 @@ usess_ipc_err_e UsessUser::Retrieve(const std::string& name)
  *          USESS_E_INVALID_MODE      : Invalid session mode.
  *          USESS_E_INVALID_USER      : Invalid user.
  *          USESS_E_NG                : Error
- * @note    
+ * @note
  */
 usess_ipc_err_e UsessUser::Privilege(const user_privilege_e mode,
-                                     const usess_ipc_res_sess_info_t& sess)
-{
+                                     const usess_ipc_res_sess_info_t& sess) {
   std::string uname;
 
   L_FUNCTION_START();
 
-  switch(mode) {
-
+  switch (mode) {
   // Change UNC user password.
   case kPrivilegeUserPasswd:
 
     // check session mode.
-    RETURN_IF((sess.sess_mode != USESS_MODE_ENABLE), USESS_E_INVALID_MODE,
+    RETURN_IF(((sess.sess_mode != USESS_MODE_ENABLE) &&
+              ((sess.sess_mode != USESS_MODE_OPER))), USESS_E_INVALID_MODE,
         "Invalid session mode. [%d]", sess.sess_mode);
 
+    // check user name.
     uname = CAST_IPC_STRING(sess.sess_uname);
-    // check user name.(only session mode=oper)
     RETURN_IF((name.compare(uname) != 0), USESS_E_INVALID_USER,
         "Invalid user name. [%s]", uname.c_str());
     break;
@@ -144,19 +141,16 @@ usess_ipc_err_e UsessUser::Privilege(const user_privilege_e mode,
  *          USESS_E_INVALID_PASSWD    : Invalid password.
  *          USESS_E_INVALID_PRIVILEGE : Invalid privilege.
  *          USESS_E_NG                : Error
- * @note    
+ * @note
  */
 usess_ipc_err_e UsessUser::Authenticate(const user_authenticate_e mode,
                                         const usess_type_e sess_type,
-                                        const char* passwd)
-{
+                                        const char* passwd) {
   L_FUNCTION_START();
 
-  switch(mode) {
-
+  switch (mode) {
   // UNC user authority.
   case kAuthenticateSessAdd:
-
     // If sessio type is "USESS_TYPE_CLI" or "USESS_TYPE_CLI_DAEMON",
     // If user name is "UNC_CLI_ADMIN",
     // password authentication is unnecessary.
@@ -192,10 +186,9 @@ usess_ipc_err_e UsessUser::Authenticate(const user_authenticate_e mode,
  * @return  USESS_E_OK             : Change password success.
  *          USESS_E_INVALID_PASSWD : Invalid password.
  *          USESS_E_NG             : Error.
- * @note    
+ * @note
  */
-usess_ipc_err_e UsessUser::ChangePassword(const char* passwd)
-{
+usess_ipc_err_e UsessUser::ChangePassword(const char* passwd) {
   mgmtdb::db_err_e db_rtn = mgmtdb::DB_E_NG;
   std::string sql_statement;
   std::string hash_passwd;
@@ -240,10 +233,9 @@ usess_ipc_err_e UsessUser::ChangePassword(const char* passwd)
  * @param   conf_data : configuration data.
  * @return  USESS_E_OK             : Success.
  *          USESS_E_NG             : Error.
- * @note    
+ * @note
  */
-usess_ipc_err_e UsessUser::SetConf(UsessConfUser& conf_data)
-{
+usess_ipc_err_e UsessUser::SetConf(UsessConfUser& conf_data) {
   conf_ = conf_data;
   return USESS_E_OK;
 }
@@ -254,10 +246,9 @@ usess_ipc_err_e UsessUser::SetConf(UsessConfUser& conf_data)
  * @param   nothing.
  * @return  true  : check ok.
  *          false : abnormal user name.
- * @note    
+ * @note
  */
-bool UsessUser::CheckUserName(const std::string& name)
-{
+bool UsessUser::CheckUserName(const std::string& name) {
   // length check.
   if (name.length() > conf_.data().user_length) return false;
   // character code check.
@@ -272,10 +263,9 @@ bool UsessUser::CheckUserName(const std::string& name)
  * @param   nothing.
  * @return  true  : check ok.
  *          false : abnormal password.
- * @note    
+ * @note
  */
-bool UsessUser::CheckPassword(const char* passwd)
-{
+bool UsessUser::CheckPassword(const char* passwd) {
   // length check.
   if (strlen(passwd) > conf_.data().passwd_length) return false;
   // character code check.
@@ -291,11 +281,10 @@ bool UsessUser::CheckPassword(const char* passwd)
  * @return  USESS_E_OK             : Success.
  *          USESS_E_INVALID_USER   : Invalid user name.
  *          USESS_E_NG             : Error.
- * @note    
+ * @note
  */
 usess_ipc_err_e UsessUser::SetUserData(
-          const mgmtdb::mgmtdb_variant_v& exec_value)
-{
+          const mgmtdb::mgmtdb_variant_v& exec_value) {
   // Error, if count of columns and exec_value.size() is not equal.
   RETURN_IF((exec_value.size() != 1 || exec_value[0].size() != 4),
     USESS_E_NG, "abnormal column counts. count=%" PFC_PFMT_SIZE_T ", %"
@@ -314,5 +303,5 @@ usess_ipc_err_e UsessUser::SetUserData(
   return USESS_E_OK;
 }
 
-}  // namespace so
 }  // namespace usess
+}  // namespace unc

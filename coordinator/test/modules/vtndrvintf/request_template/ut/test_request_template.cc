@@ -54,7 +54,7 @@ TEST(KT_VTN, Validate_Request1) {
   delete vtn_req;
   ctrl_int = NULL;
   vtn_req = NULL;
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret_val, UNC_DRV_RC_ERR_GENERIC);
 }
 
 
@@ -95,7 +95,7 @@ TEST(KT_VTN, Validate_Request12) {
   ctrl_int = NULL;
   vtn_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret_val, UNC_DRV_RC_ERR_GENERIC);
 }
 
 TEST(KT_VTN, Validate_Request13) {
@@ -137,7 +137,7 @@ TEST(KT_VTN, Validate_Request13) {
   ctrl_int = NULL;
   vtn_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret_val, UNC_DRV_RC_ERR_GENERIC);
 }
 
 
@@ -179,7 +179,7 @@ TEST(KT_VTN, Validate_Request14) {
   delete vtn_req;
   ctrl_int = NULL;
   vtn_req = NULL;
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret_val, UNC_DRV_RC_ERR_GENERIC);
 }
 
 TEST(KT_VTN, Validate_Request15) {
@@ -223,7 +223,7 @@ TEST(KT_VTN, Validate_Request15) {
   ctrl_int = NULL;
   vtn_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret_val, UNC_DRV_RC_ERR_GENERIC);
 }
 
 TEST(KT_VTN, Validate_Request16) {
@@ -268,7 +268,7 @@ TEST(KT_VTN, Validate_Request16) {
   ctrl_int = NULL;
   vtn_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret_val, UNC_DRV_RC_ERR_GENERIC);
 }
 
 TEST(KT_VTN, Validate_Request17) {
@@ -312,7 +312,7 @@ TEST(KT_VTN, Validate_Request17) {
   ctrl_int = NULL;
   vtn_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret_val, UNC_DRV_RC_ERR_GENERIC);
 }
 
 
@@ -360,7 +360,7 @@ TEST(KT_VTN, Validate_Request18) {
   ctrl_int = NULL;
   vtn_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret_val, UNC_DRV_RC_ERR_GENERIC);
 }
 
 
@@ -410,7 +410,7 @@ TEST(KT_VTN, Validate_Request19) {
   ctrl_int = NULL;
   vtn_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret_val, UNC_DRV_RC_ERR_GENERIC);
 }
 
 TEST(KT_VTN, Validate_Request191) {
@@ -459,7 +459,7 @@ TEST(KT_VTN, Validate_Request191) {
   ctrl_int = NULL;
   vtn_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret_val, UNC_DRV_RC_ERR_GENERIC);
 }
 
 TEST(KT_VTN, Validate_Request192) {
@@ -509,7 +509,7 @@ TEST(KT_VTN, Validate_Request192) {
   ctrl_int = NULL;
   vtn_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret_val, UNC_DRV_RC_ERR_GENERIC);
 }
 
 TEST(KT_VTN, Validate_Request193) {
@@ -560,7 +560,7 @@ TEST(KT_VTN, Validate_Request193) {
   ctrl_int = NULL;
   vtn_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret_val, UNC_DRV_RC_ERR_GENERIC);
 }
 
 TEST(KT_VTN, Validate_Request194) {
@@ -612,7 +612,7 @@ TEST(KT_VTN, Validate_Request194) {
   ctrl_int = NULL;
   vtn_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 
@@ -666,7 +666,7 @@ TEST(KT_VTN, Validate_Request2) {
   ctrl_int = NULL;
   vtn_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 TEST(KT_VTN, Validate_Request3) {
@@ -718,7 +718,7 @@ TEST(KT_VTN, Validate_Request3) {
   ctrl_int = NULL;
   vtn_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 TEST(KT_VBR, Validate_Request1) {
@@ -770,7 +770,7 @@ TEST(KT_VBR, Validate_Request1) {
   ctrl_int = NULL;
   vbr_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 TEST(KT_VBR, Validate_Request2) {
@@ -822,7 +822,7 @@ TEST(KT_VBR, Validate_Request2) {
   ctrl_int = NULL;
   vbr_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 TEST(KT_VBR, Validate_Request3) {
@@ -874,7 +874,7 @@ TEST(KT_VBR, Validate_Request3) {
   ctrl_int = NULL;
   vbr_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 TEST(KT_VBR_IF, Validate_Request1) {
@@ -927,7 +927,7 @@ TEST(KT_VBR_IF, Validate_Request1) {
   ctrl_int = NULL;
   vbrif_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 TEST(KT_VBR_IF, Validate_Request2) {
@@ -979,7 +979,7 @@ TEST(KT_VBR_IF, Validate_Request2) {
   ctrl_int = NULL;
   vbrif_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 TEST(KT_VBR_IF, Validate_Request3) {
@@ -1031,7 +1031,7 @@ TEST(KT_VBR_IF, Validate_Request3) {
   ctrl_int = NULL;
   vbrif_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 
@@ -1081,7 +1081,7 @@ TEST(KT_CTR, Validate_Request1) {
   ctrl_int = NULL;
   ctr_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret_val, UNC_DRV_RC_ERR_GENERIC);
 }
 
 TEST(KT_CTR, Validate_Request11) {
@@ -1132,7 +1132,7 @@ TEST(KT_CTR, Validate_Request11) {
   ctrl_int = NULL;
   ctr_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret_val, UNC_DRV_RC_ERR_GENERIC);
 }
 
 TEST(KT_CTR, Validate_Request12) {
@@ -1187,7 +1187,7 @@ TEST(KT_CTR, Validate_Request12) {
   ctrl_int = NULL;
   ctr_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 TEST(KT_CTR, Validate_Request13) {
@@ -1242,7 +1242,7 @@ TEST(KT_CTR, Validate_Request13) {
   ctrl_int = NULL;
   ctr_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 TEST(KT_CTR, Validate_Request2) {
   unc::driver::kt_handler_map kt_map;
@@ -1295,7 +1295,7 @@ TEST(KT_CTR, Validate_Request2) {
   delete ctr_req;
   ctrl_int = NULL;
   ctr_req = NULL;
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 TEST(KT_CTR, Validate_Request21) {
@@ -1350,7 +1350,7 @@ TEST(KT_CTR, Validate_Request21) {
   delete ctr_req;
   ctrl_int = NULL;
   ctr_req = NULL;
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 
@@ -1405,7 +1405,7 @@ TEST(KT_CTR, Validate_Request3) {
   delete ctr_req;
   ctrl_int = NULL;
   ctr_req = NULL;
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 TEST(KT_CTR, Validate_Request31) {
@@ -1460,7 +1460,7 @@ TEST(KT_CTR, Validate_Request31) {
   delete ctr_req;
   ctrl_int = NULL;
   ctr_req = NULL;
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 TEST(KT_CTR, Validate_Request32) {
@@ -1515,7 +1515,7 @@ TEST(KT_CTR, Validate_Request32) {
   delete ctr_req;
   ctrl_int = NULL;
   ctr_req = NULL;
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 TEST(KT_CTR, Validate_Request4) {
@@ -1570,7 +1570,7 @@ TEST(KT_CTR, Validate_Request4) {
   delete ctr_req;
   ctrl_int = NULL;
   ctr_req = NULL;
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 TEST(GLOBAL_CREATE, execute_cmd1) {
@@ -1606,7 +1606,7 @@ TEST(GLOBAL_CREATE, execute_cmd1) {
     delete cfgptr;
     cfgptr = NULL;
   }
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 TEST(GLOBAL_DELETE, execute_cmd2) {
@@ -1642,7 +1642,7 @@ TEST(GLOBAL_DELETE, execute_cmd2) {
     delete cfgptr;
     cfgptr = NULL;
   }
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 TEST(GLOBAL_UPDATE, execute_cmd3) {
@@ -1678,7 +1678,7 @@ TEST(GLOBAL_UPDATE, execute_cmd3) {
     delete cfgptr;
     cfgptr = NULL;
   }
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 TEST(GLOBAL_DEFAULT, execute_cmd4) {
@@ -1714,7 +1714,7 @@ TEST(GLOBAL_DEFAULT, execute_cmd4) {
     delete cfgptr;
     cfgptr = NULL;
   }
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_INVALID_OPERATION);
+  EXPECT_EQ(ret_val, UNC_DRV_RC_INVALID_OPERATION);
 }
 
 
@@ -1771,7 +1771,7 @@ TEST(KT_ROOT, Validate_Request1) {
   delete root_req;
   ctrl_int = NULL;
   root_req = NULL;
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 
 TEST(KT_ROOT, Validate_Request2) {
@@ -1825,7 +1825,7 @@ TEST(KT_ROOT, Validate_Request2) {
   delete root_req;
   ctrl_int = NULL;
   root_req = NULL;
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret_val, UNC_DRV_RC_ERR_GENERIC);
 }
 
 TEST(KT_ROOT, Validate_Request3) {
@@ -1876,7 +1876,7 @@ TEST(KT_ROOT, Validate_Request3) {
   delete root_req;
   ctrl_int = NULL;
   root_req = NULL;
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret_val, UNC_DRV_RC_ERR_GENERIC);
 }
 
 TEST(KT_ROOT, Validate_Request4) {
@@ -1927,7 +1927,7 @@ TEST(KT_ROOT, Validate_Request4) {
   delete root_req;
   ctrl_int = NULL;
   root_req = NULL;
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret_val, UNC_DRV_RC_ERR_GENERIC);
 }
 /*
 TEST(KT_VTN, ExecuteControllerStatusDown) {
@@ -1980,6 +1980,6 @@ TEST(KT_VTN, ExecuteControllerStatusDown) {
   ctrl_int = NULL;
   vtn_req = NULL;
 
-  EXPECT_EQ(ret_val, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
 */

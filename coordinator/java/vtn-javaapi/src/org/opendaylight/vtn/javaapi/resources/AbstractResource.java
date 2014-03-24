@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -9,6 +9,7 @@
 package org.opendaylight.vtn.javaapi.resources;
 
 import java.lang.reflect.Method;
+import java.sql.Connection;
 import java.util.List;
 
 import com.google.gson.JsonArray;
@@ -17,7 +18,6 @@ import org.opendaylight.vtn.core.ipc.ClientSession;
 import org.opendaylight.vtn.core.ipc.IpcDataUnit;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.VtnServiceResource;
-import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.connection.IpcConnPool;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
@@ -26,14 +26,12 @@ import org.opendaylight.vtn.javaapi.exception.VtnServiceExceptionHandler;
 import org.opendaylight.vtn.javaapi.init.VtnServiceConfiguration;
 import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.javaapi.ipc.IpcRequestProcessor;
-import org.opendaylight.vtn.javaapi.ipc.conversion.IpcDataUnitWrapper;
 import org.opendaylight.vtn.javaapi.ipc.conversion.IpcLogicalResponseFactory;
 import org.opendaylight.vtn.javaapi.ipc.conversion.IpcPhysicalResponseFactory;
 import org.opendaylight.vtn.javaapi.ipc.enums.IpcRequestPacketEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
-import org.opendaylight.vtn.javaapi.ipc.enums.UncOption2Enum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncSYSMGEnums;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncSessionEnums;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncTCEnums;
@@ -55,6 +53,9 @@ public abstract class AbstractResource implements VtnServiceResource {
 	private long sessionID = VtnServiceConsts.INVALID_SESSIONID;
 	private IpcConnPool connPool;
 
+	/* OpenStack DB Connection instance */
+	Connection openStackConnection;
+
 	public AbstractResource() {
 	}
 
@@ -72,8 +73,7 @@ public abstract class AbstractResource implements VtnServiceResource {
 	@Override
 	public int delete() throws VtnServiceException {
 		LOG.trace("Return from AbstractResource#delete");
-		createErrorInfo(UncResultCode.UNC_CLIENT_ERROR.getValue(),
-				VtnServiceConsts.RESOURCE_METHOD_INCORRECT);
+		createErrorInfo(UncResultCode.UNC_METHOD_NOT_ALLOWED.getValue());
 		return UncResultCode.UNC_CLIENT_ERROR.getValue();
 	}
 
@@ -83,8 +83,7 @@ public abstract class AbstractResource implements VtnServiceResource {
 	@Override
 	public int delete(final JsonObject queryString) throws VtnServiceException {
 		LOG.trace("Return from AbstractResource#delete");
-		createErrorInfo(UncResultCode.UNC_CLIENT_ERROR.getValue(),
-				VtnServiceConsts.RESOURCE_METHOD_INCORRECT);
+		createErrorInfo(UncResultCode.UNC_METHOD_NOT_ALLOWED.getValue());
 		return UncResultCode.UNC_CLIENT_ERROR.getValue();
 	}
 
@@ -94,8 +93,7 @@ public abstract class AbstractResource implements VtnServiceResource {
 	@Override
 	public int get() throws VtnServiceException {
 		LOG.trace("Return from AbstractResource#get");
-		createErrorInfo(UncResultCode.UNC_CLIENT_ERROR.getValue(),
-				VtnServiceConsts.RESOURCE_METHOD_INCORRECT);
+		createErrorInfo(UncResultCode.UNC_METHOD_NOT_ALLOWED.getValue());
 		return UncResultCode.UNC_CLIENT_ERROR.getValue();
 	}
 
@@ -105,8 +103,7 @@ public abstract class AbstractResource implements VtnServiceResource {
 	@Override
 	public int get(final JsonObject queryString) throws VtnServiceException {
 		LOG.trace("Return from AbstractResource#get");
-		createErrorInfo(UncResultCode.UNC_CLIENT_ERROR.getValue(),
-				VtnServiceConsts.RESOURCE_METHOD_INCORRECT);
+		createErrorInfo(UncResultCode.UNC_METHOD_NOT_ALLOWED.getValue());
 		return UncResultCode.UNC_CLIENT_ERROR.getValue();
 	}
 
@@ -136,8 +133,7 @@ public abstract class AbstractResource implements VtnServiceResource {
 	@Override
 	public int post(final JsonObject requestBody) throws VtnServiceException {
 		LOG.trace("Return from AbstractResource#post");
-		createErrorInfo(UncResultCode.UNC_CLIENT_ERROR.getValue(),
-				VtnServiceConsts.RESOURCE_METHOD_INCORRECT);
+		createErrorInfo(UncResultCode.UNC_METHOD_NOT_ALLOWED.getValue());
 		return UncResultCode.UNC_CLIENT_ERROR.getValue();
 	}
 
@@ -147,8 +143,7 @@ public abstract class AbstractResource implements VtnServiceResource {
 	@Override
 	public int put(final JsonObject requestBody) throws VtnServiceException {
 		LOG.trace("Return from AbstractResource#put");
-		createErrorInfo(UncResultCode.UNC_CLIENT_ERROR.getValue(),
-				VtnServiceConsts.RESOURCE_METHOD_INCORRECT);
+		createErrorInfo(UncResultCode.UNC_METHOD_NOT_ALLOWED.getValue());
 		return UncResultCode.UNC_CLIENT_ERROR.getValue();
 	}
 
@@ -259,6 +254,33 @@ public abstract class AbstractResource implements VtnServiceResource {
 				.getValue()) {
 			error.addProperty(VtnServiceJsonConsts.MSG,
 					UncCommonEnum.UncResultCode.UNC_CLIENT_ERROR.getMessage());
+		} else if (code == UncCommonEnum.UncResultCode.UNC_INVALID_ARGUMENT
+				.getValue()) {
+			error.addProperty(VtnServiceJsonConsts.MSG,
+					UncCommonEnum.UncResultCode.UNC_INVALID_ARGUMENT
+							.getMessage());
+		} else if (code == UncCommonEnum.UncResultCode.UNC_INVALID_FORMAT
+				.getValue()) {
+			error.addProperty(VtnServiceJsonConsts.MSG,
+					UncCommonEnum.UncResultCode.UNC_INVALID_FORMAT.getMessage());
+		} else if (code == UncCommonEnum.UncResultCode.UNC_INTERNAL_SERVER_ERROR
+				.getValue()) {
+			error.addProperty(VtnServiceJsonConsts.MSG,
+					UncCommonEnum.UncResultCode.UNC_INTERNAL_SERVER_ERROR
+							.getMessage());
+		} else if (code == UncCommonEnum.UncResultCode.UNC_CTRL_NOT_FOUND
+				.getValue()) {
+			error.addProperty(VtnServiceJsonConsts.MSG,
+					UncCommonEnum.UncResultCode.UNC_CTRL_NOT_FOUND.getMessage());
+		} else if (code == UncCommonEnum.UncResultCode.UNC_CONFLICT_FOUND
+				.getValue()) {
+			error.addProperty(VtnServiceJsonConsts.MSG,
+					UncCommonEnum.UncResultCode.UNC_CONFLICT_FOUND.getMessage());
+		} else if (code == UncCommonEnum.UncResultCode.UNC_METHOD_NOT_ALLOWED
+				.getValue()) {
+			error.addProperty(VtnServiceJsonConsts.MSG,
+					UncCommonEnum.UncResultCode.UNC_METHOD_NOT_ALLOWED
+							.getMessage());
 		} else {
 			error.addProperty(VtnServiceJsonConsts.MSG, "Invalid error code");
 		}
@@ -273,7 +295,7 @@ public abstract class AbstractResource implements VtnServiceResource {
 	 * 
 	 * @param errorMessage
 	 */
-	public void createErrorInfo(int errorCode, String errorMessage) {
+	public void createErrorInfo(final int errorCode, final String errorMessage) {
 		LOG.trace("Complete AbstractResource#createErrorInfo");
 		final JsonObject errorJsonObject = new JsonObject();
 		final JsonObject error = new JsonObject();
@@ -289,7 +311,8 @@ public abstract class AbstractResource implements VtnServiceResource {
 	 * 
 	 * @param errorMessage
 	 */
-	public void createSessionErrorInfo(UncSessionEnums.UsessIpcErrE errorEnum) {
+	public void createSessionErrorInfo(
+			final UncSessionEnums.UsessIpcErrE errorEnum) {
 		LOG.trace("Complete AbstractResource#createSessionErrorInfo");
 		final JsonObject errorJsonObject = new JsonObject();
 		final JsonObject error = new JsonObject();
@@ -305,7 +328,7 @@ public abstract class AbstractResource implements VtnServiceResource {
 	 * 
 	 * @param errorMessage
 	 */
-	public void createTcErrorInfo(UncTCEnums.OperationStatus errorEnum) {
+	public void createTcErrorInfo(final UncTCEnums.OperationStatus errorEnum) {
 		LOG.trace("Complete AbstractResource#createTcErrorInfo");
 		final JsonObject errorJsonObject = new JsonObject();
 		final JsonObject error = new JsonObject();
@@ -321,7 +344,8 @@ public abstract class AbstractResource implements VtnServiceResource {
 	 * 
 	 * @param errorMessage
 	 */
-	public void createNoMgErrorInfo(UncSYSMGEnums.NodeIpcErrorT errorEnum) {
+	public void
+			createNoMgErrorInfo(final UncSYSMGEnums.NodeIpcErrorT errorEnum) {
 		LOG.trace("Complete AbstractResource#createNoMgErrorInfo");
 		final JsonObject errorJsonObject = new JsonObject();
 		final JsonObject error = new JsonObject();
@@ -369,20 +393,21 @@ public abstract class AbstractResource implements VtnServiceResource {
 	 * @throws VtnServiceException
 	 */
 	public JsonObject getResponseJsonArrayPhysical(
-			final JsonObject requestBody, IpcRequestProcessor requestProcessor,
-			Object responseGenerator, JsonArray responseArray,
-			String JsonArrayName, String IndexName,
-			IpcRequestPacketEnum requestPackeEnumName,
-			List<String> uriParameters, String methodName)
+			final JsonObject requestBody,
+			final IpcRequestProcessor requestProcessor,
+			final Object responseGenerator, final JsonArray responseArray,
+			final String JsonArrayName, final String IndexName,
+			final IpcRequestPacketEnum requestPackeEnumName,
+			final List<String> uriParameters, final String methodName)
 			throws VtnServiceException {
 		// session reset
 		requestProcessor.setServiceInfo(UncUPPLEnums.UPPL_IPC_SVC_NAME,
 				UncUPPLEnums.ServiceID.UPPL_SVC_READREQ.ordinal());
 		int status = ClientSession.RESP_FATAL;
 		int memberIndex = 0;
-		VtnServiceConfiguration configuration = VtnServiceInitManager
+		final VtnServiceConfiguration configuration = VtnServiceInitManager
 				.getConfigurationMap();
-		int max_rep_count = Integer.parseInt(configuration
+		final int max_rep_count = Integer.parseInt(configuration
 				.getConfigValue(VtnServiceConsts.MAX_REP_DEFAULT));
 		memberIndex = responseArray.size();
 		if (memberIndex != 0) {
@@ -406,13 +431,6 @@ public abstract class AbstractResource implements VtnServiceResource {
 
 				requestProcessor.createIpcRequestPacket(requestPackeEnumName,
 						requestBody, uriParameters);
-				// for testing only
-				requestProcessor
-						.getRequestPacket()
-						.setOption2(
-								IpcDataUnitWrapper
-										.setIpcUint32Value(UncOption2Enum.UNC_OPT2_NEIGHBOR
-												.ordinal()));
 
 				status = requestProcessor.processIpcRequest();
 				if (status == ClientSession.RESP_FATAL) {
@@ -462,7 +480,7 @@ public abstract class AbstractResource implements VtnServiceResource {
 				memberIndex = memberArray.size();
 			}
 		}
-		JsonObject root = new JsonObject();
+		final JsonObject root = new JsonObject();
 		root.add(JsonArrayName, responseArray);
 		return root;
 	}
@@ -484,19 +502,20 @@ public abstract class AbstractResource implements VtnServiceResource {
 	 * @throws VtnServiceException
 	 */
 	public JsonObject getResponseJsonArrayLogical(final JsonObject requestBody,
-			IpcRequestProcessor requestProcessor, Object responseGenerator,
-			JsonArray responseArray, String JsonArrayName, String IndexName,
-			IpcRequestPacketEnum requestPackeEnumName,
-			List<String> uriParameters, String methodName)
+			final IpcRequestProcessor requestProcessor,
+			final Object responseGenerator, final JsonArray responseArray,
+			final String JsonArrayName, final String IndexName,
+			final IpcRequestPacketEnum requestPackeEnumName,
+			final List<String> uriParameters, final String methodName)
 			throws VtnServiceException {
 		// session reset
 		requestProcessor.setServiceInfo(UncUPLLEnums.UPLL_IPC_SERVICE_NAME,
 				UncUPLLEnums.ServiceID.UPLL_READ_SVC_ID.ordinal());
 		int status = ClientSession.RESP_FATAL;
 		int memberIndex = 0;
-		VtnServiceConfiguration configuration = VtnServiceInitManager
+		final VtnServiceConfiguration configuration = VtnServiceInitManager
 				.getConfigurationMap();
-		int max_rep_count = Integer.parseInt(configuration
+		final int max_rep_count = Integer.parseInt(configuration
 				.getConfigValue(VtnServiceConsts.MAX_REP_DEFAULT));
 		memberIndex = responseArray.size();
 		if (memberIndex != 0) {
@@ -520,13 +539,6 @@ public abstract class AbstractResource implements VtnServiceResource {
 
 				requestProcessor.createIpcRequestPacket(requestPackeEnumName,
 						requestBody, uriParameters);
-				// for testing only
-				requestProcessor
-						.getRequestPacket()
-						.setOption2(
-								IpcDataUnitWrapper
-										.setIpcUint32Value(UncOption2Enum.UNC_OPT2_NEIGHBOR
-												.ordinal()));
 
 				status = requestProcessor.processIpcRequest();
 				if (status == ClientSession.RESP_FATAL) {
@@ -576,8 +588,71 @@ public abstract class AbstractResource implements VtnServiceResource {
 				memberIndex = memberArray.size();
 			}
 		}
-		JsonObject root = new JsonObject();
+		final JsonObject root = new JsonObject();
 		root.add(JsonArrayName, responseArray);
 		return root;
+	}
+
+	/**
+	 * 
+	 * @param errorMassage
+	 * @param resourceName
+	 * @param resourceValue
+	 * @return
+	 */
+	public String getCutomErrorMessage(String errorMassage,
+			String resourceName, String resourceValue) {
+		LOG.trace("Start AbstractResource#getConflictMessage()");
+		StringBuilder errorMessage = new StringBuilder();
+		errorMessage.append(errorMassage);
+		errorMessage.append(VtnServiceConsts.OPEN_SMALL_BRACES);
+		errorMessage.append(resourceName);
+		errorMessage.append(VtnServiceConsts.COLON);
+		errorMessage.append(resourceValue);
+		errorMessage.append(VtnServiceConsts.CLOSE_SMALL_BRACES);
+
+		LOG.trace("Complete AbstractResource#getConflictMessage()");
+		return errorMessage.toString();
+	}
+
+	/**
+	 * Getter for openStackConnection
+	 * 
+	 * @return
+	 */
+	public Connection getOpenStackConnection() {
+		return openStackConnection;
+	}
+
+	/**
+	 * Setter for openStackConnection
+	 * 
+	 * @param openStackConnection
+	 */
+	public void setOpenStackConnection(Connection openStackConnection) {
+		this.openStackConnection = openStackConnection;
+	}
+
+	/**
+	 * Check for 400, 404, 409 and 503 errors returns from platform layer
+	 * components
+	 * 
+	 * @param info
+	 */
+	protected void checkForSpecificErrors(JsonObject info) {
+		if (info != null && !info.isJsonNull()
+				&& info.has(VtnServiceJsonConsts.ERROR)) {
+			int errorCode = info.get(VtnServiceJsonConsts.ERROR)
+					.getAsJsonObject().get(VtnServiceJsonConsts.CODE)
+					.getAsInt();
+			if (errorCode == UncResultCode.UNC_INVALID_FORMAT.getValue()
+					|| errorCode == UncResultCode.UNC_NOT_FOUND.getValue()
+					|| errorCode == UncResultCode.UNC_CONFLICT_FOUND.getValue()
+					|| errorCode == UncResultCode.UNC_TOO_MANY_ENTITIES_FOUND
+							.getValue()
+					|| errorCode == UncResultCode.UNC_SERVICE_UNAVILABLE
+							.getValue())
+				createErrorInfo(errorCode);
+		}
 	}
 }

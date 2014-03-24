@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -85,7 +85,7 @@ upll_rc_t CtrlrMgr::Add(const Ctrlr &ctrlr,
 /**
  * @brief Delete controller in both candidate and running
  *
- * @param ctrlr_name[in]      Controller name 
+ * @param ctrlr_name[in]      Controller name
  *
  * @retval  UPLL_RC_SUCCESS, if controller deleted
  * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE, if entry not found
@@ -105,7 +105,7 @@ upll_rc_t CtrlrMgr::Delete(const std::string &ctrlr_name,
   for (std::list<Ctrlr*>::iterator it = ctrlrs_.begin();
        it != ctrlrs_.end(); ++it) {
     if ((*it)->name_.compare(ctrlr_name) == 0 &&
-      (*it)->datatype_ == datatype) {
+        (*it)->datatype_ == datatype) {
       ctrlr = *it;
       ctrlrs_.erase(it);
       delete ctrlr;
@@ -128,7 +128,7 @@ upll_rc_t CtrlrMgr::Delete(const std::string &ctrlr_name,
 /**
  * @brief Update controller version
  *
- * @param ctrlr_name[in]      Controller name 
+ * @param ctrlr_name[in]      Controller name
  * @param ctrlr_version[in]   Controller version
  *
  * @retval  UPLL_RC_SUCCESS, if controller updated
@@ -169,8 +169,8 @@ upll_rc_t CtrlrMgr::UpdateVersion(const std::string &ctrlr_name,
 /**
  * @brief Update audit_done flag in Running
  *
- * @param ctrlr_name[in]      Controller name 
- * @param audit_done[in]      Audit Done flag 
+ * @param ctrlr_name[in]      Controller name
+ * @param audit_done[in]      Audit Done flag
  *
  * @retval  UPLL_RC_SUCCESS, if controller updated
  * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE, if entry not found
@@ -207,8 +207,8 @@ upll_rc_t CtrlrMgr::UpdateAuditDone(const std::string &ctrlr_name,
 /**
  * @brief Update config_done flag in Running
  *
- * @param ctrlr_name[in]      Controller name 
- * @param config_done[in]     Config Done flag 
+ * @param ctrlr_name[in]      Controller name
+ * @param config_done[in]     Config Done flag
  *
  * @retval  UPLL_RC_SUCCESS, if controller updated
  * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE, if entry not found
@@ -245,8 +245,8 @@ upll_rc_t CtrlrMgr::UpdateConfigDone(const std::string &ctrlr_name,
 /**
  * @brief Update invalid_config flag in Running
  *
- * @param ctrlr_name[in]      Controller name 
- * @param invalid_config[in]  Invalid Config flag 
+ * @param ctrlr_name[in]      Controller name
+ * @param invalid_config[in]  Invalid Config flag
  *
  * @retval  UPLL_RC_SUCCESS, if controller updated
  * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE, if entry not found
@@ -359,7 +359,7 @@ bool CtrlrMgr::GetCtrlrTypeAndVersion(const char *ctrlr_name,
  *
  * @param ctrlr_name[in]  Controller Name
  *
- * @return  
+ * @return
  */
 upll_rc_t CtrlrMgr::IsConfigInvalid(const char *ctrlr_name,
                                     bool *config_invalid) {
@@ -389,8 +389,8 @@ upll_rc_t CtrlrMgr::IsConfigInvalid(const char *ctrlr_name,
  *
  * @param ctrlr_name[in]  Controller Name
  *
- * @return  
- *          
+ * @return
+ *
  */
 upll_rc_t CtrlrMgr::IsConfigDone(const char *ctrlr_name, bool *config_done) {
   pfc::core::ScopedMutex lock(ctrlr_mutex_);
@@ -447,7 +447,7 @@ upll_rc_t CtrlrMgr::IsAuditDone(const char *ctrlr_name, bool *audit_done) {
 /**
  * @brief Get Name of the first controller in the list
  *
- * @param[in]  datatype      Datatype in which to be read 
+ * @param[in]  datatype      Datatype in which to be read
  * @param[out] first_name    Name of the first controller
  *
  * @return     UPLL_RC_SUCCES, when name is read from the list
@@ -485,9 +485,9 @@ upll_rc_t CtrlrMgr::GetFirstCtrlrName(
 /**
  * @brief Get Name of the next controller in the list
  *
- * @param[in]  name          Name of the input controller 
- * @param[in]  datatype      Datatype in which to be read 
- * @param[out] next_name     Name of the next controller 
+ * @param[in]  name          Name of the input controller
+ * @param[in]  datatype      Datatype in which to be read
+ * @param[out] next_name     Name of the next controller
  *
  * @return     UPLL_RC_SUCCES, when name is read from the list
  *             UPLL_RC_ERR_NO_SUCH_INSTANCE when there is no matching entry
@@ -498,7 +498,7 @@ upll_rc_t CtrlrMgr::GetNextCtrlrName(
     std::string *next_name) {
   pfc::core::ScopedMutex lock(ctrlr_mutex_);
   UPLL_LOG_TRACE("Input Ctrlr (%s) next Ctrlr (%s) ",
-                     in_name.c_str(), (*next_name).c_str());
+                 in_name.c_str(), (*next_name).c_str());
   upll_keytype_datatype_t mapped_dt;
   mapped_dt = MapDataType(datatype);
   if (next_name == NULL) {
@@ -515,7 +515,7 @@ upll_rc_t CtrlrMgr::GetNextCtrlrName(
       continue;
     if ((*it)->name_.compare(in_name) > 0) {
       UPLL_LOG_DEBUG("ctlr in list (%s) and input ctrlr (%s) are same",
-       (*it)->name_.c_str(), in_name.c_str());
+                     (*it)->name_.c_str(), in_name.c_str());
       *next_name = (*it)->name_;
       UPLL_LOG_DEBUG("next_name Ctrlr (%s)", (*next_name).c_str());
       return UPLL_RC_SUCCESS;
@@ -584,15 +584,15 @@ void CtrlrMgr::PrintCtrlrList() {
     return;
   }
   ss << "\n***********************************************************"
-     << "name, type, version, audit_done, config_done, invalid_config,"
-     << " datatype\n"
-     << "\n***********************************************************";
+      << "name, type, version, audit_done, config_done, invalid_config,"
+      << " datatype\n"
+      << "\n***********************************************************";
   for (std::list<Ctrlr*>::iterator it = ctrlrs_.begin();
        it != ctrlrs_.end(); ++it) {
     ss << (*it)->name_.c_str() << ", " << (*it)->type_ << ", "
-       << (*it)->version_.c_str() << ", " << (*it)->audit_done_ << ", "
-       << (*it)->config_done_ << ", " << (*it)->invalid_config_ << ", "
-       << (*it)->datatype_ << "\n";
+        << (*it)->version_.c_str() << ", " << (*it)->audit_done_ << ", "
+        << (*it)->config_done_ << ", " << (*it)->invalid_config_ << ", "
+        << (*it)->datatype_ << "\n";
   }
   UPLL_LOG_DEBUG("\n%s", ss.str().c_str());
   ss << "\n***********************************************************";

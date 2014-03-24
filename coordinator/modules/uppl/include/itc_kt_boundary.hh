@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -30,7 +30,7 @@ class Kt_Boundary: public Kt_Base {
 
     ~Kt_Boundary();
 
-    UpplReturnCode Create(OdbcmConnectionHandler *db_conn,
+    UncRespCode Create(OdbcmConnectionHandler *db_conn,
                           uint32_t session_id,
                           uint32_t configuration_id,
                           void* key_struct,
@@ -38,13 +38,13 @@ class Kt_Boundary: public Kt_Base {
                           uint32_t data_type,
                           ServerSession & sess);
 
-    UpplReturnCode CreateKeyInstance(OdbcmConnectionHandler *db_conn,
+    UncRespCode CreateKeyInstance(OdbcmConnectionHandler *db_conn,
                                      void* key_struct,
                                      void* val_struct,
                                      uint32_t data_type,
                                      uint32_t key_type);
 
-    UpplReturnCode Update(OdbcmConnectionHandler *db_conn,
+    UncRespCode Update(OdbcmConnectionHandler *db_conn,
                           uint32_t session_id,
                           uint32_t configuration_id,
                           void* key_struct,
@@ -52,20 +52,20 @@ class Kt_Boundary: public Kt_Base {
                           uint32_t data_type,
                           ServerSession & sess);
 
-    UpplReturnCode ReadInternal(OdbcmConnectionHandler *db_conn,
+    UncRespCode ReadInternal(OdbcmConnectionHandler *db_conn,
                                 vector<void *> &boundary_key,
                                 vector<void *> &boundary_val,
                                 uint32_t data_type,
                                 uint32_t operation_type);
 
-    UpplReturnCode Delete(OdbcmConnectionHandler *db_conn,
+    UncRespCode Delete(OdbcmConnectionHandler *db_conn,
                           uint32_t session_id,
                           uint32_t configuration_id,
                           void* key_struct,
                           uint32_t data_type,
                           ServerSession & sess);
 
-    UpplReturnCode ReadBulk(OdbcmConnectionHandler *db_conn,
+    UncRespCode ReadBulk(OdbcmConnectionHandler *db_conn,
                             void* key_struct,
                             uint32_t data_type,
                             uint32_t &max_repetition_count,
@@ -74,27 +74,27 @@ class Kt_Boundary: public Kt_Base {
                             pfc_bool_t is_read_next,
                             ReadRequest *read_req);
 
-    UpplReturnCode PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
+    UncRespCode PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
                                            void* key_struct,
                                            void* val_struct,
                                            uint32_t operation,
                                            uint32_t data_type);
 
-    UpplReturnCode PerformSemanticValidation(OdbcmConnectionHandler *db_conn,
+    UncRespCode PerformSemanticValidation(OdbcmConnectionHandler *db_conn,
                                              void* key_struct,
                                              void* val_struct,
                                              uint32_t operation,
                                              uint32_t data_type);
 
-    UpplReturnCode GetModifiedRows(OdbcmConnectionHandler *db_conn,
+    UncRespCode GetModifiedRows(OdbcmConnectionHandler *db_conn,
                                    vector<void *> &key_struct,
                                    CsRowStatus row_status);
 
-    UpplReturnCode IsKeyExists(OdbcmConnectionHandler *db_conn,
+    UncRespCode IsKeyExists(OdbcmConnectionHandler *db_conn,
                                unc_keytype_datatype_t data_type,
                                const vector<string>& key_values);
 
-    UpplReturnCode HandleOperStatus(
+    UncRespCode HandleOperStatus(
         OdbcmConnectionHandler *db_conn,
         uint32_t data_type,
         void *key_struct,
@@ -137,7 +137,7 @@ class Kt_Boundary: public Kt_Base {
         vector<val_boundary_st_t> &vect_obj_val_boundary,
         uint32_t &max_rep_ct);
 
-    UpplReturnCode PerformRead(OdbcmConnectionHandler *db_conn,
+    UncRespCode PerformRead(OdbcmConnectionHandler *db_conn,
                                uint32_t session_id,
                                uint32_t configuration_id,
                                void* key_struct,
@@ -149,7 +149,7 @@ class Kt_Boundary: public Kt_Base {
                                uint32_t option2,
                                uint32_t max_rep_ct);
 
-    UpplReturnCode ReadBoundaryValFromDB(OdbcmConnectionHandler *db_conn,
+    UncRespCode ReadBoundaryValFromDB(OdbcmConnectionHandler *db_conn,
         void* key_struct,
         void* val_struct,
         uint32_t data_type,
@@ -159,10 +159,10 @@ class Kt_Boundary: public Kt_Base {
         vector<val_boundary_st_t> &vect_val_boundary_st,
         pfc_bool_t is_state = PFC_FALSE);
 
-    UpplReturnCode SendSemanticRequestToUPLL(void* key_struct,
+    UncRespCode SendSemanticRequestToUPLL(void* key_struct,
                                              uint32_t data_type);
 
-    UpplReturnCode ReadBulkInternal(OdbcmConnectionHandler *db_conn,
+    UncRespCode ReadBulkInternal(OdbcmConnectionHandler *db_conn,
         void* key_struct,
         void* val_struct,
         uint32_t data_type,
@@ -170,12 +170,12 @@ class Kt_Boundary: public Kt_Base {
         vector<key_boundary_t> &vect_key_boundary,
         vector<val_boundary_st_t> &vect_val_boundary);
 
-    UpplReturnCode SetOperStatus(OdbcmConnectionHandler *db_conn,
+    UncRespCode SetOperStatus(OdbcmConnectionHandler *db_conn,
                                  uint32_t data_type,
                                  void *key_struct,
                                  void* val_struct,
                                  UpplBoundaryOperStatus oper_status);
-    UpplReturnCode GetBoundaryValidFlag(OdbcmConnectionHandler *db_conn,
+    UncRespCode GetBoundaryValidFlag(OdbcmConnectionHandler *db_conn,
         void *key_struct,
         val_boundary_st_t &val_boundary_valid_st,
         uint32_t data_type);
@@ -184,24 +184,24 @@ class Kt_Boundary: public Kt_Base {
                          val_boundary_t &obj_val_boundary);
     void FrameCsAttrValue(string attr_value,
                           val_boundary_t &obj_val_boundary);
-    UpplReturnCode ValidateSiblingFiltering(unsigned int ctr1_valid_val,
+    UncRespCode ValidateSiblingFiltering(unsigned int ctr1_valid_val,
                                             unsigned int ctr2_valid_val,
                                             unsigned int dmn1_valid_val,
                                             unsigned int dmn2_valid_val);
-    UpplReturnCode GetOperStatus(OdbcmConnectionHandler *db_conn,
+    UncRespCode GetOperStatus(OdbcmConnectionHandler *db_conn,
                                  uint32_t data_type,
                                  void* key_struct,
                                  uint8_t &oper_status);
-    UpplReturnCode SendOperStatusNotification(key_boundary_t bdry_key,
+    UncRespCode SendOperStatusNotification(key_boundary_t bdry_key,
                                               uint8_t old_oper_st,
                                               uint8_t new_oper_st);
-    UpplReturnCode GetAllBoundaryOperStatus(OdbcmConnectionHandler *db_conn,
+    UncRespCode GetAllBoundaryOperStatus(OdbcmConnectionHandler *db_conn,
                                             string controller_name,
                                             string domain_name,
                                             string logical_port_id,
                                             map<string, uint8_t> &bdry_notfn,
                                             uint32_t data_type);
-    UpplReturnCode CheckBoundaryExistence(
+    UncRespCode CheckBoundaryExistence(
         OdbcmConnectionHandler *db_conn,
         void *key_struct,
         void *val_struct,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -13,7 +13,6 @@ import java.util.List;
 
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 
-// TODO: Auto-generated Javadoc
 /**
  * The Class VtnServiceException.
  */
@@ -130,7 +129,7 @@ public class VtnServiceException extends Exception {
 	 * 
 	 * @return the code
 	 */
-	public String getCode() {
+	public final String getCode() {
 		final StringBuilder builder = new StringBuilder();
 
 		builder.append(VtnServiceConsts.OPEN_SQR_BRACKET);
@@ -153,7 +152,7 @@ public class VtnServiceException extends Exception {
 	 * @see java.lang.Throwable#toString()
 	 */
 	@Override
-	public String toString() {
+	public final String toString() {
 		final StringBuilder builder = new StringBuilder();
 
 		builder.append(getCode());

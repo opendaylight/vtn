@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -29,9 +29,6 @@ public class AutoSaveResourceValidator extends VtnServiceValidator {
 	/** The the instance of AbstractResource. */
 	private final AbstractResource resource;
 
-	/** The validator. */
-	final CommonValidator validator = new CommonValidator();
-
 	/**
 	 * Instantiates a new auto save resource validator.
 	 * 
@@ -48,15 +45,16 @@ public class AutoSaveResourceValidator extends VtnServiceValidator {
 	 * Auto-save Status API
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("AutoSaveResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of AutoSaveResourceValidator");
 		boolean isValid = false;
 		if (requestBody != null && VtnServiceConsts.PUT.equals(method)) {
 			isValid = validatePut(requestBody);
-		}else {
+		} else {
 			setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 			isValid = false;
 		}

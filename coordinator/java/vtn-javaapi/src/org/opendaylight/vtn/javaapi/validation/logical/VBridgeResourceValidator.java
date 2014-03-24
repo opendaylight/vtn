@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -29,7 +29,7 @@ public class VBridgeResourceValidator extends VtnServiceValidator {
 	private static final Logger LOG = Logger
 			.getLogger(VBridgeResourceValidator.class.getName());
 	private final AbstractResource resource;
-	final CommonValidator validator = new CommonValidator();
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new Vbridge resource validator.
@@ -47,7 +47,7 @@ public class VBridgeResourceValidator extends VtnServiceValidator {
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start VBridgeResourceValidator#validateUri()");
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.URI
@@ -88,8 +88,9 @@ public class VBridgeResourceValidator extends VtnServiceValidator {
 	 * Validate request json for get, put and post method of VBridge API
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start VBridgeResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of VBridgeResourceValidator");

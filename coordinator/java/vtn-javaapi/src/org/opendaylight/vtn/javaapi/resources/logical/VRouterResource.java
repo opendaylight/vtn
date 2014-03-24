@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -41,21 +41,24 @@ public class VRouterResource extends AbstractResource {
 	/** The vrt name. */
 	@UNCField("vrt_name")
 	private String vrtName;
+
 	/**
 	 * @return the vtnName
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
+
 	/**
 	 * @return the vrtName
 	 */
-	public String getVrtName() {
+	public final String getVrtName() {
 		return vrtName;
 	}
 
 	private static final Logger LOG = Logger.getLogger(VRouterResource.class
 			.getName());
+
 	/**
 	 * Instantiates a new VRouter resource.
 	 */
@@ -65,6 +68,7 @@ public class VRouterResource extends AbstractResource {
 		setValidator(new VRouterResourceValidator(this));
 		LOG.trace("Complete VRouterResource#VRouterResource()");
 	}
+
 	/**
 	 * Implementation of delete method of VRouter
 	 * 
@@ -72,7 +76,7 @@ public class VRouterResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Start VRouterResource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -120,6 +124,7 @@ public class VRouterResource extends AbstractResource {
 		LOG.trace("Complete VRouterResource#delete()");
 		return status;
 	}
+
 	/**
 	 * Implementation of get method of VRouter
 	 * 
@@ -130,7 +135,8 @@ public class VRouterResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VRouterResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -151,7 +157,7 @@ public class VRouterResource extends AbstractResource {
 			LOG.debug("Request Packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			setInfo(responseGenerator.getVRouterResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.SHOW));
@@ -183,6 +189,7 @@ public class VRouterResource extends AbstractResource {
 		LOG.trace("Complete VRoutersResource#get()");
 		return status;
 	}
+
 	/**
 	 * Implementation of Put method of VRouter
 	 * 
@@ -193,7 +200,8 @@ public class VRouterResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VRouterResource#put()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -241,6 +249,7 @@ public class VRouterResource extends AbstractResource {
 		LOG.trace("Complete VRouterResource#put()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -36,6 +36,7 @@ import org.opendaylight.vtn.javaapi.validation.logical.VtnStationsResourceValida
 public class VtnStationsResource extends AbstractResource {
 	private static final Logger LOG = Logger
 			.getLogger(VtnStationsResource.class.getName());
+
 	/**
 	 * Instantiates a new vtn stations resource.
 	 */
@@ -44,6 +45,7 @@ public class VtnStationsResource extends AbstractResource {
 		setValidator(new VtnStationsResourceValidator(this));
 		LOG.trace("Completed VtnStationsResource#VtnStationsResource()");
 	}
+
 	/**
 	 * Implementation of get method of VtnStations
 	 * 
@@ -54,7 +56,8 @@ public class VtnStationsResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VtnStationsResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;

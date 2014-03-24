@@ -50,7 +50,7 @@ TEST(odcdriver,  create_cmd_valid) {
   std::string descp =  "desc";
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
           descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -93,7 +93,7 @@ TEST(odcdriver,  create_cmd_valid_admin_disable) {
   std::string descp =  "desc";
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
           descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -135,7 +135,7 @@ TEST(odcdriver,  create_cmd_invalid_resp) {
   std::string descp =  "desc";
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
           descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -175,7 +175,7 @@ TEST(odcdriver,  update_cmd_invalid_resp) {
   std::string descp =  "desc";
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
           descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -215,7 +215,7 @@ TEST(odcdriver,  delete_cmd_invalid_resp) {
   std::string descp =  "desc";
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
           descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.delete_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -256,7 +256,7 @@ TEST(odcdriver,  create_cmd_null_resp) {
   std::string descp =  "desc";
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
           descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -298,7 +298,7 @@ TEST(odcdriver,  update_cmd_null_resp) {
   std::string descp =  "desc";
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
           descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -340,7 +340,7 @@ TEST(odcdriver,  delete_cmd_null_resp) {
   std::string descp =  "desc";
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
           descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.delete_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -380,7 +380,7 @@ TEST(odcdriver,  create_cmd_empty_vtn) {
   std::string descp =  "desc";
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
           descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -419,7 +419,7 @@ TEST(odcdriver,  create_cmd_empty_vbr) {
   std::string descp =  "desc";
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
           descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -457,7 +457,7 @@ TEST(odcdriver,  create_cmd_empty_vbr_if) {
   std::string descp =  "desc";
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
           descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -496,7 +496,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_no_values) {
           (vbrif_val.val_vbrif.description),
           descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
   vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   if (ctr != NULL) {
     delete ctr;
@@ -544,7 +544,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_values) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -592,7 +592,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_values) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -639,7 +639,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_invalid_logical_port) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -684,7 +684,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_invalid_port_values) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -730,7 +730,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_invalid_logical_port) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -779,7 +779,7 @@ TEST(odcdriver,  create_cmd_port_map_invalid_data) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -827,7 +827,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_vlanid_zero) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -875,7 +875,7 @@ TEST(odcdriver,  create_cmd_port_map_in_diff_format) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -924,7 +924,7 @@ TEST(odcdriver,  create_cmd_port_map_in_proper_format_invalid) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -972,7 +972,7 @@ TEST(odcdriver,  create_cmd_port_map_in_diff_format_invalid) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1020,7 +1020,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_invlanid) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1069,7 +1069,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_vlanid) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1119,7 +1119,7 @@ TEST(odcdriver,  update_cmd_port_map_valid) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1168,7 +1168,7 @@ TEST(odcdriver,  update_cmd_no_port_map) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1221,7 +1221,7 @@ TEST(odcdriver,  update_cmd_port_map_delete_resp_null) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1272,7 +1272,7 @@ TEST(odcdriver,  update_cmd_port_map_invalid) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1319,7 +1319,7 @@ TEST(odcdriver,  update_cmd_port_map_valid_vlan) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1367,7 +1367,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_null_resp) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1417,7 +1417,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_invalid_logical) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1465,7 +1465,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_no_port_name) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1510,7 +1510,7 @@ TEST(odcdriver,  create_cmd_port_map_invalid) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id)-1);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1554,7 +1554,7 @@ TEST(odcdriver,  create_cmd_port_map_invalid_portmap) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,  obj.create_cmd
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,  obj.create_cmd
             (vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1598,7 +1598,7 @@ TEST(odcdriver,  update_cmd_port_map_portmap_invalid) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.update_cmd
             (vbrif_key,  vbrif_val,  ctr));
   delete ctr;
@@ -1643,7 +1643,7 @@ TEST(odcdriver,  update_cmd_port_map_portmap) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1687,7 +1687,7 @@ TEST(odcdriver,  update_cmd_port_map_portmap_failure) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1734,7 +1734,7 @@ TEST(odcdriver,  update_cmd_port_map_update_portmap) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1779,7 +1779,7 @@ TEST(odcdriver,  update_cmd_empty_vtnname) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1824,7 +1824,7 @@ TEST(odcdriver,  delete_cmd_empty_vtnname) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.delete_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1869,7 +1869,7 @@ TEST(odcdriver,  update_cmd_delete_portmap) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1915,7 +1915,7 @@ TEST(odcdriver,  update_cmd_vbrif_success_portmap_failure) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1964,7 +1964,7 @@ TEST(odcdriver,  update_cmd_vbrif_success_portmap_delete_failure) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
           sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
   delete ctr;
 }
@@ -1995,7 +1995,7 @@ TEST(odcdriver,  fetch_config) {
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
   std::vector<unc::vtndrvcache::ConfigNode *>
       cfgnode_vector;
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.fetch_config(ctr, &key_vbr, cfgnode_vector));
   EXPECT_EQ(1U, cfgnode_vector.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
@@ -2035,7 +2035,7 @@ TEST(odcdriver,  fetch_config_empty_vtn) {
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
   std::vector<unc::vtndrvcache::ConfigNode *>
       cfgnode_vector;
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_vbr, cfgnode_vector));
   EXPECT_EQ(0U, cfgnode_vector.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
@@ -2075,7 +2075,7 @@ TEST(odcdriver,  fetch_config_empty_vtn_data) {
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
   std::vector<unc::vtndrvcache::ConfigNode *>
       cfgnode_vector;
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_vbr, cfgnode_vector));
   EXPECT_EQ(0U, cfgnode_vector.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
@@ -2116,7 +2116,7 @@ TEST(odcdriver,  fetch_config_null_response) {
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
   std::vector<unc::vtndrvcache::ConfigNode *>
       cfgnode_vector;
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_vbr, cfgnode_vector));
   EXPECT_EQ(0U, cfgnode_vector.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
@@ -2156,7 +2156,7 @@ TEST(odcdriver,  fetch_config_invalid_resp) {
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
   std::vector<unc::vtndrvcache::ConfigNode *>
       cfgnode_vector;
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_vbr, cfgnode_vector));
   EXPECT_EQ(0U, cfgnode_vector.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
@@ -2196,7 +2196,7 @@ TEST(odcdriver,  fetch_config_with_portmap) {
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
   std::vector<unc::vtndrvcache::ConfigNode *>
       cfgnode_vector;
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.fetch_config(ctr, &key_vbr, cfgnode_vector));
   EXPECT_EQ(1U, cfgnode_vector.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
@@ -2236,7 +2236,7 @@ TEST(odcdriver,  fetch_config_with_portmap_no_vlan) {
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
   std::vector<unc::vtndrvcache::ConfigNode *>
       cfgnode_vector;
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.fetch_config(ctr, &key_vbr, cfgnode_vector));
   EXPECT_EQ(1U, cfgnode_vector.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =

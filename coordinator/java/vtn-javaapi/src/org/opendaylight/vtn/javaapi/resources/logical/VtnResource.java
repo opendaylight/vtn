@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -40,6 +40,7 @@ public class VtnResource extends AbstractResource {
 	/** The Constant LOG. */
 	private static final Logger LOG = Logger.getLogger(VtnResource.class
 			.getName());
+
 	/**
 	 * Instantiates a new vtn resource.
 	 */
@@ -49,12 +50,14 @@ public class VtnResource extends AbstractResource {
 		setValidator(new VtnResourceValidator(this));
 		LOG.trace("Completed VtnResource#VtnResource()");
 	}
+
 	/**
 	 * @return the vtnName
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
+
 	/**
 	 * Implementation of Put method of vtn API
 	 * 
@@ -65,7 +68,8 @@ public class VtnResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts VtnResource#put()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -113,6 +117,7 @@ public class VtnResource extends AbstractResource {
 		LOG.trace("Completed VtnResource#put()");
 		return status;
 	}
+
 	/**
 	 * Implementation of Delete method of vtn API
 	 * 
@@ -120,7 +125,7 @@ public class VtnResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Starts VtnResource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -168,6 +173,7 @@ public class VtnResource extends AbstractResource {
 		LOG.trace("Completed VtnResource#delete()");
 		return status;
 	}
+
 	/**
 	 * Implementation of get method of vtn API
 	 * 
@@ -178,7 +184,8 @@ public class VtnResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VtnResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -231,6 +238,7 @@ public class VtnResource extends AbstractResource {
 		LOG.trace("Completed VtnResource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 

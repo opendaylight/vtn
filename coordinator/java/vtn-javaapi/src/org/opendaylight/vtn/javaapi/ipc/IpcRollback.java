@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -46,7 +46,7 @@ public class IpcRollback {
 	 * 
 	 * @return the ipc request packet
 	 */
-	public IpcRequestPacket popIpcPacket() {
+	public final IpcRequestPacket popIpcPacket() {
 		IpcRequestPacket requestPacket = null;
 		if (!ipcRequestPacketStack.isEmpty()) {
 			requestPacket = ipcRequestPacketStack.pop();
@@ -60,7 +60,7 @@ public class IpcRollback {
 	 * @param requestPacket
 	 *            the request packet
 	 */
-	public void pushIpcPacket(final IpcRequestPacket requestPacket) {
+	public final void pushIpcPacket(final IpcRequestPacket requestPacket) {
 		ipcRequestPacketStack.push(requestPacket);
 	}
 
@@ -73,7 +73,8 @@ public class IpcRollback {
 	 * @throws VtnServiceException
 	 *             the vtn service exception
 	 */
-	public boolean rollBackIpcRequest(final IpcRequestProcessor requestProcessor)
+	public final boolean rollBackIpcRequest(
+			final IpcRequestProcessor requestProcessor)
 			throws VtnServiceException {
 		boolean rollBackStatus = false;
 		final Iterator<IpcRequestPacket> ipcRequestPacketIterator = ipcRequestPacketStack

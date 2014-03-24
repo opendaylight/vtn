@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -35,7 +35,7 @@ import org.opendaylight.vtn.javaapi.validation.UserResourceValidator;
 @UNCVtnService(path = "/users/{username}/password")
 public class UserResource extends AbstractResource {
 
-	private static final Logger LOG = Logger.getLogger(ConfigResource.class
+	private static final Logger LOG = Logger.getLogger(UserResource.class
 			.getName());
 
 	@UNCField("username")
@@ -46,7 +46,7 @@ public class UserResource extends AbstractResource {
 	 * 
 	 * @return the user name
 	 */
-	public String getUserName() {
+	public final String getUserName() {
 		return userName;
 	}
 
@@ -71,7 +71,8 @@ public class UserResource extends AbstractResource {
 	 *             the vtn service exception
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts UserResource#put()");
 		ClientSession session = null;
 		int status = ClientSession.RESP_FATAL;
@@ -98,8 +99,10 @@ public class UserResource extends AbstractResource {
 
 			// set user name
 			LOG.info("set user name for : " + getUserName());
-			usessIpcReqUserPasswd.set(VtnServiceIpcConsts.SESS_UNAME,
-					IpcDataUnitWrapper.setIpcUint8ArrayValue(getUNCUserName(getUserName())));
+			usessIpcReqUserPasswd
+					.set(VtnServiceIpcConsts.SESS_UNAME,
+							IpcDataUnitWrapper
+									.setIpcUint8ArrayValue(getUNCUserName(getUserName())));
 
 			// set password
 			LOG.info("set password");
@@ -112,7 +115,7 @@ public class UserResource extends AbstractResource {
 			session.addOutput(usessIpcReqUserPasswd);
 			LOG.info("Request packet created successfully");
 			status = session.invoke();
-			LOG.info("Request packet processed with status:"+status);
+			LOG.info("Request packet processed with status:" + status);
 			if (status != UncSessionEnums.UsessIpcErrE.USESS_E_OK.ordinal()) {
 				LOG.info("Error occurred while performing operation");
 				createSessionErrorInfo(UncIpcErrorCode.getSessionCodes(status));
@@ -158,18 +161,19 @@ public class UserResource extends AbstractResource {
 		LOG.trace("Completed UserResource#put()");
 		return status;
 	}
-	
+
 	/**
 	 * Convert the higher level user name to USESS user name
+	 * 
 	 * @param userName
 	 * @return
 	 */
-	private String getUNCUserName(String userName) {
+	private String getUNCUserName(final String userName) {
 		LOG.debug("User name : " + userName);
 		String uncUserName = null;
 		if (userName.equalsIgnoreCase(VtnServiceJsonConsts.ADMIN)) {
 			uncUserName = VtnServiceIpcConsts.USESS_USER_WEB_ADMIN;
-		} else if (userName.equalsIgnoreCase(VtnServiceJsonConsts.OPER)){
+		} else if (userName.equalsIgnoreCase(VtnServiceJsonConsts.OPER)) {
 			uncUserName = VtnServiceIpcConsts.USESS_USER_WEB_OPER;
 		}
 		LOG.debug("UNC user name : " + uncUserName);

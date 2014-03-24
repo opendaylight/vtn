@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -61,11 +61,13 @@ TEST(TcConfigOperations, TcValidateOperType) {
                                              unc_map_);
 
   tc_configoperations.tc_oper_  =  TC_OP_RUNNING_SAVE;
-  EXPECT_EQ(TC_INVALID_OPERATION_TYPE, tc_configoperations.TcValidateOperType());
+  EXPECT_EQ(TC_INVALID_OPERATION_TYPE,
+            tc_configoperations.TcValidateOperType());
 
   tc_configoperations.tc_oper_  =  TC_OP_CLEAR_STARTUP;
   // change -11 to define
-  EXPECT_EQ(TC_INVALID_OPERATION_TYPE, tc_configoperations.TcValidateOperType());
+  EXPECT_EQ(TC_INVALID_OPERATION_TYPE,
+            tc_configoperations.TcValidateOperType());
   DEL_AUDIT_PARAMS();
 }
 
@@ -77,7 +79,8 @@ TEST(TcConfigOperations, TcValidateOperType_Failure) {
                                              db_handler,
                                              unc_map_);
   // Check return value and change to define
-  EXPECT_EQ(TC_INVALID_OPERATION_TYPE, tc_configoperations.TcValidateOperType());
+  EXPECT_EQ(TC_INVALID_OPERATION_TYPE,
+            tc_configoperations.TcValidateOperType());
   DEL_AUDIT_PARAMS();
 }
 
@@ -214,10 +217,10 @@ TEST(TcConfigOperations, HandleLockRet) {
   EXPECT_EQ(TC_OPER_FAILURE, tc_configoperations.HandleLockRet(ret));
 
   ret  =  TC_LOCK_INVALID_SESSION_ID;
-  EXPECT_EQ(5, tc_configoperations.HandleLockRet(ret));
+  EXPECT_EQ(104, tc_configoperations.HandleLockRet(ret));
 
   ret  =  TC_LOCK_INVALID_CONFIG_ID;
-  EXPECT_EQ(3, tc_configoperations.HandleLockRet(ret));
+  EXPECT_EQ(102, tc_configoperations.HandleLockRet(ret));
   DEL_AUDIT_PARAMS();
 }
 

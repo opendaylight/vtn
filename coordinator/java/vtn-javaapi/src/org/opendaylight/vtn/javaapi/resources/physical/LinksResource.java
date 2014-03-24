@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -28,6 +28,7 @@ import org.opendaylight.vtn.javaapi.ipc.enums.IpcRequestPacketEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncOperationEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncOption2Enum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncUPPLEnums;
 import org.opendaylight.vtn.javaapi.resources.AbstractResource;
@@ -38,6 +39,9 @@ import org.opendaylight.vtn.javaapi.validation.physical.LinkResourceValidator;
  */
 @UNCVtnService(path = "/controllers/{controller_id}/links")
 public class LinksResource extends AbstractResource {
+	/**
+	 * Logger for debugging purpose .
+	 */
 	private static final Logger LOG = Logger.getLogger(LinksResource.class
 			.getName());
 	/** The controller Id. */
@@ -56,21 +60,23 @@ public class LinksResource extends AbstractResource {
 	/**
 	 * @return the controllerId
 	 */
-	public String getControllerId() {
+	public final String getControllerId() {
 		return controllerId;
 	}
 
 	/**
-	 * Implementation of get method of Link API
+	 * Implementation of get method of Link API.
 	 * 
 	 * @param requestBody
 	 *            the request Json object
 	 * 
 	 * @return Error code
 	 * @throws VtnServiceException
+	 *             , in case of error .
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts LinksResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -88,25 +94,36 @@ public class LinksResource extends AbstractResource {
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_LINK_GET, requestBody,
 					uriParameterList);
-			getModifiedRequestPacket(requestBody, requestProcessor);
-			LOG.debug("Request packet created successfully");
-			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet processed with status:" + status);
-			final IpcPhysicalResponseFactory responseGenerator = new IpcPhysicalResponseFactory();
-			JsonObject responseJson = responseGenerator.getLinkResponse(
-					requestProcessor.getIpcResponsePacket(), requestBody,
-					VtnServiceJsonConsts.LIST);
-			if (responseJson.get(VtnServiceJsonConsts.LINKS).isJsonArray()) {
-				JsonArray responseArray = responseJson.get(
-						VtnServiceJsonConsts.LINKS).getAsJsonArray();
-				responseJson = getResponseJsonArrayPhysical(requestBody,
-						requestProcessor, responseGenerator, responseArray,
-						VtnServiceJsonConsts.LINKS,
-						VtnServiceJsonConsts.LINKNAME,
-						IpcRequestPacketEnum.KT_LINK_GET, uriParameterList,
-						VtnServiceIpcConsts.GET_LINK_RESPONSE);
+			if (!requestBody.has(VtnServiceJsonConsts.LINKNAME)) {
+				getModifiedRequestPacket(requestBody, requestProcessor);
+				LOG.debug("Request packet created successfully");
+				status = requestProcessor.processIpcRequest();
+				LOG.debug("Request packet processed with status:" + status);
+				final IpcPhysicalResponseFactory responseGenerator = new IpcPhysicalResponseFactory();
+				JsonObject responseJson = responseGenerator.getLinkResponse(
+						requestProcessor.getIpcResponsePacket(), requestBody);
+				if (responseJson.get(VtnServiceJsonConsts.LINKS).isJsonArray()) {
+					final JsonArray responseArray = responseJson.get(
+							VtnServiceJsonConsts.LINKS).getAsJsonArray();
+					responseJson = getResponseJsonArrayPhysical(requestBody,
+							requestProcessor, responseGenerator, responseArray,
+							VtnServiceJsonConsts.LINKS,
+							VtnServiceJsonConsts.LINKNAME,
+							IpcRequestPacketEnum.KT_LINK_GET, uriParameterList,
+							VtnServiceIpcConsts.GET_LINK_RESPONSE);
+				}
+				setInfo(responseJson);
+			} else {
+				requestProcessor.getRequestPacket().setOperation(
+						IpcDataUnitWrapper
+								.setIpcUint32Value(UncOperationEnum.UNC_OP_READ
+										.ordinal()));
+				status = requestProcessor.processIpcRequest();
+				LOG.debug("Request packet processed with status:" + status);
+				final IpcPhysicalResponseFactory responseGenerator = new IpcPhysicalResponseFactory();
+				setInfo(responseGenerator.getLinkResponse(
+						requestProcessor.getIpcResponsePacket(), requestBody));
 			}
-			setInfo(responseJson);
 			LOG.debug("Response object created successfully");
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
@@ -136,43 +153,57 @@ public class LinksResource extends AbstractResource {
 		return status;
 	}
 
+	/**
+	 * @param requestBody
+	 *            , for handling request.
+	 * @param requestProcessor
+	 *            , for processing the request .
+	 */
 	private void getModifiedRequestPacket(final JsonObject requestBody,
-			IpcRequestProcessor requestProcessor) {
-			if ((requestBody.has(VtnServiceJsonConsts.SWITCH1ID)
-					&& requestBody.has(VtnServiceJsonConsts.SWITCH2ID)) || requestBody.has(VtnServiceJsonConsts.INDEX)) {
-				requestProcessor
-						.getRequestPacket()
-						.setOption2(
-								IpcDataUnitWrapper
-										.setIpcUint32Value(UncOption2Enum.UNC_OPT2_MATCH_BOTH_SWITCH
-												.ordinal()));
-			} else if (requestBody.has(VtnServiceJsonConsts.SWITCH1ID)) {
-				requestProcessor
-						.getRequestPacket()
-						.setOption2(
-								IpcDataUnitWrapper
-										.setIpcUint32Value(UncOption2Enum.UNC_OPT2_MATCH_SWITCH1
-												.ordinal()));
-			} else if (requestBody.has(VtnServiceJsonConsts.SWITCH2ID)) {
-				requestProcessor
-						.getRequestPacket()
-						.setOption2(
-								IpcDataUnitWrapper
-										.setIpcUint32Value(UncOption2Enum.UNC_OPT2_MATCH_SWITCH2
-												.ordinal()));
-			}
+			final IpcRequestProcessor requestProcessor) {
+		if ((requestBody.has(VtnServiceJsonConsts.SWITCH1ID) && requestBody
+				.has(VtnServiceJsonConsts.SWITCH2ID))
+				|| requestBody.has(VtnServiceJsonConsts.INDEX)) {
+			requestProcessor
+					.getRequestPacket()
+					.setOption2(
+							IpcDataUnitWrapper
+									.setIpcUint32Value(UncOption2Enum.UNC_OPT2_MATCH_BOTH_SWITCH
+											.ordinal()));
+		} else if (requestBody.has(VtnServiceJsonConsts.SWITCH1ID)) {
+			requestProcessor
+					.getRequestPacket()
+					.setOption2(
+							IpcDataUnitWrapper
+									.setIpcUint32Value(UncOption2Enum.UNC_OPT2_MATCH_SWITCH1
+											.ordinal()));
+		} else if (requestBody.has(VtnServiceJsonConsts.SWITCH2ID)) {
+			requestProcessor
+					.getRequestPacket()
+					.setOption2(
+							IpcDataUnitWrapper
+									.setIpcUint32Value(UncOption2Enum.UNC_OPT2_MATCH_SWITCH2
+											.ordinal()));
+		}
 	}
 
 	/**
-	 * Add URI parameters to list
+	 * Add URI parameters to list.
 	 * 
-	 * @return parameter list
+	 * @param requestBody
+	 *            , to handle the request .
+	 * @return List , containing all URI paramters .
 	 */
 	private List<String> getUriParameters(final JsonObject requestBody) {
 		LOG.trace("Starts LinksResource#getUriParameters()");
 		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(controllerId);
-		if (requestBody != null && requestBody.has(VtnServiceJsonConsts.INDEX)) {
+		if (requestBody != null
+				&& requestBody.has(VtnServiceJsonConsts.LINKNAME)) {
+			uriParameters.add(requestBody.get(VtnServiceJsonConsts.LINKNAME)
+					.getAsString());
+		} else if (requestBody != null
+				&& requestBody.has(VtnServiceJsonConsts.INDEX)) {
 			uriParameters.add(requestBody.get(VtnServiceJsonConsts.INDEX)
 					.getAsString());
 		}

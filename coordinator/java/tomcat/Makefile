@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2013 NEC Corporation
+# Copyright (c) 2012-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -61,7 +61,7 @@ all-subdirs install-subdirs clean-subdirs:	$(SUBDIRS)
 
 all-subdirs:		SUBDIR_TARGET = all
 install-subdirs:	SUBDIR_TARGET = install
-clean-subdirs:		SUBDIR_TARGET = install
+clean-subdirs:		SUBDIR_TARGET = clean
 
 include $(BLDDIR)/rules.mk
 include $(JAVA_EXT_RULES_MK)

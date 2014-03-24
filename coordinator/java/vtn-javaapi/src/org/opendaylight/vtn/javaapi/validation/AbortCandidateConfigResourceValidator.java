@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -23,10 +23,7 @@ import org.opendaylight.vtn.javaapi.resources.AbstractResource;
 public class AbortCandidateConfigResourceValidator extends VtnServiceValidator {
 
 	private static final Logger LOG = Logger
-			.getLogger(AbortCandidateConfigResourceValidator.class
-					.getName());
-
-	final CommonValidator validator = new CommonValidator();
+			.getLogger(AbortCandidateConfigResourceValidator.class.getName());
 
 	/** The instance of AbstractResource. */
 	private final AbstractResource resource;
@@ -46,15 +43,16 @@ public class AbortCandidateConfigResourceValidator extends VtnServiceValidator {
 	 * Validate request Json for put method of Abort Candidate Configuration API
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start AbortCandidateConfigResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of AbortCandidateConfigResourceValidator");
 		boolean isValid = false;
 		if (requestBody != null && VtnServiceConsts.PUT.equals(method)) {
 			isValid = validatePut(requestBody);
-		}else {
+		} else {
 			setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
 			isValid = false;
 		}

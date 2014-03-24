@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -58,7 +58,7 @@ public class DifferenceConfigResource extends AbstractResource {
 	 *             the vtn service exception
 	 */
 	@Override
-	public int get() throws VtnServiceException {
+	public final int get() throws VtnServiceException {
 		LOG.trace("Starts DifferenceConfigResource#get()");
 		ClientSession session = null;
 		int status = ClientSession.RESP_FATAL;
@@ -181,10 +181,10 @@ public class DifferenceConfigResource extends AbstractResource {
 	 * @param dirtyStatus
 	 *            the dirty status
 	 */
-	private void createResponse(String dirtyStatus) {
+	private void createResponse(final String dirtyStatus) {
 		LOG.trace("Starts DifferenceConfigResource#createResponse()");
-		JsonObject response = new JsonObject();
-		JsonObject dirtyJson = new JsonObject();
+		final JsonObject response = new JsonObject();
+		final JsonObject dirtyJson = new JsonObject();
 		if (UncStructIndexEnum.DirtyStatus.TRUE.getValue().equals(dirtyStatus)) {
 			dirtyJson.addProperty(VtnServiceJsonConsts.DIFF_STATUS,
 					VtnServiceJsonConsts.TRUE);

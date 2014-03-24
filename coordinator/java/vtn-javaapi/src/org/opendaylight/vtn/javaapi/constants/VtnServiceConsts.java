@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -13,12 +13,14 @@ package org.opendaylight.vtn.javaapi.constants;
  */
 public final class VtnServiceConsts {
 
-	public static final String JAVAAPI_VERSION = "V1.0";
+	public static final String JAVAAPI_VERSION = "V1.1";
 
 	public static final int IPC_RESUL_CODE_INDEX = 7;
 	public static final int IPC_COUNT_INDEX = 2;
-	public static final int UPPL_RC_ERR_NO_SUCH_INSTANCE = 16;
-	public static final int UPLL_RC_ERR_NO_SUCH_INSTANCE = 11;
+	public static final int UPPL_RC_ERR_NO_SUCH_INSTANCE = 2015;
+	public static final int UPLL_RC_ERR_NO_SUCH_INSTANCE = 1010;
+	public static final int UPPL_ERROR_INITIAL_INDEX = 1999;
+	public static final int UPLL_ERROR_INITIAL_INDEX = 999;
 
 	public static final String PUT = "put";
 	public static final String GET = "get";
@@ -27,6 +29,7 @@ public final class VtnServiceConsts {
 
 	public static final String COMMON_CONF_FILEPATH = "org/opendaylight/vtn/javaapi/conf.properties";
 	public static final String APP_CONF_FILEPATH = "webapp_connection.properties";
+	public static final String MAPMODE_CONF_FILEPATH = "mapmode.properties";
 	public static final String UPPL_ERRORS_FILEPATH = "org/opendaylight/vtn/javaapi/ipc/enums/uppl_errors.properties";
 	public static final String UPLL_ERRORS_FILEPATH = "org/opendaylight/vtn/javaapi/ipc/enums/upll_errors.properties";
 	public static final String SINGLETON_EXCEPTION = "Already instantiated";
@@ -47,7 +50,7 @@ public final class VtnServiceConsts {
 	public static final String NETMASK_REGEX = "^(((128|192|224|240|248|252|254)\\.0\\.0\\.0)|(255\\.(0|128|192|224|240|248|252|254)\\.0\\.0)|(255\\.255\\.(0|128|192|224|240|248|252|254)\\.0)|(255\\.255\\.255\\.(0|128|192|224|240|248|252|254)))$";
 
 	public static final String ALPHANUM_REGEX = "^[0-9A-Za-z](\\w)*$";
-	public static final String ALARM_REGEX="^(\\d{1,19})$";
+	public static final String ALARM_REGEX = "^(\\d{1,19})$";
 	public static final String SLASH = "/";
 	public static final String EMPTY_STRING = "";
 	public static final String COMMA = ",";
@@ -73,7 +76,7 @@ public final class VtnServiceConsts {
 	public static final long INVALID_SESSIONID = 0;
 
 	public static final String WHITESPACE = "\\s";
-	public static final String RESOURCE_PATH_INCORRECT = "Resource path is not correct";
+	// public static final String INVALID_FORMAT = "Invalid Format";
 	public static final String RESOURCE_METHOD_INCORRECT = "Resource method is not implemented";
 
 	public static final String UTF8 = "UTF-8";
@@ -81,15 +84,21 @@ public final class VtnServiceConsts {
 	public static final String INDEX_ERROR_MSG = "index parameter not allowed for op : count";
 	public static final String VERSION_REGEX = "^[0-9][0-9.]*[0-9]$|^[0-9]$";
 
-
 	public static final String WEB_API = "WEB-API";
 	public static final String UNC_GUI = "UNC-GUI";
 	public static final String ZERO = "0";
 	public static final String INCORRECT_METHOD_INVOCATION = "Incorrect method invocation";
-	
+
 	public static final int DEFAULT_NUMBER = 0;
 	public static final String DEFAULT_IP = "0.0.0.0";
 	public static final String DEFAULT_IPV6 = "0000:0000:0000:0000:0000:0000:0000:0000";
 	public static final String DEFAULT_MAC = "0000.0000.0000";
-	
+
+	public static final String OPEN_SMALL_BRACES = "(";
+	public static final String CLOSE_SMALL_BRACES = ")";
+
+	public static final String QUESTION_MARK = "?";
+
+	public static final String QUOTE_CHAR = "\"";
+
 }

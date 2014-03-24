@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -41,6 +41,9 @@ void TcModule::collect_db_params() {
   dsn_name =
       tc_db_block.getString(tc_conf_db_dsn_name_param,
                             tc_def_db_dsn_name_value.c_str());
+
+  max_failover_instance_ = tc_db_block.getUint32(max_failover_instance_param,
+                                                max_failover_instance_value);
 }
 
 /**
@@ -101,7 +104,7 @@ pfc_bool_t TcModule::init() {
     pfc_log_error("Unable to Register State Handlers");
     return PFC_FALSE;
   }
-  // Read the configuration file
+  /*Read the configuration file */
   collect_db_params();
   TcDbHandler tc_db_hdlr_(dsn_name);
   if (validate_tc_db(&tc_db_hdlr_) == PFC_FALSE) {
@@ -190,6 +193,43 @@ pfc_bool_t TcModule::HandleAct(pfc_bool_t is_switch) {
 
   TcOperStatus oper_ret(startup_.Dispatch());
   if (PFC_EXPECT_FALSE(oper_ret != TC_OPER_SUCCESS)) {
+    if (PFC_EXPECT_TRUE(startup_.audit_db_fail_ == PFC_TRUE)) {
+      pfc_log_error("Audit DB failure in switchover");
+      /*Get failover instance from DB */
+      uint32_t failover_instance;
+      if (PFC_EXPECT_TRUE(TCOPER_RET_SUCCESS == tc_db_hdlr_->GetRecoveryTable(
+                  &startup_.database_type_,
+                  &startup_.fail_oper_,
+                  &failover_instance))) {
+        /*increment and update failover instance*/
+        tc_db_hdlr_->UpdateRecoveryTable(startup_.database_type_,
+                                         startup_.fail_oper_,
+                                         ++failover_instance);
+        startup_.audit_db_fail_ = PFC_FALSE;
+
+        if (PFC_EXPECT_TRUE(failover_instance >= max_failover_instance_)) {
+          /*sending alarm to usr*/
+          if (PFC_EXPECT_TRUE(TC_OPER_SUCCESS !=
+                              startup_.SendAuditDBFailNotice(alarm_id))) {
+            pfc_log_warn("Failed to send AuditDBFailNotification");
+          }
+
+          pfc_log_info("Transiting to ACT_FAIL state");
+          tc_lock_.TcUpdateUncState(TC_ACT_FAIL);
+          ret = tc_lock_.ReleaseLock(0,
+                                     0,
+                                     TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION,
+                                     TC_WRITE_NONE);
+          if (PFC_EXPECT_FALSE(ret != TC_LOCK_SUCCESS)) {
+            pfc_log_fatal("Cannot Release Lock Instance");
+            return PFC_FALSE;
+          }
+          return PFC_TRUE;
+        }
+      } else {
+        pfc_log_error("could not fetch RecoveryTable attributes");
+      }
+    }
     pfc_log_fatal("StartUp Operation Failure");
     ret = tc_lock_.ReleaseLock(0,
                                0,
@@ -201,11 +241,10 @@ pfc_bool_t TcModule::HandleAct(pfc_bool_t is_switch) {
     }
     return PFC_FALSE;
   }
-  ret=
-     tc_lock_.ReleaseLock(0,
-                          0,
-                          TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION,
-                          TC_WRITE_NONE);
+  ret = tc_lock_.ReleaseLock(0,
+                             0,
+                             TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION,
+                             TC_WRITE_NONE);
   if (PFC_EXPECT_FALSE(ret != TC_LOCK_SUCCESS)) {
     pfc_log_fatal("Cannot Release Lock Instance");
     return PFC_FALSE;

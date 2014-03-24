@@ -1,14 +1,14 @@
-#ifndef _UPPL_COMMON_H_
-#define _UPPL_COMMON_H_
-
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
+#ifndef UNC_UPPL_COMMON_H_
+#define UNC_UPPL_COMMON_H_
 
 /**
  * @brief   UPPL Common Header
@@ -19,13 +19,16 @@
  *
  */
 
-
 /*
  * @brief System State
  */
 
 #define UPPL_IPC_CHN_NAME                   "phynwd"
 #define UPPL_IPC_SVC_NAME                   "uppl"
+
+#define UPPL_LP_STANDARD_SD_DESC "PF Standard Subdomain"
+#define UPPL_LP_EXTENSION_SD_DESC "PF Extension Subdomain"
+#define UPPL_LP_MAC_FORWARDING_DESC "PF MAC Forwarding Subdomain"
 
 typedef enum {
   UPPL_SYSTEM_ST_ACTIVE = 0,
@@ -68,10 +71,10 @@ typedef enum {
 
 //  Enum for the structure val_path_fault_alarm
 typedef enum {
-   kIdxIngressLogicalPort = 0,
-   kIdxEgressLogicalPort,
-   kIdxIngressNoOfPorts,
-   kIdxEgressNoOfPorts
+  kIdxIngressLogicalPort = 0,
+  kIdxEgressLogicalPort,
+  kIdxIngressNoOfPorts,
+  kIdxEgressNoOfPorts
 }uppl_val_path_fault_alarm_index;
 
 /*
@@ -167,6 +170,11 @@ typedef enum {
   kIdxSwitchAlarmStatus
 }uppl_val_switch_st_index;
 
+typedef enum {
+  kIdxSwitchSt = 0,
+  kIdxSwitchStatFlowCount
+}uppl_val_switch_st_detail_index;
+
 /*
  * KT_PORT specific
  */
@@ -209,6 +217,22 @@ typedef enum {
   kIdxPortAlarmsStatus,
   kIdxPortLogicalPortId
 }uppl_val_port_st_index;
+
+typedef enum {
+  kIdxPortStatSt = 0,
+  kIdxPortStatRxPackets,
+  kIdxPortStatTxPackets,
+  kIdxPortStatRxBytes,
+  kIdxPortStatTxBytes,
+  kIdxPortStatRxDropped,
+  kIdxPortStatTxDropped,
+  kIdxPortStatRxErrors,
+  kIdxPortStatTxErrors,
+  kIdxPortStatRxFrameErr,
+  kIdxPortStatRxOverErr,
+  kIdxPortStatRxCrcErr,
+  kIdxPortStatCollisions
+}uppl_val_port_stats_index;
 
 typedef enum {
   kIdxPort = 0,
@@ -258,83 +282,7 @@ typedef enum {
   kIdxBoundaryStOperStatus
 }uppl_val_boundary_st_index;
 
-/*
- * @brief DB Return Status and (Error Code)
- */
 
-typedef enum {
-  UPPL_RC_SUCCESS = 0,
-  UPPL_RC_FAILURE,
-  UPPL_RC_ERR_BAD_REQUEST,
-  UPPL_RC_ERR_INVALID_CONFIGID,
-  UPPL_RC_ERR_INVALID_SESSIONID,
-  UPPL_RC_ERR_VERSION_NOT_SUPPORTED,
-  UPPL_RC_ERR_KEYTYPE_NOT_SUPPORTED,
-  UPPL_RC_ERR_DATATYPE_NOT_SUPPORTED,
-  UPPL_RC_ERR_ATTRIBUTE_NOT_SUPPORTED,
-  UPPL_RC_ERR_OPERATION_NOT_SUPPORTED,
-  UPPL_RC_ERR_OPERATION_NOT_ALLOWED,
-  UPPL_RC_ERR_INVALID_OPTION1,
-  UPPL_RC_ERR_INVALID_OPTION2,
-  UPPL_RC_ERR_CFG_SYNTAX,
-  UPPL_RC_ERR_CFG_SEMANTIC,
-  UPPL_RC_ERR_PARENT_DOES_NOT_EXIST,
-  UPPL_RC_ERR_NO_SUCH_INSTANCE,
-  UPPL_RC_ERR_INSTANCE_EXISTS,
-  UPPL_RC_ERR_EXCEEDS_RESOURCE_LIMIT,
-  UPPL_RC_ERR_DB_ACCESS,
-  UPPL_RC_ERR_NOT_SUPPORTED_BY_STANDBY,
-  UPPL_RC_ERR_RESOURCE_DISCONNECTED,
-  UPPL_RC_ERR_INVALID_STATE,
-  UPPL_RC_ERR_MERGE_CONFLICT,
-  UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION,
-  UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE,
-  UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE,
-  UPPL_RC_ERR_SHUTTING_DOWN,
-  UPPL_RC_ERR_IPC_WRITE_ERROR,
-  UPPL_RC_ERR_DB_UPDATE,
-  UPPL_RC_ERR_DB_GET,
-  UPPL_RC_ERR_DB_DELETE,
-  UPPL_RC_ERR_DB_CREATE,
-  UPPL_RC_ERR_CANDIDATE_IS_DIRTY,
-  UPPL_RC_ERR_ATTRIBUTE_NOT_FOUND,
-
-  UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED,
-  UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED,
-  UPPL_RC_ERR_ALARM_API,
-
-  UPPL_RC_ERR_CONF_FILE_READ,
-  UPPL_RC_ERR_CAP_FILE_READ,
-
-  UPPL_RC_ERR_DB_OPER_STATUS,
-
-  UPPL_RC_ERR_AUDIT_NOT_IN_PROGRESS,
-  UPPL_RC_ERR_FATAL_COPY_CONFIG,
-  UPPL_RC_ERR_FATAL_COPYDB_CANDID_RUNNING,
-  UPPL_RC_ERR_COPY_CANDID_TO_RUNNING,
-  UPPL_RC_ERR_COPY_RUNNING_TO_CANDID,
-  UPPL_RC_ERR_INVALID_CANDID_CONFIG,
-  UPPL_RC_ERR_WRITE_ENTITY_DB,
-  UPPL_RC_ERR_COPY_RUNNING_TO_START,
-  UPPL_RC_ERR_COPY_STARTUP_TO_CANDID,
-  UPPL_RC_ERR_CLEAR_DB,
-  UPPL_RC_ERR_IMPORT_START_INVALID_DRIVER_RESPONSE,
-  UPPL_RC_ERR_IMPORT_FAILURE,
-  UPPL_RC_ERR_IMPORT_MERGE_FAILURE,
-  UPPL_RC_ERR_COMMIT_OPERATION_NOT_ALLOWED,
-  UPPL_RC_ERR_COMMIT_UPDATE_DRIVER_FAILURE,
-  UPPL_RC_ERR_TRANSACTION_START,
-  UPPL_RC_ERR_INVALID_TRANSACT_START_REQ,
-  UPPL_RC_ERR_TRANSACTION_START_INVALID_DRIVER_RESPONSE,
-  UPPL_RC_ERR_VOTE_DB_INVALID,
-  UPPL_RC_ERR_VOTE_INVALID_REQ,
-  UPPL_RC_ERR_AUDIT_FAILURE,
-  UPPL_RC_ERR_IMPORT_IN,
-  UPPL_RC_ERR_ABORT_AUDIT,
-  UPPL_RC_ERR_ABORT_TRANSACTION,
-  UPPL_RC_ERR_MANDATORY_ATTRIB_NULL_VALUE,
-  UPPL_RC_ERR_MANDATORY_ATTRIB_INVALID,
-}UpplReturnCode;
 
 typedef enum {
   UPPL_SVC_CONFIGREQ = 0,
@@ -357,13 +305,13 @@ typedef enum {
 /*Alarm type enumeration body*/
 typedef enum {
   UPPL_ALARMS_PATH_FAULT = 0,   /*Physical Path Fault/Recovery*/
-  UPPL_ALARMS_OFS_BC_CORE_DOMAIN_SPLIT, /* Broadcast Core Domain Split/Recovery*/
-  UPPL_ALARMS_OFS_BC_SUB_DOMAIN_SPLIT, /* Broadcast Sub Domain Split/Recovery*/
+  UPPL_ALARMS_OFS_BC_CORE_DOMAIN_SPLIT, /* BC Core Domain Split/Recovery*/
+  UPPL_ALARMS_OFS_BC_SUB_DOMAIN_SPLIT, /* BC Sub Domain Split/Recovery*/
   UPPL_ALARMS_FLOW_ENT_FULL,    /*FlowEntry Full Occurred/Recovery*/
   UPPL_ALARMS_DEFAULT_FLOW,     /*Default Flow Failure/Success*/
   UPPL_ALARMS_PORT_DIRECTION,   /*Port direction is inconsistent/consistent*/
   UPPL_ALARMS_PORT_CONGES,      /*OFS Port Congestion Occurred/Recovered*/
-  UPPL_ALARMS_OFS_LACK_FEATURES,/*OFS is lack of features/OFS has recovered lack of features*/
+  UPPL_ALARMS_OFS_LACK_FEATURES,/*OFS has lack of features/recovered it*/
 } uppl_alarm_type_t;
 
 /*
@@ -399,6 +347,4 @@ typedef enum {
   UNC_OP_CLEAR_IMPORT_CONFIG
 } unc_addl_operation_t;
 
-
-#endif  //  _UPPL_COMMON_H_
-
+#endif  // UNC_UPPL_COMMON_H_

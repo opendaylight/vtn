@@ -111,7 +111,7 @@ pfc_bool_t VtnDrvIntf::init(void) {
           vbrif_req));
 
   KtHandler* vbrvlanmap_req = new unc::driver::KtRequestHandler<key_vlan_map_t,
-      val_vlan_map_t,
+      pfcdrv_val_vlan_map_t,
       unc::driver::vbrvlanmap_driver_command> (NULL);
 
   if (NULL == vbrvlanmap_req) {
@@ -172,7 +172,7 @@ pfc_ipcresp_t VtnDrvIntf::ipcService(pfc::core::ipc::ServerSession &sess,
 
   pfc::core::ipc::ServerSession* p_sess=&sess;
   odl_drv_request_header_t request_hdr;
-  drv_resp_code_t resp_code = DRVAPI_RESPONSE_FAILURE;
+  UncRespCode resp_code = UNC_DRV_RC_ERR_GENERIC;
   memset(&request_hdr, 0, sizeof(request_hdr));
   VtnDrvRetEnum result = get_request_header(p_sess, request_hdr);
 
@@ -199,11 +199,11 @@ pfc_ipcresp_t VtnDrvIntf::ipcService(pfc::core::ipc::ServerSession &sess,
   }
 
   resp_code = hnd_ptr->handle_request(sess, request_hdr, ctrl_inst_);
-  if (resp_code != DRVAPI_RESPONSE_SUCCESS) {
+  if (resp_code != UNC_RC_SUCCESS) {
     pfc_log_debug("handle_request fail for key:%d", request_hdr.key_type);
     return PFC_IPCRESP_FATAL;
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 

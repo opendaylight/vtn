@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -16,6 +16,8 @@
 #include "itc_kt_base.hh"
 #include "itc_kt_root.hh"
 #include "itc_kt_controller.hh"
+#include "itc_kt_dataflow.hh"
+#include "itc_kt_ctr_dataflow.hh"
 #include "itc_kt_switch.hh"
 #include "itc_read_request.hh"
 #include "itc_kt_boundary.hh"
@@ -54,17 +56,28 @@ ReadRequest::~ReadRequest() {
  *                the read operation
  * @param[in]   : session - Object of ServerSession where the request
  *                argument present
- * @return      : UPPL_RC_SUCCESS if processing the Read request is successful
- *                or UPPL_RC_ERR_* in case of failure
+ * @return      : UNC_RC_SUCCESS if processing the Read request is successful
+ *                or UNC_UPPL_RC_ERR_* in case of failure
  * */
-UpplReturnCode ReadRequest::ProcessReq(ServerSession &session,
+UncRespCode ReadRequest::ProcessReq(ServerSession &session,
                                        physical_request_header &obj_req_hdr) {
+  PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+  PhysicalCore* physical_core = physical_layer->get_physical_core();
+  if (physical_core->system_transit_state_ == true) {
+    pfc_log_error("UNC is in state transit mode ");
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+  }
+
   Kt_Base *KtObj = NULL;
-  UpplReturnCode resp_code = UPPL_RC_SUCCESS, return_code = UPPL_RC_SUCCESS;
+  UncRespCode resp_code = UNC_RC_SUCCESS, return_code = UNC_RC_SUCCESS;
   physical_response_header rsh;
   PhyUtil::getRespHeaderFromReqHeader(obj_req_hdr, rsh);
-  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadOnly, resp_code);
-  if (resp_code != UPPL_RC_SUCCESS) {
+  OdbcmConnectionHandler *db_conn = NULL;
+  OPEN_DB_CONNECTION_WITH_POOL(unc::uppl::kOdbcmConnReadOnly,
+                               resp_code, db_conn,
+                               obj_req_hdr.client_sess_id,
+                               obj_req_hdr.config_id);
+  if (resp_code != UNC_RC_SUCCESS) {
     pfc_log_error("DB Connection failure for operation %d",
                   obj_req_hdr.operation);
     int err = PhyUtil::sessOutRespHeader(session, rsh);
@@ -82,30 +95,58 @@ UpplReturnCode ReadRequest::ProcessReq(ServerSession &session,
           obj_req_hdr.operation == UNC_OP_READ_SIBLING ||
           obj_req_hdr.operation == UNC_OP_READ_SIBLING_BEGIN ||
           obj_req_hdr.operation == UNC_OP_READ_SIBLING_COUNT) {
-        rsh.result_code = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+        rsh.result_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
       }
       KtObj = new Kt_Root();
       if (KtObj  == NULL) {
         pfc_log_error("Memory not allocated for Kt_Root");
-        return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
       }
       memset(&key_root_obj, 0, sizeof(key_root_t));
       // The root key in request is not considered
       key_struct = static_cast<void*> (&key_root_obj);
       break;
+
+    case UNC_KT_DATAFLOW:
+      if ((obj_req_hdr.operation != UNC_OP_READ) ||
+          (obj_req_hdr.data_type != UNC_DT_STATE)) {
+        pfc_log_error("KtDataflow supports only Read Operation");
+        rsh.result_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+      }
+      GetDataflowStructure(session, key_struct, rsh);
+      KtObj = new Kt_Dataflow();
+      if (KtObj  == NULL) {
+        pfc_log_error("Memory not allocated for Kt_Dataflow");
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+      }
+      break;
+
     case  UNC_KT_CONTROLLER:
       KtObj = new Kt_Controller();
       if (KtObj  == NULL) {
         pfc_log_error("Memory not allocated for Kt_Controller");
-        return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
       }
       GetControllerStructure(session, key_struct, val_struct, rsh);
+      break;
+    case UNC_KT_CTR_DATAFLOW:
+      if ((obj_req_hdr.operation != UNC_OP_READ) ||
+          (obj_req_hdr.data_type != UNC_DT_STATE)) {
+        pfc_log_error("Kt_Ctr_Dataflow supports only Read Operation");
+        rsh.result_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+      }
+      GetCtrDataflowStructure(session, key_struct, rsh);
+      KtObj = new Kt_Ctr_Dataflow();
+      if (KtObj  == NULL) {
+        pfc_log_error("Memory not allocated for Kt_Ctr_Dataflow");
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+      }
       break;
     case UNC_KT_CTR_DOMAIN:
       KtObj = new Kt_Ctr_Domain();
       if (KtObj  == NULL) {
         pfc_log_error("Memory not allocated for Kt_Ctr_Domain");
-        return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
       }
       GetDomainStructure(session, key_struct, val_struct, rsh);
       break;
@@ -113,7 +154,7 @@ UpplReturnCode ReadRequest::ProcessReq(ServerSession &session,
       KtObj = new Kt_LogicalPort();
       if (KtObj  == NULL) {
         pfc_log_error("Memory not allocated for Kt_LogicalPort");
-        return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
       }
       GetLogicalPortStructure(session, key_struct, val_struct, rsh);
       break;
@@ -121,7 +162,7 @@ UpplReturnCode ReadRequest::ProcessReq(ServerSession &session,
       KtObj = new Kt_LogicalMemberPort();
       if (KtObj  == NULL) {
         pfc_log_error("Memory not allocated for Kt_LogicalMemberPort");
-        return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
       }
       GetLogicalMemberPortStructure(session, key_struct, val_struct, rsh);
       break;
@@ -129,7 +170,7 @@ UpplReturnCode ReadRequest::ProcessReq(ServerSession &session,
       KtObj = new Kt_Switch();
       if (KtObj  == NULL) {
         pfc_log_error("Memory not allocated for Kt_Switch");
-        return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
       }
       GetSwitchStructure(session, key_struct, val_struct, rsh);
       break;
@@ -137,7 +178,7 @@ UpplReturnCode ReadRequest::ProcessReq(ServerSession &session,
       KtObj = new Kt_Port();
       if (KtObj  == NULL) {
         pfc_log_error("Memory not allocated for Kt_Port");
-        return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
       }
       GetPortStructure(session, key_struct, val_struct, rsh);
       break;
@@ -145,7 +186,7 @@ UpplReturnCode ReadRequest::ProcessReq(ServerSession &session,
       KtObj = new Kt_Link();
       if (KtObj  == NULL) {
         pfc_log_error("Memory not allocated for Kt_Link");
-        return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
       }
       GetLinkStructure(session, key_struct, val_struct, rsh);
       break;
@@ -153,15 +194,15 @@ UpplReturnCode ReadRequest::ProcessReq(ServerSession &session,
       KtObj = new Kt_Boundary();
       if (KtObj  == NULL) {
         pfc_log_error("Memory not allocated for Kt_Boundary");
-        return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
       }
       GetBoundaryStructure(session, key_struct, val_struct, rsh);
       break;
     default:
-      rsh.result_code = UPPL_RC_ERR_KEYTYPE_NOT_SUPPORTED;
+      rsh.result_code = UNC_UPPL_RC_ERR_KEYTYPE_NOT_SUPPORTED;
       break;
   }
-  if (rsh.result_code != UPPL_RC_SUCCESS) {
+  if (rsh.result_code != UNC_RC_SUCCESS) {
     if (KtObj != NULL) {
       delete KtObj;
       KtObj = NULL;
@@ -169,9 +210,9 @@ UpplReturnCode ReadRequest::ProcessReq(ServerSession &session,
     pfc_log_info("Read service failed with error %d", rsh.result_code);
     int err = PhyUtil::sessOutRespHeader(session, rsh);
     if (err != 0) {
-      return_code = UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return_code = UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     } else {
-      return_code = UPPL_RC_SUCCESS;
+      return_code = UNC_RC_SUCCESS;
     }
     return return_code;
   }
@@ -183,7 +224,7 @@ UpplReturnCode ReadRequest::ProcessReq(ServerSession &session,
     case UNC_OP_READ_SIBLING:
     case UNC_OP_READ_SIBLING_COUNT:
       // form validate request for READ operation
-      resp_code = KtObj->ValidateRequest(&db_conn,
+      resp_code = KtObj->ValidateRequest(db_conn,
                                          key_struct,
                                          NULL,
                                          obj_req_hdr.operation,
@@ -191,10 +232,10 @@ UpplReturnCode ReadRequest::ProcessReq(ServerSession &session,
                                          obj_req_hdr.key_type);
       break;
     default:
-      resp_code = UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+      resp_code = UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
       break;
   }
-  if (resp_code != UPPL_RC_SUCCESS) {
+  if (resp_code != UNC_RC_SUCCESS) {
     // validation failed call add out put
     rsh.result_code = resp_code;
     pfc_log_error("read validation failed");
@@ -204,12 +245,12 @@ UpplReturnCode ReadRequest::ProcessReq(ServerSession &session,
                                              &session, key_struct);
     }
     if (err != 0) {
-      return_code = UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return_code = UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     } else {
-      return_code = UPPL_RC_SUCCESS;
+      return_code = UNC_RC_SUCCESS;
     }
   } else {
-    return_code = ProcessReadOperation(&db_conn, session, KtObj, obj_req_hdr,
+    return_code = ProcessReadOperation(db_conn, session, KtObj, obj_req_hdr,
                                        key_struct, val_struct,
                                        obj_req_hdr.operation);
   }
@@ -232,10 +273,10 @@ UpplReturnCode ReadRequest::ProcessReq(ServerSession &session,
  *                KtObj - Object of the base class to invoke appropriate
  *                Kt class
  *                obj_req_hdr - object of physical request header
- * @return      : UPPL_RC_SUCCESS if processing the Read request is successful
- *                or UPPL_RC_ERR_* in case of failure
+ * @return      : UNC_RC_SUCCESS if processing the Read request is successful
+ *                or UNC_UPPL_RC_ERR_* in case of failure
  * */
-UpplReturnCode ReadRequest::ProcessReadOperation(
+UncRespCode ReadRequest::ProcessReadOperation(
     OdbcmConnectionHandler *db_conn,
     ServerSession &session,
     Kt_Base *KtObj,
@@ -243,7 +284,7 @@ UpplReturnCode ReadRequest::ProcessReadOperation(
     void* key_struct,
     void* val_struct,
     uint32_t operation_type) {
-  UpplReturnCode resp_code = UPPL_RC_SUCCESS, return_code = UPPL_RC_SUCCESS;
+  UncRespCode resp_code = UNC_RC_SUCCESS, return_code = UNC_RC_SUCCESS;
   pfc_bool_t response_sent = PFC_FALSE;
   uint32_t max_rep_ct = obj_req_hdr.max_rep_count;
   switch (operation_type) {
@@ -263,10 +304,11 @@ UpplReturnCode ReadRequest::ProcessReadOperation(
     case UNC_OP_READ_NEXT:
       // Invoke Read Next operation for respective KT class
       resp_code = KtObj->ReadNext(db_conn,
+                                  obj_req_hdr.client_sess_id,
                                   key_struct,
                                   obj_req_hdr.data_type,
                                   this);
-      if (resp_code == UPPL_RC_SUCCESS) {
+      if (resp_code == UNC_RC_SUCCESS) {
         response_sent = PFC_TRUE;
         return_code = FrameReadBulkResponse(session,
                                             obj_req_hdr.client_sess_id,
@@ -292,7 +334,7 @@ UpplReturnCode ReadRequest::ProcessReadOperation(
                                   false,
                                   false,
                                   this);
-      if (resp_code == UPPL_RC_SUCCESS) {
+      if (resp_code == UNC_RC_SUCCESS) {
         response_sent = PFC_TRUE;
         return_code = FrameReadBulkResponse(session,
                                             obj_req_hdr.client_sess_id,
@@ -347,7 +389,7 @@ UpplReturnCode ReadRequest::ProcessReadOperation(
       response_sent = PFC_TRUE;
       break;
     default:
-      resp_code = UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+      resp_code = UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
       break;
   }
   if (!response_sent) {
@@ -359,9 +401,9 @@ UpplReturnCode ReadRequest::ProcessReadOperation(
     err |= KtObj->AddKeyStructuretoSession(obj_req_hdr.key_type, &session,
                                            key_struct);
     if (err != 0) {
-      return_code = UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return_code = UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     } else {
-      return_code = UPPL_RC_SUCCESS;
+      return_code = UNC_RC_SUCCESS;
     }
   }
   return return_code;
@@ -378,12 +420,12 @@ UpplReturnCode ReadRequest::ProcessReadOperation(
  *                data_type - UNC_DT_* specifies the database type
  *                option1,option2 - specifies any additional
  *                condition for read operation
- * @return      : UPPL_RC_SUCCESS is returned when the response is added
+ * @return      : UNC_RC_SUCCESS is returned when the response is added
  *                to ipc session successfully.
- *                UPPL_RC_ERR_* is returned when ipc response could not
+ *                UNC_UPPL_RC_ERR_* is returned when ipc response could not
  *                be added to sess.
  * */
-UpplReturnCode ReadRequest::FrameReadBulkResponse(ServerSession &session,
+UncRespCode ReadRequest::FrameReadBulkResponse(ServerSession &session,
                                                   uint32_t session_id,
                                                   uint32_t config_id,
                                                   uint32_t operation,
@@ -407,7 +449,7 @@ UpplReturnCode ReadRequest::FrameReadBulkResponse(ServerSession &session,
   rsh.max_rep_count = max_rep_ct;
   if (vect_bulk_read_buffer.empty()) {
     pfc_log_debug("No instances available to read");
-    rsh.result_code = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+    rsh.result_code = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
   }
   int err = PhyUtil::sessOutRespHeader(session, rsh);
   iter = vect_bulk_read_buffer.begin();
@@ -449,10 +491,10 @@ UpplReturnCode ReadRequest::FrameReadBulkResponse(ServerSession &session,
     }
     if (err != 0) {
       pfc_log_error("Server session addOutput failed");
-      return UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**GetControllerStructure
@@ -482,6 +524,46 @@ void ReadRequest::GetControllerStructure(ServerSession &session,
   } else {
     pfc_log_debug("No value structure provided in read request");
   }
+  return;
+}
+
+/**GetDataflowStructure
+ * @Description : This function is to get the value structure of the Dataflow
+ * @param[in]   : session - Object of ServerSession where the request
+ *                argument present 
+ *                key_struct - the key for the kt_Dataflow instance
+ *                val_struct - the value structure for the ktDataflow
+ *                &rsh - object of the physical response header
+ * @return      : void 
+ * */
+void ReadRequest::GetDataflowStructure(ServerSession &session,
+                                         void * &key_struct,
+                                         physical_response_header &rsh) {
+  // populate key_ctr structure
+  memset(&key_dataflow_obj, 0, sizeof(key_dataflow_t));
+  rsh.result_code = session.getArgument(8, key_dataflow_obj);
+  pfc_log_info("%s", DataflowCmn::get_string(key_dataflow_obj).c_str());
+  key_struct = static_cast<void*> (&key_dataflow_obj);
+  return;
+}
+
+/**GetCtrDataflowStructure
+ * @Description : This function is to get the value structure of the CtrDataflow
+ * @param[in]   : session - Object of ServerSession where the request
+ *                argument present 
+ *                key_struct - the key for the kt_Ctr_Dataflow instance
+ *                val_struct - the value structure for the ktCtrDataflow
+ *                &rsh - object of the physical response header
+ * @return      : void 
+ * */
+void ReadRequest::GetCtrDataflowStructure(ServerSession &session,
+                                         void * &key_struct,
+                                         physical_response_header &rsh) {
+  // populate key_ctr structure
+  memset(&key_ctr_dataflow_obj, 0, sizeof(key_ctr_dataflow_t));
+  rsh.result_code = session.getArgument(8, key_ctr_dataflow_obj);
+  key_struct = static_cast<void*> (&key_ctr_dataflow_obj);
+  pfc_log_info("%s", DataflowCmn::get_string(key_ctr_dataflow_obj).c_str());
   return;
 }
 

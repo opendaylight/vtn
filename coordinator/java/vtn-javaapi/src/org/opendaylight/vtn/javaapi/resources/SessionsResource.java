@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -61,7 +61,8 @@ public class SessionsResource extends AbstractResource {
 	 *             the vtn service exception
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts SessionsResource#post()");
 		ClientSession session = null;
 		ClientSession sessionEnable = null;
@@ -134,27 +135,27 @@ public class SessionsResource extends AbstractResource {
 					usessIpcReqSessAdd
 							.set(VtnServiceIpcConsts.LOGIN_NAME,
 									IpcDataUnitWrapper
-											.setIpcUint8ArrayValue(VtnServiceJsonConsts.NONE));
+											.setIpcUint8ArrayValue(VtnServiceConsts.EMPTY_STRING));
 				}
 				// add type to usess_ipc_req_sess_add structure
 				if (sessionJson.has(VtnServiceJsonConsts.TYPE)
 						&& sessionJson.getAsJsonPrimitive(
 								VtnServiceJsonConsts.TYPE).getAsString() != null
-								&& sessionJson
+						&& sessionJson
 								.getAsJsonPrimitive(VtnServiceJsonConsts.TYPE)
 								.getAsString().trim()
 								.equalsIgnoreCase(VtnServiceJsonConsts.WEBAPI)) {
 					usessIpcReqSessAdd
-					.set(VtnServiceIpcConsts.SESS_TYPE,
-							IpcDataUnitWrapper
-							.setIpcInt32Value(UncSessionEnums.UsessTypeE.USESS_TYPE_WEB_API
-									.ordinal()));
+							.set(VtnServiceIpcConsts.SESS_TYPE,
+									IpcDataUnitWrapper
+											.setIpcInt32Value(UncSessionEnums.UsessTypeE.USESS_TYPE_WEB_API
+													.ordinal()));
 				} else {
 					usessIpcReqSessAdd
-					.set(VtnServiceIpcConsts.SESS_TYPE,
-							IpcDataUnitWrapper
-							.setIpcInt32Value(UncSessionEnums.UsessTypeE.USESS_TYPE_WEB_UI
-									.ordinal()));
+							.set(VtnServiceIpcConsts.SESS_TYPE,
+									IpcDataUnitWrapper
+											.setIpcInt32Value(UncSessionEnums.UsessTypeE.USESS_TYPE_WEB_UI
+													.ordinal()));
 				}
 				LOG.debug("sess_type: "
 						+ IpcDataUnitWrapper.getIpcStructUint32Value(
@@ -183,7 +184,7 @@ public class SessionsResource extends AbstractResource {
 					usessIpcReqSessAdd
 							.set(VtnServiceJsonConsts.INFO,
 									IpcDataUnitWrapper
-											.setIpcUint8ArrayValue(VtnServiceJsonConsts.NONE));
+											.setIpcUint8ArrayValue(VtnServiceConsts.EMPTY_STRING));
 				}
 				session.addOutput(usessIpcReqSessAdd);
 				LOG.info("Request packet created successfully");
@@ -191,7 +192,8 @@ public class SessionsResource extends AbstractResource {
 				LOG.info("Request packet processed with status:" + status);
 				if (status != UncSessionEnums.UsessIpcErrE.USESS_E_OK.ordinal()) {
 					LOG.info("Error occurred while performing operation");
-					createSessionErrorInfo(UncIpcErrorCode.getSessionCodes(status));
+					createSessionErrorInfo(UncIpcErrorCode
+							.getSessionCodes(status));
 					status = UncResultCode.UNC_SERVER_ERROR.getValue();
 				} else {
 					LOG.info("Opeartion successfully performed");
@@ -199,28 +201,26 @@ public class SessionsResource extends AbstractResource {
 					final IpcStruct responseStruct = (IpcStruct) session
 							.getResponse(0);
 					final JsonObject sessionInfo = new JsonObject();
-					final String sessionId = IpcDataUnitWrapper.getIpcStructUint32Value(
-							responseStruct, VtnServiceIpcConsts.ID)
-							.toString();
-					sessionInfo.addProperty(
-							VtnServiceJsonConsts.SESSIONID, sessionId);
+					final String sessionId = IpcDataUnitWrapper
+							.getIpcStructUint32Value(responseStruct,
+									VtnServiceIpcConsts.ID).toString();
+					sessionInfo.addProperty(VtnServiceJsonConsts.SESSIONID,
+							sessionId);
 					response.add(VtnServiceJsonConsts.SESSION, sessionInfo);
 					setInfo(response);
 
 					if (sessionJson.has(VtnServiceJsonConsts.USERNAME)
 							&& sessionJson
-							.getAsJsonPrimitive(
-									VtnServiceJsonConsts.USERNAME)
+									.getAsJsonPrimitive(
+											VtnServiceJsonConsts.USERNAME)
 									.getAsString()
 									.equalsIgnoreCase(
 											VtnServiceJsonConsts.ADMIN)) {
-						sessionEnable = getConnPool()
-								.getSession(
-										UncSessionEnums.UNCD_IPC_CHANNEL,
-										UncSessionEnums.UNCD_IPC_SERVICE,
-										UncSessionEnums.ServiceID.kUsessEnable
-										.ordinal(),
-										getExceptionHandler());
+						sessionEnable = getConnPool().getSession(
+								UncSessionEnums.UNCD_IPC_CHANNEL,
+								UncSessionEnums.UNCD_IPC_SERVICE,
+								UncSessionEnums.ServiceID.kUsessEnable
+										.ordinal(), getExceptionHandler());
 						LOG.info("Session created successfully");
 						// create request packet for IPC call based on API key
 						// and JsonObject
@@ -231,17 +231,17 @@ public class SessionsResource extends AbstractResource {
 						final IpcStruct usessIpcReqSessIdCurrent = new IpcStruct(
 								UncStructEnum.UsessIpcSessId.getValue());
 						usessIpcReqSessIdCurrent
-						.set(VtnServiceIpcConsts.ID, IpcDataUnitWrapper
-								.setIpcUint32Value(sessionId));
+								.set(VtnServiceIpcConsts.ID, IpcDataUnitWrapper
+										.setIpcUint32Value(sessionId));
 						usessIpcReqSessEnable.set(VtnServiceIpcConsts.CURRENT,
 								usessIpcReqSessIdCurrent);
 						usessIpcReqSessEnable
-						.set(VtnServiceIpcConsts.ENABLE_PASSWORD,
-								IpcDataUnitWrapper
-								.setIpcUint8ArrayValue(sessionJson
-										.getAsJsonPrimitive(
-												VtnServiceJsonConsts.PASSWORD)
-												.getAsString()));
+								.set(VtnServiceIpcConsts.ENABLE_PASSWORD,
+										IpcDataUnitWrapper
+												.setIpcUint8ArrayValue(sessionJson
+														.getAsJsonPrimitive(
+																VtnServiceJsonConsts.PASSWORD)
+														.getAsString()));
 						sessionEnable.addOutput(usessIpcReqSessEnable);
 						LOG.info("Request packet created successfully");
 						status = sessionEnable.invoke();
@@ -293,7 +293,7 @@ public class SessionsResource extends AbstractResource {
 			}
 			// destroy session by common handler
 			getConnPool().destroySession(session);
-			if(sessionEnable != null){
+			if (sessionEnable != null) {
 				getConnPool().destroySession(sessionEnable);
 			}
 		}
@@ -312,7 +312,8 @@ public class SessionsResource extends AbstractResource {
 	 *             the vtn service exception
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("starts SessionsResource#get()");
 		ClientSession session = null;
 		int status = ClientSession.RESP_FATAL;
@@ -553,21 +554,26 @@ public class SessionsResource extends AbstractResource {
 				// add mode to response json
 				if (IpcDataUnitWrapper
 						.getIpcStructUint32Value(responseStruct,
-								VtnServiceIpcConsts.SESS_MODE).toString()
-						.equals(UncSessionEnums.UsessModeE.USESS_MODE_OPER.getValue())) {
+								VtnServiceIpcConsts.SESS_MODE)
+						.toString()
+						.equals(UncSessionEnums.UsessModeE.USESS_MODE_OPER
+								.getValue())) {
 					sessJson.addProperty(VtnServiceJsonConsts.MODE,
 							VtnServiceJsonConsts.OPER);
 				} else if (IpcDataUnitWrapper
 						.getIpcStructUint32Value(responseStruct,
 								VtnServiceIpcConsts.SESS_MODE)
 						.toString()
-						.equals(UncSessionEnums.UsessModeE.USESS_MODE_ENABLE.getValue())) {
+						.equals(UncSessionEnums.UsessModeE.USESS_MODE_ENABLE
+								.getValue())) {
 					sessJson.addProperty(VtnServiceJsonConsts.MODE,
 							VtnServiceJsonConsts.ENABLE);
 				} else if (IpcDataUnitWrapper
 						.getIpcStructUint32Value(responseStruct,
-								VtnServiceIpcConsts.SESS_MODE).toString()
-						.equals(UncSessionEnums.UsessModeE.USESS_MODE_DEL.getValue())) {
+								VtnServiceIpcConsts.SESS_MODE)
+						.toString()
+						.equals(UncSessionEnums.UsessModeE.USESS_MODE_DEL
+								.getValue())) {
 					sessJson.addProperty(VtnServiceJsonConsts.MODE,
 							VtnServiceJsonConsts.DEL);
 				} else if (IpcDataUnitWrapper
@@ -582,8 +588,8 @@ public class SessionsResource extends AbstractResource {
 					LOG.debug("Incorrect value for mode");
 				}
 				LOG.debug("mode: "
-						+ IpcDataUnitWrapper.getIpcStructUint32Value(responseStruct,
-								VtnServiceIpcConsts.SESS_MODE));
+						+ IpcDataUnitWrapper.getIpcStructUint32Value(
+								responseStruct, VtnServiceIpcConsts.SESS_MODE));
 				// add configstatus to response json
 				if (IpcDataUnitWrapper
 						.getIpcStructUint32Value(responseStruct,
@@ -605,7 +611,8 @@ public class SessionsResource extends AbstractResource {
 					LOG.debug("Incorrect value for config_status");
 				}
 				LOG.debug("configstatus: "
-						+ IpcDataUnitWrapper.getIpcStructUint32Value(responseStruct,
+						+ IpcDataUnitWrapper.getIpcStructUint32Value(
+								responseStruct,
 								VtnServiceIpcConsts.CONFIG_STATUS));
 			}
 			sessArray.add(sessJson);

@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -20,12 +20,12 @@ namespace upll {
 namespace kt_momgr {
 
 /*  This file declares interfaces for keyType KT_VBR_FLOWFILER_ENTRY */
-/**
- * @brief  VbrFlowFilterEntryMoMgr class handles all the request
- *         received from service.
- */
-class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
-  private:
+  /**
+   * @brief  VbrFlowFilterEntryMoMgr class handles all the request
+   *         received from service.
+   */
+  class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
+   private:
     /**
      * @brief  Member Variable for VbrFlowfilterEntryBindInfo.
      */
@@ -40,9 +40,8 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      * @brief  Member Variable for FlowListRenameBindInfo.
      */
     static BindInfo vbr_flowlist_rename_bind_info[];
-    uint32_t cur_instance_count;
 
-  public:
+   public:
     /**
      * @brief  Validates the Attribute of a Particular Class.
      *
@@ -62,8 +61,8 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
                                         upll_keytype_datatype_t dt_type);
 
     upll_rc_t TxVote(unc_key_type_t keytype,
-                            DalDmlIntf *dmi,
-                            ConfigKeyVal **err_ckv);
+                     DalDmlIntf *dmi,
+                     ConfigKeyVal **err_ckv);
     /**
      * @Brief  Validates the syntax of the specified key and value structure
      *         for KT_VBR_FLOWFILTER_ENTRY keytype
@@ -91,8 +90,8 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_CFG_SYNTAX  validation failed.
      */
     upll_rc_t ValidateVbrFlowfilterEntryKey(
-         key_vbr_flowfilter_entry_t *key_vbr_flowfilter_entry,
-         unc_keytype_operation_t operation);
+        key_vbr_flowfilter_entry_t *key_vbr_flowfilter_entry,
+        unc_keytype_operation_t operation);
 
     upll_rc_t GetControllerDomainID(ConfigKeyVal *ikey,
                                     controller_domain *ctrlr_dom,
@@ -112,8 +111,7 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_CFG_SYNTAX  validation failed.
      */
     static upll_rc_t ValidateFlowfilterEntryValue(
-          val_flowfilter_entry_t *val_flowfilter_entry, uint32_t operation,
-          bool action_valid = false, bool action_redirect = false);
+        val_flowfilter_entry_t *val_flowfilter_entry, uint32_t operation);
 
     /**
      * @Brief  Validates the syntax for redirect_port, redirect_node fields of
@@ -126,8 +124,8 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_CFG_SYNTAX  validation failed.
      */
     static upll_rc_t ValidateRedirectField(
-               val_flowfilter_entry_t *val_flowfilter_entry,
-                                    uint32_t operation);
+        val_flowfilter_entry_t *val_flowfilter_entry,
+        uint32_t operation);
 
     /**
      * @Brief  Validates the syntax for action field and checks whether
@@ -141,8 +139,7 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_CFG_SYNTAX  validation failed.
      */
     static upll_rc_t ValidateFlowfilterEntryAction(
-           val_flowfilter_entry_t *val_flowfilter_entry, uint32_t operation,
-           bool db_up_action_valid, bool action_redirect);
+        val_flowfilter_entry_t *val_flowfilter_entry, uint32_t operation);
 
     /**
      * @Brief  Checks if the specified key type and
@@ -157,7 +154,7 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_GENERIC                 Generic failure.
      */
     static upll_rc_t ValFlowFilterEntryAttributeSupportCheck(
-      val_flowfilter_entry_t *val_flowfilter_entry, const uint8_t* attrs);
+        val_flowfilter_entry_t *val_flowfilter_entry, const uint8_t* attrs);
 
     /**
      * @brief  VbrFlowFilterEntryMoMgr Class Constructor.
@@ -188,8 +185,8 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_SUCCESS         validation succeeded.
      * @retval  UPLL_RC_ERR_CFG_SYNTAX  validation failed.
      */
-     upll_rc_t ValidateValFlowfilterEntry(IpcReqRespHeader *req,
-           ConfigKeyVal *key, DalDmlIntf *dmi = NULL);
+    upll_rc_t ValidateValFlowfilterEntry(IpcReqRespHeader *req,
+                                         ConfigKeyVal *key);
 
     /**
      * @Brief  Checks if the specified key type(KT_VBR_FLOWFILTER_ENTRY) and
@@ -205,8 +202,8 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_INVALID_OPTION1  Option1 is not valid.
      * @retval  UPLL_RC_ERR_INVALID_OPTION2  Option2 is not valid.
      */
-     upll_rc_t ValidateCapability(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                                   const char* ctrlr_name = NULL);
+    upll_rc_t ValidateCapability(IpcReqRespHeader *req, ConfigKeyVal *ikey,
+                                 const char* ctrlr_name = NULL);
 
     /**
      * @brief  Methods Used for getting Value Attribute.
@@ -263,14 +260,15 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      * @param[in]   cs_status    Describes CsStatus Infomation.
      *                           Information.
      * @param[in]   phase        Describes the Phase of the Operation.
-     * @param[in]   ckv_audit    Pointer to ConfigKeyVal Class.
+     * @param[in]      dmi          Pointer to the DalDmlIntf(DB Interface)
      *
      * @retval  UPLL_RC_SUCCESS      Successfull completion.
      * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
      */
-     upll_rc_t UpdateAuditConfigStatus(unc_keytype_configstatus_t cs_status,
-                                       uuc::UpdateCtrlrPhase phase,
-                                       ConfigKeyVal *&ckv_running);
+    upll_rc_t UpdateAuditConfigStatus(unc_keytype_configstatus_t cs_status,
+                                      uuc::UpdateCtrlrPhase phase,
+                                      ConfigKeyVal *&ckv_running,
+                                      DalDmlIntf *dmi);
 
     /**
      * @brief  Method used to fill the CongigKeyVal with the Parent
@@ -393,7 +391,7 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
      */
     upll_rc_t CreateCandidateMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                                DalDmlIntf *dmi);
+                                DalDmlIntf *dmi, bool restore_flag = false);
 
     /**
      * @brief  Method used for Read Operation.
@@ -463,15 +461,15 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      */
     upll_rc_t UpdateMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                        DalDmlIntf *dmi);
-   /**
-    * @brief  Method Used for Getting the Controller Id.
-    *
-    * @param[in]  ikey  Pointer to ConfigKeyVal Class.
-    * @param[in]  dmi   Pointer to DalDmiIntf Class
-    *
-    * @retval  UPLL_RC_SUCCESS      Successfull Operation.
-    * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
-    */
+    /**
+     * @brief  Method Used for Getting the Controller Id.
+     *
+     * @param[in]  ikey  Pointer to ConfigKeyVal Class.
+     * @param[in]  dmi   Pointer to DalDmiIntf Class
+     *
+     * @retval  UPLL_RC_SUCCESS      Successfull Operation.
+     * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
+     */
     upll_rc_t GetControllerId(ConfigKeyVal *ikey,
                               DalDmlIntf *dmi);
 
@@ -524,7 +522,7 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      *
      * @retval  UPLL_RC_SUCCESS      Successfull completion.
      * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
-     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists 
+     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists
      * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
      */
 
@@ -572,13 +570,13 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
                           unc_keytype_operation_t op);
 
     upll_rc_t GetFlowlistConfigKey(
-          const char *flowlist_name, ConfigKeyVal *&okey,
-          DalDmlIntf *dmi);
+        const char *flowlist_name, ConfigKeyVal *&okey,
+        DalDmlIntf *dmi);
 
     upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
-          DalDmlIntf *dmi,
-          IpcReqRespHeader *req);
-};
+                            DalDmlIntf *dmi,
+                            IpcReqRespHeader *req);
+  };
 }  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -45,13 +45,24 @@ void UncStateHandler::unc_act_event_handler_fn(pfc::core::Event* Event) {
   lock_.lock();
   pfc_log_info("State change to Active received from Daemon");
   if (system_state_ == UPPL_SYSTEM_ST_STANDBY) {
+    PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+    PhysicalCore* physical_core = physical_layer->get_physical_core();
+    physical_core->system_transit_state_ = true;
+
     // Close the existing rw connections if any after switch over
     ODBCM_RC_STATUS close_rw_handle =
         PhysicalLayer::get_instance()->get_odbc_manager()->CloseRwConnection();
     pfc_log_debug("Rw Connection Handle Free status %d", close_rw_handle);
+    //  All existing Read only connections will be freed when transiting to ACT
+    ODBCM_RC_STATUS close_ro_handle =
+          PhysicalLayer::get_instance()->
+                       get_odbc_manager()->FreeingConnections(false);
+    pfc_log_debug("RO Connection Handle(s) Free status %d",
+                                                     close_ro_handle);
+    physical_core->system_transit_state_ = false;
     set_system_state(UPPL_SYSTEM_ST_ACTIVE);
     // Send event subscription to driver
-    UpplReturnCode ret = PhysicalCore::get_physical_core()->
+    UncRespCode ret = PhysicalCore::get_physical_core()->
         SendEventSubscripToDriver();
     pfc_log_debug("Event subscription return %d", ret);
     // clear all alarms

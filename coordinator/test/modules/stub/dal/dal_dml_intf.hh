@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -676,11 +676,11 @@ class DalDmlIntf {
      *     dummy address. Do not pass NULL address.
      *
      */
-    virtual DalResultCode CopyModifiedRecords(
-                    const UpllCfgType dest_cfg_type,
-                    const UpllCfgType src_cfg_type,
-                    const DalTableIndex table_index,
-                    const DalBindInfo *output_and_match_attr_info)= 0;
+    virtual DalResultCode CopyModifiedRecords(const UpllCfgType dest_cfg_type,
+                                    const UpllCfgType src_cfg_type,
+                                    const DalTableIndex table_index,
+                                    const DalBindInfo *bind_info,
+                                    const unc_keytype_operation_t op) const = 0;
 
     /**
      * CopyMatchingRecords

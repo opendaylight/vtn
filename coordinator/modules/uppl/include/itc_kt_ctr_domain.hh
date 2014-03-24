@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -37,7 +37,7 @@ class Kt_Ctr_Domain : public Kt_State_Base {
     Kt_Ctr_Domain();
     ~Kt_Ctr_Domain();
 
-    UpplReturnCode Create(OdbcmConnectionHandler *db_conn,
+    UncRespCode Create(OdbcmConnectionHandler *db_conn,
                           uint32_t session_id,
                           uint32_t configuration_id,
                           void* key_struct,
@@ -45,13 +45,13 @@ class Kt_Ctr_Domain : public Kt_State_Base {
                           uint32_t data_type,
                           ServerSession &sess);
 
-    UpplReturnCode CreateKeyInstance(OdbcmConnectionHandler *db_conn,
+    UncRespCode CreateKeyInstance(OdbcmConnectionHandler *db_conn,
                                      void* key_struct,
                                      void* val_struct,
                                      uint32_t data_type,
                                      uint32_t key_type);
 
-    UpplReturnCode Update(OdbcmConnectionHandler *db_conn,
+    UncRespCode Update(OdbcmConnectionHandler *db_conn,
                           uint32_t session_id,
                           uint32_t configuration_id,
                           void* key_struct,
@@ -59,31 +59,31 @@ class Kt_Ctr_Domain : public Kt_State_Base {
                           uint32_t data_type,
                           ServerSession &sess);
 
-    UpplReturnCode UpdateKeyInstance(OdbcmConnectionHandler *db_conn,
+    UncRespCode UpdateKeyInstance(OdbcmConnectionHandler *db_conn,
                                      void* key_struct,
                                      void* val_struct,
                                      uint32_t data_type,
                                      uint32_t key_type);
 
-    UpplReturnCode Delete(OdbcmConnectionHandler *db_conn,
+    UncRespCode Delete(OdbcmConnectionHandler *db_conn,
                           uint32_t session_id,
                           uint32_t configuration_id,
                           void* key_struct,
                           uint32_t data_type,
                           ServerSession &sess);
 
-    UpplReturnCode DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
+    UncRespCode DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
                                      void* key_struct,
                                      uint32_t data_type,
                                      uint32_t key_type);
 
-    UpplReturnCode ReadInternal(OdbcmConnectionHandler *db_conn,
+    UncRespCode ReadInternal(OdbcmConnectionHandler *db_conn,
                                 vector<void *> &key_struct,
                                 vector<void *> &val_struct,
                                 uint32_t data_type,
                                 uint32_t operation_type);
 
-    UpplReturnCode ReadBulk(OdbcmConnectionHandler *db_conn,
+    UncRespCode ReadBulk(OdbcmConnectionHandler *db_conn,
                             void* key_struct,
                             uint32_t data_type,
                             uint32_t &max_rep_ct,
@@ -92,45 +92,45 @@ class Kt_Ctr_Domain : public Kt_State_Base {
                             pfc_bool_t is_read_next,
                             ReadRequest *read_req);
 
-    UpplReturnCode PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
+    UncRespCode PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
                                            void* key_struct,
                                            void* val_struct,
                                            uint32_t operation,
                                            uint32_t data_type);
 
-    UpplReturnCode PerformSemanticValidation(OdbcmConnectionHandler *db_conn,
+    UncRespCode PerformSemanticValidation(OdbcmConnectionHandler *db_conn,
                                              void* key_struct,
                                              void* val_struct,
                                              uint32_t operation,
                                              uint32_t data_type);
 
-    UpplReturnCode HandleDriverAlarms(OdbcmConnectionHandler *db_conn,
+    UncRespCode HandleDriverAlarms(OdbcmConnectionHandler *db_conn,
                                       uint32_t data_type,
                                       uint32_t alarm_type,
                                       uint32_t oper_type,
                                       void* key_struct,
                                       void* val_struct);
 
-    UpplReturnCode InvokeBoundaryNotifyOperStatus(
+    UncRespCode InvokeBoundaryNotifyOperStatus(
         OdbcmConnectionHandler *db_conn,
         uint32_t data_type,
         void *key_struct);
 
-    UpplReturnCode IsKeyExists(OdbcmConnectionHandler *db_conn,
+    UncRespCode IsKeyExists(OdbcmConnectionHandler *db_conn,
                                unc_keytype_datatype_t data_type,
                                const vector<string>& key_values);
 
-    UpplReturnCode GetModifiedRows(OdbcmConnectionHandler *db_conn,
+    UncRespCode GetModifiedRows(OdbcmConnectionHandler *db_conn,
                                    vector<void *> &key_struct,
                                    CsRowStatus row_status);
 
     void Fill_Attr_Syntax_Map();
-    UpplReturnCode HandleOperStatus(OdbcmConnectionHandler *db_conn,
+    UncRespCode HandleOperStatus(OdbcmConnectionHandler *db_conn,
                                     uint32_t data_type,
                                     void *key_struct,
                                     void *value_struct);
 
-    UpplReturnCode GetOperStatus(OdbcmConnectionHandler *db_conn,
+    UncRespCode GetOperStatus(OdbcmConnectionHandler *db_conn,
                                  uint32_t data_type,
                                  void* key_struct,
                                  uint8_t &oper_status);
@@ -193,7 +193,7 @@ class Kt_Ctr_Domain : public Kt_State_Base {
         uint32_t operation_type,
         vector<key_ctr_domain> &domain_id);
 
-    UpplReturnCode PerformRead(OdbcmConnectionHandler *db_conn,
+    UncRespCode PerformRead(OdbcmConnectionHandler *db_conn,
                                uint32_t session_id,
                                uint32_t configuration_id,
                                void* key_struct,
@@ -205,7 +205,7 @@ class Kt_Ctr_Domain : public Kt_State_Base {
                                uint32_t option2,
                                uint32_t max_rep_ct);
 
-    UpplReturnCode ReadDomainValFromDB(OdbcmConnectionHandler *db_conn,
+    UncRespCode ReadDomainValFromDB(OdbcmConnectionHandler *db_conn,
         void* key_struct,
         void* val_struct,
         uint32_t data_type,
@@ -214,7 +214,7 @@ class Kt_Ctr_Domain : public Kt_State_Base {
         vector<val_ctr_domain_st> &vect_val_ctr_domain_st,
         vector<key_ctr_domain> &domain_id);
 
-    UpplReturnCode ReadBulkInternal(OdbcmConnectionHandler *db_conn,
+    UncRespCode ReadBulkInternal(OdbcmConnectionHandler *db_conn,
         void* key_struct,
         uint32_t data_type,
         uint32_t max_rep_ct,
@@ -226,13 +226,13 @@ class Kt_Ctr_Domain : public Kt_State_Base {
                             string controller_name);
 
     Kt_Base* GetChildClassPointer(KtDomainChildClass KIndex);
-    UpplReturnCode SetOperStatus(OdbcmConnectionHandler *db_conn,
+    UncRespCode SetOperStatus(OdbcmConnectionHandler *db_conn,
                                  uint32_t data_type,
                                  void* key_struct,
                                  UpplDomainOperStatus oper_status);
     void FreeChildKeyStruct(int child_class,
                             void *key_struct);
-    UpplReturnCode GetCtrDomainValidFlag(OdbcmConnectionHandler *db_conn,
+    UncRespCode GetCtrDomainValidFlag(OdbcmConnectionHandler *db_conn,
         void *key_struct,
         val_ctr_domain_st_t &val_ctr_domain_valid_st,
         uint32_t data_type);

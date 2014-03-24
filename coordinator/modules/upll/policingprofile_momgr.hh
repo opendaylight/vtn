@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -19,12 +19,12 @@ namespace upll {
 namespace kt_momgr {
 
 /* This file declares interfaces for keyType KT_POLICING_PROFILE */
-/**
- * @brief PolicingProfileMoMgr class handles all the request
- *  received from service.
- */
-class PolicingProfileMoMgr : public MoMgrImpl {
-  private:
+  /**
+   * @brief PolicingProfileMoMgr class handles all the request
+   *  received from service.
+   */
+  class PolicingProfileMoMgr : public MoMgrImpl {
+   private:
     /**
      * Member Variable for PolicingProfileBindInfo.
      */
@@ -59,56 +59,55 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      * Member Variable for PolicingProfileBindInfo.
      */
     static BindInfo rename_policingprofile_rename_tbl[];
-    uint32_t cur_instance_count;
-   /**
-    * @Brief Validates the syntax of the specified key and value structure
-    *        for KT_POLICINGPROFILE keytype
-    *
-    * @param[in] IpcReqRespHeader contains first 8 fields of input request
-    *            structure
-    * @param[in] ConfigKeyVal key and value structure.
-    *
-    * @retval UPLL_RC_SUCCESS              Successful.
-    * @retval UPLL_RC_ERR_CFG_SYNTAX       Syntax error.
-    * @retval UPLL_RC_ERR_NO_SUCH_INSTANCE policingprofile is not available.
-    * @retval UPLL_RC_ERR_GENERIC          Generic failure.
-    * @retval UPLL_RC_ERR_INVALID_OPTION1  option1 is not valid.
-    * @retval UPLL_RC_ERR_INVALID_OPTION2  option2 is not valid.
-    */
+    /**
+     * @Brief Validates the syntax of the specified key and value structure
+     *        for KT_POLICINGPROFILE keytype
+     *
+     * @param[in] IpcReqRespHeader contains first 8 fields of input request
+     *            structure
+     * @param[in] ConfigKeyVal key and value structure.
+     *
+     * @retval UPLL_RC_SUCCESS              Successful.
+     * @retval UPLL_RC_ERR_CFG_SYNTAX       Syntax error.
+     * @retval UPLL_RC_ERR_NO_SUCH_INSTANCE policingprofile is not available.
+     * @retval UPLL_RC_ERR_GENERIC          Generic failure.
+     * @retval UPLL_RC_ERR_INVALID_OPTION1  option1 is not valid.
+     * @retval UPLL_RC_ERR_INVALID_OPTION2  option2 is not valid.
+     */
     upll_rc_t ValidateMessage(IpcReqRespHeader *req, ConfigKeyVal *key);
 
-   /**
-    * @Brief Validates the syntax for KT_POLICING_PROFILE keytype
-    *   key structure.
-    *
-    * @param[in] key_flowlist KT_POLICING_PROFILE key structure.
-    *
-    * @retval UPLL_RC_SUCCESS        validation succeeded.
-    * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
-    */
+    /**
+     * @Brief Validates the syntax for KT_POLICING_PROFILE keytype
+     *   key structure.
+     *
+     * @param[in] key_flowlist KT_POLICING_PROFILE key structure.
+     *
+     * @retval UPLL_RC_SUCCESS        validation succeeded.
+     * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
+     */
     upll_rc_t ValidatePolicingProfileRenameValue(
-       val_rename_policingprofile_t *val_rename_policingprofile,
-       uint32_t operation);
+        val_rename_policingprofile_t *val_rename_policingprofile,
+        uint32_t operation);
 
-   /**
-    * @Brief Checks if the specified key type(KT_POLICING_PROFILE) and
-    *        associated attributes are supported on the given controller,
-    *        based on the valid flag
-    *
-    * @param[in] IpcReqRespHeader  contains first 8 fields of input request
-    *                              structure
-    * @param[in]   ConfigKeyVal    contains key and value structure.
-    * @param[in]   ctrlr_name      controller_name
-    *
-    * @retval  UPLL_RC_SUCCESS             Validation succeeded.
-    * @retval  UPLL_RC_ERR_GENERIC         Validation failure.
-    * @retval  UPLL_RC_ERR_INVALID_OPTION1 Option1 is not valid.
-    * @retval  UPLL_RC_ERR_INVALID_OPTION2 Option2 is not valid.
-    */
+    /**
+     * @Brief Checks if the specified key type(KT_POLICING_PROFILE) and
+     *        associated attributes are supported on the given controller,
+     *        based on the valid flag
+     *
+     * @param[in] IpcReqRespHeader  contains first 8 fields of input request
+     *                              structure
+     * @param[in]   ConfigKeyVal    contains key and value structure.
+     * @param[in]   ctrlr_name      controller_name
+     *
+     * @retval  UPLL_RC_SUCCESS             Validation succeeded.
+     * @retval  UPLL_RC_ERR_GENERIC         Validation failure.
+     * @retval  UPLL_RC_ERR_INVALID_OPTION1 Option1 is not valid.
+     * @retval  UPLL_RC_ERR_INVALID_OPTION2 Option2 is not valid.
+     */
     upll_rc_t ValidateCapability(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                                   const char* ctrlr_name = NULL);
+                                 const char* ctrlr_name = NULL);
 
-  public:
+   public:
     /**
      * @brief PolicingProfileMoMgr Class Constructor.
      */
@@ -130,7 +129,7 @@ class PolicingProfileMoMgr : public MoMgrImpl {
                                 DalDmlIntf *dmi,
                                 IpcReqRespHeader *req = NULL);
 
-     /**
+    /**
      * @brief  Gets the validity of the index in the given val structure
      *
      * @param[out] valid    This will contain the output of validity of
@@ -143,8 +142,10 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_SUCCESS     Successfull completion.
      * @retval  UPLL_RC_ERR_GENERIC Val is NULL.
      */
-    upll_rc_t GetValid(void *val, uint64_t indx, uint8_t *&valid,
-                   upll_keytype_datatype_t dt_type, MoMgrTables tbl = MAINTBL);
+    upll_rc_t GetValid(void *val, uint64_t indx,
+                       uint8_t *&valid,
+                       upll_keytype_datatype_t dt_type,
+                       MoMgrTables tbl = MAINTBL);
 
     /**
      * @brief  Allocates Memory for the Incoming Pointer to the Class.
@@ -192,7 +193,8 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
     upll_rc_t GetRenamedUncKey(ConfigKeyVal *ctrlr_key,
-                               upll_keytype_datatype_t dt_type, DalDmlIntf *dmi,
+                               upll_keytype_datatype_t dt_type,
+                               DalDmlIntf *dmi,
                                uint8_t *ctrlr_id);
 
     /**
@@ -246,7 +248,7 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      */
     upll_rc_t UpdateAuditConfigStatus(
         unc_keytype_configstatus_t cs_status, uuc::UpdateCtrlrPhase phase,
-        ConfigKeyVal *&ckv_running);
+        ConfigKeyVal *&ckv_running, DalDmlIntf *dmi);
 
     /**
      * @brief  Method Swaps the Key and Val structures.
@@ -395,10 +397,11 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
     upll_rc_t TxUpdateController(unc_key_type_t keytype,
-        uint32_t session_id, uint32_t config_id,
-        uuc::UpdateCtrlrPhase phase,
-        set<string> *affected_ctrlr_set, DalDmlIntf *dmi,
-        ConfigKeyVal **err_ckv);
+                                 uint32_t session_id, uint32_t config_id,
+                                 uuc::UpdateCtrlrPhase phase,
+                                 set<string> *affected_ctrlr_set,
+                                 DalDmlIntf *dmi,
+                                 ConfigKeyVal **err_ckv);
 
     /**
      * @brief  Method to send req to driver
@@ -416,8 +419,12 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
     upll_rc_t TxUpdateProcess(ConfigKeyVal *ck_main,
-        IpcResponse *ipc_resp, unc_keytype_operation_t op, DalDmlIntf *dmi,
-        controller_domain *ctrlr_dom);
+                              IpcResponse *ipc_resp,
+                              unc_keytype_operation_t op,
+                              DalDmlIntf *dmi,
+                              controller_domain *ctrlr_dom,
+                              set<string> *affected_ctrlr_set,
+                              bool *driver_resp);
 
     /**
      * @brief  Method to old policingprofile name from rename struct to
@@ -436,8 +443,11 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_GENERIC           Failure
      */
     upll_rc_t GetRenameInfo(ConfigKeyVal *ikey,
-        ConfigKeyVal *okey, ConfigKeyVal *&rename_info, DalDmlIntf *dmi,
-        const char *ctrlr_id, bool &renamed);
+                            ConfigKeyVal *okey,
+                            ConfigKeyVal *&rename_info,
+                            DalDmlIntf *dmi,
+                            const char *ctrlr_id,
+                            bool &renamed);
 
     /**
      * @brief  Method to Create ConfigKeyVal with rename struct as key
@@ -511,8 +521,8 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
     upll_rc_t GetControllerSpan(ConfigKeyVal *ikey,
-              upll_keytype_datatype_t dt_type,
-              DalDmlIntf *dmi);
+                                upll_keytype_datatype_t dt_type,
+                                DalDmlIntf *dmi);
 
     /**
      * @brief  Method to Set the Consolidated status
@@ -526,7 +536,7 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
     upll_rc_t SetConsolidatedStatus(ConfigKeyVal *ikey,
-        DalDmlIntf *dmi);
+                                    DalDmlIntf *dmi);
 
     /**
      * @brief  Method to Delete record in ctrlrtbl
@@ -541,7 +551,7 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
     upll_rc_t CtrlrTblDelete(ConfigKeyVal *pp_ckv,
-        DalDmlIntf *dmi, upll_keytype_datatype_t dt_type);
+                             DalDmlIntf *dmi, upll_keytype_datatype_t dt_type);
 
     /**
      * @brief  Method to Create record in ctrlrtbl
@@ -556,7 +566,7 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
     upll_rc_t CtrlrTblCreate(ConfigKeyVal *pp_ckv,
-        DalDmlIntf *dmi, upll_keytype_datatype_t dt_type);
+                             DalDmlIntf *dmi, upll_keytype_datatype_t dt_type);
 
     /**
      * @brief  Method to Create or Delete record in ctrlrtbl
@@ -572,8 +582,10 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
     upll_rc_t PolicingProfileCtrlrTblOper(const char *policingprofile_name,
-       const char *ctrlr_id, DalDmlIntf *dmi, unc_keytype_operation_t oper,
-       upll_keytype_datatype_t dt_type);
+                                          const char *ctrlr_id,
+                                          DalDmlIntf *dmi,
+                                          unc_keytype_operation_t oper,
+                                          upll_keytype_datatype_t dt_type);
 
     /**
      * @brief  Method to Get Policingprofile COnfigKeyVal
@@ -593,8 +605,8 @@ class PolicingProfileMoMgr : public MoMgrImpl {
         const char *ctrlr_id);
 
     upll_rc_t UpdateMainTbl(ConfigKeyVal *key_pp,
-      unc_keytype_operation_t op, uint32_t driver_result,
-      ConfigKeyVal *nreq, DalDmlIntf *dmi);
+                            unc_keytype_operation_t op, uint32_t driver_result,
+                            ConfigKeyVal *nreq, DalDmlIntf *dmi);
 
     upll_rc_t GetDiffRecord(ConfigKeyVal *ckv_running,
                             ConfigKeyVal *ckv_audit,
@@ -613,19 +625,19 @@ class PolicingProfileMoMgr : public MoMgrImpl {
     upll_rc_t SetPPConsolidatedStatus(ConfigKeyVal *ikey,
                                       uint8_t *ctrlr_id,
                                       DalDmlIntf *dmi);
-};
+  };
 
-typedef struct val_policingprofile_ctrl {
+  typedef struct val_policingprofile_ctrl {
     unc_keytype_configstatus_t cs_row_status;
     uint8_t flags;    // DBFLAGS
     uint32_t ref_count;  // DB RefCount
     uint8_t valid[1];
-} val_policingprofile_ctrl_t;
+  } val_policingprofile_ctrl_t;
 
-typedef struct key_policingprofile_ctrl {
-  uint8_t policingprofile_name[33];
-  uint8_t ctrlr_name[32];
-} key_policingprofile_ctrl_t;
+  typedef struct key_policingprofile_ctrl {
+    uint8_t policingprofile_name[33];
+    uint8_t ctrlr_name[32];
+  } key_policingprofile_ctrl_t;
 }  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -29,7 +29,7 @@ public class HostAddressResourceValidator extends VtnServiceValidator {
 			.getLogger(HostAddressResourceValidator.class.getName());
 
 	private final AbstractResource resource;
-	final CommonValidator validator = new CommonValidator();
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new host address resource validator.
@@ -47,7 +47,7 @@ public class HostAddressResourceValidator extends VtnServiceValidator {
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start HostAddressResourceValidator#validateUri()");
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.URI
@@ -83,8 +83,9 @@ public class HostAddressResourceValidator extends VtnServiceValidator {
 	 * API.
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start HostAddressResourceValidator#validate()");
 		boolean isValid = false;
 		try {
@@ -160,11 +161,9 @@ public class HostAddressResourceValidator extends VtnServiceValidator {
 						&& ipaddr.getAsJsonPrimitive(
 								VtnServiceJsonConsts.PREFIX).getAsString() != null) {
 					isValid = validator.isValidRange(
-							ipaddr
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.PREFIX)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.VAL_1,
+							ipaddr.getAsJsonPrimitive(
+									VtnServiceJsonConsts.PREFIX).getAsString()
+									.trim(), VtnServiceJsonConsts.VAL_1,
 							VtnServiceJsonConsts.VAL_30);
 				} else {
 					isValid = false;

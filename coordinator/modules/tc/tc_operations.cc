@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -290,6 +290,10 @@ TcOperStatus TcOperations::Execute() {
     if ( MsgRet != TCOPER_RET_SUCCESS ) {
       delete tcmsg_;
       tcmsg_ = NULL;
+      if (*MsgIter == unc::tclib::MSG_AUDITDB) {
+        /*set when Audit DB fails in startup phase*/
+        audit_db_fail_ = PFC_TRUE;
+      }
       return HandleMsgRet(MsgRet);
     }
 

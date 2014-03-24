@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -139,7 +139,6 @@ class Test2phase : public TwoPhaseCommit {
   TcOperRet TestGetControllerInfo(pfc::core::ipc::ClientSession* sess) {
     return GetControllerInfo(sess);
   }
-
 };
 
 

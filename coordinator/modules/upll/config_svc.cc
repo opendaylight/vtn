@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -11,6 +11,7 @@
  * upll_main.cc - UPLL module
  */
 
+#include <clstat_api.h>
 #include <map>
 
 #include "pfc/debug.h"
@@ -24,17 +25,18 @@
 #include "unc/unc_events.h"
 
 #include "alarm.hh"
-#include <clstat_api.h>
 
 #include "unc/uppl_common.h"
 #include "unc/pfcdriver_include.h"
-
 #include "unc/upll_svc.h"
 #include "uncxx/upll_log.hh"
 
 #include "kt_util.hh"
 #include "ctrlr_mgr.hh"
 #include "config_svc.hh"
+
+bool fatal_done;
+pfc::core::Mutex  fatal_mutex_lock;
 
 namespace unc {
 namespace upll {
@@ -60,13 +62,13 @@ unsigned int UpllConfigSvc::kNumCfgServices = 4;
 UpllConfigSvc::UpllConfigSvc(const pfc_modattr_t *mattr)
     : pfc::core::Module(mattr), sys_evhid_(EVHANDLER_ID_INVALID),
     cls_evhid_(EVHANDLER_ID_INVALID) {
-  UPLL_LOG_NOTICE("constructor");
-  shutting_down_ = false;
-  node_active_ = false;
-  config_mgr_ = NULL;
-  physical_evhdlr_ = NULL;
-  pfcdriver_evhdlr_ = NULL;
-}
+      UPLL_LOG_NOTICE("constructor");
+      shutting_down_ = false;
+      node_active_ = false;
+      config_mgr_ = NULL;
+      physical_evhdlr_ = NULL;
+      pfcdriver_evhdlr_ = NULL;
+    }
 
 /*
  * UpllConfigSvc::~UpllConfigSvc(void)
@@ -184,7 +186,26 @@ pfc_ipcresp_t UpllConfigSvc::KtService(pfc::core::ipc::ServerSession *sess,
     ping_tspec.tv_nsec = 0;
     sess->setTimeout(&ping_tspec);
     UPLL_LOG_DEBUG("IPC Server Session timeout for Ping set to %d",
-                  kIpcTimeoutPing);
+                   kIpcTimeoutPing);
+  } else if (ckv->get_key_type() == UNC_KT_VTNSTATION_CONTROLLER) {
+    pfc_timespec_t tspec;
+    tspec.tv_sec = kIpcTimeoutVtnstation;
+    tspec.tv_nsec = 0;
+    sess->setTimeout(&tspec);
+    UPLL_LOG_DEBUG("IPC Server Session timeout for VTN_STATION_CONTROLLER "
+                   "set to %d", kIpcTimeoutVtnstation);
+  }
+
+  if (ckv->get_key_type() == UNC_KT_VTN_DATAFLOW) {
+    pfc_timespec_t dataflow_tspec;
+    dataflow_tspec.tv_sec = kIpcTimeoutDataflow;
+    dataflow_tspec.tv_nsec = 0;
+    sess->setTimeout(&dataflow_tspec);
+    UPLL_LOG_DEBUG("IPC Server Session timeout for data-flow set to %d",
+                   kIpcTimeoutDataflow);
+    // XXX: store server session object in CKV user_data CKV
+    // for data-flow library
+    ckv->set_user_data(sess);
   }
 
   pfc_ipcresp_t ret = config_mgr_->KtServiceHandler(service, &msghdr, ckv);
@@ -195,6 +216,19 @@ pfc_ipcresp_t UpllConfigSvc::KtService(pfc::core::ipc::ServerSession *sess,
   }
 
   // send the response
+  // Convert driver specific error UPLL_RC_ERR_CTR_DISCONNECTED
+  // to logical specific error UNC_UPLL_RC_ERR_RESOURCE_DISCONNECTED
+  if (msghdr.result_code == UPLL_RC_ERR_CTR_DISCONNECTED) {
+    msghdr.result_code = UPLL_RC_ERR_RESOURCE_DISCONNECTED;
+  }
+  if (ckv->get_key_type() == UNC_KT_VTN_DATAFLOW) {
+    UPLL_LOG_TRACE("KT:UNC_KT_VTN_DATAFLOW result:%d", msghdr.result_code);
+    ckv->set_user_data(NULL);
+    if (msghdr.result_code == UPLL_RC_SUCCESS) {
+      delete ckv;
+      return 0;
+    }
+  }
   if (!IpcUtil::WriteKtResponse(sess, msghdr, ckv)) {
     UPLL_LOG_DEBUG("Failed to send response to key tree request");
     delete ckv;
@@ -216,7 +250,7 @@ pfc_ipcresp_t UpllConfigSvc::GlobalConfigService(
 
   if (0 != (ipc_err = sess->getArgument(arg++, operation))) {
     UPLL_LOG_DEBUG("Unable to read operation from IPC request. Err=%d",
-                  ipc_err);
+                   ipc_err);
     return PFC_IPCRESP_FATAL;
   }
   switch (operation) {
@@ -227,6 +261,7 @@ pfc_ipcresp_t UpllConfigSvc::GlobalConfigService(
                      " to infinite");
       urc = config_mgr_->IsCandidateDirty(&dirty);
       // Write response
+      // No need to convert UPLL_RC_ERR_CTR_DISCONNECTED error code
       if ((0 != (ipc_err = sess->addOutput((uint32_t)operation))) ||
           (0 != (ipc_err = sess->addOutput((uint32_t)urc))) ||
           (0 != (ipc_err = sess->addOutput((uint8_t)dirty)))) {
@@ -263,13 +298,13 @@ pfc_ipcresp_t UpllConfigSvc::GlobalConfigService(
       }
 
       /*
-      pfc_timespec_t sess_timeout;
-      sess_timeout.tv_sec = kIpcTimeoutImport;
-      sess_timeout.tv_nsec = 0;
-      sess->setTimeout(&sess_timeout);
-      UPLL_LOG_DEBUG("IPC Server Session timeout for Import set to %d",
-                     kIpcTimeoutImport);
-      */
+         pfc_timespec_t sess_timeout;
+         sess_timeout.tv_sec = kIpcTimeoutImport;
+         sess_timeout.tv_nsec = 0;
+         sess->setTimeout(&sess_timeout);
+         UPLL_LOG_DEBUG("IPC Server Session timeout for Import set to %d",
+         kIpcTimeoutImport);
+         */
       sess->setTimeout(NULL);
       UPLL_LOG_DEBUG("IPC Server Session timeout for Import set to infinite.");
 
@@ -278,6 +313,11 @@ pfc_ipcresp_t UpllConfigSvc::GlobalConfigService(
                      " session_id=%d, config_id=%d",
                      urc, ctrlr_name, session_id, config_id);
       // Write response
+      // Convert driver specific error UNC_RC_ERR_CTR_DISCONNECTED
+      // to logical specific error UNC_UPLL_RC_ERR_RESOURCE_DISCONNECTED
+      if (urc == UPLL_RC_ERR_CTR_DISCONNECTED) {
+        urc = UPLL_RC_ERR_RESOURCE_DISCONNECTED;
+      }
       if ((0 != (ipc_err = sess->addOutput((uint32_t)operation))) ||
           (0 != (ipc_err = sess->addOutput((uint32_t)urc)))) {
         UPLL_LOG_DEBUG("Unable to write IPC response. Err=%d", ipc_err);
@@ -297,13 +337,13 @@ pfc_ipcresp_t UpllConfigSvc::GlobalConfigService(
       }
 
       /*
-      pfc_timespec_t sess_timeout;
-      sess_timeout.tv_sec = kIpcTimeoutImport;
-      sess_timeout.tv_nsec = 0;
-      sess->setTimeout(&sess_timeout);
-      UPLL_LOG_DEBUG("IPC Server Session timeout for ImportMerge set to %d",
-                     kIpcTimeoutImport);
-      */
+         pfc_timespec_t sess_timeout;
+         sess_timeout.tv_sec = kIpcTimeoutImport;
+         sess_timeout.tv_nsec = 0;
+         sess->setTimeout(&sess_timeout);
+         UPLL_LOG_DEBUG("IPC Server Session timeout for ImportMerge set to %d",
+         kIpcTimeoutImport);
+         */
       sess->setTimeout(NULL);
       UPLL_LOG_DEBUG("IPC Server Session timeout for Merge set to infinite");
 
@@ -311,6 +351,11 @@ pfc_ipcresp_t UpllConfigSvc::GlobalConfigService(
       UPLL_LOG_TRACE("Merge: urc=%d, session_id=%d, config_id=%d",
                      urc, session_id, config_id);
       // Write response
+      // Convert driver specific error UNC_RC_CTR_DISCONNECTED
+      // to logical specific error UNC_UPLL_RC_ERR_RESOURCE_DISCONNECTED
+      if (urc == UPLL_RC_ERR_CTR_DISCONNECTED) {
+        urc = UPLL_RC_ERR_RESOURCE_DISCONNECTED;
+      }
       if ((0 != (ipc_err = sess->addOutput((uint32_t)operation))) ||
           (0 != (ipc_err = sess->addOutput((uint32_t)urc)))) {
         UPLL_LOG_DEBUG("Unable to write IPC response. Err=%d", ipc_err);
@@ -332,6 +377,7 @@ pfc_ipcresp_t UpllConfigSvc::GlobalConfigService(
       UPLL_LOG_TRACE("ClearImport: urc=%d, session_id=%d, config_id=%d",
                      urc, session_id, config_id);
       // Write response
+      // No need to convert UNC_RC_CTR_DISCONNECTED error code
       if ((0 != (ipc_err = sess->addOutput((uint32_t)operation))) ||
           (0 != (ipc_err = sess->addOutput((uint32_t)urc)))) {
         UPLL_LOG_DEBUG("Unable to write IPC response. Err=%d", ipc_err);
@@ -342,12 +388,12 @@ pfc_ipcresp_t UpllConfigSvc::GlobalConfigService(
     break;
 
     case UPLL_IS_KEY_TYPE_IN_USE_OP:
-      return HandleIsKeyInUse(sess, arg);
-      break;
+    return HandleIsKeyInUse(sess, arg);
+    break;
 
     case UPLL_UPPL_UPDATE_OP:
-      return HandleUpplUpdate(sess, arg);
-      break;
+    return HandleUpplUpdate(sess, arg);
+    break;
   }
   return PFC_IPCRESP_FATAL;
 }
@@ -465,8 +511,8 @@ pfc_ipcresp_t UpllConfigSvc::HandleUpplUpdate(
     if (ctr_val.valid[kIdxType] == UNC_VF_VALID) {
       // For Unknown, version is optional.
       if (((unc_keytype_ctrtype_t)ctr_val.type == UNC_CT_PFC ||
-          (unc_keytype_ctrtype_t)ctr_val.type == UNC_CT_VNP || 
-          (unc_keytype_ctrtype_t)ctr_val.type == UNC_CT_ODC)) {
+           (unc_keytype_ctrtype_t)ctr_val.type == UNC_CT_VNP ||
+           (unc_keytype_ctrtype_t)ctr_val.type == UNC_CT_ODC)) {
         if (ctr_val.valid[kIdxVersion] == UNC_VF_INVALID) {
           urc = UPLL_RC_ERR_CFG_SYNTAX;
         }
@@ -671,7 +717,7 @@ void UpllConfigSvc::PhysicalEventHandler(const IpcEvent &event) {
   uint32_t arg_cnt = sess.getResponseCount();
   if (arg_cnt < unc::upll::ipc_util::kPhyConfigNotificationMandatoryFields) {
     UPLL_LOG_DEBUG("Not enough arguments in Physical event. Has only %u.",
-                  arg_cnt);
+                   arg_cnt);
     return;
   }
 
@@ -767,14 +813,14 @@ void UpllConfigSvc::PhysicalEventHandler(const IpcEvent &event) {
           if ((old_ctr_st.oper_status == UPPL_CONTROLLER_OPER_UP)  &&
               (new_ctr_st.oper_status != UPPL_CONTROLLER_OPER_UP)) {
             config_mgr_->OnControllerStatusChange(
-                            reinterpret_cast<char *>(key_ctr.controller_name),
-                            UPPL_CONTROLLER_OPER_DOWN);
+                reinterpret_cast<char *>(key_ctr.controller_name),
+                UPPL_CONTROLLER_OPER_DOWN);
           }  else if ((old_ctr_st.oper_status != UPPL_CONTROLLER_OPER_UP)  &&
-                     (new_ctr_st.oper_status == UPPL_CONTROLLER_OPER_UP)) {
+                      (new_ctr_st.oper_status == UPPL_CONTROLLER_OPER_UP)) {
             config_mgr_->OnControllerStatusChange(
-                             reinterpret_cast<char *>(key_ctr.controller_name),
-                             UPPL_CONTROLLER_OPER_UP);
-          } 
+                reinterpret_cast<char *>(key_ctr.controller_name),
+                UPPL_CONTROLLER_OPER_UP);
+          }
         }
       }
       return;
@@ -794,7 +840,12 @@ void UpllConfigSvc::PhysicalEventHandler(const IpcEvent &event) {
           return;
         }
         if (operation == UNC_OP_CREATE) {
-          // To do nothing?
+          config_mgr_->OnLogicalPortStatusChange(
+              reinterpret_cast<char *>(
+                  key_port.domain_key.ctr_key.controller_name),
+              reinterpret_cast<char *>(key_port.domain_key.domain_name),
+              reinterpret_cast<char *>(key_port.port_id),
+              new_port_st.oper_status);
         } else if (operation == UNC_OP_UPDATE) {
           if (0 != (err = sess.getResponse(arg++, old_port_st))) {
             UPLL_LOG_DEBUG("Failed to get field at #%u in Physical event. "
@@ -881,7 +932,7 @@ void UpllConfigSvc::PfcDriverAlarmHandler(const IpcEvent &event) {
       (0 != (err = sess.getResponse(arg++, keytype))) ||
       (0 != (err = sess.getResponse(arg++, alarm_type)))) {
     UPLL_LOG_DEBUG("Failed to get header field #%u in the alarm from PFCDriver."
-                  " Err=%d", arg, err);
+                   " Err=%d", arg, err);
     return;
   }
   if (ctrlr_name[0] == 0) {
@@ -980,10 +1031,10 @@ void UpllConfigSvc::UnregisterIpcEventHandlers() {
     pfcdriver_evhdlr_ = NULL;
   }
 }
-                                                                       // NOLINT
-}  // namesapce config_svc
-}  // namesapce upll
-}  // namesapce unc
+// NOLINT
+}  // namespace config_svc
+}  // namespace upll
+}  // namespace unc
 
 /* Declare C++ module. */
 PFC_MODULE_IPC_DECL(unc::upll::config_svc::UpllConfigSvc,

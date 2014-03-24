@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -55,7 +55,7 @@ public class VLinksResource extends AbstractResource {
 	 * 
 	 * @return the VTN name
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
@@ -81,7 +81,8 @@ public class VLinksResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VLinksResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -140,7 +141,8 @@ public class VLinksResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VLinksResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -163,7 +165,7 @@ public class VLinksResource extends AbstractResource {
 			status = requestProcessor.processIpcRequest();
 			final List<String> uriParameterList = getUriParameters(requestBody);
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			/*
 			 * setInfo(responseGenerator.getVLinkResponse(
 			 * requestProcessor.getIpcResponsePacket(), requestBody,
@@ -173,14 +175,14 @@ public class VLinksResource extends AbstractResource {
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.LIST);
 			if (responseJson.get(VtnServiceJsonConsts.VLINKS).isJsonArray()) {
-				JsonArray responseArray = responseJson.get(
+				final JsonArray responseArray = responseJson.get(
 						VtnServiceJsonConsts.VLINKS).getAsJsonArray();
 				responseJson = getResponseJsonArrayLink(requestBody,
-                        requestProcessor, responseGenerator,
-                        responseArray, VtnServiceJsonConsts.VLINKS,
-                        VtnServiceJsonConsts.VLKNAME,
-                        IpcRequestPacketEnum.KT_VLINK_GET,
-                        uriParameterList,VtnServiceIpcConsts.GET_VLINKS_RESPONSE);
+						requestProcessor, responseGenerator, responseArray,
+						VtnServiceJsonConsts.VLINKS,
+						VtnServiceJsonConsts.VLKNAME,
+						IpcRequestPacketEnum.KT_VLINK_GET, uriParameterList,
+						VtnServiceIpcConsts.GET_VLINKS_RESPONSE);
 			}
 			setInfo(responseJson);
 			LOG.debug("Response object created successfully");
@@ -213,8 +215,8 @@ public class VLinksResource extends AbstractResource {
 	}
 
 	private void getModifiedRequestPacket(final JsonObject requestBody,
-			IpcRequestProcessor requestProcessor) {
-		IpcStruct valStruct = new IpcStruct(
+			final IpcRequestProcessor requestProcessor) {
+		final IpcStruct valStruct = new IpcStruct(
 				UncStructEnum.ValVlink.getValue());
 		requestProcessor.getRequestPacket().setValStruct(valStruct);
 		if (requestBody.has(VtnServiceJsonConsts.VNODE1NAME)
@@ -230,10 +232,9 @@ public class VLinksResource extends AbstractResource {
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
 				valStruct.set(VtnServiceJsonConsts.VNODE1NAME,
-						IpcDataUnitWrapper
-								.setIpcUint8ArrayValue(requestBody.get(
-										VtnServiceJsonConsts.VNODE1NAME)
-										.getAsString()));
+						IpcDataUnitWrapper.setIpcUint8ArrayValue(requestBody
+								.get(VtnServiceJsonConsts.VNODE1NAME)
+								.getAsString()));
 			}
 			if (requestBody.has(VtnServiceJsonConsts.VNODE2NAME)) {
 				valStruct
@@ -244,10 +245,9 @@ public class VLinksResource extends AbstractResource {
 										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
 												.ordinal()));
 				valStruct.set(VtnServiceJsonConsts.VNODE2NAME,
-						IpcDataUnitWrapper
-								.setIpcUint8ArrayValue(requestBody.get(
-										VtnServiceJsonConsts.VNODE2NAME)
-										.getAsString()));
+						IpcDataUnitWrapper.setIpcUint8ArrayValue(requestBody
+								.get(VtnServiceJsonConsts.VNODE2NAME)
+								.getAsString()));
 			}
 		}
 		if (requestBody.get(VtnServiceJsonConsts.TARGETDB).getAsString()
@@ -255,8 +255,8 @@ public class VLinksResource extends AbstractResource {
 				&& !requestBody.get(VtnServiceJsonConsts.OP).getAsString()
 						.equalsIgnoreCase(VtnServiceJsonConsts.COUNT)) {
 			LOG.debug("Add ValVlinkSt to Request Packet");
-			IpcDataUnit[] extraDataUnits = new IpcDataUnit[1];
-			IpcStruct valStructSt = new IpcStruct(
+			final IpcDataUnit[] extraDataUnits = new IpcDataUnit[1];
+			final IpcStruct valStructSt = new IpcStruct(
 					UncStructEnum.ValVlinkSt.getValue());
 			extraDataUnits[0] = valStructSt;
 			requestProcessor.getRequestPacket().setExtraDataUnits(
@@ -282,23 +282,23 @@ public class VLinksResource extends AbstractResource {
 		LOG.trace("Completed VLinksResource#getUriParameters()");
 		return uriParameters;
 	}
-	
-	public JsonObject getResponseJsonArrayLink(final JsonObject requestBody,
-			IpcRequestProcessor requestProcessor,
-			Object responseGenerator, JsonArray responseArray,
-			String JsonArrayName, String IndexName,
-			IpcRequestPacketEnum requestPackeEnumName,
-			List<String> uriParameters, String methodName)
-					throws VtnServiceException {
-		//session reset
-		requestProcessor.setServiceInfo(
-				UncUPLLEnums.UPLL_IPC_SERVICE_NAME,
+
+	private final JsonObject getResponseJsonArrayLink(
+			final JsonObject requestBody,
+			final IpcRequestProcessor requestProcessor,
+			final Object responseGenerator, final JsonArray responseArray,
+			final String JsonArrayName, final String IndexName,
+			final IpcRequestPacketEnum requestPackeEnumName,
+			final List<String> uriParameters, final String methodName)
+			throws VtnServiceException {
+		// session reset
+		requestProcessor.setServiceInfo(UncUPLLEnums.UPLL_IPC_SERVICE_NAME,
 				UncUPLLEnums.ServiceID.UPLL_READ_SVC_ID.ordinal());
 		int status = ClientSession.RESP_FATAL;
 		int memberIndex = 0;
-		VtnServiceConfiguration configuration = VtnServiceInitManager
+		final VtnServiceConfiguration configuration = VtnServiceInitManager
 				.getConfigurationMap();
-		int max_rep_count = Integer.parseInt(configuration
+		final int max_rep_count = Integer.parseInt(configuration
 				.getConfigValue(VtnServiceConsts.MAX_REP_DEFAULT));
 		memberIndex = responseArray.size();
 		if (memberIndex != 0) {
@@ -331,19 +331,19 @@ public class VLinksResource extends AbstractResource {
 									+ VtnServiceConsts.HYPHEN
 									+ Thread.currentThread().getStackTrace()[1]
 											.getMethodName(),
-											UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
-											UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorMessage());
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR
+									.getErrorMessage());
 				}
 				try {
 					Method method;
-
 
 					final Class<IpcLogicalResponseFactory> sourceClass = IpcLogicalResponseFactory.class;
 					// get the method name to get the IpcLogicalResponseFactory
 					// object for given key
 					method = sourceClass.getMethod(methodName,
 							new Class<?>[] { IpcDataUnit[].class,
-							JsonObject.class, String.class });
+									JsonObject.class, String.class });
 					// get IpcLogicalResponseFactory object
 					memberArray = ((JsonObject) method.invoke(
 							responseGenerator,
@@ -357,8 +357,9 @@ public class VLinksResource extends AbstractResource {
 									+ VtnServiceConsts.HYPHEN
 									+ Thread.currentThread().getStackTrace()[1]
 											.getMethodName(),
-											UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
-											UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorMessage());
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR
+									.getErrorMessage());
 				}
 				if (null != memberArray && !memberArray.isJsonNull()
 						&& memberArray.size() > 0) {
@@ -369,7 +370,7 @@ public class VLinksResource extends AbstractResource {
 				memberIndex = memberArray.size();
 			}
 		}
-		JsonObject root = new JsonObject();
+		final JsonObject root = new JsonObject();
 		root.add(JsonArrayName, responseArray);
 		return root;
 	}

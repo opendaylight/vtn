@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -37,7 +37,7 @@ pfc_bool_t is_switch = true;
 
 #define DEL_AUDIT_PARAMS() \
     delete tc_lock_; \
-tc_lock_ =NULL ;
+tc_lock_ =NULL;
 
 /*class to test TcStartupOperations*/
 class TestTcStartUpOperations : public TcStartUpOperations {

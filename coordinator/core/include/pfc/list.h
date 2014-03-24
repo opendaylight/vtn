@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -177,23 +177,33 @@ pfc_list_move_all(pfc_list_t *head, pfc_list_t *newhead)
 /*
  * List iterator.
  */
-#define	PFC_LIST_FOREACH(head, var)					\
-	for ((var) = (head)->pl_next; (var) != (head); (var) = (var)->pl_next)
-#define	PFC_LIST_REV_FOREACH(head, var)					\
-	for ((var) = (head)->pl_prev; (var) != (head); (var) = (var)->pl_prev)
+#define	PFC_LIST_FOREACH_FROM(head, from, var)				\
+	for ((var) = (from); (var) != (head); (var) = (var)->pl_next)
+#define	PFC_LIST_REV_FOREACH_FROM(head, from, var)			\
+	for ((var) = (from); (var) != (head); (var) = (var)->pl_prev)
+
+#define	PFC_LIST_FOREACH(head, var)				\
+	PFC_LIST_FOREACH_FROM(head, (head)->pl_next, var)
+#define	PFC_LIST_REV_FOREACH(head, var)				\
+	PFC_LIST_REV_FOREACH_FROM(head, (head)->pl_prev, var)
 
 /*
  * List iterator that allow removal of `var'.
  * One more variable must be specified to preserve next or previous link.
  */
-#define	PFC_LIST_FOREACH_SAFE(head, var, next)				\
-	for ((var) = (head)->pl_next;					\
+#define	PFC_LIST_FOREACH_SAFE_FROM(head, from, var, next)		\
+	for ((var) = (from);						\
 	     (var) != (head) && ((next) = (var)->pl_next, 1);           \
 	     (var) = (next))
-#define	PFC_LIST_REV_FOREACH_SAFE(head, var, prev)			\
-	for ((var) = (head)->pl_prev;					\
+#define	PFC_LIST_REV_FOREACH_SAFE_FROM(head, from, var, prev)		\
+	for ((var) = (from);						\
 	     (var) != (head) && ((prev) = (var)->pl_prev, 1);           \
 	     (var) = (prev))
+
+#define	PFC_LIST_FOREACH_SAFE(head, var, next)				\
+	PFC_LIST_FOREACH_SAFE_FROM(head, (head)->pl_next, var, next)
+#define	PFC_LIST_REV_FOREACH_SAFE(head, var, prev)			\
+	PFC_LIST_REV_FOREACH_SAFE_FROM(head, (head)->pl_prev, var, prev)
 
 PFC_C_END_DECL
 

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011-2013 NEC Corporation
+# Copyright (c) 2011-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -13,3 +13,6 @@
 
 include ../config.mk
 include $(BLDDIR)/exec-defs.mk
+
+# Don't apply configurations for runtime environment.
+OPENSSL_RUNPATH		:= $(OPENSSL_LIBDIR)

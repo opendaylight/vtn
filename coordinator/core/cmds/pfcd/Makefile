@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2010-2013 NEC Corporation
+# Copyright (c) 2010-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -50,6 +50,7 @@ LDFLAGS		+= $(EXT_LIBDIRS:%=-Wl,-rpath-link,%)
 
 PFC_LIBS	= libpfc libpfc_cmd libpfc_util libpfc_ipcsrv libpfc_ipcclnt
 LDLIBS		+= -ldl
+LDLIBS_PREP	= $(PFCD_EXTRA_LDLIBS)
 
 # Embed build timestamp.
 # Note that this always causes rebuild of pfcd.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -65,7 +65,7 @@ void build_delete_table_script() {
   // Print Copyright
   line.clear();
   line += "/*\n"
-      " * Copyright (c) 2012-2013 NEC Corporation\n"
+      " * Copyright (c) 2012-2014 NEC Corporation\n"
       " * All rights reserved.\n"
       " *\n"
       " * This program and the accompanying materials are made available "
@@ -80,21 +80,22 @@ void build_delete_table_script() {
   line.clear();
   line += "/**\n"
           " * upll_delete_table.sql\n"
-          " *   Contains SQL commands to delete all the tables created by UPLL\n"
-          " */\n"; 
+          " *   Contains SQL commands to delete all the tables"
+          "created by UPLL\n"
+          " */\n";
   printf("\n%s", line.c_str());
 
-
   for (cfg_idx = 0; cfg_idx < kUpllDbNumCfgId; cfg_idx++) {
-  for (tbl_idx = 0; tbl_idx < uudstbl::kDalNumTables; tbl_idx++) {
+  for (uint16_t tbl_iter = uudstbl::kDalNumTables; tbl_iter > 0; tbl_iter--) {
+    tbl_idx = tbl_iter - 1;
     // Controller Table appears only in Candidate
     if (tbl_idx == uudstbl::kDbiCtrlrTbl && cfg_idx != kCfgIdCandidate) {
-      break;
+      continue;
     }
 
-    // Create Table
+    // Delete Table
     line.clear();
-    line += "DROP TABLE ";
+    line += "TRUNCATE TABLE ";
     line += get_cfg_str(static_cast<UpllDbCfgId>(cfg_idx));
     line += uudschema::TableName(tbl_idx);
     line += ";";

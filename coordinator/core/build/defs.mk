@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2010-2013 NEC Corporation
+# Copyright (c) 2010-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -161,7 +161,8 @@ endif	# DEBUG_BUILD
 # Note that CPPFLAGS is applied to both C and C++ compilation.
 CC_DEFS		= $(CC_FEATURE_DEFS) $(CC_DEBUG_DEFS) $(EXTRA_CPPFLAGS)
 CC_INCLUDES	= $(CC_INCDIRS_PREP:%=-I%) $(OBJS_INCDIRS:%=-I$(OBJROOT)/%)
-CC_INCLUDES	+= $(CC_INCDIRS:%=-I$(SRCROOT)/%) $(EXTRA_INCDIRS:%=-I%)
+CC_INCLUDES	+= $(CC_INCDIRS:%=-I$(SRCROOT)/%) $(OPENSSL_INCDIR:%=-I%)
+CC_INCLUDES	+=  $(EXTRA_INCDIRS:%=-I%)
 CPPFLAGS	= $(CPPFLAGS_ALL) $(CC_DEFS) $(CC_INCLUDES)
 CXX_DEFS	= $(EXTRA_CXX_CPPFLAGS)
 CXX_INCLUDES	= $(CXX_INCDIRS:%=-I$(SRCROOT)/%) $(BOOST_INCDIR:%=-I%)
@@ -197,7 +198,8 @@ ASFLAGS		= -x assembler-with-cpp
 PFC_EXTLIBDIRS	= $(PFC_EXTLIBS:%=$(OBJROOT)/ext/%)
 
 # Library search path for runtime linker.
-LD_RUNTIME_DIR	= $(EXTRA_RUNTIME_DIR) $(INST_LIBDIR) $(EXTERNAL_RUNPATH)
+LD_RUNTIME_DIR	= $(EXTRA_RUNTIME_DIR) $(OPENSSL_RUNPATH) $(INST_LIBDIR)
+LD_RUNTIME_DIR	+= $(EXTERNAL_RUNPATH)
 LD_RPATH	= $(filter-out $(DEFAULT_LIBPATH), $(abspath $(LD_RUNTIME_DIR)))
 
 # Linker option to disallow unresolved symbol.
@@ -212,7 +214,8 @@ LD_ZDEFS	= -z defs
 # LD_LDFLAGS:		Linker options to be passed via "-Wl".
 # EXTRA_LDFLAGS:	Extra flags to be passed to linker.
 LD_LIBDIRS	= $(LINK_LIBDIR) $(OBJTREE_LIBDIRS:%=$(OBJROOT)/%)
-LD_LIBDIRS	+= $(PFC_EXTLIBDIRS) $(EXTRA_LIBDIRS)
+LD_LIBDIRS	+= $(OPENSSL_LIBDIR) $(PFC_EXTLIBDIRS)
+LD_LIBDIRS	+= $(filter-out $(DEFAULT_LIBPATH),$(abspath $(EXTRA_LIBDIRS)))
 LDFLAGS_RPATH	= $(LD_RPATH:%=-Wl,-rpath,%)
 LDFLAGS		= $(LD_LIBDIRS:%=-L%) $(LDFLAGS_RPATH) $(LD_LDFLAGS:%=-Wl,%)
 LDFLAGS		+= $(LD_MODE) $(EXTRA_LDFLAGS)

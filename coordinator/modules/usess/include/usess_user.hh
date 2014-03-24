@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -10,6 +10,7 @@
 #ifndef _USESS_USER_HH_
 #define _USESS_USER_HH_
 
+#include <string>
 #include "usess_def.hh"
 #include "usess_conf_user.hh"
 #include "mgmt_database.hh"
@@ -42,8 +43,7 @@ typedef enum {
 // -------------------------------------------------------------
 // Class declaration.
 // -------------------------------------------------------------
-class UsessUser : public UsessBaseCommon
-{
+class UsessUser : public UsessBaseCommon {
  public:
   // -----------------------------
   //  class method.

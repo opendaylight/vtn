@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -58,13 +58,13 @@ class MoCfgServiceIntf {
  public:
   virtual ~MoCfgServiceIntf() {}
   virtual upll_rc_t CreateMo(IpcReqRespHeader *req, ConfigKeyVal *key,
-                          DalDmlIntf *dmi) = 0;
+                             DalDmlIntf *dmi) = 0;
   // domain_id is guaranteed for VTN, for vnode it might be there (driver team
   // need to confirm), for others it is optional and not present does not mean
   // no domain id.
   virtual upll_rc_t CreateImportMo(IpcReqRespHeader *req, ConfigKeyVal *key,
-                                DalDmlIntf *dmi, const char *ctrlr_id,
-                                const char *domain_id) = 0;
+                                   DalDmlIntf *dmi, const char *ctrlr_id,
+                                   const char *domain_id) = 0;
   virtual upll_rc_t DeleteMo(IpcReqRespHeader *req, ConfigKeyVal *key,
                              DalDmlIntf *dmi) = 0;
   virtual upll_rc_t UpdateMo(IpcReqRespHeader *req, ConfigKeyVal *key,
@@ -95,16 +95,22 @@ enum UpdateCtrlrPhase {
   kUpllUcpDelete2
 };
 
+enum KTxCtrlrAffectedState {
+  kCtrlrAffectedNoDiff =  0,  // There is no diff in UNC and Ctrlr Configuration
+  kCtrlrAffectedOnlyCSDiff,   // No config diff, only diff in the config status
+  kCtrlrAffectedConfigDiff  // There is a diff in the configuration,
+  // add the controller to affected ctrlr list
+};
 // Interface class for normal transaction operations
 class MoTxServiceIntf {
  public:
   virtual ~MoTxServiceIntf() {}
   virtual upll_rc_t TxUpdateController(unc_key_type_t keytype,
-                                    uint32_t session_id, uint32_t config_id,
-                                    UpdateCtrlrPhase phase,
-                                    set<string> *affected_ctrlr_set,
-                                    DalDmlIntf *dmi,
-                                    ConfigKeyVal **err_ckv) = 0;
+                                       uint32_t session_id, uint32_t config_id,
+                                       UpdateCtrlrPhase phase,
+                                       set<string> *affected_ctrlr_set,
+                                       DalDmlIntf *dmi,
+                                       ConfigKeyVal **err_ckv) = 0;
   virtual upll_rc_t TxVote(unc_key_type_t keytype, DalDmlIntf *dmi,
                            ConfigKeyVal **err_ckv) = 0;
   virtual upll_rc_t TxVoteCtrlrStatus(
@@ -123,8 +129,8 @@ class MoTxServiceIntf {
 
   virtual upll_rc_t TxUpdateDtState(unc_key_type_t ktype,
                                     uint32_t session_id,
-                                     uint32_t config_id,
-                                     DalDmlIntf *dmi) {
+                                    uint32_t config_id,
+                                    DalDmlIntf *dmi) {
     UPLL_LOG_DEBUG("kt: %u", ktype);
     return UPLL_RC_SUCCESS;
   }
@@ -135,13 +141,16 @@ class MoTxServiceIntf {
 class MoAuditServiceIntf {
  public:
   virtual ~MoAuditServiceIntf() {}
-  virtual upll_rc_t AuditUpdateController(unc_key_type_t keytype,
-                                          const char *ctrlr_id,
-                                          uint32_t session_id,
-                                          uint32_t config_id,
-                                          UpdateCtrlrPhase phase,
-                                          bool *ctrlr_affected,
-                                          DalDmlIntf *dmi) = 0;
+  virtual upll_rc_t AuditUpdateController
+      (unc_key_type_t keytype,
+       const char *ctrlr_id,
+       uint32_t session_id,
+       uint32_t config_id,
+       UpdateCtrlrPhase phase,
+       DalDmlIntf *dmi,
+       ConfigKeyVal **err_ckv,
+       KTxCtrlrAffectedState *ctrlr_affected) = 0;
+
   // virtual upll_rc_t AuditVote(const char *ctrlr_id) = 0;
   virtual upll_rc_t AuditVoteCtrlrStatus(unc_key_type_t keytype,
                                          CtrlrVoteStatus *vote_satus,
@@ -179,10 +188,13 @@ class MoDbServiceIntf {
   virtual ~MoDbServiceIntf() {}
   virtual upll_rc_t CopyRunningToStartup(unc_key_type_t kt,
                                          DalDmlIntf *dmi) = 0;
+  virtual upll_rc_t ClearConfiguration(unc_key_type_t kt, DalDmlIntf *dmi,
+                                       upll_keytype_datatype_t cfg_type) = 0;
   virtual upll_rc_t ClearStartup(unc_key_type_t kt, DalDmlIntf *dmi) = 0;
   virtual upll_rc_t LoadStartup(unc_key_type_t kt, DalDmlIntf *dmi) = 0;
   virtual upll_rc_t CopyRunningToCandidate(unc_key_type_t kt,
-                                           DalDmlIntf *dmi) = 0;
+                                           DalDmlIntf *dmi,
+                                           unc_keytype_operation_t op) = 0;
   virtual upll_rc_t IsCandidateDirty(unc_key_type_t kt, bool *dirty,
                                      DalDmlIntf *dmi) = 0;
 };
@@ -190,140 +202,147 @@ class MoDbServiceIntf {
 class MoManager : public MoCfgServiceIntf, public MoTxServiceIntf,
     public MoAuditServiceIntf, public MoImportServiceIntf,
     public MoDbServiceIntf {
- public:
-  static const uint32_t kMaxReadBulkCount = 10000;
+     public:
+      static const uint32_t kMaxReadBulkCount = 10000;
 
-  virtual ~MoManager() {}
+      virtual ~MoManager() {}
 
-  const MoManager *GetMoManager(unc_key_type_t kt);
-  // virtual void UpplNotificationHandler(pfc_event_t event, pfc_ptr_t arg);
-  // virtual void DriverNotificationHandler(pfc_event_t event, pfc_ptr_t arg);
-  virtual upll_rc_t IsKeyInUse(upll_keytype_datatype_t datatype,
-                               const ConfigKeyVal *ckv, bool *in_use,
-                               DalDmlIntf *dmi) {
-    *in_use = true;
-    return UPLL_RC_ERR_GENERIC;
-  }
+      const MoManager *GetMoManager(unc_key_type_t kt);
+      // virtual void UpplNotificationHandler(pfc_event_t event, pfc_ptr_t arg);
+      // virtual void DriverNotificationHandler(pfc_event_t event,
+      // pfc_ptr_t arg);
+      virtual upll_rc_t IsKeyInUse(upll_keytype_datatype_t datatype,
+                                   const ConfigKeyVal *ckv, bool *in_use,
+                                   DalDmlIntf *dmi) {
+        *in_use = true;
+        return UPLL_RC_ERR_GENERIC;
+      }
 
-  /**
-   * @brief      Method to get a configkeyval of a specified keytype from
-   * an input configkeyval
-   *
-   * @param[in/out]  okey                 pointer to output ConfigKeyVal
-   * @param[in]      parent_key           pointer to the configkeyval from
-   * which the output configkey val is initialized.
-   *
-   * @retval         UPLL_RC_SUCCESS      Successfull completion.
-   * @retval         UPLL_RC_ERR_GENERIC  Failure case.
-   */
-  virtual upll_rc_t GetChildConfigKey(ConfigKeyVal *&okey,
-                                      ConfigKeyVal *parent_key) = 0;
+      /**
+       * @brief      Method to get a configkeyval of a specified keytype from
+       * an input configkeyval
+       *
+       * @param[in/out]  okey                 pointer to output ConfigKeyVal
+       * @param[in]      parent_key           pointer to the configkeyval from
+       * which the output configkey val is initialized.
+       *
+       * @retval         UPLL_RC_SUCCESS      Successfull completion.
+       * @retval         UPLL_RC_ERR_GENERIC  Failure case.
+       */
+      virtual upll_rc_t GetChildConfigKey(ConfigKeyVal *&okey,
+                                          ConfigKeyVal *parent_key) = 0;
 
-  /**
-   * @brief      Method to get a configkeyval of the parent keytype
-   *
-   * @param[in/out]  okey           pointer to parent ConfigKeyVal
-   * @param[in]      ikey           pointer to the child configkeyval from
-   * which the parent configkey val is obtained.
-   *
-   * @retval         UPLL_RC_SUCCESS      Successfull completion.
-   * @retval         UPLL_RC_ERR_GENERIC  Failure case.
-   **/
-  virtual upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey,
-                                       ConfigKeyVal *ikey) = 0;
-  // Capabiltiy functions
-  /**
-   * @brief  Return instance count of specified key type.
-   *
-   * @param[in] ctrlr_name  controller name.
-   * @param[in] keytype     key type
-   * @param[out] instance_count  Max instance count for specified keytype.
-   * @param[in] datatype    Datatype. default is CANDIDATE
-   *
-   * @retval true   Successful
-   * @retval false  controller/keytype is not found
-   */
-  virtual bool GetMaxInstanceCount(const char *ctrlr_name,
-                   unc_key_type_t keytype,
-                   uint32_t &instance_count,
-                   upll_keytype_datatype_t datatype = UPLL_DT_CANDIDATE);
-  /**
-   * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of specified key type.
-   * 
-   * @param[in]  ctrlr_name controller name.
-   * @param[in]  version    controller version
-   * @param[in]  keytype    Key type.
-   * @param[out] instance_count  Instance count for specified keytype.
-   * @param[in]  num_attrs  Maximum attribute for specified key type
-   * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
-   * @param[in] datatype    Datatype. default is CANDIDATE
-   * 
-   * @retval true   Successful
-   * @retval false  controller or keytype is not found
-   */
-  virtual bool GetCreateCapability(const char *ctrlr_name,
-                   unc_key_type_t keytype,
-                   uint32_t *instnace_count,
-                   uint32_t *num_attrs,
-                   const uint8_t **attrs,
-                   upll_keytype_datatype_t datatype = UPLL_DT_CANDIDATE);
-  /**
-   * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of specified key type.
-   * 
-   * @param[in]  ctrlr_type controller type.
-   * @param[in]  keytype    Key type.
-   * @param[in]  num_attrs  Maximum attribute for specified key type
-   * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
-   * @param[in] datatype    Datatype. default is CANDIDATE
-   * 
-   * @retval true   Successful
-   * @retval false  controler or keytype is not found
-   */
-  virtual bool GetUpdateCapability(const char *ctrlr_name,
-                   unc_key_type_t keytype,
-                   uint32_t *num_attrs,
-                   const uint8_t **attrs,
-                   upll_keytype_datatype_t datatype = UPLL_DT_CANDIDATE);
-  /**
-   * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of specified key type.
-   * 
-   * @param[in]  ctrlr_name controller name.
-   * @param[in]  keytype    Key type.
-   * @param[in]  num_attrs  Maximum attribute for specified key type
-   * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
-   * @param[in] datatype    Datatype. default is CANDIDATE
-   * 
-   * @retval true   Successful
-   * @retval false  controller or keytype is not found
-   */
-  virtual bool GetReadCapability(const char *ctrlr_name,
-                   unc_key_type_t keytype,
-                   uint32_t *num_attrs,
-                   const uint8_t **attrs,
-                   upll_keytype_datatype_t datatype = UPLL_DT_CANDIDATE);
-  /**
-   * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of specified key type.
-   * 
-   * @param[in]  ctrlr_name controller name.
-   * @param[in]  keytype    Key type.
-   * @param[in]  num_attrs  Maximum attribute for specified key type
-   * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
-   * @param[in] datatype    Datatype. default is CANDIDATE
-   * 
-   * @retval true   Successful
-   * @retval false  controller or keytype is not found
-   */
-  virtual bool GetStateCapability(const char *ctrlr_name,
-                   unc_key_type_t keytype,
-                   uint32_t *num_attrs,
-                   const uint8_t **attrs,
-                   upll_keytype_datatype_t datatype = UPLL_DT_CANDIDATE);
- private:
-  static bool GetCtrlrTypeAndVersion(const char *ctrlr_name,
-                                     upll_keytype_datatype_t datatype,
-                                     unc_keytype_ctrtype_t *ctrlr_type,
-                                     std::string *version);
-};
+      /**
+       * @brief      Method to get a configkeyval of the parent keytype
+       *
+       * @param[in/out]  okey           pointer to parent ConfigKeyVal
+       * @param[in]      ikey           pointer to the child configkeyval from
+       * which the parent configkey val is obtained.
+       *
+       * @retval         UPLL_RC_SUCCESS      Successfull completion.
+       * @retval         UPLL_RC_ERR_GENERIC  Failure case.
+       **/
+      virtual upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey,
+                                           ConfigKeyVal *ikey) = 0;
+      // Capabiltiy functions
+      /**
+       * @brief  Return instance count of specified key type.
+       *
+       * @param[in] ctrlr_name  controller name.
+       * @param[in] keytype     key type
+       * @param[out] instance_count  Max instance count for specified keytype.
+       * @param[in] datatype    Datatype. default is CANDIDATE
+       *
+       * @retval true   Successful
+       * @retval false  controller/keytype is not found
+       */
+      virtual bool GetMaxInstanceCount(const char *ctrlr_name,
+                                       unc_key_type_t keytype,
+                                       uint32_t &instance_count,
+                                       upll_keytype_datatype_t datatype =
+                                       UPLL_DT_CANDIDATE);
+      /**
+       * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of
+       *         specified key type.
+       *
+       * @param[in]  ctrlr_name controller name.
+       * @param[in]  version    controller version
+       * @param[in]  keytype    Key type.
+       * @param[out] instance_count  Instance count for specified keytype.
+       * @param[in]  num_attrs  Maximum attribute for specified key type
+       * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
+       * @param[in] datatype    Datatype. default is CANDIDATE
+       *
+       * @retval true   Successful
+       * @retval false  controller or keytype is not found
+       */
+      virtual bool GetCreateCapability(const char *ctrlr_name,
+                                       unc_key_type_t keytype,
+                                       uint32_t *instnace_count,
+                                       uint32_t *num_attrs,
+                                       const uint8_t **attrs,
+                                       upll_keytype_datatype_t datatype =
+                                       UPLL_DT_CANDIDATE);
+      /**
+       * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of specified key type.
+       *
+       * @param[in]  ctrlr_type controller type.
+       * @param[in]  keytype    Key type.
+       * @param[in]  num_attrs  Maximum attribute for specified key type
+       * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
+       * @param[in] datatype    Datatype. default is CANDIDATE
+       *
+       * @retval true   Successful
+       * @retval false  controler or keytype is not found
+       */
+      virtual bool GetUpdateCapability(const char *ctrlr_name,
+                                       unc_key_type_t keytype,
+                                       uint32_t *num_attrs,
+                                       const uint8_t **attrs,
+                                       upll_keytype_datatype_t datatype =
+                                       UPLL_DT_CANDIDATE);
+      /**
+       * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of specified key type.
+       *
+       * @param[in]  ctrlr_name controller name.
+       * @param[in]  keytype    Key type.
+       * @param[in]  num_attrs  Maximum attribute for specified key type
+       * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
+       * @param[in] datatype    Datatype. default is CANDIDATE
+       *
+       * @retval true   Successful
+       * @retval false  controller or keytype is not found
+       */
+      virtual bool GetReadCapability(const char *ctrlr_name,
+                                     unc_key_type_t keytype,
+                                     uint32_t *num_attrs,
+                                     const uint8_t **attrs,
+                                     upll_keytype_datatype_t datatype =
+                                     UPLL_DT_CANDIDATE);
+      /**
+       * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of specified key type.
+       *
+       * @param[in]  ctrlr_name controller name.
+       * @param[in]  keytype    Key type.
+       * @param[in]  num_attrs  Maximum attribute for specified key type
+       * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
+       * @param[in] datatype    Datatype. default is CANDIDATE
+       *
+       * @retval true   Successful
+       * @retval false  controller or keytype is not found
+       */
+      virtual bool GetStateCapability(const char *ctrlr_name,
+                                      unc_key_type_t keytype,
+                                      uint32_t *num_attrs,
+                                      const uint8_t **attrs,
+                                      upll_keytype_datatype_t datatype =
+                                      UPLL_DT_CANDIDATE);
+     private:
+      static bool GetCtrlrTypeAndVersion(const char *ctrlr_name,
+                                         upll_keytype_datatype_t datatype,
+                                         unc_keytype_ctrtype_t *ctrlr_type,
+                                         std::string *version);
+    };
 
 }  // namespace config_momgr
 }  // namespace upll

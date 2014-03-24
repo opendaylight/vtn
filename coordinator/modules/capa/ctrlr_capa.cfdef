@@ -1,5 +1,5 @@
 %
-% Copyright (c) 2012-2013 NEC Corporation
+% Copyright (c) 2012-2014 NEC Corporation
 % All rights reserved.
 % 
 % This program and the accompanying materials are made available under the
@@ -414,4 +414,137 @@ defmap vrouter_interface_flow_filter_entry {
         network_monitor         = BOOL[4];
         dscp                    = BOOL[4];
         priority                = BOOL[4];
+}
+
+%        *****uppl defs******
+
+
+defmap controller  {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        description      =  BOOL[4];
+        type             =  BOOL[4];
+        version          =  BOOL[4];
+        ip_address       =  BOOL[4];
+        user             =  BOOL[4];
+        password         =  BOOL[4];
+        enable_audit     =  BOOL[4];
+        port             =  BOOL[4];
+}
+defmap ctr_domain  {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        type             =  BOOL[4];
+        description      =  BOOL[4];
+}
+
+
+defmap logical_port {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        description         =  BOOL[4];
+        port_type          =  BOOL[4];
+        switch_id           =  BOOL[4];
+        physical_port_id    =  BOOL[4];
+        oper_down_criteria  =  BOOL[4];
+}
+defmap switch  {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        description      =   BOOL[4];
+        model            =   BOOL[4];
+        ip_address       =   BOOL[4];
+        ipv6_address     =   BOOL[4];
+        admin_status     =   BOOL[4];
+        domain_name      =   BOOL[4];
+}
+
+defmap port  {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        port_number         =  BOOL[4];
+        description         =  BOOL[4];
+        admin_status        =  BOOL[4];
+        trunk_allowed_vlan  =  BOOL[4];
+}
+
+defmap link  {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        description         =  BOOL[4];
+}
+
+defmap boundary  {
+        instance_count         =  UINT32;
+
+        description        = BOOL[4];
+        controller_name1   = BOOL[4];
+        domain_name1       = BOOL[4];
+        logical_port_id1   = BOOL[4];
+        controller_name2   = BOOL[4];
+        domain_name2       = BOOL[4];
+        logical_port_id2   = BOOL[4];
+}
+
+defmap ctr_dataflow  {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+       
+	controller_name         = BOOL[4];
+        controller_type         = BOOL[4];
+        flow_id                 = BOOL[4];
+        status                  = BOOL[4];
+        flow_type               = BOOL[4];
+        policy_index            = BOOL[4];
+        vtn_id                  = BOOL[4];
+        ingress_switch_id       = BOOL[4];
+        in_port                 = BOOL[4];
+        in_station_id           = BOOL[4];
+        in_domain               = BOOL[4];
+        egress_switch_id        = BOOL[4];
+        out_port                = BOOL[4];
+        out_station_id          = BOOL[4];
+        out_domain              = BOOL[4];
+        path_info_count         = BOOL[4];
+        match_count             = BOOL[4];
+        action_count            = BOOL[4];
+
+}
+
+defmap dataflow  {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+	
+ 	controller_name         = BOOL[4]; 
+        controller_type         = BOOL[4];
+        flow_id                 = BOOL[4];
+        status                  = BOOL[4];
+        flow_type               = BOOL[4];
+        policy_index            = BOOL[4];
+        vtn_id                  = BOOL[4];
+        ingress_switch_id       = BOOL[4];
+        in_port                 = BOOL[4];
+        in_station_id           = BOOL[4];
+        in_domain               = BOOL[4];
+        egress_switch_id        = BOOL[4];
+        out_port                = BOOL[4];
+        out_station_id          = BOOL[4];
+        out_domain              = BOOL[4];
+        path_info_count         = BOOL[4];
+        match_count             = BOOL[4];
+        action_count            = BOOL[4];
+}
+
+defmap vtn_dataflow {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
 }

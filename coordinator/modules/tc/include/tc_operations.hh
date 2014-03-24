@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -64,6 +64,9 @@ class TcOperations {
 
   /* To Track Operation and Revoke if needed */
   TcOperEnum tc_oper_status_;
+
+  /*flag is set when Audit DB fails in startup phase*/
+  pfc_bool_t audit_db_fail_;
 
 
   TcOperations(TcLock* tclock,
@@ -156,15 +159,16 @@ class TcStartUpOperations: public TcOperations {
   TcOperStatus TcCreateMsgList();
   TcOperStatus FillTcMsgData(TcMsg*, TcMsgOperType);
   TcOperStatus HandleArgs();
-  TcOperStatus  HandleLockRet(TcLockRet LockRet);
+  TcOperStatus HandleLockRet(TcLockRet LockRet);
   TcOperStatus SendAdditionalResponse(TcOperStatus oper_stat);
   TcOperStatus SendResponse(TcOperStatus oper_status);
+  TcOperStatus SendAuditDBFailNotice(uint32_t alarm_id);
 };
 
 /*
- * @brief TcDbOperations 
+ * @brief TcDbOperations
  *        Provides Methods to handle
- *        DB operations (Save/Clear StartUp) 
+ *        DB operations (Save/Clear StartUp)
  *        requests from user
  */
 class TcDbOperations: public TcOperations {
@@ -297,6 +301,7 @@ class TcAuditOperations: public TcOperations {
   unc::tclib::TcAuditResult audit_result_;
   unc::tclib::TcTransEndResult trans_result_;
   pfc_bool_t api_audit_;
+  pfc_bool_t force_reconnect_;
 
   TcAuditOperations(TcLock* tclock,
                     pfc::core::ipc::ServerSession* sess,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -354,7 +354,7 @@ string IpctUtil::get_string(const val_switch_st &val_st) {
   char ip_value[INET6_ADDRSTRLEN];
   memset(&ip_value, '\0', INET6_ADDRSTRLEN);
   inet_ntop(AF_INET6, &v.ipv6_address.s6_addr, ip_value, INET6_ADDRSTRLEN);
-  ss << "KT_SWITCH:[VAL: "
+  ss << "KT_SWITCH:[VAL_SW_ST: "
       << "description:" << v.description
       << ", model:" << v.model
       << ", ip_address:" << ODBCMUtils::get_ip_string(v.ip_address.s_addr)
@@ -368,6 +368,54 @@ string IpctUtil::get_string(const val_switch_st &val_st) {
   << ", software:" << val_st.software
   << ", alarms_status:" << PhyUtil::uint64tostr(val_st.alarms_status)
   << ", st_valid:" << st_valid.str()
+  << "]"
+  << endl;
+  return ss.str();
+}
+
+/** get_string
+ * @Description : this function returns the values contained in the val_st
+ *                structure
+ * @param[in]   : val_st - structure variable of type val_switch_st 
+ * @return      : attributes in value structure of switch are returned 
+ **/
+string IpctUtil::get_string(const val_switch_st_detail_t &val_stats) {
+  stringstream ss;
+  val_switch_st_t val_st = val_stats.switch_st_val;
+  val_switch_t v = val_st.switch_val;
+  stringstream valid;
+  for (unsigned int i = 0 ; i < 6 ; ++i) {
+    valid << PhyUtil::uint8tostr(v.valid[i]);
+  }
+  stringstream st_valid;
+  for (unsigned int i = 0 ; i < 6 ; ++i) {
+    st_valid << PhyUtil::uint8tostr(val_st.valid[i]);
+  }
+  stringstream stdet_valid;
+  for (unsigned int i = 0 ; i < 2 ; ++i) {
+    stdet_valid << PhyUtil::uint8tostr(val_stats.valid[i]);
+  }
+  /* A string of contiguous zero fields in the 
+   preferred form can be shown as "::" */
+  char ip_value[INET6_ADDRSTRLEN];
+  memset(&ip_value, '\0', INET6_ADDRSTRLEN);
+  inet_ntop(AF_INET6, &v.ipv6_address.s6_addr, ip_value, INET6_ADDRSTRLEN);
+  ss << "KT_SWITCH:[VAL_SW_ST: "
+      << "description:" << v.description
+      << ", model:" << v.model
+      << ", ip_address:" << ODBCMUtils::get_ip_string(v.ip_address.s_addr)
+  << ", ipv6_address:" << ip_value
+  << ", admin_status:" << PhyUtil::uint8tostr(v.admin_status)
+  << ", DomainName:" << v.domain_name
+  << ", valid:" << valid.str()
+  << ", oper_status:" << PhyUtil::uint8tostr(val_st.oper_status)
+  << ", manufacturer:" << val_st.manufacturer
+  << ", hardware:" << val_st.hardware
+  << ", software:" << val_st.software
+  << ", alarms_status:" << PhyUtil::uint64tostr(val_st.alarms_status)
+  << ", st_valid:" << st_valid.str() << endl
+  << ", flow_count:" << val_stats.flow_count
+  << ", stdet_valid:" << stdet_valid.str()
   << "]"
   << endl;
   return ss.str();
@@ -411,7 +459,7 @@ string IpctUtil::get_string(const val_port_st_t &v) {
            v.mac_address[0], v.mac_address[1], v.mac_address[2],
            v.mac_address[3], v.mac_address[4], v.mac_address[5]);
 
-  ss << "KT_PORT:[VAL: "
+  ss << "KT_PORT:[VAL_PORT_ST: "
       << "port_number:" << v.port.port_number
       << ", description:" << v.port.description
       << ", admin_status:" << PhyUtil::uint8tostr(v.port.admin_status)
@@ -426,6 +474,60 @@ string IpctUtil::get_string(const val_port_st_t &v) {
   << ", alarms_status:" << PhyUtil::uint64tostr(v.alarms_status)
   << ", logical_port_id:" << v.logical_port_id
   << ", st_valid:" << st_valid.str()
+  << "]"
+  << endl;
+  return ss.str();
+}
+
+/** 
+ * @Description : This function returns the values from the value structure
+ * @param[in]   : v - structure variable of type val_port_t  
+ * @return      : attributes in value structure of val_port_t are returned
+ **/
+string IpctUtil::get_string(const val_port_stats_t &v) {
+  stringstream ss;
+  stringstream valid;
+  for (unsigned int i = 0 ; i < 4; ++i) {
+    valid << PhyUtil::uint8tostr(v.port_st_val.port.valid[i]);
+  }
+  stringstream st_valid;
+  for (unsigned int i = 0; i < 8; ++i) {
+    st_valid << PhyUtil::uint8tostr(v.port_st_val.valid[i]);
+  }
+  stringstream stats_valid;
+  for (unsigned int i = 0; i < 13; ++i) {
+    stats_valid << PhyUtil::uint8tostr(v.valid[i]);
+  }
+  char macaddr[18];
+  memset(&macaddr, '\0', 18);
+  snprintf(macaddr, sizeof(macaddr), "%02x%02x.%02x%02x.%02x%02x",
+           v.port_st_val.mac_address[0], v.port_st_val.mac_address[1],
+           v.port_st_val.mac_address[2], v.port_st_val.mac_address[3],
+           v.port_st_val.mac_address[4], v.port_st_val.mac_address[5]);
+
+  ss << "KT_PORT:[VAL_PORT_STATS: "
+      << "port_number:" << v.port_st_val.port.port_number
+      << ", description:" << v.port_st_val.port.description
+  << ", admin_status:" << PhyUtil::uint8tostr
+  (v.port_st_val.port.admin_status)
+  << ", trunk_allowed_vlan:" << PhyUtil::uint8tostr
+  (v.port_st_val.port.trunk_allowed_vlan)
+  << ", valid:" << valid.str()
+  << ", oper_status:" << PhyUtil::uint8tostr(v.port_st_val.oper_status)
+  << ", mac_address:" << macaddr
+  << ", direction:" << PhyUtil::uint8tostr(v.port_st_val.direction)
+  << ", duplex:" << PhyUtil::uint8tostr(v.port_st_val.duplex)
+  << ", speed:" << PhyUtil::uint64tostr(v.port_st_val.speed)
+  << ", alarms_status:" << PhyUtil::uint64tostr(v.port_st_val.alarms_status)
+  << ", logical_port_id:" << v.port_st_val.logical_port_id
+  << ", st_valid:" << st_valid.str() << endl
+  << ", rx_packets:" << v.rx_packets << ", tx_packets:" << v.tx_packets
+  << ", rx_bytes:" << v.rx_bytes << ", tx_bytes:" << v.tx_bytes
+  << ", rx_dropped:" << v.rx_dropped << ", tx_dropped:" << v.tx_dropped
+  << ", rx_errors:" << v.rx_errors << ", tx_errors:" << v.tx_errors
+  << ", rx_frame_err:" << v.rx_frame_err << ", rx_over_err:" << v.rx_over_err
+  << ", rx_crc_err:" << v.rx_crc_err << ", collisions:" << v.collisions
+  << ", stats_valid:" << stats_valid.str()
   << "]"
   << endl;
   return ss.str();
@@ -727,3 +829,49 @@ string IpctUtil::get_string(const val_port_alarm_t  &v) {
       << endl;
   return ss.str();
 }
+
+/** 
+ * @Description : This function returns the values from the value structure
+ * @param[in]   : val_obj - structure variable of type val_df_data_flow_t
+ * @return      : attributes in value structure of val_df_data_flow_t are
+ * returned
+ **/
+string IpctUtil::get_string(const val_df_data_flow_t &val_obj) {
+  stringstream ss;
+  stringstream valid;
+  for (unsigned int i = 0; i < 2 ; ++i) {
+    valid << PhyUtil::uint8tostr(val_obj.valid[i]);
+  }
+  ss << "KT_CTR_DATAFLOW:[VAL: \n"
+      << " reason: " << val_obj.reason
+      << " controller_count: " << val_obj.controller_count
+      << "\n"
+      << " valid: " << valid.str()
+      << " ]"
+      << endl;
+  return ss.str();
+}
+
+/** 
+ * @Description : This function returns the values from the value structure
+ * @param[in]   : val_obj - structure variable of type val_df_data_flow_t
+ * @return      : attributes in value structure of val_df_data_flow_t are
+ * returned
+ **/
+string IpctUtil::get_string(const val_df_data_flow_st_t &val_obj) {
+  stringstream ss;
+  stringstream valid_st;
+  for (unsigned int i = 0; i < 3 ; ++i) {
+    valid_st << PhyUtil::uint8tostr(val_obj.valid[i]);
+  }
+  ss << "KT_CTR_DATAFLOW:[VAL: \n"
+      << " packets: " << PhyUtil::uint64tostr(val_obj.packets)
+      << ", octets: " << PhyUtil::uint64tostr(val_obj.octets)
+      << ", duration: " << val_obj.duration
+      << "\n"
+      << " valid_st: " << valid_st.str()
+      << " ]"
+      << endl;
+  return ss.str();
+}
+

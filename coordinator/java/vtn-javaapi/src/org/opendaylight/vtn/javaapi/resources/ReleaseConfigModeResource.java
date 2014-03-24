@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -41,7 +41,7 @@ public class ReleaseConfigModeResource extends AbstractResource {
 	 * 
 	 * @return the config id
 	 */
-	public String getConfigId() {
+	public final String getConfigId() {
 		return configId;
 	}
 
@@ -71,7 +71,7 @@ public class ReleaseConfigModeResource extends AbstractResource {
 	 *             the vtn service exception
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Starts ReleaseConfigModeResource#delete()");
 		ClientSession session = null;
 		int status = ClientSession.RESP_FATAL;
@@ -90,7 +90,7 @@ public class ReleaseConfigModeResource extends AbstractResource {
 					.setIpcUint32Value(getConfigId()));
 			LOG.info("Request packet created successfully");
 			status = session.invoke();
-			LOG.info("Request packet processed with status:"+status);
+			LOG.info("Request packet processed with status:" + status);
 			final String operationType = IpcDataUnitWrapper
 					.getIpcDataUnitValue(session
 							.getResponse(VtnServiceJsonConsts.VAL_0));

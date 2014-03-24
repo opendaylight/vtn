@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -21,10 +21,9 @@ namespace usess {
  * @brief   Constructor.
  * @param   database  : database instance.
  * @return  nothing.
- * @note    
+ * @note
  */
-UsessEnable::UsessEnable(mgmtdb::MgmtDatabase& database) : database_(database)
-{
+UsessEnable::UsessEnable(mgmtdb::MgmtDatabase& database) : database_(database) {
 }
 
 
@@ -32,10 +31,9 @@ UsessEnable::UsessEnable(mgmtdb::MgmtDatabase& database) : database_(database)
  * @brief   Destructor.
  * @param   nothing.
  * @return  nothing.
- * @note    
+ * @note
  */
-UsessEnable::~UsessEnable(void)
-{
+UsessEnable::~UsessEnable(void) {
 }
 
 
@@ -44,10 +42,9 @@ UsessEnable::~UsessEnable(void)
  * @param   nothing.
  * @return  true  : success
  *          false : failure
- * @note    
+ * @note
  */
-bool UsessEnable::Init(void)
-{
+bool UsessEnable::Init(void) {
   usess_ipc_err_e rtn = USESS_E_NG;
 
 
@@ -65,10 +62,9 @@ bool UsessEnable::Init(void)
  * @param   nothing.
  * @return  true  : success
  *          false : failure
- * @note    
+ * @note
  */
-bool UsessEnable::Fini(void)
-{
+bool UsessEnable::Fini(void) {
   return true;
 }
 
@@ -80,15 +76,13 @@ bool UsessEnable::Fini(void)
  * @return  USESS_E_OK                : Privilege success
  *          USESS_E_INVALID_PRIVILEGE : Invalid privilege.
  *          USESS_E_NG                : Error
- * @note    
+ * @note
  */
 usess_ipc_err_e UsessEnable::Privilege(const enable_privilege_e mode,
-                                       const usess_ipc_res_sess_info_t& sess)
-{
+                                       const usess_ipc_res_sess_info_t& sess) {
   L_FUNCTION_START();
 
-  switch(mode) {
-
+  switch (mode) {
   // Enable authority.
   case kPrivilegeEnable:
 
@@ -128,11 +122,10 @@ usess_ipc_err_e UsessEnable::Privilege(const enable_privilege_e mode,
  * @return  USESS_E_OK                : Authentication success
  *          USESS_E_INVALID_PASSWD    : Invalid password
  *          USESS_E_NG                : Error
- * @note    
+ * @note
  */
 usess_ipc_err_e UsessEnable::Authenticate(const enable_authenticate_e mode,
-        const usess_ipc_res_sess_info_t& sess, const char* passwd)
-{
+        const usess_ipc_res_sess_info_t& sess, const char* passwd) {
   int16_t fetch_type[] = {SQL_INTEGER, SQL_VARCHAR};
   std::string uname;
   std::string sql_statement;
@@ -143,8 +136,7 @@ usess_ipc_err_e UsessEnable::Authenticate(const enable_authenticate_e mode,
 
   L_FUNCTION_START();
 
-  switch(mode) {
-
+  switch (mode) {
   // Enable password Authentication.
   case kAuthenticateEnable:
 
@@ -203,10 +195,9 @@ usess_ipc_err_e UsessEnable::Authenticate(const enable_authenticate_e mode,
  * @return  USESS_E_OK             : Change password success
  *          USESS_E_INVALID_PASSWD : Invalid password
  *          USESS_E_NG             : Error
- * @note    
+ * @note
  */
-usess_ipc_err_e UsessEnable::ChangePassword(const char* passwd)
-{
+usess_ipc_err_e UsessEnable::ChangePassword(const char* passwd) {
   mgmtdb::db_err_e db_rtn = mgmtdb::DB_E_NG;
   std::string sql_statement;
   std::string hash_passwd;
@@ -253,10 +244,9 @@ usess_ipc_err_e UsessEnable::ChangePassword(const char* passwd)
  * @param   nothing.
  * @return  USESS_E_OK             : Success
  *          USESS_E_NG             : Error
- * @note    
+ * @note
  */
-usess_ipc_err_e UsessEnable::LoadConf(void)
-{
+usess_ipc_err_e UsessEnable::LoadConf(void) {
   usess_ipc_err_e func_rtn;
 
 
@@ -276,10 +266,9 @@ usess_ipc_err_e UsessEnable::LoadConf(void)
  * @param   nothing.
  * @return  true  : check ok.
  *          false : abnormal password.
- * @note    
+ * @note
  */
-bool UsessEnable::CheckPassword(const char* passwd)
-{
+bool UsessEnable::CheckPassword(const char* passwd) {
   // length check.
   if (strlen(passwd) > conf_.data().passwd_length) return false;
   // character code check.

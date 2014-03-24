@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -29,7 +29,7 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 			.getLogger(VtnStationsResourceValidator.class.getName());
 
 	private final AbstractResource resource;
-	final CommonValidator validator = new CommonValidator();
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new vtn stations resource validator.
@@ -122,14 +122,14 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 			if (requestBody.has(VtnServiceJsonConsts.VLANID)
 					&& requestBody.has(VtnServiceJsonConsts.NO_VLAN_ID)) {
 				isValid = false;
-			} // validation for key: vlan_id
-			else if (requestBody.has(VtnServiceJsonConsts.VLANID)) {
+			} else if (requestBody.has(VtnServiceJsonConsts.VLANID)) {
 				setInvalidParameter(VtnServiceJsonConsts.VLANID);
 				if (requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.VLANID)
 						.getAsString() != null
 						&& !requestBody
 								.getAsJsonPrimitive(VtnServiceJsonConsts.VLANID)
 								.getAsString().trim().isEmpty()) {
+					// validation for key: vlan_id
 					isValid = validator.isValidRange(requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.VLANID)
 							.getAsString().trim(), VtnServiceJsonConsts.VAL_1,
@@ -137,8 +137,8 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 				} else {
 					isValid = false;
 				}
-			} // validation for key: no_vlan_id
-			else if (requestBody.has(VtnServiceJsonConsts.NO_VLAN_ID)) {
+			} else if (requestBody.has(VtnServiceJsonConsts.NO_VLAN_ID)) {
+				// validation for key: no_vlan_id
 				setInvalidParameter(VtnServiceJsonConsts.NO_VLAN_ID);
 				if (requestBody.getAsJsonPrimitive(
 						VtnServiceJsonConsts.NO_VLAN_ID).getAsString() != null
@@ -268,7 +268,8 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 								.getAsJsonPrimitive(VtnServiceJsonConsts.IFNAME)
 								.getAsString().trim().isEmpty();
 			}
-		}// validation for key: domain_id
+		}
+		// validation for key: domain_id
 		if (isValid) {
 			setInvalidParameter(VtnServiceJsonConsts.DOMAINID);
 			if (requestBody.has(VtnServiceJsonConsts.DOMAINID)

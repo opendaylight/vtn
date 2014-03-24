@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -13,6 +13,7 @@ import java.util.List;
 
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
+import org.opendaylight.vtn.core.ipc.IpcUint32;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
@@ -25,6 +26,8 @@ import org.opendaylight.vtn.javaapi.ipc.enums.IpcRequestPacketEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncOperationEnum;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncOption1Enum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncUPPLEnums;
 import org.opendaylight.vtn.javaapi.resources.AbstractResource;
 import org.opendaylight.vtn.javaapi.resources.logical.VtnsResource;
@@ -61,7 +64,7 @@ public class SwitchResource extends AbstractResource {
 	 * 
 	 * @return the controller Id
 	 */
-	public String getControllerId() {
+	public final String getControllerId() {
 		return controllerId;
 	}
 
@@ -70,7 +73,7 @@ public class SwitchResource extends AbstractResource {
 	 * 
 	 * @return the Switch Id
 	 */
-	public String getSwitchId() {
+	public final String getSwitchId() {
 		return switchId;
 	}
 
@@ -83,7 +86,8 @@ public class SwitchResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts SwitchResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -100,9 +104,21 @@ public class SwitchResource extends AbstractResource {
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_SWITCH_GET, requestBody,
 					getUriParameters());
+			
+			requestProcessor.getRequestPacket().setOperation(
+					new IpcUint32(UncOperationEnum.UNC_OP_READ.ordinal()));
+			
+			if (requestBody.has(VtnServiceJsonConsts.OP)
+					&& requestBody.get(VtnServiceJsonConsts.OP).getAsString()
+							.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
+				requestProcessor.getRequestPacket()
+						.setOption1(
+								new IpcUint32(UncOption1Enum.UNC_OPT1_DETAIL
+										.ordinal()));
+			}
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet processed with status:"+status);
+			LOG.debug("Request packet processed with status:" + status);
 			final IpcPhysicalResponseFactory responseGenerator = new IpcPhysicalResponseFactory();
 			setInfo(responseGenerator.getSwitchResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,

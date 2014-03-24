@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -24,8 +24,7 @@ using namespace pfc::core::ipc;
  * Set up test environment.
  */
 void
-UpplTestEnv::SetUp()
-{
+UpplTestEnv::SetUp() {
   TcLibModule::stub_loadtcLibModule();
   TcLibModule::stub_setTCApiCommonRetcode(TcLibModule::REGISTER,
                                           TC_API_COMMON_SUCCESS);
@@ -37,8 +36,7 @@ UpplTestEnv::SetUp()
  * Clean up test environment.
  */
 void
-UpplTestEnv::TearDown()
-{
+UpplTestEnv::TearDown() {
   ServerSession::clearStubData();
   ODBCManager::clearStubData();
   PhysicalLayerStub::unloadphysicallayer();

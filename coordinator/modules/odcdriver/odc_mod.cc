@@ -209,8 +209,8 @@ pfc_bool_t ODCModule::get_physical_port_details(
   pfc_bool_t cache_empty = PFC_TRUE;
 
   // Gets the SWITCH details
-  drv_resp_code_t ret_val = odc_switch_obj.fetch_config(ctr_ptr, cache_empty);
-  if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+  UncRespCode ret_val = odc_switch_obj.fetch_config(ctr_ptr, cache_empty);
+  if (UNC_RC_SUCCESS != ret_val) {
     pfc_log_error("Error occured in getting switch details");
     return PFC_FALSE;
   }
@@ -221,11 +221,11 @@ pfc_bool_t ODCModule::get_physical_port_details(
   for (cfgnode_cache = itr_ptr->PhysicalNodeFirstItem();
        itr_ptr->IsDone() == false;
        cfgnode_cache = itr_ptr->NextItem() ) {
-    if (cfgnode_cache == NULL) {
+    if (NULL == cfgnode_cache) {
       pfc_log_error("cfgnode is NULL before get_type");
       delete ctr_ptr->physical_port_cache;
       ctr_ptr->physical_port_cache = NULL;
-      return DRVAPI_RESPONSE_FAILURE;
+      return PFC_FALSE;
     }
 
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
@@ -245,7 +245,7 @@ pfc_bool_t ODCModule::get_physical_port_details(
       OdcPort odc_port_obj(conf_file_values_);
       //  Gets the port details of a particular SW
       ret_val = odc_port_obj.fetch_config(ctr_ptr, key_switch, cache_empty);
-      if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+      if (UNC_RC_SUCCESS != ret_val) {
         pfc_log_error("Error occured in getting port details");
         return PFC_FALSE;
       }
@@ -253,7 +253,7 @@ pfc_bool_t ODCModule::get_physical_port_details(
   }
   OdcLink odc_link_obj(conf_file_values_);
   ret_val = odc_link_obj.fetch_config(ctr_ptr, cache_empty);
-  if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+  if (UNC_RC_SUCCESS != ret_val) {
     pfc_log_error("Error occured in getting link details");
     return PFC_FALSE;
   }

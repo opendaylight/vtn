@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -72,6 +72,7 @@ class PhyUtil {
                                     const northbound_alarm_header& rqh);
     static string uint8tostr(const uint8_t &c);
     static string uint16tostr(const uint16_t &c);
+    static string uint32tostr(const uint32_t &c);
     static string uint64tostr(const uint64_t &c);
     static int uint8touint(const uint8_t &c);
     static unsigned int strtouint(const string &str);
@@ -115,7 +116,7 @@ class PhyUtil {
         const TableAttrSchema& table_attr_schema,
         uint8_t *attr_value,
         AttributeDataType attr_type);
-    static UpplReturnCode get_controller_type(
+    static UncRespCode get_controller_type(
         OdbcmConnectionHandler *db_conn,
         string controller_name,
         unc_keytype_ctrtype_t& controller_type,
@@ -130,21 +131,5 @@ class PhyUtil {
     static bool IsFilteringOperation(uint32_t operation_type,
                               unsigned int valid);
 };
-
-#define FN_START_TIME(fn_name, kt) \
-pfc_timespec_t start; \
-pfc_clock_gettime(&start); \
-pfc_log_info("Start Time for %s in function %s is %" PFC_PFMT_u64, \
-         fn_name, kt, static_cast<uint64_t> (start.tv_nsec)); \
-
-#define FN_END_TIME(fn_name, kt) \
-pfc_timespec_t end; \
-pfc_clock_gettime(&end); \
-pfc_log_info("End Time for %s in function %s is %" PFC_PFMT_u64, \
-           fn_name, kt, static_cast<uint64_t> (end.tv_nsec)); \
-pfc_timespec_sub(&end, &start); \
-uint64_t elapsed(pfc_clock_time2msec(&end)); \
-pfc_log_info("Time taken for %s in function %s is %" PFC_PFMT_u64, \
-     fn_name, kt, elapsed); \
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -34,7 +34,6 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
   static BindInfo vbrifpolicingmap_bind_info[];
   static BindInfo key_vbrifpm_maintbl_rename_bind_info[];
   static BindInfo key_vbrifpm_policyname_maintbl_rename_bind_info[];
-  uint32_t cur_instance_count;
   /**
    * @Brief Validates the syntax of the specified key and value structure
    *        for KT_VBR_POLICINGMAP keytype
@@ -103,7 +102,7 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
    * @retval    UPLL_RC_ERR_GENERIC          Generic Errors.
    */
   upll_rc_t CreateCandidateMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                              DalDmlIntf *dmi);
+                              DalDmlIntf *dmi, bool restore_flag = false);
 
   /**
    * @Brief This API is used to delete the record (VbrIf name with
@@ -360,9 +359,10 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
   /**
    * @Brief This API updates the Configuration status for AuditConfigiration
    *
-   * @param[in]  ctrlr_rslt           Pointer to ConfigkeyVal class.
+   * @param[in]  cs_status            either UNC_CS_INVALID or UNC_CS_APPLIED.
    * @param[in]  phase                Describes the phase of controller.
    * @param[in]  ckv_running          Pointer to ConfigkeyVal.
+   * @param[in]  dmi                  Pointer to the DalDmlIntf(DB Interface)
    *
    * @retval     UPLL_RC_SUCCESS      Successful completion.
    * @retval     UPLL_RC_ERR_GENERIC  Generic Errors.
@@ -370,7 +370,9 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
   upll_rc_t UpdateAuditConfigStatus(
       unc_keytype_configstatus_t cs_status,
       uuc::UpdateCtrlrPhase phase,
-      ConfigKeyVal *&ckv_running);
+      ConfigKeyVal *&ckv_running,
+      DalDmlIntf *dmi);
+
   /**
    * @Brief Method to compare to keys
    *
@@ -465,24 +467,24 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
   upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey,
                                ConfigKeyVal *ikey);
 
-   /**
-    * @brief  Method used for Restoring Profile in the Controller Table
-    *
-    * @param[in]      ikey       Pointer to ConfigKeyVal Class
-    * @param[in]      dt_type    Describes Configiration Information.
-    * @param[in]      tbl        Describe the destination table
-    * @param[in]      dmi        Pointer to DalDmlIntf Class.
-    *
-    * @retval  UPLL_RC_SUCCESS      Successfull completion.
-    * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
-    * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists 
-    * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
-    */
+  /**
+   * @brief  Method used for Restoring Profile in the Controller Table
+   *
+   * @param[in]      ikey       Pointer to ConfigKeyVal Class
+   * @param[in]      dt_type    Describes Configiration Information.
+   * @param[in]      tbl        Describe the destination table
+   * @param[in]      dmi        Pointer to DalDmlIntf Class.
+   *
+   * @retval  UPLL_RC_SUCCESS      Successfull completion.
+   * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
+   * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists 
+   * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
+   */
 
-   upll_rc_t RestorePOMInCtrlTbl(ConfigKeyVal *ikey,
-                                 upll_keytype_datatype_t dt_type,
-                                 MoMgrTables tbl,
-                                 DalDmlIntf* dmi);
+  upll_rc_t RestorePOMInCtrlTbl(ConfigKeyVal *ikey,
+                                upll_keytype_datatype_t dt_type,
+                                MoMgrTables tbl,
+                                DalDmlIntf* dmi);
 
   upll_rc_t ReadDetail(ConfigKeyVal *ikey,
                        ConfigKeyVal *dup_key,
@@ -586,8 +588,9 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
                                   uint32_t session_id,
                                   uint32_t config_id,
                                   uuc::UpdateCtrlrPhase phase,
-                                  bool *ctrlr_affected,
-                                  DalDmlIntf *dmi);
+                                  DalDmlIntf *dmi,
+                                  ConfigKeyVal **err_ckv,
+                                  KTxCtrlrAffectedState *ctrlr_affected);
 
   upll_rc_t CreateAuditMoImpl(ConfigKeyVal *ikey,
                               DalDmlIntf *dmi,
@@ -617,15 +620,15 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
                       uint8_t &rename);
 
   upll_rc_t GetPolicingProfileConfigKey(
-        const char *pp_name, ConfigKeyVal *&okey,
-        DalDmlIntf *dmi);
+      const char *pp_name, ConfigKeyVal *&okey,
+      DalDmlIntf *dmi);
 
   upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
                           DalDmlIntf *dmi,
                           IpcReqRespHeader *req);
 };
-}  // kt_momgr
-}  // upll
-}  // unc
+}  // namespace kt_momgr
+}  // namespace upll
+}  // namespace unc
 
 #endif  // MODULES_UPLL_VBR_IF_POLICINGMAP_MOMGR_HH_

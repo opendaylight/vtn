@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -30,17 +30,17 @@ class Kt_Link : public Kt_State_Base {
 
   ~Kt_Link();
 
-  UpplReturnCode DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
+  UncRespCode DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
                                    void* key_struct,
                                    uint32_t data_type,
                                    uint32_t key_type);
-  UpplReturnCode ReadInternal(OdbcmConnectionHandler *db_conn,
+  UncRespCode ReadInternal(OdbcmConnectionHandler *db_conn,
       vector<void *> &key_val,
       vector<void *> &val_struct,
       uint32_t data_type,
       uint32_t operation_type);
 
-  UpplReturnCode ReadBulk(OdbcmConnectionHandler *db_conn,
+  UncRespCode ReadBulk(OdbcmConnectionHandler *db_conn,
                           void* key_struct,
                           uint32_t data_type,
                           uint32_t &max_rep_ct,
@@ -49,25 +49,25 @@ class Kt_Link : public Kt_State_Base {
                           pfc_bool_t is_read_next,
                           ReadRequest *read_req);
 
-  UpplReturnCode PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
+  UncRespCode PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
                                          void* key_struct,
                                          void* val_struct,
                                          uint32_t operation,
                                          uint32_t data_type);
 
-  UpplReturnCode PerformSemanticValidation(OdbcmConnectionHandler *db_conn,
+  UncRespCode PerformSemanticValidation(OdbcmConnectionHandler *db_conn,
                                            void* key_struct,
                                            void* val_struct,
                                            uint32_t operation,
                                            uint32_t data_type);
 
-  UpplReturnCode IsKeyExists(OdbcmConnectionHandler *db_conn,
+  UncRespCode IsKeyExists(OdbcmConnectionHandler *db_conn,
                              unc_keytype_datatype_t data_type,
                              const vector<string>& key_values);
 
   void Fill_Attr_Syntax_Map();
 
-  UpplReturnCode HandleOperStatus(OdbcmConnectionHandler *db_conn,
+  UncRespCode HandleOperStatus(OdbcmConnectionHandler *db_conn,
                                   uint32_t data_type,
                                   void *key_struct,
                                   void *value_struct);
@@ -140,7 +140,7 @@ class Kt_Link : public Kt_State_Base {
                               uint32_t operation_type,
                               vector<key_link_t> &link_id);
 
-  UpplReturnCode PerformRead(OdbcmConnectionHandler *db_conn,
+  UncRespCode PerformRead(OdbcmConnectionHandler *db_conn,
                              uint32_t session_id,
                              uint32_t configuration_id,
                              void* key_struct,
@@ -152,7 +152,7 @@ class Kt_Link : public Kt_State_Base {
                              uint32_t option2,
                              uint32_t max_rep_ct);
 
-  UpplReturnCode ReadLinkValFromDB(OdbcmConnectionHandler *db_conn,
+  UncRespCode ReadLinkValFromDB(OdbcmConnectionHandler *db_conn,
                                    void* key_struct,
                                    void* val_struct,
                                    uint32_t data_type,
@@ -164,22 +164,22 @@ class Kt_Link : public Kt_State_Base {
                                    uint32_t option2,
                                    pfc_bool_t is_state = PFC_FALSE);
 
-  UpplReturnCode ReadBulkInternal(OdbcmConnectionHandler *db_conn,
+  UncRespCode ReadBulkInternal(OdbcmConnectionHandler *db_conn,
                                   void* key_struct,
                                   uint32_t data_type,
                                   uint32_t max_rep_ct,
                                   vector<val_link_st_t> &vect_val_link_st,
                                   vector<key_link_t> &vect_link_id);
 
-  UpplReturnCode SetOperStatus(OdbcmConnectionHandler *db_conn,
+  UncRespCode SetOperStatus(OdbcmConnectionHandler *db_conn,
                                uint32_t data_type,
                                void* key_struct,
                                UpplLinkOperStatus oper_status);
-  UpplReturnCode GetLinkValidFlag(OdbcmConnectionHandler *db_conn,
+  UncRespCode GetLinkValidFlag(OdbcmConnectionHandler *db_conn,
       void *key_struct,
       val_link_st_t &val_link_valid_st,
       uint32_t data_type);
-  UpplReturnCode GetOperStatus(OdbcmConnectionHandler *db_conn,
+  UncRespCode GetOperStatus(OdbcmConnectionHandler *db_conn,
                                uint32_t data_type,
                                void* key_struct, uint8_t &oper_status);
   void FrameValidValue(string attr_value, val_link_st &obj_val_link);

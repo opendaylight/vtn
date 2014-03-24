@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -49,12 +49,12 @@ class IPCConnectionManager {
   IPCClientLogicalHandler* get_ipc_client_logical_handler();
   string get_uppl_channel_name();
   string get_uppl_service_name();
-  UpplReturnCode Finalize();
+  UncRespCode Finalize();
   uint32_t SendEvent(ServerEvent *evt);
-  UpplReturnCode SendEventSubscription();
-  UpplReturnCode CancelEventSubscription();
+  UncRespCode SendEventSubscription();
+  UncRespCode CancelEventSubscription();
   void addControllerToAuditList(string);
-  UpplReturnCode removeControllerFromAuditList(string);
+  UncRespCode removeControllerFromAuditList(string);
   pfc_bool_t IsControllerInAudit(string controller_name);
   uint32_t StartNotificationTimer(OdbcmConnectionHandler *db_conn,
                                   string controller_name);
@@ -70,7 +70,7 @@ class IPCConnectionManager {
     }
     return timer_id;
   }
-  UpplReturnCode CancelTimer(string);
+  UncRespCode CancelTimer(string);
 
  private:
   IPCServerHandler* ipc_server_handler_;

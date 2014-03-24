@@ -24,7 +24,7 @@ OdcSwitch::~OdcSwitch() {
 
 
 // Get switch information in the controller
-drv_resp_code_t OdcSwitch::fetch_config(unc::driver::controller *ctr_ptr,
+UncRespCode OdcSwitch::fetch_config(unc::driver::controller *ctr_ptr,
                                         pfc_bool_t &cache_empty) {
   ODC_FUNC_TRACE;
   PFC_VERIFY(ctr_ptr != NULL);
@@ -45,23 +45,23 @@ drv_resp_code_t OdcSwitch::fetch_config(unc::driver::controller *ctr_ptr,
 
   if (NULL == response) {
     pfc_log_error("Error Occured while getting httpresponse");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   int resp_code = response->code;
   if (HTTP_200_RESP_OK != resp_code) {
     pfc_log_error("Response code is not OK , resp : %d", resp_code);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   if (NULL != response->write_data) {
     if (NULL != response->write_data->memory) {
       char *data = response->write_data->memory;
       pfc_log_trace("All Switches : %s", data);
-      drv_resp_code_t ret_val =  parse_node_response(
+      UncRespCode ret_val =  parse_node_response(
                               ctr_ptr, data, cfgnode_vector);
       pfc_log_debug("Number of SWITCH present, %d",
                     static_cast<int>(cfgnode_vector.size()));
-      if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+      if (ret_val != UNC_RC_SUCCESS) {
         pfc_log_error("Error occured while parsing");
         return ret_val;
       }
@@ -71,11 +71,11 @@ drv_resp_code_t OdcSwitch::fetch_config(unc::driver::controller *ctr_ptr,
     }
   }
   pfc_log_error("Response data is NULL");
-  return DRVAPI_RESPONSE_FAILURE;;
+  return UNC_DRV_RC_ERR_GENERIC;;
 }
 
 // parse each SWITCH append t  cache
-drv_resp_code_t OdcSwitch::fill_config_node_vector(
+UncRespCode OdcSwitch::fill_config_node_vector(
     unc::driver::controller *ctr_ptr,
     json_object *json_obj_node_prop,
     int arr_idx,
@@ -92,10 +92,10 @@ drv_resp_code_t OdcSwitch::fill_config_node_vector(
                                                      arr_idx,
                                                      json_obj_node);
 
-  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
       (json_object_is_type(json_obj_node, json_type_null))) {
     pfc_log_error(" Error while parsing node or json type NULL");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   std::string node_id   = "";
@@ -103,10 +103,10 @@ drv_resp_code_t OdcSwitch::fill_config_node_vector(
                                             "id",
                                             -1,
                                             node_id);
-  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
       (node_id.empty())) {
     pfc_log_error(" Error while parsing id");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   json_object *json_prop = NULL;
@@ -115,10 +115,10 @@ drv_resp_code_t OdcSwitch::fill_config_node_vector(
                                             arr_idx,
                                             json_prop);
 
-  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
       (json_object_is_type(json_prop, json_type_null))) {
     pfc_log_error(" Error while parsing description or json_prop NULL");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   json_object *json_obj_description = NULL;
   ret_val = restjson::JsonBuildParse::parse(json_prop,
@@ -126,10 +126,10 @@ drv_resp_code_t OdcSwitch::fill_config_node_vector(
                                             -1,
                                             json_obj_description);
 
-  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
       (json_object_is_type(json_obj_description, json_type_null))) {
     pfc_log_error(" Error while parsing description or json type NULL");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   std::string desc   = "";
   ret_val = restjson::JsonBuildParse::parse(json_obj_description,
@@ -137,9 +137,9 @@ drv_resp_code_t OdcSwitch::fill_config_node_vector(
                                             -1,
                                             desc);
 
-  if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
+  if (restjson::REST_OP_SUCCESS != ret_val) {
     pfc_log_error(" Error while parsing description");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   std::string ctr_name = ctr_ptr->get_controller_id();
@@ -173,21 +173,21 @@ drv_resp_code_t OdcSwitch::fill_config_node_vector(
 
   PFC_VERIFY(cfgptr != NULL);
   cfgnode_vector.push_back(cfgptr);
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 //  Compare whether cache empty or not
-drv_resp_code_t OdcSwitch::compare_with_cache(
+UncRespCode OdcSwitch::compare_with_cache(
     unc::driver::controller *ctr_ptr,
     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector,
     pfc_bool_t &cache_empty) {
   ODC_FUNC_TRACE;
   if (NULL == ctr_ptr->physical_port_cache) {
     pfc_log_error("cache pointer is empty");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   std::list<std::string> switch_list;
-  drv_resp_code_t ret_val = DRVAPI_RESPONSE_FAILURE;
+  UncRespCode ret_val = UNC_DRV_RC_ERR_GENERIC;
   if (0 == ctr_ptr->physical_port_cache->cfg_list_count()) {
     cache_empty = PFC_TRUE;
     for (std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
@@ -195,10 +195,10 @@ drv_resp_code_t OdcSwitch::compare_with_cache(
       unc::vtndrvcache::ConfigNode *cfgnode_cache = *it;
       if (NULL == cfgnode_cache) {
         pfc_log_error("cfgnode_cache is NULL");
-        return DRVAPI_RESPONSE_FAILURE;
+        return UNC_DRV_RC_ERR_GENERIC;
       }
       ret_val = add_event(ctr_ptr, cfgnode_cache, switch_list);
-      if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+      if (ret_val != UNC_RC_SUCCESS) {
         pfc_log_error("Error in adding to cache");
         return ret_val;
       }
@@ -208,7 +208,7 @@ drv_resp_code_t OdcSwitch::compare_with_cache(
     ret_val = verify_in_cache(ctr_ptr, cfgnode_vector, switch_list);
     return ret_val;
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 //  Notify physical about the switch event
@@ -243,7 +243,7 @@ void OdcSwitch::update_list(key_switch_t *key_switch,
 }
 
 //  Add event for Switch
-drv_resp_code_t OdcSwitch::add_event(unc::driver::controller *ctr_ptr,
+UncRespCode OdcSwitch::add_event(unc::driver::controller *ctr_ptr,
                                      unc::vtndrvcache::ConfigNode *cfg_node,
                                      std::list<std::string> &switch_list) {
   ODC_FUNC_TRACE;
@@ -255,16 +255,16 @@ drv_resp_code_t OdcSwitch::add_event(unc::driver::controller *ctr_ptr,
 
   if ((NULL == key_switch) || (NULL == val_switch)) {
     pfc_log_error("key_switch/val_switch is NULL");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   //  Send Notification to UPPL
   notify_physical(unc::driver::VTN_SWITCH_CREATE,
                   key_switch, val_switch, NULL);
 
   //  Append to cache
-  drv_resp_code_t  ret_val =
+  UncRespCode  ret_val =
       ctr_ptr->physical_port_cache->append_Physical_attribute_node(cfg_node);
-  if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+  if (ret_val != UNC_RC_SUCCESS) {
     delete_config_node(cfg_node);
     pfc_log_error(" Error in adding to cache");
     return ret_val;
@@ -274,7 +274,7 @@ drv_resp_code_t OdcSwitch::add_event(unc::driver::controller *ctr_ptr,
 }
 
 // Update event for Switch
-drv_resp_code_t OdcSwitch::update_event(unc::driver::controller *ctr_ptr,
+UncRespCode OdcSwitch::update_event(unc::driver::controller *ctr_ptr,
                                         unc::vtndrvcache::ConfigNode *cfg_node,
                                         val_switch_st_t *val_old_switch,
                                         std::list<std::string> &switch_list) {
@@ -289,7 +289,7 @@ drv_resp_code_t OdcSwitch::update_event(unc::driver::controller *ctr_ptr,
   if ((NULL == key_switch) || (NULL == val_switch) ||
       (NULL == val_old_switch)) {
     pfc_log_error("key_switch/val_switch is NULL");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   // Send notification to UPPL
@@ -297,9 +297,9 @@ drv_resp_code_t OdcSwitch::update_event(unc::driver::controller *ctr_ptr,
                   val_switch, val_old_switch);
 
   // Append to cache
-  drv_resp_code_t  ret_val =
+  UncRespCode  ret_val =
       ctr_ptr->physical_port_cache->update_physical_attribute_node(cfg_node);
-  if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+  if (ret_val != UNC_RC_SUCCESS) {
     delete_config_node(cfg_node);
     pfc_log_error(" Error in updating to cache");
     return ret_val;
@@ -309,7 +309,7 @@ drv_resp_code_t OdcSwitch::update_event(unc::driver::controller *ctr_ptr,
 }
 
 // Delete event for Switch
-drv_resp_code_t OdcSwitch::delete_event(unc::driver::controller *ctr,
+UncRespCode OdcSwitch::delete_event(unc::driver::controller *ctr,
                                         std::list<std::string> &switch_list) {
   ODC_FUNC_TRACE;
   unc::vtndrvcache::ConfigNode *cfgnode_cache = NULL;
@@ -322,7 +322,7 @@ drv_resp_code_t OdcSwitch::delete_event(unc::driver::controller *ctr,
        cfgnode_cache = itr_ptr->NextItem() ) {
     if (NULL == cfgnode_cache) {
       pfc_log_error("cfgnode is NULL before get_type");
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     pfc_log_debug("key_type is %d", key_type);
@@ -335,7 +335,7 @@ drv_resp_code_t OdcSwitch::delete_event(unc::driver::controller *ctr,
       key_switch_t *key_switch_cache = cfgptr_cache->get_key_structure();
       if (NULL == key_switch_cache) {
         pfc_log_error("Key sswitch cache is empty");
-        return DRVAPI_RESPONSE_FAILURE;
+        return UNC_DRV_RC_ERR_GENERIC;
       }
       std::string switch_id = reinterpret_cast<const char*>
           (key_switch_cache->switch_id);
@@ -354,7 +354,7 @@ drv_resp_code_t OdcSwitch::delete_event(unc::driver::controller *ctr,
       key_port_t *key_port_cache = cfgptr_cache_port->get_key_structure();
       if (NULL == key_port_cache) {
         pfc_log_error("key_port_cache is NULL");
-        return DRVAPI_RESPONSE_FAILURE;
+        return UNC_DRV_RC_ERR_GENERIC;
       }
       std::string switch_port_id = reinterpret_cast<const char*>
                                   (key_port_cache->sw_key.switch_id);
@@ -371,18 +371,18 @@ drv_resp_code_t OdcSwitch::delete_event(unc::driver::controller *ctr,
     }
   }
 
-  drv_resp_code_t  ret_val =
+  UncRespCode  ret_val =
         delete_logical_port(ctr, cfg_node_delete_map);
-  if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+  if (ret_val != UNC_RC_SUCCESS) {
     pfc_log_error("Error in deleting logical port");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   ret_val = delete_switch(ctr, cfg_node_delete_map);
   return ret_val;
 }
 
 // Send Delete notification to logical port
-drv_resp_code_t OdcSwitch::delete_logical_port(
+UncRespCode OdcSwitch::delete_logical_port(
     unc::driver::controller *ctr,
     const std::map<std::string,
     unc::vtndrvcache::ConfigNode *> &cfg_node_delete_map) {
@@ -395,7 +395,7 @@ drv_resp_code_t OdcSwitch::delete_logical_port(
     unc::vtndrvcache::ConfigNode *cfg_node = iter->second;
     if (NULL == cfg_node) {
       pfc_log_error("cfgnode is NULL before get_type");
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     std::string switch_id = iter->first;
     if (switch_id.compare(0, 3, "LP-") == 0) {
@@ -407,7 +407,7 @@ drv_resp_code_t OdcSwitch::delete_logical_port(
       val_port_st_t *val_port = cfgptr_cache->get_val_structure();
       if ((NULL == key_port) || (NULL == val_port)) {
         pfc_log_error("key_port/val_port is NULL");
-        return DRVAPI_RESPONSE_FAILURE;
+        return UNC_DRV_RC_ERR_GENERIC;
       }
 
       OdcPort odc_port_obj(conf_file_values_);
@@ -416,11 +416,11 @@ drv_resp_code_t OdcSwitch::delete_logical_port(
                                                 key_port, val_port, NULL);
     }
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 // Send Delete notification to Switch
-drv_resp_code_t OdcSwitch::delete_switch(
+UncRespCode OdcSwitch::delete_switch(
     unc::driver::controller *ctr,
     const std::map<std::string,
     unc::vtndrvcache::ConfigNode *> &cfg_node_delete_map) {
@@ -433,7 +433,7 @@ drv_resp_code_t OdcSwitch::delete_switch(
     unc::vtndrvcache::ConfigNode *cfg_node = iter->second;
     if (NULL == cfg_node) {
       pfc_log_error("cfgnode is NULL before get_type");
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     std::string switch_id = iter->first;
     if (switch_id.compare(0, 3, "LP-") != 0) {
@@ -446,26 +446,26 @@ drv_resp_code_t OdcSwitch::delete_switch(
       val_switch_st_t *val_switch = cfgptr_cache_sw->get_val_structure();
       if ((NULL == key_switch) || (NULL == val_switch)) {
         pfc_log_error("key_switch/val_switch is NULL");
-        return DRVAPI_RESPONSE_FAILURE;
+        return UNC_DRV_RC_ERR_GENERIC;
       }
       // Send notification to UPPL
       notify_physical(unc::driver::VTN_SWITCH_DELETE, key_switch,
                       val_switch, NULL);
 
       // Delete from cache
-      drv_resp_code_t  ret_val =
+      UncRespCode  ret_val =
           ctr->physical_port_cache->delete_physical_attribute_node(cfg_node);
-      if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+      if (ret_val != UNC_RC_SUCCESS) {
         pfc_log_error(" Error in deleting in cache");
         return ret_val;
       }
     }
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 //  Verify in cache whether switch aleady exists or not
-drv_resp_code_t OdcSwitch::verify_in_cache(
+UncRespCode OdcSwitch::verify_in_cache(
     unc::driver::controller *ctr_ptr,
     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector,
     std::list<std::string> &switch_list) {
@@ -478,7 +478,7 @@ drv_resp_code_t OdcSwitch::verify_in_cache(
     unc::vtndrvcache::ConfigNode *cfg_node = *ctr_iterator;
     if (NULL == cfg_node) {
       pfc_log_error("cfgnode is NULL before get_type");
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
 
     unc::vtndrvcache::CacheElementUtil<key_switch_t, val_switch_st_t, uint32_t>
@@ -497,8 +497,8 @@ drv_resp_code_t OdcSwitch::verify_in_cache(
             cfgnode_ctr, cfgnode_cache);
     if (PFC_FALSE == exist_in_cache) {
       pfc_log_trace("Switch %s not exists in cache", switch_id.c_str());
-      drv_resp_code_t  ret_val = add_event(ctr_ptr, cfgnode_ctr, switch_list);
-      if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+      UncRespCode  ret_val = add_event(ctr_ptr, cfgnode_ctr, switch_list);
+      if (ret_val != UNC_RC_SUCCESS) {
         pfc_log_error("Error occured in adding to cache");
         return ret_val;
       }
@@ -517,9 +517,9 @@ drv_resp_code_t OdcSwitch::verify_in_cache(
       if (PFC_TRUE == sw_update) {
         pfc_log_trace("Switch is %s,  parameters are updated",
                                      switch_id.c_str());
-        drv_resp_code_t  ret_val =
+        UncRespCode  ret_val =
             update_event(ctr_ptr, cfgnode_ctr, val_switch_cache, switch_list);
-        if (ret_val != DRVAPI_RESPONSE_SUCCESS) {
+        if (ret_val != UNC_RC_SUCCESS) {
           pfc_log_error("error in updating the cache");
           return ret_val;
         }
@@ -532,7 +532,7 @@ drv_resp_code_t OdcSwitch::verify_in_cache(
     }
   }
   // Check for delete
-  drv_resp_code_t  ret_val = delete_event(ctr_ptr, switch_list);
+  UncRespCode  ret_val = delete_event(ctr_ptr, switch_list);
   return ret_val;
 }
 
@@ -567,7 +567,7 @@ pfc_bool_t OdcSwitch::is_switch_modified(val_switch_st_t *val_switch_ctr,
 }
 
 // parsing function for converting controller response to driver format
-drv_resp_code_t OdcSwitch::parse_node_response(
+UncRespCode OdcSwitch::parse_node_response(
     unc::driver::controller *ctr_ptr,
     char *data,
     std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
@@ -575,7 +575,7 @@ drv_resp_code_t OdcSwitch::parse_node_response(
   json_object* jobj = restjson::JsonBuildParse::get_json_object(data);
   if (json_object_is_type(jobj, json_type_null)) {
     pfc_log_error("json_object_is_type error");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   uint32_t array_length =0;
   json_object *json_obj_node_prop = NULL;
@@ -584,11 +584,11 @@ drv_resp_code_t OdcSwitch::parse_node_response(
                                                      -1,
                                                      json_obj_node_prop);
 
-  if ((DRVAPI_RESPONSE_SUCCESS != ret_val) ||
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
       (json_object_is_type(json_obj_node_prop, json_type_null))) {
     json_object_put(jobj);
     pfc_log_error("Parsing Error json_obj_node_prop is null");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   if (json_object_is_type(json_obj_node_prop, json_type_array)) {
@@ -598,19 +598,19 @@ drv_resp_code_t OdcSwitch::parse_node_response(
   if (0 == array_length) {
     pfc_log_trace("No SWITCH present");
     json_object_put(jobj);
-    return DRVAPI_RESPONSE_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   for (uint32_t arr_idx = 0; arr_idx < array_length; arr_idx++) {
-    drv_resp_code_t ret_val = fill_config_node_vector(ctr_ptr,
+    UncRespCode ret_val = fill_config_node_vector(ctr_ptr,
                              json_obj_node_prop, arr_idx, cfgnode_vector);
-    if (DRVAPI_RESPONSE_SUCCESS != ret_val) {
+    if (UNC_RC_SUCCESS != ret_val) {
       json_object_put(jobj);
       pfc_log_error("Error return from parse_node_append_vector failure");
       return ret_val;
     }
   }
   json_object_put(jobj);
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 }  // namespace odcdriver
 }  // namespace unc

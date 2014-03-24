@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -23,8 +23,7 @@ namespace usess {
  * @return  nothing.
  * @note    
  */
-UsessUsers::UsessUsers(mgmtdb::MgmtDatabase& database) : database_(database)
-{
+UsessUsers::UsessUsers(mgmtdb::MgmtDatabase& database) : database_(database) {
 }
 
 
@@ -34,8 +33,7 @@ UsessUsers::UsessUsers(mgmtdb::MgmtDatabase& database) : database_(database)
  * @return  nothing.
  * @note    
  */
-UsessUsers::~UsessUsers(void)
-{
+UsessUsers::~UsessUsers(void) {
 }
 
 
@@ -46,8 +44,7 @@ UsessUsers::~UsessUsers(void)
  *          false : failure
  * @note    
  */
-bool UsessUsers::Init(void)
-{
+bool UsessUsers::Init(void) {
   usess_ipc_err_e rtn = USESS_E_NG;
 
 
@@ -60,7 +57,6 @@ bool UsessUsers::Init(void)
 
   L_FUNCTION_COMPLETE();
   return true;
-
 }
 
 
@@ -71,8 +67,7 @@ bool UsessUsers::Init(void)
  *          false : failure
  * @note    
  */
-bool UsessUsers::Fini(void)
-{
+bool UsessUsers::Fini(void) {
   L_FUNCTION_START();
   L_FUNCTION_COMPLETE();
   return true;
@@ -88,8 +83,7 @@ bool UsessUsers::Fini(void)
  *          USESS_E_NG             : Error
  * @note    
  */
-usess_ipc_err_e UsessUsers::GetUser(const std::string& name, UsessUser& user)
-{
+usess_ipc_err_e UsessUsers::GetUser(const std::string& name, UsessUser& user) {
   usess_ipc_err_e func_rtn;
 
   L_FUNCTION_START();
@@ -110,8 +104,7 @@ usess_ipc_err_e UsessUsers::GetUser(const std::string& name, UsessUser& user)
  *          USESS_E_NG             : Error
  * @note    
  */
-usess_ipc_err_e UsessUsers::LoadConf(void)
-{
+usess_ipc_err_e UsessUsers::LoadConf(void) {
   usess_ipc_err_e func_rtn;
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -47,7 +47,7 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start StaticIpRouteResourceValidator#validateUri()");
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.URI
@@ -138,8 +138,9 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 	 * StaticIpRoute API.
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start StaticIpRouteResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of StaticIpRouteResourceValidator");
@@ -150,9 +151,9 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 					&& VtnServiceConsts.GET.equals(method)) {
 				isValid = validateGet(requestBody, isListOpFlag());
 				updateOpParameterForList(requestBody);
-//			} else if (isValid && requestBody != null
-//					&& VtnServiceConsts.PUT.equals(method)) {
-//				isValid = validatePut(requestBody);
+				// } else if (isValid && requestBody != null
+				// && VtnServiceConsts.PUT.equals(method)) {
+				// isValid = validatePut(requestBody);
 			} else if (isValid && requestBody != null
 					&& VtnServiceConsts.POST.equals(method)) {
 				isValid = validatePost(requestBody);
@@ -272,32 +273,29 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 				if (staticIp.has(VtnServiceJsonConsts.PREFIX)
 						&& staticIp.getAsJsonPrimitive(
 								VtnServiceJsonConsts.PREFIX).getAsString() != null) {
-					isValid = validator.isValidRange(
-							staticIp
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.PREFIX)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.VAL_0,
+					isValid = validator.isValidRange(staticIp
+							.getAsJsonPrimitive(VtnServiceJsonConsts.PREFIX)
+							.getAsString().trim(), VtnServiceJsonConsts.VAL_0,
 							VtnServiceJsonConsts.VAL_32);
 				} else {
 					isValid = false;
 				}
 			}
 			// validation for key: nmg_name(mandatory)
-//			if (isValid) {
-//				setInvalidParameter(VtnServiceJsonConsts.NMGNAME);
-//				if (staticIp.has(VtnServiceJsonConsts.NMGNAME)
-//						&& staticIp.getAsJsonPrimitive(
-//								VtnServiceJsonConsts.NMGNAME).getAsString() != null
-//						&& !staticIp
-//								.getAsJsonPrimitive(
-//										VtnServiceJsonConsts.NMGNAME)
-//								.getAsString().trim().isEmpty()) {
-//					isValid = validator.isValidMaxLengthAlphaNum(staticIp
-//							.getAsJsonPrimitive(VtnServiceJsonConsts.NMGNAME)
-//							.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
-//				}
-//			}
+			// if (isValid) {
+			// setInvalidParameter(VtnServiceJsonConsts.NMGNAME);
+			// if (staticIp.has(VtnServiceJsonConsts.NMGNAME)
+			// && staticIp.getAsJsonPrimitive(
+			// VtnServiceJsonConsts.NMGNAME).getAsString() != null
+			// && !staticIp
+			// .getAsJsonPrimitive(
+			// VtnServiceJsonConsts.NMGNAME)
+			// .getAsString().trim().isEmpty()) {
+			// isValid = validator.isValidMaxLengthAlphaNum(staticIp
+			// .getAsJsonPrimitive(VtnServiceJsonConsts.NMGNAME)
+			// .getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+			// }
+			// }
 			if (isValid) {
 				isValid = validatePut(requestBody);
 			}

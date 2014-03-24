@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -21,6 +21,7 @@
 #include <map>
 
 #include "physical_common_def.hh"
+#include "phy_util.hh"
 #include "unc/uppl_common.h"
 #include "ipc_connection_manager.hh"
 #include "odbcm_utils.hh"
@@ -34,13 +35,15 @@ using unc::uppl::ODBCMOperator;
 using unc::uppl::DBTableSchema;
 using unc::uppl::ODBCMTableColumns;
 using unc::uppl::OdbcmConnectionHandler;
+using unc::uppl::ScopedDBConnection;
+
 class ReadRequest;
 
 class Kt_Class_Attr_Syntax {
  public:
   pfc_ipctype_t data_type;
-  uint32_t min_value;
-  uint32_t max_value;
+  uint64_t min_value;
+  uint64_t max_value;
   uint32_t min_length;
   uint32_t max_length;
   bool mandatory_attrib;
@@ -73,70 +76,70 @@ class Kt_Base {
     return UNC_KT_ROOT;
   };
 
-  virtual UpplReturnCode Create(OdbcmConnectionHandler *db_conn,
+  virtual UncRespCode Create(OdbcmConnectionHandler *db_conn,
                                 uint32_t session_id, uint32_t configuration_id,
                                 void* key_struct, void* val_struct,
                                 uint32_t data_type, ServerSession &sess) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   };
 
-  virtual UpplReturnCode CreateKeyInstance(OdbcmConnectionHandler *db_conn,
+  virtual UncRespCode CreateKeyInstance(OdbcmConnectionHandler *db_conn,
                                            void* key_struct,
                                            void* val_struct,
                                            uint32_t data_type,
                                            uint32_t key_type) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   };
 
-  virtual UpplReturnCode UpdateKeyInstance(OdbcmConnectionHandler *db_conn,
+  virtual UncRespCode UpdateKeyInstance(OdbcmConnectionHandler *db_conn,
                                            void* key_struct, void* val_struct,
                                            uint32_t data_type,
                                            uint32_t key_type,
                                            void* &old_val_struct) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   };
 
-  virtual UpplReturnCode Update(OdbcmConnectionHandler *db_conn,
+  virtual UncRespCode Update(OdbcmConnectionHandler *db_conn,
                                 uint32_t session_id, uint32_t configuration_id,
                                 void* key_struct, void* val_struct,
                                 uint32_t data_type, ServerSession &sess) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   };
 
-  virtual UpplReturnCode Delete(OdbcmConnectionHandler *db_conn,
+  virtual UncRespCode Delete(OdbcmConnectionHandler *db_conn,
                                 uint32_t session_id, uint32_t configuration_id,
                                 void* key_struct, uint32_t data_type,
                                 ServerSession &sess) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   };
 
-  virtual UpplReturnCode DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
+  virtual UncRespCode DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
                                            void* key_struct,
                                            uint32_t data_type,
                                            uint32_t key_type) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   };
 
-  virtual UpplReturnCode ReadInternal(OdbcmConnectionHandler *db_conn,
+  virtual UncRespCode ReadInternal(OdbcmConnectionHandler *db_conn,
                                       vector<void*> &key_struct,
                                       vector<void*> &val_struct,
                                       uint32_t data_type,
                                       uint32_t operation_type) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   };
 
-  virtual UpplReturnCode Read(OdbcmConnectionHandler *db_conn,
+  virtual UncRespCode Read(OdbcmConnectionHandler *db_conn,
                               uint32_t session_id, uint32_t configuration_id,
                               void* key_struct, void* val_struct,
                               uint32_t data_type, ServerSession &sess,
                               uint32_t option1, uint32_t option2);
 
-  virtual UpplReturnCode ReadNext(OdbcmConnectionHandler *db_conn,
-                                  void* key_struct,
+  virtual UncRespCode ReadNext(OdbcmConnectionHandler *db_conn,
+                                  uint32_t session_id, void* key_struct,
                                   uint32_t data_type,
                                   ReadRequest *read_req);
 
-  virtual UpplReturnCode ReadBulk(OdbcmConnectionHandler *db_conn,
+  virtual UncRespCode ReadBulk(OdbcmConnectionHandler *db_conn,
                                   void* key_struct,
                                   uint32_t data_type,
                                   uint32_t &max_rep_ct,
@@ -145,7 +148,7 @@ class Kt_Base {
                                   pfc_bool_t is_read_next,
                                   ReadRequest *read_req)=0;
 
-  virtual UpplReturnCode ReadSiblingBegin(OdbcmConnectionHandler *db_conn,
+  virtual UncRespCode ReadSiblingBegin(OdbcmConnectionHandler *db_conn,
                                           uint32_t session_id,
                                           uint32_t configuration_id,
                                           void* key_struct, void* val_struct,
@@ -154,7 +157,7 @@ class Kt_Base {
                                           uint32_t option1, uint32_t option2,
                                           uint32_t &max_rep_ct);
 
-  virtual UpplReturnCode ReadSibling(OdbcmConnectionHandler *db_conn,
+  virtual UncRespCode ReadSibling(OdbcmConnectionHandler *db_conn,
                                      uint32_t session_id,
                                      uint32_t configuration_id,
                                      void* key_struct, void* val_struct,
@@ -162,7 +165,7 @@ class Kt_Base {
                                      uint32_t option1, uint32_t option2,
                                      uint32_t &max_rep_ct);
 
-  virtual UpplReturnCode ReadSiblingCount(OdbcmConnectionHandler *db_conn,
+  virtual UncRespCode ReadSiblingCount(OdbcmConnectionHandler *db_conn,
                                           uint32_t session_id,
                                           uint32_t configuration_id,
                                           void* key_struct, void* val_struct,
@@ -171,7 +174,7 @@ class Kt_Base {
                                           ServerSession &sess,
                                           uint32_t option1, uint32_t option2);
 
-  virtual UpplReturnCode PerformRead(OdbcmConnectionHandler *db_conn,
+  virtual UncRespCode PerformRead(OdbcmConnectionHandler *db_conn,
                                      uint32_t session_id,
                                      uint32_t configuration_id,
                                      void* key_struct, void* val_struct,
@@ -180,93 +183,93 @@ class Kt_Base {
                                      ServerSession &sess, uint32_t option1,
                                      uint32_t option2, uint32_t max_rep_ct)=0;
 
-  virtual UpplReturnCode PerformSyntaxValidation(
+  virtual UncRespCode PerformSyntaxValidation(
       OdbcmConnectionHandler *db_conn,
       void* key_struct,
       void* val_struct,
       uint32_t operation,
       uint32_t data_type)=0;
 
-  virtual UpplReturnCode PerformSemanticValidation(
+  virtual UncRespCode PerformSemanticValidation(
       OdbcmConnectionHandler *db_conn,
       void* key_struct,
       void* val_struct,
       uint32_t operation,
       uint32_t data_type)=0;
 
-  UpplReturnCode
+  UncRespCode
   ValidateRequest(OdbcmConnectionHandler *db_conn,
                   void* key_struct, void* val_struct, uint32_t operation,
                   uint32_t data_type, uint32_t key_type);
 
-  virtual UpplReturnCode ValidateCtrlrValueCapability(string version,
+  virtual UncRespCode ValidateCtrlrValueCapability(string version,
                                                       uint32_t key_type) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   };
 
-  virtual UpplReturnCode ValidateCtrlrScalability(std::string version,
+  virtual UncRespCode ValidateCtrlrScalability(std::string version,
                                                   uint32_t key_type,
                                                   uint32_t data_type) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   };
 
   // Caller can check whether a controller_id is existing (or)
   // A switch within a controller is existing
   // In this case list will contain two values -
   // a controller id and a switch id
-  virtual UpplReturnCode IsKeyExists(OdbcmConnectionHandler *db_conn,
+  virtual UncRespCode IsKeyExists(OdbcmConnectionHandler *db_conn,
                                      unc_keytype_datatype_t data_type,
                                      const vector<string>& key_values) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   };
 
-  UpplReturnCode ConfigurationChangeNotification(uint32_t data_type,
+  UncRespCode ConfigurationChangeNotification(uint32_t data_type,
                                                  uint32_t key_type,
                                                  uint32_t oper_type,
                                                  void *key_struct,
                                                  void* old_val_struct,
                                                  void* new_val_struct);
 
-  virtual UpplReturnCode HandleDriverAlarms(OdbcmConnectionHandler *db_conn,
+  virtual UncRespCode HandleDriverAlarms(OdbcmConnectionHandler *db_conn,
                                             uint32_t data_type,
                                             uint32_t alarm_type,
                                             uint32_t oper_type,
                                             void* key_struct,
                                             void* val_struct) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   };
 
-  virtual UpplReturnCode GetModifiedRows(OdbcmConnectionHandler *db_conn,
+  virtual UncRespCode GetModifiedRows(OdbcmConnectionHandler *db_conn,
                                          vector<void *> &key_struct,
                                          vector<void *> &val_struct,
                                          CsRowStatus row_status) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   };
 
   virtual void Fill_Attr_Syntax_Map() {
   };
 
-  virtual UpplReturnCode HandleOperStatus(OdbcmConnectionHandler *db_conn,
+  virtual UncRespCode HandleOperStatus(OdbcmConnectionHandler *db_conn,
                                           uint32_t data_type,
                                           void *key_struct,
                                           void *value_struct) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   };
 
-  virtual UpplReturnCode NotifyOperStatus(OdbcmConnectionHandler *db_conn,
+  virtual UncRespCode NotifyOperStatus(OdbcmConnectionHandler *db_conn,
                                           uint32_t data_type,
                                           void *key_struct,
                                           void *value_struct) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   };
 
   virtual pfc_bool_t CompareKeyStruct(void *key_struct1, void *key_struct2) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   };
 
   virtual pfc_bool_t CompareValueStruct(void *value_struct1,
                                         void *value_struct2) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   };
   virtual void
   PopulateDBSchemaForKtTable(OdbcmConnectionHandler *db_conn,
@@ -296,148 +299,188 @@ class Kt_Base {
                            void *&old_value_struct);
   static map<unc_key_type_t, map<string, Kt_Class_Attr_Syntax> >
   attr_syntax_map_all;
-  UpplReturnCode get_oper_status(vector<OperStatusHolder> &ref_oper_status,
+  UncRespCode get_oper_status(vector<OperStatusHolder> &ref_oper_status,
                                    unc_key_type_t key_type,
                                    void* key_struct,
                                    uint8_t &oper_status);
   void ClearOperStatusHolder(vector<OperStatusHolder> &ref_oper_status);
 
  private:
-  UpplReturnCode ValidateKtRoot(uint32_t operation,
+  UncRespCode ValidateKtRoot(uint32_t operation,
                                 uint32_t data_type);
-  UpplReturnCode ValidateKtCtrlBdry(uint32_t operation,
+  UncRespCode ValidateKtDataflow(uint32_t operation,
+                                uint32_t data_type);
+  UncRespCode ValidateKtCtrlBdry(uint32_t operation,
                                     uint32_t data_type);
-  UpplReturnCode ValidateKtCtrDomain(uint32_t operation,
+  UncRespCode ValidateKtCtrDataflow(uint32_t operation,
+                                uint32_t data_type);
+  UncRespCode ValidateKtCtrDomain(uint32_t operation,
                                      uint32_t data_type);
-  UpplReturnCode ValidateKtState(uint32_t operation,
+  UncRespCode ValidateKtState(uint32_t operation,
                                  uint32_t data_type);
 };
 
 #define VALIDATE_STRING_FIELD(attr_name, field, ret_code) \
     { \
   map<string, Kt_Class_Attr_Syntax>::iterator itVal = \
-  attr_syntax_map.find(attr_name); \
+  attr_syntax_map.find((attr_name)); \
   if (itVal != attr_syntax_map.end()) { \
     Kt_Class_Attr_Syntax objAttr = itVal->second; \
     if (objAttr.data_type == PFC_IPCTYPE_STRING) { \
-      if (field.length() < objAttr.min_length || \
-          field.length() > objAttr.max_length) { \
-        ret_code = UPPL_RC_ERR_CFG_SYNTAX; \
+      if ((field).length() < objAttr.min_length || \
+          (field).length() > objAttr.max_length) { \
+        (ret_code) = UNC_UPPL_RC_ERR_CFG_SYNTAX; \
       } \
     } \
   } else { \
-    ret_code = UPPL_RC_ERR_ATTRIBUTE_NOT_SUPPORTED; \
+    (ret_code) = UNC_UPPL_RC_ERR_ATTRIBUTE_NOT_SUPPORTED; \
   } \
 }
 
 #define VALIDATE_IPV4_FIELD(attr_name, field, ret_code) \
     { \
     map<string, Kt_Class_Attr_Syntax>::iterator itVal = \
-    attr_syntax_map.find(attr_name); \
+    attr_syntax_map.find((attr_name)); \
     if (itVal != attr_syntax_map.end()) { \
       Kt_Class_Attr_Syntax objAttr = itVal->second; \
       if (objAttr.data_type == PFC_IPCTYPE_IPV4) { \
-        if (field.s_addr < objAttr.min_value || \
-            field.s_addr  > objAttr.max_value) { \
-          ret_code = UPPL_RC_ERR_CFG_SYNTAX; \
+        if ((field).s_addr < objAttr.min_value || \
+            (field).s_addr  > objAttr.max_value) { \
+          (ret_code) = UNC_UPPL_RC_ERR_CFG_SYNTAX; \
         } \
       } \
     } else { \
-      ret_code = UPPL_RC_ERR_ATTRIBUTE_NOT_SUPPORTED; \
+      (ret_code) = UNC_UPPL_RC_ERR_ATTRIBUTE_NOT_SUPPORTED; \
     } \
     }
 
 #define VALIDATE_IPV6_FIELD(attr_name, field, ret_code) \
     { \
   map<string, Kt_Class_Attr_Syntax>::iterator itVal = \
-  attr_syntax_map.find(attr_name); \
+  attr_syntax_map.find((attr_name)); \
   if (itVal != attr_syntax_map.end()) { \
     Kt_Class_Attr_Syntax objAttr = itVal->second; \
     if (objAttr.data_type == PFC_IPCTYPE_IPV6) { \
-      if (*(field.s6_addr) < objAttr.min_value || \
-          *(field.s6_addr)  > objAttr.max_value) { \
-        ret_code = UPPL_RC_ERR_CFG_SYNTAX; \
+      if (*((field).s6_addr) < objAttr.min_value || \
+          *((field).s6_addr)  > objAttr.max_value) { \
+        (ret_code) = UNC_UPPL_RC_ERR_CFG_SYNTAX; \
       } \
     } \
   } else { \
-    ret_code = UPPL_RC_ERR_ATTRIBUTE_NOT_SUPPORTED; \
+    (ret_code) = UNC_UPPL_RC_ERR_ATTRIBUTE_NOT_SUPPORTED; \
   } \
 }
 #define VALIDATE_INT_FIELD(attr_name, field, ret_code) \
     { \
     map<string, Kt_Class_Attr_Syntax>::iterator itVal = \
-    attr_syntax_map.find(attr_name); \
+    attr_syntax_map.find((attr_name)); \
     if (itVal != attr_syntax_map.end()) { \
       Kt_Class_Attr_Syntax objAttr = itVal->second; \
-      if (objAttr.data_type == PFC_IPCTYPE_UINT32 || \
+      if (objAttr.data_type == PFC_IPCTYPE_UINT64 || \
+          objAttr.data_type == PFC_IPCTYPE_UINT32 || \
           objAttr.data_type == PFC_IPCTYPE_UINT16 || \
           objAttr.data_type == PFC_IPCTYPE_UINT8) { \
-        if (field < objAttr.min_value || \
-            field > objAttr.max_value) { \
-          ret_code = UPPL_RC_ERR_CFG_SYNTAX; \
+        if ((field) < objAttr.min_value || \
+            (field) > objAttr.max_value) { \
+          (ret_code) = UNC_UPPL_RC_ERR_CFG_SYNTAX; \
         } \
       } \
     } else { \
-      ret_code = UPPL_RC_ERR_ATTRIBUTE_NOT_SUPPORTED; \
+      (ret_code) = UNC_UPPL_RC_ERR_ATTRIBUTE_NOT_SUPPORTED; \
     } \
 }
 
 #define VALIDATE_MANDATORY_FIELD(attr_name, mandatory) \
     { \
       map<string, Kt_Class_Attr_Syntax>::iterator itVal = \
-      attr_syntax_map.find(attr_name); \
+      attr_syntax_map.find((attr_name)); \
       if (itVal != attr_syntax_map.end()) { \
         Kt_Class_Attr_Syntax objAttr = itVal->second; \
         if (objAttr.mandatory_attrib == false) { \
-          mandatory = PFC_FALSE; \
+          (mandatory) = PFC_FALSE; \
         } else { \
-          mandatory = PFC_TRUE; \
+          (mandatory) = PFC_TRUE; \
         } \
       } else { \
-        mandatory = PFC_FALSE; \
+        (mandatory) = PFC_FALSE; \
       } \
 }
 
 #define IS_VALID_STRING_KEY(attr_name, value, \
     operation, ret_code, mandatory) \
     { \
-        VALIDATE_MANDATORY_FIELD(attr_name, mandatory); \
-        if ((operation == UNC_OP_CREATE || operation == UNC_OP_READ || \
-            operation == UNC_OP_UPDATE || operation == UNC_OP_DELETE) \
-            && mandatory == PFC_TRUE && value.empty()) { \
+        VALIDATE_MANDATORY_FIELD((attr_name), (mandatory)); \
+        if (((operation) == UNC_OP_CREATE || (operation) == UNC_OP_READ || \
+            (operation) == UNC_OP_UPDATE || (operation) == UNC_OP_DELETE) \
+            && (mandatory) == PFC_TRUE && (value).empty()) { \
           pfc_log_error( \
                          "Key value %s not found for %d operation", \
                          attr_name, operation); \
-                         ret_code = UPPL_RC_ERR_CFG_SYNTAX; \
+                         (ret_code) = UNC_UPPL_RC_ERR_CFG_SYNTAX; \
         } \
-        VALIDATE_STRING_FIELD(attr_name, value, ret_code); \
-        if (ret_code != UPPL_RC_SUCCESS) { \
+        VALIDATE_STRING_FIELD((attr_name), (value), (ret_code)); \
+        if ((ret_code) != UNC_RC_SUCCESS) { \
           pfc_log_error("Length check failed for attribute %s", \
                         attr_name); \
         } \
 }
 
+#define IS_VALID_VLAN_ID(attr_name, value, \
+    operation, ret_code, mandatory) \
+    { \
+       VALIDATE_MANDATORY_FIELD((attr_name), (mandatory)); \
+        if (((operation) == UNC_OP_READ) \
+            && mandatory == PFC_TRUE \
+            && ((PhyUtil::uint16tostr(value)).empty())) { \
+          pfc_log_error( \
+                         "Key value %s not found for %d operation", \
+                         attr_name, operation); \
+                         (ret_code) = UNC_UPPL_RC_ERR_CFG_SYNTAX; \
+        }  \
+    map<string, Kt_Class_Attr_Syntax>::iterator itVal = \
+    attr_syntax_map.find(attr_name); \
+    if (itVal != attr_syntax_map.end()) { \
+      Kt_Class_Attr_Syntax objAttr = itVal->second; \
+      if (objAttr.data_type == PFC_IPCTYPE_UINT16) { \
+        if ((value) < objAttr.min_value || \
+            (value) > objAttr.max_value) { \
+          if ((value) == 0xffff) { \
+            pfc_log_info("no_vlan_id value is allowed");\
+            (ret_code) = UNC_RC_SUCCESS; \
+          } else { \
+            (ret_code) = UNC_UPPL_RC_ERR_CFG_SYNTAX; \
+            pfc_log_error("Value check failed for attribute %s", \
+                        attr_name); \
+          } \
+      } \
+     } \
+    } else { \
+      (ret_code) = UNC_UPPL_RC_ERR_ATTRIBUTE_NOT_SUPPORTED; \
+    } \
+}
+
+
 #define IS_VALID_STRING_VALUE(attr_name, value, \
     operation, valid_value, ret_code, mandatory) \
-    VALIDATE_MANDATORY_FIELD(attr_name, mandatory); \
-    if (operation == UNC_OP_CREATE && (valid_value != UNC_VF_VALID && \
-        mandatory == PFC_TRUE)) { \
+    VALIDATE_MANDATORY_FIELD((attr_name), (mandatory)); \
+    if ((operation) == UNC_OP_CREATE && ((valid_value) != UNC_VF_VALID && \
+        (mandatory) == PFC_TRUE)) { \
       pfc_log_error(\
                     "Mandatory attribute %s in not available in " \
                     "%d operation", \
                     attr_name, operation); \
-                    ret_code = UPPL_RC_ERR_CFG_SYNTAX; \
-    } else if (valid_value == UNC_VF_VALID) { \
-      if (mandatory == PFC_TRUE && value.empty()) { \
+                    (ret_code) = UNC_UPPL_RC_ERR_CFG_SYNTAX; \
+    } else if ((valid_value) == UNC_VF_VALID) { \
+      if ((mandatory) == PFC_TRUE && (value).empty()) { \
         pfc_log_error(\
                       "Mandatory attribute value %s in not " \
                       "available in %d operation", \
                       attr_name, operation); \
-                      ret_code = UPPL_RC_ERR_CFG_SYNTAX; \
-                      ret_code = UPPL_RC_ERR_CFG_SYNTAX; \
+                      (ret_code) = UNC_UPPL_RC_ERR_CFG_SYNTAX; \
+                      (ret_code) = UNC_UPPL_RC_ERR_CFG_SYNTAX; \
       } \
-      VALIDATE_STRING_FIELD(attr_name, value, ret_code); \
-      if (ret_code != UPPL_RC_SUCCESS) { \
+      VALIDATE_STRING_FIELD((attr_name), (value), (ret_code)); \
+      if ((ret_code) != UNC_RC_SUCCESS) { \
         pfc_log_error("Length check failed for attribute %s", \
                       attr_name); \
       } \
@@ -445,17 +488,17 @@ class Kt_Base {
 
 #define IS_VALID_INT_VALUE(attr_name, value, \
     operation, valid_value, ret_code, mandatory) \
-    VALIDATE_MANDATORY_FIELD(attr_name, mandatory); \
-    if (operation == UNC_OP_CREATE && (valid_value != UNC_VF_VALID && \
-        mandatory == PFC_TRUE)) { \
+    VALIDATE_MANDATORY_FIELD((attr_name), (mandatory)); \
+    if ((operation) == UNC_OP_CREATE && ((valid_value) != UNC_VF_VALID && \
+        (mandatory) == PFC_TRUE)) { \
       pfc_log_error(\
                     "Mandatory attribute %s in not available in " \
                     "%d operation", \
                     attr_name, operation); \
-                    ret_code = UPPL_RC_ERR_CFG_SYNTAX; \
-    } else if (valid_value == UNC_VF_VALID) { \
-      VALIDATE_INT_FIELD(attr_name, value, ret_code); \
-      if (ret_code != UPPL_RC_SUCCESS) { \
+                    (ret_code) = UNC_UPPL_RC_ERR_CFG_SYNTAX; \
+    } else if ((valid_value) == UNC_VF_VALID) { \
+      VALIDATE_INT_FIELD((attr_name), (value), (ret_code)); \
+      if ((ret_code) != UNC_RC_SUCCESS) { \
         pfc_log_error("Syntax validation failed for attribute %s", \
                       attr_name); \
       } \
@@ -463,17 +506,17 @@ class Kt_Base {
 
 #define IS_VALID_IPV4_VALUE(attr_name, value, \
     operation, valid_value, ret_code, mandatory) \
-    VALIDATE_MANDATORY_FIELD(attr_name, mandatory); \
-    if (operation == UNC_OP_CREATE && (valid_value != UNC_VF_VALID && \
-        mandatory == PFC_TRUE)) { \
+    VALIDATE_MANDATORY_FIELD((attr_name), (mandatory)); \
+    if ((operation) == UNC_OP_CREATE && ((valid_value) != UNC_VF_VALID && \
+        (mandatory) == PFC_TRUE)) { \
       pfc_log_error(\
                     "Mandatory attribute %s in not available in " \
                     "%d operation", \
                     attr_name, operation); \
-                    ret_code = UPPL_RC_ERR_CFG_SYNTAX; \
-    } else if (valid_value == UNC_VF_VALID) { \
-      VALIDATE_IPV4_FIELD(attr_name, value, ret_code); \
-      if (ret_code != UPPL_RC_SUCCESS) { \
+                    (ret_code) = UNC_UPPL_RC_ERR_CFG_SYNTAX; \
+    } else if ((valid_value) == UNC_VF_VALID) { \
+      VALIDATE_IPV4_FIELD((attr_name), (value), (ret_code)); \
+      if ((ret_code) != UNC_RC_SUCCESS) { \
         pfc_log_error("Syntax validation failed for attribute %s", \
                       attr_name); \
       } \
@@ -481,37 +524,37 @@ class Kt_Base {
 
 #define IS_VALID_IPV6_VALUE(attr_name, value, \
     operation, valid_value, ret_code, mandatory) \
-    VALIDATE_MANDATORY_FIELD(attr_name, mandatory); \
-    if (operation == UNC_OP_CREATE && (valid_value != UNC_VF_VALID && \
-        mandatory == PFC_TRUE)) { \
+    VALIDATE_MANDATORY_FIELD((attr_name), (mandatory)); \
+    if ((operation) == UNC_OP_CREATE && ((valid_value) != UNC_VF_VALID && \
+        (mandatory) == PFC_TRUE)) { \
       pfc_log_error(\
                     "Mandatory attribute %s in not available in " \
                     "%d operation", \
                     attr_name, operation); \
-                    ret_code = UPPL_RC_ERR_CFG_SYNTAX; \
-    } else if (valid_value == UNC_VF_VALID) { \
-      VALIDATE_IPV6_FIELD(attr_name, value, ret_code); \
-      if (ret_code != UPPL_RC_SUCCESS) { \
+                    (ret_code) = UNC_UPPL_RC_ERR_CFG_SYNTAX; \
+    } else if ((valid_value) == UNC_VF_VALID) { \
+      VALIDATE_IPV6_FIELD((attr_name), (value), (ret_code)); \
+      if ((ret_code) != UNC_RC_SUCCESS) { \
         pfc_log_error("Syntax validation failed for attribute %s", \
                       attr_name); \
       } \
 }
 
-#define ADD_CTRL_OPER_STATUS(controller_name, oper_status) \
+#define ADD_CTRL_OPER_STATUS(controller_name, oper_status, ref_oper_status) \
     key_ctr_t *ctlr_key = new key_ctr_t; \
-    memset(ctlr_key->controller_name, 0, 32); \
-    memcpy(ctlr_key->controller_name, controller_name.c_str(), \
-           controller_name.length()+1); \
+    memset((ctlr_key->controller_name), 0, 32); \
+    memcpy((ctlr_key->controller_name), ((controller_name).c_str()), \
+           ((controller_name).length())+1); \
     OperStatusHolder obj_oper_status_ctr(UNC_KT_CONTROLLER, \
                                      reinterpret_cast<void *>(ctlr_key), \
-                                     oper_status); \
-    ref_oper_status.push_back(obj_oper_status_ctr); \
+                                     (oper_status)); \
+    (ref_oper_status).push_back(obj_oper_status_ctr); \
 
-#define GET_ADD_CTRL_OPER_STATUS(controller_name) \
+#define GET_ADD_CTRL_OPER_STATUS(ctr_name, vect_operstatus) \
     key_ctr_t *ctr_key = new key_ctr_t; \
     memset(ctr_key->controller_name, 0, 32); \
-    memcpy(ctr_key->controller_name, controller_name.c_str(), \
-           (controller_name.length())+1); \
+    memcpy((ctr_key->controller_name), ((ctr_name).c_str()), \
+           ((ctr_name).length())+1); \
     void* key_type_struct = reinterpret_cast<void*>(ctr_key); \
     Kt_Controller controller; \
     uint8_t ctr_oper_status = \
@@ -520,34 +563,34 @@ class Kt_Base {
     if (data_type == UNC_DT_IMPORT) { \
        ctrl_data_type = UNC_DT_RUNNING; \
     } \
-    UpplReturnCode read_status = controller.GetOperStatus( \
+    UncRespCode read_status = controller.GetOperStatus( \
         db_conn, ctrl_data_type, key_type_struct, ctr_oper_status); \
     pfc_log_debug("Controller's read_status %d, oper_status %d", \
               read_status, ctr_oper_status); \
     OperStatusHolder obj_oper_status_ctr(UNC_KT_CONTROLLER, \
                                      reinterpret_cast<void *>(ctr_key), \
                                      ctr_oper_status); \
-    ref_oper_status.push_back(obj_oper_status_ctr); \
+    (vect_operstatus).push_back(obj_oper_status_ctr);
 
-#define ADD_SWITCH_OPER_STATUS(sw_key, oper_status) \
+#define ADD_SWITCH_OPER_STATUS(sw_key, oper_status, ref_oper_status) \
     key_switch_t *p_switch = new key_switch_t(sw_key); \
     OperStatusHolder obj_oper_status_sw(UNC_KT_SWITCH, \
                                      reinterpret_cast<void*>(p_switch), \
-                                     oper_status); \
-    ref_oper_status.push_back(obj_oper_status_sw);
+                                     (oper_status)); \
+    (ref_oper_status).push_back(obj_oper_status_sw);
 
-#define ADD_PORT_OPER_STATUS(port_key, oper_status) \
+#define ADD_PORT_OPER_STATUS(port_key, oper_status, ref_oper_status) \
     key_port_t *p_port = new key_port_t(port_key); \
     OperStatusHolder obj_oper_status_port(UNC_KT_PORT, \
                                      reinterpret_cast<void*>(p_port), \
-                                     oper_status); \
-    ref_oper_status.push_back(obj_oper_status_port);
+                                     (oper_status)); \
+    (ref_oper_status).push_back(obj_oper_status_port);
 
-#define ADD_LP_PORT_OPER_STATUS(lp_key, oper_status) \
+#define ADD_LP_PORT_OPER_STATUS(lp_key, oper_status, ref_oper_status) \
     key_logical_port_t *p_lport = new key_logical_port_t(lp_key); \
     OperStatusHolder obj_oper_status_lp(UNC_KT_LOGICAL_PORT, \
                                      reinterpret_cast<void*>(p_lport), \
-                                     oper_status); \
-    ref_oper_status.push_back(obj_oper_status_lp); \
+                                     (oper_status)); \
+    (ref_oper_status).push_back(obj_oper_status_lp); \
 
 #endif

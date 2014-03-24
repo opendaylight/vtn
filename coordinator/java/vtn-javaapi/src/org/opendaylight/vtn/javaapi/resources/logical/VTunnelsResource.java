@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -45,7 +45,7 @@ public class VTunnelsResource extends AbstractResource {
 	 * 
 	 * @return the vtn name
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
@@ -72,7 +72,8 @@ public class VTunnelsResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VTunnelsResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -132,7 +133,8 @@ public class VTunnelsResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VTunnelsResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -166,26 +168,23 @@ public class VTunnelsResource extends AbstractResource {
 			LOG.debug("Request Packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			/*
 			 * setInfo(responseGenerator.getVTunnelResponse(
 			 * requestProcessor.getIpcResponsePacket(), requestBody,
 			 * VtnServiceJsonConsts.LIST));
 			 */
-			JsonObject responseJson = responseGenerator
-					.getVTunnelResponse(
-							requestProcessor.getIpcResponsePacket(),
-							requestBody, VtnServiceJsonConsts.LIST);
-			if (responseJson.get(VtnServiceJsonConsts.VTUNNELS)
-					.isJsonArray()) {
-				JsonArray responseArray = responseJson.get(
+			JsonObject responseJson = responseGenerator.getVTunnelResponse(
+					requestProcessor.getIpcResponsePacket(), requestBody,
+					VtnServiceJsonConsts.LIST);
+			if (responseJson.get(VtnServiceJsonConsts.VTUNNELS).isJsonArray()) {
+				final JsonArray responseArray = responseJson.get(
 						VtnServiceJsonConsts.VTUNNELS).getAsJsonArray();
 				responseJson = getResponseJsonArrayLogical(requestBody,
 						requestProcessor, responseGenerator, responseArray,
 						VtnServiceJsonConsts.VTUNNELS,
 						VtnServiceJsonConsts.VTUNNELNAME,
-						IpcRequestPacketEnum.KT_VTUNNEL_GET,
-						uriParameterList,
+						IpcRequestPacketEnum.KT_VTUNNEL_GET, uriParameterList,
 						VtnServiceIpcConsts.GET_VTUNNEL_RESPONSE);
 			}
 			setInfo(responseJson);
@@ -225,9 +224,9 @@ public class VTunnelsResource extends AbstractResource {
 	 *            the request body
 	 * @return the uri parameters
 	 */
-	private List<String> getUriParameters(JsonObject requestBody) {
+	private List<String> getUriParameters(final JsonObject requestBody) {
 		LOG.trace("Start VTunnelsResource#getUriParameters()");
-		List<String> uriParameters = new ArrayList<String>();
+		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(vtnName);
 		if (requestBody != null && requestBody.has(VtnServiceJsonConsts.INDEX)) {
 			uriParameters.add(requestBody.get(VtnServiceJsonConsts.INDEX)

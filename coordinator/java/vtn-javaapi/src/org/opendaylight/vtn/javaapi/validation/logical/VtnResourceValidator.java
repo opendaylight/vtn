@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -29,7 +29,7 @@ public class VtnResourceValidator extends VtnServiceValidator {
 			.getLogger(VtnResourceValidator.class.getName());
 
 	private final AbstractResource resource;
-	final CommonValidator validator = new CommonValidator();
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new vtn resource validator.
@@ -47,7 +47,7 @@ public class VtnResourceValidator extends VtnServiceValidator {
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start VtnResourceValidator#validateUri()");
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.URI
@@ -71,8 +71,9 @@ public class VtnResourceValidator extends VtnServiceValidator {
 	 * Validate request Json object for get, put and post method of Vtn API
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start VtnResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of VtnResourceValidator");
@@ -172,11 +173,12 @@ public class VtnResourceValidator extends VtnServiceValidator {
 							.getAsJsonObject(VtnServiceJsonConsts.VTN)
 							.getAsJsonPrimitive(
 									VtnServiceJsonConsts.DESCRIPTION)
-							.getAsString() != null && !requestBody
+							.getAsString() != null
+					&& !requestBody
 							.getAsJsonObject(VtnServiceJsonConsts.VTN)
 							.getAsJsonPrimitive(
 									VtnServiceJsonConsts.DESCRIPTION)
-									.getAsString().trim().isEmpty()) {
+							.getAsString().trim().isEmpty()) {
 				isValid = validator.isValidMaxLength(requestBody
 						.getAsJsonObject(VtnServiceJsonConsts.VTN)
 						.getAsJsonPrimitive(VtnServiceJsonConsts.DESCRIPTION)

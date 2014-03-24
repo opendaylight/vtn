@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -51,7 +51,7 @@ public class IpRouteResource extends AbstractResource {
 	 * 
 	 * @return the vtn name
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
@@ -60,7 +60,7 @@ public class IpRouteResource extends AbstractResource {
 	 * 
 	 * @return the vrt name
 	 */
-	public String getVrtName() {
+	public final String getVrtName() {
 		return vrtName;
 	}
 
@@ -85,7 +85,8 @@ public class IpRouteResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start IpRouteResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -155,6 +156,6 @@ public class IpRouteResource extends AbstractResource {
 		uriParameters.add(vtnName);
 		uriParameters.add(vrtName);
 		LOG.trace("Completed IpRouteResource#getUriParameters()");
-	    return uriParameters;
+		return uriParameters;
 	}
 }

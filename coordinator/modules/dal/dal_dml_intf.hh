@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -11,14 +11,15 @@
  * dal_dml_intf.hh
  *   Contains definition of DalDmlIntf
  *   DML interface of database
- * 
+ *
  * Implemented by DalOdbcMgr
- */ 
+ */
 
 #ifndef __DAL_DML_INTF_HH__
 #define __DAL_DML_INTF_HH__
 
 #include <stdint.h>
+#include <string>
 #include "dal_defines.hh"
 #include "dal_bind_info.hh"
 #include "dal_schema.hh"
@@ -29,7 +30,7 @@ namespace upll {
 namespace dal {
 
 /**
- *  DalConnIntf 
+ *  DalConnIntf
  *    Database management query APIs for database
  *
  *  Inherited by DalOdbcMgr
@@ -378,11 +379,12 @@ class DalDmlIntf {
      */
     virtual DalResultCode DeleteRecords(const UpllCfgType cfg_type,
                                 const DalTableIndex table_index,
-                                const DalBindInfo *matching_attr_info) const = 0;
+                                const DalBindInfo
+                                *matching_attr_info) const = 0;
 
     /**
      * CreateRecord
-     *   Creates the record in table with the given input data for 
+     *   Creates the record in table with the given input data for
      *   the given cfg_type
      *
      * @param[in] cfg_type        - Configuration Type for which the record
@@ -622,12 +624,13 @@ class DalDmlIntf {
     virtual DalResultCode CopyEntireRecords(const UpllCfgType dest_cfg_type,
                                     const UpllCfgType src_cfg_type,
                                     const DalTableIndex table_index,
-                                    const DalBindInfo *output_attr_info) const = 0;
+                                    const DalBindInfo
+                                    *output_attr_info) const = 0;
 
     /**
      * CopyModifiedRecords
-     *   Copies the entire records of table from source configuration to
-     *   destination configuration.
+     *   Copies the modified records of table from source configuration to
+     *   destination configuration based on the operation.
      *
      * @param[in] dest_cfg_type   - Configuration Type where the records to be
      *                              copied (not equal to src_cfg_type)
@@ -637,20 +640,23 @@ class DalDmlIntf {
      * @param[in] output_and_match_attr_info
      *                            - Bind Information for output and match
      *                            - columns
+     * @param[in] op              - Operation to be performed for Copy.
      *
      * @return DalResultCode      - kDalRcSuccess in case of success
      *                            - Valid errorcode otherwise
      *                              On successful execution, both the
-     *                              configurations have same records
+     *                              configurations have same records.
      *
      * Note:
      * Information on Copy Logic
-     * 1. Remvoe the records from dest_cfg_type that are result of
-     *    GetDeletedRecords(dest_cfg_type, src_cfg_type, ...)
-     * 2. Add the records in dest_cfg_type that are result of
-     *    GetCreatedRecords(dest_cfg_type, src_cfg_type, ...)
-     * 3. Update the records in dest_cfg_type with the records from 
-     *    src_cfg_type that are result of
+     * 1. For DELETE operation, Remove the records from dest_cfg_type that are
+     *    result of GetDeletedRecords(dest_cfg_type, src_cfg_type, ...)
+     *    This should be called for Child schema first and then parent schema
+     *    if Parent-Child relationship is established.
+     * 2. For CREATE operation, Add the records in dest_cfg_type that are
+     *    result of GetCreatedRecords(dest_cfg_type, src_cfg_type, ...)
+     * 3. For UPDATE operation, Update the records in dest_cfg_type with the
+     *    records from src_cfg_type that are result of
      *    GetUpdatedRecords(dest_cfg_type, src_cfg_type, ...)
      * 4. Recommended to use this API, where difference between both the
      *    configurations are comparitively lesser.
@@ -682,50 +688,9 @@ class DalDmlIntf {
                     const UpllCfgType dest_cfg_type,
                     const UpllCfgType src_cfg_type,
                     const DalTableIndex table_index,
-                    const DalBindInfo *output_and_match_attr_info) const = 0;
+                    const DalBindInfo *output_and_match_attr_info,
+                    const unc_keytype_operation_t op) const = 0;
 
-    /**
-     * CopyModifiedInsertRecords
-     *   Inserts the additional records of table from source configuration to
-     *   destination configuration.
-     *
-     * @param[in] dest_cfg_type   - Configuration Type where the records to be
-     *                              copied (not equal to src_cfg_type)
-     * @param[in] src_cfg_type    - Configuration Type from where the records
-     *                              will be copied (not equal to dest_cfg_type)
-     * @param[in] table_index     - Valid Index of the table
-     * @param[in] output_and_match_attr_info
-     *                            - Bind Information for output and match
-     *                            - columns
-     *
-     * @return DalResultCode      - kDalRcSuccess in case of success
-     *                            - Valid errorcode otherwise
-     *                              On successful execution, both the
-     *                              configurations have same records.
-     *
-     * Note:
-     * Information on Copy Logic
-     * 1. Add the records in dest_cfg_type that are result of
-     *    GetCreatedRecords(dest_cfg_type, src_cfg_type, ...)
-     *    
-     * Information on usage of DalBindInfo
-     *  1. Valid instance of DalBindInfo with same table_index used in this API
-     *  2. BindInput if used for any attributes, ignored.
-     *  3. BindMatch if used for any attributes, ignored.
-     *  4. BindOutput is optional.
-     *     BindOutput, if used, copy the values of bound columns from
-     *     src_cfg_type to dst_cfg_type
-     *     BindOutput, if not used, copy the values of all columns from
-     *     src_cfg_type to dst_cfg_type
-     *     Since the bound value is not used for this API, it is ok to bind
-     *     dummy address. Do not pass NULL address.
-     *
-     */
-    virtual DalResultCode CopyModifiedInsertRecords(
-                    const UpllCfgType dest_cfg_type,
-                    const UpllCfgType src_cfg_type,
-                    const DalTableIndex table_index,
-                    const DalBindInfo *output_and_match_attr_info) const = 0;
 
     /**
      * CopyMatchingRecords

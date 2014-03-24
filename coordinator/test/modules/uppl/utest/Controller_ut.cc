@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -35,6 +35,7 @@
 #include <pfc/iostream.h>
 #include <pfc/ipc_client.h>
 #include <pfc/ipc_pfcd.h>
+#include <tclib_module.hh>
 #include <odbcm_mgr.hh>
 #include <physical_common_def.hh>
 #include <unc/uppl_common.h>
@@ -51,7 +52,6 @@
 #include <itc_kt_logicalport.hh>
 #include <ipct_util.hh>
 #include "PhysicalLayerStub.hh"
-#include <tclib_module.hh>
 #include "ut_util.hh"
 
 using unc::uppl::PhysicalLayer;
@@ -63,8 +63,7 @@ using namespace unc::tclib;
 using namespace unc::uppl::test;
 
 class ControllerTest
-  : public UpplTestEnv
-{
+  : public UpplTestEnv {
 };
 
 static char pkctrName1[] = "Controller1";
@@ -80,8 +79,12 @@ TEST_F(ControllerTest, PerformSyntxCheck_Domainname_notFound_01) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   uint32_t operation = UNC_OP_CREATE;
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.PerformSyntaxValidation(db_conn,&k,&v,operation,UNC_DT_STATE);
-  EXPECT_EQ(UPPL_RC_ERR_CFG_SYNTAX, ret);
+  int ret =  ktCtrlrObj.PerformSyntaxValidation(db_conn,
+                                                &k,
+                                                &v,
+                                                operation,
+                                                UNC_DT_STATE);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_CFG_SYNTAX, ret);
 }
 
 TEST_F(ControllerTest, PerformSyntxCheck_Controllername_notFound_02) {
@@ -92,8 +95,12 @@ TEST_F(ControllerTest, PerformSyntxCheck_Controllername_notFound_02) {
   memset(k.controller_name, '\0', 32);
   uint32_t operation = UNC_OP_CREATE;
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.PerformSyntaxValidation(db_conn,&k,&v,operation,UNC_DT_STATE);
-  EXPECT_EQ(UPPL_RC_ERR_CFG_SYNTAX, ret);
+  int ret =  ktCtrlrObj.PerformSyntaxValidation(db_conn,
+                                                &k,
+                                                &v,
+                                                operation,
+                                                UNC_DT_STATE);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_CFG_SYNTAX, ret);
 }
 
 TEST_F(ControllerTest, PerformSyntxCheck_Valstrct_without_type_03) {
@@ -105,8 +112,12 @@ TEST_F(ControllerTest, PerformSyntxCheck_Valstrct_without_type_03) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   uint32_t operation = UNC_OP_CREATE;
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.PerformSyntaxValidation(db_conn,&k,&v,operation,UNC_DT_STATE);
-  EXPECT_EQ(UPPL_RC_ERR_CFG_SYNTAX, ret);
+  int ret =  ktCtrlrObj.PerformSyntaxValidation(db_conn,
+                                                &k,
+                                                &v,
+                                                operation,
+                                                UNC_DT_STATE);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_CFG_SYNTAX, ret);
 }
 
 TEST_F(ControllerTest, PerformSyntxCheck_Valstrct_04) {
@@ -120,8 +131,12 @@ TEST_F(ControllerTest, PerformSyntxCheck_Valstrct_04) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   uint32_t operation = UNC_OP_CREATE;
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.PerformSyntaxValidation(db_conn,&k,&v,operation,UNC_DT_CANDIDATE);
-  EXPECT_EQ(UPPL_RC_ERR_CFG_SYNTAX, ret);
+  int ret =  ktCtrlrObj.PerformSyntaxValidation(db_conn,
+                                                &k,
+                                                &v,
+                                                operation,
+                                                UNC_DT_CANDIDATE);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_CFG_SYNTAX, ret);
 }
 
 TEST_F(ControllerTest, PerformSyntxCheck_Valstrct_05) {
@@ -135,8 +150,12 @@ TEST_F(ControllerTest, PerformSyntxCheck_Valstrct_05) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   uint32_t operation = UNC_OP_UPDATE;
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.PerformSyntaxValidation(db_conn,&k,&v,operation,UNC_DT_CANDIDATE);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  int ret =  ktCtrlrObj.PerformSyntaxValidation(db_conn,
+                                                &k,
+                                                &v,
+                                                operation,
+                                                UNC_DT_CANDIDATE);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
 TEST_F(ControllerTest, PerformSyntxCheck_Valstrct_06) {
@@ -150,8 +169,12 @@ TEST_F(ControllerTest, PerformSyntxCheck_Valstrct_06) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   uint32_t operation = UNC_OP_CREATE;
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.PerformSyntaxValidation(db_conn,&k,&v,operation,UNC_DT_CANDIDATE);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  int ret =  ktCtrlrObj.PerformSyntaxValidation(db_conn,
+                                                &k,
+                                                &v,
+                                                operation,
+                                                UNC_DT_CANDIDATE);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
 TEST_F(ControllerTest, PerformSyntxCheck_Valstrct_07) {
@@ -165,8 +188,12 @@ TEST_F(ControllerTest, PerformSyntxCheck_Valstrct_07) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   uint32_t operation = UNC_OP_CREATE;
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.PerformSyntaxValidation(db_conn,&k,&v,operation,UNC_DT_CANDIDATE);
-  EXPECT_EQ(UPPL_RC_ERR_CFG_SYNTAX, ret);
+  int ret =  ktCtrlrObj.PerformSyntaxValidation(db_conn,
+                                                &k,
+                                                &v,
+                                                operation,
+                                                UNC_DT_CANDIDATE);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_CFG_SYNTAX, ret);
 }
 
 TEST_F(ControllerTest, PerformSyntxCheck_Valstrct_08) {
@@ -182,11 +209,12 @@ TEST_F(ControllerTest, PerformSyntxCheck_Valstrct_08) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   uint32_t operation = UNC_OP_CREATE;
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.PerformSyntaxValidation(db_conn,&k,&v,operation,UNC_DT_CANDIDATE);
-  EXPECT_EQ(UPPL_RC_ERR_CFG_SYNTAX, ret);
+  int ret =  ktCtrlrObj.PerformSyntaxValidation(
+      db_conn, &k, &v, operation, UNC_DT_CANDIDATE);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_CFG_SYNTAX, ret);
 }
 
-// Create for unsupported datatype
+//  Create for unsupported datatype
 TEST_F(ControllerTest, Create_01) {
   key_ctr_t k;
   val_ctr_t v;
@@ -202,11 +230,17 @@ TEST_F(ControllerTest, Create_01) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.Create(db_conn,session_id,configuration_id,&k,&v,UNC_DT_STATE,ses);
-  EXPECT_EQ(UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
+  int ret =  ktCtrlrObj.Create(db_conn,
+                               session_id,
+                               configuration_id,
+                               &k,
+                               &v,
+                               UNC_DT_STATE,
+                               ses);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
 }
 
-// Domain Create success 
+//  Domain Create success
 TEST_F(ControllerTest, Create_02) {
   key_ctr_t k;
   val_ctr_t v;
@@ -228,17 +262,26 @@ TEST_F(ControllerTest, Create_02) {
   ses.stub_setAddOutput((uint32_t)ODBCM_RC_SUCCESS);
   ses.stub_setAddOutput((uint32_t)UNC_DT_CANDIDATE);
   ses.stub_setAddOutput((uint32_t)UNC_KT_CONTROLLER);
-  //ses.stub_setAddOutput((uint32_t)&k);
+  // ses.stub_setAddOutput((uint32_t)&k);
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::CREATEONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW,
+                                             ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::CREATEONEROW,
+      ODBCM_RC_SUCCESS);
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.Create(db_conn,session_id,configuration_id,&k,&v,UNC_DT_CANDIDATE,ses);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  int ret =  ktCtrlrObj.Create(db_conn,
+                               session_id,
+                               configuration_id,
+                               &k,
+                               &v,
+                               UNC_DT_CANDIDATE,
+                               ses);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// get_controller_type returns failure 
+//  get_controller_type returns failure
 TEST_F(ControllerTest, Create_03) {
   key_ctr_t k;
   val_ctr_t v;
@@ -260,16 +303,24 @@ TEST_F(ControllerTest, Create_03) {
   ses.stub_setAddOutput((uint32_t)ODBCM_RC_SUCCESS);
   ses.stub_setAddOutput((uint32_t)UNC_DT_CANDIDATE);
   ses.stub_setAddOutput((uint32_t)UNC_KT_CONTROLLER);
-  //ses.stub_setAddOutput((uint32_t)&k);
+  // ses.stub_setAddOutput((uint32_t)&k);
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_CONNECTION_ERROR);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW,
+      ODBCM_RC_CONNECTION_ERROR);
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.Create(db_conn,session_id,configuration_id,&k,&v,UNC_DT_CANDIDATE,ses);
-  EXPECT_EQ(UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
+  int ret =  ktCtrlrObj.Create(db_conn,
+                               session_id,
+                               configuration_id,
+                               &k,
+                               &v,
+                               UNC_DT_CANDIDATE,
+                               ses);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
 }
 
-//Create on unsupported datatype 
+// Create on unsupported datatype
 TEST_F(ControllerTest, Create) {
   key_ctr_t k;
   val_ctr_t v;
@@ -285,10 +336,16 @@ TEST_F(ControllerTest, Create) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.Create(db_conn,session_id,configuration_id,&k,&v,UNC_DT_STATE,ses);
-  EXPECT_EQ(UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
+  int ret =  ktCtrlrObj.Create(db_conn,
+                               session_id,
+                               configuration_id,
+                               &k,
+                               &v,
+                               UNC_DT_STATE,
+                               ses);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
 }
- 
+
 TEST_F(ControllerTest, PerformSemanticValidation_01) {
   key_ctr_t k;
   val_ctr_t v;
@@ -302,57 +359,73 @@ TEST_F(ControllerTest, PerformSemanticValidation_01) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   uint32_t operation = UNC_OP_CREATE;
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.PerformSyntaxValidation(db_conn,&k,&v,operation,UNC_DT_CANDIDATE);
-  EXPECT_EQ(UPPL_RC_ERR_CFG_SYNTAX, ret);
+  int ret =  ktCtrlrObj.PerformSyntaxValidation(db_conn,
+                                                &k,
+                                                &v,
+                                                operation,
+                                                UNC_DT_CANDIDATE);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_CFG_SYNTAX, ret);
 }
 
-// IsKeyExists  with UNC_DT_CANDIDATE datatype ODBC return ODBCM_RC_CONNECTION_ERROR
+// IsKeyExists  with UNC_DT_CANDIDATE datatype
+// ODBC return ODBCM_RC_CONNECTION_ERROR
 TEST_F(ControllerTest, IsKeyExists_01) {
   Kt_Controller  ktCtrlrObj;
   vector<string> vect_key;
   vect_key.push_back(pkctrName1);
   vect_key.push_back(pkDomainName2);
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_CONNECTION_ERROR);
-  int ret =  ktCtrlrObj.IsKeyExists(db_conn,UNC_DT_CANDIDATE,vect_key);
-  EXPECT_EQ(UPPL_RC_ERR_DB_ACCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::ISROWEXISTS,
+      ODBCM_RC_CONNECTION_ERROR);
+  int ret =  ktCtrlrObj.IsKeyExists(db_conn,
+                                    UNC_DT_CANDIDATE,
+                                    vect_key);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_ACCESS, ret);
 }
 
-// IsKeyExists  with UNC_DT_CANDIDATE datatype ODBC return ODBCM_RC_ROW_EXISTS
+//  IsKeyExists  with UNC_DT_CANDIDATE datatype
+//  ODBC return ODBCM_RC_ROW_EXISTS
 TEST_F(ControllerTest, IsKeyExists_02) {
   Kt_Controller  ktCtrlrObj;
   vector<string> vect_key;
   vect_key.push_back(pkctrName1);
   vect_key.push_back(pkDomainName2);
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_ROW_EXISTS);
-  int ret =  ktCtrlrObj.IsKeyExists(db_conn,UNC_DT_CANDIDATE,vect_key);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::ISROWEXISTS,
+      ODBCM_RC_ROW_EXISTS);
+  int ret =  ktCtrlrObj.IsKeyExists(db_conn, UNC_DT_CANDIDATE, vect_key);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// IsKeyExists  with UNC_DT_CANDIDATE datatype ODBC return ODBCM_RC_QUERY_TIMEOUT
+//  IsKeyExists  with UNC_DT_CANDIDATE datatype
+//  ODBC return ODBCM_RC_QUERY_TIMEOUT
 TEST_F(ControllerTest, IsKeyExists_03) {
   Kt_Controller  ktCtrlrObj;
   vector<string> vect_key;
   vect_key.push_back(pkctrName1);
   vect_key.push_back(pkDomainName2);
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_QUERY_TIMEOUT);
-  int ret =  ktCtrlrObj.IsKeyExists(db_conn,UNC_DT_CANDIDATE,vect_key);
-  EXPECT_EQ(UPPL_RC_ERR_DB_GET, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::ISROWEXISTS,
+      ODBCM_RC_QUERY_TIMEOUT);
+  int ret =  ktCtrlrObj.IsKeyExists(db_conn, UNC_DT_CANDIDATE, vect_key);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_GET, ret);
 }
 
-// IsKeyExists  with key structure empty
+//  IsKeyExists  with key structure empty
 TEST_F(ControllerTest, IsKeyExists_04) {
   Kt_Controller  ktCtrlrObj;
   vector<string> vect_key;
   vect_key.clear();
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.IsKeyExists(db_conn,UNC_DT_CANDIDATE,vect_key);
-  EXPECT_EQ(UPPL_RC_ERR_BAD_REQUEST, ret);
+  int ret =  ktCtrlrObj.IsKeyExists(db_conn, UNC_DT_CANDIDATE, vect_key);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_BAD_REQUEST, ret);
 }
 
-// CreateKeyInstance with UNC_DT_CANDIDATE datatype ODBC return ODBCM_RC_CONNECTION_ERROR
+//  CreateKeyInstance with UNC_DT_CANDIDATE
+//  datatype ODBC return ODBCM_RC_CONNECTION_ERROR
 TEST_F(ControllerTest, CreateKeyInstance_01) {
   key_ctr_t k;
   val_ctr_t v;
@@ -367,12 +440,15 @@ TEST_F(ControllerTest, CreateKeyInstance_01) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::CREATEONEROW, ODBCM_RC_CONNECTION_ERROR);
-  int ret =  ktCtrlrObj.CreateKeyInstance(db_conn,&k,&v,UNC_DT_CANDIDATE,key_type);
-  EXPECT_EQ(UPPL_RC_ERR_DB_ACCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::CREATEONEROW,
+      ODBCM_RC_CONNECTION_ERROR);
+  int ret =  ktCtrlrObj.CreateKeyInstance(db_conn, &k, &v,
+                                          UNC_DT_CANDIDATE, key_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_ACCESS, ret);
 }
 
-// CreateKeyInstance with UNC_DT_RUNNING datatype ODBC 
+//  CreateKeyInstance with UNC_DT_RUNNING datatype ODBC
 TEST_F(ControllerTest, CreateKeyInstance_02) {
   key_ctr_t k;
   val_ctr_t v;
@@ -387,12 +463,19 @@ TEST_F(ControllerTest, CreateKeyInstance_02) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::CREATEONEROW, ODBCM_RC_CONNECTION_ERROR);
-  int ret =  ktCtrlrObj.CreateKeyInstance(db_conn,&k,&v,UNC_DT_RUNNING,key_type);
-  EXPECT_EQ(UPPL_RC_ERR_DB_ACCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::CREATEONEROW,
+      ODBCM_RC_CONNECTION_ERROR);
+  int ret =  ktCtrlrObj.CreateKeyInstance(db_conn,
+                                          &k,
+                                          &v,
+                                          UNC_DT_RUNNING,
+                                          key_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_ACCESS, ret);
 }
 
-// CreateKeyInstance with UNC_DT_STATE  datatype ODBC return ODBCM_RC_CONNECTION_ERROR
+//  CreateKeyInstance with UNC_DT_STATE
+//  datatype ODBC return ODBCM_RC_CONNECTION_ERROR
 TEST_F(ControllerTest, CreateKeyInstance_03) {
   key_ctr_t k;
   val_ctr_t v;
@@ -407,12 +490,19 @@ TEST_F(ControllerTest, CreateKeyInstance_03) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::CREATEONEROW, ODBCM_RC_CONNECTION_ERROR);
-  int ret =  ktCtrlrObj.CreateKeyInstance(db_conn,&k,&v,UNC_DT_STATE,key_type);
-  EXPECT_EQ(UPPL_RC_ERR_DB_ACCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::CREATEONEROW,
+      ODBCM_RC_CONNECTION_ERROR);
+  int ret =  ktCtrlrObj.CreateKeyInstance(db_conn,
+                                          &k,
+                                          &v,
+                                          UNC_DT_STATE,
+                                          key_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_ACCESS, ret);
 }
 
-// CreateKeyInstance with UNC_DT_IMPORT  datatype ODBC return ODBCM_RC_CONNECTION_ERROR
+//  CreateKeyInstance with UNC_DT_IMPORT
+//  datatype ODBC return ODBCM_RC_CONNECTION_ERROR
 TEST_F(ControllerTest, CreateKeyInstance_04) {
   key_ctr_t k;
   val_ctr_t v;
@@ -427,12 +517,14 @@ TEST_F(ControllerTest, CreateKeyInstance_04) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::CREATEONEROW, ODBCM_RC_CONNECTION_ERROR);
-  int ret =  ktCtrlrObj.CreateKeyInstance(db_conn,&k,&v,UNC_DT_IMPORT,key_type);
-  EXPECT_EQ(UPPL_RC_ERR_DB_ACCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::CREATEONEROW, ODBCM_RC_CONNECTION_ERROR);
+  int ret =
+      ktCtrlrObj.CreateKeyInstance(db_conn, &k, &v, UNC_DT_IMPORT, key_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_ACCESS, ret);
 }
 
-// CreateKeyInstance with UNC_DT_CANDIDATE datatype ODBC return Failure
+//  CreateKeyInstance with UNC_DT_CANDIDATE datatype ODBC return Failure
 TEST_F(ControllerTest, CreateKeyInstance_05) {
   key_ctr_t k;
   val_ctr_t v;
@@ -447,12 +539,18 @@ TEST_F(ControllerTest, CreateKeyInstance_05) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::CREATEONEROW, ODBCM_RC_TRANSACTION_ERROR);
-  int ret =  ktCtrlrObj.CreateKeyInstance(db_conn,&k,&v,UNC_DT_CANDIDATE,key_type);
-  EXPECT_EQ(UPPL_RC_ERR_DB_CREATE, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::CREATEONEROW,
+      ODBCM_RC_TRANSACTION_ERROR);
+  int ret =  ktCtrlrObj.CreateKeyInstance(db_conn,
+                                          &k,
+                                          &v,
+                                          UNC_DT_CANDIDATE,
+                                          key_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_CREATE, ret);
 }
 
-// CreateKeyInstance with UNC_DT_CANDIDATE datatype ODBC ODBCM_RC_SUCCESS
+//  CreateKeyInstance with UNC_DT_CANDIDATE datatype ODBC ODBCM_RC_SUCCESS
 TEST_F(ControllerTest, CreateKeyInstance_06) {
   key_ctr_t k;
   val_ctr_t v;
@@ -467,12 +565,18 @@ TEST_F(ControllerTest, CreateKeyInstance_06) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::CREATEONEROW, ODBCM_RC_SUCCESS);
-  int ret =  ktCtrlrObj.CreateKeyInstance(db_conn,&k,&v,UNC_DT_CANDIDATE,key_type);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::CREATEONEROW,
+      ODBCM_RC_SUCCESS);
+  int ret =  ktCtrlrObj.CreateKeyInstance(db_conn,
+                                          &k,
+                                          &v,
+                                          UNC_DT_CANDIDATE,
+                                          key_type);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// CreateKeyInstance with UNC_DT_STATE  datatype ODBC return Failure
+//  CreateKeyInstance with UNC_DT_STATE  datatype ODBC return Failure
 TEST_F(ControllerTest, CreateKeyInstance_07) {
   key_ctr_t k;
   val_ctr_t v;
@@ -487,12 +591,18 @@ TEST_F(ControllerTest, CreateKeyInstance_07) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::CREATEONEROW, ODBCM_RC_TRANSACTION_ERROR);
-  int ret =  ktCtrlrObj.CreateKeyInstance(db_conn,&k,&v,UNC_DT_STATE,key_type);
-  EXPECT_EQ(UPPL_RC_ERR_DB_CREATE, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::CREATEONEROW,
+      ODBCM_RC_TRANSACTION_ERROR);
+  int ret =  ktCtrlrObj.CreateKeyInstance(db_conn,
+                                          &k,
+                                          &v,
+                                          UNC_DT_STATE,
+                                          key_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_CREATE, ret);
 }
 
-// CreateKeyInstance with UNC_DT_IMPORT  datatype ODBC return Failure
+//  CreateKeyInstance with UNC_DT_IMPORT  datatype ODBC return Failure
 TEST_F(ControllerTest, CreateKeyInstance_08) {
   key_ctr_t k;
   val_ctr_t v;
@@ -507,12 +617,19 @@ TEST_F(ControllerTest, CreateKeyInstance_08) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::CREATEONEROW, ODBCM_RC_TRANSACTION_ERROR);
-  int ret =  ktCtrlrObj.CreateKeyInstance(db_conn,&k,&v,UNC_DT_IMPORT,key_type);
-  EXPECT_EQ(UPPL_RC_ERR_DB_CREATE, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::CREATEONEROW,
+      ODBCM_RC_TRANSACTION_ERROR);
+  int ret =  ktCtrlrObj.CreateKeyInstance(
+      db_conn,
+      &k,
+      &v,
+      UNC_DT_IMPORT,
+      key_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_CREATE, ret);
 }
 
-// Update for unsupported datatype
+//  Update for unsupported datatype
 TEST_F(ControllerTest, Update_01) {
   key_ctr_t k;
   val_ctr_t v;
@@ -528,10 +645,11 @@ TEST_F(ControllerTest, Update_01) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.Update(db_conn,session_id,configuration_id,&k,&v,UNC_DT_STATE,ses);
-  EXPECT_EQ(UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
+  int ret =  ktCtrlrObj.Update(db_conn, session_id, configuration_id,
+                               &k, &v, UNC_DT_STATE, ses);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
 }
-// Domain Update success 
+//  Domain Update success
 TEST_F(ControllerTest, Update_02) {
   key_ctr_t k;
   val_ctr_t v;
@@ -553,17 +671,27 @@ TEST_F(ControllerTest, Update_02) {
   ses.stub_setAddOutput((uint32_t)ODBCM_RC_SUCCESS);
   ses.stub_setAddOutput((uint32_t)UNC_DT_CANDIDATE);
   ses.stub_setAddOutput((uint32_t)UNC_KT_CONTROLLER);
-  //ses.stub_setAddOutput((uint32_t)&k);
+  // ses.stub_setAddOutput((uint32_t)&k);
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW,
+      ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW,
+      ODBCM_RC_SUCCESS);
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.Update(db_conn,session_id,configuration_id,&k,&v,UNC_DT_CANDIDATE,ses);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  int ret =  ktCtrlrObj.Update(db_conn,
+                               session_id,
+                               configuration_id,
+                               &k,
+                               &v,
+                               UNC_DT_CANDIDATE,
+                               ses);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// get_controller_type returns failure 
+//  get_controller_type returns failure
 TEST_F(ControllerTest, Update_03) {
   key_ctr_t k;
   val_ctr_t v;
@@ -585,16 +713,25 @@ TEST_F(ControllerTest, Update_03) {
   ses.stub_setAddOutput((uint32_t)ODBCM_RC_SUCCESS);
   ses.stub_setAddOutput((uint32_t)UNC_DT_CANDIDATE);
   ses.stub_setAddOutput((uint32_t)UNC_KT_CONTROLLER);
-  //ses.stub_setAddOutput((uint32_t)&k);
+  // ses.stub_setAddOutput((uint32_t)&k);
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_CONNECTION_ERROR);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW,
+      ODBCM_RC_CONNECTION_ERROR);
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.Update(db_conn,session_id,configuration_id,&k,&v,UNC_DT_CANDIDATE,ses);
-  EXPECT_EQ(UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
+  int ret =  ktCtrlrObj.Update(db_conn,
+                               session_id,
+                               configuration_id,
+                               &k,
+                               &v,
+                               UNC_DT_CANDIDATE,
+                               ses);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
 }
 
-// UpdateKeyInstance with UNC_DT_CANDIDATE ODBC retuns ODBCM_RC_CONNECTION_ERROR
+//  UpdateKeyInstance with UNC_DT_CANDIDATE ODBC
+//  retuns ODBCM_RC_CONNECTION_ERROR
 TEST_F(ControllerTest, UpdateKeyInstance_01) {
   key_ctr_t k;
   val_ctr_t v;
@@ -609,12 +746,16 @@ TEST_F(ControllerTest, UpdateKeyInstance_01) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_CONNECTION_ERROR);
-  int ret =  ktCtrlrObj.UpdateKeyInstance(db_conn,&k,&v,UNC_DT_CANDIDATE,key_type);
-  EXPECT_EQ(UPPL_RC_ERR_DB_ACCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW,
+      ODBCM_RC_CONNECTION_ERROR);
+  int ret =
+      ktCtrlrObj.UpdateKeyInstance(db_conn, &k, &v, UNC_DT_CANDIDATE,
+                                   key_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_ACCESS, ret);
 }
 
-// UpdateKeyInstance on unsupported datatype
+//  UpdateKeyInstance on unsupported datatype
 TEST_F(ControllerTest, UpdateKeyInstance_02) {
   key_ctr_t k;
   val_ctr_t v;
@@ -629,10 +770,11 @@ TEST_F(ControllerTest, UpdateKeyInstance_02) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.UpdateKeyInstance(db_conn,&k,&v,UNC_DT_RUNNING,key_type);
-  EXPECT_EQ(UPPL_RC_ERR_DB_UPDATE, ret);
+  int ret =  ktCtrlrObj.UpdateKeyInstance(db_conn, &k, &v,
+                                          UNC_DT_RUNNING, key_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_UPDATE, ret);
 }
-// UpdateKeyInstance with UNC_DT_IMPORT ODBC retuns ODBCM_RC_CONNECTION_ERROR
+//  UpdateKeyInstance with UNC_DT_IMPORT ODBC retuns ODBCM_RC_CONNECTION_ERROR
 TEST_F(ControllerTest, UpdateKeyInstance_03) {
   key_ctr_t k;
   val_ctr_t v;
@@ -647,12 +789,15 @@ TEST_F(ControllerTest, UpdateKeyInstance_03) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_CONNECTION_ERROR);
-  int ret =  ktCtrlrObj.UpdateKeyInstance(db_conn,&k,&v,UNC_DT_IMPORT,key_type);
-  EXPECT_EQ(UPPL_RC_ERR_DB_ACCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW,
+      ODBCM_RC_CONNECTION_ERROR);
+  int ret =  ktCtrlrObj.UpdateKeyInstance(db_conn, &k, &v,
+                                          UNC_DT_IMPORT, key_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_ACCESS, ret);
 }
 
-// UpdateKeyInstance with UNC_DT_IMPORT ODBC retuns ODBCM_RC_SUCCESS
+//  UpdateKeyInstance with UNC_DT_IMPORT ODBC retuns ODBCM_RC_SUCCESS
 TEST_F(ControllerTest, UpdateKeyInstance_04) {
   key_ctr_t k;
   val_ctr_t v;
@@ -667,12 +812,18 @@ TEST_F(ControllerTest, UpdateKeyInstance_04) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
-  int ret =  ktCtrlrObj.UpdateKeyInstance(db_conn,&k,&v,UNC_DT_IMPORT,key_type);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW,
+      ODBCM_RC_SUCCESS);
+  int ret =  ktCtrlrObj.UpdateKeyInstance(db_conn,
+                                          &k,
+                                          &v,
+                                          UNC_DT_IMPORT,
+                                          key_type);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// UpdateKeyInstance with UNC_DT_IMPORT ODBC retuns 
+//  UpdateKeyInstance with UNC_DT_IMPORT ODBC retuns
 TEST_F(ControllerTest, UpdateKeyInstance_05) {
   key_ctr_t k;
   val_ctr_t v;
@@ -687,12 +838,18 @@ TEST_F(ControllerTest, UpdateKeyInstance_05) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_TRANSACTION_ERROR);
-  int ret =  ktCtrlrObj.UpdateKeyInstance(db_conn,&k,&v,UNC_DT_IMPORT,key_type);
-  EXPECT_EQ(UPPL_RC_ERR_DB_UPDATE, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW,
+      ODBCM_RC_TRANSACTION_ERROR);
+  int ret =  ktCtrlrObj.UpdateKeyInstance(db_conn,
+                                          &k,
+                                          &v,
+                                          UNC_DT_IMPORT,
+                                          key_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_UPDATE, ret);
 }
 
-// Delete for unsupported datatype
+//  Delete for unsupported datatype
 TEST_F(ControllerTest, Delete_01) {
   key_ctr_t k;
   val_ctr_t v;
@@ -708,11 +865,17 @@ TEST_F(ControllerTest, Delete_01) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.Delete(db_conn,session_id,configuration_id,&k,UNC_DT_STATE,ses);
-  EXPECT_EQ(UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
+  int ret =  ktCtrlrObj.Delete(db_conn,
+                               session_id,
+                               configuration_id,
+                               &k,
+                               UNC_DT_STATE,
+                               ses);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_IPC_WRITE_ERROR,
+            ret);
 }
 
-// Domain Delete success 
+//  Domain Delete success
 TEST_F(ControllerTest, Delete_02) {
   key_ctr_t k;
   val_ctr_t v;
@@ -736,14 +899,24 @@ TEST_F(ControllerTest, Delete_02) {
   ses.stub_setAddOutput((uint32_t)UNC_KT_CONTROLLER);
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::DELETEONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW,
+      ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::DELETEONEROW,
+      ODBCM_RC_SUCCESS);
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.Delete(db_conn,session_id,configuration_id,&k,UNC_DT_CANDIDATE,ses);
-  EXPECT_EQ(UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
+  int ret =  ktCtrlrObj.Delete(
+      db_conn,
+      session_id,
+      configuration_id,
+      &k,
+      UNC_DT_CANDIDATE,
+      ses);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
 }
 
-// get_controller_type returns failure 
+//  get_controller_type returns failure
 TEST_F(ControllerTest, Delete_03) {
   key_ctr_t k;
   val_ctr_t v;
@@ -767,13 +940,15 @@ TEST_F(ControllerTest, Delete_03) {
   ses.stub_setAddOutput((uint32_t)UNC_KT_CONTROLLER);
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_CONNECTION_ERROR);
+  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW,
+                                             ODBCM_RC_CONNECTION_ERROR);
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.Delete(db_conn,session_id,configuration_id,&k,UNC_DT_CANDIDATE,ses);
-  EXPECT_EQ(UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
+  int ret =  ktCtrlrObj.Delete(db_conn, session_id, configuration_id,
+                               &k, UNC_DT_CANDIDATE, ses);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
 }
 
-// Domain Delete With boundary referred
+//  Domain Delete With boundary referred
 TEST_F(ControllerTest, Delete_04) {
   key_ctr_t k;
   val_ctr_t v;
@@ -797,14 +972,23 @@ TEST_F(ControllerTest, Delete_04) {
   ses.stub_setAddOutput((uint32_t)UNC_KT_CONTROLLER);
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_ROW_EXISTS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW,
+      ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::ISROWEXISTS,
+      ODBCM_RC_ROW_EXISTS);
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.Delete(db_conn,session_id,configuration_id,&k,UNC_DT_CANDIDATE,ses);
-  EXPECT_EQ(UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
+  int ret =  ktCtrlrObj.Delete(db_conn,
+                               session_id,
+                               configuration_id,
+                               &k,
+                               UNC_DT_CANDIDATE,
+                               ses);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
 }
 
-// UpdateKeyInstance with ODBC retuns ODBCM_RC_CONNECTION_ERROR
+//  UpdateKeyInstance with ODBC retuns ODBCM_RC_CONNECTION_ERROR
 TEST_F(ControllerTest, GetModifiedRows_01) {
   key_ctr_t k;
   val_ctr v;
@@ -819,12 +1003,13 @@ TEST_F(ControllerTest, GetModifiedRows_01) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETMODIFIEDROWS, ODBCM_RC_CONNECTION_ERROR);
-  int ret =  ktCtrlrObj.GetModifiedRows(db_conn,obj_key_struct,UPDATED);
-  EXPECT_EQ(UPPL_RC_ERR_DB_ACCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETMODIFIEDROWS, ODBCM_RC_CONNECTION_ERROR);
+  int ret =  ktCtrlrObj.GetModifiedRows(db_conn, obj_key_struct, UPDATED);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_ACCESS, ret);
 }
 
-// ODBC retuns ODBCM_RC_RECORD_NOT_FOUND 
+//  ODBC retuns ODBCM_RC_RECORD_NOT_FOUND
 TEST_F(ControllerTest, GetModifiedRows_02) {
   key_ctr_t k;
   val_ctr v;
@@ -839,12 +1024,14 @@ TEST_F(ControllerTest, GetModifiedRows_02) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETMODIFIEDROWS, ODBCM_RC_RECORD_NOT_FOUND);
-  int ret =  ktCtrlrObj.GetModifiedRows(db_conn,obj_key_struct,UPDATED);
-  EXPECT_EQ(UPPL_RC_ERR_NO_SUCH_INSTANCE, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETMODIFIEDROWS,
+      ODBCM_RC_RECORD_NOT_FOUND);
+  int ret =  ktCtrlrObj.GetModifiedRows(db_conn, obj_key_struct, UPDATED);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE, ret);
 }
 
-// ODBC retuns ODBCM_RC_SUCCESS 
+//  ODBC retuns ODBCM_RC_SUCCESS
 TEST_F(ControllerTest, GetModifiedRows_03) {
   key_ctr_t k;
   val_ctr v;
@@ -859,12 +1046,14 @@ TEST_F(ControllerTest, GetModifiedRows_03) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETMODIFIEDROWS, ODBCM_RC_SUCCESS);
-  int ret =  ktCtrlrObj.GetModifiedRows(db_conn,obj_key_struct,UPDATED);
+  unc::uppl::ODBCManager::stub_setResultcode
+      (unc::uppl::ODBCManager::GETMODIFIEDROWS, ODBCM_RC_SUCCESS);
+  int ret =
+      ktCtrlrObj.GetModifiedRows(db_conn, obj_key_struct, UPDATED);
   EXPECT_EQ(ODBCM_RC_SUCCESS, ret);
 }
 
-// ODBC retuns ODBCM_RC_FAILED
+//  ODBC retuns ODBCM_RC_FAILED
 TEST_F(ControllerTest, GetModifiedRows_04) {
   key_ctr_t k;
   val_ctr v;
@@ -879,22 +1068,24 @@ TEST_F(ControllerTest, GetModifiedRows_04) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETMODIFIEDROWS, ODBCM_RC_FAILED);
-  int ret =  ktCtrlrObj.GetModifiedRows(db_conn,obj_key_struct,UPDATED);
-  EXPECT_EQ(UPPL_RC_ERR_DB_GET, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETMODIFIEDROWS, ODBCM_RC_FAILED);
+  int ret =  ktCtrlrObj.GetModifiedRows(db_conn, obj_key_struct, UPDATED);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_GET, ret);
 }
 
 TEST_F(ControllerTest, SetOperStatus_001) {
-
   key_ctr_t k;
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  ktCtrlrObj;
   OdbcmConnectionHandler *db_conn =NULL;
 
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_FAILED);
-  int ret =  ktCtrlrObj.SetOperStatus(db_conn,UNC_DT_STATE,&k,(UpplControllerOperStatus)1);
-  EXPECT_EQ(UPPL_RC_ERR_DB_UPDATE, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_FAILED);
+  int ret =  ktCtrlrObj.SetOperStatus(db_conn, UNC_DT_STATE, &k,
+                                      (UpplControllerOperStatus)1);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_UPDATE, ret);
 }
 
 TEST_F(ControllerTest, SetOperStatus_002) {
@@ -903,9 +1094,11 @@ TEST_F(ControllerTest, SetOperStatus_002) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  ktCtrlrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_ROW_NOT_EXISTS);
-  int ret =  ktCtrlrObj.SetOperStatus(db_conn,UNC_DT_STATE,&k,(UpplControllerOperStatus)0);
-  EXPECT_EQ(UPPL_RC_ERR_DB_UPDATE, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_ROW_NOT_EXISTS);
+  int ret =  ktCtrlrObj.SetOperStatus(db_conn, UNC_DT_STATE, &k,
+                                      (UpplControllerOperStatus)0);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_UPDATE, ret);
 }
 
 TEST_F(ControllerTest, SetOperStatus_003) {
@@ -915,10 +1108,13 @@ TEST_F(ControllerTest, SetOperStatus_003) {
   Kt_Controller  ktCtrlrObj;
   OdbcmConnectionHandler *db_conn =NULL;
 
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
-  int ret =  ktCtrlrObj.SetOperStatus(db_conn,UNC_DT_STATE,&k,(UpplControllerOperStatus)0);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
+  int ret =  ktCtrlrObj.SetOperStatus(
+      db_conn, UNC_DT_STATE, &k, (UpplControllerOperStatus)0);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
 TEST_F(ControllerTest, SetOperStatus_004) {
@@ -931,56 +1127,61 @@ TEST_F(ControllerTest, SetOperStatus_004) {
   ser_evt.addOutput((uint32_t)UNC_OP_CREATE);
   ser_evt.addOutput((uint32_t)UNC_DT_STATE);
   ser_evt.addOutput((uint32_t)UNC_KT_PORT);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
-  int ret =  ktCtrlrObj.SetOperStatus(db_conn,UNC_DT_STATE,&k,(UpplControllerOperStatus)0);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode
+      (unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode
+      (unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  int ret =  ktCtrlrObj.SetOperStatus(
+      db_conn, UNC_DT_STATE, &k, (UpplControllerOperStatus)0);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// GetOperStatus ODBC returns failure
+//  GetOperStatus ODBC returns failure
 TEST_F(ControllerTest, GetOperStatus_001) {
-
   key_ctr_t k;
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  ktCtrlrObj;
   OdbcmConnectionHandler *db_conn =NULL;
   uint8_t op_status;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
-  int ret =  ktCtrlrObj.GetOperStatus(db_conn,UNC_DT_STATE,&k,op_status);
-  EXPECT_EQ(UPPL_RC_ERR_DB_GET, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
+  int ret =  ktCtrlrObj.GetOperStatus(
+      db_conn, UNC_DT_STATE, &k, op_status);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_GET, ret);
 }
 
-// GetOperStatus ODBC returns SUCCESS
+//  GetOperStatus ODBC returns SUCCESS
 TEST_F(ControllerTest, GetOperStatus_002) {
-
   key_ctr_t k;
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  ktCtrlrObj;
   OdbcmConnectionHandler *db_conn =NULL;
   uint8_t op_status;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
-  int ret =  ktCtrlrObj.GetOperStatus(db_conn,UNC_DT_STATE,&k,op_status);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  int ret =  ktCtrlrObj.GetOperStatus(
+      db_conn, UNC_DT_STATE, &k, op_status);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
 TEST_F(ControllerTest, GetOperStatus_003) {
-
   key_ctr_t k;
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  ktCtrlrObj;
   OdbcmConnectionHandler *db_conn =NULL;
   uint8_t op_status;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS_WITH_INFO);
-  int ret =  ktCtrlrObj.GetOperStatus(db_conn,UNC_DT_STATE,&k,op_status);
-  EXPECT_EQ(UPPL_RC_ERR_DB_GET, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS_WITH_INFO);
+  int ret =  ktCtrlrObj.GetOperStatus(
+      db_conn, UNC_DT_STATE, &k, op_status);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_GET, ret);
 }
 
-// NotifyOperStatus with NULL keystruct
+//  NotifyOperStatus with NULL keystruct
 TEST_F(ControllerTest, NotifyOperStatus_01) {
-
   key_ctr_t k;
   val_ctr v;
   memset(&v, 0, sizeof(v));
@@ -995,12 +1196,13 @@ TEST_F(ControllerTest, NotifyOperStatus_01) {
 
   Kt_Controller  ktCtrlrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  int ret =  ktCtrlrObj.NotifyOperStatus(db_conn,UNC_DT_STATE, &k, &v, oper_stat_hldr);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  int ret =  ktCtrlrObj.NotifyOperStatus(
+      db_conn, UNC_DT_STATE, &k, &v, oper_stat_hldr);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
 /*
-// NotifyOperStatus 
+//  NotifyOperStatus
 TEST_F(ControllerTest, NotifyOperStatus_02) {
   key_ctr_t k;
   val_ctr v;
@@ -1015,12 +1217,14 @@ TEST_F(ControllerTest, NotifyOperStatus_02) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   vector<OperStatusHolder> oper_stat_hldr;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
-  int ret =  ktCtrlrObj.NotifyOperStatus(db_conn,UNC_DT_STATE,&k,&v,oper_stat_hldr );
-  EXPECT_EQ(UPPL_RC_ERR_DB_UPDATE, ret);
+  unc::uppl::ODBCManager::stub_setResultcode
+  (unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  int ret =  ktCtrlrObj.NotifyOperStatus
+  (db_conn, UNC_DT_STATE, &k, &v, oper_stat_hldr );
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_UPDATE, ret);
 }
 
-// NotifyOperStatus Controller oper_status  retunrs failure 
+//  NotifyOperStatus Controller oper_status  retunrs failure
 TEST_F(ControllerTest, NotifyOperStatus_03) {
   key_ctr_t k;
   val_ctr v;
@@ -1035,13 +1239,15 @@ TEST_F(ControllerTest, NotifyOperStatus_03) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   vector<OperStatusHolder> oper_stat_hldr;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
-  int ret =  ktCtrlrObj.NotifyOperStatus(db_conn,UNC_DT_STATE,&k,&v,oper_stat_hldr);
-  EXPECT_EQ(UPPL_RC_ERR_DB_UPDATE, ret);
+  unc::uppl::ODBCManager::stub_setResultcode
+  (unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
+  int ret =
+  ktCtrlrObj.NotifyOperStatus(db_conn, UNC_DT_STATE, &k, &v, oper_stat_hldr);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_UPDATE, ret);
 }
 */
 
-// HandleOperStatus Controller oper_status returns success
+//  HandleOperStatus Controller oper_status returns success
 TEST_F(ControllerTest, HandleOperStatus_01) {
   key_ctr_t k;
   val_ctr v;
@@ -1055,13 +1261,15 @@ TEST_F(ControllerTest, HandleOperStatus_01) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
-  int ret =  ktCtrlrObj.HandleOperStatus(db_conn,UNC_DT_STATE,&k,&v);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
+  int ret =  ktCtrlrObj.HandleOperStatus(db_conn, UNC_DT_STATE, &k, &v);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// HandleOperStatus Controller oper_status  retunrs failure 
+//  HandleOperStatus Controller oper_status  retunrs failure
 TEST_F(ControllerTest, HandleOperStatus_02) {
   key_ctr_t k;
   val_ctr v;
@@ -1075,12 +1283,13 @@ TEST_F(ControllerTest, HandleOperStatus_02) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
-  int ret =  ktCtrlrObj.HandleOperStatus(db_conn,UNC_DT_STATE,&k,&v);
-  EXPECT_EQ(UPPL_RC_ERR_DB_UPDATE, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
+  int ret =  ktCtrlrObj.HandleOperStatus(db_conn, UNC_DT_STATE, &k, &v);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_UPDATE, ret);
 }
 
-// HandleOperStatus with bIsInternal false 
+//  HandleOperStatus with bIsInternal false
 TEST_F(ControllerTest, HandleOperStatus_03) {
   key_ctr_t k;
   val_ctr v;
@@ -1095,12 +1304,15 @@ TEST_F(ControllerTest, HandleOperStatus_03) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
   bool bIsInternal = false;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
-  int ret =  ktCtrlrObj.HandleOperStatus(db_conn,UNC_DT_STATE,&k,&v,bIsInternal);
-  EXPECT_EQ(UPPL_RC_ERR_DB_UPDATE, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  int ret =  ktCtrlrObj.HandleOperStatus(
+      db_conn, UNC_DT_STATE, &k, &v, bIsInternal);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_UPDATE, ret);
 }
 
-// HandleOperStatus with bIsInternal false and oper_status is UPPL_CONTROLLER_OPER_UP 
+//  HandleOperStatus with bIsInternal false
+//  and oper_status is UPPL_CONTROLLER_OPER_UP
 TEST_F(ControllerTest, HandleOperStatus_04) {
   key_ctr_t k;
   val_ctr_st_t v;
@@ -1109,19 +1321,23 @@ TEST_F(ControllerTest, HandleOperStatus_04) {
   memset(v.controller.description, '\0', 128);
   memcpy(v.controller.description, valDescription, strlen(valDescription));
   v.valid[kIdxDescription] = 1;
-  v.oper_status=UPPL_CONTROLLER_OPER_UP;
+  v.oper_status = UPPL_CONTROLLER_OPER_UP;
   Kt_Controller  ktCtrlrObj;
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
   bool bIsInternal = false;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
-  int ret =  ktCtrlrObj.HandleOperStatus(db_conn,UNC_DT_STATE,&k,&v,bIsInternal);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
+  int ret =  ktCtrlrObj.HandleOperStatus(
+      db_conn, UNC_DT_STATE, &k, &v, bIsInternal);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// HandleOperStatus with bIsInternal true and oper_status is UPPL_CONTROLLER_OPER_UP 
+//  HandleOperStatus with bIsInternal
+//  true and oper_status is UPPL_CONTROLLER_OPER_UP
 TEST_F(ControllerTest, HandleOperStatus_05) {
   key_ctr_t k;
   val_ctr_st_t v;
@@ -1130,19 +1346,23 @@ TEST_F(ControllerTest, HandleOperStatus_05) {
   memset(v.controller.description, '\0', 128);
   memcpy(v.controller.description, valDescription, strlen(valDescription));
   v.valid[kIdxDescription] = 1;
-  v.oper_status=UPPL_CONTROLLER_OPER_UP;
+  v.oper_status = UPPL_CONTROLLER_OPER_UP;
   Kt_Controller  ktCtrlrObj;
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
-  bool bIsInternal=true;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
-  int ret =  ktCtrlrObj.HandleOperStatus(db_conn,UNC_DT_STATE,&k,&v,bIsInternal);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  bool bIsInternal = true;
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
+  int ret =  ktCtrlrObj.HandleOperStatus(
+      db_conn, UNC_DT_STATE, &k, &v, bIsInternal);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// HandleOperStatus with bIsInternal true and oper_status is UPPL_CONTROLLER_OPER_DOWN 
+//  HandleOperStatus with bIsInternal true
+//  and oper_status is UPPL_CONTROLLER_OPER_DOWN
 TEST_F(ControllerTest, HandleOperStatus_06) {
   key_ctr_t k;
   val_ctr_st_t v;
@@ -1151,19 +1371,22 @@ TEST_F(ControllerTest, HandleOperStatus_06) {
   memset(v.controller.description, '\0', 128);
   memcpy(v.controller.description, valDescription, strlen(valDescription));
   v.valid[kIdxDescription] = 1;
-  v.oper_status=UPPL_CONTROLLER_OPER_DOWN;
+  v.oper_status = UPPL_CONTROLLER_OPER_DOWN;
   Kt_Controller  ktCtrlrObj;
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   OdbcmConnectionHandler *db_conn =NULL;
   bool bIsInternal = true;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
-  int ret =  ktCtrlrObj.HandleOperStatus(db_conn,UNC_DT_RUNNING,&k,&v,bIsInternal);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
+  int ret =  ktCtrlrObj.HandleOperStatus(
+      db_conn, UNC_DT_RUNNING, &k, &v, bIsInternal);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// HandleDriverAlarms with unsupported alarm type
+//  HandleDriverAlarms with unsupported alarm type
 TEST_F(ControllerTest, HandleDriverAlarms_01) {
   key_ctr_t k;
   val_ctr v;
@@ -1173,12 +1396,14 @@ TEST_F(ControllerTest, HandleDriverAlarms_01) {
   vector<void *> obj_key_struct;
   Kt_Controller  ktCtrlrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
-  int ret =  ktCtrlrObj.HandleDriverAlarms(db_conn,UNC_DT_STATE,alarm_type,oper_type,&k,&v);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
+  int ret =  ktCtrlrObj.HandleDriverAlarms(
+      db_conn, UNC_DT_STATE, alarm_type, oper_type, &k, &v);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// HandleDriverAlarms with UNC_COREDOMAIN_SPLIT alarm type
+//  HandleDriverAlarms with UNC_COREDOMAIN_SPLIT alarm type
 TEST_F(ControllerTest, HandleDriverAlarms_02) {
   key_ctr_t k;
   val_ctr v;
@@ -1190,12 +1415,14 @@ TEST_F(ControllerTest, HandleDriverAlarms_02) {
   vector<void *> obj_key_struct;
   Kt_Controller  ktCtrlrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
-  int ret =  ktCtrlrObj.HandleDriverAlarms(db_conn,UNC_DT_STATE,alarm_type,oper_type,&k,&v);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
+  int ret =  ktCtrlrObj.HandleDriverAlarms(
+      db_conn, UNC_DT_STATE, alarm_type, oper_type, &k, &v);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// HandleDriverAlarms with oper_type UNC_OP_CREATE 
+//  HandleDriverAlarms with oper_type UNC_OP_CREATE
 TEST_F(ControllerTest, HandleDriverAlarms_03) {
   key_ctr_t k;
   val_ctr v;
@@ -1207,12 +1434,14 @@ TEST_F(ControllerTest, HandleDriverAlarms_03) {
   vector<void *> obj_key_struct;
   Kt_Controller  ktCtrlrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
-  int ret =  ktCtrlrObj.HandleDriverAlarms(db_conn,UNC_DT_STATE,alarm_type,oper_type,&k,&v);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  int ret =  ktCtrlrObj.HandleDriverAlarms(
+      db_conn, UNC_DT_STATE, alarm_type, oper_type, &k, &v);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// HandleDriverAlarms with oper_type UNC_OP_DELETE 
+//  HandleDriverAlarms with oper_type UNC_OP_DELETE
 TEST_F(ControllerTest, HandleDriverAlarms_04) {
   key_ctr_t k;
   val_ctr v;
@@ -1224,13 +1453,16 @@ TEST_F(ControllerTest, HandleDriverAlarms_04) {
   vector<void *> obj_key_struct;
   Kt_Controller  ktCtrlrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
-  int ret =  ktCtrlrObj.HandleDriverAlarms(db_conn,UNC_DT_STATE,alarm_type,oper_type,&k,&v);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
+  int ret =  ktCtrlrObj.HandleDriverAlarms(
+      db_conn, UNC_DT_STATE, alarm_type, oper_type, &k, &v);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// PerformSemanticValidation with oper_type UNC_OP_CREATE 
+//  PerformSemanticValidation with oper_type UNC_OP_CREATE
 TEST_F(ControllerTest, PerformSemanticValidation_11) {
   key_ctr_t k;
   val_ctr v;
@@ -1241,12 +1473,14 @@ TEST_F(ControllerTest, PerformSemanticValidation_11) {
   vector<void *> obj_key_struct;
   Kt_Controller  ktCtrlrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_ROW_EXISTS);
-  int ret =  ktCtrlrObj.PerformSemanticValidation(db_conn, &k, &v, oper_type, UNC_DT_STATE);
-  EXPECT_EQ(UPPL_RC_ERR_INSTANCE_EXISTS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_ROW_EXISTS);
+  int ret =  ktCtrlrObj.PerformSemanticValidation(
+      db_conn, &k, &v, oper_type, UNC_DT_STATE);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_INSTANCE_EXISTS, ret);
 }
 
-// PerformSemanticValidation with oper_type UNC_OP_CREATE 
+//  PerformSemanticValidation with oper_type UNC_OP_CREATE
 TEST_F(ControllerTest, PerformSemanticValidation_02) {
   key_ctr_t k;
   val_ctr v;
@@ -1257,12 +1491,15 @@ TEST_F(ControllerTest, PerformSemanticValidation_02) {
   vector<void *> obj_key_struct;
   Kt_Controller  ktCtrlrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_CONNECTION_ERROR);
-  int ret =  ktCtrlrObj.PerformSemanticValidation(db_conn, &k, &v, oper_type, UNC_DT_STATE);
-  EXPECT_EQ(UPPL_RC_ERR_DB_ACCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode
+      (unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_CONNECTION_ERROR);
+  int ret =
+      ktCtrlrObj.PerformSemanticValidation(
+          db_conn, &k, &v, oper_type, UNC_DT_STATE);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_ACCESS, ret);
 }
 
-// PerformSemanticValidation with oper_type UNC_OP_CREATE 
+//  PerformSemanticValidation with oper_type UNC_OP_CREATE
 TEST_F(ControllerTest, PerformSemanticValidation_03) {
   key_ctr_t k;
   val_ctr v;
@@ -1273,12 +1510,14 @@ TEST_F(ControllerTest, PerformSemanticValidation_03) {
   vector<void *> obj_key_struct;
   Kt_Controller  ktCtrlrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_TRANSACTION_ERROR);
-  int ret =  ktCtrlrObj.PerformSemanticValidation(db_conn, &k, &v, oper_type, UNC_DT_IMPORT);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_TRANSACTION_ERROR);
+  int ret =  ktCtrlrObj.PerformSemanticValidation(
+      db_conn, &k, &v, oper_type, UNC_DT_IMPORT);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// PerformSemanticValidation with oper_type UNC_OP_READ 
+//  PerformSemanticValidation with oper_type UNC_OP_READ
 TEST_F(ControllerTest, PerformSemanticValidation_04) {
   key_ctr_t k;
   val_ctr v;
@@ -1289,12 +1528,14 @@ TEST_F(ControllerTest, PerformSemanticValidation_04) {
   vector<void *> obj_key_struct;
   Kt_Controller  ktCtrlrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_ROW_EXISTS);
-  int ret =  ktCtrlrObj.PerformSemanticValidation(db_conn, &k, &v, oper_type, UNC_DT_STATE);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_ROW_EXISTS);
+  int ret =  ktCtrlrObj.PerformSemanticValidation(
+      db_conn, &k, &v, oper_type, UNC_DT_STATE);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// PerformSemanticValidation with oper_type UNC_OP_UPDATE 
+//  PerformSemanticValidation with oper_type UNC_OP_UPDATE
 TEST_F(ControllerTest, PerformSemanticValidation_05) {
   key_ctr_t k;
   val_ctr v;
@@ -1305,12 +1546,14 @@ TEST_F(ControllerTest, PerformSemanticValidation_05) {
   vector<void *> obj_key_struct;
   Kt_Controller  ktCtrlrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_CONNECTION_ERROR);
-  int ret =  ktCtrlrObj.PerformSemanticValidation(db_conn, &k, &v, oper_type, UNC_DT_STATE);
-  EXPECT_EQ(UPPL_RC_ERR_DB_ACCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_CONNECTION_ERROR);
+  int ret =  ktCtrlrObj.PerformSemanticValidation(
+      db_conn, &k, &v, oper_type, UNC_DT_STATE);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_ACCESS, ret);
 }
 
-// PerformSemanticValidation with oper_type UNC_OP_DELETE 
+//  PerformSemanticValidation with oper_type UNC_OP_DELETE
 TEST_F(ControllerTest, PerformSemanticValidation_06) {
   key_ctr_t k;
   val_ctr v;
@@ -1321,13 +1564,16 @@ TEST_F(ControllerTest, PerformSemanticValidation_06) {
   vector<void *> obj_key_struct;
   Kt_Controller  ktCtrlrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_QUERY_TIMEOUT);
-  int ret =  ktCtrlrObj.PerformSemanticValidation(db_conn, &k, &v, oper_type, UNC_DT_STATE);
-  EXPECT_EQ(UPPL_RC_ERR_NO_SUCH_INSTANCE, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_QUERY_TIMEOUT);
+  int ret =
+      ktCtrlrObj.PerformSemanticValidation(
+          db_conn, &k, &v, oper_type, UNC_DT_STATE);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE, ret);
 }
 
 /*
-// ReadBulkInternal with max_count zero
+//  ReadBulkInternal with max_count zero
 TEST_F(ControllerTest, ReadBulkInternal_01) {
   key_ctr_t k;
   val_ctr v;
@@ -1340,20 +1586,21 @@ TEST_F(ControllerTest, ReadBulkInternal_01) {
   vector<void *> obj_key_struct;
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-UpplReturnCode Kt_Boundary::ReadBulkInternal(
+UncRespCode Kt_Boundary::ReadBulkInternal(
     OdbcmConnectionHandler *db_conn,
     void* key_struct,
     void *val_struct,
     uint32_t data_type,
     uint32_t max_rep_ct,
     vector<key_boundary_t> &vect_key_boundary,
-    vector<val_boundary_st_t> &vect_val_boundary) 
+    vector<val_boundary_st_t> &vect_val_boundary)
 
-  int ret =  KtctrObj.ReadBulkInternal(db_conn, &k, &v, UNC_DT_STATE, max_rep_ct,  vect_ctr_id, vect_val_ctr_st);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  int ret =  KtctrObj.ReadBulkInternal(
+  db_conn, &k, &v, UNC_DT_STATE, max_rep_ct,  vect_ctr_id, vect_val_ctr_st);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// ReadBulkInternal with read_db_status ODBCM_RC_RECORD_NOT_FOUND
+//  ReadBulkInternal with read_db_status ODBCM_RC_RECORD_NOT_FOUND
 TEST_F(ControllerTest, ReadBulkInternal_02) {
   key_ctr_t k;
   vector<val_ctr_st> vect_val_ctr_st;
@@ -1364,12 +1611,14 @@ TEST_F(ControllerTest, ReadBulkInternal_02) {
   vector<void *> obj_key_struct;
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_RECORD_NOT_FOUND);
-  int ret =  KtctrObj.ReadBulkInternal(db_conn, &k, UNC_DT_STATE, max_rep_ct, vect_val_ctr_st, vect_domain_id);
-  EXPECT_EQ(UPPL_RC_ERR_NO_SUCH_INSTANCE, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+  unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_RECORD_NOT_FOUND);
+  int ret =  KtctrObj.ReadBulkInternal(
+  db_conn, &k, UNC_DT_STATE, max_rep_ct, vect_val_ctr_st, vect_domain_id);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE, ret);
 }
 
-// ReadBulkInternal with read_db_status ODBCM_RC_CONNECTION_ERROR
+//  ReadBulkInternal with read_db_status ODBCM_RC_CONNECTION_ERROR
 TEST_F(ControllerTest, ReadBulkInternal_03) {
   key_ctr_t k;
   vector<val_ctr_st> vect_val_ctr_st;
@@ -1380,12 +1629,14 @@ TEST_F(ControllerTest, ReadBulkInternal_03) {
   vector<void *> obj_key_struct;
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_CONNECTION_ERROR);
-  int ret =  KtctrObj.ReadBulkInternal(db_conn, &k, UNC_DT_STATE, max_rep_ct, vect_val_ctr_st, vect_domain_id);
-  EXPECT_EQ(UPPL_RC_ERR_DB_ACCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+  unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_CONNECTION_ERROR);
+  int ret =  KtctrObj.ReadBulkInternal(
+  db_conn, &k, UNC_DT_STATE, max_rep_ct, vect_val_ctr_st, vect_domain_id);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_ACCESS, ret);
 }
 
-// ReadBulkInternal with read_db_status ODBCM_RC_TABLE_NOT_FOUND
+//  ReadBulkInternal with read_db_status ODBCM_RC_TABLE_NOT_FOUND
 TEST_F(ControllerTest, ReadBulkInternal_04) {
   key_ctr_t k;
   vector<val_ctr_st> vect_val_ctr_st;
@@ -1396,13 +1647,14 @@ TEST_F(ControllerTest, ReadBulkInternal_04) {
   vector<void *> obj_key_struct;
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_TABLE_NOT_FOUND);
-  int ret =  KtctrObj.ReadBulkInternal(db_conn, &k, UNC_DT_STATE, max_rep_ct, 
-                                              vect_val_ctr_st, vect_domain_id);
-  EXPECT_EQ(UPPL_RC_ERR_DB_GET, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+    unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_TABLE_NOT_FOUND);
+  int ret =  KtctrObj.ReadBulkInternal(db_conn, &k, UNC_DT_STATE, max_rep_ct,
+                                       vect_val_ctr_st, vect_domain_id);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_GET, ret);
 }
 
-// ReadBulkInternal with read_db_status ODBCM_RC_SUCCESS
+//  ReadBulkInternal with read_db_status ODBCM_RC_SUCCESS
 TEST_F(ControllerTest, ReadBulkInternal_05) {
   key_ctr_t k;
   vector<val_ctr_st> vect_val_ctr_st;
@@ -1413,15 +1665,16 @@ TEST_F(ControllerTest, ReadBulkInternal_05) {
   vector<void *> obj_key_struct;
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_SUCCESS);
   int ret =  KtctrObj.ReadBulkInternal(db_conn, &k, UNC_DT_STATE, max_rep_ct,
-                                             vect_val_ctr_st, vect_domain_id);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+                                      vect_val_ctr_st, vect_domain_id);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 */
 
-//  ReadBulk with get_controller_type returns failure
-//  MEM
+//   ReadBulk with get_controller_type returns failure
+//   MEM
 TEST_F(ControllerTest, ReadBulk_02) {
   key_ctr_t k;
   int child_index = 2;
@@ -1434,15 +1687,18 @@ TEST_F(ControllerTest, ReadBulk_02) {
   vector<void *> obj_key_struct;
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_SUCCESS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_SUCCESS);
   int ret =  KtctrObj.ReadBulk(db_conn, &k, UNC_DT_CANDIDATE, max_rep_ct,
-                              child_index, parent_call,is_read_next, read_req);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+                              child_index, parent_call, is_read_next, read_req);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-//  ReadBulk with data type UNC_DT_IMPORT
+//   ReadBulk with data type UNC_DT_IMPORT
 TEST_F(ControllerTest, ReadBulk_01) {
   key_ctr_t k;
   int child_index = 0;
@@ -1456,11 +1712,11 @@ TEST_F(ControllerTest, ReadBulk_01) {
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
   int ret =  KtctrObj.ReadBulk(db_conn, &k, UNC_DT_IMPORT, max_rep_ct,
-                              child_index, parent_call,is_read_next, read_req);
-  EXPECT_EQ(UPPL_RC_ERR_OPERATION_NOT_ALLOWED, ret);
+                              child_index, parent_call, is_read_next, read_req);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED, ret);
 }
 
-//  ReadBulk with data type UNC_DT_IMPORT
+//   ReadBulk with data type UNC_DT_IMPORT
 TEST_F(ControllerTest, ReadBulk_05) {
   key_ctr_t k;
   int child_index = -1;
@@ -1474,12 +1730,12 @@ TEST_F(ControllerTest, ReadBulk_05) {
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
   int ret =  KtctrObj.ReadBulk(db_conn, &k, UNC_DT_IMPORT, max_rep_ct,
-                              child_index, parent_call,is_read_next, read_req);
-  EXPECT_EQ(UPPL_RC_ERR_OPERATION_NOT_ALLOWED, ret);
+                              child_index, parent_call, is_read_next, read_req);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED, ret);
 }
 
 
-//  ReadBulk with data type UNC_DT_IMPORT
+//   ReadBulk with data type UNC_DT_IMPORT
 TEST_F(ControllerTest, ReadBulk_06) {
   key_ctr_t k;
   int child_index = 2;
@@ -1493,11 +1749,11 @@ TEST_F(ControllerTest, ReadBulk_06) {
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
   int ret =  KtctrObj.ReadBulk(db_conn, &k, UNC_DT_IMPORT, max_rep_ct,
-                              child_index, parent_call,is_read_next, read_req);
-  EXPECT_EQ(UPPL_RC_ERR_OPERATION_NOT_ALLOWED, ret);
+                              child_index, parent_call, is_read_next, read_req);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED, ret);
 }
 
-// DeleteKeyInstance with data type UNC_DT_RUNNING
+//  DeleteKeyInstance with data type UNC_DT_RUNNING
 TEST_F(ControllerTest, DeleteKeyInstance_01) {
   key_ctr_t k;
   uint32_t key_type = 0;
@@ -1505,12 +1761,14 @@ TEST_F(ControllerTest, DeleteKeyInstance_01) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  //unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_SUCCESS);
-  int ret =  KtctrObj.DeleteKeyInstance(db_conn, &k, UNC_DT_STATE, key_type);
-  EXPECT_EQ(UPPL_RC_ERR_DB_DELETE, ret);
+  // unc::uppl::ODBCManager::stub_setResultcode(
+  // unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_SUCCESS);
+  int ret =  KtctrObj.DeleteKeyInstance(
+      db_conn, &k, UNC_DT_STATE, key_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_DELETE, ret);
 }
 
-// DeleteKeyInstance with out child
+//  DeleteKeyInstance with out child
 TEST_F(ControllerTest, DeleteKeyInstance_02) {
   key_ctr_t k;
   uint32_t key_type = 0;
@@ -1518,12 +1776,14 @@ TEST_F(ControllerTest, DeleteKeyInstance_02) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::DELETEONEROW, ODBCM_RC_ROW_NOT_EXISTS);
-  int ret =  KtctrObj.DeleteKeyInstance(db_conn, &k, UNC_DT_CANDIDATE, key_type);
-  EXPECT_EQ(UPPL_RC_ERR_NO_SUCH_INSTANCE, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::DELETEONEROW, ODBCM_RC_ROW_NOT_EXISTS);
+  int ret =  KtctrObj.DeleteKeyInstance(db_conn, &k,
+                                        UNC_DT_CANDIDATE, key_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE, ret);
 }
 
-// DeleteKeyInstance with out child
+//  DeleteKeyInstance with out child
 TEST_F(ControllerTest, DeleteKeyInstance_03) {
   key_ctr_t k;
   uint32_t key_type = 0;
@@ -1531,12 +1791,14 @@ TEST_F(ControllerTest, DeleteKeyInstance_03) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::DELETEONEROW, ODBCM_RC_ROW_NOT_EXISTS);
-  int ret =  KtctrObj.DeleteKeyInstance(db_conn, &k, UNC_DT_AUDIT, key_type);
-  EXPECT_EQ(UPPL_RC_ERR_NO_SUCH_INSTANCE, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::DELETEONEROW, ODBCM_RC_ROW_NOT_EXISTS);
+  int ret =  KtctrObj.DeleteKeyInstance(db_conn,
+                                        &k, UNC_DT_AUDIT, key_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE, ret);
 }
 
-// DeleteKeyInstance with out child
+//  DeleteKeyInstance with out child
 TEST_F(ControllerTest, DeleteKeyInstance_04) {
   key_ctr_t k;
   uint32_t key_type = 0;
@@ -1544,12 +1806,13 @@ TEST_F(ControllerTest, DeleteKeyInstance_04) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::DELETEONEROW, ODBCM_RC_TRANSACTION_ERROR);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::DELETEONEROW, ODBCM_RC_TRANSACTION_ERROR);
   int ret =  KtctrObj.DeleteKeyInstance(db_conn, &k, UNC_DT_IMPORT, key_type);
-  EXPECT_EQ(UPPL_RC_ERR_DB_DELETE, ret);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_DELETE, ret);
 }
 
-// DeleteKeyInstance suceess
+//  DeleteKeyInstance suceess
 TEST_F(ControllerTest, DeleteKeyInstance_05) {
   key_ctr_t k;
   uint32_t key_type = 0;
@@ -1557,11 +1820,12 @@ TEST_F(ControllerTest, DeleteKeyInstance_05) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::DELETEONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::DELETEONEROW, ODBCM_RC_SUCCESS);
   int ret =  KtctrObj.DeleteKeyInstance(db_conn, &k, UNC_DT_IMPORT, key_type);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
-// FreeChildKeyStruct success
+//  FreeChildKeyStruct success
 TEST_F(ControllerTest, FreeChildKeyStruct_01) {
   void *k = new key_ctr_domain_t;
   int child_class = 0;
@@ -1569,52 +1833,52 @@ TEST_F(ControllerTest, FreeChildKeyStruct_01) {
   KtctrObj.FreeChildKeyStruct(k, child_class);
 }
 
-// FreeChildKeyStruct suceess
+//  FreeChildKeyStruct suceess
 TEST_F(ControllerTest, FreeChildKeyStruct_02) {
   void *key = new key_logical_port_t;
   int child_class = 1;
   Kt_Controller  KtctrObj;
-  int ret =  UPPL_RC_SUCCESS;
+  int ret =  UNC_RC_SUCCESS;
   KtctrObj.FreeChildKeyStruct(key, child_class);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// FreeChildKeyStruct suceess
+//  FreeChildKeyStruct suceess
 TEST_F(ControllerTest, FreeChildKeyStruct_03) {
   void *key = new key_link_t;
   int child_class = 2;
   Kt_Controller  KtctrObj;
-  int ret =  UPPL_RC_SUCCESS;
+  int ret =  UNC_RC_SUCCESS;
   KtctrObj.FreeChildKeyStruct(key, child_class);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// getChildKeyStruct success
+//  getChildKeyStruct success
 TEST_F(ControllerTest, getChildKeyStruct_01) {
   int child_class = 0;
   Kt_Controller  KtctrObj;
   KtctrObj.getChildKeyStruct(child_class, "controller1");
 }
 
-// getChildKeyStruct suceess
+//  getChildKeyStruct suceess
 TEST_F(ControllerTest, getChildKeyStruct_02) {
   int child_class = 1;
   Kt_Controller  KtctrObj;
-  int ret =  UPPL_RC_SUCCESS;
+  int ret =  UNC_RC_SUCCESS;
   KtctrObj.getChildKeyStruct(child_class, "controller1");
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// getChildKeyStruct suceess
+//  getChildKeyStruct suceess
 TEST_F(ControllerTest, getChildKeyStruct_03) {
   int child_class = 2;
   Kt_Controller  KtctrObj;
-  int ret =  UPPL_RC_SUCCESS;
+  int ret =  UNC_RC_SUCCESS;
   KtctrObj.getChildKeyStruct(child_class, "controller1");
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-//PerformRead with negative option1
+// PerformRead with negative option1
 TEST_F(ControllerTest, PerformRead_Neg_option1_01) {
   key_ctr_t k;
   val_ctr v;
@@ -1634,11 +1898,14 @@ TEST_F(ControllerTest, PerformRead_Neg_option1_01) {
   sess.stub_setAddOutput((uint32_t)0);
   sess.stub_setAddOutput((uint32_t)UNC_KT_CONTROLLER);
 
-  int ret =  KtctrObj.PerformRead(db_conn,(uint32_t)0,(uint32_t)0,&k,&v,(uint32_t)UNC_DT_STATE,(uint32_t)UNC_OP_READ,sess,(uint32_t)UNC_OPT1_DETAIL,(uint32_t)UNC_OPT2_NONE,(uint32_t)1);
-  EXPECT_EQ(UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
+  int ret =  KtctrObj.PerformRead(
+      db_conn, (uint32_t)0, (uint32_t)0, &k, &v,
+      (uint32_t)UNC_DT_STATE, (uint32_t)UNC_OP_READ, sess,
+      (uint32_t)UNC_OPT1_DETAIL, (uint32_t)UNC_OPT2_NONE, (uint32_t)1);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
 }
 
-//PerformRead with negative option1 
+// PerformRead with negative option1
 TEST_F(ControllerTest, PerformRead_Neg_option1_02) {
   key_ctr_t k;
   val_ctr v;
@@ -1655,14 +1922,18 @@ TEST_F(ControllerTest, PerformRead_Neg_option1_02) {
   sess.stub_setAddOutput((uint32_t)UNC_OPT1_DETAIL);
   sess.stub_setAddOutput((uint32_t)UNC_OPT2_NONE);
   sess.stub_setAddOutput((uint32_t)UNC_DT_STATE);
-  sess.stub_setAddOutput((uint32_t)UPPL_RC_ERR_INVALID_OPTION1);
+  sess.stub_setAddOutput((uint32_t)UNC_UPPL_RC_ERR_INVALID_OPTION1);
   sess.stub_setAddOutput((uint32_t)UNC_KT_CONTROLLER);
 
-  int ret =  KtctrObj.PerformRead(db_conn,(uint32_t)0,(uint32_t)0,&k,&v,(uint32_t)UNC_DT_STATE,(uint32_t)UNC_OP_READ,sess,(uint32_t)UNC_OPT1_DETAIL,(uint32_t)UNC_OPT2_NONE,(uint32_t)1);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  int ret =  KtctrObj.PerformRead(
+      db_conn, (uint32_t)0, (uint32_t)0, &k, &v,
+      (uint32_t)UNC_DT_STATE, (uint32_t)UNC_OP_READ, sess,
+      (uint32_t)UNC_OPT1_DETAIL,
+      (uint32_t)UNC_OPT2_NONE, (uint32_t)1);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-//PerformRead with negative option2 
+// PerformRead with negative option2
 TEST_F(ControllerTest, PerformRead_Neg_option2_03) {
   key_ctr_t k;
   val_ctr v;
@@ -1682,11 +1953,15 @@ TEST_F(ControllerTest, PerformRead_Neg_option2_03) {
   sess.stub_setAddOutput((uint32_t)0);
   sess.stub_setAddOutput((uint32_t)UNC_KT_CONTROLLER);
 
-  int ret =  KtctrObj.PerformRead(db_conn,(uint32_t)0,(uint32_t)0,&k,&v,(uint32_t)UNC_DT_STATE,(uint32_t)UNC_OP_READ,sess,(uint32_t)UNC_OPT1_NORMAL,(uint32_t)UNC_OPT2_MAC_ENTRY_STATIC,(uint32_t)1);
-  EXPECT_EQ(UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
+  int ret =  KtctrObj.PerformRead(
+      db_conn, (uint32_t)0, (uint32_t)0, &k, &v,
+      (uint32_t)UNC_DT_STATE, (uint32_t)UNC_OP_READ,
+      sess, (uint32_t)UNC_OPT1_NORMAL,
+      (uint32_t)UNC_OPT2_MAC_ENTRY_STATIC, (uint32_t)1);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
 }
 
-//PerformRead with negative option1 
+// PerformRead with negative option1
 TEST_F(ControllerTest, PerformRead_Neg_option2_04) {
   key_ctr_t k;
   val_ctr v;
@@ -1703,14 +1978,18 @@ TEST_F(ControllerTest, PerformRead_Neg_option2_04) {
   sess.stub_setAddOutput((uint32_t)UNC_OPT1_NORMAL);
   sess.stub_setAddOutput((uint32_t)UNC_OPT2_MAC_ENTRY_STATIC);
   sess.stub_setAddOutput((uint32_t)UNC_DT_STATE);
-  sess.stub_setAddOutput((uint32_t)UPPL_RC_ERR_INVALID_OPTION2);
+  sess.stub_setAddOutput((uint32_t)UNC_UPPL_RC_ERR_INVALID_OPTION2);
   sess.stub_setAddOutput((uint32_t)UNC_KT_CONTROLLER);
 
-  int ret =  KtctrObj.PerformRead(db_conn,(uint32_t)0,(uint32_t)0,&k,&v,(uint32_t)UNC_DT_STATE,(uint32_t)UNC_OP_READ,sess,(uint32_t)UNC_OPT1_NORMAL,(uint32_t)UNC_OPT2_MAC_ENTRY_STATIC,(uint32_t)1);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  int ret =  KtctrObj.PerformRead(
+      db_conn, (uint32_t)0, (uint32_t)0, &k, &v,
+      (uint32_t)UNC_DT_STATE, (uint32_t)UNC_OP_READ,
+      sess, (uint32_t)UNC_OPT1_NORMAL,
+      (uint32_t)UNC_OPT2_MAC_ENTRY_STATIC, (uint32_t)1);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-//PerformRead with unsupported datatype 
+// PerformRead with unsupported datatype
 TEST_F(ControllerTest, PerformRead_Neg_datatype_05) {
   key_ctr_t k;
   val_ctr v;
@@ -1730,11 +2009,15 @@ TEST_F(ControllerTest, PerformRead_Neg_datatype_05) {
   sess.stub_setAddOutput((uint32_t)0);
   sess.stub_setAddOutput((uint32_t)UNC_KT_CONTROLLER);
 
-  int ret =  KtctrObj.PerformRead(db_conn,(uint32_t)0,(uint32_t)0,&k,&v,(uint32_t)UNC_DT_AUDIT,(uint32_t)UNC_OP_READ,sess,(uint32_t)UNC_OPT1_NORMAL,(uint32_t)UNC_OPT2_NONE,(uint32_t)1);
-  EXPECT_EQ(UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
+  int ret =  KtctrObj.PerformRead(
+      db_conn, (uint32_t)0, (uint32_t)0, &k, &v,
+      (uint32_t)UNC_DT_AUDIT, (uint32_t)UNC_OP_READ,
+      sess, (uint32_t)UNC_OPT1_NORMAL,
+      (uint32_t)UNC_OPT2_NONE, (uint32_t)1);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
 }
 
-//PerformRead with negative dataype
+// PerformRead with negative dataype
 TEST_F(ControllerTest, PerformRead_Neg_datatype_06) {
   key_ctr_t k;
   val_ctr v;
@@ -1751,14 +2034,18 @@ TEST_F(ControllerTest, PerformRead_Neg_datatype_06) {
   sess.stub_setAddOutput((uint32_t)UNC_OPT1_DETAIL);
   sess.stub_setAddOutput((uint32_t)UNC_OPT2_NONE);
   sess.stub_setAddOutput((uint32_t)UNC_DT_AUDIT);
-  sess.stub_setAddOutput((uint32_t)UPPL_RC_ERR_OPERATION_NOT_ALLOWED);
+  sess.stub_setAddOutput((uint32_t)UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED);
   sess.stub_setAddOutput((uint32_t)UNC_KT_CONTROLLER);
 
-  int ret =  KtctrObj.PerformRead(db_conn,(uint32_t)0,(uint32_t)0,&k,&v,(uint32_t)UNC_DT_AUDIT,(uint32_t)UNC_OP_READ,sess,(uint32_t)UNC_OPT1_NORMAL,(uint32_t)UNC_OPT2_NONE,(uint32_t)1);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  int ret =  KtctrObj.PerformRead(
+      db_conn, (uint32_t)0,
+      (uint32_t)0, &k, &v, (uint32_t)UNC_DT_AUDIT,
+      (uint32_t)UNC_OP_READ, sess,
+      (uint32_t)UNC_OPT1_NORMAL, (uint32_t)UNC_OPT2_NONE, (uint32_t)1);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-//PerformRead with valid option1 and valid option2
+// PerformRead with valid option1 and valid option2
 TEST_F(ControllerTest, PerformRead_pos_07) {
   key_ctr_t k;
   val_ctr v;
@@ -1767,7 +2054,8 @@ TEST_F(ControllerTest, PerformRead_pos_07) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
   ServerSession sess;
   sess.stub_setAddOutput((uint32_t)0);
   sess.stub_setAddOutput((uint32_t)0);
@@ -1779,11 +2067,15 @@ TEST_F(ControllerTest, PerformRead_pos_07) {
   sess.stub_setAddOutput((uint32_t)0);
   sess.stub_setAddOutput((uint32_t)UNC_KT_CONTROLLER);
 
-  int ret =  KtctrObj.PerformRead(db_conn,(uint32_t)0,(uint32_t)0,&k,&v,(uint32_t)UNC_DT_STATE,(uint32_t)UNC_OP_READ,sess,(uint32_t)UNC_OPT1_NORMAL,(uint32_t)UNC_OPT2_NONE,(uint32_t)1);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  int ret =  KtctrObj.PerformRead(
+      db_conn, (uint32_t)0, (uint32_t)0, &k, &v,
+      (uint32_t)UNC_DT_STATE, (uint32_t)UNC_OP_READ,
+      sess, (uint32_t)UNC_OPT1_NORMAL,
+      (uint32_t)UNC_OPT2_NONE, (uint32_t)1);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-//PerformRead with valid option1 and valid option2
+// PerformRead with valid option1 and valid option2
 TEST_F(ControllerTest, PerformRead_pos_db_Success_08) {
   key_ctr_t k;
   val_ctr_t v;
@@ -1797,7 +2089,8 @@ TEST_F(ControllerTest, PerformRead_pos_db_Success_08) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
   ServerSession sess;
   sess.stub_setAddOutput((uint32_t)0);
   sess.stub_setAddOutput((uint32_t)0);
@@ -1809,8 +2102,12 @@ TEST_F(ControllerTest, PerformRead_pos_db_Success_08) {
   sess.stub_setAddOutput((uint32_t)0);
   sess.stub_setAddOutput((uint32_t)UNC_KT_CONTROLLER);
 
-  int ret =  KtctrObj.PerformRead(db_conn,(uint32_t)0,(uint32_t)0,&k,&v,(uint32_t)UNC_DT_CANDIDATE,(uint32_t)UNC_OP_READ,sess,(uint32_t)UNC_OPT1_NORMAL,(uint32_t)UNC_OPT2_NONE,(uint32_t)0);
-  EXPECT_EQ(UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
+  int ret =  KtctrObj.PerformRead(
+      db_conn, (uint32_t)0, (uint32_t)0, &k, &v,
+      (uint32_t)UNC_DT_CANDIDATE, (uint32_t)UNC_OP_READ,
+      sess, (uint32_t)UNC_OPT1_NORMAL,
+      (uint32_t)UNC_OPT2_NONE, (uint32_t)0);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
 }
 
 TEST_F(ControllerTest, PerformRead_pos_db_fail_09) {
@@ -1821,7 +2118,8 @@ TEST_F(ControllerTest, PerformRead_pos_db_fail_09) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
   ServerSession sess;
   sess.stub_setAddOutput((uint32_t)0);
   sess.stub_setAddOutput((uint32_t)0);
@@ -1832,11 +2130,15 @@ TEST_F(ControllerTest, PerformRead_pos_db_fail_09) {
   sess.stub_setAddOutput((uint32_t)UNC_DT_STATE);
   sess.stub_setAddOutput((uint32_t)UNC_KT_CONTROLLER);
 
-  int ret =  KtctrObj.PerformRead(db_conn,(uint32_t)0,(uint32_t)0,&k,&v,(uint32_t)UNC_DT_STATE,(uint32_t)UNC_OP_READ,sess,(uint32_t)UNC_OPT1_NORMAL,(uint32_t)UNC_OPT2_NONE,(uint32_t)0);
-  EXPECT_EQ(UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
+  int ret =  KtctrObj.PerformRead(
+      db_conn, (uint32_t)0, (uint32_t)0, &k, &v,
+      (uint32_t)UNC_DT_STATE, (uint32_t)UNC_OP_READ,
+      sess, (uint32_t)UNC_OPT1_NORMAL,
+      (uint32_t)UNC_OPT2_NONE, (uint32_t)0);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
 }
 
-//PerformRead with valid option1 and valid option2
+// PerformRead with valid option1 and valid option2
 TEST_F(ControllerTest, PerformRead_pos_db_Success_10) {
   key_ctr_t k;
   val_ctr_t v;
@@ -1850,7 +2152,8 @@ TEST_F(ControllerTest, PerformRead_pos_db_Success_10) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
   ServerSession sess;
   sess.stub_setAddOutput((uint32_t)0);
   sess.stub_setAddOutput((uint32_t)0);
@@ -1862,11 +2165,15 @@ TEST_F(ControllerTest, PerformRead_pos_db_Success_10) {
   sess.stub_setAddOutput((uint32_t)0);
   sess.stub_setAddOutput((uint32_t)UNC_KT_CONTROLLER);
 
-  int ret =  KtctrObj.PerformRead(db_conn,(uint32_t)0,(uint32_t)0,&k,&v,(uint32_t)UNC_DT_CANDIDATE,(uint32_t)UNC_OP_READ,sess,(uint32_t)UNC_OPT1_NORMAL,(uint32_t)UNC_OPT2_NONE,(uint32_t)0);
-  EXPECT_EQ(UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
+  int ret =  KtctrObj.PerformRead(
+      db_conn, (uint32_t)0, (uint32_t)0, &k, &v,
+      (uint32_t)UNC_DT_CANDIDATE, (uint32_t)UNC_OP_READ,
+      sess, (uint32_t)UNC_OPT1_NORMAL,
+      (uint32_t)UNC_OPT2_NONE, (uint32_t)0);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
 }
 
-//HandleDriverEvents with other than Update operation
+// HandleDriverEvents with other than Update operation
 TEST_F(ControllerTest, HandleDriverEvents_No_Update_01) {
   key_ctr_t k;
   val_ctr_st_t v_old;
@@ -1880,11 +2187,12 @@ TEST_F(ControllerTest, HandleDriverEvents_No_Update_01) {
   uint32_t data_type = UNC_DT_STATE;
   OdbcmConnectionHandler *db_conn =NULL;
 
-  int ret =  KtctrObj.HandleDriverEvents(db_conn,&k,oper_type,data_type,&v_old,&v_new,is_events_done);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  int ret =  KtctrObj.HandleDriverEvents(
+      db_conn, &k, oper_type, data_type, &v_old, &v_new, is_events_done);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-//HandleDriverEvents with CANDIDATE operation
+// HandleDriverEvents with CANDIDATE operation
 TEST_F(ControllerTest, HandleDriverEvents_CANDIDATE_NegDB_02) {
   key_ctr_t k;
   val_ctr_st_t v_old;
@@ -1894,17 +2202,20 @@ TEST_F(ControllerTest, HandleDriverEvents_CANDIDATE_NegDB_02) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   pfc_bool_t is_events_done(PFC_FALSE);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_FAILED);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_FAILED);
   Kt_Controller  KtctrObj;
   uint32_t oper_type = UNC_OP_UPDATE;
   uint32_t data_type = UNC_DT_CANDIDATE;
   OdbcmConnectionHandler *db_conn =NULL;
 
-  int ret =  KtctrObj.HandleDriverEvents(db_conn,&k,oper_type,data_type,&v_old,&v_new,is_events_done);
-  EXPECT_EQ(UPPL_RC_ERR_DB_GET, ret);
+  int ret =
+      KtctrObj.HandleDriverEvents(db_conn, &k, oper_type, data_type,
+                                  &v_old, &v_new, is_events_done);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_GET, ret);
 }
 
-//HandleDriverEvents with RUNNING datatype
+// HandleDriverEvents with RUNNING datatype
 TEST_F(ControllerTest, HandleDriverEvents_RUNNING_NegDB_03) {
   key_ctr_t k;
   val_ctr_st_t v_old;
@@ -1914,17 +2225,19 @@ TEST_F(ControllerTest, HandleDriverEvents_RUNNING_NegDB_03) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   pfc_bool_t is_events_done(PFC_FALSE);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_FAILED);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_FAILED);
   Kt_Controller  KtctrObj;
   uint32_t oper_type = UNC_OP_UPDATE;
   uint32_t data_type = UNC_DT_RUNNING;
   OdbcmConnectionHandler *db_conn =NULL;
 
-  int ret =  KtctrObj.HandleDriverEvents(db_conn,&k,oper_type,data_type,&v_old,&v_new,is_events_done);
-  EXPECT_EQ(UPPL_RC_ERR_DB_GET, ret);
+  int ret =  KtctrObj.HandleDriverEvents(
+      db_conn, &k, oper_type, data_type, &v_old, &v_new, is_events_done);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_GET, ret);
 }
 
-//HandleDriverEvents with RUNNING datatype
+// HandleDriverEvents with RUNNING datatype
 TEST_F(ControllerTest, HandleDriverEvents_RUNNING_04) {
   key_ctr_t k;
   val_ctr_st_t v_old;
@@ -1934,17 +2247,19 @@ TEST_F(ControllerTest, HandleDriverEvents_RUNNING_04) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   pfc_bool_t is_events_done(PFC_FALSE);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
   Kt_Controller  KtctrObj;
   uint32_t oper_type = UNC_OP_UPDATE;
   uint32_t data_type = UNC_DT_RUNNING;
   OdbcmConnectionHandler *db_conn =NULL;
 
-  int ret =  KtctrObj.HandleDriverEvents(db_conn,&k,oper_type,data_type,&v_old,&v_new,is_events_done);
-  EXPECT_EQ(UPPL_RC_ERR_DB_GET, ret);
+  int ret =  KtctrObj.HandleDriverEvents(
+      db_conn, &k, oper_type, data_type, &v_old, &v_new, is_events_done);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_GET, ret);
 }
 
-//HandleDriverEvents with RUNNING datatype
+// HandleDriverEvents with RUNNING datatype
 TEST_F(ControllerTest, HandleDriverEvents_RUNNING_05) {
   key_ctr_t k;
   memset(&k, 0, sizeof(k));
@@ -1956,18 +2271,21 @@ TEST_F(ControllerTest, HandleDriverEvents_RUNNING_05) {
   v_new.oper_status = UPPL_CONTROLLER_OPER_UP;
 
   pfc_bool_t is_events_done(PFC_FALSE);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
   Kt_Controller  KtctrObj;
   uint32_t oper_type = UNC_OP_UPDATE;
   uint32_t data_type = UNC_DT_RUNNING;
   OdbcmConnectionHandler *db_conn =NULL;
 
-  int ret =  KtctrObj.HandleDriverEvents(db_conn,&k,oper_type,data_type,&v_old,&v_new,is_events_done);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  int ret =  KtctrObj.HandleDriverEvents(
+      db_conn, &k, oper_type, data_type, &v_old, &v_new, is_events_done);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-//HandleDriverEvents with RUNNING datatype
+// HandleDriverEvents with RUNNING datatype
 TEST_F(ControllerTest, HandleDriverEvents_RUNNING_06) {
   key_ctr_t k;
   val_ctr_st_t v_old;
@@ -1978,18 +2296,21 @@ TEST_F(ControllerTest, HandleDriverEvents_RUNNING_06) {
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   pfc_bool_t is_events_done(PFC_FALSE);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
   Kt_Controller  KtctrObj;
   uint32_t oper_type = UNC_OP_UPDATE;
   uint32_t data_type = UNC_DT_RUNNING;
   OdbcmConnectionHandler *db_conn =NULL;
 
-  int ret =  KtctrObj.HandleDriverEvents(db_conn,&k,oper_type,data_type,&v_old,&v_new,is_events_done);
-  EXPECT_EQ(UPPL_RC_ERR_DB_GET, ret);
+  int ret =  KtctrObj.HandleDriverEvents(
+      db_conn, &k, oper_type, data_type, &v_old, &v_new, is_events_done);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_GET, ret);
 }
 
-//HandleDriverEvents with RUNNING datatype
+// HandleDriverEvents with RUNNING datatype
 TEST_F(ControllerTest, HandleDriverEvents_RUNNING_07) {
   key_ctr_t k;
   val_ctr_st_t v_old;
@@ -1998,19 +2319,22 @@ TEST_F(ControllerTest, HandleDriverEvents_RUNNING_07) {
   memset(v_new.valid, '\0', sizeof(v_new.valid));
   v_new.oper_status = UPPL_CONTROLLER_OPER_UP;
 
-  pfc_bool_t is_events_done=false;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  pfc_bool_t is_events_done = false;
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
   Kt_Controller  KtctrObj;
   uint32_t oper_type = UNC_OP_UPDATE;
   uint32_t data_type = UNC_DT_RUNNING;
   OdbcmConnectionHandler *db_conn =NULL;
 
-  int ret =  KtctrObj.HandleDriverEvents(db_conn,&k,oper_type,data_type,&v_old,&v_new,is_events_done);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  int ret =  KtctrObj.HandleDriverEvents(
+      db_conn, &k, oper_type, data_type, &v_old, &v_new, is_events_done);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-//HandleDriverEvents with RUNNING datatype
+// HandleDriverEvents with RUNNING datatype
 TEST_F(ControllerTest, HandleDriverEvents_RUNNING_08) {
   key_ctr_t k;
   val_ctr_st_t v_old;
@@ -2020,18 +2344,21 @@ TEST_F(ControllerTest, HandleDriverEvents_RUNNING_08) {
   v_new.oper_status = UPPL_CONTROLLER_OPER_DOWN;
 
   pfc_bool_t is_events_done(PFC_FALSE);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
   Kt_Controller  KtctrObj;
   uint32_t oper_type = UNC_OP_UPDATE;
   uint32_t data_type = UNC_DT_RUNNING;
   OdbcmConnectionHandler *db_conn =NULL;
 
-  int ret =  KtctrObj.HandleDriverEvents(db_conn,&k,oper_type,data_type,&v_old,&v_new,is_events_done);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  int ret =  KtctrObj.HandleDriverEvents(
+      db_conn, &k, oper_type, data_type, &v_old, &v_new, is_events_done);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-//HandleDriverEvents with RUNNING datatype
+// HandleDriverEvents with RUNNING datatype
 TEST_F(ControllerTest, HandleDriverEvents_RUNNING_09) {
   key_ctr_t k;
   val_ctr_st_t v_old;
@@ -2043,44 +2370,49 @@ TEST_F(ControllerTest, HandleDriverEvents_RUNNING_09) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
 
   pfc_bool_t is_events_done(PFC_FALSE);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::UPDATEONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
   Kt_Controller  KtctrObj;
   uint32_t oper_type = UNC_OP_UPDATE;
   uint32_t data_type = UNC_DT_RUNNING;
   OdbcmConnectionHandler *db_conn =NULL;
 
-  int ret =  KtctrObj.HandleDriverEvents(db_conn,&k,oper_type,data_type,&v_old,&v_new,is_events_done);
-  EXPECT_EQ(UPPL_RC_ERR_DB_GET, ret);
+  int ret =  KtctrObj.HandleDriverEvents(
+      db_conn, &k, oper_type, data_type, &v_old, &v_new, is_events_done);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_GET, ret);
 }
 
-//CheckIpAndClearStateDB with DB success
+// CheckIpAndClearStateDB with DB success
 TEST_F(ControllerTest, CheckIpAndClearStateDB_Db_Success_01) {
   key_ctr_t k;
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
 
-  int ret =  KtctrObj.CheckIpAndClearStateDB(db_conn,&k);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  int ret =  KtctrObj.CheckIpAndClearStateDB(db_conn, &k);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-//CheckIpAndClearStateDB with DB failure
+// CheckIpAndClearStateDB with DB failure
 TEST_F(ControllerTest, CheckIpAndClearStateDB_Db_failure_02) {
   key_ctr_t k;
   memset(k.controller_name, '\0', 32);
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
 
-  int ret =  KtctrObj.CheckIpAndClearStateDB(db_conn,&k);
-  EXPECT_EQ(UPPL_RC_ERR_DB_GET, ret);
+  int ret =  KtctrObj.CheckIpAndClearStateDB(db_conn, &k);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_GET, ret);
 }
 
-//SendOperStatusNotification with add output error
+// SendOperStatusNotification with add output error
 TEST_F(ControllerTest, SendOperStatusNotification_01) {
   key_ctr_t k;
   uint8_t old_oper_st(0);
@@ -2094,11 +2426,12 @@ TEST_F(ControllerTest, SendOperStatusNotification_01) {
 
   Kt_Controller  KtctrObj;
 
-  int ret =  KtctrObj.SendOperStatusNotification(k,old_oper_st,new_oper_st);
-  EXPECT_EQ(UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
+  int ret =
+      KtctrObj.SendOperStatusNotification(k, old_oper_st, new_oper_st);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
 }
 
-//SendOperStatusNotification with success in add output
+// SendOperStatusNotification with success in add output
 TEST_F(ControllerTest, SendOperStatusNotification_02) {
   key_ctr_t k;
   uint8_t old_oper_st(0);
@@ -2112,11 +2445,12 @@ TEST_F(ControllerTest, SendOperStatusNotification_02) {
 
   Kt_Controller  KtctrObj;
 
-  int ret =  KtctrObj.SendOperStatusNotification(k,old_oper_st,new_oper_st);
-  EXPECT_EQ(UPPL_RC_FAILURE, ret);
+  int ret =
+      KtctrObj.SendOperStatusNotification(k, old_oper_st, new_oper_st);
+  EXPECT_EQ(UNC_UPPL_RC_FAILURE, ret);
 }
 
-//ValidateControllerIpAddress
+// ValidateControllerIpAddress
 TEST_F(ControllerTest, ValidateControllerIpAddress_01) {
   key_ctr_t k;
   memset(k.controller_name, '\0', 32);
@@ -2130,11 +2464,13 @@ TEST_F(ControllerTest, ValidateControllerIpAddress_01) {
   uint32_t data_type(UNC_DT_STATE);
   OdbcmConnectionHandler *db_conn =NULL;
   v.valid[kIdxIpAddress]=1;
-  int ret =  KtctrObj.ValidateControllerIpAddress(db_conn,operation,data_type,(unc_keytype_ctrtype_t)0,(UpplReturnCode)0,&k,&v);
-  EXPECT_EQ(UPPL_RC_ERR_CFG_SYNTAX, ret);
+  int ret =  KtctrObj.ValidateControllerIpAddress(
+      db_conn, operation, data_type, (unc_keytype_ctrtype_t)0,
+      (UncRespCode)0, &k, &v);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_CFG_SYNTAX, ret);
 }
 
-//ValidateControllerIpAddress
+// ValidateControllerIpAddress
 TEST_F(ControllerTest, ValidateControllerIpAddress_02) {
   key_ctr_t k;
   memset(k.controller_name, '\0', 32);
@@ -2148,11 +2484,13 @@ TEST_F(ControllerTest, ValidateControllerIpAddress_02) {
   uint32_t data_type(UNC_DT_STATE);
   OdbcmConnectionHandler *db_conn =NULL;
   v.valid[kIdxIpAddress]=2;
-  int ret =  KtctrObj.ValidateControllerIpAddress(db_conn,operation,data_type,(unc_keytype_ctrtype_t)1,(UpplReturnCode)0,&k,&v);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  int ret =  KtctrObj.ValidateControllerIpAddress(
+      db_conn, operation, data_type,
+      (unc_keytype_ctrtype_t)1, (UncRespCode)0, &k, &v);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-//ValidateControllerIpAddress
+// ValidateControllerIpAddress
 TEST_F(ControllerTest, ValidateControllerIpAddress_03) {
   key_ctr_t k;
   memset(k.controller_name, '\0', 32);
@@ -2166,12 +2504,15 @@ TEST_F(ControllerTest, ValidateControllerIpAddress_03) {
   uint32_t data_type(UNC_DT_STATE);
   OdbcmConnectionHandler *db_conn =NULL;
   v.valid[kIdxIpAddress]=1;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_SUCCESS);
-  int ret =  KtctrObj.ValidateControllerIpAddress(db_conn,operation,data_type,(unc_keytype_ctrtype_t)1,(UpplReturnCode)0,&k,&v);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_SUCCESS);
+  int ret =  KtctrObj.ValidateControllerIpAddress(
+      db_conn, operation, data_type, (unc_keytype_ctrtype_t)1,
+      (UncRespCode)0, &k, &v);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-//ValidateControllerIpAddress
+// ValidateControllerIpAddress
 TEST_F(ControllerTest, ValidateControllerIpAddress_04) {
   key_ctr_t k;
   memset(k.controller_name, '\0', 32);
@@ -2185,12 +2526,15 @@ TEST_F(ControllerTest, ValidateControllerIpAddress_04) {
   uint32_t data_type = UNC_DT_RUNNING;
   OdbcmConnectionHandler *db_conn =NULL;
   v.valid[kIdxIpAddress]=1;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_FAILED);
-  int ret =  KtctrObj.ValidateControllerIpAddress(db_conn,operation,data_type,(unc_keytype_ctrtype_t)1,(UpplReturnCode)0,&k,&v);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_FAILED);
+  int ret =  KtctrObj.ValidateControllerIpAddress(
+      db_conn, operation, data_type,
+      (unc_keytype_ctrtype_t)1, (UncRespCode)0, &k, &v);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-//ValidateUnknownCtrlrScalability
+// ValidateUnknownCtrlrScalability
 TEST_F(ControllerTest, ValidateUnknownCtrlrScalability_Neg_DB_01) {
   key_ctr_t k;
   memset(k.controller_name, '\0', 32);
@@ -2200,12 +2544,14 @@ TEST_F(ControllerTest, ValidateUnknownCtrlrScalability_Neg_DB_01) {
   uint8_t type(UNC_CT_PFC);
   uint32_t data_type(UNC_DT_RUNNING);
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETSIBLINGCOUNT_FILTER, ODBCM_RC_FAILED);
-  int ret =  KtctrObj.ValidateUnknownCtrlrScalability(db_conn,&k,type,data_type);
-  EXPECT_EQ(UPPL_RC_ERR_DB_GET, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETSIBLINGCOUNT_FILTER, ODBCM_RC_FAILED);
+  int ret =  KtctrObj.ValidateUnknownCtrlrScalability(
+      db_conn, &k, type, data_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_GET, ret);
 }
 
-//ValidateUnknownCtrlrScalability
+// ValidateUnknownCtrlrScalability
 TEST_F(ControllerTest, ValidateUnknownCtrlrScalability_Neg_DB_02) {
   key_ctr_t k;
   memset(k.controller_name, '\0', 32);
@@ -2215,12 +2561,14 @@ TEST_F(ControllerTest, ValidateUnknownCtrlrScalability_Neg_DB_02) {
   uint8_t type(UNC_CT_PFC);
   uint32_t data_type(UNC_DT_STATE);
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETSIBLINGCOUNT_FILTER, ODBCM_RC_CONNECTION_ERROR);
-  int ret =  KtctrObj.ValidateUnknownCtrlrScalability(db_conn,&k,type,data_type);
-  EXPECT_EQ(UPPL_RC_ERR_DB_ACCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+    unc::uppl::ODBCManager::GETSIBLINGCOUNT_FILTER, ODBCM_RC_CONNECTION_ERROR);
+  int ret =  KtctrObj.ValidateUnknownCtrlrScalability(
+      db_conn, &k, type, data_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_ACCESS, ret);
 }
 
-//ValidateUnknownCtrlrScalability
+// ValidateUnknownCtrlrScalability
 TEST_F(ControllerTest, ValidateUnknownCtrlrScalability_Neg_DB_03) {
   key_ctr_t k;
   memset(k.controller_name, '\0', 32);
@@ -2230,13 +2578,15 @@ TEST_F(ControllerTest, ValidateUnknownCtrlrScalability_Neg_DB_03) {
   uint8_t type(UNC_CT_PFC);
   uint32_t data_type(UNC_DT_STATE);
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETSIBLINGCOUNT_FILTER, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETSIBLINGCOUNT_FILTER, ODBCM_RC_SUCCESS);
   unc::uppl::ODBCManager::stub_setSiblingCount(1);
-  int ret =  KtctrObj.ValidateUnknownCtrlrScalability(db_conn,&k,type,data_type);
-  EXPECT_EQ(UPPL_RC_ERR_EXCEEDS_RESOURCE_LIMIT, ret);
+  int ret =  KtctrObj.ValidateUnknownCtrlrScalability(
+      db_conn, &k, type, data_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_EXCEEDS_RESOURCE_LIMIT, ret);
 }
 
-//ValidateUnknownCtrlrScalability
+// ValidateUnknownCtrlrScalability
 TEST_F(ControllerTest, ValidateUnknownCtrlrScalability_Neg_DB_04) {
   key_ctr_t k;
   memset(k.controller_name, '\0', 32);
@@ -2246,13 +2596,15 @@ TEST_F(ControllerTest, ValidateUnknownCtrlrScalability_Neg_DB_04) {
   uint8_t type(UNC_CT_PFC);
   uint32_t data_type(UNC_DT_STATE);
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETSIBLINGCOUNT_FILTER, ODBCM_RC_RECORD_NOT_FOUND);
+  unc::uppl::ODBCManager::stub_setResultcode(
+    unc::uppl::ODBCManager::GETSIBLINGCOUNT_FILTER, ODBCM_RC_RECORD_NOT_FOUND);
   unc::uppl::ODBCManager::stub_setSiblingCount(1);
-  int ret =  KtctrObj.ValidateUnknownCtrlrScalability(db_conn,&k,type,data_type);
-  EXPECT_EQ(UPPL_RC_ERR_EXCEEDS_RESOURCE_LIMIT, ret);
+  int ret =  KtctrObj.ValidateUnknownCtrlrScalability(
+      db_conn, &k, type, data_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_EXCEEDS_RESOURCE_LIMIT, ret);
 }
 
-//FrameValidValue
+// FrameValidValue
 TEST_F(ControllerTest, FrameValidValue_01) {
   val_ctr_t v;
   val_ctr_st_t v_st;
@@ -2278,7 +2630,7 @@ TEST_F(ControllerTest, FrameValidValue_01) {
 /*******TAMIL TEST CASES*******/
 /********ReadBulk*******/
 
-//ReadBulk opr returns Success for max_ct is zero
+// ReadBulk opr returns Success for max_ct is zero
 TEST_F(ControllerTest, ReadBulk_Max_Ct_Zero) {
   key_ctr_t k;
   int child_index(0);
@@ -2292,11 +2644,11 @@ TEST_F(ControllerTest, ReadBulk_Max_Ct_Zero) {
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
   int ret =  KtctrObj.ReadBulk(db_conn, &k, UNC_DT_CANDIDATE, max_rep_ct,
-                              child_index, parent_call,is_read_next, read_req);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+                              child_index, parent_call, is_read_next, read_req);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-//Check for controller key existence
+// Check for controller key existence
 TEST_F(ControllerTest, ReadBulk_childIndex) {
   key_ctr_t k;
   int child_index = -1;
@@ -2309,15 +2661,17 @@ TEST_F(ControllerTest, ReadBulk_childIndex) {
   vector<void *> obj_key_struct;
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_ROW_EXISTS);
-  //unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_ROW_EXISTS);
+  // unc::uppl::ODBCManager::stub_setResultcode(
+  // unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
   int ret =  KtctrObj.ReadBulk(db_conn, &k, UNC_DT_CANDIDATE, max_rep_ct,
-                              child_index, parent_call,is_read_next, read_req);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+                          child_index, parent_call, is_read_next, read_req);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
 /*************ReadBulkInternal**********/
-// ReadBulkInternal: No record to read
+//  ReadBulkInternal: No record to read
 TEST_F(ControllerTest, ReadBulkInternal_NoRecordFound) {
   key_ctr_t k;
   val_ctr_t v;
@@ -2329,12 +2683,14 @@ TEST_F(ControllerTest, ReadBulkInternal_NoRecordFound) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_RECORD_NOT_FOUND);
-  int ret =  KtctrObj.ReadBulkInternal(db_conn, &k, &v,UNC_DT_STATE, max_rep_ct, vect_val_ctr_st, vect_ctr_id);
-  EXPECT_EQ(UPPL_RC_ERR_NO_SUCH_INSTANCE, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_RECORD_NOT_FOUND);
+  int ret =  KtctrObj.ReadBulkInternal(db_conn, &k, &v,
+          UNC_DT_STATE, max_rep_ct, vect_val_ctr_st, vect_ctr_id);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE, ret);
 }
 
-// ReadBulkInternal with read_db_status ODBCM_RC_CONNECTION_ERROR
+//  ReadBulkInternal with read_db_status ODBCM_RC_CONNECTION_ERROR
 TEST_F(ControllerTest, ReadBulkInternal_Db_Connxn_Error) {
   key_ctr_t k;
   val_ctr_t v;
@@ -2346,12 +2702,15 @@ TEST_F(ControllerTest, ReadBulkInternal_Db_Connxn_Error) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_CONNECTION_ERROR);
-  int ret =  KtctrObj.ReadBulkInternal(db_conn, &k, &v,UNC_DT_STATE, max_rep_ct, vect_val_ctr_st, vect_ctr_id);
-  EXPECT_EQ(UPPL_RC_ERR_DB_ACCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_CONNECTION_ERROR);
+  int ret =  KtctrObj.ReadBulkInternal(
+      db_conn, &k, &v, UNC_DT_STATE,
+      max_rep_ct, vect_val_ctr_st, vect_ctr_id);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_ACCESS, ret);
 }
 
-// ReadBulkInternal with read_db_status ODBCM_RC_TABLE_NOT_FOUND
+//  ReadBulkInternal with read_db_status ODBCM_RC_TABLE_NOT_FOUND
 TEST_F(ControllerTest, ReadBulkInternal_Err_DB_Get) {
   key_ctr_t k;
   val_ctr_t v;
@@ -2363,13 +2722,16 @@ TEST_F(ControllerTest, ReadBulkInternal_Err_DB_Get) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_TABLE_NOT_FOUND);
-  int ret =  KtctrObj.ReadBulkInternal(db_conn, &k, &v,UNC_DT_STATE, max_rep_ct, 
-                                              vect_val_ctr_st, vect_ctr_id);
-  EXPECT_EQ(UPPL_RC_ERR_DB_GET, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETBULKROWS,
+      ODBCM_RC_TABLE_NOT_FOUND);
+  int ret =  KtctrObj.ReadBulkInternal(
+      db_conn, &k, &v, UNC_DT_STATE, max_rep_ct,
+      vect_val_ctr_st, vect_ctr_id);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_GET, ret);
 }
 
-// ReadBulkInternal with read_db_status ODBCM_RC_SUCCESS
+//  ReadBulkInternal with read_db_status ODBCM_RC_SUCCESS
 TEST_F(ControllerTest, ReadBulkInternal_Success) {
   key_ctr_t k;
   val_ctr_t v;
@@ -2381,71 +2743,80 @@ TEST_F(ControllerTest, ReadBulkInternal_Success) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_SUCCESS);
-  int ret =  KtctrObj.ReadBulkInternal(db_conn, &k, &v,UNC_DT_STATE, max_rep_ct,
-                                             vect_val_ctr_st, vect_ctr_id);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_SUCCESS);
+  int ret =  KtctrObj.ReadBulkInternal(db_conn,
+                                       &k, &v, UNC_DT_STATE, max_rep_ct,
+                                       vect_val_ctr_st, vect_ctr_id);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
 /*********ValidateCtrlrValueCapability*******/
-//returns config syntax error
+// returns config syntax error
 TEST_F(ControllerTest, ValidateCtrlrValueCapability_Err_CFG_SYNTAX) {
   string version;
   uint32_t key_type(UNC_KT_CONTROLLER);
   Kt_Controller  KtctrObj;
   int ret =  KtctrObj.ValidateCtrlrValueCapability(version, key_type);
-  EXPECT_EQ(UPPL_RC_ERR_CFG_SYNTAX, ret);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_CFG_SYNTAX, ret);
 }
 
 /*******ValidateCtrlrScalability****/
-//Returns Connxn Error
+// Returns Connxn Error
 TEST_F(ControllerTest, ValidateCtrlrScalability_Err_DB_Access) {
   OdbcmConnectionHandler *db_conn =NULL;
   string version;
   uint32_t key_type = UNC_KT_CONTROLLER;
   uint32_t data_type = UNC_DT_STATE;
   Kt_Controller  KtctrObj;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETROWCOUNT, ODBCM_RC_CONNECTION_ERROR);
-  int ret =  KtctrObj.ValidateCtrlrScalability(db_conn, version, key_type, data_type);
-  EXPECT_EQ(UPPL_RC_ERR_DB_ACCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETROWCOUNT, ODBCM_RC_CONNECTION_ERROR);
+  int ret =  KtctrObj.ValidateCtrlrScalability(
+      db_conn, version, key_type, data_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_ACCESS, ret);
 }
 
-//Unable to get scalability number from system
+// Unable to get scalability number from system
 TEST_F(ControllerTest, ValidateCtrlrScalability_System_Error) {
   OdbcmConnectionHandler *db_conn =NULL;
   string version;
   uint32_t key_type = UNC_KT_CONTROLLER;
   uint32_t data_type = UNC_DT_STATE;
   Kt_Controller  KtctrObj;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETROWCOUNT, ODBCM_RC_SUCCESS);
-  int ret =  KtctrObj.ValidateCtrlrScalability(db_conn, version, key_type, data_type);
-  EXPECT_EQ(UPPL_RC_ERR_DB_GET, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETROWCOUNT, ODBCM_RC_SUCCESS);
+  int ret =  KtctrObj.ValidateCtrlrScalability(
+      db_conn, version, key_type, data_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_GET, ret);
 }
 
-//Unable to get scalability number from DB
+// Unable to get scalability number from DB
 TEST_F(ControllerTest, ValidateCtrlrScalability_DB_Err) {
   OdbcmConnectionHandler *db_conn =NULL;
   string version;
   uint32_t key_type = UNC_KT_CONTROLLER;
   uint32_t data_type = UNC_DT_STATE;
   Kt_Controller  KtctrObj;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETROWCOUNT, ODBCM_RC_FAILED);
-  int ret =  KtctrObj.ValidateCtrlrScalability(db_conn, version, key_type, data_type);
-  EXPECT_EQ(UPPL_RC_ERR_DB_GET, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETROWCOUNT, ODBCM_RC_FAILED);
+  int ret =  KtctrObj.ValidateCtrlrScalability(
+      db_conn, version, key_type, data_type);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_GET, ret);
 }
 
 /******ValidateTypeIpAddress*******/
 
-//Not required to validate type and ip
+// Not required to validate type and ip
 TEST_F(ControllerTest, ValidateTypeIpAddress_NoValidation) {
   OdbcmConnectionHandler *db_conn =NULL;
   key_ctr_t k;
-  val_ctr_st_t *v = NULL; 
+  val_ctr_st_t *v = NULL;
   uint32_t data_type = UNC_DT_STATE;
   uint32_t ctrl_type(UNC_CT_PFC);
   Kt_Controller  KtctrObj;
-  int ret =  KtctrObj.ValidateTypeIpAddress(db_conn,&k,v,data_type,ctrl_type);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  int ret =  KtctrObj.ValidateTypeIpAddress(
+      db_conn, &k, v, data_type, ctrl_type);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
 TEST_F(ControllerTest, ValidateTypeIpAddress) {
@@ -2456,14 +2827,16 @@ TEST_F(ControllerTest, ValidateTypeIpAddress) {
 
   val_ctr_st_t v;
   memset(&v, 0, sizeof(v));
-  //v->valid[kIdxIpAddress] = UNC_VF_INVALID;
+  // v->valid[kIdxIpAddress] = UNC_VF_INVALID;
 
   uint32_t data_type = UNC_DT_STATE;
   uint32_t ctrl_type(UNC_CT_PFC);
   Kt_Controller  KtctrObj;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_FAILED);
-  int ret =  KtctrObj.ValidateTypeIpAddress(db_conn,&k,&v,data_type,ctrl_type);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_FAILED);
+  int ret =  KtctrObj.ValidateTypeIpAddress(
+      db_conn, &k, &v, data_type, ctrl_type);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
 /*******HandleDriverAlarms*********/
@@ -2484,8 +2857,9 @@ TEST_F(ControllerTest, HandleDriverAlarms) {
               "aa:bb:cc:dd:ee:ff:00:11", sizeof(v.egress_ofs_dpid));
 
   Kt_Controller  KtctrObj;
-  int ret =  KtctrObj.HandleDriverAlarms(db_conn,data_type,alarm_type,oper_type,&k,&v);
-  EXPECT_EQ(UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
+  int ret =  KtctrObj.HandleDriverAlarms(
+      db_conn, data_type, alarm_type, oper_type, &k, &v);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
 }
 
 
@@ -2498,28 +2872,31 @@ TEST_F(ControllerTest, SendSemanticRequestToUPLL) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  KtctrObj;
   int ret =  KtctrObj.SendSemanticRequestToUPLL(&k, data_type);
-  EXPECT_EQ(UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE, ret);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE, ret);
 }
 
-//GetChildClassPointer
+// GetChildClassPointer
 TEST_F(ControllerTest, GetChildClassPointer_01) {
   int kIndex = 0;
   Kt_Controller  KtctrObj;
-  Kt_Base *child(KtctrObj.GetChildClassPointer((KtControllerChildClass)kIndex));
+  Kt_Base *child(
+      KtctrObj.GetChildClassPointer((KtControllerChildClass)kIndex));
   ASSERT_TRUE(child != NULL);
 }
 
 TEST_F(ControllerTest, GetChildClassPointer_02) {
   int kIndex = 1;
   Kt_Controller  KtctrObj;
-  Kt_Base *child(KtctrObj.GetChildClassPointer((KtControllerChildClass)kIndex));
+  Kt_Base *child(KtctrObj.GetChildClassPointer(
+          (KtControllerChildClass)kIndex));
   ASSERT_TRUE(child != NULL);
 }
 
 TEST_F(ControllerTest, GetChildClassPointer_03) {
   int kIndex = 2;
   Kt_Controller  KtctrObj;
-  Kt_Base *child(KtctrObj.GetChildClassPointer((KtControllerChildClass)kIndex));
+  Kt_Base *child(KtctrObj.GetChildClassPointer(
+          (KtControllerChildClass)kIndex));
   ASSERT_TRUE(child != NULL);
 }
 
@@ -2535,11 +2912,13 @@ TEST_F(ControllerTest, ReadBulk) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  //unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_ROW_EXISTS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  // unc::uppl::ODBCManager::stub_setResultcode(
+  // unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_ROW_EXISTS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
   int ret =  KtctrObj.ReadBulk(db_conn, &k, UNC_DT_CANDIDATE, max_rep_ct,
-                              child_index, parent_call,is_read_next, read_req);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+                            child_index, parent_call, is_read_next, read_req);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
 TEST_F(ControllerTest, ReadBulk_ReadBuffer) {
@@ -2553,11 +2932,13 @@ TEST_F(ControllerTest, ReadBulk_ReadBuffer) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  //unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_ROW_EXISTS);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  // unc::uppl::ODBCManager::stub_setResultcode(
+  // unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_ROW_EXISTS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
   int ret =  KtctrObj.ReadBulk(db_conn, &k, UNC_DT_CANDIDATE, max_rep_ct,
-                              child_index, parent_call,is_read_next, &read_req);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+                          child_index, parent_call, is_read_next, &read_req);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
 TEST_F(ControllerTest, ReadBulk_child_ind) {
@@ -2571,36 +2952,40 @@ TEST_F(ControllerTest, ReadBulk_child_ind) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_ROW_EXISTS);
-  //unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
+  unc::uppl::ODBCManager::stub_setResultcode(
+      unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_ROW_EXISTS);
+  // unc::uppl::ODBCManager::stub_setResultcode(
+  // unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_SUCCESS);
   int ret =  KtctrObj.ReadBulk(db_conn, &k, UNC_DT_STATE, max_rep_ct,
                                child_index, parent_call, is_read_next,
                                &read_req);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
 TEST_F(ControllerTest, ReadBulk_ctr_exists_FALSE) {
   key_ctr_t k;
-  memset(&k,0,sizeof(key_ctr_t));
+  memset(&k, 0, sizeof(key_ctr_t));
   int child_index(0);
   pfc_bool_t parent_call(PFC_FALSE);
   pfc_bool_t is_read_next(PFC_FALSE);
   ReadRequest read_req;
   uint32_t max_rep_ct = 1;
-  //memset(k.controller_name, '\0', 32);
-  //memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
+  // memset(k.controller_name, '\0', 32);
+  // memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
 
-  //unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_CONNECTION_ERROR);
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_RECORD_NOT_FOUND);
+  // unc::uppl::ODBCManager::stub_setResultcode
+  // (unc::uppl::ODBCManager::ISROWEXISTS, ODBCM_RC_CONNECTION_ERROR);
+  unc::uppl::ODBCManager::stub_setResultcode
+      (unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_RECORD_NOT_FOUND);
   int ret =  KtctrObj.ReadBulk(db_conn, &k, UNC_DT_STATE, max_rep_ct,
-                               child_index, parent_call,is_read_next,
+                               child_index, parent_call, is_read_next,
                                &read_req);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
-// DeleteKeyInstance:returns DB error
+//  DeleteKeyInstance:returns DB error
 TEST_F(ControllerTest, DeleteKeyInstan_Err_DB_ACCESS) {
   key_ctr_t k;
   uint32_t key_type(UNC_KT_CONTROLLER);
@@ -2608,13 +2993,14 @@ TEST_F(ControllerTest, DeleteKeyInstan_Err_DB_ACCESS) {
   memcpy(k.controller_name, pkctrName1, strlen(pkctrName1));
   Kt_Controller  KtctrObj;
   OdbcmConnectionHandler *db_conn =NULL;
-  unc::uppl::ODBCManager::stub_setResultcode(unc::uppl::ODBCManager::DELETEONEROW, ODBCM_RC_CONNECTION_ERROR);
+  unc::uppl::ODBCManager::stub_setResultcode
+      (unc::uppl::ODBCManager::DELETEONEROW, ODBCM_RC_CONNECTION_ERROR);
   int ret =  KtctrObj.DeleteKeyInstance(db_conn, &k, UNC_DT_STATE, key_type);
-  EXPECT_EQ(UPPL_RC_ERR_DB_ACCESS, ret);
+  EXPECT_EQ(UNC_UPPL_RC_ERR_DB_ACCESS, ret);
 }
 
-//ReadBulkInternal:Reaturns success for max_ct zero
-TEST_F(ControllerTest,ReadBulkInternal_MaxCt_LessThan_Zero) {
+// ReadBulkInternal:Reaturns success for max_ct zero
+TEST_F(ControllerTest, ReadBulkInternal_MaxCt_LessThan_Zero) {
   OdbcmConnectionHandler *db_conn =NULL;
   key_ctr_t k;
   val_ctr_st_t v;
@@ -2623,11 +3009,12 @@ TEST_F(ControllerTest,ReadBulkInternal_MaxCt_LessThan_Zero) {
   vector<val_ctr_st_t> vect_val_ctr;
   vector<string> vect_ctr_id;
   Kt_Controller  KtctrObj;
-  int ret = KtctrObj.ReadBulkInternal(db_conn,&k,&v,data_type,max_rep_ct,vect_val_ctr,vect_ctr_id);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
-}  
+  int ret = KtctrObj.ReadBulkInternal
+      (db_conn, &k, &v, data_type, max_rep_ct, vect_val_ctr, vect_ctr_id);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
+}
 
-//HandleDriverEvents
+// HandleDriverEvents
 TEST_F(ControllerTest, HandleDriverEvents) {
   OdbcmConnectionHandler *db_conn =NULL;
   key_ctr_t k;
@@ -2640,12 +3027,14 @@ TEST_F(ControllerTest, HandleDriverEvents) {
   val_ctr_st_t *new_val_struct(NULL);
   pfc_bool_t is_events_done(PFC_FALSE);
   Kt_Controller  KtctrObj;
-  int ret = KtctrObj.HandleDriverEvents(db_conn,&k,oper_type,data_type,old_val_struct,new_val_struct,is_events_done);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  int ret = KtctrObj.HandleDriverEvents
+      (db_conn, &k, oper_type, data_type, old_val_struct,
+       new_val_struct, is_events_done);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 
 /***8*ReadCtrValFromDb****/
-//Unsuported opr type....Returns Success
+// Unsuported opr type....Returns Success
 TEST_F(ControllerTest, ReadCtrValFromDB) {
   OdbcmConnectionHandler *db_conn =NULL;
   key_ctr_t k;
@@ -2656,6 +3045,8 @@ TEST_F(ControllerTest, ReadCtrValFromDB) {
   vector<val_ctr_st_t> vect_val_ctr_st;
   vector<string> controller_id;
   Kt_Controller  KtctrObj;
-  int ret = KtctrObj.ReadCtrValFromDB(db_conn,&k,&v,data_type,operation_type,max_rep_ct,vect_val_ctr_st,controller_id);
-  EXPECT_EQ(UPPL_RC_SUCCESS, ret);
+  int ret = KtctrObj.ReadCtrValFromDB
+      (db_conn, &k, &v, data_type, operation_type, max_rep_ct,
+       vect_val_ctr_st, controller_id);
+  EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }

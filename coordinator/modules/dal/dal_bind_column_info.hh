@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -11,7 +11,7 @@
 /**
  * dal_bind_column_info.hh
  *   Contains bind information for each column defined in the schema
- */ 
+ */
 
 #ifndef __DAL_BIND_COLUMN_INFO__HH__
 #define __DAL_BIND_COLUMN_INFO__HH__
@@ -370,7 +370,7 @@ class DalBindColumnInfo {
     DalIoType io_type_;           // IO type to specify the column binding
 
     void *app_out_addr_;          // DAL user buffer for output. The result
-                                  // will be stored to this address after 
+                                  // will be stored to this address after
                                   // successful query execution/fetch results
 
     void *db_in_out_addr_;        // DAL buffer contains input/output value

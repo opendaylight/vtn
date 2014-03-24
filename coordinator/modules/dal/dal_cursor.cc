@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -183,7 +183,7 @@ DalCursor::CloseStmtHandle(SQLHANDLE stmt_handle) {
     if (free_dal_rc != kDalRcSuccess) {
       UPLL_LOG_TRACE("Err - %d. Failed to Free Handle %p",
                      free_dal_rc, stmt_handle);
-      return ((dal_rc == kDalRcSuccess) ? free_dal_rc : dal_rc); 
+      return ((dal_rc == kDalRcSuccess) ? free_dal_rc : dal_rc);
     }
   }
   stmt_handle = NULL;

@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -36,6 +36,11 @@ struct DalColumnSchema {
   size_t db_array_size;          // size used in DB
 };
 
+struct DalRelnSchema {
+  DalTableIndex parent_index;
+  size_t num_fk_columns;
+};
+
 struct DalTableSchema {
   const char *table_name;   // Table Name
   size_t num_columns;      // Total number of columns in the table
@@ -66,7 +71,7 @@ enum kVtnIndex {
   kDbiVtnCsDesc,
   kDbiVtnNumCols
 };
-}
+}  // namespace vtn
 
 namespace vtn_controller {
 static const uint8_t kVtnCtrlrNumPks = 3;
@@ -85,7 +90,7 @@ enum kVtnCtrlrIndex {
   kDbiCsDesc,
   kDbiVtnCtrlrNumCols
 };
-}
+}  // namespace vtn_controller
 
 namespace vtn_rename {
 static const uint8_t kVtnRenameNumPks = 3;
@@ -126,7 +131,7 @@ enum kVbrIndex {
   kDbiVbrFlags,
   kDbiVbrNumCols
 };
-}
+}  // namespace vbridge
 
 namespace vbridge_vlanmap {
 static const uint8_t kVbrVlanMapNumPks = 4;
@@ -136,15 +141,17 @@ enum kVbrVlanMapIndex {
   kDbiLogicalPortId,
   kDbiLogicalPortIdValid,
   kDbiVlanid,
+  kDbiBdryRefCount,
   kDbiCtrlrName,
   kDbiDomainId,
   kDbiVbrVlanMapFlags,
   kDbiValidVlanid,
+  kDbiValidBdryRefCount,
   kDbiCsRowStatus,
   kDbiCsVlanid,
   kDbiVbrVlanMapNumCols
 };
-}
+}  // namespace vbridge_vlanmap
 
 namespace vbridge_interface {
 static const uint8_t kVbrIfNumPks = 3;
@@ -184,7 +191,7 @@ enum kVbrIfIndex {
   kDbiCsTagged,
   kDbiVbrIfNumCols
 };
-}
+}  // namespace vbridge_interface
 
 namespace vrouter {
 static const uint8_t kVrtNumPks = 2;
@@ -210,7 +217,7 @@ enum kVrtIndex {
   kDbiCsDhcprelayAdminstatus,
   kDbiVrtNumCols
 };
-}
+}  // namespace vrouter
 
 namespace vrouter_interface {
 static const uint8_t kVrtIfNumPks = 3;
@@ -242,7 +249,7 @@ enum kVrtIfIndex {
   kDbiCsAdminStatus,
   kDbiVrtIfNumCols
 };
-}
+}  // namespace vrouter_interface
 
 namespace vnode_rename {
 static const uint8_t kVnodeRenameNumPks = 4;
@@ -255,7 +262,7 @@ enum kVnodeRenameIndex {
   kDbiUncvnodeName,
   kDbiVnodeRenameNumCols
 };
-}
+}  // namespace vnode_rename
 
 namespace vlink {
 static const uint8_t kVlinkNumPks = 2;
@@ -298,7 +305,7 @@ enum kVlinkIndex {
   kDbiCsDesc,
   kDbiVlinkNumCols
 };
-}
+}  // namespace vlink
 
 namespace vlink_rename {
 static const uint8_t kVlinkRenameNumPks = 4;
@@ -311,7 +318,7 @@ enum kVlinkRenameIndex {
   kDbiVlinkName,
   kDbiVlinkRenameNumCols
 };
-}
+}  // namespace vlink_rename
 
 namespace static_ip_route {
 static const uint8_t kStaticIpRouteNumPks = 6;
@@ -331,7 +338,7 @@ enum kStaticIpRouteIndex {
   kDbiCsMetric,
   kDbiStaticIpRouteNumCols
 };
-}
+}  // namespace static_ip_route
 
 namespace dhcprelay_server {
 static const uint8_t kDhcpRelayServerNumPks = 3;
@@ -345,7 +352,7 @@ enum kDhcpRelayServerIndex {
   kDbiCsRowstatus,
   kDbiDhcpRelayServerNumCols
 };
-}
+}  // namespace dhcprelay_server
 
 namespace dhcprelay_interface {
 static const uint8_t kDhcpRelayIfNumPks = 3;
@@ -359,7 +366,7 @@ enum kDhcpRelayIfIndex {
   kDbiCsRowstatus,
   kDbiDhcpRelayIfNumCols
 };
-}
+}  // namespace dhcprelay_interface
 
 namespace vbridge_networkmonitor_group {
 static const uint8_t kVbrNwMonGrpNumPks = 3;
@@ -378,7 +385,7 @@ enum kVbrNwMonGrpIndex {
   kDbiCsAdminStatus,
   kDbiVbrNwMonGrpNumCols
 };
-}
+}  // namespace vbridge_networkmonitor_group
 
 namespace vbridge_networkmonitor_host {
 static const uint8_t kVbrNwMonHostNumPks = 4;
@@ -408,7 +415,7 @@ enum kVbrNwMonHostIndex {
   kDbiCsWaitTime,
   kDbiVbrNwMonHostNumCols
 };
-}
+}  // namespace vbridge_networkmonitor_host
 
 namespace vunknown {
 static const uint8_t kVunknownNumPks = 2;
@@ -428,7 +435,7 @@ enum kVunknownIndex {
   kDbiCsDomainId,
   kDbiVunknownNumCols
 };
-}
+}  // namespace vunknown
 
 namespace vunknown_interface {
 static const uint8_t kVunknownIfNumPks = 3;
@@ -447,7 +454,7 @@ enum kVunknownIfIndex {
   kDbiCsAdminStatus,
   kDbiVunknownIfNumCols
 };
-}
+}  // namespace vunknown_interface
 
 namespace vtep {
 static const uint8_t kVtepNumPks = 2;
@@ -470,7 +477,7 @@ enum kVtepIndex {
   kDbiCsDomainId,
   kDbiVtepNumCols
 };
-}
+}  // namespace vtep
 
 namespace vtep_interface {
 static const uint8_t kVtepIfNumPks = 3;
@@ -504,7 +511,7 @@ enum kVtepIfIndex {
   kDbiCsTagged,
   kDbiVtepIfNumCols
 };
-}
+}  // namespace vtep_interface
 
 namespace vtep_group {
 static const uint8_t kVtepGrpNumPks = 2;
@@ -521,7 +528,7 @@ enum kVtepGrpIndex {
   kDbiCsDesc,
   kDbiVtepGrpNumCols
 };
-}
+}  // namespace vtep_group
 
 namespace vtep_groupmember {
 static const uint8_t kVtepGrpMemNumPks = 3;
@@ -535,7 +542,7 @@ enum kVtepGrpMemIndex {
   kDbiCsRowstatus,
   kDbiVtepGrpMemNumCols
 };
-}
+}  // namespace vtep_groupmember
 
 namespace vtunnel {
 static const uint8_t kVtunnelNumPks = 2;
@@ -567,7 +574,7 @@ enum kVtunnelIndex {
   kDbiCsLabel,
   kDbiVtunnelNumCols
 };
-}
+}  // namespace vtunnel
 
 namespace vtunnel_interface {
 static const uint8_t kVtunnelIfNumPks = 3;
@@ -601,7 +608,7 @@ enum kVtunnelIfIndex {
   kDbiCsTagged,
   kDbiVtunnelIfNumCols
 };
-}
+}  // namespace vtunnel_interface
 // L2/L3 MoMgr Enum End
 
 // POM MoMgr Enum Start
@@ -780,7 +787,7 @@ enum FlowListEntryCtrlrSchema {
   kDbiCsIcmpV6Code,
   kDbiFlowListEntryCtrlrNumCols  // Number of Columns
 };  // FlowFilterEntryCtrlrSchema
-}  // namespace flowlist_entry_Ctrlr
+}  // namespace flowlist_entry_ctrlr
 
 // Enum definition for index in global policing profile table Schema
 namespace policingprofile {
@@ -1333,6 +1340,7 @@ enum kDalTableIndex {
   kDalNumTables
 };  // enum kDalTableIndex
 
+  extern const DalRelnSchema relational_schema[];
   extern const DalTableSchema table_schema[];
 };  // namespace table
 
@@ -1355,6 +1363,16 @@ TableNumPkCols(uint16_t table_index) {
            table::table_schema[table_index].num_pk_columns : 0);
 }
 
+inline size_t
+TableParentIndex(uint16_t table_index) {
+  return (table::relational_schema[table_index].parent_index);
+}
+
+inline size_t
+TableNumFkCols(uint16_t table_index) {
+  return ((table_index < table::kDalNumTables) ?
+           table::relational_schema[table_index].num_fk_columns : 0);
+}
 
 /* Inline Functions for Column Schema */
 inline const char *

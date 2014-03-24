@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -16,8 +16,15 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import org.opendaylight.vtn.core.util.Logger;
+import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
+import org.opendaylight.vtn.javaapi.openstack.constants.VtnServiceOpenStackConsts;
+import org.opendaylight.vtn.javaapi.resources.AbstractResource;
 
 public class VtnServiceUtil {
+
+	private static final Logger LOG = Logger.getLogger(VtnServiceUtil.class
+			.getName());
 
 	/**
 	 * Check the validity of Json Object
@@ -44,11 +51,11 @@ public class VtnServiceUtil {
 	 */
 	public static JsonObject trimParamValues(final JsonObject jsonObject) {
 		// extract all the entries in Json Object
-		Set<Entry<String, JsonElement>> jsonSet = jsonObject.entrySet();
+		final Set<Entry<String, JsonElement>> jsonSet = jsonObject.entrySet();
 		/*
 		 * iterate the loop for each entry
 		 */
-		for (Entry<String, JsonElement> entry : jsonSet) {
+		for (final Entry<String, JsonElement> entry : jsonSet) {
 			/*
 			 * if entry is type of Json Object
 			 */
@@ -56,24 +63,18 @@ public class VtnServiceUtil {
 					&& entry.getValue().isJsonObject()) {
 				VtnServiceUtil.trimParamValues((JsonObject) entry.getValue());
 				continue;
-			}
-			/*
-			 * if entry is type of Json array
-			 */
-			else if (!(entry.getValue() instanceof JsonNull)
+			} else if (!(entry.getValue() instanceof JsonNull)
 					&& entry.getValue().isJsonArray()) {
-				JsonArray array = (JsonArray) entry.getValue();
+				final JsonArray array = (JsonArray) entry.getValue();
 				for (int index = 0; index < array.size(); index++) {
-					VtnServiceUtil.trimParamValues(array.get(index)
-							.getAsJsonObject());
-					continue;
+					if (array.get(index).isJsonObject()) {
+						VtnServiceUtil.trimParamValues(array.get(index)
+								.getAsJsonObject());
+						continue;
+					}
 				}
 				continue;
-			}
-			/*
-			 * if entry is primitive type value
-			 */
-			else if (!(entry.getValue() instanceof JsonNull)
+			} else if (!(entry.getValue() instanceof JsonNull)
 					&& !entry.getValue().getAsString()
 							.equals(entry.getValue().getAsString().trim())) {
 				entry.setValue(new JsonPrimitive(entry.getValue().getAsString()
@@ -82,7 +83,7 @@ public class VtnServiceUtil {
 		}
 		return jsonObject;
 	}
-	
+
 	/**
 	 * Remove the parameters of given Json which contain empty string
 	 * 
@@ -90,43 +91,55 @@ public class VtnServiceUtil {
 	 *            object that require to be update
 	 * @return Updated Json Object
 	 */
-	public static JsonObject removeEmptyParamas(final JsonObject jsonObject){
+	public static JsonObject removeEmptyParamas(final JsonObject jsonObject) {
 		// extract all the entries in Json Object
-		Set<Entry<String, JsonElement>> jsonSet = jsonObject.entrySet();
+		final Set<Entry<String, JsonElement>> jsonSet = jsonObject.entrySet();
 		/*
 		 * iterate the loop for each entry
 		 */
-		for (Entry<String, JsonElement> entry : jsonSet) {
+		for (final Entry<String, JsonElement> entry : jsonSet) {
 			/*
 			 * if entry is type of Json Object
 			 */
 			if (!(entry.getValue() instanceof JsonNull)
 					&& entry.getValue().isJsonObject()) {
-				VtnServiceUtil.removeEmptyParamas((JsonObject) entry.getValue());
+				VtnServiceUtil
+						.removeEmptyParamas((JsonObject) entry.getValue());
 				continue;
-			}
-			/*
-			 * if entry is type of Json array
-			 */
-			else if (!(entry.getValue() instanceof JsonNull)
+			} else if (!(entry.getValue() instanceof JsonNull)
 					&& entry.getValue().isJsonArray()) {
-				JsonArray array = (JsonArray) entry.getValue();
+				final JsonArray array = (JsonArray) entry.getValue();
 				for (int index = 0; index < array.size(); index++) {
 					VtnServiceUtil.removeEmptyParamas(array.get(index)
 							.getAsJsonObject());
 					continue;
 				}
 				continue;
-			}
-			/*
-			 * if entry is primitive type value
-			 */
-			else if (!(entry.getValue() instanceof JsonNull)
+			} else if (!(entry.getValue() instanceof JsonNull)
 					&& entry.getValue().getAsString()
-							.equals("")) {
+							.equals(VtnServiceConsts.EMPTY_STRING)) {
 				jsonObject.remove(entry.getKey());
 			}
 		}
 		return jsonObject;
+	}
+
+	/**
+	 * 
+	 * @param resource
+	 * @return
+	 */
+	public static boolean isOpenStackResurce(AbstractResource resource) {
+		LOG.trace("Start VtnServiceUtil#isOpenStackResurce()");
+		boolean status = false;
+		if (resource == null) {
+			LOG.debug("Decision cannot be taken that request came for UNC core APIs or UNC OpenStack APIs");
+		} else if (resource.getClass().getCanonicalName()
+				.startsWith(VtnServiceOpenStackConsts.OS_RESOURCE_PKG)) {
+			LOG.debug("Request came for UNC OpenStack APIs");
+			status = true;
+		}
+		LOG.trace("Complete VtnServiceUtil#isOpenStackResurce()");
+		return status;
 	}
 }

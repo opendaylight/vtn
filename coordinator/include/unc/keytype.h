@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -66,6 +66,7 @@ typedef enum {
 	UNC_KT_VTN_FLOWFILTER_CONTROLLER,
 	UNC_KT_VTN_PATHMAP_ENTRY,
 	UNC_KT_VTN_PATHMAP_CONTROLLER,
+	UNC_KT_VTN_DATAFLOW,
 	/* UPPL: 0x200~0x3ff */
 	UNC_KT_CONTROLLER = 0x200,
 	UNC_KT_SWITCH,
@@ -75,7 +76,8 @@ typedef enum {
 	UNC_KT_LOGICAL_PORT,
 	UNC_KT_LOGICAL_MEMBER_PORT,
 	UNC_KT_BOUNDARY,
-  UNC_KT_INVALID = 0x300
+	UNC_KT_DATAFLOW,
+	UNC_KT_CTR_DATAFLOW
 } unc_key_type_t;
 
 /* Operation */
@@ -124,7 +126,8 @@ typedef enum {
 	UNC_OPT2_CLEAR_ARPAGENT,	/* clear arpagent */
 	UNC_OPT2_MATCH_SWITCH1,		/* match-switch1 */
 	UNC_OPT2_MATCH_SWITCH2,		/* match-switch2 */
-	UNC_OPT2_MATCH_BOTH_SWITCH	/* match-both-switch */
+	UNC_OPT2_MATCH_BOTH_SWITCH,	/* match-both-switch */
+	UNC_OPT2_SIBLING_ALL	    /* return all sibling details */
 } unc_keytype_option2_t;
 
 /* Data type indicates the data storage. */
@@ -142,8 +145,7 @@ typedef enum {
 typedef enum {
 	UNC_CS_UNKNOWN= 0,
 	UNC_CS_APPLIED,
-	UNC_CS_PARTAILLY_APPLIED,
-	UNC_CS_PARTIALLY_APPLIED = UNC_CS_PARTAILLY_APPLIED,
+	UNC_CS_PARTIALLY_APPLIED,
 	UNC_CS_NOT_APPLIED,
 	UNC_CS_INVALID,
 	UNC_CS_NOT_SUPPORTED
@@ -154,8 +156,7 @@ typedef enum {
 	UNC_VF_INVALID= 0,
 	UNC_VF_VALID,
 	UNC_VF_VALID_NO_VALUE,
-	UNC_VF_NOT_SOPPORTED,
-	UNC_VF_NOT_SUPPORTED = UNC_VF_NOT_SOPPORTED,
+	UNC_VF_NOT_SUPPORTED,
   UNC_VF_VALUE_NOT_MODIFIED
 } unc_keytype_validflag_t;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -57,7 +57,8 @@ public class AcquireConfigModeResource extends AbstractResource {
 	 *             the vtn service exception
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts AcquireConfigModeResource#post()");
 		ClientSession session = null;
 		int status = ClientSession.RESP_FATAL;
@@ -85,7 +86,7 @@ public class AcquireConfigModeResource extends AbstractResource {
 					.setIpcUint32Value(getSessionID()));
 			LOG.info("Request packet created successfully");
 			status = session.invoke();
-			LOG.info("Request packet processed with status:"+status);
+			LOG.info("Request packet processed with status:" + status);
 			final String operationType = IpcDataUnitWrapper
 					.getIpcDataUnitValue(session
 							.getResponse(VtnServiceJsonConsts.VAL_0));
@@ -95,14 +96,10 @@ public class AcquireConfigModeResource extends AbstractResource {
 			final int operationStatus = Integer.parseInt(IpcDataUnitWrapper
 					.getIpcDataUnitValue(session
 							.getResponse(VtnServiceJsonConsts.VAL_2)));
-			final String configId = IpcDataUnitWrapper
-					.getIpcDataUnitValue(session
-							.getResponse(VtnServiceJsonConsts.VAL_3));
 			LOG.info("Response  received successfully");
 			LOG.info("OperationType " + operationType);
 			LOG.info("SessionId " + sessionId);
 			LOG.info("OperationStatus " + operationStatus);
-			LOG.info("ConfigId " + configId);
 			if (operationStatus != UncTCEnums.OperationStatus.TC_OPER_SUCCESS
 					.getCode()) {
 				createTcErrorInfo(UncIpcErrorCode.getTcCodes(operationStatus));
@@ -110,6 +107,10 @@ public class AcquireConfigModeResource extends AbstractResource {
 				status = UncCommonEnum.UncResultCode.UNC_SERVER_ERROR
 						.getValue();
 			} else {
+				final String configId = IpcDataUnitWrapper
+						.getIpcDataUnitValue(session
+								.getResponse(VtnServiceJsonConsts.VAL_3));
+				LOG.info("ConfigId " + configId);
 				final JsonObject response = new JsonObject();
 				final JsonObject config = new JsonObject();
 				config.addProperty(VtnServiceJsonConsts.CONFIGID, configId);

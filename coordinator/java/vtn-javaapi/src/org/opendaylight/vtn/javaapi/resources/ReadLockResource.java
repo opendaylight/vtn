@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -56,7 +56,8 @@ public class ReadLockResource extends AbstractResource {
 	 *             the vtn service exception
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts ReadLockResource#put()");
 		ClientSession session = null;
 		int status = ClientSession.RESP_FATAL;
@@ -89,7 +90,7 @@ public class ReadLockResource extends AbstractResource {
 			}
 			LOG.info("Request packet created successfully");
 			status = session.invoke();
-			LOG.info("Request packet processed with status:"+status);
+			LOG.info("Request packet processed with status:" + status);
 			final String operationType = IpcDataUnitWrapper
 					.getIpcDataUnitValue(session
 							.getResponse(VtnServiceJsonConsts.VAL_0));
@@ -162,7 +163,7 @@ public class ReadLockResource extends AbstractResource {
 	 *             the vtn service exception
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Starts ReadLockResource#delete()");
 		int status = ClientSession.RESP_FATAL;
 		ClientSession session = null;
@@ -180,7 +181,7 @@ public class ReadLockResource extends AbstractResource {
 					.setIpcUint32Value(getSessionID()));
 			LOG.info("Request packet created successfully");
 			status = session.invoke();
-			LOG.info("Request packet processed with status:"+status);
+			LOG.info("Request packet processed with status:" + status);
 			final String operationType = IpcDataUnitWrapper
 					.getIpcDataUnitValue(session.getResponse(0));
 			final String sessionId = IpcDataUnitWrapper

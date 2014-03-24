@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -38,24 +38,29 @@ public class FlowListEntryResource extends AbstractResource {
 	/** The FlowList name. */
 	@UNCField("fl_name")
 	private String flName;
+
 	/**
 	 * @return the fl name
 	 */
-	public String getFlName() {
+	public final String getFlName() {
 		return flName;
 	}
+
 	/** The seqnum. */
 	@UNCField("seqnum")
 	private String seqnum;
+
 	/**
 	 * 
 	 * @return the seqnum
 	 */
-	public String getSeqnum() {
+	public final String getSeqnum() {
 		return seqnum;
 	}
+
 	private static final Logger LOG = Logger
 			.getLogger(FlowListEntryResource.class.getName());
+
 	/**
 	 * Instantiates a new flow list entry resource.
 	 */
@@ -65,6 +70,7 @@ public class FlowListEntryResource extends AbstractResource {
 		setValidator(new FlowListEntryResourceValidator(this));
 		LOG.trace("Complete FlowListEntryResource#FlowListEntryResource()");
 	}
+
 	/**
 	 * Implementation of delete method of FlowListEntry
 	 * 
@@ -72,7 +78,7 @@ public class FlowListEntryResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Starts FlowListEntryResource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -94,7 +100,7 @@ public class FlowListEntryResource extends AbstractResource {
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
 			LOG.debug("Complete Ipc framework call");
-			
+
 		} catch (final VtnServiceException e) {
 			getExceptionHandler()
 					.raise(Thread.currentThread().getStackTrace()[1]
@@ -121,6 +127,7 @@ public class FlowListEntryResource extends AbstractResource {
 		LOG.trace("Completed FlowListEntryResource#delete()");
 		return status;
 	}
+
 	/**
 	 * Implementation of get method of FlowListEntry
 	 * 
@@ -131,7 +138,8 @@ public class FlowListEntryResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts FlowListEntryResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -152,7 +160,7 @@ public class FlowListEntryResource extends AbstractResource {
 			LOG.debug("Request Packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			setInfo(responseGenerator.getFlowListEntryResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.SHOW));
@@ -184,6 +192,7 @@ public class FlowListEntryResource extends AbstractResource {
 		LOG.trace("Completed FlowListEntryResource#get()");
 		return status;
 	}
+
 	/**
 	 * Implementation of put method of FlowListEntry
 	 * 
@@ -194,7 +203,8 @@ public class FlowListEntryResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts FlowListEntryResource#put()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -242,6 +252,7 @@ public class FlowListEntryResource extends AbstractResource {
 		LOG.trace("Completed FlowListEntryResource#put()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 

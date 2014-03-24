@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -66,6 +66,23 @@ ODBCManager::OpenDBConnection(OdbcmConnectionHandler *conn_obj) {
 
 ODBCM_RC_STATUS
 ODBCManager::CloseDBConnection(OdbcmConnectionHandler *conn_obj) {
+  return ODBCM_RC_SUCCESS;
+}
+
+ODBCM_RC_STATUS
+ODBCManager:: AssignDBConnection(OdbcmConnectionHandler *&db_conn,
+                                 uint32_t session_id, uint32_t config_id) {
+  return ODBCM_RC_SUCCESS;
+}
+
+ODBCM_RC_STATUS
+ODBCManager::PoolDBConnection(OdbcmConnectionHandler *&conn_obj,
+                      uint32_t session_id, uint32_t config_id) {
+   return ODBCM_RC_SUCCESS;
+}
+
+ODBCM_RC_STATUS
+ODBCManager::FreeingConnections(bool IsAllOrUnused) {
   return ODBCM_RC_SUCCESS;
 }
 
@@ -150,7 +167,7 @@ ODBCManager::ClearOneRow(unc_keytype_datatype_t, DBTableSchema&,
 
 ODBCM_RC_STATUS
 ODBCManager::GetSiblingCount(unc_keytype_datatype_t, DBTableSchema&,
-                    uint32_t &count, OdbcmConnectionHandler *conn_obj) {
+                             uint32_t &count, OdbcmConnectionHandler *conn_obj) {
   count = sibling_count;
   return stub_getMappedResultCode(ODBCManager::GETSIBLINGCOUNT);
 }

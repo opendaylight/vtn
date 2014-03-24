@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -20,42 +20,55 @@ namespace upll {
 namespace config_momgr {
 
 using unc::upll::dal::DalOdbcMgr;
+using namespace unc::upll::upll_util;
 
 #define CALL_MOMGRS_PREORDER(func, ...)                                     \
-  {                                                                         \
-    const std::list<unc_key_type_t> *lst = cktt_.get_preorder_list();       \
-    for (std::list<unc_key_type_t>::const_iterator it = lst->begin();       \
-         it != lst->end(); it++) {                                          \
-      const unc_key_type_t kt(*it);                                         \
-      if (upll_kt_momgrs_.count(kt) > 0) {                                  \
-        UPLL_LOG_DEBUG("KT: %u; kt_name: %s", kt, kt_name_map_[kt].c_str());\
-        MoManager *momgr = upll_kt_momgrs_[kt];                             \
-        urc = momgr->func(kt, __VA_ARGS__);                                 \
-        if (urc != UPLL_RC_SUCCESS) {                                       \
-          UPLL_LOG_WARN("Error = %d, KT: %s", urc, kt_name_map_[kt].c_str());\
-          break;                                                            \
-        }                                                                   \
-      }                                                                     \
-    }                                                                       \
-  }
+{                                                                         \
+  const std::list<unc_key_type_t> *lst = cktt_.get_preorder_list();       \
+  for (std::list<unc_key_type_t>::const_iterator it = lst->begin();       \
+       it != lst->end(); it++) {                                          \
+    const unc_key_type_t kt(*it);                                         \
+    std::map<unc_key_type_t, MoManager*>::iterator momgr_it =		\
+    upll_kt_momgrs_.find(kt);					\
+    if (momgr_it != upll_kt_momgrs_.end()) {				\
+      UPLL_LOG_DEBUG("KT: %u; kt_name: %s", kt, kt_name_map_[kt].c_str());\
+      MoManager *momgr = momgr_it->second;				\
+      urc = momgr->func(kt, __VA_ARGS__);                                 \
+      if (urc != UPLL_RC_SUCCESS) {                                       \
+        UPLL_LOG_WARN("Error = %d, KT: %s", urc, kt_name_map_[kt].c_str());\
+        break;                                                            \
+      }                                                                   \
+      if ((urc = ContinueActiveProcess()) != UPLL_RC_SUCCESS) {           \
+        UPLL_LOG_WARN("Error = %d, KT: %s", urc, kt_name_map_[kt].c_str());\
+        break;                                                            \
+      }                                                                   \
+    }                                                                     \
+  }                                                                       \
+}
 
 #define CALL_MOMGRS_REVERSE_ORDER(func, ...)                                \
-  {                                                                         \
-    const std::list<unc_key_type_t> *lst = cktt_.get_reverse_postorder_list();\
-    for (std::list<unc_key_type_t>::const_iterator it = lst->begin();       \
-         it != lst->end(); it++) {                                          \
-      const unc_key_type_t kt(*it);                                         \
-      if (upll_kt_momgrs_.count(kt) > 0) {                                  \
-        UPLL_LOG_DEBUG("KT: %u; kt_name: %s", kt, kt_name_map_[kt].c_str());\
-        MoManager *momgr = upll_kt_momgrs_[kt];                             \
-        urc = momgr->func(kt, __VA_ARGS__);                                 \
-        if (urc != UPLL_RC_SUCCESS) {                                       \
-          UPLL_LOG_INFO("Error = %d, KT: %s", urc, kt_name_map_[kt].c_str());\
-          break;                                                            \
-        }                                                                   \
-      }                                                                     \
-    }                                                                       \
-  }
+{                                                                         \
+  const std::list<unc_key_type_t> *lst = cktt_.get_reverse_postorder_list();\
+  for (std::list<unc_key_type_t>::const_iterator it = lst->begin();       \
+       it != lst->end(); it++) {                                          \
+    const unc_key_type_t kt(*it);                                         \
+    std::map<unc_key_type_t, MoManager*>::iterator momgr_it =		\
+    upll_kt_momgrs_.find(kt);					\
+    if (momgr_it != upll_kt_momgrs_.end()) {				\
+      UPLL_LOG_DEBUG("KT: %u; kt_name: %s", kt, kt_name_map_[kt].c_str());\
+      MoManager *momgr = momgr_it->second;				\
+      urc = momgr->func(kt, __VA_ARGS__);                                 \
+      if (urc != UPLL_RC_SUCCESS) {                                       \
+        UPLL_LOG_WARN("Error = %d, KT: %s", urc, kt_name_map_[kt].c_str());\
+        break;                                                            \
+      }                                                                   \
+      if ((urc = ContinueActiveProcess()) != UPLL_RC_SUCCESS) {           \
+        UPLL_LOG_WARN("Error = %d, KT: %s", urc, kt_name_map_[kt].c_str());\
+        break;                                                            \
+      }                                                                   \
+    }                                                                     \
+  }                                                                       \
+}
 
 upll_rc_t UpllConfigMgr::ValidateCommit(const char *caller) {
   UPLL_FUNC_TRACE;
@@ -98,7 +111,7 @@ upll_rc_t UpllConfigMgr::ValidateAudit(const char *caller,
   }
   if (0 != audit_ctrlr_id_.compare(req_ctrlr_id)) {
     UPLL_LOG_WARN("%s: Requested controller: %s, audit_ctrlr_id_: %s",
-                caller, req_ctrlr_id, audit_ctrlr_id_.c_str());
+                  caller, req_ctrlr_id, audit_ctrlr_id_.c_str());
     return UPLL_RC_ERR_NOT_ALLOWED_AT_THIS_TIME;
   }
 
@@ -128,14 +141,15 @@ upll_rc_t UpllConfigMgr::OnTxStart(uint32_t session_id, uint32_t config_id,
                              UPLL_DT_CANDIDATE, ConfigLock::CFG_WRITE_LOCK,
                              UPLL_DT_RUNNING, ConfigLock::CFG_READ_LOCK);
 
-  DalOdbcMgr *dbinst = &config_rw_dom_;
+  DalOdbcMgr *dbinst = dbcm_->GetConfigRwConn();
 
   CALL_MOMGRS_REVERSE_ORDER(TxUpdateController, session_id, config_id,
                             kUpllUcpDelete, &affected_ctrlr_set_, dbinst,
                             err_ckv);
 
   if (urc != UPLL_RC_SUCCESS) {
-    DalClose(dbinst, false, __FUNCTION__);
+    dbcm_->DalTxClose(dbinst, false);
+    dbcm_->ReleaseRwConn(dbinst);
     return urc;
   }
 
@@ -143,7 +157,8 @@ upll_rc_t UpllConfigMgr::OnTxStart(uint32_t session_id, uint32_t config_id,
                        kUpllUcpCreate, &affected_ctrlr_set_, dbinst, err_ckv);
 
   if (urc != UPLL_RC_SUCCESS) {
-    DalClose(dbinst, false, __FUNCTION__);
+    dbcm_->DalTxClose(dbinst, false);
+    dbcm_->ReleaseRwConn(dbinst);
     return urc;
   }
 
@@ -151,26 +166,36 @@ upll_rc_t UpllConfigMgr::OnTxStart(uint32_t session_id, uint32_t config_id,
                        kUpllUcpUpdate, &affected_ctrlr_set_, dbinst, err_ckv);
 
   if (urc != UPLL_RC_SUCCESS) {
-    DalClose(dbinst, false, __FUNCTION__);
+    dbcm_->DalTxClose(dbinst, false);
+    dbcm_->ReleaseRwConn(dbinst);
     return urc;
   }
 
   unc_key_type_t phase2_kts[] = { UNC_KT_POLICING_PROFILE_ENTRY,
-                                  UNC_KT_POLICING_PROFILE,
-                                  UNC_KT_FLOWLIST_ENTRY,
-                                  UNC_KT_FLOWLIST
-                                };
+    UNC_KT_POLICING_PROFILE,
+    UNC_KT_FLOWLIST_ENTRY,
+    UNC_KT_FLOWLIST
+  };
   for (unsigned int i = 0; i < sizeof(phase2_kts)/sizeof(phase2_kts[0]); i++) {
     const unc_key_type_t phase2_kt(phase2_kts[i]);
-    if (upll_kt_momgrs_.count(phase2_kt) > 0) {
+    std::map<unc_key_type_t, MoManager*>::iterator momgr_it =
+        upll_kt_momgrs_.find(phase2_kt);
+    if (momgr_it != upll_kt_momgrs_.end()) {
       UPLL_LOG_DEBUG("KT: %u; kt_name: %s",
                      phase2_kt, kt_name_map_[phase2_kt].c_str());
-      MoManager *momgr = upll_kt_momgrs_[phase2_kt];
+      MoManager *momgr = momgr_it->second;
       if (momgr == NULL)
         continue;
-      urc = momgr->TxUpdateController(phase2_kt, session_id, config_id,
-                                      kUpllUcpDelete2, &affected_ctrlr_set_, dbinst,
+      urc = momgr->TxUpdateController(phase2_kt,
+                                      session_id,
+                                      config_id,
+                                      kUpllUcpDelete2,
+                                      &affected_ctrlr_set_,
+                                      dbinst,
                                       err_ckv);
+      if (urc == UPLL_RC_SUCCESS) {
+        urc = ContinueActiveProcess();
+      }
       if (urc != UPLL_RC_SUCCESS) {
         UPLL_LOG_WARN("Error = %d, KT: %s",
                       urc, kt_name_map_[phase2_kt].c_str());
@@ -179,7 +204,8 @@ upll_rc_t UpllConfigMgr::OnTxStart(uint32_t session_id, uint32_t config_id,
     }
   }
 
-  upll_rc_t db_urc = DalClose(dbinst, (urc == UPLL_RC_SUCCESS), __FUNCTION__);
+  upll_rc_t db_urc = dbcm_->DalTxClose(dbinst, (urc == UPLL_RC_SUCCESS));
+  dbcm_->ReleaseRwConn(dbinst);
   if (urc == UPLL_RC_SUCCESS) {
     urc = db_urc;
   }
@@ -189,7 +215,8 @@ upll_rc_t UpllConfigMgr::OnTxStart(uint32_t session_id, uint32_t config_id,
 
 upll_rc_t UpllConfigMgr::OnAuditTxStart(const char *ctrlr_id,
                                         uint32_t session_id,
-                                        uint32_t config_id) {
+                                        uint32_t config_id,
+                                        ConfigKeyVal **err_ckv) {
   UPLL_FUNC_TRACE;
   upll_rc_t urc = UPLL_RC_ERR_GENERIC;
 
@@ -201,70 +228,84 @@ upll_rc_t UpllConfigMgr::OnAuditTxStart(const char *ctrlr_id,
                              UPLL_DT_AUDIT, ConfigLock::CFG_READ_LOCK,
                              UPLL_DT_RUNNING, ConfigLock::CFG_READ_LOCK);
 
-  DalOdbcMgr *dbinst = &config_rw_dom_;
+  DalOdbcMgr *dbinst = dbcm_->GetConfigRwConn();
 
   affected_ctrlr_set_.clear();
 
-  bool ctrlr_affected = false;
+  KTxCtrlrAffectedState ctrlr_affected = kCtrlrAffectedNoDiff;
+  audit_ctrlr_affected_state_ = ctrlr_affected;
   CALL_MOMGRS_REVERSE_ORDER(AuditUpdateController, ctrlr_id, session_id,
-                            config_id, kUpllUcpDelete, &ctrlr_affected,
-                            dbinst);
+                            config_id, kUpllUcpDelete, dbinst,
+                            err_ckv, &ctrlr_affected);
   if (urc != UPLL_RC_SUCCESS) {
-    DalClose(dbinst, false, __FUNCTION__);
+    dbcm_->DalTxClose(dbinst, false);
+    dbcm_->ReleaseRwConn(dbinst);
     return urc;
   }
 
   CALL_MOMGRS_PREORDER(AuditUpdateController, ctrlr_id, session_id, config_id,
-                       kUpllUcpCreate, &ctrlr_affected, dbinst);
+                       kUpllUcpCreate, dbinst, err_ckv,
+                       &ctrlr_affected);
   if (urc != UPLL_RC_SUCCESS) {
-    DalClose(dbinst, false, __FUNCTION__);
+    dbcm_->DalTxClose(dbinst, false);
+    dbcm_->ReleaseRwConn(dbinst);
     return urc;
   }
 
   CALL_MOMGRS_PREORDER(AuditUpdateController, ctrlr_id, session_id, config_id,
-                       kUpllUcpUpdate, &ctrlr_affected, dbinst);
+                       kUpllUcpUpdate, dbinst, err_ckv, &ctrlr_affected);
 
   if (urc != UPLL_RC_SUCCESS) {
-    DalClose(dbinst, false, __FUNCTION__);
+    dbcm_->DalTxClose(dbinst, false);
+    dbcm_->ReleaseRwConn(dbinst);
     return urc;
   }
 
   unc_key_type_t phase2_kts[] = { UNC_KT_POLICING_PROFILE_ENTRY,
-                                  UNC_KT_POLICING_PROFILE,
-                                  UNC_KT_FLOWLIST_ENTRY,
-                                  UNC_KT_FLOWLIST
-                                };
+    UNC_KT_POLICING_PROFILE,
+    UNC_KT_FLOWLIST_ENTRY,
+    UNC_KT_FLOWLIST
+  };
   for (unsigned int i = 0; i < sizeof(phase2_kts)/sizeof(phase2_kts[0]); i++) {
-      const unc_key_type_t phase2_kt(phase2_kts[i]);
-      if (upll_kt_momgrs_.count(phase2_kt) > 0) {
-        UPLL_LOG_DEBUG("KT: %u; kt_name: %s", phase2_kt,
-                       kt_name_map_[phase2_kt].c_str());
-        MoManager *momgr = upll_kt_momgrs_[phase2_kt];
-        if (momgr == NULL)
-          continue;
-        urc = momgr->AuditUpdateController(phase2_kt, ctrlr_id, session_id,
-                                           config_id, kUpllUcpDelete2,
-                                           &ctrlr_affected, dbinst);
-        if (urc != UPLL_RC_SUCCESS) {
-          UPLL_LOG_WARN("Error = %d, KT: %s", urc,
-                        kt_name_map_[phase2_kt].c_str());
-          break;
-        }
+    const unc_key_type_t phase2_kt(phase2_kts[i]);
+    std::map<unc_key_type_t, MoManager*>::iterator momgr_it =
+        upll_kt_momgrs_.find(phase2_kt);
+    if (momgr_it != upll_kt_momgrs_.end()) {
+      UPLL_LOG_DEBUG("KT: %u; kt_name: %s", phase2_kt,
+                     kt_name_map_[phase2_kt].c_str());
+      MoManager *momgr = momgr_it->second;
+      if (momgr == NULL)
+        continue;
+      urc = momgr->AuditUpdateController(phase2_kt, ctrlr_id, session_id,
+                                         config_id, kUpllUcpDelete2,
+                                         dbinst, err_ckv, &ctrlr_affected);
+      if (urc == UPLL_RC_SUCCESS) {
+        urc = ContinueActiveProcess();
       }
+      if (urc != UPLL_RC_SUCCESS) {
+        UPLL_LOG_WARN("Error = %d, KT: %s", urc,
+                      kt_name_map_[phase2_kt].c_str());
+        break;
+      }
+    }
   }
 
-  upll_rc_t db_urc = DalClose(dbinst, (urc == UPLL_RC_SUCCESS), __FUNCTION__);
+  upll_rc_t db_urc = dbcm_->DalTxClose(dbinst, (urc == UPLL_RC_SUCCESS));
+  dbcm_->ReleaseRwConn(dbinst);
   if (urc == UPLL_RC_SUCCESS) {
     urc = db_urc;
   }
 
   if (urc == UPLL_RC_SUCCESS) {
-    if (ctrlr_affected) {
+    audit_ctrlr_affected_state_ = ctrlr_affected;
+    if (ctrlr_affected == kCtrlrAffectedConfigDiff) {
       audit_mutex_lock_.lock();
       affected_ctrlr_set_.insert(audit_ctrlr_id_);
       audit_mutex_lock_.unlock();
+    } else if (ctrlr_affected == kCtrlrAffectedOnlyCSDiff) {
+      UPLL_LOG_INFO("Audit - only cs diff");
     } else {
-      UPLL_LOG_DEBUG("No change found");
+      UPLL_LOG_INFO("No audit diff");
     }
   }
 
@@ -284,11 +325,12 @@ upll_rc_t UpllConfigMgr::OnTxVote(
                              UPLL_DT_CANDIDATE, ConfigLock::CFG_READ_LOCK,
                              UPLL_DT_RUNNING, ConfigLock::CFG_READ_LOCK);
 
-  DalOdbcMgr *dbinst = &config_rw_dom_;
+  DalOdbcMgr *dbinst = dbcm_->GetConfigRwConn();
 
   CALL_MOMGRS_PREORDER(TxVote, dbinst, err_ckv);
 
-  upll_rc_t db_urc = DalClose(dbinst, (urc == UPLL_RC_SUCCESS), __FUNCTION__);
+  upll_rc_t db_urc = dbcm_->DalTxClose(dbinst, (urc == UPLL_RC_SUCCESS));
+  dbcm_->ReleaseRwConn(dbinst);
   if (urc == UPLL_RC_SUCCESS) {
     urc = db_urc;
   }
@@ -324,11 +366,12 @@ upll_rc_t UpllConfigMgr::OnTxVoteCtrlrStatus(
                              UPLL_DT_CANDIDATE, ConfigLock::CFG_READ_LOCK,
                              UPLL_DT_RUNNING, ConfigLock::CFG_READ_LOCK);
 
-  DalOdbcMgr *dbinst = &config_rw_dom_;
+  DalOdbcMgr *dbinst = dbcm_->GetConfigRwConn();
 
   CALL_MOMGRS_PREORDER(TxVoteCtrlrStatus, ctrlr_vote_status, dbinst);
 
-  upll_rc_t db_urc = DalClose(dbinst, (urc == UPLL_RC_SUCCESS), __FUNCTION__);
+  upll_rc_t db_urc = dbcm_->DalTxClose(dbinst, (urc == UPLL_RC_SUCCESS));
+  dbcm_->ReleaseRwConn(dbinst);
   if (urc == UPLL_RC_SUCCESS) {
     urc = db_urc;
   }
@@ -350,20 +393,21 @@ upll_rc_t UpllConfigMgr::OnAuditTxVoteCtrlrStatus(
                              UPLL_DT_AUDIT, ConfigLock::CFG_READ_LOCK,
                              UPLL_DT_RUNNING, ConfigLock::CFG_WRITE_LOCK);
 
-  DalOdbcMgr *dbinst = &config_rw_dom_;
+  DalOdbcMgr *dbinst = dbcm_->GetConfigRwConn();
 
   CALL_MOMGRS_PREORDER(AuditVoteCtrlrStatus, ctrlr_vote_status, dbinst);
 
   upll_rc_t db_urc;
-  if (UPLL_RC_SUCCESS != (db_urc = DalClose(dbinst, (urc == UPLL_RC_SUCCESS),
-                                             __FUNCTION__))) {
+  if (UPLL_RC_SUCCESS != (db_urc = dbcm_->DalTxClose(
+              dbinst, (urc == UPLL_RC_SUCCESS)))) {
+    dbcm_->ReleaseRwConn(dbinst);
     return ((urc != UPLL_RC_SUCCESS) ? urc : db_urc);
   }
+  dbcm_->ReleaseRwConn(dbinst);
 
   // Send an alarm
   if (ctrlr_vote_status->upll_ctrlr_result != UPLL_RC_SUCCESS &&
-      ctrlr_vote_status->upll_ctrlr_result !=
-      UPLL_RC_ERR_RESOURCE_DISCONNECTED) {
+      ctrlr_vote_status->upll_ctrlr_result != UPLL_RC_ERR_CTR_DISCONNECTED) {
     upll_rc_t ctrmgr_urc;
     bool config_invalid = false;
     if ((ctrmgr_urc = (CtrlrMgr::GetInstance()->IsConfigInvalid(
@@ -391,7 +435,7 @@ upll_rc_t UpllConfigMgr::OnTxGlobalCommit(
   UPLL_FUNC_TRACE;
   upll_rc_t urc;
   if (UPLL_RC_SUCCESS != (urc = ValidateCommit(__FUNCTION__))) {
-    pfc_log_fatal("TxGlobalCommit failed. Urc=%d", urc);
+    UPLL_LOG_FATAL("TxGlobalCommit failed. Urc=%d", urc);
     return urc;
   }
 
@@ -404,7 +448,7 @@ upll_rc_t UpllConfigMgr::OnAuditTxGlobalCommit(
   UPLL_FUNC_TRACE;
   upll_rc_t urc;
   if (UPLL_RC_SUCCESS != (urc = ValidateAudit(__FUNCTION__, ctrlr_id))) {
-    pfc_log_fatal("AuditTxGlobalCommit failed. Urc=%d", urc);
+    UPLL_LOG_FATAL("AuditTxGlobalCommit failed. Urc=%d", urc);
     return urc;
   }
 
@@ -435,15 +479,14 @@ upll_rc_t UpllConfigMgr::OnTxCommitCtrlrStatus(
                              UPLL_DT_RUNNING, ConfigLock::CFG_WRITE_LOCK);
   // TODO(a): Why do we need write lock on CANDIDATE?
 
-  DalOdbcMgr *dbinst = &config_rw_dom_;
+  DalOdbcMgr *dbinst = dbcm_->GetConfigRwConn();
 
   CALL_MOMGRS_PREORDER(TxCopyCandidateToRunning, ctrlr_commit_status, dbinst);
 
   if (urc == UPLL_RC_SUCCESS) {
     unc_key_type_t state_kts[] = { UNC_KT_VLINK, UNC_KT_VBR_IF,
-                                    UNC_KT_VRT_IF,
-                                    UNC_KT_VBRIDGE, UNC_KT_VROUTER,
-                                    UNC_KT_VTN };
+      UNC_KT_VRT_IF, UNC_KT_VBRIDGE,
+      UNC_KT_VROUTER, UNC_KT_VTN };
     for (unsigned int i = 0; i < sizeof(state_kts)/sizeof(state_kts[0]); i++) {
       MoManager *momgr = GetMoManager(state_kts[i]);
       if (momgr == NULL)
@@ -454,10 +497,15 @@ upll_rc_t UpllConfigMgr::OnTxCommitCtrlrStatus(
         UPLL_LOG_DEBUG("Failed to update status for KT %d", state_kts[i]);
         break;
       }
+      if ((urc = ContinueActiveProcess()) != UPLL_RC_SUCCESS) {
+        UPLL_LOG_WARN("Error = %d, TxUpdateDtState KT: %d", urc, state_kts[i]);
+        break;
+      }
     }
   }
 
-  upll_rc_t db_urc = DalClose(dbinst, (urc == UPLL_RC_SUCCESS), __FUNCTION__);
+  upll_rc_t db_urc = dbcm_->DalTxClose(dbinst, (urc == UPLL_RC_SUCCESS));
+  dbcm_->ReleaseRwConn(dbinst);
   if (urc == UPLL_RC_SUCCESS) {
     urc = db_urc;
   }
@@ -465,15 +513,17 @@ upll_rc_t UpllConfigMgr::OnTxCommitCtrlrStatus(
   if (urc == UPLL_RC_SUCCESS) {
     candidate_dirty_qc_lock_.lock();
     candidate_dirty_qc_ = false;
+    // Clearing the dirty flags(used for skipping DB Diff operation) if stored
+    dbinst->ClearDirty();
     candidate_dirty_qc_lock_.unlock();
-     // Send Config Notifications
-     ConfigNotifier::SendBufferedNotificationsToUpllUser();
+    // Send Config Notifications
+    ConfigNotifier::SendBufferedNotificationsToUpllUser();
   } else {
-     ConfigNotifier::CancelBufferedNotificationsToUpllUser();
+    ConfigNotifier::CancelBufferedNotificationsToUpllUser();
   }
 
   if (urc != UPLL_RC_SUCCESS) {
-    pfc_log_fatal("Committing candidate to running failed. Urc=%d", urc);
+    UPLL_LOG_FATAL("Committing candidate to running failed. Urc=%d", urc);
   }
   return urc;
 }
@@ -492,15 +542,17 @@ upll_rc_t UpllConfigMgr::OnAuditTxCommitCtrlrStatus(
                              UPLL_DT_AUDIT, ConfigLock::CFG_READ_LOCK,
                              UPLL_DT_RUNNING, ConfigLock::CFG_WRITE_LOCK);
 
-  DalOdbcMgr *dbinst = &config_rw_dom_;
+  DalOdbcMgr *dbinst = dbcm_->GetConfigRwConn();
 
   CALL_MOMGRS_PREORDER(AuditCommitCtrlrStatus, ctrlr_commit_status, dbinst);
 
   upll_rc_t db_urc;
-  if (UPLL_RC_SUCCESS != (db_urc = DalClose(dbinst, (urc == UPLL_RC_SUCCESS),
-                                            __FUNCTION__))) {
+  if (UPLL_RC_SUCCESS != (db_urc = dbcm_->DalTxClose(
+              dbinst, (urc == UPLL_RC_SUCCESS)))) {
+    dbcm_->ReleaseRwConn(dbinst);
     return ((urc != UPLL_RC_SUCCESS) ? urc : db_urc);
   }
+  dbcm_->ReleaseRwConn(dbinst);
 
   bool assert_alarm = (ctrlr_commit_status->upll_ctrlr_result ==
                        UPLL_RC_SUCCESS) ? false : true;
@@ -509,9 +561,8 @@ upll_rc_t UpllConfigMgr::OnAuditTxCommitCtrlrStatus(
   if ((ctrmgr_urc = (CtrlrMgr::GetInstance()->IsConfigInvalid(
                   ctrlr_commit_status->ctrlr_id.c_str(),
                   &alarm_exists))) != UPLL_RC_SUCCESS) {
-    UPLL_LOG_DEBUG("Error in IsConfigInvalid(%s). Urc=%d",
-                   ctrlr_commit_status->ctrlr_id.c_str(),
-                   ctrmgr_urc);
+    UPLL_LOG_INFO("Error in IsConfigInvalid(%s). Urc=%d",
+                  ctrlr_commit_status->ctrlr_id.c_str(), ctrmgr_urc);
   } else {
     if (assert_alarm) {
       UPLL_LOG_ERROR("Audit failed for %s",
@@ -533,7 +584,7 @@ upll_rc_t UpllConfigMgr::OnAuditTxCommitCtrlrStatus(
   }
 
   if (urc != UPLL_RC_SUCCESS) {
-    pfc_log_fatal("AuditCommitCtrlrStatus failed. Urc=%d", urc);
+    UPLL_LOG_FATAL("AuditCommitCtrlrStatus failed. Urc=%d", urc);
   }
 
   return urc;
@@ -551,13 +602,17 @@ upll_rc_t UpllConfigMgr::OnTxEnd() {
                              UPLL_DT_CANDIDATE, ConfigLock::CFG_WRITE_LOCK,
                              UPLL_DT_RUNNING, ConfigLock::CFG_WRITE_LOCK);
 
-  DalOdbcMgr *dbinst = &config_rw_dom_;
+  DalOdbcMgr *dbinst = dbcm_->GetConfigRwConn();
 
   CALL_MOMGRS_PREORDER(TxEnd, dbinst);
 
-  upll_rc_t db_urc = DalClose(dbinst, (urc == UPLL_RC_SUCCESS), __FUNCTION__);
+  upll_rc_t db_urc = dbcm_->DalTxClose(dbinst, (urc == UPLL_RC_SUCCESS));
+  dbcm_->ReleaseRwConn(dbinst);
   if (urc == UPLL_RC_SUCCESS) {
     urc = db_urc;
+  }
+  if (urc != UPLL_RC_SUCCESS) {
+    UPLL_LOG_FATAL("TxEnd failed. Urc=%d", urc);
   }
 
   commit_mutex_lock_.lock();
@@ -565,10 +620,6 @@ upll_rc_t UpllConfigMgr::OnTxEnd() {
   commit_mutex_lock_.unlock();
 
   affected_ctrlr_set_.clear();
-
-  if (urc != UPLL_RC_SUCCESS) {
-    pfc_log_fatal("TxEnd failed. Urc=%d", urc);
-  }
 
   return urc;
 }
@@ -592,7 +643,7 @@ upll_rc_t UpllConfigMgr::OnAuditStart(const char *ctrlr_id) {
 
   unc_keytype_ctrtype_t ctrlr_type;
   if (false == CtrlrMgr::GetInstance()->GetCtrlrType(
-      ctrlr_id, UPLL_DT_RUNNING, &ctrlr_type)) {
+          ctrlr_id, UPLL_DT_RUNNING, &ctrlr_type)) {
     UPLL_LOG_INFO("Unknown controller. Cannot do audit for %s ",
                   ctrlr_id);
     return UPLL_RC_ERR_NO_SUCH_INSTANCE;
@@ -609,7 +660,6 @@ upll_rc_t UpllConfigMgr::OnAuditStart(const char *ctrlr_id) {
   audit_mutex_lock_.unlock();
 
   if (UPLL_RC_SUCCESS != (urc = ValidateAudit(__FUNCTION__, ctrlr_id))) {
-    UPLL_LOG_INFO("Validate Audit Failed (err=%u)", urc);
     return urc;
   }
 
@@ -622,31 +672,63 @@ upll_rc_t UpllConfigMgr::OnAuditStart(const char *ctrlr_id) {
   return urc;
 }
 
+// UpllConfigMgr::OnAuditEnd() is called in two scenarios:
+// 1. In normal audit operation at the end of Audit process either successful
+// audit or failed audit. If updating to contorller failed, OnAuditEnd() is
+// locall called.
+// 2. During transition from Standby to Active.
 upll_rc_t UpllConfigMgr::OnAuditEnd(const char *ctrlr_id, bool sby2act_trans) {
   UPLL_FUNC_TRACE;
   upll_rc_t urc = UPLL_RC_ERR_GENERIC;
 
   if (!sby2act_trans) {
     if (UPLL_RC_SUCCESS != (urc = ValidateAudit(__FUNCTION__, ctrlr_id))) {
-      UPLL_LOG_INFO("Validate Audit failed. (urc = %u)", urc);
       return urc;
     }
+    // If only cs status is diffrent in the configuration then the
+    // Call TxCommitCtrlrStatus to Update the config Status
+    // During IMPORT->MERGE->COMMIT->AUDIT case, TC jumpt from
+    // AuditTxStart to AuditEnd sice  there is no diff in the
+    // configurations except cs-status in this case.
+    //  In such case the configuration is not being sent to the controller
+    //  during AUDIT operation
+    if (audit_ctrlr_affected_state_ == kCtrlrAffectedOnlyCSDiff) {
+      // Reset the audit controller affected state. Without reset,
+      // stale value is present during failover
+      audit_ctrlr_affected_state_ = kCtrlrAffectedNoDiff;
+      CtrlrCommitStatus ccs(ctrlr_id, UPLL_RC_SUCCESS, UPLL_RC_SUCCESS);
+      urc = OnAuditTxCommitCtrlrStatus(&ccs);
+      if (urc != UPLL_RC_SUCCESS) {
+        UPLL_LOG_FATAL("Failed to update config status in AuditEnd, Urc=%u",
+                       urc);
+        return urc;
+      }
+    }
   }
+  // Reset the audit controller affected state. Without reset,
+  // stale value is present during failover
+  audit_ctrlr_affected_state_ = kCtrlrAffectedNoDiff;
 
   ScopedConfigLock scfg_lock(cfg_lock_,
                              UPLL_DT_AUDIT, ConfigLock::CFG_WRITE_LOCK);
 
-  DalOdbcMgr *dbinst = &config_rw_dom_;
+  DalOdbcMgr *dbinst = dbcm_->GetConfigRwConn();
 
-  CALL_MOMGRS_PREORDER(AuditEnd, ctrlr_id, dbinst);
+  CALL_MOMGRS_REVERSE_ORDER(AuditEnd, ctrlr_id, dbinst);
 
   if (urc != UPLL_RC_SUCCESS) {
-    pfc_log_fatal("AuditEnd failed. Error:%d", urc);
+    UPLL_LOG_FATAL("AuditEnd failed. Error:%d", urc);
   }
 
-  upll_rc_t db_urc = DalClose(dbinst, (urc == UPLL_RC_SUCCESS), __FUNCTION__);
+  upll_rc_t db_urc = dbcm_->DalTxClose(dbinst, (urc == UPLL_RC_SUCCESS));
+  dbcm_->ReleaseRwConn(dbinst);
   if (urc == UPLL_RC_SUCCESS) {
     urc = db_urc;
+  }
+
+  if (urc != UPLL_RC_SUCCESS) {
+    UPLL_LOG_FATAL("AuditEnd failed. Urc=%d", urc);
+    return urc;
   }
 
   audit_mutex_lock_.lock();
@@ -655,10 +737,6 @@ upll_rc_t UpllConfigMgr::OnAuditEnd(const char *ctrlr_id, bool sby2act_trans) {
   audit_mutex_lock_.unlock();
 
   affected_ctrlr_set_.clear();
-
-  if (urc != UPLL_RC_SUCCESS) {
-    pfc_log_fatal("AuditEnd failed. Urc=%d", urc);
-  }
 
   return urc;
 }
@@ -684,22 +762,44 @@ upll_rc_t UpllConfigMgr::OnLoadStartup() {
                              UPLL_DT_IMPORT, ConfigLock::CFG_WRITE_LOCK,
                              UPLL_DT_AUDIT, ConfigLock::CFG_WRITE_LOCK);
 
-  DalOdbcMgr *dbinst = &config_rw_dom_;
+  DalOdbcMgr *dbinst = dbcm_->GetConfigRwConn();
+
+  CALL_MOMGRS_REVERSE_ORDER(ClearConfiguration, dbinst, UPLL_DT_CANDIDATE);
+  if (urc != UPLL_RC_SUCCESS) {
+    dbcm_->DalTxClose(dbinst, false);
+    dbcm_->ReleaseRwConn(dbinst);
+    UPLL_LOG_FATAL("Loading startup configuration failed. Urc=%d", urc);
+    return urc;
+  }
+
+  CALL_MOMGRS_REVERSE_ORDER(ClearConfiguration, dbinst, UPLL_DT_RUNNING);
+  if (urc != UPLL_RC_SUCCESS) {
+    dbcm_->DalTxClose(dbinst, false);
+    dbcm_->ReleaseRwConn(dbinst);
+    UPLL_LOG_FATAL("Loading startup configuration failed. Urc=%d", urc);
+    return urc;
+  }
 
   CALL_MOMGRS_PREORDER(LoadStartup, dbinst);
 
   // Audit and Import tables have been already cleared as part of transitioning
   // to ACTIVE
 
-  upll_rc_t db_urc = DalClose(dbinst, (urc == UPLL_RC_SUCCESS), __FUNCTION__);
+  upll_rc_t db_urc = dbcm_->DalTxClose(dbinst, (urc == UPLL_RC_SUCCESS));
+  dbcm_->ReleaseRwConn(dbinst);
   if (urc == UPLL_RC_SUCCESS) {
     urc = db_urc;
   }
 
   if (urc != UPLL_RC_SUCCESS) {
-    pfc_log_fatal("Loading startup configuration failed. Urc=%d", urc);
+    UPLL_LOG_FATAL("Loading startup configuration failed. Urc=%d", urc);
   }
 
+  if (urc == UPLL_RC_SUCCESS) {
+    // SBY->ACT transition, the dirty flags would be lost, So making all the
+    // tables dirty to perform ful DB Diff on commit/abort operation
+    dbinst->MakeAllDirty();
+  }
   return urc;
 }
 
@@ -720,17 +820,28 @@ upll_rc_t UpllConfigMgr::OnSaveRunningConfig(uint32_t session_id) {
                              UPLL_DT_STARTUP, ConfigLock::CFG_WRITE_LOCK,
                              UPLL_DT_RUNNING, ConfigLock::CFG_READ_LOCK);
 
-  DalOdbcMgr *dbinst = &config_rw_dom_;
+  DalOdbcMgr *dbinst = dbcm_->GetConfigRwConn();
 
+  // Clearing StartUp configuration
+  CALL_MOMGRS_REVERSE_ORDER(ClearConfiguration, dbinst, UPLL_DT_STARTUP);
+  if (urc != UPLL_RC_SUCCESS) {
+    dbcm_->DalTxClose(dbinst, false);
+    dbcm_->ReleaseRwConn(dbinst);
+    UPLL_LOG_FATAL("SaveRunningConfig failed. Urc=%d", urc);
+    return urc;
+  }
+
+  // Copying Running configuration to Startup
   CALL_MOMGRS_PREORDER(CopyRunningToStartup, dbinst);
 
-  upll_rc_t db_urc = DalClose(dbinst, (urc == UPLL_RC_SUCCESS), __FUNCTION__);
+  upll_rc_t db_urc = dbcm_->DalTxClose(dbinst, (urc == UPLL_RC_SUCCESS));
+  dbcm_->ReleaseRwConn(dbinst);
   if (urc == UPLL_RC_SUCCESS) {
     urc = db_urc;
   }
 
   if (urc != UPLL_RC_SUCCESS) {
-    pfc_log_fatal("SaveRunningConfig failed. Urc=%d", urc);
+    UPLL_LOG_FATAL("SaveRunningConfig failed. Urc=%d", urc);
   }
 
   return urc;
@@ -754,25 +865,50 @@ upll_rc_t UpllConfigMgr::OnAbortCandidateConfig(uint32_t session_id) {
                              UPLL_DT_CANDIDATE, ConfigLock::CFG_WRITE_LOCK,
                              UPLL_DT_RUNNING, ConfigLock::CFG_READ_LOCK);
 
-  DalOdbcMgr *dbinst = &config_rw_dom_;
+  DalOdbcMgr *dbinst = dbcm_->GetConfigRwConn();
+  // For TcLibInterface::HandleAuditConfig, session_id and config_id is 0
+  // For such transactions, make all the tables dirty to perform full abort
+  if (session_id == 0) {
+    dbinst->MakeAllDirty();
+  }
 
-  CALL_MOMGRS_PREORDER(CopyRunningToCandidate, dbinst);
+  CALL_MOMGRS_REVERSE_ORDER(CopyRunningToCandidate, dbinst, UNC_OP_DELETE);
+  if (urc != UPLL_RC_SUCCESS) {
+    dbcm_->DalTxClose(dbinst, false);
+    dbcm_->ReleaseRwConn(dbinst);
+    UPLL_LOG_FATAL("Abort candidate failed. Urc=%d", urc);
+    return urc;
+  }
 
-  upll_rc_t db_urc = DalClose(dbinst, (urc == UPLL_RC_SUCCESS), __FUNCTION__);
+  CALL_MOMGRS_PREORDER(CopyRunningToCandidate, dbinst, UNC_OP_CREATE);
+  if (urc != UPLL_RC_SUCCESS) {
+    dbcm_->DalTxClose(dbinst, false);
+    dbcm_->ReleaseRwConn(dbinst);
+    UPLL_LOG_FATAL("Abort candidate failed. Urc=%d", urc);
+    return urc;
+  }
+
+  CALL_MOMGRS_PREORDER(CopyRunningToCandidate, dbinst, UNC_OP_UPDATE);
+
+  upll_rc_t db_urc = dbcm_->DalTxClose(dbinst, (urc == UPLL_RC_SUCCESS));
+  // Release DB Connection after ClearDirty
   if (urc == UPLL_RC_SUCCESS) {
     urc = db_urc;
+  }
+
+  if (urc != UPLL_RC_SUCCESS) {
+    UPLL_LOG_FATAL("Abort candidate failed. Urc=%d", urc);
   }
 
   if (urc == UPLL_RC_SUCCESS) {
     candidate_dirty_qc_lock_.lock();
     candidate_dirty_qc_ = false;
+    // Clearing the dirty flags(used for skipping DB Diff operation) if stored
+    dbinst->ClearDirty();
     candidate_dirty_qc_lock_.unlock();
   }
 
-  if (urc != UPLL_RC_SUCCESS) {
-    pfc_log_fatal("Abort candidate failed. Urc=%d", urc);
-  }
-
+  dbcm_->ReleaseRwConn(dbinst);
   return urc;
 }
 
@@ -792,17 +928,18 @@ upll_rc_t UpllConfigMgr::OnClearStartupConfig(uint32_t session_id) {
   ScopedConfigLock scfg_lock(cfg_lock_,
                              UPLL_DT_STARTUP, ConfigLock::CFG_WRITE_LOCK);
 
-  DalOdbcMgr *dbinst = &config_rw_dom_;
+  DalOdbcMgr *dbinst = dbcm_->GetConfigRwConn();
 
-  CALL_MOMGRS_PREORDER(ClearStartup, dbinst);
+  CALL_MOMGRS_REVERSE_ORDER(ClearStartup, dbinst);
 
-  upll_rc_t db_urc = DalClose(dbinst, (urc == UPLL_RC_SUCCESS), __FUNCTION__);
+  upll_rc_t db_urc = dbcm_->DalTxClose(dbinst, (urc == UPLL_RC_SUCCESS));
+  dbcm_->ReleaseRwConn(dbinst);
   if (urc == UPLL_RC_SUCCESS) {
     urc = db_urc;
   }
 
   if (urc != UPLL_RC_SUCCESS) {
-    pfc_log_fatal("ClearStartupConfig failed. Urc=%d", urc);
+    UPLL_LOG_FATAL("ClearStartupConfig failed. Urc=%d", urc);
   }
 
   return urc;
@@ -832,13 +969,19 @@ upll_rc_t UpllConfigMgr::ClearImport(uint32_t session_id, uint32_t config_id,
   ScopedConfigLock scfg_lock(cfg_lock_,
                              UPLL_DT_IMPORT, ConfigLock::CFG_WRITE_LOCK);
 
-  DalOdbcMgr *dbinst = &import_rw_dom_;
+  DalOdbcMgr *dbinst = dbcm_->GetConfigRwConn();
 
-  CALL_MOMGRS_PREORDER(ImportClear, import_ctrlr_id_.c_str(), dbinst);
+  CALL_MOMGRS_REVERSE_ORDER(ImportClear, import_ctrlr_id_.c_str(), dbinst);
 
-  upll_rc_t db_urc = DalClose(dbinst, (urc == UPLL_RC_SUCCESS), __FUNCTION__);
+  upll_rc_t db_urc = dbcm_->DalTxClose(dbinst, (urc == UPLL_RC_SUCCESS));
+  dbcm_->ReleaseRwConn(dbinst);
   if (urc == UPLL_RC_SUCCESS) {
     urc = db_urc;
+  }
+
+  if (urc != UPLL_RC_SUCCESS) {
+    UPLL_LOG_FATAL("ClearImportConfig failed. Urc=%d", urc);
+    return urc;
   }
 
   import_in_progress_ = false;

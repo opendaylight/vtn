@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -38,25 +38,25 @@ class NotificationRequest : public ITCReq {
   pfc_bool_t ProcessEvent(const IpcEvent &event);
 
   private:
-  UpplReturnCode ProcessPortEvents(ClientSession *sess,
+  UncRespCode ProcessPortEvents(ClientSession *sess,
                                    uint32_t data_type,
                                    uint32_t operation);
-  UpplReturnCode ProcessSwitchEvents(ClientSession *sess,
+  UncRespCode ProcessSwitchEvents(ClientSession *sess,
                                      uint32_t data_type,
                                      uint32_t operation);
-  UpplReturnCode ProcessLinkEvents(ClientSession *sess,
+  UncRespCode ProcessLinkEvents(ClientSession *sess,
                                    uint32_t data_type,
                                    uint32_t operation);
-  UpplReturnCode ProcessControllerEvents(ClientSession *sess,
+  UncRespCode ProcessControllerEvents(ClientSession *sess,
                                          uint32_t data_type,
                                          uint32_t operation);
-  UpplReturnCode ProcessDomainEvents(ClientSession *sess,
+  UncRespCode ProcessDomainEvents(ClientSession *sess,
                                      uint32_t data_type,
                                      uint32_t operation);
-  UpplReturnCode ProcessLogicalPortEvents(ClientSession *sess,
+  UncRespCode ProcessLogicalPortEvents(ClientSession *sess,
                                           uint32_t data_type,
                                           uint32_t operation);
-  UpplReturnCode ProcessLogicalMemeberPortEvents(
+  UncRespCode ProcessLogicalMemeberPortEvents(
       ClientSession *sess,
       uint32_t data_type,
       uint32_t operation);
@@ -64,10 +64,10 @@ class NotificationRequest : public ITCReq {
                          string controller_name,
                          uint32_t &data_type);
   /*This function process notification events*/
-  UpplReturnCode ProcessNotificationEvents(const IpcEvent &event);
+  UncRespCode ProcessNotificationEvents(const IpcEvent &event);
   /*This function process alarm events*/
-  UpplReturnCode ProcessAlarmEvents(const IpcEvent &event);
-  UpplReturnCode InvokeKtDriverEvent(
+  UncRespCode ProcessAlarmEvents(const IpcEvent &event);
+  UncRespCode InvokeKtDriverEvent(
       OdbcmConnectionHandler *db_conn,
       uint32_t operation,
       uint32_t data_type,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -37,7 +37,8 @@ import org.opendaylight.vtn.javaapi.validation.logical.VBridgeFlowFilterEntriesR
  * 
  */
 
-@UNCVtnService(path = "/vtns/{vtn_name}/vbridges/{vbr_name}/interfaces/{if_name}/flowfilters/{ff_type}/flowfilterentries")
+@UNCVtnService(
+		path = "/vtns/{vtn_name}/vbridges/{vbr_name}/interfaces/{if_name}/flowfilters/{ff_type}/flowfilterentries")
 public class VBridgeInterfaceFlowFilterEntriesResource extends AbstractResource {
 	/** The VTN name. */
 	@UNCField("vtn_name")
@@ -70,28 +71,28 @@ public class VBridgeInterfaceFlowFilterEntriesResource extends AbstractResource 
 	/**
 	 * @return the vtnName
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
 	/**
 	 * @return the vbrName
 	 */
-	public String getVbrName() {
+	public final String getVbrName() {
 		return vbrName;
 	}
 
 	/**
 	 * @return the ifName
 	 */
-	public String getIfName() {
+	public final String getIfName() {
 		return ifName;
 	}
 
 	/**
 	 * @return the ffType
 	 */
-	public String getFfType() {
+	public final String getFfType() {
 		return ffType;
 	}
 
@@ -105,7 +106,8 @@ public class VBridgeInterfaceFlowFilterEntriesResource extends AbstractResource 
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VBridgeInterfaceFlowFilterEntriesResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -165,7 +167,8 @@ public class VBridgeInterfaceFlowFilterEntriesResource extends AbstractResource 
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VBridgeInterfaceFlowFilterEntries#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -201,10 +204,14 @@ public class VBridgeInterfaceFlowFilterEntriesResource extends AbstractResource 
 							requestBody, VtnServiceJsonConsts.LIST);
 			if (responseJson.get(VtnServiceJsonConsts.FLOWFILTERENTRIES)
 					.isJsonArray()) {
-				JsonArray responseArray = responseJson.get(
-						VtnServiceJsonConsts.FLOWFILTERENTRIES).getAsJsonArray();
-				responseJson = getResponseJsonArrayLogical(requestBody,
-						requestProcessor, responseGenerator, responseArray,
+				final JsonArray responseArray = responseJson.get(
+						VtnServiceJsonConsts.FLOWFILTERENTRIES)
+						.getAsJsonArray();
+				responseJson = getResponseJsonArrayLogical(
+						requestBody,
+						requestProcessor,
+						responseGenerator,
+						responseArray,
 						VtnServiceJsonConsts.FLOWFILTERENTRIES,
 						VtnServiceJsonConsts.SEQNUM,
 						IpcRequestPacketEnum.KT_VBRIF_FLOWFILTER_ENTRY_GET,

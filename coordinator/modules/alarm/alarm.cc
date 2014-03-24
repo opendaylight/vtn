@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -10,13 +10,12 @@
 #include <pfcxx/module.hh>
 #include <alarm.hh>
 
-namespace pfc{
-namespace alarm{
+namespace pfc {
+namespace alarm {
 
 class AlarmModule
-  : public pfc::core::Module
-{
-public:
+  : public pfc::core::Module {
+ public:
   AlarmModule(const pfc_modattr_t *mattr) : pfc::core::Module(mattr) {}
   ~AlarmModule(void) {}
 
@@ -29,8 +28,7 @@ public:
  */
 
 alarm_return_code_t
-pfc_alarm_initialize(int32_t *fd)
-{
+pfc_alarm_initialize(int32_t *fd) {
   *fd = -1;
   return ALM_OK;
 }
@@ -38,49 +36,43 @@ pfc_alarm_initialize(int32_t *fd)
 alarm_return_code_t
 pfc_alarm_send(const std::string& VTN_name, const std::string& alm_msg,
                const std::string& alm_msg_summary,
-               alarm_info_t *data, int32_t fd)
-{
+               alarm_info_t *data, int32_t fd) {
   return ALM_OK;
 }
 
-alarm_return_code_t 
+alarm_return_code_t
 pfc_alarm_send_with_key(const std::string& VTN_name, const std::string& alm_msg,
                         const std::string& alm_msg_summary,
-                        alarm_info_with_key_t* data, int32_t fd)
-{
+                        alarm_info_with_key_t* data, int32_t fd) {
   return ALM_OK;
 }
 
-alarm_return_code_t 
+alarm_return_code_t
 pfc_alarm_send_with_key2(const std::string& VTN_name,
                          const std::string& alm_msg,
                          const std::string& alm_msg_summary,
                          alarm_info_with_key_t* data, int32_t fd,
-                         struct timeval* tv)
-{
+                         struct timeval* tv) {
   return ALM_OK;
 }
 
 alarm_return_code_t
-pfc_alarm_clear (uint8_t apl_No)
-{
+pfc_alarm_clear(uint8_t apl_No) {
   return ALM_OK;
 }
 
 alarm_return_code_t
-pfc_alarm_close(int32_t fd)
-{
+pfc_alarm_close(int32_t fd) {
   return ALM_OK;
 }
 
 alarm_return_code_t
-pfc_alarm_view_start(void)
-{
+pfc_alarm_view_start(void) {
   return ALM_OK;
 }
 
-};
-};
+};  // namespace alarm
+};  // namespace pfc
 
 /* Declare C++ module. */
 PFC_MODULE_DECL(pfc::alarm::AlarmModule);

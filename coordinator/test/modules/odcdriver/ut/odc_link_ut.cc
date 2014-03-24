@@ -28,7 +28,7 @@ TEST(odcdriver_link, test_link_null_resp) {
   unc::restjson::ConfFileValues_t conf_file;
   pfc_bool_t cache_empty = PFC_FALSE;
   unc::odcdriver::OdcLink obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj.fetch_config(ctr, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
   ctr= NULL;
@@ -50,7 +50,7 @@ TEST(odcdriver_link, test_link_invalid_resp) {
   const pfc_bool_t cache_empty = PFC_FALSE;
   unc::odcdriver::OdcLink obj(conf_file);
 
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
@@ -75,7 +75,7 @@ TEST(odcdriver_link, test_link_data_add_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
   delete ctr;
@@ -101,7 +101,7 @@ TEST(odcdriver_link, test_link_data_add) {
   int flag = 1;
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
   std::auto_ptr<unc::vtndrvcache::CommonIterator>
       itr_ptr(ctr->physical_port_cache->create_iterator());
   unc::vtndrvcache::ConfigNode *cfgnode_cache = NULL;
@@ -161,7 +161,7 @@ TEST(odcdriver_link, test_link_data_add_wrong_resp) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
   delete ctr;
@@ -185,7 +185,7 @@ TEST(odcdriver_link, test_link_data_add_resp) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
   std::auto_ptr<unc::vtndrvcache::CommonIterator>
       itr_ptr(ctr->physical_port_cache->create_iterator());
 
@@ -259,13 +259,13 @@ TEST(odcdriver_link, test_link_data_add_resp_dynamically) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
 
   std::string LINK_RESP_ADD_DYNAMICALLY = "172.16.0.35";
   inet_aton(LINK_RESP_ADD_DYNAMICALLY.c_str(),  &val_ctr.ip_address);
   cache_empty = PFC_FALSE;
   ctr->update_ctr(key_ctr, val_ctr);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
 
   std::auto_ptr<unc::vtndrvcache::CommonIterator>
       itr_ptr(ctr->physical_port_cache->create_iterator());
@@ -329,12 +329,12 @@ TEST(odcdriver_link,
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
 
   inet_aton(LINK_RESP_ADD.c_str(),  &val_ctr.ip_address);
   cache_empty = PFC_FALSE;
   ctr->update_ctr(key_ctr, val_ctr);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
 
   std::auto_ptr<unc::vtndrvcache::CommonIterator>
       itr_ptr(ctr->physical_port_cache->create_iterator());
@@ -409,13 +409,13 @@ TEST(odcdriver_link,
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
 
   inet_aton(LINK_RESP_UPDATE.c_str(),  &val_ctr.ip_address);
   cache_empty = PFC_FALSE;
   ctr->update_ctr(key_ctr, val_ctr);
   ctr->set_connection_status(0);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
   std::auto_ptr<unc::vtndrvcache::CommonIterator>
       itr_ptr(ctr->physical_port_cache->create_iterator());
   unc::vtndrvcache::ConfigNode *cfgnode_cache = NULL;
@@ -477,14 +477,14 @@ TEST(odcdriver_link, test_link_data_update_dynamically) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
 
   std::string LINK_RESP_ONE_LINK = "172.16.0.32";
   inet_aton(LINK_RESP_ONE_LINK.c_str(),  &val_ctr.ip_address);
   cache_empty = PFC_FALSE;
 
   ctr->update_ctr(key_ctr, val_ctr);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
 
   int flag = 1;
   std::auto_ptr<unc::vtndrvcache::CommonIterator>
@@ -548,13 +548,13 @@ TEST(odcdriver_link, test_link_data_delete) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
 
   std::string LINK_RESP_DELETE = "172.16.0.37";
   inet_aton(LINK_RESP_DELETE.c_str(),  &val_ctr.ip_address);
   cache_empty = PFC_FALSE;
   ctr->update_ctr(key_ctr, val_ctr);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -580,7 +580,7 @@ TEST(odcdriver_link, test_link_no_data) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -606,7 +606,7 @@ TEST(odcdriver_link, test_link_edge_resp_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -632,7 +632,7 @@ TEST(odcdriver_link, test_link_tail_node_resp_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -658,7 +658,7 @@ TEST(odcdriver_link, test_link_node_resp_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -683,7 +683,7 @@ TEST(odcdriver_link, test_link_node_id_resp_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -709,7 +709,7 @@ TEST(odcdriver_link, test_link_tail_id_resp_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -736,7 +736,7 @@ TEST(odcdriver_link, test_link_head_node_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -761,7 +761,7 @@ TEST(odcdriver_link, test_link_head_id_resp_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -787,7 +787,7 @@ TEST(odcdriver_link, test_link_head_resp_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -813,7 +813,7 @@ TEST(odcdriver_link, test_link_head_node_resp_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -839,7 +839,7 @@ TEST(odcdriver_link, test_link_head_node_prop_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -865,7 +865,7 @@ TEST(odcdriver_link, test_link_head_node_prop_namewrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -891,7 +891,7 @@ TEST(odcdriver_link, test_link_head_node_prop_name_value_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -918,7 +918,7 @@ TEST(odcdriver_link, test_link_head_node_prop_state_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -946,7 +946,7 @@ TEST(odcdriver_link, test_link_head_node_prop_state_value_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -972,7 +972,7 @@ TEST(odcdriver_link, test_link_head_node_prop_config_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -999,7 +999,7 @@ TEST(odcdriver_link, test_link_head_node_prop_config_value_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -1026,7 +1026,7 @@ TEST(odcdriver_link, test_link_edge_prop_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -1056,7 +1056,7 @@ TEST(odcdriver_link,
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
   int flag = 1;
   for (cfgnode_cache = itr_ptr->PhysicalNodeFirstItem();
        itr_ptr->IsDone() == false;
@@ -1100,7 +1100,7 @@ TEST(odcdriver_link,
   inet_aton(LINK_RESP_UPDATE_LINK.c_str(),  &val_ctr.ip_address);
   cache_empty = PFC_FALSE;
   ctr->update_ctr(key_ctr, val_ctr);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
 
   int flag1 = 1;
   for (cfgnode_cache = itr_ptr1->PhysicalNodeFirstItem();
@@ -1165,10 +1165,10 @@ TEST(odcdriver_link,
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
 
   cache_empty = PFC_FALSE;
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
   int flag = 1;
   for (cfgnode_cache = itr_ptr->PhysicalNodeFirstItem();
        itr_ptr->IsDone() == false;
@@ -1233,10 +1233,10 @@ TEST(odcdriver_link,
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
 
   cache_empty = PFC_FALSE;
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
   int flag = 1;
   for (cfgnode_cache = itr_ptr->PhysicalNodeFirstItem();
        itr_ptr->IsDone() == false;

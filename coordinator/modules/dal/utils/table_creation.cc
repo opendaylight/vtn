@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -148,7 +148,7 @@ void build_create_table_script() {
   // Print Copyright
   line.clear();
   line += "/*\n"
-      " * Copyright (c) 2012-2013 NEC Corporation\n"
+      " * Copyright (c) 2012-2014 NEC Corporation\n"
       " * All rights reserved.\n"
       " *\n"
       " * This program and the accompanying materials are made available "
@@ -164,7 +164,7 @@ void build_create_table_script() {
   line += "/**\n"
           " * upll_create_table.sql\n"
           " *   Contains SQL commands to create all the tables need for UPLL\n"
-          " */\n"; 
+          " */\n";
   printf("\n%s", line.c_str());
 
   for (cfg_idx = 0; cfg_idx < kUpllDbNumCfgId; cfg_idx++) {
@@ -192,25 +192,31 @@ void build_create_table_script() {
       line += " ";
 
       // data type
-      line += get_data_type_str(uudschema::ColumnDbDataTypeId(tbl_idx, col_idx));
+      line += get_data_type_str(uudschema::ColumnDbDataTypeId(
+              tbl_idx,
+              col_idx));
 
       // dimension
       if (uudschema::ColumnDbArraySize(tbl_idx, col_idx) > 1 &&
           uudschema::ColumnDbDataTypeId(tbl_idx, col_idx) != SQL_BINARY) {
         line += "(";
         memset(size_str, '0', 4);
-        sprintf(size_str, "%zd", uudschema::ColumnDbArraySize(tbl_idx, col_idx));
+        sprintf(size_str, "%zd", uudschema::ColumnDbArraySize(
+                tbl_idx,
+                col_idx));
         line += size_str;
         line += ")";
       }
-      
+
       // default
       line += " default ";
       def_type = get_default_type(uudschema::ColumnName(tbl_idx, col_idx),
-                                  uudschema::ColumnDbDataTypeId(tbl_idx, col_idx));
+                                  uudschema::ColumnDbDataTypeId(tbl_idx,
+                                                                col_idx));
       if (def_type == kDefaultTypeBinary) {
         line += "'";
-        for (uint16_t i = 0; i < uudschema::ColumnDbArraySize(tbl_idx, col_idx); i++) {
+        for (uint16_t i = 0; i < uudschema::ColumnDbArraySize(tbl_idx,
+                                                              col_idx); i++) {
           line+= get_default_str((UpllDbCfgId)cfg_idx, def_type);
         }
         line += "'";
@@ -232,7 +238,8 @@ void build_create_table_script() {
     // Primary Keys
     line += "PRIMARY KEY(";
     first = true;
-    for (col_idx = 0; col_idx < uudschema::TableNumPkCols(tbl_idx); col_idx++) {
+    for (col_idx = 0; col_idx < uudschema::TableNumPkCols(tbl_idx);
+         col_idx++) {
       if (first == false) {
         line += ", ";
       } else {
@@ -240,15 +247,66 @@ void build_create_table_script() {
       }
       line += uudschema::ColumnName(tbl_idx, col_idx);
     }
-    line += "));";
+    if ((cfg_idx == kCfgIdCandidate) &&
+        uudschema::TableParentIndex(tbl_idx) < uudstbl::kDalNumTables) {
+      line += "),";
+    } else {
+      line += "));";
+    }
     printf("\n  %s", line.c_str());
+
+    // Foreign Keys
+    if ((cfg_idx == kCfgIdCandidate) &&
+        uudschema::TableParentIndex(tbl_idx) < uudstbl::kDalNumTables) {
+      line.clear();
+      line += "FOREIGN KEY(";
+      first = true;
+      for (col_idx = 0; col_idx < uudschema::TableNumFkCols(tbl_idx);
+           col_idx++) {
+        if (first == false) {
+          line += ", ";
+        } else {
+          first = false;
+        }
+        line += uudschema::ColumnName(tbl_idx, col_idx);
+      }
+      line += ") ";
+      line += "REFERENCES ";
+      line += get_cfg_str(static_cast<UpllDbCfgId>(cfg_idx));
+      line += uudschema::TableName(uudschema::TableParentIndex(tbl_idx));
+      line += "(";
+      first = true;
+      for (col_idx = 0; col_idx < uudschema::TableNumFkCols(tbl_idx);
+           col_idx++) {
+        if (first == false) {
+          line += ", ";
+        } else {
+          first = false;
+        }
+        line += uudschema::ColumnName(uudschema::TableParentIndex(tbl_idx),
+                                      col_idx);
+      }
+      line += "));";
+      printf("\n  %s", line.c_str());
+    }
+
     printf("\n");
   }  // for all tables
   }  // for all config types
 }  // build_create_table_script
 
+void build_create_index_script() {
+  printf("\nCREATE INDEX ca_vbr_if_tbl_semindex ON ca_vbr_if_tbl USING btree (logical_port_id, controller_name, domain_id, valid_portmap, valid_logical_port_id);");
+  printf("\nCREATE INDEX ca_policingprofile_entry_tbl_semindex ON ca_policingprofile_entry_tbl USING btree (flowlist, valid_flowlist);");
+  printf("\nCREATE INDEX ca_vtn_policingmap_tbl_semindex ON ca_vtn_policingmap_tbl USING btree (policername, valid_policername);");
+  printf("\nCREATE INDEX ca_vbr_policingmap_tbl_semindex ON ca_vbr_policingmap_tbl USING btree (policername, valid_policername);");
+  printf("\nCREATE INDEX ca_vbr_if_policingmap_tbl_semindex ON ca_vbr_if_policingmap_tbl USING btree (policername, valid_policername);");
+
+  printf("\nCREATE INDEX ru_vbr_if_tbl_showindex ON ru_vbr_if_tbl (vtn_name, vex_name, valid_vex_name);");
+}
 
 int main() {
   build_create_table_script();
+  build_create_index_script();
   return 0;
 }

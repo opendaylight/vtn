@@ -30,17 +30,17 @@ public class UncIpcErrorCode {
 
 	private static final Map<Integer, UncErrorBean> LOGICAL_CODES = new HashMap<Integer, UncErrorBean>();
 
-	private static final Map<Integer, UncTCEnums.OperationStatus> TC_CODES = new HashMap<Integer,UncTCEnums.OperationStatus>();
+	private static final Map<Integer, UncTCEnums.OperationStatus> TC_CODES = new HashMap<Integer, UncTCEnums.OperationStatus>();
 
 	private static final Map<Integer, UncSessionEnums.UsessIpcErrE> SESSION_CODES = new HashMap<Integer, UncSessionEnums.UsessIpcErrE>();
 
 	private static final Map<Integer, UncSYSMGEnums.NodeIpcErrorT> NODE_CODES = new HashMap<Integer, UncSYSMGEnums.NodeIpcErrorT>();
 
 	private static final Map<Integer, String> SYSMG_CODES = new HashMap<Integer, String>();
-	
+
 	/**
-	 * Read the properties of logical and physical errors
-	 * Create objects for UncErrorBean and set them in Map.
+	 * Read the properties of logical and physical errors Create objects for
+	 * UncErrorBean and set them in Map
 	 *
 	 * @throws VtnServiceException   Failed to load error definition.
 	 */
@@ -69,84 +69,95 @@ public class UncIpcErrorCode {
 		}
 
 		/*
-		 * load the TC errors and put the error enums objects in the map 
+		 * load the TC errors and put the error enums objects in the map
 		 */
-		for(UncTCEnums.OperationStatus operationStatus : UncTCEnums.OperationStatus.values()){
+		for (final UncTCEnums.OperationStatus operationStatus : UncTCEnums.OperationStatus
+				.values()) {
 			TC_CODES.put(operationStatus.getCode(), operationStatus);
 		}
-		
+
 		/*
-		 * load the Session errors and put the error enums objects in the map 
+		 * load the Session errors and put the error enums objects in the map
 		 */
 		int index = 0;
-		for(UncSessionEnums.UsessIpcErrE operationStatus : UncSessionEnums.UsessIpcErrE.values()){
+		for (final UncSessionEnums.UsessIpcErrE operationStatus : UncSessionEnums.UsessIpcErrE
+				.values()) {
 			SESSION_CODES.put(index++, operationStatus);
 		}
-		
+
 		/*
-		 * load the Node errors and put the error enums objects in the map 
+		 * load the Node errors and put the error enums objects in the map
 		 */
 		index = 0;
-		for(UncSYSMGEnums.NodeIpcErrorT operationStatus : UncSYSMGEnums.NodeIpcErrorT.values()){
+		for (final UncSYSMGEnums.NodeIpcErrorT operationStatus : UncSYSMGEnums.NodeIpcErrorT
+				.values()) {
 			NODE_CODES.put(index++, operationStatus);
 		}
-		
+
 		/*
-		 * load the Node errors and put the error enums objects in the map 
+		 * load the Node errors and put the error enums objects in the map
 		 */
 		index = 0;
-		for(UncSYSMGEnums.MgmtIpcErrorT operationStatus : UncSYSMGEnums.MgmtIpcErrorT.values()){
+		for (final UncSYSMGEnums.MgmtIpcErrorT operationStatus : UncSYSMGEnums.MgmtIpcErrorT
+				.values()) {
 			SYSMG_CODES.put(index++, operationStatus.getMessage());
 		}
 	}
-	
+
 	/**
 	 * Get error code enum for the received result code from UPPL
+	 *
 	 * @param errorKey
 	 * @return
 	 */
-	public static UncErrorBean getPhysicalError(final int errorKey){
+	public static UncErrorBean getPhysicalError(final int errorKey) {
 		return PHYSICAL_CODES.get(errorKey);
 	}
 
 	/**
 	 * Get error code enum for the received result code from UPLL
+	 *
 	 * @param errorKey
 	 * @return
 	 */
-	public static UncErrorBean getLogicalError(final int errorKey){
+	public static UncErrorBean getLogicalError(final int errorKey) {
 		return LOGICAL_CODES.get(errorKey);
 	}
-	
+
 	/**
 	 * Get error message for the received result code from TC
+	 *
 	 * @param errorKey
 	 * @return
 	 */
 	public static UncTCEnums.OperationStatus getTcCodes(final int errorKey) {
 		return TC_CODES.get(errorKey);
 	}
-	
+
 	/**
 	 * Get error message for the received result code from Session
+	 * 
 	 * @param errorKey
 	 * @return
 	 */
-	public static UncSessionEnums.UsessIpcErrE getSessionCodes(final int errorKey) {
+	public static UncSessionEnums.UsessIpcErrE getSessionCodes(
+			final int errorKey) {
 		return SESSION_CODES.get(errorKey);
 	}
-	
+
 	/**
 	 * Get error message for the received result code from Node Manager
+	 * 
 	 * @param errorKey
 	 * @return
 	 */
 	public static UncSYSMGEnums.NodeIpcErrorT getNodeCodes(final int errorKey) {
 		return NODE_CODES.get(errorKey);
 	}
-	
+
 	/**
 	 * Get error message for the received result code from System Manager
+	 * 
 	 * @param errorKey
 	 * @return
 	 */

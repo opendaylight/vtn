@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -138,12 +138,15 @@ class IpctSt {
   static const char *kIpcStrStValPolicingmapController;
   static const char *kIpcStrStKeyVbrPolicingmapEntry;
   static const char *kIpcStrStKeyVbrifPolicingmapEntry;
+  static const char *kIpcStrStKeyVtnDataflow;
   // Driver structures
   static const char *kIpcStrStPfcdrvValVbrIf;
   static const char *kIpcStrStPfcdrvValVbrifVextif;
   static const char *kIpcStrStPfcdrvValFlowfilterEntry;
   static const char *kIpcStrStPfcdrvValVbrifPolicingmap;
-      // Physical strucures
+  /* VlanmapOnBoundary: New val struct */
+  static const char *kIpcStrStPfcdrvValVlanMap;
+  // Physical strucures
   static const char *kIpcStrStKeyCtr;
   static const char *kIpcStrStValCtr;
   static const char *kIpcStrStValCtrSt;
@@ -288,6 +291,8 @@ class IpctSt {
     kIpcStPfcdrvValVbrifVextif,
     kIpcStPfcdrvValFlowfilterEntry,
     kIpcStPfcdrvValVbrifPolicingmap,
+    /* VlanmapOnBoundary: New val struct */
+    kIpcStPfcdrvValVlanMap,
     // Physical structures
     kIpcStKeyCtr,
     kIpcStValCtr,
@@ -302,29 +307,35 @@ class IpctSt {
     kIpcStValPathFaultAlarm,
     // Overlay Driver structures
     kIpcStVnpdrvValVtunnel,
-    kIpcStVnpdrvValVtunnelIf
+    kIpcStVnpdrvValVtunnelIf,
+    // Vtn DataFlow Structures
+    kIpcStKeyVtnDataflow
   };  // enum IpcStructNum
 
   static uint32_t Register(const char *stname, IpcStructNum stnum);
   static void RegisterAll();
 
   static IpcStructNum GetIpcStNum(const char *stname) {
-    std::string str = stname;
-    if (ipc_strname_to_stnum_map_.count(str))
-      return ipc_strname_to_stnum_map_[str];
+    std::map<std::string, IpcStructNum>::iterator it =
+        ipc_strname_to_stnum_map_.find(stname);
+    if (it !=  ipc_strname_to_stnum_map_.end())
+      return it->second;
     else
       return kIpcInvalidStNum;
   }
   static const pfc_ipcstdef_t *GetIpcStdef(const char *stname) {
-    std::string str = stname;
-    if (ipc_stdef_smap_.count(str))
-      return ipc_stdef_smap_[str];
+    std::map<std::string, const pfc_ipcstdef_t*>::iterator it =
+        ipc_stdef_smap_.find(stname);
+    if (it != ipc_stdef_smap_.end())
+      return it->second;
     else
       return NULL;
   }
   static const pfc_ipcstdef_t *GetIpcStdef(IpcStructNum st_num) {
-    if (ipc_stdef_nmap_.count(st_num))
-      return ipc_stdef_nmap_[st_num];
+    std::map<IpcStructNum, const pfc_ipcstdef_t*>::iterator it =
+        ipc_stdef_nmap_.find(st_num);
+    if (it != ipc_stdef_nmap_.end())
+      return it->second;
     else
       return NULL;
   }

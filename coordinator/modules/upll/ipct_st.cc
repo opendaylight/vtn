@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -140,14 +140,17 @@ const char *IpctSt::kIpcStrStKeyVbrPolicingmapEntry =
     "key_vbr_policingmap_entry";
 const char *IpctSt::kIpcStrStKeyVbrifPolicingmapEntry =
     "key_vbrif_policingmap_entry";
-  // Add Driver structures below
+// Add Driver structures below
 const char *IpctSt::kIpcStrStPfcdrvValVbrIf = "pfcdrv_val_vbr_if";
 const char *IpctSt::kIpcStrStPfcdrvValVbrifVextif = "pfcdrv_val_vbrif_vextif";
 const char *IpctSt::kIpcStrStPfcdrvValFlowfilterEntry =
     "pfcdrv_val_flowfilter_entry";
 const char *IpctSt::kIpcStrStPfcdrvValVbrifPolicingmap =
     "pfcdrv_val_vbrif_policingmap";
-  // Add Physical structures below
+/* VlanmapOnBoundary: Added new val struct */
+const char *IpctSt::kIpcStrStPfcdrvValVlanMap =
+    "pfcdrv_val_vlan_map";
+// Add Physical structures below
 const char *IpctSt::kIpcStrStKeyCtr = "key_ctr";
 const char *IpctSt::kIpcStrStValCtr = "val_ctr";
 const char *IpctSt::kIpcStrStValCtrSt = "val_ctr_st";
@@ -159,9 +162,11 @@ const char *IpctSt::kIpcStrStKeyBoundary = "key_boundary";
 const char *IpctSt::kIpcStrStValBoundary = "val_boundary";
 const char *IpctSt::kIpcStrStValBoundarySt = "val_boundary_st";
 const char *IpctSt::kIpcStrStValPathFaultAlarm = "val_path_fault_alarm";
-  // Add Overlay Driver structures below
+// Add Overlay Driver structures below
 const char *IpctSt::kIpcStrStVnpdrvValVtunnel = "vnpdrv_val_vtunnel";
 const char *IpctSt::kIpcStrStVnpdrvValVtunnelIf ="vnpdrv_val_vtunnel_if";
+// Add vtn dataflow structure below
+const char *IpctSt::kIpcStrStKeyVtnDataflow ="key_vtn_dataflow";
 
 std::map<std::string, const pfc_ipcstdef_t*> IpctSt::ipc_stdef_smap_;
 std::map<IpctSt::IpcStructNum, const pfc_ipcstdef_t*> IpctSt::ipc_stdef_nmap_;
@@ -508,6 +513,10 @@ void IpctSt::RegisterAll() {
   REGISTER_STDEF(pfcdrv_val_vbrif_policingmap,
                  kIpcStrStPfcdrvValVbrifPolicingmap,
                  kIpcStPfcdrvValVbrifPolicingmap);
+  /* VlanmapOnBoundary: Added new val struct */
+  REGISTER_STDEF(pfcdrv_val_vlan_map,
+                 kIpcStrStPfcdrvValVlanMap,
+                 kIpcStPfcdrvValVlanMap);
   // Add Physical structures below
   REGISTER_STDEF(key_ctr,
                  kIpcStrStKeyCtr,
@@ -546,6 +555,9 @@ void IpctSt::RegisterAll() {
   REGISTER_STDEF(vnpdrv_val_vtunnel_if,
                  kIpcStrStVnpdrvValVtunnelIf,
                  kIpcStVnpdrvValVtunnelIf);
+  REGISTER_STDEF(key_vtn_dataflow,
+                 kIpcStrStKeyVtnDataflow,
+                 kIpcStKeyVtnDataflow);
 }
 
 }  // namespace ipc_util

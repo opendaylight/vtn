@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -61,22 +61,29 @@ ConfigurationRequest::~ConfigurationRequest() {
  *                process the configuration request received from north bound
  * @param[in]   : session - Object of ServerSession where the request
  *                argument present
- * @return      : UPPL_RC_SUCCESS is returned when the response is added to
+ * @return      : UNC_RC_SUCCESS is returned when the response is added to
  *                ipc session successfully otherwise Common error code is
  *                returned when ipc response could not be added to session.
  * */
-UpplReturnCode ConfigurationRequest::ProcessReq(
+UncRespCode ConfigurationRequest::ProcessReq(
     ServerSession &session,
     physical_request_header &obj_req_hdr) {
+  PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+  PhysicalCore* physical_core = physical_layer->get_physical_core();
+  if (physical_core->system_transit_state_ == true) {
+    pfc_log_error("UNC is in state transit mode ");
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+  }
+
   Kt_Base *KtObj = NULL;
-  UpplReturnCode db_ret = UPPL_RC_SUCCESS;
+  UncRespCode db_ret = UNC_RC_SUCCESS;
   OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteNb, db_ret);
-  if (db_ret != UPPL_RC_SUCCESS) {
+  if (db_ret != UNC_RC_SUCCESS) {
     pfc_log_fatal("DB Connection failure for operation %d",
                   obj_req_hdr.operation);
     return db_ret;
   }
-  UpplReturnCode return_code = UPPL_RC_SUCCESS, resp_code = UPPL_RC_SUCCESS;
+  UncRespCode return_code = UNC_RC_SUCCESS, resp_code = UNC_RC_SUCCESS;
 
   void* key_struct = NULL;
   void* val_struct = NULL;
@@ -86,7 +93,7 @@ UpplReturnCode ConfigurationRequest::ProcessReq(
 
   resp_code = ValidateReq(&db_conn, session, obj_req_hdr,
                           key_struct, val_struct, KtObj);
-  if (resp_code != UPPL_RC_SUCCESS) {
+  if (resp_code != UNC_RC_SUCCESS) {
     // validation failed call add output
     // return the actual response
     pfc_log_error("Config validation failed %d", resp_code);
@@ -99,9 +106,9 @@ UpplReturnCode ConfigurationRequest::ProcessReq(
       KtObj = NULL;
     }
     if (err != 0) {
-      return_code = UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return_code = UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     } else {
-      return_code = UPPL_RC_SUCCESS;
+      return_code = UNC_RC_SUCCESS;
     }
     return return_code;
   }
@@ -141,7 +148,7 @@ UpplReturnCode ConfigurationRequest::ProcessReq(
       // Already handled
       break;
   }
-  if (resp_code != UPPL_RC_SUCCESS) {
+  if (resp_code != UNC_RC_SUCCESS) {
     // validation failed call add out put
     // return the actual response
     pfc_log_error("Config validation failed");
@@ -150,18 +157,18 @@ UpplReturnCode ConfigurationRequest::ProcessReq(
     err |= KtObj->AddKeyStructuretoSession(obj_req_hdr.key_type, &session,
                                            key_struct);
     if (err == 0) {
-      resp_code = UPPL_RC_SUCCESS;
+      resp_code = UNC_RC_SUCCESS;
     } else {
-      resp_code = UPPL_RC_ERR_IPC_WRITE_ERROR;
+      resp_code = UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
   }
   if (KtObj != NULL) {
     delete KtObj;
     KtObj = NULL;
   }
-  if (resp_code == UPPL_RC_ERR_IPC_WRITE_ERROR) {
+  if (resp_code == UNC_UPPL_RC_ERR_IPC_WRITE_ERROR) {
     // It's a common error code
-    return_code = UPPL_RC_ERR_IPC_WRITE_ERROR;
+    return_code = UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
   }
   pfc_log_debug("Returning %d from config request handler", return_code);
   return return_code;
@@ -176,16 +183,16 @@ UpplReturnCode ConfigurationRequest::ProcessReq(
  *                obj_req_hdr - object of physical request header 
  *                KtObj - Object of the base class to invoke appropriate
  *                kt class
- * @return      : UPPL_RC_SUCCESS if validation is successful
- *                or UPPL_RC_ERR_* if validation is failed
+ * @return      : UNC_RC_SUCCESS if validation is successful
+ *                or UNC_UPPL_RC_ERR_* if validation is failed
  * */
-UpplReturnCode ConfigurationRequest::ValidateReq(
+UncRespCode ConfigurationRequest::ValidateReq(
     OdbcmConnectionHandler *db_conn,
     ServerSession &session,
     physical_request_header obj_req_hdr,
     void* &key_struct, void* &val_struct,
     Kt_Base* &KtObj) {
-  UpplReturnCode return_code = UPPL_RC_SUCCESS, resp_code = UPPL_RC_SUCCESS;
+  UncRespCode return_code = UNC_RC_SUCCESS, resp_code = UNC_RC_SUCCESS;
   physical_response_header rsh;
   PhyUtil::getRespHeaderFromReqHeader(obj_req_hdr, rsh);
   uint32_t key_type = obj_req_hdr.key_type;
@@ -196,13 +203,21 @@ UpplReturnCode ConfigurationRequest::ValidateReq(
       KtObj = new Kt_Root();
       if (KtObj == NULL) {
         pfc_log_error("Resource allocation error");
-        return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
       }
       // The root key in request is not considered
       key_struct = static_cast<void*> (&key_root_obj);
       val_struct = NULL;
       break;
     }
+    case UNC_KT_DATAFLOW:
+    { if (obj_req_hdr.operation != UNC_OP_READ) {
+        pfc_log_error("Config operations not allowed for KtDataflow");
+        return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+      }
+      break;
+    }
+
     case UNC_KT_CONTROLLER:
     {
       resp_code = ValidateController(db_conn, session,
@@ -210,13 +225,20 @@ UpplReturnCode ConfigurationRequest::ValidateReq(
                                      obj_req_hdr.operation,
                                      key_struct,
                                      val_struct);
-      if (resp_code != UPPL_RC_SUCCESS) {
+      if (resp_code != UNC_RC_SUCCESS) {
         return resp_code;
       }
       KtObj = new Kt_Controller();
       if (KtObj == NULL) {
         pfc_log_error("Resource allocation error");
-        return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+      }
+      break;
+    }
+    case UNC_KT_CTR_DATAFLOW:
+    { if (obj_req_hdr.operation != UNC_OP_READ) {
+        pfc_log_error("Config operations not allowed for KtCtrDataflow");
+        return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
       }
       break;
     }
@@ -227,13 +249,13 @@ UpplReturnCode ConfigurationRequest::ValidateReq(
                                  obj_req_hdr.operation,
                                  key_struct,
                                  val_struct);
-      if (resp_code != UPPL_RC_SUCCESS) {
+      if (resp_code != UNC_RC_SUCCESS) {
         return resp_code;
       }
       KtObj = new Kt_Ctr_Domain();
       if (KtObj == NULL) {
         pfc_log_error("Resource allocation error");
-        return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
       }
       break;
     }
@@ -244,13 +266,13 @@ UpplReturnCode ConfigurationRequest::ValidateReq(
                                    obj_req_hdr.operation,
                                    key_struct,
                                    val_struct);
-      if (resp_code != UPPL_RC_SUCCESS) {
+      if (resp_code != UNC_RC_SUCCESS) {
         return resp_code;
       }
       KtObj = new Kt_Boundary();
       if (KtObj == NULL) {
         pfc_log_error("Resource allocation error");
-        return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
       }
       break;
     }
@@ -261,12 +283,12 @@ UpplReturnCode ConfigurationRequest::ValidateReq(
     case UNC_KT_LINK:
     {
       pfc_log_error("Operation not allowed");
-      return UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+      return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
     }
     default:
     {
       pfc_log_error("Key type not supported");
-      return UPPL_RC_ERR_KEYTYPE_NOT_SUPPORTED;
+      return UNC_UPPL_RC_ERR_KEYTYPE_NOT_SUPPORTED;
     }
   }
 
@@ -284,10 +306,10 @@ UpplReturnCode ConfigurationRequest::ValidateReq(
       break;
     }
     default:
-      resp_code = UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+      resp_code = UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
       break;
   }
-  if (resp_code != UPPL_RC_SUCCESS) {
+  if (resp_code != UNC_RC_SUCCESS) {
     // validation failed call add output
     // return the actual response
     pfc_log_error("Config validation failed");
@@ -307,22 +329,22 @@ UpplReturnCode ConfigurationRequest::ValidateReq(
  *                operation - contains UNC_OP_CREATE or UNC_OP_UPDATE
  *                key struct - specifies key instance of KT_Controller
  *                value struct - specifies value structure of KT_CONTROLLER
- * @return      : UPPL_RC_SUCCESS if scalability number is within range
- *                or UPPL_RC_ERR_* if not
+ * @return      : UNC_RC_SUCCESS if scalability number is within range
+ *                or UNC_UPPL_RC_ERR_* if not
  * * */
-UpplReturnCode ConfigurationRequest::ValidateController(
+UncRespCode ConfigurationRequest::ValidateController(
     OdbcmConnectionHandler *db_conn,
     ServerSession &session,
     uint32_t data_type,
     uint32_t operation,
     void* &key_struct,
     void* &val_struct) {
-  UpplReturnCode resp_code = UPPL_RC_SUCCESS;
+  UncRespCode resp_code = UNC_RC_SUCCESS;
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   if (data_type != UNC_DT_CANDIDATE) {
     pfc_log_info("Operation not allowed in given data type %d",
                  data_type);
-    resp_code = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    resp_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
     return resp_code;
   }
   // populate key_ctr structure
@@ -339,16 +361,16 @@ UpplReturnCode ConfigurationRequest::ValidateController(
   }
   if (err != 0) {
     pfc_log_error("Not able to read val_ctr_obj, err is %d", err);
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   if (operation != UNC_OP_CREATE) {
     pfc_log_debug("Validation not required for other than create");
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   if (val_ctr_obj.type != UNC_CT_PFC) {
     pfc_log_debug(
         "Capability validation not done for non-PFC controller");
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   // controller capability check
   string version = reinterpret_cast<const char*> (val_ctr_obj.version);
@@ -356,7 +378,7 @@ UpplReturnCode ConfigurationRequest::ValidateController(
   resp_code = physical_layer->get_physical_core()->
       ValidateKeyTypeInCtrlrCap(version,
                                 (uint32_t)UNC_KT_CONTROLLER);
-  if (resp_code != UPPL_RC_SUCCESS) {
+  if (resp_code != UNC_RC_SUCCESS) {
     pfc_log_error("Key type validation failed in capability check");
     return resp_code;
   }
@@ -364,7 +386,7 @@ UpplReturnCode ConfigurationRequest::ValidateController(
   Kt_Controller KtObj;
   resp_code = KtObj.ValidateCtrlrValueCapability(version,
                                                  (uint32_t)UNC_KT_CONTROLLER);
-  if (resp_code != UPPL_RC_SUCCESS) {
+  if (resp_code != UNC_RC_SUCCESS) {
     pfc_log_error("Attribute validation failure");
     return resp_code;
   }
@@ -374,11 +396,11 @@ UpplReturnCode ConfigurationRequest::ValidateController(
       db_conn, version,
       (uint32_t)UNC_KT_CONTROLLER,
       data_type);
-  if (resp_code != UPPL_RC_SUCCESS) {
+  if (resp_code != UNC_RC_SUCCESS) {
     pfc_log_error("scalability range exceeded");
     return resp_code;
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /* ValidateDomain
@@ -390,21 +412,21 @@ UpplReturnCode ConfigurationRequest::ValidateController(
  *                operation - contains UNC_OP_CREATE or UNC_OP_UPDATE
  *                key struct - specifies key instance of KT_Domain
  *                value struct - specifies value structure of KT_Domain
- * @return      : UPPL_RC_SUCCESS if the validation is success
- *                or UPPL_RC_ERR_* if validation is failed
+ * @return      : UNC_RC_SUCCESS if the validation is success
+ *                or UNC_UPPL_RC_ERR_* if validation is failed
  * */
-UpplReturnCode ConfigurationRequest::ValidateDomain(
+UncRespCode ConfigurationRequest::ValidateDomain(
     OdbcmConnectionHandler *db_conn,
     ServerSession &session,
     uint32_t data_type,
     uint32_t operation,
     void* &key_struct,
     void* &val_struct) {
-  UpplReturnCode resp_code = UPPL_RC_SUCCESS;
+  UncRespCode resp_code = UNC_RC_SUCCESS;
   if (data_type != UNC_DT_CANDIDATE) {
     pfc_log_info("Operation not allowed in given data type %d",
                  data_type);
-    resp_code = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    resp_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
     return resp_code;
   }
   // populate key_domain_obj structure
@@ -421,9 +443,9 @@ UpplReturnCode ConfigurationRequest::ValidateDomain(
   }
   if (err != 0) {
     pfc_log_error("Not able to read val_domain_obj, err is %d", err);
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /* ValidateBoundary
@@ -435,28 +457,28 @@ UpplReturnCode ConfigurationRequest::ValidateDomain(
  *                operation - contains UNC_OP_CREATE or UNC_OP_UPDATE
  *                key struct - specifies key instance of KT_Boundary
  *                value struct - specifies value structure of KT_Boundary
- * @return      : UPPL_RC_SUCCESS if the validation is success
- *                or UPPL_RC_ERR_* if validation is failed
+ * @return      : UNC_RC_SUCCESS if the validation is success
+ *                or UNC_UPPL_RC_ERR_* if validation is failed
  * */
-UpplReturnCode ConfigurationRequest::ValidateBoundary(
+UncRespCode ConfigurationRequest::ValidateBoundary(
     OdbcmConnectionHandler *db_conn,
     ServerSession &session,
     uint32_t data_type,
     uint32_t operation,
     void* &key_struct,
     void* &val_struct) {
-  UpplReturnCode resp_code = UPPL_RC_SUCCESS;
+  UncRespCode resp_code = UNC_RC_SUCCESS;
   if (data_type != UNC_DT_CANDIDATE) {
     pfc_log_info("Operation not allowed in given data type %d",
                  data_type);
-    resp_code = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    resp_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
     return resp_code;
   }
   // populate key_boundary_obj structure
   int err = session.getArgument(8, key_boundary_obj);
   if (err != 0) {
     pfc_log_error("Not able to read key_boundary_obj, err is %d", err);
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   key_struct = static_cast<void*> (&key_boundary_obj);
   pfc_log_debug("%s", IpctUtil::get_string(key_boundary_obj).c_str());
@@ -470,7 +492,7 @@ UpplReturnCode ConfigurationRequest::ValidateBoundary(
   }
   if (err != 0) {
     pfc_log_error("Not able to read val_boundary_obj, err is %d", err);
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }

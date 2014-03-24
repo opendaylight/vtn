@@ -1,15 +1,17 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.webapi.utils;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Set;
 
@@ -21,115 +23,167 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import org.opendaylight.vtn.core.util.Logger;
-import org.opendaylight.vtn.webapi.enums.ApplicationConstants;
+import org.opendaylight.vtn.webapi.constants.ApplicationConstants;
 import org.opendaylight.vtn.webapi.enums.ContentTypeEnum;
+import org.opendaylight.vtn.webapi.enums.HttpErrorCodeEnum;
 import org.opendaylight.vtn.webapi.exception.VtnServiceWebAPIException;
 
 /**
- * The Class DataConverter.This class will be used for conversion part of request and response as well
- * If the request will be in format of XML then needs to convert it in JSON otherwise the same JSON will be
- * passed as request object
+ * The Class DataConverter.This class will be used for conversion part of
+ * request and response as well If the request will be in format of XML then
+ * needs to convert it in JSON otherwise the same JSON will be passed as request
+ * object
  * 
  */
 public final class DataConverter {
 
 	/** The Constant LOG. */
-	private static final Logger LOG = Logger.getLogger(DataConverter.class.getName());
-	
+	private static final Logger LOG = Logger.getLogger(DataConverter.class
+			.getName());
+
 	/**
 	 * Instantiates a new data converter.
 	 */
 	private DataConverter() {
 	}
-	
+
 	/**
 	 * Convert data to json.
-	 *
-	 * @param rawRequestString the raw data
-	 * @param contentType the data type
+	 * 
+	 * @param rawRequestString
+	 *            the raw data
+	 * @param contentType
+	 *            the data type
 	 * @return the json object
-	 * @throws VtnServiceWebAPIException the vtn service web api exception
+	 * @throws VtnServiceWebAPIException
+	 *             the vtn service web api exception
 	 */
-	public static JsonObject getConvertedRequestObject(String rawRequestString, final String contentType) throws VtnServiceWebAPIException{
-		JsonObject convertedObj=null;
-		final JsonParser parser = new JsonParser(); 
-		try{
-		LOG.trace("converting request string to JSON Object #getConvertedRequestObject()");
-		if(ContentTypeEnum.APPLICATION_XML.getContentType().equals(contentType)){
-			final Random random = new Random();
-			String randomString = String.valueOf(random.nextInt());
-			rawRequestString = rawRequestString.replaceAll(ApplicationConstants.DOT_ZERO, randomString + ApplicationConstants.SESSION_TYPE);
-			org.json.JSONObject jsonObject =  XML.toJSONObject(rawRequestString);
-			if(ApplicationConstants.vtepgroup.equals(jsonObject.keys().next().toString())){
-				XMLTransformationUtil.preProcessJson(jsonObject);
+	public static JsonObject getConvertedRequestObject(String rawRequestString,
+			final String contentType) throws VtnServiceWebAPIException {
+		LOG.trace("Start DataConverter#getConvertedRequestObject()");
+		JsonObject convertedObj = null;
+		final JsonParser parser = new JsonParser();
+		try {
+			if (ContentTypeEnum.APPLICATION_XML.getContentType().equals(
+					contentType)) {
+				final Random random = new Random();
+				final String randomString = String.valueOf(random.nextInt());
+				rawRequestString = rawRequestString.replaceAll(
+						ApplicationConstants.DOT_ZERO, randomString
+								+ ApplicationConstants.SESSION_TYPE);
+				final org.json.JSONObject jsonObject = XML
+						.toJSONObject(rawRequestString);
+				if (ApplicationConstants.vtepgroup.equals(jsonObject.keys()
+						.next().toString())) {
+					XMLTransformationUtil.preProcessJson(jsonObject);
+				}
+				LOG.debug("Json before parsing : " + jsonObject);
+				convertedObj = (JsonObject) parser.parse(jsonObject.toString()
+						.replaceAll(
+								randomString
+										+ ApplicationConstants.SESSION_TYPE,
+								ApplicationConstants.DOT_ZERO));
+			} else if (ContentTypeEnum.APPLICATION_JSON.getContentType()
+					.equals(contentType)) {
+				convertedObj = (JsonObject) parser.parse(rawRequestString);
+			} else {
+				LOG.error("Content-Type is not valid");
+				throw new VtnServiceWebAPIException(
+						HttpErrorCodeEnum.UNC_BAD_REQUEST.getCode());
 			}
-			LOG.debug("Json before parsing : " + jsonObject);
-			convertedObj =  (JsonObject) parser.parse(jsonObject.toString().replaceAll(randomString + ApplicationConstants.SESSION_TYPE, ApplicationConstants.DOT_ZERO));
-		}else{
-			convertedObj =  (JsonObject) parser.parse(rawRequestString);
-		}
-		}catch (JsonSyntaxException jsonSyntaxException) {
-			LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.BAD_REQUEST_ERROR));
-			throw new VtnServiceWebAPIException(ApplicationConstants.BAD_REQUEST_ERROR, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.BAD_REQUEST_ERROR));
+			LOG.debug("Request JSON object for Java API #" + convertedObj);
+		} catch (JsonSyntaxException e) {
+			LOG.error("Request Syntax Error : " + e);
+			throw new VtnServiceWebAPIException(
+					HttpErrorCodeEnum.UNC_BAD_REQUEST.getCode());
 		} catch (JSONException e) {
-			LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.BAD_REQUEST_ERROR));
-			throw new VtnServiceWebAPIException(ApplicationConstants.BAD_REQUEST_ERROR, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.BAD_REQUEST_ERROR));
+			LOG.error("Request Syntax Error : " + e);
+			throw new VtnServiceWebAPIException(
+					HttpErrorCodeEnum.UNC_BAD_REQUEST.getCode());
+		} catch (NoSuchElementException e) {
+			LOG.error("Request Syntax Error : " + e);
+			throw new VtnServiceWebAPIException(
+					HttpErrorCodeEnum.UNC_BAD_REQUEST.getCode());
 		}
-		LOG.trace("converting request string to JSON Object completed #getConvertedRequestObject()");
-		LOG.trace("Request JSON object for Java API #" +convertedObj);
+		LOG.trace("Complete DataConverter#getConvertedRequestObject()");
 		return convertedObj;
 	}
-	
+
 	/**
 	 * Convert map to json.
-	 *
-	 * @param queryStringMap the query string map
+	 * 
+	 * @param queryStringMap
+	 *            the query string map
 	 * @return the json object
-	 * @throws VtnServiceWebAPIException 
+	 * @throws VtnServiceWebAPIException
 	 */
-	public static JsonObject convertMapToJson(final Map<String, String[]> queryStringMap, final JsonObject serviceRequest) throws VtnServiceWebAPIException{
-		LOG.trace("converting query String Map to JSON Object #convertMapToJson()");
-		final Set<String> queryStringKeySet = queryStringMap.keySet(); 
-		JSONObject json = null;	
-		try{
-			json =  new JSONObject(serviceRequest.toString());
-		for (String key : queryStringKeySet) {
-			final String[] valueList = queryStringMap.get(key);
-			if(null != valueList && valueList.length > ApplicationConstants.ONE){
-				json.put(key, Arrays.asList(valueList));
-			}else{
-				json.put(key, valueList[ApplicationConstants.ZERO]);
+	public static JsonObject convertMapToJson(
+			final Map<String, String[]> queryStringMap,
+			final JsonObject serviceRequest) throws VtnServiceWebAPIException {
+		LOG.trace("Start DataConverter#convertMapToJson()");
+		JsonObject mapJson = null;
+		final Set<String> queryStringKeySet = queryStringMap.keySet();
+		JSONObject json = null;
+		try {
+			json = new JSONObject(serviceRequest.toString());
+			for (final String key : queryStringKeySet) {
+				final String[] valueList = queryStringMap.get(key);
+				if (valueList.length == 1
+						&& valueList[0]
+								.equalsIgnoreCase(ApplicationConstants.BLANK_STR)) {
+					LOG.error("URI parameter containing no values : " + key);
+					throw new VtnServiceWebAPIException(
+							HttpErrorCodeEnum.UNC_BAD_REQUEST.getCode());
+				}
+				if (key.equalsIgnoreCase(ApplicationConstants.OP)
+						|| key.equalsIgnoreCase(ApplicationConstants.TARGETDB)) {
+					LOG.debug("Parameter not required to be added for : " + key);
+				} else {
+					if (null != valueList
+							&& valueList.length > ApplicationConstants.ONE) {
+						json.put(key, Arrays.asList(valueList));
+					} else {
+						json.put(key, valueList[ApplicationConstants.ZERO]);
+					}
+				}
 			}
+			mapJson = (JsonObject) new JsonParser().parse(json.toString());
+			LOG.debug("Coverted JSON from Map parameters : " + mapJson);
+		} catch (final JSONException e) {
+			LOG.error("Json syntax error : " + e.getMessage());
+			throw new VtnServiceWebAPIException(
+					HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR.getCode());
 		}
-		}catch (JSONException je) {
-			LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
-			throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.INTERNAL_SERVER_ERROR));
-		}
-		LOG.trace("converting query String Map to JSON Object completed#convertMapToJson()");
-		return (JsonObject) new JsonParser().parse(json.toString());
-		
+		LOG.trace("Complete DataConverter#convertMapToJson()");
+		return mapJson;
 	}
-	
+
 	/**
 	 * Convert json to xml.
-	 *
-	 * @param responseJson the response json
-	 * @param requiredContentType the required content type
+	 * 
+	 * @param responseJson
+	 *            the response json
+	 * @param requiredContentType
+	 *            the required content type
 	 * @return the string
-	 * @throws VtnServiceWebAPIException 
+	 * @throws VtnServiceWebAPIException
 	 */
-	public static String getConvertedResponse(final JSONObject responseJson, final String requiredContentType) throws VtnServiceWebAPIException {
+	public static String getConvertedResponse(final JSONObject responseJson,
+			final String requiredContentType) throws VtnServiceWebAPIException {
+		LOG.trace("Start DataConverter#getConvertedResponse()");
 		String responseString = null;
-		LOG.trace("converting response JSON to String #getConvertedResponse()");
-		LOG.debug("Json : " + responseJson);
-		try{
+		LOG.debug("Json : " + responseJson + " Content-type : "
+				+ requiredContentType);
+		try {
 			if (null != responseJson) {
 				responseString = responseJson.toString();
 				// conversion is required only for XML type response type
-				if (ContentTypeEnum.APPLICATION_XML.getContentType().equals(requiredContentType)) {
+				if (ContentTypeEnum.APPLICATION_XML.getContentType().equals(
+						requiredContentType)) {
 					// modify the json object to remove null and empty nested
 					// json and arrays
-					JSONObject modifiedJson = new JSONObject(responseJson.toString()
+					final JSONObject modifiedJson = new JSONObject(responseJson
+							.toString()
 							.replace(ApplicationConstants.NULL_STRING,
 									ApplicationConstants.EMPTY_JSON)
 							.replace(ApplicationConstants.EMPTY_JSON,
@@ -137,25 +191,23 @@ public final class DataConverter {
 							.replace(ApplicationConstants.EMPTY_JSON_ARRAY,
 									ApplicationConstants.DUMMY_JSON));
 					LOG.debug("Modified Json : " + modifiedJson.toString());
-					String xml = XMLTransformationUtil.convertJsonToXml(modifiedJson);
+					final String xml = XMLTransformationUtil
+							.convertJsonToXml(modifiedJson);
 					LOG.debug("Converted XML : " + xml);
 					// remove non-required dummy xml attributes
-					responseString = XMLTransformationUtil.convertAllAttributesToElements(xml).replace(
+					responseString = XMLTransformationUtil
+							.convertAllAttributesToElements(xml).replace(
 									ApplicationConstants.DUMMY_XML,
-									ApplicationConstants.EMPTY_STRING);
+									ApplicationConstants.BLANK_STR);
 				}
-				LOG.debug("Response String : " + responseString);
 			}
-		}catch (JSONException e) {
-			LOG.error(e.getMessage());
-			LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
-			throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.INTERNAL_SERVER_ERROR));
-		}catch (Exception e) {
-			 LOG.error(e.getMessage());
-			LOG.error(VtnServiceCommonUtil.logErrorDetails(ApplicationConstants.INTERNAL_SERVER_ERROR));
-			throw new VtnServiceWebAPIException(ApplicationConstants.INTERNAL_SERVER_ERROR, VtnServiceCommonUtil.getErrorDescription(ApplicationConstants.INTERNAL_SERVER_ERROR));
+			LOG.debug("Response String : " + responseString);
+		} catch (final Exception e) {
+			LOG.error("Internal server error occurred : " + e);
+			throw new VtnServiceWebAPIException(
+					HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR.getCode());
 		}
-		LOG.trace("converting response JSON to String completed #getConvertedResponse()");
+		LOG.trace("Complete DataConverter#getConvertedResponse()");
 		return responseString;
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -8,7 +8,6 @@
  */
 package org.opendaylight.vtn.javaapi.ipc.enums;
 
-// TODO: Auto-generated Javadoc
 /**
  * The Class UncSYSMGEnums.
  */
@@ -25,65 +24,62 @@ public class UncSYSMGEnums {
 	/**
 	 * The Enum NodeMgrServiceID.
 	 */
-	public enum NodeMgrServiceID{
-	  kNomgSoftVersionGet ,
-	  kAlarmStatusListGet,
-	  kAlarmClear,
-	  kResourceStatusGet,
-	  kNomgIpcNipcs,       //  Number of IPC Service IDs
+	public enum NodeMgrServiceID {
+		kNomgSoftVersionGet,
+		kAlarmStatusListGet,
+		kAlarmClear,
+		kResourceStatusGet,
+		kNomgIpcNipcs;
 	}
- 
-	// Management IPC Service ID 
+
+	// Management IPC Service ID
 	/**
 	 * The Enum MgmtServiceID.
 	 */
-	public enum MgmtServiceID{
-		 kMgmtSyslogSeveritySet ,
-		 kMgmtSyslogSeverityUnset,
-		 kMgmtSyslogSeverityGetSettings,
-		 kMgmtTracelogSeveritySet,
-		 kMgmtTracelogSeverityUnset,
-		 kMgmtTracelogSeverityGetSettings,
-		 kMgmtTrapEnableSet,
-		 kMgmtTrapEnableUnset,
-		 kMgmtTrapEnableGetSettings,
-		 kMgmtTrapDestinationSet,
-		 kMgmtTrapDestinationUnset,
-		 kMgmtTrapDestinationGetSettings,
-		 kMgmtTrapSourceSet,
-		 kMgmtTrapSourceUnset,
-		 kMgmtTrapSourceGetSettings,
-		 kMgmtPromptSet,
-		 kMgmtPromptUnset,
-		 kMgmtPromptGetSettings,
-		 kMgmtServiceCount;  // Number of IPC Service IDs
-	   
-	  
-	  
-	} 
+	public enum MgmtServiceID {
+		kMgmtSyslogSeveritySet,
+		kMgmtSyslogSeverityUnset,
+		kMgmtSyslogSeverityGetSettings,
+		kMgmtTracelogSeveritySet,
+		kMgmtTracelogSeverityUnset,
+		kMgmtTracelogSeverityGetSettings,
+		kMgmtTrapEnableSet,
+		kMgmtTrapEnableUnset,
+		kMgmtTrapEnableGetSettings,
+		kMgmtTrapDestinationSet,
+		kMgmtTrapDestinationUnset,
+		kMgmtTrapDestinationGetSettings,
+		kMgmtTrapSourceSet,
+		kMgmtTrapSourceUnset,
+		kMgmtTrapSourceGetSettings,
+		kMgmtPromptSet,
+		kMgmtPromptUnset,
+		kMgmtPromptGetSettings,
+		kMgmtServiceCount; 
+	}
 
 	// Nomg Return code
 	/**
 	 * The Enum NodeMgrReturnCode.
 	 */
-	public enum NodeIpcErrorT{
-		NOMG_E_OK(200, "Success"),	  
-		NOMG_E_NG(500, "Error"),
-		NOMG_E_NOENT(400, "No Entry"),
-		NOMG_E_INVAL(500, "Invalid"),
-		NOMG_E_INITING(500, "Initiating"),
-		NOMG_E_ABRT(500, "Abort");
-	  
-		private String message;
-		private int code;
-		
+	public enum NodeIpcErrorT {
+		NOMG_E_OK(200, "Success"), 
+		NOMG_E_NG(50000, "Error"), 
+		NOMG_E_NOENT(50000, "No Entry"), 
+		NOMG_E_INVAL(50000, "Invalid"), 
+		NOMG_E_INITING(50301, "Server Busy"), 
+		NOMG_E_ABRT(50000, "Abort");
+
+		private final String message;
+		private final int code;
+
 		/**
 		 * Instantiates a new node mgr return code.
 		 * 
 		 * @param message
 		 *            the message
 		 */
-		private NodeIpcErrorT(int code, String message) {
+		private NodeIpcErrorT(final int code, final String message) {
 			this.code = code;
 			this.message = message;
 		}
@@ -92,11 +88,11 @@ public class UncSYSMGEnums {
 		 * Gets the code.
 		 * 
 		 * @return the code
-		 */		
+		 */
 		public int getCode() {
 			return code;
 		}
-		
+
 		/**
 		 * Gets the message.
 		 * 
@@ -105,78 +101,80 @@ public class UncSYSMGEnums {
 		public String getMessage() {
 			return message;
 		}
-	} 
+	}
 
 	// Management Return code
 	/**
 	 * The Enum MgmtReturnCode.
 	 */
-	public enum MgmtIpcErrorT{
-	  MGMT_E_OK("Success"),
-	  MGMT_E_NG("Error"),
-	  MGMT_E_NO_ENTRY("No entry"),
-	  MGMT_E_DB_ACCESS_FAILED("Database access failed"), 
-	  MGMT_E_INVALID_APLNAME("Invalid name"),
-	  MGMT_E_INVALID_LEVEL("Invalid level"),
-	  MGMT_E_INVALID_DESTINATION("Invalid destination"),
-	  MGMT_E_INVALID_COMMUNITY("Invalid community"),
-	  MGMT_E_INVALID_IPADDR("Invalid IP address"),
-	  MGMT_E_INVALID_PROMPT("Invalid promt");
-	  
-	  private String message;
+	public enum MgmtIpcErrorT {
+		MGMT_E_OK("Success"),
+		MGMT_E_NG("Error"),
+		MGMT_E_NO_ENTRY("No entry"),
+		MGMT_E_DB_ACCESS_FAILED("Database access failed"),
+		MGMT_E_INVALID_APLNAME("Invalid name"),
+		MGMT_E_INVALID_LEVEL("Invalid level"),
+		MGMT_E_INVALID_DESTINATION("Invalid destination"),
+		MGMT_E_INVALID_COMMUNITY("Invalid community"),
+		MGMT_E_INVALID_IPADDR("Invalid IP address"),
+		MGMT_E_INVALID_PROMPT("Invalid promt");
+
+		private final String message;
 
 		/**
 		 * Instantiates a new mgmt return code.
-		 *
-		 * @param message the message
+		 * 
+		 * @param message
+		 *            the message
 		 */
-		private MgmtIpcErrorT(String message) {
+		private MgmtIpcErrorT(final String message) {
 			this.message = message;
 		}
-		
+
 		/**
 		 * Gets the message.
-		 *
+		 * 
 		 * @return the message
 		 */
 		public String getMessage() {
 			return message;
 		}
 	}
-	
+
 	// Management Return code
-		/**
+	/**
 	 * The Enum AlarmLevelT.
 	 */
-	public enum AlarmLevelT{
-			ALM_EMERG("0"),
-			ALM_ALERT("1"),
-			ALM_CRITICAL("2"),
-			ALM_ERROR("3"),
-			ALM_WARNING("4"),
-			ALM_NOTICE("5"),
-			ALM_INFO("6"),
-			ALM_DEBUG("7");
-			
-			private String value;
+	public enum AlarmLevelT {
+		ALM_EMERG("0"),
+		ALM_ALERT("1"),
+		ALM_CRITICAL("2"),
+		ALM_ERROR("3"),
+		ALM_WARNING("4"),
+		ALM_NOTICE("5"),
+		ALM_INFO("6"),
+		ALM_DEBUG("7");
 
-			/**
-			 * Instantiates a new alarm level t.
-			 *
-			 * @param value the value
-			 */
-			private AlarmLevelT(final String value) {
-				this.value = value;
-			}
+		private final String value;
 
-			/**
-			 * Gets the value.
-			 *
-			 * @return the value
-			 */
-			public String getValue() {
-				return value;
-			}
-
+		/**
+		 * Instantiates a new alarm level t.
+		 * 
+		 * @param value
+		 *            the value
+		 */
+		private AlarmLevelT(final String value) {
+			this.value = value;
 		}
+
+		/**
+		 * Gets the value.
+		 * 
+		 * @return the value
+		 */
+		public String getValue() {
+			return value;
+		}
+
+	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -37,9 +37,9 @@ class driver_command {
    * @brief    - Method to revoke the commit with triggring audit for any
    failed Operation
    * @param[in]- controller pointer
-   * @retval   - DRVAPI_RESPONSE_SUCCESS
+   * @retval   - UNC_RC_SUCCESS
    */
-  virtual drv_resp_code_t revoke(unc::driver::controller* ctr_ptr) {
+  virtual UncRespCode revoke(unc::driver::controller* ctr_ptr) {
     pfc_log_debug("%s Entering function", PFC_FUNCNAME);
 
     // Send start audit notification to TC
@@ -54,7 +54,7 @@ class driver_command {
     ptr_tclib_key_data->TcLibAuditControllerRequest(controller_name);
 
     pfc_log_debug("%s Exiting function", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
 
   /**
@@ -62,9 +62,9 @@ class driver_command {
    * @param[in]  - controller pointer
    * @param[in]  - parent key type pointer
    * @param[out] - list of configurations
-   * @retval     - DRVAPI_RESPONSE_SUCCESS / DRVAPI_RESPONSE_FAILURE
+   * @retval     - UNC_RC_SUCCESS / UNC_DRV_RC_ERR_GENERIC
    */
-  virtual drv_resp_code_t fetch_config(unc::driver::controller* ctr,
+  virtual UncRespCode fetch_config(unc::driver::controller* ctr,
                              void* parent_key,
                              std::vector<unc::vtndrvcache::ConfigNode *>&) = 0;
 };
@@ -77,23 +77,23 @@ class vtn_driver_command: public driver_command {
   /**
    * @brief    - Method to create VTN  in the controller
    * @param[in]- key_vtn_t, val_vtn_t, controller*
-   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual drv_resp_code_t create_cmd(key_vtn_t& keyvtn_, val_vtn_t& valvtn_,
+  virtual UncRespCode create_cmd(key_vtn_t& keyvtn_, val_vtn_t& valvtn_,
                                      unc::driver::controller*)=0;
   /**
    * @brief    - Method to update VTN  in the controller
    * @param[in]- key_vtn_t, val_vtn_t, controller*
-   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual drv_resp_code_t update_cmd(key_vtn_t& keyvtn_, val_vtn_t& valvtn_,
+  virtual UncRespCode update_cmd(key_vtn_t& keyvtn_, val_vtn_t& valvtn_,
                                      unc::driver::controller*)=0;
   /**
    * @brief    - Method to delete VTN  in the controller
    * @param[in]- key_vtn_t, val_vtn_t, controller*
-   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual drv_resp_code_t delete_cmd(key_vtn_t& keyvtn_, val_vtn_t& valvtn_,
+  virtual UncRespCode delete_cmd(key_vtn_t& keyvtn_, val_vtn_t& valvtn_,
                                      unc::driver::controller*)=0;
   /**
    * @brief    - Method to return the Keytype
@@ -113,24 +113,24 @@ class vbr_driver_command: public driver_command {
   /**
    * @brief    - Method to create Vbridge in the controller
    * @param[in]- key_vbr_t, val_vbr_t, controller*
-   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual drv_resp_code_t create_cmd(key_vbr_t& keyvbr_, val_vbr_t& valvbr_,
+  virtual UncRespCode create_cmd(key_vbr_t& keyvbr_, val_vbr_t& valvbr_,
                                      unc::driver::controller*) = 0;
   /**
    * @brief    - Method to update Vbridge in the controller
    * @param[in]- key_vbr_t, val_vbr_t, controller*
-   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual drv_resp_code_t update_cmd(key_vbr_t& keyvbr_, val_vbr_t& valvbr_,
+  virtual UncRespCode update_cmd(key_vbr_t& keyvbr_, val_vbr_t& valvbr_,
                                      unc::driver::controller*) = 0;
 
   /**
    * @brief    - Method to delete Vbridge in the controller
    * @param[in]- key_vbr_t, val_vbr_t, controller*
-   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual drv_resp_code_t delete_cmd(key_vbr_t& keyvbr_, val_vbr_t& valvbr_,
+  virtual UncRespCode delete_cmd(key_vbr_t& keyvbr_, val_vbr_t& valvbr_,
                                      unc::driver::controller*)=0;
   /**
    * @brief    - Method to return the Keytype
@@ -150,25 +150,25 @@ class vbrif_driver_command: public driver_command {
   /**
    * @brief    - Method to create Vbr Interface in the controller
    * @param[in]- key_vbr_if_t, pfcdrv_val_vbr_if_t, controller*
-   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual drv_resp_code_t create_cmd(key_vbr_if_t& key,
+  virtual UncRespCode create_cmd(key_vbr_if_t& key,
           pfcdrv_val_vbr_if_t& val, unc::driver::controller *conn)=0;
 
   /**
    * @brief    - Method to update Vbr Interface in the controller
    * @param[in]- key_vbr_if_t, pfcdrv_val_vbr_if_t, controller*
-   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual drv_resp_code_t update_cmd(key_vbr_if_t& key,
+  virtual UncRespCode update_cmd(key_vbr_if_t& key,
           pfcdrv_val_vbr_if_t& val, unc::driver::controller *conn) = 0;
 
   /**
    * @brief    - Method to delete Vbr Interface in the controller
    * @param[in]- key_vbr_if_t, pfcdrv_val_vbr_if_t, controller*
-   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual drv_resp_code_t delete_cmd(key_vbr_if_t& key,
+  virtual UncRespCode delete_cmd(key_vbr_if_t& key,
           pfcdrv_val_vbr_if_t& val, unc::driver::controller *conn) = 0;
 
   /**
@@ -186,29 +186,29 @@ class vbrvlanmap_driver_command: public driver_command {
   /**
    * @brief    - Method to create Vbr Vlan-Map in the controller
    * @param[in]- key_vlan_map_t, val_vlan_map_t, controller*
-   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual drv_resp_code_t create_cmd(key_vlan_map_t& key,
-                                     val_vlan_map_t& val,
-                                     unc::driver::controller *conn)=0;
+  virtual UncRespCode create_cmd(key_vlan_map_t& key,
+                                 pfcdrv_val_vlan_map_t& val,
+                                 unc::driver::controller *conn)=0;
 
   /**
    * @brief    - Method to update Vbr Vlan-Map in the controller
    * @param[in]- key_vlan_map_t, val_vlan_map_t, controller*
-   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual drv_resp_code_t update_cmd(key_vlan_map_t& key,
-                                     val_vlan_map_t& val,
-                                     unc::driver::controller *conn) = 0;
+  virtual UncRespCode update_cmd(key_vlan_map_t& key,
+                                 pfcdrv_val_vlan_map_t& val,
+                                 unc::driver::controller *conn) = 0;
 
   /**
    * @brief    - Method to delete Vbr Vlan-Map in the controller
    * @param[in]- key_vlan_map_t, val_vlan_map_t, controller*
-   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual drv_resp_code_t delete_cmd(key_vlan_map_t& key,
-                                     val_vlan_map_t& val,
-                                     unc::driver::controller *conn) = 0;
+  virtual UncRespCode delete_cmd(key_vlan_map_t& key,
+                                 pfcdrv_val_vlan_map_t& val,
+                                 unc::driver::controller *conn) = 0;
 
   /**
    * @brief    - Method to return the Keytype
@@ -228,31 +228,31 @@ class controller_command: public driver_command {
   /**
    * @brief    - Method to create controller configuration
    * @param[in]- key_ctr_t, val_ctr_t, controller*
-   * @retval   - DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t create_cmd(key_ctr_t& key,
+  UncRespCode create_cmd(key_ctr_t& key,
                              val_ctr_t & val, unc::driver::controller *conn) {
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   /**
    * @brief    - Method to update controller configuration
    * @param[in]- key_ctr_t, val_ctr_t, controller*
-   * @retval   - DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t update_cmd(key_ctr_t & key,
+  UncRespCode update_cmd(key_ctr_t & key,
                              val_ctr_t& val, unc::driver::controller *conn) {
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   /**
    * @brief    - Method to update controller configuration
    * @param[in]- key_ctr_t, val_ctr_t, controller*
-   * @retval   - DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t delete_cmd(key_ctr_t & key,
+  UncRespCode delete_cmd(key_ctr_t & key,
                              val_ctr_t & val, unc::driver::controller *conn) {
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   /**
@@ -273,9 +273,9 @@ class root_driver_command : public driver_command {
   /**
    * @brief    - Method to form the create command for Audit
    * @param[in]- key_root_t, val_root_t, controller*
-   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual drv_resp_code_t
+  virtual UncRespCode
       create_cmd(key_root_t& key,
                  val_root_t & val,
                  unc::driver::controller *conn) = 0;
@@ -283,9 +283,9 @@ class root_driver_command : public driver_command {
   /**
    * @brief    - Method to form the KT_ROOT update oommand
    * @param[in]- key_root_t, val_root_t, controller*
-   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual drv_resp_code_t
+  virtual UncRespCode
       update_cmd(key_root_t& key,
                  val_root_t & val,
                  unc::driver::controller *conn) = 0;
@@ -293,9 +293,9 @@ class root_driver_command : public driver_command {
   /**
    * @brief    - Method to form the KT_ROOT delete oommand
    * @param[in]- key_root_t, val_root_t, controller*
-   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual drv_resp_code_t
+  virtual UncRespCode
       delete_cmd(key_root_t& key,
                  val_root_t & val,
                  unc::driver::controller *conn)=0;
@@ -303,18 +303,18 @@ class root_driver_command : public driver_command {
   /**
    * @brief    - Method to read configurations during Audit
    * @param[in]- vector<unc::vtndrvcache::ConfigNode*>, controller*
-   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual drv_resp_code_t
+  virtual UncRespCode
       read_root_child(std::vector<unc::vtndrvcache::ConfigNode*>&,
                       unc::driver::controller*) = 0;
 
   /**
    * @brief    - Method to read configurations from controller during Audit
    * @param[in]- vector<unc::vtndrvcache::ConfigNode*>, controller*
-   * @retval   - DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual drv_resp_code_t
+  virtual UncRespCode
       read_all_child(unc::vtndrvcache::ConfigNode*,
                      std::vector<unc::vtndrvcache::ConfigNode*>&,
                      unc::driver::controller*)=0;

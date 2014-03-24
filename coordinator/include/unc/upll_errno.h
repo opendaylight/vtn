@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -10,51 +10,69 @@
 #ifndef UNC_UPLL_ERRNO_H_
 #define UNC_UPLL_ERRNO_H_
 
-#include "base.h"
+#include "unc/unc_base.h"
+#include "unc/base.h"
 
 UNC_C_BEGIN_DECL
 
 /* Error numbers returned by UPLL Service */
 typedef enum {
-  UPLL_RC_SUCCESS = 0,                   /* Request successfully processed */
-  UPLL_RC_ERR_GENERIC,                   /* Generic error */
-  UPLL_RC_ERR_BAD_REQUEST,               /* The request message format is bad */
-  UPLL_RC_ERR_BAD_CONFIG_OR_SESSION_ID,  /* The given session does not have the
-                                            config lock */
-  UPLL_RC_ERR_NO_SUCH_OPERATION,         /* Not a valid operation */
-  UPLL_RC_ERR_INVALID_OPTION1,           /* Not a valid option1 */
-  UPLL_RC_ERR_INVALID_OPTION2,           /* Not a valid option2 */
-  UPLL_RC_ERR_CFG_SYNTAX,                /* Syntax check failed */
-  UPLL_RC_ERR_CFG_SEMANTIC,              /* Semantic check failed */
-  UPLL_RC_ERR_RESOURCE_DISCONNECTED,     /* Resource (DBMS, Physical, Driver) is
-                                            diconnected */
-  UPLL_RC_ERR_DB_ACCESS,                 /* DBMS access (read / write /
-                                            transacation) failure */
-  UPLL_RC_ERR_NO_SUCH_INSTANCE,          /* Instance specified by key does not
-                                            exist */
-  UPLL_RC_ERR_NO_SUCH_NAME,              /* The specified keytype is unknown */
-  UPLL_RC_ERR_NO_SUCH_DATATYPE,          /* The specified datatype is unknown */
-  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR,    /* The operation not supported by
-                                            controller */
-  UPLL_RC_ERR_NOT_SUPPORTED_BY_STANDBY,  /* The operation not supported by
-                                            standby UPLL */
-  UPLL_RC_ERR_PARENT_DOES_NOT_EXIST,     /* For creating the given keytype
-                                            instance, its parent does not
-                                            exist */
-  UPLL_RC_ERR_INSTANCE_EXISTS,           /* The given keytype instance cannot be
-                                            created because it already exists */
-  UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT,   /* Not allowed for this datatype */
-  UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT,   /* Not allowed for this KT */
-  UPLL_RC_ERR_NOT_ALLOWED_AT_THIS_TIME,  /* Not allowed for at this time */
-  UPLL_RC_ERR_EXCEEDS_RESOURCE_LIMIT,    /* The given operation exceeds the
-                                            resource limit */
-  UPLL_RC_ERR_MERGE_CONFLICT,            /* Merge failed as there is a merge
-                                            conflict */
-  UPLL_RC_ERR_CANDIDATE_IS_DIRTY,        /* The operation could not be performed
-                                            because there are uncommited changes
-                                            in the candidate configuration */
-  UPLL_RC_ERR_SHUTTING_DOWN              /* UPLL daemon is shutting down and
-                                            cannot process the request */
+  /* Request successfully processed */
+  UPLL_RC_SUCCESS = UNC_RC_SUCCESS,
+  /* Generic error */
+  UPLL_RC_ERR_GENERIC = UNC_UPLL_RC_ERR_GENERIC,
+  /* The request message format is bad */
+  UPLL_RC_ERR_BAD_REQUEST = UNC_UPLL_RC_ERR_BAD_REQUEST,
+  /* The given session does not have the config lock */
+  UPLL_RC_ERR_BAD_CONFIG_OR_SESSION_ID =
+              UNC_UPLL_RC_ERR_BAD_CONFIG_OR_SESSION_ID,
+  /* Not a valid operation */
+  UPLL_RC_ERR_NO_SUCH_OPERATION = UNC_UPLL_RC_ERR_NO_SUCH_OPERATION,
+  /* Not a valid option1 */
+  UPLL_RC_ERR_INVALID_OPTION1 = UNC_UPLL_RC_ERR_INVALID_OPTION1,
+  /* Not a valid option2 */
+  UPLL_RC_ERR_INVALID_OPTION2 = UNC_UPLL_RC_ERR_INVALID_OPTION2,
+  /* Syntax check failed */
+  UPLL_RC_ERR_CFG_SYNTAX = UNC_UPLL_RC_ERR_CFG_SYNTAX,
+  /* Semantic check failed */
+  UPLL_RC_ERR_CFG_SEMANTIC = UNC_UPLL_RC_ERR_CFG_SEMANTIC,
+  /* Resource (DBMS, Physical, Driver) is disconnected */
+  UPLL_RC_ERR_RESOURCE_DISCONNECTED = UNC_UPLL_RC_ERR_RESOURCE_DISCONNECTED,
+  /* DBMS access (read / write / transacation) failure */
+  UPLL_RC_ERR_DB_ACCESS = UNC_UPLL_RC_ERR_DB_ACCESS,
+  /* Instance specified by key does not exist */
+  UPLL_RC_ERR_NO_SUCH_INSTANCE = UNC_UPLL_RC_ERR_NO_SUCH_INSTANCE,
+  /* The specified keytype is unknown */
+  UPLL_RC_ERR_NO_SUCH_NAME = UNC_UPLL_RC_ERR_NO_SUCH_NAME,
+  /* The specified datatype is unknown */
+  UPLL_RC_ERR_NO_SUCH_DATATYPE = UNC_UPLL_RC_ERR_NO_SUCH_DATATYPE,
+  /* The operation not supported by controller */
+  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR = UNC_UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR,
+  /* The operation not supported by standby UPLL */
+  UPLL_RC_ERR_NOT_SUPPORTED_BY_STANDBY =
+              UNC_UPLL_RC_ERR_NOT_SUPPORTED_BY_STANDBY,
+  /* For creating the given keytype instance, its parent does not exist */
+  UPLL_RC_ERR_PARENT_DOES_NOT_EXIST = UNC_UPLL_RC_ERR_PARENT_DOES_NOT_EXIST,
+  /* The given keytype instance cannot be created because it already exists */
+  UPLL_RC_ERR_INSTANCE_EXISTS = UNC_UPLL_RC_ERR_INSTANCE_EXISTS,
+  /* Not allowed for this datatype */
+  UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT = UNC_UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT,
+  /* Not allowed for this KT */
+  UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT = UNC_UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT,
+  /* Not allowed for at this time */
+  UPLL_RC_ERR_NOT_ALLOWED_AT_THIS_TIME =
+              UNC_UPLL_RC_ERR_NOT_ALLOWED_AT_THIS_TIME,
+  /* The given operation exceeds the resource limit */
+  UPLL_RC_ERR_EXCEEDS_RESOURCE_LIMIT = UNC_UPLL_RC_ERR_EXCEEDS_RESOURCE_LIMIT,
+  /* Merge failed as there is a merge conflict */
+  UPLL_RC_ERR_MERGE_CONFLICT = UNC_UPLL_RC_ERR_MERGE_CONFLICT,
+  /* The operation could not be performed because there are uncommited changes
+   * in the candidate configuration */
+  UPLL_RC_ERR_CANDIDATE_IS_DIRTY = UNC_UPLL_RC_ERR_CANDIDATE_IS_DIRTY,
+  /* UPLL daemon is shutting down and cannot process the request */
+  UPLL_RC_ERR_SHUTTING_DOWN = UNC_UPLL_RC_ERR_SHUTTING_DOWN,
+  /* Controller disconnected error */
+  UPLL_RC_ERR_CTR_DISCONNECTED = UNC_RC_CTR_DISCONNECTED
 } upll_rc_t;
 
 UNC_C_END_DECL

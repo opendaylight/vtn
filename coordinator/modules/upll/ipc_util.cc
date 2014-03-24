@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -210,53 +210,115 @@ upll_rc_t IpcUtil::GetCtrlrTypeFromPhy(const char *ctrlr_name,
 }
 
 upll_rc_t IpcUtil::DriverResultCodeToKtURC(
-    unc_keytype_ctrtype_t ctrlr_type, uint32_t driver_result_code) {
-  switch (ctrlr_type) {
-    case UNC_CT_PFC:
-    case UNC_CT_VNP:
-    case UNC_CT_ODC:
+    unc_keytype_operation_t operation, uint32_t driver_result_code) {
+  switch (operation) {
+    // Transaction specific operations
+    case UNC_OP_CREATE:
+    case UNC_OP_DELETE:
+    case UNC_OP_UPDATE:
       {
         switch (driver_result_code) {
-          case DRVAPI_RESPONSE_SUCCESS:
+          case UNC_RC_SUCCESS:
             return UPLL_RC_SUCCESS;
-          case DRVAPI_RESPONSE_NOT_RUNNING:
-            return UPLL_RC_ERR_GENERIC;
-          case DRVAPI_RESPONSE_CONTROLLER_DISCONNECTED:
-            return UPLL_RC_ERR_RESOURCE_DISCONNECTED;
-          case DRVAPI_RESPONSE_NOT_SENT_TO_CONTROLLER:
+
+            // case UNC_DRV_RC_DAEMON_INACTIVE: move to default case
             // It will not be sent to controller only in the case of
             // vote, and that too if previous vote failed. Since we do not send
             // VOTE request from here, let us convert it to GENERIC error.
-            return UPLL_RC_ERR_GENERIC;
-          case DRVAPI_RESPONSE_INVALID_REQUEST_FORMAT:
-            return UPLL_RC_ERR_BAD_REQUEST;
-          case DRVAPI_RESPONSE_INVALID_SESSION_ID:
-          case DRVAPI_RESPONSE_INVALID_CONFIG_ID:
-            return UPLL_RC_ERR_BAD_CONFIG_OR_SESSION_ID;
-          case DRVAPI_RESPONSE_INVALID_OPERATION:
-            return UPLL_RC_ERR_NO_SUCH_OPERATION;
-          case DRVAPI_RESPONSE_INVALID_OPTION1:
-                return UPLL_RC_ERR_INVALID_OPTION1;
-          case DRVAPI_RESPONSE_INVALID_OPTION2:
-                return UPLL_RC_ERR_INVALID_OPTION2;
-          case DRVAPI_RESPONSE_INVALID_DATATYPE:
-                return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT;
-          case DRVAPI_RESPONSE_INVALID_KEYTYPE:
-                return UPLL_RC_ERR_NO_SUCH_NAME;
-          case DRVAPI_RESPONSE_NO_SUCH_INSTANCE:
-                return UPLL_RC_ERR_NO_SUCH_INSTANCE;
-          case DRVAPI_RESPONSE_MISSING_KEY_STRUCT:
-          case DRVAPI_RESPONSE_MISSING_VAL_STRUCT:
-          case DRVAPI_RESPONSE_FAILURE:
-          case DRVAPI_RESPONSE_CTRLAPI_FAILURE:
-          case DRVAPI_RESPONSE_INVALID_TRANSACTION:
+            // case UNC_RC_REQ_NOT_SENT_TO_CTR: move to default case
+            // case UNC_DRV_RC_INVALID_REQUEST_FORMAT: move to default case
+            // case UNC_DRV_RC_INVALID_SESSION_ID: move to default case
+            // case UNC_DRV_RC_INVALID_CONFIG_ID: move to default case
+            // case UNC_DRV_RC_INVALID_OPERATION: move to default case
+            // case UNC_DRV_RC_INVALID_OPTION1: move to default case
+            // case UNC_DRV_RC_INVALID_OPTION2: move to default case
+            // case UNC_DRV_RC_INVALID_DATATYPE: move to default case
+            // case UNC_DRV_RC_INVALID_KEYTYPE: move to default case
+
+          case UNC_DRV_RC_ERR_ATTRIBUTE_SYNTAX:
+            return static_cast<upll_rc_t>(UNC_RC_CONFIG_INVAL);
+          case UNC_DRV_RC_ERR_ATTRIBUTE_SEMANTIC:
+            return static_cast<upll_rc_t>(UNC_RC_CONFIG_INVAL);
+
+          case UNC_RC_CTR_DISCONNECTED:
+            return UPLL_RC_ERR_CTR_DISCONNECTED;
+
+          case UNC_RC_CONFIG_INVAL:
+          case UNC_RC_CTR_CONFIG_STATUS_ERR:
+          case UNC_RC_CTR_BUSY:
+            return static_cast<upll_rc_t>(driver_result_code);
+
+          case UNC_RC_NO_SUCH_INSTANCE:
+            return UPLL_RC_ERR_NO_SUCH_INSTANCE;
+
+            // case UNC_DRV_RC_MISSING_KEY_STRUCT: move to default case
+            // case UNC_DRV_RC_MISSING_VAL_STRUCT: move to default case
+            // case UNC_DRV_RC_ERR_GENERIC: move to default case
+            // case UNC_RC_INTERNAL_ERR: move to default case
+
+          case UNC_RC_CTRLAPI_FAILURE:
+            return static_cast<upll_rc_t>(driver_result_code);
           default:
+            UPLL_LOG_INFO("Received error %d from driver,"
+                          " converting to GENERIC error",
+                          driver_result_code);
             return UPLL_RC_ERR_GENERIC;
         }
       }
-      break;
-    default:
-      return UPLL_RC_ERR_GENERIC;
+    default:  // Not-transaction specific operations: READ, CONTROL operations
+      {
+        switch (driver_result_code) {
+          case UNC_RC_SUCCESS:
+            return UPLL_RC_SUCCESS;
+            // case UNC_DRV_RC_DAEMON_INACTIVE: move to default case
+            // It will not be sent to controller only in the case of
+            // vote, and that too if previous vote failed. Since we do not send
+            // VOTE request from here, let us convert it to GENERIC error.
+            // case UNC_RC_REQ_NOT_SENT_TO_CTR: move to default case
+            // case UNC_DRV_RC_INVALID_REQUEST_FORMAT: move to default case
+            // case UNC_DRV_RC_INVALID_SESSION_ID: move to default case
+            // case UNC_DRV_RC_INVALID_CONFIG_ID: move to default case
+            // case UNC_DRV_RC_INVALID_OPERATION: move to default case
+            // case UNC_DRV_RC_INVALID_OPTION1: move to default case
+            // case UNC_DRV_RC_INVALID_OPTION2: move to default case
+            // case UNC_DRV_RC_INVALID_DATATYPE: move to default case
+            // case UNC_DRV_RC_INVALID_KEYTYPE: move to default case
+
+          case UNC_DRV_RC_ERR_ATTRIBUTE_SYNTAX:
+            return UPLL_RC_ERR_CFG_SYNTAX;
+          case UNC_DRV_RC_ERR_ATTRIBUTE_SEMANTIC:
+            return UPLL_RC_ERR_CFG_SEMANTIC;
+
+          case UNC_RC_CTR_DISCONNECTED:
+            return UPLL_RC_ERR_CTR_DISCONNECTED;
+
+            // case UNC_RC_CONFIG_INVAL: move to default case
+            // case UNC_RC_CTR_CONFIG_STATUS_ERR: move to default case
+            // case UNC_RC_CTR_BUSY: move to default case
+            // TODO(upll) : assumption driver does not give this error.
+            // Please Verify
+
+          case UNC_RC_NO_SUCH_INSTANCE:
+            return UPLL_RC_ERR_NO_SUCH_INSTANCE;
+
+            // case UNC_DRV_RC_MISSING_KEY_STRUCT: move to default case
+            // case UNC_DRV_RC_MISSING_VAL_STRUCT: move to default case
+            // case UNC_DRV_RC_ERR_GENERIC: move to default case
+            // case UNC_RC_INTERNAL_ERR: move to default case
+          case UNC_RC_CTRLAPI_FAILURE:
+            // TODO(upll) : need to check with Driver on whether
+            // this is possible
+            // for these operations. If so, what should it get converted in
+            // upll.
+            // In U10 we were sending GENERIC error, so we can convert to
+            // default case
+          default:
+            UPLL_LOG_INFO("Received error %d from driver,"
+                          " converting to GENERIC error",
+                          driver_result_code);
+            return UPLL_RC_ERR_GENERIC;
+        }
+      }
   }
 }
 
@@ -267,7 +329,7 @@ bool IpcUtil::SendReqToDriver(const char *ctrlr_name, char *domain_id,
                               IpcRequest *req, bool /* edit_conn */,
                               IpcResponse *resp) {
   UPLL_FUNC_TRACE
-  PFC_ASSERT(ctrlr_name != NULL);
+      PFC_ASSERT(ctrlr_name != NULL);
 
   unc_keytype_ctrtype_t ctrlr_type = UNC_CT_UNKNOWN;
   const char *channel_name = NULL;
@@ -275,11 +337,11 @@ bool IpcUtil::SendReqToDriver(const char *ctrlr_name, char *domain_id,
   pfc_ipcid_t service_id;
 
   if (unc::upll::config_momgr::CtrlrMgr::GetInstance()->GetCtrlrType(
-      ctrlr_name, req->header.datatype, &ctrlr_type) == false) {
+          ctrlr_name, req->header.datatype, &ctrlr_type) == false) {
     if ((req->header.operation == UNC_OP_DELETE) &&
         (req->header.datatype != UPLL_DT_RUNNING)) {
       if (unc::upll::config_momgr::CtrlrMgr::GetInstance()->GetCtrlrType(
-          ctrlr_name, UPLL_DT_RUNNING, &ctrlr_type) == false) {
+              ctrlr_name, UPLL_DT_RUNNING, &ctrlr_type) == false) {
         UPLL_LOG_WARN("Unable to get controller type for %s", ctrlr_name);
         resp->header.result_code = UPLL_RC_ERR_GENERIC;
         return false;
@@ -316,16 +378,16 @@ bool IpcUtil::SendReqToDriver(const char *ctrlr_name, char *domain_id,
                             true, ctrlr_name, domain_id, req, resp);
   if (ok) {
     resp->header.result_code = DriverResultCodeToKtURC(
-        ctrlr_type, resp->header.result_code);
+        req->header.operation , resp->header.result_code);
   }
   return ok;
 }
 
 upll_rc_t IpcUtil::PhysicalResultCodeToKtURC(uint32_t result_code) {
   switch (result_code) {
-    case UPPL_RC_SUCCESS:
+    case UNC_RC_SUCCESS:
       return UPLL_RC_SUCCESS;
-    case UPPL_RC_ERR_NO_SUCH_INSTANCE:
+    case UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE:
       return UPLL_RC_ERR_NO_SUCH_INSTANCE;
     default:
       return UPLL_RC_ERR_GENERIC;
@@ -357,15 +419,15 @@ bool IpcUtil::SendReqToServer(const char *channel_name,
                               const char *ctrlr_name, char *domain_id,
                               IpcRequest *req, IpcResponse *resp) {
   UPLL_FUNC_TRACE
-  if (channel_name == NULL || service_name == NULL ||
-      req == NULL || resp == NULL) {
-    UPLL_LOG_DEBUG("NULL argument");
-    if (resp != NULL) {
-      resp->header.result_code = UPLL_RC_ERR_GENERIC;
-      resp->return_code = 0;
-    }
-    return false;
-  }
+      if (channel_name == NULL || service_name == NULL ||
+          req == NULL || resp == NULL) {
+        UPLL_LOG_DEBUG("NULL argument");
+        if (resp != NULL) {
+          resp->header.result_code = UPLL_RC_ERR_GENERIC;
+          resp->return_code = 0;
+        }
+        return false;
+      }
   if (driver_msg == true && ctrlr_name == NULL) {
     UPLL_LOG_DEBUG("NULL controller argument");
     if (resp != NULL) {
@@ -395,7 +457,7 @@ bool IpcUtil::SendReqToServer(const char *channel_name,
   int err = pfc_ipcclnt_altopen(channel_name, &connid);
   if (err != 0) {
     UPLL_LOG_DEBUG("Failed to create IPC alternative connection to %s. Err=%d",
-                  channel_name, err);
+                   channel_name, err);
     resp->header.result_code = UPLL_RC_ERR_GENERIC;
     resp->return_code = PFC_IPCRESP_FATAL;
     return false;
@@ -404,11 +466,11 @@ bool IpcUtil::SendReqToServer(const char *channel_name,
   pfc::core::ipc::ClientSession cl_sess(connid, service_name, service_id, err);
   if (err != 0) {
     UPLL_LOG_DEBUG("Failed to create IPC client session %s:%s:%d. Err=%d",
-                  channel_name, service_name, service_id, err);
+                   channel_name, service_name, service_id, err);
     err = pfc_ipcclnt_altclose(connid);  // Close the IPC connection handle
     if (err != 0) {
       UPLL_LOG_DEBUG("Failed to close the IPC connection %s:%s:%d. Err=%d",
-                    channel_name, service_name, service_id, err);
+                     channel_name, service_name, service_id, err);
     }
     resp->header.result_code = UPLL_RC_ERR_GENERIC;
     resp->return_code = PFC_IPCRESP_FATAL;
@@ -432,17 +494,26 @@ bool IpcUtil::SendReqToServer(const char *channel_name,
     UPLL_LOG_TRACE("IPC Client Session timeout for channel %s set to infinity"
                    " for operation %d",
                    channel_name, req->header.operation);
+  } else if (req->ckv_data->get_key_type() == UNC_KT_VTNSTATION_CONTROLLER) {
+    pfc_timespec_t sess_timeout;
+    sess_timeout.tv_sec  = kIpcTimeoutVtnstation;
+    sess_timeout.tv_nsec = 0;
+    cl_sess.setTimeout(&sess_timeout);
+    UPLL_LOG_TRACE("IPC Client Session timeout for channel %s set to %d secs"
+                   " for operation %d on VTN_STATION_CONTROLLER",
+                   channel_name, kIpcTimeoutVtnstation, req->header.operation);
   }
+
 
   bool ret = WriteKtRequest(&cl_sess, driver_msg, ctrlr_name, domain_id,
                             req->header, req->ckv_data);
   if (!ret) {
     UPLL_LOG_DEBUG("Failed to send IPC request to %s:%s:%d",
-                  channel_name, service_name, service_id);
+                   channel_name, service_name, service_id);
     err = pfc_ipcclnt_altclose(connid);  // Close the IPC connection handle
     if (err != 0) {
       UPLL_LOG_DEBUG("Failed to close the IPC connection %s:%s:%d. Err=%d",
-                    channel_name, service_name, service_id, err);
+                     channel_name, service_name, service_id, err);
     }
     resp->header.result_code = UPLL_RC_ERR_GENERIC;
     resp->return_code = PFC_IPCRESP_FATAL;
@@ -458,24 +529,24 @@ bool IpcUtil::SendReqToServer(const char *channel_name,
                      channel_name, service_name, service_id);
       resp->return_code = PFC_IPCRESP_FATAL;
     } else {
-      pfc_log_fatal("Failed to send IPC request to %s:%s:%d. Err=%d",
-                  channel_name, service_name, service_id, err);
+      UPLL_LOG_FATAL("Failed to send IPC request to %s:%s:%d. Err=%d",
+                     channel_name, service_name, service_id, err);
       resp->return_code = PFC_IPCRESP_FATAL;
     }
     err = pfc_ipcclnt_altclose(connid);  // Close the IPC connection handle
     if (err != 0) {
       UPLL_LOG_DEBUG("Failed to close the IPC connection %s:%s:%d. Err=%d",
-                    channel_name, service_name, service_id, err);
+                     channel_name, service_name, service_id, err);
     }
     return false;
   }
   if (ipcresp != 0) {
     UPLL_LOG_DEBUG("Error at IPC server %s:%s:%d. ErrResp=%d",
-                  channel_name, service_name, service_id, ipcresp);
+                   channel_name, service_name, service_id, ipcresp);
     err = pfc_ipcclnt_altclose(connid);  // Close the IPC connection handle
     if (err != 0) {
       UPLL_LOG_DEBUG("Failed to close the IPC connection %s:%s:%d. Err=%d",
-                    channel_name, service_name, service_id, err);
+                     channel_name, service_name, service_id, err);
     }
     resp->header.result_code = UPLL_RC_ERR_GENERIC;
     resp->return_code = PFC_IPCRESP_FATAL;
@@ -486,11 +557,11 @@ bool IpcUtil::SendReqToServer(const char *channel_name,
                        &local_resp.header, &local_resp.ckv_data);
   if (!ret) {
     UPLL_LOG_DEBUG("Failed to read IPC response from %s:%s:%d",
-                  channel_name, service_name, service_id);
+                   channel_name, service_name, service_id);
     err = pfc_ipcclnt_altclose(connid);  // Close the IPC connection handle
     if (err != 0) {
       UPLL_LOG_DEBUG("Failed to close the IPC connection %s:%s:%d. Err=%d",
-                    channel_name, service_name, service_id, err);
+                     channel_name, service_name, service_id, err);
     }
     resp->header.result_code = UPLL_RC_ERR_GENERIC;
     resp->return_code = PFC_IPCRESP_FATAL;
@@ -503,15 +574,14 @@ bool IpcUtil::SendReqToServer(const char *channel_name,
     resp->ckv_data = new ConfigKeyVal(local_resp.ckv_data->get_key_type());
   }
   resp->ckv_data->ResetWith(local_resp.ckv_data);
-  if (local_resp.ckv_data)
-   delete local_resp.ckv_data;
+  delete local_resp.ckv_data;
   resp->return_code = 0;
 
   /* Close the IPC connection handle. */
   err = pfc_ipcclnt_altclose(connid);
   if (err != 0) {
     UPLL_LOG_DEBUG("Failed to close the IPC connection %s:%s:%d. Err=%d",
-                  channel_name, service_name, service_id, err);
+                   channel_name, service_name, service_id, err);
   }
 
   UPLL_LOG_TRACE("dest=%s:%s:%d, controller_name=%s domain_id=%s\n"
@@ -524,12 +594,12 @@ bool IpcUtil::SendReqToServer(const char *channel_name,
 }
 
 #define READ_PRIMARY_IPCTYPE(                                                 \
-    ipc_sess, sess_read_api, index, data_type, data_var_ptr)                  \
+                             ipc_sess, sess_read_api, index, data_type, data_var_ptr)                  \
 {                                                                             \
   ret = true;                                                                 \
   data_var_ptr = ConfigKeyVal::Malloc(sizeof(data_type));                     \
   int ipc_ret = ipc_sess->sess_read_api(                                      \
-      index, *(reinterpret_cast<data_type*>(data_var_ptr)));                  \
+                                        index, *(reinterpret_cast<data_type*>(data_var_ptr)));                  \
   if (ipc_ret != 0) {                                                         \
     UPLL_LOG_DEBUG("Failed to read argument in the IPC request, Err=%d",      \
                    ipc_ret);                                                  \
@@ -538,23 +608,23 @@ bool IpcUtil::SendReqToServer(const char *channel_name,
 }
 
 #define READ_PRIMARY_IPCTYPE_FROM_SERVER(                                     \
-    ipc_srv_sess, index, data_type, data_var_ptr) {                           \
+                                         ipc_srv_sess, index, data_type, data_var_ptr) {                           \
   READ_PRIMARY_IPCTYPE(ipc_srv_sess, getArgument,                             \
                        index, data_type, data_var_ptr) \
 }
 
 #define READ_PRIMARY_IPCTYPE_FROM_CLIENT(                                     \
-    ipc_clnt_sess, index, data_type, data_var_ptr) {                          \
+                                         ipc_clnt_sess, index, data_type, data_var_ptr) {                          \
   READ_PRIMARY_IPCTYPE(ipc_clnt_sess, getResponse,                            \
                        index, data_type, data_var_ptr) \
 }
 
 #define WRITE_PRIMARY_IPCTYPE(                                                \
-    ipc_sess, sess_write_api, data_type, data_var_ptr)                        \
+                              ipc_sess, sess_write_api, data_type, data_var_ptr)                        \
 {                                                                             \
   ret = true;                                                                 \
   int ipc_ret = ipc_sess->sess_write_api(                                     \
-                                *((data_type*)(data_var_ptr)));  /* NOLINT */ \
+                                         *((data_type*)(data_var_ptr)));  /* NOLINT */ \
   if (ipc_ret != 0) {                                                         \
     UPLL_LOG_DEBUG("Failed to read argument in the IPC request, Err=%d",      \
                    ipc_ret);                                                  \
@@ -565,162 +635,164 @@ bool IpcUtil::SendReqToServer(const char *channel_name,
 
 bool IpcUtil::ReadIpcArg(pfc::core::ipc::ServerSession *sess, uint32_t index,
                          IpctSt::IpcStructNum *st_num, void **ipc_struct) {
-    pfc_ipctype_t arg_type;
-    if (0 != sess->getArgType(index, arg_type)) {
-      UPLL_LOG_DEBUG("Failed to get arg type in the IPC request");
-      return false;
-    }
+  pfc_ipctype_t arg_type;
+  if (0 != sess->getArgType(index, arg_type)) {
+    UPLL_LOG_DEBUG("Failed to get arg type in the IPC request");
+    return false;
+  }
 
-    bool ret;
+  bool ret;
 
-    switch (arg_type) {
-      case PFC_IPCTYPE_INT8:
-        *st_num = IpctSt::kIpcStInt8;
-        READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, int8_t, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_UINT8:
-        *st_num = IpctSt::kIpcStUint8;
-        READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, uint8_t, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_INT16:
-        *st_num = IpctSt::kIpcStInt16;
-        READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, int16_t, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_UINT16:
-        *st_num = IpctSt::kIpcStUint16;
-        READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, uint16_t, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_INT32:
-        *st_num = IpctSt::kIpcStInt32;
-        READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, int32_t, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_UINT32:
-        *st_num = IpctSt::kIpcStUint32;
-        READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, uint32_t, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_INT64:
-        *st_num = IpctSt::kIpcStInt64;
-        READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, int64_t, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_UINT64:
-        *st_num = IpctSt::kIpcStUint64;
-        READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, uint64_t, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_FLOAT:
-        *st_num = IpctSt::kIpcStFloat;
-        READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, float, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_DOUBLE:
-        *st_num = IpctSt::kIpcStDouble;
-        READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, double, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_IPV4:
-        *st_num = IpctSt::kIpcStIpv4;
-        READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, struct in_addr,
+  switch (arg_type) {
+    case PFC_IPCTYPE_INT8:
+      *st_num = IpctSt::kIpcStInt8;
+      READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, int8_t, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_UINT8:
+      *st_num = IpctSt::kIpcStUint8;
+      READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, uint8_t, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_INT16:
+      *st_num = IpctSt::kIpcStInt16;
+      READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, int16_t, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_UINT16:
+      *st_num = IpctSt::kIpcStUint16;
+      READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, uint16_t, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_INT32:
+      *st_num = IpctSt::kIpcStInt32;
+      READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, int32_t, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_UINT32:
+      *st_num = IpctSt::kIpcStUint32;
+      READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, uint32_t, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_INT64:
+      *st_num = IpctSt::kIpcStInt64;
+      READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, int64_t, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_UINT64:
+      *st_num = IpctSt::kIpcStUint64;
+      READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, uint64_t, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_FLOAT:
+      *st_num = IpctSt::kIpcStFloat;
+      READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, float, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_DOUBLE:
+      *st_num = IpctSt::kIpcStDouble;
+      READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, double, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_IPV4:
+      *st_num = IpctSt::kIpcStIpv4;
+      READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, struct in_addr,
+                                       *ipc_struct);
+      break;
+    case PFC_IPCTYPE_IPV6:
+      *st_num = IpctSt::kIpcStIpv6;
+      READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, struct in6_addr,
+                                       *ipc_struct);
+      break;
+    case PFC_IPCTYPE_STRING:
+      {
+        *st_num = IpctSt::kIpcStString;
+        READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, const char *,
                                          *ipc_struct);
-        break;
-      case PFC_IPCTYPE_IPV6:
-        *st_num = IpctSt::kIpcStIpv6;
-        READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, struct in6_addr,
-                                         *ipc_struct);
-        break;
-      case PFC_IPCTYPE_STRING:
-        {
-          *st_num = IpctSt::kIpcStString;
-          READ_PRIMARY_IPCTYPE_FROM_SERVER(sess, index, const char *,
-                                           *ipc_struct);
-          char *str = strdup(*(reinterpret_cast<char **>(*ipc_struct)));
-          *ipc_struct = str;
-        }
-        break;
-      case PFC_IPCTYPE_STRUCT:
-        ret = ReadIpcStruct(sess, index, st_num, ipc_struct);
-        break;
-      case PFC_IPCTYPE_BINARY:            // NOT USED
-      default:
-        ret = false;
-    }
-    return ret;
+        char *str = strdup(*(reinterpret_cast<char **>(*ipc_struct)));
+        ConfigKeyVal::Free(*ipc_struct);
+        *ipc_struct = str;
+      }
+      break;
+    case PFC_IPCTYPE_STRUCT:
+      ret = ReadIpcStruct(sess, index, st_num, ipc_struct);
+      break;
+    case PFC_IPCTYPE_BINARY:            // NOT USED
+    default:
+      ret = false;
+  }
+  return ret;
 }
 
 bool IpcUtil::ReadIpcArg(pfc::core::ipc::ClientSession *sess, uint32_t index,
                          IpctSt::IpcStructNum *st_num, void **ipc_struct) {
-    pfc_ipctype_t arg_type;
-    if (0 != sess->getResponseType(index, arg_type)) {
-      UPLL_LOG_DEBUG("Failed to get arg type in the IPC request");
-      return false;
-    }
+  pfc_ipctype_t arg_type;
+  if (0 != sess->getResponseType(index, arg_type)) {
+    UPLL_LOG_DEBUG("Failed to get arg type in the IPC request");
+    return false;
+  }
 
-    bool ret;
+  bool ret;
 
-    switch (arg_type) {
-      case PFC_IPCTYPE_INT8:
-        *st_num = IpctSt::kIpcStInt8;
-        READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, int8_t, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_UINT8:
-        *st_num = IpctSt::kIpcStUint8;
-        READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, uint8_t, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_INT16:
-        *st_num = IpctSt::kIpcStInt16;
-        READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, int16_t, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_UINT16:
-        *st_num = IpctSt::kIpcStUint16;
-        READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, uint16_t, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_INT32:
-        *st_num = IpctSt::kIpcStInt32;
-        READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, int32_t, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_UINT32:
-        *st_num = IpctSt::kIpcStUint32;
-        READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, uint32_t, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_INT64:
-        *st_num = IpctSt::kIpcStInt64;
-        READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, int64_t, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_UINT64:
-        *st_num = IpctSt::kIpcStUint64;
-        READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, uint64_t, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_FLOAT:
-        *st_num = IpctSt::kIpcStFloat;
-        READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, float, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_DOUBLE:
-        *st_num = IpctSt::kIpcStDouble;
-        READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, double, *ipc_struct);
-        break;
-      case PFC_IPCTYPE_IPV4:
-        *st_num = IpctSt::kIpcStIpv4;
-        READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, struct in_addr,
+  switch (arg_type) {
+    case PFC_IPCTYPE_INT8:
+      *st_num = IpctSt::kIpcStInt8;
+      READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, int8_t, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_UINT8:
+      *st_num = IpctSt::kIpcStUint8;
+      READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, uint8_t, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_INT16:
+      *st_num = IpctSt::kIpcStInt16;
+      READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, int16_t, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_UINT16:
+      *st_num = IpctSt::kIpcStUint16;
+      READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, uint16_t, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_INT32:
+      *st_num = IpctSt::kIpcStInt32;
+      READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, int32_t, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_UINT32:
+      *st_num = IpctSt::kIpcStUint32;
+      READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, uint32_t, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_INT64:
+      *st_num = IpctSt::kIpcStInt64;
+      READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, int64_t, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_UINT64:
+      *st_num = IpctSt::kIpcStUint64;
+      READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, uint64_t, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_FLOAT:
+      *st_num = IpctSt::kIpcStFloat;
+      READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, float, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_DOUBLE:
+      *st_num = IpctSt::kIpcStDouble;
+      READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, double, *ipc_struct);
+      break;
+    case PFC_IPCTYPE_IPV4:
+      *st_num = IpctSt::kIpcStIpv4;
+      READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, struct in_addr,
+                                       *ipc_struct);
+      break;
+    case PFC_IPCTYPE_IPV6:
+      *st_num = IpctSt::kIpcStIpv6;
+      READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, struct in6_addr,
+                                       *ipc_struct);
+      break;
+    case PFC_IPCTYPE_STRING:
+      {
+        *st_num = IpctSt::kIpcStString;
+        READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, const char *,
                                          *ipc_struct);
-        break;
-      case PFC_IPCTYPE_IPV6:
-        *st_num = IpctSt::kIpcStIpv6;
-        READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, struct in6_addr,
-                                         *ipc_struct);
-        break;
-      case PFC_IPCTYPE_STRING:
-        {
-          *st_num = IpctSt::kIpcStString;
-          READ_PRIMARY_IPCTYPE_FROM_CLIENT(sess, index, const char *,
-                                           *ipc_struct);
-          char *str = strdup(*(reinterpret_cast<char **>(*ipc_struct)));
-          *ipc_struct = str;
-        }
-        break;
-      case PFC_IPCTYPE_STRUCT:
-        ret = ReadIpcStruct(sess, index, st_num, ipc_struct);
-        break;
-      case PFC_IPCTYPE_BINARY:            // NOT USED
-      default:
-        ret = false;
-    }
-    return ret;
+        char *str = strdup(*(reinterpret_cast<char **>(*ipc_struct)));
+        ConfigKeyVal::Free(*ipc_struct);
+        *ipc_struct = str;
+      }
+      break;
+    case PFC_IPCTYPE_STRUCT:
+      ret = ReadIpcStruct(sess, index, st_num, ipc_struct);
+      break;
+    case PFC_IPCTYPE_BINARY:            // NOT USED
+    default:
+      ret = false;
+  }
+  return ret;
 }
 
 bool IpcUtil::ReadIpcStruct(pfc::core::ipc::ServerSession *sess,
@@ -735,7 +807,7 @@ bool IpcUtil::ReadIpcStruct(pfc::core::ipc::ServerSession *sess,
   const pfc_ipcstdef_t *st_def = IpctSt::GetIpcStdef(st_name.c_str());
   if (st_def == NULL) {
     UPLL_LOG_DEBUG("Unknown structure %s in the ipc message",
-                  st_name.c_str());
+                   st_name.c_str());
     return false;
   }
   *st_num = IpctSt::GetIpcStNum(st_name.c_str());
@@ -763,7 +835,7 @@ bool IpcUtil::ReadIpcStruct(pfc::core::ipc::ClientSession *sess,
   const pfc_ipcstdef_t *st_def = IpctSt::GetIpcStdef(st_name.c_str());
   if (st_def == NULL) {
     UPLL_LOG_DEBUG("Unknown structure %s in the ipc message",
-                  st_name.c_str());
+                   st_name.c_str());
     return false;
   }
   *st_num = IpctSt::GetIpcStNum(st_name.c_str());
@@ -823,7 +895,7 @@ bool IpcUtil::WriteIpcArg(pfc::core::ipc::ServerSession *sess,
       /* With -03 the following line gives compilation error.
        * So macro isn't used.
        * WRITE_PRIMARY_IPCTYPE(sess, addOutput, const char *, &ipc_struct);
-      */
+       */
       {
         ret = true;
         int ipc_ret = sess->addOutput(
@@ -887,7 +959,7 @@ bool IpcUtil::WriteIpcArg(pfc::core::ipc::ClientSession *sess,
       /* With -03 the following line gives compilation error.
        * So macro isn't used.
        * WRITE_PRIMARY_IPCTYPE(sess, addOutput, const char *, &ipc_struct);
-      */
+       */
       {
         ret = true;
         int ipc_ret = sess->addOutput(
@@ -964,7 +1036,7 @@ bool IpcUtil::ReadKtRequest(pfc::core::ipc::ServerSession *sess,
   uint32_t arg_cnt = sess->getArgCount();
   if (arg_cnt < unc::upll::ipc_util::kKeyTreeReqMandatoryFields) {
     UPLL_LOG_DEBUG("Not enough arguments in key tree request. Has only %u.",
-                  arg_cnt);
+                   arg_cnt);
     return false;
   }
 
@@ -1014,14 +1086,14 @@ bool IpcUtil::ReadKtRequest(pfc::core::ipc::ServerSession *sess,
       // new key type is expected.
       if (0 != sess->getArgument(arg++, keytype)) {
         UPLL_LOG_DEBUG("Failed to get key type at %u in the key tree request",
-                      arg);
+                       arg);
         delete *first_ckv;
         *first_ckv = NULL;
         return false;
       }
       if (!IpcUtil::ReadIpcStruct(sess, arg++, &st_num, &ipc_st)) {
         UPLL_LOG_DEBUG("Failed to get structure at %u in the key tree request",
-                      arg);
+                       arg);
         delete *first_ckv;
         *first_ckv = NULL;
         return false;
@@ -1033,7 +1105,7 @@ bool IpcUtil::ReadKtRequest(pfc::core::ipc::ServerSession *sess,
     } else {
       if (!IpcUtil::ReadIpcArg(sess, arg++, &st_num, &ipc_st)) {
         UPLL_LOG_DEBUG("Failed to get structure at %u in the key tree request",
-                      arg);
+                       arg);
         delete *first_ckv;
         *first_ckv = NULL;
         return false;
@@ -1046,8 +1118,8 @@ bool IpcUtil::ReadKtRequest(pfc::core::ipc::ServerSession *sess,
 
 /* Send response to UPLL user */
 bool IpcUtil::WriteKtResponse(pfc::core::ipc::ServerSession *sess,
-                             const IpcReqRespHeader &msg_hdr,
-                             const ConfigKeyVal *first_ckv) {
+                              const IpcReqRespHeader &msg_hdr,
+                              const ConfigKeyVal *first_ckv) {
   if (sess == NULL) {
     UPLL_LOG_DEBUG("Null argument");
     return false;
@@ -1106,7 +1178,7 @@ bool IpcUtil::WriteKtResponse(pfc::core::ipc::ServerSession *sess,
 }
 
 /* Write KT request to Server */
-                             // ctrlr_name: Non-null if sent to driver
+// ctrlr_name: Non-null if sent to driver
 bool IpcUtil::WriteKtRequest(pfc::core::ipc::ClientSession *sess,
                              bool driver_msg,
                              const char *ctrlr_name, const char *domain_id,
@@ -1260,7 +1332,7 @@ bool IpcUtil::ReadKtResponse(pfc::core::ipc::ClientSession *sess,
   if (arg_cnt < mandatory_fields) {
     UPLL_LOG_DEBUG("Not enough arguments in key tree response."
                    " Has only %u, expected %d",
-                  arg_cnt, mandatory_fields);
+                   arg_cnt, mandatory_fields);
     return false;
   }
 
@@ -1278,14 +1350,14 @@ bool IpcUtil::ReadKtResponse(pfc::core::ipc::ClientSession *sess,
   if ((0 != (err = sess->getResponse(arg++, msg_hdr->clnt_sess_id))) ||
       (0 != (err = sess->getResponse(arg++, msg_hdr->config_id)))) {
     UPLL_LOG_DEBUG("Failed to get header field #%u in the key tree response."
-                  " Err=%d", arg, err);
+                   " Err=%d", arg, err);
     return false;
   }
   if (driver_msg == true) {
     if ((0 != (err = sess->getResponse(arg++, msg_ctrlr_name))) ||
         (0 != (err = sess->getResponse(arg++, msg_domain_id)))) {
       UPLL_LOG_DEBUG("Failed to get header field #%u in the key tree response."
-          " Err=%d", arg, err);
+                     " Err=%d", arg, err);
       return false;
     }
     if (domain_id != NULL) {
@@ -1300,7 +1372,7 @@ bool IpcUtil::ReadKtResponse(pfc::core::ipc::ClientSession *sess,
       (0 != (err = sess->getResponse(arg++, result_code))) ||
       (0 != (err = sess->getResponse(arg++, keytype))) ) {
     UPLL_LOG_DEBUG("Failed to get header field #%u in the key tree response."
-                  " Err=%d", arg, err);
+                   " Err=%d", arg, err);
     return false;
   }
   msg_hdr->operation = (unc_keytype_operation_t)operation;
@@ -1313,7 +1385,7 @@ bool IpcUtil::ReadKtResponse(pfc::core::ipc::ClientSession *sess,
   void *ipc_st;
   if (!IpcUtil::ReadIpcStruct(sess, arg++, &st_num, &ipc_st)) {
     UPLL_LOG_DEBUG("Failed to get structure at %u in the key tree response",
-                  arg);
+                   arg);
     return false;
   }
   *first_ckv = new ConfigKeyVal((unc_key_type_t)keytype, st_num, ipc_st, NULL);
@@ -1325,7 +1397,7 @@ bool IpcUtil::ReadKtResponse(pfc::core::ipc::ClientSession *sess,
     pfc_ipctype_t arg_type;
     if (0 != (err = sess->getResponseType(arg, arg_type))) {
       UPLL_LOG_DEBUG("Failed to get arg type at %u in the key tree response."
-                    " Err=%d", arg, err);
+                     " Err=%d", arg, err);
       delete *first_ckv;
       *first_ckv = NULL;
       return false;
@@ -1342,7 +1414,7 @@ bool IpcUtil::ReadKtResponse(pfc::core::ipc::ClientSession *sess,
       // new key type is expected.
       if (0 != (err = sess->getResponse(arg++, keytype))) {
         UPLL_LOG_DEBUG("Failed to get key type at %u in the key tree response."
-                      " Err=%d", arg, err);
+                       " Err=%d", arg, err);
         DumpResponse(sess);
         delete *first_ckv;
         *first_ckv = NULL;
@@ -1350,7 +1422,7 @@ bool IpcUtil::ReadKtResponse(pfc::core::ipc::ClientSession *sess,
       }
       if (!IpcUtil::ReadIpcStruct(sess, arg++, &st_num, &ipc_st)) {
         UPLL_LOG_DEBUG("Failed to get structure at %u in the key tree response",
-                      arg);
+                       arg);
         delete *first_ckv;
         *first_ckv = NULL;
         return false;
@@ -1363,7 +1435,7 @@ bool IpcUtil::ReadKtResponse(pfc::core::ipc::ClientSession *sess,
     } else {
       if (!IpcUtil::ReadIpcArg(sess, arg++, &st_num, &ipc_st)) {
         UPLL_LOG_DEBUG("Failed to get structure at %u in the key tree response",
-                      arg);
+                       arg);
         delete *first_ckv;
         *first_ckv = NULL;
         return false;
@@ -1383,27 +1455,27 @@ bool IpcUtil::ReadKtResponse(pfc::core::ipc::ClientSession *sess,
 std::string IpcUtil::IpcRequestToStr(const IpcReqRespHeader &msghdr) {
   std::stringstream ss;
   ss << "-------------IpcRequest--------------" << std::endl
-     << "  clnt_sess_id:  " << msghdr.clnt_sess_id << std::endl
-     << "  config_id:     " << msghdr.config_id << std::endl
-     << "  operation:     " << msghdr.operation << std::endl
-     << "  max_rep_count: " << msghdr.rep_count << std::endl
-     << "  option1:       " << msghdr.option1 << std::endl
-     << "  option2:       " << msghdr.option2 << std::endl
-     << "  datatype:      " << msghdr.datatype;
+      << "  clnt_sess_id:  " << msghdr.clnt_sess_id << std::endl
+      << "  config_id:     " << msghdr.config_id << std::endl
+      << "  operation:     " << msghdr.operation << std::endl
+      << "  max_rep_count: " << msghdr.rep_count << std::endl
+      << "  option1:       " << msghdr.option1 << std::endl
+      << "  option2:       " << msghdr.option2 << std::endl
+      << "  datatype:      " << msghdr.datatype;
   return ss.str();
 }
 
 std::string IpcUtil::IpcResponseToStr(const IpcReqRespHeader &msghdr) {
   std::stringstream ss;
   ss << "-------------IpcResponse--------------" << std::endl
-     << "  clnt_sess_id:  " << msghdr.clnt_sess_id << std::endl
-     << "  config_id:     " << msghdr.config_id << std::endl
-     << "  operation:     " << msghdr.operation << std::endl
-     << "  rep_count:     " << msghdr.rep_count << std::endl
-     << "  option1:       " << msghdr.option1 << std::endl
-     << "  option2:       " << msghdr.option2 << std::endl
-     << "  datatype:      " << msghdr.datatype << std::endl
-     << "  result_code:   " << msghdr.result_code;
+      << "  clnt_sess_id:  " << msghdr.clnt_sess_id << std::endl
+      << "  config_id:     " << msghdr.config_id << std::endl
+      << "  operation:     " << msghdr.operation << std::endl
+      << "  rep_count:     " << msghdr.rep_count << std::endl
+      << "  option1:       " << msghdr.option1 << std::endl
+      << "  option2:       " << msghdr.option2 << std::endl
+      << "  datatype:      " << msghdr.datatype << std::endl
+      << "  result_code:   " << msghdr.result_code;
   return ss.str();
 }
 
@@ -1473,8 +1545,9 @@ bool ConfigNotifier::SendBufferedNotificationsToUpllUser() {
   // Send out buffered notifications
   ConfigNotification *cn;
   std::list<ConfigNotification*>::iterator it = buffered_notifs.begin();
-  for (cn = *it; (it != buffered_notifs.end());
-       it++, (delete cn), (cn = *it)) {
+  for (; (it != buffered_notifs.end());
+       it++, (delete cn)) {
+    cn = *it;
     if (IpcUtil::IsShuttingDown()) {
       UPLL_LOG_WARN("Cannot send config nofitications as shutdown in progress");
       break;
@@ -1483,7 +1556,7 @@ bool ConfigNotifier::SendBufferedNotificationsToUpllUser() {
     pfc::core::ipc::ServerEvent event(UPLL_EV_CONFIG_NOTIFICATION, err);
     if (err != 0) {
       UPLL_LOG_DEBUG("Failed to create configuration notification event."
-                    " Err:%d", err);
+                     " Err:%d", err);
       continue;
     }
 
@@ -1491,9 +1564,9 @@ bool ConfigNotifier::SendBufferedNotificationsToUpllUser() {
     if ((0 != (err = event.addOutput((uint32_t)cn->get_operation()))) ||
         (0 != (err = event.addOutput((uint32_t)cn->get_datatype()))) ||
         (0 != (err = event.addOutput((uint32_t)cn->get_ckv()->get_key_type())))
-        ) {
+       ) {
       UPLL_LOG_DEBUG("Failed to add output to configuration notification."
-                    " Err=%d", err);
+                     " Err=%d", err);
       continue;
     }
 
@@ -1521,7 +1594,7 @@ bool ConfigNotifier::SendBufferedNotificationsToUpllUser() {
     err = event.post();
     if (err != 0) {
       UPLL_LOG_DEBUG("Failed to post configuration notification event."
-                    " Err=%d", err);
+                     " Err=%d", err);
       continue;
     }
   }

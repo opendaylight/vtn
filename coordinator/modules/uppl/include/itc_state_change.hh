@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -27,11 +27,11 @@ class SystemStateChangeRequest:public ITCReq  {
   public:
   SystemStateChangeRequest();
   ~SystemStateChangeRequest();
-  UpplReturnCode SystemStateChangeToStandBy(OdbcmConnectionHandler *db_conn);
-  UpplReturnCode SystemStateChangeToActive(OdbcmConnectionHandler *db_conn);
+  UncRespCode SystemStateChangeToStandBy(OdbcmConnectionHandler *db_conn);
+  UncRespCode SystemStateChangeToActive(OdbcmConnectionHandler *db_conn);
 
   private:
-  UpplReturnCode SendCandidateInfoToLogical(OdbcmConnectionHandler *db_conn);
+  UncRespCode SendCandidateInfoToLogical(OdbcmConnectionHandler *db_conn);
 };
 }  // namespace uppl
 }  // namespace unc

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -25,6 +25,7 @@
 #include <iostream>
 #include <map>
 #include <list>
+#include <unc/upll_errno.h>
 
 using namespace std;
 
@@ -69,6 +70,7 @@ public:
 
   DalOdbcMgr(void);
   ~DalOdbcMgr(void);
+  DalOdbcMgr *GetAlarmRwConn();
 
   DalResultCode Init(void);
   DalResultCode ConnectToDb(const DalConnType conn_type) const;
@@ -76,7 +78,14 @@ public:
   DalResultCode CommitTransaction() const;
   DalResultCode RollbackTransaction() const;
 
+  upll_rc_t DalTxClose(DalOdbcMgr *dom, bool commit);
+  void ReleaseRwConn(DalOdbcMgr *dom);
+
+
   DalConnType get_conn_type();
+  inline void ClearDirty() const { }
+
+  inline DalConnState get_conn_state() { return conn_state_; }
 
   DalResultCode GetSingleRecord(
     const UpllCfgType cfg_type, const DalTableIndex table_index,
@@ -153,10 +162,11 @@ public:
                                   const DalTableIndex table_index,
                                   const DalBindInfo *output_attr_info);
 
-  DalResultCode CopyModifiedRecords(
-    const UpllCfgType dest_cfg_type, const UpllCfgType src_cfg_type,
-    const DalTableIndex table_index,
-    const DalBindInfo *output_and_match_attr_info);
+  DalResultCode CopyModifiedRecords(const UpllCfgType dest_cfg_type,
+                                    const UpllCfgType src_cfg_type,
+                                    const DalTableIndex table_index,
+                                    const DalBindInfo *bind_info,
+                                    const unc_keytype_operation_t op) const ;
 
   DalResultCode CopyModifiedInsertRecords(
     const UpllCfgType dest_cfg_type, const UpllCfgType src_cfg_type,
@@ -195,6 +205,8 @@ public:
   static void stub_setSiblingCount(uint32_t sibling_count1) {
     sibling_count_ = sibling_count1;
   }
+  void MakeAllDirty() const { }
+
 
   static void clearStubData() {
     method_resultcode_map.clear();
@@ -211,6 +223,7 @@ public:
 
 private:
   DalResultCode stub_getMappedResultCode(Method) const;
+
 
   inline DalResultCode
   initCursor(DalCursor **cursor, const DalBindInfo *info, Method type) const
@@ -237,6 +250,7 @@ private:
   static  bool exists_;
   static uint32_t sibling_count_;
   mutable DalConnType conn_type_;
+  mutable DalConnState conn_state_;
   static map<uint8_t,DalResultCode> resultcodes;
   static uint32_t count;
 };  // class DalOdbcMgr

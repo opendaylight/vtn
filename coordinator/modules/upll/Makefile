@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2013 NEC Corporation
+# Copyright (c) 2012-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -13,13 +13,14 @@
 
 include ../defs.mk
 
-#CXX_OPT = -O0
+CXX_OPT = -O0
 
 # We need to append build directory to header search path explicitly
 # for build.cc.
 EXTRA_INCDIRS	= .. ../dal
 
-CXX_SOURCES	= ipct_st.cc kt_util.cc ipc_util.cc key_tree.cc \
+CXX_SOURCES	= ipct_st.cc kt_util.cc ipc_util.cc key_tree.cc dbconn_mgr.cc \
+	ipc_client_handler.cc \
 	momgr_intf.cc \
 	ctrlr_mgr.cc \
 	config_svc.cc \
@@ -38,7 +39,8 @@ VTN_SOURCES	= momgr_util.cc momgr_impl.cc \
 	vunk_momgr.cc vunk_if_momgr.cc \
         vtep_momgr.cc vtep_if_momgr.cc \
         vtep_grp_momgr.cc vtepgrp_mem_momgr.cc \
-        vtunnel_momgr.cc vtunnel_if_momgr.cc
+        vtunnel_momgr.cc vtunnel_if_momgr.cc \
+				vtn_dataflow_momgr.cc 
        
 POM_SOURCES	= policingprofile_momgr.cc policingprofile_entry_momgr.cc \
               flowlist_momgr.cc flowlist_entry_momgr.cc \

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -37,7 +37,8 @@ import org.opendaylight.vtn.javaapi.validation.logical.InterfaceResourceValidato
  * The Class VBridgeInterfaceResource.
  */
 /* This class handles delete, put and get methods */
-@UNCVtnService(path = "/vtns/{vtn_name}/vbridges/{vbr_name}/interfaces/{if_name}")
+@UNCVtnService(
+		path = "/vtns/{vtn_name}/vbridges/{vbr_name}/interfaces/{if_name}")
 public class VBridgeInterfaceResource extends AbstractResource {
 	/** The vtn name. */
 	@UNCField("vtn_name")
@@ -54,7 +55,7 @@ public class VBridgeInterfaceResource extends AbstractResource {
 	 * 
 	 * @return the vtn name
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
@@ -63,7 +64,7 @@ public class VBridgeInterfaceResource extends AbstractResource {
 	 * 
 	 * @return the vbr name
 	 */
-	public String getVbrName() {
+	public final String getVbrName() {
 		return vbrName;
 	}
 
@@ -72,7 +73,7 @@ public class VBridgeInterfaceResource extends AbstractResource {
 	 * 
 	 * @return the if name
 	 */
-	public String getIfName() {
+	public final String getIfName() {
 		return ifName;
 	}
 
@@ -97,7 +98,7 @@ public class VBridgeInterfaceResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Start VBridgeInterfaceResource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -156,7 +157,8 @@ public class VBridgeInterfaceResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VBridgeInterfaceResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -176,7 +178,8 @@ public class VBridgeInterfaceResource extends AbstractResource {
 					getUriParameters());
 			LOG.debug("Request Packet created successfully for 1st call");
 			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet processed for 1st call with status" + status);
+			LOG.debug("Request packet processed for 1st call with status"
+					+ status);
 			if (status == ClientSession.RESP_FATAL) {
 				throw new VtnServiceException(
 						Thread.currentThread().getStackTrace()[1]
@@ -189,7 +192,7 @@ public class VBridgeInterfaceResource extends AbstractResource {
 			}
 			JsonObject neighbor = null;
 			JsonObject vbrInterfaceJson = null;
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			String dataType = VtnServiceJsonConsts.STATE;
 			if (requestBody.has(VtnServiceJsonConsts.TARGETDB)) {
 				dataType = requestBody.get(VtnServiceJsonConsts.TARGETDB)
@@ -199,7 +202,8 @@ public class VBridgeInterfaceResource extends AbstractResource {
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.SHOW);
 			LOG.debug("Response object created successfully for 1st request");
-			if ((VtnServiceJsonConsts.STATE).equalsIgnoreCase(dataType) && !(vbrInterfaceJson.get(VtnServiceJsonConsts.INTERFACE) instanceof JsonNull)) {
+			if ((VtnServiceJsonConsts.STATE).equalsIgnoreCase(dataType)
+					&& !(vbrInterfaceJson.get(VtnServiceJsonConsts.INTERFACE) instanceof JsonNull)) {
 				requestProcessor.setServiceInfo(
 						UncUPLLEnums.UPLL_IPC_SERVICE_NAME,
 						UncUPLLEnums.ServiceID.UPLL_READ_SVC_ID.ordinal());
@@ -214,7 +218,8 @@ public class VBridgeInterfaceResource extends AbstractResource {
 												.ordinal())));
 				LOG.debug("Request packet created successfully for 2nd call");
 				status = requestProcessor.processIpcRequest();
-				LOG.debug("Request packet processed for 2nd call with status" + status);
+				LOG.debug("Request packet processed for 2nd call with status"
+						+ status);
 				neighbor = responseGenerator.getNeighborResponse(
 						requestProcessor.getIpcResponsePacket(), requestBody,
 						VtnServiceJsonConsts.SHOW);
@@ -263,7 +268,8 @@ public class VBridgeInterfaceResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VBridgeInterfaceResource#put()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -317,7 +323,7 @@ public class VBridgeInterfaceResource extends AbstractResource {
 	 * 
 	 * @return parameter list
 	 */
-	private List<String> getUriParameters() {		
+	private List<String> getUriParameters() {
 		LOG.trace("Start VBridgeInterfaceResource#getUriParameters()");
 		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(vtnName);

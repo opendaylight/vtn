@@ -45,9 +45,9 @@ class KtRequestHandler : public KtHandler {
   /**
    * @brief    - This method handles request received from platform layer
    * @param[in]- ServerSession, odl_drv_request_header_t,ControllerFramework*
-   * @retval   - drv_resp_code_t
+   * @retval   - UncRespCode
    **/
-  drv_resp_code_t
+  UncRespCode
       handle_request(pfc::core::ipc::ServerSession &sess,
                      unc::driver::odl_drv_request_header_t &request_header,
                      unc::driver::ControllerFramework* ctrl_int);
@@ -55,9 +55,9 @@ class KtRequestHandler : public KtHandler {
   /**
    * @brief    - This method forms the command from ConfigNode pointer
    * @param[in]- ConfigNode*, controller*, driver*
-   * @retval   - drv_resp_code_t
+   * @retval   - UncRespCode
    **/
-  drv_resp_code_t
+  UncRespCode
   execute_cmd(unc::vtndrvcache::ConfigNode *cfgptr,
                   unc::driver::controller* ctl_ptr,
                   unc::driver::driver* drv_ptr);
@@ -65,7 +65,7 @@ class KtRequestHandler : public KtHandler {
   /**
    * @brief     - This method retrieves the key and val structures
    * @param[in] - ServerSession, odl_drv_request_header_t,key,val
-   * @retval    -  drv_resp_code_t
+   * @retval    -  UncRespCode
    **/
 
 
@@ -85,7 +85,7 @@ class KtRequestHandler : public KtHandler {
 
 
  private:
-  drv_resp_code_t
+  UncRespCode
       parse_request(pfc::core::ipc::ServerSession &sess,
                     unc::driver::odl_drv_request_header_t &request_header,
                     key &key_generic_,
@@ -95,10 +95,10 @@ class KtRequestHandler : public KtHandler {
    * @brief    - This method executes the Create,Delete,Update and Read requests of
    *             Keytypes
    * @param[in]- ServerSession, odl_drv_request_header_t, ControllerFramework*
-   *             drv_resp_code_t,key,val
-   * @retval   - drv_resp_code_t
+   *             UncRespCode,key,val
+   * @retval   - UncRespCode
    **/
-  drv_resp_code_t
+  UncRespCode
       execute(pfc::core::ipc::ServerSession &sess,
               unc::driver::odl_drv_request_header_t &request_header,
               unc::driver::ControllerFramework* ctrl_int,
@@ -109,34 +109,34 @@ class KtRequestHandler : public KtHandler {
    * @brief     - This method handles response from controller
    *              and send response to platform layer
    * @param[in] - ServerSession, odl_drv_request_header_t,ControllerFramework*,
-   *              key,val,drv_resp_code_t
-   * @retval    - drv_resp_code_t
+   *              key,val,UncRespCode
+   * @retval    - UncRespCode
    **/
-  drv_resp_code_t
+  UncRespCode
   handle_response(pfc::core::ipc::ServerSession &sess,
                       unc::driver::odl_drv_request_header_t &request_header,
                       unc::driver::ControllerFramework* ctrl_int,
                       key &key_generic_,
                       val &val_generic_,
-                      drv_resp_code_t &resp_code_);
+                      UncRespCode &resp_code_);
 
   /**
    * @brief    - This method creates the Response Header
    * @param[in]- odl_drv_response_header_t,
-   *             odl_drv_request_header_t,drv_resp_code_t
+   *             odl_drv_request_header_t,UncRespCode
    * @retval   - void
    */
   void
   create_response_header(unc::driver::odl_drv_request_header_t &reqhdr,
                              unc::driver::odl_drv_response_header_t &resphdr,
-                             drv_resp_code_t &resp_code_);
+                             UncRespCode &resp_code_);
 
   /**
    * @brief    - This method populates the Response Header
    * @param[in]- ServerSession, odl_drv_response_header_t
-   * @retval   - drv_resp_code_t
+   * @retval   - UncRespCode
    **/
-  drv_resp_code_t
+  UncRespCode
   populate_response_header(pfc::core::ipc::ServerSession &sess,
                          unc::driver::odl_drv_response_header_t &resp_hdr);
 
@@ -218,10 +218,10 @@ get_val_struct(unc::vtndrvcache::ConfigNode *cfgptr) {
   /**
    * @brief     - This method retrieves the key and val structures
    * @param[in] - ServerSession, odl_drv_request_header_t,key,val
-   * @retval    -  drv_resp_code_t
+   * @retval    -  UncRespCode
    **/
 template<typename key, typename val, typename command_class>
-drv_resp_code_t
+UncRespCode
 KtRequestHandler<key, val, command_class>::parse_request(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
@@ -230,24 +230,24 @@ KtRequestHandler<key, val, command_class>::parse_request(
   if (sess.getArgument(INPUT_KEY_STRUCT_INDEX, key_generic_)) {
     pfc_log_debug("%s: Exting Function.getArg Failed to read key struct."
                   " rc=%u", PFC_FUNCNAME, 2);
-    return DRVAPI_RESPONSE_MISSING_KEY_STRUCT;
+    return UNC_DRV_RC_MISSING_KEY_STRUCT;
   }
   if (sess.getArgument(INPUT_VAL_STRUCT_INDEX, val_generic_)) {
     pfc_log_debug("%s: No value struct present.", PFC_FUNCNAME);
   }
 
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
   /**
    * @brief    - This method executes the Create,Delete,Update requests of
    *             Keytypes
    * @param[in]- ServerSession, odl_drv_request_header_t, ControllerFramework*
-   *             drv_resp_code_t,key,val
-   * @retval   - drv_resp_code_t
+   *             UncRespCode,key,val
+   * @retval   - UncRespCode
    **/
 template<typename key, typename val, typename command_class>
-drv_resp_code_t
+UncRespCode
 KtRequestHandler<key, val, command_class>::execute(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
@@ -262,7 +262,7 @@ KtRequestHandler<key, val, command_class>::execute(
 
   unc::driver::controller* ctrl_ptr = NULL;
 
-  drv_resp_code_t resp_code_ = DRVAPI_RESPONSE_FAILURE;
+  UncRespCode resp_code_ = UNC_DRV_RC_ERR_GENERIC;
 
   controller_operation util_obj(ctrl_int, WRITE_TO_CONTROLLER, ctrl_name);
   ctrl_ptr = util_obj.get_controller_handle();
@@ -277,7 +277,7 @@ KtRequestHandler<key, val, command_class>::execute(
     //  check controller connection status, if down send disconnected
     pfc_log_debug("%s Controller status is down, send disconnected",
                                  PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_CONTROLLER_DISCONNECTED;
+    return UNC_RC_CTR_DISCONNECTED;
   }
 
   unc::driver::driver_command * drv_command_ptr_ =
@@ -306,7 +306,7 @@ KtRequestHandler<key, val, command_class>::execute(
       delete command_ptr_;
       if (ctrl_ptr->controller_cache != NULL)
         delete ctrl_ptr->controller_cache;
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
 
     uint32_t size = ctrl_ptr->controller_cache->cfg_list_count();
@@ -317,7 +317,7 @@ KtRequestHandler<key, val, command_class>::execute(
     size = ctrl_ptr->controller_cache->cfg_list_count();
     pfc_log_debug("after add .... size is %d", size);
 
-    if (resp_code_ != DRVAPI_RESPONSE_SUCCESS) {
+    if (resp_code_ != UNC_RC_SUCCESS) {
       pfc_log_debug("%s:Exiting Function. AppendCommitNode fail",
                     PFC_FUNCNAME);
       if (cfgptr != NULL)
@@ -326,7 +326,7 @@ KtRequestHandler<key, val, command_class>::execute(
       return resp_code_;
     } else  {
       pfc_log_debug("Caching Success");
-      resp_code_= DRVAPI_RESPONSE_SUCCESS;
+      resp_code_= UNC_RC_SUCCESS;
     }
   } else {
     switch (request_header.header.operation) {
@@ -360,7 +360,7 @@ KtRequestHandler<key, val, command_class>::execute(
 
         pfc_log_debug("%s: Invalid operation  ", PFC_FUNCNAME);
 
-        resp_code_ = DRVAPI_RESPONSE_INVALID_OPERATION;
+        resp_code_ = UNC_DRV_RC_INVALID_OPERATION;
 
         break;
     }
@@ -373,10 +373,10 @@ KtRequestHandler<key, val, command_class>::execute(
    * @brief     - This method is the Template Specialization for parsing
    *              KT_Controller structures(Key,Val)
    * @param[in] - ServerSession, odl_drv_request_header_t,key_ctr_t,val_ctr_t
-   * @retval    -  drv_resp_code_t
+   * @retval    -  UncRespCode
    **/
 template<>
-drv_resp_code_t
+UncRespCode
 KtRequestHandler<key_ctr_t, val_ctr_t, controller_command>::parse_request(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
@@ -389,7 +389,7 @@ KtRequestHandler<key_ctr_t, val_ctr_t, controller_command>::parse_request(
     pfc_log_error("%s: GetArgument failed to read key struct "
                   "for UNC_KT_CONTROLLER (err = %u)",
                   PFC_FUNCNAME, ret_value);
-    return DRVAPI_RESPONSE_MISSING_KEY_STRUCT;
+    return UNC_DRV_RC_MISSING_KEY_STRUCT;
   }
 
   if ((request_header.header.operation == UNC_OP_CREATE)
@@ -399,39 +399,39 @@ KtRequestHandler<key_ctr_t, val_ctr_t, controller_command>::parse_request(
       pfc_log_error("%s: GetArgument failed to read value struct "
                     "for UNC_KT_CONTROLLER (err = %u)",
                     PFC_FUNCNAME, ret_value);
-      return DRVAPI_RESPONSE_MISSING_VAL_STRUCT;
+      return UNC_DRV_RC_MISSING_VAL_STRUCT;
     }
   }
 
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
   /**
    * @brief     - This method is template Specialization for parsing KT_ROOT
    * @param[in] - ServerSession,odl_drv_request_header_t,key_root_t
    *              val_root_t
-   * @retval    - drv_resp_code_t
+   * @retval    - UncRespCode
    **/
 template<>
-drv_resp_code_t
+UncRespCode
 KtRequestHandler<key_root_t, val_root_t, root_driver_command>::parse_request(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     key_root_t &key_generic_,
     val_root_t &val_generic_) {
   request_header.key_type = UNC_KT_ROOT;
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
   /**
    * @brief    - This method is the template Specialization for
    *             KT ROOT command Execution
    * @param[in]- ServerSession, odl_drv_request_header_t, ControllerFramework*
-   *             drv_resp_code_t,key_root_t,val_root_t
-   * @retval   - drv_resp_code_t
+   *             UncRespCode,key_root_t,val_root_t
+   * @retval   - UncRespCode
    **/
 template<>
-drv_resp_code_t
+UncRespCode
 KtRequestHandler<key_root_t, val_root_t, root_driver_command>::execute(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
@@ -444,7 +444,7 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::execute(
   unc::driver::driver*  drv_ptr = NULL;
   unc::driver::controller* ctrl_ptr = NULL;
 
-  drv_resp_code_t resp_code_ = DRVAPI_RESPONSE_FAILURE;
+  UncRespCode resp_code_ = UNC_DRV_RC_ERR_GENERIC;
 
   controller_operation util_obj(ctrl_int, WRITE_TO_CONTROLLER, ctrl_name);
   ctrl_ptr = util_obj.get_controller_handle();
@@ -490,7 +490,7 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::execute(
       //  fetch all root child configuration
       resp_code_ = drv_command_ptr_->fetch_config(ctrl_ptr, NULL, cfg_list);
       pfc_log_debug("vtn resp_code_%u", resp_code_);
-      if (resp_code_ != DRVAPI_RESPONSE_SUCCESS) {
+      if (resp_code_ != UNC_RC_SUCCESS) {
         pfc_log_error("%s:GetDriverByControllerName failed VTN .rt,%u",
                        PFC_FUNCNAME, resp_code_);
         delete drv_command_ptr_;
@@ -526,7 +526,7 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::execute(
                                                      parent_key,
                                                      cfg_list);
           pfc_log_debug("resp_code_%u", resp_code_);
-          if (resp_code_!= DRVAPI_RESPONSE_SUCCESS) {
+          if (resp_code_!= UNC_RC_SUCCESS) {
             pfc_log_error("%s:GetDriverByControllerName failed .rt,%u",
                            PFC_FUNCNAME, resp_code_);
             delete drv_command_ptr_;
@@ -568,11 +568,11 @@ KtRequestHandler<key, val, command_class>::get_handler(unc_key_type_t keytype) {
 /**
  * @brief    - This method is the template Specialization for KT Controller command Execution
  * @param[in]- ServerSession, odl_drv_request_header_t, ControllerFramework*
- *             drv_resp_code_t,key_root_t,val_root_t
- * @retval   - drv_resp_code_t
+ *             UncRespCode,key_root_t,val_root_t
+ * @retval   - UncRespCode
  **/
 template<>
-drv_resp_code_t
+UncRespCode
 KtRequestHandler<key_ctr_t, val_ctr_t, controller_command>::execute(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
@@ -584,7 +584,7 @@ KtRequestHandler<key_ctr_t, val_ctr_t, controller_command>::execute(
   unc::driver::controller* ctl_ptr = NULL;
   std::string ctrl_name = std::string(request_header.controller_name);
 
-  drv_resp_code_t resp_code_ = DRVAPI_RESPONSE_FAILURE;
+  UncRespCode resp_code_ = UNC_DRV_RC_ERR_GENERIC;
   switch (request_header.header.operation) {
     case UNC_OP_CREATE: {
       pfc_log_debug("%s: Creates new controller ", PFC_FUNCNAME);
@@ -594,9 +594,9 @@ KtRequestHandler<key_ctr_t, val_ctr_t, controller_command>::execute(
       PFC_ASSERT(drv_ptr != NULL);
       ctl_ptr = drv_ptr->add_controller(key_generic_, val_generic_);
       if (ctl_ptr != NULL) {
-        resp_code_ = DRVAPI_RESPONSE_SUCCESS;
+        resp_code_ = UNC_RC_SUCCESS;
       } else {
-        resp_code_ = DRVAPI_RESPONSE_FAILURE;
+        resp_code_ = UNC_DRV_RC_ERR_GENERIC;
         return resp_code_;
       }
       ctrl_int->AddController(ctrl_name, ctl_ptr, drv_ptr);
@@ -635,7 +635,7 @@ KtRequestHandler<key_ctr_t, val_ctr_t, controller_command>::execute(
     }
     default: {
       pfc_log_debug("%s: Operation not Support ", PFC_FUNCNAME);
-      resp_code_ = DRVAPI_RESPONSE_INVALID_OPERATION;
+      resp_code_ = UNC_DRV_RC_INVALID_OPERATION;
       break;
     }
   }
@@ -645,17 +645,17 @@ KtRequestHandler<key_ctr_t, val_ctr_t, controller_command>::execute(
   /**
    * @brief    - This method handles request received from platform layer
    * @param[in]- ServerSession, odl_drv_request_header_t,ControllerFramework*
-   * @retval   - drv_resp_code_t
+   * @retval   - UncRespCode
    **/
 template<typename key, typename val, class command_class>
-drv_resp_code_t
+UncRespCode
 KtRequestHandler<key, val, command_class>::handle_request(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     unc::driver::ControllerFramework* ctrl_int) {
   ODC_FUNC_TRACE;
 
-  drv_resp_code_t resp_code_ = DRVAPI_RESPONSE_FAILURE;
+  UncRespCode resp_code_ = UNC_DRV_RC_ERR_GENERIC;
   key key_generic_;
   val val_generic_;
   memset(&key_generic_, 0, sizeof(key));
@@ -666,10 +666,10 @@ KtRequestHandler<key, val, command_class>::handle_request(
 
   resp_code_ = parse_request(sess, request_header, key_generic_, val_generic_);
 
-  if (resp_code_ == DRVAPI_RESPONSE_SUCCESS) {
+  if (resp_code_ == UNC_RC_SUCCESS) {
     resp_code_ = execute(sess, request_header, ctrl_int,
                          key_generic_, val_generic_);
-    if (resp_code_ != DRVAPI_RESPONSE_SUCCESS) {
+    if (resp_code_ != UNC_RC_SUCCESS) {
        pfc_log_error("%s: execute return err with resp_code(err = %u)",
                PFC_FUNCNAME, resp_code_);
     }
@@ -681,7 +681,7 @@ KtRequestHandler<key, val, command_class>::handle_request(
   resp_code_ = handle_response(sess, request_header, ctrl_int,
                        key_generic_, val_generic_, resp_code_);
 
-  if (resp_code_ != DRVAPI_RESPONSE_SUCCESS) {
+  if (resp_code_ != UNC_RC_SUCCESS) {
     pfc_log_error("%s:. Failed to send response(err = %u)",
                   PFC_FUNCNAME, resp_code_);
   }
@@ -692,10 +692,10 @@ KtRequestHandler<key, val, command_class>::handle_request(
   /**
    * @brief    - This method forms the command from ConfigNode pointer
    * @param[in]- ConfigNode*, controller*, driver*
-   * @retval   - drv_resp_code_t
+   * @retval   - UncRespCode
    **/
 template<typename key, typename val, class command_class>
-drv_resp_code_t
+UncRespCode
 KtRequestHandler<key, val, command_class>::execute_cmd(
     unc::vtndrvcache::ConfigNode *cfgptr,
     unc::driver::controller* conn,
@@ -705,7 +705,7 @@ KtRequestHandler<key, val, command_class>::execute_cmd(
       dynamic_cast <unc::vtndrvcache::CacheElementUtil
       <key, val, uint32_t> * > (cfgptr);
 
-  drv_resp_code_t resp_code_ = DRVAPI_RESPONSE_FAILURE;
+  UncRespCode resp_code_ = UNC_DRV_RC_ERR_GENERIC;
 
   PFC_ASSERT(cache_element_ptr != NULL);
 
@@ -744,7 +744,7 @@ KtRequestHandler<key, val, command_class>::execute_cmd(
       break;
     default:
       pfc_log_error("%s: Invalid operation  ", PFC_FUNCNAME);
-      resp_code_ = DRVAPI_RESPONSE_INVALID_OPERATION;
+      resp_code_ = UNC_DRV_RC_INVALID_OPERATION;
 
       pfc_log_debug("deleted config_cmd_ptr");
       delete config_cmd_ptr;
@@ -754,7 +754,7 @@ KtRequestHandler<key, val, command_class>::execute_cmd(
   }
 
   // Revoke the commit with triggring audit for any failed Operation
-  if (resp_code_ != DRVAPI_RESPONSE_SUCCESS) {
+  if (resp_code_ != UNC_RC_SUCCESS) {
     pfc_log_debug("Revoke the commit with triggring audit");
     config_cmd_ptr->revoke(conn);
   }
@@ -769,26 +769,26 @@ KtRequestHandler<key, val, command_class>::execute_cmd(
    * @brief     - This method handles response from controller,
    *              doesnot support audit
    * @param[in] - ServerSession, odl_drv_request_header_t,ControllerFramework*,
-   *              key,val,drv_resp_code_t
-   * @retval    - drv_resp_code_t
+   *              key,val,UncRespCode
+   * @retval    - UncRespCode
    **/
 template<typename key, typename val, class command_class>
-drv_resp_code_t
+UncRespCode
 KtRequestHandler<key, val, command_class>::handle_response(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     unc::driver::ControllerFramework* ctrl_int,
     key &key_generic_,
     val &val_generic_,
-    drv_resp_code_t &controller_resp_code_ ) {
+    UncRespCode &controller_resp_code_ ) {
   ODC_FUNC_TRACE;
 
   unc::driver::odl_drv_response_header_t resp_hdr;
   uint32_t err_= 0;
   create_response_header(request_header, resp_hdr, controller_resp_code_);
-  drv_resp_code_t resp_code_ = DRVAPI_RESPONSE_FAILURE;
+  UncRespCode resp_code_ = UNC_DRV_RC_ERR_GENERIC;
   resp_code_ = populate_response_header(sess, resp_hdr);
-  if (resp_code_ != DRVAPI_RESPONSE_SUCCESS) {
+  if (resp_code_ != UNC_RC_SUCCESS) {
     pfc_log_error("%s: populate_response_header failed with ret_code ,%u",
                   PFC_FUNCNAME, resp_code_);
     return resp_code_;
@@ -798,51 +798,51 @@ KtRequestHandler<key, val, command_class>::handle_response(
   if (err_ != 0) {
     pfc_log_error("%s: Failed to send resp code:(err = %d)",
                   PFC_FUNCNAME, resp_code_);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   err_ = sess.addOutput((uint32_t) resp_hdr.key_type);
   if (err_ != 0) {
     pfc_log_error("%s: Failed to send driver data key type: (err = %d)",
                   PFC_FUNCNAME, resp_code_);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   if (resp_hdr.header.data_type != UNC_DT_RUNNING) {
     uint32_t ret_code = sess.addOutput(key_generic_);
     if (ret_code) {
       pfc_log_error("%s: addOutput failed with ret_code ,%u",
                     PFC_FUNCNAME, ret_code);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 
   /**
    * @brief     - This method handles response from controller for Audit
    * @param[in] - ServerSession, odl_drv_request_header_t,ControllerFramework*,
-   *              key_root_t,val_root_t,drv_resp_code_t
-   * @retval    - drv_resp_code_t
+   *              key_root_t,val_root_t,UncRespCode
+   * @retval    - UncRespCode
    **/
 template<>
-drv_resp_code_t
+UncRespCode
 KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     unc::driver::ControllerFramework* ctrl_int,
     key_root_t &key_generic_,
     val_root_t &val_generic_,
-    drv_resp_code_t &controller_resp_code_ ) {
+    UncRespCode &controller_resp_code_ ) {
   ODC_FUNC_TRACE;
   controller* ctr = NULL;
   memset(&key_generic_, 0, sizeof(key_root_t));
 
   unc::driver::odl_drv_response_header_t resp_hdr;
   create_response_header(request_header, resp_hdr, controller_resp_code_);
-  drv_resp_code_t resp_code_ = DRVAPI_RESPONSE_FAILURE;
+  UncRespCode resp_code_ = UNC_DRV_RC_ERR_GENERIC;
   resp_code_ = populate_response_header(sess, resp_hdr);
-  if (resp_code_ != DRVAPI_RESPONSE_SUCCESS) {
+  if (resp_code_ != UNC_RC_SUCCESS) {
     pfc_log_error("%s: populate_response_header failed"
                   "with ret_code root ,%u", PFC_FUNCNAME, resp_code_);
     return resp_code_;
@@ -856,18 +856,18 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
     if (ctr != NULL) {
       if (ctr->controller_cache == NULL) {
         pfc_log_error("Not getting controller_cache ");
-        return DRVAPI_RESPONSE_FAILURE;
+        return UNC_DRV_RC_ERR_GENERIC;
       }
       uint32_t size = ctr->controller_cache->audit_cfg_list_count();
       pfc_log_debug("config node size is %d for controller %s",
                     size, ctr_name.c_str());
       //  Not Success and Error Case check for Reps
       if ((size == 0) &&
-          (resp_hdr.result == DRVAPI_RESPONSE_NO_SUCH_INSTANCE)) {
+          (resp_hdr.result == UNC_RC_NO_SUCH_INSTANCE)) {
         pfc_log_debug("%s: Value list empty and Response"
                       "header success", PFC_FUNCNAME);
         pfc_log_debug("%s: Adding Root key only", PFC_FUNCNAME);
-        sess.addOutput((uint32_t) DRVAPI_RESPONSE_NO_SUCH_INSTANCE);
+        sess.addOutput((uint32_t) UNC_RC_NO_SUCH_INSTANCE);
         sess.addOutput((uint32_t) UNC_KT_ROOT);
         sess.addOutput(key_generic_);
 
@@ -876,8 +876,8 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
         ctr->controller_cache = NULL;
 
         pfc_log_trace("ResponseHandler::%s Exiting", PFC_FUNCNAME);
-        return DRVAPI_RESPONSE_SUCCESS;
-      } else if (resp_hdr.result != DRVAPI_RESPONSE_SUCCESS) {
+        return UNC_RC_SUCCESS;
+      } else if (resp_hdr.result != UNC_RC_SUCCESS) {
         pfc_log_debug("%s: Response header result Error",
                       PFC_FUNCNAME);
         pfc_log_debug("%s: Adding Root Key only", PFC_FUNCNAME);
@@ -888,7 +888,7 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
         delete  ctr->controller_cache;
         ctr->controller_cache = NULL;
         pfc_log_trace("ResponseHandler::%s Exiting", PFC_FUNCNAME);
-        return DRVAPI_RESPONSE_FAILURE;
+        return UNC_DRV_RC_ERR_GENERIC;
       }
 
       std::auto_ptr<unc::vtndrvcache::CommonIterator>
@@ -899,7 +899,7 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
       if (err_ != 0) {
         pfc_log_fatal("%s: Failed to send resp code audit:(err = %d)",
                       PFC_FUNCNAME, err_);
-        return DRVAPI_RESPONSE_FAILURE;
+        return UNC_DRV_RC_ERR_GENERIC;
       }
 
       bool first = true;
@@ -913,7 +913,7 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
           delete  ctr->controller_cache;
           ctr->controller_cache = NULL;
 
-          return DRVAPI_RESPONSE_FAILURE;
+          return UNC_DRV_RC_ERR_GENERIC;
         }
         if (first) {
           first = false;
@@ -931,7 +931,7 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
           delete  ctr->controller_cache;
           ctr->controller_cache = NULL;
 
-          return DRVAPI_RESPONSE_FAILURE;
+          return UNC_DRV_RC_ERR_GENERIC;
         }
         pfc_log_debug("Add key type success");
 
@@ -947,7 +947,7 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
           delete  ctr->controller_cache;
           ctr->controller_cache = NULL;
 
-          return DRVAPI_RESPONSE_FAILURE;
+          return UNC_DRV_RC_ERR_GENERIC;
         }
 
         pfc_log_debug("Add key success");
@@ -958,7 +958,7 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
           delete  ctr->controller_cache;
           ctr->controller_cache = NULL;
 
-          return DRVAPI_RESPONSE_FAILURE;
+          return UNC_DRV_RC_ERR_GENERIC;
         }
         pfc_log_debug("Add val success");
       }  // for loop
@@ -967,21 +967,21 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
       ctr->controller_cache = NULL;
     } else {
       pfc_log_error("%s: ctr is NULL", PFC_FUNCNAME);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
     pfc_log_debug("UNC_DT_RUNNING processing complete");
   } else {
        pfc_log_error("%s: unsupported datatype %u",
           PFC_FUNCNAME, resp_hdr.header.data_type);
-       return DRVAPI_RESPONSE_FAILURE;
+       return UNC_DRV_RC_ERR_GENERIC;
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
   /**
    * @brief    - This method creates the Response Header
    * @param[in]- odl_drv_response_header_t,
-   *             odl_drv_request_header_t,drv_resp_code_t
+   *             odl_drv_request_header_t,UncRespCode
    * @retval   - void
    */
 template<typename key, typename val, class command_class>
@@ -989,7 +989,7 @@ void
 KtRequestHandler<key, val, command_class>::create_response_header(
     unc::driver::odl_drv_request_header_t &reqhdr,
     unc::driver::odl_drv_response_header_t &resphdr,
-    drv_resp_code_t &resp_code_) {
+    UncRespCode &resp_code_) {
   memset(&resphdr, 0, sizeof(resphdr));
 
   /* Copy parameters from the request header to the response header. */
@@ -1024,16 +1024,16 @@ KtRequestHandler<key, val, command_class>::create_response_header(
   /**
    * @brief    - This method populates the Response Header
    * @param[in]- ServerSession, odl_drv_response_header_t
-   * @retval   - drv_resp_code_t
+   * @retval   - UncRespCode
    **/
 template<typename key, typename val, class command_class>
-drv_resp_code_t
+UncRespCode
 KtRequestHandler<key, val, command_class>::populate_response_header(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_response_header_t &resp_hdr) {
   ODC_FUNC_TRACE;
 
-  uint32_t err = DRVAPI_RESPONSE_FAILURE;
+  uint32_t err = UNC_DRV_RC_ERR_GENERIC;
 
   const char* ctr_name =
       reinterpret_cast<const char*> (resp_hdr.controller_name);
@@ -1057,7 +1057,7 @@ KtRequestHandler<key, val, command_class>::populate_response_header(
   if (err) {
     pfc_log_fatal("%s: Failed to send client session id: (err = %d)",
                   PFC_FUNCNAME, err);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   /* Sends config_id */
@@ -1065,7 +1065,7 @@ KtRequestHandler<key, val, command_class>::populate_response_header(
   if (err) {
     pfc_log_fatal("%s: Failed to send configurationid: (err = %d)",
                   PFC_FUNCNAME, err);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   /* Sends controller_name */
@@ -1075,7 +1075,7 @@ KtRequestHandler<key, val, command_class>::populate_response_header(
   if (err) {
     pfc_log_fatal("%s: Failed to send controller id: (err = %d)", PFC_FUNCNAME,
                   err);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   /* Sends domain-id*/
@@ -1084,7 +1084,7 @@ KtRequestHandler<key, val, command_class>::populate_response_header(
   err = sess.addOutput(domain_id);
   if (err) {
     pfc_log_fatal("%s: Failed to send domain id:(err = %d)", PFC_FUNCNAME, err);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   /* Sends operation */
@@ -1092,7 +1092,7 @@ KtRequestHandler<key, val, command_class>::populate_response_header(
   if (err) {
     pfc_log_fatal("%s: Failed to send driver data operation (err = %d)",
                   PFC_FUNCNAME, err);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   /* Sends max-rep-count */
@@ -1100,7 +1100,7 @@ KtRequestHandler<key, val, command_class>::populate_response_header(
   if (err) {
     pfc_log_fatal("%s: Failed to send driver data max_rep_count: (err = %d)",
                   PFC_FUNCNAME, err);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   /* Sends option1 */
@@ -1108,7 +1108,7 @@ KtRequestHandler<key, val, command_class>::populate_response_header(
   if (err) {
     pfc_log_fatal("%s: Failed to send driver data option1 : (err = %d)",
                   PFC_FUNCNAME, err);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   /* Sends option2 */
@@ -1116,7 +1116,7 @@ KtRequestHandler<key, val, command_class>::populate_response_header(
   if (err) {
     pfc_log_fatal("%s: Failed to send driver data option2 : (err = %d)",
                   PFC_FUNCNAME, err);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   /* Sends data type */
@@ -1124,10 +1124,10 @@ KtRequestHandler<key, val, command_class>::populate_response_header(
   if (err) {
     pfc_log_fatal("%s: Failed to send driver data data_type: (err = %d)",
                   PFC_FUNCNAME, err);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
   /**

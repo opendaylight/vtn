@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -36,8 +36,8 @@ class ITCReq {
   public:
     ITCReq() {}
     virtual ~ITCReq() {}
-    virtual UpplReturnCode ProcessReq(ServerSession &session) {
-      return UPPL_RC_SUCCESS;
+    virtual UncRespCode ProcessReq(ServerSession &session) {
+      return UNC_RC_SUCCESS;
     }
     virtual uint16_t ProcessEvent(uint16_t service_id, ServerSession &session) {
       return 0;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -45,11 +45,11 @@ TcOperRet TcDbHandler::GetConfTable(pfc_bool_t* auto_save) {
 }
 /*methods to access TC_RECOVERY_TABLE*/
 TcOperRet TcDbHandler::UpdateRecoveryTable(unc_keytype_datatype_t data_base,
-                                           TcServiceType operation) {
+                                           TcServiceType operation, uint32_t failover_instance) {
   return TCOPER_RET_SUCCESS;
 }
 TcOperRet TcDbHandler::GetRecoveryTable(unc_keytype_datatype_t* db,
-                                        TcServiceType* oper) {
+                                        TcServiceType* oper, uint32_t* failover_instance) {
   return TCOPER_RET_SUCCESS;
 }
 /*checks whether the row exists with a

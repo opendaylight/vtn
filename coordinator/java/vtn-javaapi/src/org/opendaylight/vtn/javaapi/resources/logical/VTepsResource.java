@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -60,7 +60,7 @@ public class VTepsResource extends AbstractResource {
 	/**
 	 * @return the vtnName
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
@@ -74,7 +74,8 @@ public class VTepsResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VTepsResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -133,7 +134,8 @@ public class VTepsResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VTepsResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -159,12 +161,12 @@ public class VTepsResource extends AbstractResource {
 							.get(VtnServiceJsonConsts.OP).getAsString()
 							.equalsIgnoreCase(VtnServiceJsonConsts.COUNT)))) {
 
-				IpcStruct valStruct = new IpcStruct(
+				final IpcStruct valStruct = new IpcStruct(
 						UncStructEnum.ValVtep.getValue());
 				requestProcessor.getRequestPacket().setValStruct(valStruct);
 				LOG.debug("Add ValVTepSt in Request Packet");
-				IpcDataUnit[] extraDataUnits = new IpcDataUnit[1];
-				IpcStruct valStructSt = new IpcStruct(
+				final IpcDataUnit[] extraDataUnits = new IpcDataUnit[1];
+				final IpcStruct valStructSt = new IpcStruct(
 						UncStructEnum.ValVtepSt.getValue());
 				extraDataUnits[0] = valStructSt;
 				requestProcessor.getRequestPacket().setExtraDataUnits(
@@ -173,26 +175,23 @@ public class VTepsResource extends AbstractResource {
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			/*
 			 * setInfo(responseGenerator.getVtepResponse(
 			 * requestProcessor.getIpcResponsePacket(), requestBody,
 			 * VtnServiceJsonConsts.LIST));
 			 */
-			JsonObject responseJson = responseGenerator
-					.getVtepResponse(
-							requestProcessor.getIpcResponsePacket(),
-							requestBody, VtnServiceJsonConsts.LIST);
-			if (responseJson.get(VtnServiceJsonConsts.VTEPS)
-					.isJsonArray()) {
-				JsonArray responseArray = responseJson.get(
+			JsonObject responseJson = responseGenerator.getVtepResponse(
+					requestProcessor.getIpcResponsePacket(), requestBody,
+					VtnServiceJsonConsts.LIST);
+			if (responseJson.get(VtnServiceJsonConsts.VTEPS).isJsonArray()) {
+				final JsonArray responseArray = responseJson.get(
 						VtnServiceJsonConsts.VTEPS).getAsJsonArray();
 				responseJson = getResponseJsonArrayLogical(requestBody,
 						requestProcessor, responseGenerator, responseArray,
 						VtnServiceJsonConsts.VTEPS,
 						VtnServiceJsonConsts.VTEPNAME,
-						IpcRequestPacketEnum.KT_VTEP_GET,
-						uriParameterList,
+						IpcRequestPacketEnum.KT_VTEP_GET, uriParameterList,
 						VtnServiceIpcConsts.GET_VTEP_RESPONSE);
 			}
 			setInfo(responseJson);
@@ -230,7 +229,7 @@ public class VTepsResource extends AbstractResource {
 	 * 
 	 * @return parameter list
 	 */
-	private List<String> getUriParameters(JsonObject requestBody) {
+	private List<String> getUriParameters(final JsonObject requestBody) {
 		LOG.trace("Start VTepsResource#getUriParameters()");
 		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(vtnName);

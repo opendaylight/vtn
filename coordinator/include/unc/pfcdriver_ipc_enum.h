@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -45,5 +45,10 @@ typedef enum {
   PFCDRV_IDX_VAL_VBRIF_VEXTIF_PM,
 } pfcdrv_val_vbrif_policingmap_index_t;
 
+/* enum for pfcdrv val vbrif structure */
+typedef enum {
+  PFCDRV_IDX_VAL_VLAN_MAP = 0,
+  PFCDRV_IDX_BDRY_REF_COUNT,
+} pfcdrv_val_vlan_map_index_t;
 
 #endif

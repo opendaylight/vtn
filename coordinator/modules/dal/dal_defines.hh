@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -45,16 +45,16 @@ enum DalResultCode {
   kDalRcConnNotAvailable,     // For all DCI and DMI APIs
   kDalRcNotDisconnected,      // For DCI interface DisconnectFromDB
   kDalRcTxnError,             // For DCI interaces Commit/RollbackTransaction
-  // TODO(sankar): It should be internal to DAL. DAL user does not have
+  // This should be internal to DAL. DAL user does not have
   // knowledge about Conn Handle
   kDalRcInvalidConnHandle,    // For DCI and DMI interfaces
   kDalRcInvalidCursor,        // For DMI interface GetNextRecord/CloseCursor
   kDalRcDataError,            // For all DMI Interfaces
-  // TODO(sankar): kDalRcRecordAlreadyExists not taken care
   kDalRcRecordAlreadyExists,  // For DMI interface CreateRecord API
+  kDalRcParentNotFound,       // For DMI interface CreateRecord API
   kDalRcRecordNotFound,       // For DMI interfaces Get/Update APIs
   kDalRcRecordNoMore,         // For DMI interface GetNextRecord
-  // TODO(sankar): kDalRcAccessViolation not taken care
+  // kDalRcAccessViolation not taken care
   kDalRcAccessViolation,      // For DMI Edit Interface with RO conn
   kDalRcConnTimeOut,          // For DCI and DMI interfaces
   kDalRcQueryTimeOut,         // For all DMI interfaces

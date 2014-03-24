@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -18,15 +18,13 @@ namespace usess {
  * @brief   Constructor.
  * @param   conf  : [IN] configuration data.
  * @return  nothing.
- * @note    
+ * @note
  */
-UsessSession::UsessSession(const UsessConfSession& conf) : conf_(conf)
-{
+UsessSession::UsessSession(const UsessConfSession& conf) : conf_(conf) {
 }
 
 UsessSession::UsessSession(const UsessConfSession& conf,
-        const usess_ipc_res_sess_info_t& sess) : conf_(conf)
-{
+        const usess_ipc_res_sess_info_t& sess) : conf_(conf) {
   sess_ = sess;
 }
 
@@ -35,10 +33,9 @@ UsessSession::UsessSession(const UsessConfSession& conf,
  * @brief   Destructor.
  * @param   nothing.
  * @return  nothing.
- * @note    
+ * @note
  */
-UsessSession::~UsessSession(void)
-{
+UsessSession::~UsessSession(void) {
 }
 
 /*
@@ -46,10 +43,9 @@ UsessSession::~UsessSession(void)
  * @param   sess_mode   : [IN] session mode.
  * @return  USESS_E_OK             : Success
  *          USESS_E_NG             : Error
- * @note    
+ * @note
  */
-usess_ipc_err_e UsessSession::TransitMode(const usess_mode_e sess_mode)
-{
+usess_ipc_err_e UsessSession::TransitMode(const usess_mode_e sess_mode) {
   tc::TcApiRet tc_rtn = tc::TC_API_COMMON_FAILURE;
   tc::TcModule *tc_instance = NULL;
 
@@ -63,7 +59,6 @@ usess_ipc_err_e UsessSession::TransitMode(const usess_mode_e sess_mode)
 
   // TC notification
   if (sess_mode == USESS_MODE_OPER) {
-
     // Get TC module instance.
     tc_instance = (tc::TcModule *)pfc::core::Module::getInstance("tc");
     RETURN_IF((tc_instance == NULL), USESS_E_NG,
@@ -71,9 +66,9 @@ usess_ipc_err_e UsessSession::TransitMode(const usess_mode_e sess_mode)
 
     // release configuration mode session.
     tc_rtn = tc_instance->TcReleaseSession(sess_.sess.id);
-    WARN_IF((tc_rtn != tc::TC_API_COMMON_SUCCESS && tc_rtn == tc::TC_INVALID_PARAM),
+    WARN_IF((tc_rtn != tc::TC_API_COMMON_SUCCESS &&
+             tc_rtn == tc::TC_INVALID_PARAM),
       "Without notification to TC. id=%d err=%d", sess_.sess.id, tc_rtn);
-
   }
 
   // modify session mode.
@@ -88,10 +83,9 @@ usess_ipc_err_e UsessSession::TransitMode(const usess_mode_e sess_mode)
  * @brief   Get session data.
  * @param   nothing.
  * @return  session data.
- * @note    
+ * @note
  */
-const usess_ipc_res_sess_info_t& UsessSession::sess(void)
-{
+const usess_ipc_res_sess_info_t& UsessSession::sess(void) {
   return sess_;
 }
 

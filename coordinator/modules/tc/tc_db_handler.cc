@@ -480,6 +480,7 @@ TcOperRet TcDbHandler::SetDefaultRecoveryTable() {
   SQLRETURN SQL_ret;
   unc_keytype_datatype_t database = UNC_DT_INVALID;
   TcServiceType oper = TC_OP_INVALID;
+  int failover_instance = 0;
   char inttostr[4];
   TcOperRet retval = TCOPER_RET_SUCCESS;
   SQLINTEGER query_length;
@@ -492,13 +493,16 @@ TcOperRet TcDbHandler::SetDefaultRecoveryTable() {
   /*set query*/
   set_query.append("INSERT INTO ");
   set_query.append(RECOVERY_TABLE);
-  set_query.append("(database,operation,date_time)");
+  set_query.append("(database,operation,failover_instance,date_time)");
   set_query.append(" VALUES(");
 
   snprintf(inttostr, sizeof(database), "%d", database);
   set_query.append(inttostr);
   set_query.append(",");
   snprintf(inttostr, sizeof(oper), "%d", oper);
+  set_query.append(inttostr);
+  set_query.append(",");
+  snprintf(inttostr, sizeof(oper), "%d", failover_instance);
   set_query.append(inttostr);
   set_query.append(",CURRENT_TIMESTAMP);");
 
@@ -525,7 +529,8 @@ TcOperRet TcDbHandler::SetDefaultRecoveryTable() {
 /*!\brief updates recovery table
  * */
 TcOperRet TcDbHandler::UpdateRecoveryTable(unc_keytype_datatype_t data_base,
-                                           TcServiceType operation) {
+                                           TcServiceType operation,
+                                           uint32_t failover_instance) {
   pfc_log_debug("%s entry", __FUNCTION__);
   SQLRETURN SQL_ret;
   std::string upd_query;
@@ -551,6 +556,9 @@ TcOperRet TcDbHandler::UpdateRecoveryTable(unc_keytype_datatype_t data_base,
   upd_query.append(inttostr);
   snprintf(inttostr, sizeof(operation), "%d", operation);
   upd_query.append(",operation=");
+  upd_query.append(inttostr);
+  snprintf(inttostr, sizeof(operation), "%d", failover_instance);
+  upd_query.append(",failover_instance=");
   upd_query.append(inttostr);
   upd_query.append(",date_time=CURRENT_TIMESTAMP WHERE database >= 0;");
 
@@ -578,14 +586,15 @@ TcOperRet TcDbHandler::UpdateRecoveryTable(unc_keytype_datatype_t data_base,
 /*!\brief retrieves data from recovery table
  * */
 TcOperRet TcDbHandler::GetRecoveryTable(unc_keytype_datatype_t* db,
-                                        TcServiceType* oper) {
+                                        TcServiceType* oper,
+                                        uint32_t* failover_instance) {
   pfc_log_debug("%s entry", __FUNCTION__);
   SQLRETURN SQL_ret;
   HSTMT hstmt_get;
   std::string get_query;
-  SQLINTEGER dbase, op;
+  SQLINTEGER dbase, op, fail_inst;
   SQLINTEGER query_length;
-  SQLLEN Db_err[2];
+  SQLLEN Db_err[3];
   TcOperRet retval = TCOPER_RET_SUCCESS;
   /*validate the row*/
   retval = IsRowExists(RECOVERY_TABLE, "database");
@@ -593,7 +602,8 @@ TcOperRet TcDbHandler::GetRecoveryTable(unc_keytype_datatype_t* db,
     return retval;
   }
   /*set query*/
-  get_query.append("SELECT database,operation FROM TC_RECOVERY_TABLE");
+  get_query.append("SELECT database,operation,failover_instance ");
+  get_query.append("FROM TC_RECOVERY_TABLE");
 
   SQL_ret = SQLAllocHandle(SQL_HANDLE_STMT, db_conn_handle_, &hstmt_get);
   if ((SQL_ret != SQL_SUCCESS) && (SQL_ret != SQL_SUCCESS_WITH_INFO)) {
@@ -608,6 +618,11 @@ TcOperRet TcDbHandler::GetRecoveryTable(unc_keytype_datatype_t* db,
   }
 
   SQL_ret = SQLBindCol(hstmt_get, 2, SQL_C_LONG, &op, 5, &Db_err[1]);
+  if ((SQL_ret != SQL_SUCCESS) && (SQL_ret != SQL_SUCCESS_WITH_INFO)) {
+    GetErrorReason(SQL_ret, SQL_HANDLE_STMT, hstmt_get);
+    return TCOPER_RET_FAILURE;
+  }
+  SQL_ret = SQLBindCol(hstmt_get, 3, SQL_C_LONG, &fail_inst, 5, &Db_err[2]);
   if ((SQL_ret != SQL_SUCCESS) && (SQL_ret != SQL_SUCCESS_WITH_INFO)) {
     GetErrorReason(SQL_ret, SQL_HANDLE_STMT, hstmt_get);
     return TCOPER_RET_FAILURE;
@@ -627,11 +642,13 @@ TcOperRet TcDbHandler::GetRecoveryTable(unc_keytype_datatype_t* db,
     *db = (Db_err[0] == SQL_NULL_DATA)
       ? UNC_DT_INVALID : (unc_keytype_datatype_t)dbase;
     *oper = (Db_err[1] == SQL_NULL_DATA) ? TC_OP_INVALID : (TcServiceType)op;
+    *failover_instance = (Db_err[2] == SQL_NULL_DATA)
+      ? 1U : (uint32_t)fail_inst;
   }
   std::string op_string = ConvertOptoString(*oper);
   std::string dbase_string = ConvertDbasetoString(*db);
-  pfc_log_info("db = %s; fail_oper = %s",
-               dbase_string.c_str(), op_string.c_str());
+  pfc_log_info("db = %s; fail_oper = %s, fail_instance = %d",
+               dbase_string.c_str(), op_string.c_str(), *failover_instance);
   /* clear all variables */
   SQLFreeHandle(SQL_HANDLE_STMT, hstmt_get);
   get_query.clear();

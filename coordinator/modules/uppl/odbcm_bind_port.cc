@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -222,6 +222,7 @@ ODBCM_RC_STATUS DBVarbind::bind_port_table_input(
         break;
       case PORT_SPEED:
         if ((*i).request_attribute_type == DATATYPE_UINT64) {
+          *p_speed_len = sizeof(SQLLEN);
           odbc_rc = BindInputParameter_SQL_BINARY(
               r_hstmt,
               ++col_no,
@@ -236,6 +237,7 @@ ODBCM_RC_STATUS DBVarbind::bind_port_table_input(
     break;
       case PORT_ALARM_STATUS:
         if ((*i).request_attribute_type == DATATYPE_UINT64) {
+          *p_alarms_status_len = sizeof(SQLLEN);
           odbc_rc = BindInputParameter_SQL_BINARY(
               r_hstmt,
               ++col_no,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -38,14 +38,14 @@ class Kt_Root: public Kt_Base {
   public:
     Kt_Root();
     ~Kt_Root();
-    UpplReturnCode Create(OdbcmConnectionHandler *db_conn,
+    UncRespCode Create(OdbcmConnectionHandler *db_conn,
                           uint32_t session_id,
                           uint32_t configuration_id,
                           void* key_struct,
                           void* val_struct,
                           uint32_t data_type,
                           ServerSession &sess);
-    UpplReturnCode Update(OdbcmConnectionHandler *db_conn,
+    UncRespCode Update(OdbcmConnectionHandler *db_conn,
                           uint32_t session_id,
                           uint32_t configuration_id,
                           void* key_struct,
@@ -53,14 +53,14 @@ class Kt_Root: public Kt_Base {
                           uint32_t data_type,
                           ServerSession &sess);
 
-    UpplReturnCode Delete(OdbcmConnectionHandler *db_conn,
+    UncRespCode Delete(OdbcmConnectionHandler *db_conn,
                           uint32_t session_id,
                           uint32_t configuration_id,
                           void* key_struct,
                           uint32_t data_type,
                           ServerSession &sess);
 
-    UpplReturnCode ReadBulk(OdbcmConnectionHandler *db_conn,
+    UncRespCode ReadBulk(OdbcmConnectionHandler *db_conn,
                             void* key_struct,
                             uint32_t data_type,
                             uint32_t &max_rep_ct,
@@ -69,7 +69,7 @@ class Kt_Root: public Kt_Base {
                             pfc_bool_t is_read_next,
                             ReadRequest *read_req);
 
-    UpplReturnCode PerformRead(OdbcmConnectionHandler *db_conn,
+    UncRespCode PerformRead(OdbcmConnectionHandler *db_conn,
                                uint32_t session_id,
                                uint32_t configuration_id,
                                void* key_struct,
@@ -79,22 +79,22 @@ class Kt_Root: public Kt_Base {
                                ServerSession &sess,
                                uint32_t option1,
                                uint32_t option2,
-                               uint32_t max_rep_ct) { return UPPL_RC_SUCCESS; }
+                               uint32_t max_rep_ct) { return UNC_RC_SUCCESS; }
 
-    UpplReturnCode PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
+    UncRespCode PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
                                            void* key_struct,
                                            void* val_struct,
                                            uint32_t operation,
                                            uint32_t data_type) {
-      return UPPL_RC_SUCCESS;
+      return UNC_RC_SUCCESS;
     }
 
-    UpplReturnCode PerformSemanticValidation(OdbcmConnectionHandler *db_conn,
+    UncRespCode PerformSemanticValidation(OdbcmConnectionHandler *db_conn,
                                              void* key_struct,
                                              void* val_struct,
                                              uint32_t operation,
                                              uint32_t data_type) {
-      return UPPL_RC_SUCCESS;
+      return UNC_RC_SUCCESS;
     }
 
     void PopulateDBSchemaForKtTable(OdbcmConnectionHandler *db_conn,

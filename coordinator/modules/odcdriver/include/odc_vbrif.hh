@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -44,33 +44,36 @@ class OdcVbrIfCommand: public unc::driver::vbrif_driver_command {
    * @param[in]  - value structure of VBRIf
    * @param[in]  - Controller connection information
    * @retval     - returns DRVAPI_RESPONSE SUCCESS on creation of vbrif successfully
-   *               /returns DRVAPI_RESPONSE_FAILURE on failure
+   *               /returns UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t create_cmd(key_vbr_if_t& key, pfcdrv_val_vbr_if_t& val,
-                             unc::driver::controller *conn);
+  UncRespCode create_cmd(key_vbr_if_t& key,
+                         pfcdrv_val_vbr_if_t& val,
+                         unc::driver::controller *conn);
 
   /**
    * @brief                      - Updates VBRIf
    * @param[in] key              - key structure of VBRIf
    * @param[in] val              - value structure of VBRIf
    * @param[in] conn             - Controller connection information
-   * @retval drv_resp_code_t     - returns DRVAPI_RESPONSE_SUCCESS on updation of VBRIf
-   *                               successfully/returns DRVAPI_RESPONSE_FAILURE on failure
+   * @retval UncRespCode         - returns UNC_RC_SUCCESS on updation of VBRIf
+   *                               successfully/returns UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t update_cmd(key_vbr_if_t& key, pfcdrv_val_vbr_if_t& val,
-                             unc::driver::controller *conn);
+  UncRespCode update_cmd(key_vbr_if_t& key,
+                         pfcdrv_val_vbr_if_t& val,
+                         unc::driver::controller *conn);
 
   /**
    * @brief                    - Deletes VBRIf
    * @param[in] key            - key structure of VBRIf
    * @param[in] val            - value structure of VBRIf
    * @param[in] conn           - Controller connection information
-   * @return drv_resp_code_t   - returns DRVAPI_RESPONSE_SUCCESS on deletion of
+   * @return UncRespCode       - returns UNC_RC_SUCCESS on deletion of
    *                             VBRIf successfully /returns
-   *                             DRVAPI_RESPONSE_FAILURE on failure
+   *                             UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t delete_cmd(key_vbr_if_t& key, pfcdrv_val_vbr_if_t& val,
-                             unc::driver::controller *conn);
+  UncRespCode delete_cmd(key_vbr_if_t& key,
+                         pfcdrv_val_vbr_if_t& val,
+                         unc::driver::controller *conn);
 
   /**
    * @brief                           - get all the vbr child
@@ -78,21 +81,26 @@ class OdcVbrIfCommand: public unc::driver::vbrif_driver_command {
    * @param[in] vbr_name              - vbr name
    * @param[in] ctr                   - controller pointer
    * @param[out] cfgnode_vector       - config node vector
-   * @return drv_resp_code_t          - returns DRVAPI_RESPONSE_SUCCESS on successfully retieving a vbr
-   *                                    child /returns DRVAPI_RESPONSE_FAILURE on failure
+   * @return UncRespCode              - returns UNC_RC_SUCCESS on successfully retieving a vbr
+   *                                    child /returns UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t get_vbrif_list(std::string vtn_name,
-         std::string vbr_name, unc::driver::controller* ctr,
-       std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
+  UncRespCode get_vbrif_list(
+      std::string vtn_name,
+      std::string vbr_name,
+      unc::driver::controller* ctr,
+      std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
+
   /**
    * @brief      - Method to fetch child configurations for the parent kt
    * @param[in]  - controller pointer
    * @param[in]  - parent key type pointer
    * @param[out] - list of configurations
-   * @retval     - DRVAPI_RESPONSE_SUCCESS / DRVAPI_RESPONSE_FAILURE
+   * @retval     - UNC_RC_SUCCESS / UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t fetch_config(unc::driver::controller* ctr, void* parent_key,
-                 std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
+  UncRespCode fetch_config(
+      unc::driver::controller* ctr,
+      void* parent_key,
+      std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
  private:
   /**
@@ -103,13 +111,17 @@ class OdcVbrIfCommand: public unc::driver::vbrif_driver_command {
    * @param[in] ctr                   - controller pointer
    * @param[in] data                  - data from which parse should happen
    * @param[out] cfgnode_vector       - config node vector
-   * @return drv_resp_code_t          - returns DRVAPI_RESPONSE_SUCCESS on parsing the
-   *                                    response of vbrif/returns DRVAPI_RESPONSE_FAILURE on failure
+   * @return UncRespCode              - returns UNC_RC_SUCCESS on parsing the
+   *                                    response of vbrif/returns UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t parse_vbrif_response(std::string vtn_name,
-                        std::string vbr_name, std::string url,
-                       unc::driver::controller* ctr, char *data,
-  std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
+  UncRespCode parse_vbrif_response(
+      std::string vtn_name,
+      std::string vbr_name,
+      std::string url,
+      unc::driver::controller* ctr,
+      char *data,
+      std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
+
   /**
    * @brief                       - parse vbr if and append it to vector
    * @param[in] vtn_name          - vtn name
@@ -119,15 +131,17 @@ class OdcVbrIfCommand: public unc::driver::vbrif_driver_command {
    * @param[in] url               - url to send request
    * @param[in] ctr               - controller pointer
    * @param[out] cfgnode_vector   - config node vector
-   * @return drv_resp_code_t      - returns DRVAPI_RESPONSE_SUCCESS on parsing vbrif and appending
-   *                                vector/ returns DRVAPI_RESPONSE_FAILURE on failure
+   * @return UncRespCode          - returns UNC_RC_SUCCESS on parsing vbrif and appending
+   *                                vector/ returns UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t fill_config_node_vector(std::string vtn_name,
-                                  std::string vbr_name, json_object *json_obj,
-                                            uint32_t arr_idx, std::string url,
-                                                 unc::driver::controller* ctr,
-                  std::vector< unc::vtndrvcache::ConfigNode *>&cfgnode_vector);
-
+  UncRespCode fill_config_node_vector(
+      std::string vtn_name,
+      std::string vbr_name,
+      json_object *json_obj,
+      uint32_t arr_idx,
+      std::string url,
+      unc::driver::controller* ctr,
+      std::vector< unc::vtndrvcache::ConfigNode *>&cfgnode_vector);
 
   /**
    * @brief                   - read portmap
@@ -137,7 +151,9 @@ class OdcVbrIfCommand: public unc::driver::vbrif_driver_command {
    * return json_object       - json object
    */
   json_object*  read_portmap(unc::driver::controller* ctr,
-                                             std::string url, int &resp_code);
+                             std::string url,
+                             int &resp_code);
+
     /**
    * @brief                  - Constructs url for vbrif
    * @param[in] vbrif_key    - key structure of vbrif key structure
@@ -166,16 +182,16 @@ class OdcVbrIfCommand: public unc::driver::vbrif_driver_command {
    * @param[in]   - logical_port_id which needs to be validated
    * @return      - returns ODC_DRV_SUCCESS/ ODC_DRV_FAILURE
    */
-  odc_drv_resp_code_t validate_logical_port_id(const std::string&
-                                               logical_port_id);
+  odc_drv_resp_code_t validate_logical_port_id(
+      const std::string& logical_port_id);
 
   /**
    * @brief                     - checks the logical port id format
    * @param[in][out]            - logical_port_id
    * @return                    - odc_drv_resp_code_t
    */
-  odc_drv_resp_code_t check_logical_port_id_format(std::string&
-                                                   logical_port_id);
+  odc_drv_resp_code_t check_logical_port_id_format(
+      std::string& logical_port_id);
 
   /**
    * @brief                     - converts the format of logical

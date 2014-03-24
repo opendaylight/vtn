@@ -44,12 +44,12 @@ class OdcLink {
    * @param[in] ctr                  - Controller pointer
    * @param[in] cache_empty          - If cache is empty it is PFC_TRUE else
    *                                   PFC_FALSE
-   * @return drv_resp_code_t         - returns DRVAPI_RESPONSE_SUCCESS on
+   * @return UncRespCode             - returns UNC_RC_SUCCESS on
    *                                   success of read all operation/returns
-   *                                   DRVAPI_RESPONSE_FAILURE on failure
+   *                                   UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t fetch_config(unc::driver::controller* ctr,
-                               const pfc_bool_t &cache_empty);
+  UncRespCode fetch_config(unc::driver::controller* ctr,
+                           const pfc_bool_t &cache_empty);
 
  private:
   /**
@@ -60,11 +60,11 @@ class OdcLink {
    * @param[out] edge_prop_map      - map which stores edge property values
    * @param[out] head_conn_map      - map which stores head connection property
    *                                  values
-   * @return drv_resp_code_t        - returns
-   *                                  DRVAPI_RESPONSE_SUCCESS/
-   *                                  DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode            - returns
+   *                                  UNC_RC_SUCCESS/
+   *                                  UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t fill_edge_value_map(
+  UncRespCode fill_edge_value_map(
       json_object *json_obj_node_prop,
       int arr_idx,
       std::map<std::string, std::string> &edge_prop_map,
@@ -78,12 +78,12 @@ class OdcLink {
    *                                   connection properties
    * @param[out] cfg_node_vector     - vector to which config node needs to be
    *                                   pushed
-   * @return drv_resp_code_t         - returns DRVAPI_RESPONSE_SUCCESS on
+   * @return UncRespCode             - returns UNC_RC_SUCCESS on
    *                                   parsing link and appending to vector
    *                                   successfully/returns
-   *                                   DRVAPI_RESPONSE_FAILURE on failure
+   *                                   UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t fill_config_node_vector(
+  UncRespCode fill_config_node_vector(
       unc::driver::controller *ctr_ptr,
       const std::map<std::string, std::string> &edge_prop_map,
       const std::map<std::string, std::string> &head_conn_map,
@@ -94,9 +94,9 @@ class OdcLink {
    * @param[in]                      - ctr controller pointer
    * @param[in]                      - Cache empty or not PFC_TRUE/PFC_FALSE
    * @param[out]                     - filled config node vector
-   * @return drv_resp_code_t         - returns DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode             - returns UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t compare_with_cache(
+  UncRespCode compare_with_cache(
       unc::driver::controller *ctr_ptr,
       const pfc_bool_t &cache_empty,
       std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
@@ -127,11 +127,11 @@ class OdcLink {
    * @param[in] ctr_ptr              - controller pointer
    * @param[in] cfg_node             - Config Node pointer
    * @param[out] link_list           - local list maintained for delete contains link id
-   * @return drv_resp_code_t         - return DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode             - return UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t add_event(unc::driver::controller *ctr_ptr,
-                            unc::vtndrvcache::ConfigNode *cfg_node,
-                            std::list<std::string> &link_list);
+  UncRespCode add_event(unc::driver::controller *ctr_ptr,
+                        unc::vtndrvcache::ConfigNode *cfg_node,
+                        std::list<std::string> &link_list);
 
   /**
    * @brief                          - update event to be sent to UPPL and cache
@@ -139,30 +139,30 @@ class OdcLink {
    * @param[in] cfg_node             - Config Node pointer
    * @param[in] val_old_link         - old link value structure
    * @param[out] link_list           - local list maintained for delete contains link id
-   * @return drv_resp_code_t         - return DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode             - return UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t update_event(unc::driver::controller *ctr_ptr,
-                               unc::vtndrvcache::ConfigNode *cfg_node,
-                               val_link_st_t *val_old_link,
-                               std::list<std::string> &link_list);
+  UncRespCode update_event(unc::driver::controller *ctr_ptr,
+                           unc::vtndrvcache::ConfigNode *cfg_node,
+                           val_link_st_t *val_old_link,
+                           std::list<std::string> &link_list);
 
   /**
    * @brief                           - delete event to be sent to UPPL and cache
    * @param[in] ctr_ptr               - controller pointer
    * @param[in] link_list             - local list maintained for delete contains link id
-   * @return drv_resp_code_t          - return DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode              - return UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t delete_event(unc::driver::controller *ctr_ptr,
-                               std::list<std::string> &link_list);
+  UncRespCode delete_event(unc::driver::controller *ctr_ptr,
+                           std::list<std::string> &link_list);
 
    /**
     * @brief                          - Verify in cache whether link aleady exists or not
     * @param[in] ctr_ptr              - controller pointer
     * @param[in] cfgnode_vector       - Config Node vector
     * @param[out] link_list           - local list maintained for delete contains link id
-    * @return drv_resp_code_t         - return DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
+    * @return UncRespCode             - return UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
     */
-  drv_resp_code_t verify_in_cache(
+  UncRespCode verify_in_cache(
       unc::driver::controller *ctr_ptr,
       std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector,
       std::list<std::string> &link_list);
@@ -181,9 +181,9 @@ class OdcLink {
    * @param[in] ctr_ptr               - Controller pointer
    * @param[in] data                  - data to be parsed
    * @param[out] cfgnode_vector       - to be filled with the response
-   * return drv_resp_code_t           - return DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
+   * return UncRespCode               - return UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t parse_link_response(
+  UncRespCode parse_link_response(
       unc::driver::controller *ctr_ptr,
       char *data,
       std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
@@ -192,10 +192,10 @@ class OdcLink {
    * @brief                          - delete_Link
    * @param[in] ctr                  - Controller pointer
    * @param[in]                      - cfg_node_delete_map
-   * @return drv_resp_code_t         - return DRVAPI_RESPONSE_SUCCESS/
-   *                                   DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode             - return UNC_RC_SUCCESS/
+   *                                   UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t delete_link(
+  UncRespCode delete_link(
       unc::driver::controller *ctr,
       const std::map<std::string,
       unc::vtndrvcache::ConfigNode *> &cfg_node_delete_map);

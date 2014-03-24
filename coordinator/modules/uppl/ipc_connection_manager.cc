@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -167,7 +167,7 @@ string IPCConnectionManager::get_uppl_service_name() {
 /**
  * @Description : Posts the event to the client
  * @param[in]   : pointer to Serverevent
- * @return      : UPPL_RC_SUCCESS
+ * @return      : UNC_RC_SUCCESS
  **/
 uint32_t IPCConnectionManager::SendEvent(ServerEvent *evt) {
   uint32_t ret = ipc_server_handler_->SendEvent(evt);
@@ -177,10 +177,10 @@ uint32_t IPCConnectionManager::SendEvent(ServerEvent *evt) {
 
 /**
  * @Description : Frees up the allocated memory
- * @return      : UPPL_RC_SUCCESS - if the allocated memory is freed
+ * @return      : UNC_RC_SUCCESS - if the allocated memory is freed
  *                successfully
  **/
-UpplReturnCode IPCConnectionManager::Finalize() {
+UncRespCode IPCConnectionManager::Finalize() {
   if (ipc_server_handler_ != NULL)
     IPCServerHandler::release_ipc_server_handler();
   if (ipc_client_logical_handler_ != NULL)
@@ -189,17 +189,17 @@ UpplReturnCode IPCConnectionManager::Finalize() {
   ipc_client_logical_handler_ = NULL;
   notfn_timer_id_.clear();
   controller_in_audit_.clear();
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**
  * @Description : This function is used for notification manager subscription
  *                to IPC event handler
- * @return      : UPPL_RC_SUCCESS  - if the IPC Event subscription notification
- *                is successful else UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED 
+ * @return      : UNC_RC_SUCCESS  - if the IPC Event subscription notification
+ *                is successful else UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED 
  *                is returned if event subscription notification failed
  **/
-UpplReturnCode IPCConnectionManager::SendEventSubscription() {
+UncRespCode IPCConnectionManager::SendEventSubscription() {
   // Get Physical layer instance
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   IpcEventAttr attr_pfc, attr_vnp, attr_odc;
@@ -207,15 +207,15 @@ UpplReturnCode IPCConnectionManager::SendEventSubscription() {
   // Add events to mask
   if ((mask.add(UNC_PHYSICAL_EVENTS)) != 0) {
     pfc_log_error("add() failed for UNC_PHYSICAL_EVENTS\n");
-    return UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+    return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
   }
   if ((mask.add(UNC_ALARMS)) != 0) {
     pfc_log_error("add() failed for UNC_ALARMS\n");
-    return UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+    return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
   }
   if ((mask.add(UNC_CTLR_STATE_EVENTS)) != 0) {
     pfc_log_error("add() failed for UNC_CTLR_STATE_EVENTS\n");
-    return UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+    return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
   }
   attr_pfc.setPriority(150);
   attr_vnp.setPriority(150);
@@ -223,7 +223,7 @@ UpplReturnCode IPCConnectionManager::SendEventSubscription() {
 
   if ((attr_pfc.addTarget(PFCDRIVER_IPC_SVC_NAME, mask)) != 0) {
     pfc_log_error("addTarget() failed for PFC driver\n");
-    return UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+    return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
   }
   // Notification manager event is registered
   physical_layer->Module::addIpcEventHandler(
@@ -233,7 +233,7 @@ UpplReturnCode IPCConnectionManager::SendEventSubscription() {
   pfc_log_debug("Event Subscribed for PFC driver");
   if ((attr_vnp.addTarget(VNPDRIVER_IPC_SVC_NAME, mask)) != 0) {
     pfc_log_error("addTarget() failed for OVERLAY driver\n");
-    return UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+    return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
   }
   physical_layer->Module::addIpcEventHandler(
       VNPDRIVER_IPC_CHN_NAME,
@@ -244,7 +244,7 @@ UpplReturnCode IPCConnectionManager::SendEventSubscription() {
   // Notification manager for ODC
   if ((attr_odc.addTarget(ODCDRIVER_IPC_SVC_NAME, mask)) != 0) {
     pfc_log_error("addTarget() failed for ODC driver\n");
-    return UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+    return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
   }
   physical_layer->Module::addIpcEventHandler(
       ODCDRIVER_IPC_CHN_NAME,
@@ -252,18 +252,18 @@ UpplReturnCode IPCConnectionManager::SendEventSubscription() {
       &attr_odc);
 
   pfc_log_debug("Event Subscribed for ODC driver");
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**
  * @Description : This function is used for notification manager cancel
  *                subscription from IPC event handler
- * @return      : UPPL_RC_SUCCESS - if event subscription is cancelled
+ * @return      : UNC_RC_SUCCESS - if event subscription is cancelled
  *                successfully from IPC Event Handler 
- *                else UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED
+ *                else UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED
  *                will be returned
  **/
-UpplReturnCode  IPCConnectionManager::CancelEventSubscription() {
+UncRespCode  IPCConnectionManager::CancelEventSubscription() {
   // Get Physical layer instance
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   // Remove the Event Handler
@@ -271,25 +271,25 @@ UpplReturnCode  IPCConnectionManager::CancelEventSubscription() {
       get_notification_manager(UNC_CT_PFC)))
       != 0) {
     pfc_log_error("removeIpcEventHandler() failed\n");
-    return UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+    return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
   }
   // Remove the Event Handler
   if ((physical_layer->Module::removeIpcEventHandler(
       get_notification_manager(UNC_CT_VNP)))
       != 0) {
     pfc_log_error("removeIpcEventHandler() failed\n");
-    return UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+    return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
   }
   // Remove the Event Handler for ODC Driver
   if ((physical_layer->Module::removeIpcEventHandler(
       get_notification_manager(UNC_CT_ODC)))
       != 0) {
     pfc_log_error("removeIpcEventHandler() for ODC Driver failed\n");
-    return UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+    return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
   }
 
   NotificationManager::release_notification_manager();
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**
@@ -315,11 +315,11 @@ void IPCConnectionManager::addControllerToAuditList(string controller_name) {
  * @Description : This function is used for remove controller from
  *                controller_in_audit vector
  * @param[in]   : controller_name of type string
- * @return      : UPPL_RC_SUCCESS  - if controller is removed successfully
- *                from audit list else UPPL_RC_ERR_AUDIT_FAILURE will be
+ * @return      : UNC_RC_SUCCESS  - if controller is removed successfully
+ *                from audit list else UNC_UPPL_RC_ERR_AUDIT_FAILURE will be
  *                returned if controller is not available in the vector
  **/
-UpplReturnCode IPCConnectionManager::removeControllerFromAuditList(
+UncRespCode IPCConnectionManager::removeControllerFromAuditList(
     string controller_name) {
   pfc_log_debug("Executing removeControllerFromAuditList");
   vector<string> :: iterator iter = find(controller_in_audit_.begin(),
@@ -327,7 +327,7 @@ UpplReturnCode IPCConnectionManager::removeControllerFromAuditList(
                                          controller_name);
   if (iter == controller_in_audit_.end()) {
     pfc_log_debug("Controller is not available in vector");
-    return UPPL_RC_ERR_AUDIT_FAILURE;
+    return UNC_UPPL_RC_ERR_AUDIT_FAILURE;
   } else {
     controller_in_audit_.erase(iter);
     pfc_log_debug("Removed %s from list", controller_name.c_str());
@@ -337,9 +337,9 @@ UpplReturnCode IPCConnectionManager::removeControllerFromAuditList(
   if (timer_iter != notfn_timer_id_.end()) {
     notfn_timer_id_.erase(timer_iter);
   } else {
-    return UPPL_RC_ERR_AUDIT_FAILURE;
+    return UNC_UPPL_RC_ERR_AUDIT_FAILURE;
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**
@@ -365,9 +365,9 @@ pfc_bool_t IPCConnectionManager::IsControllerInAudit(string controller_name) {
  * @Description : This function is used for start the timer to receive
  *                notification after audit end
  * @param[in]   : controller_name of type string
- * @return      : UPPL_RC_SUCCESS if timer is started successfully for audit
+ * @return      : UNC_RC_SUCCESS if timer is started successfully for audit
  *                as well as for task queue else
- *                UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION if there is error while
+ *                UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION if there is error while
  *                creating task queue or timer for task queue
  **/
 uint32_t IPCConnectionManager::StartNotificationTimer(
@@ -382,10 +382,10 @@ uint32_t IPCConnectionManager::StartNotificationTimer(
   map<string, TaskQueue *> :: iterator task_iter
       = queue_obj_.find(controller_name);
   if ((timer_iter != timer_obj_.end()) || (task_iter != queue_obj_.end())) {
-    pfc_log_warn("StartNotificationTimer::Timer object found for controller %s",
-        controller_name.c_str());
-    UpplReturnCode cancel_ret = CancelTimer(controller_name);
-    if (cancel_ret != UPPL_RC_SUCCESS) {
+    pfc_log_warn("StartNotificationTimer::Timer object found "
+                 "for controller %s", controller_name.c_str());
+    UncRespCode cancel_ret = CancelTimer(controller_name);
+    if (cancel_ret != UNC_RC_SUCCESS) {
       pfc_log_error("StartNotificationTimer::Failure in cancelling "
           "timer for controller %s", controller_name.c_str());
     }
@@ -397,12 +397,13 @@ uint32_t IPCConnectionManager::StartNotificationTimer(
   TaskQueue *taskq = TaskQueue::create(no_tasks);
   if (taskq == NULL) {
     pfc_log_fatal("Error while creating task queue");
-    return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
   }
   tqmap_rc = queue_obj_.insert(
           std::pair<std::string, TaskQueue*>(controller_name, taskq));
   if (tqmap_rc.second == false) {
-    pfc_log_error("StartNotificationTimer - Error in inserting TaskQueue object");
+    pfc_log_error("StartNotificationTimer - Error in "
+                  "inserting TaskQueue object");
   }
   AuditNotification func_obj;
   func_obj.controller_name_ = controller_name;
@@ -414,7 +415,7 @@ uint32_t IPCConnectionManager::StartNotificationTimer(
   Timer *notfn_timer = pfc::core::Timer::create(taskq->getId());
   if (notfn_timer == NULL) {
     pfc_log_fatal("Error while creating timer for the task queue");
-    return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
   }
   tmap_rc = timer_obj_.insert(
           std::pair<string, Timer*>(controller_name, notfn_timer));
@@ -423,7 +424,8 @@ uint32_t IPCConnectionManager::StartNotificationTimer(
   }
   uint32_t ret = notfn_timer->post(&timeout, timer_func, &time_out_id);
   if (ret != 0) {
-    pfc_log_error("StartNotificationTimer - Failure occurred in starting timer");
+    pfc_log_error("StartNotificationTimer - Failure occurred in"
+                  " starting timer");
   } else {
     pfc_log_debug("Setting time_out_id %d, taskq id %d controller_name %s",
                   time_out_id, taskq->getId(), controller_name.c_str());
@@ -436,13 +438,13 @@ uint32_t IPCConnectionManager::StartNotificationTimer(
  * @Description : This function is used to cancel the timer and 
  *                delete associated objects
  * @param[in]   : controller_name of type string
- * @return      : UPPL_RC_SUCCESS - if timer object and task object 
- *                are deleted successfully else UPPL_RC_ERR_AUDIT_FAILURE
+ * @return      : UNC_RC_SUCCESS - if timer object and task object 
+ *                are deleted successfully else UNC_UPPL_RC_ERR_AUDIT_FAILURE
  *                will be returned
  **/
-UpplReturnCode IPCConnectionManager::CancelTimer(string controller_name) {
+UncRespCode IPCConnectionManager::CancelTimer(string controller_name) {
   pfc_log_debug("Executing CancelTimer()");
-  UpplReturnCode ret = UPPL_RC_SUCCESS;
+  UncRespCode ret = UNC_RC_SUCCESS;
   uint32_t time_out_id = getTimeOutId(controller_name);
   map<string, Timer *> :: iterator timer_iter =
       timer_obj_.find(controller_name);

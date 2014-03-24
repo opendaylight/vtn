@@ -293,8 +293,8 @@ void DBVarbind::BindingInput(int table_id) {
         }
       }
       *p_switch_id1_len = ODBCM_SIZE_256;
-      *p_ipv6_len = ODBCM_SIZE_16;
-      *p_alarms_status_len = ODBCM_SIZE_16;
+      *p_ipv6_len = sizeof(SQLLEN);
+      *p_alarms_status_len = sizeof(SQLLEN);
       BindINParameter = &DBVarbind::bind_switch_table_input;
       break;
     case PORT_TABLE:
@@ -311,9 +311,9 @@ void DBVarbind::BindingInput(int table_id) {
       }
       *p_switch_id1_len = ODBCM_SIZE_256;
       *p_logicalport_id1_len = ODBCM_SIZE_320;
-      *p_alarms_status_len = ODBCM_SIZE_16;
+      *p_alarms_status_len = sizeof(SQLLEN);
       *p_mac_len = ODBCM_SIZE_6;
-      *p_speed_len = ODBCM_SIZE_16;
+      *p_speed_len = sizeof(SQLLEN);
       BindINParameter = &DBVarbind::bind_port_table_input;
       break;
     case LINK_TABLE:
@@ -456,8 +456,8 @@ void DBVarbind::BindingOutput(int table_id) {
         }
       }
       *p_switch_id1_len = ODBCM_SIZE_256;
-      *p_ipv6_len = ODBCM_SIZE_16;
-      *p_alarms_status_len = ODBCM_SIZE_16;
+      *p_ipv6_len = sizeof(SQLLEN);
+      *p_alarms_status_len = sizeof(SQLLEN);
       ODBCM_MEMSET(p_switch_table, 0, sizeof(switch_table_t));
       BindOUTParameter = &DBVarbind::bind_switch_table_output;
       break;
@@ -475,9 +475,9 @@ void DBVarbind::BindingOutput(int table_id) {
       }
       *p_switch_id1_len = ODBCM_SIZE_256;
       *p_logicalport_id1_len = ODBCM_SIZE_320;
-      *p_alarms_status_len = ODBCM_SIZE_16;
+      *p_alarms_status_len = sizeof(SQLLEN);
       *p_mac_len = ODBCM_SIZE_6;
-      *p_speed_len = ODBCM_SIZE_16;
+      *p_speed_len = sizeof(SQLLEN);
       ODBCM_MEMSET(p_port_table, 0, sizeof(port_table_t));
       BindOUTParameter = &DBVarbind::bind_port_table_output;
       break;

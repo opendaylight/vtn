@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -21,12 +21,11 @@ namespace tc {
 
 const std::string tc_conf_block="tc_db_params";
 
-
 const std::string tc_conf_db_dsn_name_param="tc_db_dsn_name";
 const std::string tc_def_db_dsn_name_value="UNC_DB_DSN";
 
-const std::string tc_conf_db_drv_name_param="tc_db_driver";
-const std::string tc_def_db_drv_name_value="UNC_DB_DRIVER";
+const std::string max_failover_instance_param="max_failover_instance";
+const uint32_t max_failover_instance_value = 4;
 
 const uint32_t TC_READ_CONCURRENCY = 1;
 const uint32_t TC_AUDIT_CONCURRENCY = 1;
@@ -36,7 +35,8 @@ typedef enum {
   TC_INIT = 1,
   TC_ACT,
   TC_SBY,
-  TC_STOP
+  TC_STOP,
+  TC_ACT_FAIL
 }TcState;
 
 /* TC Main Operations  */
@@ -344,22 +344,11 @@ class TcReadWriteLock  {
     TC_DRV_OPENFLOW,
     TC_DRV_OVERLAY,
     TC_DRV_ODL
-    //TC_DRV_LEGACY
+    // TC_DRV_LEGACY
   };
 
   typedef std::map<TcDaemonName, std::string> TcChannelNameMap;
-
-  typedef struct {
-    std::string tc_db_driver;
-    std::string tc_db_dsn_name;
-    std::string tc_db_access_username;
-    std::string tc_db_access_password;
-    uint32_t tc_db_port_number;
-    uint32_t tc_db_conn_type;
-    uint32_t tc_db_timeout;
-    uint32_t tc_db_conn_timeout;
-  } TcDbParams;
-}
-} /* unc */
+}  // namespace tc
+}  // namespace unc
 
 #endif  // __UNC_TC_LOCK_HH__

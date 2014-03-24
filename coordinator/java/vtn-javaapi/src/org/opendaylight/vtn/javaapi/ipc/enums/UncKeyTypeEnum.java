@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.ipc.enums;
 
 /**
@@ -63,24 +64,28 @@ public enum UncKeyTypeEnum {
 	UNC_KT_VTN_FLOWFILTER_CONTROLLER(0x02e),
 	UNC_KT_VTN_PATHMAP_ENTRY(0x02f),
 	UNC_KT_VTN_PATHMAP_CONTROLLER(0x030),
+	UNC_KT_VTN_DATAFLOW(0x031),
 	/* UPPL: 0x200~0x3ff */
 	UNC_KT_CONTROLLER(0x200),
 	UNC_KT_SWITCH(0x201),
 	UNC_KT_PORT(0x202),
-    UNC_KT_LINK(0x203),
-    UNC_KT_DOMAIN(0x204),
-    UNC_KT_LOGICAL_PORT(0x205),
-    UNC_KT_LOGICAL_MEMBER_PORT(0x206),
-    UNC_KT_BOUNDARY(0x207);
-	
+	UNC_KT_LINK(0x203),
+	UNC_KT_DOMAIN(0x204),
+	UNC_KT_LOGICAL_PORT(0x205),
+	UNC_KT_LOGICAL_MEMBER_PORT(0x206),
+	UNC_KT_BOUNDARY(0x207),
+	UNC_KT_DATAFLOW(0x208),
+	UNC_KT_CTR_DATAFLOW(0x209);
+
 	private final int value;
 
 	/**
 	 * Instantiates a new unc key type enum.
 	 *
-	 * @param value the value
+	 * @param value
+	 *            the value
 	 */
-	private UncKeyTypeEnum(final int value){
+	private UncKeyTypeEnum(final int value) {
 		this.value = value;
 	}
 
@@ -89,7 +94,7 @@ public enum UncKeyTypeEnum {
 	 *
 	 * @return the value
 	 */
-	public int getValue(){
+	public int getValue() {
 		return value;
 	}
 }

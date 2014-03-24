@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -388,7 +388,7 @@ pfc_tolower_u(uint8_t c)
 
 /*
  * static inline uint8_t PFC_FATTR_ALWAYS_INLINE
- * pfc_toupper(uint8_t c)
+ * pfc_toupper_u(uint8_t c)
  *	Convert the character specified by `c' to upper case, if possible.
  *
  * Calling/Exit State:

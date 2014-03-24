@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -46,12 +46,13 @@ class OdcVbrCommand: public unc::driver::vbr_driver_command {
    * @param[in] key_vbr              - key structure of VBR
    * @param[in] val_vbr              - value structure of VBR
    * @param[in] ctr                  - Controller pointrt
-   * @return drv_resp_t              - returns DRVAPI_RESPONSE_SUCCESS on creating vbr successfully
-   *                                   /returns DRVAPI_RESPONSE_FAILURE on failure
+   * @return drv_resp_t              - returns UNC_RC_SUCCESS on creating vbr successfully
+   *                                   /returns UNC_DRV_RC_ERR_GENERIC on failure
    */
 
-  drv_resp_code_t create_cmd(key_vbr_t& key_vbr, val_vbr_t& val_vbr,
-                             unc::driver::controller *ctr);
+  UncRespCode create_cmd(key_vbr_t& key_vbr,
+                         val_vbr_t& val_vbr,
+                         unc::driver::controller *ctr);
 
   /**
    * @brief                           - Constructs VBR update command and send
@@ -59,11 +60,12 @@ class OdcVbrCommand: public unc::driver::vbr_driver_command {
    * @param[in] key_vbr               - key structure of VBR
    * @param[in] val_vbr               - value structure of VBR
    * @param[in] ctr                   - Controller pointer
-   * @return drv_resp_code_t          - returns DRVAPI_RESPONSE_SUCCESS on updating vbr successfully
-   *                                    /returns DRVAPI_RESPONSE_FAILURE on failure
+   * @return UncRespCode              - returns UNC_RC_SUCCESS on updating vbr successfully
+   *                                    /returns UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t update_cmd(key_vbr_t& key_vbr, val_vbr_t& val_vbr,
-                             unc::driver::controller* ctr);
+  UncRespCode update_cmd(key_vbr_t& key_vbr,
+                         val_vbr_t& val_vbr,
+                         unc::driver::controller* ctr);
 
   /**
    * @brief                           - Constructs VBR Delete command and send
@@ -71,28 +73,29 @@ class OdcVbrCommand: public unc::driver::vbr_driver_command {
    * @param[in] key_vbr               - key structure of VBR
    * @param[in] val_vbr               - value structure of VBR
    * @param[in] ctr                   - Controller pointer
-   * @return  drv_resp_code_t         - returns DRVAPI_RESPONSE_SUCCESS on deleting a vbr
-   *                                    / returns DRVAPI_RESPONSE_FAILURE on failure
+   * @return  UncRespCode             - returns UNC_RC_SUCCESS on deleting a vbr
+   *                                    / returns UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t delete_cmd(key_vbr_t& key_vbr, val_vbr_t& val_vbr,
-                             unc::driver::controller *ctr);
+  UncRespCode delete_cmd(key_vbr_t& key_vbr,
+                         val_vbr_t& val_vbr,
+                         unc::driver::controller *ctr);
 
   /**
    * @brief                          - get vbr list - gets all the vbridge
    *                                   under particular vtn
    * @param[in]                      - vtn name
    * @param[in] ctr                  - Controller pointer
-   * @param[out] cfg_node_vector      - cfg_node_vector out parameter contains
+   * @param[out] cfg_node_vector     - cfg_node_vector out parameter contains
    *                                   list of vbridge present for specified vtn
    *                                   in controller
-   * @return drv_resp_code_t         - returns DRVAPI_RESPONSE_SUCCESS on
+   * @return UncRespCode             - returns UNC_RC_SUCCESS on
    *                                   retrieving the vtn child successfully/
-   *                                   returns DRVAPI_RESPONSE_FAILURE on fail
+   *                                   returns UNC_DRV_RC_ERR_GENERIC on fail
    */
-  drv_resp_code_t get_vbr_list(std::string vtnname,
-                                unc::driver::controller* ctr,
-                                std::vector<unc::vtndrvcache::ConfigNode *>
-                                &cfg_node_vector);
+  UncRespCode get_vbr_list(
+      std::string vtnname,
+      unc::driver::controller* ctr,
+      std::vector<unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
 
   private:
   /**
@@ -110,17 +113,19 @@ class OdcVbrCommand: public unc::driver::vbr_driver_command {
   json_object* create_request_body(const val_vbr_t& val_vtn);
 
   /**
-   * @brief                    - parse the vbr response data
-   * @param[in] data           - data which is the response from controller
-   * @param[in] vtn_name       - vtn name
+   * @brief                      - parse the vbr response data
+   * @param[in] data             - data which is the response from controller
+   * @param[in] vtn_name         - vtn name
    * @param[out] cfg_node_vector - vector to which the resp to be pushed
-   * @return drv_resp_code_t   - returns DRVAPI_RESPONSE_SUCCESS on parsing vbr
-   *                             reponse data successfully/returns
-   *                             DRVAPI_RESPONSE_FAILURE on failure
+   * @return UncRespCode         - returns UNC_RC_SUCCESS on parsing vbr
+   *                               reponse data successfully/returns
+   *                               UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t parse_vbr_response(char *data, std::string vtn_name,
-                                         unc::driver::controller* ctr,
-        std::vector< unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
+  UncRespCode parse_vbr_response(
+      char *data,
+      std::string vtn_name,
+      unc::driver::controller* ctr,
+      std::vector< unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
 
   /**
    * @brief                          - parse vbr information and append to the vector
@@ -128,16 +133,19 @@ class OdcVbrCommand: public unc::driver::vbr_driver_command {
    * @param[in] json_obj_vbr         - json object which is to be parsed
    * @param[in] arr_idx              - array index in int specifies the array
    *                                   index  -1 denotes no array
-   * @param[out] cfg_node_vector       - vector to which config node needs
+   * @param[out] cfg_node_vector     - vector to which config node needs
    *                                   to be pushed
-   * @return drv_resp_code_t         - returns DRVAPI_RESPONSE_SUCCESS on
+   * @return UncRespCode             - returns UNC_RC_SUCCESS on
    *                                   parsing vbr and appending to vector
    *                                   successfully/returns
-   *                                   DRVAPI_RESPONSE_FAILURE on failure
+   *                                   UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t fill_config_node_vector(unc::driver::controller* ctr,
-      json_object *json_obj_vbr, std::string vtn_name, uint32_t arr_idx,
-          std::vector< unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
+  UncRespCode fill_config_node_vector(
+      unc::driver::controller* ctr,
+      json_object *json_obj_vbr,
+      std::string vtn_name,
+      uint32_t arr_idx,
+      std::vector< unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
 
   /**
    * @brief                      - read port map
@@ -152,12 +160,12 @@ class OdcVbrCommand: public unc::driver::vbr_driver_command {
    * @param[in]  - controller pointer
    * @param[in]  - parent key type pointer
    * @param[out] - list of configurations
-   * @retval     - DRVAPI_RESPONSE_SUCCESS / DRVAPI_RESPONSE_FAILURE
+   * @retval     - UNC_RC_SUCCESS / UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t fetch_config(unc::driver::controller* ctr,
-                               void* parent_key,
-                               std::vector<unc::vtndrvcache::ConfigNode *>
-                                 &cfgnode_vector);
+  UncRespCode fetch_config(
+      unc::driver::controller* ctr,
+      void* parent_key,
+      std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
   private:
   uint32_t age_interval_;

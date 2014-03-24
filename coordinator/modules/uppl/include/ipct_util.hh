@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -63,11 +63,15 @@ class IpctUtil  {
     static string get_string(const key_port_t &k);
     static string get_string(const val_port_t &v);
     static string get_string(const val_port_st_t &v);
+    static string get_string(const val_port_stats_t &v);
     static string get_string(const val_port_st_neighbor &v);
 
     static string get_string(const key_switch_t &k);
     static string get_string(const val_switch_t &v);
     static string get_string(const val_switch_st_t &v);
+    static string get_string(const val_switch_st_detail_t &v);
+    static std::string get_string(const val_df_data_flow_t &val_obj);
+    static std::string get_string(const val_df_data_flow_st_t &val_obj);
 
     static string get_string(const val_path_fault_alarm_t  &v);
     static string get_string(const val_phys_path_fault_alarm_t  &v);

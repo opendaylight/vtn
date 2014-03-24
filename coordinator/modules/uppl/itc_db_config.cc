@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -40,14 +40,14 @@ DBConfigurationRequest::~DBConfigurationRequest() {
  *                   DB and from Candidate to running DB and
  *                   clears State DB entries
  * @param[in]      : None
- * @Return         : UPPL_RC_SUCCESS if Load and Commit Startup is successful
- *                   or UPPL_RC_ERR_* if failure occurs
+ * @Return         : UNC_RC_SUCCESS if Load and Commit Startup is successful
+ *                   or UNC_UPPL_RC_ERR_* if failure occurs
  * */
-UpplReturnCode DBConfigurationRequest::LoadAndCommitStartup(
+UncRespCode DBConfigurationRequest::LoadAndCommitStartup(
     OdbcmConnectionHandler *db_conn) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   ODBCM_RC_STATUS copy_db_status = ODBCM_RC_SUCCESS;
-  UpplReturnCode result_code = UPPL_RC_SUCCESS;
+  UncRespCode result_code = UNC_RC_SUCCESS;
   /* copy StartUp to Candidate */
   copy_db_status = physical_layer->get_odbc_manager()->
       CopyDatabase(UNC_DT_STARTUP, UNC_DT_CANDIDATE, db_conn);
@@ -55,13 +55,13 @@ UpplReturnCode DBConfigurationRequest::LoadAndCommitStartup(
     if (copy_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
       pfc_log_fatal("DB connection not available or cannot access DB");
-      result_code = UPPL_RC_ERR_DB_ACCESS;
+      result_code = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else {
       // log error to log daemon
       string log_msg = string("LoadAndCommitStartup:")+
           "Copying the StartUp to Candidate database failed";
       pfc_log_error(log_msg.c_str());
-      result_code = UPPL_RC_ERR_COPY_STARTUP_TO_CANDID;
+      result_code = UNC_UPPL_RC_ERR_COPY_STARTUP_TO_CANDID;
     }
     return result_code;
   }
@@ -71,14 +71,14 @@ UpplReturnCode DBConfigurationRequest::LoadAndCommitStartup(
       ClearDatabase(UNC_DT_RUNNING, db_conn);
   if (clear_status != ODBCM_RC_SUCCESS) {
     pfc_log_info("Running DB clearing failed");
-    result_code = UPPL_RC_ERR_CLEAR_DB;
+    result_code = UNC_UPPL_RC_ERR_CLEAR_DB;
   }
   // Clear Import Database entries
   clear_status = PhysicalLayer::get_instance()->get_odbc_manager()->
       ClearDatabase(UNC_DT_IMPORT, db_conn);
   if (clear_status != ODBCM_RC_SUCCESS) {
     pfc_log_info("Import DB clearing failed");
-    result_code = UPPL_RC_ERR_CLEAR_DB;
+    result_code = UNC_UPPL_RC_ERR_CLEAR_DB;
   }
   /* copy Candidate to Running */
   copy_db_status = physical_layer->get_odbc_manager()->
@@ -89,13 +89,13 @@ UpplReturnCode DBConfigurationRequest::LoadAndCommitStartup(
       string log_msg = string("LoadAndCommitStartup:")+
           "DB connection not available or cannot access DB";
       pfc_log_fatal(log_msg.c_str());
-      result_code = UPPL_RC_ERR_DB_ACCESS;
+      result_code = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else {
       // log error to log daemon
       string log_msg = string("LoadAndCommitStartup:")+
           "copying the Candidate to Running database failed";
       pfc_log_error(log_msg.c_str());
-      result_code = UPPL_RC_ERR_COPY_CANDID_TO_RUNNING;
+      result_code = UNC_UPPL_RC_ERR_COPY_CANDID_TO_RUNNING;
     }
     return result_code;
   }
@@ -105,7 +105,7 @@ UpplReturnCode DBConfigurationRequest::LoadAndCommitStartup(
       ClearDatabase(UNC_DT_STATE, db_conn);
   if (clear_status != ODBCM_RC_SUCCESS) {
     pfc_log_info("State DB clearing failed");
-    result_code = UPPL_RC_ERR_CLEAR_DB;
+    result_code = UNC_UPPL_RC_ERR_CLEAR_DB;
   }
   return result_code;
 }
@@ -113,13 +113,13 @@ UpplReturnCode DBConfigurationRequest::LoadAndCommitStartup(
 /**ClearStartUpDb()
  * @Description    : This function clears the content of Startup Database
  * @param[in]      : None
- * @Return         : UPPL_RC_SUCCESS if Clearing the startup DB is successful 
- *                   or UPPL_RC_ERR_* in case of failure
+ * @Return         : UNC_RC_SUCCESS if Clearing the startup DB is successful 
+ *                   or UNC_UPPL_RC_ERR_* in case of failure
  * */
-UpplReturnCode DBConfigurationRequest::ClearStartUpDb(
+UncRespCode DBConfigurationRequest::ClearStartUpDb(
     OdbcmConnectionHandler *db_conn) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
-  UpplReturnCode result_code = UPPL_RC_SUCCESS;
+  UncRespCode result_code = UNC_RC_SUCCESS;
   ODBCM_RC_STATUS clear_db_status;
   /* clear the StartUp db */
   clear_db_status = physical_layer->get_odbc_manager()->
@@ -128,11 +128,11 @@ UpplReturnCode DBConfigurationRequest::ClearStartUpDb(
     if (clear_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
       pfc_log_fatal("DB connection not available or cannot access DB");
-      result_code = UPPL_RC_ERR_DB_ACCESS;
+      result_code = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else {
       // log error to log daemon
       pfc_log_error("ClearStartUpDb:Clearing the StartUp database failed");
-      result_code = UPPL_RC_ERR_CLEAR_DB;
+      result_code = UNC_UPPL_RC_ERR_CLEAR_DB;
     }
   }
   return result_code;
@@ -142,23 +142,23 @@ UpplReturnCode DBConfigurationRequest::ClearStartUpDb(
  * @Description : This function modified controller to logical and rollbacks
  *                the uncommitted transaction  from the candidate database.
  * @param[in]   : None
- * @Return      : UPPL_RC_SUCCESS if AbortCandidate database is successful
- *                or UPPL_RC_ERR_* in case of failure
+ * @Return      : UNC_RC_SUCCESS if AbortCandidate database is successful
+ *                or UNC_UPPL_RC_ERR_* in case of failure
  * */
-UpplReturnCode DBConfigurationRequest::AbortCandidateDb(
+UncRespCode DBConfigurationRequest::AbortCandidateDb(
     OdbcmConnectionHandler *db_conn) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
-  UpplReturnCode result_code = UPPL_RC_SUCCESS;
+  UncRespCode result_code = UNC_RC_SUCCESS;
   result_code = SendDeletedControllerToLogical(db_conn);
-  if (result_code != UPPL_RC_SUCCESS) {
+  if (result_code != UNC_RC_SUCCESS) {
     return result_code;
   }
   result_code = SendCreatedControllerToLogical(db_conn);
-  if (result_code != UPPL_RC_SUCCESS) {
+  if (result_code != UNC_RC_SUCCESS) {
     return result_code;
   }
   result_code = SendUpdatedControllerToLogical(db_conn);
-  if (result_code != UPPL_RC_SUCCESS) {
+  if (result_code != UNC_RC_SUCCESS) {
     return result_code;
   }
   /* copy running database to candidate database */
@@ -168,15 +168,15 @@ UpplReturnCode DBConfigurationRequest::AbortCandidateDb(
     if (copy_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
       pfc_log_fatal("DB connection not available or cannot access DB");
-      result_code = UPPL_RC_ERR_DB_ACCESS;
+      result_code = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else {
       /*  log error to log  daemon */
       pfc_log_error("copy running to candidate database failed");
-      result_code = UPPL_RC_ERR_COPY_RUNNING_TO_CANDID;
+      result_code = UNC_UPPL_RC_ERR_COPY_RUNNING_TO_CANDID;
     }
   }
   result_code = SendAppliedControllerToLogical(db_conn);
-  if (result_code != UPPL_RC_SUCCESS) {
+  if (result_code != UNC_RC_SUCCESS) {
     return result_code;
   }
   return result_code;
@@ -186,13 +186,13 @@ UpplReturnCode DBConfigurationRequest::AbortCandidateDb(
  * @Description : This function send request to ODBCManager to sync running
  *                with StartUp configuration
  * @param[in]   : None
- * @Return      : UPPL_RC_SUCCESS if saving running to startup database is
- *                successful or UPPL_RC_ERR_* in case of failure
+ * @Return      : UNC_RC_SUCCESS if saving running to startup database is
+ *                successful or UNC_UPPL_RC_ERR_* in case of failure
  * */
-UpplReturnCode DBConfigurationRequest::SaveRunningToStartUp(
+UncRespCode DBConfigurationRequest::SaveRunningToStartUp(
     OdbcmConnectionHandler *db_conn)  {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
-  UpplReturnCode result_code = UPPL_RC_SUCCESS;
+  UncRespCode result_code = UNC_RC_SUCCESS;
   ODBCM_RC_STATUS copy_db_status;
 
   /* Copy running database to StartUp database */
@@ -202,11 +202,11 @@ UpplReturnCode DBConfigurationRequest::SaveRunningToStartUp(
     if (copy_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
       pfc_log_fatal("DB connection not available or cannot access DB");
-      result_code = UPPL_RC_ERR_DB_ACCESS;
+      result_code = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else {
       /* log  error  to log manager */
       pfc_log_error("copy running database to StartUp database failed");
-      result_code = UPPL_RC_ERR_COPY_RUNNING_TO_START;
+      result_code = UNC_UPPL_RC_ERR_COPY_RUNNING_TO_START;
     }
   }
   return result_code;
@@ -216,20 +216,20 @@ UpplReturnCode DBConfigurationRequest::SaveRunningToStartUp(
  * @Description : This function send the deleted controller to logical
  *                during abort candidate db/ abort transaction
  * @param[in]   : None
- * @Return      : UPPL_RC_SUCCESS if sending the controller information to
- *                logical is successful or UPPL_RC_ERR_* in case of failure 
+ * @Return      : UNC_RC_SUCCESS if sending the controller information to
+ *                logical is successful or UNC_UPPL_RC_ERR_* in case of failure 
  * */
-UpplReturnCode DBConfigurationRequest::SendDeletedControllerToLogical(
+UncRespCode DBConfigurationRequest::SendDeletedControllerToLogical(
     OdbcmConnectionHandler *db_conn) {
   Kt_Controller kt_ctr;
   vector<void*> vec_key_ctr_modified;
   // Getting the created Configuration from the database
-  UpplReturnCode result_code = kt_ctr.GetModifiedRows(
+  UncRespCode result_code = kt_ctr.GetModifiedRows(
       db_conn, vec_key_ctr_modified,
       CREATED);
-  if (result_code != UPPL_RC_SUCCESS) {
+  if (result_code != UNC_RC_SUCCESS) {
     // No created controller available
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   for (uint32_t config_count = 0; config_count != vec_key_ctr_modified.size();
       config_count++) {
@@ -247,32 +247,32 @@ UpplReturnCode DBConfigurationRequest::SendDeletedControllerToLogical(
       delete ctr_key;
       ctr_key = NULL;
     }
-    if (result_code != UPPL_RC_SUCCESS) {
+    if (result_code != UNC_RC_SUCCESS) {
       pfc_log_error("Failed to send the info to UPLL of controller");
-      return UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
+      return UNC_UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
     }
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**SendCreatedControllerToLogical
  * @Description : This function send the created controller
  *                to logical during abort candidate db/ abort transaction
  * @param[in]   : None
- * @Return      : UPPL_RC_SUCCESS if sending the controller information to
- *                logical is successful or UPPL_RC_ERR_* in case of failure
+ * @Return      : UNC_RC_SUCCESS if sending the controller information to
+ *                logical is successful or UNC_UPPL_RC_ERR_* in case of failure
  * */
-UpplReturnCode DBConfigurationRequest::SendCreatedControllerToLogical(
+UncRespCode DBConfigurationRequest::SendCreatedControllerToLogical(
     OdbcmConnectionHandler *db_conn) {
   Kt_Controller kt_ctr;
   vector<void*> vec_key_ctr_modified;
   // Getting the deleted Configuration from the database
-  UpplReturnCode result_code = kt_ctr.GetModifiedRows(
+  UncRespCode result_code = kt_ctr.GetModifiedRows(
       db_conn, vec_key_ctr_modified,
       DELETED);
-  if (result_code != UPPL_RC_SUCCESS) {
+  if (result_code != UNC_RC_SUCCESS) {
     // No deleted controller available
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
 
   for (uint32_t config_count = 0;
@@ -285,7 +285,7 @@ UpplReturnCode DBConfigurationRequest::SendCreatedControllerToLogical(
     if (kt_ctr.ReadInternal(db_conn, vect_ctr_key,
                             vect_ctr_val,
                             UNC_DT_RUNNING,
-                            UNC_OP_READ) != UPPL_RC_SUCCESS) {
+                            UNC_OP_READ) != UNC_RC_SUCCESS) {
       delete ctr_key;
       ctr_key = NULL;
       continue;
@@ -315,32 +315,32 @@ UpplReturnCode DBConfigurationRequest::SendCreatedControllerToLogical(
     val_ctr_st = NULL;
     delete ctr_key;
     ctr_key = NULL;
-    if (result_code != UPPL_RC_SUCCESS) {
+    if (result_code != UNC_RC_SUCCESS) {
       pfc_log_error("Failed to send the info to UPLL of controller");
-      return UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
+      return UNC_UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
     }
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**SendUpdatedControllerToLogical
  * @Description : This function send the updated controller to
  *                logical during abort candidate db/ abort transaction
  * @param[in]   : None
- * @Return      : UPPL_RC_SUCCESS if sending the controller information to
- *                logical is successful or UPPL_RC_ERR_* in case of failure 
+ * @Return      : UNC_RC_SUCCESS if sending the controller information to
+ *                logical is successful or UNC_UPPL_RC_ERR_* in case of failure 
  * */
-UpplReturnCode DBConfigurationRequest::SendUpdatedControllerToLogical(
+UncRespCode DBConfigurationRequest::SendUpdatedControllerToLogical(
     OdbcmConnectionHandler *db_conn) {
   Kt_Controller kt_ctr;
   vector<void*> vec_key_ctr_modified;
   // Getting the Update Configuration from the database
-  UpplReturnCode result_code = kt_ctr.GetModifiedRows(
+  UncRespCode result_code = kt_ctr.GetModifiedRows(
       db_conn, vec_key_ctr_modified,
       UPDATED);
-  if (result_code != UPPL_RC_SUCCESS) {
+  if (result_code != UNC_RC_SUCCESS) {
     // No updated controller available
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   // Iterating the updated controller vector
   for (uint32_t config_count = 0; \
@@ -354,7 +354,7 @@ UpplReturnCode DBConfigurationRequest::SendUpdatedControllerToLogical(
     if (kt_ctr.ReadInternal(db_conn, vect_ctr_key,
                             vect_ctr_val,
                             UNC_DT_RUNNING,
-                            UNC_OP_READ) != UPPL_RC_SUCCESS) {
+                            UNC_OP_READ) != UNC_RC_SUCCESS) {
       delete ctr_key;
       ctr_key = NULL;
       continue;
@@ -384,32 +384,32 @@ UpplReturnCode DBConfigurationRequest::SendUpdatedControllerToLogical(
     val_ctr_st = NULL;
     delete ctr_key;
     ctr_key = NULL;
-    if (result_code != UPPL_RC_SUCCESS) {
+    if (result_code != UNC_RC_SUCCESS) {
       pfc_log_error("Failed to send the info to UPLL of controller");
-      return UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
+      return UNC_UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
     }
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**SendAppliedControllerToLogical
  * @Description    : This function send the applied controller to
  *                   logical during abort candidate db/ abort transaction
  * @param[in]      : None
- * @Return         : UPPL_RC_SUCCESS if sending the controller information to
- *                   logical is successful or UPPL_RC_ERR_* in case of failure
+ * @Return         : UNC_RC_SUCCESS if sending the controller information to
+ *                   logical is successful or UNC_UPPL_RC_ERR_* in case of failure
  * */
-UpplReturnCode DBConfigurationRequest::SendAppliedControllerToLogical(
+UncRespCode DBConfigurationRequest::SendAppliedControllerToLogical(
     OdbcmConnectionHandler *db_conn) {
   Kt_Controller kt_ctr;
   vector<void*> vec_key_ctr_modified;
   // Getting the deleted Configuration from the database
-  UpplReturnCode result_code = kt_ctr.GetModifiedRows(
+  UncRespCode result_code = kt_ctr.GetModifiedRows(
       db_conn, vec_key_ctr_modified,
       APPLIED);
-  if (result_code != UPPL_RC_SUCCESS) {
+  if (result_code != UNC_RC_SUCCESS) {
     // No deleted controller available
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
 
   for (uint32_t config_count = 0;
@@ -422,7 +422,7 @@ UpplReturnCode DBConfigurationRequest::SendAppliedControllerToLogical(
     if (kt_ctr.ReadInternal(db_conn, vect_ctr_key,
                             vect_ctr_val,
                             UNC_DT_RUNNING,
-                            UNC_OP_READ) != UPPL_RC_SUCCESS) {
+                            UNC_OP_READ) != UNC_RC_SUCCESS) {
       delete ctr_key;
       ctr_key = NULL;
       continue;
@@ -452,10 +452,10 @@ UpplReturnCode DBConfigurationRequest::SendAppliedControllerToLogical(
     val_ctr_st = NULL;
     delete ctr_key;
     ctr_key = NULL;
-    if (result_code != UPPL_RC_SUCCESS) {
+    if (result_code != UNC_RC_SUCCESS) {
       pfc_log_error("Failed to send the info to UPLL of controller");
-      return UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
+      return UNC_UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
     }
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }

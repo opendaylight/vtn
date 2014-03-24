@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -48,6 +48,7 @@ public class ArpEntryResource extends AbstractResource {
 	/** The Constant LOG. */
 	private static final Logger LOG = Logger.getLogger(ArpEntryResource.class
 			.getName());
+
 	/**
 	 * Instantiates a new ARP entry resource.
 	 */
@@ -57,18 +58,21 @@ public class ArpEntryResource extends AbstractResource {
 		setValidator(new ArpEntryResourceValidator(this));
 		LOG.trace("Complete ArpEntryResource#ArpEntryResource()");
 	}
+
 	/**
 	 * @return the vtnName
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
+
 	/**
 	 * @return the vrtName
 	 */
-	public String getVrtName() {
+	public final String getVrtName() {
 		return vrtName;
 	}
+
 	/**
 	 * Implementation of get method of ArpEntry API
 	 * 
@@ -79,7 +83,8 @@ public class ArpEntryResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start ArpEntryResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -131,7 +136,7 @@ public class ArpEntryResource extends AbstractResource {
 												.ordinal()));
 			}
 			LOG.debug("Request packet created successfully");
-			status =requestProcessor.processIpcRequest();
+			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
 			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			setInfo(responseGenerator.getARPEntryResponse(
@@ -165,6 +170,7 @@ public class ArpEntryResource extends AbstractResource {
 		LOG.trace("Completed ArpEntryResource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -48,6 +48,7 @@ public class VTepResource extends AbstractResource {
 	/** The Constant LOG. */
 	private static final Logger LOG = Logger.getLogger(VTepResource.class
 			.getName());
+
 	/**
 	 * Instantiates a new v tep resource.
 	 */
@@ -57,18 +58,21 @@ public class VTepResource extends AbstractResource {
 		setValidator(new VTepResourceValidator(this));
 		LOG.trace("Completed VTepResource#VTepResource()");
 	}
+
 	/**
 	 * @return the vtnName
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
+
 	/**
 	 * @return the vTepName
 	 */
-	public String getvTepName() {
+	public final String getvTepName() {
 		return vTepName;
 	}
+
 	/**
 	 * Implementation of Put method of Vtep API
 	 * 
@@ -79,7 +83,8 @@ public class VTepResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VTepResource#put()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -127,6 +132,7 @@ public class VTepResource extends AbstractResource {
 		LOG.trace("Completed VTepResource#put()");
 		return status;
 	}
+
 	/**
 	 * Implementation of Delete method of Vtep API
 	 * 
@@ -134,7 +140,7 @@ public class VTepResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Start VTepResource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -181,6 +187,7 @@ public class VTepResource extends AbstractResource {
 		LOG.trace("Completed VTepResource#delete()");
 		return status;
 	}
+
 	/**
 	 * Implementation of Get method of Vtep API
 	 * 
@@ -191,7 +198,8 @@ public class VTepResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VTepResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -210,18 +218,18 @@ public class VTepResource extends AbstractResource {
 					IpcRequestPacketEnum.KT_VTEP_GET, requestBody,
 					getUriParameters());
 			LOG.debug("Request packet created successfully");
-			
+
 			if (requestBody != null
 					&& ((requestBody.has(VtnServiceJsonConsts.TARGETDB) && requestBody
 							.get(VtnServiceJsonConsts.TARGETDB).getAsString()
 							.equalsIgnoreCase(VtnServiceJsonConsts.STATE)))) {
-				
-				IpcStruct valStruct = new IpcStruct(
+
+				final IpcStruct valStruct = new IpcStruct(
 						UncStructEnum.ValVtep.getValue());
 				requestProcessor.getRequestPacket().setValStruct(valStruct);
 				LOG.debug("Add ValVTepSt in Request Packet");
-				IpcDataUnit[] extraDataUnits = new IpcDataUnit[1];
-				IpcStruct valStructSt = new IpcStruct(
+				final IpcDataUnit[] extraDataUnits = new IpcDataUnit[1];
+				final IpcStruct valStructSt = new IpcStruct(
 						UncStructEnum.ValVtepSt.getValue());
 				extraDataUnits[0] = valStructSt;
 				requestProcessor.getRequestPacket().setExtraDataUnits(
@@ -229,7 +237,7 @@ public class VTepResource extends AbstractResource {
 			}
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			setInfo(responseGenerator.getVtepResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.SHOW));
@@ -261,6 +269,7 @@ public class VTepResource extends AbstractResource {
 		LOG.trace("Completed VTepResource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 

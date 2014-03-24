@@ -24,14 +24,14 @@ class ControllerFramework  {
   ~ControllerFramework() {}
 
 
-  drv_resp_code_t GetDriverByControllerName(std::string& controller_name,
+  UncRespCode GetDriverByControllerName(std::string& controller_name,
                                             controller** ctl, driver** drv) {
     pfc_log_info("%s: res_code:%u ", PFC_FUNCNAME, res_code);
     if (res_code)
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     *ctl = controller::create_controll();
     *drv = driver::create_driver();
-    return DRVAPI_RESPONSE_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
 
 
@@ -39,13 +39,13 @@ class ControllerFramework  {
                      controller* ctl , driver* drv) { }
 
 
-  drv_resp_code_t UpdateControllerConfiguration(std::string& controller_name,
+  UncRespCode UpdateControllerConfiguration(std::string& controller_name,
                      controller*, driver*, const key_ctr&, const val_ctr&) {
-    return DRVAPI_RESPONSE_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
 
-  drv_resp_code_t RemoveControllerConfiguration(std::string& controller_name) {
-    return DRVAPI_RESPONSE_SUCCESS;
+  UncRespCode RemoveControllerConfiguration(std::string& controller_name) {
+    return UNC_RC_SUCCESS;
   }
 
 
@@ -56,23 +56,23 @@ class ControllerFramework  {
 
   void RegisterDriver(unc_keytype_ctrtype_t controller_type, driver*) { }
 
-  drv_resp_code_t GetControllerInstance(
+  UncRespCode GetControllerInstance(
       std::string& controller_name,
       controller** controller_instance,
       driver** driver_instance) {
     if (res_code)
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     *controller_instance = controller::create_controll();
     *driver_instance = driver::create_driver();
-    return DRVAPI_RESPONSE_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
 
-  drv_resp_code_t
+  UncRespCode
       RemoveControllerConfiguration(
           std::string& controller_name,
           controller* controller_instance,
           driver* driver_instance) {
-        return DRVAPI_RESPONSE_SUCCESS;
+        return UNC_RC_SUCCESS;
       }
   static void set_result(uint32_t resp);
   static void set_root_result(uint32_t resp);

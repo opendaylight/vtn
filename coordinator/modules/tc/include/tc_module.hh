@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -108,8 +108,8 @@ class TcModule : public pfc::core::Module, public UncStateHandler {
   TcTaskqUtil* audit_q_;
   /* DB DSN NAME */
   std::string dsn_name;
-  /* DB DRV NAME */
-  std::string drv_name;
+  /*Max Failover instance*/
+  uint32_t max_failover_instance_;
 };
 }  //  namespace tc
 }  //  namespace unc

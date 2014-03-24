@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -92,42 +92,42 @@ Kt_Base* Kt_Ctr_Domain::GetChildClassPointer(KtDomainChildClass KIndex) {
  *                data_type - UNC_DT_* , Create only allowed in candidate from
  *                VTN
  *                sess - ipc server session where the response has to be added
- * @return      : UPPL_RC_SUCCESS is returned when the response is added to ipc
+ * @return      : UNC_RC_SUCCESS is returned when the response is added to ipc
  *                session successfully.
- *                UPPL_RC_ERR_* is returned when ipc response could not be
+ *                UNC_UPPL_RC_ERR_* is returned when ipc response could not be
  *                added to sess.
  **/
 
-UpplReturnCode Kt_Ctr_Domain::Create(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Ctr_Domain::Create(OdbcmConnectionHandler *db_conn,
                                      uint32_t session_id,
                                      uint32_t configuration_id,
                                      void* key_struct,
                                      void* val_struct,
                                      uint32_t data_type,
                                      ServerSession &sess) {
-  UpplReturnCode create_status = UPPL_RC_SUCCESS;
+  UncRespCode create_status = UNC_RC_SUCCESS;
   key_ctr_domain *obj_key_ctr_domain=
       reinterpret_cast<key_ctr_domain*>(key_struct);
   if ((unc_keytype_datatype_t)data_type != UNC_DT_CANDIDATE) {
     pfc_log_error("Create operation is provided on unsupported data type");
-    create_status = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    create_status = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   } else {
     string controller_name = (const char*)obj_key_ctr_domain->
         ctr_key.controller_name;
     unc_keytype_ctrtype_t controller_type;
-    UpplReturnCode retcode = PhyUtil::get_controller_type(
+    UncRespCode retcode = PhyUtil::get_controller_type(
         db_conn, controller_name,
         controller_type,
         (unc_keytype_datatype_t)data_type);
     // Check whether operation is allowed on the given DT type
-    if (retcode != UPPL_RC_SUCCESS) {
+    if (retcode != UNC_RC_SUCCESS) {
       pfc_log_error("Error getting the controller type");
-      create_status = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
-    } else if (retcode == UPPL_RC_SUCCESS) {
+      create_status = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    } else if (retcode == UNC_RC_SUCCESS) {
       if (controller_type != UNC_CT_UNKNOWN) {
         pfc_log_error("Create Operation of KNOWN DOMAIN");
         pfc_log_error("is not supported from VTN");
-        create_status = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+        create_status = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
       } else {
         create_status = CreateKeyInstance(db_conn, key_struct,
                                           val_struct,
@@ -145,16 +145,16 @@ UpplReturnCode Kt_Ctr_Domain::Create(OdbcmConnectionHandler *db_conn,
       0,
       0,
       data_type,
-      create_status};
+      static_cast<uint32_t>(create_status)};
 
   int err = PhyUtil::sessOutRespHeader(sess, rsh);
   err |= sess.addOutput((uint32_t)UNC_KT_CTR_DOMAIN);
   err |= sess.addOutput(*obj_key_ctr_domain);
   if (err != 0) {
     pfc_log_error("Server session addOutput failed, so return IPC_WRITE_ERROR");
-    create_status = UPPL_RC_ERR_IPC_WRITE_ERROR;
+    create_status = UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
   } else {
-    create_status = UPPL_RC_SUCCESS;
+    create_status = UNC_RC_SUCCESS;
   }
   return create_status;
 }
@@ -168,23 +168,23 @@ UpplReturnCode Kt_Ctr_Domain::Create(OdbcmConnectionHandler *db_conn,
  *                request is from VTN and allowed in state if request is from
  *                south bound
  *                key_type - indicates the key type class 
- * * @return    : UPPL_RC_SUCCESS is returned when the create is success
- *                UPPL_RC_ERR_* is returned when ipc response could not be
+ * * @return    : UNC_RC_SUCCESS is returned when the create is success
+ *                UNC_UPPL_RC_ERR_* is returned when ipc response could not be
  *                added to sess.
  * */
-UpplReturnCode Kt_Ctr_Domain::CreateKeyInstance(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Ctr_Domain::CreateKeyInstance(OdbcmConnectionHandler *db_conn,
                                                 void* key_struct,
                                                 void* val_struct,
                                                 uint32_t data_type,
                                                 uint32_t key_type) {
-  UpplReturnCode create_status = UPPL_RC_SUCCESS;
+  UncRespCode create_status = UNC_RC_SUCCESS;
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   // Check whether operation is allowed on the given DT type
   if ((unc_keytype_datatype_t)data_type != UNC_DT_CANDIDATE &&
       (unc_keytype_datatype_t)data_type != UNC_DT_STATE &&
       (unc_keytype_datatype_t)data_type != UNC_DT_IMPORT) {
     pfc_log_error("Create operation is provided on unsupported data type");
-    return UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   }
 
   // Structure used to send request to ODBC
@@ -217,11 +217,11 @@ UpplReturnCode Kt_Ctr_Domain::CreateKeyInstance(OdbcmConnectionHandler *db_conn,
     if (create_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
       pfc_log_fatal("DB connection not available or cannot access DB");
-      create_status = UPPL_RC_ERR_DB_ACCESS;
+      create_status = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else {
       // log error to log daemon
       pfc_log_error("Create operation has failed");
-      create_status = UPPL_RC_ERR_DB_CREATE;
+      create_status = UNC_UPPL_RC_ERR_DB_CREATE;
     }
   } else {
     pfc_log_info("Create of Domain is success");
@@ -239,41 +239,41 @@ UpplReturnCode Kt_Ctr_Domain::CreateKeyInstance(OdbcmConnectionHandler *db_conn,
  *                data_type - UNC_DT_* , Update only allowed in candidate from
  *                VTN
  *                sess - ipc server session where the response has to be added
- * @return      : UPPL_RC_SUCCESS is returned when the response is added to ipc
+ * @return      : UNC_RC_SUCCESS is returned when the response is added to ipc
  *                session successfully.
- *                UPPL_RC_ERR_* is returned when ipc response could not be
+ *                UNC_UPPL_RC_ERR_* is returned when ipc response could not be
  *                added to sess.
  **/
-UpplReturnCode Kt_Ctr_Domain::Update(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Ctr_Domain::Update(OdbcmConnectionHandler *db_conn,
                                      uint32_t session_id,
                                      uint32_t configuration_id,
                                      void* key_struct,
                                      void* val_struct,
                                      uint32_t data_type,
                                      ServerSession &sess) {
-  UpplReturnCode update_status = UPPL_RC_SUCCESS;
+  UncRespCode update_status = UNC_RC_SUCCESS;
   key_ctr_domain *obj_key_ctr_domain=
       reinterpret_cast<key_ctr_domain*>(key_struct);
   if ((unc_keytype_datatype_t)data_type != UNC_DT_CANDIDATE) {
     pfc_log_error("Update operation is provided on unsupported data type");
-    update_status = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    update_status = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   } else {
     string controller_name = (const char*)obj_key_ctr_domain->
         ctr_key.controller_name;
     unc_keytype_ctrtype_t controller_type;
-    UpplReturnCode retcode = PhyUtil::get_controller_type(
+    UncRespCode retcode = PhyUtil::get_controller_type(
         db_conn, controller_name,
         controller_type,
         (unc_keytype_datatype_t)data_type);
     // Check whether operation is allowed on the given DT type
-    if (retcode != UPPL_RC_SUCCESS) {
+    if (retcode != UNC_RC_SUCCESS) {
       pfc_log_error("Error getting the controller type");
-      update_status = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
-    } else if (retcode == UPPL_RC_SUCCESS) {
+      update_status = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    } else if (retcode == UNC_RC_SUCCESS) {
       if (controller_type != UNC_CT_UNKNOWN) {
         pfc_log_error("Update Operation of KNOWN DOMAIN");
         pfc_log_error("is not supported from VTN");
-        update_status = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+        update_status = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
       } else {
         update_status = UpdateKeyInstance(db_conn, key_struct,
                                           val_struct,
@@ -291,15 +291,15 @@ UpplReturnCode Kt_Ctr_Domain::Update(OdbcmConnectionHandler *db_conn,
       0,
       0,
       data_type,
-      update_status};
+      static_cast<uint32_t>(update_status)};
   int err = PhyUtil::sessOutRespHeader(sess, rsh);
   err |= sess.addOutput((uint32_t)UNC_KT_CTR_DOMAIN);
   err |= sess.addOutput(*obj_key_ctr_domain);
   if (err != 0) {
     pfc_log_error("Server session addOutput failed, so return IPC_WRITE_ERROR");
-    update_status = UPPL_RC_ERR_IPC_WRITE_ERROR;
+    update_status = UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
   } else {
-    update_status = UPPL_RC_SUCCESS;
+    update_status = UNC_RC_SUCCESS;
   }
   return update_status;
 }
@@ -312,23 +312,23 @@ UpplReturnCode Kt_Ctr_Domain::Update(OdbcmConnectionHandler *db_conn,
  *                request is from VTN and allowed in state if request is from
  *                southbound
  *                key_type - indicates the key type class
- * * @return    : UPPL_RC_SUCCESS is returned when the update
+ * * @return    : UNC_RC_SUCCESS is returned when the update
  * is done successfully.
- * UPPL_RC_ERR_* is returned when the update is error
+ * UNC_UPPL_RC_ERR_* is returned when the update is error
  * */
-UpplReturnCode Kt_Ctr_Domain::UpdateKeyInstance(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Ctr_Domain::UpdateKeyInstance(OdbcmConnectionHandler *db_conn,
                                                 void* key_struct,
                                                 void* val_struct,
                                                 uint32_t data_type,
                                                 uint32_t key_type) {
-  UpplReturnCode update_status = UPPL_RC_SUCCESS;
+  UncRespCode update_status = UNC_RC_SUCCESS;
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   // Check whether operation is allowed on the given DT type
   if ((unc_keytype_datatype_t)data_type != UNC_DT_CANDIDATE &&
       (unc_keytype_datatype_t)data_type != UNC_DT_STATE &&
       (unc_keytype_datatype_t)data_type != UNC_DT_IMPORT) {
     pfc_log_error("Update operation is provided on unsupported data type");
-    return UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   }
   // Structure used to send request to ODBC
   DBTableSchema kt_ctr_domain_dbtableschema;
@@ -361,10 +361,10 @@ UpplReturnCode Kt_Ctr_Domain::UpdateKeyInstance(OdbcmConnectionHandler *db_conn,
       if (update_db_status == ODBCM_RC_CONNECTION_ERROR) {
         // log fatal error to log daemon
         pfc_log_fatal("DB connection not available or cannot access DB");
-        update_status = UPPL_RC_ERR_DB_ACCESS;
+        update_status = UNC_UPPL_RC_ERR_DB_ACCESS;
       } else {
         // log error to log daemon
-        update_status = UPPL_RC_ERR_DB_UPDATE;
+        update_status = UNC_UPPL_RC_ERR_DB_UPDATE;
       }
     } else {
       pfc_log_info("Update of a ctr domain in data_type(%d) is success",
@@ -386,41 +386,41 @@ UpplReturnCode Kt_Ctr_Domain::UpdateKeyInstance(OdbcmConnectionHandler *db_conn,
  *                  request is from VTN and allowed in state if request is from
  *                  southbound
  *                  sess - ipc server session where the response has to be added
- * * @return      : UPPL_RC_SUCCESS is returned when the response is added to
+ * * @return      : UNC_RC_SUCCESS is returned when the response is added to
  *                  ipc session successfully.
- *                  UPPL_RC_ERR_* is returned when ipc response could not be
+ *                  UNC_UPPL_RC_ERR_* is returned when ipc response could not be
  *                  added to sess.
  **/
-UpplReturnCode Kt_Ctr_Domain::Delete(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Ctr_Domain::Delete(OdbcmConnectionHandler *db_conn,
                                      uint32_t session_id,
                                      uint32_t configuration_id,
                                      void* key_struct,
                                      uint32_t data_type,
                                      ServerSession &sess) {
-  UpplReturnCode delete_status = UPPL_RC_SUCCESS;
+  UncRespCode delete_status = UNC_RC_SUCCESS;
   key_ctr_domain *obj_key_ctr_domain=
       reinterpret_cast<key_ctr_domain*>(key_struct);
   if ((unc_keytype_datatype_t)data_type != UNC_DT_CANDIDATE) {
     pfc_log_error("Delete operation is provided on unsupported data type");
-    delete_status = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    delete_status = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   } else {
     string domain_name = (const char*)obj_key_ctr_domain->domain_name;
     string controller_name = (const char*)obj_key_ctr_domain->
         ctr_key.controller_name;
     unc_keytype_ctrtype_t controller_type;
-    UpplReturnCode retcode = PhyUtil::get_controller_type(
+    UncRespCode retcode = PhyUtil::get_controller_type(
         db_conn, controller_name, controller_type,
         (unc_keytype_datatype_t)data_type);
     // Check whether operation is allowed on the given DT type
-    if (retcode != UPPL_RC_SUCCESS) {
+    if (retcode != UNC_RC_SUCCESS) {
       pfc_log_error("Error getting the controller type");
-      delete_status = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+      delete_status = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
     }
-    if (retcode == UPPL_RC_SUCCESS && controller_type != UNC_CT_UNKNOWN) {
+    if (retcode == UNC_RC_SUCCESS && controller_type != UNC_CT_UNKNOWN) {
       pfc_log_error("Delete Operation of KNOWN DOMAIN");
       pfc_log_error("is not supported from VTN");
-      delete_status = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
-    } else if (retcode == UPPL_RC_SUCCESS) {
+      delete_status = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    } else if (retcode == UNC_RC_SUCCESS) {
       // Check whether any boundary is referring domain
       Kt_Boundary boundary_class;
       if (boundary_class.IsBoundaryReferred(db_conn, UNC_KT_CTR_DOMAIN,
@@ -429,7 +429,7 @@ UpplReturnCode Kt_Ctr_Domain::Delete(OdbcmConnectionHandler *db_conn,
         // Boundary is referring Domain
         pfc_log_error("Domain is referred in Boundary, "
             "so delete is not allowed");
-        delete_status = UPPL_RC_ERR_CFG_SEMANTIC;
+        delete_status = UNC_UPPL_RC_ERR_CFG_SEMANTIC;
       } else {
         // Delete domain
         delete_status = DeleteKeyInstance(db_conn, key_struct, data_type,
@@ -445,15 +445,15 @@ UpplReturnCode Kt_Ctr_Domain::Delete(OdbcmConnectionHandler *db_conn,
       0,
       0,
       data_type,
-      delete_status};
+      static_cast<uint32_t>(delete_status)};
   int err = PhyUtil::sessOutRespHeader(sess, rsh);
   err |= sess.addOutput((uint32_t)UNC_KT_CTR_DOMAIN);
   err |= sess.addOutput(*obj_key_ctr_domain);
   if (err != 0) {
     pfc_log_error("Server session addOutput failed, so return IPC_WRITE_ERROR");
-    delete_status = UPPL_RC_ERR_IPC_WRITE_ERROR;
+    delete_status = UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
   } else {
-    delete_status = UPPL_RC_SUCCESS;
+    delete_status = UNC_RC_SUCCESS;
   }
   return delete_status;
 }
@@ -466,11 +466,11 @@ UpplReturnCode Kt_Ctr_Domain::Delete(OdbcmConnectionHandler *db_conn,
  *                request is from VTN and allowed in state if request is from
  *                southbound
  *                key_type - indicates the key type class
- * @return      : UPPL_RC_SUCCESS is returned when the delete is done
+ * @return      : UNC_RC_SUCCESS is returned when the delete is done
  *                successfully.
- *                UPPL_RC_ERR_* is returned when the delete is error
+ *                UNC_UPPL_RC_ERR_* is returned when the delete is error
  **/
-UpplReturnCode Kt_Ctr_Domain::DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Ctr_Domain::DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
                                                 void* key_struct,
                                                 uint32_t data_type,
                                                 uint32_t key_type) {
@@ -479,9 +479,9 @@ UpplReturnCode Kt_Ctr_Domain::DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
       (unc_keytype_datatype_t)data_type != UNC_DT_STATE &&
       (unc_keytype_datatype_t)data_type != UNC_DT_IMPORT) {
     pfc_log_error("Delete operation is provided on unsupported data type");
-    return UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   }
-  UpplReturnCode delete_status = UPPL_RC_SUCCESS;
+  UncRespCode delete_status = UNC_RC_SUCCESS;
   key_ctr_domain *obj_key_ctr_domain=
       reinterpret_cast<key_ctr_domain*>(key_struct);
   string domain_name = (const char*)obj_key_ctr_domain->domain_name;
@@ -515,25 +515,25 @@ UpplReturnCode Kt_Ctr_Domain::DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
                                                  controller_name,
                                                  domain_name);
       Kt_LogicalPort logical_port;
-      UpplReturnCode ch_delete_status = logical_port.DeleteKeyInstance(
+      UncRespCode ch_delete_status = logical_port.DeleteKeyInstance(
           db_conn,
           child_key_struct,
           data_type,
           UNC_KT_LOGICAL_PORT);
       FreeChildKeyStruct(KIdxLogicalPort, child_key_struct);
-      if (ch_delete_status == UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+      if (ch_delete_status == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE) {
         pfc_log_debug("Domain has no child");
       }
-      if (ch_delete_status != UPPL_RC_ERR_NO_SUCH_INSTANCE &&
-          ch_delete_status != UPPL_RC_SUCCESS) {
+      if (ch_delete_status != UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE &&
+          ch_delete_status != UNC_RC_SUCCESS) {
         // child delete , failed so return error
         pfc_log_error("Delete failed for child with %d with error %d",
                       0, ch_delete_status);
-        delete_status = UPPL_RC_ERR_CFG_SEMANTIC;
+        delete_status = UNC_UPPL_RC_ERR_CFG_SEMANTIC;
         break;
       }
     }
-    if (delete_status != UPPL_RC_SUCCESS) {
+    if (delete_status != UNC_RC_SUCCESS) {
       continue;
     }
     // Structure used to send request to ODBC
@@ -574,20 +574,20 @@ UpplReturnCode Kt_Ctr_Domain::DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
       if (delete_db_status == ODBCM_RC_CONNECTION_ERROR) {
         // log fatal error to log daemon
         pfc_log_fatal("DB connection not available or cannot access DB");
-        delete_status = UPPL_RC_ERR_DB_ACCESS;
+        delete_status = UNC_UPPL_RC_ERR_DB_ACCESS;
       } else if (delete_db_status == ODBCM_RC_ROW_NOT_EXISTS ||
           delete_db_status == ODBCM_RC_RECORD_NOT_FOUND) {
         pfc_log_error("No matching record found");
-        delete_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+        delete_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
       } else {
         // log error to log daemon
         pfc_log_error("Delete operation has failed in domain common table");
-        delete_status = UPPL_RC_ERR_DB_DELETE;
+        delete_status = UNC_UPPL_RC_ERR_DB_DELETE;
       }
     } else if (data_type != UNC_DT_CANDIDATE) {
       // Boundary operstatus to be changed only after running db sync
       // Notify switch to update domainid as invalid
-      delete_status = UPPL_RC_SUCCESS;
+      delete_status = UNC_RC_SUCCESS;
       Kt_Switch switch_obj;
       key_switch_t obj_key_switch;
       memset(&obj_key_switch, '\0', sizeof(key_switch_t));
@@ -605,7 +605,7 @@ UpplReturnCode Kt_Ctr_Domain::DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
              domain_name.c_str(),
              domain_name.length()+1);
       obj_val_switch.switch_val.valid[kIdxSwitchDomainName] = UNC_VF_VALID;
-      UpplReturnCode read_status = switch_obj.UpdateSwitchValidFlag(
+      UncRespCode read_status = switch_obj.UpdateSwitchValidFlag(
           db_conn, reinterpret_cast<void*>(&obj_key_switch),
           reinterpret_cast<void*>(&obj_val_switch),
           obj_val_switch,
@@ -614,7 +614,7 @@ UpplReturnCode Kt_Ctr_Domain::DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
     } else {
       pfc_log_info("Delete of a ctr_domain in data_type(%d) is success",
                    data_type);
-      delete_status = UPPL_RC_SUCCESS;
+      delete_status = UNC_RC_SUCCESS;
     }
   }
   return delete_status;
@@ -628,12 +628,12 @@ UpplReturnCode Kt_Ctr_Domain::DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
  *                data_type - UNC_DT_* , read allowed in
  *                candidate/running/startup/state
  *                operation_type - indicates the operation type - UNC_OP_*.
- * @return      : UPPL_RC_SUCCESS is returned when the response
+ * @return      : UNC_RC_SUCCESS is returned when the response
  *                is added to ipc session successfully.
- *                UPPL_RC_ERR_* is returned when ipc response could not be
+ *                UNC_UPPL_RC_ERR_* is returned when ipc response could not be
  *                added to sess.
  **/
-UpplReturnCode Kt_Ctr_Domain::ReadInternal(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Ctr_Domain::ReadInternal(OdbcmConnectionHandler *db_conn,
                                            vector<void *> &key_val,
                                            vector<void *> &val_struct,
                                            uint32_t data_type,
@@ -652,7 +652,7 @@ UpplReturnCode Kt_Ctr_Domain::ReadInternal(OdbcmConnectionHandler *db_conn,
     void_val_struct = val_struct[0];
   }
   // Get read response from database
-  UpplReturnCode read_status = ReadDomainValFromDB(db_conn, key_struct,
+  UncRespCode read_status = ReadDomainValFromDB(db_conn, key_struct,
                                                    void_val_struct,
                                                    data_type,
                                                    operation_type,
@@ -661,10 +661,11 @@ UpplReturnCode Kt_Ctr_Domain::ReadInternal(OdbcmConnectionHandler *db_conn,
                                                    vect_domain_id);
   key_val.clear();
   val_struct.clear();
-  pfc_log_info("ReadDomainValFromDB returned %d with response size %d",
+  pfc_log_info("ReadDomainValFromDB returned %d with response size %"
+               PFC_PFMT_SIZE_T,
                read_status,
-               static_cast<int>(vect_val_ctr_domain_st.size()));
-  if (read_status == UPPL_RC_SUCCESS) {
+               vect_val_ctr_domain_st.size());
+  if (read_status == UNC_RC_SUCCESS) {
     pfc_log_debug("Read operation is success");
     for (unsigned int iIndex = 0 ; iIndex < vect_val_ctr_domain_st.size();
         ++iIndex) {
@@ -676,8 +677,8 @@ UpplReturnCode Kt_Ctr_Domain::ReadInternal(OdbcmConnectionHandler *db_conn,
       val_struct.push_back(reinterpret_cast<void *>(val_domain));
     }
   }
-  pfc_log_debug("Returned Key vector size: %d",
-                static_cast<int> (key_val.size()));
+  pfc_log_debug("Returned Key vector size: %" PFC_PFMT_SIZE_T,
+                key_val.size());
   return read_status;
 }
 
@@ -692,12 +693,12 @@ UpplReturnCode Kt_Ctr_Domain::ReadInternal(OdbcmConnectionHandler *db_conn,
  *                readbulk
  *                is_read_next - indicates whether this function is invoked
  *                from readnext
- * @return      : UPPL_RC_SUCCESS is returned when the response
+ * @return      : UNC_RC_SUCCESS is returned when the response
  *                is added to ipc session successfully.
- *                UPPL_RC_ERR_* is returned when ipc response could not be
+ *                UNC_UPPL_RC_ERR_* is returned when ipc response could not be
  *                added to sess.
  **/
-UpplReturnCode Kt_Ctr_Domain::ReadBulk(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Ctr_Domain::ReadBulk(OdbcmConnectionHandler *db_conn,
                                        void* key_struct,
                                        uint32_t data_type,
                                        uint32_t &max_rep_ct,
@@ -708,14 +709,14 @@ UpplReturnCode Kt_Ctr_Domain::ReadBulk(OdbcmConnectionHandler *db_conn,
   pfc_log_info("Processing ReadBulk of Kt_Domain");
   key_ctr_domain obj_key_ctr_domain=
       *(reinterpret_cast<key_ctr_domain*>(key_struct));
-  UpplReturnCode read_status = UPPL_RC_SUCCESS;
+  UncRespCode read_status = UNC_RC_SUCCESS;
 
   vector<val_ctr_domain_st> vect_val_ctr_domain;
   if (data_type != UNC_DT_CANDIDATE && data_type != UNC_DT_RUNNING &&
       data_type != UNC_DT_STATE && data_type != UNC_DT_STARTUP) {
     pfc_log_debug("ReadBulk operation is not allowed in %d data type",
                   data_type);
-    read_status = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    read_status = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
     return read_status;
   }
   string str_domain_name =
@@ -724,10 +725,10 @@ UpplReturnCode Kt_Ctr_Domain::ReadBulk(OdbcmConnectionHandler *db_conn,
       reinterpret_cast<char *>(obj_key_ctr_domain.ctr_key.controller_name);
   unc_keytype_ctrtype_t controller_type = UNC_CT_UNKNOWN;
   pfc_bool_t invalid_parent = false;
-  UpplReturnCode retcode = PhyUtil::get_controller_type(
+  UncRespCode retcode = PhyUtil::get_controller_type(
       db_conn, str_controller_name, controller_type,
       (unc_keytype_datatype_t)data_type);
-  if (retcode != UPPL_RC_SUCCESS) {
+  if (retcode != UNC_RC_SUCCESS) {
     pfc_log_error("Error getting the controller type");
     invalid_parent = true;
   }
@@ -755,10 +756,10 @@ UpplReturnCode Kt_Ctr_Domain::ReadBulk(OdbcmConnectionHandler *db_conn,
       vector<string> vect_key_value;
       vect_key_value.push_back(str_controller_name);
       vect_key_value.push_back(str_domain_name);
-      UpplReturnCode key_exist_status = IsKeyExists(
+      UncRespCode key_exist_status = IsKeyExists(
           db_conn, (unc_keytype_datatype_t)data_type,
           vect_key_value);
-      if (key_exist_status == UPPL_RC_SUCCESS) {
+      if (key_exist_status == UNC_RC_SUCCESS) {
         domain_exists = PFC_TRUE;
       }
     }
@@ -775,7 +776,7 @@ UpplReturnCode Kt_Ctr_Domain::ReadBulk(OdbcmConnectionHandler *db_conn,
                                     dummy_val_domain);
     }
     pfc_log_debug("read status from Kt_Ctr_Domain is %d", read_status);
-    if (invalid_parent == false && (read_status == UPPL_RC_SUCCESS ||
+    if (invalid_parent == false && (read_status == UNC_RC_SUCCESS ||
         domain_exists == PFC_TRUE)) {
       // For each domain, read the child's attributes
       vector<val_ctr_domain_st> ::iterator vect_iter =
@@ -826,7 +827,7 @@ UpplReturnCode Kt_Ctr_Domain::ReadBulk(OdbcmConnectionHandler *db_conn,
           --max_rep_ct;
           if (max_rep_ct == 0) {
             pfc_log_debug("CtrDomain - max_rep_ct reached zero...");
-            return UPPL_RC_SUCCESS;
+            return UNC_RC_SUCCESS;
           }
         }
         domain_exists = PFC_FALSE;
@@ -851,7 +852,7 @@ UpplReturnCode Kt_Ctr_Domain::ReadBulk(OdbcmConnectionHandler *db_conn,
             continue;
           }
           pfc_log_debug("Domain = Calling child %d read bulk", kIdx);
-          UpplReturnCode ch_read_status = child[kIdx]->ReadBulk(
+          UncRespCode ch_read_status = child[kIdx]->ReadBulk(
               db_conn, child_key_struct,
               data_type,
               max_rep_ct,
@@ -866,18 +867,18 @@ UpplReturnCode Kt_Ctr_Domain::ReadBulk(OdbcmConnectionHandler *db_conn,
           FreeChildKeyStruct(kIdx, child_key_struct);
           if (max_rep_ct == 0) {
             pfc_log_debug("max_rep_ct reached zero, so returning");
-            return UPPL_RC_SUCCESS;
+            return UNC_RC_SUCCESS;
           }
         }
         // reset child index
         child_index = -1;
       }
-    } else if (read_status == UPPL_RC_ERR_DB_ACCESS) {
+    } else if (read_status == UNC_UPPL_RC_ERR_DB_ACCESS) {
       pfc_log_debug("KtCtrDomain ReadBulk - Returning DB Access Error");
       return read_status;
     }
   } else if (max_rep_ct == 0) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   if (max_rep_ct > 0 && parent_call == false) {
     pfc_log_debug("max_rep_ct is %d and parent_call is %d, calling parent",
@@ -897,14 +898,14 @@ UpplReturnCode Kt_Ctr_Domain::ReadBulk(OdbcmConnectionHandler *db_conn,
         is_read_next,
         read_req);
     pfc_log_debug("read status from Kt_Controller kin is %d", read_status);
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   pfc_log_debug("reached end of key tree, read_status=%d",
                 read_status);
-  if (read_status == UPPL_RC_ERR_NO_SUCH_INSTANCE) {
-    read_status = UPPL_RC_SUCCESS;
+  if (read_status == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+    read_status = UNC_RC_SUCCESS;
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**
@@ -916,12 +917,12 @@ UpplReturnCode Kt_Ctr_Domain::ReadBulk(OdbcmConnectionHandler *db_conn,
  *                vect_val_ctr_domain - indicates the fetched values from db of
  *                val_ctr_domain type
  *                vect_domain_id - indicates the fetched domain names from db
- * @return      : UPPL_RC_SUCCESS is returned when the response
+ * @return      : UNC_RC_SUCCESS is returned when the response
  *                is added to ipc session successfully.
- *                UPPL_RC_ERR_* is returned when ipc response could not be
+ *                UNC_UPPL_RC_ERR_* is returned when ipc response could not be
  *                added to sess.
  **/
-UpplReturnCode Kt_Ctr_Domain::ReadBulkInternal(
+UncRespCode Kt_Ctr_Domain::ReadBulkInternal(
     OdbcmConnectionHandler *db_conn,
     void* key_struct,
     uint32_t data_type,
@@ -929,11 +930,11 @@ UpplReturnCode Kt_Ctr_Domain::ReadBulkInternal(
     vector<val_ctr_domain_st> &vect_val_ctr_domain_st,
     vector<key_ctr_domain> &vect_domain_id) {
   if (max_rep_ct <= 0) {
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   void *val_struct = NULL;
-  UpplReturnCode read_status = UPPL_RC_SUCCESS;
+  UncRespCode read_status = UNC_RC_SUCCESS;
   ODBCM_RC_STATUS read_db_status = ODBCM_RC_SUCCESS;
   DBTableSchema kt_ctr_domain_dbtableschema;
   // Populate DBSchema for ctr_domain_table
@@ -951,14 +952,14 @@ UpplReturnCode Kt_Ctr_Domain::ReadBulkInternal(
                   (unc_keytype_operation_t)UNC_OP_READ_BULK, db_conn);
   if (read_db_status == ODBCM_RC_RECORD_NOT_FOUND) {
     pfc_log_debug("No record found");
-    read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+    read_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     return read_status;
   } else if (read_db_status == ODBCM_RC_CONNECTION_ERROR) {
-    read_status = UPPL_RC_ERR_DB_ACCESS;
+    read_status = UNC_UPPL_RC_ERR_DB_ACCESS;
     pfc_log_error("Read operation has failed with error %d", read_db_status);
     return read_status;
   } else if (read_db_status != ODBCM_RC_SUCCESS) {
-    read_status = UPPL_RC_ERR_DB_GET;
+    read_status = UNC_UPPL_RC_ERR_DB_GET;
     // log error to log daemon
     pfc_log_error("Read operation has failed");
     return read_status;
@@ -978,17 +979,17 @@ UpplReturnCode Kt_Ctr_Domain::ReadBulkInternal(
  *                value_struct - the value for the kt Domain instance
  *                data_type - UNC_DT_* - indicates the data base type
  *                operation_type - UNC_OP* - indicates the operation type
- * @return      : UPPL_RC_SUCCESS is returned when the validation is successful
- *                UPPL_RC_ERR_* is returned when validation is failure
+ * @return      : UNC_RC_SUCCESS is returned when the validation is successful
+ *                UNC_UPPL_RC_ERR_* is returned when validation is failure
  **/
-UpplReturnCode Kt_Ctr_Domain::PerformSyntaxValidation(
+UncRespCode Kt_Ctr_Domain::PerformSyntaxValidation(
     OdbcmConnectionHandler *db_conn,
     void* key_struct,
     void* val_struct,
     uint32_t operation,
     uint32_t data_type) {
   pfc_log_info("Syntax Validation of KT_CTR_DOMAIN");
-  UpplReturnCode ret_code = UPPL_RC_SUCCESS;
+  UncRespCode ret_code = UNC_RC_SUCCESS;
   pfc_bool_t mandatory = PFC_TRUE;
 
   // Validate key structure
@@ -998,14 +999,14 @@ UpplReturnCode Kt_Ctr_Domain::PerformSyntaxValidation(
       attr_syntax_map_all[UNC_KT_CTR_DOMAIN];
   IS_VALID_STRING_KEY(DOMAIN_NAME_STR, domain_name, operation, ret_code,
                       mandatory);
-  if (ret_code != UPPL_RC_SUCCESS) {
-    return UPPL_RC_ERR_CFG_SYNTAX;
+  if (ret_code != UNC_RC_SUCCESS) {
+    return UNC_UPPL_RC_ERR_CFG_SYNTAX;
   }
 
   string value = reinterpret_cast<char*>(key->ctr_key.controller_name);
   IS_VALID_STRING_KEY(CTR_NAME_STR, value, operation, ret_code, mandatory);
-  if (ret_code != UPPL_RC_SUCCESS) {
-    return UPPL_RC_ERR_CFG_SYNTAX;
+  if (ret_code != UNC_RC_SUCCESS) {
+    return UNC_UPPL_RC_ERR_CFG_SYNTAX;
   }
 
   // Validate value structure
@@ -1020,25 +1021,25 @@ UpplReturnCode Kt_Ctr_Domain::PerformSyntaxValidation(
   valid_val = PhyUtil::uint8touint(domain_value->valid[kIdxDomainType]);
   IS_VALID_INT_VALUE(DOMAIN_TYPE_STR, domain_value->type, operation,
                      valid_val, ret_code, mandatory);
-  if (ret_code != UPPL_RC_SUCCESS) {
-    return UPPL_RC_ERR_CFG_SYNTAX;
+  if (ret_code != UNC_RC_SUCCESS) {
+    return UNC_UPPL_RC_ERR_CFG_SYNTAX;
   }
   if (data_type == UNC_DT_CANDIDATE) {
     if (operation == UNC_OP_CREATE) {
       if (domain_value->type != UPPL_DOMAIN_TYPE_NORMAL) {
         pfc_log_info(
             "Only normal controller domain can be created from northbound");
-        return UPPL_RC_ERR_CFG_SYNTAX;
+        return UNC_UPPL_RC_ERR_CFG_SYNTAX;
       }
       if (domain_name == DEFAULT_DOMAIN) {
         pfc_log_info("Default Domain name cannot be used");
-        return UPPL_RC_ERR_CFG_SYNTAX;
+        return UNC_UPPL_RC_ERR_CFG_SYNTAX;
       }
     }
     if (operation == UNC_OP_UPDATE) {
       if (valid_val == UNC_VF_VALID) {
         pfc_log_info("Domain type cannot be modified from northbound");
-        return UPPL_RC_ERR_CFG_SYNTAX;
+        return UNC_UPPL_RC_ERR_CFG_SYNTAX;
       }
     }
   }
@@ -1048,8 +1049,8 @@ UpplReturnCode Kt_Ctr_Domain::PerformSyntaxValidation(
   value = reinterpret_cast<char*>(domain_value->description);
   IS_VALID_STRING_VALUE(DOMAIN_DESCRIPTION_STR, value, operation,
                         valid_val, ret_code, mandatory);
-  if (ret_code != UPPL_RC_SUCCESS) {
-    return UPPL_RC_ERR_CFG_SYNTAX;
+  if (ret_code != UNC_RC_SUCCESS) {
+    return UNC_UPPL_RC_ERR_CFG_SYNTAX;
   }
   return ret_code;
 }
@@ -1060,16 +1061,16 @@ UpplReturnCode Kt_Ctr_Domain::PerformSyntaxValidation(
  *                val_struct - specifies value of KT_DOMAIN
  *                operation - UNC_OP* - indicates the operation type
  *                data_type - UNC_DT* - indicates the data base type
- * @return      : UPPL_RC_SUCCESS if semantic valition is successful
- *                or UPPL_RC_ERR_* if failed
+ * @return      : UNC_RC_SUCCESS if semantic valition is successful
+ *                or UNC_UPPL_RC_ERR_* if failed
  **/
-UpplReturnCode Kt_Ctr_Domain::PerformSemanticValidation(
+UncRespCode Kt_Ctr_Domain::PerformSemanticValidation(
     OdbcmConnectionHandler *db_conn,
     void* key_struct,
     void* val_struct,
     uint32_t operation,
     uint32_t data_type) {
-  UpplReturnCode status = UPPL_RC_SUCCESS;
+  UncRespCode status = UNC_RC_SUCCESS;
   pfc_log_debug("Inside PerformSemanticValidation of KT_CTR_DOMAIN");
   // Check whether the given instance of domain exists in DB
   key_ctr_domain *obj_key_ctr_domain =
@@ -1080,17 +1081,17 @@ UpplReturnCode Kt_Ctr_Domain::PerformSemanticValidation(
   vector<string> domain_vect_key_value;
   domain_vect_key_value.push_back(controller_name);
   domain_vect_key_value.push_back(domain_name);
-  UpplReturnCode key_status = IsKeyExists(db_conn,
+  UncRespCode key_status = IsKeyExists(db_conn,
                                           (unc_keytype_datatype_t)data_type,
                                           domain_vect_key_value);
   pfc_log_debug("IsKeyExists status %d", key_status);
   // In case of create operation, key should not exist
   if (operation == UNC_OP_CREATE) {
-    if (key_status == UPPL_RC_SUCCESS) {
+    if (key_status == UNC_RC_SUCCESS) {
       pfc_log_error("Key instance already exists");
       pfc_log_error("Hence create operation not allowed");
-      status = UPPL_RC_ERR_INSTANCE_EXISTS;
-    } else if (key_status == UPPL_RC_ERR_DB_ACCESS) {
+      status = UNC_UPPL_RC_ERR_INSTANCE_EXISTS;
+    } else if (key_status == UNC_UPPL_RC_ERR_DB_ACCESS) {
       pfc_log_error("DB Access failure");
       status = key_status;
     } else {
@@ -1100,19 +1101,19 @@ UpplReturnCode Kt_Ctr_Domain::PerformSemanticValidation(
   } else if (operation == UNC_OP_UPDATE || operation == UNC_OP_DELETE ||
       operation == UNC_OP_READ) {
     // In case of update/delete/read operation, key should exist
-    if (key_status == UPPL_RC_ERR_DB_ACCESS) {
+    if (key_status == UNC_UPPL_RC_ERR_DB_ACCESS) {
       pfc_log_error("DB Access failure");
       status = key_status;
-    } else if (key_status != UPPL_RC_SUCCESS) {
+    } else if (key_status != UNC_RC_SUCCESS) {
       pfc_log_error("Key instance does not exist");
       pfc_log_error("Hence update/delete/read operation not allowed");
-      status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+      status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     } else {
       pfc_log_info("key instance exist update/del/read operation allowed");
     }
   }
 
-  if (operation == UNC_OP_CREATE && status == UPPL_RC_SUCCESS) {
+  if (operation == UNC_OP_CREATE && status == UNC_RC_SUCCESS) {
     vector<string> parent_vect_key_value;
     parent_vect_key_value.push_back(controller_name);
     Kt_Controller KtObj;
@@ -1120,12 +1121,12 @@ UpplReturnCode Kt_Ctr_Domain::PerformSemanticValidation(
     if (data_type == UNC_DT_IMPORT) {
       parent_data_type = UNC_DT_RUNNING;
     }
-    UpplReturnCode parent_key_status = KtObj.IsKeyExists(
+    UncRespCode parent_key_status = KtObj.IsKeyExists(
         db_conn,
         (unc_keytype_datatype_t)parent_data_type, parent_vect_key_value);
     pfc_log_debug("Parent IsKeyExists status %d", parent_key_status);
-    if (parent_key_status != UPPL_RC_SUCCESS) {
-      status = UPPL_RC_ERR_PARENT_DOES_NOT_EXIST;
+    if (parent_key_status != UNC_RC_SUCCESS) {
+      status = UNC_UPPL_RC_ERR_PARENT_DOES_NOT_EXIST;
     }
   }
   pfc_log_debug("Return Code SemanticValidation: %d", status);
@@ -1141,26 +1142,26 @@ UpplReturnCode Kt_Ctr_Domain::PerformSemanticValidation(
  *                UNC_OP_DELETE
  *                key_struct - indicates the key instance of KT_DOMAIN
  *                value_struct - indicates the alarm values structure
- * @return      : UPPL_RC_SUCCESS if alarm is handled successfully or
- *                UPPL_RC_ERR* if incase of failure
+ * @return      : UNC_RC_SUCCESS if alarm is handled successfully or
+ *                UNC_UPPL_RC_ERR* if incase of failure
  **/
-UpplReturnCode Kt_Ctr_Domain::HandleDriverAlarms(
+UncRespCode Kt_Ctr_Domain::HandleDriverAlarms(
     OdbcmConnectionHandler *db_conn,
     uint32_t data_type,
     uint32_t alarm_type,
     uint32_t oper_type,
     void* key_struct,
     void* val_struct) {
-  UpplReturnCode status = UPPL_RC_SUCCESS;
+  UncRespCode status = UNC_RC_SUCCESS;
   if (alarm_type != UNC_COREDOMAIN_SPLIT) {
     pfc_log_warn("%d alarm received for domain is ignored", alarm_type);
     return status;
   }
   uint8_t oper_status_db = 0;
-  UpplReturnCode read_status = GetOperStatus(db_conn, data_type,
+  UncRespCode read_status = GetOperStatus(db_conn, data_type,
                                              key_struct,
                                              oper_status_db);
-  if (read_status != UPPL_RC_SUCCESS) {
+  if (read_status != UNC_RC_SUCCESS) {
     pfc_log_error("Unable to get current oper_status from db");
     return read_status;
   }
@@ -1191,15 +1192,15 @@ UpplReturnCode Kt_Ctr_Domain::HandleDriverAlarms(
  * @param[in]   : data_type - indicates the data base type
  *                key_struct - indicates the key instance of KT_DOMAIN
  *                value_struct - indicates the value structure of KT_DOMAIN
- * @return      : UPPL_RC_SUCCESS - if oper status update in DB is successful
- *                else UPPL_RC_ERR_* is returned
+ * @return      : UNC_RC_SUCCESS - if oper status update in DB is successful
+ *                else UNC_UPPL_RC_ERR_* is returned
  **/
-UpplReturnCode Kt_Ctr_Domain::HandleOperStatus(
+UncRespCode Kt_Ctr_Domain::HandleOperStatus(
     OdbcmConnectionHandler *db_conn,
     uint32_t data_type,
     void *key_struct,
     void *value_struct) {
-  UpplReturnCode return_code = UPPL_RC_SUCCESS;
+  UncRespCode return_code = UNC_RC_SUCCESS;
 
   if (key_struct != NULL) {
     key_ctr_domain_t *obj_key_ctr_domain =
@@ -1213,10 +1214,10 @@ UpplReturnCode Kt_Ctr_Domain::HandleOperStatus(
     uint8_t ctrl_oper_status = 0;
     UpplDomainOperStatus domain_oper_status = UPPL_CTR_DOMAIN_OPER_UNKNOWN;
     Kt_Controller controller;
-    UpplReturnCode read_status = controller.GetOperStatus(
+    UncRespCode read_status = controller.GetOperStatus(
         db_conn, data_type, reinterpret_cast<void*>(&ctr_key),
         ctrl_oper_status);
-    if (read_status == UPPL_RC_SUCCESS) {
+    if (read_status == UNC_RC_SUCCESS) {
       pfc_log_info("Controller's oper_status %d", ctrl_oper_status);
       if (ctrl_oper_status ==
           (UpplControllerOperStatus) UPPL_CONTROLLER_OPER_UP) {
@@ -1232,7 +1233,7 @@ UpplReturnCode Kt_Ctr_Domain::HandleOperStatus(
     pfc_log_info("Set Domain oper status status %d", return_code);
 
   } else {
-    return_code = UPPL_RC_ERR_BAD_REQUEST;
+    return_code = UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   return return_code;
 }
@@ -1241,16 +1242,16 @@ UpplReturnCode Kt_Ctr_Domain::HandleOperStatus(
  * @Description : This function invokes the notifyoperstatus of boundary
  * @param[in]   : data_type - indicates the data base type
  *                key_struct - indicates the key instance of kt domain
- * @return      : UPPL_RC_SUCCESS -if oper status is handled properly in
+ * @return      : UNC_RC_SUCCESS -if oper status is handled properly in
  *                boundary
- *                or UPPL_RC_ERR* in case of failure
+ *                or UNC_UPPL_RC_ERR* in case of failure
  **/
-UpplReturnCode Kt_Ctr_Domain::InvokeBoundaryNotifyOperStatus(
+UncRespCode Kt_Ctr_Domain::InvokeBoundaryNotifyOperStatus(
     OdbcmConnectionHandler *db_conn,
     uint32_t data_type,
     void *key_struct) {
   // Get controller and domain oper status
-  UpplReturnCode return_code = UPPL_RC_SUCCESS;
+  UncRespCode return_code = UNC_RC_SUCCESS;
   key_ctr_domain_t *obj_key_ctr_domain =
       reinterpret_cast<key_ctr_domain_t*>(key_struct);
 
@@ -1259,7 +1260,7 @@ UpplReturnCode Kt_Ctr_Domain::InvokeBoundaryNotifyOperStatus(
   string domain_name =
       (const char*)obj_key_ctr_domain->domain_name;
   vector<OperStatusHolder> ref_oper_status;
-  GET_ADD_CTRL_OPER_STATUS(controller_name);
+  GET_ADD_CTRL_OPER_STATUS(controller_name, ref_oper_status);
   Kt_Boundary boundary;
   val_boundary_t obj_val_boundary1;
   memset(&obj_val_boundary1, 0, sizeof(obj_val_boundary1));
@@ -1299,10 +1300,10 @@ UpplReturnCode Kt_Ctr_Domain::InvokeBoundaryNotifyOperStatus(
  *                key_struct - key instance of KT_DOMAIN
  *                oper_status - reference variable to store the oper status
  *                from DB
- * @return      : UPPL_RC_SUCCESS - if oper status is read successfully else
- *                UPPL_RC_ERR* is returned
+ * @return      : UNC_RC_SUCCESS - if oper status is read successfully else
+ *                UNC_UPPL_RC_ERR* is returned
  **/
-UpplReturnCode Kt_Ctr_Domain::GetOperStatus(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Ctr_Domain::GetOperStatus(OdbcmConnectionHandler *db_conn,
                                             uint32_t data_type,
                                             void* key_struct,
                                             uint8_t &oper_status) {
@@ -1351,7 +1352,7 @@ UpplReturnCode Kt_Ctr_Domain::GetOperStatus(OdbcmConnectionHandler *db_conn,
       read_db_status != ODBCM_RC_RECORD_NOT_FOUND) {
     // log error
     pfc_log_error("oper_status read operation failed");
-    return UPPL_RC_ERR_DB_GET;
+    return UNC_UPPL_RC_ERR_DB_GET;
   }
 
   // read the oper_status value
@@ -1380,7 +1381,7 @@ UpplReturnCode Kt_Ctr_Domain::GetOperStatus(OdbcmConnectionHandler *db_conn,
       }
     }
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /** 
@@ -1388,10 +1389,10 @@ UpplReturnCode Kt_Ctr_Domain::GetOperStatus(OdbcmConnectionHandler *db_conn,
  * @param[in]   : data_type - indicates the data base type
  *                key_struct - key instance of kt domain
  *                oper_status - oper status value to be updated in DB
- * @return      : UPPL_RC_SUCCESS - if the oper status is updation in db is
- *                success or UPPL_RC_ERR*
+ * @return      : UNC_RC_SUCCESS - if the oper status is updation in db is
+ *                success or UNC_UPPL_RC_ERR*
  **/
-UpplReturnCode Kt_Ctr_Domain::SetOperStatus(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Ctr_Domain::SetOperStatus(OdbcmConnectionHandler *db_conn,
                                             uint32_t data_type,
                                             void* key_struct,
                                             UpplDomainOperStatus oper_status) {
@@ -1438,14 +1439,14 @@ UpplReturnCode Kt_Ctr_Domain::SetOperStatus(OdbcmConnectionHandler *db_conn,
   } else if (update_db_status != ODBCM_RC_SUCCESS) {
     // log error
     pfc_log_error("oper_status update operation failed");
-    return UPPL_RC_ERR_DB_UPDATE;
+    return UNC_UPPL_RC_ERR_DB_UPDATE;
   } else {
     // Notify operstatus change to northbound
     uint8_t old_oper_status = 0;
-    UpplReturnCode read_status = GetOperStatus(db_conn, data_type,
+    UncRespCode read_status = GetOperStatus(db_conn, data_type,
                                                key_struct,
                                                old_oper_status);
-    if (read_status == UPPL_RC_SUCCESS && data_type != UNC_DT_IMPORT) {
+    if (read_status == UNC_RC_SUCCESS && data_type != UNC_DT_IMPORT) {
       val_ctr_domain_st old_val_ctr_domain, new_val_ctr_domain;
       memset(&old_val_ctr_domain, 0, sizeof(old_val_ctr_domain));
       memset(&new_val_ctr_domain, 0, sizeof(new_val_ctr_domain));
@@ -1456,9 +1457,9 @@ UpplReturnCode Kt_Ctr_Domain::SetOperStatus(OdbcmConnectionHandler *db_conn,
       int err = 0;
       // Send notification to Northbound
       ServerEvent ser_evt((pfc_ipcevtype_t)UPPL_EVENTS_KT_CTR_DOMAIN, err);
-      northbound_event_header rsh = {UNC_OP_UPDATE,
+      northbound_event_header rsh = {static_cast<uint32_t>(UNC_OP_UPDATE),
           data_type,
-          UNC_KT_CTR_DOMAIN};
+          static_cast<uint32_t>(UNC_KT_CTR_DOMAIN)};
       err = PhyUtil::sessOutNBEventHeader(ser_evt, rsh);
       err |= ser_evt.addOutput(*obj_key_ctr_domain);
       err |= ser_evt.addOutput(new_val_ctr_domain);
@@ -1466,7 +1467,7 @@ UpplReturnCode Kt_Ctr_Domain::SetOperStatus(OdbcmConnectionHandler *db_conn,
       if (err == 0) {
         PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
         // Notify operstatus modifications
-        UpplReturnCode status = (UpplReturnCode) physical_layer
+        UncRespCode status = (UncRespCode) physical_layer
             ->get_ipc_connection_manager()->SendEvent(&ser_evt);
         pfc_log_debug("Event notification status %d", status);
       } else {
@@ -1474,7 +1475,7 @@ UpplReturnCode Kt_Ctr_Domain::SetOperStatus(OdbcmConnectionHandler *db_conn,
       }
     }
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /** 
@@ -1482,19 +1483,19 @@ UpplReturnCode Kt_Ctr_Domain::SetOperStatus(OdbcmConnectionHandler *db_conn,
  * @param[in]   : data type - UNC_DT_* - indicates the data base type
  *                key values - vector of type string to store the primary
  *                key values
- * @return      : UPPL_RC_SUCCESS - incase the row exists in domain table or
- *                UPPL_RC_ERR* is returned
+ * @return      : UNC_RC_SUCCESS - incase the row exists in domain table or
+ *                UNC_UPPL_RC_ERR* is returned
  **/
-UpplReturnCode Kt_Ctr_Domain::IsKeyExists(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Ctr_Domain::IsKeyExists(OdbcmConnectionHandler *db_conn,
                                           unc_keytype_datatype_t data_type,
                                           const vector<string> &key_values) {
   pfc_log_debug("Inside IsKeyExists");
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
-  UpplReturnCode check_status = UPPL_RC_SUCCESS;
+  UncRespCode check_status = UNC_RC_SUCCESS;
   if (key_values.empty()) {
     // No key given, return failure
     pfc_log_error("No key given. Returning error");
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
 
   string controller_name = key_values[0];
@@ -1534,7 +1535,7 @@ UpplReturnCode Kt_Ctr_Domain::IsKeyExists(OdbcmConnectionHandler *db_conn,
   if (check_db_status == ODBCM_RC_CONNECTION_ERROR) {
     // log error to log daemon
     pfc_log_error("DB connection not available or cannot access DB");
-    check_status = UPPL_RC_ERR_DB_ACCESS;
+    check_status = UNC_UPPL_RC_ERR_DB_ACCESS;
   } else if (check_db_status == ODBCM_RC_ROW_EXISTS) {
     pfc_log_debug("DB returned success for Row exists");
     pfc_log_debug("Checking .db_return_status_ %d with %d",
@@ -1544,11 +1545,11 @@ UpplReturnCode Kt_Ctr_Domain::IsKeyExists(OdbcmConnectionHandler *db_conn,
       pfc_log_debug("DB returned success for Row exists");
     } else {
       pfc_log_info("DB Returned failure for IsRowExists");
-      check_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+      check_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     }
   } else {
     pfc_log_info("DB Returned failure for IsRowExists");
-    check_status = UPPL_RC_ERR_DB_GET;
+    check_status = UNC_UPPL_RC_ERR_DB_GET;
   }
   pfc_log_debug("check_status = %d", check_status);
   return check_status;
@@ -1756,10 +1757,10 @@ void Kt_Ctr_Domain::PopulateDBSchemaForKtTable(
  *                option1,option2 - specifies any additional condition for
  *                read operation
  *                max_rep_ct - indicates the maximum repetition count
- * @return      : UPPL_RC_SUCCESS - if the read operation is successful
- *                UPPL_RC_ERR_* - read operation failed
+ * @return      : UNC_RC_SUCCESS - if the read operation is successful
+ *                UNC_UPPL_RC_ERR_* - read operation failed
  **/
-UpplReturnCode Kt_Ctr_Domain::PerformRead(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Ctr_Domain::PerformRead(OdbcmConnectionHandler *db_conn,
                                           uint32_t session_id,
                                           uint32_t configuration_id,
                                           void* key_struct,
@@ -1781,19 +1782,19 @@ UpplReturnCode Kt_Ctr_Domain::PerformRead(OdbcmConnectionHandler *db_conn,
       option1,
       option2,
       data_type,
-      0};
+      static_cast<uint32_t>(0)};
 
   if (option1 != UNC_OPT1_NORMAL) {
     pfc_log_error("Invalid option1 specified for read operation");
-    rsh.result_code = UPPL_RC_ERR_INVALID_OPTION1;
+    rsh.result_code = UNC_UPPL_RC_ERR_INVALID_OPTION1;
     int err = PhyUtil::sessOutRespHeader(sess, rsh);
     err |= sess.addOutput((uint32_t)UNC_KT_CTR_DOMAIN);
     err |= sess.addOutput(*obj_key_ctr_domain);
     if (err != 0) {
       pfc_log_error("addOutput failed for physical_response_header");
-      return UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   if (operation_type == UNC_OP_READ) {
     max_rep_ct = 1;
@@ -1804,17 +1805,17 @@ UpplReturnCode Kt_Ctr_Domain::PerformRead(OdbcmConnectionHandler *db_conn,
       (unc_keytype_datatype_t)data_type != UNC_DT_STATE &&
       (unc_keytype_datatype_t)data_type != UNC_DT_IMPORT) {
     pfc_log_error("Data type is not allowed");
-    rsh.result_code = UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    rsh.result_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
     int err = PhyUtil::sessOutRespHeader(sess, rsh);
     err |= sess.addOutput((uint32_t)UNC_KT_CTR_DOMAIN);
     err |= sess.addOutput(*obj_key_ctr_domain);
     if (err != 0) {
       pfc_log_error("addOutput failed for physical_response_header");
-      return UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
-  UpplReturnCode read_status = UPPL_RC_SUCCESS;
+  UncRespCode read_status = UNC_RC_SUCCESS;
   // Read from DB directly for all data types
   vector<key_ctr_domain> vect_domain_id;
   vector<val_ctr_domain_st> vect_val_ctr_domain_st;
@@ -1827,7 +1828,7 @@ UpplReturnCode Kt_Ctr_Domain::PerformRead(OdbcmConnectionHandler *db_conn,
                                     vect_domain_id);
   rsh.result_code = read_status;
   rsh.max_rep_count = max_rep_ct;
-  if (read_status == UPPL_RC_SUCCESS) {
+  if (read_status == UNC_RC_SUCCESS) {
     for (unsigned int index = 0; index < vect_domain_id.size();
         ++index) {
       string domain_name = (const char *)vect_domain_id[index].domain_name;
@@ -1840,23 +1841,23 @@ UpplReturnCode Kt_Ctr_Domain::PerformRead(OdbcmConnectionHandler *db_conn,
       }
     }
     if (rsh.max_rep_count == 0) {
-      rsh.result_code = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+      rsh.result_code = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
       int err = PhyUtil::sessOutRespHeader(sess, rsh);
       err |= sess.addOutput((uint32_t)UNC_KT_CONTROLLER);
       err |= sess.addOutput(*obj_key_ctr_domain);
       if (err != 0) {
         pfc_log_error("addOutput failed for physical_response_header");
-        return UPPL_RC_ERR_IPC_WRITE_ERROR;
+        return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
       }
-      return UPPL_RC_SUCCESS;
+      return UNC_RC_SUCCESS;
     }
     int err = PhyUtil::sessOutRespHeader(sess, rsh);
     if (err != 0) {
       pfc_log_error("addOutput failed for physical_response_header");
-      return UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
-    pfc_log_debug("Vector of Domain Id: %d",
-                  (unsigned int) vect_domain_id.size());
+    pfc_log_debug("Vector of Domain Id: %"
+                  PFC_PFMT_SIZE_T, vect_domain_id.size());
     for (unsigned int index = 0; index < vect_domain_id.size();
         ++index) {
       string domain_name = (const char *)vect_domain_id[index].domain_name;
@@ -1886,7 +1887,7 @@ UpplReturnCode Kt_Ctr_Domain::PerformRead(OdbcmConnectionHandler *db_conn,
     err |= sess.addOutput(*obj_key_ctr_domain);
     if (err != 0) {
       pfc_log_error("addOutput failed for physical_response_header");
-      return UPPL_RC_ERR_IPC_WRITE_ERROR;
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
   }
   pfc_log_debug("Return value for read operation %d", read_status);
@@ -1906,10 +1907,10 @@ UpplReturnCode Kt_Ctr_Domain::PerformRead(OdbcmConnectionHandler *db_conn,
  *                val_ctr_domain_st_t structure
  *                domain_id - vector of type key_ctr_domain to store the
  *                domain id
- * @return      : UPPL_RC_SUCCESS - read operation is success
- *                UPPL_RC_ERR_DB_GET - read operation is failure
+ * @return      : UNC_RC_SUCCESS - read operation is success
+ *                UNC_UPPL_RC_ERR_DB_GET - read operation is failure
  **/
-UpplReturnCode Kt_Ctr_Domain::ReadDomainValFromDB(
+UncRespCode Kt_Ctr_Domain::ReadDomainValFromDB(
     OdbcmConnectionHandler *db_conn,
     void* key_struct,
     void* val_struct,
@@ -1920,10 +1921,10 @@ UpplReturnCode Kt_Ctr_Domain::ReadDomainValFromDB(
     vector<key_ctr_domain> &domain_id) {
   if (operation_type < UNC_OP_READ) {
     // Unsupported operation type for this function
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
-  UpplReturnCode read_status = UPPL_RC_SUCCESS;
+  UncRespCode read_status = UNC_RC_SUCCESS;
   ODBCM_RC_STATUS read_db_status = ODBCM_RC_SUCCESS;
 
   // Common structures that will be used to send query to ODBC
@@ -1949,14 +1950,14 @@ UpplReturnCode Kt_Ctr_Domain::ReadDomainValFromDB(
   }
   if (read_db_status == ODBCM_RC_RECORD_NOT_FOUND) {
     pfc_log_debug("No record found");
-    read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+    read_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     return read_status;
   } else if (read_db_status == ODBCM_RC_CONNECTION_ERROR) {
-    read_status = UPPL_RC_ERR_DB_ACCESS;
+    read_status = UNC_UPPL_RC_ERR_DB_ACCESS;
     pfc_log_error("Read operation has failed with error %d", read_db_status);
     return read_status;
   } else if (read_db_status != ODBCM_RC_SUCCESS) {
-    read_status = UPPL_RC_ERR_DB_GET;
+    read_status = UNC_UPPL_RC_ERR_DB_GET;
     // log error to log daemon
     pfc_log_error("Read operation has failed with error %d", read_db_status);
     return read_status;
@@ -1967,12 +1968,12 @@ UpplReturnCode Kt_Ctr_Domain::ReadDomainValFromDB(
                            max_rep_ct,
                            operation_type,
                            domain_id);
-  pfc_log_debug("vect_val_ctr_domain size: %d",
-                (unsigned int)vect_val_ctr_domain_st.size());
-  pfc_log_debug("domain_id size: %d", (unsigned int)domain_id.size());
+  pfc_log_debug("vect_val_ctr_domain size: %"
+                PFC_PFMT_SIZE_T, vect_val_ctr_domain_st.size());
+  pfc_log_debug("domain_id size: %" PFC_PFMT_SIZE_T, domain_id.size());
   if (vect_val_ctr_domain_st.empty()) {
     // Read failed , return error
-    read_status = UPPL_RC_ERR_DB_GET;
+    read_status = UNC_UPPL_RC_ERR_DB_GET;
     // log error to log daemon
     pfc_log_error("Read operation has failed after reading response");
     return read_status;
@@ -2166,8 +2167,8 @@ void Kt_Ctr_Domain::FillDomainValueStructure(
     obj_val_ctr_domain_st.domain = obj_val_ctr_domain;
     vect_domain_id.push_back(obj_key_ctr_domain);
     vect_obj_val_ctr_domain.push_back(obj_val_ctr_domain_st);
-    pfc_log_debug("result - vect_obj_val_ctr_domain size: %d",
-                  (unsigned int) vect_obj_val_ctr_domain.size());
+    pfc_log_debug("result - vect_obj_val_ctr_domain size: %"
+                  PFC_PFMT_SIZE_T, vect_obj_val_ctr_domain.size());
   }
   return;
 }
@@ -2177,10 +2178,10 @@ void Kt_Ctr_Domain::FillDomainValueStructure(
  * @param[in]   : obj_key_struct - vector to hold the key structure of ctr
  *                domain key type
  *                row_status - indicates the row status to be queried in DB with
- * @return      : UPPL_RC_SUCCESS - if the row exists in DB or UPPL_RC_ERR*
+ * @return      : UNC_RC_SUCCESS - if the row exists in DB or UNC_UPPL_RC_ERR*
  *                if the row doesn't exists in DB
  **/
-UpplReturnCode Kt_Ctr_Domain::GetModifiedRows(OdbcmConnectionHandler *db_conn,
+UncRespCode Kt_Ctr_Domain::GetModifiedRows(OdbcmConnectionHandler *db_conn,
                                               vector<void *> &obj_key_struct,
                                               CsRowStatus row_status) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
@@ -2196,7 +2197,7 @@ UpplReturnCode Kt_Ctr_Domain::GetModifiedRows(OdbcmConnectionHandler *db_conn,
   void *domain_key = reinterpret_cast <void *> (&obj_key_ctr_domain);
   void *domain_val = reinterpret_cast <void *> (&val_struct);
 
-  UpplReturnCode read_status = UPPL_RC_SUCCESS;
+  UncRespCode read_status = UNC_RC_SUCCESS;
   ODBCM_RC_STATUS read_db_status = ODBCM_RC_SUCCESS;
 
   DBTableSchema kt_ctr_domain_dbtableschema;
@@ -2215,13 +2216,13 @@ UpplReturnCode Kt_Ctr_Domain::GetModifiedRows(OdbcmConnectionHandler *db_conn,
 
   if (read_db_status == ODBCM_RC_RECORD_NOT_FOUND) {
     pfc_log_debug("No record to read");
-    read_status = UPPL_RC_ERR_NO_SUCH_INSTANCE;
+    read_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     return read_status;
   } else if (read_db_status == ODBCM_RC_CONNECTION_ERROR) {
-    read_status = UPPL_RC_ERR_DB_ACCESS;
+    read_status = UNC_UPPL_RC_ERR_DB_ACCESS;
     return read_status;
   } else if (read_db_status != ODBCM_RC_SUCCESS) {
-    read_status = UPPL_RC_ERR_DB_GET;
+    read_status = UNC_UPPL_RC_ERR_DB_GET;
     return read_status;
   }
   vector<key_ctr_domain> vect_domain_id;
@@ -2298,21 +2299,21 @@ void Kt_Ctr_Domain::Fill_Attr_Syntax_Map() {
  * @param[in]   : key_struct - key instanc of ctr domain
  *                val_ctr_domain_valid_st - structure variable of type
  *                val_ctr_domain_st_t
- * @return      : UPPL_RC_SUCCESS - if the ctr domain valid flag read is
- *                success else UPPL_RC_ERR_*
+ * @return      : UNC_RC_SUCCESS - if the ctr domain valid flag read is
+ *                success else UNC_UPPL_RC_ERR_*
  **/
-UpplReturnCode Kt_Ctr_Domain::GetCtrDomainValidFlag(
+UncRespCode Kt_Ctr_Domain::GetCtrDomainValidFlag(
     OdbcmConnectionHandler *db_conn,
     void *key_struct,
     val_ctr_domain_st_t &val_ctr_domain_valid_st,
     uint32_t data_type) {
-  UpplReturnCode return_code = UPPL_RC_SUCCESS;
+  UncRespCode return_code = UNC_RC_SUCCESS;
   vector<void *> vect_key_ctr_domain;
   vect_key_ctr_domain.push_back(key_struct);
   vector<void *> vect_val_ctr_domain;
   return_code = ReadInternal(db_conn, vect_key_ctr_domain, vect_val_ctr_domain,
                              data_type, UNC_OP_READ);
-  if (return_code == UPPL_RC_SUCCESS) {
+  if (return_code == UNC_RC_SUCCESS) {
     val_ctr_domain_st_t *obj_new_ctr_domain_val =
         reinterpret_cast<val_ctr_domain_st_t*>(vect_val_ctr_domain[0]);
     if (obj_new_ctr_domain_val != NULL) {

@@ -1,5 +1,5 @@
 --
--- Copyright (c) 2012-2013 NEC Corporation
+-- Copyright (c) 2012-2014 NEC Corporation
 -- All rights reserved.
 -- 
 -- This program and the accompanying materials are made available under the
@@ -30,9 +30,10 @@ create table if not exists s_controller_table (
   enable_audit smallint default 0,
   actual_version varchar(32),
   oper_status smallint default 0,
-  valid char(9),
+  port integer,
+  valid char(10),
   cs_row_status smallint,
-  cs_attr char(9) 
+  cs_attr char(10) 
   );
 
 create table if not exists s_ctr_domain_table(
@@ -73,9 +74,10 @@ create table if not exists c_controller_table (
   enable_audit smallint default 0,
   actual_version varchar(32),
   oper_status smallint default 0,
-  valid char(9),
+  port integer,
+  valid char(10),
   cs_row_status smallint,
-  cs_attr char(9) 
+  cs_attr char(10) 
   );
 
 create table if not exists c_ctr_domain_table(
@@ -116,9 +118,10 @@ create table if not exists r_controller_table (
   enable_audit smallint default 0,
   actual_version varchar(32),
   oper_status smallint default 0,
-  valid char(9),
+  port integer,
+  valid char(10),
   cs_row_status smallint default 5,
-  cs_attr char(9) 
+  cs_attr char(10) 
   );
 
 create table if not exists r_ctr_domain_table(

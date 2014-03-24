@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -42,9 +42,9 @@ class ConfigurationRequest: public ITCReq {
  public:
   ConfigurationRequest();
   ~ConfigurationRequest();
-  UpplReturnCode ProcessReq(ServerSession &session,
+  UncRespCode ProcessReq(ServerSession &session,
                             physical_request_header &obj_req_hdr);
-  UpplReturnCode ValidateReq(OdbcmConnectionHandler *db_conn,
+  UncRespCode ValidateReq(OdbcmConnectionHandler *db_conn,
                              ServerSession &session,
       physical_request_header obj_req_hdr,
       void* &key_struct,
@@ -59,19 +59,19 @@ class ConfigurationRequest: public ITCReq {
   val_ctr_domain_t val_domain_obj;
   key_boundary_t key_boundary_obj;
   val_boundary_t val_boundary_obj;
-  UpplReturnCode ValidateController(OdbcmConnectionHandler *db_conn,
+  UncRespCode ValidateController(OdbcmConnectionHandler *db_conn,
                                     ServerSession &session,
                                     uint32_t data_type,
                                     uint32_t operation,
                                     void* &key_struct,
                                     void* &val_struct);
-  UpplReturnCode ValidateDomain(OdbcmConnectionHandler *db_conn,
+  UncRespCode ValidateDomain(OdbcmConnectionHandler *db_conn,
                                 ServerSession &session,
                                 uint32_t data_type,
                                 uint32_t operation,
                                 void* &key_struct,
                                 void* &val_struct);
-  UpplReturnCode ValidateBoundary(OdbcmConnectionHandler *db_conn,
+  UncRespCode ValidateBoundary(OdbcmConnectionHandler *db_conn,
                                   ServerSession &session,
                                   uint32_t data_type,
                                   uint32_t operation,

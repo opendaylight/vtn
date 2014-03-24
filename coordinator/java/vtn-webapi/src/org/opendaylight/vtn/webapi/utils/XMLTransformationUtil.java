@@ -1,18 +1,24 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.webapi.utils;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.StringReader;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 
 import javax.xml.transform.OutputKeys;
+import javax.xml.transform.TransformerConfigurationException;
+
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.stream.StreamResult;
 
@@ -21,7 +27,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import org.opendaylight.vtn.core.util.Logger;
-import org.opendaylight.vtn.webapi.enums.ApplicationConstants;
+import org.opendaylight.vtn.webapi.constants.ApplicationConstants;
 import org.opendaylight.vtn.webapi.exception.VtnServiceWebAPIException;
 
 /**
@@ -32,8 +38,27 @@ import org.opendaylight.vtn.webapi.exception.VtnServiceWebAPIException;
 public class XMLTransformationUtil {
 
 	/** The Constant LOG. */
-	private static final Logger LOG = Logger.getLogger(XMLTransformationUtil.class.getName());
-	
+	private static final Logger LOG = Logger
+			.getLogger(XMLTransformationUtil.class.getName());
+
+	private static javax.xml.transform.Transformer trans;
+
+	static {
+		javax.xml.transform.TransformerFactory transFact = javax.xml.transform.TransformerFactory
+				.newInstance();
+		javax.xml.transform.Source xsltSource = new javax.xml.transform.stream.StreamSource(
+				Thread.currentThread().getContextClassLoader()
+						.getResource(ApplicationConstants.XSLT_FILE)
+						.toExternalForm());
+		try {
+			trans = transFact.newTransformer(xsltSource);
+			trans.setOutputProperty(OutputKeys.STANDALONE,
+					ApplicationConstants.XML_STANDALONE);
+		} catch (TransformerConfigurationException e) {
+			LOG.error("Error ocurred while compilation of XSLT sheet : " + e);
+		}
+	}
+
 	/**
 	 * Convert all elements to attributes in XML string
 	 * 
@@ -42,17 +67,16 @@ public class XMLTransformationUtil {
 	 * @return attributed XML string
 	 * @throws TransformerException
 	 */
+
+	static Set<String> keySet = null;
+
 	public static String convertAllAttributesToElements(String xmlContent)
-			throws TransformerException {
+			throws TransformerException, IOException {
 		LOG.trace("Start XMLTransformationUtil#convertAllAttributesToElements()");
-		javax.xml.transform.Source xmlSource = new javax.xml.transform.stream.StreamSource(
+		final javax.xml.transform.Source xmlSource = new javax.xml.transform.stream.StreamSource(
 				new StringReader(xmlContent));
-		javax.xml.transform.Source xsltSource = new javax.xml.transform.stream.StreamSource(
-				Thread.currentThread().getContextClassLoader()
-						.getResource(ApplicationConstants.XSLT_FILE)
-						.toExternalForm());
 		LOG.trace("Complete XMLTransformationUtil#convertAllAttributesToElements()");
-		return transformContent(xmlSource, xsltSource);
+		return transformContent(xmlSource);
 	}
 
 	/**
@@ -62,29 +86,29 @@ public class XMLTransformationUtil {
 	 * @param xsltSource
 	 * @return
 	 * @throws TransformerException
+	 * @throws IOException
 	 */
-	private static String transformContent(
-			javax.xml.transform.Source xmlSource,
-			javax.xml.transform.Source xsltSource) throws TransformerException {
+	private static String
+			transformContent(javax.xml.transform.Source xmlSource)
+					throws TransformerException, IOException {
 		LOG.trace("Start XMLTransformationUtil#transformContent()");
 		String modifiedContent = null;
-		javax.xml.transform.TransformerFactory transFact = javax.xml.transform.TransformerFactory
-				.newInstance();
-		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		StreamResult result = new javax.xml.transform.stream.StreamResult(
-				outStream);
-		javax.xml.transform.Transformer trans = transFact
-				.newTransformer(xsltSource);
-		trans.setOutputProperty(OutputKeys.STANDALONE,
-				ApplicationConstants.XML_STANDALONE);
-		trans.transform(xmlSource, result);
-		byte[] b = ((ByteArrayOutputStream) result.getOutputStream())
-				.toByteArray();
-		modifiedContent = new String(b);
-		// removing any line feed to save bytes.
-		modifiedContent = modifiedContent.replaceAll(
-				ApplicationConstants.LINE_FEED,
-				ApplicationConstants.EMPTY_STRING);
+		ByteArrayOutputStream outStream = null;
+		try {
+			outStream = new ByteArrayOutputStream();
+			final StreamResult result = new javax.xml.transform.stream.StreamResult(
+					outStream);
+			trans.transform(xmlSource, result);
+			final byte[] b = ((ByteArrayOutputStream) result.getOutputStream())
+					.toByteArray();
+			modifiedContent = new String(b);
+			// removing any line feed to save bytes.
+			modifiedContent = modifiedContent.replaceAll(
+					ApplicationConstants.LINE_FEED,
+					ApplicationConstants.BLANK_STR);
+		} finally {
+			outStream.close();
+		}
 		LOG.trace("Complete XMLTransformationUtil#transformContent()");
 		return modifiedContent;
 	}
@@ -96,7 +120,7 @@ public class XMLTransformationUtil {
 	 * @param responseJson
 	 * @return
 	 * @throws JSONException
-	 * @throws VtnServiceWebAPIException 
+	 * @throws VtnServiceWebAPIException
 	 */
 	public static String convertJsonToXml(Object responseJson)
 			throws JSONException, VtnServiceWebAPIException {
@@ -110,12 +134,13 @@ public class XMLTransformationUtil {
 	 * @param parentTagName
 	 * @return
 	 * @throws JSONException
-	 * @throws VtnServiceWebAPIException 
+	 * @throws VtnServiceWebAPIException
 	 */
 	public static String convertJsonToXml(Object responseJson,
-			String parentTagName) throws JSONException, VtnServiceWebAPIException {
+			String parentTagName) throws JSONException,
+			VtnServiceWebAPIException {
 		LOG.trace("Start XMLTransformationUtil#convertJsonToXml()");
-		StringBuffer xmlString = new StringBuffer();
+		final StringBuffer xmlString = new StringBuffer();
 		// local parameter required for conversion
 		JSONArray jsonArray;
 		JSONObject jsonObject;
@@ -140,7 +165,7 @@ public class XMLTransformationUtil {
 				jsonKey = jsonKeys.next().toString();
 				jsonValue = jsonObject.opt(jsonKey);
 				if (jsonValue == null) {
-					jsonValue = ApplicationConstants.EMPTY_STRING;
+					jsonValue = ApplicationConstants.BLANK_STR;
 				}
 				// if element in JSON object is JSON array type then iterate for
 				// all of element recursively
@@ -163,10 +188,9 @@ public class XMLTransformationUtil {
 						try {
 							childElementName = ConfigurationManager
 									.getInstance().getConfProperty(jsonKey);
-						} catch (VtnServiceWebAPIException e) {
+						} catch (final VtnServiceWebAPIException e) {
 							LOG.error("Property not found for list element");
-							if (!(ApplicationConstants.ipaddrs.equals(jsonKey) 
-									|| ApplicationConstants.ipv6addr.equals(jsonKey))) {
+							if (!(checkForJsonKey(jsonKey))) {
 								throw e;
 							} else {
 								flag = true;
@@ -174,25 +198,30 @@ public class XMLTransformationUtil {
 						}
 						// sb.append('[');
 						for (counter = 0; counter < length; counter += 1) {
-							if(childElementName != null){
-								xmlString.append(ApplicationConstants.LESS_THAN);
+							if (childElementName != null) {
+								xmlString
+										.append(ApplicationConstants.LESS_THAN);
 								xmlString.append(childElementName);
-								xmlString.append(ApplicationConstants.GREATER_THAN);
+								xmlString
+										.append(ApplicationConstants.GREATER_THAN);
 							}
-							jsonValue = jsonArray.get(counter);								
+							jsonValue = jsonArray.get(counter);
 							if (jsonValue instanceof JSONArray) {
 								xmlString.append(convertJsonToXml(jsonValue));
 							} else {
 								if (!(counter == length - 1) && flag) {
-									jsonValue = jsonValue + ApplicationConstants.COMMA_STR;
+									jsonValue = jsonValue
+											+ ApplicationConstants.COMMA_STR;
 								}
 								xmlString.append(convertJsonToXml(jsonValue));
 							}
-							if(childElementName != null){
-								xmlString.append(ApplicationConstants.LESS_THAN);
+							if (childElementName != null) {
+								xmlString
+										.append(ApplicationConstants.LESS_THAN);
 								xmlString.append(ApplicationConstants.SLASH);
 								xmlString.append(childElementName);
-								xmlString.append(ApplicationConstants.GREATER_THAN);
+								xmlString
+										.append(ApplicationConstants.GREATER_THAN);
 							}
 						}
 						// sb.append(']');
@@ -202,7 +231,7 @@ public class XMLTransformationUtil {
 						xmlString.append(ApplicationConstants.GREATER_THAN);
 						flag = false;
 					}
-				} else if (ApplicationConstants.EMPTY_STRING.equals(jsonValue)) {
+				} else if (ApplicationConstants.BLANK_STR.equals(jsonValue)) {
 					xmlString.append(ApplicationConstants.LESS_THAN);
 					xmlString.append(jsonKey);
 					xmlString.append(ApplicationConstants.SLASH);
@@ -236,18 +265,74 @@ public class XMLTransformationUtil {
 		return xmlString.toString();
 	}
 
+	private static boolean checkForJsonKey(String jsonKey) {
+		boolean exist = false;
+		if (keySet == null) {
+			keySet = new HashSet<String>();
+			keySet.add(ApplicationConstants.ipaddrs);
+			keySet.add(ApplicationConstants.ipv6addr);
+			keySet.add(ApplicationConstants.inport);
+			keySet.add(ApplicationConstants.macdstaddr);
+			keySet.add(ApplicationConstants.macdstaddr_mask);
+			keySet.add(ApplicationConstants.macsrcaddr);
+			keySet.add(ApplicationConstants.macsrcaddr_mask);
+			keySet.add(ApplicationConstants.macethertype);
+			keySet.add(ApplicationConstants.vlan_id);
+			keySet.add(ApplicationConstants.vlan_priority);
+			keySet.add(ApplicationConstants.iptos);
+			keySet.add(ApplicationConstants.ipproto);
+			keySet.add(ApplicationConstants.ipdstaddr);
+			keySet.add(ApplicationConstants.ipdstaddr_mask);
+			keySet.add(ApplicationConstants.ipsrcaddr);
+			keySet.add(ApplicationConstants.ipsrcaddr_mask);
+			keySet.add(ApplicationConstants.l4dstport_icmptype);
+			keySet.add(ApplicationConstants.l4dstport_icmptype_mask);
+			keySet.add(ApplicationConstants.l4srcport_icmptype);
+			keySet.add(ApplicationConstants.l4srcport_icmptype_mask);
+			keySet.add(ApplicationConstants.ipv6dstaddr);
+			keySet.add(ApplicationConstants.ipv6dstaddr_mask);
+			keySet.add(ApplicationConstants.ipv6srcaddr);
+			keySet.add(ApplicationConstants.ipv6srcaddr_mask);
+			keySet.add(ApplicationConstants.outputport);
+			keySet.add(ApplicationConstants.enqueueport);
+			keySet.add(ApplicationConstants.queue_id);
+			keySet.add(ApplicationConstants.setmacdstaddr);
+			keySet.add(ApplicationConstants.setmacsrcaddr);
+			keySet.add(ApplicationConstants.setvlan_id);
+			keySet.add(ApplicationConstants.setvlan_priority);
+			keySet.add(ApplicationConstants.setipdstaddr);
+			keySet.add(ApplicationConstants.setipsrcaddr);
+			keySet.add(ApplicationConstants.setiptos);
+			keySet.add(ApplicationConstants.setl4dstport_icmptype);
+			keySet.add(ApplicationConstants.setl4srcport_icmptype);
+			keySet.add(ApplicationConstants.setipv6dstaddr);
+			keySet.add(ApplicationConstants.setipv6srcaddr);
+		}
+		if (keySet.contains(jsonKey)) {
+			exist = true;
+		}
+		return exist;
+
+	}
+
 	/**
 	 * pre-process request Json for removing unwanted tags
+	 * 
 	 * @param jsonObject
 	 * @return
 	 * @throws JSONException
 	 * @throws VtnServiceWebAPIException
 	 */
-	public static JSONObject preProcessJson(JSONObject jsonObject) throws JSONException, VtnServiceWebAPIException {
+	public static JSONObject preProcessJson(JSONObject jsonObject)
+			throws JSONException, VtnServiceWebAPIException {
 		// pre-process for vtep-group API
-		if (ApplicationConstants.vtepgroup.equals(jsonObject.keys().next().toString()) 
-				&& jsonObject.getJSONObject(ApplicationConstants.vtepgroup).has(ApplicationConstants.member_vteps)) {
-			JSONObject memberVtepJson = jsonObject.getJSONObject(ApplicationConstants.vtepgroup).getJSONObject(ApplicationConstants.member_vteps);
+		if (ApplicationConstants.vtepgroup.equals(jsonObject.keys().next()
+				.toString())
+				&& jsonObject.getJSONObject(ApplicationConstants.vtepgroup)
+						.has(ApplicationConstants.member_vteps)) {
+			final JSONObject memberVtepJson = jsonObject.getJSONObject(
+					ApplicationConstants.vtepgroup).getJSONObject(
+					ApplicationConstants.member_vteps);
 			JSONArray newArray = new JSONArray();
 			if (memberVtepJson.has(ApplicationConstants.member_vtep)) {
 				// only one instance
@@ -259,8 +344,9 @@ public class XMLTransformationUtil {
 					newArray = memberVtepJson
 							.getJSONArray(ApplicationConstants.member_vtep);
 				}
-			}					
-			jsonObject.getJSONObject(ApplicationConstants.vtepgroup).put(ApplicationConstants.member_vteps, newArray);
+			}
+			jsonObject.getJSONObject(ApplicationConstants.vtepgroup).put(
+					ApplicationConstants.member_vteps, newArray);
 		}
 		return jsonObject;
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -47,22 +47,25 @@ public class HostAddressResource extends AbstractResource {
 	private String vbrName;
 	private static final Logger LOG = Logger
 			.getLogger(HostAddressResource.class.getName());
+
 	/**
 	 * Gets the vtn name.
 	 * 
 	 * @return the vtn name
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
+
 	/**
 	 * Gets the vbr name.
 	 * 
 	 * @return the vbr name
 	 */
-	public String getVbrName() {
+	public final String getVbrName() {
 		return vbrName;
 	}
+
 	/**
 	 * Instantiates a new host address resource.
 	 */
@@ -72,6 +75,7 @@ public class HostAddressResource extends AbstractResource {
 		setValidator(new HostAddressResourceValidator(this));
 		LOG.trace("Complete HostAddressResource#HostAddressResource()");
 	}
+
 	/**
 	 * Implementation of Delete method of Host Address API
 	 * 
@@ -79,7 +83,7 @@ public class HostAddressResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Start HostAddressResource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -128,6 +132,7 @@ public class HostAddressResource extends AbstractResource {
 		LOG.trace("Complete HostAddressResource#delete()");
 		return status;
 	}
+
 	/**
 	 * Implementation of Put method of Host Address API
 	 * 
@@ -138,7 +143,8 @@ public class HostAddressResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start HostAddressResource#put()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -186,6 +192,7 @@ public class HostAddressResource extends AbstractResource {
 		LOG.trace("Complete HostAddressResource#put()");
 		return status;
 	}
+
 	/**
 	 * Implementation of get method of Host Address API
 	 * 
@@ -196,7 +203,8 @@ public class HostAddressResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject queryString) throws VtnServiceException {
+	public final int get(final JsonObject queryString)
+			throws VtnServiceException {
 		LOG.trace("Start HostAddressResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -250,6 +258,7 @@ public class HostAddressResource extends AbstractResource {
 		LOG.trace("Complete HostAddressResource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -21,15 +21,15 @@ import org.opendaylight.vtn.javaapi.validation.CommonValidator;
 import org.opendaylight.vtn.javaapi.validation.VtnServiceValidator;
 
 /**
- * The Class VBypassResourceValidator validates request Json object for
- * VBypass API.
+ * The Class VBypassResourceValidator validates request Json object for VBypass
+ * API.
  */
 public class VBypassResourceValidator extends VtnServiceValidator {
 
 	private static final Logger LOG = Logger
 			.getLogger(VBypassResourceValidator.class.getName());
 	private final AbstractResource resource;
-	final CommonValidator validator = new CommonValidator();
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new VBypass resource validator.
@@ -47,7 +47,7 @@ public class VBypassResourceValidator extends VtnServiceValidator {
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start VBypassResourceValidator#validateUri()");
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.URI
@@ -62,11 +62,11 @@ public class VBypassResourceValidator extends VtnServiceValidator {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VBYPASS_NAME);
 				if (((VBypassResource) resource).getVbypassName() != null
-						&& !((VBypassResource) resource).getVbypassName().trim()
-						.isEmpty()) {
+						&& !((VBypassResource) resource).getVbypassName()
+								.trim().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VBypassResource) resource).getVbypassName().trim(),
-							VtnServiceJsonConsts.LEN_31);
+							((VBypassResource) resource).getVbypassName()
+									.trim(), VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -75,7 +75,7 @@ public class VBypassResourceValidator extends VtnServiceValidator {
 		} else if (resource instanceof VBypassesResource
 				&& ((VBypassesResource) resource).getVtnName() != null
 				&& !((VBypassesResource) resource).getVtnName().trim()
-				.isEmpty()) {
+						.isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
 					((VBypassesResource) resource).getVtnName().trim(),
 					VtnServiceJsonConsts.LEN_31);
@@ -89,8 +89,9 @@ public class VBypassResourceValidator extends VtnServiceValidator {
 	 * Validate request Json object for get, put and post method of VBypass API
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start VBypassResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of VBypassResourceValidator");
@@ -152,16 +153,14 @@ public class VBypassResourceValidator extends VtnServiceValidator {
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.VBYPASS);
 		if (requestBody.has(VtnServiceJsonConsts.VBYPASS)
-				&& requestBody.get(VtnServiceJsonConsts.VBYPASS)
-				.isJsonObject()) {
+				&& requestBody.get(VtnServiceJsonConsts.VBYPASS).isJsonObject()) {
 			final JsonObject vBypass = requestBody
 					.getAsJsonObject(VtnServiceJsonConsts.VBYPASS);
 			// validation for key: VBYPASS_NAME(mandatory)
 			setInvalidParameter(VtnServiceJsonConsts.VBYPASS_NAME);
 			if (vBypass.has(VtnServiceJsonConsts.VBYPASS_NAME)
-					&& vBypass
-					.getAsJsonPrimitive(VtnServiceJsonConsts.VBYPASS_NAME)
-					.getAsString() != null) {
+					&& vBypass.getAsJsonPrimitive(
+							VtnServiceJsonConsts.VBYPASS_NAME).getAsString() != null) {
 				isValid = validator.isValidMaxLengthAlphaNum(vBypass
 						.getAsJsonPrimitive(VtnServiceJsonConsts.VBYPASS_NAME)
 						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
@@ -192,29 +191,30 @@ public class VBypassResourceValidator extends VtnServiceValidator {
 	 * @param vBypass
 	 * @return
 	 */
-	private boolean commonValidations(boolean isValid, final JsonObject vBypass) {
+	private boolean
+			commonValidations(boolean isValid, final JsonObject vBypass) {
 		LOG.trace("Start VBypassResourceValidator#commonValidations()");
 		// validation for key: description
 		setInvalidParameter(VtnServiceJsonConsts.DESCRIPTION);
 		if (vBypass.has(VtnServiceJsonConsts.DESCRIPTION)
-				&& vBypass.getAsJsonPrimitive(
-						VtnServiceJsonConsts.DESCRIPTION).getAsString() != null
-						&& !vBypass
-						.getAsJsonPrimitive(
-								VtnServiceJsonConsts.DESCRIPTION)
-								.getAsString().trim().isEmpty()) {
-			isValid = validator.isValidMaxLength(
-					vBypass.getAsJsonPrimitive(
-							VtnServiceJsonConsts.DESCRIPTION)
-							.getAsString().trim(),
+				&& vBypass.getAsJsonPrimitive(VtnServiceJsonConsts.DESCRIPTION)
+						.getAsString() != null
+				&& !vBypass
+						.getAsJsonPrimitive(VtnServiceJsonConsts.DESCRIPTION)
+						.getAsString().trim().isEmpty()) {
+			isValid = validator
+					.isValidMaxLength(
+							vBypass.getAsJsonPrimitive(
+									VtnServiceJsonConsts.DESCRIPTION)
+									.getAsString().trim(),
 							VtnServiceJsonConsts.LEN_127);
 		}
 		// validation for key: type
 		if (isValid) {
 			setInvalidParameter(VtnServiceJsonConsts.TYPE);
 			if (vBypass.has(VtnServiceJsonConsts.TYPE)
-					&& vBypass.getAsJsonPrimitive(
-							VtnServiceJsonConsts.TYPE).getAsString() != null) {
+					&& vBypass.getAsJsonPrimitive(VtnServiceJsonConsts.TYPE)
+							.getAsString() != null) {
 				isValid = validType(vBypass
 						.getAsJsonPrimitive(VtnServiceJsonConsts.TYPE)
 						.getAsString().trim());
@@ -225,17 +225,14 @@ public class VBypassResourceValidator extends VtnServiceValidator {
 			setInvalidParameter(VtnServiceJsonConsts.CONTROLLERID);
 			if (vBypass.has(VtnServiceJsonConsts.CONTROLLERID)
 					&& vBypass.getAsJsonPrimitive(
-							VtnServiceJsonConsts.CONTROLLERID)
-							.getAsString() != null
-							&& !vBypass
+							VtnServiceJsonConsts.CONTROLLERID).getAsString() != null
+					&& !vBypass
 							.getAsJsonPrimitive(
 									VtnServiceJsonConsts.CONTROLLERID)
-									.getAsString().trim().isEmpty()) {
-				isValid = validator.isValidMaxLengthAlphaNum(
-						vBypass.getAsJsonPrimitive(
-								VtnServiceJsonConsts.CONTROLLERID)
-								.getAsString().trim(),
-								VtnServiceJsonConsts.LEN_31);
+							.getAsString().trim().isEmpty()) {
+				isValid = validator.isValidMaxLengthAlphaNum(vBypass
+						.getAsJsonPrimitive(VtnServiceJsonConsts.CONTROLLERID)
+						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
 			}
 		}
 		LOG.trace("Complete VBypassResourceValidator#commonValidations()");
@@ -257,8 +254,7 @@ public class VBypassResourceValidator extends VtnServiceValidator {
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.VBYPASS);
 		if (requestBody.has(VtnServiceJsonConsts.VBYPASS)
-				&& requestBody.get(VtnServiceJsonConsts.VBYPASS)
-				.isJsonObject()) {
+				&& requestBody.get(VtnServiceJsonConsts.VBYPASS).isJsonObject()) {
 			isValid = true;
 			final JsonObject vBypass = requestBody
 					.getAsJsonObject(VtnServiceJsonConsts.VBYPASS);
@@ -269,10 +265,10 @@ public class VBypassResourceValidator extends VtnServiceValidator {
 				if (vBypass.has(VtnServiceJsonConsts.DOMAINID)
 						&& vBypass.getAsJsonPrimitive(
 								VtnServiceJsonConsts.DOMAINID).getAsString() != null
-								&& !vBypass
+						&& !vBypass
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.DOMAINID)
-										.getAsString().trim().isEmpty()) {
+								.getAsString().trim().isEmpty()) {
 					isValid = validator.isValidDomainId(vBypass
 							.getAsJsonPrimitive(VtnServiceJsonConsts.DOMAINID)
 							.getAsString().trim(), VtnServiceJsonConsts.LEN_31);

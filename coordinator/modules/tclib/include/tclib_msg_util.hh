@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -21,8 +21,8 @@ namespace tclib {
 class TcLibMsgUtil {
  public:
   /**
-   * @brief       Get of commit transaction arguments from the session  
-   * @param[in]   session pointer of server session from where data will be read 
+   * @brief       Get of commit transaction arguments from the session
+   * @param[in]   session pointer of server session from where data will be read
    * @param[out]  commit_trans_msg structure variable after reading from session
    * @retval      TC_SUCCESS Get data from session is success
    * @retval      TC_FAILURE Get data from session is failed
@@ -34,8 +34,8 @@ class TcLibMsgUtil {
 
   /**
    * @brief       Get of commit driver vote/global arguments from the session
-   * @param[in]   session pointer of server session from where data will be read 
-   * @param[out]  drv_vote_global_msg structure variable after reading 
+   * @param[in]   session pointer of server session from where data will be read
+   * @param[out]  drv_vote_global_msg structure variable after reading
    *              from session
    * @retval      TC_SUCCESS Get data from session is success
    * @retval      TC_FAILURE Get data from session is failed
@@ -47,7 +47,7 @@ class TcLibMsgUtil {
 
   /**
    * @brief       Get of commit driver result arguments from the session
-   * @param[in]   session pointer of server session from where data will be read 
+   * @param[in]   session pointer of server session from where data will be read
    * @param[out]  drv_result_msg structure variable after reading from session
    * @retval      TC_SUCCESS Get data from session is success
    * @retval      TC_FAILURE Get data from session is failed
@@ -59,7 +59,7 @@ class TcLibMsgUtil {
 
   /**
    * @brief       Get of commit global abort arguments from the session
-   * @param[in]   session pointer of server session from where data will be read 
+   * @param[in]   session pointer of server session from where data will be read
    * @param[out]  global_abort_msg structure variable after reading from session
    * @retval      TC_SUCCESS Get data from session is success
    * @retval      TC_FAILURE Get data from session is failed
@@ -71,7 +71,7 @@ class TcLibMsgUtil {
 
   /**
    * @brief       Get of audit transaction arguments from the session
-   * @param[in]   session pointer of server session from where data will be read 
+   * @param[in]   session pointer of server session from where data will be read
    * @param[out]  audit_trans_msg structure variable after reading from session
    * @retval      TC_SUCCESS Get data from session is success
    * @retval      TC_FAILURE Get data from session is failed
@@ -83,8 +83,8 @@ class TcLibMsgUtil {
 
   /**
    * @brief       Get of audit driver vote/global arguments from the session
-   * @param[in]   session pointer of server session from where data will be read 
-   * @param[out]  drv_vote_global_msg structure variable after reading 
+   * @param[in]   session pointer of server session from where data will be read
+   * @param[out]  drv_vote_global_msg structure variable after reading
    *              from session
    * @retval      TC_SUCCESS Get data from session is success
    * @retval      TC_FAILURE Get data from session is failed
@@ -96,7 +96,7 @@ class TcLibMsgUtil {
 
   /**
    * @brief       Get of audit driver result arguments from the session
-   * @param[in]   session pointer of server session from where data will be read 
+   * @param[in]   session pointer of server session from where data will be read
    * @param[out]  drv_result_msg structure variable after reading from session
    * @retval      TC_SUCCESS Get data from session is success
    * @retval      TC_FAILURE Get data from session is failed
@@ -108,7 +108,7 @@ class TcLibMsgUtil {
 
   /**
    * @brief       Get of audit global abort arguments from the session
-   * @param[in]   session pointer of server session from where data will be read 
+   * @param[in]   session pointer of server session from where data will be read
    * @param[out]  global_abort_msg structure variable after reading from session
    * @retval      TC_SUCCESS Get data from session is success
    * @retval      TC_FAILURE Get data from session is failed
@@ -120,7 +120,7 @@ class TcLibMsgUtil {
 
   /**
    * @brief       Get of audit config related arguments from the session
-   * @param[in]   session pointer of server session from where data will be read 
+   * @param[in]   session pointer of server session from where data will be read
    * @param[out]  audit_config_msg structure variable after reading from session
    * @retval      TC_SUCCESS Get data from session is success
    * @retval      TC_FAILURE Get data from session is failed
@@ -128,7 +128,7 @@ class TcLibMsgUtil {
   static TcCommonRet GetAuditConfigMsg(pfc::core::ipc::ServerSession *session,
                                        TcAuditConfigMsg &audit_config_msg);
 };
-}  // tclib
-}  // unc
+}  // namespace tclib
+}  // namespace unc
 
 #endif /* _UNC_TCLIB_MSG_UTIL_HH_ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -21,7 +21,6 @@ using unc::uppl::ODBCManager;
 namespace unc {
 namespace uppl {
 
-
 enum OdbcmConnType {
   kOdbcmConnReadOnly = 0,  // Read Only Connection
   kOdbcmConnReadWriteNb,   // Read Write Connection For Nb requests
@@ -35,15 +34,16 @@ class OdbcmConnectionHandler {
     * Constructor for OdbcmConnectionHandler
     */
     explicit OdbcmConnectionHandler(const OdbcmConnType conn_type,
-                                    UpplReturnCode &conn_status,
-                                    ODBCManager *odbc_manager) {
-      conn_type_ = conn_type;
-      odbc_manager_ = odbc_manager;
-      conn_handle_ = NULL;
-      conn_status = UPPL_RC_SUCCESS;
+                                    UncRespCode &conn_status,
+                                    ODBCManager *odbc_manager):
+                                    conn_type_(conn_type),
+                                    conn_handle_(NULL),
+                                    odbc_manager_(odbc_manager),
+                                    using_session_id_(0) {
+      conn_status = UNC_RC_SUCCESS;
       ODBCM_RC_STATUS db_ret = odbc_manager_->OpenDBConnection(this);
       if (db_ret != ODBCM_RC_SUCCESS) {
-        conn_status = UPPL_RC_ERR_DB_ACCESS;
+        conn_status = UNC_UPPL_RC_ERR_DB_ACCESS;
       }
     }
     /*
@@ -61,6 +61,14 @@ class OdbcmConnectionHandler {
       conn_handle_ = conn_handle;
     }
 
+    void set_using_session_id(uint32_t session_id) {
+      using_session_id_ = session_id;
+    }
+
+    uint32_t get_using_session_id() {
+      return using_session_id_;
+    }
+
     OdbcmConnType get_conn_type() {
       return conn_type_;
     }
@@ -73,7 +81,44 @@ class OdbcmConnectionHandler {
     OdbcmConnType conn_type_;
     SQLHDBC conn_handle_;  // Connection handler to create ODBC Connection
     ODBCManager *odbc_manager_;
+    uint32_t using_session_id_;
 };
+
+class ScopedDBConnection {
+  public:
+    explicit ScopedDBConnection(const OdbcmConnType conn_type,
+                         UncRespCode &resp_code,
+                         OdbcmConnectionHandler *&db_conn,
+                         uint32_t session_id,
+                         uint32_t config_id,
+                         ODBCManager *odbc_manager): conn_type_(conn_type),
+                                              db_conn_(NULL),
+                                              session_id_(session_id),
+                                              config_id_(config_id),
+                                              odbc_manager_(odbc_manager) {
+      resp_code = UNC_RC_SUCCESS;
+      ODBCM_RC_STATUS db_status = odbc_manager_->AssignDBConnection(
+                                         db_conn_, session_id_, config_id_);
+      db_conn = db_conn_;
+      if (db_conn == NULL) pfc_log_info("conn is null after assign");
+      if (db_conn_ == NULL) pfc_log_info("conn_ is null after assign");
+      if (db_status != ODBCM_RC_SUCCESS) {
+        resp_code = UNC_UPPL_RC_ERR_DB_ACCESS;
+        pfc_log_error("odbc connection assignation is failed!!");
+      }
+    }
+    ~ScopedDBConnection() {
+      odbc_manager_->PoolDBConnection(db_conn_, session_id_, config_id_);
+    }
+
+  private:
+    OdbcmConnType conn_type_;
+    OdbcmConnectionHandler *db_conn_;
+    uint32_t session_id_;
+    uint32_t config_id_;
+    ODBCManager *odbc_manager_;
+};
+
 }  // namespace uppl
 }  // namespace unc
 #endif /*_ODBCM_DB_CONNECTION_H_*/

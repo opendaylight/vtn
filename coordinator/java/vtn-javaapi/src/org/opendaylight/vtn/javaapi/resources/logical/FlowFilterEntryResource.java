@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -13,6 +13,7 @@ import java.util.List;
 
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
+import org.opendaylight.vtn.core.ipc.IpcUint32;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
@@ -25,6 +26,7 @@ import org.opendaylight.vtn.javaapi.ipc.conversion.IpcLogicalResponseFactory;
 import org.opendaylight.vtn.javaapi.ipc.enums.IpcRequestPacketEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncDataType;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncOperationEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncOption1Enum;
@@ -36,7 +38,8 @@ import org.opendaylight.vtn.javaapi.validation.logical.FlowFilterEntryResourceVa
  * The Class FlowFilterEntryResource implements delete, get and put methods
  */
 
-@UNCVtnService(path = "/vtns/{vtn_name}/flowfilters/{ff_type}/flowfilterentries/{seqnum}")
+@UNCVtnService(
+		path = "/vtns/{vtn_name}/flowfilters/{ff_type}/flowfilterentries/{seqnum}")
 public class FlowFilterEntryResource extends AbstractResource {
 	/** The vtn name. */
 	@UNCField("vtn_name")
@@ -47,26 +50,31 @@ public class FlowFilterEntryResource extends AbstractResource {
 	/** The seqnum. */
 	@UNCField("seqnum")
 	private String seqnum;
+
 	/**
 	 * @return the vtnName
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
+
 	/**
 	 * @return the ffType
 	 */
-	public String getFfType() {
+	public final String getFfType() {
 		return ffType;
 	}
+
 	/**
 	 * @return the seqnum
 	 */
-	public String getSeqnum() {
+	public final String getSeqnum() {
 		return seqnum;
 	}
+
 	private static final Logger LOG = Logger
 			.getLogger(FlowFilterEntryResource.class.getName());
+
 	/**
 	 * Instantiates a new flow filter entry resource.
 	 */
@@ -76,6 +84,7 @@ public class FlowFilterEntryResource extends AbstractResource {
 		setValidator(new FlowFilterEntryResourceValidator(this));
 		LOG.trace("Start FlowFilterEntryResource#FlowFilterEntryResource()");
 	}
+
 	/**
 	 * Implementation of put method of FlowFilterEntry
 	 * 
@@ -86,7 +95,8 @@ public class FlowFilterEntryResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts FlowFilterEntryResource#put()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -134,6 +144,7 @@ public class FlowFilterEntryResource extends AbstractResource {
 		LOG.trace("Completed FlowFilterEntryResource#put()");
 		return status;
 	}
+
 	/**
 	 * Implementation of delete method of FlowFilterEntry
 	 * 
@@ -141,7 +152,7 @@ public class FlowFilterEntryResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Starts FlowFilterEntryResource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -189,6 +200,7 @@ public class FlowFilterEntryResource extends AbstractResource {
 		LOG.trace("Complete FlowFilterEntryResource#delete()");
 		return status;
 	}
+
 	/**
 	 * Implementation of get method of FlowFilterEntry
 	 * 
@@ -199,7 +211,8 @@ public class FlowFilterEntryResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts FlowFilterEntryResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -222,10 +235,29 @@ public class FlowFilterEntryResource extends AbstractResource {
 				requestProcessor.createIpcRequestPacket(
 						IpcRequestPacketEnum.KT_VTN_FLOWFILTER_ENTRY_GET,
 						requestBody, getUriParameters());
+				requestProcessor.getRequestPacket().setDataType(
+						new IpcUint32(UncDataType.UNC_DT_RUNNING.ordinal()));
+				requestBody.addProperty(VtnServiceJsonConsts.TARGETDB,
+						VtnServiceJsonConsts.RUNNING);
 			} else {
-				requestProcessor.createIpcRequestPacket(
-						IpcRequestPacketEnum.KT_VTN_FLOWFILTER_ENTRY_GET_STATE,
-						requestBody, getUriParameters());
+				if (requestBody != null
+						&& requestBody.has(VtnServiceJsonConsts.OP)
+						&& requestBody.get(VtnServiceJsonConsts.OP)
+								.getAsString()
+								.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
+					requestProcessor
+							.createIpcRequestPacket(
+									IpcRequestPacketEnum.KT_VTN_FLOWFILTER_ENTRY_GET_STATE,
+									requestBody, getUriParameters());
+				} else {
+					requestProcessor.createIpcRequestPacket(
+							IpcRequestPacketEnum.KT_VTN_FLOWFILTER_ENTRY_GET,
+							requestBody, getUriParameters());
+					requestProcessor.getRequestPacket().setDataType(
+							new IpcUint32(UncDataType.UNC_DT_RUNNING.ordinal()));
+					requestBody.addProperty(VtnServiceJsonConsts.TARGETDB,
+						VtnServiceJsonConsts.RUNNING);
+				}
 			}
 			requestProcessor.getRequestPacket().setOperation(
 					IpcDataUnitWrapper
@@ -236,16 +268,22 @@ public class FlowFilterEntryResource extends AbstractResource {
 					|| (requestBody.has(VtnServiceJsonConsts.TARGETDB) && requestBody
 							.get(VtnServiceJsonConsts.TARGETDB).getAsString()
 							.equalsIgnoreCase(VtnServiceJsonConsts.STATE))) {
-				requestProcessor
-						.getRequestPacket()
-						.setOption1(
-								IpcDataUnitWrapper
-										.setIpcUint32Value((UncOption1Enum.UNC_OPT1_DETAIL
-												.ordinal())));
+				if(requestBody != null
+						&& requestBody.has(VtnServiceJsonConsts.OP)
+						&& requestBody.get(VtnServiceJsonConsts.OP)
+								.getAsString()
+								.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)){
+					requestProcessor
+					.getRequestPacket()
+					.setOption1(
+							IpcDataUnitWrapper
+									.setIpcUint32Value((UncOption1Enum.UNC_OPT1_DETAIL
+											.ordinal())));
+				}
 			}
-			status= requestProcessor.processIpcRequest();
+			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			setInfo(responseGenerator.getVtnFlowFilterEntryResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.SHOW));
@@ -278,12 +316,13 @@ public class FlowFilterEntryResource extends AbstractResource {
 		LOG.trace("Complete FlowFilterEntryResource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 
 	 * @return parameter list
 	 */
-	private List<String> getUriParameters() {		
+	private List<String> getUriParameters() {
 		LOG.trace("Start FlowFilterEntryResource#getUriParameters()");
 		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(vtnName);

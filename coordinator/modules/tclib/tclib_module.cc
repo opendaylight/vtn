@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -163,6 +163,7 @@ TcApiCommonRet TcLibModule::TcLibAuditControllerRequest
   int err = 0;
   unc_keytype_ctrtype_t ctr_type = UNC_CT_UNKNOWN;
   tc::TcUtilRet util_ret = tc::TCUTIL_RET_SUCCESS;
+  uint8_t force_reconnect = 0;
 
   if (pTcLibInterface_ != NULL) {
     ctr_type = pTcLibInterface_->HandleGetControllerType();
@@ -226,6 +227,15 @@ TcApiCommonRet TcLibModule::TcLibAuditControllerRequest
     pfc_ipcclnt_altclose(conn);
     return TC_API_COMMON_FAILURE;
   }
+  /* Writing force_reconnect into the session */
+  idx++;
+  util_ret = tc::TcClientSessionUtils::set_uint8(&sess, force_reconnect);
+  if (util_ret != tc::TCUTIL_RET_SUCCESS) {
+    pfc_log_error("%s %d TcServerSessionUtils failed with %d",
+                  __FUNCTION__, __LINE__, util_ret);
+    pfc_ipcclnt_altclose(conn);
+    return TC_API_COMMON_FAILURE;
+  }
 
   /*Invoke the session using the handle*/
   err = sess.invoke(resp);
@@ -275,6 +285,21 @@ TcApiCommonRet TcLibModule::TcLibValidateUpdateMsg(uint32_t sessionid,
   }
   return ret;
 }
+
+
+/**
+ * @brief       Gives current session_id and config_id to upll, upll, pfcdriver
+ * @param[out]  current session_id
+ * @param[out]  current config_id
+ */
+void TcLibModule::GetSessionAttributes(uint32_t* session_id,
+                                      uint32_t* config_id) {
+  pfc_log_info("session_id:%d, config_id:%d", session_id_, config_id_);
+  pfc::core::ScopedMutex m(tclib_mutex_);
+  *session_id = session_id_;
+  *config_id = config_id_;
+}
+
 
 /**
    * @brief      GetKeyIndex
@@ -1069,6 +1094,7 @@ NotifySessionConfig(pfc::core::ipc::ServerSession *sess) {
   tc::TcUtilRet util_ret = tc::TCUTIL_RET_SUCCESS;
 
   pfc::core::ScopedMutex m(tclib_mutex_);
+
   /*read from the session and update the session and config id*/
   if (sess != NULL) {
     argcount = sess->getArgCount();
@@ -1491,9 +1517,17 @@ TcCommonRet TcLibModule::AuditTransStartEnd(TcMsgOperType oper_type,
 
   switch (oper_type) {
     case MSG_AUDIT_START :
-      ret = pTcLibInterface_->HandleAuditStart(audit_trans_msg.session_id,
-                                               audit_trans_msg.driver_id,
-                                               audit_trans_msg.controller_id);
+      if (GetControllerType() != UNC_CT_UNKNOWN) {
+        ret = pTcLibInterface_->HandleAuditStart(
+            audit_trans_msg.session_id,
+            audit_trans_msg.driver_id,
+            audit_trans_msg.controller_id,
+            audit_trans_msg.reconnect_controller);
+      } else {
+        ret = pTcLibInterface_->HandleAuditStart(audit_trans_msg.session_id,
+                                                 audit_trans_msg.driver_id,
+                                                 audit_trans_msg.controller_id);
+      }
       pfc_log_info("%s %d HandleAuditStart returned with %d",
                    __FUNCTION__, __LINE__, ret);
       if (ret != TC_SUCCESS) {
@@ -2191,11 +2225,13 @@ unc_keytype_ctrtype_t TcLibModule::GetDriverId() {
                   __FUNCTION__, __LINE__, util_ret);
     return UNC_CT_UNKNOWN;
   }
-
+  oper_state_ = MSG_GET_DRIVERID;
   ctr_type = pTcLibInterface_->HandleGetControllerType(controller_id);
 
   pfc_log_info("%s %d Handler returned with %d",
                __FUNCTION__, __LINE__, ctr_type);
+
+  oper_state_ = MSG_NONE;
   return ctr_type;
 }
 

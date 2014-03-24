@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -54,14 +54,14 @@ public class VRouterInterfacesResource extends AbstractResource {
 	/**
 	 * @return the vtnName
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
 	/**
 	 * @return the vrtName
 	 */
-	public String getVrtName() {
+	public final String getVrtName() {
 		return vrtName;
 	}
 
@@ -88,7 +88,8 @@ public class VRouterInterfacesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VRouterInterfacesResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -109,7 +110,8 @@ public class VRouterInterfacesResource extends AbstractResource {
 					uriParameterList);
 			LOG.debug("Request Packet created successfully for 1st call");
 			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet processed for 1st call with status" + status);
+			LOG.debug("Request packet processed for 1st call with status"
+					+ status);
 			if (status == ClientSession.RESP_FATAL) {
 				throw new VtnServiceException(
 						Thread.currentThread().getStackTrace()[1]
@@ -137,18 +139,18 @@ public class VRouterInterfacesResource extends AbstractResource {
 			vrtInterfacesJson = responseGenerator.getVRouterInterfaceResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.LIST);
-			if (vrtInterfacesJson.get(VtnServiceJsonConsts.INTERFACES).isJsonArray()) {
-				JsonArray responseArray = vrtInterfacesJson.get(
-						VtnServiceJsonConsts.INTERFACES)
-						.getAsJsonArray();
+			if (vrtInterfacesJson.get(VtnServiceJsonConsts.INTERFACES)
+					.isJsonArray()) {
+				final JsonArray responseArray = vrtInterfacesJson.get(
+						VtnServiceJsonConsts.INTERFACES).getAsJsonArray();
 				vrtInterfacesJson = getResponseJsonArrayLogical(requestBody,
-                        requestProcessor, responseGenerator,
-                        responseArray, VtnServiceJsonConsts.INTERFACES,
-                        VtnServiceJsonConsts.IFNAME,
-                        IpcRequestPacketEnum.KT_VRT_IF_GET,
-                        uriParameterList,VtnServiceIpcConsts.GET_VROUTER_INTERFACE_RESPONSE);
+						requestProcessor, responseGenerator, responseArray,
+						VtnServiceJsonConsts.INTERFACES,
+						VtnServiceJsonConsts.IFNAME,
+						IpcRequestPacketEnum.KT_VRT_IF_GET, uriParameterList,
+						VtnServiceIpcConsts.GET_VROUTER_INTERFACE_RESPONSE);
 			}
-			 LOG.debug("Response object created successfully for 1st request");
+			LOG.debug("Response object created successfully for 1st request");
 			if ((VtnServiceJsonConsts.STATE).equalsIgnoreCase(dataType)
 					&& opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
 				final Iterator<JsonElement> interfaceIterator = vrtInterfacesJson
@@ -179,7 +181,8 @@ public class VRouterInterfacesResource extends AbstractResource {
 													.ordinal()));
 					LOG.debug("Request packet created successfully for 2nd call");
 					status = requestProcessor.processIpcRequest();
-					LOG.debug("Request packet processed for 2nd call with status" + status);
+					LOG.debug("Request packet processed for 2nd call with status"
+							+ status);
 					neighbor = responseGenerator.getNeighborResponse(
 							requestProcessor.getIpcResponsePacket(),
 							requestBody, VtnServiceJsonConsts.SHOW);
@@ -231,7 +234,8 @@ public class VRouterInterfacesResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VRouterInterfacesResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;

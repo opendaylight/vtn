@@ -43,11 +43,11 @@ class OdcSwitch {
    * @param[in] ctr                  - Controller pointer
    * @param[out] cache_empty         - If cache is empty it is PFC_TRUE else
    *                                   PFC_FALSE
-   * @return drv_resp_code_t         - returns DRVAPI_RESPONSE_SUCCESS on
+   * @return UncRespCode             - returns UNC_RC_SUCCESS on
    *                                   success of read all operation/returns
-   *                                   DRVAPI_RESPONSE_FAILURE on failure
+   *                                   UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t fetch_config(unc::driver::controller* ctr,
+  UncRespCode fetch_config(unc::driver::controller* ctr,
                                pfc_bool_t &cache_empty);
 
  private:
@@ -60,12 +60,12 @@ class OdcSwitch {
    *                                   index  -1 denotes no array
    * @param[out] cfg_node_vector     - vector to which config node needs to be
    *                                   pushed
-   * @return drv_resp_code_t         - returns DRVAPI_RESPONSE_SUCCESS on
+   * @return UncRespCode             - returns UNC_RC_SUCCESS on
    *                                   parsing switch and appending to vector
    *                                   successfully/returns
-   *                                   DRVAPI_RESPONSE_FAILURE on failure
+   *                                   UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t fill_config_node_vector(
+  UncRespCode fill_config_node_vector(
       unc::driver::controller *ctr_ptr,
       json_object *json_obj_node_prop,
       int arr_idx,
@@ -76,9 +76,9 @@ class OdcSwitch {
    * @param[in]                      - ctr controller pointer
    * @param[out]                     - filled config node vector
    * @param[out]                     - Cache empty or not PFC_TRUE/PFC_FALSE
-   * @return drv_resp_code_t         - returns DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode             - returns UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t compare_with_cache(
+  UncRespCode compare_with_cache(
       unc::driver::controller *ctr_ptr,
       std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector,
       pfc_bool_t &cache_empty);
@@ -108,10 +108,10 @@ class OdcSwitch {
    * @param[in] ctr_ptr              - controller pointer
    * @param[in] cfg_node             - Config Node pointer
    * @param[out] switch_list         - local list maintained for delete contains switch id
-   * @return drv_resp_code_t         - return DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode             - return UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
    */
 
-  drv_resp_code_t add_event(unc::driver::controller *ctr_ptr,
+  UncRespCode add_event(unc::driver::controller *ctr_ptr,
                             unc::vtndrvcache::ConfigNode *cfg_node,
                             std::list<std::string> &switch_list);
 
@@ -121,9 +121,9 @@ class OdcSwitch {
    * @param[in] cfg_node             - Config Node pointer
    * @param[in] val_old_switch       - old switch value structure
    * @param[out] switch_list         - local list maintained for delete contains switch id
-   * @return drv_resp_code_t         - return DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode             - return UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t update_event(unc::driver::controller *ctr_ptr,
+  UncRespCode update_event(unc::driver::controller *ctr_ptr,
                                unc::vtndrvcache::ConfigNode *cfg_node,
                                val_switch_st_t *val_old_switch,
                                std::list<std::string> &switch_list);
@@ -132,19 +132,19 @@ class OdcSwitch {
    * @brief                           - delete event to be sent to UPPL and cache
    * @param[in] ctr_ptr               - controller pointer
    * @param[in] switch_list           - local list maintained for delete contains switch id
-   * @return drv_resp_code_t          - return DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode              - return UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t delete_event(unc::driver::controller *ctr_ptr,
-                               std::list<std::string> &switch_list);
+  UncRespCode delete_event(unc::driver::controller *ctr_ptr,
+                           std::list<std::string> &switch_list);
 
    /**
     * @brief                          - Verify in cache whether switch aleady exists or not
     * @param[in] ctr_ptr              - controller pointer
     * @param[in] cfgnode_vector       - Config Node vector
     * @param[out] switch_list         - local list maintained for delete contains switch id
-    * @return drv_resp_code_t         - return DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
+    * @return UncRespCode             - return UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
     */
-  drv_resp_code_t verify_in_cache(
+  UncRespCode verify_in_cache(
       unc::driver::controller *ctr_ptr,
       std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector,
       std::list<std::string> &switch_list);
@@ -163,9 +163,9 @@ class OdcSwitch {
    * @param[in] ctr_ptr               - Controller pointer
    * @param[in] data                  - data to be parsed
    * @param[out] cfgnode_vector       - to be filled with the response
-   * return drv_resp_code_t           - return DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
+   * return UncRespCode               - return UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t parse_node_response(
+  UncRespCode parse_node_response(
       unc::driver::controller *ctr_ptr,
       char *data,
       std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
@@ -174,10 +174,10 @@ class OdcSwitch {
    * @brief                          - delete_logical_port
    * @param[in] ctr                  - Controller pointer
    * @param[in]                      - cfg_node_delete_map
-   * @return drv_resp_code_t         - return DRVAPI_RESPONSE_SUCCESS/
-   *                                   DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode             - return UNC_RC_SUCCESS/
+   *                                   UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t delete_logical_port(
+  UncRespCode delete_logical_port(
       unc::driver::controller *ctr,
       const std::map<std::string,
       unc::vtndrvcache::ConfigNode *> &cfg_node_delete_map);
@@ -186,10 +186,10 @@ class OdcSwitch {
    * @brief                          - delete_Switch
    * @param[in] ctr                  - Controller pointer
    * @param[in]                      - cfg_node_delete_map
-   * @return drv_resp_code_t         - return DRVAPI_RESPONSE_SUCCESS/
-   *                                   DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode             - return UNC_RC_SUCCESS/
+   *                                   UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t delete_switch(
+  UncRespCode delete_switch(
       unc::driver::controller *ctr,
       const std::map<std::string,
       unc::vtndrvcache::ConfigNode *> &cfg_node_delete_map);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -255,8 +255,25 @@ ClientSession::addOutput(val_logical_port_st&) {
   return addOutPut_;
 }
 
+int
+ClientSession::addOutput(key_port&) {
+  return addOutPut_;
+}
 
+int
+ClientSession::addOutput(key_switch&) {
+  return addOutPut_;
+}
 
+int
+ClientSession::addOutput(key_ctr_dataflow&) {
+  return addOutPut_;
+}
+
+int
+ClientSession::addOutput(key_dataflow&) {
+  return addOutPut_;
+}
 
 void
 ClientSession::stub_setAddOutput(uint32_t data) {
@@ -361,6 +378,7 @@ int
 ClientSession::addOutput(const pfc_ipcstdef_t& /*def*/, pfc_cptr_t /*data*/) {
   return addOutPut_;
 }
+
 
 void
 ClientSession::stub_setAddOutput(int result) {
@@ -529,8 +547,40 @@ ClientSession::getResponse(uint32_t index, key_logical_member_port_t& data) {
   return responseResult_;
 }
 
+int
+ClientSession::getResponse(unsigned int, val_port_stats& data) {
+  return responseResult_;
+}
 
+int
+ClientSession::getResponse(uint32_t, val_switch_st_detail&) {
+  return responseResult_;
+}
 
+int
+ClientSession::getResponse(uint32_t, val_df_data_flow_st_t&) {
+  return responseResult_;
+}
+
+int
+ClientSession::getResponse(unsigned int, key_dataflow&) {
+  return responseResult_;
+}
+
+int
+ClientSession::getResponse(unsigned int, key_vtn&) {
+  return responseResult_;
+}
+
+int
+ClientSession::getResponse(unsigned int, pfcdrv_network_mon_alarm_data&) {
+  return responseResult_;
+}
+
+int
+ClientSession::getResponse(unsigned int, pfcdrv_policier_alarm_data&) {
+  return responseResult_;
+}
 
 void
 ClientSession::stub_setResponse(int result) {

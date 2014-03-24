@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -33,140 +33,140 @@ namespace kt_momgr {
   (dt_type == UPLL_DT_STATE)
 
 
-// Min and Max values for validation
+  // Min and Max values for validation
 
-const uint8_t kMinLenCtrlrId = 1;
-const uint8_t kMaxLenCtrlrId = 31;
+  const uint8_t kMinLenCtrlrId = 1;
+  const uint8_t kMaxLenCtrlrId = 31;
 
-const uint8_t kMinLenDomainId = 1;
-const uint8_t kMaxLenDomainId = 31;
-static const char* kDefaultDomainId = "(DEFAULT)";
+  const uint8_t kMinLenDomainId = 1;
+  const uint8_t kMaxLenDomainId = 31;
+  static const char* kDefaultDomainId = "(DEFAULT)";
 
-const uint8_t kMinLenVtnName = 1;
-const uint8_t kMaxLenVtnName = 31;
+  const uint8_t kMinLenVtnName = 1;
+  const uint8_t kMaxLenVtnName = 31;
 
-const uint8_t kMinLenVlinkName = 1;
-const uint8_t kMaxLenVlinkName = 31;
+  const uint8_t kMinLenVlinkName = 1;
+  const uint8_t kMaxLenVlinkName = 31;
 
-const uint8_t kMinLenVnodeName = 1;
-const uint8_t kMaxLenVnodeName = 31;
+  const uint8_t kMinLenVnodeName = 1;
+  const uint8_t kMaxLenVnodeName = 31;
 
-const uint8_t kMinLenInterfaceName = 1;
-const uint8_t kMaxLenInterfaceName = 31;
+  const uint8_t kMinLenInterfaceName = 1;
+  const uint8_t kMaxLenInterfaceName = 31;
 
-const uint8_t kMinLenDescription = 1;
-const uint8_t kMaxLenDescription = 127;
+  const uint8_t kMinLenDescription = 1;
+  const uint8_t kMaxLenDescription = 127;
 
-const uint8_t kMinLenSwitchId = 1;
-const uint8_t kMaxLenSwitchId = 255;
+  const uint8_t kMinLenSwitchId = 1;
+  const uint8_t kMaxLenSwitchId = 255;
 
-const uint16_t kMinLenLogicalPortId = 1;
-const uint16_t kMaxLenLogicalPortId = 319;
+  const uint16_t kMinLenLogicalPortId = 1;
+  const uint16_t kMaxLenLogicalPortId = 319;
 
-const uint16_t kMinVlanId = 1;
-const uint16_t kMaxVlanId = 4095;
+  const uint16_t kMinVlanId = 1;
+  const uint16_t kMaxVlanId = 4095;
 
-const uint8_t kMinIpRoutePrefix = 0;
-const uint8_t kMaxIpRoutePrefix = 32;
+  const uint8_t kMinIpRoutePrefix = 0;
+  const uint8_t kMaxIpRoutePrefix = 32;
 
-const uint8_t kMinVnodeIpv4Prefix = 1;
-const uint8_t kMaxVnodeIpv4Prefix = 30;
+  const uint8_t kMinVnodeIpv4Prefix = 1;
+  const uint8_t kMaxVnodeIpv4Prefix = 30;
 
-const uint8_t kMinIpv4Prefix = 1;
-const uint8_t kMaxIpv4Prefix = 32;
+  const uint8_t kMinIpv4Prefix = 1;
+  const uint8_t kMaxIpv4Prefix = 32;
 
-const uint8_t kMinIpv6Prefix = 1;
-const uint8_t kMaxIpv6Prefix = 128;
+  const uint8_t kMinIpv6Prefix = 1;
+  const uint8_t kMaxIpv6Prefix = 128;
 
-const uint16_t kMinPingPacketLen = 1;
-const uint16_t kMaxPingPacketLen = 65467;
+  const uint16_t kMinPingPacketLen = 1;
+  const uint16_t kMaxPingPacketLen = 65467;
 
-const uint32_t kMinPingCount = 1;
-const uint32_t kMaxPingCount = 655350;
+  const uint32_t kMinPingCount = 1;
+  const uint32_t kMaxPingCount = 655350;
 
-const uint8_t kMinPingInterval = 1;
-const uint8_t kMaxPingInterval = 60;
+  const uint8_t kMinPingInterval = 1;
+  const uint8_t kMaxPingInterval = 60;
 
-const uint8_t kMinPingTimeout = 1;
-const uint8_t kMaxPingTimeout = 60;
+  const uint8_t kMinPingTimeout = 1;
+  const uint8_t kMaxPingTimeout = 60;
 
-const uint8_t kMinLenPortName = 1;
-const uint8_t kMaxLenPortName = 32;
+  const uint8_t kMinLenPortName = 1;
+  const uint8_t kMaxLenPortName = 32;
 
-const uint64_t kMinStationId = 1;
-const uint64_t kMaxStationId = 524287;
+  const uint64_t kMinStationId = 1;
+  const uint64_t kMaxStationId = 524287;
 
-const uint32_t kMinIpAddressCount = 1;
-const uint32_t kMaxIpAddressCount = 0xFFFFFFFF;
+  const uint32_t kMinIpAddressCount = 1;
+  const uint32_t kMaxIpAddressCount = 0xFFFFFFFF;
 
-const uint16_t kMinLenGroupMetric = 1;
-const uint16_t kMaxLenGroupMetric = 65535;
+  const uint16_t kMinLenGroupMetric = 1;
+  const uint16_t kMaxLenGroupMetric = 65535;
 
-const uint8_t kMinLenBoundaryName = 1;
-const uint8_t kMaxLenBoundaryName = 31;
+  const uint8_t kMinLenBoundaryName = 1;
+  const uint8_t kMaxLenBoundaryName = 31;
 
-const uint8_t kMinLenNwmName = 1;
-const uint8_t kMaxLenNwmName = 31;
+  const uint8_t kMinLenNwmName = 1;
+  const uint8_t kMaxLenNwmName = 31;
 
-const uint16_t kMinNWMHHealthInterval = 5;
-const uint16_t kMaxNWMHHealthInterval = 600;
+  const uint16_t kMinNWMHHealthInterval = 5;
+  const uint16_t kMaxNWMHHealthInterval = 600;
 
-const uint16_t kMinNWMHRecoveryInterval = 5;
-const uint16_t kMaxNWMHRecoveryInterval = 600;
+  const uint16_t kMinNWMHRecoveryInterval = 5;
+  const uint16_t kMaxNWMHRecoveryInterval = 600;
 
-const uint8_t kMinNWMHFailureCount = 1;
-const uint8_t kMaxNWMHFailureCount = 10;
+  const uint8_t kMinNWMHFailureCount = 1;
+  const uint8_t kMaxNWMHFailureCount = 10;
 
-const uint8_t kMinNWMHRecoveryCount = 1;
-const uint8_t kMaxNWMHRecoveryCount = 10;
+  const uint8_t kMinNWMHRecoveryCount = 1;
+  const uint8_t kMaxNWMHRecoveryCount = 10;
 
-const uint8_t kMinNWMHWaitTime = 1;
-const uint8_t kMaxNWMHWaitTime = 60;
+  const uint8_t kMinNWMHWaitTime = 1;
+  const uint8_t kMaxNWMHWaitTime = 60;
 
-/*KT_FLOWLIST, KT_FLOWLIST_ENTRY*/
-const uint8_t kMinLenFlowListName = 1;
-const uint8_t kMaxLenFlowListName = 32;
+  /*KT_FLOWLIST, KT_FLOWLIST_ENTRY*/
+  const uint8_t kMinLenFlowListName = 1;
+  const uint8_t kMaxLenFlowListName = 32;
 
-const uint16_t kMinEthType = 0x0000;
-const uint16_t kMaxEthType = 0xffff;
+  const uint16_t kMinEthType = 0x0000;
+  const uint16_t kMaxEthType = 0xffff;
 
-const uint8_t kMinIPDscp = 0;
-const uint8_t kMaxIPDscp = 63;
+  const uint8_t kMinIPDscp = 0;
+  const uint8_t kMaxIPDscp = 63;
 
-const uint8_t kMinVlanPriority = 0;
-const uint8_t kMaxVlanPriority = 7;
+  const uint8_t kMinVlanPriority = 0;
+  const uint8_t kMaxVlanPriority = 7;
 
-const uint8_t kMinIPProto = 1;
-const uint8_t kMaxIPProto = 255;
+  const uint8_t kMinIPProto = 1;
+  const uint8_t kMaxIPProto = 255;
 
-const uint16_t kMinL4Port = 0;
-const uint16_t kMaxL4Port = 65535;
+  const uint16_t kMinL4Port = 0;
+  const uint16_t kMaxL4Port = 65535;
 
-const uint8_t kMinIcmpValue = 0;
-const uint8_t kMaxIcmpValue = 255;
+  const uint8_t kMinIcmpValue = 0;
+  const uint8_t kMaxIcmpValue = 255;
 
-/*KT_POLICING_PROFILE, KT_POLICING_PROFILE_ENTRY */
-const uint8_t kMinLenPolicingProfileName = 1;
-const uint8_t kMaxLenPolicingProfileName = 32;
+  /*KT_POLICING_PROFILE, KT_POLICING_PROFILE_ENTRY */
+  const uint8_t kMinLenPolicingProfileName = 1;
+  const uint8_t kMaxLenPolicingProfileName = 32;
 
-const uint8_t kMinPolicingProfileSeqNum = 1;
-const uint8_t kMaxPolicingProfileSeqNum = 255;
+  const uint8_t kMinPolicingProfileSeqNum = 1;
+  const uint8_t kMaxPolicingProfileSeqNum = 255;
 
-const uint32_t kMinRateType = 0;
-const uint32_t kMaxRateType = 4294967295u;
+  const uint32_t kMinRateType = 0;
+  const uint32_t kMaxRateType = 4294967295u;
 
-const uint32_t kMinBurstSize = 0;
-const uint32_t kMaxBurstSize = 4294967295u;
+  const uint32_t kMinBurstSize = 0;
+  const uint32_t kMaxBurstSize = 4294967295u;
 
-const uint8_t kMinPrecedence = 1;
-const uint8_t kMaxPrecedence = 3;
+  const uint8_t kMinPrecedence = 1;
+  const uint8_t kMaxPrecedence = 3;
 
-const uint16_t kMinFlowFilterSeqNum = 1;
-const uint16_t kMaxFlowFilterSeqNum = 65535;
+  const uint16_t kMinFlowFilterSeqNum = 1;
+  const uint16_t kMaxFlowFilterSeqNum = 65535;
 
-// template function to validate the boundary conditions for the input value
+  // template function to validate the boundary conditions for the input value
 
-template<class ValType>
+  template<class ValType>
 bool ValidateNumericRange(const ValType &num_val, const ValType &min_value,
                           const ValType &max_value, const bool &include_min,
                           const bool &include_max) {
@@ -246,11 +246,11 @@ inline bool ValidateDefaultStr(uint8_t *str,
     return false;
   } else if (!ValidateStringRange(reinterpret_cast<char *>(str), min, max)) {
     UPLL_LOG_DEBUG(" Invalid string length %d",
-        (unsigned int) strlen(reinterpret_cast<char *>(str)));
+                   (unsigned int) strlen(reinterpret_cast<char *>(str)));
     return false;
   } else if ((str[0] == '(') &&
-      (0 == strncmp(reinterpret_cast<char *>(str),
-                    kDefaultDomainId, strlen(kDefaultDomainId)))) {
+             (0 == strncmp(reinterpret_cast<char *>(str),
+                           kDefaultDomainId, strlen(kDefaultDomainId)))) {
     return true;
   } else if (!ValidateStrId(reinterpret_cast<char *>(str))) {
     UPLL_LOG_DEBUG("Invalid string format %s", str);
@@ -305,7 +305,7 @@ inline bool ValidateDesc(uint8_t *str, unsigned int min, unsigned int max) {
   if (!(ret_val = ValidateStringRange(reinterpret_cast<char *>(str),
                                       min, max))) {
     UPLL_LOG_DEBUG("Invalid string length %d",
-                  (unsigned int) strlen(reinterpret_cast<char *>(str)));
+                   (unsigned int) strlen(reinterpret_cast<char *>(str)));
   } else {
     if (!(ret_val = ValidateStrPrint(reinterpret_cast<char *>(str)))) {
       UPLL_LOG_DEBUG("Invalid string format %s", str);
@@ -320,7 +320,7 @@ inline bool ValidateDesc(uint8_t *str, unsigned int min, unsigned int max) {
 
 // wrapper function for validating logical port id
 inline bool ValidateLogicalPortId(char *str, unsigned int min,
-                                       unsigned int max) {
+                                  unsigned int max) {
   UPLL_LOG_DEBUG("Inside ValidateLogicalPortId");
 
   if (NULL == str) {
@@ -335,15 +335,15 @@ inline bool ValidateLogicalPortId(char *str, unsigned int min,
     return false;
   }
 
-/*
-  while(*str) {
-    if (!(isalnum(*str) || ('-' == *str) || ('.' == *str) || (':' == *str))) {
-      UPLL_LOG_DEBUG("UPLL_RC_ERR_CFG_SYNTAX %c ",*str);
-      return UPLL_RC_ERR_CFG_SYNTAX;
-    }
-    str++;
-  }
-*/
+  /*
+     while(*str) {
+     if (!(isalnum(*str) || ('-' == *str) || ('.' == *str) || (':' == *str))) {
+     UPLL_LOG_DEBUG("UPLL_RC_ERR_CFG_SYNTAX %c ",*str);
+     return UPLL_RC_ERR_CFG_SYNTAX;
+     }
+     str++;
+     }
+     */
   return true;
 }
 
@@ -354,16 +354,16 @@ inline bool ValidateMacAddr(uint8_t *mac_addr) {
   if ((memcmp(mac_addr, temp_mac1, 6) == 0)
       || (memcmp(mac_addr, temp_mac2, 6) == 0)) {
     UPLL_LOG_DEBUG("Invalid Mac address: %x %x %x %x %x %x", mac_addr[0],
-                  mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4],
-                  mac_addr[5]);
+                   mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4],
+                   mac_addr[5]);
     return false;
   }
   /* Multicast MAC address check*/
   if (mac_addr[0] == 0x01 && mac_addr[1] == 0x00 && mac_addr[2] == 0x5e) {
     if ((mac_addr[3] & 0x80) == 0) {
       UPLL_LOG_DEBUG("Invalid Mac address:%x %x %x %x %x %x", mac_addr[0],
-                    mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4],
-                    mac_addr[5]);
+                     mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4],
+                     mac_addr[5]);
       return false;
     }
   }
@@ -400,8 +400,8 @@ inline bool chk_ip_mask_allow(uint32_t mask) {
   h_mask = ntohl(mask);
 
   if (h_mask == 0x00000000
-    || h_mask == 0xfffffffe
-    || h_mask == 0xffffffff) {
+      || h_mask == 0xfffffffe
+      || h_mask == 0xffffffff) {
     return false;
   }
   return true;

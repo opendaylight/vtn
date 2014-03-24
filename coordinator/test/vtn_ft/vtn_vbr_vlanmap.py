@@ -11,6 +11,7 @@
 
 import requests, json, collections, time, controller, vtn_vbr
 import vtn_testconfig
+import resp_code
 
 CONTROLLERDATA=vtn_testconfig.CONTROLLERDATA
 VTNVBRDATA=vtn_testconfig.VTNVBRDATA
@@ -52,7 +53,7 @@ def create_vlanmap(vtn_blockname,vbr_blockname,vlanmap_blockname,no_vlan=0):
     print json.dumps(vlan_map_add)
     r = requests.post(url,data=json.dumps(vlan_map_add),headers=def_header)
     print r.status_code
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_CREATE_SUCCESS:
         return 1
     else:
         return 0
@@ -73,7 +74,7 @@ def delete_vlanmap(vtn_blockname,vbr_blockname,vlanmap_blockname,no_vlan=0):
 
     r = requests.delete(url,headers=def_header)
     print r.status_code
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_DELETE_SUCCESS:
         return 1
     else:
         return 0
@@ -95,14 +96,14 @@ def validate_vlanmap_update(vtn_blockname, vbr_blockname, vlanmap_blockname,
     print r.status_code
 
     if presence == "no":
-        if r.status_code == 404:
+        if r.status_code == resp_code.RESP_NOT_FOUND:
             return 0
 
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_GET_SUCCESS:
         return 1
 
 
-    data=json.loads(r.text)
+    data=json.loads(r.content)
     print data
     if presence == "no":
         print data['vlanmap']
@@ -153,14 +154,14 @@ def validate_vlanmap_at_controller(vtn_blockname, vbr_blockname, vlanmap_blockna
     print r.status_code
 
     if presence == "no":
-        if r.status_code == 404:
+        if r.status_code == resp_code.RESP_NOT_FOUND:
             return 0
 
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_GET_SUCCESS:
         return 1
 
 
-    data=json.loads(r.text)
+    data=json.loads(r.content)
     print data
     if presence == "no":
         print data['vlanmap']
@@ -226,7 +227,7 @@ def update_vlanmap(vtn_blockname,vbr_blockname,vlanmap_blockname,update_id=0):
     print json.dumps(vlan_map_add)
     r = requests.put(url,data=json.dumps(vlan_map_add),headers=def_header)
     print r.status_code
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_UPDATE_SUCCESS:
         return 1
     else:
         return 0

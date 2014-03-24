@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -26,6 +26,8 @@
 #include "ipc_client_configuration_handler.hh"
 #include "ipct_util.hh"
 
+using unc::tclib::TcLibModule;
+
 /**TransactionRequest
  * @Description : This function initializes the member data
  * @param[in]   : None
@@ -48,26 +50,26 @@ TransactionRequest::~TransactionRequest() {
  *                from the Candidate Database with respect to row status 
  * @param[in]   : row_status - Denotes the row status of the kt_controller,
  *                kt_domain and kt_boundary
- * @return      : UPPL_RC_SUCCESS if the modified configuration obtained or
- *                UPPL_RC_ERR_* for failure
+ * @return      : UNC_RC_SUCCESS if the modified configuration obtained or
+ *                UNC_UPPL_RC_ERR_* for failure
  */
-UpplReturnCode TransactionRequest::GetModifiedConfiguration(
+UncRespCode TransactionRequest::GetModifiedConfiguration(
     OdbcmConnectionHandler *db_conn,
     CsRowStatus row_status) {
-  UpplReturnCode ret_code = UPPL_RC_SUCCESS;
+  UncRespCode ret_code = UNC_RC_SUCCESS;
   ret_code = GetModifiedController(db_conn, row_status);
-  if (ret_code != UPPL_RC_SUCCESS) {
+  if (ret_code != UNC_RC_SUCCESS) {
     return ret_code;
   }
   ret_code = GetModifiedDomain(db_conn, row_status);
-  if (ret_code != UPPL_RC_SUCCESS) {
+  if (ret_code != UNC_RC_SUCCESS) {
     return ret_code;
   }
   ret_code = GetModifiedBoundary(db_conn, row_status);
-  if (ret_code != UPPL_RC_SUCCESS) {
+  if (ret_code != UNC_RC_SUCCESS) {
     return ret_code;
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /** StartTransaction
@@ -79,12 +81,12 @@ UpplReturnCode TransactionRequest::GetModifiedConfiguration(
  *                the candidate database and send the configuration to driver
  * @param[in]   : session_id - ipc session id used for TC validation
  *                config_id - configuration id used for TC validation
- * @return      : UPPL_RC_SUCCESS if the start Transaction is success and set
+ * @return      : UNC_RC_SUCCESS if the start Transaction is success and set
  *                the trans_state as TRANS_START_SUCCESS or returns
- *                UPPL_RC_ERR_* if the start transaction is failed and set
+ *                UNC_UPPL_RC_ERR_* if the start transaction is failed and set
  *                the trans_state as TRANS_START_FAILURE
  * */
-UpplReturnCode TransactionRequest::StartTransaction(
+UncRespCode TransactionRequest::StartTransaction(
     OdbcmConnectionHandler *db_conn,
     uint32_t session_id,
     uint32_t config_id) {
@@ -92,10 +94,8 @@ UpplReturnCode TransactionRequest::StartTransaction(
       get_physical_core();
   InternalTransactionCoordinator *itc_trans  =
       physical_core->get_internal_transaction_coordinator();
-  vector<string>vec_controller_oflow;
-  vector<string>vec_controller_vnp;
 
-  pfc_log_info("TransactionRequest::StartTransaction-------");
+  pfc_log_info("TransactionRequest::StartTransaction");
   pfc_log_debug("trans_state()= %d", itc_trans->trans_state());
   if (itc_trans->trans_state() == TRANS_END) {
     pfc_log_debug("Inside itc_trans->trans_state() == TRANS_END");
@@ -103,53 +103,37 @@ UpplReturnCode TransactionRequest::StartTransaction(
     ClearMaps();
     // Getting the Created configurations
     if ((GetModifiedConfiguration(db_conn,
-                                  CREATED) != UPPL_RC_SUCCESS)) {
+                                  CREATED) != UNC_RC_SUCCESS)) {
       pfc_log_debug("Inside GetCreatedUpdatedConfiguration CREATE !="
-          "UPPL_RC_SUCCESS");
+          "UNC_RC_SUCCESS");
       itc_trans->set_trans_state(TRANS_END);
-      return UPPL_RC_ERR_TRANSACTION_START;
+      return UNC_UPPL_RC_ERR_TRANSACTION_START;
     }
     // Getting the Updated configurations and sending to driver
     if ((GetModifiedConfiguration(db_conn,
-                                  UPDATED) !=  UPPL_RC_SUCCESS)) {
+                                  UPDATED) !=  UNC_RC_SUCCESS)) {
       pfc_log_debug("Inside GetCreatedUpdatedConfiguration UPDATE !="
-          "UPPL_RC_SUCCESS");
+          "UNC_RC_SUCCESS");
       itc_trans->set_trans_state(TRANS_END);
-      return UPPL_RC_ERR_TRANSACTION_START;
+      return UNC_UPPL_RC_ERR_TRANSACTION_START;
     }
     // Getting the Deleted configurations and sending to driver
     if ((GetModifiedConfiguration(db_conn,
-                                  DELETED) !=  UPPL_RC_SUCCESS)) {
-      pfc_log_debug("Inside GetDeletedConfiguration != UPPL_RC_SUCCESS");
+                                  DELETED) !=  UNC_RC_SUCCESS)) {
+      pfc_log_debug("Inside GetDeletedConfiguration != UNC_RC_SUCCESS");
       itc_trans->set_trans_state(TRANS_END);
-      return UPPL_RC_ERR_TRANSACTION_START;
+      return UNC_UPPL_RC_ERR_TRANSACTION_START;
     }
   } else {
     pfc_log_debug("Inside itc_trans->trans_state() != TRANS_END");
     itc_trans->set_trans_state(TRANS_END);
-    return UPPL_RC_ERR_INVALID_TRANSACT_START_REQ;
-  }
-  // Assigning the modified controllers in vector
-  vec_controller_oflow.assign(set_controller_oflow.begin(),
-                              set_controller_oflow.end());
-  vec_controller_vnp.assign(set_controller_vnp.begin(),
-                            set_controller_vnp.end());
-  // Storing the  Drivers and associated controllers in the  Map
-  if (!vec_controller_oflow.empty()) {
-    driver_controller_info_map_.insert(
-        std::pair<unc_keytype_ctrtype_t,
-        vector<string> >(UNC_CT_PFC, vec_controller_oflow) );
-  }
-  if (!vec_controller_vnp.empty()) {
-    driver_controller_info_map_.insert(
-        std::pair<unc_keytype_ctrtype_t,
-        vector<string> >(UNC_CT_VNP, vec_controller_vnp) );
+    return UNC_UPPL_RC_ERR_INVALID_TRANSACT_START_REQ;
   }
   itc_trans->set_trans_state(TRANS_START_SUCCESS);
   pfc_log_debug("TransactionRequest::StartTransaction::trans_state()= %d",
                 itc_trans->trans_state());
-  pfc_log_info("TransactionRequest::StartTransaction is Successful-------");
-  return UPPL_RC_SUCCESS;
+  pfc_log_info("TransactionRequest::StartTransaction is Successful");
+  return UNC_RC_SUCCESS;
 }
 
 /**HandleVoteRequest
@@ -161,10 +145,10 @@ UpplReturnCode TransactionRequest::StartTransaction(
  * @param[in]   : session_id - ipc session id used for TC validation
  *                config_id - configuration id used for TC validation
  * @param[out]  : driver_info - map that contains the updated controller list
- * @return      : UPPL_RC_SUCCESS if VoteRequest is successfull or
- *                UPPL_RC_ERR_* if VoteRequest is failed
+ * @return      : UNC_RC_SUCCESS if VoteRequest is successfull or
+ *                UNC_UPPL_RC_ERR_* if VoteRequest is failed
  * */
-UpplReturnCode TransactionRequest::HandleVoteRequest(uint32_t session_id,
+UncRespCode TransactionRequest::HandleVoteRequest(uint32_t session_id,
                                                      uint32_t config_id,
                                                      TcDriverInfoMap
                                                      &driver_info) {
@@ -172,7 +156,7 @@ UpplReturnCode TransactionRequest::HandleVoteRequest(uint32_t session_id,
       get_physical_core();
   InternalTransactionCoordinator *itc_trans  =
       physical_core->get_internal_transaction_coordinator();
-  pfc_log_info("TransactionRequest::HandleVoteRequest-------");
+  pfc_log_info("TransactionRequest::HandleVoteRequest");
   pfc_log_debug("trans_state()= %d", itc_trans->trans_state());
 
   if (itc_trans->trans_state() == TRANS_START_SUCCESS) {
@@ -182,12 +166,12 @@ UpplReturnCode TransactionRequest::HandleVoteRequest(uint32_t session_id,
     itc_trans->set_trans_state(VOTE_WAIT_DRIVER_RESULT);
   } else {
     pfc_log_debug("Inside itc_trans->trans_state() != TRANS_START_SUCCESS");
-    return UPPL_RC_ERR_VOTE_INVALID_REQ;
+    return UNC_UPPL_RC_ERR_VOTE_INVALID_REQ;
   }
   pfc_log_debug("TransactionRequest::VoteRequest:trans_state()= %d",
                 itc_trans->trans_state());
-  pfc_log_info("TransactionRequest::VoteRequest is Successful-------");
-  return UPPL_RC_SUCCESS;
+  pfc_log_info("TransactionRequest::VoteRequest is Successful");
+  return UNC_RC_SUCCESS;
 }
 
 /** HandleDriverResult
@@ -201,10 +185,10 @@ UpplReturnCode TransactionRequest::HandleVoteRequest(uint32_t session_id,
  *                phase - specifies the TC commit phase type.Its a enum value
  *                driver_result - specifies the TC commit phase result.
  *                Its a enum value
- * @return      : UPPL_RC_SUCCESS if the HandleDriverResult is successful or
- *                returns UPPL_RC_ERR_* if HandleDriverResult is failed
+ * @return      : UNC_RC_SUCCESS if the HandleDriverResult is successful or
+ *                returns UNC_UPPL_RC_ERR_* if HandleDriverResult is failed
  **/
-UpplReturnCode TransactionRequest::HandleDriverResult(
+UncRespCode TransactionRequest::HandleDriverResult(
     OdbcmConnectionHandler *db_conn,
     uint32_t session_id,
     uint32_t config_id,
@@ -214,7 +198,7 @@ UpplReturnCode TransactionRequest::HandleDriverResult(
       get_physical_core();
   InternalTransactionCoordinator *itc_trans  =
       physical_core->get_internal_transaction_coordinator();
-  pfc_log_info("TransactionRequest::HandleDriverResult-------");
+  pfc_log_info("TransactionRequest::HandleDriverResult");
   pfc_log_debug("trans_state()= %d", itc_trans->trans_state());
   pfc_log_debug("phase = %d", phase);
 
@@ -224,11 +208,11 @@ UpplReturnCode TransactionRequest::HandleDriverResult(
       pfc_log_debug("itc_trans->trans_state() == VOTE_WAIT_DRIVER_RESULT");
       itc_trans->set_trans_state(VOTE_SUCCESS);
       pfc_log_info(
-          "TransactionRequest::HandleDriverResult:VotePhase is Successful----");
+          "TransactionRequest::HandleDriverResult:VotePhase is Successful");
       pfc_log_debug("TransactionRequest::HandleDriverResult:trans_state()= %d",
                     itc_trans->trans_state());
     } else {
-      return UPPL_RC_ERR_VOTE_INVALID_REQ;
+      return UNC_UPPL_RC_ERR_VOTE_INVALID_REQ;
     }
   }
   if (phase == unc::tclib::TC_COMMIT_GLOBAL_COMMIT_PHASE &&
@@ -243,9 +227,43 @@ UpplReturnCode TransactionRequest::HandleDriverResult(
         boundary_updated.empty()) {
       itc_trans->set_trans_state(GLOBAL_COMMIT_SUCCESS);
       pfc_log_info("CommitPhase:There are no modified configurations\n");
-      return UPPL_RC_SUCCESS;
+      return UNC_RC_SUCCESS;
     }
 
+/*
+    // check whether it is already in running db otherwise delete
+    // the entries from the vector
+    vector<key_ctr_t> :: iterator it_controller1 =
+      controller_deleted.begin();
+    for ( ; it_controller1 != controller_deleted.end();) {
+       pfc_log_debug(
+          "Checking the deleted entries in running database:Inside for loop");
+
+      key_ctr_t key_ctr_obj = *it_controller1;
+      vector<string> vect_ctr_key_value;
+      string controller_name = reinterpret_cast<char *>
+        (key_ctr_obj.controller_name);
+      pfc_log_debug(
+           "DeletedControlleris %s", key_ctr_obj.controller_name);
+      vect_ctr_key_value.push_back(controller_name);
+      Kt_Controller kt_controller;
+      UncRespCode key_exist_running = kt_controller.IsKeyExists(
+        db_conn, UNC_DT_RUNNING,
+        vect_ctr_key_value);
+      if (key_exist_running == UNC_RC_SUCCESS) {
+        ++it_controller1;
+        continue;
+      } else if (key_exist_running == UNC_UPPL_RC_ERR_DB_ACCESS) {
+        pfc_log_fatal(
+          "TransactionRequest:Connection Error");
+        return UNC_UPPL_RC_ERR_DB_ACCESS;
+      } else {
+        pfc_log_debug(
+           "Controller entry is not available in running");
+        it_controller1  = controller_deleted.erase(it_controller1);
+      }
+    }
+*/
     /* Storing the Old values of updated controller */
     vector<key_ctr_t> :: iterator it_controller =
         controller_updated.begin();
@@ -260,7 +278,7 @@ UpplReturnCode TransactionRequest::HandleDriverResult(
       vect_ctr_key.push_back(reinterpret_cast<void *>(&key_ctr_obj));
       if (kt_controller.ReadInternal(db_conn, vect_ctr_key, vect_ctr_val,
                                      UNC_DT_RUNNING,
-                                     UNC_OP_READ) != UPPL_RC_SUCCESS) {
+                                     UNC_OP_READ) != UNC_RC_SUCCESS) {
         // Remove the updated key from updated vector
         it_controller = controller_updated.erase(it_controller);
         continue;
@@ -291,7 +309,7 @@ UpplReturnCode TransactionRequest::HandleDriverResult(
       if (kt_domain.ReadInternal(db_conn, vect_domain_key,
                                  vect_domain_val_st,
                                  UNC_DT_RUNNING,
-                                 UNC_OP_READ) != UPPL_RC_SUCCESS) {
+                                 UNC_OP_READ) != UNC_RC_SUCCESS) {
         // Remove the updated key from updated vector
         it_domain = domain_updated.erase(it_domain);
         continue;
@@ -322,7 +340,7 @@ UpplReturnCode TransactionRequest::HandleDriverResult(
       if (kt_boundary.ReadInternal(db_conn, vect_boundary_key,
                                    vect_boundary_val_st,
                                    UNC_DT_RUNNING,
-                                   UNC_OP_READ) != UPPL_RC_SUCCESS) {
+                                   UNC_OP_READ) != UNC_RC_SUCCESS) {
         // Remove the updated key from updated vector
         it_boundary = boundary_updated.erase(it_boundary);
         continue;
@@ -344,10 +362,10 @@ UpplReturnCode TransactionRequest::HandleDriverResult(
       pfc_log_info("Configuration Committed Successfully");
     } else if (db_commit_status == ODBCM_RC_CONNECTION_ERROR) {
       pfc_log_fatal("Committing Configuration Failed - DB Access Error");
-      return UPPL_RC_ERR_FATAL_COPYDB_CANDID_RUNNING;
+      return UNC_UPPL_RC_ERR_FATAL_COPYDB_CANDID_RUNNING;
     } else {
       pfc_log_fatal("Committing Configuration Failed");
-      return UPPL_RC_ERR_FATAL_COPYDB_CANDID_RUNNING;
+      return UNC_UPPL_RC_ERR_FATAL_COPYDB_CANDID_RUNNING;
     }
     // For all deleted controllers, remove the state entries as well
     it_controller = controller_deleted.begin();
@@ -360,9 +378,18 @@ UpplReturnCode TransactionRequest::HandleDriverResult(
       ODBCM_RC_STATUS clear_status =
           PhysicalLayer::get_instance()->get_odbc_manager()->
           ClearOneInstance(UNC_DT_STATE, controller_name, db_conn);
-      if (clear_status != ODBCM_RC_SUCCESS) {
-        pfc_log_info("State DB clearing failed");
+      if (clear_status !=  ODBCM_RC_SUCCESS) {
+        pfc_log_fatal("Error during Clearing the state db");
+        TcLibModule* tclib_ptr = static_cast<TcLibModule*>
+         (TcLibModule::getInstance(TCLIB_MODULE_NAME));
+        tclib_ptr->TcLibWriteControllerInfo(controller_name.c_str(),
+                                            UNC_RC_INTERNAL_ERR,
+                                            0);
+        return UNC_UPPL_RC_ERR_CLEAR_DB;
       }
+      // remove the deleted controller entry from alarm_status_map
+      physical_core->remove_ctr_from_alarm_status_map(controller_name, "1");
+      physical_core->remove_ctr_from_alarm_status_map(controller_name, "3");
     }
     itc_trans->set_trans_state(GLOBAL_COMMIT_SUCCESS);
     pfc_log_debug("TransactionRequest::HandleDriverResult:trans_state()= %d",
@@ -380,11 +407,11 @@ UpplReturnCode TransactionRequest::HandleDriverResult(
       if (kt_boundary.ReadInternal(db_conn, vect_boundary_key,
                                    vect_boundary_val_st,
                                    UNC_DT_RUNNING,
-                                   UNC_OP_READ) != UPPL_RC_SUCCESS) {
+                                   UNC_OP_READ) != UNC_RC_SUCCESS) {
         continue;
       }
       vector<OperStatusHolder> ref_oper_status;
-      UpplReturnCode operstatus_return =
+      UncRespCode operstatus_return =
           kt_boundary.HandleOperStatus(
               db_conn, UNC_DT_RUNNING,
               reinterpret_cast<void*>(&key_boundary_obj),
@@ -410,25 +437,25 @@ UpplReturnCode TransactionRequest::HandleDriverResult(
     }
     pfc_log_info("Starting to send the Notification after"
         " committing configuration");
-    UpplReturnCode notfn_status = SendControllerNotification(db_conn,
+    UncRespCode notfn_status = SendControllerNotification(db_conn,
                                                              vec_old_val_ctr);
-    if (notfn_status != UPPL_RC_SUCCESS) {
+    if (notfn_status != UNC_RC_SUCCESS) {
       return notfn_status;
     }
     notfn_status = SendDomainNotification(db_conn, vec_old_val_ctr_domain);
-    if (notfn_status != UPPL_RC_SUCCESS) {
+    if (notfn_status != UNC_RC_SUCCESS) {
       return notfn_status;
     }
     notfn_status = SendBoundaryNotification(db_conn, vec_old_val_boundary);
-    if (notfn_status != UPPL_RC_SUCCESS) {
+    if (notfn_status != UNC_RC_SUCCESS) {
       return notfn_status;
     }
   }
   if (phase != unc::tclib::TC_COMMIT_VOTE_PHASE &&
       phase != unc::tclib::TC_COMMIT_GLOBAL_COMMIT_PHASE) {
-    return UPPL_RC_ERR_COMMIT_OPERATION_NOT_ALLOWED;
+    return UNC_UPPL_RC_ERR_COMMIT_OPERATION_NOT_ALLOWED;
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**HandleGlobalCommitRequest
@@ -439,11 +466,11 @@ UpplReturnCode TransactionRequest::HandleDriverResult(
  * @param[in]   : session_id - ipc session id used for TC validation
  *                config_id - configuration id used for TC validation
  * @param[out]  : driver_info - contains the controller list 
- * @return      : UPPL_RC_SUCCESS if the HandleGlobalCommitRequest is
- *                successful or returns UPPL_RC_ERR_* if
+ * @return      : UNC_RC_SUCCESS if the HandleGlobalCommitRequest is
+ *                successful or returns UNC_UPPL_RC_ERR_* if
  *                HandleGlobalCommitRequest is failed
  * */
-UpplReturnCode TransactionRequest::HandleGlobalCommitRequest(
+UncRespCode TransactionRequest::HandleGlobalCommitRequest(
     uint32_t session_id,
     uint32_t config_id,
     TcDriverInfoMap
@@ -452,7 +479,7 @@ UpplReturnCode TransactionRequest::HandleGlobalCommitRequest(
       get_physical_core();
   InternalTransactionCoordinator *itc_trans =
       physical_core->get_internal_transaction_coordinator();
-  pfc_log_info("TransactionRequest::HandleGlobalCommitRequest-------");
+  pfc_log_info("TransactionRequest::HandleGlobalCommitRequest");
   pfc_log_debug("trans_state()= %d", itc_trans->trans_state());
 
   if (itc_trans->trans_state() == VOTE_SUCCESS) {
@@ -461,12 +488,12 @@ UpplReturnCode TransactionRequest::HandleGlobalCommitRequest(
     itc_trans->set_trans_state(GLOBAL_COMMIT_WAIT_DRIVER_RESULT);
   } else {
     pfc_log_debug("itc_trans->trans_state() != VOTE_SUCCESS");
-    return UPPL_RC_ERR_COMMIT_OPERATION_NOT_ALLOWED;
+    return UNC_UPPL_RC_ERR_COMMIT_OPERATION_NOT_ALLOWED;
   }
   pfc_log_debug(
       "TransactionRequest::HandleGlobalCommitRequest:trans_state()= %d",
       itc_trans->trans_state());
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /** AbortTransaction
@@ -475,10 +502,10 @@ UpplReturnCode TransactionRequest::HandleGlobalCommitRequest(
  * @param[in]   : session_id - ipc session id used for TC validation
  *                config_id - configuration id used for TC validation
  *                operation_phase - denotes the TC commit operation phase
- * @return      : UPPL_RC_SUCCESS if the AbortTransaction is successful or
- *                returns UPPL_RC_ERR_* if AbortTransaction is failed
+ * @return      : UNC_RC_SUCCESS if the AbortTransaction is successful or
+ *                returns UNC_UPPL_RC_ERR_* if AbortTransaction is failed
  * */
-UpplReturnCode TransactionRequest::AbortTransaction(uint32_t session_id,
+UncRespCode TransactionRequest::AbortTransaction(uint32_t session_id,
                                                     uint32_t config_id,
                                                     TcCommitOpAbortPhase
                                                     operation_phase) {
@@ -496,7 +523,7 @@ UpplReturnCode TransactionRequest::AbortTransaction(uint32_t session_id,
     pfc_log_info("AbortTxn COMMIT_VOTE_REQ - Nothing to do");
   }
   itc_trans-> set_trans_state(TRANS_END);
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /** EndTransaction
@@ -507,55 +534,53 @@ UpplReturnCode TransactionRequest::AbortTransaction(uint32_t session_id,
  * @param[in]   : session_id - ipc session id used for TC validation
  *                config_id - configuration id used for TC validation
  *                trans_res - specifies the TC transaction end result
- * @return      : UPPL_RC_SUCCESS if the EndTransaction is successful or
- *                returns UPPL_RC_ERR_* if EndTransaction is failed
+ * @return      : UNC_RC_SUCCESS if the EndTransaction is successful or
+ *                returns UNC_UPPL_RC_ERR_* if EndTransaction is failed
  * */
-UpplReturnCode TransactionRequest::EndTransaction(
+UncRespCode TransactionRequest::EndTransaction(
     OdbcmConnectionHandler *db_conn,
     uint32_t session_id,
     uint32_t config_id,
     TcTransEndResult trans_res ) {
-  UpplReturnCode ret_code = UPPL_RC_SUCCESS;
+  UncRespCode ret_code = UNC_RC_SUCCESS;
   PhysicalCore *physical_core = PhysicalLayer::get_instance()->
       get_physical_core();
   InternalTransactionCoordinator *itc_trans  =
       physical_core->get_internal_transaction_coordinator();
-  pfc_log_info("TransactionRequest::EndTransaction-------");
+  pfc_log_info("TransactionRequest::EndTransaction");
   pfc_log_debug("trans_state()= %d", itc_trans->trans_state());
   // Checking the result of the Transaction
   if (trans_res == unc::tclib::TRANS_END_FAILURE) {
     itc_trans->set_trans_state(TRANS_END);
     pfc_log_info("End Transaction:FailureResponse from TC\n");
     ClearMaps();
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   // Checking whether there is any modified controller configuration
   if (controller_deleted.empty() && controller_created.empty() &&
       controller_updated.empty()) {
     itc_trans->set_trans_state(TRANS_END);
     pfc_log_info("End Transaction:No Modified configurations\n");
-    return UPPL_RC_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
   string controller_name = "";
   string driver_name = "";
   unc_keytype_ctrtype_t controller_type;
   key_ctr_t key_ctr_obj;
   Kt_Controller kt_controller;
-  UpplReturnCode err = UPPL_RC_SUCCESS;
+  UncRespCode err = UNC_RC_SUCCESS;
   IPCClientDriverHandler pfc_drv_handler(UNC_CT_PFC, err);
-  if (err != UPPL_RC_SUCCESS) {
+  if (err != UNC_RC_SUCCESS) {
     pfc_log_fatal("Cannot open session to PFC driver");
     return err;
   }
-  err = UPPL_RC_SUCCESS;
   IPCClientDriverHandler vnp_drv_handler(UNC_CT_VNP, err);
-  if (err != UPPL_RC_SUCCESS) {
+  if (err != UNC_RC_SUCCESS) {
     pfc_log_fatal("Cannot open session to VNP driver");
     return err;
   }
-  err = UPPL_RC_SUCCESS;
   IPCClientDriverHandler odc_drv_handler(UNC_CT_ODC, err);
-  if (err != UPPL_RC_SUCCESS) {
+  if (err != UNC_RC_SUCCESS) {
     pfc_log_fatal("Cannot open session to ODC driver");
     return err;
   }
@@ -563,7 +588,7 @@ UpplReturnCode TransactionRequest::EndTransaction(
   vector<key_ctr_t> :: iterator it_controller = controller_deleted.begin();
   for ( ; it_controller != controller_deleted.end(); ++it_controller) {
     key_ctr_obj = *it_controller;
-    UpplReturnCode logical_result =
+    UncRespCode logical_result =
         kt_controller.SendUpdatedControllerInfoToUPLL(
             UNC_DT_RUNNING,
             UNC_OP_DELETE,
@@ -577,7 +602,7 @@ UpplReturnCode TransactionRequest::EndTransaction(
       controller_type =
           (unc_keytype_ctrtype_t)controller_type_map[controller_name];
       if (physical_core->GetDriverName(controller_type, driver_name)
-          != UPPL_RC_SUCCESS)  {
+          != UNC_RC_SUCCESS)  {
         pfc_log_debug("Unable to get the Driver Name from Physical Core");
         continue;
       }
@@ -590,7 +615,7 @@ UpplReturnCode TransactionRequest::EndTransaction(
       } else if (controller_type == UNC_CT_VNP) {
         pfc_log_debug("VNP Controller Type");
         cli_session = vnp_drv_handler.ResetAndGetSession();
-      } else if (controller_type == UNC_CT_ODC ) {
+      } else if ( controller_type == UNC_CT_ODC ) {
         pfc_log_debug("ODC Controller Type");
         cli_session = odc_drv_handler.ResetAndGetSession();
       } else {
@@ -607,18 +632,16 @@ UpplReturnCode TransactionRequest::EndTransaction(
       err |= cli_session->addOutput(key_ctr_obj);
       pfc_log_info("%s", IpctUtil::get_string(key_ctr_obj).c_str());
       // Send the request to driver
-      UpplReturnCode driver_response = UPPL_RC_SUCCESS;
+      UncRespCode driver_response = UNC_RC_SUCCESS;
       driver_response_header rsp;
       if (controller_type == UNC_CT_PFC) {
         driver_response = pfc_drv_handler.SendReqAndGetResp(rsp);
-      }
-      if (controller_type == UNC_CT_VNP) {
+      } else if (controller_type == UNC_CT_VNP) {
         driver_response = vnp_drv_handler.SendReqAndGetResp(rsp);
-      }
-      if (controller_type == UNC_CT_ODC ) {
+      } else if (controller_type == UNC_CT_ODC) {
         driver_response = odc_drv_handler.SendReqAndGetResp(rsp);
       }
-      if (err != 0 || driver_response != UPPL_RC_SUCCESS) {
+      if (err != 0 || driver_response != UNC_RC_SUCCESS) {
         pfc_log_error("Delete response from driver for controller %s"
             "is %d err=%d", controller_name.c_str(), driver_response, err);
       }
@@ -659,10 +682,6 @@ void TransactionRequest::ClearMaps() {
   if (!boundary_created.empty()) boundary_created.clear();
   if (!boundary_updated.empty()) boundary_updated.clear();
   if (!boundary_deleted.empty()) boundary_deleted.clear();
-  /* Clearing the contents of the previously stored controllers
-   * related to specific type */
-  if (!set_controller_oflow.empty()) set_controller_oflow.clear();
-  if (!set_controller_vnp.empty())set_controller_vnp.clear();
 }
 
 /**SendControllerNotification
@@ -670,10 +689,10 @@ void TransactionRequest::ClearMaps() {
  *                the modified controllers
  * @param[in]   : vec_old_val_ctr - Vector for storing the old value struct
  *                of the controller
- * @return      : UPPL_RC_SUCCESS if the notification of modified controllers
- *                success or returns UPPL_RC_ERR_* if its failed
+ * @return      : UNC_RC_SUCCESS if the notification of modified controllers
+ *                success or returns UNC_UPPL_RC_ERR_* if its failed
  * */
-UpplReturnCode TransactionRequest::SendControllerNotification(
+UncRespCode TransactionRequest::SendControllerNotification(
     OdbcmConnectionHandler *db_conn,
     vector<void *> vec_old_val_ctr) {
   // Sending the notification of deleted  controllers
@@ -686,7 +705,7 @@ UpplReturnCode TransactionRequest::SendControllerNotification(
     key_ctr_t key_ctr_obj = *it_controller;
     pfc_log_debug("Sending Notification for Deleted Controller: %s",
                   key_ctr_obj.controller_name);
-    UpplReturnCode nofn_status =
+    UncRespCode nofn_status =
         kt_controller.ConfigurationChangeNotification(
             (uint32_t)UNC_DT_RUNNING,
             (uint32_t)UNC_KT_CONTROLLER,
@@ -704,13 +723,13 @@ UpplReturnCode TransactionRequest::SendControllerNotification(
                   key_ctr_obj.controller_name);
     vector<void *> vect_ctr_key, vect_ctr_val;
     vect_ctr_key.push_back(reinterpret_cast<void *>(&key_ctr_obj));
-    UpplReturnCode retCode = kt_controller.ReadInternal(db_conn,
+    UncRespCode retCode = kt_controller.ReadInternal(db_conn,
                                                         vect_ctr_key,
                                                         vect_ctr_val,
                                                         UNC_DT_CANDIDATE,
                                                         UNC_OP_READ);
-    if (retCode == UPPL_RC_SUCCESS) {
-      UpplReturnCode nofn_status =
+    if (retCode == UNC_RC_SUCCESS) {
+      UncRespCode nofn_status =
           kt_controller.ConfigurationChangeNotification(
               (uint32_t)UNC_DT_RUNNING,
               (uint32_t)UNC_KT_CONTROLLER,
@@ -731,10 +750,10 @@ UpplReturnCode TransactionRequest::SendControllerNotification(
         delete ctr_val;
         ctr_val = NULL;
       }
-    } else  if (retCode == UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+    } else  if (retCode == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE) {
       // Do nothing
     } else {
-      return UPPL_RC_ERR_COMMIT_OPERATION_NOT_ALLOWED;
+      return UNC_UPPL_RC_ERR_COMMIT_OPERATION_NOT_ALLOWED;
     }
   }
   // Sending the notification of updated Controller
@@ -749,13 +768,13 @@ UpplReturnCode TransactionRequest::SendControllerNotification(
                   key_ctr_obj.controller_name);
     vector<void *> vect_ctr_key, vect_ctr_val;
     vect_ctr_key.push_back(reinterpret_cast<void *>(&key_ctr_obj));
-    UpplReturnCode retCode = kt_controller.ReadInternal(db_conn,
+    UncRespCode retCode = kt_controller.ReadInternal(db_conn,
                                                         vect_ctr_key,
                                                         vect_ctr_val,
                                                         UNC_DT_CANDIDATE,
                                                         UNC_OP_READ);
-    if (retCode == UPPL_RC_SUCCESS) {
-      UpplReturnCode nofn_status =
+    if (retCode == UNC_RC_SUCCESS) {
+      UncRespCode nofn_status =
           kt_controller.ConfigurationChangeNotification(
               (uint32_t)UNC_DT_RUNNING,
               (uint32_t)UNC_KT_CONTROLLER,
@@ -784,13 +803,13 @@ UpplReturnCode TransactionRequest::SendControllerNotification(
         delete ctr_old_val;
         ctr_old_val = NULL;
       }
-    } else  if (retCode == UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+    } else  if (retCode == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE) {
       // Do nothing
     } else {
-      return UPPL_RC_ERR_COMMIT_OPERATION_NOT_ALLOWED;
+      return UNC_UPPL_RC_ERR_COMMIT_OPERATION_NOT_ALLOWED;
     }
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**SendDomainNotification
@@ -798,10 +817,10 @@ UpplReturnCode TransactionRequest::SendControllerNotification(
  *                the modified domain
  * @param[in]   : vec_old_val_ctr - Vector for storing the old value struct
  *                of the domain
- * @return      : UPPL_RC_SUCCESS if the notification of modified domain
- *                success or returns UPPL_RC_ERR_* if its failed
+ * @return      : UNC_RC_SUCCESS if the notification of modified domain
+ *                success or returns UNC_UPPL_RC_ERR_* if its failed
  * */
-UpplReturnCode TransactionRequest::SendDomainNotification(
+UncRespCode TransactionRequest::SendDomainNotification(
     OdbcmConnectionHandler *db_conn,
     vector<void *> vec_old_val_ctr_domain) {
   /*Sending the notification of deleted unknown domain */
@@ -816,7 +835,7 @@ UpplReturnCode TransactionRequest::SendDomainNotification(
     int ret_notfn = kt_domain.InvokeBoundaryNotifyOperStatus(
         db_conn, UNC_DT_RUNNING, key_ctr_domain_ptr);
     pfc_log_debug("Boundary Invoke Operation return %d", ret_notfn);
-    UpplReturnCode nofn_status =
+    UncRespCode nofn_status =
         kt_domain.ConfigurationChangeNotification(
             (uint32_t)UNC_DT_RUNNING,
             (uint32_t)UNC_KT_CTR_DOMAIN,
@@ -842,14 +861,14 @@ UpplReturnCode TransactionRequest::SendDomainNotification(
     vect_key_struct.push_back(key_ctr_domain_ptr);
     pfc_log_debug("TxnClass:Controllername: %s",
                   key_ctr_domain_obj.ctr_key.controller_name);
-    UpplReturnCode retCode = kt_domain.ReadInternal(db_conn, vect_key_struct,
+    UncRespCode retCode = kt_domain.ReadInternal(db_conn, vect_key_struct,
                                                     vect_new_val,
                                                     UNC_DT_CANDIDATE,
                                                     UNC_OP_READ);
 
-    if (retCode == UPPL_RC_SUCCESS) {
+    if (retCode == UNC_RC_SUCCESS) {
       void *val_ctr_domain_new = vect_new_val[0];
-      UpplReturnCode nofn_status =
+      UncRespCode nofn_status =
           kt_domain.ConfigurationChangeNotification(
               (uint32_t)UNC_DT_RUNNING,
               (uint32_t)UNC_KT_CTR_DOMAIN,
@@ -878,10 +897,10 @@ UpplReturnCode TransactionRequest::SendDomainNotification(
         delete val_domain_old;
         val_domain_old = NULL;
       }
-    } else  if (retCode == UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+    } else  if (retCode == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE) {
       // Do nothing
     } else {
-      return UPPL_RC_ERR_COMMIT_OPERATION_NOT_ALLOWED;
+      return UNC_UPPL_RC_ERR_COMMIT_OPERATION_NOT_ALLOWED;
     }
   }
   /* Sending the notification of created unknown domain */
@@ -898,13 +917,13 @@ UpplReturnCode TransactionRequest::SendDomainNotification(
         db_conn, UNC_DT_RUNNING, reinterpret_cast<void *>(&key_ctr_domain_obj));
     pfc_log_debug("Domain Invoke Operation return %d", ret_notfn);
 
-    UpplReturnCode retCode = kt_domain.ReadInternal(db_conn, vect_key_domain,
+    UncRespCode retCode = kt_domain.ReadInternal(db_conn, vect_key_domain,
                                                     vect_val_domain,
                                                     UNC_DT_CANDIDATE,
                                                     UNC_OP_READ);
-    if (retCode == UPPL_RC_SUCCESS) {
+    if (retCode == UNC_RC_SUCCESS) {
       void *val_ctr_domain_new = vect_val_domain[0];
-      UpplReturnCode nofn_status =
+      UncRespCode nofn_status =
           kt_domain.ConfigurationChangeNotification(
               (uint32_t)UNC_DT_RUNNING,
               (uint32_t)UNC_KT_CTR_DOMAIN,
@@ -926,13 +945,13 @@ UpplReturnCode TransactionRequest::SendDomainNotification(
         delete val_domain;
         val_domain = NULL;
       }
-    } else  if (retCode == UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+    } else  if (retCode == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE) {
       // Do nothing
     } else {
-      return UPPL_RC_ERR_COMMIT_OPERATION_NOT_ALLOWED;
+      return UNC_UPPL_RC_ERR_COMMIT_OPERATION_NOT_ALLOWED;
     }
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**SendBoundaryNotification
@@ -940,10 +959,10 @@ UpplReturnCode TransactionRequest::SendDomainNotification(
  *                the modified boundary
  * @param[in]   : vec_old_val_ctr - Vector for storing the old value struct
  *                of the boundary
- * @return      : UPPL_RC_SUCCESS if the notification of modified boundary
- *                success or returns UPPL_RC_ERR_* if its failed
+ * @return      : UNC_RC_SUCCESS if the notification of modified boundary
+ *                success or returns UNC_UPPL_RC_ERR_* if its failed
  * */
-UpplReturnCode TransactionRequest::SendBoundaryNotification(
+UncRespCode TransactionRequest::SendBoundaryNotification(
     OdbcmConnectionHandler *db_conn,
     vector<void *> vec_old_val_boundary) {
   /*Sending the notification of deleted  boundary */
@@ -953,7 +972,7 @@ UpplReturnCode TransactionRequest::SendBoundaryNotification(
   for (; it_boundary != boundary_deleted.end(); ++it_boundary) {
     key_boundary_t key_boundary_obj = *it_boundary;
     void *key_boundary_ptr = reinterpret_cast<void *>(&key_boundary_obj);
-    UpplReturnCode nofn_status =
+    UncRespCode nofn_status =
         kt_boundary.ConfigurationChangeNotification(
             (uint32_t)UNC_DT_RUNNING,
             (uint32_t)UNC_KT_BOUNDARY,
@@ -973,15 +992,15 @@ UpplReturnCode TransactionRequest::SendBoundaryNotification(
     vector<void *> vect_boundary_val_st;
     vect_boundary_key.push_back(reinterpret_cast<void*>(&key_boundary_obj));
 
-    UpplReturnCode retCode = kt_boundary.ReadInternal(db_conn,
+    UncRespCode retCode = kt_boundary.ReadInternal(db_conn,
                                                       vect_boundary_key,
                                                       vect_boundary_val_st,
                                                       UNC_DT_CANDIDATE,
                                                       UNC_OP_READ);
-    if (retCode == UPPL_RC_SUCCESS) {
+    if (retCode == UNC_RC_SUCCESS) {
       void *val_boundary_new = reinterpret_cast<void *>
       (&new_val_boundary);
-      UpplReturnCode nofn_status =
+      UncRespCode nofn_status =
           kt_boundary.ConfigurationChangeNotification(
               (uint32_t)UNC_DT_RUNNING,
               (uint32_t)UNC_KT_BOUNDARY,
@@ -1002,10 +1021,10 @@ UpplReturnCode TransactionRequest::SendBoundaryNotification(
         delete val_boundary;
         val_boundary = NULL;
       }
-    } else  if (retCode == UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+    } else  if (retCode == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE) {
       // Do nothing
     } else {
-      return UPPL_RC_ERR_COMMIT_OPERATION_NOT_ALLOWED;
+      return UNC_UPPL_RC_ERR_COMMIT_OPERATION_NOT_ALLOWED;
     }
   }
   // Sending the notification of updated  boundary
@@ -1021,13 +1040,13 @@ UpplReturnCode TransactionRequest::SendBoundaryNotification(
     vector<void *> vect_boundary_val_st;
     key_boundary_t key_boundary_obj = *it_boundary;
     vect_boundary_key.push_back(reinterpret_cast<void*>(&key_boundary_obj));
-    UpplReturnCode retCode = kt_boundary.ReadInternal(db_conn,
+    UncRespCode retCode = kt_boundary.ReadInternal(db_conn,
                                                       vect_boundary_key,
                                                       vect_boundary_val_st,
                                                       UNC_DT_CANDIDATE,
                                                       UNC_OP_READ);
-    if (retCode == UPPL_RC_SUCCESS) {
-      UpplReturnCode nofn_status =
+    if (retCode == UNC_RC_SUCCESS) {
+      UncRespCode nofn_status =
           kt_boundary.ConfigurationChangeNotification(
               (uint32_t)UNC_DT_RUNNING,
               (uint32_t)UNC_KT_BOUNDARY,
@@ -1056,13 +1075,13 @@ UpplReturnCode TransactionRequest::SendBoundaryNotification(
         delete val_boundary_old;
         val_boundary_old = NULL;
       }
-    } else  if (retCode == UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+    } else  if (retCode == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE) {
       // Do nothing
     } else {
-      return UPPL_RC_ERR_COMMIT_OPERATION_NOT_ALLOWED;
+      return UNC_UPPL_RC_ERR_COMMIT_OPERATION_NOT_ALLOWED;
     }
   }
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**SendControllerInfo
@@ -1079,20 +1098,19 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
                                             uint32_t session_id,
                                             uint32_t config_id) {
   vector<key_ctr_t> controller_info;
-  UpplReturnCode err = UPPL_RC_SUCCESS;
+  UncRespCode err = UNC_RC_SUCCESS;
   IPCClientDriverHandler pfc_drv_handler(UNC_CT_PFC, err);
-  if (err != UPPL_RC_SUCCESS) {
+  if (err != UNC_RC_SUCCESS) {
     pfc_log_error("Cannot open session to PFC driver");
     return;
   }
-  err = UPPL_RC_SUCCESS;
   IPCClientDriverHandler vnp_drv_handler(UNC_CT_VNP, err);
-  if (err != UPPL_RC_SUCCESS) {
+  if (err != UNC_RC_SUCCESS) {
     pfc_log_error("Cannot open session to VNP driver");
     return;
   }
   IPCClientDriverHandler odc_drv_handler(UNC_CT_ODC, err);
-  if (err != UPPL_RC_SUCCESS) {
+  if (err != UNC_RC_SUCCESS) {
     pfc_log_error("Cannot open session to VNP driver");
     return;
   }
@@ -1113,12 +1131,12 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
                   controller_name.c_str());
     vector<void *> vect_key_ctr, vect_ctr_val;
     vect_key_ctr.push_back(reinterpret_cast<void *>(&key_ctr_obj));
-    UpplReturnCode retCode = kt_controller.ReadInternal(db_conn,
+    UncRespCode retCode = kt_controller.ReadInternal(db_conn,
                                                         vect_key_ctr,
                                                         vect_ctr_val,
                                                         UNC_DT_CANDIDATE,
                                                         UNC_OP_READ);
-    if (retCode != UPPL_RC_SUCCESS) {
+    if (retCode != UNC_RC_SUCCESS) {
       pfc_log_debug("ReadInternal failed for controller");
       continue;
     }
@@ -1130,7 +1148,7 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
       continue;
     }
     // Inform logical
-    UpplReturnCode logical_result =
+    UncRespCode logical_result =
         kt_controller.SendUpdatedControllerInfoToUPLL(
             UNC_DT_RUNNING,
             operation_type,
@@ -1143,7 +1161,7 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
         (unc_keytype_ctrtype_t)
         (PhyUtil::uint8touint(val_ctr_new->controller.type));
     if (physical_core->GetDriverName(controller_type, driver_name)
-        != UPPL_RC_SUCCESS)  {
+        != UNC_RC_SUCCESS)  {
       pfc_log_debug("TxnEnd:Unable to get Driver Name from Physical Core");
       delete val_ctr_new;
       val_ctr_new = NULL;
@@ -1164,7 +1182,7 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
     } else if (controller_type == UNC_CT_VNP) {
       pfc_log_debug("VNP Controller type");
       cli_session = vnp_drv_handler.ResetAndGetSession();
-    } else if (controller_type == UNC_CT_ODC ) {
+    } else if ( controller_type == UNC_CT_ODC ) {
       pfc_log_debug("ODC Controller type");
       cli_session = odc_drv_handler.ResetAndGetSession();
     } else {
@@ -1193,7 +1211,7 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
     pfc_log_info("%s", IpctUtil::get_string(key_ctr_obj).c_str());
     pfc_log_info("%s", IpctUtil::get_string(*val_ctr_new).c_str());
     // Send the request to driver
-    UpplReturnCode driver_response = UPPL_RC_SUCCESS;
+    UncRespCode driver_response = UNC_RC_SUCCESS;
     driver_response_header rsp;
 
     if (controller_type == UNC_CT_PFC) {
@@ -1202,7 +1220,7 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
     if (controller_type == UNC_CT_VNP) {
       driver_response = vnp_drv_handler.SendReqAndGetResp(rsp);
     }
-    if (controller_type == UNC_CT_ODC ) {
+    if ( controller_type == UNC_CT_ODC ) {
       driver_response = odc_drv_handler.SendReqAndGetResp(rsp);
     }
     delete val_ctr_new;
@@ -1213,7 +1231,7 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
       delete ctr_key;
       ctr_key = NULL;
     }
-    if (err != 0 || driver_response != UPPL_RC_SUCCESS) {
+    if (err != 0 || driver_response != UNC_RC_SUCCESS) {
       pfc_log_error("Create request to Driver failed for controller %s"
           " with response %d, err=%d", controller_name.c_str(),
           driver_response, err);
@@ -1227,13 +1245,13 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
  *                from the Candidate Database.
  * @param[in]   : row_status - specifies the row status of modified
  *                row of kt_controller
- * @return      : UPPL_RC_SUCCESS if GetModifiedControllers is successful or
- *                UPPL_RC_ERR_* in case of failure  
+ * @return      : UNC_RC_SUCCESS if GetModifiedControllers is successful or
+ *                UNC_UPPL_RC_ERR_* in case of failure  
  * */
-UpplReturnCode TransactionRequest::GetModifiedController(
+UncRespCode TransactionRequest::GetModifiedController(
     OdbcmConnectionHandler *db_conn,
     CsRowStatus row_status) {
-  UpplReturnCode ret_code = UPPL_RC_SUCCESS;
+  UncRespCode ret_code = UNC_RC_SUCCESS;
   unc_keytype_ctrtype_t controller_type;
   pfc_log_info("Get Modified Controller for Row Status: %d", row_status);
 
@@ -1244,8 +1262,16 @@ UpplReturnCode TransactionRequest::GetModifiedController(
       db_conn, vec_key_ctr_modified,
       row_status);
   pfc_log_debug("Controller:GetModifiedRows return code = %d", ret_code);
-  if (ret_code == UPPL_RC_ERR_DB_ACCESS) {
-    return ret_code;
+  if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS ||
+      ret_code == UNC_UPPL_RC_ERR_DB_GET) {
+    pfc_log_info(
+          "Error retrieving GetModifiedRows, return txn error");
+    TcLibModule* tclib_ptr = static_cast<TcLibModule*>
+          (TcLibModule::getInstance(TCLIB_MODULE_NAME));
+    tclib_ptr->TcLibWriteControllerInfo("",
+                                        UNC_RC_INTERNAL_ERR,
+                                        0);
+    return UNC_UPPL_RC_ERR_TRANSACTION_START;
   }
   for (uint32_t config_count = 0; \
   config_count < vec_key_ctr_modified.size(); config_count++) {
@@ -1262,21 +1288,26 @@ UpplReturnCode TransactionRequest::GetModifiedController(
     // check whether it is already in running
     vector<string> vect_ctr_key_value;
     vect_ctr_key_value.push_back(controller_name);
-    UpplReturnCode key_exist_running = kt_controller.IsKeyExists(
+    UncRespCode key_exist_running = kt_controller.IsKeyExists(
         db_conn, UNC_DT_RUNNING,
         vect_ctr_key_value);
-    if (key_exist_running == UPPL_RC_ERR_DB_ACCESS) {
+    if (key_exist_running == UNC_UPPL_RC_ERR_DB_ACCESS) {
       // Error retrieving information from database, send failure
       pfc_log_info(
           "Error retrieving information from running db, return txn error");
-      return UPPL_RC_ERR_TRANSACTION_START;
-    } else if (key_exist_running != UPPL_RC_SUCCESS) {
+      TcLibModule* tclib_ptr = static_cast<TcLibModule*>
+          (TcLibModule::getInstance(TCLIB_MODULE_NAME));
+      tclib_ptr->TcLibWriteControllerInfo(controller_name.c_str(),
+                                          UNC_RC_INTERNAL_ERR,
+                                          0);
+      return UNC_UPPL_RC_ERR_TRANSACTION_START;
+    } else if (key_exist_running != UNC_RC_SUCCESS) {
       pfc_log_debug(
           "Controller entry in is not available in running");
     }
     if (row_status == CREATED) {
       controller_created.push_back(*ptr_key_ctr);
-      if (key_exist_running == UPPL_RC_SUCCESS) {
+      if (key_exist_running == UNC_RC_SUCCESS) {
         controller_deleted.push_back(*ptr_key_ctr);
         is_controller_recreated = PFC_TRUE;
       }
@@ -1284,7 +1315,7 @@ UpplReturnCode TransactionRequest::GetModifiedController(
     if (row_status == UPDATED)
       controller_updated.push_back(*ptr_key_ctr);
     if (row_status == DELETED) {
-      if (key_exist_running == UPPL_RC_SUCCESS) {
+      if (key_exist_running == UNC_RC_SUCCESS) {
         controller_deleted.push_back(*ptr_key_ctr);
       }
     }
@@ -1293,12 +1324,7 @@ UpplReturnCode TransactionRequest::GetModifiedController(
     ptr_key_ctr = NULL;
     if (PhyUtil::get_controller_type(
         db_conn, controller_name,
-        controller_type, UNC_DT_CANDIDATE) == UPPL_RC_SUCCESS) {
-      if (controller_type  == UNC_CT_PFC) {
-        set_controller_oflow.insert(controller_name);
-      } else if (controller_type  == UNC_CT_VNP) {
-        set_controller_vnp.insert(controller_name);
-      }
+        controller_type, UNC_DT_CANDIDATE) == UNC_RC_SUCCESS) {
       if (row_status == DELETED) {
         pfc_log_debug(
             "Controller %s of type %d is marked for DELETION",
@@ -1307,25 +1333,35 @@ UpplReturnCode TransactionRequest::GetModifiedController(
       }
     } else {
       pfc_log_info("Error retrieving controller type from candidate");
-      return UPPL_RC_ERR_TRANSACTION_START;
+      TcLibModule* tclib_ptr = static_cast<TcLibModule*>
+        (TcLibModule::getInstance(TCLIB_MODULE_NAME));
+      tclib_ptr->TcLibWriteControllerInfo(controller_name.c_str(),
+                                          UNC_RC_INTERNAL_ERR,
+                                          0);
+      return UNC_UPPL_RC_ERR_TRANSACTION_START;
     }
     if (is_controller_recreated == PFC_TRUE) {
       // Get existing controller type from RUNNING
       if (PhyUtil::get_controller_type(
           db_conn,  controller_name,
-          controller_type, UNC_DT_RUNNING) == UPPL_RC_SUCCESS) {
+          controller_type, UNC_DT_RUNNING) == UNC_RC_SUCCESS) {
         pfc_log_debug(
             "Controller %s of type %d is marked for RECREATION",
             controller_name.c_str(), controller_type);
         controller_type_map[controller_name] = controller_type;
       } else {
         pfc_log_info("Error retrieving controller type from running");
-        return UPPL_RC_ERR_TRANSACTION_START;
+        TcLibModule* tclib_ptr = static_cast<TcLibModule*>
+          (TcLibModule::getInstance(TCLIB_MODULE_NAME));
+        tclib_ptr->TcLibWriteControllerInfo(controller_name.c_str(),
+                                          UNC_RC_INTERNAL_ERR,
+                                          0);
+        return UNC_UPPL_RC_ERR_TRANSACTION_START;
       }
     }
   }
   pfc_log_debug("Modified Controllers Iterated properly");
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**GetModifiedDomain
@@ -1333,13 +1369,13 @@ UpplReturnCode TransactionRequest::GetModifiedController(
  *                from the Candidate Database.
  * @param[in]   : row_status - specifies the row status of modified
  *                row of kt_domain
- * @return      : UPPL_RC_SUCCESS if GetModifiedDomain is successful or
- *                UPPL_RC_ERR_* in case of failure
+ * @return      : UNC_RC_SUCCESS if GetModifiedDomain is successful or
+ *                UNC_UPPL_RC_ERR_* in case of failure
  * */
-UpplReturnCode TransactionRequest::GetModifiedDomain(
+UncRespCode TransactionRequest::GetModifiedDomain(
     OdbcmConnectionHandler *db_conn,
     CsRowStatus row_status) {
-  UpplReturnCode ret_code = UPPL_RC_SUCCESS;
+  UncRespCode ret_code = UNC_RC_SUCCESS;
   pfc_log_info("Get Modified Domain for Row Status: %d", row_status);
   /* Getting the Modified Unknown Domain Configuration */
   Kt_Ctr_Domain kt_ctr_domain;
@@ -1348,7 +1384,15 @@ UpplReturnCode TransactionRequest::GetModifiedDomain(
       db_conn, vec_key_ctr_domain_modified,
       row_status);
   pfc_log_debug("Domain:GetModifiedRows return code = %d", ret_code);
-  if (ret_code == UPPL_RC_ERR_DB_ACCESS) {
+  if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS ||
+      ret_code == UNC_UPPL_RC_ERR_DB_GET) {
+    pfc_log_info(
+          "Error retrieving GetModifiedRows, return txn error");
+    TcLibModule* tclib_ptr = static_cast<TcLibModule*>
+          (TcLibModule::getInstance(TCLIB_MODULE_NAME));
+    tclib_ptr->TcLibWriteControllerInfo("",
+                                        UNC_RC_INTERNAL_ERR,
+                                        0);
     return ret_code;
   }
   for (uint32_t config_count = 0; \
@@ -1375,16 +1419,22 @@ UpplReturnCode TransactionRequest::GetModifiedDomain(
       vect_domain_key_value.push_back(
           (const char*)ptr_key_ctr_domain->ctr_key.controller_name);
       vect_domain_key_value.push_back(domain_name);
-      UpplReturnCode key_exist_running = kt_ctr_domain.IsKeyExists(
+      UncRespCode key_exist_running = kt_ctr_domain.IsKeyExists(
           db_conn, UNC_DT_RUNNING,
           vect_domain_key_value);
-      if (key_exist_running == UPPL_RC_SUCCESS) {
+      if (key_exist_running == UNC_RC_SUCCESS) {
         domain_deleted.push_back(*ptr_key_ctr_domain);
-      } else if (key_exist_running == UPPL_RC_ERR_DB_ACCESS) {
+      } else if (key_exist_running == UNC_UPPL_RC_ERR_DB_ACCESS) {
         // Error retrieving information from database, send failure
         pfc_log_info(
             "Error retrieving information from running db, return txn error");
-        return UPPL_RC_ERR_TRANSACTION_START;
+        TcLibModule* tclib_ptr = static_cast<TcLibModule*>
+          (TcLibModule::getInstance(TCLIB_MODULE_NAME));
+        tclib_ptr->TcLibWriteControllerInfo(
+          (const char*)ptr_key_ctr_domain->ctr_key.controller_name,
+          UNC_RC_INTERNAL_ERR,
+          0);
+        return UNC_UPPL_RC_ERR_TRANSACTION_START;
       } else {
         pfc_log_debug(
             "Deleted entry in candidate is not available in running-ignoring");
@@ -1395,7 +1445,7 @@ UpplReturnCode TransactionRequest::GetModifiedDomain(
     ptr_key_ctr_domain = NULL;
   }
   pfc_log_debug("Modified Domain iterated properly");
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**GetModifiedBoundary
@@ -1403,13 +1453,13 @@ UpplReturnCode TransactionRequest::GetModifiedDomain(
  *                from the Candidate Database.
  * @param[in]   : row_status - specifies the row status of modified
  *                row of kt_boundary
- * @return      : UPPL_RC_SUCCESS if GetModifiedBoundary is successful or
- *                UPPL_RC_ERR_* in case of failure
+ * @return      : UNC_RC_SUCCESS if GetModifiedBoundary is successful or
+ *                UNC_UPPL_RC_ERR_* in case of failure
  * */
-UpplReturnCode TransactionRequest::GetModifiedBoundary(
+UncRespCode TransactionRequest::GetModifiedBoundary(
     OdbcmConnectionHandler *db_conn,
     CsRowStatus row_status) {
-  UpplReturnCode ret_code = UPPL_RC_SUCCESS;
+  UncRespCode ret_code = UNC_RC_SUCCESS;
   pfc_log_info("Get Modified Boundary for Row Status: %d", row_status);
   //  Getting the Modified Boundary Configuration
   Kt_Boundary kt_boundary;
@@ -1418,13 +1468,21 @@ UpplReturnCode TransactionRequest::GetModifiedBoundary(
       db_conn, vec_key_boundary_modified,
       row_status);
   pfc_log_debug("Controller:GetModifiedRows return code = %d", ret_code);
-  if (ret_code == UPPL_RC_ERR_DB_ACCESS) {
-    return ret_code;
+  if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS ||
+      ret_code == UNC_UPPL_RC_ERR_DB_GET) {
+    pfc_log_info(
+        "Error retrieving GetModifiedRows from running db, return txn error");
+    TcLibModule* tclib_ptr = static_cast<TcLibModule*>
+        (TcLibModule::getInstance(TCLIB_MODULE_NAME));
+    tclib_ptr->TcLibWriteControllerInfo("",
+                                        UNC_RC_INTERNAL_ERR,
+                                        0);
+    return UNC_UPPL_RC_ERR_TRANSACTION_START;
   }
   for (uint32_t config_count = 0; \
-  config_count < vec_key_boundary_modified.size(); config_count++) {
+       config_count < vec_key_boundary_modified.size(); config_count++) {
     key_boundary_t *ptr_key_boundary = reinterpret_cast<key_boundary_t *>
-    (vec_key_boundary_modified[config_count]);
+        (vec_key_boundary_modified[config_count]);
     if (ptr_key_boundary == NULL) {
       continue;
     }
@@ -1437,16 +1495,22 @@ UpplReturnCode TransactionRequest::GetModifiedBoundary(
       vector<string> vect_bdry_key_value;
       vect_bdry_key_value.push_back(
           (const char*)ptr_key_boundary->boundary_id);
-      UpplReturnCode key_exist_running = kt_boundary.IsKeyExists(
+      UncRespCode key_exist_running = kt_boundary.IsKeyExists(
           db_conn, UNC_DT_RUNNING,
           vect_bdry_key_value);
-      if (key_exist_running == UPPL_RC_SUCCESS) {
+      if (key_exist_running == UNC_RC_SUCCESS) {
         boundary_deleted.push_back(*ptr_key_boundary);
-      } else if (key_exist_running == UPPL_RC_ERR_DB_ACCESS) {
+      } else if (key_exist_running == UNC_UPPL_RC_ERR_DB_ACCESS) {
         // Error retrieving information from database, send failure
         pfc_log_info(
             "Error retrieving information from running db, return txn error");
-        return UPPL_RC_ERR_TRANSACTION_START;
+        TcLibModule* tclib_ptr = static_cast<TcLibModule*>
+            (TcLibModule::getInstance(TCLIB_MODULE_NAME));
+        tclib_ptr->TcLibWriteControllerInfo("",
+                                            UNC_RC_INTERNAL_ERR,
+                                            0);
+
+        return UNC_UPPL_RC_ERR_TRANSACTION_START;
       } else {
         pfc_log_debug(
             "Deleted entry in candidate is not available in running-ignoring");
@@ -1457,5 +1521,5 @@ UpplReturnCode TransactionRequest::GetModifiedBoundary(
     ptr_key_boundary = NULL;
   }
   pfc_log_debug("Modified Boundary iterated properly");
-  return UPPL_RC_SUCCESS;
+  return UNC_RC_SUCCESS;
 }

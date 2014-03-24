@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -109,6 +109,8 @@ class TcLibModule : public pfc::core::Module {
                                             pfc_ipcstdef_t value_def,
                                             void* key_data,
                                             void* value_data);
+  void GetSessionAttributes(uint32_t* session_id, uint32_t* config_id);
+
 
  private:
   TcCommonRet ValidateOperTypeSequence(TcMsgOperType oper_type);

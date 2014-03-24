@@ -89,9 +89,9 @@ unc_key_type_t KeyTree::get_parenttype(unc_key_type_t child_type) {
  * @brief       : Method to traverse the tree and populate the nodes into
  *                the vector
  * @param [in]  : value_list
- * @retval      : DRVAPI_RESPONSE_SUCCESS
+ * @retval      : UNC_RC_SUCCESS
  */
-drv_resp_code_t KeyTree::get_nodelist_keytree() {
+UncRespCode KeyTree::get_nodelist_keytree() {
   ODC_FUNC_TRACE;
   cfg_node_list_.clear();
   return node_tree_.get_node_list(cfg_node_list_);
@@ -100,12 +100,12 @@ drv_resp_code_t KeyTree::get_nodelist_keytree() {
 /**
  * @brief       : Method to add individual confignode to the cache for commit
  * @param [in]  : value_node
- * @retval      : DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+ * @retval      : UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
  */
-drv_resp_code_t KeyTree::append_commit_node(ConfigNode* value_node) {
+UncRespCode KeyTree::append_commit_node(ConfigNode* value_node) {
   ODC_FUNC_TRACE;
   cfg_node_list_.push_back(value_node);
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**
@@ -144,12 +144,12 @@ void KeyTree::clear_root_cache() {
  * @brief       : Method to add confignode lists to the cache for
  *              : Physical nodes
  * @param [in]  : value_list
- * @retval      : ERR_ADD_CHILD_TO_TREE_FAILED / DRVAPI_RESPONSE_SUCCESSS
+ * @retval      : ERR_ADD_CHILD_TO_TREE_FAILED / UNC_RC_SUCCESSS
  */
-drv_resp_code_t KeyTree::append_physical_attribute_configuration_list(
+UncRespCode KeyTree::append_physical_attribute_configuration_list(
     const std::vector<ConfigNode*>&value_list) {
   ODC_FUNC_TRACE;
-  drv_resp_code_t err = DRVAPI_RESPONSE_FAILURE;
+  UncRespCode err = UNC_DRV_RC_ERR_GENERIC;
   ConfigNode*  tmp_cfgnode_ptr = NULL;
   std::vector<ConfigNode*>::const_iterator it = value_list.begin();
   std::vector<ConfigNode*>::const_iterator itr_end = value_list.end();
@@ -158,56 +158,56 @@ drv_resp_code_t KeyTree::append_physical_attribute_configuration_list(
     if (*it == NULL) {
       pfc_log_error("RunningConfig::%s:%d: ConfigNode is NULL",
                     PFC_FUNCNAME, __LINE__);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
 
     tmp_cfgnode_ptr = *it;
     err = append_audit_node(tmp_cfgnode_ptr);
-    if (DRVAPI_RESPONSE_SUCCESS != err) {
+    if (UNC_RC_SUCCESS != err) {
       pfc_log_error("%s: AddChildToTree faild err=%d", PFC_FUNCNAME, err);
       tmp_cfgnode_ptr = NULL;
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**
  * @brief       : Method to add individual confignode to the cache for
  *              : Physical node
  * @param [in]  : value_node
- * @retval      : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
+ * @retval      : UNC_DRV_RC_ERR_GENERIC / UNC_RC_SUCCESS
  */
-drv_resp_code_t KeyTree::append_Physical_attribute_node(
+UncRespCode KeyTree::append_Physical_attribute_node(
     ConfigNode* value_node) {
   ODC_FUNC_TRACE;
-  drv_resp_code_t err = DRVAPI_RESPONSE_FAILURE;
+  UncRespCode err = UNC_DRV_RC_ERR_GENERIC;
   err = append_audit_node(value_node);
-  if (DRVAPI_RESPONSE_SUCCESS != err) {
+  if (UNC_RC_SUCCESS != err) {
     pfc_log_error("%s: AddChildToTree faild err=%d", PFC_FUNCNAME, err);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**
  * @brief       : Method to update confignode to the cache for physical-node
  * @param [in]  : child_ptr(confignode)
- * @retval      : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
+ * @retval      : UNC_DRV_RC_ERR_GENERIC / UNC_RC_SUCCESS
  */
-drv_resp_code_t KeyTree:: update_physical_attribute_node(
+UncRespCode KeyTree:: update_physical_attribute_node(
     ConfigNode* child_ptr) {
   ODC_FUNC_TRACE;
   if (NULL == child_ptr) {
     pfc_log_error("update_port_to_list:Child Node is NULL!!!!!!");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   unc_key_type_t key_type = child_ptr->get_type_name();
   std::string key_name= child_ptr->get_key_name();
   ConfigNode* old_cfgptr = get_node_from_hash(key_name, key_type);
   if (NULL == old_cfgptr) {
     pfc_log_error("no such configuration exist in cache");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   std::string type_check = TypeToStrFun(child_ptr->get_type_name());
   pfc_log_info("type check for port/switch %s", type_check.c_str());
@@ -244,24 +244,24 @@ drv_resp_code_t KeyTree:: update_physical_attribute_node(
     old_link_ptr->set_val_structure(update_link_ptr->get_val_structure());
   } else {
     pfc_log_error("unmatched update request");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**
  * @brief       : Method to delete confignode from the cache for physical node
  * @param [in]  : child_ptr(confignode)
- * @retval      : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
+ * @retval      : UNC_DRV_RC_ERR_GENERIC / UNC_RC_SUCCESS
  */
-drv_resp_code_t KeyTree:: delete_physical_attribute_node(
+UncRespCode KeyTree:: delete_physical_attribute_node(
     ConfigNode* child_ptr) {
   ODC_FUNC_TRACE;
-  drv_resp_code_t err = DRVAPI_RESPONSE_FAILURE;
+  UncRespCode err = UNC_DRV_RC_ERR_GENERIC;
   if (NULL == child_ptr) {
     pfc_log_error("delete_port_to_list:Child Node is NULL!!!!!!");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   std::string  parent_key = child_ptr->get_parent_key_name();
   unc_key_type_t parent_type = get_parenttype(child_ptr->get_type_name());
@@ -270,14 +270,14 @@ drv_resp_code_t KeyTree:: delete_physical_attribute_node(
   if (NULL == parent_ptr) {
     pfc_log_error("Parent:%s  Not Present for:%s", parent_key.c_str(),
                   child_ptr->get_key_generate().c_str());
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   unc_key_type_t key_type = child_ptr->get_type_name();
   std::string key_name= child_ptr->get_key_name();
   ConfigNode* old_cfgptr = get_node_from_hash(key_name, key_type);
   if (NULL == old_cfgptr) {
     pfc_log_error("no such configuration exist in cache");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   std::string type_check = TypeToStrFun(child_ptr->get_type_name());
   pfc_log_info("type check for port/switch %s", type_check.c_str());
@@ -285,15 +285,15 @@ drv_resp_code_t KeyTree:: delete_physical_attribute_node(
   if ((type_check == "UNC_KT_PORT") || (type_check == "UNC_KT_SWITCH") ||
       (type_check == "UNC_KT_LINK")) {
     err = parent_ptr->delete_child_node(old_cfgptr, erased_key_list);
-    if ( DRVAPI_RESPONSE_SUCCESS != err ) {
+    if ( UNC_RC_SUCCESS != err ) {
       pfc_log_error("delete_child_to_list Faild for:%s!!!!",
                     child_ptr->get_key_generate().c_str());
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
   cfg_node_list_.clear();
   } else {
     pfc_log_error("unmatched delete request");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   std::vector<key_information>:: iterator itr_err = erased_key_list.begin();
   for (; itr_err != erased_key_list.end(); ++itr_err) {
@@ -301,7 +301,7 @@ drv_resp_code_t KeyTree:: delete_physical_attribute_node(
                   itr_err->key_type);
     ConfigHashArr[itr_err->key_type].erase(itr_err->key);
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**
@@ -334,12 +334,12 @@ pfc_bool_t KeyTree::compare_is_physical_node_found(
 /**
  * @brief       : Method to add confignode lists to the cache for Audit
  * @param [in]  : value_list
- * @retval      : ERR_ADD_CHILD_TO_TREE_FAILED / DRVAPI_RESPONSE_SUCCESSS
+ * @retval      : ERR_ADD_CHILD_TO_TREE_FAILED / UNC_RC_SUCCESSS
  */
-drv_resp_code_t KeyTree::append_audit_configuration_list(
+UncRespCode KeyTree::append_audit_configuration_list(
     const std::vector<ConfigNode*>&value_list) {
   ODC_FUNC_TRACE;
-  drv_resp_code_t err = DRVAPI_RESPONSE_FAILURE;
+  UncRespCode err = UNC_DRV_RC_ERR_GENERIC;
 
   ConfigNode*  tmp_cfgnode_ptr = NULL;
   std::vector<ConfigNode*>::const_iterator it = value_list.begin();
@@ -350,29 +350,29 @@ drv_resp_code_t KeyTree::append_audit_configuration_list(
     if (*it == NULL) {
       pfc_log_error("RunningConfig::%s:%d: ConfigNode is NULL",
                    PFC_FUNCNAME, __LINE__);
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
 
     tmp_cfgnode_ptr = *it;
     err = append_audit_node(tmp_cfgnode_ptr);
-    if (DRVAPI_RESPONSE_SUCCESS != err) {
+    if (UNC_RC_SUCCESS != err) {
       pfc_log_error("%s: AddChildToTree faild err=%d", PFC_FUNCNAME, err);
       tmp_cfgnode_ptr = NULL;
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**
  * @brief       : Method to add individual confignode to the cache for Audit
  * @param [in]  : value_node
- * @retval      : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
+ * @retval      : UNC_DRV_RC_ERR_GENERIC / UNC_RC_SUCCESS
  */
-drv_resp_code_t KeyTree::append_audit_node(
+UncRespCode KeyTree::append_audit_node(
     ConfigNode* value_node) {
   ODC_FUNC_TRACE;
-  drv_resp_code_t err = DRVAPI_RESPONSE_FAILURE;
+  UncRespCode err = UNC_DRV_RC_ERR_GENERIC;
 
   ConfigNode*  tmp_cfgnode_ptr = NULL;
   ConfigNode*  real_cfgnode_ptr= NULL;
@@ -392,10 +392,10 @@ drv_resp_code_t KeyTree::append_audit_node(
     pfc_log_debug("%s: Parent Type Check %s ", PFC_FUNCNAME,
                  tmp_cfgnode_ptr->get_parent_key_name().c_str());
     err = add_node_to_tree(tmp_cfgnode_ptr);
-    if (DRVAPI_RESPONSE_SUCCESS != err) {
+    if (UNC_RC_SUCCESS != err) {
       pfc_log_error("%s: AddChildToTree faild err=%d", PFC_FUNCNAME, err);
       tmp_cfgnode_ptr = NULL;
-      return DRVAPI_RESPONSE_FAILURE;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
   } else {
     pfc_log_debug("%s: Node already Present in Tree...", PFC_FUNCNAME);
@@ -404,19 +404,19 @@ drv_resp_code_t KeyTree::append_audit_node(
     real_cfgnode_ptr = NULL;
   }
 
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**
  * @brief       : Method to add node to the cache and search map by validation
  * @param [in]  : value_list
- * @retval      : DRVAPI_RESPONSE_SUCCESSS/DRVAPI_RESPONSE_FAILURE
+ * @retval      : UNC_RC_SUCCESSS/UNC_DRV_RC_ERR_GENERIC
  */
-drv_resp_code_t KeyTree::add_node_to_tree(ConfigNode* child_ptr) {
+UncRespCode KeyTree::add_node_to_tree(ConfigNode* child_ptr) {
   ODC_FUNC_TRACE;
   if (NULL == child_ptr) {
     pfc_log_error("add_node_to_tree:Child Node is NULL!!!!!!");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   std::string  parent_key = child_ptr->get_parent_key_name();
   unc_key_type_t parent_type = get_parenttype(child_ptr->get_type_name());
@@ -426,24 +426,24 @@ drv_resp_code_t KeyTree::add_node_to_tree(ConfigNode* child_ptr) {
   if (NULL == parent_ptr) {
     pfc_log_error("Parent:%s  Not Present for:%s", parent_key.c_str(),
                  child_ptr->get_key_generate().c_str());
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   // Add the new node to child list of the parentnode using parent_ptr
-  drv_resp_code_t err = parent_ptr->add_child_to_list(child_ptr);
-  if ( DRVAPI_RESPONSE_SUCCESS != err ) {
+  UncRespCode err = parent_ptr->add_child_to_list(child_ptr);
+  if ( UNC_RC_SUCCESS != err ) {
     pfc_log_error("add_node_to_tree:add_child_to_list Faild for:%s!!!!",
                  child_ptr->get_key_generate().c_str());
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   // Add the new node to the search map
   err = add_child_to_hash(child_ptr);
 
-  if ( DRVAPI_RESPONSE_SUCCESS == err ) {
+  if ( UNC_RC_SUCCESS == err ) {
     pfc_log_debug("add_node_to_tree:add_child_to_hash Succed for: %s!!!!",
                  child_ptr->get_key_generate().c_str());
     cfgnode_count_++;
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**
@@ -468,15 +468,15 @@ ConfigNode* KeyTree::get_node_from_hash(
 /**
  * @brief       : Method to insert node to the search map
  * @param [in]  : child_ptr
- * @retval      : DRVAPI_RESPONSE_SUCCESSS
+ * @retval      : UNC_RC_SUCCESSS
  */
-drv_resp_code_t KeyTree::add_child_to_hash(ConfigNode* child_ptr) {
+UncRespCode KeyTree::add_child_to_hash(ConfigNode* child_ptr) {
   ODC_FUNC_TRACE;
   unc_key_type_t key_type = child_ptr->get_type_name();
   std::string key = child_ptr->get_key_generate();
   ConfigHashArr[key_type].insert(std::pair <std::string,
                                  ConfigNode*>(key, child_ptr));
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 }  // namespace vtndrvcache

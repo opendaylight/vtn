@@ -32,7 +32,7 @@ TEST(append_commit_node, vtn) {
   delete KeyTree_obj;
   KeyTree_obj = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 
 TEST(append_commit_node, vbr) {
@@ -65,7 +65,7 @@ TEST(append_commit_node, vbr) {
   delete KeyTree_obj;
   KeyTree_obj = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 
 TEST(append_commit_node, Reterive_key_val) {
@@ -86,7 +86,7 @@ TEST(append_commit_node, Reterive_key_val) {
          sizeof(val1_obj.vbr_description));
 
   key_vlan_map key2_obj;
-  val_vlan_map_t val2_obj;
+  pfcdrv_val_vlan_map_t val2_obj;
   memcpy(key2_obj.vbr_key.vtn_key.vtn_name, "vtn1",
          sizeof(key2_obj.vbr_key.vtn_key.vtn_name));
   memcpy(key2_obj.vbr_key.vbridge_name, "vbr1",
@@ -94,21 +94,21 @@ TEST(append_commit_node, Reterive_key_val) {
   memcpy(key2_obj.logical_port_id, "SW-00:00:00:00:00:00:00:01",
          sizeof(key2_obj.logical_port_id));
   key2_obj.logical_port_id_valid = 1;
-  val2_obj. vlan_id = 100;
+  val2_obj.vm.vlan_id = 100;
 
   ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
       (&key_obj, &val_obj, operation);
   int ret = KeyTree_obj->append_commit_node(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, uint32_t>
       (&key1_obj, &val1_obj, operation);
   ret = KeyTree_obj->append_commit_node(cfgptr1);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
-  ConfigNode *cfgptr2 = new CacheElementUtil<key_vlan_map_t, val_vlan_map_t,
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
+  ConfigNode *cfgptr2 = new CacheElementUtil<key_vlan_map_t, pfcdrv_val_vlan_map_t,
              uint32_t>(&key2_obj, &val2_obj, operation);
   ret = KeyTree_obj->append_commit_node(cfgptr2);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   cfgptr = itr_ptr->FirstItem();
@@ -130,14 +130,14 @@ TEST(append_commit_node, Reterive_key_val) {
       reinterpret_cast<char*>(tmp1_ptr->get_val_structure()->vbr_description));
 
   cfgptr2 = itr_ptr->NextItem();
-  CacheElementUtil<key_vlan_map, val_vlan_map, uint32_t> *tmp2_ptr =
-      static_cast<CacheElementUtil<key_vlan_map, val_vlan_map,
+  CacheElementUtil<key_vlan_map, pfcdrv_val_vlan_map_t, uint32_t> *tmp2_ptr =
+      static_cast<CacheElementUtil<key_vlan_map, pfcdrv_val_vlan_map_t,
       uint32_t>*> (cfgptr2);
 
   EXPECT_EQ(1, (tmp2_ptr->get_key_structure()->logical_port_id_valid));
   EXPECT_STREQ(reinterpret_cast<char*>(key2_obj.logical_port_id),
       reinterpret_cast<char*>(tmp2_ptr->get_key_structure()->logical_port_id));
-  EXPECT_EQ(100, (tmp2_ptr->get_val_structure()->vlan_id));
+  EXPECT_EQ(100, (tmp2_ptr->get_val_structure()->vm.vlan_id));
 
   delete itr_ptr;
   delete KeyTree_obj;
@@ -153,7 +153,7 @@ TEST(add_node_to_tree, null) {
   delete KeyTree_obj;
   KeyTree_obj = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 
 TEST(add_node_to_tree, null_parent) {
@@ -174,7 +174,7 @@ TEST(add_node_to_tree, null_parent) {
   delete cfgptr;
   KeyTree_obj = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 
 TEST(add_node_to_tree, parent_exist) {
@@ -206,10 +206,10 @@ TEST(add_node_to_tree, parent_exist) {
   KeyTree_obj = NULL;
   cfgptr = NULL;
   cfgptr1 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 
-TEST(add_child_to_hash, DRVAPI_RESPONSE_SUCCESS) {
+TEST(add_child_to_hash, UNC_RC_SUCCESS) {
   KeyTree* KeyTree_obj;
   KeyTree_obj = KeyTree::create_cache();
   int operation = 1;
@@ -226,7 +226,7 @@ TEST(add_child_to_hash, DRVAPI_RESPONSE_SUCCESS) {
   delete cfgptr;
   KeyTree_obj = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 
 TEST(get_parenttype, vtn) {
@@ -284,21 +284,21 @@ TEST(append_audit_node, Node_not_exist) {
       (&key_obj, &val_obj, operation);
 
   int ret = KeyTree_obj->append_audit_node(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, uint32_t>
       (&key1_obj, &val1_obj, operation);
   ret = KeyTree_obj->append_audit_node(cfgptr1);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   ConfigNode *cfgptr2 = new CacheElementUtil<key_vbr_if, pfcdrv_val_vbr_if_t,
              uint32_t>(&key2_obj, &val2_obj, operation);
   ret = KeyTree_obj->append_audit_node(cfgptr2);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   delete KeyTree_obj;
   KeyTree_obj = NULL;
   cfgptr2 = NULL;
   cfgptr1 = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 
 TEST(append_audit_node, null) {
@@ -311,7 +311,7 @@ TEST(append_audit_node, null) {
   delete KeyTree_obj;
   KeyTree_obj = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 
 TEST(append_audit_node, parent_not_exist) {
@@ -335,7 +335,7 @@ TEST(append_audit_node, parent_not_exist) {
   delete KeyTree_obj;
   KeyTree_obj = NULL;
   cfgptr1 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 
 TEST(append_audit_node, parent_exist_already) {
@@ -363,7 +363,7 @@ TEST(append_audit_node, parent_exist_already) {
   KeyTree_obj = NULL;
   cfgptr = NULL;
   cfgptr1 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 
 TEST(append_audit_configuration_list, vector_arg_sucess) {
@@ -399,7 +399,7 @@ TEST(append_audit_configuration_list, vector_arg_sucess) {
   KeyTree_obj = NULL;
   cfgptr1 = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 
 TEST(append_audit_configuration_list, vector_arg_failure) {
@@ -416,7 +416,7 @@ TEST(append_audit_configuration_list, vector_arg_failure) {
   delete KeyTree_obj;
   KeyTree_obj = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 
 TEST(append_audit_configuration_list, vector_arg_failure1) {
@@ -443,7 +443,7 @@ TEST(append_audit_configuration_list, vector_arg_failure1) {
   delete KeyTree_obj;
   KeyTree_obj = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 
 TEST(clear_audit_commit_cache, check) {
@@ -463,7 +463,7 @@ TEST(clear_audit_commit_cache, check) {
   delete KeyTree_obj;
   KeyTree_obj = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 
 TEST(clear_root_cache, check) {
@@ -483,7 +483,7 @@ TEST(clear_root_cache, check) {
   delete KeyTree_obj;
   KeyTree_obj = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 
 TEST(get_node_from_hash, get_node) {
@@ -579,17 +579,17 @@ TEST(get_nodelist_keytree, check) {
   ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
       (&key_obj, &val_obj, operation);
   int ret = KeyTree_obj->append_audit_node(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, uint32_t>
       (&key1_obj, &val1_obj, operation);
   ret = KeyTree_obj->append_audit_node(cfgptr1);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
   ConfigNode *cfgptr2 = new CacheElementUtil<key_vbr_if, pfcdrv_val_vbr_if_t,
              uint32_t>(&key2_obj, &val2_obj, operation);
   ret = KeyTree_obj->append_audit_node(cfgptr2);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
   ret =  KeyTree_obj->get_nodelist_keytree();
 
@@ -598,7 +598,7 @@ TEST(get_nodelist_keytree, check) {
   cfgptr2 = NULL;
   cfgptr1 = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 //  Append switch-port in keytree in bulk operation
 TEST(append_physical_attribute_configuration_list, append_single_switchNode) {
@@ -624,7 +624,7 @@ TEST(append_physical_attribute_configuration_list, append_single_switchNode) {
   delete KeyTree_obj;
   KeyTree_obj = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 
 //  Append switch-port in keytree in bulk operation
@@ -669,7 +669,7 @@ TEST(append_physical_attribute_configuration_list, append_multiple_switchNode) {
   KeyTree_obj = NULL;
   cfgptr = NULL;
   cfgptrone = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 //  Append switch-port in keytree with empty list
 TEST(append_physical_attribute_configuration_list, append_empty_list) {
@@ -685,7 +685,7 @@ TEST(append_physical_attribute_configuration_list, append_empty_list) {
   delete KeyTree_obj;
   KeyTree_obj = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 //  Append port in keytree with  list ,which parent not found
 TEST(append_physical_attribute_configuration_list,
@@ -722,7 +722,7 @@ TEST(append_physical_attribute_configuration_list,
   }
   }
   vec_list.clear();
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 //  Append one switch and one port individual to keytree with
 //  append_Physical_attribute_node method
@@ -742,7 +742,7 @@ TEST(append_Physical_attribute_node, switch_port_success) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0001
   key_port key_obj;
   memcpy(key_obj.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -764,7 +764,7 @@ TEST(append_Physical_attribute_node, switch_port_success) {
   KeyTree_obj = NULL;
   cfgptr = NULL;
   cfgptr1 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 //  Append switch/port in keytree with empty
 TEST(append_Physical_attribute_node, append_empty_switch) {
@@ -777,7 +777,7 @@ TEST(append_Physical_attribute_node, append_empty_switch) {
   delete KeyTree_obj;
   KeyTree_obj = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 //  append port, which parent is not found in cache,return failure
 TEST(append_Physical_attribute_node, switch_port_failure) {
@@ -796,7 +796,7 @@ TEST(append_Physical_attribute_node, switch_port_failure) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0002(whcih is not present
   //  in cache)
   key_port key_obj;
@@ -820,7 +820,7 @@ TEST(append_Physical_attribute_node, switch_port_failure) {
   cfgptr = NULL;
   delete cfgptr1;
   cfgptr1 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 //  append switch, which is already exist  in cache,ignore the configuration and
 //  return success
@@ -840,7 +840,7 @@ TEST(append_Physical_attribute_node, switch_port_exist_success) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add another duplicate switch 0000-0000-0000-0001 to cache
   key_switch key_switch_obj1;
   val_switch_st val_switch1;
@@ -859,7 +859,7 @@ TEST(append_Physical_attribute_node, switch_port_exist_success) {
   KeyTree_obj = NULL;
   cfgptr = NULL;
   cfgptr1 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 //  Append one switch and two port to keytree with
 //  append_Physical_attribute_node method and update one port details
@@ -879,7 +879,7 @@ TEST(update_physical_attribute_node, update_port) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0001
   key_port key_obj;
   memcpy(key_obj.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -896,7 +896,7 @@ TEST(update_physical_attribute_node, update_port) {
       (&key_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth4 to switch 0000-0000-0000-0001
   key_port key_obj1;
   memcpy(key_obj1.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -913,7 +913,7 @@ TEST(update_physical_attribute_node, update_port) {
       (&key_obj1, &val_obj1, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr2);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
   //  update port s2-eth3
   key_port key_obj2;
@@ -940,7 +940,7 @@ TEST(update_physical_attribute_node, update_port) {
   cfgptr2 = NULL;
   delete cfgptr3;
   cfgptr3 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 //  Append one switch and two port to keytree with
 //  append_Physical_attribute_node method and update switch detail
@@ -962,7 +962,7 @@ TEST(update_physical_attribute_node, update_switch) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0001
   key_port key_obj;
   memcpy(key_obj.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -979,7 +979,7 @@ TEST(update_physical_attribute_node, update_switch) {
       (&key_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth4 to switch 0000-0000-0000-0001
   key_port key_obj1;
   memcpy(key_obj1.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -996,7 +996,7 @@ TEST(update_physical_attribute_node, update_switch) {
       (&key_obj1, &val_obj1, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr2);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
   //  update switch 0000-0000-0000-0001
   key_switch key_switch_obj1;
@@ -1021,7 +1021,7 @@ TEST(update_physical_attribute_node, update_switch) {
   cfgptr2 = NULL;
   delete cfgptr3;
   cfgptr3 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 //  Update switch/port in keytree with empty
 TEST(update_physical_attribute_node, append_empty_switch) {
@@ -1034,7 +1034,7 @@ TEST(update_physical_attribute_node, append_empty_switch) {
   delete KeyTree_obj;
   KeyTree_obj = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 //  Append one switch and two port to keytree with
 //  append_Physical_attribute_node method and update  switch fail
@@ -1056,7 +1056,7 @@ TEST(update_physical_attribute_node, update_fail) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0001
   key_port key_obj;
   memcpy(key_obj.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -1073,7 +1073,7 @@ TEST(update_physical_attribute_node, update_fail) {
       (&key_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth4 to switch 0000-0000-0000-0001
   key_port key_obj1;
   memcpy(key_obj1.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -1090,7 +1090,7 @@ TEST(update_physical_attribute_node, update_fail) {
       (&key_obj1, &val_obj1, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr2);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
   //  update switch 0000-0000-0000-0002(different switch,which not available in
   //  keytree)
@@ -1116,7 +1116,7 @@ TEST(update_physical_attribute_node, update_fail) {
   cfgptr2 = NULL;
   delete cfgptr3;
   cfgptr3 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 //  Append one switch and two port to keytree with
 //  append_Physical_attribute_node method and update any key_type other than
@@ -1139,7 +1139,7 @@ TEST(update_physical_attribute_node, update_fail_otherkey_type) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0001
   key_port key_obj;
   memcpy(key_obj.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -1156,7 +1156,7 @@ TEST(update_physical_attribute_node, update_fail_otherkey_type) {
       (&key_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth4 to switch 0000-0000-0000-0001
   key_port key_obj1;
   memcpy(key_obj1.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -1173,7 +1173,7 @@ TEST(update_physical_attribute_node, update_fail_otherkey_type) {
       (&key_obj1, &val_obj1, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr2);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  append vtn into keytree
   key_vtn vtn_key;
   memset(&vtn_key, 0, sizeof(vtn_key));
@@ -1187,7 +1187,7 @@ TEST(update_physical_attribute_node, update_fail_otherkey_type) {
       (&vtn_key, &vtn_val, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr3);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  update other key_type than kt_switch,kt_port
   key_vtn vtn_key1;
   memset(&vtn_key1, 0, sizeof(vtn_key1));
@@ -1209,7 +1209,7 @@ TEST(update_physical_attribute_node, update_fail_otherkey_type) {
   cfgptr3 = NULL;
   delete cfgptr4;
   cfgptr4 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 //  Delete switch/port in keytree with empty
 TEST(delete_physical_attribute_node, delete_empty_switch) {
@@ -1222,7 +1222,7 @@ TEST(delete_physical_attribute_node, delete_empty_switch) {
   delete KeyTree_obj;
   KeyTree_obj = NULL;
   cfgptr = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 //  Try to delete a non-existing port,which parent not available in keytree
 TEST(delete_physical_attribute_node, parent_not_present_fail) {
@@ -1243,7 +1243,7 @@ TEST(delete_physical_attribute_node, parent_not_present_fail) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0001
   key_port key_obj;
   memcpy(key_obj.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -1260,7 +1260,7 @@ TEST(delete_physical_attribute_node, parent_not_present_fail) {
       (&key_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth4 to switch 0000-0000-0000-0001
   key_port key_obj1;
   memcpy(key_obj1.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -1277,7 +1277,7 @@ TEST(delete_physical_attribute_node, parent_not_present_fail) {
       (&key_obj1, &val_obj1, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr2);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  delete port which is not available in keytree
   key_port key_obj2;
   memcpy(key_obj2.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -1301,7 +1301,7 @@ TEST(delete_physical_attribute_node, parent_not_present_fail) {
   cfgptr2 = NULL;
   delete cfgptr3;
   cfgptr3 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 //  Try to delete a non-existing port,which parent not available in keytree
 TEST(delete_physical_attribute_node, child_not_present_fail) {
@@ -1322,7 +1322,7 @@ TEST(delete_physical_attribute_node, child_not_present_fail) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0001
   key_port key_obj;
   memcpy(key_obj.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -1339,7 +1339,7 @@ TEST(delete_physical_attribute_node, child_not_present_fail) {
       (&key_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth4 to switch 0000-0000-0000-0001
   key_port key_obj1;
   memcpy(key_obj1.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -1356,7 +1356,7 @@ TEST(delete_physical_attribute_node, child_not_present_fail) {
       (&key_obj1, &val_obj1, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr2);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  delete port which is not available in keytree
   key_port key_obj2;
   memcpy(key_obj2.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -1380,7 +1380,7 @@ TEST(delete_physical_attribute_node, child_not_present_fail) {
   cfgptr2 = NULL;
   delete cfgptr3;
   cfgptr3 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 //  Delete a existing port.
 TEST(delete_physical_attribute_node, delete_port) {
@@ -1400,7 +1400,7 @@ TEST(delete_physical_attribute_node, delete_port) {
   ConfigNode *cfgptr = new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0001
   key_port key_obj;
   memcpy(key_obj.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -1417,7 +1417,7 @@ TEST(delete_physical_attribute_node, delete_port) {
       (&key_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth4 to switch 0000-0000-0000-0001
   key_port key_obj1;
   memcpy(key_obj1.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -1434,7 +1434,7 @@ TEST(delete_physical_attribute_node, delete_port) {
       (&key_obj1, &val_obj1, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr2);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   ConfigNode* cfgnode;
   for (cfgnode = itr_ptr->PhysicalNodeFirstItem();
@@ -1475,7 +1475,7 @@ TEST(delete_physical_attribute_node, delete_port) {
   cfgptr2 = NULL;
   delete cfgptr3;
   cfgptr3 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 //  Delete a existing switch having two-port configuration.
 TEST(delete_physical_attribute_node, delete_switch) {
@@ -1496,7 +1496,7 @@ TEST(delete_physical_attribute_node, delete_switch) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add switch 0000-0000-0000-0002 to cache
   key_switch key_switch_obj1;
   val_switch_st val_switch1;
@@ -1511,7 +1511,7 @@ TEST(delete_physical_attribute_node, delete_switch) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj1, &val_switch1, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_sw2);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth1 to switch 0000-0000-0000-0002
   key_port key_obj_sw2;
   memcpy(key_obj_sw2.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -1527,7 +1527,7 @@ TEST(delete_physical_attribute_node, delete_switch) {
       (&key_obj_sw2, &val_obj_sw2, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_sw2_port1);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0001
   key_port key_obj;
   memcpy(key_obj.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -1544,7 +1544,7 @@ TEST(delete_physical_attribute_node, delete_switch) {
       (&key_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth4 to switch 0000-0000-0000-0001
   key_port key_obj1;
   memcpy(key_obj1.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -1561,7 +1561,7 @@ TEST(delete_physical_attribute_node, delete_switch) {
       (&key_obj1, &val_obj1, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr2);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   ConfigNode* cfgnode;
   for (cfgnode = itr_ptr->PhysicalNodeFirstItem();
@@ -1605,7 +1605,7 @@ TEST(delete_physical_attribute_node, delete_switch) {
   cfgptr3 = NULL;
   cfgptr_sw2 = NULL;
   cfgptr_sw2_port1 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 //  delete failed other than switch/port
 TEST(delete_physical_attribute_node, delete_fail_otherkey_type) {
@@ -1626,7 +1626,7 @@ TEST(delete_physical_attribute_node, delete_fail_otherkey_type) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0001
   key_port key_obj;
   memcpy(key_obj.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -1643,7 +1643,7 @@ TEST(delete_physical_attribute_node, delete_fail_otherkey_type) {
       (&key_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth4 to switch 0000-0000-0000-0001
   key_port key_obj1;
   memcpy(key_obj1.sw_key.ctr_key.controller_name, "odc1", sizeof(
@@ -1660,7 +1660,7 @@ TEST(delete_physical_attribute_node, delete_fail_otherkey_type) {
       (&key_obj1, &val_obj1, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr2);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
   //  append vtn into keytree
 
@@ -1676,7 +1676,7 @@ TEST(delete_physical_attribute_node, delete_fail_otherkey_type) {
       (&vtn_key, &vtn_val, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr3);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
   //  delete other key_type than kt_switch,kt_port
 
@@ -1700,7 +1700,7 @@ TEST(delete_physical_attribute_node, delete_fail_otherkey_type) {
   cfgptr3 = NULL;
   delete cfgptr4;
   cfgptr4 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_FAILURE);
+  EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 //  Try to find empty switch/port from keytree
 TEST(compare_is_physical_node_found, empty_switch_port_fail) {
@@ -1768,7 +1768,7 @@ TEST(compare_is_physical_node_found, switch_port_not_present_pass) {
   ConfigNode *cfgptr = new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   key_switch key_switch_obj1;
   val_switch_st val_switch1;
   memcpy(key_switch_obj1.ctr_key.controller_name, "odc1", sizeof(
@@ -1830,7 +1830,7 @@ TEST(append_Physical_attribute_node, single_link_sucess) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch01);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth1 to switch 0000-0000-0000-0001
   key_port key_obj;
   val_port_st val_obj;
@@ -1850,7 +1850,7 @@ TEST(append_Physical_attribute_node, single_link_sucess) {
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch01_port_s1eth1);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add switch 0000-0000-0000-0002 to cache
   key_switch key_switch_obj_sw02;
   val_switch_st val_switch_sw02;
@@ -1864,7 +1864,7 @@ TEST(append_Physical_attribute_node, single_link_sucess) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj_sw02, &val_switch_sw02, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch02);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth2 to switch 0000-0000-0000-0002
   key_port key_obj_s2eth2;
   val_port_st val_obj_s2eth2;
@@ -1884,7 +1884,7 @@ TEST(append_Physical_attribute_node, single_link_sucess) {
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch02_port_s2eth2);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   // add one link between switch01 to switch02
   key_link  key_link_sw01sw02;
   val_link_st  val_link_sw01sw02;
@@ -1925,7 +1925,7 @@ TEST(append_Physical_attribute_node, single_link_sucess) {
   cfgptr_switch02 = NULL;
   cfgptr_switch02_port_s2eth2 = NULL;
   cfgptr_link_sw01sw02 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 //  Append twoswitches and two ports  to keytree with
 //  append_Physical_attribute_node method and create bidirectional link
@@ -1947,7 +1947,7 @@ TEST(append_Physical_attribute_node, bidirectional_link_sucess) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch01);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth1 to switch 0000-0000-0000-0001
   key_port key_obj;
   val_port_st val_obj;
@@ -1967,7 +1967,7 @@ TEST(append_Physical_attribute_node, bidirectional_link_sucess) {
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch01_port_s1eth1);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add switch 0000-0000-0000-0002 to cache
   key_switch key_switch_obj_sw02;
   val_switch_st val_switch_sw02;
@@ -1981,7 +1981,7 @@ TEST(append_Physical_attribute_node, bidirectional_link_sucess) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj_sw02, &val_switch_sw02, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch02);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth2 to switch 0000-0000-0000-0002
   key_port key_obj_s2eth2;
   val_port_st val_obj_s2eth2;
@@ -2001,7 +2001,7 @@ TEST(append_Physical_attribute_node, bidirectional_link_sucess) {
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch02_port_s2eth2);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   // add one link between switch01 to switch02
   key_link  key_link_sw01sw02;
   val_link_st  val_link_sw01sw02;
@@ -2025,7 +2025,7 @@ TEST(append_Physical_attribute_node, bidirectional_link_sucess) {
       new CacheElementUtil<key_link, val_link_st, uint32_t>
       (&key_link_sw01sw02, &val_link_sw01sw02, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_link_sw01sw02);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   // add one link between switch02 to switch01
   key_link  key_link_sw02sw01;
   val_link_st  val_link_sw02sw01;
@@ -2067,7 +2067,7 @@ TEST(append_Physical_attribute_node, bidirectional_link_sucess) {
   cfgptr_switch02_port_s2eth2 = NULL;
   cfgptr_link_sw01sw02 = NULL;
   cfgptr_link_sw02sw01 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 //  Append twoswitches and two ports  to keytree with
 //  append_Physical_attribute_node method and create one link between
@@ -2089,7 +2089,7 @@ TEST(delete_physical_attribute_node, single_link__delete_sucess) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch01);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth1 to switch 0000-0000-0000-0001
   key_port key_obj;
   val_port_st val_obj;
@@ -2109,7 +2109,7 @@ TEST(delete_physical_attribute_node, single_link__delete_sucess) {
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch01_port_s1eth1);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add switch 0000-0000-0000-0002 to cache
   key_switch key_switch_obj_sw02;
   val_switch_st val_switch_sw02;
@@ -2123,7 +2123,7 @@ TEST(delete_physical_attribute_node, single_link__delete_sucess) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj_sw02, &val_switch_sw02, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch02);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth2 to switch 0000-0000-0000-0002
   key_port key_obj_s2eth2;
   val_port_st val_obj_s2eth2;
@@ -2143,7 +2143,7 @@ TEST(delete_physical_attribute_node, single_link__delete_sucess) {
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch02_port_s2eth2);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   // add one link between switch01 to switch02
   key_link  key_link_sw01sw02;
   val_link_st  val_link_sw01sw02;
@@ -2167,7 +2167,7 @@ TEST(delete_physical_attribute_node, single_link__delete_sucess) {
       new CacheElementUtil<key_link, val_link_st, uint32_t>
       (&key_link_sw01sw02, &val_link_sw01sw02, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_link_sw01sw02);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   ConfigNode* cfgnode;
   for (cfgnode = itr_ptr->PhysicalNodeFirstItem();
@@ -2221,7 +2221,7 @@ TEST(delete_physical_attribute_node, single_link__delete_sucess) {
   cfgptr_link_sw01sw02 = NULL;
   delete cfgptr_link_delete_sw01sw02;
   cfgptr_link_delete_sw01sw02 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 //  Append twoswitches and two ports  to keytree with
 //  append_Physical_attribute_node method and create bidirectional link
@@ -2243,7 +2243,7 @@ TEST(delete_physical_attribute_node, bidirectional_link_delete_sucess) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch01);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth1 to switch 0000-0000-0000-0001
   key_port key_obj;
   val_port_st val_obj;
@@ -2263,7 +2263,7 @@ TEST(delete_physical_attribute_node, bidirectional_link_delete_sucess) {
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch01_port_s1eth1);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add switch 0000-0000-0000-0002 to cache
   key_switch key_switch_obj_sw02;
   val_switch_st val_switch_sw02;
@@ -2277,7 +2277,7 @@ TEST(delete_physical_attribute_node, bidirectional_link_delete_sucess) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj_sw02, &val_switch_sw02, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch02);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth2 to switch 0000-0000-0000-0002
   key_port key_obj_s2eth2;
   val_port_st val_obj_s2eth2;
@@ -2297,7 +2297,7 @@ TEST(delete_physical_attribute_node, bidirectional_link_delete_sucess) {
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch02_port_s2eth2);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   // add one link between switch01 to switch02
   key_link  key_link_sw01sw02;
   val_link_st  val_link_sw01sw02;
@@ -2321,7 +2321,7 @@ TEST(delete_physical_attribute_node, bidirectional_link_delete_sucess) {
       new CacheElementUtil<key_link, val_link_st, uint32_t>
       (&key_link_sw01sw02, &val_link_sw01sw02, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_link_sw01sw02);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   // add one link between switch02 to switch01
   key_link  key_link_sw02sw01;
   val_link_st  val_link_sw02sw01;
@@ -2345,7 +2345,7 @@ TEST(delete_physical_attribute_node, bidirectional_link_delete_sucess) {
       new CacheElementUtil<key_link, val_link_st, uint32_t>
       (&key_link_sw02sw01, &val_link_sw02sw01, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_link_sw02sw01);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   ConfigNode* cfgnode;
   for (cfgnode = itr_ptr->PhysicalNodeFirstItem();
@@ -2379,7 +2379,7 @@ TEST(delete_physical_attribute_node, bidirectional_link_delete_sucess) {
       (&key_link_delete_sw01sw02, &val_link_delete_sw01sw02, operation);
   ret = KeyTree_obj->delete_physical_attribute_node(
       cfgptr_link_delete_sw01sw02);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   // delete existing link between switch02 to switch01
   key_link  key_link_delete_sw02sw01;
   val_link_st  val_link_delete_sw02sw01;
@@ -2427,7 +2427,7 @@ TEST(delete_physical_attribute_node, bidirectional_link_delete_sucess) {
   cfgptr_link_delete_sw01sw02 = NULL;
   delete cfgptr_link_delete_sw02sw01;
   cfgptr_link_delete_sw02sw01 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 //  Append twoswitches and two ports  to keytree with
 //  append_Physical_attribute_node method and create one link between
@@ -2449,7 +2449,7 @@ TEST(update_physical_attribute_node, single_link_update_sucess) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch01);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth1 to switch 0000-0000-0000-0001
   key_port key_obj;
   val_port_st val_obj;
@@ -2469,7 +2469,7 @@ TEST(update_physical_attribute_node, single_link_update_sucess) {
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch01_port_s1eth1);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add switch 0000-0000-0000-0002 to cache
   key_switch key_switch_obj_sw02;
   val_switch_st val_switch_sw02;
@@ -2483,7 +2483,7 @@ TEST(update_physical_attribute_node, single_link_update_sucess) {
       new CacheElementUtil<key_switch, val_switch_st, uint32_t>
       (&key_switch_obj_sw02, &val_switch_sw02, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch02);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth2 to switch 0000-0000-0000-0002
   key_port key_obj_s2eth2;
   val_port_st val_obj_s2eth2;
@@ -2503,7 +2503,7 @@ TEST(update_physical_attribute_node, single_link_update_sucess) {
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch02_port_s2eth2);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   // add one link between switch01 to switch02
   key_link  key_link_sw01sw02;
   val_link_st  val_link_sw01sw02;
@@ -2527,7 +2527,7 @@ TEST(update_physical_attribute_node, single_link_update_sucess) {
       new CacheElementUtil<key_link, val_link_st, uint32_t>
       (&key_link_sw01sw02, &val_link_sw01sw02, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_link_sw01sw02);
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
   CacheElementUtil<key_link, val_link_st, uint32_t> *tmp_ptr_one =
       static_cast<CacheElementUtil<key_link, val_link_st, uint32_t>*> (
           cfgptr_link_sw01sw02);
@@ -2578,7 +2578,7 @@ TEST(update_physical_attribute_node, single_link_update_sucess) {
   cfgptr_link_sw01sw02 = NULL;
   delete cfgptr_link_update_sw01sw02;
   cfgptr_link_update_sw01sw02 = NULL;
-  EXPECT_EQ(ret, DRVAPI_RESPONSE_SUCCESS);
+  EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 }  // namespace vtndrvcache
 }  // namespace unc

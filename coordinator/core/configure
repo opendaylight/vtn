@@ -23,7 +23,7 @@ use vars qw(%COMMAND_SPEC %OSTYPE %OS_CONF %GCC_OSTYPE %ARCH %GCC_ARCH @PATH
 	    %DEFAULT_OSARCH_LIBPATH @DEFAULT_LIBPATH @LIBDIR_NAMES
 	    $PFC_PRODUCT_NAME %MAKEVAR_RESV @LINUX_DIST $PFC_SCM_REVISION
 	    @OPENSSL_TESTS @CONFIG_TESTS @CFLAGS_TESTS %REQUIRED_CFLAGS
-	    @UNLINK_ON_ERROR $YEAR_RANGE @JAVA_LIBRARY_PATH);
+	    @UNLINK_ON_ERROR $YEAR_RANGE @JAVA_LIBRARY_PATH %MAKEVAR_OP);
 
 use Cwd qw(abs_path);
 use DirHandle;
@@ -2417,7 +2417,7 @@ sub check_gtest_config($);
 sub compile_and_exec($%);
 sub check_perl($);
 sub check_boost($);
-sub check_openssl($);
+sub check_openssl($\@);
 sub check_openssl_const(%);
 sub check_cflags_tests();
 sub check_config_tests(\@$\%);
@@ -2441,6 +2441,7 @@ sub check_gcc_multiarch($);
 sub check_gcc_option($$$$$);
 sub check_gcc_ld($);
 sub check_os_arch($$$$);
+sub write_makevar($$$);
 sub create_config_mk($\%);
 sub create_config_pl(\%);
 sub create_java_config_mk($\%);
@@ -3565,6 +3566,9 @@ OUT
 		  [OPTTYPE_INST, 'javadir',
 		   "Installation directory for Java programs.",
 		   dname => 'java', relative => 'libdir'],
+		  [OPTTYPE_INST, 'certsdir',
+		   "Installation directory for Certification Authorities.",
+		   dname => 'certs', relative => 'sysconfdir'],
 
 		  [OPTTYPE_STRING, 'c-optimize',
 		   "Specify C compiler option for optimization.",
@@ -3631,8 +3635,11 @@ OUT
 		   "Specify installation prefix of boost.",
 		   arg => OptSpec::OPTARG_DIR, auto => 1],
 		  [OPTTYPE_STRING, 'openssl',
-		   "Specify installation prefix of OpenSSL.\n",
+		   "Specify installation prefix of OpenSSL.",
 		   arg => OptSpec::OPTARG_DIR, auto => 1],
+		  [OPTTYPE_STRING, 'openssl-runpath',
+		   'Specify runtime library path for OpenSSL libraries.',
+		   arg => OptSpec::OPTARG_PATH],
 		  [OPTTYPE_STRING, 'shell',
 		   "Specify absolute path to bourne shell on the target " .
 		   "system.",
@@ -3718,6 +3725,10 @@ OUT
 		  [OPTTYPE_BOOL, 'tidlog',
 		   "Enable or disable thread ID logging in the PFC log.",
 		   default => 1],
+
+		  [OPTTYPE_STRING, 'build-type-suffix',
+		   "Specify an arbitrary string to be added to build type " .
+		   "suffix."],
 		);
 
 	sub new
@@ -4029,8 +4040,9 @@ MAIN:
 	my $perl = $conf->get('perl');
 	check_perl($perl);
 
+	my (@hdefs);
 	my $boost_var = check_boost($conf);
-	my $openssl_var = check_openssl($conf);
+	my $openssl_var = check_openssl($conf, @hdefs);
 	my $runpath = check_runpath($conf);
 
 	my $cfdef_arch = $arch;
@@ -4141,7 +4153,6 @@ MAIN:
 	}
 
 	# Check system configuration.
-	my (@hdefs);
 	check_cflags_tests();
 	check_config_tests(@hdefs, $os, %vars);
 
@@ -5136,11 +5147,9 @@ OUT
 	return \%vars;
 }
 
-sub check_openssl($)
+sub check_openssl($\@)
 {
-	my ($conf) = @_;
-
-	return {} unless ($conf->isUNC());
+	my ($conf, $hdefs) = @_;
 
 	my $spec = $conf->getSpec('openssl');
 	my $prefix = $spec->value();
@@ -5179,14 +5188,25 @@ sub check_openssl($)
 	undef $incdir if (is_default_header_path($incdir));
 
 	my (%opts) = (PREFIX => [$prefix]);
+	my (@cppflags);
+	push(@cppflags, '-I' . $incdir) if ($incdir);
+	$opts{CPPFLAGS} = \@cppflags;
+	$opts{CODE} = <<'OUT';
+#include <openssl/crypto.h>
+
+int
+main(int argc, char **argv)
+{
+	SSLeay();
+	return;
+}
+OUT
 	my ($libname, $libdir) = check_library('crypto', %opts);
-	error("OpenSSL library is not found.") unless ($libdir);
+	error("OpenSSL libcrypto library is not found.") unless ($libdir);
 	undef $libdir if (is_default_library_path($libdir));
 
 	my $gcc = $COMMAND_SPEC{gcc}->{PATH};
-	my (@cppflags, @ldflags);
-
-	push(@cppflags, '-I' . $incdir) if ($incdir);
+	my (@ldflags);
 	push(@ldflags, '-L' . $libdir, '-Wl,-rpath,' . $libdir) if ($libdir);
 	(%opts) = (CC => $gcc, CFLAGS => $CC_MODE);
 	$opts{CPPFLAGS} = \@cppflags;
@@ -5198,17 +5218,24 @@ sub check_openssl($)
 		$opts{CC_ERROR} = \@errout;
 		my $out;
 		my ($checking, $source) = ($test->{CHECK}, $test->{CODE});
+		my $libs = $test->{LIBS} || '-lcrypto';
+		$opts{LIBS} = $libs;
 
 		checking($checking);
 		eval {
 			$out = compile_and_exec($source, %opts);
 		};
 		if ($@) {
-			print "unknown\n";
-			if (@errout) {
-				print "\n", @errout, "\n";
+			if ($test->{IGNORE_ERROR}) {
+				$out = ["NO:Compilation failed\n"];
 			}
-			error("OpenSSL test failed: $@");
+			else {
+				print "unknown\n";
+				if (@errout) {
+					print "\n", @errout, "\n";
+				}
+				error("OpenSSL test failed: $@");
+			}
 		}
 
 		my $line = $out->[0];
@@ -5219,13 +5246,37 @@ sub check_openssl($)
 			error($1);
 		}
 
-		$line =~ s,^OK:,,;
-		print $line, "\n";
+		my $value;
+		if ($line =~ m,^NO(:(.+))?$,o) {
+			my $msg = ($2) ? " ($2)" : '';
+
+			print "no$msg\n";
+			my $mandatory = $test->{MANDATORY};
+			error($mandatory) if ($mandatory);
+		}
+		elsif ($line =~ m,^VALUE:(.+)$,o) {
+			$value = $1;
+			print $value, "\n";
+		}
+		elsif ($line =~ m,^OK:(.+)$,o) {
+			print $1, "\n";
+			$value = 1;
+		}
+		else {
+			error("Unexpected output: $line");
+		}
+
+		my ($name, $desc) = ($test->{DEFINE}, $test->{DESC});
+		push(@$hdefs, ConfDef->new($name, $value, $desc)) if ($name);
 	}
 
 	my (%vars) = (OPENSSL_INCDIR => $incdir, OPENSSL_LIBDIR => $libdir,
 		      OPENSSL_PREFIX => $prefix,
 		      OPENSSL_CONST => check_openssl_const(%opts));
+	my $runpath = $conf->get('openssl-runpath');
+	$runpath = '$(OPENSSL_LIBDIR)' unless ($runpath);
+	$vars{OPENSSL_RUNPATH} = $runpath;
+	$MAKEVAR_OP{OPENSSL_RUNPATH} = '=';
 
 	return \%vars;
 }
@@ -5259,6 +5310,9 @@ main(int argc, char **argv)
 
 	DEFCONST(EVP_MAX_KEY_LENGTH);
 	DEFCONST(EVP_MAX_IV_LENGTH);
+
+	DEFCONST(CRYPTO_LOCK);
+	DEFCONST(CRYPTO_UNLOCK);
 
 	return 0;
 }
@@ -5892,7 +5946,7 @@ sub check_library($\%)
 {
 	my ($libname, $args) = @_;
 
-	checking("for $libname library");
+	checking("for lib$libname library");
 
 	my $code = $args->{CODE};
 	unless ($code) {
@@ -5912,16 +5966,24 @@ OUT
 	$args->{CFLAGS} = $CC_MODE unless ($cflags);
 	$args->{CC_ONLY} = 1;
 
-	my $prefix = $args->{PREFIX} || [];
-	foreach my $pfx (@$prefix, '/') {
-		foreach my $dir (@LIBDIR_NAMES) {
-			my $path = canonicalize_path("$pfx/$dir");
-			my $libname = check_library_impl($libname, $path,
-							 %$args);
-			if ($libname) {
-				print "$path\n";
-				return ($libname, $path);
+	my $libdirs = $args->{LIBDIRS};
+	unless ($libdirs) {
+		my $prefix = $args->{PREFIX} || [];
+		my (@dirs);
+		foreach my $pfx (@$prefix, '/') {
+			foreach my $dir (@LIBDIR_NAMES) {
+				my $path = canonicalize_path("$pfx/$dir");
+				push(@dirs, $path) if (-d $path);
 			}
+		}
+		$libdirs = \@dirs;
+	}
+
+	foreach my $path (@$libdirs) {
+		my $libname = check_library_impl($libname, $path, %$args);
+		if ($libname) {
+			print "$path\n";
+			return ($libname, $path);
 		}
 	}
 
@@ -5935,7 +5997,8 @@ sub check_library_impl($$\%)
 	my ($libname, $path, $args) = @_;
 
 	my (%opts) = (%$args);
-	$opts{LDFLAGS} = '-L' . $path;
+	my (@ldflags) = ('-L' . $path, '-Wl,-rpath,' . $path);
+	$opts{LDFLAGS} = \@ldflags;
 	my $code = $args->{CODE};
 
 	$opts{LIBS} = '-l' . $libname;
@@ -6226,6 +6289,14 @@ sub check_os_arch($$$$)
 	return ($os, $arch, $multiarch);
 }
 
+sub write_makevar($$$)
+{
+	my ($fh, $name, $value) = @_;
+
+	my $op = $MAKEVAR_OP{$name} || ':=';
+	$fh->printf("%s\t\t%s %s\n", $name, $op, $value);
+}
+
 sub create_config_mk($\%)
 {
 	my ($conf, $vars) = @_;
@@ -6257,18 +6328,14 @@ OUT
 
 	foreach my $vname (sort(keys(%$vars))) {
 		my $value = $vars->{$vname};
-		$fh->print(<<OUT);
-$vname		:= $value
-OUT
+		write_makevar($fh, $vname, $value);
 	}
 	$fh->print("\n");
 
 	foreach my $key (sort(@{$conf->getInstDirKeys()})) {
 		my $dir = $conf->get($key);
 		my $vname = make_symbol('INST_', $key);
-		$fh->print(<<OUT);
-$vname		:= $dir
-OUT
+		write_makevar($fh, $vname, $dir);
 	}
 	$fh->print("\n");
 
@@ -6278,9 +6345,7 @@ OUT
 			my $var = uc($key);
 			my $path = $spec->{PATH};
 			next unless ($path);
-			$fh->print(<<OUT);
-$var		:= $path
-OUT
+			write_makevar($fh, $var, $path);
 		}
 	}
 
@@ -6352,9 +6417,7 @@ OUT
 		if ($key eq 'ANT') {
 			$key = 'ANT_PATH';
 		}
-		$fh->print(<<OUT);
-$key		:= $value
-OUT
+		write_makevar($fh, $key, $value);
 	}
 
 	my $junit = $jenv->{JAVA_JUNIT};
@@ -6425,13 +6488,21 @@ OUT
 OUT
 	}
 
+	my $ssuffix;
+	my $suff = $conf->get('build-type-suffix');
+	if ($suff) {
+		$ssuffix = ' ' . stringify('-' . $suff);
+	}
+
 	$fh->print(<<OUT);
 /* Version suffix which represents build type. */
 #ifdef	PFC_VERBOSE_DEBUG
-#define	PFC_BUILD_TYPE_SUFFIX	"-debug"
+#define	PFC_DEBUG_BUILD_TYPE_SUFFIX	"-debug"
 #else	/* !PFC_VERBOSE_DEBUG */
-#define	PFC_BUILD_TYPE_SUFFIX	""
+#define	PFC_DEBUG_BUILD_TYPE_SUFFIX	""
 #endif	/* PFC_VERBOSE_DEBUG */
+
+#define	PFC_BUILD_TYPE_SUFFIX	PFC_DEBUG_BUILD_TYPE_SUFFIX$ssuffix
 
 /* PFC installation root. */
 #define	PFC_ROOTDIR	$sprefix

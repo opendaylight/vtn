@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -40,7 +40,8 @@ import org.opendaylight.vtn.javaapi.validation.physical.DomainLogicalPortResourc
 /**
  * The Class DomainLogicalPortsResource implements get method.
  */
-@UNCVtnService(path = "/controllers/{controller_id}/domains/{domain_id}/logical_ports")
+@UNCVtnService(
+		path = "/controllers/{controller_id}/domains/{domain_id}/logical_ports")
 public class DomainLogicalPortsResource extends AbstractResource {
 	/**
 	 * @return the controllerId
@@ -66,11 +67,11 @@ public class DomainLogicalPortsResource extends AbstractResource {
 
 	}
 
-	public String getcontrollerId() {
+	public final String getcontrollerId() {
 		return controllerId;
 	}
 
-	public String getdomainId() {
+	public final String getdomainId() {
 		return domainId;
 	}
 
@@ -84,7 +85,8 @@ public class DomainLogicalPortsResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(JsonObject queryString) throws VtnServiceException {
+	public final int get(final JsonObject queryString)
+			throws VtnServiceException {
 		LOG.trace("Starts DomainLogicalPortsResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -111,51 +113,187 @@ public class DomainLogicalPortsResource extends AbstractResource {
 					IpcRequestPacketEnum.KT_LOGICAL_PORT_GET, queryString,
 					getUriParameters(queryString));
 			LOG.debug("Request packet for 1st created successfully");
-			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet 1st call processed with status:"+status);
-			if (status == ClientSession.RESP_FATAL) {
-				throw new VtnServiceException(
-						Thread.currentThread().getStackTrace()[1]
-								.getClassName()
-								+ VtnServiceConsts.HYPHEN
-								+ Thread.currentThread().getStackTrace()[1]
-										.getMethodName(),
-						UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
-						UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorMessage());
-			}
-			resp = requestProcessor.getIpcResponsePacket();
-			JsonObject root = responseGenerator.getDomainLogicalPortResponse(
-					resp, queryString, VtnServiceJsonConsts.LIST);
-			String opType = VtnServiceJsonConsts.NORMAL;
-			if (queryString.has(VtnServiceJsonConsts.OP)) {
-				opType = queryString.get(VtnServiceJsonConsts.OP).getAsString();
-			}
-			JsonArray logicalPortsArray = new JsonArray();
-			JsonArray memberArray = null;
-			JsonArray memberArrayNew = null;
-			if (VtnServiceJsonConsts.STATE.equalsIgnoreCase(dataType)
-					&& VtnServiceJsonConsts.DETAIL.equalsIgnoreCase(opType)) {
-				final Iterator<JsonElement> logicalPortIterator = root
-						.get(VtnServiceJsonConsts.LOGICALPORTS)
-						.getAsJsonArray().iterator();
-				requestProcessor.setServiceInfo(UncUPPLEnums.UPPL_IPC_SVC_NAME,
-						UncUPPLEnums.ServiceID.UPPL_SVC_READREQ.ordinal());
-				while (logicalPortIterator.hasNext()) {
-					JsonObject logicalPortsJson = (JsonObject) logicalPortIterator
-							.next();
+
+			if (!queryString.has(VtnServiceJsonConsts.LOGICAL_PORT_ID)) {
+				status = requestProcessor.processIpcRequest();
+				LOG.debug("Request packet 1st call processed with status:"
+						+ status);
+				if (status == ClientSession.RESP_FATAL) {
+					throw new VtnServiceException(
+							Thread.currentThread().getStackTrace()[1]
+									.getClassName()
+									+ VtnServiceConsts.HYPHEN
+									+ Thread.currentThread().getStackTrace()[1]
+											.getMethodName(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR
+									.getErrorMessage());
+				}
+				resp = requestProcessor.getIpcResponsePacket();
+				final JsonObject root = responseGenerator
+						.getDomainLogicalPortResponse(resp, queryString);
+				String opType = VtnServiceJsonConsts.NORMAL;
+				if (queryString.has(VtnServiceJsonConsts.OP)) {
+					opType = queryString.get(VtnServiceJsonConsts.OP)
+							.getAsString();
+				}
+				final JsonArray logicalPortsArray = new JsonArray();
+				JsonArray memberArray = null;
+				JsonArray memberArrayNew = null;
+				if (VtnServiceJsonConsts.STATE.equalsIgnoreCase(dataType)
+						&& VtnServiceJsonConsts.DETAIL.equalsIgnoreCase(opType)) {
+					final Iterator<JsonElement> logicalPortIterator = root
+							.get(VtnServiceJsonConsts.LOGICALPORTS)
+							.getAsJsonArray().iterator();
+					requestProcessor.setServiceInfo(
+							UncUPPLEnums.UPPL_IPC_SVC_NAME,
+							UncUPPLEnums.ServiceID.UPPL_SVC_READREQ.ordinal());
+					while (logicalPortIterator.hasNext()) {
+						final JsonObject logicalPortsJson = (JsonObject) logicalPortIterator
+								.next();
+						requestProcessor
+								.createIpcRequestPacket(
+										IpcRequestPacketEnum.KT_LOGICAL_PORT_MEMBER_GET,
+										queryString,
+										getUriParametersMember(logicalPortsJson));
+						requestProcessor
+								.getRequestPacket()
+								.setOperation(
+										IpcDataUnitWrapper
+												.setIpcUint32Value(UncOperationEnum.UNC_OP_READ_SIBLING_BEGIN
+														.ordinal()));
+						LOG.debug("Request packet for 2nd call created successfully");
+						status = requestProcessor.processIpcRequest();
+						LOG.debug("Request packet 2nd call processed with status:"
+								+ status);
+						if (status == ClientSession.RESP_FATAL) {
+							throw new VtnServiceException(
+									Thread.currentThread().getStackTrace()[1]
+											.getClassName()
+											+ VtnServiceConsts.HYPHEN
+											+ Thread.currentThread()
+													.getStackTrace()[1]
+													.getMethodName(),
+									UncJavaAPIErrorCode.IPC_SERVER_ERROR
+											.getErrorCode(),
+									UncJavaAPIErrorCode.IPC_SERVER_ERROR
+											.getErrorMessage());
+						}
+						resp = requestProcessor.getIpcResponsePacket();
+						memberArray = responseGenerator
+								.getDomainLogicalPortMemberResponse(resp);
+						int memberIndex = 0;
+						final VtnServiceConfiguration configuration = VtnServiceInitManager
+								.getConfigurationMap();
+						final int max_rep_count = Integer
+								.parseInt(configuration
+										.getConfigValue(VtnServiceConsts.MAX_REP_DEFAULT));
+						memberIndex = memberArray.size();
+						if (memberArray.size() >= max_rep_count) {
+							while (memberIndex >= max_rep_count) {
+								memberIndex = memberArray.size();
+								memberLastIndex = (JsonObject) memberArray
+										.get(memberIndex - 1);
+								requestProcessor
+										.createIpcRequestPacket(
+												IpcRequestPacketEnum.KT_LOGICAL_PORT_MEMBER_GET,
+												queryString,
+												getUriParametersMemberGreaterThanDefault(
+														logicalPortsJson,
+														memberLastIndex));
+								requestProcessor
+										.getRequestPacket()
+										.setOperation(
+												IpcDataUnitWrapper
+														.setIpcUint32Value(UncOperationEnum.UNC_OP_READ_SIBLING
+																.ordinal()));
+								status = requestProcessor.processIpcRequest();
+								if (status == ClientSession.RESP_FATAL) {
+									throw new VtnServiceException(
+											Thread.currentThread()
+													.getStackTrace()[1]
+													.getClassName()
+													+ VtnServiceConsts.HYPHEN
+													+ Thread.currentThread()
+															.getStackTrace()[1]
+															.getMethodName(),
+											UncJavaAPIErrorCode.IPC_SERVER_ERROR
+													.getErrorCode(),
+											UncJavaAPIErrorCode.IPC_SERVER_ERROR
+													.getErrorMessage());
+								}
+								resp = requestProcessor.getIpcResponsePacket();
+								memberArrayNew = responseGenerator
+										.getDomainLogicalPortMemberResponse(resp);
+								if (null != memberArrayNew
+										&& !memberArrayNew.isJsonNull()) {
+									memberArray.getAsJsonArray().addAll(
+											memberArrayNew);
+								} else {
+									break;
+								}
+								memberIndex++;
+							}
+						}
+						logicalPortsJson.add(VtnServiceJsonConsts.MEMBERPORTS,
+								memberArray);
+						logicalPortsArray.add(logicalPortsJson);
+					}
+					root.add(VtnServiceJsonConsts.LOGICALPORTS,
+							logicalPortsArray);
+				}
+				setInfo(root);
+			} else {
+				requestProcessor.getRequestPacket().setOperation(
+						IpcDataUnitWrapper
+								.setIpcUint32Value(UncOperationEnum.UNC_OP_READ
+										.ordinal()));
+				status = requestProcessor.processIpcRequest();
+				LOG.debug("Request packet for 1st call processed with status:"
+						+ status);
+				if (status == ClientSession.RESP_FATAL) {
+					throw new VtnServiceException(
+							Thread.currentThread().getStackTrace()[1]
+									.getClassName()
+									+ VtnServiceConsts.HYPHEN
+									+ Thread.currentThread().getStackTrace()[1]
+											.getMethodName(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR
+									.getErrorMessage());
+				}
+				final JsonObject root = responseGenerator
+						.getDomainLogicalPortResponse(
+								requestProcessor.getIpcResponsePacket(),
+								queryString);
+				JsonArray memberArray = null;
+				JsonArray memberArrayNew = null;
+				String opType = VtnServiceJsonConsts.NORMAL;
+				if (queryString.has(VtnServiceJsonConsts.OP)) {
+					opType = queryString.get(VtnServiceJsonConsts.OP)
+							.getAsString();
+				}
+				if (VtnServiceJsonConsts.STATE.equalsIgnoreCase(dataType)
+						&& opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)
+						&& (root.get(VtnServiceJsonConsts.LOGICALPORTS)
+								.getAsJsonArray().size() != 0)) {
+					requestProcessor.setServiceInfo(
+							UncUPPLEnums.UPPL_IPC_SVC_NAME,
+							UncUPPLEnums.ServiceID.UPPL_SVC_READREQ.ordinal());
 					requestProcessor.createIpcRequestPacket(
 							IpcRequestPacketEnum.KT_LOGICAL_PORT_MEMBER_GET,
 							queryString,
-							getUriParametersMember(logicalPortsJson));
+							getUriParametersMemberShow(queryString));
 					requestProcessor
 							.getRequestPacket()
 							.setOperation(
 									IpcDataUnitWrapper
 											.setIpcUint32Value(UncOperationEnum.UNC_OP_READ_SIBLING_BEGIN
 													.ordinal()));
-					LOG.debug("Request packet for 2nd call created successfully");
+					LOG.debug("Request packet  2nd call created successfully");
 					status = requestProcessor.processIpcRequest();
-					LOG.debug("Request packet 2nd call processed with status:"+status);
+					LOG.debug("Request packet 2nd call processed with status:"
+							+ status);
 					if (status == ClientSession.RESP_FATAL) {
 						throw new VtnServiceException(
 								Thread.currentThread().getStackTrace()[1]
@@ -169,13 +307,13 @@ public class DomainLogicalPortsResource extends AbstractResource {
 								UncJavaAPIErrorCode.IPC_SERVER_ERROR
 										.getErrorMessage());
 					}
-					resp = requestProcessor.getIpcResponsePacket();
 					memberArray = responseGenerator
-							.getDomainLogicalPortMemberResponse(resp);
+							.getDomainLogicalPortMemberResponse(requestProcessor
+									.getIpcResponsePacket());
 					int memberIndex = 0;
-					VtnServiceConfiguration configuration = VtnServiceInitManager
+					final VtnServiceConfiguration configuration = VtnServiceInitManager
 							.getConfigurationMap();
-					int max_rep_count = Integer.parseInt(configuration
+					final int max_rep_count = Integer.parseInt(configuration
 							.getConfigValue(VtnServiceConsts.MAX_REP_DEFAULT));
 					memberIndex = memberArray.size();
 					if (memberArray.size() >= max_rep_count) {
@@ -188,8 +326,7 @@ public class DomainLogicalPortsResource extends AbstractResource {
 											IpcRequestPacketEnum.KT_LOGICAL_PORT_MEMBER_GET,
 											queryString,
 											getUriParametersMemberGreaterThanDefault(
-													logicalPortsJson,
-													memberLastIndex));
+													root, memberLastIndex));
 							requestProcessor
 									.getRequestPacket()
 									.setOperation(
@@ -223,13 +360,21 @@ public class DomainLogicalPortsResource extends AbstractResource {
 							memberIndex++;
 						}
 					}
-					logicalPortsJson.add(VtnServiceJsonConsts.MEMBERPORTS,
-							memberArray);
-					logicalPortsArray.add(logicalPortsJson);
+					if (null != memberArray) {
+						final JsonArray resultJsonArray = new JsonArray();
+						final JsonObject logicalPortJson = (JsonObject) root
+								.get(VtnServiceJsonConsts.LOGICALPORTS)
+								.getAsJsonArray()
+								.get(VtnServiceJsonConsts.VAL_0);
+						logicalPortJson.add(VtnServiceJsonConsts.MEMBER_PORTS,
+								memberArray);
+						resultJsonArray.add(logicalPortJson);
+						root.add(VtnServiceJsonConsts.LOGICALPORTS,
+								resultJsonArray);
+					}
 				}
-				root.add(VtnServiceJsonConsts.LOGICALPORTS, logicalPortsArray);
+				setInfo(root);
 			}
-			setInfo(root);
 			LOG.debug("Response object created successfully");
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
@@ -271,7 +416,7 @@ public class DomainLogicalPortsResource extends AbstractResource {
 	 * 
 	 * @return
 	 */
-	public String getControllerId() {
+	public final String getControllerId() {
 		return controllerId;
 	}
 
@@ -280,7 +425,7 @@ public class DomainLogicalPortsResource extends AbstractResource {
 	 * 
 	 * @return
 	 */
-	public String getDomainId() {
+	public final String getDomainId() {
 		return domainId;
 	}
 
@@ -289,12 +434,17 @@ public class DomainLogicalPortsResource extends AbstractResource {
 	 * 
 	 * @return parameter list
 	 */
-	private List<String> getUriParameters(JsonObject requestBody) {
+	private List<String> getUriParameters(final JsonObject requestBody) {
 		LOG.trace("Starts LogicalPortsResource#getUriParameters()");
 		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(controllerId);
 		uriParameters.add(domainId);
-		if (requestBody != null && requestBody.has(VtnServiceJsonConsts.INDEX)) {
+		if (requestBody != null
+				&& requestBody.has(VtnServiceJsonConsts.LOGICAL_PORT_ID)) {
+			uriParameters.add(requestBody.get(
+					VtnServiceJsonConsts.LOGICAL_PORT_ID).getAsString());
+		} else if (requestBody != null
+				&& requestBody.has(VtnServiceJsonConsts.INDEX)) {
 			uriParameters.add(requestBody.get(VtnServiceJsonConsts.INDEX)
 					.getAsString());
 		}
@@ -307,21 +457,42 @@ public class DomainLogicalPortsResource extends AbstractResource {
 	 * 
 	 * @return parameter list
 	 */
-	private List<String> getUriParametersMember(JsonObject logicalPortsJson) {
+	private List<String> getUriParametersMember(
+			final JsonObject logicalPortsJson) {
 		LOG.trace("Starts LogicalPortsResource#getUriParametersMember()");
 		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(controllerId);
 		uriParameters.add(domainId);
 		uriParameters.add(logicalPortsJson.get(
 				VtnServiceJsonConsts.LOGICAL_PORT_ID).getAsString());
-		// uriParameters.add((logicalPortsJson.get(VtnServiceJsonConsts.SWITCHID).getAsString()));
-		// uriParameters.add((logicalPortsJson.get(VtnServiceJsonConsts.PORTNAME).getAsString()));
+
 		LOG.trace("Completed LogicalPortsResource#getUriParametersMember()");
 		return uriParameters;
 	}
 
-	private List<String> getUriParametersMemberGreaterThanDefault(
-			JsonObject logicalPortsJson, final JsonObject memberLastIndex) {
+	/**
+	 * Add URI Member parameters to Show
+	 * 
+	 * @return parameter list
+	 */
+	private List<String> getUriParametersMemberShow(
+			final JsonObject logicalPortsJson) {
+		LOG.trace("Starts DomainLogicalPortResource#getUriParametersMember()");
+		final List<String> uriParameters = new ArrayList<String>();
+		uriParameters.add(controllerId);
+		uriParameters.add(domainId);
+		if (logicalPortsJson.has(VtnServiceJsonConsts.LOGICAL_PORT_ID)) {
+			uriParameters.add(logicalPortsJson.get(
+					VtnServiceJsonConsts.LOGICAL_PORT_ID).getAsString());
+		}
+		LOG.trace("Completed DomainLogicalPortResource#getUriParametersMember()");
+		return uriParameters;
+	}
+
+	private List<String>
+			getUriParametersMemberGreaterThanDefault(
+					final JsonObject logicalPortsJson,
+					final JsonObject memberLastIndex) {
 		LOG.trace("Starts LogicalPortsResource#getUriParametersMemberGreaterThanDefault()");
 		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(controllerId);

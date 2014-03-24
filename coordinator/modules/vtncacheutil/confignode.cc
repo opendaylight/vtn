@@ -74,9 +74,9 @@ ConfigNode::ConfigNode() : operation_(0) {
  * @brief     : Method to retrieve each node from the Keytree and populate in
                 the vector
  * @param[in] : ConfigNode value_list
- * @retval    : DRVAPI_RESPONSE_SUCCESS
+ * @retval    : UNC_RC_SUCCESS
  */
-drv_resp_code_t ConfigNode::get_node_list(
+UncRespCode ConfigNode::get_node_list(
     std::vector<ConfigNode*>& value_list) {
   ODC_FUNC_TRACE;
 
@@ -84,7 +84,7 @@ drv_resp_code_t ConfigNode::get_node_list(
   // from the root node or to the recursive caller
   if (child_list_.empty()) {
     pfc_log_debug("%s: No child list", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_SUCCESS;
+    return UNC_RC_SUCCESS;
   }
 
   // Get the child list of each node
@@ -111,7 +111,7 @@ drv_resp_code_t ConfigNode::get_node_list(
     }
   }
 
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**
@@ -148,9 +148,9 @@ void ConfigNode::print(int level_index) {
  *            : from the the cache and insert key into erased_key_list before
  *            : doing delete operation
  * @param[in] : confignode *, erased_key_list(vector contain structure)
- * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
+ * @retval    : UNC_DRV_RC_ERR_GENERIC / UNC_RC_SUCCESS
  */
-drv_resp_code_t ConfigNode::delete_child_node(ConfigNode *node_ptr,
+UncRespCode ConfigNode::delete_child_node(ConfigNode *node_ptr,
                   std::vector<key_information>& erased_key_list) {
   ODC_FUNC_TRACE;
   std::map<unc_key_type_t, std::vector<ConfigNode*> >::iterator itr;
@@ -159,13 +159,13 @@ drv_resp_code_t ConfigNode::delete_child_node(ConfigNode *node_ptr,
 
   if (node_ptr == NULL) {
     pfc_log_error("%s : ConfigNode is NULL", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   itr = child_list_.find(node_ptr->get_type_name());
   if (itr == itr_end) {
     pfc_log_error("no such configuration present");
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   } else {
     std::vector<ConfigNode*>& node_list = itr->second;
     if (!node_list.empty()) {
@@ -184,16 +184,16 @@ drv_resp_code_t ConfigNode::delete_child_node(ConfigNode *node_ptr,
       }
     }
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**
  * @brief     : This method traverse the child list if parent have and delete
  *            :the nodes
  * @param[in] : erased_key_list
- * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
+ * @retval    : UNC_DRV_RC_ERR_GENERIC / UNC_RC_SUCCESS
  */
-drv_resp_code_t ConfigNode::clear_child_list(std::vector<key_information>&
+UncRespCode ConfigNode::clear_child_list(std::vector<key_information>&
                                              erased_key_list) {
   ODC_FUNC_TRACE;
   if (!child_list_.empty()) {
@@ -220,15 +220,15 @@ drv_resp_code_t ConfigNode::clear_child_list(std::vector<key_information>&
       }
     }
   }
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**
  * @brief     : This method inserts the node in the cache
  * @param[in] : confignode *
- * @retval    : DRVAPI_RESPONSE_FAILURE / DRVAPI_RESPONSE_SUCCESS
+ * @retval    : UNC_DRV_RC_ERR_GENERIC / UNC_RC_SUCCESS
  */
-drv_resp_code_t ConfigNode::add_child_to_list(ConfigNode *node_ptr) {
+UncRespCode ConfigNode::add_child_to_list(ConfigNode *node_ptr) {
   ODC_FUNC_TRACE;
 
   std::map<unc_key_type_t, std::vector<ConfigNode*> >::iterator itr;
@@ -237,7 +237,7 @@ drv_resp_code_t ConfigNode::add_child_to_list(ConfigNode *node_ptr) {
 
   if (node_ptr == NULL) {
     pfc_log_error("%s : ConfigNode is NULL", PFC_FUNCNAME);
-    return DRVAPI_RESPONSE_FAILURE;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
   itr = child_list_.find(node_ptr->get_type_name());
@@ -261,7 +261,7 @@ drv_resp_code_t ConfigNode::add_child_to_list(ConfigNode *node_ptr) {
   std::vector<ConfigNode*>& node_list = itr->second;
   node_list.push_back(node_ptr);
 
-  return DRVAPI_RESPONSE_SUCCESS;
+  return UNC_RC_SUCCESS;
 }
 
 /**

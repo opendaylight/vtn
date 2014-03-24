@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -52,7 +52,7 @@ public class IpcChannelConnection {
 	 * 
 	 * @return the counter
 	 */
-	public int getCounter() {
+	public final int getCounter() {
 		LOG.trace("Return from IpcChannelConnection#getCounter()");
 		return counter;
 	}
@@ -63,7 +63,7 @@ public class IpcChannelConnection {
 	 * @param altConnections
 	 *            the new alt connections
 	 */
-	public void setAltConnections(final AltConnection altConnections) {
+	public final void setAltConnections(final AltConnection altConnections) {
 		LOG.trace("Start IpcChannelConnection#setAltConnections()");
 		this.altConnections = altConnections;
 		LOG.trace("Complete IpcChannelConnection#setAltConnections()");
@@ -82,7 +82,7 @@ public class IpcChannelConnection {
 	 * @throws VtnServiceException
 	 *             the vtn service exception
 	 */
-	public ClientSession getSession(final String serviceName,
+	public final ClientSession getSession(final String serviceName,
 			final int serviceID,
 			final VtnServiceExceptionHandler exceptionHandler)
 			throws VtnServiceException {
@@ -116,7 +116,7 @@ public class IpcChannelConnection {
 	 * @param session
 	 *            the session
 	 */
-	public void destroySession(final ClientSession session) {
+	public final void destroySession(final ClientSession session) {
 		LOG.trace("Start IpcChannelConnection#destroySession()");
 		session.destroy();
 		// decrease the counter

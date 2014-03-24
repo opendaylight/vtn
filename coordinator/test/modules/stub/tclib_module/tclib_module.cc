@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -43,6 +43,8 @@ TcApiCommonRet TcLibModule::TcLibAuditControllerRequest
   return stub_getMappedResultCode(TcLibModule::AUDIT_CONTROLLER);
 }
 
+void TcLibModule::GetSessionAttributes(uint32_t* session_id, uint32_t* config_id) {
+}
 
 TcApiCommonRet TcLibModule::TcLibValidateUpdateMsg
          (uint32_t sessionid, uint32_t configid) {

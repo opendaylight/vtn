@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -51,13 +51,13 @@ class InternalTransactionCoordinator {
     DBConfigurationRequest *db_config_req();
     SystemStateChangeRequest *system_state_change_req();
 
-    UpplReturnCode PerformConfigIdValidation(ServerSession &session,
+    UncRespCode PerformConfigIdValidation(ServerSession &session,
                                              uint32_t sessionId,
                                              uint32_t configId);
 
-    UpplReturnCode ProcessReq(ServerSession &session, pfc_ipcid_t);
-    UpplReturnCode ProcessReq(ServerSession &session);
-    UpplReturnCode ProcessEvent(const IpcEvent &event);
+    UncRespCode ProcessReq(ServerSession &session, pfc_ipcid_t);
+    UncRespCode ProcessReq(ServerSession &session);
+    UncRespCode ProcessEvent(const IpcEvent &event);
 
     /*  set_config_request_status
      *
@@ -130,15 +130,15 @@ class InternalTransactionCoordinator {
     SystemStateChangeRequest *system_state_change_req_;
     AuditRequest *audit_req_;
 
-    UpplReturnCode ProcessConfigRequest(ServerSession &session,
+    UncRespCode ProcessConfigRequest(ServerSession &session,
                                         physical_request_header &obj_req_hdr,
                                         physical_response_header &rsh);
-    UpplReturnCode ProcessReadRequest(ServerSession &session,
+    UncRespCode ProcessReadRequest(ServerSession &session,
                                       physical_request_header &obj_req_hdr,
                                       physical_response_header &rsh);
-    UpplReturnCode ProcessImportRequest(ServerSession &session,
+    UncRespCode ProcessImportRequest(ServerSession &session,
                                         uint32_t operation);
-    UpplReturnCode ProcessIsCandidateDirty(ServerSession &session,
+    UncRespCode ProcessIsCandidateDirty(ServerSession &session,
                                            uint32_t operation);
 };
 #endif

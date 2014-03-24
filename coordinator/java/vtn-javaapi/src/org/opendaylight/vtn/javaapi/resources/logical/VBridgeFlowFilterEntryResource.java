@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -39,7 +39,8 @@ import org.opendaylight.vtn.javaapi.validation.logical.VBridgeFlowFilterEntryRes
  * 
  */
 
-@UNCVtnService(path = "/vtns/{vtn_name}/vbridges/{vbr_name}/flowfilters/{ff_type}/flowfilterentries/{seqnum}")
+@UNCVtnService(
+		path = "/vtns/{vtn_name}/vbridges/{vbr_name}/flowfilters/{ff_type}/flowfilterentries/{seqnum}")
 public class VBridgeFlowFilterEntryResource extends AbstractResource {
 	/** The vtn name. */
 	@UNCField("vtn_name")
@@ -71,28 +72,28 @@ public class VBridgeFlowFilterEntryResource extends AbstractResource {
 	/**
 	 * @return the vtnName
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
 	/**
 	 * @return the vbrName
 	 */
-	public String getVbrName() {
+	public final String getVbrName() {
 		return vbrName;
 	}
 
 	/**
 	 * @return the ffType
 	 */
-	public String getFfType() {
+	public final String getFfType() {
 		return ffType;
 	}
 
 	/**
 	 * @return the seqNum
 	 */
-	public String getSeqnum() {
+	public final String getSeqnum() {
 		return seqnum;
 	}
 
@@ -103,7 +104,7 @@ public class VBridgeFlowFilterEntryResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Start VBridgeFlowFilterEntryResource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -122,7 +123,7 @@ public class VBridgeFlowFilterEntryResource extends AbstractResource {
 					IpcRequestPacketEnum.KT_VBR_FLOWFILTER_ENTRY_DELETE,
 					getNullJsonObject(), getUriParameters());
 			LOG.debug("Request packet created successfully");
-			status= requestProcessor.processIpcRequest();
+			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
@@ -162,7 +163,8 @@ public class VBridgeFlowFilterEntryResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VBridgeFlowFilterEntryResource#put()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -221,7 +223,8 @@ public class VBridgeFlowFilterEntryResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VBridgeFlowFilterEntryResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;

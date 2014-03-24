@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013 NEC Corporation
+# Copyright (c) 2013-2014 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -11,6 +11,7 @@
 
 import requests, json, collections, sys, time, subprocess, controller, vtn_vbr
 import vtn_testconfig, pexpect, mininet_test
+import resp_code
 
 SWITCHDATA = vtn_testconfig.SWITCHDATA
 VTNVBRDATA = vtn_testconfig.VTNVBRDATA
@@ -34,13 +35,13 @@ def validate_switch_at_physical(switch_blockname,controller_blockname,presence="
     print r.status_code
 
     if presence == "no":
-        if r.status_code == 404:
+        if r.status_code == resp_code.RESP_NOT_FOUND:
             return 0
 
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_GET_SUCCESS:
         return 1
 
-    data=json.loads(r.text)
+    data=json.loads(r.content)
     print data
 
     if data['switches'] == []:
@@ -75,7 +76,7 @@ def update_switch(switch_blockname, controller_blockname):
 
     r = requests.put(url,headers=controller_headers,auth=('admin','admin'))
     print r.status_code
-    if r.status_code != 201:
+    if r.status_code != resp_code.RESP_CREATE_SUCCESS:
         return 1
     else:
         return 0
@@ -94,13 +95,13 @@ def validate_update_switch(switch_blockname, controller_blockname,presence="yes"
     print r.status_code
 
     if presence == "no":
-        if r.status_code == 404:
+        if r.status_code == resp_code.RESP_NOT_FOUND:
             return 0
 
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_GET_SUCCESS:
         return 1
 
-    data=json.loads(r.text)
+    data=json.loads(r.content)
     print data
 
     if data['switch'] == [ ] or data['switch'] == None:
@@ -130,13 +131,13 @@ def validate_switch_port(switch_blockname, port_blockname, controller_blockname,
     print r.status_code
 
     if presence == "no":
-        if r.status_code == 404:
+        if r.status_code == resp_code.RESP_NOT_FOUND:
             return 0
 
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_GET_SUCCESS:
         return 1
 
-    data=json.loads(r.text)
+    data=json.loads(r.content)
 
     if presence == "no":
         print data['ports']
@@ -183,13 +184,13 @@ def validate_logical_port(port_blockname, controller_blockname, child, presence 
     print r.status_code
 
     if presence == "no":
-      if r.status_code == 404:
+      if r.status_code == resp_code.RESP_NOT_FOUND:
           return 0
 
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_GET_SUCCESS:
         return 1
 
-    data=json.loads(r.text)
+    data=json.loads(r.content)
 
     if presence == "no":
         print data['logical_ports']
@@ -248,10 +249,10 @@ def validate_link_down(controller_blockname, switch_blockname, port_blockname, s
     r = requests.get(url, headers=coordinator_headers,auth=('admin','adminpass'))
     print r.status_code
 
-    if r.status_code != 200:
+    if r.status_code != resp_code.RESP_GET_SUCCESS:
         return 1
 
-    data=json.loads(r.text)
+    data=json.loads(r.content)
 
     port_content = data['ports'][position]
     print port_content, '\n'

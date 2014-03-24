@@ -15,6 +15,7 @@ import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
+import org.opendaylight.vtn.javaapi.openstack.constants.VtnServiceOpenStackConsts;
 import org.opendaylight.vtn.javaapi.util.VtnServiceUtil;
 
 /**
@@ -28,6 +29,7 @@ public final class VtnServiceConfiguration {
 
 	private static final Properties commonConfigProperties = new Properties();
 	private Properties appConfigProperties = null;
+	private Properties mapModeConfigProperties = null;
 
 	static {
 		try {
@@ -52,6 +54,8 @@ public final class VtnServiceConfiguration {
 
 		appConfigProperties = new Properties();
 
+		mapModeConfigProperties = new Properties();
+
 		init();
 
 		LOG.trace("Complete VtnServiceConfiguration#VtnServiceConfiguration()");
@@ -75,6 +79,18 @@ public final class VtnServiceConfiguration {
 								.getResourceAsStream(
 										VtnServiceConsts.APP_CONF_FILEPATH));
 			}
+
+			if (Thread.currentThread().getContextClassLoader().toString()
+					.contains(VtnServiceOpenStackConsts.VTN_WEB_API_ROOT)) {
+				synchronized (mapModeConfigProperties) {
+					mapModeConfigProperties.load(Thread
+							.currentThread()
+							.getContextClassLoader()
+							.getResourceAsStream(
+									VtnServiceConsts.MAPMODE_CONF_FILEPATH));
+				}
+			}			
+
 		} catch (final IOException e) {
 			VtnServiceInitManager
 					.getExceptionHandler()
@@ -125,6 +141,25 @@ public final class VtnServiceConfiguration {
 					.get(key).toString() : VtnServiceConsts.EMPTY_STRING;
 		}
 		LOG.debug(key + VtnServiceConsts.COLON + configValue);
+		return configValue;
+	}
+
+	/**
+	 * Get map-mode property value for vlan-map creation corresponding to
+	 * OpenStack's Port operation
+	 * 
+	 * @param key
+	 * @return
+	 */
+	public String getMapModeValue() {
+		LOG.trace("Return from VtnServiceConfiguration#getMapModeValue()");
+		// initialize with 0 as default
+		String configValue = VtnServiceConsts.ZERO;
+		if (mapModeConfigProperties != null) {
+			configValue = mapModeConfigProperties.get(
+					VtnServiceOpenStackConsts.VLANMAP_MODE).toString();
+		}
+		LOG.debug("Map Mode " + VtnServiceConsts.COLON + configValue);
 		return configValue;
 	}
 }

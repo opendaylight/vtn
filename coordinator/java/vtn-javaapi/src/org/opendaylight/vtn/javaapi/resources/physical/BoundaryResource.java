@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -45,7 +45,7 @@ public class BoundaryResource extends AbstractResource {
 	 * 
 	 * @return the boundary id
 	 */
-	public String getboundaryId() {
+	public final String getboundaryId() {
 		return boundaryId;
 	}
 
@@ -69,7 +69,8 @@ public class BoundaryResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts BoundaryResource#put()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -88,7 +89,7 @@ public class BoundaryResource extends AbstractResource {
 					getUriParameters());
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet processed with status:"+status);
+			LOG.debug("Request packet processed with status:" + status);
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
 			getExceptionHandler()
@@ -124,7 +125,7 @@ public class BoundaryResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Starts BoundaryResource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -143,7 +144,7 @@ public class BoundaryResource extends AbstractResource {
 					getNullJsonObject(), getUriParameters());
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet processed with status:"+status);
+			LOG.debug("Request packet processed with status:" + status);
 			LOG.debug("Complete Ipc framework call");
 		} catch (final VtnServiceException e) {
 			getExceptionHandler()
@@ -182,7 +183,8 @@ public class BoundaryResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts BoundaryResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -201,7 +203,7 @@ public class BoundaryResource extends AbstractResource {
 					getUriParameters());
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet processed with status:"+status);
+			LOG.debug("Request packet processed with status:" + status);
 			final IpcPhysicalResponseFactory responseGenerator = new IpcPhysicalResponseFactory();
 			setInfo(responseGenerator.getBoundaryResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,

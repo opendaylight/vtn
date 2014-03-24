@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -49,18 +49,21 @@ public class VTepGroupsResource extends AbstractResource {
 	private String vtnName;
 	private static final Logger LOG = Logger.getLogger(VTepGroupsResource.class
 			.getSimpleName());
+
 	public VTepGroupsResource() {
 		super();
 		LOG.trace("Start VTepGroupsResource#VTunnelsResource()");
 		setValidator(new VTepGroupResourceValidator(this));
 		LOG.trace("Complete VTepGroupsResource#VTunnelsResource()");
 	}
+
 	/**
 	 * @return the vtnName
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
+
 	/**
 	 * Implementation of Post method of VTepGroup API
 	 * 
@@ -71,7 +74,8 @@ public class VTepGroupsResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("starts VTepGroupResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -116,10 +120,10 @@ public class VTepGroupsResource extends AbstractResource {
 						.get(VtnServiceJsonConsts.VTEPGROUPMEMBERNAME)
 						.getAsJsonArray();
 				if (vTepGroupMemberArray.size() > 0) {
-				requestProcessor.setServiceInfo(
-						UncUPLLEnums.UPLL_IPC_SERVICE_NAME,
-						UncUPLLEnums.ServiceID.UPLL_EDIT_SVC_ID.ordinal());
-						
+					requestProcessor.setServiceInfo(
+							UncUPLLEnums.UPLL_IPC_SERVICE_NAME,
+							UncUPLLEnums.ServiceID.UPLL_EDIT_SVC_ID.ordinal());
+
 					for (final JsonElement jsonElement : vTepGroupMemberArray) {
 						requestBody.add(
 								VtnServiceJsonConsts.INDEX,
@@ -168,6 +172,7 @@ public class VTepGroupsResource extends AbstractResource {
 		LOG.trace("Completed VTepGroupsResource#create()");
 		return status;
 	}
+
 	/**
 	 * Implementation of Get method of VTepGroup API
 	 * 
@@ -178,7 +183,8 @@ public class VTepGroupsResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VTepGroupResource#get()");
 		ClientSession session = null;
 		JsonObject root = new JsonObject();
@@ -206,7 +212,8 @@ public class VTepGroupsResource extends AbstractResource {
 				opType = requestBody.get(VtnServiceJsonConsts.OP).getAsString();
 			}
 			status = requestProcessor.processIpcRequest();
-			LOG.debug("Request packet processed for 1st call with status" + status);
+			LOG.debug("Request packet processed for 1st call with status"
+					+ status);
 			if (status == ClientSession.RESP_FATAL) {
 				throw new VtnServiceException(
 						Thread.currentThread().getStackTrace()[1]
@@ -217,28 +224,30 @@ public class VTepGroupsResource extends AbstractResource {
 						UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
 						UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorMessage());
 			}
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
-			JsonObject VtepGrp = responseGenerator.getVTepGroupResponse(
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final JsonObject VtepGrp = responseGenerator.getVTepGroupResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.LIST);
-					
-			requestProcessor.setServiceInfo(
-						UncUPLLEnums.UPLL_IPC_SERVICE_NAME,
-						UncUPLLEnums.ServiceID.UPLL_READ_SVC_ID.ordinal());
-						
+
+			requestProcessor.setServiceInfo(UncUPLLEnums.UPLL_IPC_SERVICE_NAME,
+					UncUPLLEnums.ServiceID.UPLL_READ_SVC_ID.ordinal());
+
 			JsonArray vTepGroupArr = null;
 
 			if (VtnServiceJsonConsts.DETAIL.equalsIgnoreCase(opType)) {
-				Iterator<JsonElement> vtepGrpItr = VtepGrp.getAsJsonArray(
-						VtnServiceJsonConsts.VTEPGROUPS).iterator();
+				final Iterator<JsonElement> vtepGrpItr = VtepGrp
+						.getAsJsonArray(VtnServiceJsonConsts.VTEPGROUPS)
+						.iterator();
 				vTepGroupArr = new JsonArray();
-				VtnServiceConfiguration configuration = VtnServiceInitManager
+				final VtnServiceConfiguration configuration = VtnServiceInitManager
 						.getConfigurationMap();
 				final int max_rep_count = Integer.parseInt(configuration
 						.getConfigValue(VtnServiceConsts.MAX_REP_DEFAULT));
 				while (vtepGrpItr.hasNext()) {
 					JsonObject vTepGroup = (JsonObject) vtepGrpItr.next();
-					requestBody.addProperty(VtnServiceJsonConsts.INDEX,vTepGroup.get(VtnServiceJsonConsts.VTEPGROUPNAME).getAsString());
+					requestBody.addProperty(VtnServiceJsonConsts.INDEX,
+							vTepGroup.get(VtnServiceJsonConsts.VTEPGROUPNAME)
+									.getAsString());
 					requestProcessor.createIpcRequestPacket(
 							IpcRequestPacketEnum.KT_VTEP_GRP_MEMBER_GET,
 							requestBody, getUriParameters(requestBody));
@@ -250,16 +259,17 @@ public class VTepGroupsResource extends AbstractResource {
 											.setIpcUint32Value(UncOperationEnum.UNC_OP_READ_SIBLING_BEGIN
 													.ordinal()));
 					status = requestProcessor.processIpcRequest();
-					LOG.debug("Request packet processed for 2nd call with status" + status);
+					LOG.debug("Request packet processed for 2nd call with status"
+							+ status);
 					vTepGroup = responseGenerator.getVtepGroupMembers(
 							requestProcessor.getIpcResponsePacket(), vTepGroup);
-					JsonArray memberJsonArray = vTepGroup
+					final JsonArray memberJsonArray = vTepGroup
 							.getAsJsonArray(VtnServiceJsonConsts.MEMBERVTEPS);
 					if (memberJsonArray.size() >= max_rep_count) {
 						int memberIndex = memberJsonArray.size();
 						while (memberIndex >= max_rep_count) {
 							memberIndex = memberJsonArray.size();
-							JsonObject memberJson = (JsonObject) vTepGroup
+							final JsonObject memberJson = (JsonObject) vTepGroup
 									.getAsJsonArray(
 											VtnServiceJsonConsts.MEMBERVTEPS)
 									.get(memberIndex - 1);
@@ -330,6 +340,7 @@ public class VTepGroupsResource extends AbstractResource {
 		LOG.trace("Completed VTepGroupsResource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 

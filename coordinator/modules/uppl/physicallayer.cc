@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -45,6 +45,9 @@ Mutex PhysicalLayer::notification_manager_mutex_;
 // Static variable for mutex obj use in ODBCManager class
 Mutex PhysicalLayer::ODBCManager_mutex_;
 
+// Static variable for mutex obj use in ODBC connection pool access
+Mutex PhysicalLayer::db_conpool_mutex_;
+
 ReadWriteLock PhysicalLayer::phy_fini_db_lock_;
 ReadWriteLock PhysicalLayer::phy_fini_phycore_lock_;
 ReadWriteLock PhysicalLayer::phy_fini_event_lock_;
@@ -63,7 +66,7 @@ uint8_t PhysicalLayer::phyFiniFlag = 0;
 pfc_bool_t PhysicalLayer::init() {
   pfc_log_info("Physical Layer init() called");
   uint8_t init_status = InitializePhysicalSubModules();
-  if (init_status != UPPL_RC_SUCCESS) {
+  if (init_status != UNC_RC_SUCCESS) {
     pfc_log_warn("Init failed with %d", init_status);
     return PFC_FALSE;
   }
@@ -86,8 +89,8 @@ pfc_bool_t PhysicalLayer::fini() {
     ScopedReadWriteLock ipcFiniLock(PhysicalLayer::get_phy_fini_phycore_lock_(),
                                     PFC_TRUE);
   }
-  UpplReturnCode fini_status = FinalizePhysicalSubModules();
-  if (fini_status != UPPL_RC_SUCCESS) {
+  UncRespCode fini_status = FinalizePhysicalSubModules();
+  if (fini_status != UNC_RC_SUCCESS) {
     pfc_log_warn("Fini failed with %d", fini_status);
     return PFC_FALSE;
   }
@@ -122,33 +125,33 @@ PhysicalLayer* PhysicalLayer::get_instance() {
  *@Description : This function instantiates objects for the classes
  *               PhysicalCore, IPCConnectionManager and ODBCManager.
  *@param[in] : None
- *@return    : UPPL_RC_SUCCESS is returned if all sub modules are initialized
+ *@return    : UNC_RC_SUCCESS is returned if all sub modules are initialized
  *             successfully
- *             otherwise UPPL_RC_ERR* is returned to denote error
+ *             otherwise UNC_UPPL_RC_ERR* is returned to denote error
 
  **/
-UpplReturnCode PhysicalLayer::InitializePhysicalSubModules() {
-  UpplReturnCode ret = UPPL_RC_SUCCESS;
-  UpplReturnCode resp = UPPL_RC_SUCCESS;
+UncRespCode PhysicalLayer::InitializePhysicalSubModules() {
+  UncRespCode ret = UNC_RC_SUCCESS;
+  UncRespCode resp = UNC_RC_SUCCESS;
   pfc_log_debug("Initialising IPCConnectionManager submodule");
   ipc_connection_manager_= new IPCConnectionManager();
   if (ipc_connection_manager_ == NULL) {
     pfc_log_error("Memory not allocated for ipc_connection_manager_");
-    return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
   }
   ipc_connection_manager_->InitializeIpcServerClient();
   pfc_log_info("IPCConnectionManager submodule initialised");
   physical_core_ = PhysicalCore::get_physical_core();
   if (physical_core_ == NULL) {
     pfc_log_error("Memory not allocated for physical_core_");
-    return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
   }
   pfc_log_debug("Initialising PhysicalCore submodule");
   ret = physical_core_->InitializePhysical();
-  if (ret != UPPL_RC_SUCCESS) {
+  if (ret != UNC_RC_SUCCESS) {
     pfc_log_error("Physical core initialise failed");
     resp = FinalizePhysicalSubModules();
-    if (resp != UPPL_RC_SUCCESS) return resp;
+    if (resp != UNC_RC_SUCCESS) return resp;
     return ret;
   }
   pfc_log_info("Physical Core initialised");
@@ -156,14 +159,14 @@ UpplReturnCode PhysicalLayer::InitializePhysicalSubModules() {
   odbc_manager_= ODBCManager::get_ODBCManager();
   if (odbc_manager_ == NULL) {
     pfc_log_error("Memory not allocated for odbc_manager_");
-    return UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
   }
   ODBCM_RC_STATUS odbc_ret = odbc_manager_->ODBCM_Initialize();
   if (odbc_ret != ODBCM_RC_SUCCESS) {
     pfc_log_error("ODBCManager initialise failed");
     resp = FinalizePhysicalSubModules();
-    if (resp != UPPL_RC_SUCCESS) return resp;
-    ret = UPPL_RC_FAILURE;
+    if (resp != UNC_RC_SUCCESS) return resp;
+    ret = UNC_UPPL_RC_FAILURE;
     return ret;  // Returns success code
   }
   pfc_log_info("ODBCManager initialised");
@@ -176,13 +179,13 @@ UpplReturnCode PhysicalLayer::InitializePhysicalSubModules() {
                     classes PhysicalCore, IPCConnectionManager and
                     ODBCManager
  *@param[in] : None
- *@return    : UPPL_RC_SUCCESS is returned if all sub modules are finalized
+ *@return    : UNC_RC_SUCCESS is returned if all sub modules are finalized
  *             successfully
- *             otherwise UPPL_RC_ERR* is returned to denote error
+ *             otherwise UNC_UPPL_RC_ERR* is returned to denote error
  **/
-UpplReturnCode PhysicalLayer::FinalizePhysicalSubModules() {
-  UpplReturnCode response = UPPL_RC_SUCCESS;
-  UpplReturnCode ret = UPPL_RC_SUCCESS;
+UncRespCode PhysicalLayer::FinalizePhysicalSubModules() {
+  UncRespCode response = UNC_RC_SUCCESS;
+  UncRespCode ret = UNC_RC_SUCCESS;
   {
     ScopedReadWriteLock eventFiniLock(PhysicalLayer::get_phy_fini_event_lock_(),
                                       PFC_TRUE);
@@ -192,7 +195,7 @@ UpplReturnCode PhysicalLayer::FinalizePhysicalSubModules() {
       ipc_connection_manager_ = NULL;
     }
   }
-  if (ret != UPPL_RC_SUCCESS) {
+  if (ret != UNC_RC_SUCCESS) {
     pfc_log_error("IPCConnectionManager's Finalize failed");
     response = ret;
   }
@@ -201,7 +204,7 @@ UpplReturnCode PhysicalLayer::FinalizePhysicalSubModules() {
     ScopedReadWriteLock pcFiniLock(PhysicalLayer::get_phy_fini_phycore_lock_(),
                                    PFC_TRUE);
     ret = physical_core_->FinalizePhysical();
-    if (ret != UPPL_RC_SUCCESS) {
+    if (ret != UNC_RC_SUCCESS) {
       pfc_log_error("Physical Core's Finalize failed");
       response = ret;
     }
@@ -244,7 +247,7 @@ pfc_ipcresp_t PhysicalLayer::ipcService(ServerSession &session,
                                         pfc_ipcid_t service_id) {
   pfc_log_info("PhysicalLayer::ipcService is called with service id %d",
                service_id);
-  PHY_FINI_IPC_LOCK(UPPL_RC_ERR_SHUTTING_DOWN);
+  PHY_FINI_IPC_LOCK(UNC_UPPL_RC_ERR_SHUTTING_DOWN);
   return ipc_connection_manager_->get_ipc_server_handler()->
       IpcService(session, service_id);
 }

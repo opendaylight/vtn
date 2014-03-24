@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -25,30 +25,37 @@ import org.opendaylight.vtn.javaapi.validation.VtnServiceValidator;
  * API.
  */
 public class SwitchResourceValidator extends VtnServiceValidator {
-
+	/**
+	 * Logger for debugging purpose.
+	 */
 	private static final Logger LOG = Logger
 			.getLogger(SwitchResourceValidator.class.getName());
-
+	/**
+	 * resource , the instance of AbstractResource.
+	 */
 	private final AbstractResource resource;
-	final CommonValidator validator = new CommonValidator();
+	/**
+	 * validator object for common validations.
+	 */
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new switch resource validator.
 	 * 
-	 * @param switchResource
-	 *            the instance of AbstractResource
+	 * @param resource
+	 *            , the instance of AbstractResource.
 	 */
 	public SwitchResourceValidator(final AbstractResource resource) {
 		this.resource = resource;
 	}
 
 	/**
-	 * Validate uri parameters for Switch API
+	 * Validate uri parameters for Switch API.
 	 * 
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start SwitchResourceValidator#validateUri()");
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.CONTROLLERID);
@@ -89,8 +96,9 @@ public class SwitchResourceValidator extends VtnServiceValidator {
 	 * Validate get request json for Switch API
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start SwitchResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of SwitchResourceValidator");
@@ -122,18 +130,19 @@ public class SwitchResourceValidator extends VtnServiceValidator {
 	}
 
 	/**
-	 * Validate get request json for Switch API
+	 * Validate get request json for Switch API.
 	 * 
 	 * @param requestBody
-	 *            the request Json object
-	 * @return true, if is valid get
+	 *            , the request Json object .
+	 * @return true, if is valid get .
+	 * @param opFlag
+	 *            ,to reolve type of operations .
 	 */
-	public boolean validateGet(final JsonObject requestBody,
+	public final boolean validateGet(final JsonObject requestBody,
 			final boolean opFlag) {
 		LOG.trace("Start SwitchResourceValidator#ValidateGet");
 		boolean isValid = true;
 		// validation for key: targetdb
-		// updated check for targetdb
 		setInvalidParameter(VtnServiceJsonConsts.TARGETDB);
 		if (requestBody.has(VtnServiceJsonConsts.TARGETDB)
 				&& requestBody
@@ -151,11 +160,24 @@ public class SwitchResourceValidator extends VtnServiceValidator {
 					VtnServiceJsonConsts.STATE);
 		}
 		if (!opFlag) {
-			if (requestBody.has(VtnServiceJsonConsts.OP)) {
-				requestBody.remove(VtnServiceJsonConsts.OP);
+			// validation for key: op
+			setInvalidParameter(VtnServiceJsonConsts.OP);
+			if (requestBody.has(VtnServiceJsonConsts.OP)
+					&& requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
+							.getAsString() != null
+					&& !requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
+							.getAsString().trim().isEmpty()) {
+				final String operation = requestBody
+						.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
+						.getAsString().trim();
+				isValid = operation
+						.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL);
 			} else {
-				LOG.debug("No need to remove");
+				requestBody.remove(VtnServiceJsonConsts.OP);
+				requestBody.addProperty(VtnServiceJsonConsts.OP,
+						VtnServiceJsonConsts.NORMAL);
 			}
+
 			if (requestBody.has(VtnServiceJsonConsts.INDEX)) {
 				requestBody.remove(VtnServiceJsonConsts.INDEX);
 			} else {
@@ -170,7 +192,24 @@ public class SwitchResourceValidator extends VtnServiceValidator {
 			if (isValid) {
 				// validation for key: op
 				setInvalidParameter(VtnServiceJsonConsts.OP);
-				isValid = validator.isValidOperation(requestBody);
+				if (requestBody.has(VtnServiceJsonConsts.OP)
+						&& requestBody.getAsJsonPrimitive(
+								VtnServiceJsonConsts.OP).getAsString() != null
+						&& !requestBody
+								.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
+								.getAsString().trim().isEmpty()) {
+					final String operation = requestBody
+							.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
+							.getAsString().trim();
+					isValid = operation
+							.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)
+							|| operation
+									.equalsIgnoreCase(VtnServiceJsonConsts.COUNT);
+				} else {
+					requestBody.remove(VtnServiceJsonConsts.OP);
+					requestBody.addProperty(VtnServiceJsonConsts.OP,
+							VtnServiceJsonConsts.NORMAL);
+				}
 			}
 			if (isValid) {
 				// validation for key: index

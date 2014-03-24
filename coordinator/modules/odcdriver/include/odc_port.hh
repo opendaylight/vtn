@@ -42,11 +42,11 @@ class OdcPort {
    * @param[in] ctr                  - Controller pointer
    * @param[in] parent_key           - parent key is key_switch
    * @param[in] cache_empty          - PFC_TRUE/ PFC_FALSE
-   * @return drv_resp_code_t         - returns DRVAPI_RESPONSE_SUCCESS on
+   * @return UncRespCode             - returns UNC_RC_SUCCESS on
    *                                   success of read all operation/returns
-   *                                   DRVAPI_RESPONSE_FAILURE on failure
+   *                                   UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t fetch_config(unc::driver::controller* ctr,
+  UncRespCode fetch_config(unc::driver::controller* ctr,
                                key_switch_t *parent_key,
                                const pfc_bool_t cache_empty);
 
@@ -72,12 +72,12 @@ class OdcPort {
    *                                   index  -1 denotes no array
    * @param[out] cfg_node_vector     - vector to which config node needs to be
    *                                   pushed
-   * @return drv_resp_code_t         - returns DRVAPI_RESPONSE_SUCCESS on
+   * @return UncRespCode             - returns UNC_RC_SUCCESS on
    *                                   parsing port and appending to vector
    *                                   successfully/returns
-   *                                   DRVAPI_RESPONSE_FAILURE on failure
+   *                                   UNC_DRV_RC_ERR_GENERIC on failure
    */
-  drv_resp_code_t fill_config_node_vector(
+  UncRespCode fill_config_node_vector(
       unc::driver::controller *ctr_ptr,
       json_object *json_obj_node_prop,
       int arr_idx,
@@ -92,11 +92,11 @@ class OdcPort {
    * @param[out] state_value         - state_value is parsed and its out param
    * @param[out] config_value        - config_value is parsed and its out param
    * @param[out] speed               - speed value is parsed and its out param
-   * @return drv_resp_code_t         - returns
-   *                                    DRVAPI_RESPONSE_SUCCESS/DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode             - returns
+   *                                    UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
 
-  drv_resp_code_t parse_port_properties_value(
+  UncRespCode parse_port_properties_value(
       int arr_idx,
       json_object *json_obj_node_conn,
       std::string &name_value,
@@ -109,10 +109,10 @@ class OdcPort {
    * @param[in]                      - filled config node vector
    * @param[in] switch id            - switch id in string
    * @param[in] cache_empty          - cache_empty pfc_bool_t
-   * @return drv_resp_code_t         - returns DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode             - returns UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
    */
 
-  drv_resp_code_t compare_with_cache(
+  UncRespCode compare_with_cache(
       unc::driver::controller *ctr_ptr,
       std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector,
       const std::string &switch_id, const pfc_bool_t cache_empty);
@@ -140,10 +140,10 @@ class OdcPort {
    * @param[in] ctr_ptr              - controller pointer
    * @param[in] cfg_node             - Config Node pointer
    * @param[out] port_list           - local list maintained for delete contains port id
-   * @return drv_resp_code_t         - return DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode             - return UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
    */
 
-  drv_resp_code_t add_event(unc::driver::controller *ctr_ptr,
+  UncRespCode add_event(unc::driver::controller *ctr_ptr,
                             unc::vtndrvcache::ConfigNode *cfg_node,
                             std::list<std::string> &port_list);
 
@@ -153,9 +153,9 @@ class OdcPort {
    * @param[in] cfg_node             - Config Node pointer
    * @param[in] val_old_port         - old port value structure
    * @param[out] port_list           - local list maintained for delete contains port id
-   * @return drv_resp_code_t         - return DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode             - return UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t update_event(unc::driver::controller *ctr_ptr,
+  UncRespCode update_event(unc::driver::controller *ctr_ptr,
                                unc::vtndrvcache::ConfigNode *cfg_node,
                                val_port_st_t *val_old_port,
                                std::list<std::string> &port_list);
@@ -165,9 +165,9 @@ class OdcPort {
    * @param[in] ctr_ptr              - controller pointer
    * @param[in] switch id            - switch id in string
    * @param[in] port_list            - local list maintained for delete contains port id
-   * @return drv_resp_code_t         - return DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode             - return UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t delete_event(unc::driver::controller *ctr_ptr,
+  UncRespCode delete_event(unc::driver::controller *ctr_ptr,
                                const std::string &switch_id,
                                std::list<std::string> &port_list);
 
@@ -177,9 +177,9 @@ class OdcPort {
    * @param[in] cfgnode_vector       - Config Node vector
    * @param[in] switch id            - switch id in string
    * @param[out] port_list           - local list maintained for delete contains port id
-   * @return drv_resp_code_t         - return DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode             - return UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t verify_in_cache(
+  UncRespCode verify_in_cache(
       unc::driver::controller *ctr_ptr,
       std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector,
       const std::string &switch_id,
@@ -199,9 +199,9 @@ class OdcPort {
    * @param[in] ctr_ptr               - Controller pointer
    * @param[in] data                  - data to be parsed
    * @param[out] cfgnode_vector       - to be filled with the response
-   * return drv_resp_code_t           - return DRVAPI_RESPONSE_SUCCESS/ DRVAPI_RESPONSE_FAILURE
+   * return UncRespCode               - return UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t parse_port_response(
+  UncRespCode parse_port_response(
       unc::driver::controller *ctr_ptr,
       char *data,
       std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
@@ -235,10 +235,10 @@ class OdcPort {
    * @param[in] ctr                   - Controller pointer
    * @param[in]                       - cfg_node_delete_map map which contains
    *                                    config node pointer to be deleted
-   * @return drv_resp_code_t          - return DRVAPI_RESPONSE_SUCCESS/
-   *                                    DRVAPI_RESPONSE_FAILURE
+   * @return UncRespCode              - return UNC_RC_SUCCESS/
+   *                                    UNC_DRV_RC_ERR_GENERIC
    */
-  drv_resp_code_t delete_port(
+  UncRespCode delete_port(
       unc::driver::controller *ctr,
       const std::map<std::string,
       unc::vtndrvcache::ConfigNode *> &cfg_node_delete_map);

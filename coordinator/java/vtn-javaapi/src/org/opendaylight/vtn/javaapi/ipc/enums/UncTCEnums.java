@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -15,30 +15,30 @@ public class UncTCEnums {
 
 	public enum ServiceID {
 
-		TC_CONFIG_SERVICES, 
-		TC_CANDIDATE_SERVICES, 
-		TC_STARTUP_DB_SERVICES, 
-		TC_READ_ACCESS_SERVICES, 
-		TC_AUTO_SAVE_SERVICES, 
+		TC_CONFIG_SERVICES,
+		TC_CANDIDATE_SERVICES,
+		TC_STARTUP_DB_SERVICES,
+		TC_READ_ACCESS_SERVICES,
+		TC_AUTO_SAVE_SERVICES,
 		TC_AUDIT_SERVICES;
 
 	}
 
 	public enum ServiceType {
-		TC_OP_CONFIG_ACQUIRE, 
-		TC_OP_CONFIG_RELEASE, 
-		TC_OP_CONFIG_ACQUIRE_FORCE, 
-		TC_OP_CANDIDATE_COMMIT, 
-		TC_OP_CANDIDATE_ABORT, 
-		TC_OP_RUNNING_SAVE, 
-		TC_OP_CLEAR_STARTUP, 
-		TC_OP_READ_ACQUIRE, 
-		TC_OP_READ_RELEASE, 
-		TC_OP_AUTOSAVE_GET, 
-		TC_OP_AUTOSAVE_ENABLE, 
-		TC_OP_AUTOSAVE_DISABLE, 
-		TC_OP_USER_AUDIT, 
-		TC_OP_DRIVER_AUDIT, 
+		TC_OP_CONFIG_ACQUIRE,
+		TC_OP_CONFIG_RELEASE,
+		TC_OP_CONFIG_ACQUIRE_FORCE,
+		TC_OP_CANDIDATE_COMMIT,
+		TC_OP_CANDIDATE_ABORT,
+		TC_OP_RUNNING_SAVE,
+		TC_OP_CLEAR_STARTUP,
+		TC_OP_READ_ACQUIRE,
+		TC_OP_READ_RELEASE,
+		TC_OP_AUTOSAVE_GET,
+		TC_OP_AUTOSAVE_ENABLE,
+		TC_OP_AUTOSAVE_DISABLE,
+		TC_OP_USER_AUDIT,
+		TC_OP_DRIVER_AUDIT,
 		TC_OP_INVALID
 	}
 
@@ -46,35 +46,35 @@ public class UncTCEnums {
 
 		/* System Fail over */
 
-		TC_OPER_FAILURE(-11, 500, "Operation failure"),
+		TC_OPER_FAILURE(-11, 50000, "Operation failure"),
 
 		/* Invalid Input Values Passed */
 
-		TC_OPER_INVALID_INPUT(-10, 500, "Invalid Input Values Passed"),
+		TC_OPER_INVALID_INPUT(-10, 50000, "Invalid Input Values Passed"),
 
 		TC_OPER_SUCCESS(0, 200, "Success"),
 
-		TC_CONFIG_NOT_PRESENT(1, 404, "Configuration not present"),
+		TC_CONFIG_NOT_PRESENT(100, 50000, "Configuration not present"),
 
-		TC_CONFIG_PRESENT(2, 503, "Service unavailable"),
+		TC_CONFIG_PRESENT(101, 50301, "Server Busy"),
 
-		TC_INVALID_CONFIG_ID(3, 400, "Invalid config id"),
+		TC_INVALID_CONFIG_ID(102, 50000, "Invalid config id"),
 
-		TC_INVALID_OPERATION_TYPE(4, 500, "Invalid operation type"),
+		TC_INVALID_OPERATION_TYPE(103, 50000, "Invalid operation type"),
 
-		TC_INVALID_SESSION_ID(5, 400, "Invalid session id"),
+		TC_INVALID_SESSION_ID(104, 50000, "Invalid session id"),
 
-		TC_INVALID_STATE(6, 503, "Invalid state"),
+		TC_INVALID_STATE(105, 50000, "Invalid state"),
 
-		TC_OPER_ABORT(7, 500, "Operation abort"),
+		TC_OPER_ABORT(106, 50000, "Operation abort"),
 
-		TC_SESSION_ALREADY_ACTIVE(8, 503, "Service unavailable"),
+		TC_SESSION_ALREADY_ACTIVE(107, 50301, "Server Busy"),
 
-		TC_SESSION_NOT_ACTIVE(9, 404, "Session not active"),
+		TC_SESSION_NOT_ACTIVE(108, 50000, "Session not active"),
 
-		TC_SYSTEM_BUSY(10, 503, "System busy"),
+		TC_SYSTEM_BUSY(109, 50301, "Server Busy"),
 
-		TC_SYSTEM_FAILURE(11, 500, "System failure");
+		TC_SYSTEM_FAILURE(110, 50000, "System failure");
 
 		private final String message;
 		private final int code;
@@ -101,28 +101,25 @@ public class UncTCEnums {
 	}
 
 	public enum RequestIndex {
-		TC_REQ_OP_TYPE_INDEX, 
-		TC_REQ_SESSION_ID_INDEX, 
-		TC_REQ_ARG_INDEX
+		TC_REQ_OP_TYPE_INDEX, TC_REQ_SESSION_ID_INDEX, TC_REQ_ARG_INDEX
 	}
 
 	public enum ResponseIndex {
-		TC_RES_OP_TYPE_INDEX, 
-		TC_RES_SESSION_ID_INDEX, 
-		TC_RES_OP_STATUS_INDEX, 
+		TC_RES_OP_TYPE_INDEX,
+		TC_RES_SESSION_ID_INDEX,
+		TC_RES_OP_STATUS_INDEX,
 		TC_RES_VALUE_INDEX;
 	}
 
 	public enum CandidateOperRespIndex {
-		TC_CAND_RES_OP_TYPE_INDEX, 
-		TC_CAND_RES_SESSION_ID_INDEX, 
-		TC_CAND_RES_CONFIG_ID_INDEX, 
+		TC_CAND_RES_OP_TYPE_INDEX,
+		TC_CAND_RES_SESSION_ID_INDEX,
+		TC_CAND_RES_CONFIG_ID_INDEX,
 		TC_CAND_RES_OP_STATUS_INDEX;
 	}
 
 	public enum AutoSave {
-		TC_AUTOSAVE_DISABLED("0"), 
-		TC_AUTOSAVE_ENABLED("1");
+		TC_AUTOSAVE_DISABLED("0"), TC_AUTOSAVE_ENABLED("1");
 
 		private final String value;
 

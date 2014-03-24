@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -47,7 +47,7 @@ pfc_ipcresp_t IPCServerHandler::IpcService(ServerSession &session,
                                            pfc_ipcid_t service_id) {
   if (service_id > 2) {
     pfc_log_error("Fatal Error:Invalid service id");
-    return UPPL_RC_ERR_BAD_REQUEST;
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
   } else {
     PhysicalLayer* physical_layer = PhysicalLayer::get_instance();
     uint32_t err = physical_layer->get_physical_core()->

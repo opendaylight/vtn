@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -118,9 +118,8 @@ public final class AnnotationReflect {
 			return returnKey;
 		}
 		// iterate for each value of KeySet in scanned resource classes
-		//for (final String key : PackageScan.getCachedResources().keySet()) {
 		PackageScan pscan = PackageScan.getInstance();
-		for (final String key: pscan.getAllPaths()) {
+		for (final String key : pscan.getAllPaths()) {
 			if (returnKey != null) {
 				break;
 			}

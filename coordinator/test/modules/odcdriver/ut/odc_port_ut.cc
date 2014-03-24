@@ -43,19 +43,19 @@ TEST(odcdriver_port, test_port_one_add) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
 
   inet_aton(PORT_RESP_ONE.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
 
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.fetch_config(ctr, &key_switch, cache_empty));
 
   inet_aton(PORT_RESP_TWO.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.fetch_config(ctr, &key_switch, cache_empty));
 
   delete ctr->physical_port_cache;
@@ -86,7 +86,7 @@ TEST(odcdriver_port, test_port_null_resp) {
   const pfc_bool_t cache_empty = PFC_FALSE;
   unc::odcdriver::OdcPort obj(conf_file);
 
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
@@ -115,7 +115,7 @@ TEST(odcdriver_port, test_port_invalid_resp) {
   const pfc_bool_t cache_empty = PFC_FALSE;
   unc::odcdriver::OdcPort obj(conf_file);
 
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
@@ -145,7 +145,7 @@ TEST(odcdriver_port, test_port_data_add) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
   key_ctr_t key_ctr_update;
   val_ctr_t val_ctr_update;
@@ -158,7 +158,7 @@ TEST(odcdriver_port, test_port_data_add) {
   ctr->update_ctr(key_ctr_update, val_ctr_update);
 
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.fetch_config(ctr, &key_switch, cache_empty));
 
   int flag = 1;
@@ -203,7 +203,7 @@ TEST(odcdriver_port, test_port_data_add) {
 
   strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
           strlen(switch_id.c_str()));
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.fetch_config(ctr, &key_switch, cache_empty));
 
   delete ctr->physical_port_cache;
@@ -234,7 +234,7 @@ TEST(odcdriver_port, test_port_data_delete) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
   key_ctr_t key_ctr_update;
   val_ctr_t val_ctr_update;
@@ -247,7 +247,7 @@ TEST(odcdriver_port, test_port_data_delete) {
   ctr->update_ctr(key_ctr_update, val_ctr_update);
 
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   int flag = 1;
   std::auto_ptr<unc::vtndrvcache::CommonIterator>
@@ -295,7 +295,7 @@ TEST(odcdriver_port, test_port_data_delete) {
   //  Fills Key Structure
   strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
           strlen(switch_id.c_str()));
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.fetch_config(ctr, &key_switch, cache_empty));
 
   delete ctr->physical_port_cache;
@@ -327,7 +327,7 @@ TEST(odcdriver_port, test_port_data_update) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
   key_ctr_t key_ctr_update;
   val_ctr_t val_ctr_update;
@@ -340,7 +340,7 @@ TEST(odcdriver_port, test_port_data_update) {
   ctr->update_ctr(key_ctr_update, val_ctr_update);
 
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   int flag = 1;
   std::auto_ptr<unc::vtndrvcache::CommonIterator>
@@ -385,7 +385,7 @@ TEST(odcdriver_port, test_port_data_update) {
   inet_aton(SWITCH_RESP.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
 
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
   //  Fills Key Structure
   strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
@@ -394,7 +394,7 @@ TEST(odcdriver_port, test_port_data_update) {
   std::string PORT_RESP_UPDATE  = "172.16.0.24";
   inet_aton(PORT_RESP_UPDATE.c_str(),  &val_ctr_update.ip_address);
   ctr->update_ctr(key_ctr_update, val_ctr_update);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   flag = 1;
 
@@ -466,7 +466,7 @@ TEST(odcdriver_port, test_port_data_update__empty) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
   key_ctr_t key_ctr_update;
   val_ctr_t val_ctr_update;
@@ -479,7 +479,7 @@ TEST(odcdriver_port, test_port_data_update__empty) {
   ctr->update_ctr(key_ctr_update, val_ctr_update);
 
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   int flag = 1;
   std::auto_ptr<unc::vtndrvcache::CommonIterator>
@@ -522,7 +522,7 @@ TEST(odcdriver_port, test_port_data_update__empty) {
   inet_aton(SWITCH_RESP.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
 
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
   //  Fills Key Structure
   strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
@@ -531,7 +531,7 @@ TEST(odcdriver_port, test_port_data_update__empty) {
   std::string  PORT_RESP_EMPTY = "172.16.0.26";
   inet_aton(PORT_RESP_EMPTY.c_str(),  &val_ctr_update.ip_address);
   ctr->update_ctr(key_ctr_update, val_ctr_update);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.fetch_config(ctr, &key_switch, cache_empty));
 
   cfgnode_cache = NULL;
@@ -577,14 +577,14 @@ TEST(odcdriver_port, test_port_resp_one) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
 
   inet_aton(PORT_RESP_ONE.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
 
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.fetch_config(ctr, &key_switch, cache_empty));
 
   int flag = 1;
@@ -649,12 +649,12 @@ TEST(odcdriver_port, test_port_resp_conn_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
   inet_aton(PORT_NODE_CONN_PROP_WRONG.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
@@ -688,12 +688,12 @@ TEST(odcdriver_port, test_port_conn_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
   inet_aton(PORT_NODE_CONN_WRONG.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
@@ -727,12 +727,12 @@ TEST(odcdriver_port, test_port_connwrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
   inet_aton(PORT_NODE_CONN_NODE_WRONG.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
@@ -766,12 +766,12 @@ TEST(odcdriver_port, test_port_conn_type_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
   inet_aton(PORT_NODE_CONN_TYPE_WRONG.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
@@ -805,12 +805,12 @@ TEST(odcdriver_port, test_port_node_id_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
   inet_aton(PORT_NODE_ID_WRONG.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
@@ -845,12 +845,12 @@ TEST(odcdriver_port, test_port_node_conn_id_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
   inet_aton(PORT_NODE_CONN_ID_WRONG.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
@@ -884,12 +884,12 @@ TEST(odcdriver_port, test_port_node_id_SW_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
   inet_aton(PORT_NODE_ID_SW.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
@@ -923,12 +923,12 @@ TEST(odcdriver_port, test_port_node_prop_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
   inet_aton(PORT_NODE_PROP_WRONG.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
@@ -962,12 +962,12 @@ TEST(odcdriver_port, test_port_node_prop_name_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
   inet_aton(PORT_NODE_PROP_NAME_WRONG.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
@@ -1001,12 +1001,12 @@ TEST(odcdriver_port, test_port_node_prop_name_value_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
   inet_aton(PORT_NODE_PROP_NAME_VALUE_WRONG.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
@@ -1040,12 +1040,12 @@ TEST(odcdriver_port, test_port_node_prop_state_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
   inet_aton(PORT_NODE_PROP_STATE_WRONG.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
@@ -1079,12 +1079,12 @@ TEST(odcdriver_port, test_port_node_prop_config_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
   inet_aton(PORT_NODE_PROP_CONFIG_WRONG.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
@@ -1118,12 +1118,12 @@ TEST(odcdriver_port, test_port_node_prop_bandwidth_wrong) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
   inet_aton(PORT_NODE_PROP_BANDWIDTH_WRONG.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
@@ -1158,14 +1158,14 @@ TEST(odcdriver_port, test_port_resp_conf_unknown) {
   ctr->set_connection_status(1);
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
 
   inet_aton(PORT_RESP_ONE.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
 
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   int flag = 1;
   std::auto_ptr<unc::vtndrvcache::CommonIterator>
@@ -1234,14 +1234,14 @@ TEST(odcdriver_port, test_port_resp_parent_sw_NULL) {
   ctr->set_connection_status(1);
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcSwitch obj_sw(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj_sw.fetch_config(ctr, cache_empty));
 
 
   inet_aton(PORT_RESP_ONE.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
 
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(DRVAPI_RESPONSE_FAILURE,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, NULL, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -18,16 +18,15 @@
 #ifndef _IPC_CLIENT_CONFIGURATION_HANDLER_H_
 #define _IPC_CLIENT_CONFIGURATION_HANDLER_H_
 
-
+#include <unc/odcdriver_include.h>
 #include <pfcxx/ipc_client.hh>
 #include <pfcxx/module.hh>
 #include <string>
 #include "unc/uppl_common.h"
 #include "unc/keytype.h"
+#include "phy_util.hh"
 #include "unc/pfcdriver_include.h"
 #include "unc/vnpdriver_include.h"
-#include <unc/odcdriver_include.h>
-#include "phy_util.hh"
 
 using pfc::core::ipc::ClientSession;
 
@@ -42,14 +41,14 @@ namespace uppl {
 
 class IPCClientDriverHandler {
   public:
-    IPCClientDriverHandler(unc_keytype_ctrtype_t type, UpplReturnCode &err);
+    IPCClientDriverHandler(unc_keytype_ctrtype_t type, UncRespCode &err);
     ~IPCClientDriverHandler();
     IPCClientDriverHandler();
     IPCClientDriverHandler(const IPCClientDriverHandler&);
     IPCClientDriverHandler& operator=(const IPCClientDriverHandler&);
     ClientSession* ResetAndGetSession();
-    UpplReturnCode SendReqAndGetResp(driver_response_header &rsp);
-    UpplReturnCode ConvertDriverErrorCode(uint32_t drv_err_code);
+    UncRespCode SendReqAndGetResp(driver_response_header &rsp);
+    UncRespCode ConvertDriverErrorCode(uint32_t drv_err_code);
   private:
     ClientSession *cli_session;
     pfc_ipcconn_t connp;

@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -96,4 +96,4 @@ namespace usess {
 }  // namespace usess
 }  // namespace unc
 
-#endif // _USESS_DEF_HH_
+#endif  // _USESS_DEF_HH_

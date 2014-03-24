@@ -85,12 +85,19 @@ use constant	JSON_C_VERSION		=> '0.10';
 # Define required Java libraries.
 @JAVA_LIBSPEC = ({KEY => 'gson', DESC => 'Google gson',
 		  NAME => 'GOOGLE_GSON', FILEPAT => qr(.*gson.*\.jar$),
-		  FNAME => 'google-gson.jar',
 		  REQUIRED_CLASS => 'com/google/gson/JsonObject.class'},
 		 {KEY => 'org-json', DESC => 'org.json',
 		  NAME => 'ORG_JSON', FILEPAT => qr(.*json.*\.jar$),
-		  FNAME => 'org-json.jar',
-		  REQUIRED_CLASS => 'org/json/JSONObject.class'});
+		  REQUIRED_CLASS => 'org/json/JSONObject.class'},
+		 {KEY => 'postgresql-jdbc', DESC => 'PostgreSQL JDBC driver',
+		  NAME => 'POSTGRESQL_JDBC',
+		  FILEPAT => qr(postgresql-.*-jdbc.*\.jar$),
+		  REQUIRED_CLASS => 'org/postgresql/PGConnection.class'},
+		 {KEY => 'commons-net', DESC => 'Apache Commons Net library',
+		  NAME => 'COMMONS_NET',
+		  FILEPAT => qr(commons-net-.*\.jar$),
+		  REQUIRED_CLASS =>
+			  'org/apache/commons/net/util/SubnetUtils.class'});
 
 # Define required Apache Tomcat libraries.
 @TOMCAT_LIBSPEC = ({NAME => 'TOMCAT_SERVLET_API',
@@ -1410,6 +1417,14 @@ OUT
 		   check => 'checkAbsPath'],
 		  [OPTTYPE_STRING, 'org-json',
 		   "Specify absolute path to org.json Java library.",
+		   arg => OptSpec::OPTARG_FILE, auto => 1, unc => 1,
+		   check => 'checkAbsPath'],
+		  [OPTTYPE_STRING, 'postgresql-jdbc',
+		   "Specify absolute path to PostgreSQL JDBC driver.",
+		   arg => OptSpec::OPTARG_FILE, auto => 1, unc => 1,
+		   check => 'checkAbsPath'],
+		  [OPTTYPE_STRING, 'commons-net',
+		   "Specify absolute path to Apache Commons Net library.",
 		   arg => OptSpec::OPTARG_FILE, auto => 1, unc => 1,
 		   check => 'checkAbsPath'],
 		);
@@ -2898,6 +2913,7 @@ sub check_jar($\%\%$)
 
 	my $vname = $spec->{NAME};
 	$vars->{$vname} = $path;
+	$spec->{FNAME} = basename($path) unless ($spec->{FNAME});
 
 	return undef;
 }

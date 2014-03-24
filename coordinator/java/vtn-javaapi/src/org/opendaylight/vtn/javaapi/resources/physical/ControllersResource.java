@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -56,7 +56,8 @@ public class ControllersResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int post(final JsonObject requestBody) throws VtnServiceException {
+	public final int post(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts ControllersResource#post()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -114,7 +115,8 @@ public class ControllersResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts ControllersResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -144,14 +146,16 @@ public class ControllersResource extends AbstractResource {
 			JsonObject responseJson = responseGenerator.getControllerResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.LIST);
-			if (responseJson.get(VtnServiceJsonConsts.CONTROLLERS).isJsonArray()) {
-				JsonArray responseArray = responseJson.get(
+			if (responseJson.get(VtnServiceJsonConsts.CONTROLLERS)
+					.isJsonArray()) {
+				final JsonArray responseArray = responseJson.get(
 						VtnServiceJsonConsts.CONTROLLERS).getAsJsonArray();
 				responseJson = getResponseJsonArrayPhysical(requestBody,
 						requestProcessor, responseGenerator, responseArray,
 						VtnServiceJsonConsts.CONTROLLERS,
 						VtnServiceJsonConsts.CONTROLLERID,
-						IpcRequestPacketEnum.KT_CONTROLLER_GET, uriParameterList,
+						IpcRequestPacketEnum.KT_CONTROLLER_GET,
+						uriParameterList,
 						VtnServiceIpcConsts.GET_CONTROLLER_RESPONSE);
 			}
 			setInfo(responseJson);

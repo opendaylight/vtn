@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -33,7 +33,8 @@ import org.opendaylight.vtn.javaapi.validation.logical.InterfaceResourceValidato
 /**
  * The Class DhcpRelayInterfaceResource implements delete and get methods.
  */
-@UNCVtnService(path = "/vtns/{vtn_name}/vrouters/{vrt_name}/dhcprelay/interfaces/{if_name}")
+@UNCVtnService(
+		path = "/vtns/{vtn_name}/vrouters/{vrt_name}/dhcprelay/interfaces/{if_name}")
 public class DhcpRelayInterfaceResource extends AbstractResource {
 	/** The vtn name. */
 	@UNCField("vtn_name")
@@ -44,26 +45,31 @@ public class DhcpRelayInterfaceResource extends AbstractResource {
 	/** The if name. */
 	@UNCField("if_name")
 	private String ifName;
+
 	/**
 	 * @return the vtn name
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
+
 	/**
 	 * @return the vrt name
 	 */
-	public String getVrtName() {
+	public final String getVrtName() {
 		return vrtName;
 	}
+
 	/**
 	 * @return the if name
 	 */
-	public String getIfName() {
+	public final String getIfName() {
 		return ifName;
 	}
+
 	private static final Logger LOG = Logger
 			.getLogger(DhcpRelayInterfaceResource.class.getName());
+
 	/**
 	 * Instantiates a new dhcp relay interface resource.
 	 */
@@ -73,6 +79,7 @@ public class DhcpRelayInterfaceResource extends AbstractResource {
 		setValidator(new InterfaceResourceValidator(this));
 		LOG.trace("Complete DhcpRelayInterfaceResource#DhcpRelayInterfaceResource()");
 	}
+
 	/**
 	 * Implementation of delete method of Dhcp Relay Interface
 	 * 
@@ -80,7 +87,7 @@ public class DhcpRelayInterfaceResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Start DhcpRelayInterfaceResource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -128,6 +135,7 @@ public class DhcpRelayInterfaceResource extends AbstractResource {
 		LOG.trace("Complete DhcpRelayInterfaceResource#delete()");
 		return status;
 	}
+
 	/**
 	 * Implementation of get method of Dhcp Relay Interface
 	 * 
@@ -138,7 +146,8 @@ public class DhcpRelayInterfaceResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start DhcpRelayInterfaceResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -159,7 +168,7 @@ public class DhcpRelayInterfaceResource extends AbstractResource {
 			LOG.debug("Request Packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			setInfo(responseGenerator.getDhcpRelayInterfaceResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.SHOW));
@@ -191,12 +200,13 @@ public class DhcpRelayInterfaceResource extends AbstractResource {
 		LOG.trace("Completed DhcpRelayInterfaceResource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 
 	 * @return
 	 */
-	private List<String> getUriParameters() {	
+	private List<String> getUriParameters() {
 		LOG.trace("Start DhcpRelayInterfaceResource#getUriParameters()");
 		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(vtnName);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -33,7 +33,7 @@ public class ConfigModeResourceValidator extends VtnServiceValidator {
 	private final AbstractResource resource;
 
 	/** The validator. */
-	final CommonValidator validator = new CommonValidator();
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new configuration mode resource validator.
@@ -51,7 +51,7 @@ public class ConfigModeResourceValidator extends VtnServiceValidator {
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start ConfigModeResourceValidator#validateUri()");
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.URI
@@ -76,8 +76,9 @@ public class ConfigModeResourceValidator extends VtnServiceValidator {
 	 * Validate request json for Acquire Configuration Mode API
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start ConfigModeResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of ConfigModeResourceValidator");

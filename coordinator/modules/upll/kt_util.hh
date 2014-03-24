@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -173,6 +173,9 @@ class KtUtil {
   static string IpcStructToStr(const pfcdrv_val_flowfilter_entry &data);
   static string IpcStructToStr(const pfcdrv_val_vbrif_policingmap &data);
 
+  /* VlanmapOnBoundary: New val struct */
+  static string IpcStructToStr(const pfcdrv_val_vlan_map &data);
+
   static string Ipv4AddrToStr(struct in_addr address);
   static string Ipv4AddrToStr(uint32_t address);
   static string Ipv6AddrToStr(struct in6_addr address);
@@ -182,6 +185,7 @@ class KtUtil {
 
   static string IpcStructToStr(const vnpdrv_val_vtunnel &data);
   static string IpcStructToStr(const vnpdrv_val_vtunnel_if &data);
+  static string IpcStructToStr(const key_vtn_dataflow &key_vtn_df);
 
  private:
   KtUtil() {}
@@ -193,5 +197,5 @@ class KtUtil {
 }  // namespace ipc_util
 }  // namespace upll
 }  // namespace unc
-                                                                       // NOLINT
+// NOLINT
 #endif  // UPLL_KT_UTIL_HH_

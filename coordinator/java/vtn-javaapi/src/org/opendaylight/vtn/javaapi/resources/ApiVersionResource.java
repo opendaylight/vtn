@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -39,7 +39,7 @@ public class ApiVersionResource extends AbstractResource {
 	 * Implementation of get method of JavaAPI version
 	 */
 	@Override
-	public int get() {
+	public final int get() {
 		LOG.trace("Start ApiVersionResource#get()");
 		int status = UncResultCode.UNC_SERVER_ERROR.getValue();
 		final JsonObject root = new JsonObject();

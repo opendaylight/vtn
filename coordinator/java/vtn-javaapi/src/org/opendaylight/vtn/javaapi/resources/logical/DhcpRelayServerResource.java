@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -33,7 +33,8 @@ import org.opendaylight.vtn.javaapi.validation.logical.DhcpRelayServerResourceVa
 /**
  * The Class DhcpRelayServerResource implements delete and get methods.
  */
-@UNCVtnService(path = "/vtns/{vtn_name}/vrouters/{vrt_name}/dhcprelay/servers/{ipaddr}")
+@UNCVtnService(
+		path = "/vtns/{vtn_name}/vrouters/{vrt_name}/dhcprelay/servers/{ipaddr}")
 public class DhcpRelayServerResource extends AbstractResource {
 	/** The vtn name. */
 	@UNCField("vtn_name")
@@ -46,6 +47,7 @@ public class DhcpRelayServerResource extends AbstractResource {
 	private String ipaddr;
 	private static final Logger LOG = Logger
 			.getLogger(DhcpRelayServerResource.class.getName());
+
 	/**
 	 * Instantiates a new dhcp relay server resource.
 	 */
@@ -55,24 +57,28 @@ public class DhcpRelayServerResource extends AbstractResource {
 		setValidator(new DhcpRelayServerResourceValidator(this));
 		LOG.trace("Complete DhcpRelayServerResource#DhcpRelayServerResource()");
 	}
+
 	/**
 	 * @return the vtnName
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
+
 	/**
 	 * @return the vrtName
 	 */
-	public String getVrtName() {
+	public final String getVrtName() {
 		return vrtName;
 	}
+
 	/**
 	 * @return the ipAddr
 	 */
-	public String getIpaddr() {
+	public final String getIpaddr() {
 		return ipaddr;
 	}
+
 	/**
 	 * Implementation of delete method of Dhcp Relay Server
 	 * 
@@ -80,7 +86,7 @@ public class DhcpRelayServerResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Start DhcpRelayServerResource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -128,6 +134,7 @@ public class DhcpRelayServerResource extends AbstractResource {
 		LOG.trace("Complete DhcpRelayServerResource#delete()");
 		return status;
 	}
+
 	/**
 	 * Implementation of get method of Dhcp Relay Server
 	 * 
@@ -138,7 +145,8 @@ public class DhcpRelayServerResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start DhcpRelayServerResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -160,7 +168,7 @@ public class DhcpRelayServerResource extends AbstractResource {
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
 			LOG.debug("Complete Ipc framework call");
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			setInfo(responseGenerator.getDHCPRelayServerResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.SHOW));
@@ -191,12 +199,13 @@ public class DhcpRelayServerResource extends AbstractResource {
 		LOG.trace("Complete DhcpRelayServerResource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 
 	 * @return
 	 */
-	private List<String> getUriParameters() {		
+	private List<String> getUriParameters() {
 		LOG.trace("Start DhcpRelayServerResource#getUriParameters()");
 		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(vtnName);

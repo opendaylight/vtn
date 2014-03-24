@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -30,7 +30,7 @@ public class VRouterInterfaceResourceValidator extends VtnServiceValidator {
 			.getLogger(VRouterInterfaceResourceValidator.class.getName());
 
 	private final AbstractResource resource;
-	final CommonValidator validator = new CommonValidator();
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new vrouter interface resource validator.
@@ -48,7 +48,7 @@ public class VRouterInterfaceResourceValidator extends VtnServiceValidator {
 	 * @return true, if successful
 	 */
 	@Override
-	public boolean validateUri() {
+	public final boolean validateUri() {
 		LOG.trace("Start VRouterInterfaceResourceValidator#validateUri()");
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.URI
@@ -118,8 +118,9 @@ public class VRouterInterfaceResourceValidator extends VtnServiceValidator {
 	 * VrouterInterface API
 	 */
 	@Override
-	public void validate(final String method, final JsonObject requestBody)
-			throws VtnServiceException {
+	public final void
+			validate(final String method, final JsonObject requestBody)
+					throws VtnServiceException {
 		LOG.trace("Start VRouterInterfaceResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of VRouterInterfaceResourceValidator");
@@ -215,7 +216,6 @@ public class VRouterInterfaceResourceValidator extends VtnServiceValidator {
 	private boolean validatePut(final JsonObject requestBody)
 			throws VtnServiceException {
 		LOG.trace("Start VRouterInterfaceResourceValidator#validatePost()");
-		final CommonValidator validator = new CommonValidator();
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.INTERFACE);
 		if (requestBody.has(VtnServiceJsonConsts.INTERFACE)
@@ -273,12 +273,9 @@ public class VRouterInterfaceResourceValidator extends VtnServiceValidator {
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.PREFIX);
 				if (vRouterInterface.has(VtnServiceJsonConsts.PREFIX)) {
-					isValid = validator.isValidRange(
-							vRouterInterface
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.PREFIX)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.VAL_1,
+					isValid = validator.isValidRange(vRouterInterface
+							.getAsJsonPrimitive(VtnServiceJsonConsts.PREFIX)
+							.getAsString().trim(), VtnServiceJsonConsts.VAL_1,
 							VtnServiceJsonConsts.VAL_30);
 				}
 			}

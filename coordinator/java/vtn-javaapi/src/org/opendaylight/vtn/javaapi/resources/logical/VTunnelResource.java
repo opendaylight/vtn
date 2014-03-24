@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -44,20 +44,24 @@ public class VTunnelResource extends AbstractResource {
 	/** The v tunnel name. */
 	@UNCField("vtunnel_name")
 	private String vTunnelName;
+
 	/**
 	 * @return the vtnName
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
+
 	/**
 	 * @return the vTunnelName
 	 */
-	public String getvTunnelName() {
+	public final String getvTunnelName() {
 		return vTunnelName;
 	}
+
 	private static final Logger LOG = Logger.getLogger(VTunnelResource.class
 			.getName());
+
 	/**
 	 * Instantiates a new v tunnel resource.
 	 */
@@ -67,6 +71,7 @@ public class VTunnelResource extends AbstractResource {
 		setValidator(new VTunnelResourceValidator(this));
 		LOG.trace("Complete VTunnelResource#VTunnelResource()");
 	}
+
 	/**
 	 * Implementation of put method of VTunnels
 	 * 
@@ -77,7 +82,8 @@ public class VTunnelResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 
 		LOG.trace("Start VTunnelResource#put()");
 		ClientSession session = null;
@@ -126,6 +132,7 @@ public class VTunnelResource extends AbstractResource {
 		LOG.trace("Complete VTunnelResource#put()");
 		return status;
 	}
+
 	/**
 	 * Implementation of delete method of VTunnels
 	 * 
@@ -133,7 +140,7 @@ public class VTunnelResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Start VTunnelResource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -182,6 +189,7 @@ public class VTunnelResource extends AbstractResource {
 		LOG.trace("Complete VTunnelResource#delete()");
 		return status;
 	}
+
 	/**
 	 * Implementation of get method of VTunnels
 	 * 
@@ -214,12 +222,12 @@ public class VTunnelResource extends AbstractResource {
 					&& requestBody.get(VtnServiceJsonConsts.TARGETDB)
 							.getAsString()
 							.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
-				IpcStruct valStruct = new IpcStruct(
+				final IpcStruct valStruct = new IpcStruct(
 						UncStructEnum.ValVtunnel.getValue());
 				requestProcessor.getRequestPacket().setValStruct(valStruct);
 				LOG.debug("Add ValVtunnelSt in Request Packet");
-				IpcDataUnit[] extraDataUnits = new IpcDataUnit[1];
-				IpcStruct valStructSt = new IpcStruct(
+				final IpcDataUnit[] extraDataUnits = new IpcDataUnit[1];
+				final IpcStruct valStructSt = new IpcStruct(
 						UncStructEnum.ValVtunnelSt.getValue());
 				extraDataUnits[0] = valStructSt;
 				requestProcessor.getRequestPacket().setExtraDataUnits(
@@ -229,7 +237,7 @@ public class VTunnelResource extends AbstractResource {
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
 			LOG.debug("Complete Ipc framework call");
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			setInfo(responseGenerator.getVTunnelResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.SHOW));
@@ -260,6 +268,7 @@ public class VTunnelResource extends AbstractResource {
 		LOG.trace("Complete VTunnelResource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 
@@ -267,7 +276,7 @@ public class VTunnelResource extends AbstractResource {
 	 */
 	private List<String> getUriParameters() {
 		LOG.trace("Start VTunnelResource#getUriParameters()");
-		List<String> uriParameters = new ArrayList<String>();
+		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(vtnName);
 		uriParameters.add(vTunnelName);
 		LOG.trace("Completed VTunnelResource#getUriParameters()");

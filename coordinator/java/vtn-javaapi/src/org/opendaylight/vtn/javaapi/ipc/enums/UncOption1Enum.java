@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -13,7 +13,7 @@ package org.opendaylight.vtn.javaapi.ipc.enums;
  */
 public enum UncOption1Enum {
 
-	UNC_OPT1_NORMAL,	/* normal */
-	UNC_OPT1_DETAIL,	/* detail */
-	UNC_OPT1_COUNT		/* count */
+	UNC_OPT1_NORMAL, /* normal */
+	UNC_OPT1_DETAIL, /* detail */
+	UNC_OPT1_COUNT /* count */
 }

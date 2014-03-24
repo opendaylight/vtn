@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2013 NEC Corporation
+# Copyright (c) 2012-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -22,8 +22,9 @@ JAVA_IMPL_TITLE         = $(JAVA_SPEC_TITLE)
 # Use PFC-IPC and PFC-Core utility library.
 JAVA_LIBS		= pfc_ipc.jar pfc_util.jar vtn-javaapi.jar
 
-# Use both Google gson and org.json.
-JAVA_EXTLIBS		= $(GOOGLE_GSON) $(ORG_JSON)
+# Define external libraries.
+JAVA_EXTLIBS		= $(GOOGLE_GSON) $(ORG_JSON) $(COMMONS_NET)
+JAVA_EXTLIBS		+= $(POSTGRESQL_JDBC)
 
 # Replace keywords in properties file.
 JAVA_TEXT_FILTERS	= -f UNC_JAVA_LIBDIR '$(INST_JAVADIR)/jar'

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -15,7 +15,7 @@
 namespace unc {
 namespace tc {
 
-#define UNC_AUDIT_OPS_ARG_COUNT 3
+#define UNC_AUDIT_OPS_ARG_COUNT 4
 
 
 TcAuditOperations::TcAuditOperations(TcLock* tc_lock_,
@@ -30,7 +30,8 @@ TcAuditOperations::TcAuditOperations(TcLock* tc_lock_,
       audit_handle_(audit_),
       audit_result_(unc::tclib::TC_AUDIT_FAILURE),
       trans_result_(unc::tclib::TRANS_END_FAILURE),
-      api_audit_(PFC_FALSE) {}
+      api_audit_(PFC_FALSE),
+      force_reconnect_(PFC_FALSE) {}
 
 TcAuditOperations::~TcAuditOperations() {
   if (resp_tc_msg_) {
@@ -116,24 +117,33 @@ TcOperStatus TcAuditOperations::TcValidateOperType() {
  * @brief check for valid Operation Paramaters
  */
 TcOperStatus TcAuditOperations::TcValidateOperParams() {
-  TcUtilRet ret;
+  TcUtilRet ret = TCUTIL_RET_SUCCESS, ret1 = TCUTIL_RET_SUCCESS;
+  uint8_t reconnect = 0;
   if ( tc_oper_ == TC_OP_USER_AUDIT ) {
     ret= TcServerSessionUtils::get_string(ssess_,
                                           TC_REQ_ARG_INDEX,
                                           controller_id_);
+    ret1= TcServerSessionUtils::get_uint8(ssess_,
+                                          TC_REQ_ARG_INDEX+1,
+                                          &reconnect);
   } else {
     ret= TcServerSessionUtils::get_string(ssess_,
                                           TC_REQ_SESSION_ID_INDEX,
                                           controller_id_);
   }
-  if ( ret == TCUTIL_RET_FAILURE ) {
+  if (ret == TCUTIL_RET_FAILURE || ret1 == TCUTIL_RET_FAILURE) {
     return TC_OPER_INVALID_INPUT;
-  } else if ( ret == TCUTIL_RET_FATAL ) {
+  } else if (ret == TCUTIL_RET_FATAL || ret1 == TCUTIL_RET_FATAL) {
     return TC_OPER_FAILURE;
   }
+
   if ( controller_id_.length() == 0 ) {
     return TC_OPER_INVALID_INPUT;
   }
+  /*force-reconnect option*/
+  force_reconnect_ = (pfc_bool_t)reconnect;
+  pfc_log_info("controller %s force_reconnect %d",
+               controller_id_.c_str(), force_reconnect_);
 
   uint8_t read_drv_id = 0;
   if ( tc_oper_ == TC_OP_DRIVER_AUDIT ) {
@@ -249,8 +259,7 @@ pfc_bool_t TcAuditOperations::GetDriverType() {
   driver_id_ = tc_drv_msg->GetResult();
   if ( driver_id_ == UNC_CT_UNKNOWN ) {
     pfc_log_error("Controller of Unknown type");
-    delete tc_drv_msg;
-    tc_drv_msg = NULL;
+    resp_tc_msg_ = tc_drv_msg;
     return PFC_FALSE;
   }
   delete tc_drv_msg;
@@ -414,10 +423,13 @@ TcOperStatus TcAuditOperations::FillTcMsgData(TcMsg* tc_msg,
   if ( oper_type == unc::tclib::MSG_GET_DRIVERID ) {
     tc_msg->SetData(0, controller_id_, UNC_CT_UNKNOWN);
   } else {
-  if ( driver_id_ == UNC_CT_UNKNOWN ) {
-    return TC_OPER_INVALID_INPUT;
-  }
+    if ( driver_id_ == UNC_CT_UNKNOWN ) {
+      return TC_OPER_INVALID_INPUT;
+    }
     tc_msg->SetData(0, controller_id_, driver_id_);
+  }
+  if (oper_type == unc::tclib::MSG_AUDIT_START) {
+    tc_msg->SetReconnect(force_reconnect_);
   }
   if (oper_type == unc::tclib::MSG_AUDIT_TRANS_END) {
     tc_msg->SetTransResult(trans_result_);
@@ -438,7 +450,7 @@ TcOperStatus TcAuditOperations::Execute() {
   }
 
   if ( GetDriverType() == PFC_FALSE ) {
-    return TC_OPER_INVALID_INPUT;
+    return TC_OPER_ABORT;
   }
 
   pfc_log_info("Driver Type %d", driver_id_);
@@ -492,6 +504,8 @@ TcAuditOperations::SendAdditionalResponse(TcOperStatus oper_stat) {
   if ( api_audit_ == PFC_TRUE ) {
     return oper_stat;
   }
+  if (oper_stat != TC_OPER_SUCCESS)
+     audit_result_ = unc::tclib::TC_AUDIT_FAILURE;
   /*Append the status of Audit operation*/
   if (SetAuditOperationStatus() != TC_OPER_SUCCESS) {
         return TC_OPER_FAILURE;

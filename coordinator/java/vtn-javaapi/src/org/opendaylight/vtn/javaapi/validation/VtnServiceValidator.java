@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -8,12 +8,14 @@
  */
 package org.opendaylight.vtn.javaapi.validation;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
+import org.opendaylight.vtn.javaapi.openstack.constants.VtnServiceOpenStackConsts;
 import org.opendaylight.vtn.javaapi.resources.AbstractResource;
 
 /**
@@ -33,7 +35,7 @@ public abstract class VtnServiceValidator {
 	 * @param listOpFlag
 	 *            the new list op flag
 	 */
-	protected void setListOpFlag(final boolean listOpFlag) {
+	protected final void setListOpFlag(final boolean listOpFlag) {
 		this.listOpFlag = listOpFlag;
 	}
 
@@ -42,7 +44,7 @@ public abstract class VtnServiceValidator {
 	 * 
 	 * @return true, if is list op flag
 	 */
-	public boolean isListOpFlag() {
+	public final boolean isListOpFlag() {
 		return listOpFlag;
 	}
 
@@ -52,7 +54,7 @@ public abstract class VtnServiceValidator {
 	 * @param requestBody
 	 *            the request body
 	 */
-	public void updateOpParameterForList(final JsonObject requestBody) {
+	public final void updateOpParameterForList(final JsonObject requestBody) {
 		if (listOpFlag && !requestBody.has(VtnServiceJsonConsts.OP)) {
 			requestBody.addProperty(VtnServiceJsonConsts.OP,
 					VtnServiceJsonConsts.NORMAL);
@@ -64,7 +66,16 @@ public abstract class VtnServiceValidator {
 	 * 
 	 * @return the invalid parameter
 	 */
-	public String getInvalidParameter() {
+	public final String getInvalidParameter() {
+		int colonIndex = invalidParameter.indexOf(VtnServiceConsts.COLON);
+		if (colonIndex > -1
+				&& invalidParameter.substring(colonIndex + 1).length() > VtnServiceOpenStackConsts.MAX_MSG_LEN) {
+			LOG.debug("message length is more than 1024, required to truncate");
+			String firstPart = invalidParameter.substring(0, colonIndex + 1);
+			String secondPart = invalidParameter.substring(colonIndex + 1)
+					.substring(0, VtnServiceOpenStackConsts.MAX_MSG_LEN);
+			invalidParameter = firstPart + secondPart;
+		}
 		return invalidParameter;
 	}
 
@@ -74,7 +85,7 @@ public abstract class VtnServiceValidator {
 	 * @param invalidParameter
 	 *            the new invalid parameter
 	 */
-	public void setInvalidParameter(final String invalidParameter) {
+	public final void setInvalidParameter(final String invalidParameter) {
 		this.invalidParameter = invalidParameter;
 	}
 
@@ -125,7 +136,7 @@ public abstract class VtnServiceValidator {
 	}
 
 	/**
-	 * Default implementation of Validate uri method.
+	 * Default implementation of Validate URI method.
 	 * 
 	 * @return true, if successful
 	 * @throws VtnServiceException
@@ -134,5 +145,88 @@ public abstract class VtnServiceValidator {
 	public boolean validateUri() throws VtnServiceException {
 		LOG.trace("Return from VtnServiceValidator#validate");
 		return true;
+	}
+
+	/**
+	 * Validates the parameters of POST request body
+	 * 
+	 * @param validator
+	 *            - instance for CommonValidator
+	 * @param requestBody
+	 *            - JSON object contains "id" and "description" parameters
+	 * @return - validation status as true or false
+	 */
+	public boolean validatePost(final CommonValidator validator,
+			final JsonObject requestBody) {
+		LOG.trace("Start VtnServiceValidator#validatePost()");
+		boolean isValid = true;
+		// validation of id
+		if (requestBody != null
+				&& requestBody.has(VtnServiceOpenStackConsts.ID)) {
+			final JsonElement id = requestBody
+					.get(VtnServiceOpenStackConsts.ID);
+			if (id.isJsonNull()
+					|| id.getAsString().isEmpty()
+					|| !validator.isValidMaxLengthAlphaNum(id.getAsString(),
+							VtnServiceJsonConsts.LEN_31)) {
+				isValid = false;
+				setInvalidParameter(VtnServiceOpenStackConsts.ID
+						+ VtnServiceConsts.COLON
+						+ (id.isJsonNull() ? id : id.getAsString()));
+			}
+		}
+
+		if (isValid) {
+			isValid = validatePut(validator, requestBody);
+		}
+
+		LOG.trace("Complete VtnServiceValidator#validatePost()");
+		return isValid;
+	}
+
+	/**
+	 * Validates the parameters of PUT request body
+	 * 
+	 * @param validator
+	 *            - instance for CommonValidator
+	 * @param requestBody
+	 *            - JSON object "description" parameter
+	 * @return - validation status as true or false
+	 */
+	public boolean validatePut(final CommonValidator validator,
+			final JsonObject requestBody) {
+		LOG.trace("Start VtnServiceValidator#validatePut()");
+		boolean isValid = true;
+		// validation of description
+		if (requestBody != null
+				&& requestBody.has(VtnServiceOpenStackConsts.DESCRIPTION)) {
+			final JsonElement description = requestBody
+					.get(VtnServiceOpenStackConsts.DESCRIPTION);
+			if (!description.isJsonNull()) {
+				if (hasInvaidDescChars(description.getAsString())
+						|| !validator.isValidMaxLength(
+								description.getAsString(),
+								VtnServiceJsonConsts.LEN_127)) {
+					isValid = false;
+					setInvalidParameter(VtnServiceOpenStackConsts.DESCRIPTION
+							+ VtnServiceConsts.COLON
+							+ description.getAsString());
+				}
+			}
+		}
+		LOG.trace("Complete VtnServiceValidator#validatePut()");
+		return isValid;
+	}
+
+	/**
+	 * Check if description string contains invalid characters or not
+	 * 
+	 * @param description
+	 *            - string that required to validate
+	 * @return - result as true or false
+	 */
+	private boolean hasInvaidDescChars(String description) {
+		return ((description.contains(VtnServiceConsts.QUESTION_MARK)) || (description
+				.contains(VtnServiceConsts.QUOTE_CHAR)));
 	}
 }

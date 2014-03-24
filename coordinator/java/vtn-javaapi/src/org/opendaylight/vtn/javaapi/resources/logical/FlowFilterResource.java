@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -41,27 +41,32 @@ public class FlowFilterResource extends AbstractResource {
 	/** The Vtn name. */
 	@UNCField("vtn_name")
 	private String vtnName;
+
 	/**
 	 * Gets the vtn name.
 	 * 
 	 * @return the vtn name
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
+
 	/** The FlowFilter type. */
 	@UNCField("ff_type")
 	private String ffType;
+
 	/**
 	 * Gets the ff type.
 	 * 
 	 * @return the ff type
 	 */
-	public String getFfType() {
+	public final String getFfType() {
 		return ffType;
 	}
+
 	private static final Logger LOG = Logger.getLogger(FlowFilterResource.class
 			.getName());
+
 	/**
 	 * Instantiates a new flow filter resource.
 	 */
@@ -71,6 +76,7 @@ public class FlowFilterResource extends AbstractResource {
 		setValidator(new FlowFilterResourceValidator(this));
 		LOG.trace("Complete FlowFilterResource#FlowFilterResource()");
 	}
+
 	/**
 	 * Implementation of Delete method of Flow Filter API
 	 * 
@@ -78,7 +84,7 @@ public class FlowFilterResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Starts FlowFilterResource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -137,7 +143,8 @@ public class FlowFilterResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Starts FlowFilterResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -155,7 +162,7 @@ public class FlowFilterResource extends AbstractResource {
 					IpcRequestPacketEnum.KT_VTN_FLOWFILTER_GET, requestBody,
 					getUriParameters());
 			LOG.debug("Request packet created successfully");
-			status=requestProcessor.processIpcRequest();
+			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
 			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			setInfo(responseGenerator.getFlowFilterResponse(
@@ -189,6 +196,7 @@ public class FlowFilterResource extends AbstractResource {
 		LOG.trace("Completed FlowFilterResource#get()");
 		return status;
 	}
+
 	/**
 	 * Add URI parameters to list
 	 * 

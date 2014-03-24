@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -51,7 +51,7 @@ public class VLinkResource extends AbstractResource {
 	 * 
 	 * @return the vtn name
 	 */
-	public String getVtnName() {
+	public final String getVtnName() {
 		return vtnName;
 	}
 
@@ -60,7 +60,7 @@ public class VLinkResource extends AbstractResource {
 	 * 
 	 * @return the vlk name
 	 */
-	public String getVlkName() {
+	public final String getVlkName() {
 		return vlkName;
 	}
 
@@ -89,7 +89,8 @@ public class VLinkResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int put(final JsonObject requestBody) throws VtnServiceException {
+	public final int put(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VLinkResource#put()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -145,7 +146,7 @@ public class VLinkResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public final int delete() throws VtnServiceException {
 		LOG.trace("Start VLinkResource#delete()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -204,7 +205,8 @@ public class VLinkResource extends AbstractResource {
 	 * @throws VtnServiceException
 	 */
 	@Override
-	public int get(final JsonObject requestBody) throws VtnServiceException {
+	public final int get(final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VLinkResource#get()");
 		ClientSession session = null;
 		IpcRequestProcessor requestProcessor = null;
@@ -222,14 +224,14 @@ public class VLinkResource extends AbstractResource {
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_VLINK_GET, requestBody,
 					getUriParameters());
-			IpcStruct valStruct = new IpcStruct(
+			final IpcStruct valStruct = new IpcStruct(
 					UncStructEnum.ValVlink.getValue());
 			requestProcessor.getRequestPacket().setValStruct(valStruct);
 			if (requestBody.get(VtnServiceJsonConsts.TARGETDB).getAsString()
 					.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
 				LOG.debug("Add ValVlinkSt in Request Packet");
-				IpcDataUnit[] extraDataUnits = new IpcDataUnit[1];
-				IpcStruct valStructSt = new IpcStruct(
+				final IpcDataUnit[] extraDataUnits = new IpcDataUnit[1];
+				final IpcStruct valStructSt = new IpcStruct(
 						UncStructEnum.ValVlinkSt.getValue());
 				extraDataUnits[0] = valStructSt;
 				requestProcessor.getRequestPacket().setExtraDataUnits(
@@ -238,7 +240,7 @@ public class VLinkResource extends AbstractResource {
 			LOG.debug("Request packet created successfully");
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
-			IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
+			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();
 			setInfo(responseGenerator.getVLinkResponse(
 					requestProcessor.getIpcResponsePacket(), requestBody,
 					VtnServiceJsonConsts.SHOW));
@@ -276,7 +278,7 @@ public class VLinkResource extends AbstractResource {
 	 * 
 	 * @return parameter list
 	 */
-	private List<String> getUriParameters() {		
+	private List<String> getUriParameters() {
 		LOG.trace("Start VLinkResource#getUriParameters()");
 		final List<String> uriParameters = new ArrayList<String>();
 		uriParameters.add(vtnName);
