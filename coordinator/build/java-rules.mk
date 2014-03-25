@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2013 NEC Corporation
+# Copyright (c) 2012-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -16,19 +16,7 @@ ifndef	UNC_BUILD_JAVA_RULES_MK_INCLUDED
 
 UNC_BUILD_JAVA_RULES_MK_INCLUDED	:= 1
 
-ifeq	($(strip $(JAVA_WEBROOT)),)
-
-ifdef	TOMCAT_SHARED
-
-include $(BLDDIR)/tomcat-defs.mk
-
-DEST_SHLIBDIR		= $(DESTDIR)$(TOMCAT_SHLIBDIR)
-DEST_SHLIBFILES		= $(JAVA_LIBFILE:%=$(DEST_SHLIBDIR)/%)
-JAVA_EXTRA_INSTALL	+= install-tomcat-shlib
-
-endif	# TOMCAT_SHARED
-
-else	# !empty(JAVA_WEBROOT)
+ifneq	($(strip $(JAVA_WEBROOT)),)
 
 include $(BLDDIR)/tomcat-defs.mk
 
@@ -57,31 +45,11 @@ ANT_PROPS		+= pkg.webapp.base=$(DESTDIR)$(TOMCAT_APPDIR)
 # Remove WAR file on "make clean".
 CLEANFILES		+= $(OBJDIR)/$(JAVA_LIBNAME).war
 
-endif	# empty(JAVA_WEBROOT)
+endif	# !empty(JAVA_WEBROOT)
 
 include $(CORE_BLDDIR)/java-rules.mk
 
-ifeq	($(strip $(JAVA_WEBROOT)),)
-
-ifdef	TOMCAT_SHARED
-
-# Install as Tomcat shared library.
-
-include $(BLDDIR)/tomcat-defs.mk
-
-install-tomcat-shlib:	$(DEST_SHLIBFILES)
-
-$(DEST_SHLIBDIR):
-	@echo "=== Installing $@";					\
-	$(INSTALL_DIRS) $@
-
-$(DEST_SHLIBDIR)/%:	$(DEST_SHLIBDIR) FRC
-	@echo "=== Installing $@";					\
-	$(LN_S) ../$(TOMCAT_RJARDIR)/$* $@
-
-endif	# TOMCAT_SHARED
-
-else	# !empty(JAVA_WEBROOT)
+ifneq	($(strip $(JAVA_WEBROOT)),)
 
 # Rules to invoke Apache ant.
 war:	build
@@ -93,6 +61,6 @@ install-webapp:	ANT_TARGET = install-webapp
 install-war:	build
 install-war:	ANT_TARGET = install-war
 
-endif	# empty(JAVA_WEBROOT)
+endif	# !empty(JAVA_WEBROOT)
 
 endif	# !UNC_BUILD_JAVA_RULES_MK_INCLUDED

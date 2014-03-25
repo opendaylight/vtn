@@ -25,9 +25,6 @@ JAVA_LIBS		= pfc_ipc.jar pfc_util.jar
 # Define external libraries.
 JAVA_EXTLIBS		= $(GOOGLE_GSON) $(COMMONS_NET) $(POSTGRESQL_JDBC)
 
-# Install as Tomcat shared library.
-TOMCAT_SHARED		= 1
-
 include ../rules.mk
 
 else	# !JAVA_EXT_MK

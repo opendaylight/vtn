@@ -52,6 +52,8 @@ use constant	JAVA_EXT_MK		=> 'java-ext.mk';
 use constant	JAVA_EXT_MK_VAR		=> 'JAVA_EXT_MK';
 use constant	JAVA_EXT_RULES_MK	=> 'java-ext-rules.mk';
 use constant	JAVA_EXT_RULES_MK_VAR	=> 'JAVA_EXT_RULES_MK';
+use constant	TOMCAT_RULES_MK		=> 'tomcat-rules.mk';
+use constant	TOMCAT_RULES_MK_VAR	=> 'TOMCAT_RULES_MK';
 
 use constant	DEV_NULL		=> '/dev/null';
 use constant	DEFAULT_PATH		=> qw(/usr/bin /bin /usr/sbin /sbin);
@@ -97,25 +99,88 @@ use constant	JSON_C_VERSION		=> '0.10';
 		  NAME => 'COMMONS_NET',
 		  FILEPAT => qr(commons-net-.*\.jar$),
 		  REQUIRED_CLASS =>
-			  'org/apache/commons/net/util/SubnetUtils.class'});
+			  'org/apache/commons/net/util/SubnetUtils.class'},
+		 {KEY => 'log4j', DESC => 'Apache Log4j',
+		  NAME => 'LOG4J', FILEPAT => qr(.*log4j.*\.jar$),
+		  REQUIRED_CLASS => 'org/apache/log4j/Logger.class'});
 
 # Define required Apache Tomcat libraries.
 @TOMCAT_LIBSPEC = ({NAME => 'TOMCAT_SERVLET_API',
-		    FILEPAT => qr(.*servlet-.*api.*\.jar$),
+		    FILEPAT => qr(.*servlet-api.*\.jar$),
 		    FNAME => 'servlet-api.jar',
 		    REQUIRED_CLASS => 'javax/servlet/http/HttpServlet.class'},
 		   {NAME => 'TOMCAT_JSP_API',
 		    FILEPAT => qr(.*jsp-.*api.*\.jar$),
 		    FNAME => 'jsp-api.jar',
 		    REQUIRED_CLASS => 'javax/servlet/jsp/JspPage.class'},
+		   {NAME => 'TOMCAT_ANNOTATIONS_API',
+		    FILEPAT => qr(.*annotations-api.*\.jar$),
+		    FNAME => 'annotations-api.jar',
+		    REQUIRED_CLASS => 'javax/annotation/Resource.class'},
+		   {NAME => 'TOMCAT_EL_API',
+		    FILEPAT => qr(.*el-api.*\.jar$),
+		    FNAME => 'el-api.jar',
+		    REQUIRED_CLASS => 'javax/el/ELContext.class'},
+		   {NAME => 'TOMCAT_API',
+		    FILEPAT => qr(.*tomcat-api.*\.jar$),
+		    FNAME => 'tomcat-api.jar',
+		    REQUIRED_CLASS => 'org/apache/tomcat/JarScanner.class'},
+		   {NAME => 'TOMCAT_UTIL',
+		    FILEPAT => qr(.*tomcat-util.*\.jar$),
+		    FNAME => 'tomcat-util.jar',
+		    REQUIRED_CLASS => 'org/apache/tomcat/util/scan/Jar.class'},
 		   {NAME => 'TOMCAT_CATALINA',
 		    FILEPAT => qr(.*catalina.*\.jar$'),
 		    FNAME => 'catalina.jar',
 		    REQUIRED_CLASS => 'org/apache/catalina/Server.class'},
+		   {NAME => 'TOMCAT_COYOTE',
+		    FILEPAT => qr(.*tomcat-coyote.*\.jar$'),
+		    FNAME => 'tomcat-coyote.jar',
+		    REQUIRED_CLASS =>
+			'org/apache/tomcat/util/digester/Rule.class'},
+		   {NAME => 'TOMCAT_JASPER',
+		    FILEPAT => qr(.*tomcat-jasper.*\.jar$'),
+		    FNAME => 'jasper.jar',
+		    REQUIRED_CLASS =>
+			'org/apache/jasper/compiler/JspRuntimeContext.class'},
+		   {NAME => 'TOMCAT_JASPER_EL',
+		    FILEPAT => qr(.*tomcat-jasper-el.*\.jar$'),
+		    FNAME => 'jasper-el.jar',
+		    REQUIRED_CLASS =>
+			'org/apache/el/MethodExpressionImpl.class'},
+		   {NAME => 'TOMCAT_I18N_ES',
+		    FILEPAT => qr(.*tomcat-.*i18n-es.*\.jar$),
+		    FNAME => 'tomcat-i18n-es.jar',
+		    REQUIRED_CLASS =>
+			'javax/servlet/LocalStrings_es.properties'},
+		   {NAME => 'TOMCAT_I18N_FR',
+		    FILEPAT => qr(.*tomcat-.*i18n-fr.*\.jar$),
+		    FNAME => 'tomcat-i18n-fr.jar',
+		    REQUIRED_CLASS =>
+			'javax/servlet/LocalStrings_fr.properties'},
+		   {NAME => 'TOMCAT_I18N_JA',
+		    FILEPAT => qr(.*tomcat-.*i18n-ja.*\.jar$),
+		    FNAME => 'tomcat-i18n-ja.jar',
+		    REQUIRED_CLASS =>
+			'javax/servlet/LocalStrings_ja.properties'},
 		   {NAME => 'TOMCAT_JULI',
 		    FILEPAT => qr(.*tomcat-.*juli.*\.jar$),
+		    DESC => 'extras:tomcat-juli.jar',
 		    FNAME => 'tomcat-juli.jar',
-		    REQUIRED_CLASS => 'org/apache/juli/logging/Log.class'});
+		    BOOTSTRAP => 1,
+		    REQUIRED_CLASS =>
+			'org/apache/juli/logging/LogSource.class'},
+		   {NAME => 'TOMCAT_JULI_ADAPTERS',
+		    FILEPAT => qr(.*tomcat-.*juli-adapters.*\.jar$),
+		    DESC => 'extras:tomcat-juli-adapters.jar',
+		    FNAME => 'tomcat-juli-adapters.jar',
+		    REQUIRED_CLASS =>
+			'org/apache/juli/logging/impl/Log4JLogger.class'},
+		   {NAME => 'ECJ',
+		    FILEPAT => qr(.*ecj-.*\.jar$),
+		    DESC => 'ecj.jar',
+		    REQUIRED_CLASS => 
+			'org/eclipse/jdt/core/JDTCompilerAdapter.class'});
 
 # Build identifiers.
 @BUILD_ID_SPEC = ({DESC => 'Package build ID', MAPKEY => 'BUILD_ID',
@@ -1425,6 +1490,10 @@ OUT
 		   check => 'checkAbsPath'],
 		  [OPTTYPE_STRING, 'commons-net',
 		   "Specify absolute path to Apache Commons Net library.",
+		   arg => OptSpec::OPTARG_FILE, auto => 1, unc => 1,
+		   check => 'checkAbsPath'],
+		  [OPTTYPE_STRING, 'log4j',
+		   "Specify absolute path to Apache Log4j Java library.",
 		   arg => OptSpec::OPTARG_FILE, auto => 1, unc => 1,
 		   check => 'checkAbsPath'],
 		);
@@ -2847,6 +2916,7 @@ sub check_webapi_env($\%\%)
 	my $objdir = $vars->{OBJROOT};
 	$vars->{JAVA_EXT_MK_VAR()} = $objdir. '/' . JAVA_EXT_MK;
 	$vars->{JAVA_EXT_RULES_MK_VAR()} = $objdir . '/' . JAVA_EXT_RULES_MK;
+	$vars->{TOMCAT_RULES_MK_VAR()} = $objdir . '/' . TOMCAT_RULES_MK;
 
 	return \%wenv;
 }
@@ -2949,20 +3019,21 @@ sub check_tomcat_libdir($\%\%)
 	my $jar = $jenv->{JAVA_HOME} . '/bin/jar';
 
 	foreach my $spec (@TOMCAT_LIBSPEC) {
-		my $fname = $spec->{FNAME};
-		checking("for Apache Tomcat library: $fname");
+		my $desc = $spec->{DESC} || $spec->{FNAME};
+		checking("for Apache Tomcat library: $desc");
 
 		my $path = check_tomcat_libfile(@$dirs, $jar, $spec);
 		unless ($path) {
 			print "no\n";
 
-			return "$fname was not found.";
+			return "$desc was not found.";
 		}
 
 		print $path, "\n";
 
 		my $vname = $spec->{NAME};
 		$vars->{$vname} = $path;
+		$spec->{FNAME} = basename($path) unless ($spec->{FNAME});
 	}
 
 	return undef;
@@ -3204,10 +3275,14 @@ DEST_EXTJARDIR	= $(DESTDIR)$(INST_EXTJARDIR)
 
 OUT
 
-	my (@names);
+	my (@names, @extlibs);
 	foreach my $spec (@JAVA_LIBSPEC, @TOMCAT_LIBSPEC) {
 		my $name = $spec->{NAME};
-		push(@names, '$(' . $name . ')') if ($spec->{KEY});
+		if ($spec->{KEY}) {
+			my $n = '$(' . $name . ')';
+			push(@names, $n);
+			push(@extlibs, $n) unless ($name eq 'LOG4J');
+		}
 		my $fname = $spec->{FNAME};
 		my $jarfile = $wenv->{$name};
 		my $jname = $name . '_JAR';
@@ -3217,15 +3292,29 @@ $jname		:= $jarfile
 OUT
 	}
 
+	my (@libs, @bootlibs);
+	foreach my $spec (@TOMCAT_LIBSPEC) {
+		my $name = '$(' . $spec->{NAME} . ')';
+		if ($spec->{BOOTSTRAP}) {
+			push(@bootlibs, $name);
+		}
+		else {
+			push(@libs, $name);
+		}
+	}
+
 	my $extnames = join(' ', @names);
+	my $tomcat_extlibs = join(' ', @extlibs);
+	my $tomcat_libs = join(' ', @libs);
+	my $tomcat_bootlibs = join(' ', @bootlibs);
+
 	$fh->print(<<OUT);
 
 JAVA_EXT_LIBS	:= $extnames
 
-OUT
-
-	$fh->print(<<OUT);
-
+TOMCAT_LIBS	:= $tomcat_libs
+TOMCAT_BOOTLIBS	:= $tomcat_bootlibs
+TOMCAT_EXT_LIBS	:= $tomcat_extlibs
 endif	# !UNC_JAVA_EX_MK_INCLUDED
 OUT
 
@@ -3243,23 +3332,6 @@ ifndef	UNC_JAVA_EXT_RULES_MK_INCLUDED
 
 UNC_JAVA_EXT_RULES_MK_INCLUDED	:= 1
 
-ifdef	JAREXT_SYMLINK
-OUT
-
-	foreach my $spec (@JAVA_LIBSPEC) {
-		my $name = $spec->{NAME};
-		my $jname = $name . '_JAR';
-		$fh->print(<<OUT);
-
-\$(DEST_EXTDIR)/\$($name):	\$(DEST_EXTDIR) \$($jname)
-	\@echo "=== Installing \$\@";					\\
-	\$(LN_S) \$(JAREXT_SYMLINK)/\$($name) \$\@
-OUT
-	}
-
-	$fh->print(<<'OUT');
-
-else	# !JAREXT_SYMLINK
 OUT
 
 	foreach my $spec (@JAVA_LIBSPEC) {
@@ -3275,13 +3347,45 @@ OUT
 
 	$fh->print(<<'OUT');
 
-endif	# JAREXT_SYMLINK
-
 $(DEST_EXTDIR):
 	@echo "=== Installing $@";					\
 	$(INSTALL_DIRS) $@
 
 endif	# !UNC_JAVA_EXT_RULES_MK_INCLUDED
+OUT
+
+	$path = $vars->{TOMCAT_RULES_MK_VAR()};
+	print "== creating $path\n";
+	$fh = FileHandle->new($path,  O_CREAT|O_TRUNC|O_WRONLY, 0644) or
+		fatal("open($path) failed: $!");
+
+	$fh->print(<<'OUT');
+##
+## Define rules to install Tomcat libraries.
+##
+
+ifndef	UNC_TOMCAT_RULES_MK_INCLUDED
+
+UNC_TOMCAT_RULES_MK_INCLUDED	:= 1
+
+OUT
+
+	foreach my $spec (@TOMCAT_LIBSPEC) {
+		my $name = $spec->{NAME};
+		my $jname = $name . '_JAR';
+		my $dst = ($spec->{BOOTSTRAP})
+			? 'DEST_BINDIR' : 'DEST_LIBDIR';
+		$fh->print(<<OUT);
+
+\$($dst)/\$($name):	\$($dst) FRC
+	\@echo "=== Installing \$\@";					\\
+	\$(INSTALL_FILES) \$($jname) \$\@
+OUT
+	}
+
+	$fh->print(<<'OUT');
+
+endif	# !UNC_TOMCAT_RULES_MK_INCLUDED
 OUT
 }
 

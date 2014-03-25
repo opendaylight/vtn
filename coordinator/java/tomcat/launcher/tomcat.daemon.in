@@ -1,0 +1,70 @@
+#
+# Copyright (c) 2014 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+##
+## UNC daemon configuration file for Apache Tomcat server.
+##
+
+#
+# Daemon process attributes.
+#
+daemon
+{
+	# A brief description of the daemon.
+	description	= "Apache Tomcat server";
+
+	# The key of "command" map associated with the daemon command.
+	command		= "tomcat";
+
+	# Determine order of the daemon start.
+	# Daemons are started in ascending order of "start_order".
+	start_order	= 1300;
+
+	# Signal name to use when the launcher stops the daemon.
+	# This parameter is ignored if "stop" parameter is defined.
+	# Default is "TERM", which represents SIGTERM.
+	#stop_signal	= "TERM";
+
+	# How long, in milliseconds, the launcher should wait for the daemon
+	# to be stopped after executing "stop" command or sending "stop_signal"
+	# signal. Default is 10000 milliseconds.
+	#stop_timeout	= 10000;
+
+	# Determine order of the daemon stop.
+	# Daemons are stopped in ascending order of "stop_order".
+	# Note that the value of "stop_order" affects the timing when to
+	# stop the daemon.
+	#   - If the value is less than 1000, the daemon is always stopped
+	#     before modules in uncd, except for launcher and clstat.
+	#   - If the value is greater than or equal 1000, the daemon is
+	#     always stopped after modules in uncd, except for launcher and
+	#     clstat.
+	stop_order	= 700;
+
+	# Maximum number of stderr log file rotation.
+	# Log file rotation is disabled if zero is specified.
+	# stderr logging is disabled if a negative value is specified.
+	# Default is 10.
+	#stderr_rotate	= 10;
+}
+
+#
+# Command to be executed.
+#
+
+# Apache Tomcat server.
+command "tomcat"
+{
+	# Path to an executable file for the command.
+	# It is recommended to specify an absolute path.
+	path		= "%TOMCAT_BINDIR%/tomcat";
+
+	# Command line arguments, excluding argv[0].
+	args		= ["start"];
+}

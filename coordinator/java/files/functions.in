@@ -1,0 +1,67 @@
+#
+# Copyright (c) 2014 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+##
+## Libraries for shell scripts which use Java.
+##
+
+# Import global configuration if exists.
+if [ -r %INST_SYSCONFDIR%/java.conf ]; then
+    . %INST_SYSCONFDIR%/java.conf
+fi
+
+##
+## Detect JRE location and set it to JRE_HOME environment variable.
+## Note that this function may set JDK location to JAVA_HOME environment
+## variable if it is not set.
+##
+vtn_set_jre_home()
+{
+    if [ -n "$JRE_HOME" -a -x "$JRE_HOME/bin/java" ]; then
+        export JRE_HOME
+        return
+    fi
+
+    if [ -z "$JAVA_HOME" ]; then
+        # Try to use RedHat system configuration.
+        _funcs=/usr/share/java-utils/java-functions
+        if [ -r $_funcs ]; then
+            . $_funcs
+            set_jvm
+        else
+            _java=`which java 2>/dev/null || :`
+            if [ -n "$_java" ]; then
+                [ -h "$_java" ] && _java=`readlink -f $_java` 
+                _java=`dirname $_java`
+                JAVA_HOME=`dirname $_java`
+            else
+                # Try standard locations.
+                for d in /usr /usr/java /usr/local /usr/local/java; do
+                    _java="$d/bin/java"
+                    if [ -x $java ]; then
+                        JAVA_HOME=$d
+                        break
+                    fi
+                done
+            fi
+        fi
+
+        if [ -z "$JAVA_HOME" ]; then
+            echo "*** ERROR: Failed to determine Java location." >&2
+            exit 1
+        fi
+    fi
+
+    if [ -x "$JAVA_HOME/jre/bin/java" ]; then
+        JRE_HOME="$JAVA_HOME/jre"
+    else
+        JRE_HOME=$JAVA_HOME
+    fi
+    export JRE_HOME
+}

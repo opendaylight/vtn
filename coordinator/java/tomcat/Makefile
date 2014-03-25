@@ -11,65 +11,18 @@
 ## Makefile that installs Apache Tomcat binary distribution.
 ##
 
-NEED_OBJDIR	:= 1
-
 include ../../build/config.mk
 
 ifdef	JAVA_EXT_MK
 
-include $(JAVA_CONFIG_MK)
-include $(JAVA_EXT_MK)
-include $(BLDDIR)/tomcat-defs.mk
+SUBDIRS		= bootstrap conf ext launcher lib unc-addon
 
-SUBDIRS		= unc-addon
-
-# Install common libraries to TOMCAT_LIBDIR.
-DEST_LIBDIR	= $(DESTDIR)$(TOMCAT_LIBDIR)
-COMMON_LIBS	= pfc_util.jar pfc_ipc.jar
-DEST_LIBFILES	= $(COMMON_LIBS:%=$(DEST_LIBDIR)/%)
-
-# Install shared libraries to TOMCAT_SHLIBDIR.
-DEST_SHLIBDIR	= $(DESTDIR)$(TOMCAT_SHLIBDIR)
-DEST_EXTDIR	= $(DEST_SHLIBDIR)
-DEST_SHLIBFILES	= $(JAVA_EXT_LIBS:%=$(DEST_SHLIBDIR)/%)
-JAREXT_SYMLINK	= ../$(TOMCAT_RJARDIR)/ext
-
-all:	all-subdirs
-
-install:	install-lib install-shlib
-	$(MAKE) install-subdirs
-
-# Install JAR file links to TOMCAT_LIBDIR.
-install-lib:	$(DEST_LIBFILES)
-
-$(DEST_LIBDIR):
-	@echo "=== Installing $@";					\
-	$(INSTALL_DIRS) $@
-
-$(DEST_LIBDIR)/%:	$(DEST_LIBDIR) FRC
-	@echo "=== Installing $@";					\
-	$(LN_S) $(TOMCAT_RJARDIR)/$* $@
-
-# Install JAR file links to TOMCAT_SHLIBDIR.
-install-shlib:	$(DEST_SHLIBFILES)
-
-# Build sub directories.
-$(SUBDIRS):	FRC
-	$(MAKE) -C $@ $(SUBDIR_TARGET)
-
-all-subdirs install-subdirs clean-subdirs:	$(SUBDIRS)
-
-all-subdirs:		SUBDIR_TARGET = all
-install-subdirs:	SUBDIR_TARGET = install
-clean-subdirs:		SUBDIR_TARGET = clean
-
-include $(BLDDIR)/rules.mk
-include $(JAVA_EXT_RULES_MK)
+include $(CORE_BLDDIR)/subdirs.mk
 
 else	# !JAVA_EXT_MK
 
-all install clean clobber doc:
+all install clean clobber:
 
-.PHONY:	all install clean clobber doc
+.PHONY:	all install clean clobber
 
 endif	# JAVA_EXT_MK

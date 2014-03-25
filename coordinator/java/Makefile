@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2013 NEC Corporation
+# Copyright (c) 2012-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -21,15 +21,18 @@ EXTDIR		= ext
 # Name of the sub directory which installs Apache Tomcat binary distribution.
 TOMCAT_DIR	= tomcat
 
+# Name of the sub directory which installs system files.
+FILES_DIR	= files
+
 # Regular expression to eliminate sub directories from JAVA_SUBDIRS.
-PAT_EXCLUDES	= '^($(EXTDIR)|$(TOMCAT_DIR))$$'
+PAT_EXCLUDES	= '^($(EXTDIR)|$(TOMCAT_DIR)|$(FILES_DIR))$$'
 
 # Collect sub directories which contain Makefile.
 # Note that the JAR file name without ".jar" suffix must be the directory name.
 JAVA_SUBDIRS	:= $(shell $(LISTFILE) -mc '^Makefile$$' -e $(PAT_EXCLUDES) .)
 $(eval $(call LISTFILE_ASSERT,$(JAVA_SUBDIRS)))
 
-SUBDIRS		= $(EXTDIR) $(TOMCAT_DIR) $(JAVA_SUBDIRS)
+SUBDIRS		= $(EXTDIR) $(TOMCAT_DIR) $(FILES_DIR) $(JAVA_SUBDIRS)
 
 include $(CORE_BLDDIR)/subdirs.mk
 

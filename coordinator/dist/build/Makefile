@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013 NEC Corporation
+# Copyright (c) 2013-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -27,7 +27,6 @@ OBJDIR		= $(TARGETDIR)/objs
 DESTROOT	= $(TARGETDIR)/$(VTN_DESTDIR)
 
 JAVA_LIBDIR	= $(TARGETDIR)/java
-TOMCAT_LIBDIR	= $(TARGETDIR)/tomcat
 
 VERSION_FILE	= $(TARGETDIR)/VERSION
 CONFIGURE	= $(SRCDIR)/configure
@@ -39,7 +38,7 @@ CONFIGURE_ARGS	+= --with-version-file=$(VERSION_FILE)
 CONFIGURE_ARGS	+= --with-objdir=$(OBJDIR)
 CONFIGURE_ARGS	+= --includedir=none
 CONFIGURE_ARGS	+= --with-java-libdir=$(JAVA_LIBDIR)
-CONFIGURE_ARGS	+= --with-tomcat-libdir=$(TOMCAT_LIBDIR)
+CONFIGURE_ARGS	+= --with-tomcat-libdir=$(JAVA_LIBDIR)
 
 # Determine JAVA_HOME.
 STRIP_VTN_JAVA_HOME	:= $(strip $(VTN_JAVA_HOME))

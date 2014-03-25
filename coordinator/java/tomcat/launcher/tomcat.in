@@ -1,0 +1,99 @@
+#!%SHELL_PATH%
+
+#
+# Copyright (c) 2014 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+##
+## Shell script to launch the Apache Tomcat server.
+##
+
+umask 022
+
+# Import runtime environment.
+TOMCAT_ENV=%TOMCAT_ROOT%/conf/tomcat-env.sh
+[ -r $TOMCAT_ENV ] && . $TOMCAT_ENV
+
+if [ -z "$JRE_HOME" -o ! -x "$JRE_HOME/bin/java" ]; then
+    # Determine JRE location.
+    JAVA_FUNCTIONS=%INST_DATADIR%/java/functions
+    if [ -r $JAVA_FUNCTIONS ]; then
+        . $JAVA_FUNCTIONS
+        vtn_set_jre_home
+    fi
+fi
+
+TOMCAT_PORT=${TOMCAT_PORT:-8083}
+
+# Define system directory path.
+TOMCAT_ROOT=%TOMCAT_ROOT%
+TOMCAT_BINDIR=$TOMCAT_ROOT/bin
+TOMCAT_LOGDIR=${TOMCAT_LOGDIR:-%TOMCAT_VARDIR%/log}
+TOMCAT_TMPDIR=${TOMCAT_TMPDIR:-%TOMCAT_VARDIR%/tmp}
+TOMCAT_WORKDIR=${TOMCAT_WORKDIR:-%TOMCAT_VARDIR%/work}
+VTN_JAVADIR=%INST_JAVADIR%/jar
+JAVA_ENDORSED_DIRS=${JAVA_ENDORSED_DIRS:-%TOMCAT_ROOT%/endorsed}
+
+case "$1" in
+    start|configtest)
+        ARGUMENT=$1
+        ;;
+
+    version)
+        eval exec $JRE_HOME/bin/java -classpath $TOMCAT_ROOT/lib/catalina.jar \
+          org.apache.catalina.util.ServerInfo
+        ;;
+
+    *)
+        echo "*** Usage: tomcat {start|configtest|version}" >&2
+        exit 1
+        ;;
+esac
+
+# Prepare system directories.
+for dir in $TOMCAT_TMPDIR $TOMCAT_LOGDIR $TOMCAT_WORKDIR; do
+    if [ ! -d $dir ]; then
+        mkdir -p $dir
+        if [ $? -ne 0 ]; then
+            echo "*** Failed to create temporary directory." >&2
+            exit 1
+        fi
+    fi
+done
+
+chmod 0700 $TOMCAT_LOGDIR
+if [ $? -ne 0 ]; then
+    echo "*** Failed to change permission for log directory." >&2
+    exit 1
+fi
+
+# Construct class path.
+if [ -n "$CLASSPATH" ]; then
+    CLASSPATH="$CLASSPATH":
+fi
+
+CLASSPATH="$CLASSPATH""$TOMCAT_BINDIR/bootstrap.jar"
+CLASSPATH="$CLASSPATH":"$TOMCAT_BINDIR/tomcat-juli.jar"
+
+# Bootstrap class name.
+BOOTSTRAP=org.apache.catalina.startup.Bootstrap
+
+# Define properties to be passed to Tomcat.
+TOMCAT_PROPS="-Djava.endorsed.dirs=\"$JAVA_ENDORSED_DIRS\""
+TOMCAT_PROPS="$TOMCAT_PROPS -Djava.io.tmpdir=\"$TOMCAT_TMPDIR\""
+TOMCAT_PROPS="$TOMCAT_PROPS -Dcatalina.base=\"$TOMCAT_ROOT\""
+TOMCAT_PROPS="$TOMCAT_PROPS -Dcatalina.home=\"$TOMCAT_ROOT\""
+TOMCAT_PROPS="$TOMCAT_PROPS -Dvtn.logdir=\"$TOMCAT_LOGDIR\""
+TOMCAT_PROPS="$TOMCAT_PROPS -Dvtn.workdir=\"$TOMCAT_WORKDIR\""
+TOMCAT_PROPS="$TOMCAT_PROPS -Dvtn.logger.jar=\"%LOG4J%\""
+TOMCAT_PROPS="$TOMCAT_PROPS -Dvtn.java.libdir=\"$VTN_JAVADIR\""
+TOMCAT_PROPS="$TOMCAT_PROPS -Dvtn.port=\"$TOMCAT_PORT\""
+
+# Run Tomcat server.
+eval exec $JRE_HOME/bin/java $JAVA_OPTS $TOMCAT_OPTS $TOMCAT_PROPS      \
+  -classpath "$CLASSPATH" $BOOTSTRAP $ARGUMENT 1>&2

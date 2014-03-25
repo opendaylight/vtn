@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -448,8 +448,8 @@ class GlobalResourceManager implements LogFatalHandler
 	 */
 	private String getLogBaseDirectory()
 	{
-		// Try "unc.log.dir" property first.
-		String base = System.getProperty("unc.log.dir");
+		// Try "vtn.logdir" property first.
+		String base = System.getProperty("vtn.logdir");
 		if (base != null) {
 			return base;
 		}

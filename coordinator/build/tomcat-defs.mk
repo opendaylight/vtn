@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2013 NEC Corporation
+# Copyright (c) 2012-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -20,18 +20,17 @@ ifdef	JAVA_EXT_MK
 # Root directory of Tomcat binary distribution.
 TOMCAT_ROOT	= $(PREFIX)/tomcat
 
-# Tomcat library directories.
+# Sub directories in TOMCAT_ROOT.
 TOMCAT_LIBDIR	= $(TOMCAT_ROOT)/lib
 TOMCAT_SHLIBDIR	= $(TOMCAT_ROOT)/shared/lib
+TOMCAT_BINDIR	= $(TOMCAT_ROOT)/bin
+TOMCAT_CONFDIR	= $(TOMCAT_ROOT)/conf
 
 # Application base directory.
 TOMCAT_APPDIR	= $(TOMCAT_ROOT)/webapps
 
 # Name of JAR files which provides Tomcat APIs.
 TOMCAT_JARFILES	= $(TOMCAT_SERVLET_API_JAR) $(TOMCAT_JSP_API_JAR)
-
-# Relative path from TOMCAT_LIBDIR to INST_JARDIR.
-TOMCAT_RJARDIR	= ../../lib/java/jar
 
 endif	# JAVA_EXT_MK
 

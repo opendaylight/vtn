@@ -56,7 +56,6 @@ daemon
 	# process when it starts the daemon process.
 	#
 	# Note that this parameter affects only initial bootstrap.
-	# This parameter will be ignored when a daemon process is respawned.
 	start_wait	= true;
 
 	# How long, in milliseconds, the launcher should wait for an IPC
@@ -95,26 +94,6 @@ daemon
 	#     always stopped after modules in uncd, except for launcher and
 	#     clstat.
 	stop_order	= %STOP_ORDER%;
-
-	# The maximum number of times to restart the daemon when it is
-	# terminated unexpectedly.
-	# If this value is not zero, the launcher tries to respawn the daemon
-	# process when it is terminated. If the number of respawn exceeds
-	# this value, the launcher exits abnormally.
-	# If this value is zero, which is the default, the launcher process
-	# considers that the daemon process is mandatory. So it exits
-	# abnormally when the daemon is terminated.
-	#respawn_limit	= 0;
-
-	# The minimum lifetime of the daemon process in milliseconds.
-	# This parameter only affects the daemon which defines "respawn"
-	# parameter as non-zero value.
-	# If the daemon is terminated unexpectedly and it is the first time,
-	# the launcher tries to respawn the daemon unconditionally.
-	# And then the daemon is terminated again within this milliseconds,
-	# the launcher never respawns the daemon and exits abnormally.
-	# Default is 10000 milliseconds.
-	#min_lifetime	= 10000;
 
 	# Maximum number of stderr log file rotation.
 	# Log file rotation is disabled if zero is specified.

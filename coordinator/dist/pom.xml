@@ -66,9 +66,9 @@
     <maven.test.skip>false</maven.test.skip>
 
     <vtn.java.libdir>${basedir}/target/java</vtn.java.libdir>
-    <vtn.tomcat.libdir>${basedir}/target/tomcat</vtn.tomcat.libdir>
     <vtn.gson.version>2.2.2</vtn.gson.version>
     <vtn.json.version>20090211</vtn.json.version>
+    <vtn.log4j.version>1.2.17</vtn.log4j.version>
     <vtn.tomcat.version>7.0.39</vtn.tomcat.version>
     <vtn.commons.net.version>3.3</vtn.commons.net.version>
     <vtn.postgresql.jdbc.version>9.2-1003-jdbc4</vtn.postgresql.jdbc.version>
@@ -126,73 +126,16 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <version>${dependency.version}</version>
         <executions>
+          <!-- Copy java libraries. -->
           <execution>
             <id>setup-java-libs</id>
             <phase>initialize</phase>
             <goals>
-              <goal>copy</goal>
+              <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <!-- Copy java libraries -->
-              <artifactItems>
-                <artifactItem>
-                  <groupId>com.google.code.gson</groupId>
-                  <artifactId>gson</artifactId>
-                  <version>${vtn.gson.version}</version>
-                  <outputDirectory>${vtn.java.libdir}</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.json</groupId>
-                  <artifactId>json</artifactId>
-                  <version>${vtn.json.version}</version>
-                  <outputDirectory>${vtn.java.libdir}</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>junit</groupId>
-                  <artifactId>junit</artifactId>
-                  <version>${junit.version}</version>
-                  <outputDirectory>${vtn.java.libdir}</outputDirectory>
-                </artifactItem>
-
-                <artifactItem>
-                  <groupId>commons-net</groupId>
-                  <artifactId>commons-net</artifactId>
-                  <version>${vtn.commons.net.version}</version>
-                  <outputDirectory>${vtn.java.libdir}</outputDirectory>
-                </artifactItem>
-
-                <artifactItem>
-                  <groupId>org.postgresql</groupId>
-                  <artifactId>postgresql</artifactId>
-                  <version>${vtn.postgresql.jdbc.version}</version>
-                  <outputDirectory>${vtn.java.libdir}</outputDirectory>
-                </artifactItem>
-
-                <artifactItem>
-                  <groupId>org.apache.tomcat</groupId>
-                  <artifactId>tomcat-catalina</artifactId>
-                  <version>${vtn.tomcat.version}</version>
-                  <outputDirectory>${vtn.tomcat.libdir}</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.apache.tomcat</groupId>
-                  <artifactId>tomcat-servlet-api</artifactId>
-                  <version>${vtn.tomcat.version}</version>
-                  <outputDirectory>${vtn.tomcat.libdir}</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.apache.tomcat</groupId>
-                  <artifactId>tomcat-jsp-api</artifactId>
-                  <version>${vtn.tomcat.version}</version>
-                  <outputDirectory>${vtn.tomcat.libdir}</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.apache.tomcat</groupId>
-                  <artifactId>tomcat-juli</artifactId>
-                  <version>${vtn.tomcat.version}</version>
-                  <outputDirectory>${vtn.tomcat.libdir}</outputDirectory>
-                </artifactItem>
-              </artifactItems>
+              <outputDirectory>${vtn.java.libdir}</outputDirectory>
+              <excludeArtifactIds>tomcat-juli</excludeArtifactIds>
             </configuration>
           </execution>
         </executions>
@@ -404,23 +347,49 @@
     </dependency>
 
     <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>${vtn.log4j.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.apache.tomcat</groupId>
       <artifactId>tomcat-catalina</artifactId>
       <version>${vtn.tomcat.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.tomcat</groupId>
-      <artifactId>tomcat-servlet-api</artifactId>
+      <artifactId>tomcat-coyote</artifactId>
       <version>${vtn.tomcat.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.tomcat</groupId>
-      <artifactId>tomcat-jsp-api</artifactId>
+      <artifactId>tomcat-jasper</artifactId>
       <version>${vtn.tomcat.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.tomcat</groupId>
-      <artifactId>tomcat-juli</artifactId>
+      <artifactId>tomcat-i18n-es</artifactId>
+      <version>${vtn.tomcat.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>tomcat-i18n-fr</artifactId>
+      <version>${vtn.tomcat.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>tomcat-i18n-ja</artifactId>
+      <version>${vtn.tomcat.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat.extras</groupId>
+      <artifactId>tomcat-extras-juli</artifactId>
+      <version>${vtn.tomcat.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat.extras</groupId>
+      <artifactId>tomcat-extras-juli-adapters</artifactId>
       <version>${vtn.tomcat.version}</version>
     </dependency>
   </dependencies>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+#
+# Copyright (c) 2014 NEC Corporation
+# All rights reserved.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+-->
+
+<!--
+
+Construct bootstrap.jar from catalina.jar.
+
+This project expects that a path to catalina.jar file is specified by
+"catalina.jar" property.
+
+ -->
+
+<project name="bootstrap" default="jar">
+  <!-- Build properties. -->
+  <property name="classdir" value="classes" />
+  <property name="bootstrap.jar" value="bootstrap.jar" />
+  <property name="bootstrap.main"
+            value="org.apache.catalina.startup.Bootstrap" />
+
+  <!-- Files to be archived in bootstrap.jar. -->
+  <patternset id="bootstrap.files">
+    <include name="org/apache/catalina/startup/Bootstrap.*" />
+    <include name="org/apache/catalina/startup/catalina.properties" />
+    <include name="org/apache/catalina/startup/CatalinaProperties.*" />
+    <include name="org/apache/catalina/startup/ClassLoaderFactory.*" />
+    <include name="org/apache/catalina/startup/ClassLoaderFactory$*.*" />
+    <include name="org/apache/catalina/startup/Tool.*" />
+    <include name="org/apache/catalina/loader/StandardClassLoader*.*" />
+    <include name="org/apache/catalina/security/SecurityClassLoad.*" />
+    <include name="org/apache/naming/JndiPermission.*" />
+  </patternset>
+
+  <target name="jar" description="Create bootstrap.jar.">
+    <mkdir dir="${classdir}" />
+    <unjar src="${catalina.jar}" dest="${classdir}" />
+    <jar jarfile="${bootstrap.jar}">
+      <fileset dir="${classdir}">
+        <patternset refid="bootstrap.files" />
+      </fileset>
+      <manifest>
+        <attribute name="Main-Class" value="${bootstrap.main}" />
+      </manifest>
+    </jar>
+  </target>
+</project>
