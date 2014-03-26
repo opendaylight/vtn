@@ -39,6 +39,49 @@ TOMCAT_WORKDIR=${TOMCAT_WORKDIR:-%TOMCAT_VARDIR%/work}
 VTN_JAVADIR=%INST_JAVADIR%/jar
 JAVA_ENDORSED_DIRS=${JAVA_ENDORSED_DIRS:-%TOMCAT_ROOT%/endorsed}
 
+usage()
+{
+    cat >&2 <<EOF
+Usage: tomcat [-w channel] {start|configtest|version}
+EOF
+    exit 1
+}
+
+help()
+{
+    cat <<EOF
+Usage: tomcat [OPTIONS} {start|configtest|version}
+
+Options:
+    -w channel        Watch the specified IPC channel.
+
+Help Options:
+    -h                Display this help message.
+EOF
+    exit 0
+}
+
+IPC_WATCH=
+
+while getopts "w:h" opt; do
+    case "$opt" in
+        w)
+            IPC_WATCH=$OPTARG
+            ;;
+
+        h)
+            help
+            ;;
+
+        ?)
+	    usage
+	    ;;
+    esac
+done
+
+shift $(($OPTIND - 1))
+[ $# -ne 1 ] && usage
+
 case "$1" in
     start|configtest)
         ARGUMENT=$1
@@ -50,8 +93,7 @@ case "$1" in
         ;;
 
     *)
-        echo "*** Usage: tomcat {start|configtest|version}" >&2
-        exit 1
+        usage
         ;;
 esac
 
@@ -93,6 +135,10 @@ TOMCAT_PROPS="$TOMCAT_PROPS -Dvtn.workdir=\"$TOMCAT_WORKDIR\""
 TOMCAT_PROPS="$TOMCAT_PROPS -Dvtn.logger.jar=\"%LOG4J%\""
 TOMCAT_PROPS="$TOMCAT_PROPS -Dvtn.java.libdir=\"$VTN_JAVADIR\""
 TOMCAT_PROPS="$TOMCAT_PROPS -Dvtn.port=\"$TOMCAT_PORT\""
+
+if [ -n "$IPC_WATCH" ]; then
+    TOMCAT_PROPS="$TOMCAT_PROPS -Dvtn.ipc.watch=\"$IPC_WATCH\""
+fi
 
 # Run Tomcat server.
 eval exec $JRE_HOME/bin/java $JAVA_OPTS $TOMCAT_OPTS $TOMCAT_PROPS      \

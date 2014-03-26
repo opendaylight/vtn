@@ -66,5 +66,5 @@ command "tomcat"
 	path		= "%TOMCAT_BINDIR%/tomcat";
 
 	# Command line arguments, excluding argv[0].
-	args		= ["start"];
+	args		= ["-wuncd", "start"];
 }

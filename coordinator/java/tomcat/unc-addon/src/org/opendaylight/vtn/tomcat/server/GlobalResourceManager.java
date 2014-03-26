@@ -17,14 +17,24 @@ import java.io.InputStream;
 import org.apache.catalina.Globals;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
+import org.opendaylight.vtn.core.util.HostAddress;
 import org.opendaylight.vtn.core.util.LogSystem;
 import org.opendaylight.vtn.core.util.LogConfiguration;
 import org.opendaylight.vtn.core.util.LogLevel;
 import org.opendaylight.vtn.core.util.LogFacility;
 import org.opendaylight.vtn.core.util.LogFatalHandler;
+import org.opendaylight.vtn.core.ipc.ChannelAddress;
+import org.opendaylight.vtn.core.ipc.ChannelDownEvent;
+import org.opendaylight.vtn.core.ipc.ChannelState;
+import org.opendaylight.vtn.core.ipc.ChannelUpEvent;
 import org.opendaylight.vtn.core.ipc.ClientLibrary;
+import org.opendaylight.vtn.core.ipc.IpcEvent;
+import org.opendaylight.vtn.core.ipc.IpcEventAttribute;
 import org.opendaylight.vtn.core.ipc.IpcEventConfiguration;
+import org.opendaylight.vtn.core.ipc.IpcEventHandler;
+import org.opendaylight.vtn.core.ipc.IpcEventMask;
 import org.opendaylight.vtn.core.ipc.IpcEventSystem;
+import org.opendaylight.vtn.core.ipc.IpcHostSet;
 
 /**
  * <p>
@@ -42,7 +52,7 @@ import org.opendaylight.vtn.core.ipc.IpcEventSystem;
  *   </li>
  * </ul>
  */
-class GlobalResourceManager implements LogFatalHandler
+class GlobalResourceManager implements LogFatalHandler, IpcEventHandler
 {
 	/**
 	 * <p>
@@ -75,6 +85,31 @@ class GlobalResourceManager implements LogFatalHandler
 	 * </p>
 	 */
 	private final static byte  RSTATE_FINI  = 0x04;
+
+	/**
+	 * <p>
+	 *   Internal state bit that indicates {@link System#exit(int)} is
+	 *   already called.
+	 * </p>
+	 */
+	private final static byte  RSTATE_EXITED  = 0x08;
+
+	/**
+	 * Priority of IPC event handler which watches the specified
+	 * IPC channel.
+	 */
+	private final static int  IPC_WATCH_PRIORITY = 100000;
+
+	/**
+	 * The name of IPC event resources for IPC channel watching.
+	 */
+	private final static String IPC_WATCH_NAME = "channel_watch";
+
+	/**
+	 * Set {@code true} only if the Tomcat instance should not be aborted
+	 * even if a fatal level log is recorded.
+	 */
+	private boolean  ignoreFatal;
 
 	/**
 	 * <p>
@@ -132,12 +167,40 @@ class GlobalResourceManager implements LogFatalHandler
 
 	/**
 	 * <p>
-	 *   FATAL log handler that does nothing.
+	 *   Invoked when a fatal level log is recorded.
 	 * </p>
 	 */
 	@Override
 	public void fatalError()
 	{
+		if (!ignoreFatal) {
+			abort();
+		}
+	}
+
+	/**
+	 * <p>
+	 *   Invoked when the target IPC channel is down.
+	 * </p>
+	 *
+	 * @param event  A received IPC event.
+	 */
+	@Override
+	public void eventReceived(IpcEvent event)
+	{
+		if (event instanceof ChannelDownEvent) {
+			_log.fatal("IPC channel is down: " + event);
+
+			// Abort the Tomcat instance on another thread.
+			abortAsync();
+			return;
+		}
+		if (event instanceof ChannelUpEvent) {
+			_log.info("IPC channel is up: " + event);
+			return;
+		}
+
+		_log.warn("Received unexpected event: " + event);
 	}
 
 	/**
@@ -164,6 +227,7 @@ class GlobalResourceManager implements LogFatalHandler
 
 		initializeLog(prop);
 		initializeIpc(prop);
+		initializeIpcWatch();
 	}
 
 	/**
@@ -275,10 +339,8 @@ class GlobalResourceManager implements LogFatalHandler
 			conf.setLevelFile(lfile);
 		}
 
-		if (fetchBoolean(prop, "log.fatal.ignore")) {
-			// Do not call System.exit(int) on fatal error.
-			conf.setFatalHandler(this);
-		}
+		ignoreFatal = fetchBoolean(prop, "log.fatal.ignore");
+		conf.setFatalHandler(this);
 
 		// Initialize core logging functionality.
 		LogSystem lsys = LogSystem.getInstance();
@@ -288,9 +350,7 @@ class GlobalResourceManager implements LogFatalHandler
 		catch (Exception e) {
 			// This should never happen.
 			_log.fatal("Unable to initialize core logging.", e);
-
-			System.exit(2);
-			// NOTREACHED
+			abort();
 		}
 
 		_log.info("Core logging has been initialized: " + logFile);
@@ -375,12 +435,146 @@ class GlobalResourceManager implements LogFatalHandler
 			// This should never happen.
 			_log.fatal("Unable to initialize IPC event subsystem.",
 				   e);
-
-			System.exit(2);
-			// NOTREACHED
+			abort();
 		}
 
 		_log.info("IPC event subsystem has been initialized.");
+	}
+
+	/**
+	 * <p>
+	 *   Initialize IPC channel watching.
+	 * </p>
+	 */
+	private void initializeIpcWatch()
+	{
+		String watch = System.getProperty("vtn.ipc.watch");
+		if (watch == null) {
+			return;
+		}
+
+		_log.info("Activating IPC channel watching: " + watch);
+
+		IpcEventSystem esys = IpcEventSystem.getInstance();
+		IpcEventAttribute evattr = new IpcEventAttribute();
+
+		try {
+			ChannelAddress chaddr =
+				setUpEventAttribute(watch, evattr);
+			String name = chaddr.getChannelName();
+			esys.addHandler(name, this, evattr, IPC_WATCH_NAME);
+
+			HostAddress haddr = chaddr.getHostAddress();
+			ChannelState state = esys.getChannelState(name, haddr);
+			if (state == ChannelState.DOWN) {
+				_log.fatal("IPC channel is down: " + chaddr);
+				abort();
+				return;
+			}
+
+			_log.info(chaddr + ": IPC channel state: " + state);
+		}
+		catch (Exception e) {
+			_log.error("Failed to start IPC channel watching", e);
+		}
+	}
+
+	/**
+	 * <p>
+	 *   Abort the Tomcat instance.
+	 * </p>
+	 */
+	private void abort()
+	{
+		synchronized (this) {
+			final byte state = _state;
+
+			if ((state & ~RSTATE_INIT) != 0) {
+				// Shutdown sequence is already triggered.
+				return;
+			}
+			
+			_state = (byte)(state | RSTATE_EXITED);
+		}
+
+		System.exit(2);
+		// NOTREACHED
+	}
+
+	/**
+	 * <p>
+	 *   Abort the Tomcat instance on another thread.
+	 * </p>
+	 */
+	private void abortAsync()
+	{
+		try {
+			Thread t = new Thread("Tomcat abort thread") {
+				@Override
+				public void run()
+				{
+					abort();
+				}
+			};
+			t.start();
+		} catch (Exception e) {
+			// This should never happen.
+			_log.error("Failed to start abort thread", e);
+			abort();
+		}
+	}
+
+	/**
+	 * <p>
+	 *   Set up IPC event attribute for IPC channel watching.
+	 * </p>
+	 *
+	 * @param chaddr  IPC channel address to watch.
+	 * @param evattr  IPC event attribute.
+	 * @return  An IPC channel address instance is returned.
+	 */
+	private ChannelAddress setUpEventAttribute(String chaddr,
+						   IpcEventAttribute evattr)
+		throws Exception
+	{
+		// Split IPC channel name and host address.
+		String chname;
+		HostAddress haddr = null;
+		int idx = chaddr.indexOf('@');
+		if (idx > 0) {
+			chname = chaddr.substring(0, idx);
+			int len = chaddr.length();
+			if (idx < len - 1) {
+				String h = chaddr.substring(idx + 1, len);
+				haddr = HostAddress.getByName(h);
+			}
+		}
+		else if (idx < 0) {
+			chname = chaddr;
+		}
+		else {
+			_log.error("No IPC channel name: " + chaddr);
+			return null;
+		}
+
+		if (haddr == null) {
+			haddr = HostAddress.getLocalAddress();
+		}
+
+		// Watch IPC channel down and state event.
+		IpcEventMask evmask = new IpcEventMask(ChannelDownEvent.TYPE);
+		evmask.add(ChannelUpEvent.TYPE);
+		evattr.addTarget(null, evmask);
+
+		IpcHostSet hset = new IpcHostSet(IPC_WATCH_NAME);
+		hset.create();
+		hset.add(haddr);
+		evattr.setHostSet(IPC_WATCH_NAME);
+
+		evattr.setPriority(IPC_WATCH_PRIORITY);
+		evattr.setLogEnabled(true);
+
+		return new ChannelAddress(chname, haddr);
 	}
 
 	/**
