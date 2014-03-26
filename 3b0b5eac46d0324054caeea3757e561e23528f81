@@ -1,0 +1,8 @@
+Code-Review+2: Tomohisa Yamabe <t-yamabe@bp.jp.nec.com>
+Verified+1: Tomohisa Yamabe <t-yamabe@bp.jp.nec.com>
+Verified+1: jenkins-vtn <jenkins-vtn@opendaylight.org>
+Submitted-by: Tomohisa Yamabe <t-yamabe@bp.jp.nec.com>
+Submitted-at: Wed, 26 Mar 2014 01:54:45 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/5759
+Project: vtn
+Branch: refs/heads/master
