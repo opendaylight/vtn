@@ -26,8 +26,12 @@ JAVA_LIBS		= pfc_ipc.jar pfc_util.jar vtn-javaapi.jar
 JAVA_EXTLIBS		= $(GOOGLE_GSON) $(ORG_JSON) $(COMMONS_NET)
 JAVA_EXTLIBS		+= $(POSTGRESQL_JDBC)
 
+# ODBC system directory.
+ODBCSYSINI		= $(INST_UNCWORKDIR)/db/etc
+
 # Replace keywords in properties file.
 JAVA_TEXT_FILTERS	= -f UNC_JAVA_LIBDIR '$(INST_JAVADIR)/jar'
+JAVA_TEXT_FILTERS	+= -f ODBCSYSINI '$(ODBCSYSINI)'
 
 include ../rules.mk
 

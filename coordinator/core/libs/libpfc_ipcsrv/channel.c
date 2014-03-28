@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013 NEC Corporation
+ * Copyright (c) 2011-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -615,16 +615,13 @@ ipcsrv_open(ipc_channel_t *chp, mode_t mode)
 	uint32_t	plen;
 	int		err, sock, ret;
 
-	if (geteuid() == 0) {
-		/* Initialize IPC system directories. */
-		err = pfc_ipc_conf_dirinit();
-		if (PFC_EXPECT_FALSE(err != 0)) {
-			IPCSRV_LOG_ERROR("Failed to initialize system "
-					 "directories: %s",
-					 strerror(err));
+	/* Initialize IPC system directories. */
+	err = pfc_ipc_conf_dirinit();
+	if (PFC_EXPECT_FALSE(err != 0)) {
+		IPCSRV_LOG_ERROR("Failed to initialize system directories: %s",
+				 strerror(err));
 
-			return err;
-		}
+		return err;
 	}
 
 	/* Determine UNIX domain socket path and temporary directory. */

@@ -1,0 +1,104 @@
+#
+# Copyright (c) 2014 NEC Corporation
+# All rights reserved.
+# 
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+##
+## Common shell variables and functions.
+##
+
+# Files to keep runtime state.
+DOT_SETUP=%INST_LOCALSTATEDIR%/.setup
+DOT_RUNNING=%INST_LOCALSTATEDIR%/.running
+
+# Path to ODBC system directory.
+ODBCSYSINI=%INST_UNCWORKDIR%/db/etc
+ODBCINIFILE=$ODBCSYSINI/odbc.ini
+ODBCINSTINI=$ODBCSYSINI/odbcinst.ini
+
+# Commands
+DB_START=%INST_SBINDIR%/db_start
+DB_STOP=%INST_SBINDIR%/db_stop
+UNCD_START=%INST_SBINDIR%/uncd_start
+UNCD_STOP=%INST_SBINDIR%/uncd_stop
+
+export ODBCSYSINI
+
+#
+# error_perm()
+#       Show error message that the current user is not allowed to execute
+#       this program and exit.
+#
+#       Optional error message can be specified.
+#
+error_perm()
+{
+    [ -n "$1" ] && echo "*** ERROR: $1" >&2
+    echo "*** ERROR: You are not allowed to execute this command." >&2
+    exit 1
+}
+
+#
+# check_localstatedir()
+#       Ensure that "var" directory is writable.
+#
+check_localstatedir()
+{
+    if [ ! -d %INST_LOCALSTATEDIR% ]; then
+        # This should never happen.
+        echo "*** ERROR: %INST_LOCALSTATEDIR% does not exist."
+        exit 1
+    fi
+
+    [ -w %INST_LOCALSTATEDIR% ] || \
+        error_perm "%INST_LOCALSTATEDIR% is not writable."
+}
+
+#
+# init_env()
+#       Initialize common environment variables.
+#       Does nothing if VTN_RUN_UID is not empty.
+#
+init_env()
+{
+    [ -n "$VTN_RUN_UID" ] && return
+    check_localstatedir
+
+    if [ ! -f $DOT_SETUP ]; then
+        echo "*** ERROR: Database is not yet initialized." >&2
+	exit 1
+    fi
+
+    [ -r $DOT_SETUP ] || error_perm "State file is not readable."
+    read VTN_RUN_UID VTN_RUN_USERNAME < $DOT_SETUP
+    if [ -z "$VTN_RUN_UID" -o -z "$VTN_RUN_USERNAME" ]; then
+            echo "*** ERROR: State file is broken." >&2
+            exit 1
+    fi
+
+    if [ `id -u` -ne "$VTN_RUN_UID" ]; then
+        cat >&2 <<EOF
+*** Error: This command must be executeda as "$VTN_RUN_USERNAME" user.
+EOF
+        exit 1
+    fi
+
+    export VTN_RUN_UID VTN_RUN_USERNAME
+
+    # Ensure that the unixODBC system directory is readable.
+    if [ -z "$ODBCSYSINI" ]; then
+        echo "*** Error: ODBC system directory is not defined." >&2
+        exit 1
+    fi
+
+    if [ ! -d "$ODBCSYSINI" ]; then
+        echo "*** Error: ODBC system directory does not exist." >&2
+	exit 1
+    fi
+
+    [ -r "$ODBCSYSINI" ] || error_perm "ODBC system directory is no readable."
+}

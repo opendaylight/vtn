@@ -31,6 +31,18 @@ PGINST_LIST="$PGINST_LIST /usr/local/postgresql* /usr/local/postgresql/*"
 #
 PGSQL_VERSION_MAJOR=9
 
+#
+# State flags used for error handling.
+#
+STATE_RMDB=			# Database should be destroyed on error.
+STATE_DBSTOP=			# PostgreSQL should be stopped on error.
+STATE_RMSETUP=			# DOT_SETUP should be removed on error.
+
+#
+# Option specified by command line.
+#
+OPTION=
+
 # usage()
 #
 #   Show usage message.
@@ -45,10 +57,13 @@ usage()
 {
 	cat << EOF
 Usage: db_setup [OPTION]
+
 Setup database configuration and storage area.
 
-  -r     re-create the database storage area
-  -h     show this help message and exit
+  -r     Reset existing database storage area.
+  -c     Clean up environment.
+         This option erases existing database and log files.
+  -h     Show this help message and exit.
 EOF
 	exit 0
 }
@@ -65,7 +80,17 @@ EOF
 #
 invalid_argument()
 {
-	echo "*** Error: Invalid argument."
+	echo "*** ERROR: Invalid argument."
+	exit 1
+}
+
+# error_busy()
+#     Show error message that the database is now initializing and terminates
+#     the program.
+#
+error_busy()
+{
+	echo "*** ERROR: Database is now initializing."
 	exit 1
 }
 
@@ -82,7 +107,7 @@ invalid_argument()
 data_copy_error()
 {
 	error_output copy $LOGFILE $TMPLOGFILE
-	echo "*** Error: Failed in data copy."
+	echo "*** ERROR: Failed in data copy."
 	exit 1
 }
 
@@ -99,25 +124,253 @@ data_copy_error()
 db_setup_error()
 {
 	error_output $1 $LOGFILE $TMPLOGFILE
-	echo "*** Error: DB error occurred during DB setting."
+	echo "*** ERROR: DB error occurred during DB setting."
 	exit 1
 }
 
-# check_exists_db()
+# error_need_cleanup()
 #
-#	I check whether DB exists.
+#      Show the specified error message, and notify that the runtime
+#      runtime environment needs to be reset.
+#
+#      This function always terminates the program.
 #
 # * input
-#	   Nothing
+#      arg1: Error message.
 #
-# * output
-#	   0: exists
-#	   1: not exists or -r option is designated
-#
-check_exists_db()
+error_need_cleanup()
 {
-	[ ! -d $PGDATA -o $ROPT = "ON" -o $start_flg -eq 1 ] \
-		|| return 0 && return 1
+	local msg=$1
+
+	cat <<EOF
+*** ERROR: $msg
+***     Execute "$0 -c" as "root" user.
+EOF
+
+	exit 1
+}
+
+# check_user()
+#
+#      Check whether the current user can execute this program or not.
+#
+# * input
+#      arg1: A non-empty string must be passed in case of initializing DB.
+#
+check_user()
+{
+	local initializing="$1"
+
+	local uid=`id -u`
+	local uname=`id -un`
+	if [ -z "$uid" -o -z "$uname" ]; then
+		# This should never happen.
+		echo "*** ERROR: Failed to determine current user."
+		exit 1
+	fi
+
+	if [ ! -e $DOT_SETUP ]; then
+		VTN_RUN_UID=$uid
+		VTN_RUN_USERNAME=$uname
+		return
+	fi
+
+	[ -r $DOT_SETUP ] || error_perm "State file is not readable."
+
+	# Read DOT_SETUP with holding shared lock.
+	{
+		flock -ns 200 || error_busy
+
+		read VTN_RUN_UID VTN_RUN_USERNAME <&200
+		if [ -z "$VTN_RUN_UID" -o -z "$VTN_RUN_USERNAME" ]; then
+			if [ -z "$initializing" ]; then
+				VTN_RUN_UID=$uid
+				VTN_RUN_USERNAME=$uname
+			else
+				error_need_cleanup "Incomplete state file."
+			fi
+		fi
+	} 200< $DOT_SETUP
+
+	local root_clean
+	[ "$uid" -eq 0 -a -z "$initializing" ] && root_clean=1
+	if [ -z "$root_clean" -a $uid -ne $VTN_RUN_UID ]; then
+		cat <<EOF
+*** ERROR: This command must be executed as "$VTN_RUN_USERNAME" user.
+EOF
+		exit 1
+	fi
+
+	[ -w $DOT_SETUP ] || error_need_cleanup "State file is not writable."
+}
+
+# remove_file()
+#
+#      Remove the specified file
+#      The program exits on any error.
+#
+# * input
+#      arg1: Path to the file to be removed.
+#
+remove_file()
+{
+	local path=$1
+
+	[ -e $path ] || return
+	if [ ! -w $path ]; then
+		error_need_cleanup "File is not writable: $path"
+		# NOTREACHED
+	fi
+
+	rm -rf $path
+	if [ $? -ne 0 ]; then
+		error_need_cleanup "Failed to remove file: $path"
+		# NOTREACHED
+	fi
+}
+
+# create_dir()
+#
+#      Crete a directory.
+#      The program exits on any error.
+#
+# * input
+#      arg1: Path to the directory to be created.
+#      arg2: Permission bits for the directory.
+#      arg3: User and group to be passed to chown command. (optional)
+#
+create_dir()
+{
+	local path="$1"
+	local perm="$2"
+	local owner="$3"
+
+	if [ ! -d $path ]; then
+		mkdir -p $path
+		if [ $? -ne 0 ]; then
+			error_need_cleanup "Failed to create directory: $path"
+			# NOTREACHED
+		fi
+	fi
+
+	chmod $perm $path
+	if [ $? -ne 0 ]; then
+		error_need_cleanup "Failed to change file mode: $path"
+		# NOTREACHED
+	fi
+
+	if [ $VTN_RUN_UID -eq 0 -a -n "$owner" ]; then
+		chown $owner $path
+		if [ $? -ne 0 ]; then
+			error_need_cleanup "Failed to change file owner: $path"
+			# NOTREACHED
+		fi
+	fi
+}
+
+# init_sysdirs()
+#
+#      Initialize system directories.
+#
+init_sysdirs()
+{
+	# Create system directories. (perm: 0755)
+	local sysdirs="$VARRUNDIR $VARDBDIR $DBMUPDATECONFDIR $DBMLOGDIR"
+	local dir
+	for dir in $sysdirs; do
+		create_dir $dir 0755
+	done
+
+	# Create system directories. (perm: 01777)
+	sysdirs=$DBMTMPDIR
+	for dir in $sysdirs; do
+		create_dir $dir 01777
+	done
+
+	# Create system directories. (owner:SUUSER, perm: 0700)
+	sysdirs="$LOG_DIRECTORY"
+	for dir in $sysdirs; do
+		create_dir $dir 0700 "$SUUSER:$SUUSER"
+	done
+}
+
+# clean_env()
+#
+#      Clean up existing database and log files.
+#
+clean_env()
+{
+	check_localstatedir
+	check_user
+	check_vtn_stopped
+
+	{
+		flock -nx 200 || error_busy
+
+		local dir
+		for dir in %INST_LOCALSTATEDIR%/*; do
+			remove_file $dir
+		done
+
+		if [ "%INST_UNCWORKDIR%" != "%INST_LOCALSTATEDIR%" ]; then
+			for dir in %INST_LOCALSTATEDIR%/*; do
+				remove_file $dir
+			done
+		fi
+	} 200>> $DOT_SETUP
+
+	remove_file $DOT_SETUP
+}
+
+# check_vtn_stopped()
+#       Ensure that VTN is not running.
+#
+check_vtn_stopped()
+{
+	if [ -f $DOT_RUNNING ]; then
+		cat <<EOF
+*** ERROR: VTN is running.
+***     Execute "$VTN_STOP" as "$VTN_RUN_USERNAME" user.
+EOF
+		exit 1
+	fi
+}
+
+# setup_exit_hook()
+#       Called when setup_db() exits.
+#
+setup_exit_hook()
+{
+	# Terminate PostgreSQL.
+	[ -n "$STATE_DBSTOP" ] && db_stop 2>>$TMPLOGFILE
+
+	# Remove database so that the database will be re-created
+	# on succeeding db_setup.
+	[ -n "$STATE_RMDB" ] && rm -rf $PGDATA
+
+	# Remove temporary log file.
+	rm -f $TMPLOGFILE
+
+	# Remove DOT_SETUP if needed.
+	[ -n "$STATE_RMSETUP" ] && rm -f $DOT_SETUP
+}
+
+# set_option()
+#       Set command line option.
+#
+# * input
+#      arg1: Option specified by command line.
+#
+set_option()
+{
+	local opt="$1"
+
+	if [ -n "$OPTION" ]; then
+		echo "*** ERROR: $OPTION and $opt are mutually exclusive."
+		exit 1
+	fi
+
+	OPTION=$opt
 }
 
 # create_db()
@@ -132,66 +385,51 @@ check_exists_db()
 #
 create_db()
 {
-	echo "1" > $STARTFILE
-	if [ $ROPT = "ON" -o $start_flg -eq 1 ]; then
-		db_stop 2> $TMPLOGFILE
+	if [ -d $PGDATA ]; then
+		[ -z "$OPTION" ] && return
 		rm -fr $PGDATA
 	fi
-	SU_DB_USER=$PGUSER
-	su -m $SUUSER -c "$PGINST/bin/initdb -D $PGDATA -U $PGUSER \
+	create_dir $PGDATA 0700 "$SUUSER:$SUUSER"
+	STATE_RMDB=1
+
+	runas_suuser "$PGINST/bin/initdb -D $PGDATA -U $PGUSER \
 		-E UNICODE --no-locale" > /dev/null 2> $TMPLOGFILE
 	[ $? -ne 0 ] && db_setup_error initdb
 	copy_postgresql_conf 2> $TMPLOGFILE
 	[ $? -ne 0 ] && data_copy_error
+
+	# Start PostgreSQL.
 	(db_start 200<&-) 2> $TMPLOGFILE
 	[ $? -ne 0 ] && db_setup_error dbstart
+	STATE_DBSTOP=1
+
 	TMP_PGDATABASE=$PGDATABASE
 	PGDATABASE=postgres
-	local psql="$PGINST/bin/psql"
-	su -m $SUUSER -c "$psql -c \
+	local psql="cd /; $PGINST/bin/psql"
+	runas_suuser "$psql -c \
 		\"ALTER USER $PGUSER PASSWORD '$PGPASSWORD'\"" \
 		> /dev/null 2> $TMPLOGFILE
 	[ $? -ne 0 ] && db_setup_error alterpass
-	su -m $SUUSER -c "$psql -c \
-		\"CREATE USER $UNC_DB_USER WITH NOSUPERUSER PASSWORD '$UNC_DB_PASSWORD';\"" \
+	runas_suuser "$psql -c \
+		\"CREATE USER $UNC_DB_USER WITH NOSUPERUSER \
+		PASSWORD '$UNC_DB_PASSWORD';\"" \
 		> /dev/null 2> $TMPLOGFILE
 	[ $? -ne 0 ] && db_setup_error createuser
 	PGDATABASE=$TMP_PGDATABASE
-	su -m $SUUSER -c "$PGINST/bin/createdb -E UNICODE \
+	runas_suuser "$PGINST/bin/createdb -E UNICODE \
 		-O $UNC_DB_USER $PGDATABASE" > /dev/null 2> $TMPLOGFILE
 	[ $? -ne 0 ] && db_setup_error createdb
 	PGUSER=$UNC_DB_USER
 	for UNCDATASQLFILE in `ls -1 $UNCDATASQLDIR/*.sql`; do
-		su -m $SUUSER -c "$psql -f $UNCDATASQLFILE" \
+		runas_suuser "$psql -f $UNCDATASQLFILE" \
 			> /dev/null 2> $TMPLOGFILE
 		[ $? -ne 0 ] && db_setup_error createtable
 	done
+
+	STATE_RMDB=
+	STATE_DBSTOP=
 	db_stop 2> $TMPLOGFILE
 	[ $? -ne 0 ] && db_setup_error dbstop
-	PGUSER=$SU_DB_USER
-	rm -f $STARTFILE
-}
-
-# directory_owner()
-#
-#   setting owner of directories.
-#
-# * input
-#     Nothing
-#
-# * output
-#     1: error exit
-#
-directory_owner()
-{
-	chown $SUUSER:$SUUSER $PGBASE
-	[ $? -ne 0 ] && data_copy_error
-	chown $SUUSER:$SUUSER $LOG_DIRECTORY
-	[ $? -ne 0 ] && data_copy_error
-	chown $SUUSER:$SUUSER $ARCHIVE_DIRECTORY
-	[ $? -ne 0 ] && data_copy_error
-	chown $SUUSER:$SUUSER $DBMUPDATECONFDIR
-	[ $? -ne 0 ] && data_copy_error
 }
 
 # check_pgsql_version()
@@ -254,6 +492,7 @@ check_pginst()
 		# NOTREACHED
 	fi
 
+	local cmd
 	for cmd in initdb createdb pg_ctl postgres psql; do
 		local path="$dir/bin/$cmd"
 		check_pgsql_version $path && continue
@@ -388,28 +627,18 @@ setup_pgsql_conf()
 
 	[ "$writeconf" = "0" ] && return
 
-	local year=`date '+%Y'`
-	cat > $DBMPGSQLCONF <<EOF
-#
-# Copyright (c) 2012-$year NEC Corporation
-# All rights reserved.
-#
-# This program and the accompanying materials are made available under the
-# terms of the Eclipse Public License v1.0 which accompanies this
-# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
-#
+	create_copyright_file $DBMPGSQLCONF 0644 || \
+		log_fatal "Failed to create configuration file: $DBMPGSQLCONF"
 
-#
-# DO NOT EDIT THIS FILE
-#
-# This file is automatically generated by db_setup.
-#
-
+	cat >> $DBMPGSQLCONF <<EOF
 PGINST=$PGINST
 PGSQL_ODBC_DRIVER=$PGSQL_ODBC_DRIVER
 EOF
-
-	chmod 0644 $DBMPGSQLCONF
+	if [ $? -ne 0 ]; then
+		log_fatal "Failed to write configuration file: $DBMPGSQLCONF" \
+			  $LOGFILE
+		# NOTREACHED
+	fi
 }
 
 # odbc_driver_install()
@@ -424,22 +653,17 @@ EOF
 #
 odbc_driver_install()
 {
-	/usr/bin/odbcinst -q -d -v -n UNC_DB_DRIVER > /dev/null 2> $TMPLOGFILE
-	[ $? -eq 0 ] && return 0
+	create_copyright_file $ODBCINSTINI 0644 || db_setup_error odbc
 
-	# Create odbcinst.ini under temporary directory.
-	local odbcinst=$DBMTMPDIR/odbcinst.ini
-	cat > $odbcinst <<EOF
+	cat >> $ODBCINSTINI <<EOF
 [UNC_DB_DRIVER]
 Decription	= PostgreSQL ODBC
 Driver		= $PGSQL_ODBC_DRIVER
 Threading	= 2
 BoolsAsChar	= Yes
+UsageCount	= 1
 EOF
-	/usr/bin/odbcinst -i -d -f $odbcinst > $TMPLOGFILE
-	local status=$?
-	rm -f $odbcinst
-	[ $status -ne 0 ] && db_setup_error odbc
+	[ $? -ne 0 ] && db_setup_error odbc
 }
 
 # setup_db()
@@ -454,57 +678,59 @@ EOF
 #
 setup_db()
 {
+	check_localstatedir
+	check_user 1
+	check_vtn_stopped
+
 	{
-		flock -nx 200
+		flock -nx 200 || error_busy
+
+		chmod 0644 $DOT_SETUP
 		if [ $? -ne 0 ]; then
-			log_output $$ ERROR $0 \
-				"Setting the DB is already executing." $LOGFILE
-			echo "*** Error: Setting the DB is already executing."
-			exit 1
+			log_fatal "Failed to change file mode of state file." \
+				  $LOGFILE
+			# NOTREACHED
 		fi
 
-		trap 'rm -f $TMPLOGFILE' 0
-
-		start_flg=0
-		[ -r $STARTFILE ] && start_flg=`cat $STARTFILE`
+		STATE_RMSETUP=1
+		trap setup_exit_hook 0
+		init_sysdirs
 
 		setup_pgsql_conf
-		directory_owner
 		odbc_driver_install
 		pgpass_setting 2> $TMPLOGFILE
 		[ $? -ne 0 ] && data_copy_error
-		check_exists_db
-		[ $? -eq 1 ] && create_db
-		copy_postgresql_conf 2> $TMPLOGFILE
-		[ $? -ne 0 ] && data_copy_error
+		create_db
 		create_setting_file 2> $TMPLOGFILE
 		[ $? -ne 0 ] && data_copy_error
+
+		echo "$VTN_RUN_UID $VTN_RUN_USERNAME" > $DOT_SETUP
+		if [ $? -ne 0 ]; then
+			log_fatal "Failed to write state file." $LOGFILE
+			# NOTREACHED
+		fi
+
+		STATE_RMSETUP=
 
 		log_output $$ INFO $0 "Setup completed successfully." $LOGFILE
 		echo "Setup completed successfully."
 
-	} 200> ${LOCKFILE}
+	} 200>> $DOT_SETUP
 }
-
-check_user_permission || exit 1
 
 export_pg_env
 
 LOGFILE=$DBMLOGDIR/unc_setup_db.log
 TMPLOGFILE=$DBMTMPDIR/unc_setup_db.log
-LOCKFILE=$DBMTMPDIR/unc_setup_db.lock
-STARTFILE=$DBMTMPDIR/unc_setup_db_cluster.starting
 
 trap 'interrupt_error $LOGFILE' 1 2 3 15
-
-ROPT="OFF"
 
 while [ $# -gt 0 ]; do
 	case "$1" in
 		"")
 			;;
-		-r)
-			ROPT="ON"
+		-r | -c)
+			set_option $1
 			;;
 		-h)
 			usage;;
@@ -515,6 +741,10 @@ while [ $# -gt 0 ]; do
 	shift 1
 done
 
-setup_db
+if [ "$OPTION" = "-c" ]; then
+	clean_env
+else
+	setup_db
+fi
 
 exit 0

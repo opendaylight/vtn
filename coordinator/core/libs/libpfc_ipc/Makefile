@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011-2013 NEC Corporation
+# Copyright (c) 2011-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -34,26 +34,4 @@ EXTRA_CPPFLAGS	= -D_PFC_LIBPFC_IPC_BUILD
 # Define log identifier.
 USE_LOG_IDENT	= 1
 
-# Create system directories on "make install".
-INST_WORKDIR	= $(DESTDIR)$(INST_IPCWORKDIR)
-INST_CHANNELDIR	= $(INST_WORKDIR)/.channel
-
-PERM_CHANNELDIR	= 01777
-INST_IPCDIRS	= $(INST_WORKDIR) $(INST_CHANNELDIR)
-
-INSTALL_IPCDIR	=						\
-	echo "=== Installing $@ (permission: $(PERM_DIR))";	\
-	$(INSTALL_DIRS) $@
-
-EXTRA_INSTALL	+= install-dirs
-
 include ../rules.mk
-
-install-dirs:	$(INST_IPCDIRS)
-
-$(INST_IPCDIRS):
-	@$(INSTALL_IPCDIR)
-
-$(INST_CHANNELDIR):	$(INST_WORKDIR)
-
-$(INST_CHANNELDIR):	PERM_DIR = $(PERM_CHANNELDIR)

@@ -11,12 +11,20 @@
 
 # dbm common script functions
 
+IFS="
+	 "
 PATH=/bin:/usr/bin:/usr/sbin:/sbin
 export PATH
 
-ALLOW_UID=0
-
 umask 066
+
+# Import common functions.
+. %INST_DATADIR%/vtn_funcs.sh
+if [ $? -ne 0 ]; then
+	# This should never happen.
+	echo "*** ERROR: Failed to import common functions."
+	exit 1
+fi
 
 # readconf()
 #
@@ -39,14 +47,19 @@ readconf()
 	return 0
 }
 
+VARRUNDIR=%INST_LOCALSTATEDIR%/run
+VARDBDIR=%INST_UNCWORKDIR%/db
 DBMCONFDIR=%INST_SYSCONFDIR%/dbm
-DBMTMPDIR=%INST_LOCALSTATEDIR%/run/dbm
 DBMLOGDIR=%INST_UNCWORKDIR%/dbm
-DBMUPDATECONFDIR=%INST_UNCWORKDIR%/db/etc
+
+DBMUPDATECONFDIR=$VARDBDIR/etc
+DBMTMPDIR=$VARRUNDIR/dbm
 
 DBMCONF=$DBMCONFDIR/unc_db_env.conf
 DBMPATHCONF=$DBMCONFDIR/pathinfo/unc_db_path_info.conf
 DBMPGSQLCONF=$DBMUPDATECONFDIR/pgsql.conf
+
+VTN_STOP=%INST_BINDIR%/vtn_stop
 
 # Read $DBMPGSQLCONF first so that PostgreSQL path can be overwritten by
 # unc_db_env.conf.
@@ -60,11 +73,10 @@ SINGLEPOSTFILE=$DBMCONFDIR/postgresql.conf.single
 HBACONFFILE=$DBMCONFDIR/pg_hba.conf
 HBADATAFILE=$PGDATA/pg_hba.conf
 POSTLOGFILE=$PGDATA/postmaster.log
-ODBCINIORGFILE=$DBMCONFDIR/odbc.ini.org
-ODBCINIFILE=$DBMUPDATECONFDIR/odbc.ini
-ODBCINSTALLEDFILE=$DBMTMPDIR/unc_odbc_DSN.installed
 UNCDATASQLDIR=%INST_SQLDIR%
 DBLOGFILE=$DBMLOGDIR/unc_db_script.log
+
+PGHOST=$DBMTMPDIR
 
 PGCTL_START_WAIT=60
 PGCTL_STOP_WAIT=180
@@ -73,7 +85,7 @@ clm_date() { date +'%y-%m-%d %H:%M:%S.%N'; }
 
 # expand_shm_param()
 #
-#      Expand SysV IPC Shared memory parameter if needed.
+#      Expand SysV IPC shared memory parameter if needed.
 #      (Linux specific)
 #
 # * input
@@ -89,29 +101,37 @@ expand_shm_param()
 	local value=$2
 
 	local cur=`cat $path`
-	if test -n "$cur" -a "$cur" -lt "$value"; then
+	if [ -n "$cur" -a "$cur" -lt "$value" ]; then
 		echo "$value" > $path
 	fi
 }
 
-# check_user_permission()
+# check_shm_param()
 #
-#      Validate current user.
-#      (root is allowed).
+#       Ensure that SysV IPC shared memory parameter is sufficient.
+#       (Linux specific)
+#
+#       If not, a command to be executed as root is appended to
+#       SHM_PARAM_ERROR variable.
 #
 # * input
-#      Nothing
+#      arg1:  Path to proc filesystem file
+#      arg2:  Expected value
 #
 # * output
-#      0: valid
-#      1: invalid
+#      0 is returned on success. 1 is returned on error.
 #
-check_user_permission()
+check_shm_param()
 {
-	if [ "$(id -u)" != "$ALLOW_UID" ]; then
-		echo "*** Error: You need to be root."
+	local path=$1
+	local value=$2
+
+	local cur=`cat $path`
+	if [ -n "$cur" -a "$cur" -lt "$value" ]; then
+		SHM_PARAM_ERROR="echo $value > $path"
 		return 1
 	fi
+
 	return 0
 }
 
@@ -136,6 +156,8 @@ log_output()
 	local cmd_name=$3
 	local message=$4
 	local logfile=$5
+
+	[ -z "$logfile" ] && return
 	echo "$(clm_date): $cmd_name[$pid]: $log_level : $message" >> $logfile
 }
 
@@ -155,9 +177,31 @@ log_fatal()
 	local msg=$1
 	local logfile=$2
 
-	log_output $$ ERROR $0 "$msg" $logfile
-	echo "*** Error: $msg"
+	log_output $$ ERROR $0 "$msg" "$logfile"
+	echo "*** ERROR: $msg"
 	exit 1
+}
+
+# runas_suuser()
+#      Run the specified command as PostgreSQL superuser.
+#
+# * input
+#      arg1:  Command and arguments
+#
+# * output
+#      Exit status of the command is returned.
+#
+runas_suuser()
+{
+	local cmd=$1
+
+	if [ $VTN_RUN_UID -eq 0 ]; then
+		su -m $SUUSER -c "$cmd"
+	else
+		eval "$cmd"
+	fi
+
+	return $?
 }
 
 # db_access_check()
@@ -170,7 +214,7 @@ log_fatal()
 #
 db_access_check()
 {
-	su -m $SUUSER -c "$PGINST/bin/psql -c \"select now();\"" > /dev/null
+	runas_suuser "cd /; $PGINST/bin/psql -c \"select 1;\"" > /dev/null
 	[ $? -ne 0 ] && return 1
 	return 0
 }
@@ -186,28 +230,47 @@ db_access_check()
 #
 db_start()
 {
-	# PostgreSQL server may be configured to use /var/run/postgresql as
-	# UNIX domain socket directory rather than /tmp.
-	local sockdir=/var/run/postgresql
-	[ -d $sockdir ] || mkdir -p $sockdir
-	chmod 02775 $sockdir
-	chown $SUUSER:$SUUSER $sockdir
-
-	local lock_file=".s.PGSQL.$PGPORT.lock"
 	db_access_check
 	[ $? -eq 0 ] && return 1
 	rm -f $POSTLOGFILE
 	rm -f $PIDFILE
-	rm -f "/tmp/$lock_file"
-	rm -f "$sockdir/$lock_file"
 
-	# Expand shared memory parameter if needed.
-	expand_shm_param /proc/sys/kernel/shmmax $SHMMAX
-	expand_shm_param /proc/sys/kernel/shmall $SHMALL
+	local sockfile="$PGHOST.s.PGSQL.$PGPORT"
+	rm -f $sockfile
+	rm -f "${sockfile}.lock"
 
-	su -m $SUUSER -c \
+	if [ $VTN_RUN_UID -eq 0 ]; then
+		# Expand shared memory parameter if needed.
+		expand_shm_param /proc/sys/kernel/shmmax $SHMMAX
+		expand_shm_param /proc/sys/kernel/shmall $SHMALL
+	else
+		local cmd_shmmax cmd_shmall
+		check_shm_param /proc/sys/kernel/shmmax $SHMMAX
+		[ $? -ne 0 ] && cmd_shmmax=$SHM_PARAM_ERROR
+		check_shm_param /proc/sys/kernel/shmall $SHMALL
+		[ $? -ne 0 ] && cmd_shmall=$SHM_PARAM_ERROR
+		if [ -n "$cmd_shmmax" -o -n "$cmd_shmall" ]; then
+			cat <<EOF
+*** ERROR: SysV shared memory parameter needs to be expanded.
+***     Execute following commands as "root" user.
+***
+EOF
+			local cmd
+			for cmd in "$cmd_shmmax" "$cmd_shmall"; do
+				[ -n "$cmd" ] && cat <<EOF
+***         $cmd
+EOF
+			done
+			cat <<EOF
+***
+EOF
+			return 2
+		fi
+	fi
+
+	runas_suuser \
 		"$PGINST/bin/pg_ctl start -D $PGDATA -w -t $PGCTL_START_WAIT" \
-		 > /dev/null
+		 >&2
 	[ $? -ne 0 ] && return 2
 	return 0
 }
@@ -243,7 +306,7 @@ db_stop_exec()
 {
 	local stop_mode="$1"
 
-	su -m $SUUSER -c \
+	runas_suuser \
 		"$PGINST/bin/pg_ctl stop -D $PGDATA $stop_mode \
 		-t $PGCTL_STOP_WAIT" > /dev/null
 	[ $? -ne 0 ] && return 1
@@ -280,28 +343,98 @@ kill_pg_process()
 	return 0
 }
 
-# create_setting_hba_file()
+# create_copyright_file()
 #
-#	create setting hba file.
+#      Create a new file with copyright notice.
 #
 # * input
-#	   Nothing
+#      arg1: Path to the file to be created.
+#      arg2: File mode. (optional)
+#      arg3: Owner and group to be passed to chown command. (optional)
+#
+#      If LOGFILE is defined, an error log is recorded into the file specified
+#      by LOGFILE on error.
 #
 # * output
-#	   0: Success
-#	   1: Failure
+#      0: Success
+#      1: Failure
 #
-create_setting_hba_file()
+create_copyright_file()
 {
-	# Setting of pg_hba.conf
-	su -m $SUUSER -c "cp $HBACONFFILE $HBADATAFILE"
-	[ $? -ne 0 ] && return 1
-	chmod 0600 $HBADATAFILE
-	{
-		echo "host    all         $UNC_DB_USER,$PGUSER    127.0.0.1/32  md5"
-		echo "host    all         $UNC_DB_USER,$PGUSER    ::1/128       md5"
-	} >> $HBADATAFILE
-	[ $? -ne 0 ] && return 1
+	local path="$1"
+	local mode="$2"
+	local owner="$3"
+
+	local year=`date '+%Y'`
+	cat > $path <<EOF
+#
+# Copyright (c) 2012-$year NEC Corporation
+# All rights reserved.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+#
+# DO NOT EDIT THIS FILE
+#
+# This file is automatically generated by db_setup.
+#
+
+EOF
+
+	if [ $? -ne 0 ]; then
+		log_output $$ ERROR $0 "Failed to create file: $path" \
+			   "$LOGFILE"
+		return 1
+	fi
+
+	if [ -n "$mode" ]; then
+		chmod $mode $path
+		if [ $? -ne 0 ]; then
+			log_output $$ ERROR $0 \
+				   "Failed to change file mode: $path" \
+				   "$LOGFILE"
+			return 1
+		fi
+	fi
+
+	if [ $VTN_RUN_UID -eq 0 -a -n "$owner" ]; then
+		chown $owner $path
+		if [ $? -ne 0 ]; then
+			log_output $$ ERROR $0 "Failed to change owner: $path" \
+				   "$LOGFILE"
+			return 1
+		fi
+	fi
+
+	return 0
+}
+
+# copy_postgresql_file()
+#
+#       Copy file only for PostgreSQL.
+#
+# * input
+#      arg1: Source file path
+#      arg2: Destination file path.
+#
+# * output
+#      0: Success
+#      1: Failure
+#
+copy_postgresql_file()
+{
+	local src="$1"
+	local dst="$2"
+
+	cp $src $dst || return 1
+	if [ $VTN_RUN_UID -eq 0 ]; then
+		chown $SUUSER:$SUUSER $dst || return 1
+	fi
+
+	chmod 0600 $dst || return 1
 
 	return 0
 }
@@ -319,12 +452,8 @@ create_setting_hba_file()
 #
 copy_postgresql_conf()
 {
-	# Setting of postgresql.conf
-	su -m $SUUSER -c "cp $SINGLEPOSTFILE $POSTFILE"
-	[ $? -ne 0 ] && return 1
-	chmod 0600 $POSTFILE
-
-	return 0
+	# Install postgresql.conf.
+	copy_postgresql_file $SINGLEPOSTFILE $POSTFILE || return 1
 }
 
 # create_setting_file()
@@ -340,19 +469,15 @@ copy_postgresql_conf()
 #
 create_setting_file()
 {
-	create_setting_hba_file
-	[ $? -ne 0 ] && return 1
+	# Copy pg_hba.conf.
+	copy_postgresql_file $HBACONFFILE $HBADATAFILE
 
 	# Setting of odbc.ini
-	su -m $SUUSER -c "cp -p $ODBCINIORGFILE $ODBCINIFILE"
-	chmod 0644 $ODBCINIFILE
-	odbc_common_setting UNC_DB_DSN localhost
-	[ $? -ne 0 ] && return 1
-	odbc_common_setting UNC_DB_LC1_DSN localhost
-	[ $? -ne 0 ] && return 1
-	echo "[UNC_DB_LC2_DSN]" >> $ODBCINIFILE
+	rm -f $ODBCINIFILE || return 1
 
-	rm -f $ODBCINSTALLEDFILE
+	create_copyright_file $ODBCINIFILE 0600 || return 1
+	odbc_common_setting UNC_DB_DSN $PGHOST || return 1
+	odbc_common_setting UNC_DB_LC1_DSN $PGHOST || return 1
 
 	return 0
 }
@@ -363,7 +488,7 @@ create_setting_file()
 #
 # * input
 #	   arg1: DSN
-#	   arg2: Server IP address
+#	   arg2: Server IP address or UNIX domain socket directory
 #
 # * output
 #	   0: Success
@@ -400,13 +525,17 @@ odbc_common_setting()
 pgpass_setting()
 {
 	rm -f $PGPASSFILE
+	create_copyright_file $PGPASSFILE || return 1
+
 	cat >> $PGPASSFILE << EOF
 localhost:$PGPORT:*:$PGUSER:$PGPASSWORD
 localhost:$PGPORT:$PGDATABASE:$UNC_DB_USER:$UNC_DB_PASSWORD
 EOF
 	[ $? -ne 0 ] && return 1
-	chown $SUUSER:$SUUSER $PGPASSFILE
-	chmod 0600 $PGPASSFILE
+	if [ $VTN_RUN_UID -eq 0 ]; then
+		chown $SUUSER:$SUUSER $PGPASSFILE || return 1
+	fi
+	chmod 0600 $PGPASSFILE || return 1
 
 	return 0
 }
@@ -424,6 +553,7 @@ EOF
 export_pg_env()
 {
 	export PGDATA
+	export PGHOST
 	export PGPORT
 	export PGUSER
 	export PGDATABASE
@@ -521,6 +651,6 @@ interrupt_error()
 {
 	log_output $$ ERROR $0 \
 		"The command has interrupted." $1
-	echo "*** Error: The command has interrupted."
+	echo "*** ERROR: The command has interrupted."
 	exit 1
 }

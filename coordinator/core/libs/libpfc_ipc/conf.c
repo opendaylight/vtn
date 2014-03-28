@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013 NEC Corporation
+ * Copyright (c) 2011-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -291,13 +291,15 @@ ipc_conf_mkdir(const char *path, mode_t perm)
 		}
 	}
 
-	/* Change owner and group to root explicitly. */
-	ret = chown(path, 0, 0);
-	if (PFC_EXPECT_FALSE(ret != 0)) {
-		err = errno;
-		IPC_LOG_ERROR("Failed to change owner of directory(%s)"
-			      ": %s", path, strerror(err));
-		goto error;
+	if (geteuid() == 0) {
+		/* Change owner and group to root explicitly. */
+		ret = chown(path, 0, 0);
+		if (PFC_EXPECT_FALSE(ret != 0)) {
+			err = errno;
+			IPC_LOG_ERROR("Failed to change owner of directory(%s)"
+				      ": %s", path, strerror(err));
+			goto error;
+		}
 	}
 
 	/*

@@ -35,6 +35,11 @@ public class VtnIniParser {
 	private Map<String, Map<String, String>> iniEntriesMap = new HashMap<String, Map<String, String>>();
 
 	/**
+	 * Default server name.
+	 */
+	private static final String  DEFAULT_SERVER = "localhost";
+
+	/**
 	 * Constructor that initialize with loading of ini file
 	 * 
 	 * @param path
@@ -132,8 +137,16 @@ public class VtnIniParser {
 		 */
 		connectionProperties.setDbDriver(VtnServiceOpenStackConsts.DB_DRIVER);
 
+		// Determine server name.
+		// Use default server if the server name is a UNIX domain
+		// socket path or undefined.
+		String server = kv.get(VtnServiceOpenStackConsts.DB_IP);
+		if (server == null || server.startsWith("/")) {
+			server = DEFAULT_SERVER;
+		}
+
 		connectionProperties.setDbURL(VtnServiceOpenStackConsts.DB_URL_PREFIX
-				+ kv.get(VtnServiceOpenStackConsts.DB_IP)
+				+ server
 				+ VtnServiceConsts.COLON
 				+ kv.get(VtnServiceOpenStackConsts.DB_PORT)
 				+ VtnServiceConsts.SLASH

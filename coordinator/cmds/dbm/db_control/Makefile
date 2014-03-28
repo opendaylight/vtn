@@ -17,35 +17,26 @@ include $(JAVA_CONFIG_MK)
 
 # Script files to be installed to system admin script directory.
 # Typically, system admin script directory is sbin.
-SYS_SCRIPTS_IN	=		\
+SYS_SCRIPTS_IN	=	\
 	db_setup.in	\
-	db_start.in \
+	db_start.in	\
 	db_stop.in
 
 # Use db management specific configuration.
 DBM_CONF_IN	= 		\
-	odbc.ini.org.in \
-	unc_db_env.conf.in \
-	pg_hba.conf.in \
+	unc_db_env.conf.in	\
+	pg_hba.conf.in		\
 	postgresql.conf.single.in
 
 DBM_PATH_CONF_IN	= 		\
 	unc_db_path_info.conf.in
 
-# Directory of database management
-DBM_DIRS	=		\
-	$(DESTDIR)$(INST_UNCWORKDIR)/db \
-	$(DESTDIR)$(INST_UNCWORKDIR)/dbm \
-	$(DESTDIR)$(INST_UNCWORKDIR)/db/etc
+# Install LOCALSTATEDIR on "make install".
+DBM_DIRS	= $(DESTDIR)$(INST_LOCALSTATEDIR)
 
-# Directory of database management
-DBM_VARRUN_DIRS	=		\
-	$(DESTDIR)$(INST_LOCALSTATEDIR)/run/dbm
-
-# Directory of database management
-DBM_POST_DIRS	=		\
-	$(DESTDIR)$(INST_UNCWORKDIR)/db/pg_log \
-	$(DESTDIR)$(INST_UNCWORKDIR)/db/archive_log
+ifneq	($(INST_LOCALSTATEDIR),$(INST_UNCWORKDIR))
+DBM_DIRS	+= $(DESTDIR)$(INST_UNCWORKDIR)
+endif	# INST_LOCALSTATEDIR != INST_UNCWORKDIR
 
 # sed(1) rules to generate shell scripts.
 SED_RULES	= $(SED_RULE_LIST:%=-e %)
@@ -61,18 +52,16 @@ DEST_SYS_SCRIPTDIR	= $(DESTDIR)$(INST_SYSSCRIPTDIR)
 DEST_SYS_SCRIPTS	= $(SYS_SCRIPTS_IN:%.in=$(DEST_SYS_SCRIPTDIR)/%)
 DEST_DBMCONFDIR		= /dbm
 DEST_DBM_CONFDIR	= $(DESTDIR)$(INST_SYSCONFDIR)$(DEST_DBMCONFDIR)
-DEST_DBM_CONF	= $(DBM_CONF_IN:%.in=$(DEST_DBM_CONFDIR)/%)
-DEST_DBMPATHCONFDIR		= /dbm/pathinfo
+DEST_DBM_CONF		= $(DBM_CONF_IN:%.in=$(DEST_DBM_CONFDIR)/%)
+DEST_DBMPATHCONFDIR	= /dbm/pathinfo
 DEST_DBM_PATH_CONFDIR	= $(DESTDIR)$(INST_SYSCONFDIR)$(DEST_DBMPATHCONFDIR)
 DEST_DBM_PATH_CONF	= $(DBM_PATH_CONF_IN:%.in=$(DEST_DBM_PATH_CONFDIR)/%)
 
-DEST_SCRIPTS	= \
-	$(DEST_SYS_SCRIPTS) \
-	$(DEST_DBM_CONF) \
-	$(DEST_DBM_PATH_CONF) \
-	$(DBM_DIRS) \
-	$(DBM_VARRUN_DIRS) \
-	$(DBM_POST_DIRS)
+DEST_SCRIPTS	=		\
+	$(DEST_SYS_SCRIPTS)	\
+	$(DEST_DBM_CONF)	\
+	$(DEST_DBM_PATH_CONF)	\
+	$(DBM_DIRS)
 
 all:	$(OBJ_SCRIPTS)
 
@@ -95,20 +84,6 @@ $(DEST_DBM_CONFDIR)/%:	$(OBJDIR)/%
 $(DEST_DBM_PATH_CONFDIR)/%:	$(OBJDIR)/%
 	@$(call CMD_INSTALL_FILE,$<,$@)
 
-# Make directory.
+# Install mandatory directories.
 $(DBM_DIRS):
 	$(INSTALL_DIRS) $@
-
-# Make directory.
-PERM_VARRUN_DIRS=0777
-$(DBM_VARRUN_DIRS):
-	$(INSTALL_DIRS) $@
-
-$(DBM_VARRUN_DIRS):	PERM_DIR = $(PERM_VARRUN_DIRS)
-
-# Make directory.
-PERM_POST_DIRS=0700
-$(DBM_POST_DIRS):
-	$(INSTALL_DIRS) $@
-
-$(DBM_POST_DIRS):	PERM_DIR = $(PERM_POST_DIRS)
