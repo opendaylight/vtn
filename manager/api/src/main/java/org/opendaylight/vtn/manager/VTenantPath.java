@@ -29,7 +29,7 @@ public class VTenantPath implements Serializable, Comparable<VTenantPath> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -5024217337562580493L;
+    private static final long serialVersionUID = -1044749796338168412L;
 
     /**
      * The name of the {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
@@ -65,6 +65,25 @@ public class VTenantPath implements Serializable, Comparable<VTenantPath> {
     }
 
     /**
+     * Determine whether the virtual tenant specified by this instance contains
+     * the virtual node specified by {@code path}.
+     *
+     * <p>
+     *   Note that this method returns {@code true} if the specified path
+     *   is identical to this instance.
+     * </p>
+     *
+     * @param path  A {@code VTenantPath} to be tested.
+     * @return  {@code true} is returned only if the virtual tenant specified
+     *          by this instance contains the virtual node specified by
+     *          {@code path}.
+     * @since   Helium
+     */
+    public final boolean contains(VTenantPath path) {
+        return (getClass().isInstance(path) && equalsPath(path));
+    }
+
+    /**
      * Return a {@link StringBuilder} object which contains a string
      * representation of this object.
      *
@@ -86,11 +105,12 @@ public class VTenantPath implements Serializable, Comparable<VTenantPath> {
      * in this object or not.
      *
      * @param path  An object to be compared.
+     *              Specifying {@code null} results in undefined behavior.
      * @return   {@code true} if all path components in {@code path} are
      *           identical to components in this object.
      *           Otherwise {@code false}.
      */
-    protected final boolean equalsPath(VTenantPath path) {
+    protected boolean equalsPath(VTenantPath path) {
         if (tenantName == null) {
             return (path.tenantName == null);
         }

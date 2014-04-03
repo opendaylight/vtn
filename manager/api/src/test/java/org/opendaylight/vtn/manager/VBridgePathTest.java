@@ -38,6 +38,25 @@ public class VBridgePathTest extends TestBase {
     }
 
     /**
+     * Ensure that {@link VTenantPath#contains(VTenantPath)} works.
+     */
+    @Test
+    public void testContains() {
+        for (String tname: createStrings("tenant")) {
+            for (String bname: createStrings("bridge")) {
+                VBridgePath path = new VBridgePath(tname, bname);
+                assertFalse(path.contains(null));
+                assertTrue(path.contains(path));
+
+                String notMatched = "not_matched";
+                containsTest(path, tname, bname, true);
+                containsTest(path, notMatched, bname, false);
+                containsTest(path, tname, notMatched, false);
+            }
+        }
+    }
+
+    /**
      * Test case for {@link VBridgePath#equals(Object)} and
      * {@link VBridgePath#hashCode()}.
      */
@@ -91,5 +110,25 @@ public class VBridgePathTest extends TestBase {
                 serializeTest(path);
             }
         }
+    }
+
+    /**
+     * Internal method for {@link #testContains()}.
+     *
+     * @param path      A {@link VBridgePath} instance to be tested.
+     * @param tname     The name of the tenant for test.
+     * @param bname     The name of the vBridge for test.
+     * @param expected  Expected result.
+     */
+    private void containsTest(VBridgePath path, String tname, String bname,
+                              boolean expected) {
+        VTenantPath tpath = new VTenantPath(tname);
+        assertEquals(false, path.contains(tpath));
+
+        VBridgePath bpath = new VBridgePath(tpath, bname);
+        assertEquals(expected, path.contains(bpath));
+
+        VBridgeIfPath ipath = new VBridgeIfPath(bpath, "interface");
+        assertEquals(expected, path.contains(ipath));
     }
 }

@@ -31,7 +31,7 @@ public class VBridgeIfPath extends VBridgePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -858600931349403234L;
+    private static final long serialVersionUID = 8804848224089838313L;
 
     /**
      * The name of the
@@ -118,25 +118,29 @@ public class VBridgeIfPath extends VBridgePath {
      * in this object or not.
      *
      * @param path  An object to be compared.
+     *              An instance of {@code VBridgeIfPath} must be specified.
      * @return   {@code true} if all path components in {@code path} are
      *           identical to components in this object.
      *           Otherwise {@code false}.
      */
-    protected final boolean equalsPath(VBridgeIfPath path) {
-        if (!equalsPath((VBridgePath)path)) {
+    @Override
+    protected boolean equalsPath(VTenantPath path) {
+        if (!super.equalsPath(path)) {
             return false;
         }
 
+        VBridgeIfPath ipath = (VBridgeIfPath)path;
         if (ifName == null) {
-            return (path.ifName == null);
+            return (ipath.ifName == null);
         }
 
-        return ifName.equals(path.ifName);
+        return ifName.equals(ipath.ifName);
     }
 
     /**
      * {@inheritDoc}
      */
+    @Override
     protected List<String> getComponents() {
         List<String> components = super.getComponents();
         components.add(ifName);

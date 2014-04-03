@@ -49,6 +49,20 @@ public class VTenantPathTest extends TestBase {
     }
 
     /**
+     * Test case for {@link VTenantPath#contains(VTenantPath)}.
+     */
+    @Test
+    public void testContains() {
+        for (String tname: createStrings("tenant_name")) {
+            VTenantPath path = new VTenantPath(tname);
+            assertFalse(path.contains(null));
+            assertTrue(path.contains(path));
+            containsTest(path, tname, true);
+            containsTest(path, "not_matched", false);
+        }
+    }
+
+    /**
      * Test case for {@link VTenantPath#equals(Object)} and
      * {@link VTenantPath#hashCode()}.
      */
@@ -214,5 +228,24 @@ public class VTenantPathTest extends TestBase {
         }
 
         fail("Identical: lesser=" + lesser + ", greater=" + greater);
+    }
+
+    /**
+     * Internal method for {@link #testContains()}.
+     *
+     * @param path      A {@link VTenantPath} instance to be tested.
+     * @param tname     The name of the tenant for test.
+     * @param expected  Expected result.
+     */
+    private void containsTest(VTenantPath path, String tname,
+                              boolean expected) {
+        VTenantPath tpath = new VTenantPath(tname);
+        assertEquals(expected, path.contains(tpath));
+
+        VBridgePath bpath = new VBridgePath(tpath, "bridge");
+        assertEquals(expected, path.contains(bpath));
+
+        VBridgeIfPath ipath = new VBridgeIfPath(bpath, "interface");
+        assertEquals(expected, path.contains(ipath));
     }
 }

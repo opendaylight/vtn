@@ -116,22 +116,14 @@ public class MapReference implements Serializable {
      *
      * @param cname  The name of the container.
      *               Specifying {@code null} results in undefined behavior.
-     * @param path
-     *   Path to the virtual bridge.
-     *   Specifying a value that satisfies one of the followings results in
-     *   undefined behavior.
-     *   <ul>
-     *     <li>{@code null}</li>
-     *     <li>An instance of classes which extend {@link VBridgePath}</li>
-     *   </ul>
+     * @param path   Path to the virtual bridge.
+     *               Specifying {@code null} results in undefined behavior.
      * @return  {@code true} is returned if the target virtual node pointed
      *          by this instance is contained in the specified virtual node.
      *          Otherwise {@code false} is returned.
      */
     public boolean isContained(String cname, VBridgePath path) {
-        return (containerName.equals(cname) &&
-                vnodePath.getTenantName().equals(path.getTenantName()) &&
-                vnodePath.getBridgeName().equals(path.getBridgeName()));
+        return (containerName.equals(cname) && path.contains(vnodePath));
     }
 
     /**

@@ -890,6 +890,24 @@ public abstract class TestBase extends Assert {
         return inet;
     }
 
+    /**
+     * Determine whether the specified two strings are identical or not.
+     *
+     * <p>
+     *   This method returns {@code true} if both strings are {@code null}.
+     * </p>
+     *
+     * @param str1  A string to be tested.
+     * @param str2  A string to be tested.
+     * @return  {@code true} only if thw two strings are identical.
+     */
+    protected static boolean equals(String str1, String str2) {
+        if (str1 == null) {
+            return (str2 == null);
+        }
+
+        return str1.equals(str2);
+    }
 
     /**
      * Join the separated strings with inserting a separator.
