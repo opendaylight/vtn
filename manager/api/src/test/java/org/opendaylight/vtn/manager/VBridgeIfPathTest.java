@@ -43,6 +43,29 @@ public class VBridgeIfPathTest extends TestBase {
     }
 
     /**
+     * Ensure that {@link VTenantPath#contains(VTenantPath)} works.
+     */
+    @Test
+    public void testContains() {
+        for (String tname: createStrings("tenant")) {
+            for (String bname: createStrings("bridge")) {
+                for (String iname: createStrings("ifname")) {
+                    VBridgeIfPath path =
+                        new VBridgeIfPath(tname, bname, iname);
+                    assertFalse(path.contains(null));
+                    assertTrue(path.contains(path));
+
+                    String notMatched = "not_matched";
+                    containsTest(path, tname, bname, iname, true);
+                    containsTest(path, notMatched, bname, iname, false);
+                    containsTest(path, tname, notMatched, iname, false);
+                    containsTest(path, tname, bname, notMatched, false);
+                }
+            }
+        }
+    }
+
+    /**
      * Test case for {@link VBridgeIfPath#equals(Object)} and
      * {@link VBridgeIfPath#hashCode()}.
      */
@@ -112,5 +135,26 @@ public class VBridgeIfPathTest extends TestBase {
                 }
             }
         }
+    }
+
+    /**
+     * Internal method for {@link #testContains()}.
+     *
+     * @param path      A {@link VBridgePath} instance to be tested.
+     * @param tname     The name of the tenant for test.
+     * @param bname     The name of the vBridge for test.
+     * @param iname     The name of the interface for test.
+     * @param expected  Expected result.
+     */
+    private void containsTest(VBridgePath path, String tname, String bname,
+                              String iname, boolean expected) {
+        VTenantPath tpath = new VTenantPath(tname);
+        assertEquals(false, path.contains(tpath));
+
+        VBridgePath bpath = new VBridgePath(tpath, bname);
+        assertEquals(false, path.contains(bpath));
+
+        VBridgeIfPath ipath = new VBridgeIfPath(bpath, iname);
+        assertEquals(expected, path.contains(ipath));
     }
 }

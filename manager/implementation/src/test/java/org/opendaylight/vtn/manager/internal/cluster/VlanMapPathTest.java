@@ -43,6 +43,29 @@ public class VlanMapPathTest extends TestBase {
     }
 
     /**
+     * Ensure that {@link VTenantPath#contains(VTenantPath)} works.
+     */
+    @Test
+    public void testContains() {
+        for (String tname: createStrings("tenant")) {
+            for (String bname: createStrings("bridge")) {
+                VBridgePath bpath = new VBridgePath(tname, bname);
+                for (String mapId: createStrings("mapId", false)) {
+                    VlanMapPath path = new VlanMapPath(bpath, mapId);
+                    assertFalse(path.contains(null));
+                    assertTrue(path.contains(path));
+
+                    String notMatched = "not_matched";
+                    containsTest(path, tname, bname, mapId, true);
+                    containsTest(path, notMatched, bname, mapId, false);
+                    containsTest(path, tname, notMatched, mapId, false);
+                    containsTest(path, tname, bname, notMatched, false);
+                }
+            }
+        }
+    }
+
+    /**
      * Test case for {@link VlanMapPath#equals(Object)} and
      * {@link VlanMapPath#hashCode()}.
      */
@@ -163,5 +186,29 @@ public class VlanMapPathTest extends TestBase {
                 }
             }
         }
+    }
+
+    /**
+     * Internal method for {@link #testContains()}.
+     *
+     * @param path      A {@link VBridgePath} instance to be tested.
+     * @param tname     The name of the tenant for test.
+     * @param bname     The name of the vBridge for test.
+     * @param mapId     The identifier of the VLAN mapping for test.
+     * @param expected  Expected result.
+     */
+    private void containsTest(VBridgePath path, String tname, String bname,
+                              String mapId, boolean expected) {
+        VTenantPath tpath = new VTenantPath(tname);
+        assertEquals(false, path.contains(tpath));
+
+        VBridgePath bpath = new VBridgePath(tpath, bname);
+        assertEquals(false, path.contains(bpath));
+
+        VBridgeIfPath ipath = new VBridgeIfPath(bpath, mapId);
+        assertEquals(false, path.contains(ipath));
+
+        VlanMapPath vpath = new VlanMapPath(bpath, mapId);
+        assertEquals(expected, path.contains(vpath));
     }
 }
