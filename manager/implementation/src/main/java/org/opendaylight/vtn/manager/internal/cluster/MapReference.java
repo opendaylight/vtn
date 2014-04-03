@@ -21,11 +21,11 @@ import org.opendaylight.vtn.manager.VBridgePath;
  * A virtual node referred by a virtual network mapping is represented by
  * a pair of container name and virtual node path in a container.
  */
-public class MapReference implements Serializable {
+public class MapReference implements Serializable, Comparable<MapReference> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 2652438187969451532L;
+    private static final long serialVersionUID = 1690512385908719387L;
 
     /**
      * Mapping type.
@@ -170,5 +170,33 @@ public class MapReference implements Serializable {
             append(vnodePath.toString());
 
         return builder.toString();
+    }
+
+    // Comparable
+
+    /**
+     * Compare two {@code MapReference} instances numerically.
+     *
+     * @param  ref  A {@code MapReference} instance to be compared.
+     * @return   {@code 0} is returned if this instance is equal to
+     *           the specified instance.
+     *           A value less than {@code 0} is returned if this instance is
+     *           numerically less than the specified instance.
+     *           A value greater than {@code 0} is returned if this instance is
+     *           numerically greater than the specified instance.
+     */
+    @Override
+    public int compareTo(MapReference ref) {
+        int ret = mapType.compareTo(ref.mapType);
+        if (ret != 0) {
+            return ret;
+        }
+
+        ret = containerName.compareTo(ref.containerName);
+        if (ret != 0) {
+            return ret;
+        }
+
+        return vnodePath.compareTo(ref.vnodePath);
     }
 }

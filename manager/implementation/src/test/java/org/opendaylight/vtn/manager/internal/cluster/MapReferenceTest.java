@@ -9,9 +9,11 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import java.util.HashSet;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.TreeSet;
 
 import org.junit.Test;
 
@@ -110,6 +112,54 @@ public class MapReferenceTest extends TestBase {
         }
 
         assertEquals(references.size(), set.size());
+    }
+
+    /**
+     * Test case for {@link MapReference#compareTo(MapReference)}.
+     */
+    @Test
+    public void testCompareTo() {
+        List<MapReference> references = createMapReferences();
+        TreeSet<MapReference> set = new TreeSet(references);
+        assertEquals(references.size(), set.size());
+        assertEquals(new HashSet(references), set);
+
+        assertEquals(references.size(), set.size());
+
+        Iterator<MapReference> it = set.iterator();
+        assertTrue(it.hasNext());
+
+        MapReference prev = it.next();
+        MapType prevType = prev.getMapType();
+        String prevContainer = prev.getContainerName();
+        VBridgePath prevPath = prev.getPath();
+
+        while (it.hasNext()) {
+            MapReference ref = it.next();
+            assertTrue(prev.compareTo(ref) < 0);
+            assertFalse(prev.equals(ref));
+
+            MapType type = ref.getMapType();
+            String container = ref.getContainerName();
+            VBridgePath path = ref.getPath();
+
+            if (type.equals(prevType)) {
+                if (container.equals(prevContainer)) {
+                    assertTrue(prevPath.compareTo(path) < 0);
+                    assertFalse(prevPath.equals(path));
+                } else {
+                    assertTrue(prevContainer.compareTo(container) < 0);
+                    assertFalse(prevContainer.equals(container));
+                }
+            } else {
+                assertTrue(prevType.compareTo(type) < 0);
+                assertFalse(prevType.equals(type));
+            }
+
+            prevType = type;
+            prevContainer = container;
+            prevPath = path;
+        }
     }
 
     /**
