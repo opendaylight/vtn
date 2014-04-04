@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -19,6 +19,7 @@ import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.controller.forwardingrulesmanager.
     IForwardingRulesManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
+import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -180,14 +181,20 @@ public abstract class FlowModTask implements Runnable {
 
         Logger logger = getLogger();
         if (!status.isSuccess()) {
-            if (status.getCode() == StatusCode.UNDEFINED) {
-                logger.error("{}: Failed to install flow entry: Timed Out:" +
-                             "entry={}", vtnManager.getContainerName(),
-                             fent);
-            } else {
-                logger.error("{}: Failed to install flow entry: " +
-                             "status={}, entry={}",
-                             vtnManager.getContainerName(), status, fent);
+            Node node = fent.getNode();
+            if (vtnManager.exists(node)) {
+                if (status.getCode() == StatusCode.UNDEFINED) {
+                    logger.error("{}: Failed to install flow entry: " +
+                                 "Timed Out: entry={}",
+                                 vtnManager.getContainerName(), fent);
+                } else {
+                    logger.error("{}: Failed to install flow entry: " +
+                                 "status={}, entry={}",
+                                 vtnManager.getContainerName(), status, fent);
+                }
+            } else if (logger.isTraceEnabled()) {
+                logger.error("{}: Failed to install flow entry: No node: " +
+                             "entry={}", vtnManager.getContainerName(), fent);
             }
             return false;
         }
@@ -231,14 +238,20 @@ public abstract class FlowModTask implements Runnable {
 
         Logger logger = getLogger();
         if (!status.isSuccess()) {
-            if (status.getCode() == StatusCode.UNDEFINED) {
-                logger.error("{}: Failed to uninstall flow entry: " +
-                             "Timed Out: entry={}",
-                             vtnManager.getContainerName(), status, fent);
-            } else {
-                logger.error("{}: Failed to uninstall flow entry: " +
-                             "status={}, entry={}",
-                             vtnManager.getContainerName(), status, fent);
+            Node node = fent.getNode();
+            if (vtnManager.exists(node)) {
+                if (status.getCode() == StatusCode.UNDEFINED) {
+                    logger.error("{}: Failed to uninstall flow entry: " +
+                                 "Timed Out: entry={}",
+                                 vtnManager.getContainerName(), status, fent);
+                } else {
+                    logger.error("{}: Failed to uninstall flow entry: " +
+                                 "status={}, entry={}",
+                                 vtnManager.getContainerName(), status, fent);
+                }
+            } else if (logger.isTraceEnabled()) {
+                logger.trace("{}: Failed to uninstall flow entry: No node: " +
+                             "entry={}", vtnManager.getContainerName(), fent);
             }
             return false;
         }

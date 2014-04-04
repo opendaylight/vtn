@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -27,6 +27,7 @@ import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.forwardingrulesmanager.
     IForwardingRulesManager;
 import org.opendaylight.controller.sal.connection.ConnectionLocality;
+import org.opendaylight.controller.sal.core.Node;
 
 /**
  * This class implements flow programming task which installs a VTN flow.
@@ -165,7 +166,8 @@ public class FlowAddTask extends RemoteFlowModTask {
         VTNManagerImpl mgr = getVTNManager();
         IConnectionManager cnm = mgr.getConnectionManager();
         for (FlowEntry fent: entries) {
-            ConnectionLocality cl = cnm.getLocalityStatus(fent.getNode());
+            Node node = fent.getNode();
+            ConnectionLocality cl = cnm.getLocalityStatus(node);
             if (cl == ConnectionLocality.LOCAL) {
                 LocalFlowAddTask task = new LocalFlowAddTask(mgr, fent);
                 local.add(task);
@@ -173,8 +175,15 @@ public class FlowAddTask extends RemoteFlowModTask {
             } else if (cl == ConnectionLocality.NOT_LOCAL) {
                 remote.add(fent);
             } else {
-                LOG.error("{}: Target node of flow entry is disconnected: {}",
-                          mgr.getConnectionManager(), fent);
+                if (mgr.exists(node)) {
+                    LOG.error("{}: " +
+                              "Target node of flow entry is disconnected: {}",
+                              mgr.getContainerName(), fent);
+                } else if (LOG.isTraceEnabled()) {
+                    LOG.trace("{}: Target node does not exist: {}",
+                              mgr.getContainerName(), fent);
+                }
+
                 return false;
             }
         }
@@ -245,16 +254,20 @@ public class FlowAddTask extends RemoteFlowModTask {
 
         // This class expects that the ingress flow is installed to local node.
         IConnectionManager cnm = mgr.getConnectionManager();
-        ConnectionLocality cl = cnm.getLocalityStatus(ingress.getNode());
+        Node node = ingress.getNode();
+        ConnectionLocality cl = cnm.getLocalityStatus(node);
         if (cl != ConnectionLocality.LOCAL) {
             if (cl == ConnectionLocality.NOT_LOCAL) {
                 LOG.error("{}: Ingress flow must be installed to " +
                           "local node: {}", mgr.getContainerName(),
                           ingress);
-            } else {
+            } else if (mgr.exists(node)) {
                 LOG.error("{}: Target node of ingress flow entry is " +
                           "disconnected: {}", mgr.getContainerName(),
                           ingress);
+            } else if (LOG.isTraceEnabled()) {
+                LOG.trace("{}: Target node does not exist: {}",
+                          mgr.getContainerName(), ingress);
             }
             return null;
         }

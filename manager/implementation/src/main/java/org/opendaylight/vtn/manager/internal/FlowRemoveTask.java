@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -27,6 +27,7 @@ import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 import org.opendaylight.controller.connectionmanager.IConnectionManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.connection.ConnectionLocality;
+import org.opendaylight.controller.sal.core.Node;
 
 /**
  * This class implements flow programming task which uninstalls VTN flows.
@@ -248,7 +249,8 @@ public class FlowRemoveTask extends RemoteFlowModTask {
         ArrayList<LocalFlowRemoveTask> local =
             new ArrayList<LocalFlowRemoveTask>();
         for (FlowEntry fent: entries) {
-            ConnectionLocality cl = cnm.getLocalityStatus(fent.getNode());
+            Node node = fent.getNode();
+            ConnectionLocality cl = cnm.getLocalityStatus(node);
             if (cl == ConnectionLocality.LOCAL) {
                 LocalFlowRemoveTask task =
                     new LocalFlowRemoveTask(mgr, fent);
@@ -257,8 +259,14 @@ public class FlowRemoveTask extends RemoteFlowModTask {
             } else if (cl == ConnectionLocality.NOT_LOCAL) {
                 remote.add(fent);
             } else {
-                LOG.warn("{}: Target node of flow entry is not connected: {}",
-                         mgr.getConnectionManager(), fent);
+                if (mgr.exists(node)) {
+                    LOG.warn("{}: " +
+                             "Target node of flow entry is not connected: {}",
+                             mgr.getContainerName(), fent);
+                } else if (LOG.isTraceEnabled()) {
+                    LOG.trace("{}: Target node does not exist: {}",
+                              mgr.getContainerName(), fent);
+                }
             }
         }
 

@@ -3627,6 +3627,9 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         Node node0 = NodeCreator.createOFNode(Long.valueOf(0L));
         Node node1 = NodeCreator.createOFNode(Long.valueOf(1L));
+        ConcurrentMap<Node, VNodeState> nodeDB = vtnMgr.getNodeDB();
+        nodeDB.put(node0, VNodeState.UP);
+        nodeDB.put(node1, VNodeState.UP);
 
         // ingress
         NodeConnector innc
@@ -4125,8 +4128,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VTNFlowDatabase fdb = vtnMgr.getTenantFlowDB(path.getTenantName());
 
         Node node0 = NodeCreator.createOFNode(Long.valueOf(0L));
-        Set<Node> nodeSet = new HashSet<Node>();
-        nodeSet.add(node0);
+        ConcurrentMap<Node, VNodeState> nodeDB = vtnMgr.getNodeDB();
+        nodeDB.put(node0, VNodeState.UP);
 
         Set<VTNFlow> flows = new HashSet<VTNFlow>();
         VTNFlow flow = fdb.create(vtnMgr);

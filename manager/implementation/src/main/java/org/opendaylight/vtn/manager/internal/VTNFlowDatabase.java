@@ -76,7 +76,7 @@ public class VTNFlowDatabase {
      *   separating ingress flow from others.
      * </p>
      */
-    protected class FlowCollector {
+    private final class FlowCollector {
         /**
          * List of ingress flow entries.
          */
@@ -112,12 +112,12 @@ public class VTNFlowDatabase {
             }
 
             FlowEntry ingress = it.next();
-            if (match(ingress)) {
+            if (match(mgr, ingress)) {
                 ingressFlows.add(ingress);
             }
             while (it.hasNext()) {
                 FlowEntry fent = it.next();
-                if (match(fent)) {
+                if (match(mgr, fent)) {
                     flowEntries.add(fent);
                 }
             }
@@ -149,43 +149,21 @@ public class VTNFlowDatabase {
         /**
          * Determine whether the given flow entry should be collected or not.
          *
+         * @param mgr   VTN Manager service.
          * @param fent  A flow entry.
          * @return  {@code true} is returned if the given flow entry should
          *          be collected.
          */
-        public boolean match(FlowEntry fent) {
-            // Collect all flow entries.
-            return true;
-        }
-    }
+        private boolean match(VTNManagerImpl mgr, FlowEntry fent) {
+            // Don't collect flow entry in the removed node.
+            Node node = fent.getNode();
+            boolean ret = mgr.exists(node);
+            if (!ret && LOG.isTraceEnabled()) {
+                LOG.trace("{}: Ignore flow entry in the removed node: {}",
+                          mgr.getContainerName(), fent);
+            }
 
-    /**
-     * Flow collector that excludes flow entries in the specified node.
-     */
-    private final class ExcludeNodeCollector extends FlowCollector {
-        /**
-         * A node to be excluded.
-         */
-        private final Node  excludeNode;
-
-        /**
-         * Construct a new collector.
-         *
-         * @param node  A node to be excluded.
-         */
-        private ExcludeNodeCollector(Node node) {
-            excludeNode = node;
-        }
-
-        /**
-         * Determine whether the given flow entry should be handled or not.
-         *
-         * @param fent  A flow entry.
-         * @return  {@code true} is returned if the given flow entry should
-         *          be handled.
-         */
-        public boolean match(FlowEntry fent) {
-            return !excludeNode.equals(fent.getNode());
+            return ret;
         }
     }
 
@@ -300,47 +278,21 @@ public class VTNFlowDatabase {
     /**
      * Remove all VTN flows related to the given node.
      *
-     * <p>
-     *   This method assumes that the given node is no longer available.
-     *   So this method never tries to remove flow entries from the given node.
-     * </p>
-     *
-     * @param mgr   VTN Manager service.
-     * @param node  A node associated with a switch.
+     * @param mgr        VTN Manager service.
+     * @param node       A node associated with a switch.
      * @return  A {@link FlowRemoveTask} object that will execute the actual
      *          work is returned. {@code null} is returned if there is no flow
      *          entry to be removed.
      */
     public synchronized FlowRemoveTask removeFlows(VTNManagerImpl mgr,
                                                    Node node) {
-        return removeFlows(mgr, node, false);
-    }
-
-    /**
-     * Remove all VTN flows related to the given node.
-     *
-     * @param mgr        VTN Manager service.
-     * @param node       A node associated with a switch.
-     * @param available  Specifying {@code true} means that the given node is
-     *                   still available.
-     *                   Otherwise this method assumes that the given node is
-     *                   no longer available. In this case this method never
-     *                   tries to remove flow entries from the given node.
-     * @return  A {@link FlowRemoveTask} object that will execute the actual
-     *          work is returned. {@code null} is returned if there is no flow
-     *          entry to be removed.
-     */
-    public synchronized FlowRemoveTask removeFlows(VTNManagerImpl mgr,
-                                                   Node node,
-                                                   boolean available) {
         Set<VTNFlow> vflows = nodeFlows.remove(node);
         if (vflows == null) {
             return null;
         }
 
         // Eliminate flow entries in the specified node.
-        FlowCollector collector = (available)
-            ? new FlowCollector() : new ExcludeNodeCollector(node);
+        FlowCollector collector = new FlowCollector();
         for (VTNFlow vflow: vflows) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("{}:{}: Remove VTN flow related to node {}: " +
