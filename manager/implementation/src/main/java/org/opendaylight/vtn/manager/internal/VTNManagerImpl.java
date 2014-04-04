@@ -1153,9 +1153,7 @@ public class VTNManagerImpl
         }
 
         if (nodeDB.putIfAbsent(node, VNodeState.UP) == null) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("{}: addNode: New node {}", containerName, node);
-            }
+            LOG.info("{}: addNode: New node {}", containerName, node);
             addDisabledNode(node);
             return true;
         }
@@ -1185,10 +1183,6 @@ public class VTNManagerImpl
      */
     private boolean removeNode(Node node) {
         if (nodeDB.remove(node) != null) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("{}: removeNode: Removed {}", containerName, node);
-            }
-
             TimerTask task = disabledNodes.remove(node);
             if (task != null) {
                 task.cancel();
@@ -1199,15 +1193,15 @@ public class VTNManagerImpl
                 new HashSet<NodeConnector>(portDB.keySet());
             for (NodeConnector nc: ports) {
                 if (node.equals(nc.getNode())) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("{}: removeNode({}): Remove port {}",
-                                  containerName, node, nc);
-                    }
+                    LOG.info("{}: removeNode({}): Remove port {}",
+                             containerName, node, nc);
                     if (portDB.remove(nc) != null) {
                         removeISLPort(nc);
                     }
                 }
             }
+
+            LOG.info("{}: removeNode: Removed {}", containerName, node);
 
             return true;
         }
@@ -1279,20 +1273,15 @@ public class VTNManagerImpl
         PortProperty old = portDB.putIfAbsent(nc, pp);
         if (old == null) {
             addNode(nc.getNode(), false);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("{}: addPort: New port: port={}, prop={}",
-                          containerName, nc, pp);
-            }
+            LOG.info("{}: addPort: New port: port={}, prop={}",
+                     containerName, nc, pp);
             return UpdateType.ADDED;
         }
 
         if (!old.equals(pp)) {
             portDB.put(nc, pp);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("{}: addPort: Property has been changed: " +
-                          "port={}, prop={} -> {}", containerName, nc,
-                          old, pp);
-            }
+            LOG.info("{}: addPort: Property has been changed: " +
+                     "port={}, prop={} -> {}", containerName, nc, old, pp);
             return UpdateType.CHANGED;
         }
 
@@ -1317,9 +1306,7 @@ public class VTNManagerImpl
      */
     private boolean removePort(NodeConnector nc) {
         if (portDB.remove(nc) != null) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("{}: removePort: Removed {}", containerName, nc);
-            }
+            LOG.info("{}: removePort: Removed {}", containerName, nc);
             removeISLPort(nc);
             return true;
         }
@@ -1423,10 +1410,8 @@ public class VTNManagerImpl
      */
     private boolean addISLPort(NodeConnector nc) {
         if (islDB.putIfAbsent(nc, VNodeState.UP) == null) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("{}: addISLPort: New ISL port {}",
-                          containerName, nc);
-            }
+            LOG.info("{}: addISLPort: New ISL port {}",
+                     containerName, nc);
             return true;
         }
 
@@ -1452,9 +1437,7 @@ public class VTNManagerImpl
      */
     private boolean removeISLPort(NodeConnector nc) {
         if (islDB.remove(nc) != null) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("{}: removeISLPort: Removed {}", containerName, nc);
-            }
+            LOG.info("{}: removeISLPort: Removed {}", containerName, nc);
             return true;
         }
 
@@ -2173,10 +2156,6 @@ public class VTNManagerImpl
     /**
      * Return a set of existing nodes.
      *
-     * <p>
-     *   This method must be called with holding {@link #rwLock}.
-     * </p>
-     *
      * @return  A set of existing nodes.
      */
     public Set<Node> getNodes() {
@@ -2185,10 +2164,6 @@ public class VTNManagerImpl
 
     /**
      * Determine whether the given node exists or not.
-     *
-     * <p>
-     *   This method must be called with holding {@link #rwLock}.
-     * </p>
      *
      * @param node  Node associated with SDN switch.
      * @return  {@code true} is returned if the given node exists.
@@ -3706,10 +3681,9 @@ public class VTNManagerImpl
         TimerTask task = new TimerTask() {
             @Override
             public void run() {
-                if (disabledNodes.remove(node) != null &&
-                    LOG.isDebugEnabled()) {
-                    LOG.debug("{}: {}: Start packet service",
-                              containerName, node);
+                if (disabledNodes.remove(node) != null) {
+                    LOG.info("{}: {}: Start packet service",
+                             containerName, node);
                 }
             }
         };
@@ -5048,7 +5022,7 @@ public class VTNManagerImpl
                     // all flow entries in this node should be removed by
                     // protocol plugin.
                     for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-                        fdb.removeFlows(this, node, true);
+                        fdb.removeFlows(this, node);
                     }
                 }
 

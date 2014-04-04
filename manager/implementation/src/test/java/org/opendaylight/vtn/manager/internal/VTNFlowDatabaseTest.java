@@ -27,6 +27,7 @@ import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
@@ -320,6 +321,12 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         Node node0 = NodeCreator.createOFNode(Long.valueOf(0L));
         Node node1 = NodeCreator.createOFNode(Long.valueOf(1L));
         Node node2 = NodeCreator.createOFNode(Long.valueOf(2L));
+
+        // Register nodes to node DB except node2.
+        ConcurrentMap<Node, VNodeState> nodeDB = vtnMgr.getNodeDB();
+        nodeDB.put(node0, VNodeState.UP);
+        nodeDB.put(node1, VNodeState.UP);
+
         Set<Short> portIds0 = new HashSet<Short>(createShorts((short) 10, (short) 5,
                                                               false));
         Set<Short> portIds1 = new HashSet<Short>(createShorts((short) 10, (short) 4,
@@ -371,7 +378,7 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
 
         // remove Flows related to node1.
         // flow entries in switch are also removed.
-        FlowRemoveTask task = fdb.removeFlows(vtnMgr, node1, true);
+        FlowRemoveTask task = fdb.removeFlows(vtnMgr, node1);
         assertNotNull(task);
         flushFlowTasks();
 
@@ -422,8 +429,13 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         task = fdb.removeFlows(vtnMgr, node0);
         assertNull(task);
         flushFlowTasks();
-        assertEquals(0, stubObj.getFlowEntries().size());
 
+        // Flow entry in node 2 must be retained.
+        Set<FlowEntry> flows = stubObj.getFlowEntries();
+        assertFalse(flows.isEmpty());
+        for (FlowEntry fent: flows) {
+            assertEquals(node2, fent.getNode());
+        }
     }
 
     /**
@@ -437,6 +449,11 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         Node node0 = NodeCreator.createOFNode(Long.valueOf(0L));
         Node node1 = NodeCreator.createOFNode(Long.valueOf(1L));
         Node node2 = NodeCreator.createOFNode(Long.valueOf(2L));
+        ConcurrentMap<Node, VNodeState> nodeDB = vtnMgr.getNodeDB();
+        nodeDB.put(node0, VNodeState.UP);
+        nodeDB.put(node1, VNodeState.UP);
+        nodeDB.put(node2, VNodeState.UP);
+
         Set<Short> portIds0 = new HashSet<Short>(createShorts((short) 10, (short) 5,
                                                               false));
         Set<Short> portIds1 = new HashSet<Short>(createShorts((short) 10, (short) 4,
