@@ -447,10 +447,7 @@ public class ArpHandler {
         // Check to see if we know about the destination host.
         IfIptoHost ht = vtnManager.getHostTracker();
         HostNodeConnector host = ht.hostQuery(dstIp);
-        if (host != null && host.getVlan() == vlan) {
-            // Forward the packet to the known host if a packet is reachable.
-            forward(pctx, host);
-        } else {
+        if (host == null || host.getVlan() != vlan) {
             if (LOG.isTraceEnabled()) {
                 LOG.trace("{}: Send broadcast ARP request to discover host: " +
                           "addr={}, vlan={}", vtnManager.getContainerName(),
@@ -459,73 +456,14 @@ public class ArpHandler {
 
             // Send broadcast ARP request to discover host.
             floodArpRequest(dstIp, subnet);
+        } else if (LOG.isTraceEnabled()) {
+            LOG.trace("{}: Ignore IPv4 packet to known host: addr={}, " +
+                      "vlan={}, port={}", vtnManager.getContainerName(),
+                      dstIp.getHostAddress(), vlan,
+                      pctx.getIncomingNodeConnector());
         }
 
         return PacketResult.KEEP_PROCESSING;
-    }
-
-    /**
-     * Forward a received packet to the specified host.
-     *
-     * @param pctx  The context of an incoming packet.
-     * @param host  The destination host.
-     */
-    private void forward(PacketContext pctx, HostNodeConnector host) {
-        NodeConnector outgoing = host.getnodeConnector();
-        ISwitchManager swMgr = vtnManager.getSwitchManager();
-        if (!swMgr.isNodeConnectorEnabled(outgoing)) {
-            InetAddress dstIp = host.getNetworkAddress();
-            LOG.trace("{}: Port is down: addr={}, incoming={}, host={}",
-                      vtnManager.getContainerName(),
-                      dstIp.getHostAddress(),
-                      pctx.getIncomingNodeConnector(), host);
-            return;
-        }
-
-        if (isReachable(pctx, outgoing)) {
-            short vlan = host.getVlan();
-            Ethernet frame = pctx.createFrame(vlan);
-
-            if (LOG.isTraceEnabled()) {
-                InetAddress dstIp = host.getNetworkAddress();
-                LOG.trace("{}: Forward packet to known host: addr={}, {}",
-                          vtnManager.getContainerName(),
-                          dstIp.getHostAddress(),
-                          pctx.getDescription(frame, outgoing, vlan));
-            }
-
-            vtnManager.transmit(outgoing, frame);
-        } else if (LOG.isTraceEnabled()) {
-            InetAddress dstIp = host.getNetworkAddress();
-            LOG.trace("{}: No route: addr={}, incoming={}, host={}",
-                      vtnManager.getContainerName(),
-                      dstIp.getHostAddress(),
-                      pctx.getIncomingNodeConnector(), host);
-        }
-    }
-
-    /**
-     * Determine whether an incoming packet is reachable or not.
-     *
-     * @param pctx      The context of an incoming packet.
-     * @param outgoing  A {@code NodeConnector} associated with outgoing
-     *                  switch port.
-     * @return  {@code true} is returned if the specified packet is reachable
-     *          to {@code outgoing}. Otherwise {@code false} is returned.
-     */
-    private boolean isReachable(PacketContext pctx, NodeConnector outgoing) {
-        NodeConnector incoming = pctx.getIncomingNodeConnector();
-        Node src = incoming.getNode();
-        Node dst = outgoing.getNode();
-        boolean reachable;
-        if (src.equals(dst)) {
-            reachable = true;
-        } else {
-            IRouting routing = vtnManager.getRouting();
-            reachable = (routing.getRoute(src, dst) != null);
-        }
-
-        return reachable;
     }
 
     /**
