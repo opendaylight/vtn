@@ -20,6 +20,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -390,6 +391,12 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     private ConcurrentMap<String, ConcurrentMap<?, ?>> caches =
         new ConcurrentHashMap<String, ConcurrentMap<?, ?>>();
 
+    /**
+     * A set of transactional cache names.
+     */
+    private Set<String>  transactionalCaches =
+        new ConcurrentSkipListSet<String>();
+
     // IClusterGlobalServices, IClusterContainerServices
 
     @Override
@@ -401,15 +408,26 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     public ConcurrentMap<?, ?> createCache(String cacheName, Set<cacheMode> cMode) throws CacheExistException,
             CacheConfigException {
 
-        ConcurrentMap<?, ?> res = this.caches.get(cacheName);
-        if (res == null) {
-            res = (CACHE_CONFREVISION.equals(cacheName))
-                ? new ConfRevisionMap()
-                : new ConcurrentHashMap<Object, Object>();
-            this.caches.put(cacheName, res);
-            return res;
+        ConcurrentMap<?, ?> cache;
+        if (CACHE_CONFREVISION.equals(cacheName)) {
+            cache = new ConfRevisionMap();
+        } else if (VTNManagerImpl.CACHE_EVENT.equals(cacheName)) {
+            cache = new ClusterEventMap();
+        } else {
+            cache = new ConcurrentHashMap<Object, Object>();
         }
-        throw new CacheExistException();
+
+        if (this.caches.putIfAbsent(cacheName, cache) != null) {
+            throw new CacheExistException();
+        }
+
+        // Default cache mode is TRANSACTIONAL.
+        if (cMode.contains(cacheMode.TRANSACTIONAL) ||
+            !cMode.contains(cacheMode.NON_TRANSACTIONAL)) {
+            Assert.assertTrue(transactionalCaches.add(cacheName));
+        }
+
+        return cache;
     }
 
     @Override
@@ -420,6 +438,7 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     @Override
     public void destroyCache(String cacheName) {
         this.caches.remove(cacheName);
+        transactionalCaches.remove(cacheName);
     }
 
     @Override
@@ -450,7 +469,8 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
             throw new SystemException("Cache transaction is already active.");
         }
 
-        t = new TestTransaction(transactionTestMode, timeout, unit, caches);
+        t = new TestTransaction(transactionTestMode, timeout, unit, caches,
+                                transactionalCaches);
         CLUSTER_TRANSACTION.set(t);
 
     }

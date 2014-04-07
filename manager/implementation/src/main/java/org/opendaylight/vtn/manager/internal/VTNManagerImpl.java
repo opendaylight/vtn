@@ -3115,7 +3115,7 @@ public class VTNManagerImpl
 
                 ClusterEventId evid = new ClusterEventId();
                 ids.add(evid);
-                clusterEvent.put(evid, cev);
+                putEvent(evid, cev);
             }
 
             // Create a timer task to remove cluster event objects.
@@ -3716,6 +3716,22 @@ public class VTNManagerImpl
             task.cancel();
             it.remove();
         }
+    }
+
+    /**
+     * Determine whether the specified node is contained in
+     * {@link #disabledNodes} or not.
+     *
+     * <p>
+     *   This method is only for testing.
+     * </p>
+     *
+     * @param node  A {@link Node} instance to be tested.
+     * @return  {@code true} only if the specified node is contained in
+     *          {@link #disabledNodes}.
+     */
+    boolean isDisabled(Node node) {
+        return disabledNodes.containsKey(node);
     }
 
     /**

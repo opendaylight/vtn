@@ -231,7 +231,6 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         startVTNManager(c);
         checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
 
-
         // in case another node is loading configuration and
         // waiting process in self node timeout.
         stopVTNManager(true);
@@ -363,22 +362,38 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         stopVTNManager(false);
         VTNManagerImpl.cleanUpConfigFile(containerName);
 
-        ConcurrentMap<ClusterEventId, ClusterEvent> clsmap
-            = (ConcurrentMap<ClusterEventId, ClusterEvent>) stubObj
-                .getCache(VTNManagerImpl.CACHE_EVENT);
+        ClusterEventMap clsmap = (ClusterEventMap)
+            stubObj.getCache(VTNManagerImpl.CACHE_EVENT);
+        List<ClusterEvent> posted = clsmap.getPostedEvents();
+        assertEquals(1 + bpathlist.size() + ifpathlist.size(), posted.size());
+        assertTrue(posted.get(0) instanceof VTenantEvent);
+        int index = 1;
+        for (VBridgePath path: bpathlist) {
+            assertTrue(posted.get(index) instanceof VBridgeEvent);
+            index++;
+        }
+        for (VBridgePath path: ifpathlist) {
+            assertTrue(posted.get(index) instanceof VBridgeIfEvent);
+            index++;
+        }
 
-        FlowGroupId gid = new FlowGroupId("test_tenant");
-        VTNFlow flow = new VTNFlow(gid);
-        FlowModResultEvent ev = new FlowModResultEvent("test",
-                                                       FlowModResult.SUCCEEDED);
-        clsmap.put(gid, ev);
+        posted.clear();
+        for (int i = 0; i < 10; i++) {
+            FlowGroupId gid = new FlowGroupId("test_tenant");
+            VTNFlow flow = new VTNFlow(gid);
+            FlowModResultEvent ev =
+                new FlowModResultEvent("test", FlowModResult.SUCCEEDED);
+            clsmap.put(gid, ev);
+            posted.add(ev);
+        }
 
         startVTNManager(c);
-        assertNull(clsmap.get(gid));
+        assertTrue(clsmap.isEmpty());
+        assertEquals(posted, clsmap.getPostedEvents());
 
         // in case flow cache remain.
         VTNFlowDatabase fdb = vtnMgr.getTenantFlowDB(tpath.getTenantName());
-        flow = fdb.create(vtnMgr);
+        VTNFlow flow = fdb.create(vtnMgr);
         Node node = NodeCreator.createOFNode(Long.valueOf(0L));
         NodeConnector innc = NodeConnectorCreator
                 .createOFNodeConnector(Short.valueOf("1"), node);
@@ -399,7 +414,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         ConcurrentMap<FlowGroupId, VTNFlow> flowMap
             = (ConcurrentMap<FlowGroupId, VTNFlow>) stubObj
                 .getCache(VTNManagerImpl.CACHE_FLOWS);
-        gid = new FlowGroupId("test_tenant");
+        FlowGroupId gid = new FlowGroupId("test_tenant");
         flow = new VTNFlow(gid);
         flowMap.put(gid, flow);
 
@@ -443,7 +458,6 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         entries = getMacAddressEntries(tent.getEntryId());
         assertEquals(1, entries.size());
         assertEquals(1, map.size());
-
     }
 
     /**
@@ -477,10 +491,9 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         VBridgeIfPath ifpath = new VBridgeIfPath(tpath.getTenantName(),
                                                  bpath.getBridgeName(),
                                                  "interface");
-        ConcurrentMap<ClusterEventId, ClusterEvent> clsEvents
-                = (ConcurrentMap<ClusterEventId, ClusterEvent>) stubObj
-                        .getCache(VTNManagerImpl.CACHE_EVENT);
-        clsEvents.clear();
+        ClusterEventMap clsEvents = (ClusterEventMap)
+            stubObj.getCache(VTNManagerImpl.CACHE_EVENT);
+        assertTrue(clsEvents.getPostedEvents().isEmpty());
 
         VTNManagerAwareStub listener = new VTNManagerAwareStub();
         mgr.addVTNManagerAware(listener);
@@ -490,39 +503,36 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         VTenantConfig tconf = new VTenantConfig(null, 300, 0);
         Status st = mgr.addTenant(tpath, tconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        List<ClusterEvent> events = new ArrayList<ClusterEvent>(clsEvents.values());
+        List<ClusterEvent> events = clsEvents.getPostedEvents();
         checkVTenantEvent(events, 1, tpath, tconf, UpdateType.ADDED);
         VTenantEvent tev = (VTenantEvent) events.get(0);
 
         listener.checkVtnInfo(1, tpath, UpdateType.ADDED);
         executeVTenantEvent(mgr, tpath, tev);
         listener.checkVtnInfo(1, tpath, UpdateType.ADDED);
-        clsEvents.clear();
 
         // change vTenant.
         tconf = new VTenantConfig("desc", 100, 200);
         st = mgr.modifyTenant(tpath, tconf, true);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        events = clsEvents.getPostedEvents();
         checkVTenantEvent(events, 1, tpath, tconf, UpdateType.CHANGED);
         tev = (VTenantEvent) events.get(0);
 
         listener.checkVtnInfo(1, tpath, UpdateType.CHANGED);
         executeVTenantEvent(mgr, tpath, tev);
         listener.checkVtnInfo(1, tpath, UpdateType.CHANGED);
-        clsEvents.clear();
 
         // remove vTenant.
         st = mgr.removeTenant(tpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        events = clsEvents.getPostedEvents();
         checkVTenantEvent(events, 1, tpath, tconf, UpdateType.REMOVED);
         tev = (VTenantEvent) events.get(0);
 
         listener.checkVtnInfo(1, tpath, UpdateType.REMOVED);
         executeVTenantEvent(mgr, tpath, tev);
         listener.checkVtnInfo(1, tpath, UpdateType.REMOVED);
-        clsEvents.clear();
 
         // add vTenant again for following tests.
         tconf = new VTenantConfig(null, 300, 0);
@@ -530,45 +540,43 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         listener.checkVtnInfo(1, tpath, UpdateType.ADDED);
-        clsEvents.clear();
+        events = clsEvents.getPostedEvents();
+        checkVTenantEvent(events, 1, tpath, tconf, UpdateType.ADDED);
 
         // add vBridge.
         VBridgeConfig bconf = new VBridgeConfig(null, 600);
         st = mgr.addBridge(bpath, bconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        events = clsEvents.getPostedEvents();
         checkVBridgeEvent(events, 1, bpath, bconf, UpdateType.ADDED);
         VBridgeEvent bev = (VBridgeEvent) events.get(0);
 
         listener.checkVbrInfo(1, bpath, UpdateType.ADDED);
         executeVBridgeEvent(mgr, bpath, bev, true);
         listener.checkVbrInfo(1, bpath, UpdateType.ADDED);
-        clsEvents.clear();
 
         // change vBridge.
         bconf = new VBridgeConfig("desc", 600);
         st = mgr.modifyBridge(bpath, bconf, true);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        events = clsEvents.getPostedEvents();
         checkVBridgeEvent(events, 1, bpath, bconf, UpdateType.CHANGED);
         bev = (VBridgeEvent) events.get(0);
 
         listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
         executeVBridgeEvent(mgr, bpath, bev, true);
         listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
-        clsEvents.clear();
 
         // remove vBridge.
         st = mgr.removeBridge(bpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        events = clsEvents.getPostedEvents();
         checkVBridgeEvent(events, 1, bpath, bconf, UpdateType.REMOVED);
         bev = (VBridgeEvent) events.get(0);
 
         listener.checkVbrInfo(1, bpath, UpdateType.REMOVED);
         executeVBridgeEvent(mgr, bpath, bev, true);
         listener.checkVbrInfo(1, bpath, UpdateType.REMOVED);
-        clsEvents.clear();
 
         // add vBridge for following tests.
         bconf = new VBridgeConfig(null, 600);
@@ -576,45 +584,43 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         listener.checkVbrInfo(1, bpath, UpdateType.ADDED);
-        clsEvents.clear();
+        events = clsEvents.getPostedEvents();
+        checkVBridgeEvent(events, 1, bpath, bconf, UpdateType.ADDED);
 
         // add vBridgeInterface.
         VInterfaceConfig ifconf = new VInterfaceConfig(null, Boolean.TRUE);
         st = mgr.addBridgeInterface(ifpath, ifconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        events = clsEvents.getPostedEvents();
         checkVBridgeIfEvent(events, 1, ifpath, ifconf, UpdateType.ADDED);
         VBridgeIfEvent ifev = (VBridgeIfEvent) events.get(0);
 
         listener.checkVIfInfo(1, ifpath, UpdateType.ADDED);
         executeClusterEvent(mgr, ifpath, ifev, true);
         listener.checkVIfInfo(1, ifpath, UpdateType.ADDED);
-        clsEvents.clear();
 
         // change vBridgeInterface.
         ifconf = new VInterfaceConfig("description", Boolean.TRUE);
         st = mgr.modifyBridgeInterface(ifpath, ifconf, true);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        events = clsEvents.getPostedEvents();
         checkVBridgeIfEvent(events, 1, ifpath, ifconf, UpdateType.CHANGED);
         ifev = (VBridgeIfEvent) events.get(0);
 
         listener.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
         executeClusterEvent(mgr, ifpath, ifev, true);
         listener.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
-        clsEvents.clear();
 
         // remove vBridgeInterface.
         st = mgr.removeBridgeInterface(ifpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        events = clsEvents.getPostedEvents();
         checkVBridgeIfEvent(events, 1, ifpath, ifconf, UpdateType.REMOVED);
         ifev = (VBridgeIfEvent) events.get(0);
 
         listener.checkVIfInfo(1, ifpath, UpdateType.REMOVED);
         executeClusterEvent(mgr, ifpath, ifev, true);
         listener.checkVIfInfo(1, ifpath, UpdateType.REMOVED);
-        clsEvents.clear();
 
         // add vBridgeInterface for following tests.
         ifconf = new VInterfaceConfig(null, Boolean.TRUE);
@@ -622,7 +628,8 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         listener.checkVIfInfo(1, ifpath, UpdateType.ADDED);
-        clsEvents.clear();
+        events = clsEvents.getPostedEvents();
+        checkVBridgeIfEvent(events, 1, ifpath, ifconf, UpdateType.ADDED);
 
         // add PortMap. When PortMap status is changed,
         // VBridge and VBridgeInterface status is also changed.
@@ -632,7 +639,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         PortMapConfig pmconf = new PortMapConfig(node0, port, vlan);
         st = mgr.setPortMap(ifpath, pmconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        events = clsEvents.getPostedEvents();
         assertEquals(3, events.size());
 
         bev = null;
@@ -671,13 +678,12 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                 listener.checkPmapInfo(1, ifpath, pmconf, UpdateType.ADDED);
             }
         }
-        clsEvents.clear();
 
         // change PortMap
         pmconf = new PortMapConfig(node0, port, (short) 1);
         st = vtnMgr.setPortMap(ifpath, pmconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        events = clsEvents.getPostedEvents();
         assertEquals(1, events.size());
         checkPortMapEvent(events, 1, ifpath, pmconf, UpdateType.CHANGED);
         pmev = (PortMapEvent) events.get(0);
@@ -685,13 +691,12 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         listener.checkPmapInfo(1, ifpath, pmconf, UpdateType.CHANGED);
         executeClusterEvent(mgr, ifpath, pmev, true);
         listener.checkPmapInfo(1, ifpath, pmconf, UpdateType.CHANGED);
-        clsEvents.clear();
 
         // clear PortMap. When portmap is removed,
         // VBridge and VBridgeInterface status is also changed.
         st = mgr.setPortMap(ifpath, null);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        events = clsEvents.getPostedEvents();
         assertEquals(3, events.size());
         flushTasks();
         bev = null;
@@ -730,7 +735,6 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                 listener.checkPmapInfo(1, ifpath, pmconf, UpdateType.REMOVED);
             }
         }
-        clsEvents.clear();
 
         // add VlanMap.
         // VBridge status is also changed.
@@ -742,7 +746,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
             unexpected(e);
         }
         assertNotNull(map);
-        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        events = clsEvents.getPostedEvents();
         assertEquals(2, events.size());
 
         bev = null;
@@ -769,13 +773,12 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                 listener.checkVlmapInfo(1, bpath, map.getId(), UpdateType.ADDED);
             }
         }
-        clsEvents.clear();
 
         // remove VlanMap.
         // VBridge status is also changed.
         st = mgr.removeVlanMap(bpath, map.getId());
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        events = clsEvents.getPostedEvents();
         assertEquals(2, events.size());
 
         bev = null;
@@ -802,7 +805,6 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                 listener.checkVlmapInfo(1, bpath, map.getId(), UpdateType.REMOVED);
             }
         }
-        clsEvents.clear();
         flushTasks();
         listener.checkAllNull();
 
@@ -810,6 +812,15 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         pmconf = new PortMapConfig(node0, port, (short) 0);
         st = mgr.setPortMap(ifpath, pmconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        events = clsEvents.getPostedEvents();
+        assertEquals(3, events.size());
+        checkPortMapEvent((PortMapEvent)events.get(0), ifpath, pmconf,
+                          UpdateType.ADDED);
+        checkVBridgeIfEvent((VBridgeIfEvent)events.get(1), ifpath, ifconf,
+                            VNodeState.UP, VNodeState.UP, UpdateType.CHANGED);
+        checkVBridgeEvent((VBridgeEvent)events.get(2), bpath, bconf,
+                          VNodeState.UP, UpdateType.CHANGED);
 
         listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
         listener.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
@@ -823,15 +834,19 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         }
         assertNotNull(map);
 
+        events = clsEvents.getPostedEvents();
+        assertEquals(1, events.size());
+        checkVlanMapEvent((VlanMapEvent)events.get(0), bpath, map,
+                          UpdateType.ADDED);
+
         listener.checkVlmapInfo(1, bpath, map.getId(), UpdateType.ADDED);
-        clsEvents.clear();
 
         // remove tenant.
         // VTenantEvent, VBridgeEvent, VBridgeIfEvent, PortMapEvent and
         // VlanMapEvent are posted.
         st = mgr.removeTenant(tpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        events = new ArrayList<ClusterEvent>(clsEvents.values());
+        events = clsEvents.getPostedEvents();
         assertEquals(5, events.size());
 
         listener.checkVtnInfo(1, tpath, UpdateType.REMOVED);
@@ -842,6 +857,8 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
 
         flushTasks();
         listener.checkAllNull();
+
+        checkEventCleared(clsEvents);
     }
 
     /**
@@ -1472,11 +1489,11 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
      * @param mapType   {@link MapType}.
      * @param msg       A string output when assertion is failed.
      */
-    protected void checkNotification (VTNManagerImpl mgr, VBridgePath bpath,
-                                      VBridgeIfPath ifp, NodeConnector chgNc,
-                                      Node chgNode, PortMapConfig pmconf,
-                                      VlanMapConfig vlconf, MapType mapType,
-                                      String msg) {
+    protected void checkNotification(VTNManagerImpl mgr, VBridgePath bpath,
+                                     VBridgeIfPath ifp, NodeConnector chgNc,
+                                     Node chgNode, PortMapConfig pmconf,
+                                     VlanMapConfig vlconf, MapType mapType,
+                                     String msg) {
         ISwitchManager swMgr = mgr.getSwitchManager();
         ITopologyManager topoMgr = mgr.getTopologyManager();
         VTenantPath tpath = new VTenantPath(bpath.getTenantName());
@@ -1909,10 +1926,14 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
 
                 PacketResult result = mgr.receiveDataPacket(inPkt);
                 assertEquals(PacketResult.IGNORED, result);
-                List<RawPacket> transDatas = stub.getTransmittedDataPacket();
-                assertEquals(0, transDatas.size());
+                List<RawPacket> dataList = stub.getTransmittedDataPacket();
+                assertEquals(0, dataList.size());
             }
         }
+
+        ClusterEventMap clsEvents = (ClusterEventMap)
+            stubObj.getCache(VTNManagerImpl.CACHE_EVENT);
+        checkEventCleared(clsEvents);
     }
 
     /**
@@ -1960,6 +1981,9 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         }
         byte[] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
 
+        ClusterEventMap clsEvents = (ClusterEventMap)
+            stubObj.getCache(VTNManagerImpl.CACHE_EVENT);
+
         for (PortVlan inPv : mappedThis) {
             NodeConnector inNc = inPv.getNodeConnector();
             short inVlan = inPv.getVlan();
@@ -1975,11 +1999,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                                           bytes[3], bytes[4], bytes[5]};
                 byte[] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)iphost};
 
-                ConcurrentMap<ClusterEventId, ClusterEvent> clsEvents
-                = (ConcurrentMap<ClusterEventId, ClusterEvent>) stubObj
-                    .getCache(VTNManagerImpl.CACHE_EVENT);
-                clsEvents.clear();
-
+                clsEvents.getPostedEvents();
 
                 RawPacket inPkt = null;
                 if (ethtype.shortValue() == EtherTypes.IPv4.shortValue()) {
@@ -2020,15 +2040,15 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                         assertEquals(emsg, 0, entry.getInetAddresses().size());
                     }
 
-                    List<RawPacket> transDatas = stub.getTransmittedDataPacket();
+                    List<RawPacket> dataList = stub.getTransmittedDataPacket();
 
                     if (ethtype.shortValue() == EtherTypes.IPv4.shortValue()) {
-                        assertEquals(emsg, mappedThis.size(), transDatas.size());
+                        assertEquals(emsg, mappedThis.size(), dataList.size());
                     } else {
-                        assertEquals(emsg, mappedThis.size() - 1, transDatas.size());
+                        assertEquals(emsg, mappedThis.size() - 1, dataList.size());
                     }
 
-                    for (RawPacket raw: transDatas) {
+                    for (RawPacket raw: dataList) {
                         Ethernet pkt = (Ethernet)stub.decodeDataPacket(raw);
                         String emsgPkt = emsg + ",(out packet)" + pkt.toString()
                                 + ",(in nc)" + raw.getIncomingNodeConnector()
@@ -2070,10 +2090,9 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                         }
                     }
 
-                    clsEvents = (ConcurrentMap<ClusterEventId, ClusterEvent>) stubObj
-                            .getCache(VTNManagerImpl.CACHE_EVENT);
-                    assertEquals(transmitOtherNode.size(), clsEvents.size());
-                    for (ClusterEvent ev : clsEvents.values()) {
+                    List<ClusterEvent> posted = clsEvents.getPostedEvents();
+                    assertEquals(transmitOtherNode.size(), posted.size());
+                    for (ClusterEvent ev : posted) {
                         assertTrue(ev instanceof RawPacketEvent);
                     }
 
@@ -2084,6 +2103,8 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                     } else {
                         assertEquals(ea.toString(), PacketResult.IGNORED, result);
                     }
+
+                    assertEquals(0, clsEvents.getPostedEvents().size());
                 }
                 iphost++;
             }
@@ -2207,12 +2228,12 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                         }
 
                         // Check output data packet.
-                        List<RawPacket> transDatas = stub.getTransmittedDataPacket();
+                        List<RawPacket> dataList = stub.getTransmittedDataPacket();
 
                         // IP address probe request should be sent.
-                        assertEquals(emsg, 2, transDatas.size());
+                        assertEquals(emsg, 2, dataList.size());
 
-                        for (RawPacket raw : transDatas) {
+                        for (RawPacket raw : dataList) {
                             Packet pkt = stub.decodeDataPacket(raw);
                             Ethernet eth = (Ethernet)pkt;
                             short outEthType;
@@ -2273,6 +2294,19 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
             expireFlows(mgr, stub);
             Status st = mgr.flushMacEntries(bpath);
             assertEquals(StatusCode.SUCCESS, st.getCode());
+        }
+    }
+
+    /**
+     * Ensure that all events were removed by timer thread.
+     *
+     * @param map  A cluster cache which keeps cluster events.
+     */
+    private void checkEventCleared(ClusterEventMap map) {
+        try {
+            map.waitForCleared(10000);
+        } catch (Exception e) {
+            unexpected(e);
         }
     }
 }

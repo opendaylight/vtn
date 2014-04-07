@@ -9,16 +9,21 @@
 
 package org.opendaylight.vtn.manager.internal;
 
-import java.util.Map;
 import java.util.HashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeUnit;
 
 import javax.transaction.Transaction;
 import javax.transaction.SystemException;
 import javax.transaction.Synchronization;
 import javax.transaction.xa.XAResource;
+
+import org.opendaylight.controller.clustering.services.IClusterServices.
+    cacheMode;
 
 /**
  * An implementation of {@link Transaction} for test.
@@ -97,6 +102,11 @@ public class TestTransaction implements Transaction {
         new HashMap<String, ConcurrentMap<?, ?>>();
 
     /**
+     * A set of transactional cache names.
+     */
+    private final Set<String>  transactionalCaches;
+
+    /**
      * Construct a new transaction.
      *
      * @param mode     Transaction test mode.
@@ -104,11 +114,13 @@ public class TestTransaction implements Transaction {
      * @param unit     A {@link TimeUnit} object used when this transaction
      *                 begins.
      * @param caches   A map which contains all cluster caches.
+     * @param xnames   A set of transactional cache names.
      * @throws SystemException
      *    {@link Mode#FAIL_BEGIN} is specified to {@code mode}.
      */
     public TestTransaction(Mode mode, long timeout, TimeUnit unit,
-                           Map<String, ConcurrentMap<?, ?>> caches)
+                           Map<String, ConcurrentMap<?, ?>> caches,
+                           Set<String> xnames)
         throws SystemException {
         if (mode == Mode.FAIL_BEGIN) {
             throw new SystemException(ERR_FAIL_BEGIN);
@@ -117,6 +129,7 @@ public class TestTransaction implements Transaction {
         this.mode = (mode == null) ? Mode.PASS : mode;
         this.timeout = timeout;
         this.timeUnit = unit;
+        this.transactionalCaches = new ConcurrentSkipListSet<String>(xnames);
 
         copy(cacheBackup, caches, true);
     }
@@ -237,6 +250,10 @@ public class TestTransaction implements Transaction {
                       Map<String, ConcurrentMap<?, ?>> src, boolean deep) {
         for (Map.Entry<String, ConcurrentMap<?, ?>> entry: src.entrySet()) {
             String name = entry.getKey();
+            if (!transactionalCaches.contains(name)) {
+                continue;
+            }
+
             ConcurrentMap<Object, Object> cache =
                 (ConcurrentMap<Object, Object>)entry.getValue();
             if (deep) {
