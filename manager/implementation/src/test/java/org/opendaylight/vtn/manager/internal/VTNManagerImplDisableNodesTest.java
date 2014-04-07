@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -371,16 +371,8 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
                     // a result of adding Node, specified Node set to
                     // disableNodes.
                     addNode(mgr, swMgr, disableNode);
+                    waitFor(mgr, disableNode);
 
-                    // sleep until disabled Node timer timeout
-                    try {
-                        Thread.sleep(10);
-                    } catch (InterruptedException e) {
-                        unexpected(e);
-                    }
-
-                    // EdgeTimeout is not infinity, but time is long enough and
-                    // expected to return result before timeout.
                     for (PortVlan pv : mappedThis) {
                         String emsg = "(vlan)" + vlan
                                 + ",(vlanmap conf)" + vlconf.toString()
@@ -642,5 +634,27 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
             mgr.notifyNodeConnector(nc, UpdateType.ADDED, propMap);
         }
         mgr.initISL();
+    }
+
+    /**
+     * Wait for the PACKET_IN service on the specified node to be started.
+     *
+     * @param mgr   VTN Manager service.
+     * @param node  A {@link Node} instance.
+     */
+    private void waitFor(VTNManagerImpl mgr, Node node) {
+        final long timeout = System.currentTimeMillis() + 10000;
+
+        while (mgr.isDisabled(node)) {
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                unexpected(e);
+            }
+
+            if (System.currentTimeMillis() > timeout) {
+                fail("PACKET_IN service did not start: " + node);
+            }
+        }
     }
 }

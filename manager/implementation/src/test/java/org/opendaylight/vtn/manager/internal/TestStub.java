@@ -20,6 +20,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -97,6 +98,17 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     ISwitchManager, ITopologyManager, IDataPacketService, IRouting,
     IForwardingRulesManager, IfIptoHost, IConnectionManager {
 
+    /**
+     * Active cluster cache transactions per thread.
+     */
+    private static final ThreadLocal<TestTransaction>  CLUSTER_TRANSACTION =
+        new ThreadLocal<TestTransaction>();
+
+    /**
+     * Mode for cluster cache transaction test.
+     */
+    private TestTransaction.Mode  transactionTestMode = null;
+
     /*
      * Mode of {@link TestStub}.
      * Each mode corresponds to following configuration.
@@ -164,7 +176,6 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
      * List of InetAddress of cluster nodes
      */
     List<InetAddress> nodeInetAddresses = null;
-
 
     /**
      * Constructor of TestStub
@@ -368,8 +379,19 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
         return new HashMap<String, Property>(prop);
     }
 
+    /**
+     * All cluster caches.
+     */
+    private ConcurrentMap<String, ConcurrentMap<?, ?>> caches =
+        new ConcurrentHashMap<String, ConcurrentMap<?, ?>>();
+
+    /**
+     * A set of transactional cache names.
+     */
+    private Set<String>  transactionalCaches =
+        new ConcurrentSkipListSet<String>();
+
     // IClusterGlobalServices, IClusterContainerServices
-    private ConcurrentMap<String, ConcurrentMap<?, ?>> caches = new ConcurrentHashMap<String, ConcurrentMap<?, ?>>();
 
     @Override
     public void removeContainerCaches(String containerName) {
@@ -380,13 +402,24 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     public ConcurrentMap<?, ?> createCache(String cacheName, Set<cacheMode> cMode) throws CacheExistException,
             CacheConfigException {
 
-        ConcurrentMap<?, ?> res = this.caches.get(cacheName);
-        if (res == null) {
-            res = new ConcurrentHashMap<Object, Object>();
-            this.caches.put(cacheName, res);
-            return res;
+        ConcurrentMap<?, ?> cache;
+        if (VTNManagerImpl.CACHE_EVENT.equals(cacheName)) {
+            cache = new ClusterEventMap();
+        } else {
+            cache = new ConcurrentHashMap<Object, Object>();
         }
-        throw new CacheExistException();
+
+        if (this.caches.putIfAbsent(cacheName, cache) != null) {
+            throw new CacheExistException();
+        }
+
+        // Default cache mode is TRANSACTIONAL.
+        if (cMode.contains(cacheMode.TRANSACTIONAL) ||
+            !cMode.contains(cacheMode.NON_TRANSACTIONAL)) {
+            Assert.assertTrue(transactionalCaches.add(cacheName));
+        }
+
+        return cache;
     }
 
     @Override
@@ -397,6 +430,7 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     @Override
     public void destroyCache(String cacheName) {
         this.caches.remove(cacheName);
+        transactionalCaches.remove(cacheName);
     }
 
     @Override
@@ -416,28 +450,50 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
 
     @Override
     public void tbegin() throws NotSupportedException, SystemException {
-
+        tbegin(0, TimeUnit.SECONDS);
     }
 
     @Override
     public void tbegin(long timeout, TimeUnit unit)
         throws NotSupportedException, SystemException {
+        TestTransaction t = CLUSTER_TRANSACTION.get();
+        if (t != null) {
+            throw new SystemException("Cache transaction is already active.");
+        }
+
+        t = new TestTransaction(transactionTestMode, timeout, unit, caches,
+                                transactionalCaches);
+        CLUSTER_TRANSACTION.set(t);
+
     }
 
     @Override
     public void tcommit() throws RollbackException, HeuristicMixedException, HeuristicRollbackException,
             SecurityException, IllegalStateException, SystemException {
+        TestTransaction t = CLUSTER_TRANSACTION.get();
+        if (t == null) {
+            throw new SystemException("Cache transaction is not active.");
+        }
 
+        t.commit();
+        CLUSTER_TRANSACTION.remove();
     }
 
     @Override
     public void trollback() throws IllegalStateException, SecurityException, SystemException {
+        TestTransaction t = CLUSTER_TRANSACTION.get();
+        if (t == null) {
+            throw new SystemException("Cache transaction is not active.");
+        }
 
+        t.rollback();
+        t.restore(caches);
+        CLUSTER_TRANSACTION.remove();
     }
 
     @Override
-    public Transaction tgetTransaction() throws SystemException {
-        return null;
+    public Transaction tgetTransaction() {
+        return CLUSTER_TRANSACTION.get();
     }
 
     @Override
@@ -1331,5 +1387,14 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
         }
 
         return null;
+    }
+
+    /**
+     * Set mode for cluster cache transaction test.
+     *
+     * @param mode  Test mode.
+     */
+    public void setTransactionTestMode(TestTransaction.Mode mode) {
+        transactionTestMode = mode;
     }
 }
