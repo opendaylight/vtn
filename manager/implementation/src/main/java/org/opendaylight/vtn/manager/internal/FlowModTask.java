@@ -243,7 +243,7 @@ public abstract class FlowModTask implements Runnable {
                 if (status.getCode() == StatusCode.UNDEFINED) {
                     logger.error("{}: Failed to uninstall flow entry: " +
                                  "Timed Out: entry={}",
-                                 vtnManager.getContainerName(), status, fent);
+                                 vtnManager.getContainerName(), fent);
                 } else {
                     logger.error("{}: Failed to uninstall flow entry: " +
                                  "status={}, entry={}",
