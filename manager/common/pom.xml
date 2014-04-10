@@ -19,13 +19,12 @@
 
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>manager.common</artifactId>
-  <version>0.1.0</version>
   <packaging>pom</packaging>
 
   <parent>
     <groupId>org.opendaylight.vtn</groupId>
     <artifactId>common</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.0-1-SNAPSHOT</version>
     <relativePath>../../common</relativePath>
   </parent>
 
@@ -292,7 +291,7 @@
           <dependency>
             <groupId>org.opendaylight.vtn</groupId>
             <artifactId>manager.checkstyle</artifactId>
-            <version>0.1.0</version>
+            <version>0.1.0-1-SNAPSHOT</version>
           </dependency>
         </dependencies>
         <executions>
@@ -499,22 +498,22 @@
       <dependency>
         <groupId>org.opendaylight.vtn</groupId>
         <artifactId>manager</artifactId>
-        <version>0.1.0</version>
+        <version>0.1.0-1-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.vtn</groupId>
         <artifactId>manager.implementation</artifactId>
-        <version>0.1.0</version>
+        <version>0.1.0-1-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.vtn</groupId>
         <artifactId>manager.northbound</artifactId>
-        <version>0.1.0</version>
+        <version>0.1.0-1-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.vtn</groupId>
         <artifactId>manager.neutron</artifactId>
-        <version>0.1.0</version>
+        <version>0.1.0-1-SNAPSHOT</version>
       </dependency>
 
       <!-- OpenDaylight controller projects -->
