@@ -94,8 +94,8 @@ public class VInterfaceConfig implements Serializable {
      *       {@link Boolean#FALSE} for disabling the interface.
      *     </li>
      *     <li>
-     *       Specifying {@code null} will imply that description is not
-     *       configured for the interface.
+     *       Specifying {@code null} will imply that enable/disable
+     *       configuration is not specified.
      *     </li>
      *   </ul>
      */
