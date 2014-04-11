@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal;
 
 import java.net.InetAddress;
@@ -38,7 +39,9 @@ import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 import org.opendaylight.vtn.manager.VBridgeConfig;
+import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VInterfaceConfig;
 import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
@@ -47,6 +50,7 @@ import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
+import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
 
 /**
  * JUnit test for {@link PacketContext}.
@@ -436,14 +440,27 @@ public class PacketContextTest extends TestUseVTNManagerBase {
         VTenantPath tpath = new VTenantPath("tenant");
         VBridgePath bpath1 = new VBridgePath(tpath.getTenantName(), "bridge1");
         VBridgePath bpath2 = new VBridgePath(tpath.getTenantName(), "bridge2");
+        VBridgeIfPath ipath1 = new VBridgeIfPath(bpath1, "if_1");
+        VBridgeIfPath ipath2 = new VBridgeIfPath(bpath2, "if_1");
+        VlanMapPath vpath1 = new VlanMapPath(bpath1, "ANY.0");
+        VlanMapPath vpath2 = new VlanMapPath(bpath2, "ANY.0");
+        VTenantPath[] allPaths = {
+            tpath, bpath1, bpath2, ipath1, ipath2, vpath1, vpath2,
+        };
 
         Status st = vtnMgr.addTenant(tpath, new VTenantConfig("desc"));
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         st = vtnMgr.addBridge(bpath1, new VBridgeConfig(null));
         assertEquals(StatusCode.SUCCESS, st.getCode());
+        st = vtnMgr.addBridgeInterface
+            (ipath1, new VInterfaceConfig(null, Boolean.TRUE));
+        assertEquals(StatusCode.SUCCESS, st.getCode());
 
         st = vtnMgr.addBridge(bpath2, new VBridgeConfig(null));
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+        st = vtnMgr.addBridgeInterface
+            (ipath2, new VInterfaceConfig(null, Boolean.TRUE));
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         short vlans[] = { 0, 1, 100, 4095 };
@@ -466,7 +483,14 @@ public class PacketContextTest extends TestUseVTNManagerBase {
         // add obsolete entries.
         int numEntries = 0;
         for (short vlan : vlans) {
+            short outVlan = vlan;
+            if (outVlan < 4095) {
+                outVlan++;
+            }
+
             for (EthernetAddress ea : ethers) {
+                Set<VTenantPath> dependPaths = new HashSet<VTenantPath>();
+
                 String msg = "";
                 byte[] bytes = ea.getValue();
                 byte[] src = new byte[] { bytes[0], bytes[1], bytes[2],
@@ -489,10 +513,10 @@ public class PacketContextTest extends TestUseVTNManagerBase {
                 MacTableEntry me;
                 if (vlan < 0) {
                     assertEquals(msg, (short)0, pctx.getVlan());
-                    me = new MacTableEntry(bpath1, key, innc, (short) 0, ipaddr);
+                    me = new MacTableEntry(ipath1, key, innc, (short)0, ipaddr);
                 } else {
                     assertEquals(vlan, pctx.getVlan());
-                    me = new MacTableEntry(bpath1, key, innc, vlan, ipaddr);
+                    me = new MacTableEntry(ipath1, key, innc, vlan, ipaddr);
                 }
 
                 pctx.addObsoleteEntry(me);
@@ -522,26 +546,51 @@ public class PacketContextTest extends TestUseVTNManagerBase {
 
                 ActionList actions = new ActionList(innc.getNode());
                 actions.addOutput(outnc);
+                actions.addVlanId(outVlan);
                 flow.addFlow(vtnMgr, match, actions, pri);
                 assertTrue(flow.getFlowPorts().contains(innc));
 
-                // check method set dependency for MacVlan
-                assertFalse(flow.dependsOn(new MacVlan(src, vlan)));
-                pctx.setFlowDependency(flow);
+                // A flow entry must depend on source and destination L2 hosts.
                 assertTrue(flow.dependsOn(new MacVlan(src, vlan)));
+                assertTrue(flow.dependsOn(new MacVlan(dst, outVlan)));
+                boolean sameVlan = (vlan == outVlan);
+                assertEquals(sameVlan,
+                             flow.dependsOn(new MacVlan(src, outVlan)));
+                assertEquals(sameVlan, flow.dependsOn(new MacVlan(dst, vlan)));
 
-                // check method set dependency for virtual node path.
-                assertFalse(flow.dependsOn(tpath));
-                assertFalse(flow.dependsOn(bpath1));
-                pctx.addNodePath(tpath);
+                // Set source node path.
                 pctx.setFlowDependency(flow);
-                assertTrue(flow.dependsOn(tpath));
-                assertFalse(flow.dependsOn(bpath1));
-                pctx.addNodePath(bpath1);
+                for (VTenantPath p: allPaths) {
+                    assertFalse(flow.dependsOn(p));
+                }
+                pctx.setSourceNodePath(ipath1);
                 pctx.setFlowDependency(flow);
-                assertTrue(flow.dependsOn(tpath));
-                assertTrue(flow.dependsOn(bpath1));
-                assertFalse(flow.dependsOn(bpath2));
+                assertTrue(dependPaths.add(ipath1));
+                assertTrue(dependPaths.add(bpath1));
+                assertTrue(dependPaths.add(tpath));
+                for (VTenantPath p: allPaths) {
+                    assertEquals(dependPaths.contains(p), flow.dependsOn(p));
+                }
+
+                // Set destination node path.
+                pctx.setDestinationNodePath(vpath1);
+                pctx.setFlowDependency(flow);
+                assertTrue(dependPaths.add(vpath1));
+                for (VTenantPath p: allPaths) {
+                    assertEquals(dependPaths.contains(p), flow.dependsOn(p));
+                }
+
+                // Set depended node paths.
+                for (VTenantPath pth: new VTenantPath[]{ipath2, vpath2}) {
+                    assertFalse(flow.dependsOn(pth));
+                    pctx.addNodePath(pth);
+                    pctx.setFlowDependency(flow);
+                    assertTrue(dependPaths.add(pth));
+                    for (VTenantPath p: allPaths) {
+                        assertEquals(dependPaths.contains(p),
+                                     flow.dependsOn(p));
+                    }
+                }
 
                 // install and purge flow.
                 fdb.install(vtnMgr, flow);

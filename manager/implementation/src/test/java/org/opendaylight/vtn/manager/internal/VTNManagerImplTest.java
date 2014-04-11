@@ -33,34 +33,6 @@ import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.opendaylight.controller.clustering.services.IClusterContainerServices;
-import org.opendaylight.controller.connectionmanager.IConnectionManager;
-import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
-import org.opendaylight.controller.forwardingrulesmanager.IForwardingRulesManager;
-import org.opendaylight.controller.hosttracker.IfHostListener;
-import org.opendaylight.controller.hosttracker.IfIptoHost;
-import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
-import org.opendaylight.controller.sal.core.ConstructionException;
-import org.opendaylight.controller.sal.core.Node;
-import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.core.UpdateType;
-import org.opendaylight.controller.sal.flowprogrammer.Flow;
-import org.opendaylight.controller.sal.match.Match;
-import org.opendaylight.controller.sal.match.MatchType;
-import org.opendaylight.controller.sal.packet.ARP;
-import org.opendaylight.controller.sal.packet.IDataPacketService;
-import org.opendaylight.controller.sal.packet.PacketResult;
-import org.opendaylight.controller.sal.packet.RawPacket;
-import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.routing.IRouting;
-import org.opendaylight.controller.sal.utils.GlobalConstants;
-import org.opendaylight.controller.sal.utils.NetUtils;
-import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
-import org.opendaylight.controller.sal.utils.NodeCreator;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-import org.opendaylight.controller.switchmanager.ISwitchManager;
-import org.opendaylight.controller.topologymanager.ITopologyManager;
 import org.opendaylight.vtn.manager.IVTNManagerAware;
 import org.opendaylight.vtn.manager.IVTNModeListener;
 import org.opendaylight.vtn.manager.MacAddressEntry;
@@ -96,6 +68,36 @@ import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantImpl;
 import org.opendaylight.vtn.manager.internal.cluster.VlanMapImpl;
+import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
+
+import org.opendaylight.controller.clustering.services.IClusterContainerServices;
+import org.opendaylight.controller.connectionmanager.IConnectionManager;
+import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
+import org.opendaylight.controller.forwardingrulesmanager.IForwardingRulesManager;
+import org.opendaylight.controller.hosttracker.IfHostListener;
+import org.opendaylight.controller.hosttracker.IfIptoHost;
+import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
+import org.opendaylight.controller.sal.core.ConstructionException;
+import org.opendaylight.controller.sal.core.Node;
+import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.core.UpdateType;
+import org.opendaylight.controller.sal.flowprogrammer.Flow;
+import org.opendaylight.controller.sal.match.Match;
+import org.opendaylight.controller.sal.match.MatchType;
+import org.opendaylight.controller.sal.packet.ARP;
+import org.opendaylight.controller.sal.packet.IDataPacketService;
+import org.opendaylight.controller.sal.packet.PacketResult;
+import org.opendaylight.controller.sal.packet.RawPacket;
+import org.opendaylight.controller.sal.packet.address.EthernetAddress;
+import org.opendaylight.controller.sal.routing.IRouting;
+import org.opendaylight.controller.sal.utils.GlobalConstants;
+import org.opendaylight.controller.sal.utils.NetUtils;
+import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
+import org.opendaylight.controller.sal.utils.NodeCreator;
+import org.opendaylight.controller.sal.utils.Status;
+import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.controller.switchmanager.ISwitchManager;
+import org.opendaylight.controller.topologymanager.ITopologyManager;
 
 /**
  * JUnit test for {@link VTNManagerImpl}.
@@ -614,8 +616,10 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                (short)-1, connectors.get(0), ARP.REQUEST);
 
        VBridgePath path = new VBridgePath("tenant1", "bridge1");
+       VBridgeIfPath ipath = new VBridgeIfPath(path, "if1");
+       TestBridgeNode bnode = new TestBridgeNode(ipath);
        MacAddressTable table = new MacAddressTable(mgr, path, 600);
-       table.add(pctx);
+       table.add(pctx, bnode);
 
        flushTasks();
        assertEquals(1, hl1.getHostListenerCalled());
@@ -1046,6 +1050,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VTNManagerImpl mgr = vtnMgr;
         MacAddressTable table = null;
         VBridgePath bpath = new VBridgePath("teannt", "bridge");
+        VBridgeIfPath ipath = new VBridgeIfPath(bpath, "if");
+        VlanMapPath vpath = new VlanMapPath(bpath, "ANY.0");
         int[] ages = new int[] {10, 600, 1000000};
 
         for (int age : ages) {
@@ -1053,6 +1059,9 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
             table = mgr.getMacAddressTable(bpath);
             assertNotNull(table);
+
+            assertEquals(table, mgr.getMacAddressTable(ipath));
+            assertEquals(table, mgr.getMacAddressTable(vpath));
 
             mgr.removeMacAddressTable(bpath, false);
         }
@@ -2910,6 +2919,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                                   (byte)0xFF, (byte)0xFF, (byte)0xFF};
         byte[] target2 = new byte[] {(byte)192, (byte)1, (byte)0, (byte)250};
 
+        TestBridgeNode bnode = new TestBridgeNode();
         int nignored = 0;
 
         for (EthernetAddress ea : ethers) {
@@ -2917,7 +2927,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             byte[] src = new byte[] {bytes[0], bytes[1], bytes[2],
                                      bytes[3], bytes[4], bytes[5]};
             byte[] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)iphost};
-            byte[] src2 = new byte[] {0x00, bytes[4], bytes[3],
+            byte[] src2 = new byte[] {(byte)0xf0, bytes[4], bytes[3],
                                       bytes[2], bytes[1], bytes[0]};
             byte[] sender2 = new byte[] {(byte)192, (byte)1, (byte)0, (byte)iphost};
             EthernetAddress ea2 = null;
@@ -2932,8 +2942,13 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             PacketContext pctx2 = createARPPacketContext(src2, dst2, sender2, target2,
                     (vlan2 > 0) ? vlan2 : -1, connectors.get(0), ARP.REQUEST);
 
-            tbl.add(pctx);
-            tbl2.add(pctx2);
+            VBridgePath bp = new VBridgeIfPath(bpath, "if");
+            bnode.setPath(bp);
+            tbl.add(pctx, bnode);
+
+            bp = new VlanMapPath(bpath2, "ANY.0");
+            bnode.setPath(bp);
+            tbl2.add(pctx2, bnode);
 
             String emsg = ea.toString();
             MacAddressEntry entry = null;
@@ -3000,7 +3015,9 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             PacketContext pctx = createARPPacketContext(src, dst, sender, target,
                     (short)-1, connectors.get(0), ARP.REQUEST);
 
-            tbl.add(pctx);
+            VBridgePath bp = new VBridgeIfPath(bpath, "if");
+            bnode.setPath(bp);
+            tbl.add(pctx, bnode);
         }
 
         // check entry
@@ -3091,7 +3108,9 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             unexpected(e);
         }
 
-        tbl.add(pctx);
+        VlanMapPath vpath = new VlanMapPath(bpath, "id");
+        TestBridgeNode bnode = new TestBridgeNode(vpath);
+        tbl.add(pctx, bnode);
 
         VBridgePath[] badplist = new VBridgePath[] {null,
                 new VBridgePath(tname, null),

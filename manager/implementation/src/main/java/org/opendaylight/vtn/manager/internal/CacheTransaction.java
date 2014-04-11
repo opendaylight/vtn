@@ -104,6 +104,8 @@ public abstract class CacheTransaction<T> {
                 }
             } catch (VTNException e) {
                 throw e;
+            } catch (NullPointerException e) {
+                return handleNull(e);
             } catch (Exception e) {
                 String msg = "Cluster cache transaction abort";
                 LOG.error(msg, e);
@@ -126,6 +128,26 @@ public abstract class CacheTransaction<T> {
      */
     protected final void abort() {
         doAbort = true;
+    }
+
+    /**
+     * Handle {@link NullPointerException} caused by {@link #execute()}.
+     *
+     * @param e  A {@link NullPointerException} caught in {@link #execute()}.
+     * @return  An object returned by {@link #executeImpl()}.
+     * @throws VTNException
+     *   An exception was thrown by {@link #executeImpl()}, or a cluster cache
+     *   transaction could not be established.
+     * @throws NullPointerException
+     *   The specified exception can not be ignored.
+     */
+    private T handleNull(NullPointerException e) throws VTNException {
+        if (cluster != null) {
+            throw e;
+        }
+
+        // This code is only for unit test.
+        return executeImpl();
     }
 
     /**

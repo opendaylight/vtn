@@ -10,7 +10,6 @@
 package org.opendaylight.vtn.manager.internal.cluster;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
@@ -27,6 +26,7 @@ import org.opendaylight.vtn.manager.VInterfaceConfig;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
 import org.opendaylight.vtn.manager.internal.NodeUtils;
@@ -34,12 +34,10 @@ import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
 
-import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.Ethernet;
-import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
@@ -57,7 +55,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 699966877414184978L;
+    private static final long serialVersionUID = 5856439559947334819L;
 
     /**
      * Logger instance.
@@ -358,34 +356,24 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
             : new PortVlan(mapped, oldconf.getVlan());
 
         // Register port mapping, and unregister old port mapping if needed.
-        MapReference ref = resMgr.registerPortMap(mgr, ifPath, pvlan, rmlan);
+        MapReference ref;
+        try {
+            ref = resMgr.registerPortMap(mgr, ifPath, pvlan, rmlan, true);
+        } catch (VTNException e) {
+            Status status = e.getStatus();
+            if (status == null ||
+                status.getCode().equals(StatusCode.INTERNALERROR)) {
+                mgr.logException(LOG, ifPath, e, pvlan, rmlan);
+            }
+            throw e;
+        }
+
         if (ref != null) {
             assert ref.getMapType() == MapType.PORT;
 
             throw new VTNException(StatusCode.CONFLICT,
                                    "Specified port is mapped to " +
                                    ref.getAbsolutePath());
-        }
-
-        if (nc != null) {
-            // The specified network may already be mapped by another VLAN
-            // mapping. So we need to flush flow entries relevant to the
-            // network.
-            flushCache(mgr, null, nc, vlan);
-
-            // We need to remove learnt MAC addresses in the specified network
-            // from all MAC address tables in the tenant because they may be
-            // moved from another vBridge.
-            VTenantImpl vtn = parent.getTenant();
-            vtn.removeMacTableEntries(mgr, nc, vlan);
-        }
-
-        if (mapped != null) {
-            // Purge all MAC address table entries and VTN flows relevant to
-            // old mapping.
-            short oldVlan = oldconf.getVlan();
-            MacAddressTable table = mgr.getMacAddressTable(parent.getPath());
-            flushCache(mgr, table, mapped, oldVlan);
         }
 
         // Update the state of the bridge interface.
@@ -498,10 +486,9 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
 
         Node pnode = pmconf.getNode();
         if (pnode.equals(node)) {
-            // No need to flush MAC address table entries.
-            // It will be done by the parent.
-            flushCache(mgr, null, mapped, pmconf.getVlan());
-            unmapPort(mgr, db, ist, ifPath);
+            // No need to flush MAC address table entries and flow entries.
+            // It will be done by the VTN Manager service.
+            unmapPort(mgr, db, ist, ifPath, false);
             cur = VNodeState.DOWN;
             setState(mgr, db, ist, cur);
         }
@@ -532,7 +519,6 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
             return getBridgeState(cur, bstate);
         }
 
-        MacAddressTable table = null;
         NodeConnector mapped = ist.getMappedPort();
         VNodeState state = VNodeState.UNKNOWN;
         switch (type) {
@@ -563,10 +549,9 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
                 if (pmconf.getPort().getName() != null &&
                     !portMatch(mgr, pmconf, nc)) {
                     // This port should be unmapped because its name has been
-                    // changed. In this case MAC address table entries need to
-                    // be flushed.
-                    table = mgr.getMacAddressTable(parent.getPath());
-                    unmapPort(mgr, db, ist, ifPath);
+                    // changed. In this case flow and MAC address table entries
+                    // need to be purged.
+                    unmapPort(mgr, db, ist, ifPath, true);
                     state = VNodeState.DOWN;
                 } else {
                     state = getNewState(mgr, ist, nc, pstate);
@@ -578,9 +563,9 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
 
         case REMOVED:
             if (nc.equals(mapped)) {
-                // No need to flush MAC address table entries.
-                // It will be done by the parent.
-                unmapPort(mgr, db, ist, ifPath);
+                // No need to flush MAC address table entries and flow entries.
+                // It will be done by the VTN Manager service.
+                unmapPort(mgr, db, ist, ifPath, false);
                 state = VNodeState.DOWN;
             } else {
                 return getBridgeState(cur, bstate);
@@ -591,11 +576,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
             return getBridgeState(cur, bstate);
         }
 
-        if (setState(mgr, db, ist, state) && mapped != null &&
-            state != VNodeState.UP) {
-            // Flush caches added by obsolete port mapping.
-            flushCache(mgr, table, mapped, pmconf.getVlan());
-        }
+        setState(mgr, db, ist, state);
 
         return getBridgeState(state, bstate);
     }
@@ -603,34 +584,32 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
     /**
      * This method is called when topology graph is changed.
      *
-     * @param mgr       VTN Manager service.
-     * @param db        Virtual node state DB.
-     * @param bstate    Current bridge state value.
-     * @param topoList  List of topoedgeupdates Each topoedgeupdate includes
-     *                  edge, its Properties (BandWidth and/or Latency etc)
-     *                  and update type.
+     * @param mgr     VTN Manager service.
+     * @param db      Virtual node state DB.
+     * @param bstate  Current bridge state value.
+     * @param estate  A {@link EdgeUpdateState} instance which contains
+     *                information reported by the controller.
      * @return  New bridge state value.
      */
     VNodeState edgeUpdate(VTNManagerImpl mgr,
                           ConcurrentMap<VTenantPath, Object> db,
-                          VNodeState bstate, List<TopoEdgeUpdate> topoList) {
+                          VNodeState bstate, EdgeUpdateState estate) {
         VBridgeIfState ist = getIfState(db);
         VNodeState cur = ist.getState();
         PortMapConfig pmconf = portMapConfig;
         if (pmconf != null) {
             NodeConnector mapped = ist.getMappedPort();
-            if (mapped != null) {
-                for (TopoEdgeUpdate topo: topoList) {
-                    Edge e = topo.getEdge();
-                    NodeConnector head = e.getHeadNodeConnector();
-                    NodeConnector tail = e.getTailNodeConnector();
-                    if (mapped.equals(head) || mapped.equals(tail)) {
-                        VNodeState state = getNewState(mgr, ist);
-                        setState(mgr, db, ist, state);
-                        cur = state;
-                        break;
-                    }
-                }
+            Boolean changed = estate.getPortState(mapped);
+            if (changed != null) {
+                assert mapped != null;
+                VNodeState pstate = getPortState(mgr, mapped);
+                ist.setPortState(pstate);
+
+                VNodeState state =
+                    (pstate == VNodeState.UP && !changed.booleanValue())
+                    ? VNodeState.UP : VNodeState.DOWN;
+                setState(mgr, db, ist, state);
+                cur = state;
             }
         }
 
@@ -746,21 +725,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
             NodeConnector mapped = ist.getMappedPort();
             PortMap pmap = new PortMap(pmconf, mapped);
             if (mapped != null) {
-                unmapPort(mgr, db, ist, null);
-
-                // Remove MAC address table entries added by the port mapping.
-                short vlan = pmconf.getVlan();
-                MacAddressTable table =
-                    mgr.getMacAddressTable(parent.getPath());
-                if (table != null) {
-                    table.flush(mapped, vlan);
-                }
-
-                if (retain) {
-                    // Purge all VTN flows related to the mapped network.
-                    VTNThreadData.removeFlows(mgr, getTenantName(), mapped,
-                                              vlan);
-                }
+                unmapPort(mgr, db, ist, null, retain);
             }
 
             PortMapEvent.removed(mgr, ifPath, pmap, false);
@@ -948,10 +913,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
         if (pmconf != null) {
             NodeConnector mapped = ist.getMappedPort();
             if (mapped != null) {
-                unmapPort(mgr, db, ist, null);
-                MacAddressTable table =
-                    mgr.getMacAddressTable(parent.getPath());
-                flushCache(mgr, table, mapped, pmconf.getVlan());
+                unmapPort(mgr, db, ist, null, true);
             }
 
             portMapConfig = null;
@@ -1117,7 +1079,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
         MapReference ref;
 
         try {
-            ref = resMgr.registerPortMap(mgr, ifPath, pvlan, null);
+            ref = resMgr.registerPortMap(mgr, ifPath, pvlan, null, !resuming);
         } catch (VTNException e) {
             LOG.error(getContainerName() + ":" + ifPath +
                       ": Failed to map port: "+ pvlan, e);
@@ -1132,17 +1094,6 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
             ist.isDirty();
 
             if (!resuming) {
-                // The specified network may already be mapped by another VLAN
-                // mapping. So we need to flush flow entries relevant to the
-                // network.
-                flushCache(mgr, null, nc, vlan);
-
-                // We need to remove learnt MAC addresses in the specified
-                // network from all MAC address tables in the tenant because
-                // they may be moved from another vBridge.
-                VTenantImpl vtn = parent.getTenant();
-                vtn.removeMacTableEntries(mgr, nc, vlan);
-
                 PortMap pmap = new PortMap(portMapConfig, nc);
                 PortMapEvent.changed(mgr, ifPath, pmap, false);
             }
@@ -1157,26 +1108,24 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
     /**
      * Unmap the physical switch port currently mapped.
      *
-     * <p>
-     *   Note that this method never purges flow entries related to the mapped
-     *   switch port.
-     * </p>
-     *
-     * @param mgr   VTN Manager service.
-     * @param db    Virtual node state DB.
-     * @param ist   Runtime state of the interface.
-     * @param path  Path to the bridge interface. {@code null} can be passed
-     *              if no need to notify event.
+     * @param mgr    VTN Manager service.
+     * @param db     Virtual node state DB.
+     * @param ist    Runtime state of the interface.
+     * @param path   Path to the bridge interface. {@code null} can be passed
+     *               if no need to notify event.
+     * @param purge  If {@code true} is specified, network caches originated
+     *               by the port mapping will be purged.
      */
     private void unmapPort(VTNManagerImpl mgr,
                            ConcurrentMap<VTenantPath, Object> db,
-                           VBridgeIfState ist, VBridgeIfPath path) {
+                           VBridgeIfState ist, VBridgeIfPath path,
+                           boolean purge) {
         // Unregister port mapping.
         short vlan = portMapConfig.getVlan();
         PortVlan pvlan = new PortVlan(ist.getMappedPort(), vlan);
         IVTNResourceManager resMgr = mgr.getResourceManager();
         try {
-            resMgr.unregisterPortMap(mgr, pvlan);
+            resMgr.unregisterPortMap(mgr, ifPath, pvlan, purge);
         } catch (VTNException e) {
             LOG.error(getContainerName() + ":" + ifPath +
                       ": Failed to unmap port: "+ pvlan, e);
@@ -1296,7 +1245,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
      * @return  Path to the interface.
      */
     @Override
-    public VTenantPath getPath() {
+    public VBridgeIfPath getPath() {
         return ifPath;
     }
 
