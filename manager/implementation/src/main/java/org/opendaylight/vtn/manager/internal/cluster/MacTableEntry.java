@@ -28,16 +28,12 @@ import org.opendaylight.controller.sal.utils.NetUtils;
 /**
  * {@code MacTableEntry} class represents a table entry in the MAC address
  * table.
- *
- * <p>
- *   Note that this class is not synchronized.
- * </p>
  */
 public class MacTableEntry implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 1179200149209477680L;
+    private static final long serialVersionUID = 1443599896969099856L;
 
     /**
      * The maximum number of IP address probe request.
@@ -98,7 +94,7 @@ public class MacTableEntry implements Serializable {
     /**
      * Construct a new MAC address table entry.
      *
-     * @param path    Path to virtual L2 bridge.
+     * @param path    Path to a virtual node which maps the MAC address.
      * @param mac     A long value which represents the MAC address.
      * @param port    A node connector associated with the MAC address.
      *                Specifying {@code null} results in undefined behavior.
@@ -277,12 +273,29 @@ public class MacTableEntry implements Serializable {
     public MacTableEntryId reassignEntryId() {
         // No need to synchronize this method because this method is called
         // before this entry is put to the cluster cache.
-        VBridgePath path = entryId.getBridgePath();
+        VBridgePath path = entryId.getMapPath();
         long mac = entryId.getMacAddress();
         MacTableEntryId newId = new MacTableEntryId(path, mac);
         entryId = newId;
 
         return newId;
+    }
+
+    /**
+     * Determine whether the host corresponding to this MAC address table
+     * entry has moved or not.
+     *
+     * @param port   A {@link NodeConnector} instance expected to be configured
+     *               in this entry.
+     * @param vlan   A VLAN ID expected to be configured in this entry.
+     * @param mpath  A {@link VBridgePath} instance expected configured in
+     *               this entry.
+     * @return  {@code true} is returned if the host corresponding to this
+     *          instance has moved. Otherwise {@code false} is returned.
+     */
+    public boolean hasMoved(NodeConnector port, short vlan, VBridgePath mpath) {
+        return !(vlan == this.vlan && port.equals(this.port) &&
+                 mpath.equals(entryId.getMapPath()));
     }
 
     /**

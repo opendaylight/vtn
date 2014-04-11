@@ -16,6 +16,7 @@ import java.util.HashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
@@ -110,6 +111,16 @@ public class PacketContext {
      * Set of virtual node paths which handles this packet.
      */
     private final Set<VTenantPath>  virtualNodes = new HashSet<VTenantPath>();
+
+    /**
+     * A path to a virtual node which maps incoming flow.
+     */
+    private VBridgePath  sourceNodePath;
+
+    /**
+     * A path to a virtual node which maps outgoing flow.
+     */
+    private VBridgePath  destinationNodePath;
 
     /**
      * Construct a new packet context.
@@ -490,6 +501,24 @@ public class PacketContext {
     }
 
     /**
+     * Set a path to virtual node which maps incoming flow.
+     *
+     * @param path  A virtual node path.
+     */
+    public void setSourceNodePath(VBridgePath path) {
+        sourceNodePath = path;
+    }
+
+    /**
+     * Set a path to virtual node which maps outgoing flow.
+     *
+     * @param path  A virtual node path.
+     */
+    public void setDestinationNodePath(VBridgePath path) {
+        destinationNodePath = path;
+    }
+
+    /**
      * Record a virtual node which handled this packet.
      *
      * @param path  A virtual node path.
@@ -506,10 +535,8 @@ public class PacketContext {
      */
     public void setFlowDependency(VTNFlow vflow) {
         // Set relevant virtual nodes.
+        vflow.setIngressPath(sourceNodePath);
+        vflow.setEgressPath(destinationNodePath);
         vflow.addDependency(virtualNodes);
-
-        // Set source host entry.
-        MacVlan mvlan = new MacVlan(getSourceAddress(), getVlan());
-        vflow.addDependency(mvlan);
     }
 }

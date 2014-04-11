@@ -6,6 +6,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal;
 
 import java.util.ArrayList;
@@ -13,18 +14,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
-import org.opendaylight.controller.sal.core.Node;
-import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.match.Match;
-import org.opendaylight.controller.sal.match.MatchType;
-import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
-import org.opendaylight.controller.sal.utils.NodeCreator;
+
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VNodeState;
@@ -33,6 +29,16 @@ import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
+import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
+
+import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
+import org.opendaylight.controller.sal.core.Node;
+import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.match.Match;
+import org.opendaylight.controller.sal.match.MatchType;
+import org.opendaylight.controller.sal.utils.NetUtils;
+import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
+import org.opendaylight.controller.sal.utils.NodeCreator;
 
 /**
  * JUnit test for {@link VTNFlowDatabaseTest}
@@ -311,7 +317,6 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
 
     /**
      * Test method for
-     * {@link VTNFlowDatabase#removeFlows(VTNManagerImpl, Node, boolean)},
      * {@link VTNFlowDatabase#removeFlows(VTNManagerImpl, Node)}.
      */
     @Test
@@ -551,18 +556,18 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         VTNFlowDatabase fdb = new VTNFlowDatabase("test");
 
         Node node0 = NodeCreator.createOFNode(Long.valueOf(0L));
-        Set<Short> portIds0 = new HashSet<Short>(createShorts((short) 10, (short) 5,
+        Set<Short> portIds0 = new HashSet<Short>(createShorts((short)10,
+                                                              (short)10,
                                                               false));
-        Set<NodeConnector> ncset0
-            = NodeConnectorCreator.createOFNodeConnectorSet(portIds0, node0);
+        Set<NodeConnector> ncset0 = NodeConnectorCreator.
+            createOFNodeConnectorSet(portIds0, node0);
 
         int pri = 1;
 
         // add flow entries.
         Set<VTNFlow> flows = new HashSet<VTNFlow>();
-        NodeConnector outnc
-            = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15),
-                                                         node0);
+        NodeConnector outnc = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)15), node0);
         String tname = "tenant";
         String bname = "bridge";
         String ifname = "interface";
@@ -570,42 +575,65 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         VBridgePath bpath = new VBridgePath(tname, bname);
         VBridgeIfPath bifpath = new VBridgeIfPath(tname, bname, ifname);
         Set<VTenantPath> pathSet = new HashSet<VTenantPath>();
-        MacVlan[] macVlans = new MacVlan[] {
-            new MacVlan(0L, (short) 0),
-            new MacVlan(0L, (short) 4095),
-            new MacVlan(1L, (short) 0),
-        };
+        Set<VTenantPath> edgePaths = new HashSet<VTenantPath>();
+        VTenantPath parent = new VTenantPath("parent");
 
         HashMap<MacVlan, NodeConnector> mvmap =
             new HashMap<MacVlan, NodeConnector>();
         int numEntries = 0;
+        short vlan = 0;
+        long mac = 1L;
         for (NodeConnector innc : ncset0) {
             VTNFlow flow = fdb.create(vtnMgr);
             Match match = new Match();
             match.setField(MatchType.IN_PORT, innc);
-            ActionList actions = new ActionList(innc.getNode());
-            actions.addOutput(outnc);
-            flow.addFlow(vtnMgr, match, actions, pri);
+            byte[] src = NetUtils.longToByteArray6(mac);
+            match.setField(MatchType.DL_SRC, src);
+            match.setField(MatchType.DL_VLAN, vlan);
+            MacVlan inhost = new MacVlan(mac, vlan);
+            assertNull(mvmap.put(inhost, innc));
+            String tn, bn;
+            if ((numEntries & 1) == 0) {
+                tn = parent.getTenantName();
+                bn = "vbr" + mac;
+            } else {
+                tn = "vtn_" + mac;
+                bn = "vbr";
+            }
+            VBridgeIfPath ipath = new VBridgeIfPath(tn, bn, "if");
+            flow.setIngressPath(ipath);
+            edgePaths.add(ipath);
+            vlan++;
+            mac++;
 
-            MacVlan macVlan = null;
+            byte[] dst = NetUtils.longToByteArray6(mac);
+            match.setField(MatchType.DL_DST, dst);
+            MacVlan ehost = new MacVlan(mac, vlan);
+            assertNull(mvmap.put(ehost, outnc));
+            VBridgePath bp = new VBridgePath("vtn_" + mac, "vbr");
+            VlanMapPath vpath = new VlanMapPath(bp, "id");
+            flow.setEgressPath(vpath);
+            edgePaths.add(vpath);
+
+            ActionList actions = new ActionList(innc.getNode());
+            actions.addOutput(outnc).addVlanId(vlan);
+            flow.addFlow(vtnMgr, match, actions, pri);
+            assertTrue(flow.dependsOn(inhost));
+            assertTrue(flow.dependsOn(ehost));
+            vlan++;
+            mac++;
+
             if (numEntries == 0) {
                 pathSet.add(tpath);
-                macVlan = macVlans[0];
-                mvmap.put(macVlan, innc);
             } else if (numEntries == 1) {
                 pathSet.add(bpath);
-                macVlan = macVlans[1];
-                mvmap.put(macVlan, innc);
             } else if (numEntries == 2) {
                 pathSet.add(bifpath);
-                macVlan = macVlans[2];
-                mvmap.put(macVlan, outnc);
             } else if (numEntries >= 3) {
-                // when numEntries >= 0, add empty pathSet and add null to macVlan.
+                // when numEntries >= 0, add empty pathSet.
                 pathSet.clear();
             }
             flow.addDependency(pathSet);
-            flow.addDependency(macVlan);
 
             fdb.install(vtnMgr, flow);
             flushFlowTasks();
@@ -652,6 +680,38 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
 
         revertFlowEntries(vtnMgr, fdb, revertFlows, numEntries, numEntries);
 
+        // Remove flows by specifying edge node path.
+        for (VTenantPath path: edgePaths) {
+            task = fdb.removeFlows(vtnMgr, path);
+            assertNotNull(task);
+            flushFlowTasks();
+            assertEquals(numEntries - 1, stubObj.getFlowEntries().size());
+
+            task = fdb.removeFlows(vtnMgr, path);
+            assertNull(task);
+            assertEquals(numEntries - 1, stubObj.getFlowEntries().size());
+
+            revertFlows.clear();
+            revertFlows = checkFlowDBEntriesVTenantPath(vtnMgr, fdb, flows,
+                                                        path);
+            revertFlowEntries(vtnMgr, fdb, revertFlows, numEntries,
+                              numEntries);
+        }
+
+        // Remove flows by specifying parent path of ingress node.
+        task = fdb.removeFlows(vtnMgr, parent);
+        assertNotNull(task);
+        flushFlowTasks();
+        int num = numEntries >>> 1;
+        assertEquals(num, stubObj.getFlowEntries().size());
+        task = fdb.removeFlows(vtnMgr, parent);
+        assertNull(task);
+        assertEquals(num, stubObj.getFlowEntries().size());
+        revertFlows.clear();
+        revertFlows = checkFlowDBEntriesVTenantPath(vtnMgr, fdb, flows,
+                                                    parent);
+        revertFlowEntries(vtnMgr, fdb, revertFlows, numEntries, numEntries);
+
         // not match tenant
         VTenantPath notMatchPath = new VTenantPath("notmatch");
         task = fdb.removeFlows(vtnMgr, notMatchPath);
@@ -668,10 +728,10 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         NodeConnector unknownPort =
             NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short)1),
                                                        node0);
-        for (MacVlan macVlan : macVlans) {
-            long mac = macVlan.getMacAddress();
-            short vlan = macVlan.getVlan();
-            MacVlan mv = new MacVlan(mac, vlan);
+        for (MacVlan macVlan: mvmap.keySet()) {
+            long addr = macVlan.getMacAddress();
+            short vl = macVlan.getVlan();
+            MacVlan mv = new MacVlan(addr, vl);
             unknownEntries.add(new ObjectPair<MacVlan, NodeConnector>
                                (mv, unknownPort));
         }
@@ -691,19 +751,42 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         }
 
         // Remove flows by L2 host entry.
-        for (MacVlan macVlan : macVlans) {
-            NodeConnector port = mvmap.get(macVlan);
-            String emsg = macVlan.toString() + ", port=" + port;
-            task = fdb.removeFlows(vtnMgr, macVlan, port);
+        for (Map.Entry<MacVlan, NodeConnector> entry: mvmap.entrySet()) {
+            MacVlan mvlan = entry.getKey();
+            NodeConnector port = entry.getValue();
+            String emsg = mvlan.toString() + ", port=" + port;
+            task = fdb.removeFlows(vtnMgr, mvlan, port);
             assertNotNull(emsg, task);
             flushFlowTasks();
             assertEquals(emsg,
                          numEntries - 1, stubObj.getFlowEntries().size());
             revertFlows.clear();
-            revertFlows = checkFlowDBEntriesMacVlan(vtnMgr, fdb, flows, macVlan);
+            revertFlows = checkFlowDBEntriesMacVlan(vtnMgr, fdb, flows, mvlan);
 
             revertFlowEntries(vtnMgr, fdb, revertFlows, numEntries, numEntries);
         }
+
+        // Remove only one flow using VTNFlowMatch.
+        final VTNFlow target = flows.iterator().next();
+        VTNFlowMatch vmatch = new VTNFlowMatch() {
+            @Override
+            public boolean accept(VTNFlow vflow) {
+                return vflow.equals(target);
+            }
+
+            @Override
+            public String getDescription() {
+                return "vflow=" + target;
+            }
+        };
+
+        task = fdb.removeFlows(vtnMgr, vmatch);
+        assertNotNull(task);
+        flushFlowTasks();
+        assertEquals(numEntries - 1, stubObj.getFlowEntries().size());
+        revertFlows.clear();
+        revertFlows = checkFlowDBEntriesVTenantPath(vtnMgr, fdb, flows,
+                                                    target.getEgressPath());
 
         // in case there are no flow entry.
         fdb.clear(vtnMgr);
@@ -714,9 +797,10 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         flushFlowTasks();
         assertEquals(0, stubObj.getFlowEntries().size());
 
-        for (MacVlan macVlan : macVlans) {
-            NodeConnector port = mvmap.get(macVlan);
-            task = fdb.removeFlows(vtnMgr, macVlan, port);
+        for (Map.Entry<MacVlan, NodeConnector> entry: mvmap.entrySet()) {
+            MacVlan mvlan = entry.getKey();
+            NodeConnector port = entry.getValue();
+            task = fdb.removeFlows(vtnMgr, mvlan, port);
             assertNull(task);
         }
 

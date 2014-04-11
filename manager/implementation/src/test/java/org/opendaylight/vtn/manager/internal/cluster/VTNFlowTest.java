@@ -1,11 +1,12 @@
-/**
- * Copyright (c) 2013 NEC Corporation
+/*
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal.cluster;
 
 import java.net.InetAddress;
@@ -16,7 +17,18 @@ import java.util.List;
 import java.util.Set;
 
 import org.junit.Test;
+
+import org.opendaylight.vtn.manager.VBridgeIfPath;
+import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.internal.ActionList;
+import org.opendaylight.vtn.manager.internal.FlowModTaskTestBase;
+import org.opendaylight.vtn.manager.internal.L2Host;
+
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
+import org.opendaylight.controller.sal.action.Action;
+import org.opendaylight.controller.sal.action.SetDlDst;
+import org.opendaylight.controller.sal.action.SetDlSrc;
 import org.opendaylight.controller.sal.core.ConstructionException;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -26,20 +38,15 @@ import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.IPProtocols;
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
-import org.opendaylight.vtn.manager.VTenantPath;
-import org.opendaylight.vtn.manager.internal.ActionList;
-import org.opendaylight.vtn.manager.internal.FlowModTaskTestBase;
 
 /**
  * JUnit Test for {@link VTNFlow}
  */
 public class VTNFlowTest extends FlowModTaskTestBase {
-
     /**
-     * test case for getter methods.
+     * Test case for getter methods.
      */
     @Test
     public void testGetter() {
@@ -168,77 +175,269 @@ public class VTNFlowTest extends FlowModTaskTestBase {
     }
 
     /**
-     * test case for
+     * Test case for
      * {@link VTNFlow#addDependency(Set)},
      * {@link VTNFlow#dependsOn(VTenantPath)}.
      */
     @Test
     public void testDependencyTenantPath() {
         VTenantPath tpathNotMatch = new VTenantPath("not_match_tenant");
-        Set<VTenantPath> pathSet = new HashSet<VTenantPath>();
+
+        VTenantPath stpath = new VTenantPath("tenant_src");
+        VBridgePath sbpath = new VBridgePath(stpath, "bridge");
+        VBridgeIfPath srcpath = new VBridgeIfPath(sbpath, "id");
+        Set<VTenantPath> srcPaths = new HashSet<VTenantPath>();
+        assertTrue(srcPaths.add(stpath));
+        assertTrue(srcPaths.add(sbpath));
+        assertTrue(srcPaths.add(srcpath));
+
+        VTenantPath dtpath = new VTenantPath("tenant_dst");
+        VBridgePath dbpath = new VBridgePath(dtpath, "bridge");
+        VlanMapPath dstpath = new VlanMapPath(dbpath, "id");
+        Set<VTenantPath> dstPaths = new HashSet<VTenantPath>();
+        assertTrue(dstPaths.add(dtpath));
+        assertTrue(dstPaths.add(dbpath));
+        assertTrue(dstPaths.add(dstpath));
+
+        Set<VTenantPath> srcDstPaths = new HashSet<VTenantPath>(srcPaths);
+        srcDstPaths.addAll(dstPaths);
+
+        Set<VTenantPath> independPaths = new HashSet<VTenantPath>();
+        independPaths.add(tpathNotMatch);
+        independPaths.add(new VBridgePath(stpath.getTenantName(), "vbr10"));
+        independPaths.add(new VBridgeIfPath(sbpath, "if_10"));
+        independPaths.add(new VlanMapPath(sbpath, "id"));
+        independPaths.add(new VBridgePath(dtpath.getTenantName(), "vbr10"));
+        independPaths.add(new VBridgeIfPath(dbpath, "id"));
+        independPaths.add(new VlanMapPath(dbpath, "ANY.0"));
 
         FlowGroupId gid = new FlowGroupId("test");
         VTNFlow vflow = new VTNFlow(gid);
-        for (String tname : createStrings("vtn", false)) {
-            pathSet.clear();
-            pathSet.add(new VTenantPath(tname));
-            vflow.addDependency(pathSet);
+        for (VTenantPath path: srcDstPaths) {
+            assertFalse(vflow.dependsOn(path));
+        }
 
-            for (VTenantPath path : pathSet) {
-                assertTrue(vflow.dependsOn(new VTenantPath(path.getTenantName())));
+        // Set node path associated with the ingress flow.
+        assertNull(vflow.getIngressPath());
+        vflow.setIngressPath(srcpath);
+        assertEquals(srcpath, vflow.getIngressPath());
+        for (VTenantPath path: srcPaths) {
+            assertTrue(vflow.dependsOn(path));
+        }
+        for (VTenantPath path: dstPaths) {
+            assertFalse(vflow.dependsOn(path));
+        }
+
+        // Set node path associated with the egress flow.
+        assertNull(vflow.getEgressPath());
+        vflow.setEgressPath(dstpath);
+        assertEquals(dstpath, vflow.getEgressPath());
+        for (VTenantPath path: srcDstPaths) {
+            assertTrue(vflow.dependsOn(path));
+        }
+        for (VTenantPath path: independPaths) {
+            assertFalse(vflow.dependsOn(path));
+        }
+
+        Set<VTenantPath> pathSet = new HashSet<VTenantPath>(srcDstPaths);
+        for (String tname : createStrings("vtn", false)) {
+            VBridgePath bpath1 = new VBridgePath(tname, "bridge_1");
+            VBridgePath bpath2 = new VBridgePath(tname, "bridge_2");
+            Set<VTenantPath> set = new HashSet<VTenantPath>();
+            assertTrue(set.add(bpath1));
+            assertTrue(set.add(bpath2));
+            pathSet.add(bpath1);
+            pathSet.add(bpath2);
+            vflow.addDependency(set);
+
+            for (VTenantPath path: pathSet) {
+                assertTrue(vflow.dependsOn(path));
             }
-            assertFalse(vflow.dependsOn(tpathNotMatch));
+
+            independPaths.add(new VTenantPath(tname));
+            independPaths.add(new VBridgePath(tname, "bridge_3"));
+            for (VTenantPath path: set) {
+                VBridgePath bp = (VBridgePath)path;
+                independPaths.add(new VBridgeIfPath(bp, "id"));
+                independPaths.add(new VlanMapPath(bp, "id"));
+            }
+        }
+
+        for (VTenantPath path: independPaths) {
+            assertFalse(vflow.dependsOn(path));
         }
         assertEquals(gid, vflow.getGroupId());
-
-        pathSet.clear();
-        for (String tname : createStrings("strings", false)) {
-            gid = new FlowGroupId(tname);
-            vflow = new VTNFlow(gid);
-            assertEquals(tname, gid, vflow.getGroupId());
-
-            pathSet.add(new VTenantPath(tname));
-            vflow.addDependency(pathSet);
-
-            for (VTenantPath path : pathSet) {
-                assertTrue(path.toString(),
-                           vflow.dependsOn(new VTenantPath(path.getTenantName())));
-            }
-            assertFalse(tname, vflow.dependsOn(tpathNotMatch));
-        }
     }
 
     /**
-     * test case for
-     * {@link VTNFlow#addDependency(MacVlan)},
-     * {@link VTNFlow#dependsOn(MacVlan)}.
+     * Test case for {@link VTNFlow#dependsOn(MacVlan)} and
+     * {@link VTNFlow#getEdgeHosts()}.
      */
     @Test
     public void testDependencyMacVlan() {
-        short[] vlans = new short[] {-1, 0, 1, 4095};
-
         FlowGroupId gid = new FlowGroupId("test");
         VTNFlow vflow = new VTNFlow(gid);
+        byte[] addrEE = {
+            (byte)0x00, (byte)0x00, (byte)0x00,
+            (byte)0x00, (byte)0x00, (byte)0xee,
+        };
+        byte[] addrFF = {
+            (byte)0x00, (byte)0x00, (byte)0x00,
+            (byte)0x00, (byte)0x00, (byte)0xff,
+        };
+        MacVlan hostEE = new MacVlan(addrEE, (short)9);
+        MacVlan hostFF = new MacVlan(addrFF, (short)9);
+        assertFalse(vflow.dependsOn(hostEE));
+        assertFalse(vflow.dependsOn(hostFF));
+        assertNull(vflow.getEdgeHosts());
 
-        MacVlan mvNotMatch = new MacVlan(new byte[] {0, 0, 0, 0, 0, (byte)0xff},
-                                         (short) 9);
+        byte[][] srcAddrs = {
+            new byte[]{
+                (byte)0x00, (byte)0x11, (byte)0x22,
+                (byte)0x33, (byte)0x44, (byte)0x55,
+            },
+            new byte[]{
+                (byte)0xf0, (byte)0xfa, (byte)0xfb,
+                (byte)0xfc, (byte)0xfc, (byte)0xfe,
+            },
+        };
+        byte[][] dstAddrs = {
+            new byte[]{
+                (byte)0x00, (byte)0xaa, (byte)0xbb,
+                (byte)0xcc, (byte)0xdd, (byte)0xee,
+            },
+            new byte[]{
+                (byte)0xa0, (byte)0xa1, (byte)0xa2,
+                (byte)0xa3, (byte)0xa4, (byte)0xa5,
+            },
+        };
+        short[] srcVlans = {0, 10, 4095};
+        short[] dstVlans = {0, 100, 200};
+        short ivlan = 999;
+
+        Node node = NodeCreator.createOFNode(Long.valueOf(0));
+        NodeConnector sport = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)1), node);
+        NodeConnector dport = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)2), node);
+        NodeConnector iport = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)3), node);
+
+        MacVlan imvlan = new MacVlan(addrFF, ivlan);
+        L2Host ihost = new L2Host(addrFF, ivlan, iport);
 
         Set<MacVlan> mvSet = new HashSet<MacVlan>();
-        for (short vlan : vlans) {
-            for (EthernetAddress ea : createEthernetAddresses(false)) {
-                MacVlan mv = new MacVlan(ea.getValue(), vlan);
-                mvSet.add(mv);
+        for (byte[] src: srcAddrs) {
+            for (short svlan: srcVlans) {
+                MacVlan srcHost = new MacVlan(src, svlan);
+                L2Host sh = new L2Host(src, svlan, sport);
+                Match match = new Match();
+                match.setField(MatchType.DL_SRC, src);
+                match.setField(MatchType.DL_VLAN, svlan);
+                match.setField(MatchType.IN_PORT, sport);
 
-                vflow.addDependency(mv);
+                for (byte[] dst: dstAddrs) {
+                    match.setField(MatchType.DL_DST, dst);
 
-                for (MacVlan regMacVlan : mvSet) {
-                    String emsg = "(mvSet)" + mvSet.toString()
-                            + ",(regMacVlan)" + regMacVlan.toString();
-                    byte[] mac = NetUtils.longToByteArray6(regMacVlan.getMacAddress());
-                    assertTrue(emsg,
-                               vflow.dependsOn(new MacVlan(mac, regMacVlan.getVlan())));
+                    for (short dvlan: dstVlans) {
+                        boolean sameVlan = (svlan == dvlan);
+                        MacVlan dstHost = new MacVlan(dst, dvlan);
+                        L2Host dh = new L2Host(dst, dvlan, dport);
+                        MacVlan[] hosts = {
+                            new MacVlan(src, dvlan),
+                            new MacVlan(dst, svlan),
+                        };
+
+                        // Test for VTN flow that has no action.
+                        vflow = new VTNFlow(gid);
+                        Flow f = new Flow(match, null);
+                        vflow.addFlow(vtnMgr, f, node);
+
+                        ObjectPair<L2Host, L2Host> edges =
+                            vflow.getEdgeHosts();
+                        assertEquals(sh, edges.getLeft());
+                        assertNull(edges.getRight());
+
+                        assertTrue(vflow.dependsOn(srcHost));
+                        assertFalse(vflow.dependsOn(dstHost));
+                        assertFalse(vflow.dependsOn(hostEE));
+                        assertFalse(vflow.dependsOn(hostFF));
+                        assertFalse(vflow.dependsOn(imvlan));
+
+                        // Test for VTN flow that has only one flow.
+                        vflow = new VTNFlow(gid);
+                        ActionList actions = new ActionList(node);
+                        actions.addOutput(dport).addVlanId(dvlan);
+                        vflow.addFlow(vtnMgr, match, actions, 10);
+
+                        edges = vflow.getEdgeHosts();
+                        assertEquals(sh, edges.getLeft());
+                        assertEquals(dh, edges.getRight());
+
+                        assertTrue(vflow.dependsOn(srcHost));
+                        assertTrue(vflow.dependsOn(dstHost));
+                        assertFalse(vflow.dependsOn(hostEE));
+                        assertFalse(vflow.dependsOn(hostFF));
+                        assertFalse(vflow.dependsOn(imvlan));
+                        for (MacVlan mv: hosts) {
+                            assertEquals(sameVlan, vflow.dependsOn(mv));
+                        }
+
+                        for (int nflows = 0; nflows < 5; nflows++) {
+                            // Add intermediate flow.
+                            for (int i = 0; i < nflows; i++) {
+                                actions = new ActionList(node);
+                                actions.addOutput(iport).addVlanId(ivlan);
+                                List<Action> alist = actions.get();
+                                alist.add(new SetDlSrc(addrEE));
+                                alist.add(new SetDlDst(addrFF));
+                                f = new Flow(match, alist);
+                                vflow.addFlow(vtnMgr, f, node);
+                            }
+
+                            L2Host ih;
+                            NodeConnector inc;
+                            boolean hasIflow;
+                            if (nflows == 0) {
+                                ih = dh;
+                                hasIflow = false;
+                            } else {
+                                ih = ihost;
+                                hasIflow = true;
+                            }
+                            edges = vflow.getEdgeHosts();
+                            assertEquals(sh, edges.getLeft());
+                            assertEquals(ih, edges.getRight());
+
+                            assertTrue(vflow.dependsOn(srcHost));
+                            assertEquals(!hasIflow, vflow.dependsOn(dstHost));
+                            assertFalse(vflow.dependsOn(hostEE));
+                            assertFalse(vflow.dependsOn(hostFF));
+                            assertEquals(hasIflow, vflow.dependsOn(imvlan));
+                            assertEquals(sameVlan && !hasIflow,
+                                         vflow.dependsOn
+                                         (new MacVlan(dst, svlan)));
+
+                            // Add egress flow.
+                            actions = new ActionList(node);
+                            actions.addOutput(dport).addVlanId(dvlan);
+                            vflow.addFlow(vtnMgr, match, actions, 10);
+
+                            edges = vflow.getEdgeHosts();
+                            assertEquals(sh, edges.getLeft());
+                            assertEquals(dh, edges.getRight());
+
+                            assertTrue(vflow.dependsOn(srcHost));
+                            assertTrue(vflow.dependsOn(dstHost));
+                            assertFalse(vflow.dependsOn(hostEE));
+                            assertFalse(vflow.dependsOn(hostFF));
+                            assertFalse(vflow.dependsOn(imvlan));
+                            for (MacVlan mv: hosts) {
+                                assertEquals(sameVlan, vflow.dependsOn(mv));
+                            }
+                        }
+                    }
                 }
-                assertFalse(mv.toString(), vflow.dependsOn(mvNotMatch));
             }
         }
     }
@@ -255,6 +454,10 @@ public class VTNFlowTest extends FlowModTaskTestBase {
         Set<String> tnames = new HashSet<String>();
         tnames.add("d");
         tnames.add("default");
+
+        VBridgePath bpath = new VBridgePath("tenant", "bridge");
+        VlanMapPath ipath = new VlanMapPath(bpath, "OF|100");
+        VBridgeIfPath epath = new VBridgeIfPath("t1", "b1", "i1");
 
         Set<Object> set = new HashSet<Object>();
         Set<Object> setMulti = new HashSet<Object>();
@@ -301,6 +504,11 @@ public class VTNFlowTest extends FlowModTaskTestBase {
                 }
             }
             testEquals(setMulti, vflowMul1, vflowMul2);
+
+            // Node paths must not affect object identify.
+            vflowMul2.setIngressPath(ipath);
+            vflowMul2.setEgressPath(epath);
+            assertFalse(setMulti.add(vflowMul2));
         }
 
         int required = tnames.size() * connectors.size() * MatchType.values().length
@@ -312,7 +520,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
     }
 
     /**
-     *  Ensure that {@link VTNFlow} is serializable.
+     * Ensure that {@link VTNFlow} is serializable.
      */
     @Test
     public void testSerialize() {
@@ -357,6 +565,36 @@ public class VTNFlowTest extends FlowModTaskTestBase {
                             // add multiple match.
                             vflow.addFlow(vtnMgr, match, actions, pri);
                             serializeTest(vflow);
+
+                            // Set node dependency.
+                            VTenantPath tpath0 = new VTenantPath("t0_" + vlan);
+                            VTenantPath tpath1 = new VTenantPath("t1_" + vlan);
+                            Set<VTenantPath> pset = new HashSet<VTenantPath>();
+                            assertTrue(pset.add(tpath0));
+                            assertTrue(pset.add(tpath1));
+                            vflow.addDependency(pset);
+
+                            VTenantPath tpath2 = new VTenantPath("vtn" + vlan);
+                            VBridgePath bpath2 =
+                                new VBridgePath(tpath2, "vbr" + vlan);
+                            VlanMapPath vpath = new VlanMapPath(bpath2, "id");
+                            VTenantPath tpath3 = new VTenantPath("t" + vlan);
+                            VBridgePath bpath3 =
+                                new VBridgePath(tpath3, "b" + vlan);
+                            VBridgeIfPath ipath =
+                                new VBridgeIfPath(bpath3, "if" + vlan);
+                            vflow.setIngressPath(vpath);
+                            vflow.setEgressPath(ipath);
+                            VTenantPath[] paths = {
+                                tpath0, tpath1,
+                                tpath2, bpath2, vpath,
+                                tpath3, bpath3, ipath,
+                            };
+
+                            VTNFlow vf = (VTNFlow)serializeTest(vflow);
+                            for (VTenantPath path: paths) {
+                                assertTrue(vf.dependsOn(path));
+                            }
                         }
                     }
                 }
@@ -365,7 +603,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
     }
 
     /**
-     * Test method for {@link VTNFlow#isLocal(VTNManagerImpl)}.
+     * Test case for {@link VTNFlow#isLocal(VTNManagerImpl)}.
      */
     @Test
     public void testIsLocal() {

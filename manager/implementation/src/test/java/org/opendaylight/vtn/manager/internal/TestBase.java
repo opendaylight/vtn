@@ -676,6 +676,37 @@ public abstract class TestBase extends Assert {
     }
 
     /**
+     * Create a list of {@link VBridgePath} objects.
+     *
+     * @param subclass  If {@code true} is specified, instances of classes
+     *                  which extend {@link VBridgePath} are added to the
+     *                  returned list.
+     * @return  A list of {@link VBridgePath} objects.
+     */
+    protected static List<VBridgePath> createVBridgePaths(boolean subclass) {
+        if (!subclass) {
+            return createVBridgePaths();
+        }
+
+        List<VBridgePath> list = new ArrayList<VBridgePath>();
+        String[] bnames = {"bridge1", "bridge2"};
+        String[] inames = {"if_1", "if_2"};
+        for (String tname: new String[]{"tenant1", "tenant2"}) {
+            for (String bname: bnames) {
+                VBridgePath bpath = new VBridgePath(tname, bname);
+                list.add(bpath);
+
+                for (String iname: inames) {
+                    list.add(new VBridgeIfPath(tname, bname, iname));
+                    list.add(new VlanMapPath(bpath, iname));
+                }
+            }
+        }
+
+        return list;
+    }
+
+    /**
      * create a {@link PacketContext} object.
      *
      * @param eth   A {@link Ethernet} object.

@@ -30,6 +30,7 @@ import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
+import org.opendaylight.vtn.manager.internal.cluster.VBridgeNode;
 
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.core.Node;
@@ -309,6 +310,44 @@ public class MacAddressTable {
 
     /**
      * Remove MAC address table entries associated with switch ports accepted
+     * by the given {@link PortFilter} instance.
+     *
+     * <p>
+     *   Note that {@code null} is always passed to
+     *   {@link PortFilter#accept(NodeConnector, PortProperty)} as port
+     *   property.
+     * </p>
+     */
+    protected class PortFilterEntryRemover extends EntryRemover {
+        /**
+         * A {@link PortFilter} instance which determines target ports.
+         */
+        private final PortFilter  filter;
+
+        /**
+         * Construct a new entry remover.
+         *
+         * @param filter  A {@link PortFilter} instance.
+         */
+        protected PortFilterEntryRemover(PortFilter filter) {
+            this.filter = filter;
+        }
+
+        /**
+         * Determine whether the given entry should be removed or not.
+         *
+         * @param tent  A MAC address table entry.
+         * @return  {@code true} is returned if the given entry should be
+         *          removed. Otherwise {@code fales} is returned.
+         */
+        @Override
+        protected boolean match(MacTableEntry tent) {
+            return filter.accept(tent.getPort(), null);
+        }
+    }
+
+    /**
+     * Remove MAC address table entries associated with switch ports accepted
      * by the given {@link PortFilter} instance and the specified VLAN ID.
      *
      * <p>
@@ -317,12 +356,8 @@ public class MacAddressTable {
      *   property.
      * </p>
      */
-    private final class PortFilterEntryRemover extends EntryRemover {
-        /**
-         * A {@link PortFilter} instance which determines target ports.
-         */
-        private final PortFilter  filter;
-
+    private final class PortFilterVlanEntryRemover
+        extends PortFilterEntryRemover {
         /**
          * The target VLAN ID.
          */
@@ -334,8 +369,8 @@ public class MacAddressTable {
          * @param filter  A {@link PortFilter} instance.
          * @param vlan    A VLAN ID.
          */
-        protected PortFilterEntryRemover(PortFilter filter, short vlan) {
-            this.filter = filter;
+        protected PortFilterVlanEntryRemover(PortFilter filter, short vlan) {
+            super(filter);
             this.vlan = vlan;
         }
 
@@ -348,8 +383,7 @@ public class MacAddressTable {
          */
         @Override
         protected boolean match(MacTableEntry tent) {
-            return (tent.getVlan() == vlan &&
-                    filter.accept(tent.getPort(), null));
+            return (tent.getVlan() == vlan && super.match(tent));
         }
     }
 
@@ -433,6 +467,38 @@ public class MacAddressTable {
     }
 
     /**
+     * Remove MAC address table entries accepted by the specified
+     * {@link MacTableEntryFilter} instance.
+     */
+    private final class FilterEntryRemover extends EntryRemover {
+        /**
+         * A {@link MacTableEntryFilter} instance.
+         */
+        private final MacTableEntryFilter  filter;
+
+        /**
+         * Construct a new entry remover.
+         *
+         * @param filter  A {@link MacTableEntryFilter} instance.
+         */
+        private FilterEntryRemover(MacTableEntryFilter filter) {
+            this.filter = filter;
+        }
+
+        /**
+         * Determine whether the given entry should be removed or not.
+         *
+         * @param tent  A MAC address table entry.
+         * @return  {@code true} is returned if the given entry should be
+         *          removed. Otherwise {@code fales} is returned.
+         */
+        @Override
+        protected boolean match(MacTableEntry tent) {
+            return filter.accept(tent);
+        }
+    }
+
+    /**
      * Convert a MAC address into a key of the MAC address table.
      *
      * @param addr A byte array which represents a MAC address.
@@ -491,9 +557,10 @@ public class MacAddressTable {
     /**
      * Add a MAC address table entry if needed.
      *
-     * @param pctx  The context of the received packet.
+     * @param pctx   The context of the received packet.
+     * @param bnode  A {@link VBridgeNode} which maps the incoming packet.
      */
-    public void add(PacketContext pctx) {
+    public void add(PacketContext pctx, VBridgeNode bnode) {
         byte[] src = pctx.getSourceAddress();
         if (!NetUtils.isUnicastMACAddr(src)) {
             return;
@@ -513,10 +580,12 @@ public class MacAddressTable {
         InetAddress ipaddr = getSourceInetAddress(pctx);
 
         // Add a MAC address table entry.
-        MacTableEntry tent = addEntry(pctx, port, vlan, key, ipaddr);
+        MacTableEntry tent = addEntry(pctx, bnode, port, vlan, key, ipaddr);
         if (tent == null) {
             return;
         }
+
+        assert bridgePath.equals(tent.getEntryId().getBridgePath());
 
         // Notify the host tracker of new host entry.
         if (ipaddr != null) {
@@ -576,16 +645,10 @@ public class MacAddressTable {
      * @return  A MAC address table entry if found. {@code null} if not fonud.
      */
     public synchronized MacTableEntry get(Long key) {
-        Map<Long, MacTableEntry> table = macAddressTable;
-        MacTableEntry tent;
-        if (table != null) {
-            tent = table.get(key);
-            if (tent != null) {
-                // Turn the used flag on.
-                tent.setUsed();
-            }
-        } else {
-            tent = null;
+        MacTableEntry tent = getEntry(key);
+        if (tent != null) {
+            // Turn the used flag on.
+            tent.setUsed();
         }
 
         return tent;
@@ -646,18 +709,8 @@ public class MacAddressTable {
             return null;
         }
 
-        synchronized (this) {
-            Map<Long, MacTableEntry> table = macAddressTable;
-            if (table == null) {
-                return null;
-            }
-
-            MacTableEntry tent = table.get(key);
-            if (tent == null) {
-                return null;
-            }
-            return tent.getEntry();
-        }
+        MacTableEntry tent = getEntry(key);
+        return (tent == null) ? null : tent.getEntry();
     }
 
     /**
@@ -768,6 +821,20 @@ public class MacAddressTable {
 
     /**
      * Flush all MAC address table entries associated with ports accepted by
+     * the specified {@link PortFilter} instance.
+     *
+     * @param filter  A {@link PortFilter} instance.
+     */
+    public synchronized void flush(PortFilter filter) {
+        Map<Long, MacTableEntry> table = macAddressTable;
+        if (table != null) {
+            EntryRemover remover = new PortFilterEntryRemover(filter);
+            remover.remove(table);
+        }
+    }
+
+    /**
+     * Flush all MAC address table entries associated with ports accepted by
      * the specified {@link PortFilter} instance and the specified VLAN ID.
      *
      * @param filter  A {@link PortFilter} instance.
@@ -776,7 +843,7 @@ public class MacAddressTable {
     public synchronized void flush(PortFilter filter, short vlan) {
         Map<Long, MacTableEntry> table = macAddressTable;
         if (table != null) {
-            EntryRemover remover = new PortFilterEntryRemover(filter, vlan);
+            EntryRemover remover = new PortFilterVlanEntryRemover(filter, vlan);
             remover.remove(table);
         }
     }
@@ -796,6 +863,21 @@ public class MacAddressTable {
         Map<Long, MacTableEntry> table = macAddressTable;
         if (table != null) {
             EntryRemover remover = new ControllerEntryRemover(addrs);
+            remover.remove(table);
+        }
+    }
+
+    /**
+     * Flush all MAC address table entries accepted by the specified
+     * {@link MacTableEntryFilter} instance.
+     *
+     * @param filter  A {@link MacTableEntryFilter} instance.
+     *                Specifying {@code null} results in undefined behavior.
+     */
+    public synchronized void flush(MacTableEntryFilter filter) {
+        Map<Long, MacTableEntry> table = macAddressTable;
+        if (table != null) {
+            EntryRemover remover = new FilterEntryRemover(filter);
             remover.remove(table);
         }
     }
@@ -928,6 +1010,7 @@ public class MacAddressTable {
      * Add a MAC address table entry for a received packet.
      *
      * @param pctx    The context of the received packet.
+     * @param bnode   A {@link VBridgeNode} which maps the incoming packet.
      * @param port    A node connector associated with incoming switch port.
      * @param vlan    VLAN ID.
      * @param key     A long value which represents a MAC address.
@@ -937,6 +1020,7 @@ public class MacAddressTable {
      *          {@code null} is returned if this table is no longer available.
      */
     private synchronized MacTableEntry addEntry(PacketContext pctx,
+                                                VBridgeNode bnode,
                                                 NodeConnector port, short vlan,
                                                 Long key, InetAddress ipaddr) {
         Map<Long, MacTableEntry> table = macAddressTable;
@@ -945,10 +1029,11 @@ public class MacAddressTable {
         }
 
         // Search for a table entry mapped to the given MAC address.
+        VBridgePath mapPath = bnode.getPath();
         MacTableEntry tent = table.get(key);
         if (tent == null) {
             // Register a new table entry.
-            tent = new MacTableEntry(bridgePath, key, port, vlan, ipaddr);
+            tent = new MacTableEntry(mapPath, key, port, vlan, ipaddr);
             if (LOG.isTraceEnabled()) {
                 LOG.trace("{}: New MAC address table entry: {}",
                           getTableName(), tent);
@@ -965,17 +1050,15 @@ public class MacAddressTable {
         }
 
         // Check to see if the entry needs to be changed.
-        NodeConnector curport = tent.getPort();
-        short curvlan = tent.getVlan();
         boolean changed = false;
         MacTableEntry newEnt = tent;
-        if (vlan != curvlan || !port.equals(curport)) {
+        if (tent.hasMoved(port, vlan, mapPath)) {
             // The host was moved to other network.
             pctx.addObsoleteEntry(tent);
             vtnManager.removeMacTableEntry(tent.getEntryId());
 
             // Replace the table entry.
-            newEnt = new MacTableEntry(bridgePath, key, port, vlan, ipaddr);
+            newEnt = new MacTableEntry(mapPath, key, port, vlan, ipaddr);
             table.put(key, newEnt);
             vtnManager.putMacTableEntry(newEnt);
             changed = true;
@@ -1001,6 +1084,22 @@ public class MacAddressTable {
         }
 
         return newEnt;
+    }
+
+    /**
+     * Return a MAC address entry associated with the specified MAC address.
+     *
+     * <p>
+     *   Unlike {@link #get(Long)}, this method never affects the used flag
+     *   of the MAC address table entry.
+     * </p>
+     *
+     * @param key  A {@link Long} instance which represents the MAC address.
+     * @return  A MAC address table entry if found. {@code null} if not fonud.
+     */
+    private synchronized MacTableEntry getEntry(Long key) {
+        Map<Long, MacTableEntry> table = macAddressTable;
+        return (table == null) ? null : table.get(key);
     }
 
     /**

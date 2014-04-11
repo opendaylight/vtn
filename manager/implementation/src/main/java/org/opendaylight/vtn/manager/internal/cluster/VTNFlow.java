@@ -17,8 +17,10 @@ import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
 
+import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.ActionList;
+import org.opendaylight.vtn.manager.internal.L2Host;
 import org.opendaylight.vtn.manager.internal.NodeUtils;
 import org.opendaylight.vtn.manager.internal.PortFilter;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
@@ -28,6 +30,7 @@ import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.action.Action;
 import org.opendaylight.controller.sal.action.Output;
 import org.opendaylight.controller.sal.action.PopVlan;
+import org.opendaylight.controller.sal.action.SetDlDst;
 import org.opendaylight.controller.sal.action.SetVlanId;
 import org.opendaylight.controller.sal.connection.ConnectionLocality;
 import org.opendaylight.controller.sal.core.Node;
@@ -56,7 +59,7 @@ public class VTNFlow implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 2586894271137343163L;
+    private static final long serialVersionUID = -8156281482065842424L;
 
     /**
      * The identifier of the flow group.
@@ -81,14 +84,30 @@ public class VTNFlow implements Serializable {
 
     /**
      * Set of virtual node paths on which this flow depends.
+     *
+     * <p>
+     *   Note that this field does not affect identify of this instance.
+     * </p>
      */
     private final Set<VTenantPath>  dependNodes = new HashSet<VTenantPath>();
 
     /**
-     * Set of host entry, which is a pair of MAC address and VLAN ID,
-     * on which this flow depends.
+     * A path to virtual node which maps the incoming flow.
+     *
+     * <p>
+     *   Note that this field does not affect identify of this instance.
+     * </p>
      */
-    private final Set<MacVlan>  dependHosts = new HashSet<MacVlan>();
+    private VBridgePath  ingressPath;
+
+    /**
+     * A path to virtual node which maps the egress flow.
+     *
+     * <p>
+     *   Note that this field does not affect identify of this instance.
+     * </p>
+     */
+    private VBridgePath  egressPath;
 
     /**
      * Construct a new VTN flow object.
@@ -158,7 +177,7 @@ public class VTNFlow implements Serializable {
      * @param hard  A hard timeout for an ingress flow.
      */
     public void setTimeout(int idle, int hard) {
-        if (flowEntries.size() != 0) {
+        if (!flowEntries.isEmpty()) {
             Flow ingress = flowEntries.get(0).getFlow();
             ingress.setIdleTimeout((short)idle);
             ingress.setHardTimeout((short)hard);
@@ -211,16 +230,6 @@ public class VTNFlow implements Serializable {
     }
 
     /**
-     * Add a host entry, represented by a pair of MAC address and VLAN ID,
-     * to the dependency set.
-     *
-     * @param mvlan  A pair of MAC address and VLAN ID.
-     */
-    public void addDependency(MacVlan mvlan) {
-        dependHosts.add(mvlan);
-    }
-
-    /**
      * Determine whether this flow depends on the specified virtual node
      * or not.
      *
@@ -229,7 +238,9 @@ public class VTNFlow implements Serializable {
      *          virtual node specified by {@code path}.
      */
     public boolean dependsOn(VTenantPath path) {
-        return dependNodes.contains(path);
+        return (path != null &&
+                (path.contains(ingressPath) || path.contains(egressPath) ||
+                 dependNodes.contains(path)));
     }
 
     /**
@@ -241,7 +252,56 @@ public class VTNFlow implements Serializable {
      *          specified host entry.
      */
     public boolean dependsOn(MacVlan mvlan) {
-        return dependHosts.contains(mvlan);
+        ObjectPair<L2Host, L2Host> pair = getEdgeHosts();
+        if (pair == null) {
+            return false;
+        }
+
+        L2Host in = pair.getLeft();
+        if (mvlan.equals(in.getHost())) {
+            return true;
+        }
+
+        L2Host out = pair.getRight();
+        return (out != null && mvlan.equals(out.getHost()));
+    }
+
+    /**
+     * Return a path to virtual node which maps the ingress flow.
+     *
+     * @return  A path to virtual node which maps the ingress flow.
+     */
+    public VBridgePath getIngressPath() {
+        return ingressPath;
+    }
+
+    /**
+     * Set a path to virtual node which maps the ingress flow.
+     *
+     * @param path  A path to virtual node which maps the ingress flow.
+     */
+    public void setIngressPath(VBridgePath path) {
+        ingressPath = path;
+    }
+
+    /**
+     * Return a path to virtual node which maps the egress flow.
+     *
+     * @return  A path to virtual node which maps the egress flow.
+     *          {@code null} is returned if this flow does not contain a
+     *          egress flow.
+     */
+    public VBridgePath getEgressPath() {
+        return egressPath;
+    }
+
+    /**
+     * Set a path to virtual node which maps the egress flow.
+     *
+     * @param path  A path to virtual node which maps the egress flow.
+     */
+    public void setEgressPath(VBridgePath path) {
+        egressPath = path;
     }
 
     /**
@@ -265,7 +325,7 @@ public class VTNFlow implements Serializable {
      *          Otherwise {@code false} is returned.
      */
     public boolean isIncomingNetwork(PortFilter filter, short vlan) {
-        if (flowEntries.size() == 0) {
+        if (flowEntries.isEmpty()) {
             return false;
         }
 
@@ -408,6 +468,45 @@ public class VTNFlow implements Serializable {
     }
 
     /**
+     * Get two {@link L2Host} instance which represents host information
+     * matched by edge flow entries.
+     *
+     * @return  A {@link ObjectPair} instance which contains two
+     *          {@link L2Host} instances. A {@link L2Host} instance which
+     *          represents incoming host address is set to the left side,
+     *          and outgoing host address is set to the right side.
+     *          Node that {@code null} may be set for outgoing host.
+     *          {@code null} is returned if not found.
+     */
+    public ObjectPair<L2Host, L2Host> getEdgeHosts() {
+        int sz = flowEntries.size();
+        if (sz <= 0) {
+            return null;
+        }
+
+        // Check ingress flow.
+        // DL_SRC, DL_DST, IN_PORT, and DL_VLAN fields should be contained
+        // in the ingress flow.
+        Match match = flowEntries.get(0).getFlow().getMatch();
+        MatchField mf = match.getField(MatchType.IN_PORT);
+        NodeConnector inPort = (NodeConnector)mf.getValue();
+        mf = match.getField(MatchType.DL_SRC);
+        byte[] src = (byte[])mf.getValue();
+        mf = match.getField(MatchType.DL_VLAN);
+        short vlan = ((Short)mf.getValue()).shortValue();
+        L2Host in = new L2Host(src, vlan, inPort);
+
+        mf = match.getField(MatchType.DL_DST);
+        byte[] dst = (byte[])mf.getValue();
+
+        // Check egress flow.
+        List<Action> actions = flowEntries.get(sz - 1).getFlow().getActions();
+        L2Host out = getDestinationHost(actions, dst, vlan);
+
+        return new ObjectPair<L2Host, L2Host>(in, out);
+    }
+
+    /**
      * Read data from the given input stream and deserialize.
      *
      * @param in  An input stream.
@@ -451,6 +550,50 @@ public class VTNFlow implements Serializable {
         }
 
         return -1;
+    }
+
+    /**
+     * Determine the destination host configured in the specified list of
+     * flow actions.
+     *
+     * @param actions  A list of flow actions.
+     * @param addr     Destination address configured in the ingress flow.
+     * @param inVlan   VLAN ID configured in the ingress flow.
+     * @return  A {@link L2Host} instance is returned if the destination host
+     *          is configured in this flow.
+     *          {@code null} is returned if not configured.
+     */
+    private L2Host getDestinationHost(List<Action> actions, byte[] addr,
+                                      short inVlan) {
+        if (actions == null) {
+            return null;
+        }
+
+        byte[] dst = addr;
+        NodeConnector port = null;
+        short vlan = inVlan;
+        boolean vlanSet = false;
+        for (Action action: actions) {
+            if (action instanceof SetDlDst) {
+                dst = ((SetDlDst)action).getDlAddress();
+            } else if (action instanceof Output) {
+                port = ((Output)action).getPort();
+            } else {
+                short v = getOutputVlan(action);
+                if (v != -1) {
+                    vlan = v;
+                    vlanSet = true;
+                }
+            }
+
+            // We assume that there is no duplicate OUTPUT, DL_DST, VLAN_VID
+            // actions in the action list.
+            if (dst != addr && port != null && vlanSet) {
+                break;
+            }
+        }
+
+        return (port == null) ? null : new L2Host(dst, vlan, port);
     }
 
     /**
