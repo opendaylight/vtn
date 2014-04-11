@@ -27,4 +27,8 @@
   <logger name="org.opendaylight.vtn.manager.northbound.integrationtest"
           level="INFO" />
 
+  <!-- Suppress unwanted logs. -->
+  <logger name="org.opendaylight.controller.security.ControllerCustomRealm"
+          level="OFF"/>
+
 </configuration>
