@@ -92,7 +92,7 @@ public class VTNNeutronUtils {
      * @return VTN manager service instance
      */
     public IVTNManager getVTNManager() {
-        return vtnManager;
+        return this.vtnManager;
     }
 
     /**
@@ -367,7 +367,7 @@ public class VTNNeutronUtils {
      */
     void setVTNManager(IVTNManager service) {
         LOG.trace("Set vtn manager: {}", service);
-        vtnManager = service;
+        this.vtnManager = service;
     }
 
     /**
@@ -376,9 +376,9 @@ public class VTNNeutronUtils {
      * @param service  VTN manager service.
      */
     void unsetVTNManager(IVTNManager service) {
-        if (vtnManager == service) {
+        if (this.vtnManager == service) {
             LOG.trace("Unset vtn manager: {}", service);
-            vtnManager = null;
+            this.vtnManager = null;
         }
     }
 }
