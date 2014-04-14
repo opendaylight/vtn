@@ -51,6 +51,10 @@
               org.opendaylight.controller.networkconfig.neutron,
               org.opendaylight.controller.sal.core,
               org.opendaylight.controller.sal.utils,
+              org.opendaylight.ovsdb.lib.notation,
+              org.opendaylight.ovsdb.lib.table,
+              org.opendaylight.ovsdb.lib.table.internal,
+              org.opendaylight.ovsdb.plugin,
               org.opendaylight.vtn.manager,
               org.apache.felix.dm,
               org.slf4j,
@@ -74,6 +78,11 @@
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opendaylight.ovsdb</groupId>
+      <artifactId>ovsdb</artifactId>
     </dependency>
 
     <dependency>

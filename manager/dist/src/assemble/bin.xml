@@ -48,5 +48,12 @@
       <directory>${project.build.directory}/generated-resources</directory>
       <outputDirectory>/</outputDirectory>
     </fileSet>
+    <fileSet>
+      <includes>
+        <include>configuration/vtn.ini</include>
+      </includes>
+      <directory>src/resources</directory>
+      <outputDirectory>/opendaylight</outputDirectory>
+    </fileSet>
   </fileSets>
 </assembly>
