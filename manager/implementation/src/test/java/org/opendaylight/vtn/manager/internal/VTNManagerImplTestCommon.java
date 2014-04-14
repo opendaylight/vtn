@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal;
 
 import java.util.List;
@@ -52,6 +53,14 @@ import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
  * Common class for tests of {@link VTNManagerImpl}.
  */
 public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
+    /**
+     * Construct a new instance.
+     *
+     * @param stub  An integer value to be passed to {@link TestStub}.
+     */
+    protected VTNManagerImplTestCommon(int stub) {
+        super(stub);
+    }
 
     /**
      * method for setup the environment.

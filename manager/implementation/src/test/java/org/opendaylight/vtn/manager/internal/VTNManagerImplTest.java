@@ -6,6 +6,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal;
 
 import java.io.ByteArrayInputStream;
@@ -29,7 +30,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.apache.felix.dm.Component;
 import org.apache.felix.dm.impl.ComponentImpl;
-import org.junit.BeforeClass;
+
 import org.junit.Test;
 
 import org.opendaylight.controller.clustering.services.IClusterContainerServices;
@@ -105,10 +106,11 @@ import org.opendaylight.vtn.manager.internal.cluster.VlanMapImpl;
  * </p>
  */
 public class VTNManagerImplTest extends VTNManagerImplTestCommon {
-
-    @BeforeClass
-    public static void beforeClass() {
-        stubMode = 0;
+    /**
+     * Construct a new instance.
+     */
+    public VTNManagerImplTest() {
+        super(0);
     }
 
     /**

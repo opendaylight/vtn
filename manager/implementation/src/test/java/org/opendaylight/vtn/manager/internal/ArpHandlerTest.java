@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal;
 
 import java.net.InetAddress;
@@ -16,8 +17,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.core.ConstructionException;
 import org.opendaylight.controller.sal.core.Node;
@@ -67,10 +68,11 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
      */
     private byte[] hostMac = new byte [] { 0x00, 0x00, 0x00, 0x11, 0x22, 0x33};
 
-
-    @BeforeClass
-    public static void beforeClass() {
-        stubMode = 2;
+    /**
+     * Construct a new instance.
+     */
+    public ArpHandlerTest() {
+        super(2);
     }
 
     /**
