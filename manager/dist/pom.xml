@@ -49,6 +49,10 @@
       <type>zip</type>
       <classifier>osgipackage</classifier>
     </dependency>
+    <dependency>
+      <groupId>org.opendaylight.ovsdb</groupId>
+      <artifactId>ovsdb</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
@@ -95,6 +99,23 @@
              <includeGroupIds>org.opendaylight.controller</includeGroupIds>
              <excludeTransitive>true</excludeTransitive>
              <ignorePermissions>false</ignorePermissions>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-ovsdb</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.opendaylight.ovsdb</groupId>
+                  <artifactId>ovsdb</artifactId>
+                  <type>jar</type>
+                  <outputDirectory>${project.build.directory}/generated-resources/opendaylight/plugins</outputDirectory>
+                </artifactItem>
+              </artifactItems>
             </configuration>
           </execution>
         </executions>
