@@ -774,6 +774,13 @@
         <version>7.0.42</version>
       </dependency>
 
+      <!-- OpenDaylight OVSDB project -->
+      <dependency>
+        <groupId>org.opendaylight.ovsdb</groupId>
+        <artifactId>ovsdb</artifactId>
+        <version>0.5.1-SNAPSHOT</version>
+      </dependency>
+
       <dependency>
         <groupId>org.codehaus.enunciate</groupId>
         <artifactId>enunciate-core-annotations</artifactId>
