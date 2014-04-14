@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal;
 
 import java.util.ArrayList;
@@ -16,8 +17,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 
 import org.apache.felix.dm.impl.ComponentImpl;
+
 import org.junit.Before;
-import org.junit.BeforeClass;
+
 import org.opendaylight.controller.clustering.services.IClusterContainerServices;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
@@ -28,9 +30,11 @@ import org.opendaylight.vtn.manager.internal.cluster.VNodeEvent;
  */
 public class VNodeEventTestBase extends TestUseVTNManagerBase {
 
-    @BeforeClass
-    public static void beforeClass() {
-        stubMode = 3;
+    /**
+     * Construct a new instance.
+     */
+    public VNodeEventTestBase() {
+        super(3);
     }
 
     @Before

@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.apache.felix.dm.Component;
 import org.apache.felix.dm.impl.ComponentImpl;
-import org.junit.BeforeClass;
+
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.IVTNManagerAware;
@@ -108,10 +108,11 @@ import org.opendaylight.controller.topologymanager.ITopologyManager;
  * </p>
  */
 public class VTNManagerImplTest extends VTNManagerImplTestCommon {
-
-    @BeforeClass
-    public static void beforeClass() {
-        stubMode = 0;
+    /**
+     * Construct a new instance.
+     */
+    public VTNManagerImplTest() {
+        super(0);
     }
 
     /**

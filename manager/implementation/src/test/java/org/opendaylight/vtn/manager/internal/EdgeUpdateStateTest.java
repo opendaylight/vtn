@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.opendaylight.controller.sal.core.Edge;
@@ -35,11 +34,10 @@ import org.opendaylight.controller.topologymanager.ITopologyManager;
  */
 public class EdgeUpdateStateTest extends TestUseVTNManagerBase {
     /**
-     * Called when the test class is loaded.
+     * Construct a new instance.
      */
-    @BeforeClass
-    public static void beforeClass() {
-        stubMode = 2;
+    public EdgeUpdateStateTest() {
+        super(2);
     }
 
     /**

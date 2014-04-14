@@ -6,6 +6,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal;
 
 import java.util.List;
@@ -54,6 +55,14 @@ import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
  * Common class for tests of {@link VTNManagerImpl}.
  */
 public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
+    /**
+     * Construct a new instance.
+     *
+     * @param stub  An integer value to be passed to {@link TestStub}.
+     */
+    protected VTNManagerImplTestCommon(int stub) {
+        super(stub);
+    }
 
     /**
      * method for setup the environment.
