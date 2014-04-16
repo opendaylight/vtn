@@ -691,8 +691,8 @@ UncRespCode OdcLink::fill_config_node_vector(
     if (it_head_node != head_conn_map.end()) {
       port_id1 = it_head_node->second;
     } else {
-      pfc_log_error("No corresponding port available . Error occured");
-      return UNC_DRV_RC_ERR_GENERIC;
+      pfc_log_debug("No corresponding port available .");
+      continue;
     }
     size_t pos_sw_one = tail_node_conn.find(PIPE_SEPARATOR);
     if (pos_sw_one == std::string::npos) {
