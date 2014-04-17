@@ -115,8 +115,7 @@ UncRespCode OdcSwitch::fill_config_node_vector(
                                             arr_idx,
                                             json_prop);
 
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (json_object_is_type(json_prop, json_type_null))) {
+  if (restjson::REST_OP_SUCCESS != ret_val) {
     pfc_log_error(" Error while parsing description or json_prop NULL");
     return UNC_DRV_RC_ERR_GENERIC;
   }
@@ -126,22 +125,24 @@ UncRespCode OdcSwitch::fill_config_node_vector(
                                             -1,
                                             json_obj_description);
 
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (json_object_is_type(json_obj_description, json_type_null))) {
-    pfc_log_error(" Error while parsing description or json type NULL");
+  if (restjson::REST_OP_SUCCESS != ret_val) {
+    pfc_log_error(" Error occured while parsing json object description");
     return UNC_DRV_RC_ERR_GENERIC;
   }
   std::string desc   = "";
-  ret_val = restjson::JsonBuildParse::parse(json_obj_description,
-                                            "value",
-                                            -1,
-                                            desc);
+  if (json_object_is_type(json_obj_description, json_type_null)) {
+    pfc_log_debug("Switch Description is Null");
+  } else {
+    ret_val = restjson::JsonBuildParse::parse(json_obj_description,
+                                              "value",
+                                              -1,
+                                              desc);
 
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error while parsing description");
-    return UNC_DRV_RC_ERR_GENERIC;
+    if (restjson::REST_OP_SUCCESS != ret_val) {
+      pfc_log_error(" Error while parsing description");
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
   }
-
   std::string ctr_name = ctr_ptr->get_controller_id();
   //  Fills Key Structure
   strncpy(reinterpret_cast<char*> (key_switch.switch_id), node_id.c_str(),
