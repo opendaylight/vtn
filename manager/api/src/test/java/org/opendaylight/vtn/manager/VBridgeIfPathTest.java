@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -53,13 +53,23 @@ public class VBridgeIfPathTest extends TestBase {
         List<String> bnames = createStrings("bridge");
         List<String> inames = createStrings("ifname");
         for (String tname: tnames) {
+            VTenantPath tpath = new VTenantPath(tname);
             for (String bname: bnames) {
+                VBridgePath bpath = new VBridgePath(tname, bname);
                 for (String iname: inames) {
                     VBridgeIfPath p1 = new VBridgeIfPath(tname, bname, iname);
                     VBridgeIfPath p2 =
                         new VBridgeIfPath(copy(tname), copy(bname),
                                           copy(iname));
                     testEquals(set, p1, p2);
+
+                    // A instance of VTenantPath and VBridgePath must be
+                    // treated as different object even if it has the same
+                    // path component.
+                    assertFalse(tpath.equals(p1));
+                    assertFalse(p1.equals(tpath));
+                    assertFalse(bpath.equals(p1));
+                    assertFalse(p1.equals(bpath));
                 }
             }
         }
