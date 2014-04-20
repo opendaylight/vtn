@@ -42,11 +42,11 @@ import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
+import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.PortFilter;
-import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
 import org.opendaylight.controller.sal.core.Node;
@@ -54,7 +54,6 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.PacketResult;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
-import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.ObjectWriter;
 import org.opendaylight.controller.sal.utils.Status;
@@ -73,7 +72,7 @@ public final class VTenantImpl implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 1787875602878186647L;
+    private static final long serialVersionUID = -4637018876337158798L;
 
     /**
      * Logger instance.
@@ -828,14 +827,6 @@ public final class VTenantImpl implements Serializable {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            if (type == UpdateType.REMOVED) {
-                // Uninstall VTN flows related to the removed node.
-                VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
-                if (fdb != null) {
-                    fdb.removeFlows(mgr, node);
-                }
-            }
-
             for (VBridgeImpl vbr: vBridges.values()) {
                 vbr.notifyNode(mgr, node, type);
             }
@@ -848,30 +839,16 @@ public final class VTenantImpl implements Serializable {
      * This method is called when some properties of a node connector are
      * added/deleted/changed.
      *
-     * @param mgr   VTN Manager service.
-     * @param nc    Node connector being updated.
-     * @param type  Type of update.
+     * @param mgr     VTN Manager service.
+     * @param nc      Node connector being updated.
+     * @param pstate  The state of the node connector.
+     * @param type    Type of update.
      */
     public void notifyNodeConnector(VTNManagerImpl mgr, NodeConnector nc,
-                                    UpdateType type) {
-        VNodeState pstate;
-        if (type == UpdateType.REMOVED) {
-            pstate = VNodeState.UNKNOWN;
-        } else {
-            // Determine whether the port is up or not.
-            pstate = (mgr.isEnabled(nc)) ? VNodeState.UP : VNodeState.DOWN;
-        }
-
+                                    VNodeState pstate, UpdateType type) {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            if (pstate != VNodeState.UP) {
-                // Uninstall VTN flows related to the switch port.
-                VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
-                if (fdb != null) {
-                    fdb.removeFlows(mgr, nc);
-                }
-            }
             for (VBridgeImpl vbr: vBridges.values()) {
                 vbr.notifyNodeConnector(mgr, nc, pstate, type);
             }
@@ -883,17 +860,16 @@ public final class VTenantImpl implements Serializable {
     /**
      * This method is called when topology graph is changed.
      *
-     * @param mgr       VTN Manager service.
-     * @param topoList  List of topoedgeupdates Each topoedgeupdate includes
-     *                  edge, its Properties (BandWidth and/or Latency etc)
-     *                  and update type.
+     * @param mgr     VTN Manager service.
+     * @param estate  A {@link EdgeUpdateState} instance which contains
+     *                information reported by the controller.
      */
-    public void edgeUpdate(VTNManagerImpl mgr, List<TopoEdgeUpdate> topoList) {
+    public void edgeUpdate(VTNManagerImpl mgr, EdgeUpdateState estate) {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
             for (VBridgeImpl vbr: vBridges.values()) {
-                vbr.edgeUpdate(mgr, topoList);
+                vbr.edgeUpdate(mgr, estate);
             }
         } finally {
             rdlock.unlock();

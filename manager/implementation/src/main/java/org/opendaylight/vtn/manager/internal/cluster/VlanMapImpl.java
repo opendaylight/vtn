@@ -10,7 +10,6 @@
 package org.opendaylight.vtn.manager.internal.cluster;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentMap;
@@ -20,21 +19,22 @@ import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VNodeState;
+import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
+import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
-import org.opendaylight.vtn.manager.internal.VTNThreadData;
 import org.opendaylight.vtn.manager.internal.VlanMapPortFilter;
 
-import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.Ethernet;
-import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
+import org.opendaylight.controller.sal.utils.Status;
+import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
  * Implementation of VLAN mapping to the virtual L2 bridge.
@@ -53,7 +53,7 @@ public final class VlanMapImpl implements VBridgeNode, Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -7224821077858515527L;
+    private static final long serialVersionUID = 6936105710286767846L;
 
     /**
      * Logger instance.
@@ -81,18 +81,6 @@ public final class VlanMapImpl implements VBridgeNode, Serializable {
     VlanMapImpl(VBridgePath bpath, String mapId, VlanMapConfig vlconf) {
         vlanMapConfig = vlconf;
         setPath(bpath, mapId);
-    }
-
-    /**
-     * Initialize the state of the VLAN mapping.
-     *
-     * @param mgr    VTN Manager service.
-     */
-    void initState(VTNManagerImpl mgr) {
-        Node node = vlanMapConfig.getNode();
-        boolean valid = (node == null) ? true : checkNode(mgr, node);
-        ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
-        db.put(mapPath, Boolean.valueOf(valid));
     }
 
     /**
@@ -160,7 +148,20 @@ public final class VlanMapImpl implements VBridgeNode, Serializable {
      * @return  New bridge state value.
      */
     VNodeState resume(VTNManagerImpl mgr, VNodeState bstate) {
+        // Register this VLAN mapping to the global resource manager.
+        IVTNResourceManager resMgr = mgr.getResourceManager();
+        short vlan = vlanMapConfig.getVlan();
         Node node = vlanMapConfig.getNode();
+        NodeVlan nvlan = new NodeVlan(node, vlan);
+
+        try {
+            resMgr.registerVlanMap(mgr, mapPath, nvlan, false);
+        } catch (Exception e) {
+            LOG.error(mgr.getContainerName() + ":" + mapPath +
+                      ": Failed to resume VLAN mapping: " + nvlan, e);
+            // FALLTHROUGH
+        }
+
         boolean valid = (node == null) ? true : checkNode(mgr, node);
         if (valid) {
             ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
@@ -246,32 +247,22 @@ public final class VlanMapImpl implements VBridgeNode, Serializable {
     /**
      * This method is called when topology graph is changed.
      *
-     * @param mgr       VTN Manager service.
-     * @param db        Virtual node state DB.
-     * @param bstate    Current bridge state value.
-     * @param topoList  List of topoedgeupdates Each topoedgeupdate includes
-     *                  edge, its Properties (BandWidth and/or Latency etc)
-     *                  and update type.
+     * @param mgr     VTN Manager service.
+     * @param db      Virtual node state DB.
+     * @param bstate  Current bridge state value.
+     * @param estate  A {@link EdgeUpdateState} instance which contains
+     *                information reported by the controller.
      * @return  New bridge state value.
      */
     VNodeState edgeUpdate(VTNManagerImpl mgr,
                           ConcurrentMap<VTenantPath, Object> db,
-                          VNodeState bstate, List<TopoEdgeUpdate> topoList) {
+                          VNodeState bstate, EdgeUpdateState estate) {
         boolean cur = isValid(db);
         Node node = vlanMapConfig.getNode();
-        if (node != null) {
-            for (TopoEdgeUpdate topo: topoList) {
-                Edge e = topo.getEdge();
-                NodeConnector head = e.getHeadNodeConnector();
-                NodeConnector tail = e.getTailNodeConnector();
-                if (node.equals(head.getNode()) ||
-                    node.equals(tail.getNode())) {
-                    boolean valid = mgr.hasEdgePort(node);
-                    setValid(db, cur, valid);
-                    cur = valid;
-                    break;
-                }
-            }
+        if (node != null && estate.contains(node)) {
+            boolean valid = estate.hasEdgePort(mgr, node);
+            setValid(db, cur, valid);
+            cur = valid;
         }
 
         return getBridgeState(cur, bstate);
@@ -365,26 +356,92 @@ public final class VlanMapImpl implements VBridgeNode, Serializable {
     }
 
     /**
+     * Register a new VLAN mapping to the resource manager.
+     *
+     * @param mgr    VTN manager service.
+     * @param bpath  Path to the parent bridge.
+     * @param nvlan  A {@link NodeVlan} instance which contains a pair of
+     *               {@link Node} instance and VLAN ID.
+     * @throws VTNException  An error occurred.
+     */
+    void register(VTNManagerImpl mgr, VBridgePath bpath, NodeVlan nvlan)
+        throws VTNException {
+        IVTNResourceManager resMgr = mgr.getResourceManager();
+        MapReference ref;
+        try {
+            ref = resMgr.registerVlanMap(mgr, mapPath, nvlan, true);
+        } catch (VTNException e) {
+            Status status = e.getStatus();
+            if (status == null ||
+                status.getCode().equals(StatusCode.INTERNALERROR)) {
+                mgr.logException(LOG, mapPath, e, nvlan);
+            }
+            throw e;
+        }
+
+        if (ref != null) {
+            assert ref.getMapType() == MapType.VLAN;
+
+            String msg;
+            if (ref.isContained(mgr.getContainerName(), bpath)) {
+                msg = "Already mapped to this bridge";
+            } else {
+                StringBuilder builder = new StringBuilder("VLAN(");
+                nvlan.appendContents(builder);
+                builder.append(") is mapped to ").
+                    append(ref.getAbsolutePath());
+                msg = builder.toString();
+            }
+            throw new VTNException(StatusCode.CONFLICT, msg);
+        }
+
+        // Initialize the state of the VLAN mapping.
+        Node node = vlanMapConfig.getNode();
+        boolean valid = (node == null) ? true : checkNode(mgr, node);
+        ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
+        db.put(mapPath, Boolean.valueOf(valid));
+    }
+
+    /**
      * Destroy the VLAN mapping.
      *
      * @param mgr     VTN manager service.
      * @param bpath   Path to the parent bridge.
-     * @param vlmap   Information about the VLAN mapping.
      * @param retain  {@code true} means that the parent bridge will be
      *                retained. {@code false} means that the parent bridge
      *                is being destroyed.
+     * @throws VTNException  An error occurred.
      */
-    void destroy(VTNManagerImpl mgr, VBridgePath bpath, VlanMap vlmap,
-                 boolean retain) {
+    void destroy(VTNManagerImpl mgr, VBridgePath bpath, boolean retain)
+        throws VTNException {
+        // Unregister VLAN mapping from the resource manager.
+        short vlan = vlanMapConfig.getVlan();
+        Node node = vlanMapConfig.getNode();
+        NodeVlan nvlan = new NodeVlan(node, vlan);
+        IVTNResourceManager resMgr = mgr.getResourceManager();
+        try {
+            resMgr.unregisterVlanMap(mgr, mapPath, nvlan, retain);
+        } catch (VTNException e) {
+            if (retain) {
+                Status status = e.getStatus();
+                if (status == null ||
+                    status.getCode().equals(StatusCode.INTERNALERROR)) {
+                    mgr.logException(LOG, bpath, e, nvlan);
+                }
+                throw e;
+            } else {
+                LOG.error(mgr.getContainerName() + ":" + bpath +
+                          ": Failed to unregister VLAN mapping: " + nvlan, e);
+                // FALLTHROUGH
+            }
+        }
+
+        // Remove VLAN mapping state.
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         db.remove(mapPath);
 
-        if (retain) {
-            // Purge all VTN flows related to this mapping.
-            VTNThreadData.removeFlows(mgr, mapPath);
-        }
-
         // Generate a VLAN mapping event.
+        VlanMap vlmap = new VlanMap(getMapId(), node, vlan);
         VlanMapEvent.removed(mgr, bpath, vlmap, retain);
     }
 
@@ -425,7 +482,7 @@ public final class VlanMapImpl implements VBridgeNode, Serializable {
      * @return  Path to the interface.
      */
     @Override
-    public VTenantPath getPath() {
+    public VlanMapPath getPath() {
         return mapPath;
     }
 

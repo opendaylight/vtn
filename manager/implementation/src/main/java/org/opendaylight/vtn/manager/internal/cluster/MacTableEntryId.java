@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -28,12 +28,12 @@ public class MacTableEntryId extends ClusterEventId {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -3716337163455005118L;
+    private static final long serialVersionUID = 7249703870323895498L;
 
     /**
-     * Path to the virtual L2 bridge.
+     * Path to the virtual node which originated the entry.
      */
-    private final VBridgePath  bridgePath;
+    private final VBridgePath  mapPath;
 
     /**
      * A long integer value which represents a MAC address.
@@ -48,12 +48,12 @@ public class MacTableEntryId extends ClusterEventId {
      *   a new event ID.
      * </p>
      *
-     * @param path   Path to the virtual L2 bridge.
+     * @param path   Path to the virtual node which maps the MAC address.
      *               Specifying {@code null} results in undefined behavior.
      * @param mac    A long value which represents a MAC address.
      */
     public MacTableEntryId(VBridgePath path, long mac) {
-        bridgePath = path;
+        mapPath = path;
         macAddress = mac;
     }
 
@@ -62,15 +62,24 @@ public class MacTableEntryId extends ClusterEventId {
      *
      * @param addr   IP address of the controller.
      * @param id     The event ID.
-     * @param path   Path to the virtual L2 bridge.
+     * @param path   Path to the virtual node which maps the MAC address.
      *               Specifying {@code null} results in undefined behavior.
      * @param mac    A long value which represents a MAC address.
      */
     public MacTableEntryId(InetAddress addr, long id, VBridgePath path,
                            long mac) {
         super(addr, id);
-        bridgePath = path;
+        mapPath = path;
         macAddress = mac;
+    }
+
+    /**
+     * Return the path to the virtual node which maps the MAC address.
+     *
+     * @return  The path to the virtual node.
+     */
+    public VBridgePath getMapPath() {
+        return mapPath;
     }
 
     /**
@@ -79,7 +88,8 @@ public class MacTableEntryId extends ClusterEventId {
      * @return  The path to the virtual L2 bridge.
      */
     public VBridgePath getBridgePath() {
-        return bridgePath;
+        return new VBridgePath(mapPath.getTenantName(),
+                               mapPath.getBridgeName());
     }
 
     /**
@@ -107,7 +117,7 @@ public class MacTableEntryId extends ClusterEventId {
         }
 
         MacTableEntryId tid = (MacTableEntryId)o;
-        return (bridgePath.equals(tid.bridgePath) &&
+        return (mapPath.equals(tid.mapPath) &&
                 macAddress == tid.macAddress);
     }
 
@@ -118,7 +128,7 @@ public class MacTableEntryId extends ClusterEventId {
      */
     @Override
     public int hashCode() {
-        return super.hashCode() ^ bridgePath.hashCode() ^
+        return super.hashCode() ^ mapPath.hashCode() ^
             VTNManagerImpl.hashCode(macAddress);
     }
 
@@ -129,7 +139,7 @@ public class MacTableEntryId extends ClusterEventId {
      */
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder(bridgePath.toString());
+        StringBuilder builder = new StringBuilder(mapPath.toString());
         builder.append(SEPARATOR).
             append(VTNManagerImpl.formatMacAddress(macAddress)).
             append(SEPARATOR).append(super.toString());

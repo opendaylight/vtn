@@ -41,25 +41,37 @@ public interface IVTNResourceManager {
     void removeManager(VTNManagerImpl mgr);
 
     /**
-     * Register VLAN ID for VLAN mapping.
+     * Register a new VLAN mapping.
      *
-     * <p>
-     *   Note that this method must be called with holding the read/write lock
-     *   of {@code mgr} in writer mode.
-     * </p>
+     * <ul>
+     *   <li>
+     *     If {@code nvlan} specifies a VLAN network on a specific node and
+     *     {@code true} is specified to {@code purge}, this method purges
+     *     network caches corresponding to the network superseded by a new
+     *     VLAN mapping.
+     *   </li>
+     *   <li>
+     *     Note that this method must be called with holding the read/write
+     *     lock of {@code mgr} in writer mode.
+     *   </li>
+     * </ul>
      *
      * @param mgr    VTN Manager service.
      * @param path   Path to the VLAN mapping which maps the specified VLAN
      *               network.
      * @param nvlan  A {@link NodeVlan} object which specifies the VLAN network
      *               to be mapped.
+     * @param purge  If {@code true} is specified, this method purges caches
+     *               corresponding to the VLAN network superseded by a new
+     *               VLAN mapping.
      * @return  {@code null} is returned on success.
      *          On failure, a reference to the VLAN mapping which maps the
      *          VLAN network specified by {@code nvlan} is returned.
      * @throws VTNException  A fatal error occurred.
      */
     MapReference registerVlanMap(VTNManagerImpl mgr, VlanMapPath path,
-                                 NodeVlan nvlan) throws VTNException;
+                                 NodeVlan nvlan, boolean purge)
+        throws VTNException;
 
     /**
      * Unregister VLAN mapping.
@@ -70,26 +82,39 @@ public interface IVTNResourceManager {
      * </p>
      *
      * @param mgr    VTN Manager service.
+     * @param path   Path to the VLAN mapping to be unregistered.
      * @param nvlan  A {@link NodeVlan} object which specifies the VLAN network
      *               to be unmapped.
+     * @param purge  If {@code true} is specified, this method purges caches
+     *               corresponding to the unmapped VLAN network.
      * @throws VTNException  A fatal error occurred.
      */
-    void unregisterVlanMap(VTNManagerImpl mgr, NodeVlan nvlan)
+    void unregisterVlanMap(VTNManagerImpl mgr, VlanMapPath path,
+                           NodeVlan nvlan, boolean purge)
         throws VTNException;
 
     /**
      * Register mapping between physical switch port and virtual bridge
      * interface.
      *
-     * <p>
-     *   If a non-{@code null} value is specified to {@code rmlan}, the port
-     *   mapping which maps the VLAN network specified by {@code rmlan} is
-     *   removed in one transaction.
-     * </p>
-     * <p>
-     *   Note that this method must be called with holding the read/write lock
-     *   of {@code mgr} in writer mode.
-     * </p>
+     * <ul>
+     *   <li>
+     *     If a non-{@code null} value is specified to {@code rmlan},
+     *     the port mapping which maps the VLAN network specified by
+     *     {@code rmlan} is removed in one transaction.
+     *     Note that the VLAN network specified by {@code rmlan} must be
+     *     currently mapped to the virtual interface specified by {@code path}.
+     *   </li>
+     *   <li>
+     *     If {@code true} is specified to {@code purge}, this method purges
+     *     network caches corresponding to obsolete mapping and the
+     *     VLAN network superseded by a new port mapping.
+     *   </li>
+     *   <li>
+     *     Note that this method must be called with holding the read/write
+     *     lock of {@code mgr} in writer mode.
+     *   </li>
+     * </ul>
      *
      * @param mgr    VTN Manager service.
      * @param path   Path to the virtual bridge interface which maps the
@@ -100,13 +125,15 @@ public interface IVTNResourceManager {
      * @param rmlan  A {@link PortVlan} object which specifies the VLAN network
      *               to be unmapped. No port mapping is removed if {@code null}
      *               is specified.
+     * @param purge  If {@code true} is specified, this method purges network
+     *               caches as appropriate.
      * @return  {@code null} is returned on success.
      *          On failure, a reference to the port mapping which maps the
      *          VLAN network specified by {@code pvlan} is returned.
      * @throws VTNException  A fatal error occurred.
      */
     MapReference registerPortMap(VTNManagerImpl mgr, VBridgeIfPath path,
-                                 PortVlan pvlan, PortVlan rmlan)
+                                 PortVlan pvlan, PortVlan rmlan, boolean purge)
         throws VTNException;
 
     /**
@@ -118,12 +145,15 @@ public interface IVTNResourceManager {
      * </p>
      *
      * @param mgr    VTN Manager service.
+     * @param path   Path to the virtual bridge interface.
      * @param pvlan  A {@link PortVlan} object which specifies the VLAN network
      *               to be unmapped.
+     * @param purge  If {@code true} is specified, this method purges caches
+     *               corresponding to the unmapped VLAN network.
      * @throws VTNException  A fatal error occurred.
      */
-    void unregisterPortMap(VTNManagerImpl mgr, PortVlan pvlan)
-        throws VTNException;
+    void unregisterPortMap(VTNManagerImpl mgr, VBridgeIfPath path,
+                           PortVlan pvlan, boolean purge) throws VTNException;
 
     /**
      * Determine whether the specified VLAN network is mapped by VLAN mapping

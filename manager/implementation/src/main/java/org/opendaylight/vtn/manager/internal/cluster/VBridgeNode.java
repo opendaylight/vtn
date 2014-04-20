@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,7 +9,7 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.VBridgePath;
 
 /**
  * {@code VBridgeNode} determines interfaces to be implemented by virtual
@@ -27,7 +27,7 @@ public interface VBridgeNode {
      *
      * @return  Path to the node.
      */
-    VTenantPath getPath();
+    VBridgePath getPath();
 
     /**
      * Determine whether this node is enabled or not.

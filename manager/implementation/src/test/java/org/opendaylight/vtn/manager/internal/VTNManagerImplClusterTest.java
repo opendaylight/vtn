@@ -1457,9 +1457,9 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                                                 VNodeState.UP, emsgVmap);
 
                                 // test for notification APIs.
-                                checkNotification (mgr, bpath, ifp, cnc,
-                                                   cnode, pmconf, vlconf,
-                                                   MapType.ALL, emsgVmap);
+                                checkNotification(mgr, bpath, ifp, cnc,
+                                                  cnode, pmconf, vlconf,
+                                                  MapType.ALL, emsgVmap);
 
                                 st = mgr.removeVlanMap(bpath, vmap.getId());
                                 assertEquals(emsgVmap, StatusCode.SUCCESS, st.getCode());
@@ -1497,6 +1497,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         ISwitchManager swMgr = mgr.getSwitchManager();
         ITopologyManager topoMgr = mgr.getTopologyManager();
         VTenantPath tpath = new VTenantPath(bpath.getTenantName());
+        VBridgePath mapPath = createMapPath(bpath, ifp, pmconf, vlconf);
 
         NodeConnector mapNc = null;
         Node portMapNode = null;
@@ -1521,7 +1522,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         // test for nodeconnector change notify.
         Map<String, Property> propMap = null; // not used now.
         checkMacTableEntry(mgr, bpath, true, msg);
-        putMacTableEntry(mgr, bpath, chgNc);
+        putMacTableEntry(mgr, mapPath, chgNc);
         mgr.notifyNodeConnector(chgNc, UpdateType.REMOVED, propMap);
         if (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) {
             if (chgNc.equals(mapNc)) {
@@ -1532,11 +1533,11 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         } else {
             checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UNKNOWN, msg);
         }
-        if (chgNc.equals(mapNc) || vlanMapNode == null || chgNode.equals(vlanMapNode)) {
-            checkMacTableEntry(mgr, bpath, true, msg);
-        } else {
-            checkMacTableEntry(mgr, bpath, false, msg);
-        }
+
+        // When a NodeConnector is removed, MAC adddress table entries
+        // detected by the port corresponding to removed NodeConnector are
+        // always flushed.
+        checkMacTableEntry(mgr, bpath, true, msg);
 
         propMap = swMgr.getNodeConnectorProps(chgNc);
         Name chgNcName = (Name)propMap.get(Name.NamePropName);
@@ -1597,30 +1598,27 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                 .createOFNodeConnector(Short.valueOf("11"), node0);
 
         VTNFlow flow = putFlowEntry(mgr, tpath.getTenantName(), innc, outnc);
-        putMacTableEntry(mgr, bpath, chgNc);
+        putMacTableEntry(mgr, mapPath, chgNc);
         mgr.notifyNode(chgNode, UpdateType.REMOVED, propMap);
         if (mapType.equals(MapType.PORT) || mapType.equals(MapType.ALL)) {
             if (chgNode.equals(portMapNode)) {
                 checkNodeStatus(mgr, bpath, ifp, VNodeState.DOWN, VNodeState.DOWN, msg);
-                checkMacTableEntry(mgr, bpath, true, msg);
             } else if (chgNode.equals(vlanMapNode)) {
                 checkNodeStatus(mgr, bpath, ifp, VNodeState.DOWN, VNodeState.UP, msg);
-                checkMacTableEntry(mgr, bpath, true, msg);
             } else {
                 checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UP, msg);
-                checkMacTableEntry(mgr, bpath,
-                        (mapType.equals(MapType.ALL) && vlanMapNode == null) ? true : false,
-                        msg);
             }
         } else {
             if (chgNode.equals(vlanMapNode)) {
                 checkNodeStatus(mgr, bpath, ifp, VNodeState.DOWN, VNodeState.UNKNOWN,msg);
-                checkMacTableEntry(mgr, bpath, true, msg);
             } else {
                 checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UNKNOWN,msg);
-                checkMacTableEntry(mgr, bpath, (vlanMapNode == null) ? true : false, msg);
             }
         }
+
+        // When a Node is removed, MAC adddress table entries detected by
+        // the switch corresponding to removed Node are always flushed.
+        checkMacTableEntry(mgr, bpath, chgNode.equals(chgNc.getNode()), msg);
 
         flushFlowTasks();
         if (chgNc.getNode().equals(node0)) {

@@ -15,20 +15,22 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.InetAddress;
 import java.net.Inet4Address;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
+import java.util.Collection;
+import java.util.Deque;
 import java.util.Dictionary;
 import java.util.EnumSet;
-import java.util.Deque;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.Set;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -68,13 +70,16 @@ import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
+import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
+import org.opendaylight.vtn.manager.internal.cluster.MapType;
 import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.PortProperty;
 import org.opendaylight.vtn.manager.internal.cluster.RawPacketEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantImpl;
+import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
 
 import org.opendaylight.controller.clustering.services.CacheConfigException;
 import org.opendaylight.controller.clustering.services.CacheExistException;
@@ -163,11 +168,6 @@ public class VTNManagerImpl
      */
     private static final Pattern RESOURCE_NAME_REGEX =
         Pattern.compile("^\\p{Alnum}[\\p{Alnum}_]*$");
-
-    /**
-     * Maximum value of VLAN ID.
-     */
-    static final short VLAN_ID_MAX = 4095;
 
     /**
      * The number of bytes in an IPv4 address.
@@ -1092,7 +1092,7 @@ public class VTNManagerImpl
         Set<NodeConnector> current =
             new HashSet<NodeConnector>(islDB.keySet());
         for (Edge edge: edgeMap.keySet()) {
-            if (addISL(edge) >= 0) {
+            if (addISL(edge, null) >= 0) {
                 NodeConnector head = edge.getHeadNodeConnector();
                 NodeConnector tail = edge.getTailNodeConnector();
                 current.remove(head);
@@ -1197,7 +1197,7 @@ public class VTNManagerImpl
                     LOG.info("{}: removeNode({}): Remove port {}",
                              containerName, node, nc);
                     if (portDB.remove(nc) != null) {
-                        removeISLPort(nc);
+                        removeISLPort(nc, null);
                     }
                 }
             }
@@ -1308,7 +1308,7 @@ public class VTNManagerImpl
     private boolean removePort(NodeConnector nc) {
         if (portDB.remove(nc) != null) {
             LOG.info("{}: removePort: Removed {}", containerName, nc);
-            removeISLPort(nc);
+            removeISLPort(nc, null);
             return true;
         }
 
@@ -1324,10 +1324,17 @@ public class VTNManagerImpl
      *
      * @param topoList  A list of {@code TopoEdgeUpdate} passed by topology
      *                  manager.
+     * @param islMap    If a non-{@code null} value is specified, switch ports
+     *                  that were actually changed its state are set to the
+     *                  specified map. {@link Boolean#TRUE} is set if the
+     *                  port associated with the key was changed to ISL port.
+     *                  {@link Boolean#FALSE} is set if the port was changed
+     *                  to edge port.
      * @return  {@code true} is returned if inter switch links was actually
      *          updated. {@code false} is returned if link map was not changed.
      */
-    private boolean updateISL(List<TopoEdgeUpdate> topoList) {
+    private boolean updateISL(List<TopoEdgeUpdate> topoList,
+                              Map<NodeConnector, Boolean> islMap) {
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
@@ -1335,8 +1342,8 @@ public class VTNManagerImpl
             for (TopoEdgeUpdate topo: topoList) {
                 UpdateType type = topo.getUpdateType();
                 Edge edge = topo.getEdge();
-                if ((type == UpdateType.ADDED && addISL(edge) > 0) ||
-                    (type == UpdateType.REMOVED && removeISL(edge))) {
+                if ((type == UpdateType.ADDED && addISL(edge, islMap) > 0) ||
+                    (type == UpdateType.REMOVED && removeISL(edge, islMap))) {
                     changed = true;
                 }
             }
@@ -1355,18 +1362,24 @@ public class VTNManagerImpl
      *   {@link #rwLock}.
      * </p>
      *
-     * @param edge  A edge;
+     * @param edge    A edge;
+     * @param islMap  If a non-{@code null} value is specified, switch ports
+     *                that were actually changed its state is set to the
+     *                specified map. {@link Boolean#TRUE} is set if the
+     *                port associated with the key was changed to ISL port.
+     *                {@link Boolean#FALSE} is set if the port was changed
+     *                to edge port.
      * @return  {@code 1} is returned if the given edge is actually added.
      *          {@code 0} is returned if the given edge already exists in
      *          the inter switch link map.
      *          {@code -1} is returned if the given edge is invalid.
      */
-    private int addISL(Edge edge) {
+    private int addISL(Edge edge, Map<NodeConnector, Boolean> islMap) {
         NodeConnector head = edge.getHeadNodeConnector();
         NodeConnector tail = edge.getTailNodeConnector();
         if (portDB.containsKey(head) && portDB.containsKey(tail)) {
-            boolean h = addISLPort(head);
-            boolean t = addISLPort(tail);
+            boolean h = addISLPort(head, islMap);
+            boolean t = addISLPort(tail, islMap);
             return (h || t) ? 1 : 0;
         } else if (LOG.isDebugEnabled()) {
             LOG.debug("{}: addISL: Ignore invalid edge: {}",
@@ -1384,15 +1397,21 @@ public class VTNManagerImpl
      *   {@link #rwLock}.
      * </p>
      *
-     * @param edge  A edge.
+     * @param edge    A edge.
+     * @param islMap  If a non-{@code null} value is specified, switch ports
+     *                that were actually changed its state is set to the
+     *                specified map. {@link Boolean#TRUE} is set if the
+     *                port associated with the key was changed to ISL port.
+     *                {@link Boolean#FALSE} is set if the port was changed
+     *                to edge port.
      * @return  {@code true} is returned if the given edge is actually removed.
      *          Otherwise {@code false} is returned.
      */
-    private boolean removeISL(Edge edge) {
+    private boolean removeISL(Edge edge, Map<NodeConnector, Boolean> islMap) {
         NodeConnector head = edge.getHeadNodeConnector();
         NodeConnector tail = edge.getTailNodeConnector();
-        boolean h = removeISLPort(head);
-        boolean t = removeISLPort(tail);
+        boolean h = removeISLPort(head, islMap);
+        boolean t = removeISLPort(tail, islMap);
         return (h || t);
     }
 
@@ -1404,13 +1423,20 @@ public class VTNManagerImpl
      *   {@link #rwLock}.
      * </p>
      *
-     * @param nc  A node connector.
+     * @param nc      A node connector.
+     * @param islMap  If a non-{@code null} value is specified, the specified
+     *                port is put to the given map only if the port was
+     *                actually added to the ISL map.
      * @return  {@code true} is returned if the given node connector is
      *          actually added. {@code false} is returned if the given node
      *          connector exists in the inter switch link map.
      */
-    private boolean addISLPort(NodeConnector nc) {
+    private boolean addISLPort(NodeConnector nc,
+                               Map<NodeConnector, Boolean> islMap) {
         if (islDB.putIfAbsent(nc, VNodeState.UP) == null) {
+            if (islMap != null) {
+                islMap.put(nc, Boolean.TRUE);
+            }
             LOG.info("{}: addISLPort: New ISL port {}",
                      containerName, nc);
             return true;
@@ -1431,13 +1457,20 @@ public class VTNManagerImpl
      *   {@link #rwLock}.
      * </p>
      *
-     * @param nc  A node connector.
+     * @param nc      A node connector.
+     * @param islMap  If a non-{@code null} value is specified, the specified
+     *                port is put to the given map only if the port was
+     *                actually removed from the ISL map.
      * @return  {@code true} is returned if the given node connector is
      *          actually removed. {@code false} is returned if the given node
      *          connector does not exist in the inter switch link map.
      */
-    private boolean removeISLPort(NodeConnector nc) {
+    private boolean removeISLPort(NodeConnector nc,
+                                  Map<NodeConnector, Boolean> islMap) {
         if (islDB.remove(nc) != null) {
+            if (islMap != null) {
+                islMap.put(nc, Boolean.FALSE);
+            }
             LOG.info("{}: removeISLPort: Removed {}", containerName, nc);
             return true;
         }
@@ -2026,6 +2059,15 @@ public class VTNManagerImpl
     }
 
     /**
+     * Return a collection of existing {@link MacAddressTable} instances.
+     *
+     * @return  A collection of {@link MacAddressTable} instances.
+     */
+    public Collection<MacAddressTable> getMacAddressTables() {
+        return macTableMap.values();
+    }
+
+    /**
      * Return a MAC address table associated with the given virtual L2 bridge.
      *
      * @param path   Path to the virtual L2 bridge.
@@ -2033,7 +2075,10 @@ public class VTNManagerImpl
      *          bridge. {@code null} is returned if not found.
      */
     public MacAddressTable getMacAddressTable(VBridgePath path) {
-        return macTableMap.get(path);
+        VBridgePath bpath = (path.getClass().equals(VBridgePath.class))
+            ? path
+            : new VBridgePath(path.getTenantName(), path.getBridgeName());
+        return macTableMap.get(bpath);
     }
 
     /**
@@ -2828,7 +2873,7 @@ public class VTNManagerImpl
      * @throws VTNException  The specified VLAN ID is invalid.
      */
     public static void checkVlan(short vlan) throws VTNException {
-        if (vlan < 0 || vlan > VLAN_ID_MAX) {
+        if (((long)vlan & ~MacVlan.MASK_VLAN_ID) != 0L) {
             String msg = "Invalid VLAN ID: " + vlan;
             throw new VTNException(StatusCode.BADREQUEST, msg);
         }
@@ -2986,6 +3031,28 @@ public class VTNManagerImpl
     }
 
     /**
+     * Record an error log message which indicates an unexpected exception
+     * was caught.
+     *
+     * @param log   A {@link Logger} instance.
+     * @param path  A {@link VTenantPath} which specifies the virtual node.
+     * @param e     An exception to be logged.
+     * @param args  Additional objects to be added to a log message.
+     */
+    public void logException(Logger log, VTenantPath path, Exception e,
+                             Object ... args) {
+        StringBuilder builder = new StringBuilder(containerName);
+        builder.append(':').append(path).append(": Unexpected exception");
+
+        String sep = ": ";
+        for (Object o: args) {
+            builder.append(sep).append(o);
+            sep = ", ";
+        }
+        log.error(builder.toString(), e);
+    }
+
+    /**
      * Run the specified task on the VTN task thread.
      *
      * @param r  A runnable to be run on the task queue runner thread.
@@ -3089,6 +3156,27 @@ public class VTNManagerImpl
                 timer.schedule(task, CLUSTER_EVENT_LIFETIME);
             }
         }
+    }
+
+    /**
+     * Create a reference to the port mapping configured in this container.
+     *
+     * @param path  A path to the vBridge interface which contains port mapping
+     *              configuration.
+     * @return      A reference to the port mapping.
+     */
+    public MapReference getMapReference(VBridgeIfPath path) {
+        return new MapReference(MapType.PORT, containerName, path);
+    }
+
+    /**
+     * Create a reference to the VLAN mapping configured in this container.
+     *
+     * @param path  A path to the VLAN mapping.
+     * @return      A reference to the VLAN mapping.
+     */
+    public MapReference getMapReference(VlanMapPath path) {
+        return new MapReference(MapType.VLAN, containerName, path);
     }
 
     /**
@@ -3939,6 +4027,32 @@ public class VTNManagerImpl
             };
             postTask(r);
         }
+    }
+
+    /**
+     * Purge network caches specified by {@link MapCleaner} instance.
+     *
+     * <p>
+     *   Note that network cache purging will be done asynchronously.
+     * </p>
+     *
+     * @param cleaner     A {@link MapCleaner} instance.
+     * @param tenantName  The name of the target virtual tenant.
+     */
+    void purge(final MapCleaner cleaner, final String tenantName) {
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                Lock rdlock = rwLock.readLock();
+                rdlock.lock();
+                try {
+                    cleaner.purge(VTNManagerImpl.this, tenantName);
+                } finally {
+                    unlock(rdlock);
+                }
+            }
+        };
+        postTask(r);
     }
 
     // IVTNManager
@@ -5072,6 +5186,17 @@ public class VTNManagerImpl
                 if (!removeNode(node)) {
                     return;
                 }
+
+                // Uninstall VTN flows related to the removed node.
+                for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                    fdb.removeFlows(this, node);
+                }
+
+                // Flush MAC address table entries detected on the removed
+                // node.
+                for (MacAddressTable table: macTableMap.values()) {
+                    table.flush(node);
+                }
             }
 
             for (VTenantImpl vtn: tenantDB.values()) {
@@ -5111,8 +5236,28 @@ public class VTNManagerImpl
                 }
             }
 
+            VNodeState pstate;
+            if (type == UpdateType.REMOVED) {
+                pstate = VNodeState.UNKNOWN;
+            } else {
+                // Determine whether the port is up or not.
+                pstate = (isEnabled(nc)) ? VNodeState.UP : VNodeState.DOWN;
+            }
+
+            if (pstate != VNodeState.UP) {
+                // Uninstall VTN flows related to the switch port.
+                for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                    fdb.removeFlows(this, nc);
+                }
+
+                // Flush MAC address table entries detected on the switch port.
+                for (MacAddressTable table: macTableMap.values()) {
+                    table.flush(nc);
+                }
+            }
+
             for (VTenantImpl vtn: tenantDB.values()) {
-                vtn.notifyNodeConnector(this, nc, utype);
+                vtn.notifyNodeConnector(this, nc, pstate, utype);
             }
         } finally {
             unlock(wrlock);
@@ -5130,16 +5275,35 @@ public class VTNManagerImpl
      */
     @Override
     public void edgeUpdate(List<TopoEdgeUpdate> topoList) {
+        HashMap<NodeConnector, Boolean> islMap =
+            new HashMap<NodeConnector, Boolean>();
+
         // Maintain the inter switch link DB.
-        if (!updateISL(topoList)) {
+        if (!updateISL(topoList, islMap)) {
             return;
         }
+
+        EdgeUpdateState estate = new EdgeUpdateState(islMap);
 
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
+            // Uninstall VTN flows related to the switch port that was
+            // changed its link state.
+            for (NodeConnector port: islMap.keySet()) {
+                for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                    fdb.removeFlows(this, port);
+                }
+            }
+
+            // Flush MAC address table entries detected on the switch port
+            // that was changed to ISL port.
+            for (MacAddressTable table: macTableMap.values()) {
+                table.flush(estate);
+            }
+
             for (VTenantImpl vtn: tenantDB.values()) {
-                vtn.edgeUpdate(this, topoList);
+                vtn.edgeUpdate(this, estate);
             }
         } finally {
             unlock(rdlock);

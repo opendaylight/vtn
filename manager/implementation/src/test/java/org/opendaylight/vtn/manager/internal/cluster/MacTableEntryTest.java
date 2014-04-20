@@ -19,23 +19,39 @@ import java.util.Set;
 
 import org.junit.Test;
 
-import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.vtn.manager.MacAddressEntry;
+import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.internal.TestBase;
 
+import org.opendaylight.controller.sal.core.Node.NodeIDType;
+import org.opendaylight.controller.sal.core.Node;
+import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
+import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.packet.address.EthernetAddress;
+import org.opendaylight.controller.sal.utils.NetUtils;
 
 /**
  * JUnit test for {@link MacTableEntry}
  */
 public class MacTableEntryTest extends TestBase {
     /**
+     * A list of {@link VBridgePath} instances for test.
+     */
+    private final List<VBridgePath>  bridgePaths;
+
+    /**
      * The maximum number of IP address probe request.
      */
     private static final int  MAX_IP_PROBE = 10;
+
+    /**
+     * Construct a new instance.
+     */
+    public MacTableEntryTest() {
+        bridgePaths = createVBridgePaths(true);
+    }
 
     /**
      * Test case for getter and setter methods.
@@ -44,7 +60,9 @@ public class MacTableEntryTest extends TestBase {
     public void testGetter() {
         short vlans[] = {-10, 0, 1, 100, 4095};
 
-        for (VBridgePath path: createVBridgePaths()) {
+        for (VBridgePath path: bridgePaths) {
+            VBridgePath bpath = new VBridgePath(path.getTenantName(),
+                                                path.getBridgeName());
             for (EthernetAddress ea: createEthernetAddresses(false)) {
                 long mac = NetUtils.byteArray6ToLong(ea.getValue());
                 for (NodeConnector nc: createNodeConnectors(3, false)) {
@@ -78,7 +96,8 @@ public class MacTableEntryTest extends TestBase {
                             checkMacTableEntry(me, ips, mac, nc, vlan);
 
                             MacTableEntryId id = me.getEntryId();
-                            assertEquals(path, id.getBridgePath());
+                            assertEquals(path, id.getMapPath());
+                            assertEquals(bpath, id.getBridgePath());
                             assertEquals(mac, id.getMacAddress());
 
                             // test for getEntry()
@@ -161,18 +180,54 @@ public class MacTableEntryTest extends TestBase {
     }
 
     /**
+     * Test case for
+     * {@link MacTableEntry#hasMoved(NodeConnector, short, VBridgePath)}.
+     */
+    @Test
+    public void testHasMoved() {
+        String unknown = "unknown";
+        NodeConnector unknownPort = null;
+        try {
+            Node node = new Node(NodeIDType.PRODUCTION, unknown);
+            unknownPort = new NodeConnector(NodeConnectorIDType.PRODUCTION,
+                                            unknown, node);
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        VBridgeIfPath unknownPath =
+            new VBridgeIfPath(unknown, unknown, unknown);
+
+        for (MacTableEntry tent: createMacTableEntries()) {
+            MacTableEntryId id = tent.getEntryId();
+            VBridgePath mapPath = id.getMapPath();
+            short vlan = tent.getVlan();
+            NodeConnector port = copy(tent.getPort());
+            assertFalse(tent.hasMoved(port, vlan, mapPath));
+
+            short otherVlan = (vlan == 0) ? (short)1 : (short)(vlan - 1);
+            assertTrue(tent.hasMoved(unknownPort, vlan, mapPath));
+            assertTrue(tent.hasMoved(port, otherVlan, mapPath));
+            assertTrue(tent.hasMoved(port, vlan, unknownPath));
+            assertTrue(tent.hasMoved(unknownPort, otherVlan, mapPath));
+            assertTrue(tent.hasMoved(unknownPort, vlan, unknownPath));
+            assertTrue(tent.hasMoved(port, otherVlan, unknownPath));
+        }
+    }
+
+    /**
      * Test case for {@link MacTableEntry#equals(Object)} and
      * {@link MacTableEntry#hashCode()}.
      */
     @Test
     public void testEquals() {
-        HashSet<Object> set = new HashSet<Object>();
         List<MacTableEntry> entries = createMacTableEntries();
+        HashSet<Object> set = new HashSet<Object>(entries.size());
         for (MacTableEntry tent1: entries) {
             MacTableEntryId id = tent1.getEntryId();
             MacTableEntryId newId =
                 new MacTableEntryId(id.getControllerAddress(), id.getEventId(),
-                                    id.getBridgePath(), id.getMacAddress());
+                                    id.getMapPath(), id.getMacAddress());
             NodeConnector port = copy(tent1.getPort());
             short vlan = tent1.getVlan();
             MacTableEntry tent2 = new MacTableEntry(newId, port, vlan, null);
@@ -206,7 +261,7 @@ public class MacTableEntryTest extends TestBase {
         String suffix = "]";
         short vlans[] = {-10, 0, 1, 100, 4095};
 
-        for (VBridgePath path: createVBridgePaths()) {
+        for (VBridgePath path: bridgePaths) {
             for (EthernetAddress ea: createEthernetAddresses(false)) {
                 long mac = NetUtils.byteArray6ToLong(ea.getValue());
                 for (NodeConnector nc: createNodeConnectors(3, false)) {
@@ -260,11 +315,14 @@ public class MacTableEntryTest extends TestBase {
      */
     private List<MacTableEntry> createMacTableEntries() {
         List<MacTableEntry> list = new ArrayList<MacTableEntry>();
-        short vlans[] = {-10, 0, 1, 100, 4095};
+        short vlans[] = {0, 1, 4095};
+        long[] macAddrs = {
+            0x000000000001L,
+            0xf0123456789aL,
+        };
 
-        for (VBridgePath path: createVBridgePaths()) {
-            for (EthernetAddress ea: createEthernetAddresses(false)) {
-                long mac = NetUtils.byteArray6ToLong(ea.getValue());
+        for (VBridgePath path: bridgePaths) {
+            for (long mac: macAddrs) {
                 MacTableEntryId id = new MacTableEntryId(path, mac);
                 for (NodeConnector nc: createNodeConnectors(2, false)) {
                     for (short vlan: vlans) {

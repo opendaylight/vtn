@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -45,8 +45,10 @@ import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
+import org.opendaylight.vtn.manager.internal.cluster.MapType;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
+import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
 
 /**
  * Common class for tests of {@link VTNManagerImpl}.
@@ -375,11 +377,12 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
      * Put a MAC Address Table Entry to MAC Address Table of specified bridge.
      *
      * @param mgr   VTN Manager service.
-     * @param bpath A {@link VBridgePath} of {@link VBridge} which is added entry.
+     * @param path  A path to the virtual network mapping which maps the
+     *              MAC address table entry.
      * @param nc    Incoming NodeConnector.
      */
-    protected void putMacTableEntry(VTNManagerImpl mgr, VBridgePath bpath,
-                                  NodeConnector nc) {
+    protected void putMacTableEntry(VTNManagerImpl mgr, VBridgePath path,
+                                    NodeConnector nc) {
         byte[] src = new byte[] {(byte)0x00, (byte)0x01, (byte)0x01,
                                  (byte)0x01, (byte)0x01, (byte)0x01,};
         byte[] dst = new byte[] {(byte)0xFF, (byte)0xFF, (byte)0xFF,
@@ -389,8 +392,9 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
 
         PacketContext pctx = createARPPacketContext(src, dst, sender ,target,
                                                     (short)-1, nc, ARP.REQUEST);
-        MacAddressTable tbl = mgr.getMacAddressTable(bpath);
-        tbl.add(pctx);
+        MacAddressTable tbl = mgr.getMacAddressTable(path);
+        TestBridgeNode bnode = new TestBridgeNode(path);
+        tbl.add(pctx, bnode);
     }
 
     /**
@@ -403,7 +407,7 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
      * @param msg       error message.
      */
     protected void checkMacTableEntry(VTNManagerImpl mgr, VBridgePath bpath,
-                                    boolean isFlushed, String msg) {
+                                      boolean isFlushed, String msg) {
         MacAddressTable tbl = mgr.getMacAddressTable(bpath);
 
         List<MacAddressEntry> list = null;
@@ -429,7 +433,6 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         mgr.flushMacEntries(bpath);
     }
 
-
     /**
      * Put flow entry
      */
@@ -452,4 +455,48 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         return flowDB.containsValue(flow);
     }
 
+    /**
+     * Create a {@link VlanMapPath} instance from the VLAN mapping
+     * configuration.
+     *
+     * @param path    A path to the vBridge.
+     * @param vlconf  VLAN mapping configuration.
+     */
+    protected VlanMapPath createVlanMapPath(VBridgePath path,
+                                            VlanMapConfig vlconf) {
+        Node node = vlconf.getNode();
+        short vlan = vlconf.getVlan();
+        StringBuilder builder = new StringBuilder();
+        if (node == null) {
+            builder.append("ANY");
+        } else {
+            builder.append(node.getType()).append('-').
+                append(node.getNodeIDString());
+        }
+        builder.append('.').append((int)vlan);
+
+        return new VlanMapPath(path, builder.toString());
+    }
+
+    /**
+     * Create a {@link VBridgePath} which points to the specified virtual
+     * mapping.
+     *
+     * @param path    A path to the vBridge.
+     * @param ifpath  A path to the virtual interface which has the port
+     *                mapping configuration.
+     * @param pmconf  Port mapping configuration.
+     * @param vlconf  VLAN mapping configuration.
+     */
+    protected VBridgePath createMapPath(VBridgePath path, VBridgeIfPath ifpath,
+                                        PortMapConfig pmconf,
+                                        VlanMapConfig vlconf) {
+        if (pmconf != null) {
+            return ifpath;
+        } else if (vlconf != null) {
+            return createVlanMapPath(path, vlconf);
+        }
+
+        return path;
+    }
 }

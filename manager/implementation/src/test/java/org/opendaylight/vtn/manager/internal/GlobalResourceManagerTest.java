@@ -33,7 +33,10 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.apache.felix.dm.impl.ComponentImpl;
+
+import org.junit.After;
 import org.junit.Test;
+
 import org.opendaylight.controller.clustering.services.CacheConfigException;
 import org.opendaylight.controller.clustering.services.CacheExistException;
 import org.opendaylight.controller.clustering.services.IClusterGlobalServices;
@@ -90,6 +93,11 @@ public class GlobalResourceManagerTest extends TestBase {
      * {@link GlobalResourceManager#portMaps}.
      */
     private static final String  CACHE_PORTMAP = "vtn.portmap";
+
+    /**
+     * A {@link GlobalResourceManager} instance.
+     */
+    private GlobalResourceManager  resourceManager;
 
     /**
      * Stub class of {@link IClusterGlobalServices}.
@@ -190,6 +198,17 @@ public class GlobalResourceManagerTest extends TestBase {
         }
     }
 
+    /**
+     * Tear down the test environment.
+     */
+    @After
+    public void tearDown() {
+        GlobalResourceManager grsc = resourceManager;
+        if (grsc != null) {
+            resourceManager = null;
+            grsc.destroy();
+        }
+    }
 
     /**
      * Test method for
@@ -291,8 +310,8 @@ public class GlobalResourceManagerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link GlobalResourceManager#registerVlanMap(VTNManagerImpl,VlanMapPath,NodeVlan)},
-     * {@link GlobalResourceManager#unregisterVlanMap(VTNManagerImpl,NodeVlan)}.
+     * {@link GlobalResourceManager#registerVlanMap(VTNManagerImpl,VlanMapPath,NodeVlan,boolean)},
+     * {@link GlobalResourceManager#unregisterVlanMap(VTNManagerImpl,VlanMapPath,NodeVlan,boolean)}.
      */
     @Test
     public void testRegisterVlanMap() {
@@ -300,6 +319,8 @@ public class GlobalResourceManagerTest extends TestBase {
         containerNames.add("default");
         containerNames.add("tenant");
 
+        HashMap<NodeVlan, VlanMapPath> mappings =
+            new HashMap<NodeVlan, VlanMapPath>();
         TestStub stubObj = new TestStub(0);
         IClusterGlobalServices cs = (IClusterGlobalServices)stubObj;
         GlobalResourceManager grsc = setupGlobalResourceManager(stubObj);
@@ -311,13 +332,15 @@ public class GlobalResourceManagerTest extends TestBase {
         ConfRevisionMap revMap = getRevisionCache(cs);
         int updateFailure = 0;
 
+        String tname = "tenant";
+        String bname = "bridge";
+        VBridgePath bpath = new VBridgePath(tname, bname);
+        VlanMapPath invalidPath = new VlanMapPath(bpath, "unknown");
+
         for (String containerName : containerNames) {
             VTNManagerImpl mgr = setupVTNManager(grsc, stubObj, containerName);
 
             int revision = getRevision(revMap);
-            String tname = "tenant";
-            String bname = "bridge";
-            VBridgePath bpath = new VBridgePath(tname, bname);
             short vlan = 0;
             NodeVlan nvlan0 = new NodeVlan(null, vlan);
             String mapId = createVlanMapId(nvlan0);
@@ -326,7 +349,8 @@ public class GlobalResourceManagerTest extends TestBase {
 
             try {
                 revMap.activateTest(updateFailure);
-                ref = grsc.registerVlanMap(mgr, vpath, nvlan0);
+                ref = grsc.registerVlanMap(mgr, vpath, nvlan0, true);
+                mappings.put(nvlan0, vpath);
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -340,7 +364,7 @@ public class GlobalResourceManagerTest extends TestBase {
             VlanMapPath vpathnew = new VlanMapPath(bpathnew, mapId);
             try {
                 revMap.activateTest(updateFailure);
-                ref = grsc.registerVlanMap(mgr, vpathnew, nvlan0);
+                ref = grsc.registerVlanMap(mgr, vpathnew, nvlan0, true);
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -353,7 +377,7 @@ public class GlobalResourceManagerTest extends TestBase {
 
             try {
                 revMap.activateTest(updateFailure);
-                ref = grsc.registerVlanMap(otherMgr, vpathnew, nvlan0);
+                ref = grsc.registerVlanMap(otherMgr, vpathnew, nvlan0, true);
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -368,7 +392,8 @@ public class GlobalResourceManagerTest extends TestBase {
             VlanMapPath vpath0_0 = new VlanMapPath(bpathnew, mapId0_0);
             try {
                 revMap.activateTest(updateFailure);
-                ref = grsc.registerVlanMap(otherMgr, vpath0_0, nvlan0_0);
+                ref = grsc.registerVlanMap(otherMgr, vpath0_0, nvlan0_0, true);
+                mappings.put(nvlan0_0, vpath0_0);
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -383,7 +408,8 @@ public class GlobalResourceManagerTest extends TestBase {
             VlanMapPath vpath4095_0 = new VlanMapPath(bpathnew, mapId4095_0);
             try {
                 revMap.activateTest(updateFailure);
-                ref = grsc.registerVlanMap(mgr, vpath4095_0, nvlan4095_0);
+                ref = grsc.registerVlanMap(mgr, vpath4095_0, nvlan4095_0, true);
+                mappings.put(nvlan4095_0, vpath4095_0);
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -394,7 +420,8 @@ public class GlobalResourceManagerTest extends TestBase {
 
             try {
                 revMap.activateTest(updateFailure);
-                grsc.unregisterVlanMap(mgr, nvlan0);
+                grsc.unregisterVlanMap(mgr, mappings.remove(nvlan0), nvlan0,
+                                       true);
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -408,7 +435,8 @@ public class GlobalResourceManagerTest extends TestBase {
             VlanMapPath vpath4095 = new VlanMapPath(bpath, mapId4095);
             try {
                 revMap.activateTest(updateFailure);
-                ref = grsc.registerVlanMap(mgr, vpath4095, nvlan4095);
+                ref = grsc.registerVlanMap(mgr, vpath4095, nvlan4095, true);
+                mappings.put(nvlan4095, vpath4095);
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -423,7 +451,7 @@ public class GlobalResourceManagerTest extends TestBase {
             try {
                 VlanMapPath p = new VlanMapPath(bpath, mapId0_0);
                 revMap.activateTest(updateFailure);
-                ref = grsc.registerVlanMap(mgr, p, nvlan0_0);
+                ref = grsc.registerVlanMap(mgr, p, nvlan0_0, true);
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -435,7 +463,8 @@ public class GlobalResourceManagerTest extends TestBase {
 
             try {
                 revMap.activateTest(updateFailure);
-                ref = grsc.registerVlanMap(mgr, vpath, nvlan0);
+                ref = grsc.registerVlanMap(mgr, vpath, nvlan0, true);
+                mappings.put(nvlan0, vpath);
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -450,7 +479,8 @@ public class GlobalResourceManagerTest extends TestBase {
             VlanMapPath vpath4095_1 = new VlanMapPath(bpath, mapId4095_1);
             try {
                 revMap.activateTest(updateFailure);
-                ref = grsc.registerVlanMap(mgr, vpath4095_1, nvlan4095_1);
+                ref = grsc.registerVlanMap(mgr, vpath4095_1, nvlan4095_1, true);
+                mappings.put(nvlan4095_1, vpath4095_1);
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -466,7 +496,8 @@ public class GlobalResourceManagerTest extends TestBase {
             // Unregister VLAN:0 on Node:0.
             try {
                 revMap.activateTest(updateFailure);
-                grsc.unregisterVlanMap(otherMgr, nvlan0_0);
+                grsc.unregisterVlanMap(otherMgr, vpath0_0, nvlan0_0, true);
+                mappings.put(nvlan0_0, vpath0_0);
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -484,7 +515,19 @@ public class GlobalResourceManagerTest extends TestBase {
             for (NodeVlan nv: invalid) {
                 try {
                     revMap.activateTest(updateFailure);
-                    grsc.unregisterVlanMap(mgr, nv);
+                    grsc.unregisterVlanMap(mgr, vpath, nv, true);
+                    fail("Exception must be thrown.");
+                } catch (VTNException e) {
+                    assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());
+                }
+                revision = checkRevision(revMap, false, revision,
+                                         updateFailure);
+            }
+
+            for (NodeVlan nv: mappings.keySet()) {
+                try {
+                    revMap.activateTest(updateFailure);
+                    grsc.unregisterVlanMap(mgr, invalidPath, nv, true);
                     fail("Exception must be thrown.");
                 } catch (VTNException e) {
                     assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());
@@ -505,7 +548,7 @@ public class GlobalResourceManagerTest extends TestBase {
 
                 for (NodeVlan nv: nvlans) {
                     revMap.activateTest(updateFailure);
-                    grsc.unregisterVlanMap(mgr, nv);
+                    grsc.unregisterVlanMap(mgr, mappings.remove(nv), nv, true);
                     size--;
                     assertEquals(size, vmap.size());
                     revision = checkRevision(revMap, true, revision,
@@ -516,14 +559,13 @@ public class GlobalResourceManagerTest extends TestBase {
             }
 
             updateFailure += 3;
-            grsc.destroy();
         }
     }
 
     /**
      * Test method for
-     * {@link GlobalResourceManager#registerPortMap(VTNManagerImpl,VBridgeIfPath,PortVlan, PortVlan)},
-     * {@link GlobalResourceManager#unregisterPortMap(VTNManagerImpl,PortVlan)}.
+     * {@link GlobalResourceManager#registerPortMap(VTNManagerImpl,VBridgeIfPath,PortVlan,PortVlan,boolean)},
+     * {@link GlobalResourceManager#unregisterPortMap(VTNManagerImpl,VBridgeIfPath,PortVlan,boolean)}.
      */
     @Test
     public void testRegisterPortMap() {
@@ -532,6 +574,8 @@ public class GlobalResourceManagerTest extends TestBase {
         containerNames.add("default");
         containerNames.add("tenant");
 
+        HashMap<PortVlan, VBridgeIfPath> mappings =
+            new HashMap<PortVlan, VBridgeIfPath>();
         TestStub stubObj = new TestStub(0);
         IClusterGlobalServices cs = (IClusterGlobalServices)stubObj;
         GlobalResourceManager grsc = setupGlobalResourceManager(stubObj);
@@ -539,6 +583,12 @@ public class GlobalResourceManagerTest extends TestBase {
 
         ConfRevisionMap revMap = getRevisionCache(cs);
         int updateFailure = 0;
+
+        String tname = "tenant";
+        String bname = "bridge";
+        String ifname = "interface";
+        VBridgeIfPath bifpath = new VBridgeIfPath(tname, bname, ifname);
+        VBridgeIfPath invalidPath = new VBridgeIfPath(tname, bname, "unknown");
 
         for (String containerName : containerNames) {
             VTNManagerImpl mgr = setupVTNManager(grsc, stubObj, containerName);
@@ -550,16 +600,13 @@ public class GlobalResourceManagerTest extends TestBase {
                     String emsg = "(NodeConnector)" + nc.toString()
                             + ",(vlan)" + vlan;
 
-                    String tname = "tenant";
-                    String bname = "bridge";
-                    String ifname = "interface";
-                    VBridgeIfPath bifpath =
-                        new VBridgeIfPath(tname, bname, ifname);
                     PortVlan pv = new PortVlan(nc, vlan);
                     MapReference ref = null;
                     try {
                         revMap.activateTest(updateFailure);
-                        ref = grsc.registerPortMap(mgr, bifpath, pv, null);
+                        ref = grsc.registerPortMap(mgr, bifpath, pv, null,
+                                                   true);
+                        mappings.put(pv, bifpath);
                     } catch (Exception e) {
                         unexpected(e);
                     }
@@ -576,7 +623,8 @@ public class GlobalResourceManagerTest extends TestBase {
                         new VBridgeIfPath(tname, bnamenew, ifnamenew);
                     try {
                         revMap.activateTest(updateFailure);
-                        ref = grsc.registerPortMap(mgr, bifpathnew, pv, null);
+                        ref = grsc.registerPortMap(mgr, bifpathnew, pv, null,
+                                                   true);
                     } catch (Exception e) {
                         unexpected(e);
                     }
@@ -591,7 +639,7 @@ public class GlobalResourceManagerTest extends TestBase {
                     try {
                         revMap.activateTest(updateFailure);
                         ref = grsc.registerPortMap(otherMgr, bifpathnew, pv,
-                                                   null);
+                                                   null, true);
                     } catch (Exception e) {
                         unexpected(e);
                     }
@@ -601,11 +649,29 @@ public class GlobalResourceManagerTest extends TestBase {
                     checkMapCache(cs, MapType.PORT, containerName, bifpath,
                                   pv);
 
-                    // add non-conflict pvnew, and remove pv.
+                    // Map nc/vlan:100 to bifpathnew.
+                    PortVlan pvlan100 = new PortVlan(nc, (short)100);
+                    try {
+                        revMap.activateTest(updateFailure);
+                        ref = grsc.registerPortMap(mgr, bifpathnew, pvlan100,
+                                                   null, true);
+                        mappings.put(pvlan100, bifpathnew);
+                    } catch (Exception e) {
+                        unexpected(e);
+                    }
+                    revision = checkRevision(revMap, true, revision,
+                                             updateFailure);
+                    assertEquals(revision, getRevision(revMap));
+                    assertEquals(emsg, null, ref);
+
+                    // Replace VLAN mapped to bifpathnew with nc/vlan:4094.
                     PortVlan pvnew = new PortVlan(nc, (short)4094);
                     try {
                         revMap.activateTest(updateFailure);
-                        ref = grsc.registerPortMap(mgr, bifpathnew, pvnew, pv);
+                        ref = grsc.registerPortMap(mgr, bifpathnew, pvnew,
+                                                   pvlan100, true);
+                        mappings.put(pvnew, bifpathnew);
+                        mappings.remove(pvlan100);
                     } catch (Exception e) {
                         unexpected(e);
                     }
@@ -618,12 +684,13 @@ public class GlobalResourceManagerTest extends TestBase {
                         (ConcurrentMap<PortVlan, MapReference>)cs.getCache(CACHE_PORTMAP);
                     checkMapCache(cs, MapType.PORT, containerName, bifpathnew,
                                   pvnew);
-                    checkMapCache(cs, MapType.PORT, null, null, pv);
+                    checkMapCache(cs, MapType.PORT, null, null, pvlan100);
 
                     // check if another entry exist after calling unregisterPortMap()
                     try {
                         revMap.activateTest(updateFailure);
-                        ref = grsc.registerPortMap(mgr, bifpath, pvnew, null);
+                        ref = grsc.registerPortMap(mgr, bifpath, pvnew, null,
+                                                   true);
                     } catch (Exception e) {
                         unexpected(e);
                     }
@@ -637,7 +704,35 @@ public class GlobalResourceManagerTest extends TestBase {
 
                     try {
                         revMap.activateTest(updateFailure);
-                        ref = grsc.registerPortMap(mgr, bifpathnew, pv, null);
+                        ref = grsc.registerPortMap(mgr, bifpathnew, pv, null,
+                                                   true);
+                    } catch (Exception e) {
+                        unexpected(e);
+                    }
+                    revision = checkRevision(revMap, false, revision,
+                                             updateFailure);
+                    required = new MapReference(MapType.PORT, containerName,
+                                                bifpath);
+                    assertEquals(emsg, required, ref);
+                    checkMapCache(cs, MapType.PORT, containerName, bifpath,
+                                  pv);
+
+                    try {
+                        revMap.activateTest(updateFailure);
+                        grsc.unregisterPortMap(mgr, bifpath, pv, true);
+                        mappings.remove(pv);
+                    } catch (Exception e) {
+                        unexpected(e);
+                    }
+                    revision = checkRevision(revMap, true, revision,
+                                             updateFailure);
+                    checkMapCache(cs, MapType.PORT, null, null, pv);
+
+                    try {
+                        revMap.activateTest(updateFailure);
+                        ref = grsc.registerPortMap(mgr, bifpathnew, pv, null,
+                                                   true);
+                        mappings.put(pv, bifpathnew);
                     } catch (Exception e) {
                         unexpected(e);
                     }
@@ -650,7 +745,7 @@ public class GlobalResourceManagerTest extends TestBase {
                     try {
                         PortVlan pvlan = new PortVlan(nc, (short)1);
                         revMap.activateTest(updateFailure);
-                        grsc.unregisterPortMap(mgr, pvlan);
+                        grsc.unregisterPortMap(mgr, bifpath, pvlan, true);
                         fail("Exception must be thrown.");
                     } catch (VTNException e) {
                         assertEquals(StatusCode.NOTFOUND,
@@ -659,11 +754,25 @@ public class GlobalResourceManagerTest extends TestBase {
                     revision = checkRevision(revMap, false, revision,
                                              updateFailure);
 
+                    for (PortVlan pvlan: mappings.keySet()) {
+                        try {
+                            revMap.activateTest(updateFailure);
+                            grsc.unregisterPortMap(mgr, invalidPath, pvlan,
+                                                   true);
+                        } catch (VTNException e) {
+                            assertEquals(StatusCode.NOTFOUND,
+                                         e.getStatus().getCode());
+                        }
+                        revision = checkRevision(revMap, false, revision,
+                                                 updateFailure);
+                    }
+
                     try {
                         PortVlan[] pvlans = {pvnew, pv};
                         for (PortVlan pvlan: pvlans) {
                             revMap.activateTest(updateFailure);
-                            grsc.unregisterPortMap(mgr, pvlan);
+                            grsc.unregisterPortMap(mgr, mappings.remove(pvlan),
+                                                   pvlan, true);
                             revision = checkRevision(revMap, true, revision,
                                                      updateFailure);
                         }
@@ -674,7 +783,6 @@ public class GlobalResourceManagerTest extends TestBase {
             }
 
             updateFailure++;
-            grsc.destroy();
         }
     }
 
@@ -973,7 +1081,7 @@ public class GlobalResourceManagerTest extends TestBase {
             VlanMapPath vpath0 = new VlanMapPath(bpath, mapId0);
             MapReference ref = null;
             try {
-                ref = grsc.registerVlanMap(mgr, vpath0, nvlan0);
+                ref = grsc.registerVlanMap(mgr, vpath0, nvlan0, true);
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -986,7 +1094,7 @@ public class GlobalResourceManagerTest extends TestBase {
             VBridgeIfPath bifpath = new VBridgeIfPath(tname, bname, ifname);
             PortVlan pv = new PortVlan(nc, vlan);
             try {
-                ref = grsc.registerPortMap(mgr, bifpath, pv, null);
+                ref = grsc.registerPortMap(mgr, bifpath, pv, null, true);
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -998,7 +1106,7 @@ public class GlobalResourceManagerTest extends TestBase {
             String mapId1 = createVlanMapId(nvlan1);
             VlanMapPath vpath1 = new VlanMapPath(bpath, mapId1);
             try {
-                ref = grsc.registerVlanMap(otherMgr, vpath1, nvlan1);
+                ref = grsc.registerVlanMap(otherMgr, vpath1, nvlan1, true);
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -1011,7 +1119,7 @@ public class GlobalResourceManagerTest extends TestBase {
             VBridgeIfPath ifpath1 = new VBridgeIfPath(tname, bname, ifname1);
             PortVlan pv1 = new PortVlan(nc1, (short)1);
             try {
-                ref = grsc.registerPortMap(otherMgr, ifpath1, pv1, null);
+                ref = grsc.registerPortMap(otherMgr, ifpath1, pv1, null, true);
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -1043,8 +1151,6 @@ public class GlobalResourceManagerTest extends TestBase {
             revision = checkRevision(revMap, true, revision, updateFailure);
             assertEquals(0, vmap.size());
             assertEquals(0, pmap.size());
-
-            grsc.destroy();
         }
     }
 
@@ -1098,7 +1204,6 @@ public class GlobalResourceManagerTest extends TestBase {
         grsc.executeAsync(task2);
         assertTrue(task1.await(1000L, TimeUnit.MILLISECONDS));
         assertTrue(task2.await(1000L, TimeUnit.MILLISECONDS));
-
         grsc.destroy();
     }
 
@@ -1301,15 +1406,22 @@ public class GlobalResourceManagerTest extends TestBase {
      * @param stubObj       A {@link TestStub} object.
      * @return {@link GlobalResourceManager}.
      */
-    private GlobalResourceManager setupGlobalResourceManager (TestStub stubObj) {
+    private GlobalResourceManager setupGlobalResourceManager(TestStub stubObj) {
+        GlobalResourceManager grsc = resourceManager;
+        if (grsc != null) {
+            resourceManager = null;
+            grsc.destroy();
+        }
+
         ComponentImpl c = new ComponentImpl(null, null, null);
-        GlobalResourceManager grsc = new GlobalResourceManager();
+        grsc = new GlobalResourceManager();
 
         Hashtable<String, String> properties = new Hashtable<String, String>();
         c.setServiceProperties(properties);
 
         grsc.setClusterGlobalService(stubObj);
         grsc.init(c);
+        resourceManager = grsc;
 
         return grsc;
     }
@@ -1474,7 +1586,7 @@ public class GlobalResourceManagerTest extends TestBase {
         throws VTNException {
         VBridgeIfPath path = it.next();
         PortVlan pvlan = new PortVlan(port, vlan);
-        MapReference ref = resMgr.registerPortMap(mgr, path, pvlan, null);
+        MapReference ref = resMgr.registerPortMap(mgr, path, pvlan, null, true);
         if (ref != null) {
             throw new VTNException(StatusCode.CONFLICT,
                                    "Port mapping failed: " + pvlan +
@@ -1514,7 +1626,7 @@ public class GlobalResourceManagerTest extends TestBase {
         String mapId = createVlanMapId(nvlan);
         VBridgePath bpath = it.next();
         VlanMapPath path = new VlanMapPath(bpath, mapId);
-        MapReference ref = resMgr.registerVlanMap(mgr, path, nvlan);
+        MapReference ref = resMgr.registerVlanMap(mgr, path, nvlan, true);
         if (ref != null) {
             throw new VTNException(StatusCode.CONFLICT,
                                    "VLAN mapping failed: " + nvlan +

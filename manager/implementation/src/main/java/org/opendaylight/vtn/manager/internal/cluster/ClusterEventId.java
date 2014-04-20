@@ -173,7 +173,6 @@ public class ClusterEventId implements Serializable {
                 eventId == evid.eventId);
     }
 
-
     /**
      * Return the hash code of this object.
      *

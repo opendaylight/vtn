@@ -42,6 +42,7 @@ import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.ActionList;
+import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
 import org.opendaylight.vtn.manager.internal.PacketContext;
@@ -49,7 +50,6 @@ import org.opendaylight.vtn.manager.internal.VTNConfig;
 import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
-import org.opendaylight.vtn.manager.internal.VlanMapPortFilter;
 
 import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
@@ -60,7 +60,6 @@ import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.PacketResult;
 import org.opendaylight.controller.sal.routing.IRouting;
-import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -79,7 +78,7 @@ public final class VBridgeImpl implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4760005898902580450L;
+    private static final long serialVersionUID = -5189845784962442671L;
 
     /**
      * Logger instance.
@@ -455,7 +454,7 @@ public final class VBridgeImpl implements Serializable {
         throws VTNException {
         if (vlconf == null) {
             Status status = VTNManagerImpl.
-                argumentIsNull("VLAN map configiguration");
+                argumentIsNull("VLAN mapping configiguration");
             throw new VTNException(status);
         }
 
@@ -472,44 +471,14 @@ public final class VBridgeImpl implements Serializable {
         // Create a VLAN mapping instance.
         VlanMapImpl vmap = new VlanMapImpl(bridgePath, id, vlconf);
 
-        IVTNResourceManager resMgr = mgr.getResourceManager();
-        VlanMapPath path = (VlanMapPath)vmap.getPath();
+        VlanMapPath path = vmap.getPath();
         NodeVlan nvlan = new NodeVlan(node, vlan);
 
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
             // Register a new VLAN mapping to the resource manager.
-            MapReference ref = resMgr.registerVlanMap(mgr, path, nvlan);
-            if (ref != null) {
-                assert ref.getMapType() == MapType.VLAN;
-
-                String msg;
-                if (ref.isContained(getContainerName(), bridgePath)) {
-                    msg = "Already mapped to this bridge";
-                } else {
-                    StringBuilder builder = new StringBuilder("VLAN(");
-                    nvlan.appendContents(builder);
-                    builder.append(") is mapped to ").
-                        append(ref.getAbsolutePath());
-                    msg = builder.toString();
-                }
-                throw new VTNException(StatusCode.CONFLICT, msg);
-            }
-
-            if (node != null && mgr.exists(node) &&
-                resMgr.isVlanMapped(new NodeVlan(null, vlan))) {
-                // The specified VLAN network overlaps existing VLAN mapping
-                // configured with null node. So network caches releated to
-                // overlapped network must be flushed.
-                String tenantName = getTenantName();
-                VlanMapPortFilter filter =
-                    VlanMapPortFilter.create(resMgr, node, vlan, null);
-                VTNThreadData.removeFlows(mgr, tenantName, node, filter, vlan);
-                parent.removeMacTableEntries(mgr, filter, vlan);
-            }
-
-            vmap.initState(mgr);
+            vmap.register(mgr, bridgePath, nvlan);
             vlanMaps.put(id, vmap);
 
             VlanMap vlmap = new VlanMap(id, node, vlan);
@@ -548,23 +517,8 @@ public final class VBridgeImpl implements Serializable {
                 throw new VTNException(status);
             }
 
-            VlanMapConfig vlconf = vmap.getVlanMapConfig();
-            short vlan = vlconf.getVlan();
-            Node node = vlconf.getNode();
-
-            // Unregister VLAN mapping.
-            IVTNResourceManager resMgr = mgr.getResourceManager();
-            NodeVlan nvlan = new NodeVlan(node, vlan);
-            resMgr.unregisterVlanMap(mgr, nvlan);
-
-            // Flush MAC address table associated with this VLAN map.
-            // Although this may flush entries associated with the port
-            // mapping, it should never cause any problem.
-            MacAddressTable table = mgr.getMacAddressTable(bridgePath);
-            table.flush(node, vlan);
-
-            VlanMap vlmap = new VlanMap(mapId, node, vlan);
-            vmap.destroy(mgr, bridgePath, vlmap, true);
+            // Destroy VLAN mapping.
+            vmap.destroy(mgr, bridgePath, true);
             updateState(mgr);
         } finally {
             wrlock.unlock();
@@ -715,7 +669,6 @@ public final class VBridgeImpl implements Serializable {
      */
     void resume(VTNManagerImpl mgr) {
         VNodeState state = VNodeState.UNKNOWN;
-        IVTNResourceManager resMgr = mgr.getResourceManager();
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         String containerName = getContainerName();
 
@@ -730,22 +683,8 @@ public final class VBridgeImpl implements Serializable {
                 }
             }
 
+            // Resume VLAN mappings.
             for (VlanMapImpl vmap: vlanMaps.values()) {
-                // Register VLAN mappings to the global resource manager.
-                VlanMapConfig vlconf = vmap.getVlanMapConfig();
-                Node node = vlconf.getNode();
-                short vlan = vlconf.getVlan();
-                NodeVlan nvlan = new NodeVlan(node, vlan);
-                try {
-                    resMgr.registerVlanMap(mgr, (VlanMapPath)vmap.getPath(),
-                                           nvlan);
-                } catch (Exception e) {
-                    LOG.error(containerName + ":" + bridgePath +
-                              ": Failed to resume VLAN mapping: " + nvlan, e);
-                    continue;
-                }
-
-                // Resume the VLAN mappings.
                 state = vmap.resume(mgr, state);
             }
 
@@ -795,47 +734,28 @@ public final class VBridgeImpl implements Serializable {
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
-            boolean doflush = false;
-
             for (VBridgeIfImpl vif: vInterfaces.values()) {
-                if (!doflush && type == UpdateType.REMOVED) {
-                    PortMapConfig pmconf = vif.getPortMapConfig();
-                    doflush = (pmconf != null &&
-                               pmconf.getNode().equals(node));
-                }
-
                 VNodeState s = vif.notifyNode(mgr, db, state, node, type);
                 if (vif.isEnabled()) {
                     if (LOG.isTraceEnabled()) {
-                        LOG.trace("{}:{}: notifyNode(if): {} -> {}",
-                                  getContainerName(), bridgePath, state, s);
+                        LOG.trace("{}:{}: notifyNode(if:{}): {} -> {}",
+                                  getContainerName(), bridgePath,
+                                  vif.getName(), state, s);
                     }
                     state = s;
                 }
             }
 
             for (VlanMapImpl vmap: vlanMaps.values()) {
-                if (!doflush && type == UpdateType.REMOVED) {
-                    VlanMapConfig vlconf = vmap.getVlanMapConfig();
-                    Node vmnode = vlconf.getNode();
-                    doflush = (vmnode == null || vmnode.equals(node));
-                }
-
                 VNodeState s = vmap.notifyNode(mgr, db, state, node, type);
                 if (LOG.isTraceEnabled()) {
-                    LOG.trace("{}:{}: notifyNode(vmap): {} -> {}",
-                              getContainerName(), bridgePath, state, s);
+                    LOG.trace("{}:{}: notifyNode(vmap:{}): {} -> {}",
+                              getContainerName(), bridgePath,
+                              vmap.getMapId(), state, s);
                 }
                 state = s;
             }
             setState(mgr, state);
-
-            if (doflush) {
-                // Flush MAC address table entries associated with the
-                // removed node.
-                MacAddressTable table = mgr.getMacAddressTable(bridgePath);
-                table.flush(node);
-            }
         } finally {
             wrlock.unlock();
         }
@@ -858,48 +778,31 @@ public final class VBridgeImpl implements Serializable {
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
-            boolean doflush = false;
-
             for (VBridgeIfImpl vif: vInterfaces.values()) {
-                if (!doflush && pstate != VNodeState.UP) {
-                    NodeConnector mapped = vif.getMappedPort(mgr);
-                    doflush = nc.equals(mapped);
-                }
-
                 VNodeState s = vif.notifyNodeConnector(mgr, db, state, nc,
                                                        pstate, type);
                 if (vif.isEnabled()) {
                     if (LOG.isTraceEnabled()) {
-                        LOG.trace("{}:{}: notifyNodeConnector(if): {} -> {}",
-                                  getContainerName(), bridgePath, state, s);
+                        LOG.trace("{}:{}: notifyNodeConnector(if:{}): " +
+                                  "{} -> {}",
+                                  getContainerName(), bridgePath,
+                                  vif.getName(), state, s);
                     }
                     state = s;
                 }
             }
 
             for (VlanMapImpl vmap: vlanMaps.values()) {
-                if (!doflush && pstate != VNodeState.UP) {
-                    VlanMapConfig vlconf = vmap.getVlanMapConfig();
-                    Node vmnode = vlconf.getNode();
-                    doflush = (vmnode == null || vmnode.equals(nc.getNode()));
-                }
-
                 VNodeState s = vmap.notifyNodeConnector(mgr, db, state, nc,
                                                         pstate, type);
                 if (LOG.isTraceEnabled()) {
-                    LOG.trace("{}:{}: notifyNodeConnector(vmap): {} -> {}",
-                              getContainerName(), bridgePath, state, s);
+                    LOG.trace("{}:{}: notifyNodeConnector(vmap:{}): {} -> {}",
+                              getContainerName(), bridgePath,
+                              vmap.getMapId(), state, s);
                 }
                 state = s;
             }
             setState(mgr, state);
-
-            if (doflush) {
-                // Flush MAC address table entries associated with the given
-                // node connector.
-                MacAddressTable table = mgr.getMacAddressTable(bridgePath);
-                table.flush(nc);
-            }
         } finally {
             wrlock.unlock();
         }
@@ -908,12 +811,11 @@ public final class VBridgeImpl implements Serializable {
     /**
      * This method is called when topology graph is changed.
      *
-     * @param mgr       VTN Manager service.
-     * @param topoList  List of topoedgeupdates Each topoedgeupdate includes
-     *                  edge, its Properties (BandWidth and/or Latency etc)
-     *                  and update type.
+     * @param mgr     VTN Manager service.
+     * @param estate  A {@link EdgeUpdateState} instance which contains
+     *                information reported by the controller.
      */
-    void edgeUpdate(VTNManagerImpl mgr, List<TopoEdgeUpdate> topoList) {
+    void edgeUpdate(VTNManagerImpl mgr, EdgeUpdateState estate) {
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
 
         Lock wrlock = rwLock.readLock();
@@ -921,21 +823,23 @@ public final class VBridgeImpl implements Serializable {
         wrlock.lock();
         try {
             for (VBridgeIfImpl vif: vInterfaces.values()) {
-                VNodeState s = vif.edgeUpdate(mgr, db, state, topoList);
+                VNodeState s = vif.edgeUpdate(mgr, db, state, estate);
                 if (vif.isEnabled()) {
                     if (LOG.isTraceEnabled()) {
-                        LOG.trace("{}:{}: edgeUpdate(if): {} -> {}",
-                                  getContainerName(), bridgePath, state, s);
+                        LOG.trace("{}:{}: edgeUpdate(if:{}): {} -> {}",
+                                  getContainerName(), bridgePath,
+                                  vif.getName(), state, s);
                     }
                     state = s;
                 }
             }
 
             for (VlanMapImpl vmap: vlanMaps.values()) {
-                VNodeState s = vmap.edgeUpdate(mgr, db, state, topoList);
+                VNodeState s = vmap.edgeUpdate(mgr, db, state, estate);
                 if (LOG.isTraceEnabled()) {
-                    LOG.trace("{}:{}: edgeUpdate(vmap): {} -> {}",
-                              getContainerName(), bridgePath, state, s);
+                    LOG.trace("{}:{}: edgeUpdate(vmap:{}): {} -> {}",
+                              getContainerName(), bridgePath,
+                              vmap.getMapId(), state, s);
                 }
                 state = s;
             }
@@ -1072,9 +976,8 @@ public final class VBridgeImpl implements Serializable {
             }
 
             if (bnode.isEnabled()) {
-                pctx.addNodePath(bridgePath);
-                pctx.addNodePath(bnode.getPath());
-                handlePacket(mgr, pctx);
+                pctx.setSourceNodePath(bnode.getPath());
+                handlePacket(mgr, pctx, bnode);
             } else if (LOG.isDebugEnabled()) {
                 LOG.debug("{}:{}: " +
                           "Ignore packet received from disabled network: {}",
@@ -1145,22 +1048,15 @@ public final class VBridgeImpl implements Serializable {
             for (Iterator<Map.Entry<String, VlanMapImpl>> it =
                      vlanMaps.entrySet().iterator(); it.hasNext();) {
                 Map.Entry<String, VlanMapImpl> entry = it.next();
-                String mapId = entry.getKey();
                 VlanMapImpl vmap = entry.getValue();
-                VlanMapConfig vlconf = vmap.getVlanMapConfig();
-                Node node = vlconf.getNode();
-                short vlan = vlconf.getVlan();
-                NodeVlan nvlan = new NodeVlan(node, vlan);
                 try {
-                    resMgr.unregisterVlanMap(mgr, nvlan);
+                    vmap.destroy(mgr, bridgePath, false);
                 } catch (Exception e) {
                     LOG.error(getContainerName() + ":" + bridgePath +
-                              ": Failed to unregister VLAN map: " + nvlan);
+                              ": Failed to destroy VLAN mapping: " +
+                              entry.getKey(), e);
                     // FALLTHROUGH
                 }
-
-                VlanMap vlmap = new VlanMap(mapId, vlconf.getNode(), vlan);
-                vmap.destroy(mgr, bridgePath, vlmap, false);
                 it.remove();
             }
 
@@ -1573,13 +1469,16 @@ public final class VBridgeImpl implements Serializable {
      *   Note that this method must be called with holding the bridge lock.
      * </p>
      *
-     * @param mgr   VTN Manager service.
-     * @param pctx  The context of the received packet.
+     * @param mgr    VTN Manager service.
+     * @param pctx   The context of the received packet.
+     * @param bnode  A {@link VBridgeNode} instance that maps the received
+     *               packet.
      */
-    private void handlePacket(VTNManagerImpl mgr, PacketContext pctx) {
+    private void handlePacket(VTNManagerImpl mgr, PacketContext pctx,
+                              VBridgeNode bnode) {
         // Learn the source MAC address if needed.
         MacAddressTable table = mgr.getMacAddressTable(bridgePath);
-        table.add(pctx);
+        table.add(pctx, bnode);
 
         byte[] dst = pctx.getDestinationAddress();
         if (isResponseToController(mgr, pctx, dst)) {
@@ -1717,7 +1616,7 @@ public final class VBridgeImpl implements Serializable {
             return null;
         }
 
-        pctx.addNodePath(bnode.getPath());
+        pctx.setDestinationNodePath(bnode.getPath());
 
         return tent;
     }
@@ -1779,8 +1678,6 @@ public final class VBridgeImpl implements Serializable {
         // Set flow dependency which specifies network elements relevant to
         // this VTN flow.
         pctx.setFlowDependency(vflow);
-        byte[] dst = pctx.getDestinationAddress();
-        vflow.addDependency(new MacVlan(dst, outVlan));
 
         // Install flow entries.
         fdb.install(mgr, vflow);
