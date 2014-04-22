@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal;
 
 import java.io.File;
@@ -54,11 +55,19 @@ import org.slf4j.LoggerFactory;
  * Common class for test of using VTNManager.
  */
 public class TestUseVTNManagerBase extends TestBase {
-    protected VTNManagerImpl vtnMgr = null;
+    protected VTNManagerImpl vtnMgr;
     protected GlobalResourceManager resMgr;
-    protected TestStub stubObj = null;
-    protected static int stubMode = 0;
-    protected static int clusterMode = 0;
+    protected TestStub stubObj;
+    protected int stubMode;
+
+    /**
+     * Construct a new instance.
+     *
+     * @param stub  An integer value to be passed to {@link TestStub}.
+     */
+    protected TestUseVTNManagerBase(int stub) {
+        stubMode = stub;
+    }
 
     @Before
     public void before() {

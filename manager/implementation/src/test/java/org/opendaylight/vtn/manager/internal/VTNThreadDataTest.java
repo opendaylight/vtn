@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal;
 
 import java.util.HashSet;
@@ -15,6 +16,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.junit.Test;
+
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.match.Match;
@@ -32,9 +34,15 @@ import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 
 /**
- * JUnit Test for {@link VTNThreadData}
+ * JUnit Test for {@link VTNThreadData}.
  */
 public class VTNThreadDataTest extends TestUseVTNManagerBase {
+    /**
+     * Construct a new instance.
+     */
+    public VTNThreadDataTest() {
+        super(2);
+    }
 
     /**
      * Test method for {@link VTNThreadData#create(Lock)}.

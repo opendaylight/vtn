@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VBridgeIfPath;
@@ -45,9 +44,11 @@ import org.opendaylight.controller.sal.utils.NodeCreator;
  */
 public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
 
-    @BeforeClass
-    public static void beforeClass() {
-        stubMode = 2;
+    /**
+     * Construct a new instance.
+     */
+    public VTNFlowDatabaseTest() {
+        super(2);
     }
 
     /**

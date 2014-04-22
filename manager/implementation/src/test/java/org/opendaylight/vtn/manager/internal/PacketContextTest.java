@@ -16,8 +16,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.opendaylight.controller.sal.core.ConstructionException;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -56,10 +56,11 @@ import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
  * JUnit test for {@link PacketContext}.
  */
 public class PacketContextTest extends TestUseVTNManagerBase {
-
-    @BeforeClass
-    public static void beforeClass() {
-        stubMode = 2;
+    /**
+     * Construct a new instance.
+     */
+    public PacketContextTest() {
+        super(2);
     }
 
     /**

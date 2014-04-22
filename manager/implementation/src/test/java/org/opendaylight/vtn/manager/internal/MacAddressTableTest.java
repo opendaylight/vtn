@@ -20,7 +20,7 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentMap;
 
 import org.apache.felix.dm.impl.ComponentImpl;
-import org.junit.BeforeClass;
+
 import org.junit.Test;
 
 import org.opendaylight.controller.sal.core.ConstructionException;
@@ -63,13 +63,11 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
     }
 
     /**
-     * setup a test environment for MacAddressTableTest.
+     * Construct a new instance.
      */
-    @BeforeClass
-    static public void beforeClass() {
-        stubMode = 2;
+    public MacAddressTableTest() {
+        super(2);
     }
-
 
     /**
      * Test case for {@link MacAddressTable#getTableKey(byte [])}.
