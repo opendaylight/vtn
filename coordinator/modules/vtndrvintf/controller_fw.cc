@@ -189,6 +189,7 @@ void ReadParams::PingController() {
       pfc_log_debug("Controller status is DOWN ctlr_name:%s",
                     ctlr_name_.c_str());
     }
+    ctr_fw_->SetDomainFlag(ctlr_name_,PFC_FALSE);
     ctr_instance->set_connection_status(CONNECTION_DOWN);
   }
   uint32_t ping_interval = drv_instance->get_ping_interval();
@@ -581,7 +582,7 @@ void ControllerFramework::SendNotificationToPhysical(
                 val_ctr_old.oper_status, val_ctr_new.oper_status);
 }
 
-void ControllerFramework::SetDomainFlag(std::string ctr_name) {
+void ControllerFramework::SetDomainFlag(std::string ctr_name, pfc_bool_t flag) {
   ControllerContainer* controller_container(NULL);
   std::map<std::string, ControllerContainer*>::iterator
       controller_list_iterator = controller_list.begin();
@@ -592,7 +593,7 @@ void ControllerFramework::SetDomainFlag(std::string ctr_name) {
   } else {
     controller_container = controller_list_iterator->second;
     PFC_VERIFY(controller_container != NULL);
-    controller_container->Domain_event_ = PFC_TRUE;
+    controller_container->Domain_event_ = flag;
   }
 }
 

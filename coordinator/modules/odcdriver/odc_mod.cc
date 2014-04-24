@@ -170,6 +170,15 @@ pfc_bool_t ODCModule::is_physicalconfig_needed() {
 pfc_bool_t ODCModule::ping_controller(unc::driver::controller* ctr) {
   ODC_FUNC_TRACE;
   PFC_ASSERT(ctr != NULL);
+
+  // If controller is down clear physical port cache
+  if (unc::driver::CONNECTION_DOWN == ctr->get_connection_status()) {
+    pfc_log_debug("Controller is Down, Clear Physical port cache");
+    if (NULL != ctr->physical_port_cache) {
+       delete ctr->physical_port_cache;
+       ctr->physical_port_cache = NULL;
+    }
+  }
   std::string url = "";
   url.append(BASE_URL);
   url.append(VERSION);
@@ -208,6 +217,10 @@ pfc_bool_t ODCModule::get_physical_port_details(
   OdcSwitch odc_switch_obj(conf_file_values_);
   pfc_bool_t cache_empty = PFC_TRUE;
 
+  if (NULL == ctr_ptr->physical_port_cache) {
+    pfc_log_error("Physical port cache pointer is NULL");
+    return PFC_FALSE;
+  }
   // Gets the SWITCH details
   UncRespCode ret_val = odc_switch_obj.fetch_config(ctr_ptr, cache_empty);
   if (UNC_RC_SUCCESS != ret_val) {

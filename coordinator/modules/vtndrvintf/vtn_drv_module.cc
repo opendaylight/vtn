@@ -427,7 +427,7 @@ void VtnDrvIntf::logicalport_event(oper_type operation,
   Domain_event = ctrl_inst_->GetDomainFlag(controller_name);
   if (Domain_event == PFC_FALSE) {
     domain_event(controller_name, domain_name);  //  post domain event to UPPL
-    ctrl_inst_->SetDomainFlag(controller_name);
+    ctrl_inst_->SetDomainFlag(controller_name, PFC_TRUE);
   }
 
   pfc_log_debug("logicalport Operation received is %d", operation);

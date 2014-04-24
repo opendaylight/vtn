@@ -180,9 +180,10 @@ class ControllerFramework  {
   /**
    * @brief      - This function is to Set the Domain event flag
    * @param[in]  - controller name
+   * @param[in]  - flag to set domain
    * @retval     - None
    */
-  void SetDomainFlag(std::string ctr_name);
+  void SetDomainFlag(std::string ctr_name, pfc_bool_t flag);
   pfc::core::Mutex controller_list_rwlock_;
   uint32_t time_interval_;  //  in seconds
 
