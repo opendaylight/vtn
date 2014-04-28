@@ -9,6 +9,7 @@
 
 package org.opendaylight.vtn.manager.internal;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,6 +34,7 @@ import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.flowprogrammer.Flow;
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.utils.NetUtils;
@@ -180,7 +182,7 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
 
     /**
      * Test method for
-     * {@link VTNFlowDatabase#flowRemoved(VTNManagerImpl, FlowEntry)},
+     * {@link VTNFlowDatabase#flowRemoved(VTNManagerImpl, FlowEntry, boolean)},
      * {@link VTNFlowDatabase#flowRemoved(VTNManagerImpl, FlowGroupId)}.
      */
     @Test
@@ -222,32 +224,47 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         assertEquals(numFlows, db.values().size());
         assertEquals(numFlows * 2, stubObj.getFlowEntries().size());
 
-        // test flowRemoved(VTNMangerImpl, FlowEntry)
+        // test flowRemoved(VTNMangerImpl, FlowEntry, boolean)
+        String empty = "";
+        boolean rmIngress = true;
         for (VTNFlow flow : flows) {
             int i = 0;
             for (FlowEntry ent : flow.getFlowEntries()) {
                 String emsg = ent.toString();
-                fdb.flowRemoved(vtnMgr, ent);
+
+                // Ensure that only node, priority, and flow match affect
+                // identity of FlowEntry instance.
+                Node node = ent.getNode();
+                Flow fl = ent.getFlow();
+                Flow f = new Flow(fl.getMatch(), null);
+                f.setPriority(fl.getPriority());
+                FlowEntry fent = new FlowEntry(empty, empty, f, node);
+                boolean ret = fdb.flowRemoved(vtnMgr, ent, rmIngress);
                 flushFlowTasks();
 
                 if (i == 0) {
+                    assertTrue(ret);
                     VTNFlow regFlow = db.get(flow.getGroupId());
                     assertNull(emsg, regFlow);
                     assertEquals(emsg, numFlows - 1, db.values().size());
-                    assertEquals(emsg, numFlows * 2 - 1,
-                                 stubObj.getFlowEntries().size());
 
-                    // because florwRemoved(VTNManagerImpl, FlowEntry) is invoked
-                    // when VTN flow was expired, this invoked
-                    // after FlowEnry have already been removed.
-                    // In this test case need to remove FlowEntry in DB of stub.
-                    stubObj.uninstallFlowEntry(ent);
+                    if (rmIngress) {
+                        assertEquals(emsg, (numFlows - 1) * 2,
+                                     stubObj.getFlowEntries().size());
+                    } else {
+                        assertEquals(emsg, numFlows * 2 - 1,
+                                     stubObj.getFlowEntries().size());
+                        // Need to uninstall ingress flow because
+                        // flowRemoved() never does.
+                        stubObj.uninstallFlowEntry(ent);
+                    }
 
                     Set<VTNFlow> revert = new HashSet<VTNFlow>();
                     revert.add(flow);
                     revertFlowEntries(vtnMgr, fdb, revert, numFlows,
                                       numFlows * 2);
                 } else {
+                    assertFalse(ret);
                     VTNFlow regFlow = db.get(flow.getGroupId());
                     assertNotNull(emsg, regFlow);
                     assertEquals(emsg, numFlows, db.values().size());
@@ -257,11 +274,12 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
 
                 i++;
             }
+            rmIngress = false;
         }
 
         // specify null to FlowEntry.
         FlowEntry fent = null;
-        fdb.flowRemoved(vtnMgr, fent);
+        fdb.flowRemoved(vtnMgr, fent, false);
         flushFlowTasks();
 
         assertEquals(numFlows, db.values().size());
@@ -305,7 +323,7 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
 
         VTNFlow flow = flows.iterator().next();
         List<FlowEntry> flowEntries = flow.getFlowEntries();
-        fdb.flowRemoved(vtnMgr, flowEntries.get(0));
+        fdb.flowRemoved(vtnMgr, flowEntries.get(0), false);
         flushFlowTasks();
         assertEquals(0, db.values().size());
         assertEquals(0, stubObj.getFlowEntries().size());
@@ -1081,6 +1099,111 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
             // call after cleared.
             FlowEntry ent = flows.iterator().next().getFlowEntries().get(0);
             assertFalse(fdb.containsIngressFlow(ent));
+        }
+    }
+
+    /**
+     * Test case for {@link VTNFlowDatabase#fixBrokenOvsFlow(Flow)}.
+     */
+    @Test
+    public void testFixBrokenOvsFlow() {
+        Node node = NodeCreator.createOFNode(Long.valueOf(0L));
+        NodeConnector port = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)1), node);
+        NodeConnector outPort = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)2), node);
+        byte[] src = {
+            (byte)0x00, (byte)0x11, (byte)0x22,
+            (byte)0x33, (byte)0x44, (byte)0x55,
+        };
+        byte[] dst = {
+            (byte)0xf0, (byte)0xfa, (byte)0xfb,
+            (byte)0xfc, (byte)0xfc, (byte)0xfe,
+        };
+        InetAddress nwSrc = null, nwDst = null;
+        try {
+            nwSrc = InetAddress.getByName("192.168.10.1");
+            nwDst = InetAddress.getByName("10.1.2.254");
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        HashMap<MatchType, Object> fields = new HashMap<MatchType, Object>();
+        fields.put(MatchType.IN_PORT, port);
+        fields.put(MatchType.DL_SRC, src);
+        fields.put(MatchType.DL_DST, dst);
+        fields.put(MatchType.DL_VLAN, Short.valueOf((short)10));
+        fields.put(MatchType.DL_OUTER_VLAN, Short.valueOf((short)20));
+        fields.put(MatchType.DL_OUTER_VLAN_PR, Short.valueOf((short)3));
+        fields.put(MatchType.DL_TYPE, Short.valueOf((short)0x800));
+        fields.put(MatchType.NW_TOS, Byte.valueOf((byte)0x1));
+        fields.put(MatchType.NW_PROTO, Byte.valueOf((byte)0x6));
+        fields.put(MatchType.NW_SRC, nwSrc);
+        fields.put(MatchType.NW_DST, nwDst);
+        fields.put(MatchType.TP_SRC, Short.valueOf((short)1000));
+        fields.put(MatchType.TP_DST, Short.valueOf((short)2000));
+
+        Match match = new Match();
+        Match matchPcp = new Match();
+        matchPcp.setField(MatchType.DL_VLAN_PR, Byte.valueOf((byte)0x0));
+        assertFalse(match.equals(matchPcp));
+        assertFalse(match.isPresent(MatchType.DL_VLAN_PR));
+        assertTrue(matchPcp.isPresent(MatchType.DL_VLAN_PR));
+
+        ActionList actions = new ActionList(node);
+        actions.addOutput(outPort).addVlanId((short)100);
+
+        Flow flow = new Flow(match, actions.get());
+        Flow flowPcp = new Flow(matchPcp, actions.get());
+        String group = "flow-group";
+        String name = "flow-name";
+        String empty = "";
+        for (short pri = 0; pri <= 10; pri++) {
+            flow.setPriority(pri);
+            flowPcp.setPriority(pri);
+            assertNull(VTNFlowDatabase.fixBrokenOvsFlow(flow));
+            Flow fixed = VTNFlowDatabase.fixBrokenOvsFlow(flowPcp);
+            assertEquals(pri, fixed.getPriority());
+            assertFalse(fixed.getMatch().isPresent(MatchType.DL_VLAN_PR));
+            assertEquals(match, fixed.getMatch());
+
+            // Ensure that only node, priority, and flow match affect identity
+            // of FlowEntry instance.
+            FlowEntry fent = new FlowEntry(group, name, flow, node);
+            FlowEntry fe = new FlowEntry(empty, empty, fixed, node);
+            assertEquals(fent, fe);
+        }
+
+        for (Map.Entry<MatchType, Object> entry: fields.entrySet()) {
+            MatchType mtype = entry.getKey();
+            Object value = entry.getValue();
+            assertFalse(match.isPresent(mtype));
+            match.setField(mtype, value);
+            assertTrue(match.isPresent(mtype));
+
+            assertFalse(matchPcp.isPresent(mtype));
+            matchPcp.setField(mtype, value);
+            assertTrue(matchPcp.isPresent(mtype));
+            assertFalse(match.equals(matchPcp));
+
+            flow = new Flow(match, null);
+            flowPcp = new Flow(matchPcp, null);
+            for (short pri = 0; pri <= 10; pri++) {
+                flow.setPriority(pri);
+                flowPcp.setPriority(pri);
+                assertNull(VTNFlowDatabase.fixBrokenOvsFlow(flow));
+                Flow fixed = VTNFlowDatabase.fixBrokenOvsFlow(flowPcp);
+                assertEquals(flow, fixed);
+                assertEquals(pri, fixed.getPriority());
+                assertFalse(fixed.getMatch().isPresent(MatchType.DL_VLAN_PR));
+                assertEquals(match, fixed.getMatch());
+
+                // Ensure that only node, priority, and flow match affect
+                // identity of FlowEntry instance.
+                FlowEntry fent = new FlowEntry(group, name, flow, node);
+                FlowEntry fe = new FlowEntry(empty, empty, fixed, node);
+                assertEquals(fent, fe);
+            }
         }
     }
 }
