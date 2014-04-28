@@ -5445,17 +5445,30 @@ public class VTNManagerImpl
         LOG.trace("{}: flowRemoved() called: node={}, flow={}",
                   containerName, node, flow);
 
-        VTNFlowDatabase found = null;
         String empty = "";
         FlowEntry entry = new FlowEntry(empty, empty, flow, node);
         for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-            if (fdb.containsIngressFlow(entry)) {
-                found = fdb;
-                break;
+            if (fdb.flowRemoved(this, entry, false)) {
+                return;
             }
         }
-        if (found != null) {
-            found.flowRemoved(this, entry);
+
+        // Below are workaround for a bug of old version of Open vSwitch.
+        Flow fixedFlow = VTNFlowDatabase.fixBrokenOvsFlow(flow);
+        if (fixedFlow != null) {
+            entry = new FlowEntry(empty, empty, fixedFlow, node);
+            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                // In this case we need to uninstall ingress flow too because
+                // it may be still kept by the forwarding rule manager.
+                if (fdb.flowRemoved(this, entry, true)) {
+                    return;
+                }
+            }
+        }
+
+        if (flow.getIdleTimeout() != 0) {
+            LOG.trace("{}: Expired flow not found: node={}, flow={}",
+                      containerName, node, flow);
         }
     }
 

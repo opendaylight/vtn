@@ -9,13 +9,14 @@
 
 package org.opendaylight.vtn.manager.internal;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ArrayList;
+import java.util.ListIterator;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.concurrent.ConcurrentMap;
 
 import org.slf4j.Logger;
@@ -29,6 +30,9 @@ import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.flowprogrammer.Flow;
+import org.opendaylight.controller.sal.match.Match;
+import org.opendaylight.controller.sal.match.MatchType;
 
 /**
  * Flow database which keeps all VTN flows in the container.
@@ -68,6 +72,40 @@ public class VTNFlowDatabase {
      */
     private final Map<NodeConnector, Set<VTNFlow>>  portFlows =
         new HashMap<NodeConnector, Set<VTNFlow>>();
+
+    /**
+     * Fix broken flow entry originated by Open vSwitch.
+     *
+     * <p>
+     *   Old version of Open vSwitch may clear OFPFW_DL_VLAN_PCP wildcard bit
+     *   in flow entry incorrectly. This method removes VLAN_PCP condition
+     *   from the specified flow entry.
+     * </p>
+     *
+     * @param flow  A {@link Flow} instance converted from an OpenFlow flow
+     *              entry.
+     * @return  A {@link Flow} instance if the specified flow entry contains
+     *          VLAN_PCP condition. {@code false} is returned if not.
+     */
+    public static Flow fixBrokenOvsFlow(Flow flow) {
+        Match match = flow.getMatch();
+        if (match.isPresent(MatchType.DL_VLAN_PR)) {
+            // VTN Manager never set DL_VLAN_PR match field into flow entry.
+            // So we can simply remove it.
+            match.clearField(MatchType.DL_VLAN_PR);
+
+            // We don't need to copy action list.
+            // A Flow instance returned here is configured into a FlowEntry
+            // instance, and it is used as a search key for vtnFlows lookup.
+            // But only flow match and priority affect identity of FlowEntry
+            // instance.
+            Flow f = new Flow(match, null);
+            f.setPriority(flow.getPriority());
+            return f;
+        }
+
+        return null;
+    }
 
     /**
      * Flow entry collector.
@@ -224,11 +262,18 @@ public class VTNFlowDatabase {
      *
      * @param mgr    VTN Manager service.
      * @param entry  A flow entry object which contains expired SAL flow.
+     * @param rmIn   If {@code true} is specified, this method tries to remove
+     *               ingress flow from the forwarding rule manager.
+     * @return  {@code true} is returned if the specified flow was actually
+     *          removed from this instance.
+     *          {@code false} is returned if the specified flow is not
+     *          contained in this instance.
      */
-    public synchronized void flowRemoved(VTNManagerImpl mgr, FlowEntry entry) {
+    public synchronized boolean flowRemoved(VTNManagerImpl mgr,
+                                            FlowEntry entry, boolean rmIn) {
         VTNFlow vflow = vtnFlows.remove(entry);
         if (vflow == null) {
-            return;
+            return false;
         }
 
         // Remove this VTN flow from the database and the cluster cache.
@@ -237,12 +282,12 @@ public class VTNFlowDatabase {
         removeNodeIndex(vflow);
         removePortIndex(vflow);
 
-        Iterator<FlowEntry> it = vflow.getFlowEntries().iterator();
+        ListIterator<FlowEntry> it = vflow.getFlowEntries().listIterator();
         if (!it.hasNext()) {
             // This should never happen.
             LOG.warn("{}: An empty flow expired: group={}",
                      mgr.getContainerName(), gid);
-            return;
+            return true;
         }
 
         FlowEntry ingress = it.next();
@@ -251,11 +296,22 @@ public class VTNFlowDatabase {
                       mgr.getContainerName(), tenantName, gid, ingress);
         }
 
-        if (it.hasNext()) {
-            // Uninstall flow entries except for ingress flow.
+        boolean hasNext;
+        if (rmIn) {
+            // Move iterator cursor backwards in order to remove ingress flow.
+            it.previous();
+            hasNext = true;
+        } else {
+            hasNext = it.hasNext();
+        }
+
+        if (hasNext) {
+            // Uninstall flow entries.
             FlowRemoveTask task = new FlowRemoveTask(mgr, gid, null, it);
             mgr.postFlowTask(task);
         }
+
+        return true;
     }
 
     /**
