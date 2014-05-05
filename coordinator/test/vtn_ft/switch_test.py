@@ -1223,6 +1223,83 @@ def test_multi_ctr_multi_mininet(ctr1_child, ctr2_child):
 
     print "MULTI-CONTROLLER MULTI-MININET PHYSICAL READ TEST SUCCESS"
 
+def test_audit_physical_read(ctr1_child):
+    print "****CREATE Controller with valid IP****"
+    child = mininet_test.create_mininet_topology('MININETONE', 'ControllerFirst', '3')
+    if child.isalive() == True :
+        print "Topology creation Success!!!"
+    else:
+        print "Topology creation Failed"
+        mininet_test.close_topology(child)
+        stop_controller(ctr1_child)
+        exit(1)
+
+    retval = controller.add_controller_ex('ControllerFirst')
+    if retval != 0:
+        print "Controller Create Failed"
+        mininet_test.close_topology(child)
+        stop_controller(ctr1_child)
+        exit(1)
+    # Delay for AUDIT
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+        print "controller state change failed"
+        mininet_test.close_topology(child)
+        stop_controller(ctr1_child)
+        exit(1)
+
+    insync(50)
+    retval = validate_switch_at_physical('SwitchOne', 'ControllerFirst', 'yes', 0)
+    if retval != 0:
+        print "switch1 validate failed"
+        mininet_test.close_topology(child)
+        stop_controller(ctr1_child)
+        exit(1)
+
+    print "****UPDATE Controller IP to invalid****"
+    test_invalid_ipaddr= vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerFirst')['invalid_ipaddr']
+    retval = controller.update_controller_ex('ControllerFirst',ipaddr=test_invalid_ipaddr)
+    if retval != 0:
+        print "controller invalid_ip update failed"
+        mininet_test.close_topology(child)
+        stop_controller(ctr1_child)
+        exit(1)
+
+    # Delay for AUDIT
+    retval = controller.wait_until_state('ControllerFirst',"down")
+    if retval != 0:
+       mininet_test.close_topology(child)
+       stop_controller(ctr1_child)
+       print "controller state change failed"
+       exit(1)
+
+    insync(50)
+    print "****UPDATE Controller IP to valid****"
+    test_controller_ipaddr= vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerFirst')['ipaddr']
+    retval = controller.update_controller_ex('ControllerFirst',ipaddr=test_controller_ipaddr)
+    if retval != 0:
+        print "controller valid_ip update failed"
+        mininet_test.close_topology(child)
+        stop_controller(ctr1_child)
+        exit(1)
+    # Delay for AUDIT
+    retval = controller.wait_until_state('ControllerFirst',"up")
+    if retval != 0:
+        print "controller state change failed"
+        mininet_test.close_topology(child)
+        stop_controller(ctr1_child)
+        exit(1)
+
+    insync(60)
+    retval = validate_switch_at_physical('SwitchOne', 'ControllerFirst', 'yes', 0)
+    if retval != 0:
+        print "switch1 validate failed"
+        mininet_test.close_topology(child)
+        stop_controller(ctr_child)
+        exit(1)
+
+    print "SWITCH READ IN AUDIT SCENARIO IS SUCCESS"
+
 # Main Block
 if __name__ == '__main__':
     print '*****Switch TESTS******'
@@ -1234,6 +1311,7 @@ if __name__ == '__main__':
     test_physical_read_2(ctr1_child)
     test_physical_read_3(ctr1_child)
     test_physical_read_4(ctr1_child)
+    test_audit_physical_read(ctr1_child)
 #Start controller2
     ctr2_child = start_controller('ControllerSecond')
     insync(150)
