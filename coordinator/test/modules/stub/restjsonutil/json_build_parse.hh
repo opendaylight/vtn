@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -60,8 +60,9 @@ static int get_array_length(json_object* jobj,
     return ZERO_ARRAY_LENGTH;
   }
 
-  json_object *jobj_value = json_object_object_get(jobj, key.c_str());
-  if (json_object_is_type(jobj_value, json_type_null)) {
+  json_object *jobj_value(NULL);
+  if (!json_object_object_get_ex(jobj, key.c_str(), &jobj_value) ||
+      json_object_is_type(jobj_value, json_type_null)) {
     pfc_log_error("json object value is NULL");
     return ZERO_ARRAY_LENGTH;
   }
@@ -102,15 +103,20 @@ JsonBuildParse::parse(json_object * jobj, const std::string & key,
   if (json_object_is_type(jobj, json_type_null)) {
     return REST_OP_FAILURE;
   }
-  json_object * jobj_getval;
 
+  json_object *o;
   if (-1 != arrindex) {
-    json_object *jobj_array = json_object_array_get_idx(jobj, arrindex);
-    jobj_getval = json_object_object_get(jobj_array, key.c_str());
+    o = json_object_array_get_idx(jobj, arrindex);
+    if (json_object_is_type(o, json_type_null)) {
+      return REST_OP_FAILURE;
+    }
   } else {
-    jobj_getval = json_object_object_get(jobj, key.c_str());
+    o = jobj;
   }
-  if (json_object_is_type(jobj_getval, json_type_null)) {
+
+  json_object *jobj_getval(NULL);
+  if (!json_object_object_get_ex(o, key.c_str(), &jobj_getval) ||
+      json_object_is_type(jobj_getval, json_type_null)) {
     return REST_OP_SUCCESS;
   }
 

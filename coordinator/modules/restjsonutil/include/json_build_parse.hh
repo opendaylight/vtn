@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -120,21 +120,22 @@ int JsonBuildParse::parse(json_object* jobj, const std::string &key,
     return REST_OP_FAILURE;
   }
 
-  json_object * jobj_getval = NULL;
-
   // arrindex != -1 means json_object is of type array
+  json_object *o;
   if (-1 != arrindex) {
-    json_object *jobj_array = json_object_array_get_idx(jobj, arrindex);
-    if (json_object_is_type(jobj, json_type_null)) {
+    o = json_object_array_get_idx(jobj, arrindex);
+    if (json_object_is_type(o, json_type_null)) {
       pfc_log_error("json array object is NULL ... ");
       return REST_OP_FAILURE;
     }
-    jobj_getval = json_object_object_get(jobj_array, key.c_str());
   } else {
-    jobj_getval = json_object_object_get(jobj, key.c_str());
+    o = jobj;
   }
+
   // Checks the json object value is not null
-  if (!(json_object_is_type(jobj_getval, json_type_null))) {
+  json_object *jobj_getval(NULL);
+  if (json_object_object_get_ex(o, key.c_str(), &jobj_getval) &&
+      !json_object_is_type(jobj_getval, json_type_null)) {
     JsonTypeUtil::get_value(jobj_getval, val);
   }
   // If json object is NULL , get_value is not called return REST_OP_SUCCESS
