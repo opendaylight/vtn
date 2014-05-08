@@ -237,7 +237,8 @@ TEST(JsonBuildParse , get_array_length_nested_arr_case2) {
   char *str = const_cast<char *>
       ("{\"example\" :  { \"Name\": 10, \"categories\": [{\"c\" : 10}]} }");
   json_object *jobj = json_tokener_parse(str);
-  json_object *jobj_value = json_object_object_get(jobj, "example");
+  json_object *jobj_value(NULL);
+  EXPECT_EQ(TRUE, json_object_object_get_ex(jobj, "example", &jobj_value));
   int arr_len = obj.get_array_length(jobj_value, "categories");
   int len = 1;
   EXPECT_EQ(len, arr_len);

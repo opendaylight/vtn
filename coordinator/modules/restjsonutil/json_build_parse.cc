@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -43,8 +43,9 @@ int JsonBuildParse::get_array_length(json_object* jobj,
     return ZERO_ARRAY_LENGTH;
   }
 
-  json_object *jobj_value = json_object_object_get(jobj, key.c_str());
-  if (json_object_is_type(jobj_value, json_type_null)) {
+  json_object *jobj_value(NULL);
+  if (!json_object_object_get_ex(jobj, key.c_str(), &jobj_value) ||
+      json_object_is_type(jobj_value, json_type_null)) {
     pfc_log_error("json object value is NULL");
     return ZERO_ARRAY_LENGTH;
   }
