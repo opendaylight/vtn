@@ -259,7 +259,7 @@ public class VTNManagerStub implements IVTNManager {
 
     @Override
     public Status setPortMap(VBridgeIfPath path, PortMapConfig pmconf) {
-        return null;
+      return new Status(StatusCode.CREATED, "desc");
     }
 
     @Override
