@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -253,7 +253,7 @@ public class VTNManagerStub implements IVTNManager {
 
     @Override
     public Status setPortMap(VBridgeIfPath path, PortMapConfig pmconf) {
-        return null;
+      return new Status(StatusCode.CREATED, "desc");
     }
 
     @Override
