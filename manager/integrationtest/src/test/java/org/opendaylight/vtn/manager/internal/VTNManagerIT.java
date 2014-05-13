@@ -100,6 +100,7 @@ import org.opendaylight.controller.sal.core.Name;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
+import org.opendaylight.controller.sal.core.Path;
 import org.opendaylight.controller.sal.core.Property;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.flowprogrammer.Flow;
@@ -115,6 +116,7 @@ import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.routing.IListenRoutingUpdates;
+import org.opendaylight.controller.sal.routing.IRouting;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
 import org.opendaylight.controller.switchmanager.IInventoryListener;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
@@ -143,6 +145,16 @@ public class VTNManagerIT extends TestBase {
         getLogger(VTNManagerIT.class);
     private static final String BUNDLE_VTN_MANAGER_IMPL =
         "org.opendaylight.vtn.manager.implementation";
+
+    /**
+     * The number of seconds to wait for the latch to be counted down to zero.
+     */
+    private static final long  LATCH_TIMEOUT = 10L;
+
+    /**
+     * The number of seconds to ensure that the latch is not counted down.
+     */
+    private static final long  LATCH_FALSE_TIMEOUT = 2L;
 
     // get the OSGI bundle context
     @Inject
@@ -2593,7 +2605,8 @@ public class VTNManagerIT extends TestBase {
         // In this case, packet is NOT sent.
         assertFalse(emsg, mgr.probeHost(hnc));
         try {
-            assertFalse(emsg, latch.await(2L, TimeUnit.SECONDS));
+            assertFalse(emsg,
+                        latch.await(LATCH_FALSE_TIMEOUT, TimeUnit.SECONDS));
         } catch (InterruptedException e) {
             unexpected(e);
         }
@@ -2611,7 +2624,8 @@ public class VTNManagerIT extends TestBase {
         // In this case, packet is NOT sent.
         assertFalse(emsg, mgr.probeHost(hnc));
         try {
-            assertFalse(emsg, latch.await(2L, TimeUnit.SECONDS));
+            assertFalse(emsg,
+                        latch.await(LATCH_FALSE_TIMEOUT, TimeUnit.SECONDS));
         } catch (InterruptedException e) {
             unexpected(e);
         }
@@ -2631,7 +2645,8 @@ public class VTNManagerIT extends TestBase {
             // In this case, packet is NOT sent.
             assertFalse(emsg, mgr.probeHost(hnc));
             try {
-                assertFalse(emsg, latch.await(2L, TimeUnit.SECONDS));
+                assertFalse(emsg,
+                            latch.await(LATCH_FALSE_TIMEOUT, TimeUnit.SECONDS));
             } catch (InterruptedException e) {
                 unexpected(e);
             }
@@ -2682,7 +2697,7 @@ public class VTNManagerIT extends TestBase {
             latch = dps.setLatch(1);
             assertTrue(emsg, mgr.probeHost(hnc));
             try {
-                assertTrue(emsg, latch.await(2L, TimeUnit.SECONDS));
+                assertTrue(emsg, latch.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
             } catch (InterruptedException e) {
                 unexpected(e);
             }
@@ -2719,7 +2734,8 @@ public class VTNManagerIT extends TestBase {
         latch = dps.setLatch(1);
         assertFalse(emsg, mgr.probeHost(hnc));
         try {
-            assertFalse(emsg, latch.await(2L, TimeUnit.SECONDS));
+            assertFalse(emsg,
+                        latch.await(LATCH_FALSE_TIMEOUT, TimeUnit.SECONDS));
         } catch (InterruptedException e) {
             unexpected(e);
         }
@@ -2821,7 +2837,7 @@ public class VTNManagerIT extends TestBase {
             CountDownLatch latch = dps.setLatch(setBPath.size());
             mgr.findHost(ip4addr, setBPath);
             try {
-                assertTrue(emsg, latch.await(2L, TimeUnit.SECONDS));
+                assertTrue(emsg, latch.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
             } catch (InterruptedException e) {
                 unexpected(e);
             }
@@ -2834,7 +2850,8 @@ public class VTNManagerIT extends TestBase {
             mgr.findHost(ip6addr, setBPath);
             try {
                 // In this case, No packet is sent.
-                assertFalse(emsg, latch.await(2L, TimeUnit.SECONDS));
+                assertFalse(emsg,
+                            latch.await(LATCH_FALSE_TIMEOUT, TimeUnit.SECONDS));
             } catch (InterruptedException e) {
                 unexpected(e);
             }
@@ -2846,7 +2863,8 @@ public class VTNManagerIT extends TestBase {
             mgr.findHost(null, setBPath);
             try {
                 // In this case, No packet is sent.
-                assertFalse(emsg, latch.await(2L, TimeUnit.SECONDS));
+                assertFalse(emsg,
+                            latch.await(LATCH_FALSE_TIMEOUT, TimeUnit.SECONDS));
             } catch (InterruptedException e) {
                 unexpected(e);
             }
@@ -2863,7 +2881,8 @@ public class VTNManagerIT extends TestBase {
         CountDownLatch latch = dps.setLatch(setBPath.size());
         mgr.findHost(ip4addr, setBPath);
         try {
-            assertTrue("all bpathes", latch.await(2L, TimeUnit.SECONDS));
+            assertTrue("all bpathes",
+                       latch.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
         } catch (InterruptedException e) {
             unexpected(e);
         }
@@ -2874,7 +2893,8 @@ public class VTNManagerIT extends TestBase {
         latch = dps.setLatch(listBPath.size());
         mgr.findHost(ip4addr, null);
         try {
-            assertTrue("bpath is null", latch.await(2L, TimeUnit.SECONDS));
+            assertTrue("bpath is null",
+                       latch.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
         } catch (InterruptedException e) {
             unexpected(e);
         }
@@ -2907,7 +2927,8 @@ public class VTNManagerIT extends TestBase {
         mgr.findHost(ip4addr, setDead);
         try {
             // In this case, No packet is sent.
-            assertFalse("invalid port", latch.await(2L, TimeUnit.SECONDS));
+            assertFalse("invalid port",
+                        latch.await(LATCH_FALSE_TIMEOUT, TimeUnit.SECONDS));
         } catch (InterruptedException e) {
             unexpected(e);
         }
@@ -3073,6 +3094,306 @@ public class VTNManagerIT extends TestBase {
     }
 
     /**
+     * An internal class which wait for the specified edge.
+     */
+    private class EdgeWaiter implements IListenRoutingUpdates {
+        /**
+         * The number of milliseconds to wait for the completion of
+         * shortest path recalculation.
+         */
+        private static final long  RECALC_TIMEOUT = 10000L;
+
+        /**
+         * {@link IRouting} service.
+         */
+        private final IRouting  routing;
+
+        /**
+         * Construct a new instance.
+         */
+        private EdgeWaiter() {
+            routing = (IRouting)ServiceHelper.
+                getInstance(IRouting.class, GlobalConstants.DEFAULT.toString(),
+                            VTNManagerIT.this);
+            assertNotNull(routing);
+        }
+
+        /**
+         * Wait for the specified edge to be established.
+         *
+         * @param src  The source node.
+         * @param dst  The destination node.
+         */
+        private void await(Node src, Node dst) {
+            if (routing.getRoute(src, dst) != null) {
+                return;
+            }
+
+            // Register routing listener.
+            Dictionary<String, Object> props = new Hashtable<String, Object>();
+            ServiceRegistration reg = ServiceHelper.
+                registerServiceWReg(IListenRoutingUpdates.class,
+                                    GlobalConstants.DEFAULT.toString(), this,
+                                    props);
+            assertNotNull(reg);
+
+            try {
+                long timeout = RECALC_TIMEOUT;
+                long limit = System.currentTimeMillis() + timeout;
+                synchronized (this) {
+                    Path path;
+                    while ((path = routing.getRoute(src, dst)) == null) {
+                        assertTrue(timeout > 0);
+                        log.trace("Waiting for the edge from {} to {}.",
+                                  src, dst);
+                        wait(timeout);
+
+                        long cur = System.currentTimeMillis();
+                        timeout = limit - cur;
+                    }
+                    log.trace("A required edge has been established: {}", path);
+                }
+            } catch (Exception e) {
+                TestBase.unexpected(e);
+            } finally {
+                reg.unregister();
+            }
+        }
+
+        /**
+         * Invoked when the recalculation of the shortest path tree is done.
+         */
+        @Override
+        public synchronized void recalculateDone() {
+            notify();
+        }
+    }
+
+    /**
+     * An adapter class for {@link IVTNManagerAware}.
+     */
+    protected class VTNManagerAwareAdapter implements IVTNManagerAware {
+        /**
+         * Invoked when the information related to the VTN is changed.
+         *
+         * @param path     A {@link VTenantPath} object that specifies the
+         *                 position of the VTN.
+         * @param vtenant  A {@link VTenant} object which represents the VTN
+         *                 information.
+         * @param type
+         *   An {@link UpdateType} object which indicates the type of
+         *   modification is specified.
+         */
+        @Override
+        public void vtnChanged(VTenantPath path, VTenant vtenant,
+                               UpdateType type) {
+        }
+
+        /**
+         * Invoked when the information related to the vBridge is changed.
+         *
+         * @param path     A {@link VBridgePath} object that specifies the
+         *                 position of the vBridge.
+         * @param vbridge  A {@link VBridge} object which represents the
+         *                 vBridge information.
+         * @param type
+         *   An {@link UpdateType} object which indicates the type of
+         *   modification is specified.
+         */
+        @Override
+        public void vBridgeChanged(VBridgePath path, VBridge vbridge,
+                                   UpdateType type) {
+        }
+
+        /**
+         * Invoked when the information related to the virtual interface
+         * configured in the vBridge is changed.
+         *
+         * @param path    A {@link VBridgeIfPath} object that specifies the
+         *                position of the vBridge interface.
+         * @param viface  A {@link VInterface} object which represents the
+         *                vBridge interface information.
+         * @param type
+         *   An {@link UpdateType} object which indicates the type of
+         *   modification is specified.
+         */
+        @Override
+        public void vBridgeInterfaceChanged(VBridgeIfPath path,
+                                            VInterface viface,
+                                            UpdateType type) {
+        }
+
+        /**
+         * Invoked when the information related to the VLAN mapping
+         * configured in the vBridge is changed.
+         *
+         * @param path   A {@link VBridgePath} object that specifies the
+         *               position of the VBridge.
+         * @param vlmap  A {@link VlanMap} object which represents the VLAN
+         *               mapping information.
+         * @param type
+         *   An {@link UpdateType} object which indicates the type of
+         *   modification is specified.
+         */
+        @Override
+        public void vlanMapChanged(VBridgePath path, VlanMap vlmap,
+                                   UpdateType type) {
+        }
+
+        /**
+         * Invoked when the information related to the port mapping
+         * configured in the vBridge is changed.
+         *
+         * @param path  A {@link VBridgeIfPath} object that specifies the
+         *              position of the vBridge interface.
+         * @param pmap  A {@link PortMap} object which represents the
+         *              port mapping information.
+         * @param type
+         *   An {@link UpdateType} object which indicates the type of
+         *   modification is specified.
+         */
+        @Override
+        public void portMapChanged(VBridgeIfPath path, PortMap pmap,
+                                   UpdateType type) {
+        }
+    }
+
+    /**
+     * An internal class which wait for the vBridge state to be changed.
+     */
+    private class VBridgeStateWaiter extends VTNManagerAwareAdapter {
+        /**
+         * The number of milliseconds to wait the vBridge state to be changed.
+         */
+        private static final long  WAIT_TIMEOUT = 10000L;
+
+        /**
+         * The target vBridge.
+         */
+        private final VBridgePath  bridgePath;
+
+        /**
+         * Expected state of the vBridge.
+         */
+        private final VNodeState  expectedState;
+
+        /**
+         * Expected fault count.
+         */
+        private final int  expectedFaults;
+
+        /**
+         * Set {@code true} if the state of the target vBridge is changed
+         * as expected.
+         */
+        private volatile boolean  changed;
+
+        /**
+         * Construct a new instance.
+         *
+         * @param path   A path to the target vBridge.
+         * @param state  An expected state of the vBridge.
+         */
+        private VBridgeStateWaiter(VBridgePath path, VNodeState state) {
+            this(path, state, -1);
+        }
+
+        /**
+         * Construct a new instance.
+         *
+         * @param path    A path to the target vBridge.
+         * @param state   An expected state of the vBridge.
+         * @param faults  An expected value of the path fault count.
+         *                A negative value means that the path fault count
+         *                should not be observed.
+         */
+        private VBridgeStateWaiter(VBridgePath path, VNodeState state,
+                                   int faults) {
+            bridgePath = path;
+            expectedState = state;
+            expectedFaults = faults;
+        }
+
+        /**
+         * Wait for the vBridge state to be changed as expected.
+         */
+        private void await() {
+            try {
+                VBridge vbridge = vtnManager.getBridge(bridgePath);
+                if (isExpected(vbridge)) {
+                    return;
+                }
+            } catch (Exception e) {
+                TestBase.unexpected(e);
+            }
+
+            // Register VTN listener.
+            Dictionary<String, Object> props = new Hashtable<String, Object>();
+            ServiceRegistration reg = ServiceHelper.
+                registerServiceWReg(IVTNManagerAware.class,
+                                    GlobalConstants.DEFAULT.toString(), this,
+                                    props);
+            assertNotNull(reg);
+
+            try {
+                long timeout = WAIT_TIMEOUT;
+                long limit = System.currentTimeMillis() + timeout;
+                synchronized (this) {
+                    VBridge vbridge = vtnManager.getBridge(bridgePath);
+                    if (isExpected(vbridge)) {
+                        return;
+                    }
+
+                    while (!changed) {
+                        assertTrue(timeout > 0);
+                        log.trace("Waiting for the vBridge state to be " +
+                                  "changed: path={}, state={}, faults={}",
+                                  bridgePath, expectedState, expectedFaults);
+                        wait(timeout);
+
+                        long cur = System.currentTimeMillis();
+                        timeout = limit - cur;
+                    }
+                    log.trace("vBridge state has been changed.");
+                }
+            } catch (Exception e) {
+                TestBase.unexpected(e);
+            } finally {
+                reg.unregister();
+            }
+        }
+
+        /**
+         * Determine whether the specified vBridge information represents
+         * the expected state of the target vBridge.
+         *
+         * @param vbridge  A {@link VBridge} instance to be tested.
+         * @return  {@code true} if the specified vBridge information
+         *          represents the expected state of the target vBridge.
+         *          Otherwise {@code false}.
+         */
+        private boolean isExpected(VBridge vbridge) {
+            return (expectedState.equals(vbridge.getState()) &&
+                    (expectedFaults < 0 ||
+                     expectedFaults == vbridge.getFaults()));
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void vBridgeChanged(VBridgePath path, VBridge vbridge,
+                                   UpdateType type) {
+            if (!type.equals(UpdateType.REMOVED) && isExpected(vbridge)) {
+                synchronized (this) {
+                    changed = true;
+                    notify();
+                }
+            }
+        }
+    }
+
+    /**
      * Test method for
      * {@link IVTNManagerAware#vtnChanged(VTenantPath, VTenant, UpdateType)}
      * {@link IVTNManagerAware#vBridgeChanged(VBridgePath, VBridge, UpdateType)}
@@ -3118,7 +3439,7 @@ public class VTNManagerIT extends TestBase {
                 ServiceHelper.registerServiceWReg(IVTNManagerAware.class, "default",
                                                     listenerRepeated, props);
         assertNotNull(updateServiceRegRepeated);
-        res.await(10L, TimeUnit.SECONDS);
+        res.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
 
         res = listener.restart(1);
 
@@ -3128,7 +3449,7 @@ public class VTNManagerIT extends TestBase {
         st = mgr.addTenant(tpath, new VTenantConfig(null));
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        res.await(10L, TimeUnit.SECONDS);
+        res.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
         assertEquals(1, ups.size());
@@ -3145,7 +3466,7 @@ public class VTNManagerIT extends TestBase {
         st = mgr.addBridge(bpath, new VBridgeConfig(null));
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        res.await(10L, TimeUnit.SECONDS);
+        res.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
         assertEquals(1, ups.size());
@@ -3163,7 +3484,7 @@ public class VTNManagerIT extends TestBase {
         st = mgr.addBridgeInterface(ifpath, ifconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        res.await(10L, TimeUnit.SECONDS);
+        res.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
         assertEquals(1, ups.size());
@@ -3182,7 +3503,7 @@ public class VTNManagerIT extends TestBase {
         st = mgr.setPortMap(ifpath, pmconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        res.await(10L, TimeUnit.SECONDS);
+        res.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
         assertEquals(3, ups.size());
@@ -3212,7 +3533,7 @@ public class VTNManagerIT extends TestBase {
             unexpected(e);
         }
 
-        res.await(10L, TimeUnit.SECONDS);
+        res.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
         assertEquals(1, ups.size());
@@ -3227,7 +3548,7 @@ public class VTNManagerIT extends TestBase {
         st = mgr.modifyTenant(tpath, new VTenantConfig("desc"), false);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        res.await(10L, TimeUnit.SECONDS);
+        res.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
         assertEquals(1, ups.size());
@@ -3242,7 +3563,7 @@ public class VTNManagerIT extends TestBase {
         st = mgr.modifyBridge(bpath, new VBridgeConfig("desc"), false);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        res.await(10L, TimeUnit.SECONDS);
+        res.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
         assertEquals(1, ups.size());
@@ -3258,7 +3579,7 @@ public class VTNManagerIT extends TestBase {
                 new VInterfaceConfig("interface", Boolean.TRUE), false);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        res.await(10L, TimeUnit.SECONDS);
+        res.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
         assertEquals(1, ups.size());
@@ -3275,7 +3596,7 @@ public class VTNManagerIT extends TestBase {
         st = mgr.setPortMap(ifpath, pmconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        res.await(10L, TimeUnit.SECONDS);
+        res.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
         assertEquals(1, ups.size());
@@ -3290,7 +3611,7 @@ public class VTNManagerIT extends TestBase {
         st = mgr.removeVlanMap(bpath, map.getId());
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        res.await(10L, TimeUnit.SECONDS);
+        res.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
         assertEquals(1, ups.size());
@@ -3305,7 +3626,7 @@ public class VTNManagerIT extends TestBase {
         st = mgr.setPortMap(ifpath, null);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        res.await(10L, TimeUnit.SECONDS);
+        res.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
         assertEquals(3, ups.size());
@@ -3330,7 +3651,7 @@ public class VTNManagerIT extends TestBase {
         st = mgr.removeBridgeInterface(ifpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        res.await(10L, TimeUnit.SECONDS);
+        res.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
         assertEquals(1, ups.size());
@@ -3345,7 +3666,7 @@ public class VTNManagerIT extends TestBase {
         st = mgr.removeBridge(bpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        res.await(10L, TimeUnit.SECONDS);
+        res.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
         assertEquals(1, ups.size());
@@ -3360,7 +3681,7 @@ public class VTNManagerIT extends TestBase {
         st =mgr.removeTenant(tpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        res.await(10L, TimeUnit.SECONDS);
+        res.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
 
         ups = listener.getUpdates();
         assertEquals(1, ups.size());
@@ -3380,7 +3701,7 @@ public class VTNManagerIT extends TestBase {
         mgr.modifyBridge(bpath, new VBridgeConfig(null), false);
         mgr.removeTenant(tpath);
 
-        res.await(1L, TimeUnit.SECONDS);
+        res.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
         ups = listener.getUpdates();
         assertEquals(0, ups.size());
     }
@@ -3848,7 +4169,7 @@ public class VTNManagerIT extends TestBase {
         VTenantConfig tconf = new VTenantConfig(null);
         VTenant vtenant = new VTenant("tenant", tconf);
         mgr.addTenant(tpath, tconf);
-        assertTrue(res.await(10L, TimeUnit.SECONDS));
+        assertTrue(res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
         tenantList.delete();
         configFile.delete();
         configFile100.delete();
@@ -3863,7 +4184,7 @@ public class VTNManagerIT extends TestBase {
         res = listener.restart(1);
         cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
                                       false);
-        assertTrue(res.await(10L, TimeUnit.SECONDS));
+        assertTrue(res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
         assertTrue(tenantList.exists());
         assertTrue(configFile.exists());
         assertFalse(configFile100.exists());
@@ -3873,7 +4194,7 @@ public class VTNManagerIT extends TestBase {
         VTenant vtenant100 = new VTenant("tenant100", tconf100);
         res = listener.restart(1);
         mgr.addTenant(tpath100, tconf100);
-        assertTrue(res.await(10L, TimeUnit.SECONDS));
+        assertTrue(res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
         tenantList.delete();
         configFile.delete();
         configFile100.delete();
@@ -3888,7 +4209,7 @@ public class VTNManagerIT extends TestBase {
         res = listener.restart(1);
         cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
                                       false);
-        assertTrue(res.await(10L, TimeUnit.SECONDS));
+        assertTrue(res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
         assertTrue(tenantList.exists());
         assertFalse(configFile.exists());
         assertTrue(configFile100.exists());
@@ -3908,7 +4229,7 @@ public class VTNManagerIT extends TestBase {
         res = listener.restart(1);
         cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
                                       false);
-        assertTrue(res.await(10L, TimeUnit.SECONDS));
+        assertTrue(res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
         checkFileExists(configFile, true, true);
         checkFileExists(configFile100, false, true);
         checkFileExists(tenantList, false, true);
@@ -3923,7 +4244,7 @@ public class VTNManagerIT extends TestBase {
         res = listener.restart(1);
         cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
                                       false);
-        assertTrue(res.await(10L, TimeUnit.SECONDS));
+        assertTrue(res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
         checkFileExists(configFile, false, true);
         checkFileExists(configFile100, true, true);
         checkFileExists(tenantList, false, true);
@@ -3931,7 +4252,7 @@ public class VTNManagerIT extends TestBase {
         res = listener.restart(2);
         mgr.removeTenant(tpath);
         mgr.removeTenant(tpath100);
-        assertTrue(res.await(10L, TimeUnit.SECONDS));
+        assertTrue(res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
 
         // delete
         tenantList.delete();
@@ -3952,7 +4273,7 @@ public class VTNManagerIT extends TestBase {
         res = listener.restart(1);
         cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
                                       false);
-        assertTrue(res.await(10L, TimeUnit.SECONDS));
+        assertTrue(res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
         checkFileExists(configFile, false, false);
         checkFileExists(configFile100, true, false);
         checkFileExists(tenantList, true, true);
@@ -3967,7 +4288,7 @@ public class VTNManagerIT extends TestBase {
         res = listener.restart(1);
         cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
                                       false);
-        assertTrue(res.await(10L, TimeUnit.SECONDS));
+        assertTrue(res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
         checkFileExists(configFile, true, true);
         checkFileExists(configFile100, false, true);
         checkFileExists(tenantList, true, true);
@@ -4240,9 +4561,7 @@ public class VTNManagerIT extends TestBase {
         for (NodeConnector nc: connectors) {
             byte iphost = 1;
             for (EthernetAddress ea: createEthernetAddresses(false)) {
-                byte [] bytes = ea.getValue();
-                byte [] src =
-                        new byte[] {bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5]};
+                byte [] src = ea.getValue();
                 byte [] dst =
                         new byte[] {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
                 byte [] sender = new byte[] {(byte) 192, (byte) 168, (byte) 0, iphost};
@@ -4358,8 +4677,12 @@ public class VTNManagerIT extends TestBase {
         // (Default value of "disabled" time is 3000 ms.)
         sleep(3000 + 100);
 
+        // Update edges, and wait for the shortest path graph to be updated.
+        log.trace("Update edge: {}", listEdge);
         Set<Property> properties = new HashSet<Property>();
         tps.addEdge(listEdge, properties, UpdateType.ADDED);
+        EdgeWaiter waiter = new EdgeWaiter();
+        waiter.await(listNode.get(1), listNode.get(0));
 
         short vtnFlowPriorityDefault = 10;
         short vtnFlowIdleTimeoutDefault = 300;
@@ -4439,9 +4762,7 @@ public class VTNManagerIT extends TestBase {
                 NodeConnector reqNc = listNc.get(0);
                 NodeConnector replyNc = listNc.get(1);
 
-                byte [] bytes = ea.getValue();
-                byte [] src =
-                        new byte[] {bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5]};
+                byte [] src = ea.getValue();
                 byte [] dstBC =
                         new byte[] {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
                 byte [] dst = tgtMac;
@@ -4477,7 +4798,7 @@ public class VTNManagerIT extends TestBase {
             }
 
             try {
-                assertTrue(latch.await(2L, TimeUnit.SECONDS));
+                assertTrue(latch.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
             } catch (InterruptedException e) {
                 unexpected(e);
             }
@@ -4503,8 +4824,10 @@ public class VTNManagerIT extends TestBase {
             }
             mapNodeFlow.clear();
 
-            // from node1 to node0
-            latch = fps.setLatch(listNode.get(0), ethers.size());
+            // Send ARP reply from node1 to node0.
+            // This test will remove flows installed by previous test because
+            // tgtMac is moved from node0 to node1.
+            latch = fps.setLatch(listNode.get(0), ethers.size() * 2);
             CountDownLatch latch2 = fps.setLatch(listNode.get(1), ethers.size());
             iphost = 1;
             for (EthernetAddress ea: ethers) {
@@ -4534,9 +4857,7 @@ public class VTNManagerIT extends TestBase {
                     }
                 }
 
-                byte [] bytes = ea.getValue();
-                byte [] src =
-                        new byte[] {bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5]};
+                byte [] src = ea.getValue();
                 byte [] dstBC =
                         new byte[] {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
                 byte [] dst = tgtMac;
@@ -4590,8 +4911,8 @@ public class VTNManagerIT extends TestBase {
             }
 
             try {
-                assertTrue(latch.await(2L, TimeUnit.SECONDS));
-                assertTrue(latch2.await(2L, TimeUnit.SECONDS));
+                assertTrue(latch.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(latch2.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
             } catch (InterruptedException e) {
                 unexpected(e);
             }
@@ -4758,6 +5079,9 @@ public class VTNManagerIT extends TestBase {
         } catch (VTNException e) {
             unexpected(e);
         }
+        VBridgeStateWaiter waiter =
+            new VBridgeStateWaiter(bpath, VNodeState.UP, 0);
+        waiter.await();
 
         // Get FlowProgrammerService from openflow stub
         ServiceReference r = bc.getServiceReference(IPluginInFlowProgrammerService.class.getName());
@@ -4831,30 +5155,20 @@ public class VTNManagerIT extends TestBase {
             assertEquals(emsg, 0, fps.getFlowCount(listNode.get(i)));
         }
 
-        VBridge vbr = null;
-        try {
-            vbr = vtnManager.getBridge(bpath);
-        } catch (VTNException e) {
-            unexpected(e);
-        }
-        assertEquals(VNodeState.DOWN, vbr.getState());
-
+        waiter = new VBridgeStateWaiter(bpath, VNodeState.DOWN, 1);
+        waiter.await();
 
         // add Edge. (recalculateDone is invoked.)
         Set<Property> properties = new HashSet<Property>();
         tps.addEdge(listEdge, properties, UpdateType.ADDED);
 
-        sleep(2000);
-        try {
-            vbr = vtnManager.getBridge(bpath);
-        } catch (VTNException e) {
-            unexpected(e);
-        }
-        assertEquals(VNodeState.UP, vbr.getState());
-
+        waiter = new VBridgeStateWaiter(bpath, VNodeState.UP, 0);
+        waiter.await();
 
         st = vtnManager.removeVlanMap(bpath, map.getId());
         assertEquals(StatusCode.SUCCESS, st.getCode());
+        waiter = new VBridgeStateWaiter(bpath, VNodeState.UNKNOWN, 0);
+        waiter.await();
 
         st = vtnManager.removeBridge(bpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
@@ -4950,7 +5264,7 @@ public class VTNManagerIT extends TestBase {
             CountDownLatch res = dps.setLatch(existConnectors.size());
             hostFinder.find(ia);
             try {
-                assertTrue(emsg, res.await(2L, TimeUnit.SECONDS));
+                assertTrue(emsg, res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -4962,7 +5276,8 @@ public class VTNManagerIT extends TestBase {
             hostFinder.find(ia6);
             try {
                 // In this state, NO packet is sent.
-                assertFalse(emsg, res.await(2L, TimeUnit.SECONDS));
+                assertFalse(emsg,
+                            res.await(LATCH_FALSE_TIMEOUT, TimeUnit.SECONDS));
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -4974,7 +5289,8 @@ public class VTNManagerIT extends TestBase {
             hostFinder.find(null);
             try {
                 // In this state, NO packet is sent.
-                assertFalse(emsg, res.await(2L, TimeUnit.SECONDS));
+                assertFalse(emsg,
+                            res.await(LATCH_FALSE_TIMEOUT, TimeUnit.SECONDS));
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -5002,13 +5318,21 @@ public class VTNManagerIT extends TestBase {
             } else {
                 found = true;
             }
-            int count = (found) ? 1 : 0;
+            int count;
+            long tmout;
+            if (found) {
+                count = 1;
+                tmout = LATCH_TIMEOUT;
+            } else {
+                count = 0;
+                tmout = LATCH_FALSE_TIMEOUT;
+            }
 
             dps.clearPkt();
             res = dps.setLatch(1);
             hostFinder.probe(hnode);
             try {
-                assertEquals(emsg, found, res.await(2L, TimeUnit.SECONDS));
+                assertEquals(emsg, found, res.await(tmout, TimeUnit.SECONDS));
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -5020,7 +5344,8 @@ public class VTNManagerIT extends TestBase {
             hostFinder.probe(null);
             try {
                 // In this state, NO packet is sent.
-                assertFalse(emsg, res.await(2L, TimeUnit.SECONDS));
+                assertFalse(emsg,
+                            res.await(LATCH_FALSE_TIMEOUT, TimeUnit.SECONDS));
             } catch (Exception e) {
                 unexpected(e);
             }

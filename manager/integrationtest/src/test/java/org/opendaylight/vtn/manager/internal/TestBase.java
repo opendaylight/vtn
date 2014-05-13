@@ -44,7 +44,7 @@ public abstract class TestBase extends Assert {
      *
      * @param t  A throwable.
      */
-    protected static void unexpected(Throwable t) {
+    static void unexpected(Throwable t) {
         throw new AssertionError("Unexpected throwable: " + t, t);
     }
 
