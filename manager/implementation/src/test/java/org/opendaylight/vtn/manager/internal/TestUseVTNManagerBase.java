@@ -61,6 +61,11 @@ public class TestUseVTNManagerBase extends TestBase {
     protected int stubMode;
 
     /**
+     * The number of milliseconds to wait for VTN events.
+     */
+    private static final long  EVENT_TIMEOUT = 10000L;
+
+    /**
      * Construct a new instance.
      *
      * @param stub  An integer value to be passed to {@link TestStub}.
@@ -166,7 +171,7 @@ public class TestUseVTNManagerBase extends TestBase {
      * Flush all pending tasks on the VTN flow thread.
      */
     protected void flushFlowTasks() {
-        flushFlowTasks(10000L);
+        flushFlowTasks(EVENT_TIMEOUT);
     }
 
     /**
@@ -477,7 +482,7 @@ public class TestUseVTNManagerBase extends TestBase {
         public synchronized void checkVtnInfo(int count, VTenantPath path,
                                        UpdateType type) {
             if (vtnChangedCalled < count) {
-                long milli = 1000;
+                long milli = EVENT_TIMEOUT;
                 long limit = System.currentTimeMillis() + milli;
                 do {
                     try {
@@ -515,7 +520,7 @@ public class TestUseVTNManagerBase extends TestBase {
         synchronized void checkVbrInfo(int count, VBridgePath path,
                                        UpdateType type) {
             if (vbrChangedCalled < count) {
-                long milli = 1000;
+                long milli = EVENT_TIMEOUT;
                 long limit = System.currentTimeMillis() + milli;
                 do {
                     try {
@@ -553,7 +558,7 @@ public class TestUseVTNManagerBase extends TestBase {
         synchronized void checkVIfInfo(int count, VBridgeIfPath path,
                                       UpdateType type) {
             if (vIfChangedCalled < count) {
-                long milli = 1000;
+                long milli = EVENT_TIMEOUT;
                 long limit = System.currentTimeMillis() + milli;
                 do {
                     try {
@@ -592,7 +597,7 @@ public class TestUseVTNManagerBase extends TestBase {
         synchronized void checkVlmapInfo(int count, VBridgePath path,
                                          String id, UpdateType type) {
             if (vlanMapChangedCalled < count) {
-                long milli = 1000;
+                long milli = EVENT_TIMEOUT;
                 long limit = System.currentTimeMillis() + milli;
                 do {
                     try {
@@ -633,7 +638,7 @@ public class TestUseVTNManagerBase extends TestBase {
         synchronized void checkPmapInfo(int count, VBridgeIfPath path,
                                         PortMapConfig pconf, UpdateType type) {
             if (portMapChangedCalled < count) {
-                long milli = 1000;
+                long milli = EVENT_TIMEOUT;
                 long limit = System.currentTimeMillis() + milli;
                 do {
                     try {
@@ -726,7 +731,7 @@ public class TestUseVTNManagerBase extends TestBase {
 
         private synchronized int getCalledCount(int expected) {
             if (calledCount < expected) {
-                long milli = 1000;
+                long milli = EVENT_TIMEOUT;
                 long limit = System.currentTimeMillis() + milli;
                 do {
                     try {
@@ -748,7 +753,7 @@ public class TestUseVTNManagerBase extends TestBase {
 
         private synchronized Boolean getCalledArg() {
             if (oldactive == null) {
-                long milli = 1000;
+                long milli = EVENT_TIMEOUT;
                 long limit = System.currentTimeMillis() + milli;
                 do {
                     try {
