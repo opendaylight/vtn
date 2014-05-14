@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Cisco Systems, Inc. and others.  All rights reserved.
+ * Copyright (c) 2013-2014 Cisco Systems, Inc. and others.  All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 
 import org.slf4j.Logger;
@@ -35,11 +34,10 @@ public class FlowProgrammerService implements IPluginInFlowProgrammerService
             .getLogger(FlowProgrammerService.class);
 
     private final Map<Node, CountDownLatch> mapLatch= new HashMap<Node, CountDownLatch>();
-    Map<Node, List<Flow>> mapNF = null;
+    private final Map<Node, List<Flow>> mapNF = new HashMap<Node, List<Flow>>();
 
     void init() {
         logger.debug("openflow stub FlowProgrammerService init called.");
-        mapNF = new HashMap<Node, List<Flow>>();
     }
 
     /**
@@ -196,28 +194,34 @@ public class FlowProgrammerService implements IPluginInFlowProgrammerService
     }
 
     public int getFlowCount(Node node) {
-        List<Flow> list = mapNF.get(node);
-        if (list == null) {
-            return 0;
+        synchronized (mapNF) {
+            List<Flow> list = mapNF.get(node);
+            if (list == null) {
+                return 0;
+            }
+            return list.size();
         }
-        return list.size();
     }
 
     public List<Flow> getFlows(Node node) {
-        List<Flow> list = mapNF.get(node);
-        if (list == null) {
-            return new ArrayList<Flow>();
+        synchronized (mapNF) {
+            List<Flow> list = mapNF.get(node);
+            if (list == null) {
+                return new ArrayList<Flow>();
+            }
+            return list;
         }
-        return list;
     }
 
     private void addFlowInternal(Node node, Flow flow) {
-        List<Flow> list = mapNF.get(node);
-        if (list == null) {
-            list = new CopyOnWriteArrayList<Flow>();
-            mapNF.put(node, list);
+        synchronized (mapNF) {
+            List<Flow> list = mapNF.get(node);
+            if (list == null) {
+                list = new ArrayList<Flow>();
+                mapNF.put(node, list);
+            }
+            list.add(flow);
         }
-        list.add(flow);
 
         CountDownLatch latch = mapLatch.get(node);
         if (latch != null) {
@@ -226,11 +230,13 @@ public class FlowProgrammerService implements IPluginInFlowProgrammerService
     }
 
     private void removeFlowInternal(Node node, Flow flow) {
-        List<Flow> list = mapNF.get(node);
-        if (list == null) {
-            return;
+        synchronized (mapNF) {
+            List<Flow> list = mapNF.get(node);
+            if (list == null) {
+                return;
+            }
+            list.remove(flow);
         }
-        list.remove(flow);
 
         CountDownLatch latch = mapLatch.get(node);
         if (latch != null) {
@@ -239,16 +245,20 @@ public class FlowProgrammerService implements IPluginInFlowProgrammerService
     }
 
     public void clearFlow(Node node) {
-        List<Flow> listFlow = mapNF.get(node);
-        if (listFlow == null) {
-            return;
-        }
+        synchronized (mapNF) {
+            List<Flow> listFlow = mapNF.get(node);
+            if (listFlow == null) {
+                return;
+            }
 
-        listFlow.clear();
+            listFlow.clear();
+        }
     }
 
     public void clearFlowAll() {
-        mapNF.clear();
+        synchronized (mapNF) {
+            mapNF.clear();
+        }
         mapLatch.clear();
     }
 }
