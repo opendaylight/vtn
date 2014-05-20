@@ -1,0 +1,7 @@
+Code-Review+2: Shigeru Yasuda <s-yasuda@da.jp.nec.com>
+Verified+1: jenkins-vtn <jenkins-vtn@opendaylight.org>
+Submitted-by: Shigeru Yasuda <s-yasuda@da.jp.nec.com>
+Submitted-at: Tue, 20 May 2014 00:37:42 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/7230
+Project: vtn
+Branch: refs/heads/stable/hydrogen
