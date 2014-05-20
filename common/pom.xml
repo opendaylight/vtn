@@ -108,4 +108,29 @@
     </dependency>
   </dependencies>
 
+  <profiles>
+    <profile>
+      <id>viewbuild</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <build.suffix>${project.version}</build.suffix>
+        <vtn.build.id />
+      </properties>
+    </profile>
+    <profile>
+      <id>jenkins</id>
+      <activation>
+        <property>
+          <name>BUILDSUFFIX</name>
+        </property>
+      </activation>
+      <properties>
+        <build.suffix>${BUILDSUFFIX}</build.suffix>
+        <vtn.build.id>${BUILDSUFFIX}</vtn.build.id>
+      </properties>
+    </profile>
+  </profiles>
+
 </project>

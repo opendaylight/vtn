@@ -34,25 +34,13 @@
 
   <profiles>
     <profile>
-      <id>viewbuild</id>
+      <id>integrationtests</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <activeByDefault>false</activeByDefault>
       </activation>
+      <!-- Run all tests. -->
       <properties>
-        <build.suffix>${project.version}</build.suffix>
-        <vtn.build.id />
-      </properties>
-    </profile>
-    <profile>
-      <id>jenkins</id>
-      <activation>
-        <property>
-          <name>BUILDSUFFIX</name>
-        </property>
-      </activation>
-      <properties>
-        <build.suffix>${BUILDSUFFIX}</build.suffix>
-        <vtn.build.id>${BUILDSUFFIX}</vtn.build.id>
+        <maven.test.skip>false</maven.test.skip>
       </properties>
     </profile>
   </profiles>
@@ -61,9 +49,9 @@
     <execplugin.version>1.1.1</execplugin.version>
     <buildhelper.version>1.8</buildhelper.version>
 
-    <!-- Run tests by default. -->
+    <!-- Skip tests entirely unless integrationtests profile is active. -->
     <skipTests>false</skipTests>
-    <maven.test.skip>false</maven.test.skip>
+    <maven.test.skip>true</maven.test.skip>
 
     <vtn.java.libdir>${basedir}/target/java</vtn.java.libdir>
     <vtn.tomcat.libdir>${basedir}/target/tomcat</vtn.tomcat.libdir>

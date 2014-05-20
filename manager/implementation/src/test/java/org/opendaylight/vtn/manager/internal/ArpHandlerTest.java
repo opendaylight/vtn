@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.core.ConstructionException;
@@ -42,6 +43,7 @@ import org.opendaylight.vtn.manager.VBridgePath;
 /**
  * JUnit test for {@link ArpHandler}
  */
+@Category(SlowTest.class)
 public class ArpHandlerTest extends VTNManagerImplTestCommon {
 
     /**

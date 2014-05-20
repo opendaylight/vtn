@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal.cluster;
 
 import java.util.Hashtable;
@@ -16,6 +17,7 @@ import java.util.TimerTask;
 
 import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -33,9 +35,12 @@ import org.opendaylight.vtn.manager.internal.TestStubCluster;
 import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
+import org.opendaylight.vtn.manager.internal.SlowTest;
+
 /**
  * JUnit test for {@link FlowModResultEvent}.
  */
+@Category(SlowTest.class)
 public class FlowModResultEventTest extends FlowModTaskTestBase {
 
     /**

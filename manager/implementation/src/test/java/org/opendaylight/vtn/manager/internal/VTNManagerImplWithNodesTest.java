@@ -27,6 +27,7 @@ import org.apache.felix.dm.Component;
 import org.apache.felix.dm.impl.ComponentImpl;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import org.opendaylight.controller.clustering.services.IClusterContainerServices;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
@@ -90,6 +91,7 @@ import org.opendaylight.vtn.manager.internal.cluster.VlanMapImpl;
  * {@link VlanMapImpl} are also implemented in this class.
  * </p>
  */
+@Category(SlowTest.class)
 public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
     /**
      * Construct a new instance.

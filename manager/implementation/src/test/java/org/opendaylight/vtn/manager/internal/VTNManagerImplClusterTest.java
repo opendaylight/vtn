@@ -27,6 +27,7 @@ import org.apache.felix.dm.impl.ComponentImpl;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.connection.ConnectionLocality;
@@ -101,6 +102,7 @@ import org.opendaylight.vtn.manager.internal.cluster.VlanMapEvent;
  * on the environment some nodes exist in cluster mode.
  * </p>
  */
+@Category(SlowTest.class)
 public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
     /**
      * Construct a new instance.
