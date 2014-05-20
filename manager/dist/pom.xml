@@ -36,14 +36,9 @@
     <module>../neutron</module>
     <module>../northbound</module>
 
-    <!-- Tests -->
-    <module>../integrationtest</module>
-    <module>../northboundIT</module>
-
     <!-- Parents -->
     <module>../checkstyle</module>
     <module>../common</module>
-    <module>../common.it</module>
     <module>../../common</module>
   </modules>
 
@@ -127,4 +122,19 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>integrationtests</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <modules>
+        <!-- Run integration tests if integrationtests profile is active. -->
+        <module>../integrationtest</module>
+        <module>../northboundIT</module>
+        <module>../common.it</module>
+      </modules>
+    </profile>
+  </profiles>
 </project>

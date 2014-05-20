@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
@@ -24,6 +25,8 @@ import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.FlowModTaskTestBase;
 import org.opendaylight.vtn.manager.internal.L2Host;
+
+import org.opendaylight.vtn.manager.internal.SlowTest;
 
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.action.Action;
@@ -44,6 +47,7 @@ import org.opendaylight.controller.sal.utils.NodeCreator;
 /**
  * JUnit Test for {@link VTNFlow}
  */
+@Category(SlowTest.class)
 public class VTNFlowTest extends FlowModTaskTestBase {
     /**
      * Test case for getter methods.

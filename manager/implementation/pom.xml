@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2013 NEC Corporation
+# Copyright (c) 2013-2014 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -37,10 +37,37 @@
     <sonar.jacoco.Reportpath>target/jacoco.exec</sonar.jacoco.Reportpath>
     <sonar.jacoco.itReportPath>target/jacoco-it.exec</sonar.jacoco.itReportPath>
     <sonar.language>java</sonar.language>
+
+    <!-- Skip slow tests unless integrationtests profile is active. -->
+    <vtn.test.slowtest>
+      org.opendaylight.vtn.manager.internal.SlowTest
+    </vtn.test.slowtest>
   </properties>
+
+  <profiles>
+    <profile>
+      <id>integrationtests</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <properties>
+        <!-- Run all tests. -->
+        <vtn.test.slowtest />
+      </properties>
+    </profile>
+  </profiles>
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>${testvm.argLine}</argLine>
+          <excludedGroups>${vtn.test.slowtest}</excludedGroups>
+        </configuration>
+      </plugin>
+
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>

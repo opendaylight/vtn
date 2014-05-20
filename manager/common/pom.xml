@@ -83,63 +83,6 @@
     <javadoc.exclude>*.internal</javadoc.exclude>
   </properties>
 
-  <profiles>
-    <profile>
-      <id>viewbuild</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <properties>
-        <build.suffix>${project.version}</build.suffix>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>jenkins</id>
-      <activation>
-        <property>
-          <name>BUILDSUFFIX</name>
-        </property>
-      </activation>
-      <properties>
-        <build.suffix>${BUILDSUFFIX}</build.suffix>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>fastreassembly</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-dependency-plugin</artifactId>
-            <version>${maven-dependency.version}</version>
-            <executions>
-              <execution>
-                <id>copyfastreassembly</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>copy</goal>
-                </goals>
-                <configuration>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>${project.groupId}</groupId>
-                      <artifactId>${project.artifactId}</artifactId>
-                      <version>${project.version}</version>
-                      <destFileName>${project.groupId}.${project.artifactId}-${project.version}.jar</destFileName>
-                    </artifactItem>
-                  </artifactItems>
-                  <outputDirectory>${fastreassembly.directory}</outputDirectory>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
-
   <repositories>
     <!-- OpenDayLight repository mirror -->
     <repository>

@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.felix.dm.impl.ComponentImpl;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import org.opendaylight.controller.sal.core.ConstructionException;
 import org.opendaylight.controller.sal.core.Node;
@@ -43,6 +44,7 @@ import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
 /**
  * JUnit test for {@link MacAddressTable}.
  */
+@Category(SlowTest.class)
 public class MacAddressTableTest extends TestUseVTNManagerBase {
 
     // The Test class which implemented DataLinkAddress class.

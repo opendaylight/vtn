@@ -32,6 +32,7 @@ import org.apache.felix.dm.Component;
 import org.apache.felix.dm.impl.ComponentImpl;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import org.opendaylight.vtn.manager.IVTNManagerAware;
 import org.opendaylight.vtn.manager.IVTNModeListener;
@@ -107,6 +108,7 @@ import org.opendaylight.controller.topologymanager.ITopologyManager;
  * {@link VlanMapImpl} are also implemented in this class.
  * </p>
  */
+@Category(SlowTest.class)
 public class VTNManagerImplTest extends VTNManagerImplTestCommon {
     /**
      * Construct a new instance.

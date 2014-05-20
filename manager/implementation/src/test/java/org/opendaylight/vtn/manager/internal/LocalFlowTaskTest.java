@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal;
 
 import java.util.Set;
@@ -15,6 +16,8 @@ import java.util.TimerTask;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -29,6 +32,7 @@ import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 /**
  * JUnit test for {@link LocalFlowAddTask} and {@link LocalFlowRemoveTask}.
  */
+@Category(SlowTest.class)
 public class LocalFlowTaskTest extends FlowModTaskTestBase {
 
     @Before
