@@ -259,7 +259,7 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
         VBridgeIfPath path = new VBridgeIfPath(tenantName, bridgeName, ifName);
         Status status = mgr.addBridgeInterface(path, iconf);
         if (status.isSuccess()) {
-            return Response.created(uriInfo.getRequestUri()).build();
+            return Response.created(uriInfo.getAbsolutePath()).build();
         }
 
         throw getException(status);

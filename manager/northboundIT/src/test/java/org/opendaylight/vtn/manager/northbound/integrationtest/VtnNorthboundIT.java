@@ -507,7 +507,10 @@ public class VtnNorthboundIT extends TestBase {
         // Test POST vtn8, setting invalid value after description to requestBody
         requestBody = "{\"description\":\"" + desc1 + "\", \"Timeout\":\"" + timeout0 + "\", \"hard\":\"" + timeout0 + "\"}";
         requestUri = baseURL + "default/vtns/" + tname8;
-        result = getJsonResult(requestUri, "POST", requestBody);
+
+        // Ensure that query parameters are eliminated from Location.
+        result = getJsonResult(requestUri + "?param1=1&param2=2", "POST",
+                               requestBody);
         Assert.assertEquals(201, httpResponseCode.intValue());
         Assert.assertEquals(requestUri, httpLocation);
 
@@ -1088,7 +1091,10 @@ public class VtnNorthboundIT extends TestBase {
         // Test POST vBridge4
         requestBody = "{\"description\":\"" + desc1 + "\", \"ageInterval\":\"" + ageinter4 + "\"}";
         requestUri = baseURL + tname1 + "/vbridges/" + bname4;
-        result = getJsonResult(requestUri, "POST", requestBody);
+
+        // Ensure that query parameters are eliminated from Location.
+        result = getJsonResult(requestUri + "?param1=1&param2=2", "POST",
+                               requestBody);
         Assert.assertEquals(201, httpResponseCode.intValue());
         Assert.assertEquals(requestUri, httpLocation);
 
@@ -1615,7 +1621,10 @@ public class VtnNorthboundIT extends TestBase {
         // Test POST vBridge Interface5
         requestBody = "{\"description\":\"" + desc3 + "\"}";
         requestUri = baseURL + bname1 + "/interfaces/" + ifname5;
-        result = getJsonResult(requestUri, "POST", requestBody);
+
+        // Ensure that query parameters are eliminated from Location.
+        result = getJsonResult(requestUri + "?param1=1&param2=2", "POST",
+                               requestBody);
         Assert.assertEquals(201, httpResponseCode.intValue());
         Assert.assertEquals(requestUri, httpLocation);
 
@@ -2602,7 +2611,10 @@ public class VtnNorthboundIT extends TestBase {
         // Test POST VLAN Mapping, setting requestBody without node elements
         requestBody = "{\"vlan\":\"" + vlan3 +"\"}";
         requestUri = baseURL + bname2 + "/vlanmaps";
-        result = getJsonResult(requestUri, "POST", requestBody);
+
+        // Ensure that query parameters are eliminated from Location.
+        result = getJsonResult(requestUri + "?param1=1&param2=2", "POST",
+                               requestBody);
         Assert.assertEquals(201, httpResponseCode.intValue());
         loc = requestUri + "/" + "ANY" + "." + vlan3;
         Assert.assertEquals(loc, httpLocation);
