@@ -234,7 +234,7 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
         VTenantPath path = new VTenantPath(tenantName);
         Status status = mgr.addTenant(path, tconf);
         if (status.isSuccess()) {
-            return Response.created(uriInfo.getRequestUri()).build();
+            return Response.created(uriInfo.getAbsolutePath()).build();
         }
 
         throw getException(status);

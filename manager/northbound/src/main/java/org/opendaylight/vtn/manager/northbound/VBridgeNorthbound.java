@@ -255,7 +255,7 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
         VBridgePath path = new VBridgePath(tenantName, bridgeName);
         Status status = mgr.addBridge(path, bconf);
         if (status.isSuccess()) {
-            return Response.created(uriInfo.getRequestUri()).build();
+            return Response.created(uriInfo.getAbsolutePath()).build();
         }
 
         throw getException(status);
@@ -568,13 +568,7 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
 
             // Return CREATED with Location header.
             String id = vmap.getId();
-            String uri = uriInfo.getAbsolutePath().toASCIIString();
-            StringBuilder builder = new StringBuilder(uri);
-            if (uri.charAt(uri.length() - 1) != '/') {
-                builder.append('/');
-            }
-            builder.append(id);
-            URI vmapUri = URI.create(builder.toString());
+            URI vmapUri = uriInfo.getAbsolutePathBuilder().path(id).build();
             return Response.created(vmapUri).build();
         } catch (VTNException e) {
             throw getException(e.getStatus());
