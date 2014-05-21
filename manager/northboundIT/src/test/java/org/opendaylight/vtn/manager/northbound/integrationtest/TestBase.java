@@ -9,6 +9,7 @@
 
 package org.opendaylight.vtn.manager.northbound.integrationtest;
 
+import java.io.File;
 import java.net.InetAddress;
 import java.util.HashSet;
 import java.util.Set;
@@ -149,4 +150,18 @@ public abstract class TestBase extends Assert {
         return createRawPacket(createARPPacket(src, dst, sender, target, vlan, arptype), nc);
     }
 
+    /**
+     * Detele the specified file.
+     *
+     * @param file  A {@link File} to be deleted.
+     */
+    protected static void delete(File file) {
+        File[] list = file.listFiles();
+        if (list != null) {
+            for (File f: list) {
+                delete(f);
+            }
+        }
+        file.delete();
+    }
 }

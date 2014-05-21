@@ -295,6 +295,9 @@
         <configuration>
           <filesets>
             <fileset>
+              <directory>configuration</directory>
+            </fileset>
+            <fileset>
               <directory>ObjectStore</directory>
             </fileset>
             <fileset>

@@ -23,4 +23,7 @@
   <root level="error">
     <appender-ref ref="STDOUT" />
   </root>
+
+  <logger name="org.opendaylight.vtn.manager.internal.VTNManagerIT"
+          level="INFO"/>
 </configuration>

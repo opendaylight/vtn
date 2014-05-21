@@ -72,10 +72,14 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-clean-plugin</artifactId>
         <version>${clean.version}</version>
         <configuration>
           <filesets>
+            <fileset>
+              <directory>configuration</directory>
+            </fileset>
             <fileset>
               <directory>ObjectStore</directory>
             </fileset>

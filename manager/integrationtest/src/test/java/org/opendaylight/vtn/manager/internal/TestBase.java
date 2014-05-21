@@ -11,6 +11,7 @@ package org.opendaylight.vtn.manager.internal;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
@@ -770,5 +771,20 @@ public abstract class TestBase extends Assert {
 
         assertNotSame(o, newobj);
         assertEquals(o, newobj);
+    }
+
+    /**
+     * Detele the specified file.
+     *
+     * @param file  A {@link File} to be deleted.
+     */
+    protected void delete(File file) {
+        File[] list = file.listFiles();
+        if (list != null) {
+            for (File f: list) {
+                delete(f);
+            }
+        }
+        file.delete();
     }
 }

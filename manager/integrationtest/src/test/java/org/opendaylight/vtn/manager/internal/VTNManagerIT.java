@@ -6,13 +6,12 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,6 +53,20 @@ import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
+import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.exam.junit.Configuration;
+import org.ops4j.pax.exam.junit.ExamReactorStrategy;
+import org.ops4j.pax.exam.junit.PaxExam;
+import org.ops4j.pax.exam.spi.reactors.PerClass;
+import org.ops4j.pax.exam.util.PathUtils;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.framework.Version;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.opendaylight.vtn.manager.BundleVersion;
 import org.opendaylight.vtn.manager.IVTNGlobal;
 import org.opendaylight.vtn.manager.IVTNManager;
@@ -78,6 +91,12 @@ import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantEvent;
+
+import org.opendaylight.vtn.manager.integrationtest.internal.DataPacketServices;
+import org.opendaylight.vtn.manager.integrationtest.internal.FlowProgrammerService;
+import org.opendaylight.vtn.manager.integrationtest.internal.InventoryService;
+import org.opendaylight.vtn.manager.integrationtest.internal.TopologyServices;
+
 import org.opendaylight.controller.clustering.services.ICacheUpdateAware;
 import org.opendaylight.controller.configuration.IConfigurationContainerAware;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
@@ -123,24 +142,9 @@ import org.opendaylight.controller.switchmanager.IInventoryListener;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
 import org.opendaylight.controller.switchmanager.Subnet;
 import org.opendaylight.controller.topologymanager.ITopologyManagerAware;
-import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.exam.junit.Configuration;
-import org.ops4j.pax.exam.junit.PaxExam;
-import org.ops4j.pax.exam.util.PathUtils;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
-import org.osgi.framework.ServiceRegistration;
-import org.osgi.framework.Version;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.opendaylight.vtn.manager.integrationtest.internal.DataPacketServices;
-import org.opendaylight.vtn.manager.integrationtest.internal.FlowProgrammerService;
-import org.opendaylight.vtn.manager.integrationtest.internal.InventoryService;
-import org.opendaylight.vtn.manager.integrationtest.internal.TopologyServices;
-
 
 @RunWith(PaxExam.class)
+@ExamReactorStrategy(PerClass.class)
 public class VTNManagerIT extends TestBase {
     private static final Logger log = LoggerFactory.
         getLogger(VTNManagerIT.class);
@@ -178,6 +182,13 @@ public class VTNManagerIT extends TestBase {
     // Configure the OSGi container
     @Configuration
     public Option[] config() {
+        // Create configuration directory.
+        File confdir = new File(GlobalConstants.STARTUPHOME.toString());
+        if (confdir.exists()) {
+            delete(confdir);
+        }
+        confdir.mkdirs();
+
         return options(
                 //
                 systemProperty("logback.configurationFile").value(
@@ -302,6 +313,8 @@ public class VTNManagerIT extends TestBase {
 
         // Assert if true, if false we are good to go!
         assertFalse(debugit);
+        assertNotNull(implBundle);
+        assertEquals(Bundle.ACTIVE, implBundle.getState());
 
         ServiceReference r = bc.getServiceReference(IVTNManager.class.getName());
         if (r != null) {
@@ -328,34 +341,26 @@ public class VTNManagerIT extends TestBase {
         assertNotNull(this.vtnGlobal);
     }
 
-    @BeforeClass
-    public static void before() {
-        File confdir = new File(GlobalConstants.STARTUPHOME.toString());
-        boolean result = confdir.exists();
-        if (!result) {
-            result = confdir.mkdirs();
+    /**
+     * Called when a test suite quits.
+     */
+    @After
+    public void tearDown() {
+        if (vtnManager == null) {
+            return;
         }
-    }
 
-    @AfterClass
-    public static void after() {
-        String currdir = new File(".").getAbsoluteFile().getParent();
-        File confdir = new File(GlobalConstants.STARTUPHOME.toString());
-
-        if (confdir.exists()) {
-            File[] list = confdir.listFiles();
-            for (File f : list) {
-                f.delete();
+        try {
+            // Remove all VTNs in the default container.
+            for (VTenant vtn: vtnManager.getTenants()) {
+                String name = vtn.getName();
+                log.debug("Clean up VTN: {}", name);
+                VTenantPath path = new VTenantPath(name);
+                Status st = vtnManager.removeTenant(path);
+                assertEquals(StatusCode.SUCCESS, st.getCode());
             }
-
-            while (confdir != null && confdir.getAbsolutePath() != currdir) {
-                confdir.delete();
-                String pname = confdir.getParent();
-                if (pname == null) {
-                    break;
-                }
-                confdir = new File(pname);
-            }
+        } catch (Exception e) {
+            unexpected(e);
         }
     }
 
@@ -386,8 +391,9 @@ public class VTNManagerIT extends TestBase {
      * {@link IVTNManager#isActive()}
      */
     private void testAddGetRemoveTenant() {
-        IVTNManager mgr = this.vtnManager;
+        log.info("Running testAddGetRemoveTenant().");
 
+        IVTNManager mgr = this.vtnManager;
         List<VTenantPath> tpathes = new ArrayList<VTenantPath>();
         List<String> descs = new ArrayList<String>();
         List<Integer> ivs = new ArrayList<Integer>();
@@ -572,6 +578,8 @@ public class VTNManagerIT extends TestBase {
      * {@link IVTNManager#modifyTenant(VTenantPath, VTenantConfig, boolean)}
      */
     private void testModifyTenant() {
+        log.info("Running testModifyTenant().");
+
         IVTNManager mgr = this.vtnManager;
         List<VTenantPath> tpathes = new ArrayList<VTenantPath>();
         List<String> descs = new ArrayList<String>();
@@ -885,6 +893,8 @@ public class VTNManagerIT extends TestBase {
      * {@link IVTNManager#getBridge(VBridgePath)}.
      */
     private void testBridge() {
+        log.info("Running testBridge().");
+
         IVTNManager mgr = this.vtnManager;
         List<Integer> ages = new ArrayList<Integer>();
         List<String> tlist = new ArrayList<String>();
@@ -1315,6 +1325,7 @@ public class VTNManagerIT extends TestBase {
      * {@link IVTNManager#getBridgeInterface(VBridgeIfPath)}.
      */
     private void testBridgeInterface() {
+        log.info("Running testBridgeInterface().");
         IVTNManager mgr = this.vtnManager;
         List<String> tlist = new ArrayList<String>();
         List<String> blist = new ArrayList<String>();
@@ -1851,6 +1862,8 @@ public class VTNManagerIT extends TestBase {
      * {@link IVTNManager#getVlanMaps(VBridgePath)}.
      */
     private void testVlanMap() {
+        log.info("Running testVlanMap().");
+
         IVTNManager mgr = this.vtnManager;
         short[] vlans = new short[] { -1, 0, 1, 10, 100, 1000, 4094, 4095, 4096 };
 
@@ -2191,6 +2204,8 @@ public class VTNManagerIT extends TestBase {
      * {@link IVTNManager#setPortMap(VBridgeIfPath, PortMapConfig)}.
      */
     private void testPortMap() {
+        log.info("Running testPortMap().");
+
         IVTNManager mgr = this.vtnManager;
         short[] vlans = new short[] { -1, 0, 1, 10, 100, 1000, 4094, 4095, 4096 };
 
@@ -2554,6 +2569,8 @@ public class VTNManagerIT extends TestBase {
      * Test case for {@link IVTNManager#probeHost(HostNodeConnector)}.
      */
     private void testProbeHost() {
+        log.info("Running testProbeHost().");
+
         IVTNManager mgr = this.vtnManager;
         ServiceReference r = bc.getServiceReference(ISwitchManager.class.getName());
         ISwitchManager swmgr = (ISwitchManager)(bc.getService(r));
@@ -2759,6 +2776,8 @@ public class VTNManagerIT extends TestBase {
      * Test case for {@link IVTNManager#findHost(InetAddress, Set)}.
      */
     private void testFindHost() {
+        log.info("Running testFindHost().");
+
         IVTNManager mgr = this.vtnManager;
         ServiceReference r = bc.getServiceReference(ISwitchManager.class.getName());
         ISwitchManager swmgr = (ISwitchManager)(bc.getService(r));
@@ -2952,6 +2971,8 @@ public class VTNManagerIT extends TestBase {
      * Test case for {@link IVTNGlobal}.
      */
     private void testIVTNGlobal() {
+        log.info("Running testIVTNGlobal().");
+
         int api = vtnGlobal.getApiVersion();
         assertTrue("API version = " + api, api > 0);
 
@@ -3045,7 +3066,7 @@ public class VTNManagerIT extends TestBase {
 
         @Override
         public void vtnChanged(VTenantPath path, VTenant vtenant, UpdateType type) {
-            log.debug("VTNManager[{}] Got an vtn changed for path:{} object:{}", path, vtenant);
+            log.debug("VTNManager[{}] Got a vtn changed for path:{} object:{}", path, vtenant);
             Update u = new Update(type, path, vtenant);
             this.gotUpdates.add(u);
             if (latch != null) {
@@ -3055,7 +3076,7 @@ public class VTNManagerIT extends TestBase {
 
         @Override
         public void vBridgeChanged(VBridgePath path, VBridge vbridge, UpdateType type) {
-            log.debug("VTNManager[{}] Got an vbridge changed for path:{} object:{}", path, vbridge);
+            log.debug("VTNManager[{}] Got a vbridge changed for path:{} object:{}", path, vbridge);
             Update u = new Update(type, path, vbridge);
             this.gotUpdates.add(u);
             if (latch != null) {
@@ -3065,7 +3086,7 @@ public class VTNManagerIT extends TestBase {
 
         @Override
         public void vBridgeInterfaceChanged(VBridgeIfPath path, VInterface viface, UpdateType type) {
-            log.debug("VTNManager[{}] Got an vbridge interface changed for path:{} object:{}", path, viface);
+            log.debug("VTNManager[{}] Got a vbridge interface changed for path:{} object:{}", path, viface);
             Update u = new Update(type, path, viface);
             this.gotUpdates.add(u);
             if (latch != null) {
@@ -3075,7 +3096,7 @@ public class VTNManagerIT extends TestBase {
 
         @Override
         public void vlanMapChanged(VBridgePath path, VlanMap vlmap, UpdateType type) {
-            log.debug("VTNManager[{}] Got an vlan map changed for path:{} object:{}", path, vlmap);
+            log.debug("VTNManager[{}] Got a vlan map changed for path:{} object:{}", path, vlmap);
             Update u = new Update(type, path, vlmap);
             this.gotUpdates.add(u);
             if (latch != null) {
@@ -3085,7 +3106,7 @@ public class VTNManagerIT extends TestBase {
 
         @Override
         public void portMapChanged(VBridgeIfPath path, PortMap pmap, UpdateType type) {
-            log.debug("VTNManager[{}] Got an port map changed for path:{} object:{}", path, pmap);
+            log.debug("VTNManager[{}] Got a port map changed for path:{} object:{}", path, pmap);
             Update u = new Update(type, path, pmap);
             this.gotUpdates.add(u);
             if (latch != null) {
@@ -3406,6 +3427,8 @@ public class VTNManagerIT extends TestBase {
      */
     @Test
     public void testIVTNManagerAware() throws InterruptedException, VTNException {
+        log.info("Running testIVTNManagerAware().");
+
         IVTNManager mgr = this.vtnManager;
 
         String tname1 = "tenant1";
@@ -3717,6 +3740,8 @@ public class VTNManagerIT extends TestBase {
      */
     @Test
     public void testMacEntry() {
+        log.info("Running testMacEntry().");
+
         class DataLinkAddressStub extends DataLinkAddress {
             private static final long serialVersionUID = -9043768232113080608L;
 
@@ -4083,9 +4108,10 @@ public class VTNManagerIT extends TestBase {
      * test method for {@link IVTNManager#isActive()}
      */
     private void testIsActive() {
-        IVTNManager mgr = this.vtnManager;
+        log.info("Running testIsActive().");
 
         // There is NO VTN.
+        IVTNManager mgr = this.vtnManager;
         try {
             List<VTenant> listVTN = mgr.getTenants();
             assertTrue(listVTN.isEmpty());
@@ -4110,6 +4136,8 @@ public class VTNManagerIT extends TestBase {
      */
     @Test
     public void testIObjectReader() {
+        log.info("Running testIObjectReader().");
+
         Object o = new VTenantPath("tenant");
         byte[] bytes = null;
         try {
@@ -4147,6 +4175,8 @@ public class VTNManagerIT extends TestBase {
      */
     @Test
     public void testICacheUpdateAware() throws InterruptedException {
+        log.info("Running testICacheUpdateAware().");
+
         IVTNManager mgr = vtnManager;
         String root = GlobalConstants.STARTUPHOME.toString();
         String tenantListFileName = root + "vtn-default-tenant-names.conf";
@@ -4328,6 +4358,7 @@ public class VTNManagerIT extends TestBase {
      */
     @Test
     public void testIConfigurationContainerAware() {
+        log.info("Running testIConfigurationContainerAware().");
         Status st = configContainerAware.saveConfiguration();
         assertEquals(StatusCode.SUCCESS, st.getCode());
     }
@@ -4337,6 +4368,8 @@ public class VTNManagerIT extends TestBase {
      */
     @Test
     public void testIInventoryListener() {
+        log.info("Running testIInventoryListener().");
+
         IInventoryListener mgr = inventoryListener;
         short[] vlans = new short[] { 0, 10, 4095 };
 
@@ -4554,6 +4587,8 @@ public class VTNManagerIT extends TestBase {
      */
     @Test
     public void testIListenDataPacket() {
+        log.info("Running testIListenDataPacket().");
+
         ServiceReference r = bc.getServiceReference(ISwitchManager.class.getName());
         ISwitchManager swmgr = (ISwitchManager)(bc.getService(r));
         byte[] cntMac = swmgr.getControllerMAC();
@@ -5012,6 +5047,8 @@ public class VTNManagerIT extends TestBase {
      */
     @Test
     public void testIListenRoutingUpdates() {
+        log.info("Running testIListenRoutingUpdates().");
+
         String tname = "vtn";
         VTenantPath tpath = new VTenantPath(tname);
         Status st = vtnManager.addTenant(tpath, new VTenantConfig(null));
@@ -5195,6 +5232,8 @@ public class VTNManagerIT extends TestBase {
      */
     @Test
     public void testIHostFinder() {
+        log.info("Running testIHostFinder().");
+
         IVTNManager mgr = vtnManager;
         Status st = null;
 
@@ -5375,6 +5414,7 @@ public class VTNManagerIT extends TestBase {
      */
     @Test
     public void testIVTNModeListener() {
+        log.info("Running testIVTNModeListener().");
 
         // stub for test
         class VTNModeListenerStub implements IVTNModeListener {
