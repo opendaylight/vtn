@@ -22,7 +22,7 @@ Installing ODL Controller and Execution
 1.Unzip the file as follows.
   This will create a directory with name "opendaylight".
 
-    # unzip distributions-virtualization-0.1.0.osgipackage.zip
+    # unzip distributions-virtualization-0.1.1-1.osgipackage.zip
 
 2. Please ensure the environment variable JAVA_HOME is set to the location
    of the JDK.
@@ -40,7 +40,7 @@ Installing the VTN Coordinator
 
 1. The VTN Coordinator is available in the "externalapps" directory of the
    virtualization edition as the tarball named
-   org.opendaylight.vtn.distribution.vtn-coordinator-5.0.0.0-bin.tar.bz2.
+   org.opendaylight.vtn.distribution.vtn-coordinator-5.0.0.0-1-bin.tar.bz2.
 
    If you want to run the VTN Coordinator on a different machine, copy the
    tarball to the target machine.
@@ -49,7 +49,7 @@ Installing the VTN Coordinator
    This will install the VTN Coordinator to /usr/local/vtn directory.
 
      # tar -C / -xvjf \
-       org.opendaylight.vtn.distribution.vtn-coordinator-5.0.0.0-bin.tar.bz2
+       org.opendaylight.vtn.distribution.vtn-coordinator-5.0.0.0-1-bin.tar.bz2
 
 Launch the VTN Coordinator
 --------------------------
