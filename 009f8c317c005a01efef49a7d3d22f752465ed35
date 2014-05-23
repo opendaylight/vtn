@@ -1,0 +1,106 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fa82b9bf_0e47a51e",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/OVSDBPluginEventHandler.java",
+        "patchSetId": 6
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-05-23T09:06:06Z",
+      "side": 1,
+      "message": "Remove this line because java.io.InputStream is not used.",
+      "revId": "009f8c317c005a01efef49a7d3d22f752465ed35",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_ae5559c7",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/OVSDBPluginEventHandler.java",
+        "patchSetId": 6
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-05-23T09:06:06Z",
+      "side": 1,
+      "message": "Remove this line because java.io.FileReader is not used.",
+      "revId": "009f8c317c005a01efef49a7d3d22f752465ed35",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_ce50ddd6",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/OVSDBPluginEventHandler.java",
+        "patchSetId": 6
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-05-23T09:06:06Z",
+      "side": 1,
+      "message": "Remove this line because java.io.IOException is not used.",
+      "revId": "009f8c317c005a01efef49a7d3d22f752465ed35",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_8e62d5ab",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/OVSDBPluginEventHandler.java",
+        "patchSetId": 6
+      },
+      "lineNbr": 203,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-05-23T09:06:06Z",
+      "side": 1,
+      "message": "Indent is wrong.",
+      "revId": "009f8c317c005a01efef49a7d3d22f752465ed35",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_ee4b6129",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/OVSDBPluginEventHandler.java",
+        "patchSetId": 6
+      },
+      "lineNbr": 308,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-05-23T09:06:06Z",
+      "side": 1,
+      "message": "Expected @param tag for obj.",
+      "revId": "009f8c317c005a01efef49a7d3d22f752465ed35",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_6e5f51e6",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/OVSDBPluginEventHandler.java",
+        "patchSetId": 6
+      },
+      "lineNbr": 709,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-05-23T09:06:06Z",
+      "side": 1,
+      "message": "Insert a white space after \u0027,\u0027.",
+      "revId": "009f8c317c005a01efef49a7d3d22f752465ed35",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
