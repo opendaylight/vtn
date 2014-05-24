@@ -6,1153 +6,100 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.neutron;
 
 import org.junit.Test;
+
 import java.util.UUID;
 import java.math.BigInteger;
+
 import org.opendaylight.ovsdb.lib.notation.OvsDBSet;
 import org.opendaylight.ovsdb.lib.table.Bridge;
 import org.opendaylight.ovsdb.lib.table.Interface;
-import org.opendaylight.ovsdb.lib.table.internal.Table;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.vtn.manager.IVTNManager;
-import static org.junit.Assert.assertEquals;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import org.opendaylight.ovsdb.lib.notation.OvsDBMap;
+
+import static org.junit.Assert.assertEquals;
+
 /**
  * JUnit test for {@link OVSDBPluginEventHandler}.
  */
-  public class OVSDBPluginEventHandlerTest extends TestBase {
-    /**
-     * Test method for
-     * {@link OVSDBPluginEventHandler#getIntegrationBridgeName()}.
-     * Test IntegrationBridgeName with value.
-     */
-    @Test
-      public void testIntegrationBridgeNameValue() {
-        OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-        ovsdb.setIntegrationBridgeName("value");
-        assertEquals("value",
-            ovsdb.getIntegrationBridgeName());
-      }
-
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#getFailmode()}.
-      * Test getFailmode method.
-      */
-    @Test
-      public void testFailModeValue() {
-        OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-        ovsdb.setFailmode("fail_value");
-        assertEquals("fail_value", ovsdb.getFailmode());
-      }
-
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#getFailmode()}.
-      * Test getProtocol method.
-      */
-    @Test
-      public void testgetProtocolsValue() {
-        OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-        ovsdb.setProtocols("protocols_value");
-        assertEquals("protocols_value", ovsdb.getProtocols());
-      }
-
-    /**
-     * Test method for
-     * {@link OVSDBPluginEventHandler#getPortName()}.
-     * Test getPortName method.
-     */
-    @Test
-      public void testgetPortValue() {
-        OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-        ovsdb.setPortName("ports_value");
-        assertEquals("ports_value", ovsdb.getPortName());
-      }
-    /**
-     * Test method for
-     * {@link OVSDBPluginEventHandler#createInternalNetworkForNeutron(Node)}.
-     * Test Node Add method when Config Service is Null.
-     */
-    @Test
-      public void testNodeAddedOVSDBConfigServiceNull() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("333");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          IVTNManager mgr = new VTNManagerStub();
-          ovsdb.setVTNManager(mgr);
-          ovsdb.createInternalNetworkForNeutron(nodeObj);
-          assertEquals(0, 1);
-        } catch (Exception ex) {
-          assertEquals(null, ex.getMessage());
-          //OVSDB Config Service object is Null
-          assertEquals(0, 0);
-        }
-      }
-
-    /**
-     * Test method for
-     * {@link OVSDBPluginEventHandler#createInternalNetworkForNeutron(Node)}.
-     * Test Node Add method with proper values.
-     */
-    @Test
-      public void testNodeAddedSuccesfully() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("51");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.createInternalNetworkForNeutron(nodeObj);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          // Node Add is Successful , so this catch part should not be executed
-          assertEquals(0, 1);
-        }
-      }
-
-    /**
-     * Test method for
-     * {@link OVSDBPluginEventHandler#createInternalNetworkForNeutron(Node)}.
-     * Test Node Add method when Status uuid is Null.
-     */
-    @Test
-      public void testNodeAddStatusUuidNull() {
-        try {
-          String onePk = "PK";
-          String retVal = "return";
-          Node nodeObj = new Node(onePk, retVal);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.createInternalNetworkForNeutron(nodeObj);
-          // Node not added createInternalNetworkForNeutron throws exception
-          assertEquals(0, 1);
-        } catch (Exception ex) {
-          assertEquals(null, ex.getMessage());
-          // Node Add is not Successful , so this catch part should be executed
-          assertEquals(0, 0);
-        }
-      }
-
-    /**
-     * Test method for
-     * {@link OVSDBPluginEventHandler#createInternalNetworkForNeutron(Node)}.
-     * Test Node add Method when status uuid is undefined.
-     */
-    @Test
-      public void testNodeAddStatusUuidUndefined() {
-        try {
-          String retVal = "return";
-          String production = "PR";
-
-          Node nodeObj = new Node(production, retVal);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.createInternalNetworkForNeutron(nodeObj);
-          // Node not added createInternalNetworkForNeutron
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          // Node Add is not Successful , but catch part should not be executed
-          assertEquals(0, 1);
-        }
-      }
-
-    /**
-     * Test method for
-     * {@link OVSDBPluginEventHandler#createInternalNetworkForNeutron(Node)}.
-     * Test Node Add method when Status uuid is create.
-     */
-    @Test
-      public void testNodeAddStatusUuidCreate() {
-        try {
-          String pcep = "PE";
-          UUID idOne = UUID.randomUUID();
-
-          Node nodeObj = new Node(pcep, idOne);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.createInternalNetworkForNeutron(nodeObj);
-          // Node added createInternalNetworkForNeutron
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          // Node Add is Successful , so catch part should not be executed
-          assertEquals(0, 1);
-        }
-      }
-    /**
-     * Test method for
-     * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-     * Test update Row method.
-     */
+public class OVSDBPluginEventHandlerTest extends TestBase {
+  /**
+   * Test method for
+   * {@link OVSDBPluginEventHandler#getIntegrationBridgeName()}.
+   * Test GetSet Methods in OVSDBPluginEventHandler with value.
+   */
   @Test
-      public void testUpdateRow() {
-        try {
-          String pcep = "PE";
-          UUID idOne = UUID.randomUUID();
+    public void testSetGetMethods() {
+      OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
+      ovsdb.setIntegrationBridgeName(BRIDGENAME);
+      ovsdb.setFailmode(FAILMODE);
+      ovsdb.setProtocols(PROTOCOLS);
+      ovsdb.setPortName(PORTNAME);
+      assertEquals(BRIDGENAME,
+          ovsdb.getIntegrationBridgeName());
+      assertEquals(FAILMODE, ovsdb.getFailmode());
+      assertEquals(PROTOCOLS, ovsdb.getProtocols());
+      assertEquals(PORTNAME, ovsdb.getPortName());
+    }
 
-
-          Node nodeObj = new Node(pcep, idOne);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-
-          ConcurrentMap<String, Table<?>>  oldTable = new ConcurrentHashMap();
-          ConcurrentMap<String, Table<?>>  newTable = new ConcurrentHashMap();
-
-          Bridge bridge = new Bridge();
-          bridge.setName("br-int");
-          oldTable.put("1", bridge);
-
-          Bridge newBridge = new Bridge();
-          newBridge.setName("br-int1");
-          newTable.put("1", newBridge);
-        } catch (Exception ex) {
-          // Node Add is Successful , so catch part should not be executed
-          assertEquals(0, 0);
-        }
-      }
-
-    /**
-     * Test method for
-     * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-     * Test Node update method when Neutron Port as Bridge.
-     */
-    @Test
-      public void testNodeUpdatedNeutronPortAsBridge() {
+  /**
+   * Test method for
+   * {@link OVSDBPluginEventHandler#createInternalNetworkForNeutron(Node)}.
+   * Test createInternalNetworkForNeutron Method.
+   */
+  @Test
+    public void createInternalNetworkForNeutron() {
+      for (int i=0; i<CREATE_NETWORK_ARRAY.length; i++) {
         try {
-          String pcep = "PE";
-          UUID idOne = UUID.randomUUID();
-          Node nodeObj = new Node(pcep, idOne);
           OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          Bridge bridge = new Bridge();
-          bridge.setName("br-int");
-          // Send Bridge instead of Interface
-          ovsdb.rowUpdated(nodeObj, "Interface", "edf", bridge, bridge);
-          assertEquals(0, 1);
-        } catch (Exception ex) {
-          assertEquals("org.opendaylight.ovsdb.lib.table.Bridge cannot be cast to org.opendaylight.ovsdb.lib.table.Interface", ex.getMessage());
-          assertEquals(0, 0);
-        }
-      }
-    /**
-     * Test method for
-     * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-     * Test Node Update method when the Neutron Port is Null.
-     */
-    @Test
-      public void testNodeUpdatedNeutronPortNull() {
-        try {
-          String pcep = "PE";
-          UUID idOne = UUID.randomUUID();
-          Node nodeObj = new Node(pcep, idOne);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          Interface bridge = new Interface();
-          bridge.setName("br-int");
-          ovsdb.rowUpdated(nodeObj, "Interface", "edf", null, null);
-          // Node added createInternalNetworkForNeutron
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(null, ex.getMessage());
-          // Node Add is Successful , so catch part should not be executed
-          assertEquals(0, 1);
-        }
-      }
-
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node Update Method when Neutron port new row is Null.
-      */
-    @Test
-      public void testNodeUpdatedNeutronPortNewRowNull() {
-        try {
-          String pcep = "PE";
-          UUID idOne = UUID.randomUUID();
-          Node nodeObj = new Node(pcep, idOne);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          Interface bridge = new Interface();
-          bridge.setName("br-int");
-          ovsdb.rowUpdated(nodeObj, "Interface", "edf", bridge, null);
-          assertEquals(0, 1);
-        } catch (Exception ex) {
-          assertEquals(null, ex.getMessage());
-          assertEquals(0, 0);
-        }
-      }
-
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node update method when there is no external id.
-      */
-    @Test
-      public void testNodeUpdatedNeutronPortNoExternalId() {
-        try {
-          String pcep = "PE";
-          UUID idOne = UUID.randomUUID();
-          Node nodeObj = new Node(pcep, idOne);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          Interface bridge = new Interface();
-          bridge.setName("br-int");
-          ovsdb.rowUpdated(nodeObj, "Interface", "edf", bridge, bridge);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(0, 1);
-        }
-      }
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node update method when the external id is wrong.
-      */
-   @Test
-     public void testNodeUpdatedExternalIdWrong() {
-        try {
-          String pcep = "PE";
-          UUID idOne = UUID.randomUUID();
-          Node nodeObj = new Node(pcep, idOne);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("1iface-id", "ovsdb");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(nodeObj, "Interface", "edf", intfOld, intfNew);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(0, 1);
-        }
-      }
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Nodeupdate method when the Neutron Port CRUD is Null.
-      */
-   @Test
-      public void testNodeUpdatedNeutronCURDNull() {
-        try {
-          String pcep = "PE";
-          UUID idOne = UUID.randomUUID();
-          Node nodeObj = new Node(pcep, idOne);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(nodeObj, "Interface", "edf", intfOld, intfNew);
-          assertEquals(1, 0);
-        } catch (Exception ex) {
-          // Expected Catch should be called NeutronCURD is Null
-          assertEquals(0, 0);
-          assertEquals(null, ex.getMessage());
-        }
-      }
-
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node Update method when the NeutronPort is Null.
-      */
-    @Test
-      public void testNodeUpdatedNeutronCURDNotNullNeutronPortNull() {
-        try {
-          String pcep = "PE";
-          UUID idOne = UUID.randomUUID();
-          Node nodeObj = new Node(pcep, idOne);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(nodeObj, "Interface", "edf", intfOld, intfNew);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(1, 0);
-        }
-      }
-
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node Update Method when Neutron Port is Not Null.
-      */
-     @Test
-      public void testNodeUpdatedNeutronCURDNotNullNeutronPortNotNull() {
-        try {
-          String pcep = "PE";
-          UUID idOne = UUID.randomUUID();
-          Node nodeObj = new Node(pcep, idOne);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.createInternalNetworkForNeutron(nodeObj);
-          ovsdb.setNeutronPortCRUD(neutron);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(nodeObj, "Interface", "edf", intfOld, intfNew);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(1, 0);
-        }
-      }
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node Update Method when there is No port.
-      */
-    @Test
-      public void testNodeUpdatedSwitchIdFromInterfaceNoPort() {
-        try {
-          String pcep = "PE";
-          UUID idOne = UUID.randomUUID();
-          Node nodeObj = new Node(pcep, idOne);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(nodeObj, "Interface", "edf", intfOld, intfNew);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(1, 0);
-        }
-      }
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}
-      *  Make getRows Null.
-      *  Test Node update method when the Interface Get row is Null.
-      */
-    @Test
-      public void testNodeUpdatedSwitchIdFromInterfacePortGetRowNull() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("0");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(nodeObj, "Interface", "edf", intfOld, intfNew);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(1, 0);
-        }
-      }
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}
-      * Get Interfaces alone Null.
-      * Test Node update method when the Get Interface is Null.
-      */
-     @Test
-      public void testNodeUpdatedSwitchIdFromInterfacePortGetInterfacesNull() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("3");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(nodeObj, "Interface", "edf", intfOld, intfNew);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(1, 0);
-        }
-      }
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node update method when the Get Interface Row is Null.
-      */
-    @Test
-      public void testNodeUpdatedSwitchIdFromInterfacePortGetInterfacesRowNull() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("5");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(1, 0);
-        }
-      }
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node Update method when the Uuid is Null.
-      */
-    @Test
-      public void testNodeUpdatedInterfaceUuidNameNull() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("5");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(nodeObj, "Interface", null, intfOld, intfNew);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(1, 0);
-        }
-      }
-
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node update Method when the Node is Null.
-      */
-    @Test
-      public void testNodeUpdatedNodeNull() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("5");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(null, "Interface", "bb", intfOld, intfNew);
-          assertEquals(1, 0);
-        } catch (Exception ex) {
-          assertEquals(null, ex.getMessage());
-          assertEquals(0, 0);
-        }
-      }
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test the Node update method when the interface not matches.
-      */
-    @Test
-      public void testNodeUpdatedInterfaceNotMatches() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("2");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(1, 0);
-        }
-      }
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node update method when there is Empty port.
-      */
-   @Test
-      public void testNodeUpdateEmptyPort() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("4");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(1, 0);
-        }
-      }
-
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node update method when there is no Interface table.
-      */
-    @Test
-      public void testNodeUpdateNewTableNotInterfaceTable() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("4");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Bridge intfNew = new Bridge();
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb");
-          intfNew.setExternal_ids(mapOvsdb);
-          Interface bb = new Interface();
-          ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", bb, intfNew);
-          assertEquals(1, 0);
-          // Node added createInternalNetworkForNeutron
-        } catch (Exception ex) {
-          // Expected Catch should be called because Bridge is sent instead of Interface
-          assertEquals("org.opendaylight.ovsdb.lib.table.Bridge cannot be cast to org.opendaylight.ovsdb.lib.table.Interface", ex.getMessage());
-          assertEquals(0, 0);
-        }
-      }
-
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node update method not a interface table.
-      */
-    @Test
-      public void testNodeUpdateNotInterfaceTable() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("4");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb");
-          intfNew.setExternal_ids(mapOvsdb);
-
-          Bridge bb = new Bridge();
-          ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", bb, intfNew);
-          assertEquals(1, 0);
-          // Node added createInternalNetworkForNeutron
-        } catch (Exception ex) {
-          // Expected Catch should be called because Bridge is sent instead of Interface
-          assertEquals("org.opendaylight.ovsdb.lib.table.Bridge cannot be cast to org.opendaylight.ovsdb.lib.table.Interface", ex.getMessage());
-          assertEquals(0, 0);
-        }
-      }
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node update method when the getDataPathId is Null.
-      */
-   @Test
-      public void testNodeUpdategetDataPathIdNull() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("5");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(1, 0);
-        }
-      }
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node update method when the Interface port is not filled.
-      */
-   @Test
-      public void testNodeUpdategetDataPathIdNotNullInterfaceGetPortNotFilled() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("100");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(1, 0);
-        }
-      }
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node update method when the Get port is Null.
-      */
-   @Test
-      public void testNodeUpdategetDataPathIdNotNullInterfaceGetPortNull() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("100");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          OvsDBSet<BigInteger> ovsdbInt = null;
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          intfOld.setOfport(ovsdbInt);
-          Interface intfNew = new Interface();
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(1, 0);
-        }
-      }
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node update method when the Get Port is Empty.
-      */
-   @Test
-      public void testNodeUpdategetDataPathIdNotNullInterfaceGetPortEmpty() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("100");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          OvsDBSet<BigInteger> ovsdbInt = new  OvsDBSet<BigInteger>();
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          intfOld.setOfport(ovsdbInt);
-          Interface intfNew = new Interface();
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(1, 0);
-        }
-      }
-
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node update method when the VTN Identifiers are Null.
-      */
-    @Test
-      public void testNodeUpdatesetPortMapForInterfaceLongValueSuccessgetVTNIdentifiersNull() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("5");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          OvsDBSet<BigInteger> ovsdbint = new OvsDBSet<BigInteger>();
-          BigInteger a = new BigInteger("33333");
-          ovsdbint.add(a);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          intfNew.setOfport(ovsdbint);
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(1, 0);
-        }
-      }
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node update method when the TenantUUID not Null.
-      */
-    @Test
-      public void testNodeUpdategetVTNIdentifiersTenentUUIDNotNull() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("101");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          OvsDBSet<BigInteger> ovsdbint = new OvsDBSet<BigInteger>();
-          BigInteger a = new BigInteger("33333");
-          ovsdbint.add(a);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          intfNew.setOfport(ovsdbint);
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb1");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(1, 0);
-        }
-      }
-
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node Update Method when the bridge UUid not Null.
-      */
-    @Test
-      public void testNodeUpdategetVTNIdentifiersbridgeUUIDNotNull() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("101");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          OvsDBSet<BigInteger> ovsdbint = new OvsDBSet<BigInteger>();
-          BigInteger a = new BigInteger("33333");
-          ovsdbint.add(a);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          intfNew.setOfport(ovsdbint);
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb_bridgeUUID");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(1, 0);
-        }
-      }
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node update Method when the Port UUID not Null.
-      */
-    @Test
-      public void testNodeUpdategetVTNIdentifiersPortUUIDNotNull() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("101");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          OvsDBSet<BigInteger> ovsdbint = new OvsDBSet<BigInteger>();
-          BigInteger a = new BigInteger("33333");
-          ovsdbint.add(a);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          intfNew.setOfport(ovsdbint);
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb_portUUID");
-          intfNew.setExternal_ids(mapOvsdb);
-          ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(1, 0);
-        }
-      }
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowUpdated(Node, String , String , Table, Table)}.
-      * Test Node update method when the VTNIdentifiers is Success.
-      */
-    @Test
-      public void testNodeUpdategetVTNIdentifiersSuccess() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("101");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.createInternalNetworkForNeutron(nodeObj);
-          ovsdb.setNeutronPortCRUD(neutron);
-          OvsDBSet<BigInteger> ovsdbint = new OvsDBSet<BigInteger>();
-          BigInteger a = new BigInteger("33333");
-          ovsdbint.add(a);
-          Interface intfOld = new Interface();
-          intfOld.setName("intf-int");
-          Interface intfNew = new Interface();
-          intfNew.setOfport(ovsdbint);
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "neutron_fill");
-          intfNew.setExternal_ids(mapOvsdb);
           IVTNManager mgr = new VTNManagerStub();
+          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
           ovsdb.setVTNManager(mgr);
-          ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(1, 0);
-        }
-      }
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowRemoved(Node, String , String , Table, Object)}.
-      * Test node row remove Method with VTNIdentifiers success.
-      */
-     @Test
-        public void testRowRemovedVTNIdentifiersSuccess() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("101");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          OvsDBSet<BigInteger> ovsdbint = new OvsDBSet<BigInteger>();
-          BigInteger a = new BigInteger("33333");
-          ovsdbint.add(a);
-          Interface intfRow = new Interface();
-          intfRow.setName("intf-int");
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "neutron_fill");
-          intfRow.setExternal_ids(mapOvsdb);
-          IVTNManager mgr = new VTNManagerStub();
-          ovsdb.setVTNManager(mgr);
-          Object obj = new Object();
-          ovsdb.rowRemoved(nodeObj, "Interface", "intf-row1", intfRow, obj);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(1, 0);
-        }
-      }
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowRemoved(Node , String , String , Table, Object)}.
-      * Test node row remove method without setmanager method.
-      */
-   @Test
-       public void testRowRemovedVTNIdentifiersWithoutSetManager() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("101");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          OvsDBSet<BigInteger> ovsdbint = new OvsDBSet<BigInteger>();
-          BigInteger a = new BigInteger("33333");
-          ovsdbint.add(a);
-          Interface intfRow = new Interface();
-          intfRow.setName("intf-int");
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "neutron_fill");
-          intfRow.setExternal_ids(mapOvsdb);
-          IVTNManager mgr = new VTNManagerStub();
-          Object obj = new Object();
-          ovsdb.rowRemoved(nodeObj, "Interface", "intf-row1", intfRow, obj);
-          assertEquals(1, 0);
-        } catch (Exception ex) {
-          assertEquals(null, ex.getMessage());
-          assertEquals(0, 0);
-        }
-      }
 
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowRemoved(Node , String , String , Table, Object)}.
-      * Test method for Node row remove method when interface value is NULL.
-      */
-    @Test
-       public void testRowRemovedVTNIdentifiersIntfNull() {
+          if (OPENFLOW.equalsIgnoreCase(CREATE_NETWORK_ARRAY[i][0])) {
+            Long longObj = new Long(Long.parseLong(CREATE_NETWORK_ARRAY[i][1]));
+            Node nodeObj = new Node(CREATE_NETWORK_ARRAY[i][0], longObj);
+            ovsdb.createInternalNetworkForNeutron(nodeObj);
+          } else if ((ONEPK.equalsIgnoreCase(CREATE_NETWORK_ARRAY[i][0])) ||
+              (PRODUCTION.equalsIgnoreCase(CREATE_NETWORK_ARRAY[i][0]))) {
+            Node nodeObj = new Node(CREATE_NETWORK_ARRAY[i][0], CREATE_NETWORK_ARRAY[i][1]);
+            ovsdb.createInternalNetworkForNeutron(nodeObj);
+          } else if(PCEP.equalsIgnoreCase(CREATE_NETWORK_ARRAY[i][0])) {
+            UUID idOne = new UUID(0L, 0L);
+            Node nodeObj = new Node(CREATE_NETWORK_ARRAY[i][0], idOne);
+            ovsdb.nodeAdded(nodeObj);
+          }
+          if (CREATE_NETWORK_ARRAY[i][3].equalsIgnoreCase("1")) {
+            assertEquals(1, 0);
+          } else if(CREATE_NETWORK_ARRAY[i][3].equalsIgnoreCase("0")) {
+            assertEquals(0, 0);
+          }
+
+        } catch (Exception ex) {
+          if (CREATE_NETWORK_ARRAY[i][3].equalsIgnoreCase("1")) {
+            if ("null".equalsIgnoreCase(CREATE_NETWORK_ARRAY[i][4])) {
+              assertEquals(null, ex.getMessage());
+            }
+          }
+        }
+      }
+    }
+
+  /**
+   * Test method for
+   * {@link OVSDBPluginEventHandler#rowRemoved(Node, String, String, Table, Object)}.
+   * Test rowRemoved Method in OVSDBPluginEventHandler.
+   */
+  @Test
+    public void testRowRemoved() {
+      for(int test = 0; test < ROW_REMOVE_ARRAY.length; test++) {
         try {
-          String openFlow = "OF";
-          Long longObj = new Long("101");
-          Node nodeObj = new Node(openFlow, longObj);
+          Long longObj = new Long(ROW_REMOVE_ARRAY[test][0]);
+          Node nodeObj = new Node(OPENFLOW, longObj);
           OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
           NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
           ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
@@ -1161,32 +108,196 @@ import org.opendaylight.ovsdb.lib.notation.OvsDBMap;
           ovsdb.setConnectionService(connectionService);
           ovsdb.setNeutronPortCRUD(neutron);
           OvsDBSet<BigInteger> ovsdbint = new OvsDBSet<BigInteger>();
-          BigInteger a = new BigInteger("33333");
+          BigInteger a = new BigInteger("65534");
           ovsdbint.add(a);
           Interface intfRow = new Interface();
-          intfRow.setName("intf-int");
+          intfRow.setName(ROW_REMOVE_ARRAY[test][1]);
           OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "neutron_fill");
+          mapOvsdb.put("iface-id", ROW_REMOVE_ARRAY[test][2]);
           intfRow.setExternal_ids(mapOvsdb);
-          IVTNManager mgr = new VTNManagerStub();
           Object obj = new Object();
-          ovsdb.rowRemoved(nodeObj, "Interface", "intf-row1", null, obj);
-          assertEquals(0, 0);
+          if("0D2206F8-B700-4F78-913D-9CE7A2D78473".equalsIgnoreCase(ROW_REMOVE_ARRAY[test][2])) {
+            IVTNManager mgr = new VTNManagerStub();
+            ovsdb.setVTNManager(mgr);
+            ovsdb.rowRemoved(nodeObj, "Interface", "85c27f20-f218-11e3-a7b6-0002a5d5c51b", intfRow, obj);
+            if("0".equalsIgnoreCase(ROW_REMOVE_ARRAY[test][4])){
+              assertEquals(0, 0);
+            }
+          } else if("C387EB44-7832-49F4-B9F0-D30D27770883".equalsIgnoreCase(ROW_REMOVE_ARRAY[test][2])) {
+            IVTNManager mgr = new VTNManagerStub();
+            ovsdb.setVTNManager(mgr);
+            ovsdb.rowRemoved(nodeObj, "Interface", "85c27f20-f218-11e3-a7b6-0002a5d5c51b", intfRow, obj);
+            if("0".equalsIgnoreCase(ROW_REMOVE_ARRAY[test][4])){
+              assertEquals(0, 0);
+            }
+          } else if("C387EB44-7832-49F4-B9F0-D30D27770883".equalsIgnoreCase(ROW_REMOVE_ARRAY[test][2])) {
+            IVTNManager mgr = new VTNManagerStub();
+            ovsdb.setVTNManager(mgr);
+            ovsdb.rowRemoved(nodeObj, "Interface", "85c27f20-f218-11e3-a7b6-0002a5d5c51b", intfRow, obj);
+            if("0".equalsIgnoreCase(ROW_REMOVE_ARRAY[test][4])) {
+              assertEquals(0, 0);
+            }
+          } else if(ROW_REMOVE_ARRAY[test][1].equals(null)) {
+            IVTNManager mgr = new VTNManagerStub();
+            ovsdb.setVTNManager(mgr);
+            if("0".equalsIgnoreCase(ROW_REMOVE_ARRAY[test][4])) {
+              assertEquals(0, 0);
+            }
+          } else if("unset_manager".equalsIgnoreCase(ROW_REMOVE_ARRAY[test][3])) {
+            if("1".equalsIgnoreCase(ROW_REMOVE_ARRAY[test][4])) {
+              assertEquals(1, 0);
+            }
+          }
         } catch (Exception ex) {
           assertEquals(null, ex.getMessage());
           assertEquals(0, 0);
         }
       }
-     /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowRemoved(Node , String , String , Table, Object)}.
-      * Test for Node Row remove method when this method returns HTTP NOT OK.
-      */
-   @Test
-       public void testRowRemovedVTNIdentifiersHTTPNotOK() {
+    }
+
+  /**
+   * Test method for
+   * {@link OVSDBPluginEventHandler#rowUpdated(Node, String, String, Table, Table)}.
+   * Test rowUpdated Methods with Neutron Port in OVSDBPluginEventHandler.
+   */
+  @Test
+    public void testNodeUpdatedNeutronPort() {
+      for (int tmp = 0; tmp < RW_UPDT_INP_ARY.length; tmp++) {
+        try {
+          String pcep = RW_UPDT_INP_ARY[tmp][0];
+          UUID idOne = UUID.randomUUID();
+          Node nodeObj = new Node(pcep, idOne);
+          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
+          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
+          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
+          ovsdb.setOVSDBConfigService(ovsdbConfig);
+          ovsdb.setConnectionService(connectionService);
+          if(RW_UPDT_INP_ARY[tmp][1].equalsIgnoreCase("bridge")
+              || RW_UPDT_INP_ARY[tmp][1].equalsIgnoreCase("bridge-int")){
+            if(RW_UPDT_INP_ARY[tmp][1].equalsIgnoreCase("bridge-int")) {
+              Interface bridge = new Interface();
+              bridge.setName(RW_UPDT_INP_ARY[tmp][2]);
+              if(RW_UPDT_INP_ARY[tmp][5].equalsIgnoreCase("null")
+                  && RW_UPDT_INP_ARY[tmp][6].equalsIgnoreCase("null")) {
+                ovsdb.rowUpdated(nodeObj, RW_UPDT_INP_ARY[tmp][3],
+                    RW_UPDT_INP_ARY[tmp][4], null, null);
+              } else if (RW_UPDT_INP_ARY[tmp][6].equalsIgnoreCase("null")) {
+                ovsdb.rowUpdated(nodeObj, RW_UPDT_INP_ARY[tmp][3],
+                    RW_UPDT_INP_ARY[tmp][4], bridge, null);
+              } else{
+                ovsdb.rowUpdated(nodeObj, RW_UPDT_INP_ARY[tmp][3],
+                    RW_UPDT_INP_ARY[tmp][4], bridge, bridge);
+              }
+            } else{
+              Bridge bridge = new Bridge();
+              bridge.setName(RW_UPDT_INP_ARY[tmp][2]);
+              // Send Bridge instead of Interface
+              ovsdb.rowUpdated(nodeObj, RW_UPDT_INP_ARY[tmp][3],
+                  RW_UPDT_INP_ARY[tmp][4], bridge, bridge);
+            }
+
+          } else if(RW_UPDT_INP_ARY[tmp][1].equalsIgnoreCase("intf")) {
+            Interface intfOld = new Interface();
+            intfOld.setName(RW_UPDT_INP_ARY[tmp][2]);
+            Interface intfNew = new Interface();
+            OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
+            mapOvsdb.put(RW_UPDT_INP_ARY[tmp][12], RW_UPDT_INP_ARY[tmp][13]);
+            intfNew.setExternal_ids(mapOvsdb);
+            ovsdb.rowUpdated(nodeObj, RW_UPDT_INP_ARY[tmp][3],
+                RW_UPDT_INP_ARY[tmp][4], intfOld, intfNew);
+          } else if(RW_UPDT_INP_ARY[tmp][1].equalsIgnoreCase("intf-neutron")) {
+            NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
+            ovsdb.setNeutronPortCRUD(neutron);
+            Interface intfOld = new Interface();
+            intfOld.setName(RW_UPDT_INP_ARY[tmp][2]);
+            Interface intfNew = new Interface();
+            OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
+            mapOvsdb.put("iface-id", "C387EB44-7832-49F4-B9F0-D30D27770883");
+            intfNew.setExternal_ids(mapOvsdb);
+            ovsdb.rowUpdated(nodeObj, RW_UPDT_INP_ARY[tmp][3],
+                RW_UPDT_INP_ARY[tmp][4], intfOld, intfNew);
+          }
+          assertEquals(RW_UPDT_INP_ARY[tmp][7], RW_UPDT_INP_ARY[tmp][8]);
+        } catch (Exception ex) {
+          if(RW_UPDT_INP_ARY[tmp][9].equalsIgnoreCase("ex_msg")) {
+            assertEquals(EXCEPTION_MSG, ex.getMessage());
+          }
+          if(RW_UPDT_INP_ARY[tmp][9].equalsIgnoreCase("null_msg")) {
+            assertEquals(null, ex.getMessage());
+          }
+          assertEquals(RW_UPDT_INP_ARY[tmp][10], RW_UPDT_INP_ARY[tmp][11]);
+        }
+      }
+    }
+
+  /**
+   * Test method for
+   * {@link OVSDBPluginEventHandler#rowUpdated(Node, String, String, Table, Table)}.
+   * Test rowUpdated Method with ExternalId in OVSDBPluginEventHandler.
+   */
+  @Test
+    public void testRowUpdateWithExternalId() {
+      for (int tmp = 0; tmp < RW_UPDT_INP_OF_ARY.length; tmp++) {
         try {
           String openFlow = "OF";
-          Long longObj = new Long("101");
+          Long longObj = new Long(RW_UPDT_INP_OF_ARY[tmp][1]);
+          Node nodeObj = new Node(openFlow, longObj);
+          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
+          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
+          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
+          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
+          ovsdb.setOVSDBConfigService(ovsdbConfig);
+          ovsdb.setConnectionService(connectionService);
+          if (!(RW_UPDT_INP_OF_ARY[tmp][0].equalsIgnoreCase("Set_OF_Null"))) {
+            ovsdb.setNeutronPortCRUD(neutron);
+             }
+          if(RW_UPDT_INP_OF_ARY[tmp][0].equalsIgnoreCase("Set_OF_Bridge")){
+            Bridge intfNew = new Bridge();
+            OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
+            mapOvsdb.put(RW_UPDT_INP_OF_ARY[tmp][3], RW_UPDT_INP_OF_ARY[tmp][4]);
+            intfNew.setExternal_ids(mapOvsdb);
+            Interface bb = new Interface();
+            ovsdb.rowUpdated(nodeObj, RW_UPDT_INP_OF_ARY[tmp][5], RW_UPDT_INP_OF_ARY[tmp][6], bb, intfNew);
+            } else if(RW_UPDT_INP_OF_ARY[tmp][0].equalsIgnoreCase("Set_OF_Bridge_intf")){
+            Interface intfNew = new Interface();
+            OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
+            mapOvsdb.put(RW_UPDT_INP_OF_ARY[tmp][3], RW_UPDT_INP_OF_ARY[tmp][4]);
+            intfNew.setExternal_ids(mapOvsdb);
+            Bridge bb = new Bridge();
+            ovsdb.rowUpdated(nodeObj, RW_UPDT_INP_OF_ARY[tmp][5], RW_UPDT_INP_OF_ARY[tmp][6], bb, intfNew);
+            } else{
+            Interface intfOld = new Interface();
+            intfOld.setName(RW_UPDT_INP_OF_ARY[tmp][2]);
+            Interface intfNew = new Interface();
+            OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String>();
+            mapOvsdb.put(RW_UPDT_INP_OF_ARY[tmp][3], RW_UPDT_INP_OF_ARY[tmp][4]);
+            intfNew.setExternal_ids(mapOvsdb);
+            ovsdb.rowUpdated(nodeObj, RW_UPDT_INP_OF_ARY[tmp][5], RW_UPDT_INP_OF_ARY[tmp][6], intfOld, intfNew);
+             }
+            assertEquals(RW_UPDT_INP_OF_ARY[tmp][7], RW_UPDT_INP_OF_ARY[tmp][8]);
+            } catch (Exception ex) {
+          if (RW_UPDT_INP_OF_ARY[tmp][9].equalsIgnoreCase("ex_msg")) {
+            assertEquals(EXCEPTION_MSG, ex.getMessage());
+           }
+          if (RW_UPDT_INP_OF_ARY[tmp][9].equalsIgnoreCase("null_msg")) {
+            assertEquals(null, ex.getMessage());
+          assertEquals(RW_UPDT_INP_OF_ARY[tmp][10], RW_UPDT_INP_OF_ARY[tmp][11]);
+           }
+          }
+      }
+    }
+
+  /**
+   * Test method for
+   * {@link OVSDBPluginEventHandler#rowUpdated(Node, String, String, Table, Table)}.
+   * Test rowUpdated Method with Port in OVSDBPluginEventHandler.
+   */
+  @Test
+    public void testNodeRowUpdatePort() {
+      for (int test = 0; test < ROW_UPDATE_PORT_ARRAY.length; test++) {
+        try {
+          String openFlow = ROW_UPDATE_PORT_ARRAY[test][0];
+          Long longObj = new Long(ROW_UPDATE_PORT_ARRAY[test][1]);
           Node nodeObj = new Node(openFlow, longObj);
           OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
           NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
@@ -1195,57 +306,102 @@ import org.opendaylight.ovsdb.lib.notation.OvsDBMap;
           ovsdb.setOVSDBConfigService(ovsdbConfig);
           ovsdb.setConnectionService(connectionService);
           ovsdb.setNeutronPortCRUD(neutron);
-          OvsDBSet<BigInteger> ovsdbint = new OvsDBSet<BigInteger>();
-          BigInteger a = new BigInteger("33333");
-          ovsdbint.add(a);
-          Interface intfRow = new Interface();
-          intfRow.setName("intf-int");
+          Interface intfOld = new Interface();
+          intfOld.setName(ROW_UPDATE_PORT_ARRAY[test][2]);
+          Interface intfNew = new Interface();
           OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "ovsdb");
-          intfRow.setExternal_ids(mapOvsdb);
-          IVTNManager mgr = new VTNManagerStub();
-          Object obj = new Object();
-          ovsdb.rowRemoved(nodeObj, "Interface", "intf-row1", intfRow, obj);
-          assertEquals(0, 0);
+          // In this case when the Interface port is not filled.
+          if("set_port".equalsIgnoreCase(ROW_UPDATE_PORT_ARRAY[test][4])) {
+            mapOvsdb.put("iface-id", ROW_UPDATE_PORT_ARRAY[test][3]);
+            intfNew.setExternal_ids(mapOvsdb);
+            ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
+            if("0".equalsIgnoreCase(ROW_UPDATE_PORT_ARRAY[test][6])) {
+              assertEquals(0, 0);
+            }
+          } else if ("set_null_port".equalsIgnoreCase(ROW_UPDATE_PORT_ARRAY[test][4])){
+            // In this case when the Get port is Null.
+            OvsDBSet<BigInteger> ovsdbInt = null;
+            mapOvsdb.put("iface-id", ROW_UPDATE_PORT_ARRAY[test][3]);
+            intfNew.setExternal_ids(mapOvsdb);
+            intfNew.setOfport(ovsdbInt);
+            ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
+            if("0".equalsIgnoreCase(ROW_UPDATE_PORT_ARRAY[test][6])) {
+              assertEquals(0, 0);
+            }
+          } else if ("set_empty_port".equalsIgnoreCase(ROW_UPDATE_PORT_ARRAY[test][4])){
+            // In this case the Get Port is Empty.
+            OvsDBSet<BigInteger> ovsdbInt = new  OvsDBSet<BigInteger>();
+            mapOvsdb.put("iface-id", ROW_UPDATE_PORT_ARRAY[test][3]);
+            intfNew.setExternal_ids(mapOvsdb);
+            intfNew.setOfport(ovsdbInt);
+            ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
+            if("0".equalsIgnoreCase(ROW_UPDATE_PORT_ARRAY[test][6])) {
+              assertEquals(0, 0);
+            }
+          } else if ("without_port".equalsIgnoreCase(ROW_UPDATE_PORT_ARRAY[test][4])){
+            // In this case the VTN Identifiers are Null.
+            OvsDBSet<BigInteger> ovsdbint = new  OvsDBSet<BigInteger>();
+            BigInteger a = new BigInteger(ROW_UPDATE_PORT_ARRAY[test][5]);
+            ovsdbint.add(a);
+            intfNew.setOfport(ovsdbint);
+            mapOvsdb.put("iface-id", ROW_UPDATE_PORT_ARRAY[test][3]);
+            intfNew.setExternal_ids(mapOvsdb);
+            ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
+            if("0".equalsIgnoreCase(ROW_UPDATE_PORT_ARRAY[test][6])) {
+              assertEquals(0, 0);
+            }
+          } else if ("4790F3C1-AB34-4ABC-B7A5-C1B5C7202389".equalsIgnoreCase(ROW_UPDATE_PORT_ARRAY[test][3])){
+            // In this case when the TenantUUID not Null
+            OvsDBSet<BigInteger> ovsdbint = new  OvsDBSet<BigInteger>();
+            BigInteger a = new BigInteger(ROW_UPDATE_PORT_ARRAY[test][5]);
+            ovsdbint.add(a);
+            intfNew.setOfport(ovsdbint);
+            mapOvsdb.put("iface-id", ROW_UPDATE_PORT_ARRAY[test][3]);
+            intfNew.setExternal_ids(mapOvsdb);
+            ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
+            if("0".equalsIgnoreCase(ROW_UPDATE_PORT_ARRAY[test][6])) {
+              assertEquals(0, 0);
+            }
+          } else if ("52B1482F-A41E-409F-AC68-B04ACFD07779".equalsIgnoreCase(ROW_UPDATE_PORT_ARRAY[test][3])){
+            // In this case when the bridge UUid not Null.
+            OvsDBSet<BigInteger> ovsdbint = new  OvsDBSet<BigInteger>();
+            BigInteger a = new BigInteger(ROW_UPDATE_PORT_ARRAY[test][5]);
+            ovsdbint.add(a);
+            intfNew.setOfport(ovsdbint);
+            mapOvsdb.put("iface-id", ROW_UPDATE_PORT_ARRAY[test][3]);
+            intfNew.setExternal_ids(mapOvsdb);
+            ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
+            if("0".equalsIgnoreCase(ROW_UPDATE_PORT_ARRAY[test][6])) {
+              assertEquals(0, 0);
+            }
+          } else if ("8c781fc0-f215-11e3-aac3-0002a5d5c51b".equalsIgnoreCase(ROW_UPDATE_PORT_ARRAY[test][3])){
+            // In this case when the Port UUID not Null.
+            OvsDBSet<BigInteger> ovsdbint = new  OvsDBSet<BigInteger>();
+            BigInteger a = new BigInteger(ROW_UPDATE_PORT_ARRAY[test][5]);
+            ovsdbint.add(a);
+            intfNew.setOfport(ovsdbint);
+            mapOvsdb.put("iface-id", ROW_UPDATE_PORT_ARRAY[test][3]);
+            intfNew.setExternal_ids(mapOvsdb);
+            ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
+            if("0".equalsIgnoreCase(ROW_UPDATE_PORT_ARRAY[test][6])) {
+              assertEquals(0, 0);
+            }
+          } else if ("0D2206F8-B700-4F78-913D-9CE7A2D78473".equalsIgnoreCase(ROW_UPDATE_PORT_ARRAY[test][3])){
+            // In this case when the VTNIdentifiers is Success.
+            OvsDBSet<BigInteger> ovsdbint = new  OvsDBSet<BigInteger>();
+            BigInteger a = new BigInteger(ROW_UPDATE_PORT_ARRAY[test][5]);
+            ovsdbint.add(a);
+            intfNew.setOfport(ovsdbint);
+            mapOvsdb.put("iface-id", ROW_UPDATE_PORT_ARRAY[test][3]);
+            intfNew.setExternal_ids(mapOvsdb);
+            ovsdb.rowUpdated(nodeObj, "Interface", "intf-row1", intfOld, intfNew);
+            if("0".equalsIgnoreCase(ROW_UPDATE_PORT_ARRAY[test][6])) {
+              assertEquals(0, 0);
+            }
+          }
         } catch (Exception ex) {
-          assertEquals(null, ex.getMessage());
-          assertEquals(0, 0);
+          assertEquals(1, 0);
         }
       }
-      /**
-      * Test method for
-      * {@link OVSDBPluginEventHandler#rowRemoved(Node , String, String , Table, Object)}.
-      * Test for Node row remove method when neutron Undefined value is not NULL.
-      */
-    @Test
-       public void testRowRemovedVTNIdentifiersPortUndefined() {
-        try {
-          String openFlow = "OF";
-          Long longObj = new Long("5");
-          Node nodeObj = new Node(openFlow, longObj);
-          OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
-          NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
-          ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
-          OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-          ovsdb.setOVSDBConfigService(ovsdbConfig);
-          ovsdb.setConnectionService(connectionService);
-          ovsdb.setNeutronPortCRUD(neutron);
-          OvsDBSet<BigInteger> ovsdbint = new OvsDBSet<BigInteger>();
-          BigInteger a = new BigInteger("33333");
-          ovsdbint.add(a);
-          Interface intfRow = new Interface();
-          intfRow.setName("intf-int");
-          OvsDBMap<String, String> mapOvsdb = new OvsDBMap<String, String> ();
-          mapOvsdb.put("iface-id", "neutron_undefined");
-          intfRow.setExternal_ids(mapOvsdb);
-          IVTNManager mgr = new VTNManagerStub();
-          ovsdb.setVTNManager(mgr);
-          Object obj = new Object();
-          ovsdb.rowRemoved(nodeObj, "Interface", "intf-row1", intfRow, obj);
-          assertEquals(0, 0);
-        } catch (Exception ex) {
-          assertEquals(null, ex.getMessage());
-          assertEquals(0, 0);
-        }
-      }
+    }
 }

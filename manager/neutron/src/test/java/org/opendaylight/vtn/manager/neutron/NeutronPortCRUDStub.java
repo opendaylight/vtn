@@ -6,6 +6,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.neutron;
 
 import java.util.List;
@@ -16,43 +17,39 @@ import org.opendaylight.controller.networkconfig.neutron.NeutronPort;
  * Stub class for unit tests.
  *
  * This stub provides APIs implemented in
- * org.opendaylight.vtn.manager package.
+ * org.opendaylight.controller.networkconfig.neutron package.
  */
 
 public class NeutronPortCRUDStub implements INeutronPortCRUD {
-  @Override
-    public boolean portExists(String uuid) {
-      return false;
-    }
-
+  // Following methods are used in UnitTest.
   @Override
     public NeutronPort getPort(String uuid) {
-      if (uuid.equals("ovsdb")) {
+      if (uuid.equals("C387EB44-7832-49F4-B9F0-D30D27770883")) {
         NeutronPort neutron = new NeutronPort();
         return neutron;
-      } else if (uuid.equals("ovsdb1")) {
+      } else if (uuid.equals("4790F3C1-AB34-4ABC-B7A5-C1B5C7202389")) {
         NeutronPort neutron = new NeutronPort();
-        neutron.setTenantID("tenantid");
+        neutron.setTenantID("E6E005D3A24542FCB03897730A5150E2");
         return neutron;
-      } else if (uuid.equals("ovsdb_bridgeUUID")) {
+      } else if (uuid.equals("52B1482F-A41E-409F-AC68-B04ACFD07779")) {
         NeutronPort neutron = new NeutronPort();
-        neutron.setNetworkUUID("bridgeUUID");
+        neutron.setNetworkUUID("5e7e0900-f215-11e3-aa76-0002a5d5c51b");
         return neutron;
-      } else if (uuid.equals("ovsdb_portUUID")) {
+      } else if (uuid.equals("8c781fc0-f215-11e3-aac3-0002a5d5c51b")) {
         NeutronPort neutron = new NeutronPort();
-        neutron.setPortUUID("portUUID");
+        neutron.setPortUUID("9c781fc0-f215-11e3-aac3-0002a5d5c51b");
         return neutron;
-      } else if (uuid.equals("neutron_fill")) {
+      } else if (uuid.equals("0D2206F8-B700-4F78-913D-9CE7A2D78473")) {
         NeutronPort neutron = new NeutronPort();
-        neutron.setTenantID("tenantid");
-        neutron.setPortUUID("portUUID");
-        neutron.setNetworkUUID("bridgeUUID");
+        neutron.setTenantID("E6E005D3A24542FCB03897730A5150E2");
+        neutron.setPortUUID("9c781fc0-f215-11e3-aac3-0002a5d5c51b");
+        neutron.setNetworkUUID("5e7e0900-f215-11e3-aa76-0002a5d5c51b");
         return neutron;
       }
       return null;
-
     }
 
+  // Following methods are Unused in UnitTest.
   @Override
     public List<NeutronPort> getAllPorts() {
       return null;
@@ -62,10 +59,12 @@ public class NeutronPortCRUDStub implements INeutronPortCRUD {
     public boolean addPort(NeutronPort input) {
       return false;
     }
+
   @Override
     public boolean removePort(String uuid) {
       return false;
     }
+
   @Override
     public boolean updatePort(String uuid, NeutronPort delta) {
       return false;
@@ -75,8 +74,14 @@ public class NeutronPortCRUDStub implements INeutronPortCRUD {
     public boolean macInUse(String macAddress) {
       return false;
     }
+
   @Override
     public NeutronPort getGatewayPort(String subnetUUID) {
       return null;
+    }
+
+  @Override
+    public boolean portExists(String uuid) {
+      return true;
     }
 }

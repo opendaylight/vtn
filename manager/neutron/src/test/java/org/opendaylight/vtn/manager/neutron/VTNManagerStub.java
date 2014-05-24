@@ -61,11 +61,7 @@ public class VTNManagerStub implements IVTNManager {
     static final String VBR_IF_1_UUID = "F6197D54-97A1-44D2-ABFB-6DFED030C30F";
     static final String VBR_IF_1_NAME = "F6197D5497A14D2ABFB6DFED030C30F";
 
-    @Override
-    public boolean isActive() {
-        return true;
-    }
-
+    // Following methods are used in UnitTest.
     @Override
     public List<VTenant> getTenants() throws VTNException {
         return null;
@@ -102,11 +98,6 @@ public class VTNManagerStub implements IVTNManager {
         return new Status(StatusCode.SUCCESS);
     }
 
-    @Override
-    public Status modifyTenant(VTenantPath path, VTenantConfig tconf,
-                               boolean all) {
-        return null;
-    }
 
     @Override
     public Status removeTenant(VTenantPath path) {
@@ -253,13 +244,14 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
-    public PortMap getPortMap(VBridgeIfPath path) throws VTNException {
-        return null;
-    }
-
-    @Override
     public Status setPortMap(VBridgeIfPath path, PortMapConfig pmconf) {
       return new Status(StatusCode.CREATED, "desc");
+    }
+
+    // Following methods are Unused in UnitTest.
+    @Override
+    public PortMap getPortMap(VBridgeIfPath path) throws VTNException {
+        return null;
     }
 
     @Override
@@ -331,6 +323,15 @@ public class VTNManagerStub implements IVTNManager {
 
     @Override
     public Status flushMacEntries(VBridgePath path) {
+        return null;
+    }
+    @Override
+    public boolean isActive() {
+        return true;
+    }
+    @Override
+    public Status modifyTenant(VTenantPath path, VTenantConfig tconf,
+                               boolean all) {
         return null;
     }
 }
