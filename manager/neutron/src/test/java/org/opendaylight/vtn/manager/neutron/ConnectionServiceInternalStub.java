@@ -6,6 +6,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.neutron;
 
 import java.util.List;
@@ -21,10 +22,17 @@ import java.util.concurrent.ExecutionException;
  * Stub class for unit tests.
  *
  * This stub provides APIs implemented in
- * org.opendaylight.vtn.manager package.
+ * org.opendaylight.ovsdb.plugin package.
  */
 
 public class ConnectionServiceInternalStub implements IConnectionServiceInternal {
+  //Following methods are used in UnitTest.
+  @Override
+    public Boolean setOFController(Node node, String bridgeUUID) throws InterruptedException, ExecutionException {
+      return true;
+    }
+
+  // Following Methods are Unused in UnitTest.
   @Override
     public Connection getConnection(Node node) {
       return null;
@@ -38,10 +46,5 @@ public class ConnectionServiceInternalStub implements IConnectionServiceInternal
   @Override
     public Node connect(String identifier, Map<ConnectionConstants, String> params) {
       return null;
-    }
-
-  @Override
-    public Boolean setOFController(Node node, String bridgeUUID) throws InterruptedException, ExecutionException {
-      return true;
     }
 };
