@@ -485,5 +485,72 @@ TEST_F(DriverTxnInterfaceTest, HandleCommitCacheCmdFailure) {
   CtrObj = NULL;
   TxnObj = NULL;
 }
+
+TEST_F(DriverTxnInterfaceTest, HandleAuditVoteRequest_ControllerNameNotExist) {
+  uint32_t session_id = 1;
+  std::string ctr_id = "ctr_name";
+  unc::tclib::TcLibModule::stub_loadtcLibModule();
+  unc::driver::ControllerFramework* CtrObj =
+      new unc::driver::ControllerFramework;
+  ControllerFramework::res_code = 1;
+  typedef std::map <unc_key_type_t, KtHandler*> kt_handler_map;
+  kt_handler_map map_kt_;
+  unc::tclib::TcControllerList controller;
+  controller::set_controller_status(0);
+  controller.push_back("ctrl_demo");
+  unc::tclib::TcCommonRet ret_code = unc::tclib::TC_SUCCESS;
+  DriverTxnInterface *TxnObj = new DriverTxnInterface(CtrObj, map_kt_);
+  EXPECT_EQ(ret_code, TxnObj->HandleAuditVoteRequest
+            (session_id, ctr_id, controller));
+  unc::tclib::TcLibModule::stub_unloadtcLibModule();
+  delete TxnObj;
+  delete CtrObj;
+  CtrObj = NULL;
+  TxnObj = NULL;
+}
+
+TEST_F(DriverTxnInterfaceTest, HandleAuditGlobalCommit_ControllerNameNotExist) {
+  uint32_t session_id = 1;
+  std::string ctr_id = "ctr_name";
+  typedef std::map <unc_key_type_t, KtHandler*> kt_handler_map;
+  unc::tclib::TcLibModule::stub_loadtcLibModule();
+  unc::driver::ControllerFramework* CtrObj =
+      new unc::driver::ControllerFramework;
+  kt_handler_map map_kt_;
+  ControllerFramework::res_code = 1;
+  unc::tclib::TcControllerList controller;
+  controller.push_back("ctr_demo");
+  unc::tclib::TcCommonRet ret_code = unc::tclib::TC_SUCCESS;
+  DriverTxnInterface *TxnObj = new DriverTxnInterface(CtrObj, map_kt_);
+  EXPECT_EQ(ret_code, TxnObj->HandleAuditGlobalCommit
+            (session_id, ctr_id, controller));
+  unc::tclib::TcLibModule::stub_unloadtcLibModule();
+  delete TxnObj;
+  delete CtrObj;
+  CtrObj = NULL;
+  TxnObj = NULL;
+}
+
+TEST_F(DriverTxnInterfaceTest, HandleAuditEND_ControllerNameNotExist) {
+  uint32_t session_id = 1;
+  std::string ctr_id = "ctr_name";
+  typedef std::map <unc_key_type_t, KtHandler*> kt_handler_map;
+  unc::tclib::TcLibModule::stub_loadtcLibModule();
+  unc::driver::ControllerFramework* CtrObj =
+      new unc::driver::ControllerFramework;
+  kt_handler_map map_kt_;
+  unc_keytype_ctrtype_t ctr_type = UNC_CT_ODC;
+  ControllerFramework::res_code = 1;
+  unc::tclib::TcAuditResult audit_result = unc::tclib::TC_AUDIT_SUCCESS;
+  unc::tclib::TcCommonRet ret_code = unc::tclib::TC_SUCCESS;
+  DriverTxnInterface *TxnObj = new DriverTxnInterface(CtrObj, map_kt_);
+  EXPECT_EQ(ret_code, TxnObj->HandleAuditEnd
+            (session_id, ctr_type, ctr_id, audit_result));
+  unc::tclib::TcLibModule::stub_unloadtcLibModule();
+  delete TxnObj;
+  delete CtrObj;
+  CtrObj = NULL;
+  TxnObj = NULL;
+}
 }  // namespace driver
 }  // namespace unc
