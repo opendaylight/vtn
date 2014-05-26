@@ -178,7 +178,7 @@ TEST_F(DriverTxnInterfaceTest, HandleAuditVoteRequestFailure) {
   unc::tclib::TcControllerList controller;
   controller::set_controller_status(0);
   controller.push_back("ctr_demo");
-  unc::tclib::TcCommonRet ret_code = unc::tclib::TC_FAILURE;
+  unc::tclib::TcCommonRet ret_code = unc::tclib::TC_SUCCESS;
   DriverTxnInterface *TxnObj = new DriverTxnInterface(CtrObj, map_kt_);
   EXPECT_EQ(ret_code, TxnObj->HandleAuditVoteRequest
             (session_id, ctr_id, controller));
@@ -200,7 +200,7 @@ TEST_F(DriverTxnInterfaceTest, HandleAuditGlobalCommitSuccess) {
   kt_handler_map map_kt_;
   unc::tclib::TcControllerList controller;
   controller.push_back("ctr_demo");
-  unc::tclib::TcCommonRet ret_code = unc::tclib::TC_FAILURE;
+  unc::tclib::TcCommonRet ret_code = unc::tclib::TC_SUCCESS;
   DriverTxnInterface *TxnObj = new DriverTxnInterface(CtrObj, map_kt_);
   EXPECT_EQ(ret_code, TxnObj->HandleAuditGlobalCommit
             (session_id, ctr_id, controller));
@@ -268,7 +268,7 @@ TEST_F(DriverTxnInterfaceTest, HandleCommitVoteRequest2PhTrue) {
   unc::tclib::TcControllerList controller;
   controller.push_back("ctr_demo");
   unc::driver::driver::set_ctrl_instance(1);
-  unc::tclib::TcCommonRet ret_code = unc::tclib::TC_FAILURE;
+  unc::tclib::TcCommonRet ret_code = unc::tclib::TC_SUCCESS;
   DriverTxnInterface *TxnObj = new DriverTxnInterface(CtrObj, map_kt_);
   EXPECT_EQ(ret_code, TxnObj->HandleCommitVoteRequest
             (session_id, config_id, controller));
@@ -322,7 +322,7 @@ TEST_F(DriverTxnInterfaceTest, HandleCommitVoteRequestFailure) {
   unc::driver::driver::set_ctrl_instance(1);
   controller::set_controller_status(0);
   controller.push_back("ctr_demo");
-  unc::tclib::TcCommonRet ret_code = unc::tclib::TC_FAILURE;
+  unc::tclib::TcCommonRet ret_code = unc::tclib::TC_SUCCESS;
   DriverTxnInterface *TxnObj = new DriverTxnInterface(CtrObj, map_kt_);
   EXPECT_EQ(ret_code, TxnObj->HandleCommitVoteRequest
             (session_id, config_id, controller));

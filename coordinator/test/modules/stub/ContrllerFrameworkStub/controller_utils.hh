@@ -359,6 +359,7 @@ class controller_operation {
       :ctl_fw_(fw_ptr), ctl_oper_(operation) {
     ctr_ =controller::create_controll();
     drv_ = driver::create_driver();
+    Controller_Status = PFC_FALSE;
   }
 
   /**
@@ -372,6 +373,7 @@ class controller_operation {
   : ctl_fw_(fw_ptr), ctl_oper_(operation) {
     ctr_ =controller::create_controll();
     drv_ = driver::create_driver();
+    Controller_Status = PFC_FALSE;
   }
 
   /**
@@ -397,12 +399,30 @@ class controller_operation {
   unc::driver::driver* get_driver_handle() {
     return drv_;
   }
+  /**
+   * @brief     - get controller Status
+   * @param[in] - NA
+   * @retval    - pfc_bool
+   */
+  pfc_bool_t get_controller_status() {
+    return Controller_Status;
+  }
+
+  /**
+   * @brief     - set controller Status
+   * @param[in] - pfc_bool_t status
+   * @retval    - void
+   */
+  void set_controller_status(pfc_bool_t status) {
+    Controller_Status = status;
+  }
 
  private:
   ControllerFramework* ctl_fw_;
   ControllerOps ctl_oper_;
   controller* ctr_;
   driver* drv_;
+  pfc_bool_t Controller_Status;
 };
 
 }  //  namespace driver

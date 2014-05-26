@@ -265,6 +265,11 @@ KtRequestHandler<key, val, command_class>::execute(
   UncRespCode resp_code_ = UNC_DRV_RC_ERR_GENERIC;
 
   controller_operation util_obj(ctrl_int, WRITE_TO_CONTROLLER, ctrl_name);
+  if (util_obj.get_controller_status() == PFC_FALSE) {
+    pfc_log_debug("%s Controller status is down, send disconnected",
+                                 PFC_FUNCNAME);
+    return UNC_RC_CTR_DISCONNECTED;
+  }
   ctrl_ptr = util_obj.get_controller_handle();
   drv_ptr = util_obj.get_driver_handle();
 
