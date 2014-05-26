@@ -74,6 +74,13 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitGlobalCommit(
     pfc_bool_t commit = PFC_FALSE;
     ctr_name = *iter;
     controller_operation util_obj(crtl_inst_, WRITE_TO_CONTROLLER, ctr_name);
+    if (util_obj.get_controller_status() == PFC_FALSE) {
+      pfc_log_debug("%s Controller not exist, send disconnected", \
+                                               PFC_FUNCNAME);
+      tclib_ptr->TcLibWriteControllerInfo(ctr_name,
+                          (uint32_t)UNC_RC_CTR_DISCONNECTED, 0);
+      return unc::tclib::TC_SUCCESS;
+    }
     ctr = util_obj.get_controller_handle();
     drv = util_obj.get_driver_handle();
     PFC_ASSERT(ctr != NULL);
@@ -237,6 +244,14 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitVoteRequest(
     pfc_bool_t vote = PFC_FALSE;
     ctr_name = *iter;
     controller_operation util_obj(crtl_inst_, WRITE_TO_CONTROLLER, ctr_name);
+    if (util_obj.get_controller_status() == PFC_FALSE) {
+      pfc_log_debug("%s Controller not exist, send disconnected", \
+                                               PFC_FUNCNAME);
+      tclib_ptr->TcLibWriteControllerInfo(ctr_name,
+                          (uint32_t)UNC_RC_CTR_DISCONNECTED, 0);
+      return unc::tclib::TC_SUCCESS;
+    }
+
     ctr = util_obj.get_controller_handle();
     drv = util_obj.get_driver_handle();
     PFC_ASSERT(ctr != NULL);
@@ -360,9 +375,21 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleAuditEnd(uint32_t session_id,
                                        unc::tclib::TcAuditResult
                                        audit_result) {
   controller* ctr = NULL;
+  unc::tclib::TcLibModule* tclib_ptr =
+      static_cast<unc::tclib::TcLibModule*>
+      (unc::tclib::TcLibModule::getInstance("tclib"));
+  PFC_ASSERT(tclib_ptr != NULL);
   controller_operation util_obj(crtl_inst_,
                                 READ_FROM_CONTROLLER,
                                 controller_id);
+    if (util_obj.get_controller_status() == PFC_FALSE) {
+      pfc_log_debug("%s Controller not exist, send disconnected", \
+                                               PFC_FUNCNAME);
+      tclib_ptr->TcLibWriteControllerInfo(controller_id,
+                          (uint32_t)UNC_RC_CTR_DISCONNECTED, 0);
+      return unc::tclib::TC_SUCCESS;
+    }
+
   ctr = util_obj.get_controller_handle();
   PFC_ASSERT(ctr != NULL);
   if (audit_result == unc::tclib::TC_AUDIT_SUCCESS) {
