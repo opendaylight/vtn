@@ -371,6 +371,26 @@ class controller_operation {
   ~controller_operation();
 
   /**
+   * @brief     - get controller Status, PFC_FALSE if controller not exist in
+   *              list or PFC_TRUE if controller exist in list.
+   * @param[in] - NA
+   * @retval    - returns PFC_FALSE/PFC_TRUE(pfc_bool_t)
+   */
+  pfc_bool_t get_controller_status() {
+    return controller_status_;
+  }
+
+  /**
+   * @brief     - set controller PFC_FALSE if controller not exist in list or
+   *              set PFC_TRUE if controller exist in list
+   * @param[in] - PFC_FALSE/PFC_TRUE(pfc_bool_t)
+   * @retval    - void
+   */
+  void set_controller_status(pfc_bool_t status) {
+    controller_status_ = status;
+  }
+
+  /**
    * @brief     - get controller
    * @param[in] - NA
    * @retval    - controller pointer
@@ -393,6 +413,7 @@ class controller_operation {
   ControllerOps ctl_oper_;
   controller* ctr_;
   driver* drv_;
+  pfc_bool_t controller_status_;
 };
 
 }  //  namespace driver
