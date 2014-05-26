@@ -189,7 +189,7 @@ void ReadParams::PingController() {
       pfc_log_debug("Controller status is DOWN ctlr_name:%s",
                     ctlr_name_.c_str());
     }
-    ctr_fw_->SetDomainFlag(ctlr_name_,PFC_FALSE);
+    ctr_fw_->SetDomainFlag(ctlr_name_, PFC_FALSE);
     ctr_instance->set_connection_status(CONNECTION_DOWN);
   }
   uint32_t ping_interval = drv_instance->get_ping_interval();
@@ -265,7 +265,7 @@ void ReadConfig::GetPhysicalConfig() {
       (ctr_instance->audit_result_ == PFC_FALSE)) {
     pfc_log_error("Controller down/Audit failed in controller");
     ctr_fw_->post_physical_taskq(ctlr_name_, drv_instance, ctr_instance,
-                                  ctr_fw_->time_interval_);
+                                 ctr_fw_->time_interval_);
     return;
   }
   pfc_bool_t ping_status =
@@ -582,7 +582,8 @@ void ControllerFramework::SendNotificationToPhysical(
                 val_ctr_old.oper_status, val_ctr_new.oper_status);
 }
 
-void ControllerFramework::SetDomainFlag(std::string ctr_name, pfc_bool_t flag) {
+void ControllerFramework::SetDomainFlag(std::string ctr_name,
+                                        pfc_bool_t flag) {
   ControllerContainer* controller_container(NULL);
   std::map<std::string, ControllerContainer*>::iterator
       controller_list_iterator = controller_list.begin();
@@ -638,9 +639,10 @@ controller_operation::controller_operation(ControllerFramework *fw_ptr,
   ctl_fw_->controller_list_rwlock_.lock();
   ctl_fw_->GetDriverByControllerName(ctl_id, &ctr_, &drv_);
 
-  PFC_VERIFY(drv_);
-  PFC_VERIFY(ctr_);
-
+  if (ctr_== NULL && drv_ == NULL) {
+    set_controller_status(PFC_FALSE);
+  } else {
+  set_controller_status(PFC_TRUE);
   switch (ctl_oper_) {
     case CONTROLLER_DELETE:
       ctr_->access_.mark_controller_for_delete();
@@ -698,10 +700,14 @@ controller_operation::controller_operation(ControllerFramework *fw_ptr,
     default:
       pfc_log_debug("Not a valid oper..");
   }
+  }
 }
 
 controller_operation::~controller_operation() {
   pfc_log_debug("~ControllerFwUtil--oper_type:%d", ctl_oper_);
+  if (ctr_== NULL && drv_ == NULL) {
+      ctl_fw_->controller_list_rwlock_.unlock();
+  } else {
   switch (ctl_oper_) {
     case CONTROLLER_UPDATE: {
       ctr_->access_.set_controller_marked_for_update(PFC_FALSE);
@@ -737,6 +743,7 @@ controller_operation::~controller_operation() {
     }
     default:
       pfc_log_debug("Not a valid oper..");
+  }
   }
 }
 

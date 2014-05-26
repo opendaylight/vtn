@@ -371,6 +371,24 @@ class controller_operation {
   ~controller_operation();
 
   /**
+   * @brief     - get controller Status
+   * @param[in] - NA
+   * @retval    - pfc_bool
+   */
+  pfc_bool_t get_controller_status() {
+    return Controller_Status;
+  }
+
+  /**
+   * @brief     - set controller Status
+   * @param[in] - pfc_bool_t status
+   * @retval    - void
+   */
+  void set_controller_status(pfc_bool_t status) {
+    Controller_Status = status;
+  }
+
+  /**
    * @brief     - get controller
    * @param[in] - NA
    * @retval    - controller pointer
@@ -393,6 +411,7 @@ class controller_operation {
   ControllerOps ctl_oper_;
   controller* ctr_;
   driver* drv_;
+  pfc_bool_t Controller_Status;
 };
 
 }  //  namespace driver
