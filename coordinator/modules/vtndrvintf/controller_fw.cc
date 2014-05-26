@@ -189,7 +189,7 @@ void ReadParams::PingController() {
       pfc_log_debug("Controller status is DOWN ctlr_name:%s",
                     ctlr_name_.c_str());
     }
-    ctr_fw_->SetDomainFlag(ctlr_name_,PFC_FALSE);
+    ctr_fw_->SetDomainFlag(ctlr_name_, PFC_FALSE);
     ctr_instance->set_connection_status(CONNECTION_DOWN);
   }
   uint32_t ping_interval = drv_instance->get_ping_interval();
@@ -265,7 +265,7 @@ void ReadConfig::GetPhysicalConfig() {
       (ctr_instance->audit_result_ == PFC_FALSE)) {
     pfc_log_error("Controller down/Audit failed in controller");
     ctr_fw_->post_physical_taskq(ctlr_name_, drv_instance, ctr_instance,
-                                  ctr_fw_->time_interval_);
+                                 ctr_fw_->time_interval_);
     return;
   }
   pfc_bool_t ping_status =
@@ -582,7 +582,8 @@ void ControllerFramework::SendNotificationToPhysical(
                 val_ctr_old.oper_status, val_ctr_new.oper_status);
 }
 
-void ControllerFramework::SetDomainFlag(std::string ctr_name, pfc_bool_t flag) {
+void ControllerFramework::SetDomainFlag(std::string ctr_name,
+                                        pfc_bool_t flag) {
   ControllerContainer* controller_container(NULL);
   std::map<std::string, ControllerContainer*>::iterator
       controller_list_iterator = controller_list.begin();
@@ -625,6 +626,7 @@ controller_operation::controller_operation(ControllerFramework *fw_ptr,
   ctl_fw_->controller_list_rwlock_.lock();
   pfc_log_debug(" Controller TYPE:%d", ctl_type);
   drv_ = ctl_fw_->GetDriverInstance(ctl_type);
+  controller_status_ = PFC_FALSE;
 }
 
 controller_operation::controller_operation(ControllerFramework *fw_ptr,
@@ -633,110 +635,117 @@ controller_operation::controller_operation(ControllerFramework *fw_ptr,
                                            : ctl_fw_(fw_ptr),
                                            ctl_oper_(operation),
                                            ctr_(NULL),
-                                           drv_(NULL) {
+                                           drv_(NULL),
+                                           controller_status_(PFC_FALSE){
   ODC_FUNC_TRACE;
   ctl_fw_->controller_list_rwlock_.lock();
   ctl_fw_->GetDriverByControllerName(ctl_id, &ctr_, &drv_);
 
-  PFC_VERIFY(drv_);
-  PFC_VERIFY(ctr_);
-
-  switch (ctl_oper_) {
-    case CONTROLLER_DELETE:
-      ctr_->access_.mark_controller_for_delete();
-    case CONTROLLER_UPDATE: {
-      if (ctl_oper_ ==  CONTROLLER_UPDATE)
-        ctr_->access_.mark_controller_for_update();
-      if (ctr_->access_.can_delete_update() == PFC_TRUE) {
-        pfc_log_debug("No r/w operation.. Proced with Delete");
-      } else {
-        pfc_log_debug(" r/w operation Inprogress.Wait before Delete");
-        ctr_->access_.delete_wait(ctl_fw_->controller_list_rwlock_);
-      }
-      break;
-    }
-    case READ_FROM_CONTROLLER: {
-      if ( ctr_->access_.can_delete_controller_marked_for_delete()
-          == PFC_TRUE ) {
-        drv_= NULL;
-        ctr_= NULL;
+  if (ctr_== NULL && drv_ == NULL) {
+    set_controller_status(PFC_FALSE);
+  } else {
+    set_controller_status(PFC_TRUE);
+    switch (ctl_oper_) {
+      case CONTROLLER_DELETE:
+        ctr_->access_.mark_controller_for_delete();
+      case CONTROLLER_UPDATE: {
+        if (ctl_oper_ ==  CONTROLLER_UPDATE)
+          ctr_->access_.mark_controller_for_update();
+        if (ctr_->access_.can_delete_update() == PFC_TRUE) {
+          pfc_log_debug("No r/w operation.. Proced with Delete");
+        } else {
+          pfc_log_debug(" r/w operation Inprogress.Wait before Delete");
+          ctr_->access_.delete_wait(ctl_fw_->controller_list_rwlock_);
+        }
         break;
-      } else if ( ctr_->access_.get_controller_marked_for_update()
-                 == PFC_TRUE ) {
-        ctr_->access_.increment_read_wait_count();
-        ctr_->access_.wait_until_update(ctl_fw_->controller_list_rwlock_);
-        ctr_->access_.decrement_read_wait_count();
       }
-      uint32_t read_count = ctr_->access_.get_read_count();
-      read_count++;
-      ctr_->access_.set_read_count(read_count);
-      ctl_fw_->controller_list_rwlock_.unlock();
-      break;
-    }
-    case WRITE_TO_CONTROLLER: {
-      uint32_t write_count = ctr_->access_.get_write_count();
-      pfc_log_debug("write count:%d", write_count);
-      if ( ctr_->access_.can_delete_controller_marked_for_delete()
-          == PFC_TRUE ) {
-        pfc_log_debug("can_delete_controller:TRUE");
-        drv_= NULL;
-        ctr_= NULL;
+      case READ_FROM_CONTROLLER: {
+        if ( ctr_->access_.can_delete_controller_marked_for_delete()
+            == PFC_TRUE ) {
+          drv_= NULL;
+          ctr_= NULL;
+          break;
+        } else if ( ctr_->access_.get_controller_marked_for_update()
+                   == PFC_TRUE ) {
+          ctr_->access_.increment_read_wait_count();
+          ctr_->access_.wait_until_update(ctl_fw_->controller_list_rwlock_);
+          ctr_->access_.decrement_read_wait_count();
+        }
+        uint32_t read_count = ctr_->access_.get_read_count();
+        read_count++;
+        ctr_->access_.set_read_count(read_count);
+        ctl_fw_->controller_list_rwlock_.unlock();
         break;
-      } else if ((write_count != 0) ||
-          (ctr_->access_.get_controller_marked_for_update() == PFC_TRUE)) {
-        ctr_->access_.increment_write_wait_count();
-        ctr_->access_.wait_for_write(ctl_fw_->controller_list_rwlock_);
-        pfc_log_debug("Write cond Wait");
-        ctr_->access_.decrement_write_wait_count();
       }
-      pfc_log_debug("WRITE in progress");
-      ctr_->access_.set_write_in_progress();
-      ctr_->access_.set_write_count(1);
-      ctl_fw_->controller_list_rwlock_.unlock();
-      break;
+      case WRITE_TO_CONTROLLER: {
+        uint32_t write_count = ctr_->access_.get_write_count();
+        pfc_log_debug("write count:%d", write_count);
+        if ( ctr_->access_.can_delete_controller_marked_for_delete()
+            == PFC_TRUE ) {
+          pfc_log_debug("can_delete_controller:TRUE");
+          drv_= NULL;
+          ctr_= NULL;
+          break;
+        } else if ((write_count != 0) ||
+                   (ctr_->access_.get_controller_marked_for_update() == PFC_TRUE)) {
+          ctr_->access_.increment_write_wait_count();
+          ctr_->access_.wait_for_write(ctl_fw_->controller_list_rwlock_);
+          pfc_log_debug("Write cond Wait");
+          ctr_->access_.decrement_write_wait_count();
+        }
+        pfc_log_debug("WRITE in progress");
+        ctr_->access_.set_write_in_progress();
+        ctr_->access_.set_write_count(1);
+        ctl_fw_->controller_list_rwlock_.unlock();
+        break;
+      }
+      default:
+        pfc_log_debug("Not a valid oper..");
     }
-    default:
-      pfc_log_debug("Not a valid oper..");
   }
 }
 
 controller_operation::~controller_operation() {
   pfc_log_debug("~ControllerFwUtil--oper_type:%d", ctl_oper_);
-  switch (ctl_oper_) {
-    case CONTROLLER_UPDATE: {
-      ctr_->access_.set_controller_marked_for_update(PFC_FALSE);
-      ctr_->access_.update_completed();
-      if (ctr_->access_.get_write_wait_count() > 0)
-        ctr_->access_.release_write_wait();
-    }
-    case CONTROLLER_DELETE:
-    case CONTROLLER_ADD:
-      ctl_fw_->controller_list_rwlock_.unlock();
-      break;
-    case READ_FROM_CONTROLLER:
-    case WRITE_TO_CONTROLLER: {
-      ctl_fw_->controller_list_rwlock_.lock();
-      uint32_t read_count = ctr_->access_.get_read_count();
-      uint32_t write_count = ctr_->access_.get_write_count();
-      if (ctl_oper_ == READ_FROM_CONTROLLER)
-        read_count--;
-      if (ctl_oper_ == WRITE_TO_CONTROLLER) {
-        write_count--;
-        pfc_log_debug("Write completed set write_in_progress_ FALSE");
-        ctr_->access_.write_completed();
+  if (ctr_== NULL && drv_ == NULL) {
+    ctl_fw_->controller_list_rwlock_.unlock();
+  } else {
+    switch (ctl_oper_) {
+      case CONTROLLER_UPDATE: {
+        ctr_->access_.set_controller_marked_for_update(PFC_FALSE);
+        ctr_->access_.update_completed();
+        if (ctr_->access_.get_write_wait_count() > 0)
+          ctr_->access_.release_write_wait();
       }
-      ctr_->access_.set_read_count(read_count);
-      ctr_->access_.set_write_count(write_count);
-      if ( write_count <= 0 && ctr_->access_.get_write_wait_count() > 0 )
-        ctr_->access_.release_write_wait();
-      if ( write_count <= 0 && ctr_->access_.get_write_wait_count() == 0
-          && read_count == 0 )
-        ctr_->access_.delete_allow();
-      ctl_fw_->controller_list_rwlock_.unlock();
-      break;
+      case CONTROLLER_DELETE:
+      case CONTROLLER_ADD:
+        ctl_fw_->controller_list_rwlock_.unlock();
+        break;
+      case READ_FROM_CONTROLLER:
+      case WRITE_TO_CONTROLLER: {
+        ctl_fw_->controller_list_rwlock_.lock();
+        uint32_t read_count = ctr_->access_.get_read_count();
+        uint32_t write_count = ctr_->access_.get_write_count();
+        if (ctl_oper_ == READ_FROM_CONTROLLER)
+          read_count--;
+        if (ctl_oper_ == WRITE_TO_CONTROLLER) {
+          write_count--;
+          pfc_log_debug("Write completed set write_in_progress_ FALSE");
+          ctr_->access_.write_completed();
+        }
+        ctr_->access_.set_read_count(read_count);
+        ctr_->access_.set_write_count(write_count);
+        if ( write_count <= 0 && ctr_->access_.get_write_wait_count() > 0 )
+          ctr_->access_.release_write_wait();
+        if ( write_count <= 0 && ctr_->access_.get_write_wait_count() == 0
+            && read_count == 0 )
+          ctr_->access_.delete_allow();
+        ctl_fw_->controller_list_rwlock_.unlock();
+        break;
+      }
+      default:
+        pfc_log_debug("Not a valid oper..");
     }
-    default:
-      pfc_log_debug("Not a valid oper..");
   }
 }
 
