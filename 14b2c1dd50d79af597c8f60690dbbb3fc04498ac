@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fa82b9bf_624e8071",
+        "filename": "coordinator/modules/vtndrvintf/vtn_drv_transaction_handle.cc",
+        "patchSetId": 4
+      },
+      "lineNbr": 385,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-05-27T13:09:24Z",
+      "side": 1,
+      "message": "It seems to me that the indent is wrong.",
+      "revId": "14b2c1dd50d79af597c8f60690dbbb3fc04498ac",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_c22f4c87",
+        "filename": "coordinator/test/modules/stub/ContrllerFrameworkStub/controller_utils.hh",
+        "patchSetId": 4
+      },
+      "lineNbr": 416,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-05-27T13:09:24Z",
+      "side": 1,
+      "message": "This method does not return a value into this parameter.",
+      "revId": "14b2c1dd50d79af597c8f60690dbbb3fc04498ac",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_a23488de",
+        "filename": "coordinator/test/modules/stub/ContrllerFrameworkStub/controller_utils.hh",
+        "patchSetId": 4
+      },
+      "lineNbr": 419,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-05-27T13:09:24Z",
+      "side": 1,
+      "message": "I think it should be \"set\", not \"sit\".",
+      "revId": "14b2c1dd50d79af597c8f60690dbbb3fc04498ac",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
