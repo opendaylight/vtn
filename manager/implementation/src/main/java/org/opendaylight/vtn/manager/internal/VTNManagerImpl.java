@@ -5473,7 +5473,6 @@ public class VTNManagerImpl
         PacketContext pctx = new PacketContext(inPkt, (Ethernet)decoded);
         Packet payload = pctx.getPayload();
         if (payload instanceof LLDP) {
-            LOG.trace("{}: Ignore LLDP packet: {}", containerName, payload);
             return PacketResult.IGNORED;
         }
 
