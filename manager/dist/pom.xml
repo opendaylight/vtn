@@ -65,7 +65,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>buildnumber-maven-plugin</artifactId>
-        <version>${buildnumber.version}</version>
         <executions>
           <execution>
             <phase>validate</phase>
@@ -83,7 +82,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <version>${dependency.version}</version>
         <executions>
           <execution>
             <id>unpack-shared-resources</id>

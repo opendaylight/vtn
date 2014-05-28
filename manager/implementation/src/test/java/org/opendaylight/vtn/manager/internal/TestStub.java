@@ -1141,7 +1141,17 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     }
 
     @Override
+    public Status addStaticFlowAsync(FlowConfig config) {
+        return null;
+    }
+
+    @Override
     public Status removeStaticFlow(FlowConfig config) {
+        return null;
+    }
+
+    @Override
+    public Status removeStaticFlowAsync(FlowConfig config) {
         return null;
     }
 
@@ -1152,6 +1162,11 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
 
     @Override
     public Status removeStaticFlow(String name, Node node) {
+        return null;
+    }
+
+    @Override
+    public Status removeStaticFlowAsync(String name, Node node) {
         return null;
     }
 

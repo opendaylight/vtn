@@ -88,6 +88,11 @@ public class FlowModTaskTestBase extends TestUseVTNManagerBase {
         }
 
         @Override
+        public Status addStaticFlowAsync(FlowConfig config) {
+            return null;
+        }
+
+        @Override
         public boolean checkFlowEntryConflict(FlowEntry arg0) {
             return false;
         }
@@ -213,7 +218,17 @@ public class FlowModTaskTestBase extends TestUseVTNManagerBase {
         }
 
         @Override
+        public Status removeStaticFlowAsync(FlowConfig config) {
+            return null;
+        }
+
+        @Override
         public Status removeStaticFlow(String arg0, Node arg1) {
+            return null;
+        }
+
+        @Override
+        public Status removeStaticFlowAsync(String name, Node node) {
             return null;
         }
 
