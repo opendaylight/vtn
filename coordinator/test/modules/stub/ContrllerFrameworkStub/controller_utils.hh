@@ -359,6 +359,7 @@ class controller_operation {
       :ctl_fw_(fw_ptr), ctl_oper_(operation) {
     ctr_ =controller::create_controll();
     drv_ = driver::create_driver();
+    controller_status_ = PFC_FALSE;
   }
 
   /**
@@ -369,9 +370,15 @@ class controller_operation {
   controller_operation(ControllerFramework* fw_ptr,
                        ControllerOps operation,
                        std::string ctl_id)
-  : ctl_fw_(fw_ptr), ctl_oper_(operation) {
+                       : ctl_fw_(fw_ptr), ctl_oper_(operation) {
     ctr_ =controller::create_controll();
     drv_ = driver::create_driver();
+    if (ctl_fw_->GetDriverByControllerName(
+            ctl_id, &ctr_, &drv_) == UNC_DRV_RC_ERR_GENERIC) {
+      controller_status_ = PFC_FALSE;
+    } else {
+      controller_status_ = PFC_TRUE;
+    }
   }
 
   /**
@@ -398,11 +405,32 @@ class controller_operation {
     return drv_;
   }
 
+  /**
+  * @brief     - get controller Status, PFC_FALSE if controller not exist in
+  *              list or PFC_TRUE if controller exist in list.
+  * @param[in] - NA
+  * @retval    - returns PFC_FALSE/PFC_TRUE(pfc_bool_t)
+  */
+  pfc_bool_t get_controller_status() {
+    return controller_status_;
+  }
+
+  /**
+  * @brief     - set controller PFC_FALSE if controller not exist in list or
+  *              set PFC_TRUE if controller exist in list
+  * @param[in] - PFC_FALSE/PFC_TRUE(pfc_bool_t)
+  * @retval    - void
+  */
+  void set_controller_status(pfc_bool_t status) {
+    controller_status_ = status;
+  }
+
  private:
   ControllerFramework* ctl_fw_;
   ControllerOps ctl_oper_;
   controller* ctr_;
   driver* drv_;
+  pfc_bool_t controller_status_;
 };
 
 }  //  namespace driver
