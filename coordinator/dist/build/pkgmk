@@ -41,22 +41,35 @@ sub find_tar();
 sub remove_solink($);
 sub create_package($$$$);
 sub exec_command(@);
-sub copy_files(\@);
-sub copy_file($$);
+sub copy_files(\@\@);
+sub copy_file($$\@);
 
 MAIN:
 {
-	Getopt::Long::Configure(qw(no_ignore_case bundling require_order));
+	Getopt::Long::Configure(qw(no_ignore_case require_order));
 
 	my $help = sub { usage(0); };
 	my $prefix = DEFAULT_PREFIX;
 	my $output = DEFAULT_OUTPUT;
-	my ($tar, @copyFiles);
+	my ($tar, @copyFiles, @replaces, $pat);
+	my $rfunc = sub {
+		my ($key, $value) = @_;
+
+		if ($pat) {
+			$pat->{REPL} = $value;
+			push(@replaces, $pat);
+			undef $pat;
+		}
+		else {
+			$pat = {PATTERN => qr,$value,};
+		}
+	};
 	usage(1) unless (GetOptions('help'		=> $help,
 				    'debug'		=> \$DEBUG,
 				    'p|prefix=s'	=> \$prefix,
 				    'o|output=s'	=> \$output,
 				    'c|copy-files=s'	=> \@copyFiles,
+				    'R|replace=s{2}'	=> $rfunc,
 				    'tar=s'		=> \$tar));
 	usage(1) unless (@ARGV == 1);
 
@@ -74,7 +87,7 @@ MAIN:
 			$tar = find_tar();
 		}
 
-		copy_files(@copyFiles);
+		copy_files(@copyFiles, @replaces);
 		remove_solink($root);
 		create_package($tar, $root, $prefix, $output);
 	};
@@ -114,6 +127,10 @@ Options:
 
     -c|--copy-file <src>:<dst>
        Copy the file specified by <src> to <dst>.
+
+    -R|--replace <regexp> <replacement>
+       Replace all strings that matches <regexp> in the file specified to
+       -c option with <replacement>.
 
     --tar <file>
        Specify location of GNU tar program.
@@ -241,20 +258,20 @@ sub exec_command(@)
 	}
 }
 
-sub copy_files(\@)
+sub copy_files(\@\@)
 {
-	my ($args) = @_;
+	my ($args, $replaces) = @_;
 
 	my $sep = qr,\s*:\s*,;
 	foreach my $arg (@$args) {
 		my ($src, $dst) = split($sep, $arg, 2);
-		copy_file($src, $dst);
+		copy_file($src, $dst, @$replaces);
 	}
 }
 
-sub copy_file($$)
+sub copy_file($$\@)
 {
-	my ($src, $dst) = @_;
+	my ($src, $dst, $replaces) = @_;
 
 	print "--- Copying file: $src -> $dst\n";
 	my $fh = FileHandle->new($src);
@@ -267,20 +284,15 @@ sub copy_file($$)
 				  FILE_PERM);
 	die "Failed to create file: $dst: $!\n" unless ($out);
 
-	while (1) {
-		my $buf;
-		my $nbytes = $fh->sysread($buf, FILE_BUFSIZE);
-		die "Unable to read file: $src: $!\n"
-			unless (defined($nbytes));
-		last if ($nbytes == 0);
+	while (defined(my $line = $fh->getline())) {
+		foreach my $pat (@$replaces) {
+			my ($regexp, $repl) = ($pat->{PATTERN}, $pat->{REPL});
+			$line =~ s,$regexp,$repl,g;
+		}
 
-		my $off = 0;
-		do {
-			my $ret = $out->syswrite($buf, $nbytes, $off);
-			die "Unable to write file: $dst: $!\n"
-				unless (defined($ret));
-			$nbytes -= $ret;
-			$off += $ret;
-		} until ($nbytes <= 0);
+		$out->print($line);
 	}
+
+	die "Failed to read file: $src\n" if ($fh->error());
+	die "Failed to write file: $dst\n" unless (defined($out->flush()));
 }
