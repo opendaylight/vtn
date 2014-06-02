@@ -45,7 +45,9 @@
         <artifactId>jacoco-maven-plugin</artifactId>
         <configuration>
           <destFile>../northbound/target/jacoco-it.exec</destFile>
-          <includes>org.opendaylight.vtn.*</includes>
+          <includes>
+            <include>org.opendaylight.vtn.*</include>
+          </includes>
         </configuration>
         <executions>
           <execution>
