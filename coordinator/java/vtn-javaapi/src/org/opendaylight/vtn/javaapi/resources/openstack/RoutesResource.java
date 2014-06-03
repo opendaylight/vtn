@@ -6,6 +6,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.resources.openstack;
 
 import java.sql.Connection;
@@ -349,16 +350,26 @@ public class RoutesResource extends AbstractResource {
 	 * @return - generated route_id
 	 */
 	private String convertRouteId(JsonObject requestBody) {
-		final SubnetUtils subnetUtils = new SubnetUtils(requestBody.get(
-				VtnServiceOpenStackConsts.DESTNATION).getAsString());
-		final String routeId = requestBody
-				.get(VtnServiceOpenStackConsts.DESTNATION).getAsString()
-				.split(VtnServiceConsts.SLASH)[0]
-				+ VtnServiceConsts.HYPHEN
-				+ requestBody.get(VtnServiceOpenStackConsts.NEXTHOP)
-						.getAsString()
-				+ VtnServiceConsts.HYPHEN
-				+ subnetUtils.getInfo().getNetmask();
+		String destination = requestBody.get(
+				VtnServiceOpenStackConsts.DESTNATION).getAsString();
+		String ipAndPrefix[] = destination.split(VtnServiceConsts.SLASH);
+
+		int prefix = Integer.parseInt(ipAndPrefix[1]);
+		String routeId = null;
+		if (prefix == 0) {
+			routeId = ipAndPrefix[0]
+					+ VtnServiceConsts.HYPHEN
+					+ requestBody.get(VtnServiceOpenStackConsts.NEXTHOP)
+							.getAsString() + VtnServiceConsts.HYPHEN
+					+ VtnServiceConsts.DEFAULT_IP;
+		} else {
+			final SubnetUtils subnetUtils = new SubnetUtils(destination);
+			routeId = ipAndPrefix[0]
+					+ VtnServiceConsts.HYPHEN
+					+ requestBody.get(VtnServiceOpenStackConsts.NEXTHOP)
+							.getAsString() + VtnServiceConsts.HYPHEN
+					+ subnetUtils.getInfo().getNetmask();
+		}
 		return routeId;
 	}
 

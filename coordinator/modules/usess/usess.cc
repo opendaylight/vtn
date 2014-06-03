@@ -16,7 +16,8 @@ namespace usess {
 #define CLASS_NAME "Usess"
 
 // IPC handler function table.
-usess_ipc_err_e (Usess::*Usess::IpcHandler[])(pfc::core::ipc::ServerSession&) = {
+usess_ipc_err_e (Usess::*Usess::IpcHandler[])(pfc::core::ipc::ServerSession&) =
+{
     &Usess::UsessSessAddHandler,
     &Usess::UsessSessDelHandler,
     &Usess::UsessSessTypeDelHandler,
@@ -34,10 +35,11 @@ usess_ipc_err_e (Usess::*Usess::IpcHandler[])(pfc::core::ipc::ServerSession&) = 
  * @brief   Constructor.
  * @param   attr  : module attribute.
  * @return  nothing.
- * @note
+ * @note    
  */
 Usess::Usess(const pfc_modattr_t *attr)
-  : pfc::core::Module(attr), users_(database_), enable_(database_) {
+  : pfc::core::Module(attr), users_(database_), enable_(database_)
+{
   event_id_conf_reload_ = EVHANDLER_ID_INVALID;
 }
 
@@ -46,9 +48,10 @@ Usess::Usess(const pfc_modattr_t *attr)
  * @brief   Destructor.
  * @param   nothing.
  * @return  nothing.
- * @note
+ * @note    
  */
-Usess::~Usess(void) {
+Usess::~Usess(void)
+{
 }
 
 
@@ -57,9 +60,10 @@ Usess::~Usess(void) {
  * @param   nothing.
  * @return  PFC_TRUE  : Success.
  *          PFC_FALSE : Failure.
- * @note
+ * @note    
  */
-pfc_bool_t Usess::init(void) {
+pfc_bool_t Usess::init(void)
+{
   // event mask value.
   pfc::core::EventMask reload_mask(PFC_MODEVENT_TYPE_RELOAD);
   // event handler.
@@ -112,12 +116,10 @@ pfc_bool_t Usess::init(void) {
   L_FUNCTION_COMPLETE();
   return PFC_TRUE;
 
-unlock_end
-    :
+unlock_end:
   USESS_UNLOCK();
 
-proc_end
-    :
+proc_end:
   fini();
   return PFC_FALSE;
 }
@@ -128,9 +130,10 @@ proc_end
  * @param   nothing.
  * @return  PFC_TRUE  : Success.
  *          PFC_FALSE : Failure.
- * @note
+ * @note    
  */
-pfc_bool_t Usess::fini(void) {
+pfc_bool_t Usess::fini(void)
+{
   // area of return value.
   int remove_handler_rtn = -1;
   pfc_bool_t err_code = PFC_TRUE;
@@ -189,10 +192,11 @@ pfc_bool_t Usess::fini(void) {
  *          USESS_E_INVALID_USER      : Invalid user name.
  *          USESS_E_INVALID_PASSWD    : Invalid password.
  *          USESS_E_SESS_OVER         : Over the number of user sessions.
- * @note
+ * @note    
  */
 pfc_ipcresp_t Usess::ipcService(pfc::core::ipc::ServerSession &ipcsess,
-        pfc_ipcid_t service) {
+        pfc_ipcid_t service)
+{
   // area of return value.
   usess_ipc_err_e rtn = USESS_E_NG;
 
@@ -212,8 +216,7 @@ pfc_ipcresp_t Usess::ipcService(pfc::core::ipc::ServerSession &ipcsess,
   L_FUNCTION_COMPLETE();
   rtn = USESS_E_OK;
 
-proc_end
-    :
+proc_end:
   return static_cast<pfc_ipcresp_t>(rtn);
 }
 
@@ -222,9 +225,10 @@ proc_end
  * @brief   Receive of configuration reload event.
  * @param   event : [IN] event object.
  * @return  nothing.
- * @note
+ * @note    
  */
-void Usess::ReloadConfEventHandler(pfc::core::Event* event) {
+void Usess::ReloadConfEventHandler(pfc::core::Event* event)
+{
   pfc_evtype_t event_type = 0;
   // area of return value.
   usess_ipc_err_e err_code = USESS_E_OK;
@@ -243,7 +247,7 @@ void Usess::ReloadConfEventHandler(pfc::core::Event* event) {
   // Configuration file reload.
   // -------------------------------------------------------------
   int_rtn = reloadConf();
-  GOTO_IF((int_rtn != 0), proc_end,
+  GOTO_IF((int_rtn != 0), proc_end, 
       "Failed reload configuration. err=%d (%s)",
       int_rtn, strerror(int_rtn));
 
@@ -273,8 +277,7 @@ void Usess::ReloadConfEventHandler(pfc::core::Event* event) {
   }
   return;
 
-proc_end
-    :
+proc_end:
   return;
 }
 
@@ -283,10 +286,11 @@ proc_end
  * @brief   Called from IPC service handler, and add the session.
  * @param   ipcsess : [IN/OUT] IPC service handler context.
  * @return  Processing result.
- * @note
+ * @note    
  */
 usess_ipc_err_e Usess::UsessSessAddHandler(
-      pfc::core::ipc::ServerSession& ipcsess) {
+      pfc::core::ipc::ServerSession& ipcsess)
+{
   // area of IPC send/receive data.
   usess_ipc_req_sess_add_t receive_data;
   usess_ipc_sess_id_t send_data;
@@ -352,13 +356,11 @@ usess_ipc_err_e Usess::UsessSessAddHandler(
   L_FUNCTION_COMPLETE();
   return USESS_E_OK;
 
-unlock_end
-    :
+unlock_end:
   database_.Disconnect();
   USESS_UNLOCK();
 
-proc_end
-    :
+proc_end:
   // erase of password data area.
   memset(receive_data.sess_passwd, 0x00, sizeof(receive_data.sess_passwd));
   memset(passwd, 0x00, sizeof(passwd));
@@ -371,10 +373,11 @@ proc_end
  * @brief   Called from IPC service handler, and delete the session.
  * @param   ipcsess : [IN/OUT] IPC service handler context.
  * @return  Processing result.
- * @note
+ * @note    
  */
 usess_ipc_err_e Usess::UsessSessDelHandler(
-    pfc::core::ipc::ServerSession& ipcsess) {
+    pfc::core::ipc::ServerSession& ipcsess)
+{
   usess_ipc_req_sess_del_t receive_data;
 
   int ipc_rtn = -1;
@@ -407,12 +410,10 @@ usess_ipc_err_e Usess::UsessSessDelHandler(
   L_FUNCTION_COMPLETE();
   return USESS_E_OK;
 
-unlock_end
-    :
+unlock_end:
   USESS_UNLOCK();
 
-proc_end
-    :
+proc_end:
   return err_code;
 }
 
@@ -422,10 +423,11 @@ proc_end
  *          and delete the session of Specified session type.
  * @param   ipcsess : [IN/OUT] IPC service handler context.
  * @return  Processing result.
- * @note
+ * @note    
  */
 usess_ipc_err_e Usess::UsessSessTypeDelHandler(
-    pfc::core::ipc::ServerSession& ipcsess) {
+    pfc::core::ipc::ServerSession& ipcsess)
+{
   usess_ipc_req_sess_type_del_t receive_data;
 
   int ipc_rtn = -1;
@@ -452,12 +454,10 @@ usess_ipc_err_e Usess::UsessSessTypeDelHandler(
   L_FUNCTION_COMPLETE();
   return USESS_E_OK;
 
-unlock_end
-    :
+unlock_end:
   USESS_UNLOCK();
 
-proc_end
-    :
+proc_end:
   return err_code;
 }
 
@@ -465,10 +465,11 @@ proc_end
  * @brief   Called from IPC service handler, perform enable authentication.
  * @param   ipcsess : [IN/OUT] IPC service handler context.
  * @return  Processing result.
- * @note
+ * @note    
  */
 usess_ipc_err_e Usess::UsessEnableHandler(
-    pfc::core::ipc::ServerSession& ipcsess) {
+    pfc::core::ipc::ServerSession& ipcsess)
+{
   usess_ipc_req_sess_enable_t receive_data;
   UsessSession *sess = NULL;
   char passwd[73] = {'\0'};
@@ -523,13 +524,11 @@ usess_ipc_err_e Usess::UsessEnableHandler(
   L_FUNCTION_COMPLETE();
   return USESS_E_OK;
 
-unlock_end
-    :
+unlock_end:
   database_.Disconnect();
   USESS_UNLOCK();
 
-proc_end
-    :
+proc_end:
   // erase of password data area.
   memset(receive_data.enable_passwd, 0x00, sizeof(receive_data.enable_passwd));
   memset(passwd, 0x00, sizeof(passwd));
@@ -542,10 +541,11 @@ proc_end
  * @brief   Called from IPC service handler, perform disable authentication.
  * @param   ipcsess : [IN/OUT] IPC service handler context.
  * @return  Processing result.
- * @note
+ * @note    
  */
 usess_ipc_err_e Usess::UsessDisableHandler(
-    pfc::core::ipc::ServerSession& ipcsess) {
+    pfc::core::ipc::ServerSession& ipcsess)
+{
   usess_ipc_sess_id_t receive_data;
   UsessSession *sess = NULL;
 
@@ -582,12 +582,10 @@ usess_ipc_err_e Usess::UsessDisableHandler(
   L_FUNCTION_COMPLETE();
   return USESS_E_OK;
 
-unlock_end
-    :
+unlock_end:
   USESS_UNLOCK();
 
-proc_end
-    :
+proc_end:
   return err_code;
 }
 
@@ -596,10 +594,11 @@ proc_end
  * @brief   Called from IPC service handler, send session count.
  * @param   ipcsess : [IN/OUT] IPC service handler context.
  * @return  Processing result.
- * @note
+ * @note    
  */
 usess_ipc_err_e Usess::UsessSessCountHandler(
-    pfc::core::ipc::ServerSession& ipcsess) {
+    pfc::core::ipc::ServerSession& ipcsess)
+{
   usess_ipc_sess_id_t receive_data;
   uint32_t send_data;
 
@@ -636,12 +635,10 @@ usess_ipc_err_e Usess::UsessSessCountHandler(
   L_FUNCTION_COMPLETE();
   return USESS_E_OK;
 
-unlock_end
-    :
+unlock_end:
   USESS_UNLOCK();
 
-proc_end
-    :
+proc_end:
   return err_code;
 }
 
@@ -650,10 +647,11 @@ proc_end
  * @brief   Called from IPC service handler, send session list.
  * @param   ipcsess : [IN/OUT] IPC service handler context.
  * @return  Processing result.
- * @note
+ * @note    
  */
 usess_ipc_err_e Usess::UsessSessListHandler(
-    pfc::core::ipc::ServerSession& ipcsess) {
+    pfc::core::ipc::ServerSession& ipcsess)
+{
   usess_ipc_sess_id_t receive_data;
   usess_session_list_v info_list;
 
@@ -694,12 +692,10 @@ usess_ipc_err_e Usess::UsessSessListHandler(
   L_FUNCTION_COMPLETE();
   return USESS_E_OK;
 
-unlock_end
-    :
+unlock_end:
   USESS_UNLOCK();
 
-proc_end
-    :
+proc_end:
   return err_code;
 }
 
@@ -708,10 +704,11 @@ proc_end
  * @brief   Called from IPC service handler, send session detail.
  * @param   ipcsess : [IN/OUT] IPC service handler context.
  * @return  Processing result.
- * @note
+ * @note    
  */
 usess_ipc_err_e Usess::UsessSessDetailHandler(
-    pfc::core::ipc::ServerSession& ipcsess) {
+    pfc::core::ipc::ServerSession& ipcsess)
+{
   usess_ipc_req_sess_detail_t receive_data;
   usess_session_list_v info_list;
 
@@ -750,12 +747,10 @@ usess_ipc_err_e Usess::UsessSessDetailHandler(
   L_FUNCTION_COMPLETE();
   return USESS_E_OK;
 
-unlock_end
-    :
+unlock_end:
   USESS_UNLOCK();
 
-proc_end
-    :
+proc_end:
   return err_code;
 }
 
@@ -764,10 +759,11 @@ proc_end
  * @brief   Called from IPC service handler, change user password.
  * @param   ipcsess : [IN/OUT] IPC service handler context.
  * @return  Processing result.
- * @note
+ * @note    
  */
 usess_ipc_err_e Usess::UserUserPasswdHandler(
-    pfc::core::ipc::ServerSession& ipcsess) {
+    pfc::core::ipc::ServerSession& ipcsess)
+{
   usess_ipc_req_user_passwd_t receive_data;
   UsessUser user(database_);
   UsessSession *sess = NULL;
@@ -826,13 +822,11 @@ usess_ipc_err_e Usess::UserUserPasswdHandler(
   L_FUNCTION_COMPLETE();
   return USESS_E_OK;
 
-unlock_end
-    :
+unlock_end:
   database_.Disconnect();
   USESS_UNLOCK();
 
-proc_end
-    :
+proc_end:
   // erase of password data area.
   memset(receive_data.sess_passwd, 0x00, sizeof(receive_data.sess_passwd));
   memset(passwd, 0x00, sizeof(passwd));
@@ -845,10 +839,11 @@ proc_end
  * @brief   Called from IPC service handler, change enable password.
  * @param   ipcsess : [IN/OUT] IPC service handler context.
  * @return  Processing result.
- * @note
+ * @note    
  */
 usess_ipc_err_e Usess::UserEnablePasswdHandler(
-    pfc::core::ipc::ServerSession& ipcsess) {
+    pfc::core::ipc::ServerSession& ipcsess)
+{
   usess_ipc_req_enable_passwd_t receive_data;
   UsessSession *sess = NULL;
   char passwd[73] = {'\0'};
@@ -898,13 +893,11 @@ usess_ipc_err_e Usess::UserEnablePasswdHandler(
   L_FUNCTION_COMPLETE();
   return USESS_E_OK;
 
-unlock_end
-    :
+unlock_end:
   database_.Disconnect();
   USESS_UNLOCK();
 
-proc_end
-    :
+proc_end:
   // erase of password data area.
   memset(receive_data.enable_passwd, 0x00, sizeof(receive_data.enable_passwd));
   memset(passwd, 0x00, sizeof(passwd));
@@ -913,7 +906,7 @@ proc_end
 }
 
 
-}  // namespace usess
-}  // namespace unc
+} // namespace usess
+} // namespace unc
 
 PFC_MODULE_IPC_DECL(unc::usess::Usess, kUsessIpcNipcs);

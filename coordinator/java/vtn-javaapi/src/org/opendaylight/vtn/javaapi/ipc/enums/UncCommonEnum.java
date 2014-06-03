@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.ipc.enums;
 
 public class UncCommonEnum {
@@ -57,6 +58,7 @@ public class UncCommonEnum {
 		UNC_CLIENT_ERROR(400, "Invalid Argument("),
 		UNC_INVALID_FORMAT(40001, "Invalid Format"),
 		UNC_INVALID_ARGUMENT(40002, "Invalid Argument("),
+		UNC_UNAUTHORIZED(40100, "Unauthorized"),
 		UNC_NOT_FOUND(40400, "Not Found"),
 		UNC_METHOD_NOT_ALLOWED(40500, "Method Not Allowed"),
 		UNC_CONFLICT_FOUND(40901, "Duplicate Entity Exists"),

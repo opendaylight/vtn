@@ -68,7 +68,7 @@ bool MoManager::GetCreateCapability(const char *ctrlr_name,
   }
 
   unc::capa::CapaModule *capa = reinterpret_cast<unc::capa::CapaModule *>(
-      pfc::core::Module::getInstance("capa"));
+    pfc::core::Module::getInstance("capa"));
   if (capa == NULL) {
     UPLL_LOG_FATAL("CapaModule is not found");
     return false;
@@ -97,7 +97,7 @@ bool MoManager::GetUpdateCapability(const char *ctrlr_name,
   }
 
   unc::capa::CapaModule *capa = reinterpret_cast<unc::capa::CapaModule *>(
-      pfc::core::Module::getInstance("capa"));
+    pfc::core::Module::getInstance("capa"));
   if (capa == NULL) {
     UPLL_LOG_FATAL("CapaModule is not found");
     return false;
@@ -126,7 +126,7 @@ bool MoManager::GetReadCapability(const char *ctrlr_name,
   }
 
   unc::capa::CapaModule *capa = reinterpret_cast<unc::capa::CapaModule *>(
-      pfc::core::Module::getInstance("capa"));
+    pfc::core::Module::getInstance("capa"));
   if (capa == NULL) {
     UPLL_LOG_FATAL("CapaModule is not found");
     return false;
@@ -154,7 +154,7 @@ bool MoManager::GetStateCapability(const char *ctrlr_name,
   }
 
   unc::capa::CapaModule *capa = reinterpret_cast<unc::capa::CapaModule *>(
-      pfc::core::Module::getInstance("capa"));
+    pfc::core::Module::getInstance("capa"));
   if (capa == NULL) {
     UPLL_LOG_FATAL("CapaModule is not found");
     return false;

@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -252,6 +252,11 @@ typedef struct {
  * Note that the LOG_LVLCHAR_NONE must not be specified to 'c'.
  */
 #define	LOG_CHAR2LVL(c)			((c) - '0')
+
+/*
+ * Determine whether fatal log message is recorded or not.
+ */
+static pfc_bool_t	log_isfatal = PFC_FALSE;
 
 /*
  * Internal prototypes.
@@ -724,6 +729,21 @@ pfc_log_setup_directory(const char *path, int *errloc)
 }
 
 /*
+ * pfc_bool_t
+ * pfc_log_isfatal(void)
+ *	Determine whether at least one fatal log message is recorded or not.
+ *
+ * Calling/Exit State:
+ *	PFC_TRUE is returned if at least one fatal log message is recorded.
+ *	Otherwise PFC_FALSE is returned.
+ */
+pfc_bool_t
+pfc_log_isfatal(void)
+{
+	return log_isfatal;
+}
+
+/*
  * void
  * pfc_log_set_fatal_handler(pfc_log_fatal_t handler)
  *	Install fatal error log handler.
@@ -1087,6 +1107,7 @@ pfc_log_common_impl(pfc_log_level_t level, const char *modname,
 
 	if (level == PFC_LOGLVL_FATAL) {
 		handler = log_fatal_handler;
+		(void)pfc_atomic_swap_uint8(&log_isfatal, PFC_TRUE);
 	}
 	else {
 		handler = NULL;

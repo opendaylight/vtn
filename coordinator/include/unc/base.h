@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -107,6 +107,11 @@ UNC_C_BEGIN_DECL
 #define	UNC_PFMT_xUODBCINT64		"lX"
 #define	UNC_PFMT_XUODBCINT64		"lX"
 
+/* SQLLEN is defined as long. */
+#define	UNC_PFMT_SQLLEN			"ld"
+#define	UNC_PFMT_xSQLLEN		"lx"
+#define	UNC_PFMT_XSQLLEN		"lX"
+
 #else	/* !UNC_LP64 */
 
 /*
@@ -147,6 +152,11 @@ UNC_C_BEGIN_DECL
 #define	UNC_PFMT_UODBCINT64		"llu"
 #define	UNC_PFMT_xUODBCINT64		"llX"
 #define	UNC_PFMT_XUODBCINT64		"llX"
+
+/* SQLLEN is defined as SQLINTEGER. */
+#define	UNC_PFMT_SQLLEN			UNC_PFMT_SQLINTEGER
+#define	UNC_PFMT_xSQLLEN		UNC_PFMT_xSQLINTEGER
+#define	UNC_PFMT_XSQLLEN		UNC_PFMT_XSQLINTEGER
 
 #endif	/* UNC_LP64 */
 

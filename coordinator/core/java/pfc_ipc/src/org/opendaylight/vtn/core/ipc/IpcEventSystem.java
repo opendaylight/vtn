@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -630,6 +630,47 @@ public final class IpcEventSystem
 	 * @see	IpcEventAttribute#addTarget(String, IpcEventMask)
 	 */
 	public native void notifyState(int id) throws IpcException;
+
+	/**
+	 * <p>
+	 *   Enable or disable auto-cancellation of IPC client session.
+	 * </p>
+	 * <p>
+	 *   When an event listener session is disconnected unexpectedly,
+	 *   the IPC event subsystem check whether auto-cancellation of
+	 *   IPC client session is enabled or not. If enabled, the IPC event
+	 *   subsystem calls {@link ClientSession#cancel()} for each IPC
+	 *   client session associated with the same IPC server as disconnected
+	 *   listener session.
+	 * </p>
+	 * <ul>
+	 *   <li>
+	 *     Auto-cancellation is disabled by default.
+	 *   </li>
+	 *   <li>
+	 *     This method can be called even if the IPC event subsystem is
+	 *     not initialized.
+	 *   </li>
+	 * </ul>
+	 *
+	 * @param value  Auto-cancellation of IPC client session is enabled
+	 *               if {@code true} is specified.
+	 *               It is disabled if {@code false} is specified.
+	 * @since  C14
+	 */
+	public native void setAutoCancelEnabled(boolean value);
+
+	/**
+	 * <p>
+	 *   Determine whether auto-cancellation of IPC client session is
+	 *   enabled or not.
+	 * </p>
+	 *
+	 * @return  {@code true} if enabled. {@code false} if disabled.
+	 * @see  #setAutoCancelEnabled(boolean)
+	 * @since  C14
+	 */
+	public native boolean isAutoCancelEnabled();
 
 	/**
 	 * <p>

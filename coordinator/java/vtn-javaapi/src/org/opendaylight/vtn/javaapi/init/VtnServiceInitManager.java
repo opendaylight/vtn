@@ -1,14 +1,17 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.init;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.opendaylight.vtn.core.util.Logger;
@@ -17,6 +20,7 @@ import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceExceptionHandler;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceInitFailException;
+import org.opendaylight.vtn.javaapi.ipc.enums.IpcRequestPacketEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncIpcErrorCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
 import org.opendaylight.vtn.javaapi.openstack.constants.VtnServiceOpenStackConsts;
@@ -39,6 +43,9 @@ public final class VtnServiceInitManager {
 	private static Map<ClassLoader, IpcConnPool> ipcConnectionPoolMap = new HashMap<ClassLoader, IpcConnPool>();
 	private static Map<ClassLoader, DataBaseConnectionPool> dbConnectionPoolMap = new HashMap<ClassLoader, DataBaseConnectionPool>();
 
+	private static List<String> readAsList = new ArrayList<String>();
+	private static List<String> multiCallList = new ArrayList<String>();
+	
 	/**
 	 * Instantiates a new vtn service init manager.
 	 */
@@ -99,6 +106,8 @@ public final class VtnServiceInitManager {
 
 			// load the resources
 			PackageScan.getInstance();
+			// add api names with READ as List support
+			setReadAsList();
 		} catch (final VtnServiceException e) {
 			LOG.error("VtnService Initialization Failed : " + e);
 			throw new VtnServiceInitFailException(
@@ -156,4 +165,53 @@ public final class VtnServiceInitManager {
 		return dbConnectionPoolMap.get(Thread.currentThread()
 				.getContextClassLoader());
 	}
+	
+	/**
+	 * Get list of API names where List is created for corresponding IPC READ
+	 * operations
+	 */
+	private static void setReadAsList() {
+		readAsList
+				.add(IpcRequestPacketEnum.KT_VTNSTATION_CONTROLLER_GET.name());
+		readAsList
+		.add(IpcRequestPacketEnum.KT_VTNSTATION_CONTROLLER_GET_COUNT.name());
+		readAsList.add(IpcRequestPacketEnum.KT_VTN_DATAFLOW_GET.name());
+		readAsList.add(IpcRequestPacketEnum.KT_DATAFLOW_GET.name());
+		readAsList.add(IpcRequestPacketEnum.KT_CTR_DATAFLOW_GET.name());
+		readAsList.add(IpcRequestPacketEnum.KT_VBRIDGE_L2Domain.name());
+		readAsList.add(IpcRequestPacketEnum.KT_VBRIDGE_MAC_ENTRY_GET.name());
+		readAsList.add(IpcRequestPacketEnum.KT_VROUTER_ARP_ENTRY.name());
+		readAsList.add(IpcRequestPacketEnum.KT_VROUTER_ARP_ENTRY_COUNT.name());
+		readAsList.add(IpcRequestPacketEnum.KT_VROUTER_IPROUTE_GET.name());
+		readAsList.add(IpcRequestPacketEnum.KT_VTEP_GRP_MEMBER_GET.name());
+		readAsList.add(IpcRequestPacketEnum.KT_PORT_GET_MEMBER.name());
+		readAsList.add(IpcRequestPacketEnum.KT_LOGICAL_PORT_MEMBER_GET.name());
+				
+		// set multi-call list where NO_SUCH_INSTANCE should be treated as
+		// SIUCESS for second call READ
+		multiCallList.add(IpcRequestPacketEnum.KT_VRT_IF_GET.name());
+		multiCallList.add(IpcRequestPacketEnum.KT_VBR_IF_GET.name());
+		multiCallList.add(IpcRequestPacketEnum.KT_VUNK_IF_GET.name());
+		multiCallList.add(IpcRequestPacketEnum.KT_VTEP_IF_GET.name());
+		multiCallList.add(IpcRequestPacketEnum.KT_VTUNNEL_IF_GET.name());
+	}
+
+	/**
+	 * Getter for readAsList
+	 * 
+	 * @return
+	 */
+	public static List<String> getReadAsList() {
+		return readAsList;
+	}
+	
+	/**
+	 * Getter for multiCallList
+	 * 
+	 * @return
+	 */
+	public static List<String> getMultiCallList() {
+		return multiCallList;
+	}
+
 }

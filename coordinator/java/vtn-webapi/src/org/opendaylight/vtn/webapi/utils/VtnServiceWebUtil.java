@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -15,6 +15,7 @@ import java.util.Enumeration;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.codec.binary.Base64;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -110,16 +111,45 @@ public class VtnServiceWebUtil {
 					throws VtnServiceWebAPIException {
 		LOG.trace("Start VtnServiceWebUtil#prepareHeaderJson()");
 		final JsonObject headerJson = new JsonObject();
-		final Enumeration<?> headerEnum = request.getHeaderNames();
-		if (null != headerEnum) {
-			while (headerEnum.hasMoreElements()) {
-				final String nextElement = (String) headerEnum.nextElement();
-				if (SessionEnum.USERNAME.getSessionElement()
-						.equals(nextElement)
-						|| SessionEnum.PASSWORD.getSessionElement().equals(
-								nextElement)) {
-					headerJson.addProperty(nextElement,
-							request.getHeader(nextElement));
+		
+		/*
+		 * check if Authorization header is available or not
+		 * If available then decode username and password, if
+		 * not available then check for header fields for 
+		 * username and password
+		 */
+		final String authrizationHeader = request
+				.getHeader(ApplicationConstants.HTTP_AUTHERIZATION);
+		if (authrizationHeader != null
+				&& authrizationHeader
+						.startsWith(ApplicationConstants.AUTHERIZATION_BASIC)) {
+			// Authorization: Basic base64credentials
+			String base64Credentials = authrizationHeader.substring(
+					ApplicationConstants.AUTHERIZATION_BASIC.length()).trim();
+			String credentials = new String(
+					Base64.decodeBase64(base64Credentials));
+			// credentials = username:password
+			final String[] values = credentials
+					.split(ApplicationConstants.COLON);
+			if (values.length == 2) {
+				headerJson.addProperty(
+						SessionEnum.USERNAME.getSessionElement(), values[0]);
+				headerJson.addProperty(
+						SessionEnum.PASSWORD.getSessionElement(), values[1]);
+			}
+		} else {
+			final Enumeration<?> headerEnum = request.getHeaderNames();
+			if (null != headerEnum) {
+				while (headerEnum.hasMoreElements()) {
+					final String nextElement = (String) headerEnum
+							.nextElement();
+					if (SessionEnum.USERNAME.getSessionElement().equals(
+							nextElement)
+							|| SessionEnum.PASSWORD.getSessionElement().equals(
+									nextElement)) {
+						headerJson.addProperty(nextElement,
+								request.getHeader(nextElement));
+					}
 				}
 			}
 		}

@@ -449,6 +449,63 @@ enum kVunknownIfIndex {
   kDbiVunknownIfNumCols
 };
 }
+namespace vterminal {
+static const uint8_t kVterminalNumPks = 2;
+enum kVterminalIndex {
+  kDbiVtnName = 0,
+  kDbiVterminalName,
+  kDbiCtrlrName,
+  kDbiDomainId,
+  kDbiVterminalDesc,
+  kDbiOperStatus,
+  kDbiDownCount,
+  kDbiFaultCount,
+  kDbiValidCtrlrName,
+  kDbiValidDomainId,
+  kDbiValidVterminalDesc,
+  kDbiValidOperStatus,
+  kDbiCsRowStatus,
+  kDbiCsCtrlrName,
+  kDbiCsDomainId,
+  kDbiCsVterminalDesc,
+  kDbiVterminalFlags,
+  kDbiVterminalNumCols
+};
+}
+
+namespace vterminal_interface {
+static const uint8_t kVtermIfNumPks = 3;
+enum kVtermIfIndex {
+  kDbiVtnName = 0,
+  kDbiVterminalName,
+  kDbiIfName,
+  kDbiAdminStatus,
+  kDbiDesc,
+  kDbiLogicalPortId,
+  kDbiVlanId,
+  kDbiTagged,
+  kDbiOperStatus,
+  kDbiDownCount,
+  kDbiCtrlrName,
+  kDbiDomainId,
+  kDbiFlags,
+  kDbiValidAdminStatus,
+  kDbiValidDesc,
+  kDbiValidPortMap,
+  kDbiValidLogicalPortId,
+  kDbiValidVlanid,
+  kDbiValidTagged,
+  kDbiValidOperStatus,
+  kDbiCsRowstatus,
+  kDbiCsAdminStatus,
+  kDbiCsDesc,
+  kDbiCsPortMap,
+  kDbiCsLogicalPortId,
+  kDbiCsVlanid,
+  kDbiCsTagged,
+  kDbiVtermIfNumCols
+};
+}
 
 namespace vtep {
 static const uint8_t kVtepNumPks = 2;
@@ -647,6 +704,84 @@ enum FlowListRenameSchema {
 };  // enum FlowListRenameSchema
 }  // namespace flowlist_rename
 
+namespace vterm_if_flowfilter {
+static const uint8_t kVtermIfFlowFilterNumPks = 4;
+enum VtermIfFlowFilterSchema {
+  kDbiVtnName = 0,
+  kDbiVtermName,
+  kDbiVtermIfName,
+  kDbiInputDirection,
+  kDbiCtrlrName,
+  kDbiDomainId,
+  kDbiFlags,
+  kDbiCsRowStatus,
+  kDbiVtermIfFlowFilterNumCols  // Number of Columns
+};  // VtermIfFlowFilterSchema
+}  // namespace vterm_if_flowfilter
+
+// Enum definition for index in vTerminal interface flow filter entry table Schema
+namespace vterm_if_flowfilter_entry {
+static const uint8_t kVtermIfFlowFilterEntryNumPks = 5;
+enum VtermIfFlowFilterEntrySchema {
+  kDbiVtnName = 0,
+  kDbiVtermName,
+  kDbiVtermIfName,
+  kDbiInputDirection,
+  kDbiSequenceNum,
+  kDbiCtrlrName,
+  kDbiDomainId,
+  kDbiFlowlistName,
+  kDbiAction,
+  kDbiRedirectNode,
+  kDbiRedirectPort,
+  kDbiRedirectDirection,
+  kDbiModifyDstMac,
+  kDbiModifySrcMac,
+  kDbiNwmName,
+  kDbiDscp,
+  kDbiPriority,
+  kDbiFlags,
+  kDbiValidFlowlistName,
+  kDbiValidAction,
+  kDbiValidRedirectNode,
+  kDbiValidRedirectPort,
+  kDbiValidRedirectDirection,
+  kDbiValidModifyDstMac,
+  kDbiValidModifySrcMac,
+  kDbiValidNwmName,
+  kDbiValidDscp,
+  kDbiValidPriority,
+  kDbiCsRowStatus,
+  kDbiCsFlowlistName,
+  kDbiCsAction,
+  kDbiCsRedirectNode,
+  kDbiCsRedirectPort,
+  kDbiCsRedirectDirection,
+  kDbiCsModifyDstMac,
+  kDbiCsModifySrcMac,
+  kDbiCsNwmName,
+  kDbiCsDscp,
+  kDbiCsPriority,
+  kDbiVtermIfFlowFilterEntryNumCols  // Number of Columns
+};  // VtermIfFlowFilterEntrySchema
+}  // namespace vterm_if_flowfilter_entry
+
+namespace vterm_if_policingmap {
+static const uint8_t kVtermIfPolicingMapNumPks = 3;
+enum VtermIfPolicingMapSchema {
+  kDbiVtnName = 0,
+  kDbiVtermName,
+  kDbiVtermIfName,
+  kDbiCtrlrname,
+  kDbiDomainId,
+  kDbiPolicername,
+  kDbiFlags,
+  kDbiValidPolicername,
+  kDbiCsRowStatus,
+  kDbiCsPolicername,
+  kDbiVtermIfPolicingMapNumCols  // Number of Columns
+};  // VtermIfPolicingMap
+}  // namespace vterm_if_policingmap
 
 // Enum definition for index in global flowlist entry table Schema
 namespace flowlist_entry {
@@ -1069,6 +1204,9 @@ enum VbrFlowFilterEntrySchema {
   kDbiCsNwmName,
   kDbiCsDscp,
   kDbiCsPriority,
+  kDbiValidRedirectDirection,
+  kDbiCsRedirectDirection,
+  kDbiRedirectDirection,
   kDbiVbrFlowFilterEntryNumCols  // Number of Columns
 };  // VbrFlowFilterEntrySchema
 }  // namespace vbr_flowfilter_entry
@@ -1086,6 +1224,9 @@ enum VbrIfFlowFilterSchema {
   kDbiDomainId,
   kDbiFlags,
   kDbiCsRowStatus,
+  kDbiRedirectDirection,
+  kDbiValidRedirectDirection,
+  kDbiCsRedirectDirection,
   kDbiVbrIfFlowFilterNumCols  // Number of Columns
 };  // VbrFlowFilterEntrySchema
 }  // namespace vbr_if_flowfilter
@@ -1130,6 +1271,9 @@ enum VbrIfFlowFilterEntrySchema {
   kDbiCsNwmName,
   kDbiCsDscp,
   kDbiCsPriority,
+  kDbiRedirectDirection,
+  kDbiValidRedirectDirection,
+  kDbiCsRedirectDirection,
   kDbiVbrIfFlowFilterEntryNumCols  // Number of Columns
 };  // VbrIfFlowFilterEntrySchema
 }  // namespace vbr_if_flowfilter_entry
@@ -1191,6 +1335,8 @@ enum VrtIfFlowFilterEntrySchema {
   kDbiCsNwmName,
   kDbiCsDscp,
   kDbiCsPriority,
+  kDbiRedirectDirection,
+  kDbiValidRedirectDirection,
   kDbiVrtIfFlowFilterEntryNumCols  // Number of Columns
 };  // VrtIfFlowFilterEntrySchema
 }  // namespace vrt_if_flowfilter_entry
@@ -1302,6 +1448,9 @@ enum kDalTableIndex {
   kDbiVtepGrpMemTbl,
   kDbiVtunnelTbl,
   kDbiVtunnelIfTbl,
+  kDbiVterminalTbl,
+  kDbiVtermIfTbl,
+
   // L2/L3 MoMgr Table Enum End
   // POM MoMgr Table Enum Start
   kDbiFlowListTbl,
@@ -1322,48 +1471,51 @@ enum kDalTableIndex {
   kDbiVbrFlowFilterEntryTbl,
   kDbiVbrIfFlowFilterTbl,
   kDbiVbrIfFlowFilterEntryTbl,
+  kDbiVtermIfFlowFilterTbl,
+  kDbiVtermIfFlowFilterEntryTbl,
   kDbiVrtIfFlowFilterTbl,
   kDbiVrtIfFlowFilterEntryTbl,
   kDbiVtnPolicingMapTbl,
   kDbiVtnPolicingMapCtrlrTbl,
   kDbiVbrPolicingMapTbl,
   kDbiVbrIfPolicingMapTbl,
+  kDbiVtermIfPolicingMapTbl,
   // POM MoMgr Table Enum End
 
   kDbiCtrlrTbl,
   kDalNumTables
 };  // enum kDalTableIndex
-  extern const DalTableSchema table_schema[];
+extern const DalTableSchema table_schema[];
 };  // namespace table
 
 /* Inline Functions for Table Schema */
 inline const char *
 TableName(uint16_t table_index) {
   return ((table_index < table::kDalNumTables) ?
-           table::table_schema[table_index].table_name : NULL);
+          table::table_schema[table_index].table_name : NULL);
 }
 
 inline size_t
 TableNumCols(uint16_t table_index) {
   return ((table_index < table::kDalNumTables) ?
-           table::table_schema[table_index].num_columns : 0);
+          table::table_schema[table_index].num_columns : 0);
 }
 
 inline size_t
 TableNumPkCols(uint16_t table_index) {
   return ((table_index < table::kDalNumTables) ?
-           table::table_schema[table_index].num_pk_columns : 0);
+          table::table_schema[table_index].num_pk_columns : 0);
 }
 
 /* Inline Functions for Column Schema */
 inline const char *
 ColumnName(uint16_t table_index, uint16_t column_index) {
   return ((table_index < table::kDalNumTables) ?
-           ((column_index < table::table_schema[table_index].num_columns) ?
-             table::table_schema[table_index].
-             column_schema[column_index].column_name :
-             NULL) :
-           NULL);
+          ((column_index < table::table_schema[table_index].num_columns) ?
+           table::table_schema[table_index].
+           column_schema[column_index].column_name :
+           NULL) :
+          NULL);
 }
 
 inline SQLSMALLINT

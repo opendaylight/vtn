@@ -53,8 +53,8 @@ const std::vector<IpctSt::IpcStructNum>& KtUtil::GetCfgMsgTemplate(
   UPLL_FUNC_TRACE;
   static std::vector<IpctSt::IpcStructNum> dummy;
   std::map<unc_key_type_t, KtMsgTemplate*>::iterator it
-      = kt_msg_templates_.find(kt);
-  if ( it != kt_msg_templates_.end() ) {
+    = kt_msg_templates_.find(kt);
+  if (it != kt_msg_templates_.end() ) {
     return it->second->kt_cfg_msg;
   }
   return dummy;
@@ -204,6 +204,36 @@ void KtUtil::Init() {
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVrtIfFlowfilterEntry);
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStPfcdrvValFlowfilterEntry);
   kt_msg_templates_[UNC_KT_VRTIF_FLOWFILTER_ENTRY] = tmpl;
+  // UNC_KT_VTERMINAL
+  tmpl = new KtMsgTemplate();
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVterminal);
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStValVterminal);
+  kt_msg_templates_[UNC_KT_VTERMINAL] = tmpl;
+  // UNC_KT_VTERM_IF
+  tmpl = new KtMsgTemplate();
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVtermIf);
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStValVtermIf);
+  kt_msg_templates_[UNC_KT_VTERM_IF] = tmpl;
+  // UNC_KT_VTERMIF_POLICINGMAP
+  tmpl = new KtMsgTemplate();
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVtermIf);
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStValPolicingmap);
+  // can't do; TC does not support
+  // tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStPfcdrvValVbrifVextif);
+  kt_msg_templates_[UNC_KT_VTERMIF_POLICINGMAP] = tmpl;
+  // UNC_KT_VTERMIF_POLICINGMAP_ENTRY // read only
+
+  // UNC_KT_VTERM_IF_FLOWFILTER
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVtermIfFlowfilter);
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStPfcdrvValVbrifVextif);
+  kt_msg_templates_[UNC_KT_VTERMIF_FLOWFILTER] = tmpl;
+
+  // UNC_KT_VTERMIF_FLOWFILTER_ENTRY
+  tmpl = new KtMsgTemplate();
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVtermIfFlowfilterEntry);
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStPfcdrvValFlowfilterEntry);
+  kt_msg_templates_[UNC_KT_VTERMIF_FLOWFILTER_ENTRY] = tmpl;
+
   // UNC_KT_VUNKNOWN
   tmpl = new KtMsgTemplate();
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVunknown);
@@ -249,7 +279,7 @@ void KtUtil::Init() {
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVlink);
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStValVlink);
   kt_msg_templates_[UNC_KT_VLINK] = tmpl;
-  // UNC_KT_VTN_DATAFLOW
+ //UNC_KT_VTN_DATAFLOW
   tmpl = new KtMsgTemplate();
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVtnDataflow);
   kt_msg_templates_[UNC_KT_VTN_DATAFLOW] = tmpl;
@@ -263,7 +293,7 @@ void KtUtil::Init() {
  * @param stnum
  * @param data
  *
- * @return
+ * @return 
  */
 std::string KtUtil::KtStructToStr(IpctSt::IpcStructNum stnum, void *data) {
   std::stringstream ss;
@@ -411,6 +441,20 @@ std::string KtUtil::KtStructToStr(IpctSt::IpcStructNum stnum, void *data) {
       return IpcStructToStr(*reinterpret_cast<key_dhcp_relay_server*>(data));
     case IpctSt::kIpcStValDhcpRelayServer:
       return IpcStructToStr(*reinterpret_cast<val_dhcp_relay_server*>(data));
+    case IpctSt::kIpcStKeyVterminal:
+      return IpcStructToStr(*reinterpret_cast<key_vterm*>(data));
+    case IpctSt::kIpcStValVterminal:
+      return IpcStructToStr(*reinterpret_cast<val_vterm*>(data));
+    case IpctSt::kIpcStValRenameVterminal:
+      return IpcStructToStr(*reinterpret_cast<val_rename_vterm*>(data));
+    case IpctSt::kIpcStValVterminalSt:
+      return IpcStructToStr(*reinterpret_cast<val_vterm_st*>(data));
+    case IpctSt::kIpcStKeyVtermIf:
+      return IpcStructToStr(*reinterpret_cast<key_vterm_if*>(data));
+    case IpctSt::kIpcStValVtermIf:
+      return IpcStructToStr(*reinterpret_cast<val_vterm_if*>(data));
+    case IpctSt::kIpcStValVtermIfSt:
+      return IpcStructToStr(*reinterpret_cast<val_vterm_if_st*>(data));
     case IpctSt::kIpcStKeyNwm:
       return IpcStructToStr(*reinterpret_cast<key_nwm*>(data));
     case IpctSt::kIpcStValNwm:
@@ -553,6 +597,15 @@ std::string KtUtil::KtStructToStr(IpctSt::IpcStructNum stnum, void *data) {
     case IpctSt::kIpcStKeyVbrifPolicingmapEntry:
       return IpcStructToStr(
           *reinterpret_cast<key_vbrif_policingmap_entry*>(data));
+    case IpctSt::kIpcStKeyVtermIfPolicingMapEntry:
+      return IpcStructToStr(
+          *reinterpret_cast<key_vtermif_policingmap_entry*>(data));
+    case IpctSt::kIpcStKeyVtermIfFlowfilter:
+      return IpcStructToStr(*reinterpret_cast<key_vterm_if_flowfilter*>(data));
+    case IpctSt::kIpcStKeyVtermIfFlowfilterEntry:
+      return IpcStructToStr(
+          *reinterpret_cast<key_vterm_if_flowfilter_entry*>(data));
+
       // Driver structures
     case IpctSt::kIpcStPfcdrvValVbrIf:
       return IpcStructToStr(*reinterpret_cast<pfcdrv_val_vbr_if*>(data));
@@ -564,7 +617,7 @@ std::string KtUtil::KtStructToStr(IpctSt::IpcStructNum stnum, void *data) {
     case IpctSt::kIpcStPfcdrvValVbrifPolicingmap:
       return IpcStructToStr(
           *reinterpret_cast<pfcdrv_val_vbrif_policingmap*>(data));
-      /* VlanmapOnBoundary: Added new val struct */
+    /* VlanmapOnBoundary: Added new val struct */
     case IpctSt::kIpcStPfcdrvValVlanMap:
       return IpcStructToStr(*reinterpret_cast<pfcdrv_val_vlan_map*>(data));
       // Physical structures
@@ -737,8 +790,7 @@ std::string KtUtil::IpcStructToStr(const key_vtn_dataflow& key_vtn_df) {
   ss << "   -->vtn_name " << key_vtn_df.vtn_key.vtn_name << endl;
   ss << "   -->vnode_name " << key_vtn_df.vnode_id << endl;
   ss << "   -->vlan_id " << key_vtn_df.vlanid << endl;
-  ss << "   -->source_mac_addr " <<
-      MacAddrToStr(key_vtn_df.src_mac_address) << endl;
+  ss << "   -->source_mac_addr " << MacAddrToStr(key_vtn_df.src_mac_address) << endl;
   return ss.str();
 }
 
@@ -1155,6 +1207,70 @@ std::string KtUtil::IpcStructToStr(const val_dhcp_relay_server& val_server) {
   return ss.str();
 }
 
+std::string KtUtil::IpcStructToStr(const key_vterm& key_vterm) {
+std::stringstream ss;
+ss << "   -----   key_vterm   -----   " << endl;
+ss << IpcStructToStr(key_vterm.vtn_key);
+ss << "   -->vterminal_name " << key_vterm.vterminal_name << endl;
+return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_vterm& val_vterm) {
+std::stringstream ss;
+ss << "   -----   val_vterm   -----   " << endl;
+ss << "   -->valid " << VALID_ARRAY_TO_STR(val_vterm.valid);
+ss << "   -->cs_row_status " << chr2int(val_vterm.cs_row_status) << endl;
+ss << "   -->cs_attr " << CS_ARRAY_TO_STR(val_vterm.cs_attr);
+ss << "   -->controller_id " << val_vterm.controller_id << endl;
+ss << "   -->domain_id " << val_vterm.domain_id << endl;
+ss << "   -->vterm_description " << val_vterm.vterm_description << endl;
+return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_rename_vterm& val_rename_vterm) {
+std::stringstream ss;
+ss << "   -----   val_rename_vterm   -----   " << endl;
+ss << "   -->valid " << VALID_ARRAY_TO_STR(val_rename_vterm.valid);
+ss << "   -->new_name " << val_rename_vterm.new_name << endl;
+return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_vterm_st& val_vterm_st) {
+std::stringstream ss;
+ss << "   -----   val_vterm_st   -----   " << endl;
+ss << "   -->valid " << VALID_ARRAY_TO_STR(val_vterm_st.valid);
+ss << "   -->oper_status " << chr2int(val_vterm_st.oper_status) << endl;
+return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const key_vterm_if& key_vterm_if) {
+  std::stringstream ss;
+  ss << "   -----   key_vterm_if   -----   " << endl;
+  ss << IpcStructToStr(key_vterm_if.vterm_key);
+  ss << "   -->if_name " << key_vterm_if.if_name << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_vterm_if& val_vterm_if) {
+  std::stringstream ss;
+  ss << "   -----   val_vterm_if   -----   " << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(val_vterm_if.valid);
+  ss << "   -->admin_status " << chr2int(val_vterm_if.admin_status) << endl;
+  ss << "   -->description " << val_vterm_if.description << endl;
+  ss << "   -->cs_row_status " << chr2int(val_vterm_if.cs_row_status) << endl;
+  ss << "   -->cs_attr " << CS_ARRAY_TO_STR(val_vterm_if.cs_attr);
+  ss << IpcStructToStr(val_vterm_if.portmap);
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_vterm_if_st& val_vterm_if_st) {
+  std::stringstream ss;
+  ss << "   -----   val_vterm_if_st   -----   " << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(val_vterm_if_st.valid);
+  ss << "   -->oper_status " << chr2int(val_vterm_if_st.oper_status) << endl;
+  return ss.str();
+}
+
 std::string KtUtil::IpcStructToStr(const key_nwm& key_nwm) {
   std::stringstream ss;
   ss << "   -----   key_nwm   -----   " << endl;
@@ -1545,7 +1661,7 @@ std::string KtUtil::IpcStructToStr(const val_flowfilter& val_flowfilter) {
 }
 
 std::string KtUtil::IpcStructToStr(const val_vtn_flowfilter_controller_st&
-                                   val_cnler_st) {
+                              val_cnler_st) {
   std::stringstream ss;
   ss << "   -----   val_vtn_flowfilter_controller_st   -----   " << endl;
   ss << "   -->valid " << VALID_ARRAY_TO_STR(val_cnler_st.valid);
@@ -1585,7 +1701,7 @@ std::string KtUtil::IpcStructToStr(const val_flowlist_entry_st& val_cnler_st) {
 }
 
 std::string KtUtil::IpcStructToStr(const key_vtn_flowfilter_entry&
-                                   key_vtn_flowfilter_entry) {
+                              key_vtn_flowfilter_entry) {
   std::stringstream ss;
   ss << "   -----   key_vtn_flowfilter_entry   -----   " << endl;
   // ss << "   -->flowfilter_key " << endl;
@@ -1637,7 +1753,7 @@ std::string KtUtil::IpcStructToStr(const key_vbr_flowfilter& data) {
 }
 
 std::string KtUtil::IpcStructToStr(const key_vbr_flowfilter_entry&
-                                   key_vbr_flowfilter_entry) {
+                              key_vbr_flowfilter_entry) {
   std::stringstream ss;
   ss << "   -----   key_vbr_flowfilter_entry   -----   " << endl;
   // ss << "   -->flowfilter_key " << endl;
@@ -1657,6 +1773,7 @@ std::string KtUtil::IpcStructToStr(const val_flowfilter_entry& data) {
   ss << "   -->action " << chr2int(data.action) << endl;
   ss << "   -->redirect_node " << data.redirect_node << endl;
   ss << "   -->redirect_port " << data.redirect_port << endl;
+  ss << "   -->redirect_direction " << chr2int(data.redirect_direction) << endl;
   ss << "   -->modify_dstmac " << MacAddrToStr(data.modify_dstmac) << endl;
   ss << "   -->modify_srcmac " << MacAddrToStr(data.modify_srcmac) << endl;
   ss << "   -->nwm_name " << data.nwm_name << endl;
@@ -1683,7 +1800,7 @@ std::string KtUtil::IpcStructToStr(const val_flowfilter_entry_st& data) {
 }
 
 std::string KtUtil::IpcStructToStr(const key_vbr_if_flowfilter&
-                                   key_vbr_if_flowfilter) {
+                              key_vbr_if_flowfilter) {
   std::stringstream ss;
   ss << "   -----   key_vbr_if_flowfilter   -----   " << endl;
   // ss << "   -->if_key " << endl;
@@ -1693,7 +1810,7 @@ std::string KtUtil::IpcStructToStr(const key_vbr_if_flowfilter&
 }
 
 std::string KtUtil::IpcStructToStr(const key_vbr_if_flowfilter_entry&
-                                   key_vbr_if_flowfilter_entry) {
+                              key_vbr_if_flowfilter_entry) {
   std::stringstream ss;
   ss << "   -----   key_vbr_if_flowfilter_entry   -----   " << endl;
   // ss << "   -->flowfilter_key " << endl;
@@ -1704,7 +1821,7 @@ std::string KtUtil::IpcStructToStr(const key_vbr_if_flowfilter_entry&
 }
 
 std::string KtUtil::IpcStructToStr(const key_vrt_if_flowfilter&
-                                   key_vrt_if_flowfilter) {
+                              key_vrt_if_flowfilter) {
   std::stringstream ss;
   ss << "   -----   key_vrt_if_flowfilter   -----   " << endl;
   // ss << "   -->if_key " << endl;
@@ -1721,7 +1838,22 @@ std::string KtUtil::IpcStructToStr(const key_vrt_if_flowfilter_entry& data) {
   ss << "   -->sequence_num " << data.sequence_num << endl;
   return ss.str();
 }
+std::string KtUtil::IpcStructToStr(const key_vterm_if_flowfilter&
+                              key_vterm_if_flowfilter) {
+  std::stringstream ss;
+  ss << "   -----   key_vterm_if_flowfilter   -----   " << endl;
+  ss << IpcStructToStr(key_vterm_if_flowfilter.if_key);
+  ss << "   -->direction " << chr2int(key_vterm_if_flowfilter.direction) << endl;
+  return ss.str();
+}
 
+std::string KtUtil::IpcStructToStr(const key_vterm_if_flowfilter_entry& data) {
+  std::stringstream ss;
+  ss << "   -----   key_vterm_if_flowfilter_entry   -----   " << endl;
+  ss << IpcStructToStr(data.flowfilter_key);
+  ss << "   -->sequence_num " << data.sequence_num << endl;
+  return ss.str();
+}
 std::string KtUtil::IpcStructToStr(const key_policingprofile& data) {
   std::stringstream ss;
   ss << "   -----   key_policingprofile   -----   " << endl;
@@ -1737,7 +1869,7 @@ std::string KtUtil::IpcStructToStr(const val_policingprofile& data) {
 }
 
 std::string KtUtil::IpcStructToStr(const val_rename_policingprofile&
-                                   val_rename_policingprofile) {
+                              val_rename_policingprofile) {
   std::stringstream ss;
   ss << "   -----   val_rename_policingprofile   -----   " << endl;
   ss << "   -->valid " << VALID_ARRAY_TO_STR(val_rename_policingprofile.valid);
@@ -1747,7 +1879,7 @@ std::string KtUtil::IpcStructToStr(const val_rename_policingprofile&
 }
 
 std::string KtUtil::IpcStructToStr(const key_policingprofile_entry&
-                                   key_policingprofile_entry) {
+                              key_policingprofile_entry) {
   std::stringstream ss;
   ss << "   -----   key_policingprofile_entry   -----   " << endl;
   // ss << "   -->policingprofile_key " << endl;
@@ -1801,7 +1933,7 @@ std::string KtUtil::IpcStructToStr(const val_policingmap& data) {
 }
 
 std::string KtUtil::IpcStructToStr(const val_policingmap_controller_st&
-                                   val_cnler_st) {
+                              val_cnler_st) {
   std::stringstream ss;
   ss << "   -----   val_policingmap_controller_st   -----   " << endl;
   ss << "   -->valid " << VALID_ARRAY_TO_STR(val_cnler_st.valid);
@@ -1836,7 +1968,7 @@ std::string KtUtil::IpcStructToStr(const val_policingmap_switch_st& data) {
 }
 
 std::string KtUtil::IpcStructToStr(const key_vtn_policingmap_controller&
-                                   key_vtn_policingmap_controller) {
+                              key_vtn_policingmap_controller) {
   std::stringstream ss;
   ss << "   -----   key_vtn_policingmap_controller   -----   " << endl;
   // ss << "   -->vtn_key " << endl;
@@ -1876,6 +2008,16 @@ std::string KtUtil::IpcStructToStr(const key_vbrif_policingmap_entry&
   ss << IpcStructToStr(key_vbrif_policingmap_entry.vbrif_key) << endl;
   ss << "   -->sequence_num "
       << chr2int(key_vbrif_policingmap_entry.sequence_num) << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const key_vtermif_policingmap_entry&
+                                   key_vtermif_policingmap_entry) {
+  std::stringstream ss;
+  ss << "   -----   key_vtermif_policingmap_entry   -----   " << endl;
+  ss << IpcStructToStr(key_vtermif_policingmap_entry.vterm_if_key) << endl;
+  ss << "   -->sequence_num "
+      << chr2int(key_vtermif_policingmap_entry.sequence_num) << endl;
   return ss.str();
 }
 

@@ -322,7 +322,7 @@ KtAttrCapability::~KtAttrCapability() {
 
 bool KtAttrCapability::Init(uint32_t num_attrs) {
   num_attrs_ = num_attrs;
-  if ( num_attrs == 0 ) {
+  if (num_attrs == 0 ) {
     // KTs without any configuration attributes exist.
     // Just to avoid null pointers, and zero size allocation, keep 1 byte memory
     // Class varaible num_attrs_ still will be zero
@@ -400,5 +400,5 @@ bool KtAttrCapability::GetStateCapability(uint32_t *num_attrs,
   *state = (const uint8_t *)state_cap_;
   return true;
 }
-}  // namespace capa
-}  // namespace unc
+}  /* capa */
+}  /* unc */

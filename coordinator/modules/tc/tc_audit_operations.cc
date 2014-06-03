@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -504,8 +504,6 @@ TcAuditOperations::SendAdditionalResponse(TcOperStatus oper_stat) {
   if ( api_audit_ == PFC_TRUE ) {
     return oper_stat;
   }
-  if (oper_stat != TC_OPER_SUCCESS)
-     audit_result_ = unc::tclib::TC_AUDIT_FAILURE;
   /*Append the status of Audit operation*/
   if (SetAuditOperationStatus() != TC_OPER_SUCCESS) {
         return TC_OPER_FAILURE;

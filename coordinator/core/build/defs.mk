@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2010-2014 NEC Corporation
 # All rights reserved.
-# 
+#
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License v1.0 which accompanies this
 # distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -160,7 +160,8 @@ endif	# DEBUG_BUILD
 # and EXTRA_CXX_INCDIRS only for C++ language.
 # Note that CPPFLAGS is applied to both C and C++ compilation.
 CC_DEFS		= $(CC_FEATURE_DEFS) $(CC_DEBUG_DEFS) $(EXTRA_CPPFLAGS)
-CC_INCLUDES	= $(CC_INCDIRS_PREP:%=-I%) $(OBJS_INCDIRS:%=-I$(OBJROOT)/%)
+CC_INCLUDES	= $(CC_INCDIRS_FIRST:%=-I%) $(CC_INCDIRS_PREP:%=-I%)
+CC_INCLUDES	+= $(OBJS_INCDIRS:%=-I$(OBJROOT)/%)
 CC_INCLUDES	+= $(CC_INCDIRS:%=-I$(SRCROOT)/%) $(OPENSSL_INCDIR:%=-I%)
 CC_INCLUDES	+=  $(EXTRA_INCDIRS:%=-I%)
 CPPFLAGS	= $(CPPFLAGS_ALL) $(CC_DEFS) $(CC_INCLUDES)
@@ -198,7 +199,8 @@ ASFLAGS		= -x assembler-with-cpp
 PFC_EXTLIBDIRS	= $(PFC_EXTLIBS:%=$(OBJROOT)/ext/%)
 
 # Library search path for runtime linker.
-LD_RUNTIME_DIR	= $(EXTRA_RUNTIME_DIR) $(OPENSSL_RUNPATH) $(INST_LIBDIR)
+LD_RUNTIME_DIR	= $(LD_RUNTIME_DIR_FIRST) $(LD_RUNTIME_DIR_PREP) 
+LD_RUNTIME_DIR	+= $(EXTRA_RUNTIME_DIR) $(OPENSSL_RUNPATH) $(INST_LIBDIR)
 LD_RUNTIME_DIR	+= $(EXTERNAL_RUNPATH)
 LD_RPATH	= $(filter-out $(DEFAULT_LIBPATH), $(abspath $(LD_RUNTIME_DIR)))
 
@@ -214,6 +216,7 @@ LD_ZDEFS	= -z defs
 # LD_LDFLAGS:		Linker options to be passed via "-Wl".
 # EXTRA_LDFLAGS:	Extra flags to be passed to linker.
 LD_LIBDIRS	= $(LINK_LIBDIR) $(OBJTREE_LIBDIRS:%=$(OBJROOT)/%)
+LD_LIBDIRS	+= $(LD_LIBDIRS_FIRST) $(LD_LIBDIRS_PREP)
 LD_LIBDIRS	+= $(OPENSSL_LIBDIR) $(PFC_EXTLIBDIRS)
 LD_LIBDIRS	+= $(filter-out $(DEFAULT_LIBPATH),$(abspath $(EXTRA_LIBDIRS)))
 LDFLAGS_RPATH	= $(LD_RPATH:%=-Wl,-rpath,%)

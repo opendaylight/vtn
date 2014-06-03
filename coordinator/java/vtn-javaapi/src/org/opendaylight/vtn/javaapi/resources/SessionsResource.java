@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -68,6 +68,24 @@ public class SessionsResource extends AbstractResource {
 		ClientSession sessionEnable = null;
 		int status = ClientSession.RESP_FATAL;
 		try {
+			JsonObject sessionJson = null;
+			// unauthorized user check
+			if (requestBody != null
+					&& requestBody.has(VtnServiceJsonConsts.SESSION)) {
+				sessionJson = requestBody
+						.getAsJsonObject(VtnServiceJsonConsts.SESSION);
+				if (sessionJson.has(VtnServiceJsonConsts.USERNAME)) {
+					String username = sessionJson.get(
+							VtnServiceJsonConsts.USERNAME).getAsString();
+					if (!(username.equalsIgnoreCase(VtnServiceJsonConsts.ADMIN) || username
+							.equalsIgnoreCase(VtnServiceJsonConsts.OPER))) {
+						createErrorInfo(UncCommonEnum.UncResultCode.UNC_UNAUTHORIZED
+								.getValue());
+						status = UncResultCode.UNC_CLIENT_ERROR.getValue();
+						return status;
+					}
+				}
+			}
 			LOG.debug("Start Ipc framework call");
 			session = getConnPool().getSession(
 					UncSessionEnums.UNCD_IPC_CHANNEL,
@@ -81,8 +99,6 @@ public class SessionsResource extends AbstractResource {
 					UncStructEnum.UsessIpcReqSessAdd.getValue());
 			if (requestBody != null
 					&& requestBody.has(VtnServiceJsonConsts.SESSION)) {
-				final JsonObject sessionJson = requestBody
-						.getAsJsonObject(VtnServiceJsonConsts.SESSION);
 				// add user name to usess_ipc_req_sess_add structure
 				if (sessionJson.has(VtnServiceJsonConsts.USERNAME)
 						&& sessionJson

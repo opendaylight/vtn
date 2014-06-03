@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -80,9 +80,8 @@ void build_delete_table_script() {
   line.clear();
   line += "/**\n"
           " * upll_delete_table.sql\n"
-          " *   Contains SQL commands to delete all the tables"
-          "created by UPLL\n"
-          " */\n";
+          " *   Contains SQL commands to delete all the tables created by UPLL\n"
+          " */\n"; 
   printf("\n%s", line.c_str());
 
   for (cfg_idx = 0; cfg_idx < kUpllDbNumCfgId; cfg_idx++) {
@@ -95,7 +94,7 @@ void build_delete_table_script() {
 
     // Delete Table
     line.clear();
-    line += "TRUNCATE TABLE ";
+    line += "DROP TABLE ";
     line += get_cfg_str(static_cast<UpllDbCfgId>(cfg_idx));
     line += uudschema::TableName(tbl_idx);
     line += ";";

@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2013 NEC Corporation
+ * Copyright (c) 2011-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -17,6 +17,8 @@
 #include <stdarg.h>
 #include <pfc/base.h>
 #include <pfc/refptr.h>
+#include <pfc/event.h>
+#include <pfc/clock.h>
 #include "ptimer.h"
 
 PFC_C_BEGIN_DECL
@@ -34,6 +36,8 @@ extern void		libpfc_shutdown_start(void);
 extern int		libpfc_shutdown_getfd(void);
 extern pfc_bool_t	libpfc_is_shutdown(void);
 extern pfc_ptimer_t	libpfc_getptimer(void);
+extern int		libpfc_post_sysevent(pfc_evtype_t type,
+					     const pfc_timespec_t *timeout);
 
 #ifdef	_PFC_LIBPFC_BUILD
 extern void	libpfc_ipc_init(void);

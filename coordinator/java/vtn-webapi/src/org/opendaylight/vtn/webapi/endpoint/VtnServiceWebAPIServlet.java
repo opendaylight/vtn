@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -410,8 +410,9 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 						.substring(0, 3));
 
 				/*
-				 * If service is unavailable then retry-after header required to
-				 * be set
+				 * Set specific response header as per response codes
+				 * 503 : retry-after 
+				 * 401 : WWW-Authenticate
 				 */
 				if (actualErrorCode.equalsIgnoreCase(String
 						.valueOf(HttpErrorCodeEnum.UNC_SERVICE_UNAVAILABLE
@@ -420,6 +421,11 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 							ApplicationConstants.RETRY_AFTER,
 							ConfigurationManager.getInstance().getConfProperty(
 									ApplicationConstants.RETRY_AFTER));
+				} else if (actualErrorCode.equalsIgnoreCase(String
+						.valueOf(HttpErrorCodeEnum.UNC_UNAUTHORIZED.getCode()))) {
+					response.setHeader(
+							ApplicationConstants.AUTHORIZATION_RESP_HEADER,
+							ApplicationConstants.AUTHORIZATION_RESP_VALUE);
 				}
 
 				LOG.debug("Set HTTP response status : " + errorCode);

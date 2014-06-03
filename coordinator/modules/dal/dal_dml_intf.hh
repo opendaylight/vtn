@@ -11,15 +11,14 @@
  * dal_dml_intf.hh
  *   Contains definition of DalDmlIntf
  *   DML interface of database
- *
+ * 
  * Implemented by DalOdbcMgr
- */
+ */ 
 
 #ifndef __DAL_DML_INTF_HH__
 #define __DAL_DML_INTF_HH__
 
 #include <stdint.h>
-#include <string>
 #include "dal_defines.hh"
 #include "dal_bind_info.hh"
 #include "dal_schema.hh"
@@ -30,7 +29,7 @@ namespace upll {
 namespace dal {
 
 /**
- *  DalConnIntf
+ *  DalConnIntf 
  *    Database management query APIs for database
  *
  *  Inherited by DalOdbcMgr
@@ -379,12 +378,11 @@ class DalDmlIntf {
      */
     virtual DalResultCode DeleteRecords(const UpllCfgType cfg_type,
                                 const DalTableIndex table_index,
-                                const DalBindInfo
-                                *matching_attr_info) const = 0;
+                                const DalBindInfo *matching_attr_info) const = 0;
 
     /**
      * CreateRecord
-     *   Creates the record in table with the given input data for
+     *   Creates the record in table with the given input data for 
      *   the given cfg_type
      *
      * @param[in] cfg_type        - Configuration Type for which the record
@@ -438,6 +436,38 @@ class DalDmlIntf {
                     const DalTableIndex table_index,
                     const DalBindInfo *input_and_matching_attr_info) const = 0;
 
+    /**
+     * UpdateRecords
+     *   Updates the records of table with the given sql query.
+     *   Increments the write count if operation is successful.
+     *
+     * @param[in] query_stmt      - The update sql query to be executed
+     * @param[in] cfg_type        - Configuration Type for which the records
+     *                              have to be updated
+     * @param[in] table_index     - Valid Index of the table
+     * @param[in] input_and_matching_attr_info
+     *                            - Bind Information for updating records
+     *
+     * @return DalResultCode      - kDalRcSuccess in case of success
+     *                            - Valid errorcode otherwise
+     *
+     * Note:
+     * Information on usage of DalBindInfo
+     *  1. Valid instance of DalBindInfo with same table_index used in this API
+     *  2. BindInput is mandatory for the interested attributes.
+     *  3. BindMatch is optional.
+     *     But it is recommended to provide all primary keys for match to
+     *     update unique record.
+     *     BindMatch if used, updates multiple records that match the given
+     *     values.
+     *     BindMatch if not used, updates all the records from the table.
+     *  4. BindOutput if used for any attributes, ignored.
+     */
+    virtual DalResultCode UpdateRecords(
+                              std::string query_stmt,
+                              const UpllCfgType cfg_type,
+                              const DalTableIndex table_index,
+                              const DalBindInfo *bind_info) const = 0;
     /**
      * GetDeletedRecords
      *   Fetches the records from cfg_type_2 which are not in cfg_type_1
@@ -624,8 +654,7 @@ class DalDmlIntf {
     virtual DalResultCode CopyEntireRecords(const UpllCfgType dest_cfg_type,
                                     const UpllCfgType src_cfg_type,
                                     const DalTableIndex table_index,
-                                    const DalBindInfo
-                                    *output_attr_info) const = 0;
+                                    const DalBindInfo *output_attr_info) const = 0;
 
     /**
      * CopyModifiedRecords

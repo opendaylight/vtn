@@ -25,15 +25,15 @@ using unc::uppl::ODBCMTableColumns;
  * Set UINT8 value to the specified TableAttrSchema.
  */
 #define TABLE_ATTR_SCHEMA_UINT8_SET(schema, len, str, bufsize)  \
-    do {                                                           \
-      ColumnAttrValue <unsigned char[(bufsize)]> *__v=             \
-      new ColumnAttrValue <unsigned char[(bufsize)]>;        \
-      memset(__v->value, 0, bufsize);                              \
-      strncpy(reinterpret_cast<char *>(__v->value), (str).c_str(), \
-              (len)+1);                 \
-      (schema).p_table_attribute_value = __v;                      \
-      (schema).table_attribute_length = (len);                     \
-    } while (0)
+ do {                                                           \
+   ColumnAttrValue <unsigned char[(bufsize)]> *__v=             \
+         new ColumnAttrValue <unsigned char[(bufsize)]>;        \
+   memset(__v->value, 0, bufsize);                              \
+   strncpy(reinterpret_cast<char *>(__v->value), (str).c_str(), \
+                                      (len)+1);                 \
+   (schema).p_table_attribute_value = __v;                      \
+   (schema).table_attribute_length = (len);                     \
+ } while (0)
 
 /**getRespHeaderFromReqHeader
  * @Description : This function is for giving response to logical using
@@ -585,38 +585,38 @@ void PhyUtil::FillDbSchema(ODBCMTableColumns attr_name, string attr_value,
   table_attr_schema.table_attribute_name = attr_name;
   switch (attr_type) {
     case DATATYPE_UINT16:
-      {
-        ColumnAttrValue <uint16_t> *value = new ColumnAttrValue <uint16_t>;
-        value->value = strtouint(attr_value);
-        table_attr_schema.p_table_attribute_value = value;
-        break;
-      }
+    {
+      ColumnAttrValue <uint16_t> *value = new ColumnAttrValue <uint16_t>;
+      value->value = strtouint(attr_value);
+      table_attr_schema.p_table_attribute_value = value;
+      break;
+    }
     case DATATYPE_UINT64:
-      {
-        ColumnAttrValue <uint64_t> *value = new ColumnAttrValue <uint64_t>;
-        value->value = strtouint64(attr_value);
-        table_attr_schema.p_table_attribute_value = value;
-        break;
-      }
+    {
+      ColumnAttrValue <uint64_t> *value = new ColumnAttrValue <uint64_t>;
+      value->value = strtouint64(attr_value);
+      table_attr_schema.p_table_attribute_value = value;
+      break;
+    }
     case DATATYPE_UINT32:
-      {
-        ColumnAttrValue <uint32_t> *value = new ColumnAttrValue <uint32_t>;
-        value->value = strtouint(attr_value);
-        table_attr_schema.p_table_attribute_value = value;
-        break;
-      }
+    {
+      ColumnAttrValue <uint32_t> *value = new ColumnAttrValue <uint32_t>;
+      value->value = strtouint(attr_value);
+      table_attr_schema.p_table_attribute_value = value;
+      break;
+    }
     case DATATYPE_IPV4:
-      {
-        ColumnAttrValue <uint32_t> *value=
-            new ColumnAttrValue <uint32_t>;
-        value->value = 0;
-        if (!attr_value.empty()) {
-          value->value = inet_addr(attr_value.c_str());
-        }
-        pfc_log_debug("ip address to db: %d", value->value);
-        table_attr_schema.p_table_attribute_value = value;
-        break;
+    {
+      ColumnAttrValue <uint32_t> *value=
+          new ColumnAttrValue <uint32_t>;
+      value->value = 0;
+      if (!attr_value.empty()) {
+        value->value = inet_addr(attr_value.c_str());
       }
+      pfc_log_debug("ip address to db: %d", value->value);
+      table_attr_schema.p_table_attribute_value = value;
+      break;
+    }
 
     case DATATYPE_UINT8_ARRAY_2:
       TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
@@ -715,7 +715,7 @@ void PhyUtil::FillDbSchema(ODBCMTableColumns attr_name, uint8_t* attr_value,
     }
     break;
     default:
-    break;
+      break;
   }
   table_attr_schema.request_attribute_type = attr_type;
   vect_attr.push_back(table_attr_schema);
@@ -765,19 +765,19 @@ void PhyUtil::FillDbSchema(ODBCMTableColumns attr_name,
                           empty.length(), attr_type,
                           vect_attr);
   } else if (operation_type == UNC_OP_CREATE &&
-             in_valid_val == UNC_VF_INVALID) {
+      in_valid_val == UNC_VF_INVALID) {
     pfc_log_debug("Attribute '%s' is not given in create request",
                   attr_name_str.c_str());
     out_valid_value << UNC_VF_INVALID;
   } else if ((operation_type == UNC_OP_CREATE ||
-              operation_type == UNC_OP_UPDATE) &&
-             in_valid_val == UPPL_NO_VAL_STRUCT) {
+      operation_type == UNC_OP_UPDATE) &&
+      in_valid_val == UPPL_NO_VAL_STRUCT) {
     out_valid_value << UNC_VF_VALID;
     PhyUtil::FillDbSchema(attr_name, attr_value,
                           attr_value.length(), attr_type,
                           vect_attr);
   } else if (operation_type == UNC_OP_UPDATE &&
-             in_valid_val == UNC_VF_VALID_NO_VALUE) {
+      in_valid_val == UNC_VF_VALID_NO_VALUE) {
     // empty value - value to be deleted
     pfc_log_debug("Attribute '%s' value is to be deleted in update request",
                   attr_name_str.c_str());
@@ -793,7 +793,7 @@ void PhyUtil::FillDbSchema(ODBCMTableColumns attr_name,
   } else if (operation_type == UNC_OP_CREATE) {
     out_valid_value << in_valid_val;
   } else if (operation_type == UNC_OP_UPDATE &&
-             in_valid_val == UNC_VF_INVALID) {
+      in_valid_val == UNC_VF_INVALID) {
     pfc_log_debug(
         "Attribute '%s' not given in Update Request. Retain db valid",
         attr_name_str.c_str());
@@ -845,13 +845,13 @@ void PhyUtil::FillDbSchema(ODBCMTableColumns attr_name,
                           empty.length(), attr_type,
                           vect_attr);
   } else if (operation_type == UNC_OP_CREATE &&
-             in_valid_val == UNC_VF_INVALID) {
+      in_valid_val == UNC_VF_INVALID) {
     pfc_log_debug("Attribute '%s' is not given in create request",
                   attr_name_str.c_str());
     out_valid_value << UNC_VF_INVALID;
   } else if ((operation_type == UNC_OP_CREATE ||
-              operation_type == UNC_OP_UPDATE) &&
-             in_valid_val == UPPL_NO_VAL_STRUCT) {
+      operation_type == UNC_OP_UPDATE) &&
+      in_valid_val == UPPL_NO_VAL_STRUCT) {
     pfc_log_debug("Attribute '%s' is not given in create/update request",
                   attr_name_str.c_str());
     out_valid_value << UNC_VF_VALID;
@@ -859,7 +859,7 @@ void PhyUtil::FillDbSchema(ODBCMTableColumns attr_name,
                           attr_length, attr_type,
                           vect_attr);
   } else if (operation_type == UNC_OP_UPDATE &&
-             in_valid_val == UNC_VF_VALID_NO_VALUE) {
+      in_valid_val == UNC_VF_VALID_NO_VALUE) {
     // empty value - value to be deleted
     pfc_log_debug("Attribute '%s' value is to be deleted in update request",
                   attr_name_str.c_str());
@@ -871,7 +871,7 @@ void PhyUtil::FillDbSchema(ODBCMTableColumns attr_name,
   } else if (operation_type == UNC_OP_CREATE) {
     out_valid_value << in_valid_val;
   } else if (operation_type == UNC_OP_UPDATE &&
-             in_valid_val == UNC_VF_INVALID) {
+      in_valid_val == UNC_VF_INVALID) {
     pfc_log_debug(
         "Attribute '%s' not given in Update Request. Retain db valid",
         attr_name_str.c_str());
@@ -894,55 +894,55 @@ void PhyUtil::GetValueFromDbSchema(const TableAttrSchema& table_attr_schema,
   stringstream ss;
   switch (attr_type) {
     case DATATYPE_UINT16:
-      {
-        ColumnAttrValue <uint16_t> *value =
-            (ColumnAttrValue <uint16_t>*)
-            table_attr_schema.p_table_attribute_value;
-        ss << value->value;
-        break;
-      }
+    {
+      ColumnAttrValue <uint16_t> *value =
+          (ColumnAttrValue <uint16_t>*)
+          table_attr_schema.p_table_attribute_value;
+      ss << value->value;
+      break;
+    }
     case DATATYPE_UINT64:
-      {
-        ColumnAttrValue <uint64_t> *value =
-            (ColumnAttrValue <uint64_t>*)
-            table_attr_schema.p_table_attribute_value;
-        ss << value->value;
-        break;
-      }
+    {
+      ColumnAttrValue <uint64_t> *value =
+          (ColumnAttrValue <uint64_t>*)
+          table_attr_schema.p_table_attribute_value;
+      ss << value->value;
+      break;
+    }
     case DATATYPE_UINT32:
-      {
-        ColumnAttrValue <uint32_t> *value =
-            (ColumnAttrValue <uint32_t>*)
-            table_attr_schema.p_table_attribute_value;
-        ss << value->value;
-        break;
-      }
+    {
+      ColumnAttrValue <uint32_t> *value =
+          (ColumnAttrValue <uint32_t>*)
+          table_attr_schema.p_table_attribute_value;
+      ss << value->value;
+      break;
+    }
     case DATATYPE_IPV4:
-      {
-        ColumnAttrValue <uint32_t> *value =
-            (ColumnAttrValue <uint32_t>*)
-            table_attr_schema.p_table_attribute_value;
-        pfc_log_debug("Received ip value from DB: %d", value->value);
-        if (value->value > 0) {
-          struct sockaddr_in ipv4_addr;
-          memset(&ipv4_addr, 0, sizeof(sockaddr_in));
-          ipv4_addr.sin_addr.s_addr = value->value;
-          ss << inet_ntoa(ipv4_addr.sin_addr);
-          pfc_log_debug("ip address from db: %d", ipv4_addr.sin_addr.s_addr);
-        } else {
-          string empty = "";
-          ss << empty;
-        }
-        break;
+    {
+      ColumnAttrValue <uint32_t> *value =
+          (ColumnAttrValue <uint32_t>*)
+          table_attr_schema.p_table_attribute_value;
+      pfc_log_debug("Received ip value from DB: %d", value->value);
+      if (value->value > 0) {
+        struct sockaddr_in ipv4_addr;
+        memset(&ipv4_addr, 0, sizeof(sockaddr_in));
+        ipv4_addr.sin_addr.s_addr = value->value;
+        ss << inet_ntoa(ipv4_addr.sin_addr);
+        pfc_log_debug("ip address from db: %d", ipv4_addr.sin_addr.s_addr);
+      } else {
+        string empty = "";
+        ss << empty;
       }
+      break;
+    }
     case DATATYPE_IPV6:
-      {
-        ColumnAttrValue <unsigned char[16+1]> *value =
-            (ColumnAttrValue <unsigned char[16+1]>*)
-            table_attr_schema.p_table_attribute_value;
-        ss << value->value;
-        break;
-      }
+    {
+      ColumnAttrValue <unsigned char[16+1]> *value =
+          (ColumnAttrValue <unsigned char[16+1]>*)
+          table_attr_schema.p_table_attribute_value;
+      ss << value->value;
+      break;
+    }
     default:
       break;
   }
@@ -963,102 +963,102 @@ void PhyUtil::GetValueFromDbSchemaStr(const TableAttrSchema& table_attr_schema,
                                       AttributeDataType attr_type) {
   switch (attr_type) {
     case DATATYPE_UINT8_ARRAY_2:
-      {
-        ColumnAttrValue <unsigned char[2+1]> *value =
-            (ColumnAttrValue <unsigned char[2+1]>*)
-            table_attr_schema.p_table_attribute_value;
-        memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
-        break;
-      }
+    {
+      ColumnAttrValue <unsigned char[2+1]> *value =
+          (ColumnAttrValue <unsigned char[2+1]>*)
+          table_attr_schema.p_table_attribute_value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
+      break;
+    }
     case DATATYPE_UINT8_ARRAY_3:
-      {
-        ColumnAttrValue <unsigned char[3+1]> *value =
-            (ColumnAttrValue <unsigned char[3+1]>*)
-            table_attr_schema.p_table_attribute_value;
-        memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
-        break;
-      }
+    {
+      ColumnAttrValue <unsigned char[3+1]> *value =
+          (ColumnAttrValue <unsigned char[3+1]>*)
+          table_attr_schema.p_table_attribute_value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
+      break;
+    }
     case DATATYPE_UINT8_ARRAY_6:
-      {
-        ColumnAttrValue <unsigned char[6+1]> *value =
-            (ColumnAttrValue <unsigned char[6+1]>*)
-            table_attr_schema.p_table_attribute_value;
-        memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
-        memcpy(attr_value, value->value, 6);
-        break;
-      }
+    {
+      ColumnAttrValue <unsigned char[6+1]> *value =
+          (ColumnAttrValue <unsigned char[6+1]>*)
+          table_attr_schema.p_table_attribute_value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
+      memcpy(attr_value, value->value, 6);
+      break;
+    }
     case DATATYPE_UINT8_ARRAY_8:
-      {
-        ColumnAttrValue <unsigned char[8+1]> *value =
-            (ColumnAttrValue <unsigned char[8+1]>*)
-            table_attr_schema.p_table_attribute_value;
-        memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
-        break;
-      }
+    {
+      ColumnAttrValue <unsigned char[8+1]> *value =
+          (ColumnAttrValue <unsigned char[8+1]>*)
+          table_attr_schema.p_table_attribute_value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
+      break;
+    }
     case DATATYPE_UINT8_ARRAY_9:
-      {
-        ColumnAttrValue <unsigned char[9+1]> *value =
-            (ColumnAttrValue <unsigned char[9+1]>*)
-            table_attr_schema.p_table_attribute_value;
-        memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
-        break;
-      }
+    {
+      ColumnAttrValue <unsigned char[9+1]> *value =
+          (ColumnAttrValue <unsigned char[9+1]>*)
+          table_attr_schema.p_table_attribute_value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
+      break;
+    }
     case DATATYPE_UINT8_ARRAY_11:
-      {
-        ColumnAttrValue <unsigned char[11+1]> *value =
-            (ColumnAttrValue <unsigned char[11+1]>*)
-            table_attr_schema.p_table_attribute_value;
-        memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
-        break;
-      }
+    {
+      ColumnAttrValue <unsigned char[11+1]> *value =
+          (ColumnAttrValue <unsigned char[11+1]>*)
+          table_attr_schema.p_table_attribute_value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
+      break;
+    }
     case DATATYPE_UINT8_ARRAY_16:
-      {
-        ColumnAttrValue <unsigned char[16+1]> *value =
-            (ColumnAttrValue <unsigned char[16+1]>*)
-            table_attr_schema.p_table_attribute_value;
-        memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
-        break;
-      }
+    {
+      ColumnAttrValue <unsigned char[16+1]> *value =
+          (ColumnAttrValue <unsigned char[16+1]>*)
+          table_attr_schema.p_table_attribute_value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
+      break;
+    }
     case DATATYPE_UINT8_ARRAY_32:
-      {
-        ColumnAttrValue <unsigned char[32+1]> *value =
-            (ColumnAttrValue <unsigned char[32+1]>*)
-            table_attr_schema.p_table_attribute_value;
-        memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
-        break;
-      }
+    {
+      ColumnAttrValue <unsigned char[32+1]> *value =
+          (ColumnAttrValue <unsigned char[32+1]>*)
+          table_attr_schema.p_table_attribute_value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
+      break;
+    }
     case DATATYPE_UINT8_ARRAY_128:
-      {
-        ColumnAttrValue <unsigned char[128+1]> *value =
-            (ColumnAttrValue <unsigned char[128+1]>*)
-            table_attr_schema.p_table_attribute_value;
-        memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
-        break;
-      }
+    {
+      ColumnAttrValue <unsigned char[128+1]> *value =
+          (ColumnAttrValue <unsigned char[128+1]>*)
+          table_attr_schema.p_table_attribute_value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
+      break;
+    }
     case DATATYPE_UINT8_ARRAY_256:
-      {
-        ColumnAttrValue <unsigned char[256+1]> *value =
-            (ColumnAttrValue <unsigned char[256+1]>*)
-            table_attr_schema.p_table_attribute_value;
-        memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
-        break;
-      }
+    {
+      ColumnAttrValue <unsigned char[256+1]> *value =
+          (ColumnAttrValue <unsigned char[256+1]>*)
+          table_attr_schema.p_table_attribute_value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
+      break;
+    }
     case DATATYPE_UINT8_ARRAY_257:
-      {
-        ColumnAttrValue <unsigned char[257+1]> *value =
-            (ColumnAttrValue <unsigned char[257+1]>*)
-            table_attr_schema.p_table_attribute_value;
-        memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
-        break;
-      }
+    {
+      ColumnAttrValue <unsigned char[257+1]> *value =
+          (ColumnAttrValue <unsigned char[257+1]>*)
+          table_attr_schema.p_table_attribute_value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
+      break;
+    }
     case DATATYPE_UINT8_ARRAY_320:
-      {
-        ColumnAttrValue <unsigned char[320+1]> *value =
-            (ColumnAttrValue <unsigned char[320+1]>*)
-            table_attr_schema.p_table_attribute_value;
-        memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
-        break;
-      }
+    {
+      ColumnAttrValue <unsigned char[320+1]> *value =
+          (ColumnAttrValue <unsigned char[320+1]>*)
+          table_attr_schema.p_table_attribute_value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
+      break;
+    }
     default:
       break;
   }
@@ -1103,7 +1103,7 @@ UncRespCode PhyUtil::get_controller_type(
   dbtableschema_obj.set_table_name(unc::uppl::CTR_TABLE);
   dbtableschema_obj.PushBackToRowList(vect_table_attr_schema);
   ODBCM_RC_STATUS db_status = physical_layer->get_odbc_manager()-> \
-                              GetOneRow(datatype, dbtableschema_obj, db_conn);
+      GetOneRow(datatype, dbtableschema_obj, db_conn);
   if (db_status == ODBCM_RC_CONNECTION_ERROR) {
     // log fatal error to log daemon
     pfc_log_fatal("DB connection not available or cannot access DB");
@@ -1156,7 +1156,7 @@ void PhyUtil::reorder_col_attrs(
     for ( ; tab_iter != vect_table_attr_schema.end(); ++tab_iter) {
       TableAttrSchema col_attr = (*tab_iter);
       if (key_attr_name == ODBCManager::get_ODBCManager()->GetColumnName(
-              col_attr.table_attribute_name)) {
+          col_attr.table_attribute_name)) {
         vect_table_attr_schema.erase(tab_iter);
         vect_table_attr_schema.insert(vect_table_attr_schema.begin(),
                                       col_attr);
@@ -1202,9 +1202,9 @@ bool PhyUtil::IsValidValue(uint32_t operation_type,
 bool PhyUtil::IsFilteringOperation(uint32_t operation_type,
                                    unsigned int valid) {
   if ((operation_type == UNC_OP_READ ||
-       operation_type == UNC_OP_READ_SIBLING_BEGIN ||
-       operation_type == UNC_OP_READ_SIBLING ||
-       operation_type == UNC_OP_READ_SIBLING_COUNT) &&
+      operation_type == UNC_OP_READ_SIBLING_BEGIN ||
+      operation_type == UNC_OP_READ_SIBLING ||
+      operation_type == UNC_OP_READ_SIBLING_COUNT) &&
       valid == UNC_VF_VALID) {
     return true;
   } else {

@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.validation;
 
 import com.google.gson.JsonObject;
@@ -189,7 +190,7 @@ public class SessionResourceValidator extends VtnServiceValidator {
 							session.getAsJsonPrimitive(
 									VtnServiceJsonConsts.LOGIN_NAME)
 									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_63);
+							VtnServiceJsonConsts.LEN_32);
 				}
 			}
 			// validation for key: username
@@ -202,16 +203,9 @@ public class SessionResourceValidator extends VtnServiceValidator {
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.USERNAME)
 								.getAsString().trim().isEmpty()) {
-					isValid = session
+					isValid = validator.isValidMaxLength(session
 							.getAsJsonPrimitive(VtnServiceJsonConsts.USERNAME)
-							.getAsString().trim()
-							.equalsIgnoreCase(VtnServiceJsonConsts.ADMIN)
-							|| session
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.USERNAME)
-									.getAsString()
-									.trim()
-									.equalsIgnoreCase(VtnServiceJsonConsts.OPER);
+							.getAsString().trim(), VtnServiceJsonConsts.LEN_32);
 				} else {
 					requestBody.getAsJsonObject(VtnServiceJsonConsts.SESSION)
 							.remove(VtnServiceJsonConsts.USERNAME);

@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2013 NEC Corporation
+ * Copyright (c) 2011-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -366,7 +366,7 @@ struct ipc_conn {
 /*
  * IPC connection iterator.
  */
-typedef void	(*ipc_conniter_t)(ipc_conn_t *cnp);
+typedef void	(*ipc_conniter_t)(ipc_conn_t *cnp, pfc_ptr_t arg);
 
 /*
  * Client session state.
@@ -539,6 +539,8 @@ extern void	pfc_ipcclnt_canceller_cleanup(void);
 extern void	pfc_ipcclnt_canceller_fork_prepare(void);
 extern void	pfc_ipcclnt_canceller_fork_parent(void);
 extern void	pfc_ipcclnt_canceller_fork_child(void);
+extern void	pfc_ipcclnt_canceller_conn_notify(ipc_conn_t *cnp,
+						  pfc_ptr_t arg);
 
 extern ipc_conn_t	*pfc_ipcclnt_getconn(pfc_ipcconn_t conn);
 
@@ -552,7 +554,7 @@ extern int	pfc_ipcclnt_conn_invoke(ipc_conn_t *PFC_RESTRICT cnp,
 extern int	pfc_ipcclnt_conn_setdefault(const char *PFC_RESTRICT name,
 					    char *PFC_RESTRICT newname,
 					    pfc_hostaddr_t *PFC_RESTRICT haddr);
-extern void	pfc_ipcclnt_conn_iterate(ipc_conniter_t iter);
+extern void	pfc_ipcclnt_conn_iterate(ipc_conniter_t iter, pfc_ptr_t arg);
 extern void	pfc_ipcclnt_conn_cleanup(void);
 extern void	pfc_ipcclnt_conn_fork_prepare(void);
 extern void	pfc_ipcclnt_conn_fork_parent(void);

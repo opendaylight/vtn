@@ -3,7 +3,7 @@
 #
 # Copyright (c) 2010-2014 NEC Corporation
 # All rights reserved.
-# 
+#
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License v1.0 which accompanies this
 # distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -23,7 +23,9 @@ use vars qw(%COMMAND_SPEC %OSTYPE %OS_CONF %GCC_OSTYPE %ARCH %GCC_ARCH @PATH
 	    %DEFAULT_OSARCH_LIBPATH @DEFAULT_LIBPATH @LIBDIR_NAMES
 	    $PFC_PRODUCT_NAME %MAKEVAR_RESV @LINUX_DIST $PFC_SCM_REVISION
 	    @OPENSSL_TESTS @CONFIG_TESTS @CFLAGS_TESTS %REQUIRED_CFLAGS
-	    @UNLINK_ON_ERROR $YEAR_RANGE @JAVA_LIBRARY_PATH %MAKEVAR_OP);
+	    @UNLINK_ON_ERROR $YEAR_RANGE @JAVA_LIBRARY_PATH %MAKEVAR_OP
+	    @CC_INCDIRS_FIRST @LD_LIBDIRS_FIRST
+	    %INCDIRS_FIRST_MAP %LIBDIRS_FIRST_MAP);
 
 use Cwd qw(abs_path);
 use DirHandle;
@@ -34,6 +36,8 @@ use File::Path;
 use File::stat;
 use Getopt::Long;
 use POSIX qw(:DEFAULT :sys_wait_h :errno_h :fcntl_h);
+
+use vars qw(%Config);
 
 # Define product name.
 $PFC_PRODUCT_NAME = 'PF6800';
@@ -2324,6 +2328,10 @@ use constant	COMMON_ARCH		=> {
 	ARCH_I386() => ARCH_X86(), ARCH_X86_64() => ARCH_X86(),
 };
 
+use constant	JAVA_ARCHFLAG		=> {
+	ARCH_I386() => '-d32', ARCH_I686() => '-d32', ARCH_X86_64() => '-d64',
+};
+
 # ILP model.
 use constant	MODEL_LP64	=> 'LP64';
 use constant	MODEL_ILP32	=> 'ILP32';
@@ -2423,8 +2431,11 @@ sub check_cflags_tests();
 sub check_config_tests(\@$\%);
 sub format_boost_version($);
 sub check_java(\%$);
-sub get_java_home($);
-sub check_java_home($);
+sub scan_jdk($$);
+sub get_required_jdk_version($);
+sub get_java_home($%);
+sub search_java_home($$%);
+sub check_java_home($%);
 sub check_java_version($$%);
 sub check_jarfile($$$$);
 sub check_junit(\%$);
@@ -2439,7 +2450,9 @@ sub is_default_library_path($);
 sub check_gcc_arch($@);
 sub check_gcc_multiarch($);
 sub check_gcc_option($$$$$);
+sub check_strict_aliasing($$$\@);
 sub check_gcc_ld($);
+sub check_cc_search_path($);
 sub check_os_arch($$$$);
 sub write_makevar($$$);
 sub create_config_mk($\%);
@@ -3497,7 +3510,7 @@ OUT
 }
 
 {
-	package Config;
+	package Configure;
 
 	use Getopt::Long;
 	use Config;
@@ -3590,12 +3603,23 @@ OUT
 		   arg => OptSpec::OPTARG_CXX_OPT,
 		   default => \$main::CXX_DEBUG, prefix => 'enable-',
 		   check => 'checkNone'],
+		  [OPTTYPE_STRING_LIST, 'prep-includes',
+		   'Specify C/C++ header search path prior to default.',
+		   arg => OptSpec::OPTARG_DIR,
+		   check => 'checkTargetAbsPath'],
+		  [OPTTYPE_STRING_LIST, 'prep-libraries',
+		   'Specify C/C++ library search path prior to default.',
+		   arg => OptSpec::OPTARG_DIR,
+		   check => 'checkTargetAbsPath'],
 		  [OPTTYPE_BOOL, 'debug',
 		   "Enable or disable debugging build option.",
 		   default => $main::DEBUG_BUILD],
 		  [OPTTYPE_BOOL, 'errwarn',
 		   "Determine whether compilation warning should be treated " .
 		   "as error or not.", default => 1],
+		  [OPTTYPE_BOOL, 'strict-aliasing',
+		   'Determine whether to allow the compiler to assume ' .
+		   'strict aliasing rules.', default => 1],
 		  [OPTTYPE_STRING_LIST, 'cppflags',
 		   "Specify additional C/C++ preprocessor flags.\n" .
 		   "This option can be specified multiple times.",
@@ -3695,9 +3719,14 @@ OUT
 		   check => 'checkAbsPath'],
 		  [OPTTYPE_STRING, 'java-home',
 		   "Specify path to JDK home directory. " .
-		   "If omitted, OpenJDK home directory is used.",
+		   "If omitted or an invalid path is specified, " .
+		   "this command tries to find the location of the JDK.",
 		   arg => OptSpec::OPTARG_DIR, auto => 1,
 		   check => 'checkAbsPath'],
+		  [OPTTYPE_STRING, 'java-version',
+		   'Specify required version of JDK. (Default: ' .
+		   main::JDK_VERSION_MAJOR() . '.' .
+		   main::JDK_VERSION_MINOR() . ')'],
 		  [OPTTYPE_BOOL, 'java-debug',
 		   "Specify whether to compile Java programs with debugging " .
 		   "option.", default => 1],
@@ -3803,6 +3832,9 @@ OUT
 		$map{listspec} = sub {
 			print join("\n", keys(%map));
 			exit 0;
+		};
+		$map{'scan-jdk'} = sub {
+			$me->{_SCAN_JDK} = 1;
 		};
 
 		return \%map;
@@ -3932,6 +3964,13 @@ OUT
 
 		return $me->{_UNC};
 	}
+
+	sub isScanJDK
+	{
+		my $me = shift;
+
+		return $me->{_SCAN_JDK};
+	}
 }
 
 MAIN:
@@ -3954,7 +3993,7 @@ MAIN:
 	my (@argv_saved) = (@ARGV);
 
 	# Parse options.
-	my $conf = Config->new;
+	my $conf = Configure->new;
 
 	my $recheck = $conf->recheck();
 	if ($recheck) {
@@ -3972,19 +4011,26 @@ MAIN:
 		}
 
 		(@argv_saved) = (@ARGV);
-		$conf = Config->new;
+		$conf = Configure->new;
 	}
 
-	my $root = check_srcroot();
 	my $os = $conf->get('os');
 	my $arch = $conf->get('arch');
 	error("Invalid OS type: $os") if (defined($os) and !$OSTYPE{$os});
 	error("Invalid CPU architecture: $arch")
 		if (defined($arch) and !$ARCH{$arch});
 
+	if ($conf->isScanJDK()) {
+		my $jhome = scan_jdk($conf, $arch);
+		print $jhome, "\n" if ($jhome);
+
+		exit 0;
+	}
+
 	# Set up additional Java library search path.
 	setup_java_libdir($conf);
 
+	my $root = check_srcroot();
 	my $prefix = $conf->get('prefix');
 
 	# Check whether mandatory commands are installed or not.
@@ -4014,6 +4060,8 @@ MAIN:
 	($os, $arch, $multiarch) = check_os_arch($os, $arch, $gcc, $gxx);
 	my ($config_os, $config_arch) = ($os, $arch);
 
+	check_cc_search_path($conf);
+
 	# Determine compiler options for strict source check.
 	my $errwarn = ($conf->get('errwarn')) ? '-Werror' : undef;
 	foreach my $opts (GCC_WARN_OPTS, $errwarn) {
@@ -4033,6 +4081,10 @@ MAIN:
 	$gxx_alias = GCC_NO_STRICT_ALIAS
 		if (check_gcc_option($gxx, GCC_NO_STRICT_ALIAS, $CXX_MODE,
 				     undef, []));
+	check_strict_aliasing($conf, $gcc, $gcc_alias, @CC_WARN)
+		if ($gcc_alias);
+	check_strict_aliasing($conf, $gxx, $gxx_alias, @CXX_WARN)
+		if ($gxx_alias);
 
 	check_gcc_ld($gcc);
 	check_gcc_ld($gxx);
@@ -4058,6 +4110,7 @@ MAIN:
 		$ldlibdir = $conf->get('objdir') . '/ldlibs';
 	}
 
+	my $make = $COMMAND_SPEC{make}->{PATH};
 	my (%vars) = (PFC_PRODUCT_NAME	=> $PFC_PRODUCT_NAME,
 		      PREFIX		=> $prefix,
 		      CC		=> $gcc,
@@ -4076,6 +4129,7 @@ MAIN:
 		      CONFIG_ARCH	=> $config_arch,
 		      CPPFLAGS_ALL	=> join(' ', @{$conf->get('cppflags')}),
 		      DEFAULT_LIBPATH	=> join(' ', @DEFAULT_LIBPATH),
+		      PATH_MAKE		=> $make,
 		      PERL		=> $perl,
 		      SRCROOT		=> $root,
 		      OBJROOT		=> $conf->get('objdir'),
@@ -4088,6 +4142,11 @@ MAIN:
 		      OSTYPE		=> $os,
 		      ARCH		=> $arch,
 		      MULTIARCH		=> $multiarch);
+
+	$vars{CC_INCDIRS_FIRST} = join(' ', @CC_INCDIRS_FIRST)
+		if (@CC_INCDIRS_FIRST);
+	$vars{LD_LIBDIRS_FIRST} = join(' ', @LD_LIBDIRS_FIRST)
+		if (@LD_LIBDIRS_FIRST);
 
 	$PFC_BUILD_ID = $conf->get('build-id');
 	if (length($PFC_BUILD_ID) != 0) {
@@ -4121,7 +4180,6 @@ MAIN:
 		$vars{UNC_OBJROOT} = $pl_objroot;
 		$vars{UNC_INCDIRS} = $pl_objroot . '/include ' .
 			$pl_srcroot . '/include';
-		$conf->set('java', 1);
 
 		my $moddir = abs_path($root . '/../' . MODULES_DIR);
 		push(@modsrcdir, $moddir);
@@ -4207,8 +4265,6 @@ MAIN:
 	create_java_config_mk($vars{JAVA_CONFIG_MK}, %$jenv) if ($jenv);
 	create_gtest_config();
 	create_config_status(@argv_saved, %vars);
-
-	my $make = $COMMAND_SPEC{make}->{PATH};
 	setup($make);
 
 	print "\nType \"$make\" to build.\n" unless ($conf->isUNC());
@@ -5142,7 +5198,10 @@ OUT
 		}
 	}
 
+	undef $incdir if ($incdir and $INCDIRS_FIRST_MAP{$incdir});
+
 	my (%vars) = (BOOST_INCDIR => $incdir);
+	$vars{BOOST_CPPFLAGS} = '-I$(BOOST_INCDIR)' if ($incdir);
 
 	return \%vars;
 }
@@ -5509,7 +5568,10 @@ sub check_config_tests(\@$\%)
 		else {
 			error("Unexpected output: $line");
 		}
-		push(@$hdefs, ConfDef->new($name, $value, $desc, $required));
+		push(@$hdefs, ConfDef->new($name, $value, $desc, $required))
+			if ($name);
+		my $callback = $test->{CALLBACK};
+		&$callback($vars, $value) if ($callback);
 	}
 }
 
@@ -5536,32 +5598,34 @@ sub check_java(\%$)
 	}
 	print "yes\n";
 
+	checking('for required Java version');
+	my ($major, $minor) = eval {
+		return get_required_jdk_version($conf);
+	};
+	if ($@) {
+		my $err = "$@";
+		chomp($err);
+		print "error\n";
+		error($err);
+	}
+	print "${major}.${minor}\n";
+
 	my $jobjdir = $conf->get('java-objdir');
 	unless (defined($jobjdir)) {
 		$jobjdir = $conf->get('objdir') . '/jobjs';
 	}
 
 	checking('for JDK home directory');
-	my $jhome = get_java_home($conf);
+	my (%args) = (major => $major, minor => $minor);
+	my $arch = $vars->{CONFIG_ARCH};
+	my $jmode = JAVA_ARCHFLAG->{$arch};
+	$args{mode} = $jmode if ($jmode);
+	my ($jhome, $jver) = get_java_home($conf, %args);
 	unless ($jhome) {
 		print "not found\n";
-		error("OpenJDK is not found. Use --with-java-home.");
+		error("JDK is not found. Use --with-java-home.");
 	}
-	print "$jhome\n";
-
-	my $jmode = ($vars->{PFC_LP64}) ? '-d64' : '-d32';
-	check_java_version($jhome, 'java', option => [$jmode]);
-	check_java_version($jhome, 'javac');
-	check_java_version($jhome, 'javah');
-
-	checking('for jar command');
-	my $jar = $jhome . '/bin/jar';
-	unless (-x $jar) {
-		print "no\n";
-		error("jar command was not found in $jhome.");
-	}
-
-	print $jar, "\n";
+	print "$jhome ($jver)\n";
 
 	checking('whether to compile Java source with debugging option');
 	my $debug = $conf->get('java-debug');
@@ -5571,6 +5635,11 @@ sub check_java(\%$)
 	checking('for encoding of Java source');
 	my $enc = $conf->get('java-encoding');
 	print $enc, "\n";
+
+	my (%jenv) = (JAVA_OBJDIR => $jobjdir, JAVA_HOME => $jhome,
+		      JAVA_DEBUG_DEF => $debug, JAVA_ENCODING_DEF => $enc,
+		      INST_JARDIR => '$(INST_JAVADIR)/jar');
+	$jenv{JAVA_MODE} = $jmode if ($jmode);
 
 	checking('for JNI header file path');
 	my $inc = $jhome . '/include';
@@ -5590,11 +5659,10 @@ sub check_java(\%$)
 
 	my $incdir = "$mdinc $inc";
 	print "$incdir\n";
+	$jenv{JNI_INCDIR} = $incdir;
 
-	my (%jenv) = (JAVA_OBJDIR => $jobjdir, JAVA_HOME => $jhome,
-		      JAVA_DEBUG_DEF => $debug, JAVA_ENCODING_DEF => $enc,
-		      JNI_INCDIR => $incdir, JAVA_MODE => $jmode,
-		      INST_JARDIR => '$(INST_JAVADIR)/jar');
+	# Set JAVA_HOME environment variable for succeeding tests.
+	$ENV{JAVA_HOME} = $jhome;
 
 	check_junit(%jenv, $conf);
 	check_ant(%jenv, $conf);
@@ -5602,67 +5670,132 @@ sub check_java(\%$)
 	return \%jenv;
 }
 
-sub get_java_home($)
+sub scan_jdk($$)
+{
+	my ($conf, $arch) = @_;
+
+	my ($major, $minor) = eval {
+		return get_required_jdk_version($conf);
+	};
+
+	$major = JDK_VERSION_MAJOR unless (defined($major));
+	$minor = JDK_VERSION_MINOR unless (defined($minor));
+	my (%args) = (major => $major, minor => $minor);
+
+	unless ($arch) {
+		my $archname = $Config{myarchname};
+		$arch = (split(/-/, $archname, 2))[0] if ($archname);
+	}
+
+	my $jmode = JAVA_ARCHFLAG->{$arch};
+	$args{mode} = $jmode if ($jmode);
+
+	my ($jhome, $jver) = get_java_home($conf, %args);
+
+	return $jhome;
+}
+
+sub get_required_jdk_version($)
 {
 	my ($conf) = @_;
 
-	my $jhome = $conf->get('java-home');
-	return $jhome if ($jhome);
+	my ($major, $minor);
+	my $ver = $conf->get('java-version');
+	if (defined($ver)) {
+		die "Unexpected Java version format: $ver\n"
+			unless ($ver =~ /^\s*(\d+)\.(\d+)(\.\d+)?\s*$/);
 
-	# Search for OpenJDK under /usr/lib/jvm.
-	my $jvmdir = '/usr/lib/jvm';
-	my ($cur_maj, $cur_min, $cur_rev);
-	my $pat = qr,^java-(\d+)\.(\d+)\.(\d+)-openjdk,;
-	my $dirp = DirHandle->new($jvmdir);
+		$major = $1;
+		$minor = $2;
+	}
+	else {
+		$major = JDK_VERSION_MAJOR;
+		$minor = JDK_VERSION_MINOR;
+	}
+
+	return ($major, $minor);
+}
+
+sub get_java_home($%)
+{
+	my ($conf, %args) = @_;
+
+	# Try the specified JAVA_HOME first.
+	my $jhome = $conf->get('java-home');
+	my $ver;
+	if ($jhome) {
+		$ver = check_java_home($jhome, %args);
+		return ($jhome, $ver) if ($ver);
+	}
+
+	# Try OpenJDK at the standard location.
+	$jhome = '/usr/lib/jvm/java-openjdk';
+	$ver = check_java_home($jhome, %args);
+	return ($jhome, $ver) if ($ver);
+
+	# Try possible directories.
+	my $dirpat = qr,^(jdk|java),;
+	foreach my $dir (qw(/usr/lib/jvm /usr/java /usr /usr/local/java
+			    /usr/local)) {
+		($jhome, $ver) = search_java_home($dir, $dirpat, %args);
+		return ($jhome, $ver) if ($jhome);
+	}
+
+	# Try to derive JDK home from javac command.
+	my $javac_pat = qr,/bin/javac$,;
+	foreach my $dir (@PATH) {
+		my $javac = "$dir/javac";
+		next unless (-x $javac);
+		my $path = abs_path($javac);
+		next unless ($path);
+		if ($path =~ s,$javac_pat,,) {
+			$ver = check_java_home($path, %args);
+			return ($path, $ver) if ($ver);
+		}
+	}
+
+	return undef;
+}
+
+sub search_java_home($$%)
+{
+	my ($basedir, $dirpat, %args) = @_;
+
+	my $dirp = DirHandle->new($basedir);
 	return undef unless ($dirp);
 
 	while (my $dp = $dirp->read()) {
-		next unless ($dp =~ $pat);
-		my ($maj, $min, $rev) = ($1, $2, $3);
-		next unless ($maj > JDK_VERSION_MAJOR or
-			     ($maj == JDK_VERSION_MAJOR and
-			      $min >= JDK_VERSION_MINOR));
-		my $path = $jvmdir . '/' . $dp;
-		next unless (check_java_home($path));
+		next unless ($dp =~ $dirpat);
+		my $jhome = "$basedir/$dp";
+		my $javac = "$jhome/bin/javac";
+		next unless (-x $javac);
 
-		if (!defined($cur_maj) or $cur_maj < $maj or
-		    ($cur_maj == $maj and
-		     ($cur_min < $min or
-		      ($cur_min == $min and $cur_rev < $rev)))) {
-			$cur_maj = $maj;
-			$cur_min = $min;
-			$cur_rev = $rev;
-			$jhome = $path;
-		}
+		my $ver = check_java_home($jhome, %args);
+		return ($jhome, $ver) if ($ver);
 	}
-	undef $dirp;
-	return $jhome if ($jhome);
 
-	# Try /usr/lib/jvm/java-openjdk.
-	return check_java_home($jvmdir . '/java-openjdk');
+	return undef;
 }
 
-sub check_java_home($)
+sub check_java_home($%)
 {
-	my ($jhome) = @_;
+	my ($jhome, %args) = @_;
 
-	my $st = stat($jhome);
-	return undef unless ($st and S_ISDIR($st->mode()));
+	my (%option) = (major => $args{major}, minor => $args{minor});
+	return undef unless (check_java_version($jhome, 'javac', %option));
+	return undef unless (check_java_version($jhome, 'javah', %option));
 
-	# Ensure that both JRE and javac exist.
-	my $javac = $jhome . '/bin/javac';
-	$st = stat($javac);
-	return undef unless ($st and S_ISREG($st->mode()));
+	my $mode = $args{mode};
+	$option{option} = [$args{mode}] if ($mode);
+	my $ver = check_java_version($jhome, 'java', %option);
+	return undef unless ($ver);
 
-	my $jre = $jhome . '/jre';
-	$st = stat($jre);
-	return undef unless ($st and S_ISDIR($st->mode()));
+	# Check jar command.
+	my $jar = $jhome . '/bin/jar';
 
-	my $java = $jre . '/bin/java';
-	$st = stat($java);
-	return undef unless ($st and S_ISREG($st->mode()));
+	return undef unless (-x $jar);
 
-	return $jhome;
+	return $ver;
 }
 
 sub check_java_version($$%)
@@ -5670,8 +5803,6 @@ sub check_java_version($$%)
 	my ($jhome, $cmd, %args) = @_;
 
 	my $path = $jhome . '/bin/' . $cmd;
-	checking("for $path version");
-
 	my ($ver, $major, $minor, @output);
 	my ($filter) = sub {
 		my ($rh) = @_;
@@ -5696,23 +5827,14 @@ sub check_java_version($$%)
 	my (@commands) = ($path, '-version');
 	push(@commands, @$cmdopts) if ($cmdopts);
 	my $ret = exec_command(%opts, @commands);
-	unless ($ret == 0) {
-		print "unknown\n";
-		if (@output) {
-			print "\n$path output:\n";
-			print "---------------\n";
-			print @output;
-			print "---------------\n";
-		}
-		error("Unable to determine $path version.");
-	}
+	return undef unless ($ret == 0);
 
-	print $ver, "\n";
-	if ($major < JDK_VERSION_MAJOR or
-	    ($major == JDK_VERSION_MAJOR and $minor < JDK_VERSION_MINOR)) {
-		error("JDK ", JDK_VERSION_MAJOR, '.', JDK_VERSION_MINOR,
-		      ' or later is required.');
-	}
+	my $req_major = $args{major};
+	my $req_minor = $args{minor};
+
+	return undef if ($major < $req_major or
+			 ($major == $req_major and $minor < $req_minor));
+	return $ver;
 }
 
 sub check_jarfile($$$$)
@@ -6176,6 +6298,20 @@ OUT
 	return 1;
 }
 
+sub check_strict_aliasing($$$\@)
+{
+	my ($conf, $gcc, $opt, $warn) = @_;
+
+	checking("whether to allow $gcc to assume strict aliasing rules");
+	if ($conf->get('strict-aliasing')) {
+		print "yes\n";
+	}
+	else {
+		print "no\n";
+		push(@$warn, $opt);
+	}
+}
+
 sub check_gcc_ld($)
 {
 	my ($gcc) = @_;
@@ -6287,6 +6423,39 @@ sub check_os_arch($$$$)
 	push(@DEFAULT_LIBPATH, '/usr/lib') unless ($has_usrlib);
 
 	return ($os, $arch, $multiarch);
+}
+
+sub check_cc_search_path($)
+{
+	my ($conf) = @_;
+
+	checking('for C/C++ header search path prior to default');
+	my $list = $conf->get('prep-includes');
+	if ($list and @$list) {
+		print join(' ', @$list), "\n";
+		foreach my $dir (@$list) {
+			push(@CC_INCDIRS_FIRST, $dir);
+			$INCDIRS_FIRST_MAP{$dir} = 1;
+		}
+	}
+	else {
+		print "none specified\n";
+	}
+
+	checking('for C/C++ library search path prior to default');
+	$list = $conf->get('prep-libraries');
+	if ($list and @$list) {
+		print join(' ', @$list), "\n";
+		foreach my $dir (@$list) {
+			push(@LD_LIBDIRS_FIRST, $dir);
+			$LIBDIRS_FIRST_MAP{$dir} = 1;
+		}
+	}
+	else {
+		print "none specified\n";
+
+		return;
+	}
 }
 
 sub write_makevar($$$)

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -457,10 +457,12 @@ public class IpcLogicalResponseFactory {
 			 * Create Json for Count
 			 */
 			l2Domain = new JsonObject();
-			l2Domain.addProperty(
-					VtnServiceJsonConsts.COUNT,
-					IpcDataUnitWrapper
-							.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]));
+			String count = VtnServiceConsts.ZERO;
+			if (responsePacket.length >= 1) {
+				count = IpcDataUnitWrapper
+						.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]);
+			}
+			l2Domain.addProperty(VtnServiceJsonConsts.COUNT, String.valueOf(count));
 			root.add(rootJsonName, l2Domain);
 		} else {
 			// There is no use of key type, key structure and count of l2domains
@@ -607,11 +609,12 @@ public class IpcLogicalResponseFactory {
 			 * Create Json for Count
 			 */
 			macEntries = new JsonObject();
-			macEntries
-					.addProperty(
-							VtnServiceJsonConsts.COUNT,
-							IpcDataUnitWrapper
-									.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]));
+			String count = VtnServiceConsts.ZERO;
+			if (responsePacket.length >= 1) {
+				count = IpcDataUnitWrapper
+						.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]);
+			}
+			macEntries.addProperty(VtnServiceJsonConsts.COUNT, String.valueOf(count));
 			root.add(rootJsonName, macEntries);
 		} else {
 			// There is no use of key type and key structure
@@ -977,7 +980,41 @@ public class IpcLogicalResponseFactory {
 										valFlowFilterEntryStruct,
 										VtnServiceIpcConsts.REDIRECTPORT));
 					}
-
+					//Direction
+					validBit = valFlowFilterEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_REDIRECT_DIRECTION_FFE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						if (IpcDataUnitWrapper
+								.getIpcStructUint8Value(valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.REDIRECTDIRECTION)
+								.equals(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_IN
+										.getValue())) {
+							setValueToJsonObject(validBit, redirectDst,
+									VtnServiceJsonConsts.DIRECTION,
+									VtnServiceJsonConsts.IN);
+						} else if (IpcDataUnitWrapper
+								.getIpcStructUint8Value(valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.REDIRECTDIRECTION)
+								.equals(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_OUT
+										.getValue())) {
+							setValueToJsonObject(validBit, redirectDst,
+									VtnServiceJsonConsts.DIRECTION,
+									VtnServiceJsonConsts.OUT);
+						}  else {
+							LOG.debug("Direction : Invalid");
+						}
+						LOG.debug("Direction :"
+								+ IpcDataUnitWrapper
+										.getIpcStructUint8Value(
+												valFlowFilterEntryStruct,
+												VtnServiceIpcConsts.REDIRECTDIRECTION));
+					}
 					validBit = valFlowFilterEntryStruct
 							.getByte(
 									VtnServiceIpcConsts.VALID,
@@ -1685,46 +1722,13 @@ public class IpcLogicalResponseFactory {
 				 * add mandatory informations from key structure
 				 */
 				final IpcStruct keyFlowFilterEntryStruct = (IpcStruct) responsePacket[index++];
-				/*
-				 * this part is always required in Show, but not required in
-				 * List + "normal" op type
-				 */
-				if (getType.equals(VtnServiceJsonConsts.LIST)
-						|| getType.equals(VtnServiceJsonConsts.SHOW)
-						&& !dataType
-								.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
-					LOG.debug("Case : List or show, targetdb : not state");
-					flowFilterEntry.addProperty(VtnServiceJsonConsts.SEQNUM,
-							IpcDataUnitWrapper.getIpcStructUint16Value(
-									keyFlowFilterEntryStruct,
-									VtnServiceIpcConsts.SEQUENCENUM));
-				}
-				if (getType.equals(VtnServiceJsonConsts.LIST)
-						&& opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)
-						|| getType.equals(VtnServiceJsonConsts.SHOW)
-						&& !dataType
-								.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
-					LOG.debug("Case : List ,type : detail or show, targetdb : not state");
-					/*
-					 * add valid informations from value structure
-					 */
-					final IpcStruct valFlowFilterEntryStruct = (IpcStruct) responsePacket[index++];
-					LOG.debug("call getValVtnFlowFilterEntry to get data from value structure ValVtnFlowFilterEntry");
-					getValVtnFlowFilterEntry(flowFilterEntry,
-							valFlowFilterEntryStruct);
-				} else if (getType.equals(VtnServiceJsonConsts.LIST)
-						&& opType.equalsIgnoreCase(VtnServiceJsonConsts.NORMAL)) {
-					LOG.debug("Operation : normal Skip value struture");
-					index++;
-				}
-
 				if (getType.equals(VtnServiceJsonConsts.SHOW)
 						&& dataType
-								.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
-					LOG.debug("Case : Show and  targetdb :state");
+								.equalsIgnoreCase(VtnServiceJsonConsts.STATE)
+						&& requestBody.has(VtnServiceJsonConsts.CONTROLLERID)
+						&& requestBody.has(VtnServiceJsonConsts.DOMAINID)) {
+					LOG.debug("Show with controller and domain information in state db");
 					final IpcStruct valVtnFlowFilterControllerStruct = (IpcStruct) responsePacket[index++];
-					final IpcStruct valVtnFlowFilterControllerStStruct = (IpcStruct) responsePacket[index++];
-					final IpcStruct valFlowFilterEntryStruct = (IpcStruct) responsePacket[index++];
 					// from controller - seqnum
 					validBit = valVtnFlowFilterControllerStruct
 							.getByte(
@@ -1741,11 +1745,14 @@ public class IpcLogicalResponseFactory {
 										valVtnFlowFilterControllerStruct,
 										VtnServiceIpcConsts.SEQUENCENUM));
 					}
-					LOG.debug("call getValVtnFlowFilterEntry to get data from value structure ValVtnFlowFilterEntry");
+
+					final IpcStruct valVtnFlowFilterControllerStStruct = (IpcStruct) responsePacket[index++];
+					final IpcStruct valFlowFilterEntryStruct = (IpcStruct) responsePacket[index++];
+
 					getValVtnFlowFilterEntry(flowFilterEntry,
 							valFlowFilterEntryStruct);
 					if (opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
-						LOG.debug("op : detail");
+						LOG.debug("op specified as detail");
 						validBit = valVtnFlowFilterControllerStStruct
 								.getByte(
 										VtnServiceIpcConsts.VALID,
@@ -1789,13 +1796,32 @@ public class IpcLogicalResponseFactory {
 								flowListEntriesJsonArray);
 						flowFilterEntry.add(flowListName, flowListJson);
 					} else {
-						LOG.debug("Show ,Operation : normal and target db :state Skip flowList value strutures ");
+						LOG.debug("op not specified as detail");
 						// increasing index to eliminate flow list entry
 						// structures in case of show and op : normal
 						index = responsePacket.length - 1;
 					}
-
-					// root.add(subRootJsonName, statistics);
+				} else {
+					LOG.debug("Case except : Show with controller and domain information in state db");
+					flowFilterEntry.addProperty(VtnServiceJsonConsts.SEQNUM,
+							IpcDataUnitWrapper.getIpcStructUint16Value(
+									keyFlowFilterEntryStruct,
+									VtnServiceIpcConsts.SEQUENCENUM));
+					if (getType.equals(VtnServiceJsonConsts.LIST)
+							&& opType
+									.equalsIgnoreCase(VtnServiceJsonConsts.NORMAL)) {
+						LOG.debug("list with no detail information");
+						index++;
+					} else {
+						LOG.debug("List with detail option or show case");
+						/*
+						 * add valid informations from value structure
+						 */
+						final IpcStruct valFlowFilterEntryStruct = (IpcStruct) responsePacket[index++];
+						LOG.debug("call getValVtnFlowFilterEntry to get data from value structure ValVtnFlowFilterEntry");
+						getValVtnFlowFilterEntry(flowFilterEntry,
+								valFlowFilterEntryStruct);
+					}
 				}
 				// add current json object to array, if it has been initialized
 				// earlier
@@ -2852,11 +2878,12 @@ public class IpcLogicalResponseFactory {
 			 * Create Json for Count
 			 */
 			aRPEntries = new JsonObject();
-			aRPEntries
-					.addProperty(
-							VtnServiceJsonConsts.COUNT,
-							IpcDataUnitWrapper
-									.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]));
+			String count = VtnServiceConsts.ZERO;
+			if (responsePacket.length >= 1) {
+				count = IpcDataUnitWrapper
+						.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]);
+			}
+			aRPEntries.addProperty(VtnServiceJsonConsts.COUNT, String.valueOf(count));
 			root.add(rootJsonName, aRPEntries);
 		} else {
 			int index = 0;
@@ -2873,9 +2900,12 @@ public class IpcLogicalResponseFactory {
 			index++;
 
 			// get count of value structure
-			final Long count = Long
-					.parseLong(IpcDataUnitWrapper
-							.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]));
+			Long count = 0L;
+			if (responsePacket.length != 0) {
+				count = Long
+						.parseLong(IpcDataUnitWrapper
+								.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]));
+			}
 			LOG.debug("Count of value structure: " + count);
 			/*
 			 * moving from count to value structure parameter
@@ -3381,7 +3411,41 @@ public class IpcLogicalResponseFactory {
 										valFlowFilterEntryStruct,
 										VtnServiceIpcConsts.REDIRECTPORT));
 					}
-
+					//Direction
+					validBit = valFlowFilterEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_REDIRECT_DIRECTION_FFE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						if (IpcDataUnitWrapper
+								.getIpcStructUint8Value(valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.REDIRECTDIRECTION)
+								.equals(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_IN
+										.getValue())) {
+							setValueToJsonObject(validBit, redirectDst,
+									VtnServiceJsonConsts.DIRECTION,
+									VtnServiceJsonConsts.IN);
+						} else if (IpcDataUnitWrapper
+								.getIpcStructUint8Value(valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.REDIRECTDIRECTION)
+								.equals(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_OUT
+										.getValue())) {
+							setValueToJsonObject(validBit, redirectDst,
+									VtnServiceJsonConsts.DIRECTION,
+									VtnServiceJsonConsts.OUT);
+						}  else {
+							LOG.debug("Direction : Invalid");
+						}
+						LOG.debug("Direction :"
+								+ IpcDataUnitWrapper
+										.getIpcStructUint8Value(
+												valFlowFilterEntryStruct,
+												VtnServiceIpcConsts.REDIRECTDIRECTION));
+					}
 					validBit = valFlowFilterEntryStruct
 							.getByte(
 									VtnServiceIpcConsts.VALID,
@@ -3418,7 +3482,9 @@ public class IpcLogicalResponseFactory {
 				}
 				if (getType.equals(VtnServiceJsonConsts.SHOW)
 						&& dataType
-								.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
+								.equalsIgnoreCase(VtnServiceJsonConsts.STATE)
+						&& opType
+								.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
 					LOG.debug("Case : Show and targetdb :State ");
 					final IpcStruct valFlowFilterEntryStStruct = (IpcStruct) responsePacket[index++];
 					if (opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
@@ -5030,7 +5096,7 @@ public class IpcLogicalResponseFactory {
 						validBit = valVbrIfStStruct
 								.getByte(
 										VtnServiceIpcConsts.VALID,
-										UncStructIndexEnum.ValVrtIfStIndex.UPLL_IDX_OPER_STATUS_VRTIS
+										UncStructIndexEnum.ValVbrIfStIndex.UPLL_IDX_OPER_STATUS_VBRIS
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
@@ -5430,7 +5496,14 @@ public class IpcLogicalResponseFactory {
 									VtnServiceIpcConsts.VALID,
 									UncStructIndexEnum.ValVtunnelIfIndex.UPLL_IDX_PORT_MAP_VTNL_IF
 											.ordinal());
-				} else {
+				} else if (ifType
+						.equalsIgnoreCase(VtnServiceJsonConsts.VTERMINAL_INTERFACE_PORTMAP)) {
+					validBit = valIfStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valVtermIfIndex.UPLL_IDX_PM_VTERMI
+											.ordinal());
+				}  else {
 					LOG.debug("Incorrect ifType:" + ifType);
 				}
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
@@ -5494,12 +5567,7 @@ public class IpcLogicalResponseFactory {
 							.ordinal()
 							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
-						/*
-						 * setValueToJsonObject(validBit, portMap,
-						 * VtnServiceJsonConsts.TAGGED,
-						 * IpcDataUnitWrapper.getIpcStructUint8ArrayValue
-						 * (valPortMapStruct, VtnServiceIpcConsts.TAGGED));
-						 */if (IpcDataUnitWrapper
+					if (IpcDataUnitWrapper
 								.getIpcStructUint8Value(valPortMapStruct,
 										VtnServiceIpcConsts.TAGGED)
 								.equals(UncStructIndexEnum.vlan_tagged.UPLL_VLAN_TAGGED
@@ -5922,7 +5990,41 @@ public class IpcLogicalResponseFactory {
 										valFlowFilterEntryStruct,
 										VtnServiceIpcConsts.REDIRECTPORT));
 					}
-
+					//Direction
+					validBit = valFlowFilterEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_REDIRECT_DIRECTION_FFE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						if (IpcDataUnitWrapper
+								.getIpcStructUint8Value(valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.REDIRECTDIRECTION)
+								.equals(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_IN
+										.getValue())) {
+							setValueToJsonObject(validBit, redirectDst,
+									VtnServiceJsonConsts.DIRECTION,
+									VtnServiceJsonConsts.IN);
+						} else if (IpcDataUnitWrapper
+								.getIpcStructUint8Value(valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.REDIRECTDIRECTION)
+								.equals(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_OUT
+										.getValue())) {
+							setValueToJsonObject(validBit, redirectDst,
+									VtnServiceJsonConsts.DIRECTION,
+									VtnServiceJsonConsts.OUT);
+						}  else {
+							LOG.debug("Direction : Invalid");
+						}
+						LOG.debug("Direction :"
+								+ IpcDataUnitWrapper
+										.getIpcStructUint8Value(
+												valFlowFilterEntryStruct,
+												VtnServiceIpcConsts.REDIRECTDIRECTION));
+					}
 					validBit = valFlowFilterEntryStruct
 							.getByte(
 									VtnServiceIpcConsts.VALID,
@@ -5958,7 +6060,9 @@ public class IpcLogicalResponseFactory {
 				}
 				if (getType.equals(VtnServiceJsonConsts.SHOW)
 						&& dataType
-								.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
+								.equalsIgnoreCase(VtnServiceJsonConsts.STATE)
+						&& opType
+								.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
 					LOG.debug("Case : Show and targetdb :State ");
 					final IpcStruct valFlowFilterEntryStStruct = (IpcStruct) responsePacket[index++];
 					if (opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
@@ -6639,11 +6743,9 @@ public class IpcLogicalResponseFactory {
 	 * @param valFlowFilterEntryStruct
 	 */
 	public void getValVtnFlowFilterEntry(final JsonObject flowFilterEntry,
-
-	final IpcStruct valFlowFilterEntryStruct) {
+			final IpcStruct valFlowFilterEntryStruct) {
 		LOG.trace("Start getValVtnFlowFilterEntry");
 		byte validBit;
-
 		validBit = valFlowFilterEntryStruct
 				.getByte(
 						VtnServiceIpcConsts.VALID,
@@ -6677,24 +6779,6 @@ public class IpcLogicalResponseFactory {
 				setValueToJsonObject(validBit, flowFilterEntry,
 						VtnServiceJsonConsts.ACTIONTYPE,
 						VtnServiceJsonConsts.PASS);
-			} else if (IpcDataUnitWrapper
-					.getIpcStructUint8Value(valFlowFilterEntryStruct,
-							VtnServiceIpcConsts.ACTION)
-					.equalsIgnoreCase(
-							UncStructIndexEnum.FlowfilterAction.UPLL_FLOWFILTER_ACT_DROP
-									.getValue())) {
-				setValueToJsonObject(validBit, flowFilterEntry,
-						VtnServiceJsonConsts.ACTIONTYPE,
-						VtnServiceJsonConsts.DROP);
-			} else if (IpcDataUnitWrapper
-					.getIpcStructUint8Value(valFlowFilterEntryStruct,
-							VtnServiceIpcConsts.ACTION)
-					.equalsIgnoreCase(
-							UncStructIndexEnum.FlowfilterAction.UPLL_FLOWFILTER_ACT_REDIRECT
-									.getValue())) {
-				setValueToJsonObject(validBit, flowFilterEntry,
-						VtnServiceJsonConsts.ACTIONTYPE,
-						VtnServiceJsonConsts.REDIRECT);
 			} else {
 				LOG.debug("Action Type : Invalid");
 			}
@@ -7684,7 +7768,7 @@ public class IpcLogicalResponseFactory {
 				count = IpcDataUnitWrapper
 						.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]);
 			}
-			ipRouteList.addProperty(VtnServiceJsonConsts.COUNT, count);
+			ipRouteList.addProperty(VtnServiceJsonConsts.COUNT, String.valueOf(count));
 			root.add(rootJsonName, ipRouteList);
 		} else {
 			int index = 0;
@@ -9585,5 +9669,870 @@ public class IpcLogicalResponseFactory {
 		LOG.debug("action json:" + action);
 		return action;
 	}
+	
+	/**
+	 * Used for VTerminalInterface FlowFilter Response
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @param getType
+	 * @return JsonObject
+	 */
+	public JsonObject getVTerminalInterfaceFlowFilterResponse(
+			final IpcDataUnit[] responsePacket, final JsonObject requestBody,
+			final String getType) {
+		LOG.trace("Start getVTerminalInterfaceFlowFilterResponse");
+		final JsonObject root = new JsonObject();
 
+		final String rootJsonName = VtnServiceJsonConsts.FLOWFILTER;
+		LOG.debug("Json Name :" + rootJsonName);
+		JsonObject vTerminalIFflowFilter = null;
+		for (int index = 0; index < responsePacket.length; index++) {
+
+			vTerminalIFflowFilter = new JsonObject();
+
+			// There is no use of key type
+			LOG.debug("Skip key type: no use");
+			index++;
+			/*
+			 * add mandatory informations from key structure
+			 */
+			final IpcStruct keyVTerminalIfFlowFilter = (IpcStruct) responsePacket[index++];
+			if (IpcDataUnitWrapper
+					.getIpcStructUint8Value(keyVTerminalIfFlowFilter,
+							VtnServiceIpcConsts.DIRECTION)
+					.equals(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_IN
+							.getValue())) {
+				vTerminalIFflowFilter.addProperty(VtnServiceJsonConsts.FFTYPE,
+						VtnServiceJsonConsts.IN);
+				LOG.debug("FF Type :"
+						+ IpcDataUnitWrapper.getIpcStructUint8Value(
+								keyVTerminalIfFlowFilter,
+								VtnServiceIpcConsts.DIRECTION));
+			} else if (IpcDataUnitWrapper
+					.getIpcStructUint8Value(keyVTerminalIfFlowFilter,
+							VtnServiceIpcConsts.DIRECTION)
+					.equals(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_OUT
+							.getValue())) {
+				vTerminalIFflowFilter.addProperty(VtnServiceJsonConsts.FFTYPE,
+						VtnServiceJsonConsts.OUT);
+				LOG.debug("FF Type :"
+						+ IpcDataUnitWrapper.getIpcStructUint8Value(
+								keyVTerminalIfFlowFilter,
+								VtnServiceIpcConsts.DIRECTION));
+			} else {
+				LOG.debug("Invalid value for FFTYPE parameter");
+			}
+		}
+
+		/*
+		 * finally add single object to root json object and return the same.
+		 */
+		root.add(rootJsonName, vTerminalIFflowFilter);
+		LOG.debug("response Json: " + root.toString());
+		LOG.trace("Complete getVTerminalInterfaceFlowFilterResponse");
+		return root;
+	}
+
+
+	/**
+	 * Used for VTerminalInterface FlowFilterEntry Response
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @param getType
+	 * @return JsonObject
+	 */
+	public JsonObject getVTerminalInterfaceFlowFilterEntryResponse(
+			final IpcDataUnit[] responsePacket, final JsonObject requestBody,
+			final String getType) {
+		LOG.trace("Start getVTerminalInterfaceFlowFilterEntryResponse");
+		final JsonObject root = new JsonObject();
+		JsonArray vTermIfFlowFilterEntryArray = null;
+		LOG.debug("getType: " + getType);
+		/*
+		 * operation type will be required to resolve the response type
+		 */
+		String opType = VtnServiceJsonConsts.NORMAL;
+		if (requestBody.has(VtnServiceJsonConsts.OP)) {
+			opType = requestBody.get(VtnServiceJsonConsts.OP).getAsString();
+		}
+		/*
+		 * data type will be required to resolve the response structures
+		 */
+		String dataType = VtnServiceJsonConsts.STATE;
+		if (requestBody.has(VtnServiceJsonConsts.TARGETDB)) {
+			dataType = requestBody.get(VtnServiceJsonConsts.TARGETDB)
+					.getAsString();
+		}
+		String rootJsonName;
+		/*
+		 * get type (show or list) will be required to resolve root json name
+		 * here it will be vtn for show and vtns for list
+		 */
+		if (getType.equals(VtnServiceJsonConsts.SHOW)) {
+			rootJsonName = VtnServiceJsonConsts.FLOWFILTERENTRY;
+		} else {
+			rootJsonName = VtnServiceJsonConsts.FLOWFILTERENTRIES;
+			// json array will be required for list type of cases
+			vTermIfFlowFilterEntryArray = new JsonArray();
+		}
+		LOG.debug("Json Name :" + rootJsonName);
+		JsonObject vTermIfFlowFilterEntry = null;
+
+		if (opType.equalsIgnoreCase(VtnServiceJsonConsts.COUNT)) {
+			/*
+			 * Create Json for Count
+			 */
+			vTermIfFlowFilterEntry = new JsonObject();
+			vTermIfFlowFilterEntry
+					.addProperty(
+							VtnServiceJsonConsts.COUNT,
+							IpcDataUnitWrapper
+									.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]));
+			root.add(rootJsonName, vTermIfFlowFilterEntry);
+		} else {
+			for (int index = 0; index < responsePacket.length; index++) {
+
+				vTermIfFlowFilterEntry = new JsonObject();
+				byte validBit;
+
+				// There is no use of key type
+				index++;
+				LOG.debug("Skip key type: no use");
+				/*
+				 * add mandatory informations from key structure
+				 */
+				final IpcStruct keyVTerminalIfFlowFilterEntryStruct = (IpcStruct) responsePacket[index++];
+				vTermIfFlowFilterEntry.addProperty(VtnServiceJsonConsts.SEQNUM,
+						IpcDataUnitWrapper.getIpcStructUint16Value(
+								keyVTerminalIfFlowFilterEntryStruct,
+								VtnServiceIpcConsts.SEQUENCENUM));
+
+				/*
+				 * this part is always required in Show, but not required in
+				 * List + "normal" op type
+				 */
+
+				if (getType.equals(VtnServiceJsonConsts.LIST)
+						&& opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)
+						|| getType.equals(VtnServiceJsonConsts.SHOW)) {
+					LOG.debug("Case : Show or List with detail");
+					/*
+					 * add valid informations from value structure
+					 */
+					final IpcStruct valFlowFilterEntryStruct = (IpcStruct) responsePacket[index++];
+
+					validBit = valFlowFilterEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_FLOWLIST_NAME_FFE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, vTermIfFlowFilterEntry,
+								VtnServiceJsonConsts.FLNAME,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valFlowFilterEntryStruct,
+										VtnServiceJsonConsts.FLOWLISTNAME));
+					}
+					validBit = valFlowFilterEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_ACTION_FFE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						if (IpcDataUnitWrapper
+								.getIpcStructUint8Value(
+										valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.ACTION)
+								.equalsIgnoreCase(
+										UncStructIndexEnum.FlowfilterAction.UPLL_FLOWFILTER_ACT_PASS
+												.getValue())) {
+							setValueToJsonObject(validBit,
+									vTermIfFlowFilterEntry,
+									VtnServiceJsonConsts.ACTIONTYPE,
+									VtnServiceJsonConsts.PASS);
+						} else if (IpcDataUnitWrapper
+								.getIpcStructUint8Value(
+										valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.ACTION)
+								.equalsIgnoreCase(
+										UncStructIndexEnum.FlowfilterAction.UPLL_FLOWFILTER_ACT_DROP
+												.getValue())) {
+							setValueToJsonObject(validBit,
+									vTermIfFlowFilterEntry,
+									VtnServiceJsonConsts.ACTIONTYPE,
+									VtnServiceJsonConsts.DROP);
+						} else if (IpcDataUnitWrapper
+								.getIpcStructUint8Value(
+										valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.ACTION)
+								.equalsIgnoreCase(
+										UncStructIndexEnum.FlowfilterAction.UPLL_FLOWFILTER_ACT_REDIRECT
+												.getValue())) {
+							setValueToJsonObject(validBit,
+									vTermIfFlowFilterEntry,
+									VtnServiceJsonConsts.ACTIONTYPE,
+									VtnServiceJsonConsts.REDIRECT);
+						}
+						LOG.debug("Action type :"
+								+ IpcDataUnitWrapper.getIpcStructUint8Value(
+										valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.ACTION));
+					}
+					validBit = valFlowFilterEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_NWM_NAME_FFE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, vTermIfFlowFilterEntry,
+								VtnServiceJsonConsts.NMGNAME,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.NWMNAME));
+					}
+					validBit = valFlowFilterEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_PRIORITY_FFE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, vTermIfFlowFilterEntry,
+								VtnServiceJsonConsts.PRIORITY,
+								IpcDataUnitWrapper.getIpcStructUint8Value(
+										valFlowFilterEntryStruct,
+										VtnServiceJsonConsts.PRIORITY));
+					}
+					validBit = valFlowFilterEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_DSCP_FFE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, vTermIfFlowFilterEntry,
+								VtnServiceJsonConsts.DSCP,
+								IpcDataUnitWrapper.getIpcStructUint8Value(
+										valFlowFilterEntryStruct,
+										VtnServiceJsonConsts.DSCP));
+					}
+					final JsonObject redirectDst = new JsonObject();
+					validBit = valFlowFilterEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_REDIRECT_NODE_FFE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, redirectDst,
+								VtnServiceJsonConsts.VNODENAME,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.REDIRECTNODE));
+					}
+					validBit = valFlowFilterEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_REDIRECT_PORT_FFE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, redirectDst,
+								VtnServiceJsonConsts.IFNAME,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.REDIRECTPORT));
+					}
+					// Direction
+					validBit = valFlowFilterEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_REDIRECT_DIRECTION_FFE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						if (IpcDataUnitWrapper
+								.getIpcStructUint8Value(
+										valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.REDIRECTDIRECTION)
+								.equals(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_IN
+										.getValue())) {
+							setValueToJsonObject(validBit, redirectDst,
+									VtnServiceJsonConsts.DIRECTION,
+									VtnServiceJsonConsts.IN);
+						} else if (IpcDataUnitWrapper
+								.getIpcStructUint8Value(
+										valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.REDIRECTDIRECTION)
+								.equals(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_OUT
+										.getValue())) {
+							setValueToJsonObject(validBit, redirectDst,
+									VtnServiceJsonConsts.DIRECTION,
+									VtnServiceJsonConsts.OUT);
+						} else {
+							LOG.debug("Direction : Invalid");
+						}
+						LOG.debug("Direction :"
+								+ IpcDataUnitWrapper.getIpcStructUint8Value(
+										valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.REDIRECTDIRECTION));
+					}
+					validBit = valFlowFilterEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_MODIFY_DST_MAC_FFE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, redirectDst,
+								VtnServiceJsonConsts.MACDSTADDR,
+								IpcDataUnitWrapper.getMacAddress(
+										valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.MODIFYDSTMACADDR));
+					}
+					validBit = valFlowFilterEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_MODIFY_SRC_MAC_FFE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, redirectDst,
+								VtnServiceJsonConsts.MACSRCADDR,
+								IpcDataUnitWrapper.getMacAddress(
+										valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.MODIFYSRCMACADDR));
+					}
+					vTermIfFlowFilterEntry.add(
+							VtnServiceJsonConsts.REDIRECTDST, redirectDst);
+				}
+				if (getType.equals(VtnServiceJsonConsts.SHOW)
+						&& dataType
+								.equalsIgnoreCase(VtnServiceJsonConsts.STATE)
+						&& opType
+								.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
+					LOG.debug("Case : Show and targetdb :State ");
+					final IpcStruct valFlowFilterEntryStStruct = (IpcStruct) responsePacket[index++];
+					if (opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
+						LOG.debug("op : detail");
+						validBit = valFlowFilterEntryStStruct
+								.getByte(
+										VtnServiceIpcConsts.VALID,
+										UncStructIndexEnum.ValFlowfilterEntryStIndex.UPLL_IDX_NWM_STATUS_FFES
+												.ordinal());
+						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+								.ordinal()
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+										.ordinal()) {
+							setValueToJsonObject(validBit,
+									vTermIfFlowFilterEntry,
+									VtnServiceJsonConsts.NMG_STATUS,
+									IpcDataUnitWrapper.getIpcStructUint8Value(
+											valFlowFilterEntryStStruct,
+											VtnServiceIpcConsts.NWM_STATUS));
+						}
+						final PomStatsIndex pomStatsIndexSet = new PomStatsIndex();
+						pomStatsIndexSet
+								.setSoftware(UncStructIndexEnum.ValFlowfilterEntryStIndex.UPLL_IDX_SOFTWARE_FFES
+										.ordinal());
+						pomStatsIndexSet
+								.setExistingFlow(UncStructIndexEnum.ValFlowfilterEntryStIndex.UPLL_IDX_EXIST_FFES
+										.ordinal());
+						pomStatsIndexSet
+								.setExpiredFlow(UncStructIndexEnum.ValFlowfilterEntryStIndex.UPLL_IDX_EXPIRE_FFES
+										.ordinal());
+						pomStatsIndexSet
+								.setTotal(UncStructIndexEnum.ValFlowfilterEntryStIndex.UPLL_IDX_TOTAL_FFES
+										.ordinal());
+						LOG.debug("call getPomStats : for statics information");
+						getPomStats(vTermIfFlowFilterEntry,
+								valFlowFilterEntryStStruct, pomStatsIndexSet);
+						final String flowListName = VtnServiceJsonConsts.FLOWLIST;
+						final JsonObject flowListJson = new JsonObject();
+						final String flowListEntriesName = VtnServiceJsonConsts.FLOWLISTENTRIES;
+						final JsonArray flowListEntriesJsonArray = new JsonArray();
+						LOG.debug("call getPomStatsFLowList : for statics information of flowList");
+						index = getPomStatsFlowList(responsePacket, index,
+								flowListEntriesJsonArray);
+						flowListJson.add(flowListEntriesName,
+								flowListEntriesJsonArray);
+						vTermIfFlowFilterEntry.add(flowListName, flowListJson);
+					} else {
+						LOG.debug("Show ,Operation : normal and target db :state Skip flowList value strutures ");
+						// increasing index to eliminate flow list entry
+						// structures in case of show and op : normal
+						index = responsePacket.length - 1;
+					}
+				}
+				if (getType.equals(VtnServiceJsonConsts.LIST)
+						&& opType.equalsIgnoreCase(VtnServiceJsonConsts.NORMAL)) {
+					LOG.debug("List ,Operation : normal Skip value strutures ");
+					index++;
+				}
+				// add current json object to array, if it has been initialized
+				// earlier
+				if (null != vTermIfFlowFilterEntryArray) {
+					vTermIfFlowFilterEntryArray.add(vTermIfFlowFilterEntry);
+				}
+			}
+			/*
+			 * finally add either array or single object to root json object and
+			 * return the same.
+			 */
+			if (null != vTermIfFlowFilterEntryArray) {
+				root.add(rootJsonName, vTermIfFlowFilterEntryArray);
+			} else {
+				root.add(rootJsonName, vTermIfFlowFilterEntry);
+			}
+		}
+		LOG.debug("response Json: " + root.toString());
+		LOG.trace("Complete getVTerminalInterfaceFlowFilterEntryResponse");
+
+		return root;
+	}
+
+	/**
+	 * Used for Vterminal Response
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @param getType
+	 * @return JsonObject
+	 */
+	public JsonObject getVTerminalResponse(final IpcDataUnit[] responsePacket,
+			final JsonObject requestBody, final String getType) {
+		LOG.trace("Start getVTerminalResponse");
+		final JsonObject root = new JsonObject();
+		JsonArray vterminalsArray = null;
+		LOG.debug("getType: " + getType);
+		/*
+		 * operation type will be required to resolve the response type
+		 */
+		String opType = VtnServiceJsonConsts.NORMAL;
+		if (requestBody.has(VtnServiceJsonConsts.OP)) {
+			opType = requestBody.get(VtnServiceJsonConsts.OP).getAsString();
+		}
+		/*
+		 * data type will be required to resolve the response structures
+		 */
+		String dataType = VtnServiceJsonConsts.STATE;
+		if (requestBody.has(VtnServiceJsonConsts.TARGETDB)) {
+			dataType = requestBody.get(VtnServiceJsonConsts.TARGETDB)
+					.getAsString();
+		}
+		String rootJsonName;
+		/*
+		 * get type (show or list) will be required to resolve root json name
+		 * here it will be vtn for show and vtns for list
+		 */
+		if (getType.equals(VtnServiceJsonConsts.SHOW)) {
+			rootJsonName = VtnServiceJsonConsts.VTERMINAL;
+
+		} else {
+			rootJsonName = VtnServiceJsonConsts.VTERMINALS;
+			// json array will be required for list type of cases
+			vterminalsArray = new JsonArray();
+
+		}
+		LOG.debug("Json Name :" + rootJsonName);
+		JsonObject vterminal = null;
+		if (opType.equalsIgnoreCase(VtnServiceJsonConsts.COUNT)) {
+			/*
+			 * Create Json for Count
+			 */
+			vterminal = new JsonObject();
+			vterminal
+					.addProperty(
+							VtnServiceJsonConsts.COUNT,
+							IpcDataUnitWrapper
+									.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]));
+			root.add(rootJsonName, vterminal);
+		} else {
+			for (int index = 0; index < responsePacket.length; index++) {
+				vterminal = new JsonObject();
+				byte validBit;
+				// There is no use of key type
+				LOG.debug("Skip key type: no use");
+				index++;
+				/*
+				 * add mandatory informations from key structure
+				 */
+				final IpcStruct keyVTerminalStruct = (IpcStruct) responsePacket[index++];
+				vterminal.addProperty(VtnServiceJsonConsts.VTERMINAL_NAME,
+						IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+								keyVTerminalStruct,
+								VtnServiceIpcConsts.VTERMINAL_NAME));
+				/*
+				 * this part is always required in Show, but not required in
+				 * List + "normal" op type
+				 */
+				if (getType.equals(VtnServiceJsonConsts.SHOW)
+						|| opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
+					LOG.debug("Case : Show or detail");
+					/*
+					 * add valid informations from value structure
+					 */
+					final IpcStruct valVTerminalStruct = (IpcStruct) responsePacket[index++];
+					validBit = valVTerminalStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valVtermIndex.UPLL_IDX_CONTROLLER_ID_VTERM
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, vterminal,
+								VtnServiceJsonConsts.CONTROLLERID,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valVTerminalStruct,
+										VtnServiceIpcConsts.CONTROLLERID));
+					}
+					validBit = valVTerminalStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valVtermIndex.UPLL_IDX_DESC_VTERM
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, vterminal,
+								VtnServiceJsonConsts.DESCRIPTION,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valVTerminalStruct,
+										VtnServiceIpcConsts.VTERM_DESCRIPTION));
+					}
+					validBit = valVTerminalStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valVtermIndex.UPLL_IDX_DOMAIN_ID_VTERM
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, vterminal,
+								VtnServiceJsonConsts.DOMAINID,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valVTerminalStruct,
+										VtnServiceIpcConsts.DOMAINID));
+					}
+					/*
+					 * If data type is set as "state", then value structure will
+					 * also contain the state information
+					 */
+					if (dataType.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
+						LOG.debug("targetdb : State");
+						final IpcStruct valVtnStStruct = (IpcStruct) responsePacket[index++];
+						/*
+						 * If response is required in detail format then use the
+						 * State value structure
+						 */
+						validBit = valVtnStStruct
+								.getByte(
+										VtnServiceIpcConsts.VALID,
+										UncStructIndexEnum.valVtermStIndex.UPLL_IDX_OPER_STATUS_VTERMS
+												.ordinal());
+						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+								.ordinal()
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+										.ordinal()) {
+							if (IpcDataUnitWrapper
+									.getIpcStructUint8Value(valVtnStStruct,
+											VtnServiceIpcConsts.OPERSTATUS)
+									.equals(UncStructIndexEnum.ValOperStatus.UPLL_OPER_STATUS_UP
+											.getValue())) {
+								setValueToJsonObject(validBit, vterminal,
+										VtnServiceJsonConsts.STATUS,
+										VtnServiceJsonConsts.UP);
+
+							} else if (IpcDataUnitWrapper
+									.getIpcStructUint8Value(valVtnStStruct,
+											VtnServiceIpcConsts.OPERSTATUS)
+									.equals(UncStructIndexEnum.ValOperStatus.UPLL_OPER_STATUS_DOWN
+											.getValue())) {
+								setValueToJsonObject(validBit, vterminal,
+										VtnServiceJsonConsts.STATUS,
+										VtnServiceJsonConsts.DOWN);
+
+							} else if (IpcDataUnitWrapper
+									.getIpcStructUint8Value(valVtnStStruct,
+											VtnServiceIpcConsts.OPERSTATUS)
+									.equals(UncStructIndexEnum.ValOperStatus.UPLL_OPER_STATUS_UNKNOWN
+											.getValue())) {
+								setValueToJsonObject(validBit, vterminal,
+										VtnServiceJsonConsts.STATUS,
+										VtnServiceJsonConsts.UNKNOWN);
+
+							} else {
+								LOG.debug("Operstatus invalid");
+							}
+							LOG.debug("Operstatus :"
+									+ IpcDataUnitWrapper
+											.getIpcStructUint8Value(
+													valVtnStStruct,
+													VtnServiceIpcConsts.OPERSTATUS));
+						}
+
+					}
+				} else {
+					LOG.debug("Operation : normal Skip value struture");
+					index++;
+					if (dataType.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
+						LOG.debug("Operation : normal and target db :state Skip St value struture ");
+						index++;
+					}
+				}
+				// add current json object to array, if it has been initialized
+				// earlier
+				if (null != vterminalsArray) {
+					vterminalsArray.add(vterminal);
+				}
+			}
+			/*
+			 * finally add either array or single object to root json object and
+			 * return the same.
+			 */
+			if (null != vterminalsArray) {
+				root.add(rootJsonName, vterminalsArray);
+			} else {
+				root.add(rootJsonName, vterminal);
+			}
+		}
+		LOG.debug("response Json: " + root.toString());
+		LOG.trace("Complete getVTerminalResponse");
+
+		return root;
+	}
+
+	/**
+	 * Used for VTerminalInterface Response
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @param getType
+	 * @return JsonObject
+	 */
+	public JsonObject getVTerminalInterfaceResponse(
+			final IpcDataUnit[] responsePacket, final JsonObject requestBody,
+			final String getType) {
+		LOG.trace("Start getVTerminalInterfaceResponse");
+		final JsonObject root = new JsonObject();
+		JsonArray vTermInterfaceArray = null;
+		LOG.debug("getType: " + getType);
+		/*
+		 * operation type will be required to resolve the response type
+		 */
+		String opType = VtnServiceJsonConsts.NORMAL;
+		if (requestBody.has(VtnServiceJsonConsts.OP)) {
+			opType = requestBody.get(VtnServiceJsonConsts.OP).getAsString();
+		}
+		/*
+		 * data type will be required to resolve the response structures
+		 */
+		String dataType = VtnServiceJsonConsts.STATE;
+		if (requestBody.has(VtnServiceJsonConsts.TARGETDB)) {
+			dataType = requestBody.get(VtnServiceJsonConsts.TARGETDB)
+					.getAsString();
+		}
+		String rootJsonName = null;
+		if (getType.equals(VtnServiceJsonConsts.SHOW)) {
+			rootJsonName = VtnServiceJsonConsts.INTERFACE;
+		} else {
+			rootJsonName = VtnServiceJsonConsts.INTERFACES;
+			// json array will be required for list type of cases
+			vTermInterfaceArray = new JsonArray();
+		}
+		LOG.debug("Json Name :" + rootJsonName);
+		JsonObject vTermInterface = null;
+		if (opType.equalsIgnoreCase(VtnServiceJsonConsts.COUNT)) {
+			/*
+			 * Create Json for Count
+			 */
+			vTermInterface = new JsonObject();
+			vTermInterface
+					.addProperty(
+							VtnServiceJsonConsts.COUNT,
+							IpcDataUnitWrapper
+									.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]));
+			root.add(rootJsonName, vTermInterface);
+		} else {
+			for (int index = 0; index < responsePacket.length; index++) {
+				vTermInterface = new JsonObject();
+				byte validBit;
+				// There is no use of key type
+				LOG.debug("Skip key type: no use");
+				index++;
+				/*
+				 * add mandatory informations from key structure
+				 */
+				final IpcStruct keyVtermInterfaceStruct = (IpcStruct) responsePacket[index++];
+				vTermInterface.addProperty(VtnServiceJsonConsts.IFNAME,
+						IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+								keyVtermInterfaceStruct,
+								VtnServiceIpcConsts.IFNAME));
+				/*
+				 * this part is always required in Show, but not required in
+				 * List + "normal" op type
+				 */
+				if (getType.equals(VtnServiceJsonConsts.SHOW)
+						|| opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
+					LOG.debug("Case : Show or detail");
+					/*
+					 * add valid informations from value structure
+					 */
+					final IpcStruct valVTermInterfaceStruct = (IpcStruct) responsePacket[index++];
+
+					validBit = valVTermInterfaceStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valVtermIfIndex.UPLL_IDX_DESC_VTERMI
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, vTermInterface,
+								VtnServiceJsonConsts.DESCRIPTION,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valVTermInterfaceStruct,
+										VtnServiceIpcConsts.DESCRIPTION));
+					}
+					validBit = valVTermInterfaceStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valVtermIfIndex.UPLL_IDX_ADMIN_STATUS_VTERMI
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						if (IpcDataUnitWrapper
+								.getIpcStructUint8Value(
+										valVTermInterfaceStruct,
+										VtnServiceIpcConsts.ADMIN_STATUS)
+								.equals(UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_ENABLE
+										.getValue())) {
+							setValueToJsonObject(validBit, vTermInterface,
+									VtnServiceJsonConsts.ADMINSTATUS,
+									VtnServiceJsonConsts.ENABLE);
+						} else if (IpcDataUnitWrapper
+								.getIpcStructUint8Value(
+										valVTermInterfaceStruct,
+										VtnServiceIpcConsts.ADMIN_STATUS)
+								.equals(UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_DISABLE
+										.getValue())) {
+							setValueToJsonObject(validBit, vTermInterface,
+									VtnServiceJsonConsts.ADMINSTATUS,
+									VtnServiceJsonConsts.DISABLE);
+						} else {
+							LOG.debug("Adminstatus : Invalid");
+						}
+						LOG.debug("Adminstatus :"
+								+ IpcDataUnitWrapper.getIpcStructUint8Value(
+										valVTermInterfaceStruct,
+										VtnServiceIpcConsts.ADMIN_STATUS));
+					}
+					if (VtnServiceJsonConsts.STATE.equals(dataType)) {
+						LOG.debug("targetdb : State");
+						final IpcStruct valVbrIfStStruct = (IpcStruct) responsePacket[index++];
+						validBit = valVbrIfStStruct
+								.getByte(
+										VtnServiceIpcConsts.VALID,
+										UncStructIndexEnum.valVtermIfStIndex.UPLL_IDX_OPER_STATUS_VTERMIS
+												.ordinal());
+						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+								.ordinal()
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+										.ordinal()) {
+							if (IpcDataUnitWrapper
+									.getIpcStructUint8Value(valVbrIfStStruct,
+											VtnServiceIpcConsts.OPERSTATUS)
+									.equals(UncStructIndexEnum.ValOperStatus.UPLL_OPER_STATUS_UP
+											.getValue())) {
+								setValueToJsonObject(validBit, vTermInterface,
+										VtnServiceJsonConsts.OPERSTATUS,
+										VtnServiceJsonConsts.UP);
+							} else if (IpcDataUnitWrapper
+									.getIpcStructUint8Value(valVbrIfStStruct,
+											VtnServiceIpcConsts.OPERSTATUS)
+									.equals(UncStructIndexEnum.ValOperStatus.UPLL_OPER_STATUS_DOWN
+											.getValue())) {
+								setValueToJsonObject(validBit, vTermInterface,
+										VtnServiceJsonConsts.OPERSTATUS,
+										VtnServiceJsonConsts.DOWN);
+							} else if (IpcDataUnitWrapper
+									.getIpcStructUint8Value(valVbrIfStStruct,
+											VtnServiceIpcConsts.OPERSTATUS)
+									.equals(UncStructIndexEnum.ValOperStatus.UPLL_OPER_STATUS_UNKNOWN
+											.getValue())) {
+								setValueToJsonObject(validBit, vTermInterface,
+										VtnServiceJsonConsts.OPERSTATUS,
+										VtnServiceJsonConsts.UNKNOWN);
+							} else {
+								LOG.debug("Operstatus : Invalid");
+							}
+							LOG.debug("Operstatus :"
+									+ IpcDataUnitWrapper
+											.getIpcStructUint8Value(
+													valVbrIfStStruct,
+													VtnServiceIpcConsts.OPERSTATUS));
+						}
+					}
+				} else {
+					LOG.debug("Operation : normal Skip value struture");
+					index++;
+					if (dataType.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
+						LOG.debug("Operation : normal and target db :state Skip St value struture ");
+						index++;
+					}
+				}
+				// add current json object to array, if it has been
+				// initialized
+				// earlier
+				if (null != vTermInterfaceArray) {
+					vTermInterfaceArray.add(vTermInterface);
+				}
+			}
+			/*
+			 * finally add either array or single object to root json object and
+			 * return the same.
+			 */
+			if (null != vTermInterfaceArray) {
+				root.add(rootJsonName, vTermInterfaceArray);
+			} else {
+				root.add(rootJsonName, vTermInterface);
+			}
+		}
+		LOG.debug("response Json: " + root.toString());
+		LOG.trace("Complete getVTerminalInterfaceResponse");
+
+		return root;
+	}
 }

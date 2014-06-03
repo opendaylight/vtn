@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.validation;
 
 import java.math.BigInteger;
@@ -683,7 +684,9 @@ public class CommonValidator {
 							|| actionType
 									.equalsIgnoreCase(VtnServiceJsonConsts.DROP)
 							|| actionType
-									.equalsIgnoreCase(VtnServiceJsonConsts.REDIRECT);
+									.equalsIgnoreCase(VtnServiceJsonConsts.REDIRECT)
+							|| actionType
+									.equalsIgnoreCase(VtnServiceJsonConsts.EMPTY);
 				}
 			}
 			// validation for key: nmg_name
@@ -778,7 +781,21 @@ public class CommonValidator {
 									.trim().isEmpty();
 				}
 			}
-
+			// validation for key: Direction (optional)
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.DIRECTION);
+				if (dest.has(VtnServiceJsonConsts.DIRECTION)
+						&& dest.getAsJsonPrimitive(
+								VtnServiceJsonConsts.DIRECTION)
+								.getAsString() != null) {
+					isValid = VtnServiceJsonConsts.IN
+							.equalsIgnoreCase(dest.getAsJsonPrimitive(VtnServiceJsonConsts.DIRECTION).getAsString().trim())
+								|| VtnServiceJsonConsts.OUT
+									.equalsIgnoreCase(dest.getAsJsonPrimitive(VtnServiceJsonConsts.DIRECTION).getAsString().trim())
+								|| VtnServiceJsonConsts.EMPTY
+									.equalsIgnoreCase(dest.getAsJsonPrimitive(VtnServiceJsonConsts.DIRECTION).getAsString().trim());	
+				}
+			}
 			// validation for key: macdstaddr (optional)
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.MACDSTADDR);
@@ -866,4 +883,40 @@ public class CommonValidator {
 		return isValid;
 	}
 
+	/**
+	 * Validates action_type parameter for VTN Flow Filter POST/PUT APIs
+	 * 
+	 * @param requestBody
+	 * @return
+	 */
+	public boolean isValidVtnFlowFilterEntry(JsonObject requestBody) {
+		LOG.trace("Start CommonValidator#isValidVtnFlowFilterEntry()");
+		boolean isValid = false;
+		setInvalidParameter(VtnServiceJsonConsts.FLOWFILTERENTRY);
+		if (requestBody.has(VtnServiceJsonConsts.FLOWFILTERENTRY)
+				&& requestBody.get(VtnServiceJsonConsts.FLOWFILTERENTRY)
+						.isJsonObject()) {
+			isValid = true;
+			final JsonObject ffEntry = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.FLOWFILTERENTRY);
+			// validation for key: action_type
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.ACTIONTYPE);
+				// only pass supported in VTN mode
+				if (ffEntry.has(VtnServiceJsonConsts.ACTIONTYPE)
+						&& ffEntry.getAsJsonPrimitive(
+								VtnServiceJsonConsts.ACTIONTYPE).getAsString() != null) {
+					final String actionType = ffEntry
+							.getAsJsonPrimitive(VtnServiceJsonConsts.ACTIONTYPE)
+							.getAsString().trim();
+					isValid = actionType
+							.equalsIgnoreCase(VtnServiceJsonConsts.PASS)
+							|| actionType
+									.equalsIgnoreCase(VtnServiceJsonConsts.EMPTY);
+				}
+			}
+		}
+		LOG.trace("Complete CommonValidator#isValidVtnFlowFilterEntry()");
+		return isValid;
+	}
 }

@@ -7,20 +7,19 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-/*
- * dal_info.hh
+/*                                                                
+ * dal_info.hh 
  *   Contians information and buffers from dal user for all the columns
  *   in a specific table
  *   The buffers store the input values from dal user to databse and
  *   the output values from database to dal user.
- */
+ */ 
 
 #ifndef __DAL_BIND_INFO__HH__
 #define __DAL_BIND_INFO__HH__
 
 #include <stdint.h>
 #include <sqltypes.h>
-#include <string>
 #include <vector>
 #include "dal_schema.hh"
 #include "dal_bind_column_info.hh"

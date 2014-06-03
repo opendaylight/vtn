@@ -3,7 +3,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -18,10 +18,15 @@ import java.util.Random;
 import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.lang.reflect.Method;
-import junit.framework.Assert;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 import org.opendaylight.vtn.core.CoreSystem;
+
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertNotNull;
+import static junit.framework.TestCase.assertTrue;
+import static junit.framework.TestCase.fail;
 
 /**
  * <p>
@@ -1301,7 +1306,7 @@ class FieldDef
 /**
  * Implementation of structure field test.
  */
-abstract class TestFieldImpl extends Assert
+abstract class TestFieldImpl
 {
 	/**
 	 * Create sample data to be set to an {@link IpcStruct} object.
@@ -3917,7 +3922,7 @@ class IpcUnsupportedFieldTest extends IpcDataUnitFieldTest
 /**
  * Implementation of array structure field test.
  */
-abstract class TestArrayFieldImpl extends Assert
+abstract class TestArrayFieldImpl
 {
 	/**
 	 * Get all elements in the specified array field.
@@ -5421,7 +5426,7 @@ class StringFieldSetTest extends StringFieldTest
 /**
  * Base class for test structures.
  */
-abstract class TestStruct extends Assert
+abstract class TestStruct
 {
 	/**
 	 * Data type identifier.

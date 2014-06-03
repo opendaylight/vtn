@@ -45,7 +45,7 @@ enum vtn_neighbor {
   kCapConnectedIfName,
   kCapConnectedVlinkName
 };
-}  // namespace vtn_neighbor
+} // namespace vtn_neighbor
 
 namespace vbr {
 enum vbr {
@@ -86,14 +86,14 @@ enum vrt {
 
 namespace dhcp_relay_server {
 enum dhcp_relay_server {
-  //   kCapServerAddr = 0
+ //   kCapServerAddr = 0
 };
-}  // namespace dhcp_relay_server
+} //namespace dhcp_relay_server
 
 namespace dhcp_relay_if {
 enum dhcp_relay_if {
 };
-}  // namespace dhcp_relay_if
+}//namespace dhcp_relay_if
 
 namespace static_ip_route {
 enum static_ip_route {
@@ -111,6 +111,25 @@ enum vrt_if {
   kCapOperStatus
 };
 }  // namespace vrt_if
+
+namespace vterminal {
+enum vterminal {
+  kCapDomainId =0,
+  kCapDesc,
+  kCapOperStatus
+};
+}  // namespace vterminal
+
+namespace vterm_if {
+enum vterm_if {
+  kCapDesc = 0,
+  kCapAdminStatus,
+  kCapLogicalPortId,
+  kCapVlanId,
+  kCapTagged,
+  kCapOperStatus
+};
+}  // namespace vterm_if
 
 namespace vunknown {
 enum vunknown {
@@ -287,7 +306,7 @@ enum vtn_flowfilter_entry {
 
 namespace vtn_flowfilter_controller {
 enum  vtn_flowfilter_controller {
-  kCapDirection = 0,
+  kCapDirection=0,
   kCapSeqNum
 };
 }  // namesapce vtn_flowfilter_controller
@@ -297,7 +316,7 @@ namespace vtn_policingmap {
 enum vtn_policingmap {
   kCapPolicername = 0
 };
-}  // namespace vtn_policingmap
+}  // namespace vbr_policingmap
 
 // UNC_KT_VTN_POLICINGMAP_CONTROLLER
 namespace vtn_policingmap_controller {
@@ -320,13 +339,14 @@ enum vbr_flowfilter_entry {
   kCapAction,
   kCapRedirectNode,
   kCapRedirectPort,
+  kCapRedirectDirection,
   kCapModifyDstMac,
   kCapModifySrcMac,
   kCapNwmName,
   kCapDscp,
   kCapPriority
 };
-}  // namespace vbr_flowfilter_entry
+}  // namespace vbridge_flowfilter_entry
 
 // UNC_KT_VBR_POLICINGMAP
 namespace vbr_policingmap {
@@ -346,7 +366,7 @@ enum vbr_policingmap_entry {
 namespace vbr_if_flowfilter {
 enum vbr_if_flowfilter {
 };
-}  // namespace vbr_if_flowfilter
+}  // namespace vbrif_flowfilter
 
 
 // UNC_KT_VBRIF_FLOWFILTER_ENTRY
@@ -356,27 +376,28 @@ enum vbr_if_flowfilter_entry {
   kCapAction,
   kCapRedirectNode,
   kCapRedirectPort,
+  kCapRedirectDirection,
   kCapModifyDstMac,
   kCapModifySrcMac,
   kCapNwmName,
   kCapDscp,
   kCapPriority
 };
-}  // namespace vbr_if_flowfilter_entry
+}  // namespace vbridge_if_flowfilter_entry
 
 // UNC_KT_VBRIF_POLICINGMAP
 namespace vbr_if_policingmap {
 enum vbr_if_policingmap {
   kCapPolicername = 0
 };
-}  // namespace vbr_if_policingmap
+}  // namespace vbrif_policingmap
 
 
 // UNC_KT_VBRIF_POLICINGMAP_ENTRY
 namespace vbr_if_policingmap_entry {
 enum vbr_if_policingmap_entry {
 };
-}  // namespace vbr_if_policingmap_entry
+}  // namespace vbrif_policingmap_entry
 
 
 // UNC_KT_VRTIF_FLOWFILTER
@@ -392,13 +413,48 @@ enum vrt_if_flowfilter_entry {
   kCapAction,
   kCapRedirectNode,
   kCapRedirectPort,
+  kCapRedirectDirection,
   kCapModifyDstMac,
   kCapModifySrcMac,
   kCapNwmName,
   kCapDscp,
   kCapPriority
 };
-}  // namespace vrt_if_flowfilter_entry
+
+}  // namespace vterminal_if_flowfilter_entry
+// UNC_KT_VTERMIF_FLOWFILTER
+namespace vterm_if_flowfilter {
+enum vterm_if_flowfilter {
+};
+}  // namespace vterm_if_flowfilter
+
+// UNC_KT_VTERMIF_FLOWFILTER_ENTRY
+namespace vterm_if_flowfilter_entry {
+enum vterm_if_flowfilter_entry {
+  kCapFlowlistName = 0,
+  kCapAction,
+  kCapRedirectNode,
+  kCapRedirectPort,
+  kCapRedirectDirection,
+  kCapModifyDstMac,
+  kCapModifySrcMac,
+  kCapNwmName,
+  kCapDscp,
+  kCapPriority
+};
+}  // namespace vterminal_if_flowfilter_entry
+
+namespace vterm_if_policingmap {
+enum vterm_if_policingmap {
+  kCapPolicername = 0
+};
+}
+
+namespace vterm_if_policingmap_entry {
+enum vterm_if_policingmap_entry {
+};
+
+} 
 // UNC_KT_CONTROLLER
 namespace controller {
 enum controller {
@@ -415,7 +471,7 @@ enum controller {
   kCsrowstatus,
   kCsattr
 };
-}  // namespace controller
+}
 // UNC_KT_VTN_DATAFLOW
 namespace vtn_dataflow {
 enum vtn_dataflow {

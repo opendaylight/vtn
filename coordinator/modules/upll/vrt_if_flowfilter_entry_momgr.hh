@@ -21,13 +21,13 @@ namespace upll {
 namespace kt_momgr {
 
 /* This file declares interfaces for keyType KT_VRT_IF_FLOWFILTER */
-  /**
-   * @brief VrtIfFlowFilterEntryMoMgr class handles all the request
-   *  received from service.
-   */
+/**
+ * @brief VrtIfFlowFilterEntryMoMgr class handles all the request
+ *  received from service.
+ */
 
-  class VrtIfFlowFilterEntryMoMgr : public MoMgrImpl {
-   private:
+class VrtIfFlowFilterEntryMoMgr : public MoMgrImpl {
+  private:
     static BindInfo vrt_if_flowfilter_entry_bind_info[];
     static BindInfo vrt_if_flowfilter_entry_maintbl_bind_info[];
 
@@ -35,82 +35,81 @@ namespace kt_momgr {
      * @Brief  Member variable for VrtIFlowlistRenameBindInfo
      */
     static BindInfo vrt_if_flowlist_rename_bind_info[];
-
-   public:
+    public:
     /**
-     * @brief  Method used to fill the CongigKeyVal with the
-     Parent Class Information.
+    * @brief  Method used to fill the CongigKeyVal with the
+              Parent Class Information.
 
-     * @param[out] okey        This Contains the pointerto the
-     ConfigKeyVal Class forwhich
-     fields have to be updated
-     with values from the parent Class.
-     * @param[in]  parent_key  This Contains the pointer to the
-     ConfigKeyVal Class which is the
-     Parent Class used to fill the details.
+    * @param[out] okey        This Contains the pointerto the
+                              ConfigKeyVal Class forwhich
+                              fields have to be updated
+                              with values from the parent Class.
+    * @param[in]  parent_key  This Contains the pointer to the
+                              ConfigKeyVal Class which is the
+                              Parent Class used to fill the details.
 
-     * @retval UPLL_RC_SUCCESS  Successfull completion.
-     * @retval UPLL_RC_ERR_GENERIC Failure
-     */
+    * @retval UPLL_RC_SUCCESS  Successfull completion.
+    * @retval UPLL_RC_ERR_GENERIC Failure
+    */
     upll_rc_t GetChildConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *parent_key);
 
     /**
-     * @brief  Method used to get the RenamedUncKey.
-     * @param[out] ikey      This Contains the pointer to
-     the Class for which fields have
-     to be updated with values from
-     the parent Class.
-     * @param[in]  dt_type   Describes Configiration Information.
-     * @param[in]  dmi       Pointer to DalDmlIntf Class.
-     * @param[in]  ctrlr_id  Describes the Controller Name.
+    * @brief  Method used to get the RenamedUncKey.
+    * @param[out] ikey      This Contains the pointer to
+                            the Class for which fields have
+                            to be updated with values from
+                            the parent Class.
+    * @param[in]  dt_type   Describes Configiration Information.
+    * @param[in]  dmi       Pointer to DalDmlIntf Class.
+    * @param[in]  ctrlr_id  Describes the Controller Name.
 
-     * @retval UPLL_RC_SUCCESS  Successfull completion.
-     * @retval UPLL_RC_ERR_GENERIC  Failure
-     */
+    * @retval UPLL_RC_SUCCESS  Successfull completion.
+    * @retval UPLL_RC_ERR_GENERIC  Failure
+    */
     upll_rc_t GetRenamedUncKey(ConfigKeyVal *ikey,
                                upll_keytype_datatype_t dt_type, DalDmlIntf *dmi,
                                uint8_t *ctrlr_id);
 
     /**
-     * @brief  Method used for RenamedControllerkey(PfcName).
+    * @brief  Method used for RenamedControllerkey(PfcName).
 
-     * @param[out] ikey       Contains the Pointer to ConfigkeyVal
-     Class and contains the Pfc Name.
-     * @param[in] dt_type     Describes Configiration Information.
-     * @param[in] dmi         Pointer to DalDmlIntf Class.
-     * @param[in] ctrlr_name  Describes the Controller Name.
+    * @param[out] ikey       Contains the Pointer to ConfigkeyVal
+                             Class and contains the Pfc Name.
+    * @param[in] dt_type     Describes Configiration Information.
+    * @param[in] dmi         Pointer to DalDmlIntf Class.
+    * @param[in] ctrlr_name  Describes the Controller Name.
 
-     * @retval UPLL_RC_SUCCESS  Successfull completion.
-     * @retval UPLL_RC_ERR_GENERIC  Return Failure
-     */
+    * @retval UPLL_RC_SUCCESS  Successfull completion.
+    * @retval UPLL_RC_ERR_GENERIC  Return Failure
+    */
     upll_rc_t GetRenamedControllerKey(ConfigKeyVal *ikey,
                                       upll_keytype_datatype_t dt_type,
                                       DalDmlIntf *dmi,
                                       controller_domain *ctrlr_dom = NULL);
     /**
-     * @brief  Method used for DeleteMo  Operation.
+    * @brief  Method used for DeleteMo  Operation.
 
-     * @param[in] req   Describes RequestResponderHeaderClass.
-     * @param[in] ikey  Pointer to ConfigKeyVal Class.
-     * @param[in] dmi   Pointer to DalDmlIntf Class.
+    * @param[in] req   Describes RequestResponderHeaderClass.
+    * @param[in] ikey  Pointer to ConfigKeyVal Class.
+    * @param[in] dmi   Pointer to DalDmlIntf Class.
 
-     * @retval  UPLL_RC_SUCCESS  Successfull completion.
-     * @retval  UPLL_RC_ERR_GENERIC  Reurn Failure
-     */
+    * @retval  UPLL_RC_SUCCESS  Successfull completion.
+    * @retval  UPLL_RC_ERR_GENERIC  Reurn Failure
+    */
     upll_rc_t DeleteMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                        DalDmlIntf *dmi);
     /**
-     * @brief  Method used for GetObjectConfigKeyVal  Operation.
+    * @brief  Method used for GetObjectConfigKeyVal  Operation.
 
-     * @param[out] okey    This Contains the pointerto the
-     ConfigKeyVal Class forwhich
-     fields have to be updated.
-     * @param[in] ikey     Pointer to ConfigKeyVal Class.
-     * @param[in] ObjType  Specifies Flowlist Or N/w Monitor Type .
+    * @param[out] okey    This Contains the pointerto the
+                          ConfigKeyVal Class forwhich
+                          fields have to be updated.
+    * @param[in] ikey     Pointer to ConfigKeyVal Class.
+    * @param[in] ObjType  Specifies Flowlist Or N/w Monitor Type .
 
-     * @retval UPLL_RC_SUCCESS Successfull completion.
-     * @retval UPLL_RC_ERR_GENERIC Generic Error
-     */
+    * @retval UPLL_RC_SUCCESS Successfull completion.
+    * @retval UPLL_RC_ERR_GENERIC Generic Error
+    */
     upll_rc_t GetObjectConfigKeyVal(ConfigKeyVal *&okey, ConfigKeyVal *&ikey,
                                     int ObjType);
 
@@ -145,158 +144,158 @@ namespace kt_momgr {
                                 IpcReqRespHeader *req = NULL);
 
     /**
-     * @brief  Method used for createCandidateMo  Operation.
+    * @brief  Method used for createCandidateMo  Operation.
 
-     * @param[in] req   Describes RequestResponderHeaderClass.
-     * @param[in] ikey  Pointer to ConfigKeyVal Class.
-     * @param[in] dmi   Pointer to DalDmlIntf Class.
+    * @param[in] req   Describes RequestResponderHeaderClass.
+    * @param[in] ikey  Pointer to ConfigKeyVal Class.
+    * @param[in] dmi   Pointer to DalDmlIntf Class.
 
-     * @retval  UPLL_RC_SUCCESS  Successfull completion.
-     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS Instance does Not exist
-     */
+    * @retval  UPLL_RC_SUCCESS  Successfull completion.
+    * @retval  UPLL_RC_ERR_INSTANCE_EXISTS Instance does Not exist
+    */
     upll_rc_t CreateCandidateMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                                 DalDmlIntf *dmi, bool restore_flag = false);
 
     /**
-     * @brief  Method used for Validation before Merge.
+    * @brief  Method used for Validation before Merge.
 
-     * @param[in] ikey      This Contains the pointer to the
-     Class for which fields have to
-     be Validated before the Merge.
-     * @param[in] keytype   Describes the keyType Information.
-     * @param[in] dmi       Pointer to DalDmlIntf Class.
-     * @param[in] ctrlr_id  Describes the Controller Name.
+    * @param[in] ikey      This Contains the pointer to the
+                           Class for which fields have to
+                           be Validated before the Merge.
+    * @param[in] keytype   Describes the keyType Information.
+    * @param[in] dmi       Pointer to DalDmlIntf Class.
+    * @param[in] ctrlr_id  Describes the Controller Name.
 
-     * @retval UPLL_RC_SUCCESS  Successfull completion.
-     * @retval UPLL_RC_ERR_MERGE_CONFLICT  metge Conflict Error
-     */
+    * @retval UPLL_RC_SUCCESS  Successfull completion.
+    * @retval UPLL_RC_ERR_MERGE_CONFLICT  metge Conflict Error
+    */
     upll_rc_t MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
                             ConfigKeyVal *ikey, DalDmlIntf *dmi);
 
     /**
-     * @brief  Method used to Duplicate the ConfigkeyVal.
+    * @brief  Method used to Duplicate the ConfigkeyVal.
 
-     * @param[out] okey  This Contains the pointer to
-     the Class for which fields
-     have to be updated with values
-     from the Request.
-     * @param[in]  req   This Contains the pointer to the
-     Class which is used for the Duplication .
+    * @param[out] okey  This Contains the pointer to
+                        the Class for which fields
+                        have to be updated with values
+                        from the Request.
+    * @param[in]  req   This Contains the pointer to the
+                        Class which is used for the Duplication .
 
-     * @retval UPLL_RC_SUCCESS  Successfull completion.
-     * @retval UPLL_RC_ERR_GENERIC  Generic failure
-     */
+    * @retval UPLL_RC_SUCCESS  Successfull completion.
+    * @retval UPLL_RC_ERR_GENERIC  Generic failure
+    */
     upll_rc_t DupConfigKeyVal(ConfigKeyVal *&okey, ConfigKeyVal *&req,
                               MoMgrTables tbl);
 
     /**
-     * @brief  Method Updates the ConfigStatus for AuditConfigiration.
+    * @brief  Method Updates the ConfigStatus for AuditConfigiration.
 
-     * @param[out]  ckv_running  This Contains the pointer to the Class
-     *                           for which Audit ConfigStatus is Updated.
-     * @param[in]   cs_status    Describes CsStatus Information.
-     Information.
-     * @param[in]   phase        Describes the Phase of the Operation.
-     * @param[in]   dmi          Pointer to the DalDmlIntf(DB Interface)
-     *
-     * @retval  UPLL_RC_SUCCESS  Successfull completion.
-     * @retval  UPLL_RC_GENERIC  Returned Generic Error.
-     */
+    * @param[out]  ckv_running  This Contains the pointer to the Class
+    *                           for which Audit ConfigStatus is Updated.
+    * @param[in]   cs_status    Describes CsStatus Information.
+                                Information.
+    * @param[in]   phase        Describes the Phase of the Operation.
+    * @param[in]   dmi          Pointer to the DalDmlIntf(DB Interface)
+    *
+    * @retval  UPLL_RC_SUCCESS  Successfull completion.
+    * @retval  UPLL_RC_GENERIC  Returned Generic Error.
+    */
     upll_rc_t UpdateAuditConfigStatus(unc_keytype_configstatus_t cs_status,
                                       uuc::UpdateCtrlrPhase phase,
                                       ConfigKeyVal *&ckv_running,
                                       DalDmlIntf *dmi);
 
     /**
-     * @brief  Method used for Update Operation.
+    * @brief  Method used for Update Operation.
 
-     * @param[in] req   Describes RequestResponderHeaderClass.
-     * @param[in] ikey  Pointer to ConfigKeyVal Class.
-     * @param[in] dmi   Pointer to DalDmlIntf Class.
+    * @param[in] req   Describes RequestResponderHeaderClass.
+    * @param[in] ikey  Pointer to ConfigKeyVal Class.
+    * @param[in] dmi   Pointer to DalDmlIntf Class.
 
-     * @retval UPLL_RC_SUCCESS  Successfull completion.
-     * @retval UPLL_RC_ERR_GENERIC Failure
-     */
+    * @retval UPLL_RC_SUCCESS  Successfull completion.
+    * @retval UPLL_RC_ERR_GENERIC Failure
+    */
     upll_rc_t UpdateMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                        DalDmlIntf *dmi);
 
     /**
-     * @brief  Method Updates the ConfigStatus for AuditConfigiration.
+    * @brief  Method Updates the ConfigStatus for AuditConfigiration.
 
-     * @param[out] ckv_db               This Contains the pointer to
-     the Class for which ConfigStatus
-     is Updated.
-     * @param[in]  ctrlr_commit_status  Describes Commit Control Status Information.
-     * @param[in]  response_code        Describes the Response Code.
-     * @param[in]  dmi                  Pinter to DalDmlIntf Class.
+    * @param[out] ckv_db               This Contains the pointer to
+                                       the Class for which ConfigStatus
+                                       is Updated.
+    * @param[in]  ctrlr_commit_status  Describes Commit Control Status Information.
+    * @param[in]  response_code        Describes the Response Code.
+    * @param[in]  dmi                  Pinter to DalDmlIntf Class.
 
-     * @retval UPLL_RC_SUCCESS  Successfull completion.
-     * @retval UPLL_RC_ERR_NO_SUCH_INSTANCE  No Instance Exist
-     */
+    * @retval UPLL_RC_SUCCESS  Successfull completion.
+    * @retval UPLL_RC_ERR_NO_SUCH_INSTANCE  No Instance Exist
+    */
     upll_rc_t ReadMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                      DalDmlIntf *dmi);
 
     /**
-     * @brief  Method used for Trasaction Vote Operation.
+    * @brief  Method used for Trasaction Vote Operation.
 
-     * @param[in] key            Pointer to ConfigKeyVal Class.
-     * @param[in] op             Describes the Type of Opeartion.
-     * @param[in] driver_result  Describes the result of Driver Operation.
-     * @param[in] upd_key        Pointer to ConfigKeyVal Class.
-     * @param[in] ctrlr_key      Pointer to ConfigKeyVal Class.
+    * @param[in] key            Pointer to ConfigKeyVal Class.
+    * @param[in] op             Describes the Type of Opeartion.
+    * @param[in] driver_result  Describes the result of Driver Operation.
+    * @param[in] upd_key        Pointer to ConfigKeyVal Class.
+    * @param[in] ctrlr_key      Pointer to ConfigKeyVal Class.
 
-     * @retval  UPLL_RC_SUCCESS  Successfull completion.
-     * @retval  UPLL_RC_ERR_GENERIC  Failure
-     */
+    * @retval  UPLL_RC_SUCCESS  Successfull completion.
+    * @retval  UPLL_RC_ERR_GENERIC  Failure
+    */
     upll_rc_t UpdateConfigStatus(ConfigKeyVal *key, unc_keytype_operation_t op,
                                  uint32_t driver_result, ConfigKeyVal *upd_key,
                                  DalDmlIntf *dmi, ConfigKeyVal *ctrlr_key);
 
     /**
-     * @brief  Allocates Memory for the Incoming Pointer to the Class.
+    * @brief  Allocates Memory for the Incoming Pointer to the Class.
 
-     * @param[out] ck_val   This Contains the pointer to the Class for
-     which memory has to be allocated.
-     * @param[in]  dt_type  Describes Configiration Information.
-     * @param[in]  tbl      Describes the Destination table Information.
+    * @param[out] ck_val   This Contains the pointer to the Class for
+                           which memory has to be allocated.
+    * @param[in]  dt_type  Describes Configiration Information.
+    * @param[in]  tbl      Describes the Destination table Information.
 
-     * @retval UPLL_RC_SUCCESS  Successfull completion.
-     * @retval UPLL_RC_ERR_GENERIC  Return Generic Error
-     */
+    * @retval UPLL_RC_SUCCESS  Successfull completion.
+    * @retval UPLL_RC_ERR_GENERIC  Return Generic Error
+    */
     upll_rc_t AllocVal(ConfigVal *&ck_val, upll_keytype_datatype_t dt_type,
                        MoMgrTables tbl);
 
     /**
-     * @brief  Allocates Memory for the Incoming Pointer to the Class.
+    * @brief  Allocates Memory for the Incoming Pointer to the Class.
 
-     *@param[out] val      This Contains the pointer to the Class for
-     which memory has to be allocated.
-     *@param[in]  indx     Describes The Index Value
-     *@param[in]  valid    Describes The Validity Of VrtIfFlowFilterEntryMoMgr
-     *@param[in]  dt_type  Describes Configiration Information.
-     *@param[in]  tbl      Describes the Destination table Information.
+    *@param[out] val      This Contains the pointer to the Class for
+                          which memory has to be allocated.
+    *@param[in]  indx     Describes The Index Value
+    *@param[in]  valid    Describes The Validity Of VrtIfFlowFilterEntryMoMgr
+    *@param[in]  dt_type  Describes Configiration Information.
+    *@param[in]  tbl      Describes the Destination table Information.
 
-     *@retval  UPLL_RC_SUCCESS  Successfull completion.
-     *@retval  UPLL_RC_ERR_GENERIC  Failure
-     */
+    *@retval  UPLL_RC_SUCCESS  Successfull completion.
+    *@retval  UPLL_RC_ERR_GENERIC  Failure
+    */
 
     upll_rc_t GetValid(void *val, uint64_t indx, uint8_t *&valid,
                        upll_keytype_datatype_t dt_type, MoMgrTables tbl);
 
     /**
-     * @Brief Validates the syntax of the specified key and value structure
-     *        for KT_VRTIF_FLOWFILTER_ENTRY keytype
-     *
-     * @param[in] IpcReqRespHeader  contains first 8 fields of input
-     *                              request structure
-     * @param[in] ConfigKeyVal      key and value structure.
-     *
-     * @retval UPLL_RC_SUCCESS               Successful.
-     * @retval UPLL_RC_ERR_CFG_SYNTAX        Syntax error.
-     * @retval UPLL_RC_ERR_NO_SUCH_INSTANCE  key_vrtif_flowfilter_entry
-     *                                       is not available.
-     * @retval UPLL_RC_ERR_GENERIC           Generic failure.
-     */
+    * @Brief Validates the syntax of the specified key and value structure
+    *        for KT_VRTIF_FLOWFILTER_ENTRY keytype
+    *
+    * @param[in] IpcReqRespHeader  contains first 8 fields of input
+    *                              request structure
+    * @param[in] ConfigKeyVal      key and value structure.
+    *
+    * @retval UPLL_RC_SUCCESS               Successful.
+    * @retval UPLL_RC_ERR_CFG_SYNTAX        Syntax error.
+    * @retval UPLL_RC_ERR_NO_SUCH_INSTANCE  key_vrtif_flowfilter_entry
+    *                                       is not available.
+    * @retval UPLL_RC_ERR_GENERIC           Generic failure.
+    */
     upll_rc_t ValidateMessage(IpcReqRespHeader *req, ConfigKeyVal *key);
 
 
@@ -316,38 +315,38 @@ namespace kt_momgr {
     upll_rc_t ValidateVrtIfValStruct(IpcReqRespHeader *req,
                                      ConfigKeyVal *ikey);
 
-    /**
-     * @Brief Validates the syntax fr KT_VRTIF_FLOWFILTER_ENTRY
-     *        keytype key structure.
-     *
-     * @param[in]  key_vbrif_flowfilter  KT_VRTIF_FLOWFILTER_ENTRY key structure.
-     *
-     * @retval UPLL_RC_SUCCESS        validation succeeded.
-     * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
-     */
+   /**
+    * @Brief Validates the syntax fr KT_VRTIF_FLOWFILTER_ENTRY
+    *        keytype key structure.
+    *
+    * @param[in]  key_vbrif_flowfilter  KT_VRTIF_FLOWFILTER_ENTRY key structure.
+    *
+    * @retval UPLL_RC_SUCCESS        validation succeeded.
+    * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
+    */
     upll_rc_t ValidateVrtIfFlowfilterEntryKey(
-        key_vrt_if_flowfilter_entry_t* key_vrt_if_flowfilter_entry,
-        unc_keytype_operation_t operation);
+    key_vrt_if_flowfilter_entry_t* key_vrt_if_flowfilter_entry,
+    unc_keytype_operation_t operation);
 
     /**
-     * @Brief Checks if the specified key type(KT_VRTIF_FLOWFILTER_ENTRY) and
-     *        associated attributes are supported on the given controller,
-     *        based on the valid flag
-     *
-     * @param[in] IpcReqRespHeader  contains first 8 fields of input
-     *                              request structure
-     * @param[in] ConfigKeyVal      contains key and value structure.
-     * @param[in] ctrlr_name        controller name.
-     *
-     * @retval  UPLL_RC_SUCCESS              Validation succeeded.
-     * @retval  UPLL_RC_ERR_GENERIC          Validation failure.
-     * @retval  UPLL_RC_ERR_INVALID_OPTION1  Option1 is not valid.
-     * @retval  UPLL_RC_ERR_INVALID_OPTION2  Option2 is not valid.
-     */
+    * @Brief Checks if the specified key type(KT_VRTIF_FLOWFILTER_ENTRY) and
+    *        associated attributes are supported on the given controller,
+    *        based on the valid flag
+    *
+    * @param[in] IpcReqRespHeader  contains first 8 fields of input
+    *                              request structure
+    * @param[in] ConfigKeyVal      contains key and value structure.
+    * @param[in] ctrlr_name        controller name.
+    *
+    * @retval  UPLL_RC_SUCCESS              Validation succeeded.
+    * @retval  UPLL_RC_ERR_GENERIC          Validation failure.
+    * @retval  UPLL_RC_ERR_INVALID_OPTION1  Option1 is not valid.
+    * @retval  UPLL_RC_ERR_INVALID_OPTION2  Option2 is not valid.
+    */
     upll_rc_t ValidateCapability(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                                 const char* ctrlr_name = NULL);
+                                  const char* ctrlr_name = NULL);
 
-    /**
+     /**
      * @Brief Method used to get the Bind Info Structure for Rename Purpose.
      *
      * @param[in]  key_type  Describes the KT Information.
@@ -358,7 +357,7 @@ namespace kt_momgr {
      * @retval  pfc_true   Successful Completion.
      * @retval  pfc_fasle  Failure.
      */
-    bool GetRenameKeyBindInfo(unc_key_type_t key_type,
+     bool GetRenameKeyBindInfo(unc_key_type_t key_type,
                               BindInfo *&binfo,
                               int &nattr,
                               MoMgrTables tbl);
@@ -373,10 +372,10 @@ namespace kt_momgr {
      * @retval  UPLL_RC_SUCCESS      Successfull Completion.
      * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
      */
-    upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey,
+     upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey,
                               ConfigKeyVal *ikey);
 
-    /**
+     /**
      * @brief Method To Compare the Valid Check of Attributes
      *
      * @param[out]  val1   Pointer to ConfigKeyVal Class
@@ -413,7 +412,7 @@ namespace kt_momgr {
     bool IsValidKey(void *key,
                     uint64_t index);
 
-    /**
+      /**
      * @brief  Method used for GetParentConfigKey Operation.
      *
      * @param[out]  okey        Pointer to ConfigKeyVal Class.
@@ -422,8 +421,8 @@ namespace kt_momgr {
      * @retval  UPLL_RC_SUCCESS      Successfull completion.
      * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
      */
-    upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey,
-                                 ConfigKeyVal *ikey);
+     upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey,
+                                  ConfigKeyVal *ikey);
 
 
     /**
@@ -436,24 +435,24 @@ namespace kt_momgr {
      *
      * @retval  UPLL_RC_SUCCESS      Successfull completion.
      * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
-     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists
+     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists 
      * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
      */
-    upll_rc_t RestorePOMInCtrlTbl(ConfigKeyVal *ikey,
-                                  upll_keytype_datatype_t dt_type,
-                                  MoMgrTables tbl,
-                                  DalDmlIntf* dmi);
+     upll_rc_t RestorePOMInCtrlTbl(ConfigKeyVal *ikey,
+                                   upll_keytype_datatype_t dt_type,
+                                   MoMgrTables tbl,
+                                   DalDmlIntf* dmi);
 
     upll_rc_t SetVlinkPortmapConfiguration(ConfigKeyVal *ikey,
                                            upll_keytype_datatype_t dt_type,
                                            DalDmlIntf *dmi,
                                            InterfacePortMapInfo flag,
                                            unc_keytype_operation_t oper);
-
+#if 0
     upll_rc_t TxVote(unc_key_type_t keytype,
                      DalDmlIntf *dmi,
                      ConfigKeyVal **err_ckv);
-
+#endif
     upll_rc_t TxUpdateController(unc_key_type_t keytype,
                                  uint32_t session_id,
                                  uint32_t config_id,
@@ -467,17 +466,20 @@ namespace kt_momgr {
                                         upll_keytype_datatype_t dt_type);
 
     upll_rc_t GetControllerDomainID(ConfigKeyVal *ikey,
-                                    upll_keytype_datatype_t dt_type,
-                                    DalDmlIntf *dmi);
+                               upll_keytype_datatype_t dt_type,
+                               DalDmlIntf *dmi);
 
     upll_rc_t ConstructReadDetailResponse(ConfigKeyVal *ikey,
                                           ConfigKeyVal *drv_resp_ckv,
-                                          ConfigKeyVal **okey);
+                                          controller_domain ctrlr_dom,
+                                          ConfigKeyVal **okey,
+                                          DalDmlIntf *dmi
+);
 
     upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
                                 upll_keytype_datatype_t dt_type,
                                 DalDmlIntf *dmi);
-
+    
     upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
 
 
@@ -505,12 +507,12 @@ namespace kt_momgr {
                           unc_keytype_operation_t op);
 
     upll_rc_t GetFlowlistConfigKey(
-        const char *flowlist_name, ConfigKeyVal *&okey,
-        DalDmlIntf *dmi);
+          const char *flowlist_name, ConfigKeyVal *&okey,
+          DalDmlIntf *dmi);
 
     upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
-                            DalDmlIntf *dmi,
-                            IpcReqRespHeader *req);
+          DalDmlIntf *dmi,
+          IpcReqRespHeader *req);
 
     VrtIfFlowFilterEntryMoMgr();
     ~VrtIfFlowFilterEntryMoMgr() {
@@ -521,7 +523,7 @@ namespace kt_momgr {
       }
       delete[] table;
     }
-  };
+};
 }  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc

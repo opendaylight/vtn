@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -291,6 +291,7 @@ public final class VtnServiceIpcConsts {
 	public static final String GET_VTUNNEL_RESPONSE = "getVTunnelResponse";
 	public static final String GET_VBRIDGE_INTERFACE_FLOW_FILTER_ENTRY_RESPONSE = "getVBridgeInterfaceFlowFilterEntryResponse";
 	public static final String GET_VROUTER_INTERFACE_FLOW_FILTER_ENTRY_RESPONSE = "getVRouterInterfaceFlowFilterEntryResponse";
+	public static final String GET_VTERMINAL_INTERFACE_FLOW_FILTER_ENTRY_RESPONSE = "getVTerminalInterfaceFlowFilterEntryResponse";
 	public static final String GET_VTEP_RESPONSE = "getVtepResponse";
 	public static final String GET_BOUNDARY_RESPONSE = "getBoundaryResponse";
 	public static final String GET_VTEP_INTERFACE_RESPONSE = "getVTepInterfaceResponse";

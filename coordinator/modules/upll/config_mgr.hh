@@ -17,6 +17,8 @@
 #include <vector>
 
 #include "pfcxx/ipc_server.hh"
+#include "pfcxx/timer.hh"
+#include "pfcxx/task_queue.hh"
 #include "cxx/pfcxx/synch.hh"
 #include "unc/uppl_common.h"
 #include "unc/pfcdriver_include.h"
@@ -34,6 +36,7 @@
 #include "tclib_intf_impl.hh"
 #include "config_lock.hh"
 #include "dbconn_mgr.hh"
+#include "ctrlr_mgr.hh"
 
 namespace unc {
 namespace upll {
@@ -52,12 +55,12 @@ enum upll_alarm_category_t {
 
 class UpllConfigMgr {
  public:
-  /**
-   * @brief Creates a singleton instance of UpllConfigMgr if one is not already
-   * constructed.
-   *
-   * @return Pointer to newly constructed or exsting instance of UpllConfigMgr
-   */
+   /**
+    * @brief Creates a singleton instance of UpllConfigMgr if one is not already
+    * constructed.
+    *
+    * @return Pointer to newly constructed or exsting instance of UpllConfigMgr
+    */
   static UpllConfigMgr *GetUpllConfigMgr() {
     if (!singleton_instance_) {
       singleton_instance_ = new UpllConfigMgr();
@@ -103,6 +106,7 @@ class UpllConfigMgr {
 
   // GlobalConfigService
 
+  upll_rc_t IsCandidateDirtyShallow(bool *dirty);
   /**
    * @brief Checks if candidate configuration is not same as running configuration.
    *
@@ -199,7 +203,7 @@ class UpllConfigMgr {
    * @brief Controller down event handler
    *
    * @param[in] ctrlr_name  name of the controller
-   * @param[in] operstatus  operational status of controller
+   * @param[in] operstatus  operational status of controller 
    */
   void OnControllerStatusChange(const char *ctrlr_name, bool operstatus);
 
@@ -269,8 +273,8 @@ class UpllConfigMgr {
   upll_rc_t OnTxStart(uint32_t session_id, uint32_t config_id,
                       ConfigKeyVal **err_ckv);
   upll_rc_t OnAuditTxStart(const char *ctrlr_id,
-                           uint32_t session_id, uint32_t config_id,
-                           ConfigKeyVal **err_ckv);
+                        uint32_t session_id, uint32_t config_id,
+                        ConfigKeyVal **err_ckv);
   upll_rc_t OnTxVote(const std::set<std::string> **affected_ctrlr_list,
                      ConfigKeyVal **err_ckv);
   upll_rc_t OnAuditTxVote(const char *ctrlr_id,
@@ -294,11 +298,17 @@ class UpllConfigMgr {
   upll_rc_t OnAbortCandidateConfig(uint32_t session_id);
   upll_rc_t OnClearStartupConfig(uint32_t session_id);
 
+  // BATCH configuration support
+  upll_rc_t OnBatchStart(uint32_t session_id, uint32_t config_id);
+  upll_rc_t OnBatchAlive(uint32_t session_id, uint32_t config_id);
+  upll_rc_t OnBatchEnd(uint32_t session_id, uint32_t config_id, bool timedout);
+
   const KeyTree &GetConfigKeyTree() { return cktt_; }
 
   MoManager *GetMoManager(unc_key_type_t kt) {
+    
     std::map<unc_key_type_t, MoManager*>::iterator it =
-        upll_kt_momgrs_.find(kt);
+      upll_kt_momgrs_.find(kt);
     if (it != upll_kt_momgrs_.end() )
       return it->second;
     return NULL;
@@ -307,6 +317,7 @@ class UpllConfigMgr {
   void set_shutting_down(bool shutdown) {
     sys_state_rwlock_.wrlock();
     shutting_down_ = shutdown;
+    TerminateBatch();
     tclib_impl_.set_shutting_down(shutdown);
     sys_state_rwlock_.unlock();
   }
@@ -318,15 +329,26 @@ class UpllConfigMgr {
     return state;
   }
 
-  void SetClusterState(bool active) {
+  // cl_switched is true if cluster swithover is happening. false if just
+  // cold-started
+  void SetClusterState(bool active, bool cl_switched) {
+    // To support fail-over and switch-over scenarios, candidate_dirty_qc_ is
+    // set to TRUE whenever the system changes states to active or standby, as
+    // in this case all MoMgrs are consulted to find if the candidate
+    // configuration is really dirty
+    candidate_dirty_qc_lock_.lock();
+    candidate_dirty_qc_ = true;
+    candidate_dirty_qc_initialized_ = false;
+    candidate_dirty_qc_lock_.unlock();
+
     sys_state_rwlock_.wrlock();
     node_active_ = active;
+    cl_switched_ = cl_switched;
     tclib_impl_.SetClusterState(active);
     sys_state_rwlock_.unlock();
-    dbcm_->TerminateAllDbConns();
+    dbcm_->TerminateAndInitializeDbConns(active);
     if (active) {
       upll_rc_t urc;
-      dbcm_->InitializeDbConnections();
       DalOdbcMgr *dbinst = dbcm_->GetConfigRwConn();
       dbinst->MakeAllDirty();
       dbcm_->ReleaseRwConn(dbinst);
@@ -338,8 +360,12 @@ class UpllConfigMgr {
       if (urc != UPLL_RC_SUCCESS) {
         UPLL_LOG_FATAL("Failed to clear import tables, urc=%d", urc);
       }
+      // Clearing the controllers
+      CtrlrMgr::GetInstance()->CleanUp();
+      CtrlrMgr::GetInstance()->PrintCtrlrList();
     } else {
       // dbcm_->TerminateAllDbConns();
+      TerminateBatch();
     }
   }
 
@@ -353,12 +379,12 @@ class UpllConfigMgr {
 
   upll_rc_t ContinueActiveProcess() {
     if (IsShuttingDown()) {
-      UPLL_LOG_INFO("Shutting down, cannot commit");
+      UPLL_LOG_INFO("Shutting down, cannot preform the request");
       return UPLL_RC_ERR_SHUTTING_DOWN;
     }
 
     if (!IsActiveNode()) {
-      UPLL_LOG_INFO("Node is not active, cannot commit");
+      UPLL_LOG_INFO("Node is not active, cannot preform the request");
       return UPLL_RC_ERR_NOT_SUPPORTED_BY_STANDBY;
     }
     return UPLL_RC_SUCCESS;
@@ -417,10 +443,18 @@ class UpllConfigMgr {
                            const char *ctrlr_id, uint32_t operation);
   upll_rc_t ImportCtrlrConfig(const char *ctrlr_id, upll_keytype_datatype_t dt);
 
+  void TriggerInvalidConfigAlarm(upll_rc_t ctrlt_result, string ctrlr_id);
+
   bool SendInvalidConfigAlarm(string ctrlr_name, bool assert_alarm);
 
+  void GetBatchParamsFrmConfFile();
+  upll_rc_t ValidateBatchConfigMode(uint32_t session_id, uint32_t config_id);
+  upll_rc_t RegisterBatchTimeoutCB(uint32_t session_id, uint32_t config_id);
+  upll_rc_t DbCommitIfInBatchMode(const char* func);
+  void TerminateBatch();
 
   bool node_active_;  // cluster state
+  bool cl_switched_;   // whether cluster state switched. On coldstart false.
   bool shutting_down_;
   pfc::core::ReadWriteLock sys_state_rwlock_;
   KeyTree cktt_;
@@ -428,6 +462,7 @@ class UpllConfigMgr {
   std::map<unc_key_type_t, std::string> kt_name_map_;
   ConfigLock cfg_lock_;
   bool candidate_dirty_qc_;
+  bool candidate_dirty_qc_initialized_; // Whether deterministically initialized or not
   pfc::core::Mutex candidate_dirty_qc_lock_;
   std::map<unc_key_type_t, MoManager*> upll_kt_momgrs_;
   TcLibIntfImpl tclib_impl_;
@@ -450,6 +485,30 @@ class UpllConfigMgr {
   UpllDbConnMgr *dbcm_;
 
   int32_t alarm_fd;
+
+  // Batch configuration mode support
+  class BatchTimeoutHandler {
+   public:
+    BatchTimeoutHandler() { }
+    void operator() () {
+      UpllConfigMgr* ucm = UpllConfigMgr::GetUpllConfigMgr();
+      UPLL_LOG_INFO("Batch operation timed-out and BATCH-END is called");
+      //we don't have to perform session validation on  batch-timeout
+      //Session validation will be ignored in BatchEnd on passing true.
+      ucm->OnBatchEnd(0, 0, true);
+    }
+  };
+
+  pfc::core::Mutex batch_mutex_lock_;
+  bool batch_mode_in_progress_;
+  pfc::core::Timer* batch_timer_;
+  pfc::core::TaskQueue* batch_taskq_;
+  pfc_timeout_t  batch_timeout_id_;
+  uint32_t batch_timeout_;  // in seconds
+  BatchTimeoutHandler batch_timeout_fctr_;
+  pfc::core::timer_func_t batch_timer_func_;
+  uint32_t batch_commit_limit_;
+  uint32_t batch_op_cnt_;
 
   static UpllConfigMgr *singleton_instance_;
 };

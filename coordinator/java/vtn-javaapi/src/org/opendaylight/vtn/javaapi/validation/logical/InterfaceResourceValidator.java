@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.validation.logical;
 
 import com.google.gson.JsonObject;
@@ -23,6 +24,8 @@ import org.opendaylight.vtn.javaapi.resources.logical.VBypassInterfaceResource;
 import org.opendaylight.vtn.javaapi.resources.logical.VBypassInterfacesResource;
 import org.opendaylight.vtn.javaapi.resources.logical.VTepInterfaceResource;
 import org.opendaylight.vtn.javaapi.resources.logical.VTepInterfacesResource;
+import org.opendaylight.vtn.javaapi.resources.logical.VTerminalInterfaceResource;
+import org.opendaylight.vtn.javaapi.resources.logical.VTerminalInterfacesResource;
 import org.opendaylight.vtn.javaapi.resources.logical.VTunnelInterfaceResource;
 import org.opendaylight.vtn.javaapi.resources.logical.VTunnelInterfacesResource;
 import org.opendaylight.vtn.javaapi.validation.CommonValidator;
@@ -50,12 +53,13 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 	}
 
 	/**
-	 * Validate uri parameters for
+	 * Validate URI parameters for
 	 * VUnknownInterfaceResource,VUnknownInterfacesResource
 	 * ,VTunnelInterfaceResource,
 	 * VTunnelInterfacesResource,VBridgeInterfaceResource
 	 * ,VBridgeInterfacesResource,DhcpRelayInterfaceResource,
-	 * DhcpRelayInterfacesResource,VTepInterfaceResource and
+	 * DhcpRelayInterfacesResource,VTepInterfaceResource 
+	 * VTerminalInterfaceResource and
 	 * VTepInterfacesResource
 	 * 
 	 * @return true, if successful
@@ -349,6 +353,61 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 				}
 			}
 			setListOpFlag(true);
+		} else if (resource instanceof VTerminalInterfaceResource
+				&& ((VTerminalInterfaceResource) resource).getVtnName() != null
+				&& !((VTerminalInterfaceResource) resource).getVtnName().trim()
+						.isEmpty()) {
+			isValid = validator.isValidMaxLengthAlphaNum(
+					((VTerminalInterfaceResource) resource).getVtnName().trim(),
+					VtnServiceJsonConsts.LEN_31);
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.URI
+						+ VtnServiceJsonConsts.VTERMINALNAME);
+				if (((VTerminalInterfaceResource) resource).getVterminalName() != null
+						&& !((VTerminalInterfaceResource) resource).getVterminalName()
+								.trim().isEmpty()) {
+					isValid = validator.isValidMaxLengthAlphaNum(
+							((VTerminalInterfaceResource) resource).getVterminalName()
+									.trim(), VtnServiceJsonConsts.LEN_31);
+				} else {
+					isValid = false;
+				}
+			}
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.URI
+						+ VtnServiceJsonConsts.IFNAME);
+				if (((VTerminalInterfaceResource) resource).getIfName() != null
+						&& !((VTerminalInterfaceResource) resource).getIfName()
+								.trim().isEmpty()) {
+					isValid = validator.isValidMaxLengthAlphaNum(
+							((VTerminalInterfaceResource) resource).getIfName()
+									.trim(), VtnServiceJsonConsts.LEN_31);
+				} else {
+					isValid = false;
+				}
+			}
+			setListOpFlag(false);
+		}else if (resource instanceof VTerminalInterfacesResource
+				&& ((VTerminalInterfacesResource) resource).getVtnName() != null
+				&& !((VTerminalInterfacesResource) resource).getVtnName().trim()
+						.isEmpty()) {
+			isValid = validator.isValidMaxLengthAlphaNum(
+					((VTerminalInterfacesResource) resource).getVtnName().trim(),
+					VtnServiceJsonConsts.LEN_31);
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.URI
+						+ VtnServiceJsonConsts.VTERMINALNAME);
+				if (((VTerminalInterfacesResource) resource).getVterminalName() != null
+						&& !((VTerminalInterfacesResource) resource).getVterminalName()
+								.trim().isEmpty()) {
+					isValid = validator.isValidMaxLengthAlphaNum(
+							((VTerminalInterfacesResource) resource).getVterminalName()
+									.trim(), VtnServiceJsonConsts.LEN_31);
+				} else {
+					isValid = false;
+				}
+			}
+			setListOpFlag(true);
 		}
 		LOG.trace("Complete InterfaceResourceValidator#validateUri()");
 		return isValid;
@@ -523,7 +582,9 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 					isValid = adminStatus
 							.equalsIgnoreCase(VtnServiceJsonConsts.ENABLE)
 							|| adminStatus
-									.equalsIgnoreCase(VtnServiceJsonConsts.DISABLE);
+									.equalsIgnoreCase(VtnServiceJsonConsts.DISABLE)
+							|| adminStatus
+									.equalsIgnoreCase(VtnServiceJsonConsts.EMPTY);
 				}
 			}
 		}

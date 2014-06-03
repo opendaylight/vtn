@@ -1,7 +1,7 @@
 #
 # Copyright (c) %YEAR_RANGE% NEC Corporation
 # All rights reserved.
-# 
+#
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License v1.0 which accompanies this
 # distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -116,4 +116,14 @@ rlimit
 {
 	# Maximum number of file descriptors.
 	open_files	= 1024;
+}
+
+#
+# Options for IPC event subsystem.
+#
+ipc_event
+{
+	# Determine whether cancellable client sessions should be canceled
+	# on IPC channel down event or not.
+	auto_cancel	= true;
 }

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -2428,7 +2428,7 @@ void Kt_Switch::GetSwitchValStructure(
     valid_value_struct = PhyUtil::uint8touint(
         obj_val_switch->valid[kIdxSwitch]);
   }
-
+  
   string value;
   // Description
   if (obj_val_switch != NULL) {
@@ -2455,6 +2455,7 @@ void Kt_Switch::GetSwitchValStructure(
   value.clear();
   // model
   if (obj_val_switch != NULL) {
+
     if (valid_value_struct == UNC_VF_VALID) {
       valid_val = PhyUtil::uint8touint(obj_val_switch->switch_val.
                                      valid[kIdxSwitchModel]);
@@ -2479,7 +2480,7 @@ void Kt_Switch::GetSwitchValStructure(
   char *ip_value = new char[16];
   memset(ip_value, '\0', 16);
   if (obj_val_switch != NULL) {
-    if (valid_value_struct == UNC_VF_VALID) {
+    if(valid_value_struct == UNC_VF_VALID) {
       valid_val = PhyUtil::uint8touint(
         obj_val_switch->switch_val.
         valid[kIdxSwitchIPAddress]);
@@ -2509,6 +2510,7 @@ void Kt_Switch::GetSwitchValStructure(
   ip_value = new char[16];
   memset(ip_value, '\0', 16);
   if (obj_val_switch != NULL) {
+
     if (valid_value_struct == UNC_VF_VALID) {
       valid_val = PhyUtil::uint8touint(obj_val_switch->switch_val.
                                      valid[kIdxSwitchIPV6Address]);
@@ -2533,7 +2535,8 @@ void Kt_Switch::GetSwitchValStructure(
   value.clear();
   // Admin Status
   if (obj_val_switch != NULL) {
-    if (valid_value_struct == UNC_VF_VALID) {
+
+    if(valid_value_struct == UNC_VF_VALID) {
       valid_val = PhyUtil::uint8touint(obj_val_switch->switch_val.
                                      valid[kIdxSwitchAdminStatus]);
       value = PhyUtil::uint8tostr(obj_val_switch->
@@ -2556,6 +2559,7 @@ void Kt_Switch::GetSwitchValStructure(
   value.clear();
   // Domain Name
   if (obj_val_switch != NULL) {
+
     if (valid_value_struct == UNC_VF_VALID) {
       valid_val = PhyUtil::uint8touint(obj_val_switch->switch_val.
                                      valid[kIdxSwitchDomainName]);

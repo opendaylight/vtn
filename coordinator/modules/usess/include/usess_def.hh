@@ -96,4 +96,4 @@ namespace usess {
 }  // namespace usess
 }  // namespace unc
 
-#endif  // _USESS_DEF_HH_
+#endif // _USESS_DEF_HH_

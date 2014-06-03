@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -175,7 +175,7 @@ extern void		signal_mask_assert(void);
 #endif	/* PFC_VERBOSE_DEBUG */
 
 extern void		event_init(void);
-extern void		event_post_global(pfc_evtype_t type);
+extern int		event_post_global(pfc_evtype_t type);
 extern pfc_bool_t	event_post_signal(int sig);
 
 extern void	module_init(int argc, char **argv, uint32_t flags);
@@ -194,6 +194,7 @@ extern void	child_killall(void);
  */
 #define	PFCD_MODF_ALL		PFC_CONST_U(0x1)	/* load all modules */
 #define	PFCD_MODF_CHECKONLY	PFC_CONST_U(0x2)	/* conf check only */
+#define	PFCD_MODF_NOCONF	PFC_CONST_U(0x4)	/* ignore config file */
 
 /*
  * static inline void *

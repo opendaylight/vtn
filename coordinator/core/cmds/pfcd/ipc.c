@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2013 NEC Corporation
+ * Copyright (c) 2011-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -472,6 +472,7 @@ ipc_client_init()
 {
 	pfc_cfblk_t	cfblk;
 	pfc_ipcevopts_t	opts;
+	pfc_bool_t	auto_cancel;
 	int		err;
 
 	/* Determine options for IPC event subsystem. */
@@ -490,6 +491,10 @@ ipc_client_init()
 
 	/* Enable logging in IPC client library. */
 	pfc_ipcclnt_enable_log(PFC_TRUE);
+
+	/* Enable auto-cancellation of IPC client session if requested. */
+	auto_cancel = pfc_conf_get_bool(cfblk, "auto_cancel", PFC_FALSE);
+	pfc_ipcclnt_event_setautocancel(auto_cancel);
 
 	/* Zero means default value. */
 	IPC_EVENT_LOAD_OPTION(cfblk, &opts, idle_timeout);

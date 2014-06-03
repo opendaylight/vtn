@@ -20,12 +20,12 @@ namespace upll {
 namespace kt_momgr {
 
 /*  This file declares interfaces for keyType KT_VBR_FLOWFILER_ENTRY */
-  /**
-   * @brief  VbrFlowFilterEntryMoMgr class handles all the request
-   *         received from service.
-   */
-  class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
-   private:
+/**
+ * @brief  VbrFlowFilterEntryMoMgr class handles all the request
+ *         received from service.
+ */
+class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
+  private:
     /**
      * @brief  Member Variable for VbrFlowfilterEntryBindInfo.
      */
@@ -41,7 +41,7 @@ namespace kt_momgr {
      */
     static BindInfo vbr_flowlist_rename_bind_info[];
 
-   public:
+  public:
     /**
      * @brief  Validates the Attribute of a Particular Class.
      *
@@ -60,9 +60,6 @@ namespace kt_momgr {
                                         DalDmlIntf *dmi,
                                         upll_keytype_datatype_t dt_type);
 
-    upll_rc_t TxVote(unc_key_type_t keytype,
-                     DalDmlIntf *dmi,
-                     ConfigKeyVal **err_ckv);
     /**
      * @Brief  Validates the syntax of the specified key and value structure
      *         for KT_VBR_FLOWFILTER_ENTRY keytype
@@ -90,8 +87,8 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_CFG_SYNTAX  validation failed.
      */
     upll_rc_t ValidateVbrFlowfilterEntryKey(
-        key_vbr_flowfilter_entry_t *key_vbr_flowfilter_entry,
-        unc_keytype_operation_t operation);
+         key_vbr_flowfilter_entry_t *key_vbr_flowfilter_entry,
+         unc_keytype_operation_t operation);
 
     upll_rc_t GetControllerDomainID(ConfigKeyVal *ikey,
                                     controller_domain *ctrlr_dom,
@@ -111,7 +108,8 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_CFG_SYNTAX  validation failed.
      */
     static upll_rc_t ValidateFlowfilterEntryValue(
-        val_flowfilter_entry_t *val_flowfilter_entry, uint32_t operation);
+          val_flowfilter_entry_t *val_flowfilter_entry, uint32_t operation
+          );
 
     /**
      * @Brief  Validates the syntax for redirect_port, redirect_node fields of
@@ -124,8 +122,8 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_CFG_SYNTAX  validation failed.
      */
     static upll_rc_t ValidateRedirectField(
-        val_flowfilter_entry_t *val_flowfilter_entry,
-        uint32_t operation);
+               val_flowfilter_entry_t *val_flowfilter_entry,
+                                    uint32_t operation);
 
     /**
      * @Brief  Validates the syntax for action field and checks whether
@@ -139,7 +137,7 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_CFG_SYNTAX  validation failed.
      */
     static upll_rc_t ValidateFlowfilterEntryAction(
-        val_flowfilter_entry_t *val_flowfilter_entry, uint32_t operation);
+           val_flowfilter_entry_t *val_flowfilter_entry, uint32_t operation);
 
     /**
      * @Brief  Checks if the specified key type and
@@ -154,7 +152,7 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_GENERIC                 Generic failure.
      */
     static upll_rc_t ValFlowFilterEntryAttributeSupportCheck(
-        val_flowfilter_entry_t *val_flowfilter_entry, const uint8_t* attrs);
+      val_flowfilter_entry_t *val_flowfilter_entry, const uint8_t* attrs);
 
     /**
      * @brief  VbrFlowFilterEntryMoMgr Class Constructor.
@@ -185,8 +183,8 @@ namespace kt_momgr {
      * @retval  UPLL_RC_SUCCESS         validation succeeded.
      * @retval  UPLL_RC_ERR_CFG_SYNTAX  validation failed.
      */
-    upll_rc_t ValidateValFlowfilterEntry(IpcReqRespHeader *req,
-                                         ConfigKeyVal *key);
+     upll_rc_t ValidateValFlowfilterEntry(IpcReqRespHeader *req,
+           ConfigKeyVal *key);
 
     /**
      * @Brief  Checks if the specified key type(KT_VBR_FLOWFILTER_ENTRY) and
@@ -202,8 +200,8 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_INVALID_OPTION1  Option1 is not valid.
      * @retval  UPLL_RC_ERR_INVALID_OPTION2  Option2 is not valid.
      */
-    upll_rc_t ValidateCapability(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                                 const char* ctrlr_name = NULL);
+     upll_rc_t ValidateCapability(IpcReqRespHeader *req, ConfigKeyVal *ikey,
+                                   const char* ctrlr_name = NULL);
 
     /**
      * @brief  Methods Used for getting Value Attribute.
@@ -265,10 +263,10 @@ namespace kt_momgr {
      * @retval  UPLL_RC_SUCCESS      Successfull completion.
      * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
      */
-    upll_rc_t UpdateAuditConfigStatus(unc_keytype_configstatus_t cs_status,
-                                      uuc::UpdateCtrlrPhase phase,
-                                      ConfigKeyVal *&ckv_running,
-                                      DalDmlIntf *dmi);
+     upll_rc_t UpdateAuditConfigStatus(unc_keytype_configstatus_t cs_status,
+                                       uuc::UpdateCtrlrPhase phase,
+                                       ConfigKeyVal *&ckv_running,
+                                       DalDmlIntf *dmi);
 
     /**
      * @brief  Method used to fill the CongigKeyVal with the Parent
@@ -461,15 +459,15 @@ namespace kt_momgr {
      */
     upll_rc_t UpdateMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                        DalDmlIntf *dmi);
-    /**
-     * @brief  Method Used for Getting the Controller Id.
-     *
-     * @param[in]  ikey  Pointer to ConfigKeyVal Class.
-     * @param[in]  dmi   Pointer to DalDmiIntf Class
-     *
-     * @retval  UPLL_RC_SUCCESS      Successfull Operation.
-     * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
-     */
+   /**
+    * @brief  Method Used for Getting the Controller Id.
+    *
+    * @param[in]  ikey  Pointer to ConfigKeyVal Class.
+    * @param[in]  dmi   Pointer to DalDmiIntf Class
+    *
+    * @retval  UPLL_RC_SUCCESS      Successfull Operation.
+    * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
+    */
     upll_rc_t GetControllerId(ConfigKeyVal *ikey,
                               DalDmlIntf *dmi);
 
@@ -522,7 +520,7 @@ namespace kt_momgr {
      *
      * @retval  UPLL_RC_SUCCESS      Successfull completion.
      * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
-     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists
+     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists 
      * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
      */
 
@@ -552,6 +550,8 @@ namespace kt_momgr {
     bool IsValidKey(void *key, uint64_t index);
     upll_rc_t ConstructReadDetailResponse(ConfigKeyVal *ikey,
                                           ConfigKeyVal *drv_resp_ckv,
+                                          controller_domain ctrlr_dom,
+                                          DalDmlIntf *dmi , 
                                           ConfigKeyVal **okey);
 
     upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
@@ -559,7 +559,11 @@ namespace kt_momgr {
                                 DalDmlIntf *dmi);
 
     upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
-
+    upll_rc_t SetRedirectDestination(
+                        ConfigKeyVal *okey , 
+                        upll_keytype_datatype_t dt_type,
+                        DalDmlIntf *dmi, 
+          val_flowfilter_entry_t* val_flowfilter_entry); 
     upll_rc_t UpdateVnodeVal(ConfigKeyVal *ikey, DalDmlIntf *dmi,
                              upll_keytype_datatype_t data_type,
                              bool &no_rename);
@@ -570,13 +574,15 @@ namespace kt_momgr {
                           unc_keytype_operation_t op);
 
     upll_rc_t GetFlowlistConfigKey(
-        const char *flowlist_name, ConfigKeyVal *&okey,
-        DalDmlIntf *dmi);
+          const char *flowlist_name, ConfigKeyVal *&okey,
+          DalDmlIntf *dmi);
 
     upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
-                            DalDmlIntf *dmi,
-                            IpcReqRespHeader *req);
-  };
+          DalDmlIntf *dmi,
+          IpcReqRespHeader *req);
+
+    static bool IsAllAttrInvalid(val_flowfilter_entry_t *val);
+};
 }  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc

@@ -93,77 +93,72 @@ class CapaModule : public pfc::core::Module, CapaIntf {
    * @retval true   Successful
    * @retval false  keytype is not found for the given ctrlr type
    */
-  bool  GetInstanceCount(unc_keytype_ctrtype_t ctrlr_type,
-                         const std::string &version,
+  bool  GetInstanceCount(unc_keytype_ctrtype_t ctrlr_type, const std::string &version,
                          unc_key_type_t keytype, uint32_t &instance_count);
 
 
   /**
    * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of specified key type.
-   *
+   * 
    * @param[in]  keytype    Key type.
    * @param[in]  version    controller version
    * @param[out] num_attrs  Maximum attribute for specified key type
    * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
-   *
+   * 
    * @retval true   Successful
    * @retval false  keytype is  not found for the given ctrlr type
    */
 
-  bool GetCreateCapability(unc_keytype_ctrtype_t ctrlr_type,
-                           const std::string &version,
+  bool GetCreateCapability(unc_keytype_ctrtype_t ctrlr_type, const std::string &version,
                            unc_key_type_t keytype,
                            uint32_t *instnace_count,
                            uint32_t *num_attrs, const uint8_t  **attrs);
 
   /**
    * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of specified key type.
-   *
+   * 
    * @param[in]  keytype    Key type.
    * @param[in]  version    controller version
    * @param[out] num_attrs  Maximum attribute for specified key type
    * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
-   *
+   * 
    * @retval true   Successful
    * @retval false  keytype is  not found for the given ctrlr type
    */
 
-  bool GetUpdateCapability(unc_keytype_ctrtype_t ctrlr_type,
-                           const std::string &version,
+  bool GetUpdateCapability(unc_keytype_ctrtype_t ctrlr_type, const std::string &version,
                            unc_key_type_t keytype,
                            uint32_t *num_attrs, const uint8_t  **attrs);
 
   /**
    * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of specified key type.
-   *
+   * 
    * @param[in]  keytype    Key type.
    * @param[in]  version    controller version
    * @param[out] num_attrs  Maximum attribute for specified key type
    * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
-   *
+   * 
    * @retval true   Successful
    * @retval false  keytype is  not found for the given ctrlr type
    */
 
-  bool GetReadCapability(unc_keytype_ctrtype_t ctrlr_type,
-                         const std::string &version,
+  bool GetReadCapability(unc_keytype_ctrtype_t ctrlr_type, const std::string &version,
                          unc_key_type_t keytype,
                          uint32_t *num_attrs, const uint8_t  **attrs);
 
   /**
    * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of specified key type.
-   *
+   * 
    * @param[in]  keytype    Key type.
    * @param[in]  version    controller version
    * @param[out] num_attrs  Maximum attribute for specified key type
    * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
-   *
+   * 
    * @retval true   Successful
    * @retval false  keytype is  not found for the given ctrlr type
    */
 
-  bool GetStateCapability(unc_keytype_ctrtype_t ctrlr_type,
-                          const std::string &version,
+  bool GetStateCapability(unc_keytype_ctrtype_t ctrlr_type, const std::string &version,
                           unc_key_type_t keytype,
                           uint32_t *num_attrs, const uint8_t  **attrs);
 
@@ -241,12 +236,13 @@ bool GetSupportedVersion(unc_keytype_ctrtype_t ctrlr_type,
    private:
     pfc::core::ReadWriteLock *lock_;
   };
+
 };
 // NOLINT
 
 
-}  // namespace capa
-}  // namespace unc
+} /* namespace capctrl */
+} /* namespace unc */
 
 #endif  // CAPABILITY_MGR_HH_
 

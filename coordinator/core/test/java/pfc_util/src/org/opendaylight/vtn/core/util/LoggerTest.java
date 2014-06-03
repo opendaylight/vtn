@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -12,11 +12,23 @@ package org.opendaylight.vtn.core.util;
 import java.io.File;
 import java.io.FileReader;
 import java.io.BufferedReader;
-import java.util.Date;
+import java.io.IOException;
+import java.io.FileNotFoundException;
+import java.io.CharArrayWriter;
+import java.io.PrintWriter;
 import java.util.LinkedList;
 import java.util.Iterator;
 import java.util.IllegalFormatException;
-import junit.framework.Assert;
+import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertNull;
+import static junit.framework.TestCase.assertSame;
+import static junit.framework.TestCase.assertTrue;
+import static junit.framework.TestCase.fail;
+
 import org.opendaylight.vtn.core.CoreSystem;
 
 /**
@@ -26,6 +38,21 @@ import org.opendaylight.vtn.core.CoreSystem;
  */
 public class LoggerTest extends TestBase
 {
+	/**
+	 * <p>
+	 *   A newline character for the running environment.
+	 * </p>
+	 */
+	final static String  NEWLINE =
+		System.getProperty("line.separator", "\n");
+
+	/**
+	 * <p>
+	 *   A pseudo random number generator.
+	 * </p>
+	 */
+	private final Random  _rand = new Random();
+
 	/**
 	 * <p>
 	 *   Create JUnit test case for {@link Logger}.
@@ -98,6 +125,72 @@ public class LoggerTest extends TestBase
 		for (String name: names) {
 			for (LoggerMethod method: methods) {
 				formatTest(name, method);
+			}
+		}
+	}
+
+	/**
+	 * <p>
+	 *   Ensure that logger methods implemented by {@link Logger} construct
+	 *   a correct log message from a string and a throwable, and pass it
+	 *   to subclass.
+	 * </p>
+	 */
+	public void testThrowable()
+	{
+		String[] names = {
+			null,
+			"name-1",
+			"name-2",
+		};
+
+		LoggerMethod[] methods = {
+			new FatalLoggerMethod(),
+			new ErrorLoggerMethod(),
+			new WarningLoggerMethod(),
+			new NoticeLoggerMethod(),
+			new InfoLoggerMethod(),
+			new DebugLoggerMethod(),
+			new TraceLoggerMethod(),
+			new VerboseLoggerMethod(),
+		};
+
+		for (String name: names) {
+			for (LoggerMethod method: methods) {
+				throwableTest(name, method);
+			}
+		}
+	}
+
+	/**
+	 * <p>
+	 *   Ensure that logger methods implemented by {@link Logger} construct
+	 *   a correct log message from a format string and a throwable,
+	 *   and pass it to subclass.
+	 * </p>
+	 */
+	public void testFormatThrowable()
+	{
+		String[] names = {
+			null,
+			"name-1",
+			"name-2",
+		};
+
+		LoggerMethod[] methods = {
+			new FatalLoggerMethod(),
+			new ErrorLoggerMethod(),
+			new WarningLoggerMethod(),
+			new NoticeLoggerMethod(),
+			new InfoLoggerMethod(),
+			new DebugLoggerMethod(),
+			new TraceLoggerMethod(),
+			new VerboseLoggerMethod(),
+		};
+
+		for (String name: names) {
+			for (LoggerMethod method: methods) {
+				formatThrowableTest(name, method);
 			}
 		}
 	}
@@ -178,7 +271,7 @@ public class LoggerTest extends TestBase
 	/**
 	 * <p>
 	 *   Test case of logger method for each levels, which takes a log
-	 *   message specified format string.
+	 *   message specified by format string.
 	 * </p>
 	 *
 	 * @param name		The name of the logger.
@@ -262,6 +355,399 @@ public class LoggerTest extends TestBase
 				assertEquals(message, logger.getLastMessage());
 			}
 		}
+	}
+
+	/**
+	 * <p>
+	 *   Test case of logger method for each levels, which takes a string
+	 *   and a throwable.
+	 * </p>
+	 *
+	 * @param name		The name of the logger.
+	 * @param method	A {@link LoggerMethod} instance.
+	 */
+	private void throwableTest(String name, LoggerMethod method)
+	{
+		// Create a dummy logger.
+		DummyLogger logger = new DummyLogger(name);
+		assertEquals(name, logger.getName());
+
+		LogLevel level = method.getLevel();
+		int lvl = level.getLevel();
+		int index = 0;
+
+		String[] whites = {
+			NEWLINE,
+			" ",
+			"\f",
+			"\n",
+			"\r",
+			"\t",
+			"\u000b",	// "\v"
+		};
+
+		for (int curlvl = LogLevel.LVL_FATAL;
+		     curlvl <= LogLevel.LVL_VERBOSE; curlvl++) {
+			// Logger methods which takes a throwable checks the
+			// current logging level, and it does not construct
+			// a log message if it should not be logged.
+			boolean dropped;
+
+			if (level == LogLevel.VERBOSE && !CoreSystem.DEBUG) {
+				dropped = true;
+			}
+			else {
+				dropped = (lvl > curlvl);
+			}
+
+			// Change current logging level.
+			logger.setCurrentLevel(curlvl);
+
+			for (int widx = 0; widx < whites.length; widx++) {
+				// Reset previous message.
+				logger.reset();
+
+				// Log a dummy message.
+				// A format conversion specifier should be
+				// embedded into the dummy message in order to
+				// check whether the message is never passed
+				// to Formatter.
+				StringBuilder buf = new StringBuilder
+					("Test log message: %s: index = ");
+				buf.append(index);
+				String msg = buf.toString();
+				for (int n = 0; n <= widx; n++) {
+					buf.append(whites[n]);
+				}
+				Throwable t = getThrowable(index);
+				String message = buf.toString();
+				method.invoke(logger, t, message);
+
+				if (dropped) {
+					// Verbose log must be dropped on
+					// release build.
+					assertEquals(LogLevel.LVL_NONE,
+						     logger.getLastLevel());
+					assertEquals(null,
+						     logger.getLastName());
+					assertEquals(null,
+						     logger.getLastMessage());
+				}
+				else {
+					assertEquals(lvl,
+						     logger.getLastLevel());
+					assertEquals(name,
+						     logger.getLastName());
+
+					buf = new StringBuilder(msg);
+					buf.append('\n').append(toString(t));
+					assertEquals(buf.toString(),
+						     logger.getLastMessage());
+				}
+
+				// Specify null throwable.
+				method.invoke(logger, (Throwable)null,
+					      message);
+				if (dropped) {
+					assertEquals(LogLevel.LVL_NONE,
+						     logger.getLastLevel());
+					assertEquals(null,
+						     logger.getLastName());
+					assertEquals(null,
+						     logger.getLastMessage());
+				}
+				else {
+					assertEquals(lvl,
+						     logger.getLastLevel());
+					assertEquals(name,
+						     logger.getLastName());
+					assertEquals(msg,
+						     logger.getLastMessage());
+				}
+
+				// Specify an empty message.
+				buf = new StringBuilder();
+				for (int n = 0; n <= widx; n++) {
+					buf.append(whites[n]);
+				}
+				method.invoke(logger, t, buf.toString());
+
+				if (dropped) {
+					assertEquals(LogLevel.LVL_NONE,
+						     logger.getLastLevel());
+					assertEquals(null,
+						     logger.getLastName());
+					assertEquals(null,
+						     logger.getLastMessage());
+				}
+				else {
+					assertEquals(lvl,
+						     logger.getLastLevel());
+					assertEquals(name,
+						     logger.getLastName());
+
+					buf = new StringBuilder();
+					buf.append('\n').append(toString(t));
+					assertEquals(buf.toString(),
+						     logger.getLastMessage());
+				}
+
+				index++;
+			}
+		}
+	}
+
+	/**
+	 * <p>
+	 *   Test case of logger method for each levels, which takes a log
+	 *   message specified by format string and a throwable.
+	 * </p>
+	 *
+	 * @param name		The name of the logger.
+	 * @param method	A {@link LoggerMethod} instance.
+	 */
+	private void formatThrowableTest(String name, LoggerMethod method)
+	{
+		// Create a dummy logger.
+		DummyLogger logger = new DummyLogger(name);
+		assertEquals(name, logger.getName());
+
+		LogLevel level = method.getLevel();
+		int lvl = level.getLevel();
+		int index = 0;
+
+		String[] whites = {
+			NEWLINE,
+			" ",
+			"\f",
+			"\n",
+			"\r",
+			"\t",
+			"\u000b",	// "\v"
+		};
+
+		for (int curlvl = LogLevel.LVL_FATAL;
+		     curlvl <= LogLevel.LVL_VERBOSE; curlvl++) {
+			// Formatter logger methods checks the current logging
+			// level, and it does not construct a log message
+			// if it should not be logged.
+			boolean dropped;
+
+			if (level == LogLevel.VERBOSE && !CoreSystem.DEBUG) {
+				dropped = true;
+			}
+			else {
+				dropped = (lvl > curlvl);
+			}
+
+			// Change current logging level.
+			logger.setCurrentLevel(curlvl);
+
+			for (int widx = 0; widx < whites.length; widx++) {
+				// Reset previous message.
+				logger.reset();
+
+				// Invoke log method with illegal format.
+				StringBuilder buf = new StringBuilder
+					("Test log message: %s: index = %d");
+				for (int n = 0; n <= widx; n++) {
+					buf.append(whites[n]);
+				}
+				String format = buf.toString();
+				Throwable t = getThrowable(index);
+				Object[] args = {
+					index,
+					level,
+				};
+
+				try {
+					method.invoke(logger, t, format, args);
+					assertTrue(dropped);
+				}
+				catch (IllegalFormatException e) {
+					assertFalse(dropped);
+				}
+				catch (Exception e) {
+					unexpected(e);
+				}
+
+				assertEquals(LogLevel.LVL_NONE,
+					     logger.getLastLevel());
+				assertEquals(null, logger.getLastName());
+				assertEquals(null, logger.getLastMessage());
+
+				args = new Object[]{
+					level,
+					index,
+				};
+
+				// Log a dummy message.
+				method.invoke(logger, t, format, args);
+
+				if (dropped) {
+					// This message should be dropped.
+					assertEquals(LogLevel.LVL_NONE,
+						     logger.getLastLevel());
+					assertEquals(null,
+						     logger.getLastName());
+					assertEquals(null,
+						     logger.getLastMessage());
+				}
+				else {
+					buf = new StringBuilder
+						("Test log message: ");
+					buf.append(level).append(": index = ").
+						append(index).append(NEWLINE).
+						append(toString(t));
+					assertEquals(lvl,
+						     logger.getLastLevel());
+					assertEquals(name,
+						     logger.getLastName());
+					assertEquals(buf.toString(),
+						     logger.getLastMessage());
+				}
+
+				// Specify null throwable.
+				method.invoke(logger, (Throwable)null, format,
+					      args);
+
+				if (dropped) {
+					assertEquals(LogLevel.LVL_NONE,
+						     logger.getLastLevel());
+					assertEquals(null,
+						     logger.getLastName());
+					assertEquals(null,
+						     logger.getLastMessage());
+				}
+				else {
+					buf = new StringBuilder
+						("Test log message: ");
+					buf.append(level).append(": index = ").
+						append(index);
+					assertEquals(lvl,
+						     logger.getLastLevel());
+					assertEquals(name,
+						     logger.getLastName());
+					assertEquals(buf.toString(),
+						     logger.getLastMessage());
+				}
+
+				// Specify an empty message.
+				buf = new StringBuilder();
+				for (int n = 0; n <= widx; n++) {
+					buf.append(whites[n]);
+				}
+
+				method.invoke(logger, t, "%s", buf.toString());
+
+				if (dropped) {
+					assertEquals(LogLevel.LVL_NONE,
+						     logger.getLastLevel());
+					assertEquals(null,
+						     logger.getLastName());
+					assertEquals(null,
+						     logger.getLastMessage());
+				}
+				else {
+					assertEquals(lvl,
+						     logger.getLastLevel());
+					assertEquals(name,
+						     logger.getLastName());
+
+					buf = new StringBuilder();
+					buf.append('\n').append(toString(t));
+					assertEquals(buf.toString(),
+						     logger.getLastMessage());
+				}
+
+				index++;
+			}
+		}
+	}
+
+	/**
+	 * <p>
+	 *   Create an throwable for test.
+	 * </p>
+	 *
+	 * @param index	An index which determines the type of throwable.
+	 * @return	A throwable for test.
+	 */
+	private Throwable getThrowable(int index)
+	{
+		return getThrowable(_rand, index);
+	}
+
+	/**
+	 * <p>
+	 *   Create a throwable for test.
+	 * </p>
+	 *
+	 * @param rand	A pseudo random number generator.
+	 * @param index	An index which determines the type of throwable.
+	 * @return	A throwable for test.
+	 */
+	private static Throwable getThrowable(Random rand, int index)
+	{
+		int mod = index % 4;
+		int arg = rand.nextInt();
+		Throwable ret = null;
+
+		try {
+			if (mod == 0) {
+				throw new IllegalArgumentException
+					("Test runtime exception: " + arg);
+			}
+			else if (mod == 1) {
+				throw new IOException
+					("Test exception: " + arg);
+			}
+			else if (mod == 2) {
+				throw new OutOfMemoryError
+					("Test error: " + arg);
+			}
+			else {
+				throw new Throwable("Test throwable: " + arg);
+			}
+		}
+		catch (Throwable t) {
+			ret = t;
+		}
+
+		return ret;
+	}
+
+	/**
+	 * <p>
+	 *   Convert the given throwable into a string.
+	 * </p>
+	 *
+	 * @param t	A throwable.
+	 * @return	A string which represents the given throwable.
+	 */
+	private static String toString(Throwable t)
+	{
+		CharArrayWriter array = new CharArrayWriter();
+		PrintWriter writer = new PrintWriter(array, false);
+		t.printStackTrace(writer);
+		writer.close();
+
+		StringBuilder builder = new StringBuilder(array.toString());
+		int len = builder.length();
+		int idx = len - 1;
+		for (; idx >= 0; idx--) {
+			char  c = builder.charAt(idx);
+			if (c != 0 && !Character.isWhitespace(c)) {
+				idx++;
+				break;
+			}
+		}
+
+		if (idx < len) {
+			builder.delete(idx, len);
+		}
+
+		return builder.toString();
 	}
 
 	/**
@@ -452,6 +938,7 @@ public class LoggerTest extends TestBase
 
 		// Run tests.
 		TraceLogTestManager tmgr = new TraceLogTestManager();
+
 		for (String name: names) {
 			for (LoggerMethod method: methods) {
 				// Write trace logs.
@@ -474,11 +961,18 @@ public class LoggerTest extends TestBase
 		// After shutdown() call, any logging request should be
 		// ignored.
 		Logger logger = Logger.getLogger();
+		Throwable t = getThrowable(ctx.getRandom(), 0);
 		for (LoggerMethod method: methods) {
-			method.invoke(logger, "A log message.");
+			String msg = "A log message.";
+			method.invoke(logger, msg);
+			assertEquals(length, file.length());
+			method.invoke(logger, t, msg);
 			assertEquals(length, file.length());
 
-			method.invoke(logger, "A formatted message: %d", 0);
+			String fmt = "A formatted message: %d";
+			method.invoke(logger, fmt, 0);
+			assertEquals(length, file.length());
+			method.invoke(logger, t, fmt, 0);
 			assertEquals(length, file.length());
 		}
 	}
@@ -567,6 +1061,8 @@ public class LoggerTest extends TestBase
 			assertTrue(dropped);
 		}
 		catch (Exception e) {
+			assertFalse(dropped);
+
 			// This must be a NullPointerException thrown by
 			// Java VM.
 			checkException(e, cls);
@@ -594,8 +1090,8 @@ public class LoggerTest extends TestBase
 		// message in order to check whether the message is never
 		// passed to Formatter.
 		long time = System.nanoTime();
-		String message = "This is a message string: " + curLevel +
-			"." + level + ": " + time;
+		String message = "This is a message string: %s: %d: " +
+			curLevel + "." + level + ": " + time;
 		int fcnt = ctx.getFatalCount();
 
 		method.invoke(logger, message);
@@ -608,21 +1104,75 @@ public class LoggerTest extends TestBase
 		assertEquals(fcnt, ctx.getFatalCount());
 
 		// Check whether a log record was written to the file or not.
-		String line = ctx.getNewRecord();
+		String log = ctx.getNewRecord();
 		if (dropped) {
-			assertTrue(line == null);
+			assertTrue(log == null);
 		}
 		else {
-			assertNotNull(line);
+			assertNotNull(log);
 			message = ctx.createMessage(level, logger.getName(),
 						    message);
-			assertTrue(line.endsWith(message));
+			assertEquals(message, log);
+		}
+
+		// Record a log message and null throwable.
+		// The logger should ignore null throwable.
+		time = System.nanoTime();
+		message = "This is a message string: %s: %d: " +
+			curLevel + "." + level + ": " + time;
+		Throwable t = null;
+
+		method.invoke(logger, t, message);
+
+		if (level == LogLevel.FATAL) {
+			assertFalse(dropped);
+			fcnt++;
+		}
+		assertEquals(fcnt, ctx.getFatalCount());
+
+		log = ctx.getNewRecord();
+		if (dropped) {
+			assertTrue(log == null);
+		}
+		else {
+			assertNotNull(log);
+			message = ctx.createMessage(level, logger.getName(),
+						    message);
+			assertEquals(message, log);
+		}
+
+		// Record a log message by specifying a message string and
+		// a throwable.
+		time = System.nanoTime();
+		message = "This is a message string: %s: %d: " +
+			curLevel + "." + level + ": " + time;
+		t = getThrowable(ctx.getRandom(), (int)(time % 4));
+
+		method.invoke(logger, t, message);
+
+		// Check the fatal error counter.
+		if (level == LogLevel.FATAL) {
+			assertFalse(dropped);
+			fcnt++;
+		}
+		assertEquals(fcnt, ctx.getFatalCount());
+
+		// Check whether a log record was written to the file or not.
+		log = ctx.getNewRecord();
+		if (dropped) {
+			assertTrue(log == null);
+		}
+		else {
+			assertNotNull(log);
+			message = ctx.createMessage(level, logger.getName(),
+						    message, NEWLINE,
+						    toString(t));
+			assertEquals(message, log);
 		}
 
 		// Record a log message by specifying format string.
 		String format = "This is a formatted message: %s.%s: %d";
 		time = System.nanoTime();
-		fcnt = ctx.getFatalCount();
 
 		Object[] args = {curLevel, level, time};
 		method.invoke(logger, format, args);
@@ -635,17 +1185,173 @@ public class LoggerTest extends TestBase
 		assertEquals(fcnt, ctx.getFatalCount());
 
 		// Check whether a log record was written to the file or not.
-		line = ctx.getNewRecord();
+		log = ctx.getNewRecord();
 		if (dropped) {
-			assertNull(line);
+			assertNull(log);
 		}
 		else {
 			String msg =  String.format(format, args);
 			message = ctx.createMessage(level, logger.getName(),
 						    msg);
-			assertNotNull(line);
-			assertTrue(line.endsWith(message));
+			assertNotNull(log);
+			assertEquals(message, log);
 		}
+
+		// Record a log message by specifying format string and
+		// null throwable.
+		// The logger should ignore null throwable.
+		time = System.nanoTime();
+		t = null;
+
+		args = new Object[]{curLevel, level, time};
+		method.invoke(logger, t, format, args);
+
+		// Check the fatal error counter.
+		if (level == LogLevel.FATAL) {
+			assertFalse(dropped);
+			fcnt++;
+		}
+		assertEquals(fcnt, ctx.getFatalCount());
+
+		// Check whether a log record was written to the file or not.
+		log = ctx.getNewRecord();
+		if (dropped) {
+			assertNull(log);
+		}
+		else {
+			String msg =  String.format(format, args);
+			message = ctx.createMessage(level, logger.getName(),
+						    msg);
+			assertNotNull(log);
+			assertEquals(message, log);
+		}
+
+		// Record a log message by specifying format string and
+		// a throwable.
+		time = System.nanoTime();
+		t = getThrowable(ctx.getRandom(), (int)(time % 4));
+
+		args = new Object[]{curLevel, level, time};
+		method.invoke(logger, t, format, args);
+
+		// Check the fatal error counter.
+		if (level == LogLevel.FATAL) {
+			assertFalse(dropped);
+			fcnt++;
+		}
+		assertEquals(fcnt, ctx.getFatalCount());
+
+		// Check whether a log record was written to the file or not.
+		log = ctx.getNewRecord();
+		if (dropped) {
+			assertNull(log);
+		}
+		else {
+			String msg =  String.format(format, args);
+			message = ctx.createMessage(level, logger.getName(),
+						    msg, NEWLINE, toString(t));
+			assertNotNull(log);
+			assertEquals(message, log);
+		}
+	}
+}
+
+/**
+ * Log file reader.
+ */
+class LogFileReader extends BufferedReader
+{
+	/**
+	 * Regular expression that matches the first line of a log record.
+	 */
+	private final static Pattern  LOG_PATTERN =
+		Pattern.compile("^\\d{4}-\\d{2}-\\d{2} " +
+				"\\d{2}:\\d{2}:\\d{2}\\.\\d{6}: " +
+				"\\[\\d+\\]: " +
+				"((FATAL|ERROR|WARNING|NOTICE|INFO|DEBUG|" +
+				"TRACE|VERBOSE): (.*))$");
+
+	/**
+	 * A stack for unread lines.
+	 */
+	private final LinkedList<String>  _unreadStack =
+		new LinkedList<String>();
+
+	/**
+	 * Construct a new object.
+	 *
+	 * @param file	A file object corresponding to the log file.
+	 * @throws FileNotFoundException
+	 *	The given file does not exist, or it is unable to open.
+	 */
+	LogFileReader(File file) throws FileNotFoundException
+	{
+		super(new FileReader(file));
+	}
+
+	/**
+	 *  Reads a line of text from the log file.
+	 *
+	 * @return	A string containing the contents of the line.
+	 * @throws IOException
+	 *	An I/O error occurred.
+	 */
+	@Override
+	public String readLine() throws IOException
+	{
+		// Pop unread string if exists.
+		return (_unreadStack.isEmpty())
+			? super.readLine()
+			: _unreadStack.removeFirst();
+	}
+
+	/**
+	 * Read a log record.
+	 *
+	 * @return	A string which contains the contents of a log record.
+	 *		{@code null} is returned if no log record is available.
+	 * @throws IOException
+	 *	An I/O error occurred.
+	 */
+	String readLog() throws IOException
+	{
+		// Read the first line of a log record.
+		String line = readLine();
+		if (line == null) {
+			return null;
+		}
+
+		Matcher m = LOG_PATTERN.matcher(line);
+		if (!m.matches()) {
+			fail("Unexpected log: " + line);
+		}
+
+		StringBuilder builder = new StringBuilder(m.group(1));
+
+		// Read the rest of lines.
+		for (line = readLine(); line != null; line = readLine()) {
+			m = LOG_PATTERN.matcher(line);
+			if (m.matches()) {
+				// This record should be returned by the
+				// next call.
+				unreadLine(line);
+				break;
+			}
+
+			builder.append(LoggerTest.NEWLINE).append(line);
+		}
+
+		return builder.toString();
+	}
+
+	/**
+	 * Put the given string to the head of file reader stream.
+	 *
+	 * @param line	A string containing the contents of the line.
+	 */
+	private void unreadLine(String line)
+	{
+		_unreadStack.addFirst(line);
 	}
 }
 
@@ -654,8 +1360,15 @@ public class LoggerTest extends TestBase
  *   Context for trace log test.
  * </p>
  */
-class LogTestContext extends Assert implements LogFatalHandler
+class LogTestContext implements LogFatalHandler
 {
+	/**
+	 * <p>
+	 *   A pseudo random number generator.
+	 * </p>
+	 */
+	private final Random  _rand = new Random();
+
 	/**
 	 * <p>
 	 *   Log file.
@@ -687,6 +1400,16 @@ class LogTestContext extends Assert implements LogFatalHandler
 	LogTestContext(File file)
 	{
 		_file = file;
+	}
+
+	/**
+	 * Return a pseudo random number generator.
+	 *
+	 * @return	A pseudo random number generator.
+	 */
+	Random getRandom()
+	{
+		return _rand;
 	}
 
 	/**
@@ -728,31 +1451,30 @@ class LogTestContext extends Assert implements LogFatalHandler
 	 */
 	String getNewRecord() throws Exception
 	{
-		BufferedReader reader = new BufferedReader
-			(new FileReader(_file));
+		LogFileReader reader = new LogFileReader(_file);
 		Iterator<String> it = _messages.iterator();
 
 		// Read all lines in the log file.
 		String last = null;
-		for (String line = reader.readLine(); line != null;
-		     line = reader.readLine()) {
+		for (String log = reader.readLog(); log != null;
+		     log = reader.readLog()) {
 			if (it.hasNext()) {
-				// This line should be recorded in _message.
+				// This record should be recorded in _message.
 				String msg = it.next();
-				assertEquals(msg, line);
+				assertEquals(msg, log);
 			}
 			else if (last == null) {
-				// This must be the last line in the log file.
-				last = line;
+				// Keep the latest log.
+				last = log;
 			}
 			else {
-				fail("Unexpected log: [" + line + "], last[" +
+				fail("Unexpected log: [" + log + "], last[" +
 				     last + "]");
 			}
 		}
 
 		if (last != null) {
-			// Record a new line in _message.
+			// Put a new log record into _message.
 			_messages.add(last);
 		}
 
@@ -776,7 +1498,7 @@ class LogTestContext extends Assert implements LogFatalHandler
 	 */
 	String createMessage(LogLevel level, String name, Object ... msgs)
 	{
-		StringBuffer buf = new StringBuffer(level.toString());
+		StringBuilder buf = new StringBuilder(level.toString());
 
 		buf.append(": ");
 		if (name != null) {
@@ -797,7 +1519,7 @@ class LogTestContext extends Assert implements LogFatalHandler
  *   Abstract class which handles the logging system.
  * </p>
  */
-abstract class LogTestManager extends Assert
+abstract class LogTestManager
 {
 	/**
 	 * <p>
@@ -857,7 +1579,7 @@ abstract class LogTestManager extends Assert
 
 		if (isSupported(level)) {
 			boolean changed = setLevel(level);
-			String line = ctx.getNewRecord();
+			String log = ctx.getNewRecord();
 			LogLevel tlevel = LogSystem.getInstance().getLevel();
 
 			assertEquals(cur != level, changed);
@@ -868,10 +1590,10 @@ abstract class LogTestManager extends Assert
 					(LogLevel.INFO, null,
 					 "Logging level for ", getTypeName(),
 					 " has been changed to ", level, ".");
-				assertTrue(line.endsWith(expected));
+				assertEquals(expected, log);
 			}
 			else {
-				assertNull(line);
+				assertNull(log);
 			}
 		}
 		else {
@@ -1056,6 +1778,17 @@ abstract class LoggerMethod
 
 	/**
 	 * <p>
+	 *   Invoke logger method with the given log message and throwable.
+	 * </p>
+	 *
+	 * @param logger	A logger instance.
+	 * @param t		A throwable.
+	 * @param message	A log message.
+	 */
+	abstract void invoke(Logger logger, Throwable t, String message);
+
+	/**
+	 * <p>
 	 *   Invoke logger method with the given format string.
 	 * </p>
 	 *
@@ -1064,6 +1797,19 @@ abstract class LoggerMethod
 	 * @param args		Arguments referenced by {@code format}.
 	 */
 	abstract void invoke(Logger logger, String format, Object ... args);
+
+	/**
+	 * <p>
+	 *   Invoke logger method with the given format string and a throwable.
+	 * </p>
+	 *
+	 * @param logger	A logger instance.
+	 * @param t		A throwable.
+	 * @param format	A format string.
+	 * @param args		Arguments referenced by {@code format}.
+	 */
+	abstract void invoke(Logger logger, Throwable t, String format,
+			     Object ... args);
 }
 
 /**
@@ -1084,12 +1830,7 @@ final class FatalLoggerMethod extends LoggerMethod
 	}
 
 	/**
-	 * <p>
-	 *   Invoke logger method with the given log message.
-	 * </p>
-	 *
-	 * @param logger	A logger instance.
-	 * @param message	A log message.
+	 * {@inheritDoc}
 	 */
 	@Override
 	void invoke(Logger logger, String message)
@@ -1098,18 +1839,30 @@ final class FatalLoggerMethod extends LoggerMethod
 	}
 
 	/**
-	 * <p>
-	 *   Invoke logger method with the given format string.
-	 * </p>
-	 *
-	 * @param logger	A logger instance.
-	 * @param format	A format string.
-	 * @param args		Arguments referenced by {@code format}.
+	 * {@inheritDoc}
+	 */
+	@Override
+	void invoke(Logger logger, Throwable t, String message)
+	{
+		logger.fatal(t, message);
+	}
+
+	/**
+	 * {@inheritDoc}
 	 */
 	@Override
 	void invoke(Logger logger, String format, Object ... args)
 	{
 		logger.fatal(format, args);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	void invoke(Logger logger, Throwable t, String format, Object ... args)
+	{
+		logger.fatal(t, format, args);
 	}
 }
 
@@ -1131,12 +1884,7 @@ final class ErrorLoggerMethod extends LoggerMethod
 	}
 
 	/**
-	 * <p>
-	 *   Invoke logger method with the given log message.
-	 * </p>
-	 *
-	 * @param logger	A logger instance.
-	 * @param message	A log message.
+	 * {@inheritDoc}
 	 */
 	@Override
 	void invoke(Logger logger, String message)
@@ -1145,18 +1893,30 @@ final class ErrorLoggerMethod extends LoggerMethod
 	}
 
 	/**
-	 * <p>
-	 *   Invoke logger method with the given format string.
-	 * </p>
-	 *
-	 * @param logger	A logger instance.
-	 * @param format	A format string.
-	 * @param args		Arguments referenced by {@code format}.
+	 * {@inheritDoc}
+	 */
+	@Override
+	void invoke(Logger logger, Throwable t, String message)
+	{
+		logger.error(t, message);
+	}
+
+	/**
+	 * {@inheritDoc}
 	 */
 	@Override
 	void invoke(Logger logger, String format, Object ... args)
 	{
 		logger.error(format, args);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	void invoke(Logger logger, Throwable t, String format, Object ... args)
+	{
+		logger.error(t, format, args);
 	}
 }
 
@@ -1178,12 +1938,7 @@ final class WarningLoggerMethod extends LoggerMethod
 	}
 
 	/**
-	 * <p>
-	 *   Invoke logger method with the given log message.
-	 * </p>
-	 *
-	 * @param logger	A logger instance.
-	 * @param message	A log message.
+	 * {@inheritDoc}
 	 */
 	@Override
 	void invoke(Logger logger, String message)
@@ -1192,18 +1947,30 @@ final class WarningLoggerMethod extends LoggerMethod
 	}
 
 	/**
-	 * <p>
-	 *   Invoke logger method with the given format string.
-	 * </p>
-	 *
-	 * @param logger	A logger instance.
-	 * @param format	A format string.
-	 * @param args		Arguments referenced by {@code format}.
+	 * {@inheritDoc}
+	 */
+	@Override
+	void invoke(Logger logger, Throwable t, String message)
+	{
+		logger.warning(t, message);
+	}
+
+	/**
+	 * {@inheritDoc}
 	 */
 	@Override
 	void invoke(Logger logger, String format, Object ... args)
 	{
 		logger.warning(format, args);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	void invoke(Logger logger, Throwable t, String format, Object ... args)
+	{
+		logger.warning(t, format, args);
 	}
 }
 
@@ -1225,12 +1992,7 @@ final class NoticeLoggerMethod extends LoggerMethod
 	}
 
 	/**
-	 * <p>
-	 *   Invoke logger method with the given log message.
-	 * </p>
-	 *
-	 * @param logger	A logger instance.
-	 * @param message	A log message.
+	 * {@inheritDoc}
 	 */
 	@Override
 	void invoke(Logger logger, String message)
@@ -1239,18 +2001,30 @@ final class NoticeLoggerMethod extends LoggerMethod
 	}
 
 	/**
-	 * <p>
-	 *   Invoke logger method with the given format string.
-	 * </p>
-	 *
-	 * @param logger	A logger instance.
-	 * @param format	A format string.
-	 * @param args		Arguments referenced by {@code format}.
+	 * {@inheritDoc}
+	 */
+	@Override
+	void invoke(Logger logger, Throwable t, String message)
+	{
+		logger.notice(t, message);
+	}
+
+	/**
+	 * {@inheritDoc}
 	 */
 	@Override
 	void invoke(Logger logger, String format, Object ... args)
 	{
 		logger.notice(format, args);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	void invoke(Logger logger, Throwable t, String format, Object ... args)
+	{
+		logger.notice(t, format, args);
 	}
 }
 
@@ -1272,12 +2046,7 @@ final class InfoLoggerMethod extends LoggerMethod
 	}
 
 	/**
-	 * <p>
-	 *   Invoke logger method with the given log message.
-	 * </p>
-	 *
-	 * @param logger	A logger instance.
-	 * @param message	A log message.
+	 * {@inheritDoc}
 	 */
 	@Override
 	void invoke(Logger logger, String message)
@@ -1286,18 +2055,30 @@ final class InfoLoggerMethod extends LoggerMethod
 	}
 
 	/**
-	 * <p>
-	 *   Invoke logger method with the given format string.
-	 * </p>
-	 *
-	 * @param logger	A logger instance.
-	 * @param format	A format string.
-	 * @param args		Arguments referenced by {@code format}.
+	 * {@inheritDoc}
+	 */
+	@Override
+	void invoke(Logger logger, Throwable t, String message)
+	{
+		logger.info(t, message);
+	}
+
+	/**
+	 * {@inheritDoc}
 	 */
 	@Override
 	void invoke(Logger logger, String format, Object ... args)
 	{
 		logger.info(format, args);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	void invoke(Logger logger, Throwable t, String format, Object ... args)
+	{
+		logger.info(t, format, args);
 	}
 }
 
@@ -1319,12 +2100,7 @@ final class DebugLoggerMethod extends LoggerMethod
 	}
 
 	/**
-	 * <p>
-	 *   Invoke logger method with the given log message.
-	 * </p>
-	 *
-	 * @param logger	A logger instance.
-	 * @param message	A log message.
+	 * {@inheritDoc}
 	 */
 	@Override
 	void invoke(Logger logger, String message)
@@ -1333,18 +2109,30 @@ final class DebugLoggerMethod extends LoggerMethod
 	}
 
 	/**
-	 * <p>
-	 *   Invoke logger method with the given format string.
-	 * </p>
-	 *
-	 * @param logger	A logger instance.
-	 * @param format	A format string.
-	 * @param args		Arguments referenced by {@code format}.
+	 * {@inheritDoc}
+	 */
+	@Override
+	void invoke(Logger logger, Throwable t, String message)
+	{
+		logger.debug(t, message);
+	}
+
+	/**
+	 * {@inheritDoc}
 	 */
 	@Override
 	void invoke(Logger logger, String format, Object ... args)
 	{
 		logger.debug(format, args);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	void invoke(Logger logger, Throwable t, String format, Object ... args)
+	{
+		logger.debug(t, format, args);
 	}
 }
 
@@ -1366,12 +2154,7 @@ final class TraceLoggerMethod extends LoggerMethod
 	}
 
 	/**
-	 * <p>
-	 *   Invoke logger method with the given log message.
-	 * </p>
-	 *
-	 * @param logger	A logger instance.
-	 * @param message	A log message.
+	 * {@inheritDoc}
 	 */
 	@Override
 	void invoke(Logger logger, String message)
@@ -1380,18 +2163,30 @@ final class TraceLoggerMethod extends LoggerMethod
 	}
 
 	/**
-	 * <p>
-	 *   Invoke logger method with the given format string.
-	 * </p>
-	 *
-	 * @param logger	A logger instance.
-	 * @param format	A format string.
-	 * @param args		Arguments referenced by {@code format}.
+	 * {@inheritDoc}
+	 */
+	@Override
+	void invoke(Logger logger, Throwable t, String message)
+	{
+		logger.trace(t, message);
+	}
+
+	/**
+	 * {@inheritDoc}
 	 */
 	@Override
 	void invoke(Logger logger, String format, Object ... args)
 	{
 		logger.trace(format, args);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	void invoke(Logger logger, Throwable t, String format, Object ... args)
+	{
+		logger.trace(t, format, args);
 	}
 }
 
@@ -1413,12 +2208,7 @@ final class VerboseLoggerMethod extends LoggerMethod
 	}
 
 	/**
-	 * <p>
-	 *   Invoke logger method with the given log message.
-	 * </p>
-	 *
-	 * @param logger	A logger instance.
-	 * @param message	A log message.
+	 * {@inheritDoc}
 	 */
 	@Override
 	void invoke(Logger logger, String message)
@@ -1427,17 +2217,29 @@ final class VerboseLoggerMethod extends LoggerMethod
 	}
 
 	/**
-	 * <p>
-	 *   Invoke logger method with the given format string.
-	 * </p>
-	 *
-	 * @param logger	A logger instance.
-	 * @param format	A format string.
-	 * @param args		Arguments referenced by {@code format}.
+	 * {@inheritDoc}
+	 */
+	@Override
+	void invoke(Logger logger, Throwable t, String message)
+	{
+		logger.verbose(t, message);
+	}
+
+	/**
+	 * {@inheritDoc}
 	 */
 	@Override
 	void invoke(Logger logger, String format, Object ... args)
 	{
 		logger.verbose(format, args);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	void invoke(Logger logger, Throwable t, String format, Object ... args)
+	{
+		logger.verbose(t, format, args);
 	}
 }

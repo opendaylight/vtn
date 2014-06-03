@@ -40,14 +40,14 @@ class CapaIntf {
 
   /**
    * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of specified key type.
-   *
+   * 
    * @param[in]  ctrlr_type controller type.
    * @param[in]  version    controller version
    * @param[in]  keytype    Key type.
    * @param[out] instance_count  Instance count for specified keytype.
    * @param[out] num_attrs  Maximum attribute for specified key type
    * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
-   *
+   * 
    * @retval true   Successful
    * @retval false  controller or keytype is not found
    */
@@ -60,13 +60,13 @@ class CapaIntf {
 
   /**
    * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of specified key type.
-   *
+   * 
    * @param[in]  ctrlr_type controller type.
    * @param[in]  version    controller version
    * @param[in]  keytype    Key type.
    * @param[out] num_attrs  Maximum attribute for specified key type
    * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
-   *
+   * 
    * @retval true   Successful
    * @retval false  controler or keytype is not found
    */
@@ -78,13 +78,13 @@ class CapaIntf {
 
   /**
    * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of specified key type.
-   *
+   * 
    * @param[in]  ctrlr_type controller type.
    * @param[in]  version    controller version
    * @param[in]  keytype    Key type.
    * @param[out] num_attrs  Maximum attribute for specified key type
    * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
-   *
+   * 
    * @retval true   Successful
    * @retval false  controller or keytype is not found
    */
@@ -96,13 +96,13 @@ class CapaIntf {
 
   /**
    * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of specified key type.
-   *
+   * 
    * @param[in]  ctrlr_type controller type.
    * @param[in]  version    controller version
    * @param[in]  keytype    Key type.
    * @param[out] num_attrs  Maximum attribute for specified key type
    * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
-   *
+   * 
    * @retval true   Successful
    * @retval false  controller or keytype is not found
    */
@@ -118,7 +118,7 @@ class CapaIntf {
   static const uint32_t kNumberOfAvailability = 4;
 };
                                                                        // NOLINT
-}  // namespace capa
-}  // namespace unc
+} /* namespace capctrl */
+} /* namespace unc */
 
 #endif  // CAPA_INTF_HH_

@@ -6,6 +6,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.openstack.convertor;
 
 import org.apache.commons.net.util.SubnetUtils;
@@ -85,10 +86,17 @@ public class StaticRouteResourceGenerator {
 					+ VtnServiceConsts.SLASH + staticIpRouteId[2];
 			final String nexthop = staticIpRouteId[1];
 
-			final SubnetUtils subnetUtils = new SubnetUtils(destination);
-			final String routeId = staticIpRouteId[0] + VtnServiceConsts.HYPHEN
-					+ staticIpRouteId[1] + VtnServiceConsts.HYPHEN
-					+ subnetUtils.getInfo().getNetmask();
+			String routeId = null;
+			if (staticIpRouteId[2].equals(VtnServiceConsts.ZERO)) {
+				routeId = staticIpRouteId[0] + VtnServiceConsts.HYPHEN
+						+ staticIpRouteId[1] + VtnServiceConsts.HYPHEN
+						+ VtnServiceConsts.DEFAULT_IP;
+			} else {
+				final SubnetUtils subnetUtils = new SubnetUtils(destination);
+				routeId = staticIpRouteId[0] + VtnServiceConsts.HYPHEN
+						+ staticIpRouteId[1] + VtnServiceConsts.HYPHEN
+						+ subnetUtils.getInfo().getNetmask();
+			}
 
 			final JsonObject route = new JsonObject();
 			route.addProperty(VtnServiceOpenStackConsts.ID, routeId);

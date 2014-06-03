@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -10,8 +10,6 @@
 #ifndef _USESS_SESSIONS_HH_
 #define _USESS_SESSIONS_HH_
 
-#include <map>
-#include <vector>
 #include "usess_def.hh"
 #include "usess_conf_session.hh"
 #include "usess_session.hh"
@@ -53,7 +51,8 @@ typedef std::vector<usess_ipc_res_sess_info_t> usess_session_list_v;
 // -------------------------------------------------------------
 // Class declaration.
 // -------------------------------------------------------------
-class UsessSessions {
+class UsessSessions
+{
  public:
   UsessSessions(void);
   ~UsessSessions(void);
@@ -93,6 +92,7 @@ class UsessSessions {
   UsessConfSession conf_;
   // allocated session id.
   uint32_t allocated_sess_id_[ID_NUM];
+
 };
 
 }  // namespace usess

@@ -113,6 +113,11 @@ UPLL_SOURCES  += dbconn_mgr.cc
 UPLL_SOURCES  += vtn_dataflow_momgr.cc
 UPLL_SOURCES  += ipc_client_handler.cc
 UPLL_SOURCES  += config_svc.cc
+UPLL_SOURCES  += vterm_if_momgr.cc
+UPLL_SOURCES  += vterm_if_policingmap_momgr.cc
+UPLL_SOURCES  += vterminal_momgr.cc
+UPLL_SOURCES  += vterm_if_flowfilter_momgr.cc
+UPLL_SOURCES  += vterm_if_flowfilter_entry_momgr.cc
 
 CAPA_SOURCES	= capa_module_stub.cc
 DAL_SOURCES	= dal_odbc_mgr.cc dal_bind_info.cc dal_schema.cc

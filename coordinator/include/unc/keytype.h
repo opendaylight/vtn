@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -50,6 +50,12 @@ typedef enum {
 	UNC_KT_DHCPRELAY_SERVER,
 	UNC_KT_DHCPRELAY_IF,
 	UNC_KT_IF_ARPENTRY,
+        UNC_KT_VTERMINAL,
+        UNC_KT_VTERM_IF,
+        UNC_KT_VTERMIF_POLICINGMAP,
+        UNC_KT_VTERMIF_POLICINGMAP_ENTRY,
+        UNC_KT_VTERMIF_FLOWFILTER,
+        UNC_KT_VTERMIF_FLOWFILTER_ENTRY,
 	UNC_KT_VUNKNOWN,
 	UNC_KT_VUNK_IF,
 	UNC_KT_VTEP,

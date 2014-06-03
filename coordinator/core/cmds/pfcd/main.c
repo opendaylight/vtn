@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -163,6 +163,7 @@ static const char	*pfcd_copt_desc[] = {
 #define	OPTCHAR_NODAEMON	'D'
 #define	OPTCHAR_NOREDIRECT	'R'
 #define	OPTCHAR_PROPERTY	'P'
+#define	OPTCHAR_NOLOADMOD	'N'
 #define	OPTCHAR_VERSION		'\v'
 
 static const pfc_cmdopt_def_t	pfcd_option_spec[] = {
@@ -172,7 +173,10 @@ static const pfc_cmdopt_def_t	pfcd_option_spec[] = {
 	{OPTCHAR_ALL, "all", PFC_CMDOPT_TYPE_NONE, PFC_CMDOPT_DEF_ONCE,
 	 "Load all modules at the daemon boot.", NULL},
 	{OPTCHAR_CHECK, "check", PFC_CMDOPT_TYPE_NONE, 0,
-	 "Validate configuration file and exit.", NULL},
+	 "Validate configuration file and exit.\n"
+	 "Configuration files for all installed modules are also validated. "
+	 "In that case both \"modules.load_modules\" in the configuration "
+	 "file and command line arguments are ignored.", NULL},
 	{OPTCHAR_DEBUG, "debug", PFC_CMDOPT_TYPE_NONE, 0,
 	 "Run in foreground with sending verbose message to stderr.", NULL},
 	{OPTCHAR_NODAEMON, "no-daemon", PFC_CMDOPT_TYPE_NONE,
@@ -184,6 +188,10 @@ static const pfc_cmdopt_def_t	pfcd_option_spec[] = {
 	 "This option also disables stderr logging.", NULL},
 	{OPTCHAR_PROPERTY, "property", PFC_CMDOPT_TYPE_STRING, 0,
 	 "Set PFC daemon system property.", "KEY=VALUE"},
+	{OPTCHAR_NOLOADMOD, "no-load-modules", PFC_CMDOPT_TYPE_NONE,
+	 PFC_CMDOPT_DEF_ONCE,
+	 "Ignore \"modules.load_modules\" option in the configuration file.",
+	 NULL},
 	{OPTCHAR_VERSION, "version", PFC_CMDOPT_TYPE_NONE,
 	 PFC_CMDOPT_DEF_ONCE | PFC_CMDOPT_DEF_LONGONLY,
 	 "Print version information and exit.", NULL},
@@ -754,7 +762,7 @@ setup(int argc, char **argv)
 			break;
 
 		case OPTCHAR_ALL:
-			modflags = PFCD_MODF_ALL;
+			modflags |= PFCD_MODF_ALL;
 			break;
 
 		case OPTCHAR_CHECK:
@@ -804,6 +812,14 @@ setup(int argc, char **argv)
 		case OPTCHAR_PROPERTY:
 			/* Append system property. */
 			prop_add(pfc_cmdopt_arg_string(parser));
+			break;
+
+		case OPTCHAR_NOLOADMOD:
+			/*
+			 * Ignore modules.load_modules in the configuration
+			 * file.
+			 */
+			modflags |= PFCD_MODF_NOCONF;
 			break;
 
 		case OPTCHAR_VERSION:
@@ -1429,7 +1445,12 @@ pfcd_boot(void)
 
 	/* Raise a PFC service start event. */
 	pfcd_setstate(PFCD_STATE_RUNNING);
-	event_post_global(PFC_EVTYPE_SYS_START);
+	err = event_post_global(PFC_EVTYPE_SYS_START);
+	if (PFC_EXPECT_FALSE(err != 0 && err != ETIMEDOUT)) {
+		pfc_log_fatal("Failed to post system start event.");
+
+		return;
+	}
 
 	/* Send service-ready notification via IPC client session. */
 	ipc_notify_ready();
@@ -1454,7 +1475,7 @@ pfcd_shutdown(void)
 	PFCD_STATE_UNLOCK();
 
 	/* Raise a PFC service shutdown event. */
-	event_post_global(PFC_EVTYPE_SYS_STOP);
+	(void)event_post_global(PFC_EVTYPE_SYS_STOP);
 	(void)ipc_post_event(PFCD_IPCEVENT_SYS_STOP);
 
 	/* Call common shutdown routine. */

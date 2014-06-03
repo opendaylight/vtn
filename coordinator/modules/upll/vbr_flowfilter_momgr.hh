@@ -17,12 +17,12 @@ namespace upll {
 namespace kt_momgr {
 
 /*  This file declares interfaces for keyType KT_VBR_FLOWFILER */
-  /**
-   *  @brief  VbrFlowFilterMoMgr class handles all the request
-   *          received from service.
-   */
-  class VbrFlowFilterMoMgr : public MoMgrImpl {
-   private:
+/**
+ *  @brief  VbrFlowFilterMoMgr class handles all the request
+ *          received from service.
+ */
+class VbrFlowFilterMoMgr : public MoMgrImpl {
+  private:
     static unc_key_type_t vbr_flowfilter_child[];
     /**
      * @brief  Member Variable for VbrFlowfilterBindInfo.
@@ -103,25 +103,25 @@ namespace kt_momgr {
         key_vbr_flowfilter_t* key_vbr_flowfilter,
         unc_keytype_operation_t op);
 
-    /**
-     * @Brief Checks if the specified key type(KT_VBR_FLOWFILTER) and
-     *        associated attributes are supported on the given controller,
-     *        based on the valid flag
-     *
-     * @param[in] IpcReqRespHeader  contains first 8 fields of input request
-     *                              structure
-     * @param[in] ConfigKeyVal    contains key and value structure.
-     * @param[in] ctrlr_name        controller name.
-     *
-     * @retval  UPLL_RC_SUCCESS             Validation succeeded.
-     * @retval  UPLL_RC_ERR_GENERIC         Validation failure.
-     * @retval  UPLL_RC_ERR_INVALID_OPTION1 Option1 is not valid.
-     * @retval  UPLL_RC_ERR_INVALID_OPTION2 Option2 is not valid.
-     */
+   /**
+    * @Brief Checks if the specified key type(KT_VBR_FLOWFILTER) and
+    *        associated attributes are supported on the given controller,
+    *        based on the valid flag
+    *
+    * @param[in] IpcReqRespHeader  contains first 8 fields of input request
+    *                              structure
+    * @param[in] ConfigKeyVal    contains key and value structure.
+    * @param[in] ctrlr_name        controller name.
+    *
+    * @retval  UPLL_RC_SUCCESS             Validation succeeded.
+    * @retval  UPLL_RC_ERR_GENERIC         Validation failure.
+    * @retval  UPLL_RC_ERR_INVALID_OPTION1 Option1 is not valid.
+    * @retval  UPLL_RC_ERR_INVALID_OPTION2 Option2 is not valid.
+    */
     upll_rc_t ValidateCapability(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                                 const char* ctrlr_name = NULL);
+                                   const char* ctrlr_name = NULL);
 
-   public:
+  public:
     /**
      * @brief  VbrFlowFilterMoMgr Class Constructor.
      */
@@ -166,10 +166,10 @@ namespace kt_momgr {
      * @retval  UPLL_RC_SUCCESS      Successfull completion.
      * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
      */
-    upll_rc_t UpdateAuditConfigStatus(unc_keytype_configstatus_t cs_status,
-                                      uuc::UpdateCtrlrPhase phase,
-                                      ConfigKeyVal *&ckv_running,
-                                      DalDmlIntf *dmi);
+     upll_rc_t UpdateAuditConfigStatus(unc_keytype_configstatus_t cs_status,
+                              uuc::UpdateCtrlrPhase phase,
+                              ConfigKeyVal *&ckv_running,
+                              DalDmlIntf *dmi);
 
     /**
      * @brief  Method used to fill the CongigKeyVal with the Parent
@@ -219,11 +219,11 @@ namespace kt_momgr {
      *
      * @retval  UPLL_RC_SUCCESS Successful Completion
      **/
-    upll_rc_t GetValid(void*val,
-                       uint64_t indx,
-                       uint8_t *&valid,
-                       upll_keytype_datatype_t dt_type,
-                       MoMgrTables tbl);
+     upll_rc_t GetValid(void*val,
+                        uint64_t indx,
+                        uint8_t *&valid,
+                        upll_keytype_datatype_t dt_type,
+                        MoMgrTables tbl);
 
     /**
      * @brief  Method used to Duplicate the ConfigkeyVal.
@@ -359,19 +359,19 @@ namespace kt_momgr {
     upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey,
                               ConfigKeyVal *ikey);
 
-    /**
-     * @brief Method To Compare the Valid Check of Attributes
-     *
-     * @param[out]  val1   Pointer to ConfigKeyVal Class which contains only Valid Attributes
-     * @param[in]   val2   Pointer to ConfigKeyVal Class.
-     * @param[in]   audit  If true,Audit Process.
-     *
-     * @return  Void Function.
-     */
+   /**
+    * @brief Method To Compare the Valid Check of Attributes
+    *
+    * @param[out]  val1   Pointer to ConfigKeyVal Class which contains only Valid Attributes
+    * @param[in]   val2   Pointer to ConfigKeyVal Class.
+    * @param[in]   audit  If true,Audit Process.
+    *
+    * @return  Void Function.
+    */
     bool CompareValidValue(void *&val1, void *val2, bool audit) {
       return false;
     }
-    /**
+     /**
      * @brief  Method used for ReadSibling Operation.
      *
      * @param[in]      req   Describes RequestResponderHeaderClass.
@@ -387,7 +387,7 @@ namespace kt_momgr {
                             bool begin,
                             DalDmlIntf *dmi);
 
-    /**
+     /**
      * @brief  Method used for GetParentConfigKey Operation.
      *
      * @param[out]  okey        Pointer to ConfigKeyVal Class.
@@ -400,7 +400,7 @@ namespace kt_momgr {
     upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey,
                                  ConfigKeyVal *ikey);
 
-    /**
+      /**
      * @brief  Method to check validity of Key
      *
      * @param[in]   ConfigKeyVal  input COnfigKeyVal
@@ -415,7 +415,9 @@ namespace kt_momgr {
 
     upll_rc_t ConstructReadDetailResponse(ConfigKeyVal *ikey,
                                           ConfigKeyVal *drv_resp_ckv,
-                                          ConfigKeyVal **okey);
+                                          controller_domain ctrlr_dom,
+                                          ConfigKeyVal **okey,
+                                          DalDmlIntf *dmi);
 
     upll_rc_t CreateAuditMoImpl(ConfigKeyVal *ikey,
                                 DalDmlIntf *dmi,
@@ -437,9 +439,10 @@ namespace kt_momgr {
                           unc_keytype_operation_t op);
 
     upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
-                            DalDmlIntf *dmi,
-                            IpcReqRespHeader *req);
-  };
+                          DalDmlIntf *dmi,
+                          IpcReqRespHeader *req);
+
+};
 }  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc

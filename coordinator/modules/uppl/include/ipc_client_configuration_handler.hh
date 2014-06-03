@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -18,15 +18,16 @@
 #ifndef _IPC_CLIENT_CONFIGURATION_HANDLER_H_
 #define _IPC_CLIENT_CONFIGURATION_HANDLER_H_
 
-#include <unc/odcdriver_include.h>
+
 #include <pfcxx/ipc_client.hh>
 #include <pfcxx/module.hh>
 #include <string>
 #include "unc/uppl_common.h"
 #include "unc/keytype.h"
-#include "phy_util.hh"
 #include "unc/pfcdriver_include.h"
 #include "unc/vnpdriver_include.h"
+#include <unc/odcdriver_include.h>
+#include "phy_util.hh"
 
 using pfc::core::ipc::ClientSession;
 

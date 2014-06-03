@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.resources;
 
 import java.lang.reflect.Method;
@@ -280,6 +281,11 @@ public abstract class AbstractResource implements VtnServiceResource {
 				.getValue()) {
 			error.addProperty(VtnServiceJsonConsts.MSG,
 					UncCommonEnum.UncResultCode.UNC_METHOD_NOT_ALLOWED
+							.getMessage());
+		} else if (code == UncCommonEnum.UncResultCode.UNC_UNAUTHORIZED
+				.getValue()) {
+			error.addProperty(VtnServiceJsonConsts.MSG,
+					UncCommonEnum.UncResultCode.UNC_UNAUTHORIZED
 							.getMessage());
 		} else {
 			error.addProperty(VtnServiceJsonConsts.MSG, "Invalid error code");

@@ -17,34 +17,34 @@ namespace unc {
 namespace upll {
 namespace kt_momgr {
 
-BindInfo VtepGrpMoMgr::vtep_grp_bind_info[] = {
-  { uudst::vtep_group::kDbiVtnName, CFG_KEY,
-    offsetof(key_vtep_grp, vtn_key.vtn_name), uud::kDalChar,
-    kMaxLenVtnName+1 },
-  { uudst::vtep_group::kDbiVtepgrpName, CFG_KEY,
-    offsetof(key_vtep_grp, vtepgrp_name), uud::kDalChar,
-    kMaxLenVnodeName+1 },
-  { uudst::vtep_group::kDbiCtrlrName, CFG_VAL,
-    offsetof(val_vtep_grp, controller_id), uud::kDalChar, kMaxLenCtrlrId+1},
-  { uudst::vtep_group::kDbiCtrlrName, CK_VAL,
-    offsetof(key_user_data_t, ctrlr_id),
-    uud::kDalChar, kMaxLenCtrlrId+1 },
-  { uudst::vtep_group::kDbiDesc, CFG_VAL, offsetof(val_vtep_grp, description),
-    uud::kDalChar, kMaxLenDescription+1},
-  { uudst::vtep_group::kDbiFlags, CK_VAL, offsetof(key_user_data_t, flags),
-    uud::kDalUint8, 1},
-  { uudst::vtep_group::kDbiValidCtrlrName, CFG_META_VAL,
-    offsetof(val_vtep_grp, valid[0]), uud::kDalUint8, 1},
-  { uudst::vtep_group::kDbiValidDesc, CFG_META_VAL,
-    offsetof(val_vtep_grp, valid[1]), uud::kDalUint8, 1},
-  { uudst::vtep_group::kDbiCsRowstatus, CS_VAL,
-    offsetof(val_vtep_grp, cs_row_status), uud::kDalUint8, 1},
-  { uudst::vtep_group::kDbiCsCtrlrName, CS_VAL, offsetof(val_vtep_grp,
-                                                         cs_attr[0]),
-  uud::kDalUint8, 1},
-  { uudst::vtep_group::kDbiCsDesc, CS_VAL, offsetof(val_vtep_grp, cs_attr[1]),
-    uud::kDalUint8, 1}
-};
+  BindInfo VtepGrpMoMgr::vtep_grp_bind_info[] = {
+    { uudst::vtep_group::kDbiVtnName, CFG_KEY,
+      offsetof(key_vtep_grp, vtn_key.vtn_name), uud::kDalChar,
+      kMaxLenVtnName+1 },
+    { uudst::vtep_group::kDbiVtepgrpName, CFG_KEY,
+      offsetof(key_vtep_grp, vtepgrp_name), uud::kDalChar,
+      kMaxLenVnodeName+1 },
+    { uudst::vtep_group::kDbiCtrlrName, CFG_VAL,
+      offsetof(val_vtep_grp, controller_id), uud::kDalChar, kMaxLenCtrlrId+1},
+    { uudst::vtep_group::kDbiCtrlrName, CK_VAL,
+      offsetof(key_user_data_t, ctrlr_id),
+      uud::kDalChar, kMaxLenCtrlrId+1 },
+    { uudst::vtep_group::kDbiDesc, CFG_VAL, offsetof(val_vtep_grp, description),
+      uud::kDalChar, kMaxLenDescription+1},
+    { uudst::vtep_group::kDbiFlags, CK_VAL, offsetof(key_user_data_t, flags),
+      uud::kDalUint8, 1},
+    { uudst::vtep_group::kDbiValidCtrlrName, CFG_META_VAL,
+      offsetof(val_vtep_grp, valid[0]), uud::kDalUint8, 1},
+    { uudst::vtep_group::kDbiValidDesc, CFG_META_VAL,
+      offsetof(val_vtep_grp, valid[1]), uud::kDalUint8, 1},
+    { uudst::vtep_group::kDbiCsRowstatus, CS_VAL,
+      offsetof(val_vtep_grp, cs_row_status), uud::kDalUint8, 1},
+    { uudst::vtep_group::kDbiCsCtrlrName, CS_VAL, offsetof(val_vtep_grp,
+      cs_attr[0]),
+      uud::kDalUint8, 1},
+    { uudst::vtep_group::kDbiCsDesc, CS_VAL, offsetof(val_vtep_grp, cs_attr[1]),
+      uud::kDalUint8, 1}
+  };
 
 unc_key_type_t VtepGrpMoMgr::vtep_grp_child[] = {
   UNC_KT_VTEP_GRP_MEMBER
@@ -53,9 +53,9 @@ unc_key_type_t VtepGrpMoMgr::vtep_grp_child[] = {
 VtepGrpMoMgr::VtepGrpMoMgr() {
   UPLL_FUNC_TRACE;
   Table *tbl = new Table(uudst::kDbiVtepGrpTbl, UNC_KT_VTEP_GRP,
-                         vtep_grp_bind_info,
-                         IpctSt::kIpcStKeyVtepGrp, IpctSt::kIpcStValVtepGrp,
-                         uudst::vtep_group::kDbiVtepGrpNumCols+1);
+      vtep_grp_bind_info,
+      IpctSt::kIpcStKeyVtepGrp, IpctSt::kIpcStValVtepGrp,
+      uudst::vtep_group::kDbiVtepGrpNumCols+1);
   ntable = MAX_MOMGR_TBLS;
   table = new Table *[ntable];
   table[MAINTBL] = tbl;
@@ -115,11 +115,11 @@ bool VtepGrpMoMgr::IsValidKey(void *key, uint64_t index) {
 }
 
 upll_rc_t VtepGrpMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
-                                          ConfigKeyVal *parent_key) {
+    ConfigKeyVal *parent_key) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   key_vtep_grp *vtep_grp_key = static_cast<key_vtep_grp *>
-      (ConfigKeyVal::Malloc(sizeof(key_vtep_grp)));
+    (ConfigKeyVal::Malloc(sizeof(key_vtep_grp)));
   if (vtep_grp_key == NULL) return UPLL_RC_ERR_GENERIC;
   void *pkey;
   if (parent_key == NULL) {
@@ -150,38 +150,38 @@ upll_rc_t VtepGrpMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
   switch (parent_key->get_key_type()) {
     case UNC_KT_VTEP_GRP:
       uuu::upll_strncpy(vtep_grp_key->vtepgrp_name,
-                        reinterpret_cast<key_vtep_grp *>(pkey)->vtepgrp_name,
-                        (kMaxLenVnodeName+1));
+               reinterpret_cast<key_vtep_grp *>(pkey)->vtepgrp_name,
+              (kMaxLenVnodeName+1));
       uuu::upll_strncpy(vtep_grp_key->vtn_key.vtn_name,
-                        reinterpret_cast<key_vtep *>(pkey)->vtn_key.vtn_name,
-                        (kMaxLenVtnName+1));
+             reinterpret_cast<key_vtep *>(pkey)->vtn_key.vtn_name,
+             (kMaxLenVtnName+1));
       break;
     case UNC_KT_VTN:
     default:
       uuu::upll_strncpy(vtep_grp_key->vtn_key.vtn_name,
-                        reinterpret_cast<key_vtn *>(pkey)->vtn_name,
-                        (kMaxLenVtnName+1));
+             reinterpret_cast<key_vtn *>(pkey)->vtn_name,
+             (kMaxLenVtnName+1));
   }
   SET_USER_DATA(okey, parent_key);
   return result_code;
 }
 
 upll_rc_t VtepGrpMoMgr::GetParentConfigKey(ConfigKeyVal *&okey,
-                                           ConfigKeyVal *ikey ) {
+    ConfigKeyVal *ikey ) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   key_vtep_grp *pkey = (ikey)?
-      static_cast<key_vtep_grp *>(ikey->get_key()):NULL;
+    static_cast<key_vtep_grp *>(ikey->get_key()):NULL;
   if (!pkey) return UPLL_RC_ERR_GENERIC;
 
   if (ikey->get_key_type() != UNC_KT_VTEP_GRP)
     return UPLL_RC_ERR_GENERIC;
   key_vtn *vtn_key = reinterpret_cast<key_vtn *>
-      (ConfigKeyVal::Malloc(sizeof(key_vtn)));
+                     (ConfigKeyVal::Malloc(sizeof(key_vtn)));
   if (!vtn_key) return UPLL_RC_ERR_GENERIC;
   uuu::upll_strncpy(vtn_key->vtn_name,
-                    pkey->vtn_key.vtn_name,
-                    (kMaxLenVtnName+1));
+         pkey->vtn_key.vtn_name,
+         (kMaxLenVtnName+1));
   DELETE_IF_NOT_NULL(okey);
   okey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, vtn_key, NULL);
   if (okey == NULL) {
@@ -194,15 +194,14 @@ upll_rc_t VtepGrpMoMgr::GetParentConfigKey(ConfigKeyVal *&okey,
 }
 
 upll_rc_t VtepGrpMoMgr::AllocVal(ConfigVal *&ck_val,
-                                 upll_keytype_datatype_t dt_type,
-                                 MoMgrTables tbl) {
+    upll_keytype_datatype_t dt_type, MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   void *val;
   if (ck_val != NULL) return UPLL_RC_ERR_GENERIC;
   switch (tbl) {
     case MAINTBL:
       val = reinterpret_cast<void *>
-          (ConfigKeyVal::Malloc(sizeof(val_vtep_grp)));
+            (ConfigKeyVal::Malloc(sizeof(val_vtep_grp)));
       if (!val) return UPLL_RC_ERR_GENERIC;
       ck_val = new ConfigVal(IpctSt::kIpcStValVtepGrp, val);
       if (!ck_val) {
@@ -224,7 +223,7 @@ upll_rc_t VtepGrpMoMgr::ValidateAttribute(ConfigKeyVal *ikey,
   ctrlr_dom.ctrlr = NULL;
   ctrlr_dom.domain = NULL;
   upll_rc_t result_code = GetControllerDomainId(ikey, UPLL_DT_CANDIDATE,
-                                                &ctrlr_dom, dmi);
+                                               &ctrlr_dom, dmi);
   if ((result_code != UPLL_RC_SUCCESS) || (ctrlr_dom.ctrlr == NULL)) {
     UPLL_LOG_INFO("GetControllerDomainId failed err_code %d", result_code);
     return UPLL_RC_ERR_GENERIC;
@@ -233,9 +232,7 @@ upll_rc_t VtepGrpMoMgr::ValidateAttribute(ConfigKeyVal *ikey,
   unc_keytype_ctrtype_t ctrlrtype;
   uuc::CtrlrMgr *ctrlr_mgr = uuc::CtrlrMgr::GetInstance();
   if (!ctrlr_mgr->GetCtrlrType(
-          reinterpret_cast<char *>(ctrlr_dom.ctrlr),
-          req->datatype,
-          &ctrlrtype)) {
+        reinterpret_cast<char *>(ctrlr_dom.ctrlr), req->datatype, &ctrlrtype)) {
     UPLL_LOG_DEBUG("Specified Controller Doesn't Exist");
     return UPLL_RC_ERR_CFG_SEMANTIC;
   }
@@ -243,9 +240,9 @@ upll_rc_t VtepGrpMoMgr::ValidateAttribute(ConfigKeyVal *ikey,
 }
 
 upll_rc_t VtepGrpMoMgr::GetControllerDomainId(ConfigKeyVal *ikey,
-                                              upll_keytype_datatype_t dt_type,
-                                              controller_domain *ctrlr_dom,
-                                              DalDmlIntf *dmi) {
+                                    upll_keytype_datatype_t dt_type,
+                                    controller_domain *ctrlr_dom,
+                                    DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   ConfigKeyVal *okey = NULL;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
@@ -254,17 +251,17 @@ upll_rc_t VtepGrpMoMgr::GetControllerDomainId(ConfigKeyVal *ikey,
     return UPLL_RC_ERR_GENERIC;
   }
   val_vtep_grp *temp_vtep_grp = reinterpret_cast<val_vtep_grp *>
-      (GetVal(ikey));
+                                                (GetVal(ikey));
   if (temp_vtep_grp->valid[UPLL_IDX_CONTROLLER_ID_VTEPG] != UNC_VF_VALID) {
     temp_vtep_grp = NULL;
     result_code = GetChildConfigKey(okey, ikey);
     if (UPLL_RC_SUCCESS != result_code) {
       UPLL_LOG_ERROR("GetChildConfigKey failed with result_code %d",
-                     result_code);
+                      result_code);
       return result_code;
     }
     DbSubOp dbop = {kOpReadSingle, kOpMatchNone,
-      kOpInOutCtrlr | kOpInOutDomain | kOpInOutFlag};
+                    kOpInOutCtrlr | kOpInOutDomain | kOpInOutFlag};
     result_code = ReadConfigDB(okey, dt_type, UNC_OP_READ, dbop,
                                dmi, MAINTBL);
     if (UPLL_RC_SUCCESS != result_code) {
@@ -297,7 +294,7 @@ upll_rc_t VtepGrpMoMgr::GetControllerDomainId(ConfigKeyVal *ikey,
 }
 
 upll_rc_t VtepGrpMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
-                                        ConfigKeyVal *&req, MoMgrTables tbl) {
+    ConfigKeyVal *&req, MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   if (req == NULL) return UPLL_RC_ERR_GENERIC;
   if (okey != NULL) return UPLL_RC_ERR_GENERIC;
@@ -308,7 +305,7 @@ upll_rc_t VtepGrpMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
     if (tbl == MAINTBL) {
       val_vtep_grp *ival = reinterpret_cast<val_vtep_grp *>(GetVal(req));
       val_vtep_grp *vtepgrp_val = reinterpret_cast<val_vtep_grp *>
-          (ConfigKeyVal::Malloc(sizeof(val_vtep_grp)));
+        (ConfigKeyVal::Malloc(sizeof(val_vtep_grp)));
       if (!vtepgrp_val) return UPLL_RC_ERR_GENERIC;
       memcpy(vtepgrp_val, ival, sizeof(val_vtep_grp));
       tmp1 = new ConfigVal(IpctSt::kIpcStValVtepGrp, vtepgrp_val);
@@ -321,14 +318,14 @@ upll_rc_t VtepGrpMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
   void *tkey = (req != NULL)?(req)->get_key():NULL;
   key_vtep_grp *ikey = reinterpret_cast<key_vtep_grp *>(tkey);
   key_vtep_grp *vtepgrp_key = reinterpret_cast<key_vtep_grp *>
-      (ConfigKeyVal::Malloc(sizeof(key_vtep_grp)));
+    (ConfigKeyVal::Malloc(sizeof(key_vtep_grp)));
   if (!vtepgrp_key) {
     if (tmp1) delete tmp1;
     return UPLL_RC_ERR_GENERIC;
   }
   memcpy(vtepgrp_key, ikey, sizeof(key_vtep_grp));
   okey = new ConfigKeyVal(UNC_KT_VTEP_GRP, IpctSt::kIpcStKeyVtepGrp,
-                          vtepgrp_key, tmp1);
+      vtepgrp_key, tmp1);
   if (okey) {
     SET_USER_DATA(okey, req);
   } else {
@@ -340,17 +337,17 @@ upll_rc_t VtepGrpMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
 }
 
 upll_rc_t VtepGrpMoMgr::UpdateConfigStatus(ConfigKeyVal *vtepgrp_key,
-                                           unc_keytype_operation_t op,
-                                           uint32_t driver_result,
-                                           ConfigKeyVal *upd_key,
-                                           DalDmlIntf *dmi,
-                                           ConfigKeyVal *ctrlr_key) {
+    unc_keytype_operation_t op,
+    uint32_t driver_result,
+    ConfigKeyVal *upd_key,
+    DalDmlIntf *dmi,
+    ConfigKeyVal *ctrlr_key) {
   UPLL_FUNC_TRACE;
   val_vtep_grp_t *vtepgrp_val = reinterpret_cast<val_vtep_grp_t *>
-      (GetVal(vtepgrp_key));
+                                (GetVal(vtepgrp_key));
 
   unc_keytype_configstatus_t cs_status =
-      (driver_result == UPLL_RC_SUCCESS) ? UNC_CS_APPLIED : UNC_CS_NOT_APPLIED;
+    (driver_result == UPLL_RC_SUCCESS) ? UNC_CS_APPLIED : UNC_CS_NOT_APPLIED;
   val_vtep_grp_t *val_running = static_cast<val_vtep_grp_t *>(GetVal(upd_key));
   if (vtepgrp_val == NULL) return UPLL_RC_ERR_GENERIC;
   if (op == UNC_OP_CREATE) {
@@ -364,8 +361,8 @@ upll_rc_t VtepGrpMoMgr::UpdateConfigStatus(ConfigKeyVal *vtepgrp_key,
     return UPLL_RC_ERR_GENERIC;
   }
   for (unsigned int loop = 0;
-       loop < sizeof(vtepgrp_val->valid) / sizeof(vtepgrp_val->valid[0]);
-       ++loop) {
+      loop < sizeof(vtepgrp_val->valid) / sizeof(vtepgrp_val->valid[0]);
+      ++loop) {
     if ((UNC_VF_VALID == vtepgrp_val->valid[loop])
         || (UNC_VF_VALID_NO_VALUE == vtepgrp_val->valid[loop])) {
       // Description is set to APPLIED
@@ -375,10 +372,10 @@ upll_rc_t VtepGrpMoMgr::UpdateConfigStatus(ConfigKeyVal *vtepgrp_key,
         vtepgrp_val->cs_attr[loop] = cs_status;
     } else if ((vtepgrp_val->valid[loop] == UNC_VF_INVALID) &&
                (UNC_OP_CREATE == op)) {
-      vtepgrp_val->cs_attr[loop] = UNC_CS_APPLIED;
+        vtepgrp_val->cs_attr[loop] = UNC_CS_APPLIED;
     } else if ((vtepgrp_val->valid[loop] == UNC_VF_INVALID) &&
                (UNC_OP_UPDATE == op)) {
-      vtepgrp_val->cs_attr[loop] = val_running->cs_attr[loop];
+        vtepgrp_val->cs_attr[loop] = val_running->cs_attr[loop];
     }
   }
   return UPLL_RC_SUCCESS;
@@ -402,27 +399,27 @@ bool VtepGrpMoMgr::CompareValidValue(void *&val1, void *val2,
   val_vtep_grp_t *val_vtepgrp1 = reinterpret_cast<val_vtep_grp_t *>(val1);
   val_vtep_grp_t *val_vtepgrp2  = reinterpret_cast<val_vtep_grp_t *>(val2);
   for ( unsigned int loop = 0;
-       loop < sizeof(val_vtepgrp1->valid)/sizeof(uint8_t); ++loop ) {
+      loop < sizeof(val_vtepgrp1->valid)/sizeof(uint8_t); ++loop ) {
     if ( UNC_VF_INVALID == val_vtepgrp1->valid[loop]
-        && UNC_VF_VALID == val_vtepgrp2->valid[loop])
+      && UNC_VF_VALID == val_vtepgrp2->valid[loop])
       val_vtepgrp1->valid[loop] = UNC_VF_VALID_NO_VALUE;
   }
   if (UNC_VF_VALID == val_vtepgrp1->valid[UPLL_IDX_DESCRIPTION_VTEPG]
       && UNC_VF_VALID == val_vtepgrp2->valid[UPLL_IDX_DESCRIPTION_VTEPG]) {
     if (!strcmp(reinterpret_cast<char*>(val_vtepgrp1->description),
-                reinterpret_cast<char*>(val_vtepgrp2->description)))
+          reinterpret_cast<char*>(val_vtepgrp2->description)))
       val_vtepgrp1->valid[UPLL_IDX_DESCRIPTION_VTEPG] = UNC_VF_INVALID;
   }
   if (UNC_VF_VALID == val_vtepgrp1->valid[UPLL_IDX_CONTROLLER_ID_VTEPG]
       && UNC_VF_VALID == val_vtepgrp2->valid[UPLL_IDX_CONTROLLER_ID_VTEPG]) {
     if (!strcmp(reinterpret_cast<char*>(val_vtepgrp1->controller_id),
-                reinterpret_cast<char*>(val_vtepgrp2->controller_id)))
+          reinterpret_cast<char*>(val_vtepgrp2->controller_id)))
       val_vtepgrp1->valid[UPLL_IDX_CONTROLLER_ID_VTEPG] = UNC_VF_INVALID;
   }
   if (!copy_to_running)
-    val_vtepgrp1->valid[UPLL_IDX_DESCRIPTION_VTEPG] = UNC_VF_INVALID;
+     val_vtepgrp1->valid[UPLL_IDX_DESCRIPTION_VTEPG] = UNC_VF_INVALID;
   for (unsigned int loop = 0;
-       loop < sizeof(val_vtepgrp1->valid) / sizeof(uint8_t); ++loop) {
+      loop < sizeof(val_vtepgrp1->valid) / sizeof(uint8_t); ++loop) {
     if ((UNC_VF_VALID == (uint8_t) val_vtepgrp1->valid[loop]) ||
         (UNC_VF_VALID_NO_VALUE == (uint8_t) val_vtepgrp1->valid[loop])) {
       invalid_attr = false;
@@ -440,18 +437,18 @@ upll_rc_t VtepGrpMoMgr::UpdateAuditConfigStatus(
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   val_vtep_grp_t *val = (ckv_running != NULL)?
-      reinterpret_cast<val_vtep_grp_t *>(GetVal(ckv_running)):NULL;
+    reinterpret_cast<val_vtep_grp_t *>(GetVal(ckv_running)):NULL;
   if (NULL == val) {
     return UPLL_RC_ERR_GENERIC;
   }
   if (uuc::kUpllUcpCreate == phase )
     val->cs_row_status = cs_status;
   if ((uuc::kUpllUcpUpdate == phase) &&
-      (val->cs_row_status == UNC_CS_INVALID ||
-       val->cs_row_status == UNC_CS_NOT_APPLIED))
+           (val->cs_row_status == UNC_CS_INVALID ||
+            val->cs_row_status == UNC_CS_NOT_APPLIED))
     val->cs_row_status = cs_status;
   for (unsigned int loop = 0;
-       loop < sizeof(val->valid)/sizeof(uint8_t); ++loop ) {
+      loop < sizeof(val->valid)/sizeof(uint8_t); ++loop ) {
     if ((cs_status == UNC_CS_INVALID &&  UNC_VF_VALID == val->valid[loop]) ||
         cs_status == UNC_CS_APPLIED)
       val->cs_attr[loop] = cs_status;
@@ -460,7 +457,7 @@ upll_rc_t VtepGrpMoMgr::UpdateAuditConfigStatus(
 }
 
 upll_rc_t VtepGrpMoMgr::ValidateMessage(IpcReqRespHeader *req,
-                                        ConfigKeyVal *ikey) {
+    ConfigKeyVal *ikey) {
   UPLL_FUNC_TRACE;
   upll_rc_t ret_val = UPLL_RC_SUCCESS;
   if (!ikey || !req || !(ikey->get_key())) {
@@ -474,17 +471,17 @@ upll_rc_t VtepGrpMoMgr::ValidateMessage(IpcReqRespHeader *req,
   }
   if (ikey->get_st_num() != IpctSt::kIpcStKeyVtepGrp) {
     UPLL_LOG_DEBUG("Invalid struct received.Expected struct-kIpcStKeyVtepGrp,"
-                   "received struct -%s ", reinterpret_cast<const char *>
-                   (IpctSt::GetIpcStdef(ikey->get_st_num())));
+        "received struct -%s ", reinterpret_cast<const char *>
+        (IpctSt::GetIpcStdef(ikey->get_st_num())));
     return UPLL_RC_ERR_BAD_REQUEST;
   }
   key_vtep_grp_t *key_vtep_grp = reinterpret_cast<key_vtep_grp_t *>
-      (ikey->get_key());
+    (ikey->get_key());
   val_vtep_grp_t *val_vtep_grp = NULL;
   if ((ikey->get_cfg_val()) &&
       ((ikey->get_cfg_val())->get_st_num() == IpctSt::kIpcStValVtepGrp)) {
     val_vtep_grp =
-        reinterpret_cast <val_vtep_grp_t *> (ikey->get_cfg_val()->get_val());
+      reinterpret_cast <val_vtep_grp_t *> (ikey->get_cfg_val()->get_val());
   }
   uint32_t dt_type = req->datatype;
   uint32_t operation = req->operation;
@@ -510,13 +507,13 @@ upll_rc_t VtepGrpMoMgr::ValidateMessage(IpcReqRespHeader *req,
       return UPLL_RC_ERR_BAD_REQUEST;
     }
   } else if (((operation == UNC_OP_READ) ||
-              (operation == UNC_OP_READ_SIBLING) ||
-              (operation == UNC_OP_READ_SIBLING_BEGIN) ||
-              (operation == UNC_OP_READ_SIBLING_COUNT)) &&
-             ((dt_type == UPLL_DT_CANDIDATE) ||
-              (dt_type == UPLL_DT_RUNNING) ||
-              (dt_type == UPLL_DT_STARTUP) ||
-              (dt_type == UPLL_DT_STATE))) {
+        (operation == UNC_OP_READ_SIBLING) ||
+        (operation == UNC_OP_READ_SIBLING_BEGIN) ||
+        (operation == UNC_OP_READ_SIBLING_COUNT)) &&
+      ((dt_type == UPLL_DT_CANDIDATE) ||
+       (dt_type == UPLL_DT_RUNNING) ||
+       (dt_type == UPLL_DT_STARTUP) ||
+       (dt_type == UPLL_DT_STATE))) {
     if (option1 == UNC_OPT1_NORMAL) {
       if (option2 == UNC_OPT2_NONE) {
         if (val_vtep_grp != NULL) {
@@ -540,23 +537,23 @@ upll_rc_t VtepGrpMoMgr::ValidateMessage(IpcReqRespHeader *req,
       return UPLL_RC_ERR_INVALID_OPTION1;
     }
   } else if ((operation == UNC_OP_DELETE) ||
-             (((operation == UNC_OP_READ_NEXT) ||
-               (operation == UNC_OP_READ_BULK)) &&
-              ((dt_type == UPLL_DT_CANDIDATE) ||
-               (dt_type == UPLL_DT_RUNNING) ||
-               (dt_type == UPLL_DT_STARTUP)))) {
+        (((operation == UNC_OP_READ_NEXT) ||
+        (operation == UNC_OP_READ_BULK)) &&
+        ((dt_type == UPLL_DT_CANDIDATE) ||
+          (dt_type == UPLL_DT_RUNNING) ||
+          (dt_type == UPLL_DT_STARTUP)))) {
     UPLL_LOG_TRACE("Value structure is none for this operation:%d", operation);
     return UPLL_RC_SUCCESS;
   } else {
     UPLL_LOG_INFO("Invalid datatype(%d) or operation(%d)", dt_type,
-                  operation);
+        operation);
     return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT;
   }
   return UPLL_RC_SUCCESS;
 }
 
 upll_rc_t VtepGrpMoMgr::ValidateVTepGrpValue(val_vtep_grp_t *val_vtep_grp,
-                                             uint32_t operation) {
+    uint32_t operation) {
   UPLL_FUNC_TRACE;
   bool ret_val =false;
 
@@ -647,7 +644,7 @@ upll_rc_t VtepGrpMoMgr::ValidateVTepGrpValue(val_vtep_grp_t *val_vtep_grp,
 }
 
 upll_rc_t VtepGrpMoMgr::CtrlrIdAndDomainIdUpdationCheck(ConfigKeyVal *ikey,
-                                                        ConfigKeyVal *okey) {
+                                                   ConfigKeyVal *okey) {
   UPLL_FUNC_TRACE;
   val_vtep_grp *vtepg_val = reinterpret_cast<val_vtep_grp *>(GetVal(ikey));
   val_vtep_grp *vtepg_val1 = reinterpret_cast<val_vtep_grp *>(GetVal(okey));
@@ -662,11 +659,11 @@ upll_rc_t VtepGrpMoMgr::CtrlrIdAndDomainIdUpdationCheck(ConfigKeyVal *ikey,
   return UPLL_RC_SUCCESS;
 }
 upll_rc_t VtepGrpMoMgr::ValidateVTepGrpKey(key_vtep_grp_t *key_vtep_grp,
-                                           uint32_t operation) {
+                        uint32_t operation) {
   UPLL_FUNC_TRACE;
   upll_rc_t ret_val = UPLL_RC_SUCCESS;
   ret_val = ValidateKey(
-      reinterpret_cast<char *>(key_vtep_grp->vtn_key.vtn_name),
+  reinterpret_cast<char *>(key_vtep_grp->vtn_key.vtn_name),
       kMinLenVtnName, kMaxLenVtnName);
   if (ret_val != UPLL_RC_SUCCESS) {
     UPLL_LOG_INFO("Vtn Name syntax check failed."
@@ -677,12 +674,12 @@ upll_rc_t VtepGrpMoMgr::ValidateVTepGrpKey(key_vtep_grp_t *key_vtep_grp,
   if ((operation != UNC_OP_READ_SIBLING_BEGIN) &&
       (operation != UNC_OP_READ_SIBLING_COUNT)) {
     UPLL_LOG_TRACE("UNC_KT_VTEP_GRP:vtepgrp_name (%s)",
-                   key_vtep_grp->vtepgrp_name);
+                    key_vtep_grp->vtepgrp_name);
     ret_val = ValidateKey(reinterpret_cast<char *>(key_vtep_grp->vtepgrp_name),
-                          kMinLenVnodeName, kMaxLenVnodeName);
+              kMinLenVnodeName, kMaxLenVnodeName);
     if (ret_val != UPLL_RC_SUCCESS) {
       UPLL_LOG_DEBUG("Syntax check failed. vtepgrp_name (%s)",
-                     key_vtep_grp->vtepgrp_name);
+                      key_vtep_grp->vtepgrp_name);
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
   } else {
@@ -710,8 +707,7 @@ upll_rc_t VtepGrpMoMgr::ValVTepGrpAttributeSupportCheck(
   return UPLL_RC_SUCCESS;
 }
 upll_rc_t VtepGrpMoMgr::ValidateCapability(IpcReqRespHeader *req,
-                                           ConfigKeyVal *ikey,
-                                           const char * ctrlr_name) {
+    ConfigKeyVal *ikey, const char * ctrlr_name) {
   UPLL_FUNC_TRACE;
   if (!ikey || !req) {
     UPLL_LOG_DEBUG("ConfigKeyVal / IpcReqRespHeader is Null");
@@ -720,7 +716,7 @@ upll_rc_t VtepGrpMoMgr::ValidateCapability(IpcReqRespHeader *req,
 
   if (!ctrlr_name) {
     ctrlr_name = reinterpret_cast<char*>((reinterpret_cast<key_user_data_t *>
-                                          (ikey->get_user_data()))->ctrlr_id);
+                  (ikey->get_user_data()))->ctrlr_id);
     if (!ctrlr_name || !strlen(ctrlr_name)) {
       UPLL_LOG_DEBUG("Controller Name is NULL");
       return UPLL_RC_ERR_GENERIC;
@@ -728,7 +724,7 @@ upll_rc_t VtepGrpMoMgr::ValidateCapability(IpcReqRespHeader *req,
   }
 
   UPLL_LOG_TRACE("ctrlr_name(%s), operation : (%d)",
-                 ctrlr_name, req->operation);
+      ctrlr_name, req->operation);
 
   bool result_code = false;
   uint32_t max_instance_count = 0;
@@ -737,23 +733,19 @@ upll_rc_t VtepGrpMoMgr::ValidateCapability(IpcReqRespHeader *req,
   switch (req->operation) {
     case UNC_OP_CREATE:
       result_code = GetCreateCapability(ctrlr_name,
-                                        ikey->get_key_type(),
-                                        &max_instance_count,
-                                        &max_attrs,
-                                        &attrs);
+          ikey->get_key_type(), &max_instance_count, &max_attrs, &attrs);
       break;
     case UNC_OP_UPDATE: {
-      result_code = GetUpdateCapability(ctrlr_name,
-                                        ikey->get_key_type(),
-                                        &max_attrs, &attrs);
-    }
+        result_code = GetUpdateCapability(ctrlr_name,
+            ikey->get_key_type(), &max_attrs, &attrs);
+      }
       break;
     case UNC_OP_READ:
     case UNC_OP_READ_SIBLING:
     case UNC_OP_READ_SIBLING_BEGIN:
     case UNC_OP_READ_SIBLING_COUNT:
       result_code = GetReadCapability(ctrlr_name,
-                                      ikey->get_key_type(), &max_attrs, &attrs);
+          ikey->get_key_type(), &max_attrs, &attrs);
       break;
 
     default:
@@ -763,15 +755,15 @@ upll_rc_t VtepGrpMoMgr::ValidateCapability(IpcReqRespHeader *req,
 
   if (!result_code) {
     UPLL_LOG_DEBUG("keytype(%d) is not supported by controller(%s) "
-                   "for operation(%d)",
-                   ikey->get_key_type(), ctrlr_name, req->operation);
+        "for operation(%d)",
+        ikey->get_key_type(), ctrlr_name, req->operation);
     return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
   }
   val_vtep_grp_t *val_vtep_grp = NULL;
   if ((ikey->get_cfg_val()) &&
       ((ikey->get_cfg_val())->get_st_num() == IpctSt::kIpcStValVtepGrp)) {
     val_vtep_grp =
-        reinterpret_cast<val_vtep_grp_t *> (ikey->get_cfg_val()->get_val());
+      reinterpret_cast<val_vtep_grp_t *> (ikey->get_cfg_val()->get_val());
   }
   if (val_vtep_grp) {
     if (max_attrs > 0) {
@@ -787,18 +779,18 @@ upll_rc_t VtepGrpMoMgr::ValidateCapability(IpcReqRespHeader *req,
 }
 
 upll_rc_t VtepGrpMoMgr::CreateVtunnelKey(ConfigKeyVal *ikey,
-                                         ConfigKeyVal *&okey) {
+    ConfigKeyVal *&okey) {
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   ConfigVal *tmp;
   if ( NULL == ikey)
     return UPLL_RC_ERR_GENERIC;
   key_vtep_grp *vtepgrp_key = reinterpret_cast<key_vtep_grp *>
-      (ikey->get_key());
+                              (ikey->get_key());
 
   val_vtunnel_t *val_vtunnel = reinterpret_cast<val_vtunnel_t *>
-      (ConfigKeyVal::Malloc(sizeof(val_vtunnel_t)));
+                               (ConfigKeyVal::Malloc(sizeof(val_vtunnel_t)));
   key_vtunnel_t *key_vtunnel = reinterpret_cast<key_vtunnel_t *>
-      (ConfigKeyVal::Malloc(sizeof(key_vtunnel_t)));
+                               (ConfigKeyVal::Malloc(sizeof(key_vtunnel_t)));
 
   if (!val_vtunnel || !key_vtunnel)
     return UPLL_RC_ERR_GENERIC;
@@ -815,10 +807,10 @@ upll_rc_t VtepGrpMoMgr::CreateVtunnelKey(ConfigKeyVal *ikey,
 
   uuu::upll_strncpy(val_vtunnel->vtn_name,
                     vtepgrp_key->vtn_key.vtn_name,
-                    (kMaxLenVtnName+1));
+                   (kMaxLenVtnName+1));
   uuu::upll_strncpy(val_vtunnel->vtep_grp_name,
                     vtepgrp_key->vtepgrp_name,
-                    (kMaxLenVnodeName+1));
+                   (kMaxLenVnodeName+1));
   val_vtunnel->valid[UPLL_IDX_VTN_NAME_VTNL] = UNC_VF_VALID;
   val_vtunnel->valid[UPLL_IDX_VTEP_GRP_NAME_VTNL] = UNC_VF_VALID;
 
@@ -836,17 +828,15 @@ upll_rc_t VtepGrpMoMgr::CreateVtunnelKey(ConfigKeyVal *ikey,
 }
 
 upll_rc_t VtepGrpMoMgr::IsReferenced(ConfigKeyVal *ikey,
-                                     upll_keytype_datatype_t dt_type,
-                                     DalDmlIntf *dmi) {
+    upll_keytype_datatype_t dt_type, DalDmlIntf *dmi) {
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   ConfigKeyVal *okey = NULL;
   if ( !ikey || !(ikey->get_key()) || !dmi)
     return UPLL_RC_ERR_GENERIC;
   result_code = CreateVtunnelKey(ikey, okey);
 
-  MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>(
-      const_cast<MoManager *>
-      (GetMoManager(UNC_KT_VTUNNEL)));
+  MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>
+                                            (GetMoManager(UNC_KT_VTUNNEL)));
   DbSubOp dbop = {kOpReadMultiple, kOpMatchNone, kOpInOutNone};
   result_code = mgr->ReadConfigDB(okey, dt_type, UNC_OP_READ, dbop,
                                   dmi, MAINTBL);
@@ -856,12 +846,12 @@ upll_rc_t VtepGrpMoMgr::IsReferenced(ConfigKeyVal *ikey,
     result_code =  UPLL_RC_ERR_CFG_SEMANTIC;
   }
   result_code = (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)?
-      UPLL_RC_SUCCESS:result_code;
+                 UPLL_RC_SUCCESS:result_code;
   DELETE_IF_NOT_NULL(okey);
   return result_code;
 }
 
 
-}  // namespace kt_momgr
+}  // namespace vtn
 }  // namespace upll
 }  // namespace unc

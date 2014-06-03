@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -444,7 +444,7 @@ class Kt_Base {
       if (objAttr.data_type == PFC_IPCTYPE_UINT16) { \
         if ((value) < objAttr.min_value || \
             (value) > objAttr.max_value) { \
-          if ((value) == 0xffff) { \
+          if((value) == 0xffff) { \
             pfc_log_info("no_vlan_id value is allowed");\
             (ret_code) = UNC_RC_SUCCESS; \
           } else { \

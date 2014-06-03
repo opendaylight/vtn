@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -18,7 +18,6 @@ import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 public class IpAddressUtil {
 
 	private final static int ipV4Size = 4;
-	private final static int ipV6Size = 8;
 
 	private static final Logger LOG = Logger.getLogger(IpAddressUtil.class
 			.getName());
@@ -50,14 +49,12 @@ public class IpAddressUtil {
 	/**
 	 * Convert IPV6 text format to byte array
 	 * 
-	 * @param ipV6Add
-	 *            : IPV6 address in text format
 	 * @return : IPV6 address in byte array format
 	 */
 	public static byte[] textToNumericFormatV6(final String ipV6Add) {
 		LOG.trace("Start textToNumericFormatV6 : " + ipV6Add);
 		byte[] responseArray = null;
-		if (ipV6Add.split(VtnServiceConsts.COLON).length == ipV6Size && ipV6Add.trim().equals(ipV6Add)) {
+		if (!ipV6Add.contains(VtnServiceConsts.DOT) && ipV6Add.trim().equals(ipV6Add)) {
 			try {
 				responseArray = InetAddress.getByName(ipV6Add).getAddress();
 			} catch (final UnknownHostException e) {

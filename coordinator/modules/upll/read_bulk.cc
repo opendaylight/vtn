@@ -36,8 +36,7 @@ static bool GetNextSiblingKT(const KeyTree &kt_tree, const unc_key_type_t kt,
 }
 
 static bool GetFirstChildKT(const KeyTree &kt_tree,
-                            unc_key_type_t parent_kt,
-                            unc_key_type_t *child_kt) {
+                          unc_key_type_t parent_kt, unc_key_type_t *child_kt) {
   UPLL_FUNC_TRACE;
   UPLL_LOG_TRACE("Request parent KT = %d", parent_kt);
   bool ok = kt_tree.GetFirstChild(parent_kt, child_kt);
@@ -239,10 +238,10 @@ upll_rc_t UpllConfigMgr::ReadBulkGetSubtree(const KeyTree &kt_tree,
     upll_rc_t curr_urc;
     ConfigKeyVal *curr_resp_ckv = NULL;
     for ((curr_urc = ReadBulkGetSibling(datatype, curr_req_ckv, &curr_resp_ckv,
-                                        true, dmi));
+                                       true, dmi));
          curr_urc == UPLL_RC_SUCCESS;
          (curr_urc = ReadBulkGetSibling(datatype, curr_req_ckv, &curr_resp_ckv,
-                                        false, dmi))) {
+                                       false, dmi))) {
       delete curr_req_ckv;
       curr_req_ckv = curr_resp_ckv->DupKey();  // prepare for loop
       if (curr_req_ckv == NULL) {
@@ -385,10 +384,10 @@ upll_rc_t UpllConfigMgr::ReadBulkMo(IpcReqRespHeader *msghdr,
 
   bool begin = true;
   bool retrieve_user_req_mo = true;  // Check the presence of user given key
-  const ConfigKeyVal *step_req_ckv = user_req_ckv->DupKey();
+  const ConfigKeyVal *step_req_ckv = user_req_ckv->DupKey(); 
   if (!step_req_ckv) {
     UPLL_LOG_DEBUG("step_req_ckv is NULL");
-    return UPLL_RC_ERR_GENERIC;
+    return UPLL_RC_ERR_GENERIC; 
   }
   upll_rc_t urc;
   while (pending_cnt > 0) {
@@ -489,8 +488,8 @@ upll_rc_t UpllConfigMgr::ReadBulkMo(IpcReqRespHeader *msghdr,
             subtree_req_ckv = NULL;
           } else {
             /* Can't delete step_resp_ckv as is it attached to user_resp_ckv
-               delete step_resp_ckv;
-               */
+            delete step_resp_ckv;
+            */
             delete subtree_req_ckv;
             subtree_req_ckv = NULL;
             msghdr->result_code = UPLL_RC_SUCCESS;
@@ -507,7 +506,7 @@ upll_rc_t UpllConfigMgr::ReadBulkMo(IpcReqRespHeader *msghdr,
                          step_req_ckv->get_key_type());
           unc_key_type_t next_sibling_kt;
           if (GetNextSiblingKT(*kt_tree, step_req_ckv->get_key_type(),
-                               &next_sibling_kt)) {
+                             &next_sibling_kt)) {
             // There is a NEXT SIBLING KT for the given KT; get the first
             // instance of the next KT
             begin = true;
@@ -601,7 +600,7 @@ upll_rc_t UpllConfigMgr::ReadBulkMo(IpcReqRespHeader *msghdr,
   UPLL_LOG_TRACE("Returning from %s", __FUNCTION__);
   return UPLL_RC_ERR_GENERIC;
 }
-// NOLINT
-}  // namespace config_momgr
-}  // namespace upll
-}  // namespace unc
+                                                                       // NOLINT
+}  // namesapce config_momgr
+}  // namesapce upll
+}  // namesapce unc

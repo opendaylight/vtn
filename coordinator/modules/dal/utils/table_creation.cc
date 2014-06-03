@@ -164,7 +164,7 @@ void build_create_table_script() {
   line += "/**\n"
           " * upll_create_table.sql\n"
           " *   Contains SQL commands to create all the tables need for UPLL\n"
-          " */\n";
+          " */\n"; 
   printf("\n%s", line.c_str());
 
   for (cfg_idx = 0; cfg_idx < kUpllDbNumCfgId; cfg_idx++) {
@@ -192,31 +192,25 @@ void build_create_table_script() {
       line += " ";
 
       // data type
-      line += get_data_type_str(uudschema::ColumnDbDataTypeId(
-              tbl_idx,
-              col_idx));
+      line += get_data_type_str(uudschema::ColumnDbDataTypeId(tbl_idx, col_idx));
 
       // dimension
       if (uudschema::ColumnDbArraySize(tbl_idx, col_idx) > 1 &&
           uudschema::ColumnDbDataTypeId(tbl_idx, col_idx) != SQL_BINARY) {
         line += "(";
         memset(size_str, '0', 4);
-        sprintf(size_str, "%zd", uudschema::ColumnDbArraySize(
-                tbl_idx,
-                col_idx));
+        sprintf(size_str, "%zd", uudschema::ColumnDbArraySize(tbl_idx, col_idx));
         line += size_str;
         line += ")";
       }
-
+      
       // default
       line += " default ";
       def_type = get_default_type(uudschema::ColumnName(tbl_idx, col_idx),
-                                  uudschema::ColumnDbDataTypeId(tbl_idx,
-                                                                col_idx));
+                                  uudschema::ColumnDbDataTypeId(tbl_idx, col_idx));
       if (def_type == kDefaultTypeBinary) {
         line += "'";
-        for (uint16_t i = 0; i < uudschema::ColumnDbArraySize(tbl_idx,
-                                                              col_idx); i++) {
+        for (uint16_t i = 0; i < uudschema::ColumnDbArraySize(tbl_idx, col_idx); i++) {
           line+= get_default_str((UpllDbCfgId)cfg_idx, def_type);
         }
         line += "'";
@@ -238,8 +232,7 @@ void build_create_table_script() {
     // Primary Keys
     line += "PRIMARY KEY(";
     first = true;
-    for (col_idx = 0; col_idx < uudschema::TableNumPkCols(tbl_idx);
-         col_idx++) {
+    for (col_idx = 0; col_idx < uudschema::TableNumPkCols(tbl_idx); col_idx++) {
       if (first == false) {
         line += ", ";
       } else {
@@ -283,8 +276,7 @@ void build_create_table_script() {
         } else {
           first = false;
         }
-        line += uudschema::ColumnName(uudschema::TableParentIndex(tbl_idx),
-                                      col_idx);
+        line += uudschema::ColumnName(uudschema::TableParentIndex(tbl_idx), col_idx);
       }
       line += "));";
       printf("\n  %s", line.c_str());

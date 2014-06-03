@@ -31,9 +31,10 @@ const usess_conf_common_t UsessConfCommon::kDefaultConf_ = {
  * @brief   Constructor.
  * @param   nothing.
  * @return  nothing.
- * @note
+ * @note    
  */
-UsessConfCommon::UsessConfCommon(void) {
+UsessConfCommon::UsessConfCommon(void)
+{
   data_ = kDefaultConf_;
 }
 
@@ -41,18 +42,20 @@ UsessConfCommon::UsessConfCommon(void) {
  * @brief   Destructor.
  * @param   nothing.
  * @return  nothing.
- * @note
+ * @note    
  */
-UsessConfCommon::~UsessConfCommon(void) {
+UsessConfCommon::~UsessConfCommon(void)
+{
 }
 
 /*
  * @brief   Configuration file data load.
  * @param   nothing.
  * @return  Processing result.
- * @note
+ * @note    
  */
-usess_ipc_err_e UsessConfCommon::LoadConf(void) {
+usess_ipc_err_e UsessConfCommon::LoadConf(void)
+{
   pfc::core::ModuleConfBlock conf_block(kConfBlockName_);
 
 
@@ -80,9 +83,10 @@ usess_ipc_err_e UsessConfCommon::LoadConf(void) {
  * @brief   configuration data access.
  * @param   nothing.
  * @return  Processing result.
- * @note
+ * @note    
  */
-const usess_conf_common_t& UsessConfCommon::data(void) const {
+const usess_conf_common_t& UsessConfCommon::data(void) const
+{
   return data_;
 }
 

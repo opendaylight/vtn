@@ -26,41 +26,41 @@ class CtrlrMgr {
  public:
   static const uint32_t CTRLR_NAME_LEN = 31;
   class Ctrlr {
-   public:
-    friend class CtrlrMgr;
-    Ctrlr(const char *name, unc_keytype_ctrtype_t type, const char *version)
+    public:
+      friend class CtrlrMgr;
+      Ctrlr(const char *name, unc_keytype_ctrtype_t type, const char *version)
         :name_(name), type_(type), version_(version) {
-          invalid_config_ = false;
-          audit_done_ = false;
-          config_done_ = false;
-          datatype_ = UPLL_DT_CANDIDATE;
-        }
-    Ctrlr(const Ctrlr &ctrlr, upll_keytype_datatype_t datatype)
+        invalid_config_ = false;
+        audit_done_ = false;
+        config_done_ = false;
+        datatype_ = UPLL_DT_CANDIDATE;
+      }
+      Ctrlr(const Ctrlr &ctrlr, upll_keytype_datatype_t datatype)
         :name_(ctrlr.name_), version_(ctrlr.version_) {
-          UPLL_FUNC_TRACE;
-          type_ = ctrlr.type_;
-          invalid_config_ = ctrlr.invalid_config_;
-          audit_done_ = ctrlr.audit_done_;
-          config_done_ = ctrlr.config_done_;
-          datatype_ = datatype;
-        }
-    ~Ctrlr() {
-      UPLL_FUNC_TRACE;
-      name_.clear();
-      version_.clear();
-    }
+        UPLL_FUNC_TRACE;
+        type_ = ctrlr.type_;
+        invalid_config_ = ctrlr.invalid_config_;
+        audit_done_ = ctrlr.audit_done_;
+        config_done_ = ctrlr.config_done_;
+        datatype_ = datatype;
+      }
+      ~Ctrlr() {
+        UPLL_FUNC_TRACE;
+        name_.clear();
+        version_.clear();
+      }
 
-   private:
-    std::string name_;
-    unc_keytype_ctrtype_t type_;
-    std::string version_;
-    bool audit_done_;      // true, if audit is completed.
-    // available only in running
-    bool config_done_;     // available only in running
-    bool invalid_config_;  // Invalid config status after audit failure
-    // available only in running
-    upll_keytype_datatype_t datatype_;
-    // if it is Running, Ctrlr is available in both candidate and running
+    private:
+      std::string name_;
+      unc_keytype_ctrtype_t type_;
+      std::string version_;
+      bool audit_done_;      // true, if audit is completed.
+                             // available only in running
+      bool config_done_;     // available only in running
+      bool invalid_config_;  // Invalid config status after audit failure
+                             // available only in running
+      upll_keytype_datatype_t datatype_;
+        // if it is Running, Ctrlr is available in both candidate and running
   };  // Class Ctrlr
 
   upll_rc_t Add(const Ctrlr &ctrlr, const upll_keytype_datatype_t datatype);
@@ -121,5 +121,5 @@ class CtrlrMgr {
 }  // namespace config_momgr
 }  // namespace upll
 }  // namespace unc
-// NOLINT
+                                                                       // NOLINT
 #endif  // UPLL_CTRLR_MGR_HH_

@@ -541,7 +541,8 @@ UncRespCode TransactionRequest::EndTransaction(
     OdbcmConnectionHandler *db_conn,
     uint32_t session_id,
     uint32_t config_id,
-    TcTransEndResult trans_res ) {
+    TcTransEndResult trans_res,
+    bool audit_flag) {
   UncRespCode ret_code = UNC_RC_SUCCESS;
   PhysicalCore *physical_core = PhysicalLayer::get_instance()->
       get_physical_core();
@@ -615,7 +616,7 @@ UncRespCode TransactionRequest::EndTransaction(
       } else if (controller_type == UNC_CT_VNP) {
         pfc_log_debug("VNP Controller Type");
         cli_session = vnp_drv_handler.ResetAndGetSession();
-      } else if ( controller_type == UNC_CT_ODC ) {
+      } else if (controller_type == UNC_CT_ODC ) {
         pfc_log_debug("ODC Controller Type");
         cli_session = odc_drv_handler.ResetAndGetSession();
       } else {
@@ -623,6 +624,7 @@ UncRespCode TransactionRequest::EndTransaction(
             "UNKNOWN type");
         continue;
       }
+      if(audit_flag != false) {
       string domain_id = "";
       driver_request_header rqh = {uint32_t(0), uint32_t(0), controller_name,
           domain_id, UNC_OP_DELETE, uint32_t(0),
@@ -636,14 +638,17 @@ UncRespCode TransactionRequest::EndTransaction(
       driver_response_header rsp;
       if (controller_type == UNC_CT_PFC) {
         driver_response = pfc_drv_handler.SendReqAndGetResp(rsp);
-      } else if (controller_type == UNC_CT_VNP) {
+      }
+      else if (controller_type == UNC_CT_VNP) {
         driver_response = vnp_drv_handler.SendReqAndGetResp(rsp);
-      } else if (controller_type == UNC_CT_ODC) {
+      }
+      else if (controller_type == UNC_CT_ODC) {
         driver_response = odc_drv_handler.SendReqAndGetResp(rsp);
       }
       if (err != 0 || driver_response != UNC_RC_SUCCESS) {
         pfc_log_error("Delete response from driver for controller %s"
             "is %d err=%d", controller_name.c_str(), driver_response, err);
+      }
       }
     } else {
       pfc_log_error("Could not able to find type for %s",
@@ -652,10 +657,10 @@ UncRespCode TransactionRequest::EndTransaction(
   }
   pfc_log_debug("End Trans:Deleted Controller Iterated ");
   // Sending the 'Created' Controller Configuration Notification
-  SendControllerInfo(db_conn, UNC_OP_CREATE, session_id, config_id);
+  SendControllerInfo(db_conn, UNC_OP_CREATE, session_id, config_id, audit_flag);
   pfc_log_debug("End Trans:Created Controller Iterated ");
   // Sending the 'Updated' Controller Request to Driver
-  SendControllerInfo(db_conn, UNC_OP_UPDATE, session_id, config_id);
+  SendControllerInfo(db_conn, UNC_OP_UPDATE, session_id, config_id, audit_flag);
   pfc_log_debug("End Trans:Updated Controller Iterated ");
   itc_trans->set_trans_state(TRANS_END);
   pfc_log_debug("End Trans:Response Code = %d", ret_code);
@@ -1096,7 +1101,8 @@ UncRespCode TransactionRequest::SendBoundaryNotification(
 void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
                                             uint32_t operation_type,
                                             uint32_t session_id,
-                                            uint32_t config_id) {
+                                            uint32_t config_id,
+                                            bool audit_flag) {
   vector<key_ctr_t> controller_info;
   UncRespCode err = UNC_RC_SUCCESS;
   IPCClientDriverHandler pfc_drv_handler(UNC_CT_PFC, err);
@@ -1182,7 +1188,7 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
     } else if (controller_type == UNC_CT_VNP) {
       pfc_log_debug("VNP Controller type");
       cli_session = vnp_drv_handler.ResetAndGetSession();
-    } else if ( controller_type == UNC_CT_ODC ) {
+    } else if (controller_type == UNC_CT_ODC ) {
       pfc_log_debug("ODC Controller type");
       cli_session = odc_drv_handler.ResetAndGetSession();
     } else {
@@ -1212,6 +1218,7 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
     pfc_log_info("%s", IpctUtil::get_string(*val_ctr_new).c_str());
     // Send the request to driver
     UncRespCode driver_response = UNC_RC_SUCCESS;
+    if(audit_flag != false) {
     driver_response_header rsp;
 
     if (controller_type == UNC_CT_PFC) {
@@ -1220,8 +1227,9 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
     if (controller_type == UNC_CT_VNP) {
       driver_response = vnp_drv_handler.SendReqAndGetResp(rsp);
     }
-    if ( controller_type == UNC_CT_ODC ) {
+    if (controller_type == UNC_CT_ODC ) {
       driver_response = odc_drv_handler.SendReqAndGetResp(rsp);
+    }
     }
     delete val_ctr_new;
     val_ctr_new = NULL;
@@ -1262,8 +1270,7 @@ UncRespCode TransactionRequest::GetModifiedController(
       db_conn, vec_key_ctr_modified,
       row_status);
   pfc_log_debug("Controller:GetModifiedRows return code = %d", ret_code);
-  if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS ||
-      ret_code == UNC_UPPL_RC_ERR_DB_GET) {
+  if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS || ret_code == UNC_UPPL_RC_ERR_DB_GET) {
     pfc_log_info(
           "Error retrieving GetModifiedRows, return txn error");
     TcLibModule* tclib_ptr = static_cast<TcLibModule*>
@@ -1384,8 +1391,7 @@ UncRespCode TransactionRequest::GetModifiedDomain(
       db_conn, vec_key_ctr_domain_modified,
       row_status);
   pfc_log_debug("Domain:GetModifiedRows return code = %d", ret_code);
-  if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS ||
-      ret_code == UNC_UPPL_RC_ERR_DB_GET) {
+  if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS || ret_code == UNC_UPPL_RC_ERR_DB_GET) {
     pfc_log_info(
           "Error retrieving GetModifiedRows, return txn error");
     TcLibModule* tclib_ptr = static_cast<TcLibModule*>
@@ -1468,21 +1474,20 @@ UncRespCode TransactionRequest::GetModifiedBoundary(
       db_conn, vec_key_boundary_modified,
       row_status);
   pfc_log_debug("Controller:GetModifiedRows return code = %d", ret_code);
-  if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS ||
-      ret_code == UNC_UPPL_RC_ERR_DB_GET) {
-    pfc_log_info(
-        "Error retrieving GetModifiedRows from running db, return txn error");
+   if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS || ret_code == UNC_UPPL_RC_ERR_DB_GET) {
+     pfc_log_info(
+          "Error retrieving GetModifiedRows from running db, return txn error");
     TcLibModule* tclib_ptr = static_cast<TcLibModule*>
-        (TcLibModule::getInstance(TCLIB_MODULE_NAME));
+          (TcLibModule::getInstance(TCLIB_MODULE_NAME));
     tclib_ptr->TcLibWriteControllerInfo("",
                                         UNC_RC_INTERNAL_ERR,
                                         0);
-    return UNC_UPPL_RC_ERR_TRANSACTION_START;
+    return UNC_UPPL_RC_ERR_TRANSACTION_START; 
   }
   for (uint32_t config_count = 0; \
-       config_count < vec_key_boundary_modified.size(); config_count++) {
+  config_count < vec_key_boundary_modified.size(); config_count++) {
     key_boundary_t *ptr_key_boundary = reinterpret_cast<key_boundary_t *>
-        (vec_key_boundary_modified[config_count]);
+    (vec_key_boundary_modified[config_count]);
     if (ptr_key_boundary == NULL) {
       continue;
     }
@@ -1505,11 +1510,11 @@ UncRespCode TransactionRequest::GetModifiedBoundary(
         pfc_log_info(
             "Error retrieving information from running db, return txn error");
         TcLibModule* tclib_ptr = static_cast<TcLibModule*>
-            (TcLibModule::getInstance(TCLIB_MODULE_NAME));
+          (TcLibModule::getInstance(TCLIB_MODULE_NAME));
         tclib_ptr->TcLibWriteControllerInfo("",
-                                            UNC_RC_INTERNAL_ERR,
-                                            0);
-
+                                        UNC_RC_INTERNAL_ERR,
+                                        0);
+        
         return UNC_UPPL_RC_ERR_TRANSACTION_START;
       } else {
         pfc_log_debug(

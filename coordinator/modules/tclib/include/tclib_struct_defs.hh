@@ -136,7 +136,7 @@ typedef struct {
   unc_keytype_datatype_t db_type;
   TcServiceType service_type;
 }TcAuditConfigMsg;
-}  // namespace tclib
-}  // namespace unc
+}  // tclib
+}  // unc
 
 #endif /* _UNC_TCLIB_STRUCT_DEFS_HH_ */

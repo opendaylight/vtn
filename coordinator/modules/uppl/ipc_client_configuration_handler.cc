@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -36,7 +36,7 @@ Ktclasses,Audit,Import and ITC class.
 IPCClientDriverHandler::IPCClientDriverHandler(
     unc_keytype_ctrtype_t cntr_type, UncRespCode &err) {
   if (cntr_type == UNC_CT_PFC ||
-      cntr_type == UNC_CT_VNP ||
+      cntr_type == UNC_CT_VNP || 
       cntr_type == UNC_CT_ODC ) {
     controller_type = cntr_type;
     PhysicalCore* physical_core = PhysicalCore::get_physical_core();
@@ -149,11 +149,11 @@ UncRespCode IPCClientDriverHandler::ConvertDriverErrorCode(
           return UNC_UPPL_RC_ERR_INVALID_STATE;
         case UNC_DRV_RC_ERR_ATTRIBUTE_SYNTAX:
           return UNC_UPPL_RC_ERR_CFG_SYNTAX;
+        case UNC_RC_CTR_CONFIG_STATUS_ERR:
         case UNC_DRV_RC_ERR_ATTRIBUTE_SEMANTIC:
           return UNC_UPPL_RC_ERR_CFG_SEMANTIC;
         case UNC_RC_CTR_DISCONNECTED:
         case UNC_RC_REQ_NOT_SENT_TO_CTR:
-        case UNC_RC_CTR_CONFIG_STATUS_ERR:
         case UNC_RC_CTR_BUSY:
           return UNC_UPPL_RC_ERR_CTRLR_DISCONNECTED;
         case UNC_RC_NO_SUCH_INSTANCE:

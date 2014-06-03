@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -428,6 +428,35 @@ enum val_nwm_host_index {
   UPLL_IDX_WAIT_TIME_NWMH
 };
 
+/* index enumeration for val_vterm structure */
+enum val_vterm_index {
+  UPLL_IDX_CONTROLLER_ID_VTERM = 0,
+  UPLL_IDX_DOMAIN_ID_VTERM,
+  UPLL_IDX_DESC_VTERM
+};
+
+/* index enumeration for val_rename_vterm structure */
+enum val_rename_vterm_index {
+  UPLL_IDX_NEW_NAME_RVTERM = 0
+};
+
+/* index enumeration for val_vterm_st structure */
+enum val_vterm_st_index {
+  UPLL_IDX_OPER_STATUS_VTERMS = 0
+};
+
+/* index enumeration for val_vterm_if structure */
+enum val_vterm_if_index {
+  UPLL_IDX_ADMIN_STATUS_VTERMI = 0,
+  UPLL_IDX_DESC_VTERMI,
+  UPLL_IDX_PM_VTERMI
+};
+
+/* index enumeration for val_vterm_if_st structure */
+enum val_vterm_if_st_index {
+  UPLL_IDX_OPER_STATUS_VTERMIS = 0,
+};
+
 /* enums used for pom IPC structures */
 
 /* IP type enum in val_flowlist */
@@ -556,15 +585,16 @@ enum val_flowfilter_entry_st_index {
 
 /* valid array enum in val_flowfilter_entry */
 enum val_flowfilter_entry_index {
-  UPLL_IDX_FLOWLIST_NAME_FFE = 0, /* flowlist_name */
-  UPLL_IDX_ACTION_FFE,            /* action */
-  UPLL_IDX_REDIRECT_NODE_FFE,     /* redirect_node */
-  UPLL_IDX_REDIRECT_PORT_FFE,     /* redirect_port */
-  UPLL_IDX_MODIFY_DST_MAC_FFE,    /* modify_dstmac */
-  UPLL_IDX_MODIFY_SRC_MAC_FFE,    /* modify_srcmac */
-  UPLL_IDX_NWM_NAME_FFE,          /* nwm_name */
-  UPLL_IDX_DSCP_FFE,              /* dscp */
-  UPLL_IDX_PRIORITY_FFE           /* priority */
+  UPLL_IDX_FLOWLIST_NAME_FFE = 0,  /* flowlist_name */
+  UPLL_IDX_ACTION_FFE,             /* action */
+  UPLL_IDX_REDIRECT_NODE_FFE,      /* redirect_node */
+  UPLL_IDX_REDIRECT_PORT_FFE,      /* redirect_port */
+  UPLL_IDX_REDIRECT_DIRECTION_FFE, /* redirect direction */
+  UPLL_IDX_MODIFY_DST_MAC_FFE,     /* modify_dstmac */
+  UPLL_IDX_MODIFY_SRC_MAC_FFE,     /* modify_srcmac */
+  UPLL_IDX_NWM_NAME_FFE,           /* nwm_name */
+  UPLL_IDX_DSCP_FFE,               /* dscp */
+  UPLL_IDX_PRIORITY_FFE            /* priority */
 };
 
 /* valid array enum in val_rename_policingprofile */

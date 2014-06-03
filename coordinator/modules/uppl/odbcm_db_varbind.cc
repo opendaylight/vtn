@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -660,9 +660,7 @@ ODBCM_RC_STATUS DBVarbind::fetch_is_row_exists_status(
     "IsRowExists: %d, cs_row_status:%d,",
     p_isrowexists->is_exists,
     p_isrowexists->cs_row_status);
-  if (p_isrowexists->ind_exists != SQL_NULL_DATA &&
-      p_isrowexists->ind_row_status != SQL_NULL_DATA &&
-      p_isrowexists->is_exists == EXISTS &&
+  if (p_isrowexists->is_exists == EXISTS &&
       p_isrowexists->cs_row_status != UNKNOWN) {
     return ODBCM_RC_ROW_EXISTS;
   }
@@ -679,8 +677,10 @@ ODBCM_RC_STATUS DBVarbind::fetch_is_row_exists_status(
 ODBCM_RC_STATUS DBVarbind::bind_is_row_exists_output(
     std::vector<TableAttrSchema> &column_attr, HSTMT &r_hstmt) {
   SQLRETURN odbc_rc = ODBCM_RC_SUCCESS;
-  odbc_rc = SQLBindCol(r_hstmt, 1, SQL_C_SHORT, &p_isrowexists->is_exists,
-                       0, &p_isrowexists->ind_exists);
+  odbc_rc = SQLBindCol(
+    r_hstmt, 1, SQL_C_SHORT, reinterpret_cast<SQLSMALLINT*>(
+        &p_isrowexists->is_exists), 0,
+      (&p_isrowexists->cbIsExistsNum));
   if (odbc_rc == SQL_ERROR || odbc_rc == SQL_INVALID_HANDLE) {
     pfc_log_error("ODBCM::DBVarbind::bind o/p: "
         "IsRowExists bind is_exists error:"
@@ -691,8 +691,9 @@ ODBCM_RC_STATUS DBVarbind::bind_is_row_exists_output(
 // odbcm_debug_info("ODBCM::DBVarbind::bind o/p: IsRowExists col1-"
 //      "is_exists: done");
 
-  odbc_rc = SQLBindCol(r_hstmt, 2, SQL_C_SHORT, &p_isrowexists->cs_row_status,
-                       0, &p_isrowexists->ind_row_status);
+  odbc_rc = SQLBindCol(r_hstmt, 2, SQL_C_SHORT, reinterpret_cast<SQLSMALLINT*>(
+                &p_isrowexists->cs_row_status), 0,
+      (&p_isrowexists->cbRowStatusNum));
   if (odbc_rc == SQL_ERROR||odbc_rc == SQL_INVALID_HANDLE) {
     pfc_log_error("ODBCM::DBVarbind::bind o/p: IsRowExists"
         "bind cs_row_status error::SQL_ERROR or SQL_INVALID_HANDLE");

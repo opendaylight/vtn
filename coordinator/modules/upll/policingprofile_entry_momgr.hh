@@ -19,13 +19,13 @@ namespace upll {
 namespace kt_momgr {
 
 /* This file declares interfaces for keyType KT_POLICINGPROFILE_ENTRY */
-  /*
-   * @brief  PolicingProfileEntryMoMgr class handles all the request
-   *         received from service.
-   */
+/*
+ * @brief  PolicingProfileEntryMoMgr class handles all the request
+ *         received from service.
+ */
 
-  class PolicingProfileEntryMoMgr: public MoMgrImpl {
-   private:
+class PolicingProfileEntryMoMgr: public MoMgrImpl {
+  private:
     /**
      * Member Variable for PolicingProfileEntryBindInfo.
      */
@@ -48,7 +48,7 @@ namespace kt_momgr {
     static BindInfo       rename_flowlist_pp_entry_main_tbl[];
     /**
      * Member Variable for PolicingProfileEntryBindInfo.
-     */
+    */
     static BindInfo       rename_flowlist_pp_entry_ctrl_tbl[];
     /**
      * @brief  Validates the Attribute of a Particular Class.
@@ -72,8 +72,8 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_CFG_SYNTAX  validation failed.
      */
     upll_rc_t ValidateRate(
-        val_policingprofile_entry_t *val_policingprofile_entry,
-        uint32_t operation);
+       val_policingprofile_entry_t *val_policingprofile_entry,
+       uint32_t operation);
 
     /**
      * @Brief  Validates the syntax of red_action,green_action,yellow_action
@@ -86,8 +86,8 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_CFG_SYNTAX  validation failed.
      */
     upll_rc_t ValidateColorAction(
-        val_policingprofile_entry_t *val_policingprofile_entry,
-        uint32_t operation);
+       val_policingprofile_entry_t *val_policingprofile_entry,
+       uint32_t operation);
 
     /**
      * @Brief  Validates the syntax ofred_action_priority,green_action_priority,
@@ -101,8 +101,8 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_CFG_SYNTAX  validation failed.
      */
     upll_rc_t  ValidateColorPriority(
-        val_policingprofile_entry_t *val_policingprofile_entry,
-        uint32_t operation);
+       val_policingprofile_entry_t *val_policingprofile_entry,
+       uint32_t operation);
 
     /**
      * @Brief  Validates the syntax of Precedence for red,green,yellow
@@ -115,8 +115,8 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_CFG_SYNTAX  validation failed.
      */
     upll_rc_t  ValidateColorPrecedence(
-        val_policingprofile_entry_t *val_policingprofile_entry,
-        uint32_t operation);
+       val_policingprofile_entry_t *val_policingprofile_entry,
+       uint32_t operation);
 
     /**
      * @Brief  Validates the syntax of dscp for red,green,yellow
@@ -129,13 +129,13 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_CFG_SYNTAX  validation failed.
      */
     upll_rc_t  ValidateColorDscp(
-        val_policingprofile_entry_t *val_policingprofile_entry,
-        uint32_t operation);
+       val_policingprofile_entry_t *val_policingprofile_entry,
+       uint32_t operation);
 
     /**
      * @Brief  Validates syntax of policingprofile name and checks whether it
      *         exists in KT_POLICINGPROFILE table, if not exists sends
-     SEMANTIC error.
+	           SEMANTIC error.
      *
      * @param[in]  policing_profile_name  policingprofile_name.
      *
@@ -144,7 +144,7 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_SEMANTIC    name is not exists in table
      */
     upll_rc_t ValidatePolicingProfileName(ConfigKeyVal *ikey, DalDmlIntf *dmi,
-                                          IpcReqRespHeader *req);
+        IpcReqRespHeader *req);
 
     /**
      * @Brief  Validates the syntax of the specified key and value structure
@@ -167,17 +167,17 @@ namespace kt_momgr {
      *         key structure.
      *
      * @param[in]  key_policingprofile_entry  KT_POLICING_PROFILE_ENTRY
-     key structure.
+	                                      key structure.
      *
      * @retval  UPLL_RC_SUCCESS         validation succeeded.
      * @retval  UPLL_RC_ERR_CFG_SYNTAX  validation failed.
      */
-    upll_rc_t ValidatePolicingProfileEntryKey(
-        ConfigKeyVal *key, uint32_t operation);
+     upll_rc_t ValidatePolicingProfileEntryKey(
+           ConfigKeyVal *key, uint32_t operation);
 
     /**
      * @Brief  Validates the syntax for KT_POLICING_PROFILE_ENTRY
-     keytype value structure.
+               keytype value structure.
      *
      * @param[in]  key_policingprofile_entry  KT_POLICING_PROFILE_ENTRY
      *                                        key structure.
@@ -208,7 +208,7 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_INVALID_OPTION2  Option2 is not valid.
      */
     upll_rc_t ValidateCapability(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                                 const char* ctrlr_name = NULL);
+                                   const char* ctrlr_name = NULL);
 
     /**
      * @Brief  Checks if the specified key type and
@@ -223,7 +223,7 @@ namespace kt_momgr {
      */
     upll_rc_t ValPolicingProfileEntryAttributeSupportCheck(
         val_policingprofile_entry_t *val_policingprofile_entry,
-        const uint8_t* attrs);
+       const uint8_t* attrs);
 
     /**
      * @Brief  Checks if the specified green_action, green_action_priority,
@@ -234,9 +234,8 @@ namespace kt_momgr {
      * @param[in]  attrs                      Refers supported capability file attributes
      *                                        for the given controller name.
      */
-    void ValidateGreenFieldAttribute(val_policingprofile_entry_t *
-                                     val_policingprofile_entry,
-                                     const uint8_t *attrs);
+     void ValidateGreenFieldAttribute(val_policingprofile_entry_t *
+      val_policingprofile_entry, const uint8_t *attrs);
 
     /**
      * @Brief  Checks if the specified yellow_action, yellow_action_priority,
@@ -247,9 +246,8 @@ namespace kt_momgr {
      * @param[in]  attrs                      Refers supported capability file
      *                                        attributes for the given controller name.
      */
-    void ValidateYellowFieldAttribute(val_policingprofile_entry_t *
-                                      val_policingprofile_entry,
-                                      const uint8_t *attrs);
+      void ValidateYellowFieldAttribute(val_policingprofile_entry_t *
+        val_policingprofile_entry, const uint8_t *attrs);
 
     /**
      * @Brief  Checks if the specified red_action, red_action_priority,
@@ -259,14 +257,13 @@ namespace kt_momgr {
      * @param[in]  val_policingprofile_entry  value structure.
      * @param[in]  attrs                      Refers supported capability file attributes
      */
-    void ValidateRedFieldAttribute(val_policingprofile_entry_t *
-                                   val_policingprofile_entry,
-                                   const uint8_t *attrs);
+     void ValidateRedFieldAttribute(val_policingprofile_entry_t *
+      val_policingprofile_entry, const uint8_t *attrs);
 
     /**
      * @Brief  Validates the policingprofile_name in key_sttruct exists in
      *         VTN/VBR/VBRIF policingmap table, if exists UPDATE/DELETE
-     *         opearations are not allowed for val struct fields .
+	 *         opearations are not allowed for val struct fields .
      *
      * @param[in]  policingprofile_name  name.
      *
@@ -278,7 +275,7 @@ namespace kt_momgr {
                                                         IpcReqRespHeader *req);
 
 
-   public:
+  public:
     /**
      * @brief  PolicingProfileEntryMoMgr Class Constructor.
      */
@@ -299,7 +296,7 @@ namespace kt_momgr {
      * @brief  Validation or the Incoming Attributes of the Class.
      *
      * @param[out]  val      This Contains the pointer to the Class
-     for which memory has to be allocated.
+                             for which memory has to be allocated.
      * @param[in]   indx     Describes the Attributes.
      * @param[in]   valid    Describes the Pointer to attributes of Class
      * @param[in]   dt_type  Describes Configiration Information.
@@ -310,15 +307,15 @@ namespace kt_momgr {
      */
 
     upll_rc_t GetValid(void *val,
-                       uint64_t indx,
-                       uint8_t *&valid,
-                       upll_keytype_datatype_t dt_type,
-                       MoMgrTables tbl);
+                    uint64_t indx,
+                    uint8_t *&valid,
+                    upll_keytype_datatype_t dt_type,
+                    MoMgrTables tbl);
     /**
      * @brief  Allocates Memory for the Incoming Pointer to the Class.
      *
      * @param[out]  ck_val   This Contains the pointer to the Class
-     for which memory has to be allocated.
+                             for which memory has to be allocated.
      * @param[in]   dt_type  Describes Configiration Information.
      * @param[in]   tbl      Describes the Destination table Information.
      *
@@ -327,15 +324,15 @@ namespace kt_momgr {
      */
 
     upll_rc_t AllocVal(ConfigVal *&ck_val,
-                       upll_keytype_datatype_t dt_type,
-                       MoMgrTables tbl);
+                    upll_keytype_datatype_t dt_type,
+                     MoMgrTables tbl);
 
     /**
      * @brief  Method Updates the ConfigStatus for AuditConfigiration.
      *
      * @param[in]   cs_status    either UNC_CS_INVALID or UNC_CS_APPLIED.
      * @param[in]   phase        Describes Commit Control Status
-     Information.
+                                 Information.
      * @param[in]   ckv_running  Describes the Response Code.
      * @param[in]   dmi          Pointer to the DalDmlIntf(DB Interface)
      *
@@ -349,7 +346,7 @@ namespace kt_momgr {
 
     /**
      * @brief  Method used to fill the CongigKeyVal with the Parent Class
-     Information.
+               Information.
      *
      * @param[out]  okey        This Contains the pointer to the
      *                          ConfigKeyVal Class for which fields have to be
@@ -363,14 +360,14 @@ namespace kt_momgr {
      */
 
     upll_rc_t GetChildConfigKey(ConfigKeyVal *&okey,
-                                ConfigKeyVal *parent_key);
+                             ConfigKeyVal *parent_key);
 
     /**
      * @brief  Method used to get the RenamedUncKey.
      *
      * @param[out]  ctrlr_key  This Contains the pointer to the Class for which
      *                         fields have to be updated with values
-     from the parent Class.
+                               from the parent Class.
      * @param[in]   dt_type    Describes Configiration Information.
      * @param[in]   dmi        Pointer to DalDmlIntf Class.
      * @param[in]   ctrlr_id   Describes the Controller Name.
@@ -380,17 +377,17 @@ namespace kt_momgr {
      */
 
     upll_rc_t GetRenamedUncKey(ConfigKeyVal *ctrlr_key,
-                               upll_keytype_datatype_t dt_type,
-                               DalDmlIntf *dmi, uint8_t *ctrlr_id);
+                            upll_keytype_datatype_t dt_type,
+                            DalDmlIntf *dmi, uint8_t *ctrlr_id);
 
     /**
      * @brief  Method used to Duplicate the ConfigkeyVal.
      *
      * @param[out]  okey  This Contains the pointer to the
      *                    Class for which fields have to be
-     updated with values from the Request.
+                          updated with values from the Request.
      * @param[in]   req   This Contains the pointer to the Class
-     which is used for the Duplication .
+                          which is used for the Duplication .
      * @param[in]   tbl   Describes the Destination tables.
      *
      * @retval  UPLL_RT_SUCCESS      Successfull completion.
@@ -398,8 +395,8 @@ namespace kt_momgr {
      */
 
     upll_rc_t DupConfigKeyVal(ConfigKeyVal *&okey,
-                              ConfigKeyVal *&req,
-                              MoMgrTables tbl);
+                           ConfigKeyVal *&req,
+                           MoMgrTables tbl);
 
     /**
      * @brief  Method used for Validation before Merge.
@@ -415,8 +412,8 @@ namespace kt_momgr {
      */
 
     upll_rc_t MergeValidate(unc_key_type_t keytype,
-                            const char *ctrlr_id,
-                            ConfigKeyVal *ikey, DalDmlIntf *dmi);
+                         const char *ctrlr_id,
+                         ConfigKeyVal *ikey, DalDmlIntf *dmi);
 
     /**
      * @brief  Method used for Rename Operation.
@@ -431,8 +428,8 @@ namespace kt_momgr {
      */
 
     upll_rc_t RenameMo(IpcReqRespHeader *req,
-                       ConfigKeyVal *ikey,
-                       DalDmlIntf *dmi, const char *ctrlr_id);
+                    ConfigKeyVal *ikey,
+                    DalDmlIntf *dmi, const char *ctrlr_id);
 
 
     /**
@@ -446,14 +443,14 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_GENERIC  Failure.
      */
     upll_rc_t IsReferenced(
-        ConfigKeyVal *ikey,
-        upll_keytype_datatype_t dt_type, DalDmlIntf *dmi);
+                    ConfigKeyVal *ikey,
+                    upll_keytype_datatype_t dt_type, DalDmlIntf *dmi);
 
     /**
      * @brief  Method used for RenamedControllerkey(PfcName).
      *
      * @param[out]  ikey        Contains the Pointer to ConfigkeyVal Class
-     and contains the Pfc Name.
+                                and contains the Pfc Name.
      * @param[in]   dt_type     Describes Configiration Information.
      * @param[in]   dmi         Pointer to DalDmlIntf Class.
      * @param[in]   ctrlr_name  Describes the Controller Name.
@@ -463,15 +460,15 @@ namespace kt_momgr {
      */
 
     upll_rc_t GetRenamedControllerKey(ConfigKeyVal *ikey,
-                                      upll_keytype_datatype_t dt_type,
-                                      DalDmlIntf *dmi,
-                                      controller_domain *ctrlr_dom = NULL);
+                                   upll_keytype_datatype_t dt_type,
+                                   DalDmlIntf *dmi,
+                                   controller_domain *ctrlr_dom = NULL);
 
     /**
      * @brief  Method used for TxCopyCandidateToRunning.
      *
      * @param[in]  keytype              Describes the followong keytype
-     undergoing the operation.
+                                        undergoing the operation.
      * @param[in]  ctrlr_commit_status  Pointer to the CtrlrCommitStatusList Class
      * @param[in]  dmi                  Pointer to DalDmlIntf Class.
      *
@@ -480,10 +477,9 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE  No Recorde Exists in database.
      */
 
-    upll_rc_t TxCopyCandidateToRunning(
-        unc_key_type_t keytype,
-        CtrlrCommitStatusList *ctrlr_commit_status,
-        DalDmlIntf *dmi);
+    upll_rc_t TxCopyCandidateToRunning(unc_key_type_t keytype,
+                                    CtrlrCommitStatusList *ctrlr_commit_status,
+                                    DalDmlIntf *dmi);
 
     /**
      * @brief      Method used to Update the Values in the specified key type.
@@ -496,8 +492,8 @@ namespace kt_momgr {
      * @retval     UPLL_RC_ERR_GENERIC        Failure case.
      */
     upll_rc_t UpdateMo(IpcReqRespHeader *req,
-                       ConfigKeyVal *ikey,
-                       DalDmlIntf *dmi);
+                             ConfigKeyVal *ikey,
+                             DalDmlIntf *dmi);
 
     /**
      * @brief  Method used for UpdateConfigStatus.
@@ -513,11 +509,11 @@ namespace kt_momgr {
      */
 
     upll_rc_t UpdateConfigStatus(ConfigKeyVal *key,
-                                 unc_keytype_operation_t op,
-                                 uint32_t driver_result,
-                                 ConfigKeyVal *nreq,
-                                 DalDmlIntf   *dmi,
-                                 ConfigKeyVal *ctrlr_key);
+                              unc_keytype_operation_t op,
+                              uint32_t driver_result,
+                              ConfigKeyVal *nreq,
+                              DalDmlIntf   *dmi,
+                              ConfigKeyVal *ctrlr_key);
 
     /**
      * @brief  Method used for Read Operation.
@@ -531,8 +527,8 @@ namespace kt_momgr {
      */
 
     upll_rc_t ReadMo(IpcReqRespHeader *req,
-                     ConfigKeyVal *ikey,
-                     DalDmlIntf *dmi);
+                  ConfigKeyVal *ikey,
+                  DalDmlIntf *dmi);
 
     /**
      * @brief  Method used for ReadSibling Operation.
@@ -546,8 +542,8 @@ namespace kt_momgr {
      */
 
     upll_rc_t ReadSiblingMo(IpcReqRespHeader *req,
-                            ConfigKeyVal *ikey,
-                            DalDmlIntf *dmi);
+                         ConfigKeyVal *ikey,
+                         DalDmlIntf *dmi);
 
     /**
      * @brief  Method used for Trasaction Vote Operation.
@@ -563,12 +559,12 @@ namespace kt_momgr {
      */
 
     upll_rc_t ReadRecord(IpcReqRespHeader *req,
-                         ConfigKeyVal *ikey,
-                         DalDmlIntf *dmi, unc_keytype_operation_t op);
+                      ConfigKeyVal *ikey,
+                      DalDmlIntf *dmi, unc_keytype_operation_t op);
 
     /**
      * @brief  Method GetPolicingprofileKeyVal used for checking
-     the refernce count for policngprofile object .
+               the refernce count for policngprofile object .
 
      * @param[out]  okey        Contains the Pointer to ConfigkeyVal Class
      *                          and contains the Pfc Name.
@@ -580,7 +576,7 @@ namespace kt_momgr {
      */
 
     upll_rc_t GetPolicingprofileKeyVal(ConfigKeyVal *&okey,
-                                       ConfigKeyVal *&ikey);
+                          ConfigKeyVal *&ikey);
 
     /**
      * @brief  Method to compare to keys
@@ -619,12 +615,12 @@ namespace kt_momgr {
      */
 
     upll_rc_t TxUpdateController(unc_key_type_t keytype,
-                                 uint32_t session_id,
-                                 uint32_t config_id,
-                                 uuc::UpdateCtrlrPhase phase,
-                                 set<string> *affected_ctrlr_set,
-                                 DalDmlIntf *dmi,
-                                 ConfigKeyVal **err_ckv);
+                                          uint32_t session_id,
+                                          uint32_t config_id,
+                                          uuc::UpdateCtrlrPhase phase,
+                                          set<string> *affected_ctrlr_set,
+                                          DalDmlIntf *dmi,
+                                          ConfigKeyVal **err_ckv);
 
     /**
      * @brief  Method TxUpdateProcess .
@@ -642,12 +638,12 @@ namespace kt_momgr {
      */
 
     upll_rc_t TxUpdateProcess(ConfigKeyVal *ck_main,
-                              IpcResponse *ipc_resp,
-                              unc_keytype_operation_t op,
-                              DalDmlIntf *dmi,
-                              controller_domain *ctrlr_dom,
-                              set<string> *affected_ctrlr_set,
-                              bool *driver_resp);
+                             IpcResponse *ipc_resp,
+                             unc_keytype_operation_t op,
+                             DalDmlIntf *dmi,
+                             controller_domain *ctrlr_dom,
+                             set<string> *affected_ctrlr_set,
+                             bool *driver_resp);
 
     /**
      * @brief  Method GetControllerSpan.
@@ -661,8 +657,7 @@ namespace kt_momgr {
      */
 
     upll_rc_t GetControllerSpan(ConfigKeyVal *ikey,
-                                upll_keytype_datatype_t dt_type,
-                                DalDmlIntf *dmi);
+                         upll_keytype_datatype_t dt_type, DalDmlIntf *dmi);
 
     /**
      * @brief  Method CopyToConfigKey.
@@ -676,7 +671,7 @@ namespace kt_momgr {
      */
 
     upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey,
-                              ConfigKeyVal *ikey);
+        ConfigKeyVal *ikey);
 
     /**
      * @brief  Method GetRenameKeyBindInfo.
@@ -689,7 +684,7 @@ namespace kt_momgr {
      */
 
     bool GetRenameKeyBindInfo(unc_key_type_t key_type,
-                              BindInfo *&binfo, int &nattr, MoMgrTables tbl);
+        BindInfo *&binfo, int &nattr, MoMgrTables tbl);
 
     /**
      * @brief  Method UpdatePolicingProfileEntryRenamed.
@@ -703,8 +698,8 @@ namespace kt_momgr {
      */
 
     upll_rc_t UpdatePolicingProfileEntryRenamed(
-        ConfigKeyVal *rename_info,
-        DalDmlIntf *dmi, upll_keytype_datatype_t data_type);
+      ConfigKeyVal *rename_info,
+      DalDmlIntf *dmi, upll_keytype_datatype_t data_type);
 
     /**
      * @brief  Method to get Parent ConfigKeyVal
@@ -742,7 +737,7 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
     upll_rc_t CtrlrTblDelete(ConfigKeyVal *ppe_ckv,
-                             DalDmlIntf *dmi, upll_keytype_datatype_t dt_type);
+      DalDmlIntf *dmi, upll_keytype_datatype_t dt_type);
 
     /**
      * @brief  Method to Create or Delete record in ctrlrtbl
@@ -759,9 +754,9 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
     upll_rc_t PolicingProfileEntryCtrlrTblOper
-        (const char *policingprofile_name, const char *ctrlr_id,
-         DalDmlIntf *dmi, unc_keytype_operation_t oper,
-         upll_keytype_datatype_t dt_type);
+      (const char *policingprofile_name, const char *ctrlr_id,
+       DalDmlIntf *dmi, unc_keytype_operation_t oper,
+       upll_keytype_datatype_t dt_type);
 
     /**
      * @brief  Method to Get Policingprofile ConfigKeyVal
@@ -793,7 +788,7 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
     upll_rc_t CtrlrTblCreate(ConfigKeyVal *ppe_ckv,
-                             DalDmlIntf *dmi, upll_keytype_datatype_t dt_type);
+        DalDmlIntf *dmi, upll_keytype_datatype_t dt_type);
 
     /**
      * @brief  Method to Set the Consolidated status
@@ -807,7 +802,7 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
     upll_rc_t SetConsolidatedStatus(ConfigKeyVal *ikey,
-                                    DalDmlIntf *dmi);
+        DalDmlIntf *dmi);
 
     /**
      * @brief  Method to Read policingprofileentry avl structure
@@ -824,45 +819,44 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
     upll_rc_t ReadPolicingProfileEntry(
-        const char *policingprofile_name, uint8_t seq_num,
-        const char *ctrlr_id, DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
-        ConfigKeyVal *&ppe_ckv, unc_keytype_option1_t opt1 = UNC_OPT1_NORMAL);
+      const char *policingprofile_name, uint8_t seq_num,
+      const char *ctrlr_id, DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+      ConfigKeyVal *&ppe_ckv, unc_keytype_option1_t opt1 = UNC_OPT1_NORMAL);
 
     upll_rc_t IsFlowlistConfigured(const char* flowlist_name,
-                                   DalDmlIntf *dmi);
+      DalDmlIntf *dmi);
 
     upll_rc_t ReadDetailEntry(
-        ConfigKeyVal *ff_ckv, upll_keytype_datatype_t dt_type,
-        DbSubOp dbop, DalDmlIntf *dmi);
+      ConfigKeyVal *ff_ckv, upll_keytype_datatype_t dt_type,
+      DbSubOp dbop, DalDmlIntf *dmi);
 
     upll_rc_t ValidatePolicingprofileEntryVal(ConfigKeyVal *key,
                                               uint32_t operation,
                                               uint32_t datatype);
 
     upll_rc_t ValidateFlowList(
-        ConfigKeyVal *ikey, DalDmlIntf *dmi,
-        IpcReqRespHeader *req);
+      ConfigKeyVal *ikey, DalDmlIntf *dmi,
+      IpcReqRespHeader *req);
 
     upll_rc_t UpdateMainTbl(ConfigKeyVal *ppe_key,
-                            unc_keytype_operation_t op, uint32_t driver_result,
-                            ConfigKeyVal *nreq, DalDmlIntf *dmi);
+      unc_keytype_operation_t op, uint32_t driver_result,
+      ConfigKeyVal *nreq, DalDmlIntf *dmi);
 
     upll_rc_t FilterAttributes(ConfigKeyVal *ckv_main,
                                ConfigKeyVal *ckv_ctrlr);
 
     upll_rc_t ValidateValidElements(
-        const char *policingprofile_name, DalDmlIntf *dmi,
-        upll_keytype_datatype_t dt_type);
+      const char *policingprofile_name, DalDmlIntf *dmi,
+      upll_keytype_datatype_t dt_type);
 
     upll_rc_t IsFlowListMatched(const char *flowlist_name,
-                                upll_keytype_datatype_t dt_type,
-                                DalDmlIntf *dmi);
+      upll_keytype_datatype_t dt_type, DalDmlIntf *dmi);
 
     upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
 
     upll_rc_t DecrementRefCount(
-        ConfigKeyVal *ppe_ckv, DalDmlIntf *dmi,
-        upll_keytype_datatype_t dt_type);
+      ConfigKeyVal *ppe_ckv, DalDmlIntf *dmi,
+      upll_keytype_datatype_t dt_type);
     upll_rc_t UpdateVnodeVal(ConfigKeyVal *ikey,
                              DalDmlIntf *dmi,
                              upll_keytype_datatype_t data_type,
@@ -878,28 +872,31 @@ namespace kt_momgr {
         unc_keytype_configstatus_t current_cs,
         unc_keytype_configstatus_t current_ctrlr_cs);
 
-    upll_rc_t GetFlowListEntryConfigKey(
+   upll_rc_t GetFlowListEntryConfigKey(
         ConfigKeyVal *&okey, ConfigKeyVal *ikey);
 
-    upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
+   upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
                             DalDmlIntf *dmi,
                             IpcReqRespHeader *req);
 
-    upll_rc_t GetFlowlistConfigKey(
+   upll_rc_t GetFlowlistConfigKey(
         const char *flowlist_name, ConfigKeyVal *&okey,
-        DalDmlIntf *dmi);
+        DalDmlIntf *dmi); 
 
     upll_rc_t SetPPEntryConsolidatedStatus(ConfigKeyVal *ikey,
                                            uint8_t *ctrlr_id,
                                            DalDmlIntf *dmi);
-  };
 
-  typedef struct val_policingprofile_entry_ctrl {
-    uint8_t valid[18];
-    unc_keytype_configstatus_t cs_row_status;
-    unc_keytype_configstatus_t cs_attr[18];
-    uint8_t flags;
-  }val_policingprofile_entry_ctrl_t;
+    bool IsAllAttrInvalid(
+        val_policingprofile_entry_t *val);
+};
+
+typedef struct val_policingprofile_entry_ctrl {
+  uint8_t valid[18];
+  unc_keytype_configstatus_t cs_row_status;
+  unc_keytype_configstatus_t cs_attr[18];
+  uint8_t flags;
+}val_policingprofile_entry_ctrl_t;
 
 }  // namespace kt_momgr
 }  // namespace upll

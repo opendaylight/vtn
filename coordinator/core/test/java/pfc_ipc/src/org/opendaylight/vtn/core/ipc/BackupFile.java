@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -12,15 +12,15 @@ package org.opendaylight.vtn.core.ipc;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-import junit.framework.Assert;
 
+import static junit.framework.TestCase.assertTrue;
 /**
  * <p>
  *   {@code BackupFile} is an abstract class which represents a file with
  *   backup.
  * </p>
  */
-abstract class BackupFile extends Assert
+abstract class BackupFile
 {
 	/**
 	 * <p>

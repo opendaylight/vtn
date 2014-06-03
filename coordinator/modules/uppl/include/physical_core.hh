@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -355,7 +355,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      */
     TcCommonRet HandleAuditStart(uint32_t session_id,
                                  unc_keytype_ctrtype_t driver_id,
-                                 string controller_id,
+                                 string controller_id, 
                                  pfc_bool_t force_reconnect) {
       /*this should not called by UPPL*/
       return unc::tclib::TC_FAILURE;
@@ -481,6 +481,9 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      */
 
     TcCommonRet HandleClearStartup(uint32_t session_id);
+
+    TcCommonRet SendControllerInfoToUPLL(OdbcmConnectionHandler *db_conn,
+                                         uint32_t dt_type);
 
     /**
      * @Description : This function will be called back when TC sends

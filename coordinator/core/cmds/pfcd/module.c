@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -214,6 +214,8 @@ static int		module_busy_wait(pmodule_t *PFC_RESTRICT mod,
 					 abstime);
 static void		module_loader_seterror(mod_loader_t *loader, int err)
 	PFC_FATTR_NOINLINE;
+static size_t		module_set_mandatory(int argc, char **argv,
+					     uint32_t flags);
 
 /*
  * Module loader specifications.
@@ -268,6 +270,9 @@ static const mod_loader_spec_t	mod_loader_spec_shutdown = {
  *				cache.
  *	- PFCD_MODF_CHECKONLY:	PFC module system is initialized only for
  *				for module configuration file check.
+ *
+ *	- PFCD_MODF_NOCONF:	Ignore "modules.load_modules" option in the
+ *				configuration file.
  */
 void
 module_init(int argc, char **argv, uint32_t flags)
@@ -275,8 +280,7 @@ module_init(int argc, char **argv, uint32_t flags)
 	modch_map_t	map;
 	pfc_flock_t	lock;
 	const char	*confdir;
-	size_t		count = 0;
-	int		index, nloads, err;
+	size_t		count;
 
 	/* Get "module" configuration block handle. */
 	conf_module = pfc_sysconf_get_block(conf_module_name);
@@ -304,44 +308,12 @@ module_init(int argc, char **argv, uint32_t flags)
 			pfc_module_set_mandatory_all(PFC_TRUE);
 		}
 	}
+	else if ((flags & PFCD_MODF_CHECKONLY) == 0) {
+		/* Set mandatory flag to modules to be loaded. */
+		count = module_set_mandatory(argc, argv, flags);
+	}
 	else {
-		/* Set mandatory flag to modules specified by pfcd.conf. */
-		nloads = pfc_conf_array_size(conf_module, param_load_modules);
-		for (index = 0; index < nloads; index++) {
-			const char	*name;
-
-			name = pfc_conf_array_stringat(conf_module,
-						       param_load_modules,
-						       index, NULL);
-			if (PFC_EXPECT_FALSE(name == NULL)) {
-				continue;
-			}
-
-			err = pfc_module_set_mandatory(name, PFC_TRUE);
-			if (PFC_EXPECT_FALSE(err != 0)) {
-				PFC_ASSERT(err == ENOENT);
-				fatal("%s: Unknown module name: %s",
-				      param_load_modules, name);
-				/* NOTREACHED */
-			}
-			count++;
-		}
-
-		/*
-		 * Set mandatory flag to modules specified by command line
-		 * argument.
-		 */
-		for (; argc > 0; argc--, argv++) {
-			const char	*name = (const char *)*argv;
-
-			err = pfc_module_set_mandatory(name, PFC_TRUE);
-			if (PFC_EXPECT_FALSE(err != 0)) {
-				PFC_ASSERT(err == ENOENT);
-				fatal("Unknown module name: %s", name);
-				/* NOTREACHED */
-			}
-			count++;
-		}
+		count = 0;
 	}
 
 	if (PFC_EXPECT_FALSE((flags & PFCD_MODF_CHECKONLY) == 0 &&
@@ -1321,22 +1293,29 @@ static int
 module_busy_wait(pmodule_t *PFC_RESTRICT mod,
 		 const pfc_timespec_t *PFC_RESTRICT abstime)
 {
-	int	err = 0;
+	int	err = 0, werr = 0;
 
 	PMODULE_LOCK(mod);
 
 	while (mod->pm_flags & PMODF_BUSY) {
-		mod->pm_nwaiting++;
-		err = PMODULE_TIMEDWAIT_ABS(mod, abstime);
-		mod->pm_nwaiting--;
-		if (PFC_EXPECT_FALSE(err == EINTR)) {
-			err = 0;
-			continue;
-		}
-		if (PFC_EXPECT_FALSE(err == ETIMEDOUT)) {
+		if (werr != 0) {
+			err = werr;
 			break;
 		}
-		PFC_ASSERT(err == 0);
+
+		mod->pm_nwaiting++;
+		werr = PMODULE_TIMEDWAIT_ABS(mod, abstime);
+		mod->pm_nwaiting--;
+		if (PFC_EXPECT_TRUE(werr == 0)) {
+			continue;
+		}
+		if (PFC_EXPECT_FALSE(werr == EINTR)) {
+			werr = 0;
+			continue;
+		}
+
+		/* One more check should be done. */
+		PFC_ASSERT(werr == ETIMEDOUT);
 	}
 
 	PMODULE_UNLOCK(mod);
@@ -1360,4 +1339,60 @@ module_loader_seterror(mod_loader_t *loader, int err)
 		loader->ml_result = err;
 		MOD_LOADER_BROADCAST(loader);
 	}
+}
+
+/*
+ * static size_t
+ * module_set_mandatory(int argc, char **argv, uint32_t flags)
+ *	Select mandatory modules according to the configuration.
+ *
+ * Calling/Exit State:
+ *	The number of selected mandatory modules is returned.
+ */
+static size_t
+module_set_mandatory(int argc, char **argv, uint32_t flags)
+{
+	size_t	count = 0;
+	int	err;
+
+	if ((flags & PFCD_MODF_NOCONF) == 0) {
+		int	index, nloads;
+
+		/* Set mandatory flag to modules specified by pfcd.conf. */
+		nloads = pfc_conf_array_size(conf_module, param_load_modules);
+		for (index = 0; index < nloads; index++) {
+			const char	*name;
+
+			name = pfc_conf_array_stringat(conf_module,
+						       param_load_modules,
+						       index, NULL);
+			if (PFC_EXPECT_FALSE(name == NULL)) {
+				continue;
+			}
+
+			err = pfc_module_set_mandatory(name, PFC_TRUE);
+			if (PFC_EXPECT_FALSE(err != 0)) {
+				PFC_ASSERT(err == ENOENT);
+				fatal("%s: Unknown module name: %s",
+				      param_load_modules, name);
+				/* NOTREACHED */
+			}
+			count++;
+		}
+	}
+
+	/*Set mandatory flag to modules specified by command line argument. */
+	for (; argc > 0; argc--, argv++) {
+		const char	*name = (const char *)*argv;
+
+		err = pfc_module_set_mandatory(name, PFC_TRUE);
+		if (PFC_EXPECT_FALSE(err != 0)) {
+			PFC_ASSERT(err == ENOENT);
+			fatal("Unknown module name: %s", name);
+			/* NOTREACHED */
+		}
+		count++;
+	}
+
+	return count;
 }

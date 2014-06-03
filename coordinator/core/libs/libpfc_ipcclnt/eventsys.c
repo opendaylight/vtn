@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -190,6 +190,11 @@ pfc_refptr_t	*ipc_svname_chstate PFC_ATTR_HIDDEN;
  * IPC event subsystem operations.
  */
 static ipc_cevsysops_t	*ipc_evsys_ops = NULL;
+
+/*
+ * Determine whether the auto-cancellation is enabled or not.
+ */
+static pfc_bool_t	ipc_auto_cancel = PFC_FALSE;
 
 /*
  * Internal prototypes.
@@ -587,6 +592,28 @@ ipc_event_close(int *fdp)
 	if (fd != -1) {
 		PFC_ASSERT_INT(close(fd), 0);
 		*fdp = -1;
+	}
+}
+
+/*
+ * static inline void PFC_FATTR_ALWAYS_INLINE
+ * ipc_elsess_cancel_clients(ipc_elsess_t *elsp)
+ *	Cancel ongoing IPC invocation requests on client sessions which
+ *	connects to the same IPC server as the specified listener session.
+ *
+ * Remarks:
+ *	The caller must call this function without holding any lock because
+ *	it may acquire the global client lock.
+ */
+static inline void PFC_FATTR_ALWAYS_INLINE
+ipc_elsess_cancel_clients(ipc_elsess_t *elsp)
+{
+	// Nothing to do if the IPC client library is already disabled.
+	if (!ipc_disabled) {
+		IPC_CLIENT_RDLOCK();
+		pfc_ipcclnt_conn_iterate(pfc_ipcclnt_canceller_conn_notify,
+					 elsp);
+		IPC_CLIENT_UNLOCK();
 	}
 }
 
@@ -998,6 +1025,36 @@ pfc_ipcclnt_event_fini(void)
 	IPCCLNT_LOG_INFO("The IPC event subsystem has been finalized.");
 
 	return 0;
+}
+
+/*
+ * void
+ * pfc_ipcclnt_event_setautocancel(pfc_bool_t value)
+ *	Enable or disable auto-cancellation of IPC client sessions.
+ *
+ *	Auto-cancellation is enabled if PFC_TRUE is specified to `value'.
+ *	When an event listener session is disconnected unexpectedly,
+ *	the IPC event subsystem check whether auto-cancellation is enabled
+ *	or not. If enabled, it calls pfc_ipcclnt_sess_cancel() with specifying
+ *	PFC_FALSE to `discard' argument for each IPC client session associated
+ *	with the same IPC server as the listener session.
+ */
+void
+pfc_ipcclnt_event_setautocancel(pfc_bool_t value)
+{
+	(void)pfc_atomic_swap_uint8((uint8_t *)&ipc_auto_cancel, value);
+}
+
+/*
+ * pfc_bool_t
+ * pfc_ipcclnt_event_getautocancel(void)
+ *	Determine whether auto-cancellation of IPC client session is enabled
+ *	or not.
+ */
+pfc_bool_t
+pfc_ipcclnt_event_getautocancel(void)
+{
+	return ipc_auto_cancel;
 }
 
 #define	ADDHDLR_TARGET		PFC_CONST_U(0x1)
@@ -4027,13 +4084,36 @@ ipc_elsess_disconnect(ipc_elsess_t *elsp)
 	}
 
 	if (!IPC_ELSESS_IS_SHUTDOWN(elsp)) {
+		pfc_bool_t	need_event, locked = PFC_TRUE;
+
 		PFC_ASSERT(downcode != IPC_CHDOWN_NONE);
 		if (elsp->els_prevdown == IPC_CHDOWN_NONE) {
 			elsp->els_prevdown = (uint8_t)downcode;
+			need_event = PFC_TRUE;
+		}
+		else {
+			need_event = PFC_FALSE;
+		}
 
-			/* Post an IPC channel down event. */
+		if (ipc_auto_cancel) {
+			// Cancel ongoing IPC invocation request on client
+			// sessions which connects to the same IPC server as
+			// the listener session.
 			IPC_ELSESS_UNLOCK(elsp);
+			locked = PFC_FALSE;
+			ipc_elsess_cancel_clients(elsp);
+		}
+
+		if (need_event) {
+			/* Post an IPC channel down event. */
+			if (locked) {
+				IPC_ELSESS_UNLOCK(elsp);
+				locked = PFC_FALSE;
+			}
 			ipc_elsess_post_downevent(elsp, downcode);
+		}
+
+		if (!locked) {
 			IPC_ELSESS_LOCK(elsp);
 		}
 

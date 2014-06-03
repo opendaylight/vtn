@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -1870,19 +1870,19 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
       }
       pfc_log_info("Filling the key structure and value into map");
       // Filling the key structure and value strucute to the map from DB
-      map<string, val_port_stats_t*> nb_port_stats_map;
+      map<string, val_port_stats_t> nb_port_stats_map;
 
       for (unsigned int index = 0; index < vect_port_id.size();
           ++index) {
         key_port_t obj_key_port = vect_port_id[index];
         string port_name =  reinterpret_cast<char*>(obj_key_port.port_id);
         pfc_log_debug("Inside the map %s", obj_key_port.port_id);
-        val_port_stats_t *ptr = new val_port_stats_t;
-        memset(ptr, 0, sizeof(val_port_stats_t));
-        memcpy(&ptr->port_st_val, &vect_val_port_st[index]
+        val_port_stats_t ptr;
+        memset(&ptr, 0, sizeof(val_port_stats_t));
+        memcpy(&(ptr.port_st_val), &vect_val_port_st[index]
             , sizeof(val_port_st_t));
-        ptr->valid[0] = 1;
-        nb_port_stats_map.insert(std::pair<string, val_port_stats_t*>
+        ptr.valid[0] = 1;
+        nb_port_stats_map.insert(std::pair<string, val_port_stats_t>
                             (port_name, ptr));
         pfc_log_debug("Map size=%" PFC_PFMT_SIZE_T, nb_port_stats_map.size());
       }
@@ -1950,17 +1950,16 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
           driver_response = UNC_UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
           break;
         }
-        map<string, val_port_stats_t*> :: iterator it_port_key_val =
+        map<string, val_port_stats_t> :: iterator it_port_key_val =
                                    nb_port_stats_map.find(port_name);
         if (it_port_key_val != nb_port_stats_map.end()) {
           pfc_log_info("Found entry in nb_port_stats_map for %s",
                                                       port_name.c_str());
-          val_port_stats_t *ptr = reinterpret_cast<val_port_stats_t *>
-                                       (it_port_key_val->second);
-          memcpy(&port_stat_val.port_st_val, &ptr->port_st_val
+          val_port_stats_t val_port_stat = it_port_key_val->second;
+          memcpy(&port_stat_val.port_st_val, &val_port_stat.port_st_val
               , sizeof(port_stat_val.port_st_val));
           port_stat_val.valid[0] = 1;
-          memcpy(ptr, &port_stat_val, sizeof(port_stat_val));
+          nb_port_stats_map[port_name] = port_stat_val;
         }
       }
     } else {
@@ -2000,29 +1999,25 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
         key_port_t obj_key_port = vect_port_id[index];
         string port_name =  reinterpret_cast<char*>(obj_key_port.port_id);
         pfc_log_debug("Inside the map %s", port_name.c_str());
-        map<string, val_port_stats_t*> :: iterator it_port_key_val;
-        it_port_key_val = nb_port_stats_map.find(port_name);
+        map<string, val_port_stats_t> :: iterator it_port_key_val =
+                                  nb_port_stats_map.find(port_name);
         if (it_port_key_val == nb_port_stats_map.end()) {
           pfc_log_debug("Skipping %s", port_name.c_str());
           continue;
         }
-        val_port_stats_t *ptr = reinterpret_cast<val_port_stats_t *>
-                                                (it_port_key_val->second);
-        if (ptr != NULL) {
-        err |= sess.addOutput((uint32_t)UNC_KT_PORT);
-        pfc_log_debug("%s", IpctUtil::get_string(obj_key_port).c_str());
-        err |= sess.addOutput(obj_key_port);
-        pfc_log_debug("%s", IpctUtil::get_string(*ptr).c_str());
-        err |= sess.addOutput(*ptr);
-        if (err != 0) {
-          pfc_log_debug("addOutput failed for physical_response_header");
-          return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
-        }
-        if (index < vect_port_id.size() - 1) {
-          sess.addOutput();  //  Seperator
-        }
-        delete ptr;
-        }
+          val_port_stats_t val_stats_obj = it_port_key_val->second;
+          err |= sess.addOutput((uint32_t)UNC_KT_PORT);
+          pfc_log_debug("%s", IpctUtil::get_string(obj_key_port).c_str());
+          err |= sess.addOutput(obj_key_port);
+          pfc_log_debug("%s", IpctUtil::get_string(val_stats_obj).c_str());
+          err |= sess.addOutput(val_stats_obj);
+          if (err != 0) {
+            pfc_log_debug("addOutput failed for physical_response_header");
+            return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
+          }
+          if (index < vect_port_id.size() - 1) {
+            sess.addOutput();  //  Seperator
+          }
       }
       return UNC_RC_SUCCESS;
     }
@@ -2353,7 +2348,7 @@ void Kt_Port::Fill_Attr_Syntax_Map() {
   attr_syntax_map[PORT_DIRECTION_STR] = objAttrDirectionSyntax;
 
   Kt_Class_Attr_Syntax objAttrTrunkAVlanSyntax =
-  { PFC_IPCTYPE_UINT16, 0, 65536, 0, 0, false, "" };
+  { PFC_IPCTYPE_UINT16, 0, 65535, 0, 0, false, "" };
   attr_syntax_map[PORT_TRUNK_ALL_VLAN_STR] = objAttrTrunkAVlanSyntax;
 
   Kt_Class_Attr_Syntax objAttrOperStatusSyntax =

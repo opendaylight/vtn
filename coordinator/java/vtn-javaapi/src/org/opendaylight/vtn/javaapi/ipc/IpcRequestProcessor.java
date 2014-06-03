@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.ipc;
 
 import java.lang.reflect.Method;
@@ -32,7 +33,9 @@ import org.opendaylight.vtn.javaapi.ipc.enums.UncDataType;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncErrorBean;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncIpcErrorCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncKeyTypeEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncOperationEnum;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncOption2Enum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncStructEnum;
 import org.opendaylight.vtn.javaapi.util.VtnServiceUtil;
 
@@ -51,6 +54,7 @@ public class IpcRequestProcessor {
 	private transient final ClientSession session;
 	private JsonObject errorJson;
 	private boolean noSuchInstanceFlag;
+	private String requestPacketEnumName = null;
 	private String serviceName = null;
 	private int serviceId;
 
@@ -157,6 +161,7 @@ public class IpcRequestProcessor {
 			} else {
 				LOG.debug("No need to update the parameters of request packet");
 			}
+			requestPacketEnumName = requestPacketEnum.name();
 		} else {
 			LOG.warning("Request Packet Enum cannot be null");
 		}
@@ -296,7 +301,7 @@ public class IpcRequestProcessor {
 			// set the value of "max_repetition" parameter to IPC request
 			// parameter
 			requestPacket.setMaxRepCount(new IpcUint32(requestBody
-					.getAsJsonPrimitive(VtnServiceJsonConsts.MAX).getAsInt()));
+					.getAsJsonPrimitive(VtnServiceJsonConsts.MAX).getAsString()));
 		} else {
 			// if not available, then get the default value and set to IPC
 			// request packet
@@ -550,14 +555,16 @@ public class IpcRequestProcessor {
 				LOG.debug("Result code received: " + resultCode);
 				final int keyType = requestPacket.getKeyType().intValue();
 
-				if (requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ
+				if (requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ_SIBLING_BEGIN
 						.ordinal()
-						|| requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ_SIBLING_BEGIN
-								.ordinal()
 						|| requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ_SIBLING
 								.ordinal()
 						|| requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ_SIBLING_COUNT
-								.ordinal()) {
+								.ordinal()
+						|| VtnServiceInitManager.getReadAsList().contains(
+								requestPacketEnumName)
+						|| VtnServiceInitManager.getMultiCallList().contains(
+								requestPacketEnumName)) {
 					if (keyType >= UncCommonEnum.MIN_LOGICAL_KEYTYPE
 							&& keyType <= UncCommonEnum.MAX_LOGICAL_KEYTYPE
 							&& Integer.parseInt(resultCode) == VtnServiceConsts.UPLL_RC_ERR_NO_SUCH_INSTANCE) {
@@ -571,6 +578,23 @@ public class IpcRequestProcessor {
 					} else {
 						LOG.debug(" Either Key Type does not exists or operation is not success");
 					}
+					
+					if (VtnServiceInitManager.getMultiCallList().contains(
+							requestPacketEnumName)
+							&& requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ
+									.ordinal()) {
+						if (requestPacket
+								.getOption2()
+								.compareTo(
+										IpcDataUnitWrapper
+												.setIpcUint32Value((UncOption2Enum.UNC_OPT2_NEIGHBOR
+														.ordinal()))) != 0) {
+							noSuchInstanceFlag = false;
+						}
+					}
+				} else if (keyType == UncKeyTypeEnum.UNC_KT_PORT.getValue()
+						&& Integer.parseInt(resultCode) == VtnServiceConsts.UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+					noSuchInstanceFlag = true;
 				}
 
 				// if return code is not success, then create the error Json for

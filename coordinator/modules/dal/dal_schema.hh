@@ -71,7 +71,7 @@ enum kVtnIndex {
   kDbiVtnCsDesc,
   kDbiVtnNumCols
 };
-}  // namespace vtn
+}
 
 namespace vtn_controller {
 static const uint8_t kVtnCtrlrNumPks = 3;
@@ -90,7 +90,7 @@ enum kVtnCtrlrIndex {
   kDbiCsDesc,
   kDbiVtnCtrlrNumCols
 };
-}  // namespace vtn_controller
+}
 
 namespace vtn_rename {
 static const uint8_t kVtnRenameNumPks = 3;
@@ -131,7 +131,7 @@ enum kVbrIndex {
   kDbiVbrFlags,
   kDbiVbrNumCols
 };
-}  // namespace vbridge
+}
 
 namespace vbridge_vlanmap {
 static const uint8_t kVbrVlanMapNumPks = 4;
@@ -151,7 +151,7 @@ enum kVbrVlanMapIndex {
   kDbiCsVlanid,
   kDbiVbrVlanMapNumCols
 };
-}  // namespace vbridge_vlanmap
+}
 
 namespace vbridge_interface {
 static const uint8_t kVbrIfNumPks = 3;
@@ -191,7 +191,7 @@ enum kVbrIfIndex {
   kDbiCsTagged,
   kDbiVbrIfNumCols
 };
-}  // namespace vbridge_interface
+}
 
 namespace vrouter {
 static const uint8_t kVrtNumPks = 2;
@@ -217,7 +217,7 @@ enum kVrtIndex {
   kDbiCsDhcprelayAdminstatus,
   kDbiVrtNumCols
 };
-}  // namespace vrouter
+}
 
 namespace vrouter_interface {
 static const uint8_t kVrtIfNumPks = 3;
@@ -249,7 +249,65 @@ enum kVrtIfIndex {
   kDbiCsAdminStatus,
   kDbiVrtIfNumCols
 };
-}  // namespace vrouter_interface
+}
+
+namespace vterminal {
+static const uint8_t kVterminalNumPks = 2;
+enum kVterminalIndex {
+  kDbiVtnName = 0,
+  kDbiVterminalName,
+  kDbiCtrlrName,
+  kDbiDomainId,
+  kDbiVterminalDesc,
+  kDbiOperStatus,
+  kDbiDownCount,
+  kDbiFaultCount,
+  kDbiValidCtrlrName,
+  kDbiValidDomainId,
+  kDbiValidVterminalDesc,
+  kDbiValidOperStatus,
+  kDbiCsRowStatus,
+  kDbiCsCtrlrName,
+  kDbiCsDomainId,
+  kDbiCsVterminalDesc,
+  kDbiVterminalFlags,
+  kDbiVterminalNumCols
+};
+}
+
+namespace vterminal_interface {
+static const uint8_t kVtermIfNumPks = 3;
+enum kVtermIfIndex {
+  kDbiVtnName = 0,
+  kDbiVterminalName,
+  kDbiIfName,
+  kDbiAdminStatus,
+  kDbiDesc,
+  kDbiLogicalPortId,
+  kDbiVlanId,
+  kDbiTagged,
+  kDbiOperStatus,
+  kDbiDownCount,
+  kDbiCtrlrName,
+  kDbiDomainId,
+  kDbiFlags,
+  kDbiValidAdminStatus,
+  kDbiValidDesc,
+  kDbiValidPortMap,
+  kDbiValidLogicalPortId,
+  kDbiValidVlanid,
+  kDbiValidTagged,
+  kDbiValidOperStatus,
+  kDbiCsRowstatus,
+  kDbiCsAdminStatus,
+  kDbiCsDesc,
+  kDbiCsPortMap,
+  kDbiCsLogicalPortId,
+  kDbiCsVlanid,
+  kDbiCsTagged,
+  kDbiVtermIfNumCols
+};
+}
 
 namespace vnode_rename {
 static const uint8_t kVnodeRenameNumPks = 4;
@@ -262,7 +320,7 @@ enum kVnodeRenameIndex {
   kDbiUncvnodeName,
   kDbiVnodeRenameNumCols
 };
-}  // namespace vnode_rename
+}
 
 namespace vlink {
 static const uint8_t kVlinkNumPks = 2;
@@ -305,7 +363,7 @@ enum kVlinkIndex {
   kDbiCsDesc,
   kDbiVlinkNumCols
 };
-}  // namespace vlink
+}
 
 namespace vlink_rename {
 static const uint8_t kVlinkRenameNumPks = 4;
@@ -318,7 +376,7 @@ enum kVlinkRenameIndex {
   kDbiVlinkName,
   kDbiVlinkRenameNumCols
 };
-}  // namespace vlink_rename
+}
 
 namespace static_ip_route {
 static const uint8_t kStaticIpRouteNumPks = 6;
@@ -338,7 +396,7 @@ enum kStaticIpRouteIndex {
   kDbiCsMetric,
   kDbiStaticIpRouteNumCols
 };
-}  // namespace static_ip_route
+}
 
 namespace dhcprelay_server {
 static const uint8_t kDhcpRelayServerNumPks = 3;
@@ -352,7 +410,7 @@ enum kDhcpRelayServerIndex {
   kDbiCsRowstatus,
   kDbiDhcpRelayServerNumCols
 };
-}  // namespace dhcprelay_server
+}
 
 namespace dhcprelay_interface {
 static const uint8_t kDhcpRelayIfNumPks = 3;
@@ -366,7 +424,7 @@ enum kDhcpRelayIfIndex {
   kDbiCsRowstatus,
   kDbiDhcpRelayIfNumCols
 };
-}  // namespace dhcprelay_interface
+}
 
 namespace vbridge_networkmonitor_group {
 static const uint8_t kVbrNwMonGrpNumPks = 3;
@@ -385,7 +443,7 @@ enum kVbrNwMonGrpIndex {
   kDbiCsAdminStatus,
   kDbiVbrNwMonGrpNumCols
 };
-}  // namespace vbridge_networkmonitor_group
+}
 
 namespace vbridge_networkmonitor_host {
 static const uint8_t kVbrNwMonHostNumPks = 4;
@@ -415,7 +473,7 @@ enum kVbrNwMonHostIndex {
   kDbiCsWaitTime,
   kDbiVbrNwMonHostNumCols
 };
-}  // namespace vbridge_networkmonitor_host
+}
 
 namespace vunknown {
 static const uint8_t kVunknownNumPks = 2;
@@ -435,7 +493,7 @@ enum kVunknownIndex {
   kDbiCsDomainId,
   kDbiVunknownNumCols
 };
-}  // namespace vunknown
+}
 
 namespace vunknown_interface {
 static const uint8_t kVunknownIfNumPks = 3;
@@ -454,7 +512,7 @@ enum kVunknownIfIndex {
   kDbiCsAdminStatus,
   kDbiVunknownIfNumCols
 };
-}  // namespace vunknown_interface
+}
 
 namespace vtep {
 static const uint8_t kVtepNumPks = 2;
@@ -477,7 +535,7 @@ enum kVtepIndex {
   kDbiCsDomainId,
   kDbiVtepNumCols
 };
-}  // namespace vtep
+}
 
 namespace vtep_interface {
 static const uint8_t kVtepIfNumPks = 3;
@@ -511,7 +569,7 @@ enum kVtepIfIndex {
   kDbiCsTagged,
   kDbiVtepIfNumCols
 };
-}  // namespace vtep_interface
+}
 
 namespace vtep_group {
 static const uint8_t kVtepGrpNumPks = 2;
@@ -528,7 +586,7 @@ enum kVtepGrpIndex {
   kDbiCsDesc,
   kDbiVtepGrpNumCols
 };
-}  // namespace vtep_group
+}
 
 namespace vtep_groupmember {
 static const uint8_t kVtepGrpMemNumPks = 3;
@@ -542,7 +600,7 @@ enum kVtepGrpMemIndex {
   kDbiCsRowstatus,
   kDbiVtepGrpMemNumCols
 };
-}  // namespace vtep_groupmember
+}
 
 namespace vtunnel {
 static const uint8_t kVtunnelNumPks = 2;
@@ -574,7 +632,7 @@ enum kVtunnelIndex {
   kDbiCsLabel,
   kDbiVtunnelNumCols
 };
-}  // namespace vtunnel
+}
 
 namespace vtunnel_interface {
 static const uint8_t kVtunnelIfNumPks = 3;
@@ -608,7 +666,7 @@ enum kVtunnelIfIndex {
   kDbiCsTagged,
   kDbiVtunnelIfNumCols
 };
-}  // namespace vtunnel_interface
+}
 // L2/L3 MoMgr Enum End
 
 // POM MoMgr Enum Start
@@ -787,7 +845,7 @@ enum FlowListEntryCtrlrSchema {
   kDbiCsIcmpV6Code,
   kDbiFlowListEntryCtrlrNumCols  // Number of Columns
 };  // FlowFilterEntryCtrlrSchema
-}  // namespace flowlist_entry_ctrlr
+}  // namespace flowlist_entry_Ctrlr
 
 // Enum definition for index in global policing profile table Schema
 namespace policingprofile {
@@ -1050,6 +1108,7 @@ enum VbrFlowFilterEntrySchema {
   kDbiAction,
   kDbiRedirectNode,
   kDbiRedirectPort,
+  kDbiRedirectDirection,
   kDbiModifyDstMac,
   kDbiModifySrcMac,
   kDbiNwmName,
@@ -1060,6 +1119,7 @@ enum VbrFlowFilterEntrySchema {
   kDbiValidAction,
   kDbiValidRedirectNode,
   kDbiValidRedirectPort,
+  kDbiValidRedirectDirection,
   kDbiValidModifyDstMac,
   kDbiValidModifySrcMac,
   kDbiValidNwmName,
@@ -1070,6 +1130,7 @@ enum VbrFlowFilterEntrySchema {
   kDbiCsAction,
   kDbiCsRedirectNode,
   kDbiCsRedirectPort,
+  kDbiCsRedirectDirection,
   kDbiCsModifyDstMac,
   kDbiCsModifySrcMac,
   kDbiCsNwmName,
@@ -1111,6 +1172,7 @@ enum VbrIfFlowFilterEntrySchema {
   kDbiAction,
   kDbiRedirectNode,
   kDbiRedirectPort,
+  kDbiRedirectDirection,
   kDbiModifyDstMac,
   kDbiModifySrcMac,
   kDbiNwmName,
@@ -1121,6 +1183,7 @@ enum VbrIfFlowFilterEntrySchema {
   kDbiValidAction,
   kDbiValidRedirectNode,
   kDbiValidRedirectPort,
+  kDbiValidRedirectDirection,
   kDbiValidModifyDstMac,
   kDbiValidModifySrcMac,
   kDbiValidNwmName,
@@ -1131,6 +1194,7 @@ enum VbrIfFlowFilterEntrySchema {
   kDbiCsAction,
   kDbiCsRedirectNode,
   kDbiCsRedirectPort,
+  kDbiCsRedirectDirection,
   kDbiCsModifyDstMac,
   kDbiCsModifySrcMac,
   kDbiCsNwmName,
@@ -1172,6 +1236,7 @@ enum VrtIfFlowFilterEntrySchema {
   kDbiAction,
   kDbiRedirectNode,
   kDbiRedirectPort,
+  kDbiRedirectDirection,
   kDbiModifyDstMac,
   kDbiModifySrcMac,
   kDbiNwmName,
@@ -1182,6 +1247,7 @@ enum VrtIfFlowFilterEntrySchema {
   kDbiValidAction,
   kDbiValidRedirectNode,
   kDbiValidRedirectPort,
+  kDbiValidRedirectDirection,
   kDbiValidModifyDstMac,
   kDbiValidModifySrcMac,
   kDbiValidNwmName,
@@ -1192,6 +1258,7 @@ enum VrtIfFlowFilterEntrySchema {
   kDbiCsAction,
   kDbiCsRedirectNode,
   kDbiCsRedirectPort,
+  kDbiCsRedirectDirection,
   kDbiCsModifyDstMac,
   kDbiCsModifySrcMac,
   kDbiCsNwmName,
@@ -1201,6 +1268,68 @@ enum VrtIfFlowFilterEntrySchema {
 };  // VrtIfFlowFilterEntrySchema
 }  // namespace vrt_if_flowfilter_entry
 
+// Enum definition for index in vTerminal interface flow filter table Schema
+namespace vterm_if_flowfilter {
+static const uint8_t kVtermIfFlowFilterNumPks = 4;
+enum VtermIfFlowFilterSchema {
+  kDbiVtnName = 0,
+  kDbiVtermName,
+  kDbiVtermIfName,
+  kDbiInputDirection,
+  kDbiCtrlrName,
+  kDbiDomainId,
+  kDbiFlags,
+  kDbiCsRowStatus,
+  kDbiVtermIfFlowFilterNumCols  // Number of Columns
+};  // VtermIfFlowFilterSchema
+}  // namespace vterm_if_flowfilter
+
+// Enum definition for index in vTerminal interface flow filter entry table Schema
+namespace vterm_if_flowfilter_entry {
+static const uint8_t kVtermIfFlowFilterEntryNumPks = 5;
+enum VtermIfFlowFilterEntrySchema {
+  kDbiVtnName = 0,
+  kDbiVtermName,
+  kDbiVtermIfName,
+  kDbiInputDirection,
+  kDbiSequenceNum,
+  kDbiCtrlrName,
+  kDbiDomainId,
+  kDbiFlowlistName,
+  kDbiAction,
+  kDbiRedirectNode,
+  kDbiRedirectPort,
+  kDbiRedirectDirection,
+  kDbiModifyDstMac,
+  kDbiModifySrcMac,
+  kDbiNwmName,
+  kDbiDscp,
+  kDbiPriority,
+  kDbiFlags,
+  kDbiValidFlowlistName,
+  kDbiValidAction,
+  kDbiValidRedirectNode,
+  kDbiValidRedirectPort,
+  kDbiValidRedirectDirection,
+  kDbiValidModifyDstMac,
+  kDbiValidModifySrcMac,
+  kDbiValidNwmName,
+  kDbiValidDscp,
+  kDbiValidPriority,
+  kDbiCsRowStatus,
+  kDbiCsFlowlistName,
+  kDbiCsAction,
+  kDbiCsRedirectNode,
+  kDbiCsRedirectPort,
+  kDbiCsRedirectDirection,
+  kDbiCsModifyDstMac,
+  kDbiCsModifySrcMac,
+  kDbiCsNwmName,
+  kDbiCsDscp,
+  kDbiCsPriority,
+  kDbiVtermIfFlowFilterEntryNumCols  // Number of Columns
+};  // VtermIfFlowFilterEntrySchema
+}  // namespace vterm_if_flowfilter_entry
 
 // Enum definition for index in vtn policing map table Schema
 namespace vtn_policingmap {
@@ -1267,6 +1396,24 @@ enum VbrIfPolicingMapSchema {
   kDbiVbrIfPolicingMapNumCols  // Number of Columns
 };  // VbrIfPolicingMap
 }  // namespace vbr_if_policingmap
+
+namespace vterm_if_policingmap {
+static const uint8_t kVtermIfPolicingMapNumPks = 3;
+enum VtermIfPolicingMapSchema {
+  kDbiVtnName = 0,
+  kDbiVtermName,
+  kDbiVtermIfName,
+  kDbiCtrlrname,
+  kDbiDomainId,
+  kDbiPolicername,
+  kDbiFlags,
+  kDbiValidPolicername,
+  kDbiCsRowStatus,
+  kDbiCsPolicername,
+  kDbiVtermIfPolicingMapNumCols  // Number of Columns
+};  // VtermIfPolicingMap
+}  // namespace vterm_if_policingmap
+
 // POM MoMgr Enum End
 
 namespace ctrlr {
@@ -1292,6 +1439,8 @@ enum kDalTableIndex {
   kDbiVbrIfTbl,
   kDbiVrtTbl,
   kDbiVrtIfTbl,
+  kDbiVterminalTbl,
+  kDbiVtermIfTbl,
   kDbiVNodeRenameTbl,
   kDbiVlinkTbl,
   kDbiVlinkRenameTbl,
@@ -1330,10 +1479,13 @@ enum kDalTableIndex {
   kDbiVbrIfFlowFilterEntryTbl,
   kDbiVrtIfFlowFilterTbl,
   kDbiVrtIfFlowFilterEntryTbl,
+  kDbiVtermIfFlowFilterTbl,
+  kDbiVtermIfFlowFilterEntryTbl,
   kDbiVtnPolicingMapTbl,
   kDbiVtnPolicingMapCtrlrTbl,
   kDbiVbrPolicingMapTbl,
   kDbiVbrIfPolicingMapTbl,
+  kDbiVtermIfPolicingMapTbl,
   // POM MoMgr Table Enum End
 
   kDbiCtrlrTbl,

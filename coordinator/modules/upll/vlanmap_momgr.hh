@@ -22,264 +22,280 @@ namespace uuds = unc::upll::dal::schema;
 namespace uudst = unc::upll::dal::schema::table;
 
 class VlanMapMoMgr : public VnodeChildMoMgr {
- private:
-  static BindInfo vlan_map_bind_info[];
-  static BindInfo vlan_map_maintbl_update_key_bind_info[];
-  /**
-   * @brief  Gets the valid array position of the variable in the value
-   *         structure from the table in the specified configuration
-   *
-   * @param[in]     val      pointer to the value structure
-   * @param[in]     indx     database index for the variable
-   * @param[out]    valid    position of the variable in the valid array -
-   *                          NULL if valid does not exist.
-   * @param[in]     dt_type  specifies the configuration
-   * @param[in]     tbl      specifies the table containing the given value
-   *
-   **/
-  upll_rc_t GetValid(void *val,
-                     uint64_t indx,
-                     uint8_t *&valid,
-                     upll_keytype_datatype_t dt_type,
-                     MoMgrTables tbl) {
-    if (val == NULL) return UPLL_RC_ERR_GENERIC;
-    if (tbl == MAINTBL) {
-      switch (indx) {
-        /* VlanmapOnBoundary: New attributes added*/
-        case uudst::vbridge_vlanmap::kDbiVlanid:
-          valid = &(reinterpret_cast<pfcdrv_val_vlan_map *>
-                    (val))->vm.valid[UPLL_IDX_VLAN_ID_VM];
-          break;
-        case uudst::vbridge_vlanmap::kDbiBdryRefCount:
-          valid = &(reinterpret_cast<pfcdrv_val_vlan_map *>
-                    (val))->valid[PFCDRV_IDX_BDRY_REF_COUNT];
-          break;
-        default:
-          return UPLL_RC_ERR_GENERIC;
+  private:
+    static BindInfo vlan_map_bind_info[];
+    static BindInfo vlan_map_maintbl_update_key_bind_info[];
+    /**
+     * @brief  Gets the valid array position of the variable in the value
+     *         structure from the table in the specified configuration
+     *
+     * @param[in]     val      pointer to the value structure
+     * @param[in]     indx     database index for the variable
+     * @param[out]    valid    position of the variable in the valid array -
+     *                          NULL if valid does not exist.
+     * @param[in]     dt_type  specifies the configuration
+     * @param[in]     tbl      specifies the table containing the given value
+     *
+     **/
+    upll_rc_t GetValid(void *val,
+                       uint64_t indx,
+                       uint8_t *&valid,
+                       upll_keytype_datatype_t dt_type,
+                       MoMgrTables tbl) {
+      if (val == NULL) return UPLL_RC_ERR_GENERIC;
+      if (tbl == MAINTBL) {
+        switch (indx) {
+          /* VlanmapOnBoundary: New attributes added*/
+          case uudst::vbridge_vlanmap::kDbiVlanid:
+            valid = &(reinterpret_cast<pfcdrv_val_vlan_map *>
+                      (val))->vm.valid[UPLL_IDX_VLAN_ID_VM];
+            break;
+          case uudst::vbridge_vlanmap::kDbiBdryRefCount:
+            valid = &(reinterpret_cast<pfcdrv_val_vlan_map *>
+                      (val))->valid[PFCDRV_IDX_BDRY_REF_COUNT];
+            break;
+          default:
+            return UPLL_RC_ERR_GENERIC;
+        }
       }
+      return UPLL_RC_SUCCESS;
     }
-    return UPLL_RC_SUCCESS;
-  }
 
-  /**
-   * @brief  Update parent oper status on delete for Transaction commit
-   *
-   * @param[in]  ikey          ConfigKeyVal instance
-   * @param[in]   dmi           Database connection parameter
+   /**
+    * @brief  Update parent oper status on delete for Transaction commit
+    *
+    * @param[in]  ikey          ConfigKeyVal instance
+    * @param[in]   dmi           Database connection parameter
 
-   * @retval  UPLL_RC_SUCCESS      Completed successfully.
-   * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
-   */
-  upll_rc_t UpdateParentOperStatus(ConfigKeyVal *ikey,
-                                   DalDmlIntf *dmi);
+    * @retval  UPLL_RC_SUCCESS      Completed successfully.
+    * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
+    */
+    upll_rc_t UpdateParentOperStatus(ConfigKeyVal *ikey,
+                                     DalDmlIntf *dmi);
 
-  upll_rc_t UpdateConfigStatus(ConfigKeyVal *req,
-                               unc_keytype_operation_t op,
-                               uint32_t driver_result,
-                               ConfigKeyVal *upd_key, DalDmlIntf *dmi,
-                               ConfigKeyVal *ctrlr_key = NULL);
+    upll_rc_t UpdateConfigStatus(ConfigKeyVal *req,
+                                 unc_keytype_operation_t op,
+                                 uint32_t driver_result,
+                                 ConfigKeyVal *upd_key, DalDmlIntf *dmi,
+                                 ConfigKeyVal *ctrlr_key = NULL);
 
-  upll_rc_t UpdateAuditConfigStatus(unc_keytype_configstatus_t cs_status,
-                                    uuc::UpdateCtrlrPhase phase,
-                                    ConfigKeyVal *&ckv_running,
-                                    DalDmlIntf *dmi);
-  /**
-   * @Brief  Validates the syntax of the specified key and value structure
-   *         for KT_VBR_VLANMAP keytype
-   *
-   * @param[in]  req    This structure contains IpcReqRespHeader
-   *                    (first 8 fields of input request structure).
-   * @param[in]  ikey   ikey contains key and value structure.
-   *
-   * @retval  UPLL_RC_SUCCESS               Successful.
-   * @retval  UPLL_RC_ERR_CFG_SYNTAX        Syntax error.
-   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE  key_vlan_map is not available.
-   * @retval  UPLL_RC_ERR_GENERIC           Generic failure.
-   * @retval  UPLL_RC_ERR_INVALID_OPTION1   option1 is not valid.
-   * @retval  UPLL_RC_ERR_INVALID_OPTION2   option2 is not valid.
-   */
-  upll_rc_t ValidateMessage(IpcReqRespHeader *req,
-                            ConfigKeyVal *ikey);
+    upll_rc_t UpdateAuditConfigStatus(unc_keytype_configstatus_t cs_status,
+                                      uuc::UpdateCtrlrPhase phase,
+                                      ConfigKeyVal *&ckv_running,
+                                      DalDmlIntf *dmi);
+    /**
+     * @Brief  Validates the syntax of the specified key and value structure
+     *         for KT_VBR_VLANMAP keytype
+     *
+     * @param[in]  req    This structure contains IpcReqRespHeader
+     *                    (first 8 fields of input request structure).
+     * @param[in]  ikey   ikey contains key and value structure.
+     *
+     * @retval  UPLL_RC_SUCCESS               Successful.
+     * @retval  UPLL_RC_ERR_CFG_SYNTAX        Syntax error.
+     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE  key_vlan_map is not available.
+     * @retval  UPLL_RC_ERR_GENERIC           Generic failure.
+     * @retval  UPLL_RC_ERR_INVALID_OPTION1   option1 is not valid.
+     * @retval  UPLL_RC_ERR_INVALID_OPTION2   option2 is not valid.
+     */
+    upll_rc_t ValidateMessage(IpcReqRespHeader *req,
+                              ConfigKeyVal *ikey);
 
-  /**
-   * @Brief  Checks if the specified key type(KT_VBR_VLANMAP) and
-   *         associated attributes are supported on the given controller,
-   *         based on the valid flag
-   *
-   * @param[in]  req               This structure contains IpcReqRespHeader
-   *                               (first 8 fields of input request structure).
-   * @param[in]  ikey              ikey contains key and value structure.
-   * @param[in]  ctrlr_id          controller associated with the input ikey.
-   *
-   * @retval  UPLL_RC_SUCCESS              Validation succeeded.
-   * @retval  UPLL_RC_ERR_GENERIC          Validation failure.
-   * @retval  UPLL_RC_ERR_INVALID_OPTION1  Option1 is not valid.
-   * @retval  UPLL_RC_ERR_INVALID_OPTION2  Option2 is not valid.
-   */
-  upll_rc_t ValidateCapability(IpcReqRespHeader *req,
-                               ConfigKeyVal *ikey,
-                               const char *ctrlr_name);
+    /**
+     * @Brief  Checks if the specified key type(KT_VBR_VLANMAP) and
+     *         associated attributes are supported on the given controller,
+     *         based on the valid flag
+     *
+     * @param[in]  req               This structure contains IpcReqRespHeader
+     *                               (first 8 fields of input request structure).
+     * @param[in]  ikey              ikey contains key and value structure.
+     * @param[in]  ctrlr_id          controller associated with the input ikey.
+     *
+     * @retval  UPLL_RC_SUCCESS              Validation succeeded.
+     * @retval  UPLL_RC_ERR_GENERIC          Validation failure.
+     * @retval  UPLL_RC_ERR_INVALID_OPTION1  Option1 is not valid.
+     * @retval  UPLL_RC_ERR_INVALID_OPTION2  Option2 is not valid.
+     */
+    upll_rc_t ValidateCapability(IpcReqRespHeader *req,
+                                 ConfigKeyVal *ikey,
+                                 const char *ctrlr_name);
 
-  /**
-   * @Brief  Checks if the specified key type and
-   *         associated attributes are supported on the given controller,
-   *         based on the valid flag.
-   *
-   * @param[in]  val_vlan_map    KT_VBR_VLANMAP Value structure.
-   * @param[in]  attrs           Pointer to controller attribute.
-   * @param[in]  operation       Operation name.
-   *
-   * @retval  UPLL_RC_SUCCESS                     validation succeeded.
-   * @retval  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR  Attribute NOT_SUPPORTED.
-   * @retval  UPLL_RC_ERR_GENERIC                 Generic failure.
-   **/
-  upll_rc_t ValVlanmapAttributeSupportCheck(
-      val_vlan_map *vlanmap_val,
-      const uint8_t *attrs,
-      unc_keytype_operation_t operation);
+    /**
+     * @Brief  Checks if the specified key type and
+     *         associated attributes are supported on the given controller,
+     *         based on the valid flag.
+     *
+     * @param[in]  val_vlan_map    KT_VBR_VLANMAP Value structure.
+     * @param[in]  attrs           Pointer to controller attribute.
+     * @param[in]  operation       Operation name.
+     *
+     * @retval  UPLL_RC_SUCCESS                     validation succeeded.
+     * @retval  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR  Attribute NOT_SUPPORTED.
+     * @retval  UPLL_RC_ERR_GENERIC                 Generic failure.
+     **/
+    upll_rc_t ValVlanmapAttributeSupportCheck(
+        val_vlan_map *vlanmap_val,
+        const uint8_t *attrs,
+        unc_keytype_operation_t operation);
 
-  /**
-   * @Brief  Validates the syntax for KT_VBR_VLANMAP Keytype key structure.
-   *
-   * @param[in]  key_vlan_map  KT_VBR_VLANMAP key structure.
-   * @param[in]  operation     Operation type.
-   *
-   * @retval  UPLL_RC_SUCCESS        validation succeeded.
-   * @retval  UPLL_RC_ERR_CFG_SYNTAX validation failed.
-   *
-   */
-  upll_rc_t ValidateVlanmapKey(key_vlan_map *vlan_map_key,
-                               unc_keytype_operation_t operation);
+    /**
+     * @Brief  Validates the syntax for KT_VBR_VLANMAP Keytype key structure.
+     *
+     * @param[in]  key_vlan_map  KT_VBR_VLANMAP key structure.
+     * @param[in]  operation     Operation type.
+     *
+     * @retval  UPLL_RC_SUCCESS        validation succeeded.
+     * @retval  UPLL_RC_ERR_CFG_SYNTAX validation failed.
+     *
+     */
+    upll_rc_t ValidateVlanmapKey(key_vlan_map *vlan_map_key,
+                         unc_keytype_operation_t operation);
 
-  /**
-   * @Brief  Validates the syntax for KT_VBR_VLANMAP keytype value structure.
-   *
-   * @param[in]  val_vlan_map   KT_VBR_VLANMAP value structure.
-   * @param[in]  operation      Operation type.
-   *
-   * @retval  UPLL_RC_SUCCESS                validation succeeded.
-   * @retval  UPLL_RC_ERR_CFG_SYNTAX         validation failed.
-   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE   description field is not available
-   **/
-  upll_rc_t ValidateVlanmapValue(val_vlan_map *vlanmap_val,
-                                 uint32_t op);
+    /**
+     * @Brief  Validates the syntax for KT_VBR_VLANMAP keytype value structure.
+     *
+     * @param[in]  val_vlan_map   KT_VBR_VLANMAP value structure.
+     * @param[in]  operation      Operation type.
+     *
+     * @retval  UPLL_RC_SUCCESS                validation succeeded.
+     * @retval  UPLL_RC_ERR_CFG_SYNTAX         validation failed.
+     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE   description field is not available
+     **/
+    upll_rc_t ValidateVlanmapValue(val_vlan_map *vlanmap_val,
+                                   uint32_t op);
 
-  /**
-   * @brief  Perform Semantic Check to check Different vbridges
-   *          contain same switch-id and vlan-id
-   *
-   * @param[in]       ikey        ConfigKeyVal
-   * @param[out]      upll_rc_t   UPLL_RC_ERR_CFG_SEMANTIC on error
-   *                                UPLL_RC_SUCCESS on success
-   **/
-  upll_rc_t ValidateAttribute(ConfigKeyVal *kval,
-                              DalDmlIntf *dmi,
-                              IpcReqRespHeader *req = NULL);
-  /**
-   * @brief  Allocates for the specified val in the given configuration in the     * specified table.
-   *
-   * @param[in]  ck_val   Reference pointer to configval structure allocated.      * @param[in]  dt_type  specifies the configuration candidate/running/state
-   * @param[in]  tbl      specifies if the corresponding table is the  main
-   *                      table / controller table or rename table.
-   *
-   * @retval     UPLL_RC_SUCCESS      Successfull completion.
-   * @retval     UPLL_RC_ERR_GENERIC  Failure case.
-   **/
-  upll_rc_t AllocVal(ConfigVal *&ck_val,
-                     upll_keytype_datatype_t dt_type,
-                     MoMgrTables tbl = MAINTBL);
-  /**
-   * @brief      Method to get a configkeyval of the parent keytype
-   *
-   * @param[in/out]  okey           pointer to parent ConfigKeyVal
-   * @param[in]      ikey           pointer to the child configkeyval from
-   * which the parent configkey val is obtained.
-   *
-   * @retval         UPLL_RC_SUCCESS      Successfull completion.
-   * @retval         UPLL_RC_ERR_GENERIC  Failure case.
-   **/
-  upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *ikey);
-  uint8_t* GetControllerId(ConfigKeyVal *ck_vbr,
+    /**
+     * @brief  Perform Semantic Check to check Different vbridges
+     *          contain same switch-id and vlan-id
+     *
+     * @param[in]       ikey        ConfigKeyVal
+     * @param[out]      upll_rc_t   UPLL_RC_ERR_CFG_SEMANTIC on error
+     *                                UPLL_RC_SUCCESS on success
+     **/
+    upll_rc_t ValidateAttribute(ConfigKeyVal *kval,
+                                DalDmlIntf *dmi,
+                                IpcReqRespHeader *req = NULL);
+    /**
+     * @brief  Allocates for the specified val in the given configuration in the     * specified table.
+     *
+     * @param[in]  ck_val   Reference pointer to configval structure allocated.      * @param[in]  dt_type  specifies the configuration candidate/running/state
+     * @param[in]  tbl      specifies if the corresponding table is the  main
+     *                      table / controller table or rename table.
+     *
+     * @retval     UPLL_RC_SUCCESS      Successfull completion.
+     * @retval     UPLL_RC_ERR_GENERIC  Failure case.
+     **/
+    upll_rc_t AllocVal(ConfigVal *&ck_val,
+                       upll_keytype_datatype_t dt_type,
+                       MoMgrTables tbl = MAINTBL);
+    /**
+     * @brief      Method to get a configkeyval of the parent keytype
+     *
+     * @param[in/out]  okey           pointer to parent ConfigKeyVal
+     * @param[in]      ikey           pointer to the child configkeyval from
+     * which the parent configkey val is obtained.
+     *
+     * @retval         UPLL_RC_SUCCESS      Successfull completion.
+     * @retval         UPLL_RC_ERR_GENERIC  Failure case.
+     **/
+    upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *ikey);
+    uint8_t* GetControllerId(ConfigKeyVal *ck_vbr,
+                             upll_keytype_datatype_t dt_type,
+                             DalDmlIntf *dmi);
+    /**
+     * @brief  Filters the attributes which need not be sent to controller
+     *
+     * @param[in/out]  val1   first record value instance.
+     * @param[in]      val2   second record value instance.
+     * @param[in]      audit  Not used for VTN
+     * @param[in]      op     Operation to be performed
+     *
+     **/
+    bool FilterAttributes(void *&val1,
+                          void *val2,
+                          bool audit_status,
+                          unc_keytype_operation_t op);
+    /**
+     * @brief  Compares the valid value between two database records.
+     * 	     if both the values are same, update the valid flag for corresponding
+     * 	     attribute as invalid in the first record.
+     *
+     * @param[in/out]  val1   first record value instance.
+     * @param[in]      val2   second record value instance.
+     * @param[in]      audit  if true, CompareValidValue called from audit process.
+     *
+     **/
+    bool CompareValidValue(void *&val1,
+                           void *val2,
+                           bool audit);
+
+    /* Rename */
+    bool GetRenameKeyBindInfo(unc_key_type_t key_type,
+                              BindInfo *&binfo,
+                              int &nattr,
+                              MoMgrTables tbl);
+    upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey,
+                              ConfigKeyVal *ikey);
+    upll_rc_t IsReferenced(ConfigKeyVal *ikey,
                            upll_keytype_datatype_t dt_type,
                            DalDmlIntf *dmi);
-  /**
-   * @brief  Filters the attributes which need not be sent to controller
-   *
-   * @param[in/out]  val1   first record value instance.
-   * @param[in]      val2   second record value instance.
-   * @param[in]      audit  Not used for VTN
-   * @param[in]      op     Operation to be performed
-   *
-   **/
-  bool FilterAttributes(void *&val1,
-                        void *val2,
-                        bool audit_status,
-                        unc_keytype_operation_t op);
-  /**
-   * @brief  Compares the valid value between two database records.
-   * 	     if both the values are same, update the valid flag for corresponding
-   * 	     attribute as invalid in the first record.
-   *
-   * @param[in/out]  val1   first record value instance.
-   * @param[in]      val2   second record value instance.
-   * @param[in]      audit  if true, CompareValidValue called from audit process.
-   *
-   **/
-  bool CompareValidValue(void *&val1,
-                         void *val2,
-                         bool audit);
+    bool ResetDataForSibling(key_vlan_map *key_vmap,
+                             uudst::vbridge_vlanmap::kVbrVlanMapIndex index);
+    /**
+     * @brief  VlanmapOnBoundary:
+     *         Verifies whether the flow filter or policing map configured 
+     *         in the requested boundary vlink request of logical port id 
+     *         is SW or SD
+     *
+     * @param[in]   req          This structure contains
+     *                           IpcReqRespHeader(first 8 fields of 
+     *                           input request structure).
+     * @param[out]  ikey         ConfigKeyVal instance of vlink.
+     * @param[in]   dmi          pointer to DalDmlIntf  
+     **/
+    upll_rc_t CheckIfFfPmConfigured(IpcReqRespHeader *req, 
+                                    ConfigKeyVal *ikey, DalDmlIntf *dmi);
 
-  /* Rename */
-  bool GetRenameKeyBindInfo(unc_key_type_t key_type,
-                            BindInfo *&binfo,
-                            int &nattr,
-                            MoMgrTables tbl);
-  upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey,
-                            ConfigKeyVal *ikey);
-  upll_rc_t IsReferenced(ConfigKeyVal *ikey,
-                         upll_keytype_datatype_t dt_type,
-                         DalDmlIntf *dmi);
-  bool ResetDataForSibling(key_vlan_map *key_vmap,
-                           uudst::vbridge_vlanmap::kVbrVlanMapIndex index);
-  /**
-   * @brief  VlanmapOnBoundary:
-   *         Verifies whether the flow filter or policing map configured
-   *         in the requested boundary vlink request of logical port id
-   *         is SW or SD
-   *
-   * @param[in]   req          This structure contains
-   *                           IpcReqRespHeader(first 8 fields of
-   *                           input request structure).
-   * @param[out]  ikey         ConfigKeyVal instance of vlink.
-   * @param[in]   dmi          pointer to DalDmlIntf
-   **/
-  upll_rc_t CheckIfFfPmConfigured(IpcReqRespHeader *req,
-                                  ConfigKeyVal *ikey, DalDmlIntf *dmi);
-
-  static uint16_t kVbrVlanMapNumChildKey;
-
- public:
-  VlanMapMoMgr();
-  virtual ~VlanMapMoMgr() {
-    for (int i = 0; i < ntable; i++)
-      if (table[i]) {
-        delete table[i];
+    /* @brief             To return Success if all the valid flags are
+     *                      INVALID during update operation
+     * @param[in]  val_vlan_map    Value Structure
+     *
+     * @retval  true               All flags are INVALID.
+     * @retval  false              One of the attribute is not INVALID.
+     *
+     **/
+    bool IsAllAttrInvalid(val_vlan_map_t *val_vlanmap) {
+      for (unsigned int loop = 0;
+        loop < sizeof(val_vlanmap->valid)/sizeof(uint8_t); ++loop) {
+        if (UNC_VF_INVALID != val_vlanmap->valid[loop])
+          return false;
       }
-    delete[] table;
-  }
-  /**
-   * @brief      Method to check if individual portions of a key are valid
-   *
-   * @param[in/out]  ikey                 pointer to ConfigKeyVal referring to a UNC resource
-   * @param[in]      index                db index associated with the variable
-   *
-   * @retval         true                 input key is valid
-   * @retval         false                input key is invalid.
-   **/
-  bool IsValidKey(void *tkey,
-                  uint64_t index);
-  upll_rc_t IsLogicalPortAndVlanIdInUse(ConfigKeyVal *ckv, DalDmlIntf *dmi,
-                                        IpcReqRespHeader *req);
+      return true;
+    }
+    static uint16_t kVbrVlanMapNumChildKey;
+
+  public:
+    VlanMapMoMgr();
+    virtual ~VlanMapMoMgr() {
+      for (int i = 0; i < ntable; i++)
+        if (table[i]) {
+          delete table[i];
+        }
+      delete[] table;
+    }
+    /**
+     * @brief      Method to check if individual portions of a key are valid
+     *
+     * @param[in/out]  ikey                 pointer to ConfigKeyVal referring to a UNC resource
+     * @param[in]      index                db index associated with the variable
+     *
+     * @retval         true                 input key is valid
+     * @retval         false                input key is invalid.
+     **/
+    bool IsValidKey(void *tkey,
+                    uint64_t index);
+    upll_rc_t IsLogicalPortAndVlanIdInUse(ConfigKeyVal *ckv, DalDmlIntf *dmi,
+                                          IpcReqRespHeader *req);
 
   /* @brief         READ_SIBLING_BEGIN: Gets the first MO from the sibling group
    *                under the parent
@@ -306,7 +322,7 @@ class VlanMapMoMgr : public VnodeChildMoMgr {
                                   bool begin,
                                   DalDmlIntf *dal);
   /**
-   * @brief  VlanmapOnBoundary
+   * @brief  VlanmapOnBoundary 
    *         To handles boundary vlink logical port id - SW or SD request
    *
    * @param[in]   req          This structure contains
@@ -320,7 +336,7 @@ class VlanMapMoMgr : public VnodeChildMoMgr {
   upll_rc_t BoundaryVlanmapReq(IpcReqRespHeader *req,
                                ConfigKeyVal *ikey, ConfigKeyVal *db_vlink,
                                ConfigKeyVal *vlanmap_ckv, DalDmlIntf *dmi);
-
+ 
   upll_rc_t ReadSiblingBeginMo(IpcReqRespHeader *header,
                                ConfigKeyVal *ikey,
                                bool begin,
@@ -328,7 +344,7 @@ class VlanMapMoMgr : public VnodeChildMoMgr {
   upll_rc_t ReadSiblingCount(IpcReqRespHeader *header,
                              ConfigKeyVal *ikey,
                              DalDmlIntf *dmi);
-  upll_rc_t AdaptValToVtnService(ConfigKeyVal *ikey);
+  upll_rc_t AdaptValToVtnService(ConfigKeyVal *ikey, AdaptType adapt_type);
   upll_rc_t UpdateMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                      DalDmlIntf *dmi);
   upll_rc_t DeleteMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
@@ -365,7 +381,8 @@ class VlanMapMoMgr : public VnodeChildMoMgr {
   upll_rc_t GetChildConfigKey(ConfigKeyVal *&okey,
                               ConfigKeyVal *parent_key);
   upll_rc_t CheckIfVnodeisVlanmapped(ConfigKeyVal *ikey,
-                                     DalDmlIntf *dmi);
+                                   DalDmlIntf *dmi);
+
 };
 
 }  // namespace kt_momgr

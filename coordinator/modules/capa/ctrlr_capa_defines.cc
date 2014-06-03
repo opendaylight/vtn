@@ -62,6 +62,7 @@ KtAttrMap kam_dhcp_relay_server[] = {
 };
 
 KtAttrMap kam_dhcp_relay_interface[] = {
+
 };
 
 KtAttrMap kam_static_ip_route[] = {
@@ -77,6 +78,20 @@ KtAttrMap kam_vrouter_interface[] = {
   { "operstatus", vrt_if::kCapOperStatus }
 };
 
+KtAttrMap kam_vterminal[] = {
+  { "domain_id", vterminal::kCapDomainId },
+  { "description", vterminal::kCapDesc },
+  { "operstatus", vterminal::kCapOperStatus }
+};
+
+KtAttrMap kam_vterm_if[] = {
+  { "description", vterm_if::kCapDesc },
+  { "admin_status", vterm_if::kCapAdminStatus },
+  { "logical_port_id", vterm_if::kCapLogicalPortId },
+  { "vlan_id", vterm_if::kCapVlanId },
+  { "tagged", vterm_if::kCapTagged },
+  { "operstatus", vterm_if::kCapOperStatus }
+};
 #if 0
 // Unknown does not have controller configuration.
 KtAttrMap kam_vunknown[] = {
@@ -238,6 +253,7 @@ KtAttrMap kam_vbridge_flow_filter_entry[] = {
   { "action", vbr_flowfilter_entry::kCapAction },
   { "redirect_node", vbr_flowfilter_entry::kCapRedirectNode },
   { "redirect_port", vbr_flowfilter_entry::kCapRedirectPort },
+  { "redirect_direction", vbr_flowfilter_entry::kCapRedirectDirection },
   { "modify_destination_mac", vbr_flowfilter_entry::kCapModifyDstMac },
   { "modify_source_mac", vbr_flowfilter_entry::kCapModifySrcMac },
   { "network_monitor", vbr_flowfilter_entry::kCapNwmName },
@@ -260,6 +276,7 @@ KtAttrMap kam_vbridge_if_flow_filter_entry[] = {
   { "action", vbr_if_flowfilter_entry::kCapAction },
   { "redirect_node", vbr_if_flowfilter_entry::kCapRedirectNode },
   { "redirect_port", vbr_if_flowfilter_entry::kCapRedirectPort },
+  { "redirect_direction", vbr_if_flowfilter_entry::kCapRedirectDirection },
   { "modify_destination_mac", vbr_if_flowfilter_entry::kCapModifyDstMac },
   { "modify_source_mac", vbr_if_flowfilter_entry::kCapModifySrcMac },
   { "network_monitor", vbr_if_flowfilter_entry::kCapNwmName },
@@ -282,13 +299,38 @@ KtAttrMap kam_vrouter_if_flow_filter_entry[] = {
   { "action", vrt_if_flowfilter_entry::kCapAction },
   { "redirect_node", vrt_if_flowfilter_entry::kCapRedirectNode },
   { "redirect_port", vrt_if_flowfilter_entry::kCapRedirectPort },
+  { "redirect_direction", vrt_if_flowfilter_entry::kCapRedirectDirection },
   { "modify_destination_mac", vrt_if_flowfilter_entry::kCapModifyDstMac },
   { "modify_source_mac", vrt_if_flowfilter_entry::kCapModifySrcMac },
   { "network_monitor", vrt_if_flowfilter_entry::kCapNwmName },
   { "dscp", vrt_if_flowfilter_entry::kCapDscp },
   { "priority", vrt_if_flowfilter_entry::kCapPriority }
 };
-// ****************adding for physical module***********/
+
+KtAttrMap kam_vterminal_if_flow_filter[] = {
+};
+
+KtAttrMap kam_vterminal_if_flow_filter_entry[] = {
+  { "flowlist_name", vterm_if_flowfilter_entry::kCapFlowlistName },
+  { "action", vterm_if_flowfilter_entry::kCapAction },
+  { "redirect_node", vterm_if_flowfilter_entry::kCapRedirectNode },
+  { "redirect_port", vterm_if_flowfilter_entry::kCapRedirectPort },
+  { "redirect_direction", vterm_if_flowfilter_entry::kCapRedirectDirection },
+  { "modify_destination_mac", vterm_if_flowfilter_entry::kCapModifyDstMac },
+  { "modify_source_mac", vterm_if_flowfilter_entry::kCapModifySrcMac },
+  { "network_monitor", vterm_if_flowfilter_entry::kCapNwmName },
+  { "dscp", vterm_if_flowfilter_entry::kCapDscp },
+  { "priority", vterm_if_flowfilter_entry::kCapPriority }
+};
+
+KtAttrMap kam_vterminal_if_policing_map[] = {
+  { "policer_name", vterm_if_policingmap::kCapPolicername }
+};
+
+KtAttrMap kam_vterminal_if_policing_map_entry[] = {
+};
+
+//****************adding for physical module***********/
 
 KtAttrMap kam_controller[] = {
   { "type", controller::kType},
@@ -300,28 +342,36 @@ KtAttrMap kam_controller[] = {
   { "enable_audit", controller::kEnableAudit}
 };
 KtAttrMap kam_ctr_domain[] =  {
+
 };
 
 
 KtAttrMap kam_logical_port[] = {
+
 };
 
 KtAttrMap kam_switch[] =  {
+
 };
 
 KtAttrMap kam_port[] = {
+
 };
 
 KtAttrMap kam_link[] = {
+
 };
 
 KtAttrMap kam_boundary[] = {
+
 };
 
 KtAttrMap kam_ctr_data_flow[] = {
-};
 
+};
+ 
 KtAttrMap kam_data_flow[] =  {
+
 };
 
 KtAttrMap kam_vtn_dataflow[] = {
@@ -341,18 +391,18 @@ KtMap kt_map[] = {
     &kam_vbr_if[0] },
   { "vrouter", UNC_KT_VROUTER, ARRAY_SIZE(kam_vrouter),
     &kam_vrouter[0] },
-  { "dhcp_relay_server", UNC_KT_DHCPRELAY_SERVER,
-    ARRAY_SIZE(kam_dhcp_relay_server),
+  { "dhcp_relay_server", UNC_KT_DHCPRELAY_SERVER, ARRAY_SIZE(kam_dhcp_relay_server),
     &kam_dhcp_relay_server[0] },
-  { "dhcp_relay_interface", UNC_KT_DHCPRELAY_IF,
-    ARRAY_SIZE(kam_dhcp_relay_interface),
+  { "dhcp_relay_interface", UNC_KT_DHCPRELAY_IF, ARRAY_SIZE(kam_dhcp_relay_interface),
     &kam_dhcp_relay_interface[0] },
-  { "static_ip_route", UNC_KT_VRT_IPROUTE,
-    ARRAY_SIZE(kam_static_ip_route),
+  { "static_ip_route", UNC_KT_VRT_IPROUTE, ARRAY_SIZE(kam_static_ip_route),
     &kam_static_ip_route[0] },
-  { "vrouter_interface", UNC_KT_VRT_IF,
-    ARRAY_SIZE(kam_vrouter_interface),
+  { "vrouter_interface", UNC_KT_VRT_IF, ARRAY_SIZE(kam_vrouter_interface),
     &kam_vrouter_interface[0] },
+  { "vterminal", UNC_KT_VTERMINAL, ARRAY_SIZE(kam_vterminal),
+    &kam_vterminal[0] },
+  { "vterminal_interface", UNC_KT_VTERM_IF, ARRAY_SIZE(kam_vterm_if),
+    &kam_vterm_if[0] },
 #if 0
   { "vunknown", UNC_KT_VUNKNOWN, ARRAY_SIZE(kam_vunknown),
     &kam_vunknown[0] },
@@ -375,8 +425,7 @@ KtMap kt_map[] = {
     &kam_vlink[0] },
   { "network_monitor_group", UNC_KT_VBR_NWMONITOR, ARRAY_SIZE(kam_nwm),
     &kam_nwm[0] },
-  { "network_monitor_ip_host", UNC_KT_VBR_NWMONITOR_HOST,
-    ARRAY_SIZE(kam_nwm_host),
+  { "network_monitor_ip_host", UNC_KT_VBR_NWMONITOR_HOST, ARRAY_SIZE(kam_nwm_host),
     &kam_nwm_host[0] },
 
   { "flow_list", UNC_KT_FLOWLIST,
@@ -433,6 +482,18 @@ KtMap kt_map[] = {
   { "vrouter_interface_flow_filter_entry", UNC_KT_VRTIF_FLOWFILTER_ENTRY,
     ARRAY_SIZE(kam_vrouter_if_flow_filter_entry),
     &kam_vrouter_if_flow_filter_entry[0] },
+
+  { "vterminal_interface_flow_filter", UNC_KT_VTERMIF_FLOWFILTER,
+    ARRAY_SIZE(kam_vterminal_if_flow_filter), &kam_vterminal_if_flow_filter[0] },
+  { "vterminal_interface_flow_filter_entry", UNC_KT_VTERMIF_FLOWFILTER_ENTRY,
+    ARRAY_SIZE(kam_vterminal_if_flow_filter_entry),
+    &kam_vterminal_if_flow_filter_entry[0] },
+
+ { "vterminal_interface_policing_map", UNC_KT_VTERMIF_POLICINGMAP,
+    ARRAY_SIZE(kam_vterminal_if_policing_map), &kam_vterminal_if_policing_map[0] },
+ { "vterminal_interface_policing_map_entry", UNC_KT_VTERMIF_POLICINGMAP_ENTRY,
+    ARRAY_SIZE(kam_vterminal_if_policing_map_entry),
+    &kam_vterminal_if_policing_map_entry[0] },
 
   { "controller", UNC_KT_CONTROLLER, ARRAY_SIZE(kam_controller),
     &kam_controller[0] },

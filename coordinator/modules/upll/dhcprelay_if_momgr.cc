@@ -18,57 +18,56 @@ namespace upll {
 namespace kt_momgr {
 
 BindInfo DhcpRelayIfMoMgr::dhcprelay_if_bind_info[] = {
-  { uudst::dhcprelay_interface::kDbiVtnName, CFG_KEY, offsetof(
-          key_dhcp_relay_if, vrt_key.vtn_key.vtn_name),
-  uud::kDalChar, 32 },
-  { uudst::dhcprelay_interface::kDbiVrtName, CFG_KEY, offsetof(
-          key_dhcp_relay_if, vrt_key.vrouter_name),
-  uud::kDalChar, 32 },
-  { uudst::dhcprelay_interface::kDbiIfName, CFG_KEY, offsetof(
-          key_dhcp_relay_if, if_name),
-  uud::kDalChar, 32 },
-  { uudst::dhcprelay_interface::kDbiCtrlrName, CK_VAL, offsetof(key_user_data,
-                                                                ctrlr_id),
-  uud::kDalChar, 32 },
-  { uudst::dhcprelay_interface::kDbiDomainId, CK_VAL, offsetof(key_user_data,
-                                                               domain_id),
-  uud::kDalChar, 32 },
-  { uudst::dhcprelay_interface::kDbiCsRowstatus, CS_VAL, offsetof(
-          val_dhcp_relay_if, cs_row_status),
-  uud::kDalUint8, 1 },
-  { uudst::dhcprelay_interface::kDbiFlags, CK_VAL, offsetof(key_user_data,
-                                                            flags),
-  uud::kDalUint8, 1 }, };
+    { uudst::dhcprelay_interface::kDbiVtnName, CFG_KEY, offsetof(
+        key_dhcp_relay_if, vrt_key.vtn_key.vtn_name),
+      uud::kDalChar, 32 },
+    { uudst::dhcprelay_interface::kDbiVrtName, CFG_KEY, offsetof(
+        key_dhcp_relay_if, vrt_key.vrouter_name),
+      uud::kDalChar, 32 },
+    { uudst::dhcprelay_interface::kDbiIfName, CFG_KEY, offsetof(
+        key_dhcp_relay_if, if_name),
+      uud::kDalChar, 32 },
+    { uudst::dhcprelay_interface::kDbiCtrlrName, CK_VAL, offsetof(key_user_data,
+                                                                  ctrlr_id),
+      uud::kDalChar, 32 },
+    { uudst::dhcprelay_interface::kDbiDomainId, CK_VAL, offsetof(key_user_data,
+                                                                 domain_id),
+      uud::kDalChar, 32 },
+    { uudst::dhcprelay_interface::kDbiCsRowstatus, CS_VAL, offsetof(
+        val_dhcp_relay_if, cs_row_status),
+      uud::kDalUint8, 1 },
+    { uudst::dhcprelay_interface::kDbiFlags, CK_VAL, offsetof(key_user_data,
+                                                              flags),
+      uud::kDalUint8, 1 }, };
 
 BindInfo DhcpRelayIfMoMgr::dhcprealy_if_maintbl_key_update_bind_info[] = {
-  { uudst::dhcprelay_interface::kDbiVtnName, CFG_MATCH_KEY, offsetof(
-          key_dhcp_relay_if, vrt_key.vtn_key.vtn_name),
-  uud::kDalChar, kMaxLenVtnName + 1 },
-  { uudst::dhcprelay_interface::kDbiVrtName, CFG_MATCH_KEY, offsetof(
-          key_dhcp_relay_if, vrt_key.vrouter_name),
-  uud::kDalChar, kMaxLenVnodeName + 1 },
-  { uudst::dhcprelay_interface::kDbiIfName, CFG_MATCH_KEY, offsetof(
-          key_dhcp_relay_if, if_name),
-  uud::kDalChar, kMaxLenVnodeName + 1 },
-  { uudst::dhcprelay_interface::kDbiVtnName, CFG_INPUT_KEY, offsetof(
-          key_rename_vnode_info_t, new_unc_vtn_name),
-  uud::kDalChar, kMaxLenVtnName + 1 },
-  { uudst::dhcprelay_interface::kDbiVrtName, CFG_INPUT_KEY, offsetof(
-          key_rename_vnode_info_t, new_unc_vnode_name),
-  uud::kDalChar, kMaxLenVnodeName + 1 },
-  { uudst::dhcprelay_interface::kDbiFlags, CK_VAL, offsetof(
-          key_user_data_t, flags),
-  uud::kDalUint8, 1 } };
+    { uudst::dhcprelay_interface::kDbiVtnName, CFG_MATCH_KEY, offsetof(
+        key_dhcp_relay_if, vrt_key.vtn_key.vtn_name),
+      uud::kDalChar, kMaxLenVtnName + 1 },
+    { uudst::dhcprelay_interface::kDbiVrtName, CFG_MATCH_KEY, offsetof(
+        key_dhcp_relay_if, vrt_key.vrouter_name),
+      uud::kDalChar, kMaxLenVnodeName + 1 },
+    { uudst::dhcprelay_interface::kDbiIfName, CFG_MATCH_KEY, offsetof(
+        key_dhcp_relay_if, if_name),
+      uud::kDalChar, kMaxLenVnodeName + 1 },
+    { uudst::dhcprelay_interface::kDbiVtnName, CFG_INPUT_KEY, offsetof(
+        key_rename_vnode_info_t, new_unc_vtn_name),
+      uud::kDalChar, kMaxLenVtnName + 1 },
+    { uudst::dhcprelay_interface::kDbiVrtName, CFG_INPUT_KEY, offsetof(
+        key_rename_vnode_info_t, new_unc_vnode_name),
+      uud::kDalChar, kMaxLenVnodeName + 1 },
+    { uudst::dhcprelay_interface::kDbiFlags, CK_VAL, offsetof(
+        key_user_data_t, flags),
+      uud::kDalUint8, 1 } };
 
 DhcpRelayIfMoMgr::DhcpRelayIfMoMgr() {
   UPLL_FUNC_TRACE
-      ntable = MAX_MOMGR_TBLS;
+  ntable = MAX_MOMGR_TBLS;
   table = new Table *[ntable];
   table[MAINTBL]= new Table(uudst::kDbiDhcpRelayIfTbl, UNC_KT_DHCPRELAY_IF,
-                            dhcprelay_if_bind_info,
-                            IpctSt::kIpcStKeyDhcpRelayIf,
-                            IpctSt::kIpcStValDhcpRelayIf,
-                            uudst::dhcprelay_interface::kDbiDhcpRelayIfNumCols);
+                   dhcprelay_if_bind_info, IpctSt::kIpcStKeyDhcpRelayIf,
+                   IpctSt::kIpcStValDhcpRelayIf,
+                   uudst::dhcprelay_interface::kDbiDhcpRelayIfNumCols);
   table[RENAMETBL] = NULL;
   table[CTRLRTBL] = NULL;
   nchild = 0;
@@ -93,48 +92,47 @@ bool DhcpRelayIfMoMgr::GetRenameKeyBindInfo(unc_key_type_t key_type,
   return PFC_TRUE;
 }
 
-upll_rc_t DhcpRelayIfMoMgr::ValidateAttribute(ConfigKeyVal *ikey,
+upll_rc_t DhcpRelayIfMoMgr::ValidateAttribute(ConfigKeyVal *ikey, 
                                               DalDmlIntf *dmi,
                                               IpcReqRespHeader *req) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
-  if (ikey->get_key_type() != UNC_KT_DHCPRELAY_IF)
+  if (ikey->get_key_type() != UNC_KT_DHCPRELAY_IF) 
     result_code = UPLL_RC_ERR_CFG_SYNTAX;
 
-#if 0
+  #if 0
   /* Check if vrouter admin status is disabled */
   result_code = IsAdminStatusEnable(ikey, dmi);
   if (result_code != UPLL_RC_SUCCESS) {
     return UPLL_RC_ERR_CFG_SEMANTIC;
   }
-#endif
+  #endif
 
-  /* Check if vrt interface exists */
+    /* Check if vrt interface exists */
   MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>
-                                                 (GetMoManager(UNC_KT_VRT_IF)));
+                                            (GetMoManager(UNC_KT_VRT_IF)));
   if (!mgr) {
-    UPLL_LOG_DEBUG("Invalid param");
-    return UPLL_RC_ERR_GENERIC;
+   UPLL_LOG_DEBUG("Invalid param");
+   return UPLL_RC_ERR_GENERIC;
   }
   ConfigKeyVal *ckv_vrtif = NULL;
   result_code = mgr->GetChildConfigKey(ckv_vrtif, ikey);
   if (!ckv_vrtif || result_code != UPLL_RC_SUCCESS) {
-    UPLL_LOG_DEBUG("Returing error %d", result_code);
+    UPLL_LOG_DEBUG("Returing error %d",result_code);
     return UPLL_RC_ERR_GENERIC;
   }
   DbSubOp dbop = {kOpReadExist, kOpMatchNone, kOpInOutNone};
   result_code = mgr->UpdateConfigDB(ckv_vrtif, req->datatype,
-                                    UNC_OP_READ, dmi, &dbop, MAINTBL);
+                         UNC_OP_READ, dmi, &dbop, MAINTBL);
   if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
-    UPLL_LOG_DEBUG("Vrt interface does not exist %s",
-                   (ckv_vrtif->ToStr()).c_str());
+    UPLL_LOG_DEBUG("Vrt interface does not exist %s",(ckv_vrtif->ToStr()).c_str());
     delete ckv_vrtif;
     return UPLL_RC_ERR_CFG_SEMANTIC;
   } else if (result_code == UPLL_RC_ERR_INSTANCE_EXISTS) {
     delete ckv_vrtif;
     return UPLL_RC_SUCCESS;
   } else  {
-    UPLL_LOG_DEBUG(" Returning error %d", result_code);
+    UPLL_LOG_DEBUG(" Returning error %d",result_code);
   }
   delete ckv_vrtif;
   return result_code;
@@ -153,7 +151,7 @@ upll_rc_t DhcpRelayIfMoMgr::ValidateCapability(IpcReqRespHeader *req,
 
   if (!ctrlr_name) {
     ctrlr_name = reinterpret_cast<char*>((reinterpret_cast<key_user_data_t *>
-                                          (ikey->get_user_data()))->ctrlr_id);
+                  (ikey->get_user_data()))->ctrlr_id);
     if (!ctrlr_name || !strlen(ctrlr_name)) {
       UPLL_LOG_DEBUG("Controller Name is NULL");
       return UPLL_RC_ERR_GENERIC;
@@ -262,7 +260,7 @@ upll_rc_t DhcpRelayIfMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
   void *pkey;
   if (parent_key == NULL) {
     dhcp_key = reinterpret_cast<key_dhcp_relay_if *>
-        (ConfigKeyVal::Malloc(sizeof(key_dhcp_relay_if)));
+       (ConfigKeyVal::Malloc(sizeof(key_dhcp_relay_if)));
     if (okey) delete okey;
     okey = new ConfigKeyVal(UNC_KT_DHCPRELAY_IF, IpctSt::kIpcStKeyDhcpRelayIf,
                             dhcp_key, NULL);
@@ -276,37 +274,35 @@ upll_rc_t DhcpRelayIfMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
     dhcp_key = reinterpret_cast<key_dhcp_relay_if *>(okey->get_key());
   } else {
     dhcp_key = reinterpret_cast<key_dhcp_relay_if *>
-        (ConfigKeyVal::Malloc(sizeof(key_dhcp_relay_if)));
+       (ConfigKeyVal::Malloc(sizeof(key_dhcp_relay_if)));
   }
   unc_key_type_t keytype = parent_key->get_key_type();
   switch (keytype) {
     case UNC_KT_VTN:
       uuu::upll_strncpy(dhcp_key->vrt_key.vtn_key.vtn_name,
-                        reinterpret_cast<key_vtn *>(pkey)->vtn_name,
-                        (kMaxLenVtnName + 1));
+                   reinterpret_cast<key_vtn *>(pkey)->vtn_name,
+                   (kMaxLenVtnName + 1));
       *(dhcp_key->vrt_key.vrouter_name) = *"";
       break;
     case UNC_KT_VROUTER:
       uuu::upll_strncpy(dhcp_key->vrt_key.vtn_key.vtn_name,
-                        reinterpret_cast<key_vrt *>(pkey)->vtn_key.vtn_name,
-                        (kMaxLenVtnName + 1));
+             reinterpret_cast<key_vrt *>(pkey)->vtn_key.vtn_name,
+             (kMaxLenVtnName + 1));
       uuu::upll_strncpy(dhcp_key->vrt_key.vrouter_name,
-                        reinterpret_cast<key_vrt *>(pkey)->vrouter_name,
-                        (kMaxLenVnodeName + 1));
+             reinterpret_cast<key_vrt *>(pkey)->vrouter_name,
+             (kMaxLenVnodeName + 1));
       break;
     case UNC_KT_VRT_IF:
     case UNC_KT_DHCPRELAY_IF:
       uuu::upll_strncpy(dhcp_key->vrt_key.vtn_key.vtn_name,
-                        reinterpret_cast<key_dhcp_relay_if *>
-                        (pkey)->vrt_key.vtn_key.vtn_name,
-                        (kMaxLenVtnName + 1));
+          reinterpret_cast<key_dhcp_relay_if *>(pkey)->vrt_key.vtn_key.vtn_name,
+          (kMaxLenVtnName + 1));
       uuu::upll_strncpy(dhcp_key->vrt_key.vrouter_name,
-                        reinterpret_cast<key_dhcp_relay_if *>
-                        (pkey)->vrt_key.vrouter_name,
-                        (kMaxLenVnodeName + 1));
+             reinterpret_cast<key_dhcp_relay_if *>(pkey)->vrt_key.vrouter_name,
+             (kMaxLenVnodeName + 1));
       uuu::upll_strncpy(dhcp_key->if_name,
-                        reinterpret_cast<key_dhcp_relay_if *>(pkey)->if_name,
-                        (kMaxLenInterfaceName + 1));
+             reinterpret_cast<key_dhcp_relay_if *>(pkey)->if_name,
+             (kMaxLenInterfaceName + 1));
     default:
       break;
   }
@@ -337,15 +333,13 @@ upll_rc_t DhcpRelayIfMoMgr::GetParentConfigKey(ConfigKeyVal *&okey,
       (ikey->get_key());
   if (!pkey) return UPLL_RC_ERR_GENERIC;
   key_vrt *vrt_key = reinterpret_cast<key_vrt *>
-      (ConfigKeyVal::Malloc(sizeof(key_vrt)));
+    (ConfigKeyVal::Malloc(sizeof(key_vrt)));
   uuu::upll_strncpy(vrt_key->vtn_key.vtn_name,
-                    reinterpret_cast<key_dhcp_relay_if*>
-                    (pkey)->vrt_key.vtn_key.vtn_name,
-                    (kMaxLenVtnName + 1));
-  uuu::upll_strncpy(vrt_key->vrouter_name,
-                    reinterpret_cast<key_dhcp_relay_if*>
-                    (pkey)->vrt_key.vrouter_name,
-                    (kMaxLenVnodeName + 1));
+    reinterpret_cast<key_dhcp_relay_if*>(pkey)->vrt_key.vtn_key.vtn_name,
+        (kMaxLenVtnName + 1));
+      uuu::upll_strncpy(vrt_key->vrouter_name,
+        reinterpret_cast<key_dhcp_relay_if*>(pkey)->vrt_key.vrouter_name,
+             (kMaxLenVnodeName + 1));
   if (okey) delete okey;
   okey = new ConfigKeyVal(UNC_KT_VROUTER, IpctSt::kIpcStKeyVrt, vrt_key, NULL);
   if (okey == NULL) {
@@ -391,7 +385,7 @@ upll_rc_t DhcpRelayIfMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
           reinterpret_cast<val_dhcp_relay_if *>(GetVal(req));
       val_dhcp_relay_if *dhcp_val =
           reinterpret_cast<val_dhcp_relay_if *>(ConfigKeyVal::Malloc(
-                  sizeof(val_dhcp_relay_if)));
+          sizeof(val_dhcp_relay_if)));
       memcpy(dhcp_val, ival, sizeof(val_dhcp_relay_if));
       tmp1 = new ConfigVal(IpctSt::kIpcStValDhcpRelayIf, dhcp_val);
     }
@@ -399,7 +393,7 @@ upll_rc_t DhcpRelayIfMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
   void *tkey = (req)->get_key();
   key_dhcp_relay_if *ikey = reinterpret_cast<key_dhcp_relay_if *>(tkey);
   key_dhcp_relay_if *dhcp_key = reinterpret_cast<key_dhcp_relay_if *>(
-      ConfigKeyVal::Malloc(sizeof(key_dhcp_relay_if)));
+    ConfigKeyVal::Malloc(sizeof(key_dhcp_relay_if)));
   memcpy(dhcp_key, ikey, sizeof(key_dhcp_relay_if));
   okey = new ConfigKeyVal(UNC_KT_DHCPRELAY_IF, IpctSt::kIpcStKeyDhcpRelayIf,
                           dhcp_key, tmp1);
@@ -416,7 +410,7 @@ upll_rc_t DhcpRelayIfMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
 upll_rc_t DhcpRelayIfMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
                                                unc_keytype_operation_t op,
                                                uint32_t driver_result,
-                                               ConfigKeyVal *upd_key,
+                                               ConfigKeyVal *upd_key, 
                                                DalDmlIntf *dmi,
                                                ConfigKeyVal *ctrlr_key) {
   UPLL_FUNC_TRACE;
@@ -425,17 +419,17 @@ upll_rc_t DhcpRelayIfMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
 
   unc_keytype_configstatus_t cs_status =
       (driver_result == UPLL_RC_SUCCESS) ? UNC_CS_APPLIED
-      : UNC_CS_NOT_APPLIED;
+                                         : UNC_CS_NOT_APPLIED;
   if (dhcp_val == NULL) return UPLL_RC_ERR_GENERIC;
   if (op == UNC_OP_CREATE) {
     dhcp_val->cs_row_status = cs_status;
   }
-  UPLL_LOG_TRACE("%s", (ikey->ToStrAll()).c_str());
-  val_dhcp_relay_if *dhcp_val2 =
-      reinterpret_cast<val_dhcp_relay_if *>(GetVal(upd_key));
+  UPLL_LOG_TRACE("%s",(ikey->ToStrAll()).c_str());
+  val_dhcp_relay_if *dhcp_val2 = 
+          reinterpret_cast<val_dhcp_relay_if *>(GetVal(upd_key));
   if (dhcp_val2 == NULL) return UPLL_RC_ERR_GENERIC;
   if (UNC_OP_UPDATE == op) {
-    UPLL_LOG_TRACE("%s", (upd_key->ToStrAll()).c_str());
+    UPLL_LOG_TRACE("%s",(upd_key->ToStrAll()).c_str());
     dhcp_val->cs_row_status = dhcp_val2->cs_row_status;
   }
   return UPLL_RC_SUCCESS;
@@ -454,8 +448,8 @@ upll_rc_t DhcpRelayIfMoMgr::UpdateAuditConfigStatus(
   if (NULL == val) return UPLL_RC_ERR_GENERIC;
   if (uuc::kUpllUcpCreate == phase) val->cs_row_status = cs_status;
   if ((uuc::kUpllUcpUpdate == phase) &&
-      (val->cs_row_status == UNC_CS_INVALID ||
-       val->cs_row_status == UNC_CS_NOT_APPLIED))
+           (val->cs_row_status == UNC_CS_INVALID ||
+            val->cs_row_status == UNC_CS_NOT_APPLIED))
     val->cs_row_status = cs_status;
   return result_code;
 }
@@ -473,21 +467,21 @@ upll_rc_t DhcpRelayIfMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
   key_dhcp_relay_if_t * key_dhcp = reinterpret_cast<key_dhcp_relay_if_t *>
       (ConfigKeyVal::Malloc(sizeof(key_dhcp_relay_if_t)));
   uuu::upll_strncpy(key_dhcp->vrt_key.vtn_key.vtn_name,
-                    key_rename->old_unc_vtn_name, (kMaxLenVtnName + 1));
+         key_rename->old_unc_vtn_name, (kMaxLenVtnName + 1));
   if (ikey->get_key_type() == UNC_KT_VROUTER) {
     if (!strlen(reinterpret_cast<char *>(key_rename->old_unc_vnode_name))) {
       free(key_dhcp);
       return UPLL_RC_ERR_GENERIC;
     }
     uuu::upll_strncpy(key_dhcp->vrt_key.vrouter_name,
-                      key_rename->old_unc_vnode_name, (kMaxLenVnodeName + 1));
+           key_rename->old_unc_vnode_name, (kMaxLenVnodeName + 1));
   } else {
     if (!strlen(reinterpret_cast<char *>(key_rename->new_unc_vnode_name))) {
       FREE_IF_NOT_NULL(key_dhcp);
       return UPLL_RC_ERR_GENERIC;
     }
     uuu::upll_strncpy(key_dhcp->vrt_key.vrouter_name,
-                      key_rename->new_unc_vnode_name, (kMaxLenVnodeName+1));
+       key_rename->new_unc_vnode_name, (kMaxLenVnodeName+1));
   }
 
   okey = new ConfigKeyVal(UNC_KT_DHCPRELAY_IF, IpctSt::kIpcStKeyDhcpRelayIf,
@@ -513,8 +507,8 @@ upll_rc_t DhcpRelayIfMoMgr::ValidateMessage(IpcReqRespHeader *req,
 
   upll_rc_t ret_val;
   if (ikey->get_st_num() != IpctSt::kIpcStKeyDhcpRelayIf) {
-    UPLL_LOG_DEBUG("Invalid key structure received. received struct num - %d",
-                   ikey->get_st_num());
+     UPLL_LOG_DEBUG("Invalid key structure received. received struct num - %d",
+                  ikey->get_st_num());
     return UPLL_RC_ERR_BAD_REQUEST;
   }
   key_dhcp_relay_if *dhcprelayif_key =
@@ -537,10 +531,10 @@ upll_rc_t DhcpRelayIfMoMgr::ValidateMessage(IpcReqRespHeader *req,
     if (dt_type == UPLL_DT_CANDIDATE || dt_type == UPLL_DT_RUNNING
         || dt_type == UPLL_DT_STARTUP || dt_type == UPLL_DT_STATE
         || UPLL_DT_IMPORT == dt_type) {
-      if (option1 != UNC_OPT1_NORMAL)
+      if (option1 != UNC_OPT1_NORMAL) 
         return UPLL_RC_ERR_INVALID_OPTION1;
       if (option2 != UNC_OPT2_NONE)
-        return UPLL_RC_ERR_INVALID_OPTION2;
+        return UPLL_RC_ERR_INVALID_OPTION2; 
       UPLL_LOG_DEBUG("Value structure is none for operation type:%d", op);
       return UPLL_RC_SUCCESS;
     } else {
@@ -553,18 +547,18 @@ upll_rc_t DhcpRelayIfMoMgr::ValidateMessage(IpcReqRespHeader *req,
 }
 
 upll_rc_t DhcpRelayIfMoMgr::ValidateDhcpRelayIfKey(
-    key_dhcp_relay_if *dhcprelayif_key,
+    key_dhcp_relay_if *dhcprelayif_key, 
     unc_keytype_operation_t operation) {
 
   UPLL_FUNC_TRACE;
   upll_rc_t ret_val;
 
   ret_val = ValidateKey(reinterpret_cast<char *>
-                        (dhcprelayif_key->vrt_key.vtn_key.vtn_name),
-                        kMinLenVtnName, kMaxLenVtnName);
+          (dhcprelayif_key->vrt_key.vtn_key.vtn_name),
+          kMinLenVtnName, kMaxLenVtnName);
   if (ret_val != UPLL_RC_SUCCESS) {
     UPLL_LOG_DEBUG("syntax check failed. VTN Name - %s",
-                   dhcprelayif_key->vrt_key.vtn_key.vtn_name);
+                  dhcprelayif_key->vrt_key.vtn_key.vtn_name);
     return UPLL_RC_ERR_CFG_SYNTAX;
   }
   ret_val = ValidateKey(reinterpret_cast<char *>
@@ -572,17 +566,17 @@ upll_rc_t DhcpRelayIfMoMgr::ValidateDhcpRelayIfKey(
                         kMinLenVnodeName, kMaxLenVnodeName);
   if (ret_val != UPLL_RC_SUCCESS) {
     UPLL_LOG_DEBUG("syntax check failed. VROUTER Name - %s",
-                   dhcprelayif_key->vrt_key.vrouter_name);
+                  dhcprelayif_key->vrt_key.vrouter_name);
     return UPLL_RC_ERR_CFG_SYNTAX;
   }
   if (operation != UNC_OP_READ_SIBLING_COUNT &&
       operation != UNC_OP_READ_SIBLING_BEGIN) {
     ret_val = ValidateKey(reinterpret_cast<char *>
-                          (dhcprelayif_key->if_name), kMinLenInterfaceName,
-                          kMaxLenInterfaceName);
+                        (dhcprelayif_key->if_name), kMinLenInterfaceName,
+                        kMaxLenInterfaceName);
     if (ret_val != UPLL_RC_SUCCESS) {
       UPLL_LOG_DEBUG("syntax check failed. If name - %s",
-                     dhcprelayif_key->if_name);
+                  dhcprelayif_key->if_name);
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
   } else {
@@ -598,26 +592,25 @@ upll_rc_t DhcpRelayIfMoMgr::IsReferenced(ConfigKeyVal *ikey,
   return UPLL_RC_SUCCESS;
 }
 
-upll_rc_t DhcpRelayIfMoMgr::IsAdminStatusEnable(ConfigKeyVal *ikey,
+upll_rc_t DhcpRelayIfMoMgr::IsAdminStatusEnable(ConfigKeyVal *ikey, 
                                                 DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
-  MoMgrImpl *vrt_mgr = reinterpret_cast<MoMgrImpl *>(
-      const_cast<MoManager *>
-      (GetMoManager(UNC_KT_VROUTER)));
+  MoMgrImpl *vrt_mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>
+                                            (GetMoManager(UNC_KT_VROUTER)));
   if (!vrt_mgr) {
-    UPLL_LOG_DEBUG("Invalid param");
-    return UPLL_RC_ERR_GENERIC;
+   UPLL_LOG_DEBUG("Invalid param");
+   return UPLL_RC_ERR_GENERIC;
   }
   ConfigKeyVal *ckv_vrt = NULL;
   result_code = GetParentConfigKey(ckv_vrt, ikey);
   if (!ckv_vrt || result_code != UPLL_RC_SUCCESS) {
-    UPLL_LOG_DEBUG("Returing error %d", result_code);
+    UPLL_LOG_DEBUG("Returing error %d",result_code);
     return UPLL_RC_ERR_GENERIC;
   }
   DbSubOp dbop = {kOpReadSingle, kOpMatchNone, kOpInOutNone};
   result_code = vrt_mgr->ReadConfigDB(ckv_vrt, UPLL_DT_CANDIDATE, UNC_OP_READ,
-                                      dbop, dmi, MAINTBL);
+                             dbop, dmi, MAINTBL);
   if (result_code == UPLL_RC_SUCCESS) {
     val_vrt_t *vrt_val = reinterpret_cast<val_vrt_t *>(GetVal(ckv_vrt));
     if (vrt_val && vrt_val->dhcp_relay_admin_status == UPLL_ADMIN_ENABLE) {

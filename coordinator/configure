@@ -17,6 +17,7 @@ use strict;
 use vars qw($UNC_PRODUCT_NAME $DEBUG_BUILD @UNLINK_ON_ERROR $YEAR_RANGE
 	    $SRCROOT $CORE_SRCROOT $VERSION_FILE $BLDDIR @PATH %DEFAULT_LIBPATH
 	    @PKG_CONFIG_LIBDIR @JAVA_LIBSPEC @JAVA_LIBRARY_PATH
+	    %INCDIRS_FIRST_MAP %LIBDIRS_FIRST_MAP
 	    @TOMCAT_LIBSPEC @BUILD_ID_SPEC %COMMAND_SPEC);
 
 use Cwd qw(abs_path);
@@ -71,6 +72,9 @@ use constant	UG_NAMELEN_MAX		=> 31;
 
 $DEBUG_BUILD = 1;
 
+# Required JDK version.
+use constant	JDK_VERSION		=> '1.7';
+
 # Required ODBC version.
 use constant	ODBC_VERSION		=> 3;
 
@@ -95,6 +99,12 @@ use constant	JSON_C_VERSION		=> '0.10';
 		  NAME => 'POSTGRESQL_JDBC',
 		  FILEPAT => qr(postgresql-.*-jdbc.*\.jar$),
 		  REQUIRED_CLASS => 'org/postgresql/PGConnection.class'},
+		 {KEY => 'commons-codec',
+		  DESC => 'Apache Commons Codec library',
+		  NAME => 'COMMONS_CODEC',
+		  FILEPAT => qr(commons-codec-.*\.jar$),
+		  REQUIRED_CLASS =>
+			  'org/apache/commons/codec/binary/Base64.class'},
 		 {KEY => 'commons-net', DESC => 'Apache Commons Net library',
 		  NAME => 'COMMONS_NET',
 		  FILEPAT => qr(commons-net-.*\.jar$),
@@ -234,8 +244,8 @@ sub get_command($$$);
 sub search_command($@);
 sub read_command_output(\%@);
 sub read_command_oneline(\%@);
-sub fixup_cppflags($);
-sub fixup_ldflags($\@\@);
+sub fixup_cppflags($%);
+sub fixup_ldflags($\@\@%);
 
 END {
 	if (@UNLINK_ON_ERROR) {
@@ -1343,7 +1353,7 @@ OUT
 }
 
 {
-	package Config;
+	package Configure;
 
 	use Getopt::Long;
 	use Config;
@@ -1488,6 +1498,10 @@ OUT
 		   "Specify absolute path to PostgreSQL JDBC driver.",
 		   arg => OptSpec::OPTARG_FILE, auto => 1, unc => 1,
 		   check => 'checkAbsPath'],
+		  [OPTTYPE_STRING, 'commons-codec',
+		   "Specify absolute path to Apache Commons Codec library.",
+		   arg => OptSpec::OPTARG_FILE, auto => 1, unc => 1,
+		   check => 'checkAbsPath'],
 		  [OPTTYPE_STRING, 'commons-net',
 		   "Specify absolute path to Apache Commons Net library.",
 		   arg => OptSpec::OPTARG_FILE, auto => 1, unc => 1,
@@ -1507,7 +1521,7 @@ OUT
 		Getopt::Long::Configure(qw(no_ignore_case bundling
 					   require_order));
 		my $me = {_OPTS => {}, _INSTOPTS => {}, _INSTRELOPTS => {},
-			  _UNHANDLED => {}};
+			  _UNHANDLED => {}, _OVERWRITE => {}};
 		$me = bless($me, $class);
 		$me->parse();
 
@@ -1615,7 +1629,6 @@ OUT
 		}
 
 		my $unhandled = $me->{_UNHANDLED};
-
 		while (my ($key, $opt) = each(%$unhandled)) {
 			push(@args, $opt->getArguments());
 		}
@@ -1662,6 +1675,10 @@ OUT
 		foreach my $vars (@makevars) {
 			push(@args, '--with-make-variable', $vars);
 		}
+
+		# Build Java bindings.
+		push(@args, '--enable-java',
+		     '--with-java-version=' . main::JDK_VERSION);
 
 		return \@args;
 	}
@@ -1738,7 +1755,7 @@ OUT
 
 		my $spec = $me->getSpec($key);
 
-		return ($spec) ? $spec->value() : undef;
+		return ($spec) ? $spec->value() : $me->{_OVERWRITE}->{$key};
 	}
 
 	sub set
@@ -1746,7 +1763,13 @@ OUT
 		my $me = shift;
 		my ($key, $value) = @_;
 
-		$me->getSpec($key)->value($value);
+		my $spec = $me->getSpec($key);
+		if ($spec) {
+			$spec->value($value);
+		}
+		else {
+			$me->{_OVERWRITE}->{$value} = $value;
+		}
 	}
 
 	sub getInstDirKeys
@@ -1813,7 +1836,7 @@ MAIN:
 	$BLDDIR = $SRCROOT . '/' . BUILD_DIR;
 
 	# Parse options.
-	my $conf = Config->new;
+	my $conf = Configure->new;
 
 	my $recheck = $conf->recheck();
 	if ($recheck) {
@@ -1831,7 +1854,7 @@ MAIN:
 		}
 
 		(@argv_saved) = (@ARGV);
-		$conf = Config->new;
+		$conf = Configure->new;
 	}
 
 	# Run core/configure.
@@ -2388,28 +2411,7 @@ sub check_config_tests(\%\@)
 
 sub check_srcroot()
 {
-	my $dir;
-	if ($0 =~ m,/,) {
-		$dir = dirname($0);
-	}
-	else {
-		# Determine source tree path from PATH environment variable.
-		my $confst = stat($0);
-		fatal("stat($0) failed: $!") unless ($confst);
-		foreach my $d (split(/:/, $ENV{PATH})) {
-			my $path = "$d/configure";
-			my $st = stat($path);
-			next unless ($st);
-			if ($st->dev == $confst->dev and
-			    $st->ino == $confst->ino) {
-				$dir = $d;
-				last;
-			}
-		}
-
-		fatal("Failed to determine source tree root.") unless ($dir);
-	}
-
+	my $dir = dirname($0);
 	my $root = abs_path($dir) or
 		fatal("Failed to determine source tree root: $dir");
 
@@ -2638,6 +2640,23 @@ OUT
 	$vars->{ODBC_DEFS_MK_VAR()} = $objdir . '/' . ODBC_DEFS_MK;
 	$vars->{ODBC_RULES_MK_VAR()} = $vars->{BLDDIR} . '/' . ODBC_RULES_MK;
 
+	if (%INCDIRS_FIRST_MAP and defined($cppflags)) {
+		print "-- adjusting CPPFLAGS for ODBC...";
+		STDOUT->flush();
+		$cppflags = fixup_cppflags($cppflags,
+					   defaults => \%INCDIRS_FIRST_MAP);
+	}
+	if (%LIBDIRS_FIRST_MAP and
+	    (defined($ldflags) or @libpath or @runpath)) {
+		print "-- adjusting LDFLAGS for ODBC...";
+		STDOUT->flush();
+		undef @libpath;
+		undef @runpath;
+		$ldflags = [] unless (defined($ldflags));
+		$ldflags = fixup_ldflags($ldflags, @libpath, @runpath,
+					 defaults => \%LIBDIRS_FIRST_MAP);
+	}
+
 	$odbcvars->{ODBC_CPPFLAGS} = join(' ', @$cppflags)
 		if (defined($cppflags));
 	$odbcvars->{ODBC_LIBDIRS} = join(' ', @libpath) if (@libpath);
@@ -2831,6 +2850,23 @@ sub check_package($\%$%)
 	unless ($vprefix) {
 		$vprefix = uc($desc);
 		$vprefix =~ s,-,_,g;
+	}
+
+	if (%INCDIRS_FIRST_MAP and defined($cflags)) {
+		print "-- adjusting CPPFLAGS for $desc...";
+		STDOUT->flush();
+		$cflags = fixup_cppflags($cflags,
+					 defaults => \%INCDIRS_FIRST_MAP);
+	}
+	if (%LIBDIRS_FIRST_MAP and
+	    (defined($ldflags) or @libpath or @runpath)) {
+		print "-- adjusting LDFLAGS for $desc...";
+		STDOUT->flush();
+		undef @libpath;
+		undef @runpath;
+		$ldflags = [] unless (defined($ldflags));
+		$ldflags = fixup_ldflags($ldflags, @libpath, @runpath,
+					 defaults => \%LIBDIRS_FIRST_MAP);
 	}
 
 	my $result = $args{vars} || $vars;
@@ -3531,8 +3567,19 @@ sub parse_config_mk(\%)
 		$vars->{$name} = $value;
 	}
 
+	# Set up INCDIRS_FIRST_MAP map.
+	my $white = qr,\s+,;
+	my $first = $vars->{CC_INCDIRS_FIRST};
+	(%INCDIRS_FIRST_MAP) = map {$_ => 1} (split($white, $first))
+		if ($first);
+
+	# Set up LIBDIRS_FIRST_MAP map.
+	$first = $vars->{LD_LIBDIRS_FIRST};
+	(%LIBDIRS_FIRST_MAP) = map {$_ => 1} (split($white, $first))
+		if ($first);
+
 	# Set up DEFAULT_LIBPATH map.
-	my (@libs) = (split(/\s+/, $vars->{DEFAULT_LIBPATH}));
+	my (@libs) = (split($white, $vars->{DEFAULT_LIBPATH}));
 	(%DEFAULT_LIBPATH) = map {$_ => 1} @libs;
 
 	# Set well-known standard library directories to DEFAULT_LIBPATH.
@@ -3616,7 +3663,11 @@ sub get_command($$$)
 	my $path = $conf->get($cfkey);
 
 	return $path if (defined($path));
-	return $ENV{$envkey};
+
+	$path = $ENV{$envkey};
+	return $path if ($path and -x $path);
+
+	return undef;
 }
 
 sub search_command($@)
@@ -3688,17 +3739,26 @@ sub read_command_oneline(\%@)
 	error("\"$cmd\" exited with unexpected output.");
 }
 
-sub fixup_cppflags($)
+sub fixup_cppflags($%)
 {
-	my ($cppflags) = @_;
+	my ($cppflags, %args) = @_;
 
-	my (@list) = split(/\s+/, $cppflags);
+	my $list;
+	if (ref($cppflags) eq 'ARRAY') {
+		$list = $cppflags;
+	}
+	else {
+		my (@l) = split(/\s+/, $cppflags);
+		$list = \@l;
+	}
+
 	my (@flags);
 	my $pat = qr,^-I(.+)$,;
+	my $defaults = $args{defaults} || {DEFAULT_INCDIR() => 1};
 
-	while (defined(my $arg = shift(@list))) {
+	while (defined(my $arg = shift(@$list))) {
 		if ($arg eq '-I') {
-			my $path = shift(@list);
+			my $path = shift(@$list);
 
 			unless (defined($path)) {
 				print "failed\n\n";
@@ -3708,7 +3768,7 @@ sub fixup_cppflags($)
 
 			$path = canonicalize_path($path);
 			push(@flags, '-I' . $path)
-				unless ($path eq DEFAULT_INCDIR);
+				unless ($defaults->{$path});
 			next;
 		}
 
@@ -3717,7 +3777,7 @@ sub fixup_cppflags($)
 
 			$path = canonicalize_path($path);
 			push(@flags, '-I' . $path)
-				unless ($path eq DEFAULT_INCDIR);
+				unless ($defaults->{$path});
 			next;
 		}
 
@@ -3735,29 +3795,38 @@ sub fixup_cppflags($)
 	return undef;
 }
 
-sub fixup_ldflags($\@\@)
+sub fixup_ldflags($\@\@%)
 {
-	my ($ldflags, $libpath, $runpath) = @_;
+	my ($ldflags, $libpath, $runpath, %args) = @_;
 
-	my (@list) = split(/\s+/, $ldflags);
+	my $list;
+	if (ref($ldflags) eq 'ARRAY') {
+		$list = $ldflags;
+	}
+	else {
+		my (@l) = split(/\s+/, $ldflags);
+		$list = \@l;
+	}
+
+	my $defaults = $args{defaults} || \%DEFAULT_LIBPATH;
 	my (@flags, %lmap, %rmap);
 	my $pat = qr,^-L(.+)$,;
 	my $rpat = qr/^-Wl,-rpath,(.+)$/;
 
 	my $add_path = sub {
-		my ($path, $list, $map, $f) = @_;
+		my ($path, $l, $map, $f) = @_;
 
 		$path = canonicalize_path($path);
-		unless ($DEFAULT_LIBPATH{$path} or $map->{$path}) {
+		unless ($defaults->{$path} or $map->{$path}) {
 			push(@flags, $f . $path);
-			push(@$list, $path);
+			push(@$l, $path);
 			$map->{$path} = 1;
 		}
 	};
 
-	while (defined(my $arg = shift(@list))) {
+	while (defined(my $arg = shift(@$list))) {
 		if ($arg eq '-L') {
-			my $path = shift(@list);
+			my $path = shift(@$list);
 
 			unless (defined($path)) {
 				print "failed\n\n";

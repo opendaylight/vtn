@@ -2611,84 +2611,6 @@ TEST_F(VtnMoMgrTest, ReadSiblingCount_vtnStation_01) {
   delete ikey;
 }
 
-/* MappingvExtTovBr() */
-TEST_F(VtnMoMgrTest, MappingvExtTovBr_vtnstation_02) {
-  VtnMoMgr vtn;
-  IPC_REQ_RESP_HEADER_DECL(req);
-  DalDmlIntf *dmi(getDalDmlIntf());
-  uint32_t count1 = 0;
-  uint32_t *count = &count1;
-
-  key_vtnstation_controller_t *key_station
-      (ZALLOC_TYPE(key_vtnstation_controller_t));
-  strcpy((char*)key_station->controller_name, (const char *)"pfc1");
-  val_vtnstation_controller_st_t *val_station(
-      ZALLOC_TYPE(val_vtnstation_controller_st_t));
-  strcpy((char*)val_station->vtn_name, (const char *)"vtn1");
-  strcpy((char*)val_station->domain_id, (const char *)"dom1");
-  strcpy((char*)val_station->vbr_name, (const char *)"vbr_name1");
-  strcpy((char*)val_station->vbrif_name, (const char *)"vbrif_name1");
-  strcpy((char*)val_station->switch_id, (const char *)"switch_id1");
-  strcpy((char*)val_station->port_name, (const char *)"port1");
-
-  ConfigVal *config_val =  new ConfigVal(
-    IpctSt::kIpcStValVtnstationControllerSt, val_station);
-  ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER,
-     IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
-
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC,
-    vtn.MappingvExtTovBr(ikey, req, dmi, count));
-  val_station->map_type = UPLL_IF_VLAN_MAP;
-  EXPECT_EQ(UPLL_RC_SUCCESS,
-    vtn.MappingvExtTovBr(ikey, req, dmi, count));
-  delete ikey;
-}
-
-TEST_F(VtnMoMgrTest, MappingvExtTovBr_vtnstation_03) {
-  VtnMoMgr vtn;
-  IPC_REQ_RESP_HEADER_DECL(req);
-  DalDmlIntf *dmi(getDalDmlIntf());
-  uint32_t count1 = 0;
-  uint32_t *count = &count1;
-
-  key_vtnstation_controller_t *key_station
-      (ZALLOC_TYPE(key_vtnstation_controller_t));
-  strcpy((char*)key_station->controller_name, (const char *)"pfc1");
-  val_vtnstation_controller_st_t *val_station(ZALLOC_TYPE(val_vtnstation_controller_st_t));
-  uuu::upll_strncpy(
-    val_station->vtn_name, "vtn_name", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(
-    val_station->vbr_name, "vbr_name", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(
-    val_station->vbrif_name, "vbrif_name", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(
-    val_station->domain_id, "domain_id", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(
-    val_station->switch_id, "switch_id", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(
-    val_station->port_name, "port_name", (kMaxLenCtrlrId + 1));
-  val_station->valid[UPLL_IDX_VTN_NAME_VSCS] = UNC_VF_VALID;
-  val_station->valid[UPLL_IDX_VBR_NAME_VSCS] = UNC_VF_VALID;
-  val_station->valid[UPLL_IDX_VBR_IF_NAME_VSCS] = UNC_VF_VALID;
-
-  ConfigVal *config_val =  new ConfigVal(
-    IpctSt::kIpcStValVtnstationControllerSt, val_station);
-  ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER,
-     IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
-
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC,
-    vtn.MappingvExtTovBr(ikey, req, dmi, count));
-  val_station->map_type = UPLL_IF_VLAN_MAP;
-  EXPECT_EQ(UPLL_RC_SUCCESS,
-    vtn.MappingvExtTovBr(ikey, req, dmi, count));
-  val_station->valid[UPLL_IDX_VTN_NAME_VSCS] = UNC_VF_VALID;
-  val_station->valid[UPLL_IDX_VBR_IF_NAME_VSCS] = UNC_VF_VALID;
-  EXPECT_EQ(UPLL_RC_SUCCESS,
-    vtn.MappingvExtTovBr(ikey, req, dmi, count));
-
-  delete ikey;
-}
-
 TEST_F(VtnMoMgrTest, MappingvExtTovBr_vtnstation_val_NULL) {
   VtnMoMgr vtn;
   IPC_REQ_RESP_HEADER_DECL(req);
@@ -2768,52 +2690,6 @@ TEST_F(VtnMoMgrTest, MappingvExtTovBr_vtnstation_05) {
     DalOdbcMgr::RECORD_EXISTS, kDalRcSuccess);
   DalOdbcMgr::stub_setResultcode(
     DalOdbcMgr::RECORD_COUNT, kDalRcSuccess);
-  IPC_REQ_RESP_HEADER_DECL(req);
-  DalDmlIntf *dmi(getDalDmlIntf());
-  uint32_t count1 = 0;
-  uint32_t *count = &count1;
-
-  key_vtnstation_controller_t *key_station
-      (ZALLOC_TYPE(key_vtnstation_controller_t));
-  strcpy((char*)key_station->controller_name, (const char *)"pfc1");
-  val_vtnstation_controller_st_t *val_station(
-      ZALLOC_TYPE(val_vtnstation_controller_st_t));
-  uuu::upll_strncpy(
-    val_station->vtn_name, "vtn_name", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(
-    val_station->vbr_name, "vbr_name", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(
-    val_station->vbrif_name, "vbrif_name", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(
-    val_station->domain_id, "domain_id", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(
-    val_station->switch_id, "switch_id", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(
-    val_station->port_name, "port_name", (kMaxLenCtrlrId + 1));
-  val_station->valid[UPLL_IDX_VTN_NAME_VSCS] = UNC_VF_VALID;
-  val_station->valid[UPLL_IDX_VBR_NAME_VSCS] = UNC_VF_VALID;
-  val_station->valid[UPLL_IDX_VBR_IF_NAME_VSCS] = UNC_VF_VALID;
-
-  ConfigVal *config_val =  new ConfigVal(
-    IpctSt::kIpcStValVtnstationControllerSt, val_station);
-  ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER,
-     IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
-
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC,
-    vtn.MappingvExtTovBr(ikey, req, dmi, count));
-
-  delete ikey;
-}
-
-TEST_F(VtnMoMgrTest, MappingvExtTovBr_vtnstation_06) {
-  VtnMoMgr vtn;
-  DalOdbcMgr::stub_setSingleRecordExists(true);
-  DalOdbcMgr::stub_setResultcode(
-    DalOdbcMgr::RECORD_EXISTS, kDalRcSuccess);
-  DalOdbcMgr::stub_setResultcode(
-    DalOdbcMgr::RECORD_COUNT, kDalRcSuccess);
-  DalOdbcMgr::stub_setResultcode(
-    DalOdbcMgr::SINGLE, kDalRcRecordNoMore);
   IPC_REQ_RESP_HEADER_DECL(req);
   DalDmlIntf *dmi(getDalDmlIntf());
   uint32_t count1 = 0;
@@ -2999,41 +2875,6 @@ TEST_F(VtnMoMgrTest, MappingvExtTovBr_mapping_02) {
   VtnMoMgr vtn;
   DalOdbcMgr::stub_setResultcode(
     DalOdbcMgr::INIT, kDalRcSuccess);
-  IPC_REQ_RESP_HEADER_DECL(req);
-  DalDmlIntf *dmi(getDalDmlIntf());
-  uint32_t count1 = 0;
-  uint32_t *count = &count1;
-
-  key_vtn_controller_t *key_ctrlr(ZALLOC_TYPE(key_vtn_controller_t));
-  val_vtn_mapping_controller_st_t *val_mapping
-      (ZALLOC_TYPE(val_vtn_mapping_controller_st_t));
-  strcpy((char*)key_ctrlr->controller_name, (const char *)"pfc1");
-  strcpy((char*)key_ctrlr->domain_id, (const char *)"dom1");
-  strcpy((char*)val_mapping->switch_id, (const char *)"switch_id1");
-  strcpy((char*)val_mapping->port_name, (const char *)"port_name1");
-  strcpy((char*)val_mapping->vbr_name, (const char *)"vbr_name1");
-  strcpy((char*)val_mapping->vbrif_name, (const char *)"vbrif_name1");
-  strcpy((char*)val_mapping->logical_port_id, (const char *)"logical_port_id1");
-  val_mapping->valid[UPLL_IDX_VBR_NAME_VMCS] = UNC_VF_VALID;
-  val_mapping->valid[UPLL_IDX_VBR_IF_NAME_VMCS] = UNC_VF_VALID;
-  ConfigVal *config_val =
-      new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping);
-  ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER,
-    IpctSt::kIpcStKeyVtnController, key_ctrlr, config_val);
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC,
-    vtn.MappingvExtTovBr(ikey, req, dmi, count));
-  delete ikey;
-}
-
-TEST_F(VtnMoMgrTest, MappingvExtTovBr_mapping_03) {
-  VtnMoMgr vtn;
-  DalOdbcMgr::stub_setSingleRecordExists(true);
-  DalOdbcMgr::stub_setResultcode(
-    DalOdbcMgr::RECORD_EXISTS, kDalRcSuccess);
-  DalOdbcMgr::stub_setResultcode(
-    DalOdbcMgr::RECORD_COUNT, kDalRcSuccess);
-  DalOdbcMgr::stub_setResultcode(
-    DalOdbcMgr::SINGLE, kDalRcRecordNoMore);
   IPC_REQ_RESP_HEADER_DECL(req);
   DalDmlIntf *dmi(getDalDmlIntf());
   uint32_t count1 = 0;
@@ -3611,7 +3452,7 @@ TEST_F(VtnMoMgrTest, AdaptValToVtnService_ikey_NULL) {
   VtnMoMgr vtn;
   ConfigKeyVal *ikey = NULL;
   EXPECT_EQ(UPLL_RC_ERR_GENERIC,
-    vtn.AdaptValToVtnService(ikey));
+    vtn.AdaptValToVtnService(ikey, ADAPT_ONE));
 }
 
 TEST_F(VtnMoMgrTest, AdaptValToVtnService_ikey) {
@@ -3631,7 +3472,7 @@ TEST_F(VtnMoMgrTest, AdaptValToVtnService_ikey) {
 
     IpctSt::kIpcStKeyVtn, key, config_val);
   EXPECT_EQ(UPLL_RC_SUCCESS,
-    vtn.AdaptValToVtnService(ikey));
+    vtn.AdaptValToVtnService(ikey, ADAPT_ONE));
   delete ikey;
 }
 
@@ -3645,7 +3486,7 @@ TEST_F(VtnMoMgrTest, AdaptValToVtnService_ConfigVal_NULL) {
 
     IpctSt::kIpcStKeyVtn, key, config_val);
   EXPECT_EQ(UPLL_RC_ERR_GENERIC,
-    vtn.AdaptValToVtnService(ikey));
+    vtn.AdaptValToVtnService(ikey, ADAPT_ONE));
   delete ikey;
 }
 
@@ -4303,38 +4144,6 @@ TEST_F(VtnMoMgrTest, UpdateOperStatus_02) {
   EXPECT_EQ(UPLL_RC_ERR_GENERIC,
     vtn.UpdateOperStatus(ikey,
                                  dmi, notification, true));
-  delete ikey;
-}
-
-TEST_F(VtnMoMgrTest, UpdateOperStatus_03) {
-  VtnMoMgr vtn;
-  DalOdbcMgr::stub_setResultcode(
-    DalOdbcMgr::MULTIPLE, kDalRcRecordNoMore);
-  DalOdbcMgr::stub_setResultcode(
-    DalOdbcMgr::CREATE_RECORD, kDalRcSuccess);
-
-  std::map<uint8_t, DalResultCode> map;
-  map.insert(std::make_pair(1, kDalRcRecordNoMore));
-  map.insert(std::make_pair(0, kDalRcSuccess));
-  state_notification notification = kPortFaultReset;
-  key_vtn_t *keyvtn;
-  val_vtn_t *valVtn;
-  GetKeyValStruct(keyvtn, valVtn);
-
-  ConfigVal *config_val =  new ConfigVal(
-    IpctSt::kIpcStValVtn, valVtn);
-  ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN,
-
-    IpctSt::kIpcStKeyVtn, keyvtn, config_val);
-  DalDmlIntf *dmi(getDalDmlIntf());
-  key_user_data_t *user_data(ZALLOC_TYPE(key_user_data_t));
-  uuu::upll_strncpy(
-    user_data->ctrlr_id, "Controller1", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(
-    user_data->domain_id, "dom_id", (kMaxLenCtrlrId + 1));
-  ikey->set_user_data((void*)user_data);
-  EXPECT_EQ(UPLL_RC_ERR_NO_SUCH_INSTANCE,
-     vtn.UpdateOperStatus(ikey, dmi, notification, true));
   delete ikey;
 }
 
@@ -6373,29 +6182,6 @@ TEST_F(VtnMoMgrTest, RestoreVtnOperStatus_VALID_02) {
   DalOdbcMgr::stub_setResultcode(
     DalOdbcMgr::SINGLE, kDalRcSuccess);
   EXPECT_EQ(UPLL_RC_ERR_GENERIC,
-    vtn.RestoreVtnOperStatus(ikey, dmi, notification));
-  delete ikey;
-}
-
-TEST_F(VtnMoMgrTest, RestoreVtnOperStatus_VALID_03) {
-  VtnMoMgr vtn;
-  state_notification notification = kCtrlrDisconnect;
-  DalDmlIntf *dmi(getDalDmlIntf());
-  key_vtn_t *key;
-  val_vtn_t *val;
-  GetKeyValStruct(key, val);
-
-  ConfigVal *config_val =  new ConfigVal(
-    IpctSt::kIpcStValVtnSt, val);
-  ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN,
-
-    IpctSt::kIpcStKeyVtn, key, config_val);
-  DalOdbcMgr::stub_setResultcode(
-    DalOdbcMgr::SINGLE, kDalRcSuccess);
-  DalOdbcMgr::stub_setResultcode(
-    DalOdbcMgr::CREATE_RECORD, kDalRcSuccess);
-
-  EXPECT_EQ(UPLL_RC_SUCCESS,
     vtn.RestoreVtnOperStatus(ikey, dmi, notification));
   delete ikey;
 }

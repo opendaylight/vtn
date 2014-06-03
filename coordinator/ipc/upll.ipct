@@ -1,7 +1,7 @@
 #
-# Copyright (c) 2012-2013 NEC Corporation
+# Copyright (c) 2012-2014 NEC Corporation
 # All rights reserved.
-# 
+#
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License v1.0 which accompanies this
 # distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -712,13 +712,14 @@ ipc_struct key_vbr_flowfilter_entry {
 # FlowfilterEntry value
 #
 ipc_struct val_flowfilter_entry {
-  UINT8   valid[9];                   # valid flag
+  UINT8   valid[10];                  # valid flag
   UINT8   cs_row_status;              # object configuration status
-  UINT8   cs_attr[9];                 # attributes configuration status
+  UINT8   cs_attr[10];                 # attributes configuration status
   UINT8   flowlist_name[33];          # flowlist name
   UINT8   action;                     # flowfilter action
   UINT8   redirect_node[32];          # redirect node
   UINT8   redirect_port[32];          # redirect port
+  UINT8   redirect_direction;         # redirect direction
   UINT8   modify_dstmac[6];           # modified destination MAC
   UINT8   modify_srcmac[6];           # modified source MAC
   UINT8   nwm_name[32];               # network monitor name
@@ -908,4 +909,99 @@ ipc_struct key_vbrif_policingmap_entry {
   UINT8         sequence_num;       # sequence number
 };
 
+##
+## IPC structures for vTerminal
+##
 
+#
+# vTerminal key
+#
+ipc_struct key_vterm {
+  key_vtn vtn_key;                    # VTN key
+  UINT8   vterminal_name[32];         # vTerminal name
+};
+
+#
+# vTerminal value
+#
+ipc_struct val_vterm {
+  UINT8   valid[3];                   # valid flag
+  UINT8   cs_row_status;              # object configuration status
+  UINT8   cs_attr[3];                 # attributes configuration status
+  UINT8   controller_id[32];          # controller id
+  UINT8   domain_id[32];              # domain id
+  UINT8   vterm_description[128];     # vTerminal description
+};
+
+#
+# vTerminal rename value
+#
+ipc_struct val_rename_vterm {
+  UINT8   valid[1];                   
+  UINT8   new_name[32];
+};
+
+#
+# vTerminal status value
+#
+ipc_struct val_vterm_st {
+  UINT8   valid[1];                   # valid flag
+  UINT8   oper_status;                # vTerminal operational status
+};
+
+##
+## IPC structures for vTerminal Interface
+##
+
+#
+# vTerminal Interface key
+#
+ipc_struct key_vterm_if {
+  key_vterm  vterm_key;              # vTerminal key
+  UINT8      if_name[32];            # interface name
+};
+
+#
+# vTerminal Interface value
+#
+ipc_struct val_vterm_if {
+  UINT8         valid[3];            # valid flag
+  UINT8         cs_row_status;       # object configuration status
+  UINT8         cs_attr[3];          # attributes configuration status
+  UINT8         admin_status;        # admin status
+  UINT8         description[128];    # vTerminal Interfcae description
+  val_port_map  portmap;             # portmap value
+};
+
+#
+# vTerminal Interface status value
+#
+ipc_struct val_vterm_if_st {
+  UINT8         valid[1];
+  UINT8         oper_status;
+};
+
+#
+# vTerminal Interface Flowfilter key
+#
+ipc_struct key_vterm_if_flowfilter {
+  key_vterm_if  if_key;              # vTerminal Interface key
+  UINT8         direction;           # Flowfilter direction
+};
+
+#
+# vTerminal Interface Flowfilter Entry key
+#
+ipc_struct  key_vterm_if_flowfilter_entry {
+  key_vterm_if_flowfilter   flowfilter_key;   # vTerminal Interface
+                                              # Flowfilter key
+  UINT16                    sequence_num;     # sequence number
+};
+
+#
+# vTerminal Interface Policingmap Entry key
+#
+ipc_struct key_vtermif_policingmap_entry {
+  key_vterm_if    vterm_if_key;          # vTerminal Interface key
+  UINT8           sequence_num;          # sequence number
+};

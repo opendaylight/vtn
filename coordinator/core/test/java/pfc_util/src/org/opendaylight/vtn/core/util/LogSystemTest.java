@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -16,7 +16,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Iterator;
 import java.lang.reflect.Method;
-import junit.framework.Assert;
+
+import static junit.framework.TestCase.assertNotNull;
 
 /**
  * <p>
@@ -772,7 +773,7 @@ public class LogSystemTest extends TestBase
  *   Simple command line option parser.
  * </p>
  */
-class CommandOptionParser extends Assert
+class CommandOptionParser
 {
 	/**
 	 * <p>

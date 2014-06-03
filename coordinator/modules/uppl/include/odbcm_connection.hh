@@ -35,7 +35,7 @@ class OdbcmConnectionHandler {
     */
     explicit OdbcmConnectionHandler(const OdbcmConnType conn_type,
                                     UncRespCode &conn_status,
-                                    ODBCManager *odbc_manager):
+                                    ODBCManager *odbc_manager): 
                                     conn_type_(conn_type),
                                     conn_handle_(NULL),
                                     odbc_manager_(odbc_manager),

@@ -63,7 +63,8 @@ typedef struct {
 // -------------------------------------------------------------
 //  Class declaration.
 // -------------------------------------------------------------
-class UsessConfSession {
+class UsessConfSession
+{
  public:
   UsessConfSession(void);
   ~UsessConfSession(void);

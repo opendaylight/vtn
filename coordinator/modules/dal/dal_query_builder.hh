@@ -225,8 +225,8 @@ class DalQueryBuilder {
      * @return DalQuerytoken  - valid DalQuerytoken enum on success
      */
     DalQuerytoken str_to_num(const std::string &tokenstr,
-                             const size_t start_pos,
-                             const size_t length) const;
+			     const size_t start_pos,
+			     const size_t length) const;
 
     /* get_config_prefix
      *   verifies config type, and adds appropriate config type prefix
@@ -247,8 +247,8 @@ class DalQueryBuilder {
      * @return bool                 - true on success else false
      */
     bool next_token_pos(const std::string &query_template,
-                        size_t &start_position,
-                        size_t &last_position) const;
+			size_t &start_position,
+			size_t &last_position) const;
 
     /* get_bind_str
      *   generate column's or table name string according to token, and it

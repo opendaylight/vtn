@@ -58,7 +58,7 @@ typedef enum {
             (const char*)(struct2).domain_name)) && \
     (!strcmp((const char*)(struct1).lp_str.switch_id, \
             (const char*)(struct2).lp_str.switch_id)))) \
-     status = true;
+     status = true; 
 
 /* @ Controller Class definition */
 class Kt_Dataflow: public Kt_Base {
@@ -104,7 +104,7 @@ class Kt_Dataflow: public Kt_Base {
     multimap<string, lmp_struct>* get_LMP_map() {
       return &LMP_map_;
     }
-
+    
     multimap<string, port_struct>* get_PP_map() {
       return &PP_map_;
     }
@@ -220,8 +220,8 @@ class Kt_Dataflow: public Kt_Base {
     UncRespCode getkeysfrom_boundary_map(string ctr_name,
                                list<boundary_val> &found_keys,
                                list<boundary_val> &found_vals,
-                               string &ingress_bdry_id);
-
+                               string ingress_domain_name);
+ 
     UncDataflowReason CreateDfCmnNodeForNonPfc(OdbcmConnectionHandler *db_conn,
                                   DataflowDetail *df_segment,
                                   DataflowCmn *source_node,

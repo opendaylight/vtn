@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -155,6 +155,9 @@ extern void	pfc_log_init(const char *PFC_RESTRICT ident,
 			     pfc_log_fatal_t handler);
 extern void	pfc_log_sysinit(pfc_log_conf_t *cfp);
 extern void	pfc_log_fini(void);
+
+extern pfc_bool_t	pfc_log_isfatal(void);
+
 extern void	pfc_log_set_fatal_handler(pfc_log_fatal_t handler);
 extern int	pfc_log_set_level(pfc_log_level_t level);
 

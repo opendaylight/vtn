@@ -1,15 +1,15 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi;
 
 import java.sql.Connection;
-
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
@@ -217,8 +217,8 @@ public class RestResource implements VtnServiceResource {
 						UncJavaAPIErrorCode.INTERNAL_ERROR.getErrorMessage(),
 						exception);
 			}
-		}
-		logResponseCode(responseCode);
+		}		
+		responseCode = convertResponseCode(responseCode);
 		LOG.trace("Complete RestResource#delete()");
 		return responseCode;
 	}
@@ -273,7 +273,7 @@ public class RestResource implements VtnServiceResource {
 						exception);
 			}
 		}
-		logResponseCode(responseCode);
+		responseCode = convertResponseCode(responseCode);
 		LOG.trace("Complete RestResource#delete()");
 		return responseCode;
 	}
@@ -324,7 +324,7 @@ public class RestResource implements VtnServiceResource {
 				// resource.createErrorInfo();
 			}
 		}
-		logResponseCode(responseCode);
+		responseCode = convertResponseCode(responseCode);
 		LOG.trace("Complete RestResource#get()");
 		return responseCode;
 	}
@@ -377,7 +377,7 @@ public class RestResource implements VtnServiceResource {
 				// resource.createErrorInfo();
 			}
 		}
-		logResponseCode(responseCode);
+		responseCode = convertResponseCode(responseCode);
 		LOG.trace("Complete RestResource#get()");
 		return responseCode;
 	}
@@ -432,7 +432,7 @@ public class RestResource implements VtnServiceResource {
 						exception);
 			}
 		}
-		logResponseCode(responseCode);
+		responseCode = convertResponseCode(responseCode);
 		LOG.trace("Complete RestResource#post()");
 		return responseCode;
 	}
@@ -487,7 +487,7 @@ public class RestResource implements VtnServiceResource {
 						exception);
 			}
 		}
-		logResponseCode(responseCode);
+		responseCode = convertResponseCode(responseCode);
 		LOG.trace("Complete RestResource#put()");
 		return responseCode;
 	}
@@ -561,12 +561,25 @@ public class RestResource implements VtnServiceResource {
 	}
 
 	/**
-	 * Log the returned value for response code
+	 * Log the returned value for response code and convert response code as per
+	 * error code
 	 * 
 	 * @param responseCode
 	 */
-	private void logResponseCode(final int responseCode) {
+	private int convertResponseCode(final int responseCode) {
 		LOG.debug("Return value for responseCode : " + responseCode);
+		int finalresponseCode = responseCode;
+		if (responseCode == UncResultCode.UNC_SERVER_ERROR.getValue()
+				&& null != resource.getInfo()) {
+			if (String.valueOf(VtnServiceJsonConsts.VAL_4).equals(
+					resource.getInfo().get(VtnServiceJsonConsts.ERROR)
+							.getAsJsonObject().get(VtnServiceJsonConsts.CODE)
+							.getAsString().substring(0, 1))) {
+				finalresponseCode = UncResultCode.UNC_CLIENT_ERROR.getValue();
+			}
+		}
+		LOG.debug("Return value for finalresponseCode : " + finalresponseCode);
+		return finalresponseCode;
 	}
 
 	/**

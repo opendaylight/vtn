@@ -21,13 +21,13 @@ namespace ipc_util {
 bool IpcClientHandler::SendReqToDriver(const char *ctrlr_name, char *domain_id,
                                        IpcRequest *req ) {
   UPLL_FUNC_TRACE
-      bool ok = SendReqToServer(PFCDRIVER_CHANNEL_NAME,
-                                PFCDRIVER_SERVICE_NAME,
-                                PFCDRIVER_SVID_LOGICAL,
-                                true,
-                                ctrlr_name,
-                                domain_id,
-                                req);
+  bool ok = SendReqToServer(PFCDRIVER_CHANNEL_NAME,
+                            PFCDRIVER_SERVICE_NAME,
+                            PFCDRIVER_SVID_LOGICAL,
+                            true,
+                            ctrlr_name,
+                            domain_id,
+                            req);
   if (ok) {
     ipc_resp.header.result_code = IpcUtil::DriverResultCodeToKtURC(
         req->header.operation , ipc_resp.header.result_code);
@@ -38,13 +38,13 @@ bool IpcClientHandler::SendReqToDriver(const char *ctrlr_name, char *domain_id,
 
 
 bool IpcClientHandler::SendReqToServer(const char *channel_name,
-                                       const char *service_name,
-                                       pfc_ipcid_t service_id,
-                                       bool driver_msg,
-                                       const char *ctrlr_name, char *domain_id,
-                                       IpcRequest *req) {
+                              const char *service_name,
+                              pfc_ipcid_t service_id,
+                              bool driver_msg,
+                              const char *ctrlr_name, char *domain_id,
+                              IpcRequest *req) {
   UPLL_FUNC_TRACE
-      IpcResponse *resp = &ipc_resp;
+  IpcResponse *resp = &ipc_resp;
 
   if (channel_name == NULL || service_name == NULL ||
       req == NULL || resp == NULL) {
@@ -83,7 +83,7 @@ bool IpcClientHandler::SendReqToServer(const char *channel_name,
   int err = pfc_ipcclnt_altopen(channel_name, &connid);
   if (err != 0) {
     UPLL_LOG_DEBUG("Failed to create IPC alternative connection to %s. Err=%d",
-                   channel_name, err);
+                  channel_name, err);
     resp->header.result_code = UPLL_RC_ERR_GENERIC;
     resp->return_code = PFC_IPCRESP_FATAL;
     return false;
@@ -93,11 +93,11 @@ bool IpcClientHandler::SendReqToServer(const char *channel_name,
                                               service_id, err);
   if (err != 0) {
     UPLL_LOG_DEBUG("Failed to create IPC client session %s:%s:%d. Err=%d",
-                   channel_name, service_name, service_id, err);
+                  channel_name, service_name, service_id, err);
     err = pfc_ipcclnt_altclose(connid);  // Close the IPC connection handle
     if (err != 0) {
       UPLL_LOG_DEBUG("Failed to close the IPC connection %s:%s:%d. Err=%d",
-                     channel_name, service_name, service_id, err);
+                    channel_name, service_name, service_id, err);
     }
     resp->header.result_code = UPLL_RC_ERR_GENERIC;
     resp->return_code = PFC_IPCRESP_FATAL;
@@ -113,14 +113,14 @@ bool IpcClientHandler::SendReqToServer(const char *channel_name,
                    channel_name, kIpcTimeoutDataflow);
   }
   bool ret = IpcUtil::WriteKtRequest(cl_sess, driver_msg, ctrlr_name, domain_id,
-                                     req->header, req->ckv_data);
+                            req->header, req->ckv_data);
   if (!ret) {
     UPLL_LOG_DEBUG("Failed to send IPC request to %s:%s:%d",
-                   channel_name, service_name, service_id);
+                  channel_name, service_name, service_id);
     err = pfc_ipcclnt_altclose(connid);  // Close the IPC connection handle
     if (err != 0) {
       UPLL_LOG_DEBUG("Failed to close the IPC connection %s:%s:%d. Err=%d",
-                     channel_name, service_name, service_id, err);
+                    channel_name, service_name, service_id, err);
     }
     resp->header.result_code = UPLL_RC_ERR_GENERIC;
     resp->return_code = PFC_IPCRESP_FATAL;
@@ -142,17 +142,17 @@ bool IpcClientHandler::SendReqToServer(const char *channel_name,
     err = pfc_ipcclnt_altclose(connid);  // Close the IPC connection handle
     if (err != 0) {
       UPLL_LOG_DEBUG("Failed to close the IPC connection %s:%s:%d. Err=%d",
-                     channel_name, service_name, service_id, err);
+                    channel_name, service_name, service_id, err);
     }
     return false;
   }
   if (ipcresp != 0) {
     UPLL_LOG_DEBUG("Error at IPC server %s:%s:%d. ErrResp=%d",
-                   channel_name, service_name, service_id, ipcresp);
+                  channel_name, service_name, service_id, ipcresp);
     err = pfc_ipcclnt_altclose(connid);  // Close the IPC connection handle
     if (err != 0) {
       UPLL_LOG_DEBUG("Failed to close the IPC connection %s:%s:%d. Err=%d",
-                     channel_name, service_name, service_id, err);
+                    channel_name, service_name, service_id, err);
     }
     resp->header.result_code = UPLL_RC_ERR_GENERIC;
     resp->return_code = PFC_IPCRESP_FATAL;
@@ -162,11 +162,11 @@ bool IpcClientHandler::SendReqToServer(const char *channel_name,
   ret = ReadKtResponse(cl_sess, service_id, driver_msg, domain_id);
   if (!ret) {
     UPLL_LOG_DEBUG("Failed to read IPC response from %s:%s:%d",
-                   channel_name, service_name, service_id);
+                  channel_name, service_name, service_id);
     err = pfc_ipcclnt_altclose(connid);  // Close the IPC connection handle
     if (err != 0) {
       UPLL_LOG_DEBUG("Failed to close the IPC connection %s:%s:%d. Err=%d",
-                     channel_name, service_name, service_id, err);
+                    channel_name, service_name, service_id, err);
     }
     resp->header.result_code = UPLL_RC_ERR_GENERIC;
     resp->return_code = PFC_IPCRESP_FATAL;
@@ -189,8 +189,8 @@ bool IpcClientHandler::SendReqToServer(const char *channel_name,
  * then the domain_id from the message is placed in the domain_id pointer.
  * Caller should have sent a valid pointer for copying domain id */
 bool IpcClientHandler::ReadKtResponse(pfc::core::ipc::ClientSession *sess,
-                                      pfc_ipcid_t /* service */,
-                                      bool driver_msg, char *domain_id) {
+                             pfc_ipcid_t /* service */,
+                             bool driver_msg, char *domain_id) {
   UPLL_FUNC_TRACE;
   if (sess == NULL) {
     UPLL_LOG_DEBUG("Null argument");
@@ -204,12 +204,12 @@ bool IpcClientHandler::ReadKtResponse(pfc::core::ipc::ClientSession *sess,
 
   uint32_t arg_cnt = sess->getResponseCount();
   uint32_t mandatory_fields = (driver_msg) ?
-      unc::upll::ipc_util::kKeyTreeDriverRespMandatoryFields :
+            unc::upll::ipc_util::kKeyTreeDriverRespMandatoryFields :
       unc::upll::ipc_util::kKeyTreeRespMandatoryFields;
   if (arg_cnt < mandatory_fields) {
     UPLL_LOG_DEBUG("Not enough arguments in key tree response."
                    " Has only %u, expected %d",
-                   arg_cnt, mandatory_fields);
+                  arg_cnt, mandatory_fields);
     return false;
   }
 
@@ -226,7 +226,7 @@ bool IpcClientHandler::ReadKtResponse(pfc::core::ipc::ClientSession *sess,
   if ((0 != (err = sess->getResponse(arg++, msg_hdr->clnt_sess_id))) ||
       (0 != (err = sess->getResponse(arg++, msg_hdr->config_id)))) {
     UPLL_LOG_DEBUG("Failed to get header field #%u in the key tree response."
-                   " Err=%d", arg, err);
+                  " Err=%d", arg, err);
     UPLL_LOG_TRACE("Config and Sess id is not able to get");
     return false;
   }
@@ -234,7 +234,7 @@ bool IpcClientHandler::ReadKtResponse(pfc::core::ipc::ClientSession *sess,
     if ((0 != (err = sess->getResponse(arg++, msg_ctrlr_name))) ||
         (0 != (err = sess->getResponse(arg++, msg_domain_id)))) {
       UPLL_LOG_DEBUG("Failed to get header field #%u in the key tree response."
-                     " Err=%d", arg, err);
+          " Err=%d", arg, err);
       UPLL_LOG_TRACE("Ctrlr and domain name not able to get");
       return false;
     }
@@ -250,7 +250,7 @@ bool IpcClientHandler::ReadKtResponse(pfc::core::ipc::ClientSession *sess,
       (0 != (err = sess->getResponse(arg++, result_code))) ||
       (0 != (err = sess->getResponse(arg++, keytype))) ) {
     UPLL_LOG_DEBUG("Failed to get header field #%u in the key tree response."
-                   " Err=%d", arg, err);
+                  " Err=%d", arg, err);
     return false;
   }
   arg++; /* Key struct skkipped */
@@ -265,7 +265,7 @@ bool IpcClientHandler::ReadKtResponse(pfc::core::ipc::ClientSession *sess,
   void *ipc_st;
   if (!IpcUtil::ReadIpcStruct(sess, arg++, &st_num, &ipc_st)) {
     UPLL_LOG_DEBUG("Failed to get structure at %u in the key tree response",
-                   arg);
+                  arg);
     return false;
   }
   *first_ckv = new ConfigKeyVal((unc_key_type_t)keytype, st_num, ipc_st, NULL);

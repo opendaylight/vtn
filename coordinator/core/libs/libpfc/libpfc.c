@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -357,6 +357,81 @@ pfc_ptimer_t
 libpfc_getptimer(void)
 {
 	return libpfc_ptimer;
+}
+
+/*
+ * int
+ * libpfc_post_sysevent(pfc_evtype_t type, const pfc_timespec_t *timeout)
+ *	Post a global system event.
+ *
+ *	This function always wait for completion of event delivery.
+ *	`timeout' specifies the maximum amount of time of the wait.
+ *	Specifying NULL to `timeout' means infinite timeout.
+ *
+ * Calling/Exit State:
+ *	Upon successful completion, zero is returned.
+ *	Otherwise error number which indicates the cause of error is returned.
+ */
+int
+libpfc_post_sysevent(pfc_evtype_t type, const pfc_timespec_t *timeout)
+{
+	pfc_event_t	event;
+	pfc_bool_t	emergency;
+	pfc_ptr_t	data = NULL;
+	const char	*evsrc = pfc_event_global_source();
+	int		err;
+
+	if (type == PFC_EVTYPE_SYS_STOP) {
+		/* Post an emergency event if fatal error is logged. */
+		emergency = pfc_log_isfatal();
+		data = (pfc_ptr_t)(uintptr_t)emergency;
+	}
+	else {
+		emergency = PFC_FALSE;
+	}
+
+	err = pfc_event_create(&event, type, data, NULL);
+	if (PFC_EXPECT_FALSE(err != 0)) {
+		pfc_log_error("Failed to generate global event: %u: %s",
+			      type, strerror(err));
+
+		return err;
+	}
+
+	/* Enable event delivery logging. */
+	pfc_event_enable_log(event, PFC_TRUE);
+
+	if (emergency) {
+		err = pfc_event_post_emergency(evsrc, event);
+	}
+	else {
+		err = pfc_event_post(evsrc, event);
+	}
+	if (PFC_EXPECT_FALSE(err != 0)) {
+		pfc_log_error("Failed to deliver global event: %u: %s",
+			      type, strerror(err));
+
+		return err;
+	}
+
+	pfc_log_trace("System event has been posted: type=%u", type);
+
+	/* We should wait for completion of system event delivery. */
+	err = pfc_event_flush(evsrc, timeout);
+	if (PFC_EXPECT_FALSE(err != 0)) {
+		if (err == ETIMEDOUT) {
+			pfc_log_error("System event delivery seems to stuck: "
+				      "type=%u", type);
+		}
+		else {
+			pfc_log_error("System event sync failed: %s",
+				      strerror(err));
+		}
+
+		/* FALLTHROUGH */
+	}
+
+	return err;
 }
 
 /*

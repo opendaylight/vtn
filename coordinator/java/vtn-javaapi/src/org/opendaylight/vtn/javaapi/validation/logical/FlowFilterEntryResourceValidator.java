@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.validation.logical;
 
 import com.google.gson.JsonObject;
@@ -20,7 +21,7 @@ import org.opendaylight.vtn.javaapi.validation.CommonValidator;
 import org.opendaylight.vtn.javaapi.validation.VtnServiceValidator;
 
 /**
- * The Class FlowFilterEntryResourceValidator validates request Json object for
+ * The Class FlowFilterEntryResourceValidator validates request JSON object for
  * put and get method of FlowFilterEntry API.
  */
 public class FlowFilterEntryResourceValidator extends VtnServiceValidator {
@@ -95,12 +96,11 @@ public class FlowFilterEntryResourceValidator extends VtnServiceValidator {
 	}
 
 	/**
-	 * Validate request Json object for get, put method of FlowFilterEntry API
+	 * Validate request JSON object for get, put method of FlowFilterEntry API
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start FlowFilterEntryResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of FlowFilterEntryResourceValidator");
@@ -113,7 +113,8 @@ public class FlowFilterEntryResourceValidator extends VtnServiceValidator {
 				updateOpParameterForList(requestBody);
 			} else if (isValid && requestBody != null
 					&& VtnServiceConsts.PUT.equals(method)) {
-				isValid = validator.isValidFlowFilterEntry(requestBody);
+				isValid = validator.isValidFlowFilterEntry(requestBody)
+						&& validator.isValidVtnFlowFilterEntry(requestBody);
 				setInvalidParameter(validator.getInvalidParameter());
 			} else if (isValid) {
 				setInvalidParameter(VtnServiceConsts.INCORRECT_METHOD_INVOCATION);
@@ -159,38 +160,6 @@ public class FlowFilterEntryResourceValidator extends VtnServiceValidator {
 		setInvalidParameter(VtnServiceJsonConsts.TARGETDB);
 		isValid = validator.isValidRequestDB(requestBody);
 
-		if (isValid && requestBody.has(VtnServiceJsonConsts.OP)
-				&& requestBody
-						.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
-						.getAsString().trim()
-						.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
-			// validation for key: controller_id(mandatory)
-			setInvalidParameter(VtnServiceJsonConsts.CONTROLLERID);
-			if (requestBody.has(VtnServiceJsonConsts.CONTROLLERID)
-					&& requestBody.getAsJsonPrimitive(
-							VtnServiceJsonConsts.CONTROLLERID).getAsString() != null) {
-				isValid = validator.isValidMaxLengthAlphaNum(requestBody
-						.getAsJsonPrimitive(VtnServiceJsonConsts.CONTROLLERID)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
-			} else {
-				isValid = false;
-			}
-
-			if (isValid) {
-				// validation for key: domain_id(mandatory)
-				setInvalidParameter(VtnServiceJsonConsts.DOMAINID);
-				if (requestBody.has(VtnServiceJsonConsts.DOMAINID)
-						&& requestBody.getAsJsonPrimitive(
-								VtnServiceJsonConsts.DOMAINID).getAsString() != null) {
-					isValid = validator.isValidDomainId(requestBody
-							.getAsJsonPrimitive(VtnServiceJsonConsts.DOMAINID)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
-				} else {
-					isValid = false;
-				}
-			}
-		}
-
 		// validation for key: op
 		if (isValid) {
 			setInvalidParameter(VtnServiceJsonConsts.OP);
@@ -211,11 +180,54 @@ public class FlowFilterEntryResourceValidator extends VtnServiceValidator {
 						VtnServiceJsonConsts.NORMAL);
 			}
 		}
+
+		if (isValid) {
+			// validation for key: controller_id(optional)
+			setInvalidParameter(VtnServiceJsonConsts.CONTROLLERID);
+			if (requestBody.has(VtnServiceJsonConsts.CONTROLLERID)
+					&& requestBody.getAsJsonPrimitive(
+							VtnServiceJsonConsts.CONTROLLERID).getAsString() != null) {
+				isValid = validator.isValidMaxLengthAlphaNum(requestBody
+						.getAsJsonPrimitive(VtnServiceJsonConsts.CONTROLLERID)
+						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+			}
+		}
+
+		if (isValid) {
+			// validation for key: domain_id(optional)
+			setInvalidParameter(VtnServiceJsonConsts.DOMAINID);
+			if (requestBody.has(VtnServiceJsonConsts.DOMAINID)
+					&& requestBody.getAsJsonPrimitive(
+							VtnServiceJsonConsts.DOMAINID).getAsString() != null) {
+				isValid = validator.isValidDomainId(requestBody
+						.getAsJsonPrimitive(VtnServiceJsonConsts.DOMAINID)
+						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+			}
+		}
+
+		/*
+		 * controller_id and domain_id are mandatory for detail case
+		 */
+		if (requestBody.get(VtnServiceJsonConsts.OP).getAsString()
+				.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)
+				&& requestBody.get(VtnServiceJsonConsts.TARGETDB).getAsString()
+						.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
+			setInvalidParameter(VtnServiceJsonConsts.CONTROLLERID
+					+ VtnServiceConsts.HYPHEN + VtnServiceJsonConsts.DOMAINID);
+			if (requestBody.has(VtnServiceJsonConsts.CONTROLLERID)
+					&& requestBody.has(VtnServiceJsonConsts.DOMAINID)) {
+				LOG.info("mandatory parameters are provided for detail case");
+			} else {
+				LOG.error("mandatory parameters are not provided for detail case");
+				isValid = false;
+			}
+		}
+
+		// index parameter should not be used in show APIs
 		if (requestBody.has(VtnServiceJsonConsts.INDEX)) {
 			requestBody.remove(VtnServiceJsonConsts.INDEX);
-		} else {
-			LOG.debug("No need to remove");
 		}
+
 		LOG.trace("Complete FlowFilterEntryResourceValidator#validateGet()");
 		return isValid;
 	}

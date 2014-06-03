@@ -1,13 +1,16 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
 package org.opendaylight.vtn.core.util;
+
+import java.io.CharArrayWriter;
+import java.io.PrintWriter;
 
 import org.opendaylight.vtn.core.CoreSystem;
 
@@ -44,6 +47,25 @@ import org.opendaylight.vtn.core.CoreSystem;
  *     // String.format(String, Object...).
  *     logger.debug("Debug message: %s, %d", "string argument", 10);
  *
+ *     // Log an error message.
+ *     // Stack backtrace of the specified exception is also logged.
+ *     try {
+ *         ...;
+ *     }
+ *     catch (Exception e) {
+ *         logger.error(e, "Unexpected exception.");
+ *     }
+ *
+ *     // Log a warning message specified by the format string and
+ *     // arguments. Stack backtrace of the specified exception is also
+ *     // logged.
+ *     try {
+ *         ...;
+ *     }
+ *     catch (Exception e) {
+ *         logger.warning(e, "Unexpected exception: %s, %d", "string", 20);
+ *     }
+ *
  *     // Log a fatal message.
  *     // This invokes FATAL log handler if registered.
  *     logger.fatal("Fatal error.");
@@ -58,6 +80,14 @@ import org.opendaylight.vtn.core.CoreSystem;
  */
 public abstract class Logger
 {
+	/**
+	 * <p>
+	 *   A newline character for the running environment.
+	 * </p>
+	 */
+	private final static String  NEWLINE =
+		System.getProperty("line.separator", "\n");
+
 	/**
 	 * <p>
 	 *   Load native library.
@@ -149,7 +179,7 @@ public abstract class Logger
 	 *   </li>
 	 * </ul>
 	 *
-	 * @param message		A message to be logged.
+	 * @param message	A message to be logged.
 	 * @throws NullPointerException
 	 *	{@code message} is {@code null}.
 	 * @see LogSystem#initialize(LogConfiguration)
@@ -194,13 +224,78 @@ public abstract class Logger
 
 	/**
 	 * <p>
+	 *   Log a fatal error message.
+	 * </p>
+	 * <ul>
+	 *   <li>
+	 *     A FATAL log handler is invoked if registered.
+	 *   </li>
+	 *   <li>
+	 *     The given throwable and its backtrace are also logged.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logging system is not
+	 *     initialized.
+	 *   </li>
+	 * </ul>
+	 *
+	 * @param t		A throwable to be logged.
+	 * @param message	A message to be logged.
+	 * @throws NullPointerException
+	 *	{@code message} is {@code null}.
+	 * @see LogSystem#initialize(LogConfiguration)
+	 * @see LogFatalHandler
+	 */
+	public void fatal(Throwable t, String message)
+	{
+		log(LogLevel.LVL_FATAL, t, message);
+	}
+
+	/**
+	 * <p>
+	 *   Log a fatal error message.
+	 * </p>
+	 * <ul>
+	 *   <li>
+	 *     A FATAL log handler is invoked if registered.
+	 *   </li>
+	 *   <li>
+	 *     A log message is constructed by
+	 *     {@link String#format(String,Object...)}.
+	 *   </li>
+	 *   <li>
+	 *     The given throwable and its backtrace are also logged.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logging system is not
+	 *     initialized.
+	 *   </li>
+	 * </ul>
+	 *
+	 * @param t		A throwable to be logged.
+	 * @param format	A format string.
+	 * @param args		Arguments referenced by {@code format}.
+	 * @throws NullPointerException
+	 *	{@code format} is {@code null}.
+	 * @throws IllegalFormatException
+	 *	{@code format} contains an illegal syntax.
+	 * @see LogSystem#initialize(LogConfiguration)
+	 * @see LogFatalHandler
+	 */
+	public void fatal(Throwable t, String format, Object ... args)
+	{
+		log(LogLevel.LVL_FATAL, t, format, args);
+	}
+
+	/**
+	 * <p>
 	 *   Log an error message.
 	 * </p>
 	 * <p>
 	 *   This method does nothing if the logging system is not initialized.
 	 * </p>
 	 *
-	 * @param message		A message to be logged.
+	 * @param message	A message to be logged.
 	 * @throws NullPointerException
 	 *	{@code message} is {@code null}.
 	 * @see LogSystem#initialize(LogConfiguration)
@@ -240,13 +335,70 @@ public abstract class Logger
 
 	/**
 	 * <p>
+	 *   Log an error message.
+	 * </p>
+	 * <ul>
+	 *   <li>
+	 *     The given throwable and its backtrace are also logged.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logging system is not
+	 *     initialized.
+	 *   </li>
+	 * </ul>
+	 *
+	 * @param t		A throwable to be logged.
+	 * @param message	A message to be logged.
+	 * @throws NullPointerException
+	 *	{@code message} is {@code null}.
+	 * @see LogSystem#initialize(LogConfiguration)
+	 */
+	public void error(Throwable t, String message)
+	{
+		log(LogLevel.LVL_ERROR, t, message);
+	}
+
+	/**
+	 * <p>
+	 *   Log an error message.
+	 * </p>
+	 * <ul>
+	 *   <li>
+	 *     A log message is constructed by
+	 *     {@link String#format(String,Object...)}.
+	 *   </li>
+	 *   <li>
+	 *     The given throwable and its backtrace are also logged.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logging system is not
+	 *     initialized.
+	 *   </li>
+	 * </ul>
+	 *
+	 * @param t		A throwable to be logged.
+	 * @param format	A format string.
+	 * @param args		Arguments referenced by {@code format}.
+	 * @throws NullPointerException
+	 *	{@code format} is {@code null}.
+	 * @throws IllegalFormatException
+	 *	{@code format} contains an illegal syntax.
+	 * @see LogSystem#initialize(LogConfiguration)
+	 */
+	public void error(Throwable t, String format, Object ... args)
+	{
+		log(LogLevel.LVL_ERROR, t, format, args);
+	}
+
+	/**
+	 * <p>
 	 *   Log a warning message.
 	 * </p>
 	 * <p>
 	 *   This method does nothing if the logging system is not initialized.
 	 * </p>
 	 *
-	 * @param message		A message to be logged.
+	 * @param message	A message to be logged.
 	 * @throws NullPointerException
 	 *	{@code message} is {@code null}.
 	 * @see LogSystem#initialize(LogConfiguration)
@@ -286,13 +438,70 @@ public abstract class Logger
 
 	/**
 	 * <p>
+	 *   Log a warning message.
+	 * </p>
+	 * <ul>
+	 *   <li>
+	 *     The given throwable and its backtrace are also logged.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logging system is not
+	 *     initialized.
+	 *   </li>
+	 * </ul>
+	 *
+	 * @param t		A throwable to be logged.
+	 * @param message	A message to be logged.
+	 * @throws NullPointerException
+	 *	{@code message} is {@code null}.
+	 * @see LogSystem#initialize(LogConfiguration)
+	 */
+	public void warning(Throwable t, String message)
+	{
+		log(LogLevel.LVL_WARNING, t, message);
+	}
+
+	/**
+	 * <p>
+	 *   Log a warning message.
+	 * </p>
+	 * <ul>
+	 *   <li>
+	 *     A log message is constructed by
+	 *     {@link String#format(String,Object...)}.
+	 *   </li>
+	 *   <li>
+	 *     The given throwable and its backtrace are also logged.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logging system is not
+	 *     initialized.
+	 *   </li>
+	 * </ul>
+	 *
+	 * @param t		A throwable to be logged.
+	 * @param format	A format string.
+	 * @param args		Arguments referenced by {@code format}.
+	 * @throws NullPointerException
+	 *	{@code format} is {@code null}.
+	 * @throws IllegalFormatException
+	 *	{@code format} contains an illegal syntax.
+	 * @see LogSystem#initialize(LogConfiguration)
+	 */
+	public void warning(Throwable t, String format, Object ... args)
+	{
+		log(LogLevel.LVL_WARNING, t, format, args);
+	}
+
+	/**
+	 * <p>
 	 *   Log a normal but significant message.
 	 * </p>
 	 * <p>
 	 *   This method does nothing if the logging system is not initialized.
 	 * </p>
 	 *
-	 * @param message		A message to be logged.
+	 * @param message	A message to be logged.
 	 * @throws NullPointerException
 	 *	{@code message} is {@code null}.
 	 * @see LogSystem#initialize(LogConfiguration)
@@ -332,13 +541,76 @@ public abstract class Logger
 
 	/**
 	 * <p>
+	 *   Log a normal but significant message.
+	 * </p>
+	 * <ul>
+	 *   <li>
+	 *     The given throwable and its backtrace are also logged.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logging system is not
+	 *     initialized.
+	 *   </li>
+	 * </ul>
+	 *
+	 * @param t		A throwable to be logged.
+	 * @param message	A message to be logged.
+	 * @throws NullPointerException
+	 *	{@code message} is {@code null}.
+	 * @see LogSystem#initialize(LogConfiguration)
+	 */
+	public void notice(Throwable t, String message)
+	{
+		log(LogLevel.LVL_NOTICE, t, message);
+	}
+
+	/**
+	 * <p>
+	 *   Log a normal but significant message.
+	 * </p>
+	 * <ul>
+	 *   <li>
+	 *     A log message is constructed by
+	 *     {@link String#format(String,Object...)}.
+	 *   </li>
+	 *   <li>
+	 *     The given throwable and its backtrace are also logged.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logging system is not
+	 *     initialized.
+	 *   </li>
+	 * </ul>
+	 *
+	 * @param t		A throwable to be logged.
+	 * @param format	A format string.
+	 * @param args		Arguments referenced by {@code format}.
+	 * @throws NullPointerException
+	 *	{@code format} is {@code null}.
+	 * @throws IllegalFormatException
+	 *	{@code format} contains an illegal syntax.
+	 * @see LogSystem#initialize(LogConfiguration)
+	 */
+	public void notice(Throwable t, String format, Object ... args)
+	{
+		log(LogLevel.LVL_NOTICE, t, format, args);
+	}
+
+	/**
+	 * <p>
 	 *   Log an informational message.
 	 * </p>
-	 * <p>
-	 *   This method does nothing if the logging system is not initialized.
-	 * </p>
+	 * <ul>
+	 *   <li>
+	 *     The given throwable and its backtrace are also logged.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logging system is not
+	 *     initialized.
+	 *   </li>
+	 * </ul>
 	 *
-	 * @param message		A message to be logged.
+	 * @param message	A message to be logged.
 	 * @throws NullPointerException
 	 *	{@code message} is {@code null}.
 	 * @see LogSystem#initialize(LogConfiguration)
@@ -378,13 +650,70 @@ public abstract class Logger
 
 	/**
 	 * <p>
+	 *   Log an informational message.
+	 * </p>
+	 * <ul>
+	 *   <li>
+	 *     The given throwable and its backtrace are also logged.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logging system is not
+	 *     initialized.
+	 *   </li>
+	 * </ul>
+	 *
+	 * @param t		A throwable to be logged.
+	 * @param message	A message to be logged.
+	 * @throws NullPointerException
+	 *	{@code message} is {@code null}.
+	 * @see LogSystem#initialize(LogConfiguration)
+	 */
+	public void info(Throwable t, String message)
+	{
+		log(LogLevel.LVL_INFO, t, message);
+	}
+
+	/**
+	 * <p>
+	 *   Log an informational message.
+	 * </p>
+	 * <ul>
+	 *   <li>
+	 *     A log message is constructed by
+	 *     {@link String#format(String,Object...)}.
+	 *   </li>
+	 *   <li>
+	 *     The given throwable and its backtrace are also logged.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logging system is not
+	 *     initialized.
+	 *   </li>
+	 * </ul>
+	 *
+	 * @param t		A throwable to be logged.
+	 * @param format	A format string.
+	 * @param args		Arguments referenced by {@code format}.
+	 * @throws NullPointerException
+	 *	{@code format} is {@code null}.
+	 * @throws IllegalFormatException
+	 *	{@code format} contains an illegal syntax.
+	 * @see LogSystem#initialize(LogConfiguration)
+	 */
+	public void info(Throwable t, String format, Object ... args)
+	{
+		log(LogLevel.LVL_INFO, t, format, args);
+	}
+
+	/**
+	 * <p>
 	 *   Log a debugging message.
 	 * </p>
 	 * <p>
 	 *   This method does nothing if the logging system is not initialized.
 	 * </p>
 	 *
-	 * @param message		A message to be logged.
+	 * @param message	A message to be logged.
 	 * @throws NullPointerException
 	 *	{@code message} is {@code null}.
 	 * @see LogSystem#initialize(LogConfiguration)
@@ -420,6 +749,63 @@ public abstract class Logger
 	public void debug(String format, Object ... args)
 	{
 		log(LogLevel.LVL_DEBUG, format, args);
+	}
+
+	/**
+	 * <p>
+	 *   Log a debugging message.
+	 * </p>
+	 * <ul>
+	 *   <li>
+	 *     The given throwable and its backtrace are also logged.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logging system is not
+	 *     initialized.
+	 *   </li>
+	 * </ul>
+	 *
+	 * @param t		A throwable to be logged.
+	 * @param message	A message to be logged.
+	 * @throws NullPointerException
+	 *	{@code message} is {@code null}.
+	 * @see LogSystem#initialize(LogConfiguration)
+	 */
+	public void debug(Throwable t, String message)
+	{
+		log(LogLevel.LVL_DEBUG, t, message);
+	}
+
+	/**
+	 * <p>
+	 *   Log a debugging message.
+	 * </p>
+	 * <ul>
+	 *   <li>
+	 *     A log message is constructed by
+	 *     {@link String#format(String,Object...)}.
+	 *   </li>
+	 *   <li>
+	 *     The given throwable and its backtrace are also logged.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logging system is not
+	 *     initialized.
+	 *   </li>
+	 * </ul>
+	 *
+	 * @param t		A throwable to be logged.
+	 * @param format	A format string.
+	 * @param args		Arguments referenced by {@code format}.
+	 * @throws NullPointerException
+	 *	{@code format} is {@code null}.
+	 * @throws IllegalFormatException
+	 *	{@code format} contains an illegal syntax.
+	 * @see LogSystem#initialize(LogConfiguration)
+	 */
+	public void debug(Throwable t, String format, Object ... args)
+	{
+		log(LogLevel.LVL_DEBUG, t, format, args);
 	}
 
 	/**
@@ -474,6 +860,73 @@ public abstract class Logger
 	public void trace(String format, Object ... args)
 	{
 		log(LogLevel.LVL_TRACE, format, args);
+	}
+
+	/**
+	 * <p>
+	 *   Log a trace level message.
+	 * </p>
+	 * <ul>
+	 *   <li>
+	 *     The given throwable and its backtrace are also logged.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logging system is not
+	 *     initialized.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logger instance is bound to
+	 *     the system logger because it does not support trace level
+	 *     message.
+	 *   </li>
+	 * </ul>
+	 *
+	 * @param t		A throwable to be logged.
+	 * @param message	A message to be logged.
+	 * @throws NullPointerException
+	 *	{@code message} is {@code null}.
+	 * @see LogSystem#initialize(LogConfiguration)
+	 */
+	public void trace(Throwable t, String message)
+	{
+		log(LogLevel.LVL_TRACE, t, message);
+	}
+
+	/**
+	 * <p>
+	 *   Log a trace level message.
+	 * </p>
+	 * <ul>
+	 *   <li>
+	 *     A log message is constructed by
+	 *     {@link String#format(String,Object...)}.
+	 *   </li>
+	 *   <li>
+	 *     The given throwable and its backtrace are also logged.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logging system is not
+	 *     initialized.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logger instance is bound to
+	 *     the system logger because it does not support trace level
+	 *     message.
+	 *   </li>
+	 * </ul>
+	 *
+	 * @param t		A throwable to be logged.
+	 * @param format	A format string.
+	 * @param args		Arguments referenced by {@code format}.
+	 * @throws NullPointerException
+	 *	{@code format} is {@code null}.
+	 * @throws IllegalFormatException
+	 *	{@code format} contains an illegal syntax.
+	 * @see LogSystem#initialize(LogConfiguration)
+	 */
+	public void trace(Throwable t, String format, Object ... args)
+	{
+		log(LogLevel.LVL_TRACE, t, format, args);
 	}
 
 	/**
@@ -541,13 +994,91 @@ public abstract class Logger
 
 	/**
 	 * <p>
+	 *   Log a verbose message.
+	 * </p>
+	 * <ul>
+	 *   <li>
+	 *     The given throwable and its backtrace are also logged.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logging system is not
+	 *     initialized.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing on release build.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logger instance is bound to
+	 *     the system logger because it does not support verbose message.
+	 *   </li>
+	 * </ul>
+	 *
+	 * @param t		A throwable to be logged.
+	 * @param message	A message to be logged.
+	 * @throws NullPointerException
+	 *	{@code message} is {@code null}.
+	 * @see LogSystem#initialize(LogConfiguration)
+	 */
+	public void verbose(Throwable t, String message)
+	{
+		if (CoreSystem.DEBUG) {
+			log(LogLevel.LVL_VERBOSE, t, message);
+		}
+	}
+
+	/**
+	 * <p>
+	 *   Log a verbose message.
+	 * </p>
+	 * <ul>
+	 *   <li>
+	 *     A log message is constructed by
+	 *     {@link String#format(String,Object...)}.
+	 *   </li>
+	 *   <li>
+	 *     The given throwable and its backtrace are also logged.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing on release build.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logging system is not
+	 *     initialized.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing on release build.
+	 *   </li>
+	 *   <li>
+	 *     This method does nothing if the logger instance is bound to
+	 *     the system logger because it does not support verbose message.
+	 *   </li>
+	 * </ul>
+	 *
+	 * @param t		A throwable to be logged.
+	 * @param format	A format string.
+	 * @param args		Arguments referenced by {@code format}.
+	 * @throws NullPointerException
+	 *	{@code format} is {@code null}.
+	 * @throws IllegalFormatException
+	 *	{@code format} contains an illegal syntax.
+	 * @see LogSystem#initialize(LogConfiguration)
+	 */
+	public void verbose(Throwable t, String format, Object ... args)
+	{
+		if (CoreSystem.DEBUG) {
+			log(LogLevel.LVL_VERBOSE, t, format, args);
+		}
+	}
+
+	/**
+	 * <p>
 	 *   Log the specified message to the PFC-Core logging system
 	 * </p>
 	 *
 	 * @param lvl		Logging level value of the message.
 	 * @param message	A message to be logged.
 	 * @throws NullPointerException
-	 *	{@code level} or {@code message} is {@code null}.
+	 *	{@code message} is {@code null}.
 	 */
 	private void log(int lvl, String message)
 	{
@@ -564,7 +1095,7 @@ public abstract class Logger
 	 * @param format	A format string.
 	 * @param args		Arguments referenced by {@code format}.
 	 * @throws NullPointerException
-	 *	{@code level} or {@code format} is {@code null}.
+	 *	{@code format} is {@code null}.
 	 * @throws IllegalFormatException
 	 *	{@code format} contains an illegal syntax.
 	 */
@@ -575,6 +1106,118 @@ public abstract class Logger
 		if (lvl <= cur) {
 			logImpl(lvl, _name, String.format(format, args));
 		}
+	}
+
+	/**
+	 * <p>
+	 *   Log the specified message to the PFC-Core logging system.
+	 * </p>
+	 * <p>
+	 *   This method also logs the specified throwable and its backtrace
+	 *   to the PFC-Core logging system.
+	 * </p>
+	 *
+	 * @param lvl		Logging level value of the message.
+	 * @param t		A throwable to be logged.
+	 * @param message	A message to be logged.
+	 * @throws NullPointerException
+	 *	{@code message} is {@code null}.
+	 */
+	private void log(int lvl, Throwable t, String message)
+	{
+		int cur = getCurrentLevel();
+
+		if (lvl <= cur) {
+			logImpl(lvl, _name, getMessage(t, message));
+		}
+	}
+
+	/**
+	 * <p>
+	 *   Log the message specified by the given format to the PFC-Core
+	 *   logging system
+	 * </p>
+	 * <p>
+	 *   This method also logs the specified throwable and its backtrace
+	 *   to the PFC-Core logging system.
+	 * </p>
+	 *
+	 * @param lvl		Logging level value of the message.
+	 * @param t		A throwable to be logged.
+	 * @param format	A format string.
+	 * @param args		Arguments referenced by {@code format}.
+	 * @throws NullPointerException
+	 *	{@code format} is {@code null}.
+	 * @throws IllegalFormatException
+	 *	{@code format} contains an illegal syntax.
+	 */
+	private void log(int lvl, Throwable t, String format, Object[] args)
+	{
+		int cur = getCurrentLevel();
+
+		if (lvl <= cur) {
+			String msg = String.format(format, args);
+			logImpl(lvl, _name, getMessage(t, msg));
+		}
+	}
+
+	/**
+	 * <p>
+	 *   Construct a log message from the given message and throwable.
+	 * </p>
+	 *
+	 * @param t		A throwable to be logged.
+	 * @param message	A log message to be logged.
+	 * @return		A log message.
+	 * @throws NullPointerException
+	 *	{@code message} is {@code null}.
+	 */
+	private String getMessage(Throwable t, String message)
+	{
+		StringBuilder builder = new StringBuilder(message);
+
+		if (t != null) {
+			// Eliminate trailing whitespaces in the given message,
+			// and append one newline.
+			chop(builder).append(NEWLINE);
+
+			// Create a backtrace for the given throwable, and
+			// append it to the log message.
+			BacktraceWriter array = new BacktraceWriter();
+			PrintWriter writer = new PrintWriter(array, false);
+			t.printStackTrace(writer);
+			writer.close();
+			builder.append(array.getCharArray(), 0, array.size());
+		}
+
+		return chop(builder).toString();
+	}
+
+	/**
+	 * <p>
+	 *   Remove trailing whitespaces in the given string builder object.
+	 * </p>
+	 *
+	 * @param builder	A string builder object.
+	 * @return		{@code builder} is always returned.
+	 */
+	private StringBuilder chop(StringBuilder builder)
+	{
+		int len = builder.length();
+		int idx = len - 1;
+		for (; idx >= 0; idx--) {
+			char  c = builder.charAt(idx);
+			if (c != 0 && !Character.isWhitespace(c)) {
+				break;
+			}
+		}
+
+		idx++;
+		if (idx < len) {
+			builder.delete(idx, len);
+		}
+
+		return builder;
 	}
 
 	/**
@@ -643,5 +1286,40 @@ public abstract class Logger
 		 */
 		@Override
 		native void logImpl(int level, String name, String msg);
+	}
+
+	/**
+	 * <p>
+	 *   A character buffer used to generate stack backtrace.
+	 * </p>
+	 * <p>
+	 *   This class is used to avoid unnecessary buffer copy.
+	 * </p>
+	 */
+	private static final class BacktraceWriter extends CharArrayWriter
+	{
+		/**
+		 * Initial size of the internal buffer used to generate stack
+		 * backtrace.
+		 */
+		private final static int  BACKTRACE_BUFSIZ = 1024;
+
+		/**
+		 * Construct a new object.
+		 */
+		private BacktraceWriter()
+		{
+			super(BACKTRACE_BUFSIZ);
+		}
+
+		/**
+		 * Return an array of characters written to this object.
+		 *
+		 * @return  An array of characters written to this object.
+		 */
+		private char[] getCharArray()
+		{
+			return buf;
+		}
 	}
 }

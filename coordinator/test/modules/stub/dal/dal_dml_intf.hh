@@ -430,9 +430,42 @@ class DalDmlIntf {
      *  4. BindOutput if used for any attributes, ignored.
      */
     virtual DalResultCode UpdateRecords(
-                    const UpllCfgType cfg_type,
-                    const DalTableIndex table_index,
-                    const DalBindInfo *input_and_matching_attr_info)= 0;
+                            const UpllCfgType cfg_type,
+                            const DalTableIndex table_index,
+                            const DalBindInfo *input_and_matching_attr_info) = 0;
+
+    /**
+     * UpdateRecords
+     *   Updates the records of table with the given input data for
+     *   the given cfg_type
+     *
+     * @param[in] cfg_type        - Configuration Type for which the records
+     *                              have to be updated
+     * @param[in] table_index     - Valid Index of the table
+     * @param[in] input_and_matching_attr_info
+     *                            - Bind Information for updating records
+     *
+     * @return DalResultCode      - kDalRcSuccess in case of success
+     *                            - Valid errorcode otherwise
+     *
+     * Note:
+     * Information on usage of DalBindInfo
+     *  1. Valid instance of DalBindInfo with same table_index used in this API
+     *  2. BindInput is mandatory for the interested attributes.
+     *  3. BindMatch is optional.
+     *     But it is recommended to provide all primary keys for match to
+     *     update unique record.
+     *     BindMatch if used, updates multiple records that match the given
+     *     values.
+     *     BindMatch if not used, updates all the records from the table.
+     *  4. BindOutput if used for any attributes, ignored.
+     */
+    virtual DalResultCode UpdateRecords(
+        std::string query_statement,
+        const UpllCfgType cfg_type,
+        const DalTableIndex table_index,
+        const DalBindInfo *input_and_matching_attr_info)= 0;
+
 
     /**
      * GetDeletedRecords
@@ -471,11 +504,11 @@ class DalDmlIntf {
      *  5. CloseCursor with this cursor as input will destroy the cursor object
      */
     virtual DalResultCode GetDeletedRecords(const UpllCfgType cfg_type_1,
-                                    const UpllCfgType cfg_type_2,
-                                    const DalTableIndex table_index,
-                                    const size_t max_record_count,
-                                    const DalBindInfo *output_attr_info,
-                                    DalCursor **cursor)= 0;
+                                            const UpllCfgType cfg_type_2,
+                                            const DalTableIndex table_index,
+                                            const size_t max_record_count,
+                                            const DalBindInfo *output_attr_info,
+                                            DalCursor **cursor)= 0;
 
     /**
      * GetCreatedRecords
@@ -514,11 +547,11 @@ class DalDmlIntf {
      *  5. CloseCursor with this cursor as input will destroy the cursor object
      */
     virtual DalResultCode GetCreatedRecords(const UpllCfgType cfg_type_1,
-                                    const UpllCfgType cfg_type_2,
-                                    const DalTableIndex table_index,
-                                    const size_t max_record_count,
-                                    const DalBindInfo *output_attr_info,
-                                    DalCursor **cursor) = 0;
+                                            const UpllCfgType cfg_type_2,
+                                            const DalTableIndex table_index,
+                                            const size_t max_record_count,
+                                            const DalBindInfo *output_attr_info,
+                                            DalCursor **cursor) = 0;
 
     /**
      * GetUpdatedRecords

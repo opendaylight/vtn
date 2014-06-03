@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.validation.logical;
 
 import com.google.gson.JsonObject;
@@ -23,6 +24,8 @@ import org.opendaylight.vtn.javaapi.resources.logical.VBridgeInterfaceFlowFilter
 import org.opendaylight.vtn.javaapi.resources.logical.VBridgeInterfaceFlowFiltersResource;
 import org.opendaylight.vtn.javaapi.resources.logical.VRouterInterfaceFlowFilterResource;
 import org.opendaylight.vtn.javaapi.resources.logical.VRouterInterfaceFlowFiltersResource;
+import org.opendaylight.vtn.javaapi.resources.logical.VTerminalInterfaceFlowFilterResource;
+import org.opendaylight.vtn.javaapi.resources.logical.VTerminalInterfaceFlowFiltersResource;
 import org.opendaylight.vtn.javaapi.validation.CommonValidator;
 import org.opendaylight.vtn.javaapi.validation.VtnServiceValidator;
 
@@ -345,7 +348,101 @@ public class FlowFilterResourceValidator extends VtnServiceValidator {
 			}
 			setListOpFlag(false);
 		}
-
+		// For VTerminalInterfaceFlowFiltersResource instance
+		else if (resource instanceof VTerminalInterfaceFlowFiltersResource
+				&& ((VTerminalInterfaceFlowFiltersResource) resource).getVtnName() != null
+				&& !((VTerminalInterfaceFlowFiltersResource) resource)
+						.getVtnName().trim().isEmpty()) {
+			isValid = validator.isValidMaxLengthAlphaNum(
+					((VTerminalInterfaceFlowFiltersResource) resource)
+							.getVtnName().trim(), VtnServiceJsonConsts.LEN_31);
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.URI
+						+ VtnServiceJsonConsts.VTERMINALNAME);
+				if (((VTerminalInterfaceFlowFiltersResource) resource)
+						.getVterminalName() != null
+						&& !((VTerminalInterfaceFlowFiltersResource) resource)
+								.getVterminalName().trim().isEmpty()) {
+					isValid = validator.isValidMaxLengthAlphaNum(
+							((VTerminalInterfaceFlowFiltersResource) resource)
+									.getVterminalName().trim(),
+							VtnServiceJsonConsts.LEN_31);
+				} else {
+					isValid = false;
+				}
+			}
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.URI
+						+ VtnServiceJsonConsts.IFNAME);
+				if (((VTerminalInterfaceFlowFiltersResource) resource).getIfName() != null
+						&& !((VTerminalInterfaceFlowFiltersResource) resource)
+								.getIfName().trim().isEmpty()) {
+					isValid = validator.isValidMaxLengthAlphaNum(
+							((VTerminalInterfaceFlowFiltersResource) resource)
+									.getIfName().trim(),
+							VtnServiceJsonConsts.LEN_31);
+				} else {
+					isValid = false;
+				}
+			}
+		
+			setListOpFlag(true);
+		}
+		// For VTerminalInterfaceFlowFilterResource instance
+		else if (resource instanceof VTerminalInterfaceFlowFilterResource
+				&& ((VTerminalInterfaceFlowFilterResource) resource).getVtnName() != null
+				&& !((VTerminalInterfaceFlowFilterResource) resource)
+						.getVtnName().trim().isEmpty()) {
+			isValid = validator.isValidMaxLengthAlphaNum(
+					((VTerminalInterfaceFlowFilterResource) resource)
+							.getVtnName().trim(), VtnServiceJsonConsts.LEN_31);
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.URI
+						+ VtnServiceJsonConsts.VTERMINALNAME);
+				if (((VTerminalInterfaceFlowFilterResource) resource)
+						.getVterminalName() != null
+						&& !((VTerminalInterfaceFlowFilterResource) resource)
+								.getVterminalName().trim().isEmpty()) {
+					isValid = validator.isValidMaxLengthAlphaNum(
+							((VTerminalInterfaceFlowFilterResource) resource)
+									.getVterminalName().trim(),
+							VtnServiceJsonConsts.LEN_31);
+				} else {
+					isValid = false;
+				}
+			}
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.URI
+						+ VtnServiceJsonConsts.IFNAME);
+				if (((VTerminalInterfaceFlowFilterResource) resource).getIfName() != null
+						&& !((VTerminalInterfaceFlowFilterResource) resource)
+								.getIfName().trim().isEmpty()) {
+					isValid = validator.isValidMaxLengthAlphaNum(
+							((VTerminalInterfaceFlowFilterResource) resource)
+									.getIfName().trim(),
+							VtnServiceJsonConsts.LEN_31);
+				} else {
+					isValid = false;
+				}
+			}
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.URI
+						+ VtnServiceJsonConsts.FFTYPE);
+				if (((VTerminalInterfaceFlowFilterResource) resource).getFfType() != null
+						&& !((VTerminalInterfaceFlowFilterResource) resource)
+								.getFfType().trim().isEmpty()) {
+					isValid = VtnServiceJsonConsts.IN
+							.equalsIgnoreCase(((VTerminalInterfaceFlowFilterResource) resource)
+									.getFfType().trim())
+							|| VtnServiceJsonConsts.OUT
+									.equalsIgnoreCase(((VTerminalInterfaceFlowFilterResource) resource)
+											.getFfType().trim());
+				} else {
+					isValid = false;
+				}
+			}
+			setListOpFlag(false);
+		}
 		LOG.trace("Complete FlowFilterResourceValidator#validateUri()");
 		return isValid;
 	}

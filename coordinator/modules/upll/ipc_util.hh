@@ -33,6 +33,7 @@
 namespace unc {
 namespace upll {
 
+static const uint32_t kIpcTimeoutReadState = 300;
 static const uint32_t kIpcTimeoutPing = 330;
 static const uint32_t kIpcTimeoutImport = 300;
 static const uint32_t kIpcTimeoutDataflow = 3600;
@@ -97,6 +98,8 @@ class ConfigVal {
   // user_data is not freed on deleting this object or resetting its value
   inline void *get_user_data() const { return user_data_; }
   inline void set_user_data(void *user_data) { user_data_ = user_data; }
+  inline void set_next_cfg_val(ConfigVal *cfg_val) { next_cfg_val_ = cfg_val; }
+
 
   // Only dups val structure, nothing else.
   // Note: shallow Dup
@@ -188,13 +191,14 @@ class ConfigKeyVal {
 
   inline ConfigKeyVal *get_next_cfg_key_val() const { return next_ckv_; }
   void AppendCfgKeyVal(unc_key_type_t kt, IpctSt::IpcStructNum st_num,
-                       void *key, ConfigVal *cv = NULL) {
+                           void *key, ConfigVal *cv = NULL) {
     AppendCfgKeyVal(new ConfigKeyVal(kt, st_num, key, cv));
   }
   void AppendCfgKeyVal(ConfigKeyVal *cfg_kv);
   // Caller should take care of memory pointed to by next_ckv_, before calling
   // set_next_cfg_key_val
   inline void set_next_cfg_key_val(ConfigKeyVal *ckv) { next_ckv_ = ckv; }
+  inline void set_cfg_val(ConfigVal *cfg) { cfg_val_ = cfg; }
 
   void DeleteNextCfgKeyVal();
 
@@ -250,6 +254,17 @@ class ConfigKeyVal {
     from->next_ckv_ = NULL;
   }
 
+  void ResetWithoutNextCkv(ConfigKeyVal *from) {
+    this->key_type_ = from->key_type_;
+    SetKey(from->st_num_, from->key_);
+    from->key_ = NULL;
+    SetUserData(from->user_data_);
+    from->user_data_ = NULL;
+    DeleteCfgVal();
+    AppendCfgVal(from->cfg_val_);
+    from->cfg_val_ = NULL;
+  }
+
   std::string ToStr() const;
   std::string ToStrAll() const;
 
@@ -277,8 +292,8 @@ class ConfigNotification {
  public:
   // {New and old(optional) values can be given in keyval}
   ConfigNotification(unc_keytype_operation_t operation,
-                     unc_keytype_datatype_t datatype,
-                     ConfigKeyVal *ckv_data) {
+                          unc_keytype_datatype_t datatype,
+                          ConfigKeyVal *ckv_data) {
     operation_ = operation;
     datatype_ = datatype;
     ckv_ = ckv_data;

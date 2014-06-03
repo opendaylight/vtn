@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -1079,6 +1079,39 @@ Java_org_opendaylight_vtn_core_ipc_IpcEventSystem_notifyState(
 		}
 		/* FALLTHROUGH */
 	}
+}
+
+/*
+ * JNIEXPORT void JNICALL
+ * Java_com_nec_jp_pflow_core_ipc_IpcEventSystem_setAutoCancelEnabled(
+ *	JNIEnv *env, jobject this, jboolean value)
+ *
+ *	Enable or disable auto-cancellation of IPC client session.
+ */
+JNIEXPORT void JNICALL
+Java_com_nec_jp_pflow_core_ipc_IpcEventSystem_setAutoCancelEnabled(
+	JNIEnv *env, jobject this, jboolean value)
+{
+	pfc_ipcclnt_event_setautocancel(value);
+}
+
+/*
+ * JNIEXPORT jboolean JNICALL
+ * Java_com_nec_jp_pflow_core_ipc_IpcEventSystem_isAutoCancelEnabled(
+ *	JNIEnv *env, jobject this)
+ *
+ *	Determine whether auto-cancellation of IPC client session is
+ *	enabled or not.
+ *
+ * Calling/Exit State:
+ *	JNI_TRUE is returned if enabled.
+ *	JNI_FALSE is returned if disabled.
+ */
+JNIEXPORT jboolean JNICALL
+Java_com_nec_jp_pflow_core_ipc_IpcEventSystem_isAutoCancelEnabled(
+	JNIEnv *env, jobject this)
+{
+	return (jboolean)pfc_ipcclnt_event_getautocancel();
 }
 
 /*

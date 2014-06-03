@@ -104,7 +104,7 @@ class TcLock {
   /* State based methods */
   TcLockRet TcOperationIsAllowed(uint32_t session_id, TcOperation operation);
 };
-}  // namespace tc
-}  // namespace unc
+}
+} /* unc */
 
 #endif  // __UNC_TC_LOCK_HH__

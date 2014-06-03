@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2012-2014 NEC Corporation
 # All rights reserved.
-# 
+#
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License v1.0 which accompanies this
 # distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -24,6 +24,7 @@ JAVA_LIBS		= pfc_ipc.jar pfc_util.jar
 
 # Define external libraries.
 JAVA_EXTLIBS		= $(GOOGLE_GSON) $(COMMONS_NET) $(POSTGRESQL_JDBC)
+JAVA_EXTLIBS		+= $(COMMONS_CODEC)
 
 include ../rules.mk
 

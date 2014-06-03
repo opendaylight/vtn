@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 /**
  * @brief   ODBC Manager
  * @file    odbcm_db_varbind.hh
@@ -183,8 +184,8 @@ enum is_exists {
 typedef struct {
     SQLSMALLINT is_exists;
     SQLSMALLINT cs_row_status;
-    SQLLEN      ind_exists;
-    SQLLEN      ind_row_status;
+    SQLLEN        cbIsExistsNum;
+    SQLLEN        cbRowStatusNum;
 }is_row_exists_t;
 
 /** 

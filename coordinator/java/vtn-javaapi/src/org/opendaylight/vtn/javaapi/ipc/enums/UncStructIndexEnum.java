@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.ipc.enums;
 
 public class UncStructIndexEnum {
@@ -147,6 +148,7 @@ public class UncStructIndexEnum {
 		UPLL_IDX_ACTION_FFE,
 		UPLL_IDX_REDIRECT_NODE_FFE,
 		UPLL_IDX_REDIRECT_PORT_FFE,
+		UPLL_IDX_REDIRECT_DIRECTION_FFE,
 		UPLL_IDX_MODIFY_DST_MAC_FFE,
 		UPLL_IDX_MODIFY_SRC_MAC_FFE,
 		UPLL_IDX_NWM_NAME_FFE,
@@ -405,6 +407,10 @@ public class UncStructIndexEnum {
 		UPLL_IDX_OPER_STATUS_VRTIS
 	};
 
+	public enum ValVbrIfStIndex {
+	UPLL_IDX_OPER_STATUS_VBRIS
+	};
+	
 	public enum ValVtnNeighborIndex {
 		UPLL_IDX_CONN_VNODE_NAME_VN,
 		UPLL_IDX_CONN_VNODE_IF_NAME_VN,
@@ -784,7 +790,6 @@ public class UncStructIndexEnum {
 		UNC_ACTION_SET_TP_DST,
 		UNC_ACTION_SET_IPV6_SRC,
 		UNC_ACTION_SET_IPV6_DST;
-
 	};
 
 	public enum UncDataflowReason {
@@ -797,5 +802,4 @@ public class UncStructIndexEnum {
 		UNC_DF_RES_FLOW_NOT_FOUND,
 		UNC_DF_RES_SYSTEM_ERROR
 	};
-
 }

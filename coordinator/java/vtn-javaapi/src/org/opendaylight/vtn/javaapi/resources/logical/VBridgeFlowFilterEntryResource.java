@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -251,12 +251,17 @@ public class VBridgeFlowFilterEntryResource extends AbstractResource {
 					|| (requestBody.has(VtnServiceJsonConsts.TARGETDB) && requestBody
 							.get(VtnServiceJsonConsts.TARGETDB).getAsString()
 							.equalsIgnoreCase(VtnServiceJsonConsts.STATE))) {
-				requestProcessor
-						.getRequestPacket()
-						.setOption1(
-								IpcDataUnitWrapper
-										.setIpcUint32Value((UncOption1Enum.UNC_OPT1_DETAIL
-												.ordinal())));
+				if (requestBody.has(VtnServiceJsonConsts.OP)
+						&& requestBody.get(VtnServiceJsonConsts.OP)
+								.getAsString()
+								.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
+					requestProcessor
+							.getRequestPacket()
+							.setOption1(
+									IpcDataUnitWrapper
+											.setIpcUint32Value((UncOption1Enum.UNC_OPT1_DETAIL
+													.ordinal())));
+				}
 			}
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);

@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 /**
  * @brief   ODBC Manager
  * @file    odbcm_query_processor.cc
@@ -138,7 +139,7 @@ ODBCM_RC_STATUS QueryProcessor::ExecuteReadDBQuery(
   }
   /** If no record found for the read query */
   pfc_log_info("ODBCM::QueryProcessor::ExecuteReadDBQuery: "
-    "Row count = %ld", row_count);
+    "Row count = %" UNC_PFMT_SQLLEN, row_count);
   if (row_count <= 0) {
     return ODBCM_RC_RECORD_NOT_FOUND;
   } else {
@@ -189,7 +190,7 @@ ODBCM_RC_STATUS QueryProcessor::ExecuteGroupOperationQuery(
   }
   /** If no record found for the query */
   pfc_log_info("ODBCM::QueryProcessor::ExecuteGroupOperationQuery: "
-      "No of rows in last executed query: %ld", row_count);
+      "No of rows in last executed query: %" UNC_PFMT_SQLLEN, row_count);
   if (row_count <= 0) {
     pfc_log_debug("ODBCM::QueryProcessor::ExecuteGroupOperationQuery: "
       "No record exists !!!");
@@ -301,8 +302,9 @@ ODBCM_RC_STATUS QueryProcessor::ExecuteTransaction(
                         ODBCMUtils::get_RC_Details(odbc_rc).c_str());
           return (ODBCM_RC_STATUS)odbc_rc;
         }
-        pfc_log_debug("ODBCM::QueryProcessor::ExecuteTransaction: %ld"
-                      " rows with cs_row_status not as APPLIED", row_count);
+        pfc_log_debug("ODBCM::QueryProcessor::ExecuteTransaction: %"
+            UNC_PFMT_SQLLEN " rows with cs_row_status not as APPLIED",
+            row_count);
         /* Close the cursor */
         odbc_rc = SQLCloseCursor(hstmt);
         //  ODBCM_PROCESS_HANDLE_CHECK(hstmt, odbc_rc);

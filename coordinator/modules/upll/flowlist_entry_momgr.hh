@@ -19,12 +19,12 @@ namespace upll {
 namespace kt_momgr {
 
 /* This file declares interfaces for keyType KT_VBR_FLOWFILER */
-  /**
-   * @brief VbrFlowFilterMoMgr class handles all the request
-   *  received from service.
-   */
-  class FlowListEntryMoMgr: public MoMgrImpl {
-   private:
+/**
+ * @brief VbrFlowFilterMoMgr class handles all the request
+ *  received from service.
+ */
+class FlowListEntryMoMgr: public MoMgrImpl {
+  private:
     /**
      * Member Variable for FlowListEntryBindInfo.
      */
@@ -36,36 +36,36 @@ namespace kt_momgr {
 
     static BindInfo rename_flowlist_entry_main_tbl[];
     static BindInfo rename_flowlist_entry_ctrlr_tbl[];
-
+    
     bool GetRenameKeyBindInfo(unc_key_type_t key_type,
-                              BindInfo *&binfo, int &nattr, MoMgrTables tbl);
+    BindInfo *&binfo, int &nattr, MoMgrTables tbl);
 
-    /**
-     * @brief     Methods Used for  Validating Attribute.
-     * @param[in]  kval     The pointer to the ConfigKeyVal class
-     *
-     * @param[in]  dmi      Pointer to the Database Interface.
-     *
-     * @retval  UPLL_RC_SUCCESS      Validation succeeded.
-     * @retval  UPLL_RC_ERR_GENERIC  Validation failure.
-     */
+   /**
+    * @brief     Methods Used for  Validating Attribute.
+    * @param[in]  kval     The pointer to the ConfigKeyVal class
+    *
+    * @param[in]  dmi      Pointer to the Database Interface.
+    *
+    * @retval  UPLL_RC_SUCCESS      Validation succeeded.
+    * @retval  UPLL_RC_ERR_GENERIC  Validation failure.
+    */
     upll_rc_t ValidateAttribute(ConfigKeyVal *kval,
                                 DalDmlIntf *dmi,
                                 IpcReqRespHeader *req = NULL);
 
-    /**
-     * @Brief Checks if the specified key type(KT_FLOWLIST_ENTRY) and
-     *        associated attributes are supported on the given controller,
-     *        based on the valid flag
-     *
-     * @param[in] IpcReqRespHeader  contains first 8 fields of input request
-     *                              structure
-     * @param[in]   ConfigKeyVal    contains key and value structure.
-     * @param[in]   ctrlr_name      controller_name
-     *
-     * @retval  UPLL_RC_SUCCESS             Validation succeeded.
-     * @retval  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR  Validation failure.
-     */
+   /**
+    * @Brief Checks if the specified key type(KT_FLOWLIST_ENTRY) and
+    *        associated attributes are supported on the given controller,
+    *        based on the valid flag
+    *
+    * @param[in] IpcReqRespHeader  contains first 8 fields of input request
+    *                              structure
+    * @param[in]   ConfigKeyVal    contains key and value structure.
+    * @param[in]   ctrlr_name      controller_name
+    *
+    * @retval  UPLL_RC_SUCCESS             Validation succeeded.
+    * @retval  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR  Validation failure.
+    */
     upll_rc_t ValidateCapability(IpcReqRespHeader *req, ConfigKeyVal *key,
                                  const char *ctrlr_name = NULL);
 
@@ -80,263 +80,261 @@ namespace kt_momgr {
      * @retval UPLL_RC_SUCCESS        indicates attribute check completion
      */
     upll_rc_t ValFlowlistEntryAttributeSupportCheck(
-        val_flowlist_entry_t *val_flowlist_entry,
-        const uint8_t* attrs);
+                          val_flowlist_entry_t *val_flowlist_entry,
+                          const uint8_t* attrs);
 
-    /**
-     * @Brief Checks ip_proto attributes is supported
-     *  on the given controller, based on the valid flag.
-     *
-     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
-     * @param[in] attrs               pointer to controller attribute
-     *
-     */
+   /**
+    * @Brief Checks ip_proto attributes is supported
+    *  on the given controller, based on the valid flag.
+    *
+    * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
+    * @param[in] attrs               pointer to controller attribute
+    *
+    */
     void ValidateIpProtoAttribute(
-        val_flowlist_entry_t *val_flowlist_entry, const uint8_t *attrs);
+      val_flowlist_entry_t *val_flowlist_entry, const uint8_t *attrs);
 
     /**
-     * @Brief Checks Vlan_priority attributes is supported
-     *  on the given controller, based on the valid flag.
-     *
-     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
-     * @param[in] attrs               pointer to controller attributee
-     */
+    * @Brief Checks Vlan_priority attributes is supported
+    *  on the given controller, based on the valid flag.
+    *
+    * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
+    * @param[in] attrs               pointer to controller attributee
+    */
     void ValidateVlanPriorityAttribute(
-        val_flowlist_entry_t *val_flowlist_entry, const uint8_t *attrs);
+      val_flowlist_entry_t *val_flowlist_entry, const uint8_t *attrs);
 
-    /**
-     * @Brief Checks dst_mac and src_mac attributes are supported
-     *  on the given controller, based on the valid flag.
-     *
-     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
-     * @param[in] attrs               pointer to controller attribute
-     */
+   /**
+    * @Brief Checks dst_mac and src_mac attributes are supported
+    *  on the given controller, based on the valid flag.
+    *
+    * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
+    * @param[in] attrs               pointer to controller attribute
+    */
     void ValidateMacAttribute(val_flowlist_entry_t *val_flowlist_entry,
-                              const uint8_t *attrs);
+      const uint8_t *attrs);
 
-    /**
-     * @Brief Checks source and destination IPV4 and IPV4 prefix attributes
-     *  are supported on the given controller, based on the valid flag.
-     *
-     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
-     * @param[in] attrs               pointer to controller attribute
-     */
+   /**
+    * @Brief Checks source and destination IPV4 and IPV4 prefix attributes
+    *  are supported on the given controller, based on the valid flag.
+    *
+    * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
+    * @param[in] attrs               pointer to controller attribute
+    */
     void ValidateIPAttribute(val_flowlist_entry_t *val_flowlist_entry,
-                             const uint8_t *attrs);
+      const uint8_t *attrs);
 
-    /**
-     * @Brief Checks source and destination IPV6 and IPV6 prefix attributes
-     *  are supported on the given controller, based on the valid flag.
-     *
-     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
-     * @param[in] attrs               pointer to controller attribute
-     */
+   /**
+    * @Brief Checks source and destination IPV6 and IPV6 prefix attributes
+    *  are supported on the given controller, based on the valid flag.
+    *
+    * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
+    * @param[in] attrs               pointer to controller attribute
+    */
     void ValidateIPV6Attribute(val_flowlist_entry_t *val_flowlist_entry,
-                               const uint8_t *attrs);
+      const uint8_t *attrs);
 
-    /**
-     * @Brief Checks source and destination L4 port and portEndpt attributes
-     *  are supported on the given controller, based on the valid flag.
-     *
-     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
-     * @param[in] attrs               pointer to controller attribute
-     */
+   /**
+    * @Brief Checks source and destination L4 port and portEndpt attributes
+    *  are supported on the given controller, based on the valid flag.
+    *
+    * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
+    * @param[in] attrs               pointer to controller attribute
+    */
     void ValidateL4PortAttribute(val_flowlist_entry_t *val_flowlist_entry,
-                                 const uint8_t *attrs);
+      const uint8_t *attrs);
 
-    /**
-     * @Brief Checks icmp_type, icmp_code, icmpv6_type, icmpv6_code
-     *  are supported on the given controller, based on the valid flag.
-     *
-     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
-     * @param[in] attrs               pointer to controller attribute
-     */
+   /**
+    * @Brief Checks icmp_type, icmp_code, icmpv6_type, icmpv6_code
+    *  are supported on the given controller, based on the valid flag.
+    *
+    * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
+    * @param[in] attrs               pointer to controller attribute
+    */
     void ValidateICMPAttribute(val_flowlist_entry_t *val_flowlist_entry,
-                               const uint8_t *attrs);
-    /**
-     * @Brief Checks Mac_eth_type attributes is supported
-     *  on the given controller, based on the valid flag.
-     *
-     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
-     * @param[in] attrs               pointer to controller attribute
-     */
+     const uint8_t *attrs);
+   /**
+    * @Brief Checks Mac_eth_type attributes is supported
+    *  on the given controller, based on the valid flag.
+    *
+    * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
+    * @param[in] attrs               pointer to controller attribute
+    */
     void ValidateMacEthTypeAttribute(
-        val_flowlist_entry_t *val_flowlist_entry, const uint8_t *attrs);
+      val_flowlist_entry_t *val_flowlist_entry, const uint8_t *attrs);
 
-    /**
-     * @Brief Checks DSCP attributes is supported
-     *  on the given controller, based on the valid flag.
-     *
-     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
-     * @param[in] attrs               pointer to controller attribute
-     */
+   /**
+    * @Brief Checks DSCP attributes is supported
+    *  on the given controller, based on the valid flag.
+    *
+    * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure
+    * @param[in] attrs               pointer to controller attribute
+    */
     void ValidateIpDscpAttribute(
-        val_flowlist_entry_t *val_flowlist_entry, const uint8_t *attrs);
+      val_flowlist_entry_t *val_flowlist_entry, const uint8_t *attrs);
 
-    /**
-     * @Brief Validates the syntax of the specified key and value structure
-     *        for KT_FLOWLIST_ENTRY keytype
-     *
-     * @param[in] IpcReqRespHeader  contains first 8 fields of input request structure
-     * @param[in] ConfigKeyVal      key and value structure.
-     *
-     * @retval UPLL_RC_SUCCESS              Successful.
-     * @retval UPLL_RC_ERR_CFG_SYNTAX       Syntax error.
-     * @retval UPLL_RC_ERR_NO_SUCH_INSTANCE key_flowlist_entry is not available.
-     * @retval UPLL_RC_ERR_GENERIC          Generic failure.
-     * @retval UPLL_RC_ERR_INVALID_OPTION1  option1 is not valid.
-     * @retval UPLL_RC_ERR_INVALID_OPTION2  option2 is not valid.
-     */
+   /**
+    * @Brief Validates the syntax of the specified key and value structure
+    *        for KT_FLOWLIST_ENTRY keytype
+    *
+    * @param[in] IpcReqRespHeader  contains first 8 fields of input request structure
+    * @param[in] ConfigKeyVal      key and value structure.
+    *
+    * @retval UPLL_RC_SUCCESS              Successful.
+    * @retval UPLL_RC_ERR_CFG_SYNTAX       Syntax error.
+    * @retval UPLL_RC_ERR_NO_SUCH_INSTANCE key_flowlist_entry is not available.
+    * @retval UPLL_RC_ERR_GENERIC          Generic failure.
+    * @retval UPLL_RC_ERR_INVALID_OPTION1  option1 is not valid.
+    * @retval UPLL_RC_ERR_INVALID_OPTION2  option2 is not valid.
+    */
     upll_rc_t ValidateMessage(IpcReqRespHeader *req, ConfigKeyVal *key);
 
-    /**
-     * @Brief Validates the syntax for KT_FLOWLIST_ENTRY keytype key structure.
-     * @param[in] key_flowlist  KT_FLOWLIST_ENTRY key structure.
-     * @retval UPLL_RC_SUCCESS         validation succeeded.
-     * @retval UPLL_RC_ERR_CFG_SYNTAX  validation failed.
-     */
+   /**
+    * @Brief Validates the syntax for KT_FLOWLIST_ENTRY keytype key structure.
+    * @param[in] key_flowlist  KT_FLOWLIST_ENTRY key structure.
+    * @retval UPLL_RC_SUCCESS         validation succeeded.
+    * @retval UPLL_RC_ERR_CFG_SYNTAX  validation failed.
+    */
     upll_rc_t ValidateFlowlistEntryKey(ConfigKeyVal *key,
                                        unc_keytype_operation_t op);
 
-    /**
-     * @Brief Validates the syntax for KT_FLOWLIST_ENTRY keytype value structure.
-     *
-     * @param[in] val_flowlist KT_FLOWLIST_ENTRY value structure.
-     *
-     * @retval UPLL_RC_SUCCESS         validation succeeded.
-     * @retval UPLL_RC_ERR_CFG_SYNTAX  validation failed.
-     */
+   /**
+    * @Brief Validates the syntax for KT_FLOWLIST_ENTRY keytype value structure.
+    *
+    * @param[in] val_flowlist KT_FLOWLIST_ENTRY value structure.
+    *
+    * @retval UPLL_RC_SUCCESS         validation succeeded.
+    * @retval UPLL_RC_ERR_CFG_SYNTAX  validation failed.
+    */
     upll_rc_t ValidateFlowlistEntryVal(
-        ConfigKeyVal *key, uint32_t operation, uint32_t dt_type);
+       ConfigKeyVal *key, uint32_t operation, uint32_t dt_type);
 
     upll_rc_t ValidateFlowlistEntryVal(IpcReqRespHeader *req,
-                                       ConfigKeyVal *key,
-                                       DalDmlIntf *dmi);
-    /**
-     * @Brief Validates the syntax for mac_dst, mac_src fields
-     *
-     * @param[in] val_flowlist_entry  KT_FLOWLIST_ENTRY value structure.
-     * @param[in] operation           Describes operation code
-     *
-     * @retval UPLL_RC_SUCCESS         validation succeeded.
-     * @retval UPLL_RC_ERR_CFG_SYNTAX  validation failed.
-     */
+                                 ConfigKeyVal *key,
+                                 DalDmlIntf *dmi);
+   /**
+    * @Brief Validates the syntax for mac_dst, mac_src fields
+    *
+    * @param[in] val_flowlist_entry  KT_FLOWLIST_ENTRY value structure.
+    * @param[in] operation           Describes operation code
+    *
+    * @retval UPLL_RC_SUCCESS         validation succeeded.
+    * @retval UPLL_RC_ERR_CFG_SYNTAX  validation failed.
+    */
     upll_rc_t ValidateFlowlistMacAddr(val_flowlist_entry_t *val_flowlist_entry,
-                                      uint32_t operation);
-    /**
-     * @Brief Validates the syntax for mac_eth_type field
-     *
-     * @param[in] val_flowlist_entry  KT_FLOWLIST_ENTRY value structure.
-     * @param[in] operation           Describes operation code
-     *
-     * @retval UPLL_RC_SUCCESS         validation succeeded.
-     * @retval UPLL_RC_ERR_CFG_SYNTAX  validation failed.
-     */
+                                       uint32_t operation);
+   /**
+    * @Brief Validates the syntax for mac_eth_type field
+    *
+    * @param[in] val_flowlist_entry  KT_FLOWLIST_ENTRY value structure.
+    * @param[in] operation           Describes operation code
+    *
+    * @retval UPLL_RC_SUCCESS         validation succeeded.
+    * @retval UPLL_RC_ERR_CFG_SYNTAX  validation failed.
+    */
     upll_rc_t ValidateEthType(val_flowlist_entry_t *val_flowlist_entry,
-                              uint32_t operation);
-    /**
-     * @Brief Validates the syntax for dst_ip, dst_ip_prefix fields
-     *
-     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure.
-     * @param[in] operation     Describes operation code
-     *
-     * @retval UPLL_RC_SUCCESS        validation succeeded.
-     * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
-     */
+                               uint32_t operation);
+   /**
+    * @Brief Validates the syntax for dst_ip, dst_ip_prefix fields
+    *
+    * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure.
+    * @param[in] operation     Describes operation code
+    *
+    * @retval UPLL_RC_SUCCESS        validation succeeded.
+    * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
+    */
     upll_rc_t ValidateIPAddress(val_flowlist_entry_t *val_flowlist_entry,
-                                uint8_t ip_type,
-                                unc_keytype_operation_t operation,
-                                bool is_src_ip);
+    uint8_t ip_type, unc_keytype_operation_t operation, bool is_src_ip);
 
-    /**
-     * @Brief Validates the syntax for valn_priority field
-     *
-     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure.
-     * @param[in] operation     Describes operation code
-     *
-     * @retval UPLL_RC_SUCCESS        validation succeeded.
-     * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
-     */
+   /**
+    * @Brief Validates the syntax for valn_priority field
+    *
+    * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure.
+    * @param[in] operation     Describes operation code
+    *
+    * @retval UPLL_RC_SUCCESS        validation succeeded.
+    * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
+    */
     upll_rc_t ValidateVlanPriority(val_flowlist_entry_t *val_flowlist_entry,
-                                   uint32_t operation);
+                                    uint32_t operation);
 
-    /**
-     * @Brief Validates the syntax for ip_proto field
-     *
-     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure.
-     * @param[in] operation     Describes operation code
-     *
-     * @retval UPLL_RC_SUCCESS        validation succeeded.
-     * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
-     */
+   /**
+    * @Brief Validates the syntax for ip_proto field
+    *
+    * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure.
+    * @param[in] operation     Describes operation code
+    *
+    * @retval UPLL_RC_SUCCESS        validation succeeded.
+    * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
+    */
     upll_rc_t ValidateIPProto(val_flowlist_entry_t *val_flowlist_entry,
                               uint32_t operation);
 
-    /**
-     * @Brief Validates the syntax for DSCP field
-     *
-     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure.
-     * @param[in] operation     Describes operation code
-     *
-     * @retval UPLL_RC_SUCCESS        validation succeeded.
-     * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
-     */
+   /**
+    * @Brief Validates the syntax for DSCP field
+    *
+    * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure.
+    * @param[in] operation     Describes operation code
+    *
+    * @retval UPLL_RC_SUCCESS        validation succeeded.
+    * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
+    */
     upll_rc_t ValidateDSCP(val_flowlist_entry_t *val_flowlist_entry,
                            uint32_t operation);
 
-    /**
-     * @Brief Validates the syntax for l4_dst_port_endpt, l4_dst_port fields
-     *
-     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure.
-     * @param[in] operation     Describes operation code
-     *
-     * @retval UPLL_RC_SUCCESS        validation succeeded.
-     * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
-     */
+   /**
+    * @Brief Validates the syntax for l4_dst_port_endpt, l4_dst_port fields
+    *
+    * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure.
+    * @param[in] operation     Describes operation code
+    *
+    * @retval UPLL_RC_SUCCESS        validation succeeded.
+    * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
+    */
     upll_rc_t ValidateL4Port(val_flowlist_entry_t *val_flowlist_entry,
                              val_flowlist_entry_t *db_val_fle,
                              uint32_t operation,
                              bool is_src_port);
 
-    /**
-     * @Brief Validates the syntax for icmp_type, icmp_code fields
-     *
-     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure.
-     * @param[in] val_flowlist KT_FLOWLIST value structure
-     * @param[in] operation     Describes operation code
-     *
-     * @retval UPLL_RC_SUCCESS        validation succeeded.
-     * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
-     */
+   /**
+    * @Brief Validates the syntax for icmp_type, icmp_code fields
+    *
+    * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure.
+    * @param[in] val_flowlist KT_FLOWLIST value structure
+    * @param[in] operation     Describes operation code
+    *
+    * @retval UPLL_RC_SUCCESS        validation succeeded.
+    * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
+    */
 
     upll_rc_t ValidateIcmp(val_flowlist_entry_t *val_flowlist_entry,
                            val_flowlist_entry_t *db_val_fle,
                            uint8_t ip_type, uint32_t operation);
 
-    /**
-     * @Brief Validates the syntax for DSCP field
-     *
-     * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure.
-     * @param[in] operation     Describes operation code
-     *
-     * @retval UPLL_RC_SUCCESS        validation succeeded.
-     * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
-     */
+   /**
+    * @Brief Validates the syntax for DSCP field
+    *
+    * @param[in] val_flowlist_entry KT_FLOWLIST_ENTRY value structure.
+    * @param[in] operation     Describes operation code
+    *
+    * @retval UPLL_RC_SUCCESS        validation succeeded.
+    * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
+    */
     upll_rc_t ValidateDscp(val_flowlist_entry_t *val_flowlist_entry,
                            uint32_t operation);
 
-    /**
-     * @brief  Method GetControllerSpan.
-     *
-     * @param[out]  ikey     Contains the Pointer to ConfigkeyVal Class
-     * @param[in]   dt_type  Describes Datatype.
-     * @param[in]   dmi      Describes the Objct type .
-     *
-     * @retval  UPLL_RT_SUCCESS      Successfull completion.
-     * @retval  UPLL_RC_ERR_GENERIC  Failure.
-     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE  No record found in DB
-     * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
-     * */
+   /**
+    * @brief  Method GetControllerSpan.
+    *
+    * @param[out]  ikey     Contains the Pointer to ConfigkeyVal Class
+    * @param[in]   dt_type  Describes Datatype.
+    * @param[in]   dmi      Describes the Objct type .
+    *
+    * @retval  UPLL_RT_SUCCESS      Successfull completion.
+    * @retval  UPLL_RC_ERR_GENERIC  Failure.
+    * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE  No record found in DB
+    * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
+    * */
 
     upll_rc_t GetControllerSpan(ConfigKeyVal *ikey,
                                 upll_keytype_datatype_t dt_type,
@@ -357,21 +355,21 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE  No record found in DB
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      * */
-    upll_rc_t TxUpdateProcess(ConfigKeyVal *ck_main,
-                              IpcResponse *ipc_resp,
-                              unc_keytype_operation_t op,
-                              DalDmlIntf *dmi,
-                              controller_domain *ctrlr_dom,
-                              set<string> *affected_ctrlr_set,
-                              bool *driver_resp);
+     upll_rc_t TxUpdateProcess(ConfigKeyVal *ck_main,
+                               IpcResponse *ipc_resp,
+                               unc_keytype_operation_t op,
+                               DalDmlIntf *dmi,
+                               controller_domain *ctrlr_dom,
+                               set<string> *affected_ctrlr_set,
+                               bool *driver_resp);
 
-    upll_rc_t UpdateMainTbl(ConfigKeyVal *fle_key,
-                            unc_keytype_operation_t op,
-                            uint32_t driver_result,
-                            ConfigKeyVal *nreq,
-                            DalDmlIntf *dmi);
+     upll_rc_t UpdateMainTbl(ConfigKeyVal *fle_key,
+                             unc_keytype_operation_t op,
+                             uint32_t driver_result,
+                             ConfigKeyVal *nreq,
+                             DalDmlIntf *dmi);
 
-   public:
+  public:
     /**
      * @brief FlowlistEntryMoMgr Class Constructor.
      */
@@ -418,7 +416,7 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_GENERIC  Failure.
      */
     upll_rc_t AllocVal(ConfigVal *&ck_val, upll_keytype_datatype_t dt_type,
-                       MoMgrTables tbl);
+        MoMgrTables tbl);
 
     /**
      * @brief  Update config status for commit result and vote result.
@@ -432,11 +430,11 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_GENERIC  For failue case GENERIC ERROR
      *
      ***/
-    upll_rc_t UpdateAuditConfigStatus(
-        unc_keytype_configstatus_t cs_status,
-        uuc::UpdateCtrlrPhase phase,
-        ConfigKeyVal *&ckv_running,
-        DalDmlIntf *dmi);
+     upll_rc_t UpdateAuditConfigStatus(
+                           unc_keytype_configstatus_t cs_status,
+                           uuc::UpdateCtrlrPhase phase,
+                           ConfigKeyVal *&ckv_running,
+                           DalDmlIntf *dmi);
 
     /**
      * @brief  Method used to fill the CongigKeyVal with the Parent
@@ -468,9 +466,7 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_GENERIC  Failure.
      */
     upll_rc_t GetRenamedUncKey(ConfigKeyVal *ctrlr_key,
-                               upll_keytype_datatype_t dt_type,
-                               DalDmlIntf *dmi,
-                               uint8_t *ctrlr_id);
+        upll_keytype_datatype_t dt_type, DalDmlIntf *dmi, uint8_t *ctrlr_id);
 
     /**
      * @brief  Method used to Duplicate the ConfigkeyVal.
@@ -484,7 +480,7 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_GENERIC  Failure.
      */
     upll_rc_t DupConfigKeyVal(ConfigKeyVal *&okey, ConfigKeyVal *&req,
-                              MoMgrTables tbl);
+        MoMgrTables tbl);
 
     /**
      * @brief     Method used for Validation before Merge.
@@ -498,7 +494,7 @@ namespace kt_momgr {
      * @retval    UPLL_RC_SUCCESS  Successfull completion.
      */
     upll_rc_t MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
-                            ConfigKeyVal *ikey, DalDmlIntf *dmi);
+        ConfigKeyVal *ikey, DalDmlIntf *dmi);
 
     /**
      * @brief     Method used for Rename Operation.
@@ -511,7 +507,7 @@ namespace kt_momgr {
      * @retval    UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT
      */
     upll_rc_t RenameMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                       DalDmlIntf *dmi, const char *ctrlr_id);
+        DalDmlIntf *dmi, const char *ctrlr_id);
 
     /* @brief        Checkes whether the key exists in DB
      *
@@ -539,12 +535,11 @@ namespace kt_momgr {
      * */
 
     upll_rc_t GetFlowListKeyVal(ConfigKeyVal *&okey,
-                                ConfigKeyVal *&ikey);
+                          ConfigKeyVal *&ikey);
     /**
      * @brief  Method used for RenamedControllerkey(PfcName).
      *
-     * @param[out] ikey      Contains the Pointer to ConfigkeyVal
-     *                       Class and contains the Pfc Name
+     * @param[out] ikey      Contains the Pointer to ConfigkeyVal Class and contains the Pfc Name.
      * @param[in] dt_type    Describes Configiration Information.
      * @param[in] dmi        Pointer to DalDmlIntf Class.
      * @param[in] ctrlr_id   Describes the Controller Name.
@@ -555,9 +550,8 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
     upll_rc_t GetRenamedControllerKey(ConfigKeyVal *ikey,
-                                      upll_keytype_datatype_t dt_type,
-                                      DalDmlIntf *dmi,
-                                      controller_domain *ctrlr_dom = NULL);
+        upll_keytype_datatype_t dt_type, DalDmlIntf *dmi,
+        controller_domain *ctrlr_dom = NULL);
     /**
      * @brief     Method used for TxCopyCandidateToRunning.
      * @param[in] keytype             Describes the followong keytype
@@ -570,10 +564,8 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE  No record found in DB
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      * */
-    upll_rc_t TxCopyCandidateToRunning(
-        unc_key_type_t keytype,
-        CtrlrCommitStatusList *ctrlr_commit_status,
-        DalDmlIntf *dmi);
+    upll_rc_t TxCopyCandidateToRunning(unc_key_type_t keytype,
+        CtrlrCommitStatusList *ctrlr_commit_status, DalDmlIntf *dmi);
 
     /**
      *  @brief  Method to Update Controller with created, deleted and updated records
@@ -594,23 +586,23 @@ namespace kt_momgr {
      *  */
 
     upll_rc_t TxUpdateController(unc_key_type_t keytype,
-                                 uint32_t session_id,
-                                 uint32_t config_id,
-                                 uuc::UpdateCtrlrPhase phase,
-                                 set<string> *affected_ctrlr_set,
-                                 DalDmlIntf *dmi,
-                                 ConfigKeyVal **err_ckv);
+                                                uint32_t session_id,
+                                                uint32_t config_id,
+                                                uuc::UpdateCtrlrPhase phase,
+                                                set<string> *affected_ctrlr_set,
+                                                DalDmlIntf *dmi,
+                                                ConfigKeyVal **err_ckv);
 
     bool CompareValidValue(void *&val1, void *val2, bool copy_to_running);
 
-    /**
-     *  @brief  Method to compare to keys
-     *
-     *  @param[in]  key1  Pointer to key structure for comparision
-     *  @param[in]  key2  Pointer to key for comparision
-     *
-     *  @returncode  returns true if both the input parameters match
-     *   */
+   /**
+    *  @brief  Method to compare to keys
+    *
+    *  @param[in]  key1  Pointer to key structure for comparision
+    *  @param[in]  key2  Pointer to key for comparision
+    *
+    *  @returncode  returns true if both the input parameters match
+    *   */
     bool CompareKey(ConfigKeyVal *key1,
                     ConfigKeyVal *key2);
 
@@ -623,12 +615,9 @@ namespace kt_momgr {
      * @param[in] ctrlr_key     Pointer to ConfigKeyVal Class.
      * @retval    RT_SUCCESS    Successfull completion.
      */
-    upll_rc_t UpdateConfigStatus(ConfigKeyVal *key,
-                                 unc_keytype_operation_t op,
-                                 uint32_t driver_result,
-                                 ConfigKeyVal *nreq,
-                                 DalDmlIntf *dmi,
-                                 ConfigKeyVal *ctrlr_key);
+    upll_rc_t UpdateConfigStatus(ConfigKeyVal *key, unc_keytype_operation_t op,
+        uint32_t driver_result, ConfigKeyVal *nreq, DalDmlIntf *dmi,
+        ConfigKeyVal *ctrlr_key);
     /**
      * @brief     Method used for Read Operation.
      * @param[in] req        Describes RequestResponderHeaderClass.
@@ -641,7 +630,7 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
     upll_rc_t ReadMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                     DalDmlIntf *dmi);
+        DalDmlIntf *dmi);
 
     /* @brief      Read the configuration from DB based on the operation code
      *  @param[in]     req    Pointer to IpcResResHeader
@@ -651,7 +640,7 @@ namespace kt_momgr {
      *  @return code          UPLL_RC_SUCCECSS Successful Completion
      */
     upll_rc_t ReadSiblingMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                            bool begin, DalDmlIntf *dmi);
+        bool begin, DalDmlIntf *dmi);
 
     /**
      * @brief     Method used for Read Operation.
@@ -666,7 +655,7 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      * */
     upll_rc_t ReadRecord(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                         DalDmlIntf *dmi);
+        DalDmlIntf *dmi);
 
     /**
      * @brief  Method to Create ConfigKeyVal with rename struct as key
@@ -678,10 +667,10 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_GENERIC           Failure
      */
     upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey,
-                              ConfigKeyVal *ikey);
+        ConfigKeyVal *ikey);
 
 
-    /** @brief Method to Update the Controller Table entry
+   /** @brief Method to Update the Controller Table entry
      *
      * @param[in] ikey     Pointer to ConkeyValClass
      * @param[in] op       Operation code
@@ -691,7 +680,7 @@ namespace kt_momgr {
      * @retval  UPLL_RC_SUCCESS      Successfull completion.
      * @retval  UPLL_RC_ERR_GENERIC  Failure
      *
-     */
+   */
     upll_rc_t UpdateControllerTable(ConfigKeyVal *ikey,
                                     unc_keytype_operation_t op,
                                     upll_keytype_datatype_t dt_type,
@@ -699,7 +688,7 @@ namespace kt_momgr {
                                     char* ctrl_id);
     void SetValidAttributesForController(val_flowlist_entry_t *val);
 
-    /** @brief Method to Validate and Update flowlist in  the Controller Table
+   /** @brief Method to Validate and Update flowlist in  the Controller Table
      *
      * @param[in] flowlist FlowListName
      * @param[in] dmi      Pointer to DB Interface
@@ -709,7 +698,7 @@ namespace kt_momgr {
      * @retval  UPLL_RC_SUCCESS      Successfull completion.
      * @retval  UPLL_RC_ERR_GENERIC  Failure
      *
-     */
+   */
     upll_rc_t AddFlowListToController(char *flowlist_name,
                                       DalDmlIntf *dmi,
                                       char* ctrl_id,
@@ -749,57 +738,59 @@ namespace kt_momgr {
      *
      * @retval  UPLL_RC_ERR_GENERIC           Failure
      **/
-    upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey,
-                                 ConfigKeyVal *ikey);
+  upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey,
+                               ConfigKeyVal *ikey);
 
-    upll_rc_t CreateCandidateMo(IpcReqRespHeader *req,
+  upll_rc_t CreateCandidateMo(IpcReqRespHeader *req,
+                                       ConfigKeyVal *ikey,
+                                       DalDmlIntf *dmi,
+                                       bool restore_flag = false);
+
+  upll_rc_t UpdateMo(IpcReqRespHeader *req,
+                             ConfigKeyVal *ikey,
+                             DalDmlIntf *dmi);
+
+  upll_rc_t IsFlowListMatched(ConfigKeyVal *ikey,
+                              DalDmlIntf *dmi,
+                              IpcReqRespHeader *req);
+
+  upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
+
+  bool FilterAttributes(void *&val1,
+                        void *val2,
+                        bool copy_to_running,
+                        unc_keytype_operation_t op);
+
+  upll_rc_t Get_Tx_Consolidated_Status(
+      unc_keytype_configstatus_t &status,
+      unc_keytype_configstatus_t  drv_result_status,
+      unc_keytype_configstatus_t current_cs,
+      unc_keytype_configstatus_t current_ctrlr_cs);
+
+  upll_rc_t CreateEntryCtrlrTbl(IpcReqRespHeader *req,
                                 ConfigKeyVal *ikey,
-                                DalDmlIntf *dmi,
-                                bool restore_flag = false);
+                                DalDmlIntf *dmi);
 
-    upll_rc_t UpdateMo(IpcReqRespHeader *req,
-                       ConfigKeyVal *ikey,
-                       DalDmlIntf *dmi);
+  upll_rc_t SetFlowlistEntryConsolidatedStatus(ConfigKeyVal *ikey,
+                                               uint8_t *ctrlr_id,
+                                               DalDmlIntf *dmi);
 
-    upll_rc_t IsFlowListMatched(ConfigKeyVal *ikey,
-                                DalDmlIntf *dmi,
-                                IpcReqRespHeader *req);
+  upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
+                          DalDmlIntf *dmi,
+                          IpcReqRespHeader *req);
+  bool CompareValidVal(void *&val1, void *val2, void *val3,
+                       bool copy_to_running);
 
-    upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
+  bool IsAllAttrInvalid(val_flowlist_entry_t *val);
+};
 
-    bool FilterAttributes(void *&val1,
-                          void *val2,
-                          bool copy_to_running,
-                          unc_keytype_operation_t op);
-
-    upll_rc_t Get_Tx_Consolidated_Status(
-        unc_keytype_configstatus_t &status,
-        unc_keytype_configstatus_t  drv_result_status,
-        unc_keytype_configstatus_t current_cs,
-        unc_keytype_configstatus_t current_ctrlr_cs);
-
-    upll_rc_t CreateEntryCtrlrTbl(IpcReqRespHeader *req,
-                                  ConfigKeyVal *ikey,
-                                  DalDmlIntf *dmi);
-
-    upll_rc_t SetFlowlistEntryConsolidatedStatus(ConfigKeyVal *ikey,
-                                                 uint8_t *ctrlr_id,
-                                                 DalDmlIntf *dmi);
-
-    upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
-                            DalDmlIntf *dmi,
-                            IpcReqRespHeader *req);
-    bool CompareValidVal(void *&val1, void *val2, void *val3,
-                         bool copy_to_running);
-  };
-
-  typedef struct val_flowlist_entry_ctrl {
+typedef struct val_flowlist_entry_ctrl {
     uint8_t valid[22];
     unc_keytype_configstatus_t cs_row_status;
     unc_keytype_configstatus_t cs_attr[22];
     uint8_t flags;
-  } val_flowlist_entry_ctrl_t;
-}  // namespace kt_momgr
+} val_flowlist_entry_ctrl_t;
+}  // nameSpace kt_momgr
 }  // namespace upll
 }  // namespace unc
 #endif  // UPLL_FLOWLISTENTRY_MOMGR_HH_

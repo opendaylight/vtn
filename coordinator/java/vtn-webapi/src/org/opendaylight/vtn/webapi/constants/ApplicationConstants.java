@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -221,6 +221,10 @@ public final class ApplicationConstants {
 
 	public static final String HTTP_HEADER_ACCEPT = "Accept";
 
+	public static final String HTTP_AUTHERIZATION = "Authorization";
+
+	public static final String AUTHERIZATION_BASIC = "Basic";
+
 	public static final String DOT_REGEX = ".";
 
 	public static final String QUESTION_MARK_CHAR = "?";
@@ -232,6 +236,10 @@ public final class ApplicationConstants {
 	public static final String INFO = "/info";
 
 	public static final String RETRY_AFTER = "Retry-After";
+
+	public static final String AUTHORIZATION_RESP_HEADER = "WWW-Authenticate";
+
+	public static final String AUTHORIZATION_RESP_VALUE = "BASIC realm=\"Web API\"";
 
 	public static final String MD5 = "MD5";
 
@@ -275,6 +283,7 @@ public final class ApplicationConstants {
 	public static final String setl4srcport_icmptype = "setl4srcport_icmptype";
 	public static final String setipv6dstaddr = "setipv6dstaddr";
 	public static final String setipv6srcaddr = "setipv6srcaddr";
+	public static final String stripvlan = "stripvlan";
 
 	public static final String OS_RESOURCE_PKG = "org.opendaylight.vtn.javaapi.resources.openstack.";
 	public static final String SEMI_COLON = ";";

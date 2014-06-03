@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.ipc;
 
 import java.util.List;
@@ -51,7 +52,7 @@ public class IpcStructFactory {
 				&& ((JsonObject) requestBody.get(VtnServiceJsonConsts.VTN))
 						.has(VtnServiceJsonConsts.VTNNAME)) {
 			keyVtnStruct.set(VtnServiceJsonConsts.VTNNAME, IpcDataUnitWrapper
-					.setIpcUint8ArrayValue(((JsonObject) requestBody
+					.setIpcUint8ArrayValue(((JsonObject) requestBody 
 							.get(VtnServiceJsonConsts.VTN)).get(
 							VtnServiceJsonConsts.VTNNAME).getAsString()));
 		} else if (uriParameters != null
@@ -1151,7 +1152,10 @@ public class IpcStructFactory {
 													ValVTunnelIfStruct,
 													UncStructIndexEnum.ValVtunnelIfIndex.UPLL_IDX_ADMIN_ST_VTNL_IF
 															.ordinal()));
-				} else {
+				} else if (requestBody
+						.getAsJsonObject(VtnServiceJsonConsts.INTERFACE)
+						.get(VtnServiceJsonConsts.ADMINSTATUS).getAsString()
+						.equalsIgnoreCase(VtnServiceJsonConsts.DISABLE)) {
 					ValVTunnelIfStruct
 							.set(VtnServiceJsonConsts.ADMIN_STATUS,
 									IpcDataUnitWrapper
@@ -1161,6 +1165,15 @@ public class IpcStructFactory {
 													ValVTunnelIfStruct,
 													UncStructIndexEnum.ValVtunnelIfIndex.UPLL_IDX_ADMIN_ST_VTNL_IF
 															.ordinal()));
+				} else {
+					ValVTunnelIfStruct
+							.set(VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValVtunnelIfIndex.UPLL_IDX_ADMIN_ST_VTNL_IF
+											.ordinal(),
+									IpcDataUnitWrapper
+											.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID_NO_VALUE
+													.ordinal()));
+
 				}
 				LOG.debug("adminstatus:"
 						+ requestBody
@@ -1857,7 +1870,10 @@ public class IpcStructFactory {
 													ValVtepIfStruct,
 													UncStructIndexEnum.ValVtepIfIndex.UPLL_IDX_ADMIN_ST_VTEPI
 															.ordinal()));
-				} else {
+				} else if (requestBody
+						.getAsJsonObject(VtnServiceJsonConsts.INTERFACE)
+						.get(VtnServiceJsonConsts.ADMINSTATUS).getAsString()
+						.equalsIgnoreCase(VtnServiceJsonConsts.DISABLE)) {
 					ValVtepIfStruct
 							.set(VtnServiceJsonConsts.ADMIN_STATUS,
 									IpcDataUnitWrapper
@@ -1867,6 +1883,14 @@ public class IpcStructFactory {
 													ValVtepIfStruct,
 													UncStructIndexEnum.ValVtepIfIndex.UPLL_IDX_ADMIN_ST_VTEPI
 															.ordinal()));
+				} else {
+					ValVtepIfStruct
+							.set(VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValVtepIfIndex.UPLL_IDX_ADMIN_ST_VTEPI
+											.ordinal(),
+									IpcDataUnitWrapper
+											.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID_NO_VALUE
+													.ordinal()));
 				}
 				LOG.debug("adminstatus:"
 						+ requestBody
@@ -3055,17 +3079,6 @@ public class IpcStructFactory {
 	 */
 	public final IpcStruct getValVtnFlowFilterEntryStruct(
 			final JsonObject requestBody, final List<String> uriParameters) {
-		// Lower level structure
-		/*
-		 * ipc_struct ValVtnFlowFilterEntry{ UINT8 valid[5]; UINT8
-		 * cs_row_status; UINT8 cs_attr[5]; UINT8 flowlist_name[32+1]; UINT8
-		 * action; UINT8 nwm_name[31+1]; UINT8 dscp; UINT8 priority;
-		 * 
-		 * enum ValVtnFlowFilterEntryIndex { kIdxFlowListName=0, kIdxAction,
-		 * kIdxnwn_name, kIdxdscp, kIdxPriority };
-		 * 
-		 * };
-		 */
 		LOG.trace("Start getValVtnFlowFilterEntryStruct");
 		final IpcStruct valVtnFlowFilterEntryStruct = new IpcStruct(
 				UncStructEnum.ValVtnFlowFilterEntry.getValue());
@@ -3116,21 +3129,13 @@ public class IpcStructFactory {
 									IpcDataUnitWrapper
 											.setIpcUint8Value(UncStructIndexEnum.FlowfilterAction.UPLL_FLOWFILTER_ACT_PASS
 													.ordinal()));
-				} else if (flowFilterEntry.get(VtnServiceJsonConsts.ACTIONTYPE)
-						.getAsString()
-						.equalsIgnoreCase(VtnServiceJsonConsts.DROP)) {
+				} else {
 					valVtnFlowFilterEntryStruct
-							.set(VtnServiceJsonConsts.ACTION,
+							.set(VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValVtnFlowfilterEntryIndex.UPLL_IDX_ACTION_VFFE
+											.ordinal(),
 									IpcDataUnitWrapper
-											.setIpcUint8Value(UncStructIndexEnum.FlowfilterAction.UPLL_FLOWFILTER_ACT_DROP
-													.ordinal()));
-				} else if (flowFilterEntry.get(VtnServiceJsonConsts.ACTIONTYPE)
-						.getAsString()
-						.equalsIgnoreCase(VtnServiceJsonConsts.REDIRECT)) {
-					valVtnFlowFilterEntryStruct
-							.set(VtnServiceJsonConsts.ACTION,
-									IpcDataUnitWrapper
-											.setIpcUint8Value(UncStructIndexEnum.FlowfilterAction.UPLL_FLOWFILTER_ACT_REDIRECT
+											.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID_NO_VALUE
 													.ordinal()));
 				}
 			} else {
@@ -3226,7 +3231,6 @@ public class IpcStructFactory {
 		} else {
 			LOG.warning("request body and uri parameters are not correct for getValVtnFlowFilterEntryStruct");
 		}
-		LOG.info("Value Structure: " + valVtnFlowFilterEntryStruct.toString());
 		LOG.trace("Complete getValVtnFlowFilterEntryStruct");
 		return valVtnFlowFilterEntryStruct;
 	}
@@ -3616,13 +3620,6 @@ public class IpcStructFactory {
 	 */
 	public final IpcStruct getValFlowfilterEntryStruct(
 			final JsonObject requestBody, final List<String> uriParameters) {
-		/*
-		 * ipc_struct val_flowfilter_entry { UINT8 valid[9]; UINT8
-		 * cs_row_status; UINT8 cs_attr[9]; UINT8 flowlist_name[32+1]; UINT8
-		 * action; UINT8 redirect_node[31+1]; UINT8 redirect_port[31+1]; UINT8
-		 * modify_dstmac[6]; UINT8 modify_srcmac[6]; UINT8 nwm_name[31+1]; UINT8
-		 * dscp; UINT8 priority; };
-		 */
 		LOG.trace("Start getValFlowfilterEntryStruct");
 		final IpcStruct valFlowfilterEntryStruct = IpcDataUnitWrapper
 				.setIpcStructValue(UncStructEnum.ValFlowfilterEntry.getValue());
@@ -3681,11 +3678,21 @@ public class IpcStructFactory {
 									IpcDataUnitWrapper
 											.setIpcUint8Value(UncStructIndexEnum.FlowfilterAction.UPLL_FLOWFILTER_ACT_DROP
 													.ordinal()));
-				} else {
+				} else if (flowFilterEntry.get(VtnServiceJsonConsts.ACTIONTYPE)
+						.getAsString()
+						.equalsIgnoreCase(VtnServiceJsonConsts.REDIRECT)) {
 					valFlowfilterEntryStruct
 							.set(VtnServiceIpcConsts.ACTION,
 									IpcDataUnitWrapper
 											.setIpcUint8Value(UncStructIndexEnum.FlowfilterAction.UPLL_FLOWFILTER_ACT_REDIRECT
+													.ordinal()));
+				} else {
+					valFlowfilterEntryStruct
+							.set(VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_ACTION_FFE
+											.ordinal(),
+									IpcDataUnitWrapper
+											.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID_NO_VALUE
 													.ordinal()));
 				}
 				LOG.debug("action_type:"
@@ -3756,6 +3763,53 @@ public class IpcStructFactory {
 									IpcDataUnitWrapper
 											.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_INVALID
 													.ordinal()));
+				}
+				if (redirectDst.has(VtnServiceJsonConsts.DIRECTION)) {
+					valFlowfilterEntryStruct
+							.set(VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_REDIRECT_DIRECTION_FFE
+											.ordinal(),
+									IpcDataUnitWrapper
+											.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
+													.ordinal()));
+
+					if (redirectDst.get(VtnServiceJsonConsts.DIRECTION)
+							.getAsString()
+							.equalsIgnoreCase(VtnServiceJsonConsts.IN)) {
+						valFlowfilterEntryStruct
+								.set(VtnServiceIpcConsts.REDIRECTDIRECTION,
+										IpcDataUnitWrapper
+												.setIpcUint8Value(
+														UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_IN
+																.getValue(),
+														valFlowfilterEntryStruct,
+														UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_REDIRECT_DIRECTION_FFE
+																.ordinal()));
+					} else if (redirectDst.get(VtnServiceJsonConsts.DIRECTION)
+							.getAsString()
+							.equalsIgnoreCase(VtnServiceJsonConsts.OUT)) {
+						valFlowfilterEntryStruct
+								.set(VtnServiceIpcConsts.REDIRECTDIRECTION,
+										IpcDataUnitWrapper
+												.setIpcUint8Value(
+														UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_OUT
+																.getValue(),
+														valFlowfilterEntryStruct,
+														UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_REDIRECT_DIRECTION_FFE
+																.ordinal()));
+					} else {
+						valFlowfilterEntryStruct
+								.set(VtnServiceIpcConsts.VALID,
+										UncStructIndexEnum.ValFlowfilterEntryIndex.UPLL_IDX_REDIRECT_DIRECTION_FFE
+												.ordinal(),
+										IpcDataUnitWrapper
+												.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID_NO_VALUE
+														.ordinal()));
+					}
+					LOG.debug("Direction:"
+							+ redirectDst.get(VtnServiceJsonConsts.DIRECTION)
+									.getAsString());
+
 				}
 				if (redirectDst.has(VtnServiceJsonConsts.MACDSTADDR)) {
 					valFlowfilterEntryStruct
@@ -4127,7 +4181,9 @@ public class IpcStructFactory {
 													valVbrIfStruct,
 													UncStructIndexEnum.ValVbrIfIndex.UPLL_IDX_ADMIN_STATUS_VBRI
 															.ordinal()));
-				} else {
+				} else if (vbrIf.get(VtnServiceJsonConsts.ADMINSTATUS)
+						.getAsString()
+						.equalsIgnoreCase(VtnServiceJsonConsts.DISABLE)) {
 					valVbrIfStruct
 							.set(VtnServiceJsonConsts.ADMIN_STATUS,
 									IpcDataUnitWrapper
@@ -4137,6 +4193,14 @@ public class IpcStructFactory {
 													valVbrIfStruct,
 													UncStructIndexEnum.ValVbrIfIndex.UPLL_IDX_ADMIN_STATUS_VBRI
 															.ordinal()));
+				} else {
+					valVbrIfStruct
+							.set(VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValVbrIfIndex.UPLL_IDX_ADMIN_STATUS_VBRI
+											.ordinal(),
+									IpcDataUnitWrapper
+											.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID_NO_VALUE
+													.ordinal()));
 				}
 				LOG.debug("adminstatus"
 						+ vbrIf.get(VtnServiceJsonConsts.ADMINSTATUS)
@@ -4594,6 +4658,18 @@ public class IpcStructFactory {
 												.ordinal()));
 				if (vRouterIf.get(VtnServiceJsonConsts.ADMINSTATUS)
 						.getAsString()
+						.equalsIgnoreCase(VtnServiceJsonConsts.ENABLE)) {
+					valVrtIfStruct
+							.set(VtnServiceJsonConsts.ADMIN_STATUS,
+									IpcDataUnitWrapper
+											.setIpcUint8Value(
+													UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_ENABLE
+															.getValue(),
+													valVrtIfStruct,
+													UncStructIndexEnum.ValVrtIfIndex.UPLL_IDX_ADMIN_ST_VI
+															.ordinal()));
+				} else if (vRouterIf.get(VtnServiceJsonConsts.ADMINSTATUS)
+						.getAsString()
 						.equalsIgnoreCase(VtnServiceJsonConsts.DISABLE)) {
 					valVrtIfStruct
 							.set(VtnServiceJsonConsts.ADMIN_STATUS,
@@ -4606,14 +4682,12 @@ public class IpcStructFactory {
 															.ordinal()));
 				} else {
 					valVrtIfStruct
-							.set(VtnServiceJsonConsts.ADMIN_STATUS,
+							.set(VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValVrtIfIndex.UPLL_IDX_ADMIN_ST_VI
+											.ordinal(),
 									IpcDataUnitWrapper
-											.setIpcUint8Value(
-													UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_ENABLE
-															.getValue(),
-													valVrtIfStruct,
-													UncStructIndexEnum.ValVrtIfIndex.UPLL_IDX_ADMIN_ST_VI
-															.ordinal()));
+											.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID_NO_VALUE
+													.ordinal()));
 				}
 				LOG.debug("adminstatus:"
 						+ vRouterIf.get(VtnServiceJsonConsts.ADMINSTATUS)
@@ -6793,5 +6867,512 @@ public class IpcStructFactory {
 		LOG.info("Key Structure: " + keyCtrDataFlowStruct.toString());
 		LOG.trace("Complete getKeyCtrDataFlowStruct");
 		return keyCtrDataFlowStruct;
+	}
+	
+	// Added New key Structure and Value Structure for U13 Requirement
+	/**
+	 * Gets the key Vterm struct.
+	 * 
+	 * @param requestBody
+	 *            the request body
+	 * @param uriParameters
+	 *            the uri parameters
+	 * @return the key Vterm struct
+	 */
+	public IpcStruct getKeyVtermStruct(final JsonObject requestBody,
+			final List<String> uriParameters) {
+		LOG.trace("Start getKeyVtermStruct");
+		final IpcStruct keyVtnVtermStruct = IpcDataUnitWrapper
+				.setIpcStructValue(UncStructEnum.KeyVterm.getValue());
+		IpcStruct keyVtnStruct = null;
+		if (uriParameters != null
+				&& uriParameters.size() >= UncIndexEnum.ONE.ordinal()) {
+			keyVtnStruct = getKeyVtnStruct(requestBody,
+					uriParameters.subList(0, 1));
+		}
+		keyVtnVtermStruct.set(VtnServiceIpcConsts.VTNKEY, keyVtnStruct);
+		if (requestBody != null
+				&& requestBody.has(VtnServiceJsonConsts.VTERMINAL)
+				&& ((JsonObject) requestBody
+						.get(VtnServiceJsonConsts.VTERMINAL))
+						.has(VtnServiceJsonConsts.VTERMINAL_NAME)) {
+			keyVtnVtermStruct.set(VtnServiceIpcConsts.VTERMINAL_NAME,
+					IpcDataUnitWrapper
+							.setIpcUint8ArrayValue(((JsonObject) requestBody
+									.get(VtnServiceJsonConsts.VTERMINAL)).get(
+									VtnServiceJsonConsts.VTERMINAL_NAME)
+									.getAsString()));
+		} else if (uriParameters != null
+				&& uriParameters.size() == UncIndexEnum.TWO.ordinal()) {
+			keyVtnVtermStruct.set(VtnServiceIpcConsts.VTERMINAL_NAME,
+					IpcDataUnitWrapper.setIpcUint8ArrayValue(uriParameters
+							.get(1)));
+		} else {
+			LOG.warning("request body and uri parameters are not correct for getKeyVtermStruct");
+		}
+		LOG.info("Key Structure: " + keyVtnVtermStruct.toString());
+		LOG.trace("Complete getKeyVtermStruct");
+		return keyVtnVtermStruct;
+	}
+
+	/**
+	 * Gets the val Vterminal struct.
+	 * 
+	 * @param requestBody
+	 *            the request body
+	 * @param uriParameters
+	 *            the uri parameters
+	 * @return the Val Vterminal struct
+	 */
+	public IpcStruct getValVtermStruct(final JsonObject requestBody,
+			final List<String> uriParameters) {
+
+		LOG.trace("Start getValVtermStruct");
+		final IpcStruct ValVtermStruct = IpcDataUnitWrapper
+				.setIpcStructValue(UncStructEnum.ValVterm.getValue());
+		if (requestBody != null
+				&& requestBody.has(VtnServiceJsonConsts.VTERMINAL)) {
+			JsonObject vterminal = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.VTERMINAL);
+			if (vterminal.has(VtnServiceJsonConsts.DESCRIPTION)) {
+				ValVtermStruct
+						.set(VtnServiceIpcConsts.VALID,
+								UncStructIndexEnum.valVtermIndex.UPLL_IDX_DESC_VTERM
+										.ordinal(),
+								IpcDataUnitWrapper
+										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
+												.ordinal()));
+				ValVtermStruct
+						.set(VtnServiceIpcConsts.VTERM_DESCRIPTION,
+								IpcDataUnitWrapper
+										.setIpcUint8ArrayValue(
+												vterminal
+														.get(VtnServiceJsonConsts.DESCRIPTION)
+														.getAsString(),
+												ValVtermStruct,
+												UncStructIndexEnum.valVtermIndex.UPLL_IDX_DESC_VTERM
+														.ordinal()));
+			} else {
+				ValVtermStruct
+						.set(VtnServiceIpcConsts.VALID,
+								UncStructIndexEnum.valVtermIndex.UPLL_IDX_DESC_VTERM
+										.ordinal(),
+								IpcDataUnitWrapper
+										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_INVALID
+												.ordinal()));
+			}
+			if (vterminal.has(VtnServiceJsonConsts.CONTROLLERID)) {
+				ValVtermStruct
+						.set(VtnServiceIpcConsts.VALID,
+								UncStructIndexEnum.valVtermIndex.UPLL_IDX_CONTROLLER_ID_VTERM
+										.ordinal(),
+								IpcDataUnitWrapper
+										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
+												.ordinal()));
+				ValVtermStruct
+						.set(VtnServiceJsonConsts.CONTROLLERID,
+								IpcDataUnitWrapper
+										.setIpcUint8ArrayValue(
+												vterminal
+														.get(VtnServiceJsonConsts.CONTROLLERID)
+														.getAsString(),
+												ValVtermStruct,
+												UncStructIndexEnum.valVtermIndex.UPLL_IDX_CONTROLLER_ID_VTERM
+														.ordinal()));
+			} else {
+				ValVtermStruct
+						.set(VtnServiceIpcConsts.VALID,
+								UncStructIndexEnum.valVtermIndex.UPLL_IDX_CONTROLLER_ID_VTERM
+										.ordinal(),
+								IpcDataUnitWrapper
+										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_INVALID
+												.ordinal()));
+			}
+			if (vterminal.has(VtnServiceJsonConsts.DOMAINID)) {
+				ValVtermStruct
+						.set(VtnServiceIpcConsts.VALID,
+								UncStructIndexEnum.valVtermIndex.UPLL_IDX_DOMAIN_ID_VTERM
+										.ordinal(),
+								IpcDataUnitWrapper
+										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
+												.ordinal()));
+				ValVtermStruct
+						.set(VtnServiceJsonConsts.DOMAINID,
+								IpcDataUnitWrapper
+										.setIpcUint8ArrayValue(
+												vterminal
+														.get(VtnServiceJsonConsts.DOMAINID)
+														.getAsString(),
+												ValVtermStruct,
+												UncStructIndexEnum.valVtermIndex.UPLL_IDX_DOMAIN_ID_VTERM
+														.ordinal()));
+			} else {
+				ValVtermStruct
+						.set(VtnServiceIpcConsts.VALID,
+								UncStructIndexEnum.valVtermIndex.UPLL_IDX_DOMAIN_ID_VTERM
+										.ordinal(),
+								IpcDataUnitWrapper
+										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_INVALID
+												.ordinal()));
+			}
+		} else {
+			LOG.warning("request body and uri parameters are not correct for getValVtermStruct");
+		}
+		LOG.info("Value Structure: " + ValVtermStruct.toString());
+		LOG.trace("Complete getValVtermStruct");
+		return ValVtermStruct;
+	}
+
+	/**
+	 * Gets the key Vterm Interface struct.
+	 * 
+	 * @param requestBody
+	 *            the request body
+	 * @param uriParameters
+	 *            the uri parameters
+	 * @return the key Vterm Interface struct
+	 */
+	public IpcStruct getKeyVtermIfStruct(final JsonObject requestBody,
+			final List<String> uriParameters) {
+		LOG.trace("Start getKeyVtermIfStruct");
+		final IpcStruct keyVtnVtermIfStruct = IpcDataUnitWrapper
+				.setIpcStructValue(UncStructEnum.KeyVtermIf.getValue());
+		IpcStruct keyVtnVtermStruct = null;
+		if (uriParameters != null
+				&& uriParameters.size() >= UncIndexEnum.TWO.ordinal()) {
+			keyVtnVtermStruct = getKeyVtermStruct(requestBody,
+					uriParameters.subList(0, 2));
+		}
+		keyVtnVtermIfStruct
+				.set(VtnServiceIpcConsts.VTERMKEY, keyVtnVtermStruct);
+		if (requestBody != null
+				&& requestBody.has(VtnServiceJsonConsts.INTERFACE)
+				&& ((JsonObject) requestBody
+						.get(VtnServiceJsonConsts.INTERFACE))
+						.has(VtnServiceJsonConsts.IFNAME)) {
+			keyVtnVtermIfStruct
+					.set(VtnServiceIpcConsts.IFNAME, IpcDataUnitWrapper
+							.setIpcUint8ArrayValue(((JsonObject) requestBody
+									.get(VtnServiceJsonConsts.INTERFACE)).get(
+									VtnServiceJsonConsts.IFNAME).getAsString()));
+		} else if (uriParameters != null
+				&& uriParameters.size() == UncIndexEnum.THREE.ordinal()) {
+			keyVtnVtermIfStruct.set(VtnServiceIpcConsts.IFNAME,
+					IpcDataUnitWrapper.setIpcUint8ArrayValue(uriParameters
+							.get(2)));
+		} else {
+			LOG.warning("request body and uri parameters are not correct for getKeyVtermIfStruct");
+		}
+
+		LOG.info("Key Structure: " + keyVtnVtermIfStruct.toString());
+		LOG.trace("Complete getKeyVtermIfStruct");
+		return keyVtnVtermIfStruct;
+	}
+
+	/**
+	 * Gets the val Vterminal If struct.
+	 * 
+	 * @param requestBody
+	 *            the request body
+	 * @param uriParameters
+	 *            the uri parameters
+	 * @return the Val Vterminal If struct
+	 */
+	public IpcStruct getValVtermIfStruct(final JsonObject requestBody,
+			final List<String> uriParameters) {
+
+		LOG.trace("Start getValVtermIfStruct");
+		final IpcStruct ValVtermIfStruct = IpcDataUnitWrapper
+				.setIpcStructValue(UncStructEnum.ValVtermIf.getValue());
+		if (requestBody != null
+				&& requestBody.has(VtnServiceJsonConsts.INTERFACE)) {
+			JsonObject vterminal = requestBody
+					.getAsJsonObject(VtnServiceJsonConsts.INTERFACE);
+			if (vterminal.has(VtnServiceJsonConsts.DESCRIPTION)) {
+				ValVtermIfStruct
+						.set(VtnServiceIpcConsts.VALID,
+								UncStructIndexEnum.valVtermIfIndex.UPLL_IDX_DESC_VTERMI
+										.ordinal(),
+								IpcDataUnitWrapper
+										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
+												.ordinal()));
+				ValVtermIfStruct
+						.set(VtnServiceJsonConsts.DESCRIPTION,
+								IpcDataUnitWrapper
+										.setIpcUint8ArrayValue(
+												vterminal
+														.get(VtnServiceJsonConsts.DESCRIPTION)
+														.getAsString(),
+												ValVtermIfStruct,
+												UncStructIndexEnum.valVtermIfIndex.UPLL_IDX_DESC_VTERMI
+														.ordinal()));
+			} else {
+				ValVtermIfStruct
+						.set(VtnServiceIpcConsts.VALID,
+								UncStructIndexEnum.valVtermIfIndex.UPLL_IDX_DESC_VTERMI
+										.ordinal(),
+								IpcDataUnitWrapper
+										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_INVALID
+												.ordinal()));
+			}
+			if (requestBody.getAsJsonObject(VtnServiceJsonConsts.INTERFACE)
+					.has(VtnServiceJsonConsts.ADMINSTATUS)) {
+				ValVtermIfStruct
+						.set(VtnServiceIpcConsts.VALID,
+								UncStructIndexEnum.valVtermIfIndex.UPLL_IDX_ADMIN_STATUS_VTERMI
+										.ordinal(),
+								IpcDataUnitWrapper
+										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
+												.ordinal()));
+				if (requestBody.getAsJsonObject(VtnServiceJsonConsts.INTERFACE)
+						.get(VtnServiceJsonConsts.ADMINSTATUS).getAsString()
+						.equalsIgnoreCase(VtnServiceJsonConsts.ENABLE)) {
+					ValVtermIfStruct
+							.set(VtnServiceJsonConsts.ADMIN_STATUS,
+									IpcDataUnitWrapper
+											.setIpcUint8Value(
+													UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_ENABLE
+															.getValue(),
+													ValVtermIfStruct,
+													UncStructIndexEnum.valVtermIfIndex.UPLL_IDX_ADMIN_STATUS_VTERMI
+															.ordinal()));
+				} else if (requestBody
+						.getAsJsonObject(VtnServiceJsonConsts.INTERFACE)
+						.get(VtnServiceJsonConsts.ADMINSTATUS).getAsString()
+						.equalsIgnoreCase(VtnServiceJsonConsts.DISABLE)) {
+					ValVtermIfStruct
+							.set(VtnServiceJsonConsts.ADMIN_STATUS,
+									IpcDataUnitWrapper
+											.setIpcUint8Value(
+													UncStructIndexEnum.ValAdminStatus.UPLL_ADMIN_DISABLE
+															.getValue(),
+													ValVtermIfStruct,
+													UncStructIndexEnum.valVtermIfIndex.UPLL_IDX_ADMIN_STATUS_VTERMI
+															.ordinal()));
+				} else {
+					ValVtermIfStruct
+							.set(VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valVtermIfIndex.UPLL_IDX_ADMIN_STATUS_VTERMI
+											.ordinal(),
+									IpcDataUnitWrapper
+											.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID_NO_VALUE
+													.ordinal()));
+				}
+				LOG.debug("adminstatus:"
+						+ requestBody
+								.getAsJsonObject(VtnServiceJsonConsts.INTERFACE)
+								.get(VtnServiceJsonConsts.ADMINSTATUS)
+								.getAsString());
+
+			} else {
+				ValVtermIfStruct
+						.set(VtnServiceIpcConsts.VALID,
+								UncStructIndexEnum.valVtermIfIndex.UPLL_IDX_ADMIN_STATUS_VTERMI
+										.ordinal(),
+								IpcDataUnitWrapper
+										.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_INVALID
+												.ordinal()));
+			}
+
+		} else if (requestBody != null
+				&& requestBody.has(VtnServiceJsonConsts.PORTMAP)) {
+			ValVtermIfStruct
+					.set(VtnServiceIpcConsts.VALID,
+							UncStructIndexEnum.valVtermIfIndex.UPLL_IDX_ADMIN_STATUS_VTERMI
+									.ordinal(),
+							IpcDataUnitWrapper
+									.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_INVALID
+											.ordinal()));
+			ValVtermIfStruct
+					.set(VtnServiceIpcConsts.VALID,
+							UncStructIndexEnum.valVtermIfIndex.UPLL_IDX_DESC_VTERMI
+									.ordinal(),
+							IpcDataUnitWrapper
+									.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_INVALID
+											.ordinal()));
+			ValVtermIfStruct
+					.set(VtnServiceIpcConsts.VALID,
+							UncStructIndexEnum.valVtermIfIndex.UPLL_IDX_PM_VTERMI
+									.ordinal(),
+							IpcDataUnitWrapper
+									.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID
+											.ordinal()));
+			final IpcStruct valPortMapStruct = getValPortMapStruct(requestBody,
+					uriParameters);
+			ValVtermIfStruct.set(VtnServiceIpcConsts.PORTMAP, valPortMapStruct);
+		} else if (requestBody == null) {
+			final IpcStruct valPortMapStruct = IpcDataUnitWrapper
+					.setIpcStructValue(UncStructEnum.ValPortMap.getValue());
+			ValVtermIfStruct
+					.set(VtnServiceIpcConsts.VALID,
+							UncStructIndexEnum.valVtermIfIndex.UPLL_IDX_ADMIN_STATUS_VTERMI
+									.ordinal(),
+							IpcDataUnitWrapper
+									.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_INVALID
+											.ordinal()));
+			ValVtermIfStruct
+					.set(VtnServiceIpcConsts.VALID,
+							UncStructIndexEnum.valVtermIfIndex.UPLL_IDX_DESC_VTERMI
+									.ordinal(),
+							IpcDataUnitWrapper
+									.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_INVALID
+											.ordinal()));
+			ValVtermIfStruct
+					.set(VtnServiceIpcConsts.VALID,
+							UncStructIndexEnum.valVtermIfIndex.UPLL_IDX_PM_VTERMI
+									.ordinal(),
+							IpcDataUnitWrapper
+									.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID_NO_VALUE
+											.ordinal()));
+			valPortMapStruct
+					.set(VtnServiceIpcConsts.VALID,
+							UncStructIndexEnum.ValPortMapIndex.UPLL_IDX_LOGICAL_PORT_ID_PM
+									.ordinal(),
+							IpcDataUnitWrapper
+									.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID_NO_VALUE
+											.ordinal()));
+			valPortMapStruct
+					.set(VtnServiceIpcConsts.VALID,
+							UncStructIndexEnum.ValPortMapIndex.UPLL_IDX_VLAN_ID_PM
+									.ordinal(),
+							IpcDataUnitWrapper
+									.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID_NO_VALUE
+											.ordinal()));
+			valPortMapStruct
+					.set(VtnServiceIpcConsts.VALID,
+							UncStructIndexEnum.ValPortMapIndex.UPLL_IDX_TAGGED_PM
+									.ordinal(),
+							IpcDataUnitWrapper
+									.setIpcUint8Value(UncStructIndexEnum.Valid.UNC_VF_VALID_NO_VALUE
+											.ordinal()));
+			ValVtermIfStruct.set(VtnServiceIpcConsts.PORTMAP, valPortMapStruct);
+		} else {
+			LOG.warning("request body and uri parameters are not correct for getValVtermIfStruct");
+		}
+		LOG.info("Value Structure: " + ValVtermIfStruct.toString());
+		LOG.trace("Complete getValVtermIfStruct");
+		return ValVtermIfStruct;
+	}
+
+	/**
+	 * Gets the key Vterm Interface Flowfilter struct.
+	 * 
+	 * @param requestBody
+	 *            the request body
+	 * @param uriParameters
+	 *            the uri parameters
+	 * @return the key Vterm Interface Flowfilter struct
+	 */
+	public IpcStruct getKeyVtermIfFlowfilterStruct(
+			final JsonObject requestBody, final List<String> uriParameters) {
+		LOG.trace("Start getKeyVtermIfFlowfilterStruct");
+		final IpcStruct keyVtnVtermIfFlowFilterStruct = IpcDataUnitWrapper
+				.setIpcStructValue(UncStructEnum.KeyVtermIfFlowfilter
+						.getValue());
+		IpcStruct keyVtnVtermIf = null;
+		if (uriParameters != null
+				&& uriParameters.size() >= UncIndexEnum.THREE.ordinal()) {
+			keyVtnVtermIf = getKeyVtermIfStruct(requestBody,
+					uriParameters.subList(0, 3));
+		}
+		keyVtnVtermIfFlowFilterStruct.set(VtnServiceIpcConsts.IFKEY,
+				keyVtnVtermIf);
+		if (requestBody != null
+				&& requestBody.has(VtnServiceJsonConsts.FLOWFILTER)
+				&& ((JsonObject) requestBody
+						.get(VtnServiceJsonConsts.FLOWFILTER))
+						.has(VtnServiceJsonConsts.FFTYPE)) {
+			if (requestBody.getAsJsonObject(VtnServiceJsonConsts.FLOWFILTER)
+					.get(VtnServiceJsonConsts.FFTYPE).getAsString()
+					.equalsIgnoreCase(VtnServiceJsonConsts.IN)) {
+				keyVtnVtermIfFlowFilterStruct
+						.set(VtnServiceIpcConsts.DIRECTION,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_IN
+												.ordinal()));
+			} else {
+				keyVtnVtermIfFlowFilterStruct
+						.set(VtnServiceIpcConsts.DIRECTION,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_OUT
+												.ordinal()));
+			}
+			LOG.debug("ff_type:"
+					+ requestBody
+							.getAsJsonObject(VtnServiceJsonConsts.FLOWFILTER)
+							.get(VtnServiceJsonConsts.FFTYPE).getAsString());
+		} else if (uriParameters != null
+				&& uriParameters.size() == UncIndexEnum.FOUR.ordinal()) {
+			if (uriParameters.get(3).equalsIgnoreCase(VtnServiceJsonConsts.IN)) {
+				keyVtnVtermIfFlowFilterStruct
+						.set(VtnServiceIpcConsts.DIRECTION,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_IN
+												.ordinal()));
+			} else {
+
+				keyVtnVtermIfFlowFilterStruct
+						.set(VtnServiceIpcConsts.DIRECTION,
+								IpcDataUnitWrapper
+										.setIpcUint8Value(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_OUT
+												.ordinal()));
+			}
+			LOG.debug("ff_type:" + uriParameters.get(3));
+		} else {
+			LOG.warning("request body and uri parameters are not correct for getKeyVtermIfFlowfilterStruct");
+		}
+		LOG.info("Key Structure: " + keyVtnVtermIfFlowFilterStruct.toString());
+		LOG.trace("Complete getKeyVtermIfFlowfilterStruct");
+		return keyVtnVtermIfFlowFilterStruct;
+	}
+
+	/**
+	 * Gets the key Vterm Interface Flowfilter Entry struct.
+	 * 
+	 * @param requestBody
+	 *            the request body
+	 * @param uriParameters
+	 *            the uri parameters
+	 * @return the key Vterm Interface Flowfilter Entry struct
+	 */
+	public IpcStruct getKeyVtermIfFlowfilterEntryStruct(
+			final JsonObject requestBody, final List<String> uriParameters) {
+		LOG.trace("Start getKeyVtermIfFlowfilterEntryStruct");
+
+		final IpcStruct keyVtnVtermIfFlowfilterEntryStruct = IpcDataUnitWrapper
+				.setIpcStructValue(UncStructEnum.KeyVtermIfFlowfilterEntry
+						.getValue());
+		IpcStruct keyVtnVtermIfFlowFilterStruct = null;
+		if (uriParameters != null
+				&& uriParameters.size() >= UncIndexEnum.FOUR.ordinal()) {
+			keyVtnVtermIfFlowFilterStruct = getKeyVtermIfFlowfilterStruct(
+					requestBody, uriParameters.subList(0, 4));
+		}
+		keyVtnVtermIfFlowfilterEntryStruct.set(
+				VtnServiceIpcConsts.FLOWFILTERKEY,
+				keyVtnVtermIfFlowFilterStruct);
+		if (requestBody != null
+				&& requestBody.has(VtnServiceJsonConsts.FLOWFILTERENTRY)
+				&& ((JsonObject) requestBody
+						.get(VtnServiceJsonConsts.FLOWFILTERENTRY))
+						.has(VtnServiceJsonConsts.SEQNUM)) {
+			keyVtnVtermIfFlowfilterEntryStruct.set(
+					VtnServiceJsonConsts.SEQUENCENUM, IpcDataUnitWrapper
+							.setIpcUint16Value(((JsonObject) requestBody
+									.get(VtnServiceJsonConsts.FLOWFILTERENTRY))
+									.get(VtnServiceJsonConsts.SEQNUM)
+									.getAsString()));
+		} else if (uriParameters != null
+				&& uriParameters.size() == UncIndexEnum.FIVE.ordinal()) {
+			keyVtnVtermIfFlowfilterEntryStruct.set(
+					VtnServiceJsonConsts.SEQUENCENUM,
+					IpcDataUnitWrapper.setIpcUint16Value(uriParameters.get(4)));
+		} else {
+			LOG.warning("request body and uri parameters are not correct for getKeyVtermIfFlowfilterEntryStruct");
+		}
+		LOG.info("Key Structure: "
+				+ keyVtnVtermIfFlowfilterEntryStruct.toString());
+		LOG.trace("Complete getKeyVtermIfFlowfilterEntryStruct");
+		return keyVtnVtermIfFlowfilterEntryStruct;
 	}
 }

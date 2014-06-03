@@ -191,6 +191,7 @@ public class XMLTransformationUtil {
 						} catch (final VtnServiceWebAPIException e) {
 							LOG.error("Property not found for list element");
 							if (!(checkForJsonKey(jsonKey))) {
+								LOG.error("missing entry : " + jsonKey);
 								throw e;
 							} else {
 								flag = true;
@@ -307,6 +308,7 @@ public class XMLTransformationUtil {
 			keySet.add(ApplicationConstants.setl4srcport_icmptype);
 			keySet.add(ApplicationConstants.setipv6dstaddr);
 			keySet.add(ApplicationConstants.setipv6srcaddr);
+			keySet.add(ApplicationConstants.stripvlan);
 		}
 		if (keySet.contains(jsonKey)) {
 			exist = true;

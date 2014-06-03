@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2013 NEC Corporation
+ * Copyright (c) 2011-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -551,6 +551,9 @@ typedef struct {
 extern int	pfc_ipcclnt_event_init(const pfc_ipcevopts_t *opts);
 extern int	pfc_ipcclnt_event_shutdown(void);
 extern int	pfc_ipcclnt_event_fini(void);
+extern void	pfc_ipcclnt_event_setautocancel(pfc_bool_t value);
+
+extern pfc_bool_t	pfc_ipcclnt_event_getautocancel(void);
 
 extern int	pfc_ipcevent_add_handler(pfc_ipcevhdlr_t *PFC_RESTRICT idp,
 					 const char *PFC_RESTRICT channel,

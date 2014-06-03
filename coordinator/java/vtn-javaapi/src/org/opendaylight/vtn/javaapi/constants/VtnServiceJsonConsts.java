@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.constants;
 
 import java.math.BigInteger;
@@ -782,6 +783,7 @@ public final class VtnServiceJsonConsts {
 	public static final String VTUNNEL_INTERFACE_PORTMAP = "VTunnelInterfacePortMap";
 	public static final String VTEP_INTERFACE_PORTMAP = "VTepInterfacePortMap";
 	public static final String VBRIDGE_INTERFACE_PORTMAP = "VBridgeInterfacePortMap";
+	public static final String VTERMINAL_INTERFACE_PORTMAP = "VTerminalInterfacePortMap";
 	public static final String DATAFLOWS = "dataflows";
 	// vterminal
 	public static final String VTERMINAL = "vterminal";
@@ -930,5 +932,6 @@ public final class VtnServiceJsonConsts {
 	public static final String VLAN_ID_65535 = "65535";
 	public static final String EMPTY = "";
 	public static final String STRIPVLAN = "stripvlan";
+	public static final String AUDIT = "audit";
 
 }

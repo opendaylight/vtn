@@ -74,7 +74,7 @@ const char * DalQueryBuilder::DalGetCreatedRecQT =
 
 const char * DalQueryBuilder::DalGetModRecQT     =
   "SELECT {mand_out_columns} FROM {config1_table_name}"
-    " WHERE EXISTS"
+    " WHERE EXISTS" 
       " ( SELECT {primary_key_columns} FROM"
         " ( SELECT {opt_match_columns} FROM {config2_table_name} EXCEPT"
           " SELECT {opt_match_columns} FROM {config1_table_name}"
@@ -236,7 +236,8 @@ bool DalQueryBuilder::get_sql_statement(
     return false;
   }
 
-  query_str = sql_templates[dal_api_num].query_tmpl;
+  query_str = sql_templates[dal_api_num].query_tmpl;  
+  
   /* replace all tokens in query template to get statement */
   while (next_token_pos(query_str, start_pos, last_pos)) {
     size_t length = last_pos - start_pos + 1;
@@ -257,8 +258,8 @@ bool DalQueryBuilder::get_sql_statement(
 
 /* keep finding tokens from given query template until end of templates */
 bool DalQueryBuilder::next_token_pos(const std::string &query_template,
-                                     size_t &start_position,
-                                     size_t &last_position) const {
+				     size_t &start_position,
+				     size_t &last_position) const {
   if (query_template.empty()) {
     UPLL_LOG_DEBUG("Empty Query Template String");
     return false;
@@ -288,8 +289,8 @@ bool DalQueryBuilder::next_token_pos(const std::string &query_template,
 
 /* converts token string to enum constants */
 DalQuerytoken DalQueryBuilder::str_to_num(const std::string &tokenstr,
-                                          const size_t start_pos,
-                                          const size_t length) const {
+					  const size_t start_pos,
+					  const size_t length) const {
   if (tokenstr.empty()) {
     UPLL_LOG_DEBUG("Empty Token String");
     return kDalInvalidToken;
@@ -302,16 +303,15 @@ DalQuerytoken DalQueryBuilder::str_to_num(const std::string &tokenstr,
   } else if (tokenstr.compare(start_pos, length, DalMandInColUpdExpr) == 0) {
     return kDalMandInColUpdExpr;
 
-    // Output Related tokens
+  // Output Related tokens
   } else if (tokenstr.compare(start_pos, length, DalMandOutColNames) == 0) {
     return kDalMandOutColNames;
   } else if (tokenstr.compare(start_pos, length, DalOptOutColNames) == 0) {
     return kDalOptOutColNames;
-  } else if (tokenstr.compare(start_pos, length,
-                              DalOptDstOutColUpdTempExpr) == 0) {
+  } else if (tokenstr.compare(start_pos, length, DalOptDstOutColUpdTempExpr) == 0) {
     return kDalOptDstOutColUpdTempExpr;
 
-    // Match Related tokens
+  // Match Related tokens
   } else if (tokenstr.compare(start_pos, length, DalMandMatchColNames) == 0) {
     return kDalMandMatchColNames;
   } else if (tokenstr.compare(start_pos, length, DalOptMatchColNames) == 0) {
@@ -320,24 +320,20 @@ DalQuerytoken DalQueryBuilder::str_to_num(const std::string &tokenstr,
     return kDalMandMatchColEqExpr;
   } else if (tokenstr.compare(start_pos, length, DalOptMatchColEqExpr) == 0) {
     return kDalOptMatchColEqExpr;
-  } else if (tokenstr.compare(start_pos, length,
-                              DalOptMatchColEqNotLastExpr) == 0) {
+  } else if (tokenstr.compare(start_pos, length, DalOptMatchColEqNotLastExpr) == 0) {
     return kDalOptMatchColEqNotLastExpr;
-  } else if (tokenstr.compare(start_pos, length,
-                              DalMandMatchColLstGtrExpr) == 0) {
+  } else if (tokenstr.compare(start_pos, length, DalMandMatchColLstGtrExpr) == 0) {
     return kDalMandMatchColLstGtrExpr;
-  } else if (tokenstr.compare(start_pos, length,
-                              DalMandMatchColEqTempExpr) == 0) {
+  } else if (tokenstr.compare(start_pos, length, DalMandMatchColEqTempExpr) == 0) {
     return kDalMandMatchColEqTempExpr;
 
-    // Primary Key Related tokens
+  // Primary Key Related tokens
   } else if (tokenstr.compare(start_pos, length, DalPkeyColNames) == 0) {
     return kDalPkeyColNames;
-  } else if (tokenstr.compare(start_pos, length,
-                              DalMatchPriColEqTempExpr) == 0) {
+  } else if (tokenstr.compare(start_pos, length, DalMatchPriColEqTempExpr) == 0) {
     return kDalMatchPriColEqTempExpr;
 
-    // Table Related tokens
+  // Table Related tokens
   } else if (tokenstr.compare(start_pos, length, DalCfg1TableName) == 0) {
     return kDalCfg1TableName;
   } else if (tokenstr.compare(start_pos, length, DalCfg2TableName) == 0) {
@@ -423,18 +419,18 @@ bool DalQueryBuilder::fill_column_names(const DalIoCode io_code,
 
     if (io_code == kDalIoCodeInput) {
       if ( io_type != kDalIoInputOnly &&
-          io_type != kDalIoInputAndMatch ) {
+           io_type != kDalIoInputAndMatch ) {
         continue;
       }
     } else if (io_code == kDalIoCodeOutput) {
       if ( io_type != kDalIoOutputOnly &&
-          io_type != kDalIoOutputAndMatch ) {
+           io_type != kDalIoOutputAndMatch ) {
         continue;
       }
     } else if (io_code == kDalIoCodeMatch) {
       if ( io_type != kDalIoMatchOnly &&
-          io_type != kDalIoInputAndMatch &&
-          io_type != kDalIoOutputAndMatch ) {
+           io_type != kDalIoInputAndMatch &&
+           io_type != kDalIoOutputAndMatch ) {
         continue;
       }
     }
@@ -453,8 +449,8 @@ bool DalQueryBuilder::fill_column_names(const DalIoCode io_code,
 // Finding the position of greater Primary Key index bound for match
 // in DalBindList
 bool DalQueryBuilder::find_last_pkey_pos_for_match(
-    const DalBindInfo *dbi,
-    uint16_t *last_pkey_pos) const {
+                          const DalBindInfo *dbi,
+                          uint16_t *last_pkey_pos) const {
   DalBindList::iterator bl_it;
   DalBindList bind_list;
   DalBindColumnInfo *col_info = NULL;
@@ -471,14 +467,14 @@ bool DalQueryBuilder::find_last_pkey_pos_for_match(
     return false;
   }
   for (bl_it = bind_list.begin(), index = 0; bl_it != bind_list.end();
-       ++bl_it, ++index) {
+      ++bl_it, ++index) {
     col_info = *bl_it;
     if ((col_info->get_io_type() == kDalIoMatchOnly ||
-         col_info->get_io_type() == kDalIoInputAndMatch ||
-         col_info->get_io_type() == kDalIoOutputAndMatch) &&
-        (schema::ColumnIsPKeyIndex(dbi->get_table_index(),
-                                   col_info->get_column_index()) &&
-         col_info->get_column_index() >= last_pkey_col_index)) {
+        col_info->get_io_type() == kDalIoInputAndMatch ||
+        col_info->get_io_type() == kDalIoOutputAndMatch) && 
+        (schema::ColumnIsPKeyIndex(dbi->get_table_index(), 
+                            col_info->get_column_index()) &&
+        col_info->get_column_index() >= last_pkey_col_index)) {
       *last_pkey_pos = index;
       last_pkey_col_index = col_info->get_column_index();
     }
@@ -545,14 +541,14 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
       }
 
       if (fill_column_names(kDalIoCodeInput,
-                            table_index, dbi, replc_str) == false) {
+                          table_index, dbi, replc_str) == false) {
         UPLL_LOG_DEBUG("Error Filling Column names for Input");
         return false;
       }
-      break;
+    break;
 
-      // {mand_insert_?} - ?, ?, ?, ...
-      // count of attributes bound for input
+    // {mand_insert_?} - ?, ?, ?, ...
+    // count of attributes bound for input
     case kDalMandInColValues:
       // PFC_ASSERT(dbi);
       if (dbi == NULL) {
@@ -578,8 +574,8 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
       }
       break;
 
-      // {mand_in_columns_with_?} - col1 = ?, col2 = ?, col3 = ?, ...
-      // For all attributes bound for input
+    // {mand_in_columns_with_?} - col1 = ?, col2 = ?, col3 = ?, ...
+    // For all attributes bound for input
     case kDalMandInColUpdExpr:
       // PFC_ASSERT(dbi);
       if (dbi == NULL) {
@@ -605,16 +601,15 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
           if (first)
             first = false;
 
-          replc_str += schema::ColumnName(table_index,
-                                          col_info->get_column_index());
+          replc_str += schema::ColumnName(table_index, col_info->get_column_index());
           replc_str += "= ?";
         }  // if
       }  // for
       break;
 
-      // Output Related Tokens
-      // {mand_out_columns} - col1, col2, ...
-      // column names of attributes bound for output
+    // Output Related Tokens
+    // {mand_out_columns} - col1, col2, ...
+    // column names of attributes bound for output
     case kDalMandOutColNames:
       // PFC_ASSERT(dbi);
       if (dbi == NULL) {
@@ -634,9 +629,9 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
       }
       break;
 
-      // {opt_out_columns} - col1, col2, ...
-      // column names of attributes bound for output
-      // All column names, if no attributes bound for output
+    // {opt_out_columns} - col1, col2, ...
+    // column names of attributes bound for output
+    // All column names, if no attributes bound for output
     case kDalOptOutColNames:
       if (dbi == NULL || dbi->get_output_bind_count() == 0) {
         UPLL_LOG_TRACE("All Columns bound for Optional Output");
@@ -660,10 +655,10 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
       }
       break;
 
-      // {opt_dst_out_columns_with_temp} -
-      // <dst_table>.col1 = temp.col1, <dst_table>.col2 = temp.col2, ...
-      // column names of attributes bound for output
-      // All column names, if no attributes bound for output
+    // {opt_dst_out_columns_with_temp} -
+    // <dst_table>.col1 = temp.col1, <dst_table>.col2 = temp.col2, ...
+    // column names of attributes bound for output
+    // All column names, if no attributes bound for output
     case kDalOptDstOutColUpdTempExpr:
       table_name = "";
       if (get_bind_str(kDalDstTableName, dbi, table_name,
@@ -682,8 +677,8 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
           if (first)
             first = false;
 
-          //  replc_str += std::string(table_name);
-          //  replc_str += std::string(".");
+        //  replc_str += std::string(table_name);
+        //  replc_str += std::string(".");
           replc_str += schema::ColumnName(table_index, col_index);
           replc_str += "= temp.";
           replc_str += schema::ColumnName(table_index, col_index);
@@ -713,18 +708,18 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
       }
       break;
 
-      // Match Related Tokens
-      // {mand_match_columns} - col1, col2, ...
-      // column names of attributes bound for match
+    // Match Related Tokens
+    // {mand_match_columns} - col1, col2, ...
+    // column names of attributes bound for match
     case kDalMandMatchColNames:
       if (dbi == NULL || dbi->get_match_bind_count() == 0) {
         UPLL_LOG_DEBUG("No columns bound for Mandatory match");
         return false;
       }
 
-      // {opt_match_columns} - col1, col2, ...
-      // column names of attributes bound for match
-      // All column names, if no attributes bound for output
+    // {opt_match_columns} - col1, col2, ...
+    // column names of attributes bound for match
+    // All column names, if no attributes bound for output
     case kDalOptMatchColNames:
       // PFC_ASSERT(dbi);
       if (dbi == NULL || dbi->get_match_bind_count() == 0) {
@@ -749,9 +744,9 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
       }
       break;
 
-      // {mand_WHERE_match_columns_eq} -
-      // WHERE col1 = ?, col2 = ?, ...
-      // column names of attributes bound for match
+    // {mand_WHERE_match_columns_eq} -
+    // WHERE col1 = ?, col2 = ?, ...
+    // column names of attributes bound for match
     case kDalMandMatchColEqExpr:
       // PFC_ASSERT(dbi);
       if (dbi == NULL) {
@@ -764,10 +759,10 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
         return false;
       }
 
-      // {opt_WHERE_match_columns_eq} -
-      // WHERE col1 = ?, col2 = ?, ...
-      // column names of attributes bound for match
-      // Empty string if no attributes bound for match
+    // {opt_WHERE_match_columns_eq} -
+    // WHERE col1 = ?, col2 = ?, ...
+    // column names of attributes bound for match
+    // Empty string if no attributes bound for match
     case kDalOptMatchColEqExpr:
       if (dbi == NULL || dbi->get_match_bind_count() == 0) {
         UPLL_LOG_DEBUG("No columns bound for Optional Match");
@@ -793,17 +788,16 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
           if (first)
             first = false;
 
-          replc_str += schema::ColumnName(table_index,
-                                          col_info->get_column_index());
+          replc_str += schema::ColumnName(table_index, col_info->get_column_index());
           replc_str += " = ?";
         }  // if
       }  // for
       break;
 
-      // {opt_WHERE_match_columns_eq_not_last} -
-      // WHERE col1 = ?, col2 = ?, ..., col(n-1) = ?
-      // n is the number of attributes bound for match
-      // column names of attributes bound for match
+    // {opt_WHERE_match_columns_eq_not_last} -
+    // WHERE col1 = ?, col2 = ?, ..., col(n-1) = ?
+    // n is the number of attributes bound for match
+    // column names of attributes bound for match
     case kDalOptMatchColEqNotLastExpr:
       if (dbi == NULL || dbi->get_match_bind_count() < 1) {
         UPLL_LOG_DEBUG("No columns bound for Optional Match");
@@ -830,8 +824,7 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
             if (first)
               first = false;
 
-            replc_str += schema::ColumnName(table_index,
-                                            col_info->get_column_index());
+            replc_str += schema::ColumnName(table_index, col_info->get_column_index());
             replc_str += "= ?";
           }
           col_count++;
@@ -839,10 +832,10 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
       }  // for
       break;
 
-      // {mand_WHERE_match_columns_last_greater} -
-      // WHERE col1 = ?, col2 = ?, ..., col(n-1) > ?
-      // n is the number of attributes bound for match
-      // column names of attributes bound for match
+    // {mand_WHERE_match_columns_last_greater} -
+    // WHERE col1 = ?, col2 = ?, ..., col(n-1) > ?
+    // n is the number of attributes bound for match
+    // column names of attributes bound for match
     case kDalMandMatchColLstGtrExpr:
       // PFC_ASSERT(dbi);
       if (dbi == NULL) {
@@ -877,8 +870,7 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
           if (first)
             first = false;
 
-          replc_str += schema::ColumnName(table_index,
-                                          col_info->get_column_index());
+          replc_str += schema::ColumnName(table_index, col_info->get_column_index());
           if (col_count == last_pkey_pos)
             replc_str += "> ?";
           else
@@ -888,9 +880,9 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
       }  // for
       break;
 
-      // Primary Key Related Tokens
-      // {primary_key_columns} - col1, col2, ...
-      // All primary key column names of the table
+    // Primary Key Related Tokens
+    // {primary_key_columns} - col1, col2, ...
+    // All primary key column names of the table
     case kDalPkeyColNames:
       col_count = schema::TableNumPkCols(table_index);
       for (col_index = 0; col_index < col_count; col_index++) {
@@ -904,9 +896,9 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
       }
       break;
 
-      // {mand_match_columns_eq_with_temp}
-      // col1 = temp.col1 AND col2 = temp.col2 ...
-      // For all match columns in bind list
+    // {mand_match_columns_eq_with_temp}
+    // col1 = temp.col1 AND col2 = temp.col2 ...
+    // For all match columns in bind list
     case kDalMandMatchColEqTempExpr:
       if (dbi == NULL) {
         UPLL_LOG_INFO("Null Bind Info for Mandatory token");
@@ -935,19 +927,18 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
           if (first)
             first = false;
 
-          replc_str += schema::ColumnName(table_index,
-                                          col_info->get_column_index());
+          replc_str += schema::ColumnName(table_index, col_info->get_column_index());
           replc_str += " = temp.";
-          replc_str += schema::ColumnName(table_index,
-                                          col_info->get_column_index());
+          replc_str += schema::ColumnName(table_index, col_info->get_column_index());
+
         }  // if
         col_count++;
       }  // for
       break;
 
-      // {match_dst_primary_key_columns_eq_with_temp} - col1, col2, ...
-      // <dst_table>.col1 = temp.col1 AND <dst_table>.col2 = temp.col2 ...
-      // For all primary key column names of the table
+    // {match_dst_primary_key_columns_eq_with_temp} - col1, col2, ...
+    // <dst_table>.col1 = temp.col1 AND <dst_table>.col2 = temp.col2 ...
+    // For all primary key column names of the table
     case kDalMatchPriColEqTempExpr:
       table_name = "";
       col_count = schema::TableNumPkCols(table_index);
@@ -970,32 +961,32 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
       }
       break;
 
-      // Table Related Tokens
-      // {config1_table_name} - <config1>_<table_name>
+    // Table Related Tokens
+    // {config1_table_name} - <config1>_<table_name>
     case kDalCfg1TableName:
-      // {dst_table_name} - <dst_config>_<table_name>
+    // {dst_table_name} - <dst_config>_<table_name>
     case kDalDstTableName:
       if (get_config_prefix(first_config, replc_str) != true) {
-        UPLL_LOG_DEBUG("First/Dest configuration type wrong");
-        return false;
+         UPLL_LOG_DEBUG("First/Dest configuration type wrong");
+         return false;
       }
 
       replc_str += schema::TableName(table_index);
       break;
 
-      // {config2_table_name} - <config2>_<table_name>
+    // {config2_table_name} - <config2>_<table_name>
     case kDalCfg2TableName:
-      // {src_table_name} - <src_config>_<table_name>
+    // {src_table_name} - <src_config>_<table_name>
     case kDalSrcTableName:
       if (get_config_prefix(second_config, replc_str) != true) {
-        UPLL_LOG_DEBUG("Second/src configuration type wrong");
-        return false;
+         UPLL_LOG_DEBUG("Second/src configuration type wrong");
+         return false;
       }
 
       replc_str += schema::TableName(table_index);
       break;
 
-      /* Invalid token */
+    /* Invalid token */
     default:
       UPLL_LOG_DEBUG("Invalid query token");
       return false;

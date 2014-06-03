@@ -6,6 +6,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.resources.openstack;
 
 import java.sql.Connection;
@@ -231,13 +232,20 @@ public class RouteResource extends AbstractResource {
 	 */
 	private String convertRouteId(String osRouteId) {
 		final String[] routeId = osRouteId.split(VtnServiceConsts.HYPHEN);
-		final SubnetUtils subnetUtils = new SubnetUtils(routeId[0], routeId[2]);
-		final String staticIpRouteId = routeId[0]
-				+ VtnServiceConsts.HYPHEN
-				+ routeId[1]
-				+ VtnServiceConsts.HYPHEN
-				+ subnetUtils.getInfo().getCidrSignature()
-						.split(VtnServiceConsts.SLASH)[1];
+		String staticIpRouteId = null;
+		if (routeId.equals(VtnServiceConsts.DEFAULT_IP)) {
+			staticIpRouteId = routeId[0] + VtnServiceConsts.HYPHEN + routeId[1]
+					+ VtnServiceConsts.HYPHEN + VtnServiceConsts.ZERO;
+		} else {
+			final SubnetUtils subnetUtils = new SubnetUtils(routeId[0],
+					routeId[2]);
+			staticIpRouteId = routeId[0]
+					+ VtnServiceConsts.HYPHEN
+					+ routeId[1]
+					+ VtnServiceConsts.HYPHEN
+					+ subnetUtils.getInfo().getCidrSignature()
+							.split(VtnServiceConsts.SLASH)[1];
+		}
 		return staticIpRouteId;
 	}
 

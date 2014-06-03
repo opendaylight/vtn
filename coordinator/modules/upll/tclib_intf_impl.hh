@@ -140,59 +140,59 @@ class TcLibIntfImpl : public unc::tclib::TcLibInterface {
       uint32_t session_id, unc_keytype_ctrtype_t ctr_type,
       std::string controller_id, TcAuditOpAbortPhase fail_phase);
 
-  /**
-   * @brief Save Configuration
+  /** 
+   * @brief Save Configuration 
    */
   virtual TcCommonRet HandleSaveConfiguration(uint32_t session_id);
 
-  /**
-   * @brief Abort Candidate Configuration
+  /** 
+   * @brief Abort Candidate Configuration 
    */
   virtual TcCommonRet HandleAbortCandidate(uint32_t session_id,
                                            uint32_t config_id);
 
-  /**
+  /** 
    * @brief Clear Startup Configuration
    */
   virtual TcCommonRet HandleClearStartup(uint32_t session_id);
 
-  /**
+  /** 
    * @brief HandleAuditConfig DB
    */
   virtual TcCommonRet HandleAuditConfig(unc_keytype_datatype_t db_target,
                                         TcServiceType fail_oper);
-  /**
+  /** 
    * @brief Setup Configuration
    * Message sent to UPPL at the end of startup operation to send messages to
    * driver
    */
   virtual TcCommonRet HandleSetup();
 
-  /**
+  /** 
    * @brief Setup Complete
    * Message sent to UPPL during state changes
    */
   virtual TcCommonRet HandleSetupComplete();
 
-  /**
+  /** 
    * @brief Get Driver Id
    * Invoked from TC to detect the driver id for a controller
    */
   // virtual unc_keytype_ctrtype_t HandleGetDriverId(std::string controller_id);
 
-  /**
-   * @brief      Get controller type invoked from TC to detect the controller type
+  /** 
+   * @brief      Get controller type invoked from TC to detect the controller type 
    *             for a controller
    * @param[in]  controller_id controller id intended for audit
    * @retval     openflow/overlay/legacy if controller id matches
-   * @retval     UNC_CT_UNKNOWN if controller id does not belong to
+   * @retval     UNC_CT_UNKNOWN if controller id does not belong to 
    *             any of controller type
    */
   virtual unc_keytype_ctrtype_t HandleGetControllerType(
       std::string controller_id);
 
-  /**
-   * @brief Get Controller Type
+  /** 
+   * @brief Get Controller Type 
    * Invoked from TC to detect the type of the controller
    * Intended for the driver modules
    */
@@ -247,9 +247,9 @@ class TcLibIntfImpl : public unc::tclib::TcLibInterface {
   bool shutting_down_;
   pfc::core::ReadWriteLock sys_state_rwlock_;
 };
-// NOLINT
-}  // namespace config_momgr
-}  // namespace upll
-}  // namespace unc
-// NOLINT
+                                                                       // NOLINT
+}  // config_momgr
+}  // upll
+}  // unc
+                                                                       // NOLINT
 #endif  // UPLL_TCLIB_INTF_IMPL_HH_

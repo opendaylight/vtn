@@ -186,6 +186,53 @@ bool ConfigLock::Unlock(upll_keytype_datatype_t dt1,
   return false;
 }
 
+bool ConfigLock::Lock(upll_keytype_datatype_t dt1, LockType locktype1,
+                      upll_keytype_datatype_t dt2, LockType locktype2,
+                      upll_keytype_datatype_t dt3, LockType locktype3,
+                      upll_keytype_datatype_t dt4, LockType locktype4,
+                      upll_keytype_datatype_t dt5, LockType locktype5) {
+  // map does the sorting
+  std::map<upll_keytype_datatype_t, LockType> req;
+  req[dt1] = locktype1; 
+  req[dt2] = locktype2; 
+  req[dt3] = locktype3; 
+  req[dt4] = locktype4; 
+  req[dt5] = locktype5; 
+  std::map<upll_keytype_datatype_t, LockType>::const_iterator dtlock_itr;
+  for ( dtlock_itr = req.begin(); dtlock_itr != req.end(); ++dtlock_itr) {
+    if (UPLL_DT_INVALID != dtlock_itr->first) {
+      if (!Lock(dtlock_itr->first, dtlock_itr->second)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+
+bool ConfigLock::Unlock(upll_keytype_datatype_t dt1,
+                        upll_keytype_datatype_t dt2,
+                        upll_keytype_datatype_t dt3,
+                        upll_keytype_datatype_t dt4,
+                        upll_keytype_datatype_t dt5) {
+  // map does the sorting and Locktype values are dummy here.
+  std::map<upll_keytype_datatype_t, LockType> req;
+  req[dt1] = CFG_READ_LOCK;
+  req[dt2] = CFG_READ_LOCK;
+  req[dt3] = CFG_READ_LOCK;
+  req[dt4] = CFG_READ_LOCK;
+  req[dt5] = CFG_READ_LOCK;
+  std::map<upll_keytype_datatype_t, LockType>::const_reverse_iterator  dtlock_itr;
+  for (dtlock_itr = req.rbegin(); dtlock_itr != req.rend(); ++dtlock_itr) {
+    if (UPLL_DT_INVALID != dtlock_itr->first) {
+      if (!Unlock(dtlock_itr->first)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 }  // namespace config_momgr
 }  // namespace upll
 }  // namespace unc

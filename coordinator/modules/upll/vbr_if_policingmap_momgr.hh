@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -467,24 +467,24 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
   upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey,
                                ConfigKeyVal *ikey);
 
-  /**
-   * @brief  Method used for Restoring Profile in the Controller Table
-   *
-   * @param[in]      ikey       Pointer to ConfigKeyVal Class
-   * @param[in]      dt_type    Describes Configiration Information.
-   * @param[in]      tbl        Describe the destination table
-   * @param[in]      dmi        Pointer to DalDmlIntf Class.
-   *
-   * @retval  UPLL_RC_SUCCESS      Successfull completion.
-   * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
-   * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists 
-   * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
-   */
+   /**
+    * @brief  Method used for Restoring Profile in the Controller Table
+    *
+    * @param[in]      ikey       Pointer to ConfigKeyVal Class
+    * @param[in]      dt_type    Describes Configiration Information.
+    * @param[in]      tbl        Describe the destination table
+    * @param[in]      dmi        Pointer to DalDmlIntf Class.
+    *
+    * @retval  UPLL_RC_SUCCESS      Successfull completion.
+    * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
+    * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists 
+    * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
+    */
 
-  upll_rc_t RestorePOMInCtrlTbl(ConfigKeyVal *ikey,
-                                upll_keytype_datatype_t dt_type,
-                                MoMgrTables tbl,
-                                DalDmlIntf* dmi);
+   upll_rc_t RestorePOMInCtrlTbl(ConfigKeyVal *ikey,
+                                 upll_keytype_datatype_t dt_type,
+                                 MoMgrTables tbl,
+                                 DalDmlIntf* dmi);
 
   upll_rc_t ReadDetail(ConfigKeyVal *ikey,
                        ConfigKeyVal *dup_key,
@@ -620,15 +620,15 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
                       uint8_t &rename);
 
   upll_rc_t GetPolicingProfileConfigKey(
-      const char *pp_name, ConfigKeyVal *&okey,
-      DalDmlIntf *dmi);
+        const char *pp_name, ConfigKeyVal *&okey,
+        DalDmlIntf *dmi);
 
   upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
                           DalDmlIntf *dmi,
                           IpcReqRespHeader *req);
 };
-}  // namespace kt_momgr
-}  // namespace upll
-}  // namespace unc
+}  // kt_momgr
+}  // upll
+}  // unc
 
 #endif  // MODULES_UPLL_VBR_IF_POLICINGMAP_MOMGR_HH_

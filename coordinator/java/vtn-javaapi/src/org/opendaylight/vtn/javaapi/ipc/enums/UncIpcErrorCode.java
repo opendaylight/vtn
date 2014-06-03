@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.ipc.enums;
 
 import java.io.FileNotFoundException;
@@ -52,12 +53,16 @@ public class UncIpcErrorCode {
 			// Load the logical errors and put the error bean
 			// objects in the map.
 			loadErrorCodes(log, LOGICAL_CODES,
-				       VtnServiceConsts.UPLL_ERRORS_FILEPATH);
+				       VtnServiceConsts.UPLL_ERRORS_FILEPATH,
+				       VtnServiceConsts.
+				       UPLL_ERROR_INITIAL_INDEX);
 		
 			// Load the physical errors and put the error bean
 			// objects in the map.
 			loadErrorCodes(log, PHYSICAL_CODES,
-				       VtnServiceConsts.UPPL_ERRORS_FILEPATH);
+				       VtnServiceConsts.UPPL_ERRORS_FILEPATH,
+				       VtnServiceConsts.
+				       UPPL_ERROR_INITIAL_INDEX);
 		}
 		catch (Exception e) {
 			VtnServiceInitManager.getExceptionHandler().
@@ -173,6 +178,8 @@ public class UncIpcErrorCode {
 	 * @param map       A map to store IPC error codes.
 	 * @param resource  The resource name corresponding to the property
 	 *                  file.
+	 * @param initialErrorIndex
+	 *                  Initial error index for UPLL or UPPL.
 	 * @throws FileNotFoundException
 	 *     Property file was not found.
 	 * @throws IOException
@@ -180,7 +187,8 @@ public class UncIpcErrorCode {
 	 */
 	private static void loadErrorCodes(Logger log,
 					   Map<Integer, UncErrorBean>map,
-					   String resource)
+					   String resource,
+					   int initialErrorIndex)
 		throws IOException {
 		// Load the give property file.
 		InputStream in = UncIpcErrorCode.class.getClassLoader().
@@ -195,12 +203,10 @@ public class UncIpcErrorCode {
 		Properties prop = new Properties();
 		try {
 			prop.load(in);
-		}
-		finally {
+		} finally {
 			try {
 				in.close();
-			}
-			catch (Exception e) {
+			} catch (Exception e) {
 				// Ignore this error.
 				log.warning("Failed to close IPC error " +
 					    "property: name=%s, error=%s",
@@ -235,7 +241,11 @@ public class UncIpcErrorCode {
 			uerr.setErrorCode(code);
 			uerr.setJavaAPIErrorMessage(java);
 			uerr.setSouthboundErrorMessage(south);
-			map.put(index, uerr);
+			if (index == 0) {
+				map.put(index, uerr);
+			} else {
+				map.put(index + initialErrorIndex, uerr);
+			}
 		}
 	}
 }

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -10,7 +10,6 @@
 #ifndef _USESS_CONF_ENABLE_HH_
 #define _USESS_CONF_ENABLE_HH_
 
-#include <string>
 #include "usess_def.hh"
 
 namespace unc {
@@ -33,7 +32,8 @@ typedef struct {
 // -------------------------------------------------------------
 // Class declaration.
 // -------------------------------------------------------------
-class UsessConfEnable {
+class UsessConfEnable
+{
  public:
   // -----------------------------
   //  class method.

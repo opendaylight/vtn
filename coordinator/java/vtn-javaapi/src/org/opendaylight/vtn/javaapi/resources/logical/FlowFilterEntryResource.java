@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.resources.logical;
 
 import java.util.ArrayList;
@@ -13,7 +14,6 @@ import java.util.List;
 
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
-import org.opendaylight.vtn.core.ipc.IpcUint32;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
@@ -26,10 +26,8 @@ import org.opendaylight.vtn.javaapi.ipc.conversion.IpcLogicalResponseFactory;
 import org.opendaylight.vtn.javaapi.ipc.enums.IpcRequestPacketEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
-import org.opendaylight.vtn.javaapi.ipc.enums.UncDataType;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncOperationEnum;
-import org.opendaylight.vtn.javaapi.ipc.enums.UncOption1Enum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncUPLLEnums;
 import org.opendaylight.vtn.javaapi.resources.AbstractResource;
 import org.opendaylight.vtn.javaapi.validation.logical.FlowFilterEntryResourceValidator;
@@ -38,8 +36,7 @@ import org.opendaylight.vtn.javaapi.validation.logical.FlowFilterEntryResourceVa
  * The Class FlowFilterEntryResource implements delete, get and put methods
  */
 
-@UNCVtnService(
-		path = "/vtns/{vtn_name}/flowfilters/{ff_type}/flowfilterentries/{seqnum}")
+@UNCVtnService(path = "/vtns/{vtn_name}/flowfilters/{ff_type}/flowfilterentries/{seqnum}")
 public class FlowFilterEntryResource extends AbstractResource {
 	/** The vtn name. */
 	@UNCField("vtn_name")
@@ -227,60 +224,51 @@ public class FlowFilterEntryResource extends AbstractResource {
 			LOG.debug("Session created successfully");
 			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
 					getConfigID(), getExceptionHandler());
-			if (requestBody != null
-					&& requestBody.has(VtnServiceJsonConsts.TARGETDB)
-					&& !requestBody.get(VtnServiceJsonConsts.TARGETDB)
-							.getAsString()
-							.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
+
+			// set default value of targetdb
+			if (!requestBody.has(VtnServiceJsonConsts.TARGETDB)) {
+				requestBody.addProperty(VtnServiceJsonConsts.TARGETDB,
+						VtnServiceJsonConsts.STATE);
+			}
+
+			// set default value of op
+			if (!requestBody.has(VtnServiceJsonConsts.OP)) {
+				requestBody.addProperty(VtnServiceJsonConsts.OP,
+						VtnServiceJsonConsts.NORMAL);
+			}
+
+			/*
+			 * create request-body as per op and targetdb parameters
+			 */
+			if (!requestBody.get(VtnServiceJsonConsts.TARGETDB).getAsString()
+					.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
+				LOG.info("request-packet creation for : KT_VTN_FLOWFILTER_ENTRY_GET");
 				requestProcessor.createIpcRequestPacket(
 						IpcRequestPacketEnum.KT_VTN_FLOWFILTER_ENTRY_GET,
 						requestBody, getUriParameters());
-				requestProcessor.getRequestPacket().setDataType(
-						new IpcUint32(UncDataType.UNC_DT_RUNNING.ordinal()));
-				requestBody.addProperty(VtnServiceJsonConsts.TARGETDB,
-						VtnServiceJsonConsts.RUNNING);
 			} else {
-				if (requestBody != null
-						&& requestBody.has(VtnServiceJsonConsts.OP)
-						&& requestBody.get(VtnServiceJsonConsts.OP)
-								.getAsString()
-								.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
+				if (requestBody.has(VtnServiceJsonConsts.CONTROLLERID)
+						&& requestBody.has(VtnServiceJsonConsts.DOMAINID)) {
+					LOG.info("request-packet creation for : KT_VTN_FLOWFILTER_ENTRY_GET_STATE");
 					requestProcessor
 							.createIpcRequestPacket(
 									IpcRequestPacketEnum.KT_VTN_FLOWFILTER_ENTRY_GET_STATE,
 									requestBody, getUriParameters());
 				} else {
+					LOG.info("request-packet creation for : KT_VTN_FLOWFILTER_ENTRY_GET");
 					requestProcessor.createIpcRequestPacket(
 							IpcRequestPacketEnum.KT_VTN_FLOWFILTER_ENTRY_GET,
 							requestBody, getUriParameters());
-					requestProcessor.getRequestPacket().setDataType(
-							new IpcUint32(UncDataType.UNC_DT_RUNNING.ordinal()));
-					requestBody.addProperty(VtnServiceJsonConsts.TARGETDB,
-						VtnServiceJsonConsts.RUNNING);
 				}
 			}
+
+			// update operation as READ
 			requestProcessor.getRequestPacket().setOperation(
 					IpcDataUnitWrapper
 							.setIpcUint32Value((UncOperationEnum.UNC_OP_READ
 									.ordinal())));
+
 			LOG.debug("Request packet created successfully");
-			if (!requestBody.has(VtnServiceJsonConsts.TARGETDB)
-					|| (requestBody.has(VtnServiceJsonConsts.TARGETDB) && requestBody
-							.get(VtnServiceJsonConsts.TARGETDB).getAsString()
-							.equalsIgnoreCase(VtnServiceJsonConsts.STATE))) {
-				if(requestBody != null
-						&& requestBody.has(VtnServiceJsonConsts.OP)
-						&& requestBody.get(VtnServiceJsonConsts.OP)
-								.getAsString()
-								.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)){
-					requestProcessor
-					.getRequestPacket()
-					.setOption1(
-							IpcDataUnitWrapper
-									.setIpcUint32Value((UncOption1Enum.UNC_OPT1_DETAIL
-											.ordinal())));
-				}
-			}
 			status = requestProcessor.processIpcRequest();
 			LOG.debug("Request packet processed with status" + status);
 			final IpcLogicalResponseFactory responseGenerator = new IpcLogicalResponseFactory();

@@ -88,6 +88,8 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
 
     inline DalConnType get_conn_type() { return conn_type_; }
     inline DalConnState get_conn_state() { return conn_state_; }
+    inline uint32_t get_write_count() { return write_count_; }
+    inline void reset_write_count() { write_count_ = 0; }
 
     /**
      * CommitTransaction
@@ -410,6 +412,7 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
     /**
      * DeleteRecords
      *   Deletes the records of table from the given cfg_type
+     *   Increments the write count if operation is successful.
      *
      * @param[in] cfg_type        - Configuration Type for which the records
      *                              have to be updated
@@ -444,6 +447,7 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      *   Performs existence check and parent existence check if
      *   kDalRcGeneralError is returned. This is done to get proper error
      *   codes when Database cannot.
+     *   Increments the write count if operation is successful.
      *
      * @param[in] cfg_type        - Configuration Type for which the record
      *                              has to be created
@@ -469,6 +473,7 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      * UpdateRecords
      *   Updates the records of table with the given input data for 
      *   the given cfg_type
+     *   Increments the write count if operation is successful.
      *
      * @param[in] cfg_type        - Configuration Type for which the records
      *                              have to be updated
@@ -495,6 +500,38 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
                     const UpllCfgType cfg_type,
                     const DalTableIndex table_index,
                     const DalBindInfo *input_and_matching_attr_info) const;
+
+    /**
+     * UpdateRecords
+     *   Updates the records of table with the given sql query.
+     *   Increments the write count if operation is successful.
+     *
+     * @param[in] query_stmt      - User supplied executable query statement
+     * @param[in] cfg_type        - Configuration Type for which the records
+     *                              have to be updated
+     * @param[in] table_index     - Valid Index of the table
+     * @param[in] input_and_matching_attr_info
+     *                            - Bind Information for updating records
+     *
+     * @return DalResultCode      - kDalRcSuccess in case of success
+     *                            - Valid errorcode otherwise
+     *
+     * Note:
+     * Information on usage of DalBindInfo
+     *  1. Valid instance of DalBindInfo with same table_index used in this API
+     *  2. BindInput is mandatory for the interested attributes.
+     *  3. BindMatch is optional.
+     *     But it is recommended to provide all primary keys for match to
+     *     update unique record in the user defined query.
+     *     BindMatch if used, updates multiple records that match the given
+     *     values in the user defined query.
+     *     BindMatch if not used, updates all the records from the table.
+     *  4. BindOutput if used for any attributes in the user defiuned query, ignored.
+     */
+    DalResultCode UpdateRecords(std::string query_stmt,
+                                const UpllCfgType cfg_type,
+                                const DalTableIndex table_index,
+                                const DalBindInfo *bind_info) const;
 
     /**
      * GetDeletedRecords
@@ -1071,6 +1108,7 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
     SQLHANDLE dal_conn_handle_;  // Connection Handle
     mutable DalConnType conn_type_;  // Connection Type
     mutable DalConnState conn_state_;  // Connection State
+    mutable uint32_t write_count_;  
 };  // class DalOdbcMgr
 
 }  // namespace dal

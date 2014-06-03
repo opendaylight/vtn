@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.ipc.enums;
 
 public class UncSessionEnums {
@@ -105,13 +106,13 @@ public class UncSessionEnums {
 	public enum UsessIpcErrE {
 		USESS_E_OK(200, "Success"), // success.
 		USESS_E_NG(50000, "Internal error"), // error.
-		USESS_E_INVALID_SESSID(50000, "Invalid current session ID"), 
-		USESS_E_NO_SUCH_SESSID(50000, "Invalid target session ID"),
-		USESS_E_INVALID_PRIVILEGE(50000, "Invalid privileges"),
-		USESS_E_INVALID_MODE(50000, "Invalid mode"),
-		USESS_E_INVALID_SESSTYPE(50000, "Invalid session type"),
-		USESS_E_INVALID_USER(50000, "Invalid user name"),
-		USESS_E_INVALID_PASSWD(50000, "Invalid password"),
+		USESS_E_INVALID_SESSID(40000, "Invalid current session ID"), 
+		USESS_E_NO_SUCH_SESSID(40400, "Invalid target session ID"),
+		USESS_E_INVALID_PRIVILEGE(40300, "Invalid privileges"),
+		USESS_E_INVALID_MODE(40000, "Invalid mode"),
+		USESS_E_INVALID_SESSTYPE(40000, "Invalid session type"),
+		USESS_E_INVALID_USER(40100, "Invalid user name"),
+		USESS_E_INVALID_PASSWD(40100, "Invalid password"),
 		USESS_E_SESS_OVER(50000, "Over the number of user sessions");
 
 		private final String message;

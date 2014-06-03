@@ -1,7 +1,7 @@
 %
-% Copyright (c) 2010-2013 NEC Corporation
+% Copyright (c) 2010-2014 NEC Corporation
 % All rights reserved.
-% 
+%
 % This program and the accompanying materials are made available under the
 % terms of the Eclipse Public License v1.0 which accompanies this
 % distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -72,9 +72,9 @@ defblock options
 	% Maximum size of a message log file.
 	message_size	= UINT32: max=50000000;
 
-	% How long, in seconds, PFC daemon should wait for a shutdown
-	% start event to be delivered to all handlers.
-	shutdown_ack_timeout	= UINT32: max=3600;
+	% How long, in seconds, PFC daemon should wait for completion of
+	% system event (SYS_START and SYS_STOP) delivery.
+	sysevent_ack_timeout	= UINT32: max=3600;
 
 	% External command search path.
 	% PFC bindir is automatically prepended.
@@ -286,6 +286,11 @@ defblock ipc_event
 	timeout		= UINT32:
 		min=PFCD_CONF_IPC_EVENT_TIMEOUT_MIN,
 		max=PFCD_CONF_IPC_EVENT_TIMEOUT_MAX;
+
+	% Determine whether cancellable client sessions should be canceled
+	% on IPC channel down event or not.
+	% Default is false.
+	auto_cancel	= BOOL;
 }
 
 %

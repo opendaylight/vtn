@@ -18,12 +18,12 @@ namespace upll {
 namespace kt_momgr {
 
 /*  This file declares interfaces for keyType KT_VBRIF_FLOWFILER */
-  /**
-   *  @brief  VbrIfFlowFilterMoMgr class handles all the request
-   *          received from service.
-   */
-  class VbrIfFlowFilterMoMgr : public MoMgrImpl {
-   private:
+/**
+ *  @brief  VbrIfFlowFilterMoMgr class handles all the request
+ *          received from service.
+ */
+class VbrIfFlowFilterMoMgr : public MoMgrImpl {
+  private:
     static unc_key_type_t vbr_if_flowfilter_child[];
     /**
      * @brief  Member Variable for VbrIfFlowfilterBindInfo.
@@ -34,8 +34,7 @@ namespace kt_momgr {
      * @brief  Member Variable for VbrIfFlowfilterMainTblBindInfo.
      */
     static BindInfo vbr_if_flowfiltermaintbl_bind_info[];
-
-   public:
+  public:
     /**
      * @brief  VbrIfFlowFilterMoMgr Class Constructor.
      */
@@ -105,26 +104,26 @@ namespace kt_momgr {
      * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
      */
     upll_rc_t ValidateVbrIfFlowfilterKey(
-        key_vbr_if_flowfilter_t* key_vbr_if_flowfilter,
-        unc_keytype_operation_t op);
+          key_vbr_if_flowfilter_t* key_vbr_if_flowfilter,
+          unc_keytype_operation_t op);
 
-    /**
-     * @Brief Checks if the specified key type(KT_VBRIF_FLOWFILTER) and
-     *        associated attributes are supported on the given controller,
-     *        based on the valid flag
-     *
-     * @param[in] IpcReqRespHeader  contains first 8 fields of input request
-     *                              structure
-     * @param[in] ConfigKeyVal     contains key and value structure.
-     * @param[in] ctrlr_name       controller name.
-     *
-     * @retval  UPLL_RC_SUCCESS             Validation succeeded.
-     * @retval  UPLL_RC_ERR_GENERIC         Validation failure.
-     * @retval  UPLL_RC_ERR_INVALID_OPTION1 Option1 is not valid.
-     * @retval  UPLL_RC_ERR_INVALID_OPTION2 Option2 is not valid.
-     */
+   /**
+    * @Brief Checks if the specified key type(KT_VBRIF_FLOWFILTER) and
+    *        associated attributes are supported on the given controller,
+    *        based on the valid flag
+    *
+    * @param[in] IpcReqRespHeader  contains first 8 fields of input request
+    *                              structure
+    * @param[in] ConfigKeyVal     contains key and value structure.
+    * @param[in] ctrlr_name       controller name.
+    *
+    * @retval  UPLL_RC_SUCCESS             Validation succeeded.
+    * @retval  UPLL_RC_ERR_GENERIC         Validation failure.
+    * @retval  UPLL_RC_ERR_INVALID_OPTION1 Option1 is not valid.
+    * @retval  UPLL_RC_ERR_INVALID_OPTION2 Option2 is not valid.
+    */
     upll_rc_t ValidateCapability(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                                 const char* ctrlr_name = NULL);
+                                   const char* ctrlr_name = NULL);
     /**
      * @brief  Allocates Memory for the Incoming Pointer to the Class.
      *
@@ -152,10 +151,10 @@ namespace kt_momgr {
      * @retval  UPLL_RC_SUCCESS      Successfull completion.
      * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
      */
-    upll_rc_t UpdateAuditConfigStatus(unc_keytype_configstatus_t cs_status,
-                                      uuc::UpdateCtrlrPhase phase,
-                                      ConfigKeyVal *&ckv_running,
-                                      DalDmlIntf *dmi);
+     upll_rc_t UpdateAuditConfigStatus(unc_keytype_configstatus_t cs_status,
+                                       uuc::UpdateCtrlrPhase phase,
+                                       ConfigKeyVal *&ckv_running,
+                                       DalDmlIntf *dmi);
     /**
      * @brief  Method used to fill the CongigKeyVal with the Parent
      *         Class Information.
@@ -318,15 +317,15 @@ namespace kt_momgr {
     upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey,
                               ConfigKeyVal *ikey);
 
-    /**
-     * @brief Method To Compare the Valid Check of Attributes
-     *
-     * @param[out]  val1   Pointer to ConfigKeyVal Class which contains only Valid Attributes
-     * @param[in]   val2   Pointer to ConfigKeyVal Class.
-     * @param[in]   audit  If true,Audit Process.
-     *
-     * @return  Void Function.
-     */
+   /**
+    * @brief Method To Compare the Valid Check of Attributes
+    *
+    * @param[out]  val1   Pointer to ConfigKeyVal Class which contains only Valid Attributes
+    * @param[in]   val2   Pointer to ConfigKeyVal Class.
+    * @param[in]   audit  If true,Audit Process.
+    *
+    * @return  Void Function.
+    */
     bool CompareValidValue(void *&val1, void *val2, bool audit) {
       return false;
     }
@@ -359,13 +358,13 @@ namespace kt_momgr {
      *
      * @retval  UPLL_RC_SUCCESS Successful Completion
      **/
-    upll_rc_t GetValid(void*val,
-                       uint64_t indx,
-                       uint8_t *&valid,
-                       upll_keytype_datatype_t dt_type,
-                       MoMgrTables tbl) {
-      return UPLL_RC_SUCCESS;
-    }
+     upll_rc_t GetValid(void*val,
+                        uint64_t indx,
+                        uint8_t *&valid,
+                        upll_keytype_datatype_t dt_type,
+                        MoMgrTables tbl) {
+     return UPLL_RC_SUCCESS;
+     }
 
     /**
      * @brief  Method used for GetParentConfigKey Operation.
@@ -377,8 +376,8 @@ namespace kt_momgr {
      * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
      */
 
-    upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey,
-                                 ConfigKeyVal *ikey);
+     upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey,
+                                  ConfigKeyVal *ikey);
 
     /**
      * @brief  Method to check validity of Key
@@ -403,64 +402,63 @@ namespace kt_momgr {
                                 uint8_t* ctrlr_id);
 
     upll_rc_t GetVexternalInformation(ConfigKeyVal* ck_main,
-                                      upll_keytype_datatype_t dt_type,
-                                      pfcdrv_val_vbrif_vextif *& pfc_val,
-                                      uint8_t db_flag, DalDmlIntf *dmi);
+                 upll_keytype_datatype_t dt_type,
+                 pfcdrv_val_vbrif_vextif *& pfc_val,
+                 uint8_t db_flag, DalDmlIntf *dmi);
 
     upll_rc_t SetVlinkPortmapConfiguration(ConfigKeyVal *ikey,
-                                           upll_keytype_datatype_t dt_type,
-                                           DalDmlIntf *dmi,
-                                           InterfacePortMapInfo flag,
-                                           unc_keytype_operation_t oper);
+                           upll_keytype_datatype_t dt_type,
+                           DalDmlIntf *dmi, InterfacePortMapInfo flag,
+                           unc_keytype_operation_t oper);
 
     upll_rc_t TxUpdateController(unc_key_type_t keytype,
-                                 uint32_t session_id,
-                                 uint32_t config_id,
-                                 uuc::UpdateCtrlrPhase phase,
-                                 set<string> *affected_ctrlr_set,
-                                 DalDmlIntf *dmi,
-                                 ConfigKeyVal **err_ckv);
+                                        uint32_t session_id,
+                                        uint32_t config_id,
+                                        uuc::UpdateCtrlrPhase phase,
+                                        set<string> *affected_ctrlr_set,
+                                        DalDmlIntf *dmi,
+                                        ConfigKeyVal **err_ckv);
 
     upll_rc_t CreateCandidateMo(IpcReqRespHeader *req,
-                                ConfigKeyVal *ikey,
-                                DalDmlIntf *dmi,
-                                bool restore_flag = false);
+                                       ConfigKeyVal *ikey,
+                                       DalDmlIntf *dmi,
+                                       bool restore_flag = false);
 
     upll_rc_t ConstructReadDetailResponse(ConfigKeyVal *ikey,
-                                          ConfigKeyVal *drv_resp_ckv,
-                                          ConfigKeyVal** okey);
+                                         ConfigKeyVal *drv_resp_ckv,
+                                          controller_domain ctrlr_dom,
+                                         ConfigKeyVal** okey,
+                                         DalDmlIntf *dmi);
 
     upll_rc_t GetControllerDomainID(ConfigKeyVal *ikey,
                                     upll_keytype_datatype_t dt_type,
                                     DalDmlIntf *dmi);
 
-    upll_rc_t CreateAuditMoImpl(unc::upll::ipc_util::ConfigKeyVal*,
-                                unc::upll::dal::DalDmlIntf*,
-                                const char*);
-    upll_rc_t AuditUpdateController(unc_key_type_t keytype,
-                                    const char *ctrlr_id,
-                                    uint32_t session_id,
-                                    uint32_t config_id,
-                                    uuc::UpdateCtrlrPhase phase,
-                                    DalDmlIntf *dmi,
-                                    ConfigKeyVal **err_ckv,
-                                    KTxCtrlrAffectedState *ctrlr_affected);
+   upll_rc_t CreateAuditMoImpl(unc::upll::ipc_util::ConfigKeyVal*, unc::upll::dal::DalDmlIntf*, const char*); 
+   upll_rc_t AuditUpdateController(unc_key_type_t keytype,
+                             const char *ctrlr_id,
+                             uint32_t session_id,
+                             uint32_t config_id,
+                             uuc::UpdateCtrlrPhase phase,
+                             DalDmlIntf *dmi,
+                             ConfigKeyVal **err_ckv,
+                             KTxCtrlrAffectedState *ctrlr_affected);
 
-    upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
-                                upll_keytype_datatype_t dt_type,
-                                DalDmlIntf *dmi);
+  upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
+                              upll_keytype_datatype_t dt_type,
+                              DalDmlIntf *dmi);
 
-    upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
+  upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
 
-    bool FilterAttributes(void *&val1,
-                          void *val2,
-                          bool copy_to_running,
-                          unc_keytype_operation_t op);
+  bool FilterAttributes(void *&val1,
+                        void *val2,
+                        bool copy_to_running,
+                        unc_keytype_operation_t op);
 
-    upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
-                            DalDmlIntf *dmi,
-                            IpcReqRespHeader *req);
-  };
+  upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
+                          DalDmlIntf *dmi,
+                          IpcReqRespHeader *req);
+};
 }  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc

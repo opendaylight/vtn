@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -318,6 +318,8 @@ ODBCM_RC_STATUS DBVarbind::bind_port_table_output(
         HSTMT &r_hstmt/**statement handler which carries the SQL Query*/) {
   int64_t odbc_rc = SQL_SUCCESS;  // odbc APIs return code
   uint16_t col_no = 0;  // column number
+
+  /**Vector iterator to take the TableAttrSchema structures*/
   std::vector< TableAttrSchema >::iterator i;
   uint8_t log_flag = 1;
 
@@ -407,7 +409,7 @@ ODBCM_RC_STATUS DBVarbind::bind_port_table_output(
               reinterpret_cast<SQLSMALLINT*>(&p_port_table->sadmins_status),
               sizeof(SQLSMALLINT),
               (&p_port_table->cbadminstatus)
-               /*buffer to fetch values*/);
+              /*buffer to fetch values*/);
       /**set flag value 0 to print column binding details */
           log_flag = 0;
         }

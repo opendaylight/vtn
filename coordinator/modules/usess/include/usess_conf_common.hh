@@ -28,7 +28,8 @@ typedef struct {
 // -------------------------------------------------------------
 // Class declaration.
 // -------------------------------------------------------------
-class UsessConfCommon {
+class UsessConfCommon
+{
  public:
   UsessConfCommon(void);
   ~UsessConfCommon(void);

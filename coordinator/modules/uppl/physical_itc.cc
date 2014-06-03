@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -248,8 +248,11 @@ UncRespCode InternalTransactionCoordinator::ProcessReq(
         return UNC_RC_SUCCESS;
     }
   } else if (service_id == 2) {
-    uint32_t operation;
-    session.getArgument(0, operation);
+    uint32_t operation = UNC_OP_INVALID;  // cpptest issue fix
+    int err = session.getArgument(0, operation);
+    if (err != 0) {
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
+    }
     pfc_log_debug("Received operation %d in service_id %d",
                   operation, service_id);
     switch (operation) {

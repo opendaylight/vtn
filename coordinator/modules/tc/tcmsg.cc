@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -443,7 +443,7 @@ TcOperRet TcMsgSetUp::Execute() {
 
     sess_ = TcClientSessionUtils::create_tc_client_session(channel_name,
                                                            service_id,
-                                                           conn_, PFC_FALSE);
+                                                           conn_, PFC_TRUE);
     if (NULL == sess_) {
       return TCOPER_RET_FATAL;
     }
@@ -671,8 +671,8 @@ TcOperRet TcMsgAuditDB::Execute() {
     pfc_log_error("Invalid AuditDB Attributes");
     return TCOPER_RET_FAILURE;
   }
-  notifyorder_.push_back(TC_UPLL);
   notifyorder_.push_back(TC_UPPL);
+  notifyorder_.push_back(TC_UPLL);
   pfc_log_info("sending AUDIT-DB notification");
   for (NotifyList::iterator list_iter = notifyorder_.begin();
        list_iter != notifyorder_.end(); list_iter++) {
@@ -684,7 +684,7 @@ TcOperRet TcMsgAuditDB::Execute() {
 
     /*Create session for the given module name and service id*/
     sess_ = TcClientSessionUtils::create_tc_client_session(channel_name,
-                                  tclib::TCLIB_AUDIT_CONFIG, conn_, PFC_FALSE);
+                                  tclib::TCLIB_AUDIT_CONFIG, conn_, PFC_TRUE);
     if (NULL == sess_) {
       return TCOPER_RET_FATAL;
     }

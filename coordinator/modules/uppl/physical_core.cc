@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -21,6 +21,8 @@
 #include "physical_core.hh"
 #include "physicallayer.hh"
 #include "tclib_module.hh"
+#include "itc_kt_controller.hh"
+#include "ipc_client_configuration_handler.hh"
 
 using unc::tclib::TcApiCommonRet;
 using unc::tclib::TcLibModule;
@@ -945,6 +947,59 @@ TcCommonRet PhysicalCore::HandleAbortCandidate(uint32_t session_id,
   }
 }
 
+TcCommonRet PhysicalCore::SendControllerInfoToUPLL(OdbcmConnectionHandler *db_conn
+    , uint32_t dt_type) {
+  Kt_Controller kt_ctr;
+  vector<void *> vect_ctr_key, vect_ctr_val;
+  key_ctr_t key_ctr_obj;
+  memset(&key_ctr_obj, '\0', sizeof(key_ctr_t));
+  vect_ctr_key.push_back(reinterpret_cast<void *>(&key_ctr_obj));
+
+  // Getting the controller list from dt_type Database
+  UncRespCode read_status = kt_ctr.ReadInternal(db_conn,vect_ctr_key,
+                                                   vect_ctr_val,
+                                                   dt_type,
+                                                   UNC_OP_READ_SIBLING_BEGIN);
+  if (read_status != UNC_RC_SUCCESS && read_status != UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+    pfc_log_info("read from %d db is %d", dt_type, read_status);
+    return unc::tclib::TC_FAILURE;
+  }
+  read_status = UNC_RC_SUCCESS;
+  for (uint32_t ctrIndex = 0; ctrIndex < vect_ctr_key.size();
+      ctrIndex ++) {
+    key_ctr_t *ctr_key =
+        reinterpret_cast<key_ctr_t*>(vect_ctr_key[ctrIndex]);
+    string controller_name = (const char*)ctr_key->controller_name;
+    pfc_log_debug("controller_name: %s", controller_name.c_str());
+    val_ctr_st_t *obj_val_ctr =
+        reinterpret_cast<val_ctr_st_t*>(vect_ctr_val[ctrIndex]);
+
+    // Sending the Controller Update Information to Logical Layer
+    UncRespCode upll_result = kt_ctr.SendUpdatedControllerInfoToUPLL(
+        dt_type,
+        UNC_OP_CREATE,
+        UNC_KT_CONTROLLER,
+        vect_ctr_key[ctrIndex],
+        reinterpret_cast<void*>(&obj_val_ctr->controller));
+    if (upll_result != UNC_RC_SUCCESS) {
+      pfc_log_info("Failed to send the controller %s in %d DB to UPLL",
+                   controller_name.c_str(), dt_type);
+      read_status = upll_result;
+    }
+    // Release memory allocated for key struct
+    delete ctr_key;
+    ctr_key = NULL;
+    // delete the val memory
+    delete obj_val_ctr;
+    obj_val_ctr = NULL;
+  }
+  if (read_status != UNC_RC_SUCCESS) {
+    pfc_log_info("SendUpdatedControllerInfoToUPLL failed.. %d", read_status);
+    return unc::tclib::TC_FAILURE;
+  }
+  return unc::tclib::TC_SUCCESS;
+}
+
 /**
  * @Description : This function will be called back when TC sends
  *                db recovery requests during failover
@@ -963,13 +1018,26 @@ TcCommonRet PhysicalCore::HandleAuditConfig(unc_keytype_datatype_t db_target,
   ScopedReadWriteLock eventDoneLock(PhysicalLayer::get_events_done_lock_(),
                                     PFC_TRUE);  // write lock
   OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
-  pfc_log_debug("Received HandleAuditConfig from TC");
+  pfc_log_info("Received HandleAuditConfig from TC");
   // Call ITC transaction handler function
   UncRespCode resp = UNC_RC_SUCCESS;
   if (fail_oper == TC_OP_CANDIDATE_COMMIT) {
+    pfc_log_info("Received HandleAuditConfig from TC");
     uint32_t session_id = 0;
     uint32_t config_id = 0;
     TcDriverInfoMap driver_info;
+
+    TcCommonRet send_status = SendControllerInfoToUPLL(&db_conn, UNC_DT_CANDIDATE);
+    if (send_status != unc::tclib::TC_SUCCESS) {
+      pfc_log_debug("Send to UPLL failed with %d", send_status);
+      return unc::tclib::TC_FAILURE;
+    }
+    send_status = SendControllerInfoToUPLL(&db_conn, UNC_DT_RUNNING);
+    if (send_status != unc::tclib::TC_SUCCESS) {
+      pfc_log_debug("Send to UPLL failed with %d", send_status);
+      return unc::tclib::TC_FAILURE;
+    }
+
     TransactionRequest *txn_req =
         internal_transaction_coordinator_->transaction_req();
     resp = txn_req->StartTransaction(&db_conn, session_id, config_id);
@@ -1013,7 +1081,8 @@ TcCommonRet PhysicalCore::HandleAuditConfig(unc_keytype_datatype_t db_target,
       return unc::tclib::TC_FAILURE;
     }
     TcTransEndResult trans_res = unc::tclib::TRANS_END_SUCCESS;
-    resp = txn_req->EndTransaction(&db_conn, session_id, config_id, trans_res);
+    bool audit_flag = false;
+    resp = txn_req->EndTransaction(&db_conn, session_id, config_id, trans_res, audit_flag);
     if (resp != UNC_RC_SUCCESS) {
       pfc_log_error("HandleAuditConfig - EndTransaction COM PH failed with %d",
                     resp);
@@ -1028,6 +1097,19 @@ TcCommonRet PhysicalCore::HandleAuditConfig(unc_keytype_datatype_t db_target,
     resp = internal_transaction_coordinator_->db_config_req()->
         SaveRunningToStartUp(&db_conn);
   } else if (fail_oper == TC_OP_CANDIDATE_ABORT) {
+    pfc_log_debug("Handling Failover op - CANDIDATE_ABORT");
+
+    TcCommonRet send_status = SendControllerInfoToUPLL(&db_conn, UNC_DT_CANDIDATE);
+    if (send_status != unc::tclib::TC_SUCCESS) {
+      pfc_log_debug("Send to UPLL failed with %d", send_status);
+      return unc::tclib::TC_FAILURE;
+    }
+    send_status = SendControllerInfoToUPLL(&db_conn, UNC_DT_RUNNING);
+    if (send_status != unc::tclib::TC_SUCCESS) {
+      pfc_log_debug("Send to UPLL failed with %d", send_status);
+      return unc::tclib::TC_FAILURE;
+    }
+
     resp = internal_transaction_coordinator_->db_config_req()->
         AbortCandidateDb(&db_conn);
   } else if (fail_oper == TC_OP_USER_AUDIT ||

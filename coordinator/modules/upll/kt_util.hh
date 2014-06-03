@@ -91,6 +91,13 @@ class KtUtil {
   static string IpcStructToStr(const val_dhcp_relay_if &val_if);
   static string IpcStructToStr(const key_dhcp_relay_server &keyserver);
   static string IpcStructToStr(const val_dhcp_relay_server &val_server);
+  static string IpcStructToStr(const key_vterm &key_vterm);
+  static string IpcStructToStr(const val_vterm &val_vterm);
+  static string IpcStructToStr(const val_rename_vterm &val_rename_vterm);
+  static string IpcStructToStr(const val_vterm_st &val_vterm_st);
+  static string IpcStructToStr(const key_vterm_if &key_vterm_if);
+  static string IpcStructToStr(const val_vterm_if &val_vterm_if);
+  static string IpcStructToStr(const val_vterm_if_st &val_vterm_if_st);
   static string IpcStructToStr(const key_nwm &key_nwm);
   static string IpcStructToStr(const val_nwm &val_nwm);
   static string IpcStructToStr(const val_nwm_st &val_nwm_st);
@@ -143,6 +150,8 @@ class KtUtil {
   static string IpcStructToStr(const key_vbr_if_flowfilter_entry &key_entry);
   static string IpcStructToStr(const key_vrt_if_flowfilter &key_flowfilter);
   static string IpcStructToStr(const key_vrt_if_flowfilter_entry &key_entry);
+  static string IpcStructToStr(const key_vterm_if_flowfilter &key_flowfilter);
+  static string IpcStructToStr(const key_vterm_if_flowfilter_entry &key_entry);
   static string IpcStructToStr(const key_policingprofile &key_policingprofile);
   static string IpcStructToStr(const val_policingprofile &val_policingprofile);
   static string IpcStructToStr(const val_rename_policingprofile &val__rofile);
@@ -155,6 +164,7 @@ class KtUtil {
   static string IpcStructToStr(const key_vbr_policingmap_entry &key__entry);
   static string IpcStructToStr(const key_vbrif_policingmap_entry &key_entry);
   static string IpcStructToStr(const val_policingmap_controller &key_entry);
+  static string IpcStructToStr(const key_vtermif_policingmap_entry &key_entry);
 
   static string IpcStructToStr(const key_ctr &data);
   static string IpcStructToStr(const val_ctr &data);
@@ -197,5 +207,5 @@ class KtUtil {
 }  // namespace ipc_util
 }  // namespace upll
 }  // namespace unc
-// NOLINT
+                                                                       // NOLINT
 #endif  // UPLL_KT_UTIL_HH_

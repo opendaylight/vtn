@@ -283,7 +283,6 @@ UncRespCode Kt_Ctr_Dataflow::PerformRead(OdbcmConnectionHandler *db_conn,
   key_ctr_dataflow_t *obj_key_ctr_dataflow
       = reinterpret_cast<key_ctr_dataflow_t*>(key_struct);
 
-  // Invalid Operation TODO: move this to as part of semantic validation.
   if (option1 != UNC_OPT1_NORMAL && option1 != UNC_OPT1_DETAIL) {
     pfc_log_error("Invalid option1 specified for read operation");
     rsh.result_code = UNC_UPPL_RC_ERR_INVALID_OPTION1;
@@ -379,15 +378,18 @@ UncRespCode Kt_Ctr_Dataflow::PerformRead(OdbcmConnectionHandler *db_conn,
   if (read_err_status != UNC_RC_SUCCESS) {
     int err = PhyUtil::sessOutRespHeader(sess, rsh);
     if (err != 0) {
+      delete df_segment;
       pfc_log_error("Failure in addOutput");
       return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
+    delete df_segment;
     return UNC_RC_SUCCESS;
   }
   int err = PhyUtil::sessOutRespHeader(sess, rsh);
   err |= sess.addOutput((uint32_t)UNC_KT_CTR_DATAFLOW);
   err |= sess.addOutput(*obj_key_ctr_dataflow);
   if (err != 0) {
+    delete df_segment;
     pfc_log_error("Failure in addOutput");
     return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
   }
@@ -412,8 +414,10 @@ UncRespCode Kt_Ctr_Dataflow::PerformRead(OdbcmConnectionHandler *db_conn,
   }
   if (err != 0) {
     pfc_log_error("Failure in addOutput");
+    delete df_segment;
     return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
   }
+  delete df_segment;
   return UNC_RC_SUCCESS;
 }
 

@@ -74,6 +74,13 @@ class IpctSt {
   static const char *kIpcStrStValDhcpRelayIf;
   static const char *kIpcStrStKeyDhcpRelayServer;
   static const char *kIpcStrStValDhcpRelayServer;
+  static const char *kIpcStrStKeyVterminal;
+  static const char *kIpcStrStValVterminal;
+  static const char *kIpcStrStValRenameVterminal;
+  static const char *kIpcStrStValVterminalSt;
+  static const char *kIpcStrStKeyVtermIf;
+  static const char *kIpcStrStValVtermIf;
+  static const char *kIpcStrStValVtermIfSt;
   static const char *kIpcStrStKeyNwm;
   static const char *kIpcStrStValNwm;
   static const char *kIpcStrStValNwmSt;
@@ -126,6 +133,8 @@ class IpctSt {
   static const char *kIpcStrStKeyVbrIfFlowfilterEntry;
   static const char *kIpcStrStKeyVrtIfFlowfilter;
   static const char *kIpcStrStKeyVrtIfFlowfilterEntry;
+  static const char *kIpcStrStKeyVtermIfFlowfilter;
+  static const char *kIpcStrStKeyVtermIfFlowfilterEntry;
   static const char *kIpcStrStKeyPolicingprofile;
   static const char *kIpcStrStValPolicingprofile;
   static const char *kIpcStrStValRenamePolicingprofile;
@@ -138,6 +147,7 @@ class IpctSt {
   static const char *kIpcStrStValPolicingmapController;
   static const char *kIpcStrStKeyVbrPolicingmapEntry;
   static const char *kIpcStrStKeyVbrifPolicingmapEntry;
+  static const char *kIpcStrStKeyVtermIfPolicingMapEntry;
   static const char *kIpcStrStKeyVtnDataflow;
   // Driver structures
   static const char *kIpcStrStPfcdrvValVbrIf;
@@ -146,7 +156,7 @@ class IpctSt {
   static const char *kIpcStrStPfcdrvValVbrifPolicingmap;
   /* VlanmapOnBoundary: New val struct */
   static const char *kIpcStrStPfcdrvValVlanMap;
-  // Physical strucures
+      // Physical strucures
   static const char *kIpcStrStKeyCtr;
   static const char *kIpcStrStValCtr;
   static const char *kIpcStrStValCtrSt;
@@ -222,6 +232,13 @@ class IpctSt {
     kIpcStValDhcpRelayIf,
     kIpcStKeyDhcpRelayServer,
     kIpcStValDhcpRelayServer,
+    kIpcStKeyVterminal,
+    kIpcStValVterminal,
+    kIpcStValRenameVterminal,
+    kIpcStValVterminalSt,
+    kIpcStKeyVtermIf,
+    kIpcStValVtermIf,
+    kIpcStValVtermIfSt,
     kIpcStKeyNwm,
     kIpcStValNwm,
     kIpcStValNwmSt,
@@ -274,6 +291,8 @@ class IpctSt {
     kIpcStKeyVbrIfFlowfilterEntry,
     kIpcStKeyVrtIfFlowfilter,
     kIpcStKeyVrtIfFlowfilterEntry,
+    kIpcStKeyVtermIfFlowfilter,
+    kIpcStKeyVtermIfFlowfilterEntry,
     kIpcStKeyPolicingprofile,
     kIpcStValPolicingprofile,
     kIpcStValRenamePolicingprofile,
@@ -286,6 +305,7 @@ class IpctSt {
     kIpcStValPolicingmapController,
     kIpcStKeyVbrPolicingmapEntry,
     kIpcStKeyVbrifPolicingmapEntry,
+    kIpcStKeyVtermIfPolicingMapEntry,
     // Driver structures
     kIpcStPfcdrvValVbrIf,
     kIpcStPfcdrvValVbrifVextif,
@@ -317,7 +337,7 @@ class IpctSt {
 
   static IpcStructNum GetIpcStNum(const char *stname) {
     std::map<std::string, IpcStructNum>::iterator it =
-        ipc_strname_to_stnum_map_.find(stname);
+      ipc_strname_to_stnum_map_.find(stname);
     if (it !=  ipc_strname_to_stnum_map_.end())
       return it->second;
     else
@@ -325,7 +345,7 @@ class IpctSt {
   }
   static const pfc_ipcstdef_t *GetIpcStdef(const char *stname) {
     std::map<std::string, const pfc_ipcstdef_t*>::iterator it =
-        ipc_stdef_smap_.find(stname);
+      ipc_stdef_smap_.find(stname);
     if (it != ipc_stdef_smap_.end())
       return it->second;
     else
@@ -333,7 +353,7 @@ class IpctSt {
   }
   static const pfc_ipcstdef_t *GetIpcStdef(IpcStructNum st_num) {
     std::map<IpcStructNum, const pfc_ipcstdef_t*>::iterator it =
-        ipc_stdef_nmap_.find(st_num);
+      ipc_stdef_nmap_.find(st_num);    
     if (it != ipc_stdef_nmap_.end())
       return it->second;
     else

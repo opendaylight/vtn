@@ -254,7 +254,7 @@ DalBindInfo::ResetDalOutBuffer(void) {
         col_info->get_io_type() == kDalIoOutputAndMatch) {
       if (col_info->ResetDalOutputBuffer(table_index_) != true) {
         UPLL_LOG_DEBUG("Failed Restting DAL output buffer for Column(%s) "
-                       "in Table(%s)",
+                       "in Table(%s)", 
                        schema::ColumnName(table_index_,
                          col_info->get_column_index()),
                        schema::TableName(table_index_));
@@ -338,7 +338,7 @@ DalBindInfo::BindAttribute(const DalIoCode io_code,
 
   // Create new DalBindColumnInfo instance if
   //   1. there is no instance available
-  //   2. there is an instance and binding is already done.
+  //   2. there is an instance and binding is already done. 
   // Update the exisiting instance if binding is not done before.
   for (iter = bind_list_.begin(); iter != bind_list_.end(); ++iter) {
     col_info = *iter;

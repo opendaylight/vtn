@@ -7,7 +7,6 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-
 #include <tclib_module.hh>
 #include <tclib_msg_util.hh>
 #include <uncxx/tc/libtc_common.hh>
@@ -298,6 +297,7 @@ void TcLibModule::GetSessionAttributes(uint32_t* session_id,
   pfc::core::ScopedMutex m(tclib_mutex_);
   *session_id = session_id_;
   *config_id = config_id_;
+
 }
 
 
@@ -2275,8 +2275,9 @@ pfc_ipcresp_t TcLibModule::ipcService(pfc::core::ipc::ServerSession& sess,
     return PFC_IPCRESP_FATAL;
   }
   /*set IPC timeout to infinity for commit/audit operations*/
-  if (service >= TCLIB_COMMIT_TRANSACTION &&
-      service <= TCLIB_USER_ABORT) {
+  if ((service >= TCLIB_COMMIT_TRANSACTION &&
+       service <= TCLIB_SETUP_COMPLETE) ||
+      (service == TCLIB_AUDIT_CONFIG)) {
     if (TC_SUCCESS != sess.setTimeout(NULL)) {
       pfc_log_debug("setting IPC timeout to infinity failed");
     }
@@ -2292,8 +2293,7 @@ pfc_ipcresp_t TcLibModule::ipcService(pfc::core::ipc::ServerSession& sess,
 
   switch (service) {
     case TCLIB_NOTIFY_SESSION_CONFIG:
-      resp_ret = (pfc_ipcresp_t)NotifySessionConfig(&sess);
-      break;
+      return (pfc_ipcresp_t)NotifySessionConfig(&sess);
     case TCLIB_COMMIT_TRANSACTION:
       resp_ret = (pfc_ipcresp_t)CommitTransaction();
       break;

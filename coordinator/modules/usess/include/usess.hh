@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -76,7 +76,8 @@ namespace usess {
 // -------------------------------------------------------------
 // Class definition
 // -------------------------------------------------------------
-class Usess : public pfc::core::Module {
+class Usess : public pfc::core::Module
+{
  public:
   Usess(const pfc_modattr_t *attr);
   ~Usess(void);
@@ -92,7 +93,7 @@ class Usess : public pfc::core::Module {
 
 
  private:
-  static usess_ipc_err_e(Usess::*IpcHandler[])(
+  static usess_ipc_err_e (Usess::*IpcHandler[])(
                       pfc::core::ipc::ServerSession&);
 
   // Processing function of IPC Service.

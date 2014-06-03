@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2013 NEC Corporation
+ * Copyright (c) 2011-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -122,9 +122,9 @@ static int	ipcconn_invoke(ipc_conn_t *PFC_RESTRICT cnp,
 static int	ipcconn_handshake(ipc_sess_t *PFC_RESTRICT isp,
 				  ipc_clchan_t *PFC_RESTRICT chp,
 				  ctimespec_t *PFC_RESTRICT abstime);
-static void	ipcconn_fork_prepare(ipc_conn_t *cnp);
-static void	ipcconn_fork_parent(ipc_conn_t *cnp);
-static void	ipcconn_fork_child(ipc_conn_t *cnp);
+static void	ipcconn_fork_prepare(ipc_conn_t *cnp, pfc_ptr_t arg);
+static void	ipcconn_fork_parent(ipc_conn_t *cnp, pfc_ptr_t arg);
+static void	ipcconn_fork_child(ipc_conn_t *cnp, pfc_ptr_t arg);
 
 static int	ipc_cpool_lookup(pfc_ipccpool_t pool, ipc_cpool_t **cplpp);
 static int	ipc_cpool_getconn(pfc_ipccpool_t pool,
@@ -1302,27 +1302,28 @@ out:
 
 /*
  * void PFC_ATTR_HIDDEN
- * pfc_ipcclnt_conn_iterate(ipc_conniter_t iter)
+ * pfc_ipcclnt_conn_iterate(ipc_conniter_t iter, pfc_ptr_t arg)
  *	Iterate all active IPC connections.
  *
  *	Each connection is passed to the iterator function specified by `iter'.
+ *	`arg' is passed to the call of `iter'.
  *
  * Remarks:
  *	This function must be called with holding the client lock in
  *	reader or writer mode.
  */
 void PFC_ATTR_HIDDEN
-pfc_ipcclnt_conn_iterate(ipc_conniter_t iter)
+pfc_ipcclnt_conn_iterate(ipc_conniter_t iter, pfc_ptr_t arg)
 {
 	pfc_rbnode_t	*node = NULL;
 
 	if (ipcconn_default.icn_id != PFC_IPCCONN_INVALID) {
 		PFC_ASSERT(IPC_CONN_DEFAULT_IS_VALID(&ipcconn_default));
-		(*iter)(&ipcconn_default);
+		(*iter)(&ipcconn_default, arg);
 	}
 
 	while ((node = pfc_rbtree_next(&ipcconn_alttree, node)) != NULL) {
-		(*iter)(IPC_CONN_NODE2PTR(node));
+		(*iter)(IPC_CONN_NODE2PTR(node), arg);
 	}
 }
 
@@ -1409,7 +1410,7 @@ pfc_ipcclnt_conn_fork_prepare(void)
 	 *	Connection pool locks don't need to be held on fork(2)
 	 *	because they are always held with holding the client lock.
 	 */
-	pfc_ipcclnt_conn_iterate(ipcconn_fork_prepare);
+	pfc_ipcclnt_conn_iterate(ipcconn_fork_prepare, NULL);
 }
 
 /*
@@ -1426,7 +1427,7 @@ void PFC_ATTR_HIDDEN
 pfc_ipcclnt_conn_fork_parent(void)
 {
 	/* Release all locks held by pfc_ipcclnt_conn_fork_prepare(). */
-	pfc_ipcclnt_conn_iterate(ipcconn_fork_parent);
+	pfc_ipcclnt_conn_iterate(ipcconn_fork_parent, NULL);
 }
 
 /*
@@ -1439,7 +1440,7 @@ void PFC_ATTR_HIDDEN
 pfc_ipcclnt_conn_fork_child(void)
 {
 	/* Discard IPC connections. */
-	pfc_ipcclnt_conn_iterate(ipcconn_fork_child);
+	pfc_ipcclnt_conn_iterate(ipcconn_fork_child, NULL);
 }
 
 /*
@@ -2275,11 +2276,11 @@ ipcconn_handshake(ipc_sess_t *PFC_RESTRICT isp,
 
 /*
  * static void
- * ipcconn_fork_prepare(ipc_conn_t *cnp)
+ * ipcconn_fork_prepare(ipc_conn_t *cnp, pfc_ptr_t arg PFC_ATTR_UNUSED)
  *	fork(2) prepare handler for the given connection handle.
  */
 static void
-ipcconn_fork_prepare(ipc_conn_t *cnp)
+ipcconn_fork_prepare(ipc_conn_t *cnp, pfc_ptr_t arg PFC_ATTR_UNUSED)
 {
 	pfc_list_t	*elem;
 
@@ -2294,14 +2295,14 @@ ipcconn_fork_prepare(ipc_conn_t *cnp)
 
 /*
  * static void
- * ipcconn_fork_parent(ipc_conn_t *cnp)
+ * ipcconn_fork_parent(ipc_conn_t *cnp, pfc_ptr_t arg PFC_ATTR_UNUSED)
  *	fork(2) parent handler for the given connection handle.
  *
  * Remarks:
  *	This function must be called with holding the connection lock.
  */
 static void
-ipcconn_fork_parent(ipc_conn_t *cnp)
+ipcconn_fork_parent(ipc_conn_t *cnp, pfc_ptr_t arg PFC_ATTR_UNUSED)
 {
 	pfc_list_t	*elem;
 
@@ -2316,11 +2317,11 @@ ipcconn_fork_parent(ipc_conn_t *cnp)
 
 /*
  * static void
- * ipcconn_fork_child(ipc_conn_t *cnp)
+ * ipcconn_fork_child(ipc_conn_t *cnp, pfc_ptr_t arg PFC_ATTR_UNUSED)
  *	fork(2) child handler for the given connection handle.
  */
 static void
-ipcconn_fork_child(ipc_conn_t *cnp)
+ipcconn_fork_child(ipc_conn_t *cnp, pfc_ptr_t arg PFC_ATTR_UNUSED)
 {
 	pfc_iostream_t	stream;
 	pfc_list_t	*elem;

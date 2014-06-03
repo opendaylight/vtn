@@ -20,77 +20,76 @@ namespace upll {
 namespace kt_momgr {
 
 /* This file declares interfaces for keyType KT_VRT_IF_FLOWFILTER */
-  /**
-   * @brief  VrtIfFlowFilterMoMgr class handles all the request
-   *         received from service.
-   */
+/**
+ * @brief  VrtIfFlowFilterMoMgr class handles all the request
+ *         received from service.
+ */
 
-  class VtnFlowFilterMoMgr : public MoMgrImpl {
-   private:
+class VtnFlowFilterMoMgr : public MoMgrImpl {
+  private:
     static unc_key_type_t vtn_flowfilter_child[];
     static BindInfo vtn_flowfilter_bind_info[];
     static BindInfo vtn_flowfilter_ctrl_bind_info[];
     static BindInfo vtn_flowfilter_maintbl_rename_bindinfo[];
     static BindInfo vtn_flowfilter_ctrlrtbl_rename_bindinfo[];
     /**
-     * @Brief Validates the syntax of the specified key and value structure
-     *        for KT_VTN_FLOWFILTER/KT_VTN_FLOWFILTER_CONTROLLER keytype
-     *
-     * @param[in] IpcReqRespHeader contains first 8 fields of input request
-     *                             structure
-     * @param[in] ConfigKeyVal key and value structure.
-     *
-     * @retval UPLL_RC_SUCCESS              Successful.
-     * @retval UPLL_RC_ERR_CFG_SYNTAX       Syntax error.
-     * @retval UPLL_RC_ERR_NO_SUCH_INSTANCE key_vtn_flowfilter is not available.
-     * @retval UPLL_RC_ERR_GENERIC          Generic failure.
-     */
+    * @Brief Validates the syntax of the specified key and value structure
+    *        for KT_VTN_FLOWFILTER/KT_VTN_FLOWFILTER_CONTROLLER keytype
+    *
+    * @param[in] IpcReqRespHeader contains first 8 fields of input request
+    *                             structure
+    * @param[in] ConfigKeyVal key and value structure.
+    *
+    * @retval UPLL_RC_SUCCESS              Successful.
+    * @retval UPLL_RC_ERR_CFG_SYNTAX       Syntax error.
+    * @retval UPLL_RC_ERR_NO_SUCH_INSTANCE key_vtn_flowfilter is not available.
+    * @retval UPLL_RC_ERR_GENERIC          Generic failure.
+    */
     upll_rc_t ValidateMessage(IpcReqRespHeader *req, ConfigKeyVal *key);
     /**
-     * @Brief Checks if the specified key type and
-     *        associated attributes are supported on the given controller,
-     *        based on the valid flag.
-     *
-     * @param[in] val_flowfilter_controller  KT_FLOWFILTER_CONTROLLER value structure.
-     * @param[in] attrs         pointer to controller attribute
-     *
-     * @retval UPLL_RC_SUCCESS                    validation succeeded.
-     * @retval UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR Attribute NOT_SUPPORTED.
-     * @retval UPLL_RC_ERR_GENERIC                Generic failure.
-     */
+    * @Brief Checks if the specified key type and
+    *        associated attributes are supported on the given controller,
+    *        based on the valid flag.
+    *
+    * @param[in] val_flowfilter_controller  KT_FLOWFILTER_CONTROLLER value structure.
+    * @param[in] attrs         pointer to controller attribute
+    *
+    * @retval UPLL_RC_SUCCESS                    validation succeeded.
+    * @retval UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR Attribute NOT_SUPPORTED.
+    * @retval UPLL_RC_ERR_GENERIC                Generic failure.
+    */
     upll_rc_t ValVtnFlowfilterAttributeSupportCheck(
         val_flowfilter_controller_t *val_flowfilter_controller,
         const uint8_t* attrs);
     /**
-     * @Brief Checks if the specified key type(KT_VTN_FLOWFILTER_CONTROLLER) and
-     *        associated attributes are supported on the given controller,
-     *        based on the valid flag
-     *
-     * @param[in] IpcReqRespHeader  contains first 8 fields of input request
-     *                              structure
-     * @param[in] ConfigKeyVal      contains key and value structure.
-     * @param[in] ctrlr_name        controller_name
-     *
-     * @retval  UPLL_RC_SUCCESS             Validation succeeded.
-     * @retval  UPLL_RC_ERR_GENERIC         Validation failure.
-     * @retval  UPLL_RC_ERR_INVALID_OPTION1 Option1 is not valid.
-     * @retval  UPLL_RC_ERR_INVALID_OPTION2 Option2 is not valid.
-     */
+    * @Brief Checks if the specified key type(KT_VTN_FLOWFILTER_CONTROLLER) and
+    *        associated attributes are supported on the given controller,
+    *        based on the valid flag
+    *
+    * @param[in] IpcReqRespHeader  contains first 8 fields of input request
+    *                              structure
+    * @param[in] ConfigKeyVal      contains key and value structure.
+    * @param[in] ctrlr_name        controller_name
+    *
+    * @retval  UPLL_RC_SUCCESS             Validation succeeded.
+    * @retval  UPLL_RC_ERR_GENERIC         Validation failure.
+    * @retval  UPLL_RC_ERR_INVALID_OPTION1 Option1 is not valid.
+    * @retval  UPLL_RC_ERR_INVALID_OPTION2 Option2 is not valid.
+    */
     upll_rc_t ValidateCapability(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                                 const char* ctrlr_name = NULL);
+                                   const char* ctrlr_name = NULL);
 
     /**
-     * @Brief Validates the syntax for KT_VTN_FLOWFILTER_CONTROLLER key structure.
-     *
-     * @param[in] key_vtn_flowfilter_controller
-     *                       KT_VTN_FLOWFILTER_CONTROLLER key structure.
-     *
-     * @retval UPLL_RC_SUCCESS        validation succeeded.
-     * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
-     */
+    * @Brief Validates the syntax for KT_VTN_FLOWFILTER_CONTROLLER key structure.
+    *
+    * @param[in] key_vtn_flowfilter_controller
+    *                       KT_VTN_FLOWFILTER_CONTROLLER key structure.
+    *
+    * @retval UPLL_RC_SUCCESS        validation succeeded.
+    * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
+    */
     upll_rc_t ValidateVtnFlowfilterControllerValue(
-        val_flowfilter_controller_t *val_flowfilter_controller,
-        uint32_t operation);
+    val_flowfilter_controller_t *val_flowfilter_controller, uint32_t operation);
 
     upll_rc_t UpdateMainTbl(ConfigKeyVal *vtn_ff_key,
                             unc_keytype_operation_t op,
@@ -98,7 +97,7 @@ namespace kt_momgr {
                             ConfigKeyVal *nreq,
                             DalDmlIntf *dmi);
 
-   public:
+  public:
     VtnFlowFilterMoMgr();
 
     ~VtnFlowFilterMoMgr() {
@@ -125,7 +124,7 @@ namespace kt_momgr {
 
     upll_rc_t ReadMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                      DalDmlIntf *dmi);
-    /**
+     /**
      * @brief  Method used for ReadSiblingMo.
      *
      * @param[in]       req     Describes RequestResponderHeaderClass.
@@ -144,7 +143,7 @@ namespace kt_momgr {
      * @brief  Method used for Validation before Merge.
      *
      * @param[in]  ikey      This Contains the pointer to the Class for which
-     fields have to be Validated before the Merge.
+                             fields have to be Validated before the Merge.
      * @param[in]  keytype   Describes the keyType Information.
      * @param[in]  dmi       Pointer to DalDmlIntf Class.
      * @param[in]  ctrlr_id  Describes the Controller Name.
@@ -176,9 +175,9 @@ namespace kt_momgr {
      **/
 
     upll_rc_t CreateCandidateMo(IpcReqRespHeader *req,
-                                ConfigKeyVal *ikey,
-                                DalDmlIntf *dmi,
-                                bool restore_flag = false);
+                                                ConfigKeyVal *ikey,
+                                                DalDmlIntf *dmi,
+                                                bool restore_flag = false);
 
     /**
      * @brief  Method used for Update Operation.
@@ -231,9 +230,9 @@ namespace kt_momgr {
      * @brief  Method used to Duplicate the ConfigkeyVal.
      *
      * @param[out]  okey  This Contains the pointer to the Class for which
-     fields have to be updated with values from the Request.
+                          fields have to be updated with values from the Request.
      * @param[in]   req   This Contains the pointer to the Class which is
-     used for the Duplication .
+                          used for the Duplication .
 
      * @retval  UPLL_RC_SUCCESS      Successfull completion.
      * @retval  UPLL_RC_ERR_GENERIC  Failure
@@ -251,7 +250,7 @@ namespace kt_momgr {
      * @retval  UPLL_RC_SUCCESS      Validation succeeded.
      * @retval  UPLL_RC_ERR_GENERIC  Validation failure.
      * */
-    upll_rc_t ValidateAttribute(ConfigKeyVal *kval,
+     upll_rc_t ValidateAttribute(ConfigKeyVal *kval,
                                 DalDmlIntf *dmi,
                                 IpcReqRespHeader *req = NULL);
 
@@ -270,22 +269,22 @@ namespace kt_momgr {
      *
      * @retval  UPLL_RC_SUCCESS Successful Completion
      **/
-    upll_rc_t GetValid(void*val,
-                       uint64_t indx,
-                       uint8_t *&valid,
-                       upll_keytype_datatype_t dt_type,
-                       MoMgrTables tbl) {
-      UPLL_FUNC_TRACE;
-      // no valid parameter
-      valid = NULL;
-      return UPLL_RC_SUCCESS;
-    }
+     upll_rc_t GetValid(void*val,
+                        uint64_t indx,
+                        uint8_t *&valid,
+                        upll_keytype_datatype_t dt_type,
+                        MoMgrTables tbl) {
+       UPLL_FUNC_TRACE;
+       // no valid parameter
+       valid = NULL;
+       return UPLL_RC_SUCCESS;
+     }
 
     /**
      * @brief  Method used for RenamedControllerkey(PfcName).
      *
      * @param[out]  ikey         Contains the Pointer to ConfigkeyVal
-     Class and contains the Pfc Name.
+                                 Class and contains the Pfc Name.
      * @param[in]   dt_type      Describes Configiration Information.
      * @param[in]   dmi          Pointer to DalDmlIntf Class.
      * @param[in]   ctrlr__name  Describes the Controller Name.
@@ -305,9 +304,9 @@ namespace kt_momgr {
      * @brief  Method used to get the RenamedUncKey.
      *
      * @param[out]  ikey      This Contains the pointer to
-     the Class for which fields have
-     to be updated with values from
-     the parent Class.
+                              the Class for which fields have
+                              to be updated with values from
+                              the parent Class.
      * @param[in]   dt_type   Describes Configiration Information.
      * @param[in]   dmi       Pointer to DalDmlIntf Class.
      * @param[in]   ctrlr_id  Describes the Controller Name.
@@ -333,13 +332,13 @@ namespace kt_momgr {
      * @retval  UPLL_RC_SUCCESS  Successfull completion.
      * @retval  UPLL_RC_GENERIC  Returned Generic Error.
      **/
-    upll_rc_t UpdateAuditConfigStatus(unc_keytype_configstatus_t cs_status,
-                                      uuc::UpdateCtrlrPhase phase,
-                                      ConfigKeyVal *&ckv_running,
-                                      DalDmlIntf *dmi);
+     upll_rc_t UpdateAuditConfigStatus(unc_keytype_configstatus_t cs_status,
+                                       uuc::UpdateCtrlrPhase phase,
+                                       ConfigKeyVal *&ckv_running,
+                                       DalDmlIntf *dmi);
 
-    upll_rc_t SetConsolidatedStatus(ConfigKeyVal *ikey,
-                                    DalDmlIntf *dmi);
+     upll_rc_t SetConsolidatedStatus(ConfigKeyVal *ikey,
+                                     DalDmlIntf *dmi);
     /**
      * @brief  Method used for Trasaction Vote Operation.
      *
@@ -373,7 +372,7 @@ namespace kt_momgr {
     upll_rc_t TxCopyCandidateToRunning(
         unc_key_type_t keytype, CtrlrCommitStatusList *ctrlr_commit_status,
         DalDmlIntf *dmi);
-    /**
+     /**
      * @brief  Method to Update the controller details .
      *
      * @param[out]  ck_main   Contains the Pointer to ConfigkeyVal Class
@@ -393,8 +392,7 @@ namespace kt_momgr {
                               unc_keytype_operation_t op,
                               DalDmlIntf *dmi,
                               controller_domain *ctrlr_domi,
-                              set<string> *affected_ctrlr_set,
-                              bool *driver_resp);
+                              set<string> *affected_ctrlr_set,bool *driver_resp);
     /**
      * @brief  Update controller with the new created / updated / deleted
      *         configuration between the Candidate and the Running
@@ -428,7 +426,7 @@ namespace kt_momgr {
      * @brief  Allocates Memory for the Incoming Pointer to the Class.
      *
      * @param[out]  ck_val   This Contains the pointer to the Class for
-     which memory has to be allocated.
+                             which memory has to be allocated.
      * @param[in]   dt_type  Describes Configiration Information.
      * @param[in]   tbl      Describes the Destination table Information.
      *
@@ -455,7 +453,7 @@ namespace kt_momgr {
 
     upll_rc_t ReadRecord(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                          DalDmlIntf *dmi);
-    /**
+     /**
      * @Brief Method used to get the Bind Info Structure for Rename Purpose.
      *
      * @param[in]  key_type  Describes the KT Information.
@@ -466,7 +464,7 @@ namespace kt_momgr {
      * @retval  true   Successful Completion.
      * @retval  false  Failure.
      */
-    bool GetRenameKeyBindInfo(unc_key_type_t key_type,
+     bool GetRenameKeyBindInfo(unc_key_type_t key_type,
                               BindInfo *&binfo,
                               int &nattr,
                               MoMgrTables tbl);
@@ -480,7 +478,7 @@ namespace kt_momgr {
      * @retval  UPLL_RC_SUCCESS      Successfull Completion.
      * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
      */
-    upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey,
+     upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey,
                               ConfigKeyVal *ikey);
 
     /**
@@ -537,12 +535,12 @@ namespace kt_momgr {
      *
      */
     upll_rc_t UpdateControllerTableForVtn(
-        uint8_t* vtn_name,
-        controller_domain *ctrlr_dom,
-        unc_keytype_operation_t op,
-        upll_keytype_datatype_t dt_type,
-        DalDmlIntf *dmi,
-        uint8_t flag);
+                                          uint8_t* vtn_name,
+                                          controller_domain *ctrlr_dom,
+                                          unc_keytype_operation_t op,
+                                          upll_keytype_datatype_t dt_type,
+                                          DalDmlIntf *dmi,
+                                          uint8_t flag);
 
     upll_rc_t UpdateControllerTable(
         ConfigKeyVal *ikey,
@@ -568,18 +566,18 @@ namespace kt_momgr {
                        DalDmlIntf *dmi);
 
     upll_rc_t GetDiffRecord(ConfigKeyVal *ckv_running,
-                            ConfigKeyVal *ckv_audit,
-                            uuc::UpdateCtrlrPhase phase, MoMgrTables tbl,
-                            ConfigKeyVal *&ckv_driver_req,
-                            DalDmlIntf *dmi,
-                            bool &invalid_attr);
+                                   ConfigKeyVal *ckv_audit,
+                                   uuc::UpdateCtrlrPhase phase, MoMgrTables tbl,
+                                   ConfigKeyVal *&ckv_driver_req,
+                                   DalDmlIntf *dmi,
+                                   bool &invalid_attr);
 
     upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
                                 upll_keytype_datatype_t dt_type,
                                 DalDmlIntf *dmi);
     upll_rc_t  SetVtnFFConsolidatedStatus(ConfigKeyVal *ikey,
                                           uint8_t *ctrlr_id,
-                                          DalDmlIntf *dmi);
+                                          DalDmlIntf *dmi); 
     upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
 
     bool FilterAttributes(void *&val1,
@@ -588,23 +586,23 @@ namespace kt_momgr {
                           unc_keytype_operation_t op);
 
     upll_rc_t CreateAuditMoImpl(ConfigKeyVal *ikey,
-                                DalDmlIntf *dmi,
-                                const char *ctrlr_id);
+                                                DalDmlIntf *dmi,
+                                                const char *ctrlr_id);
 
     upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
-                            DalDmlIntf *dmi,
-                            IpcReqRespHeader *req);
+                          DalDmlIntf *dmi,
+                          IpcReqRespHeader *req);
 
     upll_rc_t CopyVtnFlowFilterControllerCkv(ConfigKeyVal *ikey,
-                                             ConfigKeyVal *&okey);
-  };
+                           ConfigKeyVal *&okey);
+};
 
-  typedef struct val_vtn_flowfilter_ctrlr {
+typedef struct val_vtn_flowfilter_ctrlr {
     uint8_t valid[1];
-    //    uint8_t input_direction;
+//    uint8_t input_direction;
     unc_keytype_configstatus_t cs_row_status;
     uint8_t flags;
-  } val_vtn_flowfilter_ctrlr_t;
+} val_vtn_flowfilter_ctrlr_t;
 }  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc

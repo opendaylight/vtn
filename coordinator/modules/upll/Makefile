@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2012-2014 NEC Corporation
 # All rights reserved.
-# 
+#
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License v1.0 which accompanies this
 # distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -40,7 +40,7 @@ VTN_SOURCES	= momgr_util.cc momgr_impl.cc \
         vtep_momgr.cc vtep_if_momgr.cc \
         vtep_grp_momgr.cc vtepgrp_mem_momgr.cc \
         vtunnel_momgr.cc vtunnel_if_momgr.cc \
-				vtn_dataflow_momgr.cc 
+				vtn_dataflow_momgr.cc vterminal_momgr.cc vterm_if_momgr.cc
        
 POM_SOURCES	= policingprofile_momgr.cc policingprofile_entry_momgr.cc \
               flowlist_momgr.cc flowlist_entry_momgr.cc \
@@ -48,9 +48,9 @@ POM_SOURCES	= policingprofile_momgr.cc policingprofile_entry_momgr.cc \
               vbr_if_flowfilter_momgr.cc vbr_if_flowfilter_entry_momgr.cc \
 						 	vrt_if_flowfilter_momgr.cc vrt_if_flowfilter_entry_momgr.cc \
 						 	vtn_flowfilter_momgr.cc vtn_flowfilter_entry_momgr.cc \
-              vbr_policingmap_momgr.cc vbr_if_policingmap_momgr.cc \
-							vtn_policingmap_momgr.cc
-                 
+              vbr_policingmap_momgr.cc vbr_if_policingmap_momgr.cc vterm_if_policingmap_momgr.cc \
+							vtn_policingmap_momgr.cc \
+              vterm_if_flowfilter_momgr.cc vterm_if_flowfilter_entry_momgr.cc
 
 include ../rules.mk
 

@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.validation.logical;
 
 import com.google.gson.JsonObject;
@@ -87,9 +88,8 @@ public class FlowFilterEntriesResourceValidator extends VtnServiceValidator {
 	 * API.
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start FlowFilterEntriesResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of FlowFilterEntriesResourceValidator");
@@ -169,7 +169,9 @@ public class FlowFilterEntriesResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 			if (isValid) {
-				isValid = validator.isValidFlowFilterEntry(requestBody);
+				isValid = validator.isValidFlowFilterEntry(requestBody)
+						&& validator.isValidVtnFlowFilterEntry(requestBody);
+				setInvalidParameter(validator.getInvalidParameter());
 			}
 		}
 		LOG.trace("Complete FlowFilterEntriesResourceValidator#validatePost()");

@@ -1,7 +1,7 @@
 %
 % Copyright (c) 2012-2014 NEC Corporation
 % All rights reserved.
-% 
+%
 % This program and the accompanying materials are made available under the
 % terms of the Eclipse Public License v1.0 which accompanies this
 % distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -118,6 +118,28 @@ defmap vrouter_interface {
         admin_status            = BOOL[4];
         operstatus              = BOOL[4];
 }
+
+defmap vterminal {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        domain_id               = BOOL[4];
+        description             = BOOL[4];
+        operstatus              = BOOL[4];
+}
+
+defmap vterminal_interface {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        description             = BOOL[4];
+        admin_status            = BOOL[4];
+        logical_port_id         = BOOL[4];
+        vlan_id                 = BOOL[4];
+        tagged                  = BOOL[4];
+        operstatus              = BOOL[4];
+}
+
 %
 %defmap vunknown {
 %        instance_count          =  UINT32;
@@ -341,6 +363,7 @@ defmap vbridge_flow_filter_entry {
         action                  = BOOL[4];
         redirect_node           = BOOL[4];
         redirect_port           = BOOL[4];
+        redirect_direction    = BOOL[4];
         modify_destination_mac  = BOOL[4];
         modify_source_mac       = BOOL[4];
         network_monitor         = BOOL[4];
@@ -375,6 +398,7 @@ defmap vbridge_interface_flow_filter_entry {
         action                  = BOOL[4];
         redirect_node           = BOOL[4];
         redirect_port           = BOOL[4];
+        redirect_direction    = BOOL[4];
         modify_destination_mac  = BOOL[4];
         modify_source_mac       = BOOL[4];
         network_monitor         = BOOL[4];
@@ -409,12 +433,50 @@ defmap vrouter_interface_flow_filter_entry {
         action                  = BOOL[4];
         redirect_node           = BOOL[4];
         redirect_port           = BOOL[4];
+        redirect_direction    = BOOL[4];
         modify_destination_mac  = BOOL[4];
         modify_source_mac       = BOOL[4];
         network_monitor         = BOOL[4];
         dscp                    = BOOL[4];
         priority                = BOOL[4];
 }
+
+defmap vterminal_interface_flow_filter {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+}
+
+defmap vterminal_interface_flow_filter_entry {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        flowlist_name           = BOOL[4];
+        action                  = BOOL[4];
+        redirect_node           = BOOL[4];
+        redirect_port           = BOOL[4];
+        redirect_direction    = BOOL[4];
+        modify_destination_mac  = BOOL[4];
+        modify_source_mac       = BOOL[4];
+        network_monitor         = BOOL[4];
+        dscp                    = BOOL[4];
+        priority                = BOOL[4];
+}
+
+defmap vterminal_interface_policing_map {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+        policer_name             = BOOL[4];
+}
+
+defmap vterminal_interface_policing_map_entry {
+        instance_count          =  UINT32;
+
+        % 0:CONF_CREATE, 1:CONF_UPDATE, 2:CONF_READ, 3:STATE_READ
+}
+
+
 
 %        *****uppl defs******
 

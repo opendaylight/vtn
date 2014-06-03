@@ -62,6 +62,13 @@ const char *IpctSt::kIpcStrStKeyDhcpRelayIf = "key_dhcp_relay_if";
 const char *IpctSt::kIpcStrStValDhcpRelayIf = "val_dhcp_relay_if";
 const char *IpctSt::kIpcStrStKeyDhcpRelayServer = "key_dhcp_relay_server";
 const char *IpctSt::kIpcStrStValDhcpRelayServer = "val_dhcp_relay_server";
+const char *IpctSt::kIpcStrStKeyVterminal = "key_vterm";
+const char *IpctSt::kIpcStrStValVterminal = "val_vterm";
+const char *IpctSt::kIpcStrStValRenameVterminal = "val_rename_vterm";
+const char *IpctSt::kIpcStrStValVterminalSt = "val_vterm_st";
+const char *IpctSt::kIpcStrStKeyVtermIf = "key_vterm_if";
+const char *IpctSt::kIpcStrStValVtermIf = "val_vterm_if";
+const char *IpctSt::kIpcStrStValVtermIfSt = "val_vterm_if_st";
 const char *IpctSt::kIpcStrStKeyNwm = "key_nwm";
 const char *IpctSt::kIpcStrStValNwm = "val_nwm";
 const char *IpctSt::kIpcStrStValNwmSt = "val_nwm_st";
@@ -119,6 +126,9 @@ const char *IpctSt::kIpcStrStKeyVbrIfFlowfilterEntry =
 const char *IpctSt::kIpcStrStKeyVrtIfFlowfilter = "key_vrt_if_flowfilter";
 const char *IpctSt::kIpcStrStKeyVrtIfFlowfilterEntry =
     "key_vrt_if_flowfilter_entry";
+const char *IpctSt::kIpcStrStKeyVtermIfFlowfilter = "key_vterm_if_flowfilter";
+const char *IpctSt::kIpcStrStKeyVtermIfFlowfilterEntry =
+    "key_vterm_if_flowfilter_entry";
 const char *IpctSt::kIpcStrStKeyPolicingprofile = "key_policingprofile";
 const char *IpctSt::kIpcStrStValPolicingprofile = "val_policingprofile";
 const char *IpctSt::kIpcStrStValRenamePolicingprofile =
@@ -140,7 +150,9 @@ const char *IpctSt::kIpcStrStKeyVbrPolicingmapEntry =
     "key_vbr_policingmap_entry";
 const char *IpctSt::kIpcStrStKeyVbrifPolicingmapEntry =
     "key_vbrif_policingmap_entry";
-// Add Driver structures below
+const char *IpctSt::kIpcStrStKeyVtermIfPolicingMapEntry =
+    "key_vtermif_policingmap_entry";
+  // Add Driver structures below
 const char *IpctSt::kIpcStrStPfcdrvValVbrIf = "pfcdrv_val_vbr_if";
 const char *IpctSt::kIpcStrStPfcdrvValVbrifVextif = "pfcdrv_val_vbrif_vextif";
 const char *IpctSt::kIpcStrStPfcdrvValFlowfilterEntry =
@@ -148,9 +160,9 @@ const char *IpctSt::kIpcStrStPfcdrvValFlowfilterEntry =
 const char *IpctSt::kIpcStrStPfcdrvValVbrifPolicingmap =
     "pfcdrv_val_vbrif_policingmap";
 /* VlanmapOnBoundary: Added new val struct */
-const char *IpctSt::kIpcStrStPfcdrvValVlanMap =
+const char *IpctSt::kIpcStrStPfcdrvValVlanMap = 
     "pfcdrv_val_vlan_map";
-// Add Physical structures below
+  // Add Physical structures below
 const char *IpctSt::kIpcStrStKeyCtr = "key_ctr";
 const char *IpctSt::kIpcStrStValCtr = "val_ctr";
 const char *IpctSt::kIpcStrStValCtrSt = "val_ctr_st";
@@ -162,10 +174,10 @@ const char *IpctSt::kIpcStrStKeyBoundary = "key_boundary";
 const char *IpctSt::kIpcStrStValBoundary = "val_boundary";
 const char *IpctSt::kIpcStrStValBoundarySt = "val_boundary_st";
 const char *IpctSt::kIpcStrStValPathFaultAlarm = "val_path_fault_alarm";
-// Add Overlay Driver structures below
+  // Add Overlay Driver structures below
 const char *IpctSt::kIpcStrStVnpdrvValVtunnel = "vnpdrv_val_vtunnel";
 const char *IpctSt::kIpcStrStVnpdrvValVtunnelIf ="vnpdrv_val_vtunnel_if";
-// Add vtn dataflow structure below
+  // Add vtn dataflow structure below
 const char *IpctSt::kIpcStrStKeyVtnDataflow ="key_vtn_dataflow";
 
 std::map<std::string, const pfc_ipcstdef_t*> IpctSt::ipc_stdef_smap_;
@@ -308,6 +320,27 @@ void IpctSt::RegisterAll() {
   REGISTER_STDEF(val_dhcp_relay_server,
                  kIpcStrStValDhcpRelayServer,
                  kIpcStValDhcpRelayServer);
+  REGISTER_STDEF(key_vterm,
+                 kIpcStrStKeyVterminal,
+                 kIpcStKeyVterminal);
+  REGISTER_STDEF(val_vterm,
+                 kIpcStrStValVterminal,
+                 kIpcStValVterminal);
+  REGISTER_STDEF(val_rename_vterm,
+                 kIpcStrStValRenameVterminal,
+                 kIpcStValRenameVterminal);
+  REGISTER_STDEF(val_vterm_st,
+                 kIpcStrStValVterminalSt,
+                 kIpcStValVterminalSt);
+  REGISTER_STDEF(key_vterm_if,
+                 kIpcStrStKeyVtermIf,
+                 kIpcStKeyVtermIf);
+  REGISTER_STDEF(val_vterm_if,
+                 kIpcStrStValVtermIf,
+                 kIpcStValVtermIf);
+  REGISTER_STDEF(val_vterm_if_st,
+                 kIpcStrStValVtermIfSt,
+                 kIpcStValVtermIfSt);
   REGISTER_STDEF(key_nwm,
                  kIpcStrStKeyNwm,
                  kIpcStKeyNwm);
@@ -464,6 +497,12 @@ void IpctSt::RegisterAll() {
   REGISTER_STDEF(key_vrt_if_flowfilter_entry,
                  kIpcStrStKeyVrtIfFlowfilterEntry,
                  kIpcStKeyVrtIfFlowfilterEntry);
+  REGISTER_STDEF(key_vterm_if_flowfilter,
+                 kIpcStrStKeyVtermIfFlowfilter,
+                 kIpcStKeyVtermIfFlowfilter);
+  REGISTER_STDEF(key_vterm_if_flowfilter_entry,
+                 kIpcStrStKeyVtermIfFlowfilterEntry,
+                 kIpcStKeyVtermIfFlowfilterEntry);
   REGISTER_STDEF(key_policingprofile,
                  kIpcStrStKeyPolicingprofile,
                  kIpcStKeyPolicingprofile);
@@ -500,6 +539,9 @@ void IpctSt::RegisterAll() {
   REGISTER_STDEF(key_vbrif_policingmap_entry,
                  kIpcStrStKeyVbrifPolicingmapEntry,
                  kIpcStKeyVbrifPolicingmapEntry);
+  REGISTER_STDEF(key_vtermif_policingmap_entry,
+                 kIpcStrStKeyVtermIfPolicingMapEntry,
+                 kIpcStKeyVtermIfPolicingMapEntry);
   // Add Driver structures below
   REGISTER_STDEF(pfcdrv_val_vbr_if,
                  kIpcStrStPfcdrvValVbrIf,

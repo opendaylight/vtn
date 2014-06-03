@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.connection;
 
 import java.util.Collections;
@@ -272,6 +273,12 @@ public final class IpcConnPool {
 						clientSession = leastUsedIpcChannelConnection
 								.getSession(serviceName, serviceID,
 										exceptionHandler);
+						if (serviceID == UncUPLLEnums.ServiceID.UPLL_READ_SVC_ID
+								.ordinal()
+								|| serviceID == UncUPPLEnums.ServiceID.UPPL_SVC_READREQ
+										.ordinal()) {
+							clientSession.setTimeout(null);
+						}
 					} catch (final VtnServiceException e) {
 						exceptionHandler.raise(
 								Thread.currentThread().getStackTrace()[1]
@@ -284,6 +291,19 @@ public final class IpcConnPool {
 								UncJavaAPIErrorCode.SESS_ERROR
 										.getErrorMessage(), e);
 						throw e;
+					} catch (final IpcException e) {
+						LOG.error("Error occured while performing addOutput operation");
+						exceptionHandler.raise(
+								Thread.currentThread().getStackTrace()[1]
+										.getClassName()
+										+ VtnServiceConsts.HYPHEN
+										+ Thread.currentThread()
+												.getStackTrace()[1]
+												.getMethodName(),
+								UncJavaAPIErrorCode.IPC_SERVER_ERROR
+										.getErrorCode(),
+								UncJavaAPIErrorCode.IPC_SERVER_ERROR
+										.getErrorMessage(), e);
 					}
 					// maintain the session map, that will be used at the time
 					// of

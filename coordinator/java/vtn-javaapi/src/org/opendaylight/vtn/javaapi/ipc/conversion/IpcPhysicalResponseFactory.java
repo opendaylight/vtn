@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -951,7 +951,7 @@ public class IpcPhysicalResponseFactory {
 					count = responsePacket.length;
 				}
 			}
-			switchPort.addProperty(VtnServiceJsonConsts.COUNT, count);
+			switchPort.addProperty(VtnServiceJsonConsts.COUNT, String.valueOf(count));
 			root.add(rootJsonName, switchPort);
 		} else {
 			IpcStruct valPortStruct = null;
@@ -1637,7 +1637,7 @@ public class IpcPhysicalResponseFactory {
 					count = responsePacket.length;
 				}
 			}
-			links.addProperty(VtnServiceJsonConsts.COUNT, count);
+			links.addProperty(VtnServiceJsonConsts.COUNT, String.valueOf(count));
 			root.add(rootJsonName, links);
 
 		} else {
@@ -2263,7 +2263,7 @@ public class IpcPhysicalResponseFactory {
 					count = responsePacket.length;
 				}
 			}
-			logicalPort.addProperty(VtnServiceJsonConsts.COUNT, count);
+			logicalPort.addProperty(VtnServiceJsonConsts.COUNT, String.valueOf(count));
 			root.add(rootJsonName, logicalPort);
 
 		} else {
@@ -2479,7 +2479,7 @@ public class IpcPhysicalResponseFactory {
 											UncPhysicalStructIndexEnum.UpplLogicalPortOperStatus.UPPL_LOGICAL_PORT_OPER_UP
 													.getValue())) {
 								setValueToJsonObject(validBit, logicalPort,
-										VtnServiceIpcConsts.OPERSTATUS,
+										VtnServiceJsonConsts.OPERSTATUS,
 										VtnServiceJsonConsts.UP);
 							} else if (IpcDataUnitWrapper
 									.getIpcStructUint8Value(
@@ -2489,7 +2489,7 @@ public class IpcPhysicalResponseFactory {
 											UncPhysicalStructIndexEnum.UpplLogicalPortOperStatus.UPPL_LOGICAL_PORT_OPER_DOWN
 													.getValue())) {
 								setValueToJsonObject(validBit, logicalPort,
-										VtnServiceIpcConsts.OPERSTATUS,
+										VtnServiceJsonConsts.OPERSTATUS,
 										VtnServiceJsonConsts.DOWN);
 							} else if (IpcDataUnitWrapper
 									.getIpcStructUint8Value(
@@ -2499,7 +2499,7 @@ public class IpcPhysicalResponseFactory {
 											UncPhysicalStructIndexEnum.UpplLogicalPortOperStatus.UPPL_LOGICAL_PORT_OPER_UNKNOWN
 													.getValue())) {
 								setValueToJsonObject(validBit, logicalPort,
-										VtnServiceIpcConsts.OPERSTATUS,
+										VtnServiceJsonConsts.OPERSTATUS,
 										VtnServiceJsonConsts.UNKNOWN);
 							} else {
 								LOG.debug("Operstatus : invalid");

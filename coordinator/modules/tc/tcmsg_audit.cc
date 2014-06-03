@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -469,7 +469,7 @@ TcOperRet AuditTransaction::Execute() {
     case tclib::MSG_AUDIT_TRANS_START: {
       pfc_log_info("*** AUDIT TxSTART ***");
       notifyorder_.push_back(TC_DRV_ODL);
-      // notifyorder_.push_back(TC_DRV_OVERLAY);
+      //notifyorder_.push_back(TC_DRV_OVERLAY);
       // notifyorder_.push_back(TC_DRV_LEGACY);
       notifyorder_.push_back(TC_UPLL);
       notifyorder_.push_back(TC_UPPL);

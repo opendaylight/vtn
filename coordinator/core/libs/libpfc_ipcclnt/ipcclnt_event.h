@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -697,6 +697,19 @@ ipc_evhdlr_name(ipc_evhdlr_t *ehp)
 			PFC_ASSERT(__refcnt != 0);			\
 		}							\
 	} while (0)
+
+/*
+ * static inline pfc_bool_t PFC_FATTR_ALWAYS_INLINE
+ * ipc_elsess_conn_equals(ipc_elsess_t *elsp, ipc_conn_t *cnp)
+ *	Determine whether specified IPC event listener session and
+ *	IPC connection target the same IPC server or not.
+ */
+static inline pfc_bool_t PFC_FATTR_ALWAYS_INLINE
+ipc_elsess_conn_equals(ipc_elsess_t *elsp, ipc_conn_t *cnp)
+{
+	return (elsp->els_chan == cnp->icn_chan &&
+		pfc_hostaddr_compare(&elsp->els_addr, &cnp->icn_addr) == 0);
+}
 
 #endif	/* _PFC_LIBPFC_IPCCLNT_BUILD */
 

@@ -28,15 +28,15 @@ class VrtMoMgr : public VnodeMoMgr {
   static BindInfo key_vrt_maintbl_update_bind_info[];
   static BindInfo key_vrt_renametbl_update_bind_info[];
   /**
-   * @brief  Gets the valid array position of the variable in the value
-   *         structure from the table in the specified configuration
+   * @brief  Gets the valid array position of the variable in the value 
+   *         structure from the table in the specified configuration  
    *
-   * @param[in]     val      pointer to the value structure
+   * @param[in]     val      pointer to the value structure 
    * @param[in]     indx     database index for the variable
-   * @param[out]    valid    position of the variable in the valid array -
+   * @param[out]    valid    position of the variable in the valid array - 
    *                          NULL if valid does not exist.
    * @param[in]     dt_type  specifies the configuration
-   * @param[in]     tbl      specifies the table containing the given value
+   * @param[in]     tbl      specifies the table containing the given value 
    *
    **/
   upll_rc_t GetValid(void *val,
@@ -48,13 +48,13 @@ class VrtMoMgr : public VnodeMoMgr {
       return UPLL_RC_ERR_GENERIC;
     if (tbl == MAINTBL) {
       switch (indx) {
-        case uudst::vrouter::kDbiOperStatus:
-          valid = &(reinterpret_cast<val_vbr_st *>(val))->
-              valid[UPLL_IDX_OPER_STATUS_VRTS];
-          break;
-        case uudst::vrouter::kDbiDownCount:
-          valid = NULL;
-          break;
+         case uudst::vrouter::kDbiOperStatus:
+           valid = &(reinterpret_cast<val_vbr_st *>(val))->
+                valid[UPLL_IDX_OPER_STATUS_VRTS];
+           break;
+         case uudst::vrouter::kDbiDownCount:
+            valid = NULL;
+            break;
         case uudst::vrouter::kDbiCtrlrName:
           valid = &(reinterpret_cast<val_vrt *>(val))->
               valid[UPLL_IDX_CONTROLLER_ID_VRT];
@@ -75,18 +75,19 @@ class VrtMoMgr : public VnodeMoMgr {
           return UPLL_RC_ERR_GENERIC;
       }
     } else if (tbl == RENAMETBL) {
-      switch (indx) {
-        case uudst::vnode_rename::kDbiCtrlrVtnName:
-          valid = &(reinterpret_cast<val_rename_vnode *>
+
+       switch(indx) {
+         case uudst::vnode_rename::kDbiCtrlrVtnName:
+            valid = &(reinterpret_cast<val_rename_vnode *>
                     (val))->valid[UPLL_CTRLR_VTN_NAME_VALID];
-          break;
-        case uudst::vnode_rename::kDbiCtrlrVnodeName:
-          valid = &(reinterpret_cast<val_rename_vnode *>
+            break;
+         case uudst::vnode_rename::kDbiCtrlrVnodeName:
+            valid = &(reinterpret_cast<val_rename_vnode *>
                     (val))->valid[UPLL_CTRLR_VNODE_NAME_VALID];
-          break;
-        default:
-          break;
-      }
+            break;
+         default:
+            break;
+       }
     }
     return UPLL_RC_SUCCESS;
   }
@@ -107,7 +108,7 @@ class VrtMoMgr : public VnodeMoMgr {
   /**
    * @brief  Compares the valid value between two database records.
    * 	     if both the values are same, update the valid flag for corresponding
-   * 	     attribute as invalid in the first record.
+   * 	     attribute as invalid in the first record. 
    *
    * @param[in/out]  val1   first record value instance.
    * @param[in]      val2   second record value instance.
@@ -189,7 +190,7 @@ class VrtMoMgr : public VnodeMoMgr {
    * @retval  UPLL_RC_ERR_CFG_SYNTAX   validation failed.
    */
   upll_rc_t ValidateVrtKey(key_vrt *vrt_key,
-                           unc_keytype_operation_t operation = UNC_OP_INVALID);
+                       unc_keytype_operation_t operation = UNC_OP_INVALID);
 
   /**
    * @Brief  Validates the syntax for KT_VRT keytype value structure.
@@ -234,7 +235,7 @@ class VrtMoMgr : public VnodeMoMgr {
    * @param[in]  operation       Operation name.
    *
    * @retval  UPLL_RC_SUCCESS                       validation succeeded.
-   * @retval  UPLL_RC_ERR_EXCEEDS_RESOURSE_LIMIT    Instance count limit is exceeds.
+   * @retval  UPLL_RC_ERR_EXCEEDS_RESOURSE_LIMIT    Instance count limit is exceeds. 
    * @retval  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR    Attribute NOT_SUPPORTED.
    * @retval  UPLL_RC_ERR_GENERIC                   Generic failure.
    */
@@ -243,7 +244,7 @@ class VrtMoMgr : public VnodeMoMgr {
                                              unc_keytype_operation_t operation);
 
   /**
-   * @brief  Duplicates the input configkeyval including the key and val.
+   * @brief  Duplicates the input configkeyval including the key and val.  
    * based on the tbl specified.
    *
    * @param[in]  okey   Output Configkeyval - allocated within the function
@@ -257,13 +258,13 @@ class VrtMoMgr : public VnodeMoMgr {
                             ConfigKeyVal *&req,
                             MoMgrTables tbl = MAINTBL);
   /**
-   * @brief  Allocates for the specified val in the given configuration in the     * specified table.
+   * @brief  Allocates for the specified val in the given configuration in the     * specified table.   
    *
-   * @param[in/out]  ck_val   Reference pointer to configval structure
-   *                          allocated.
+   * @param[in/out]  ck_val   Reference pointer to configval structure 
+   *                          allocated.      
    * @param[in]      dt_type  specifies the configuration candidate/running/
-   *                          state
-   * @param[in]      tbl      specifies if the corresponding table is the
+   *                          state 
+   * @param[in]      tbl      specifies if the corresponding table is the  
    *                          main table / controller table or rename table.
    *
    * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -275,7 +276,7 @@ class VrtMoMgr : public VnodeMoMgr {
   /**
    * @brief      Method to get a configkeyval of a specified keytype from an input configkeyval
    *
-   * @param[in/out]  okey                 pointer to output ConfigKeyVal
+   * @param[in/out]  okey                 pointer to output ConfigKeyVal 
    * @param[in]      parent_key           pointer to the configkeyval from which the output configkey val is initialized.
    *
    * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -284,10 +285,10 @@ class VrtMoMgr : public VnodeMoMgr {
   upll_rc_t GetChildConfigKey(ConfigKeyVal *&okey,
                               ConfigKeyVal *parent_key);
   /**
-   * @brief      Method to get a configkeyval of the parent keytype
+   * @brief      Method to get a configkeyval of the parent keytype 
    *
-   * @param[in/out]  okey           pointer to parent ConfigKeyVal
-   * @param[in]      ikey           pointer to the child configkeyval from
+   * @param[in/out]  okey           pointer to parent ConfigKeyVal 
+   * @param[in]      ikey           pointer to the child configkeyval from 
    * which the parent configkey val is obtained.
    *
    * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -316,15 +317,15 @@ class VrtMoMgr : public VnodeMoMgr {
                          upll_keytype_datatype_t dt_type,
                          DalDmlIntf *dmi);
 
-  /* @brief     To convert the value structure read from DB to
+  /* @brief     To convert the value structure read from DB to 
    * 		VTNService during READ operations
-   * @param[in/out] ikey      Pointer to the ConfigKeyVal Structure
-   *
+   * @param[in/out] ikey      Pointer to the ConfigKeyVal Structure                    
+   * 
    * @retval  UPLL_RC_SUCCESS                    Completed successfully.
    * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
    *
    **/
-  upll_rc_t AdaptValToVtnService(ConfigKeyVal *ikey);
+  upll_rc_t AdaptValToVtnService(ConfigKeyVal *ikey, AdaptType adapt_type);
 
  public:
   VrtMoMgr();
@@ -364,7 +365,7 @@ class VrtMoMgr : public VnodeMoMgr {
   upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey,
                             ConfigKeyVal *ikey);
   /**
-   * @Brief  compares controller id and domain id before
+   * @Brief  compares controller id and domain id before 
    *         updating the value to DB.
    *
    * @param[in]  ikey  ikey contains key and value structure.
@@ -375,7 +376,7 @@ class VrtMoMgr : public VnodeMoMgr {
    */
 
   upll_rc_t CtrlrIdAndDomainIdUpdationCheck(ConfigKeyVal *ikey,
-                                            ConfigKeyVal *okey);
+                                                   ConfigKeyVal *okey);
   /**
    * @brief create entry in Vnode Rename Table,
    *        with the renamed VTN details fetched from VTN rename Table

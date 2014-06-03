@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.javaapi.ipc.enums;
 
 public class UncTCEnums {
@@ -54,23 +55,23 @@ public class UncTCEnums {
 
 		TC_OPER_SUCCESS(0, 200, "Success"),
 
-		TC_CONFIG_NOT_PRESENT(100, 50000, "Configuration not present"),
+		TC_CONFIG_NOT_PRESENT(100, 40400, "Configuration not present"),
 
 		TC_CONFIG_PRESENT(101, 50301, "Server Busy"),
 
-		TC_INVALID_CONFIG_ID(102, 50000, "Invalid config id"),
+		TC_INVALID_CONFIG_ID(102, 40000, "Invalid config id"),
 
 		TC_INVALID_OPERATION_TYPE(103, 50000, "Invalid operation type"),
 
-		TC_INVALID_SESSION_ID(104, 50000, "Invalid session id"),
+		TC_INVALID_SESSION_ID(104, 40000, "Invalid session id"),
 
-		TC_INVALID_STATE(105, 50000, "Invalid state"),
+		TC_INVALID_STATE(105, 50300, "Invalid state"),
 
 		TC_OPER_ABORT(106, 50000, "Operation abort"),
 
 		TC_SESSION_ALREADY_ACTIVE(107, 50301, "Server Busy"),
 
-		TC_SESSION_NOT_ACTIVE(108, 50000, "Session not active"),
+		TC_SESSION_NOT_ACTIVE(108, 40400, "Session not active"),
 
 		TC_SYSTEM_BUSY(109, 50301, "Server Busy"),
 
@@ -131,5 +132,17 @@ public class UncTCEnums {
 			return value;
 		}
 	}
+	public enum TcAuditStatus {
+		TC_AUDIT_OPER_FAILURE("0"), TC_AUDIT_OPER_SUCCESS("1");
 
+		private final String value;
+
+		TcAuditStatus(final String value) {
+			this.value = value;
+		}
+
+		public int getValue() {
+			return Integer.parseInt(value);
+		}
+	}
 }

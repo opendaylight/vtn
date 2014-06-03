@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2013 NEC Corporation
+ * Copyright (c) 2011-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -13,6 +13,7 @@
 
 #include <pfc/util.h>
 #include "ipcclnt_impl.h"
+#include "ipcclnt_event.h"
 
 /*
  * If this flag is turned on, the IPC client library is disabled.
@@ -46,8 +47,7 @@ static void	canceller_destroy(ipc_canceller_t *clp);
 static void	canceller_cleanup(void);
 static int	canceller_getforsess(ipc_canceller_t **PFC_RESTRICT clpp,
 				     pfc_ipcsess_t *PFC_RESTRICT sess);
-static void	canceller_conn_notify(ipc_conn_t *cnp);
-static void	canceller_sess_notify(pfc_ipcsess_t *sess);
+static void	canceller_sess_notify(pfc_ipcsess_t *sess, pfc_bool_t do_log);
 
 static int		canceller_testcancel(ipc_canceller_t *clp);
 static int		canceller_sess_testcancel(ipc_canceller_t *clp);
@@ -98,6 +98,60 @@ canceller_destroy_l(ipc_canceller_t *clp)
 }
 
 /*
+ * static inline void PFC_FATTR_ALWAYS_INLINE
+ * canceller_conn_notify_l(ipc_conn_t *cnp, ipc_elsess_t *elsp)
+ *	Send global cancellation notification to all sessions associated with
+ *	the given connection.
+ *
+ *	See comments on pfc_ipcclnt_canceller_conn_notify().
+ *
+ * Remarks:
+ *	This function must be called with holding the connection lock.
+ */
+static inline void PFC_FATTR_ALWAYS_INLINE
+canceller_conn_notify_l(ipc_conn_t *cnp, ipc_elsess_t *elsp)
+{
+	pfc_list_t	*elem;
+	pfc_bool_t	force;
+
+	// All sessions must be canceled if the IPC client library is already
+	// disabled.
+	force = ipc_disabled;
+
+	if (elsp != NULL) {
+		// If an event listener session is specified, cancel sessions
+		// associated with connections which connect to the same IPC
+		// server as the specified event listener session.
+		if (ipc_elsess_conn_equals(elsp, cnp)) {
+			force = PFC_TRUE;
+		}
+		else {
+			return;
+		}
+	}
+
+	/*
+	 * Send cancellation notification to all sessions which accept
+	 * global cancellation.
+	 */
+	PFC_LIST_FOREACH(&cnp->icn_sessions, elem) {
+		pfc_ipcsess_t	*sess = IPC_CLSESS_LIST2PTR(elem);
+
+		/*
+		 * Check to see if this session should be canceled.
+		 * Note that we can check session creation flag without
+		 * holding the session lock because it is immutable.
+		 */
+		if (force || IPC_CLSESS_ACCEPT_GLOBCANCEL(sess)) {
+			canceller_sess_notify(sess, force);
+		}
+	}
+
+	/* Cancel busy wait on this connection. */
+	IPC_CONN_BROADCAST(cnp);
+}
+
+/*
  * void
  * pfc_ipcclnt_cancel(pfc_bool_t permanent)
  *	Cancel all ongoing IPC client sessions.
@@ -134,7 +188,7 @@ pfc_ipcclnt_cancel(pfc_bool_t permanent)
 	 * Send notification to all session-specific cancellers which accept
 	 * global cancellation, and cancel busy wait on all active connections.
 	 */
-	pfc_ipcclnt_conn_iterate(canceller_conn_notify);
+	pfc_ipcclnt_conn_iterate(pfc_ipcclnt_canceller_conn_notify, NULL);
 
 	IPC_CLIENT_UNLOCK();
 }
@@ -352,6 +406,33 @@ pfc_ipcclnt_canceller_fork_child(void)
 }
 
 /*
+ * void PFC_ATTR_HIDDEN
+ * pfc_ipcclnt_canceller_conn_notify(ipc_conn_t *cnp, pfc_ptr_t arg)
+ *	Send global cancellation notification to all sessions associated with
+ *	the given connection, and wake up all threads blocked on the given
+ *	connection.
+ *
+ *	`arg' must be NULL or a pointer to ipc_elsess_t.
+ *	If a non-NULL value is specified to `arg', this function cancels
+ *	sessions only if the target server matches the specified event
+ *	listener session. Note that PFC_IPCSSF_NOGLOBCANCEL flag in IPC
+ *	client sessions is always ignored.
+ *
+ * Remarks:
+ *	This function must be called with holding the client lock in
+ *	reader or writer mode.
+ */
+void PFC_ATTR_HIDDEN
+pfc_ipcclnt_canceller_conn_notify(ipc_conn_t *cnp, pfc_ptr_t arg)
+{
+	ipc_elsess_t	*elsp = (ipc_elsess_t *)arg;
+
+	IPC_CONN_LOCK(cnp);
+	canceller_conn_notify_l(cnp, elsp);
+	IPC_CONN_UNLOCK(cnp);
+}
+
+/*
  * static int
  * canceller_init(ipc_canceller_t *clp)
  *	Initialize the given canceller instance.
@@ -525,37 +606,13 @@ out:
 
 /*
  * static void
- * canceller_conn_notify(ipc_conn_t *cnp)
- *	Send global cancellation notification to all sessions associated with
- *	the given connection, and wake up all threads blocked on the given
- *	connection.
- */
-static void
-canceller_conn_notify(ipc_conn_t *cnp)
-{
-	pfc_list_t	*elem;
-
-	IPC_CONN_LOCK(cnp);
-
-	/*
-	 * Send cancellation notification to all sessions which accept
-	 * global cancellation.
-	 */
-	PFC_LIST_FOREACH(&cnp->icn_sessions, elem) {
-		canceller_sess_notify(IPC_CLSESS_LIST2PTR(elem));
-	}
-
-	/* Cancel busy wait on this connection. */
-	IPC_CONN_BROADCAST(cnp);
-
-	IPC_CONN_UNLOCK(cnp);
-}
-
-/*
- * static void
- * canceller_sess_notify(pfc_ipcsess_t *sess)
+ * canceller_sess_notify(pfc_ipcsess_t *sess, pfc_bool_t do_log)
  *	Send global cancellation notification to the given session-specific
  *	canceller instance.
+ *
+ *	If PFC_TRUE is specified to `do_log', this funciton records an
+ *	informational log record which indicates the specified session has
+ *	been canceled.
  *
  * Remarks:
  *	This function must be called with holding the client lock in reader
@@ -563,21 +620,9 @@ canceller_conn_notify(ipc_conn_t *cnp)
  *	session.
  */
 static void
-canceller_sess_notify(pfc_ipcsess_t *sess)
+canceller_sess_notify(pfc_ipcsess_t *sess, pfc_bool_t do_log)
 {
 	ipc_sessclr_t	*sclp;
-
-	/*
-	 * Nothing to do here if the given session does not have
-	 * session-specific canceller or it does not accept the global
-	 * cancellation, unless the IPC library is already disabled.
-	 *
-	 * Note that we can check session creation flags without holding
-	 * the session lock because it is immutable.
-	 */
-	if (!ipc_disabled && !IPC_CLSESS_ACCEPT_GLOBCANCEL(sess)) {
-		return;
-	}
 
 	/* Make this session-specific canceller invisible to the session. */
 	IPC_CLSESS_LOCK(sess);
@@ -585,12 +630,25 @@ canceller_sess_notify(pfc_ipcsess_t *sess)
 	sess->icss_canceller = NULL;
 	IPC_CLSESS_UNLOCK(sess);
 
-	if (sclp != NULL) {
-		/* Notify cancellation to this session. */
-		PFC_ASSERT(IPC_CLSESS_NEED_SPECCANCEL(sess) &&
-			   sclp->iscl_sess == sess);
-		pfc_ipcclnt_canceller_notify(&sclp->iscl_canceller);
+	if (sclp == NULL) {
+		return;
 	}
+
+	/* Notify cancellation to this session. */
+	PFC_ASSERT(IPC_CLSESS_NEED_SPECCANCEL(sess) &&
+		   sclp->iscl_sess == sess);
+
+	if (do_log) {
+		ipc_conn_t	*cnp = sess->icss_conn;
+
+		IPCCLNT_LOG_INFO("Client session has been canceled: sess=%p, "
+				 "server=%s, service=%s/%u", sess,
+				 IPC_CLCHAN_NAME(cnp->icn_chan),
+				 pfc_refptr_string_value(sess->icss_name),
+				 sess->icss_service);
+	}
+
+	pfc_ipcclnt_canceller_notify(&sclp->iscl_canceller);
 }
 
 /*

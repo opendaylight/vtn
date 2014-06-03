@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -20,11 +20,13 @@ namespace usess {
  * @return  nothing.
  * @note    
  */
-UsessSessions::UsessSessions(void) {
+UsessSessions::UsessSessions(void)
+{
   table_.clear();
   for (int loop = 0; loop < ID_NUM; ++loop) {
     allocated_sess_id_[loop] = USESS_ID_INVALID;
   }
+
 }
 
 /*
@@ -33,7 +35,8 @@ UsessSessions::UsessSessions(void) {
  * @return  nothing.
  * @note    
  */
-UsessSessions::~UsessSessions(void) {
+UsessSessions::~UsessSessions(void)
+{
 }
 
 /*
@@ -43,7 +46,8 @@ UsessSessions::~UsessSessions(void) {
  *          false : failure
  * @note    
  */
-bool UsessSessions::Init(void) {
+bool UsessSessions::Init(void)
+{
   usess_ipc_err_e rtn = USESS_E_NG;
 
   L_FUNCTION_START();
@@ -69,7 +73,8 @@ bool UsessSessions::Init(void) {
  *          false : failure
  * @note    
  */
-bool UsessSessions::Fini(void) {
+bool UsessSessions::Fini(void)
+{
   usess_ipc_err_e func_rtn = USESS_E_NG;
 
 
@@ -99,7 +104,8 @@ bool UsessSessions::Fini(void) {
  * @note    
  */
 usess_ipc_err_e UsessSessions::Add(const usess_ipc_req_sess_add_t& add_sess,
-                     UsessUser user, usess_ipc_sess_id_t& sess_id) {
+                     UsessUser user, usess_ipc_sess_id_t& sess_id)
+{
   usess_ipc_res_sess_info_t sess_data;
   usess_type_e sess_type;
   int rtn = -1;
@@ -162,7 +168,8 @@ usess_ipc_err_e UsessSessions::Add(const usess_ipc_req_sess_add_t& add_sess,
  *          USESS_E_NG             : Error
  * @note    
  */
-usess_ipc_err_e UsessSessions::Del(const usess_ipc_sess_id_t& target) {
+usess_ipc_err_e UsessSessions::Del(const usess_ipc_sess_id_t& target)
+{
   tc::TcApiRet tc_rtn = tc::TC_API_COMMON_FAILURE;
   tc::TcModule *tc_instance = NULL;     // TC module instance.
 
@@ -179,8 +186,7 @@ usess_ipc_err_e UsessSessions::Del(const usess_ipc_sess_id_t& target) {
 
   // release configuration mode session.
   tc_rtn = tc_instance->TcReleaseSession(target.id);
-  WARN_IF((tc_rtn != tc::TC_API_COMMON_SUCCESS &&
-           tc_rtn != tc::TC_INVALID_PARAM),
+  WARN_IF((tc_rtn != tc::TC_API_COMMON_SUCCESS && tc_rtn != tc::TC_INVALID_PARAM),
     "Without notification to TC. id=%d err=%d", target.id, tc_rtn);
 
   // session delete.
@@ -199,7 +205,8 @@ usess_ipc_err_e UsessSessions::Del(const usess_ipc_sess_id_t& target) {
  *          USESS_E_NG               : Error
  * @note    
  */
-usess_ipc_err_e UsessSessions::Del(const usess_type_e target_sess_type) {
+usess_ipc_err_e UsessSessions::Del(const usess_type_e target_sess_type)
+{
   usess_session_table_t::iterator it;
   tc::TcApiRet tc_rtn = tc::TC_API_COMMON_FAILURE;
   tc::TcModule *tc_instance = NULL;     // TC module instance.
@@ -225,8 +232,7 @@ usess_ipc_err_e UsessSessions::Del(const usess_type_e target_sess_type) {
 
     // TC notification. release configuration mode session.
     tc_rtn = tc_instance->TcReleaseSession(it->second.sess().sess.id);
-    WARN_IF((tc_rtn != tc::TC_API_COMMON_SUCCESS &&
-             tc_rtn != tc::TC_INVALID_PARAM),
+    WARN_IF((tc_rtn != tc::TC_API_COMMON_SUCCESS && tc_rtn != tc::TC_INVALID_PARAM),
       "Without notification to TC. id=%d err=%d",
       it->second.sess().sess.id, tc_rtn);
 
@@ -248,7 +254,8 @@ usess_ipc_err_e UsessSessions::Del(const usess_type_e target_sess_type) {
  *          USESS_E_NG             : Error
  * @note    
  */
-usess_ipc_err_e UsessSessions::Del(void) {
+usess_ipc_err_e UsessSessions::Del(void)
+{
   usess_session_table_t::iterator it;
   tc::TcApiRet tc_rtn = tc::TC_API_COMMON_FAILURE;
   tc::TcModule *tc_instance = NULL;     // TC module instance.
@@ -266,8 +273,7 @@ usess_ipc_err_e UsessSessions::Del(void) {
   for (it = table_.begin(); it != table_.end(); ++it) {
     // TC notification. release configuration mode session.
     tc_rtn = tc_instance->TcReleaseSession(it->second.sess().sess.id);
-    WARN_IF((tc_rtn != tc::TC_API_COMMON_SUCCESS &&
-             tc_rtn != tc::TC_INVALID_PARAM),
+    WARN_IF((tc_rtn != tc::TC_API_COMMON_SUCCESS && tc_rtn != tc::TC_INVALID_PARAM),
       "Without notification to TC. id=%d err=%d",
       it->second.sess().sess.id, tc_rtn);
   }
@@ -290,7 +296,8 @@ usess_ipc_err_e UsessSessions::Del(void) {
  * @note    
  */
 usess_ipc_err_e UsessSessions::GetSession(
-      const usess_ipc_sess_id_t& target, UsessSession** sess) {
+      const usess_ipc_sess_id_t& target, UsessSession** sess)
+{
   usess_session_table_t::iterator it;
 
 
@@ -314,7 +321,8 @@ usess_ipc_err_e UsessSessions::GetSession(
  * @return  session count.
  * @note    
  */
-uint32_t UsessSessions::GetCount(void) {
+uint32_t UsessSessions::GetCount(void)
+{
   L_FUNCTION_START();
   L_FUNCTION_COMPLETE();
   return table_.size();
@@ -331,7 +339,8 @@ uint32_t UsessSessions::GetCount(void) {
  * @note    
  */
 usess_ipc_err_e UsessSessions::GetList(const usess_ipc_sess_id_t& target,
-                                       usess_session_list_v& info_list) {
+                                       usess_session_list_v& info_list)
+{
   usess_session_table_t::iterator it;
   tc::TcApiRet tc_rtn = tc::TC_API_COMMON_FAILURE;
   uint32_t session_id = 0;
@@ -359,7 +368,7 @@ usess_ipc_err_e UsessSessions::GetList(const usess_ipc_sess_id_t& target,
 
   // set configration status.
   tc_rtn = tc_instance->TcGetConfigSession(&session_id, &config_id);
-  RETURN_IF((tc_rtn != tc::TC_API_COMMON_SUCCESS &&
+  RETURN_IF((tc_rtn != tc::TC_API_COMMON_SUCCESS && 
              tc_rtn != tc::TC_NO_CONFIG_SESSION &&
              tc_rtn != tc::TC_INVALID_UNC_STATE), USESS_E_NG,
         "Get configuration session to TC. err=%d", tc_rtn);
@@ -380,7 +389,8 @@ usess_ipc_err_e UsessSessions::GetList(const usess_ipc_sess_id_t& target,
  *          USESS_E_NG             : Error
  * @note    
  */
-usess_ipc_err_e UsessSessions::GetList(usess_session_list_v& info_list) {
+usess_ipc_err_e UsessSessions::GetList(usess_session_list_v& info_list)
+{
   usess_session_table_t::iterator it;
   tc::TcApiRet tc_rtn = tc::TC_API_COMMON_FAILURE;
   uint32_t session_id = 0;
@@ -397,7 +407,7 @@ usess_ipc_err_e UsessSessions::GetList(usess_session_list_v& info_list) {
 
   // set configration status.
   tc_rtn = tc_instance->TcGetConfigSession(&session_id, &config_id);
-  RETURN_IF((tc_rtn != tc::TC_API_COMMON_SUCCESS &&
+  RETURN_IF((tc_rtn != tc::TC_API_COMMON_SUCCESS && 
              tc_rtn != tc::TC_NO_CONFIG_SESSION &&
              tc_rtn != tc::TC_INVALID_UNC_STATE), USESS_E_NG,
         "Get configuration session to TC. err=%d", tc_rtn);
@@ -433,7 +443,8 @@ usess_ipc_err_e UsessSessions::GetList(usess_session_list_v& info_list) {
  * @note    
  */
 usess_ipc_err_e UsessSessions::Privilege(const session_privilege_e mode,
-    const usess_ipc_sess_id_t& current, const usess_ipc_sess_id_t& target) {
+    const usess_ipc_sess_id_t& current, const usess_ipc_sess_id_t& target)
+{
   usess_session_table_t::iterator current_it;
   usess_ipc_err_e err_code = USESS_E_NG;
 
@@ -444,6 +455,7 @@ usess_ipc_err_e UsessSessions::Privilege(const session_privilege_e mode,
   // check current session for not fixed session ID.
   if (current.id < conf_.data().local[ID_FIXED].range.start ||
       current.id > conf_.data().local[ID_FIXED].range.end) {
+
     // get current session.
     current_it = table_.find(current.id);
     RETURN_IF((current_it == table_.end()), USESS_E_INVALID_SESSID,
@@ -467,7 +479,7 @@ usess_ipc_err_e UsessSessions::Privilege(const session_privilege_e mode,
   // Privilege check.
   err_code = USESS_E_INVALID_PRIVILEGE;
 
-  switch (mode) {
+  switch(mode) {
   case kPrivilegeSessDel:               // delete session.
     if (current_it->second.sess().sess_mode == USESS_MODE_OPER) {
       if (current.id == target.id) {
@@ -514,7 +526,8 @@ usess_ipc_err_e UsessSessions::Privilege(const session_privilege_e mode,
  *          USESS_E_NG             : Error
  * @note    
  */
-usess_ipc_err_e UsessSessions::LoadConf(void) {
+usess_ipc_err_e UsessSessions::LoadConf(void)
+{
   usess_ipc_err_e func_rtn = USESS_E_NG;
 
   L_FUNCTION_START();
@@ -534,7 +547,8 @@ usess_ipc_err_e UsessSessions::LoadConf(void) {
  * @note    Do not check the maximum number of sessions.
  */
 const usess_ipc_sess_id_t UsessSessions::GetNewSessionId(
-                          usess_type_e sess_type) {
+                          usess_type_e sess_type)
+{
   usess_ipc_sess_id_t sess = {0};
   usess_conf_session_parameter_t info;
   uint32_t* allocated_id = NULL;
@@ -591,7 +605,8 @@ const usess_ipc_sess_id_t UsessSessions::GetNewSessionId(
  *          false : over session count.
  * @note    
  */
-bool UsessSessions::CheckSessTypeCount(usess_type_e sess_type) {
+bool UsessSessions::CheckSessTypeCount(usess_type_e sess_type)
+{
   usess_session_table_t::iterator it;
   usess_session_table_t::iterator lower_it;
   usess_session_table_t::iterator upper_it;
@@ -614,6 +629,7 @@ bool UsessSessions::CheckSessTypeCount(usess_type_e sess_type) {
   // get range of session ID.
   info = conf_.data().local[CONF_LOCAL_ID(sess_type)];
   if (info.connect.limited == true) {
+
     // count number of sessions
     lower_it = table_.lower_bound(info.range.start);
     upper_it = table_.upper_bound(info.range.end);
@@ -637,7 +653,8 @@ bool UsessSessions::CheckSessTypeCount(usess_type_e sess_type) {
  *          false : check ng.
  * @note    
  */
-bool UsessSessions::IsSessType(usess_type_e type) const {
+bool UsessSessions::IsSessType(usess_type_e type) const
+{
   return ((type == USESS_TYPE_UNKNOWN) ||(type == USESS_TYPE_CLI) ||
       (type == USESS_TYPE_CLI_DAEMON) || (type == USESS_TYPE_WEB_API) ||
       (type == USESS_TYPE_WEB_UI));
@@ -650,7 +667,8 @@ bool UsessSessions::IsSessType(usess_type_e type) const {
  *          false : invalid range.
  * @note    
  */
-bool UsessSessions::IsUserType(user_type_e type) const {
+bool UsessSessions::IsUserType(user_type_e type) const
+{
   return ((type == USER_TYPE_UNKNOWN) || (type == USER_TYPE_OPER) ||
           (type == USER_TYPE_ADMIN));
 }

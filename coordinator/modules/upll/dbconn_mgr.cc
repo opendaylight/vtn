@@ -11,10 +11,10 @@
  * config_mgr.cc - UPLL Config Manager
  */
 
-#include <iostream>
-#include <sstream>
 #include "upll_util.hh"
 #include "dbconn_mgr.hh"
+#include <iostream>
+#include <sstream>
 
 namespace unc {
 namespace upll {
@@ -49,7 +49,7 @@ upll_rc_t UpllDbConnMgr::ConvertDalResultCode(uudal::DalResultCode drc) {
     case uudal::kDalRcMemoryError:
     case uudal::kDalRcInternalError:
     case uudal::kDalRcGeneralError:
-      // default:
+    // default:
       return UPLL_RC_ERR_GENERIC;
   }
   return UPLL_RC_ERR_GENERIC;
@@ -60,9 +60,9 @@ void UpllDbConnMgr::ConvertConnInfoToStr() const {
 #ifdef PFC_VERBOSE_DEBUG
   std::stringstream ss;
   ss << " Max No. Of Connections:" << max_ro_conns_
-      << " No. Of Connections In Use:" << active_ro_conns_cnt_
-      << " No. Of Free Connections:" << (max_ro_conns_ - active_ro_conns_cnt_);
-  UPLL_LOG_DEBUG("DbConn: %s", ss.str().c_str());
+     << " No. Of Connections In Use:" << active_ro_conns_cnt_
+     << " No. Of Free Connections:" << (max_ro_conns_ - active_ro_conns_cnt_);
+  UPLL_LOG_DEBUG("DbConn: %s",ss.str().c_str()); 
 #endif
 }
 
@@ -135,8 +135,12 @@ upll_rc_t UpllDbConnMgr::DalTxClose(DalOdbcMgr *dom, bool commit) {
 }
 
 // GetConfigRwConn() should be called only after InitializeDbConnections()
-// It cannot be called after TerminateAllDbConns()
+// It cannot be called after terminating all connections
 DalOdbcMgr *UpllDbConnMgr::GetConfigRwConn() {
+  pfc::core::ScopedMutex lock(conn_mutex_);
+  if (config_rw_conn_ == NULL) {
+    return NULL;
+  }
   config_rw_conn_->in_use_cnt++;
   if (config_rw_conn_->in_use_cnt > 1) {
     UPLL_LOG_TRACE("Config connection shared %d times",
@@ -146,14 +150,33 @@ DalOdbcMgr *UpllDbConnMgr::GetConfigRwConn() {
 }
 
 // GetAlarmRwConn() should be called only after InitializeDbConnections()
-// It cannot be called after TerminateAllDbConns()
+// It cannot be called after terminating all connections
 DalOdbcMgr *UpllDbConnMgr::GetAlarmRwConn() {
+  pfc::core::ScopedMutex lock(conn_mutex_);
+  if (alarm_rw_conn_ == NULL) {
+    return NULL;
+  }
   alarm_rw_conn_->in_use_cnt++;
   if (alarm_rw_conn_->in_use_cnt > 1) {
     UPLL_LOG_TRACE("Alarm connection shared %d times",
                    alarm_rw_conn_->in_use_cnt);
   }
   return &alarm_rw_conn_->dom;
+}
+
+// GetAuditRwConn() should be called only after InitializeDbConnections()
+// It cannot be called after terminating all connections
+DalOdbcMgr *UpllDbConnMgr::GetAuditRwConn() {
+  pfc::core::ScopedMutex lock(conn_mutex_);
+  if (audit_rw_conn_ == NULL) {
+    return NULL;
+  }
+  audit_rw_conn_->in_use_cnt++;
+  if (audit_rw_conn_->in_use_cnt > 1) {
+    UPLL_LOG_TRACE("Audit connection shared %d times",
+                   audit_rw_conn_->in_use_cnt);
+  }
+  return &audit_rw_conn_->dom;
 }
 
 void UpllDbConnMgr::ReleaseRwConn(DalOdbcMgr *dom) {
@@ -164,6 +187,8 @@ void UpllDbConnMgr::ReleaseRwConn(DalOdbcMgr *dom) {
     dbc = config_rw_conn_;
   } else if ((alarm_rw_conn_ != NULL) && (&alarm_rw_conn_->dom == dom)) {
     dbc = alarm_rw_conn_;
+  } else if ((audit_rw_conn_ != NULL) && (&audit_rw_conn_->dom == dom)) {
+    dbc = audit_rw_conn_;
   }
   if (dbc != NULL) {
     if (dbc->in_use_cnt == 0) {  // Should not happen
@@ -172,8 +197,8 @@ void UpllDbConnMgr::ReleaseRwConn(DalOdbcMgr *dom) {
       return;
     }
     dbc->in_use_cnt--;
-    if ( dom->get_conn_state() == uudal::kDalDbDisconnected ) {
-      UPLL_LOG_FATAL("RW connection Failure.");
+    if (dom->get_conn_state() == uudal::kDalDbDisconnected ) {
+       UPLL_LOG_FATAL("RW connection Failure.");
     }
   } else {
     for (std::list<DbConn*>::iterator iter = stale_rw_conn_pool_.begin();
@@ -184,7 +209,7 @@ void UpllDbConnMgr::ReleaseRwConn(DalOdbcMgr *dom) {
           UPLL_LOG_INFO("Error: RW connection is not acquired, but released");
           return;
         }
-        if ( dom->get_conn_state() == uudal::kDalDbDisconnected ) {
+        if (dom->get_conn_state() == uudal::kDalDbDisconnected ) {
           UPLL_LOG_FATAL("Stale RW connection Failure.");
         }
         dbc->in_use_cnt--;
@@ -202,68 +227,97 @@ void UpllDbConnMgr::ReleaseRwConn(DalOdbcMgr *dom) {
   ConvertConnInfoToStr();
 }
 
-upll_rc_t UpllDbConnMgr::InitializeDbConnections() {
+upll_rc_t UpllDbConnMgr::InitializeDbConnectionsNoLock() {
   UPLL_FUNC_TRACE;
-  pfc::core::ScopedMutex lock(conn_mutex_);
   upll_rc_t urc = UPLL_RC_SUCCESS;
 
+  UPLL_LOG_INFO("Creating config db conn");
   config_rw_conn_ = new DbConn;
   if (UPLL_RC_SUCCESS != (urc = DalOpen(&config_rw_conn_->dom, true))) {
     // return urc;  // Other dom object needs to be created.
   }
+  UPLL_LOG_INFO("Creating alarm db conn");
   alarm_rw_conn_ = new DbConn;
   if (UPLL_RC_SUCCESS != (urc = DalOpen(&alarm_rw_conn_->dom, true))) {
+    // return urc;  // Other dom object needs to be created.
+  }
+  UPLL_LOG_INFO("Creating audit db conn");
+  audit_rw_conn_ = new DbConn;
+  if (UPLL_RC_SUCCESS != (urc = DalOpen(&audit_rw_conn_->dom, true))) {
     return urc;
   }
+
   ConvertConnInfoToStr();
   return urc;
 }
 
 upll_rc_t UpllDbConnMgr::TerminateDbConn(DbConn *dbc) {
   UPLL_FUNC_TRACE
-      if (dbc->in_use_cnt > 0) {
-        dbc->close_on_finish = true;
-        UPLL_LOG_DEBUG("Connection is in use (%d), setting close_on_finish",
-                       dbc->in_use_cnt);
-      } else {
-        uudal::DalResultCode drc = dbc->dom.DisconnectFromDb();
-        if (drc != uudal::kDalRcSuccess) {
-          UPLL_LOG_ERROR("Failed to disconnect from database. Err=%d", drc);
-          return UPLL_RC_ERR_GENERIC;
-        }
-      }
+  if (dbc->in_use_cnt > 0) {
+    dbc->close_on_finish = true;
+    UPLL_LOG_DEBUG("Connection is in use (%d), setting close_on_finish",
+                   dbc->in_use_cnt);
+  } else {
+    uudal::DalResultCode drc = dbc->dom.DisconnectFromDb();
+    if (drc != uudal::kDalRcSuccess) {
+      UPLL_LOG_ERROR("Failed to disconnect from database. Err=%d", drc);
+      return UPLL_RC_ERR_GENERIC;
+    }
+  }
   return UPLL_RC_SUCCESS;
 }
 
-upll_rc_t UpllDbConnMgr::TerminateAllDbConns() {
+upll_rc_t UpllDbConnMgr::TerminateAllDbConnsNoLock() {
   UPLL_FUNC_TRACE;
-  UPLL_LOG_DEBUG("All DB connections are being closed");
-  pfc::core::ScopedMutex lock(conn_mutex_);
+  UPLL_LOG_DEBUG("Any exising DB connections are being closed");
   upll_rc_t urc = UPLL_RC_SUCCESS;
-  if ( config_rw_conn_!= NULL ) {
+  if (config_rw_conn_!= NULL) {
     TerminateDbConn(config_rw_conn_);
     if (config_rw_conn_->close_on_finish) {
-      UPLL_LOG_DEBUG("config_rw_conn_ is in use, putting on the stale list");
+      UPLL_LOG_INFO("config_rw_conn_ is in use, putting on the stale list");
       stale_rw_conn_pool_.push_back(config_rw_conn_);
     } else {
       delete config_rw_conn_;
+      UPLL_LOG_INFO("config_rw_conn_ is deleted.");
     }
     config_rw_conn_ = NULL;
   }
-  if ( alarm_rw_conn_!= NULL ) {
+  if (alarm_rw_conn_!= NULL) {
     TerminateDbConn(alarm_rw_conn_);
     if (alarm_rw_conn_->close_on_finish) {
-      UPLL_LOG_DEBUG("alarm_rw_conn_ is in use, putting on the stale list");
+      UPLL_LOG_INFO("alarm_rw_conn_ is in use, putting on the stale list");
       stale_rw_conn_pool_.push_back(alarm_rw_conn_);
     } else {
       delete alarm_rw_conn_;
+      UPLL_LOG_INFO("alarm_rw_conn_ is deleted");
     }
     alarm_rw_conn_ = NULL;
+  }
+  if (audit_rw_conn_!= NULL) {
+    TerminateDbConn(audit_rw_conn_);
+    if (audit_rw_conn_->close_on_finish) {
+      UPLL_LOG_INFO("audit_rw_conn_ is in use, putting on the stale list");
+      stale_rw_conn_pool_.push_back(audit_rw_conn_);
+    } else {
+      delete audit_rw_conn_;
+      UPLL_LOG_INFO("audit_rw_conn_ is deleted");
+    }
+    audit_rw_conn_ = NULL;
   }
 
   TerminateAllRoConns_NoLock();
   ConvertConnInfoToStr();
   return urc;
+}
+
+void UpllDbConnMgr::TerminateAndInitializeDbConns(bool active) {
+  UPLL_FUNC_TRACE;
+  UPLL_LOG_DEBUG("All DB connections are being closed and initialized based on cluster state");
+  pfc::core::ScopedMutex lock(conn_mutex_);
+  TerminateAllDbConnsNoLock();
+  if (active) {
+    InitializeDbConnectionsNoLock();
+  }
 }
 
 upll_rc_t UpllDbConnMgr::TerminateAllRoConns_NoLock() {
@@ -337,7 +391,7 @@ upll_rc_t UpllDbConnMgr::ReleaseRoConn(DalOdbcMgr *dom) {
       if ((*iter)->close_on_finish == true) {
         TerminateDbConn(*iter);
         DbConn *dbc = *iter;
-        delete dbc;
+        delete dbc; 
         ro_conn_pool_.erase(iter);
       } else {
         // If dom had encountered connection error, close all RO connections
@@ -356,7 +410,7 @@ upll_rc_t UpllDbConnMgr::ReleaseRoConn(DalOdbcMgr *dom) {
   UPLL_LOG_INFO("Error: connection not found");
   return UPLL_RC_ERR_GENERIC;
 }
-// NOLINT
-}  // namespace config_momgr
-}  // namespace upll
-}  // namespace unc
+                                                                       // NOLINT
+}  // namesapce config_momgr
+}  // namesapce upll
+}  // namesapce unc

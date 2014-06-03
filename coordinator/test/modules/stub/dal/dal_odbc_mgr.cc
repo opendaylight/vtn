@@ -139,6 +139,14 @@ DalResultCode DalOdbcMgr::UpdateRecords(
   const DalBindInfo *input_and_matching_attr_info) {
   return stub_getMappedResultCode(DalOdbcMgr::CREATE_RECORD);
 }
+DalResultCode DalOdbcMgr::UpdateRecords(
+    string query_statement,
+    const UpllCfgType cfg_type,
+    const DalTableIndex table_index,
+    const DalBindInfo *input_and_matching_attr_info) {
+  return stub_getMappedResultCode(DalOdbcMgr::UPDATE_RECORD);
+}
+
 
 DalResultCode DalOdbcMgr::GetDeletedRecords(const UpllCfgType cfg_type_1,
                                             const UpllCfgType cfg_type_2,

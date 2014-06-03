@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -77,7 +77,7 @@ class TcMsg {
   TcOperRet SetAuditResult(tclib::TcAuditResult result);
   tclib::TcTransEndResult GetTransResult();
   TcOperRet SetTransResult(tclib::TcTransEndResult result);
-  virtual void SetReconnect(pfc_bool_t force_reconnect) {}
+  virtual void SetReconnect(pfc_bool_t force_reconnect){}
   /*method to send response to VTN*/
   TcOperRet ForwardResponseInternal(pfc::core::ipc::ServerSession& srv_sess,
                                     pfc::core::ipc::ClientSession* clnt_sess,

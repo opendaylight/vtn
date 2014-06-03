@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -154,7 +154,7 @@ extern const pfc_cfdef_t	MODULE_CFDEF_NAME;
 
 #else	/* !PFC_MODULE_BUILD */
 
-#define	PFC_MODULE_THIS_ID	NULL
+#define	PFC_MODULE_THIS_ID	PFC_MODULE_INVALID
 #define	PFC_MODULE_THIS_NAME	NULL
 
 #endif	/* PFC_MODULE_BUILD */

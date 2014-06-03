@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -320,6 +320,9 @@ static void	iostream_cmcred_setup(cmsg_ctx_t *ctx);
 static void	iostream_cmcred_fetch(cmsg_ctx_t *ctx);
 static int	iostream_cmcred_fetch_prepare(cmsg_ctx_t *ctx);
 static int	iostream_cmcred_fetch_cleanup(cmsg_ctx_t *ctx);
+static int	iostream_getpollerr(pfc_iostream_t stream, int fd,
+				    short events, short revents);
+static int	iostream_getsockerr(int sock);
 
 /*
  * Operations to send or receive process credentials via control message.
@@ -460,6 +463,58 @@ iostream_fetch_ucred(struct msghdr *PFC_RESTRICT msg,
 			iostream_close_fd(*src, "ucred");
 		}
 	}
+}
+
+/*
+ * static inline int PFC_FATTR_ALWAYS_INLINE
+ * iostream_getpollerr(pfc_iostream_t stream, int fd, short event,
+ *		       short revents)
+ *	Check error reported by ppoll(2) and determine error number.
+ *
+ *	`event' must be either POLLIN or POLLOUT.
+ *
+ * Calling/Exit State:
+ *	Zero is returned if no error is reported by ppoll(2).
+ *	Otherwise an error number which indicates the cause of error is
+ *	returned.
+ *
+ * Remarks:
+ *	The caller must call this function with holding the stream lock.
+ */
+static inline int PFC_FATTR_ALWAYS_INLINE
+iostream_getpollerr(pfc_iostream_t stream, int fd, short event, short revents)
+{
+	if (event == POLLIN) {
+		/*
+		 * Return zero even on error state if POLLIN event is reported.
+		 * Rest of data in file descriptor should be read by succeeding
+		 * read(2) call.
+		 */
+		if (PFC_EXPECT_TRUE(revents & POLLIN)) {
+			return 0;
+		}
+	}
+	else {
+		/* Check hang up if POLLOUT event is tested. */
+		PFC_ASSERT(event == POLLOUT);
+		if (PFC_EXPECT_FALSE(revents & POLLHUP)) {
+			stream->s_flags |= IOSTRF_HUP;
+			return EPIPE;
+		}
+	}
+
+	if (PFC_EXPECT_FALSE(revents & POLLERR)) {
+		if (IOSTREAM_IS_SOCKET(stream)) {
+			return iostream_getsockerr(fd);
+		}
+
+		return EIO;
+	}
+	if (PFC_EXPECT_FALSE(revents & POLLNVAL)) {
+		return EBADF;
+	}
+
+	return 0;
 }
 
 /*
@@ -1973,6 +2028,11 @@ iostream_read(pfc_iostream_t PFC_RESTRICT stream, uint8_t *PFC_RESTRICT buf,
 			return -ECANCELED;
 		}
 
+		err = iostream_getpollerr(stream, fd, POLLIN, pfd[0].revents);
+		if (PFC_EXPECT_FALSE(err != 0)) {
+			return (ssize_t)-err;
+		}
+
 		/* Read data into the specified buffer. */
 		nbytes = read(fd, buf, size);
 		if (nbytes == 0) {
@@ -2075,14 +2135,9 @@ iostream_write(pfc_iostream_t PFC_RESTRICT stream,
 			return -ECANCELED;
 		}
 
-		if (PFC_EXPECT_FALSE(pfd[0].revents & POLLHUP)) {
-			goto hangup;
-		}
-		if (PFC_EXPECT_FALSE(pfd[0].revents & POLLERR)) {
-			return -EIO;
-		}
-		if (PFC_EXPECT_FALSE(pfd[0].revents & POLLNVAL)) {
-			return -EBADF;
+		err = iostream_getpollerr(stream, fd, POLLOUT, pfd[0].revents);
+		if (PFC_EXPECT_FALSE(err != 0)) {
+			return (ssize_t)-err;
 		}
 
 		/* Write data. */
@@ -2099,7 +2154,9 @@ iostream_write(pfc_iostream_t PFC_RESTRICT stream,
 			return (ssize_t)-err;
 		}
 		if (err == EPIPE) {
-			goto hangup;
+			stream->s_flags |= IOSTRF_HUP;
+
+			return -EPIPE;
 		}
 		if (!PFC_IS_EWOULDBLOCK(err)) {
 			return (ssize_t)-err;
@@ -2107,11 +2164,6 @@ iostream_write(pfc_iostream_t PFC_RESTRICT stream,
 	}
 
 	return nbytes;
-
-hangup:
-	stream->s_flags |= IOSTRF_HUP;
-
-	return -EPIPE;
 }
 
 /*
@@ -2293,14 +2345,9 @@ iostream_do_sendmsg(pfc_iostream_t PFC_RESTRICT stream,
 			return -ECANCELED;
 		}
 
-		if (PFC_EXPECT_FALSE(pfd[0].revents & POLLHUP)) {
-			goto hangup;
-		}
-		if (PFC_EXPECT_FALSE(pfd[0].revents & POLLERR)) {
-			return -EIO;
-		}
-		if (PFC_EXPECT_FALSE(pfd[0].revents & POLLNVAL)) {
-			return -EBADF;
+		err = iostream_getpollerr(stream, fd, POLLOUT, pfd[0].revents);
+		if (PFC_EXPECT_FALSE(err != 0)) {
+			return (ssize_t)-err;
 		}
 
 		/* Send a message. */
@@ -2317,7 +2364,9 @@ iostream_do_sendmsg(pfc_iostream_t PFC_RESTRICT stream,
 			return (ssize_t)-err;
 		}
 		if (err == EPIPE) {
-			goto hangup;
+			stream->s_flags |= IOSTRF_HUP;
+
+			return -EPIPE;
 		}
 		if (!PFC_IS_EWOULDBLOCK(err)) {
 			return (ssize_t)-err;
@@ -2325,11 +2374,6 @@ iostream_do_sendmsg(pfc_iostream_t PFC_RESTRICT stream,
 	}
 
 	return nbytes;
-
-hangup:
-	stream->s_flags |= IOSTRF_HUP;
-
-	return -EPIPE;
 }
 
 /*
@@ -2558,6 +2602,11 @@ iostream_do_recvmsg(pfc_iostream_t PFC_RESTRICT stream,
 		if (pfd[1].fd != -1 && pfd[1].revents != 0) {
 			/* Cancellation event has been received. */
 			return -ECANCELED;
+		}
+
+		err = iostream_getpollerr(stream, fd, POLLIN, pfd[0].revents);
+		if (PFC_EXPECT_FALSE(err != 0)) {
+			return (ssize_t)-err;
 		}
 
 		/* Receive a message into the specified message header. */
@@ -2832,4 +2881,32 @@ iostream_cmcred_fetch_cleanup(cmsg_ctx_t *ctx)
 	}
 
 	return 0;
+}
+
+/*
+ * static int
+ * iostream_getsockerr(int sock)
+ *	Get and clear the socket error pending on the specified socket.
+ *
+ * Calling/Exit State:
+ *	Upon successful completion, an error number which indicates the pending
+ *	socket error is returned.
+ *	Otherwise EIO is returned.
+ */
+static int
+iostream_getsockerr(int sock)
+{
+	int		soerr = 0, ret;
+	socklen_t	optlen = sizeof(soerr);
+
+	ret = getsockopt(sock, SOL_SOCKET, SO_ERROR, &soerr, &optlen);
+	if (PFC_EXPECT_FALSE(ret != 0)) {
+		soerr = errno;
+	}
+
+	if (soerr == 0) {
+		soerr = EIO;
+	}
+
+	return soerr;
 }

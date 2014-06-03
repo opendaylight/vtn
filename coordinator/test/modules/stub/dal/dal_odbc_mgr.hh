@@ -81,6 +81,8 @@ public:
   upll_rc_t DalTxClose(DalOdbcMgr *dom, bool commit);
   void ReleaseRwConn(DalOdbcMgr *dom);
 
+  inline uint32_t get_write_count() { return write_count_; }
+  inline void reset_write_count() { write_count_ = 0; }
 
   DalConnType get_conn_type();
   inline void ClearDirty() const { }
@@ -132,6 +134,13 @@ public:
   DalResultCode CreateRecord(const UpllCfgType cfg_type,
                              const DalTableIndex table_index,
                              const DalBindInfo *input_attr_info);
+
+  DalResultCode UpdateRecords(
+      string query_statement,
+      const UpllCfgType cfg_type,
+      const DalTableIndex table_index,
+      const DalBindInfo *input_and_matching_attr_info);
+
 
   DalResultCode UpdateRecords(const UpllCfgType cfg_type,
                               const DalTableIndex table_index,
@@ -223,6 +232,7 @@ public:
 
 private:
   DalResultCode stub_getMappedResultCode(Method) const;
+  mutable uint32_t write_count_;
 
 
   inline DalResultCode

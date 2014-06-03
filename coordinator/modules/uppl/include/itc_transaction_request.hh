@@ -1,14 +1,14 @@
-#ifndef _ITC_TRANSACTION_REQUEST_HH_
-#define _ITC_TRANSACTION_REQUEST_HH_
-
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
+#ifndef _ITC_TRANSACTION_REQUEST_HH_
+#define _ITC_TRANSACTION_REQUEST_HH_
 
 /**
  * @brief    Transaction Request
@@ -65,7 +65,8 @@ class TransactionRequest : public ITCReq {
     void SendControllerInfo(OdbcmConnectionHandler *db_conn,
                             uint32_t operation_type,
                             uint32_t session_id,
-                            uint32_t config_id);
+                            uint32_t config_id,
+                            bool audit_flag);
     UncRespCode GetModifiedConfiguration(OdbcmConnectionHandler *db_conn,
                                             CsRowStatus row_status);
     void ClearMaps();
@@ -104,7 +105,8 @@ class TransactionRequest : public ITCReq {
     UncRespCode EndTransaction(OdbcmConnectionHandler *db_conn,
                                   uint32_t session_id,
                                   uint32_t config_id,
-                                  TcTransEndResult trans_res);
+                                  TcTransEndResult trans_res,
+                                  bool audit_flag = true);
 };
 }   //   namespace uppl
 }   //   namespace unc

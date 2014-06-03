@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -107,6 +107,11 @@ clstat_sess_destroy(clst_ipclist_t *UNC_RESTRICT ilp,
 {
 	int	err;
 
+	/* At first, make the specified session invisible to other threads. */
+	CLST_IPCLIST_LOCK(ilp);
+	pfc_list_remove(&csess->cis_list);
+	CLST_IPCLIST_UNLOCK(ilp);
+
 	err = pfc_ipcclnt_sess_destroy(csess->cis_sess);
 	if (PFC_EXPECT_FALSE(err != 0)) {
 		pfc_log_error("Failed to destroy IPC client session: %s",
@@ -121,13 +126,11 @@ clstat_sess_destroy(clst_ipclist_t *UNC_RESTRICT ilp,
 		/* FALLTHROUGH */
 	}
 
+	/* Wake up threads waiting for completion of finalization. */
 	CLST_IPCLIST_LOCK(ilp);
-
-	pfc_list_remove(&csess->cis_list);
 	if (ilp->cil_disabled && pfc_list_is_empty(&ilp->cil_sessions)) {
 		CLST_IPCLIST_BROADCAST(ilp);
 	}
-
 	CLST_IPCLIST_UNLOCK(ilp);
 
 	free(csess);

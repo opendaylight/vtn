@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -1160,7 +1160,7 @@ ODBCM_RC_STATUS ODBCManager::IsRowExists(
   /** Execute the prepared statement using query
    * string from queryfactory */
   status  = query_processor->ExecuteGroupOperationQuery(ISROWEXISTS,
-                                                        rowexists_stmt);
+                                                        rowexists_stmt); 
   if (status == ODBCM_RC_CONNECTION_ERROR) {
     err_connx_list_.push_back(conn_obj->get_using_session_id());
   }
@@ -1383,7 +1383,7 @@ ODBCM_RC_STATUS ODBCManager::GetBulkRows(
     return status;
   }
   pfc_log_debug("ODBCM::ODBCManager::GetBulkRows: "
-      "Row count = %ld", row_count);
+      "Row count = %" UNC_PFMT_SQLLEN, row_count);
   if (row_count < 0) {
     pfc_log_debug("ODBCM::ODBCManager::GetBulkRows: "
                   "No more record found !!!");
@@ -1862,7 +1862,7 @@ ODBCM_RC_STATUS ODBCManager::GetModifiedRows(
     return status;
   }
   pfc_log_info("ODBCM::ODBCManager::GetModifiedRows: "
-      "Row count: %ld", iRow_count);
+      "Row count: %" UNC_PFMT_SQLLEN, iRow_count);
   if (iRow_count < 0) {
     pfc_log_debug("ODBCM::ODBCManager::GetModifiedRows: "
                   "No more record found");
@@ -2311,7 +2311,7 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingRows(
     return status;
   }
   pfc_log_info("ODBCM::ODBCManager::GetSiblingRows: "
-      "Row count = %ld", iRow_count);
+      "Row count = %" UNC_PFMT_SQLLEN, iRow_count);
   if (iRow_count <= 0) {
     pfc_log_debug("ODBCM::ODBCManager::GetSiblingRows: "
                   "No more record found ");
