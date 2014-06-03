@@ -1,0 +1,191 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fa82b9bf_79615238",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/Activator.java",
+        "patchSetId": 8
+      },
+      "lineNbr": 104,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-06-03T01:00:13Z",
+      "side": 1,
+      "message": "I think this bracket should be deleted.\nThe following lines creating service dependencies should be executed only if it is OVSDBPluginEventHandler.",
+      "revId": "72a1e827b17b896d6afc5f4a645abb060c777ebb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_991696a6",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/NetworkHandler.java",
+        "patchSetId": 8
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-06-03T01:00:13Z",
+      "side": 1,
+      "message": "I think this blank line is not needed.",
+      "revId": "72a1e827b17b896d6afc5f4a645abb060c777ebb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_59100ea8",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/OVSDBPluginEventHandler.java",
+        "patchSetId": 8
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-06-03T01:00:13Z",
+      "side": 1,
+      "message": "I think this blank line is not needed.",
+      "revId": "72a1e827b17b896d6afc5f4a645abb060c777ebb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_19228601",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/OVSDBPluginEventHandler.java",
+        "patchSetId": 8
+      },
+      "lineNbr": 93,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-06-03T01:00:13Z",
+      "side": 1,
+      "message": "Indent is wrong.",
+      "revId": "72a1e827b17b896d6afc5f4a645abb060c777ebb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_b9203af8",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/OVSDBPluginEventHandler.java",
+        "patchSetId": 8
+      },
+      "lineNbr": 294,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-06-03T01:00:13Z",
+      "side": 1,
+      "message": "Please add a blank line.",
+      "revId": "72a1e827b17b896d6afc5f4a645abb060c777ebb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_797ab2f2",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/OVSDBPluginEventHandler.java",
+        "patchSetId": 8
+      },
+      "lineNbr": 370,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-06-03T01:00:13Z",
+      "side": 1,
+      "message": "Could you write what this method does?",
+      "revId": "72a1e827b17b896d6afc5f4a645abb060c777ebb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_997d36ea",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/OVSDBPluginEventHandler.java",
+        "patchSetId": 8
+      },
+      "lineNbr": 409,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-06-03T01:00:13Z",
+      "side": 1,
+      "message": "Could you write what this method does?",
+      "revId": "72a1e827b17b896d6afc5f4a645abb060c777ebb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_39842ad3",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/OVSDBPluginEventHandler.java",
+        "patchSetId": 8
+      },
+      "lineNbr": 532,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-06-03T01:00:13Z",
+      "side": 1,
+      "message": "I think this should be like this:\n\"Get the datapath ID from a bridge.\"",
+      "revId": "72a1e827b17b896d6afc5f4a645abb060c777ebb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_f96d6233",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/OVSDBPluginEventHandler.java",
+        "patchSetId": 8
+      },
+      "lineNbr": 709,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-06-03T01:00:13Z",
+      "side": 1,
+      "message": "Indent is wrong.",
+      "revId": "72a1e827b17b896d6afc5f4a645abb060c777ebb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_19692625",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/OVSDBPluginEventHandler.java",
+        "patchSetId": 8
+      },
+      "lineNbr": 726,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-06-03T01:00:13Z",
+      "side": 1,
+      "message": "Indent is wrong.",
+      "revId": "72a1e827b17b896d6afc5f4a645abb060c777ebb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_b977da01",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/OVSDBPluginEventHandler.java",
+        "patchSetId": 8
+      },
+      "lineNbr": 728,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-06-03T01:00:13Z",
+      "side": 1,
+      "message": "Add a blank line.",
+      "revId": "72a1e827b17b896d6afc5f4a645abb060c777ebb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
