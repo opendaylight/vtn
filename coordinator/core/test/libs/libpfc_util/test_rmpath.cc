@@ -24,7 +24,7 @@
 #include "misc.hh"
 
 #define	RMPATH_TEST_DEPTH	4
-#define	RMPATH_PATH_MAX		512
+#define	RMPATH_PATH_MAX		1024
 
 static int
 create_file(const char *dir, const char *name, mode_t perm=0644)
