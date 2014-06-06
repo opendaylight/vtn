@@ -246,5 +246,67 @@ TEST(TypeToStrFun, keytype_kt_link) {
   std::string ret = TypeToStrFun(UNC_KT_LINK);
   EXPECT_EQ(ret, "UNC_KT_LINK");
 }
+TEST(TypeToStrFun, key_flowlist) {
+  std::string ret = TypeToStrFun(UNC_KT_FLOWLIST);
+  EXPECT_EQ(ret, "UNC_KT_FLOWLIST");
+}
+
+TEST(TypeToStrFun, key_flowlist_entry) {
+  std::string ret = TypeToStrFun(UNC_KT_FLOWLIST_ENTRY);
+  EXPECT_EQ(ret, "UNC_KT_FLOWLIST_ENTRY");
+}
+
+TEST(TypeToStrFun, key_vtn_flowfilter) {
+  std::string ret = TypeToStrFun(UNC_KT_VTN_FLOWFILTER);
+  EXPECT_EQ(ret, "UNC_KT_VTN_FLOWFILTER");
+}
+
+TEST(TypeToStrFun, key_vtn_flowfilter_entry) {
+  std::string ret = TypeToStrFun(UNC_KT_VTN_FLOWFILTER_ENTRY);
+  EXPECT_EQ(ret, "UNC_KT_VTN_FLOWFILTER_ENTRY");
+}
+
+TEST(TypeToStrFun, key_vbr_flowfilter) {
+  std::string ret = TypeToStrFun(UNC_KT_VBR_FLOWFILTER);
+  EXPECT_EQ(ret, "UNC_KT_VBR_FLOWFILTER");
+}
+
+TEST(TypeToStrFun, key_vbr_flowfilter_entry) {
+  std::string ret = TypeToStrFun(UNC_KT_VBR_FLOWFILTER_ENTRY);
+  EXPECT_EQ(ret, "UNC_KT_VBR_FLOWFILTER_ENTRY");
+}
+
+TEST(TypeToStrFun, key_vbr_if_flowfilter) {
+  std::string ret = TypeToStrFun(UNC_KT_VBRIF_FLOWFILTER);
+  EXPECT_EQ(ret, "UNC_KT_VBRIF_FLOWFILTER");
+}
+
+TEST(TypeToStrFun, key_vbr_if_flowfilter_entry) {
+  std::string ret = TypeToStrFun(UNC_KT_VBRIF_FLOWFILTER_ENTRY);
+  EXPECT_EQ(ret, "UNC_KT_VBRIF_FLOWFILTER_ENTRY");
+}
+
+TEST(TypeToStrFun, key_vterm) {
+  std::string ret = TypeToStrFun(UNC_KT_VTERMINAL);
+  EXPECT_EQ(ret, "UNC_KT_VTERMINAL");
+}
+
+TEST(TypeToStrFun, key_vterm_if) {
+  std::string ret = TypeToStrFun(UNC_KT_VTERM_IF);
+  EXPECT_EQ(ret, "UNC_KT_VTERM_IF");
+}
+
+TEST(TypeToStrFun, key_vterm_if_flowfilter) {
+  std::string ret = TypeToStrFun(UNC_KT_VTERMIF_FLOWFILTER);
+  EXPECT_EQ(ret, "UNC_KT_VTERMIF_FLOWFILTER");
+}
+
+TEST(TypeToStrFun, key_vterm_if_flowfilter_entry) {
+  std::string ret = TypeToStrFun(UNC_KT_VTERMIF_FLOWFILTER_ENTRY);
+  EXPECT_EQ(ret, "UNC_KT_VTERMIF_FLOWFILTER_ENTRY");
+
+  ret = TypeToStrFun(UNC_KT_VLINK);
+  EXPECT_EQ(ret, "Unknown");
+}
 }  // namespace vtndrvcache
 }  // namespace unc

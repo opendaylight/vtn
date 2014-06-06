@@ -123,6 +123,182 @@ pfc_bool_t VtnDrvIntf::init(void) {
           UNC_KT_VBR_VLANMAP,
           vbrvlanmap_req));
 
+  KtHandler* flowlist_req = new unc::driver::KtRequestHandler
+      <key_flowlist,
+      val_flowlist,
+      unc::driver::flowlist_driver_command> (NULL);
+
+  if (NULL == flowlist_req) {
+    pfc_log_error("flowlist_req request handler is NULL");
+    return PFC_FALSE;
+  }
+
+  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
+          UNC_KT_FLOWLIST,
+          flowlist_req));
+
+  KtHandler* flowlist_entry_req = new unc::driver::KtRequestHandler
+      <key_flowlist_entry,
+      val_flowlist_entry,
+      unc::driver::flowlist_entry_driver_command> (NULL);
+
+  if (NULL == flowlist_entry_req) {
+    pfc_log_error("flowlist_entry_req request handler is NULL");
+    return PFC_FALSE;
+  }
+
+  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
+          UNC_KT_FLOWLIST_ENTRY,
+          flowlist_entry_req));
+
+
+  KtHandler* vtn_flowfilter_req = new unc::driver::KtRequestHandler
+      <key_vtn_flowfilter,
+      val_flowfilter,
+      unc::driver::vtn_flowfilter_driver_command> (NULL);
+
+  if (NULL == vtn_flowfilter_req) {
+    pfc_log_error("vtn_flowfilter_req request handler is NULL");
+    return PFC_FALSE;
+  }
+
+  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
+          UNC_KT_VTN_FLOWFILTER,
+          vtn_flowfilter_req));
+
+
+  KtHandler* vtn_flowfilter_entry_req = new unc::driver::KtRequestHandler
+      <key_vtn_flowfilter_entry,
+      val_vtn_flowfilter_entry,
+      unc::driver::vtn_flowfilter_entry_driver_command> (NULL);
+
+  if (NULL == vtn_flowfilter_entry_req) {
+    pfc_log_error("vtn_flowfilter_entry_req request handler is NULL");
+    return PFC_FALSE;
+  }
+
+  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
+          UNC_KT_VTN_FLOWFILTER_ENTRY,
+          vtn_flowfilter_entry_req));
+
+
+  KtHandler* vbr_flowfilter_req = new unc::driver::KtRequestHandler
+      <key_vbr_flowfilter,
+      val_flowfilter,
+      unc::driver::vbr_flowfilter_driver_command> (NULL);
+
+  if (NULL == vbr_flowfilter_req) {
+    pfc_log_error("vbr_flowfilter_req request handler is NULL");
+    return PFC_FALSE;
+  }
+
+  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
+          UNC_KT_VBR_FLOWFILTER,
+          vbr_flowfilter_req));
+
+
+  KtHandler* vbr_flowfilter_entry_req = new unc::driver::KtRequestHandler
+      <key_vbr_flowfilter_entry,
+      val_flowfilter_entry,
+      unc::driver::vbr_flowfilter_entry_driver_command> (NULL);
+
+  if (NULL == vbr_flowfilter_entry_req) {
+    pfc_log_error("vbr_flowfilter_entry_req request handler is NULL");
+    return PFC_FALSE;
+  }
+
+  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
+          UNC_KT_VBR_FLOWFILTER_ENTRY,
+          vbr_flowfilter_entry_req));
+
+
+  KtHandler* vbrif_flowfilter_req = new unc::driver::KtRequestHandler
+      <key_vbr_if_flowfilter,
+      pfcdrv_val_vbrif_vextif,
+      unc::driver::vbrif_flowfilter_driver_command> (NULL);
+
+  if (NULL == vbrif_flowfilter_req) {
+    pfc_log_error("vbrif_flowfilter_req request handler is NULL");
+    return PFC_FALSE;
+  }
+
+  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
+          UNC_KT_VBRIF_FLOWFILTER,
+          vbrif_flowfilter_req));
+
+
+  KtHandler* vbrif_flowfilter_entry_req = new unc::driver::KtRequestHandler
+      <key_vbr_if_flowfilter_entry,
+      pfcdrv_val_flowfilter_entry,
+      unc::driver::vbrif_flowfilter_entry_driver_command> (NULL);
+
+  if (NULL == vbrif_flowfilter_entry_req) {
+    pfc_log_error("vbrif_flowfilter_entry_req request handler is NULL");
+    return PFC_FALSE;
+  }
+
+  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
+          UNC_KT_VBRIF_FLOWFILTER_ENTRY,
+          vbrif_flowfilter_entry_req));
+
+  KtHandler* vterm_req = new unc::driver::KtRequestHandler<key_vterm,
+      val_vterm,
+      unc::driver::vterm_driver_command> (NULL);
+
+  if (NULL == vterm_req) {
+    pfc_log_error("vterm_req request handler is NULL");
+    return PFC_FALSE;
+  }
+
+  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
+          UNC_KT_VTERMINAL,
+          vterm_req));
+
+  KtHandler* vterm_if_req = new unc::driver::KtRequestHandler
+      <key_vterm_if,
+      val_vterm_if,
+      unc::driver::vterm_if_driver_command> (NULL);
+
+  if (NULL == vterm_if_req) {
+    pfc_log_error("vterm_if_req request handler is NULL");
+    return PFC_FALSE;
+  }
+
+  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
+          UNC_KT_VTERM_IF,
+          vterm_if_req));
+
+
+  KtHandler* vtermif_flowfilter_req = new unc::driver::KtRequestHandler
+      <key_vterm_if_flowfilter,
+      val_flowfilter,
+      unc::driver::vtermif_flowfilter_driver_command> (NULL);
+
+  if (NULL == vtermif_flowfilter_req) {
+    pfc_log_error("vtermif_flowfilter_req request handler is NULL");
+    return PFC_FALSE;
+  }
+
+  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
+          UNC_KT_VTERMIF_FLOWFILTER,
+          vtermif_flowfilter_req));
+
+  KtHandler* vtermif_flowfilter_entry_req = new unc::driver::KtRequestHandler
+      <key_vterm_if_flowfilter_entry,
+      val_flowfilter_entry,
+      unc::driver::vtermif_flowfilter_entry_driver_command> (NULL);
+
+  if (NULL == vtermif_flowfilter_entry_req) {
+    pfc_log_error("vtermif_flowfilter_entry_req request handler is NULL");
+    return PFC_FALSE;
+  }
+
+  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
+          UNC_KT_VTERMIF_FLOWFILTER_ENTRY,
+          vtermif_flowfilter_entry_req));
+
+
+
   unc::tclib::TcLibModule* tclib_obj =
       static_cast<unc::tclib::TcLibModule*>(pfc::core::Module::getInstance(
               "tclib"));

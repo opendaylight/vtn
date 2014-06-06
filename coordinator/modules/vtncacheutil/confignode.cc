@@ -53,6 +53,54 @@ std::string TypeToStrFun(unc_key_type_t search_type) {
       TypeStr = std::string("UNC_KT_LINK");
       break;
 
+    case UNC_KT_FLOWLIST:
+      TypeStr = std::string("UNC_KT_FLOWLIST");
+      break;
+
+    case UNC_KT_FLOWLIST_ENTRY:
+      TypeStr = std::string("UNC_KT_FLOWLIST_ENTRY");
+      break;
+
+    case UNC_KT_VTN_FLOWFILTER:
+      TypeStr = std::string("UNC_KT_VTN_FLOWFILTER");
+      break;
+
+    case UNC_KT_VTN_FLOWFILTER_ENTRY:
+      TypeStr = std::string("UNC_KT_VTN_FLOWFILTER_ENTRY");
+      break;
+
+    case UNC_KT_VBR_FLOWFILTER:
+      TypeStr = std::string("UNC_KT_VBR_FLOWFILTER");
+      break;
+
+    case UNC_KT_VBR_FLOWFILTER_ENTRY:
+      TypeStr = std::string("UNC_KT_VBR_FLOWFILTER_ENTRY");
+      break;
+
+    case UNC_KT_VBRIF_FLOWFILTER:
+      TypeStr = std::string("UNC_KT_VBRIF_FLOWFILTER");
+      break;
+
+    case UNC_KT_VBRIF_FLOWFILTER_ENTRY:
+      TypeStr = std::string("UNC_KT_VBRIF_FLOWFILTER_ENTRY");
+      break;
+
+    case UNC_KT_VTERMINAL:
+      TypeStr = std::string("UNC_KT_VTERMINAL");
+      break;
+
+    case UNC_KT_VTERM_IF:
+      TypeStr = std::string("UNC_KT_VTERM_IF");
+      break;
+
+    case UNC_KT_VTERMIF_FLOWFILTER:
+      TypeStr = std::string("UNC_KT_VTERMIF_FLOWFILTER");
+      break;
+
+    case UNC_KT_VTERMIF_FLOWFILTER_ENTRY:
+      TypeStr = std::string("UNC_KT_VTERMIF_FLOWFILTER_ENTRY");
+      break;
+
     default:
       TypeStr = std::string("Unknown");
       pfc_log_info("%s: key_type = %d", PFC_FUNCNAME,
