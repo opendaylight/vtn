@@ -23,7 +23,7 @@
 #include "tmpfile.hh"
 
 #define	PERM_MASK		07777
-#define	TEST_PATH_MAX		128
+#define	TEST_PATH_MAX		1024
 
 /*
  * Successful test using relative path.
