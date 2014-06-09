@@ -24,7 +24,7 @@ max_connections			= 100
 superuser_reserved_connections	= 4
 
 # Directory to store UNIX domain socket file.
-unix_socket_directory	= '%INST_LOCALSTATEDIR%/run/dbm'
+unix_socket_directories	= '%INST_LOCALSTATEDIR%/run/dbm'
 
 #
 # Resource Settings
