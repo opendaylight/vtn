@@ -360,7 +360,7 @@ TEST_F(DriverTxnInterfaceTest, HandleCommitVoteCacheSuccess) {
   kt_handler_map map_kt_;
   KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t, val_vtn_t,
-          unc::driver::vtn_driver_command>(NULL);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(NULL);
 
   map_kt_.insert(std::pair<unc_key_type_t,
                  unc::driver::KtHandler*>(UNC_KT_VTN, vtn_req));
@@ -425,7 +425,7 @@ TEST_F(DriverTxnInterfaceTest, HandleCommitCacheSuccess) {
   kt_handler_map map_kt_;
   KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t, val_vtn_t,
-          unc::driver::vtn_driver_command>(NULL);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(NULL);
 
   map_kt_.insert(std::pair<unc_key_type_t,
                  unc::driver::KtHandler*>(UNC_KT_VTN, vtn_req));
@@ -468,7 +468,7 @@ TEST_F(DriverTxnInterfaceTest, HandleCommitCacheCmdFailure) {
   kt_handler_map map_kt_;
   KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t, val_vtn_t,
-          unc::driver::vtn_driver_command>(NULL);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(NULL);
 
   map_kt_.insert(std::pair<unc_key_type_t,
                  unc::driver::KtHandler*>(UNC_KT_VTN, vtn_req));

@@ -72,7 +72,7 @@ class driver {
     switch (key_type) {
       case UNC_KT_CONTROLLER:
         ptr = static_cast<driver_command*>
-            (new controller_command);
+            (new unc::driver::odc_driver_command<key_ctr_t, val_ctr_t>);
         return ptr;
         break;
       case UNC_KT_ROOT:
@@ -82,17 +82,17 @@ class driver {
         break;
       case UNC_KT_VTN:
         ptr = static_cast<driver_command*>
-            (new vtn_driver_command);
+            (new unc::driver::odc_driver_command<key_vtn_t, val_vtn_t>);
         return ptr;
         break;
       case UNC_KT_VBRIDGE:
         ptr = static_cast<driver_command*>
-            (new vbr_driver_command);
+            (new unc::driver::odc_driver_command<key_vbr_t, val_vbr_t>);
         return ptr;
         break;
       case UNC_KT_VBR_IF:
         ptr = static_cast<driver_command*>
-            (new vbrif_driver_command);
+            (new unc::driver::odc_driver_command<key_vbr_if_t, pfcdrv_val_vbr_if_t>);
         return ptr;
         break;
       default:

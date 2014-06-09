@@ -55,7 +55,7 @@ pfc_bool_t VtnDrvIntf::init(void) {
   //  Initialize KT_Handler_Instance
   KtHandler* ctrl_req = new unc::driver::KtRequestHandler<key_ctr_t,
       val_ctr_t,
-      controller_command>(NULL);
+      unc::driver::odc_driver_command<key_ctr_t, val_ctr_t> >(NULL);
 
   if (NULL == ctrl_req) {
     pfc_log_error("controller request handler is NULL");
@@ -78,7 +78,7 @@ pfc_bool_t VtnDrvIntf::init(void) {
 
   KtHandler* vtn_req = new unc::driver::KtRequestHandler<key_vtn_t,
       val_vtn_t,
-      unc::driver::vtn_driver_command>(NULL);
+      unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(NULL);
   if (NULL == vtn_req) {
     pfc_log_error("vtn request handler is NULL");
     return PFC_FALSE;
@@ -88,7 +88,7 @@ pfc_bool_t VtnDrvIntf::init(void) {
 
   KtHandler* vbr_req = new unc::driver::KtRequestHandler<key_vbr_t,
                            val_vbr_t,
-                           unc::driver::vbr_driver_command> (NULL);
+                           unc::driver::odc_driver_command<key_vbr_t, val_vbr_t> > (NULL);
   if (NULL == vbr_req) {
     pfc_log_error("vbr request handler is NULL");
     return PFC_FALSE;
@@ -100,7 +100,7 @@ pfc_bool_t VtnDrvIntf::init(void) {
 
   KtHandler* vbrif_req = new unc::driver::KtRequestHandler<key_vbr_if_t,
       pfcdrv_val_vbr_if_t,
-      unc::driver::vbrif_driver_command>(NULL);
+      unc::driver::odc_driver_command<key_vbr_if_t, pfcdrv_val_vbr_if_t> >(NULL);
   if (NULL == vbrif_req) {
     pfc_log_error("vbr interface request handler is NULL");
     return PFC_FALSE;
@@ -112,7 +112,7 @@ pfc_bool_t VtnDrvIntf::init(void) {
 
   KtHandler* vbrvlanmap_req = new unc::driver::KtRequestHandler<key_vlan_map_t,
       pfcdrv_val_vlan_map_t,
-      unc::driver::vbrvlanmap_driver_command> (NULL);
+      unc::driver::odc_driver_command<key_vlan_map_t, pfcdrv_val_vlan_map_t> > (NULL);
 
   if (NULL == vbrvlanmap_req) {
     pfc_log_error("vbrvlanmap request handler is NULL");

@@ -382,7 +382,7 @@ KtRequestHandler<key, val, command_class>::execute(
    **/
 template<>
 UncRespCode
-KtRequestHandler<key_ctr_t, val_ctr_t, controller_command>::parse_request(
+KtRequestHandler<key_ctr_t, val_ctr_t, unc::driver::odc_driver_command<key_ctr_t, val_ctr_t> >::parse_request(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     key_ctr_t &key_generic_,
@@ -578,7 +578,7 @@ KtRequestHandler<key, val, command_class>::get_handler(unc_key_type_t keytype) {
  **/
 template<>
 UncRespCode
-KtRequestHandler<key_ctr_t, val_ctr_t, controller_command>::execute(
+KtRequestHandler<key_ctr_t, val_ctr_t, unc::driver::odc_driver_command<key_ctr_t, val_ctr_t> >::execute(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     unc::driver::ControllerFramework* ctrl_int,

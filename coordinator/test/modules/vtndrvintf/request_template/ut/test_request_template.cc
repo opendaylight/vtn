@@ -27,7 +27,7 @@ TEST(KT_VTN, Validate_Request1) {
   unc::driver::KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t,
           val_vtn_t,
-          unc::driver::vtn_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
   sess.clearStubData();
@@ -66,7 +66,7 @@ TEST(KT_VTN, Validate_Request12) {
   unc::driver::KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t,
           val_vtn_t,
-          unc::driver::vtn_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
   sess.clearStubData();
@@ -106,7 +106,7 @@ TEST(KT_VTN, Validate_Request13) {
   unc::driver::KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t,
           val_vtn_t,
-          unc::driver::vtn_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -150,7 +150,7 @@ TEST(KT_VTN, Validate_Request14) {
   unc::driver::KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t,
           val_vtn_t,
-          unc::driver::vtn_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
   sess.clearStubData();
@@ -191,7 +191,7 @@ TEST(KT_VTN, Validate_Request15) {
   unc::driver::KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t,
           val_vtn_t,
-          unc::driver::vtn_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -235,7 +235,7 @@ TEST(KT_VTN, Validate_Request16) {
   unc::driver::KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t,
           val_vtn_t,
-          unc::driver::vtn_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -280,7 +280,7 @@ TEST(KT_VTN, Validate_Request17) {
   unc::driver::KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t,
           val_vtn_t,
-          unc::driver::vtn_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
   sess.stub_setArgument_(0);
@@ -325,7 +325,7 @@ TEST(KT_VTN, Validate_Request18) {
   unc::driver::KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t,
           val_vtn_t,
-          unc::driver::vtn_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -374,7 +374,7 @@ TEST(KT_VTN, Validate_Request19) {
   unc::driver::KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t,
           val_vtn_t,
-          unc::driver::vtn_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -422,7 +422,7 @@ TEST(KT_VTN, Validate_Request191) {
   unc::driver::KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t,
           val_vtn_t,
-          unc::driver::vtn_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -471,7 +471,7 @@ TEST(KT_VTN, Validate_Request192) {
   unc::driver::KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t,
           val_vtn_t,
-          unc::driver::vtn_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -521,7 +521,7 @@ TEST(KT_VTN, Validate_Request193) {
   unc::driver::KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t,
           val_vtn_t,
-          unc::driver::vtn_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -572,7 +572,7 @@ TEST(KT_VTN, Validate_Request194) {
   unc::driver::KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t,
           val_vtn_t,
-          unc::driver::vtn_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -626,7 +626,7 @@ TEST(KT_VTN, Validate_Request2) {
   unc::driver::KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t,
           val_vtn_t,
-          unc::driver::vtn_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -678,7 +678,7 @@ TEST(KT_VTN, Validate_Request3) {
   unc::driver::KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t,
           val_vtn_t,
-          unc::driver::vtn_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -730,7 +730,7 @@ TEST(KT_VBR, Validate_Request1) {
   unc::driver::KtHandler* vbr_req =
       new unc::driver::KtRequestHandler<key_vbr_t,
           val_vbr_t,
-          unc::driver::vbr_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vbr_t, val_vbr_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -782,7 +782,7 @@ TEST(KT_VBR, Validate_Request2) {
   unc::driver::KtHandler* vbr_req =
       new unc::driver::KtRequestHandler<key_vbr_t,
           val_vbr_t,
-          unc::driver::vbr_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vbr_t, val_vbr_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -834,7 +834,7 @@ TEST(KT_VBR, Validate_Request3) {
   unc::driver::KtHandler* vbr_req =
       new unc::driver::KtRequestHandler<key_vbr_t,
           val_vbr_t,
-          unc::driver::vbr_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vbr_t, val_vbr_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -886,7 +886,7 @@ TEST(KT_VBR_IF, Validate_Request1) {
   unc::driver::KtHandler* vbrif_req =
       new unc::driver::KtRequestHandler<key_vbr_if_t,
           pfcdrv_val_vbr_if_t,
-          unc::driver::vbrif_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vbr_if_t, pfcdrv_val_vbr_if_t> > (&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -939,7 +939,7 @@ TEST(KT_VBR_IF, Validate_Request2) {
   unc::driver::KtHandler* vbrif_req =
       new unc::driver::KtRequestHandler<key_vbr_if_t,
           pfcdrv_val_vbr_if_t,
-          unc::driver::vbrif_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vbr_if_t, pfcdrv_val_vbr_if_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -991,7 +991,7 @@ TEST(KT_VBR_IF, Validate_Request3) {
   unc::driver::KtHandler* vbrif_req =
       new unc::driver::KtRequestHandler<key_vbr_if_t,
           pfcdrv_val_vbr_if_t,
-          unc::driver::vbrif_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vbr_if_t, pfcdrv_val_vbr_if_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -1044,7 +1044,7 @@ TEST(KT_CTR, Validate_Request1) {
   unc::driver::KtHandler* ctr_req =
       new unc::driver::KtRequestHandler<key_ctr_t,
           val_ctr_t,
-          unc::driver::controller_command>(&kt_map);
+          unc::driver::odc_driver_command<key_ctr_t, val_ctr_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
   sess.clearStubData();
@@ -1093,7 +1093,7 @@ TEST(KT_CTR, Validate_Request11) {
   unc::driver::KtHandler* ctr_req =
       new unc::driver::KtRequestHandler<key_ctr_t,
           val_ctr_t,
-          unc::driver::controller_command>(&kt_map);
+          unc::driver::odc_driver_command<key_ctr_t, val_ctr_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
   sess.clearStubData();
@@ -1144,7 +1144,7 @@ TEST(KT_CTR, Validate_Request12) {
   unc::driver::KtHandler* ctr_req =
       new unc::driver::KtRequestHandler<key_ctr_t,
           val_ctr_t,
-          unc::driver::controller_command>(&kt_map);
+          unc::driver::odc_driver_command<key_ctr_t, val_ctr_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
   sess.clearStubData();
@@ -1199,7 +1199,7 @@ TEST(KT_CTR, Validate_Request13) {
   unc::driver::KtHandler* ctr_req =
       new unc::driver::KtRequestHandler<key_ctr_t,
           val_ctr_t,
-          unc::driver::controller_command>(&kt_map);
+          unc::driver::odc_driver_command<key_ctr_t, val_ctr_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
   sess.clearStubData();
@@ -1253,7 +1253,7 @@ TEST(KT_CTR, Validate_Request2) {
   unc::driver::KtHandler* ctr_req =
       new unc::driver::KtRequestHandler<key_ctr_t,
           val_ctr_t,
-          unc::driver::controller_command>(&kt_map);
+          unc::driver::odc_driver_command<key_ctr_t, val_ctr_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -1307,7 +1307,7 @@ TEST(KT_CTR, Validate_Request21) {
   unc::driver::KtHandler* ctr_req =
       new unc::driver::KtRequestHandler<key_ctr_t,
           val_ctr_t,
-          unc::driver::controller_command>(&kt_map);
+          unc::driver::odc_driver_command<key_ctr_t, val_ctr_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -1363,7 +1363,7 @@ TEST(KT_CTR, Validate_Request3) {
   unc::driver::KtHandler* ctr_req =
       new unc::driver::KtRequestHandler<key_ctr_t,
           val_ctr_t,
-          unc::driver::controller_command>(&kt_map);
+          unc::driver::odc_driver_command<key_ctr_t, val_ctr_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -1417,7 +1417,7 @@ TEST(KT_CTR, Validate_Request31) {
   unc::driver::KtHandler* ctr_req =
       new unc::driver::KtRequestHandler<key_ctr_t,
           val_ctr_t,
-          unc::driver::controller_command>(&kt_map);
+          unc::driver::odc_driver_command<key_ctr_t, val_ctr_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -1472,7 +1472,7 @@ TEST(KT_CTR, Validate_Request32) {
   unc::driver::KtHandler* ctr_req =
       new unc::driver::KtRequestHandler<key_ctr_t,
           val_ctr_t,
-          unc::driver::controller_command>(&kt_map);
+          unc::driver::odc_driver_command<key_ctr_t, val_ctr_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -1527,7 +1527,7 @@ TEST(KT_CTR, Validate_Request4) {
   unc::driver::KtHandler* ctr_req =
       new unc::driver::KtRequestHandler<key_ctr_t,
           val_ctr_t,
-          unc::driver::controller_command>(&kt_map);
+          unc::driver::odc_driver_command<key_ctr_t, val_ctr_t> >(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -1594,7 +1594,7 @@ TEST(GLOBAL_CREATE, execute_cmd1) {
   unc::driver::KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t,
           val_vtn_t,
-          unc::driver::vtn_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(&kt_map);
 
   uint32_t ret_val = vtn_req->execute_cmd(cfgptr, ctr, drv);
 
@@ -1630,7 +1630,7 @@ TEST(GLOBAL_DELETE, execute_cmd2) {
   unc::driver::KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t,
           val_vtn_t,
-          unc::driver::vtn_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(&kt_map);
 
   uint32_t ret_val = vtn_req->execute_cmd(cfgptr, ctr, drv);
 
@@ -1666,7 +1666,7 @@ TEST(GLOBAL_UPDATE, execute_cmd3) {
   unc::driver::KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t,
           val_vtn_t,
-          unc::driver::vtn_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(&kt_map);
 
   uint32_t ret_val = vtn_req->execute_cmd(cfgptr, ctr, drv);
 
@@ -1702,7 +1702,7 @@ TEST(GLOBAL_DEFAULT, execute_cmd4) {
   unc::driver::KtHandler* vtn_req =
       new unc::driver::KtRequestHandler<key_vtn_t,
           val_vtn_t,
-          unc::driver::vtn_driver_command>(&kt_map);
+          unc::driver::odc_driver_command<key_vtn_t, val_vtn_t> >(&kt_map);
 
   uint32_t ret_val = vtn_req->execute_cmd(cfgptr, ctr, drv);
 
