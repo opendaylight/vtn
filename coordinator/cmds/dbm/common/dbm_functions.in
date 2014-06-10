@@ -444,16 +444,40 @@ copy_postgresql_file()
 #	copy postgresql.conf
 #
 # * input
-#	   Nothing
+#      arg1: PostgreSQL major version number
+#      arg2: PostgreSQL minor version number
 #
 # * output
-#	   0: Success
-#	   1: Failure
+#      0: Success
+#      1: Failure
 #
 copy_postgresql_conf()
 {
+	local major=$1
+	local minor=$2
+
+	# Determine parameter that specifies UNIX domain socket path.
+	local uds
+	if [ "$major" -gt 9 -o \( "$major" -eq 9 -a "$minor" -ge 3 \) ]; then
+		uds="unix_socket_directories"
+	else
+		uds="unix_socket_directory"
+	fi
+
+	# Update postgresql.conf.
+	local tmp="${POSTFILE}_tmp.$$"
+	sed -e "s,%unix_socket_directory%,$uds," $SINGLEPOSTFILE > $tmp
+	if [ $? -ne 0 ]; then
+		rm -f $tmp
+		return 1
+	fi
+
 	# Install postgresql.conf.
-	copy_postgresql_file $SINGLEPOSTFILE $POSTFILE || return 1
+	copy_postgresql_file $tmp $POSTFILE
+	local status=$?
+	rm -f $tmp
+
+	return $status
 }
 
 # create_setting_file()
