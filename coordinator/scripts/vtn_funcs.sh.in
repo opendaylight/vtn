@@ -82,7 +82,7 @@ init_env()
 
     if [ `id -u` -ne "$VTN_RUN_UID" ]; then
         cat >&2 <<EOF
-*** Error: This command must be executeda as "$VTN_RUN_USERNAME" user.
+*** Error: This command must be executed as "$VTN_RUN_USERNAME" user.
 EOF
         exit 1
     fi
