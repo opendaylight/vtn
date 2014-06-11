@@ -25,10 +25,11 @@
 namespace unc {
 namespace odcdriver {
 
-class OdcVbrIfCommand: public unc::driver::vbrif_driver_command {
+class OdcVbrIfCommand: public unc::driver::vtn_driver_command
+                       <key_vbr_if_t, pfcdrv_val_vbr_if_t> {
  public:
   /**
-   * @brief Parametrised Constructor
+   * @brief     - Parametrised Constructor
    * @param[in] - conf file values
    */
   explicit OdcVbrIfCommand(unc::restjson::ConfFileValues_t conf_values);

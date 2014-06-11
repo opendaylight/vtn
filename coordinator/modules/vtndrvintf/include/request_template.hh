@@ -4,7 +4,7 @@
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
- * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ * distribution, and is available at http:// www.eclipse.org/legal/epl-v10.html
  */
 
 #ifndef _REQUEST_TEMPLATE_H_
@@ -29,7 +29,7 @@ typedef std::map <unc_key_type_t, KtHandler*> kt_handler_map;
  * @brief KtRequestHandler provides function for handling request and response
  *
  **/
-template<typename key, typename val, typename command_class>
+template<typename key, typename val>
 class KtRequestHandler : public KtHandler {
  public:
   /*
@@ -44,7 +44,7 @@ class KtRequestHandler : public KtHandler {
 
   /**
    * @brief    - This method handles request received from platform layer
-   * @param[in]- ServerSession, odl_drv_request_header_t,ControllerFramework*
+   * @param[in]- ServerSession, odl_drv_request_header_t, ControllerFramework*
    * @retval   - UncRespCode
    **/
   UncRespCode
@@ -64,7 +64,7 @@ class KtRequestHandler : public KtHandler {
 
   /**
    * @brief     - This method retrieves the key and val structures
-   * @param[in] - ServerSession, odl_drv_request_header_t,key,val
+   * @param[in] - ServerSession, odl_drv_request_header_t, key, val
    * @retval    -  UncRespCode
    **/
 
@@ -92,10 +92,10 @@ class KtRequestHandler : public KtHandler {
                     val &val_generic_);
 
   /**
-   * @brief    - This method executes the Create,Delete,Update and Read requests of
+   * @brief    - This method executes the Create, Delete, Update and Read requests of
    *             Keytypes
    * @param[in]- ServerSession, odl_drv_request_header_t, ControllerFramework*
-   *             UncRespCode,key,val
+   *             UncRespCode, key, val
    * @retval   - UncRespCode
    **/
   UncRespCode
@@ -108,8 +108,8 @@ class KtRequestHandler : public KtHandler {
   /**
    * @brief     - This method handles response from controller
    *              and send response to platform layer
-   * @param[in] - ServerSession, odl_drv_request_header_t,ControllerFramework*,
-   *              key,val,UncRespCode
+   * @param[in] - ServerSession, odl_drv_request_header_t, ControllerFramework*,
+   *              key, val, UncRespCode
    * @retval    - UncRespCode
    **/
   UncRespCode
@@ -123,7 +123,7 @@ class KtRequestHandler : public KtHandler {
   /**
    * @brief    - This method creates the Response Header
    * @param[in]- odl_drv_response_header_t,
-   *             odl_drv_request_header_t,UncRespCode
+   *             odl_drv_request_header_t, UncRespCode
    * @retval   - void
    */
   void
@@ -157,8 +157,8 @@ class KtRequestHandler : public KtHandler {
  * @brief: Default Destructor
  **/
 
-template<typename key, typename val, typename command_class>
-KtRequestHandler<key, val, command_class>::~KtRequestHandler() {
+template<typename key, typename val>
+KtRequestHandler<key, val>::~KtRequestHandler() {
      std::map<unc_key_type_t, pfc_ipcstdef_t*> :: iterator map_it;
      for (map_it = key_map_.begin(); map_it != key_map_.end(); map_it++) {
                 delete map_it->second;
@@ -178,8 +178,8 @@ KtRequestHandler<key, val, command_class>::~KtRequestHandler() {
    * @param[in]- ConfigNode*
    * @retval   - void*
    **/
-template<typename key, typename val, typename command_class>
-void* KtRequestHandler<key, val, command_class>::
+template<typename key, typename val>
+void* KtRequestHandler<key, val>::
 get_key_struct(unc::vtndrvcache::ConfigNode *cfgptr) {
   unc::vtndrvcache::CacheElementUtil <key, val, uint32_t> * cache_util_ptr =
       static_cast <unc::vtndrvcache::CacheElementUtil<key, val, uint32_t> * >
@@ -198,8 +198,8 @@ get_key_struct(unc::vtndrvcache::ConfigNode *cfgptr) {
    * @param[in]- ConfigNode*
    * @retval   - void*
    **/
-template<typename key, typename val, typename command_class>
-void* KtRequestHandler<key, val, command_class>::
+template<typename key, typename val>
+void* KtRequestHandler<key, val>::
 get_val_struct(unc::vtndrvcache::ConfigNode *cfgptr) {
   unc::vtndrvcache::CacheElementUtil<key, val, uint32_t> * cache_util_ptr =
       static_cast <unc::vtndrvcache::CacheElementUtil
@@ -217,12 +217,12 @@ get_val_struct(unc::vtndrvcache::ConfigNode *cfgptr) {
 
   /**
    * @brief     - This method retrieves the key and val structures
-   * @param[in] - ServerSession, odl_drv_request_header_t,key,val
+   * @param[in] - ServerSession, odl_drv_request_header_t, key, val
    * @retval    -  UncRespCode
    **/
-template<typename key, typename val, typename command_class>
+template<typename key, typename val>
 UncRespCode
-KtRequestHandler<key, val, command_class>::parse_request(
+KtRequestHandler<key, val>::parse_request(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     key &key_generic_,
@@ -240,15 +240,15 @@ KtRequestHandler<key, val, command_class>::parse_request(
 }
 
   /**
-   * @brief    - This method executes the Create,Delete,Update requests of
+   * @brief    - This method executes the Create, Delete, Update requests of
    *             Keytypes
    * @param[in]- ServerSession, odl_drv_request_header_t, ControllerFramework*
-   *             UncRespCode,key,val
+   *             UncRespCode, key, val
    * @retval   - UncRespCode
    **/
-template<typename key, typename val, typename command_class>
+template<typename key, typename val>
 UncRespCode
-KtRequestHandler<key, val, command_class>::execute(
+KtRequestHandler<key, val>::execute(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     unc::driver::ControllerFramework* ctrl_int,
@@ -279,7 +279,7 @@ KtRequestHandler<key, val, command_class>::execute(
 
   pfc_log_debug("getting conn status..ctr nt NULL");
   if (ctrl_ptr->get_connection_status() == CONNECTION_DOWN) {
-    //  check controller connection status, if down send disconnected
+    //   check controller connection status, if down send disconnected
     pfc_log_debug("%s Controller status is down, send disconnected",
                                  PFC_FUNCNAME);
     return UNC_RC_CTR_DISCONNECTED;
@@ -290,7 +290,10 @@ KtRequestHandler<key, val, command_class>::execute(
 
   PFC_ASSERT(drv_command_ptr_ != NULL);
 
-  command_class *command_ptr_ = static_cast<command_class *> (drv_command_ptr_);
+  unc::driver::vtn_driver_command<key, val> * command_ptr_ =
+      static_cast<unc::driver::vtn_driver_command<key, val>*>(drv_command_ptr_);
+  // command_class *command_ptr_ =
+  // static_cast<command_class *> (drv_command_ptr_);
 
   PFC_ASSERT(command_ptr_ != NULL);
 
@@ -376,13 +379,13 @@ KtRequestHandler<key, val, command_class>::execute(
 
   /**
    * @brief     - This method is the Template Specialization for parsing
-   *              KT_Controller structures(Key,Val)
-   * @param[in] - ServerSession, odl_drv_request_header_t,key_ctr_t,val_ctr_t
+   *              KT_Controller structures(Key, Val)
+   * @param[in] - ServerSession, odl_drv_request_header_t, key_ctr_t, val_ctr_t
    * @retval    -  UncRespCode
    **/
 template<>
 UncRespCode
-KtRequestHandler<key_ctr_t, val_ctr_t, controller_command>::parse_request(
+KtRequestHandler<key_ctr_t, val_ctr_t>::parse_request(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     key_ctr_t &key_generic_,
@@ -413,13 +416,13 @@ KtRequestHandler<key_ctr_t, val_ctr_t, controller_command>::parse_request(
 
   /**
    * @brief     - This method is template Specialization for parsing KT_ROOT
-   * @param[in] - ServerSession,odl_drv_request_header_t,key_root_t
+   * @param[in] - ServerSession, odl_drv_request_header_t, key_root_t
    *              val_root_t
    * @retval    - UncRespCode
    **/
 template<>
 UncRespCode
-KtRequestHandler<key_root_t, val_root_t, root_driver_command>::parse_request(
+KtRequestHandler<key_root_t, val_root_t>::parse_request(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     key_root_t &key_generic_,
@@ -432,12 +435,12 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::parse_request(
    * @brief    - This method is the template Specialization for
    *             KT ROOT command Execution
    * @param[in]- ServerSession, odl_drv_request_header_t, ControllerFramework*
-   *             UncRespCode,key_root_t,val_root_t
+   *             UncRespCode, key_root_t, val_root_t
    * @retval   - UncRespCode
    **/
 template<>
 UncRespCode
-KtRequestHandler<key_root_t, val_root_t, root_driver_command>::execute(
+KtRequestHandler<key_root_t, val_root_t>::execute(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     unc::driver::ControllerFramework* ctrl_int,
@@ -492,11 +495,11 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::execute(
       pfc_log_debug("parent is UNC_KT_ROOT");
       std::vector<unc::vtndrvcache::ConfigNode*> cfg_list;
 
-      //  fetch all root child configuration
+      //   fetch all root child configuration
       resp_code_ = drv_command_ptr_->fetch_config(ctrl_ptr, NULL, cfg_list);
       pfc_log_debug("vtn resp_code_%u", resp_code_);
       if (resp_code_ != UNC_RC_SUCCESS) {
-        pfc_log_error("%s:GetDriverByControllerName failed VTN .rt,%u",
+        pfc_log_error("%s:GetDriverByControllerName failed VTN .rt, %u",
                        PFC_FUNCNAME, resp_code_);
         delete drv_command_ptr_;
         return resp_code_;
@@ -532,7 +535,7 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::execute(
                                                      cfg_list);
           pfc_log_debug("resp_code_%u", resp_code_);
           if (resp_code_!= UNC_RC_SUCCESS) {
-            pfc_log_error("%s:GetDriverByControllerName failed .rt,%u",
+            pfc_log_error("%s:GetDriverByControllerName failed .rt, %u",
                            PFC_FUNCNAME, resp_code_);
             delete drv_command_ptr_;
             return resp_code_;
@@ -549,17 +552,17 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::execute(
           pfc_log_debug("%d:audit_kt_size for vtn index: %d",
                         audit_kt_size, audit_kt_index);
         }
-      }  // inner for loop  for vtn read end
+      }  //  inner for loop  for vtn read end
     }
     delete drv_command_ptr_;
-  }  // audit ket type for loop end
+  }  //  audit ket type for loop end
 
   return resp_code_;
 }
 
-template<typename key, typename val, typename command_class>
+template<typename key, typename val>
 KtHandler*
-KtRequestHandler<key, val, command_class>::get_handler(unc_key_type_t keytype) {
+KtRequestHandler<key, val>::get_handler(unc_key_type_t keytype) {
   std::map <unc_key_type_t, KtHandler*>::iterator iter = kt_map_->begin();
   iter = kt_map_->find(keytype);
   KtHandler* hnd_ptr = NULL;
@@ -573,12 +576,12 @@ KtRequestHandler<key, val, command_class>::get_handler(unc_key_type_t keytype) {
 /**
  * @brief    - This method is the template Specialization for KT Controller command Execution
  * @param[in]- ServerSession, odl_drv_request_header_t, ControllerFramework*
- *             UncRespCode,key_root_t,val_root_t
+ *             UncRespCode, key_root_t, val_root_t
  * @retval   - UncRespCode
  **/
 template<>
 UncRespCode
-KtRequestHandler<key_ctr_t, val_ctr_t, controller_command>::execute(
+KtRequestHandler<key_ctr_t, val_ctr_t>::execute(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     unc::driver::ControllerFramework* ctrl_int,
@@ -649,12 +652,12 @@ KtRequestHandler<key_ctr_t, val_ctr_t, controller_command>::execute(
 
   /**
    * @brief    - This method handles request received from platform layer
-   * @param[in]- ServerSession, odl_drv_request_header_t,ControllerFramework*
+   * @param[in]- ServerSession, odl_drv_request_header_t, ControllerFramework*
    * @retval   - UncRespCode
    **/
-template<typename key, typename val, class command_class>
+template<typename key, typename val>
 UncRespCode
-KtRequestHandler<key, val, command_class>::handle_request(
+KtRequestHandler<key, val>::handle_request(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     unc::driver::ControllerFramework* ctrl_int) {
@@ -699,9 +702,9 @@ KtRequestHandler<key, val, command_class>::handle_request(
    * @param[in]- ConfigNode*, controller*, driver*
    * @retval   - UncRespCode
    **/
-template<typename key, typename val, class command_class>
+template<typename key, typename val>
 UncRespCode
-KtRequestHandler<key, val, command_class>::execute_cmd(
+KtRequestHandler<key, val>::execute_cmd(
     unc::vtndrvcache::ConfigNode *cfgptr,
     unc::driver::controller* conn,
     unc::driver::driver* drv_ptr) {
@@ -715,12 +718,13 @@ KtRequestHandler<key, val, command_class>::execute_cmd(
   PFC_ASSERT(cache_element_ptr != NULL);
 
   unc_key_type_t keytype = cfgptr->get_type_name();
-  unc::driver::driver_command * drv_command_ptr_ =
+  unc::driver::driver_command * driver_cmd_ptr =
       drv_ptr->create_driver_command(keytype);
 
-  PFC_ASSERT(drv_command_ptr_ != NULL);
-  command_class * config_cmd_ptr = NULL;
-  config_cmd_ptr = static_cast<command_class *> (drv_command_ptr_);
+  //  command_class * config_cmd_ptr = NULL;
+  // config_cmd_ptr = static_cast<command_class *> (drv_command_ptr_);
+  unc::driver::vtn_driver_command<key, val> * config_cmd_ptr =
+      static_cast<unc::driver::vtn_driver_command<key, val> *>(driver_cmd_ptr);
   uint32_t config_operation = cfgptr->get_operation();
   pfc_log_debug("keytype:%u, config_operation:%u", keytype, config_operation);
 
@@ -758,7 +762,7 @@ KtRequestHandler<key, val, command_class>::execute_cmd(
       return resp_code_;
   }
 
-  // Revoke the commit with triggring audit for any failed Operation
+  //  Revoke the commit with triggring audit for any failed Operation
   if (resp_code_ != UNC_RC_SUCCESS) {
     pfc_log_debug("Revoke the commit with triggring audit");
     config_cmd_ptr->revoke(conn);
@@ -773,13 +777,13 @@ KtRequestHandler<key, val, command_class>::execute_cmd(
   /**
    * @brief     - This method handles response from controller,
    *              doesnot support audit
-   * @param[in] - ServerSession, odl_drv_request_header_t,ControllerFramework*,
-   *              key,val,UncRespCode
+   * @param[in] - ServerSession, odl_drv_request_header_t, ControllerFramework*,
+   *              key, val, UncRespCode
    * @retval    - UncRespCode
    **/
-template<typename key, typename val, class command_class>
+template<typename key, typename val>
 UncRespCode
-KtRequestHandler<key, val, command_class>::handle_response(
+KtRequestHandler<key, val >::handle_response(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     unc::driver::ControllerFramework* ctrl_int,
@@ -794,7 +798,7 @@ KtRequestHandler<key, val, command_class>::handle_response(
   UncRespCode resp_code_ = UNC_DRV_RC_ERR_GENERIC;
   resp_code_ = populate_response_header(sess, resp_hdr);
   if (resp_code_ != UNC_RC_SUCCESS) {
-    pfc_log_error("%s: populate_response_header failed with ret_code ,%u",
+    pfc_log_error("%s: populate_response_header failed with ret_code , %u",
                   PFC_FUNCNAME, resp_code_);
     return resp_code_;
   }
@@ -815,7 +819,7 @@ KtRequestHandler<key, val, command_class>::handle_response(
   if (resp_hdr.header.data_type != UNC_DT_RUNNING) {
     uint32_t ret_code = sess.addOutput(key_generic_);
     if (ret_code) {
-      pfc_log_error("%s: addOutput failed with ret_code ,%u",
+      pfc_log_error("%s: addOutput failed with ret_code , %u",
                     PFC_FUNCNAME, ret_code);
       return UNC_DRV_RC_ERR_GENERIC;
     }
@@ -826,13 +830,13 @@ KtRequestHandler<key, val, command_class>::handle_response(
 
   /**
    * @brief     - This method handles response from controller for Audit
-   * @param[in] - ServerSession, odl_drv_request_header_t,ControllerFramework*,
-   *              key_root_t,val_root_t,UncRespCode
+   * @param[in] - ServerSession, odl_drv_request_header_t, ControllerFramework*,
+   *              key_root_t, val_root_t, UncRespCode
    * @retval    - UncRespCode
    **/
 template<>
 UncRespCode
-KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
+KtRequestHandler<key_root_t, val_root_t>::handle_response(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     unc::driver::ControllerFramework* ctrl_int,
@@ -849,7 +853,7 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
   resp_code_ = populate_response_header(sess, resp_hdr);
   if (resp_code_ != UNC_RC_SUCCESS) {
     pfc_log_error("%s: populate_response_header failed"
-                  "with ret_code root ,%u", PFC_FUNCNAME, resp_code_);
+                  "with ret_code root , %u", PFC_FUNCNAME, resp_code_);
     return resp_code_;
   }
   std::string ctr_name(resp_hdr.controller_name);
@@ -866,7 +870,7 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
       uint32_t size = ctr->controller_cache->audit_cfg_list_count();
       pfc_log_debug("config node size is %d for controller %s",
                     size, ctr_name.c_str());
-      //  Not Success and Error Case check for Reps
+      //   Not Success and Error Case check for Reps
       if ((size == 0) &&
           (resp_hdr.result == UNC_RC_NO_SUCH_INSTANCE)) {
         pfc_log_debug("%s: Value list empty and Response"
@@ -876,7 +880,7 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
         sess.addOutput((uint32_t) UNC_KT_ROOT);
         sess.addOutput(key_generic_);
 
-        //  delete cache
+        //   delete cache
         delete  ctr->controller_cache;
         ctr->controller_cache = NULL;
 
@@ -889,7 +893,7 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
         sess.addOutput((uint32_t) resp_hdr.result);
         sess.addOutput((uint32_t) UNC_KT_ROOT);
         sess.addOutput(key_generic_);
-        //  delete cache
+        //   delete cache
         delete  ctr->controller_cache;
         ctr->controller_cache = NULL;
         pfc_log_trace("ResponseHandler::%s Exiting", PFC_FUNCNAME);
@@ -927,11 +931,11 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
           pfc_log_debug("Add empty success");
         }
         unc_key_type_t keytype = cfgnode->get_type_name();
-        pfc_log_debug("%u,keytype", keytype);
+        pfc_log_debug("%u, keytype", keytype);
 
         uint32_t ret_code = sess.addOutput((uint32_t)keytype);
         if (ret_code) {
-          pfc_log_error("%s: addOutput failed for keytype ,%u",
+          pfc_log_error("%s: addOutput failed for keytype , %u",
                         PFC_FUNCNAME, ret_code);
           delete  ctr->controller_cache;
           ctr->controller_cache = NULL;
@@ -947,7 +951,7 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
         pfc_ipcstdef_t* val_sdf =val_map_.find(keytype)->second;
         ret_code = sess.addOutput(*key_sdf, key);
         if (ret_code) {
-          pfc_log_error("%s: addOutput failed for key_sdf with ret_code ,%u",
+          pfc_log_error("%s: addOutput failed for key_sdf with ret_code , %u",
                         PFC_FUNCNAME, ret_code);
           delete  ctr->controller_cache;
           ctr->controller_cache = NULL;
@@ -958,7 +962,7 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
         pfc_log_debug("Add key success");
         ret_code = sess.addOutput(*val_sdf, val);
         if (ret_code) {
-          pfc_log_error("%s: addOutput failed for val_sdf with ret_code ,%u",
+          pfc_log_error("%s: addOutput failed for val_sdf with ret_code , %u",
                         PFC_FUNCNAME, ret_code);
           delete  ctr->controller_cache;
           ctr->controller_cache = NULL;
@@ -966,8 +970,8 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
           return UNC_DRV_RC_ERR_GENERIC;
         }
         pfc_log_debug("Add val success");
-      }  // for loop
-      //  delete cache
+      }  //  for loop
+      //   delete cache
       delete  ctr->controller_cache;
       ctr->controller_cache = NULL;
     } else {
@@ -986,12 +990,12 @@ KtRequestHandler<key_root_t, val_root_t, root_driver_command>::handle_response(
   /**
    * @brief    - This method creates the Response Header
    * @param[in]- odl_drv_response_header_t,
-   *             odl_drv_request_header_t,UncRespCode
+   *             odl_drv_request_header_t, UncRespCode
    * @retval   - void
    */
-template<typename key, typename val, class command_class>
+template<typename key, typename val>
 void
-KtRequestHandler<key, val, command_class>::create_response_header(
+KtRequestHandler<key, val>::create_response_header(
     unc::driver::odl_drv_request_header_t &reqhdr,
     unc::driver::odl_drv_response_header_t &resphdr,
     UncRespCode &resp_code_) {
@@ -1031,9 +1035,9 @@ KtRequestHandler<key, val, command_class>::create_response_header(
    * @param[in]- ServerSession, odl_drv_response_header_t
    * @retval   - UncRespCode
    **/
-template<typename key, typename val, class command_class>
+template<typename key, typename val>
 UncRespCode
-KtRequestHandler<key, val, command_class>::populate_response_header(
+KtRequestHandler<key, val>::populate_response_header(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_response_header_t &resp_hdr) {
   ODC_FUNC_TRACE;
@@ -1139,9 +1143,9 @@ KtRequestHandler<key, val, command_class>::populate_response_header(
    * @brief  - This method initializes map for STDEF
    * @retval - void
    **/
-template<typename key, typename val, typename command_class>
+template<typename key, typename val>
 void
-KtRequestHandler<key, val, command_class>::initialize_map() {
+KtRequestHandler<key, val>::initialize_map() {
   uint32_t loop = 0;
   unc_key_type_t KT[] = {UNC_KT_VTN, UNC_KT_VBRIDGE, UNC_KT_VBR_IF,
                                     UNC_KT_VBR_VLANMAP};
@@ -1201,6 +1205,6 @@ KtRequestHandler<key, val, command_class>::initialize_map() {
     }
   }
 }
-}  // namespace driver
-}  // namespace unc
+}  //  namespace driver
+}  //  namespace unc
 #endif
