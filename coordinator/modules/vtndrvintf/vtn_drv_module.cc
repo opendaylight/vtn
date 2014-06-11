@@ -8,9 +8,7 @@
  */
 
 #include <vtn_drv_module.hh>
-#include <pfcxx/ipc_server.hh>
 #include <request_template.hh>
-#include "unc/unc_events.h"
 
 namespace unc {
 namespace driver {
@@ -52,76 +50,14 @@ pfc_bool_t VtnDrvIntf::init(void) {
   PFC_ASSERT(ctrl_inst_ != NULL);
   set_controller_instance(ctrl_inst_);
 
-  //  Initialize KT_Handler_Instance
-  KtHandler* ctrl_req = new unc::driver::KtRequestHandler<key_ctr_t,
-      val_ctr_t,
-      controller_command>(NULL);
-
-  if (NULL == ctrl_req) {
-    pfc_log_error("controller request handler is NULL");
-    return PFC_FALSE;
-  }
-  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
-          UNC_KT_CONTROLLER,
-          ctrl_req));
-
-  KtHandler* kt_root_req = new unc::driver::KtRequestHandler<key_root_t,
-      val_root_t,
-      unc::driver::root_driver_command>(&map_kt_);
-  if (NULL == kt_root_req) {
-    pfc_log_error("KT_ROOT request handler is NULL");
-    return PFC_FALSE;
-  }
-  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
-          UNC_KT_ROOT,
-          kt_root_req));
-
-  KtHandler* vtn_req = new unc::driver::KtRequestHandler<key_vtn_t,
-      val_vtn_t,
-      unc::driver::vtn_driver_command>(NULL);
-  if (NULL == vtn_req) {
-    pfc_log_error("vtn request handler is NULL");
-    return PFC_FALSE;
-  }
-  map_kt_.insert(std::pair<unc_key_type_t,
-                 unc::driver::KtHandler*>(UNC_KT_VTN, vtn_req));
-
-  KtHandler* vbr_req = new unc::driver::KtRequestHandler<key_vbr_t,
-                           val_vbr_t,
-                           unc::driver::vbr_driver_command> (NULL);
-  if (NULL == vbr_req) {
-    pfc_log_error("vbr request handler is NULL");
-    return PFC_FALSE;
-  }
-
-  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
-          UNC_KT_VBRIDGE,
-          vbr_req));
-
-  KtHandler* vbrif_req = new unc::driver::KtRequestHandler<key_vbr_if_t,
-      pfcdrv_val_vbr_if_t,
-      unc::driver::vbrif_driver_command>(NULL);
-  if (NULL == vbrif_req) {
-    pfc_log_error("vbr interface request handler is NULL");
-    return PFC_FALSE;
-  }
-
-  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
-          UNC_KT_VBR_IF,
-          vbrif_req));
-
-  KtHandler* vbrvlanmap_req = new unc::driver::KtRequestHandler<key_vlan_map_t,
-      pfcdrv_val_vlan_map_t,
-      unc::driver::vbrvlanmap_driver_command> (NULL);
-
-  if (NULL == vbrvlanmap_req) {
-    pfc_log_error("vbrvlanmap request handler is NULL");
-    return PFC_FALSE;
-  }
-
-  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
-          UNC_KT_VBR_VLANMAP,
-          vbrvlanmap_req));
+  create_handler<key_ctr_t, val_ctr_t>(UNC_KT_CONTROLLER);
+  create_handler<key_root_t, val_root_t>(UNC_KT_ROOT);
+  create_handler<key_vtn_t, val_vtn_t>(UNC_KT_VTN);
+  create_handler<key_vbr_t, val_vbr_t>(UNC_KT_VBRIDGE);
+  create_handler<key_vbr_if_t, pfcdrv_val_vbr_if_t>
+      (UNC_KT_VBR_IF);
+  create_handler<key_vlan_map_t, pfcdrv_val_vlan_map_t>
+      (UNC_KT_VBR_VLANMAP);
 
   unc::tclib::TcLibModule* tclib_obj =
       static_cast<unc::tclib::TcLibModule*>(pfc::core::Module::getInstance(
@@ -348,11 +284,11 @@ void VtnDrvIntf::read_conf_file() {
     conf_parser_.time_interval =
            drv_block.getUint32("physical_attributes_read_interval",
                                         default_time_interval);
-    pfc_log_debug("%s: Block Handle is Valid,Time interval %d", PFC_FUNCNAME,
+    pfc_log_debug("%s: Block Handle is Valid, Time interval %d", PFC_FUNCNAME,
                   conf_parser_.time_interval);
   } else {
     conf_parser_.time_interval = default_time_interval;
-    pfc_log_debug("%s: Block Handle is Invalid,set default Value %d",
+    pfc_log_debug("%s: Block Handle is Invalid, set default Value %d",
                   PFC_FUNCNAME, conf_parser_.time_interval);
   }
 }
@@ -419,9 +355,9 @@ void VtnDrvIntf::logicalport_event(oper_type operation,
       (const char*)key_struct.domain_key.ctr_key.controller_name;
   std::string domain_name= (const char*)key_struct.domain_key.domain_name;
   std::string logical_port_id = (const char*)key_struct.port_id;
-  pfc_log_debug("%s,key structure fields:"
-                "controller_name: %s,"
-                "domain_id: %s,"
+  pfc_log_debug("%s, key structure fields:"
+                "controller_name: %s, "
+                "domain_id: %s, "
                 "logicalport_id: %s", PFC_FUNCNAME, controller_name.c_str(),
                 domain_name.c_str(), logical_port_id.c_str());
   Domain_event = ctrl_inst_->GetDomainFlag(controller_name);
@@ -478,9 +414,9 @@ void VtnDrvIntf::switch_event(oper_type operation,
       (const char*)key_struct.ctr_key.controller_name;
   std::string switch_id = (const char*)key_struct.switch_id;
 
-  pfc_log_debug("%s,key structure fields:"
-                "controller_name: %s,"
-                "switch_id: %s,", PFC_FUNCNAME, controller_name.c_str(),
+  pfc_log_debug("%s, key structure fields:"
+                "controller_name: %s, "
+                "switch_id: %s, ", PFC_FUNCNAME, controller_name.c_str(),
                 switch_id.c_str());
   pfc_log_debug("Switch event Operation received is %d", operation);
   switch (operation) {
@@ -533,9 +469,9 @@ void VtnDrvIntf::switch_event(oper_type operation,
       (const char*)key_struct.ctr_key.controller_name;
   std::string switch_id = (const char*)key_struct.switch_id;
 
-  pfc_log_debug("%s,key structure fields:"
-                "controller_name: %s,"
-                "switch_id: %s,", PFC_FUNCNAME, controller_name.c_str(),
+  pfc_log_debug("%s, key structure fields:"
+                "controller_name: %s, "
+                "switch_id: %s, ", PFC_FUNCNAME, controller_name.c_str(),
                 switch_id.c_str());
   pfc_log_debug("Update Switch event Operation received is %d", operation);
   if (operation == VTN_SWITCH_UPDATE) {
@@ -571,9 +507,9 @@ void VtnDrvIntf::port_event(oper_type operation,
   std::string switch_id = (const char*)key_struct.sw_key.switch_id;
   std::string port_id = (const char*)key_struct.port_id;
 
-  pfc_log_debug("%s,key structure fields:"
-                "controller_name: %s,"
-                "switch_id: %s,"
+  pfc_log_debug("%s, key structure fields:"
+                "controller_name: %s, "
+                "switch_id: %s, "
                 "port_id: %s", PFC_FUNCNAME, controller_name.c_str(),
                 switch_id.c_str(), port_id.c_str());
   pfc_log_debug("Port event Operation received is %d", operation);
@@ -626,9 +562,9 @@ void VtnDrvIntf::port_event(oper_type operation,
   std::string switch_id = (const char*)key_struct.sw_key.switch_id;
   std::string port_id = (const char*)key_struct.port_id;
 
-  pfc_log_debug("%s,key structure fields:"
-                "controller_name: %s,"
-                "switch_id: %s,"
+  pfc_log_debug("%s, key structure fields:"
+                "controller_name: %s, "
+                "switch_id: %s, "
                 "port_id: %s", PFC_FUNCNAME, controller_name.c_str(),
                 switch_id.c_str(), port_id.c_str());
   pfc_log_debug("Update Port event Operation received [%d]", operation);
@@ -666,13 +602,13 @@ void VtnDrvIntf::link_event(oper_type operation,
   std::string switch_id2 = (const char*)key_struct.switch_id2;
   std::string port_id2 = (const char*)key_struct.port_id2;
 
-  pfc_log_debug("%s,key structure fields:"
-                "controller_name: %s,"
-                "switch_id1: %s,"
+  pfc_log_debug("%s, key structure fields:"
+                "controller_name: %s, "
+                "switch_id1: %s, "
                 "port_id1: %s", PFC_FUNCNAME, controller_name.c_str(),
                 switch_id1.c_str(), port_id1.c_str());
 
-  pfc_log_debug("switch_id2: %s,"
+  pfc_log_debug("switch_id2: %s, "
                 "port_id2: %s", switch_id2.c_str(), port_id2.c_str());
 
   pfc_log_debug("Link event Operation received is %d", operation);
@@ -728,13 +664,13 @@ void VtnDrvIntf::link_event(oper_type operation,
   std::string switch_id2 = (const char*)key_struct.switch_id2;
   std::string port_id2 = (const char*)key_struct.port_id2;
 
-  pfc_log_debug("%s,key structure fields:"
-                "controller_name: %s,"
-                "switch_id1: %s,"
+  pfc_log_debug("%s, key structure fields:"
+                "controller_name: %s, "
+                "switch_id1: %s, "
                 "port_id1: %s", PFC_FUNCNAME, controller_name.c_str(),
                 switch_id1.c_str(), port_id1.c_str());
 
-  pfc_log_debug("switch_id2: %s,"
+  pfc_log_debug("switch_id2: %s, "
                 "port_id2: %s", switch_id2.c_str(), port_id2.c_str());
   pfc_log_debug("Update Link event Operation received is %d", operation);
 
@@ -752,6 +688,26 @@ void VtnDrvIntf::link_event(oper_type operation,
   } else {
     pfc_log_debug("%s, Invalid operation, PFC_FUNCNAME", PFC_FUNCNAME);
   }
+}
+
+/**
+ * @brief     : Method to create Kt handler
+ * @param[in] : unc_key_type_t
+ * @retval    : None
+ */
+template <typename key, typename value>
+void VtnDrvIntf::create_handler(unc_key_type_t keytype)  {
+  if (keytype == UNC_KT_ROOT) {
+    KtHandler* handler_= new KtRequestHandler<key, value>(&map_kt_);
+  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
+          keytype,
+          handler_));
+  } else {
+  KtHandler* handler_= new KtRequestHandler<key, value>(NULL);
+  map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
+          keytype,
+          handler_));
+}
 }
 
 }  // namespace driver

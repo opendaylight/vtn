@@ -24,11 +24,12 @@
 namespace unc {
 namespace odcdriver {
 
-class OdcVtnCommand: public unc::driver::vtn_driver_command {
+class OdcVtnCommand: public unc::driver::vtn_driver_command
+                     <key_vtn_t, val_vtn_t> {
  public:
   /**
-   * @brief Parametrised Constructor
-   * @param[in] - conf file values
+   * @brief                          - Parametrised Constructor
+   * @param[in]                      - conf file values
    */
   explicit OdcVtnCommand(unc::restjson::ConfFileValues_t conf_values);
 

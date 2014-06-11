@@ -31,11 +31,10 @@ typedef struct val_root {
 class driver_command {
  public:
   virtual ~driver_command() {}
-  virtual unc_key_type_t get_key_type()=0;
 
   /**
    * @brief    - Method to revoke the commit with triggring audit for any
-   failed Operation
+                 failed Operation
    * @param[in]- controller pointer
    * @retval   - UNC_RC_SUCCESS
    */
@@ -64,210 +63,61 @@ class driver_command {
    * @param[out] - list of configurations
    * @retval     - UNC_RC_SUCCESS / UNC_DRV_RC_ERR_GENERIC
    */
-  virtual UncRespCode fetch_config(unc::driver::controller* ctr,
-                             void* parent_key,
-                             std::vector<unc::vtndrvcache::ConfigNode *>&) = 0;
+  virtual UncRespCode fetch_config(
+      unc::driver::controller* ctr,
+      void* parent_key,
+      std::vector<unc::vtndrvcache::ConfigNode *>&) = 0;
 };
 
 /*
- * @desc:Abstract base Class to be extended for VTN Commands
+ * @desc:Template Class For Driver Commands
  */
+
+template<class key_cmd, class val_cmd>
 class vtn_driver_command: public driver_command {
  public:
+
   /**
-   * @brief    - Method to create VTN  in the controller
-   * @param[in]- key_vtn_t, val_vtn_t, controller*
+   * @brief    - Method to create VTN/Vbridge/Vbridge Interface/VLANMAP in
+   *             controller
+   * @param[in]- key_vtn_t, val_vtn_t, key_vbr_t, val_vbr_t, key_vbr_if_t,
+   *             pfcdrv_val_vbr_if_t, key_vbr_if_t, pfcdrv_val_vbr_if_t,
+   *             key_vlan_map_t, pfcdrv_val_vlan_map_t controller*
    * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual UncRespCode create_cmd(key_vtn_t& keyvtn_, val_vtn_t& valvtn_,
-                                     unc::driver::controller*)=0;
+  virtual UncRespCode create_cmd(key_cmd& key_st,
+                                 val_cmd& val_st,
+                                 unc::driver::controller*)=0;
+
   /**
-   * @brief    - Method to update VTN  in the controller
-   * @param[in]- key_vtn_t, val_vtn_t, controller*
+   * @brief    - Method to update VTN/Vbridge/Vbridge Interface/VLANMAP in
+   *             controller
+   * @param[in]- key_vtn_t, val_vtn_t, key_vbr_t, val_vbr_t, key_vbr_if_t,
+   *             pfcdrv_val_vbr_if_t, key_vbr_if_t, pfcdrv_val_vbr_if_t,
+   *             key_vlan_map_t, pfcdrv_val_vlan_map_t controller*
    * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual UncRespCode update_cmd(key_vtn_t& keyvtn_, val_vtn_t& valvtn_,
-                                     unc::driver::controller*)=0;
+  virtual UncRespCode update_cmd(key_cmd& key_st,
+                                 val_cmd& val_st,
+                                 unc::driver::controller*)=0;
+
   /**
-   * @brief    - Method to delete VTN  in the controller
-   * @param[in]- key_vtn_t, val_vtn_t, controller*
+   * @brief    - Method to delete VTN/Vbridge/Vbridge Interface/VLANMAP in
+   *             controller
+   * @param[in]- key_vtn_t, val_vtn_t, key_vbr_t, val_vbr_t, key_vbr_if_t,
+   *             pfcdrv_val_vbr_if_t, key_vbr_if_t, pfcdrv_val_vbr_if_t,
+   *             key_vlan_map_t, pfcdrv_val_vlan_map_t controller*
    * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
-  virtual UncRespCode delete_cmd(key_vtn_t& keyvtn_, val_vtn_t& valvtn_,
-                                     unc::driver::controller*)=0;
-  /**
-   * @brief    - Method to return the Keytype
-   * @param[in]- None
-   * @retval   - unc_key_type_t - UNC_KT_VTN
-   */
-  unc_key_type_t get_key_type() {
-    return UNC_KT_VTN;
-  }
-};
-
-/*
- * @desc:Abstract base Class to be extended for VBR Commands
- */
-class vbr_driver_command: public driver_command {
- public:
-  /**
-   * @brief    - Method to create Vbridge in the controller
-   * @param[in]- key_vbr_t, val_vbr_t, controller*
-   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
-   */
-  virtual UncRespCode create_cmd(key_vbr_t& keyvbr_, val_vbr_t& valvbr_,
-                                     unc::driver::controller*) = 0;
-  /**
-   * @brief    - Method to update Vbridge in the controller
-   * @param[in]- key_vbr_t, val_vbr_t, controller*
-   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
-   */
-  virtual UncRespCode update_cmd(key_vbr_t& keyvbr_, val_vbr_t& valvbr_,
-                                     unc::driver::controller*) = 0;
-
-  /**
-   * @brief    - Method to delete Vbridge in the controller
-   * @param[in]- key_vbr_t, val_vbr_t, controller*
-   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
-   */
-  virtual UncRespCode delete_cmd(key_vbr_t& keyvbr_, val_vbr_t& valvbr_,
-                                     unc::driver::controller*)=0;
-  /**
-   * @brief    - Method to return the Keytype
-   * @param[in]- None
-   * @retval   - unc_key_type_t - UNC_KT_VBRIDGE
-   */
-  unc_key_type_t get_key_type() {
-    return UNC_KT_VBRIDGE;
-  }
-};
-
-/*
- * @desc:Abstract base Class to be extended for VBRIf Commands
- */
-class vbrif_driver_command: public driver_command {
- public:
-  /**
-   * @brief    - Method to create Vbr Interface in the controller
-   * @param[in]- key_vbr_if_t, pfcdrv_val_vbr_if_t, controller*
-   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
-   */
-  virtual UncRespCode create_cmd(key_vbr_if_t& key,
-          pfcdrv_val_vbr_if_t& val, unc::driver::controller *conn)=0;
-
-  /**
-   * @brief    - Method to update Vbr Interface in the controller
-   * @param[in]- key_vbr_if_t, pfcdrv_val_vbr_if_t, controller*
-   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
-   */
-  virtual UncRespCode update_cmd(key_vbr_if_t& key,
-          pfcdrv_val_vbr_if_t& val, unc::driver::controller *conn) = 0;
-
-  /**
-   * @brief    - Method to delete Vbr Interface in the controller
-   * @param[in]- key_vbr_if_t, pfcdrv_val_vbr_if_t, controller*
-   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
-   */
-  virtual UncRespCode delete_cmd(key_vbr_if_t& key,
-          pfcdrv_val_vbr_if_t& val, unc::driver::controller *conn) = 0;
-
-  /**
-   * @brief    - Method to return the Keytype
-   * @param[in]- None
-   * @retval   - unc_key_type_t - UNC_KT_VBR_IF
-   */
-  unc_key_type_t get_key_type() {
-    return UNC_KT_VBR_IF;
-  }
-};
-
-class vbrvlanmap_driver_command: public driver_command {
- public:
-  /**
-   * @brief    - Method to create Vbr Vlan-Map in the controller
-   * @param[in]- key_vlan_map_t, val_vlan_map_t, controller*
-   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
-   */
-  virtual UncRespCode create_cmd(key_vlan_map_t& key,
-                                 pfcdrv_val_vlan_map_t& val,
-                                 unc::driver::controller *conn)=0;
-
-  /**
-   * @brief    - Method to update Vbr Vlan-Map in the controller
-   * @param[in]- key_vlan_map_t, val_vlan_map_t, controller*
-   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
-   */
-  virtual UncRespCode update_cmd(key_vlan_map_t& key,
-                                 pfcdrv_val_vlan_map_t& val,
-                                 unc::driver::controller *conn) = 0;
-
-  /**
-   * @brief    - Method to delete Vbr Vlan-Map in the controller
-   * @param[in]- key_vlan_map_t, val_vlan_map_t, controller*
-   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
-   */
-  virtual UncRespCode delete_cmd(key_vlan_map_t& key,
-                                 pfcdrv_val_vlan_map_t& val,
-                                 unc::driver::controller *conn) = 0;
-
-  /**
-   * @brief    - Method to return the Keytype
-   * @param[in]- None
-   * @retval   - unc_key_type_t - UNC_KT_VBR_VLANMAP
-   */
-  unc_key_type_t get_key_type() {
-    return UNC_KT_VBR_VLANMAP;
-  }
-};
-
-/*
- * @desc:Abstract base Class to be extended for VBRIf Commands
- */
-class controller_command: public driver_command {
- public:
-  /**
-   * @brief    - Method to create controller configuration
-   * @param[in]- key_ctr_t, val_ctr_t, controller*
-   * @retval   - UNC_DRV_RC_ERR_GENERIC
-   */
-  UncRespCode create_cmd(key_ctr_t& key,
-                             val_ctr_t & val, unc::driver::controller *conn) {
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  /**
-   * @brief    - Method to update controller configuration
-   * @param[in]- key_ctr_t, val_ctr_t, controller*
-   * @retval   - UNC_DRV_RC_ERR_GENERIC
-   */
-  UncRespCode update_cmd(key_ctr_t & key,
-                             val_ctr_t& val, unc::driver::controller *conn) {
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  /**
-   * @brief    - Method to update controller configuration
-   * @param[in]- key_ctr_t, val_ctr_t, controller*
-   * @retval   - UNC_DRV_RC_ERR_GENERIC
-   */
-  UncRespCode delete_cmd(key_ctr_t & key,
-                             val_ctr_t & val, unc::driver::controller *conn) {
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  /**
-   * @brief    - Method to return the Keytype
-   * @param[in]- None
-   * @retval   - unc_key_type_t - UNC_KT_CONTROLLER
-   */
-  unc_key_type_t get_key_type() {
-    return UNC_KT_CONTROLLER;
-  }
+  virtual UncRespCode delete_cmd(key_cmd& key_st,
+                                 val_cmd& val_st,
+                                 unc::driver::controller*)=0;
 };
 
 /*
  * @desc:Abstract base Class to be extended for Audit KT_ROOT Commands
  */
+
 class root_driver_command : public driver_command {
  public:
   /**
@@ -318,14 +168,6 @@ class root_driver_command : public driver_command {
       read_all_child(unc::vtndrvcache::ConfigNode*,
                      std::vector<unc::vtndrvcache::ConfigNode*>&,
                      unc::driver::controller*)=0;
-  /**
-   * @brief    - Method to return the Keytype
-   * @param[in]- None
-   * @retval   - unc_key_type_t - UNC_KT_ROOT
-   */
-  unc_key_type_t get_key_type() {
-    return UNC_KT_ROOT;
-  }
 };
 }  // namespace driver
 }  // namespace unc
