@@ -25,11 +25,12 @@
 namespace unc {
 namespace odcdriver {
 
-class OdcVbrVlanMapCommand: public unc::driver::vbrvlanmap_driver_command {
+class OdcVbrVlanMapCommand: public unc::driver::vtn_driver_command
+                            <key_vlan_map_t, pfcdrv_val_vlan_map_t> {
  public:
   /**
-   * @brief Parametrised Constructor
-   * @param[in] - conf file values
+   * @brief                     - Parametrised Constructor
+   * @param[in]                 - conf file values
    */
   explicit OdcVbrVlanMapCommand(unc::restjson::ConfFileValues_t conf_values);
 

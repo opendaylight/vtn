@@ -19,6 +19,8 @@
 #include <driver/driver_command.hh>
 #include <vtn_drv_transaction_handle.hh>
 #include <driver/driver_interface.hh>
+#include <pfcxx/ipc_server.hh>
+#include <unc/unc_events.h>
 #include <string>
 #include <map>
 
@@ -189,6 +191,14 @@ class VtnDrvIntf :public pfc::core::Module {
   void link_event(oper_type operation, key_link_t &key_struct,
                   val_link_st_t &new_val_struct,
                   val_link_st_t &old_val_struct);
+
+  /**
+   * @brief     : Method to create Kt handler
+   * @param[in] : unc_key_type_t
+   * @retval    : None
+   */
+  template <typename key, typename value>
+  void create_handler(unc_key_type_t keytype);
 
   // used for Controller ping
   pfc::core::TaskQueue* taskq_;
