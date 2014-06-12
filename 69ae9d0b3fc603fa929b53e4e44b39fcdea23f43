@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fa82b9bf_4791f297",
+        "filename": "coordinator/modules/odcdriver/include/odc_vbr.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-06-12T08:29:39Z",
+      "side": 1,
+      "message": "Can you please align the above line just as in odc_vtn.hh",
+      "revId": "69ae9d0b3fc603fa929b53e4e44b39fcdea23f43",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_678c3680",
+        "filename": "coordinator/modules/odcdriver/include/odc_vbr_vlanmap.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-06-12T08:29:39Z",
+      "side": 1,
+      "message": "can you please align the above line just line odc_vtn.hh",
+      "revId": "69ae9d0b3fc603fa929b53e4e44b39fcdea23f43",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_47bfb2fb",
+        "filename": "coordinator/modules/vtndrvintf/include/driver/driver_command.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 79,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-06-12T08:29:39Z",
+      "side": 1,
+      "message": "the alignment is different from the other methods. Please fix the same",
+      "revId": "69ae9d0b3fc603fa929b53e4e44b39fcdea23f43",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_67baf60b",
+        "filename": "coordinator/modules/vtndrvintf/include/request_template.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-06-12T08:29:39Z",
+      "side": 1,
+      "message": "the comment above and the method are aligned differntly, the same comment tall template methods in this file. Please address them",
+      "revId": "69ae9d0b3fc603fa929b53e4e44b39fcdea23f43",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
