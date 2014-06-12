@@ -26,12 +26,15 @@ public class MapTypeTest extends TestBase {
         for (MapType type: types) {
             String emsg = "(MapType)" + type.toString();
             assertTrue(emsg, type.match(type));
-            assertTrue(emsg, type.match(MapType.ALL));
-            assertTrue(emsg, MapType.ALL.match(type));
-        }
 
-        assertFalse(MapType.PORT.match(MapType.VLAN));
-        assertFalse(MapType.VLAN.match(MapType.PORT));
+            for (MapType type2: types) {
+                boolean matches = (type.equals(MapType.ALL) ||
+                                   type2.equals(MapType.ALL) ||
+                                   type.equals(type2));
+                assertEquals(matches, type.match(type2));
+                assertEquals(matches, type2.match(type));
+            }
+        }
     }
 
     /**

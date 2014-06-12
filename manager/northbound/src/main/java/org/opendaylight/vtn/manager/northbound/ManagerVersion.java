@@ -41,7 +41,7 @@ public class ManagerVersion {
      * </p>
      * <ul>
      *   <li>
-     *     Current VTN Manager returns <strong>1</strong> as API version.
+     *     Current VTN Manager returns <strong>2</strong> as API version.
      *   </li>
      * </ul>
      */

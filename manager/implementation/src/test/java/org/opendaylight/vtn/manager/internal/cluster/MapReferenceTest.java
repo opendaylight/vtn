@@ -200,6 +200,10 @@ public class MapReferenceTest extends TestBase {
                         MapReference ref = new MapReference(type, cname, path);
                         list.add(ref);
 
+                        MacMapPath mpath = new MacMapPath(path);
+                        ref = new MapReference(type, cname, mpath);
+                        list.add(ref);
+
                         for (String name: createStrings("nm", false)) {
                             VBridgeIfPath ipath =
                                 new VBridgeIfPath(path, name);

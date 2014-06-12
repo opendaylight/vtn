@@ -15,18 +15,23 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.HashSet;
 
 import javax.xml.bind.JAXB;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.opendaylight.vtn.manager.DataLinkHost;
+import org.opendaylight.vtn.manager.EthernetHost;
+import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 
 import org.junit.Assert;
@@ -133,41 +138,136 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * Create a copy of the specified {@link EthernetAddress}.
+     * Create a copy of the specified {@link DataLinkAddress}.
      *
-     * @param ea    A {@link EthernetAddress} object to be copied.
-     * @return      A copied {@link EthernetAddress} object.
+     * @param addr  A {@link DataLinkAddress} object to be copied.
+     * @return      A copied {@link DataLinkAddress} object.
      */
-    protected static EthernetAddress copy(EthernetAddress ea) {
-        if (ea != null) {
-            try {
-                ea = new EthernetAddress(ea.getValue());
-            } catch (Exception e) {
-                unexpected(e);
-            }
+    protected static DataLinkAddress copy(DataLinkAddress addr) {
+        if (addr != null) {
+            addr = addr.clone();
         }
-        return ea;
+        return addr;
     }
 
     /**
-     * Create a deep copy of the specified {@link InetAddress} set.
+     * Create a copy of the specified {@link EthernetHost}.
      *
-     * @param ia    A {@link InetAddress} set to be copied.
-     * @return      A copied {@link InetAddress} set.
+     * @param ehost  A {@link EthernetHost} object to be copied.
+     * @return       A copied {@link EthernetHost} object.
      */
-    protected static Set<InetAddress> copy(Set<InetAddress> ia) {
-        if (ia != null) {
-            Set<InetAddress> newset = new HashSet<InetAddress>();
+    protected static EthernetHost copy(EthernetHost ehost) {
+        if (ehost != null) {
+            EthernetAddress addr = ehost.getAddress();
+            short vlan = ehost.getVlan();
+            ehost = new EthernetHost((EthernetAddress)copy(addr), vlan);
+        }
+        return ehost;
+    }
+
+    /**
+     * Create a copy of the specified {@link TestDataLinkHost}.
+     *
+     * @param dlhost  A {@link TestDataLinkHost} object to be copied.
+     * @return        A copied {@link TestDataLinkHost} object.
+     */
+    protected static TestDataLinkHost copy(TestDataLinkHost dlhost) {
+        if (dlhost != null) {
+            DataLinkAddress addr = dlhost.getAddress();
+            dlhost = new TestDataLinkHost(copy(addr));
+        }
+        return dlhost;
+    }
+
+    /**
+     * Create a copy of the specified {@link MacAddressEntry}.
+     *
+     * @param ment  A {@link MacAddressEntry} object to be copied.
+     * @return      A copied {@link MacAddressEntry} object.
+     */
+    protected static MacAddressEntry copy(MacAddressEntry ment) {
+        if (ment != null) {
+            DataLinkAddress dladdr = copy(ment.getAddress());
+            short vlan = ment.getVlan();
+            NodeConnector nc = copy(ment.getNodeConnector());
+            Set<InetAddress> ipaddrs = copy(ment.getInetAddresses());
+            ment = new MacAddressEntry(dladdr, vlan, nc, ipaddrs);
+        }
+        return ment;
+    }
+
+    /**
+     * Create a copy of the specified {@link InetAddress}.
+     *
+     * @param addr  A {@link InetAddress} object to be copied.
+     * @return      A copied {@link InetAddress} object.
+     */
+    protected static InetAddress copy(InetAddress addr) {
+        if (addr != null) {
             try {
-                for (InetAddress iaddr: ia) {
-                    newset.add(InetAddress.getByAddress(iaddr.getAddress()));
-                }
+                String host = addr.getHostName();
+                byte[] raw = addr.getAddress();
+                addr = InetAddress.getByAddress(host, raw);
             } catch (Exception e) {
                 unexpected(e);
             }
-            ia = newset;
         }
-        return ia;
+        return addr;
+    }
+
+    /**
+     * Create a deep copy of the specified set.
+     *
+     * @param set  A set of instances.
+     * @param <T>  The type of elements in the set.
+     * @return  A deep copy of the specified set.
+     */
+    protected static <T> Set<T> copy(Set<T> set) {
+        if (set != null) {
+            HashSet<Object> newset = new HashSet<Object>();
+            copy(newset, set);
+            set = (Set<T>)newset;
+        }
+        return set;
+    }
+
+    /**
+     * Create a deep copy of the specified list.
+     *
+     * @param list  A list of instances.
+     * @param <T>  The type of elements in the list.
+     * @return  A deep copy of the specified list.
+     */
+    protected static <T> List<T> copy(List<T> list) {
+        if (list != null) {
+            ArrayList<Object> newlist = new ArrayList<Object>();
+            copy(newlist, list);
+            list = (List<T>)newlist;
+        }
+        return list;
+    }
+
+    /**
+     * Create a deep copy of the specified collection.
+     *
+     * @param dst  A collection to store copies.
+     * @param src  A collection of instances.
+     * @param <T>  The type of elements in the collection.
+     */
+    protected static <T> void copy(Collection<Object> dst, Collection<T> src) {
+        for (T elem: src) {
+            if (elem instanceof InetAddress) {
+                dst.add(copy((InetAddress)elem));
+            } else if (elem instanceof EthernetHost) {
+                dst.add(copy((EthernetHost)elem));
+            } else if (elem instanceof TestDataLinkHost) {
+                dst.add(copy((TestDataLinkHost)elem));
+            } else if (elem instanceof MacAddressEntry) {
+                dst.add(copy((MacAddressEntry)elem));
+            } else {
+                fail("Unexpected instanse in the collection: " + elem);
+            }
+        }
     }
 
     /**
@@ -409,11 +509,12 @@ public abstract class TestBase extends Assert {
      * @param setNull  Set {@code null} to returned list if {@code true}.
      * @return A list of {@link EthernetAddress}.
      */
-    protected static List<EthernetAddress> createEthernetAddresses(boolean setNull) {
+    protected static List<EthernetAddress>
+        createEthernetAddresses(boolean setNull) {
         List<EthernetAddress> list = new ArrayList<EthernetAddress>();
         byte [][] addrbytes = {
             new byte[] {(byte) 0x00, (byte) 0x00, (byte) 0x00,
-                        (byte) 0x00, (byte) 0x00, (byte) 0x00},
+                        (byte) 0x00, (byte) 0x00, (byte) 0x01},
             new byte[] {(byte) 0x12, (byte) 0x34, (byte) 0x56,
                         (byte) 0x78, (byte) 0x9a, (byte) 0xbc},
             new byte[] {(byte) 0xfe, (byte) 0xdc, (byte) 0xba,
@@ -432,6 +533,37 @@ public abstract class TestBase extends Assert {
             } catch (Exception e) {
                 unexpected(e);
             }
+        }
+
+        return list;
+    }
+
+    /**
+     * Create a list of {@link DataLinkAddress} and a {@code null}.
+     *
+     * @return  A list of {@link DataLinkAddress}.
+     */
+    protected static List<DataLinkAddress> createDataLinkAddresses() {
+        return createDataLinkAddresses(true);
+    }
+
+    /**
+     * Create a list of {@link DataLinkAddress}.
+     *
+     * @param setNull  Set {@code null} to returned list if {@code true}.
+     * @return  A list of {@link DataLinkAddress}.
+     */
+    protected static List<DataLinkAddress>
+        createDataLinkAddresses(boolean setNull) {
+        List<DataLinkAddress> list = new ArrayList<DataLinkAddress>();
+
+        for (EthernetAddress ether: createEthernetAddresses(setNull)) {
+            list.add(ether);
+        }
+
+        String[] addrs = {"addr1", "addr2", "addr3"};
+        for (String a: addrs) {
+            list.add(new TestDataLink(a));
         }
 
         return list;
@@ -476,6 +608,45 @@ public abstract class TestBase extends Assert {
                 list.add(iset);
             } catch (Exception e) {
                 unexpected(e);
+            }
+        }
+
+        return list;
+    }
+
+    /**
+     * Create a list of set of {@link EthernetHost} instances.
+     *
+     * @param limit    The upper limit of the number of ethernet addresses.
+     * @return  A list of set of {@link EthernetHost} instances.
+     */
+    protected static List<Set<EthernetHost>> createEthernetHostSet(int limit) {
+        return createEthernetHostSet(limit, true);
+    }
+
+    /**
+     * Create a list of set of {@link EthernetHost} instances.
+     *
+     * @param limit    The upper limit of the number of ethernet addresses.
+     * @param setNull  Set {@code null} to returned list if {@code true}.
+     * @return  A list of set of {@link EthernetHost} instances.
+     */
+    protected static List<Set<EthernetHost>>
+        createEthernetHostSet(int limit, boolean setNull) {
+        List<Set<EthernetHost>> list = new ArrayList<Set<EthernetHost>>();
+        if (setNull) {
+            list.add(null);
+        }
+
+        HashSet<EthernetHost> set = new HashSet<EthernetHost>();
+        short vlans[] = {0, 4095};
+        for (short vlan: vlans) {
+            for (EthernetAddress ether: createEthernetAddresses()) {
+                set.add(new EthernetHost(ether, vlan));
+                list.add(new HashSet<EthernetHost>(set));
+                if (list.size() >= limit) {
+                    break;
+                }
             }
         }
 

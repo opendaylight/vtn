@@ -49,6 +49,7 @@ import org.opendaylight.controller.hosttracker.HostIdFactory;
 import org.opendaylight.controller.hosttracker.IHostId;
 import org.opendaylight.controller.hosttracker.IPHostId;
 import org.opendaylight.controller.hosttracker.IPMacHostId;
+import org.opendaylight.controller.hosttracker.IfHostListener;
 import org.opendaylight.controller.hosttracker.IfIptoHost;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.connection.ConnectionConstants;
@@ -94,10 +95,11 @@ import org.opendaylight.controller.topologymanager.TopologyUserLinkConfig;
  *   (other is not implemented yet.)
  * </p>
  */
-public class TestStub implements IClusterGlobalServices, IClusterContainerServices,
-    ISwitchManager, ITopologyManager, IDataPacketService, IRouting,
-    IForwardingRulesManager, IfIptoHost, IConnectionManager {
-
+public class TestStub
+    implements IClusterGlobalServices, IClusterContainerServices,
+               ISwitchManager, ITopologyManager, IDataPacketService, IRouting,
+               IForwardingRulesManager, IfIptoHost, IConnectionManager,
+               IfHostListener {
     /**
      * The name of the cluster cache which keeps revision identifier of
      * configuration per mapping type.
@@ -109,6 +111,11 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
      */
     private static final ThreadLocal<TestTransaction>  CLUSTER_TRANSACTION =
         new ThreadLocal<TestTransaction>();
+
+    /**
+     * A map which keeps learned hosts.
+     */
+    private final ConcurrentMap<IHostId, HostNodeConnector> hostsDB;
 
     /**
      * Mode for cluster cache transaction test.
@@ -188,14 +195,29 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
      */
     public TestStub() {
         stubMode = 0;
+        hostsDB = null;
     }
 
     /**
      * Constructor of TestStub
+     *
      * @param mode  stubMode
      */
     public TestStub(int mode) {
+        this(mode, false);
+    }
+
+    /**
+     * Constructor of TestStub
+     *
+     * @param mode  stubMode
+     * @param ht    If {@code true}, use host tracker emulator.
+     */
+    public TestStub(int mode, boolean ht) {
         stubMode = mode;
+        hostsDB = (ht)
+            ? new ConcurrentHashMap<IHostId, HostNodeConnector>()
+            : null;
         setup();
     }
 
@@ -1214,16 +1236,21 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
 
     @Override
     public HostNodeConnector hostFind(IHostId id) {
-        return null;
+        return hostQuery(id);
     }
 
     @Override
     public HostNodeConnector hostFind(InetAddress networkAddress) {
-        return null;
+        return hostQuery(networkAddress);
     }
 
     @Override
     public HostNodeConnector hostQuery(IHostId id) {
+        if (hostsDB != null) {
+            // Use host tracker emulator.
+            return hostsDB.get(id);
+        }
+
         if (stubMode >= 1) {
             HostNodeConnector hnode = null;
             InetAddress networkAddress = getIpAddress(id);
@@ -1242,7 +1269,6 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
                 } catch (ConstructionException e) {
                     return null;
                 }
-
             }
             return  hnode;
         }
@@ -1304,6 +1330,26 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     public Status removeStaticHostUsingIPAndMac(String networkAddress,
                                                 String macAddress) {
         return null;
+    }
+
+    // IfHostListener
+    @Override
+    public void hostListener(HostNodeConnector host) {
+        if (hostsDB == null) {
+            return;
+        }
+
+        IHostId id = HostIdFactory.create(host.getNetworkAddress(),
+                                          host.getDataLayerAddress());
+        while (true) {
+            HostNodeConnector old = hostsDB.putIfAbsent(id, host);
+            if (old == null || old.equals(host)) {
+                return;
+            }
+            if (hostsDB.replace(id, old, host)) {
+                return;
+            }
+        }
     }
 
     // IConnectionManager
@@ -1395,6 +1441,25 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     }
 
     /**
+     * Determine whether the specified flow entry is installed or not.
+     *
+     * @param fent  A {@link FlowEntry} to be tested.
+     * @return  {@code true} only if the specified flow entry is installed.
+     */
+    public synchronized boolean isInstalled(FlowEntry fent) {
+        return flowEntries.contains(fent);
+    }
+
+    /**
+     * Ensure that the specified number of flow entries are installed.
+     *
+     * @param count  The number of flow entries.
+     */
+    public synchronized void checkFlowCount(int count) {
+        Assert.assertEquals(count, flowEntries.size());
+    }
+
+    /**
      * Return an IP address in the given host ID.
      *
      * @param id  A host ID.
@@ -1419,5 +1484,14 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
      */
     public void setTransactionTestMode(TestTransaction.Mode mode) {
         transactionTestMode = mode;
+    }
+
+    /**
+     * Determine whether the host tracker emulator is enabled or not.
+     *
+     * @return  {@code true} only if the host tracker emulator is enabled.
+     */
+    public boolean isHostTrackerEnabled() {
+        return (hostsDB != null);
     }
 }

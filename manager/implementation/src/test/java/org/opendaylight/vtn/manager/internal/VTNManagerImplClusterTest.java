@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,6 +29,49 @@ import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+
+import org.opendaylight.vtn.manager.DataLinkHost;
+import org.opendaylight.vtn.manager.EthernetHost;
+import org.opendaylight.vtn.manager.MacAddressEntry;
+import org.opendaylight.vtn.manager.MacMapAclType;
+import org.opendaylight.vtn.manager.MacMapConfig;
+import org.opendaylight.vtn.manager.PortMap;
+import org.opendaylight.vtn.manager.PortMapConfig;
+import org.opendaylight.vtn.manager.SwitchPort;
+import org.opendaylight.vtn.manager.UpdateOperation;
+import org.opendaylight.vtn.manager.VBridge;
+import org.opendaylight.vtn.manager.VBridgeConfig;
+import org.opendaylight.vtn.manager.VBridgeIfPath;
+import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VInterface;
+import org.opendaylight.vtn.manager.VInterfaceConfig;
+import org.opendaylight.vtn.manager.VNodeState;
+import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.VTenant;
+import org.opendaylight.vtn.manager.VTenantConfig;
+import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.VlanMap;
+import org.opendaylight.vtn.manager.VlanMapConfig;
+import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
+import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
+import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
+import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
+import org.opendaylight.vtn.manager.internal.cluster.FlowModResultEvent;
+import org.opendaylight.vtn.manager.internal.cluster.MacMapEvent;
+import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
+import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
+import org.opendaylight.vtn.manager.internal.cluster.MapType;
+import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
+import org.opendaylight.vtn.manager.internal.cluster.PortMapEvent;
+import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
+import org.opendaylight.vtn.manager.internal.cluster.RawPacketEvent;
+import org.opendaylight.vtn.manager.internal.cluster.VBridgeEvent;
+import org.opendaylight.vtn.manager.internal.cluster.VBridgeIfEvent;
+import org.opendaylight.vtn.manager.internal.cluster.VNodeEvent;
+import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
+import org.opendaylight.vtn.manager.internal.cluster.VTenantEvent;
+import org.opendaylight.vtn.manager.internal.cluster.VTenantImpl;
+import org.opendaylight.vtn.manager.internal.cluster.VlanMapEvent;
 
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.connection.ConnectionLocality;
@@ -52,48 +96,13 @@ import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
+import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
 import org.opendaylight.controller.topologymanager.ITopologyManager;
-import org.opendaylight.vtn.manager.MacAddressEntry;
-import org.opendaylight.vtn.manager.PortMap;
-import org.opendaylight.vtn.manager.PortMapConfig;
-import org.opendaylight.vtn.manager.SwitchPort;
-import org.opendaylight.vtn.manager.VBridge;
-import org.opendaylight.vtn.manager.VBridgeConfig;
-import org.opendaylight.vtn.manager.VBridgeIfPath;
-import org.opendaylight.vtn.manager.VBridgePath;
-import org.opendaylight.vtn.manager.VInterface;
-import org.opendaylight.vtn.manager.VInterfaceConfig;
-import org.opendaylight.vtn.manager.VNodeState;
-import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.VTenant;
-import org.opendaylight.vtn.manager.VTenantConfig;
-import org.opendaylight.vtn.manager.VTenantPath;
-import org.opendaylight.vtn.manager.VlanMap;
-import org.opendaylight.vtn.manager.VlanMapConfig;
-import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
-import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
-import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
-import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
-import org.opendaylight.vtn.manager.internal.cluster.FlowModResultEvent;
-import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
-import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
-import org.opendaylight.vtn.manager.internal.cluster.MapType;
-import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
-import org.opendaylight.vtn.manager.internal.cluster.PortMapEvent;
-import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
-import org.opendaylight.vtn.manager.internal.cluster.RawPacketEvent;
-import org.opendaylight.vtn.manager.internal.cluster.VBridgeEvent;
-import org.opendaylight.vtn.manager.internal.cluster.VBridgeIfEvent;
-import org.opendaylight.vtn.manager.internal.cluster.VNodeEvent;
-import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
-import org.opendaylight.vtn.manager.internal.cluster.VTenantEvent;
-import org.opendaylight.vtn.manager.internal.cluster.VTenantImpl;
-import org.opendaylight.vtn.manager.internal.cluster.VlanMapEvent;
 
 /**
  * JUnit test for {@link VTNManagerImplTest}.
@@ -200,7 +209,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
 
         pmaps.put(ifpath1, null);
         pmaps.put(ifpath2, null);
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, null);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, null, null);
 
         // add mappings
         Node node = NodeCreator.createOFNode(0L);
@@ -219,20 +228,62 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         vmaps.put(map, vlconf);
 
         restartVTNManager(c);
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, null);
+
+        // Configure MAC mapping.
+        Set<DataLinkHost> allow = new HashSet<DataLinkHost>();
+        UpdateType mmresult = UpdateType.ADDED;
+        for (int i = 0; i < 10; i++) {
+            long mac = 0x123456789aL + i;
+            DataLinkHost dlh = createEthernetHost(mac, (short)i);
+
+            Set<DataLinkHost> set = new HashSet<DataLinkHost>();
+            assertTrue(set.add(dlh));
+            assertTrue(allow.add(dlh));
+            try {
+                UpdateType r = vtnMgr.setMacMap(bpath, UpdateOperation.ADD,
+                                                MacMapAclType.ALLOW, set);
+                assertEquals(mmresult, r);
+                mmresult = UpdateType.CHANGED;
+            } catch (Exception e) {
+                unexpected(e);
+            }
+        }
+
+        Set<DataLinkHost> deny = new HashSet<DataLinkHost>();
+        for (int i = 0; i < 5; i++) {
+            long mac = 0xaabbccddeeL + i;
+            DataLinkHost dlh = createEthernetHost(mac, (short)(i >> 1));
+
+            Set<DataLinkHost> set = new HashSet<DataLinkHost>();
+            assertTrue(set.add(dlh));
+            assertTrue(deny.add(dlh));
+            try {
+                UpdateType r = vtnMgr.setMacMap(bpath, UpdateOperation.ADD,
+                                                MacMapAclType.DENY, set);
+                assertEquals(mmresult, r);
+            } catch (Exception e) {
+                unexpected(e);
+            }
+        }
+
+        MacMapConfig mcconf = new MacMapConfig(allow, deny);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
+        restartVTNManager(c);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
 
         // start after configuration files is removed.
         // because caches remain, setting is taken over.
         stopVTNManager(false);
         VTNManagerImpl.cleanUpConfigFile(containerName);
         startVTNManager(c);
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
 
         // start after cache is cleared
         // this case load from configuration files.
         stopVTNManager(true);
         startVTNManager(c);
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
 
         // in case another node is loading configuration and
         // waiting process in self node timeout.
@@ -253,7 +304,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         startVTNManager(c);
 
         // loaded from configuration file.
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
 
 
         // in case another node start loading configuration
@@ -271,14 +322,14 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         startVTNManager(c);
 
         // check whether configuration loaded from configuration file.
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
 
 
         // start with no cluster service.
         stopVTNManager(true);
         vtnMgr.unsetClusterContainerService(stubObj);
         startVTNManager(c);
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
 
         stopVTNManager(true);
         vtnMgr.setClusterContainerService(stubObj);
@@ -777,6 +828,222 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
             }
         }
 
+        // Configure MAC mapping.
+        // The vBridge state will be changed to DOWN because no MAC address is
+        // mapped to the MAC mapping.
+        Set<DataLinkHost> allow = new HashSet<DataLinkHost>();
+        Set<DataLinkHost> deny = new HashSet<DataLinkHost>();
+        UpdateType mmresult = UpdateType.ADDED;
+        for (int i = 0; i < 10; i++) {
+            long mac = 0x123456789aL + i;
+            DataLinkHost dlh = createEthernetHost(mac, (short)i);
+
+            Set<DataLinkHost> set = new HashSet<DataLinkHost>();
+            assertTrue(set.add(dlh));
+            assertTrue(allow.add(dlh));
+            try {
+                UpdateType r = vtnMgr.setMacMap(bpath, UpdateOperation.ADD,
+                                                MacMapAclType.ALLOW, set);
+                assertEquals(mmresult, r);
+            } catch (Exception e) {
+                unexpected(e);
+            }
+
+            events = clsEvents.getPostedEvents();
+            MacMapEvent mev = (MacMapEvent)events.remove(0);
+            MacMapConfig mcconf = new MacMapConfig(allow, deny);
+            checkEvent(mev, bpath, mcconf, mmresult, true);
+            listener.checkMmapInfo(1, bpath, mcconf, mmresult);
+            executeClusterEvent(mgr, bpath, mev, true);
+            listener.checkMmapInfo(1, bpath, mcconf, mmresult);
+
+            if (mmresult == UpdateType.ADDED) {
+                bev = (VBridgeEvent)events.remove(0);
+                checkVBridgeEvent(bev, bpath, bconf, VNodeState.DOWN,
+                                  UpdateType.CHANGED);
+                listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
+                executeVBridgeEvent(mgr, bpath, bev, false);
+                listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
+            }
+            assertTrue(events.isEmpty());
+
+            mmresult = UpdateType.CHANGED;
+        }
+
+        for (int i = 0; i < 5; i++) {
+            long mac = 0xaabbccddeeL + i;
+            DataLinkHost dlh = createEthernetHost(mac, (short)(i >> 1));
+
+            Set<DataLinkHost> set = new HashSet<DataLinkHost>();
+            assertTrue(set.add(dlh));
+            assertTrue(deny.add(dlh));
+            try {
+                UpdateType r = vtnMgr.setMacMap(bpath, UpdateOperation.ADD,
+                                                MacMapAclType.DENY, set);
+                assertEquals(mmresult, r);
+            } catch (Exception e) {
+                unexpected(e);
+            }
+
+            events = clsEvents.getPostedEvents();
+            assertEquals(1, events.size());
+            MacMapEvent mev = (MacMapEvent)events.remove(0);
+            MacMapConfig mcconf = new MacMapConfig(allow, deny);
+            checkEvent(mev, bpath, mcconf, mmresult, true);
+            listener.checkMmapInfo(1, bpath, mcconf, mmresult);
+            executeClusterEvent(mgr, bpath, mev, true);
+            listener.checkMmapInfo(1, bpath, mcconf, mmresult);
+        }
+
+        // Activate MAC mapped hosts.
+        // This will change the vBridge state to UP.
+        byte[] dstMac = NetUtils.getBroadcastMACAddr();
+        byte[] src = {(byte)192, (byte)168, (byte)100, (byte)0};
+        byte[] dst = {(byte)192, (byte)168, (byte)100, (byte)200};
+
+        Set<DataLinkHost> activated = new HashSet<DataLinkHost>();
+        Set<MacAddressEntry> mentSet = new HashSet<MacAddressEntry>();
+        NodeConnector mmport = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf("20"), node0);
+        for (DataLinkHost dlh: allow) {
+            assertTrue(activated.add(dlh));
+            int nactives = activated.size();
+            src[3] = (byte)nactives;
+            EthernetHost eh = (EthernetHost)dlh;
+            EthernetAddress eaddr = eh.getAddress();
+
+            try {
+                assertNull(vtnMgr.getMacMappedHost(bpath, eaddr));
+            } catch (Exception e) {
+                unexpected(e);
+            }
+
+            byte[] srcMac = eaddr.getValue();
+            vlan = eh.getVlan();
+            if (vlan == 0) {
+                vlan = -1;
+            }
+            RawPacket pkt = createARPRawPacket(srcMac, dstMac, src, dst, vlan,
+                                               mmport, ARP.REQUEST);
+            assertEquals(PacketResult.KEEP_PROCESSING,
+                         mgr.receiveDataPacket(pkt));
+            flushTasks();
+            events = clsEvents.getPostedEvents();
+            if (nactives == 1) {
+                assertEquals(1, events.size());
+                bev = (VBridgeEvent)events.remove(0);
+                checkVBridgeEvent(bev, bpath, bconf, VNodeState.UP,
+                                  UpdateType.CHANGED);
+                listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
+                executeVBridgeEvent(mgr, bpath, bev, false);
+                listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
+            } else {
+                assertTrue(events.isEmpty());
+            }
+
+            try {
+                MacAddressEntry ment = vtnMgr.getMacMappedHost(bpath, eaddr);
+                assertNotNull(ment);
+                assertEquals(eaddr, ment.getAddress());
+                assertEquals(eh.getVlan(), ment.getVlan());
+                assertEquals(mmport, ment.getNodeConnector());
+                Set<InetAddress> ipaddr = new HashSet<InetAddress>();
+                assertTrue(ipaddr.add(createInetAddress(src)));
+                assertEquals(ipaddr, ment.getInetAddresses());
+                assertTrue(mentSet.add(ment));
+            } catch (Exception e) {
+                unexpected(e);
+            }
+
+            if (nactives >= allow.size() / 2) {
+                break;
+            }
+        }
+
+        assertEquals(activated.size(), mentSet.size());
+        try {
+            List<MacAddressEntry> mlist = vtnMgr.getMacMappedHosts(bpath);
+            assertEquals(mentSet.size(), mlist.size());
+            assertTrue(mentSet.containsAll(mlist));
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        // Remove MAC mapping.
+        // The vBridge state will be changed to DOWN when all activated hosts
+        // are removed.
+        for (Iterator<DataLinkHost> it = deny.iterator(); it.hasNext();) {
+            DataLinkHost dlh = it.next();
+            it.remove();
+
+            Set<DataLinkHost> set = new HashSet<DataLinkHost>();
+            assertTrue(set.add(dlh));
+            try {
+                UpdateType r = vtnMgr.setMacMap(bpath, UpdateOperation.REMOVE,
+                                                MacMapAclType.DENY, set);
+                assertEquals(mmresult, r);
+            } catch (Exception e) {
+                unexpected(e);
+            }
+
+            events = clsEvents.getPostedEvents();
+            assertEquals(1, events.size());
+            MacMapEvent mev = (MacMapEvent)events.remove(0);
+            MacMapConfig mcconf = new MacMapConfig(allow, deny);
+            checkEvent(mev, bpath, mcconf, mmresult, true);
+            listener.checkMmapInfo(1, bpath, mcconf, mmresult);
+            executeClusterEvent(mgr, bpath, mev, true);
+            listener.checkMmapInfo(1, bpath, mcconf, mmresult);
+        }
+
+        for (Iterator<DataLinkHost> it = allow.iterator(); it.hasNext();) {
+            DataLinkHost dlh = it.next();
+
+            Set<DataLinkHost> set = new HashSet<DataLinkHost>();
+            assertTrue(set.add(dlh));
+            boolean down = (activated.remove(dlh) && activated.isEmpty());
+            if (allow.size() == 1) {
+                mmresult = UpdateType.REMOVED;
+            } else {
+                it.remove();
+            }
+
+            try {
+                UpdateType r = vtnMgr.setMacMap(bpath, UpdateOperation.REMOVE,
+                                                MacMapAclType.ALLOW, set);
+            } catch (Exception e) {
+                unexpected(e);
+            }
+
+            events = clsEvents.getPostedEvents();
+            MacMapEvent mev = (MacMapEvent)events.remove(0);
+            MacMapConfig mcconf = new MacMapConfig(allow, deny);
+            checkEvent(mev, bpath, mcconf, mmresult, true);
+            listener.checkMmapInfo(1, bpath, mcconf, mmresult);
+            executeClusterEvent(mgr, bpath, mev, true);
+            listener.checkMmapInfo(1, bpath, mcconf, mmresult);
+
+            VNodeState bst;
+            if (down) {
+                bst = VNodeState.DOWN;
+            } else if (mmresult == UpdateType.REMOVED) {
+                bst = VNodeState.UP;
+            } else {
+                bst = null;
+            }
+
+            if (bst != null) {
+                assertEquals(1, events.size());
+                bev = (VBridgeEvent)events.remove(0);
+                checkVBridgeEvent(bev, bpath, bconf, bst, UpdateType.CHANGED);
+                listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
+                executeVBridgeEvent(mgr, bpath, bev, false);
+                listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
+            } else {
+                assertTrue(events.isEmpty());
+            }
+        }
+
         // remove VlanMap.
         // VBridge status is also changed.
         st = mgr.removeVlanMap(bpath, map.getId());
@@ -811,7 +1078,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         flushTasks();
         listener.checkAllNull();
 
-        // add port map and vlan map.
+        // Configure port mapping, VLAN mapping, and MAC mapping.
         pmconf = new PortMapConfig(node0, port, (short) 0);
         st = mgr.setPortMap(ifpath, pmconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
@@ -841,22 +1108,55 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         assertEquals(1, events.size());
         checkVlanMapEvent((VlanMapEvent)events.get(0), bpath, map,
                           UpdateType.ADDED);
-
         listener.checkVlmapInfo(1, bpath, map.getId(), UpdateType.ADDED);
 
+        allow.clear();
+        deny.clear();
+        for (int i = 0; i < 5; i++) {
+            long mac = 0x1122334455L + i;
+            DataLinkHost dlh = createEthernetHost(mac, (short)i);
+            assertTrue(allow.add(dlh));
+        }
+        assertTrue(allow.add(new EthernetHost(null, (short)4095)));
+
+        for (int i = 0; i < 2; i++) {
+            long mac = 0x66778899aaL + i;
+            DataLinkHost dlh = createEthernetHost(mac, (short)4095);
+            assertTrue(deny.add(dlh));
+        }
+        MacMapConfig mcconf = new MacMapConfig(allow, deny);
+        try {
+            UpdateType r = vtnMgr.setMacMap(bpath, UpdateOperation.ADD,
+                                            mcconf);
+                assertEquals(UpdateType.ADDED, r);
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        events = clsEvents.getPostedEvents();
+        assertEquals(2, events.size());
+        checkEvent((MacMapEvent)events.remove(0), bpath, mcconf,
+                   UpdateType.ADDED, true);
+        listener.checkMmapInfo(1, bpath, mcconf, UpdateType.ADDED);
+        checkVBridgeEvent((VBridgeEvent)events.remove(0), bpath, bconf,
+                          VNodeState.DOWN, UpdateType.CHANGED);
+        listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
+        assertTrue(events.isEmpty());
+
         // remove tenant.
-        // VTenantEvent, VBridgeEvent, VBridgeIfEvent, PortMapEvent and
-        // VlanMapEvent are posted.
+        // VTenantEvent, VBridgeEvent, VBridgeIfEvent, PortMapEvent,
+        // VlanMapEvent, and MacMapEvent are posted.
         st = mgr.removeTenant(tpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
         events = clsEvents.getPostedEvents();
-        assertEquals(5, events.size());
+        assertEquals(6, events.size());
 
         listener.checkVtnInfo(1, tpath, UpdateType.REMOVED);
         listener.checkVbrInfo(1, bpath, UpdateType.REMOVED);
         listener.checkVIfInfo(1, ifpath, UpdateType.REMOVED);
         listener.checkPmapInfo(1, ifpath, pmconf, UpdateType.REMOVED);
         listener.checkVlmapInfo(1, bpath, map.getId(), UpdateType.REMOVED);
+        listener.checkMmapInfo(1, bpath, mcconf, UpdateType.REMOVED);
 
         flushTasks();
         listener.checkAllNull();
@@ -1218,7 +1518,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
      *                      if {@code false} expect that it isn't saved.
      */
     private void executeClusterEvent(VTNManagerImpl mgr, VTenantPath path,
-                                       ClusterEvent event, boolean saveConfig) {
+                                     ClusterEvent event, boolean saveConfig) {
         String tname = path.getTenantName();
         String root = GlobalConstants.STARTUPHOME.toString();
         String tenantListFileName = root + "vtn-default-tenant-names.conf";

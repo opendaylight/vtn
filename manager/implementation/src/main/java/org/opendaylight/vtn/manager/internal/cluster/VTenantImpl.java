@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -25,10 +26,15 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.IVTNManagerAware;
 import org.opendaylight.vtn.manager.MacAddressEntry;
+import org.opendaylight.vtn.manager.MacMap;
+import org.opendaylight.vtn.manager.MacMapAclType;
+import org.opendaylight.vtn.manager.MacMapConfig;
 import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
+import org.opendaylight.vtn.manager.UpdateOperation;
 import org.opendaylight.vtn.manager.VBridge;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
@@ -72,7 +78,7 @@ public final class VTenantImpl implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4637018876337158798L;
+    private static final long serialVersionUID = 7578447097898769278L;
 
     /**
      * Logger instance.
@@ -662,6 +668,173 @@ public final class VTenantImpl implements Serializable {
     }
 
     /**
+     * Return information about the MAC mapping configured in the specified
+     * vBridge.
+     *
+     * @param mgr   VTN Manager service.
+     * @param path   Path to the bridge.
+     * @return  A {@link MacMap} object which represents information about
+     *          the MAC mapping specified by {@code path}.
+     *          {@code null} is returned if the MAC mapping is not configured
+     *          in the specified vBridge.
+     * @throws VTNException  An error occurred.
+     */
+    public MacMap getMacMap(VTNManagerImpl mgr, VBridgePath path)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VBridgeImpl vbr = getBridgeImpl(path);
+            return vbr.getMacMap(mgr);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Return configuration information about MAC mapping in the specified
+     * vBridge.
+     *
+     * @param path     Path to the vBridge.
+     * @param aclType  The type of access control list.
+     * @return  A set of {@link DataLinkHost} instances which contains host
+     *          information in the specified access control list is returned.
+     *          {@code null} is returned if MAC mapping is not configured in
+     *          the specified vBridge.
+     * @throws VTNException  An error occurred.
+     */
+    public Set<DataLinkHost> getMacMapConfig(VBridgePath path,
+                                             MacMapAclType aclType)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VBridgeImpl vbr = getBridgeImpl(path);
+            return vbr.getMacMapConfig(aclType);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Return a list of {@link MacAddressEntry} instances corresponding to
+     * all the MAC address information actually mapped by MAC mapping
+     * configured in the specified vBridge.
+     *
+     * @param mgr   VTN Manager service.
+     * @param path  Path to the vBridge.
+     * @return  A list of {@link MacAddressEntry} instances corresponding to
+     *          all the MAC address information actually mapped to the vBridge
+     *          specified by {@code path}.
+     *          {@code null} is returned if MAC mapping is not configured
+     *          in the specified vBridge.
+     * @throws VTNException  An error occurred.
+     */
+    public List<MacAddressEntry> getMacMappedHosts(VTNManagerImpl mgr,
+                                                   VBridgePath path)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VBridgeImpl vbr = getBridgeImpl(path);
+            return vbr.getMacMappedHosts(mgr);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Determine whether the host specified by the MAC address is actually
+     * mapped by MAC mapping configured in the specified vBridge.
+     *
+     * @param mgr   VTN Manager service.
+     * @param path  Path to the vBridge.
+     * @param addr  A {@link DataLinkAddress} instance which represents the
+     *              MAC address.
+     * @return  A {@link MacAddressEntry} instancw which represents information
+     *          about the host corresponding to {@code addr} is returned
+     *          if it is actually mapped to the specified vBridge by MAC
+     *          mapping.
+     *          {@code null} is returned if the MAC address specified by
+     *          {@code addr} is not mapped by MAC mapping, or MAC mapping is
+     *          not configured in the specified vBridge.
+     * @throws VTNException  An error occurred.
+     */
+    public MacAddressEntry getMacMappedHost(VTNManagerImpl mgr,
+                                            VBridgePath path,
+                                            DataLinkAddress addr)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VBridgeImpl vbr = getBridgeImpl(path);
+            return vbr.getMacMappedHost(mgr, addr);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Change MAC mapping configuration as specified by {@link MacMapConfig}
+     * instance.
+     *
+     * @param mgr     VTN Manager service.
+     * @param path    A {@link VBridgePath} object that specifies the position
+     *                of the vBridge.
+     * @param op      A {@link UpdateOperation} instance which indicates
+     *                how to change the MAC mapping configuration.
+     * @param mcconf  A {@link MacMapConfig} instance which contains the MAC
+     *                mapping configuration information.
+     * @return        A {@link UpdateType} object which represents the result
+     *                of the operation is returned.
+     *                {@code null} is returned if the configuration was not
+     *                changed.
+     * @throws VTNException  An error occurred.
+     */
+    public UpdateType setMacMap(VTNManagerImpl mgr, VBridgePath path,
+                                UpdateOperation op, MacMapConfig mcconf)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VBridgeImpl vbr = getBridgeImpl(path);
+            return vbr.setMacMap(mgr, op, mcconf);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Change the access controll list for the specified MAC mapping.
+     *
+     * @param mgr       VTN Manager service.
+     * @param path      A {@link VBridgePath} object that specifies the
+     *                  position of the vBridge.
+     * @param op        A {@link UpdateOperation} instance which indicates
+     *                  how to change the MAC mapping configuration.
+     * @param aclType   The type of access control list.
+     * @param dlhosts   A set of {@link DataLinkHost} instances.
+     * @return          A {@link UpdateType} object which represents the result
+     *                  of the operation is returned.
+     *                  {@code null} is returned if the configuration was not
+     *                  changed.
+     * @throws VTNException  An error occurred.
+     */
+    public UpdateType setMacMap(VTNManagerImpl mgr, VBridgePath path,
+                                UpdateOperation op, MacMapAclType aclType,
+                                Set<? extends DataLinkHost> dlhosts)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VBridgeImpl vbr = getBridgeImpl(path);
+            return vbr.setMacMap(mgr, op, aclType, dlhosts);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
      * Return a list of MAC address entries learned by the specified virtual
      * L2 bridge.
      *
@@ -1028,6 +1201,25 @@ public final class VTenantImpl implements Serializable {
         IVTNResourceManager resMgr = mgr.getResourceManager();
         Timer timer = resMgr.getTimer();
         timer.purge();
+    }
+
+    /**
+     * Update the state of the specified vBridge in this tenant.
+     *
+     * @param mgr    VTN Manager service.
+     * @param path   Path to the target bridge.
+     * @throws VTNException  The specified vBridge does not exist.
+     */
+    public void updateBridgeState(VTNManagerImpl mgr, VBridgePath path)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VBridgeImpl vbr = getBridgeImpl(path);
+            vbr.update(mgr);
+        } finally {
+            rdlock.unlock();
+        }
     }
 
     /**

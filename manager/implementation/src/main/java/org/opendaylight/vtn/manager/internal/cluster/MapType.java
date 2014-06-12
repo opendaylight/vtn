@@ -20,9 +20,14 @@ public enum MapType {
     PORT(1 << 0),
 
     /**
+     * MAC mapping.
+     */
+    MAC(1 << 1),
+
+    /**
      * VLAN mapping.
      */
-    VLAN(1 << 1),
+    VLAN(1 << 2),
 
     /**
      * A pseudo mapping type which means a wildcard.

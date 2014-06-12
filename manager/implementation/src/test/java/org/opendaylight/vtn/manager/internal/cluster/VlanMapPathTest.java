@@ -113,7 +113,7 @@ public class VlanMapPathTest extends TestBase {
 
     /**
      * Test case which verifies that {@link VTenantPath#compareTo(VTenantPath)}
-     * can handle {@link VlanMapPath} instance.
+     * can handle {@link VlanMapPath} and {@link MacMapPath} instance.
      */
     @Test
     public void testCompareTo() {
@@ -130,6 +130,11 @@ public class VlanMapPathTest extends TestBase {
                 VBridgePath bpath = new VBridgePath(path, bname);
                 assertTrue(set.add(bpath));
                 assertFalse(set.add(bpath));
+                size++;
+
+                MacMapPath mpath = new MacMapPath(bpath);
+                assertTrue(set.add(mpath));
+                assertFalse(set.add(mpath));
                 size++;
 
                 for (String iname: createStrings("interface_name")) {
