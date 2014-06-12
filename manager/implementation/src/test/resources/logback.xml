@@ -28,6 +28,10 @@
   <!-- Suppress unwanted logs. -->
   <logger name="org.opendaylight.vtn.manager.internal.VTNConfig"
           level="ERROR"/>
+  <logger name="org.opendaylight.vtn.manager.internal.VTNThreadPool"
+          level="OFF"/>
+  <logger name="org.opendaylight.vtn.manager.internal.LocalFlowRemoveTask"
+          level="OFF"/>
 
   <logger name="org.opendaylight.controller.sal.utils.ServiceHelper"
           level="OFF"/>

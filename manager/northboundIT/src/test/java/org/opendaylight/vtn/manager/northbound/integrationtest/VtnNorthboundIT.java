@@ -35,8 +35,11 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.LinkedList;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -209,6 +212,237 @@ public class VtnNorthboundIT extends TestBase {
      */
     private void assertResponse(int code) {
         assertEquals(code, httpResponseCode.intValue());
+    }
+
+    /**
+     * Construct a URI from the given path components.
+     *
+     * @param components  A string array of path components.
+     * @return  A URI.
+     */
+    private String createURI(String ... components) {
+        return createRelativeURI(VTN_BASE_URL, components);
+    }
+
+    /**
+     * Construct a URI relative to the given base URI.
+     *
+     * @param base        A base URI.
+     * @param components  A string array of path components.
+     * @return  A URI.
+     */
+    private String createRelativeURI(String base, String ... components) {
+        StringBuilder builder = new StringBuilder(base);
+
+        for (String comp: components) {
+            if (builder.charAt(builder.length() - 1) != '/') {
+                builder.append('/');
+            }
+            builder.append(comp);
+        }
+
+        return builder.toString();
+    }
+
+    /**
+     * Create a {@link JSONObject} which represents a <strong>machost</strong>
+     * element.
+     *
+     * @param addr  A string representation of MAC address.
+     * @param vlan  A string representation of VLAN ID.
+     * @throws JSONException  An error occurred.
+     */
+    private JSONObject createMacHost(String addr, String vlan)
+        throws JSONException {
+        JSONObject json = new JSONObject();
+        if (addr != null) {
+            json.put("address", addr);
+        }
+        if (vlan != null) {
+            json.put("vlan", Integer.valueOf(vlan));
+        }
+
+        return json;
+    }
+
+    /**
+     * Create a {@link JSONObject} which represents a <strong>machosts</strong>
+     * element.
+     *
+     * @param args  A list of MAC address and VLAN ID.
+     *              The number of arguments must be a multiple of 2.
+     * @throws JSONException  An error occurred.
+     */
+    private JSONObject createMacHostSet(List<String> args)
+        throws JSONException {
+        return createMacHostSet(args.toArray(new String[args.size()]));
+    }
+
+    /**
+     * Create a {@link JSONObject} which represents a <strong>machosts</strong>
+     * element.
+     *
+     * @param args  Sequence of MAC address and VLAN ID.
+     *              The number of arguments must be a multiple of 2.
+     * @throws JSONException  An error occurred.
+     */
+    private JSONObject createMacHostSet(String ... args) throws JSONException {
+        JSONObject json = new JSONObject();
+        JSONArray list = new JSONArray();
+        int i = 0;
+        while (i < args.length) {
+            String addr = args[i++];
+            String vlan = args[i++];
+            list.put(createMacHost(addr, vlan));
+        }
+
+        json.put("machost", list);
+
+        return json;
+    }
+
+    /**
+     * Create JSON object which represents <strong>macmapconf</strong>.
+     *
+     * @param allowed  A list which contains hosts in allow list.
+     * @param denied   A list which contains hosts in deny list.
+     * @return  A {@link JSONObject} instance.
+     * @throws JSONException  An error occurred.
+     */
+    private JSONObject createMacMapConfig(List<String> allowed,
+                                          List<String> denied)
+        throws JSONException {
+        JSONObject allow = createMacHostSet(allowed);
+        JSONObject deny = createMacHostSet(denied);
+        JSONObject config = new JSONObject();
+        config.put("allow", allow).put("deny", deny);
+
+        return config;
+    }
+
+    /**
+     * Complete omitted elements in <strong>machosts</strong>.
+     *
+     * @param json  A {@link JSONObject} which represents a
+     *              <strong>machosts</strong> element.
+     * @return  A {@link JSONObject} element.
+     * @throws JSONException  An error occurred.
+     */
+    private JSONObject completeMacHostSet(JSONObject json)
+        throws JSONException {
+        JSONObject newjson = new JSONObject();
+        JSONArray newlist = new JSONArray();
+
+        String listKey = "machost";
+        String addrKey = "address";
+        String vlanKey = "vlan";
+        String[] hostKeys = {addrKey, vlanKey};
+        JSONArray list = json.getJSONArray(listKey);
+        int len = list.length();
+        for (int i = 0; i < len; i++) {
+            JSONObject host = list.getJSONObject(i);
+            JSONObject newhost = new JSONObject(host, hostKeys);
+            if (newhost.isNull(vlanKey)) {
+                newhost.put(vlanKey, Integer.valueOf(0));
+            }
+            newlist.put(newhost);
+        }
+        newjson.put(listKey, newlist);
+
+        return newjson;
+    }
+
+    /**
+     * Complete omitted elements in <strong>macmapconf</strong>.
+     *
+     * @param json  A {@link JSONObject} which represents a
+     *              <strong>macmapconf</strong> element.
+     * @return  A {@link JSONObject} element.
+     * @throws JSONException  An error occurred.
+     */
+    private JSONObject completeMacMapConfig(JSONObject json)
+        throws JSONException {
+        JSONObject conf = new JSONObject();
+        for (String acl: new String[]{"allow", "deny"}) {
+            JSONObject set = json.optJSONObject(acl);
+            if (set != null) {
+                JSONArray list = set.optJSONArray("machost");
+                if (list != null && list.length() != 0) {
+                    set = completeMacHostSet(set);
+                    conf.put(acl, set);
+                }
+            }
+        }
+
+        return conf;
+    }
+
+    /**
+     * Verify that the given two JSON objects are identical.
+     *
+     * @param expected   An expected value.
+     * @param json       A {@link JSONObject} to be tested.
+     * @throws JSONException  An error occurred.
+     */
+    private void assertEquals(JSONObject expected, JSONObject json)
+        throws JSONException {
+        JSONArray keys = json.names();
+        assertEquals(expected.names(), keys);
+
+        int keyLen = keys.length();
+        for (int i = 0; i < keyLen; i++) {
+            String key = keys.getString(i);
+            Object exv = expected.get(key);
+            Object value = json.get(key);
+            if (exv instanceof JSONArray) {
+                assertEquals((JSONArray)exv, (JSONArray)value);
+            } else if (exv instanceof JSONObject) {
+                assertEquals((JSONObject)exv, (JSONObject)value);
+            } else {
+                assertEquals(exv, value);
+            }
+        }
+    }
+
+    /**
+     * Verify that the given two JSON arrays are identical,
+     *
+     * <p>
+     *   Note that this method ignores element order in the arrays.
+     * </p>
+     *
+     * @param expected  An expected value.
+     * @param jarray    A {@link JSONArray} to be tested.
+     * @throws JSONException  An error occurred.
+     */
+    private void assertEquals(JSONArray expected, JSONArray jarray)
+        throws JSONException {
+        int len = jarray.length();
+        assertEquals(expected.length(), len);
+
+        // Convert expected array elements into strings.
+        HashMap<String, Integer> exmap = new HashMap<String, Integer>();
+        for (int i = 0; i < len; i++) {
+            String value = expected.getString(i);
+            Integer count = exmap.get(value);
+            int newcnt = (count == null) ? 1 : count.intValue() + 1;
+            exmap.put(value, Integer.valueOf(newcnt));
+        }
+
+        // Test the specified array.
+        for (int i = 0; i < len; i++) {
+            String value = jarray.getString(i);
+            Integer count = exmap.get(value);
+            assertNotNull(count);
+            int cnt = count.intValue() - 1;
+            if (cnt == 0) {
+                exmap.remove(value);
+            } else {
+                exmap.put(value, Integer.valueOf(cnt));
+            }
+        }
+
+        assertTrue(exmap.isEmpty());
     }
 
     /**
@@ -984,6 +1218,7 @@ public class VtnNorthboundIT extends TestBase {
      * {@link #testVBridgeInterfaceAPI(String, String, String)},
      * {@link #testVBridgeInterfaceDeleteAPI(String, String)},
      * {@link #testVLANMappingDeleteAPI(String, String)},
+     * {@link #testMacMappingAPI(String, String, String)},
      * {@link #testMacAddressAPI(String, String)}.
      *
      * @param tname1    A tenant name.
@@ -1113,6 +1348,7 @@ public class VtnNorthboundIT extends TestBase {
         }
 
         testVLANMappingAPI(tname1, bname1);
+        testMacMappingAPI(tname1, bname1, bname2);
         testVBridgeInterfaceAPI(tname1, bname1, bname2);
 
         // Test POST vBridge3
@@ -2872,6 +3108,604 @@ public class VtnNorthboundIT extends TestBase {
     }
 
     /**
+     * Test case for MAC mapping APIs.
+     *
+     * <p>
+     *   This method is called by {@link #testVBridgeAPI(String, String)}.
+     * </p>
+     *
+     * @param tname   The name of existing virtual tenant.
+     * @param bname1  The name of existing vBridge.
+     * @param bname2  The name of existing vBridge.
+     * @throws JSONException  An error occurred.
+     */
+    private void testMacMappingAPI(String tname, String bname1, String bname2)
+        throws JSONException {
+        log.info("Starting MAC Mapping JAXB client.");
+
+        String qparam = "?param1=1&param2=2";
+        String mapUri = createURI("default/vtns", tname, "vbridges", bname1,
+                                  "macmap");
+        String mapUri2 = createURI("default/vtns", tname, "vbridges", bname2,
+                                   "macmap");
+
+        // Ensure that no MAC mapping is configured.
+        assertNoMacMapping(mapUri);
+        assertNoMacMapping(mapUri2);
+
+        LinkedList<String> allowedHosts = new LinkedList<String>();
+        allowedHosts.add(null);
+        allowedHosts.add(null);
+
+        byte[] allowedAddr = {
+            (byte)0x10, (byte)0x20, (byte)0x30,
+            (byte)0x40, (byte)0x50, (byte)0x00,
+        };
+
+        for (int i = 0; i < 20; i++) {
+            String mac;
+            if ((i & 1) == 0) {
+                mac = null;
+            } else {
+                allowedAddr[5] = (byte)i;
+                mac = HexEncode.bytesToHexStringFormat(allowedAddr);
+            }
+
+            String vlan = (i == 0) ? "4095" : String.valueOf(i);
+            allowedHosts.add(mac);
+            allowedHosts.add(vlan);
+        }
+
+        LinkedList<String> deniedHosts = new LinkedList<String>();
+        byte[] deniedAddr = {
+            (byte)0xf0, (byte)0xf1, (byte)0xf2,
+            (byte)0xf3, (byte)0x00, (byte)0xf5,
+        };
+
+        for (int i = 0; i < 20; i++) {
+            deniedAddr[4] = (byte)i;
+            String mac = HexEncode.bytesToHexStringFormat(deniedAddr);
+            String vlan = String.valueOf(i + 100);
+            deniedHosts.add(mac);
+            deniedHosts.add(vlan);
+        }
+        deniedHosts.add("00:00:ff:ff:ff:0f");
+        deniedHosts.add(null);
+
+        // Install MAC mapping configuration.
+        JSONObject config = createMacMapConfig(allowedHosts, deniedHosts);
+        JSONObject configExpected = completeMacMapConfig(config);
+
+        {
+            String cf = config.toString();
+            getJsonResult(mapUri + qparam, "PUT", cf);
+            assertResponse(HTTP_CREATED);
+            Assert.assertEquals(mapUri, httpLocation);
+
+            for (String method: new String[]{"PUT", "POST"}) {
+                getJsonResult(mapUri, method, cf);
+                assertResponse(HTTP_NO_CONTENT);
+            }
+        }
+
+        assertMacMapping(mapUri, configExpected);
+
+        // Try to create MAC mapping with specifying invalid MAC address.
+        String[] badMacs = {
+            "invalid_mac_address",      // broken
+            "00:00:00:00:00:00",        // zero
+            "ff:ff:ff:ff:ff:ff",        // broadcast
+            "81:00:11:22:33:44",        // multicast
+        };
+
+        String[] acls = {"allow", "deny"};
+        for (String mac: badMacs) {
+            JSONObject machost = new JSONObject();
+            machost.put("address", mac);
+            machost.put("vlan", 1);
+
+            JSONArray maclist = new JSONArray();
+            maclist.put(machost);
+
+            JSONObject set = new JSONObject();
+            set.put("machost", maclist);
+
+            for (String acl: acls) {
+                String uri = createRelativeURI(mapUri, acl, mac, "1");
+                getJsonResult(uri, "PUT");
+                assertResponse(HTTP_BAD_REQUEST);
+
+                for (String method: new String[]{"PUT", "POST"}) {
+                    JSONObject conf = new JSONObject();
+                    conf.put(acl, set);
+
+                    getJsonResult(mapUri, method, conf.toString());
+                    assertResponse(HTTP_BAD_REQUEST);
+
+                    uri = createRelativeURI(mapUri, acl);
+                    getJsonResult(uri, method, set.toString());
+                    assertResponse(HTTP_BAD_REQUEST);
+                }
+            }
+        }
+
+        // Try to create MAC mapping with specifying invalid VLAN ID.
+        int[] badVlans = {
+            -1, 4096, 10000,
+        };
+
+        for (int vlan: badVlans) {
+            String mac = "00:00:00:00:00:10";
+            JSONObject machost = new JSONObject();
+            machost.put("address", mac);
+            machost.put("vlan", vlan);
+
+            JSONArray maclist = new JSONArray();
+            maclist.put(machost);
+
+            JSONObject set = new JSONObject();
+            set.put("machost", maclist);
+
+            for (String acl: acls) {
+                String uri = createRelativeURI(mapUri, acl, mac,
+                                               String.valueOf(vlan));
+                getJsonResult(uri, "PUT");
+                assertResponse(HTTP_BAD_REQUEST);
+
+                for (String method: new String[]{"PUT", "POST"}) {
+                    JSONObject conf = new JSONObject();
+                    conf.put(acl, set);
+
+                    getJsonResult(mapUri, method, conf.toString());
+                    assertResponse(HTTP_BAD_REQUEST);
+
+                    uri = createRelativeURI(mapUri, acl);
+                    getJsonResult(uri, method, set.toString());
+                    assertResponse(HTTP_BAD_REQUEST);
+                }
+            }
+        }
+
+        // Try to register NULL address to deny set.
+        for (String method: new String[]{"POST", "PUT"}) {
+            String acl = "deny";
+            JSONObject set = createMacHostSet(null, "110");
+            JSONObject conf = new JSONObject();
+            conf.put(acl, set);
+
+            getJsonResult(mapUri, method, conf.toString());
+            assertResponse(HTTP_BAD_REQUEST);
+
+            String uri = createRelativeURI(mapUri, acl);
+            getJsonResult(uri, method, set.toString());
+            assertResponse(HTTP_BAD_REQUEST);
+        }
+
+        // Try to remove hosts that are not registered.
+        String remove = "?action=remove";
+        {
+            LinkedList<String> allowedHosts1 = new LinkedList<String>();
+            for (int i = 0; i < 5; i++) {
+                String mac;
+                if ((i & 1) == 0) {
+                    mac = null;
+                } else {
+                    allowedAddr[5] = (byte)i;
+                    mac = HexEncode.bytesToHexStringFormat(allowedAddr);
+                }
+
+                String vlan = String.valueOf(i + 100);
+                allowedHosts1.add(mac);
+                allowedHosts1.add(vlan);
+            }
+
+            for (int i = 5; i < 10; i++) {
+                String mac;
+                if ((i & 1) == 0) {
+                    allowedAddr[5] = (byte)(i + 1);
+                    mac = HexEncode.bytesToHexStringFormat(allowedAddr);
+                } else {
+                    mac = null;
+                }
+
+                String vlan = String.valueOf(i);
+                allowedHosts1.add(mac);
+                allowedHosts1.add(vlan);
+            }
+
+            LinkedList<String> deniedHosts1 = new LinkedList<String>();
+            for (int i = 0; i < 5; i++) {
+                deniedAddr[4] = (byte)(i + 1);
+                String mac = HexEncode.bytesToHexStringFormat(deniedAddr);
+                String vlan = String.valueOf(i + 100);
+                deniedHosts1.add(mac);
+                deniedHosts1.add(vlan);
+            }
+            for (int i = 5; i < 10; i++) {
+                deniedAddr[4] = (byte)i;
+                String mac = HexEncode.bytesToHexStringFormat(deniedAddr);
+                String vlan = String.valueOf(i + 1000);
+                deniedHosts1.add(mac);
+                deniedHosts1.add(vlan);
+            }
+
+            JSONObject allow1 = createMacHostSet(allowedHosts1);
+            JSONObject deny1 = createMacHostSet(deniedHosts1);
+            config = new JSONObject();
+            config.put("allow", allow1).put("deny", deny1);
+            getJsonResult(createRelativeURI(mapUri + remove), "POST",
+                          config.toString());
+            assertResponse(HTTP_NO_CONTENT);
+            for (String acl: acls) {
+                JSONObject set;
+                LinkedList<String> hostList;
+                if (acl.equals("allow")) {
+                    set = allow1;
+                    hostList = allowedHosts1;
+                } else {
+                    set = deny1;
+                    hostList = deniedHosts1;
+                }
+
+                getJsonResult(createRelativeURI(mapUri, acl + remove), "POST",
+                              set.toString());
+                assertResponse(HTTP_NO_CONTENT);
+
+                Iterator<String> it = hostList.iterator();
+                while (it.hasNext()) {
+                    String m = it.next();
+                    String v = it.next();
+                    String uri = createRelativeURI(mapUri, acl,
+                                                   (m == null) ? "ANY" : m,
+                                                   (v == null) ? "0" : v);
+                    getJsonResult(uri, "DELETE");
+                    assertResponse(HTTP_NO_CONTENT);
+                }
+            }
+        }
+
+        String[] allowedArray = allowedHosts.toArray(new String[0]);
+        for (int i = 0; i < allowedArray.length; i += 2) {
+            String acl = "allow";
+            String mac = allowedArray[i];
+            String vlan = allowedArray[i + 1];
+
+            // Try to map MAC addresses which are already mapped by another
+            // vBridge.
+            String uri = createRelativeURI(mapUri2, acl,
+                                           (mac == null) ? "ANY" : mac,
+                                           (vlan == null) ? "0" : vlan);
+            getJsonResult(uri, "PUT");
+            assertResponse(HTTP_CONFLICT);
+
+            JSONObject set = createMacHostSet(mac, vlan);
+            JSONObject conf = new JSONObject();
+            conf.put(acl, set);
+
+            for (String method: new String[]{"POST", "PUT"}) {
+                getJsonResult(mapUri2, method, conf.toString());
+                assertResponse(HTTP_CONFLICT);
+
+                uri = createRelativeURI(mapUri2, acl);
+                getJsonResult(uri, method, set.toString());
+                assertResponse(HTTP_CONFLICT);
+            }
+
+            if (mac == null) {
+                continue;
+            }
+
+            // Try to register duplicate MAC address.
+            uri = createRelativeURI(mapUri, acl, mac, "1000");
+            getJsonResult(uri, "PUT");
+            assertResponse(HTTP_CONFLICT);
+
+            set = createMacHostSet(mac, "1000");
+            conf = new JSONObject();
+            conf.put(acl, set);
+
+            String method = "POST";
+            getJsonResult(mapUri, method, conf.toString());
+            assertResponse(HTTP_CONFLICT);
+
+            uri = createRelativeURI(mapUri, acl);
+            getJsonResult(uri, method, set.toString());
+            assertResponse(HTTP_CONFLICT);
+        }
+
+        // Duplicate MAC address in allow set.
+        {
+            String acl = "allow";
+            String mac = "00:11:22:33:55:88";
+            JSONObject set = createMacHostSet(mac, "1000", mac, "1001");
+            for (String method: new String[]{"POST", "PUT"}) {
+                JSONObject conf = new JSONObject();
+                conf.put(acl, set);
+
+                getJsonResult(mapUri, method, conf.toString());
+                assertResponse(HTTP_BAD_REQUEST);
+
+                String uri = createRelativeURI(mapUri, acl);
+                getJsonResult(uri, method, set.toString());
+                assertResponse(HTTP_BAD_REQUEST);
+            }
+        }
+
+        // Configuration should not be affected.
+        assertMacMapping(mapUri, configExpected);
+
+        // Remove 2 hosts from both list.
+        for (int i = 0; i < 4; i++) {
+            allowedHosts.removeFirst();
+            deniedHosts.removeFirst();
+        }
+
+        config = createMacMapConfig(allowedHosts, deniedHosts);
+        getJsonResult(mapUri, "PUT", config.toString());
+        assertResponse(HTTP_OK);
+
+        configExpected = completeMacMapConfig(config);
+        assertMacMapping(mapUri, configExpected);
+
+        for (String acl: acls) {
+            LinkedList<String> hostList = (acl.equals("allow"))
+                ? allowedHosts : deniedHosts;
+
+            // Remove 2 hosts by specifying the list.
+            String mac1 = hostList.removeFirst();
+            String vlan1 = hostList.removeFirst();
+            String mac2 = hostList.removeFirst();
+            String vlan2 = hostList.removeFirst();
+            JSONObject set = createMacHostSet(mac1, vlan1, mac2, vlan2);
+
+            String uri = createRelativeURI(mapUri, acl + remove);
+            getJsonResult(uri, "POST", set.toString());
+            assertResponse(HTTP_OK);
+            assertMacMapping(mapUri, allowedHosts, deniedHosts);
+        }
+
+        // Remove 2 hosts from both lists.
+        config = new JSONObject();
+        for (String acl: acls) {
+            LinkedList<String> hostList = (acl.equals("allow"))
+                ? allowedHosts : deniedHosts;
+            String mac1 = hostList.removeFirst();
+            String vlan1 = hostList.removeFirst();
+            String mac2 = hostList.removeFirst();
+            String vlan2 = hostList.removeFirst();
+            JSONObject set = createMacHostSet(mac1, vlan1, mac2, vlan2);
+            config.put(acl, set);
+        }
+        getJsonResult(mapUri + remove, "POST", config.toString());
+        assertResponse(HTTP_OK);
+        assertMacMapping(mapUri, allowedHosts, deniedHosts);
+
+        // Remove 3 hosts by DELETE.
+        for (String acl: acls) {
+            LinkedList<String> hostList = (acl.equals("allow"))
+                ? allowedHosts : deniedHosts;
+
+            for (int i = 0; i < 3; i++) {
+                String m = hostList.removeFirst();
+                String v = hostList.removeFirst();
+                String uri = createRelativeURI(mapUri, acl,
+                                               (m == null) ? "ANY" : m,
+                                               (v == null) ? "0" : v);
+                getJsonResult(uri, "DELETE");
+                assertResponse(HTTP_OK);
+            }
+        }
+        assertMacMapping(mapUri, allowedHosts, deniedHosts);
+
+        // Remove 3 hosts, and add 4 hosts by PUT.
+        {
+            byte[] base = {
+                (byte)0xa0, (byte)0xa1, (byte)0xa2,
+                (byte)0x00, (byte)0xa4, (byte)0xa5,
+            };
+            for (String acl: acls) {
+                LinkedList<String> hostList = (acl.equals("allow"))
+                    ? allowedHosts : deniedHosts;
+                for (int i = 0; i < 6; i++) {
+                    hostList.removeFirst();
+                }
+
+                for (int i = 0; i < 4; i++) {
+                    base[3] = (byte)i;
+                    hostList.add(HexEncode.bytesToHexStringFormat(base));
+                    hostList.add(String.valueOf(i + 500));
+                }
+            }
+
+            config = createMacMapConfig(allowedHosts, deniedHosts);
+            configExpected = completeMacMapConfig(config);
+            getJsonResult(mapUri, "PUT", config.toString());
+            assertResponse(HTTP_OK);
+            assertMacMapping(mapUri, allowedHosts, deniedHosts);
+
+            for (String acl: acls) {
+                LinkedList<String> hostList = (acl.equals("allow"))
+                    ? allowedHosts : deniedHosts;
+                for (int i = 0; i < 6; i++) {
+                    hostList.removeFirst();
+                }
+
+                for (int i = 20; i < 24; i++) {
+                    base[3] = (byte)i;
+                    hostList.add(HexEncode.bytesToHexStringFormat(base));
+                    hostList.add(String.valueOf(i + 500));
+                }
+
+                JSONObject set = createMacHostSet(hostList);
+                getJsonResult(createRelativeURI(mapUri, acl), "PUT",
+                              set.toString());
+                assertResponse(HTTP_OK);
+                assertMacMapping(mapUri, allowedHosts, deniedHosts);
+            }
+        }
+
+        // Remove MAC mapping by specifying host list.
+        LinkedList<String> saveAllowed = new LinkedList<String>(allowedHosts);
+        LinkedList<String> saveDenied = new LinkedList<String>(deniedHosts);
+        for (int i = 0; i < acls.length; i++) {
+            String acl = acls[i];
+            LinkedList<String> hostList = (acl.equals("allow"))
+                ? allowedHosts : deniedHosts;
+            hostList.clear();
+
+            String uri = createRelativeURI(mapUri, acl);
+            getJsonResult(uri, "DELETE");
+            assertResponse(HTTP_OK);
+
+            if (i == acls.length - 1) {
+                assertNoMacMapping(mapUri);
+            } else {
+                assertMacMapping(mapUri, allowedHosts, deniedHosts);
+            }
+        }
+
+        // Install the same MAC mapping to another vBridge.
+        config = createMacMapConfig(saveAllowed, saveDenied);
+        configExpected = completeMacMapConfig(config);
+        getJsonResult(mapUri2, "PUT", config.toString());
+        assertResponse(HTTP_CREATED);
+        assertMacMapping(mapUri2, configExpected);
+
+        getJsonResult(mapUri2, "DELETE");
+        assertResponse(HTTP_OK);
+        assertNoMacMapping(mapUri2);
+
+        // Create MAC mapping by installing a host to the specific URI.
+        {
+            String mac = "00:11:22:33:44:55";
+            String vlan = "4095";
+            JSONObject hostSet = createMacHostSet(mac, vlan);
+            List<String> empty = new LinkedList<String>();
+
+            for (String acl: acls) {
+                JSONObject set;
+                if (acl.equals("allow")) {
+                    set = createMacHostSet(saveAllowed);
+                    config = createMacMapConfig(saveAllowed, empty);
+                } else {
+                    set = createMacHostSet(saveDenied);
+                    config = createMacMapConfig(empty, saveDenied);
+                }
+
+                configExpected = completeMacMapConfig(config);
+                String uri = createRelativeURI(mapUri2, acl);
+                for (String method: new String[]{"PUT", "POST"}) {
+                    getJsonResult(uri + qparam, method, set.toString());
+                    assertResponse(HTTP_CREATED);
+                    Assert.assertEquals(uri, httpLocation);
+                    assertMacMapping(mapUri2, configExpected);
+
+                    getJsonResult(uri, "DELETE");
+                    assertResponse(HTTP_OK);
+                    assertNoMacMapping(mapUri2);
+                }
+
+                config = new JSONObject();
+                config.put(acl, hostSet);
+                String hostUri = createRelativeURI(uri, mac, vlan);
+                getJsonResult(hostUri + qparam, "PUT");
+                assertResponse(HTTP_CREATED);
+                Assert.assertEquals(hostUri, httpLocation);
+                assertMacMapping(mapUri2, config);
+
+                getJsonResult(hostUri, "DELETE");
+                assertResponse(HTTP_OK);
+                assertNoMacMapping(mapUri2);
+            }
+        }
+    }
+
+    /**
+     * Ensure that no MAC mapping is configured.
+     *
+     * @param mapUri  A URI to the MAC mapping.
+     */
+    private void assertNoMacMapping(String mapUri) {
+        String[] uris = {
+            mapUri,
+            createRelativeURI(mapUri, "allow"),
+            createRelativeURI(mapUri, "allow/00:00:00:00:00:01/0"),
+            createRelativeURI(mapUri, "allow/ANY/0"),
+            createRelativeURI(mapUri, "deny"),
+            createRelativeURI(mapUri, "deny/00:00:00:00:00:01/0"),
+            createRelativeURI(mapUri, "mapped"),
+            createRelativeURI(mapUri, "mapped/00:00:00:00:00:01"),
+        };
+
+        for (String uri: uris) {
+            for (String method: new String[]{"GET", "DELETE"}) {
+                getJsonResult(uri);
+                assertResponse(HTTP_NO_CONTENT);
+            }
+        }
+    }
+
+    /**
+     * Ensure that MAC mapping is configured as expected.
+     *
+     * @param mapUri   A URI to the MAC mapping.
+     * @param allowed  A list which contains hosts in allow list.
+     * @param denied   A list which contains hosts in deny list.
+     * @return  A {@link JSONObject} which contains current configuration.
+     * @throws JSONException  An error occurred.
+     */
+    private JSONObject assertMacMapping(String mapUri, List<String> allowed,
+                                        List<String> denied)
+        throws JSONException {
+        JSONObject config = createMacMapConfig(allowed, denied);
+        JSONObject expected = completeMacMapConfig(config);
+        assertMacMapping(mapUri, expected);
+
+        return expected;
+    }
+
+    /**
+     * Ensure that MAC mapping is configured as expected.
+     *
+     * @param mapUri    A URI to the MAC mapping.
+     * @param expected  A {@link JSONObject} which contains expected
+     *                  configuration.
+     * @throws JSONException  An error occurred.
+     */
+    private void assertMacMapping(String mapUri, JSONObject expected)
+        throws JSONException {
+        String resp = getJsonResult(mapUri);
+        assertResponse(HTTP_OK);
+
+        JSONObject json = new JSONObject(new JSONTokener(resp));
+        assertEquals(expected, json);
+
+        for (String acl: new String[]{"allow", "deny"}) {
+            String aclUri = createRelativeURI(mapUri, acl);
+            resp = getJsonResult(aclUri);
+            assertResponse(HTTP_OK);
+            json = new JSONObject(new JSONTokener(resp));
+            JSONObject set = expected.optJSONObject(acl);
+            if (set != null) {
+                assertEquals(set, json);
+
+                JSONArray jarray = set.getJSONArray("machost");
+                int len = jarray.length();
+                for (int i = 0; i < len; i++) {
+                    JSONObject host = jarray.getJSONObject(i);
+                    String mac = host.optString("address", "ANY");
+                    String vlan = host.getString("vlan");
+                    String uri = createRelativeURI(aclUri, mac, vlan);
+                    resp = getJsonResult(uri);
+                    assertResponse(HTTP_OK);
+                    json = new JSONObject(new JSONTokener(resp));
+                    assertEquals(host, json);
+                }
+            }
+        }
+    }
+
+    /**
      * Test case for MAC Address APIs.
      *
      * <p>
@@ -3266,9 +4100,23 @@ public class VtnNorthboundIT extends TestBase {
         result = getJsonResult(loc, "DELETE");
         assertResponse(HTTP_UNAVAILABLE);
 
+        // MAC mapping APIs.
+        String mmapURL = baseURL + "/macmap";
+        String macaddr = "00:00:00:00:00:01";
+        getJsonResult(mmapURL);
+        assertResponse(HTTP_UNAVAILABLE);
+        for (String type: new String[]{"/allow", "/deny", "/mapped"}) {
+            getJsonResult(mmapURL + type);
+            assertResponse(HTTP_UNAVAILABLE);
+        }
+        String mmapAllowURL = mmapURL + "/allow/" + macaddr + "/0";
+        for (String method: new String[]{"GET", "PUT", "DELETE"}) {
+            getJsonResult(mmapAllowURL, method);
+            assertResponse(HTTP_UNAVAILABLE);
+        }
+
         // Mac Address Table APIs.
         String baseURLMac = baseURL + "/mac";
-        String macaddr = "00:00:00:00:00:01";
 
         result = getJsonResult(baseURL + bname + "/mac/" + macaddr);
         assertResponse(HTTP_UNAVAILABLE);

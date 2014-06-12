@@ -36,6 +36,8 @@ import org.opendaylight.controller.northbound.commons.exception.
     UnauthorizedException;
 import org.opendaylight.controller.northbound.commons.utils.NorthboundUtils;
 import org.opendaylight.controller.sal.authorization.Privilege;
+import org.opendaylight.controller.sal.packet.address.EthernetAddress;
+import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -184,5 +186,46 @@ public abstract class VTNNorthBoundBase {
         }
 
         return debugger;
+    }
+
+    /**
+     * Parse a string representation of Ethernet address.
+     *
+     * @param str  A string representation of Ethernet address.
+     * @return  An {@code EthernetAddress} object.
+     * @throws BadRequestException
+     *    Invalid string is passed to {@code str}.
+     */
+    protected EthernetAddress parseEthernetAddress(String str) {
+        try {
+            byte[] b = HexEncode.bytesFromHexString(str);
+            return new EthernetAddress(b);
+        } catch (Exception e) {
+            throw new BadRequestException("Invalid MAC address.");
+        }
+    }
+
+    /**
+     * Convert the specified string into a VLAN ID.
+     *
+     * <p>
+     *   Note that {@code null} is converted into {@code 0}.
+     * </p>
+     *
+     * @param str    A string representation of a VLAN ID.
+     * @return  A VLAN ID.
+     * @throws BadRequestException
+     *    Invalid string is passed to {@code str}.
+     */
+    protected short parseVlanId(String str) {
+        if (str == null) {
+            return (short)0;
+        }
+
+        try {
+            return Short.parseShort(str);
+        } catch (NumberFormatException e) {
+            throw new BadRequestException("Invalid VLAN ID.");
+        }
     }
 }

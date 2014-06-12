@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
+import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.utils.Status;
 
@@ -1394,6 +1395,586 @@ public interface IVTNManager {
      *   </dl>
      */
     Status setPortMap(VBridgeIfPath path, PortMapConfig pmconf);
+
+    /**
+     * Return information about
+     * {@linkplain <a href="package-summary.html#MAC-map">MAC mapping</a>}.
+     * configured in the specified
+     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
+     *
+     * @param path  A {@link VBridgePath} object that specifies the position
+     *              of the vBridge.
+     * @return  A {@link MacMap} object which represents MAC mapping
+     *          information configured in the vBridge specified by
+     *          {@code path}.
+     *          {@code null} is returned if MAC mapping is not configured
+     *          in the specified vBridge.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code path}.</li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name} or
+     *           {@linkplain VBridgePath#getBridgeName() vBridge name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>
+     *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or vBridge
+     *       specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    MacMap getMacMap(VBridgePath path) throws VTNException;
+
+    /**
+     * Return a list of host information configured in access control list
+     * of
+     * {@linkplain <a href="package-summary.html#MAC-map">MAC mapping</a>}.
+     *
+     * <p>
+     *   This method returns a set which contains all host information
+     *   configured in the access control list specified by
+     *   {@link MacMapAclType} instance.
+     * </p>
+     *
+     * @param path     A {@link VBridgePath} object that specifies the position
+     *                 of the vBridge.
+     * @param aclType  The type of access control list.
+     *   <dl style="margin-left: 1em;">
+     *     <dt>{@link MacMapAclType#ALLOW}
+     *     <dd>
+     *       Return all host information configured in
+     *       {@linkplain <a href="package-summary.html#MAC-map.allow">Map Allow list</a>}.
+     *
+     *     <dt>{@link MacMapAclType#DENY}
+     *     <dd>
+     *       Return all host information configured in
+     *       {@linkplain <a href="package-summary.html#MAC-map.deny">Map Deny list</a>}.
+     *   </dl>
+     * @return  A set of {@link DataLinkHost} instances which contains host
+     *          information in the specified access control list is returned.
+     *          An empty set is returned if no host is configured in the
+     *          specified access control list.
+     *          {@code null} is returned if MAC mapping is not configured in
+     *          the specified vBridge.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>
+     *           {@code null} is passed to {@code path} or {@code aclType}.
+     *         </li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name} or
+     *           {@linkplain VBridgePath#getBridgeName() vBridge name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>
+     *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or vBridge
+     *       specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    Set<DataLinkHost> getMacMapConfig(VBridgePath path, MacMapAclType aclType)
+        throws VTNException;
+
+    /**
+     * Return a list of
+     * {@linkplain <a href="package-summary.html#MAC-map.activate">hosts where mapping is actually active</a>}
+     * based on
+     * {@linkplain <a href="package-summary.html#MAC-map">MAC mapping</a>}
+     * configured in the specified
+     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
+     *
+     * @param path  A {@link VBridgePath} object that specifies the position
+     *              of the vBridge.
+     * @return
+     *   A list of {@link MacAddressEntry} instances that shows the
+     *   information of hosts where MAC mapping is active with the vBridge
+     *   specified by {@code path}.
+     *   <ul>
+     *     <li>
+     *       An empty list is returned if there are no hosts where MAC mapping
+     *       is active.
+     *     </li>
+     *     <li>
+     *       {@code null} is returned if MAC mapping is not configured in the
+     *       specified vBridge.
+     *     </li>
+     *   </ul>
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code path}.</li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name} or
+     *           {@linkplain VBridgePath#getBridgeName() vBridge name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>
+     *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or vBridge
+     *       specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    List<MacAddressEntry> getMacMappedHosts(VBridgePath path)
+        throws VTNException;
+
+    /**
+     * Determine whether, in the specified
+     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>},
+     * the
+     * {@linkplain <a href="package-summary.html#MAC-map.activate">mapping is actually active</a>}
+     * based on the
+     * {@linkplain <a href="package-summary.html#MAC-map">MAC mapping</a>} on
+     * the specified MAC address.
+     *
+     * @param path  A {@link VBridgePath} object that specifies the position
+     *              of the vBridge.
+     * @param addr  A {@link DataLinkAddress} instance which represents the
+     *              MAC address.
+     *   <ul>
+     *     <li>
+     *        Currently the VTN Manager handles only ethernet frame.
+     *        Thus, in reality, an
+     *        {@link org.opendaylight.controller.sal.packet.address.EthernetAddress}
+     *        object needs to be specified.
+     *     </li>
+     *   </ul>
+     * @return
+     *   If the MAC mapping is active between the vBridge specified by
+     *   {@code path} and the MAC address specified by {@code addr},
+     *   A {@link MacAddressEntry} instance which shows the host information
+     *   corresponding to {@code addr} is returned.
+     *   {@code null} is returned in the following cases.
+     *   <ul>
+     *     <li>
+     *       MAC mapping is not configured in the vBridge specified by
+     *       {@code path}.
+     *     </li>
+     *     <li>
+     *       MAC mapping is not activated with the MAC address specified by
+     *       {@code addr}.
+     *     </li>
+     *   </ul>
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code path}.</li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name} or
+     *           {@linkplain VBridgePath#getBridgeName() vBridge name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>
+     *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or vBridge
+     *       specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    MacAddressEntry getMacMappedHost(VBridgePath path, DataLinkAddress addr)
+        throws VTNException;
+
+    /**
+     * Configure
+     * {@linkplain <a href="package-summary.html#MAC-map">MAC mapping</a>}.
+     * in the specified
+     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
+     *
+     * <p>
+     *   This method changes the MAC addresses to be mapped and not to be
+     *   mapped at the same time.
+     * </p>
+     *
+     * @param path    A {@link VBridgePath} object that specifies the position
+     *                of the vBridge.
+     * @param op
+     *   A {@link UpdateOperation} instance which indicates how to change
+     *   the MAC mapping configuration.
+     *   <dl style="margin-left: 1em;">
+     *     <dt>{@link UpdateOperation#SET}
+     *     <dd>
+     *       Change the configuration of the MAC mapping exactly the same
+     *       as the configuration specified by {@code mcconf}.
+     *       <p>
+     *         MAC mapping is removed in the following cases.
+     *       </p>
+     *       <ul>
+     *         <li>
+     *           {@code null} is specified to {@code mcconf}.
+     *         </li>
+     *         <li>
+     *           {@code mcconf} does not contain any {@link DataLinkHost}
+     *           instance.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt>{@link UpdateOperation#ADD}
+     *     <dd>
+     *       Append the host information configured in {@code mcconf} to the
+     *       access controll lists configured in MAC mapping.
+     *       <ul>
+     *         <li>
+     *           No change is made if {@code null} is specified to
+     *           {@code mcconf}.
+     *         </li>
+     *         <li>
+     *           {@linkplain <a href="package-summary.html#MAC-map.allow">Map Allow list</a>}
+     *           of the MAC mapping is not modified if the Map Allow list in
+     *           {@code mcconf} is empty.
+     *         </li>
+     *         <li>
+     *           {@linkplain <a href="package-summary.html#MAC-map.deny">Map Deny list</a>}
+     *           of the MAC mapping is not modified if the Map Deny list in
+     *           {@code mcconf} is empty.
+     *         </li>
+     *         <li>
+     *           It will be ignored if one tries to add host information which
+     *           is already present in the access control list.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt>{@link UpdateOperation#REMOVE}
+     *     <dd>
+     *       Remove the host information configured in {@code mcconf} from the
+     *       access controll lists configured in the MAC mapping.
+     *       <ul>
+     *         <li>
+     *           No change is made if {@code null} is specified to
+     *           {@code mcconf}.
+     *         </li>
+     *         <li>
+     *           {@linkplain <a href="package-summary.html#MAC-map.allow">Map Allow list</a>}
+     *           of the MAC mapping is not modified if the Map Allow list in
+     *           {@code mcconf} is empty.
+     *         </li>
+     *         <li>
+     *           {@linkplain <a href="package-summary.html#MAC-map.deny">Map Deny list</a>}
+     *           of the MAC mapping is not modified if the Map Deny list in
+     *           {@code mcconf} is empty.
+     *         </li>
+     *         <li>
+     *           It will be ignored if one tries to remove host information
+     *           which is not present in the access control list.
+     *         </li>
+     *         <li>
+     *           MAC mappin will be removed if both Map Allow and Map Deny list
+     *           become empty.
+     *         </li>
+     *       </ul>
+     *   </dl>
+     * @param mcconf  A {@link MacMapConfig} instance which contains the MAC
+     *                mapping configuration information.
+     * @return
+     *   A {@link UpdateType} object which represents the result of the
+     *   operation is returned.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code UpdateType.ADDED}
+     *     <dd>
+     *       MAC mapping was newly configured in the specified vBridge.
+     *
+     *     <dt style="font-weight: bold;">{@code UpdateType.REMOVED}
+     *     <dd>
+     *       MAC mapping was removed from the specified vBridge.
+     *
+     *     <dt style="font-weight: bold;">{@code UpdateType.CHANGED}
+     *     <dd>
+     *       Configuration of existing MAC mapping in the specified vBridge
+     *       was changed.
+     *
+     *     <dt style="font-weight: bold;">{@code null}
+     *     <dd>
+     *       Configuration of existing MAC mapping is not changed.
+     *   </dl>
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code path} or {@code op}.</li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name} or
+     *           {@linkplain VBridgePath#getBridgeName() vBridge name}.
+     *         </li>
+     *         <li>
+     *           {@code null} or invalid {@link DataLinkHost} instance is
+     *           configured in {@code mcconf}.
+     *         </li>
+     *         <li>
+     *           {@link UpdateOperation#SET} or {@link UpdateOperation#ADD}
+     *           is passed to {@code op}, one of the following conditions is
+     *           met.
+     *           <ul>
+     *             <li>
+     *               Multiple {@link EthernetHost} instances with the same
+     *               MAC address are specified in Map Allow list of
+     *               {@code mcconf}.
+     *             </li>
+     *             <li>
+     *               {@link EthernetHost} instance without MAC address is
+     *               configured in Map Deny list of {@code mcconf}.
+     *             </li>
+     *           </ul>
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>
+     *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or
+     *       vBridge specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.CONFLICT}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>
+     *           {@link UpdateOperation#SET} or {@link UpdateOperation#ADD} is
+     *           passed to {@code op}, and host information configured inside
+     *           Map Allow list in MAC mapping of another vBridge is configured
+     *           in map Allow list of {@code mcconf}.
+     *         </li>
+     *         <li>
+     *           {@link UpdateOperation#ADD} is passed to {@code op}, and
+     *           host information having the same MAC address and different
+     *           VLAN ID when compared to the host information in Map Allow
+     *           list of {@code mcconf} is already configured in Map Allow list
+     *           of MAC mapping.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    UpdateType setMacMap(VBridgePath path, UpdateOperation op,
+                         MacMapConfig mcconf) throws VTNException;
+
+    /**
+     * Configure
+     * {@linkplain <a href="package-summary.html#MAC-map">MAC mapping</a>}.
+     * in the specified
+     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
+     *
+     * <p>
+     *   This method changes the specified access control list of the
+     *   MAC mapping.
+     * </p>
+     *
+     * @param path      A {@link VBridgePath} object that specifies the
+     *                  position of the vBridge.
+     * @param op
+     *    A {@link UpdateOperation} instance which indicates how to change
+     *    the access control list.
+     *   <dl style="margin-left: 1em;">
+     *     <dt>{@link UpdateOperation#SET}
+     *     <dd>
+     *       Change the access control list specified by {@code aclType}
+     *       exactly the same as {@code dlhosts}.
+     *       <ul>
+     *         <li>
+     *           All the host information inside the specified access control
+     *           list will be removed if {@code null} or empty list is
+     *           specified to {@code dlhosts}.
+     *         </li>
+     *         <li>
+     *           MAC mappin will be removed if both Map Allow and Map Deny list
+     *           become empty.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt>{@link UpdateOperation#ADD}
+     *     <dd>
+     *       Append the host information configured in {@code dlhosts} to the
+     *       access control list specified by {@code aclType}.
+     *       <ul>
+     *         <li>
+     *           No change is made if {@code dlhosts} is {@code null} or an
+     *           empty set.
+     *         </li>
+     *         <li>
+     *           It will be ignored if one tries to add host information which
+     *           is already present in the access control list.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt>{@link UpdateOperation#REMOVE}
+     *     <dd>
+     *       Remove the host information configured in {@code dlhosts} from the
+     *       access control list specified by {@code aclType}.
+     *       <ul>
+     *         <li>
+     *           No change is made if {@code dlhosts} is {@code null} or an
+     *           empty set.
+     *         </li>
+     *         <li>
+     *           It will be ignored if one tries to add host information which
+     *           is already present in the access control list.
+     *         </li>
+     *         <li>
+     *           MAC mappin will be removed if both Map Allow and Map Deny list
+     *           become empty.
+     *         </li>
+     *       </ul>
+     *   </dl>
+     * @param aclType   The type of access control list.
+     *   <dl style="margin-left: 1em;">
+     *     <dt>{@link MacMapAclType#ALLOW}
+     *     <dd>
+     *       Modify host information configured in
+     *       {@linkplain <a href="package-summary.html#MAC-map.allow">Map Allow list</a>}.
+     *
+     *     <dt>{@link MacMapAclType#DENY}
+     *     <dd>
+     *       Modify host information configured in
+     *       {@linkplain <a href="package-summary.html#MAC-map.deny">Map Deny list</a>}.
+     *   </dl>
+     * @param dlhosts   A set of {@link DataLinkHost} instances.
+     * @return
+     *   A {@link UpdateType} object which represents the result of the
+     *   operation is returned.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code UpdateType.ADDED}
+     *     <dd>
+     *       MAC mapping was newly configured in the specified vBridge.
+     *
+     *     <dt style="font-weight: bold;">{@code UpdateType.REMOVED}
+     *     <dd>
+     *       MAC mapping was removed from the specified vBridge.
+     *
+     *     <dt style="font-weight: bold;">{@code UpdateType.CHANGED}
+     *     <dd>
+     *       Configuration of existing MAC mapping in the specified vBridge
+     *       was changed.
+     *
+     *     <dt style="font-weight: bold;">{@code null}
+     *     <dd>
+     *       Configuration of existing MAC mapping is not changed.
+     *   </dl>
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>
+     *           {@code null} is passed to {@code path} or {@code op} or
+     *           {@code aclType}.
+     *         </li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name} or
+     *           {@linkplain VBridgePath#getBridgeName() vBridge name}.
+     *         </li>
+     *         <li>
+     *           {@code null} or invalid {@link DataLinkHost} instance is
+     *           configured in {@code dlhosts}.
+     *         </li>
+     *         <li>
+     *           {@link UpdateOperation#SET} or {@link UpdateOperation#ADD}
+     *           is passed to {@code op}, one of the following conditions is
+     *           met.
+     *           <ul>
+     *             <li>
+     *               {@link MacMapAclType#ALLOW} is passed to {@code aclType},
+     *               and multiple {@link EthernetHost} instances with the
+     *               same MAC address are specified in {@code dlhosts}.
+     *             </li>
+     *             <li>
+     *               {@link MacMapAclType#DENY} is passed to {@code aclType},
+     *               and {@link EthernetHost} instance without MAC address
+     *               is configured in {@code dlhosts}.
+     *             </li>
+     *           </ul>
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>
+     *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or
+     *       vBridge specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.CONFLICT}
+     *     <dd>
+     *       {@link MacMapAclType#ALLOW} is passed to {@code aclType}, and
+     *       one of the following conditions is met.
+     *       <ul style="padding-left: 1em;">
+     *         <li>
+     *           {@link UpdateOperation#SET} or {@link UpdateOperation#ADD} is
+     *           passed to {@code op}, and host information configured inside
+     *           the access control list in MAC mapping of another vBridge
+     *           is configured in {@code dlhosts}.
+     *         </li>
+     *         <li>
+     *           {@link UpdateOperation#ADD} is passed to {@code op}, and
+     *           host information having the same MAC address and different
+     *           VLAN ID when compared to the host information in
+     *           {@code dlhosts} is already configured in access control list
+     *           of MAC mapping.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    UpdateType setMacMap(VBridgePath path, UpdateOperation op,
+                         MacMapAclType aclType,
+                         Set<? extends DataLinkHost> dlhosts)
+        throws VTNException;
 
     /**
      * Initiate the discovery of a host based on its IP address.

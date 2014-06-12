@@ -25,6 +25,21 @@ import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Assert;
+
+import org.opendaylight.vtn.manager.DataLinkHost;
+import org.opendaylight.vtn.manager.EthernetHost;
+import org.opendaylight.vtn.manager.SwitchPort;
+import org.opendaylight.vtn.manager.VBridgeConfig;
+import org.opendaylight.vtn.manager.VBridgeIfPath;
+import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VTenantConfig;
+import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
+import org.opendaylight.vtn.manager.internal.cluster.MapReference;
+import org.opendaylight.vtn.manager.internal.cluster.MapType;
+import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
+
 import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -36,17 +51,7 @@ import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
-import org.opendaylight.vtn.manager.SwitchPort;
-import org.opendaylight.vtn.manager.VBridgeConfig;
-import org.opendaylight.vtn.manager.VBridgeIfPath;
-import org.opendaylight.vtn.manager.VBridgePath;
-import org.opendaylight.vtn.manager.VTenantConfig;
-import org.opendaylight.vtn.manager.VTenantPath;
-import org.opendaylight.vtn.manager.internal.cluster.MapReference;
-import org.opendaylight.vtn.manager.internal.cluster.MapType;
-import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
-
-import org.junit.Assert;
+import org.opendaylight.controller.sal.utils.NetUtils;
 
 /**
  * Abstract base class for JUnit tests.
@@ -177,6 +182,38 @@ public abstract class TestBase extends Assert {
     }
 
     /**
+     * Create a deep copy of the specified {@link VTenantPath} object.
+     *
+     * @param path  A {@link VTenantPath} object to be copied.
+     * @return  A copied {@link VTenantPath} object.
+     */
+    protected static VTenantPath copy(VTenantPath path) {
+        if (path != null) {
+            String tname = copy(path.getTenantName());
+            if (path instanceof VBridgePath) {
+                VBridgePath bpath = (VBridgePath)path;
+                String bname = copy(bpath.getBridgeName());
+                bpath = new VBridgePath(tname, bname);
+
+                if (path instanceof VBridgeIfPath) {
+                    VBridgeIfPath ipath = (VBridgeIfPath)path;
+                    String iname = copy(ipath.getInterfaceName());
+                    path = new VBridgeIfPath(tname, bname, iname);
+                } else if (path instanceof VlanMapPath) {
+                    VlanMapPath vpath = (VlanMapPath)path;
+                    String mapId = copy(vpath.getMapId());
+                    path = new VlanMapPath(bpath, mapId);
+                } else if (path instanceof MacMapPath) {
+                    path = new MacMapPath(bpath);
+                } else {
+                    path = bpath;
+                }
+            }
+        }
+        return path;
+    }
+
+    /**
      * Create a deep copy of the specified {@link MapReference} object.
      *
      * @param ref  A {@link MapReference} object to be copied.
@@ -186,25 +223,8 @@ public abstract class TestBase extends Assert {
         if (ref != null) {
             MapType type = ref.getMapType();
             String cname = copy(ref.getContainerName());
-            VBridgePath path = ref.getPath();
-            String tname = copy(path.getTenantName());
-            String bname = copy(path.getBridgeName());
-
-            VBridgePath newpath;
-            if (path instanceof VBridgeIfPath) {
-                VBridgeIfPath ipath = (VBridgeIfPath)path;
-                String iname = copy(ipath.getInterfaceName());
-                newpath = new VBridgeIfPath(tname, bname, iname);
-            } else if (path instanceof VlanMapPath) {
-                VlanMapPath vpath = (VlanMapPath)path;
-                String mapId = copy(vpath.getMapId());
-                VBridgePath bpath = new VBridgePath(tname, bname);
-                newpath = new VlanMapPath(bpath, mapId);
-            } else {
-                newpath = new VBridgePath(tname, bname);
-            }
-
-            ref = new MapReference(type, cname, newpath);
+            VBridgePath path = (VBridgePath)copy(ref.getPath());
+            ref = new MapReference(type, cname, path);
         }
 
         return ref;
@@ -615,6 +635,25 @@ public abstract class TestBase extends Assert {
     }
 
     /**
+     * Create a {@link EthernetAddress} instance which represents the
+     * MAC address specified by a long integer value.
+     *
+     * @param mac  A long integer value which represents the MAC address.
+     * @return  A {@link EthernetAddress} instance.
+     */
+    protected static EthernetAddress createEthernetAddresses(long mac) {
+        byte[] addr = NetUtils.longToByteArray6(mac);
+        EthernetAddress eaddr = null;
+        try {
+            eaddr = new EthernetAddress(addr);
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        return eaddr;
+    }
+
+    /**
      * Create a list of {@link InetAddress} set and a {@code null}.
      *
      * @return A list of {@link InetAddress} set.
@@ -655,6 +694,24 @@ public abstract class TestBase extends Assert {
             }
         }
         return list;
+    }
+
+    /**
+     * Create a {@link InetAddress} instance which represents the specified
+     * IP address.
+     *
+     * @param addr  A raw IP address.
+     * @return  A {@link InetAddress} instance.
+     */
+    protected static InetAddress createInetAddress(byte[] addr) {
+        InetAddress iaddr = null;
+        try {
+            iaddr = InetAddress.getByAddress(addr);
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        return iaddr;
     }
 
     /**
@@ -903,6 +960,67 @@ public abstract class TestBase extends Assert {
             byte[] sender, byte[] target, short vlan, NodeConnector nc) {
         return createRawPacket(
                 createIPv4Packet(src, dst, sender, target, vlan), nc);
+    }
+
+    /**
+     * Create a {@link EthernetHost} instance which represents the
+     * specified MAC address and VLAN ID.
+     *
+     * @param mac   A long integer value which represents the MAC address.
+     * @param vlan  A VLAN ID.
+     * @return  A {@link EthernetHost} instance.
+     */
+    protected static EthernetHost createEthernetHost(long mac, short vlan) {
+        EthernetAddress eaddr = createEthernetAddresses(mac);
+        return new EthernetHost(eaddr, vlan);
+    }
+
+    /**
+     * Create a list of set of {@link DataLinkHost} instances.
+     *
+     * @param limit  The number of ethernet addresses to be created.
+     * @return  A list of set of {@link DataLinkHost} instances.
+     */
+    protected static List<Set<DataLinkHost>> createDataLinkHostSet(int limit) {
+        return createDataLinkHostSet(limit, true);
+    }
+
+    /**
+     * Create a list of set of {@link DataLinkHost} instances.
+     *
+     * @param limit  The number of ethernet addresses to be created.
+     * @param setNull  Set {@code null} to returned list if {@code true}.
+     * @return  A list of set of {@link DataLinkHost} instances.
+     */
+    protected static List<Set<DataLinkHost>>
+        createDataLinkHostSet(int limit, boolean setNull) {
+        List<Set<DataLinkHost>> list = new ArrayList<Set<DataLinkHost>>();
+        if (setNull) {
+            list.add(null);
+        }
+
+        HashSet<DataLinkHost> set = new HashSet<DataLinkHost>();
+        short vlans[] = {0, 4095};
+        for (short vlan: vlans) {
+            for (EthernetAddress ether: createEthernetAddresses()) {
+                set.add(new EthernetHost(ether, vlan));
+                list.add(new HashSet<DataLinkHost>(set));
+                if (list.size() >= limit) {
+                    return list;
+                }
+            }
+        }
+
+        for (int i = 0; i < 2; i++) {
+            TestDataLink dladdr = new TestDataLink("addr" + i);
+            set.add(new TestDataLinkHost(dladdr));
+            list.add(new HashSet<DataLinkHost>(set));
+            if (list.size() >= limit) {
+                break;
+            }
+        }
+
+        return list;
     }
 
     /**
@@ -1174,7 +1292,7 @@ public abstract class TestBase extends Assert {
     /**
      * setup a startup directory
      */
-    protected void setupStartupDir() {
+    protected static void setupStartupDir() {
         File confdir = new File(GlobalConstants.STARTUPHOME.toString());
         boolean result = confdir.exists();
         if (!result) {
@@ -1190,7 +1308,7 @@ public abstract class TestBase extends Assert {
     /**
      * cleanup a startup directory
      */
-    protected void cleanupStartupDir() {
+    protected static void cleanupStartupDir() {
         String currdir = new File(".").getAbsoluteFile().getParent();
         File confdir = new File(GlobalConstants.STARTUPHOME.toString());
 

@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
@@ -26,9 +27,15 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.IVTNManagerAware;
+import org.opendaylight.vtn.manager.MacAddressEntry;
+import org.opendaylight.vtn.manager.MacMap;
+import org.opendaylight.vtn.manager.MacMapAclType;
+import org.opendaylight.vtn.manager.MacMapConfig;
 import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
+import org.opendaylight.vtn.manager.UpdateOperation;
 import org.opendaylight.vtn.manager.VBridge;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
@@ -59,6 +66,7 @@ import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.PacketResult;
+import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.routing.IRouting;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
@@ -78,7 +86,7 @@ public final class VBridgeImpl implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -5189845784962442671L;
+    private static final long serialVersionUID = 4676211650792643096L;
 
     /**
      * Logger instance.
@@ -134,6 +142,11 @@ public final class VBridgeImpl implements Serializable {
         new TreeMap<String, VlanMapImpl>();
 
     /**
+     * MAC mapping applied to this bridge.
+     */
+    private MacMapImpl  macMap;
+
+    /**
      * Read write lock to synchronize per-bridge resources.
      */
     private transient ReentrantReadWriteLock  rwLock =
@@ -170,6 +183,12 @@ public final class VBridgeImpl implements Serializable {
             String iname = entry.getKey();
             VBridgeIfImpl vif = entry.getValue();
             vif.setPath(this, iname);
+        }
+
+        // Initialize MAC mapping path.
+        MacMapImpl mmap = macMap;
+        if (mmap != null) {
+            mmap.setPath(bridgePath);
         }
 
         // Initialize VLAN mapping path.
@@ -658,6 +677,160 @@ public final class VBridgeImpl implements Serializable {
     }
 
     /**
+     * Return information about the MAC mapping configured in this vBridge.
+     *
+     * @param mgr   VTN Manager service.
+     * @return  A {@link MacMap} object which represents information about
+     *          the MAC mapping configured in this vBridge.
+     *          {@code null} is returned if the MAC mapping is not configured
+     *          in this vBridge.
+     * @throws VTNException  An error occurred.
+     */
+    MacMap getMacMap(VTNManagerImpl mgr) throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            MacMapImpl mmap = macMap;
+            return (mmap == null) ? null : mmap.getMacMap(mgr);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Return configuration information about MAC mapping in the specified
+     * vBridge.
+     *
+     * @param aclType  The type of access control list.
+     * @return  A set of {@link DataLinkHost} instances which contains host
+     *          information in the specified access control list is returned.
+     *          {@code null} is returned if MAC mapping is not configured in
+     *          the specified vBridge.
+     * @throws VTNException  An error occurred.
+     */
+    Set<DataLinkHost> getMacMapConfig(MacMapAclType aclType)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            MacMapImpl mmap = macMap;
+            return (mmap == null) ? null : mmap.getMacMapConfig(aclType);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Return a list of {@link MacAddressEntry} instances corresponding to
+     * all the MAC address information actually mapped by MAC mapping
+     * configured in the specified vBridge.
+     *
+     * @param mgr   VTN Manager service.
+     * @return  A list of {@link MacAddressEntry} instances corresponding to
+     *          all the MAC address information actually mapped to the vBridge
+     *          specified by {@code path}.
+     *          {@code null} is returned if MAC mapping is not configured
+     *          in the specified vBridge.
+     * @throws VTNException  An error occurred.
+     */
+    List<MacAddressEntry> getMacMappedHosts(VTNManagerImpl mgr)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            MacMapImpl mmap = macMap;
+            return (mmap == null) ? null : mmap.getMacMappedHosts(mgr);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Determine whether the host specified by the MAC address is actually
+     * mapped by MAC mapping configured in the specified vBridge.
+     *
+     * @param mgr   VTN Manager service.
+     * @param addr  A {@link DataLinkAddress} instance which represents the
+     *              MAC address.
+     * @return  A {@link MacAddressEntry} instancw which represents information
+     *          about the host corresponding to {@code addr} is returned
+     *          if it is actually mapped to the specified vBridge by MAC
+     *          mapping.
+     *          {@code null} is returned if the MAC address specified by
+     *          {@code addr} is not mapped by MAC mapping, or MAC mapping is
+     *          not configured in the specified vBridge.
+     * @throws VTNException  An error occurred.
+     */
+    MacAddressEntry getMacMappedHost(VTNManagerImpl mgr, DataLinkAddress addr)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            MacMapImpl mmap = macMap;
+            return (mmap == null) ? null : mmap.getMacMappedHost(mgr, addr);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Change MAC mapping configuration as specified by {@link MacMapConfig}
+     * instance.
+     *
+     * @param mgr     VTN Manager service.
+     * @param op      A {@link UpdateOperation} instance which indicates
+     *                how to change the MAC mapping configuration.
+     * @param mcconf  A {@link MacMapConfig} instance which contains the MAC
+     *                mapping configuration information.
+     * @return        A {@link UpdateType} object which represents the result
+     *                of the operation is returned.
+     *                {@code null} is returned if the configuration was not
+     *                changed.
+     * @throws VTNException  An error occurred.
+     */
+    UpdateType setMacMap(VTNManagerImpl mgr, UpdateOperation op,
+                         MacMapConfig mcconf) throws VTNException {
+        Lock wrlock = rwLock.writeLock();
+        wrlock.lock();
+        try {
+            MacMapImpl mmap = prepareMacMap(op);
+            MacMapConfig newconf = mmap.setMacMap(mgr, op, mcconf);
+            return commitMacMap(mgr, mmap, newconf);
+        } finally {
+            wrlock.unlock();
+        }
+    }
+
+    /**
+     * Change the access controll list for the specified MAC mapping.
+     *
+     * @param mgr       VTN Manager service.
+     * @param op        A {@link UpdateOperation} instance which indicates
+     *                  how to change the MAC mapping configuration.
+     * @param aclType   The type of access control list.
+     * @param dlhosts   A set of {@link DataLinkHost} instances.
+     * @return          A {@link UpdateType} object which represents the result
+     *                  of the operation is returned.
+     *                  {@code null} is returned if the configuration was not
+     *                  changed.
+     * @throws VTNException  An error occurred.
+     */
+    UpdateType setMacMap(VTNManagerImpl mgr, UpdateOperation op,
+                         MacMapAclType aclType,
+                         Set<? extends DataLinkHost> dlhosts)
+        throws VTNException {
+        Lock wrlock = rwLock.writeLock();
+        wrlock.lock();
+        try {
+            MacMapImpl mmap = prepareMacMap(op);
+            MacMapConfig newconf = mmap.setMacMap(mgr, op, aclType, dlhosts);
+            return commitMacMap(mgr, mmap, newconf);
+        } finally {
+            wrlock.unlock();
+        }
+    }
+
+    /**
      * Resume the virtual L2 bridge.
      *
      * <p>
@@ -681,6 +854,12 @@ public final class VBridgeImpl implements Serializable {
                 if (vif.isEnabled()) {
                     state = s;
                 }
+            }
+
+            // Resume MAC mapping.
+            MacMapImpl mmap = macMap;
+            if (mmap != null) {
+                state = mmap.resume(mgr, state);
             }
 
             // Resume VLAN mappings.
@@ -746,6 +925,16 @@ public final class VBridgeImpl implements Serializable {
                 }
             }
 
+            MacMapImpl mmap = macMap;
+            if (mmap != null) {
+                VNodeState s = mmap.notifyNode(mgr, state, node, type);
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("{}:{}: notifyNode(macmap): {} -> {}",
+                              getContainerName(), bridgePath, state, s);
+                }
+                state = s;
+            }
+
             for (VlanMapImpl vmap: vlanMaps.values()) {
                 VNodeState s = vmap.notifyNode(mgr, db, state, node, type);
                 if (LOG.isTraceEnabled()) {
@@ -792,6 +981,17 @@ public final class VBridgeImpl implements Serializable {
                 }
             }
 
+            MacMapImpl mmap = macMap;
+            if (mmap != null) {
+                VNodeState s = mmap.notifyNodeConnector(mgr, state, nc, pstate,
+                                                        type);
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("{}:{}: notifyNodeConnector(macmap): {} -> {}",
+                              getContainerName(), bridgePath, state, s);
+                }
+                state = s;
+            }
+
             for (VlanMapImpl vmap: vlanMaps.values()) {
                 VNodeState s = vmap.notifyNodeConnector(mgr, db, state, nc,
                                                         pstate, type);
@@ -832,6 +1032,16 @@ public final class VBridgeImpl implements Serializable {
                     }
                     state = s;
                 }
+            }
+
+            MacMapImpl mmap = macMap;
+            if (mmap != null) {
+                VNodeState s = mmap.edgeUpdate(mgr, state, estate);
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("{}:{}: edgeUpdate(macmap): {} -> {}",
+                              getContainerName(), bridgePath, state, s);
+                }
+                state = s;
             }
 
             for (VlanMapImpl vmap: vlanMaps.values()) {
@@ -875,6 +1085,12 @@ public final class VBridgeImpl implements Serializable {
                                             vlconf.getVlan());
                 mgr.notifyChange(listener, bridgePath, vlmap, type);
             }
+
+            MacMapImpl mmap = macMap;
+            if (mmap != null) {
+                MacMapConfig mcconf = mmap.getMacMapConfig();
+                mgr.notifyChange(listener, bridgePath, mcconf, type);
+            }
         } finally {
             rdlock.unlock();
         }
@@ -917,11 +1133,12 @@ public final class VBridgeImpl implements Serializable {
         NodeConnector nc = pctx.getOutgoingNodeConnector();
         assert nc != null;
         short vlan = pctx.getVlan();
+        long mac = NetUtils.byteArray6ToLong(pctx.getDestinationAddress());
 
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            VBridgeNode bnode = match(mgr, ref, nc, vlan);
+            VBridgeNode bnode = match(mgr, ref, mac, nc, vlan, false);
             if (bnode == null) {
                 return false;
             }
@@ -962,15 +1179,15 @@ public final class VBridgeImpl implements Serializable {
     PacketResult receive(VTNManagerImpl mgr, MapReference ref,
                          PacketContext pctx) {
         NodeConnector incoming = pctx.getIncomingNodeConnector();
-        byte[] src = pctx.getSourceAddress();
         short vlan = pctx.getVlan();
+        long mac = NetUtils.byteArray6ToLong(pctx.getSourceAddress());
 
         // Writer lock is required because this method may change the state
         // of the bridge.
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
-            VBridgeNode bnode = match(mgr, ref, incoming, vlan);
+            VBridgeNode bnode = match(mgr, ref, mac, incoming, vlan, true);
             if (bnode == null) {
                 return PacketResult.IGNORED;
             }
@@ -1060,6 +1277,13 @@ public final class VBridgeImpl implements Serializable {
                 it.remove();
             }
 
+            // Destroy MAC mapping.
+            MacMapImpl mmap = macMap;
+            if (mmap != null) {
+                macMap = null;
+                mmap.destroy(mgr, bridgePath, null, false);
+            }
+
             // Destroy MAC address table.
             mgr.removeMacAddressTable(bridgePath, retain);
 
@@ -1085,6 +1309,25 @@ public final class VBridgeImpl implements Serializable {
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         db.remove(bridgePath);
         VBridgeEvent.removed(mgr, bridgePath, vbridge, retain);
+    }
+
+    /**
+     * Scan mappings configured in this vBridge, and determine current state
+     * of this vBridge.
+     *
+     * @param mgr   VTN Manager service.
+     */
+    void update(VTNManagerImpl mgr) {
+        Lock wrlock = rwLock.writeLock();
+        wrlock.lock();
+        try {
+            updateState(mgr);
+        } catch (Exception e) {
+            // This should never happen.
+            mgr.logException(LOG, bridgePath, e);
+        } finally {
+            wrlock.unlock();
+        }
     }
 
     /**
@@ -1148,8 +1391,18 @@ public final class VBridgeImpl implements Serializable {
 
         Map<String, VlanMapImpl> vmaps = getVlanMappings();
         Map<String, VlanMapImpl> otherVmaps = vbr.getVlanMappings();
+        if (!vmaps.equals(otherVmaps)) {
+            return false;
+        }
 
-        return vmaps.equals(otherVmaps);
+        MacMapImpl mmap = getMacMapping();
+        MacMapImpl otherMmap = vbr.getMacMapping();
+
+        if (mmap == null) {
+            return (otherMmap == null);
+        }
+
+        return mmap.equals(otherMmap);
     }
 
     /**
@@ -1165,6 +1418,9 @@ public final class VBridgeImpl implements Serializable {
         rdlock.lock();
         try {
             h += vInterfaces.hashCode() ^ vlanMaps.hashCode();
+            if (macMap != null) {
+                h ^= macMap.hashCode();
+            }
         } finally {
             rdlock.unlock();
         }
@@ -1256,6 +1512,87 @@ public final class VBridgeImpl implements Serializable {
         } finally {
             rdlock.unlock();
         }
+    }
+
+    /**
+     * Return a shallow copy of the MAC mapping instance.
+     *
+     * @return  A copied MAC mapping instance.
+     */
+    private MacMapImpl getMacMapping() {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            return (macMap == null) ? null : macMap.clone();
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Return a {@link MacMapImpl} instance to change the MAC mapping
+     * configuration.
+     *
+     * <p>
+     *   Note that this method must be called with holding the bridge write
+     *   lock.
+     * </p>
+     *
+     * @param op  A {@link UpdateOperation} instance which indicates
+     *            how to change the MAC mapping configuration.
+     * @return    A {@link MacMapImpl} instance.
+     * @throws VTNException  An error occurred.
+     */
+    private MacMapImpl prepareMacMap(UpdateOperation op)
+        throws VTNException {
+        MacMapImpl mmap = macMap;
+        if (mmap == null) {
+            mmap = new MacMapImpl(bridgePath);
+        }
+
+        return mmap;
+    }
+
+    /**
+     * Install new MAC mapping configuration.
+     *
+     * <p>
+     *   Note that this method must be called with holding the bridge write
+     *   lock.
+     * </p>
+     *
+     * @param mgr      VTN Manager service.
+     * @param mmap     A {@link MacMapImpl} instance.
+     * @param newconf  A {@link MacMapConfig} instance to be delivered as
+     *                 manager event. {@code null} must be specified if the
+     *                 the MAC mapping configuration was not changed.
+     * @return         A {@link UpdateType} instance to be returned.
+     */
+    private UpdateType commitMacMap(VTNManagerImpl mgr, MacMapImpl mmap,
+                                    MacMapConfig newconf) {
+        if (newconf == null) {
+            return null;
+        }
+
+        UpdateType type;
+        if (macMap == null) {
+            assert !mmap.isEmpty();
+            MacMapEvent.added(mgr, bridgePath, newconf);
+            macMap = mmap;
+            type = UpdateType.ADDED;
+        } else if (mmap.isEmpty()) {
+            mmap.destroy(mgr, bridgePath, newconf, true);
+            macMap = null;
+            type = UpdateType.REMOVED;
+        } else {
+            assert macMap == mmap;
+            MacMapEvent.changed(mgr, bridgePath, newconf);
+            type = UpdateType.CHANGED;
+        }
+
+        updateState(mgr);
+
+        return type;
     }
 
     /**
@@ -1396,8 +1733,8 @@ public final class VBridgeImpl implements Serializable {
     }
 
     /**
-     * Scan interfaces and VLAN mappings, and determine current state of the
-     * virtual bridge.
+     * Scan mappings configured in this vBridge, and determine current state
+     * of this vBridge.
      *
      * <p>
      *   Note that this method must be called with holding the bridge write
@@ -1429,6 +1766,16 @@ public final class VBridgeImpl implements Serializable {
                              ConcurrentMap<VTenantPath, Object> db,
                              VBridgeState bst) {
         VNodeState state = VNodeState.UNKNOWN;
+
+        // Check to see if the MAC mapping is active.
+        MacMapImpl mmap = macMap;
+        if (mmap != null) {
+            state = mmap.getBridgeState(mgr, state);
+            if (state == VNodeState.DOWN) {
+                setState(mgr, db, bst, state);
+                return;
+            }
+        }
 
         // Scan virtual interfaces.
         for (VBridgeIfImpl vif: vInterfaces.values()) {
@@ -1594,7 +1941,7 @@ public final class VBridgeImpl implements Serializable {
         // Ensure that the outgoing network is mapped to this bridge.
         NodeConnector outgoing = tent.getPort();
         short outVlan = tent.getVlan();
-        VBridgeNode bnode = match(mgr, outgoing, outVlan);
+        VBridgeNode bnode = match(mgr, key.longValue(), outgoing, outVlan);
         if (bnode == null) {
             LOG.warn("{}:{}: Unexpected MAC address entry: {}",
                      getContainerName(), bridgePath, tent);
@@ -1698,18 +2045,29 @@ public final class VBridgeImpl implements Serializable {
      * </p>
      *
      * @param mgr   VTN Manager service.
-     * @param nc    A node connector where the packet was received.
-     * @param vlan  VLAN ID in the received packet.
+     * @param mac   MAC address of the host.
+     * @param nc    A {@link NodeConnector} instance corresponding to a
+     *              switch port where the host was detected.
+     * @param vlan  VLAN ID associated with the specified host..
      * @return  A {@code VBridgeNode} is returned if the network specified
      *          by {@code nc} and {@code vlan} is mapped to this bridge.
      *          Otherwise {@code null} is returned.
      */
-    private VBridgeNode match(VTNManagerImpl mgr, NodeConnector nc,
+    private VBridgeNode match(VTNManagerImpl mgr, long mac, NodeConnector nc,
                               short vlan) {
         // Check whether the packet is mapped by port mapping or not.
         for (VBridgeIfImpl vif: vInterfaces.values()) {
             if (vif.match(mgr, nc, vlan)) {
                 return vif;
+            }
+        }
+
+        // Check whether the packet is mapped by MAC mapping or not.
+        MacMapImpl mmap = macMap;
+        if (mmap != null) {
+            MacVlan mvlan = new MacVlan(mac, vlan);
+            if (mmap.isActive(mgr, mvlan, nc)) {
+                return mmap;
             }
         }
 
@@ -1730,21 +2088,26 @@ public final class VBridgeImpl implements Serializable {
      * specified VLAN network.
      *
      * <p>
-     *   Note that this method must be called with holding the bridge lock.
+     *   Note that this method must be called with holding the bridge lock
+     *   in writer mode.
      * </p>
      *
-     * @param mgr   VTN Manager service.
-     * @param ref   Reference to the virtual network mapping.
-     *              The specified reference must point the virtual node
-     *              contained in this vBridge.
-     * @param nc    A node connector where the packet was received.
-     * @param vlan  VLAN ID in the received packet.
+     * @param mgr       VTN Manager service.
+     * @param ref       Reference to the virtual network mapping.
+     *                  The specified reference must point the virtual node
+     *                  contained in this vBridge.
+     * @param mac       MAC address of the host.
+     * @param nc        A {@link NodeConnector} instance corresponding to a
+     *                  switch port where the host was detected.
+     * @param vlan      VLAN ID associated with the specified host..
+     * @param incoming  Specify {@code true} only if the specified host is
+     *                  source address of incoming packet.
      * @return  A {@code VBridgeNode} is returned if the network specified
      *          by {@code nc} and {@code vlan} is mapped to this bridge.
      *          Otherwise {@code null} is returned.
      */
-    private VBridgeNode match(VTNManagerImpl mgr, MapReference ref,
-                              NodeConnector nc, short vlan) {
+    private VBridgeNode match(VTNManagerImpl mgr, MapReference ref, long mac,
+                              NodeConnector nc, short vlan, boolean incoming) {
         MapType type = ref.getMapType();
         if (type == MapType.PORT) {
             // Determine the interface specified by the mapping reference.
@@ -1761,6 +2124,35 @@ public final class VBridgeImpl implements Serializable {
             }
 
             return (vif.match(mgr, nc, vlan)) ? vif : null;
+        }
+
+        if (type == MapType.MAC) {
+            MacMapImpl mmap = macMap;
+            if (mmap == null) {
+                // This may happen if the virtual network mapping is changed
+                // by another cluster node.
+                LOG.warn("{}:{}: Failed to resolve MAC mapping reference: {}",
+                         getContainerName(), bridgePath, ref);
+                return null;
+            }
+
+            // Activate the specified host in the MAC mapping if the specified
+            // packet is an incoming packet.
+            MacVlan mvlan = new MacVlan(mac, vlan);
+            if (incoming) {
+                Boolean ret = mmap.activate(mgr, mvlan, nc);
+                if (ret == null) {
+                    return null;
+                }
+
+                if (ret.booleanValue()) {
+                    // This MAC mapping has been activated.
+                    // So the vBridge state must be updated.
+                    updateState(mgr);
+                }
+            }
+
+            return mmap;
         }
 
         if (type == MapType.VLAN) {
@@ -1810,9 +2202,21 @@ public final class VBridgeImpl implements Serializable {
             vif.transmit(mgr, pctx, sent);
         }
 
+        // Forward packet to the network established by the MAC mapping.
+        MacMapImpl mmap = macMap;
+        if (mmap != null) {
+            mmap.transmit(mgr, pctx, sent);
+        }
+
         // Forward packet to the network established by the VLAN mapping.
         for (VlanMapImpl vmap: vlanMaps.values()) {
             vmap.transmit(mgr, pctx, sent);
+        }
+
+        if (LOG.isDebugEnabled() && sent.size() == 1 && sent.contains(innw)) {
+            LOG.debug("{}:{}: No packet was broadcasted: {}",
+                      getContainerName(), bridgePath,
+                      pctx.getDescription(innw.getNodeConnector()));
         }
     }
 

@@ -14,6 +14,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
+import java.util.Collection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -26,6 +27,7 @@ import org.opendaylight.vtn.manager.VInterfaceConfig;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.Status;
 
@@ -140,41 +142,170 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * Create a copy of the specified {@link EthernetAddress}.
+     * Create a copy of the specified {@link DataLinkAddress}.
      *
-     * @param ea    A {@link EthernetAddress} object to be copied.
-     * @return      A copied {@link EthernetAddress} object.
+     * @param addr  A {@link DataLinkAddress} object to be copied.
+     * @return      A copied {@link DataLinkAddress} object.
      */
-    protected static EthernetAddress copy(EthernetAddress ea) {
-        if (ea != null) {
-            try {
-                ea = new EthernetAddress(ea.getValue());
-            } catch (Exception e) {
-                unexpected(e);
-            }
+    protected static DataLinkAddress copy(DataLinkAddress addr) {
+        if (addr != null) {
+            addr = addr.clone();
         }
-        return ea;
+        return addr;
     }
 
     /**
-     * Create a deep copy of the specified {@link InetAddress} set.
+     * Create a copy of the specified {@link EthernetHost}.
      *
-     * @param ia    A {@link InetAddress} set to be copied.
-     * @return      A copied {@link InetAddress} set.
+     * @param ehost  A {@link EthernetHost} object to be copied.
+     * @return       A copied {@link EthernetHost} object.
      */
-    protected static Set<InetAddress> copy(Set<InetAddress> ia) {
-        if (ia != null) {
-            Set<InetAddress> newset = new HashSet<InetAddress>();
+    protected static EthernetHost copy(EthernetHost ehost) {
+        if (ehost != null) {
+            DataLinkAddress addr = ehost.getAddress();
+            short vlan = ehost.getVlan();
+            ehost = new EthernetHost((EthernetAddress)copy(addr), vlan);
+        }
+        return ehost;
+    }
+
+    /**
+     * Create a copy of the specified {@link TestDataLinkHost}.
+     *
+     * @param dlhost  A {@link TestDataLinkHost} object to be copied.
+     * @return        A copied {@link TestDataLinkHost} object.
+     */
+    protected static TestDataLinkHost copy(TestDataLinkHost dlhost) {
+        if (dlhost != null) {
+            DataLinkAddress addr = dlhost.getAddress();
+            dlhost = new TestDataLinkHost(copy(addr));
+        }
+        return dlhost;
+    }
+
+    /**
+     * Create a copy of the specified {@link MacAddressEntry}.
+     *
+     * @param entry  A {@link MacAddressEntry} object to be copied.
+     * @return       A copied {@link MacAddressEntry} object.
+     */
+    protected static MacAddressEntry copy(MacAddressEntry entry) {
+        if (entry != null) {
             try {
-                for (InetAddress iaddr : ia) {
-                    newset.add(InetAddress.getByAddress(iaddr.getAddress()));
-                }
+                DataLinkAddress dladdr = entry.getAddress();
+                short vlan = entry.getVlan();
+                NodeConnector nc = entry.getNodeConnector();
+                Set<InetAddress> ipaddr = entry.getInetAddresses();
+                entry = new MacAddressEntry(copy(dladdr), vlan, copy(nc),
+                                            copy(ipaddr));
             } catch (Exception e) {
                 unexpected(e);
             }
-            ia = newset;
         }
-        return ia;
+        return entry;
+    }
+
+    /**
+     * Create a copy of the specified {@link InetAddress}.
+     *
+     * @param addr  A {@link InetAddress} object to be copied.
+     * @return      A copied {@link InetAddress} object.
+     */
+    protected static InetAddress copy(InetAddress addr) {
+        if (addr != null) {
+            try {
+                String host = addr.getHostName();
+                byte[] raw = addr.getAddress();
+                addr = InetAddress.getByAddress(host, raw);
+            } catch (Exception e) {
+                unexpected(e);
+            }
+        }
+        return addr;
+    }
+
+    /**
+     * Create a deep copy of the specified set.
+     *
+     * @param set  A set of instances.
+     * @param <T>  The type of elements in the set.
+     * @return  A deep copy of the specified set.
+     */
+    protected static <T> Set<T> copy(Set<T> set) {
+        if (set != null) {
+            HashSet<Object> newset = new HashSet<Object>();
+            copy(newset, set);
+            set = (Set<T>)newset;
+        }
+        return set;
+    }
+
+    /**
+     * Create a deep copy of the specified list.
+     *
+     * @param list  A list of instances.
+     * @param <T>  The type of elements in the list.
+     * @return  A deep copy of the specified list.
+     */
+    protected static <T> List<T> copy(List<T> list) {
+        if (list != null) {
+            ArrayList<Object> newlist = new ArrayList<Object>();
+            copy(newlist, list);
+            list = (List<T>)newlist;
+        }
+        return list;
+    }
+
+    /**
+     * Create a deep copy of the specified collection.
+     *
+     * @param dst  A collection to store copies.
+     * @param src  A collection of instances.
+     * @param <T>  The type of elements in the collection.
+     */
+    protected static <T> void copy(Collection<Object> dst, Collection<T> src) {
+        for (T elem: src) {
+            if (elem instanceof InetAddress) {
+                dst.add(copy((InetAddress)elem));
+            } else if (elem instanceof EthernetHost) {
+                dst.add(copy((EthernetHost)elem));
+            } else if (elem instanceof TestDataLinkHost) {
+                dst.add(copy((TestDataLinkHost)elem));
+            } else if (elem instanceof MacAddressEntry) {
+                dst.add(copy((MacAddressEntry)elem));
+            } else {
+                fail("Unexpected instanse in the collection: " + elem);
+            }
+        }
+    }
+
+    /**
+     * Convert each element in the given collection into a string.
+     *
+     * @param col  A collection of objects.
+     * @return     A collection of strings.
+     */
+    protected static Collection<String> toStringCollection(Collection<?> col) {
+        if (col == null) {
+            return null;
+        }
+
+        Collection<String> newcol;
+        if (col instanceof Set) {
+            newcol = new HashSet<String>();
+        } else {
+            newcol = new ArrayList<String>();
+        }
+
+        for (Object o: col) {
+            if (o == null) {
+                newcol.add(null);
+            } else {
+                newcol.add(o.toString());
+            }
+        }
+
+        return newcol;
     }
 
     /**
@@ -489,7 +620,8 @@ public abstract class TestBase extends Assert {
      * @param setNull  Set {@code null} to returned list if {@code true}.
      * @return A list of {@link EthernetAddress}.
      */
-    protected static List<EthernetAddress> createEthernetAddresses(boolean setNull) {
+    protected static List<EthernetAddress>
+        createEthernetAddresses(boolean setNull) {
         List<EthernetAddress> list = new ArrayList<EthernetAddress>();
         byte [][] addrbytes = {
             new byte[] {(byte) 0x00, (byte) 0x00, (byte) 0x00,
@@ -512,6 +644,37 @@ public abstract class TestBase extends Assert {
             } catch (Exception e) {
                 unexpected(e);
             }
+        }
+
+        return list;
+    }
+
+    /**
+     * Create a list of {@link DataLinkAddress} and a {@code null}.
+     *
+     * @return  A list of {@link DataLinkAddress}.
+     */
+    protected static List<DataLinkAddress> createDataLinkAddresses() {
+        return createDataLinkAddresses(true);
+    }
+
+    /**
+     * Create a list of {@link DataLinkAddress}.
+     *
+     * @param setNull  Set {@code null} to returned list if {@code true}.
+     * @return  A list of {@link DataLinkAddress}.
+     */
+    protected static List<DataLinkAddress>
+        createDataLinkAddresses(boolean setNull) {
+        List<DataLinkAddress> list = new ArrayList<DataLinkAddress>();
+
+        for (EthernetAddress ether: createEthernetAddresses(setNull)) {
+            list.add(ether);
+        }
+
+        String[] addrs = {"addr1", "addr2", "addr3"};
+        for (String a: addrs) {
+            list.add(new TestDataLink(a));
         }
 
         return list;
@@ -556,6 +719,54 @@ public abstract class TestBase extends Assert {
                 list.add(iset);
             } catch (Exception e) {
                 unexpected(e);
+            }
+        }
+
+        return list;
+    }
+
+    /**
+     * Create a list of set of {@link DataLinkHost} instances.
+     *
+     * @param limit  The number of ethernet addresses to be created.
+     * @return  A list of set of {@link DataLinkHost} instances.
+     */
+    protected static List<Set<DataLinkHost>> createDataLinkHostSet(int limit) {
+        return createDataLinkHostSet(limit, true);
+    }
+
+    /**
+     * Create a list of set of {@link DataLinkHost} instances.
+     *
+     * @param limit  The number of ethernet addresses to be created.
+     * @param setNull  Set {@code null} to returned list if {@code true}.
+     * @return  A list of set of {@link DataLinkHost} instances.
+     */
+    protected static List<Set<DataLinkHost>>
+        createDataLinkHostSet(int limit, boolean setNull) {
+        List<Set<DataLinkHost>> list = new ArrayList<Set<DataLinkHost>>();
+        if (setNull) {
+            list.add(null);
+        }
+
+        HashSet<DataLinkHost> set = new HashSet<DataLinkHost>();
+        short vlans[] = {0, 4095};
+        for (short vlan: vlans) {
+            for (EthernetAddress ether: createEthernetAddresses()) {
+                set.add(new EthernetHost(ether, vlan));
+                list.add(new HashSet<DataLinkHost>(set));
+                if (list.size() >= limit) {
+                    return list;
+                }
+            }
+        }
+
+        for (int i = 0; i < 2; i++) {
+            TestDataLink dladdr = new TestDataLink("addr" + i);
+            set.add(new TestDataLinkHost(dladdr));
+            list.add(new HashSet<DataLinkHost>(set));
+            if (list.size() >= limit) {
+                break;
             }
         }
 
@@ -696,5 +907,52 @@ public abstract class TestBase extends Assert {
 
         assertNotSame(o, newobj);
         assertEquals(o, newobj);
+    }
+
+    /**
+     * Parse string representation of {@link Collection} instance.
+     *
+     * <p>
+     *   This method assumes that a string returned by
+     *   {@link Object#toString()} on each element is formated as
+     *   {@code "<name>[...]"}.
+     * </p>
+     *
+     * @param name   Class name of objects in the specified collection.
+     * @param str    A string which contains a string representation of
+     *               a collection.
+     * @param start  A index of the string where to start.
+     * @param col    A collection of string to store results.
+     * @return  A string index for next search.
+     */
+    protected static int parseString(String name, String str, int start,
+                                     Collection<String> col) {
+        assertEquals('[', str.charAt(start));
+        start++;
+        String label = name + "[";
+        String sep = ", ";
+        while (str.startsWith(label, start)) {
+            int stack = 1;
+            int end;
+            for (end = start + label.length(); stack > 0; end++) {
+                char c = str.charAt(end);
+                if (c == '[') {
+                    stack++;
+                } else if (c == ']') {
+                    stack--;
+                }
+            }
+
+            col.add(str.substring(start, end));
+            start = end;
+
+            if (str.startsWith(sep, start)) {
+                start += sep.length();
+            }
+        }
+
+        assertEquals(']', str.charAt(start));
+
+        return start + 1;
     }
 }

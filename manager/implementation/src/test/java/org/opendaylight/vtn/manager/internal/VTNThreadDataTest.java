@@ -9,7 +9,9 @@
 
 package org.opendaylight.vtn.manager.internal;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
@@ -17,21 +19,26 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.junit.Test;
 
-import org.opendaylight.controller.sal.core.Node;
-import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.match.Match;
-import org.opendaylight.controller.sal.match.MatchType;
-import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
-import org.opendaylight.controller.sal.utils.NodeCreator;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
 import org.opendaylight.vtn.manager.IVTNModeListener;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
+import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
+import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
+
+import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
+import org.opendaylight.controller.sal.core.Node;
+import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.match.Match;
+import org.opendaylight.controller.sal.match.MatchType;
+import org.opendaylight.controller.sal.utils.NetUtils;
+import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
+import org.opendaylight.controller.sal.utils.NodeCreator;
+import org.opendaylight.controller.sal.utils.Status;
+import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
  * JUnit Test for {@link VTNThreadData}.
@@ -76,6 +83,8 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
         int pri = 1;
         Set<VTNFlow> flows = new HashSet<VTNFlow>();
         Set<VTenantPath> pathSet = new HashSet<VTenantPath>();
+        Set<String> group1Set = new HashSet<String>();
+        Set<String> group2Set = new HashSet<String>();
 
         int numEntries1 = 0;
         int numEntries2 = 0;
@@ -89,14 +98,18 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
             actions.addOutput(outnc);
             flow.addFlow(vtnMgr, match, actions, pri);
 
+            Set<String> groupSet;
             if (((numEntries1 + numEntries2) % 2) == 0) {
                 pathSet.add(bpath1);
                 numEntries1++;
+                groupSet = group1Set;
             } else {
                 pathSet.add(bpath2);
                 numEntries2++;
+                groupSet = group2Set;
             }
             flow.addDependency(pathSet);
+            assertTrue(groupSet.add(flow.getGroupId().toString()));
 
             fdb.install(vtnMgr, flow);
             flushFlowTasks();
@@ -122,7 +135,13 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
         VTNThreadData.removeFlows(vtnMgr, bpath2);
         data.cleanUp(vtnMgr);
         assertEquals(numEntries1, db.size());
-        assertEquals(numEntries1, stubObj.getFlowEntries().size());
+        Set<FlowEntry> entries = stubObj.getFlowEntries();
+        assertEquals(numEntries1, entries.size());
+        for (FlowEntry f: entries) {
+            String g = f.getGroupName();
+            assertTrue(f.toString(), group1Set.contains(g));
+            assertFalse(f.toString(), group2Set.contains(g));
+        }
 
         // execute again.
         data = VTNThreadData.create(rwLock.writeLock());
@@ -147,6 +166,151 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
         // try to get lock.
         VTNThreadData.create(rwLock.writeLock());
         data.cleanUp(vtnMgr);
+
+        st = vtnMgr.removeTenant(tpath);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+    }
+
+    /**
+     * Test case for {@link VTNThreadData#removeFlows(VTNManagerImpl, String, MacVlan, NodeConnector)}.
+     */
+    @Test
+    public void testRemoveFlowsByHost() {
+        // Create tenant and bridge.
+        String tname = "tenant";
+        VTenantPath tpath = new VTenantPath(tname);
+        VBridgePath bpath = new VBridgePath(tname, "bridge");
+
+        Status st = vtnMgr.addTenant(tpath, new VTenantConfig(null));
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        st = vtnMgr.addBridge(bpath, new VBridgeConfig(null));
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        // Collect available ports.
+        Set<NodeConnector> connectors = new HashSet<NodeConnector>();
+        Map<Node, NodeConnector> untestedPorts =
+            new HashMap<Node, NodeConnector>();
+        NodeConnector unusedPort = null;
+        Set<Node> nodes = stubObj.getNodes();
+        for (Node node: nodes) {
+            for (NodeConnector port: stubObj.getNodeConnectors(node)) {
+                if (stubObj.isSpecial(port) || stubObj.isInternal(port)) {
+                    unusedPort = port;
+                } else if (untestedPorts.containsKey(node)) {
+                    assertTrue(connectors.add(port));
+                } else {
+                    untestedPorts.put(node, port);
+                }
+            }
+        }
+
+        assertNotNull(unusedPort);
+        assertEquals(nodes.size(), untestedPorts.size());
+        assertTrue(connectors.size() > 1);
+
+        // Install flow entries.
+        Map<ObjectPair<MacVlan, NodeConnector>, Set<String>> flows =
+            new HashMap<ObjectPair<MacVlan, NodeConnector>, Set<String>>();
+        Map<ObjectPair<MacVlan, NodeConnector>, Integer> flowSizes =
+            new HashMap<ObjectPair<MacVlan, NodeConnector>, Integer>();
+        VTNFlowDatabase fdb = vtnMgr.getTenantFlowDB(tname);
+        assertNotNull(fdb);
+
+        long mac = 1L;
+        short vlan = 0;
+        long untestedMac = 0x00ffffffffffL;
+        short untestedVlan = 0;
+        MacVlan untested = new MacVlan(untestedMac, untestedVlan);
+        int nflows = 0;
+
+        for (NodeConnector port: connectors) {
+            Set<String> groupSet = new HashSet<String>();
+
+            MacVlan mvlan = new MacVlan(mac, vlan);
+            ObjectPair<MacVlan, NodeConnector> pair =
+                new ObjectPair<MacVlan, NodeConnector>(mvlan, port);
+
+            // Install a flow entry that the source host matches.
+            NodeConnector untestedPort = untestedPorts.get(port.getNode());
+            VTNFlow vflow = createVTNFlow(fdb, mvlan, port, untested,
+                                          untestedPort);
+            assertTrue(groupSet.add(vflow.getGroupId().toString()));
+            fdb.install(vtnMgr, vflow);
+            int fsize1 = vflow.getFlowEntries().size();
+            nflows += fsize1;
+
+            // Install a flow entry that the destination host matches.
+            vflow = createVTNFlow(fdb, untested, untestedPort, mvlan, port);
+            assertTrue(groupSet.add(vflow.getGroupId().toString()));
+            fdb.install(vtnMgr, vflow);
+            int fsize2 = vflow.getFlowEntries().size();
+            nflows += fsize2;
+
+            assertNull(flowSizes.put(pair, fsize1 + fsize2));
+            assertNull(flows.put(pair, groupSet));
+            mac++;
+            vlan++;
+        }
+        flushFlowTasks();
+
+        ConcurrentMap<FlowGroupId, VTNFlow> db = vtnMgr.getFlowDB();
+        assertEquals(nflows, db.size());
+        assertEquals(nflows, stubObj.getFlowEntries().size());
+
+        // Try to remove flow entries with specifying unused host.
+        MacVlan unused = new MacVlan(untestedMac - 1L, untestedVlan);
+        ReentrantReadWriteLock  rwLock = new ReentrantReadWriteLock();
+        for (NodeConnector port: connectors) {
+            VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+            try {
+                VTNThreadData.removeFlows(vtnMgr, tname, unused, port);
+            } finally {
+                data.cleanUp(vtnMgr);
+            }
+            assertEquals(nflows, db.size());
+            assertEquals(nflows, stubObj.getFlowEntries().size());
+        }
+
+        // Try to remove flow entries with specifying unused port.
+        for (ObjectPair<MacVlan, NodeConnector> pair: flows.keySet()) {
+            MacVlan host = pair.getLeft();
+            VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+            try {
+                VTNThreadData.removeFlows(vtnMgr, tname, host, unusedPort);
+            } finally {
+                data.cleanUp(vtnMgr);
+            }
+            assertEquals(nflows, db.size());
+            assertEquals(nflows, stubObj.getFlowEntries().size());
+        }
+
+        // Remove flow entries by a pair of host and port.
+        for (Map.Entry<ObjectPair<MacVlan, NodeConnector>, Set<String>> entry:
+                 flows.entrySet()) {
+            ObjectPair<MacVlan, NodeConnector> pair = entry.getKey();
+            Set<String> groupSet = entry.getValue();
+
+            VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+            try {
+                VTNThreadData.removeFlows(vtnMgr, tname, pair.getLeft(),
+                                          pair.getRight());
+            } finally {
+                data.cleanUp(vtnMgr);
+            }
+
+            int fsize = flowSizes.get(pair);
+            nflows -= fsize;
+            assertEquals(nflows, db.size());
+            Set<FlowEntry> entries = stubObj.getFlowEntries();
+            assertEquals(nflows, entries.size());
+            for (FlowEntry f: entries) {
+                String g = f.getGroupName();
+                assertFalse(groupSet.contains(g));
+            }
+        }
+
+        assertEquals(0, nflows);
 
         st = vtnMgr.removeTenant(tpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
@@ -181,6 +345,40 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
         stub.checkCalledInfo(0);
 
         vtnMgr.removeVTNModeListener(stub);
+    }
+
+    /**
+     * Create a VTN flow.
+     *
+     * @param fdb  A {@link VTNFlowDatabase} instance.
+     * @param src  A {@link MacVlan} instance which represents the source host.
+     * @param in   A {@link NodeConnector} instance which represents the
+     *             incoming port.
+     * @param dst  A {@link MacVlan} instance which represents the destination
+     *             host.
+     * @param out  A {@link NodeConnector} instance which represents the
+     *             outgoing port.
+     * @return  A {@link VTNFlow} instance.
+     */
+    private VTNFlow createVTNFlow(VTNFlowDatabase fdb, MacVlan src,
+                                  NodeConnector in, MacVlan dst,
+                                  NodeConnector out) {
+        VTNFlow vflow = fdb.create(vtnMgr);
+
+        Match match = new Match();
+        byte[] saddr = NetUtils.longToByteArray6(src.getMacAddress());
+        byte[] daddr = NetUtils.longToByteArray6(dst.getMacAddress());
+        match.setField(MatchType.IN_PORT, in);
+        match.setField(MatchType.DL_SRC, saddr);
+        match.setField(MatchType.DL_DST, daddr);
+        match.setField(MatchType.DL_VLAN, src.getVlan());
+
+        ActionList actions = new ActionList(out.getNode());
+        actions.addOutput(out);
+        actions.addVlanId(dst.getVlan());
+        vflow.addFlow(vtnMgr, match, actions, 10);
+
+        return vflow;
     }
 
     /**
@@ -264,5 +462,4 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
             }
         }
     }
-
 }

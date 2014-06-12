@@ -12,6 +12,7 @@ package org.opendaylight.vtn.manager.internal;
 import java.net.InetAddress;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -20,6 +21,7 @@ import java.util.HashMap;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +38,9 @@ import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
+import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
+import org.opendaylight.vtn.manager.internal.cluster.MacMapState;
+import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 import org.opendaylight.vtn.manager.internal.cluster.MapType;
 import org.opendaylight.vtn.manager.internal.cluster.NodeVlan;
@@ -67,7 +72,7 @@ public class GlobalResourceManager
     /**
      * Current API version of the VTN Manager.
      */
-    public static final int  API_VERSION = 1;
+    public static final int  API_VERSION = 2;
 
     /**
      * The name of the cluster cache which keeps revision identifier of
@@ -84,6 +89,23 @@ public class GlobalResourceManager
      * The name of the cluster cache which keeps port mappings.
      */
     private static final String  CACHE_PORTMAP = "vtn.portmap";
+
+    /**
+     * The name of the cluster cache which keeps MAC mappings.
+     */
+    private static final String  CACHE_MACMAP = "vtn.macmap";
+
+    /**
+     * The name of the cluster cache which keeps VLAN networks to be eliminated
+     * from MAC mapping.
+     */
+    private static final String  CACHE_MACMAP_DENY = "vtn.macmap.deny";
+
+    /**
+     * The name of the cluster cache which keeps runtime state of
+     * MAC mapping.
+     */
+    private static final String  CACHE_MACMAP_STATE = "vtn.macmap.state";
 
     /**
      * The maximum number of threads in the thread pool for asynchronous tasks.
@@ -125,8 +147,34 @@ public class GlobalResourceManager
 
     /**
      * A set of port mappings established in all containers.
+     *
+     * <p>
+     *   Note that this map is also used to maintain VLAN network on
+     *   switch port owned by MAC mappings.
+     * </p>
      */
     private ConcurrentMap<PortVlan, MapReference> portMaps;
+
+    /**
+     * A set of layer 2 hosts to be mapped by MAC mapping.
+     */
+    private ConcurrentMap<MacVlan, MapReference> macMapAllowed;
+
+    /**
+     * A set of layer 2 hosts not to be mapped by MAC mapping.
+     *
+     * <p>
+     *   This map takes a {@link MacVlan} instance corresponding to the
+     *   layer 2 host as key, and a set of {@link MapReference} instances
+     *   corresponding to MAC mapping.
+     * </p>
+     */
+    private ConcurrentMap<MacVlan, Set<MapReference>> macMapDenied;
+
+    /**
+     * A set of runtime state of MAC mappings.
+     */
+    private ConcurrentMap<MapReference, MacMapState> macMapStates;
 
     /**
      * Cluster container service instance.
@@ -328,28 +376,25 @@ public class GlobalResourceManager
             for (Map.Entry<ObjectPair<String, String>, MapCleaner> entry:
                      mapCleaners.entrySet()) {
                 name = entry.getKey();
-                final MapCleaner cleaner = entry.getValue();
-
+                MapCleaner cleaner = entry.getValue();
                 String container = name.getLeft();
-                final String tenant = name.getRight();
-                final VTNManagerImpl cmgr = vtnManagers.get(container);
-                if (cmgr == null) {
-                    // This should never happen.
-                    LOG.warn("{}: VTN Manager service not found.", container);
-                    continue;
+                String tenant = name.getRight();
+                VTNManagerImpl cmgr = getVTNManager(container);
+                if (cmgr != null) {
+                    // Purge network caches in the container.
+                    cmgr.purge(cleaner, tenant);
                 }
-
-                // Purge network caches in the container.
-                cmgr.purge(cleaner, tenant);
             }
 
-            cleanUpImpl();
+            cleanUpImpl(mgr);
         }
 
         /**
          * Clean up transaction of configuration change.
+         *
+         * @param mgr  VTN Manager service.
          */
-        protected abstract void cleanUpImpl();
+        protected abstract void cleanUpImpl(VTNManagerImpl mgr);
     }
 
     /**
@@ -362,6 +407,17 @@ public class GlobalResourceManager
          * mapping.
          */
         private MapReference  conflicted;
+
+        /**
+         * A reference to MAC mapping invalidated by a new port mapping.
+         */
+        private MapReference  macMap;
+
+        /**
+         * A set of {@link MacVlan} instances which represent invalidated
+         * MAC mappings.
+         */
+        private Set<MacVlan>  macMappedHosts;
 
         /**
          * A {@link NodeConnector} corresponding to a switch port mapped by
@@ -404,10 +460,27 @@ public class GlobalResourceManager
                               boolean purge) {
             MapReference old = portMaps.putIfAbsent(pvlan, ref);
             if (old != null) {
-                // Conflicted with another port mapping.
-                assert old.getMapType() == MapType.PORT;
-                conflicted = old;
-                return;
+                MapType type = old.getMapType();
+                if (type != MapType.MAC) {
+                    // Conflicted with another port mapping.
+                    conflicted = old;
+                    return;
+                }
+
+                // Port mapping always supersedes existing MAC mapping.
+                portMaps.put(pvlan, ref);
+                macMap = old;
+                mappedPort = pvlan.getNodeConnector();
+
+                // Inactivate mappings on the specified port.
+                MacMapState mst = getMacMapStateForUpdate(old);
+                if (mst != null) {
+                    macMappedHosts = mst.inactivate(pvlan);
+                    putMacMapState(old, mst);
+                }
+                if (purge) {
+                    setMapCleaner(pvlan, old);
+                }
             }
 
             if (purge) {
@@ -444,7 +517,29 @@ public class GlobalResourceManager
          * {@inheritDoc}
          */
         @Override
-        protected void cleanUpImpl() {
+        protected void cleanUpImpl(VTNManagerImpl mgr) {
+            if (macMap != null) {
+                String container = macMap.getContainerName();
+                if (!container.equals(mgr.getContainerName())) {
+                    // A new port mapping superseded a MAC mapping in
+                    // another container. In this case the internal state of
+                    // vBridge in which the MAC mapping is configured needs to
+                    // be updated.
+                    VTNManagerImpl cmgr = getVTNManager(container);
+                    if (cmgr != null) {
+                        cmgr.updateBridgeState(macMap.getPath());
+                    }
+                }
+            }
+
+            // Record trace logs that notify inactivated MAC mappings.
+            if (macMappedHosts != null && LOG.isTraceEnabled()) {
+                for (MacVlan mvlan: macMappedHosts) {
+                    MapLog mlog =
+                        new MacMapInactivatedLog(macMap, mvlan, mappedPort);
+                    mlog.log(LOG);
+                }
+            }
         }
     }
 
@@ -527,7 +622,469 @@ public class GlobalResourceManager
          * {@inheritDoc}
          */
         @Override
-        protected void cleanUpImpl() {
+        protected void cleanUpImpl(VTNManagerImpl mgr) {
+        }
+    }
+
+    /**
+     * An instance of this class represents the result of
+     * {@link #changeMacMap(MapReference, MacMapChange)}.
+     */
+    private final class MacMapResult extends MapResult {
+        /**
+         * A set of {@link MacVlan} instances which represents hosts already
+         * mapped by this MAC mapping.
+         */
+        private final Set<MacVlan>  alreadyMapped = new HashSet<MacVlan>();
+
+        /**
+         * Runtime state of the target MAC mapping.
+         */
+        private final MacMapState  mapState;
+
+        /**
+         * Set {@code true} if the target MAC mapping is going to be removed.
+         */
+        private final boolean  removing;
+
+        /**
+         * A set of VLAN IDs corresponding to unmapped VLAN network.
+         */
+        private final Set<Short>  unmappedVlans = new HashSet<Short>();
+
+        /**
+         * A boolean value whicih indicates obsolete network caches need to
+         * be purged or not.
+         */
+        private final boolean  doPurge;
+
+        /**
+         * A list of trace level logs.
+         */
+        private final List<MapLog> logList;
+
+        /**
+         * Construct a new instance.
+         *
+         * @param ref     A reference to the target MAC mapping.
+         * @param change  A {@link MacMapChange} instance which keeps
+         *                differences to be applied.
+         */
+        private MacMapResult(MapReference ref, MacMapChange change) {
+            // Get runtime state of MAC mapping.
+            // Note that we need to modify clone of MacMapState instance
+            // in case of transaction abort.
+            removing = change.isRemoving();
+            MacMapState mst;
+            if (removing) {
+                mst = macMapStates.remove(ref);
+                if (mst != null) {
+                    mst = mst.clone();
+                }
+            } else {
+                mst = createMacMapState(ref);
+            }
+            mapState = mst;
+            doPurge = !(removing || change.dontPurge());
+            logList = (LOG.isTraceEnabled()) ? new ArrayList<MapLog>() : null;
+
+            if (!removing) {
+                // Determine hosts that are already mapped by this MAC mapping.
+                for (MacVlan mvlan: change.getAllowAddedSet()) {
+                    if (mvlan.getMacAddress() == MacVlan.UNDEFINED) {
+                        continue;
+                    }
+                    MapReference mref = getMacMapReference(mvlan);
+                    if (ref.equals(mref)) {
+                        alreadyMapped.add(mvlan);
+                    }
+                }
+            }
+        }
+
+        /**
+         * Return a {@link MacMapCleaner} instance.
+         *
+         * @param ref    A reference to the target MAC mapping.
+         * @return  A {@link MacMapCleaner} instance to clean up obsolete
+         *          network caches.
+         */
+        private MacMapCleaner getMapCleaner(MapReference ref) {
+            ObjectPair<String, String> name = getMapCleanerKey(ref);
+            MacMapCleaner cl = (MacMapCleaner)getMapCleaner(name);
+            if (cl == null) {
+                cl = new MacMapCleaner(GlobalResourceManager.this, ref);
+                addMapCleaner(name, cl);
+            }
+
+            return cl;
+        }
+
+        /**
+         * Create a {@link MacMapCleaner} instance which represents VLAN
+         * network superseded by a new MAC mapping.
+         *
+         * @param ref    A reference to the target MAC mapping.
+         * @param mvlan  A {@link MacVlan} instance which specifies the
+         *               mapped host.
+         */
+        private void addMappedHost(MapReference ref, MacVlan mvlan) {
+            if (doPurge) {
+                MacMapCleaner cl = getMapCleaner(ref);
+                cl.addMappedHost(mvlan);
+            }
+        }
+
+        /**
+         * Create a {@link MacMapCleaner} instance which represents VLAN
+         * network detached from the MAC mapping.
+         *
+         * @param ref    A reference to the target MAC mapping.
+         * @param mvlan  A {@link MacVlan} instance which specifies the
+         *               unmapped host.
+         */
+        private void addUnmappedHost(MapReference ref, MacVlan mvlan) {
+            if (doPurge) {
+                MacMapCleaner cl = getMapCleaner(ref);
+                cl.addUnmappedHost(mvlan);
+            }
+        }
+
+        /**
+         * Inactivate MAC mapping which maps the specified host.
+         *
+         * @param mst    A {@link MacMapState} instance which contains runtime
+         *               information about the MAC mapping.
+         * @param ref    A reference to a MAC mapping.
+         * @param mvlan  A {@link MacVlan} instance.
+         * @throws VTNException  An error occurred.
+         */
+        private void inactivate(MacMapState mst, MapReference ref,
+                                MacVlan mvlan)
+            throws VTNException {
+            HashSet<PortVlan> rels = new HashSet<PortVlan>();
+            NodeConnector oldPort = mst.inactivate(mvlan, rels);
+            if (oldPort == null) {
+                return;
+            }
+
+            if (logList != null) {
+                MapLog mlog = new MacMapInactivatedLog(ref, mvlan, oldPort);
+                logList.add(mlog);
+            }
+
+            // Release switch port reserved by MAC mapping.
+            releasePort(rels, ref);
+        }
+
+        /**
+         * Inactivate MAC mapping which maps the specified host.
+         *
+         * @param ref    A reference to a MAC mapping.
+         * @param mvlan  A {@link MacVlan} instance.
+         * @throws VTNException  An error occurred.
+         */
+        private void inactivate(MapReference ref, MacVlan mvlan)
+            throws VTNException {
+            MacMapState mst = getMacMapStateForUpdate(ref);
+            if (mst != null) {
+                inactivate(mst, ref, mvlan);
+                putMacMapState(ref, mst);
+            }
+        }
+
+        /**
+         * Get a set of {@link MapReference} instances associated with the
+         * specified host in the denied host set.
+         *
+         * <p>
+         *   This method must be used if you want to modify the denied host
+         *   set.
+         * </p>
+         *
+         * @param mvlan  A {@link MacVlan} instance.
+         * @return  A set of {@link MapReference} instances associated with
+         *          the specified host in the denied host set.
+         *          An empty set is returned if there was no mapping for the
+         *          specified host.
+         */
+        private Set<MapReference> getDenied(MacVlan mvlan) {
+            Set<MapReference> set = macMapDenied.get(mvlan);
+            if (set == null) {
+                return new ConcurrentSkipListSet<MapReference>();
+            }
+
+            // Return a copy of the set for succeeding modification.
+            return ((ConcurrentSkipListSet<MapReference>)set).clone();
+        }
+
+        /**
+         * Remove a map entry associated with the specified host in the
+         * denied host set.
+         *
+         * @param mvlan  A {@link MacVlan} instance.
+         * @return  A previous value associated with the specified host.
+         *          {@code null} if there was no mapping for the host.
+         */
+        private Set<MapReference> removeDenied(MacVlan mvlan) {
+            Set<MapReference> set = macMapDenied.remove(mvlan);
+            if (set == null) {
+                return set;
+            }
+
+            // Return a copy of the set for succeeding modification.
+            return ((ConcurrentSkipListSet<MapReference>)set).clone();
+        }
+
+        /**
+         * Remove the specified host from the allowed host set.
+         *
+         * @param ref    A reference to the target MAC mapping.
+         * @param mvlan  A {@link MacVlan} instance.
+         * @throws VTNException  An error occurred.
+         */
+        private void removeAllowed(MapReference ref, MacVlan mvlan)
+            throws VTNException {
+            if (macMapAllowed.remove(mvlan) == null) {
+                StringBuilder bulder =
+                    new StringBuilder("Trying to unmap unexpected host: ");
+                mvlan.appendContents(bulder);
+                throw new VTNException(StatusCode.NOTFOUND, bulder.toString());
+            }
+
+            addUnmappedHost(ref, mvlan);
+            MacMapState mst = mapState;
+            if (mst != null) {
+                if (mvlan.getMacAddress() == MacVlan.UNDEFINED) {
+                    // MAC mapping mapped by wildcard map will be invalidated
+                    // by collectUnmapped().
+                    unmappedVlans.add(Short.valueOf(mvlan.getVlan()));
+                } else {
+                    inactivate(mst, ref, mvlan);
+                }
+            }
+        }
+
+        /**
+         * Add the specified host to the allowed host set.
+         *
+         * @param ref     A reference to the target MAC mapping.
+         * @param mvlan   A {@link MacVlan} instance.
+         * @throws MacMapConflictException
+         *    The specified host is already mapped by the specified
+         *    MAC mapping.
+         * @throws VTNException  An error occurred.
+         */
+        private void addAllowed(MapReference ref, MacVlan mvlan)
+            throws VTNException {
+            MapReference old = macMapAllowed.putIfAbsent(mvlan, ref);
+            if (old != null) {
+                if (old.equals(ref)) {
+                    // Already added.
+                    return;
+                }
+                throw new MacMapConflictException(mvlan, old);
+            }
+
+            if (alreadyMapped.contains(mvlan)) {
+                // No need to purge network caches for this host because
+                // this host is already mapped by this MAC mapping.
+                return;
+            }
+
+            addMappedHost(ref, mvlan);
+            if (mvlan.getMacAddress() == MacVlan.UNDEFINED) {
+                return;
+            }
+
+            // Check to see if the specified host is mapped by wildcard
+            // MAC mapping.
+            short vlan = mvlan.getVlan();
+            MacVlan key = new MacVlan(MacVlan.UNDEFINED, vlan);
+            MapReference mref = macMapAllowed.get(key);
+            if (mref != null) {
+                inactivate(mref, mvlan);
+            }
+        }
+
+        /**
+         * Remove the specified host from the allowed host set.
+         *
+         * @param ref    A reference to the target MAC mapping.
+         * @param mvlan  A {@link MacVlan} instance.
+         * @throws VTNException  An error occurred.
+         */
+        private void removeDenied(MapReference ref, MacVlan mvlan)
+            throws VTNException {
+            Set<MapReference> set = removeDenied(mvlan);
+            if (set == null || !set.remove(ref)) {
+                StringBuilder bulder = new StringBuilder("Host(");
+                mvlan.appendContents(bulder);
+                bulder.append(") is not found in the denied set");
+                throw new VTNException(StatusCode.NOTFOUND,
+                                       bulder.toString());
+            }
+            if (!set.isEmpty()) {
+                macMapDenied.put(mvlan, set);
+            }
+
+            // Check to see if the specified host is mapped to the target
+            // MAC mapping.
+            MapReference mref = macMapAllowed.get(mvlan);
+            MacVlan key = new MacVlan(MacVlan.UNDEFINED, mvlan.getVlan());
+            MapReference wcref = macMapAllowed.get(key);
+            if (ref.equals(mref)) {
+                // The specified host exists in the allowed host set.
+                addMappedHost(ref, mvlan);
+                if (wcref != null && !wcref.equals(ref)) {
+                    // The specified host may be mapped by another MAC mapping.
+                    // It must be inactivated here.
+                    inactivate(wcref, mvlan);
+                }
+            } else if (mref == null && ref.equals(wcref)) {
+                // The specified host will be mapped to the target MAC mapping
+                // by wildcard MAC address entry.
+                // Network caches for the host should be purged because it may
+                // be mapped to another vBridge by VLAN mapping.
+                addMappedHost(ref, mvlan);
+            }
+        }
+
+        /**
+         * Add the specified host to the denied host set.
+         *
+         * @param ref    A reference to the target MAC mapping.
+         * @param mvlan  A {@link MacVlan} instance.
+         * @throws VTNException  An error occurred.
+         */
+        private void addDenied(MapReference ref, MacVlan mvlan)
+            throws VTNException {
+            Set<MapReference> set = getDenied(mvlan);
+            if (!set.add(ref)) {
+                // Already added.
+                return;
+            }
+
+            macMapDenied.put(mvlan, set);
+            addUnmappedHost(ref, mvlan);
+            MacMapState mst = mapState;
+            if (mst != null) {
+                inactivate(mst, ref, mvlan);
+            }
+        }
+
+        /**
+         * Fix up changes for MAC mappings configuration.
+         *
+         * @param ref  A reference to the target MAC mapping.
+         * @throws VTNException  An error occurred.
+         */
+        private void fixUp(MapReference ref) throws VTNException {
+            MacMapState mst = mapState;
+            if (!(mst == null || unmappedVlans.isEmpty())) {
+                // Inactivate MAC mappings which are no longer valid.
+                HashSet<PortVlan> rels = new HashSet<PortVlan>();
+                Map<MacVlan, NodeConnector> unmapped =
+                    mst.inactivate(macMapAllowed, ref, unmappedVlans, rels);
+                releasePort(rels, ref);
+                if (logList != null) {
+                    for (Map.Entry<MacVlan, NodeConnector> entry:
+                             unmapped.entrySet()) {
+                        MacVlan mvlan = entry.getKey();
+                        NodeConnector port = entry.getValue();
+                        MapLog mlog = new MacMapInactivatedLog(ref, mvlan,
+                                                               port);
+                        logList.add(mlog);
+                    }
+                }
+            }
+
+            // Update runtime state.
+            if (!removing) {
+                putMacMapState(ref, mst);
+            }
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        protected void cleanUpImpl(VTNManagerImpl mgr) {
+            if (logList != null) {
+                for (MapLog mlog: logList) {
+                    mlog.log(LOG);
+                }
+            }
+        }
+    }
+
+    /**
+     * An instance of this class is used to inactivate MAC mappings related
+     * to switch ports accepted by the specified port filter.
+     */
+    private final class MacMapPurgeResult {
+        /**
+         * Determine whether the target MAC mapping is still active or not.
+         */
+        private boolean  active;
+
+        /**
+         * A map which keeps unmapped MAC mappings.
+         */
+        private Map<MacVlan, NodeConnector>  unmapped;
+
+        /**
+         * Inactivate MAC mappings for hosts detected on the specified switch.
+         *
+         * @param ref     A reference to the target MAC mapping.
+         * @param filter  A {@link PortFilter} instance which selects
+         *                switch ports.
+         * @return  {@code true} is returned if at least one MAC mapping was
+         *          inactivated. Otherwise {@code false} is returned.
+         * @throws VTNException  A fatal error occurred.
+         */
+        private boolean inactivate(MapReference ref, PortFilter filter)
+            throws VTNException {
+            MacMapState mst = getMacMapStateForUpdate(ref);
+            if (mst == null) {
+                return false;
+            }
+
+            HashSet<PortVlan> rels = new HashSet<PortVlan>();
+            unmapped = mst.inactivate(filter, rels);
+            releasePort(rels, ref);
+            active = mst.hasMapping();
+
+            return putMacMapState(ref, mst);
+        }
+
+        /**
+         * Determine whether the target MAC mapping is still active or not.
+         *
+         * @return  {@code true} is returned if at least one host is still
+         *          mapped by the MAC mapping.
+         *          {@code false} is returned the specified MAC mapping is
+         *          no longer active.
+         */
+        private boolean isActive() {
+            return active;
+        }
+
+        /**
+         * Clean up cluster cache transaction.
+         *
+         * @param ref   A reference to the target MAC mapping.
+         */
+        private void cleanUp(MapReference ref) {
+            if (unmapped != null && LOG.isTraceEnabled()) {
+                for (Map.Entry<MacVlan, NodeConnector> entry:
+                         unmapped.entrySet()) {
+                    MacVlan mvlan = entry.getKey();
+                    NodeConnector port = entry.getValue();
+                    MapLog mlog = new MacMapInactivatedLog(ref, mvlan, port);
+                    mlog.log(LOG);
+                }
+            }
         }
     }
 
@@ -603,6 +1160,9 @@ public class GlobalResourceManager
             configRevision = new ConcurrentHashMap<MapType, Integer>();
             vlanMaps = new ConcurrentHashMap<NodeVlan, MapReference>();
             portMaps = new ConcurrentHashMap<PortVlan, MapReference>();
+            macMapAllowed = new ConcurrentHashMap<MacVlan, MapReference>();
+            macMapDenied = new ConcurrentHashMap<MacVlan, Set<MapReference>>();
+            macMapStates = new ConcurrentHashMap<MapReference, MacMapState>();
 
             // Use loopback address as controller's address.
             controllerAddress = InetAddress.getLoopbackAddress();
@@ -612,6 +1172,9 @@ public class GlobalResourceManager
             createCache(cluster, CACHE_CONFREVISION, cmode);
             createCache(cluster, CACHE_VLANMAP, cmode);
             createCache(cluster, CACHE_PORTMAP, cmode);
+            createCache(cluster, CACHE_MACMAP, cmode);
+            createCache(cluster, CACHE_MACMAP_DENY, cmode);
+            createCache(cluster, CACHE_MACMAP_STATE, cmode);
 
             configRevision = (ConcurrentMap<MapType, Integer>)
                 getCache(cluster, CACHE_CONFREVISION);
@@ -619,6 +1182,12 @@ public class GlobalResourceManager
                 getCache(cluster, CACHE_VLANMAP);
             portMaps = (ConcurrentMap<PortVlan, MapReference>)
                 getCache(cluster, CACHE_PORTMAP);
+            macMapAllowed = (ConcurrentMap<MacVlan, MapReference>)
+                getCache(cluster, CACHE_MACMAP);
+            macMapDenied = (ConcurrentMap<MacVlan, Set<MapReference>>)
+                getCache(cluster, CACHE_MACMAP_DENY);
+            macMapStates = (ConcurrentMap<MapReference, MacMapState>)
+                getCache(cluster, CACHE_MACMAP_STATE);
 
             controllerAddress = cluster.getMyAddress();
             if (controllerAddress == null) {
@@ -692,6 +1261,43 @@ public class GlobalResourceManager
         }
 
         return rev;
+    }
+
+    /**
+     * Release the specified VLAN network on a switch port reserved by
+     * the MAC mapping.
+     *
+     * @param pvlan  A {@link PortVlan} instance which represents a VLAN
+     *               network on a specific switch port.
+     * @param ref    A reference to the MAC mapping.
+     * @throws VTNException  An error occurred.
+     */
+    private void releasePort(PortVlan pvlan, MapReference ref)
+        throws VTNException {
+        if (!portMaps.remove(pvlan, ref)) {
+            StringBuilder builder = new StringBuilder
+                ("MAC mapping did not reserve port: map=");
+            builder.append(ref.toString()).
+                append(", port=").append(pvlan.toString());
+            throw new VTNException(StatusCode.INTERNALERROR,
+                                   builder.toString());
+        }
+    }
+
+    /**
+     * Release the specified VLAN network on a switch port reserved by
+     * the MAC mapping.
+     *
+     * @param rels  A set of {@link PortVlan} instances corresponding to
+     *              VLAN networks on switch port.
+     * @param ref   A reference to the MAC mapping.
+     * @throws VTNException  An error occurred.
+     */
+    private void releasePort(Set<PortVlan> rels, MapReference ref)
+        throws VTNException {
+        for (PortVlan pvlan: rels) {
+            releasePort(pvlan, ref);
+        }
     }
 
     /**
@@ -793,36 +1399,348 @@ public class GlobalResourceManager
     }
 
     /**
-     * Return a reference to virtual network mapping which maps the specified
-     * host.
+     * Return runtime state of the specified MAC mapping to be updated.
      *
-     * @param nc    A node connector corresponding to the switch port.
-     *              Specifying {@code null} results in undefined behavior.
-     * @param vlan  A VLAN ID.
-     * @return      A {@link MapReference} object is returned if found.
-     *              {@code null} is returned if not found.
+     * @param ref  A reference to the MAC mapping.
+     * @return  A {@link MacMapState} instance if found.
+     *          {@code null} if not found.
      */
-    private MapReference getMapReferenceImpl(NodeConnector nc, short vlan) {
-        // Examine port mapping at first.
-        PortVlan pvlan = new PortVlan(nc, vlan);
-        MapReference ref = portMaps.get(pvlan);
-        if (ref != null) {
-            assert ref.getMapType() == MapType.PORT;
-            return ref;
+    private MacMapState getMacMapStateForUpdate(MapReference ref) {
+        MacMapState mst = macMapStates.get(ref);
+        return (mst == null) ? null : mst.clone();
+    }
+
+    /**
+     * Return runtime state of the specified MAC mapping to be updated.
+     *
+     * <p>
+     *   Unlike {@link #getMacMapStateForUpdate(MapReference)}, this method
+     *   creates a new {@link MacMapState} instance if the runtime state of
+     *   the specified MAC mapping is not found.
+     * </p>
+     *
+     * @param ref  A reference to the MAC mapping.
+     * @return  A {@link MacMapState} instance.
+     */
+    private MacMapState createMacMapState(MapReference ref) {
+        MacMapState mst = macMapStates.get(ref);
+        return (mst == null) ? new MacMapState() : mst.clone();
+    }
+
+    /**
+     * Update runtime state of the specified MAC mapping.
+     *
+     * @param ref  A reference to the MAC mapping.
+     * @param mst  A {@link MacMapState} instance associated with the specified
+     *             MAC mapping.
+     * @return  {@code true} is returned if the state was actually updated.
+     *          Otherwise {@code false} is returned.
+     */
+    private boolean putMacMapState(MapReference ref, MacMapState mst) {
+        boolean changed = mst.isDirty();
+        if (changed) {
+            macMapStates.put(ref, mst);
         }
 
-        // Examine VLAN mapping.
+        return changed;
+    }
+
+    /**
+     * Change MAC mapping configuration.
+     *
+     * @param ref     A reference to the target MAC mapping.
+     * @param change  A {@link MacMapChange} instance which keeps differences
+     *                to be applied.
+     * @return  A {@link MacMapResult} instance.
+     * @throws MacMapConflictException
+     *   At least one host configured in {@code allowAdded} is already mapped
+     *   to vBridge by MAC mapping.
+     * @throws VTNException  A fatal error occurred.
+     */
+    private MacMapResult changeMacMap(MapReference ref, MacMapChange change)
+        throws VTNException {
+        MacMapResult result = new MacMapResult(ref, change);
+
+        // Remove hosts from the allowed host set.
+        for (MacVlan mvlan: change.getAllowRemovedSet()) {
+            result.removeAllowed(ref, mvlan);
+        }
+
+        // Add hosts to the allowed host set.
+        for (MacVlan mvlan: change.getAllowAddedSet()) {
+            result.addAllowed(ref, mvlan);
+        }
+
+        // Remove hosts from the denied host set.
+        for (MacVlan mvlan: change.getDenyRemovedSet()) {
+            result.removeDenied(ref, mvlan);
+        }
+
+        // Append hosts to the denied host set.
+        for (MacVlan mvlan: change.getDenyAddedSet()) {
+            result.addDenied(ref, mvlan);
+        }
+
+        // Fix up change of MAC mapping configuration.
+        result.fixUp(ref);
+
+        return result;
+    }
+
+    /**
+     * Activate the specified host in the MAC mapping.
+     *
+     * @param ref    A reference to the MAC mapping.
+     * @param mvlan  A {@link MacVlan} instance which represents L2 host
+     *               information.
+     * @param port   A {@link NodeConnector} instance corresponding to a
+     *               switch port where the specified host is detected.
+     * @return  A {@link MacMapActivation} instance is returned if the host
+     *          was actually activated.
+     *          {@code null} is returned if the MAC mapping for the specified
+     *          host is already activated.
+     * @throws MacMapGoneException
+     *    The specified host is no longer mapped by the target MAC mapping.
+     * @throws MacMapPortBusyException
+     *    The specified VLAN network on a switch port is reserved by
+     *    another virtual mapping.
+     * @throws MacMapDuplicateException
+     *    The same MAC address as {@code mvlan} is already mapped to the
+     *    same vBridge.
+     * @throws VTNException  A fatal error occurred.
+     */
+    private MacMapActivation activateMacMapImpl(MapReference ref,
+                                                MacVlan mvlan,
+                                                NodeConnector port)
+        throws VTNException {
+        // Verify the current MAC mapping configuration.
+        MacVlan key = getMacMapKey(ref, mvlan);
+        if (key == null) {
+            throw new MacMapGoneException(mvlan, ref);
+        }
+
+        // Reserve the VLAN network on the specified switch port.
+        short vlan = mvlan.getVlan();
+        PortVlan pvlan = new PortVlan(port, vlan);
+        MapReference old = portMaps.putIfAbsent(pvlan, ref);
+        MapReference vlanMap = null;
+        if (old != null) {
+            if (!old.equals(ref)) {
+                throw new MacMapPortBusyException(mvlan, ref, old);
+            }
+        } else if (key.getMacAddress() == MacVlan.UNDEFINED) {
+            // The target VLAN network on the port has been reserved, and
+            // the target host is mapped by wildcard MAC address.
+            // In this case we need to purge obsolete network caches
+            // originated by VLAN mapping.
+            vlanMap = getVlanMapReference(port, vlan);
+        }
+
+        // Activate the MAC mapping.
+        MacMapState mst = createMacMapState(ref);
+        MacMapActivation result = mst.activate(ref, mvlan, port);
+        if (result != null) {
+            PortVlan released = result.getReleasedNetwork();
+            if (released != null) {
+                // Release the switch port which is no longer used by
+                // this MAC mapping.
+                releasePort(released, ref);
+            }
+            if (vlanMap != null) {
+                // Need to purge network caches superseded by the MAC mapping.
+                result.setObsoleteVlanMap(vlanMap, pvlan);
+            }
+            putMacMapState(ref, mst);
+        } else if (old == null) {
+            // This should never happen.
+            StringBuilder builder = new StringBuilder
+                ("Port is reserved by MAC mapping unexpectedly: map=");
+            builder.append(ref.toString()).append(", host={");
+            mvlan.appendContents(builder);
+            builder.append("}, pvlan=").append(pvlan.toString());
+            throw new VTNException(StatusCode.INTERNALERROR,
+                                   builder.toString());
+        }
+
+        return result;
+    }
+
+    /**
+     * Return a reference to virtual network mapping which maps the specified
+     * host by MAC mapping.
+     *
+     * <p>
+     *   This method only sees the MAC mapping configuration.
+     *   It never checks whether the MAC mapping is actually activated or not.
+     * </p>
+     *
+     * @param mvlan  A {@link MacVlan} instance which specifies L2 host.
+     * @return       A {@link MapReference} object is returned if found.
+     *               {@code null} is returned if not found.
+     */
+    private MapReference getMacMapReference(MacVlan mvlan) {
+        MapReference ref = macMapAllowed.get(mvlan);
+        if (ref == null) {
+            // Check to see if the specified VLAN is mapped by MAC mapping.
+            MacVlan key = new MacVlan(MacVlan.UNDEFINED, mvlan.getVlan());
+            ref = macMapAllowed.get(key);
+            if (ref == null) {
+                return null;
+            }
+        }
+
+        Set<MapReference> deniedSet = macMapDenied.get(mvlan);
+        if (deniedSet != null && deniedSet.contains(ref)) {
+            // This MAC address is denied by configuration.
+            return null;
+        }
+
+        return ref;
+    }
+
+    /**
+     * Return the key of {@link #macMapAllowed} which maps the specified
+     * host.
+     *
+     * @param mref   A reference to the MAC mapping.
+     * @param mvlan  A {@link MacVlan} instance corresponding to the host
+     *               to be mapped by the MAC mapping.
+     * @return  If the specified host is mapped by the specified MAC mapping,
+     *          a {@link MacVlan} instance which maps the host is returned.
+     *          {@code null} is returned if the specified host is not mapped
+     *          by the specified MAC mapping.
+     */
+    private MacVlan getMacMapKey(MapReference mref, MacVlan mvlan) {
+        MacVlan key = mvlan;
+        MapReference ref = macMapAllowed.get(key);
+        if (ref == null) {
+            // Check to see if the specified VLAN is mapped by MAC mapping.
+            key = new MacVlan(MacVlan.UNDEFINED, mvlan.getVlan());
+            ref = macMapAllowed.get(key);
+            if (ref == null) {
+                return null;
+            }
+        }
+
+        Set<MapReference> deniedSet = macMapDenied.get(mvlan);
+        if (deniedSet != null && deniedSet.contains(ref)) {
+            // This MAC address is denied by configuration.
+            return null;
+        }
+
+        return (mref.equals(ref)) ? key : null;
+    }
+
+    /**
+     * Return a reference to the VLAN mapping which maps the specified VLAN
+     * network on a switch port.
+     *
+     * @param port  A {@link NodeConnector} instance corresponding to a
+     *              switch port.
+     * @param vlan  A VLAN ID.
+     * @return  A reference to the VLAN mapping if found.
+     *          {@code null} if not found.
+     */
+    private MapReference getVlanMapReference(NodeConnector port, short vlan) {
         // Note that we must examine VLAN mapping with a specific node first.
-        NodeVlan nvlan = new NodeVlan(nc.getNode(), vlan);
-        ref = vlanMaps.get(nvlan);
+        NodeVlan nvlan = new NodeVlan(port.getNode(), vlan);
+        MapReference ref = vlanMaps.get(nvlan);
         if (ref == null) {
             // Check the VLAN mapping which maps all switches.
             nvlan = new NodeVlan(null, vlan);
             ref = vlanMaps.get(nvlan);
         }
 
+        return ref;
+    }
+
+    /**
+     * Return a reference to virtual network mapping which maps the specified
+     * host.
+     *
+     * @param mac   A byte array which represents the MAC address.
+     * @param nc    A node connector corresponding to the switch port.
+     *              Specifying {@code null} results in undefined behavior.
+     * @param vlan  A VLAN ID.
+     * @param logs  A list of {@link MapLog} to store trace log records.
+     *              No trace log is recorded if {@code null} is specified.
+     * @return      A {@link MapReference} object is returned if found.
+     *              {@code null} is returned if not found.
+     */
+    private MapReference getMapReferenceImpl(byte[] mac, NodeConnector nc,
+                                             short vlan, List<MapLog> logs) {
+        // Examine port mapping at first.
+        PortVlan pvlan = new PortVlan(nc, vlan);
+        MapReference pref = portMaps.get(pvlan);
+        if (pref != null && pref.getMapType() == MapType.PORT) {
+            return pref;
+        }
+
+        // Examine MAC mapping.
+        MacVlan mvlan = new MacVlan(mac, vlan);
+        MapReference ref = getMacMapReference(mvlan);
+        if (ref != null && checkMacMapping(ref, mvlan, nc, pref, logs)) {
+            return ref;
+        }
+
+        // If the incoming VLAN network is reserved by port or MAC mapping,
+        // VLAN mapping should ignore all incoming packets from the VLAN
+        // network.
+        if (pref != null) {
+            return null;
+        }
+
+        // Examine VLAN mapping.
+        ref = getVlanMapReference(nc, vlan);
+
         assert ref == null || ref.getMapType() == MapType.VLAN;
         return ref;
+    }
+
+    /**
+     * Determine whether the MAC mapping for the specified host is available
+     * or not.
+     *
+     * @param ref    A reference to the target MAC mapping.
+     * @param mvlan  A {@link MacVlan} instance which specifies the host
+     *               to be mapped.
+     * @param port   A {@link NodeConnector} instance corresponding to a switch
+     *               port where the host was detected.
+     * @param pref   A reference to the virtual mapping which reserves the
+     *               specified VLAN network on a switch port.
+     * @param logs  A list of {@link MapLog} to store trace log records.
+     *              No trace log is recorded if {@code null} is specified.
+     * @return  {@code true} is returned only if the specified host can be
+     *          mapped by the specified MAC mapping.
+     */
+    private boolean checkMacMapping(MapReference ref, MacVlan mvlan,
+                                    NodeConnector port, MapReference pref,
+                                    List<MapLog> logs) {
+        // Ensure that the specified VLAN network on a switch port is not
+        // reserved by another virtual mapping.
+        if (pref != null && !pref.equals(ref)) {
+            if (logs != null) {
+                MapLog mlog = new MacMapPortBusyLog(ref, mvlan, port, pref);
+                logs.add(mlog);
+            }
+            return false;
+        }
+
+        // Ensure that the specified MAC address on another VLAN network is
+        // not mapped to the same vBridge.
+        MacMapState mst = macMapStates.get(ref);
+        if (mst != null) {
+            MacVlan dup = mst.getDuplicate(mvlan);
+            if (dup != null) {
+                if (logs != null) {
+                    MapLog mlog = new MacMapDuplicateLog(ref, mvlan, dup);
+                    logs.add(mlog);
+                }
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -859,6 +1777,77 @@ public class GlobalResourceManager
     }
 
     /**
+     * Remove all data related to the specified container from
+     * {@link #macMapDenied}.
+     *
+     * @param containerName  The name of the container.
+     * @return  {@code true} is returned if at least one entry was removed.
+     *          {@code false} is returned if no entry was removed.
+     */
+    private boolean removeMacMapDenied(String containerName) {
+        Set<MacVlan> removed = new HashSet<MacVlan>();
+        Map<MacVlan, Set<MapReference>> updated =
+            new HashMap<MacVlan, Set<MapReference>>();
+
+        for (Map.Entry<MacVlan, Set<MapReference>> entry:
+                 macMapDenied.entrySet()) {
+            Set<MapReference> rset = entry.getValue();
+            boolean changed = false;
+            for (Iterator<MapReference> it = rset.iterator(); it.hasNext();) {
+                MapReference ref = it.next();
+                if (containerName.equals(ref.getContainerName())) {
+                    it.remove();
+                    changed = true;
+                }
+            }
+
+            if (changed) {
+                MacVlan mvlan = entry.getKey();
+                if (rset.isEmpty()) {
+                    removed.add(mvlan);
+                } else {
+                    updated.put(mvlan, rset);
+                }
+            }
+        }
+
+        macMapDenied.putAll(updated);
+
+        for (MacVlan mvlan: removed) {
+            macMapDenied.remove(mvlan);
+        }
+
+        return !(updated.isEmpty() && removed.isEmpty());
+    }
+
+    /**
+     * Remove all data related to the specified container from
+     * {@link #macMapStates}.
+     *
+     * @param containerName  The name of the container.
+     * @return  {@code true} is returned if at least one entry was removed.
+     *          {@code false} is returned if no entry was removed.
+     */
+    private boolean removeMacMapStates(String containerName) {
+        Set<MapReference> removed = new HashSet<MapReference>();
+        for (MapReference ref: macMapStates.keySet()) {
+            if (containerName.equals(ref.getContainerName())) {
+                removed.add(ref);
+            }
+        }
+
+        if (removed.isEmpty()) {
+            return false;
+        }
+
+        for (MapReference ref: removed) {
+            macMapStates.remove(ref);
+        }
+
+        return true;
+    }
+
+    /**
      * Clean up resources associated with the given container.
      *
      * @param containerName  The name of the container.
@@ -866,8 +1855,16 @@ public class GlobalResourceManager
      *          {@code false} is returned if not changed.
      */
     private boolean cleanUpImpl(String containerName) {
+        // Clear port and VLAN mappings.
         boolean ret = removeMapReferences(vlanMaps, containerName);
-        return (removeMapReferences(portMaps, containerName) || ret);
+        ret = (removeMapReferences(portMaps, containerName) || ret);
+
+        // Clear MAC mappings.
+        ret = (removeMapReferences(macMapAllowed, containerName) || ret);
+        ret = (removeMacMapDenied(containerName) || ret);
+        ret = (removeMacMapStates(containerName) || ret);
+
+        return ret;
     }
 
     // IVTNGlobal
@@ -1043,6 +2040,32 @@ public class GlobalResourceManager
      * {@inheritDoc}
      */
     @Override
+    public void registerMacMap(VTNManagerImpl mgr, MacMapPath path,
+                               final MacMapChange change)
+        throws VTNException {
+        // Change MAC mapping configuration in a cluster cache transaction.
+        final MapReference ref = mgr.getMapReference(path);
+        ConfigTransaction<MacMapResult> xact =
+            new ConfigTransaction<MacMapResult>(mgr.getVTNConfig()) {
+            @Override
+            protected MacMapResult update() throws VTNException {
+                MacMapResult r = changeMacMap(ref, change);
+                setChanged();
+                return r;
+            }
+        };
+
+        MacMapResult result = xact.execute();
+        result.cleanUp(mgr, path.getTenantName());
+        if (change.isRemoving() && !change.dontPurge()) {
+            purge(mgr, ref);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean isVlanMapped(NodeVlan nvlan) {
         return vlanMaps.containsKey(nvlan);
     }
@@ -1059,7 +2082,48 @@ public class GlobalResourceManager
      * {@inheritDoc}
      */
     @Override
-    public  MapReference getMapReference(NodeConnector nc, short vlan) {
+    public  MapReference getMapReference(byte[] mac, NodeConnector nc,
+                                         short vlan) {
+        Integer current;
+        MapReference ref;
+        List<MapLog> logList = (LOG.isTraceEnabled())
+            ? new ArrayList<MapLog>() : null;
+
+        do {
+            // Read current revision.
+            current = getConfigRevision();
+
+            // Search for a virtual mapping which maps the given network.
+            if (logList != null) {
+                logList.clear();
+            }
+            ref = getMapReferenceImpl(mac, nc, vlan, logList);
+
+            // Ensure that the configuration is consistent.
+        } while (!current.equals(getConfigRevision()));
+
+        if (logList != null) {
+            for (MapLog mlog: logList) {
+                mlog.log(LOG);
+            }
+        }
+
+        return ref;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public MapReference getMapReference(PortVlan pvlan) {
+        return portMaps.get(pvlan);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public MapReference getMapReference(MacVlan mvlan) {
         Integer current;
         MapReference ref;
 
@@ -1067,13 +2131,127 @@ public class GlobalResourceManager
             // Read current revision.
             current = getConfigRevision();
 
-            // Search for a virtual mapping which maps the given network.
-            ref = getMapReferenceImpl(nc, vlan);
+            // Search for a MAC mapping which maps the specified host.
+            ref = getMacMapReference(mvlan);
 
             // Ensure that the configuration is consistent.
         } while (!current.equals(getConfigRevision()));
 
         return ref;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Set<PortVlan> getMacMappedNetworks(VTNManagerImpl mgr,
+                                              MacMapPath path) {
+        MapReference ref = mgr.getMapReference(path);
+        MacMapState mst = macMapStates.get(ref);
+        return (mst == null) ? null : mst.getNetworks();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PortVlan getMacMappedNetwork(VTNManagerImpl mgr, MacMapPath path,
+                                        long mac) {
+        MapReference ref = mgr.getMapReference(path);
+        MacMapState mst = macMapStates.get(ref);
+        return (mst == null) ? null : mst.getPortVlan(mac);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Map<MacVlan, NodeConnector> getMacMappedHosts(VTNManagerImpl mgr,
+                                                         MacMapPath path) {
+        MapReference ref = mgr.getMapReference(path);
+        MacMapState mst = macMapStates.get(ref);
+        return (mst == null) ? null : mst.getActiveHosts();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeConnector getMacMappedPort(VTNManagerImpl mgr, MacMapPath path,
+                                          MacVlan mvlan) {
+        MapReference ref = mgr.getMapReference(path);
+        MacMapState mst = macMapStates.get(ref);
+        return (mst == null) ? null : mst.getPort(mvlan);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean hasMacMappedHost(VTNManagerImpl mgr, MacMapPath path) {
+        MapReference ref = mgr.getMapReference(path);
+        MacMapState mst = macMapStates.get(ref);
+        return (mst == null) ? false : mst.hasMapping();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean activateMacMap(VTNManagerImpl mgr, MacMapPath path,
+                                  final MacVlan mvlan,
+                                  final NodeConnector port)
+        throws VTNException {
+        // Activate MAC mapping in a cluster cache transaction.
+        final MapReference ref = mgr.getMapReference(path);
+        ConfigTransaction<MacMapActivation> xact =
+            new ConfigTransaction<MacMapActivation>(mgr.getVTNConfig()) {
+            @Override
+            protected MacMapActivation update() throws VTNException {
+                MacMapActivation r = activateMacMapImpl(ref, mvlan, port);
+                if (r != null) {
+                    setChanged();
+                }
+                return r;
+            }
+        };
+
+        MacMapActivation result = xact.execute();
+        if (result == null) {
+            // The specified host on the port is already activated.
+            return false;
+        }
+
+        result.cleanUp(LOG, mgr, ref, mvlan, port);
+
+        return result.isActivated();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean inactivateMacMap(VTNManagerImpl mgr, MacMapPath path,
+                                    final PortFilter filter)
+        throws VTNException {
+        // Inactivate MAC mappings in a cluster cache transaction.
+        final MapReference ref = mgr.getMapReference(path);
+        ConfigTransaction<MacMapPurgeResult> xact =
+            new ConfigTransaction<MacMapPurgeResult>(mgr.getVTNConfig()) {
+            @Override
+            protected MacMapPurgeResult update() throws VTNException {
+                MacMapPurgeResult r = new MacMapPurgeResult();
+                if (r.inactivate(ref, filter)) {
+                    setChanged();
+                }
+                return r;
+            }
+        };
+
+        MacMapPurgeResult result = xact.execute();
+        result.cleanUp(ref);
+
+        return result.isActive();
     }
 
     /**
@@ -1146,6 +2324,20 @@ public class GlobalResourceManager
         } catch (Exception e) {
             LOG.error(containerName + ": Failed to clean up resource", e);
         }
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VTNManagerImpl getVTNManager(String containerName) {
+        VTNManagerImpl mgr = vtnManagers.get(containerName);
+        if (mgr == null) {
+            // This should never happen.
+            LOG.warn("{}: VTN Manager service was not found.", containerName);
+        }
+        return mgr;
     }
 
     // ICoordinatorChangeAware

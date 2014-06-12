@@ -11,9 +11,15 @@ package org.opendaylight.vtn.manager.internal.cluster;
 
 import java.io.Serializable;
 
+import org.opendaylight.vtn.manager.DataLinkHost;
+import org.opendaylight.vtn.manager.EthernetHost;
+import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
+import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.NetUtils;
+import org.opendaylight.controller.sal.utils.Status;
+import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
  * {@code MacVlan} class represents a pair of MAC address and VLAN ID.
@@ -28,7 +34,7 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -7690466020207319563L;
+    private static final long serialVersionUID = 3174739271911614298L;
 
     /**
      * A pseudo MAC address which represents undefined value.
@@ -105,6 +111,44 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
     }
 
     /**
+     * Construct a new instance which represents the specified data link
+     * layer host.
+     *
+     * <p>
+     *   This constructor is used to create a new instance for MAC mapping
+     *   configuration.
+     * </p>
+     *
+     * @param dlhost  A {@link DataLinkHost} instance.
+     * @throws VTNException
+     *    A invalid value is specified to {@code dlhost}.
+     */
+    public MacVlan(DataLinkHost dlhost) throws VTNException {
+        if (dlhost == null) {
+            Status s = VTNManagerImpl.argumentIsNull("Data link layer host");
+            throw new VTNException(s);
+        }
+
+        if (!(dlhost instanceof EthernetHost)) {
+            String msg = "Unsupported address type: " + dlhost;
+            throw new VTNException(StatusCode.BADREQUEST, msg);
+        }
+
+        EthernetHost ehost = (EthernetHost)dlhost;
+        EthernetAddress addr = ehost.getAddress();
+        long mac;
+        if (addr == null) {
+            mac = UNDEFINED;
+        } else {
+            mac = getMacAddress(addr);
+        }
+
+        short vlan = ehost.getVlan();
+        VTNManagerImpl.checkVlan(vlan);
+        encodedValue = encode(mac, vlan);
+    }
+
+    /**
      * Return a long value which represents a MAC address.
      *
      * @return  A long value which represent a MAC address.
@@ -139,6 +183,31 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
     }
 
     /**
+     * Return a {@link EthernetHost} instance which represents this instance.
+     *
+     * @return  A {@link EthernetHost} instance which represents this instance.
+     */
+    public EthernetHost getEthernetHost() {
+        try {
+            short vlan = getVlan();
+            long mac = getMacAddress();
+            EthernetAddress eaddr;
+            if (mac == UNDEFINED) {
+                eaddr = null;
+            } else {
+                byte[] raw = NetUtils.longToByteArray6(mac);
+                eaddr = new EthernetAddress(raw);
+            }
+
+            return new EthernetHost(eaddr, vlan);
+        } catch (Exception e) {
+            // This should never happen.
+            throw new IllegalStateException
+                ("Unable to create EthernetHost", e);
+        }
+    }
+
+    /**
      * Append human readable strings which represents the contents of this
      * object to the specified {@link StringBuilder}.
      *
@@ -169,6 +238,36 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
     private long encode(long mac, short vlan) {
         return (((mac << NBITS_VLAN_ID) | ((long)vlan & MASK_VLAN_ID)) &
                 MASK_ENCODED);
+    }
+
+    /**
+     * Convert a {@link EthernetAddress eth} into a long integer which
+     * represents a MAC address.
+     *
+     * @param eth  A {@link EthernetAddress} instance.
+     * @return     A long integer which represents a MAC address.
+     * @throws VTNException
+     *    A invalid address is specified to {@code eth}.
+     */
+    private long getMacAddress(EthernetAddress eth)
+        throws VTNException {
+        byte[] raw = eth.getValue();
+        long mac = NetUtils.byteArray6ToLong(raw);
+        String badaddr = null;
+        if (NetUtils.isBroadcastMACAddr(raw)) {
+            badaddr = "Broadcast address";
+        } else if (!NetUtils.isUnicastMACAddr(raw)) {
+            badaddr = "Multicast address";
+        } else if (mac == UNDEFINED) {
+            badaddr = "Zero";
+        } else {
+            return mac;
+        }
+
+        StringBuilder builder = new StringBuilder(badaddr);
+        builder.append(" cannot be specified: ").
+            append(VTNManagerImpl.formatMacAddress(mac));
+        throw new VTNException(StatusCode.BADREQUEST, builder.toString());
     }
 
     /**

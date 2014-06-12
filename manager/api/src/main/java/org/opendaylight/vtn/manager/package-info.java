@@ -73,6 +73,7 @@
  *   <ul>
  *     <li><a href="#VLAN-map">VLAN mapping</a></li>
  *     <li><a href="#port-map">Port mapping</a></li>
+ *     <li><a href="#MAC-map">MAC mapping</a> (Helium onwards)</li>
  *   </ul>
  *
  *   <h4 id="vBridge.status" style="border-bottom: 1px dashed #aaaaaa;">
@@ -91,6 +92,10 @@
  *         <ul>
  *           <li>
  *             No <a href="#VLAN-map">VLAN mapping</a> is configured in
+ *             vBridge.
+ *           </li>
+ *           <li>
+ *             No <a href="#MAC-map">MAC mapping</a> is configured in
  *             vBridge.
  *           </li>
  *           <li>
@@ -121,6 +126,10 @@
  *                 no other ports are operational.
  *               </li>
  *             </ul>
+ *           </li>
+ *           <li>
+ *             <a href="#MAC-map">MAC mapping</a> is set on vBridge and
+ *             the target host for MAC mapping is not yet detected.
  *           </li>
  *           <li>
  *             One or more than one interface out of the enabled
@@ -197,13 +206,45 @@
  *       controller.
  *     </p>
  *     <p>
+ *       Further, if the same VLAN ID specified with and without the physical
+ *       switch are set to different vBridges, higher priority will be given
+ *       to the VLAN mapping specified with the physical switch.
+ *       E.g., let us assume that vBridge is configured as shown below.
+ *     </p>
+ *     <ul>
+ *       <li>
+ *         Create a vBridge with the name <strong>bridge_1</strong> and
+ *         configure VLAN mapping with the VLAN ID <strong>1</strong> and
+ *         the physical switch <strong>switch-1</strong>.
+ *       </li>
+ *       <li>
+ *         Create a vBridge with the name <strong>bridge_2</strong> and
+ *         configure VLAN mapping with the VLAN ID <strong>1</strong>.
+ *       </li>
+ *     </ul>
+ *     <p>
+ *       Following will be the behavior in this case.
+ *     </p>
+ *     <ul>
+ *       <li>
+ *         Ethernet frames with VLAN ID <strong>1</strong> will be mapped to
+ *         <strong>bridge_1</strong> if they are detected at physical switch
+ *         <strong>switch-1</strong>.
+ *       </li>
+ *       <li>
+ *         Other Ethernet frames with VLAN ID <strong>1</strong>, which are
+ *         not detected at <strong>switch-1</strong>, will be mapped to
+ *         <strong>bridge_2</strong>.
+ *       </li>
+ *     </ul>
+ *     <p>
  *       Please note the following caution while configuring VLAN mapping.
  *     </p>
  *     <ul>
  *       <li>
- *         VLAN ID (including 0), which was mapped in VLAN mapping, will be
- *         exclusive for that vBridge. It is not possible to map a VLAN ID
- *         to another vBridge if it has been already mapped to a vBridge.
+ *         VLAN, mapped by VLAN mapping, will be exclusive for that vBridge.
+ *         It is not possible to configure VLAN mapping with the same settings
+ *         to another vBridge.
  *       </li>
  *       <li>
  *         Input and output against the internal ports (ports that are
@@ -222,7 +263,435 @@
  *           </li>
  *         </ul>
  *       </li>
+ *       <li>
+ *         VLAN mapping is not used on the VLAN network over a switch port
+ *         which has been mapped using
+ *         <a href="#port-map.conflict.VLAN">Port mapping</a>.
+ *       </li>
+ *       <li>
+ *         VLAN mapping is not used on the VLAN network over a switch port
+ *         which has detected a host mapped with
+ *         <a href="#MAC-map.conflict.VLAN">MAC mapping</a>.
+ *       </li>
  *     </ul>
+ *   </div>
+ *
+ *   <h4 id="MAC-map" style="border-bottom: 1px dashed #aaaaaa;">
+ *     MAC mapping
+ *   </h4>
+ *   <div style="margin-left: 1em;">
+ *     <p>
+ *       <strong>MAC mapping</strong> functionality is used to associate
+ *       <a href="#vBridge">vBridge</a> with any specified host and it is
+ *       supported from Helium onwards. Only one MAC mapping can be configured
+ *       on one vBridge.
+ *       However, it is possible to associate multiple hosts to vBridge by
+ *       using one MAC mapping.
+ *     </p>
+ *     <p>
+ *       A combination of MAC address of host and VLAN ID is specified to
+ *       map hosts in MAC mapping.
+ *     </p>
+ *     <ul>
+ *       <li>
+ *         If 0 is specified as VLAN ID, MAC addresses detected over untagged
+ *         network will be mapped to vBridge.
+ *       </li>
+ *       <li>
+ *         If VLAN ID equal to or more than 1 and equal to or less than 4095
+ *         is specified, MAC addresses detected over the specified VLAN will
+ *         be mapped to vBridge.
+ *       </li>
+ *     </ul>
+ *     <p>
+ *       MAC mapping has the following two access control lists.
+ *       Host is specified in MAC mapping by setting host information to
+ *       these access control lists.
+ *     </p>
+ *     <dl style="margin-left: 1em;">
+ *       <dt id="MAC-map.allow" style="font-weight: bold; margin-top: 0.5em;">Map Allow list
+ *       <dd style="margin-left: 2em;">
+ *         Set the list of hosts which are to be mapped with MAC mapping.
+ *         <ul>
+ *           <li>
+ *             Following MAC addresses cannot be set.
+ *             <ul>
+ *               <li>0</li>
+ *               <li>Broadcast address</li>
+ *               <li>Multi-cast address</li>
+ *             </ul>
+ *           </li>
+ *           <li>
+ *             If MAC address is not specified in the host information,
+ *              all the hosts detected over the specified VLAN will be mapped.
+ *           </li>
+ *           <li>
+ *             Host information set in Map Allow list will become exclusive
+ *             to that vBridge. It is not possible to set the same host
+ *             information to a different MAC mapping.
+ *           </li>
+ *           <li>
+ *             It is not possible to set multiple host information with the
+ *             same MAC address inside the same Map Allow list.
+ *             E.g., if host information specified with MAC address
+ *             <strong>A</strong> and VLAN ID <strong>1</strong> is set in
+ *             the Map Allow list, it will not be possible to add host
+ *             information having MAC address <strong>A</strong> with a
+ *             VLAN ID different from <strong>1</strong> to that Map Allow
+ *             list.
+ *           </li>
+ *         </ul>
+ *
+ *       <dt id="MAC-map.deny" style="font-weight: bold; margin-top: 0.5em;">Map Deny list
+ *       <dd style="margin-left: 2em;">
+ *         Set the list of hosts which are not mapped with MAC mapping.
+ *         This is used to exclude specific hosts from mapping when host
+ *         information set in Map Allow list does not specify any MAC address.
+ *         <ul>
+ *           <li>
+ *             Following MAC addresses cannot be set.
+ *             <ul>
+ *               <li>0</li>
+ *               <li>Broadcast address</li>
+ *               <li>Multi-cast address</li>
+ *             </ul>
+ *           </li>
+ *           <li>
+ *             As against Map Allow list, it is mandatory to specify MAC
+ *             address.
+ *           </li>
+ *           <li>
+ *             Map Deny list is evaluated before Map Allow list.
+ *             If the same host information is specified in both Map Allow
+ *             list and Map Deny list of the same MAC mapping, that host will
+ *             not be mapped using the MAC mapping.
+ *           </li>
+ *         </ul>
+ *     </dl>
+ *     <p>
+ *       If host information with and without MAC address are configured in
+ *       different MAC mapping respectively, settings with MAC address
+ *       specified are given higher priority.
+ *       E.g., let us assume that vBridge is configured as shown below.
+ *     </p>
+ *     <ul>
+ *       <li>
+ *         Create vBridge with the name <strong>bridge_1</strong> and
+ *         configure MAC address <strong>A</strong> and VLAN ID
+ *         <strong>1</strong> in the allow access list of MAC mapping.
+ *       </li>
+ *       <li>
+ *         Create vBridge with the name <strong>bridge_2</strong> and
+ *         configure VLAN ID <strong>1</strong> in the allow access list of
+ *         MAC mapping.
+ *       </li>
+ *     </ul>
+ *     <p>
+ *       Following behavior will be seen in this case.
+ *     </p>
+ *     <ul>
+ *       <li>
+ *         Host with MAC address <strong>A</strong>, on the VLAN with VLAN ID
+ *         <strong>1</strong>, will be mapped to <strong>bridge_1</strong>.
+ *       </li>
+ *       <li>
+ *         All hosts with MAC addresses other than <strong>A</strong>, on the
+ *         VLAN with VLAN ID <strong>1</strong>, will be mapped to
+ *         <strong>bridge_2</strong>.
+ *       </li>
+ *     </ul>
+ *     <h5 id="MAC-map.activate" style="border-bottom: 1px dotted #aaaaaa;">
+ *       Activation of MAC mapping
+ *     </h5>
+ *     <div style="margin-left: 1em;">
+ *       <p>
+ *         As against <a href="#VLAN-map">VLAN mapping</a> etc., MAC mapping
+ *         will not be activated just by configuring it. The mapping with
+ *         a host is activated when a packet sent from the host specified in
+ *         MAC mapping is detected for the first time. Also, when broadcast
+ *         packets are sent towards MAC mapping, the packet will be sent only
+ *         to the VLAN over the switch ports that have detected a host with
+ *         which mapping is activated.
+ *       </p>
+ *       <p>
+ *         E.g., let us assume that a network isconfigured as shown below.
+ *       </p>
+ *       <ul>
+ *         <li>
+ *           Following hosts are connected to one physical switch.
+ *           <ul>
+ *             <li>
+ *               Host with MAC address <strong>A</strong> is connected to the
+ *               VLAN over <strong>port-1</strong> which has the VLAN ID
+ *               <strong>10</strong>.
+ *             </li>
+ *             <li>
+ *               Host with MAC address <strong>B</strong> is connected to the
+ *               VLAN over <strong>port-2</strong> which has the VLAN ID
+ *               <strong>20</strong>.
+ *             </li>
+ *           </ul>
+ *         </li>
+ *         <li>
+ *           MAC mapping is configured on a <a href="#vBridge">vBridge</a>
+ *           with the name <strong>bridge_1</strong>, and following host
+ *           information is configured in
+ *           <a href="#MAC-map.allow">Map Allow list</a>.
+ *           <ul>
+ *             <li>
+ *               MAC address <strong>A</strong>, VLAN ID <strong>10</strong>
+ *             </li>
+ *             <li>
+ *               MAC address <strong>B</strong>, VLAN ID <strong>20</strong>
+ *             </li>
+ *           </ul>
+ *         </li>
+ *       </ul>
+ *       <p>
+ *         Here, following will be the behavior if the host with MAC address
+ *         <strong>A</strong> sends a broadcast packet.
+ *       </p>
+ *       <ol>
+ *         <li>
+ *           Broadcast packets with source MAC address <strong>A</strong> and
+ *           VLAN ID <strong>10</strong> is detected at the switch port
+ *           <strong>port-1</strong> and it is notified to VTN Manager.
+ *         </li>
+ *         <li>
+ *           VTN Manager maps the received packet to <strong>bridge_1</strong>
+ *           and mapping is activated between the host having MAC address
+ *          <strong>A</strong> and VLAN ID <strong>10</strong>.
+ *         </li>
+ *         <li>
+ *           VTN Manager will try to send the received packet to switch ports
+ *           that are connected to hosts with which MAC mapping is activated.
+ *           However, since there are no hosts with which the mapping is
+ *           activated, except for the host which sent the broadcast packet,
+ *           the packet is discarded.
+ *         </li>
+ *       </ol>
+ *       <p>
+ *         After that, following will be the behavior if host with MAC address
+ *         <strong>B</strong> sends a broadcast packet.
+ *       </p>
+ *       <ol>
+ *         <li>
+ *           Broadcast packets with source MAC address <strong>B</strong> and
+ *           VLAN ID <strong>20</strong> is detected at the switch port
+ *           <strong>port-2</strong> and it is notified to VTN Manager.
+ *         </li>
+ *         <li>
+ *           VTN Manager will map the received packet to
+ *           <strong>bridge_1</strong> and mapping is activated between the
+ *           host having MAC address <strong>B</strong> and VLAN ID
+ *           <strong>20</strong>.
+ *         </li>
+ *         <li>
+ *           VTN Manager will try to send the received packet to switch ports
+ *           that are connected to hosts with which MAC mapping is activated.
+ *           If we leave out the port which received the packet, only
+ *           <strong>port-1</strong> is connected to a host with which
+ *           MAC mapping is activated. Therefore, broadcast packet is sent
+ *           only to <strong>port-1</strong>.
+ *           <ul>
+ *             <li>VLAN ID is overwritten to <strong>10</strong>.
+ *           </ul>
+ *         </li>
+ *       </ol>
+ *       <p>
+ *         Once the MAC mapping with the host is activated, the combination
+ *         of physical switch port, which detected that host, and VLAN ID
+ *         will be exclusive for that vBridge. In the above mentioned
+ *         example, following switch port and VLAN ID combinations will
+ *         be exclusive to <strong>bridge_1</strong>.
+ *       </p>
+ *       <ul>
+ *         <li>Port <strong>port-1</strong>, VLAN ID <strong>10</strong>
+ *         <li>Port <strong>port-2</strong>, VLAN ID <strong>20</strong>
+ *       </ul>
+ *       <p>
+ *         E.g., in the above case, let us assume that there is a host with
+ *         MAC address <strong>C</strong> over the VLAN of
+ *         <strong>port-1</strong> and VLAN ID <strong>10</strong>.
+ *         Here, configure MAC address <strong>C</strong> and VLAN ID
+ *         <strong>10</strong> on the Map Allow list of
+ *         <strong>bridge_1</strong>, and after that when a packet sent from
+ *         MAC address <strong>C</strong> is detected, mapping is activated
+ *         between the host with MAC address <strong>C</strong> and
+ *         <strong>bridge_1</strong>.
+ *       </p>
+ *       <p>
+ *         However, if a different vBridge <strong>bridge_2</strong> is
+ *         created, and MAC address <strong>C</strong> and VLAN ID
+ *         <strong>10</strong> are configured in the Map Allow list of
+ *         <strong>bridge_2</strong>, the mapping with
+ *         <strong>bridge_2</strong> will not be activated even if the packet
+ *         sent from the host with MAC address <strong>C</strong> is detected.
+ *         This is because port <strong>port-1</strong> and VLAN ID
+ *         <strong>10</strong> is exclusive to <strong>bridge_1</strong>.
+ *         Therefore, packet sent from MAC address <strong>C</strong> is
+ *         discarded.
+ *       </p>
+ *       <p>
+ *         Further, MAC mapping will not be used for hosts detected over a
+ *         VLAN which is mapped using <a href="#port-map">Port mapping</a>.
+ *       </p>
+ *       <p>
+ *         Mapping, activated by MAC mapping, between vBridge and host will
+ *         be removed at the following instances.
+ *       </p>
+ *       <ul>
+ *         <li>When MAC mapping is deleted.</li>
+ *         <li>
+ *           When the vBridge on which the MAC mapping is set is deleted.
+ *         </li>
+ *         <li>
+ *           When the <a href="#VTN">VTN</a> that contains the vBridge where
+ *           MAC mapping is set is deleted.
+ *         </li>
+ *         <li>
+ *           When MAC mapping settings are changed, and the mapped host is
+ *           removed from the mapping target of MAC mapping.
+ *         </li>
+ *         <li>
+ *           When the switch to which the mapped host is connected is deleted.
+ *         </li>
+ *         <li>
+ *           When switch port to which the mapped host is connected is deleted.
+ *         </li>
+ *         <li>
+ *           When link down is detected at the switch port to which the mapped
+ *           host is connected.
+ *         </li>
+ *         <li>
+ *           When the switch port to which the mapped host is connected is
+ *           mapped to <a href="#vInterface">virtual interface</a> with
+ *           <a href="#port-map">Port mapping</a>.
+ *         </li>
+ *       </li>
+ *     </div>
+ *
+ *     <h5 id="MAC-map.conflict.VLAN" style="border-bottom: 1px dotted #aaaaaa;">
+ *       Duplicate settings of VLAN mapping
+ *     </h5>
+ *     <div style="margin-left: 1em;">
+ *       <p>
+ *         If a host on which MAC mapping is applied is detected over a VLAN,
+ *         mapped with <a href="#VLAN-map">VLAN mapping</a>, MAC mapping will
+ *         be given higher priority.
+ *       </p>
+ *       <p>
+ *         E.g., let us assume that a network is configured as shown below.
+ *       </p>
+ *       <ul>
+ *         <li>
+ *           Host with MAC address <strong>A</strong> is connected to the
+ *           untagged network over physical port <strong>port-1</strong> of
+ *           switch <strong>switch-1</strong>.
+ *         </li>
+ *         <li>
+ *           Create vBridge with the name <strong>bridge_1</strong> and
+ *           configure MAC mapping.
+ *           <ul>
+ *             <li>
+ *               Configure MAC address <strong>A</strong> and VLAN ID
+ *               <strong>0</strong> to
+ *               <a href="#MAC-map.allow">Map Allow list</a>.
+ *             </li>
+ *           </ul>
+ *         </li>
+ *         <li>
+ *           Create vBridge with the name <strong>bridge_2</strong> and
+ *           configure VLAN mapping.
+ *           <ul>
+ *             <li>Specify <strong>0</strong> in VLAN ID.</li>
+ *           </ul>
+ *         </li>
+ *       </ul>
+ *       <p>
+ *         Following behavior will be seen in such a case.
+ *       </p>
+ *       <ul>
+ *         <li>
+ *           Untagged packet sent by the host with MAC address
+ *           <strong>A</strong> will be mapped using the MAC mapping of
+ *           <strong>bridge_1</strong>.
+ *         </li>
+ *         <li>
+ *           Untagged packet sent by hosts with MAC addresses other than
+ *           <strong>A</strong> will be mapped using the VLAN mapping of
+ *           <strong>bridge_2</strong>.
+ *         </li>
+ *       </ul>
+ *     </div>
+ *
+ *     <h5 style="border-bottom: 1px dotted #aaaaaa;">
+ *       Limitations
+ *     </h5>
+ *     <div style="margin-left: 1em;">
+ *       <p>
+ *         MAC mapping maps physical network with vBridge at host level but,
+ *         when broadcast packet is sent towards MAC mapping,
+ *         it is transmitted in the VLAN over switch port. Therefore,
+ *         broadcast packet may be sent to hosts that are not mapped by
+ *         MAC mapping.
+ *       </p>
+ *       <p>
+ *         E.g., let us assume that a network is configured as shown below.
+ *       </p>
+ *       <ul>
+ *         <li>
+ *           Following hosts are connected to one physical switch.
+ *           <ul>
+ *             <li>
+ *               Two hosts with MAC addresses <strong>A</strong> and
+ *               <strong>B</strong> are connected to the untagged network over
+ *               the port <strong>port-1</strong>.
+ *             </li>
+ *             <li>
+ *               Host with MAC address <strong>C</strong> is connected to the
+ *               untagged network over the port <strong>port-2</strong>.
+ *             </li>
+ *           </ul>
+ *         </li>
+ *         <li>
+ *           Configure MAC mapping to vBridge with the name
+ *           <strong>bridge_1</strong>.
+ *           <ul>
+ *             <li>
+ *               Configure following host information in
+ *               <a href="#MAC-map.allow">Map Allow list</a>.
+ *               <ul>
+ *                 <li>VLAN ID </strong>0</strong></li>
+ *               </ul>
+ *             </li>
+ *             <li>
+ *               Configure following host information in
+ *               <a href="#MAC-map.deny">Map Deny list</a>.
+ *               <ul>
+ *                 <li>
+ *                   MAC address <strong>B</strong>, VLAN ID <strong>0</strong>
+ *                 </li>
+ *               </ul>
+ *             </li>
+ *           </ul>
+ *         </li>
+ *       </ul>
+ *       <p>
+ *         In this case, packets sent by host with MAC address
+ *         <strong>A</strong> or <strong>C</strong> will be mapped to
+ *         <strong>bridge_1</strong> but packets sent by host with MAC address
+ *         <strong>B</strong> will not be mapped to <strong>bridge_1</strong>.
+ *         Also, if untagged unicast packets with the destination MAC address
+ *         <strong>B</strong> are detected, they will be discarded.
+ *       </p>
+ *       <p>
+ *         However, if the host with MAC address <strong>C</strong> sends
+ *         broadcast packet, it will be forwarded to the untagged network
+ *         over <strong>port-1</strong> and broadcast packet will be delivered
+ *         to host with MAC address <strong>B</strong> as well.
+ *       </p>
+ *     </div>
  *   </div>
  *
  *   <h4 id="macTable" style="border-bottom: 1px dashed #aaaaaa;">
@@ -290,7 +759,7 @@
  *     </p>
  *     <ul>
  *       <li>
- *         Create a vBridge with the name <strong>bridge-1</strong> and map
+ *         Create a vBridge with the name <strong>bridge_1</strong> and map
  *         VLAN ID <strong>1</strong> and <strong>2</strong> by using
  *         <a href="#VLAN-map">VLAN mapping</a>.
  *       </li>
@@ -304,18 +773,18 @@
  *     <p>
  *       If the above configurations are done, then ethernet frames that have
  *       the source MAC address <strong>A</strong> and different VLAN IDs will
- *       be treated as an input of <strong>bridge-1</strong>.
+ *       be treated as an input of <strong>bridge_1</strong>.
  *     </p>
  *     <ul>
  *       <li>
  *         When a packet is sent from alias <strong>A:1</strong>, then an
  *         ethernet frame that has source MAC address as <strong>A</strong> and
- *         VLAN ID <strong>1</strong> will be input to bridge-1.
+ *         VLAN ID <strong>1</strong> will be input to bridge_1.
  *       </li>
  *       <li>
  *         When a packet is sent from alias <strong>A:2</strong>, then an
  *         ethernet frame that has source MAC address as <strong>A</strong> and
- *         VLAN ID <strong>2</strong> will be input to bridge-1.
+ *         VLAN ID <strong>2</strong> will be input to bridge_1.
  *       </li>
  *     </ul>
  *     <p>
@@ -522,7 +991,7 @@
  *       </li>
  *     </ul>
  *
- *     <h5 style="border-bottom: 1px dotted #aaaaaa;">
+ *     <h5 id="port-map.conflict.VLAN" style="border-bottom: 1px dotted #aaaaaa;">
  *       Duplicate setting of VLAN mapping
  *     </h5>
  *     <div style="margin-left: 1em;">
@@ -534,12 +1003,12 @@
  *       </p>
  *       <p>
  *         For example, let us assume that two vBridges with the names
- *         <strong>bridge-1</strong> and <strong>bridge-2</strong> are
+ *         <strong>bridge_1</strong> and <strong>bridge_2</strong> are
  *         configured like shown below.
  *       </p>
  *       <ul>
  *         <li>
- *           Configure port mapping in <strong>bridge-1</strong>
+ *           Configure port mapping in <strong>bridge_1</strong>
  *           <ul>
  *             <li>
  *               Specify physical port <strong>port-1</strong> of switch
@@ -549,7 +1018,7 @@
  *           </ul>
  *         </li>
  *         <li>
- *           Configure VLAN mapping in <strong>bridge-2</strong>
+ *           Configure VLAN mapping in <strong>bridge_2</strong>
  *           <ul>
  *             <li>Do not specify physica switch.</li>
  *             <li>Specify <strong>10</strong> in VLAN ID.</li>
@@ -564,11 +1033,11 @@
  *           If the physical port <strong>port-1</strong> of switch
  *           <strong>switch-1</strong> receives an ethernet frame with
  *           VLAN ID <strong>10</strong>, then that ethernet frame is treated
- *           as an input against <strong>bridge-1</strong>.
+ *           as an input against <strong>bridge_1</strong>.
  *           <ul>
  *             <li>
  *               It is never treated as input against
- *               <strong>bridge-2</strong>.
+ *               <strong>bridge_2</strong>.
  *             </li>
  *           </ul>
  *         </li>
@@ -576,7 +1045,72 @@
  *           If any port, except for the physical port <strong>port-1</strong>
  *           of switch <strong>switch-1</strong>, receives an ethernet frame
  *           with VLAN ID <strong>10</strong>, then that ethernet frame is
- *           treated as an input against <strong>bridge-2</strong>.
+ *           treated as an input against <strong>bridge_2</strong>.
+ *         </li>
+ *       </ul>
+ *     </div>
+ *
+ *     <h5 id="port-map.conflict.MAC" style="border-bottom: 1px dotted #aaaaaa;">
+ *       Duplicate setting of MAC mapping
+ *     </h5>
+ *     <div style="margin-left: 1em;">
+ *       <p>
+ *         If a host set in <a href="#MAC-map">MAC mapping</a> is detected over
+ *         VLAN network set in Port mapping, Port mapping settings will be
+ *         prioritized. If MAC mapping is already activated with the host
+ *         connected to this VLAN network, all MAC mappings will get
+ *         deactivated.
+ *       </p>
+ *       <p>
+ *         E.g., let us assume that a network is configured as shown below.
+ *       </p>
+ *       <ul>
+ *         <li>
+ *           Host with MAC address <strong>A</strong> is connected to untagged
+ *           network over physical port <strong>port-1</strong> of switch
+ *           <strong>switch-1</strong>.
+ *         </li>
+ *         <li>
+ *           Create <a href="#vBridge">vBridge</a> with the name
+ *           <strong>bridge_1</strong> and configure MAC mapping.
+ *           <ul>
+ *             <li>
+ *               Configure MAC address <strong>A</strong> and VLAN ID
+ *               <strong>0</strong> to
+ *               <a href="#MAC-map.allow">Map Allow list</a>.
+ *             </li>
+ *           </ul>
+ *         </li>
+ *       </ul>
+ *       <p>
+ *         Further, newly create the following vBridge.
+ *       </p>
+ *       <ul>
+ *         <li>
+ *           Create vBridge with the name <strong>bridge_2</strong> and
+ *           configure Port mapping.
+ *           <ul>
+ *             <li>
+ *               Specify physical port <strong>port-1</strong> of switch
+ *               <strong>switch-1</strong>
+ *             </li>
+ *             <li>Specify <strong>0</strong> in VLAN ID. </li>
+ *           </ul>
+ *         </li>
+ *       </ul>
+ *       <p>
+ *         Following behavior will be there in this case.
+ *       </p>
+ *       <ul>
+ *         <li>
+ *           When the Port mapping of <strong>bridge_2</strong> is set, all
+ *           the MAC mappings activated on the untagged network over physical
+ *           port <strong>port-1</strong> of switch <strong>switch-1</strong>
+ *           will get deactivated.
+ *         </li>
+ *         <li>
+ *           Packets sent by host with MAC address <strong>A</strong> will be
+ *           mapped according to the Port mapping on <strong>bridge_2</strong>.
  *         </li>
  *       </ul>
  *     </div>

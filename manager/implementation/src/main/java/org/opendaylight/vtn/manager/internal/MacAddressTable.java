@@ -749,6 +749,20 @@ public class MacAddressTable {
     }
 
     /**
+     * Return a set of {@link InetAddress} instances associated with the
+     * specified MAC address in the MAC address table.
+     *
+     * @param mac  A long value which represents the MAC address.
+     * @return  A set of {@link InetAddress} instances if found.
+     *          {@code null} if not found.
+     */
+    public Set<InetAddress> getInetAddresses(long mac) {
+        Long key = Long.valueOf(mac);
+        MacTableEntry tent = getEntry(key);
+        return (tent == null) ? null : tent.getInetAddresses();
+    }
+
+    /**
      * Flush all MAC address table entries.
      */
     public synchronized void flush() {
@@ -961,6 +975,22 @@ public class MacAddressTable {
     }
 
     /**
+     * Return a MAC address entry associated with the specified MAC address.
+     *
+     * <p>
+     *   Unlike {@link #get(Long)}, this method never affects the used flag
+     *   of the MAC address table entry.
+     * </p>
+     *
+     * @param key  A {@link Long} instance which represents the MAC address.
+     * @return  A MAC address table entry if found. {@code null} if not fonud.
+     */
+    synchronized MacTableEntry getEntry(Long key) {
+        Map<Long, MacTableEntry> table = macAddressTable;
+        return (table == null) ? null : table.get(key);
+    }
+
+    /**
      * Install a new MAC address table aging task.
      *
      * @param timer  The global timer thread.
@@ -1054,6 +1084,10 @@ public class MacAddressTable {
         MacTableEntry newEnt = tent;
         if (tent.hasMoved(port, vlan, mapPath)) {
             // The host was moved to other network.
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}: MAC address has moved: old={}", getTableName(),
+                          tent);
+            }
             pctx.addObsoleteEntry(tent);
             vtnManager.removeMacTableEntry(tent.getEntryId());
 
@@ -1080,26 +1114,10 @@ public class MacAddressTable {
 
         if (changed && LOG.isTraceEnabled()) {
             LOG.trace("{}: MAC address table entry changed: {}",
-                      getTableName(), tent);
+                      getTableName(), newEnt);
         }
 
         return newEnt;
-    }
-
-    /**
-     * Return a MAC address entry associated with the specified MAC address.
-     *
-     * <p>
-     *   Unlike {@link #get(Long)}, this method never affects the used flag
-     *   of the MAC address table entry.
-     * </p>
-     *
-     * @param key  A {@link Long} instance which represents the MAC address.
-     * @return  A MAC address table entry if found. {@code null} if not fonud.
-     */
-    private synchronized MacTableEntry getEntry(Long key) {
-        Map<Long, MacTableEntry> table = macAddressTable;
-        return (table == null) ? null : table.get(key);
     }
 
     /**
