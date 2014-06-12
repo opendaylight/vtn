@@ -1547,12 +1547,17 @@ public final class VBridgeImpl implements Serializable {
      * @param mgr    VTN Manager service.
      * @param snode  The source node.
      * @param dnode  The destination node.
+     * @return  {@code true} is returned if the specified node path is
+     *          actually added to the faulted path set.
+     *          {@code false} is returned if it already exists in the set.
      */
-    private void addFaultedPath(VTNManagerImpl mgr, Node snode, Node dnode) {
+    private boolean addFaultedPath(VTNManagerImpl mgr, Node snode, Node dnode) {
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         VBridgeState bst = getBridgeState(db);
-        bst.addFaultedPath(snode, dnode);
+        boolean ret = bst.addFaultedPath(snode, dnode);
         setState(mgr, db, bst, VNodeState.DOWN);
+
+        return ret;
     }
 
     /**
@@ -1663,9 +1668,10 @@ public final class VBridgeImpl implements Serializable {
             IRouting routing = mgr.getRouting();
             path = routing.getRoute(snode, dnode);
             if (path == null) {
-                LOG.error("{}:{}: Path fault: {} -> {}",
-                          getContainerName(), bridgePath, snode, dnode);
-                addFaultedPath(mgr, snode, dnode);
+                if (addFaultedPath(mgr, snode, dnode)) {
+                    LOG.error("{}:{}: Path fault: {} -> {}",
+                              getContainerName(), bridgePath, snode, dnode);
+                }
                 return;
             }
         } else {
