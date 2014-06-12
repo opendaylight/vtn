@@ -27,6 +27,26 @@ import org.opendaylight.vtn.manager.VBridge;
  * <p>
  *   This class is used to return a list of vBridge information to REST client.
  * </p>
+ *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"vbridge": [
+ * &nbsp;&nbsp;&nbsp;&nbsp;{
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"name": "vbridge_1",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"description": "Description about vBridge 1",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"ageInterval": "600",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"faults": "0",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"state": "-1"
+ * &nbsp;&nbsp;&nbsp;&nbsp;},
+ * &nbsp;&nbsp;&nbsp;&nbsp;{
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"name": "vbridge_2",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"ageInterval": "1000",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"faults": "2",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"state": "0"
+ * &nbsp;&nbsp;&nbsp;&nbsp;}
+ * &nbsp;&nbsp;]
+ * }</pre>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vbridges")

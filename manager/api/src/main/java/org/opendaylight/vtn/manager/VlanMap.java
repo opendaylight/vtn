@@ -29,6 +29,17 @@ import org.opendaylight.controller.sal.core.Node;
  *   other components by passing {@code VlanMap} object.
  * </p>
  *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"id": "OF-00:00:00:00:00:00:00:03.0",
+ * &nbsp;&nbsp;"vlan": "0",
+ * &nbsp;&nbsp;"node": {
+ * &nbsp;&nbsp;&nbsp;&nbsp;"type": "OF",
+ * &nbsp;&nbsp;&nbsp;&nbsp;"id": "00:00:00:00:00:00:00:03"
+ * &nbsp;&nbsp;}
+ * }</pre>
+ *
  * @see  <a href="package-summary.html#VLAN-map">VLAN mapping</a>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)

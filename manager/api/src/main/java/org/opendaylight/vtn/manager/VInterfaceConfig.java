@@ -28,6 +28,13 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  *   in vBridge.
  * </p>
  *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"description": "Description about IF-1",
+ * &nbsp;&nbsp;"enabled": true
+ * }</pre>
+ *
  * @see  <a href="package-summary.html#vInterface">Virtual interface</a>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)

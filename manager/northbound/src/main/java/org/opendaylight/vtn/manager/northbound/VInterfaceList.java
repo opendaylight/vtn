@@ -28,6 +28,26 @@ import org.opendaylight.vtn.manager.VInterface;
  *   This class is used to return a list of vBridge interface information to
  *   REST client.
  * </p>
+ *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"interface": [
+ * &nbsp;&nbsp;&nbsp;&nbsp;{
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"name": "if_1",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"state": "-1",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"entityState": "-1",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"description": "Description about IF-1",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"enabled": "true"
+ * &nbsp;&nbsp;&nbsp;&nbsp;},
+ * &nbsp;&nbsp;&nbsp;&nbsp;{
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"name": "if_2",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"state": "0",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"entityState": "1",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"enabled": "false"
+ * &nbsp;&nbsp;&nbsp;&nbsp;}
+ * &nbsp;&nbsp;]
+ * }</pre>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "interfaces")

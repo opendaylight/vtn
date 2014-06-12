@@ -27,6 +27,13 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  *   VTN Manager during the creation or modification of the vBridge.
  * </p>
  *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"description": "Description about vBridge 1",
+ * &nbsp;&nbsp;"ageInterval": "600"
+ * }</pre>
+ *
  * @see  <a href="package-summary.html#vBridge">vBridge</a>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)

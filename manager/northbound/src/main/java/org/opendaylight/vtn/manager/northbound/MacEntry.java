@@ -36,6 +36,26 @@ import org.opendaylight.controller.sal.packet.address.EthernetAddress;
  *   This class is used to return MAC address information inside the MAC
  *   address table to REST client.
  * </p>
+ *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"address": "01:02:03:04:05:06",
+ * &nbsp;&nbsp;"vlan": "0",
+ * &nbsp;&nbsp;"node": {
+ * &nbsp;&nbsp;&nbsp;&nbsp;"type": "OF",
+ * &nbsp;&nbsp;&nbsp;&nbsp;"id": "00:00:00:00:00:11:22:33"
+ * &nbsp;&nbsp;},
+ * &nbsp;&nbsp;"port": {
+ * &nbsp;&nbsp;&nbsp;&nbsp;"type": "OF",
+ * &nbsp;&nbsp;&nbsp;&nbsp;"id": "1"
+ * &nbsp;&nbsp;},
+ * &nbsp;&nbsp;"inetAddresses": {
+ * &nbsp;&nbsp;&nbsp;&nbsp;"inetAddress": [
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{"address": "192.168.10.1"}
+ * &nbsp;&nbsp;&nbsp;&nbsp;]
+ * &nbsp;&nbsp;}
+ * }</pre>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "macentry")

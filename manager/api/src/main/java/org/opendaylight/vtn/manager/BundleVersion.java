@@ -24,6 +24,18 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  *   This class is used for passing OSGi bundle version of the VTN Manager to
  *   other components.
  * </p>
+ *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"api": "1",
+ * &nbsp;&nbsp;"bundle": {
+ * &nbsp;&nbsp;&nbsp;&nbsp;"major": "0",
+ * &nbsp;&nbsp;&nbsp;&nbsp;"minor": "1",
+ * &nbsp;&nbsp;&nbsp;&nbsp;"micro": "0",
+ * &nbsp;&nbsp;&nbsp;&nbsp;"qualifier": "SNAPSHOT"
+ * &nbsp;&nbsp;}
+ * }</pre>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "bundleVersion")

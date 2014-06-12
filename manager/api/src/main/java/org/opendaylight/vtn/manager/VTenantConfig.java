@@ -33,6 +33,14 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  *   than the value in <strong>idleTimeout</strong>.
  * </p>
  *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"description": "Description about VTN 1",
+ * &nbsp;&nbsp;"idleTimeout": "300",
+ * &nbsp;&nbsp;"hardTimeout": "0"
+ * }</pre>
+ *
  * @see  <a href="package-summary.html#VTN">VTN</a>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)

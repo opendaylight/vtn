@@ -30,6 +30,16 @@ import org.opendaylight.controller.sal.core.Node;
  *   mapping to the VTN Manager during configuration of VLAN mapping.
  * </p>
  *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"vlan": "100",
+ * &nbsp;&nbsp;"node": {
+ * &nbsp;&nbsp;&nbsp;&nbsp;"type": "OF",
+ * &nbsp;&nbsp;&nbsp;&nbsp;"id": "00:00:00:00:00:00:00:03"
+ * &nbsp;&nbsp;}
+ * }</pre>
+ *
  * @see  <a href="package-summary.html#VLAN-map">VLAN mapping</a>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)

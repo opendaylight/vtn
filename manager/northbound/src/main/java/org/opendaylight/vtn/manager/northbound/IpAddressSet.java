@@ -37,6 +37,15 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  *     {@link IpAddress} insntances.
  *   </li>
  * </ul>
+ *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"inetAddress": [
+ * &nbsp;&nbsp;&nbsp;&nbsp;{"address": "192.168.10.1"},
+ * &nbsp;&nbsp;&nbsp;&nbsp;{"address": "10.1.2.3"}
+ * &nbsp;&nbsp;]
+ * }</pre>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "inetAddresses")

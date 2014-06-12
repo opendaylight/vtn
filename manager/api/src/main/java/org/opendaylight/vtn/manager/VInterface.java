@@ -26,6 +26,16 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  *   other components by passing {@code VInterface} object.
  * </p>
  *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"name": "if_1",
+ * &nbsp;&nbsp;"state": "-1",
+ * &nbsp;&nbsp;"entityState": "-1",
+ * &nbsp;&nbsp;"description": "Description about IF-1",
+ * &nbsp;&nbsp;"enabled": "true"
+ * }</pre>
+ *
  * @see  <a href="package-summary.html#vInterface">Virtual interface</a>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)

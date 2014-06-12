@@ -27,6 +27,24 @@ import org.opendaylight.vtn.manager.VTenant;
  * <p>
  *   This class is used to return a list of VTN information to REST client.
  * </p>
+ *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"vtn": [
+ * &nbsp;&nbsp;&nbsp;&nbsp;{
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"name": "vtn_1",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"description": "Description about VTN 1",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"idleTimeout": "300",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"hardTimeout": "0"
+ * &nbsp;&nbsp;&nbsp;&nbsp;},
+ * &nbsp;&nbsp;&nbsp;&nbsp;{
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"name": "vtn_2",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"idleTimeout": "600",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"hardTimeout": "1000"
+ * &nbsp;&nbsp;&nbsp;&nbsp;}
+ * &nbsp;&nbsp;]
+ * }</pre>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vtns")

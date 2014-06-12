@@ -27,6 +27,25 @@ import org.opendaylight.vtn.manager.VlanMap;
  *   This class is used to return a list of VLAN mapping information to
  *   REST client.
  * </p>
+ *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"vlanmap": [
+ * &nbsp;&nbsp;&nbsp;&nbsp;{
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"id": "OF-00:00:00:00:00:00:00:03.0",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"vlan": "0",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"node": {
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"type": "OF",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"id": "00:00:00:00:00:00:00:03"
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}
+ * &nbsp;&nbsp;&nbsp;&nbsp;},
+ * &nbsp;&nbsp;&nbsp;&nbsp;{
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"id": "ANY.7",
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"vlan": "7"
+ * &nbsp;&nbsp;&nbsp;&nbsp;}
+ * &nbsp;&nbsp;]
+ * }</pre>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vlanmaps")
