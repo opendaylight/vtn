@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -135,13 +135,13 @@ public class VBridgeStateTest extends TestBase {
             Node dst = path.getRight();
             String emsg = path.toString();
             assertTrue(emsg, faulted.add(path));
-            bst.addFaultedPath(src, dst);
+            assertTrue(bst.addFaultedPath(src, dst));
             assertTrue(emsg, bst.isDirty());
             assertFalse(emsg, bst.isDirty());
             assertSame(emsg, VNodeState.DOWN, bst.getState());
 
             // Try to add the same path.
-            bst.addFaultedPath(src, dst);
+            assertFalse(bst.addFaultedPath(src, dst));
             assertFalse(emsg, bst.isDirty());
 
             Set<ObjectPair<Node, Node>> paths = bst.getFaultedPaths();
@@ -216,8 +216,8 @@ public class VBridgeStateTest extends TestBase {
                 ObjectPair<Node, Node> path = toNodePath(edge);
                 Node src = path.getLeft();
                 Node dst = path.getRight();
-                bst1.addFaultedPath(src, dst);
-                bst2.addFaultedPath(copy(src), copy(dst));
+                assertTrue(bst1.addFaultedPath(src, dst));
+                assertTrue(bst2.addFaultedPath(copy(src), copy(dst)));
             }
             testEquals(set, bst1, bst2);
         }
@@ -256,7 +256,7 @@ public class VBridgeStateTest extends TestBase {
                 faulted.add(path);
                 Node src = path.getLeft();
                 Node dst = path.getRight();
-                bst.addFaultedPath(src, dst);
+                assertTrue(bst.addFaultedPath(src, dst));
             }
 
             String s = "state=" + state.toString();
@@ -291,7 +291,7 @@ public class VBridgeStateTest extends TestBase {
                 faulted.add(path);
                 Node src = path.getLeft();
                 Node dst = path.getRight();
-                bst1.addFaultedPath(src, dst);
+                assertTrue(bst1.addFaultedPath(src, dst));
             }
 
             VBridgeState bst2 = (VBridgeState)serializeTest(bst1);

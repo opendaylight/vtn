@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -40,7 +40,7 @@ public class VBridgeState implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 5174713374889497524L;
+    private static final long serialVersionUID = -970563907780953357L;
 
     /**
      * State of the bridge.
@@ -132,13 +132,19 @@ public class VBridgeState implements Serializable {
      *
      * @param snode  The source node.
      * @param dnode  The destination node.
+     * @return  {@code true} is returned if the specified node path is
+     *          actually added to the faulted path set.
+     *          {@code false} is returned if it already exists in the set.
      */
-    void addFaultedPath(Node snode, Node dnode) {
+    boolean addFaultedPath(Node snode, Node dnode) {
         ObjectPair<Node, Node> path = new ObjectPair<Node, Node>(snode, dnode);
-        if (faultedPaths.add(path)) {
+        boolean ret = faultedPaths.add(path);
+        if (ret) {
             bridgeState = VNodeState.DOWN;
             dirty = true;
         }
+
+        return ret;
     }
 
     /**
