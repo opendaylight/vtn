@@ -8,6 +8,7 @@
  */
 
 #include <vtn_drv_transaction_handle.hh>
+#include <vtn_drv_module.hh>
 #include <list>
 #include <vector>
 #include <memory>
@@ -20,28 +21,13 @@ namespace driver {
 */
 DriverTxnInterface::DriverTxnInterface(ControllerFramework* ctrl_frame,
                             kt_handler_map &map_kt)
-    : crtl_inst_(ctrl_frame), kt_handler_map_(map_kt) {
-      initialize_map();
-    }
+    : crtl_inst_(ctrl_frame), kt_handler_map_(map_kt) {}
 
 
 /**
  * @brief : Destructor
  */
-DriverTxnInterface::~DriverTxnInterface() {
-  std::map<unc_key_type_t, pfc_ipcstdef_t*> :: iterator map_it;
-  for (map_it = key_map_.begin(); map_it != key_map_.end(); map_it++) {
-    delete map_it->second;
-    map_it->second = NULL;
-  }
-  for (map_it = val_map_.begin(); map_it != val_map_.end(); map_it++) {
-    delete map_it->second;
-    map_it->second = NULL;
-  }
-
-  key_map_.clear();
-  val_map_.clear();
-}
+DriverTxnInterface::~DriverTxnInterface() {}
 
 /**
 * @Description :This functions invokes when TC sends COMMIT request to driver
@@ -345,8 +331,8 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitCache
         tclib_ptr->TcLibWriteControllerInfo(ctr_name, retc, 1);
         void* key = hnd_ptr->get_key_struct(cfgnode);
         void* val = hnd_ptr->get_val_struct(cfgnode);
-        pfc_ipcstdef_t* key_sdf =key_map_.find(keytype)->second;
-        pfc_ipcstdef_t* val_sdf =val_map_.find(keytype)->second;
+        pfc_ipcstdef_t* key_sdf = VtnDrvIntf::key_map.find(keytype)->second;
+        pfc_ipcstdef_t* val_sdf = VtnDrvIntf::val_map.find(keytype)->second;
         tclib_ptr->TcLibWriteKeyValueDataInfo(ctr_name, (uint32_t)keytype,
                                               *key_sdf, *val_sdf,
                                               key, val);
@@ -399,71 +385,5 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleAuditEnd(uint32_t session_id,
   return unc::tclib::TC_SUCCESS;
 }
 
-/**
-* @Description :Method to fill the map pfc_ipcstdef_t pointer against keytype
-* @param[in]   :NONE
-* @return      :NONE
-**/
-void  DriverTxnInterface::initialize_map() {
-  ODC_FUNC_TRACE;
-  uint32_t loop = 0;
-  unc_key_type_t KT[] = {UNC_KT_VTN, UNC_KT_VBRIDGE, UNC_KT_VBR_IF,
-                         UNC_KT_VBR_VLANMAP};
-  uint32_t kt_size = sizeof KT/sizeof(unc_key_type_t);
-  for (loop = 0; loop < kt_size; loop++) {
-    switch (KT[loop]) {
-      case UNC_KT_VTN:
-        {
-        pfc_ipcstdef_t *stdef_k = new pfc_ipcstdef_t;
-        PFC_IPC_STDEF_INIT(stdef_k, key_vtn);
-        pfc_ipcstdef_t *stdef_v = new pfc_ipcstdef_t;
-        PFC_IPC_STDEF_INIT(stdef_v, val_vtn);
-        key_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
-                                                                  stdef_k));
-        val_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
-                                                                  stdef_v));
-        break;
-        }
-      case UNC_KT_VBRIDGE:
-        {
-        pfc_ipcstdef_t *stdef_kvbr = new pfc_ipcstdef_t;
-        PFC_IPC_STDEF_INIT(stdef_kvbr, key_vbr);
-        pfc_ipcstdef_t *stdef_vbr = new pfc_ipcstdef_t;
-        PFC_IPC_STDEF_INIT(stdef_vbr, val_vbr);
-        key_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
-                                                                  stdef_kvbr));
-        val_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
-                                                                  stdef_vbr));
-        break;
-        }
-      case UNC_KT_VBR_IF:
-        {
-        pfc_ipcstdef_t *stdef_kvbrif = new pfc_ipcstdef_t;
-        PFC_IPC_STDEF_INIT(stdef_kvbrif, key_vbr_if);
-        pfc_ipcstdef_t *stdef_vbrif = new pfc_ipcstdef_t;
-        PFC_IPC_STDEF_INIT(stdef_vbrif, val_vbr_if);
-        key_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
-                                                                stdef_kvbrif));
-        val_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
-                                                                stdef_vbrif));
-        break;
-        }
-      case UNC_KT_VBR_VLANMAP:
-        {
-          pfc_ipcstdef_t *stdef_kvbrvlanmap = new pfc_ipcstdef_t;
-          PFC_IPC_STDEF_INIT(stdef_kvbrvlanmap, key_vlan_map);
-          pfc_ipcstdef_t *stdef_vbrvlanmap = new pfc_ipcstdef_t;
-          PFC_IPC_STDEF_INIT(stdef_vbrvlanmap, val_vlan_map);
-          key_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
-                                                          stdef_kvbrvlanmap));
-          val_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
-                                                           stdef_vbrvlanmap));
-          break;
-        }
-      default:
-        break;
-    }
-  }
-}
 }  // namespace driver
 }  // namespace unc

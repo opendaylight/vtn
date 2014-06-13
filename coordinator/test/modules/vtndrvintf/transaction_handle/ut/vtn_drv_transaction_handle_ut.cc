@@ -12,11 +12,13 @@
 #include <arpa/inet.h>
 #include <vtn_drv_transaction_handle.hh>
 #include <controller_utils.hh>
+#include <vtn_cache_mod.hh>
 #include <stdio.h>
 #include <map>
 #include "../../../stub/tclib_module/tclib_interface.hh"
 #include "../../../stub/tclib_module/tclib_module.hh"
 #include "../../../stub/ContrllerFrameworkStub/driver/driver_interface.hh"
+#include "../../../stub/ContrllerFrameworkStub/vtn_drv_module.hh"
 #include "../../../../../modules/vtndrvintf/include/request_template.hh"
 
 
@@ -27,6 +29,9 @@ class DriverTxnInterfaceTest: public testing::Test {
 
 
 TEST_F(DriverTxnInterfaceTest, HandleCommitGlobalCommitSuccess) {
+  const pfc_modattr_t* attr = NULL;
+  VtnDrvIntf obj(attr);
+  obj.init();
   uint32_t session_id = 1;
   uint32_t config_id = 1;
   std::string ctr_name = "ctr_demo";
